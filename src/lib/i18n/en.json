@@ -45,6 +45,21 @@
     "danger": "Danger",
     "unable": "Unable to assess"
   },
+  "scan": {
+    "hint": "Point at a menu and tap to scan",
+    "permissionTitle": "Camera access needed",
+    "permissionBody": "K-Bap needs your camera to scan menus on the spot.",
+    "grant": "Allow camera",
+    "reading": "Reading the menu…",
+    "noText": "No menu text found. Move closer and try again.",
+    "failed": "Scan failed. Check your connection and try again.",
+    "retake": "Retake",
+    "sample": "Run sample scan (no camera)",
+    "showOriginal": "Original",
+    "showResult": "Risk",
+    "resultTitle": "{{count}} items scanned",
+    "spikeNote": "Spike: risk comes live from the backend (currently a mock)."
+  },
   "states": {
     "loading": "Loading…",
     "emptyReviewsTitle": "No reviews yet",

@@ -9,7 +9,8 @@
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rocher.kbap"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +28,12 @@
     "plugins": [
       "expo-router",
       "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "K-Bap uses the camera to scan menus and assess dish risk for you."
+        }
+      ],
       [
         "expo-splash-screen",
         {

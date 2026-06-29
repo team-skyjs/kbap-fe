@@ -10,3 +10,10 @@ export const MOCK_MODE = true;
 
 /** Placeholder base URL (real value comes from env when MOCK_MODE=false). */
 export const API_BASE_URL = 'https://api.kbap.example/v1';
+
+/**
+ * Real BE base for the SCAN SPIKE (handoff §13). The scan flow connects LIVE
+ * regardless of MOCK_MODE — it's the one hook we wire to the real backend now.
+ * Contract is provisional (mid-renegotiation); the adapter isolates the churn.
+ */
+export const BE_BASE = 'https://meogo.handev.site';
