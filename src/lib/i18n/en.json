@@ -84,6 +84,30 @@
     "caption": "Show this screen to the restaurant staff",
     "done": "Done, got my answer!"
   },
+  "profile": {
+    "rankingTitle": "Ranking",
+    "levelPts": "Lv {{level}} · {{score}} pts",
+    "toNext": "{{points}} to {{tier}}",
+    "scoreNote": "Score = reviews + dish variety + scans",
+    "restrictionsTitle": "Dietary restrictions",
+    "edit": "Edit",
+    "add": "Add",
+    "myReviewsTitle": "My reviews · {{count}}",
+    "seeAll": "See all",
+    "accountTitle": "Account",
+    "language": "Language",
+    "notifications": "Notifications",
+    "safetyNotice": "Safety notice",
+    "deleteAccount": "Delete account",
+    "delete": {
+      "title": "Delete your account?",
+      "dataLine": "Allergy, religion & personal data are permanently deleted right away — this can't be undone.",
+      "reviewsLine": "Your reviews are kept but anonymized, so food ratings stay accurate. No one can identify you.",
+      "confirm": "I understand this is permanent.",
+      "confirmBtn": "Delete account",
+      "cancel": "Cancel"
+    }
+  },
   "review": {
     "title": "Write a review",
     "post": "Post",
@@ -121,6 +145,12 @@
     "writeReview": "Write a review"
   },
   "states": {
+    "catalogTitle": "States",
+    "labelLoading": "Loading (skeleton)",
+    "labelEmpty": "Empty",
+    "labelError": "Error",
+    "labelOffline": "Offline",
+    "labelUnable": "Unable to judge",
     "loading": "Loading…",
     "emptyReviewsTitle": "No reviews yet",
     "emptyReviewsBody": "Be the first to review this dish — your note helps the next traveler eat with confidence.",

@@ -4,12 +4,15 @@
  */
 import type { Ranking, Review, User } from '../api/types';
 
+/** Fixed ranking ladder (UI domain). */
+export const RANK_TIERS = ['Rookie', 'Explorer', 'Regular', 'Foodie', 'Native'];
+
 export const MOCK_RANKING: Ranking = {
-  tier: 'Explorer',
-  level: 2,
-  score: 1240,
-  nextTier: 'Connoisseur',
-  pointsToNext: 260,
+  tier: 'Regular',
+  level: 3,
+  score: 320,
+  nextTier: 'Foodie',
+  pointsToNext: 80,
 };
 
 export const MOCK_USER: User = {

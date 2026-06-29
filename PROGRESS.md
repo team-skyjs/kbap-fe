@@ -40,8 +40,8 @@
   - ❓ 목업의 per-dish 스파이스 메타(6/10)는 계약 FoodDetail에 필드 없음 → 생략. 계약에 추가할지 확인 요망.
 - [x] 5. 사장님 확인 — `app/food/[id]/owner` 풀스크린 카드(한국어 질문+메뉴명 강조+ko 설명+reader 캡션). useOwnerConfirmation mock. web 대조 OK.
 - [x] 6. 리뷰 작성 — `app/food/[id]/review` 별점선택+본문+Post, 제출완료(랭크 Rosette). useFoodDetail+useMe. tsc OK (스윕서 시각확인).
-- [~] 7. 프로필
-- [ ] 7. 프로필
+- [x] 7. 프로필 — `(tabs)/profile` ID/랭킹(Rosette+ladder)/제약칩/내리뷰/계정 + `app/delete-account`(FR-032 익명화 고지). web 대조 OK.
+- [~] 8. 상태(빈/로딩/에러)
 - [ ] 8. 상태(빈/로딩/에러)
 - [x] (스캔/카메라 — Session 1에서 완료, 잠금: 사용자가 별도 다듬음)
 
