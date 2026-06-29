@@ -1,0 +1,66 @@
+{
+  "brand": "K-Bap",
+  "common": {
+    "cancel": "Cancel",
+    "gotIt": "Got it",
+    "tryAgain": "Try again",
+    "goBack": "Go back",
+    "retry": "Retry",
+    "skip": "Skip"
+  },
+  "tabs": {
+    "home": "Home",
+    "food": "Food",
+    "scan": "Scan",
+    "community": "Community",
+    "profile": "Profile"
+  },
+  "search": {
+    "placeholder": "Search food, ingredient…",
+    "recent": "Recent searches"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "countNew": "{{count}} new",
+    "reviewReminder": {
+      "title": "Review reminder",
+      "body": "Did you try Kimchi Stew? Leave a review."
+    },
+    "catalogUpdated": {
+      "title": "Catalog updated",
+      "body": "Jokbal now has curated ingredient data."
+    },
+    "welcome": {
+      "title": "Welcome to K-Bap",
+      "body": "Scan your first menu to get started."
+    }
+  },
+  "community": {
+    "lockedTitle": "Community is coming soon",
+    "lockedBody": "The tab is reserved in the MVP. Boards, comments and per-nationality feeds arrive in phase 2."
+  },
+  "risk": {
+    "safe": "Safe",
+    "caution": "Caution",
+    "danger": "Danger",
+    "unable": "Unable to assess"
+  },
+  "states": {
+    "loading": "Loading…",
+    "emptyReviewsTitle": "No reviews yet",
+    "emptyReviewsBody": "Be the first to review this dish — your note helps the next traveler eat with confidence.",
+    "writeReview": "Write a review",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We couldn't load this right now. It's on our side, not yours.",
+    "offlineTitle": "You're offline",
+    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here.",
+    "viewSavedScans": "View saved scans",
+    "unableTitle": "Can't judge this one",
+    "unableBody": "We don't have enough ingredient data to rate this dish for your profile. Ask the owner before eating.",
+    "askOwner": "Ask the owner",
+    "seeIngredients": "See ingredients"
+  },
+  "shell": {
+    "placeholderNote": "Tab content lives in the screen modules"
+  }
+}

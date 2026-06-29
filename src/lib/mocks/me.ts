@@ -1,0 +1,53 @@
+/**
+ * mocks/me.ts — mock signed-in user + ranking, typed against the contract.
+ * Persona matches mocks/foods.ts (shellfish allergy).
+ */
+import type { Ranking, Review, User } from '../api/types';
+
+export const MOCK_RANKING: Ranking = {
+  tier: 'Explorer',
+  level: 2,
+  score: 1240,
+  nextTier: 'Connoisseur',
+  pointsToNext: 260,
+};
+
+export const MOCK_USER: User = {
+  id: 'u_001',
+  nickname: 'Mina',
+  nationality: 'US',
+  readerLanguage: 'en',
+  spiceTolerance: 6,
+  restrictions: [
+    { kind: 'allergy', code: 'allergy:shellfish' },
+    { kind: 'diet', code: 'diet:pescatarian' },
+  ],
+  rank: MOCK_RANKING,
+};
+
+export const MOCK_MY_REVIEWS: Review[] = [
+  {
+    id: 'r_101',
+    foodId: 'bibimbap',
+    rating: 5,
+    body: 'Fresh and balanced — asked for no gochujang and it was perfect.',
+    bodyLanguage: 'en',
+    translatedBody: null,
+    authorNationality: 'US',
+    authorRankTier: 'Explorer',
+    anonymized: false,
+    createdAt: '2026-06-20T12:30:00Z',
+  },
+  {
+    id: 'r_102',
+    foodId: 'samgyeopsal',
+    rating: 4,
+    body: 'Great grilled pork, the staff helped me avoid the shrimp dip.',
+    bodyLanguage: 'en',
+    translatedBody: null,
+    authorNationality: 'US',
+    authorRankTier: 'Explorer',
+    anonymized: false,
+    createdAt: '2026-06-15T19:05:00Z',
+  },
+];
