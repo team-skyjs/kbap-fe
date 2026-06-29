@@ -17,10 +17,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
-import { Btn, IconClose, IconScanLines } from '@/components';
+import { Btn, IconClose, IconScanLines, IconGallery, IconFlip } from '@/components';
 import { useScan, type ScannedItem } from '@/lib/data/useScan';
 import type { ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
@@ -50,6 +51,7 @@ export default function Scan() {
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
   const [showResult, setShowResult] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [facing, setFacing] = useState<CameraType>('back');
 
   function runScan(scanned: ScannedItem[], capturedPhoto: Photo) {
     setPhoto(capturedPhoto);
@@ -64,6 +66,29 @@ export default function Scan() {
     });
   }
 
+  /** Shared OCR → scan path for both camera capture and gallery import. */
+  async function scanImage(captured: Photo) {
+    if (!captured) return;
+    let lines;
+    try {
+      lines = await recognizeMenuLines(captured.uri, captured.width, captured.height);
+    } catch {
+      // native OCR not linked (Expo Go / web) → guide to dev build / sample
+      setNotice(t('scan.failed'));
+      return;
+    }
+    if (!lines.length) {
+      setNotice(t('scan.noText'));
+      return;
+    }
+    const scanned: ScannedItem[] = lines.map((l, i) => ({
+      itemId: i,
+      rawMenuName: l.text,
+      box: l.box,
+    }));
+    runScan(scanned, captured);
+  }
+
   async function capture() {
     setNotice(null);
     const cam = cameraRef.current;
@@ -71,28 +96,24 @@ export default function Scan() {
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7 });
       if (!pic?.uri) return;
-      const captured: Photo = { uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 };
-      let lines;
-      try {
-        lines = await recognizeMenuLines(captured.uri, captured.width, captured.height);
-      } catch {
-        // native OCR not linked (Expo Go) → guide to dev build / sample
-        setNotice(t('scan.failed'));
-        return;
-      }
-      if (!lines.length) {
-        setNotice(t('scan.noText'));
-        return;
-      }
-      const scanned: ScannedItem[] = lines.map((l, i) => ({
-        itemId: i,
-        rawMenuName: l.text,
-        box: l.box,
-      }));
-      runScan(scanned, captured);
+      await scanImage({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 });
     } catch {
       setNotice(t('scan.failed'));
     }
+  }
+
+  /** Import a SINGLE photo from the library (mockup gallery button). */
+  async function pickFromGallery() {
+    setNotice(null);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: false, // one photo at a time
+      selectionLimit: 1,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.length) return;
+    const a = result.assets[0];
+    await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
   }
 
   const Close = (
@@ -163,7 +184,7 @@ export default function Scan() {
   return (
     <View style={styles.root}>
       {granted ? (
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.permission]}>
           <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
@@ -185,11 +206,31 @@ export default function Scan() {
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
         <Text style={styles.hint}>{t('scan.hint')}</Text>
-        {granted && (
-          <Pressable style={styles.shutter} onPress={capture}>
-            <View style={styles.shutterInner} />
+        {/* gallery (left) · shutter (center) · flip (right) — mockup D1 */}
+        <View style={styles.camRow}>
+          <Pressable style={styles.sideBtn} onPress={pickFromGallery} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
+            <IconGallery size={22} color="#fff" />
           </Pressable>
-        )}
+          {granted ? (
+            <Pressable style={styles.shutter} onPress={capture}>
+              <View style={styles.shutterInner} />
+            </Pressable>
+          ) : (
+            <View style={styles.shutterSpacer} />
+          )}
+          {granted ? (
+            <Pressable
+              style={styles.sideBtn}
+              onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))}
+              hitSlop={8}
+              accessibilityLabel={t('scan.flip')}
+            >
+              <IconFlip size={22} color="#fff" />
+            </Pressable>
+          ) : (
+            <View style={styles.sideBtn} />
+          )}
+        </View>
         {/* Fallback path — verifies FE↔BE roundtrip without camera/OCR */}
         <View style={{ width: '100%', maxWidth: 320 }}>
           <Btn variant="ghost" onPress={() => runScan(SAMPLE_ITEMS, null)}>
@@ -228,6 +269,22 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
+  camRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  sideBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   shutter: {
     width: 76,
     height: 76,
@@ -238,6 +295,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
+  shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   notice: {

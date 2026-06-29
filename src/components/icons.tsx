@@ -154,6 +154,13 @@ export const IconBubbleEmpty = (p: IconProps) => (
     <Path d="M4 5 h16 a1.5 1.5 0 0 1 1.5 1.5 v9 A1.5 1.5 0 0 1 20 17 H10 l-4.5 3.5 V17 H4 A1.5 1.5 0 0 1 2.5 15.5 v-9 A1.5 1.5 0 0 1 4 5 Z" />
   </Glyph>
 );
+export const IconGallery = (p: IconProps) => (
+  <Glyph {...p}>
+    <Rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <Circle cx="8.5" cy="9.5" r="1.6" />
+    <Path d="M4 18 l5 -5 4 3.4 3 -2.4 4 4" />
+  </Glyph>
+);
 export const IconScanLines = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M4 7 V4.5 h2.5" />

@@ -54,6 +54,8 @@
     "noText": "No menu text found. Move closer and try again.",
     "failed": "Scan failed. Check your connection and try again.",
     "retake": "Retake",
+    "gallery": "Import from gallery",
+    "flip": "Flip camera",
     "sample": "Run sample scan (no camera)",
     "showOriginal": "Original",
     "showResult": "Risk",

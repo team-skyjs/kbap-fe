@@ -35,6 +35,12 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "K-Bap accesses your photos so you can scan a saved menu picture."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#FCF5EF",
