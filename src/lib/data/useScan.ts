@@ -24,20 +24,40 @@ async function postScan(items: ScannedItem[]): Promise<ScanOverlayItem[]> {
       boundingBox: it.box,
     })),
   };
+  // Stage logs (prefix "[scan]") — watch in Metro to confirm the BE roundtrip.
+  console.log('[scan] POST', SCAN_URL, '| items =', body.items.length);
+  console.log('[scan] request body =', JSON.stringify(body));
 
-  const res = await fetch(SCAN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`menu-scans HTTP ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(SCAN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    // fetch rejects → no connectivity / DNS / TLS → distinctly a NETWORK failure
+    console.log('[scan] NETWORK error =', String((e as Error)?.message ?? e));
+    throw new Error(`NETWORK: ${(e as Error)?.message ?? e}`);
+  }
 
-  const json = (await res.json()) as BaseResponse<MenuScanPayload>;
+  const raw = await res.text();
+  console.log('[scan] response status =', res.status, '| body =', raw.slice(0, 400));
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${raw.slice(0, 160)}`);
+
+  let json: BaseResponse<MenuScanPayload>;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    throw new Error(`BAD_JSON: ${raw.slice(0, 160)}`);
+  }
   // Branch on success + null-guard payload (§13-6), never trust HTTP alone.
   if (!json.success || !json.payload) {
-    throw new Error('menu-scans returned no payload');
+    throw new Error(`NO_PAYLOAD: success=${json.success} message=${json.message ?? 'null'}`);
   }
-  return mergeResults(items, json.payload.results ?? []);
+  const merged = mergeResults(items, json.payload.results ?? []);
+  console.log('[scan] merged results =', JSON.stringify(merged.map((m) => ({ name: m.rawMenuName, risk: m.risk }))));
+  return merged;
 }
 
 export function useScan() {

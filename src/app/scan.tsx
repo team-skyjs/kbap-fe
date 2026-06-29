@@ -29,6 +29,16 @@ import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
+// which stage failed — drives a distinct user message (no more single "check connection")
+type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be';
+
+const ERROR_MSG: Record<ErrorStage, string> = {
+  capture: 'scan.errCapture',
+  ocr: 'scan.errOcr',
+  empty: 'scan.noText',
+  network: 'scan.errNetwork',
+  be: 'scan.errBe',
+};
 
 // §13 fallback fixture — includes a non-food ("맥북") to verify UNKNOWN → unable.
 const SAMPLE_NAMES = ['된장찌개', '김치찌개', '공기밥', '맥북'];
@@ -50,8 +60,15 @@ export default function Scan() {
   const [photo, setPhoto] = useState<Photo>(null);
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
   const [showResult, setShowResult] = useState(true);
-  const [notice, setNotice] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
+  // Distinct failure stages so OCR vs BE vs network are visible (not one blob).
+  const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
+
+  function fail(stage: ErrorStage, detail: string) {
+    console.log(`[scan] FAIL stage=${stage} detail=${detail}`);
+    setError({ stage, detail });
+    setPhase('error');
+  }
 
   function runScan(scanned: ScannedItem[], capturedPhoto: Photo) {
     setPhoto(capturedPhoto);
@@ -62,23 +79,32 @@ export default function Scan() {
         setShowResult(true);
         setPhase('result');
       },
-      onError: () => setPhase('error'),
+      // BE stage: distinguish NETWORK from HTTP/payload via the error message.
+      onError: (e) => {
+        const msg = (e as Error)?.message ?? String(e);
+        fail(msg.startsWith('NETWORK') ? 'network' : 'be', msg);
+      },
     });
   }
 
   /** Shared OCR → scan path for both camera capture and gallery import. */
   async function scanImage(captured: Photo) {
     if (!captured) return;
+    console.log('[scan] scanImage ← photo', JSON.stringify(captured));
+    setError(null);
+    setPhoto(captured);
+    setPhase('scanning'); // show spinner during OCR too
+
     let lines;
     try {
       lines = await recognizeMenuLines(captured.uri, captured.width, captured.height);
-    } catch {
-      // native OCR not linked (Expo Go / web) → guide to dev build / sample
-      setNotice(t('scan.failed'));
+    } catch (e) {
+      // OCR stage: native threw (e.g. not linked, bad image, recognition failed)
+      fail('ocr', (e as Error)?.message ?? String(e));
       return;
     }
     if (!lines.length) {
-      setNotice(t('scan.noText'));
+      fail('empty', 'OCR returned 0 usable lines');
       return;
     }
     const scanned: ScannedItem[] = lines.map((l, i) => ({
@@ -86,34 +112,45 @@ export default function Scan() {
       rawMenuName: l.text,
       box: l.box,
     }));
+    console.log('[scan] scanned items =', JSON.stringify(scanned));
     runScan(scanned, captured);
   }
 
   async function capture() {
-    setNotice(null);
     const cam = cameraRef.current;
     if (!cam) return;
+    setError(null);
     try {
+      console.log('[scan] takePictureAsync…');
       const pic = await cam.takePictureAsync({ quality: 0.7 });
-      if (!pic?.uri) return;
+      console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
+      if (!pic?.uri) {
+        fail('capture', 'takePictureAsync returned no uri');
+        return;
+      }
       await scanImage({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 });
-    } catch {
-      setNotice(t('scan.failed'));
+    } catch (e) {
+      fail('capture', (e as Error)?.message ?? String(e));
     }
   }
 
   /** Import a SINGLE photo from the library (mockup gallery button). */
   async function pickFromGallery() {
-    setNotice(null);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false, // one photo at a time
-      selectionLimit: 1,
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets?.length) return;
-    const a = result.assets[0];
-    await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
+    setError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false, // one photo at a time
+        selectionLimit: 1,
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets?.length) return;
+      const a = result.assets[0];
+      console.log('[scan] picked =', JSON.stringify({ uri: a.uri, w: a.width, h: a.height }));
+      await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
+    } catch (e) {
+      fail('capture', (e as Error)?.message ?? String(e));
+    }
   }
 
   const Close = (
@@ -166,14 +203,21 @@ export default function Scan() {
 
   // ---- error ----
   if (phase === 'error') {
+    const stage = error?.stage ?? 'be';
     return (
       <View style={[styles.root, styles.center]}>
         {Close}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-        <Text style={styles.statusText}>{t('scan.failed')}</Text>
+        <Text style={styles.errStage}>{stage.toUpperCase()}</Text>
+        <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
+        {!!error?.detail && (
+          <Text style={styles.errDetail} numberOfLines={4}>
+            {error.detail}
+          </Text>
+        )}
         <View style={styles.errBtns}>
-          <Btn onPress={() => runScan(SAMPLE_ITEMS, null)}>{t('scan.sample')}</Btn>
           <Btn variant="ghost" onPress={() => setPhase('camera')}>{t('scan.retake')}</Btn>
+          <Btn onPress={() => runScan(SAMPLE_ITEMS, null)}>{t('scan.sample')}</Btn>
         </View>
       </View>
     );
@@ -197,12 +241,6 @@ export default function Scan() {
       )}
 
       {Close}
-
-      {notice && (
-        <View style={[styles.notice, { top: insets.top + 60 }]}>
-          <Text style={styles.noticeText}>{notice}</Text>
-        </View>
-      )}
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
         <Text style={styles.hint}>{t('scan.hint')}</Text>
@@ -297,16 +335,15 @@ const styles = StyleSheet.create({
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
-  errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
-  notice: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary },
+  errDetail: {
+    fontFamily: font.body,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    paddingHorizontal: 8,
   },
-  noticeText: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff' },
+  errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   spikeNote: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
   resultTitle: { fontFamily: font.display, fontSize: 16, color: '#fff' },
   toggleRow: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12, padding: 4, gap: 3 },
