@@ -46,7 +46,10 @@ export default function RootLayout() {
                 headerShown: false,
                 contentStyle: { backgroundColor: color.surface },
               }}
-            />
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+            </Stack>
           </I18nextProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
