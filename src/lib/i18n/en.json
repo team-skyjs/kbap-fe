@@ -83,5 +83,48 @@
   },
   "shell": {
     "placeholderNote": "Tab content lives in the screen modules"
+  },
+  "onboarding": {
+    "welcomeTag": "Know what's safe to eat — before you order.",
+    "continueEmail": "Continue with email",
+    "continueApple": "Continue with Apple",
+    "continueGoogle": "Continue with Google",
+    "terms": "By continuing you agree to the Terms & Privacy Policy.",
+    "verifyTitle": "Enter the code",
+    "verifySub": "We sent a 6-digit code to {{email}}. Enter it to confirm it's you.",
+    "resend": "Resend code",
+    "verify": "Verify",
+    "profileTitle": "Set up your profile",
+    "profileSub": "Required — your nationality powers same-nationality reviews; your language sets every translation.",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "How should we call you?",
+    "nationality": "Nationality",
+    "readerLanguage": "Reader language",
+    "continue": "Continue",
+    "restrictionsTitle": "What can't you eat?",
+    "restrictionsSub": "Optional — but this powers every safety warning. Add what you can, change it anytime.",
+    "restrictionsNotice": "Skip now and dishes show without personal risk until you add restrictions.",
+    "allergensLabel": "Allergies & ingredients",
+    "added": "{{count}} added",
+    "skip": "Skip for now",
+    "spiceTitle": "How spicy can you go?",
+    "spiceSub": "Optional — change it anytime. Every dish shows heat on this same 0–10 scale.",
+    "spiceNone": "0 · none",
+    "spiceExtreme": "10 · extreme",
+    "interestsTitle": "Tap what you've tried",
+    "interestsSub": "Optional — pick a few favorites to personalize recommendations.",
+    "interestsTag": "Top by popularity",
+    "picked": "{{count}} picked",
+    "consentTitle": "Before you start",
+    "consentGuidance": "Risk labels are guidance, not medical advice.",
+    "consentVary": "Ingredients vary by restaurant — always confirm 'Caution' items with the owner.",
+    "consentYours": "The final choice of what you eat is yours.",
+    "consentAgree": "I understand and agree to the safety notice.",
+    "start": "Start using K-Bap",
+    "consentNote": "Consent recorded once · re-shown on every risk screen",
+    "groups": {
+      "Dietary": "Dietary",
+      "Religion": "Religion"
+    }
   }
 }

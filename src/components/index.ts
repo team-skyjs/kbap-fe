@@ -2,6 +2,7 @@
 export * from './icons';
 export { RiskMark, RiskDot, RISK } from './RiskMark';
 export { Stars, Star } from './Stars';
+export { Flag } from './Flag';
 export { Btn, type BtnVariant } from './Btn';
 export {
   StickyHeader,

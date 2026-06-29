@@ -224,3 +224,20 @@ export const IconGlobe = (p: IconProps) => (
     <Path d="M12 3.6 c2.5 2.4 2.5 14.4 0 16.8 M12 3.6 c-2.5 2.4 -2.5 14.4 0 16.8" />
   </Glyph>
 );
+export const IconApple = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M12.2 7.6 c.6 -1.5 2 -2.1 3.1 -2.1 c.1 1.2 -.4 2.2 -1.1 2.9" />
+    <Path d="M16.4 11.1 c-.9 -.9 -2.1 -1 -2.9 -.6 c-.8 .4 -1.2 .4 -2 0 c-1.5 -.7 -3.5 -.2 -4.4 1.5 c-1 2 -.2 5.1 1.2 6.9 c.7 .9 1.3 1.2 2 .9 c.7 -.3 1 -.3 1.8 0 c.8 .3 1.3 -.1 2 -.9 c.5 -.7 .9 -1.5 1.2 -2.4 c-1.9 -.9 -2.1 -3.6 -.1 -5.9 Z" />
+  </Glyph>
+);
+export const IconGoogleG = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M19.8 12.2 a8 8 0 1 1 -2.5 -5.8" />
+    <Line x1="20" y1="12.2" x2="13" y2="12.2" />
+  </Glyph>
+);
+export const IconFlame = (p: IconProps) => (
+  <Glyph {...p} fill={p.color ?? C.ink} sw={0}>
+    <Path d="M12 3.4 c2.4 2.9 4.3 4.9 4.3 8.3 a4.3 4.3 0 0 1 -8.6 0 c0 -1.2 .4 -2.2 1.1 -3 c.2 .9 .8 1.5 1.6 1.7 c-.3 -2.4 .6 -4.6 1.6 -7 Z" />
+  </Glyph>
+);
