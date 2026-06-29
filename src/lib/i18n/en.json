@@ -15,6 +15,20 @@
     "community": "Community",
     "profile": "Profile"
   },
+  "food": {
+    "title": "Explore food",
+    "sub": "Every dish tagged with your risk.",
+    "searchPlaceholder": "Search food or ingredient…",
+    "categories": {
+      "all": "All",
+      "stews": "Stews",
+      "rice": "Rice",
+      "noodles": "Noodles",
+      "bbq": "BBQ",
+      "street": "Street",
+      "sides": "Sides"
+    }
+  },
   "search": {
     "placeholder": "Search food, ingredient…",
     "recent": "Recent searches"
