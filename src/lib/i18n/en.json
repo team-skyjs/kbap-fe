@@ -80,6 +80,25 @@
     "resultTitle": "{{count}} items scanned",
     "spikeNote": "Spike: risk comes live from the backend (currently a mock)."
   },
+  "detail": {
+    "headerTitle": "Food",
+    "verdictSafe": "Safe for you",
+    "verdictCaution": "Caution for you",
+    "verdictDanger": "Danger for you",
+    "verdictUnable": "Unable to assess",
+    "allUsers": "All users · {{count}} reviews",
+    "sameNationality": "Same nationality",
+    "insideTitle": "What's inside",
+    "insideSub": "Risk-ordered for your profile · tap any item for details",
+    "askOwner": "Ask the owner",
+    "disclaimer": "Risk labels are guidance, not medical advice. Confirm with the owner.",
+    "unableTitle": "Unable to assess",
+    "unableBody": "This dish isn't in our curated catalog yet, so safety can't be verified. Don't assume it's safe — ask the owner.",
+    "noIngredientData": "No ingredient data yet",
+    "noIngredientBody": "No rating, description, or ingredient data yet. We've logged this dish to improve the catalog.",
+    "ofShops": "~{{pct}}% of shops",
+    "writeReview": "Write a review"
+  },
   "states": {
     "loading": "Loading…",
     "emptyReviewsTitle": "No reviews yet",

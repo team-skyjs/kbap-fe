@@ -25,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
-import { IconArrowLeft, IconBell, IconSearch } from './icons';
+import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
 
 const BAR_H = 48; // top row height (icon buttons)
 const LARGE_H = 46; // expanded large-title row height
@@ -59,9 +59,11 @@ export type StickyHeaderProps = {
   search?: boolean;
   bell?: boolean;
   bellDot?: boolean;
+  bookmark?: boolean;
   onBack?: () => void;
   onSearch?: () => void;
   onBell?: () => void;
+  onBookmark?: () => void;
 };
 
 export function StickyHeader({
@@ -72,9 +74,11 @@ export function StickyHeader({
   search,
   bell,
   bellDot,
+  bookmark,
   onBack,
   onSearch,
   onBell,
+  onBookmark,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
   const topPad = insets.top + 8;
@@ -144,7 +148,12 @@ export function StickyHeader({
               {bellDot && <View style={styles.dot} />}
             </Pressable>
           )}
-          {mode === 'back' && !search && !bell && <View style={{ width: 38 }} />}
+          {bookmark && (
+            <Pressable style={styles.iconBtn} onPress={onBookmark} hitSlop={8}>
+              <IconBookmark size={19} color={C.ink} />
+            </Pressable>
+          )}
+          {mode === 'back' && !search && !bell && !bookmark && <View style={{ width: 38 }} />}
         </View>
       </View>
 

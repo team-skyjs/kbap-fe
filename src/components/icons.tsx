@@ -161,6 +161,11 @@ export const IconGallery = (p: IconProps) => (
     <Path d="M4 18 l5 -5 4 3.4 3 -2.4 4 4" />
   </Glyph>
 );
+export const IconBookmark = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M6 4.5 h12 v15.5 l-6 -4 -6 4 Z" />
+  </Glyph>
+);
 export const IconScanLines = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M4 7 V4.5 h2.5" />

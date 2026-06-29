@@ -35,8 +35,8 @@
 - [x] 2. 홈 — `(tabs)/index` 실 구현(인사말/다이어트배너/스캔CTA/Safe추천/최근스캔/카테고리/안전고지). useHome+useMe, StickyHeader. web 대조 OK.
   - 빈 상태(스캔 0건) 분기 포함. 최근 행 썸네일은 카테고리 글리프 대신 IconFood+위험배지(FoodCard에 카테고리 없음).
   - detail/review 링크는 전방 라우트라 `as Href` 캐스트(스크린 4·6에서 생성).
-- [~] 3. 음식 탐색(Food)
-- [ ] 4. 음식 디테일
+- [x] 3. 음식 탐색(Food) — `(tabs)/food` 인사말+검색박스+카테고리칩+2열 그리드. useFoods, web 대조 OK. 카테고리 필터는 mock 시각만.
+- [~] 4. 음식 디테일
 - [ ] 5. 사장님 확인
 - [ ] 6. 리뷰 작성
 - [ ] 7. 프로필
