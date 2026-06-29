@@ -84,6 +84,23 @@
     "caption": "Show this screen to the restaurant staff",
     "done": "Done, got my answer!"
   },
+  "review": {
+    "title": "Write a review",
+    "post": "Post",
+    "ratingLabel": "Your rating *",
+    "tapToRate": "Tap to rate",
+    "ratingValue": "{{value}}/5 · {{label}}",
+    "labels": ["", "Bad", "Meh", "OK", "Good", "Great"],
+    "reviewLabel": "Your review",
+    "placeholder": "Share what it tasted like, and any tips for travelers with your restrictions…",
+    "langDetected": "Written in English · auto-detected",
+    "charCount": "{{count}}/500",
+    "postReview": "Post review",
+    "postedTitle": "Review posted",
+    "postedBody": "Thanks! Your {{rating}}-star review of {{name}} is now in the food's reviews and counts toward your ranking.",
+    "backToDish": "Back to dish",
+    "seeMyReviews": "See my reviews"
+  },
   "detail": {
     "headerTitle": "Food",
     "verdictSafe": "Safe for you",

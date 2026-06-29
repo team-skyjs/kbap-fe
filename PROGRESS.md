@@ -39,8 +39,8 @@
 - [x] 4. 음식 디테일 — `app/food/[id]` 판정pill/평점2카드/성분(위험순+근거reason+ask owner)/미등록 unable. web 대조 OK.
   - ❓ 목업의 per-dish 스파이스 메타(6/10)는 계약 FoodDetail에 필드 없음 → 생략. 계약에 추가할지 확인 요망.
 - [x] 5. 사장님 확인 — `app/food/[id]/owner` 풀스크린 카드(한국어 질문+메뉴명 강조+ko 설명+reader 캡션). useOwnerConfirmation mock. web 대조 OK.
-- [~] 6. 리뷰 작성
-- [ ] 6. 리뷰 작성
+- [x] 6. 리뷰 작성 — `app/food/[id]/review` 별점선택+본문+Post, 제출완료(랭크 Rosette). useFoodDetail+useMe. tsc OK (스윕서 시각확인).
+- [~] 7. 프로필
 - [ ] 7. 프로필
 - [ ] 8. 상태(빈/로딩/에러)
 - [x] (스캔/카메라 — Session 1에서 완료, 잠금: 사용자가 별도 다듬음)
