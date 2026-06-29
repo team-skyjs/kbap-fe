@@ -36,8 +36,10 @@
   - 빈 상태(스캔 0건) 분기 포함. 최근 행 썸네일은 카테고리 글리프 대신 IconFood+위험배지(FoodCard에 카테고리 없음).
   - detail/review 링크는 전방 라우트라 `as Href` 캐스트(스크린 4·6에서 생성).
 - [x] 3. 음식 탐색(Food) — `(tabs)/food` 인사말+검색박스+카테고리칩+2열 그리드. useFoods, web 대조 OK. 카테고리 필터는 mock 시각만.
-- [~] 4. 음식 디테일
-- [ ] 5. 사장님 확인
+- [x] 4. 음식 디테일 — `app/food/[id]` 판정pill/평점2카드/성분(위험순+근거reason+ask owner)/미등록 unable. web 대조 OK.
+  - ❓ 목업의 per-dish 스파이스 메타(6/10)는 계약 FoodDetail에 필드 없음 → 생략. 계약에 추가할지 확인 요망.
+- [x] 5. 사장님 확인 — `app/food/[id]/owner` 풀스크린 카드(한국어 질문+메뉴명 강조+ko 설명+reader 캡션). useOwnerConfirmation mock. web 대조 OK.
+- [~] 6. 리뷰 작성
 - [ ] 6. 리뷰 작성
 - [ ] 7. 프로필
 - [ ] 8. 상태(빈/로딩/에러)

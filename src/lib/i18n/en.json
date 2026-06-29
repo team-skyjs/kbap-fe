@@ -80,6 +80,10 @@
     "resultTitle": "{{count}} items scanned",
     "spikeNote": "Spike: risk comes live from the backend (currently a mock)."
   },
+  "owner": {
+    "caption": "Show this screen to the restaurant staff",
+    "done": "Done, got my answer!"
+  },
   "detail": {
     "headerTitle": "Food",
     "verdictSafe": "Safe for you",
