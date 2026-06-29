@@ -9,8 +9,8 @@
 - [x] lib/theme.ts (토큰/폰트) — src/lib/theme.ts + useAppFonts (Baloo2/NunitoSans/NotoSansKR)
 - [x] mock seam (types / mocks / useXxx, MOCK_MODE=true) — src/lib/{api,mocks,data}
 ## 디자인시스템
-- [ ] RiskMark + Icon* (SVG)
-- [ ] Btn / StickyHeader(scroll-aware) / SubHeader / TabBar / TopBar / Stars / 상태 컴포넌트
+- [x] RiskMark + Icon* (SVG) — RiskMark.tsx (4상태 실루엣+글리프), icons.tsx (탭/UI/aux), Stars.tsx
+- [x] Btn / StickyHeader(scroll-aware) / SubHeader / TabBar / TopBar / Stars / 상태 컴포넌트 — src/components/*
 ## 앱 셸
 - [ ] 5-탭 + Scan FAB + Community(잠김) + 검색/알림 패널
 ## 화면 (각: 목업 대조 후 [x])
@@ -26,7 +26,10 @@
 - [x] 기반: Expo SDK 56 스캐폴드 + 의존성 + theme.ts + mock seam. tsc 0 errors, web export OK.
   - 이탈점: 핸드오프의 `lib/*` 경로 → 템플릿 관례 따라 `src/lib/*` (`@/lib/...`). seam 원칙은 동일.
   - 폰트는 weight별 고유 fontFamily(`Baloo2_700Bold` 등)로 등록(RN weight 합성 불가).
-- [~] 디자인시스템: icons/RiskMark → Btn/StickyHeader/SubHeader/TabBar/TopBar/Stars/states.
+- [x] 디자인시스템: 전 컴포넌트 RN 이식 완료. tsc 0, web 렌더 스크린샷 대조 OK (RiskMark 4상태 모양/색/폰트 일치).
+  - StickyHeader: useStickyScroll()(scrollY+onScroll) + useHeaderHeight() seam, large-title 축약 구현.
+  - 임시: src/app/index.tsx = DS 갤러리(검증용) → 앱 셸 단위에서 탭 셸로 교체.
+- [~] 앱 셸: 5-탭 expo-router Tabs + custom TabBar + Scan FAB + Community 잠김 + 검색/알림 패널(정적).
 
 ## ❓ 결정 필요 (사용자에게 질문)
 > (없음 — 채워지면 사용자에게 보고)

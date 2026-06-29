@@ -1,40 +1,86 @@
 /**
- * TEMPORARY boot screen — verifies the foundation (fonts, theme, i18n, query seam).
+ * TEMP design-system gallery — verifies Unit 2 components render.
  * Replaced by the (tabs) app shell in the app-shell unit.
  */
-import { View, Text, StyleSheet } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { color, font } from '@/lib/theme';
-import { useHome } from '@/lib/data/useHome';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
+import {
+  RiskMark,
+  Btn,
+  Stars,
+  StateBlock,
+  SkeletonList,
+  IconPlus,
+  IconBubbleEmpty,
+} from '@/components';
 
-export default function Index() {
-  const { t } = useTranslation();
-  const { data } = useHome();
+const RISKS: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
 
+function H({ children }: { children: string }) {
+  return <Text style={styles.h}>{children}</Text>;
+}
+
+export default function Gallery() {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.root}>
-      <View style={styles.mark}>
-        <Text style={styles.markText}>K</Text>
+    <ScrollView style={{ backgroundColor: C.surface }} contentContainerStyle={{ padding: 18, paddingTop: insets.top + 18, gap: 22 }}>
+      <Text style={styles.title}>K-Bap · Design System</Text>
+
+      <View style={styles.sec}>
+        <H>RiskMark (solid / outline)</H>
+        <View style={styles.row}>
+          {RISKS.map((r) => (
+            <View key={r} style={styles.riskItem}>
+              <RiskMark state={r} size={34} />
+              <Text style={[styles.cap, { color: riskTone[r].fg }]}>{r}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={styles.row}>
+          {RISKS.map((r) => (
+            <RiskMark key={r} state={r} size={28} variant="outline" />
+          ))}
+        </View>
       </View>
-      <Text style={styles.word}>{t('brand')}</Text>
-      <Text style={styles.note}>
-        Foundation ready · {data?.recommended.length ?? 0} mock recommendations
-      </Text>
-    </View>
+
+      <View style={styles.sec}>
+        <H>Stars</H>
+        <Stars value={4.4} size={22} />
+      </View>
+
+      <View style={styles.sec}>
+        <H>Buttons</H>
+        <Btn icon={<IconPlus size={17} color="#fff" />}>Primary</Btn>
+        <Btn variant="ghost">Ghost</Btn>
+        <Btn variant="danger">Delete account</Btn>
+        <Btn variant="off">Disabled</Btn>
+        <Btn sm>Small</Btn>
+      </View>
+
+      <View style={styles.sec}>
+        <H>StateBlock</H>
+        <StateBlock
+          icon={<IconBubbleEmpty size={38} color={C.primary} />}
+          title="No reviews yet"
+          body="Be the first to review this dish."
+          primary={{ label: 'Write a review', icon: <IconPlus size={17} color="#fff" /> }}
+        />
+      </View>
+
+      <View style={styles.sec}>
+        <H>Skeleton (loading)</H>
+        <SkeletonList />
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: color.surface },
-  mark: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: color.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markText: { color: '#fff', fontFamily: font.display, fontSize: 42 },
-  word: { color: color.primary, fontFamily: font.display, fontSize: 34 },
-  note: { color: color.ink2, fontFamily: font.body, fontSize: 14 },
+  title: { fontFamily: font.display, fontSize: 24, color: C.primary },
+  sec: { gap: 12, backgroundColor: C.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.hair },
+  h: { fontFamily: font.display, fontSize: 15, color: C.ink },
+  row: { flexDirection: 'row', gap: 18, alignItems: 'center', flexWrap: 'wrap' },
+  riskItem: { alignItems: 'center', gap: 4 },
+  cap: { fontFamily: font.bodyBold, fontSize: 11 },
 });
