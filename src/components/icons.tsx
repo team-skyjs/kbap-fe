@@ -241,3 +241,45 @@ export const IconFlame = (p: IconProps) => (
     <Path d="M12 3.4 c2.4 2.9 4.3 4.9 4.3 8.3 a4.3 4.3 0 0 1 -8.6 0 c0 -1.2 .4 -2.2 1.1 -3 c.2 .9 .8 1.5 1.6 1.7 c-.3 -2.4 .6 -4.6 1.6 -7 Z" />
   </Glyph>
 );
+
+/* ============ CATEGORY GLYPHS (home / browse) ============ */
+export const CatStew = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M4 10 h16 a8 8 0 0 1 -16 0 Z" />
+    <Path d="M3 20 h18" />
+    <Path d="M9 4 c-1 1.2 -1 2.4 0 3.6" />
+    <Path d="M13 3.6 c-1 1.2 -1 2.4 0 3.6" />
+  </Glyph>
+);
+export const CatBowl = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M3.5 11 h17 a8.5 8.5 0 0 1 -17 0 Z" />
+    <Path d="M9 7.5 c0 -1.5 6 -1.5 6 0" />
+  </Glyph>
+);
+export const CatNoodle = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M4 8 c3 2 5 -2 8 0 s5 2 8 0" />
+    <Path d="M4 13 c3 2 5 -2 8 0 s5 2 8 0" />
+    <Path d="M4 18 c3 2 5 -2 8 0 s5 2 8 0" />
+  </Glyph>
+);
+export const CatBBQ = (p: IconProps) => (
+  <Glyph {...p}>
+    <Rect x="4" y="9" width="16" height="3" rx="1.4" />
+    <Path d="M7 12 v6 M17 12 v6" />
+    <Path d="M8 6 c1 -1 1 -2 0 -3 M12 6 c1 -1 1 -2 0 -3 M16 6 c1 -1 1 -2 0 -3" />
+  </Glyph>
+);
+export const CatStreet = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M6 8 h12 l-1.4 11 a1.5 1.5 0 0 1 -1.5 1.4 H8.9 a1.5 1.5 0 0 1 -1.5 -1.4 Z" />
+    <Path d="M9 5 c1 -1 1 -2 0 -3 M15 5 c1 -1 1 -2 0 -3" />
+  </Glyph>
+);
+export const CatSides = (p: IconProps) => (
+  <Glyph {...p}>
+    <Circle cx="8" cy="9" r="4" />
+    <Circle cx="16" cy="15" r="4" />
+  </Glyph>
+);

@@ -20,7 +20,13 @@ export const MOCK_USER: User = {
   spiceTolerance: 6,
   restrictions: [
     { kind: 'allergy', code: 'allergy:shellfish' },
+    { kind: 'allergy', code: 'allergy:shrimp' },
+    { kind: 'allergy', code: 'allergy:crab' },
+    { kind: 'allergy', code: 'allergy:peanut' },
+    { kind: 'allergy', code: 'allergy:egg' },
+    { kind: 'allergy', code: 'allergy:sesame' },
     { kind: 'diet', code: 'diet:pescatarian' },
+    { kind: 'religion', code: 'religion:nopork' },
   ],
   rank: MOCK_RANKING,
 };

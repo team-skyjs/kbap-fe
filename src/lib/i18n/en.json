@@ -84,6 +84,37 @@
   "shell": {
     "placeholderNote": "Tab content lives in the screen modules"
   },
+  "home": {
+    "greeting": "Hi, {{name}}",
+    "greetingSub": "Here's what's safe for you today.",
+    "greetingSubEmpty": "Let's find your first safe dish.",
+    "avoidCount": "You avoid {{count}} things",
+    "edit": "Edit",
+    "scanTitle": "Scan a menu",
+    "scanSub": "Point at a Korean menu to see your risk.",
+    "safeTitle": "Safe for you today",
+    "safeSub": "Dishes that clear all your restrictions",
+    "seeAll": "See all",
+    "recentTitle": "Recently scanned",
+    "recentSub": "Tap to revisit · leave a review",
+    "review": "Review",
+    "categoriesTitle": "Browse by category",
+    "disclaimer": "Risk reflects your profile and is guidance only — always confirm with the owner.",
+    "emptyTitle": "No scans yet",
+    "emptyBody": "Scan your first Korean menu to see what's safe for you.",
+    "scan": "Scan a menu",
+    "explore": "Explore",
+    "popularTitle": "Popular to start",
+    "popularSub": "Already tagged with your risk profile",
+    "categories": {
+      "stews": "Stews",
+      "rice": "Rice & Bowls",
+      "noodles": "Noodles",
+      "bbq": "BBQ & Meat",
+      "street": "Street Food",
+      "sides": "Sides"
+    }
+  },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",
     "continueEmail": "Continue with email",

@@ -129,6 +129,18 @@ export const READER_LANGUAGES = [
   { code: 'vi', label: 'Tiếng Việt' },
 ];
 
+/** code → reader label lookup (built from all groups). */
+export const RESTRICTION_LABEL: Record<string, string> = Object.fromEntries(
+  [...ALLERGEN_GROUPS, ...LIFESTYLE_GROUPS].flatMap((g) => g.items.map((it) => [it.code, it.label])),
+);
+
+/** Pretty label for a restriction code (falls back to the slug, title-cased). */
+export function restrictionLabel(code: string): string {
+  if (RESTRICTION_LABEL[code]) return RESTRICTION_LABEL[code];
+  const slug = code.includes(':') ? code.split(':')[1] : code;
+  return slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
 /** Popular dishes for the interests step (placeholder catalog). */
 export const POPULAR_DISHES = [
   'Kimchi Stew',
