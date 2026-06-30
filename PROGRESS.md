@@ -49,6 +49,15 @@
 > ③ 카테고리/검색 실필터는 BE 연결 시(현재 mock 시각) ④ Edit/언어/알림 등 일부 설정 액션은 no-op(라우트 미정).
 > 미구현: 리뷰 목록 화면(G2, 음식별 리뷰 리스트)은 빌드순서 8개 밖이라 보류. 다국어(영어만).
 
+## OTA (EAS Update) — 밖에서 폰만으로 최신 화면 확인
+- [x] OTA 1회 설정: `eas update:configure` → expo-updates 설치, updates.url, eas.json 채널(development).
+  runtimeVersion 정책 = **fingerprint**(사용자 선택). 네이티브 변경 시 자동 bump → 비호환 OTA가 구 빌드에 안 감.
+- [x] 재사용 스킬 `.claude/skills/ota-publish/SKILL.md` — "밖에서 확인할 수 있게 올려줘" 류 요청에 발동.
+  스킬: 커밋 점검 → 채널/브랜치 일치 점검 → fingerprint로 네이티브 변경 감지(변경 시 "OTA 불가, 재빌드 필요") →
+  `eas update --branch development` → 폰 안내(앱 완전종료 후 재실행 = 자동 다운로드). baseline=`.ota/runtime-fingerprint.txt`.
+- [ ] ⚠️ **사용자 1회 액션 필요**: 현재 폰의 dev build엔 expo-updates가 없어 OTA 못 받음.
+  `eas build --profile development --platform ios`로 OTA-가능 빌드를 새로 만들어 폰에 재설치해야 함(이후 영구 OTA 수신).
+
 ---
 
 ## 세션 로그
