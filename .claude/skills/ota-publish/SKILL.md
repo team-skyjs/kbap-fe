@@ -12,103 +12,110 @@ description: >-
 # ota-publish — push the latest JS bundle to the phone over the air
 
 Goal: run `eas update` on the **development** branch so the installed K-Bap dev
-client downloads the new bundle. This only works for **JS/asset** changes; native
-changes need a rebuild (detected in step 3).
+build can load the new bundle from the dev-launcher **Updates** tab. Only
+**JS/asset** changes ship this way; native changes need a rebuild (step 3).
 
-Run these steps in order. Stop and report if any guard fails.
+Run the steps in order. Stop and report if a guard fails.
 
-## 0. Sanity: project is OTA-capable
+## 0. Sanity: project is OTA-capable + logged in
 
 ```bash
 cd /Users/yejinkim/dev/kfood/kbap-fe
 node -e "const e=require('./app.json').expo; if(!e.updates?.url){console.log('NO_UPDATES');process.exit(1)} console.log('runtimeVersion='+JSON.stringify(e.runtimeVersion))"
-npx eas-cli whoami 2>&1 | grep -viE 'available|upgrade|npm install|outdated' | tail -1
+npx eas-cli whoami 2>&1 | grep -viE 'available|To upgrade|npm install|outdated|Proceeding' | tail -1
 ```
-- If `NO_UPDATES` → EAS Update isn't configured; tell the user to run OTA setup first. Stop.
-- If `whoami` shows no user → tell them to run `npx eas-cli login`. Stop.
+- `NO_UPDATES` → EAS Update not configured; tell the user to run setup first. Stop.
+- No username → tell them to run `npx eas-cli login`. Stop.
 
-## 1. Preflight: working tree must be committed
+## 1. Preflight: working tree should be committed
 
 ```bash
 git status --porcelain
 ```
-- If output is non-empty → **warn**: there are uncommitted changes; the OTA will
-  publish the working tree but git won't have a record of exactly what shipped.
-  Ask whether to commit first (preferred) or publish anyway. Do not silently proceed.
+- Non-empty → **warn**: OTA publishes the working tree but git won't record exactly
+  what shipped. Ask to commit first (preferred) or publish anyway. Don't silently proceed.
 
-## 2. Channel ↔ branch consistency (prevents the #1 "phone never updates" mistake)
+## 2. Channel ↔ branch consistency
 
-The installed build listens on a **channel**; `eas update` publishes to a **branch**.
-For dev they must both be `development`.
+The build listens on a **channel**; `eas update` publishes to a **branch**. For dev
+both are `development`.
 
 ```bash
 node -e "const b=require('./eas.json').build.development; console.log('build.channel='+(b&&b.channel))"
 ```
-- Expected: `build.channel=development`. We will publish with `--branch development`.
-- If the channel is missing or not `development` → **stop** and report the mismatch
-  (the phone would never receive the update). Fix eas.json or publish to the matching branch.
+- Expected `development`. We publish with `--branch development`.
+- Anything else → **stop** and report (the phone would never receive it).
 
-## 3. Native-change detection (is OTA even possible?)
+## 3. Compatibility: will this OTA reach the INSTALLED build?
 
-runtimeVersion policy is **fingerprint**: if native deps / config plugins / app
-config / ios|android dirs changed, the fingerprint changes and the OTA will NOT
-reach the currently-installed build. Detect that before publishing.
+runtimeVersion policy is **fingerprint**. The OTA only reaches a build whose
+runtimeVersion == the update's fingerprint. Compare the current fingerprint to the
+**latest finished development build's runtimeVersion** (ground truth):
 
 ```bash
 CUR=$(npx expo-updates fingerprint:generate --platform ios 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).hash)}catch{console.log('FAIL')}})")
-BASE=$(cat .ota/runtime-fingerprint.txt 2>/dev/null || echo "")
-echo "current=$CUR baseline=$BASE"
+BUILD_RV=$(npx eas-cli build:list --platform ios --channel development --status finished --limit 1 --json --non-interactive 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s);console.log(a[0]?.runtimeVersion||a[0]?.fingerprint?.hash||'')}catch{console.log('')}})")
+echo "current=$CUR  latestBuildRV=$BUILD_RV"
 ```
-- `CUR == BASE` (or BASE empty on first ever run) → JS-only change → **OTA is possible**, continue.
-- `CUR != BASE` → **native config changed → this update is OTA-INCOMPATIBLE with the installed build.**
-  Tell the user verbatim:
+- `CUR == BUILD_RV` → **OTA-compatible**, continue.
+- `CUR != BUILD_RV` (and BUILD_RV non-empty) → **native config changed since the
+  installed build → this update is OTA-INCOMPATIBLE.** Tell the user verbatim:
   > 이번 변경은 네이티브 설정이 바뀌어서 **OTA로는 못 받습니다. 재빌드가 필요**합니다:
   > `eas build --profile development --platform ios` → 새 빌드를 폰에 재설치하세요.
-  Then **STOP** — do not publish — UNLESS the user explicitly says they just rebuilt
-  and reinstalled this exact config. If they confirm the rebuild, re-baseline
-  (`echo "$CUR" > .ota/runtime-fingerprint.txt`, commit it) and continue.
+  Then **STOP** — do not publish — unless the user says they'll rebuild anyway / want
+  it staged for the next build.
+- BUILD_RV empty (no build found / offline) → fall back to the baseline file
+  `.ota/runtime-fingerprint.txt`: if it exists and differs from `CUR`, warn the same way.
 
 ## 4. Compose the update message
 
-Summarize what changed (one line). Default to the latest commit subject; refine if
-multiple recent commits are relevant.
+One line summarizing what changed. Default to the latest commit subject:
 
 ```bash
 git log -1 --pretty=%s
 ```
-Use that (or a short hand-written summary) as `<MSG>` below.
 
 ## 5. Publish the OTA
 
-```bash
-npx eas-cli update --branch development --message "<MSG>" --non-interactive 2>&1 | grep -viE 'available|upgrade|npm install|outdated'
-```
-- Confirm the output shows a published update with **Runtime version** equal to a
-  fingerprint hash and **Branch: development**. Note the update group ID / link.
-- If it errors about runtimeVersion / no compatible builds → fall back to step 3's
-  rebuild guidance.
-
-## 6. Re-baseline the fingerprint
-
-Keep the baseline current so the next run compares against this publish:
+`--environment` is REQUIRED in non-interactive mode (else it errors).
 
 ```bash
-echo "$CUR" > .ota/runtime-fingerprint.txt
+npx eas-cli update --branch development --environment development \
+  --message "<MSG>" --non-interactive \
+  2>&1 | grep -viE 'available|To upgrade|npm install -g|outdated version|Proceeding with' | tail -20
 ```
-(Only meaningful if it changed; harmless otherwise. Commit it if it changed.)
+- Confirm the output shows **Branch: development** and **Runtime version** = the
+  same hash as `$CUR`. Capture the Update group ID / EAS Dashboard link.
+- If it errors about runtimeVersion / no compatible builds → go to step 3's rebuild guidance.
 
-## 7. Tell the user what to do on the phone
+## 6. Re-baseline (only if it changed)
 
-Output this to the user:
+```bash
+[ -n "$CUR" ] && echo "$CUR" > .ota/runtime-fingerprint.txt
+```
+Commit `.ota/runtime-fingerprint.txt` if it changed.
 
-> ✅ OTA 발행 완료 (branch: development).
-> 폰에서: **K-Bap dev client 앱을 완전히 종료**(앱 스위처에서 위로 밀어 닫기) 후 **다시 실행**하세요.
-> (또는 앱에서 흔들기 → **Reload**.) 인터넷을 통해 최신 번들이 자동 다운로드됩니다.
-> 안 보이면: 같은 채널(development) 빌드인지, 폰이 인터넷에 연결됐는지 확인.
+## 7. Tell the user how to load it ON THE PHONE (dev build = manual Updates tab)
+
+This is a **dev build**, so the OTA does NOT auto-apply on relaunch — the user picks
+it in the dev launcher. Output:
+
+> ✅ OTA 발행 완료 (branch: development, runtime `<CUR 앞 8자>`).
+> 폰에서:
+> 1. **K-Bap 앱 열기** → 화면의 **⚙️ 톱니 아이콘 탭**(또는 폰 흔들기)으로 개발자 메뉴 → **"Go to home"**.
+> 2. 런처 하단 **Updates** 탭 → 아래로 당겨 새로고침 → 방금 메시지의 업데이트를 **탭** → 로드됩니다.
+> (Mac 꺼져 있어도 됩니다. 인터넷만 있으면 됩니다.)
+
+### Troubleshooting (자주 나는 것)
+- **"Expected MIME-Type … got 'text/html'" + 빨간 화면**: dev 빌드가 죽은 Metro/터널
+  서버를 자동으로 부르는 중. Dismiss → ⚙️ 톱니 → **Go to home** → **Updates** 탭에서 OTA를 탭.
+  (Metro가 안 떠 있으면 dev 서버 항목은 무시하고 Updates 탭을 쓸 것.)
+- 업데이트가 Updates 탭에 안 보이면: runtime version이 빌드와 다른 것(=네이티브 변경) → 재빌드 필요(step 3).
 
 ## Notes
 - This skill never runs `eas build` (slow, native). It only publishes JS/asset OTAs.
-- First-time setup (expo-updates install, channels, an OTA-capable rebuild) is a
-  one-off and is NOT part of this skill.
-- Branch/channel are hardcoded to `development` because that's the dev workflow;
-  for preview/production publish to those branches with matching channels instead.
+- **Dev build vs preview**: a `development` (dev-client) build loads OTAs manually via
+  the Updates tab. If the user wants "open the app → latest runs automatically, no
+  launcher", that's a **preview** build (`eas build --profile preview`) which runs the
+  embedded/OTA bundle directly. Offer that if they ask for hands-off auto-update.
+- Branch/channel hardcoded to `development` for the dev workflow.
