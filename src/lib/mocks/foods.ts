@@ -57,6 +57,7 @@ export const MOCK_FOOD_DETAILS: Record<string, FoodDetail> = {
     sameNationality: agg(4.2, 41),
     description:
       'A bubbling stew of aged kimchi, pork, and tofu. Comforting, sour, and spicy — a Korean staple.',
+    spiceLevel: 6,
     photoUrl: null,
     // danger → caution → safe ordering (FR-014)
     ingredients: [
@@ -85,6 +86,7 @@ export const MOCK_FOOD_DETAILS: Record<string, FoodDetail> = {
     sameNationality: agg(4.4, 33),
     description:
       'Silken tofu stew in a spicy seafood broth, served sizzling with a raw egg cracked on top.',
+    spiceLevel: 7,
     photoUrl: null,
     ingredients: [
       { code: 'clam', name: 'Clams', percentage: 12, risk: 'danger', note: null },
@@ -106,6 +108,7 @@ export const MOCK_FOOD_UNREGISTERED: FoodDetail = {
   overall: agg(null, 0),
   sameNationality: agg(null, 0),
   description: '',
+  spiceLevel: null,
   photoUrl: null,
   ingredients: [],
   isRegistered: false,

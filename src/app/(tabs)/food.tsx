@@ -24,6 +24,8 @@ import {
   IconSearch,
 } from '@/components';
 import { useFoods } from '@/lib/data/useFoods';
+import { useMe } from '@/lib/data/useMe';
+import { personalRisk } from '@/lib/risk';
 import type { FoodCard } from '@/lib/api/types';
 
 const CATEGORY_KEYS = ['all', 'stews', 'rice', 'noodles', 'bbq', 'street', 'sides'];
@@ -37,6 +39,8 @@ export default function Food() {
   const [category, setCategory] = useState('all');
 
   const { data: foods, isLoading } = useFoods();
+  const { data: me } = useMe();
+  const hasR = (me?.restrictions.length ?? 0) > 0;
   const list = foods ?? [];
 
   return (
@@ -81,7 +85,7 @@ export default function Food() {
           ) : (
             <View style={styles.grid}>
               {list.map((f) => (
-                <BrowseCard key={f.foodId} food={f} onPress={() => router.push(`/food/${f.foodId}` as Href)} />
+                <BrowseCard key={f.foodId} food={f} hasRestrictions={hasR} onPress={() => router.push(`/food/${f.foodId}` as Href)} />
               ))}
             </View>
           )}
@@ -94,12 +98,12 @@ export default function Food() {
   );
 }
 
-function BrowseCard({ food, onPress }: { food: FoodCard; onPress: () => void }) {
+function BrowseCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestrictions: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.photo}>
         <View style={styles.badge}>
-          <RiskMark state={food.risk} size={20} />
+          <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
         </View>
       </View>
       <View style={styles.cardB}>

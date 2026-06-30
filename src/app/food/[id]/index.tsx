@@ -24,9 +24,12 @@ import {
   Btn,
   IconChevron,
   IconSpeech,
+  IconFlame,
 } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
+import { personalRisk } from '@/lib/risk';
+import { SPICE_SCALE } from '@/lib/onboarding/data';
 import type { FoodDetail, IngredientRisk } from '@/lib/api/types';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
@@ -52,7 +55,15 @@ export default function FoodDetailScreen() {
         {!isLoading && food && (
           <View style={styles.body}>
             {food.isRegistered ? (
-              <Registered food={food} nationality={me?.nationality ?? 'US'} t={t} router={router} id={id ?? ''} />
+              <Registered
+                food={food}
+                nationality={me?.nationality ?? 'US'}
+                spiceTolerance={me?.spiceTolerance ?? null}
+                hasRestrictions={(me?.restrictions.length ?? 0) > 0}
+                t={t}
+                router={router}
+                id={id ?? ''}
+              />
             ) : (
               <Unregistered food={food} t={t} onAsk={() => router.push(`/food/${id}/owner` as Href)} />
             )}
@@ -80,10 +91,29 @@ const VERDICT: Record<RiskState, string> = {
   unable: 'detail.verdictUnable',
 };
 
-function Registered({ food, nationality, t, router, id }: { food: FoodDetail; nationality: string; t: TFn; router: Router; id: string }) {
-  const tone = riskTone[food.risk];
+function Registered({
+  food,
+  nationality,
+  spiceTolerance,
+  hasRestrictions,
+  t,
+  router,
+  id,
+}: {
+  food: FoodDetail;
+  nationality: string;
+  spiceTolerance: number | null;
+  hasRestrictions: boolean;
+  t: TFn;
+  router: Router;
+  id: string;
+}) {
+  // false-safe guard (Constitution III · SC-003): empty profile never shows safe
+  const dishRisk = personalRisk(food.risk, hasRestrictions);
+  const tone = riskTone[dishRisk];
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
   const basisFor = (code: string) => food.riskBasis.find((b) => b.ingredientCode === code)?.reason ?? null;
+  const spicyForYou = food.spiceLevel != null && spiceTolerance != null && food.spiceLevel > spiceTolerance;
 
   return (
     <>
@@ -97,10 +127,21 @@ function Registered({ food, nationality, t, router, id }: { food: FoodDetail; na
 
       <View style={styles.metaRow}>
         <View style={[styles.verdict, { backgroundColor: tone.bg, borderColor: tone.line }]}>
-          <RiskMark state={food.risk} size={20} />
-          <Text style={[styles.verdictText, { color: tone.fg }]}>{t(VERDICT[food.risk])}</Text>
+          <RiskMark state={dishRisk} size={20} />
+          <Text style={[styles.verdictText, { color: tone.fg }]}>{t(VERDICT[dishRisk])}</Text>
         </View>
+        {food.spiceLevel != null && (
+          <View style={styles.spiceMeta}>
+            <IconFlame size={16} color={C.primary} />
+            <Text style={styles.spiceText}>
+              {t('detail.spice', { level: food.spiceLevel, analogy: SPICE_SCALE[food.spiceLevel] ?? '' })}
+            </Text>
+            {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
+          </View>
+        )}
       </View>
+
+      {!hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
       <View style={styles.descCard}>
         <Text style={styles.desc}>{food.description}</Text>
@@ -121,17 +162,21 @@ function Registered({ food, nationality, t, router, id }: { food: FoodDetail; na
         <Text style={styles.insideTitle}>{t('detail.insideTitle')}</Text>
         <Text style={styles.insideSub}>{t('detail.insideSub')}</Text>
         <View style={{ gap: 10 }}>
-          {ingredients.map((ing) => (
-            <IngredientRow
-              key={ing.code}
-              ing={ing}
-              reason={basisFor(ing.code)}
-              riskLabel={t(`risk.${ing.risk}`)}
-              ofShops={ing.percentage != null ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) : ing.note ?? ''}
-              askLabel={t('detail.askOwner')}
-              onAsk={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
-            />
-          ))}
+          {ingredients.map((ing) => {
+            const dRisk = personalRisk(ing.risk, hasRestrictions);
+            return (
+              <IngredientRow
+                key={ing.code}
+                ing={ing}
+                displayRisk={dRisk}
+                reason={basisFor(ing.code)}
+                riskLabel={t(`risk.${dRisk}`)}
+                ofShops={ing.percentage != null ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) : ing.note ?? ''}
+                askLabel={t('detail.askOwner')}
+                onAsk={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
+              />
+            );
+          })}
         </View>
       </View>
     </>
@@ -158,6 +203,7 @@ function RatingMini({ value, label, left }: { value: number | null; label: strin
 
 function IngredientRow({
   ing,
+  displayRisk,
   reason,
   riskLabel,
   ofShops,
@@ -165,20 +211,21 @@ function IngredientRow({
   onAsk,
 }: {
   ing: IngredientRisk;
+  displayRisk: RiskState;
   reason: string | null;
   riskLabel: string;
   ofShops: string;
   askLabel: string;
   onAsk: () => void;
 }) {
-  const [open, setOpen] = useState(ing.risk === 'caution');
-  const tone = riskTone[ing.risk];
-  const canAsk = ing.risk === 'caution' || ing.risk === 'danger';
+  const [open, setOpen] = useState(displayRisk === 'caution');
+  const tone = riskTone[displayRisk];
+  const canAsk = displayRisk === 'caution' || displayRisk === 'danger';
   return (
     <View style={styles.ingRow}>
       <Pressable style={styles.ingMain} onPress={() => setOpen((o) => !o)}>
         <View style={[styles.ingIc, { backgroundColor: tone.bg }]}>
-          <RiskMark state={ing.risk} size={18} />
+          <RiskMark state={displayRisk} size={18} />
         </View>
         <View style={styles.ingMeta}>
           <Text style={styles.ingName}>{ing.name}</Text>
@@ -253,6 +300,10 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   verdict: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
   verdictText: { fontFamily: font.display, fontSize: 14.5 },
+  spiceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  spiceText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
+  spiceWarn: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary },
+  profileHint: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: -8, lineHeight: 18 },
 
   descCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 15, ...shadow.sh1 },
   desc: { fontFamily: font.body, fontSize: 14.5, color: C.ink, lineHeight: 22 },

@@ -142,7 +142,10 @@
     "noIngredientData": "No ingredient data yet",
     "noIngredientBody": "No rating, description, or ingredient data yet. We've logged this dish to improve the catalog.",
     "ofShops": "~{{pct}}% of shops",
-    "writeReview": "Write a review"
+    "writeReview": "Write a review",
+    "spice": "{{level}}/10 · {{analogy}}",
+    "spiceAboveYou": "hotter than your taste",
+    "addProfileHint": "Add your restrictions to see a personalized verdict."
   },
   "states": {
     "catalogTitle": "States",

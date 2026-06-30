@@ -39,6 +39,7 @@ import {
 } from '@/components';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
+import { personalRisk } from '@/lib/risk';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -65,6 +66,7 @@ export default function Home() {
   const recent = home?.recent ?? [];
   const recommended = home?.recommended ?? [];
   const restrictions = me?.restrictions ?? [];
+  const hasR = restrictions.length > 0;
   const hasScans = recent.length > 0;
   // forward links to routes built in later screens (detail #4, review #6)
   const openFood = (foodId: string) => router.push(`/food/${foodId}` as Href);
@@ -166,7 +168,7 @@ export default function Home() {
                   contentContainerStyle={{ gap: 13, paddingVertical: 4 }}
                 >
                   {recommended.map((d) => (
-                    <SafeCard key={d.foodId} food={d} onPress={() => openFood(d.foodId)} />
+                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} onPress={() => openFood(d.foodId)} />
                   ))}
                 </Animated.ScrollView>
               </Section>
@@ -177,7 +179,7 @@ export default function Home() {
               <Section title={t('home.recentTitle')} sub={t('home.recentSub')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
                 <View style={{ gap: 10 }}>
                   {recent.map((d) => (
-                    <RecentRow key={d.foodId} food={d} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
+                    <RecentRow key={d.foodId} food={d} hasRestrictions={hasR} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
                   ))}
                 </View>
               </Section>
@@ -256,12 +258,12 @@ function Section({
   );
 }
 
-function SafeCard({ food, onPress }: { food: FoodCard; onPress: () => void }) {
+function SafeCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestrictions: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.safeCard} onPress={onPress}>
       <View style={styles.photo}>
         <View style={styles.photoBadge}>
-          <RiskMark state={food.risk} size={20} />
+          <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
         </View>
       </View>
       <View style={styles.cardB}>
@@ -282,14 +284,14 @@ function SafeCard({ food, onPress }: { food: FoodCard; onPress: () => void }) {
   );
 }
 
-function RecentRow({ food, reviewLabel, onPress }: { food: FoodCard; reviewLabel: string; onPress: () => void }) {
+function RecentRow({ food, hasRestrictions, reviewLabel, onPress }: { food: FoodCard; hasRestrictions: boolean; reviewLabel: string; onPress: () => void }) {
   const router = useRouter();
   return (
     <Pressable style={styles.rec} onPress={onPress}>
       <View style={styles.recThumb}>
         <IconFood size={24} color={C.primary} />
         <View style={styles.recBadge}>
-          <RiskMark state={food.risk} size={15} />
+          <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={15} />
         </View>
       </View>
       <View style={styles.recMeta}>

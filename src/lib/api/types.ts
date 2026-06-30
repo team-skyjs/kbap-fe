@@ -90,6 +90,7 @@ export interface FoodDetail {
   overall: RatingAggregate;
   sameNationality: RatingAggregate;
   description: string; // reader language, ≤150 chars (EN)
+  spiceLevel: number | null; // 0–10 dish heat (mockup "X/10"); compared to spiceTolerance
   photoUrl: string | null;
   ingredients: IngredientRisk[]; // 90%+ inclusion, danger→caution→safe order (FR-014)
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)

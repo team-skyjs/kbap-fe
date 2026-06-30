@@ -14,6 +14,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Star, Stars, Rosette, RiskMark, IconCheck } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
+import { personalRisk } from '@/lib/risk';
 
 const MAX = 500;
 
@@ -81,7 +82,7 @@ export default function ReviewCompose() {
             <Text style={styles.foodName}>{food?.name ?? ''}</Text>
             <Text style={styles.foodKo}>{food?.nameKo ?? ''}</Text>
           </View>
-          {food && <RiskMark state={food.risk} size={22} />}
+          {food && <RiskMark state={personalRisk(food.risk, (me?.restrictions.length ?? 0) > 0)} size={22} />}
         </View>
 
         {/* rating */}

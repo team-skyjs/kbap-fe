@@ -30,6 +30,7 @@ import {
 } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
+import { personalRisk } from '@/lib/risk';
 import { RANK_TIERS } from '@/lib/mocks/me';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import type { FoodCard, Review } from '@/lib/api/types';
@@ -146,7 +147,7 @@ export default function Profile() {
             >
               <View style={{ gap: 10 }}>
                 {(reviews ?? []).map((rv) => (
-                  <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} onPress={() => router.push(`/food/${rv.foodId}` as Href)} />
+                  <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} hasRestrictions={me.restrictions.length > 0} onPress={() => router.push(`/food/${rv.foodId}` as Href)} />
                 ))}
               </View>
             </Section>
@@ -186,11 +187,11 @@ function Section({ title, action, children }: { title: string; action?: React.Re
   );
 }
 
-function MyReview({ review, food, onPress }: { review: Review; food?: FoodCard; onPress: () => void }) {
+function MyReview({ review, food, hasRestrictions, onPress }: { review: Review; food?: FoodCard; hasRestrictions: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.myrev} onPress={onPress}>
       <View style={styles.myrevPh}>
-        <RiskMark state={food?.risk ?? 'unable'} size={20} />
+        <RiskMark state={food ? personalRisk(food.risk, hasRestrictions) : 'unable'} size={20} />
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
