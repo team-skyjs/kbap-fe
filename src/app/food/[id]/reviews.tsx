@@ -47,10 +47,15 @@ export default function FoodReviews() {
   const { data: me } = useMe();
 
   const [sameNatOnly, setSameNatOnly] = useState(false);
+  const [sort, setSort] = useState<'recent' | 'rating'>('recent');
 
   const nationality = me?.nationality ?? 'US';
   const all = reviews?.items ?? [];
-  const items = sameNatOnly ? all.filter((r) => r.authorNationality === nationality) : all;
+  const filtered = sameNatOnly ? all.filter((r) => r.authorNationality === nationality) : all;
+  const items = [...filtered].sort((a, b) => {
+    const recent = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    return sort === 'rating' ? b.rating - a.rating || recent : recent;
+  });
 
   return (
     <View style={styles.root}>
@@ -82,13 +87,19 @@ export default function FoodReviews() {
               />
             </View>
 
-            {/* filter — same-nationality only (translation is now per-review) */}
+            {/* controls — same-nationality filter + sort (translation is per-review) */}
             <View style={styles.filters}>
               <Pressable style={styles.filter} onPress={() => setSameNatOnly((v) => !v)}>
                 <Flag code={nationality} size={16} />
-                <Text style={styles.filterLbl}>{t('reviews.sameNationalityOnly', { country: nationality })}</Text>
+                <Text style={styles.filterLbl} numberOfLines={1}>
+                  {t('reviews.sameNationalityOnly', { country: nationality })}
+                </Text>
                 <Switch on={sameNatOnly} />
               </Pressable>
+            </View>
+            <View style={styles.sortRow}>
+              <SortPill label={t('reviews.sortRecent')} on={sort === 'recent'} onPress={() => setSort('recent')} />
+              <SortPill label={t('reviews.sortTopRated')} on={sort === 'rating'} onPress={() => setSort('rating')} />
             </View>
 
             {/* list or empty */}
@@ -220,6 +231,14 @@ function Switch({ on }: { on: boolean }) {
   );
 }
 
+function SortPill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.sortPill, on && styles.sortPillOn]} onPress={onPress}>
+      <Text style={[styles.sortPillText, on && styles.sortPillTextOn]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
@@ -238,6 +257,11 @@ const styles = StyleSheet.create({
   filters: { flexDirection: 'row', gap: 10 },
   filter: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, ...shadow.sh1 },
   filterLbl: { flex: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
+  sortRow: { flexDirection: 'row', gap: 6, backgroundColor: C.surface2, borderRadius: 12, padding: 4 },
+  sortPill: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 9 },
+  sortPillOn: { backgroundColor: C.card, ...shadow.sh1 },
+  sortPillText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  sortPillTextOn: { color: C.primary },
 
   sw: { width: 34, height: 20, borderRadius: 10, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },

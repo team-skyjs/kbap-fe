@@ -133,6 +133,8 @@
     "overall": "Overall",
     "sameNationality": "Same nationality",
     "sameNationalityOnly": "{{country}} only",
+    "sortRecent": "Recent",
+    "sortTopRated": "Top rated",
     "translate": "Translate",
     "translating": "Translating…",
     "translateFailed": "Couldn't translate",
