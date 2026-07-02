@@ -103,6 +103,17 @@
 
 ### 세션 1 종료 — 다음 세션 범위: 개별 화면 (온보딩/스파이스부터, 빌드순서 §8)
 
+### 랭킹 디테일 화면 (§15, 신규) — 완료
+- [x] `app/profile/ranking` 구현. 확정 조합(department 히어로 · medal 엠블럼 · bar 게이지 · path 사다리) 그대로.
+  계약 `Ranking`에 `breakdown`+`RankingFactor` 추가(옵셔널 — 기존 profile.tsx MOCK_RANKING 무손상), `useRanking()` 훅+mock,
+  TIERS SSOT(`lib/ranking.ts`, 7등급 0/30/80/180/350/600/1000 + 웜 컬러 램프 + 가중치 10/5/2), i18n `ranking.*`(tier EN/KO 병기).
+  medal/medallion은 SVG 로컬 컴포넌트(scallop disc+ribbon+cream inner, 이모지 0). 프로필 랭킹 카드 탭 → 진입 연결.
+  tsc 0 · jest 17/17 · web 목업 대조(히어로/게이지/내역/사다리/CTA 전부 렌더 확인).
+  - ❓ 편차 1건: 상단 sticky 헤더는 **"My Ranking"(EN 단일)**로 뒀음. §15는 "My Ranking / 내 랭킹" 이중언어인데,
+    공유 헤더(§6, 1개 컴포넌트) title 슬롯이 단일 폰트(Baloo, 한글 미포함→폴백)라 헤더에 한글 섞으면 렌더 불일치 우려.
+    이중언어는 히어로(EN 큰 등급명 + 탐험가·LEVEL 3)에서 이미 제공. 헤더도 이중언어로 원하면 헤더 컴포넌트에 KO 서브라인 슬롯 추가 필요 — 알려주세요.
+  - ❓ CTA "Write a review" 라우트: 특정 음식 없이 리뷰 작성 진입점이 없어 **음식 탭(`/food`)**으로 보냄(음식 고른 뒤 리뷰). 스캔은 `/scan`. 의도와 다르면 알려주세요.
+
 ## ❓ 결정 필요 (사용자에게 질문)
 - BE 스캔이 현재 mock(itemId 순환). 실제 카탈로그 매칭/개인화 위험도 탑재 후 false-safe 재테스트 필요(§13-6).
 - 오버레이 전략 A 채택(위험도 색만 즉시, 이름/성분은 탭 시 detail) — 단, detail/번역명은 이번 범위 밖이라 미구현.

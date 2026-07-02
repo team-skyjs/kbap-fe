@@ -80,9 +80,9 @@ export default function Profile() {
               </Pressable>
             </View>
 
-            {/* ranking */}
+            {/* ranking → tap opens the ranking-detail screen */}
             <Section title={t('profile.rankingTitle')}>
-              <View style={styles.rank}>
+              <Pressable style={styles.rank} onPress={() => router.push('/profile/ranking' as Href)}>
                 <View style={styles.rankTop}>
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                     <Rosette level={me.rank.level} size={42} />
@@ -91,11 +91,14 @@ export default function Profile() {
                       <Text style={styles.tag}>{t('profile.levelPts', { level: me.rank.level, score: me.rank.score })}</Text>
                     </View>
                   </View>
-                  {me.rank.nextTier && me.rank.pointsToNext != null && (
-                    <View style={styles.pill}>
-                      <Text style={styles.pillText}>{t('profile.toNext', { points: me.rank.pointsToNext, tier: me.rank.nextTier })}</Text>
-                    </View>
-                  )}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {me.rank.nextTier && me.rank.pointsToNext != null && (
+                      <View style={styles.pill}>
+                        <Text style={styles.pillText}>{t('profile.toNext', { points: me.rank.pointsToNext, tier: me.rank.nextTier })}</Text>
+                      </View>
+                    )}
+                    <IconChevron size={16} color={C.ink3} />
+                  </View>
                 </View>
                 <View style={styles.rankProg}>
                   {RANK_TIERS.map((_, i) => (
@@ -110,7 +113,7 @@ export default function Profile() {
                   ))}
                 </View>
                 <Text style={styles.tag}>{t('profile.scoreNote')}</Text>
-              </View>
+              </Pressable>
             </Section>
 
             {/* dietary restrictions */}

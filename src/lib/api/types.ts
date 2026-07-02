@@ -24,12 +24,24 @@ export interface DietaryRestriction {
   code: string; // e.g. "allergy:shellfish"
 }
 
+/** One score-contributing activity (FR-025): its count and the points it added. */
+export interface RankingFactor {
+  count: number; // reviews written / unique dishes / scans
+  points: number; // points this factor contributed
+}
+
 export interface Ranking {
-  tier: string; // e.g. "Explorer"
-  level: number;
+  tier: string; // stable key: newcomer|taster|explorer|regular|gourmet|kfood_master|korean_at_heart
+  level: number; // 1–7
   score: number;
-  nextTier: string | null;
+  nextTier: string | null; // stable key, null at top tier
   pointsToNext: number | null;
+  /** Score breakdown for the ranking-detail screen (contract-optional; omitted by GET /me). */
+  breakdown?: {
+    reviews: RankingFactor;
+    diversity: RankingFactor;
+    scans: RankingFactor;
+  };
 }
 
 export interface User {
