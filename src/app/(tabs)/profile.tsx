@@ -5,7 +5,9 @@
  * Data via useMe()/useMyReviews()/useFoods() (MOCK_MODE). Scroll-aware brand
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +36,8 @@ import { personalRisk } from '@/lib/risk';
 import { RANK_TIERS } from '@/lib/mocks/me';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
+import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { LanguagePicker } from '@/components/LanguagePicker';
 import type { FoodCard, Review } from '@/lib/api/types';
 
 export default function Profile() {
@@ -41,6 +45,8 @@ export default function Profile() {
   const router = useRouter();
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
+  const { lang } = useLocale();
+  const [langOpen, setLangOpen] = useState(false);
 
   const { data: me } = useMe();
   const { data: reviews } = useMyReviews();
@@ -159,7 +165,7 @@ export default function Profile() {
             {/* account */}
             <Section title={t('profile.accountTitle')}>
               <View style={styles.acctList}>
-                <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[me.readerLanguage] ?? me.readerLanguage} />
+                <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => setLangOpen(true)} />
                 <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
                 <AcctRow
@@ -175,6 +181,7 @@ export default function Profile() {
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="brand" bell />
+      <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
     </View>
   );
 }
