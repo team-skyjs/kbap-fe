@@ -31,7 +31,8 @@
   },
   "search": {
     "placeholder": "Search food, ingredient…",
-    "recent": "Recent searches"
+    "recent": "Recent searches",
+    "samples": ["Kimchi Stew", "Shrimp paste", "Bibimbap"]
   },
   "notifications": {
     "title": "Notifications",
@@ -71,6 +72,13 @@
     "errOcr": "Couldn't read text from the photo (OCR). See Metro logs.",
     "errNetwork": "Can't reach the scan service. Check your connection.",
     "errBe": "The scan service returned an error. See Metro logs.",
+    "stage": {
+      "capture": "Capture",
+      "ocr": "Text scan",
+      "empty": "No text",
+      "network": "Network",
+      "be": "Service"
+    },
     "retake": "Retake",
     "gallery": "Import from gallery",
     "flip": "Flip camera",
@@ -163,6 +171,7 @@
     "vipEyebrow": "VIP MEMBERSHIP",
     "levelLabel": "LEVEL {{level}}",
     "totalPoints": "{{score}} total points",
+    "totalPointsSuffix": "total points",
     "flavorPre": "You've tasted",
     "flavorPost": "different Korean dishes so far.",
     "ptsTo": "pts to {{tier}}",

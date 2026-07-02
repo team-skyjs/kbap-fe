@@ -78,7 +78,7 @@ function RankingBody({ rk, onReview, onScan }: { rk: Ranking; onReview: () => vo
           </Text>
         )}
         <Text style={styles.totalPts}>
-          <Text style={styles.totalPtsB}>{rk.score}</Text> total points
+          <Text style={styles.totalPtsB}>{rk.score}</Text> {t('ranking.totalPointsSuffix')}
         </Text>
       </View>
 

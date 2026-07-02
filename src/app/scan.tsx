@@ -219,7 +219,7 @@ export default function Scan() {
       <View style={[styles.root, styles.center]}>
         {Close}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-        <Text style={styles.errStage}>{stage.toUpperCase()}</Text>
+        <Text style={styles.errStage}>{t(`scan.stage.${stage}`)}</Text>
         <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
         {!!error?.detail && <Text style={styles.errDetail} numberOfLines={4}>{error.detail}</Text>}
         <View style={styles.errBtns}>
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
-  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary },
+  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' },
   errDetail: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', paddingHorizontal: 8 },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   spikeNote: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },

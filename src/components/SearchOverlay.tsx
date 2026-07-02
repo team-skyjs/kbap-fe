@@ -9,11 +9,10 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
 import { IconSearch, IconChevron } from './icons';
 
-const RECENT = ['Kimchi Stew', 'Shrimp paste', 'Bibimbap'];
-
 export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const recent = t('search.samples', { returnObjects: true }) as string[];
   return (
     <Modal visible={open} animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: C.surface }}>
@@ -29,7 +28,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
 
         <View style={styles.body}>
           <Text style={styles.tag}>{t('search.recent')}</Text>
-          {RECENT.map((s) => (
+          {recent.map((s) => (
             <View key={s} style={styles.row}>
               <IconSearch size={17} color={C.ink3} />
               <Text style={styles.rowText}>{s}</Text>

@@ -33,6 +33,7 @@ import { useFoods } from '@/lib/data/useFoods';
 import { personalRisk } from '@/lib/risk';
 import { RANK_TIERS } from '@/lib/mocks/me';
 import { restrictionLabel } from '@/lib/onboarding/data';
+import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import type { FoodCard, Review } from '@/lib/api/types';
 
 export default function Profile() {
@@ -158,7 +159,7 @@ export default function Profile() {
             {/* account */}
             <Section title={t('profile.accountTitle')}>
               <View style={styles.acctList}>
-                <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={me.readerLanguage === 'en' ? 'English' : me.readerLanguage} />
+                <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[me.readerLanguage] ?? me.readerLanguage} />
                 <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
                 <AcctRow
