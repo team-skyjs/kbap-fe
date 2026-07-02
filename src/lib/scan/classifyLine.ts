@@ -45,6 +45,7 @@ export function classifyLine(text: string, box: BoundingBox): LineType {
   if (core.length <= 1) return 'junk'; // single char / pure symbols e.g. "Q &"
   if (FILE_EXT.test(t)) return 'junk'; // ".jpg"
   if (FUNC_KEY.test(t)) return 'junk'; // "F4".."F8"
+  if (/[:：]$/.test(t)) return 'junk'; // trailing-colon fragment e.g. "소한:" (cut from 고소한)
 
   // 2) price / origin (before dishName so a price line never looks like a name)
   if (PRICE.test(t)) return 'price';
@@ -53,8 +54,8 @@ export function classifyLine(text: string, box: BoundingBox): LineType {
   const hasHangul = HANGUL.test(t);
   const hasLatin = LATIN.test(t);
 
-  // 3) section header: short 류-suffixed or a known category word
-  if (hasHangul && ((t.length <= THRESHOLDS.sectionMaxLen && /류$/.test(t)) || KNOWN_SECTIONS.includes(t))) {
+  // 3) section header: short 류/료-suffixed (식사류, 면류, 탄산음료) or a known category word
+  if (hasHangul && ((t.length <= THRESHOLDS.sectionMaxLen && /(류|료)$/.test(t)) || KNOWN_SECTIONS.includes(t))) {
     return 'section';
   }
 

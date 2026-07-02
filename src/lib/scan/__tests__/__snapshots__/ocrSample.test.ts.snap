@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`T072 segmentation on the real 58-line OCR sample (spec eb2ed72) locks the exact segmentation output (snapshot) 1`] = `
+{
+  "counts": {
+    "description": 11,
+    "dishName": 13,
+    "junk": 13,
+    "latin": 9,
+    "origin": 1,
+    "price": 8,
+    "section": 3,
+  },
+  "dishNames": [
+    "한식당",
+    "메뉴판",
+    "비빔밥",
+    "떡볶이",
+    "김치볶음밥",
+    "갈비구이",
+    "라면",
+    "냉면",
+    "열치국수",
+    "김치전",
+    "한국 전요리",
+    "해물파전",
+    "오렌지 주스",
+  ],
+}
+`;

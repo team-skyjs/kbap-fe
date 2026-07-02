@@ -16,10 +16,11 @@ describe('classifyLine (handoff §14-2)', () => {
     expect(classifyLine('돼지고기 수입산', box())).toBe('origin');
   });
 
-  it('section headers', () => {
+  it('section headers (류/료 suffix or known category)', () => {
     expect(classifyLine('식사류', box())).toBe('section');
     expect(classifyLine('면류', box())).toBe('section');
     expect(classifyLine('음료', box())).toBe('section');
+    expect(classifyLine('탄산음료', box())).toBe('section'); // real fixture: 료-suffix category
   });
 
   it('dish names (short Korean)', () => {
@@ -32,11 +33,13 @@ describe('classifyLine (handoff §14-2)', () => {
     expect(classifyLine('Bibimbap', box())).toBe('latin');
   });
 
-  it('junk: symbols / file ext / function keys', () => {
+  it('junk: symbols / file ext / function keys / trailing-colon fragment', () => {
     expect(classifyLine('Q &', box())).toBe('junk');
     expect(classifyLine('.jpg', box())).toBe('junk');
+    expect(classifyLine('vio0239mkl8.jpg', box())).toBe('junk');
     expect(classifyLine('F4', box())).toBe('junk');
     expect(classifyLine('F8', box())).toBe('junk');
+    expect(classifyLine('소한:', box())).toBe('junk'); // real fixture: description fragment (고소한 cut)
   });
 
   it('junk: latin UI text at screen edge (e.g. MacBook Air)', () => {
