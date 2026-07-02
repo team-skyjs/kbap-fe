@@ -27,6 +27,20 @@
     시뮬레이터엔 카메라가 없으므로 OCR 테스트는 갤러리 경로 권장(Photos에 메뉴 이미지 넣고 불러오기).
     실물폰 카메라 OCR은 dev client를 폰에 설치(`npx expo run:ios --device`/EAS dev build). Expo Go ❌.
 
+## T072 — 스캔 결과 세그멘테이션 (핸드오프 §14, 단계별 커밋)
+- [~] step1 줄 분류기 `src/lib/scan/classifyLine.ts` (순수함수) + jest 8/8. tsc 0(테스트 제외).
+- [ ] step2 부가정보 방사형 최근접 연결(가격·로마자) — best-effort
+- [ ] step3 dishName만 BE 전송
+- [ ] step4 표시: Original/Risk(마커)/List 3-토글 + 상세 라우트
+- [ ] step5 안전 불변식(미매칭→unable 맨아래·숨김금지, 구조로만 거르기, personalRisk 통과)
+- [ ] step6 §14-1 로그 fixture 스냅샷/단위테스트
+> jest-expo 도입(단위테스트), 테스트파일은 tsconfig exclude(앱 tsc 0 유지).
+> ❓ 확정 필요한 임계값/UI(임의로 정했으니 확인):
+>   - section "짧고" 최대 길이 = 6자 (§14 미명시, 내가 택함)
+>   - description 최소 = 12자 또는 구두점/공백 ≥3 (§14 "대략 ≥12자")
+>   - 3-토글 기본값 = Risk, 마커 = 요리명 bbox 위 위험도색 작은 배지(RiskMark). (§14-4 "마커" 세부 내가 택함)
+>   - 실제 58줄 OCR 로그 원본이 spec에 없어 §14-1 확인사실로 대표 fixture 구성(step6).
+
 ## 화면 — Session 2 (무인 구현, 빌드순서 §8, 화면당 커밋). 스캔 화면은 ⛔ 건드리지 않음.
 - [x] 1. 온보딩(+스파이스) — `app/onboarding` 7스텝 스텝퍼(환영/인증/프로필/제약/맵기/관심/동의), 5-세그 진행바. web 대조 OK.
   - ✅ (SSOT ef18332) 제약 skip 허용 확정 + **안전 불변식**: 빈 프로필은 personalRisk()로 safe→caution 강등(false-safe 0, 헌법 III/SC-003). 전 화면 적용+검증.
