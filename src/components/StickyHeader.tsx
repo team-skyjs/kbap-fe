@@ -1,17 +1,23 @@
 /**
  * StickyHeader — the ONE shared scroll-aware header (handoff §6).
- * Every scrolling screen reuses this instead of re-implementing header behavior.
  *
- * Behavior (driven by a reanimated scrollY SharedValue, computed on the UI thread):
- *  - at top: transparent background, no hairline, large title visible
- *  - on scroll: background fills (translucent surface), bottom hairline + shadow
- *    appear, large title collapses and the compact title fades into the bar.
+ * Pinned by LAYOUT, not absolute positioning: render it as the first child ABOVE
+ * the screen's Animated.ScrollView. A flex sibling above a flex:1 ScrollView can
+ * never scroll away (immune to Fabric/absolute z-order quirks that broke the
+ * previous absolute-overlay on device). Content flows BELOW it (§6).
+ *
+ * Scroll-aware (reanimated scrollY, UI thread): a bottom hairline + shadow fade
+ * in as you scroll, and an optional iOS-style large title collapses while the
+ * compact title fades into the bar.
  *
  * Usage:
  *   const { scrollY, onScroll } = useStickyScroll();
- *   <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16}
- *     contentContainerStyle={{ paddingTop: useHeaderHeight({ largeTitle: true }) }}>
- *   <StickyHeader scrollY={scrollY} mode="brand" largeTitle="Hi, Mina" search bell />
+ *   return (
+ *     <View style={{ flex: 1 }}>
+ *       <StickyHeader scrollY={scrollY} mode="brand" largeTitle="K-Bap" search bell />
+ *       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16}>…</Animated.ScrollView>
+ *     </View>
+ *   );
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -23,8 +29,8 @@ import Animated, {
   useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets, type EdgeInsets } from 'react-native-safe-area-context';
-import { color as C, font, shadow } from '@/lib/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { color as C, font } from '@/lib/theme';
 import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
 
 const BAR_H = 48; // top row height (icon buttons)
@@ -37,16 +43,6 @@ export function useStickyScroll() {
     scrollY.value = e.contentOffset.y;
   });
   return { scrollY, onScroll };
-}
-
-/** Expanded header height — use as ScrollView contentContainer paddingTop. */
-export function useHeaderHeight({ largeTitle }: { largeTitle?: boolean } = {}) {
-  const insets = useSafeAreaInsets();
-  return headerHeight(insets, !!largeTitle);
-}
-
-export function headerHeight(insets: EdgeInsets, hasLarge: boolean) {
-  return insets.top + 8 + BAR_H + (hasLarge ? LARGE_H : 0) + 12;
 }
 
 export type StickyHeaderProps = {
@@ -81,16 +77,15 @@ export function StickyHeader({
   onBookmark,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
-  const topPad = insets.top + 8;
 
-  const bgStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 22], [0, 1], Extrapolation.CLAMP),
+  // shadow + hairline fade in once scrolled (the "lifted header" cue)
+  const liftStyle = useAnimatedStyle(() => ({
+    shadowOpacity: interpolate(scrollY.value, [4, 40], [0, 0.12], Extrapolation.CLAMP),
   }));
   const hairlineStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [8, 38], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(scrollY.value, [8, 40], [0, 1], Extrapolation.CLAMP),
   }));
   const compactTitleStyle = useAnimatedStyle(() => {
-    // back-mode title is always visible; with a large title it fades in on collapse
     const from = largeTitle ? COLLAPSE * 0.55 : 0;
     const to = largeTitle ? COLLAPSE : 1;
     return { opacity: interpolate(scrollY.value, [from, to], [largeTitle ? 0 : 1, 1], Extrapolation.CLAMP) };
@@ -98,20 +93,13 @@ export function StickyHeader({
   const largeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, COLLAPSE * 0.7], [1, 0], Extrapolation.CLAMP),
     height: interpolate(scrollY.value, [0, COLLAPSE], [LARGE_H, 0], Extrapolation.CLAMP),
-    transform: [
-      { translateY: interpolate(scrollY.value, [0, COLLAPSE], [0, -10], Extrapolation.CLAMP) },
-    ],
+    transform: [{ translateY: interpolate(scrollY.value, [0, COLLAPSE], [0, -8], Extrapolation.CLAMP) }],
   }));
 
   const compactTitle = title ?? largeTitle;
 
   return (
-    <View style={[styles.root, { paddingTop: topPad }]} pointerEvents="box-none">
-      {/* animated translucent fill + shadow */}
-      <Animated.View style={[StyleSheet.absoluteFill, styles.fill, shadow.sh1, bgStyle]} />
-      <Animated.View style={[styles.hairline, hairlineStyle]} />
-
-      {/* top bar row */}
+    <Animated.View style={[styles.root, { paddingTop: insets.top + 8 }, liftStyle]}>
       <View style={styles.bar}>
         {mode === 'back' ? (
           <Pressable style={styles.iconBtn} onPress={onBack} hitSlop={8}>
@@ -126,7 +114,6 @@ export function StickyHeader({
           </View>
         )}
 
-        {/* compact title — centered for back mode, fades in for brand+large */}
         {compactTitle != null && (
           <Animated.Text
             numberOfLines={1}
@@ -157,7 +144,6 @@ export function StickyHeader({
         </View>
       </View>
 
-      {/* large collapsing title */}
       {largeTitle != null && (
         <Animated.View style={[styles.largeWrap, largeStyle]}>
           <Text numberOfLines={1} style={styles.largeTitle}>
@@ -165,27 +151,23 @@ export function StickyHeader({
           </Text>
         </Animated.View>
       )}
-    </View>
+
+      <Animated.View style={[styles.hairline, hairlineStyle]} />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+    // pinned by layout (first child above the ScrollView), NOT absolute
+    zIndex: 2,
     paddingHorizontal: 16,
-  },
-  fill: { backgroundColor: 'rgba(252,245,239,0.92)' },
-  hairline: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: C.hair,
+    paddingBottom: 4,
+    backgroundColor: C.surface,
+    // shadow: shadowOpacity is animated in (liftStyle); Android elevation static-low
+    shadowColor: '#14181f',
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   bar: { height: BAR_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -209,7 +191,6 @@ const styles = StyleSheet.create({
     borderColor: C.hair,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadow.sh1,
   },
   dot: {
     position: 'absolute',
@@ -242,6 +223,14 @@ const styles = StyleSheet.create({
   },
   largeWrap: { justifyContent: 'flex-end', paddingBottom: 6, overflow: 'hidden' },
   largeTitle: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.5 },
+  hairline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: C.hair,
+  },
 });
 
 export default StickyHeader;

@@ -13,7 +13,6 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
-  useHeaderHeight,
   Rosette,
   Flag,
   RiskDot,
@@ -39,7 +38,6 @@ export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
   const { scrollY, onScroll } = useStickyScroll();
-  const headerH = useHeaderHeight();
 
   const { data: me } = useMe();
   const { data: reviews } = useMyReviews();
@@ -50,11 +48,12 @@ export default function Profile() {
 
   return (
     <View style={styles.root}>
+      <StickyHeader scrollY={scrollY} mode="brand" bell />
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: 110 }}
       >
         {me && (
           <View style={styles.body}>
@@ -169,8 +168,6 @@ export default function Profile() {
           </View>
         )}
       </Animated.ScrollView>
-
-      <StickyHeader scrollY={scrollY} mode="brand" bell />
     </View>
   );
 }

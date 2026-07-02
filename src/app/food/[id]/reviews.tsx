@@ -15,7 +15,6 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
-  useHeaderHeight,
   Stars,
   Flag,
   Rosette,
@@ -40,7 +39,6 @@ export default function FoodReviews() {
   const router = useRouter();
   const { t } = useTranslation();
   const { scrollY, onScroll } = useStickyScroll();
-  const headerH = useHeaderHeight();
 
   const { data: reviews } = useFoodReviews(id ?? '');
   const { data: food } = useFoodDetail(id ?? '');
@@ -54,11 +52,12 @@ export default function FoodReviews() {
 
   return (
     <View style={styles.root}>
+      <StickyHeader scrollY={scrollY} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
         {reviews && (
           <View style={styles.body}>
@@ -113,8 +112,6 @@ export default function FoodReviews() {
           </View>
         )}
       </Animated.ScrollView>
-
-      <StickyHeader scrollY={scrollY} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
     </View>
   );
 }
