@@ -27,13 +27,14 @@
     시뮬레이터엔 카메라가 없으므로 OCR 테스트는 갤러리 경로 권장(Photos에 메뉴 이미지 넣고 불러오기).
     실물폰 카메라 OCR은 dev client를 폰에 설치(`npx expo run:ios --device`/EAS dev build). Expo Go ❌.
 
-## T072 — 스캔 결과 세그멘테이션 (핸드오프 §14, 단계별 커밋)
-- [~] step1 줄 분류기 `src/lib/scan/classifyLine.ts` (순수함수) + jest 8/8. tsc 0(테스트 제외).
-- [ ] step2 부가정보 방사형 최근접 연결(가격·로마자) — best-effort
-- [ ] step3 dishName만 BE 전송
-- [ ] step4 표시: Original/Risk(마커)/List 3-토글 + 상세 라우트
-- [ ] step5 안전 불변식(미매칭→unable 맨아래·숨김금지, 구조로만 거르기, personalRisk 통과)
-- [ ] step6 §14-1 로그 fixture 스냅샷/단위테스트
+## T072 — 스캔 결과 세그멘테이션 (핸드오프 §14) — ✅ 6단계 완료 (tsc 0, jest 18/18)
+- [x] step1 줄 분류기 `classifyLine.ts` (순수함수) + 단위테스트 8
+- [x] step2 `segmentMenu.ts` 방사형 최근접(가격·로마자 best-effort) + 테스트 5
+- [x] step3 dishName만 BE 전송 (설명·가격·원산지·잡음 제외)
+- [x] step4 결과 Original/Risk(마커)/List 3-토글, 마커/행 탭→상세(카탈로그 nameKo→foodId 매핑)
+- [x] step5 안전: 미매칭→unable 맨아래 정렬·숨김금지, 구조로만 거르기, personalRisk 통과
+- [x] step6 §14-1 대표 메뉴 fixture 테스트(스냅샷): dishName 10·section 3·price 9·latin 3·description 2·origin 1·junk 4
+- web 대조: 샘플 스캔 → Risk 마커 4개 + List(맥북=Unable 맨아래). jest-expo, 테스트는 tsconfig exclude.
 > jest-expo 도입(단위테스트), 테스트파일은 tsconfig exclude(앱 tsc 0 유지).
 > ❓ 확정 필요한 임계값/UI(임의로 정했으니 확인):
 >   - section "짧고" 최대 길이 = 6자 (§14 미명시, 내가 택함)

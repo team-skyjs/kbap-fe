@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`T072 segmentation on §14-1 representative menu classification breakdown is stable (snapshot) 1`] = `
+{
+  "description": 2,
+  "dishName": 10,
+  "junk": 4,
+  "latin": 3,
+  "origin": 1,
+  "price": 9,
+  "section": 3,
+}
+`;
