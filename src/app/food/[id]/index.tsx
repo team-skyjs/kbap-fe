@@ -148,11 +148,16 @@ function Registered({
       </View>
 
       <View style={styles.rate2}>
-        <RatingMini value={food.overall.average} label={t('detail.allUsers', { count: food.overall.count })} />
+        <RatingMini
+          value={food.overall.average}
+          label={t('detail.allUsers', { count: food.overall.count })}
+          onPress={() => router.push(`/food/${id}/reviews` as Href)}
+        />
         <RatingMini
           value={food.sameNationality.average}
           label={t('detail.sameNationality')}
           left={<Flag code={nationality} size={15} />}
+          onPress={() => router.push(`/food/${id}/reviews` as Href)}
         />
       </View>
 
@@ -183,9 +188,9 @@ function Registered({
   );
 }
 
-function RatingMini({ value, label, left }: { value: number | null; label: string; left?: React.ReactNode }) {
+function RatingMini({ value, label, left, onPress }: { value: number | null; label: string; left?: React.ReactNode; onPress?: () => void }) {
   return (
-    <View style={styles.rateMini}>
+    <Pressable style={styles.rateMini} onPress={onPress}>
       <View style={styles.rateBig}>
         <Star size={20} fillPct={100} fillColor={C.primary} />
         <Text style={styles.rateBigNum}>{value?.toFixed(1) ?? '—'}</Text>
@@ -197,7 +202,7 @@ function RatingMini({ value, label, left }: { value: number | null; label: strin
         </Text>
         <IconChevron size={13} color={C.ink3} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 

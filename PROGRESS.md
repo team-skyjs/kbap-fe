@@ -65,7 +65,8 @@
 ### Session 2 종료 — 8개 화면 무인 구현 완료. 전부 tsc 0 + web 스크린샷 대조 OK. 스캔 화면 미터치.
 > ❓ 모음: ① 온보딩 제약 skip 허용 여부(목업 vs 핸드오프) ② FoodDetail per-dish 스파이스 필드 계약 추가 여부
 > ③ 카테고리/검색 실필터는 BE 연결 시(현재 mock 시각) ④ Edit/언어/알림 등 일부 설정 액션은 no-op(라우트 미정).
-> 미구현: 리뷰 목록 화면(G2, 음식별 리뷰 리스트)은 빌드순서 8개 밖이라 보류. 다국어(영어만).
+> [x] 리뷰 목록 화면(G2) — `app/food/[id]/reviews`: 평점요약(전체/동일국적)·같은국적/번역 토글·익명 처리·빈상태. useFoodReviews mock, 디테일 평점카드 화살표→연결. web 대조 OK.
+> 미구현: 9개 다국어 i18n(영어만). menuName vs id 리컨실은 BE 회의 대기(방향: BE가 foodId 실어주고 [id] 유지).
 
 ## OTA (EAS Update) — 밖에서 폰만으로 최신 화면 확인
 - [x] OTA 1회 설정: `eas update:configure` → expo-updates 설치, updates.url, eas.json 채널(development).

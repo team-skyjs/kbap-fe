@@ -127,6 +127,31 @@
     "backToDish": "Back to dish",
     "seeMyReviews": "See my reviews"
   },
+  "reviews": {
+    "headerTitle": "Reviews",
+    "subtitle": "{{count}} reviews",
+    "overall": "Overall",
+    "sameNationality": "Same nationality",
+    "sameNationalityOnly": "{{country}} only",
+    "translate": "Translate",
+    "showOriginal": "Show original",
+    "translatedFrom": "Translated from {{lang}}",
+    "anonymous": "Anonymous",
+    "today": "Today",
+    "daysAgo": "{{count}}d ago",
+    "weeksAgo": "{{count}}w ago",
+    "emptyTitle": "No reviews yet",
+    "emptyBody": "Be the first to review this dish — your note helps the next traveler eat with confidence.",
+    "writeReview": "Write a review",
+    "lang": {
+      "en": "English",
+      "th": "Thai",
+      "de": "German",
+      "ja": "Japanese",
+      "vi": "Vietnamese",
+      "ko": "Korean"
+    }
+  },
   "detail": {
     "headerTitle": "Food",
     "verdictSafe": "Safe for you",
