@@ -13,10 +13,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +36,7 @@ import {
   IconPlus,
   IconProfile,
 } from '@/components';
+import { BrandTile } from '@/components/Brand';
 import {
   ALLERGEN_GROUPS,
   LIFESTYLE_GROUPS,
@@ -178,10 +179,10 @@ function Welcome({ onEmail, onSocial, t }: { onEmail: () => void; onSocial: () =
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.hero}>
-        <View style={styles.heroMark}>
-          <Text style={styles.heroMarkText}>K</Text>
-        </View>
-        <Text style={styles.word}>K-Bap</Text>
+        <BrandTile size={76} />
+        <Text style={styles.word}>
+          K<Text style={{ color: C.accent }}>-</Text>Bap
+        </Text>
         <Text style={styles.heroTag}>{t('onboarding.welcomeTag')}</Text>
       </View>
       <View style={styles.foot}>

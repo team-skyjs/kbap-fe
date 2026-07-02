@@ -31,6 +31,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
 import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
+import { BrandLockup } from './Brand';
 
 const BAR_H = 48;
 const TOP_PAD = 8;
@@ -118,12 +119,7 @@ export function StickyHeader({
             <IconArrowLeft size={20} color={C.ink} />
           </Pressable>
         ) : (
-          <View style={styles.brand}>
-            <View style={styles.mark}>
-              <Text style={styles.markText}>K</Text>
-            </View>
-            <Text style={styles.word}>K-Bap</Text>
-          </View>
+          <BrandLockup />
         )}
 
         {title != null && (
@@ -177,17 +173,6 @@ const styles = StyleSheet.create({
     ...shadow.sh1, // always a subtle bottom shadow (--sh-1)
   },
   bar: { height: BAR_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  mark: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markText: { color: '#fff', fontFamily: font.display, fontSize: 21, lineHeight: 24 },
-  word: { fontFamily: font.display, fontSize: 22, color: C.primary, letterSpacing: -0.2 },
   titleWrap: {
     position: 'absolute',
     left: 52,
