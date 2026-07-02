@@ -21,6 +21,7 @@ import {
   Rosette,
   StateBlock,
   stateIconColor,
+  Spinner,
   IconGlobe,
   IconProfile,
   IconBubbleEmpty,
@@ -29,6 +30,7 @@ import {
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
+import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
 const READER_LANG = 'en'; // MVP reader language
@@ -45,7 +47,6 @@ export default function FoodReviews() {
   const { data: me } = useMe();
 
   const [sameNatOnly, setSameNatOnly] = useState(false);
-  const [translate, setTranslate] = useState(false);
 
   const nationality = me?.nationality ?? 'US';
   const all = reviews?.items ?? [];
@@ -81,17 +82,12 @@ export default function FoodReviews() {
               />
             </View>
 
-            {/* filters */}
+            {/* filter — same-nationality only (translation is now per-review) */}
             <View style={styles.filters}>
               <Pressable style={styles.filter} onPress={() => setSameNatOnly((v) => !v)}>
                 <Flag code={nationality} size={16} />
                 <Text style={styles.filterLbl}>{t('reviews.sameNationalityOnly', { country: nationality })}</Text>
                 <Switch on={sameNatOnly} />
-              </Pressable>
-              <Pressable style={styles.filter} onPress={() => setTranslate((v) => !v)}>
-                <IconGlobe size={16} color={C.ink2} />
-                <Text style={styles.filterLbl}>{t('reviews.translate')}</Text>
-                <Switch on={translate} />
               </Pressable>
             </View>
 
@@ -110,7 +106,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} translate={translate} t={t} />
+                  <ReviewItem key={r.id} review={r} t={t} />
                 ))}
               </View>
             )}
@@ -139,11 +135,10 @@ function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; le
   );
 }
 
-function ReviewItem({ review, translate, t }: { review: Review; translate: boolean; t: TFn }) {
+function ReviewItem({ review, t }: { review: Review; t: TFn }) {
   const anon = review.anonymized;
-  const showTranslated = translate && review.bodyLanguage !== READER_LANG && !!review.translatedBody;
-  const bodyText = showTranslated ? review.translatedBody : review.body;
-  const langName = t(`reviews.lang.${review.bodyLanguage}`, { defaultValue: review.bodyLanguage });
+  const tx = useReviewTranslation(review, READER_LANG);
+  const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
 
   return (
     <View style={styles.item}>
@@ -167,11 +162,42 @@ function ReviewItem({ review, translate, t }: { review: Review; translate: boole
         <Stars value={review.rating} size={14} />
       </View>
 
-      {!!bodyText && (
-        <Text style={[styles.reviewBody, review.bodyLanguage === 'ko' && styles.reviewBodyKo]}>{bodyText}</Text>
+      {!!tx.text && (
+        <Text style={[styles.reviewBody, review.bodyLanguage === 'ko' && styles.reviewBodyKo]}>{tx.text}</Text>
       )}
 
-      {showTranslated && <Text style={styles.transNote}>{t('reviews.translatedFrom', { lang: langName })}</Text>}
+      {/* per-review translation control (only when not already in reader language) */}
+      {tx.canTranslate && (
+        <View style={styles.txRow}>
+          {tx.loading ? (
+            <View style={styles.txInline}>
+              <Spinner size={14} color={C.accent} />
+              <Text style={styles.txMuted}>{t('reviews.translating')}</Text>
+            </View>
+          ) : tx.error ? (
+            <View style={styles.txInline}>
+              <Text style={styles.txError}>{t('reviews.translateFailed')}</Text>
+              <Text style={styles.dot}>·</Text>
+              <Pressable onPress={tx.retry} hitSlop={6}>
+                <Text style={styles.txLink}>{t('reviews.retry')}</Text>
+              </Pressable>
+            </View>
+          ) : tx.showingTranslated ? (
+            <View style={styles.txInline}>
+              <Text style={styles.txMuted}>{t('reviews.translatedFrom', { lang: langName })}</Text>
+              <Text style={styles.dot}>·</Text>
+              <Pressable onPress={tx.showOriginal} hitSlop={6}>
+                <Text style={styles.txLink}>{t('reviews.showOriginal')}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.txInline} onPress={tx.translate} hitSlop={6}>
+              <IconGlobe size={14} color={C.accent} />
+              <Text style={styles.txLink}>{t('reviews.translate')}</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
     </View>
@@ -227,6 +253,11 @@ const styles = StyleSheet.create({
   rankText: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2 },
   reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
   reviewBodyKo: { fontFamily: font.ko },
-  transNote: { fontFamily: font.body, fontSize: 11.5, color: C.accent },
+  txRow: { flexDirection: 'row', alignItems: 'center' },
+  txInline: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  txLink: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.accent },
+  txMuted: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
+  txError: { fontFamily: font.body, fontSize: 12, color: C.riskDanger },
+  dot: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
 });
