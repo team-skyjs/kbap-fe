@@ -77,6 +77,7 @@ export type StickyHeaderProps = {
   hidden: SharedValue<number>;
   mode?: 'brand' | 'back';
   title?: string;
+  titleKo?: string; // optional bilingual KO subtitle rendered beside the title
   search?: boolean;
   bell?: boolean;
   bellDot?: boolean;
@@ -91,6 +92,7 @@ export function StickyHeader({
   hidden,
   mode = 'brand',
   title,
+  titleKo,
   search,
   bell,
   bellDot,
@@ -124,9 +126,16 @@ export function StickyHeader({
         )}
 
         {title != null && (
-          <Text numberOfLines={1} style={styles.title}>
-            {title}
-          </Text>
+          <View style={styles.titleWrap} pointerEvents="none">
+            <Text numberOfLines={1} style={styles.title}>
+              {title}
+            </Text>
+            {titleKo != null && (
+              <Text numberOfLines={1} style={styles.titleKo}>
+                {titleKo}
+              </Text>
+            )}
+          </View>
         )}
 
         <View style={styles.actions}>
@@ -178,15 +187,22 @@ const styles = StyleSheet.create({
   },
   markText: { color: '#fff', fontFamily: font.display, fontSize: 21, lineHeight: 24 },
   word: { fontFamily: font.display, fontSize: 22, color: C.primary, letterSpacing: -0.2 },
-  title: {
+  titleWrap: {
     position: 'absolute',
     left: 52,
     right: 52,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  title: {
     textAlign: 'center',
     fontFamily: font.display,
     fontSize: 18,
     color: C.ink,
   },
+  titleKo: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   iconBtn: {
     width: 40,

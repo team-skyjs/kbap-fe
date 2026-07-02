@@ -109,9 +109,12 @@
   TIERS SSOT(`lib/ranking.ts`, 7등급 0/30/80/180/350/600/1000 + 웜 컬러 램프 + 가중치 10/5/2), i18n `ranking.*`(tier EN/KO 병기).
   medal/medallion은 SVG 로컬 컴포넌트(scallop disc+ribbon+cream inner, 이모지 0). 프로필 랭킹 카드 탭 → 진입 연결.
   tsc 0 · jest 17/17 · web 목업 대조(히어로/게이지/내역/사다리/CTA 전부 렌더 확인).
-  - ❓ 편차 1건: 상단 sticky 헤더는 **"My Ranking"(EN 단일)**로 뒀음. §15는 "My Ranking / 내 랭킹" 이중언어인데,
-    공유 헤더(§6, 1개 컴포넌트) title 슬롯이 단일 폰트(Baloo, 한글 미포함→폴백)라 헤더에 한글 섞으면 렌더 불일치 우려.
-    이중언어는 히어로(EN 큰 등급명 + 탐험가·LEVEL 3)에서 이미 제공. 헤더도 이중언어로 원하면 헤더 컴포넌트에 KO 서브라인 슬롯 추가 필요 — 알려주세요.
+- [x] **원본 대조 수정(2차)**: DesignSync로 `my-ranking.jsx`+`My Ranking.html` 실제 원본을 읽어 1:1 정합.
+  - 사다리: 순서 정순(입문자 lv1 위→뼛속까지 한국인 lv7 아래, 이전엔 역순이었음), 노드=단순 원형 medallion(스캘럽X, 히어로만 starburst),
+    2-세그먼트 트레일(현재까지 solid·이후 muted), 우측 라벨 done="✓ Done"/current="{at}+ pts"/locked="🔒 {at} pts", 섹션명 "All ranks / 전체 등급".
+  - KO 등급명 원본대로(입문자/맛보기/탐험가/단골/미식가/한식 고수/뼛속까지 한국인), 컬러 램프 TIER_COLOR 일치.
+  - 히어로 엠블럼=starburst 메달(주황 그라데이션+흰 숫자+리본+sheen), 게이지 "단골까지" KO 서브+눈금 "N pts"(+ 제거),
+    내역 detail 몬스페이스 "N reviews × 10 pts", 이중언어 헤더(StickyHeader에 `titleKo` 옵셔널 슬롯 추가 — 컴포넌트 1개 유지).
   - ❓ CTA "Write a review" 라우트: 특정 음식 없이 리뷰 작성 진입점이 없어 **음식 탭(`/food`)**으로 보냄(음식 고른 뒤 리뷰). 스캔은 `/scan`. 의도와 다르면 알려주세요.
 
 ## ❓ 결정 필요 (사용자에게 질문)
