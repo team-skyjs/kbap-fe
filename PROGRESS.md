@@ -125,12 +125,20 @@
 - [x] ④전환 UI(52289f4, T070): `LanguagePicker`(9개 endonym 모달, 활성 체크) + 프로필 언어 행 연결(기존 no-op 수정).
 - [x] ⑤검증(web): ja/th/ru 전환 — 두부 0(제목/큰 숫자 포함), place=ko 악센트(내 랭킹/탐험가/단골까지/점수 내역/리뷰/음식 다양성/스캔/전체 등급) 한국어 유지, 러시아어 장문 레이아웃 OK, 풀 리로드 후 언어 유지(영속) 확인. tsc 0.
 
+### 브랜드 자산 리프레시 + 통합 재빌드 — 진행
+- [x] onboarding i18n 갭 수정: 다중 줄 `react-native` import라 T071 코드모드가 놓쳤던 `Text`를 `Txt`로 교체(전 파일 raw Text 0 확인).
+- [x] 네이티브 브랜드(6d9cfdf, 재빌드 필요): app.json — 잘못된 `ios.icon` 경로 삭제(→ 최상위 icon 폴백), android adaptiveIcon bg #E2580C, expo-splash-screen 루트 image(양 플랫폼)+#E2580C+imageWidth 230 contain. 새 아이콘/스플래시/파비콘 PNG + kbowl.svg.
+- [x] 인앱 로고(57fc940, JS/OTA): `Brand.tsx`(KbowlMark/BrandTile/BrandLockup — 오렌지 radial 타일+흰 마크+"K-Bap" teal 하이픈). StickyHeader·온보딩 적용. web 렌더 확인.
+- [~] 통합 dev 빌드 실행: iOS build `a2a0ab78` (fingerprint `dee1ba23`). https://expo.dev/accounts/rocher/projects/kbap/builds/a2a0ab78-2336-4d87-9b6b-7a1e90ffb4e7
+  - 이 빌드 하나로 (1) 브랜드 아이콘/스플래시(네이티브) + (2) AsyncStorage 언어영속(신규 네이티브 모듈) + (3) 인앱 로고·폰트·번역(번들 포함) 전부 활성. 이후 JS 변경만 OTA.
+
 ## ❓ i18n 후속/갭 (사용자 결정)
 - **네이티브 감수 필요**: 8개 비-en 번들은 기계번역(각 `_meta.status="machine translation — pending native review"`). 서브에이전트가 flag한 애매 키(예: tier 등급명 축약, "Shrimp paste" 현지어, "Spike"/"Metro" 개발용어)는 감수 시 확인.
 - **알레르기/제한 라벨·국가명 미번역**: `lib/onboarding/data.ts`의 allergen 라벨("Shellfish" 등)·그룹명·국가명은 아직 영어. 파일 주석대로 "서버 구동 카탈로그로 대체 예정"인 **도메인 데이터**로 간주(음식명 미번역과 동일 논리)라 이번 범위서 제외. 지금 i18n화 원하면 알려주세요(9개 언어 ~30키 추가 번역 필요).
-- **AsyncStorage = 신규 네이티브 모듈** → fingerprint 변경. 폰트·번역 자체는 OTA 가능하지만 **언어 영속(AsyncStorage)은 dev build 재빌드 후에야 기기에서 동작**. (원하면 영속만 expo-file-system(기존 네이티브 의존)으로 바꿔 OTA-호환 유지 가능.)
+- [x] **AsyncStorage 재빌드**: 유지 확정(사용자). 브랜드 재빌드(build `a2a0ab78`)에 통합 → 설치 후 언어 영속 동작. (expo-file-system 대체안은 불필요로 폐기.)
 - **번들 크기**: CJK/Thai 폰트 전 weight가 번들에 포함(런타임 로드만 온디맨드). 프로덕션은 서브셋/지연로드 권장 — fast-follow.
-- ⚠️ 무관 변경 감지: `assets/images/*.png` 6개가 수정됨 + `assets/images/kbowl.svg` 미추적. 내 작업 아님 → 건드리지 않고 남겨둠. 확인 요망.
+- [x] `assets/images/*.png` + `kbowl.svg`: 브랜드 자산 교체분(무관 변경 아님) — 커밋 6d9cfdf에 포함 완료.
+- iOS 아이콘 알파: App Store는 투명 채널 거부. Expo 빌드가 배경색으로 평탄화하지만, 빌드 산출 아이콘에 투명 픽셀 없는지 설치 후 확인 권장.
 
 ## ❓ 결정 필요 (사용자에게 질문)
 - BE 스캔이 현재 mock(itemId 순환). 실제 카탈로그 매칭/개인화 위험도 탑재 후 false-safe 재테스트 필요(§13-6).
