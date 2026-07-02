@@ -115,7 +115,22 @@
   - KO 등급명 원본대로(입문자/맛보기/탐험가/단골/미식가/한식 고수/뼛속까지 한국인), 컬러 램프 TIER_COLOR 일치.
   - 히어로 엠블럼=starburst 메달(주황 그라데이션+흰 숫자+리본+sheen), 게이지 "단골까지" KO 서브+눈금 "N pts"(+ 제거),
     내역 detail 몬스페이스 "N reviews × 10 pts", 이중언어 헤더(StickyHeader에 `titleKo` 옵셔널 슬롯 추가 — 컴포넌트 1개 유지).
-  - ❓ CTA "Write a review" 라우트: 특정 음식 없이 리뷰 작성 진입점이 없어 **음식 탭(`/food`)**으로 보냄(음식 고른 뒤 리뷰). 스캔은 `/scan`. 의도와 다르면 알려주세요.
+  - [x] CTA "Write a review" 라우트: **음식 탭(`/food`) 유지 확정**(사용자 승인). 특정 음식 없이 리뷰 불가 → /food 탐색 진입. 스캔 히스토리 생기면 "최근 먹은 음식 리뷰" 바로가기 fast-follow.
+  - [x] 헤더 이중언어: StickyHeader에 옵셔널 `titleKo` 슬롯 추가 → "My Ranking / 내 랭킹" 병기(컴포넌트 1개 유지). 원본 대조 2차에서 반영됨.
+
+### i18n 9개 언어 + 다중 스크립트 폰트 + 언어 전환 (T070/T071) — 완료
+- [x] ①감사+en(ed5a2d7): 전 화면 하드코딩 감사(위반 4건만: scan stage, profile 'English', ranking 접미사, SearchOverlay 최근검색) 전부 i18n화. `lib/i18n/languages.ts`(9개 언어·endonym·resolveLang). en=SSOT.
+- [x] ②8개 번들(fcf256e): zh-Hans/zh-Hant/ja/vi/id/th/ru/es 기계번역(각 `_meta.status`). 검증 스크립트로 키 286개 정합·placeholder·배열·한국어 악센트 유지 전부 통과. 9개 리소스 등록.
+- [x] ③폰트(fae48bd, T071): `fonts.ts`(스크립트별 FontSet+remapFamily) · `useScriptFonts`(비라틴 온디맨드 로드) · `Txt`(렌더 시 라틴 폰트→활성 스크립트 재매핑, `Text`로 aliased 스왑) · `LocaleProvider`(기기 로케일 감지+en 폴백, AsyncStorage 영속, i18next 라이브 전환, 활성 스크립트 제공). CJK→Noto SC/TC/JP, Thai→Noto Thai, ru(키릴)→Nunito(Baloo는 키릴 미포함).
+- [x] ④전환 UI(52289f4, T070): `LanguagePicker`(9개 endonym 모달, 활성 체크) + 프로필 언어 행 연결(기존 no-op 수정).
+- [x] ⑤검증(web): ja/th/ru 전환 — 두부 0(제목/큰 숫자 포함), place=ko 악센트(내 랭킹/탐험가/단골까지/점수 내역/리뷰/음식 다양성/스캔/전체 등급) 한국어 유지, 러시아어 장문 레이아웃 OK, 풀 리로드 후 언어 유지(영속) 확인. tsc 0.
+
+## ❓ i18n 후속/갭 (사용자 결정)
+- **네이티브 감수 필요**: 8개 비-en 번들은 기계번역(각 `_meta.status="machine translation — pending native review"`). 서브에이전트가 flag한 애매 키(예: tier 등급명 축약, "Shrimp paste" 현지어, "Spike"/"Metro" 개발용어)는 감수 시 확인.
+- **알레르기/제한 라벨·국가명 미번역**: `lib/onboarding/data.ts`의 allergen 라벨("Shellfish" 등)·그룹명·국가명은 아직 영어. 파일 주석대로 "서버 구동 카탈로그로 대체 예정"인 **도메인 데이터**로 간주(음식명 미번역과 동일 논리)라 이번 범위서 제외. 지금 i18n화 원하면 알려주세요(9개 언어 ~30키 추가 번역 필요).
+- **AsyncStorage = 신규 네이티브 모듈** → fingerprint 변경. 폰트·번역 자체는 OTA 가능하지만 **언어 영속(AsyncStorage)은 dev build 재빌드 후에야 기기에서 동작**. (원하면 영속만 expo-file-system(기존 네이티브 의존)으로 바꿔 OTA-호환 유지 가능.)
+- **번들 크기**: CJK/Thai 폰트 전 weight가 번들에 포함(런타임 로드만 온디맨드). 프로덕션은 서브셋/지연로드 권장 — fast-follow.
+- ⚠️ 무관 변경 감지: `assets/images/*.png` 6개가 수정됨 + `assets/images/kbowl.svg` 미추적. 내 작업 아님 → 건드리지 않고 남겨둠. 확인 요망.
 
 ## ❓ 결정 필요 (사용자에게 질문)
 - BE 스캔이 현재 mock(itemId 순환). 실제 카탈로그 매칭/개인화 위험도 탑재 후 false-safe 재테스트 필요(§13-6).
