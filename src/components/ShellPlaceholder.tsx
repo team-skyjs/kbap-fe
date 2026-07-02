@@ -3,7 +3,8 @@
  * (mockup B1 `.ph-body`). Real screen content replaces this per-tab later.
  */
 import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius } from '@/lib/theme';
 

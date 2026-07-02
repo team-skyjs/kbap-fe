@@ -6,7 +6,8 @@
  *
  * No emoji (SVG), reader text i18n'd, risk colors fixed.
  */
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';

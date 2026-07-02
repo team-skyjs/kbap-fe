@@ -16,7 +16,8 @@
  *   <StickyHeader hidden={hidden} mode="brand" search bell />   // rendered AFTER the ScrollView
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import Animated, {
   Easing,
   Extrapolation,

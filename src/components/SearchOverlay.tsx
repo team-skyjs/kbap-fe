@@ -3,7 +3,8 @@
  * searches list. MVP ships static UI; live querying is wired with the Food screen.
  */
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';

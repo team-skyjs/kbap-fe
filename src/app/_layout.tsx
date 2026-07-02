@@ -19,6 +19,7 @@ import { I18nextProvider } from 'react-i18next';
 
 import { queryClient } from '@/lib/queryClient';
 import i18n from '@/lib/i18n';
+import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { color } from '@/lib/theme';
 
@@ -40,16 +41,18 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <I18nextProvider i18n={i18n}>
-            <StatusBar style="dark" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: color.surface },
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-            </Stack>
+            <LocaleProvider>
+              <StatusBar style="dark" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: color.surface },
+                }}
+              >
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+              </Stack>
+            </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

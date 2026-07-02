@@ -3,7 +3,8 @@
  * Tone tints the icon bubble. Buttons are optional; labels are i18n text.
  */
 import * as React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { color as C, font, riskTone } from '@/lib/theme';
 import { Btn } from './Btn';
 

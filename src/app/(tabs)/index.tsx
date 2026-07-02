@@ -7,7 +7,8 @@
  * No emoji (SVG), reader text i18n'd, risk colors fixed (Constitution).
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';

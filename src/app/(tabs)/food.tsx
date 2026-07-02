@@ -8,7 +8,8 @@
  * real filtering uses the /foods?category= param once live).
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';

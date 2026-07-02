@@ -3,7 +3,8 @@
  * Ported from hifi-g.css `.topbar` / mockup TopBar.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { color as C, font } from '@/lib/theme';
 import { IconArrowLeft } from './icons';
 

@@ -8,7 +8,8 @@
  * Scroll-aware back header (§6); no emoji; reader text i18n'd; risk colors fixed.
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';

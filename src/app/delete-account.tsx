@@ -6,7 +6,8 @@
  * Mock: confirming routes back to onboarding (account gone). No real DELETE /me.
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius } from '@/lib/theme';

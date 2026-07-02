@@ -5,7 +5,8 @@
  * Labels come from i18n via the consumer (passed in `labels`).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
 import {

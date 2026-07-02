@@ -3,7 +3,8 @@
  * Ported from hifi-g.css `.btn`. Label is i18n text passed by the caller.
  */
 import * as React from 'react';
-import { Pressable, Text, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
 
 export type BtnVariant = 'primary' | 'ghost' | 'off' | 'danger';

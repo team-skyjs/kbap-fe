@@ -3,7 +3,8 @@
  * comments and per-nationality feeds arrive in phase 2 (handoff §10).
  * Shows the shell placeholder dimmed behind a "coming soon" card.
  */
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ShellPlaceholder, Btn, IconLock } from '@/components';

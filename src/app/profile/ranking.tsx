@@ -8,7 +8,8 @@
  * All glyphs SVG (no emoji); hide-on-scroll header (§6).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Stop, Text as SvgText } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
