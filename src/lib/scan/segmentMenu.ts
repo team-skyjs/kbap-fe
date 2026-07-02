@@ -9,6 +9,7 @@
  * Filtering keeps every plausible Korean dish name (structural junk only).
  */
 import type { BoundingBox } from '@/lib/api/scanTypes';
+import type { RiskState } from '@/lib/theme';
 import { classifyLine, type LineType } from './classifyLine';
 
 export interface OcrLine {
@@ -22,6 +23,12 @@ export interface MenuDish {
   box: BoundingBox;
   price: string | null; // best-effort nearest price line
   latin: string | null; // best-effort nearest romanized name
+}
+
+/** A dish enriched with the BE risk verdict — what the result view renders. */
+export interface ResultDish extends MenuDish {
+  risk: RiskState;
+  reason: string | null;
 }
 
 export interface SegmentedMenu {

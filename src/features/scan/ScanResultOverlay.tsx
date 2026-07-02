@@ -1,27 +1,30 @@
 /**
- * ScanResultOverlay — draws risk verdicts over the captured menu image (§13-4 A).
- * Each on-device normalized box is mapped onto the displayed image rect
- * (contain-fit, letterbox-aware) and tinted by risk + a RiskMark + reason.
+ * ScanResultOverlay — T072 step4 (handoff §14-4). Draws risk-color MARKERS at each
+ * dish-name box over the captured image (not full boxes → robust to layout, low
+ * overlap). Tapping a marker opens the dish detail. `showMarkers=false` = Original.
  *
- * Risk color comes ONLY from the BE verdict (mapped in the adapter); we render
- * what we got — no client-side guessing.
+ * Risk color is already personalRisk()-guarded upstream (§14-3). Markers only
+ * exist for dish names, but unmatched names still get a marker (unable) — never
+ * hidden.
  */
 import * as React from 'react';
-import { Image, LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
-import { color as C, font, riskTone } from '@/lib/theme';
+import { Image, LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import { riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
-import type { ScanOverlayItem } from '@/lib/api/scanAdapter';
+import type { ResultDish } from '@/lib/scan/segmentMenu';
 
 type Photo = { uri: string; width: number; height: number } | null;
 
 export function ScanResultOverlay({
   photo,
-  items,
-  showResult,
+  dishes,
+  showMarkers,
+  onTapDish,
 }: {
   photo: Photo;
-  items: ScanOverlayItem[];
-  showResult: boolean;
+  dishes: ResultDish[];
+  showMarkers: boolean;
+  onTapDish: (dish: ResultDish) => void;
 }) {
   const [size, setSize] = React.useState({ w: 0, h: 0 });
   const onLayout = (e: LayoutChangeEvent) => {
@@ -52,69 +55,44 @@ export function ScanResultOverlay({
         <View style={[StyleSheet.absoluteFill, styles.paper]} />
       )}
 
-      {showResult &&
+      {showMarkers &&
         rect.w > 0 &&
-        items.map((it) => {
-          const tone = riskTone[it.risk];
-          const left = rect.x + it.box.x * rect.w;
-          const top = rect.y + it.box.y * rect.h;
-          const width = Math.max(it.box.width * rect.w, 44);
-          const height = Math.max(it.box.height * rect.h, 26);
+        dishes.map((d) => {
+          const tone = riskTone[d.risk];
+          // anchor the marker at the dish-name box center
+          const cx = rect.x + (d.box.x + d.box.width / 2) * rect.w;
+          const cy = rect.y + (d.box.y + d.box.height / 2) * rect.h;
           return (
-            <View key={it.itemId} pointerEvents="none">
-              <View
-                style={[
-                  styles.box,
-                  { left, top, width, height, borderColor: tone.fg, backgroundColor: hexA(tone.fg, 0.16) },
-                ]}
-              />
-              <View style={[styles.chip, { left, top: top - 2 }]}>
-                <RiskMark state={it.risk} size={16} />
-                <View style={{ flexShrink: 1 }}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {it.rawMenuName}
-                  </Text>
-                  {!!it.reason && (
-                    <Text style={[styles.reason, { color: tone.fg }]} numberOfLines={1}>
-                      {it.reason}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </View>
+            <Pressable
+              key={d.itemId}
+              onPress={() => onTapDish(d)}
+              style={[styles.marker, { left: cx - 16, top: cy - 16, borderColor: tone.fg }]}
+            >
+              <RiskMark state={d.risk} size={22} />
+            </Pressable>
           );
         })}
     </View>
   );
 }
 
-/** color + alpha → rgba string (tone.fg are hex). */
-function hexA(hex: string, a: number) {
-  const n = parseInt(hex.replace('#', ''), 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${a})`;
-}
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#16110d' },
   paper: { backgroundColor: '#241b14' },
-  box: { position: 'absolute', borderWidth: 2, borderRadius: 6 },
-  chip: {
+  marker: {
     position: 'absolute',
-    flexDirection: 'row',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderWidth: 2,
     alignItems: 'center',
-    gap: 6,
-    maxWidth: 240,
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    borderRadius: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    transform: [{ translateY: -26 }],
+    justifyContent: 'center',
+    // subtle lift so markers read over busy photos
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-  name: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink },
-  reason: { fontFamily: font.body, fontSize: 10.5 },
 });
-
-export default ScanResultOverlay;
