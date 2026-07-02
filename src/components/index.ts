@@ -5,7 +5,7 @@ export { Stars, Star } from './Stars';
 export { Flag } from './Flag';
 export { Rosette } from './Rosette';
 export { Btn, type BtnVariant } from './Btn';
-export { StickyHeader, useStickyScroll, type StickyHeaderProps } from './StickyHeader';
+export { StickyHeader, useStickyScroll, useHeaderHeight, type StickyHeaderProps } from './StickyHeader';
 export { SubHeader } from './SubHeader';
 export { TabBar, type TabKey, type TabBarLabels } from './TabBar';
 export { TopBar } from './TopBar';

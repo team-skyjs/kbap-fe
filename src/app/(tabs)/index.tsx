@@ -16,6 +16,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
+  useHeaderHeight,
   SearchOverlay,
   NotificationsPanel,
   SkeletonList,
@@ -54,7 +55,8 @@ const CATEGORIES: { key: string; Icon: (p: IconProps) => React.JSX.Element }[] =
 export default function Home() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { scrollY, onScroll } = useStickyScroll();
+  const { onScroll, hidden } = useStickyScroll();
+  const headerH = useHeaderHeight();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -71,20 +73,11 @@ export default function Home() {
 
   return (
     <View style={styles.root}>
-      <StickyHeader
-        scrollY={scrollY}
-        mode="brand"
-        search
-        bell
-        bellDot
-        onSearch={() => setSearchOpen(true)}
-        onBell={() => setNotifOpen(true)}
-      />
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         {isLoading ? (
           <SkeletonList />
@@ -216,6 +209,15 @@ export default function Home() {
         )}
       </Animated.ScrollView>
 
+      <StickyHeader
+        hidden={hidden}
+        mode="brand"
+        search
+        bell
+        bellDot
+        onSearch={() => setSearchOpen(true)}
+        onBell={() => setNotifOpen(true)}
+      />
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
     </View>

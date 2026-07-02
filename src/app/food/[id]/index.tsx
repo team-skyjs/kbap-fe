@@ -16,6 +16,7 @@ import { color as C, font, radius, shadow, riskTone, type RiskState } from '@/li
 import {
   StickyHeader,
   useStickyScroll,
+  useHeaderHeight,
   RiskMark,
   Stars,
   Star,
@@ -37,19 +38,19 @@ export default function FoodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { scrollY, onScroll } = useStickyScroll();
+  const { onScroll, hidden } = useStickyScroll();
+  const headerH = useHeaderHeight();
 
   const { data: food, isLoading } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
 
   return (
     <View style={styles.root}>
-      <StickyHeader scrollY={scrollY} mode="back" title={t('detail.headerTitle')} bookmark onBack={() => router.back()} />
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
       >
         {!isLoading && food && (
           <View style={styles.body}>
@@ -74,6 +75,8 @@ export default function FoodDetailScreen() {
           </View>
         )}
       </Animated.ScrollView>
+
+      <StickyHeader hidden={hidden} mode="back" title={t('detail.headerTitle')} bookmark onBack={() => router.back()} />
     </View>
   );
 }

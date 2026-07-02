@@ -1,57 +1,82 @@
 /**
- * StickyHeader — the ONE shared scroll-aware header (handoff §6).
+ * StickyHeader — the ONE shared hide-on-scroll header (handoff §6, Blind pattern).
  *
- * Pinned by LAYOUT, not absolute positioning: render it as the first child ABOVE
- * the screen's Animated.ScrollView. A flex sibling above a flex:1 ScrollView can
- * never scroll away (immune to Fabric/absolute z-order quirks that broke the
- * previous absolute-overlay on device). Content flows BELOW it (§6).
- *
- * Scroll-aware (reanimated scrollY, UI thread): a bottom hairline + shadow fade
- * in as you scroll, and an optional iOS-style large title collapses while the
- * compact title fades into the bar.
+ * Overlay-fixed at the top (absolute); content flows beneath (screens pad content
+ * by useHeaderHeight()). Scroll DOWN → header slides up and hides; scroll UP →
+ * shows immediately; at the very top it's always shown. Driven by a reanimated
+ * `hidden` value (0 shown → 1 hidden) via transform: translateY + withTiming.
+ * A small delta threshold prevents jitter. Compact only (no large-title collapse):
+ * always solid background + bottom hairline/shadow while visible.
  *
  * Usage:
- *   const { scrollY, onScroll } = useStickyScroll();
- *   return (
- *     <View style={{ flex: 1 }}>
- *       <StickyHeader scrollY={scrollY} mode="brand" largeTitle="K-Bap" search bell />
- *       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16}>…</Animated.ScrollView>
- *     </View>
- *   );
+ *   const { onScroll, hidden } = useStickyScroll();
+ *   const headerH = useHeaderHeight();
+ *   <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16}
+ *     contentContainerStyle={{ paddingTop: headerH }} />
+ *   <StickyHeader hidden={hidden} mode="brand" search bell />   // rendered AFTER the ScrollView
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  Easing,
   Extrapolation,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, shadow } from '@/lib/theme';
 import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
 
-const BAR_H = 48; // top row height (icon buttons)
-const LARGE_H = 46; // expanded large-title row height
-const COLLAPSE = 56; // scroll distance for full large-title collapse
+const BAR_H = 48;
+const TOP_PAD = 8;
+const BOT_PAD = 6;
+const DELTA = 7; // §6: 6~8px jitter threshold
+const TOP_ALWAYS = 8; // within this of the top → always shown
+const TIMING = { duration: 200, easing: Easing.out(Easing.quad) };
+
+export function headerHeight(topInset: number) {
+  return topInset + TOP_PAD + BAR_H + BOT_PAD;
+}
+export function useHeaderHeight() {
+  return headerHeight(useSafeAreaInsets().top);
+}
 
 export function useStickyScroll() {
-  const scrollY = useSharedValue(0);
+  const lastY = useSharedValue(0);
+  const shown = useSharedValue(1); // discrete target: 1 shown, 0 hidden
+  const hidden = useSharedValue(0); // animated: 0 shown → 1 hidden
   const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.value = e.contentOffset.y;
+    const y = Math.max(0, e.contentOffset.y);
+    const dy = y - lastY.value;
+    if (y < TOP_ALWAYS) {
+      if (shown.value !== 1) {
+        shown.value = 1;
+        hidden.value = withTiming(0, TIMING);
+      }
+    } else if (dy > DELTA) {
+      if (shown.value !== 0) {
+        shown.value = 0;
+        hidden.value = withTiming(1, TIMING);
+      }
+    } else if (dy < -DELTA) {
+      if (shown.value !== 1) {
+        shown.value = 1;
+        hidden.value = withTiming(0, TIMING);
+      }
+    }
+    lastY.value = y;
   });
-  return { scrollY, onScroll };
+  return { onScroll, hidden };
 }
 
 export type StickyHeaderProps = {
-  scrollY: SharedValue<number>;
+  hidden: SharedValue<number>;
   mode?: 'brand' | 'back';
-  /** Compact title shown in the bar (back mode) or when large title collapses. */
   title?: string;
-  /** Optional iOS-style large title that collapses on scroll. */
-  largeTitle?: string;
   search?: boolean;
   bell?: boolean;
   bellDot?: boolean;
@@ -63,10 +88,9 @@ export type StickyHeaderProps = {
 };
 
 export function StickyHeader({
-  scrollY,
+  hidden,
   mode = 'brand',
   title,
-  largeTitle,
   search,
   bell,
   bellDot,
@@ -77,29 +101,14 @@ export function StickyHeader({
   onBookmark,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
+  const H = headerHeight(insets.top);
 
-  // shadow + hairline fade in once scrolled (the "lifted header" cue)
-  const liftStyle = useAnimatedStyle(() => ({
-    shadowOpacity: interpolate(scrollY.value, [4, 40], [0, 0.12], Extrapolation.CLAMP),
+  const slide = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(hidden.value, [0, 1], [0, -H], Extrapolation.CLAMP) }],
   }));
-  const hairlineStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [8, 40], [0, 1], Extrapolation.CLAMP),
-  }));
-  const compactTitleStyle = useAnimatedStyle(() => {
-    const from = largeTitle ? COLLAPSE * 0.55 : 0;
-    const to = largeTitle ? COLLAPSE : 1;
-    return { opacity: interpolate(scrollY.value, [from, to], [largeTitle ? 0 : 1, 1], Extrapolation.CLAMP) };
-  });
-  const largeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, COLLAPSE * 0.7], [1, 0], Extrapolation.CLAMP),
-    height: interpolate(scrollY.value, [0, COLLAPSE], [LARGE_H, 0], Extrapolation.CLAMP),
-    transform: [{ translateY: interpolate(scrollY.value, [0, COLLAPSE], [0, -8], Extrapolation.CLAMP) }],
-  }));
-
-  const compactTitle = title ?? largeTitle;
 
   return (
-    <Animated.View style={[styles.root, { paddingTop: insets.top + 8 }, liftStyle]}>
+    <Animated.View style={[styles.root, { height: H, paddingTop: insets.top + TOP_PAD }, slide]}>
       <View style={styles.bar}>
         {mode === 'back' ? (
           <Pressable style={styles.iconBtn} onPress={onBack} hitSlop={8}>
@@ -114,13 +123,10 @@ export function StickyHeader({
           </View>
         )}
 
-        {compactTitle != null && (
-          <Animated.Text
-            numberOfLines={1}
-            style={[mode === 'back' ? styles.backTitle : styles.compactTitle, compactTitleStyle]}
-          >
-            {compactTitle}
-          </Animated.Text>
+        {title != null && (
+          <Text numberOfLines={1} style={styles.title}>
+            {title}
+          </Text>
         )}
 
         <View style={styles.actions}>
@@ -144,30 +150,21 @@ export function StickyHeader({
         </View>
       </View>
 
-      {largeTitle != null && (
-        <Animated.View style={[styles.largeWrap, largeStyle]}>
-          <Text numberOfLines={1} style={styles.largeTitle}>
-            {largeTitle}
-          </Text>
-        </Animated.View>
-      )}
-
-      <Animated.View style={[styles.hairline, hairlineStyle]} />
+      <View style={styles.hairline} />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    // pinned by layout (first child above the ScrollView), NOT absolute
-    zIndex: 2,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     paddingHorizontal: 16,
-    paddingBottom: 4,
-    backgroundColor: C.surface,
-    // shadow: shadowOpacity is animated in (liftStyle); Android elevation static-low
-    shadowColor: '#14181f',
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: C.surface, // always solid while visible (§6)
+    ...shadow.sh1, // always a subtle bottom shadow (--sh-1)
   },
   bar: { height: BAR_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -181,6 +178,15 @@ const styles = StyleSheet.create({
   },
   markText: { color: '#fff', fontFamily: font.display, fontSize: 21, lineHeight: 24 },
   word: { fontFamily: font.display, fontSize: 22, color: C.primary, letterSpacing: -0.2 },
+  title: {
+    position: 'absolute',
+    left: 52,
+    right: 52,
+    textAlign: 'center',
+    fontFamily: font.display,
+    fontSize: 18,
+    color: C.ink,
+  },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   iconBtn: {
     width: 40,
@@ -203,26 +209,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.card,
   },
-  backTitle: {
-    position: 'absolute',
-    left: 52,
-    right: 52,
-    textAlign: 'center',
-    fontFamily: font.display,
-    fontSize: 18,
-    color: C.ink,
-  },
-  compactTitle: {
-    position: 'absolute',
-    left: 64,
-    right: 64,
-    textAlign: 'center',
-    fontFamily: font.display,
-    fontSize: 17,
-    color: C.ink,
-  },
-  largeWrap: { justifyContent: 'flex-end', paddingBottom: 6, overflow: 'hidden' },
-  largeTitle: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.5 },
   hairline: {
     position: 'absolute',
     left: 0,

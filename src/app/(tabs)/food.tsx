@@ -16,6 +16,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
+  useHeaderHeight,
   SearchOverlay,
   SkeletonList,
   RiskMark,
@@ -32,7 +33,8 @@ const CATEGORY_KEYS = ['all', 'stews', 'rice', 'noodles', 'bbq', 'street', 'side
 export default function Food() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { scrollY, onScroll } = useStickyScroll();
+  const { onScroll, hidden } = useStickyScroll();
+  const headerH = useHeaderHeight();
   const [searchOpen, setSearchOpen] = useState(false);
   const [category, setCategory] = useState('all');
 
@@ -43,12 +45,11 @@ export default function Food() {
 
   return (
     <View style={styles.root}>
-      <StickyHeader scrollY={scrollY} mode="brand" bell />
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         <View style={styles.body}>
           <View style={styles.greet}>
@@ -91,6 +92,7 @@ export default function Food() {
         </View>
       </Animated.ScrollView>
 
+      <StickyHeader hidden={hidden} mode="brand" bell />
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </View>
   );

@@ -70,11 +70,10 @@
 > 미구현: 9개 다국어 i18n(영어만). menuName vs id 리컨실은 BE 회의 대기(방향: BE가 foodId 실어주고 [id] 유지).
 
 
-## 🐛 sticky 헤더 네이티브 버그 수정 (진행중 — 사용자 sim 확정 대기)
-- 증상: 실기기/네이티브에서 스크롤 시 헤더가 안 고정되고 위로 사라짐(웹은 통과).
-- 근본원인 가설: StickyHeader가 `position:absolute` 형제 오버레이 → Fabric(신아키)에서 ScrollView 레이어 합성 시 pin 어긋남. 웹은 CSS라 항상 pin(웹만 통과한 이유).
-- 수정: 공유 StickyHeader를 **absolute → flex 고정**(ScrollView 위 실제 레이아웃 요소)으로 전환. 레이아웃상 스크롤에 물리적으로 안 쓸려감. scroll-aware(hairline/그림자 페이드인+large-title 축약)은 reanimated 유지. 5개 화면(홈·음식·프로필·디테일·리뷰) 헤더를 ScrollView 위로 이동 + paddingTop 제거. tsc 0, tests 17/17, web 회귀 OK.
-- ⚠️ 네이티브 최종확정: iOS 시뮬 빌드가 Xcode26/iOS26 `-destination` 이슈로 막힘 → 사용자 sim(8082 Metro reload)에서 확정 예정. (웹만으로 완료 처리 안 함.)
+## ✅ 헤더 = hide-on-scroll (Blind 패턴, §6 갱신 d63068e)
+- 스펙 해석차였음(버그 아님): §6이 "always-pinned"→"hide-on-scroll"로 정식 변경됨.
+- 공유 StickyHeader: absolute 오버레이 + reanimated `translateY`(withTiming). 내림→숨김/올림→표시, 맨위(scrollY<8) 항상표시, 방향+delta threshold 7px, discrete `shown` 상태로 상태변화시에만 애니메이션(떨림방지). large-title 제거, 항상 solid+hairline/그림자(sh-1) 컴팩트. `useStickyScroll`→{onScroll,hidden}, `useHeaderHeight`로 콘텐츠 paddingTop.
+- 5개 화면(홈·음식·프로필·디테일·리뷰) 공유 헤더로 적용. tsc0/tests17. web 검증(내림숨김/올림표시/맨위표시). 실기기 최종확인은 사용자.
 
 ## OTA (EAS Update) — 밖에서 폰만으로 최신 화면 확인
 - [x] OTA 1회 설정: `eas update:configure` → expo-updates 설치, updates.url, eas.json 채널(development).

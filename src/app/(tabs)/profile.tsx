@@ -13,6 +13,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
+  useHeaderHeight,
   Rosette,
   Flag,
   RiskDot,
@@ -37,7 +38,8 @@ import type { FoodCard, Review } from '@/lib/api/types';
 export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { scrollY, onScroll } = useStickyScroll();
+  const { onScroll, hidden } = useStickyScroll();
+  const headerH = useHeaderHeight();
 
   const { data: me } = useMe();
   const { data: reviews } = useMyReviews();
@@ -48,12 +50,11 @@ export default function Profile() {
 
   return (
     <View style={styles.root}>
-      <StickyHeader scrollY={scrollY} mode="brand" bell />
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         {me && (
           <View style={styles.body}>
@@ -168,6 +169,8 @@ export default function Profile() {
           </View>
         )}
       </Animated.ScrollView>
+
+      <StickyHeader hidden={hidden} mode="brand" bell />
     </View>
   );
 }
