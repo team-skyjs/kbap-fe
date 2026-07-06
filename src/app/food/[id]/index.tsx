@@ -42,7 +42,7 @@ export default function FoodDetailScreen() {
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
 
-  const { data: food, isLoading } = useFoodDetail(id ?? '');
+  const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
 
   return (
@@ -53,6 +53,17 @@ export default function FoodDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
       >
+        {error && !food && (
+          <View style={styles.errorState}>
+            <RiskMark state="unable" size={44} />
+            <Text style={styles.errorTitle}>{t('states.errorTitle')}</Text>
+            <Text style={styles.errorBody}>{(error as Error)?.message || t('states.errorBody')}</Text>
+            <View style={{ width: '100%', maxWidth: 260 }}>
+              <Btn onPress={() => refetch()}>{t('common.retry')}</Btn>
+            </View>
+          </View>
+        )}
+
         {!isLoading && food && (
           <View style={styles.body}>
             {food.isRegistered ? (
@@ -348,4 +359,8 @@ const styles = StyleSheet.create({
 
   disc: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, paddingTop: 14 },
   discText: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink2, lineHeight: 17 },
+
+  errorState: { alignItems: 'center', gap: 12, paddingHorizontal: 28, paddingTop: 48 },
+  errorTitle: { fontFamily: font.display, fontSize: 19, color: C.ink, textAlign: 'center' },
+  errorBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 4 },
 });
