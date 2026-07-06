@@ -61,7 +61,7 @@ export default function Onboarding() {
   const [email] = useState('you@email.com');
   const [otp, setOtp] = useState('');
   const [nickname, setNickname] = useState('');
-  const [nationality, setNationality] = useState(NATIONALITIES[0]);
+  const [nationality, setNationality] = useState<{ code: string; label: string }>(NATIONALITIES[0]);
   const [language, setLanguage] = useState(READER_LANGUAGES[0]);
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   const [spice, setSpice] = useState(5);

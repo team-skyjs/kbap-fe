@@ -18,7 +18,6 @@ import {
   useHeaderHeight,
   Rosette,
   Flag,
-  RiskDot,
   RiskMark,
   Stars,
   IconProfile,
@@ -33,7 +32,7 @@ import {
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { personalRisk } from '@/lib/risk';
-import { RANK_TIERS } from '@/lib/mocks/me';
+import { TIERS } from '@/lib/ranking';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -53,7 +52,7 @@ export default function Profile() {
   const { data: foods } = useFoods();
 
   const foodMap = new Map((foods ?? []).map((f) => [f.foodId, f]));
-  const curTier = me ? RANK_TIERS.indexOf(me.rank.tier) : 0;
+  const curLevel = me?.rank.level ?? 1;
 
   return (
     <View style={styles.root}>
@@ -82,68 +81,57 @@ export default function Profile() {
                   </View>
                 </View>
               </View>
-              <Pressable style={styles.edit} hitSlop={8}>
+              <Pressable style={styles.edit} hitSlop={8} onPress={() => router.push('/profile/edit' as Href)}>
                 <IconEdit size={18} color={C.ink2} />
               </Pressable>
             </View>
 
-            {/* ranking → tap opens the ranking-detail screen */}
+            {/* ranking → tap opens the ranking-detail screen (7-tier FR-025 data) */}
             <Section title={t('profile.rankingTitle')}>
               <Pressable style={styles.rank} onPress={() => router.push('/profile/ranking' as Href)}>
                 <View style={styles.rankTop}>
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                     <Rosette level={me.rank.level} size={42} />
                     <View>
-                      <Text style={styles.rankTier}>{me.rank.tier}</Text>
+                      <Text style={styles.rankTier}>{t(`ranking.tier.${me.rank.tier}`)}</Text>
                       <Text style={styles.tag}>{t('profile.levelPts', { level: me.rank.level, score: me.rank.score })}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     {me.rank.nextTier && me.rank.pointsToNext != null && (
                       <View style={styles.pill}>
-                        <Text style={styles.pillText}>{t('profile.toNext', { points: me.rank.pointsToNext, tier: me.rank.nextTier })}</Text>
+                        <Text style={styles.pillText}>{t('profile.toNext', { points: me.rank.pointsToNext, tier: t(`ranking.tier.${me.rank.nextTier}`) })}</Text>
                       </View>
                     )}
                     <IconChevron size={16} color={C.ink3} />
                   </View>
                 </View>
                 <View style={styles.rankProg}>
-                  {RANK_TIERS.map((_, i) => (
-                    <View key={i} style={[styles.rankSeg, i <= curTier && styles.rankSegOn]} />
-                  ))}
-                </View>
-                <View style={styles.rankTiers}>
-                  {RANK_TIERS.map((tn, i) => (
-                    <Text key={tn} style={[styles.rt, i === curTier && styles.rtOn]}>
-                      {tn}
-                    </Text>
+                  {TIERS.map((tier) => (
+                    <View key={tier.key} style={[styles.rankSeg, tier.level <= curLevel && styles.rankSegOn]} />
                   ))}
                 </View>
                 <Text style={styles.tag}>{t('profile.scoreNote')}</Text>
               </Pressable>
             </Section>
 
-            {/* dietary restrictions */}
+            {/* dietary restrictions — flat ingredient chips (no per-item risk color) */}
             <Section
               title={t('profile.restrictionsTitle')}
               action={
-                <Pressable style={styles.linkRow} hitSlop={8}>
+                <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/restrictions' as Href)}>
                   <IconEdit size={14} color={C.primary} />
                   <Text style={styles.link}>{t('profile.edit')}</Text>
                 </Pressable>
               }
             >
               <View style={styles.dietWrap}>
-                {me.restrictions.map((r) => {
-                  const danger = r.kind === 'allergy';
-                  return (
-                    <View key={r.code} style={[styles.dietChip, danger && styles.dietChipDanger]}>
-                      {danger ? <RiskDot state="danger" size={13} /> : <IconProfile size={13} color={C.ink2} />}
-                      <Text style={[styles.dietChipText, danger && styles.dietChipTextDanger]}>{restrictionLabel(r.code)}</Text>
-                    </View>
-                  );
-                })}
-                <Pressable style={styles.dietAdd} hitSlop={6}>
+                {me.restrictions.map((r) => (
+                  <View key={r.code} style={styles.dietChip}>
+                    <Text style={styles.dietChipText}>{restrictionLabel(r.code)}</Text>
+                  </View>
+                ))}
+                <Pressable style={styles.dietAdd} hitSlop={6} onPress={() => router.push('/profile/restrictions' as Href)}>
                   <IconPlus size={13} color={C.primary} />
                   <Text style={styles.dietAddText}>{t('profile.add')}</Text>
                 </Pressable>
