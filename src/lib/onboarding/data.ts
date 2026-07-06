@@ -9,6 +9,7 @@
  * (reader text in reader language). Codes stay stable/English.
  */
 import type { RestrictionKind } from '@/lib/api/types';
+import { ingredientLabel } from '@/lib/mocks/ingredients';
 
 export interface RestrictionOption {
   code: string;
@@ -111,14 +112,15 @@ export const SPICE_SCALE = [
   'Cheongyang overload',
 ];
 
-/** Nationality options (we have Flag glyphs for these codes). */
+/** Nationality options (we have Flag glyphs for these codes). `native` = endonym.
+ *  `suggested` marks the common picks shown first in the picker (I4). */
 export const NATIONALITIES = [
-  { code: 'US', label: 'United States' },
-  { code: 'JP', label: 'Japan' },
-  { code: 'TH', label: 'Thailand' },
-  { code: 'VN', label: 'Vietnam' },
-  { code: 'FR', label: 'France' },
-  { code: 'DE', label: 'Germany' },
+  { code: 'JP', label: 'Japan', native: '日本', suggested: true },
+  { code: 'US', label: 'United States', native: 'USA', suggested: true },
+  { code: 'TH', label: 'Thailand', native: 'ไทย', suggested: true },
+  { code: 'VN', label: 'Vietnam', native: 'Việt Nam', suggested: true },
+  { code: 'FR', label: 'France', native: 'France', suggested: false },
+  { code: 'DE', label: 'Germany', native: 'Deutschland', suggested: false },
 ];
 
 /** Reader-language options (display names; MVP ships English strings only). */
@@ -134,8 +136,10 @@ export const RESTRICTION_LABEL: Record<string, string> = Object.fromEntries(
   [...ALLERGEN_GROUPS, ...LIFESTYLE_GROUPS].flatMap((g) => g.items.map((it) => [it.code, it.label])),
 );
 
-/** Pretty label for a restriction code (falls back to the slug, title-cased). */
+/** Pretty label for a restriction code. Ingredient codes (KB-6 flat catalog)
+ *  resolve via the ingredient catalog; legacy grouped codes via the map. */
 export function restrictionLabel(code: string): string {
+  if (code.startsWith('ing:')) return ingredientLabel(code);
   if (RESTRICTION_LABEL[code]) return RESTRICTION_LABEL[code];
   const slug = code.includes(':') ? code.split(':')[1] : code;
   return slug.charAt(0).toUpperCase() + slug.slice(1);

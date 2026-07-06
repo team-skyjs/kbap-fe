@@ -46,6 +46,7 @@ export interface Ranking {
 
 export interface User {
   id: string;
+  email?: string; // from auth; read-only on the edit form
   nickname: string;
   nationality: string; // ISO 3166-1 alpha-2
   readerLanguage: string; // BCP-47

@@ -4,32 +4,38 @@
  */
 import type { Ranking, Review, User } from '../api/types';
 
-/** Fixed ranking ladder (UI domain). */
-export const RANK_TIERS = ['Rookie', 'Explorer', 'Regular', 'Foodie', 'Native'];
-
+/**
+ * Ranking summary reuses the 7-tier FR-025 model (same source as the ranking
+ * detail screen — see lib/ranking.ts + mocks/ranking.ts). tier is the stable key.
+ */
 export const MOCK_RANKING: Ranking = {
-  tier: 'Regular',
+  tier: 'explorer',
   level: 3,
-  score: 320,
-  nextTier: 'Foodie',
-  pointsToNext: 80,
+  score: 120,
+  nextTier: 'regular',
+  pointsToNext: 60,
 };
 
+/**
+ * restrictions are now a FLAT list of ingredient codes (KB-6 override, no
+ * category). `kind` is vestigial (kept for the contract type) — always 'allergy'.
+ */
 export const MOCK_USER: User = {
   id: 'u_001',
+  email: 'mina@kbap.app',
   nickname: 'Mina',
   nationality: 'US',
   readerLanguage: 'en',
   spiceTolerance: 6,
   restrictions: [
-    { kind: 'allergy', code: 'allergy:shellfish' },
-    { kind: 'allergy', code: 'allergy:shrimp' },
-    { kind: 'allergy', code: 'allergy:crab' },
-    { kind: 'allergy', code: 'allergy:peanut' },
-    { kind: 'allergy', code: 'allergy:egg' },
-    { kind: 'allergy', code: 'allergy:sesame' },
-    { kind: 'diet', code: 'diet:pescatarian' },
-    { kind: 'religion', code: 'religion:nopork' },
+    { kind: 'allergy', code: 'ing:shrimp' },
+    { kind: 'allergy', code: 'ing:crab' },
+    { kind: 'allergy', code: 'ing:shellfish' },
+    { kind: 'allergy', code: 'ing:peanut' },
+    { kind: 'allergy', code: 'ing:egg' },
+    { kind: 'allergy', code: 'ing:sesame' },
+    { kind: 'allergy', code: 'ing:pork' },
+    { kind: 'allergy', code: 'ing:fishsauce' },
   ],
   rank: MOCK_RANKING,
 };

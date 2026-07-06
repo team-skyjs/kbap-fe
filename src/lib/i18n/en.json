@@ -3,6 +3,7 @@
   "common": {
     "cancel": "Cancel",
     "gotIt": "Got it",
+    "save": "Save",
     "tryAgain": "Try again",
     "goBack": "Go back",
     "retry": "Retry",
@@ -117,6 +118,40 @@
       "confirmBtn": "Delete account",
       "cancel": "Cancel"
     }
+  },
+  "editProfile": {
+    "title": "Edit profile",
+    "save": "Save changes",
+    "changePhoto": "Change photo",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "How should we call you?",
+    "nicknameHint": "Shown on your reviews and ranking.",
+    "nationality": "Nationality",
+    "nationalityHint": "Changing this resets your same-nationality review matches.",
+    "readerLanguage": "Reader language",
+    "readerLanguageHint": "Every dish, review and owner card is translated into this.",
+    "linkedTitle": "Linked to account",
+    "email": "Email"
+  },
+  "nationalityPicker": {
+    "title": "Nationality",
+    "searchPlaceholder": "Search country…",
+    "notice": "Powers same-nationality reviews — pick the taste you trust most.",
+    "suggested": "Suggested",
+    "all": "All countries",
+    "empty": "No country matches."
+  },
+  "restrictionsEdit": {
+    "title": "Edit restrictions",
+    "save": "Save restrictions",
+    "notice": "This drives every safety warning. Keep it accurate — changes apply to all dishes immediately.",
+    "avoidCount": "You avoid {{count}} things",
+    "avoidNone": "Nothing avoided yet",
+    "tapToRemove": "tap × to remove",
+    "searchPlaceholder": "Search ingredients…",
+    "allIngredients": "All ingredients",
+    "emptyList": "No ingredients match your search.",
+    "disclaimer": "Guidance only — always confirm 'Caution' items with the restaurant owner."
   },
   "review": {
     "title": "Write a review",
