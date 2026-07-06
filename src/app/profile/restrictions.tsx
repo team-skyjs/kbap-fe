@@ -1,0 +1,90 @@
+/**
+ * Edit restrictions (mockup Screen I6, KB-6 override) — the flat 81-ingredient
+ * filter. Category groups + per-ingredient pre-risk-color removed; a searchable
+ * catalog + active chips (tap × to remove). Top safety notice + bottom owner-
+ * confirm disclaimer kept. Saves the flat ingredient-code list via PATCH /me
+ * (MOCK_MODE merges the cache). The picker UI is the shared IngredientFilter
+ * (also used by onboarding KB-8).
+ */
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
+import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { color as C, font } from '@/lib/theme';
+import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
+import { IngredientFilter } from '@/components/IngredientFilter';
+import { useMe, useUpdateMe } from '@/lib/data/useMe';
+
+export default function EditRestrictions() {
+  const router = useRouter();
+  const { t } = useTranslation();
+  const { data: me } = useMe();
+  const update = useUpdateMe();
+
+  const [sel, setSel] = useState<string[]>([]);
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    if (me && !seeded) {
+      setSel(me.restrictions.map((r) => r.code));
+      setSeeded(true);
+    }
+  }, [me, seeded]);
+
+  const toggle = (code: string) => setSel((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
+
+  function save() {
+    update.mutate(
+      { restrictions: sel.map((code) => ({ kind: 'allergy' as const, code })) },
+      { onSuccess: () => router.back() },
+    );
+  }
+
+  return (
+    <View style={styles.root}>
+      <SubHeader
+        title={t('restrictionsEdit.title')}
+        onBack={() => router.back()}
+        trailing={
+          <Pressable onPress={save} hitSlop={8} style={styles.saveWrap}>
+            <Text style={styles.saveLink}>{t('common.save')}</Text>
+          </Pressable>
+        }
+      />
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.notice}>
+          <RiskMark state="danger" size={22} />
+          <Text style={styles.noticeText}>{t('restrictionsEdit.notice')}</Text>
+        </View>
+
+        <IngredientFilter selected={sel} onToggle={toggle} />
+
+        <View style={styles.disc}>
+          <RiskMark state="caution" size={15} variant="outline" />
+          <Text style={styles.discText}>{t('restrictionsEdit.disclaimer')}</Text>
+        </View>
+      </ScrollView>
+
+      <View style={styles.savebar}>
+        <Btn icon={<IconCheck size={17} color="#fff" />} onPress={save}>
+          {t('restrictionsEdit.save')}
+        </Btn>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.surface },
+  body: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 28, gap: 16 },
+  saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
+  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
+
+  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
+  noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+
+  disc: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, paddingTop: 2 },
+  discText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 18 },
+
+  savebar: { padding: 18, paddingBottom: 30, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+});
