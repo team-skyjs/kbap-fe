@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { COUNTRIES, type Country } from '@/lib/onboarding/countries';
-import { Flag } from './Flag';
 import { IconSearch, IconCheck, IconClose } from './icons';
 
 export function NationalityPicker({
@@ -73,7 +72,7 @@ function Group({ label, items, current, onPick }: { label: string; items: Countr
           const on = c.code === current;
           return (
             <Pressable key={c.code} style={[styles.row, i === 0 && styles.rowFirst, on && styles.rowOn]} onPress={() => onPick(c.code)}>
-              <Flag code={c.code} size={26} />
+              <Text style={styles.code}>{c.code}</Text>
               <Text style={styles.nm}>
                 {c.name}
                 {c.native ? <Text style={styles.sub}> · {c.native}</Text> : null}
@@ -98,6 +97,7 @@ const styles = StyleSheet.create({
   list: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sh1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 15, paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   rowFirst: { borderTopWidth: 0 },
+  code: { width: 26, textAlign: 'center', fontFamily: font.bodyBold, fontSize: 11, color: C.ink3 },
   rowOn: { backgroundColor: 'rgba(226,88,12,0.045)' },
   nm: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
   sub: { fontFamily: font.body, fontSize: 12, color: C.ink3 },

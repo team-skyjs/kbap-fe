@@ -16,7 +16,6 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   Btn,
-  Flag,
   RiskMark,
   TopBar,
   IconApple,
@@ -250,7 +249,6 @@ function Profile(props: {
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('onboarding.nationality')} *</Text>
           <Pressable style={styles.field} onPress={onPickNationality}>
-            <Flag code={nationality.code} size={20} />
             <Text style={styles.fieldVal}>{nationality.name}</Text>
             <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: '90deg' }] }} />
           </Pressable>

@@ -11,7 +11,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck } from '@/components';
+import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck } from '@/components';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
 import { countryByCode } from '@/lib/onboarding/countries';
@@ -88,7 +88,6 @@ export default function EditProfile() {
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.nationality')} *</Text>
           <Pressable style={styles.field} onPress={() => setNatOpen(true)}>
-            {nation ? <Flag code={nation.code} size={20} /> : <IconGlobe size={18} color={C.ink2} />}
             <Text style={styles.val}>{nation?.name ?? me?.nationality}</Text>
             <IconChevron size={16} color={C.ink3} />
           </Pressable>

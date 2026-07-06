@@ -17,7 +17,6 @@ import {
   useStickyScroll,
   useHeaderHeight,
   Rosette,
-  Flag,
   RiskMark,
   Stars,
   IconProfile,
@@ -73,7 +72,6 @@ export default function Profile() {
                 <Text style={styles.name}>{me.nickname}</Text>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <View style={styles.pill}>
-                    <Flag code={me.nationality} size={16} />
                     <Text style={styles.pillText}>{me.nationality}</Text>
                   </View>
                   <View style={styles.pill}>
