@@ -1,13 +1,11 @@
 /**
  * First-run onboarding intro (KB-76) — RN port of Claude Design hifi-intro.jsx.
- * 3 horizontally-swiped slides (Scan / Your safety / Reviews) + a Welcome/decision
- * screen, reached by swiping past the last slide or tapping Skip. A persistent
- * bottom CTA (Sign up or log in / Browse first) and top-right Skip live on each
- * slide, mirroring the design's self-contained artboards.
+ * 3 slides (Scan / Your safety / Reviews). Only the ILLUSTRATION card slides
+ * horizontally; the brand header, copy (eyebrow/headline/sub), dots and the
+ * bottom CTA stay fixed — the copy and dots track the swiped illustration index.
  *
- * Brand = K-Bap shared components (BrandLockup / BrandTile / BrandWordmark). All
- * copy is i18n (9 languages); the illustrations are text-free so they never need
- * translation. Colors from theme tokens.
+ * Brand = K-Bap shared components (BrandLockup). All copy is i18n (9 languages);
+ * the illustrations are text-free so they never need translation. Theme tokens.
  *
  * Scope (KB-76): UI + CTA routing only. First-run gating + hasSeenIntro
  * persistence need auth + storage → deferred to the real-API integration step.
@@ -20,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, accentTint, radius, shadow } from '@/lib/theme';
 import { Btn, RiskMark, IconCamera, IconSpeech } from '@/components';
-import { BrandLockup, BrandTile, BrandWordmark } from '@/components/Brand';
+import { BrandLockup } from '@/components/Brand';
 import { IllusScan, IllusSafety, IllusReviews } from '@/features/intro/IntroIllustrations';
 
 type SlideDef = {
@@ -43,85 +41,74 @@ export default function Intro() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  // Each page needs an explicit height: a horizontal ScrollView sizes children to
-  // content, so the flex:1 hero / welcome-center have no bounded height to fill
-  // without it (foot would float mid-screen instead of pinning to the bottom).
-  const { width, height } = useWindowDimensions();
-  const scrollRef = useRef<ScrollView>(null);
-  const [page, setPage] = useState(0);
+  const { width } = useWindowDimensions();
+  const [active, setActive] = useState(0);
+  // hero height is dynamic (flex:1); measure it so the horizontal pager's pages
+  // get an explicit height (a horizontal ScrollView sizes children to content).
+  const [heroH, setHeroH] = useState(0);
 
   // KB-10 login screen isn't built yet → route "Sign up or log in" to the account
   // setup flow (onboarding). Repoint to the login screen once it lands.
   const goSignUp = () => router.replace('/onboarding' as Href);
-  const goBrowse = () => router.replace('/(tabs)');
-  const goWelcome = () => scrollRef.current?.scrollTo({ x: width * 3, animated: true });
+  const goHome = () => router.replace('/(tabs)'); // Browse first / Skip → guest home
 
-  const foot = (
-    <View style={[styles.foot, { paddingBottom: insets.bottom + 24 }]}>
-      <Btn onPress={goSignUp} style={styles.cta}>{t('intro.signUp')}</Btn>
-      <Pressable onPress={goBrowse} hitSlop={8}>
-        <Text style={styles.secondary}>{t('intro.browseFirst')}</Text>
-      </Pressable>
-    </View>
-  );
+  const cur = SLIDES[active];
 
   return (
     <View style={styles.root}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-        scrollEventThrottle={16}
-      >
-        {SLIDES.map((s) => (
-          <View key={s.index} style={{ width, height }}>
-            <View style={[styles.top, { paddingTop: insets.top + 14 }]}>
-              <BrandLockup tileSize={34} />
-              <Pressable onPress={goWelcome} hitSlop={8}>
-                <Text style={styles.skip}>{t('intro.skip')}</Text>
-              </Pressable>
-            </View>
+      {/* fixed header */}
+      <View style={[styles.top, { paddingTop: insets.top + 14 }]}>
+        <BrandLockup tileSize={34} />
+        <Pressable onPress={goHome} hitSlop={8}>
+          <Text style={styles.skip}>{t('intro.skip')}</Text>
+        </Pressable>
+      </View>
 
-            <View style={styles.hero}>
-              <View style={styles.illus}>{s.illus}</View>
-            </View>
-
-            <View style={styles.copy}>
-              <View style={[styles.eyebrow, { backgroundColor: s.accent ? accentTint : primaryTint }]}>
-                {s.icon}
-                <Text style={[styles.eyebrowText, { color: s.accent ? C.accent : C.primary }]}>{t(s.eyebrowKey)}</Text>
+      {/* ONLY the illustration card slides */}
+      <View style={styles.hero} onLayout={(e) => setHeroH(e.nativeEvent.layout.height)}>
+        {heroH > 0 && (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onScroll={(e) => {
+              const i = Math.round(e.nativeEvent.contentOffset.x / width);
+              if (i !== active && i >= 0 && i < SLIDES.length) setActive(i);
+            }}
+          >
+            {SLIDES.map((s) => (
+              <View key={s.index} style={[styles.page, { width, height: heroH }]}>
+                <View style={styles.illus}>{s.illus}</View>
               </View>
-              <Text style={styles.head}>{t(s.headKey)}</Text>
-              <Text style={styles.sub}>{t(s.subKey)}</Text>
-            </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
 
-            <View style={styles.dots}>
-              {[0, 1, 2].map((i) => (
-                <View key={i} style={[styles.dot, i === s.index && styles.dotOn]} />
-              ))}
-            </View>
-
-            {foot}
-          </View>
-        ))}
-
-        {/* S4 · Welcome / decision — no carousel chrome, big mark + CTA */}
-        <View style={{ width, height }}>
-          <View style={styles.welcomeCenter}>
-            <View style={styles.welcomeMark}>
-              <View style={styles.welcomeGlow} />
-              <BrandTile size={104} />
-            </View>
-            <View style={styles.welcomeBrand}>
-              <BrandWordmark size={42} />
-              <Text style={styles.welcomeTag}>{t('intro.welcomeTagline')}</Text>
-            </View>
-          </View>
-          {foot}
+      {/* fixed copy — tracks the swiped illustration */}
+      <View style={styles.copy}>
+        <View style={[styles.eyebrow, { backgroundColor: cur.accent ? accentTint : primaryTint }]}>
+          {cur.icon}
+          <Text style={[styles.eyebrowText, { color: cur.accent ? C.accent : C.primary }]}>{t(cur.eyebrowKey)}</Text>
         </View>
-      </ScrollView>
+        <Text style={styles.head}>{t(cur.headKey)}</Text>
+        <Text style={styles.sub}>{t(cur.subKey)}</Text>
+      </View>
+
+      <View style={styles.dots}>
+        {SLIDES.map((s, i) => (
+          <View key={i} style={[styles.dot, i === active && styles.dotOn]} />
+        ))}
+      </View>
+
+      {/* fixed CTA */}
+      <View style={[styles.foot, { paddingBottom: insets.bottom + 24 }]}>
+        <Btn onPress={goSignUp} style={styles.cta}>{t('intro.signUp')}</Btn>
+        <Pressable onPress={goHome} hitSlop={8}>
+          <Text style={styles.secondary}>{t('intro.browseFirst')}</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -132,7 +119,8 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
   skip: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 6 },
 
-  hero: { flex: 1, minHeight: 0, paddingHorizontal: 26, paddingTop: 20, paddingBottom: 4 },
+  hero: { flex: 1, minHeight: 0 },
+  page: { paddingHorizontal: 26, paddingTop: 20, paddingBottom: 4 },
   illus: { flex: 1, borderRadius: 26, overflow: 'hidden', borderWidth: 1, borderColor: C.hair, backgroundColor: C.surface2, ...shadow.sh2 },
 
   copy: { paddingHorizontal: 30, paddingTop: 22, alignItems: 'center', gap: 9 },
@@ -148,10 +136,4 @@ const styles = StyleSheet.create({
   foot: { paddingHorizontal: 22, paddingTop: 8, alignItems: 'stretch', gap: 4 },
   cta: { borderRadius: 15, paddingVertical: 15 },
   secondary: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink2, textAlign: 'center', padding: 12 },
-
-  welcomeCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20, paddingHorizontal: 34 },
-  welcomeMark: { alignItems: 'center', justifyContent: 'center' },
-  welcomeGlow: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: primaryTint },
-  welcomeBrand: { alignItems: 'center', gap: 8 },
-  welcomeTag: { fontFamily: font.body, fontSize: 16, color: C.ink2, textAlign: 'center', lineHeight: 23, maxWidth: 260 },
 });
