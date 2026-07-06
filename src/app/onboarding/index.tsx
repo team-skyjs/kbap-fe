@@ -8,14 +8,7 @@
  * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
  */
 import { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,14 +30,12 @@ import {
   IconProfile,
 } from '@/components';
 import { BrandTile } from '@/components/Brand';
-import {
-  ALLERGEN_GROUPS,
-  LIFESTYLE_GROUPS,
-  NATIONALITIES,
-  POPULAR_DISHES,
-  READER_LANGUAGES,
-  SPICE_SCALE,
-} from '@/lib/onboarding/data';
+import { IngredientFilter } from '@/components/IngredientFilter';
+import { LanguagePicker } from '@/components/LanguagePicker';
+import { NationalityPicker } from '@/components/NationalityPicker';
+import { LANG_ENDONYM } from '@/lib/i18n/languages';
+import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { NATIONALITIES, POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 
 type Step = 'welcome' | 'verify' | 'profile' | 'restrictions' | 'spice' | 'interests' | 'consent';
 const ORDER: Step[] = ['welcome', 'verify', 'profile', 'restrictions', 'spice', 'interests', 'consent'];
@@ -54,6 +45,7 @@ export default function Onboarding() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { lang } = useLocale(); // reader language = the active app locale (set via the shared picker)
 
   const [step, setStep] = useState<Step>('welcome');
 
@@ -61,14 +53,15 @@ export default function Onboarding() {
   const [email] = useState('you@email.com');
   const [otp, setOtp] = useState('');
   const [nickname, setNickname] = useState('');
-  const [nationality, setNationality] = useState<{ code: string; label: string }>(NATIONALITIES[0]);
-  const [language, setLanguage] = useState(READER_LANGUAGES[0]);
+  const [nationality, setNationality] = useState(NATIONALITIES[0].code);
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   const [spice, setSpice] = useState(5);
   const [interests, setInterests] = useState<Set<string>>(new Set());
   const [agreed, setAgreed] = useState(false);
 
-  const [picker, setPicker] = useState<null | 'nationality' | 'language'>(null);
+  const [natOpen, setNatOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const nation = NATIONALITIES.find((n) => n.code === nationality) ?? NATIONALITIES[0];
 
   const idx = ORDER.indexOf(step);
   const go = (to: Step) => setStep(to);
@@ -105,10 +98,10 @@ export default function Onboarding() {
           <Profile
             nickname={nickname}
             setNickname={setNickname}
-            nationality={nationality}
-            language={language}
-            onPickNationality={() => setPicker('nationality')}
-            onPickLanguage={() => setPicker('language')}
+            nationality={nation}
+            languageLabel={LANG_ENDONYM[lang] ?? lang}
+            onPickNationality={() => setNatOpen(true)}
+            onPickLanguage={() => setLangOpen(true)}
             onContinue={next}
             t={t}
           />
@@ -116,7 +109,7 @@ export default function Onboarding() {
 
         {step === 'restrictions' && (
           <Restrictions
-            selected={restrictions}
+            selected={Array.from(restrictions)}
             onToggle={(code) => toggle(restrictions, code, setRestrictions)}
             onContinue={next}
             onSkip={next}
@@ -143,30 +136,9 @@ export default function Onboarding() {
         )}
       </ScrollView>
 
-      {/* nationality / language picker */}
-      <PickerModal
-        visible={picker === 'nationality'}
-        title={t('onboarding.nationality')}
-        options={NATIONALITIES}
-        selectedCode={nationality.code}
-        withFlag
-        onSelect={(o) => {
-          setNationality(o);
-          setPicker(null);
-        }}
-        onClose={() => setPicker(null)}
-      />
-      <PickerModal
-        visible={picker === 'language'}
-        title={t('onboarding.readerLanguage')}
-        options={READER_LANGUAGES}
-        selectedCode={language.code}
-        onSelect={(o) => {
-          setLanguage(o);
-          setPicker(null);
-        }}
-        onClose={() => setPicker(null)}
-      />
+      {/* shared nationality (I4) / language (I5, 9 langs) pickers */}
+      <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={setNationality} onClose={() => setNatOpen(false)} />
+      <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
     </View>
   );
 }
@@ -242,13 +214,13 @@ function Profile(props: {
   nickname: string;
   setNickname: (s: string) => void;
   nationality: { code: string; label: string };
-  language: { code: string; label: string };
+  languageLabel: string;
   onPickNationality: () => void;
   onPickLanguage: () => void;
   onContinue: () => void;
   t: TFn;
 }) {
-  const { nickname, setNickname, nationality, language, onPickNationality, onPickLanguage, onContinue, t } = props;
+  const { nickname, setNickname, nationality, languageLabel, onPickNationality, onPickLanguage, onContinue, t } = props;
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.profileTitle')} sub={t('onboarding.profileSub')} />
@@ -278,7 +250,7 @@ function Profile(props: {
           <Text style={styles.fieldLbl}>{t('onboarding.readerLanguage')} *</Text>
           <Pressable style={styles.field} onPress={onPickLanguage}>
             <IconGlobe size={18} color={C.ink2} />
-            <Text style={styles.fieldVal}>{language.label}</Text>
+            <Text style={styles.fieldVal}>{languageLabel}</Text>
             <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: '90deg' }] }} />
           </Pressable>
         </View>
@@ -292,7 +264,7 @@ function Profile(props: {
   );
 }
 
-function Restrictions({ selected, onToggle, onContinue, onSkip, t }: { selected: Set<string>; onToggle: (code: string) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+function Restrictions({ selected, onToggle, onContinue, onSkip, t }: { selected: string[]; onToggle: (code: string) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.restrictionsSub')} />
@@ -300,31 +272,12 @@ function Restrictions({ selected, onToggle, onContinue, onSkip, t }: { selected:
         <RiskMark state="caution" size={22} />
         <Text style={styles.noticeText}>{t('onboarding.restrictionsNotice')}</Text>
       </View>
-      <Text style={[styles.fieldLbl, { marginBottom: 6 }]}>{t('onboarding.allergensLabel')}</Text>
-      {ALLERGEN_GROUPS.map((g) => (
-        <View key={g.label} style={styles.group}>
-          <Text style={styles.groupLbl}>{g.label.toUpperCase()}</Text>
-          <View style={styles.chipwrap}>
-            {g.items.map((it) => (
-              <Chip key={it.code} label={it.label} on={selected.has(it.code)} risk onPress={() => onToggle(it.code)} />
-            ))}
-          </View>
-        </View>
-      ))}
-      {LIFESTYLE_GROUPS.map((g) => (
-        <View key={g.label} style={styles.group}>
-          <Text style={styles.groupLbl}>{g.label.toUpperCase()}</Text>
-          <View style={styles.chipwrap}>
-            {g.items.map((it) => (
-              <Chip key={it.code} label={it.label} on={selected.has(it.code)} onPress={() => onToggle(it.code)} />
-            ))}
-          </View>
-        </View>
-      ))}
+      {/* KB-8 override: flat 81-ingredient filter, shared with the profile editor (I6) */}
+      <IngredientFilter selected={selected} onToggle={onToggle} />
       <View style={styles.foot}>
         <Btn onPress={onContinue}>
           {t('onboarding.continue')}
-          {selected.size ? ` · ${t('onboarding.added', { count: selected.size })}` : ''}
+          {selected.length ? ` · ${t('onboarding.added', { count: selected.length })}` : ''}
         </Btn>
         <Pressable onPress={onSkip} hitSlop={8}>
           <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
@@ -450,50 +403,6 @@ function ObTitle({ title, sub }: { title: string; sub?: string }) {
       <Text style={styles.obTitle}>{title}</Text>
       {!!sub && <Text style={styles.obSub}>{sub}</Text>}
     </View>
-  );
-}
-
-function Chip({ label, on, risk, onPress }: { label: string; on: boolean; risk?: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.chip, on && (risk ? styles.chipOnRisk : styles.chipOn)]} onPress={onPress}>
-      <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
-      {on && <IconCheck size={13} color="#fff" />}
-    </Pressable>
-  );
-}
-
-function PickerModal({
-  visible,
-  title,
-  options,
-  selectedCode,
-  withFlag,
-  onSelect,
-  onClose,
-}: {
-  visible: boolean;
-  title: string;
-  options: { code: string; label: string }[];
-  selectedCode: string;
-  withFlag?: boolean;
-  onSelect: (o: { code: string; label: string }) => void;
-  onClose: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.grab} />
-        <Text style={styles.sheetTitle}>{title}</Text>
-        {options.map((o) => (
-          <Pressable key={o.code} style={styles.sheetRow} onPress={() => onSelect(o)}>
-            {withFlag && <Flag code={o.code} size={22} />}
-            <Text style={styles.sheetRowText}>{o.label}</Text>
-            {o.code === selectedCode && <IconCheck size={18} color={C.primary} />}
-          </Pressable>
-        ))}
-      </View>
-    </Modal>
   );
 }
 
