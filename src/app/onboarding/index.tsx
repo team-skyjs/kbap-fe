@@ -35,7 +35,8 @@ import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
-import { NATIONALITIES, POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
+import { countryByCode, countryLang, deviceCountry } from '@/lib/onboarding/countries';
+import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 
 type Step = 'welcome' | 'verify' | 'profile' | 'restrictions' | 'spice' | 'interests' | 'consent';
 const ORDER: Step[] = ['welcome', 'verify', 'profile', 'restrictions', 'spice', 'interests', 'consent'];
@@ -45,15 +46,16 @@ export default function Onboarding() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { lang } = useLocale(); // reader language = the active app locale (set via the shared picker)
+  const { lang, setLang } = useLocale(); // reader language = the active app locale (set via the shared picker)
 
   const [step, setStep] = useState<Step>('welcome');
 
-  // collected profile (mock — not persisted)
+  // collected profile (mock — not persisted). Nationality defaults to the device
+  // region when we recognize it (else US).
   const [email] = useState('you@email.com');
   const [otp, setOtp] = useState('');
   const [nickname, setNickname] = useState('');
-  const [nationality, setNationality] = useState(NATIONALITIES[0].code);
+  const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   const [spice, setSpice] = useState(5);
   const [interests, setInterests] = useState<Set<string>>(new Set());
@@ -61,7 +63,14 @@ export default function Onboarding() {
 
   const [natOpen, setNatOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const nation = NATIONALITIES.find((n) => n.code === nationality) ?? NATIONALITIES[0];
+  const nation = countryByCode(nationality) ?? countryByCode('US')!;
+
+  // Picking a nationality suggests the reader language: the country's language if
+  // it's one of our 9, else English. The user can still override it on A3.
+  const pickNationality = (code: string) => {
+    setNationality(code);
+    setLang(countryLang(code));
+  };
 
   const idx = ORDER.indexOf(step);
   const go = (to: Step) => setStep(to);
@@ -137,7 +146,7 @@ export default function Onboarding() {
       </ScrollView>
 
       {/* shared nationality (I4) / language (I5, 9 langs) pickers */}
-      <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={setNationality} onClose={() => setNatOpen(false)} />
+      <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
       <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
     </View>
   );
@@ -213,7 +222,7 @@ function Verify({ email, otp, setOtp, onVerify, t }: { email: string; otp: strin
 function Profile(props: {
   nickname: string;
   setNickname: (s: string) => void;
-  nationality: { code: string; label: string };
+  nationality: { code: string; name: string };
   languageLabel: string;
   onPickNationality: () => void;
   onPickLanguage: () => void;
@@ -242,7 +251,7 @@ function Profile(props: {
           <Text style={styles.fieldLbl}>{t('onboarding.nationality')} *</Text>
           <Pressable style={styles.field} onPress={onPickNationality}>
             <Flag code={nationality.code} size={20} />
-            <Text style={styles.fieldVal}>{nationality.label}</Text>
+            <Text style={styles.fieldVal}>{nationality.name}</Text>
             <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: '90deg' }] }} />
           </Pressable>
         </View>

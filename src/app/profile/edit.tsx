@@ -14,7 +14,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck } from '@/components';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
-import { NATIONALITIES } from '@/lib/onboarding/data';
+import { countryByCode } from '@/lib/onboarding/countries';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
@@ -37,7 +37,7 @@ export default function EditProfile() {
     }
   }, [me, seeded]);
 
-  const nation = NATIONALITIES.find((n) => n.code === me?.nationality);
+  const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   function save() {
     update.mutate({ nickname: nickname.trim() || me?.nickname }, { onSuccess: () => router.back() });
@@ -89,7 +89,7 @@ export default function EditProfile() {
           <Text style={styles.fieldLbl}>{t('editProfile.nationality')} *</Text>
           <Pressable style={styles.field} onPress={() => setNatOpen(true)}>
             {nation ? <Flag code={nation.code} size={20} /> : <IconGlobe size={18} color={C.ink2} />}
-            <Text style={styles.val}>{nation?.label ?? me?.nationality}</Text>
+            <Text style={styles.val}>{nation?.name ?? me?.nationality}</Text>
             <IconChevron size={16} color={C.ink3} />
           </Pressable>
           <Text style={[styles.hint, styles.hintWarn]}>{t('editProfile.nationalityHint')}</Text>

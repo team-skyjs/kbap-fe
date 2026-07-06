@@ -4,8 +4,8 @@
  * Geometry is approximate by design (a glyph, not an accurate flag).
  */
 import * as React from 'react';
-import Svg, { Circle, ClipPath, Defs, G, Path, Rect } from 'react-native-svg';
-import { color as C } from '@/lib/theme';
+import Svg, { Circle, ClipPath, Defs, G, Path, Rect, Text as SvgText } from 'react-native-svg';
+import { color as C, font } from '@/lib/theme';
 
 const RED = '#cf3a2c';
 const BLUE = '#34507a';
@@ -67,7 +67,15 @@ function Inner({ code }: { code: string }) {
         </G>
       );
     default:
-      return <Rect width="24" height="24" fill="#bdb6a6" />;
+      // no drawn flag for this country → tinted circle with the ISO code monogram
+      return (
+        <G>
+          <Rect width="24" height="24" fill={C.surface2} />
+          <SvgText x="12" y="15.6" textAnchor="middle" fontFamily={font.bodyBold} fontSize="9" fill={C.ink2}>
+            {code.slice(0, 2).toUpperCase()}
+          </SvgText>
+        </G>
+      );
   }
 }
 

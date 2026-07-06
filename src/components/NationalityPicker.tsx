@@ -10,7 +10,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { NATIONALITIES } from '@/lib/onboarding/data';
+import { COUNTRIES, type Country } from '@/lib/onboarding/countries';
 import { Flag } from './Flag';
 import { IconSearch, IconCheck, IconClose } from './icons';
 
@@ -30,10 +30,10 @@ export function NationalityPicker({
   const [q, setQ] = React.useState('');
 
   const query = q.trim().toLowerCase();
-  const match = (c: (typeof NATIONALITIES)[number]) =>
-    !query || c.label.toLowerCase().includes(query) || c.native.toLowerCase().includes(query);
-  const suggested = NATIONALITIES.filter((c) => c.suggested && match(c));
-  const all = NATIONALITIES.filter((c) => !c.suggested && match(c));
+  const match = (c: Country) =>
+    !query || c.name.toLowerCase().includes(query) || c.code.toLowerCase() === query || (c.native?.toLowerCase().includes(query) ?? false);
+  const suggested = COUNTRIES.filter((c) => c.suggested && match(c));
+  const all = COUNTRIES.filter((c) => !c.suggested && match(c));
 
   function pick(code: string) {
     onSelect(code);
@@ -64,7 +64,7 @@ export function NationalityPicker({
   );
 }
 
-function Group({ label, items, current, onPick }: { label: string; items: typeof NATIONALITIES; current?: string; onPick: (code: string) => void }) {
+function Group({ label, items, current, onPick }: { label: string; items: Country[]; current?: string; onPick: (code: string) => void }) {
   return (
     <View style={{ gap: 2 }}>
       <Text style={styles.group}>{label}</Text>
@@ -75,7 +75,8 @@ function Group({ label, items, current, onPick }: { label: string; items: typeof
             <Pressable key={c.code} style={[styles.row, i === 0 && styles.rowFirst, on && styles.rowOn]} onPress={() => onPick(c.code)}>
               <Flag code={c.code} size={26} />
               <Text style={styles.nm}>
-                {c.label} <Text style={styles.sub}>· {c.native}</Text>
+                {c.name}
+                {c.native ? <Text style={styles.sub}> · {c.native}</Text> : null}
               </Text>
               <View style={[styles.radio, on && styles.radioOn]}>{on && <IconCheck size={13} color="#fff" />}</View>
             </Pressable>
