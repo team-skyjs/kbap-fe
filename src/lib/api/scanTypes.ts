@@ -10,12 +10,8 @@
  *        riskLevel: SAFE | CAUTION | DANGER | UNKNOWN
  */
 
-/** BE generic envelope. Branch on `success` (NOT HTTP status) — §13-6. */
-export interface BaseResponse<T> {
-  success: boolean;
-  payload: T | null;
-  message: string | null;
-}
+/** BE generic envelope — canonical definition lives in the shared client (KB-66). */
+export type { BaseResponse } from './client';
 
 export type BeRiskLevel = 'SAFE' | 'CAUTION' | 'DANGER' | 'UNKNOWN';
 

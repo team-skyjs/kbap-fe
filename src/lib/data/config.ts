@@ -12,8 +12,15 @@ export const MOCK_MODE = true;
 export const API_BASE_URL = 'https://api.kbap.example/v1';
 
 /**
- * Real BE base for the SCAN SPIKE (handoff §13). The scan flow connects LIVE
- * regardless of MOCK_MODE — it's the one hook we wire to the real backend now.
- * Contract is provisional (mid-renegotiation); the adapter isolates the churn.
+ * Real BE host. Scan + food-detail connect LIVE against this regardless of
+ * MOCK_MODE (the two endpoints the redeployed Swagger actually exposes). The
+ * contract is provisional; the adapters isolate the churn.
+ *
+ * Env switch (KB-66): point BE_BASE at a different host per environment.
+ * `EXPO_PUBLIC_BE_BASE` (set in eas.json / .env) wins when present; otherwise
+ * we fall back to the deployed dev host.
  */
-export const BE_BASE = 'https://meogo.handev.site';
+export const BE_BASE = process.env.EXPO_PUBLIC_BE_BASE ?? 'https://meogo.handev.site';
+
+/** Versioned REST base — every real endpoint hangs off this (KB-66 common layer). */
+export const API_V1_BASE = `${BE_BASE}/api/v1`;

@@ -6,15 +6,13 @@
  * boxes, then returns items enriched with the BE risk verdict for the overlay.
  */
 import { useMutation } from '@tanstack/react-query';
-import { BE_BASE } from './config';
-import type { BaseResponse, MenuScanPayload, MenuScanRequest } from '@/lib/api/scanTypes';
+import { api } from '@/lib/api/client';
+import type { MenuScanPayload, MenuScanRequest } from '@/lib/api/scanTypes';
 import {
   mergeResults,
   type ScanOverlayItem,
   type ScannedItem,
 } from '@/lib/api/scanAdapter';
-
-const SCAN_URL = `${BE_BASE}/api/v1/menu-scans`;
 
 async function postScan(items: ScannedItem[]): Promise<ScanOverlayItem[]> {
   const body: MenuScanRequest = {
@@ -25,37 +23,12 @@ async function postScan(items: ScannedItem[]): Promise<ScanOverlayItem[]> {
     })),
   };
   // Stage logs (prefix "[scan]") — watch in Metro to confirm the BE roundtrip.
-  console.log('[scan] POST', SCAN_URL, '| items =', body.items.length);
-  console.log('[scan] request body =', JSON.stringify(body));
-
-  let res: Response;
-  try {
-    res = await fetch(SCAN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch (e) {
-    // fetch rejects → no connectivity / DNS / TLS → distinctly a NETWORK failure
-    console.log('[scan] NETWORK error =', String((e as Error)?.message ?? e));
-    throw new Error(`NETWORK: ${(e as Error)?.message ?? e}`);
-  }
-
-  const raw = await res.text();
-  console.log('[scan] response status =', res.status, '| body =', raw.slice(0, 400));
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${raw.slice(0, 160)}`);
-
-  let json: BaseResponse<MenuScanPayload>;
-  try {
-    json = JSON.parse(raw);
-  } catch {
-    throw new Error(`BAD_JSON: ${raw.slice(0, 160)}`);
-  }
-  // Branch on success + null-guard payload (§13-6), never trust HTTP alone.
-  if (!json.success || !json.payload) {
-    throw new Error(`NO_PAYLOAD: success=${json.success} message=${json.message ?? 'null'}`);
-  }
-  const merged = mergeResults(items, json.payload.results ?? []);
+  // Envelope unwrap + error normalization now live in the shared client (KB-66):
+  // api.post resolves `payload` or throws ApiError (incl. "NETWORK:" on fetch
+  // reject, which scan.tsx branches on for its network error UI).
+  console.log('[scan] POST /menu-scans | items =', body.items.length);
+  const payload = await api.post<MenuScanPayload>('/menu-scans', body);
+  const merged = mergeResults(items, payload.results ?? []);
   console.log('[scan] merged results =', JSON.stringify(merged.map((m) => ({ name: m.rawMenuName, risk: m.risk }))));
   return merged;
 }
