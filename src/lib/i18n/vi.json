@@ -13,6 +13,21 @@
     "skip": "Bỏ qua",
     "save": "Lưu"
   },
+  "intro": {
+    "skip": "Bỏ qua",
+    "signUp": "Đăng ký hoặc đăng nhập",
+    "browseFirst": "Xem trước đã",
+    "s1Eyebrow": "QUÉT",
+    "s1Head": "Chụp thực đơn, biết ngay món nào an toàn",
+    "s1Sub": "Hướng máy ảnh vào bất kỳ thực đơn Hàn nào để biết ngay mức độ an toàn.",
+    "s2Eyebrow": "AN TOÀN CỦA BẠN",
+    "s2Head": "Cho chúng tôi biết bạn không ăn được gì",
+    "s2Sub": "Chúng tôi đối chiếu từng món với dị ứng của riêng bạn — bảo mật và chỉ dành cho bạn.",
+    "s3Eyebrow": "ĐÁNH GIÁ",
+    "s3Head": "Đánh giá thật từ những người như bạn",
+    "s3Sub": "Cảm nhận chân thật từ du khách cùng quốc gia với bạn.",
+    "welcomeTagline": "Biết món nào an toàn — trước khi bạn gọi món."
+  },
   "tabs": {
     "home": "Trang chủ",
     "food": "Món ăn",

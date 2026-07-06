@@ -13,6 +13,21 @@
     "skip": "Omitir",
     "save": "Guardar"
   },
+  "intro": {
+    "skip": "Omitir",
+    "signUp": "Regístrate o inicia sesión",
+    "browseFirst": "Explorar primero",
+    "s1Eyebrow": "ESCANEAR",
+    "s1Head": "Escanea el menú y sabe qué es seguro",
+    "s1Sub": "Apunta la cámara a cualquier menú coreano para saber al instante qué es seguro para ti.",
+    "s2Eyebrow": "TU SEGURIDAD",
+    "s2Head": "Dinos qué no puedes comer",
+    "s2Sub": "Revisamos cada plato según tus propias alergias: privado y solo para ti.",
+    "s3Eyebrow": "RESEÑAS",
+    "s3Head": "Reseñas reales de gente como tú",
+    "s3Sub": "Opiniones honestas de viajeros de tu mismo país.",
+    "welcomeTagline": "Sabe qué es seguro, antes de pedir."
+  },
   "tabs": {
     "home": "Inicio",
     "food": "Comida",

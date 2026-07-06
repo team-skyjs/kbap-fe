@@ -49,21 +49,28 @@ export function BrandTile({ size = 36 }: { size?: number }) {
   );
 }
 
+/** Standalone "K-Bap" wordmark (teal hyphen), sized. Raw Baloo, never remapped. */
+export function BrandWordmark({ size = 22 }: { size?: number }) {
+  return (
+    <Text style={[styles.word, { fontSize: size }]}>
+      K<Text style={styles.hyphen}>-</Text>Bap
+    </Text>
+  );
+}
+
 /** Full header lockup: tile + "K-Bap" wordmark (teal hyphen). */
 export function BrandLockup({ tileSize = 36 }: { tileSize?: number }) {
   return (
     <View style={styles.row}>
       <BrandTile size={tileSize} />
-      <Text style={styles.word}>
-        K<Text style={styles.hyphen}>-</Text>Bap
-      </Text>
+      <BrandWordmark size={22} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  word: { fontFamily: font.displayBlack, fontSize: 22, color: C.primary, letterSpacing: -0.2 },
+  word: { fontFamily: font.displayBlack, color: C.primary, letterSpacing: -0.2 },
   hyphen: { color: C.accent },
 });
 

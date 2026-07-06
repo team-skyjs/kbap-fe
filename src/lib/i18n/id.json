@@ -13,6 +13,21 @@
     "skip": "Lewati",
     "save": "Simpan"
   },
+  "intro": {
+    "skip": "Lewati",
+    "signUp": "Daftar atau masuk",
+    "browseFirst": "Jelajahi dulu",
+    "s1Eyebrow": "PINDAI",
+    "s1Head": "Foto menunya, tahu mana yang aman",
+    "s1Sub": "Arahkan kamera ke menu Korea mana pun untuk pembacaan keamanan seketika.",
+    "s2Eyebrow": "KEAMANAN ANDA",
+    "s2Head": "Beri tahu kami yang tak bisa Anda makan",
+    "s2Sub": "Kami memeriksa setiap hidangan terhadap alergi Anda sendiri — pribadi, dan hanya untuk Anda.",
+    "s3Eyebrow": "ULASAN",
+    "s3Head": "Ulasan nyata dari orang seperti Anda",
+    "s3Sub": "Pendapat jujur dari pelancong sesama negara Anda.",
+    "welcomeTagline": "Ketahui apa yang aman — sebelum Anda memesan."
+  },
   "tabs": {
     "home": "Beranda",
     "food": "Makanan",

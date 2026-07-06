@@ -9,6 +9,21 @@
     "retry": "Retry",
     "skip": "Skip"
   },
+  "intro": {
+    "skip": "Skip",
+    "signUp": "Sign up or log in",
+    "browseFirst": "Browse first",
+    "s1Eyebrow": "SCAN",
+    "s1Head": "Snap the menu, know what's safe",
+    "s1Sub": "Point your camera at any Korean menu for an instant safety read.",
+    "s2Eyebrow": "YOUR SAFETY",
+    "s2Head": "Tell us what you can't eat",
+    "s2Sub": "We check every dish against your own allergies — private, and only for you.",
+    "s3Eyebrow": "REVIEWS",
+    "s3Head": "Real reviews from people like you",
+    "s3Sub": "Honest takes from travelers of your own country.",
+    "welcomeTagline": "Know what's safe — before you order."
+  },
   "tabs": {
     "home": "Home",
     "food": "Food",
