@@ -11,7 +11,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { INGREDIENTS } from '@/lib/mocks/ingredients';
+import { INGREDIENTS, ingredientLabel } from '@/lib/mocks/ingredients';
 import { RiskMark } from './RiskMark';
 import { IconSearch, IconClose, IconCheck, IconPlus } from './icons';
 
@@ -20,7 +20,9 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
   const [q, setQ] = React.useState('');
   const sel = React.useMemo(() => new Set(selected), [selected]);
   const query = q.trim().toLowerCase();
-  const list = query ? INGREDIENTS.filter((i) => i.name.toLowerCase().includes(query)) : INGREDIENTS;
+  const list = query
+    ? INGREDIENTS.filter((i) => ingredientLabel(i.code).toLowerCase().includes(query) || i.name.toLowerCase().includes(query))
+    : INGREDIENTS;
   const selectedItems = INGREDIENTS.filter((i) => sel.has(i.code));
 
   return (
@@ -38,7 +40,7 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
           <View style={styles.wrap}>
             {selectedItems.map((i) => (
               <Pressable key={i.code} style={styles.rmChip} onPress={() => onToggle(i.code)}>
-                <Text style={styles.rmChipText}>{i.name}</Text>
+                <Text style={styles.rmChipText}>{ingredientLabel(i.code)}</Text>
                 <View style={styles.rmX}>
                   <IconClose size={11} color={C.ink} />
                 </View>
@@ -72,7 +74,7 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
               const on = sel.has(i.code);
               return (
                 <Pressable key={i.code} style={[styles.pickChip, on && styles.pickChipOn]} onPress={() => onToggle(i.code)}>
-                  <Text style={[styles.pickChipText, on && styles.pickChipTextOn]}>{i.name}</Text>
+                  <Text style={[styles.pickChipText, on && styles.pickChipTextOn]}>{ingredientLabel(i.code)}</Text>
                   {on ? <IconCheck size={13} color="#fff" /> : <IconPlus size={12} color={C.ink3} />}
                 </Pressable>
               );

@@ -10,9 +10,11 @@
  * Shared by the profile restrictions editor (I6) and onboarding (KB-8).
  */
 
+import i18n from '@/lib/i18n';
+
 export interface Ingredient {
   code: string; // stable catalog code, e.g. "ing:shrimp"
-  name: string; // reader-language display name (BE-localized later)
+  name: string; // English fallback name (display goes through ingredientLabel → i18n)
 }
 
 const ing = (slug: string, name: string): Ingredient => ({ code: `ing:${slug}`, name });
@@ -47,10 +49,14 @@ export const INGREDIENTS: Ingredient[] = [
 
 const BY_CODE: Record<string, Ingredient> = Object.fromEntries(INGREDIENTS.map((i) => [i.code, i]));
 
-/** Display name for an ingredient code (falls back to the title-cased slug). */
+/**
+ * Reader-language display name for an ingredient code. Resolved from i18n
+ * (`ingredients.<slug>`) so it follows the active language; the catalog English
+ * name is the fallback. Uses the global i18n instance so it works outside React
+ * components too (callers re-render on languageChanged via useTranslation).
+ */
 export function ingredientLabel(code: string): string {
-  const hit = BY_CODE[code];
-  if (hit) return hit.name;
-  const slug = code.includes(':') ? code.split(':')[1] : code;
-  return slug.charAt(0).toUpperCase() + slug.slice(1);
+  const slug = code.startsWith('ing:') ? code.slice(4) : code.includes(':') ? code.split(':')[1] : code;
+  const fallback = BY_CODE[code]?.name ?? slug.charAt(0).toUpperCase() + slug.slice(1);
+  return i18n.t(`ingredients.${slug}`, { defaultValue: fallback });
 }
