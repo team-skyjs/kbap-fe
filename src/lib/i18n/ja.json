@@ -1,5 +1,8 @@
 {
-  "_meta": { "status": "machine translation — pending native review", "lang": "ja" },
+  "_meta": {
+    "status": "machine translation — pending native review",
+    "lang": "ja"
+  },
   "brand": "K-Bap",
   "common": {
     "cancel": "キャンセル",
@@ -7,7 +10,8 @@
     "tryAgain": "もう一度お試しください",
     "goBack": "戻る",
     "retry": "再試行",
-    "skip": "スキップ"
+    "skip": "スキップ",
+    "save": "保存"
   },
   "tabs": {
     "home": "ホーム",
@@ -33,7 +37,11 @@
   "search": {
     "placeholder": "料理や食材を検索…",
     "recent": "最近の検索",
-    "samples": ["キムチチゲ", "アミの塩辛", "ビビンバ"]
+    "samples": [
+      "キムチチゲ",
+      "アミの塩辛",
+      "ビビンバ"
+    ]
   },
   "notifications": {
     "title": "通知",
@@ -125,7 +133,14 @@
     "ratingLabel": "評価 *",
     "tapToRate": "タップして評価",
     "ratingValue": "{{value}}/5 · {{label}}",
-    "labels": ["", "悪い", "いまいち", "普通", "良い", "最高"],
+    "labels": [
+      "",
+      "悪い",
+      "いまいち",
+      "普通",
+      "良い",
+      "最高"
+    ],
     "reviewLabel": "レビュー",
     "placeholder": "味の感想や、同じ食事制限のある旅行者へのヒントを共有しましょう…",
     "langDetected": "英語で記入 · 自動検出",
@@ -343,5 +358,39 @@
       "Dietary": "食事",
       "Religion": "宗教"
     }
+  },
+  "editProfile": {
+    "title": "プロフィール編集",
+    "save": "変更を保存",
+    "changePhoto": "写真を変更",
+    "nickname": "ニックネーム",
+    "nicknamePlaceholder": "何とお呼びしますか？",
+    "nicknameHint": "レビューやランキングに表示されます。",
+    "nationality": "国籍",
+    "nationalityHint": "変更すると同じ国籍のレビュー一致がリセットされます。",
+    "readerLanguage": "表示言語",
+    "readerLanguageHint": "料理・レビュー・店主カードがこの言語に翻訳されます。",
+    "linkedTitle": "連携アカウント",
+    "email": "メール"
+  },
+  "nationalityPicker": {
+    "title": "国籍",
+    "searchPlaceholder": "国を検索…",
+    "notice": "同じ国籍のレビューに使われます。最も信頼できる味を選んでください。",
+    "suggested": "おすすめ",
+    "all": "すべての国",
+    "empty": "該当する国がありません。"
+  },
+  "restrictionsEdit": {
+    "title": "制限を編集",
+    "save": "制限を保存",
+    "notice": "すべての安全警告の基準になります。正確に保ってください。変更はすべての料理に即時反映されます。",
+    "avoidCount": "{{count}}件を避けています",
+    "avoidNone": "まだ避けるものはありません",
+    "tapToRemove": "×をタップで削除",
+    "searchPlaceholder": "食材を検索…",
+    "allIngredients": "すべての食材",
+    "emptyList": "検索に一致する食材がありません。",
+    "disclaimer": "参考情報です。「注意」項目は必ず店主にご確認ください。"
   }
 }

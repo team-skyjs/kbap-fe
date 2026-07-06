@@ -1,5 +1,8 @@
 {
-  "_meta": { "status": "machine translation — pending native review", "lang": "id" },
+  "_meta": {
+    "status": "machine translation — pending native review",
+    "lang": "id"
+  },
   "brand": "K-Bap",
   "common": {
     "cancel": "Batal",
@@ -7,7 +10,8 @@
     "tryAgain": "Coba lagi",
     "goBack": "Kembali",
     "retry": "Coba lagi",
-    "skip": "Lewati"
+    "skip": "Lewati",
+    "save": "Simpan"
   },
   "tabs": {
     "home": "Beranda",
@@ -33,7 +37,11 @@
   "search": {
     "placeholder": "Cari makanan, bahan…",
     "recent": "Pencarian terakhir",
-    "samples": ["Sup Kimchi", "Pasta udang", "Bibimbap"]
+    "samples": [
+      "Sup Kimchi",
+      "Pasta udang",
+      "Bibimbap"
+    ]
   },
   "notifications": {
     "title": "Notifikasi",
@@ -125,7 +133,14 @@
     "ratingLabel": "Penilaian Anda *",
     "tapToRate": "Ketuk untuk menilai",
     "ratingValue": "{{value}}/5 · {{label}}",
-    "labels": ["", "Buruk", "Biasa", "Lumayan", "Bagus", "Hebat"],
+    "labels": [
+      "",
+      "Buruk",
+      "Biasa",
+      "Lumayan",
+      "Bagus",
+      "Hebat"
+    ],
     "reviewLabel": "Ulasan Anda",
     "placeholder": "Ceritakan rasanya, dan tips untuk pelancong dengan pantangan seperti Anda…",
     "langDetected": "Ditulis dalam bahasa Inggris · terdeteksi otomatis",
@@ -343,5 +358,39 @@
       "Dietary": "Pola Makan",
       "Religion": "Agama"
     }
+  },
+  "editProfile": {
+    "title": "Edit profil",
+    "save": "Simpan perubahan",
+    "changePhoto": "Ubah foto",
+    "nickname": "Nama panggilan",
+    "nicknamePlaceholder": "Ingin dipanggil apa?",
+    "nicknameHint": "Tampil di ulasan dan peringkat Anda.",
+    "nationality": "Kewarganegaraan",
+    "nationalityHint": "Mengubah ini mereset kecocokan ulasan sesama warga negara.",
+    "readerLanguage": "Bahasa pembaca",
+    "readerLanguageHint": "Semua hidangan, ulasan, dan kartu pemilik diterjemahkan ke bahasa ini.",
+    "linkedTitle": "Tertaut ke akun",
+    "email": "Email"
+  },
+  "nationalityPicker": {
+    "title": "Kewarganegaraan",
+    "searchPlaceholder": "Cari negara…",
+    "notice": "Mendukung ulasan sesama warga negara — pilih selera yang paling Anda percaya.",
+    "suggested": "Disarankan",
+    "all": "Semua negara",
+    "empty": "Tidak ada negara yang cocok."
+  },
+  "restrictionsEdit": {
+    "title": "Edit pantangan",
+    "save": "Simpan pantangan",
+    "notice": "Ini mengatur semua peringatan keamanan. Jaga keakuratannya — perubahan berlaku untuk semua hidangan seketika.",
+    "avoidCount": "Anda menghindari {{count}} hal",
+    "avoidNone": "Belum ada yang dihindari",
+    "tapToRemove": "ketuk × untuk menghapus",
+    "searchPlaceholder": "Cari bahan…",
+    "allIngredients": "Semua bahan",
+    "emptyList": "Tidak ada bahan yang cocok dengan pencarian Anda.",
+    "disclaimer": "Hanya panduan — selalu konfirmasi item 'Hati-hati' dengan pemilik restoran."
   }
 }

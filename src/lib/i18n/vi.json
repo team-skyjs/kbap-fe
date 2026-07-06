@@ -1,5 +1,8 @@
 {
-  "_meta": { "status": "machine translation — pending native review", "lang": "vi" },
+  "_meta": {
+    "status": "machine translation — pending native review",
+    "lang": "vi"
+  },
   "brand": "K-Bap",
   "common": {
     "cancel": "Hủy",
@@ -7,7 +10,8 @@
     "tryAgain": "Thử lại",
     "goBack": "Quay lại",
     "retry": "Thử lại",
-    "skip": "Bỏ qua"
+    "skip": "Bỏ qua",
+    "save": "Lưu"
   },
   "tabs": {
     "home": "Trang chủ",
@@ -33,7 +37,11 @@
   "search": {
     "placeholder": "Tìm món ăn, nguyên liệu…",
     "recent": "Tìm kiếm gần đây",
-    "samples": ["Canh kimchi", "Mắm tôm", "Cơm trộn Bibimbap"]
+    "samples": [
+      "Canh kimchi",
+      "Mắm tôm",
+      "Cơm trộn Bibimbap"
+    ]
   },
   "notifications": {
     "title": "Thông báo",
@@ -125,7 +133,14 @@
     "ratingLabel": "Đánh giá của bạn *",
     "tapToRate": "Chạm để chấm điểm",
     "ratingValue": "{{value}}/5 · {{label}}",
-    "labels": ["", "Tệ", "Tạm", "Ổn", "Ngon", "Tuyệt"],
+    "labels": [
+      "",
+      "Tệ",
+      "Tạm",
+      "Ổn",
+      "Ngon",
+      "Tuyệt"
+    ],
     "reviewLabel": "Đánh giá của bạn",
     "placeholder": "Chia sẻ mùi vị và bất kỳ mẹo nào cho du khách có cùng hạn chế như bạn…",
     "langDetected": "Viết bằng tiếng Anh · tự động nhận diện",
@@ -343,5 +358,39 @@
       "Dietary": "Chế độ ăn",
       "Religion": "Tôn giáo"
     }
+  },
+  "editProfile": {
+    "title": "Chỉnh sửa hồ sơ",
+    "save": "Lưu thay đổi",
+    "changePhoto": "Đổi ảnh",
+    "nickname": "Biệt danh",
+    "nicknamePlaceholder": "Chúng tôi nên gọi bạn là gì?",
+    "nicknameHint": "Hiển thị trên đánh giá và xếp hạng của bạn.",
+    "nationality": "Quốc tịch",
+    "nationalityHint": "Thay đổi sẽ đặt lại các đánh giá cùng quốc tịch của bạn.",
+    "readerLanguage": "Ngôn ngữ đọc",
+    "readerLanguageHint": "Mọi món ăn, đánh giá và thẻ chủ quán đều được dịch sang ngôn ngữ này.",
+    "linkedTitle": "Đã liên kết tài khoản",
+    "email": "Email"
+  },
+  "nationalityPicker": {
+    "title": "Quốc tịch",
+    "searchPlaceholder": "Tìm quốc gia…",
+    "notice": "Cung cấp đánh giá cùng quốc tịch — chọn khẩu vị bạn tin nhất.",
+    "suggested": "Gợi ý",
+    "all": "Tất cả quốc gia",
+    "empty": "Không tìm thấy quốc gia."
+  },
+  "restrictionsEdit": {
+    "title": "Chỉnh sửa hạn chế",
+    "save": "Lưu hạn chế",
+    "notice": "Điều này chi phối mọi cảnh báo an toàn. Giữ chính xác — thay đổi áp dụng ngay cho mọi món.",
+    "avoidCount": "Bạn tránh {{count}} thứ",
+    "avoidNone": "Chưa tránh gì",
+    "tapToRemove": "chạm × để xóa",
+    "searchPlaceholder": "Tìm nguyên liệu…",
+    "allIngredients": "Tất cả nguyên liệu",
+    "emptyList": "Không có nguyên liệu khớp.",
+    "disclaimer": "Chỉ mang tính hướng dẫn — luôn xác nhận mục 'Thận trọng' với chủ quán."
   }
 }

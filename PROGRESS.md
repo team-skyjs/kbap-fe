@@ -132,6 +132,15 @@
 - [~] 통합 dev 빌드 실행: iOS build `a2a0ab78` (fingerprint `dee1ba23`). https://expo.dev/accounts/rocher/projects/kbap/builds/a2a0ab78-2336-4d87-9b6b-7a1e90ffb4e7
   - 이 빌드 하나로 (1) 브랜드 아이콘/스플래시(네이티브) + (2) AsyncStorage 언어영속(신규 네이티브 모듈) + (3) 인앱 로고·폰트·번역(번들 포함) 전부 활성. 이후 JS 변경만 OTA.
 
+### KB-6 프로필 편집 UI (Screen I 포팅 + 오버라이드) — 완료
+- [x] 데이터(7a94ecb): `mocks/ingredients.ts` 평면 81종 카탈로그(code+name, BE 스텁) + `ingredientLabel`. restrictions=평면 재료코드(kind는 계약용 vestigial). 랭킹=7등급 FR-025 재사용(MOCK_RANKING→explorer). User.email(옵셔널), `useUpdateMe`(PATCH /me, MOCK 캐시 병합). NATIONALITIES에 native/suggested.
+- [x] 공유 컴포넌트(8797324): **`src/components/IngredientFilter.tsx`** — I6 + 온보딩 KB-8 공유. 검색 81종 + active 칩(× 제거), 카테고리 없음, 재료별 프리 위험색 없음, "왜"는 안 물음.
+- [x] 화면(1165516): `app/profile/edit.tsx`(I3) · `nationality.tsx`(I4) · `restrictions.tsx`(I6 오버라이드). I5=기존 LanguagePicker 재사용, I2=기존 delete-account 재사용.
+- [x] I1 배선(9c5d149): 랭킹 7세그먼트+지역화 tier, 평면 중립 재료칩, 연필→edit, Edit/Add→restrictions.
+- web 대조: I1/I3/I4/I6 전부 렌더 확인(7등급 진행바, 국적 Suggested/All, 81종 평면 필터 선택=오렌지·프리컬러 없음). tsc 0 · jest 17/17.
+  - ❕ 편차: (a) I1 5-tier 라벨행 제거(7등급 이름이 요약행에 안 들어감 — 전체는 랭킹 디테일에). (b) 국적/reader언어는 선택 즉시 반영(닉네임만 Save에 staged) — LanguagePicker 즉시반영과 일관. (c) 홈 "avoid N things" 배너의 빨간 점은 경고배너 프레이밍(유지). (d) reader언어 SSOT=LocaleProvider `lang`(me.readerLanguage는 미러).
+- [x] 81종 필터 공유 컴포넌트 위치: `src/components/IngredientFilter.tsx` (KB-8 온보딩에서 import).
+
 ## ❓ i18n 후속/갭 (사용자 결정)
 - **네이티브 감수 필요**: 8개 비-en 번들은 기계번역(각 `_meta.status="machine translation — pending native review"`). 서브에이전트가 flag한 애매 키(예: tier 등급명 축약, "Shrimp paste" 현지어, "Spike"/"Metro" 개발용어)는 감수 시 확인.
 - **알레르기/제한 라벨·국가명 미번역**: `lib/onboarding/data.ts`의 allergen 라벨("Shellfish" 등)·그룹명·국가명은 아직 영어. 파일 주석대로 "서버 구동 카탈로그로 대체 예정"인 **도메인 데이터**로 간주(음식명 미번역과 동일 논리)라 이번 범위서 제외. 지금 i18n화 원하면 알려주세요(9개 언어 ~30키 추가 번역 필요).

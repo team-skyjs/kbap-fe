@@ -1,5 +1,8 @@
 {
-  "_meta": { "status": "machine translation — pending native review", "lang": "es" },
+  "_meta": {
+    "status": "machine translation — pending native review",
+    "lang": "es"
+  },
   "brand": "K-Bap",
   "common": {
     "cancel": "Cancelar",
@@ -7,7 +10,8 @@
     "tryAgain": "Intentar de nuevo",
     "goBack": "Volver",
     "retry": "Reintentar",
-    "skip": "Omitir"
+    "skip": "Omitir",
+    "save": "Guardar"
   },
   "tabs": {
     "home": "Inicio",
@@ -33,7 +37,11 @@
   "search": {
     "placeholder": "Buscar comida, ingrediente…",
     "recent": "Búsquedas recientes",
-    "samples": ["Guiso de kimchi", "Pasta de camarón", "Bibimbap"]
+    "samples": [
+      "Guiso de kimchi",
+      "Pasta de camarón",
+      "Bibimbap"
+    ]
   },
   "notifications": {
     "title": "Notificaciones",
@@ -125,7 +133,14 @@
     "ratingLabel": "Tu valoración *",
     "tapToRate": "Toca para valorar",
     "ratingValue": "{{value}}/5 · {{label}}",
-    "labels": ["", "Mala", "Regular", "Aceptable", "Buena", "Excelente"],
+    "labels": [
+      "",
+      "Mala",
+      "Regular",
+      "Aceptable",
+      "Buena",
+      "Excelente"
+    ],
     "reviewLabel": "Tu reseña",
     "placeholder": "Comparte a qué sabía y cualquier consejo para viajeros con tus restricciones…",
     "langDetected": "Escrita en español · detectado automáticamente",
@@ -343,5 +358,39 @@
       "Dietary": "Dieta",
       "Religion": "Religión"
     }
+  },
+  "editProfile": {
+    "title": "Editar perfil",
+    "save": "Guardar cambios",
+    "changePhoto": "Cambiar foto",
+    "nickname": "Apodo",
+    "nicknamePlaceholder": "¿Cómo te llamamos?",
+    "nicknameHint": "Se muestra en tus reseñas y ranking.",
+    "nationality": "Nacionalidad",
+    "nationalityHint": "Cambiarla reinicia tus coincidencias de reseñas de la misma nacionalidad.",
+    "readerLanguage": "Idioma de lectura",
+    "readerLanguageHint": "Cada plato, reseña y tarjeta del dueño se traduce a este idioma.",
+    "linkedTitle": "Vinculado a la cuenta",
+    "email": "Correo"
+  },
+  "nationalityPicker": {
+    "title": "Nacionalidad",
+    "searchPlaceholder": "Buscar país…",
+    "notice": "Activa las reseñas de la misma nacionalidad: elige el gusto en el que más confías.",
+    "suggested": "Sugeridos",
+    "all": "Todos los países",
+    "empty": "Ningún país coincide."
+  },
+  "restrictionsEdit": {
+    "title": "Editar restricciones",
+    "save": "Guardar restricciones",
+    "notice": "Esto controla cada alerta de seguridad. Mantenlo preciso: los cambios se aplican a todos los platos de inmediato.",
+    "avoidCount": "Evitas {{count}} cosas",
+    "avoidNone": "Nada evitado aún",
+    "tapToRemove": "toca × para quitar",
+    "searchPlaceholder": "Buscar ingredientes…",
+    "allIngredients": "Todos los ingredientes",
+    "emptyList": "Ningún ingrediente coincide con tu búsqueda.",
+    "disclaimer": "Solo orientativo: confirma siempre los elementos de 'Precaución' con el dueño del restaurante."
   }
 }

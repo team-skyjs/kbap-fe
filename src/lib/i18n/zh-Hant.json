@@ -10,7 +10,8 @@
     "tryAgain": "再試一次",
     "goBack": "返回",
     "retry": "重試",
-    "skip": "略過"
+    "skip": "略過",
+    "save": "儲存"
   },
   "tabs": {
     "home": "首頁",
@@ -36,7 +37,11 @@
   "search": {
     "placeholder": "搜尋食物、食材…",
     "recent": "最近搜尋",
-    "samples": ["泡菜鍋", "蝦醬", "石鍋拌飯"]
+    "samples": [
+      "泡菜鍋",
+      "蝦醬",
+      "石鍋拌飯"
+    ]
   },
   "notifications": {
     "title": "通知",
@@ -128,7 +133,14 @@
     "ratingLabel": "你的評分 *",
     "tapToRate": "點擊評分",
     "ratingValue": "{{value}}/5 · {{label}}",
-    "labels": ["", "很差", "普通", "尚可", "不錯", "很棒"],
+    "labels": [
+      "",
+      "很差",
+      "普通",
+      "尚可",
+      "不錯",
+      "很棒"
+    ],
     "reviewLabel": "你的評論",
     "placeholder": "分享它嚐起來如何，以及給有相同飲食限制旅客的任何建議…",
     "langDetected": "以英文撰寫 · 自動偵測",
@@ -346,5 +358,39 @@
       "Dietary": "飲食",
       "Religion": "宗教"
     }
+  },
+  "editProfile": {
+    "title": "編輯個人資料",
+    "save": "儲存變更",
+    "changePhoto": "更換相片",
+    "nickname": "暱稱",
+    "nicknamePlaceholder": "希望我們怎麼稱呼你？",
+    "nicknameHint": "顯示於你的評論與排名。",
+    "nationality": "國籍",
+    "nationalityHint": "更改後將重設你的同國籍評論配對。",
+    "readerLanguage": "閱讀語言",
+    "readerLanguageHint": "所有菜色、評論與店家資訊都會翻譯成此語言。",
+    "linkedTitle": "已連結帳號",
+    "email": "電子郵件"
+  },
+  "nationalityPicker": {
+    "title": "國籍",
+    "searchPlaceholder": "搜尋國家…",
+    "notice": "用於同國籍評論，選擇你最信任的口味。",
+    "suggested": "建議",
+    "all": "所有國家",
+    "empty": "找不到符合的國家。"
+  },
+  "restrictionsEdit": {
+    "title": "編輯飲食限制",
+    "save": "儲存限制",
+    "notice": "這會影響所有安全警示。請保持正確，變更會立即套用至所有菜色。",
+    "avoidCount": "你避開 {{count}} 項",
+    "avoidNone": "尚未避開任何項目",
+    "tapToRemove": "點 × 移除",
+    "searchPlaceholder": "搜尋食材…",
+    "allIngredients": "所有食材",
+    "emptyList": "找不到符合的食材。",
+    "disclaimer": "僅供參考，請務必向店家確認「注意」項目。"
   }
 }

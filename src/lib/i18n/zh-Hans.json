@@ -1,5 +1,8 @@
 {
-  "_meta": { "status": "machine translation — pending native review", "lang": "zh-Hans" },
+  "_meta": {
+    "status": "machine translation — pending native review",
+    "lang": "zh-Hans"
+  },
   "brand": "K-Bap",
   "common": {
     "cancel": "取消",
@@ -7,7 +10,8 @@
     "tryAgain": "重试",
     "goBack": "返回",
     "retry": "重试",
-    "skip": "跳过"
+    "skip": "跳过",
+    "save": "保存"
   },
   "tabs": {
     "home": "首页",
@@ -33,7 +37,11 @@
   "search": {
     "placeholder": "搜索菜品、食材…",
     "recent": "最近搜索",
-    "samples": ["泡菜汤", "虾酱", "石锅拌饭"]
+    "samples": [
+      "泡菜汤",
+      "虾酱",
+      "石锅拌饭"
+    ]
   },
   "notifications": {
     "title": "通知",
@@ -125,7 +133,14 @@
     "ratingLabel": "你的评分 *",
     "tapToRate": "点击评分",
     "ratingValue": "{{value}}/5 · {{label}}",
-    "labels": ["", "差", "一般", "还行", "不错", "很棒"],
+    "labels": [
+      "",
+      "差",
+      "一般",
+      "还行",
+      "不错",
+      "很棒"
+    ],
     "reviewLabel": "你的点评",
     "placeholder": "分享一下味道如何，以及给有相同禁忌的旅行者的建议…",
     "langDetected": "以英文撰写 · 自动检测",
@@ -343,5 +358,39 @@
       "Dietary": "饮食",
       "Religion": "宗教"
     }
+  },
+  "editProfile": {
+    "title": "编辑资料",
+    "save": "保存修改",
+    "changePhoto": "更换照片",
+    "nickname": "昵称",
+    "nicknamePlaceholder": "希望我们怎么称呼你？",
+    "nicknameHint": "会显示在你的评价和排名中。",
+    "nationality": "国籍",
+    "nationalityHint": "更改国籍会重置你的同国籍评价匹配。",
+    "readerLanguage": "阅读语言",
+    "readerLanguageHint": "所有菜品、评价和店主卡片都会翻译成这种语言。",
+    "linkedTitle": "关联账号",
+    "email": "邮箱"
+  },
+  "nationalityPicker": {
+    "title": "国籍",
+    "searchPlaceholder": "搜索国家…",
+    "notice": "用于生成同国籍评价，请选择你最信赖的口味。",
+    "suggested": "推荐",
+    "all": "所有国家",
+    "empty": "没有匹配的国家。"
+  },
+  "restrictionsEdit": {
+    "title": "编辑禁忌",
+    "save": "保存禁忌",
+    "notice": "这将影响所有安全警告。请保持准确，更改会立即应用于所有菜品。",
+    "avoidCount": "你忌口 {{count}} 种",
+    "avoidNone": "尚未设置忌口",
+    "tapToRemove": "点击 × 移除",
+    "searchPlaceholder": "搜索食材…",
+    "allIngredients": "所有食材",
+    "emptyList": "没有匹配的食材。",
+    "disclaimer": "仅供参考，“注意”级别的食材请务必向餐厅店主确认。"
   }
 }
