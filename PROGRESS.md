@@ -143,6 +143,16 @@
 
 - [x] 재료 카탈로그(81종) i18n 완료: `ingredients.<slug>` 9개 언어(en + 8 기계번역), `ingredientLabel`이 i18n으로 해석 → 언어 전환 시 재료명·홈배너·I6 필터 모두 번역. 브랜드 로고는 항상 Baloo 고정(raw Text).
 
+### KB-8 온보딩 UI 정립 (Screen A 포팅 + 오버라이드) — 완료
+- [x] 공유 국적피커 추출(022ac50): `src/components/NationalityPicker.tsx`(I4 모달). KB-6 edit이 route 대신 모달 사용 → `app/profile/nationality.tsx` 삭제. 온보딩 A3와 공용.
+- [x] KB-8 온보딩 정립(72a7d9c): A1~A8 Screen A. 오버라이드:
+  1. **A4 = 공유 `IngredientFilter`**(평면 81종, KB-6 I6과 동일 컴포넌트). 추상 Dietary/Religion 프리셋·재료 프리위험색 제거. Optional/Skip + "이게 모든 안전경고 좌우" 고지 유지. 저장=평면 재료코드.
+  2. 브랜드 K-Bap: K-Bowl BrandTile + 워드마크 + CTA "Start using K-Bap".
+  3. A3 국적/언어 = 공유 NationalityPicker(I4)/LanguagePicker(I5, 9개 endonym). 옛 샘플 시트·4언어 목록 제거.
+  - 로컬 PickerModal/Chip·프리셋 데이터 사용 제거. tsc 0 · jest 17/17 · web 검증(A1 브랜드/A3 9언어 피커/A4 평면필터).
+  - 범위 밖(별도): 첫실행 게이팅·영속은 실 API 통합 단계.
+- **공유 컴포넌트·선택기 위치**: 81종 필터=`src/components/IngredientFilter.tsx` · 국적=`NationalityPicker.tsx` · 언어=`LanguagePicker.tsx` · 81종 카탈로그=`src/lib/mocks/ingredients.ts`.
+
 ## ❓ i18n 후속/갭 (사용자 결정)
 - **네이티브 감수 필요**: 8개 비-en 번들은 기계번역(각 `_meta.status="machine translation — pending native review"`). 서브에이전트가 flag한 애매 키(예: tier 등급명 축약, "Shrimp paste" 현지어, "Spike"/"Metro" 개발용어)는 감수 시 확인.
 - **알레르기/제한 라벨·국가명 미번역**: `lib/onboarding/data.ts`의 allergen 라벨("Shellfish" 등)·그룹명·국가명은 아직 영어. 파일 주석대로 "서버 구동 카탈로그로 대체 예정"인 **도메인 데이터**로 간주(음식명 미번역과 동일 논리)라 이번 범위서 제외. 지금 i18n화 원하면 알려주세요(9개 언어 ~30키 추가 번역 필요).
