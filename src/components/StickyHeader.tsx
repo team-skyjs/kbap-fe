@@ -137,13 +137,13 @@ export function StickyHeader({
 
         <View style={styles.actions}>
           {search && (
-            <Pressable style={styles.iconBtn} onPress={onSearch} hitSlop={8}>
-              <IconSearch size={20} color={C.ink} />
+            <Pressable style={styles.actionBtn} onPress={onSearch} hitSlop={10}>
+              <IconSearch size={23} color={C.ink} sw={1.8} />
             </Pressable>
           )}
           {bell && (
-            <Pressable style={styles.iconBtn} onPress={onBell} hitSlop={8}>
-              <IconBell size={20} color={C.ink} />
+            <Pressable style={styles.actionBtn} onPress={onBell} hitSlop={10}>
+              <IconBell size={23} color={C.ink} sw={1.8} />
               {bellDot && <View style={styles.dot} />}
             </Pressable>
           )}
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     color: C.ink,
   },
   titleKo: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   iconBtn: {
     width: 40,
     height: 40,
@@ -200,16 +200,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // bare line-icon action (search/bell) — no pill background, 40×40 tap target
+  actionBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dot: {
     position: 'absolute',
-    top: 7,
-    right: 8,
-    width: 8,
+    top: 6,
+    right: 7,
+    minWidth: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: C.riskDanger,
     borderWidth: 2,
-    borderColor: C.card,
+    borderColor: C.surface,
   },
   hairline: {
     position: 'absolute',
