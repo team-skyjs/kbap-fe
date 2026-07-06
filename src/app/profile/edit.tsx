@@ -8,11 +8,12 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck } from '@/components';
 import { LanguagePicker } from '@/components/LanguagePicker';
+import { NationalityPicker } from '@/components/NationalityPicker';
 import { NATIONALITIES } from '@/lib/onboarding/data';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -28,6 +29,7 @@ export default function EditProfile() {
   const [nickname, setNickname] = useState('');
   const [seeded, setSeeded] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [natOpen, setNatOpen] = useState(false);
   useEffect(() => {
     if (me && !seeded) {
       setNickname(me.nickname);
@@ -85,7 +87,7 @@ export default function EditProfile() {
         {/* nationality → I4 */}
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.nationality')} *</Text>
-          <Pressable style={styles.field} onPress={() => router.push('/profile/nationality' as Href)}>
+          <Pressable style={styles.field} onPress={() => setNatOpen(true)}>
             {nation ? <Flag code={nation.code} size={20} /> : <IconGlobe size={18} color={C.ink2} />}
             <Text style={styles.val}>{nation?.label ?? me?.nationality}</Text>
             <IconChevron size={16} color={C.ink3} />
@@ -126,6 +128,12 @@ export default function EditProfile() {
       </View>
 
       <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
+      <NationalityPicker
+        open={natOpen}
+        selectedCode={me?.nationality}
+        onSelect={(code) => update.mutate({ nationality: code })}
+        onClose={() => setNatOpen(false)}
+      />
     </View>
   );
 }
