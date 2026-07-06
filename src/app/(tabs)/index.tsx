@@ -98,7 +98,7 @@ export default function Home() {
                 <View style={styles.dietHead}>
                   <RiskMark state="danger" size={20} />
                   <Text style={styles.dietTitle}>{t('home.avoidCount', { count: restrictions.length })}</Text>
-                  <Pressable onPress={() => router.push('/profile')} hitSlop={8}>
+                  <Pressable onPress={() => router.push('/profile/restrictions' as Href)} hitSlop={8}>
                     <Text style={styles.link}>{t('home.edit')}</Text>
                   </Pressable>
                 </View>

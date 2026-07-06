@@ -77,7 +77,7 @@ export default function Profile() {
                     <Text style={styles.pillText}>{me.nationality}</Text>
                   </View>
                   <View style={styles.pill}>
-                    <Text style={styles.pillText}>{me.readerLanguage.toUpperCase()}</Text>
+                    <Text style={styles.pillText}>{lang.split('-')[0].toUpperCase()}</Text>
                   </View>
                 </View>
               </View>

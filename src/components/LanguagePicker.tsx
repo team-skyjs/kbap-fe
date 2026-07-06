@@ -12,15 +12,20 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
 import { SUPPORTED_LANGS, LANG_ENDONYM, type SupportedLang } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { useUpdateMe } from '@/lib/data/useMe';
 import { IconClose, IconCheck } from './icons';
 
 export function LanguagePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { lang, setLang } = useLocale();
+  const update = useUpdateMe();
 
   function pick(next: SupportedLang) {
-    if (next !== lang) setLang(next);
+    if (next !== lang) {
+      setLang(next); // app locale (LocaleProvider) — the reader-language SSOT
+      update.mutate({ readerLanguage: next }); // mirror onto the profile field for PATCH /me
+    }
     onClose();
   }
 
