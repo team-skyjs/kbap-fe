@@ -7,8 +7,10 @@
  * All colors come from theme tokens (no hardcoding). Fonts are already bundled.
  */
 import * as React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Txt as Text } from '@/components/Txt';
+// Brand wordmark uses the RAW react-native Text (NOT the script-aware Txt): the
+// "K-Bap" mark is a fixed Latin logo and must always render in Baloo 2, never
+// remapped to the active reader language's script font.
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, G, Path, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { color as C, font } from '@/lib/theme';
 
