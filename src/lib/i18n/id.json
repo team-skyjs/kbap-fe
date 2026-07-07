@@ -99,8 +99,8 @@
   "risk": {
     "safe": "Aman",
     "caution": "Hati-hati",
-    "danger": "Bahaya",
-    "unable": "Tidak dapat dinilai"
+    "danger": "Hindari",
+    "unable": "Tak ada data"
   },
   "scan": {
     "hint": "Arahkan ke menu dan ketuk untuk memindai",
@@ -278,6 +278,9 @@
     "verdictCaution": "Hati-hati untuk Anda",
     "verdictDanger": "Bahaya untuk Anda",
     "verdictUnable": "Tidak dapat dinilai",
+    "basisSafe": "Tidak ada bahan yang ditandai untuk profil Anda.",
+    "basisFlagged": "Ditandai untuk satu atau beberapa pembatasan Anda.",
+    "basisUnable": "Data tidak cukup untuk memverifikasi — tanyakan kepada pemilik.",
     "allUsers": "Semua pengguna · {{count}} ulasan",
     "sameNationality": "Kebangsaan sama",
     "insideTitle": "Apa isinya",

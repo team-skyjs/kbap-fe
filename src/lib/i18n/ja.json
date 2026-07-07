@@ -99,7 +99,7 @@
   "risk": {
     "safe": "安全",
     "caution": "注意",
-    "danger": "危険",
+    "danger": "禁止",
     "unable": "判定不可"
   },
   "scan": {
@@ -278,6 +278,9 @@
     "verdictCaution": "あなたに注意",
     "verdictDanger": "あなたに危険",
     "verdictUnable": "判定不可",
+    "basisSafe": "あなたのプロフィールに該当する成分はありません。",
+    "basisFlagged": "あなたの制限のいずれかに該当します。",
+    "basisUnable": "確認できるデータが不足しています — 店主にお尋ねください。",
     "allUsers": "全ユーザー · {{count}} 件のレビュー",
     "sameNationality": "同じ国籍",
     "insideTitle": "含まれるもの",

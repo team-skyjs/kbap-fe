@@ -11,11 +11,13 @@ import * as React from 'react';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { color as C, type RiskState } from '@/lib/theme';
 
-export const RISK: Record<RiskState, { color: string; label: string; ko: string }> = {
-  safe: { color: C.riskSafe, label: 'Safe', ko: '안전' },
-  caution: { color: C.riskCaution, label: 'Caution', ko: '주의' },
-  danger: { color: C.riskDanger, label: 'Danger', ko: '위험' },
-  unable: { color: C.riskUnable, label: 'Unable to assess', ko: '판정불가' },
+// Fixed per-state color (silhouette/glyph are defined below). Human-readable
+// labels are NOT here — they are reader-language i18n (`risk.*`), see RiskPill.
+export const RISK: Record<RiskState, { color: string }> = {
+  safe: { color: C.riskSafe },
+  caution: { color: C.riskCaution },
+  danger: { color: C.riskDanger },
+  unable: { color: C.riskUnable },
 };
 
 function Silhouette({ state }: { state: RiskState }) {

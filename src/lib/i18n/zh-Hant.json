@@ -99,8 +99,8 @@
   "risk": {
     "safe": "安全",
     "caution": "注意",
-    "danger": "危險",
-    "unable": "無法評估"
+    "danger": "禁止",
+    "unable": "無數據"
   },
   "scan": {
     "hint": "對準菜單並點擊以掃描",
@@ -278,6 +278,9 @@
     "verdictCaution": "對你需注意",
     "verdictDanger": "對你有危險",
     "verdictUnable": "無法評估",
+    "basisSafe": "沒有成分被標記為不適合你的檔案。",
+    "basisFlagged": "已標記為不符合你的一項或多項限制。",
+    "basisUnable": "資料不足，無法確認 — 請詢問店家。",
     "allUsers": "所有使用者 · {{count}} 則評論",
     "sameNationality": "相同國籍",
     "insideTitle": "成分內容",

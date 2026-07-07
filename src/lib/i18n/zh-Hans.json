@@ -98,9 +98,9 @@
   },
   "risk": {
     "safe": "安全",
-    "caution": "谨慎",
-    "danger": "危险",
-    "unable": "无法评估"
+    "caution": "注意",
+    "danger": "禁止",
+    "unable": "无数据"
   },
   "scan": {
     "hint": "对准菜单并点击扫描",
@@ -278,6 +278,9 @@
     "verdictCaution": "请谨慎食用",
     "verdictDanger": "对你有危险",
     "verdictUnable": "无法评估",
+    "basisSafe": "没有成分与你的资料存在冲突。",
+    "basisFlagged": "涉及你的一项或多项饮食限制。",
+    "basisUnable": "数据不足，无法核实，请咨询店主。",
     "allUsers": "所有用户 · {{count}} 条点评",
     "sameNationality": "同国籍",
     "insideTitle": "食材成分",

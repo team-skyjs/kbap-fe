@@ -13,12 +13,13 @@ import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
   RiskMark,
+  RiskPill,
   Stars,
   Star,
   Flag,
@@ -122,9 +123,17 @@ function Registered({
 }) {
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
-  const tone = riskTone[dishRisk];
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
   const basisFor = (code: string) => food.riskBasis.find((b) => b.ingredientCode === code)?.reason ?? null;
+
+  // one-line basis under the verdict (why this state) — false-safe: unable says so.
+  const governingReason = food.riskBasis[0]?.reason ?? null;
+  const verdictBasis =
+    dishRisk === 'unable'
+      ? t('detail.basisUnable')
+      : dishRisk === 'safe'
+        ? t('detail.basisSafe')
+        : governingReason ?? t('detail.basisFlagged');
   const spicyForYou = food.spiceLevel != null && spiceTolerance != null && food.spiceLevel > spiceTolerance;
 
   return (
@@ -138,10 +147,7 @@ function Registered({
       </View>
 
       <View style={styles.metaRow}>
-        <View style={[styles.verdict, { backgroundColor: tone.bg, borderColor: tone.line }]}>
-          <RiskMark state={dishRisk} size={20} />
-          <Text style={[styles.verdictText, { color: tone.fg }]}>{t(VERDICT[dishRisk])}</Text>
-        </View>
+        <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />
         {food.spiceLevel != null && (
           <View style={styles.spiceMeta}>
             <IconFlame size={16} color={C.primary} />
@@ -152,6 +158,8 @@ function Registered({
           </View>
         )}
       </View>
+
+      {!!verdictBasis && <Text style={styles.verdictBasis}>{verdictBasis}</Text>}
 
       {!hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
@@ -187,7 +195,6 @@ function Registered({
                 ing={ing}
                 displayRisk={dRisk}
                 reason={basisFor(ing.code)}
-                riskLabel={t(`risk.${dRisk}`)}
                 ofShops={ing.percentage != null ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) : ing.note ?? ''}
                 askLabel={t('detail.askOwner')}
                 onAsk={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
@@ -222,7 +229,6 @@ function IngredientRow({
   ing,
   displayRisk,
   reason,
-  riskLabel,
   ofShops,
   askLabel,
   onAsk,
@@ -230,28 +236,21 @@ function IngredientRow({
   ing: IngredientRisk;
   displayRisk: RiskState;
   reason: string | null;
-  riskLabel: string;
   ofShops: string;
   askLabel: string;
   onAsk: () => void;
 }) {
   const [open, setOpen] = useState(displayRisk === 'caution');
-  const tone = riskTone[displayRisk];
   const canAsk = displayRisk === 'caution' || displayRisk === 'danger';
   return (
     <View style={styles.ingRow}>
       <Pressable style={styles.ingMain} onPress={() => setOpen((o) => !o)}>
-        <View style={[styles.ingIc, { backgroundColor: tone.bg }]}>
-          <RiskMark state={displayRisk} size={18} />
-        </View>
         <View style={styles.ingMeta}>
           <Text style={styles.ingName}>{ing.name}</Text>
           {!!ofShops && <Text style={styles.ingPct}>{ofShops}</Text>}
         </View>
         <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }} />
-        <View style={[styles.rpill, { backgroundColor: tone.bg }]}>
-          <Text style={[styles.rpillText, { color: tone.fg }]}>{riskLabel}</Text>
-        </View>
+        <RiskPill state={displayRisk} size="sm" />
       </Pressable>
       {open && (
         <View style={styles.ingExpand}>
@@ -315,8 +314,7 @@ const styles = StyleSheet.create({
   thumb: { width: 60, height: 60, borderRadius: 16, backgroundColor: C.surface2, ...shadow.sh1 },
 
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  verdict: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
-  verdictText: { fontFamily: font.display, fontSize: 14.5 },
+  verdictBasis: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: -8 },
   spiceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   spiceText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
   spiceWarn: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary },
@@ -340,13 +338,10 @@ const styles = StyleSheet.create({
 
   ingRow: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, overflow: 'hidden', ...shadow.sh1 },
   ingMain: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 13 },
-  ingIc: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   ingMeta: { flex: 1, gap: 2 },
   ingName: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
   ingPct: { fontFamily: font.body, fontSize: 12, color: C.ink2 },
-  rpill: { borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
-  rpillText: { fontFamily: font.bodyBold, fontSize: 12.5 },
-  ingExpand: { paddingHorizontal: 14, paddingBottom: 14, paddingLeft: 65, gap: 10 },
+  ingExpand: { paddingHorizontal: 14, paddingBottom: 14, gap: 10 },
   ingReason: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 19 },
   askBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 12, ...shadow.sh1 },
   askBtnText: { fontFamily: font.display, fontSize: 14.5, color: '#fff' },

@@ -1,6 +1,7 @@
 /** Design-system barrel — shared chrome ported from the hi-fi mockup kit. */
 export * from './icons';
 export { RiskMark, RiskDot, RISK } from './RiskMark';
+export { RiskPill } from './RiskPill';
 export { Stars, Star } from './Stars';
 export { Flag } from './Flag';
 export { Rosette } from './Rosette';

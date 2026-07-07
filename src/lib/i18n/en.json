@@ -91,8 +91,8 @@
   "risk": {
     "safe": "Safe",
     "caution": "Caution",
-    "danger": "Danger",
-    "unable": "Unable to assess"
+    "danger": "Avoid",
+    "unable": "No data"
   },
   "scan": {
     "hint": "Point at a menu and tap to scan",
@@ -380,6 +380,9 @@
     "verdictCaution": "Caution for you",
     "verdictDanger": "Danger for you",
     "verdictUnable": "Unable to assess",
+    "basisSafe": "No ingredients flagged for your profile.",
+    "basisFlagged": "Flagged for one or more of your restrictions.",
+    "basisUnable": "Not enough data to verify — ask the owner.",
     "allUsers": "All users · {{count}} reviews",
     "sameNationality": "Same nationality",
     "insideTitle": "What's inside",

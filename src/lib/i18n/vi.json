@@ -99,8 +99,8 @@
   "risk": {
     "safe": "An toàn",
     "caution": "Thận trọng",
-    "danger": "Nguy hiểm",
-    "unable": "Không thể đánh giá"
+    "danger": "Tránh",
+    "unable": "Chưa rõ"
   },
   "scan": {
     "hint": "Hướng vào thực đơn và chạm để quét",
@@ -278,6 +278,9 @@
     "verdictCaution": "Thận trọng cho bạn",
     "verdictDanger": "Nguy hiểm cho bạn",
     "verdictUnable": "Không thể đánh giá",
+    "basisSafe": "Không có thành phần nào bị gắn cờ cho hồ sơ của bạn.",
+    "basisFlagged": "Bị gắn cờ vì một hoặc nhiều hạn chế của bạn.",
+    "basisUnable": "Chưa đủ dữ liệu để xác minh — hãy hỏi chủ quán.",
     "allUsers": "Tất cả người dùng · {{count}} đánh giá",
     "sameNationality": "Cùng quốc tịch",
     "insideTitle": "Bên trong có gì",

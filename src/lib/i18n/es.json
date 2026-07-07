@@ -99,8 +99,8 @@
   "risk": {
     "safe": "Seguro",
     "caution": "Precaución",
-    "danger": "Peligro",
-    "unable": "No se puede evaluar"
+    "danger": "Evitar",
+    "unable": "Sin datos"
   },
   "scan": {
     "hint": "Apunta a un menú y toca para escanear",
@@ -278,6 +278,9 @@
     "verdictCaution": "Precaución para ti",
     "verdictDanger": "Peligro para ti",
     "verdictUnable": "No se puede evaluar",
+    "basisSafe": "Ningún ingrediente marcado para tu perfil.",
+    "basisFlagged": "Marcado por una o más de tus restricciones.",
+    "basisUnable": "No hay datos suficientes para verificar; pregunta al dueño.",
     "allUsers": "Todos los usuarios · {{count}} reseñas",
     "sameNationality": "Misma nacionalidad",
     "insideTitle": "Qué contiene",
