@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   copy: { paddingHorizontal: 30, paddingTop: 22, alignItems: 'center', gap: 9 },
   eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: radius.pill, paddingHorizontal: 13, paddingVertical: 6 },
   eyebrowText: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1.4 },
-  head: { fontFamily: font.displayBlack, fontSize: 27, color: C.ink, textAlign: 'center', lineHeight: 31, letterSpacing: -0.4, maxWidth: 300 },
+  head: { fontFamily: font.displayBlack, fontSize: 27, color: C.ink, textAlign: 'center', lineHeight: 34, letterSpacing: -0.4, maxWidth: 300 },
   sub: { fontFamily: font.body, fontSize: 14.5, color: C.ink2, textAlign: 'center', lineHeight: 21, maxWidth: 320 },
 
   dots: { flexDirection: 'row', gap: 8, justifyContent: 'center', paddingTop: 22, paddingBottom: 6 },

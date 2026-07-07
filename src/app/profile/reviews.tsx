@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
 
   stat: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 15, ...shadow.sh1 },
   big: { flex: 1, alignItems: 'center', gap: 3 },
-  bigNum: { fontFamily: font.display, fontSize: 30, color: C.ink, lineHeight: 32 },
+  bigNum: { fontFamily: font.display, fontSize: 30, color: C.ink, lineHeight: 40 },
   bigLbl: { fontFamily: font.body, fontSize: 10.5, color: C.ink3 },
   sd: { width: 1, alignSelf: 'stretch', backgroundColor: C.hair },
 

@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   rateCol: { flex: 1, alignItems: 'center', gap: 4 },
   rateLblRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rateLbl: { fontFamily: font.body, fontSize: 11, letterSpacing: 0.3, color: C.ink3, textTransform: 'uppercase' },
-  rateNum: { fontFamily: font.displayBlack, fontSize: 32, color: C.ink, lineHeight: 34 },
+  rateNum: { fontFamily: font.displayBlack, fontSize: 32, color: C.ink, lineHeight: 42 },
   rateCount: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
   divider: { width: 1, backgroundColor: C.hair, marginHorizontal: 6 },
 

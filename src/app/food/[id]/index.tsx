@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
 
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
-  name: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.6, lineHeight: 30 },
+  name: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.6, lineHeight: 36 },
   ko: { fontFamily: font.ko, fontSize: 15, color: C.ink2, marginTop: 5 },
   thumb: { width: 60, height: 60, borderRadius: 16, backgroundColor: C.surface2, ...shadow.sh1 },
 
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   rate2: { flexDirection: 'row', gap: 11 },
   rateMini: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 6, ...shadow.sh1 },
   rateBig: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rateBigNum: { fontFamily: font.display, fontSize: 26, color: C.ink, lineHeight: 28 },
+  rateBigNum: { fontFamily: font.display, fontSize: 26, color: C.ink, lineHeight: 34 },
   rateLbl: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rateLblText: { flex: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
 

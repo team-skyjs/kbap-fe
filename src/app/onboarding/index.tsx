@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   chipTextOn: { color: '#fff' },
 
   // spice
-  bignum: { fontFamily: font.displayBlack, fontSize: 60, color: C.primary, lineHeight: 64 },
+  bignum: { fontFamily: font.displayBlack, fontSize: 60, color: C.primary, lineHeight: 78 },
   bignumDen: { fontFamily: font.display, fontSize: 24, color: C.ink3 },
   analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(226,88,12,0.08)' },
   analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },

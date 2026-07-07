@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 3, color: C.primary },
   heroEmblem: { marginTop: 4, marginBottom: 2, ...shadow.sh2 },
-  tierEn: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.6, lineHeight: 34 },
+  tierEn: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.6, lineHeight: 40 },
   tierKo: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3, letterSpacing: 0.2 },
   heroDivider: { width: 44, height: 2, borderRadius: 2, backgroundColor: 'rgba(226,88,12,0.35)', marginTop: 8, marginBottom: 6 },
   flavor: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, color: C.ink2, textAlign: 'center', maxWidth: 280 },
