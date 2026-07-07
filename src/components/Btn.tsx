@@ -3,7 +3,7 @@
  * Ported from hifi-g.css `.btn`. Label is i18n text passed by the caller.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
 
@@ -39,21 +39,23 @@ export function Btn({
         style,
       ]}
     >
-      {icon}
-      {children != null && (
-        <Text style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}>
-          {children}
-        </Text>
-      )}
+      {/* icon+label live in a shrink-wrapped inner row so the button only has to
+          center ONE child. Centering two flex siblings directly (icon + Text)
+          renders right-shifted on RN 0.85 native — web is fine; device is not. */}
+      <View style={styles.content}>
+        {icon}
+        {children != null && (
+          <Text style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}>
+            {children}
+          </Text>
+        )}
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    // NOTE: spacing between icon and label uses labelGap (marginLeft), NOT the
-    // flex `gap` prop — RN 0.85 native miscomputes `gap` + justifyContent:center
-    // and shifts the icon+label group off-center (web is fine, device is not).
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -61,6 +63,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 14,
+  },
+  // inner row: shrink-wraps icon+label; spacing via labelGap (marginLeft), not
+  // flex `gap`, to steer clear of the RN 0.85 gap/justify native quirk.
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   sm: {
     paddingVertical: 11,
