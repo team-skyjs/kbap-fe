@@ -39,9 +39,7 @@ export function Btn({
         style,
       ]}
     >
-      {/* icon+label live in a shrink-wrapped inner row so the button only has to
-          center ONE child. Centering two flex siblings directly (icon + Text)
-          renders right-shifted on RN 0.85 native — web is fine; device is not. */}
+      {/* icon+label in a shrink-wrapped inner row (belt-and-suspenders centering). */}
       <View style={styles.content}>
         {icon}
         {children != null && (
@@ -59,13 +57,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
+    // Fill the container via alignSelf:stretch, NOT width:'100%'. On RN 0.85
+    // native (Fabric/Yoga) a `width:'100%'` flex child miscomputes its own
+    // justifyContent:center as flex-end — the icon+label rendered flush-right on
+    // device (web was fine). Element-inspector confirmed. alignSelf:stretch
+    // gives the same full width without tripping that path.
+    alignSelf: 'stretch',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 14,
   },
-  // inner row: shrink-wraps icon+label; spacing via labelGap (marginLeft), not
-  // flex `gap`, to steer clear of the RN 0.85 gap/justify native quirk.
+  // inner row: shrink-wraps icon+label; spacing via labelGap (marginLeft).
   content: {
     flexDirection: 'row',
     alignItems: 'center',
