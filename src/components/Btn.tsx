@@ -41,7 +41,9 @@ export function Btn({
     >
       {icon}
       {children != null && (
-        <Text style={[styles.label, sm && styles.labelSm, palette.label]}>{children}</Text>
+        <Text style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}>
+          {children}
+        </Text>
       )}
     </Pressable>
   );
@@ -49,10 +51,12 @@ export function Btn({
 
 const styles = StyleSheet.create({
   base: {
+    // NOTE: spacing between icon and label uses labelGap (marginLeft), NOT the
+    // flex `gap` prop — RN 0.85 native miscomputes `gap` + justifyContent:center
+    // and shifts the icon+label group off-center (web is fine, device is not).
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 9,
     width: '100%',
     borderRadius: 14,
     paddingVertical: 14,
@@ -67,6 +71,7 @@ const styles = StyleSheet.create({
   },
   label: { fontFamily: font.display, fontSize: 16, color: '#fff' },
   labelSm: { fontSize: 14.5 },
+  labelGap: { marginLeft: 9 },
 });
 
 const VARIANTS: Record<
