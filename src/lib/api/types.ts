@@ -76,6 +76,10 @@ export interface FoodCard {
   photoUrl: string | null;
   risk: RiskState;
   overall: RatingAggregate;
+  /** Editorial popularity rank (1 = most popular). Search "popular" list. Optional; BE fills it (KB-71). */
+  popularityRank?: number;
+  /** One-line reader-language blurb for search result cards. Optional; BE fills it (KB-71). */
+  blurb?: string;
 }
 
 export interface IngredientRisk {

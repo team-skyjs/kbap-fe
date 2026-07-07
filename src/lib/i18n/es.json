@@ -70,6 +70,13 @@
   "search": {
     "placeholder": "Buscar comida, ingrediente…",
     "recent": "Búsquedas recientes",
+    "recentClearAll": "Borrar todo",
+    "recentEmptyHint": "Tus búsquedas recientes aparecerán aquí.",
+    "popular": "Populares ahora",
+    "resultCount": "{{count}} resultados",
+    "noResultsTitle": "No se encontraron coincidencias",
+    "noResultsBody": "Puede que este plato aún no esté en nuestro catálogo. Prueba con otro nombre o explora lo más popular.",
+    "backToPopular": "Ver platos populares",
     "samples": [
       "Guiso de kimchi",
       "Pasta de camarón",

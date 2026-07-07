@@ -70,6 +70,13 @@
   "search": {
     "placeholder": "搜尋食物、食材…",
     "recent": "最近搜尋",
+    "recentClearAll": "全部清除",
+    "recentEmptyHint": "你最近的搜尋會顯示在這裡。",
+    "popular": "熱門搜尋",
+    "resultCount": "{{count}} 個結果",
+    "noResultsTitle": "找不到符合的結果",
+    "noResultsBody": "這道菜可能還沒收錄在我們的目錄中。試試其他名稱，或瀏覽熱門項目。",
+    "backToPopular": "查看熱門菜色",
     "samples": [
       "泡菜鍋",
       "蝦醬",

@@ -70,6 +70,13 @@
   "search": {
     "placeholder": "搜索菜品、食材…",
     "recent": "最近搜索",
+    "recentClearAll": "全部清除",
+    "recentEmptyHint": "你最近的搜索会显示在这里。",
+    "popular": "当前热门",
+    "resultCount": "{{count}} 个结果",
+    "noResultsTitle": "未找到匹配结果",
+    "noResultsBody": "我们的目录中可能还没有这道菜。换个名称试试，或看看有哪些热门菜品。",
+    "backToPopular": "查看热门菜品",
     "samples": [
       "泡菜汤",
       "虾酱",

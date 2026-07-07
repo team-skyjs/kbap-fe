@@ -18,7 +18,6 @@ import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  SearchOverlay,
   NotificationsPanel,
   SkeletonList,
   Btn,
@@ -58,7 +57,6 @@ export default function Home() {
   const router = useRouter();
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
-  const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
   const { data: home, isLoading } = useHome();
@@ -216,10 +214,9 @@ export default function Home() {
         search
         bell
         bellDot
-        onSearch={() => setSearchOpen(true)}
+        onSearch={() => router.push('/search' as Href)}
         onBell={() => setNotifOpen(true)}
       />
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
     </View>
   );

@@ -70,6 +70,13 @@
   "search": {
     "placeholder": "Tìm món ăn, nguyên liệu…",
     "recent": "Tìm kiếm gần đây",
+    "recentClearAll": "Xóa tất cả",
+    "recentEmptyHint": "Các tìm kiếm gần đây của bạn sẽ hiển thị ở đây.",
+    "popular": "Đang thịnh hành",
+    "resultCount": "{{count}} kết quả",
+    "noResultsTitle": "Không tìm thấy kết quả nào",
+    "noResultsBody": "Món ăn này có thể chưa có trong danh mục của chúng tôi. Hãy thử một tên khác, hoặc xem các món đang thịnh hành.",
+    "backToPopular": "Xem các món thịnh hành",
     "samples": [
       "Canh kimchi",
       "Mắm tôm",

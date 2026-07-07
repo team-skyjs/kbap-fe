@@ -1,7 +1,7 @@
 /**
  * Food tab (mockup Screen G1) — browse every dish tagged with the user's risk.
- * Scroll-aware brand header + greeting, inline search entry (opens the shared
- * SearchOverlay), category chips, and a 2-column browse grid.
+ * Scroll-aware brand header + greeting, inline search entry (opens the
+ * full-screen /search route), category chips, and a 2-column browse grid.
  *
  * Data via useFoods() (MOCK_MODE). Tapping a card opens the detail (screen #4).
  * Category chips are visual selection only in mock (FoodCard has no category;
@@ -18,7 +18,6 @@ import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  SearchOverlay,
   SkeletonList,
   RiskMark,
   Stars,
@@ -36,7 +35,6 @@ export default function Food() {
   const router = useRouter();
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
-  const [searchOpen, setSearchOpen] = useState(false);
   const [category, setCategory] = useState('all');
 
   const { data: foods, isLoading } = useFoods();
@@ -58,8 +56,8 @@ export default function Food() {
             <Text style={styles.greetSub}>{t('food.sub')}</Text>
           </View>
 
-          {/* search entry → shared overlay */}
-          <Pressable style={styles.search} onPress={() => setSearchOpen(true)}>
+          {/* search entry → full-screen search route */}
+          <Pressable style={styles.search} onPress={() => router.push('/search' as Href)}>
             <IconSearch size={18} color={C.ink2} />
             <Text style={styles.searchPh}>{t('food.searchPlaceholder')}</Text>
           </Pressable>
@@ -94,7 +92,6 @@ export default function Food() {
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="brand" bell />
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </View>
   );
 }

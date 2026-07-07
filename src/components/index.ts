@@ -15,4 +15,3 @@ export { SkeletonList, Shimmer } from './Skeleton';
 export { Spinner } from './Spinner';
 export { ShellPlaceholder } from './ShellPlaceholder';
 export { NotificationsPanel } from './NotificationsPanel';
-export { SearchOverlay } from './SearchOverlay';

@@ -70,6 +70,13 @@
   "search": {
     "placeholder": "料理や食材を検索…",
     "recent": "最近の検索",
+    "recentClearAll": "すべて削除",
+    "recentEmptyHint": "最近の検索履歴がここに表示されます。",
+    "popular": "話題の検索",
+    "resultCount": "{{count}} 件の結果",
+    "noResultsTitle": "見つかりませんでした",
+    "noResultsBody": "この料理はまだカタログにないかもしれません。別の名前で検索するか、話題の料理をご覧ください。",
+    "backToPopular": "話題の料理を見る",
     "samples": [
       "キムチチゲ",
       "アミの塩辛",

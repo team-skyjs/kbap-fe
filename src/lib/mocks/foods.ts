@@ -14,14 +14,14 @@ import type {
 const agg = (average: number | null, count: number) => ({ average, count });
 
 export const MOCK_FOODS: FoodCard[] = [
-  { foodId: 'kimchi-jjigae', name: 'Kimchi Stew', nameKo: '김치찌개', photoUrl: null, risk: 'caution', overall: agg(4.4, 312) },
-  { foodId: 'bibimbap', name: 'Bibimbap', nameKo: '비빔밥', photoUrl: null, risk: 'safe', overall: agg(4.7, 540) },
-  { foodId: 'japchae', name: 'Japchae', nameKo: '잡채', photoUrl: null, risk: 'safe', overall: agg(4.5, 221) },
-  { foodId: 'tteokbokki', name: 'Tteokbokki', nameKo: '떡볶이', photoUrl: null, risk: 'safe', overall: agg(4.3, 488) },
-  { foodId: 'samgyeopsal', name: 'Samgyeopsal', nameKo: '삼겹살', photoUrl: null, risk: 'safe', overall: agg(4.8, 731) },
-  { foodId: 'jokbal', name: 'Jokbal', nameKo: '족발', photoUrl: null, risk: 'caution', overall: agg(4.2, 156) },
-  { foodId: 'sundubu-jjigae', name: 'Soft Tofu Stew', nameKo: '순두부찌개', photoUrl: null, risk: 'danger', overall: agg(4.5, 274) },
-  { foodId: 'mul-naengmyeon', name: 'Cold Buckwheat Noodles', nameKo: '물냉면', photoUrl: null, risk: 'safe', overall: agg(4.1, 98) },
+  { foodId: 'kimchi-jjigae', name: 'Kimchi Stew', nameKo: '김치찌개', photoUrl: null, risk: 'caution', overall: agg(4.4, 312), popularityRank: 4, blurb: 'Bubbling stew of aged kimchi, pork, and tofu.' },
+  { foodId: 'bibimbap', name: 'Bibimbap', nameKo: '비빔밥', photoUrl: null, risk: 'safe', overall: agg(4.7, 540), popularityRank: 2, blurb: 'Rice bowl topped with seasoned vegetables and egg.' },
+  { foodId: 'japchae', name: 'Japchae', nameKo: '잡채', photoUrl: null, risk: 'safe', overall: agg(4.5, 221), popularityRank: 6, blurb: 'Sweet-savory glass noodles stir-fried with vegetables.' },
+  { foodId: 'tteokbokki', name: 'Tteokbokki', nameKo: '떡볶이', photoUrl: null, risk: 'safe', overall: agg(4.3, 488), popularityRank: 3, blurb: 'Chewy rice cakes in a sweet-spicy gochujang sauce.' },
+  { foodId: 'samgyeopsal', name: 'Samgyeopsal', nameKo: '삼겹살', photoUrl: null, risk: 'safe', overall: agg(4.8, 731), popularityRank: 1, blurb: 'Grilled pork belly, wrapped in lettuce with sides.' },
+  { foodId: 'jokbal', name: 'Jokbal', nameKo: '족발', photoUrl: null, risk: 'caution', overall: agg(4.2, 156), popularityRank: 7, blurb: "Braised pig's trotters, sliced and served with dip." },
+  { foodId: 'sundubu-jjigae', name: 'Soft Tofu Stew', nameKo: '순두부찌개', photoUrl: null, risk: 'danger', overall: agg(4.5, 274), popularityRank: 5, blurb: 'Silken tofu stew in a spicy seafood broth.' },
+  { foodId: 'mul-naengmyeon', name: 'Cold Buckwheat Noodles', nameKo: '물냉면', photoUrl: null, risk: 'safe', overall: agg(4.1, 98), popularityRank: 8, blurb: 'Cold buckwheat noodles in a chilled, tangy broth.' },
 ];
 
 const byId = Object.fromEntries(MOCK_FOODS.map((f) => [f.foodId, f]));

@@ -70,6 +70,13 @@
   "search": {
     "placeholder": "Cari makanan, bahan…",
     "recent": "Pencarian terakhir",
+    "recentClearAll": "Hapus semua",
+    "recentEmptyHint": "Pencarian terakhir Anda akan muncul di sini.",
+    "popular": "Populer saat ini",
+    "resultCount": "{{count}} hasil",
+    "noResultsTitle": "Tidak ada hasil yang cocok",
+    "noResultsBody": "Hidangan ini mungkin belum ada di katalog kami. Coba nama lain, atau jelajahi yang sedang populer.",
+    "backToPopular": "Lihat hidangan populer",
     "samples": [
       "Sup Kimchi",
       "Pasta udang",
