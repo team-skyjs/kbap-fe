@@ -35,6 +35,15 @@
     "emptyTitle": "还没有点评",
     "emptyBody": "你点评过的菜品会显示在这里。分享你的第一条感受，帮助其他旅行者。"
   },
+  "editReview": {
+    "title": "编辑点评",
+    "save": "保存修改",
+    "delete": "删除此点评",
+    "posted": "发布于 {{when}}",
+    "notFound": "该点评已不存在。",
+    "deleteConfirmTitle": "删除此点评？",
+    "deleteConfirmBody": "该点评将被永久删除，此操作无法撤销。"
+  },
   "tabs": {
     "home": "首页",
     "food": "美食",

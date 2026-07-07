@@ -35,6 +35,15 @@
     "emptyTitle": "尚無評論",
     "emptyBody": "你評論過的菜色會顯示在這裡。分享你的第一則心得，幫助其他旅客。"
   },
+  "editReview": {
+    "title": "編輯評論",
+    "save": "儲存變更",
+    "delete": "刪除此評論",
+    "posted": "發佈於 {{when}}",
+    "notFound": "此評論已不存在。",
+    "deleteConfirmTitle": "要刪除此評論嗎？",
+    "deleteConfirmBody": "此評論將被永久移除，且無法復原。"
+  },
   "tabs": {
     "home": "首頁",
     "food": "美食",

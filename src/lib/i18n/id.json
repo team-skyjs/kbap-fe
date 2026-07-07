@@ -35,6 +35,15 @@
     "emptyTitle": "Belum ada ulasan",
     "emptyBody": "Hidangan yang Anda ulas akan muncul di sini. Bagikan pendapat pertama Anda untuk membantu pelancong lain."
   },
+  "editReview": {
+    "title": "Edit ulasan",
+    "save": "Simpan perubahan",
+    "delete": "Hapus ulasan ini",
+    "posted": "Diposting {{when}}",
+    "notFound": "Ulasan ini sudah tidak tersedia.",
+    "deleteConfirmTitle": "Hapus ulasan ini?",
+    "deleteConfirmBody": "Ulasan ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."
+  },
   "tabs": {
     "home": "Beranda",
     "food": "Makanan",

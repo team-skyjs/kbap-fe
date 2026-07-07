@@ -35,6 +35,15 @@
     "emptyTitle": "Aún no hay reseñas",
     "emptyBody": "Los platos que reseñes aparecerán aquí. Comparte tu primera opinión para ayudar a otros viajeros."
   },
+  "editReview": {
+    "title": "Editar reseña",
+    "save": "Guardar cambios",
+    "delete": "Eliminar esta reseña",
+    "posted": "Publicado {{when}}",
+    "notFound": "Esta reseña ya no está disponible.",
+    "deleteConfirmTitle": "¿Eliminar esta reseña?",
+    "deleteConfirmBody": "Esta reseña se eliminará de forma permanente. Esta acción no se puede deshacer."
+  },
   "tabs": {
     "home": "Inicio",
     "food": "Comida",

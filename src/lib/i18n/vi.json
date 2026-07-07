@@ -35,6 +35,15 @@
     "emptyTitle": "Chưa có đánh giá nào",
     "emptyBody": "Những món bạn đánh giá sẽ hiển thị ở đây. Chia sẻ cảm nhận đầu tiên để giúp các du khách khác."
   },
+  "editReview": {
+    "title": "Chỉnh sửa đánh giá",
+    "save": "Lưu thay đổi",
+    "delete": "Xoá đánh giá này",
+    "posted": "Đã đăng {{when}}",
+    "notFound": "Đánh giá này không còn khả dụng.",
+    "deleteConfirmTitle": "Xoá đánh giá này?",
+    "deleteConfirmBody": "Đánh giá này sẽ bị xoá vĩnh viễn. Bạn không thể hoàn tác."
+  },
   "tabs": {
     "home": "Trang chủ",
     "food": "Món ăn",

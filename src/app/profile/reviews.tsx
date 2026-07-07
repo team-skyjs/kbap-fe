@@ -80,7 +80,7 @@ export default function MyReviews() {
                   food={foodMap.get(rv.foodId)}
                   hasR={hasR}
                   when={relativeDate(rv.createdAt, t)}
-                  onPress={() => router.push(`/food/${rv.foodId}` as Href)}
+                  onPress={() => router.push(`/review/${rv.id}` as Href)}
                 />
               ))}
             </View>

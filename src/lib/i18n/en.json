@@ -31,6 +31,15 @@
     "emptyTitle": "No reviews yet",
     "emptyBody": "Dishes you review will show up here. Share your first take to help other travelers."
   },
+  "editReview": {
+    "title": "Edit review",
+    "save": "Save changes",
+    "delete": "Delete this review",
+    "posted": "Posted {{when}}",
+    "notFound": "This review is no longer available.",
+    "deleteConfirmTitle": "Delete this review?",
+    "deleteConfirmBody": "This review will be permanently removed. This can't be undone."
+  },
   "tabs": {
     "home": "Home",
     "food": "Food",
