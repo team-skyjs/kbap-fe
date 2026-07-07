@@ -147,7 +147,7 @@ export default function Profile() {
             >
               <View style={{ gap: 10 }}>
                 {(reviews ?? []).map((rv) => (
-                  <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} hasRestrictions={me.restrictions.length > 0} onPress={() => router.push(`/food/${rv.foodId}` as Href)} />
+                  <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} hasRestrictions={me.restrictions.length > 0} onPress={() => router.push(`/review/${rv.id}` as Href)} />
                 ))}
               </View>
             </Section>
