@@ -7,7 +7,7 @@
  * Steps: welcome → verify → profile → restrictions → spice → interests → consent.
  * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -85,7 +85,7 @@ export default function Onboarding() {
 
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {step !== 'welcome' && (
           <TopBar
             seg={SEG[step]}
@@ -182,12 +182,18 @@ function Welcome({ onEmail, onSocial, t }: { onEmail: () => void; onSocial: () =
 }
 
 function Verify({ email, otp, setOtp, onVerify, t }: { email: string; otp: string; setOtp: (s: string) => void; onVerify: () => void; t: TFn }) {
+  const inputRef = useRef<TextInput>(null);
   const digits = otp.padEnd(6, ' ').slice(0, 6).split('');
   const ready = otp.length === 6;
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.verifyTitle')} sub={t('onboarding.verifySub', { email })} />
-      <View style={styles.otpRow}>
+      {/* Tapping any box re-opens the keyboard by focusing the hidden input.
+          The input is pointerEvents:none so taps always reach this Pressable
+          (a bare opacity:0 overlay input re-focuses unreliably once dismissed);
+          the ScrollView's keyboardShouldPersistTaps="handled" lets the tap through
+          instead of being swallowed to dismiss the keyboard. */}
+      <Pressable style={styles.otpRow} onPress={() => inputRef.current?.focus()}>
         {digits.map((d, i) => {
           const active = i === otp.length;
           return (
@@ -196,8 +202,9 @@ function Verify({ email, otp, setOtp, onVerify, t }: { email: string; otp: strin
             </View>
           );
         })}
-        {/* invisible field captures input */}
+        {/* invisible field captures input; focus is driven by the Pressable above */}
         <TextInput
+          ref={inputRef}
           value={otp}
           onChangeText={(v) => setOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
           keyboardType="number-pad"
@@ -205,7 +212,7 @@ function Verify({ email, otp, setOtp, onVerify, t }: { email: string; otp: strin
           autoFocus
           maxLength={6}
         />
-      </View>
+      </Pressable>
       <Pressable hitSlop={8} style={{ marginTop: 16 }}>
         <Text style={styles.link}>{t('onboarding.resend')}</Text>
       </Pressable>
@@ -435,7 +442,7 @@ const styles = StyleSheet.create({
   otp: { flex: 1, height: 56, borderRadius: 13, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   otpOn: { borderColor: C.primary },
   otpText: { fontFamily: font.display, fontSize: 24, color: C.ink },
-  otpInput: { position: 'absolute', opacity: 0, width: '100%', height: 56 },
+  otpInput: { position: 'absolute', opacity: 0, width: '100%', height: 56, pointerEvents: 'none' },
   link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary, textDecorationLine: 'underline' },
 
   // fields
