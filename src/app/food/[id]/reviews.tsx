@@ -67,28 +67,19 @@ export default function FoodReviews() {
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40, flexGrow: 1 }}
       >
         {reviews && (all.length === 0 ? (
-          // No reviews at all → drop the summary/filter/sort; let the empty
-          // state own the screen (dish name kept for context).
-          <View style={styles.emptyRoot}>
-            <View style={styles.emptyHeader}>
-              <Text style={styles.dishName}>{food?.name ?? ''}</Text>
-              <Text style={styles.dishSub}>
-                {food?.nameKo ? `${food.nameKo} · ` : ''}
-                {t('reviews.subtitle', { count: 0 })}
-              </Text>
-            </View>
-            <View style={styles.emptyFill}>
-              <StateBlock
-                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-                title={t('reviews.emptyTitle')}
-                body={t('reviews.emptyBody')}
-                primary={{
-                  label: t('reviews.writeReview'),
-                  icon: <IconPlus size={17} color="#fff" />,
-                  onPress: () => router.push(`/food/${id}/review` as Href),
-                }}
-              />
-            </View>
+          // No reviews at all → drop the dish header/summary/filter/sort; the
+          // empty state owns the whole screen, vertically centered.
+          <View style={styles.emptyFill}>
+            <StateBlock
+              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+              title={t('reviews.emptyTitle')}
+              body={t('reviews.emptyBody')}
+              primary={{
+                label: t('reviews.writeReview'),
+                icon: <IconPlus size={17} color="#fff" />,
+                onPress: () => router.push(`/food/${id}/review` as Href),
+              }}
+            />
           </View>
         ) : (
           <View style={styles.body}>
@@ -268,8 +259,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
 
-  emptyRoot: { flex: 1 },
-  emptyHeader: { paddingHorizontal: 18, paddingTop: 4 },
   emptyFill: { flex: 1, justifyContent: 'center' },
 
   dishName: { fontFamily: font.display, fontSize: 22, color: C.ink },
