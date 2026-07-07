@@ -64,9 +64,33 @@ export default function FoodReviews() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40, flexGrow: 1 }}
       >
-        {reviews && (
+        {reviews && (all.length === 0 ? (
+          // No reviews at all → drop the summary/filter/sort; let the empty
+          // state own the screen (dish name kept for context).
+          <View style={styles.emptyRoot}>
+            <View style={styles.emptyHeader}>
+              <Text style={styles.dishName}>{food?.name ?? ''}</Text>
+              <Text style={styles.dishSub}>
+                {food?.nameKo ? `${food.nameKo} · ` : ''}
+                {t('reviews.subtitle', { count: 0 })}
+              </Text>
+            </View>
+            <View style={styles.emptyFill}>
+              <StateBlock
+                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+                title={t('reviews.emptyTitle')}
+                body={t('reviews.emptyBody')}
+                primary={{
+                  label: t('reviews.writeReview'),
+                  icon: <IconPlus size={17} color="#fff" />,
+                  onPress: () => router.push(`/food/${id}/review` as Href),
+                }}
+              />
+            </View>
+          </View>
+        ) : (
           <View style={styles.body}>
             {/* dish header */}
             <View>
@@ -103,7 +127,7 @@ export default function FoodReviews() {
               <SortPill label={t('reviews.sortTopRated')} on={sort === 'rating'} onPress={() => setSort('rating')} />
             </View>
 
-            {/* list or empty */}
+            {/* filtered to empty (reviews exist, current filter hides them all) */}
             {items.length === 0 ? (
               <StateBlock
                 icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
@@ -123,7 +147,7 @@ export default function FoodReviews() {
               </View>
             )}
           </View>
-        )}
+        ))}
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
@@ -243,6 +267,10 @@ function SortPill({ label, on, onPress }: { label: string; on: boolean; onPress:
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
+
+  emptyRoot: { flex: 1 },
+  emptyHeader: { paddingHorizontal: 18, paddingTop: 4 },
+  emptyFill: { flex: 1, justifyContent: 'center' },
 
   dishName: { fontFamily: font.display, fontSize: 22, color: C.ink },
   dishSub: { fontFamily: font.ko, fontSize: 13, color: C.ink2, marginTop: 3 },
