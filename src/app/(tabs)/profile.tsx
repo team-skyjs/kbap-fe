@@ -139,7 +139,11 @@ export default function Profile() {
             {/* my reviews */}
             <Section
               title={t('profile.myReviewsTitle', { count: reviews?.length ?? 0 })}
-              action={<Text style={styles.link}>{t('profile.seeAll')}</Text>}
+              action={
+                <Pressable hitSlop={8} onPress={() => router.push('/profile/reviews' as Href)}>
+                  <Text style={styles.link}>{t('profile.seeAll')}</Text>
+                </Pressable>
+              }
             >
               <View style={{ gap: 10 }}>
                 {(reviews ?? []).map((rv) => (

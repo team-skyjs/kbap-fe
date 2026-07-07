@@ -28,6 +28,13 @@
     "s3Sub": "来自你同一国家旅行者的真心话。",
     "welcomeTagline": "点单前，先知道什么能安心吃。"
   },
+  "myReviews": {
+    "title": "我的点评",
+    "statReviews": "条点评",
+    "statAvgGiven": "平均评分",
+    "emptyTitle": "还没有点评",
+    "emptyBody": "你点评过的菜品会显示在这里。分享你的第一条感受，帮助其他旅行者。"
+  },
   "tabs": {
     "home": "首页",
     "food": "美食",

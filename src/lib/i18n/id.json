@@ -28,6 +28,13 @@
     "s3Sub": "Pendapat jujur dari pelancong sesama negara Anda.",
     "welcomeTagline": "Ketahui apa yang aman — sebelum Anda memesan."
   },
+  "myReviews": {
+    "title": "Ulasan saya",
+    "statReviews": "ulasan",
+    "statAvgGiven": "rata-rata diberi",
+    "emptyTitle": "Belum ada ulasan",
+    "emptyBody": "Hidangan yang Anda ulas akan muncul di sini. Bagikan pendapat pertama Anda untuk membantu pelancong lain."
+  },
   "tabs": {
     "home": "Beranda",
     "food": "Makanan",

@@ -24,6 +24,13 @@
     "s3Sub": "Honest takes from travelers of your own country.",
     "welcomeTagline": "Know what's safe — before you order."
   },
+  "myReviews": {
+    "title": "My reviews",
+    "statReviews": "reviews",
+    "statAvgGiven": "avg given",
+    "emptyTitle": "No reviews yet",
+    "emptyBody": "Dishes you review will show up here. Share your first take to help other travelers."
+  },
   "tabs": {
     "home": "Home",
     "food": "Food",

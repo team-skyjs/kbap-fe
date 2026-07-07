@@ -28,6 +28,13 @@
     "s3Sub": "來自你同國家旅客的真心分享。",
     "welcomeTagline": "點餐前，先知道什麼能安心吃。"
   },
+  "myReviews": {
+    "title": "我的評論",
+    "statReviews": "則評論",
+    "statAvgGiven": "平均評分",
+    "emptyTitle": "尚無評論",
+    "emptyBody": "你評論過的菜色會顯示在這裡。分享你的第一則心得，幫助其他旅客。"
+  },
   "tabs": {
     "home": "首頁",
     "food": "美食",

@@ -28,6 +28,13 @@
     "s3Sub": "Opiniones honestas de viajeros de tu mismo país.",
     "welcomeTagline": "Sabe qué es seguro, antes de pedir."
   },
+  "myReviews": {
+    "title": "Mis reseñas",
+    "statReviews": "reseñas",
+    "statAvgGiven": "media otorgada",
+    "emptyTitle": "Aún no hay reseñas",
+    "emptyBody": "Los platos que reseñes aparecerán aquí. Comparte tu primera opinión para ayudar a otros viajeros."
+  },
   "tabs": {
     "home": "Inicio",
     "food": "Comida",
