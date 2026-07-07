@@ -17,7 +17,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { RiskPill, StateBlock, stateIconColor, IconArrowLeft, IconSearch, IconClose, IconFood } from '@/components';
+import { RiskPill, StateBlock, stateIconColor, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
 import { useFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -121,7 +121,7 @@ export default function Search() {
             <Text style={[styles.secTag, { marginTop: 22 }]}>{t('search.popular')}</Text>
             <View style={{ gap: 2 }}>
               {popular.map((f) => (
-                <PopularRow key={f.foodId} food={f} risk={riskOf(f)} onPress={() => openFood(f.foodId, false)} />
+                <PopularRow key={f.foodId} food={f} onPress={() => openFood(f.foodId, false)} />
               ))}
             </View>
           </>
@@ -149,7 +149,9 @@ export default function Search() {
   );
 }
 
-function PopularRow({ food, risk, onPress }: { food: FoodCard; risk: RiskState; onPress: () => void }) {
+// Popularity chart is editorial (what's popular), not a personalized safety
+// read — no risk badge here (per canonical design); badges live on results.
+function PopularRow({ food, onPress }: { food: FoodCard; onPress: () => void }) {
   const top = food.popularityRank === 1;
   return (
     <Pressable style={styles.popRow} onPress={onPress}>
@@ -158,7 +160,7 @@ function PopularRow({ food, risk, onPress }: { food: FoodCard; risk: RiskState; 
         <Text style={styles.popName} numberOfLines={1}>{food.name}</Text>
         <Text style={styles.popKo} numberOfLines={1}>{food.nameKo}</Text>
       </View>
-      <RiskPill state={risk} size="sm" />
+      <IconChevron size={16} color={C.ink3} />
     </Pressable>
   );
 }
