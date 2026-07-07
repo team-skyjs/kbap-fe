@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
@@ -99,15 +99,27 @@ export default function ReviewDetail() {
         }
       />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* dish */}
-        <View style={styles.foodChip}>
-          <View style={styles.foodPh} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
-            {!!food?.nameKo && <Text style={styles.foodKo}>{food.nameKo}</Text>}
+        {/* dish — tappable in view mode (→ food detail); static while editing */}
+        {editing ? (
+          <View style={styles.foodChip}>
+            <View style={styles.foodPh} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
+              {!!food?.nameKo && <Text style={styles.foodKo}>{food.nameKo}</Text>}
+            </View>
+            <RiskMark state={risk} size={22} />
           </View>
-          <RiskMark state={risk} size={22} />
-        </View>
+        ) : (
+          <Pressable style={styles.foodChip} onPress={() => router.push(`/food/${review.foodId}` as Href)}>
+            <View style={styles.foodPh} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
+              {!!food?.nameKo && <Text style={styles.foodKo}>{food.nameKo}</Text>}
+            </View>
+            <RiskMark state={risk} size={22} />
+            <IconChevron size={16} color={C.ink3} />
+          </Pressable>
+        )}
 
         {editing ? (
           <>
