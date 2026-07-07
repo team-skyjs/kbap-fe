@@ -37,9 +37,11 @@
   },
   "editReview": {
     "title": "Edit ulasan",
+    "viewTitle": "Ulasan saya",
     "save": "Simpan perubahan",
     "delete": "Hapus ulasan ini",
     "posted": "Diposting {{when}}",
+    "noBody": "Anda tidak menulis apa pun dengan rating ini.",
     "notFound": "Ulasan ini sudah tidak tersedia.",
     "deleteConfirmTitle": "Hapus ulasan ini?",
     "deleteConfirmBody": "Ulasan ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."

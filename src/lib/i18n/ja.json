@@ -37,9 +37,11 @@
   },
   "editReview": {
     "title": "レビューを編集",
+    "viewTitle": "マイレビュー",
     "save": "変更を保存",
     "delete": "このレビューを削除",
     "posted": "{{when}}に投稿",
+    "noBody": "この評価には、まだ何も書かれていません。",
     "notFound": "このレビューは現在ご利用いただけません。",
     "deleteConfirmTitle": "このレビューを削除しますか？",
     "deleteConfirmBody": "このレビューは完全に削除されます。元に戻すことはできません。"

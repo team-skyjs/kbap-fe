@@ -37,9 +37,11 @@
   },
   "editReview": {
     "title": "編輯評論",
+    "viewTitle": "我的評論",
     "save": "儲存變更",
     "delete": "刪除此評論",
     "posted": "發佈於 {{when}}",
+    "noBody": "你在此評分中未撰寫任何內容。",
     "notFound": "此評論已不存在。",
     "deleteConfirmTitle": "要刪除此評論嗎？",
     "deleteConfirmBody": "此評論將被永久移除，且無法復原。"

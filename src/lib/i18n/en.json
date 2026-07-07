@@ -33,9 +33,11 @@
   },
   "editReview": {
     "title": "Edit review",
+    "viewTitle": "My review",
     "save": "Save changes",
     "delete": "Delete this review",
     "posted": "Posted {{when}}",
+    "noBody": "You didn't write anything with this rating.",
     "notFound": "This review is no longer available.",
     "deleteConfirmTitle": "Delete this review?",
     "deleteConfirmBody": "This review will be permanently removed. This can't be undone."

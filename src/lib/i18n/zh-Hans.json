@@ -37,9 +37,11 @@
   },
   "editReview": {
     "title": "编辑点评",
+    "viewTitle": "我的点评",
     "save": "保存修改",
     "delete": "删除此点评",
     "posted": "发布于 {{when}}",
+    "noBody": "你没有为这个评分撰写任何内容。",
     "notFound": "该点评已不存在。",
     "deleteConfirmTitle": "删除此点评？",
     "deleteConfirmBody": "该点评将被永久删除，此操作无法撤销。"
