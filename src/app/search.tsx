@@ -12,6 +12,7 @@
  */
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -169,7 +170,11 @@ function ResultCard({ food, risk, onPress }: { food: FoodCard; risk: RiskState; 
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.thumb}>
-        <IconFood size={22} color={C.ink3} />
+        {food.photoUrl ? (
+          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />
+        ) : (
+          <IconFood size={22} color={C.ink3} />
+        )}
       </View>
       <View style={styles.cardMeta}>
         <View style={styles.cardTop}>

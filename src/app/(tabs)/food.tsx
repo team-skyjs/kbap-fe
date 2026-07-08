@@ -11,6 +11,7 @@
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -123,6 +124,9 @@ function BrowseCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRes
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.photo}>
+        {!!food.photoUrl && (
+          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={StyleSheet.absoluteFill} />
+        )}
         <View style={styles.badge}>
           <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
         </View>

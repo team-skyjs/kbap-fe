@@ -10,9 +10,9 @@
  *                     koreanName=null when the localized name IS Korean)
  *   - riskBasis     ← [] (no per-ingredient reason in the detail contract)
  *   - overall/sameNationality ← null aggregates (reviews API not deployed, KB-73)
- *   - photoUrl      ← imageRef when it's an absolute URL (live seed data sends
- *                     full URLs); bare filenames (schema example "doenjang.png")
- *                     drop to null — no image host defined, BE 논의 필요
+ *   - photoUrl      ← imageRef when it's an absolute URL (BE now serves
+ *                     CloudFront URLs on list + detail); bare filenames (schema
+ *                     example "doenjang.png") still drop to null
  *
  * Risk enums reuse scanAdapter.mapRisk → UNKNOWN/unrecognized ⇒ 'unable',
  * NEVER 'safe' (Constitution III, false-safe = 0).

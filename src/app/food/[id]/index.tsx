@@ -9,6 +9,7 @@
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -143,7 +144,11 @@ function Registered({
           <Text style={styles.name}>{food.name}</Text>
           <Text style={styles.ko}>{food.nameKo}</Text>
         </View>
-        <View style={styles.thumb} />
+        <View style={styles.thumb}>
+          {!!food.photoUrl && (
+            <Image source={food.photoUrl} contentFit="cover" transition={150} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+          )}
+        </View>
       </View>
 
       <View style={styles.metaRow}>
@@ -181,7 +186,11 @@ function Registered({
         />
       </View>
 
-      <View style={styles.photo} />
+      <View style={styles.photo}>
+        {!!food.photoUrl && (
+          <Image source={food.photoUrl} contentFit="cover" transition={200} style={[StyleSheet.absoluteFill, { borderRadius: radius.lg }]} />
+        )}
+      </View>
 
       <View style={styles.sec}>
         <Text style={styles.insideTitle}>{t('detail.insideTitle')}</Text>
