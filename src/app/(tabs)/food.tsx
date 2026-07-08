@@ -33,6 +33,7 @@ import {
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
+import { FLAGS } from '@/lib/flags';
 import type { FoodCard } from '@/lib/api/types';
 
 const CATEGORY_KEYS = ['all', 'stews', 'rice', 'noodles', 'bbq', 'street', 'sides'];
@@ -63,21 +64,23 @@ export default function Food() {
         <Text style={styles.searchPh}>{t('food.searchPlaceholder')}</Text>
       </Pressable>
 
-      {/* category chips */}
-      <Animated.ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8, paddingVertical: 1 }}
-      >
-        {CATEGORY_KEYS.map((key) => {
-          const on = category === key;
-          return (
-            <Pressable key={key} style={[styles.catChip, on && styles.catChipOn]} onPress={() => setCategory(key)}>
-              <Text style={[styles.catChipText, on && styles.catChipTextOn]}>{t(`food.categories.${key}`)}</Text>
-            </Pressable>
-          );
-        })}
-      </Animated.ScrollView>
+      {/* category chips — MVP-excluded behind a flag (KB-108); flip to restore */}
+      {FLAGS.categoryUI && (
+        <Animated.ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingVertical: 1 }}
+        >
+          {CATEGORY_KEYS.map((key) => {
+            const on = category === key;
+            return (
+              <Pressable key={key} style={[styles.catChip, on && styles.catChipOn]} onPress={() => setCategory(key)}>
+                <Text style={[styles.catChipText, on && styles.catChipTextOn]}>{t(`food.categories.${key}`)}</Text>
+              </Pressable>
+            );
+          })}
+        </Animated.ScrollView>
+      )}
     </View>
   );
 

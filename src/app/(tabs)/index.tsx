@@ -40,6 +40,7 @@ import {
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
+import { FLAGS } from '@/lib/flags';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -184,20 +185,22 @@ export default function Home() {
               </Section>
             )}
 
-            {/* categories */}
-            <Section title={t('home.categoriesTitle')}>
-              <View style={styles.catGrid}>
-                {CATEGORIES.map(({ key, Icon }) => (
-                  <Pressable key={key} style={styles.cat} onPress={() => router.push('/food')}>
-                    <View style={styles.catGlyph}>
-                      <Icon size={18} color={C.accent} />
-                    </View>
-                    <Text style={styles.catLbl}>{t(`home.categories.${key}`)}</Text>
-                    <IconChevron size={16} color={C.ink3} />
-                  </Pressable>
-                ))}
-              </View>
-            </Section>
+            {/* categories — MVP-excluded behind a flag (KB-108); flip to restore */}
+            {FLAGS.categoryUI && (
+              <Section title={t('home.categoriesTitle')}>
+                <View style={styles.catGrid}>
+                  {CATEGORIES.map(({ key, Icon }) => (
+                    <Pressable key={key} style={styles.cat} onPress={() => router.push('/food')}>
+                      <View style={styles.catGlyph}>
+                        <Icon size={18} color={C.accent} />
+                      </View>
+                      <Text style={styles.catLbl}>{t(`home.categories.${key}`)}</Text>
+                      <IconChevron size={16} color={C.ink3} />
+                    </Pressable>
+                  ))}
+                </View>
+              </Section>
+            )}
 
             {/* safety notice (FR-030) */}
             <View style={styles.disc}>

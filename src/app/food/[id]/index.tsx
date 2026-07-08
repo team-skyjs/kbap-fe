@@ -125,16 +125,27 @@ function Registered({
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
-  const basisFor = (code: string) => food.riskBasis.find((b) => b.ingredientCode === code)?.reason ?? null;
 
   // one-line basis under the verdict (why this state) — false-safe: unable says so.
-  const governingReason = food.riskBasis[0]?.reason ?? null;
   const verdictBasis =
     dishRisk === 'unable'
       ? t('detail.basisUnable')
       : dishRisk === 'safe'
         ? t('detail.basisSafe')
-        : governingReason ?? t('detail.basisFlagged');
+        : t('detail.basisFlagged');
+
+  // Per-ingredient explanation is generated HERE, not by the BE (2026-07-08
+  // 회의): the contract carries only inclusionPercent + riskStatus. Templates
+  // are per risk band and NEUTRAL — the user registered "an ingredient they
+  // avoid"; we never assume why (no "allergy"). Percent-less variants cover
+  // rows without inclusion data.
+  const ingBasis = (ing: IngredientRisk, dRisk: RiskState): string => {
+    if (dRisk === 'unable') return t('detail.ingBasisUnable', { ingredient: ing.name });
+    const band = dRisk === 'safe' ? 'Safe' : dRisk === 'caution' ? 'Caution' : 'Danger';
+    return ing.percentage != null
+      ? t(`detail.ingBasis${band}`, { ingredient: ing.name, percent: Math.round(ing.percentage) })
+      : t(`detail.ingBasis${band}NoPct`, { ingredient: ing.name });
+  };
   const spicyForYou = food.spiceLevel != null && spiceTolerance != null && food.spiceLevel > spiceTolerance;
 
   return (
@@ -203,7 +214,7 @@ function Registered({
                 key={ing.code}
                 ing={ing}
                 displayRisk={dRisk}
-                reason={basisFor(ing.code)}
+                reason={ingBasis(ing, dRisk)}
                 ofShops={ing.percentage != null ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) : ing.note ?? ''}
                 askLabel={t('detail.askOwner')}
                 onAsk={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
