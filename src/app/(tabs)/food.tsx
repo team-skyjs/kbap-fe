@@ -3,9 +3,11 @@
  * Scroll-aware brand header + greeting, inline search entry (opens the
  * full-screen /search route), category chips, and a 2-column browse grid.
  *
- * Data via useFoods() (MOCK_MODE). Tapping a card opens the detail (screen #4).
- * Category chips are visual selection only in mock (FoodCard has no category;
- * real filtering uses the /foods?category= param once live).
+ * Grid data is LIVE (KB-71): GET /api/v1/foods keyset pages via
+ * useInfiniteFoods — scrolling near the end fetches the next cursor until
+ * hasNext=false. Tapping a card opens the detail with the BE's numeric foodId
+ * (KB-70). Category chips are visual selection only (no category param in the
+ * list contract yet); ratings show the null aggregate until reviews land (KB-73).
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -19,11 +21,15 @@ import {
   useStickyScroll,
   useHeaderHeight,
   SkeletonList,
+  Spinner,
+  StateBlock,
+  stateIconColor,
   RiskMark,
   Stars,
   IconSearch,
+  IconFood,
 } from '@/components';
-import { useFoods } from '@/lib/data/useFoods';
+import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import type { FoodCard } from '@/lib/api/types';
@@ -37,59 +43,76 @@ export default function Food() {
   const headerH = useHeaderHeight();
   const [category, setCategory] = useState('all');
 
-  const { data: foods, isLoading } = useFoods();
+  const { data: foods, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteFoods();
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
   const list = foods ?? [];
 
+  const Header = (
+    <View style={styles.head}>
+      <View style={styles.greet}>
+        <Text style={styles.greetTitle}>{t('food.title')}</Text>
+        <Text style={styles.greetSub}>{t('food.sub')}</Text>
+      </View>
+
+      {/* search entry → full-screen search route */}
+      <Pressable style={styles.search} onPress={() => router.push('/search' as Href)}>
+        <IconSearch size={18} color={C.ink2} />
+        <Text style={styles.searchPh}>{t('food.searchPlaceholder')}</Text>
+      </Pressable>
+
+      {/* category chips */}
+      <Animated.ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 8, paddingVertical: 1 }}
+      >
+        {CATEGORY_KEYS.map((key) => {
+          const on = category === key;
+          return (
+            <Pressable key={key} style={[styles.catChip, on && styles.catChipOn]} onPress={() => setCategory(key)}>
+              <Text style={[styles.catChipText, on && styles.catChipTextOn]}>{t(`food.categories.${key}`)}</Text>
+            </Pressable>
+          );
+        })}
+      </Animated.ScrollView>
+    </View>
+  );
+
+  const Empty = isLoading ? (
+    <SkeletonList />
+  ) : isError ? (
+    <StateBlock
+      icon={<IconFood size={34} color={stateIconColor.default} />}
+      title={t('states.errorTitle')}
+      body={t('states.errorBody')}
+      primary={{ label: t('common.retry'), onPress: () => refetch() }}
+    />
+  ) : null;
+
   return (
     <View style={styles.root}>
-      <Animated.ScrollView
+      <Animated.FlatList
+        data={list}
+        keyExtractor={(f: FoodCard) => f.foodId}
+        numColumns={2}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
-      >
-        <View style={styles.body}>
-          <View style={styles.greet}>
-            <Text style={styles.greetTitle}>{t('food.title')}</Text>
-            <Text style={styles.greetSub}>{t('food.sub')}</Text>
-          </View>
-
-          {/* search entry → full-screen search route */}
-          <Pressable style={styles.search} onPress={() => router.push('/search' as Href)}>
-            <IconSearch size={18} color={C.ink2} />
-            <Text style={styles.searchPh}>{t('food.searchPlaceholder')}</Text>
-          </Pressable>
-
-          {/* category chips */}
-          <Animated.ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingVertical: 1 }}
-          >
-            {CATEGORY_KEYS.map((key) => {
-              const on = category === key;
-              return (
-                <Pressable key={key} style={[styles.catChip, on && styles.catChipOn]} onPress={() => setCategory(key)}>
-                  <Text style={[styles.catChipText, on && styles.catChipTextOn]}>{t(`food.categories.${key}`)}</Text>
-                </Pressable>
-              );
-            })}
-          </Animated.ScrollView>
-
-          {/* browse grid */}
-          {isLoading ? (
-            <SkeletonList />
-          ) : (
-            <View style={styles.grid}>
-              {list.map((f) => (
-                <BrowseCard key={f.foodId} food={f} hasRestrictions={hasR} onPress={() => router.push(`/food/${f.foodId}` as Href)} />
-              ))}
-            </View>
-          )}
-        </View>
-      </Animated.ScrollView>
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110, paddingHorizontal: 18, gap: 12 }}
+        columnWrapperStyle={{ justifyContent: 'space-between' }}
+        ListHeaderComponent={Header}
+        ListEmptyComponent={Empty}
+        ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
+        onEndReachedThreshold={0.6}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        renderItem={({ item }) => (
+          <BrowseCard food={item} hasRestrictions={hasR} onPress={() => router.push(`/food/${item.foodId}` as Href)} />
+        )}
+      />
 
       <StickyHeader hidden={hidden} mode="brand" bell />
     </View>
@@ -124,7 +147,7 @@ function BrowseCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRes
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
+  head: { paddingTop: 4, gap: 16 },
 
   greet: { gap: 2 },
   greetTitle: { fontFamily: font.display, fontSize: 26, color: C.ink, letterSpacing: -0.5 },
@@ -138,7 +161,6 @@ const styles = StyleSheet.create({
   catChipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
   catChipTextOn: { color: '#fff' },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
   card: { width: '48.5%', backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sh2 },
   photo: { height: 102, backgroundColor: C.surface2 },
   badge: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },

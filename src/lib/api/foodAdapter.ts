@@ -1,25 +1,35 @@
 /**
- * foodAdapter.ts — boundary translation BE FoodDetailWire → internal FoodDetail
- * (KB-70), mirroring scanAdapter. The detail screen is built around the richer
- * internal contract; this fills the gaps the thin BE contract doesn't carry:
+ * foodAdapter.ts — boundary translation BE wire → internal contract for the
+ * foods endpoints (KB-70 detail · KB-71 list), mirroring scanAdapter. Screens
+ * are built around the richer internal contract; this fills the gaps the thin
+ * BE contract doesn't carry:
  *
- *   - nameKo/foodId ← the Korean menuName we queried with (the BE keys by it)
+ *   - foodId        ← the numeric id we queried with (path param, kept as string
+ *                     internally — route params and mock ids are strings)
+ *   - nameKo        ← wire.koreanName, falling back to wire.name (the BE sends
+ *                     koreanName=null when the localized name IS Korean)
  *   - riskBasis     ← [] (no per-ingredient reason in the detail contract)
  *   - overall/sameNationality ← null aggregates (reviews API not deployed, KB-73)
- *   - isRegistered  ← derived: UNKNOWN overall + no ingredients ⇒ unregistered
- *   - photoUrl      ← null (imageRef is a bare filename; no image host defined —
- *                     BE 논의 필요)
+ *   - photoUrl      ← imageRef when it's an absolute URL (live seed data sends
+ *                     full URLs); bare filenames (schema example "doenjang.png")
+ *                     drop to null — no image host defined, BE 논의 필요
  *
  * Risk enums reuse scanAdapter.mapRisk → UNKNOWN/unrecognized ⇒ 'unable',
  * NEVER 'safe' (Constitution III, false-safe = 0).
  */
-import type { FoodDetail, IngredientRisk, RatingAggregate } from './types';
+import type { FoodCard, FoodDetail, IngredientRisk, RatingAggregate } from './types';
 import type { FoodDetailWire } from './foodDetailTypes';
+import type { MenuSummaryWire } from './foodListTypes';
 import { mapRisk } from './scanAdapter';
 
 const NO_RATING: RatingAggregate = { average: null, count: 0 };
 
-export function adaptFoodDetail(wire: FoodDetailWire, menuNameKo: string): FoodDetail {
+/** imageRef → usable URL, else null (bare filenames have no host yet). */
+function refToUrl(ref: string | null | undefined): string | null {
+  return ref && /^https?:\/\//.test(ref) ? ref : null;
+}
+
+export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetail {
   const ingredients: IngredientRisk[] = (wire.ingredients ?? []).map((ing, i) => ({
     // stable key for React + the "ask the owner" route param (name is user-facing,
     // index keeps it unique when the BE repeats a name).
@@ -35,16 +45,16 @@ export function adaptFoodDetail(wire: FoodDetailWire, menuNameKo: string): FoodD
   const isRegistered = wire.overallRiskStatus !== 'UNKNOWN' || ingredients.length > 0;
 
   return {
-    foodId: menuNameKo,
+    foodId,
     name: wire.name,
-    nameKo: menuNameKo,
+    nameKo: wire.koreanName ?? wire.name,
     risk: mapRisk(wire.overallRiskStatus),
     riskBasis: [],
     overall: NO_RATING,
     sameNationality: NO_RATING,
     description: wire.description ?? '',
     spiceLevel: typeof wire.spiciness === 'number' ? wire.spiciness : null,
-    photoUrl: null,
+    photoUrl: refToUrl(wire.imageRef),
     ingredients,
     isRegistered,
   };
@@ -52,14 +62,16 @@ export function adaptFoodDetail(wire: FoodDetailWire, menuNameKo: string): FoodD
 
 /**
  * Unregistered / not-in-catalog dish → the "Unable to assess" screen (FR-033).
- * The BE currently signals this as HTTP 400 "해당 음식 정보 없음" rather than an
- * in-band UNKNOWN, so the hook synthesizes this from the queried Korean name.
+ * Reached two ways: the BE 400s on an unknown foodId, or a scan→detail nav
+ * passes a raw Korean menu name (no foodId in the scan contract yet — KB-71
+ * blocker, BE 질의 중). `label` is whatever we can show: the scanned Korean
+ * name, or the queried id as a last resort.
  */
-export function unregisteredFoodDetail(menuNameKo: string): FoodDetail {
+export function unregisteredFoodDetail(label: string): FoodDetail {
   return {
-    foodId: menuNameKo,
-    name: menuNameKo,
-    nameKo: menuNameKo,
+    foodId: label,
+    name: label,
+    nameKo: label,
     risk: 'unable',
     riskBasis: [],
     overall: NO_RATING,
@@ -69,5 +81,17 @@ export function unregisteredFoodDetail(menuNameKo: string): FoodDetail {
     photoUrl: null,
     ingredients: [],
     isRegistered: false,
+  };
+}
+
+/** List summary → the FoodCard the browse grid renders (KB-71). */
+export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
+  return {
+    foodId: String(wire.foodId),
+    name: wire.name,
+    nameKo: wire.koreanName ?? wire.name,
+    photoUrl: refToUrl(wire.imageRef),
+    risk: mapRisk(wire.overallRiskStatus),
+    overall: NO_RATING, // review aggregates land with KB-73
   };
 }

@@ -1,29 +1,38 @@
 /**
- * useFoods / useFoodDetail — food browse + detail (FR-016/020/021).
+ * useFoods / useInfiniteFoods / useFoodDetail — food browse + detail
+ * (FR-016/020/021 · KB-70/71).
  *
- * - useFoods (list/search): still MOCK_MODE — no list endpoint in the BE yet.
- * - useFoodDetail: wired LIVE to GET /api/v1/foods/detail (KB-70). The BE keys
- *   a dish by its Korean menu name, so we resolve the route id → Korean name
- *   (mock catalog foodId → nameKo; a scan→detail nav may already pass the Korean
- *   name). Response is adapted BE → internal FoodDetail (foodAdapter). Query key
- *   includes the reader language so a live language switch refetches.
+ * - useInfiniteFoods (browse grid): LIVE on GET /api/v1/foods?cursor=&lang= —
+ *   newest-first keyset pagination; feed nextCursor back until hasNext=false.
+ * - useFoods (search/home helpers): still MOCK — no search endpoint in the BE
+ *   yet (KB-71 rest). Home is being rebuilt in KB-20.
+ * - useFoodDetail: LIVE on GET /api/v1/foods/{foodId} (KB-70, redeployed
+ *   Swagger). foodId is the numeric id the list/search hands down. Non-numeric
+ *   route ids still occur in two mock-era flows:
+ *     · mock catalog slugs (home/search cards while those screens stay mock)
+ *       → served from MOCK_FOOD_DETAILS so the flows keep working;
+ *     · scan→detail passes a raw Korean menu name — the scan contract has NO
+ *       foodId yet (KB-71 blocker, BE 질의 중) → "Unable to assess" screen.
+ *   Query keys include the reader language so a live switch refetches.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import i18n from '../i18n';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
+import type { PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang, ApiError } from '../api/client';
-import { adaptFoodDetail, unregisteredFoodDetail } from '../api/foodAdapter';
+import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
 
 /**
- * Detail connects LIVE regardless of the global MOCK_MODE (like the scan spike)
- * — it's one of the two endpoints the redeployed Swagger exposes. Flip to `true`
- * to fall back to mock detail (e.g. offline demo).
+ * Foods endpoints connect LIVE regardless of the global MOCK_MODE (like the
+ * scan spike) — they're what the redeployed Swagger exposes. Flip to `true`
+ * to fall back to mocks (e.g. offline demo).
  */
-const MOCK_MODE_DETAIL = false;
+const MOCK_MODE_FOODS = false;
 
+/** Mock catalog + search — home/search still ride this until KB-20/71 land. */
 export function useFoods(query?: string) {
   return useQuery({
     queryKey: ['foods', query ?? ''],
@@ -42,11 +51,34 @@ export function useFoods(query?: string) {
   });
 }
 
-/** Route id → Korean menu name the detail endpoint keys on. */
-function resolveMenuNameKo(id: string): string {
-  const hit = MOCK_FOODS.find((f) => f.foodId === id);
-  if (hit) return hit.nameKo;
-  return id; // scan→detail passes the raw Korean name (encoded → decoded by router)
+/**
+ * Browse list, LIVE (KB-71): newest-first keyset pages. `pageParam` is the
+ * BE's nextCursor (last item's foodId — treated as opaque).
+ */
+export function useInfiniteFoods() {
+  return useInfiniteQuery({
+    queryKey: ['foods', 'list', i18n.language],
+    initialPageParam: undefined as number | undefined,
+    queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
+      if (MOCK_MODE_FOODS) {
+        return {
+          items: MOCK_FOODS.map((f) => ({
+            foodId: Number(f.foodId) || 0,
+            name: f.name,
+            koreanName: f.nameKo,
+            imageRef: null,
+            spiciness: 0,
+            overallRiskStatus: 'UNKNOWN' as const,
+          })),
+          hasNext: false,
+        };
+      }
+      const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
+      return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}`);
+    },
+    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
+  });
 }
 
 export function useFoodDetail(id: string) {
@@ -54,20 +86,22 @@ export function useFoodDetail(id: string) {
     // reader language in the key: switching language refetches the localized detail.
     queryKey: ['food', id, i18n.language],
     queryFn: async (): Promise<FoodDetail> => {
-      if (MOCK_MODE_DETAIL) {
+      if (MOCK_MODE_FOODS) {
         return MOCK_FOOD_DETAILS[id] ?? MOCK_FOOD_UNREGISTERED;
       }
-      const menuNameKo = resolveMenuNameKo(id);
+      // Non-numeric id = mock-era flow (catalog slug or scanned Korean name);
+      // the live endpoint keys strictly on the numeric foodId.
+      if (!/^\d+$/.test(id)) {
+        return MOCK_FOOD_DETAILS[id] ?? unregisteredFoodDetail(decodeURIComponent(id));
+      }
       try {
-        const wire = await api.get<FoodDetailWire>(
-          `/foods/detail?menuName=${encodeURIComponent(menuNameKo)}&lang=${apiLang()}`,
-        );
-        return adaptFoodDetail(wire, menuNameKo);
+        const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
+        return adaptFoodDetail(wire, id);
       } catch (e) {
         // BE signals "dish not in catalog" as HTTP 400 (we clamp lang, so 400 here
         // means not-found, not a bad language) → show the "Unable to assess"
         // screen (FR-033), never a hard error. Network/5xx still throw → error UI.
-        if (e instanceof ApiError && e.status === 400) return unregisteredFoodDetail(menuNameKo);
+        if (e instanceof ApiError && e.status === 400) return unregisteredFoodDetail(id);
         throw e;
       }
     },

@@ -1,10 +1,10 @@
 /**
- * foodDetailTypes.ts — WIRE types for GET /api/v1/foods/detail (KB-70).
+ * foodDetailTypes.ts — WIRE types for GET /api/v1/foods/{foodId} (KB-70).
  * Mirror the redeployed Swagger EXACTLY (FoodDetailResponse / IngredientResponse).
  * Kept separate from our internal contract types; foodAdapter.ts translates
  * BE → internal so the detail screen never sees BE enums/field names.
  *
- *   GET /api/v1/foods/detail?menuName=<ko>&lang=<bcp47>
+ *   GET /api/v1/foods/{foodId}?lang=<bcp47>   (foodId: int64 path param)
  *   res: BaseResponse<FoodDetailWire>
  *     - overallRiskStatus / ingredients[].riskStatus: SAFE|CAUTION|DANGER|UNKNOWN
  *     - ⚠️ field is `riskStatus` here (scan uses `riskLevel`)
@@ -23,6 +23,8 @@ export interface IngredientWire {
 
 export interface FoodDetailWire {
   name: string; // request-language name (falls back to Korean)
+  /** Korean name regardless of lang. null when the localized name IS Korean (lang=ko / fallback). */
+  koreanName: string | null;
   imageRef: string | null; // nullable, bare image filename
   description: string; // request language
   spiciness: number; // 0..10
