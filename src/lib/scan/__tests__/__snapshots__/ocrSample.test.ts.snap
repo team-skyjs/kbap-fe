@@ -3,9 +3,9 @@
 exports[`T072 segmentation on the real 58-line OCR sample (spec eb2ed72) locks the exact segmentation output (snapshot) 1`] = `
 {
   "counts": {
-    "description": 11,
+    "description": 10,
     "dishName": 13,
-    "junk": 13,
+    "junk": 14,
     "latin": 9,
     "origin": 1,
     "price": 8,

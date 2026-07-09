@@ -9,9 +9,13 @@
  */
 import * as React from 'react';
 import { Image, LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
-import { riskTone } from '@/lib/theme';
+import { Txt as Text } from '@/components/Txt';
+import { font, riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
 import type { ResultDish } from '@/lib/scan/segmentMenu';
+
+/** Marker pill center-anchoring width (wrapper is transparent to touches). */
+const PILL_WRAP_W = 220;
 
 type Photo = { uri: string; width: number; height: number } | null;
 
@@ -59,17 +63,27 @@ export function ScanResultOverlay({
         rect.w > 0 &&
         dishes.map((d) => {
           const tone = riskTone[d.risk];
-          // anchor the marker at the dish-name box center
+          // anchor the marker pill at the dish-name box center; a fixed-width
+          // transparent wrapper centers the variable-width pill on that point
           const cx = rect.x + (d.box.x + d.box.width / 2) * rect.w;
           const cy = rect.y + (d.box.y + d.box.height / 2) * rect.h;
           return (
-            <Pressable
+            <View
               key={d.itemId}
-              onPress={() => onTapDish(d)}
-              style={[styles.marker, { left: cx - 16, top: cy - 16, borderColor: tone.fg }]}
+              pointerEvents="box-none"
+              style={[styles.pillWrap, { left: cx - PILL_WRAP_W / 2, top: cy - 16 }]}
             >
-              <RiskMark state={d.risk} size={22} />
-            </Pressable>
+              <Pressable onPress={() => onTapDish(d)} style={[styles.pill, { borderColor: tone.fg }]}>
+                <RiskMark state={d.risk} size={18} />
+                {/* ⚠️ 임시 (KB-72): the BE doesn't return a dish name yet, so the
+                    pill shows the Korean rawMenuName we scanned. When the scan
+                    contract adds names (scan-api-request §2 — reader-language
+                    name + foodId), REPLACE this label with the response name. */}
+                <Text style={styles.pillText} numberOfLines={1}>
+                  {d.rawMenuName}
+                </Text>
+              </Pressable>
+            </View>
           );
         })}
     </View>
@@ -79,15 +93,18 @@ export function ScanResultOverlay({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#16110d' },
   paper: { backgroundColor: '#241b14' },
-  marker: {
-    position: 'absolute',
-    width: 32,
+  pillWrap: { position: 'absolute', width: PILL_WRAP_W, alignItems: 'center' },
+  // icon + name pill (design D3) — replaces the icon-only circle marker
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: PILL_WRAP_W,
     height: 32,
     borderRadius: 16,
+    paddingHorizontal: 10,
     backgroundColor: '#fff',
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
     // subtle lift so markers read over busy photos
     shadowColor: '#000',
     shadowOpacity: 0.35,
@@ -95,4 +112,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
+  pillText: { fontFamily: font.ko, fontSize: 12.5, color: '#1c1917', flexShrink: 1 },
 });

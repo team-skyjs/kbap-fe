@@ -66,9 +66,33 @@ export function classifyLine(text: string, box: BoundingBox): LineType {
     return 'latin';
   }
 
+  // 4b) mixed hangul+latin at a screen edge = UI chrome ("메뉴판 - Google x" tab
+  //     title) — same edge heuristic as rule 4, needed once rule 5 started
+  //     judging the Korean part only (KB-72; the short Korean fragment of such
+  //     lines would otherwise be promoted to dishName).
+  if (hasHangul && hasLatin && (box.y < THRESHOLDS.edgeTop || box.y > THRESHOLDS.edgeBottom)) {
+    return 'junk';
+  }
+
   // 5) description: long / sentence-like Korean (OCR-noisy, never used for matching)
-  const breaks = (t.match(/[\s,·]/g) ?? []).length;
-  if (hasHangul && (t.length >= THRESHOLDS.descriptionMinLen || breaks >= THRESHOLDS.descriptionMinBreaks)) {
+  //
+  // ⚠️ 임시 패치 (KB-72): judge on the KOREAN PART of the line, not the raw line.
+  // ML Kit merges "한글 요리명 + 로마자 표기" into ONE line ("된장찌개 Doeniang
+  // fioe"), which inflated raw length past the threshold and dropped real dishes
+  // as descriptions. Quantity tags ("2인 이상") are stripped before judging.
+  // Real description sentences keep a long Korean part → still classified here.
+  // 근본 해결은 BE 카탈로그 퍼지 매칭(foodId/이름 응답) — 배포되면 재검토.
+  const hangulPart = t
+    .replace(/\d+\s*인(분)?(\s*이상)?/g, ' ') // quantity tags: "2인 이상", "3인분"
+    .replace(/[^가-힣\s]/g, ' ') // keep Hangul only (bullets/latin/digits → space)
+    .replace(/\s+/g, ' ')
+    .trim();
+  const hangulLen = hangulPart.replace(/\s/g, '').length;
+  // ≥2 Hangul chars → the Korean part is the signal; else fall back to the raw
+  // line (a latin-dominant line with 1 stray Hangul char shouldn't become a dish).
+  const judged = hangulLen >= 2 ? hangulPart : t;
+  const breaks = (judged.match(/[\s,·]/g) ?? []).length;
+  if (hasHangul && (judged.length >= THRESHOLDS.descriptionMinLen || breaks >= THRESHOLDS.descriptionMinBreaks)) {
     return 'description';
   }
 
