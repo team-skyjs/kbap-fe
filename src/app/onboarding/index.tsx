@@ -1,13 +1,14 @@
 /**
  * Onboarding flow (mockup Screen A) — a single stepper holding shared state
- * across 7 steps with a 5-segment progress bar (TopBar). Mock only: sign-up
- * issues no real token, profile/consent are not persisted (MOCK_MODE). On
- * finish it routes to the app shell.
+ * with a segmented progress bar (TopBar). Mock only: profile/consent are not
+ * persisted (MOCK_MODE). On finish it routes to the app shell.
  *
- * Steps: welcome → verify → profile → restrictions → spice → interests → consent.
+ * Steps: profile → restrictions → spice → interests → consent.
+ * The old welcome/verify (email) steps are GONE — auth is social-only on the
+ * /login screen (KB-10, 2026-07-08 회의); it routes here after sign-in.
  * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
  */
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -18,17 +19,13 @@ import {
   Btn,
   RiskMark,
   TopBar,
-  IconApple,
   IconCheck,
   IconChevron,
-  IconEnvelope,
   IconFlame,
   IconGlobe,
-  IconGoogleG,
   IconPlus,
   IconProfile,
 } from '@/components';
-import { BrandTile } from '@/components/Brand';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
@@ -37,9 +34,9 @@ import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { countryByCode, countryLang, deviceCountry } from '@/lib/onboarding/countries';
 import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 
-type Step = 'welcome' | 'verify' | 'profile' | 'restrictions' | 'spice' | 'interests' | 'consent';
-const ORDER: Step[] = ['welcome', 'verify', 'profile', 'restrictions', 'spice', 'interests', 'consent'];
-const SEG: Record<Step, number> = { welcome: 0, verify: 1, profile: 2, restrictions: 3, spice: 4, interests: 4, consent: 5 };
+type Step = 'profile' | 'restrictions' | 'spice' | 'interests' | 'consent';
+const ORDER: Step[] = ['profile', 'restrictions', 'spice', 'interests', 'consent'];
+const SEG: Record<Step, number> = { profile: 0, restrictions: 1, spice: 2, interests: 2, consent: 3 };
 
 export default function Onboarding() {
   const router = useRouter();
@@ -47,12 +44,10 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const { lang, setLang } = useLocale(); // reader language = the active app locale (set via the shared picker)
 
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('profile');
 
   // collected profile (mock — not persisted). Nationality defaults to the device
   // region when we recognize it (else US).
-  const [email] = useState('you@email.com');
-  const [otp, setOtp] = useState('');
   const [nickname, setNickname] = useState('');
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
@@ -72,7 +67,6 @@ export default function Onboarding() {
   };
 
   const idx = ORDER.indexOf(step);
-  const go = (to: Step) => setStep(to);
   const next = () => idx < ORDER.length - 1 && setStep(ORDER[idx + 1]);
   const back = () => (idx > 0 ? setStep(ORDER[idx - 1]) : router.back());
   const finish = () => router.replace('/(tabs)');
@@ -86,21 +80,13 @@ export default function Onboarding() {
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        {step !== 'welcome' && (
-          <TopBar
-            seg={SEG[step]}
-            of={5}
-            onBack={back}
-            skipLabel={['restrictions', 'spice', 'interests'].includes(step) ? t('common.skip') : undefined}
-            onSkip={next}
-          />
-        )}
-
-        {step === 'welcome' && <Welcome onEmail={() => go('verify')} onSocial={() => go('profile')} t={t} />}
-
-        {step === 'verify' && (
-          <Verify email={email} otp={otp} setOtp={setOtp} onVerify={next} t={t} />
-        )}
+        <TopBar
+          seg={SEG[step]}
+          of={3}
+          onBack={back}
+          skipLabel={['restrictions', 'spice', 'interests'].includes(step) ? t('common.skip') : undefined}
+          onSkip={next}
+        />
 
         {step === 'profile' && (
           <Profile
@@ -154,76 +140,6 @@ export default function Onboarding() {
 /* ---------- steps ---------- */
 
 type TFn = ReturnType<typeof useTranslation>['t'];
-
-function Welcome({ onEmail, onSocial, t }: { onEmail: () => void; onSocial: () => void; t: TFn }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.hero}>
-        <BrandTile size={76} />
-        <Text style={styles.word}>
-          K<Text style={{ color: C.accent }}>-</Text>Bap
-        </Text>
-        <Text style={styles.heroTag}>{t('onboarding.welcomeTag')}</Text>
-      </View>
-      <View style={styles.foot}>
-        <Btn icon={<IconEnvelope size={20} color="#fff" />} onPress={onEmail}>
-          {t('onboarding.continueEmail')}
-        </Btn>
-        <Btn variant="ghost" icon={<IconApple size={20} color={C.ink} />} onPress={onSocial}>
-          {t('onboarding.continueApple')}
-        </Btn>
-        <Btn variant="ghost" icon={<IconGoogleG size={20} color={C.ink} />} onPress={onSocial}>
-          {t('onboarding.continueGoogle')}
-        </Btn>
-        <Text style={styles.fine}>{t('onboarding.terms')}</Text>
-      </View>
-    </View>
-  );
-}
-
-function Verify({ email, otp, setOtp, onVerify, t }: { email: string; otp: string; setOtp: (s: string) => void; onVerify: () => void; t: TFn }) {
-  const inputRef = useRef<TextInput>(null);
-  const digits = otp.padEnd(6, ' ').slice(0, 6).split('');
-  const ready = otp.length === 6;
-  return (
-    <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.verifyTitle')} sub={t('onboarding.verifySub', { email })} />
-      {/* Tapping any box re-opens the keyboard by focusing the hidden input.
-          The input is pointerEvents:none so taps always reach this Pressable
-          (a bare opacity:0 overlay input re-focuses unreliably once dismissed);
-          the ScrollView's keyboardShouldPersistTaps="handled" lets the tap through
-          instead of being swallowed to dismiss the keyboard. */}
-      <Pressable style={styles.otpRow} onPress={() => inputRef.current?.focus()}>
-        {digits.map((d, i) => {
-          const active = i === otp.length;
-          return (
-            <View key={i} style={[styles.otp, active && styles.otpOn]}>
-              <Text style={styles.otpText}>{d.trim()}</Text>
-            </View>
-          );
-        })}
-        {/* invisible field captures input; focus is driven by the Pressable above */}
-        <TextInput
-          ref={inputRef}
-          value={otp}
-          onChangeText={(v) => setOtp(v.replace(/[^0-9]/g, '').slice(0, 6))}
-          keyboardType="number-pad"
-          style={styles.otpInput}
-          autoFocus
-          maxLength={6}
-        />
-      </Pressable>
-      <Pressable hitSlop={8} style={{ marginTop: 16 }}>
-        <Text style={styles.link}>{t('onboarding.resend')}</Text>
-      </Pressable>
-      <View style={styles.foot}>
-        <Btn variant={ready ? 'primary' : 'off'} onPress={ready ? onVerify : undefined}>
-          {t('onboarding.verify')}
-        </Btn>
-      </View>
-    </View>
-  );
-}
 
 function Profile(props: {
   nickname: string;
@@ -424,26 +340,11 @@ const styles = StyleSheet.create({
   app: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 
-  // welcome
-  hero: { alignItems: 'center', gap: 10, marginTop: 36 },
-  heroMark: { width: 76, height: 76, borderRadius: 38, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', ...shadow.sh2 },
-  heroMarkText: { color: '#fff', fontFamily: font.display, fontSize: 42 },
-  word: { fontFamily: font.display, fontSize: 34, color: C.primary },
-  heroTag: { fontFamily: font.body, fontSize: 15, color: C.ink2, textAlign: 'center', maxWidth: 260 },
   foot: { marginTop: 'auto', gap: 10, paddingTop: 16 },
-  fine: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, textAlign: 'center', lineHeight: 16, marginTop: 2 },
 
   // titles
   obTitle: { fontFamily: font.display, fontSize: 25, color: C.ink, letterSpacing: -0.4 },
   obSub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 20, marginTop: 6 },
-
-  // otp
-  otpRow: { flexDirection: 'row', gap: 9 },
-  otp: { flex: 1, height: 56, borderRadius: 13, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  otpOn: { borderColor: C.primary },
-  otpText: { fontFamily: font.display, fontSize: 24, color: C.ink },
-  otpInput: { position: 'absolute', opacity: 0, width: '100%', height: 56, pointerEvents: 'none' },
-  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary, textDecorationLine: 'underline' },
 
   // fields
   fieldset: { gap: 6 },

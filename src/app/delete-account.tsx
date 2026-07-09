@@ -47,7 +47,7 @@ export default function DeleteAccount() {
           <Btn
             variant={agreed ? 'danger' : 'off'}
             icon={agreed ? <IconTrash size={16} color="#fff" /> : undefined}
-            onPress={agreed ? () => router.replace('/onboarding' as Href) : undefined}
+            onPress={agreed ? () => router.replace('/login' as Href) : undefined}
           >
             {t('profile.delete.confirmBtn')}
           </Btn>
