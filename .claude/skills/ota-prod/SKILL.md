@@ -66,6 +66,27 @@ echo "current=$CUR  latestProdBuildRV=$BUILD_RV"
   Explain to the user why (OTA can't reach the installed build) before starting.
 - BUILD_RV empty (no production build ever) → **Path B** (first build).
 
+### 3-1. Mismatch but suspicious? Check for an eas.json-only diff first
+
+`eas.json` IS a fingerprint source, so editing submit metadata (ascAppId 등)
+rotates the hash with ZERO native change. Before falling into Path B, verify:
+
+```bash
+# find the eas.json content the latest prod build was made with, swap it in, recompute
+git log --oneline -5 -- eas.json   # identify the commit that changed it
+git show <that-commit>~1:eas.json > /tmp/eas-old.json
+cp eas.json /tmp/eas-new.json && cp /tmp/eas-old.json eas.json
+npx expo-updates fingerprint:generate --platform ios | ...   # recompute
+cp /tmp/eas-new.json eas.json
+```
+- Recomputed == BUILD_RV → **the app is compatible.** Publish Path A with the
+  OLD eas.json swapped in during `eas update` (restore right after) — the JS
+  bundle doesn't include eas.json, so the shipped content is identical.
+- Recomputed still differs → real native change → Path B.
+- ⚠️ Do NOT add eas.json to `.fingerprintignore` mid-cycle — it changes the
+  source set and rotates the hash AGAIN (breaks compat with the installed
+  build). Adopt the ignore file together with the NEXT native rebuild instead.
+
 ---
 
 ## Path A — OTA (JS/asset only)
