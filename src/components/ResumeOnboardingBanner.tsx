@@ -1,17 +1,19 @@
 /**
- * ResumeOnboardingBanner (KB-110) — light nudge shown over the tab shell when
- * a mid-flow onboarding draft exists: "이어서 설정하기" resumes at the saved
- * step; the ✕ ("나중에") keeps browsing with the draft intact (server sync of
- * the incomplete state lands with KB-75). Disappears for the session on
- * dismiss and forever once the flow submits (draft cleared).
+ * ResumeOnboardingBanner (KB-110) — centered modal (dimmed backdrop) shown over
+ * the tab shell when a mid-flow onboarding draft exists: "이어서 설정하기"
+ * resumes at the saved step; "나중에"(Skip for now) keeps browsing with the
+ * draft intact (server sync of the incomplete state lands with KB-75).
+ * Dismiss hides it for the session; a successful submit clears the draft so it
+ * never returns.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
-import { IconClose } from '@/components/icons';
+import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
+import { Btn } from '@/components/Btn';
+import { IconProfile } from '@/components/icons';
 import { loadOnboardingDraft } from '@/lib/onboarding/draft';
 
 export function ResumeOnboardingBanner() {
@@ -23,46 +25,66 @@ export function ResumeOnboardingBanner() {
     void loadOnboardingDraft().then((d) => setVisible(!!d));
   }, []);
 
-  if (!visible) return null;
   return (
-    <View style={styles.wrap} pointerEvents="box-none">
-      <View style={styles.card}>
-        <Text style={styles.title} numberOfLines={2}>
-          {t('onboarding.resumeTitle')}
-        </Text>
-        <Pressable
-          style={styles.cta}
-          onPress={() => {
-            setVisible(false);
-            router.push('/onboarding' as Href);
-          }}
-        >
-          <Text style={styles.ctaText}>{t('onboarding.resumeCta')}</Text>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
+      {/* backdrop tap = "나중에" (keeps the draft) */}
+      <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
+        {/* stop card taps from falling through to the backdrop */}
+        <Pressable style={styles.card} onPress={() => {}}>
+          <View style={styles.glyph}>
+            <IconProfile size={26} color={C.primary} />
+          </View>
+          <Text style={styles.title}>{t('onboarding.resumeTitle')}</Text>
+          <Btn
+            onPress={() => {
+              setVisible(false);
+              router.push('/onboarding' as Href);
+            }}
+          >
+            {t('onboarding.resumeCta')}
+          </Btn>
+          <Pressable onPress={() => setVisible(false)} hitSlop={10}>
+            <Text style={styles.later}>{t('onboarding.skip')}</Text>
+          </Pressable>
         </Pressable>
-        <Pressable onPress={() => setVisible(false)} hitSlop={10}>
-          <IconClose size={16} color={C.ink3} />
-        </Pressable>
-      </View>
-    </View>
+      </Pressable>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  // floats just above the tab bar; box-none lets the rest of the screen tap through
-  wrap: { position: 'absolute', left: 14, right: 14, bottom: 104 },
-  card: {
-    flexDirection: 'row',
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    padding: 30,
+  },
+  card: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: 14,
     backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.hair,
     borderRadius: radius.lg,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 26,
+    paddingHorizontal: 22,
     ...shadow.sh2,
   },
-  title: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, lineHeight: 18 },
-  cta: { backgroundColor: C.primary, borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 8 },
-  ctaText: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff' },
+  glyph: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: primaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontFamily: font.displayBlack,
+    fontSize: 19,
+    color: C.ink,
+    textAlign: 'center',
+    lineHeight: 26,
+    marginBottom: 2,
+  },
+  later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 6 },
 });
