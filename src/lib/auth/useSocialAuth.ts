@@ -94,18 +94,14 @@ export function useSocialAuth(onSignedIn: () => void) {
     setError(null);
     setPhase('apple');
     try {
+      // EMAIL only — 실명은 수집하지 않는다 (2026-07-09 정책; 표시명은 온보딩 닉네임)
       const c = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
       });
-      const name = [c.fullName?.givenName, c.fullName?.familyName].filter(Boolean).join(' ');
       await submitAuthCredential({
         provider: 'apple',
         authorizationCode: c.authorizationCode,
         idToken: c.identityToken,
-        fullName: name || null,
         email: c.email ?? null,
       });
       setPhase('idle');

@@ -15,15 +15,15 @@ export type AuthProvider = 'google' | 'apple';
 
 /** What each provider's client flow yields. All fields optional except provider —
  *  google gives code/idToken/accessToken depending on flow; apple gives
- *  identityToken + authorizationCode (+ name/email on FIRST grant only). */
+ *  identityToken + authorizationCode (+ email on FIRST grant only).
+ *  실명(fullName)은 수집하지 않는다 (2026-07-09 정책 — 표시명은 온보딩 닉네임). */
 export interface AuthCredential {
   provider: AuthProvider;
   authorizationCode?: string | null;
   idToken?: string | null; // google id_token / apple identityToken
   accessToken?: string | null;
-  /** Apple sends fullName/email only on the very first authorization — forward
-   *  them to the BE on first sign-in or they're gone for good. */
-  fullName?: string | null;
+  /** Apple sends email only on the very first authorization — forward it to
+   *  the BE on first sign-in or it's gone for good. */
   email?: string | null;
 }
 
