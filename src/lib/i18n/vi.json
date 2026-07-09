@@ -28,6 +28,14 @@
     "s3Sub": "Cảm nhận chân thật từ du khách cùng quốc gia với bạn.",
     "welcomeTagline": "Biết món nào an toàn — trước khi bạn gọi món."
   },
+  "login": {
+    "title": "Chào mừng đến với K-Bap",
+    "sub": "Đăng nhập để lưu hồ sơ ăn uống, lịch sử quét và đánh giá của bạn.",
+    "google": "Đăng nhập bằng Google",
+    "terms": "Khi tiếp tục, bạn đồng ý với Điều khoản dịch vụ và xác nhận đã đọc Chính sách quyền riêng tư của chúng tôi.",
+    "errorGeneric": "Đăng nhập chưa hoàn tất. Vui lòng thử lại.",
+    "errorNetwork": "Lỗi mạng — hãy kiểm tra kết nối và thử lại."
+  },
   "myReviews": {
     "title": "Đánh giá của tôi",
     "statReviews": "đánh giá",

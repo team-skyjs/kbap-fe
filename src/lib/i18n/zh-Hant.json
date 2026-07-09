@@ -28,6 +28,14 @@
     "s3Sub": "來自你同國家旅客的真心分享。",
     "welcomeTagline": "點餐前，先知道什麼能安心吃。"
   },
+  "login": {
+    "title": "歡迎使用 K-Bap",
+    "sub": "登入即可儲存你的飲食檔案、掃描紀錄與評論。",
+    "google": "使用 Google 帳戶登入",
+    "terms": "繼續即表示你同意我們的服務條款，並知悉我們的隱私權政策。",
+    "errorGeneric": "登入未完成，請再試一次。",
+    "errorNetwork": "網路錯誤——請檢查你的連線後再試一次。"
+  },
   "myReviews": {
     "title": "我的評論",
     "statReviews": "則評論",

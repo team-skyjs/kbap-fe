@@ -28,6 +28,14 @@
     "s3Sub": "Opiniones honestas de viajeros de tu mismo país.",
     "welcomeTagline": "Sabe qué es seguro, antes de pedir."
   },
+  "login": {
+    "title": "Bienvenido a K-Bap",
+    "sub": "Inicia sesión para guardar tu perfil alimentario, escaneos y reseñas.",
+    "google": "Iniciar sesión con Google",
+    "terms": "Al continuar, aceptas nuestros Términos de Servicio y reconoces nuestra Política de Privacidad.",
+    "errorGeneric": "No se pudo completar el inicio de sesión. Inténtalo de nuevo.",
+    "errorNetwork": "Error de red: revisa tu conexión e inténtalo de nuevo."
+  },
   "myReviews": {
     "title": "Mis reseñas",
     "statReviews": "reseñas",

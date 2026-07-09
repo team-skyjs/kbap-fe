@@ -28,6 +28,14 @@
     "s3Sub": "来自你同一国家旅行者的真心话。",
     "welcomeTagline": "点单前，先知道什么能安心吃。"
   },
+  "login": {
+    "title": "欢迎来到 K-Bap",
+    "sub": "登录后即可保存你的饮食档案、扫描记录和点评。",
+    "google": "使用 Google 账号登录",
+    "terms": "继续即表示你同意我们的服务条款，并已阅读隐私政策。",
+    "errorGeneric": "登录未完成，请重试。",
+    "errorNetwork": "网络错误——请检查网络连接后重试。"
+  },
   "myReviews": {
     "title": "我的点评",
     "statReviews": "条点评",

@@ -47,9 +47,8 @@ export default function Intro() {
   // get an explicit height (a horizontal ScrollView sizes children to content).
   const [heroH, setHeroH] = useState(0);
 
-  // KB-10 login screen isn't built yet → route "Sign up or log in" to the account
-  // setup flow (onboarding). Repoint to the login screen once it lands.
-  const goSignUp = () => router.replace('/onboarding' as Href);
+  const goSignUp = () => router.replace('/login' as Href); // KB-10 social login
+
   const goHome = () => router.replace('/(tabs)'); // Browse first / Skip → guest home
 
   const cur = SLIDES[active];

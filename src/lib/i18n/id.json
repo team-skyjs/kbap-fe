@@ -28,6 +28,14 @@
     "s3Sub": "Pendapat jujur dari pelancong sesama negara Anda.",
     "welcomeTagline": "Ketahui apa yang aman — sebelum Anda memesan."
   },
+  "login": {
+    "title": "Selamat datang di K-Bap",
+    "sub": "Masuk untuk menyimpan profil makanan, hasil pindaian, dan ulasan Anda.",
+    "google": "Login dengan Google",
+    "terms": "Dengan melanjutkan, Anda menyetujui Persyaratan Layanan kami dan memahami Kebijakan Privasi kami.",
+    "errorGeneric": "Proses masuk belum selesai. Silakan coba lagi.",
+    "errorNetwork": "Kesalahan jaringan — periksa koneksi Anda dan coba lagi."
+  },
   "myReviews": {
     "title": "Ulasan saya",
     "statReviews": "ulasan",

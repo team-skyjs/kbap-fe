@@ -24,6 +24,14 @@
     "s3Sub": "Honest takes from travelers of your own country.",
     "welcomeTagline": "Know what's safe — before you order."
   },
+  "login": {
+    "title": "Welcome to K-Bap",
+    "sub": "Sign in to save your food profile, scans and reviews.",
+    "google": "Sign in with Google",
+    "terms": "By continuing, you agree to our Terms of Service and acknowledge our Privacy Policy.",
+    "errorGeneric": "Sign-in didn't complete. Please try again.",
+    "errorNetwork": "Network error — check your connection and try again."
+  },
   "myReviews": {
     "title": "My reviews",
     "statReviews": "reviews",
