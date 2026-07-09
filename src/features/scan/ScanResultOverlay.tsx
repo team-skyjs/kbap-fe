@@ -14,8 +14,8 @@ import { font, riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
 import type { ResultDish } from '@/lib/scan/segmentMenu';
 
-/** Marker pill center-anchoring width (wrapper is transparent to touches). */
-const PILL_WRAP_W = 220;
+/** Cap so a pill can't run across the whole photo. */
+const PILL_MAX_W = 220;
 
 type Photo = { uri: string; width: number; height: number } | null;
 
@@ -63,27 +63,27 @@ export function ScanResultOverlay({
         rect.w > 0 &&
         dishes.map((d) => {
           const tone = riskTone[d.risk];
-          // anchor the marker pill at the dish-name box center; a fixed-width
-          // transparent wrapper centers the variable-width pill on that point
-          const cx = rect.x + (d.box.x + d.box.width / 2) * rect.w;
+          // anchor the pill's LEFT edge at the dish-name box's left (box.x),
+          // vertically at the line center — menu text is left-aligned, so pills
+          // naturally line up per line and follow tilted photos. Each pill uses
+          // its OWN box.x (no column snapping).
+          const lx = rect.x + d.box.x * rect.w;
           const cy = rect.y + (d.box.y + d.box.height / 2) * rect.h;
           return (
-            <View
+            <Pressable
               key={d.itemId}
-              pointerEvents="box-none"
-              style={[styles.pillWrap, { left: cx - PILL_WRAP_W / 2, top: cy - 16 }]}
+              onPress={() => onTapDish(d)}
+              style={[styles.pill, { left: lx, top: cy - 16, borderColor: tone.fg }]}
             >
-              <Pressable onPress={() => onTapDish(d)} style={[styles.pill, { borderColor: tone.fg }]}>
-                <RiskMark state={d.risk} size={18} />
-                {/* ⚠️ 임시 (KB-72): the BE doesn't return a dish name yet, so the
-                    pill shows the Korean rawMenuName we scanned. When the scan
-                    contract adds names (scan-api-request §2 — reader-language
-                    name + foodId), REPLACE this label with the response name. */}
-                <Text style={styles.pillText} numberOfLines={1}>
-                  {d.rawMenuName}
-                </Text>
-              </Pressable>
-            </View>
+              <RiskMark state={d.risk} size={18} />
+              {/* ⚠️ 임시 (KB-72): the BE doesn't return a dish name yet, so the
+                  pill shows the Korean rawMenuName we scanned. When the scan
+                  contract adds names (scan-api-request §2 — reader-language
+                  name + foodId), REPLACE this label with the response name. */}
+              <Text style={styles.pillText} numberOfLines={1}>
+                {d.rawMenuName}
+              </Text>
+            </Pressable>
           );
         })}
     </View>
@@ -93,13 +93,13 @@ export function ScanResultOverlay({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#16110d' },
   paper: { backgroundColor: '#241b14' },
-  pillWrap: { position: 'absolute', width: PILL_WRAP_W, alignItems: 'center' },
   // icon + name pill (design D3) — replaces the icon-only circle marker
   pill: {
+    position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    maxWidth: PILL_WRAP_W,
+    maxWidth: PILL_MAX_W,
     height: 32,
     borderRadius: 16,
     paddingHorizontal: 10,
