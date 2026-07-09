@@ -329,7 +329,9 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
 
   head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
-  name: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.6, lineHeight: 36 },
+  // lineHeight 38 + paddingTop: Korean glyphs (닭/볶…) have a taller ascent than
+  // Latin in the display font — 36 clipped the first line's top on device.
+  name: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.6, lineHeight: 38, paddingTop: 2 },
   ko: { fontFamily: font.ko, fontSize: 15, color: C.ink2, marginTop: 5 },
   thumb: { width: 60, height: 60, borderRadius: 16, backgroundColor: C.surface2, ...shadow.sh1 },
 
