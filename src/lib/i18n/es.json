@@ -412,6 +412,8 @@
     "consentAgree": "Entiendo y acepto el aviso de seguridad.",
     "start": "Empezar a usar K-Bap",
     "consentNote": "Consentimiento registrado una vez · se muestra de nuevo en cada pantalla de riesgo",
+    "resumeTitle": "Termina de configurar tu perfil alimentario",
+    "resumeCta": "Continuar",
     "groups": {
       "Dietary": "Dieta",
       "Religion": "Religión"

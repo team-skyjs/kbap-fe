@@ -514,6 +514,8 @@
     "consentAgree": "I understand and agree to the safety notice.",
     "start": "Start using K-Bap",
     "consentNote": "Consent recorded once · re-shown on every risk screen",
+    "resumeTitle": "Finish setting up your food profile",
+    "resumeCta": "Continue",
     "groups": {
       "Dietary": "Dietary",
       "Religion": "Religion"

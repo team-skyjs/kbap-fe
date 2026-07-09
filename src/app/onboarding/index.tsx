@@ -1,14 +1,19 @@
 /**
- * Onboarding flow (mockup Screen A) — a single stepper holding shared state
- * with a segmented progress bar (TopBar). Mock only: profile/consent are not
- * persisted (MOCK_MODE). On finish it routes to the app shell.
+ * Onboarding flow (KB-110 restructure) — consent first (가입 = OAuth + 동의;
+ * /login routes here after the social sheet), then the setup steps collect
+ * LOCALLY and batch-submit ONCE at the end (submitOnboardingProfile stub —
+ * BE endpoint not deployed). No per-step API calls.
  *
- * Steps: profile → restrictions → spice → interests → consent.
- * The old welcome/verify (email) steps are GONE — auth is social-only on the
- * /login screen (KB-10, 2026-07-08 회의); it routes here after sign-in.
+ * Steps: consent → profile → restrictions → spice → (interests: MVP-flagged
+ * off, FR-005). Restrictions/spice are skippable — a skip submits as an
+ * explicit UNSET (미설정), never a silent default.
+ *
+ * Mid-flow exits persist a draft (position + inputs); re-entry hydrates and
+ * resumes from the saved step (the tabs shell shows a resume nudge). The
+ * draft clears on successful submit.
  * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -33,10 +38,14 @@ import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { countryByCode, countryLang, deviceCountry } from '@/lib/onboarding/countries';
 import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
+import { FLAGS } from '@/lib/flags';
+import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
+import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
+import type { SupportedLang } from '@/lib/i18n/languages';
 
-type Step = 'profile' | 'restrictions' | 'spice' | 'interests' | 'consent';
-const ORDER: Step[] = ['profile', 'restrictions', 'spice', 'interests', 'consent'];
-const SEG: Record<Step, number> = { profile: 0, restrictions: 1, spice: 2, interests: 2, consent: 3 };
+type Step = 'consent' | 'profile' | 'restrictions' | 'spice' | 'interests';
+// consent leads (it belongs to the signup moment); interests is MVP-flagged off.
+const ORDER: Step[] = ['consent', 'profile', 'restrictions', 'spice', ...(FLAGS.onboardingTriedDishes ? (['interests'] as Step[]) : [])];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -44,16 +53,58 @@ export default function Onboarding() {
   const insets = useSafeAreaInsets();
   const { lang, setLang } = useLocale(); // reader language = the active app locale (set via the shared picker)
 
-  const [step, setStep] = useState<Step>('profile');
+  const [step, setStep] = useState<Step>('consent');
 
-  // collected profile (mock — not persisted). Nationality defaults to the device
-  // region when we recognize it (else US).
+  // collected LOCALLY (KB-110) — nothing leaves the device until the final
+  // batch submit. Nationality defaults to the device region when recognized.
   const [nickname, setNickname] = useState('');
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   const [spice, setSpice] = useState(5);
   const [interests, setInterests] = useState<Set<string>>(new Set());
   const [agreed, setAgreed] = useState(false);
+  // skips are explicit states — they submit as UNSET, distinct from "chose none"
+  const [skipped, setSkipped] = useState({ restrictions: false, spice: false });
+  const [submitting, setSubmitting] = useState(false);
+  const hydrated = useRef(false);
+  const done = useRef(false); // permanently stops draft persistence after submit
+
+  // Resume (KB-110): hydrate once from a mid-flow draft, jumping to the saved
+  // step. Consent was already given when the draft exists.
+  useEffect(() => {
+    void loadOnboardingDraft().then((d) => {
+      if (d && !hydrated.current) {
+        setAgreed(d.consented);
+        setNickname(d.nickname);
+        setNationality(d.nationality);
+        setLang(d.language as SupportedLang);
+        if (d.restrictions) setRestrictions(new Set(d.restrictions));
+        setSpice(d.spice ?? 5);
+        setSkipped({ restrictions: d.restrictions === null, spice: d.spice === null });
+        setStep(ORDER.includes(d.step) ? d.step : 'spice'); // clamp (e.g. flagged-off step)
+      }
+      hydrated.current = true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist the draft on every relevant change once consented — an app kill at
+  // any point resumes losslessly. Stops once submitting.
+  useEffect(() => {
+    // done.current: without it the finally{setSubmitting(false)} re-render
+    // would fire this effect once more and RE-SAVE the just-cleared draft.
+    if (!hydrated.current || !agreed || submitting || done.current || step === 'consent') return;
+    saveOnboardingDraft({
+      consented: true,
+      step: step as DraftStep,
+      nickname,
+      nationality,
+      language: lang,
+      restrictions: skipped.restrictions ? null : Array.from(restrictions),
+      spice: skipped.spice ? null : spice,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting]);
 
   const [natOpen, setNatOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -67,9 +118,41 @@ export default function Onboarding() {
   };
 
   const idx = ORDER.indexOf(step);
-  const next = () => idx < ORDER.length - 1 && setStep(ORDER[idx + 1]);
   const back = () => (idx > 0 ? setStep(ORDER[idx - 1]) : router.back());
-  const finish = () => router.replace('/(tabs)');
+
+  // ONE-SHOT batch submit (KB-110): the only server hand-off in the flow.
+  // Skips go out as explicit UNSET; the draft clears only after success.
+  const finish = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await submitOnboardingProfile({
+        nickname,
+        nationality,
+        language: lang,
+        avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
+        spiceTolerance: skipped.spice ? UNSET : spice,
+      });
+      done.current = true; // block any further draft writes before clearing
+      await clearOnboardingDraft();
+      router.replace('/(tabs)');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // advance; the last step's continue IS the submit
+  const next = () => (idx === ORDER.length - 1 ? void finish() : setStep(ORDER[idx + 1]));
+  const skipStep = () => {
+    if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: true }));
+    if (step === 'spice') setSkipped((s) => ({ ...s, spice: true }));
+    next();
+  };
+  const answerStep = () => {
+    if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: false }));
+    if (step === 'spice') setSkipped((s) => ({ ...s, spice: false }));
+    next();
+  };
 
   const toggle = (set: Set<string>, key: string, apply: (s: Set<string>) => void) => {
     const copy = new Set(set);
@@ -81,12 +164,16 @@ export default function Onboarding() {
     <View style={[styles.app, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <TopBar
-          seg={SEG[step]}
-          of={3}
+          seg={idx}
+          of={ORDER.length - 1}
           onBack={back}
           skipLabel={['restrictions', 'spice', 'interests'].includes(step) ? t('common.skip') : undefined}
-          onSkip={next}
+          onSkip={skipStep}
         />
+
+        {step === 'consent' && (
+          <Consent agreed={agreed} setAgreed={setAgreed} onStart={next} t={t} />
+        )}
 
         {step === 'profile' && (
           <Profile
@@ -105,14 +192,14 @@ export default function Onboarding() {
           <Restrictions
             selected={Array.from(restrictions)}
             onToggle={(code) => toggle(restrictions, code, setRestrictions)}
-            onContinue={next}
-            onSkip={next}
+            onContinue={answerStep}
+            onSkip={skipStep}
             t={t}
           />
         )}
 
         {step === 'spice' && (
-          <Spice level={spice} setLevel={setSpice} onContinue={next} onSkip={next} t={t} />
+          <Spice level={spice} setLevel={setSpice} onContinue={answerStep} onSkip={skipStep} t={t} />
         )}
 
         {step === 'interests' && (
@@ -123,10 +210,6 @@ export default function Onboarding() {
             onSkip={next}
             t={t}
           />
-        )}
-
-        {step === 'consent' && (
-          <Consent agreed={agreed} setAgreed={setAgreed} onStart={finish} t={t} />
         )}
       </ScrollView>
 

@@ -412,6 +412,8 @@
     "consentAgree": "安全に関する注意を理解し、同意します。",
     "start": "K-Bapを使い始める",
     "consentNote": "同意は一度記録 · すべてのリスク画面で再表示",
+    "resumeTitle": "フードプロフィールの設定を完了しましょう",
+    "resumeCta": "続ける",
     "groups": {
       "Dietary": "食事",
       "Religion": "宗教"

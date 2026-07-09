@@ -412,6 +412,8 @@
     "consentAgree": "Tôi hiểu và đồng ý với lưu ý an toàn.",
     "start": "Bắt đầu dùng K-Bap",
     "consentNote": "Đồng ý ghi nhận một lần · hiển thị lại trên mọi màn hình rủi ro",
+    "resumeTitle": "Hoàn tất thiết lập hồ sơ ẩm thực của bạn",
+    "resumeCta": "Tiếp tục",
     "groups": {
       "Dietary": "Chế độ ăn",
       "Religion": "Tôn giáo"

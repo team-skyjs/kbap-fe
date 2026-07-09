@@ -412,6 +412,8 @@
     "consentAgree": "Saya paham dan menyetujui pemberitahuan keamanan.",
     "start": "Mulai gunakan K-Bap",
     "consentNote": "Persetujuan dicatat sekali · ditampilkan ulang di setiap layar risiko",
+    "resumeTitle": "Selesaikan pengaturan profil makanan Anda",
+    "resumeCta": "Lanjutkan",
     "groups": {
       "Dietary": "Pola Makan",
       "Religion": "Agama"

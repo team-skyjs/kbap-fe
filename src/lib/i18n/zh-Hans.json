@@ -412,6 +412,8 @@
     "consentAgree": "我已理解并同意该安全须知。",
     "start": "开始使用 K-Bap",
     "consentNote": "同意仅记录一次 · 每个风险界面都会再次显示",
+    "resumeTitle": "完成你的饮食档案设置",
+    "resumeCta": "继续",
     "groups": {
       "Dietary": "饮食",
       "Religion": "宗教"

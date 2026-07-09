@@ -12,6 +12,7 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
+import { ResumeOnboardingBanner } from '@/components/ResumeOnboardingBanner';
 
 // route name (file) ↔ TabBar key
 const ROUTE_TO_KEY: Record<string, TabKey> = {
@@ -57,19 +58,23 @@ function AppTabBar({
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => (
-        <AppTabBar
-          activeRoute={props.state.routes[props.state.index]?.name ?? 'index'}
-          navigate={(name) => props.navigation.navigate(name as never)}
-        />
-      )}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="food" />
-      <Tabs.Screen name="community" />
-      <Tabs.Screen name="profile" />
-    </Tabs>
+    <>
+      <Tabs
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => (
+          <AppTabBar
+            activeRoute={props.state.routes[props.state.index]?.name ?? 'index'}
+            navigate={(name) => props.navigation.navigate(name as never)}
+          />
+        )}
+      >
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="food" />
+        <Tabs.Screen name="community" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
+      {/* KB-110: resume nudge when an onboarding draft exists */}
+      <ResumeOnboardingBanner />
+    </>
   );
 }

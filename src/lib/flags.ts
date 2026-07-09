@@ -9,4 +9,9 @@ export const FLAGS = {
    * contract has no category param yet. Set true to bring both back.
    */
   categoryUI: false,
+  /**
+   * Onboarding "dishes you've tried" (recommendation seed) step. Excluded
+   * from MVP (KB-110 / FR-005) — set true to restore the step in v2.
+   */
+  onboardingTriedDishes: false,
 } as const;
