@@ -81,6 +81,30 @@ export function useInfiniteFoods() {
   });
 }
 
+/**
+ * Search, LIVE (KB-71): GET /foods/search?keyword=&cursor=&lang= — submit-only
+ * (no as-you-type). Same page shape/cursor pattern as the browse list, so the
+ * summary adapter is reused as-is. keyword must be non-blank (server 400s on
+ * blank — the `enabled` flag is the client guard). Empty items on page 1 is a
+ * NORMAL response (no match), not an error.
+ */
+export function useSearchFoods(keyword: string) {
+  const term = keyword.trim();
+  return useInfiniteQuery({
+    queryKey: ['foods', 'search', term, i18n.language],
+    initialPageParam: undefined as number | undefined,
+    enabled: term.length > 0,
+    queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
+      const cursor = pageParam != null ? `&cursor=${encodeURIComponent(String(pageParam))}` : '';
+      return api.get<PageMenuSummaryWire>(
+        `/foods/search?keyword=${encodeURIComponent(term)}${cursor}&lang=${apiLang()}`,
+      );
+    },
+    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
+  });
+}
+
 export function useFoodDetail(id: string) {
   return useQuery({
     // reader language in the key: switching language refetches the localized detail.
