@@ -1,0 +1,6 @@
+# @expo/fingerprint ignore (gitignore syntax) — adopted WITH the Firebase native
+# rebuild (2026-07-10) per ota-prod skill 3-1: submit metadata edits (ascAppId 등)
+# must not rotate the OTA runtime.
+# ⚠️ If a build profile ever sets env vars that config plugins read
+# (native-affecting), REMOVE this and rebuild.
+eas.json
