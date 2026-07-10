@@ -166,6 +166,7 @@
     "language": "Ngôn ngữ",
     "notifications": "Thông báo",
     "safetyNotice": "Lưu ý an toàn",
+    "logout": "Đăng xuất",
     "deleteAccount": "Xóa tài khoản",
     "delete": {
       "title": "Xóa tài khoản của bạn?",

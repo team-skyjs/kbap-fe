@@ -158,6 +158,7 @@
     "language": "Language",
     "notifications": "Notifications",
     "safetyNotice": "Safety notice",
+    "logout": "Log out",
     "deleteAccount": "Delete account",
     "delete": {
       "title": "Delete your account?",

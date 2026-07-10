@@ -166,6 +166,7 @@
     "language": "语言",
     "notifications": "通知",
     "safetyNotice": "安全须知",
+    "logout": "退出登录",
     "deleteAccount": "注销账户",
     "delete": {
       "title": "确定注销账户？",

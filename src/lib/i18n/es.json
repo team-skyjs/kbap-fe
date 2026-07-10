@@ -166,6 +166,7 @@
     "language": "Idioma",
     "notifications": "Notificaciones",
     "safetyNotice": "Aviso de seguridad",
+    "logout": "Cerrar sesión",
     "deleteAccount": "Eliminar cuenta",
     "delete": {
       "title": "¿Eliminar tu cuenta?",

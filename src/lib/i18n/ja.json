@@ -166,6 +166,7 @@
     "language": "言語",
     "notifications": "通知",
     "safetyNotice": "安全に関する注意",
+    "logout": "ログアウト",
     "deleteAccount": "アカウントを削除",
     "delete": {
       "title": "アカウントを削除しますか？",

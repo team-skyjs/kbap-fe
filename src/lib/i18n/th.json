@@ -166,6 +166,7 @@
     "language": "ภาษา",
     "notifications": "การแจ้งเตือน",
     "safetyNotice": "ประกาศด้านความปลอดภัย",
+    "logout": "ออกจากระบบ",
     "deleteAccount": "ลบบัญชี",
     "delete": {
       "title": "ลบบัญชีของคุณ?",

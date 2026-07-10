@@ -6,7 +6,7 @@
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -27,6 +27,7 @@ import {
   IconTrash,
   IconChevron,
   IconPlus,
+  IconArrowLeft,
 } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
@@ -158,6 +159,21 @@ export default function Profile() {
                 <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => setLangOpen(true)} />
                 <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
+                <AcctRow
+                  icon={<IconArrowLeft size={18} color={C.ink2} />}
+                  label={t('profile.logout')}
+                  onPress={() => {
+                    // Firebase signOut (KB-109) — native only; lazy require keeps
+                    // the Firebase native module out of the web runtime path.
+                    void (async () => {
+                      if (Platform.OS !== 'web') {
+                        const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
+                        await session.logOut().catch(() => {});
+                      }
+                      router.replace('/login' as Href);
+                    })();
+                  }}
+                />
                 <AcctRow
                   icon={<IconTrash size={18} color={C.riskDanger} />}
                   label={t('profile.deleteAccount')}

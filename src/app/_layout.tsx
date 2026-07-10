@@ -9,6 +9,7 @@
  */
 import 'react-native-gesture-handler';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +25,13 @@ import { useAppFonts } from '@/lib/useAppFonts';
 import { color } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// KB-109: API 공통 레이어에 Firebase ID 토큰 프로바이더 연결. Firebase 네이티브
+// 모듈은 웹 런타임이 없으므로 웹 번들에서는 실행하지 않는다 (require = 지연 평가).
+if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  (require('@/lib/auth/session') as typeof import('@/lib/auth/session')).installAuthTokenProvider();
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();

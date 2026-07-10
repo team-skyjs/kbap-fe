@@ -15,4 +15,6 @@ export { SkeletonList, Shimmer } from './Skeleton';
 export { Spinner } from './Spinner';
 export { ShellPlaceholder } from './ShellPlaceholder';
 export { NotificationsPanel } from './NotificationsPanel';
-export { SocialAuthButtons } from './SocialAuthButtons';
+// SocialAuthButtons is intentionally NOT re-exported here: it pulls native-only
+// Firebase/google-signin modules (KB-109) — import it directly from
+// '@/components/SocialAuthButtons' so only auth screens carry that weight.

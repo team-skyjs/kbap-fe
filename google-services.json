@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "44799256321",
+    "project_id": "k-bap-eb032",
+    "storage_bucket": "k-bap-eb032.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:44799256321:android:f8a9fc05f0b4e861c5dd00",
+        "android_client_info": {
+          "package_name": "com.rocher.kbap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "44799256321-aol4uv551nfis3308bl9447prbpeffvp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBfhr15hA-7gD3vKWruZyc5m-NkYArIg6M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "44799256321-aol4uv551nfis3308bl9447prbpeffvp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "44799256321-nnhh4i2smd3n7ddejlmhdr1598ckmdj2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rocher.kbap"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

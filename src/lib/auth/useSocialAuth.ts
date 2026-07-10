@@ -1,31 +1,40 @@
 /**
- * useSocialAuth — client-side OAuth acquisition for the two providers (KB-109).
+ * useSocialAuth — social sign-in via Firebase Auth (KB-109, 2026-07-10 결정).
  *
- *   google → expo-auth-session Google provider (system sheet → PKCE exchange
- *            handled by the provider) → id_token/access_token (+ raw code)
- *   apple  → expo-apple-authentication → identityToken + authorizationCode
+ *   google → @react-native-google-signin (webClientId) → idToken
+ *            → signInWithCredential(GoogleAuthProvider)
+ *   apple  → expo-apple-authentication (EMAIL scope ONLY — 실명 미수집 정책)
+ *            with a SHA-256 hashed nonce → identityToken
+ *            → signInWithCredential(AppleAuthProvider(identityToken, rawNonce))
  *
- * Both funnel into submitAuthCredential() (BE stub — KB-109 scope ends at
- * acquisition). Cancel is NOT an error: the user closing the sheet returns the
- * screen to idle silently. Real failures set `error` for the login screen's
- * error line ('network' vs 'generic' so the copy can differ).
+ * Success = a Firebase session exists (onAuthStateChanged / getIdToken feed the
+ * API layer — see auth/session.ts). No BE hand-off here: the BE only verifies
+ * the ID token per request with the Admin SDK.
  *
- * ⚠️ Google needs an iOS OAuth client ID (Google Cloud Console, bundle id
- * com.rocher.kbap) provided as EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID. Missing →
- * the button reports a generic error and logs the reason (블락 — KB-109).
+ * Cancel is NOT an error: closing either sheet returns to idle silently. Real
+ * failures set `error` ('network' vs 'generic' — the login screen's copy).
+ * ⚠️ NATIVE ONLY (Firebase/google-signin native modules) — 재빌드 필요.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-import { submitAuthCredential } from './credentials';
+import * as Crypto from 'expo-crypto';
+import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
+import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
 
-// Completes a pending auth session when the app is reopened via redirect (web/
-// dismissed-sheet edge). No-op on native cold paths.
-WebBrowser.maybeCompleteAuthSession();
+// Firebase 프로젝트(k-bap-eb032)의 웹 클라이언트 ID (google-services.json
+// oauth_client client_type:3) — 시크릿 아님, 커밋 OK.
+const WEB_CLIENT_ID = '44799256321-aol4uv551nfis3308bl9447prbpeffvp.apps.googleusercontent.com';
 
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+// configure는 첫 로그인 시도 시 1회 — import 시점에 네이티브를 건드리지 않는다
+// (웹 번들이 이 모듈을 포함해도 렌더까지는 안전).
+let googleConfigured = false;
+function ensureGoogleConfigured() {
+  if (!googleConfigured) {
+    GoogleSignin.configure({ webClientId: WEB_CLIENT_ID });
+    googleConfigured = true;
+  }
+}
 
 export type AuthErrorKind = 'network' | 'generic';
 export type AuthPhase = 'idle' | 'google' | 'apple';
@@ -33,60 +42,29 @@ export type AuthPhase = 'idle' | 'google' | 'apple';
 export function useSocialAuth(onSignedIn: () => void) {
   const [phase, setPhase] = useState<AuthPhase>('idle');
   const [error, setError] = useState<AuthErrorKind | null>(null);
-  // onSignedIn fires from a response effect; keep the latest callback without
-  // re-running the effect when the parent re-renders.
-  const signedInRef = useRef(onSignedIn);
-  signedInRef.current = onSignedIn;
-
-  const [googleRequest, googleResponse, googlePrompt] = Google.useAuthRequest({
-    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
-    // The provider hook THROWS at render if the current platform has no client
-    // id — give it a placeholder so screens render before credentials exist.
-    // signInWithGoogle() still hard-guards on the real env id before prompting.
-    clientId: GOOGLE_IOS_CLIENT_ID || 'unset.apps.googleusercontent.com',
-    scopes: ['openid', 'profile', 'email'],
-  });
-
-  // Google resolves via response object (the sheet is out-of-process).
-  useEffect(() => {
-    if (!googleResponse) return;
-    if (googleResponse.type === 'success') {
-      const auth = googleResponse.authentication;
-      void submitAuthCredential({
-        provider: 'google',
-        authorizationCode: googleResponse.params?.code ?? null,
-        idToken: auth?.idToken ?? null,
-        accessToken: auth?.accessToken ?? null,
-      }).then(() => {
-        setPhase('idle');
-        signedInRef.current();
-      });
-    } else if (googleResponse.type === 'cancel' || googleResponse.type === 'dismiss') {
-      setPhase('idle'); // user closed the sheet — not an error
-    } else if (googleResponse.type === 'error') {
-      console.log('[auth] google error', googleResponse.error?.message);
-      setPhase('idle');
-      setError(/network|fetch|connect/i.test(googleResponse.error?.message ?? '') ? 'network' : 'generic');
-    }
-  }, [googleResponse]);
 
   const signInWithGoogle = async () => {
     setError(null);
-    if (!GOOGLE_IOS_CLIENT_ID) {
-      // 블락(KB-109): iOS OAuth 클라이언트 ID 미발급 — Google Cloud Console에서
-      // bundle id com.rocher.kbap로 생성 후 EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID 주입.
-      console.log('[auth] google blocked: EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID is not set');
-      setError('generic');
-      return;
-    }
     setPhase('google');
     try {
-      await googlePrompt();
-      // outcome lands in the googleResponse effect above
-    } catch (e) {
-      console.log('[auth] google prompt failed', e);
+      ensureGoogleConfigured();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true }); // iOS no-op
+      const res = await GoogleSignin.signIn();
+      if (res.type === 'cancelled') {
+        setPhase('idle'); // sheet closed — not an error
+        return;
+      }
+      const idToken = res.data?.idToken;
+      if (!idToken) throw new Error('google sign-in returned no idToken');
+      await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken));
+      console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
       setPhase('idle');
-      setError('network');
+      onSignedIn();
+    } catch (e) {
+      setPhase('idle');
+      if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) return; // silent
+      console.log('[auth] google error', e);
+      setError(/network|NETWORK|fetch|connect/i.test(String((e as Error)?.message ?? e)) ? 'network' : 'generic');
     }
   };
 
@@ -94,24 +72,26 @@ export function useSocialAuth(onSignedIn: () => void) {
     setError(null);
     setPhase('apple');
     try {
+      // Firebase requires a nonce round-trip: Apple gets the SHA-256 hash,
+      // Firebase gets the raw value to verify the identityToken binding.
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
       // EMAIL only — 실명은 수집하지 않는다 (2026-07-09 정책; 표시명은 온보딩 닉네임)
       const c = await AppleAuthentication.signInAsync({
         requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
+        nonce: hashedNonce,
       });
-      await submitAuthCredential({
-        provider: 'apple',
-        authorizationCode: c.authorizationCode,
-        idToken: c.identityToken,
-        email: c.email ?? null,
-      });
+      if (!c.identityToken) throw new Error('apple sign-in returned no identityToken');
+      await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
+      console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
       setPhase('idle');
-      signedInRef.current();
+      onSignedIn();
     } catch (e) {
       setPhase('idle');
       const code = (e as { code?: string })?.code ?? '';
       if (code === 'ERR_REQUEST_CANCELED') return; // sheet closed — silent
       console.log('[auth] apple error', e);
-      setError('generic');
+      setError(/network|NETWORK/i.test(String((e as Error)?.message ?? e)) ? 'network' : 'generic');
     }
   };
 
@@ -121,7 +101,6 @@ export function useSocialAuth(onSignedIn: () => void) {
     clearError: () => setError(null),
     // Apple sign-in exists on iOS only; the login screen hides the button elsewhere.
     appleAvailable: Platform.OS === 'ios',
-    googleReady: !!googleRequest,
     signInWithGoogle,
     signInWithApple,
   };

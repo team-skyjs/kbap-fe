@@ -16,8 +16,10 @@
  * clamps to the BE's allowed set. (place=ko data like nameKo / owner questions
  * stays Korean regardless.)
  *
- * Auth: JWT injection is a SKELETON only — the auth/login contract isn't in the
- * Swagger yet. `setAuthToken()` parks a bearer for when it lands (§0 stub).
+ * Auth (KB-109, 2026-07-10): Firebase Auth is the session source. A token
+ * PROVIDER is injected at app start (auth/session.ts, native only) and every
+ * request asks it for a fresh Firebase ID token — the SDK handles expiry
+ * refresh. No provider (web/tests/signed-out) ⇒ no Authorization header.
  */
 import i18n from '../i18n';
 import { API_V1_BASE } from '../data/config';
@@ -39,10 +41,10 @@ export interface BaseResponse<T> {
   message: string | null;
 }
 
-/* ---- JWT injection skeleton (§0 — real token contract still TBD) ---- */
-let authToken: string | null = null;
-export function setAuthToken(token: string | null) {
-  authToken = token;
+/* ---- Firebase ID token provider (KB-109) — injected by auth/session.ts ---- */
+let authTokenProvider: (() => Promise<string | null>) | null = null;
+export function setAuthTokenProvider(provider: (() => Promise<string | null>) | null) {
+  authTokenProvider = provider;
 }
 
 /** Languages the BE accepts for `lang` / Accept-Language. Others → 400, so clamp. */
@@ -59,7 +61,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     'Content-Type': 'application/json',
     'Accept-Language': apiLang(),
   };
-  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  // Firebase ID token (silently skipped when signed out / provider absent —
+  // a token fetch failure must not turn every API call into an auth error).
+  const idToken = authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
 
   let res: Response;
   try {

@@ -166,6 +166,7 @@
     "language": "Язык",
     "notifications": "Уведомления",
     "safetyNotice": "О безопасности",
+    "logout": "Выйти",
     "deleteAccount": "Удалить аккаунт",
     "delete": {
       "title": "Удалить аккаунт?",
