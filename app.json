@@ -16,6 +16,7 @@
       }
     },
     "android": {
+      "package": "com.rocher.kbap",
       "adaptiveIcon": {
         "backgroundColor": "#E2580C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
