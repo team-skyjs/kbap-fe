@@ -145,6 +145,7 @@
     "showList": "Lista",
     "resultTitle": "{{count}} platos escaneados",
     "unmatchedNote": "No está en nuestro catálogo: confírmalo con el dueño.",
+    "degradedNote": "Algunos elementos no se pudieron evaluar esta vez: trátalos con precaución.",
     "spikeNote": "Spike: el riesgo llega en vivo desde el backend (actualmente simulado)."
   },
   "owner": {

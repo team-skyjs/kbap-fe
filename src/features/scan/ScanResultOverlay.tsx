@@ -73,15 +73,13 @@ export function ScanResultOverlay({
             <Pressable
               key={d.itemId}
               onPress={() => onTapDish(d)}
+              disabled={!d.matched}
               style={[styles.pill, { left: lx, top: cy - 16, borderColor: tone.fg }]}
             >
               <RiskMark state={d.risk} size={18} />
-              {/* ⚠️ 임시 (KB-72): the BE doesn't return a dish name yet, so the
-                  pill shows the Korean rawMenuName we scanned. When the scan
-                  contract adds names (scan-api-request §2 — reader-language
-                  name + foodId), REPLACE this label with the response name. */}
+              {/* BE 응답 name(없으면 rawMenuName 폴백) — KB-72 신계약으로 임시 라벨 교체 완료 */}
               <Text style={styles.pillText} numberOfLines={1}>
-                {d.rawMenuName}
+                {d.displayName}
               </Text>
             </Pressable>
           );

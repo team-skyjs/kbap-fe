@@ -25,10 +25,13 @@ export interface MenuDish {
   latin: string | null; // best-effort nearest romanized name
 }
 
-/** A dish enriched with the BE risk verdict — what the result view renders. */
+/** A dish enriched with the BE verdict — what the result view renders (KB-72 신계약). */
 export interface ResultDish extends MenuDish {
   risk: RiskState;
-  reason: string | null;
+  matched: boolean; // false = 조사 대기 → detail navigation disabled
+  foodId: string | null; // detail route param when matched
+  displayName: string; // BE name (rawMenuName fallback) — pill/list label
+  koreanName: string | null;
 }
 
 export interface SegmentedMenu {

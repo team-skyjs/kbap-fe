@@ -1,13 +1,13 @@
 /**
  * Scan screen — camera → on-device OCR → segment (T072, handoff §14) → live BE
- * menu-scans → risk markers + list.
+ * POST /scans (KB-72 신계약 2026-07-10) → name-pill markers + list.
  *
- * §14 principle: risk binds to the DISH NAME only. OCR lines are classified
- * (classifyLine) and segmented (segmentMenu); ONLY dish names are sent to the BE.
- * Prices/romanized names are best-effort side info (safe if wrong). Filtering is
- * structural only — unmatched Korean names still show as "unable", sorted last,
- * never hidden (§14-3, Constitution III). Risk passes through personalRisk()
- * (empty-profile false-safe guard).
+ * The SERVER is the food-판정 authority now: it cleans + catalog-matches the
+ * raw lines; idx absent from results = non-food → dropped (no marker/row).
+ * The FE classifier (classifyLine) remains as a payload reducer only.
+ * matched=false = 조사 대기 → 'unable' badge, detail navigation disabled (even
+ * with a foodId — Swagger 명시). matched risk still passes personalRisk()
+ * (empty-profile false-safe guard). degraded=true shows a light notice.
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
@@ -27,7 +27,6 @@ import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { personalRisk } from '@/lib/risk';
 import { useMe } from '@/lib/data/useMe';
-import { useFoods } from '@/lib/data/useFoods';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -59,13 +58,13 @@ export default function Scan() {
   const [permission, requestPermission] = useCameraPermissions();
   const scan = useScan();
   const { data: me } = useMe();
-  const { data: foods } = useFoods();
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [photo, setPhoto] = useState<Photo>(null);
   const [dishes, setDishes] = useState<MenuDish[]>([]);
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
+  const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
   const [view, setView] = useState<ResultView>('risk');
   const [facing, setFacing] = useState<CameraType>('back');
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
@@ -85,7 +84,8 @@ export default function Scan() {
     console.log('[scan] sending dishNames =', JSON.stringify(scanned.map((s) => s.rawMenuName)));
     scan.mutate(scanned, {
       onSuccess: (res) => {
-        setItems(res);
+        setItems(res.items);
+        setDegraded(res.degraded);
         setView('risk');
         setPhase('result');
       },
@@ -150,11 +150,11 @@ export default function Scan() {
     }
   }
 
-  // resolve a scanned Korean name → catalog foodId (else the raw name → unregistered detail)
+  // Detail navigation: matched dishes only (KB-72 신계약). matched=false is
+  // 조사 대기 — there is no detail screen even when foodId exists (Swagger 명시).
   function openDish(dish: ResultDish) {
-    const match = (foods ?? []).find((f) => f.nameKo === dish.rawMenuName || f.name === dish.rawMenuName);
-    const id = match?.foodId ?? encodeURIComponent(dish.rawMenuName);
-    router.push(`/food/${id}` as Href);
+    if (!dish.matched || !dish.foodId) return;
+    router.push(`/food/${dish.foodId}` as Href);
   }
 
   const Close = (
@@ -165,11 +165,22 @@ export default function Scan() {
 
   // ---- result ----
   if (phase === 'result') {
-    // join dishes + BE risk by itemId; unmatched → unable; guard false-safe
+    // Join dishes × BE verdicts by itemId. Items the server excluded are
+    // NON-FOOD (원산지·가격·UI 문구) → dropped: no marker, no list row (KB-72
+    // 신계약 — the server is the food-판정 authority). matched risk still runs
+    // through the personalRisk false-safe guard.
     const byId = new Map(items.map((i) => [i.itemId, i]));
-    const resultDishes: ResultDish[] = dishes.map((d) => {
+    const resultDishes: ResultDish[] = dishes.flatMap((d) => {
       const it = byId.get(d.itemId);
-      return { ...d, risk: personalRisk(it?.risk ?? 'unable', hasR), reason: it?.reason ?? null };
+      if (!it) return [];
+      return [{
+        ...d,
+        risk: it.matched ? personalRisk(it.risk, hasR) : 'unable',
+        matched: it.matched,
+        foodId: it.foodId,
+        displayName: it.displayName,
+        koreanName: it.koreanName,
+      }];
     });
     // §14-5: unable sorted last, never hidden
     const listDishes = [...resultDishes].sort((a, b) => (a.risk === 'unable' ? 1 : 0) - (b.risk === 'unable' ? 1 : 0));
@@ -187,7 +198,8 @@ export default function Scan() {
         )}
         {Close}
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
-          <Text style={styles.spikeNote}>{t('scan.spikeNote')}</Text>
+          {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
+          {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
           <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: resultDishes.length })}</Text>
           <View style={styles.toggleRow}>
             <Toggle label={t('scan.showOriginal')} on={view === 'original'} onPress={() => setView('original')} />
@@ -290,18 +302,23 @@ function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: (
 function DishRow({ dish, unmatchedNote, riskLabel, onPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void }) {
   const tone = riskTone[dish.risk];
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable style={styles.row} onPress={onPress} disabled={!dish.matched}>
       <RiskMark state={dish.risk} size={24} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.rowName} numberOfLines={1}>{dish.rawMenuName}</Text>
-        {!!dish.latin && <Text style={styles.rowLatin} numberOfLines={1}>{dish.latin}</Text>}
-        {dish.risk === 'unable' && <Text style={styles.rowUnable} numberOfLines={1}>{unmatchedNote}</Text>}
+        <Text style={styles.rowName} numberOfLines={1}>{dish.displayName}</Text>
+        {/* koreanName 병기 (표시명과 다를 때) · 로마자 라인은 보조 표기 유지 */}
+        {!!dish.koreanName && dish.koreanName !== dish.displayName && (
+          <Text style={styles.rowLatin} numberOfLines={1}>{dish.koreanName}</Text>
+        )}
+        {!dish.koreanName && !!dish.latin && <Text style={styles.rowLatin} numberOfLines={1}>{dish.latin}</Text>}
+        {!dish.matched && <Text style={styles.rowUnable} numberOfLines={1}>{unmatchedNote}</Text>}
       </View>
       {!!dish.price && <Text style={styles.rowPrice}>{dish.price}</Text>}
       <View style={[styles.rowBadge, { backgroundColor: tone.bg }]}>
         <Text style={[styles.rowBadgeText, { color: tone.fg }]}>{riskLabel}</Text>
       </View>
-      <IconChevron size={16} color={C.ink3} />
+      {/* 조사 대기(matched=false)는 상세가 없어 이동 화살표도 없음 */}
+      {dish.matched && <IconChevron size={16} color={C.ink3} />}
     </Pressable>
   );
 }
@@ -324,7 +341,7 @@ const styles = StyleSheet.create({
   errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' },
   errDetail: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', paddingHorizontal: 8 },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
-  spikeNote: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
+  degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
   resultTitle: { fontFamily: font.display, fontSize: 16, color: '#fff' },
   toggleRow: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12, padding: 4, gap: 3 },
   toggle: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 9 },

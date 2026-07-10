@@ -145,6 +145,7 @@
     "showList": "Daftar",
     "resultTitle": "{{count}} hidangan dipindai",
     "unmatchedNote": "Tidak ada di katalog kami — konfirmasi dengan pemilik.",
+    "degradedNote": "Beberapa item tidak dapat dinilai kali ini — harap berhati-hati.",
     "spikeNote": "Spike: risiko diambil langsung dari backend (saat ini tiruan)."
   },
   "owner": {

@@ -137,6 +137,7 @@
     "showList": "List",
     "resultTitle": "{{count}} dishes scanned",
     "unmatchedNote": "Not in our catalog — confirm with the owner.",
+    "degradedNote": "Some items couldn't be assessed this time — treat them with care.",
     "spikeNote": "Spike: risk comes live from the backend (currently a mock)."
   },
   "owner": {

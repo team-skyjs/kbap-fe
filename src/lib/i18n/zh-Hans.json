@@ -145,6 +145,7 @@
     "showList": "列表",
     "resultTitle": "已扫描 {{count}} 道菜",
     "unmatchedNote": "不在我们的目录中——请向店家确认。",
+    "degradedNote": "本次有部分项目无法判断——请谨慎对待。",
     "spikeNote": "Spike：风险数据实时来自后端（目前为模拟数据）。"
   },
   "owner": {

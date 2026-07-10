@@ -145,6 +145,7 @@
     "showList": "Danh sách",
     "resultTitle": "Đã quét {{count}} món",
     "unmatchedNote": "Không có trong danh mục của chúng tôi — hãy xác nhận với chủ quán.",
+    "degradedNote": "Một số món chưa thể đánh giá lần này — hãy thận trọng với chúng.",
     "spikeNote": "Spike: rủi ro được lấy trực tiếp từ máy chủ (hiện là dữ liệu giả)."
   },
   "owner": {
