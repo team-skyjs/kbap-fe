@@ -347,6 +347,8 @@
   },
   "home": {
     "greeting": "こんにちは、{{name}}さん",
+    "greetingGuest": "K-Bapへようこそ",
+    "guestScansTitle": "サインインすると、スキャン履歴を保存でき、あなたに合わせた安全評価が受けられます。",
     "greetingSub": "今日あなたに安全な料理はこちら。",
     "greetingSubEmpty": "最初の安全な料理を見つけましょう。",
     "avoidCount": "{{count}} 件を避けています",

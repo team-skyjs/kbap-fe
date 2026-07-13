@@ -147,9 +147,18 @@ export interface Review {
 
 /* ---- response envelopes ---- */
 
+export interface AvoidedSubstance {
+  code: string;
+  name: string; // 회원 언어로 지역화된 성분명 (LIVE /home 제공)
+}
+
 export interface HomeResponse {
   recent: FoodCard[];
   recommended: FoodCard[];
+  /** LIVE(KB-69) 전용 — false면 개인화 섹션은 가입 유도 UI. mock에선 생략. */
+  authenticated?: boolean;
+  /** LIVE(KB-69) 전용 — 지역화된 기피 성분명. mock에선 생략(restrictionLabel 폴백). */
+  avoided?: AvoidedSubstance[];
 }
 
 export interface ScanResponse {

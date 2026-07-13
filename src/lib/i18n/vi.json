@@ -347,6 +347,8 @@
   },
   "home": {
     "greeting": "Chào bạn, {{name}}",
+    "greetingGuest": "Chào mừng bạn đến với K-Bap",
+    "guestScansTitle": "Đăng nhập để lưu lịch sử quét và nhận đánh giá an toàn dành riêng cho bạn.",
     "greetingSub": "Đây là những món an toàn cho bạn hôm nay.",
     "greetingSubEmpty": "Cùng tìm món an toàn đầu tiên của bạn nào.",
     "avoidCount": "Bạn tránh {{count}} thứ",

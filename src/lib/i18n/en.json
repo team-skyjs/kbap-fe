@@ -449,6 +449,8 @@
   },
   "home": {
     "greeting": "Hi, {{name}}",
+    "greetingGuest": "Welcome to K-Bap",
+    "guestScansTitle": "Sign in to keep your scan history and get personal safety ratings.",
     "greetingSub": "Here's what's safe for you today.",
     "greetingSubEmpty": "Let's find your first safe dish.",
     "avoidCount": "You avoid {{count}} things",

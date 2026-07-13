@@ -1,18 +1,42 @@
 /**
- * useHome — home feed (recent + recommended) with personalized risk (FR-034/035).
- * Seam pattern (handoff §5-3): queryFn returns mock JSON when MOCK_MODE,
- * else the real API. Screens only ever destructure { data, isLoading }.
+ * useHome — home feed (KB-69 실연결 2026-07-13).
+ *
+ * LIVE: GET /home — 인증 선택 엔드포인트. 회원이면 3섹션(기피성분·인기5·
+ * 최근스캔10) 전부, 비회원이면 authenticated=false + 개인화 배열 빈값 →
+ * 화면이 가입 유도 UI로 분기. 스캔 이력은 서버가 보관(로컬 이력 계획 폐기).
+ * 요약 어댑터는 목록/검색과 공유(adaptMenuSummary).
  */
 import { useQuery } from '@tanstack/react-query';
+import i18n from '../i18n';
 import type { HomeResponse } from '../api/types';
+import type { MenuSummaryWire } from '../api/foodListTypes';
 import { api } from '../api/client';
+import { adaptMenuSummary } from '../api/foodAdapter';
 import { MOCK_HOME } from '../mocks/foods';
-import { MOCK_MODE } from './config';
+
+/** 오프라인 데모용 스위치 — 게스트도 LIVE가 정상 경로다. */
+const MOCK_MODE_HOME = false;
+
+interface HomeWire {
+  authenticated: boolean;
+  avoidedSubstances: { code: string; name: string }[];
+  popularFoods: MenuSummaryWire[];
+  recentScans: MenuSummaryWire[];
+}
 
 export function useHome() {
   return useQuery({
-    queryKey: ['home'],
-    queryFn: (): Promise<HomeResponse> =>
-      MOCK_MODE ? Promise.resolve(MOCK_HOME) : api.get<HomeResponse>('/home'),
+    // 언어 전환 시 성분명·음식명 재지역화
+    queryKey: ['home', i18n.language],
+    queryFn: async (): Promise<HomeResponse> => {
+      if (MOCK_MODE_HOME) return MOCK_HOME;
+      const wire = await api.get<HomeWire>('/home');
+      return {
+        authenticated: wire.authenticated,
+        avoided: wire.avoidedSubstances ?? [],
+        recommended: (wire.popularFoods ?? []).map(adaptMenuSummary),
+        recent: (wire.recentScans ?? []).map(adaptMenuSummary),
+      };
+    },
   });
 }

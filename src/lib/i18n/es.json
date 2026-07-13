@@ -347,6 +347,8 @@
   },
   "home": {
     "greeting": "Hola, {{name}}",
+    "greetingGuest": "Te damos la bienvenida a K-Bap",
+    "guestScansTitle": "Inicia sesión para guardar tu historial de escaneos y recibir valoraciones de seguridad personalizadas.",
     "greetingSub": "Esto es lo que es seguro para ti hoy.",
     "greetingSubEmpty": "Encontremos tu primer plato seguro.",
     "avoidCount": "Evitas {{count}} cosas",

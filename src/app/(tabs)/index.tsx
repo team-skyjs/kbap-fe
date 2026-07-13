@@ -35,8 +35,10 @@ import {
   IconChevron,
   IconScanLines,
   IconFood,
+  IconLock,
   type IconProps,
 } from '@/components';
+import { Image } from 'expo-image';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -66,7 +68,14 @@ export default function Home() {
   const recent = home?.recent ?? [];
   const recommended = home?.recommended ?? [];
   const restrictions = me?.restrictions ?? [];
-  const hasR = restrictions.length > 0;
+  // LIVE(/home)는 지역화된 성분명을 직접 준다 — 게스트의 빈 배열도 그대로 존중
+  // (배너 숨김). avoided 필드 자체가 없을 때(mock)만 restrictionLabel 폴백 (KB-69).
+  const avoided =
+    home?.avoided != null
+      ? home.avoided
+      : restrictions.map((r) => ({ code: r.code, name: restrictionLabel(r.code) }));
+  const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
+  const hasR = avoided.length > 0;
   const hasScans = recent.length > 0;
   // forward links to routes built in later screens (detail #4, review #6)
   const openFood = (foodId: string) => router.push(`/food/${foodId}` as Href);
@@ -83,20 +92,22 @@ export default function Home() {
           <SkeletonList />
         ) : (
           <View style={styles.body}>
-            {/* greeting */}
+            {/* greeting — 비회원은 이름 없이 (KB-69) */}
             <View style={styles.greet}>
-              <Text style={styles.greetTitle}>{t('home.greeting', { name: me?.nickname ?? '' })}</Text>
+              <Text style={styles.greetTitle}>
+                {isGuest ? t('home.greetingGuest') : t('home.greeting', { name: me?.nickname ?? '' })}
+              </Text>
               <Text style={styles.greetSub}>
                 {hasScans ? t('home.greetingSub') : t('home.greetingSubEmpty')}
               </Text>
             </View>
 
-            {/* diet banner */}
-            {restrictions.length > 0 && (
+            {/* diet banner — LIVE는 지역화 성분명 (비회원은 빈 배열 → 숨김) */}
+            {avoided.length > 0 && (
               <View style={styles.diet}>
                 <View style={styles.dietHead}>
                   <RiskMark state="danger" size={20} />
-                  <Text style={styles.dietTitle}>{t('home.avoidCount', { count: restrictions.length })}</Text>
+                  <Text style={styles.dietTitle}>{t('home.avoidCount', { count: avoided.length })}</Text>
                   <Pressable onPress={() => router.push('/profile/restrictions' as Href)} hitSlop={8}>
                     <Text style={styles.link}>{t('home.edit')}</Text>
                   </Pressable>
@@ -106,10 +117,10 @@ export default function Home() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ gap: 7, paddingVertical: 1 }}
                 >
-                  {restrictions.map((r) => (
-                    <View key={r.code} style={styles.achip}>
+                  {avoided.map((a) => (
+                    <View key={a.code} style={styles.achip}>
                       <RiskDot state="danger" size={12} />
-                      <Text style={styles.achipText}>{restrictionLabel(r.code)}</Text>
+                      <Text style={styles.achipText}>{a.name}</Text>
                     </View>
                   ))}
                 </Animated.ScrollView>
@@ -174,15 +185,27 @@ export default function Home() {
               </Section>
             )}
 
-            {/* recently scanned */}
-            {hasScans && (
-              <Section title={t('home.recentTitle')} sub={t('home.recentSub')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
-                <View style={{ gap: 10 }}>
-                  {recent.map((d) => (
-                    <RecentRow key={d.foodId} food={d} hasRestrictions={hasR} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
-                  ))}
-                </View>
+            {/* recently scanned — 비회원은 가입 유도 카드 (KB-69, 이력은 서버 보관) */}
+            {isGuest ? (
+              <Section title={t('home.recentTitle')}>
+                <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
+                  <View style={styles.guestCtaIc}>
+                    <IconLock size={18} color={C.ink2} />
+                  </View>
+                  <Text style={styles.guestCtaText}>{t('home.guestScansTitle')}</Text>
+                  <Text style={styles.guestCtaBtn}>{t('intro.signUp')}</Text>
+                </Pressable>
               </Section>
+            ) : (
+              hasScans && (
+                <Section title={t('home.recentTitle')} sub={t('home.recentSub')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
+                  <View style={{ gap: 10 }}>
+                    {recent.map((d) => (
+                      <RecentRow key={d.foodId} food={d} hasRestrictions={hasR} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
+                    ))}
+                  </View>
+                </Section>
+              )
             )}
 
             {/* categories — MVP-excluded behind a flag (KB-108); flip to restore */}
@@ -263,6 +286,9 @@ function SafeCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestr
   return (
     <Pressable style={styles.safeCard} onPress={onPress}>
       <View style={styles.photo}>
+        {!!food.photoUrl && (
+          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={StyleSheet.absoluteFill} />
+        )}
         <View style={styles.photoBadge}>
           <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
         </View>
@@ -290,7 +316,11 @@ function RecentRow({ food, hasRestrictions, reviewLabel, onPress }: { food: Food
   return (
     <Pressable style={styles.rec} onPress={onPress}>
       <View style={styles.recThumb}>
-        <IconFood size={24} color={C.primary} />
+        {food.photoUrl ? (
+          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />
+        ) : (
+          <IconFood size={24} color={C.primary} />
+        )}
         <View style={styles.recBadge}>
           <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={15} />
         </View>
@@ -327,6 +357,12 @@ const styles = StyleSheet.create({
   dietTitle: { flex: 1, fontFamily: font.display, fontSize: 15, color: C.ink },
   achip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff', borderWidth: 1, borderColor: '#eeccc8', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   achipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.riskDanger },
+
+  // 비회원 가입 유도 카드 (KB-69)
+  guestCta: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: radius.lg, padding: 14 },
+  guestCtaIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  guestCtaText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
+  guestCtaBtn: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
 
   // scan CTA
   scanCta: { flexDirection: 'row', alignItems: 'center', gap: 13, borderRadius: radius.lg, padding: 16, ...shadow.sh2 },

@@ -347,6 +347,8 @@
   },
   "home": {
     "greeting": "Hai, {{name}}",
+    "greetingGuest": "Selamat datang di K-Bap",
+    "guestScansTitle": "Masuk untuk menyimpan riwayat pindaian dan mendapatkan penilaian keamanan pribadi Anda.",
     "greetingSub": "Ini yang aman untuk Anda hari ini.",
     "greetingSubEmpty": "Mari temukan hidangan aman pertama Anda.",
     "avoidCount": "Anda menghindari {{count}} hal",

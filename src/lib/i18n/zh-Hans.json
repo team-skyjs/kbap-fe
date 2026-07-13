@@ -347,6 +347,8 @@
   },
   "home": {
     "greeting": "你好，{{name}}",
+    "greetingGuest": "欢迎来到 K-Bap",
+    "guestScansTitle": "登录后即可保存扫描记录，并获得专属于你的安全评级。",
     "greetingSub": "以下是今天适合你的菜品。",
     "greetingSubEmpty": "一起找到你的第一道安全菜品吧。",
     "avoidCount": "你需要避开 {{count}} 项",
