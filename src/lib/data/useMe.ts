@@ -37,8 +37,10 @@ export function useMe() {
 export function useMyReviews() {
   return useQuery({
     queryKey: ['me', 'reviews'],
-    // 리뷰 API 미배포(KB-73) — mock 유지
-    queryFn: (): Promise<Review[]> => Promise.resolve(MOCK_MY_REVIEWS),
+    // 리뷰 API 미배포(KB-73). 실계정에 mock 리뷰가 보이면 오해 소지 →
+    // 세션 유저는 빈 목록, mock은 게스트/개발 경로만.
+    queryFn: async (): Promise<Review[]> =>
+      (await hasBeSession()) ? [] : MOCK_MY_REVIEWS,
   });
 }
 

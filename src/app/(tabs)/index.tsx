@@ -95,7 +95,8 @@ export default function Home() {
             {/* greeting — 비회원은 이름 없이 (KB-69) */}
             <View style={styles.greet}>
               <Text style={styles.greetTitle}>
-                {isGuest ? t('home.greetingGuest') : t('home.greeting', { name: me?.nickname ?? '' })}
+                {/* 닉네임 없는 미완료 프로필도 'Hi, ' 대신 일반 인사 */}
+                {isGuest || !me?.nickname ? t('home.greetingGuest') : t('home.greeting', { name: me.nickname })}
               </Text>
               <Text style={styles.greetSub}>
                 {hasScans ? t('home.greetingSub') : t('home.greetingSubEmpty')}

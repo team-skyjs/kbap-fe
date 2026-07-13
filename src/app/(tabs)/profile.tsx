@@ -86,11 +86,13 @@ export default function Profile() {
                 <IconProfile size={30} color={C.primary} />
               </View>
               <View style={{ flex: 1, gap: 6 }}>
-                <Text style={styles.name}>{me.nickname}</Text>
+                <Text style={styles.name}>{me.nickname || '—'}</Text>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <View style={styles.pill}>
-                    <Text style={styles.pillText}>{me.nationality}</Text>
-                  </View>
+                  {!!me.nationality && (
+                    <View style={styles.pill}>
+                      <Text style={styles.pillText}>{me.nationality}</Text>
+                    </View>
+                  )}
                   <View style={styles.pill}>
                     <Text style={styles.pillText}>{lang.split('-')[0].toUpperCase()}</Text>
                   </View>
@@ -100,6 +102,14 @@ export default function Profile() {
                 <IconEdit size={18} color={C.ink2} />
               </Pressable>
             </View>
+
+            {/* 미완료 프로필(서버 플래그) — 온보딩 이어하기 유도 행 */}
+            {me.onboardingCompleted === false && (
+              <Pressable style={styles.finishRow} onPress={() => router.push('/onboarding' as Href)}>
+                <Text style={styles.finishText}>{t('onboarding.resumeTitle')}</Text>
+                <Text style={styles.finishCta}>{t('onboarding.resumeCta')}</Text>
+              </Pressable>
+            )}
 
             {/* ranking → tap opens the ranking-detail screen (7-tier FR-025 data) */}
             <Section title={t('profile.rankingTitle')}>
@@ -258,6 +268,9 @@ function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNod
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  finishRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 12 },
+  finishText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, lineHeight: 18 },
+  finishCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
   // 게스트 가입 유도 (KB-78)
   guestAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   guestTitle: { fontFamily: font.displayBlack, fontSize: 20, color: C.ink, textAlign: 'center' },
