@@ -35,6 +35,10 @@
 - KB-69: 회원 3섹션(스캔 이력 서버 보관 확인)
 - KB-74: 실데이터 + tier 키 일치 여부 (불일치 시 매핑 테이블)
 
+## 실기기 검증 발견 버그 2건 수정 (2026-07-13 저녁)
+- 온보딩 제출 후 stale 캐시: staleTime 60s 동안 제출 전 fetch된 빈 개인화 데이터가 홈에 표시 → 제출 성공 시 queryClient.clear() 추가
+- 미완료 회원 재로그인 시 온보딩 스킵: newMember=false만 보고 홈 직행 → 로그인 후 onboardingCompleted 확인해 false면 /onboarding (판별 실패는 홈+resume 모달 안전망)
+
 ## KB-67 후속 — BE JWT 가이드 대조 (2026-07-13)
 - 수정 2건: ① 공개 인증 3종(login/refresh/logout)에 Authorization 미부착(만료 access가 붙으면 refresh 영구 실패 경로) ② refresh 실패 판별 — 401만 로그아웃, 네트워크/5xx는 토큰 보존
 - 일치 2건: ③ logout body refreshToken 포함 ④ 공개 API 401→refresh 인터셉터(전 경로)

@@ -41,6 +41,7 @@ import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
+import { queryClient } from '@/lib/queryClient';
 import type { SupportedLang } from '@/lib/i18n/languages';
 
 type Step = 'consent' | 'profile' | 'restrictions' | 'spice' | 'interests';
@@ -139,6 +140,9 @@ export default function Onboarding() {
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();
+      // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
+      // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
+      queryClient.clear();
       router.replace('/(tabs)');
     } catch (e) {
       console.log('[onboarding] submit failed — staying on screen:', (e as Error)?.message);

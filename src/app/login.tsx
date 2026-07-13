@@ -17,6 +17,7 @@ import { color as C, font } from '@/lib/theme';
 import { IconArrowLeft } from '@/components';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { BrandLockup } from '@/components/Brand';
+import { api } from '@/lib/api/client';
 
 export default function Login() {
   const router = useRouter();
@@ -37,12 +38,20 @@ export default function Login() {
       </View>
 
       <View style={styles.foot}>
-        {/* KB-67: newMember만 온보딩으로. 기존 회원은 returnTo(게이트에서 보던
-            맥락 — KB-77) 또는 홈으로 복귀 */}
+        {/* KB-67: newMember → 온보딩. 기존 회원도 onboardingCompleted=false면
+            온보딩으로 (계정만 생기고 프로필 미저장인 미완료 회원 — 400 이탈 등).
+            판별 실패 시엔 홈 — resume 모달이 안전망. */}
         <SocialAuthButtons
-          onSignedIn={(newMember) =>
-            router.replace((newMember ? '/onboarding' : (returnTo ?? '/(tabs)')) as Href)
-          }
+          onSignedIn={(newMember) => {
+            void (async () => {
+              if (newMember) return router.replace('/onboarding' as Href);
+              const completed = await api
+                .get<{ onboardingCompleted?: boolean }>('/members/me/profile')
+                .then((p) => p.onboardingCompleted === true)
+                .catch(() => true);
+              router.replace((completed ? (returnTo ?? '/(tabs)') : '/onboarding') as Href);
+            })();
+          }}
         />
         <Text style={styles.terms}>{t('login.terms')}</Text>
       </View>
