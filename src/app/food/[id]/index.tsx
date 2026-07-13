@@ -173,7 +173,6 @@ function Registered({
         /* 게스트: 개인화 verdict 절대 미표시 — 중립 락카드(블러 고스트+CTA)
            → 게이트 시트 (guest-access-policy §0-2/§1) */
         <Pressable style={styles.lockCard} onPress={() => setGateOpen(true)}>
-          <View style={styles.lockGhost} />
           <View style={styles.lockRow}>
             <View style={styles.lockIc}>
               <IconLock size={18} color={C.ink2} />
@@ -371,7 +370,6 @@ const styles = StyleSheet.create({
 
   // 게스트 verdict 락카드 (블러 고스트 + CTA)
   lockCard: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 14, overflow: 'hidden' },
-  lockGhost: { position: 'absolute', left: 14, top: 12, width: 150, height: 34, borderRadius: 17, backgroundColor: C.line, opacity: 0.4 },
   lockRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   lockIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   lockTitle: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },

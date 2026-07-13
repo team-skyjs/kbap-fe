@@ -8,15 +8,21 @@ import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
+import { useIsGuest } from '@/lib/auth/useSession';
 
 export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const items = [
-    { t: t('notifications.reviewReminder.title'), b: t('notifications.reviewReminder.body') },
-    { t: t('notifications.catalogUpdated.title'), b: t('notifications.catalogUpdated.body') },
-    { t: t('notifications.welcome.title'), b: t('notifications.welcome.body') },
-  ];
+  const isGuest = useIsGuest();
+  // 게스트: 개인화 알림(리뷰 리마인더·카탈로그) 잠김 — 일반 안내(welcome)만
+  // (guest-access-policy §1 헤더). 알림은 아직 mock — 실연결 시 서버 몫.
+  const items = isGuest
+    ? [{ t: t('notifications.welcome.title'), b: t('notifications.welcome.body') }]
+    : [
+        { t: t('notifications.reviewReminder.title'), b: t('notifications.reviewReminder.body') },
+        { t: t('notifications.catalogUpdated.title'), b: t('notifications.catalogUpdated.body') },
+        { t: t('notifications.welcome.title'), b: t('notifications.welcome.body') },
+      ];
 
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>

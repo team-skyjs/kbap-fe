@@ -13,6 +13,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
+  Btn,
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
@@ -72,10 +73,9 @@ export default function Profile() {
             </View>
             <Text style={styles.guestTitle}>{t('gate.profileTitle')}</Text>
             <Text style={styles.guestSub}>{t('gate.profileSub')}</Text>
-            <View style={{ alignSelf: 'stretch', maxWidth: 320, width: '100%' }}>
-              <Pressable style={styles.guestBtn} onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)}>
-                <Text style={styles.guestBtnText}>{t('intro.signUp')}</Text>
-              </Pressable>
+            {/* width:'100%'는 RN 0.85 flex 버그(중앙정렬 깨짐) — 공용 Btn 사용 */}
+            <View style={{ alignSelf: 'stretch', paddingHorizontal: 24 }}>
+              <Btn onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)}>{t('intro.signUp')}</Btn>
             </View>
           </View>
         ) : me && (
@@ -262,8 +262,6 @@ const styles = StyleSheet.create({
   guestAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   guestTitle: { fontFamily: font.displayBlack, fontSize: 20, color: C.ink, textAlign: 'center' },
   guestSub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, maxWidth: 300 },
-  guestBtn: { backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  guestBtnText: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff' },
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
 
   id: { flexDirection: 'row', alignItems: 'center', gap: 13 },
