@@ -11,7 +11,7 @@
  * ⚠️ RNFB 임포트 금지 (웹 번들 안전) — Firebase signOut 등 네이티브 몫은
  * 화면 쪽에서 Platform 가드 lazy require(session.ts)로 처리한다.
  */
-import { api, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
+import { api, ApiError, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
 import { clearTokens, loadTokens, saveTokens } from './beTokens';
 
@@ -71,8 +71,16 @@ async function doRefresh(): Promise<boolean> {
     console.log('[auth] token refreshed (rotation)');
     return true;
   } catch (e) {
-    console.log('[auth] refresh failed → session expired', (e as Error)?.message);
-    await sessionExpired(); // refresh 만료 = 강제 로그아웃
+    // BE JWT 가이드: refresh 401 = refresh 만료/무효 → 이때만 로그아웃.
+    // 네트워크/5xx는 일시 장애 — 토큰을 지우면 지하철에서 앱 열었다고
+    // 로그아웃되는 꼴이다 → 토큰 보존, 원요청 에러 표면화(다음 시도에 재도전).
+    const status = e instanceof ApiError ? e.status : undefined;
+    if (status === 401) {
+      console.log('[auth] refresh token expired/invalid → session expired');
+      await sessionExpired();
+    } else {
+      console.log('[auth] refresh transient failure — tokens preserved:', (e as Error)?.message);
+    }
     return false;
   }
 }

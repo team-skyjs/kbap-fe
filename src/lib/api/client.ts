@@ -54,6 +54,9 @@ export function setOnUnauthorized(handler: (() => Promise<boolean>) | null) {
   onUnauthorized = handler;
 }
 
+/** 익명으로 호출해야 하는 공개 인증 엔드포인트 (Authorization 미부착). */
+const OPEN_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
+
 /** Languages the BE accepts for `lang` / Accept-Language. Others → 400, so clamp. */
 const ALLOWED_LANGS = new Set(['ko', 'zh-Hans', 'en', 'ja', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']);
 
@@ -70,7 +73,12 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   };
   // BE access token (silently skipped when signed out / provider absent —
   // a token fetch failure must not turn every API call into an auth error).
-  const accessToken = authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  // 공개 인증 엔드포인트(login/refresh/logout)에는 붙이지 않는다 — 만료된
+  // access가 붙으면 서버가 요청 자체를 401시켜 refresh가 영원히 실패한다
+  // (BE JWT 가이드: 만료·무효 토큰 부착 시 공개 API도 401).
+  const skipAuth = OPEN_AUTH_PATHS.some((p) => path.startsWith(p));
+  const accessToken =
+    !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   let res: Response;

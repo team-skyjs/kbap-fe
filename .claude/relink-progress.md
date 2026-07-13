@@ -28,7 +28,13 @@
 
 ## 남은 실기기 검증 (예진 — KB-109 dev 재빌드 선행)
 - KB-67: 로그인→교환→인증 API / 401 rotation / 만료 강제 로그아웃
+- KB-67 후속: 만료 access 토큰으로 공개 API(foods/home) 호출 → refresh 후 정상 응답 / 비행기모드에서 refresh 실패해도 로그아웃 안 됨(토큰 보존)
 - KB-75: 제출→onboardingCompleted=true, 스킵=빈 배열
 - KB-68: 수정→재조회 일치, 빈배열/미전송 시맨틱
 - KB-69: 회원 3섹션(스캔 이력 서버 보관 확인)
 - KB-74: 실데이터 + tier 키 일치 여부 (불일치 시 매핑 테이블)
+
+## KB-67 후속 — BE JWT 가이드 대조 (2026-07-13)
+- 수정 2건: ① 공개 인증 3종(login/refresh/logout)에 Authorization 미부착(만료 access가 붙으면 refresh 영구 실패 경로) ② refresh 실패 판별 — 401만 로그아웃, 네트워크/5xx는 토큰 보존
+- 일치 2건: ③ logout body refreshToken 포함 ④ 공개 API 401→refresh 인터셉터(전 경로)
+- 회귀 테스트 4건 (beAuth.test.ts)
