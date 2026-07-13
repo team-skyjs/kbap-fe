@@ -12,7 +12,14 @@
  * 화면 쪽에서 Platform 가드 lazy require(session.ts)로 처리한다.
  */
 import { api, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
+import { queryClient } from '@/lib/queryClient';
 import { clearTokens, loadTokens, saveTokens } from './beTokens';
+
+/** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
+ *  게스트 mock과 회원 실데이터가 섞이는 것을 원천 차단. */
+function resetServerCache(): void {
+  queryClient.clear();
+}
 
 interface LoginResponseWire {
   newMember: boolean;
@@ -32,6 +39,7 @@ export function onSessionExpired(handler: (() => void) | null) {
 
 async function sessionExpired(): Promise<void> {
   await clearTokens();
+  resetServerCache();
   expiredHandler?.();
 }
 
@@ -39,6 +47,7 @@ async function sessionExpired(): Promise<void> {
 export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean }> {
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
   await saveTokens(r.accessToken, r.refreshToken);
+  resetServerCache();
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };
 }
@@ -75,6 +84,7 @@ export async function logoutBe(): Promise<void> {
     await api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
   }
   await clearTokens();
+  resetServerCache();
 }
 
 /** 탈퇴: PATCH /auth/withdraw. 성공 여부와 무관하게 로컬 세션은 정리한다. */
@@ -83,6 +93,7 @@ export async function withdrawBe(): Promise<void> {
     await api.patch('/auth/withdraw');
   } finally {
     await clearTokens();
+    resetServerCache();
   }
 }
 

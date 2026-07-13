@@ -15,15 +15,30 @@ import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
 import { IconProfile } from '@/components/icons';
 import { loadOnboardingDraft } from '@/lib/onboarding/draft';
+import { useMe } from '@/lib/data/useMe';
 
 export function ResumeOnboardingBanner() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
+  const { data: me } = useMe();
+  const [draftExists, setDraftExists] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    void loadOnboardingDraft().then((d) => setVisible(!!d));
+    void loadOnboardingDraft().then((d) => setDraftExists(!!d));
   }, []);
+
+  // KB-75: 서버 플래그가 있으면 그게 원천 — 완료 계정엔 절대 안 띄우고,
+  // 미완료 계정엔 (로컬 draft가 없어도, 예: 기기 변경) 띄운다.
+  // 플래그가 없으면(비회원/mock) 기존 로컬 draft 존재 기준.
+  const shouldShow =
+    me?.onboardingCompleted === true
+      ? false
+      : me?.onboardingCompleted === false
+        ? true
+        : draftExists;
+  const visible = shouldShow && !dismissed;
+  const setVisible = (v: boolean) => setDismissed(!v);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>

@@ -53,6 +53,8 @@ export interface User {
   spiceTolerance: number | null; // 0–10
   restrictions: DietaryRestriction[];
   rank: Ranking;
+  /** 서버 온보딩 완료 플래그 (KB-75 재유도 판정의 원천). mock/비회원에선 생략. */
+  onboardingCompleted?: boolean;
 }
 
 export interface UserUpdate {

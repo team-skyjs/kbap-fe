@@ -107,11 +107,12 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   if (!res.ok) {
     throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status);
   }
-  // 200 but success:false or missing payload — never trust HTTP status alone.
-  if (!json || !json.success || json.payload == null) {
+  // 200 but success:false — never trust HTTP status alone.
+  if (!json || !json.success) {
     throw new ApiError(json?.message ?? `Malformed response (HTTP ${res.status})`, res.status);
   }
-  return json.payload;
+  // Unit 응답(BaseResponseUnit)은 payload 필드 자체가 없다 — success면 통과.
+  return json.payload as T;
 }
 
 export const api = {
