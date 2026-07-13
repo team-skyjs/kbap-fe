@@ -120,7 +120,7 @@ export default function Food() {
         )}
       />
 
-      <StickyHeader hidden={hidden} mode="brand" bell />
+      <StickyHeader hidden={hidden} mode="brand" bell signIn={isGuest} onSignIn={() => router.push('/login' as Href)} />
     </View>
   );
 }

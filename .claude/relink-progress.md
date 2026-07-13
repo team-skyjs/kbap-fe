@@ -51,10 +51,9 @@
 | KB-78 상세 잠금 | 완료(락카드+중립 재료+시트) | verdict=락카드(블러+CTA), 재료행 중립(위험 pill·문구 숨김, 이름+% 공개), 저장/북마크 게이트 |
 | KB-78 스캔 게이트 | 완료 | 게스트 카메라/샘플 탭→시트 (§3-Q1 제안) |
 | KB-78 프로필/랭킹 | 완료(프로필 탭 가입 유도 화면; 랭킹은 프로필 경유) | 탭 진입=가입 유도 화면 |
-| KB-78 헤더 Sign in pill | ⏳ 남음 — StickyHeader에 signIn prop 추가, 홈/푸드탭에서 isGuest로 전달, 탭→/login | StickyHeader에 게스트 pill |
-| KB-84 리뷰 잠금 | ⏳ 남음 — reviews.tsx에 import는 됨. 할 것: isGuest면 요약(있으면)만 표시+리스트를 blurred ghost(opacity 0.35, pointerEvents none)로 렌더+중앙 lock CTA 카드(IconLock+lock.reviewsLocked+intro.signUp 버튼)→AuthGateSheet(context reviews). 리뷰쓰기 버튼→시트(context writeReview) | 요약 공개, 본문 리스트 블러+lock CTA→시트 (mock 위 UI, KB-73 때 재사용) |
+| KB-78 헤더 Sign in pill | 완료 | StickyHeader에 게스트 pill |
+| KB-84 리뷰 잠금 | 완료(요약 공개·리스트 고스트+lock-pop·쓰기 게이트) — reviews.tsx에 import는 됨. 할 것: isGuest면 요약(있으면)만 표시+리스트를 blurred ghost(opacity 0.35, pointerEvents none)로 렌더+중앙 lock CTA 카드(IconLock+lock.reviewsLocked+intro.signUp 버튼)→AuthGateSheet(context reviews). 리뷰쓰기 버튼→시트(context writeReview) | 요약 공개, 본문 리스트 블러+lock CTA→시트 (mock 위 UI, KB-73 때 재사용) |
 | 401 게스트 정숙 처리 | 완료(목록/검색 빈 페이지; 상세는 기존 에러UI=크래시 아님) | foods 3종 BE 전환(7/14 예정) 전: 게스트 401→빈/잠금, 크래시 금지 |
 | i18n gate/lock 키 ×9 | 완료(gate 10키+lock 4키, 패리티 미실행 — 커밋 전 확인) | |
 
-### 게이팅 남은 순서 (이어받기용)
-1. KB-84 리뷰 잠금 구현(위 메모대로) 2. StickyHeader Sign in pill 3. i18n 패리티+tsc+웹 게스트 검증(뱃지0·verdict락·시트·프로필) 4. 커밋 5. KB-77/78/84 검토중+진행로그
+### 게이팅 완료 (2026-07-13) — 웹 게스트 검증: 홈 pill·상세 락카드→시트·중립 재료·리뷰 lock-pop 전부 확인. 실기기: 로그인↔로그아웃 전환 시 잠금 즉시 해제 확인 필요(세션 쿼리). 게스트 실데이터 상세/목록은 BE foods 인증-선택 전환(7/14) 후 소생.

@@ -40,6 +40,8 @@ import type { RatingAggregate, Review } from '@/lib/api/types';
 const READER_LANG = 'en'; // MVP reader language
 
 export default function FoodReviews() {
+  const isGuest = useIsGuest();
+  const [gateOpen, setGateOpen] = useState<GateContext | null>(null);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -80,7 +82,7 @@ export default function FoodReviews() {
               primary={{
                 label: t('reviews.writeReview'),
                 icon: <IconPlus size={17} color="#fff" />,
-                onPress: () => router.push(`/food/${id}/review` as Href),
+                onPress: () => (isGuest ? setGateOpen('writeReview') : router.push(`/food/${id}/review` as Href)),
               }}
             />
           </View>
@@ -106,6 +108,28 @@ export default function FoodReviews() {
               />
             </View>
 
+            {isGuest ? (
+              /* KB-84: 게스트 — 요약(위)은 공개, 본문 리스트는 블러 고스트 +
+                 lock CTA → 게이트 시트 (guest-access-policy §1) */
+              <View>
+                <View pointerEvents="none" style={{ opacity: 0.3, gap: 12 }}>
+                  {items.slice(0, 3).map((r) => (
+                    <ReviewItem key={r.id} review={r} t={t} />
+                  ))}
+                </View>
+                <View style={styles.lockPop}>
+                  <View style={styles.lockPopIc}>
+                    <IconLock size={20} color={C.ink2} />
+                  </View>
+                  <Text style={styles.lockPopTitle}>{t('lock.reviewsLocked')}</Text>
+                  <Text style={styles.lockPopSub}>{t('gate.reviewsSub')}</Text>
+                  <Pressable style={styles.lockPopBtn} onPress={() => setGateOpen('reviews')}>
+                    <Text style={styles.lockPopBtnText}>{t('intro.signUp')}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+            <>
             {/* controls — same-nationality filter + sort (translation is per-review) */}
             <View style={styles.filters}>
               <Pressable style={styles.filter} onPress={() => setSameNatOnly((v) => !v)}>
@@ -130,7 +154,7 @@ export default function FoodReviews() {
                 primary={{
                   label: t('reviews.writeReview'),
                   icon: <IconPlus size={17} color="#fff" />,
-                  onPress: () => router.push(`/food/${id}/review` as Href),
+                  onPress: () => (isGuest ? setGateOpen('writeReview') : router.push(`/food/${id}/review` as Href)),
                 }}
               />
             ) : (
@@ -140,11 +164,14 @@ export default function FoodReviews() {
                 ))}
               </View>
             )}
+            </>
+            )}
           </View>
         ))}
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
+      <AuthGateSheet context={gateOpen ?? 'reviews'} open={gateOpen != null} onClose={() => setGateOpen(null)} />
     </View>
   );
 }
@@ -263,6 +290,13 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
 
   emptyFill: { flex: 1, justifyContent: 'center' },
+  // KB-84 게스트 lock-pop
+  lockPop: { position: 'absolute', left: 12, right: 12, top: 24, alignItems: 'center', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 18, ...shadow.sh2 },
+  lockPopIc: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  lockPopTitle: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, textAlign: 'center' },
+  lockPopSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, textAlign: 'center', lineHeight: 18 },
+  lockPopBtn: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10, marginTop: 4 },
+  lockPopBtnText: { fontFamily: font.bodyBold, fontSize: 13.5, color: '#fff' },
 
   dishName: { fontFamily: font.display, fontSize: 22, color: C.ink },
   dishSub: { fontFamily: font.ko, fontSize: 13, color: C.ink2, marginTop: 3 },

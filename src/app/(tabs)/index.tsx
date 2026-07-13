@@ -240,6 +240,8 @@ export default function Home() {
         search
         bell
         bellDot
+        signIn={isGuest}
+        onSignIn={() => router.push('/login' as Href)}
         onSearch={() => router.push('/search' as Href)}
         onBell={() => setNotifOpen(true)}
       />

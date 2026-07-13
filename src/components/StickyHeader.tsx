@@ -82,6 +82,9 @@ export type StickyHeaderProps = {
   titleKo?: string; // optional bilingual KO subtitle rendered beside the title
   search?: boolean;
   bell?: boolean;
+  /** 게스트일 때 우측 Sign in pill (KB-78, guest-access-policy §1 헤더) */
+  signIn?: boolean;
+  onSignIn?: () => void;
   bellDot?: boolean;
   bookmark?: boolean;
   onBack?: () => void;
@@ -97,6 +100,8 @@ export function StickyHeader({
   titleKo,
   search,
   bell,
+  signIn,
+  onSignIn,
   bellDot,
   bookmark,
   onBack,
@@ -145,6 +150,11 @@ export function StickyHeader({
             <Pressable style={styles.actionBtn} onPress={onBell} hitSlop={10}>
               <IconBell size={23} color={C.ink} sw={1.8} />
               {bellDot && <View style={styles.dot} />}
+            </Pressable>
+          )}
+          {signIn && (
+            <Pressable style={styles.signInPill} onPress={onSignIn} hitSlop={8}>
+              <Text style={styles.signInText}>Sign in</Text>
             </Pressable>
           )}
           {bookmark && (
@@ -207,6 +217,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  signInPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
+  signInText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
   dot: {
     position: 'absolute',
     top: 6,
