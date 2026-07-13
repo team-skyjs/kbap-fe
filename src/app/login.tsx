@@ -36,7 +36,8 @@ export default function Login() {
       </View>
 
       <View style={styles.foot}>
-        <SocialAuthButtons onSignedIn={() => router.replace('/onboarding' as Href)} />
+        {/* KB-67: newMember만 온보딩으로, 기존 회원은 바로 홈 */}
+        <SocialAuthButtons onSignedIn={(newMember) => router.replace((newMember ? '/onboarding' : '/(tabs)') as Href)} />
         <Text style={styles.terms}>{t('login.terms')}</Text>
       </View>
     </View>

@@ -33,7 +33,7 @@ function GoogleG({ size = 20 }: { size?: number }) {
   );
 }
 
-export function SocialAuthButtons({ onSignedIn }: { onSignedIn: () => void }) {
+export function SocialAuthButtons({ onSignedIn }: { onSignedIn: (newMember: boolean) => void }) {
   const { t } = useTranslation();
   const { phase, error, appleAvailable, signInWithGoogle, signInWithApple } = useSocialAuth(onSignedIn);
   const busy = phase !== 'idle';

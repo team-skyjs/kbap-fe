@@ -163,9 +163,11 @@ export default function Profile() {
                   icon={<IconArrowLeft size={18} color={C.ink2} />}
                   label={t('profile.logout')}
                   onPress={() => {
-                    // Firebase signOut (KB-109) — native only; lazy require keeps
-                    // the Firebase native module out of the web runtime path.
+                    // KB-67: BE 세션 폐기(POST /auth/logout + 토큰 삭제) 후
+                    // Firebase signOut(네이티브 전용 — lazy require).
                     void (async () => {
+                      const { logoutBe } = await import('@/lib/auth/beAuth');
+                      await logoutBe().catch(() => {});
                       if (Platform.OS !== 'web') {
                         const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
                         await session.logOut().catch(() => {});

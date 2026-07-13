@@ -21,6 +21,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
+import { exchangeLogin } from './beAuth';
 
 // Firebase 프로젝트(k-bap-eb032)의 웹 클라이언트 ID (google-services.json
 // oauth_client client_type:3) — 시크릿 아님, 커밋 OK.
@@ -39,9 +40,18 @@ function ensureGoogleConfigured() {
 export type AuthErrorKind = 'network' | 'generic';
 export type AuthPhase = 'idle' | 'google' | 'apple';
 
-export function useSocialAuth(onSignedIn: () => void) {
+export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
   const [phase, setPhase] = useState<AuthPhase>('idle');
   const [error, setError] = useState<AuthErrorKind | null>(null);
+
+  // Firebase 세션 → BE 토큰 교환 (KB-67): POST /auth/login {idToken} →
+  // access/refresh 저장. newMember로 온보딩/홈 분기.
+  const exchange = async (): Promise<boolean> => {
+    const idToken = await getAuth().currentUser?.getIdToken();
+    if (!idToken) throw new Error('no firebase id token after sign-in');
+    const { newMember } = await exchangeLogin(idToken);
+    return newMember;
+  };
 
   const signInWithGoogle = async () => {
     setError(null);
@@ -58,8 +68,9 @@ export function useSocialAuth(onSignedIn: () => void) {
       if (!idToken) throw new Error('google sign-in returned no idToken');
       await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken));
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
+      const newMember = await exchange();
       setPhase('idle');
-      onSignedIn();
+      onSignedIn(newMember);
     } catch (e) {
       setPhase('idle');
       if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) return; // silent
@@ -84,8 +95,9 @@ export function useSocialAuth(onSignedIn: () => void) {
       if (!c.identityToken) throw new Error('apple sign-in returned no identityToken');
       await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
+      const newMember = await exchange();
       setPhase('idle');
-      onSignedIn();
+      onSignedIn(newMember);
     } catch (e) {
       setPhase('idle');
       const code = (e as { code?: string })?.code ?? '';

@@ -16,10 +16,11 @@
  * clamps to the BE's allowed set. (place=ko data like nameKo / owner questions
  * stays Korean regardless.)
  *
- * Auth (KB-109, 2026-07-10): Firebase Auth is the session source. A token
- * PROVIDER is injected at app start (auth/session.ts, native only) and every
- * request asks it for a fresh Firebase ID token — the SDK handles expiry
- * refresh. No provider (web/tests/signed-out) ⇒ no Authorization header.
+ * Auth (KB-67, 2026-07-13 하이브리드): Firebase는 소셜 로그인까지만 —
+ * POST /auth/login으로 BE access/refresh 토큰을 교환하고, 모든 요청의
+ * Authorization은 BE accessToken이다 (auth/beAuth.ts installBeAuth()가
+ * 프로바이더+401 핸들러를 주입). 401 → refresh rotation 후 1회 재시도.
+ * No provider (web/tests/signed-out) ⇒ no Authorization header.
  */
 import i18n from '../i18n';
 import { API_V1_BASE } from '../data/config';
@@ -41,10 +42,16 @@ export interface BaseResponse<T> {
   message: string | null;
 }
 
-/* ---- Firebase ID token provider (KB-109) — injected by auth/session.ts ---- */
+/* ---- BE 토큰 배선 (KB-67) — auth/beAuth.ts installBeAuth()가 주입 ---- */
 let authTokenProvider: (() => Promise<string | null>) | null = null;
 export function setAuthTokenProvider(provider: (() => Promise<string | null>) | null) {
   authTokenProvider = provider;
+}
+
+/** 401 핸들러 — true 반환(=refresh 성공) 시 원요청을 1회 재시도한다. */
+let onUnauthorized: (() => Promise<boolean>) | null = null;
+export function setOnUnauthorized(handler: (() => Promise<boolean>) | null) {
+  onUnauthorized = handler;
 }
 
 /** Languages the BE accepts for `lang` / Accept-Language. Others → 400, so clamp. */
@@ -56,15 +63,15 @@ export function apiLang(): string {
   return ALLOWED_LANGS.has(l) ? l : 'en';
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, isRetry = false): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept-Language': apiLang(),
   };
-  // Firebase ID token (silently skipped when signed out / provider absent —
+  // BE access token (silently skipped when signed out / provider absent —
   // a token fetch failure must not turn every API call into an auth error).
-  const idToken = authTokenProvider ? await authTokenProvider().catch(() => null) : null;
-  if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  const accessToken = authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   let res: Response;
   try {
@@ -76,6 +83,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   } catch (e) {
     // No connectivity / DNS / TLS — distinctly a NETWORK failure (not an HTTP status).
     throw new ApiError(`NETWORK: ${(e as Error)?.message ?? e}`);
+  }
+
+  // 401 → refresh(rotation, mutex는 핸들러 몫) 후 원요청 1회 재시도 (KB-67).
+  // /auth/* 자체의 401은 재시도 대상이 아니다(로그인/refresh 실패는 그대로 표면화).
+  if (res.status === 401 && !isRetry && onUnauthorized && !path.startsWith('/auth/')) {
+    const refreshed = await onUnauthorized().catch(() => false);
+    if (refreshed) return request<T>(method, path, body, true);
   }
 
   const text = await res.text();

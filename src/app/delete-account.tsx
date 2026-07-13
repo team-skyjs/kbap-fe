@@ -3,10 +3,11 @@
  * data is deleted immediately while reviews are kept but anonymized. Requires an
  * explicit acknowledgement before the destructive action.
  *
- * Mock: confirming routes back to onboarding (account gone). No real DELETE /me.
+ * LIVE (KB-67): confirming PATCHes /auth/withdraw, clears the BE session and
+ * Firebase sign-in, then routes to /login. (리뷰 익명화 등 데이터 처리는 BE 몫.)
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +48,22 @@ export default function DeleteAccount() {
           <Btn
             variant={agreed ? 'danger' : 'off'}
             icon={agreed ? <IconTrash size={16} color="#fff" /> : undefined}
-            onPress={agreed ? () => router.replace('/login' as Href) : undefined}
+            onPress={
+              agreed
+                ? () => {
+                    // KB-67: 탈퇴 실호출 → 세션 정리 → 재로그인 화면
+                    void (async () => {
+                      const { withdrawBe } = await import('@/lib/auth/beAuth');
+                      await withdrawBe().catch(() => {}); // 실패해도 로컬 세션은 정리됨
+                      if (Platform.OS !== 'web') {
+                        const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
+                        await session.logOut().catch(() => {});
+                      }
+                      router.replace('/login' as Href);
+                    })();
+                  }
+                : undefined
+            }
           >
             {t('profile.delete.confirmBtn')}
           </Btn>

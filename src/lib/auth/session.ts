@@ -10,21 +10,13 @@
  * export never executes this module.
  */
 import { getAuth, onAuthStateChanged, signOut } from '@react-native-firebase/auth';
-import { setAuthTokenProvider } from '@/lib/api/client';
 
 /** Firebase user, derived from the modular API (namespaced types mismatch it). */
 export type AuthUser = NonNullable<ReturnType<typeof getAuth>['currentUser']>;
 
-/** Wire the shared API client (KB-66) to Firebase ID tokens. Call once at app start. */
-export function installAuthTokenProvider(): void {
-  setAuthTokenProvider(async () => {
-    const user = getAuth().currentUser;
-    if (!user) return null;
-    // getIdToken() returns a cached token and refreshes it near expiry — no
-    // manual refresh bookkeeping needed.
-    return user.getIdToken();
-  });
-}
+// NOTE (KB-67): API Authorization은 이제 BE accessToken(auth/beAuth.ts) —
+// Firebase ID토큰을 요청마다 부착하던 KB-109 구조는 제거됨. 이 모듈은
+// Firebase 세션 유틸(구독/로그아웃)만 담당한다.
 
 /** Subscribe to sign-in state. Returns the unsubscribe function. */
 export function subscribeAuth(cb: (user: AuthUser | null) => void): () => void {
