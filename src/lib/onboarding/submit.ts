@@ -17,6 +17,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
+import { toBeCode } from '@/lib/mocks/ingredients';
 
 export const UNSET = 'UNSET' as const;
 export type Unset = typeof UNSET;
@@ -39,7 +40,16 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
 
   const body = {
     nickname: payload.nickname,
-    avoidanceSubstanceCodes: payload.avoidIngredients === UNSET ? [] : payload.avoidIngredients,
+    // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
+    // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
+    avoidanceSubstanceCodes:
+      payload.avoidIngredients === UNSET
+        ? []
+        : payload.avoidIngredients.flatMap((c) => {
+            const be = toBeCode(c);
+            if (!be) console.log('[onboarding] dropping unmapped ingredient code:', c);
+            return be ? [be] : [];
+          }),
     countryCode: payload.nationality,
     appLanguage: payload.language,
   };

@@ -18,6 +18,7 @@ import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api
 import { hasBeSession } from '../auth/beAuth';
 import { loadLocalSpice } from '../onboarding/submit';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
+import { toBeCode } from '../mocks/ingredients';
 
 const SPICE_KEY = 'kbap.profile.spice.v1'; // submit.ts와 동일 키
 
@@ -71,7 +72,12 @@ export function useUpdateMe() {
       if (patch.nationality !== undefined) body.countryCode = patch.nationality;
       if (patch.readerLanguage !== undefined) body.appLanguage = patch.readerLanguage;
       if (patch.restrictions !== undefined) {
-        body.avoidanceSubstanceCodes = patch.restrictions.map((r) => r.code);
+        // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그
+        body.avoidanceSubstanceCodes = patch.restrictions.flatMap((r) => {
+          const be = toBeCode(r.code);
+          if (!be) console.log('[profile] dropping unmapped ingredient code:', r.code);
+          return be ? [be] : [];
+        });
       }
       if (Object.keys(body).length === 0) return; // spice-only 패치 등 — 서버 호출 불필요
       await api.patch('/members/me/profile', body);

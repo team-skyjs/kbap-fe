@@ -21,6 +21,7 @@
 - BE 개발용 test-token: dropbox/jh/test-token.html (시크릿은 DM — 이 세션은 미보유).
 
 ## 미해결/질문
+- **성분 코드 정합(KB-75 버그, 7/13 수정)**: 내부 카탈로그를 BE 정본 81종(UPPER_SNAKE)으로 재키잉. 와이어 경계(온보딩 제출·프로필 PATCH)에 toBeCode 변환 — 레거시 ing:slug는 넓은 카테고리 매핑(과회피=안전) 또는 드롭+로그. 신규 항목 ~30종 번역은 영어 fallback(KB-125 목록에 추가).
 - **맵기(spice)**: 온보딩/프로필 계약에 필드 없음 → 로컬 저장만 유지, BE 질의 대기 (KB-75/68 티켓에 기록됨).
 - **UNSET vs 빈 배열**: 계약상 스킵=빈 배열로 전송(회의 확정). FE 내부 UNSET 구분은 draft에만 유지.
 - foods 3종 AUTH→인증-선택 전환 요청 중(guest-access-policy) — 이번 묶음에서 건드리지 않음.

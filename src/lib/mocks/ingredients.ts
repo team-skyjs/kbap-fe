@@ -1,62 +1,119 @@
 /**
- * mocks/ingredients.ts — flat ingredient catalog (KB-6 override). Replaces the
- * category-grouped restriction taxonomy: a user's restrictions are a FLAT list
- * of ingredient codes (no Allergy/Dietary/Religion grouping, no per-ingredient
- * pre-assigned risk color — risk is contextual per dish, decided by the BE).
+ * ingredients.ts — 기피 성분 카탈로그, **BE 표준 코드(UPPER_SNAKE) 81종으로
+ * 키잉** (KB-75 버그 수정 2026-07-13: 내부 ing:slug가 와이어로 새어 400).
+ * avoidance_substance.code 정본과 1:1 — 코드가 곧 와이어 값이라 변환이 없다.
  *
- * This is BE catalog DATA (stub for MOCK_MODE): each entry is { code, name }.
- * Diet/religion intents are expressed as concrete ingredients to avoid
- * (e.g. "no pork" → avoid `ing:pork`; "halal" → avoid pork + alcohol).
- * Shared by the profile restrictions editor (I6) and onboarding (KB-8).
+ * i18nKey: 구 slug 체계의 번역(ingredients.<slug>, 9개 언어)이 있는 항목만
+ * 재사용. 신규 항목은 영어 fallback (번역 추가는 KB-125 자잘 목록).
  */
 
 import i18n from '@/lib/i18n';
 
 export interface Ingredient {
-  code: string; // stable catalog code, e.g. "ing:shrimp"
-  name: string; // English fallback name (display goes through ingredientLabel → i18n)
+  code: string; // BE 표준 코드 (UPPER_SNAKE) — 와이어 값 그 자체
+  name: string; // English fallback name
+  i18nKey?: string; // 구 slug 번역 재사용용
 }
 
-const ing = (slug: string, name: string): Ingredient => ({ code: `ing:${slug}`, name });
+const ing = (code: string, name: string, i18nKey?: string): Ingredient => ({ code, name, i18nKey });
 
-/** 81-ingredient stub catalog (flat, unordered by design — searchable in UI). */
+/** BE avoidance_substance.code 정본 81종 (guest/온보딩/프로필 공용). */
 export const INGREDIENTS: Ingredient[] = [
-  ing('egg', 'Egg'), ing('milk', 'Milk'), ing('cheese', 'Cheese'), ing('butter', 'Butter'),
-  ing('yogurt', 'Yogurt'), ing('gelatin', 'Gelatin'), ing('honey', 'Honey'),
-  ing('peanut', 'Peanut'), ing('walnut', 'Walnut'), ing('almond', 'Almond'), ing('cashew', 'Cashew'),
-  ing('pistachio', 'Pistachio'), ing('pinenut', 'Pine nut'), ing('sesame', 'Sesame'), ing('mustard', 'Mustard'),
-  ing('sunflowerseed', 'Sunflower seed'),
-  ing('wheat', 'Wheat'), ing('buckwheat', 'Buckwheat'), ing('barley', 'Barley'), ing('rye', 'Rye'),
-  ing('oat', 'Oat'), ing('corn', 'Corn'), ing('rice', 'Rice'),
-  ing('soybean', 'Soybean'), ing('tofu', 'Tofu'), ing('soysauce', 'Soy sauce'), ing('doenjang', 'Soybean paste'),
-  ing('gochujang', 'Chili paste'), ing('redbean', 'Red bean'),
-  ing('shrimp', 'Shrimp'), ing('crab', 'Crab'), ing('lobster', 'Lobster'), ing('squid', 'Squid'),
-  ing('octopus', 'Octopus'), ing('cuttlefish', 'Cuttlefish'), ing('clam', 'Clam'), ing('oyster', 'Oyster'),
-  ing('mussel', 'Mussel'), ing('abalone', 'Abalone'), ing('seasnail', 'Sea snail'), ing('scallop', 'Scallop'),
-  ing('shellfish', 'Shellfish'),
-  ing('fish', 'Fish'), ing('mackerel', 'Mackerel'), ing('anchovy', 'Anchovy'), ing('tuna', 'Tuna'),
-  ing('pollock', 'Pollock'), ing('cod', 'Cod'), ing('salmon', 'Salmon'), ing('eel', 'Eel'),
-  ing('fishsauce', 'Fish sauce'), ing('fishcake', 'Fish cake'), ing('shrimppaste', 'Shrimp paste'),
-  ing('beef', 'Beef'), ing('pork', 'Pork'), ing('chicken', 'Chicken'), ing('duck', 'Duck'),
-  ing('lamb', 'Lamb'), ing('ham', 'Ham'), ing('sausage', 'Sausage'), ing('bloodsausage', 'Blood sausage'),
-  ing('garlic', 'Garlic'), ing('onion', 'Onion'), ing('greenonion', 'Green onion'), ing('ginger', 'Ginger'),
-  ing('chili', 'Chili pepper'), ing('perilla', 'Perilla'), ing('cilantro', 'Cilantro'),
-  ing('tomato', 'Tomato'), ing('peach', 'Peach'), ing('kiwi', 'Kiwi'), ing('apple', 'Apple'),
-  ing('mango', 'Mango'), ing('mushroom', 'Mushroom'), ing('eggplant', 'Eggplant'), ing('spinach', 'Spinach'),
-  ing('alcohol', 'Alcohol'), ing('ricewine', 'Rice wine'), ing('vinegar', 'Vinegar'), ing('msg', 'MSG'),
-  ing('sulfites', 'Sulfites'),
+  // dairy & animal-derived
+  ing('EGG', 'Egg', 'egg'), ing('MILK', 'Milk', 'milk'), ing('DAIRY', 'Dairy'),
+  ing('GOAT_MILK', 'Goat milk'), ing('BUTTER', 'Butter', 'butter'), ing('GHEE', 'Ghee'),
+  ing('CHEESE', 'Cheese', 'cheese'), ing('GELATIN', 'Gelatin', 'gelatin'), ing('RENNET', 'Rennet'),
+  ing('HONEY', 'Honey', 'honey'), ing('CARMINE', 'Carmine'),
+  // nuts & seeds
+  ing('PEANUT', 'Peanut', 'peanut'), ing('WALNUT', 'Walnut', 'walnut'), ing('PINE_NUT', 'Pine nut', 'pinenut'),
+  ing('ALMOND', 'Almond', 'almond'), ing('CASHEW', 'Cashew', 'cashew'), ing('PISTACHIO', 'Pistachio', 'pistachio'),
+  ing('HAZELNUT', 'Hazelnut'), ing('MACADAMIA', 'Macadamia'), ing('PECAN', 'Pecan'),
+  ing('BRAZIL_NUT', 'Brazil nut'), ing('CHESTNUT', 'Chestnut'),
+  ing('SESAME', 'Sesame', 'sesame'), ing('SUNFLOWER_SEED', 'Sunflower seed', 'sunflowerseed'),
+  ing('MUSTARD', 'Mustard', 'mustard'),
+  // grains & legumes
+  ing('WHEAT', 'Wheat', 'wheat'), ing('BUCKWHEAT', 'Buckwheat', 'buckwheat'), ing('BARLEY', 'Barley', 'barley'),
+  ing('RYE', 'Rye', 'rye'), ing('OAT', 'Oat', 'oat'), ing('CORN', 'Corn', 'corn'),
+  ing('SOY', 'Soy', 'soybean'), ing('LUPIN', 'Lupin'), ing('PEA', 'Pea'),
+  ing('CHICKPEA', 'Chickpea'), ing('LENTIL', 'Lentil'),
+  // seafood
+  ing('SHRIMP', 'Shrimp', 'shrimp'), ing('SALTED_SHRIMP', 'Salted shrimp (saeujeot)', 'shrimppaste'),
+  ing('CRAB', 'Crab', 'crab'), ing('CRAYFISH', 'Crayfish'), ing('LOBSTER', 'Lobster', 'lobster'),
+  ing('SQUID', 'Squid', 'squid'), ing('OCTOPUS', 'Octopus', 'octopus'), ing('OYSTER', 'Oyster', 'oyster'),
+  ing('OYSTER_SAUCE', 'Oyster sauce'), ing('ABALONE', 'Abalone', 'abalone'), ing('MUSSEL', 'Mussel', 'mussel'),
+  ing('CLAM', 'Clam', 'clam'), ing('SHORT_NECK_CLAM', 'Short-neck clam'), ing('SCALLOP', 'Scallop', 'scallop'),
+  ing('SEAFOOD', 'Seafood (all)', 'shellfish'),
+  ing('FISH', 'Fish', 'fish'), ing('MACKEREL', 'Mackerel', 'mackerel'), ing('SALMON', 'Salmon', 'salmon'),
+  ing('TUNA', 'Tuna', 'tuna'), ing('COD', 'Cod', 'cod'), ing('ANCHOVY', 'Anchovy', 'anchovy'),
+  ing('FISH_SAUCE', 'Fish sauce', 'fishsauce'), ing('BROTH', 'Broth (meat/fish stock)'), ing('DASHI', 'Dashi'),
+  // meat
+  ing('BEEF', 'Beef', 'beef'), ing('PORK', 'Pork', 'pork'), ing('LARD', 'Lard'), ing('TALLOW', 'Tallow'),
+  ing('CHICKEN', 'Chicken', 'chicken'), ing('POULTRY', 'Poultry (all)'),
+  // produce & aromatics
+  ing('PEACH', 'Peach', 'peach'), ing('TOMATO', 'Tomato', 'tomato'), ing('CELERY', 'Celery'),
+  ing('POTATO', 'Potato'), ing('CARROT', 'Carrot'), ing('ONION', 'Onion', 'onion'),
+  ing('GARLIC', 'Garlic', 'garlic'), ing('SCALLION', 'Scallion', 'greenonion'), ing('CHIVE', 'Chive'),
+  ing('WILD_CHIVE', 'Wild chive'), ing('ASAFOETIDA', 'Asafoetida'),
+  // etc.
+  ing('ALCOHOL', 'Alcohol', 'alcohol'), ing('MIRIN', 'Mirin'), ing('COOKING_WINE', 'Cooking wine', 'ricewine'),
+  ing('SULFITES', 'Sulfites', 'sulfites'),
 ];
 
 const BY_CODE: Record<string, Ingredient> = Object.fromEntries(INGREDIENTS.map((i) => [i.code, i]));
 
+/** BE 정본 코드 집합 — 와이어로 나가도 되는 유일한 값들. */
+export const BE_CODES: ReadonlySet<string> = new Set(INGREDIENTS.map((i) => i.code));
+
 /**
- * Reader-language display name for an ingredient code. Resolved from i18n
- * (`ingredients.<slug>`) so it follows the active language; the catalog English
- * name is the fallback. Uses the global i18n instance so it works outside React
- * components too (callers re-render on languageChanged via useTranslation).
+ * 레거시 내부 id(ing:slug — 구 draft/mock 잔재) → BE 코드.
+ * 안전 원칙: 애매하면 더 넓은 카테고리로(과회피는 안전, 누락은 위험).
+ * 대응 불가(null)는 와이어에서 드롭 + 로그 — 출시 전이라 실사용 영향 없음.
+ */
+const LEGACY_TO_BE: Record<string, string | null> = {
+  egg: 'EGG', milk: 'MILK', cheese: 'CHEESE', butter: 'BUTTER', yogurt: 'DAIRY',
+  gelatin: 'GELATIN', honey: 'HONEY', peanut: 'PEANUT', walnut: 'WALNUT', almond: 'ALMOND',
+  cashew: 'CASHEW', pistachio: 'PISTACHIO', pinenut: 'PINE_NUT', sesame: 'SESAME',
+  mustard: 'MUSTARD', sunflowerseed: 'SUNFLOWER_SEED', wheat: 'WHEAT', buckwheat: 'BUCKWHEAT',
+  barley: 'BARLEY', rye: 'RYE', oat: 'OAT', corn: 'CORN', rice: null,
+  soybean: 'SOY', tofu: 'SOY', soysauce: 'SOY', doenjang: 'SOY', gochujang: null, redbean: null,
+  shrimp: 'SHRIMP', crab: 'CRAB', lobster: 'LOBSTER', squid: 'SQUID', octopus: 'OCTOPUS',
+  cuttlefish: 'SQUID', clam: 'CLAM', oyster: 'OYSTER', mussel: 'MUSSEL', abalone: 'ABALONE',
+  seasnail: 'SEAFOOD', scallop: 'SCALLOP', shellfish: 'SEAFOOD',
+  fish: 'FISH', mackerel: 'MACKEREL', anchovy: 'ANCHOVY', tuna: 'TUNA', pollock: 'FISH',
+  cod: 'COD', salmon: 'SALMON', eel: 'FISH', fishsauce: 'FISH_SAUCE', fishcake: 'FISH',
+  shrimppaste: 'SALTED_SHRIMP',
+  beef: 'BEEF', pork: 'PORK', chicken: 'CHICKEN', duck: 'POULTRY', lamb: null,
+  ham: 'PORK', sausage: 'PORK', bloodsausage: 'PORK',
+  garlic: 'GARLIC', onion: 'ONION', greenonion: 'SCALLION', ginger: null, chili: null,
+  perilla: null, cilantro: null, tomato: 'TOMATO', peach: 'PEACH', kiwi: null, apple: null,
+  mango: null, mushroom: null, eggplant: null, spinach: null,
+  alcohol: 'ALCOHOL', ricewine: 'COOKING_WINE', vinegar: null, msg: null, sulfites: 'SULFITES',
+};
+
+/**
+ * 와이어 경계 변환: 어떤 내부/레거시 코드든 BE 코드 또는 null.
+ * null = 서버가 모르는 코드 → 호출측이 드롭+로그 (400 방지).
+ */
+export function toBeCode(code: string): string | null {
+  if (BE_CODES.has(code)) return code; // 이미 정본
+  const slug = code.startsWith('ing:') ? code.slice(4) : code;
+  return LEGACY_TO_BE[slug] ?? null;
+}
+
+/**
+ * Reader-language display name. 구 slug 번역(ingredients.<slug>)이 있으면
+ * 재사용, 없으면 카탈로그 영어명. 레거시 ing:slug 코드도 라벨링된다.
  */
 export function ingredientLabel(code: string): string {
-  const slug = code.startsWith('ing:') ? code.slice(4) : code.includes(':') ? code.split(':')[1] : code;
-  const fallback = BY_CODE[code]?.name ?? slug.charAt(0).toUpperCase() + slug.slice(1);
-  return i18n.t(`ingredients.${slug}`, { defaultValue: fallback });
+  const entry = BY_CODE[code];
+  if (entry) {
+    return entry.i18nKey
+      ? i18n.t(`ingredients.${entry.i18nKey}`, { defaultValue: entry.name })
+      : entry.name;
+  }
+  // 레거시 ing:slug (구 draft/mock)
+  const slug = code.startsWith('ing:') ? code.slice(4) : code;
+  return i18n.t(`ingredients.${slug}`, {
+    defaultValue: slug.charAt(0).toUpperCase() + slug.slice(1),
+  });
 }
