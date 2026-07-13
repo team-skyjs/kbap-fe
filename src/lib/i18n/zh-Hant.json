@@ -418,6 +418,7 @@
     "consentNote": "同意僅記錄一次 · 每個風險畫面都會重新顯示",
     "resumeTitle": "完成你的飲食檔案設定",
     "resumeCta": "繼續",
+    "submitError": "無法儲存你的飲食檔案。請檢查填寫內容與網路連線，然後再試一次。",
     "groups": {
       "Dietary": "飲食",
       "Religion": "宗教"

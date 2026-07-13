@@ -66,6 +66,7 @@ export default function Onboarding() {
   // skips are explicit states — they submit as UNSET, distinct from "chose none"
   const [skipped, setSkipped] = useState({ restrictions: false, spice: false });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
   const hydrated = useRef(false);
   const done = useRef(false); // permanently stops draft persistence after submit
 
@@ -122,9 +123,12 @@ export default function Onboarding() {
 
   // ONE-SHOT batch submit (KB-110): the only server hand-off in the flow.
   // Skips go out as explicit UNSET; the draft clears only after success.
+  // 실패(검증 400·네트워크)는 화면에 남아 에러를 표시한다 — 미저장 상태로
+  // 홈 진입 금지 (KB-75 검토 수정, false-safe).
   const finish = async () => {
     if (submitting) return;
     setSubmitting(true);
+    setSubmitError(false);
     try {
       await submitOnboardingProfile({
         nickname,
@@ -136,6 +140,9 @@ export default function Onboarding() {
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();
       router.replace('/(tabs)');
+    } catch (e) {
+      console.log('[onboarding] submit failed — staying on screen:', (e as Error)?.message);
+      setSubmitError(true);
     } finally {
       setSubmitting(false);
     }
@@ -170,6 +177,14 @@ export default function Onboarding() {
           skipLabel={['restrictions', 'spice', 'interests'].includes(step) ? t('common.skip') : undefined}
           onSkip={skipStep}
         />
+
+        {/* 제출 실패 — 화면 유지 + 안내 (KB-75, false-safe) */}
+        {submitError && (
+          <View style={styles.submitErr}>
+            <RiskMark state="caution" size={16} />
+            <Text style={styles.submitErrText}>{t('onboarding.submitError')}</Text>
+          </View>
+        )}
 
         {step === 'consent' && (
           <Consent agreed={agreed} setAgreed={setAgreed} onStart={next} t={t} />
@@ -424,6 +439,9 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 
   foot: { marginTop: 'auto', gap: 10, paddingTop: 16 },
+  // 제출 실패 안내 (KB-75)
+  submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
 
   // titles
   obTitle: { fontFamily: font.display, fontSize: 25, color: C.ink, letterSpacing: -0.4 },

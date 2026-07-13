@@ -418,6 +418,7 @@
     "consentNote": "Persetujuan dicatat sekali · ditampilkan ulang di setiap layar risiko",
     "resumeTitle": "Selesaikan pengaturan profil makanan Anda",
     "resumeCta": "Lanjutkan",
+    "submitError": "Profil Anda tidak dapat disimpan. Periksa isian dan koneksi internet Anda, lalu coba lagi.",
     "groups": {
       "Dietary": "Pola Makan",
       "Religion": "Agama"

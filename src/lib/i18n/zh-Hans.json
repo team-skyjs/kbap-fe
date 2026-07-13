@@ -418,6 +418,7 @@
     "consentNote": "同意仅记录一次 · 每个风险界面都会再次显示",
     "resumeTitle": "完成你的饮食档案设置",
     "resumeCta": "继续",
+    "submitError": "无法保存你的饮食档案。请检查填写内容和网络连接，然后重试。",
     "groups": {
       "Dietary": "饮食",
       "Religion": "宗教"

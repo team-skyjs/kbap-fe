@@ -418,6 +418,7 @@
     "consentNote": "Đồng ý ghi nhận một lần · hiển thị lại trên mọi màn hình rủi ro",
     "resumeTitle": "Hoàn tất thiết lập hồ sơ ẩm thực của bạn",
     "resumeCta": "Tiếp tục",
+    "submitError": "Không thể lưu hồ sơ của bạn. Hãy kiểm tra thông tin đã nhập và kết nối mạng, rồi thử lại.",
     "groups": {
       "Dietary": "Chế độ ăn",
       "Religion": "Tôn giáo"

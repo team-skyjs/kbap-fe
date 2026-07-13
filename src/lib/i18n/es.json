@@ -418,6 +418,7 @@
     "consentNote": "Consentimiento registrado una vez · se muestra de nuevo en cada pantalla de riesgo",
     "resumeTitle": "Termina de configurar tu perfil alimentario",
     "resumeCta": "Continuar",
+    "submitError": "No pudimos guardar tu perfil. Revisa tus datos y tu conexión, y vuelve a intentarlo.",
     "groups": {
       "Dietary": "Dieta",
       "Religion": "Religión"

@@ -54,10 +54,19 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     await api.post('/members/me/onboarding', body);
     console.log('[onboarding] batch submit ok');
   } catch (e) {
-    // 재제출 거부(이미 완료) → 완료로 간주. 그 외(네트워크/5xx)는 그대로 표면화.
+    // ⚠️ 400은 "입력 검증 실패"와 "이미 온보딩 완료"를 겸용한다(계약 확인,
+    // 구분 코드 없음). 4xx를 전부 완료로 간주하면 검증 실패인데 프로필
+    // 미저장 상태로 홈에 들어가는 false-safe 경로가 생긴다 → 서버 플래그
+    // (onboardingCompleted)로 판별해 true일 때만 완료 간주, 아니면 표면화.
     if (e instanceof ApiError && e.status != null && e.status >= 400 && e.status < 500) {
-      console.log('[onboarding] submit rejected (already completed?) — continuing:', e.message);
-      return;
+      const completed = await api
+        .get<{ onboardingCompleted?: boolean }>('/members/me/profile')
+        .then((p) => p.onboardingCompleted === true)
+        .catch(() => false); // 판별 실패 = 완료 확신 불가 → 에러 표면화
+      if (completed) {
+        console.log('[onboarding] submit rejected but already completed — continuing:', e.message);
+        return;
+      }
     }
     throw e;
   }

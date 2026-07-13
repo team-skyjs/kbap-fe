@@ -520,6 +520,7 @@
     "consentNote": "Consent recorded once · re-shown on every risk screen",
     "resumeTitle": "Finish setting up your food profile",
     "resumeCta": "Continue",
+    "submitError": "We couldn't save your profile. Check your entries and connection, then try again.",
     "groups": {
       "Dietary": "Dietary",
       "Religion": "Religion"
