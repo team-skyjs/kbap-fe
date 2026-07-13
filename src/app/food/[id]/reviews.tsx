@@ -31,6 +31,9 @@ import {
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
+import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 

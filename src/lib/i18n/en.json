@@ -32,6 +32,24 @@
     "errorGeneric": "Sign-in didn't complete. Please try again.",
     "errorNetwork": "Network error — check your connection and try again."
   },
+  "gate": {
+    "riskTitle": "See your personal safety rating",
+    "riskSub": "Sign up and register what you can't eat — every dish gets rated just for you.",
+    "reviewsTitle": "Read real reviews from travelers",
+    "reviewsSub": "Sign up to read full reviews from people with tastes like yours.",
+    "writeTitle": "Share your take on this dish",
+    "writeSub": "Sign up to write reviews and help the next traveler eat with confidence.",
+    "scanTitle": "Scan menus to see what's safe for you",
+    "scanSub": "Sign up and point your camera at any Korean menu — we'll flag what to avoid.",
+    "profileTitle": "Your food profile lives here",
+    "profileSub": "Sign up to save what you avoid, track scans and build your ranking."
+  },
+  "lock": {
+    "verdictTitle": "Your personal safety rating",
+    "verdictSub": "Unlocked after sign-up — rated against the ingredients you avoid.",
+    "afterSignup": "after sign-up",
+    "reviewsLocked": "Reviews are hidden for guests"
+  },
   "myReviews": {
     "title": "My reviews",
     "statReviews": "reviews",

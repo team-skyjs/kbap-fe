@@ -33,12 +33,16 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { IconLock } from '@/components/icons';
 import type { FoodDetail, IngredientRisk } from '@/lib/api/types';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
 
 export default function FoodDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isGuest = useIsGuest();
   const router = useRouter();
   const { t } = useTranslation();
   const { onScroll, hidden } = useStickyScroll();
@@ -69,7 +73,7 @@ export default function FoodDetailScreen() {
         {!isLoading && food && (
           <View style={styles.body}>
             {food.isRegistered ? (
-              <Registered
+              <Registered guest={isGuest}
                 food={food}
                 nationality={me?.nationality ?? 'US'}
                 spiceTolerance={me?.spiceTolerance ?? null}
@@ -110,10 +114,12 @@ function Registered({
   nationality,
   spiceTolerance,
   hasRestrictions,
+  guest,
   t,
   router,
   id,
 }: {
+  guest: boolean;
   food: FoodDetail;
   nationality: string;
   spiceTolerance: number | null;
@@ -122,6 +128,7 @@ function Registered({
   router: Router;
   id: string;
 }) {
+  const [gateOpen, setGateOpen] = useState(false); // 게이트 시트 (KB-77)
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
@@ -162,8 +169,28 @@ function Registered({
         </View>
       </View>
 
+      {guest ? (
+        /* 게스트: 개인화 verdict 절대 미표시 — 중립 락카드(블러 고스트+CTA)
+           → 게이트 시트 (guest-access-policy §0-2/§1) */
+        <Pressable style={styles.lockCard} onPress={() => setGateOpen(true)}>
+          <View style={styles.lockGhost} />
+          <View style={styles.lockRow}>
+            <View style={styles.lockIc}>
+              <IconLock size={18} color={C.ink2} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.lockTitle}>{t('lock.verdictTitle')}</Text>
+              <Text style={styles.lockSub}>{t('lock.verdictSub')}</Text>
+            </View>
+            <View style={styles.lockTag}>
+              <Text style={styles.lockTagText}>{t('lock.afterSignup')}</Text>
+            </View>
+          </View>
+        </Pressable>
+      ) : null}
+
       <View style={styles.metaRow}>
-        <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />
+        {!guest && <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />}
         {food.spiceLevel != null && (
           <View style={styles.spiceMeta}>
             <IconFlame size={16} color={C.primary} />
@@ -175,9 +202,9 @@ function Registered({
         )}
       </View>
 
-      {!!verdictBasis && <Text style={styles.verdictBasis}>{verdictBasis}</Text>}
+      {!guest && !!verdictBasis && <Text style={styles.verdictBasis}>{verdictBasis}</Text>}
 
-      {!hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
+      {!guest && !hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
       <View style={styles.descCard}>
         <Text style={styles.desc}>{food.description}</Text>
@@ -203,6 +230,8 @@ function Registered({
         )}
       </View>
 
+      <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
+
       <View style={styles.sec}>
         <Text style={styles.insideTitle}>{t('detail.insideTitle')}</Text>
         <Text style={styles.insideSub}>{t('detail.insideSub')}</Text>
@@ -213,6 +242,7 @@ function Registered({
               <IngredientRow
                 key={ing.code}
                 ing={ing}
+                guest={guest}
                 displayRisk={dRisk}
                 reason={ingBasis(ing, dRisk)}
                 ofShops={ing.percentage != null ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) : ing.note ?? ''}
@@ -247,6 +277,7 @@ function RatingMini({ value, label, left, onPress }: { value: number | null; lab
 
 function IngredientRow({
   ing,
+  guest,
   displayRisk,
   reason,
   ofShops,
@@ -254,23 +285,26 @@ function IngredientRow({
   onAsk,
 }: {
   ing: IngredientRisk;
+  guest: boolean;
   displayRisk: RiskState;
   reason: string | null;
   ofShops: string;
   askLabel: string;
   onAsk: () => void;
 }) {
-  const [open, setOpen] = useState(displayRisk === 'caution');
-  const canAsk = displayRisk === 'caution' || displayRisk === 'danger';
+  // 게스트: 성분명+포함%는 사실이라 공개, 개인화 위험 pill·문구는 잠금(미렌더,
+  // 중립) — 확장/Ask 동선도 없음 (guest-access-policy §1)
+  const [open, setOpen] = useState(!guest && displayRisk === 'caution');
+  const canAsk = !guest && (displayRisk === 'caution' || displayRisk === 'danger');
   return (
     <View style={styles.ingRow}>
-      <Pressable style={styles.ingMain} onPress={() => setOpen((o) => !o)}>
+      <Pressable style={styles.ingMain} onPress={() => !guest && setOpen((o) => !o)}>
         <View style={styles.ingMeta}>
           <Text style={styles.ingName}>{ing.name}</Text>
           {!!ofShops && <Text style={styles.ingPct}>{ofShops}</Text>}
         </View>
-        <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }} />
-        <RiskPill state={displayRisk} size="sm" />
+        {!guest && <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }} />}
+        {!guest && <RiskPill state={displayRisk} size="sm" />}
       </Pressable>
       {open && (
         <View style={styles.ingExpand}>
@@ -335,6 +369,15 @@ const styles = StyleSheet.create({
   ko: { fontFamily: font.ko, fontSize: 15, color: C.ink2, marginTop: 5 },
   thumb: { width: 60, height: 60, borderRadius: 16, backgroundColor: C.surface2, ...shadow.sh1 },
 
+  // 게스트 verdict 락카드 (블러 고스트 + CTA)
+  lockCard: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 14, overflow: 'hidden' },
+  lockGhost: { position: 'absolute', left: 14, top: 12, width: 150, height: 34, borderRadius: 17, backgroundColor: C.line, opacity: 0.4 },
+  lockRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  lockIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  lockTitle: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  lockSub: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 2, lineHeight: 16 },
+  lockTag: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  lockTagText: { fontFamily: font.bodyBold, fontSize: 10, color: C.ink2, textTransform: 'uppercase', letterSpacing: 0.4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   verdictBasis: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: -8 },
   spiceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },

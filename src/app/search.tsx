@@ -26,6 +26,7 @@ import { useFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
 import { personalRisk } from '@/lib/risk';
+import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard } from '@/lib/api/types';
 
 const POPULAR_N = 6;
@@ -44,6 +45,7 @@ export default function Search() {
   const [submitted, setSubmitted] = useState(''); // executed search term (submit-only)
 
   const hasR = (me?.restrictions.length ?? 0) > 0;
+  const isGuest = useIsGuest();
   const search = useSearchFoods(submitted);
   const results = search.data ?? [];
 
@@ -163,7 +165,7 @@ export default function Search() {
           }}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           renderItem={({ item }) => (
-            <ResultCard food={item} risk={riskOf(item)} onPress={() => openFood(item.foodId)} />
+            <ResultCard food={item} risk={riskOf(item)} guest={isGuest} onPress={() => openFood(item.foodId)} />
           )}
         />
       ) : (
@@ -197,7 +199,7 @@ function PopularRow({ food, onPress }: { food: FoodCard; onPress: () => void }) 
   );
 }
 
-function ResultCard({ food, risk, onPress }: { food: FoodCard; risk: RiskState; onPress: () => void }) {
+function ResultCard({ food, risk, guest, onPress }: { food: FoodCard; risk: RiskState; guest: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.thumb}>
@@ -214,7 +216,8 @@ function ResultCard({ food, risk, onPress }: { food: FoodCard; risk: RiskState; 
         </View>
         {!!food.blurb && <Text style={styles.cardBlurb} numberOfLines={1}>{food.blurb}</Text>}
       </View>
-      <RiskPill state={risk} size="sm" />
+      {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
+      {!guest && <RiskPill state={risk} size="sm" />}
     </Pressable>
   );
 }

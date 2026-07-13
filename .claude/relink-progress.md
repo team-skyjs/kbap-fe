@@ -38,3 +38,23 @@
 - 수정 2건: ① 공개 인증 3종(login/refresh/logout)에 Authorization 미부착(만료 access가 붙으면 refresh 영구 실패 경로) ② refresh 실패 판별 — 401만 로그아웃, 네트워크/5xx는 토큰 보존
 - 일치 2건: ③ logout body refreshToken 포함 ④ 공개 API 401→refresh 인터셉터(전 경로)
 - 회귀 테스트 4건 (beAuth.test.ts)
+
+## 게이팅 세트 (KB-77/78/84) — 2026-07-13 착수
+정책 SSOT = dropbox/yj/guest-access-policy.md §1 매트릭스. 원칙: 게스트에 개인화 위험도 절대 미표시(UNKNOWN도 X), 잠금=블러 고스트+CTA→게이트 시트→로그인→맥락 복귀.
+
+| 조각 | 상태 | 메모 |
+|---|---|---|
+| useSession 훅 (게스트 판별) | 완료 | useQuery(['auth','session'], hasBeSession) — 인증 경계 queryClient.clear()로 자동 갱신. FLAGS.guestMode 기본 ON |
+| KB-77 AuthGateSheet | 완료 | context prop(risk/reviews/writeReview/scan/profile)→카피 분기, CTA→/login?returnTo=, 나중에/닫기 |
+| login returnTo | 완료 | 기존회원 replace(returnTo ?? /(tabs)) |
+| KB-78 목록/검색 뱃지 | 완료 | 게스트=뱃지 미렌더(자리 비움) |
+| KB-78 상세 잠금 | 완료(락카드+중립 재료+시트) | verdict=락카드(블러+CTA), 재료행 중립(위험 pill·문구 숨김, 이름+% 공개), 저장/북마크 게이트 |
+| KB-78 스캔 게이트 | 완료 | 게스트 카메라/샘플 탭→시트 (§3-Q1 제안) |
+| KB-78 프로필/랭킹 | 완료(프로필 탭 가입 유도 화면; 랭킹은 프로필 경유) | 탭 진입=가입 유도 화면 |
+| KB-78 헤더 Sign in pill | ⏳ 남음 — StickyHeader에 signIn prop 추가, 홈/푸드탭에서 isGuest로 전달, 탭→/login | StickyHeader에 게스트 pill |
+| KB-84 리뷰 잠금 | ⏳ 남음 — reviews.tsx에 import는 됨. 할 것: isGuest면 요약(있으면)만 표시+리스트를 blurred ghost(opacity 0.35, pointerEvents none)로 렌더+중앙 lock CTA 카드(IconLock+lock.reviewsLocked+intro.signUp 버튼)→AuthGateSheet(context reviews). 리뷰쓰기 버튼→시트(context writeReview) | 요약 공개, 본문 리스트 블러+lock CTA→시트 (mock 위 UI, KB-73 때 재사용) |
+| 401 게스트 정숙 처리 | 완료(목록/검색 빈 페이지; 상세는 기존 에러UI=크래시 아님) | foods 3종 BE 전환(7/14 예정) 전: 게스트 401→빈/잠금, 크래시 금지 |
+| i18n gate/lock 키 ×9 | 완료(gate 10키+lock 4키, 패리티 미실행 — 커밋 전 확인) | |
+
+### 게이팅 남은 순서 (이어받기용)
+1. KB-84 리뷰 잠금 구현(위 메모대로) 2. StickyHeader Sign in pill 3. i18n 패리티+tsc+웹 게스트 검증(뱃지0·verdict락·시트·프로필) 4. 커밋 5. KB-77/78/84 검토중+진행로그

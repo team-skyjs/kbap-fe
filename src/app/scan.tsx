@@ -27,6 +27,8 @@ import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { personalRisk } from '@/lib/risk';
 import { useMe } from '@/lib/data/useMe';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -68,6 +70,8 @@ export default function Scan() {
   const [view, setView] = useState<ResultView>('risk');
   const [facing, setFacing] = useState<CameraType>('back');
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
+  const isGuest = useIsGuest();
+  const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
 
   function fail(stage: ErrorStage, detail: string) {
     console.log(`[scan] FAIL stage=${stage} detail=${detail}`);
@@ -76,6 +80,7 @@ export default function Scan() {
   }
 
   function runScan(menuDishes: MenuDish[], capturedPhoto: Photo) {
+    if (isGuest) return setGateOpen(true); // 샘플 스캔 포함
     setDishes(menuDishes);
     setPhoto(capturedPhoto);
     setPhase('scanning');
@@ -120,6 +125,7 @@ export default function Scan() {
   }
 
   async function capture() {
+    if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
     const cam = cameraRef.current;
     if (!cam) return;
     setError(null);
@@ -134,6 +140,7 @@ export default function Scan() {
   }
 
   async function pickFromGallery() {
+    if (isGuest) return setGateOpen(true);
     setError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -156,6 +163,8 @@ export default function Scan() {
     if (!dish.matched || !dish.foodId) return;
     router.push(`/food/${dish.foodId}` as Href);
   }
+
+  const GateSheet = <AuthGateSheet context="scan" open={gateOpen} onClose={() => setGateOpen(false)} />;
 
   const Close = (
     <Pressable style={[styles.close, { top: insets.top + 8 }]} onPress={() => router.back()} hitSlop={8}>
@@ -197,6 +206,7 @@ export default function Scan() {
           <ScanResultOverlay photo={photo} dishes={resultDishes} showMarkers={view === 'risk'} onTapDish={openDish} />
         )}
         {Close}
+        {GateSheet}
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
           {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
@@ -219,6 +229,7 @@ export default function Scan() {
     return (
       <View style={[styles.root, styles.center]}>
         {Close}
+        {GateSheet}
         <ActivityIndicator color="#fff" />
         <Text style={styles.statusText}>{t('scan.reading')}</Text>
       </View>
@@ -231,6 +242,7 @@ export default function Scan() {
     return (
       <View style={[styles.root, styles.center]}>
         {Close}
+        {GateSheet}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         <Text style={styles.errStage}>{t(`scan.stage.${stage}`)}</Text>
         <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
@@ -261,6 +273,7 @@ export default function Scan() {
       )}
 
       {Close}
+        {GateSheet}
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
         <Text style={styles.hint}>{t('scan.hint')}</Text>

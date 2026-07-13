@@ -74,7 +74,14 @@ export function useInfiniteFoods() {
         };
       }
       const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
-      return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}`);
+      try {
+        return await api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}`);
+      } catch (e) {
+        // 게스트 401: BE의 foods 인증-선택 전환(guest-access-policy §2) 배포
+        // 전까지 조용히 빈 목록 — 크래시/에러 화면 금지. 전환되면 자동 소생.
+        if (e instanceof ApiError && e.status === 401) return { items: [], hasNext: false };
+        throw e;
+      }
     },
     getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
@@ -96,9 +103,14 @@ export function useSearchFoods(keyword: string) {
     enabled: term.length > 0,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
       const cursor = pageParam != null ? `&cursor=${encodeURIComponent(String(pageParam))}` : '';
-      return api.get<PageMenuSummaryWire>(
-        `/foods/search?keyword=${encodeURIComponent(term)}${cursor}&lang=${apiLang()}`,
-      );
+      try {
+        return await api.get<PageMenuSummaryWire>(
+          `/foods/search?keyword=${encodeURIComponent(term)}${cursor}&lang=${apiLang()}`,
+        );
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) return { items: [], hasNext: false }; // 게스트 정숙 (§2 전환 전)
+        throw e;
+      }
     },
     getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),

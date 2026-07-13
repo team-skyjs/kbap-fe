@@ -10,7 +10,7 @@
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
@@ -22,6 +22,7 @@ export default function Login() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 26 }]}>
@@ -36,8 +37,13 @@ export default function Login() {
       </View>
 
       <View style={styles.foot}>
-        {/* KB-67: newMember만 온보딩으로, 기존 회원은 바로 홈 */}
-        <SocialAuthButtons onSignedIn={(newMember) => router.replace((newMember ? '/onboarding' : '/(tabs)') as Href)} />
+        {/* KB-67: newMember만 온보딩으로. 기존 회원은 returnTo(게이트에서 보던
+            맥락 — KB-77) 또는 홈으로 복귀 */}
+        <SocialAuthButtons
+          onSignedIn={(newMember) =>
+            router.replace((newMember ? '/onboarding' : (returnTo ?? '/(tabs)')) as Href)
+          }
+        />
         <Text style={styles.terms}>{t('login.terms')}</Text>
       </View>
     </View>

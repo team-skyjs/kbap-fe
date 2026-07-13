@@ -36,12 +36,14 @@ import { TIERS } from '@/lib/ranking';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { useIsGuest } from '@/lib/auth/useSession';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import type { FoodCard, Review } from '@/lib/api/types';
 
 export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
+  const isGuest = useIsGuest();
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
   const { lang } = useLocale();
@@ -62,7 +64,21 @@ export default function Profile() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
-        {me && (
+        {isGuest ? (
+          /* 게스트: 프로필 전체 잠금 — 탭 진입 자체가 가입 유도 (policy §1) */
+          <View style={[styles.body, { paddingTop: 40, alignItems: 'center', gap: 14 }]}>
+            <View style={styles.guestAvatar}>
+              <IconProfile size={34} color={C.ink3} />
+            </View>
+            <Text style={styles.guestTitle}>{t('gate.profileTitle')}</Text>
+            <Text style={styles.guestSub}>{t('gate.profileSub')}</Text>
+            <View style={{ alignSelf: 'stretch', maxWidth: 320, width: '100%' }}>
+              <Pressable style={styles.guestBtn} onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)}>
+                <Text style={styles.guestBtnText}>{t('intro.signUp')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : me && (
           <View style={styles.body}>
             {/* identity */}
             <View style={styles.id}>
@@ -242,6 +258,12 @@ function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNod
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  // 게스트 가입 유도 (KB-78)
+  guestAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  guestTitle: { fontFamily: font.displayBlack, fontSize: 20, color: C.ink, textAlign: 'center' },
+  guestSub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, maxWidth: 300 },
+  guestBtn: { backgroundColor: C.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  guestBtnText: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff' },
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
 
   id: { flexDirection: 'row', alignItems: 'center', gap: 13 },

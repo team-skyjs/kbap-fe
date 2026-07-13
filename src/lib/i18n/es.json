@@ -36,6 +36,24 @@
     "errorGeneric": "No se pudo completar el inicio de sesión. Inténtalo de nuevo.",
     "errorNetwork": "Error de red: revisa tu conexión e inténtalo de nuevo."
   },
+  "gate": {
+    "riskTitle": "Descubre tu calificación de seguridad personal",
+    "riskSub": "Regístrate y anota lo que no puedes comer: cada plato se califica solo para ti.",
+    "reviewsTitle": "Lee reseñas reales de otros viajeros",
+    "reviewsSub": "Regístrate para leer reseñas completas de personas con gustos como los tuyos.",
+    "writeTitle": "Comparte tu opinión sobre este plato",
+    "writeSub": "Regístrate para escribir reseñas y ayudar al próximo viajero a comer con confianza.",
+    "scanTitle": "Escanea menús y descubre qué es seguro para ti",
+    "scanSub": "Regístrate y apunta la cámara a cualquier menú coreano: te marcaremos lo que debes evitar.",
+    "profileTitle": "Tu perfil alimentario vive aquí",
+    "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking."
+  },
+  "lock": {
+    "verdictTitle": "Tu calificación de seguridad personal",
+    "verdictSub": "Se desbloquea al registrarte: calificada según los ingredientes que evitas.",
+    "afterSignup": "al registrarte",
+    "reviewsLocked": "Las reseñas están ocultas para invitados"
+  },
   "myReviews": {
     "title": "Mis reseñas",
     "statReviews": "reseñas",

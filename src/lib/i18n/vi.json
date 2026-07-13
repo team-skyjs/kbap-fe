@@ -36,6 +36,24 @@
     "errorGeneric": "Đăng nhập chưa hoàn tất. Vui lòng thử lại.",
     "errorNetwork": "Lỗi mạng — hãy kiểm tra kết nối và thử lại."
   },
+  "gate": {
+    "riskTitle": "Xem mức đánh giá an toàn dành riêng cho bạn",
+    "riskSub": "Đăng ký và ghi lại những gì bạn không ăn được — mỗi món ăn sẽ được đánh giá riêng cho bạn.",
+    "reviewsTitle": "Đọc đánh giá thật từ du khách",
+    "reviewsSub": "Đăng ký để đọc trọn vẹn đánh giá từ những người có khẩu vị giống bạn.",
+    "writeTitle": "Chia sẻ cảm nhận của bạn về món này",
+    "writeSub": "Đăng ký để viết đánh giá và giúp du khách tiếp theo ăn uống yên tâm hơn.",
+    "scanTitle": "Quét thực đơn để biết món nào an toàn cho bạn",
+    "scanSub": "Đăng ký rồi hướng camera vào bất kỳ thực đơn tiếng Hàn nào — chúng tôi sẽ đánh dấu những món cần tránh.",
+    "profileTitle": "Hồ sơ ăn uống của bạn nằm ở đây",
+    "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn."
+  },
+  "lock": {
+    "verdictTitle": "Mức đánh giá an toàn dành riêng cho bạn",
+    "verdictSub": "Mở khóa sau khi đăng ký — được chấm dựa trên các nguyên liệu bạn tránh.",
+    "afterSignup": "sau khi đăng ký",
+    "reviewsLocked": "Đánh giá bị ẩn với khách"
+  },
   "myReviews": {
     "title": "Đánh giá của tôi",
     "statReviews": "đánh giá",

@@ -34,6 +34,7 @@ import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
+import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard } from '@/lib/api/types';
 
 const CATEGORY_KEYS = ['all', 'stews', 'rice', 'noodles', 'bbq', 'street', 'sides'];
@@ -49,6 +50,7 @@ export default function Food() {
     useInfiniteFoods();
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
+  const isGuest = useIsGuest();
   const list = foods ?? [];
 
   const Header = (
@@ -114,7 +116,7 @@ export default function Food() {
           if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }}
         renderItem={({ item }) => (
-          <BrowseCard food={item} hasRestrictions={hasR} onPress={() => router.push(`/food/${item.foodId}` as Href)} />
+          <BrowseCard food={item} hasRestrictions={hasR} guest={isGuest} onPress={() => router.push(`/food/${item.foodId}` as Href)} />
         )}
       />
 
@@ -123,16 +125,19 @@ export default function Food() {
   );
 }
 
-function BrowseCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestrictions: boolean; onPress: () => void }) {
+function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.photo}>
         {!!food.photoUrl && (
           <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={StyleSheet.absoluteFill} />
         )}
-        <View style={styles.badge}>
-          <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
-        </View>
+        {/* 게스트에겐 개인화 뱃지 미렌더 — 자리 비움 (guest-access-policy §1) */}
+        {!guest && (
+          <View style={styles.badge}>
+            <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
+          </View>
+        )}
       </View>
       <View style={styles.cardB}>
         <Text style={styles.name} numberOfLines={1}>

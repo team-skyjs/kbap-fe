@@ -36,6 +36,24 @@
     "errorGeneric": "登入未完成，請再試一次。",
     "errorNetwork": "網路錯誤——請檢查你的連線後再試一次。"
   },
+  "gate": {
+    "riskTitle": "查看你的專屬安全評級",
+    "riskSub": "註冊並登記你不能吃的食材，每道菜都會為你量身評級。",
+    "reviewsTitle": "閱讀旅人的真實評論",
+    "reviewsSub": "註冊後即可閱讀口味與你相近的人所寫的完整評論。",
+    "writeTitle": "分享你對這道菜的看法",
+    "writeSub": "註冊即可撰寫評論，幫助下一位旅人吃得安心。",
+    "scanTitle": "掃描菜單，看看哪些適合你",
+    "scanSub": "註冊後用相機對準任何韓文菜單，我們會標出需要避開的菜色。",
+    "profileTitle": "你的飲食檔案就在這裡",
+    "profileSub": "註冊即可儲存忌口食材、追蹤掃描紀錄並累積你的排名。"
+  },
+  "lock": {
+    "verdictTitle": "你的專屬安全評級",
+    "verdictSub": "註冊後解鎖——依你避開的食材進行評級。",
+    "afterSignup": "註冊後可見",
+    "reviewsLocked": "評論對訪客隱藏"
+  },
   "myReviews": {
     "title": "我的評論",
     "statReviews": "則評論",

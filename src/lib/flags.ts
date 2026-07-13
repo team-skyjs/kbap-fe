@@ -14,4 +14,9 @@ export const FLAGS = {
    * from MVP (KB-110 / FR-005) — set true to restore the step in v2.
    */
   onboardingTriedDishes: false,
+  /**
+   * 게스트(비회원) 조회 모드 — 2026-07-13 회의 확정, MVP 기본 ON.
+   * OFF = 로그인 필수 동작(QA용 안전장치). KB-77/78/84.
+   */
+  guestMode: true,
 } as const;

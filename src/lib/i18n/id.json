@@ -36,6 +36,24 @@
     "errorGeneric": "Proses masuk belum selesai. Silakan coba lagi.",
     "errorNetwork": "Kesalahan jaringan — periksa koneksi Anda dan coba lagi."
   },
+  "gate": {
+    "riskTitle": "Lihat peringkat keamanan pribadi Anda",
+    "riskSub": "Daftar dan catat apa yang tidak bisa Anda makan — setiap hidangan dinilai khusus untuk Anda.",
+    "reviewsTitle": "Baca ulasan asli dari para wisatawan",
+    "reviewsSub": "Daftar untuk membaca ulasan lengkap dari orang-orang dengan selera seperti Anda.",
+    "writeTitle": "Bagikan pendapat Anda tentang hidangan ini",
+    "writeSub": "Daftar untuk menulis ulasan dan bantu wisatawan berikutnya makan dengan tenang.",
+    "scanTitle": "Pindai menu untuk tahu mana yang aman bagi Anda",
+    "scanSub": "Daftar lalu arahkan kamera ke menu Korea mana pun — kami akan menandai yang perlu dihindari.",
+    "profileTitle": "Profil makanan Anda ada di sini",
+    "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda."
+  },
+  "lock": {
+    "verdictTitle": "Peringkat keamanan pribadi Anda",
+    "verdictSub": "Terbuka setelah mendaftar — dinilai berdasarkan bahan yang Anda hindari.",
+    "afterSignup": "setelah daftar",
+    "reviewsLocked": "Ulasan disembunyikan untuk tamu"
+  },
   "myReviews": {
     "title": "Ulasan saya",
     "statReviews": "ulasan",

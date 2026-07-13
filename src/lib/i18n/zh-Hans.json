@@ -36,6 +36,24 @@
     "errorGeneric": "登录未完成，请重试。",
     "errorNetwork": "网络错误——请检查网络连接后重试。"
   },
+  "gate": {
+    "riskTitle": "查看你的专属安全评级",
+    "riskSub": "注册并登记你不能吃的食材，每道菜都会为你专门评级。",
+    "reviewsTitle": "阅读旅行者的真实点评",
+    "reviewsSub": "注册后即可阅读与你口味相近的人写的完整点评。",
+    "writeTitle": "分享你对这道菜的看法",
+    "writeSub": "注册即可撰写点评，帮助下一位旅行者吃得安心。",
+    "scanTitle": "扫描菜单，看看哪些适合你",
+    "scanSub": "注册后用相机对准任意韩文菜单，我们会标出需要避开的菜品。",
+    "profileTitle": "你的饮食档案就在这里",
+    "profileSub": "注册即可保存忌口食材、查看扫描记录并积累你的排名。"
+  },
+  "lock": {
+    "verdictTitle": "你的专属安全评级",
+    "verdictSub": "注册后解锁——根据你忌口的食材进行评级。",
+    "afterSignup": "注册后可见",
+    "reviewsLocked": "点评对游客隐藏"
+  },
   "myReviews": {
     "title": "我的点评",
     "statReviews": "条点评",
