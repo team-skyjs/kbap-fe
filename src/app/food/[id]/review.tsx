@@ -15,6 +15,8 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Star, Stars, Rosette, RiskMark, IconCheck } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
 
 const MAX = 500;
@@ -29,10 +31,22 @@ export default function ReviewCompose() {
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const isGuest = useIsGuest();
 
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
   const canPost = rating > 0;
   const post = () => canPost && setSubmitted(true);
+
+  // 라우트 자체 가드 — 작성은 회원 전용. 진입 버튼 게이트와 별개의 이중 방어
+  // (딥링크/직접 라우트 포함, 실기기 반려분 #2와 동일 원칙).
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('review.title')} onBack={() => router.back()} />
+        <AuthGateSheet context="writeReview" open onClose={() => router.back()} />
+      </View>
+    );
+  }
 
   if (submitted) {
     return (

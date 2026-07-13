@@ -172,6 +172,17 @@ export default function Scan() {
     </Pressable>
   );
 
+  // 라우트 자체 가드 (실기기 반려분 #2): 진입로별 가드는 누락이 생긴다 —
+  // 게스트는 어떤 경로로 오든 카메라 없이 게이트 시트, 닫으면 뒤로.
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        {Close}
+        <AuthGateSheet context="scan" open onClose={() => router.back()} />
+      </View>
+    );
+  }
+
   // ---- result ----
   if (phase === 'result') {
     // Join dishes × BE verdicts by itemId. Items the server excluded are

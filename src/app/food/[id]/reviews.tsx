@@ -71,7 +71,9 @@ export default function FoodReviews() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40, flexGrow: 1 }}
       >
-        {reviews && (all.length === 0 ? (
+        {/* 게스트는 리뷰 개수와 무관하게 항상 잠금 (실기기 반려분 #3) —
+            빈 상태(쓰기 CTA 포함)는 회원에게만 */}
+        {reviews && (!isGuest && all.length === 0 ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
           <View style={styles.emptyFill}>
@@ -82,7 +84,7 @@ export default function FoodReviews() {
               primary={{
                 label: t('reviews.writeReview'),
                 icon: <IconPlus size={17} color="#fff" />,
-                onPress: () => (isGuest ? setGateOpen('writeReview') : router.push(`/food/${id}/review` as Href)),
+                onPress: () => router.push(`/food/${id}/review` as Href),
               }}
             />
           </View>
@@ -112,7 +114,8 @@ export default function FoodReviews() {
               /* KB-84: 게스트 — 요약(위)은 공개, 본문 리스트는 블러 고스트 +
                  lock CTA → 게이트 시트 (guest-access-policy §1) */
               <View>
-                <View pointerEvents="none" style={{ opacity: 0.3, gap: 12 }}>
+                {/* 리뷰 0건이어도 lock-pop이 뜰 공간 확보 (게스트에겐 빈 상태 없음) */}
+                <View pointerEvents="none" style={{ opacity: 0.3, gap: 12, minHeight: 180 }}>
                   {items.slice(0, 3).map((r) => (
                     <ReviewItem key={r.id} review={r} t={t} />
                   ))}
@@ -154,7 +157,7 @@ export default function FoodReviews() {
                 primary={{
                   label: t('reviews.writeReview'),
                   icon: <IconPlus size={17} color="#fff" />,
-                  onPress: () => (isGuest ? setGateOpen('writeReview') : router.push(`/food/${id}/review` as Href)),
+                  onPress: () => router.push(`/food/${id}/review` as Href),
                 }}
               />
             ) : (

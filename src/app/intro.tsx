@@ -20,6 +20,7 @@ import { color as C, font, primaryTint, accentTint, radius, shadow } from '@/lib
 import { Btn, RiskMark, IconCamera, IconSpeech } from '@/components';
 import { BrandLockup } from '@/components/Brand';
 import { IllusScan, IllusSafety, IllusReviews } from '@/features/intro/IntroIllustrations';
+import { markIntroSeen } from '@/lib/introSeen';
 
 type SlideDef = {
   index: number;
@@ -47,9 +48,16 @@ export default function Intro() {
   // get an explicit height (a horizontal ScrollView sizes children to content).
   const [heroH, setHeroH] = useState(0);
 
-  const goSignUp = () => router.replace('/login' as Href); // KB-10 social login
+  // 어느 출구로든 나가면 인트로는 본 것 — 다음 실행부터 바로 홈 (1회성)
+  const goSignUp = () => {
+    markIntroSeen();
+    router.replace('/login' as Href); // KB-10 social login
+  };
 
-  const goHome = () => router.replace('/(tabs)'); // Browse first / Skip → guest home
+  const goHome = () => {
+    markIntroSeen();
+    router.replace('/(tabs)'); // Browse first / Skip → guest home
+  };
 
   const cur = SLIDES[active];
 
