@@ -140,6 +140,8 @@
     "unable": "Sin datos"
   },
   "scan": {
+    "unmatchedSheetTitle": "Aún no está en nuestro catálogo",
+    "unmatchedSheetBody": "No podemos evaluar su riesgo hasta que se añada. No asumas que es seguro: confirma los ingredientes con el dueño del restaurante.",
     "rotateToPortrait": "Sostén el teléfono en vertical para escanear el menú",
     "hint": "Apunta a un menú y toca para escanear",
     "permissionTitle": "Se necesita acceso a la cámara",

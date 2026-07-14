@@ -140,6 +140,8 @@
     "unable": "Tak ada data"
   },
   "scan": {
+    "unmatchedSheetTitle": "Belum ada di katalog kami",
+    "unmatchedSheetBody": "Kami belum bisa menilai risikonya sampai hidangan ini ditambahkan. Jangan anggap aman — tanyakan bahannya langsung ke pemilik restoran.",
     "rotateToPortrait": "Pegang ponsel secara tegak untuk memindai menu",
     "hint": "Arahkan ke menu dan ketuk untuk memindai",
     "permissionTitle": "Akses kamera diperlukan",

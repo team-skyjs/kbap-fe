@@ -140,6 +140,8 @@
     "unable": "Chưa rõ"
   },
   "scan": {
+    "unmatchedSheetTitle": "Món này chưa có trong danh mục",
+    "unmatchedSheetBody": "Chúng tôi chưa thể đánh giá mức rủi ro cho đến khi món được thêm vào. Đừng mặc định là an toàn — hãy hỏi trực tiếp chủ quán về nguyên liệu.",
     "rotateToPortrait": "Hãy cầm máy theo chiều dọc để quét thực đơn",
     "hint": "Hướng vào thực đơn và chạm để quét",
     "permissionTitle": "Cần quyền truy cập máy ảnh",

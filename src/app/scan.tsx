@@ -81,7 +81,8 @@ export default function Scan() {
   const [dishes, setDishes] = useState<MenuDish[]>([]);
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
-  const [view, setView] = useState<ResultView>('risk');
+  // KB-140: 기본 화면 = 리스트 (오버레이 버튼 겹침 회피 — 2026-07-14 결정)
+  const [view, setView] = useState<ResultView>('list');
   const [facing, setFacing] = useState<CameraType>('back');
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
@@ -90,6 +91,7 @@ export default function Scan() {
   // expo-camera 내장 콜백(iOS) 사용. expo-sensors 불필요 → 재빌드 없음(OTA 가능).
   // Android는 이 콜백이 없어 미감지(현행 유지) — 출시 타깃 iOS, gap은 KB-141 로그.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
+  const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
 
   function fail(stage: ErrorStage, detail: string) {
@@ -110,7 +112,7 @@ export default function Scan() {
       onSuccess: (res) => {
         setItems(res.items);
         setDegraded(res.degraded);
-        setView('risk');
+        setView('list'); // KB-140 기본 리스트
         setPhase('result');
       },
       onError: (e) => {
@@ -184,8 +186,9 @@ export default function Scan() {
 
   // Detail navigation: matched dishes only (KB-72 신계약). matched=false is
   // 조사 대기 — there is no detail screen even when foodId exists (Swagger 명시).
+  // KB-140: unmatched 탭 = 무반응 대신 "아직 등록 안 된 음식" 안내 (중립 톤, 상세 이동은 계속 불가).
   function openDish(dish: ResultDish) {
-    if (!dish.matched || !dish.foodId) return;
+    if (!dish.matched || !dish.foodId) return setUnmatchedOpen(true);
     router.push(`/food/${dish.foodId}` as Href);
   }
 
@@ -243,14 +246,15 @@ export default function Scan() {
         )}
         {Close}
         {GateSheet}
+        <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
           {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
           <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: resultDishes.length })}</Text>
           <View style={styles.toggleRow}>
-            <Toggle label={t('scan.showOriginal')} on={view === 'original'} onPress={() => setView('original')} />
-            <Toggle label={t('scan.showResult')} on={view === 'risk'} onPress={() => setView('risk')} />
             <Toggle label={t('scan.showList')} on={view === 'list'} onPress={() => setView('list')} />
+            <Toggle label={t('scan.showResult')} on={view === 'risk'} onPress={() => setView('risk')} />
+            <Toggle label={t('scan.showOriginal')} on={view === 'original'} onPress={() => setView('original')} />
           </View>
           <Btn variant="ghost" onPress={() => { setItems([]); setDishes([]); setPhoto(null); setPhase('camera'); }}>
             {t('scan.retake')}
@@ -355,6 +359,23 @@ export default function Scan() {
   );
 }
 
+/** KB-140 unmatched 안내 — 중립 톤(unable 마크·ink 텍스트), 안전 인상 금지. */
+function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => void; t: (k: string) => string }) {
+  if (!open) return null;
+  return (
+    <Pressable style={styles.noticeBackdrop} onPress={onClose}>
+      <Pressable style={styles.noticeCard} onPress={() => {}}>
+        <RiskMark state="unable" size={30} />
+        <Text style={styles.noticeTitle}>{t('scan.unmatchedSheetTitle')}</Text>
+        <Text style={styles.noticeBody}>{t('scan.unmatchedSheetBody')}</Text>
+        <View style={{ alignSelf: 'stretch' }}>
+          <Btn variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
+        </View>
+      </Pressable>
+    </Pressable>
+  );
+}
+
 function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable style={[styles.toggle, on && styles.toggleOn]} onPress={onPress}>
@@ -366,7 +387,7 @@ function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: (
 function DishRow({ dish, unmatchedNote, riskLabel, onPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void }) {
   const tone = riskTone[dish.risk];
   return (
-    <Pressable style={styles.row} onPress={onPress} disabled={!dish.matched}>
+    <Pressable style={styles.row} onPress={onPress}>
       <RiskMark state={dish.risk} size={24} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.rowName} numberOfLines={1}>{dish.displayName}</Text>
@@ -402,6 +423,10 @@ const styles = StyleSheet.create({
   shutterOff: { opacity: 0.35 },
   rotateOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
   rotateText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff', textAlign: 'center', maxWidth: 260, lineHeight: 22 },
+  noticeBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },
+  noticeCard: { backgroundColor: '#fff', borderRadius: 20, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
+  noticeTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, textAlign: 'center' },
+  noticeBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20 },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },

@@ -140,6 +140,8 @@
     "unable": "정보 없음"
   },
   "scan": {
+    "unmatchedSheetTitle": "아직 등록되지 않은 음식이에요",
+    "unmatchedSheetBody": "카탈로그에 등재되기 전까지는 위험도를 평가할 수 없어요. 안전하다고 넘겨짚지 말고 재료를 사장님께 직접 확인하세요.",
     "rotateToPortrait": "메뉴판 스캔은 세로로 들고 찍어주세요",
     "hint": "메뉴판에 카메라를 대고 탭하세요",
     "permissionTitle": "카메라 접근이 필요해요",

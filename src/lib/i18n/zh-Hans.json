@@ -140,6 +140,8 @@
     "unable": "无数据"
   },
   "scan": {
+    "unmatchedSheetTitle": "该菜品尚未收录",
+    "unmatchedSheetBody": "在收录之前我们无法评估其风险。请勿默认它是安全的——请直接向店主确认食材。",
     "rotateToPortrait": "请竖持手机扫描菜单",
     "hint": "对准菜单并点击扫描",
     "permissionTitle": "需要相机权限",

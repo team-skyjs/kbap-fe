@@ -140,6 +140,8 @@
     "unable": "無數據"
   },
   "scan": {
+    "unmatchedSheetTitle": "該料理尚未收錄",
+    "unmatchedSheetBody": "在收錄之前我們無法評估其風險。請勿假設它是安全的——請直接向店家確認食材。",
     "rotateToPortrait": "請直持手機掃描菜單",
     "hint": "對準菜單並點擊以掃描",
     "permissionTitle": "需要相機權限",

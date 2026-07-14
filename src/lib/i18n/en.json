@@ -136,6 +136,8 @@
     "unable": "No data"
   },
   "scan": {
+    "unmatchedSheetTitle": "Not in our catalog yet",
+    "unmatchedSheetBody": "We can't rate this dish until it's added. Don't assume it's safe — check the ingredients with the restaurant owner.",
     "rotateToPortrait": "Hold your phone upright to scan the menu",
     "hint": "Point at a menu and tap to scan",
     "permissionTitle": "Camera access needed",

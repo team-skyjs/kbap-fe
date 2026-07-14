@@ -140,6 +140,8 @@
     "unable": "判定不可"
   },
   "scan": {
+    "unmatchedSheetTitle": "まだ登録されていない料理です",
+    "unmatchedSheetBody": "カタログに登録されるまでリスク評価はできません。安全と思い込まず、材料をお店の方に直接確認してください。",
     "rotateToPortrait": "メニューのスキャンは縦向きで撮影してください",
     "hint": "メニューに向けてタップしてスキャン",
     "permissionTitle": "カメラへのアクセスが必要です",
