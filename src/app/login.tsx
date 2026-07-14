@@ -35,6 +35,9 @@ export default function Login() {
       </View>
 
       <View style={styles.foot}>
+        <Pressable onPress={() => router.replace('/(tabs)' as Href)} hitSlop={8}>
+          <Text style={styles.browse}>{t('intro.browseFirst')}</Text>
+        </Pressable>
         {/* KB-67: newMember → 온보딩. 기존 회원도 onboardingCompleted=false면
             온보딩으로 (계정만 생기고 프로필 미저장인 미완료 회원 — 400 이탈 등).
             판별 실패 시엔 홈 — resume 모달이 안전망. */}
@@ -51,9 +54,6 @@ export default function Login() {
           }}
         />
         <Text style={styles.terms}>{t('login.terms')}</Text>
-        <Pressable onPress={() => router.replace('/(tabs)' as Href)} hitSlop={8}>
-          <Text style={styles.browse}>{t('intro.browseFirst')}</Text>
-        </Pressable>
       </View>
     </View>
   );
