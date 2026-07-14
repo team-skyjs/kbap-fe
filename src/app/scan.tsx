@@ -11,13 +11,14 @@
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone } from '@/lib/theme';
 import { Btn, RiskMark, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
@@ -52,6 +53,14 @@ const SAMPLE_DISHES: MenuDish[] = [
   { itemId: 3, rawMenuName: '맥북', box: { x: 0.12, y: 0.67, width: 0.5, height: 0.08 }, priceKrw: null, latin: null },
 ];
 
+/** ⑦(KB-137) 촬영/갤러리 캐시 파일 삭제 — 실패해도 스캔 흐름엔 무해(로그만). */
+function deletePhotoFile(uri: string | null | undefined): void {
+  if (!uri || !uri.startsWith('file:')) return; // 웹 blob/샘플(null)은 대상 아님
+  FileSystem.deleteAsync(uri, { idempotent: true })
+    .then(() => console.log('[scan] cleaned photo file:', uri))
+    .catch((e) => console.log('[scan] photo cleanup failed:', (e as Error)?.message ?? e));
+}
+
 export default function Scan() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -64,6 +73,11 @@ export default function Scan() {
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [photo, setPhoto] = useState<Photo>(null);
+  // ⑦(KB-137) 촬영/갤러리 파일 캐시 누적 방지 — 결과 오버레이가 photo.uri를
+  // 렌더하므로 OCR 직후가 아니라 **표시 수명이 끝날 때** 삭제: 새 사진으로
+  // 교체될 때 이전 파일, 화면 언마운트 시 마지막 파일.
+  const photoUriRef = useRef<string | null>(null);
+  useEffect(() => () => deletePhotoFile(photoUriRef.current), []);
   const [dishes, setDishes] = useState<MenuDish[]>([]);
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
@@ -104,6 +118,11 @@ export default function Scan() {
   async function scanImage(captured: Photo) {
     if (!captured) return;
     console.log('[scan] scanImage ← photo', JSON.stringify(captured));
+    // 이전 촬영/갤러리 파일은 더 이상 표시되지 않음 — 지금 삭제 (⑦ KB-137)
+    if (photoUriRef.current && photoUriRef.current !== captured.uri) {
+      deletePhotoFile(photoUriRef.current);
+    }
+    photoUriRef.current = captured.uri;
     setError(null);
     setPhoto(captured);
     setPhase('scanning');

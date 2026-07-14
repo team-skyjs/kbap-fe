@@ -17,6 +17,7 @@
 | ⑨ | 게스트 리스트 뱃지 정책 — 회귀 테스트로 고정 | 완료 | 7658a0e | 카드 4종 ×(게스트 미렌더/회원 렌더) 8케이스, guestListBadges.test.tsx |
 | ⑩ | 이미지 로딩 shimmer (실기기 체감 개선) | 완료 | 90900dd | CardPhoto 공용 래퍼 — 기존 Shimmer 재사용, 6지점 교체, 계약 테스트 3건 |
 | ⑪ | 로그아웃 3건 (확인 모달·홈 복귀·로그인 뒤로가기 제거) | 완료 | 0fc96c5 | Alert 확인+스피너 / 홈 replace(게스트 강등) / Browse first 텍스트 버튼 |
+| ⑫ | iOS 용량 절감 2차 — CJK 폰트 시스템 전환 + 스캔 파일 정리 (지시서 번호 ⑦, KB-137) | 완료(실기기 검증 대기) | | 폰트 에셋 254MB→1.7MB, Noto ttf 0건 |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
@@ -107,6 +108,14 @@
 - 검증: `expo prebuild --clean --platform ios` 후 Podfile.lock — Chinese/Japanese/Devanagari **0건**, Latin 서브스펙 제거, GoogleMLKit/TextRecognitionKorean(8.0.0)만 잔존 ✅. **실기기 검증 대기(예진)**: dev 재빌드 후 한국어+영문 혼용 메뉴판 스캔 정상 확인.
 - ⚠️ 네이티브 변경 — OTA 불가. dev 재빌드 필요 + **7/16 production 빌드에 반드시 포함** (fingerprint 회전 → 다음 배포는 ota-prod Path B).
 - 2차 후보(이번 스코프 아님): Korean만 남긴 뒤에도 200MB+면 Firebase 불필요 모듈·미사용 폰트/이미지 조사.
+
+### ⑫ iOS 용량 절감 2차 — CJK 번들 폰트 제거 + 스캔 파일 정리 (2026-07-14, KB-137 · 지시서상 ⑦이나 표 번호 중복이라 ⑫로 등재)
+- 배경(커맨드 센터 실측): 설치 347MB 중 257MB가 @expo-google-fonts ttf — 루트 import가 패밀리당 9웨이트 전부를 require(Metro는 asset require를 tree-shake 못 함).
+- 폰트: noto-sans-sc/tc/jp/kr/thai 5패키지 제거. CJK/Thai/KR은 **시스템 폰트 + fontWeight**(iOS SF→PingFang·Hiragino·Apple SD Gothic Neo·Thonburi 폴백, Android=Noto Sans CJK). fonts.ts를 스크립트→(system+weight) 매핑(resolveFont)으로 재설계, Txt가 치환 — theme.font 문자열 토큰(NotoSansKR_* 포함)은 **가상 패밀리명**으로 표면 유지, 화면 코드 무변. useScriptFonts는 항상 ready. Baloo 2/Nunito Sans는 웨이트별 서브패스 import 7개로 유지. place=ko(요리명·사장님 카드)도 system+weight.
+- 스캔 파일: 촬영(takePictureAsync)·갤러리 파일 삭제 로직 추가(expo-file-system/legacy deleteAsync, idempotent, 콘솔 로그). **지시 편차(근거)**: "OCR 직후 삭제"는 결과 오버레이(ScanResultOverlay)가 photo.uri를 렌더해 결과 화면이 깨짐(코드 확인) → **표시 수명 종료 시 삭제**로 구현 — 새 사진으로 교체될 때 이전 파일 + 화면 언마운트 시 마지막 파일. 캐시 누적 방지 목표는 동일 달성(스캔 N회 후 화면 이탈 시 잔존 0). 리뷰에서 원안 고집 시 재논의.
+- 검증: `expo export --platform ios` — **ttf/noto 계열 0건, 에셋 총 1.7MB**(폰트 7파일: Nunito 412KB×3 + Baloo 112KB×4; 종전 CJK 4패밀리 254MB). 웹 ko 렌더 — 음식탭·랭킹에서 400/700/800 굵기 위계 확인(시스템 폰트). zh/ja/th 실렌더·실기기 체감·스캔 2회 파일 정리 로그는 **검증 대기(예진, dev 빌드)**.
+- JS/에셋 레벨 — 재빌드 불필요하나 **7/16 prod 빌드 포함 필수**. ⑥(ML Kit 6MB)+⑫ 목표 설치 100MB 미만.
+- 스코프 외(메모만): MLKitTextRecognitionCommon(아카이브 103MB) Apple Vision 교체, expo-image 디스크 캐시 정책 — 출시 후 2차.
 
 ### 관찰사항 (이번 스코프 외 — 예진 판단)
 - 프로필 제한 칩이 "FISH_SAUCE" 등 코드 그대로 표시 — 기지 이슈(KB-125 신규 성분 번역 목록)와 동일 계열.

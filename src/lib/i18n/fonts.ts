@@ -1,20 +1,26 @@
 /**
- * fonts.ts — multi-script font resolution (T071, Constitution I: 9 languages,
- * zero tofu). Baloo 2 (display) covers Latin only; non-Latin reader languages
- * need a script-appropriate family. The active reader language maps to ONE
- * script, so this is a global switch (not per-glyph) — except place=ko strings
- * (menu names, owner questions) which ALWAYS stay Noto Sans KR.
+ * fonts.ts — multi-script font resolution (T071 → ⑦ 용량 2차 재설계, KB-137).
  *
- * `remapFamily()` rewrites a Latin theme.font family to the active script's
- * equivalent at render time (see components/Txt), which is why the frozen
- * StyleSheet font values still end up script-correct.
+ * 종전: 스크립트→Noto 패밀리 매핑 + 패밀리별 ttf 번들. @expo-google-fonts
+ * 루트 import가 패밀리당 9웨이트 전부를 require해 CJK 4패밀리만 254MB를
+ * 차지했다(7/10 prod .ipa 실측). Metro는 asset require를 tree-shake 못 한다.
+ *
+ * 현재: CJK/Thai/KR은 **시스템 폰트 + fontWeight**로 렌더 — iOS는 SF 폴백이
+ * PingFang SC/TC·Hiragino Sans·Apple SD Gothic Neo·Thonburi를 자동 해석하고
+ * Android 시스템 폰트가 Noto Sans CJK다. 번들 폰트는 라틴 브랜드(Baloo 2·
+ * Nunito Sans, ~5MB)만 유지. 디자인 토큰(크기·굵기 위계 400/600/700/800)은
+ * 그대로 — 패밀리 대신 weight로 위계를 표현한다.
+ *
+ * theme.font의 문자열 토큰(외부 표면)은 유지: 'NotoSansKR_*'는 이제 등록되지
+ * 않는 **가상 패밀리명**이고, Txt가 resolveFont()로 시스템 폰트+weight로
+ * 치환한다. place=ko 데이터(요리명·사장님 카드)도 같은 경로.
  */
+import type { TextStyle } from 'react-native';
 import { font as latin } from '@/lib/theme';
 
 export type ScriptKey = 'latin' | 'kr' | 'sc' | 'tc' | 'jp' | 'thai' | 'cyrillic';
 
-/** reader language → script. (멘토링 ⑤: ko가 리더 언어가 되면서 kr 스크립트 추가 —
- * place=ko 데이터 렌더링(theme.font.ko 고정)과는 별개 경로.) fallback latin. */
+/** reader language → script. fallback latin. */
 export const LANG_SCRIPT: Record<string, ScriptKey> = {
   en: 'latin',
   ko: 'kr',
@@ -28,7 +34,11 @@ export const LANG_SCRIPT: Record<string, ScriptKey> = {
   ru: 'cyrillic',
 };
 
-/** the 7 script-sensitive semantic roles (ko roles are script-fixed, excluded). */
+export function scriptOf(lang: string): ScriptKey {
+  return LANG_SCRIPT[lang] ?? 'latin';
+}
+
+/** the 7 script-sensitive semantic roles. */
 export type FontRole =
   | 'display'
   | 'displaySemi'
@@ -37,57 +47,6 @@ export type FontRole =
   | 'bodySemi'
   | 'bodyBold'
   | 'bodyBlack';
-
-export type FontSet = Record<FontRole, string>;
-
-/** Noto family for a script + weight bucket. */
-function noto(prefix: string): FontSet {
-  return {
-    display: `${prefix}_700Bold`,
-    displaySemi: `${prefix}_600SemiBold`,
-    displayBlack: `${prefix}_800ExtraBold`,
-    body: `${prefix}_400Regular`,
-    bodySemi: `${prefix}_600SemiBold`,
-    bodyBold: `${prefix}_700Bold`,
-    bodyBlack: `${prefix}_800ExtraBold`,
-  };
-}
-
-const LATIN_SET: FontSet = {
-  display: latin.display,
-  displaySemi: latin.displaySemi,
-  displayBlack: latin.displayBlack,
-  body: latin.body,
-  bodySemi: latin.bodySemi,
-  bodyBold: latin.bodyBold,
-  bodyBlack: latin.bodyBlack,
-};
-
-// Cyrillic (ru): Baloo 2 has no Cyrillic → display falls back to Nunito Sans,
-// which ships a Cyrillic subset. Body is already Nunito Sans.
-const CYRILLIC_SET: FontSet = {
-  display: latin.bodyBold,
-  displaySemi: latin.bodySemi,
-  displayBlack: latin.bodyBlack,
-  body: latin.body,
-  bodySemi: latin.bodySemi,
-  bodyBold: latin.bodyBold,
-  bodyBlack: latin.bodyBlack,
-};
-
-export const FONT_SETS: Record<ScriptKey, FontSet> = {
-  latin: LATIN_SET,
-  cyrillic: CYRILLIC_SET,
-  kr: noto('NotoSansKR'),
-  sc: noto('NotoSansSC'),
-  tc: noto('NotoSansTC'),
-  jp: noto('NotoSansJP'),
-  thai: noto('NotoSansThai'),
-};
-
-export function scriptOf(lang: string): ScriptKey {
-  return LANG_SCRIPT[lang] ?? 'latin';
-}
 
 /** Reverse lookup: a Latin theme.font family string → its semantic role. */
 const ROLE_OF_LATIN: Record<string, FontRole> = {
@@ -100,13 +59,46 @@ const ROLE_OF_LATIN: Record<string, FontRole> = {
   [latin.bodyBlack]: 'bodyBlack',
 };
 
-/**
- * Rewrite a fontFamily for the active script. Latin display/body families map to
- * the script equivalent; Korean families (place=ko) and anything unknown pass
- * through unchanged. Latin script is an identity no-op.
- */
-export function remapFamily(family: string | undefined, script: ScriptKey): string | undefined {
-  if (!family || script === 'latin') return family;
+/** role → 시스템 폰트 weight (디자인 토큰의 굵기 위계 그대로). */
+const ROLE_WEIGHT: Record<FontRole, TextStyle['fontWeight']> = {
+  display: '700',
+  displaySemi: '600',
+  displayBlack: '800',
+  body: '400',
+  bodySemi: '600',
+  bodyBold: '700',
+  bodyBlack: '800',
+};
+
+/** place=ko 가상 패밀리(theme.font.ko*) → 시스템 폰트 weight. */
+const KO_WEIGHT: Record<string, TextStyle['fontWeight']> = {
+  [latin.ko]: '400',
+  [latin.koMed]: '500',
+  [latin.koBold]: '700',
+};
+
+// Cyrillic (ru): Baloo 2에 키릴 자모가 없어 display 역할만 Nunito로 강등
+// (Nunito Sans는 키릴 서브셋 보유 — 번들 유지 대상이라 그대로).
+const CYRILLIC_FAMILY: Partial<Record<FontRole, string>> = {
+  display: latin.bodyBold,
+  displaySemi: latin.bodySemi,
+  displayBlack: latin.bodyBlack,
+};
+
+/** Txt가 style에 덧씌울 폰트 치환. null = 그대로 둠. */
+export type FontOverride = { fontFamily?: string; fontWeight?: TextStyle['fontWeight'] };
+
+export function resolveFont(family: string | undefined, script: ScriptKey): FontOverride | null {
+  if (!family) return null;
+  // place=ko 가상 패밀리 — 리더 언어와 무관하게 항상 시스템 폰트 + weight
+  if (KO_WEIGHT[family]) return { fontWeight: KO_WEIGHT[family] };
   const role = ROLE_OF_LATIN[family];
-  return role ? FONT_SETS[script][role] : family;
+  if (!role) return null; // 알 수 없는 패밀리 — 손대지 않음
+  if (script === 'latin') return null; // 라틴은 번들 브랜드 폰트 그대로
+  if (script === 'cyrillic') {
+    const fam = CYRILLIC_FAMILY[role];
+    return fam ? { fontFamily: fam } : null; // body 역할은 이미 Nunito
+  }
+  // kr/sc/tc/jp/thai: 시스템 폰트 + weight
+  return { fontWeight: ROLE_WEIGHT[role] };
 }

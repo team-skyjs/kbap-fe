@@ -1,51 +1,11 @@
 /**
- * useScriptFonts — loads the Noto family for the ACTIVE non-Latin script on
- * demand (T071). Latin (en/vi/id/es) and Cyrillic (ru → Nunito Sans) need no
- * extra load and resolve ready immediately. Only the four weights actually used
- * by theme roles (400/600/700/800) are registered per script.
+ * useScriptFonts — ⑦(KB-137)에서 무력화. CJK/Thai/KR은 시스템 폰트로 렌더하므로
+ * 스크립트별 폰트 로딩이 없다(종전 Noto 온디맨드 로딩 254MB 번들 제거).
+ * LocaleProvider 표면(scriptReady) 유지를 위해 시그니처만 남긴다.
  */
-import { useFonts } from 'expo-font';
-import {
-  NotoSansSC_400Regular,
-  NotoSansSC_600SemiBold,
-  NotoSansSC_700Bold,
-  NotoSansSC_800ExtraBold,
-} from '@expo-google-fonts/noto-sans-sc';
-import {
-  NotoSansTC_400Regular,
-  NotoSansTC_600SemiBold,
-  NotoSansTC_700Bold,
-  NotoSansTC_800ExtraBold,
-} from '@expo-google-fonts/noto-sans-tc';
-import {
-  NotoSansJP_400Regular,
-  NotoSansJP_600SemiBold,
-  NotoSansJP_700Bold,
-  NotoSansJP_800ExtraBold,
-} from '@expo-google-fonts/noto-sans-jp';
-import {
-  NotoSansThai_400Regular,
-  NotoSansThai_600SemiBold,
-  NotoSansThai_700Bold,
-  NotoSansThai_800ExtraBold,
-} from '@expo-google-fonts/noto-sans-thai';
-import {
-  NotoSansKR_600SemiBold,
-  NotoSansKR_800ExtraBold,
-} from '@expo-google-fonts/noto-sans-kr';
 import type { ScriptKey } from './fonts';
 
-const SCRIPT_MODULES: Partial<Record<ScriptKey, Record<string, number>>> = {
-  // kr: 400/700은 useAppFonts가 place=ko용으로 이미 등록 — 나머지 두 웨이트만 추가
-  kr: { NotoSansKR_600SemiBold, NotoSansKR_800ExtraBold },
-  sc: { NotoSansSC_400Regular, NotoSansSC_600SemiBold, NotoSansSC_700Bold, NotoSansSC_800ExtraBold },
-  tc: { NotoSansTC_400Regular, NotoSansTC_600SemiBold, NotoSansTC_700Bold, NotoSansTC_800ExtraBold },
-  jp: { NotoSansJP_400Regular, NotoSansJP_600SemiBold, NotoSansJP_700Bold, NotoSansJP_800ExtraBold },
-  thai: { NotoSansThai_400Regular, NotoSansThai_600SemiBold, NotoSansThai_700Bold, NotoSansThai_800ExtraBold },
-};
-
-/** Returns true once the active script's fonts are registered (or none needed). */
-export function useScriptFonts(script: ScriptKey): boolean {
-  const [loaded] = useFonts(SCRIPT_MODULES[script] ?? {});
-  return loaded;
+/** 시스템 폰트는 로딩이 없으므로 항상 ready. */
+export function useScriptFonts(_script: ScriptKey): boolean {
+  return true;
 }
