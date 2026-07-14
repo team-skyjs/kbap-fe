@@ -15,13 +15,12 @@
  */
 import { useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { RiskPill, Spinner, StateBlock, stateIconColor, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
+import { RiskPill, Spinner, StateBlock, stateIconColor, CardPhoto, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
 import { useFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -204,7 +203,7 @@ export function ResultCard({ food, risk, guest, onPress }: { food: FoodCard; ris
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.thumb}>
         {food.photoUrl ? (
-          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />
+          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={12} />
         ) : (
           <IconFood size={22} color={C.ink3} />
         )}

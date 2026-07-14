@@ -9,7 +9,6 @@
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -21,6 +20,7 @@ import {
   useHeaderHeight,
   RiskMark,
   RiskPill,
+  CardPhoto,
   Stars,
   Star,
   Flag,
@@ -164,7 +164,7 @@ function Registered({
         </View>
         <View style={styles.thumb}>
           {!!food.photoUrl && (
-            <Image source={food.photoUrl} contentFit="cover" transition={150} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+            <CardPhoto uri={food.photoUrl} borderRadius={16} />
           )}
         </View>
       </View>
@@ -225,7 +225,7 @@ function Registered({
 
       <View style={styles.photo}>
         {!!food.photoUrl && (
-          <Image source={food.photoUrl} contentFit="cover" transition={200} style={[StyleSheet.absoluteFill, { borderRadius: radius.lg }]} />
+          <CardPhoto uri={food.photoUrl} transition={200} borderRadius={radius.lg} />
         )}
       </View>
 

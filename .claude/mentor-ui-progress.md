@@ -14,6 +14,7 @@
 | ⑧-a | 게스트 홈 popularSub 카피 교체 | 완료 | 78bb8d0 | home.popularSubGuest ×10 + isGuest 분기 |
 | ⑧-b | 프로필 하위 3화면 딥링크 라우트 가드 | 완료 | 979f08d | /review/[id]·/profile/reviews·/profile/restrictions — 기존 가드 패턴 복제(context profile) |
 | ⑨ | 게스트 리스트 뱃지 정책 — 회귀 테스트로 고정 | 완료 | 7658a0e | 카드 4종 ×(게스트 미렌더/회원 렌더) 8케이스, guestListBadges.test.tsx |
+| ⑩ | 이미지 로딩 shimmer (실기기 체감 개선) | 완료 | | CardPhoto 공용 래퍼 — 기존 Shimmer 재사용, 6지점 교체, 계약 테스트 3건 |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
@@ -81,6 +82,12 @@
 - 구현: 카드 4종에 `export`만 추가(로직 무변), react-test-renderer(기설치 19.2.3) 카드 단위 렌더 — 새 의존성 없음. jest testMatch에 `.test.tsx` 추가. reanimated 공식 mock이 worklets 초기화를 끌고 와 jest에서 죽어서 인라인 표면 mock 사용(카드는 reanimated 미사용).
 - 공통 지점 일원화 검토(⑨-2): RiskMark를 리스트 문맥에서 감싸는 공통 컴포넌트 **없음** — 4개 카드가 3파일에 각자 인라인 렌더. 지시대로 신설하지 않음(추상화 1겹 < 테스트 8케이스). 새 리스트 카드가 생기면 테스트 파일의 CARDS 배열에 한 줄 추가하는 규약을 파일 헤더에 명시.
 - 테스트 45→57 (⑨에서 +8).
+
+### ⑩ 이미지 로딩 shimmer (2026-07-14, 실기기 리포트: 스크롤 시 사진 도착까지 빈 배경이 체감상 김)
+- `src/components/CardPhoto.tsx` 신설 — 사진 컨테이너에 기존 `Shimmer`(Skeleton.tsx, 스켈레톤과 같은 스윕)를 깔고 그 위에 expo-image. 로드되면 기존 fade-in(transition)이 이어받고, onLoad/onError 시 shimmer 언마운트(리스트에 무한 애니메이션 잔류 방지 — UI 스레드 낭비).
+- 교체 6지점: 음식탭 BrowseCard·홈 SafeCard/RecentRow·검색 ResultCard·상세 헤더 썸네일/히어로. photoUrl null 항목은 호출부 기존 fallback(배경색/아이콘) 유지 — 사진 없는 메뉴가 "로딩 중"처럼 보이지 않게.
+- RN 0.85 타입에 StyleSheet.absoluteFillObject 부재 → FILL 상수 직접 정의. Shimmer(ViewStyle[])/Image(ImageStyle[]) 스타일 타입 분리.
+- 검증: 계약 테스트 3건(cardPhoto.test.tsx — 로드 전 shimmer 존재/onLoad 제거/onError 제거), 웹 음식탭 렌더 회귀 없음(로컬은 이미지가 즉시 로드돼 shimmer 순간은 실기기에서 체감 확인 필요). 테스트 57→60.
 
 ### 관찰사항 (이번 스코프 외 — 예진 판단)
 - 프로필 제한 칩이 "FISH_SAUCE" 등 코드 그대로 표시 — 기지 이슈(KB-125 신규 성분 번역 목록)와 동일 계열.

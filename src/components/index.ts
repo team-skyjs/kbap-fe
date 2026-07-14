@@ -12,6 +12,7 @@ export { TabBar, type TabKey, type TabBarLabels } from './TabBar';
 export { TopBar } from './TopBar';
 export { StateBlock, stateIconColor, type StateTone } from './StateBlock';
 export { SkeletonList, Shimmer } from './Skeleton';
+export { CardPhoto } from './CardPhoto';
 export { Spinner } from './Spinner';
 export { ShellPlaceholder } from './ShellPlaceholder';
 export { NotificationsPanel } from './NotificationsPanel';

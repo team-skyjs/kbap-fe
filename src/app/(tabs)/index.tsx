@@ -21,6 +21,7 @@ import {
   SkeletonList,
   Btn,
   RiskMark,
+  CardPhoto,
   Stars,
   Star,
   CatStew,
@@ -36,7 +37,6 @@ import {
   IconLock,
   type IconProps,
 } from '@/components';
-import { Image } from 'expo-image';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -287,7 +287,7 @@ export function SafeCard({ food, hasRestrictions, guest, onPress }: { food: Food
     <Pressable style={styles.safeCard} onPress={onPress}>
       <View style={styles.photo}>
         {!!food.photoUrl && (
-          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={StyleSheet.absoluteFill} />
+          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} />
         )}
         {/* 게스트에겐 개인화 뱃지 미렌더 — 자리 비움 (guest-access-policy §1) */}
         {!guest && (
@@ -322,7 +322,7 @@ export function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }
     <Pressable style={styles.rec} onPress={onPress}>
       <View style={styles.recThumb}>
         {food.photoUrl ? (
-          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={[StyleSheet.absoluteFill, { borderRadius: 12 }]} />
+          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={12} />
         ) : (
           <IconFood size={24} color={C.primary} />
         )}

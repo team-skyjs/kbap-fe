@@ -11,7 +11,6 @@
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -26,6 +25,7 @@ import {
   StateBlock,
   stateIconColor,
   RiskMark,
+  CardPhoto,
   Stars,
   IconSearch,
   IconFood,
@@ -130,7 +130,7 @@ export function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: Fo
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.photo}>
         {!!food.photoUrl && (
-          <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={StyleSheet.absoluteFill} />
+          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} />
         )}
         {/* 게스트에겐 개인화 뱃지 미렌더 — 자리 비움 (guest-access-policy §1) */}
         {!guest && (
