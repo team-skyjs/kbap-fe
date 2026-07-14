@@ -17,7 +17,7 @@
 | ⑨ | 게스트 리스트 뱃지 정책 — 회귀 테스트로 고정 | 완료 | 7658a0e | 카드 4종 ×(게스트 미렌더/회원 렌더) 8케이스, guestListBadges.test.tsx |
 | ⑩ | 이미지 로딩 shimmer (실기기 체감 개선) | 완료 | 90900dd | CardPhoto 공용 래퍼 — 기존 Shimmer 재사용, 6지점 교체, 계약 테스트 3건 |
 | ⑪ | 로그아웃 3건 (확인 모달·홈 복귀·로그인 뒤로가기 제거) | 완료 | 0fc96c5 | Alert 확인+스피너 / 홈 replace(게스트 강등) / Browse first 텍스트 버튼 |
-| ⑫ | iOS 용량 절감 2차 — CJK 폰트 시스템 전환 + 스캔 파일 정리 (지시서 번호 ⑦, KB-137) | 완료(실기기 검증 대기) | | 폰트 에셋 254MB→1.7MB, Noto ttf 0건 |
+| ⑫ | iOS 용량 절감 2차 — CJK 폰트 시스템 전환 + 스캔 파일 정리 (지시서 번호 ⑦, KB-137) | 완료(실기기 검증 대기) | ba53be8 | 폰트 에셋 254MB→1.7MB, Noto ttf 0건 |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
@@ -131,5 +131,5 @@
 - 프로필: My reviews 위 Saved 행(카운트 tag) → /profile/saved.
 - `/profile/saved` 신설: ⑧-b 라우트 가드, 최신순, 스와이프 삭제→Undo 스낵바 5s(ReanimatedSwipeable), 빈 상태, riskTone 재사용. personalRisk 렌더 시 재평가.
 - i18n: saved.* / gate.save* / profile.saved ×10개 언어 (plural 접미키: en/es one·other, ru one·few·many·other).
-- 스킵: 첫 저장 교육 토스트(디자인 spec상 Optional — 기본 없음), Saved 카드 사유 문구(스냅샷에 재료 없음 — BE 실연결 때), 로딩 스켈레톤(로컬이라 즉시 로드).
+- 저장 토스트 구현(예진 결정 7/14): 저장 ON 시 **매번** 'Saved to your list · View'→/profile/saved, 5s 자동 닫힘 (디자인 spec의 1회 교육안 대신 상시 — View 바로가기 실용성 우선). 해제 시엔 미표시. 공용 Snackbar.tsx 신설(Undo 스낵바도 이걸로 통합). 스킵 잔여: , Saved 카드 사유 문구(스냅샷에 재료 없음 — BE 실연결 때), 로딩 스켈레톤(로컬이라 즉시 로드).
 - tsc clean, jest 60/60. 웹/실기기 확인 및 커밋은 예진.
