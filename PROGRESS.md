@@ -179,3 +179,4 @@
 - 수정 ②: useHome에 포커스 재조회 — `useFocusEffect` + `isStale`일 때만 refetch (fresh면 no-op, 전면 폴링 아님). 60s staleTime 경과·타 화면발 변경도 홈 진입 시 최신화.
 - 회귀 테스트 갱신: invalidate 의미론(캐시 제거 아님)에 맞춰 `isInvalidated` 단언 — restrictions→홈·목록·상세 invalidated / 닉네임→미invalidated. tsc 0, jest 62/62.
 - 비범위 준수: 상세 재료별 위험 뱃지 로직 무변 (BE 버그 별도 전달건).
+- (후속 지시 대사, 7/14) "38e632e에 작업 2 누락" 지적 확인 — 포커스 재조회는 직후 커밋 5bdc35c에 포함되어 이미 반영 상태(useHome.ts:51 useFocusEffect + stale 조건부 refetch). 추가 변경 없음.
