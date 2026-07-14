@@ -217,11 +217,9 @@ export default function Profile() {
                 <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
                 <AcctRow
-                  // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘. 액션 행이라 우측 chevron도 제거
-                  // (양쪽 화살표 오해 방지 — 내비게이션 행들만 chevron 유지).
+                  // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘 (우측 chevron은 행 통일 유지 — 예진 확인).
                   // ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지).
                   icon={loggingOut ? <Spinner size={18} /> : <IconLogout size={18} color={C.ink2} />}
-                  chevron={false}
                   label={t('profile.logout')}
                   onPress={confirmLogout}
                 />
@@ -278,13 +276,13 @@ function MyReview({ review, food, hasRestrictions, onPress }: { review: Review; 
   );
 }
 
-function AcctRow({ icon, label, value, danger, chevron = true, onPress }: { icon: React.ReactNode; label: string; value?: string; danger?: boolean; chevron?: boolean; onPress?: () => void }) {
+function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNode; label: string; value?: string; danger?: boolean; onPress?: () => void }) {
   return (
     <Pressable style={styles.acctRow} onPress={onPress}>
       <View style={styles.acctIc}>{icon}</View>
       <Text style={[styles.acctLabel, danger && { color: C.riskDanger }]}>{label}</Text>
       {value && <Text style={styles.tag}>{value}</Text>}
-      {chevron && <IconChevron size={16} color={danger ? C.riskDanger : C.ink2} />}
+      <IconChevron size={16} color={danger ? C.riskDanger : C.ink2} />
     </Pressable>
   );
 }

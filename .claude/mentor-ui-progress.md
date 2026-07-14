@@ -19,7 +19,7 @@
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
-- ② chevron: 로그아웃은 내비게이션이 아닌 액션 → 해당 행만 우측 chevron 제거(AcctRow에 chevron prop, 기본 true라 다른 행 무변).
+- ② chevron: 처음엔 "액션 행이라 어색" 판단으로 로그아웃 행만 제거했으나 **예진 확인으로 복원(7/14)** — 행 통일 우선. AcctRow chevron prop도 원복(사용처 없음). 최종: 좌측 IconLogout + 우측 chevron 유지.
 
 ### ③ 알림 버튼 렌더 지점 전수 + 게이트 동작
 | 지점 | 종전 | 수정 후 |
