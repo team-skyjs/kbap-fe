@@ -14,7 +14,7 @@
 | ⑧-a | 게스트 홈 popularSub 카피 교체 | 완료 | 78bb8d0 | home.popularSubGuest ×10 + isGuest 분기 |
 | ⑧-b | 프로필 하위 3화면 딥링크 라우트 가드 | 완료 | 979f08d | /review/[id]·/profile/reviews·/profile/restrictions — 기존 가드 패턴 복제(context profile) |
 | ⑨ | 게스트 리스트 뱃지 정책 — 회귀 테스트로 고정 | 완료 | 7658a0e | 카드 4종 ×(게스트 미렌더/회원 렌더) 8케이스, guestListBadges.test.tsx |
-| ⑩ | 이미지 로딩 shimmer (실기기 체감 개선) | 완료 | | CardPhoto 공용 래퍼 — 기존 Shimmer 재사용, 6지점 교체, 계약 테스트 3건 |
+| ⑩ | 이미지 로딩 shimmer (실기기 체감 개선) | 완료 | 90900dd | CardPhoto 공용 래퍼 — 기존 Shimmer 재사용, 6지점 교체, 계약 테스트 3건 |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
