@@ -84,7 +84,18 @@ export function useUpdateMe() {
       if (Object.keys(body).length === 0) return; // spice-only 패치 등 — 서버 호출 불필요
       await api.patch('/members/me/profile', body);
     },
-    onSuccess: () => {
+    onSuccess: async (_data, patch) => {
+      // KB-68 반려 수정: restrictions 변경은 개인화의 기준 자체가 바뀌는 것 —
+      // 홈(['home'])·목록/검색(['foods'])·상세(['food']) 위험도가 전부 stale.
+      // 키를 열거해 invalidate하면 개인화 쿼리가 새로 생길 때마다 이 버그가
+      // 재발하므로(이번 반려가 정확히 그 패턴) 온보딩 제출(KB-75)과 동일하게
+      // 전면 clear를 쓴다 — false-safe 0 원칙상 과무효화 쪽이 안전.
+      // mock 경로(무세션)는 캐시 병합이 진실이라 clear하면 수정이 증발 → 제외.
+      if (patch.restrictions !== undefined && (await hasBeSession())) {
+        qc.clear();
+        return;
+      }
+      // 닉네임/국가/언어 등 비개인화 필드는 기존 범위 유지 (반려 비범위)
       void qc.invalidateQueries({ queryKey: ['me'] });
     },
   });
