@@ -28,7 +28,7 @@ import {
   IconTrash,
   IconChevron,
   IconPlus,
-  IconArrowLeft,
+  IconLogout,
 } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
@@ -186,7 +186,10 @@ export default function Profile() {
                 <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
                 <AcctRow
-                  icon={<IconArrowLeft size={18} color={C.ink2} />}
+                  // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘. 액션 행이라 우측 chevron도 제거
+                  // (양쪽 화살표 오해 방지 — 내비게이션 행들만 chevron 유지).
+                  icon={<IconLogout size={18} color={C.ink2} />}
+                  chevron={false}
                   label={t('profile.logout')}
                   onPress={() => {
                     // KB-67: BE 세션 폐기(POST /auth/logout + 토큰 삭제) 후
@@ -255,13 +258,13 @@ function MyReview({ review, food, hasRestrictions, onPress }: { review: Review; 
   );
 }
 
-function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNode; label: string; value?: string; danger?: boolean; onPress?: () => void }) {
+function AcctRow({ icon, label, value, danger, chevron = true, onPress }: { icon: React.ReactNode; label: string; value?: string; danger?: boolean; chevron?: boolean; onPress?: () => void }) {
   return (
     <Pressable style={styles.acctRow} onPress={onPress}>
       <View style={styles.acctIc}>{icon}</View>
       <Text style={[styles.acctLabel, danger && { color: C.riskDanger }]}>{label}</Text>
       {value && <Text style={styles.tag}>{value}</Text>}
-      <IconChevron size={16} color={danger ? C.riskDanger : C.ink2} />
+      {chevron && <IconChevron size={16} color={danger ? C.riskDanger : C.ink2} />}
     </Pressable>
   );
 }

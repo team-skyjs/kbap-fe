@@ -109,6 +109,14 @@ export const IconArrowLeft = (p: IconProps) => (
     <Path d="M14.5 5 l-7 7 7 7" />
   </Glyph>
 );
+// ponytail: 세트에 log-out 계열 부재(멘토링 ②) — 기존 Glyph 패턴으로 문+화살표 1개 추가
+export const IconLogout = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M10 4.5 H5.5 V19.5 H10" />
+    <Path d="M15 8.5 L18.5 12 L15 15.5" />
+    <Line x1="18.5" y1="12" x2="9.5" y2="12" />
+  </Glyph>
+);
 export const IconClose = (p: IconProps) => (
   <Glyph {...p}>
     <Line x1="6" y1="6" x2="18" y2="18" />
