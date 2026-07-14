@@ -10,6 +10,7 @@
 | ③ | 알림 버튼 게스트 게이트 — 전 탭 통일 | 완료 | ab85f09 | 종 동작을 StickyHeader 내장으로 통합(게스트=게이트 시트, 회원=패널). onBell prop 제거 |
 | ④ | 스캔 결과 가격 표시(KRW만) | 완료 | ad946b7 | PRICE_BARE 정규식 + priceKrw 정수 보관 + ₩포맷 + 매칭 거리상한 0.35 |
 | ⑤ | 앱 언어에 한국어(ko) 추가 | 완료 | 4d79455 | ko.json 469키 네이티브 + kr 스크립트 폰트 + 병기 중복 가드 8지점 |
+| ⑦ | 게스트 홈 위험도 뱃지 미렌더 (KB-78 위반) | 완료 | | SafeCard/RecentRow guest prop 가드 + 섹션 헤더 중립 아이콘 |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
@@ -48,8 +49,27 @@
 - ⑤ 피커에 한국어 항목, 선택 시 전 UI 한국어 전환(탭바·계정·스캔 에러 카피), 랭킹 병기 자연스러움 ✅. LIVE ko에서 nameKo 중복 생략은 실기기+실API 확인 필요
 - 검증용 임시 플립(flags.guestMode=false, MOCK_MODE_HOME=true)은 전부 원복 확인. dist/스크린샷 정리 완료.
 
+### ⑦ 게스트 홈 뱃지 (관찰 → 버그 확정, 2026-07-14)
+- 수정: SafeCard(photoBadge)·RecentRow(recBadge)에 음식 탭 BrowseCard와 동일한 `guest` prop + `{!guest && 뱃지}` 패턴. RecentRow는 게스트 도달 불가 분기(가입 유도 카드)지만 카드 자체에서도 방어(이중 방어).
+- 섹션 헤더(168행) 판단: 게스트에겐 RiskMark safe가 "안전 주장"으로 읽힘 → **아이콘 생략 대신 중립 IconFood(주황)로 교체** — 섹션 헤더 레이아웃(아이콘+제목)을 유지하면서 위험도 함의만 제거. popularSub 카피("Already tagged with your risk profile")도 게스트에겐 개인화 주장이라 어색하나 뱃지가 아니라 지시 범위 외 — 아래 관찰사항에.
+- RiskMark 렌더 지점 전수 grep (게스트 관점):
+  | 지점 | 게스트 도달 | 판정 |
+  |---|---|---|
+  | 홈 SafeCard/RecentRow(294/331) | 도달 | **수정** (guest 가드) |
+  | 홈 섹션 헤더(169) | 도달 | **수정** (중립 아이콘) |
+  | 홈 diet 배너(107) | 미도달(avoided=[]→섹션 숨김) | OK |
+  | 홈/상세/제한편집/온보딩 disclaimer caution·intro 슬라이드 아이콘 | 도달 | OK — 안전고지/일러스트 장식, 위험도 주장 아님 |
+  | 음식 탭 BrowseCard(138) | 도달 | OK — 기존 가드 |
+  | 상세 unable 3곳·RiskPill 경유 | 도달 | OK — KB-78에서 락카드/중립 재료행 처리 |
+  | 스캔 결과(scan.tsx 330, ScanResultOverlay 79) | 미도달(라우트 가드) | OK |
+  | 작성 화면 칩(food/[id]/review.tsx 100) | 미도달(라우트 가드 선행) | OK |
+  | 프로필 MyReview(242)·delete-account·IngredientFilter·온보딩 | 미도달(회원 플로우/게이트) | OK |
+  | 내리뷰 상세(review/[id] 110/119)·프로필 reviews(118)·restrictions(56) | **딥링크 시 도달 가능성** | 아래 관찰사항 |
+- 웹 셀프 체크: 게스트 홈 카드 뱃지 없음(자리 비움)+헤더 중립 아이콘 / 회원(MOCK_HOME 임시 플립) 뱃지 복귀(SafeCard ✅·RecentRow ⚠·헤더 safe) — 둘 다 확인, 플립 원복 완료.
+
 ### 관찰사항 (이번 스코프 외 — 예진 판단)
-- 게스트 홈 "Popular to start" 카드에 caution(⚠) 뱃지가 렌더됨 (BE foods 인증-선택 전환으로 게스트 실데이터 소생 후 노출). 음식 탭 목록은 게스트 뱃지 미렌더 정책이 적용돼 있는 것과 대조적 — 홈 인기 섹션만 게스트 가드 누락일 가능성 (KB-78 정책: 게스트에 개인화 위험도 미표시). 개인화가 아닌 일반 위험도라면 정책 해석 필요.
+- ⑦ 잔여: home.popularSub 카피 "Already tagged with your risk profile"이 게스트에게도 노출 — 위험도 뱃지는 아니나 개인화 주장 카피. 게스트 전용 카피 분리 여부 판단 필요.
+- 프로필 계열 화면(내리뷰 상세 /review/[id], /profile/reviews, /profile/restrictions)은 탭 게이트만 있고 라우트 자체 가드가 없어 딥링크로 게스트 도달 가능(무세션 mock 데이터+RiskMark 노출). 실사용 진입로는 전부 게이트돼 있어 위험 낮음 — 스캔/작성처럼 라우트 가드 이중화할지 판단.
 - 프로필 제한 칩이 "FISH_SAUCE" 등 코드 그대로 표시 — 기지 이슈(KB-125 신규 성분 번역 목록)와 동일 계열.
 
 ## 질문/블로킹

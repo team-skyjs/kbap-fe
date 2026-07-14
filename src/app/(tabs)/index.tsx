@@ -165,7 +165,8 @@ export default function Home() {
             {/* safe for you / popular */}
             {recommended.length > 0 && (
               <Section
-                icon={<RiskMark state="safe" size={22} />}
+                // ⑦ 게스트에겐 safe 마크가 안전 주장으로 읽힘 → 중립 음식 아이콘
+                icon={isGuest ? <IconFood size={22} color={C.primary} /> : <RiskMark state="safe" size={22} />}
                 title={hasScans ? t('home.safeTitle') : t('home.popularTitle')}
                 sub={hasScans ? t('home.safeSub') : t('home.popularSub')}
                 seeAll={t('home.seeAll')}
@@ -177,7 +178,7 @@ export default function Home() {
                   contentContainerStyle={{ gap: 13, paddingVertical: 4 }}
                 >
                   {recommended.map((d) => (
-                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} onPress={() => openFood(d.foodId)} />
+                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
                   ))}
                 </Animated.ScrollView>
               </Section>
@@ -199,7 +200,7 @@ export default function Home() {
                 <Section title={t('home.recentTitle')} sub={t('home.recentSub')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
                   <View style={{ gap: 10 }}>
                     {recent.map((d) => (
-                      <RecentRow key={d.foodId} food={d} hasRestrictions={hasR} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
+                      <RecentRow key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
                     ))}
                   </View>
                 </Section>
@@ -280,16 +281,19 @@ function Section({
   );
 }
 
-function SafeCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestrictions: boolean; onPress: () => void }) {
+function SafeCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.safeCard} onPress={onPress}>
       <View style={styles.photo}>
         {!!food.photoUrl && (
           <Image source={food.photoUrl} recyclingKey={food.foodId} contentFit="cover" transition={150} style={StyleSheet.absoluteFill} />
         )}
-        <View style={styles.photoBadge}>
-          <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
-        </View>
+        {/* 게스트에겐 개인화 뱃지 미렌더 — 자리 비움 (guest-access-policy §1) */}
+        {!guest && (
+          <View style={styles.photoBadge}>
+            <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
+          </View>
+        )}
       </View>
       <View style={styles.cardB}>
         <Text style={styles.nm} numberOfLines={1}>
@@ -311,7 +315,7 @@ function SafeCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestr
   );
 }
 
-function RecentRow({ food, hasRestrictions, reviewLabel, onPress }: { food: FoodCard; hasRestrictions: boolean; reviewLabel: string; onPress: () => void }) {
+function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; reviewLabel: string; onPress: () => void }) {
   const router = useRouter();
   return (
     <Pressable style={styles.rec} onPress={onPress}>
@@ -321,9 +325,12 @@ function RecentRow({ food, hasRestrictions, reviewLabel, onPress }: { food: Food
         ) : (
           <IconFood size={24} color={C.primary} />
         )}
-        <View style={styles.recBadge}>
-          <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={15} />
-        </View>
+        {/* 게스트 도달 불가 분기지만 뱃지 정책은 카드 자체에서도 방어 (⑦ 이중 방어) */}
+        {!guest && (
+          <View style={styles.recBadge}>
+            <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={15} />
+          </View>
+        )}
       </View>
       <View style={styles.recMeta}>
         <Text style={styles.nm} numberOfLines={1}>
