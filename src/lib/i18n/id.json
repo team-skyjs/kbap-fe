@@ -48,7 +48,9 @@
     "profileTitle": "Profil makanan Anda ada di sini",
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
     "notifTitle": "Jangan lewatkan info terbaru",
-    "notifSub": "Daftar untuk menerima notifikasi tentang ulasan Anda dan hidangan yang Anda ikuti."
+    "notifSub": "Daftar untuk menerima notifikasi tentang ulasan Anda dan hidangan yang Anda ikuti.",
+    "saveTitle": "Simpan hidangan yang ingin kamu coba",
+    "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu."
   },
   "lock": {
     "verdictTitle": "Peringkat keamanan pribadi Anda",
@@ -187,6 +189,7 @@
     "notifications": "Notifikasi",
     "safetyNotice": "Pemberitahuan keamanan",
     "logout": "Keluar",
+    "nicknameUnset": "Nama panggilan belum diatur",
     "logoutConfirmTitle": "Keluar dari akun?",
     "logoutConfirmBody": "Anda tetap bisa menjelajah sebagai tamu dan masuk kembali kapan saja.",
     "deleteAccount": "Hapus akun",
@@ -197,7 +200,8 @@
       "confirm": "Saya paham ini permanen.",
       "confirmBtn": "Hapus akun",
       "cancel": "Batal"
-    }
+    },
+    "saved": "Tersimpan"
   },
   "review": {
     "title": "Tulis ulasan",
@@ -563,5 +567,18 @@
     "vinegar": "Cuka",
     "msg": "MSG",
     "sulfites": "Sulfit"
+  },
+  "saved": {
+    "title": "Tersimpan",
+    "count_other": "{{count}} hidangan",
+    "newestFirst": "Terbaru dulu",
+    "swipeHint": "Geser kartu ke kiri untuk menghapus",
+    "emptyTitle": "Belum ada yang disimpan",
+    "emptyBody": "Ketuk ikon penanda pada hidangan mana pun untuk menyimpannya di sini — daftar pendekmu untuk makan enak dan aman.",
+    "emptyCta": "Jelajahi makanan",
+    "removed": "Dihapus dari Tersimpan",
+    "undo": "Urungkan",
+    "toast": "Disimpan ke daftarmu",
+    "view": "Lihat"
   }
 }

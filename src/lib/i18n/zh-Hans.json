@@ -48,7 +48,9 @@
     "profileTitle": "你的饮食档案就在这里",
     "profileSub": "注册即可保存忌口食材、查看扫描记录并积累你的排名。",
     "notifTitle": "不错过任何动态",
-    "notifSub": "注册后即可接收你的点评和关注菜品的通知。"
+    "notifSub": "注册后即可接收你的点评和关注菜品的通知。",
+    "saveTitle": "收藏你想尝试的菜品",
+    "saveSub": "注册后即可收藏菜品，打造属于你的安心美食清单。"
   },
   "lock": {
     "verdictTitle": "你的专属安全评级",
@@ -187,6 +189,7 @@
     "notifications": "通知",
     "safetyNotice": "安全须知",
     "logout": "退出登录",
+    "nicknameUnset": "未设置昵称",
     "logoutConfirmTitle": "退出登录？",
     "logoutConfirmBody": "你仍可以以访客身份继续浏览，随时重新登录。",
     "deleteAccount": "注销账户",
@@ -197,7 +200,8 @@
       "confirm": "我明白此操作不可恢复。",
       "confirmBtn": "注销账户",
       "cancel": "取消"
-    }
+    },
+    "saved": "已收藏"
   },
   "review": {
     "title": "撰写点评",
@@ -563,5 +567,18 @@
     "vinegar": "醋",
     "msg": "味精",
     "sulfites": "亚硫酸盐"
+  },
+  "saved": {
+    "title": "已收藏",
+    "count_other": "{{count}} 道菜",
+    "newestFirst": "最新优先",
+    "swipeHint": "向左滑动卡片即可移除",
+    "emptyTitle": "还没有收藏",
+    "emptyBody": "点按任意菜品上的收藏图标即可保存到这里——你的安心美味清单。",
+    "emptyCta": "去逛逛美食",
+    "removed": "已从收藏中移除",
+    "undo": "撤销",
+    "toast": "已保存到你的清单",
+    "view": "查看"
   }
 }

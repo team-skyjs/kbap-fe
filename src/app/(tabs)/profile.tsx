@@ -29,9 +29,11 @@ import {
   IconChevron,
   IconPlus,
   IconLogout,
+  IconBookmark,
   Spinner,
 } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
+import { useBookmarks } from '@/lib/data/bookmarks';
 import { useFoods } from '@/lib/data/useFoods';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
@@ -55,6 +57,7 @@ export default function Profile() {
   const { data: me } = useMe();
   const { data: reviews } = useMyReviews();
   const { data: foods } = useFoods();
+  const { data: bookmarks } = useBookmarks();
 
   const foodMap = new Map((foods ?? []).map((f) => [f.foodId, f]));
   const curLevel = me?.rank.level ?? 1;
@@ -117,7 +120,12 @@ export default function Profile() {
                 <IconProfile size={30} color={C.primary} />
               </View>
               <View style={{ flex: 1, gap: 6 }}>
-                <Text style={styles.name}>{me.nickname || '—'}</Text>
+                {/* KB-125: 미완료 프로필 — 검정 '—' 대신 흐린 "미설정" 표기 */}
+                {me.nickname ? (
+                  <Text style={styles.name}>{me.nickname}</Text>
+                ) : (
+                  <Text style={styles.nameUnset}>{t('profile.nicknameUnset')}</Text>
+                )}
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {!!me.nationality && (
                     <View style={styles.pill}>
@@ -193,6 +201,17 @@ export default function Profile() {
                 </Pressable>
               </View>
             </Section>
+
+            {/* saved (Bookmark Mods A) — My reviews 바로 위: 개인 콘텐츠 클러스터.
+                카운트는 조용한 tag(“My reviews · 12”와 동일 톤), 뱃지 아님 */}
+            <View style={styles.acctList}>
+              <AcctRow
+                icon={<IconBookmark size={17} color={C.ink2} />}
+                label={t('profile.saved')}
+                value={String(bookmarks?.length ?? 0)}
+                onPress={() => router.push('/profile/saved' as Href)}
+              />
+            </View>
 
             {/* my reviews */}
             <Section
@@ -301,6 +320,7 @@ const styles = StyleSheet.create({
   id: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: font.display, fontSize: 20, color: C.ink },
+  nameUnset: { fontFamily: font.body, fontSize: 17, color: C.ink3 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
   pillText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
   edit: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },

@@ -48,7 +48,9 @@
     "profileTitle": "あなたの食のプロフィールはここに",
     "profileSub": "登録すると、避ける食材の保存、スキャン履歴の確認、ランキング作りができます。",
     "notifTitle": "最新情報を見逃さない",
-    "notifSub": "登録すると、レビューや気になる料理のお知らせが届きます。"
+    "notifSub": "登録すると、レビューや気になる料理のお知らせが届きます。",
+    "saveTitle": "気になる料理を保存しよう",
+    "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。"
   },
   "lock": {
     "verdictTitle": "あなた専用の安全評価",
@@ -187,6 +189,7 @@
     "notifications": "通知",
     "safetyNotice": "安全に関する注意",
     "logout": "ログアウト",
+    "nicknameUnset": "ニックネーム未設定",
     "logoutConfirmTitle": "ログアウトしますか？",
     "logoutConfirmBody": "ゲストとして引き続き閲覧でき、いつでも再ログインできます。",
     "deleteAccount": "アカウントを削除",
@@ -197,7 +200,8 @@
       "confirm": "これが取り消せないことを理解しました。",
       "confirmBtn": "アカウントを削除",
       "cancel": "キャンセル"
-    }
+    },
+    "saved": "保存済み"
   },
   "review": {
     "title": "レビューを書く",
@@ -563,5 +567,18 @@
     "vinegar": "酢",
     "msg": "うま味調味料",
     "sulfites": "亜硫酸塩"
+  },
+  "saved": {
+    "title": "保存済み",
+    "count_other": "{{count}}件の料理",
+    "newestFirst": "新しい順",
+    "swipeHint": "カードを左にスワイプで削除",
+    "emptyTitle": "まだ保存がありません",
+    "emptyBody": "料理のブックマークをタップするとここに保存されます。安心しておいしく食べるためのリストに。",
+    "emptyCta": "料理をさがす",
+    "removed": "保存済みから削除しました",
+    "undo": "元に戻す",
+    "toast": "リストに保存しました",
+    "view": "見る"
   }
 }

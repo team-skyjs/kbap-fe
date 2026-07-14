@@ -48,7 +48,9 @@
     "profileTitle": "你的飲食檔案就在這裡",
     "profileSub": "註冊即可儲存忌口食材、追蹤掃描紀錄並累積你的排名。",
     "notifTitle": "不錯過任何動態",
-    "notifSub": "註冊後即可接收你的評論與追蹤料理的通知。"
+    "notifSub": "註冊後即可接收你的評論與追蹤料理的通知。",
+    "saveTitle": "收藏你想嘗試的菜色",
+    "saveSub": "註冊後即可收藏菜色，打造屬於你的安心美食清單。"
   },
   "lock": {
     "verdictTitle": "你的專屬安全評級",
@@ -187,6 +189,7 @@
     "notifications": "通知",
     "safetyNotice": "安全須知",
     "logout": "登出",
+    "nicknameUnset": "未設定暱稱",
     "logoutConfirmTitle": "要登出嗎？",
     "logoutConfirmBody": "你仍可以以訪客身分繼續瀏覽，隨時重新登入。",
     "deleteAccount": "刪除帳號",
@@ -197,7 +200,8 @@
       "confirm": "我了解此操作無法復原。",
       "confirmBtn": "刪除帳號",
       "cancel": "取消"
-    }
+    },
+    "saved": "已收藏"
   },
   "review": {
     "title": "撰寫評論",
@@ -563,5 +567,18 @@
     "vinegar": "醋",
     "msg": "味精",
     "sulfites": "亞硫酸鹽"
+  },
+  "saved": {
+    "title": "已收藏",
+    "count_other": "{{count}} 道菜",
+    "newestFirst": "最新優先",
+    "swipeHint": "向左滑動卡片即可移除",
+    "emptyTitle": "還沒有收藏",
+    "emptyBody": "點按任一菜色上的收藏圖示即可儲存到這裡——你的安心美味清單。",
+    "emptyCta": "探索美食",
+    "removed": "已從收藏中移除",
+    "undo": "復原",
+    "toast": "已儲存到你的清單",
+    "view": "查看"
   }
 }

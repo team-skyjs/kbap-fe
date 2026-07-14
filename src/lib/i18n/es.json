@@ -48,7 +48,9 @@
     "profileTitle": "Tu perfil alimentario vive aquí",
     "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
     "notifTitle": "No te pierdas ninguna novedad",
-    "notifSub": "Regístrate para recibir notificaciones sobre tus reseñas y los platos que sigues."
+    "notifSub": "Regístrate para recibir notificaciones sobre tus reseñas y los platos que sigues.",
+    "saveTitle": "Guarda los platos que quieras probar",
+    "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura."
   },
   "lock": {
     "verdictTitle": "Tu calificación de seguridad personal",
@@ -187,6 +189,7 @@
     "notifications": "Notificaciones",
     "safetyNotice": "Aviso de seguridad",
     "logout": "Cerrar sesión",
+    "nicknameUnset": "Apodo sin definir",
     "logoutConfirmTitle": "¿Cerrar sesión?",
     "logoutConfirmBody": "Puedes seguir explorando como invitado y volver a iniciar sesión cuando quieras.",
     "deleteAccount": "Eliminar cuenta",
@@ -197,7 +200,8 @@
       "confirm": "Entiendo que esto es permanente.",
       "confirmBtn": "Eliminar cuenta",
       "cancel": "Cancelar"
-    }
+    },
+    "saved": "Guardados"
   },
   "review": {
     "title": "Escribir una reseña",
@@ -563,5 +567,19 @@
     "vinegar": "Vinagre",
     "msg": "MSG",
     "sulfites": "Sulfitos"
+  },
+  "saved": {
+    "title": "Guardados",
+    "count_one": "{{count}} plato",
+    "count_other": "{{count}} platos",
+    "newestFirst": "Más recientes primero",
+    "swipeHint": "Desliza una tarjeta a la izquierda para eliminarla",
+    "emptyTitle": "Aún no has guardado nada",
+    "emptyBody": "Toca el marcador en cualquier plato para guardarlo aquí: tu lista para comer rico y seguro.",
+    "emptyCta": "Explorar comida",
+    "removed": "Eliminado de Guardados",
+    "undo": "Deshacer",
+    "toast": "Guardado en tu lista",
+    "view": "Ver"
   }
 }
