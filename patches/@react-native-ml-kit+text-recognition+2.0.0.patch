@@ -1,0 +1,64 @@
+diff --git a/node_modules/@react-native-ml-kit/text-recognition/RNMLKitTextRecognition.podspec b/node_modules/@react-native-ml-kit/text-recognition/RNMLKitTextRecognition.podspec
+index 421bcfc..96e8bb8 100644
+--- a/node_modules/@react-native-ml-kit/text-recognition/RNMLKitTextRecognition.podspec
++++ b/node_modules/@react-native-ml-kit/text-recognition/RNMLKitTextRecognition.podspec
+@@ -21,15 +21,8 @@ Pod::Spec.new do |s|
+   s.requires_arc = true
+ 
+   s.dependency "React"
+-  # To recognize Latin script
+-  s.dependency 'GoogleMLKit/TextRecognition', '8.0.0'
+-  # To recognize Chinese script
+-  s.dependency 'GoogleMLKit/TextRecognitionChinese', '8.0.0'
+-  # To recognize Devanagari script
+-  s.dependency 'GoogleMLKit/TextRecognitionDevanagari', '8.0.0'
+-  # To recognize Japanese script
+-  s.dependency 'GoogleMLKit/TextRecognitionJapanese', '8.0.0'
+-  # To recognize Korean script
++  # K-Bap patch: Korean-only — the Korean recognizer also reads Latin, and each
++  # extra script model adds ~80-100MB to the app binary (TestFlight 450MB issue).
+   s.dependency 'GoogleMLKit/TextRecognitionKorean', '8.0.0'
+ end
+ 
+diff --git a/node_modules/@react-native-ml-kit/text-recognition/ios/TextRecognition.m b/node_modules/@react-native-ml-kit/text-recognition/ios/TextRecognition.m
+index d23fb71..94bf52b 100644
+--- a/node_modules/@react-native-ml-kit/text-recognition/ios/TextRecognition.m
++++ b/node_modules/@react-native-ml-kit/text-recognition/ios/TextRecognition.m
+@@ -1,12 +1,9 @@
+ #import "TextRecognition.h"
+ 
+ @import MLKitVision.MLKVisionImage;
+-@import MLKitTextRecognition;
+ @import MLKitTextRecognitionCommon;
+-@import MLKitTextRecognitionChinese;
+-@import MLKitTextRecognitionJapanese;
+ @import MLKitTextRecognitionKorean;
+-@import MLKitTextRecognitionDevanagari;
++// K-Bap patch: Korean-only bundle (see RNMLKitTextRecognition.podspec)
+ 
+ @implementation TextRecognition
+ 
+@@ -92,19 +89,12 @@ RCT_EXPORT_METHOD(recognize: (nonnull NSString*)url
+     // text recognizer options based on the script params
+     MLKCommonTextRecognizerOptions *options = nil;
+ 
+-    // if the language param isn't specified, we can assume the user requirement is Latin text recognition
+-    if (script == nil || [script isEqualToString:@"Latin"]) {
+-        options = [[MLKTextRecognizerOptions alloc] init];
+-    } else if ([script isEqualToString:@"Chinese"]) {
+-        options = [[MLKChineseTextRecognizerOptions alloc] init];
+-    } else if ([script isEqualToString:@"Devanagari"]) {
+-        options = [[MLKDevanagariTextRecognizerOptions alloc] init];
+-    } else if ([script isEqualToString:@"Japanese"]) {
+-        options = [[MLKJapaneseTextRecognizerOptions alloc] init];
+-    } else if ([script isEqualToString:@"Korean"]) {
++    // K-Bap patch: only the Korean model ships (it also recognizes Latin).
++    // Other scripts would need their pods restored in the podspec patch.
++    if ([script isEqualToString:@"Korean"]) {
+         options = [[MLKKoreanTextRecognizerOptions alloc] init];
+     } else {
+-        return reject(@"Text Recognition", @"Unsupported script", nil);
++        return reject(@"Text Recognition", @"Unsupported script (Korean-only build)", nil);
+     }
+     
+     MLKTextRecognizer *textRecognizer = [MLKTextRecognizer textRecognizerWithOptions:options];

@@ -10,6 +10,7 @@
 | ③ | 알림 버튼 게스트 게이트 — 전 탭 통일 | 완료 | ab85f09 | 종 동작을 StickyHeader 내장으로 통합(게스트=게이트 시트, 회원=패널). onBell prop 제거 |
 | ④ | 스캔 결과 가격 표시(KRW만) | 완료 | ad946b7 | PRICE_BARE 정규식 + priceKrw 정수 보관 + ₩포맷 + 매칭 거리상한 0.35 |
 | ⑤ | 앱 언어에 한국어(ko) 추가 | 완료 | 4d79455 | ko.json 469키 네이티브 + kr 스크립트 폰트 + 병기 중복 가드 8지점 |
+| ⑥ | iOS 용량 절감 — ML Kit Korean만 (450MB 이슈) | 완료(실기기 검증 대기) | | patch-package로 podspec+native 패치, Podfile.lock 검증 완료. **네이티브 변경 — dev 재빌드 필요, 7/16 prod 빌드 포함 필수** |
 | ⑦ | 게스트 홈 위험도 뱃지 미렌더 (KB-78 위반) | 완료 | dbd7909 | SafeCard/RecentRow guest prop 가드 + 섹션 헤더 중립 아이콘 |
 | ⑧-a | 게스트 홈 popularSub 카피 교체 | 완료 | 78bb8d0 | home.popularSubGuest ×10 + isGuest 분기 |
 | ⑧-b | 프로필 하위 3화면 딥링크 라우트 가드 | 완료 | 979f08d | /review/[id]·/profile/reviews·/profile/restrictions — 기존 가드 패턴 복제(context profile) |
@@ -96,8 +97,30 @@
 3. **로그인 화면 뒤로가기 제거**: replace로 진입하면 스택이 비어 `GO_BACK` 미처리 에러(리포트 c)가 나는 구조 — 아이콘 삭제로 원천 제거(a·c 동시 해결). 출구는 하단 "먼저 둘러보기" 텍스트 버튼(`intro.browseFirst` 재사용 — 신규 키 없음, 인트로와 카피 일관) → `replace('/(tabs)')`라 스택 상태 무관.
 - 웹 셀프 체크: /login 딥링크 — 뒤로가기 없음·하단 Browse first 렌더·클릭 시 홈 이동 ✅. **모달/스피너는 실기기 확인 필요** — Alert.alert이 웹 no-op + 웹은 세션이 없어 회원 로그아웃 플로우 재현 불가. 확인 포인트: 로그아웃 탭→모달, 확인→스피너→홈(게스트 화면), 연타해도 1회만.
 
+### ⑥ iOS 용량 절감 — ML Kit Korean-only (2026-07-14)
+- 방법 검토: ① 공식 스크립트 선택 설치 — **없음** (podspec에 5종 하드코딩, 옵션/환경변수 없음) ② config plugin Podfile 수정 — pod 의존성 간선은 post_install 시점에 이미 해석돼 제거가 불완전 ③ **patch-package 채택**.
+- 패치 2파일 (patches/@react-native-ml-kit+text-recognition+2.0.0.patch):
+  - `RNMLKitTextRecognition.podspec` — GoogleMLKit 의존성을 TextRecognitionKorean만 남김 (Latin·Chinese·Devanagari·Japanese 제거)
+  - `ios/TextRecognition.m` — 제거된 모듈의 @import 4종과 인식기 분기 삭제 (podspec만 고치면 컴파일 에러 — 네이티브가 5종 클래스를 무조건 참조). Korean 외 script는 "Unsupported script (Korean-only build)" reject.
+- patch-package devDependency 추가 + postinstall 스크립트 등록 (clean install에서 자동 재적용).
+- ocr.ts: recognize 호출 1곳(KOREAN) 그대로 — 호출부에 "Korean만 번들, 다른 스크립트 추가 시 podspec 패치 갱신" 주석.
+- 검증: `expo prebuild --clean --platform ios` 후 Podfile.lock — Chinese/Japanese/Devanagari **0건**, Latin 서브스펙 제거, GoogleMLKit/TextRecognitionKorean(8.0.0)만 잔존 ✅. **실기기 검증 대기(예진)**: dev 재빌드 후 한국어+영문 혼용 메뉴판 스캔 정상 확인.
+- ⚠️ 네이티브 변경 — OTA 불가. dev 재빌드 필요 + **7/16 production 빌드에 반드시 포함** (fingerprint 회전 → 다음 배포는 ota-prod Path B).
+- 2차 후보(이번 스코프 아님): Korean만 남긴 뒤에도 200MB+면 Firebase 불필요 모듈·미사용 폰트/이미지 조사.
+
 ### 관찰사항 (이번 스코프 외 — 예진 판단)
 - 프로필 제한 칩이 "FISH_SAUCE" 등 코드 그대로 표시 — 기지 이슈(KB-125 신규 성분 번역 목록)와 동일 계열.
 
 ## 질문/블로킹
 - ⑤ BE appLanguage: 스키마는 plain string이라 "ko" 통과하지만 서버측 enum 검증이 있으면 온보딩/프로필 PATCH에서 거부될 수 있음 — 실기기에서 ko 선택 후 제출 1회 확인 필요.
+
+## 북마크 UI (KB-142) — spec 세션(Claude)이 직접 구현 (2026-07-14)
+디자인: K-Bap Bookmark Mods.html + K-Bap Saved.html (DesignSync로 소스 확인). 커밋 전 상태.
+- `src/lib/data/bookmarks.ts` 신설 — AsyncStorage(`kbap.bookmarks.v1`) 로컬 스토어 + react-query 훅. **BE 북마크 API 배포 시 이 파일의 load/persist만 API로 교체** (훅 표면 유지).
+- StickyHeader: bookmark 버튼 흰 칩 → bare 아이콘(actionBtn), `bookmarkSaved` prop(아웃라인↔primary 채움), 저장 전환 시 340ms 바운스(useReducedMotion 가드).
+- 상세: 죽어있던 북마크 버튼에 토글 연결, 게스트=AuthGateSheet context 'save'(신규, gate.saveTitle/Sub ×10).
+- 프로필: My reviews 위 Saved 행(카운트 tag) → /profile/saved.
+- `/profile/saved` 신설: ⑧-b 라우트 가드, 최신순, 스와이프 삭제→Undo 스낵바 5s(ReanimatedSwipeable), 빈 상태, riskTone 재사용. personalRisk 렌더 시 재평가.
+- i18n: saved.* / gate.save* / profile.saved ×10개 언어 (plural 접미키: en/es one·other, ru one·few·many·other).
+- 스킵: 첫 저장 교육 토스트(디자인 spec상 Optional — 기본 없음), Saved 카드 사유 문구(스냅샷에 재료 없음 — BE 실연결 때), 로딩 스켈레톤(로컬이라 즉시 로드).
+- tsc clean, jest 60/60. 웹/실기기 확인 및 커밋은 예진.

@@ -90,6 +90,9 @@ export async function recognizeMenuLines(
   );
 
   console.log('[ocr] recognize ←', safeUri);
+  // ⑥ 용량: iOS 바이너리에 Korean 모델만 번들됨(patches/@react-native-ml-kit* —
+  // 한국어 인식기가 라틴 문자도 읽음). KOREAN 외 스크립트를 쓰려면 podspec 패치에
+  // 해당 pod을 복원해야 함 — 안 하면 네이티브가 "Unsupported script"로 reject.
   const result = await TextRecognition.recognize(safeUri, TextRecognitionScript.KOREAN);
   console.log('[ocr] blocks =', result.blocks.length, '| fullText =', JSON.stringify(result.text));
 
