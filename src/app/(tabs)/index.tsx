@@ -22,7 +22,6 @@ import {
   SkeletonList,
   Btn,
   RiskMark,
-  RiskDot,
   Stars,
   Star,
   CatStew,
@@ -119,8 +118,8 @@ export default function Home() {
                   contentContainerStyle={{ gap: 7, paddingVertical: 1 }}
                 >
                   {avoided.map((a) => (
+                    // ponytail: 멘토링 피드백 — 칩 내 ✕ 배지가 삭제 버튼으로 오독됨 → 텍스트만
                     <View key={a.code} style={styles.achip}>
-                      <RiskDot state="danger" size={12} />
                       <Text style={styles.achipText}>{a.name}</Text>
                     </View>
                   ))}
