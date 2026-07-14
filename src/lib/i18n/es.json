@@ -140,6 +140,7 @@
     "unable": "Sin datos"
   },
   "scan": {
+    "rotateToPortrait": "Sostén el teléfono en vertical para escanear el menú",
     "hint": "Apunta a un menú y toca para escanear",
     "permissionTitle": "Se necesita acceso a la cámara",
     "permissionBody": "K-Bap necesita tu cámara para escanear menús al instante.",

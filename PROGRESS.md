@@ -185,3 +185,10 @@
 - [x] 미완료 프로필 닉네임: 검정 '—' → muted "미설정" 표기 (profile.nicknameUnset ×10개 언어, ink3 톤).
 - [x] 온보딩/프로필 성분 언어 혼재: KB-75 재키잉 때 i18nKey 없던 신규 29종에 키 부여 + ingredients.* 29키 ×10개 언어 번역. 번역 원칙: 각 언어 통용 식재료 명칭, 현지 고유어 없는 것(Ghee·Rennet·Dashi·Mirin·Asafoetida·Carmine 등)은 관용 외래어 표기(+괄호 보충). 온보딩(IngredientFilter)·프로필 편집 화면은 동일 ingredientLabel 경유 확인; 프로필 탭 칩의 restrictionLabel이 BE 코드를 카탈로그로 라우팅하지 않아 "FISH_SAUCE" 원시 노출되던 것도 수정(BE_CODES 분기 추가 — 표시 전용, 와이어 값 무변).
 - 참고: 패리티 검사에서 saved.count_* 복수형 차이는 병렬 북마크 작업(KB-142)의 정상적 언어별 복수형 — 검사를 복수형 접미사 제외로 보정해 통과 확인.
+
+## KB-141 스캔 가로 방향 차단 (2026-07-15)
+- [x] 기술 체크(선행): **expo-sensors 불필요 — 재빌드 없음 확정**. 이미 설치된 expo-camera의 `responsiveOrientationWhenOrientationLocked` + `onResponsiveOrientationChanged`(iOS)가 portrait-lock 상태에서도 기기 회전(landscapeLeft/Right)을 이벤트로 제공. JS-only → OTA 가능, 7/16 빌드 일정 영향 0. **한계: 콜백이 iOS 전용 — Android는 미감지(현행 유지)**, 출시 타깃 iOS라 수용, Android 커버 필요 시 그때 expo-sensors 재논의.
+- [x] 구현: 가로 감지 시 카메라 위 어두운 오버레이 + IconFlip + "세로로 들어주세요" 카피(기기 방향에 맞춰 ±90° 회전해 바로 보이게) + 셔터 비활성(opacity+disabled) + capture() 함수 단 가드(진입 경로 무관 차단, 헌법 게이트). 세로 복귀 시 state 기반 즉시 해제. portraitUpsideDown은 세로 종횡비라 허용.
+- [x] i18n: scan.rotateToPortrait ×10개 로케일.
+- 비범위 준수: 갤러리 가로 사진 미처리(별도 논의), 스캔 파이프라인/API 무변. tsc 0, jest 62/62.
+- 실기기 확인 대기(예진): 가로로 들면 오버레이+셔터 잠금, 세로 복귀 시 즉시 해제, 촬영물 세로 정상.

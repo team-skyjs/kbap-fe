@@ -140,6 +140,7 @@
     "unable": "无数据"
   },
   "scan": {
+    "rotateToPortrait": "请竖持手机扫描菜单",
     "hint": "对准菜单并点击扫描",
     "permissionTitle": "需要相机权限",
     "permissionBody": "K-Bap 需要使用相机才能现场扫描菜单。",

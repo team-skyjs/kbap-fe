@@ -140,6 +140,7 @@
     "unable": "Tak ada data"
   },
   "scan": {
+    "rotateToPortrait": "Pegang ponsel secara tegak untuk memindai menu",
     "hint": "Arahkan ke menu dan ketuk untuk memindai",
     "permissionTitle": "Akses kamera diperlukan",
     "permissionBody": "K-Bap memerlukan kamera Anda untuk memindai menu di tempat.",

@@ -140,6 +140,7 @@
     "unable": "Chưa rõ"
   },
   "scan": {
+    "rotateToPortrait": "Hãy cầm máy theo chiều dọc để quét thực đơn",
     "hint": "Hướng vào thực đơn và chạm để quét",
     "permissionTitle": "Cần quyền truy cập máy ảnh",
     "permissionBody": "K-Bap cần máy ảnh của bạn để quét thực đơn tại chỗ.",

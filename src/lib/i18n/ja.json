@@ -140,6 +140,7 @@
     "unable": "判定不可"
   },
   "scan": {
+    "rotateToPortrait": "メニューのスキャンは縦向きで撮影してください",
     "hint": "メニューに向けてタップしてスキャン",
     "permissionTitle": "カメラへのアクセスが必要です",
     "permissionBody": "K-Bapがその場でメニューをスキャンするにはカメラが必要です。",

@@ -140,6 +140,7 @@
     "unable": "無數據"
   },
   "scan": {
+    "rotateToPortrait": "請直持手機掃描菜單",
     "hint": "對準菜單並點擊以掃描",
     "permissionTitle": "需要相機權限",
     "permissionBody": "K-Bap 需要使用你的相機才能即時掃描菜單。",

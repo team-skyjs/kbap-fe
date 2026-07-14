@@ -16,7 +16,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
+import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
@@ -86,6 +86,11 @@ export default function Scan() {
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
+  // KB-141 가로 촬영 차단 — portrait-lock 상태에서도 기기 회전을 알려주는
+  // expo-camera 내장 콜백(iOS) 사용. expo-sensors 불필요 → 재빌드 없음(OTA 가능).
+  // Android는 이 콜백이 없어 미감지(현행 유지) — 출시 타깃 iOS, gap은 KB-141 로그.
+  const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
+  const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
 
   function fail(stage: ErrorStage, detail: string) {
     console.log(`[scan] FAIL stage=${stage} detail=${detail}`);
@@ -145,6 +150,7 @@ export default function Scan() {
 
   async function capture() {
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
+    if (isLandscape) return; // KB-141: 어떤 진입 경로로도 가로 촬영 불가 (함수 단 가드)
     const cam = cameraRef.current;
     if (!cam) return;
     setError(null);
@@ -290,7 +296,13 @@ export default function Scan() {
   return (
     <View style={styles.root}>
       {granted ? (
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing={facing}
+          responsiveOrientationWhenOrientationLocked
+          onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
+        />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.permission]}>
           <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
@@ -298,6 +310,15 @@ export default function Scan() {
           <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
           <View style={{ width: '100%', maxWidth: 280 }}>
             <Btn onPress={requestPermission}>{t('scan.grant')}</Btn>
+          </View>
+        </View>
+      )}
+
+      {granted && isLandscape && (
+        <View style={styles.rotateOverlay} pointerEvents="none">
+          <View style={{ transform: [{ rotate: camOrientation === 'landscapeLeft' ? '90deg' : '-90deg' }], alignItems: 'center', gap: 10 }}>
+            <IconFlip size={30} color="#fff" />
+            <Text style={styles.rotateText}>{t('scan.rotateToPortrait')}</Text>
           </View>
         </View>
       )}
@@ -312,7 +333,7 @@ export default function Scan() {
             <IconGallery size={22} color="#fff" />
           </Pressable>
           {granted ? (
-            <Pressable style={styles.shutter} onPress={capture}>
+            <Pressable style={[styles.shutter, isLandscape && styles.shutterOff]} onPress={capture} disabled={isLandscape}>
               <View style={styles.shutterInner} />
             </Pressable>
           ) : (
@@ -378,6 +399,9 @@ const styles = StyleSheet.create({
   camRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   sideBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  shutterOff: { opacity: 0.35 },
+  rotateOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
+  rotateText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff', textAlign: 'center', maxWidth: 260, lineHeight: 22 },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },

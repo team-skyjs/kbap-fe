@@ -136,6 +136,7 @@
     "unable": "No data"
   },
   "scan": {
+    "rotateToPortrait": "Hold your phone upright to scan the menu",
     "hint": "Point at a menu and tap to scan",
     "permissionTitle": "Camera access needed",
     "permissionBody": "K-Bap needs your camera to scan menus on the spot.",
