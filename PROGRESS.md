@@ -172,3 +172,10 @@
 - 원인(코드 검증): `useUpdateMe` onSuccess가 `['me']`만 invalidate — 홈(['home'])·목록/검색(['foods'])·상세(['food']) 개인화 쿼리 미무효화.
 - 수정: restrictions 포함 패치 + 실세션이면 `queryClient.clear()` (온보딩 제출 KB-75와 동일 의미 — 개인화 기준 변경 = 파생 캐시 전부 stale). 키 열거 invalidate는 새 개인화 쿼리 추가 때 이 버그가 재발하는 패턴이라 기각. mock 경로(무세션)는 캐시 병합이 진실이라 clear 제외. 닉네임/국가/언어는 기존 `['me']` 범위 유지(비범위).
 - 회귀 테스트 2건: restrictions 변경→개인화 캐시 전부 제거 / 닉네임만→유지 (useUpdateMe.test.tsx). tsc 0, jest 62/62.
+
+## KB-68 2차 반려 수정 (2026-07-14) — 홈 '수정' 동선에서 홈 미갱신
+- [x] 원인(코드+RQ v5 소스 검증): 1차 수정의 `qc.clear()`는 캐시 제거만 하고 **마운트된 옵저버를 재조회시키지 않음** — 탭 화면은 언마운트되지 않으므로 홈이 stale 판정 유지(빌드 시점 무관, 구조적 결함). 저장 경로는 restrictions.tsx(useUpdateMe) 단일 확인(온보딩은 별도 submit + 리마운트라 무관).
+- 수정 ①: `clear()` → **인자 없는 `invalidateQueries()`** — 전체 stale 마킹 + 활성 쿼리 즉시 재조회. 전면성(키 미열거) 유지.
+- 수정 ②: useHome에 포커스 재조회 — `useFocusEffect` + `isStale`일 때만 refetch (fresh면 no-op, 전면 폴링 아님). 60s staleTime 경과·타 화면발 변경도 홈 진입 시 최신화.
+- 회귀 테스트 갱신: invalidate 의미론(캐시 제거 아님)에 맞춰 `isInvalidated` 단언 — restrictions→홈·목록·상세 invalidated / 닉네임→미invalidated. tsc 0, jest 62/62.
+- 비범위 준수: 상세 재료별 위험 뱃지 로직 무변 (BE 버그 별도 전달건).

@@ -3,6 +3,10 @@
  * 목록·상세)가 전부 무효화되어야 한다 — ['me']만 무효화하면 홈이 stale한
  * 위험도를 계속 보여주는 false-safe(성분 추가했는데 여전히 safe) 버그.
  * 비개인화 필드(닉네임)는 기존 범위(['me'])만 — 반려 비범위 보호.
+ *
+ * 2차 반려: clear()는 캐시 제거만 하고 마운트된 옵저버(탭 화면)를 재조회시키지
+ * 않는다 → invalidateQueries()로 교체. 그래서 단언도 "캐시 제거"가 아니라
+ * "invalidated 마킹"(활성 쿼리는 즉시 재조회되는 상태)을 본다.
  */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
@@ -54,18 +58,21 @@ function seededClient() {
   return qc;
 }
 
-it('restrictions 변경 → 개인화 쿼리(홈·목록·상세) 캐시가 비워진다', async () => {
+const isInvalidated = (qc: QueryClient, key: unknown[]) =>
+  qc.getQueryCache().find({ queryKey: key })?.state.isInvalidated ?? false;
+
+it('restrictions 변경 → 개인화 쿼리(홈·목록·상세)가 전부 invalidated 된다', async () => {
   const qc = seededClient();
   await runMutation(qc, { restrictions: [{ kind: 'allergy', code: 'PEANUT' }] });
-  expect(qc.getQueryData(['home', 'en'])).toBeUndefined();
-  expect(qc.getQueryData(['foods', 'list', 'en'])).toBeUndefined();
-  expect(qc.getQueryData(['food', 'bibimbap', 'en'])).toBeUndefined();
+  expect(isInvalidated(qc, ['home', 'en'])).toBe(true);
+  expect(isInvalidated(qc, ['foods', 'list', 'en'])).toBe(true);
+  expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(true);
 });
 
-it('닉네임만 변경 → 개인화 쿼리는 유지 (비범위 보호)', async () => {
+it('닉네임만 변경 → 개인화 쿼리는 invalidate되지 않는다 (비범위 보호)', async () => {
   const qc = seededClient();
   await runMutation(qc, { nickname: 'Mina' });
-  expect(qc.getQueryData(['home', 'en'])).toBeDefined();
-  expect(qc.getQueryData(['foods', 'list', 'en'])).toBeDefined();
-  expect(qc.getQueryData(['food', 'bibimbap', 'en'])).toBeDefined();
+  expect(isInvalidated(qc, ['home', 'en'])).toBe(false);
+  expect(isInvalidated(qc, ['foods', 'list', 'en'])).toBe(false);
+  expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(false);
 });

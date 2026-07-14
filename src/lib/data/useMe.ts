@@ -87,12 +87,14 @@ export function useUpdateMe() {
     onSuccess: async (_data, patch) => {
       // KB-68 반려 수정: restrictions 변경은 개인화의 기준 자체가 바뀌는 것 —
       // 홈(['home'])·목록/검색(['foods'])·상세(['food']) 위험도가 전부 stale.
-      // 키를 열거해 invalidate하면 개인화 쿼리가 새로 생길 때마다 이 버그가
-      // 재발하므로(이번 반려가 정확히 그 패턴) 온보딩 제출(KB-75)과 동일하게
-      // 전면 clear를 쓴다 — false-safe 0 원칙상 과무효화 쪽이 안전.
-      // mock 경로(무세션)는 캐시 병합이 진실이라 clear하면 수정이 증발 → 제외.
+      // 키를 열거하면 개인화 쿼리가 새로 생길 때마다 재발하므로 전면 무효화.
+      // ⚠️ clear()가 아니라 invalidateQueries()여야 한다(2차 반려): clear()는
+      // 캐시 제거만 하고 마운트된 옵저버를 재조회시키지 않는다 — 탭 화면은
+      // 언마운트되지 않으므로 홈이 stale 판정을 계속 보여주는 false-safe.
+      // invalidateQueries()는 전체를 stale 마킹하고 활성 쿼리를 즉시 재조회.
+      // mock 경로(무세션)는 캐시 병합이 진실이라 전면 무효화 시 수정 증발 → 제외.
       if (patch.restrictions !== undefined && (await hasBeSession())) {
-        qc.clear();
+        void qc.invalidateQueries();
         return;
       }
       // 닉네임/국가/언어 등 비개인화 필드는 기존 범위 유지 (반려 비범위)
