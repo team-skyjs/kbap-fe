@@ -14,6 +14,7 @@ import { getLocales } from 'expo-localization';
 import { resolveLang } from './languages';
 
 import en from './en.json';
+import ko from './ko.json';
 import zhHans from './zh-Hans.json';
 import zhHant from './zh-Hant.json';
 import ja from './ja.json';
@@ -25,6 +26,7 @@ import es from './es.json';
 
 export const resources = {
   en: { translation: en },
+  ko: { translation: ko },
   'zh-Hans': { translation: zhHans },
   'zh-Hant': { translation: zhHant },
   ja: { translation: ja },

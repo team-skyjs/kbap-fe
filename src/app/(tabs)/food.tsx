@@ -143,9 +143,11 @@ function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard;
         <Text style={styles.name} numberOfLines={1}>
           {food.name}
         </Text>
-        <Text style={styles.ko} numberOfLines={1}>
-          {food.nameKo}
-        </Text>
+        {food.nameKo !== food.name && (
+          <Text style={styles.ko} numberOfLines={1}>
+            {food.nameKo}
+          </Text>
+        )}
         <View style={styles.rate}>
           <Stars value={food.overall.average ?? 0} size={13} />
           <Text style={styles.rateNum}>

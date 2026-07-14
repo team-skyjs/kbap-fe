@@ -192,7 +192,7 @@ function PopularRow({ food, onPress }: { food: FoodCard; onPress: () => void }) 
       <Text style={[styles.rank, top && styles.rankTop]}>{food.popularityRank ?? '·'}</Text>
       <View style={styles.popMeta}>
         <Text style={styles.popName} numberOfLines={1}>{food.name}</Text>
-        <Text style={styles.popKo} numberOfLines={1}>{food.nameKo}</Text>
+        {food.nameKo !== food.name && <Text style={styles.popKo} numberOfLines={1}>{food.nameKo}</Text>}
       </View>
       <IconChevron size={16} color={C.ink3} />
     </Pressable>
@@ -212,7 +212,7 @@ function ResultCard({ food, risk, guest, onPress }: { food: FoodCard; risk: Risk
       <View style={styles.cardMeta}>
         <View style={styles.cardTop}>
           <Text style={styles.cardName} numberOfLines={1}>{food.name}</Text>
-          <Text style={styles.cardKo} numberOfLines={1}>{food.nameKo}</Text>
+          {food.nameKo !== food.name && <Text style={styles.cardKo} numberOfLines={1}>{food.nameKo}</Text>}
         </View>
         {!!food.blurb && <Text style={styles.cardBlurb} numberOfLines={1}>{food.blurb}</Text>}
       </View>

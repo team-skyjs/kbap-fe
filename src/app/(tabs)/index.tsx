@@ -295,9 +295,11 @@ function SafeCard({ food, hasRestrictions, onPress }: { food: FoodCard; hasRestr
         <Text style={styles.nm} numberOfLines={1}>
           {food.name}
         </Text>
-        <Text style={styles.koSm} numberOfLines={1}>
-          {food.nameKo}
-        </Text>
+        {food.nameKo !== food.name && (
+          <Text style={styles.koSm} numberOfLines={1}>
+            {food.nameKo}
+          </Text>
+        )}
         <View style={styles.rate}>
           <Stars value={food.overall.average ?? 0} size={13} />
           <Text style={styles.rateNum}>
@@ -327,9 +329,11 @@ function RecentRow({ food, hasRestrictions, reviewLabel, onPress }: { food: Food
         <Text style={styles.nm} numberOfLines={1}>
           {food.name}
         </Text>
-        <Text style={styles.koSm} numberOfLines={1}>
-          {food.nameKo}
-        </Text>
+        {food.nameKo !== food.name && (
+          <Text style={styles.koSm} numberOfLines={1}>
+            {food.nameKo}
+          </Text>
+        )}
       </View>
       <Pressable style={styles.reviewBtn} onPress={() => router.push(`/food/${food.foodId}/review` as Href)} hitSlop={6}>
         <Star size={13} fillPct={100} fillColor={C.primary} />

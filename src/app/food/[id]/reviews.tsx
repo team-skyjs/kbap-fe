@@ -94,7 +94,7 @@ export default function FoodReviews() {
             <View>
               <Text style={styles.dishName}>{food?.name ?? ''}</Text>
               <Text style={styles.dishSub}>
-                {food?.nameKo ? `${food.nameKo} · ` : ''}
+                {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} · ` : ''}
                 {t('reviews.subtitle', { count: reviews.overall.count })}
               </Text>
             </View>

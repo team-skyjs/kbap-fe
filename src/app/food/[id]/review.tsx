@@ -95,7 +95,7 @@ export default function ReviewCompose() {
           <View style={styles.foodPh} />
           <View style={{ flex: 1 }}>
             <Text style={styles.foodName}>{food?.name ?? ''}</Text>
-            <Text style={styles.foodKo}>{food?.nameKo ?? ''}</Text>
+            {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
           </View>
           {food && <RiskMark state={personalRisk(food.risk, (me?.restrictions.length ?? 0) > 0)} size={22} />}
         </View>

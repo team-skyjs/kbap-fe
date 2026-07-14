@@ -105,7 +105,7 @@ export default function ReviewDetail() {
             <View style={styles.foodPh} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
-              {!!food?.nameKo && <Text style={styles.foodKo}>{food.nameKo}</Text>}
+              {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
             </View>
             <RiskMark state={risk} size={22} />
           </View>
@@ -114,7 +114,7 @@ export default function ReviewDetail() {
             <View style={styles.foodPh} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
-              {!!food?.nameKo && <Text style={styles.foodKo}>{food.nameKo}</Text>}
+              {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
             </View>
             <RiskMark state={risk} size={22} />
             <IconChevron size={16} color={C.ink3} />

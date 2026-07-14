@@ -29,9 +29,15 @@ import {
   NotoSansThai_700Bold,
   NotoSansThai_800ExtraBold,
 } from '@expo-google-fonts/noto-sans-thai';
+import {
+  NotoSansKR_600SemiBold,
+  NotoSansKR_800ExtraBold,
+} from '@expo-google-fonts/noto-sans-kr';
 import type { ScriptKey } from './fonts';
 
 const SCRIPT_MODULES: Partial<Record<ScriptKey, Record<string, number>>> = {
+  // kr: 400/700은 useAppFonts가 place=ko용으로 이미 등록 — 나머지 두 웨이트만 추가
+  kr: { NotoSansKR_600SemiBold, NotoSansKR_800ExtraBold },
   sc: { NotoSansSC_400Regular, NotoSansSC_600SemiBold, NotoSansSC_700Bold, NotoSansSC_800ExtraBold },
   tc: { NotoSansTC_400Regular, NotoSansTC_600SemiBold, NotoSansTC_700Bold, NotoSansTC_800ExtraBold },
   jp: { NotoSansJP_400Regular, NotoSansJP_600SemiBold, NotoSansJP_700Bold, NotoSansJP_800ExtraBold },

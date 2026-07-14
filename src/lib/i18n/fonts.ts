@@ -11,11 +11,13 @@
  */
 import { font as latin } from '@/lib/theme';
 
-export type ScriptKey = 'latin' | 'sc' | 'tc' | 'jp' | 'thai' | 'cyrillic';
+export type ScriptKey = 'latin' | 'kr' | 'sc' | 'tc' | 'jp' | 'thai' | 'cyrillic';
 
-/** reader language → script. place=ko is data, never routed here. fallback latin. */
+/** reader language → script. (멘토링 ⑤: ko가 리더 언어가 되면서 kr 스크립트 추가 —
+ * place=ko 데이터 렌더링(theme.font.ko 고정)과는 별개 경로.) fallback latin. */
 export const LANG_SCRIPT: Record<string, ScriptKey> = {
   en: 'latin',
+  ko: 'kr',
   vi: 'latin',
   id: 'latin',
   es: 'latin',
@@ -76,6 +78,7 @@ const CYRILLIC_SET: FontSet = {
 export const FONT_SETS: Record<ScriptKey, FontSet> = {
   latin: LATIN_SET,
   cyrillic: CYRILLIC_SET,
+  kr: noto('NotoSansKR'),
   sc: noto('NotoSansSC'),
   tc: noto('NotoSansTC'),
   jp: noto('NotoSansJP'),

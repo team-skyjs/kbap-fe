@@ -160,7 +160,7 @@ function Registered({
       <View style={styles.head}>
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{food.name}</Text>
-          <Text style={styles.ko}>{food.nameKo}</Text>
+          {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
         </View>
         <View style={styles.thumb}>
           {!!food.photoUrl && (
@@ -327,7 +327,7 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
       <View style={styles.head}>
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{food.name}</Text>
-          <Text style={styles.ko}>{food.nameKo}</Text>
+          {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
         </View>
         <View style={[styles.thumb, { alignItems: 'center', justifyContent: 'center' }]}>
           <RiskMark state="unable" size={26} />

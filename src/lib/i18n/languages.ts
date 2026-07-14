@@ -1,14 +1,16 @@
 /**
- * languages.ts — the 9 supported reader languages (Constitution I). Endonyms are
- * shown in each language's own script (not translated), so this is a static map.
- * fallback = en. place=ko (Korean data) is NOT a reader language and not listed.
+ * languages.ts — the supported reader languages (Constitution I + 멘토링 ⑤ ko).
+ * Endonyms are shown in each language's own script (not translated), so this is
+ * a static map. fallback = en. (ko는 이제 리더 언어이기도 하다 — place=ko 데이터
+ * 렌더링과는 별개 경로.)
  */
-export const SUPPORTED_LANGS = ['en', 'zh-Hans', 'zh-Hant', 'ja', 'vi', 'id', 'th', 'ru', 'es'] as const;
+export const SUPPORTED_LANGS = ['en', 'ko', 'zh-Hans', 'zh-Hant', 'ja', 'vi', 'id', 'th', 'ru', 'es'] as const;
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 
 /** Language name in its own script (endonym), for the picker + profile row. */
 export const LANG_ENDONYM: Record<string, string> = {
   en: 'English',
+  ko: '한국어',
   'zh-Hans': '中文(简)',
   'zh-Hant': '中文(繁)',
   ja: '日本語',
@@ -35,7 +37,7 @@ export function resolveLang(locale: string | undefined | null): SupportedLang {
   }
   const base = lower.split(/[-_]/)[0];
   const byBase: Record<string, SupportedLang> = {
-    en: 'en', ja: 'ja', vi: 'vi', id: 'id', th: 'th', ru: 'ru', es: 'es',
+    en: 'en', ko: 'ko', ja: 'ja', vi: 'vi', id: 'id', th: 'th', ru: 'ru', es: 'es',
   };
   return byBase[base] ?? 'en';
 }
