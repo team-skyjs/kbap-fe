@@ -18,7 +18,6 @@ import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  NotificationsPanel,
   SkeletonList,
   Btn,
   RiskMark,
@@ -59,7 +58,6 @@ export default function Home() {
   const router = useRouter();
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
-  const [notifOpen, setNotifOpen] = useState(false);
 
   const { data: home, isLoading } = useHome();
   const { data: me } = useMe();
@@ -243,9 +241,7 @@ export default function Home() {
         signIn={isGuest}
         onSignIn={() => router.push('/login' as Href)}
         onSearch={() => router.push('/search' as Href)}
-        onBell={() => setNotifOpen(true)}
       />
-      <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
     </View>
   );
 }

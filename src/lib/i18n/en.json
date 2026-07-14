@@ -42,7 +42,9 @@
     "scanTitle": "Scan menus to see what's safe for you",
     "scanSub": "Sign up and point your camera at any Korean menu — we'll flag what to avoid.",
     "profileTitle": "Your food profile lives here",
-    "profileSub": "Sign up to save what you avoid, track scans and build your ranking."
+    "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
+    "notifTitle": "Never miss an update",
+    "notifSub": "Sign up to get notifications about your reviews and dishes you follow."
   },
   "lock": {
     "verdictTitle": "Your personal safety rating",

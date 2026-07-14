@@ -46,7 +46,9 @@
     "scanTitle": "Quét thực đơn để biết món nào an toàn cho bạn",
     "scanSub": "Đăng ký rồi hướng camera vào bất kỳ thực đơn tiếng Hàn nào — chúng tôi sẽ đánh dấu những món cần tránh.",
     "profileTitle": "Hồ sơ ăn uống của bạn nằm ở đây",
-    "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn."
+    "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
+    "notifTitle": "Đừng bỏ lỡ cập nhật nào",
+    "notifSub": "Đăng ký để nhận thông báo về đánh giá của bạn và các món ăn bạn theo dõi."
   },
   "lock": {
     "verdictTitle": "Mức đánh giá an toàn dành riêng cho bạn",

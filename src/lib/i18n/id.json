@@ -46,7 +46,9 @@
     "scanTitle": "Pindai menu untuk tahu mana yang aman bagi Anda",
     "scanSub": "Daftar lalu arahkan kamera ke menu Korea mana pun — kami akan menandai yang perlu dihindari.",
     "profileTitle": "Profil makanan Anda ada di sini",
-    "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda."
+    "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
+    "notifTitle": "Jangan lewatkan info terbaru",
+    "notifSub": "Daftar untuk menerima notifikasi tentang ulasan Anda dan hidangan yang Anda ikuti."
   },
   "lock": {
     "verdictTitle": "Peringkat keamanan pribadi Anda",

@@ -46,7 +46,9 @@
     "scanTitle": "Escanea menús y descubre qué es seguro para ti",
     "scanSub": "Regístrate y apunta la cámara a cualquier menú coreano: te marcaremos lo que debes evitar.",
     "profileTitle": "Tu perfil alimentario vive aquí",
-    "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking."
+    "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
+    "notifTitle": "No te pierdas ninguna novedad",
+    "notifSub": "Regístrate para recibir notificaciones sobre tus reseñas y los platos que sigues."
   },
   "lock": {
     "verdictTitle": "Tu calificación de seguridad personal",
