@@ -13,6 +13,7 @@
 | ⑦ | 게스트 홈 위험도 뱃지 미렌더 (KB-78 위반) | 완료 | dbd7909 | SafeCard/RecentRow guest prop 가드 + 섹션 헤더 중립 아이콘 |
 | ⑧-a | 게스트 홈 popularSub 카피 교체 | 완료 | 78bb8d0 | home.popularSubGuest ×10 + isGuest 분기 |
 | ⑧-b | 프로필 하위 3화면 딥링크 라우트 가드 | 완료 | 979f08d | /review/[id]·/profile/reviews·/profile/restrictions — 기존 가드 패턴 복제(context profile) |
+| ⑨ | 게스트 리스트 뱃지 정책 — 회귀 테스트로 고정 | 완료 | | 카드 4종 ×(게스트 미렌더/회원 렌더) 8케이스, guestListBadges.test.tsx |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
@@ -54,6 +55,7 @@
 ### ⑦ 게스트 홈 뱃지 (관찰 → 버그 확정, 2026-07-14)
 - 수정: SafeCard(photoBadge)·RecentRow(recBadge)에 음식 탭 BrowseCard와 동일한 `guest` prop + `{!guest && 뱃지}` 패턴. RecentRow는 게스트 도달 불가 분기(가입 유도 카드)지만 카드 자체에서도 방어(이중 방어).
 - 섹션 헤더(168행) 판단: 게스트에겐 RiskMark safe가 "안전 주장"으로 읽힘 → **아이콘 생략 대신 중립 IconFood(주황)로 교체** — 섹션 헤더 레이아웃(아이콘+제목)을 유지하면서 위험도 함의만 제거. popularSub 카피("Already tagged with your risk profile")도 게스트에겐 개인화 주장이라 어색하나 뱃지가 아니라 지시 범위 외 — 아래 관찰사항에.
+- **정책 확정(7/14 예진): 리스트류 전면 미표시, 테스트로 고정(⑨)** — 홈·음식탭·검색·앞으로 생길 목록 전부; 상세는 락카드 기처리.
 - RiskMark 렌더 지점 전수 grep (게스트 관점):
   | 지점 | 게스트 도달 | 판정 |
   |---|---|---|
@@ -73,6 +75,12 @@
 - ⑧-a: `home.popularSubGuest` 신설 ×10개 언어 (en "Popular Korean dishes to explore" 방향, 각 언어 자연스럽게). 홈 sub 삼항에 isGuest 분기. 키+placeholder 패리티 9/9 통과.
 - ⑧-b: 내리뷰 상세(/review/[id])·프로필 reviews·restrictions에 scan/review.tsx와 동일한 라우트 자체 가드 복제 — 모든 훅 뒤 `if (isGuest) return <SubHeader + AuthGateSheet context="profile" open onClose={back}>`. 콘텐츠(mock 포함) 미마운트. review/[id]는 `!review` not-found 분기보다 가드가 먼저(게스트에겐 존재 여부도 미노출).
 - 웹 셀프 체크: 게스트 홈 sub="Popular Korean dishes to explore"(risk profile 문구 없음) / 게스트 딥링크 3화면 전부 시트+빈 배경(미마운트) / 회원 홈 sub 기존 경로(safeSub 확인, popularSub 분기는 코드 삼항 유지) / 회원 3화면 정상 마운트(리뷰 통계·카드, 성분 필터+저장바). 임시 플립 원복 완료.
+
+### ⑨ 게스트 리스트 뱃지 회귀 테스트 (2026-07-14)
+- `src/app/__tests__/guestListBadges.test.tsx` — 리스트 카드 4종(홈 SafeCard/RecentRow·음식탭 BrowseCard·검색 ResultCard) × (게스트=RiskMark 0개 / 회원=1개 이상) 8케이스. 회원 케이스는 가드가 뱃지를 통째로 죽이는 오버슈트 방지용. 검색 카드는 RiskPill 경유지만 내부가 RiskMark라 `findAllByType(RiskMark)` 하나로 균일 검증.
+- 구현: 카드 4종에 `export`만 추가(로직 무변), react-test-renderer(기설치 19.2.3) 카드 단위 렌더 — 새 의존성 없음. jest testMatch에 `.test.tsx` 추가. reanimated 공식 mock이 worklets 초기화를 끌고 와 jest에서 죽어서 인라인 표면 mock 사용(카드는 reanimated 미사용).
+- 공통 지점 일원화 검토(⑨-2): RiskMark를 리스트 문맥에서 감싸는 공통 컴포넌트 **없음** — 4개 카드가 3파일에 각자 인라인 렌더. 지시대로 신설하지 않음(추상화 1겹 < 테스트 8케이스). 새 리스트 카드가 생기면 테스트 파일의 CARDS 배열에 한 줄 추가하는 규약을 파일 헤더에 명시.
+- 테스트 45→57 (⑨에서 +8).
 
 ### 관찰사항 (이번 스코프 외 — 예진 판단)
 - 프로필 제한 칩이 "FISH_SAUCE" 등 코드 그대로 표시 — 기지 이슈(KB-125 신규 성분 번역 목록)와 동일 계열.

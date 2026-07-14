@@ -199,7 +199,7 @@ function PopularRow({ food, onPress }: { food: FoodCard; onPress: () => void }) 
   );
 }
 
-function ResultCard({ food, risk, guest, onPress }: { food: FoodCard; risk: RiskState; guest: boolean; onPress: () => void }) {
+export function ResultCard({ food, risk, guest, onPress }: { food: FoodCard; risk: RiskState; guest: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.thumb}>

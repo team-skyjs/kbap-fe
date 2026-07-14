@@ -125,7 +125,7 @@ export default function Food() {
   );
 }
 
-function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
+export function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.photo}>

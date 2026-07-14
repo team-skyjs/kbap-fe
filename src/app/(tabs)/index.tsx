@@ -282,7 +282,7 @@ function Section({
   );
 }
 
-function SafeCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
+export function SafeCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
   return (
     <Pressable style={styles.safeCard} onPress={onPress}>
       <View style={styles.photo}>
@@ -316,7 +316,7 @@ function SafeCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; h
   );
 }
 
-function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; reviewLabel: string; onPress: () => void }) {
+export function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; reviewLabel: string; onPress: () => void }) {
   const router = useRouter();
   return (
     <Pressable style={styles.rec} onPress={onPress}>
