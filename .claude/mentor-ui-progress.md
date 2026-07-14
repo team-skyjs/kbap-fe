@@ -11,6 +11,8 @@
 | ④ | 스캔 결과 가격 표시(KRW만) | 완료 | ad946b7 | PRICE_BARE 정규식 + priceKrw 정수 보관 + ₩포맷 + 매칭 거리상한 0.35 |
 | ⑤ | 앱 언어에 한국어(ko) 추가 | 완료 | 4d79455 | ko.json 469키 네이티브 + kr 스크립트 폰트 + 병기 중복 가드 8지점 |
 | ⑦ | 게스트 홈 위험도 뱃지 미렌더 (KB-78 위반) | 완료 | dbd7909 | SafeCard/RecentRow guest prop 가드 + 섹션 헤더 중립 아이콘 |
+| ⑧-a | 게스트 홈 popularSub 카피 교체 | 완료 | | home.popularSubGuest ×10 + isGuest 분기 |
+| ⑧-b | 프로필 하위 3화면 딥링크 라우트 가드 | 완료 | | /review/[id]·/profile/reviews·/profile/restrictions — 기존 가드 패턴 복제(context profile) |
 
 ## 결정사항
 - ② 아이콘: 기존 세트에 log-out/exit 계열이 없음(30종 전수 확인, IconArrowLeft는 꼬리 없는 chevron이라 회전해도 chevron과 동일). "새 에셋 금지"는 파일/라이브러리 추가로 해석 — icons.tsx의 기존 인라인 SVG 패턴 그대로 `IconLogout`(문+화살표) 6줄 추가가 최소·명확. 부적절하면 IconClose(✕) 대체로 1줄 revert 가능.
@@ -67,9 +69,12 @@
   | 내리뷰 상세(review/[id] 110/119)·프로필 reviews(118)·restrictions(56) | **딥링크 시 도달 가능성** | 아래 관찰사항 |
 - 웹 셀프 체크: 게스트 홈 카드 뱃지 없음(자리 비움)+헤더 중립 아이콘 / 회원(MOCK_HOME 임시 플립) 뱃지 복귀(SafeCard ✅·RecentRow ⚠·헤더 safe) — 둘 다 확인, 플립 원복 완료.
 
+### ⑧ (⑦ 관찰 2건 승인 → 수정, 2026-07-14)
+- ⑧-a: `home.popularSubGuest` 신설 ×10개 언어 (en "Popular Korean dishes to explore" 방향, 각 언어 자연스럽게). 홈 sub 삼항에 isGuest 분기. 키+placeholder 패리티 9/9 통과.
+- ⑧-b: 내리뷰 상세(/review/[id])·프로필 reviews·restrictions에 scan/review.tsx와 동일한 라우트 자체 가드 복제 — 모든 훅 뒤 `if (isGuest) return <SubHeader + AuthGateSheet context="profile" open onClose={back}>`. 콘텐츠(mock 포함) 미마운트. review/[id]는 `!review` not-found 분기보다 가드가 먼저(게스트에겐 존재 여부도 미노출).
+- 웹 셀프 체크: 게스트 홈 sub="Popular Korean dishes to explore"(risk profile 문구 없음) / 게스트 딥링크 3화면 전부 시트+빈 배경(미마운트) / 회원 홈 sub 기존 경로(safeSub 확인, popularSub 분기는 코드 삼항 유지) / 회원 3화면 정상 마운트(리뷰 통계·카드, 성분 필터+저장바). 임시 플립 원복 완료.
+
 ### 관찰사항 (이번 스코프 외 — 예진 판단)
-- ⑦ 잔여: home.popularSub 카피 "Already tagged with your risk profile"이 게스트에게도 노출 — 위험도 뱃지는 아니나 개인화 주장 카피. 게스트 전용 카피 분리 여부 판단 필요.
-- 프로필 계열 화면(내리뷰 상세 /review/[id], /profile/reviews, /profile/restrictions)은 탭 게이트만 있고 라우트 자체 가드가 없어 딥링크로 게스트 도달 가능(무세션 mock 데이터+RiskMark 노출). 실사용 진입로는 전부 게이트돼 있어 위험 낮음 — 스캔/작성처럼 라우트 가드 이중화할지 판단.
 - 프로필 제한 칩이 "FISH_SAUCE" 등 코드 그대로 표시 — 기지 이슈(KB-125 신규 성분 번역 목록)와 동일 계열.
 
 ## 질문/블로킹

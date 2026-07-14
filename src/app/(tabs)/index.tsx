@@ -168,7 +168,8 @@ export default function Home() {
                 // ⑦ 게스트에겐 safe 마크가 안전 주장으로 읽힘 → 중립 음식 아이콘
                 icon={isGuest ? <IconFood size={22} color={C.primary} /> : <RiskMark state="safe" size={22} />}
                 title={hasScans ? t('home.safeTitle') : t('home.popularTitle')}
-                sub={hasScans ? t('home.safeSub') : t('home.popularSub')}
+                // ⑧-a 게스트에겐 개인화 판정이 존재한다는 카피도 금지 (원칙 2)
+                sub={hasScans ? t('home.safeSub') : isGuest ? t('home.popularSubGuest') : t('home.popularSub')}
                 seeAll={t('home.seeAll')}
                 onSeeAll={() => router.push('/food')}
               >
