@@ -179,6 +179,8 @@
     "notifications": "Notifications",
     "safetyNotice": "Safety notice",
     "logout": "Log out",
+    "logoutConfirmTitle": "Log out?",
+    "logoutConfirmBody": "You can keep browsing as a guest and sign back in anytime.",
     "deleteAccount": "Delete account",
     "delete": {
       "title": "Delete your account?",

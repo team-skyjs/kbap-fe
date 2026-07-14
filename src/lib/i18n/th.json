@@ -187,6 +187,8 @@
     "notifications": "การแจ้งเตือน",
     "safetyNotice": "ประกาศด้านความปลอดภัย",
     "logout": "ออกจากระบบ",
+    "logoutConfirmTitle": "ออกจากระบบไหม?",
+    "logoutConfirmBody": "คุณยังเรียกดูแบบผู้เยี่ยมชมต่อได้ และเข้าสู่ระบบใหม่ได้ทุกเมื่อ",
     "deleteAccount": "ลบบัญชี",
     "delete": {
       "title": "ลบบัญชีของคุณ?",

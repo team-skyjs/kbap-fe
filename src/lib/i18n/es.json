@@ -187,6 +187,8 @@
     "notifications": "Notificaciones",
     "safetyNotice": "Aviso de seguridad",
     "logout": "Cerrar sesión",
+    "logoutConfirmTitle": "¿Cerrar sesión?",
+    "logoutConfirmBody": "Puedes seguir explorando como invitado y volver a iniciar sesión cuando quieras.",
     "deleteAccount": "Eliminar cuenta",
     "delete": {
       "title": "¿Eliminar tu cuenta?",

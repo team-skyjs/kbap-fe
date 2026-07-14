@@ -187,6 +187,8 @@
     "notifications": "Уведомления",
     "safetyNotice": "О безопасности",
     "logout": "Выйти",
+    "logoutConfirmTitle": "Выйти из аккаунта?",
+    "logoutConfirmBody": "Вы сможете просматривать как гость и снова войти в любое время.",
     "deleteAccount": "Удалить аккаунт",
     "delete": {
       "title": "Удалить аккаунт?",

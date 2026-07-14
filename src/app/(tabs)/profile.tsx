@@ -6,7 +6,7 @@
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -29,10 +29,12 @@ import {
   IconChevron,
   IconPlus,
   IconLogout,
+  Spinner,
 } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { personalRisk } from '@/lib/risk';
+import { FLAGS } from '@/lib/flags';
 import { TIERS } from '@/lib/ranking';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -56,6 +58,35 @@ export default function Profile() {
 
   const foodMap = new Map((foods ?? []).map((f) => [f.foodId, f]));
   const curLevel = me?.rank.level ?? 1;
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  // ⑪-1: 무반응 버튼 연타 방지 — 확인 모달로 depth 추가, 진행 중엔 스피너+재진입 차단
+  function confirmLogout() {
+    if (loggingOut) return;
+    Alert.alert(t('profile.logoutConfirmTitle'), t('profile.logoutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('profile.logout'), style: 'destructive', onPress: () => void doLogout() },
+    ]);
+  }
+
+  async function doLogout() {
+    setLoggingOut(true);
+    try {
+      // KB-67: BE 세션 폐기(POST /auth/logout + 토큰 삭제) 후
+      // Firebase signOut(네이티브 전용 — lazy require).
+      const { logoutBe } = await import('@/lib/auth/beAuth');
+      await logoutBe().catch(() => {});
+      if (Platform.OS !== 'web') {
+        const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
+        await session.logOut().catch(() => {});
+      }
+      // ⑪-2: 로그아웃 후 로그인 화면 강제 대신 홈 — 게스트로 계속 둘러보기
+      // (세션만료 처리와 동일 정책, guestMode OFF일 때만 /login).
+      router.replace((FLAGS.guestMode ? '/(tabs)' : '/login') as Href);
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <View style={styles.root}>
@@ -188,22 +219,11 @@ export default function Profile() {
                 <AcctRow
                   // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘. 액션 행이라 우측 chevron도 제거
                   // (양쪽 화살표 오해 방지 — 내비게이션 행들만 chevron 유지).
-                  icon={<IconLogout size={18} color={C.ink2} />}
+                  // ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지).
+                  icon={loggingOut ? <Spinner size={18} /> : <IconLogout size={18} color={C.ink2} />}
                   chevron={false}
                   label={t('profile.logout')}
-                  onPress={() => {
-                    // KB-67: BE 세션 폐기(POST /auth/logout + 토큰 삭제) 후
-                    // Firebase signOut(네이티브 전용 — lazy require).
-                    void (async () => {
-                      const { logoutBe } = await import('@/lib/auth/beAuth');
-                      await logoutBe().catch(() => {});
-                      if (Platform.OS !== 'web') {
-                        const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
-                        await session.logOut().catch(() => {});
-                      }
-                      router.replace('/login' as Href);
-                    })();
-                  }}
+                  onPress={confirmLogout}
                 />
                 <AcctRow
                   icon={<IconTrash size={18} color={C.riskDanger} />}

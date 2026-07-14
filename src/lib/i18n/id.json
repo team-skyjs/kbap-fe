@@ -187,6 +187,8 @@
     "notifications": "Notifikasi",
     "safetyNotice": "Pemberitahuan keamanan",
     "logout": "Keluar",
+    "logoutConfirmTitle": "Keluar dari akun?",
+    "logoutConfirmBody": "Anda tetap bisa menjelajah sebagai tamu dan masuk kembali kapan saja.",
     "deleteAccount": "Hapus akun",
     "delete": {
       "title": "Hapus akun Anda?",

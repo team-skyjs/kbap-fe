@@ -187,6 +187,8 @@
     "notifications": "Thông báo",
     "safetyNotice": "Lưu ý an toàn",
     "logout": "Đăng xuất",
+    "logoutConfirmTitle": "Đăng xuất?",
+    "logoutConfirmBody": "Bạn vẫn có thể tiếp tục xem với tư cách khách và đăng nhập lại bất cứ lúc nào.",
     "deleteAccount": "Xóa tài khoản",
     "delete": {
       "title": "Xóa tài khoản của bạn?",

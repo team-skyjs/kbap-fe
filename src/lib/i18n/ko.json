@@ -183,6 +183,8 @@
     "notifications": "알림",
     "safetyNotice": "안전 고지",
     "logout": "로그아웃",
+    "logoutConfirmTitle": "로그아웃할까요?",
+    "logoutConfirmBody": "게스트로 계속 둘러볼 수 있고, 언제든 다시 로그인할 수 있어요.",
     "deleteAccount": "회원 탈퇴",
     "delete": {
       "title": "탈퇴하시겠어요?",

@@ -187,6 +187,8 @@
     "notifications": "通知",
     "safetyNotice": "安全に関する注意",
     "logout": "ログアウト",
+    "logoutConfirmTitle": "ログアウトしますか？",
+    "logoutConfirmBody": "ゲストとして引き続き閲覧でき、いつでも再ログインできます。",
     "deleteAccount": "アカウントを削除",
     "delete": {
       "title": "アカウントを削除しますか？",

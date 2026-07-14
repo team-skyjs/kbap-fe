@@ -187,6 +187,8 @@
     "notifications": "通知",
     "safetyNotice": "安全须知",
     "logout": "退出登录",
+    "logoutConfirmTitle": "退出登录？",
+    "logoutConfirmBody": "你仍可以以访客身份继续浏览，随时重新登录。",
     "deleteAccount": "注销账户",
     "delete": {
       "title": "确定注销账户？",
