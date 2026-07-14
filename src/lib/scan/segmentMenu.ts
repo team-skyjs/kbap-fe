@@ -21,7 +21,8 @@ export interface MenuDish {
   itemId: number; // client-assigned 0..n (BE match key, §13-2)
   rawMenuName: string;
   box: BoundingBox;
-  price: string | null; // best-effort nearest price line
+  /** 메뉴판 가격, KRW 정수 (멘토링 ④ — 환율 변환은 후일 이 값 기준). 매칭 실패=null=미표시 */
+  priceKrw: number | null;
   latin: string | null; // best-effort nearest romanized name
 }
 
@@ -51,10 +52,10 @@ function dist(a: BoundingBox, b: BoundingBox): number {
   return Math.hypot(dx, dy);
 }
 
-/** nearest line of a given type to `from`, or null. */
-function nearest(from: BoundingBox, pool: { text: string; box: BoundingBox }[]): string | null {
+/** nearest line of a given type to `from`, or null. maxD 밖이면 무매칭(null). */
+function nearest(from: BoundingBox, pool: { text: string; box: BoundingBox }[], maxD = Infinity): string | null {
   let best: string | null = null;
-  let bestD = Infinity;
+  let bestD = maxD;
   for (const c of pool) {
     const d = dist(from, c.box);
     if (d < bestD) {
@@ -65,6 +66,24 @@ function nearest(from: BoundingBox, pool: { text: string; box: BoundingBox }[]):
   return best;
 }
 
+// 멘토링 ④: 가격은 같은 행(리스트) 또는 바로 아래(그리드)에서만 — 가격 없는 메뉴에
+// 화면 반대편 가격이 붙는 것 방지(잘못된 가격 > 미표시). 정규화 좌표 기준.
+// ponytail: 고정 반경 휴리스틱 — 기울어진 사진/가격 열 분리형 메뉴판은 놓친다(진행 메모 한계 참고)
+const PRICE_MAX_DIST = 0.35;
+
+/** "12,000" / "12000원" / "₩12,000" / "W8,000" → KRW 정수. 숫자 없으면 null. */
+export function parsePriceKrw(text: string): number | null {
+  const digits = text.replace(/[^\d]/g, '');
+  if (!digits) return null;
+  const n = parseInt(digits, 10);
+  return n > 0 ? n : null;
+}
+
+/** KRW 정수 → "₩12,000" (표시 통일 포맷, Intl 미의존). */
+export function formatKrw(n: number): string {
+  return '₩' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 export function segmentMenu(lines: OcrLine[]): SegmentedMenu {
   const classified = lines.map((l) => ({ text: l.text, box: l.box, type: classifyLine(l.text, l.box) }));
 
@@ -73,13 +92,16 @@ export function segmentMenu(lines: OcrLine[]): SegmentedMenu {
   const latinLines = classified.filter((c) => c.type === 'latin');
   const origins = classified.filter((c) => c.type === 'origin').map((c) => c.text.trim());
 
-  const dishes: MenuDish[] = dishLines.map((d, i) => ({
-    itemId: i,
-    rawMenuName: d.text.trim(),
-    box: d.box,
-    price: nearest(d.box, priceLines),
-    latin: nearest(d.box, latinLines),
-  }));
+  const dishes: MenuDish[] = dishLines.map((d, i) => {
+    const priceText = nearest(d.box, priceLines, PRICE_MAX_DIST);
+    return {
+      itemId: i,
+      rawMenuName: d.text.trim(),
+      box: d.box,
+      priceKrw: priceText != null ? parsePriceKrw(priceText) : null,
+      latin: nearest(d.box, latinLines),
+    };
+  });
 
   return { dishes, origins, classified };
 }

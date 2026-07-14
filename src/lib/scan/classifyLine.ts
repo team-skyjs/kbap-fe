@@ -19,6 +19,9 @@ export type LineType =
 
 /** §14-2 rules. */
 const PRICE = /[Ww₩]\s?\d[\d,]*/; // W12,000 / w8,000 / ₩5000
+// 멘토링 ④: 통화 접두 없는 가격 — 라인 전체가 가격일 때만 (콤마 묶음 "12,000(원)"
+// 또는 3~6자리 맨숫자 "12000(원)"). 부분 매치로 하면 요리명 속 숫자를 오인한다.
+const PRICE_BARE = /^\s*₩?\s*\d{1,3}(,\d{3})+\s*원?\s*$|^\s*₩?\s*\d{3,6}\s*원?\s*$/;
 const ORIGIN = /(원산지|국산|수입산|산\))/;
 const FUNC_KEY = /^F\d{1,2}$/; // F4–F8 on-screen function keys
 const FILE_EXT = /\.(jpe?g|png|gif|heic|webp|pdf)$/i;
@@ -48,7 +51,7 @@ export function classifyLine(text: string, box: BoundingBox): LineType {
   if (/[:：]$/.test(t)) return 'junk'; // trailing-colon fragment e.g. "소한:" (cut from 고소한)
 
   // 2) price / origin (before dishName so a price line never looks like a name)
-  if (PRICE.test(t)) return 'price';
+  if (PRICE.test(t) || PRICE_BARE.test(t)) return 'price';
   if (ORIGIN.test(t)) return 'origin';
 
   const hasHangul = HANGUL.test(t);

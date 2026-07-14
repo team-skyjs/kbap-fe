@@ -24,7 +24,7 @@ import { Btn, RiskMark, IconClose, IconScanLines, IconGallery, IconFlip, IconChe
 import { useScan } from '@/lib/data/useScan';
 import type { ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
-import { segmentMenu, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
+import { segmentMenu, formatKrw, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { personalRisk } from '@/lib/risk';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -46,10 +46,10 @@ const ERROR_MSG: Record<ErrorStage, string> = {
 
 // §13 fallback fixture (no camera/OCR) — includes a non-food ("맥북") → UNKNOWN → unable.
 const SAMPLE_DISHES: MenuDish[] = [
-  { itemId: 0, rawMenuName: '된장찌개', box: { x: 0.12, y: 0.16, width: 0.5, height: 0.08 }, price: 'W8,000', latin: 'Doenjang Jjigae' },
-  { itemId: 1, rawMenuName: '김치찌개', box: { x: 0.12, y: 0.33, width: 0.5, height: 0.08 }, price: 'W8,000', latin: 'Kimchi Jjigae' },
-  { itemId: 2, rawMenuName: '공기밥', box: { x: 0.12, y: 0.5, width: 0.5, height: 0.08 }, price: 'W1,000', latin: 'Steamed Rice' },
-  { itemId: 3, rawMenuName: '맥북', box: { x: 0.12, y: 0.67, width: 0.5, height: 0.08 }, price: null, latin: null },
+  { itemId: 0, rawMenuName: '된장찌개', box: { x: 0.12, y: 0.16, width: 0.5, height: 0.08 }, priceKrw: 8000, latin: 'Doenjang Jjigae' },
+  { itemId: 1, rawMenuName: '김치찌개', box: { x: 0.12, y: 0.33, width: 0.5, height: 0.08 }, priceKrw: 8000, latin: 'Kimchi Jjigae' },
+  { itemId: 2, rawMenuName: '공기밥', box: { x: 0.12, y: 0.5, width: 0.5, height: 0.08 }, priceKrw: 1000, latin: 'Steamed Rice' },
+  { itemId: 3, rawMenuName: '맥북', box: { x: 0.12, y: 0.67, width: 0.5, height: 0.08 }, priceKrw: null, latin: null },
 ];
 
 export default function Scan() {
@@ -337,7 +337,7 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress }: { dish: ResultDish
         {!dish.koreanName && !!dish.latin && <Text style={styles.rowLatin} numberOfLines={1}>{dish.latin}</Text>}
         {!dish.matched && <Text style={styles.rowUnable} numberOfLines={1}>{unmatchedNote}</Text>}
       </View>
-      {!!dish.price && <Text style={styles.rowPrice}>{dish.price}</Text>}
+      {dish.priceKrw != null && <Text style={styles.rowPrice}>{formatKrw(dish.priceKrw)}</Text>}
       <View style={[styles.rowBadge, { backgroundColor: tone.bg }]}>
         <Text style={[styles.rowBadgeText, { color: tone.fg }]}>{riskLabel}</Text>
       </View>

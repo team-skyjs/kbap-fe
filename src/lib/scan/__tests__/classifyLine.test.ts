@@ -9,6 +9,11 @@ describe('classifyLine (handoff §14-2)', () => {
     expect(classifyLine('W12,000', box())).toBe('price');
     expect(classifyLine('w8,000', box())).toBe('price');
     expect(classifyLine('₩5000', box())).toBe('price');
+    // 멘토링 ④: 통화 접두 없는 표기
+    expect(classifyLine('12,000', box())).toBe('price');
+    expect(classifyLine('12000', box())).toBe('price');
+    expect(classifyLine('12,000원', box())).toBe('price');
+    expect(classifyLine('9,000원', box())).toBe('price');
   });
 
   it('origin', () => {
