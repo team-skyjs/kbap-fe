@@ -18,6 +18,8 @@ import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import { SubHeader, RiskMark, Stars, IconChevron, IconFood } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
 import type { FoodCard, Review } from '@/lib/api/types';
 
@@ -46,6 +48,18 @@ export default function MyReviews() {
 
   const count = reviews?.length ?? 0;
   const avg = count ? (reviews as Review[]).reduce((s, r) => s + r.rating, 0) / count : null;
+  const isGuest = useIsGuest();
+
+  // 라우트 자체 가드 (⑧-b) — 진입로는 프로필 탭(게이트)뿐이지만 딥링크 이중 방어.
+  // 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('myReviews.title')} onBack={() => router.back()} />
+        <AuthGateSheet context="profile" open onClose={() => router.back()} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>

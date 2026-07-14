@@ -20,6 +20,8 @@ import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconEdit, IconTrash, IconChevron } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
 import type { Review } from '@/lib/api/types';
 
@@ -42,6 +44,7 @@ export default function ReviewDetail() {
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
+  const isGuest = useIsGuest();
 
   function startEdit() {
     if (!review) return;
@@ -69,6 +72,17 @@ export default function ReviewDetail() {
         },
       },
     ]);
+  }
+
+  // 라우트 자체 가드 (⑧-b) — 진입로는 프로필 경유(게이트)뿐이지만 딥링크 이중 방어.
+  // 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('editReview.viewTitle')} onBack={() => router.back()} />
+        <AuthGateSheet context="profile" open onClose={() => router.back()} />
+      </View>
+    );
   }
 
   if (!review) {

@@ -15,6 +15,8 @@ import { color as C, font } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 
 export default function EditRestrictions() {
   const router = useRouter();
@@ -32,6 +34,18 @@ export default function EditRestrictions() {
   }, [me, seeded]);
 
   const toggle = (code: string) => setSel((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
+  const isGuest = useIsGuest();
+
+  // 라우트 자체 가드 (⑧-b) — 진입로는 프로필/홈 Edit(게이트·게스트 미노출)뿐이지만
+  // 딥링크 이중 방어. 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('restrictionsEdit.title')} onBack={() => router.back()} />
+        <AuthGateSheet context="profile" open onClose={() => router.back()} />
+      </View>
+    );
+  }
 
   function save() {
     update.mutate(
