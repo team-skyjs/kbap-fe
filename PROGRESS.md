@@ -180,3 +180,8 @@
 - 회귀 테스트 갱신: invalidate 의미론(캐시 제거 아님)에 맞춰 `isInvalidated` 단언 — restrictions→홈·목록·상세 invalidated / 닉네임→미invalidated. tsc 0, jest 62/62.
 - 비범위 준수: 상세 재료별 위험 뱃지 로직 무변 (BE 버그 별도 전달건).
 - (후속 지시 대사, 7/14) "38e632e에 작업 2 누락" 지적 확인 — 포커스 재조회는 직후 커밋 5bdc35c에 포함되어 이미 반영 상태(useHome.ts:51 useFocusEffect + stale 조건부 refetch). 추가 변경 없음.
+
+## KB-125 실기기 2건 (2026-07-14)
+- [x] 미완료 프로필 닉네임: 검정 '—' → muted "미설정" 표기 (profile.nicknameUnset ×10개 언어, ink3 톤).
+- [x] 온보딩/프로필 성분 언어 혼재: KB-75 재키잉 때 i18nKey 없던 신규 29종에 키 부여 + ingredients.* 29키 ×10개 언어 번역. 번역 원칙: 각 언어 통용 식재료 명칭, 현지 고유어 없는 것(Ghee·Rennet·Dashi·Mirin·Asafoetida·Carmine 등)은 관용 외래어 표기(+괄호 보충). 온보딩(IngredientFilter)·프로필 편집 화면은 동일 ingredientLabel 경유 확인; 프로필 탭 칩의 restrictionLabel이 BE 코드를 카탈로그로 라우팅하지 않아 "FISH_SAUCE" 원시 노출되던 것도 수정(BE_CODES 분기 추가 — 표시 전용, 와이어 값 무변).
+- 참고: 패리티 검사에서 saved.count_* 복수형 차이는 병렬 북마크 작업(KB-142)의 정상적 언어별 복수형 — 검사를 복수형 접미사 제외로 보정해 통과 확인.

@@ -3,8 +3,8 @@
  * 키잉** (KB-75 버그 수정 2026-07-13: 내부 ing:slug가 와이어로 새어 400).
  * avoidance_substance.code 정본과 1:1 — 코드가 곧 와이어 값이라 변환이 없다.
  *
- * i18nKey: 구 slug 체계의 번역(ingredients.<slug>, 9개 언어)이 있는 항목만
- * 재사용. 신규 항목은 영어 fallback (번역 추가는 KB-125 자잘 목록).
+ * i18nKey: 표시 전용 — ingredients.<slug> 번역 키(10개 언어). KB-125에서
+ * 신규 29종 번역 채움 (2026-07-14) — 전 항목이 키를 가진다.
  */
 
 import i18n from '@/lib/i18n';
@@ -20,42 +20,42 @@ const ing = (code: string, name: string, i18nKey?: string): Ingredient => ({ cod
 /** BE avoidance_substance.code 정본 81종 (guest/온보딩/프로필 공용). */
 export const INGREDIENTS: Ingredient[] = [
   // dairy & animal-derived
-  ing('EGG', 'Egg', 'egg'), ing('MILK', 'Milk', 'milk'), ing('DAIRY', 'Dairy'),
-  ing('GOAT_MILK', 'Goat milk'), ing('BUTTER', 'Butter', 'butter'), ing('GHEE', 'Ghee'),
-  ing('CHEESE', 'Cheese', 'cheese'), ing('GELATIN', 'Gelatin', 'gelatin'), ing('RENNET', 'Rennet'),
-  ing('HONEY', 'Honey', 'honey'), ing('CARMINE', 'Carmine'),
+  ing('EGG', 'Egg', 'egg'), ing('MILK', 'Milk', 'milk'), ing('DAIRY', 'Dairy', 'dairy'),
+  ing('GOAT_MILK', 'Goat milk', 'goatmilk'), ing('BUTTER', 'Butter', 'butter'), ing('GHEE', 'Ghee', 'ghee'),
+  ing('CHEESE', 'Cheese', 'cheese'), ing('GELATIN', 'Gelatin', 'gelatin'), ing('RENNET', 'Rennet', 'rennet'),
+  ing('HONEY', 'Honey', 'honey'), ing('CARMINE', 'Carmine', 'carmine'),
   // nuts & seeds
   ing('PEANUT', 'Peanut', 'peanut'), ing('WALNUT', 'Walnut', 'walnut'), ing('PINE_NUT', 'Pine nut', 'pinenut'),
   ing('ALMOND', 'Almond', 'almond'), ing('CASHEW', 'Cashew', 'cashew'), ing('PISTACHIO', 'Pistachio', 'pistachio'),
-  ing('HAZELNUT', 'Hazelnut'), ing('MACADAMIA', 'Macadamia'), ing('PECAN', 'Pecan'),
-  ing('BRAZIL_NUT', 'Brazil nut'), ing('CHESTNUT', 'Chestnut'),
+  ing('HAZELNUT', 'Hazelnut', 'hazelnut'), ing('MACADAMIA', 'Macadamia', 'macadamia'), ing('PECAN', 'Pecan', 'pecan'),
+  ing('BRAZIL_NUT', 'Brazil nut', 'brazilnut'), ing('CHESTNUT', 'Chestnut', 'chestnut'),
   ing('SESAME', 'Sesame', 'sesame'), ing('SUNFLOWER_SEED', 'Sunflower seed', 'sunflowerseed'),
   ing('MUSTARD', 'Mustard', 'mustard'),
   // grains & legumes
   ing('WHEAT', 'Wheat', 'wheat'), ing('BUCKWHEAT', 'Buckwheat', 'buckwheat'), ing('BARLEY', 'Barley', 'barley'),
   ing('RYE', 'Rye', 'rye'), ing('OAT', 'Oat', 'oat'), ing('CORN', 'Corn', 'corn'),
-  ing('SOY', 'Soy', 'soybean'), ing('LUPIN', 'Lupin'), ing('PEA', 'Pea'),
-  ing('CHICKPEA', 'Chickpea'), ing('LENTIL', 'Lentil'),
+  ing('SOY', 'Soy', 'soybean'), ing('LUPIN', 'Lupin', 'lupin'), ing('PEA', 'Pea', 'pea'),
+  ing('CHICKPEA', 'Chickpea', 'chickpea'), ing('LENTIL', 'Lentil', 'lentil'),
   // seafood
   ing('SHRIMP', 'Shrimp', 'shrimp'), ing('SALTED_SHRIMP', 'Salted shrimp (saeujeot)', 'shrimppaste'),
-  ing('CRAB', 'Crab', 'crab'), ing('CRAYFISH', 'Crayfish'), ing('LOBSTER', 'Lobster', 'lobster'),
+  ing('CRAB', 'Crab', 'crab'), ing('CRAYFISH', 'Crayfish', 'crayfish'), ing('LOBSTER', 'Lobster', 'lobster'),
   ing('SQUID', 'Squid', 'squid'), ing('OCTOPUS', 'Octopus', 'octopus'), ing('OYSTER', 'Oyster', 'oyster'),
-  ing('OYSTER_SAUCE', 'Oyster sauce'), ing('ABALONE', 'Abalone', 'abalone'), ing('MUSSEL', 'Mussel', 'mussel'),
-  ing('CLAM', 'Clam', 'clam'), ing('SHORT_NECK_CLAM', 'Short-neck clam'), ing('SCALLOP', 'Scallop', 'scallop'),
+  ing('OYSTER_SAUCE', 'Oyster sauce', 'oystersauce'), ing('ABALONE', 'Abalone', 'abalone'), ing('MUSSEL', 'Mussel', 'mussel'),
+  ing('CLAM', 'Clam', 'clam'), ing('SHORT_NECK_CLAM', 'Short-neck clam', 'shortneckclam'), ing('SCALLOP', 'Scallop', 'scallop'),
   ing('SEAFOOD', 'Seafood (all)', 'shellfish'),
   ing('FISH', 'Fish', 'fish'), ing('MACKEREL', 'Mackerel', 'mackerel'), ing('SALMON', 'Salmon', 'salmon'),
   ing('TUNA', 'Tuna', 'tuna'), ing('COD', 'Cod', 'cod'), ing('ANCHOVY', 'Anchovy', 'anchovy'),
-  ing('FISH_SAUCE', 'Fish sauce', 'fishsauce'), ing('BROTH', 'Broth (meat/fish stock)'), ing('DASHI', 'Dashi'),
+  ing('FISH_SAUCE', 'Fish sauce', 'fishsauce'), ing('BROTH', 'Broth (meat/fish stock)', 'broth'), ing('DASHI', 'Dashi', 'dashi'),
   // meat
-  ing('BEEF', 'Beef', 'beef'), ing('PORK', 'Pork', 'pork'), ing('LARD', 'Lard'), ing('TALLOW', 'Tallow'),
-  ing('CHICKEN', 'Chicken', 'chicken'), ing('POULTRY', 'Poultry (all)'),
+  ing('BEEF', 'Beef', 'beef'), ing('PORK', 'Pork', 'pork'), ing('LARD', 'Lard', 'lard'), ing('TALLOW', 'Tallow', 'tallow'),
+  ing('CHICKEN', 'Chicken', 'chicken'), ing('POULTRY', 'Poultry (all)', 'poultry'),
   // produce & aromatics
-  ing('PEACH', 'Peach', 'peach'), ing('TOMATO', 'Tomato', 'tomato'), ing('CELERY', 'Celery'),
-  ing('POTATO', 'Potato'), ing('CARROT', 'Carrot'), ing('ONION', 'Onion', 'onion'),
-  ing('GARLIC', 'Garlic', 'garlic'), ing('SCALLION', 'Scallion', 'greenonion'), ing('CHIVE', 'Chive'),
-  ing('WILD_CHIVE', 'Wild chive'), ing('ASAFOETIDA', 'Asafoetida'),
+  ing('PEACH', 'Peach', 'peach'), ing('TOMATO', 'Tomato', 'tomato'), ing('CELERY', 'Celery', 'celery'),
+  ing('POTATO', 'Potato', 'potato'), ing('CARROT', 'Carrot', 'carrot'), ing('ONION', 'Onion', 'onion'),
+  ing('GARLIC', 'Garlic', 'garlic'), ing('SCALLION', 'Scallion', 'greenonion'), ing('CHIVE', 'Chive', 'chive'),
+  ing('WILD_CHIVE', 'Wild chive', 'wildchive'), ing('ASAFOETIDA', 'Asafoetida', 'asafoetida'),
   // etc.
-  ing('ALCOHOL', 'Alcohol', 'alcohol'), ing('MIRIN', 'Mirin'), ing('COOKING_WINE', 'Cooking wine', 'ricewine'),
+  ing('ALCOHOL', 'Alcohol', 'alcohol'), ing('MIRIN', 'Mirin', 'mirin'), ing('COOKING_WINE', 'Cooking wine', 'ricewine'),
   ing('SULFITES', 'Sulfites', 'sulfites'),
 ];
 

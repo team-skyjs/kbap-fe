@@ -9,7 +9,7 @@
  * (reader text in reader language). Codes stay stable/English.
  */
 import type { RestrictionKind } from '@/lib/api/types';
-import { ingredientLabel } from '@/lib/mocks/ingredients';
+import { ingredientLabel, BE_CODES } from '@/lib/mocks/ingredients';
 
 export interface RestrictionOption {
   code: string;
@@ -139,7 +139,9 @@ export const RESTRICTION_LABEL: Record<string, string> = Object.fromEntries(
 /** Pretty label for a restriction code. Ingredient codes (KB-6 flat catalog)
  *  resolve via the ingredient catalog; legacy grouped codes via the map. */
 export function restrictionLabel(code: string): string {
-  if (code.startsWith('ing:')) return ingredientLabel(code);
+  // KB-125: BE 정본 코드(UPPER_SNAKE)도 성분 카탈로그 키로 — 온보딩·프로필
+  // 칩이 같은 번역을 쓴다 (종전엔 프로필 칩이 "FISH_SAUCE" 원시 코드로 노출).
+  if (BE_CODES.has(code) || code.startsWith('ing:')) return ingredientLabel(code);
   if (RESTRICTION_LABEL[code]) return RESTRICTION_LABEL[code];
   const slug = code.includes(':') ? code.split(':')[1] : code;
   return slug.charAt(0).toUpperCase() + slug.slice(1);
