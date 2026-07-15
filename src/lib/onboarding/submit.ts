@@ -38,6 +38,9 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     await AsyncStorage.setItem(SPICE_KEY, String(payload.spiceTolerance)).catch(() => {});
   }
 
+  // TODO(KB-150): BE OnboardingRequest에 맵기 필드 배포되면 body에
+  // `<필드명>: payload.spiceTolerance === UNSET ? null : payload.spiceTolerance`
+  // 추가 + 위의 로컬 보관 블록 제거 (2026-07-16 Swagger 기준 필드 없음)
   const body = {
     nickname: payload.nickname,
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는

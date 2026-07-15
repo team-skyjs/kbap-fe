@@ -204,7 +204,9 @@
       "confirmBtn": "Eliminar cuenta",
       "cancel": "Cancelar"
     },
-    "saved": "Guardados"
+    "saved": "Guardados",
+    "spiceTitle": "Tolerancia al picante",
+    "spiceUnset": "Sin definir"
   },
   "review": {
     "title": "Escribir una reseña",
@@ -466,7 +468,9 @@
     "readerLanguage": "Idioma de lectura",
     "readerLanguageHint": "Cada plato, reseña y tarjeta del dueño se traduce a este idioma.",
     "linkedTitle": "Vinculado a la cuenta",
-    "email": "Correo"
+    "email": "Correo",
+    "spice": "Tolerancia al picante",
+    "spiceClear": "Quitar ajuste"
   },
   "nationalityPicker": {
     "title": "Nacionalidad",

@@ -204,7 +204,9 @@
       "confirmBtn": "Удалить аккаунт",
       "cancel": "Отмена"
     },
-    "saved": "Сохранённое"
+    "saved": "Сохранённое",
+    "spiceTitle": "Переносимость остроты",
+    "spiceUnset": "Не задано"
   },
   "review": {
     "title": "Написать отзыв",
@@ -466,7 +468,9 @@
     "readerLanguage": "Язык чтения",
     "readerLanguageHint": "На него переводятся блюда, отзывы и карточки.",
     "linkedTitle": "Привязано к аккаунту",
-    "email": "Почта"
+    "email": "Почта",
+    "spice": "Переносимость остроты",
+    "spiceClear": "Сбросить"
   },
   "nationalityPicker": {
     "title": "Гражданство",

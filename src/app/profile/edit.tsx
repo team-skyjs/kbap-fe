@@ -11,7 +11,8 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck } from '@/components';
+import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck, IconFlame } from '@/components';
+import { SPICE_SCALE } from '@/lib/onboarding/data';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
 import { countryByCode } from '@/lib/onboarding/countries';
@@ -27,12 +28,14 @@ export default function EditProfile() {
   const update = useUpdateMe();
 
   const [nickname, setNickname] = useState('');
+  const [spice, setSpice] = useState<number | null>(null); // KB-150 — null = 미설정
   const [seeded, setSeeded] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [natOpen, setNatOpen] = useState(false);
   useEffect(() => {
     if (me && !seeded) {
       setNickname(me.nickname);
+      setSpice(me.spiceTolerance);
       setSeeded(true);
     }
   }, [me, seeded]);
@@ -40,7 +43,8 @@ export default function EditProfile() {
   const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   function save() {
-    update.mutate({ nickname: nickname.trim() || me?.nickname }, { onSuccess: () => router.back() });
+    // spice는 계약 밖 — useUpdateMe가 로컬 보관 처리(KB-150), 서버 body 무영향
+    update.mutate({ nickname: nickname.trim() || me?.nickname, spiceTolerance: spice }, { onSuccess: () => router.back() });
   }
 
   return (
@@ -105,6 +109,28 @@ export default function EditProfile() {
           <Text style={styles.hint}>{t('editProfile.readerLanguageHint')}</Text>
         </View>
 
+        {/* spice tolerance (KB-150) — 온보딩 spice 스텝과 동일 0~10 스케일/라벨(SPICE_SCALE) 재사용 */}
+        <View style={styles.fieldset}>
+          <Text style={styles.fieldLbl}>{t('editProfile.spice')}</Text>
+          <View style={[styles.field, styles.spiceField]}>
+            <View style={styles.spiceRow}>
+              {Array.from({ length: 11 }).map((_, i) => (
+                <Pressable key={i} onPress={() => setSpice(i)} hitSlop={6}>
+                  <IconFlame size={18} color={spice != null && i <= spice ? C.primary : C.ink3} />
+                </Pressable>
+              ))}
+            </View>
+            <Text style={[styles.spiceVal, spice == null && styles.spiceValUnset]}>
+              {spice != null ? t('detail.spice', { level: spice, analogy: SPICE_SCALE[spice] ?? '' }) : t('profile.spiceUnset')}
+            </Text>
+          </View>
+          {spice != null && (
+            <Pressable hitSlop={8} onPress={() => setSpice(null)}>
+              <Text style={styles.spiceClear}>{t('editProfile.spiceClear')}</Text>
+            </Pressable>
+          )}
+        </View>
+
         {/* linked email (read-only) */}
         <View style={styles.sec}>
           <Text style={styles.secTitle}>{t('editProfile.linkedTitle')}</Text>
@@ -155,6 +181,12 @@ const styles = StyleSheet.create({
   val: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
   hint: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginLeft: 2, marginTop: 3, lineHeight: 17 },
   hintWarn: { fontFamily: font.bodyBold, color: C.riskCaution },
+
+  spiceField: { flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingVertical: 14 },
+  spiceRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  spiceVal: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, textAlign: 'center' },
+  spiceValUnset: { fontFamily: font.body, color: C.ink3 },
+  spiceClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primary, marginLeft: 2, marginTop: 3 },
 
   sec: { gap: 10 },
   secTitle: { fontFamily: font.display, fontSize: 16, color: C.ink, letterSpacing: -0.2 },

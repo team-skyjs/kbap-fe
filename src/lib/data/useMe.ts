@@ -69,6 +69,9 @@ export function useUpdateMe() {
       }
 
       // 제공된 키만 와이어로 — 미전송 = 유지, restrictions 빈 배열 = 전부 해제
+      // TODO(KB-150): BE ProfileUpdateRequest에 맵기 필드 배포되면 여기에
+      // `if (patch.spiceTolerance !== undefined) body.<필드명> = patch.spiceTolerance;`
+      // 추가 + 위의 로컬 보관 블록 제거 (2026-07-16 Swagger 기준 필드 없음)
       const body: ProfileUpdateWire = {};
       if (patch.nickname !== undefined) body.nickname = patch.nickname;
       if (patch.nationality !== undefined) body.countryCode = patch.nationality;

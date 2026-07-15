@@ -71,6 +71,8 @@ export function adaptProfile(wire: MyProfileWire, localSpice: number | null): Us
     nickname: wire.nickname,
     nationality: wire.countryCode,
     readerLanguage: wire.appLanguage,
+    // TODO(KB-150): BE MyProfileResponse에 맵기 필드 배포되면 `wire.<필드명> ?? localSpice`로
+    // 매핑(마이그레이션 기간 로컬 fallback) → 이후 localSpice 파라미터 제거 (2026-07-16 필드 없음)
     spiceTolerance: localSpice, // 계약 밖 — 로컬 보관 (KB-75 질의)
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부

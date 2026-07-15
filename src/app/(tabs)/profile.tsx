@@ -30,8 +30,10 @@ import {
   IconPlus,
   IconLogout,
   IconBookmark,
+  IconFlame,
   Spinner,
 } from '@/components';
+import { SPICE_SCALE } from '@/lib/onboarding/data';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { useFoods } from '@/lib/data/useFoods';
@@ -202,6 +204,30 @@ export default function Profile() {
               </View>
             </Section>
 
+            {/* spice tolerance (KB-150) — restrictions와 같은 톤(칩), 미설정은 muted(nicknameUnset 패턴) */}
+            <Section
+              title={t('profile.spiceTitle')}
+              action={
+                <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/edit' as Href)}>
+                  <IconEdit size={14} color={C.primary} />
+                  <Text style={styles.link}>{t('profile.edit')}</Text>
+                </Pressable>
+              }
+            >
+              {me.spiceTolerance != null ? (
+                <View style={styles.dietWrap}>
+                  <View style={styles.dietChip}>
+                    <IconFlame size={13} color={C.primary} />
+                    <Text style={styles.dietChipText}>
+                      {t('detail.spice', { level: me.spiceTolerance, analogy: SPICE_SCALE[me.spiceTolerance] ?? '' })}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.spiceUnset}>{t('profile.spiceUnset')}</Text>
+              )}
+            </Section>
+
             {/* saved (Bookmark Mods A) — My reviews 바로 위: 개인 콘텐츠 클러스터.
                 카운트는 조용한 tag(“My reviews · 12”와 동일 톤), 뱃지 아님 */}
             <View style={styles.acctList}>
@@ -351,6 +377,7 @@ const styles = StyleSheet.create({
   dietChipDanger: { backgroundColor: '#fdecea', borderColor: '#f3cdc8' },
   dietChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
   dietChipTextDanger: { color: C.riskDanger },
+  spiceUnset: { fontFamily: font.body, fontSize: 13.5, color: C.ink3 },
   dietAdd: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 8 },
   dietAddText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
 

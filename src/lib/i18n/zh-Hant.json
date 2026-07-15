@@ -204,7 +204,9 @@
       "confirmBtn": "刪除帳號",
       "cancel": "取消"
     },
-    "saved": "已收藏"
+    "saved": "已收藏",
+    "spiceTitle": "辣度承受度",
+    "spiceUnset": "未設定"
   },
   "review": {
     "title": "撰寫評論",
@@ -466,7 +468,9 @@
     "readerLanguage": "閱讀語言",
     "readerLanguageHint": "所有菜色、評論與店家資訊都會翻譯成此語言。",
     "linkedTitle": "已連結帳號",
-    "email": "電子郵件"
+    "email": "電子郵件",
+    "spice": "辣度承受度",
+    "spiceClear": "清除設定"
   },
   "nationalityPicker": {
     "title": "國籍",

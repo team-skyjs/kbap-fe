@@ -204,7 +204,9 @@
       "confirmBtn": "탈퇴하기",
       "cancel": "취소"
     },
-    "saved": "저장됨"
+    "saved": "저장됨",
+    "spiceTitle": "맵기 허용치",
+    "spiceUnset": "미설정"
   },
   "editProfile": {
     "title": "프로필 수정",
@@ -218,7 +220,9 @@
     "readerLanguage": "표시 언어",
     "readerLanguageHint": "모든 요리, 리뷰, 사장님 카드가 이 언어로 번역돼요.",
     "linkedTitle": "계정 연동 정보",
-    "email": "이메일"
+    "email": "이메일",
+    "spice": "맵기 허용치",
+    "spiceClear": "설정 해제"
   },
   "nationalityPicker": {
     "title": "국적",

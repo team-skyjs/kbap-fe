@@ -200,7 +200,9 @@
       "confirmBtn": "Delete account",
       "cancel": "Cancel"
     },
-    "saved": "Saved"
+    "saved": "Saved",
+    "spiceTitle": "Spice tolerance",
+    "spiceUnset": "Not set"
   },
   "editProfile": {
     "title": "Edit profile",
@@ -214,7 +216,9 @@
     "readerLanguage": "Reader language",
     "readerLanguageHint": "Every dish, review and owner card is translated into this.",
     "linkedTitle": "Linked to account",
-    "email": "Email"
+    "email": "Email",
+    "spice": "Spice tolerance",
+    "spiceClear": "Clear (not set)"
   },
   "nationalityPicker": {
     "title": "Nationality",

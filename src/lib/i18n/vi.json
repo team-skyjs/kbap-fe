@@ -204,7 +204,9 @@
       "confirmBtn": "Xóa tài khoản",
       "cancel": "Hủy"
     },
-    "saved": "Đã lưu"
+    "saved": "Đã lưu",
+    "spiceTitle": "Mức ăn cay",
+    "spiceUnset": "Chưa đặt"
   },
   "review": {
     "title": "Viết đánh giá",
@@ -466,7 +468,9 @@
     "readerLanguage": "Ngôn ngữ đọc",
     "readerLanguageHint": "Mọi món ăn, đánh giá và thẻ chủ quán đều được dịch sang ngôn ngữ này.",
     "linkedTitle": "Đã liên kết tài khoản",
-    "email": "Email"
+    "email": "Email",
+    "spice": "Mức ăn cay",
+    "spiceClear": "Bỏ thiết lập"
   },
   "nationalityPicker": {
     "title": "Quốc tịch",

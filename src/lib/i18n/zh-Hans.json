@@ -204,7 +204,9 @@
       "confirmBtn": "注销账户",
       "cancel": "取消"
     },
-    "saved": "已收藏"
+    "saved": "已收藏",
+    "spiceTitle": "辣度承受度",
+    "spiceUnset": "未设置"
   },
   "review": {
     "title": "撰写点评",
@@ -466,7 +468,9 @@
     "readerLanguage": "阅读语言",
     "readerLanguageHint": "所有菜品、评价和店主卡片都会翻译成这种语言。",
     "linkedTitle": "关联账号",
-    "email": "邮箱"
+    "email": "邮箱",
+    "spice": "辣度承受度",
+    "spiceClear": "清除设置"
   },
   "nationalityPicker": {
     "title": "国籍",

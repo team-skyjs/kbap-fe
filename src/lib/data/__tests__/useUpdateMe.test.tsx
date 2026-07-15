@@ -23,6 +23,13 @@ jest.mock('@/lib/onboarding/submit', () => ({ loadLocalSpice: jest.fn().mockReso
 import { useUpdateMe } from '../useMe';
 import type { UserUpdate } from '@/lib/api/types';
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+// 공식 jest mock은 CJS(module.exports) — interop에 따라 default 유무가 갈려 둘 다 수용
+const asMod = require('@react-native-async-storage/async-storage');
+const AsyncStorage = asMod.default ?? asMod;
+const { api } = require('@/lib/api/client');
+/* eslint-enable @typescript-eslint/no-require-imports */
+
 function Harness({ patch, onSettled }: { patch: UserUpdate; onSettled: () => void }) {
   const update = useUpdateMe();
   React.useEffect(() => {
@@ -75,4 +82,21 @@ it('닉네임만 변경 → 개인화 쿼리는 invalidate되지 않는다 (비�
   expect(isInvalidated(qc, ['home', 'en'])).toBe(false);
   expect(isInvalidated(qc, ['foods', 'list', 'en'])).toBe(false);
   expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(false);
+});
+
+// KB-150: spice는 계약 밖(BE 필드 대기) — 로컬 보관 왕복과 null(미설정) 처리를 잠근다.
+it('spice-only 패치 → 로컬 보관만(서버 PATCH 없음) + me 무효화로 재조회 왕복 (KB-150)', async () => {
+  const qc = seededClient();
+  qc.setQueryData(['me', 'en'], { nickname: 'A' });
+  const patchCallsBefore = (api.patch as jest.Mock).mock.calls.length;
+  await runMutation(qc, { spiceTolerance: 7 });
+  expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', '7');
+  expect((api.patch as jest.Mock).mock.calls.length).toBe(patchCallsBefore); // 서버 미호출
+  expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → adaptProfile이 로컬값 주입
+});
+
+it('spice null(미설정으로 되돌림) → 로컬 키 제거 (KB-150)', async () => {
+  const qc = seededClient();
+  await runMutation(qc, { spiceTolerance: null });
+  expect(AsyncStorage.removeItem).toHaveBeenCalledWith('kbap.profile.spice.v1');
 });

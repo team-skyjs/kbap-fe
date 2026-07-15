@@ -204,7 +204,9 @@
       "confirmBtn": "Hapus akun",
       "cancel": "Batal"
     },
-    "saved": "Tersimpan"
+    "saved": "Tersimpan",
+    "spiceTitle": "Toleransi pedas",
+    "spiceUnset": "Belum diatur"
   },
   "review": {
     "title": "Tulis ulasan",
@@ -466,7 +468,9 @@
     "readerLanguage": "Bahasa pembaca",
     "readerLanguageHint": "Semua hidangan, ulasan, dan kartu pemilik diterjemahkan ke bahasa ini.",
     "linkedTitle": "Tertaut ke akun",
-    "email": "Email"
+    "email": "Email",
+    "spice": "Toleransi pedas",
+    "spiceClear": "Hapus pengaturan"
   },
   "nationalityPicker": {
     "title": "Kewarganegaraan",

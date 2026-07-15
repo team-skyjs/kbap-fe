@@ -204,7 +204,9 @@
       "confirmBtn": "アカウントを削除",
       "cancel": "キャンセル"
     },
-    "saved": "保存済み"
+    "saved": "保存済み",
+    "spiceTitle": "辛さの許容度",
+    "spiceUnset": "未設定"
   },
   "review": {
     "title": "レビューを書く",
@@ -466,7 +468,9 @@
     "readerLanguage": "表示言語",
     "readerLanguageHint": "料理・レビュー・店主カードがこの言語に翻訳されます。",
     "linkedTitle": "連携アカウント",
-    "email": "メール"
+    "email": "メール",
+    "spice": "辛さの許容度",
+    "spiceClear": "設定を解除"
   },
   "nationalityPicker": {
     "title": "国籍",

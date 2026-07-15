@@ -204,7 +204,9 @@
       "confirmBtn": "ลบบัญชี",
       "cancel": "ยกเลิก"
     },
-    "saved": "บันทึกไว้"
+    "saved": "บันทึกไว้",
+    "spiceTitle": "ระดับเผ็ดที่รับได้",
+    "spiceUnset": "ยังไม่ได้ตั้งค่า"
   },
   "review": {
     "title": "เขียนรีวิว",
@@ -466,7 +468,9 @@
     "readerLanguage": "ภาษาที่อ่าน",
     "readerLanguageHint": "ทุกเมนู รีวิว และการ์ดร้านจะถูกแปลเป็นภาษานี้",
     "linkedTitle": "เชื่อมกับบัญชี",
-    "email": "อีเมล"
+    "email": "อีเมล",
+    "spice": "ระดับเผ็ดที่รับได้",
+    "spiceClear": "ล้างการตั้งค่า"
   },
   "nationalityPicker": {
     "title": "สัญชาติ",
