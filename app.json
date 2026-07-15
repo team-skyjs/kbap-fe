@@ -55,7 +55,8 @@
         {
           "backgroundColor": "#E2580C",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 230,
+          "imageWidth": 280,
+          "_comment": "KB-125 ④ 하단 글씨 가독성 임시 확대(230→280) — 글씨 큰 새 에셋 교체 시 230 원복. 네이티브 리빌드에만 반영(OTA 불가)",
           "resizeMode": "contain"
         }
       ],
