@@ -70,7 +70,10 @@ export default function FoodDetailScreen() {
     const adding = !saved;
     setSaveError(false);
     toggleBm.mutate(
-      { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
+      {
+        snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
+        add: adding,
+      },
       {
         // 실패: 낙관적 반영은 훅이 롤백 — 여기선 에러 토스트만 (BE message 미노출, i18n)
         onError: () => {

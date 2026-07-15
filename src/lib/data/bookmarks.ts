@@ -103,29 +103,26 @@ function optimisticWrite(
 }
 
 /**
- * 상세 화면 저장 토글 — 현재 캐시 기준 add면 POST, remove면 PATCH.
- * 낙관적 즉시 반영, 실패 시 롤백(에러 토스트는 호출측 onError).
+ * 상세 화면 저장 토글 — add면 POST, 해제면 PATCH. 낙관적 즉시 반영, 실패 시
+ * 롤백(에러 토스트는 호출측 onError).
+ *
+ * ⚠️ add 여부는 호출측이 mutate 변수로 전달한다. RQ v5는 onMutate를
+ * mutationFn보다 먼저 실행하므로, mutationFn이 캐시를 재독해 분기하면
+ * 항상 "낙관 반영 후" 상태를 보고 요청이 역전된다(KB-142 반려 재현).
  */
 export function useToggleBookmark() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (snap: BookmarkSnapshot) => {
-      const bookmarked = (qc.getQueryData<Pages>(QK())?.pages ?? []).some((p) =>
-        p.items.some((it) => it.foodId === Number(snap.foodId)),
-      );
-      // 낙관적 판단과 요청이 어긋나지 않게 mutationFn 진입 시점 상태로 분기
-      if (bookmarked) {
-        await api.patch(`/bookmarks/${snap.foodId}`); // ⚠️ 취소 = PATCH (DELETE 아님)
-      } else {
+    mutationFn: async ({ snap, add }: { snap: BookmarkSnapshot; add: boolean }) => {
+      if (add) {
         await api.post('/bookmarks', { foodId: Number(snap.foodId) });
+      } else {
+        await api.patch(`/bookmarks/${snap.foodId}`); // ⚠️ 취소 = PATCH (DELETE 아님)
       }
     },
-    onMutate: async (snap) => {
+    onMutate: async ({ snap, add }) => {
       await qc.cancelQueries({ queryKey: QK() });
-      const wasBookmarked = (qc.getQueryData<Pages>(QK())?.pages ?? []).some((p) =>
-        p.items.some((it) => it.foodId === Number(snap.foodId)),
-      );
-      const prev = optimisticWrite(qc, snap.foodId, wasBookmarked ? null : toWire(snap));
+      const prev = optimisticWrite(qc, snap.foodId, add ? toWire(snap) : null);
       return { prev };
     },
     onError: (_e, _snap, ctx) => {
