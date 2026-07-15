@@ -601,6 +601,7 @@
     "sulfites": "亚硫酸盐"
   },
   "saved": {
+    "error": "无法更新收藏列表，请重试。",
     "title": "已收藏",
     "count_other": "{{count}} 道菜",
     "newestFirst": "最新优先",

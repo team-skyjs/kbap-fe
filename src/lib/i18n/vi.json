@@ -601,6 +601,7 @@
     "sulfites": "Sunfit"
   },
   "saved": {
+    "error": "Không thể cập nhật danh sách đã lưu. Vui lòng thử lại.",
     "title": "Đã lưu",
     "count_other": "{{count}} món",
     "newestFirst": "Mới nhất trước",

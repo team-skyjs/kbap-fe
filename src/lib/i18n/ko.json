@@ -601,6 +601,7 @@
     }
   },
   "saved": {
+    "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
     "title": "저장됨",
     "count_other": "음식 {{count}}개",
     "newestFirst": "최신순",

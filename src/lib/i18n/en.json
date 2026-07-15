@@ -597,6 +597,7 @@
     }
   },
   "saved": {
+    "error": "Couldn't update your saved list. Please try again.",
     "title": "Saved",
     "count_one": "{{count}} dish",
     "count_other": "{{count}} dishes",

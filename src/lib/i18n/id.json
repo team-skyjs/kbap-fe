@@ -601,6 +601,7 @@
     "sulfites": "Sulfit"
   },
   "saved": {
+    "error": "Tidak dapat memperbarui daftar simpanan. Silakan coba lagi.",
     "title": "Tersimpan",
     "count_other": "{{count}} hidangan",
     "newestFirst": "Terbaru dulu",

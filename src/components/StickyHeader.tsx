@@ -24,7 +24,9 @@ import Animated, {
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
+  withSequence,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -90,6 +92,8 @@ export type StickyHeaderProps = {
   onSignIn?: () => void;
   bellDot?: boolean;
   bookmark?: boolean;
+  /** 북마크 저장 상태 — true면 primary로 채워진 아이콘 + 저장 전환 시 1회 바운스 */
+  bookmarkSaved?: boolean;
   onBack?: () => void;
   onSearch?: () => void;
   onBookmark?: () => void;
@@ -106,6 +110,7 @@ export function StickyHeader({
   onSignIn,
   bellDot,
   bookmark,
+  bookmarkSaved,
   onBack,
   onSearch,
   onBookmark,
@@ -123,6 +128,22 @@ export function StickyHeader({
   const slide = useAnimatedStyle(() => ({
     transform: [{ translateY: interpolate(hidden.value, [0, 1], [0, -H], Extrapolation.CLAMP) }],
   }));
+
+  // 북마크 저장 바운스 (디자인 spec: 0.8→1.15→1, 340ms, reduced-motion 시 생략)
+  const reducedMotion = useReducedMotion();
+  const bmScale = useSharedValue(1);
+  const prevSaved = React.useRef(bookmarkSaved);
+  React.useEffect(() => {
+    if (!prevSaved.current && bookmarkSaved && !reducedMotion) {
+      bmScale.value = withSequence(
+        withTiming(0.8, { duration: 60 }),
+        withTiming(1.15, { duration: 160, easing: Easing.out(Easing.back(2)) },),
+        withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) }),
+      );
+    }
+    prevSaved.current = bookmarkSaved;
+  }, [bookmarkSaved, reducedMotion, bmScale]);
+  const bmPop = useAnimatedStyle(() => ({ transform: [{ scale: bmScale.value }] }));
 
   return (
     <>
@@ -167,8 +188,16 @@ export function StickyHeader({
             </Pressable>
           )}
           {bookmark && (
-            <Pressable style={styles.iconBtn} onPress={onBookmark} hitSlop={8}>
-              <IconBookmark size={19} color={C.ink} />
+            /* 디자인(Bookmark Mods B): 흰 칩 없이 bare 아이콘 — search/bell과 동일 처리.
+               unsaved=아웃라인, saved=primary 채움 */
+            <Pressable style={styles.actionBtn} onPress={onBookmark} hitSlop={8}>
+              <Animated.View style={bmPop}>
+                {bookmarkSaved ? (
+                  <IconBookmark size={22} color={C.primary} fill={C.primary} sw={0} />
+                ) : (
+                  <IconBookmark size={22} color={C.ink} sw={1.8} />
+                )}
+              </Animated.View>
             </Pressable>
           )}
           {mode === 'back' && !search && !bell && !bookmark && <View style={{ width: 38 }} />}

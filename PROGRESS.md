@@ -200,3 +200,12 @@
 - 안전 불변식 유지: unable 정렬 후순위·미숨김(§14-5) 그대로, personalRisk 경로 무변, 스캔 API/mergeResults 무변(비범위).
 - 회귀 테스트 +1: 스캔 완료 시 오버레이 미렌더 + 리스트 렌더 + unmatched(맥북) 미숨김 (scanDefaultView.test.tsx, 화면 단위). 기존 scanAdapter 6건 포함 전체 63/63 그린.
 - 실기기 확인 대기(예진): 스캔→리스트 기본 표시→토글로 오버레이 전환, unmatched 탭 시 안내 카드, 마커 겹침 완화 체감.
+
+## KB-142 북마크(저장) 실연결 (2026-07-15)
+- [x] Swagger 재확인(구현 전): GET `/api/v1/bookmarks?cursor=&lang=` → {items: FoodSummaryResponse[], hasNext, nextCursor} / POST `/api/v1/bookmarks` {foodId:int64} / **취소는 PATCH `/api/v1/bookmarks/{foodId}` (DELETE 아님)** — 전부 인증 필수.
+- [x] `bookmarks.ts` 전면 재작성(로컬 AsyncStorage → BE): useBookmarks=useInfiniteQuery 커서 페이지네이션(게스트 disabled), useToggleBookmark=낙관적 업데이트(onMutate 캐시 prepend/filter)+onError 롤백+onSettled invalidate, useRemoveBookmark/useRestoreBookmark(스와이프 삭제→Undo 유지).
+- [x] 상세 저장 버튼: 실패 시 롤백 + 에러 스낵바(saved.error ×10 로케일). 저장 성공 스낵바(View→saved) 기존 유지.
+- [x] saved 리스트: 서버 무한스크롤(onEndReached 0.6 + footer 스피너), 기존 카드/스와이프/personalRisk 재평가 구조 재사용.
+- ⚠️ **계약 갭(BE 질의 필요)**: GET `/foods/{id}` 응답에 `bookmarked` 필드 없음 → 상세의 저장 상태를 북마크 목록 캐시에서 유도(useIsBookmarked). **한계: 아직 로드 안 된 페이지의 북마크는 상세에서 초기 미저장으로 보일 수 있음.** BE에 상세 응답 `bookmarked` 필드 추가 질의(맵기 필드 선례).
+- 비범위 준수: 디자인 현행 재사용, 비회원 북마크 없음(AuthGateSheet save 게이트), BE API 무변. tsc 0, jest 63/63.
+- 실기기 확인 대기(예진): 상세 저장 토글→saved 리스트 반영→앱 재조회 시 서버 상태 일치, 무한스크롤, 실패 시 롤백+에러 토스트.

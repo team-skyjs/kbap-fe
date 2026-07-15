@@ -7,7 +7,7 @@
  * false) render the "Unable to assess" state — never assumed safe (FR-033).
  * Scroll-aware back header (§6); no emoji; reader text i18n'd; risk colors fixed.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
@@ -30,6 +30,9 @@ import {
   IconFlame,
 } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
+import { useIsBookmarked, useToggleBookmark } from '@/lib/data/bookmarks';
+import { Snackbar } from '@/components/Snackbar';
+import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
@@ -50,6 +53,43 @@ export default function FoodDetailScreen() {
 
   const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
+
+  // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142 실연결: POST/PATCH, 낙관적+실패 롤백)
+  const saved = useIsBookmarked(id ?? '');
+  const toggleBm = useToggleBookmark();
+  const [saveGateOpen, setSaveGateOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onBookmark = () => {
+    if (isGuest) {
+      setSaveGateOpen(true);
+      return;
+    }
+    if (!food) return;
+    const adding = !saved;
+    setSaveError(false);
+    toggleBm.mutate(
+      { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
+      {
+        // 실패: 낙관적 반영은 훅이 롤백 — 여기선 에러 토스트만 (BE message 미노출, i18n)
+        onError: () => {
+          setSaveToast(false);
+          setSaveError(true);
+          if (toastTimer.current) clearTimeout(toastTimer.current);
+          toastTimer.current = setTimeout(() => setSaveError(false), 4000);
+        },
+      },
+    );
+    // 저장 시 매번 토스트 (예진 결정 7/14 — 디자인 spec의 1회 교육안 대신 상시 View 바로가기)
+    if (adding) {
+      setSaveToast(true);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setSaveToast(false), 5000);
+    } else {
+      setSaveToast(false);
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -94,7 +134,22 @@ export default function FoodDetailScreen() {
         )}
       </Animated.ScrollView>
 
-      <StickyHeader hidden={hidden} mode="back" title={t('detail.headerTitle')} bookmark onBack={() => router.back()} />
+      <StickyHeader hidden={hidden} mode="back" title={t('detail.headerTitle')} bookmark bookmarkSaved={saved} onBookmark={onBookmark} onBack={() => router.back()} />
+      <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
+      {saveError && (
+        <Snackbar icon={<IconBookmark size={15} color="#fff" />} text={t('saved.error')} />
+      )}
+      {saveToast && (
+        <Snackbar
+          icon={<IconBookmark size={15} color="#fff" fill="#fff" sw={0} />}
+          text={t('saved.toast')}
+          actionLabel={t('saved.view')}
+          onAction={() => {
+            setSaveToast(false);
+            router.push('/profile/saved' as Href);
+          }}
+        />
+      )}
     </View>
   );
 }

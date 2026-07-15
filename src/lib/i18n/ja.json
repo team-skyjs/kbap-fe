@@ -601,6 +601,7 @@
     "sulfites": "亜硫酸塩"
   },
   "saved": {
+    "error": "保存リストを更新できませんでした。もう一度お試しください。",
     "title": "保存済み",
     "count_other": "{{count}}件の料理",
     "newestFirst": "新しい順",

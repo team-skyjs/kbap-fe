@@ -12,7 +12,7 @@ import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
 import { IconClose, IconLock } from '@/components/icons';
 
-export type GateContext = 'risk' | 'reviews' | 'writeReview' | 'scan' | 'profile' | 'notifications';
+export type GateContext = 'risk' | 'reviews' | 'writeReview' | 'scan' | 'profile' | 'notifications' | 'save';
 
 const COPY: Record<GateContext, { title: string; sub: string }> = {
   risk: { title: 'gate.riskTitle', sub: 'gate.riskSub' },
@@ -21,6 +21,7 @@ const COPY: Record<GateContext, { title: string; sub: string }> = {
   scan: { title: 'gate.scanTitle', sub: 'gate.scanSub' },
   profile: { title: 'gate.profileTitle', sub: 'gate.profileSub' },
   notifications: { title: 'gate.notifTitle', sub: 'gate.notifSub' },
+  save: { title: 'gate.saveTitle', sub: 'gate.saveSub' },
 };
 
 export function AuthGateSheet({
