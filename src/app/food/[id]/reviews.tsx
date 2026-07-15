@@ -10,7 +10,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
@@ -40,6 +41,10 @@ import type { RatingAggregate, Review } from '@/lib/api/types';
 const READER_LANG = 'en'; // MVP reader language
 
 export default function FoodReviews() {
+  // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
+  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+
   const isGuest = useIsGuest();
   const [gateOpen, setGateOpen] = useState<GateContext | null>(null);
   const { id } = useLocalSearchParams<{ id: string }>();

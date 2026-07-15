@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import {
@@ -267,19 +268,22 @@ function Registered({
         <Text style={styles.desc}>{food.description}</Text>
       </View>
 
-      <View style={styles.rate2}>
-        <RatingMini
-          value={food.overall.average}
-          label={t('detail.allUsers', { count: food.overall.count })}
-          onPress={() => router.push(`/food/${id}/reviews` as Href)}
-        />
-        <RatingMini
-          value={food.sameNationality.average}
-          label={t('detail.sameNationality')}
-          left={<Flag code={nationality} size={15} />}
-          onPress={() => router.push(`/food/${id}/reviews` as Href)}
-        />
-      </View>
+      {/* 평점 카드 2종(→ 리뷰 목록) — KB-148 MVP 제외(숨김) */}
+      {FLAGS.reviewsEnabled && (
+        <View style={styles.rate2}>
+          <RatingMini
+            value={food.overall.average}
+            label={t('detail.allUsers', { count: food.overall.count })}
+            onPress={() => router.push(`/food/${id}/reviews` as Href)}
+          />
+          <RatingMini
+            value={food.sameNationality.average}
+            label={t('detail.sameNationality')}
+            left={<Flag code={nationality} size={15} />}
+            onPress={() => router.push(`/food/${id}/reviews` as Href)}
+          />
+        </View>
+      )}
 
       <View style={styles.photo}>
         {!!food.photoUrl && (

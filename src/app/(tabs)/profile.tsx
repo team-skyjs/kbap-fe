@@ -213,21 +213,23 @@ export default function Profile() {
               />
             </View>
 
-            {/* my reviews */}
-            <Section
-              title={t('profile.myReviewsTitle', { count: reviews?.length ?? 0 })}
-              action={
-                <Pressable hitSlop={8} onPress={() => router.push('/profile/reviews' as Href)}>
-                  <Text style={styles.link}>{t('profile.seeAll')}</Text>
-                </Pressable>
-              }
-            >
-              <View style={{ gap: 10 }}>
-                {(reviews ?? []).map((rv) => (
-                  <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} hasRestrictions={me.restrictions.length > 0} onPress={() => router.push(`/review/${rv.id}` as Href)} />
-                ))}
-              </View>
-            </Section>
+            {/* my reviews — KB-148 MVP 제외(숨김) */}
+            {FLAGS.reviewsEnabled && (
+              <Section
+                title={t('profile.myReviewsTitle', { count: reviews?.length ?? 0 })}
+                action={
+                  <Pressable hitSlop={8} onPress={() => router.push('/profile/reviews' as Href)}>
+                    <Text style={styles.link}>{t('profile.seeAll')}</Text>
+                  </Pressable>
+                }
+              >
+                <View style={{ gap: 10 }}>
+                  {(reviews ?? []).map((rv) => (
+                    <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} hasRestrictions={me.restrictions.length > 0} onPress={() => router.push(`/review/${rv.id}` as Href)} />
+                  ))}
+                </View>
+              </Section>
+            )}
 
             {/* account */}
             <Section title={t('profile.accountTitle')}>

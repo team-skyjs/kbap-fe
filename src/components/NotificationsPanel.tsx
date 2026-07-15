@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { FLAGS } from '@/lib/flags';
 
 export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
@@ -19,7 +20,10 @@ export function NotificationsPanel({ open, onClose }: { open: boolean; onClose: 
   const items = isGuest
     ? [{ t: t('notifications.welcome.title'), b: t('notifications.welcome.body') }]
     : [
-        { t: t('notifications.reviewReminder.title'), b: t('notifications.reviewReminder.body') },
+        // 리뷰 리마인더 — KB-148 MVP 제외(숨김)
+        ...(FLAGS.reviewsEnabled
+          ? [{ t: t('notifications.reviewReminder.title'), b: t('notifications.reviewReminder.body') }]
+          : []),
         { t: t('notifications.catalogUpdated.title'), b: t('notifications.catalogUpdated.body') },
         { t: t('notifications.welcome.title'), b: t('notifications.welcome.body') },
       ];

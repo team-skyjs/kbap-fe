@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck, IconTrash } from '@/components';
@@ -33,10 +34,13 @@ export default function DeleteAccount() {
             <RiskMark state="danger" size={20} variant="outline" />
             <Text style={styles.rowText}>{t('profile.delete.dataLine')}</Text>
           </View>
-          <View style={styles.row}>
-            <RiskMark state="safe" size={20} variant="outline" />
-            <Text style={styles.rowText}>{t('profile.delete.reviewsLine')}</Text>
-          </View>
+          {/* 리뷰 익명화 안내 — KB-148 MVP 제외(숨김) */}
+          {FLAGS.reviewsEnabled && (
+            <View style={styles.row}>
+              <RiskMark state="safe" size={20} variant="outline" />
+              <Text style={styles.rowText}>{t('profile.delete.reviewsLine')}</Text>
+            </View>
+          )}
         </View>
 
         <Pressable style={styles.consent} onPress={() => setAgreed(!agreed)}>

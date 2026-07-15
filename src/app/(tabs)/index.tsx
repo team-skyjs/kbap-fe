@@ -305,12 +305,14 @@ export function SafeCard({ food, hasRestrictions, guest, onPress }: { food: Food
             {food.nameKo}
           </Text>
         )}
-        <View style={styles.rate}>
-          <Stars value={food.overall.average ?? 0} size={13} />
-          <Text style={styles.rateNum}>
-            {food.overall.average?.toFixed(1) ?? '—'} · {food.overall.count}
-          </Text>
-        </View>
+        {FLAGS.reviewsEnabled && (
+          <View style={styles.rate}>
+            <Stars value={food.overall.average ?? 0} size={13} />
+            <Text style={styles.rateNum}>
+              {food.overall.average?.toFixed(1) ?? '—'} · {food.overall.count}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -343,10 +345,12 @@ export function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }
           </Text>
         )}
       </View>
-      <Pressable style={styles.reviewBtn} onPress={() => router.push(`/food/${food.foodId}/review` as Href)} hitSlop={6}>
-        <Star size={13} fillPct={100} fillColor={C.primary} />
-        <Text style={styles.reviewBtnText}>{reviewLabel}</Text>
-      </Pressable>
+      {FLAGS.reviewsEnabled && (
+        <Pressable style={styles.reviewBtn} onPress={() => router.push(`/food/${food.foodId}/review` as Href)} hitSlop={6}>
+          <Star size={13} fillPct={100} fillColor={C.primary} />
+          <Text style={styles.reviewBtnText}>{reviewLabel}</Text>
+        </Pressable>
+      )}
     </Pressable>
   );
 }

@@ -148,12 +148,14 @@ export function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: Fo
             {food.nameKo}
           </Text>
         )}
-        <View style={styles.rate}>
-          <Stars value={food.overall.average ?? 0} size={13} />
-          <Text style={styles.rateNum}>
-            {food.overall.average?.toFixed(1) ?? '—'} · {food.overall.count}
-          </Text>
-        </View>
+        {FLAGS.reviewsEnabled && (
+          <View style={styles.rate}>
+            <Stars value={food.overall.average ?? 0} size={13} />
+            <Text style={styles.rateNum}>
+              {food.overall.average?.toFixed(1) ?? '—'} · {food.overall.count}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );

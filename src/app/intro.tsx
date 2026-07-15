@@ -14,6 +14,7 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, accentTint, radius, shadow } from '@/lib/theme';
@@ -36,7 +37,8 @@ const SLIDES: SlideDef[] = [
   { index: 0, eyebrowKey: 'intro.s1Eyebrow', headKey: 'intro.s1Head', subKey: 'intro.s1Sub', icon: <IconCamera size={13} color={C.primary} />, illus: <IllusScan /> },
   { index: 1, eyebrowKey: 'intro.s2Eyebrow', headKey: 'intro.s2Head', subKey: 'intro.s2Sub', icon: <RiskMark state="caution" size={13} />, illus: <IllusSafety /> },
   { index: 2, eyebrowKey: 'intro.s3Eyebrow', headKey: 'intro.s3Head', subKey: 'intro.s3Sub', icon: <IconSpeech size={13} color={C.accent} />, accent: true, illus: <IllusReviews /> },
-];
+  // 리뷰 슬라이드(3번) — KB-148 MVP 제외(숨김). 도트/페이저는 배열 위치(i) 기준이라 필터로 충분
+].filter((s) => FLAGS.reviewsEnabled || s.index !== 2);
 
 export default function Intro() {
   const router = useRouter();

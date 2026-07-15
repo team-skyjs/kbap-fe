@@ -12,7 +12,8 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter, type Href } from 'expo-router';
+import { Redirect, useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import { SubHeader, RiskMark, Stars, IconChevron, IconFood } from '@/components';
@@ -27,6 +28,10 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 type SortKey = 'recent' | 'rating';
 
 export default function MyReviews() {
+  // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
+  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+
   const router = useRouter();
   const { t } = useTranslation();
   const { data: reviews } = useMyReviews();

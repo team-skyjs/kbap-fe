@@ -13,6 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Stop, Text as SvgText } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
+import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
@@ -123,8 +124,11 @@ function RankingBody({ rk, onReview, onScan }: { rk: Ranking; onReview: () => vo
             <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
           </View>
           <View style={styles.breakCard}>
-            <BreakRow icon={<IconSpeech size={20} color={C.primary} />} label={t('ranking.reviewsLabel')} labelKo={t('ranking.reviewsLabelKo')} detail={t('ranking.reviewsDetail', { count: bd.reviews.count })} factor={bd.reviews} first />
-            <BreakRow icon={<IconFood size={20} color={C.primary} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} detail={t('ranking.diversityDetail', { count: bd.diversity.count })} factor={bd.diversity} />
+            {/* 리뷰 팩터 행 — KB-148 MVP 제외(숨김). 점수 가중치(ranking.ts)는 무변 */}
+            {FLAGS.reviewsEnabled && (
+              <BreakRow icon={<IconSpeech size={20} color={C.primary} />} label={t('ranking.reviewsLabel')} labelKo={t('ranking.reviewsLabelKo')} detail={t('ranking.reviewsDetail', { count: bd.reviews.count })} factor={bd.reviews} first />
+            )}
+            <BreakRow icon={<IconFood size={20} color={C.primary} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} detail={t('ranking.diversityDetail', { count: bd.diversity.count })} factor={bd.diversity} first={!FLAGS.reviewsEnabled} />
             <BreakRow icon={<IconScanLines size={20} color={C.primary} />} label={t('ranking.scansLabel')} labelKo={t('ranking.scansLabelKo')} detail={t('ranking.scansDetail', { count: bd.scans.count })} factor={bd.scans} />
             <View style={styles.breakTotal}>
               <Text style={styles.breakTotalLabel}>{t('ranking.oneMore')}</Text>
