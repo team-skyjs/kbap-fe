@@ -31,7 +31,7 @@ import {
   IconFlame,
 } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { useIsBookmarked, useToggleBookmark } from '@/lib/data/bookmarks';
+import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
 import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
@@ -56,7 +56,9 @@ export default function FoodDetailScreen() {
   const { data: me } = useMe();
 
   // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142 실연결: POST/PATCH, 낙관적+실패 롤백)
-  const saved = useIsBookmarked(id ?? '');
+  // saved는 상세 응답의 서버 필드(bookmarked) 기반 — 계약 갭 해소(2026-07-15 배포).
+  // 낙관 토글이 이 캐시 값을 즉시 뒤집는다(useToggleBookmark onMutate).
+  const saved = food?.bookmarked ?? false;
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [saveToast, setSaveToast] = useState(false);

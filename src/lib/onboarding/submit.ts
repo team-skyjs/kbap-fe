@@ -3,13 +3,13 @@
  * (KB-110 구조 · KB-75 실연결 2026-07-13).
  *
  *   POST /members/me/onboarding { nickname, avoidanceSubstanceCodes,
- *                                 countryCode, appLanguage }   (전부 필수)
+ *                                 countryCode, appLanguage,
+ *                                 spicinessPreference? }   (spice만 optional)
  *
  * - 스킵 = 빈 배열 (계약 확정): FE 내부의 UNSET 구분은 draft/화면까지만,
  *   와이어에서는 []로 나간다.
- * - ⚠️ 맵기(spice)는 계약에 필드가 없어 서버로 보내지 않는다 — 로컬
- *   (AsyncStorage)에 보관해 상세 화면의 spicyForYou 판정에 계속 쓴다.
- *   BE 질의 대기 (relink-progress.md).
+ * - 맵기(spice): KB-150 후속으로 서버 전송(2026-07-15 배포). 스킵이면 필드
+ *   생략. 로컬(AsyncStorage) 보관은 마이그레이션 fallback으로 유지.
  * - 재제출 거부(이미 완료된 계정): 에러로 죽이지 않고 완료로 간주하고
  *   통과시킨다 — 어느 쪽이든 사용자는 홈으로 가야 한다.
  * - BE 세션이 없으면(웹/미로그인 개발 경로) 로그만 남기고 성공 처리.
@@ -38,11 +38,11 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     await AsyncStorage.setItem(SPICE_KEY, String(payload.spiceTolerance)).catch(() => {});
   }
 
-  // TODO(KB-150): BE OnboardingRequest에 맵기 필드 배포되면 body에
-  // `<필드명>: payload.spiceTolerance === UNSET ? null : payload.spiceTolerance`
-  // 추가 + 위의 로컬 보관 블록 제거 (2026-07-16 Swagger 기준 필드 없음)
   const body = {
     nickname: payload.nickname,
+    // KB-150 후속: spicinessPreference 실연결 (not required 확인) — 스킵 시 필드 생략.
+    // 로컬 보관(위)은 마이그레이션 기간 fallback으로 유지 (adaptProfile 참조).
+    ...(payload.spiceTolerance !== UNSET ? { spicinessPreference: payload.spiceTolerance } : {}),
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
     avoidanceSubstanceCodes:

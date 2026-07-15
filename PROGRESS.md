@@ -206,6 +206,15 @@
 - [x] `bookmarks.ts` 전면 재작성(로컬 AsyncStorage → BE): useBookmarks=useInfiniteQuery 커서 페이지네이션(게스트 disabled), useToggleBookmark=낙관적 업데이트(onMutate 캐시 prepend/filter)+onError 롤백+onSettled invalidate, useRemoveBookmark/useRestoreBookmark(스와이프 삭제→Undo 유지).
 - [x] 상세 저장 버튼: 실패 시 롤백 + 에러 스낵바(saved.error ×10 로케일). 저장 성공 스낵바(View→saved) 기존 유지.
 - [x] saved 리스트: 서버 무한스크롤(onEndReached 0.6 + footer 스피너), 기존 카드/스와이프/personalRisk 재평가 구조 재사용.
-- ⚠️ **계약 갭(BE 질의 필요)**: GET `/foods/{id}` 응답에 `bookmarked` 필드 없음 → 상세의 저장 상태를 북마크 목록 캐시에서 유도(useIsBookmarked). **한계: 아직 로드 안 된 페이지의 북마크는 상세에서 초기 미저장으로 보일 수 있음.** BE에 상세 응답 `bookmarked` 필드 추가 질의(맵기 필드 선례).
+- ~~⚠️ 계약 갭~~ **해소됨(2026-07-15 저녁 Swagger 재배포)**: FoodDetailResponse에 `bookmarked` 추가 → 상세 저장 상태를 서버 필드 기반으로 교체(후속 섹션 참조). 목록 캐시 유도(useIsBookmarked)와 그 한계는 소멸.
 - 비범위 준수: 디자인 현행 재사용, 비회원 북마크 없음(AuthGateSheet save 게이트), BE API 무변. tsc 0, jest 63/63.
 - 실기기 확인 대기(예진): 상세 저장 토글→saved 리스트 반영→앱 재조회 시 서버 상태 일치, 무한스크롤, 실패 시 롤백+에러 토스트.
+
+## KB-142/150 후속 — Swagger 재배포 반영 (2026-07-15 저녁)
+- [x] 상세 bookmarked 실연결: FoodDetailWire/FoodDetail(옵셔널 — mock 경로 미설정=false)에 필드 추가, adaptFoodDetail 매핑(누락 방어 false), 상세 saved를 목록 캐시 유도 → `food.bookmarked` 기반으로 교체, useIsBookmarked 제거(사용처 상세뿐). 토글 onMutate가 상세 캐시(['food', id, lang])의 bookmarked도 반전 + onError 롤백 + onSettled에서 목록·상세 둘 다 invalidate. saved 리스트 해제/Undo도 상세 invalidate 동기화.
+- [x] 맵기 서버 실연결(TODO 3곳 해소): useUpdateMe PATCH body `spicinessPreference`, adaptProfile `wire.spicinessPreference`(숫자만 신뢰) ?? 로컬 fallback(마이그레이션 기간 유지), 온보딩 body 포함(스킵=필드 생략, not required 확인).
+- ⚠️ **BE 질의 2건 (미해결)**:
+  1. MyProfileResponse의 spicinessPreference가 required인데 **"미설정" 표현이 계약에 없음** — 0은 SPICE_SCALE상 "맵지 않음"이라 미설정과 의미가 다름. FE는 null/누락 시 로컬 fallback으로 방어 중. 서버의 미설정 표현 확정 필요.
+  2. **"설정 해제"(null)를 PATCH로 전달하는 방법 미정** (null 전송 vs 필드 생략 의미) — 확정 전까지 해제는 로컬만 반영(필드 생략=서버 유지). 서버에 값이 이미 있으면 해제 후 재조회 시 서버 값이 되살아나는 한계 있음.
+- profileImageUrl은 비범위(KB-149 — presigned API 대기). 테스트: bookmarked 매핑 2건(신규 foodAdapter.test) + 낙관 반전 단언 2건(toggleBookmark 확장) + spice PATCH body/해제 2건(useUpdateMe 갱신). tsc 0, jest 73/73.
+- 실기기 확인 포인트: 상세 저장 → 다른 기기/재설치에서도 저장 표시 정확, 맵기 수정→저장→재조회(서버 왕복) 값 유지, 온보딩 spice 포함.

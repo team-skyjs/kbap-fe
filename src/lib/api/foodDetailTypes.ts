@@ -28,6 +28,8 @@ export interface FoodDetailWire {
   imageRef: string | null; // nullable, bare image filename
   description: string; // request language
   spiciness: number; // 0..10
+  /** 조회 회원의 북마크 여부 — 비회원 조회는 항상 false (KB-142 계약 갭 해소, 2026-07-15 배포). */
+  bookmarked: boolean;
   overallRiskStatus: BeRiskStatus; // whole-dish verdict
   ingredients: IngredientWire[]; // inclusion% descending
 }

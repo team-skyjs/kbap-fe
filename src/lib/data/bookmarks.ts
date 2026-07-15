@@ -5,11 +5,10 @@
  *      POST /bookmarks {foodId:number} 등록 · ⚠️ 취소는 PATCH /bookmarks/{foodId}
  *      (DELETE 아님). 전부 인증 필수.
  *
- * 계약 갭: GET /foods/{id}에 bookmarked 필드가 없어 상세 저장 버튼의 초기
- * 상태를 서버가 안 준다 → GET /bookmarks로 채운 목록 캐시에서 유도
- * (useIsBookmarked) + 낙관적 토글. 로드된 페이지 밖의 북마크는 초기에 저장
- * 안 된 것으로 보일 수 있음 — "상세 응답에 bookmarked 추가" BE 질의 기록
- * (맵기 필드 선례). 훅 표면은 로컬 시절과 동일(화면 수정 최소).
+ * 상세 저장 상태: 계약 갭 해소됨(2026-07-15 Swagger 재배포 — FoodDetailResponse에
+ * bookmarked 추가, BE 질의 반영). 상세 화면은 상세 응답의 bookmarked를 쓰고,
+ * 토글의 낙관 쓰기가 목록 캐시(['bookmarks'])와 상세 캐시(['food', id, lang])
+ * 둘 다 갱신한다. 목록 캐시 유도 방식(useIsBookmarked)은 사용처가 없어져 제거.
  *
  * 게스트: 진입 자체가 게이트로 차단(KB-78/⑧-b)이지만 쿼리도 세션 없으면
  * 비활성(enabled) — 401 노이즈 방지.
@@ -17,7 +16,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import i18n from '../i18n';
 import type { RiskState } from '@/lib/theme';
-import type { FoodCard } from '../api/types';
+import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
 import { adaptMenuSummary } from '../api/foodAdapter';
@@ -70,12 +69,6 @@ export function useBookmarks() {
   });
 }
 
-/** 상세 저장 버튼 초기 상태 — 로드된 북마크 페이지에서 유도(계약 갭 임시 대응). */
-export function useIsBookmarked(foodId: string): boolean {
-  const { data } = useBookmarks();
-  return (data ?? []).some((b) => b.foodId === foodId);
-}
-
 /** 캐시(와이어 페이지)에 낙관적 add/remove. 이전 상태를 반환해 롤백에 쓴다. */
 function optimisticWrite(
   qc: ReturnType<typeof useQueryClient>,
@@ -123,12 +116,20 @@ export function useToggleBookmark() {
     onMutate: async ({ snap, add }) => {
       await qc.cancelQueries({ queryKey: QK() });
       const prev = optimisticWrite(qc, snap.foodId, add ? toWire(snap) : null);
-      return { prev };
+      // 상세 캐시의 bookmarked도 즉시 반전 — 상세 화면 saved가 이 필드 기반 (KB-142 후속)
+      const detailKey = ['food', snap.foodId, i18n.language] as const;
+      const prevDetail = qc.getQueryData<FoodDetail>(detailKey);
+      if (prevDetail) qc.setQueryData<FoodDetail>(detailKey, { ...prevDetail, bookmarked: add });
+      return { prev, prevDetail, detailKey };
     },
-    onError: (_e, _snap, ctx) => {
+    onError: (_e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
+      if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
     },
-    onSettled: () => void qc.invalidateQueries({ queryKey: ['bookmarks'] }),
+    onSettled: (_d, _e, { snap }) => {
+      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['food', snap.foodId] });
+    },
   });
 }
 
@@ -146,7 +147,10 @@ export function useRemoveBookmark() {
     onError: (_e, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
     },
-    onSettled: () => void qc.invalidateQueries({ queryKey: ['bookmarks'] }),
+    onSettled: (_d, _e, foodId) => {
+      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['food', foodId] }); // 상세 bookmarked 동기화
+    },
   });
 }
 
@@ -164,6 +168,9 @@ export function useRestoreBookmark() {
     onError: (_e, _snap, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
     },
-    onSettled: () => void qc.invalidateQueries({ queryKey: ['bookmarks'] }),
+    onSettled: (_d, _e, snap) => {
+      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['food', snap.foodId] }); // 상세 bookmarked 동기화
+    },
   });
 }

@@ -84,19 +84,21 @@ it('닉네임만 변경 → 개인화 쿼리는 invalidate되지 않는다 (비�
   expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(false);
 });
 
-// KB-150: spice는 계약 밖(BE 필드 대기) — 로컬 보관 왕복과 null(미설정) 처리를 잠근다.
-it('spice-only 패치 → 로컬 보관만(서버 PATCH 없음) + me 무효화로 재조회 왕복 (KB-150)', async () => {
+// KB-150 후속: spice 서버 실연결(spicinessPreference) — PATCH body 포함 + 로컬 fallback 유지,
+// 해제(null)는 계약 미정이라 로컬만(필드 생략 = 서버 유지)을 잠근다.
+it('spice 패치 → PATCH body에 spicinessPreference 포함 + 로컬 fallback 보관 (KB-150 후속)', async () => {
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A' });
-  const patchCallsBefore = (api.patch as jest.Mock).mock.calls.length;
   await runMutation(qc, { spiceTolerance: 7 });
-  expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', '7');
-  expect((api.patch as jest.Mock).mock.calls.length).toBe(patchCallsBefore); // 서버 미호출
-  expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → adaptProfile이 로컬값 주입
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 7 });
+  expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', '7'); // 마이그레이션 fallback
+  expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → 서버 값 우선(adaptProfile)
 });
 
-it('spice null(미설정으로 되돌림) → 로컬 키 제거 (KB-150)', async () => {
+it('spice null(설정 해제) → 서버 미전송(계약 미정, 필드 생략) + 로컬 키 제거 (KB-150 후속)', async () => {
   const qc = seededClient();
+  const patchCallsBefore = (api.patch as jest.Mock).mock.calls.length;
   await runMutation(qc, { spiceTolerance: null });
   expect(AsyncStorage.removeItem).toHaveBeenCalledWith('kbap.profile.spice.v1');
+  expect((api.patch as jest.Mock).mock.calls.length).toBe(patchCallsBefore); // 해제는 로컬만 — BE 질의 중
 });

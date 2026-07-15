@@ -35,6 +35,9 @@ export interface MyProfileWire {
   avoidanceSubstanceCodes: string[];
   countryCode: string;
   appLanguage: string;
+  /** 0..10 (KB-150 후속, 2026-07-15 배포). 계약상 required지만 "미설정" 표현이
+   *  미정(0은 '맵지 않음'이라 미설정과 의미가 다름) — null/누락 방어 겸 옵셔널. BE 질의 중. */
+  spicinessPreference?: number | null;
   onboardingCompleted: boolean;
   ranking: RankingSummaryWire;
 }
@@ -44,6 +47,7 @@ export interface ProfileUpdateWire {
   avoidanceSubstanceCodes?: string[];
   countryCode?: string;
   appLanguage?: string;
+  spicinessPreference?: number; // 0..10 — 해제(null) 전달 방법은 계약 미정, 생략=유지 (KB-150 후속)
 }
 
 export function adaptRanking(wire: RankingSummaryWire | MemberRankingWire): Ranking {
@@ -71,9 +75,9 @@ export function adaptProfile(wire: MyProfileWire, localSpice: number | null): Us
     nickname: wire.nickname,
     nationality: wire.countryCode,
     readerLanguage: wire.appLanguage,
-    // TODO(KB-150): BE MyProfileResponse에 맵기 필드 배포되면 `wire.<필드명> ?? localSpice`로
-    // 매핑(마이그레이션 기간 로컬 fallback) → 이후 localSpice 파라미터 제거 (2026-07-16 필드 없음)
-    spiceTolerance: localSpice, // 계약 밖 — 로컬 보관 (KB-75 질의)
+    // KB-150 후속: 서버 값 우선, 마이그레이션 기간 로컬 fallback. 숫자만 신뢰 —
+    // 서버의 "미설정" 표현이 계약에 없어(0=맵지않음과 구분 불가) null/누락은 로컬로 방어. BE 질의 중.
+    spiceTolerance: typeof wire.spicinessPreference === 'number' ? wire.spicinessPreference : localSpice,
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부
       code,

@@ -52,7 +52,7 @@ export function useUpdateMe() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (patch: UserUpdate): Promise<void> => {
-      // spice는 계약 밖 — 로컬 보관 (제공된 경우만)
+      // spice 로컬 보관은 유지 — 마이그레이션 기간 fallback (adaptProfile 참조, KB-150 후속)
       if ('spiceTolerance' in patch) {
         if (patch.spiceTolerance != null) {
           await AsyncStorage.setItem(SPICE_KEY, String(patch.spiceTolerance)).catch(() => {});
@@ -69,10 +69,13 @@ export function useUpdateMe() {
       }
 
       // 제공된 키만 와이어로 — 미전송 = 유지, restrictions 빈 배열 = 전부 해제
-      // TODO(KB-150): BE ProfileUpdateRequest에 맵기 필드 배포되면 여기에
-      // `if (patch.spiceTolerance !== undefined) body.<필드명> = patch.spiceTolerance;`
-      // 추가 + 위의 로컬 보관 블록 제거 (2026-07-16 Swagger 기준 필드 없음)
       const body: ProfileUpdateWire = {};
+      // KB-150 후속: spicinessPreference 실연결 (2026-07-15 Swagger 배포).
+      // ⚠️ "설정 해제"(null)는 계약에 전달 방법이 없음(null 전송 vs 필드 생략 미정)
+      // → 확정 전까지 해제는 로컬만 반영(필드 생략 = 서버 유지), BE 질의 중.
+      if (patch.spiceTolerance !== undefined && patch.spiceTolerance !== null) {
+        body.spicinessPreference = patch.spiceTolerance;
+      }
       if (patch.nickname !== undefined) body.nickname = patch.nickname;
       if (patch.nationality !== undefined) body.countryCode = patch.nationality;
       if (patch.readerLanguage !== undefined) body.appLanguage = patch.readerLanguage;

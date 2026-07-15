@@ -57,6 +57,7 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     photoUrl: refToUrl(wire.imageRef),
     ingredients,
     isRegistered,
+    bookmarked: wire.bookmarked === true, // 계약: 비회원 항상 false (KB-142)
   };
 }
 

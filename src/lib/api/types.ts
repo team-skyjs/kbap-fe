@@ -113,6 +113,8 @@ export interface FoodDetail {
   photoUrl: string | null;
   ingredients: IngredientRisk[]; // 90%+ inclusion, danger→caution→safe order (FR-014)
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)
+  /** 조회 회원의 저장(북마크) 여부 (KB-142). 옵셔널 = mock/미등록 경로 — 미설정은 false 취급. */
+  bookmarked?: boolean;
 }
 
 export interface ScanResultItem {

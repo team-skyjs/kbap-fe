@@ -63,10 +63,13 @@ beforeEach(() => jest.clearAllMocks());
 
 it('미저장 상태에서 토글(add) → POST /bookmarks 발사 (낙관 반영 후에도 역전 없음)', async () => {
   const qc = client(); // 북마크 캐시 없음 = 미저장
+  // 상세 캐시 시드 — KB-142 후속: 낙관 토글이 서버 필드(bookmarked)도 즉시 반전해야 함
+  qc.setQueryData(['food', '7', 'en'], { foodId: '7', bookmarked: false });
   await runToggle(qc, true);
 
   expect(api.post).toHaveBeenCalledWith('/bookmarks', { foodId: 7 });
   expect(api.patch).not.toHaveBeenCalled();
+  expect((qc.getQueryData(['food', '7', 'en']) as { bookmarked: boolean }).bookmarked).toBe(true); // 낙관 반전
 });
 
 it('저장 상태에서 토글(remove) → PATCH /bookmarks/{id} 발사 (DELETE·POST 아님)', async () => {
@@ -76,8 +79,10 @@ it('저장 상태에서 토글(remove) → PATCH /bookmarks/{id} 발사 (DELETE�
     pages: [{ items: [{ foodId: 7, name: 'Bibimbap', koreanName: '비빔밥', imageRef: null, spiciness: 0, overallRiskStatus: 'SAFE' }], hasNext: false }],
     pageParams: [undefined],
   });
+  qc.setQueryData(['food', '7', 'en'], { foodId: '7', bookmarked: true });
   await runToggle(qc, false);
 
   expect(api.patch).toHaveBeenCalledWith('/bookmarks/7');
   expect(api.post).not.toHaveBeenCalled();
+  expect((qc.getQueryData(['food', '7', 'en']) as { bookmarked: boolean }).bookmarked).toBe(false); // 낙관 반전
 });
