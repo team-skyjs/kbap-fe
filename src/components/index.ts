@@ -4,7 +4,7 @@ export { RiskMark, RiskDot, RISK } from './RiskMark';
 export { RiskPill } from './RiskPill';
 export { Stars, Star } from './Stars';
 export { Flag } from './Flag';
-export { Rosette } from './Rosette';
+export { Rosette, MedalEmblem } from './Rosette';
 export { Btn, type BtnVariant } from './Btn';
 export { StickyHeader, useStickyScroll, useHeaderHeight, type StickyHeaderProps } from './StickyHeader';
 export { SubHeader } from './SubHeader';

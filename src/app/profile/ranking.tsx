@@ -11,12 +11,13 @@ import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Path, Polygon, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
+  MedalEmblem,
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
@@ -163,43 +164,6 @@ function RankingBody({ rk, onReview, onScan }: { rk: Ranking; onReview: () => vo
         <Cta onPress={onScan} icon={<IconCamera size={18} color={C.ink} />} label={t('ranking.ctaScan')} pts={t('ranking.ctaScanPts')} />
       </View>
     </View>
-  );
-}
-
-/* ---------- hero medal emblem (starburst, my-ranking.jsx MedalEmblem) ---------- */
-const RAY_PTS = (() => {
-  const cx = 50, cy = 43, n = 12, R = 35, r = 28;
-  const pts: string[] = [];
-  for (let i = 0; i < n * 2; i++) {
-    const a = (Math.PI / n) * i - Math.PI / 2;
-    const rad = i % 2 === 0 ? R : r;
-    pts.push(`${(cx + rad * Math.cos(a)).toFixed(1)},${(cy + rad * Math.sin(a)).toFixed(1)}`);
-  }
-  return pts.join(' ');
-})();
-
-function MedalEmblem({ level, size }: { level: number; size: number }) {
-  const gid = React.useId();
-  const c1 = C.primary, c2 = C.primary2;
-  return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Defs>
-        <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={c1} />
-          <Stop offset="1" stopColor={c2} />
-        </LinearGradient>
-      </Defs>
-      <Path d="M40 66 L32 96 L41 88 L48 95 L48 70 Z" fill={c2} opacity={0.92} />
-      <Path d="M60 66 L68 96 L59 88 L52 95 L52 70 Z" fill={c1} opacity={0.92} />
-      <Polygon points={RAY_PTS} fill={c1} opacity={0.55} />
-      <Circle cx={50} cy={43} r={27} fill={`url(#${gid})`} />
-      <Circle cx={50} cy={43} r={27} fill="none" stroke="#fff" strokeOpacity={0.55} strokeWidth={2} />
-      <Circle cx={50} cy={43} r={22} fill="none" stroke="#fff" strokeOpacity={0.3} strokeWidth={1} />
-      <Path d="M34 34 a20 20 0 0 1 24 -8" fill="none" stroke="#fff" strokeOpacity={0.5} strokeWidth={2.4} strokeLinecap="round" />
-      <SvgText x={50} y={53.5} textAnchor="middle" fill="#fff" fontFamily={font.displayBlack} fontSize={30}>
-        {String(level)}
-      </SvgText>
-    </Svg>
   );
 }
 
