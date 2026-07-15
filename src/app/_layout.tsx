@@ -20,6 +20,7 @@ import { I18nextProvider } from 'react-i18next';
 
 import { queryClient } from '@/lib/queryClient';
 import { installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
+import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
 import { hasSeenIntro } from '@/lib/introSeen';
 import { FLAGS } from '@/lib/flags';
 import i18n from '@/lib/i18n';
@@ -39,12 +40,14 @@ export default function RootLayout() {
 
   // 첫 실행 게이트 (KB-76): introSeen 판별이 끝날 때까지 스플래시 유지 —
   // 판별 전에 홈/리다이렉트가 먼저 그려지는 race 방지 (실기기 반려분 #1).
+  // 신규 설치 잔존 세션 정리(freshInstall)도 이 게이트 안 — entryChecked 전엔
+  // 화면이 안 그려지므로 useSession 판정보다 정리가 항상 먼저다.
   const [entryChecked, setEntryChecked] = useState(false);
   const needsIntro = useRef(false);
 
   useEffect(() => {
-    hasSeenIntro()
-      .then((seen) => { needsIntro.current = !seen; })
+    Promise.all([cleanupIfFreshInstall(), hasSeenIntro()])
+      .then(([, seen]) => { needsIntro.current = !seen; })
       .finally(() => setEntryChecked(true));
   }, []);
 
