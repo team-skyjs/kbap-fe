@@ -12,7 +12,7 @@ import { Image, LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-nat
 import { Txt as Text } from '@/components/Txt';
 import { font, riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
-import type { ResultDish } from '@/lib/scan/segmentMenu';
+import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
 
 /** Cap so a pill can't run across the whole photo. */
 const PILL_MAX_W = 220;
@@ -100,6 +100,8 @@ export function ScanResultOverlay({
               <Text style={styles.pillText} numberOfLines={1}>
                 {d.displayName}
               </Text>
+              {/* 서버 제공 가격 그대로 — null=미표시 (P-002) */}
+              {d.priceKrw != null && <Text style={styles.pillPrice}>{formatKrw(d.priceKrw)}</Text>}
             </Pressable>
           );
         })}
@@ -130,4 +132,5 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   pillText: { fontFamily: font.ko, fontSize: 12.5, color: '#1c1917', flexShrink: 1 },
+  pillPrice: { fontFamily: font.bodyBold, fontSize: 11, color: '#78716c' },
 });

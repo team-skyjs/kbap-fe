@@ -41,27 +41,56 @@ export interface ScanOverlayItem extends ScannedItem {
   foodId: string | null; // route param when matched (numeric id stringified)
   displayName: string; // pill/list label: BE name, else rawMenuName fallback
   koreanName: string | null;
+  /** 서버 판독 가격(KRW 정수, 제공값 그대로). 미표기/비정상 wire 값 = null = 미표시. */
+  price: number | null;
+}
+
+/** 공통 판정 매핑 — matched=false 는 wire 값 무관 unable (false-safe, 헌법 III). */
+function verdict(r: ScanResultWire) {
+  return {
+    risk: r.matched ? mapRisk(r.riskLevel) : 'unable',
+    matched: r.matched,
+    foodId: r.foodId != null ? String(r.foodId) : null,
+    koreanName: r.koreanName ?? null,
+    // 가격은 제공값 그대로(환율·추정 금지) — 숫자가 아니면 미표기와 동일하게 null
+    price: typeof r.price === 'number' && Number.isFinite(r.price) ? r.price : null,
+  } as const;
 }
 
 /**
  * Join BE results to scanned items by idx. Items absent from the results are
- * non-food per the server → excluded (returned array may be shorter).
+ * non-food per the server → excluded (returned array may be shorter) — 7/10
+ * 결정 유지 (P-002 착수 질의 → 커맨드 센터 확정 7/16).
  */
 export function mergeResults(items: ScannedItem[], results: ScanResultWire[]): ScanOverlayItem[] {
   const byIdx = new Map<number, ScanResultWire>();
-  for (const r of results) byIdx.set(r.idx, r);
+  for (const r of results) if (r.idx != null) byIdx.set(r.idx, r);
   const out: ScanOverlayItem[] = [];
   for (const it of items) {
     const r = byIdx.get(it.itemId);
     if (!r) continue; // server says non-food → no marker, no list row
-    out.push({
-      ...it,
-      risk: r.matched ? mapRisk(r.riskLevel) : 'unable',
-      matched: r.matched,
-      foodId: r.foodId != null ? String(r.foodId) : null,
-      displayName: r.name ?? it.rawMenuName,
-      koreanName: r.koreanName ?? null,
-    });
+    out.push({ ...it, ...verdict(r), displayName: r.name ?? it.rawMenuName });
   }
   return out;
+}
+
+/** 사진에서만 추출된 항목(idx=null) — 좌표가 없어 리스트 전용. */
+export interface PhotoOnlyItem {
+  risk: RiskState;
+  matched: boolean;
+  foodId: string | null;
+  displayName: string;
+  koreanName: string | null;
+  price: number | null;
+}
+
+/**
+ * idx=null 결과(서버가 사진에서 추출했지만 대응 OCR 항목이 없는 메뉴)를 리스트
+ * 전용 항목으로 변환. 버리면 DANGER 메뉴가 사용자에게 안 보이는 갭 — 숨김 금지
+ * (P-002 안전 게이트, 헌법 III). 오버레이 마커는 좌표 부재로 없음(정상).
+ */
+export function photoOnlyResults(results: ScanResultWire[]): PhotoOnlyItem[] {
+  return results
+    .filter((r) => r.idx == null)
+    .map((r) => ({ ...verdict(r), displayName: r.name ?? r.koreanName ?? '?' }));
 }

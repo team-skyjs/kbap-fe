@@ -218,3 +218,13 @@
   2. **"설정 해제"(null)를 PATCH로 전달하는 방법 미정** (null 전송 vs 필드 생략 의미) — 확정 전까지 해제는 로컬만 반영(필드 생략=서버 유지). 서버에 값이 이미 있으면 해제 후 재조회 시 서버 값이 되살아나는 한계 있음.
 - profileImageUrl은 비범위(KB-149 — presigned API 대기). 테스트: bookmarked 매핑 2건(신규 foodAdapter.test) + 낙관 반전 단언 2건(toggleBookmark 확장) + spice PATCH body/해제 2건(useUpdateMe 갱신). tsc 0, jest 73/73.
 - 실기기 확인 포인트: 상세 저장 → 다른 기기/재설치에서도 저장 표시 정확, 맵기 수정→저장→재조회(서버 왕복) 값 유지, 온보딩 spice 포함.
+
+## KB-72 스캔 실연결 마무리 — imagePath + 가격 (2026-07-16, P-002)
+- [x] Swagger 재실측(구현 전): ScanRequest에 `imagePath` **required**(minLength 0, 패턴 ^(?!https?://)) 추가 확인. `POST /api/v1/images/complete` {path, contentType, size}→{path} 배포됨. **presigned 발급 API 미배포** → 시나리오 ②(업로드 스텁 + 나머지 완성). 응답 `idx` nullable화("사진 추출됐지만 대응 OCR 항목 없으면 null"), `price`(KRW 정수, 미표기 null, 응답 전용) 추가.
+- [x] 요청 전환: `{ imagePath, items }` — 온디바이스 OCR·박스 유지(7/16 예진×종한 합의). 발급 API 대기 동안 imagePath는 `''`(텍스트-only 폴백, 스캔 무중단 — DoD "발급 API 부재 시 안전한 폴백").
+- [x] 업로드 흐름 어댑터 `scanImage.ts` 신규: `completeImageUpload()`(실코드 — 발급 후 그대로 사용 가능) + `resolveScanImagePath()`(발급 파트만 TODO(KB-72) 스텁, null→'' 폴백). ⑦(KB-137) 순서 확인: 업로드 해석은 postScan 초입 — 파일 삭제 트리거(교체/언마운트)보다 항상 먼저.
+- [x] 가격 표시: 리스트 행 + 오버레이 pill에 **서버 price 그대로**(formatKrw 포맷만, 환율·추정 금지), null=미표시. OCR 추정가(priceKrw)를 서버값으로 대체(세그멘테이션은 payload 절감용으로 유지).
+- [x] 착수 질의→커맨드 센터 확정(7/16): 응답에 없는 idx = **드롭 유지**(7/10 결정, unable 지시 철회). **idx=null 결과는 버리지 않고 리스트 전용 노출**(photoOnlyResults — 좌표 부재로 오버레이 마커 없음, 위험도 규칙 동일·음수 itemId 합성 키). DANGER 미노출 갭 차단(헌법 III).
+- ⚠️ **BE 질의 1건**: imagePath required인데 발급 API 부재 — `''` 전송이 허용되는지(스키마상 minLength 0으로 통과 추정) 확정 필요. 거부로 확정되면 정직한 에러 표시로 전환 예정(scanImage.ts 주석).
+- 테스트: 가격 매핑(정상/null/비숫자 방어) + idx=null 조인 제외 + photoOnlyResults(danger 유지·unable 강등·koreanName 폴백) + 요청 body imagePath/items 잠금(useScan.test 신규 — 사진 유무 2경로) + 리스트 노출 회귀(scanDefaultView 확장). tsc 0, jest 80/80 (15 suites).
+- 실기기 확인 포인트: 스캔 정상 동작(imagePath '' 서버 수용 여부 — 거부 시 에러 화면 뜨는지 공유 요망), 가격 표기 메뉴에 ₩ 표시·미표기 메뉴 미표시, 리스트에 박스 없는 항목(사진 전용) 노출 여부.

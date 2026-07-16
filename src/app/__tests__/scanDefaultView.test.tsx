@@ -64,8 +64,12 @@ jest.mock('@/lib/data/useScan', () => ({
       onSuccess({
         degraded: false,
         items: [
-          { itemId: 0, rawMenuName: '된장찌개', box: { x: 0, y: 0, width: 0.1, height: 0.1 }, risk: 'safe', matched: true, foodId: '1', displayName: 'Doenjang Jjigae', koreanName: '된장찌개' },
-          { itemId: 3, rawMenuName: '맥북', box: { x: 0, y: 0.5, width: 0.1, height: 0.1 }, risk: 'unable', matched: false, foodId: null, displayName: '맥북', koreanName: null },
+          { itemId: 0, rawMenuName: '된장찌개', box: { x: 0, y: 0, width: 0.1, height: 0.1 }, risk: 'safe', matched: true, foodId: '1', displayName: 'Doenjang Jjigae', koreanName: '된장찌개', price: 8000 },
+          { itemId: 3, rawMenuName: '맥북', box: { x: 0, y: 0.5, width: 0.1, height: 0.1 }, risk: 'unable', matched: false, foodId: null, displayName: '맥북', koreanName: null, price: null },
+        ],
+        // idx=null(사진에서만 추출) — 리스트에 노출되어야 함 (P-002 안전 게이트, 드롭 금지)
+        photoOnly: [
+          { risk: 'danger', matched: true, foodId: '42', displayName: '사진전용육회', koreanName: null, price: null },
         ],
       }),
   }),
@@ -97,6 +101,9 @@ it('스캔 완료 시 기본 화면은 리스트 — 오버레이는 렌더되�
   expect(tree.root.findAllByType(ScanResultOverlay).length).toBe(0);
   const texts = tree.root.findAll((n) => n.props?.children === 'Doenjang Jjigae');
   expect(texts.length).toBeGreaterThanOrEqual(1);
+  // P-002: idx=null(사진에서만 추출) 항목도 리스트에 노출 — 드롭 금지 (헌법 III)
+  const photoOnlyRow = tree.root.findAll((n) => n.props?.children === '사진전용육회');
+  expect(photoOnlyRow.length).toBeGreaterThanOrEqual(1);
   // §14-5: unmatched(맥북)도 리스트에서 숨겨지지 않는다
   expect(tree.root.findAll((n) => n.props?.children === '맥북').length).toBeGreaterThanOrEqual(1);
 });

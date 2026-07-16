@@ -1,6 +1,8 @@
 /**
  * Scan screen — camera → on-device OCR → segment (T072, handoff §14) → live BE
- * POST /scans (KB-72 신계약 2026-07-10) → name-pill markers + list.
+ * POST /scans (KB-72 신계약 2026-07-16: imagePath + price) → name-pill markers
+ * + list. 가격은 서버 제공값만 표시(null=미표시, OCR 추정가 대체). idx=null
+ * 결과(사진에서만 추출)는 리스트에 박스 없이 노출 — 숨김 금지 (P-002 게이트).
  *
  * The SERVER is the food-판정 authority now: it cleans + catalog-matches the
  * raw lines; idx absent from results = non-food → dropped (no marker/row).
@@ -23,7 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone } from '@/lib/theme';
 import { Btn, RiskMark, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
 import { useScan } from '@/lib/data/useScan';
-import type { ScanOverlayItem } from '@/lib/api/scanAdapter';
+import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { personalRisk } from '@/lib/risk';
@@ -80,6 +82,8 @@ export default function Scan() {
   useEffect(() => () => deletePhotoFile(photoUriRef.current), []);
   const [dishes, setDishes] = useState<MenuDish[]>([]);
   const [items, setItems] = useState<ScanOverlayItem[]>([]);
+  const [photoOnly, setPhotoOnly] = useState<PhotoOnlyItem[]>([]); // idx=null — 리스트 전용
+
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
   // KB-140: 기본 화면 = 리스트 (오버레이 버튼 겹침 회피 — 2026-07-14 결정)
   const [view, setView] = useState<ResultView>('list');
@@ -108,9 +112,10 @@ export default function Scan() {
     // §14-2.2 — send ONLY dish names (no descriptions/prices/origin/junk)
     const scanned = menuDishes.map((d) => ({ itemId: d.itemId, rawMenuName: d.rawMenuName, box: d.box }));
     console.log('[scan] sending dishNames =', JSON.stringify(scanned.map((s) => s.rawMenuName)));
-    scan.mutate(scanned, {
+    scan.mutate({ items: scanned, photo: capturedPhoto }, {
       onSuccess: (res) => {
         setItems(res.items);
+        setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
         setView('list'); // KB-140 기본 리스트
         setPhase('result');
@@ -228,10 +233,26 @@ export default function Scan() {
         foodId: it.foodId,
         displayName: it.displayName,
         koreanName: it.koreanName,
+        priceKrw: it.price, // 서버 제공값 그대로 — OCR 추정가 대체, null=미표시 (P-002)
       }];
     });
+    // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
+    // 음수 itemId = 합성 키(OCR itemId 0..n 과 불충돌). 위험도 규칙은 동일.
+    const photoDishes: ResultDish[] = photoOnly.map((p, k) => ({
+      itemId: -1 - k,
+      rawMenuName: p.displayName,
+      box: { x: 0, y: 0, width: 0, height: 0 },
+      latin: null,
+      priceKrw: p.price,
+      risk: p.matched ? personalRisk(p.risk, hasR) : 'unable',
+      matched: p.matched,
+      foodId: p.foodId,
+      displayName: p.displayName,
+      koreanName: p.koreanName,
+    }));
+    const allDishes = [...resultDishes, ...photoDishes];
     // §14-5: unable sorted last, never hidden
-    const listDishes = [...resultDishes].sort((a, b) => (a.risk === 'unable' ? 1 : 0) - (b.risk === 'unable' ? 1 : 0));
+    const listDishes = [...allDishes].sort((a, b) => (a.risk === 'unable' ? 1 : 0) - (b.risk === 'unable' ? 1 : 0));
 
     return (
       <View style={styles.root}>
@@ -250,13 +271,13 @@ export default function Scan() {
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
           {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
-          <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: resultDishes.length })}</Text>
+          <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: allDishes.length })}</Text>
           <View style={styles.toggleRow}>
             <Toggle label={t('scan.showList')} on={view === 'list'} onPress={() => setView('list')} />
             <Toggle label={t('scan.showResult')} on={view === 'risk'} onPress={() => setView('risk')} />
             <Toggle label={t('scan.showOriginal')} on={view === 'original'} onPress={() => setView('original')} />
           </View>
-          <Btn variant="ghost" onPress={() => { setItems([]); setDishes([]); setPhoto(null); setPhase('camera'); }}>
+          <Btn variant="ghost" onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setPhase('camera'); }}>
             {t('scan.retake')}
           </Btn>
         </View>

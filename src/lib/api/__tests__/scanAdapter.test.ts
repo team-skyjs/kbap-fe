@@ -3,7 +3,7 @@
  * Locks the core mapping rules: server-excluded idx dropped, matched branching
  * (never on foodId), name fallback, false-safe risk mapping.
  */
-import { mapRisk, mergeResults, type ScannedItem } from '../scanAdapter';
+import { mapRisk, mergeResults, photoOnlyResults, type ScannedItem } from '../scanAdapter';
 import type { ScanResultWire } from '../scanTypes';
 
 const box = { x: 0.1, y: 0.3, width: 0.4, height: 0.05 };
@@ -15,10 +15,10 @@ const items: ScannedItem[] = [
 ];
 
 const results: ScanResultWire[] = [
-  { idx: 0, matched: true, foodId: 7, riskLevel: 'SAFE', name: '된장찌개', koreanName: '된장찌개' },
-  { idx: 1, matched: true, foodId: 8, riskLevel: 'DANGER', name: 'Kimchi Stew', koreanName: '김치찌개' },
+  { idx: 0, matched: true, foodId: 7, riskLevel: 'SAFE', name: '된장찌개', koreanName: '된장찌개', price: 8000 },
+  { idx: 1, matched: true, foodId: 8, riskLevel: 'DANGER', name: 'Kimchi Stew', koreanName: '김치찌개', price: null }, // 가격 미표기
   // idx 2 ABSENT — server excluded it as non-food
-  { idx: 3, matched: false, foodId: 99, riskLevel: 'UNKNOWN', name: null, koreanName: null }, // 조사 대기 (foodId 있어도!)
+  { idx: 3, matched: false, foodId: 99, riskLevel: 'UNKNOWN', name: null, koreanName: null }, // 조사 대기 (foodId 있어도!) · price 필드 자체 없음
 ];
 
 describe('mergeResults (KB-72 신계약)', () => {
@@ -53,6 +53,51 @@ describe('mergeResults (KB-72 신계약)', () => {
       [items[0]],
       [{ idx: 0, matched: false, foodId: null, riskLevel: 'SAFE', name: null, koreanName: null }],
     );
+    expect(m.risk).toBe('unable');
+  });
+
+  it('price: 제공값 그대로 전달, 미표기(null)/필드 없음 → null (P-002)', () => {
+    expect(merged.find((m) => m.itemId === 0)!.price).toBe(8000);
+    expect(merged.find((m) => m.itemId === 1)!.price).toBe(null);
+    expect(merged.find((m) => m.itemId === 3)!.price).toBe(null);
+  });
+
+  it('price: 비숫자 wire 값은 방어적으로 null (표시 안 함 > 이상한 가격)', () => {
+    const [m] = mergeResults(
+      [items[0]],
+      [{ idx: 0, matched: true, foodId: 7, riskLevel: 'SAFE', price: '9000' as unknown as number }],
+    );
+    expect(m.price).toBe(null);
+  });
+
+  it('idx=null 결과는 조인에서 제외 (photoOnlyResults 몫 — 크래시 없음)', () => {
+    const out = mergeResults(
+      [items[0]],
+      [
+        { idx: null, matched: true, foodId: 5, riskLevel: 'DANGER', name: '사진전용' },
+        { idx: 0, matched: true, foodId: 7, riskLevel: 'SAFE' },
+      ],
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].itemId).toBe(0);
+  });
+});
+
+describe('photoOnlyResults (P-002 안전 게이트 — idx=null 숨김 금지)', () => {
+  it('idx=null 항목만 추출, 판정 규칙은 동일 (DANGER 유지·조사대기 unable)', () => {
+    const out = photoOnlyResults([
+      { idx: 0, matched: true, foodId: 7, riskLevel: 'SAFE' }, // 조인 대상 — 제외
+      { idx: null, matched: true, foodId: 5, riskLevel: 'DANGER', name: '육회', koreanName: '육회', price: 15000 },
+      { matched: false, foodId: null, riskLevel: 'UNKNOWN', koreanName: '정체불명' }, // idx 필드 자체 없음
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ displayName: '육회', risk: 'danger', matched: true, foodId: '5', price: 15000 });
+    // 조사 대기: unable 강등 + name 없으면 koreanName 폴백
+    expect(out[1]).toMatchObject({ displayName: '정체불명', risk: 'unable', matched: false, price: null });
+  });
+
+  it('matched=false + 적대적 riskLevel 이라도 safe 로 새지 않는다', () => {
+    const [m] = photoOnlyResults([{ idx: null, matched: false, foodId: 1, riskLevel: 'SAFE', name: 'x' }]);
     expect(m.risk).toBe('unable');
   });
 });

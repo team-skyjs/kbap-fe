@@ -3,16 +3,24 @@
  * 2026-07-10). Mirror the BE swagger EXACTLY; the adapter (scanAdapter.ts)
  * translates BE → internal so screens never see BE enums/wrappers.
  *
- *   POST /api/v1/scans
- *   req: { items: [{ idx, rawMenuName }] }   — boxes stay ON-DEVICE (overlay)
+ *   POST /api/v1/scans   (imagePath 추가 — Swagger 재배포 2026-07-16)
+ *   req: { imagePath, items: [{ idx, rawMenuName }] } — boxes stay ON-DEVICE
+ *     - imagePath: required. /images/complete 가 검증한 오브젝트 경로.
+ *       presigned 발급 API 미배포 동안은 '' 로 전송(텍스트-only) — TODO(KB-72)
  *   res: BaseResponse<{ degraded, results: [{ idx, matched, foodId,
- *        riskLevel, name, koreanName }] }>
+ *        riskLevel, name, koreanName, price }] }>
  *     - results may be SHORTER than the request: non-food lines (원산지·가격·
  *       UI 문구) are excluded by the server
+ *     - idx is nullable now: 사진에서 추출됐지만 대응 OCR 항목이 없으면 null
+ *     - price: 메뉴판 표기 가격(원 단위 정수, 서버가 축약 복원). 미표기 = null.
+ *       응답 전용 — 표시할 때 포맷팅만, 환율·추정 금지
  *     - matched=false ⇒ 조사 대기: riskLevel is always UNKNOWN, and foodId may
  *       still be present — branch on `matched`, never on foodId (Swagger 명시)
  *     - degraded=true ⇒ 정제(LLM) 실패/부재: non-food may leak into results,
  *       all UNMATCHED
+ *
+ *   POST /api/v1/images/complete — 업로드 완료 신고(멱등). 서버가 실제 이미지
+ *   검증 후 { path } 반환 — 이 path 를 ScanRequest.imagePath 로 쓴다.
  */
 
 /** BE generic envelope — canonical definition lives in the shared client (KB-66). */
@@ -34,16 +42,30 @@ export interface ScanReqItem {
 }
 
 export interface ScanRequest {
+  /** 검증된 오브젝트 경로 (required, minLength 0 — 발급 API 전까진 '' = 텍스트-only). */
+  imagePath: string;
   items: ScanReqItem[];
 }
 
 export interface ScanResultWire {
-  idx: number;
+  idx?: number | null; // null = 사진에서만 추출(대응 OCR 항목 없음 — 그릴 박스 없음)
   matched: boolean; // false = 조사 대기 (riskLevel UNKNOWN, no detail screen)
   foodId?: number | null; // present even for some unmatched items — do NOT branch on it
   riskLevel: BeRiskLevel;
   name?: string | null; // display name (ko for now; localizes once auth lands)
   koreanName?: string | null;
+  price?: number | null; // 메뉴판 표기 가격(KRW 정수), 미표기 = null — 응답 전용
+}
+
+/** POST /images/complete — 업로드 완료 신고 (req/res). */
+export interface ImageCompleteRequest {
+  path: string; // 발급 시 받은 객체 키 그대로
+  contentType: string;
+  size: number; // bytes
+}
+
+export interface ImageCompletePayload {
+  path: string; // 검증된 경로 — ScanRequest.imagePath 로 그대로 사용
 }
 
 export interface ScanPayload {
