@@ -33,11 +33,16 @@ export async function completeImageUpload(req: ImageCompleteRequest): Promise<st
   return payload.path;
 }
 
+export interface UploadedImage {
+  path: string; // complete 가 검증·확정한 오브젝트 경로 — 스캔 imagePath 용
+  publicUrl: string; // 만료 없는 표시용 URL — 프로필 profileImageUrl 용 (P-004)
+}
+
 /**
- * 발급 → PUT 업로드 → 완료 신고. 성공 시 검증된 오브젝트 경로, 실패 시 throw.
+ * 발급 → PUT 업로드 → 완료 신고. 성공 시 검증된 경로·표시 URL, 실패 시 throw.
  * (호출측이 폴백 정책을 정한다 — 스캔은 null→'', 프로필은 정직한 에러+사진 없이 진행)
  */
-export async function uploadImage(file: PhotoFile, purpose: string): Promise<string> {
+export async function uploadImage(file: PhotoFile, purpose: string): Promise<UploadedImage> {
   const info = await FileSystem.getInfoAsync(file.uri); // size 는 존재 시 기본 포함 (legacy API)
   if (!info.exists || typeof info.size !== 'number') throw new Error(`file missing: ${file.uri}`);
   const contentType = imageContentType(file.uri);
@@ -55,7 +60,7 @@ export async function uploadImage(file: PhotoFile, purpose: string): Promise<str
 
   const path = await completeImageUpload({ path: issued.objectKey, contentType, size: info.size });
   console.log(`[scan] image upload complete | path = ${path}`);
-  return path;
+  return { path, publicUrl: issued.publicUrl };
 }
 
 /**
@@ -66,7 +71,7 @@ export async function uploadImage(file: PhotoFile, purpose: string): Promise<str
 export async function resolveScanImagePath(photo: PhotoFile | null): Promise<string | null> {
   if (!photo) return null; // 샘플 스캔 — 사진 자체가 없음
   try {
-    return await uploadImage(photo, 'MENU_SCAN');
+    return (await uploadImage(photo, 'MENU_SCAN')).path;
   } catch (e) {
     console.log('[scan] image upload failed — 텍스트-only 폴백:', (e as Error)?.message ?? e);
     return null;

@@ -38,6 +38,8 @@ export interface MyProfileWire {
   /** 0..10 유효값, **-1 = 미설정 센티널** (BE 확정 2026-07-16 회의 — required int,
    *  미설정 유저는 항상 -1로 옴). 누락 방어 겸 옵셔널은 구서버 대비로만 유지. */
   spicinessPreference?: number | null;
+  /** 프로필 사진 표시 URL (KB-149, 2026-07-16 배포). 미설정 시 null/누락. */
+  profileImageUrl?: string | null;
   onboardingCompleted: boolean;
   ranking: RankingSummaryWire;
 }
@@ -48,6 +50,7 @@ export interface ProfileUpdateWire {
   countryCode?: string;
   appLanguage?: string;
   spicinessPreference?: number; // 0..10, 해제 = -1 전송 (BE 확정 7/16 — 생략은 유지)
+  profileImageUrl?: string; // 업로드 publicUrl (KB-149) — 생략 = 유지
 }
 
 /**
@@ -88,6 +91,9 @@ export function adaptProfile(wire: MyProfileWire, localSpice: number | null): Us
     nationality: wire.countryCode,
     readerLanguage: wire.appLanguage,
     spiceTolerance: adaptSpice(wire.spicinessPreference, localSpice),
+    // 빈 문자열도 미설정 취급 — Image source 에 '' 가 들어가는 것 방지 (KB-149)
+    profileImageUrl:
+      typeof wire.profileImageUrl === 'string' && wire.profileImageUrl ? wire.profileImageUrl : null,
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부
       code,

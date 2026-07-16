@@ -39,8 +39,11 @@ beforeEach(() => {
   });
 });
 
-it('성공 경로: 발급 body 정확값 → PUT(requiredHeaders 그대로) → complete(objectKey) → path 반환', async () => {
-  await expect(uploadImage(PHOTO, 'MENU_SCAN')).resolves.toBe('scan/1/a.jpg');
+it('성공 경로: 발급 body 정확값 → PUT(requiredHeaders 그대로) → complete(objectKey) → path+publicUrl 반환', async () => {
+  await expect(uploadImage(PHOTO, 'MENU_SCAN')).resolves.toEqual({
+    path: 'scan/1/a.jpg',
+    publicUrl: ISSUED.publicUrl, // 프로필 표시용 (P-004 공용)
+  });
   expect(api.post).toHaveBeenCalledWith('/images/upload-url', {
     purpose: 'MENU_SCAN',
     contentType: 'image/jpeg',

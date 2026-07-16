@@ -1,12 +1,13 @@
 /**
  * Edit profile (mockup Screen I3) — reached from the pencil on the profile
- * identity card. Change photo (stub), Nickname (staged, saved on Save),
+ * identity card. Change photo (KB-149 실연결 — 선택 즉시 업로드+PATCH, 국적
+ * 행과 같은 즉시 적용 시맨틱), Nickname (staged, saved on Save),
  * Nationality → I4, Reader language → shared LanguagePicker (I5), read-only
  * Email. Nationality + reader language apply immediately when picked (same as
  * the account Language row); Save persists the nickname via PATCH /me.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,7 @@ import { countryByCode } from '@/lib/onboarding/countries';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
+import { pickProfileImage, uploadProfileImage } from '@/lib/data/profileImage';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -43,9 +45,29 @@ export default function EditProfile() {
   const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   function save() {
-    // spice는 계약 밖 — useUpdateMe가 로컬 보관 처리(KB-150), 서버 body 무영향
+    // spice: 해제(null) = -1 센티널 전송 (KB-150 확정 7/16 — useMe 참조)
     update.mutate({ nickname: nickname.trim() || me?.nickname, spiceTolerance: spice }, { onSuccess: () => router.back() });
   }
+
+  // KB-149: 사진은 국적 행처럼 즉시 적용 — 선택 → 업로드 → PATCH.
+  // 실패는 정직한 에러 표시, 기존 사진/플레이스홀더 유지 (수정 자체를 막지 않음).
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+  const changePhoto = async () => {
+    setPhotoError(false);
+    const file = await pickProfileImage().catch(() => null);
+    if (!file) return; // 취소
+    setPhotoBusy(true);
+    try {
+      const url = await uploadProfileImage(file);
+      update.mutate({ profileImageUrl: url });
+    } catch (e) {
+      console.log('[profile] photo upload failed:', (e as Error)?.message ?? e);
+      setPhotoError(true);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -59,15 +81,26 @@ export default function EditProfile() {
         }
       />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* avatar */}
+        {/* avatar — KB-149 실연결 */}
         <View style={styles.avatarWrap}>
-          <Pressable style={styles.av}>
-            <IconProfile size={44} color={C.primary} />
+          <Pressable style={styles.av} onPress={photoBusy ? undefined : () => void changePhoto()}>
+            {me?.profileImageUrl ? (
+              <Image source={{ uri: me.profileImageUrl }} style={styles.avImg} />
+            ) : (
+              <IconProfile size={44} color={C.primary} />
+            )}
+            {photoBusy && (
+              <View style={[styles.avImg, styles.avBusy]}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            )}
             <View style={styles.cam}>
               <IconCamera size={16} color="#fff" />
             </View>
           </Pressable>
-          <Text style={styles.phLbl}>{t('editProfile.changePhoto')}</Text>
+          <Text style={photoError ? styles.phErr : styles.phLbl}>
+            {photoError ? t('editProfile.photoError') : t('editProfile.changePhoto')}
+          </Text>
         </View>
 
         {/* nickname */}
@@ -171,8 +204,11 @@ const styles = StyleSheet.create({
 
   avatarWrap: { alignItems: 'center', gap: 10, paddingVertical: 4 },
   av: { width: 92, height: 92, borderRadius: 46, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  avImg: { position: 'absolute', top: 0, left: 0, width: 92, height: 92, borderRadius: 46 },
+  avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
   cam: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
   phLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  phErr: { fontFamily: font.bodyBold, fontSize: 13, color: C.riskCaution },
 
   fieldset: { gap: 6 },
   fieldLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },

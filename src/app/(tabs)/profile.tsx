@@ -6,7 +6,7 @@
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
 import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -119,7 +119,12 @@ export default function Profile() {
             {/* identity */}
             <View style={styles.id}>
               <View style={styles.avatar}>
-                <IconProfile size={30} color={C.primary} />
+                {/* KB-149: 서버 프로필 사진 — 없으면 기존 플레이스홀더 */}
+                {me.profileImageUrl ? (
+                  <Image source={{ uri: me.profileImageUrl }} style={styles.avatarImg} />
+                ) : (
+                  <IconProfile size={30} color={C.primary} />
+                )}
               </View>
               <View style={{ flex: 1, gap: 6 }}>
                 {/* KB-125: 미완료 프로필 — 검정 '—' 대신 흐린 "미설정" 표기 */}
@@ -348,7 +353,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
 
   id: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: 56, height: 56, borderRadius: 28 },
   name: { fontFamily: font.display, fontSize: 20, color: C.ink },
   nameUnset: { fontFamily: font.body, fontSize: 17, color: C.ink3 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },

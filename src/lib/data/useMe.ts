@@ -76,6 +76,7 @@ export function useUpdateMe() {
       if (patch.spiceTolerance !== undefined) {
         body.spicinessPreference = patch.spiceTolerance ?? -1;
       }
+      if (patch.profileImageUrl !== undefined) body.profileImageUrl = patch.profileImageUrl; // KB-149
       if (patch.nickname !== undefined) body.nickname = patch.nickname;
       if (patch.nationality !== undefined) body.countryCode = patch.nationality;
       if (patch.readerLanguage !== undefined) body.appLanguage = patch.readerLanguage;

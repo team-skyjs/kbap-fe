@@ -475,7 +475,8 @@
     "linkedTitle": "連携アカウント",
     "email": "メール",
     "spice": "辛さの許容度",
-    "spiceClear": "設定を解除"
+    "spiceClear": "設定を解除",
+    "photoError": "写真のアップロードに失敗しました。再試行するか、写真なしで続けられます。"
   },
   "nationalityPicker": {
     "title": "国籍",

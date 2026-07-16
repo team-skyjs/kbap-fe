@@ -28,6 +28,8 @@ export interface OnboardingProfilePayload {
   language: string; // reader language (BCP-47, one of the 9)
   avoidIngredients: string[] | Unset; // 81종 codes, or skipped
   spiceTolerance: number | Unset; // 0..10, or skipped — 로컬 보관 전용
+  /** 업로드된 프로필 사진 publicUrl (KB-149). null/생략 = 미선택 → 필드 생략. */
+  profileImageUrl?: string | null;
 }
 
 const SPICE_KEY = 'kbap.profile.spice.v1';
@@ -45,6 +47,8 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     // 수렴한다 (다르게 저장되는 게 실측되면 -1 명시 전송으로 전환). 진행로그 기록.
     // 로컬 보관(위)은 구서버 대비 fallback으로 유지 (adaptSpice 참조).
     ...(payload.spiceTolerance !== UNSET ? { spicinessPreference: payload.spiceTolerance } : {}),
+    // KB-149: 사진은 선택 사항 — 미선택은 필드 생략 (optional 확인)
+    ...(payload.profileImageUrl ? { profileImageUrl: payload.profileImageUrl } : {}),
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
     avoidanceSubstanceCodes:

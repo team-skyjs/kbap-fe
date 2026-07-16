@@ -475,7 +475,8 @@
     "linkedTitle": "Đã liên kết tài khoản",
     "email": "Email",
     "spice": "Mức ăn cay",
-    "spiceClear": "Bỏ thiết lập"
+    "spiceClear": "Bỏ thiết lập",
+    "photoError": "Tải ảnh lên thất bại. Hãy thử lại hoặc tiếp tục mà không cần ảnh."
   },
   "nationalityPicker": {
     "title": "Quốc tịch",

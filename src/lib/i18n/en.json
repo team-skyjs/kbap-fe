@@ -223,7 +223,8 @@
     "linkedTitle": "Linked to account",
     "email": "Email",
     "spice": "Spice tolerance",
-    "spiceClear": "Clear (not set)"
+    "spiceClear": "Clear (not set)",
+    "photoError": "Photo upload failed. Tap to try again — you can continue without one."
   },
   "nationalityPicker": {
     "title": "Nationality",

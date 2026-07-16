@@ -475,7 +475,8 @@
     "linkedTitle": "Tertaut ke akun",
     "email": "Email",
     "spice": "Toleransi pedas",
-    "spiceClear": "Hapus pengaturan"
+    "spiceClear": "Hapus pengaturan",
+    "photoError": "Unggah foto gagal. Coba lagi, atau lanjutkan tanpa foto."
   },
   "nationalityPicker": {
     "title": "Kewarganegaraan",

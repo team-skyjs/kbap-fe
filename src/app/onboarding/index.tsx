@@ -14,7 +14,7 @@
  * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ import {
   RiskMark,
   TopBar,
   IconCheck,
+  IconCamera,
   IconChevron,
   IconFlame,
   IconGlobe,
@@ -41,6 +42,7 @@ import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
+import { pickProfileImage, uploadProfileImage } from '@/lib/data/profileImage';
 import { queryClient } from '@/lib/queryClient';
 import type { SupportedLang } from '@/lib/i18n/languages';
 
@@ -59,6 +61,10 @@ export default function Onboarding() {
   // collected LOCALLY (KB-110) — nothing leaves the device until the final
   // batch submit. Nationality defaults to the device region when recognized.
   const [nickname, setNickname] = useState('');
+  // KB-149 프로필 사진 (선택 사항) — 선택 즉시 업로드, 제출 body엔 URL만
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   const [spice, setSpice] = useState(5);
@@ -78,6 +84,7 @@ export default function Onboarding() {
       if (d && !hydrated.current) {
         setAgreed(d.consented);
         setNickname(d.nickname);
+        setPhotoUrl(d.profileImageUrl ?? null);
         setNationality(d.nationality);
         setLang(d.language as SupportedLang);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
@@ -104,9 +111,10 @@ export default function Onboarding() {
       language: lang,
       restrictions: skipped.restrictions ? null : Array.from(restrictions),
       spice: skipped.spice ? null : spice,
+      profileImageUrl: photoUrl,
       updatedAt: new Date().toISOString(),
     });
-  }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting]);
+  }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting, photoUrl]);
 
   const [natOpen, setNatOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -137,6 +145,7 @@ export default function Onboarding() {
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
         spiceTolerance: skipped.spice ? UNSET : spice,
+        profileImageUrl: photoUrl, // null = 미선택 → 필드 생략 (KB-149)
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();
@@ -163,6 +172,22 @@ export default function Onboarding() {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: false }));
     if (step === 'spice') setSkipped((s) => ({ ...s, spice: false }));
     next();
+  };
+
+  // KB-149: 선택 즉시 업로드 — 실패는 정직한 에러 표시, 사진 없이 진행 가능
+  const pickPhoto = async () => {
+    setPhotoError(false);
+    const file = await pickProfileImage().catch(() => null);
+    if (!file) return; // 취소
+    setPhotoBusy(true);
+    try {
+      setPhotoUrl(await uploadProfileImage(file));
+    } catch (e) {
+      console.log('[onboarding] photo upload failed:', (e as Error)?.message ?? e);
+      setPhotoError(true);
+    } finally {
+      setPhotoBusy(false);
+    }
   };
 
   const toggle = (set: Set<string>, key: string, apply: (s: Set<string>) => void) => {
@@ -198,6 +223,10 @@ export default function Onboarding() {
           <Profile
             nickname={nickname}
             setNickname={setNickname}
+            photoUrl={photoUrl}
+            photoBusy={photoBusy}
+            photoError={photoError}
+            onPickPhoto={() => void pickPhoto()}
             nationality={nation}
             languageLabel={LANG_ENDONYM[lang] ?? lang}
             onPickNationality={() => setNatOpen(true)}
@@ -246,6 +275,10 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 function Profile(props: {
   nickname: string;
   setNickname: (s: string) => void;
+  photoUrl: string | null;
+  photoBusy: boolean;
+  photoError: boolean;
+  onPickPhoto: () => void;
   nationality: { code: string; name: string };
   languageLabel: string;
   onPickNationality: () => void;
@@ -253,11 +286,32 @@ function Profile(props: {
   onContinue: () => void;
   t: TFn;
 }) {
-  const { nickname, setNickname, nationality, languageLabel, onPickNationality, onPickLanguage, onContinue, t } = props;
+  const { nickname, setNickname, photoUrl, photoBusy, photoError, onPickPhoto, nationality, languageLabel, onPickNationality, onPickLanguage, onContinue, t } = props;
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.profileTitle')} sub={t('onboarding.profileSub')} />
       <View style={{ gap: 15 }}>
+        {/* KB-149 프로필 사진 (선택 사항) — 탭 → 갤러리 1:1 크롭 → 즉시 업로드 */}
+        <View style={styles.avatarWrap}>
+          <Pressable style={styles.av} onPress={photoBusy ? undefined : onPickPhoto}>
+            {photoUrl ? (
+              <Image source={{ uri: photoUrl }} style={styles.avImg} />
+            ) : (
+              <IconProfile size={40} color={C.primary} />
+            )}
+            {photoBusy && (
+              <View style={[styles.avImg, styles.avBusy]}>
+                <ActivityIndicator color="#fff" />
+              </View>
+            )}
+            <View style={styles.cam}>
+              <IconCamera size={15} color="#fff" />
+            </View>
+          </Pressable>
+          <Text style={photoError ? styles.phErr : styles.phLbl}>
+            {photoError ? t('editProfile.photoError') : t('editProfile.changePhoto')}
+          </Text>
+        </View>
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('onboarding.nickname')} *</Text>
           <View style={[styles.field, !!nickname && styles.fieldFocus]}>
@@ -452,6 +506,15 @@ const styles = StyleSheet.create({
   obSub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 20, marginTop: 6 },
 
   // fields
+  // KB-149 프로필 사진 (edit.tsx avatar 패턴)
+  avatarWrap: { alignItems: 'center', gap: 8, paddingVertical: 2 },
+  av: { width: 88, height: 88, borderRadius: 44, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  avImg: { position: 'absolute', top: 0, left: 0, width: 88, height: 88, borderRadius: 44 },
+  avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  cam: { position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: 15, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
+  phLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primary },
+  phErr: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.riskCaution },
+
   fieldset: { gap: 6 },
   fieldLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, minHeight: 50, ...shadow.sh1 },

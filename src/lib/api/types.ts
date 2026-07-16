@@ -53,6 +53,8 @@ export interface User {
   spiceTolerance: number | null; // 0–10
   restrictions: DietaryRestriction[];
   rank: Ranking;
+  /** 프로필 사진 표시 URL (KB-149). 미설정/mock 은 생략 = 플레이스홀더. */
+  profileImageUrl?: string | null;
   /** 서버 온보딩 완료 플래그 (KB-75 재유도 판정의 원천). mock/비회원에선 생략. */
   onboardingCompleted?: boolean;
 }
@@ -63,6 +65,7 @@ export interface UserUpdate {
   readerLanguage?: string;
   spiceTolerance?: number | null;
   restrictions?: DietaryRestriction[];
+  profileImageUrl?: string; // 업로드된 publicUrl (KB-149)
 }
 
 export interface RatingAggregate {

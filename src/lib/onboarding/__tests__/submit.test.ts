@@ -45,6 +45,15 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 
+  // P-004(KB-149): 사진 선택 시 profileImageUrl 포함, 미선택(null/생략) 시 필드 생략
+  it('profileImageUrl — 선택 시 body 포함, 미선택 시 필드 생략', async () => {
+    api.post.mockResolvedValue(undefined);
+    await submitOnboardingProfile({ ...payload, profileImageUrl: 'https://cdn/p.jpg' });
+    expect(api.post.mock.calls[0][1]).toMatchObject({ profileImageUrl: 'https://cdn/p.jpg' });
+    await submitOnboardingProfile({ ...payload, profileImageUrl: null });
+    expect(api.post.mock.calls[1][1]).not.toHaveProperty('profileImageUrl');
+  });
+
   it('400 + onboardingCompleted=false → 에러 표면화 (검증 실패를 삼키지 않는다)', async () => {
     api.post.mockRejectedValueOnce(new ApiError('닉네임 형식 오류', 400));
     api.get.mockResolvedValueOnce({ onboardingCompleted: false });

@@ -23,6 +23,8 @@ export interface OnboardingDraft {
   language: string; // reader language (one of the 9)
   restrictions: string[] | null; // null = skipped (미설정)
   spice: number | null; // null = skipped (미설정)
+  /** 업로드된 프로필 사진 publicUrl (KB-149). 옵셔널 — 구버전 draft 호환. */
+  profileImageUrl?: string | null;
   updatedAt: string; // ISO — freshness/debug
 }
 

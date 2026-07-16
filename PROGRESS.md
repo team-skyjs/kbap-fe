@@ -244,3 +244,12 @@
 - [x] presigned 실연동: scanImage.ts TODO(KB-72) 해소 — `uploadImage(file, purpose)` 발급→PUT(requiredHeaders 그대로, BINARY_CONTENT)→complete(objectKey). contentLength는 getInfoAsync 정확값, contentType은 확장자 매핑(기본 jpeg). **purpose 파라미터화** — P-004(프로필)와 공용 전제. 실패는 어느 단계든 null→imagePath '' 폴백(BE 허용 확정 7/16), PUT 비2xx면 complete 미호출(신고값 불일치 방지). KB-137 삭제보다 선행 순서 유지.
 - 테스트 +12: adaptSpice 경계(-1→null·0 유효·10/11/3.5·누락 fallback) / 해제 → -1 전송·0 전송 경계(useUpdateMe 갱신) / 업로드 성공 경로 body·헤더 잠금 + 발급/PUT/파일소실 실패 폴백(scanImage.test 신규) / 성공 path 전송·실패 '' 폴백(useScan 갱신). tsc 0, jest 103/103.
 - 실기기 확인 포인트: 스캔 시 Metro 로그 `[scan] upload-url issued`→`image upload complete`→`POST /scans | imagePath = scan/...` 실경로 확인 / 맵기 해제→재조회 후에도 미설정 유지 / 미설정 계정 프로필에 "-1" 노출 없음.
+
+## KB-149 프로필 이미지 업로드 — 온보딩·수정·조회 실연결 (2026-07-16, P-004)
+- [x] 사전 확인: **expo-image-picker 이미 설치**(~56.0.18, 스캔 갤러리에서 사용 중) → **리빌드 불필요, OTA 가능**. profileImageUrl 3계약(Onboarding·Update·MyProfile) 전부 optional string 배포 확인.
+- [x] 업로드 공용화: scanImage.uploadImage(file, purpose) 재사용(P-003에서 파라미터화 완료) — 반환을 { path, publicUrl }로 확장(스캔은 path, 프로필은 publicUrl). profileImage.ts 신규: pickProfileImage(1:1 크롭) + uploadProfileImage.
+- [x] 온보딩 profile 스텝: 아바타+카메라 뱃지(선택 사항) — 선택 즉시 업로드, draft에 URL 보존(중단 복귀 시 유지), 제출 body에 포함(미선택=필드 생략). 실패 시 정직한 에러 문구 + 사진 없이 진행 가능.
+- [x] 프로필 수정: 아바타 탭 → 선택→업로드→즉시 PATCH(국적 행과 같은 즉시 적용 시맨틱). 조회(프로필 탭·수정 화면): profileImageUrl 렌더, 없으면 기존 플레이스홀더.
+- ⚠️ **BE 질의 2건 (진행로그·보고 기록)**: ① 프로필용 purpose 값 미명시(예시 MENU_SCAN뿐) — `PROFILE_IMAGE` 추정 사용(profileImage.ts 상수 한 곳), 확정 시 그 값으로 교체 ② profileImageUrl에 publicUrl vs objectKey 미명시 — **필드명이 Url이라 publicUrl 우선** 채택, 반증되면 path로 전환.
+- 테스트 +4: uploadImage publicUrl 반환(기존 확장) / adaptProfile profileImageUrl 매핑(URL·누락·빈문자열) / PATCH body 포함+invalidate / 온보딩 body 포함·미선택 생략. tsc 0, jest 107/107.
+- 실기기 확인 포인트: 온보딩 사진 선택→가입 후 프로필 탭 표시 / 수정에서 교체 즉시 반영·재조회 유지 / 미설정 플레이스홀더 / 업로드 실패(비행기 모드) 시 에러 문구 + 가입·수정 계속 가능. ⚠️ purpose 추정값이라 발급 400 가능 — 에러 로그 공유 요망.

@@ -475,7 +475,8 @@
     "linkedTitle": "Vinculado a la cuenta",
     "email": "Correo",
     "spice": "Tolerancia al picante",
-    "spiceClear": "Quitar ajuste"
+    "spiceClear": "Quitar ajuste",
+    "photoError": "No se pudo subir la foto. Inténtalo de nuevo o continúa sin ella."
   },
   "nationalityPicker": {
     "title": "Nacionalidad",
