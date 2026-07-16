@@ -84,21 +84,26 @@ it('닉네임만 변경 → 개인화 쿼리는 invalidate되지 않는다 (비�
   expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(false);
 });
 
-// KB-150 후속: spice 서버 실연결(spicinessPreference) — PATCH body 포함 + 로컬 fallback 유지,
-// 해제(null)는 계약 미정이라 로컬만(필드 생략 = 서버 유지)을 잠근다.
+// KB-150 확정(7/16 회의): spice 서버 실연결 — PATCH body 포함 + 로컬 fallback 유지,
+// 해제(null)는 -1 센티널 전송(서버 왕복 후에도 미설정 유지 — 값 되살아나던 한계 소멸).
 it('spice 패치 → PATCH body에 spicinessPreference 포함 + 로컬 fallback 보관 (KB-150 후속)', async () => {
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A' });
   await runMutation(qc, { spiceTolerance: 7 });
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 7 });
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', '7'); // 마이그레이션 fallback
-  expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → 서버 값 우선(adaptProfile)
+  expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → 서버 값 우선(adaptSpice)
 });
 
-it('spice null(설정 해제) → 서버 미전송(계약 미정, 필드 생략) + 로컬 키 제거 (KB-150 후속)', async () => {
+it('spice null(설정 해제) → -1 센티널 전송(7/16 확정) + 로컬 키 제거', async () => {
   const qc = seededClient();
-  const patchCallsBefore = (api.patch as jest.Mock).mock.calls.length;
   await runMutation(qc, { spiceTolerance: null });
   expect(AsyncStorage.removeItem).toHaveBeenCalledWith('kbap.profile.spice.v1');
-  expect((api.patch as jest.Mock).mock.calls.length).toBe(patchCallsBefore); // 해제는 로컬만 — BE 질의 중
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: -1 });
+});
+
+it('spice 0("맵지 않음")은 유효값 그대로 전송 — -1과 경계 잠금', async () => {
+  const qc = seededClient();
+  await runMutation(qc, { spiceTolerance: 0 });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 0 });
 });

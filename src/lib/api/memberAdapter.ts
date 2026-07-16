@@ -35,8 +35,8 @@ export interface MyProfileWire {
   avoidanceSubstanceCodes: string[];
   countryCode: string;
   appLanguage: string;
-  /** 0..10 (KB-150 후속, 2026-07-15 배포). 계약상 required지만 "미설정" 표현이
-   *  미정(0은 '맵지 않음'이라 미설정과 의미가 다름) — null/누락 방어 겸 옵셔널. BE 질의 중. */
+  /** 0..10 유효값, **-1 = 미설정 센티널** (BE 확정 2026-07-16 회의 — required int,
+   *  미설정 유저는 항상 -1로 옴). 누락 방어 겸 옵셔널은 구서버 대비로만 유지. */
   spicinessPreference?: number | null;
   onboardingCompleted: boolean;
   ranking: RankingSummaryWire;
@@ -47,7 +47,19 @@ export interface ProfileUpdateWire {
   avoidanceSubstanceCodes?: string[];
   countryCode?: string;
   appLanguage?: string;
-  spicinessPreference?: number; // 0..10 — 해제(null) 전달 방법은 계약 미정, 생략=유지 (KB-150 후속)
+  spicinessPreference?: number; // 0..10, 해제 = -1 전송 (BE 확정 7/16 — 생략은 유지)
+}
+
+/**
+ * 맵기 wire → 내부 표현 (KB-150, -1 센티널 확정 7/16).
+ * -1(미설정) 포함 0..10 밖·비정수는 전부 null(미설정) — 칩에 "-1/10"이 노출되는
+ * 오작동 방지. 서버가 항상 값을 주므로(-1 정책) 서버값이 진실 — 로컬 fallback은
+ * 필드 누락/비숫자(구서버·마이그레이션)일 때만.
+ */
+export function adaptSpice(wire: number | null | undefined, localFallback: number | null): number | null {
+  if (typeof wire !== 'number') return localFallback;
+  if (!Number.isInteger(wire) || wire < 0 || wire > 10) return null;
+  return wire;
 }
 
 export function adaptRanking(wire: RankingSummaryWire | MemberRankingWire): Ranking {
@@ -75,9 +87,7 @@ export function adaptProfile(wire: MyProfileWire, localSpice: number | null): Us
     nickname: wire.nickname,
     nationality: wire.countryCode,
     readerLanguage: wire.appLanguage,
-    // KB-150 후속: 서버 값 우선, 마이그레이션 기간 로컬 fallback. 숫자만 신뢰 —
-    // 서버의 "미설정" 표현이 계약에 없어(0=맵지않음과 구분 불가) null/누락은 로컬로 방어. BE 질의 중.
-    spiceTolerance: typeof wire.spicinessPreference === 'number' ? wire.spicinessPreference : localSpice,
+    spiceTolerance: adaptSpice(wire.spicinessPreference, localSpice),
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부
       code,

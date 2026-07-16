@@ -1,8 +1,7 @@
 /**
  * P-002(KB-72): 스캔 요청이 새 계약 { imagePath, items } 로 나가는지 잠근다.
- * presigned 발급 API 미배포 동안 imagePath 는 '' (텍스트-only 폴백) — 사진이
- * 있어도 스텁이라 '' 이고, 크래시 없이 스캔이 계속되어야 한다 (DoD: 발급 API
- * 부재 시 안전한 폴백).
+ * P-003 갱신: presigned 실연동 — 업로드 성공 시 검증된 path, 실패 시 ''
+ * (텍스트-only 폴백, BE 허용 확정)로 크래시 없이 스캔이 계속되어야 한다.
  */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
@@ -14,6 +13,11 @@ jest.mock('@/lib/api/client', () => ({
     post: jest.fn().mockResolvedValue({ degraded: false, results: [] }),
   },
   apiLang: () => 'en',
+}));
+// 업로드 흐름은 scanImage.test 가 잠근다 — 여기서는 성공/실패 양 극단만 주입
+const mockResolvePath = jest.fn();
+jest.mock('@/lib/api/scanImage', () => ({
+  resolveScanImagePath: (...a: unknown[]) => mockResolvePath(...a),
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -56,7 +60,11 @@ async function runScan(input: ScanInput) {
   qc.clear();
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  api.post.mockResolvedValue({ degraded: false, results: [] });
+  mockResolvePath.mockResolvedValue(null);
+});
 
 it('요청 body 에 imagePath 포함 — 사진 없음(샘플) → "" + items 는 idx/rawMenuName 만', async () => {
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: null });
@@ -66,7 +74,17 @@ it('요청 body 에 imagePath 포함 — 사진 없음(샘플) → "" + items �
   });
 });
 
-it('사진이 있어도 발급 API 미배포(스텁) → imagePath "" 로 폴백, 스캔은 계속 (TODO(KB-72))', async () => {
+it('업로드 성공 → 검증된 path 가 imagePath 로 전송 (P-003 실연동)', async () => {
+  mockResolvePath.mockResolvedValue('scan/1/a.jpg');
+  const photo = { uri: 'file:///tmp/menu.jpg', width: 1000, height: 1400 };
+  await runScan({ items: [{ itemId: 0, rawMenuName: '된장찌개', box }], photo });
+  expect(mockResolvePath).toHaveBeenCalledWith(photo); // 파일 정리보다 앞 — postScan 초입
+  const [path, body] = api.post.mock.calls[0];
+  expect(path).toBe('/scans');
+  expect(body.imagePath).toBe('scan/1/a.jpg');
+});
+
+it('업로드 실패(null) → imagePath "" 폴백, 스캔은 계속 (텍스트-only)', async () => {
   await runScan({
     items: [{ itemId: 0, rawMenuName: '된장찌개', box }],
     photo: { uri: 'file:///tmp/menu.jpg', width: 1000, height: 1400 },

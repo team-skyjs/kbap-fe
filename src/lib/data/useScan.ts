@@ -4,8 +4,9 @@
  * Sends { imagePath, items: [{ idx, rawMenuName }] } — the server does the
  * cleanup + catalog matching; boxes stay on-device for the overlay (7/16
  * 예진×종한 합의 — 온디바이스 OCR 유지). imagePath 는 업로드 검증 흐름
- * (scanImage.ts)이 해석하며, presigned 발급 API 미배포 동안은 '' (텍스트-only
- * 폴백). Returns the joined overlay items, photo-only items (idx=null — 리스트
+ * (scanImage.ts: 발급→PUT→complete, P-003 실연동)이 해석하며, 업로드 실패
+ * 시 '' (텍스트-only 폴백 — BE 허용 확정 7/16). Returns the joined overlay
+ * items, photo-only items (idx=null — 리스트
  * 전용), plus the `degraded` flag (정제 실패/부재 → 안내 배너).
  */
 import { useMutation } from '@tanstack/react-query';
@@ -43,7 +44,7 @@ async function postScan({ items, photo }: ScanInput): Promise<ScanOutcome> {
   // 먼저 여기서 실행된다 — 스캔 중에는 삭제 트리거가 없다(언마운트=스캔 폐기).
   const imagePath = await resolveScanImagePath(photo);
   const body: ScanRequest = {
-    imagePath: imagePath ?? '', // 계약상 required — '' = 텍스트-only (TODO(KB-72) 발급 API 대기)
+    imagePath: imagePath ?? '', // '' = 텍스트-only 폴백 (BE 허용 확정 7/16 — 업로드 실패해도 스캔 지속)
     items: items.map((it) => ({ idx: it.itemId, rawMenuName: it.rawMenuName })),
   };
   // Stage logs (prefix "[scan]") — watch in Metro to confirm the BE roundtrip.

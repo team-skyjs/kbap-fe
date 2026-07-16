@@ -236,3 +236,11 @@
 - [x] i18n +5키 ×10 로케일 (appleGateBody/Btn/Cancelled/Mismatch/Failed).
 - 테스트 +11 (`appleRevoke.test.ts`): provider 판별(구글 false·양쪽 true·미로그인 크래시 없음) / 타계정·식별자 부재 거부 / 엣지 3종에서 revoke 미호출·중단 신호. tsc 0, jest 91/91.
 - 실기기 확인 포인트(예진): 애플 계정 탈퇴 → 설정→Apple로 로그인 목록에서 K-Bap 소멸 / 재가입 시 이메일 선택 화면 재등장 / 구글 계정 탈퇴는 게이트 없이 기존과 동일 / 시트 취소·다른 애플 계정 선택 시 계정 유지 + 안내.
+
+## P-003 — 맵기 -1 센티널 + presigned 발급 실연동 (2026-07-16, KB-150 후속·KB-72 마무리)
+- [x] Swagger 재실측: `POST /images/upload-url` 배포 확인 — req {purpose, contentType, contentLength(정확값)} 전부 required / res {uploadUrl, method, requiredHeaders, publicUrl, objectKey, expiresAt} 전부 required. spicinessPreference: 응답 required int, 요청(Update·Onboarding) optional.
+- [x] 맵기 -1 센티널(회의 확정): `adaptSpice()` 신설 — -1 포함 0..10 밖·비정수 → null(미설정), 칩 "-1/10" 노출 오작동 차단. 서버가 항상 값을 주므로 서버값 우선, 로컬 fallback은 필드 누락(구서버)일 때만. 해제는 PATCH `spicinessPreference: -1` 전송(값 되살아나던 한계 소멸 — 기존 "로컬만" 처리 폐기).
+- [x] 온보딩 스킵: **필드 생략 유지 판단** — 계약상 optional + BE 정책 "미설정 유저 DB에 -1 저장"이라 생략=미설정으로 수렴. 실측에서 다르게 확인되면 -1 명시 전송으로 전환(주석 명시).
+- [x] presigned 실연동: scanImage.ts TODO(KB-72) 해소 — `uploadImage(file, purpose)` 발급→PUT(requiredHeaders 그대로, BINARY_CONTENT)→complete(objectKey). contentLength는 getInfoAsync 정확값, contentType은 확장자 매핑(기본 jpeg). **purpose 파라미터화** — P-004(프로필)와 공용 전제. 실패는 어느 단계든 null→imagePath '' 폴백(BE 허용 확정 7/16), PUT 비2xx면 complete 미호출(신고값 불일치 방지). KB-137 삭제보다 선행 순서 유지.
+- 테스트 +12: adaptSpice 경계(-1→null·0 유효·10/11/3.5·누락 fallback) / 해제 → -1 전송·0 전송 경계(useUpdateMe 갱신) / 업로드 성공 경로 body·헤더 잠금 + 발급/PUT/파일소실 실패 폴백(scanImage.test 신규) / 성공 path 전송·실패 '' 폴백(useScan 갱신). tsc 0, jest 103/103.
+- 실기기 확인 포인트: 스캔 시 Metro 로그 `[scan] upload-url issued`→`image upload complete`→`POST /scans | imagePath = scan/...` 실경로 확인 / 맵기 해제→재조회 후에도 미설정 유지 / 미설정 계정 프로필에 "-1" 노출 없음.

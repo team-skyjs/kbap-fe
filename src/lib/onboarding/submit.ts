@@ -40,8 +40,10 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
 
   const body = {
     nickname: payload.nickname,
-    // KB-150 후속: spicinessPreference 실연결 (not required 확인) — 스킵 시 필드 생략.
-    // 로컬 보관(위)은 마이그레이션 기간 fallback으로 유지 (adaptProfile 참조).
+    // KB-150 확정(7/16): 미설정 = -1 센티널. 온보딩 스킵은 필드 생략 유지 —
+    // 계약상 optional이고 BE 정책이 "미설정 유저 = -1 저장"이라 생략 = 미설정으로
+    // 수렴한다 (다르게 저장되는 게 실측되면 -1 명시 전송으로 전환). 진행로그 기록.
+    // 로컬 보관(위)은 구서버 대비 fallback으로 유지 (adaptSpice 참조).
     ...(payload.spiceTolerance !== UNSET ? { spicinessPreference: payload.spiceTolerance } : {}),
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)

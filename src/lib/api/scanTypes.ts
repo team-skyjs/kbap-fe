@@ -5,8 +5,8 @@
  *
  *   POST /api/v1/scans   (imagePath 추가 — Swagger 재배포 2026-07-16)
  *   req: { imagePath, items: [{ idx, rawMenuName }] } — boxes stay ON-DEVICE
- *     - imagePath: required. /images/complete 가 검증한 오브젝트 경로.
- *       presigned 발급 API 미배포 동안은 '' 로 전송(텍스트-only) — TODO(KB-72)
+ *     - imagePath: required. upload-url→PUT→complete 가 검증한 오브젝트 경로
+ *       (P-003 실연동). 업로드 실패 시 '' = 텍스트-only (BE 허용 확정 7/16)
  *   res: BaseResponse<{ degraded, results: [{ idx, matched, foodId,
  *        riskLevel, name, koreanName, price }] }>
  *     - results may be SHORTER than the request: non-food lines (원산지·가격·
@@ -42,7 +42,7 @@ export interface ScanReqItem {
 }
 
 export interface ScanRequest {
-  /** 검증된 오브젝트 경로 (required, minLength 0 — 발급 API 전까진 '' = 텍스트-only). */
+  /** 검증된 오브젝트 경로 (required). '' = 텍스트-only 폴백 (BE 허용 확정 7/16). */
   imagePath: string;
   items: ScanReqItem[];
 }
@@ -55,6 +55,22 @@ export interface ScanResultWire {
   name?: string | null; // display name (ko for now; localizes once auth lands)
   koreanName?: string | null;
   price?: number | null; // 메뉴판 표기 가격(KRW 정수), 미표기 = null — 응답 전용
+}
+
+/** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */
+export interface UploadUrlRequest {
+  purpose: string; // 업로드 용도 (예: "MENU_SCAN")
+  contentType: string;
+  contentLength: number; // 정확한 바이트 수 — 불일치 시 스토리지 거절
+}
+
+export interface UploadUrlPayload {
+  uploadUrl: string;
+  method: string; // PUT
+  requiredHeaders: Record<string, string>; // 그대로 실어야 함
+  publicUrl: string; // 만료 없는 표시용
+  objectKey: string; // → complete 의 path
+  expiresAt: string;
 }
 
 /** POST /images/complete — 업로드 완료 신고 (req/res). */

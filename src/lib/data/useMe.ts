@@ -5,8 +5,9 @@
  *   없으면(비회원/웹/개발) mock — 게스트 흐름이 프로필 없이도 돌게.
  * - useUpdateMe: PATCH /members/me/profile — **화면이 보낸 필드만** 와이어로
  *   매핑(부분 수정). avoidanceSubstanceCodes 빈 배열 = 전부 해제이므로
- *   restrictions는 호출측이 명시했을 때만 전송한다. spiceTolerance는 계약에
- *   없어 로컬(AsyncStorage) 보관.
+ *   restrictions는 호출측이 명시했을 때만 전송한다. spiceTolerance는 서버
+ *   실연결(KB-150) — 해제(null)는 -1 센티널 전송(7/16 확정), 로컬 보관은
+ *   구서버 대비 fallback.
  * - useMyReviews: 리뷰 API 미배포(KB-73) — mock 유지.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -70,11 +71,10 @@ export function useUpdateMe() {
 
       // 제공된 키만 와이어로 — 미전송 = 유지, restrictions 빈 배열 = 전부 해제
       const body: ProfileUpdateWire = {};
-      // KB-150 후속: spicinessPreference 실연결 (2026-07-15 Swagger 배포).
-      // ⚠️ "설정 해제"(null)는 계약에 전달 방법이 없음(null 전송 vs 필드 생략 미정)
-      // → 확정 전까지 해제는 로컬만 반영(필드 생략 = 서버 유지), BE 질의 중.
-      if (patch.spiceTolerance !== undefined && patch.spiceTolerance !== null) {
-        body.spicinessPreference = patch.spiceTolerance;
+      // KB-150 확정(7/16 회의): 해제(null) = -1 센티널 전송 — 서버 왕복 후에도
+      // 미설정 유지(값 되살아나던 한계 소멸). 생략은 여전히 "유지".
+      if (patch.spiceTolerance !== undefined) {
+        body.spicinessPreference = patch.spiceTolerance ?? -1;
       }
       if (patch.nickname !== undefined) body.nickname = patch.nickname;
       if (patch.nationality !== undefined) body.countryCode = patch.nationality;
@@ -87,7 +87,7 @@ export function useUpdateMe() {
           return be ? [be] : [];
         });
       }
-      if (Object.keys(body).length === 0) return; // spice-only 패치 등 — 서버 호출 불필요
+      if (Object.keys(body).length === 0) return; // 와이어 필드 없는 패치 — 서버 호출 불필요
       await api.patch('/members/me/profile', body);
     },
     onSuccess: async (_data, patch) => {
