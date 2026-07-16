@@ -202,7 +202,12 @@
       "reviewsLine": "レビューは残りますが匿名化され、料理の評価は正確に保たれます。あなたを特定できる人はいません。",
       "confirm": "これが取り消せないことを理解しました。",
       "confirmBtn": "アカウントを削除",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "appleGateBody": "退会を完了するには、Appleで本人確認が必要です。",
+      "appleGateBtn": "Appleで続ける",
+      "appleCancelled": "本人確認がキャンセルされたため、退会は行われませんでした。",
+      "appleMismatch": "登録時に使用したApple IDと異なります。登録時のApple IDで確認してください。",
+      "appleFailed": "本人確認に失敗したため、退会は行われませんでした。もう一度お試しください。"
     },
     "saved": "保存済み",
     "spiceTitle": "辛さの許容度",

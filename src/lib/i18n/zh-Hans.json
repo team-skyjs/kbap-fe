@@ -202,7 +202,12 @@
       "reviewsLine": "你的点评会保留但匿名处理，以保证菜品评分的准确性。任何人都无法识别你的身份。",
       "confirm": "我明白此操作不可恢复。",
       "confirmBtn": "注销账户",
-      "cancel": "取消"
+      "cancel": "取消",
+      "appleGateBody": "要完成注销账号，需要通过 Apple 验证您的身份。",
+      "appleGateBtn": "通过 Apple 继续",
+      "appleCancelled": "身份验证已取消，账号未被注销。",
+      "appleMismatch": "这不是您注册时使用的 Apple ID。请使用注册时的 Apple ID 验证。",
+      "appleFailed": "身份验证失败，账号未被注销。请重试。"
     },
     "saved": "已收藏",
     "spiceTitle": "辣度承受度",

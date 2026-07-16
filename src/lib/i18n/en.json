@@ -198,7 +198,12 @@
       "reviewsLine": "Your reviews are kept but anonymized, so food ratings stay accurate. No one can identify you.",
       "confirm": "I understand this is permanent.",
       "confirmBtn": "Delete account",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "appleGateBody": "To finish deleting your account, verify it's you with Apple.",
+      "appleGateBtn": "Continue with Apple",
+      "appleCancelled": "Verification was cancelled, so your account was not deleted.",
+      "appleMismatch": "That's a different Apple ID. Verify with the Apple ID you signed up with.",
+      "appleFailed": "Verification failed and your account was not deleted. Please try again."
     },
     "saved": "Saved",
     "spiceTitle": "Spice tolerance",

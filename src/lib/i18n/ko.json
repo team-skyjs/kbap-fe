@@ -202,7 +202,12 @@
       "reviewsLine": "리뷰는 익명화되어 남아 음식 평점의 정확도를 지켜요. 누구도 회원님을 특정할 수 없어요.",
       "confirm": "영구 삭제라는 것을 이해했어요.",
       "confirmBtn": "탈퇴하기",
-      "cancel": "취소"
+      "cancel": "취소",
+      "appleGateBody": "탈퇴를 완료하려면 Apple로 본인 확인이 필요해요.",
+      "appleGateBtn": "Apple로 계속",
+      "appleCancelled": "본인 확인이 취소되어 탈퇴가 진행되지 않았어요.",
+      "appleMismatch": "가입할 때 사용한 Apple 계정이 아니에요. 그 계정으로 다시 확인해 주세요.",
+      "appleFailed": "본인 확인에 실패해 탈퇴가 진행되지 않았어요. 다시 시도해 주세요."
     },
     "saved": "저장됨",
     "spiceTitle": "맵기 허용치",

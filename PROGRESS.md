@@ -228,3 +228,11 @@
 - ⚠️ **BE 질의 1건**: imagePath required인데 발급 API 부재 — `''` 전송이 허용되는지(스키마상 minLength 0으로 통과 추정) 확정 필요. 거부로 확정되면 정직한 에러 표시로 전환 예정(scanImage.ts 주석).
 - 테스트: 가격 매핑(정상/null/비숫자 방어) + idx=null 조인 제외 + photoOnlyResults(danger 유지·unable 강등·koreanName 폴백) + 요청 body imagePath/items 잠금(useScan.test 신규 — 사진 유무 2경로) + 리스트 노출 회귀(scanDefaultView 확장). tsc 0, jest 80/80 (15 suites).
 - 실기기 확인 포인트: 스캔 정상 동작(imagePath '' 서버 수용 여부 — 거부 시 에러 화면 뜨는지 공유 요망), 가격 표기 메뉴에 ₩ 표시·미표기 메뉴 미표시, 리스트에 박스 없는 항목(사진 전용) 노출 여부.
+
+## KB-162 탈퇴 시 애플 재인증 + 토큰 revoke — 경로 A (2026-07-16, P-005)
+- [x] `appleRevoke.ts` 신규 (NATIVE ONLY): 애플 시트 재호출(expo-apple-authentication 기존 경로 재사용, 새 라이브러리 없음 — 로그인과 달리 credential 미생성이라 nonce/scope 불필요, signInWithCredential 호출 금지=타계정 세션 갈아타기 방지) → `credential.user`(sub)를 현재 Firebase apple.com providerData.uid와 대조 → 일치 시 `revokeToken(auth, authorizationCode)`(RNFB v25 modular, iOS 브릿지) 즉시 호출.
+- [x] delete-account 분기: iOS+애플 회원이면 탈퇴 확정 버튼 → 재인증 게이트 카드(안내→"Apple로 계속") → revoke 성공 시에만 기존 탈퇴 흐름(withdrawBe→logOut→/login). 구글 회원·웹·안드로이드는 기존 흐름 무변.
+- [x] 엣지 3종: 시트 취소→cancelled / 타계정(또는 대조 불가)→mismatch / revoke·시트 실패→failed — 전부 탈퇴 중단 + 사유 안내 카드 (revoke 없는 탈퇴를 만들지 않음, 심사 요건).
+- [x] i18n +5키 ×10 로케일 (appleGateBody/Btn/Cancelled/Mismatch/Failed).
+- 테스트 +11 (`appleRevoke.test.ts`): provider 판별(구글 false·양쪽 true·미로그인 크래시 없음) / 타계정·식별자 부재 거부 / 엣지 3종에서 revoke 미호출·중단 신호. tsc 0, jest 91/91.
+- 실기기 확인 포인트(예진): 애플 계정 탈퇴 → 설정→Apple로 로그인 목록에서 K-Bap 소멸 / 재가입 시 이메일 선택 화면 재등장 / 구글 계정 탈퇴는 게이트 없이 기존과 동일 / 시트 취소·다른 애플 계정 선택 시 계정 유지 + 안내.

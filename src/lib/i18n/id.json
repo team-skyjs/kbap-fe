@@ -202,7 +202,12 @@
       "reviewsLine": "Ulasan Anda disimpan tetapi dianonimkan, agar penilaian makanan tetap akurat. Tidak ada yang bisa mengenali Anda.",
       "confirm": "Saya paham ini permanen.",
       "confirmBtn": "Hapus akun",
-      "cancel": "Batal"
+      "cancel": "Batal",
+      "appleGateBody": "Untuk menyelesaikan penghapusan akun, verifikasi identitas Anda dengan Apple.",
+      "appleGateBtn": "Lanjutkan dengan Apple",
+      "appleCancelled": "Verifikasi dibatalkan, akun Anda tidak dihapus.",
+      "appleMismatch": "Itu bukan Apple ID yang Anda gunakan saat mendaftar. Verifikasi dengan Apple ID tersebut.",
+      "appleFailed": "Verifikasi gagal dan akun Anda tidak dihapus. Silakan coba lagi."
     },
     "saved": "Tersimpan",
     "spiceTitle": "Toleransi pedas",

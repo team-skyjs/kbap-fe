@@ -202,7 +202,12 @@
       "reviewsLine": "你的評論會保留但會匿名化，以維持美食評分的準確性。沒有人能辨識出你。",
       "confirm": "我了解此操作無法復原。",
       "confirmBtn": "刪除帳號",
-      "cancel": "取消"
+      "cancel": "取消",
+      "appleGateBody": "要完成刪除帳號，需要透過 Apple 驗證您的身分。",
+      "appleGateBtn": "透過 Apple 繼續",
+      "appleCancelled": "身分驗證已取消，帳號未被刪除。",
+      "appleMismatch": "這不是您註冊時使用的 Apple ID。請使用註冊時的 Apple ID 驗證。",
+      "appleFailed": "身分驗證失敗，帳號未被刪除。請再試一次。"
     },
     "saved": "已收藏",
     "spiceTitle": "辣度承受度",

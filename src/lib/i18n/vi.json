@@ -202,7 +202,12 @@
       "reviewsLine": "Đánh giá của bạn được giữ lại nhưng ẩn danh, để điểm món ăn vẫn chính xác. Không ai nhận ra bạn.",
       "confirm": "Tôi hiểu điều này là vĩnh viễn.",
       "confirmBtn": "Xóa tài khoản",
-      "cancel": "Hủy"
+      "cancel": "Hủy",
+      "appleGateBody": "Để hoàn tất xoá tài khoản, hãy xác minh danh tính bằng Apple.",
+      "appleGateBtn": "Tiếp tục với Apple",
+      "appleCancelled": "Xác minh đã bị huỷ nên tài khoản chưa bị xoá.",
+      "appleMismatch": "Đây không phải Apple ID bạn dùng khi đăng ký. Hãy xác minh bằng Apple ID đó.",
+      "appleFailed": "Xác minh thất bại nên tài khoản chưa bị xoá. Vui lòng thử lại."
     },
     "saved": "Đã lưu",
     "spiceTitle": "Mức ăn cay",

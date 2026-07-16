@@ -202,7 +202,12 @@
       "reviewsLine": "Tus reseñas se conservan pero se anonimizan, para que las valoraciones de comida sigan siendo precisas. Nadie puede identificarte.",
       "confirm": "Entiendo que esto es permanente.",
       "confirmBtn": "Eliminar cuenta",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "appleGateBody": "Para terminar de eliminar tu cuenta, verifica tu identidad con Apple.",
+      "appleGateBtn": "Continuar con Apple",
+      "appleCancelled": "La verificación se canceló, así que tu cuenta no se eliminó.",
+      "appleMismatch": "Ese no es el Apple ID con el que te registraste. Verifica con ese Apple ID.",
+      "appleFailed": "La verificación falló y tu cuenta no se eliminó. Inténtalo de nuevo."
     },
     "saved": "Guardados",
     "spiceTitle": "Tolerancia al picante",
