@@ -388,3 +388,4 @@
 - [x] P-011 보고 유보분("0↔1 전환 높이 변화, placeholder 판단 요망") 확정 처리(Q-11 2·6). 원인: activeCard 안 칩 ScrollView가 selected>0일 때만 렌더 → 첫 선택 시 칩영역+gap이 새로 생기며 아래 목록 1회 밀어냄.
 - [x] 수정: 칩 영역을 항상 고정 높이(36 = rmChip 높이) View로 렌더 — 빈 상태엔 placeholder 텍스트(restrictionsEdit.chipPlaceholder ×10 로케일), 선택 시 기존 horizontal ScrollView. 빈↔선택 레이아웃 높이 불변 → 목록 밀림 0. 공용 IngredientFilter라 온보딩·프로필 동시 반영.
 - 테스트: 0건 placeholder+ScrollView 미렌더 / 0↔1 칩영역 높이 36 불변 잠금(밀림 0 근거). tsc 0, jest 163/163. JS-only — preview OTA.
+- 발행: preview OTA — Android update 019f7f46-3946-7b5a (runtime cbbec117 = build1 일치). build1 호환 스왑(app.json·splash·package.json·scan.tsx) 후 복원.
