@@ -377,3 +377,4 @@
 - [x] P-021 리플 오진 정정: LanguagePicker row의 회색 padding은 android_ripple이 아니라 **sh1(elevation:1) + overflow:'hidden'(P-021 추가) 공존**이 원인(안드 알려진 버그 — elevation 그림자가 클립되며 padding 회색 채움). 증거대로 closeBtn(sh1은 있지만 overflow 없음)은 멀쩡했음.
 - [x] row에서 `...shadow.sh1` 제거 — borderWidth 1(C.hair)로 이미 구분, sh1 opacity 0.04라 시각 손실 미미. overflow:'hidden'은 유지(리플 라운드 클립, elevation 없으면 무해). android_ripple(P-021) 정상이라 유지. rowOn 틴트/테두리 무변.
 - tsc 0, jest 162/162. 스타일-only, JS-only — preview OTA. 발행 ID는 REPORTS 병기.
+- 발행: preview OTA — Android update 019f7f2f-05a0-72f9 (runtime cbbec117 = 공기계 build1 일치). ⚠️ P-022(expo-sensors 네이티브) 이후라 build1 도달·크래시 방지 위해 발행 순간 app.json·splash·package.json을 0e9f884로 + scan.tsx를 eecbe52~1(센서 없음)로 스왑(번들 크래시 방지, JS는 P-024만 실림), 후 전량 복원. build2 나오면 스왑 폐기.
