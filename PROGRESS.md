@@ -346,3 +346,8 @@
 - 테스트 +4 (가짜 타이머): min 전 hide 절대 없음 / min~cap settle 즉시 / cap 강제 / reject 무지연. tsc 0, jest 155/155.
 - ⚠️ **OTA 주의(다음 발행 시)**: 이 커밋은 네이티브(에셋·app.json)+JS 혼합 — 빌드 7 전에 게이팅만 OTA로 내려면 발행 순간 app.json·splash-icon.png를 직전 상태로 스왑(기존 gitignore 스왑에 추가). 빌드 7 재베이스라인 후 소멸.
 - 실기기 확인 포인트: (OTA 후) 빠른 네트워크 ~1.2초 균일 스플래시 / 기내모드 최대 4초 후 스켈레톤·J4 / (빌드 7) 태그라인 없는 스플래시 + 230 크기.
+
+## KB-195 온보딩 맵기 스킵 = -1 명시 전송 (2026-07-20, P-019)
+- [x] 스웨거 재실측: `OnboardingRequest.spicinessPreference` **required 승격 확인** (겸사: profileImageUrl도 required 승격 — P-016이 이미 항상 전송이라 무대응 OK). P-003의 전환 예약 주석("실측되면 -1 명시 전송 전환") 이행.
+- [x] submit.ts: 조건부 스프레드 제거 → 스킵(UNSET) 시 `spicinessPreference: -1` 명시 전송 (KB-150 센티널 정책 그대로). 헤더 주석 "전 필드 required" 갱신. 로컬 보관·UNSET 처리 무변.
+- 테스트 +1: 스킵→-1 / 설정→실값 잠금. tsc 0, jest 156/156. JS-only — OTA 가능.

@@ -45,6 +45,15 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 
+  // P-019(KB-195): required 승격 — 스킵도 -1 명시 전송 (생략하면 가입 400)
+  it('spicinessPreference — 스킵(UNSET) 시 -1 명시 전송, 설정 시 실값', async () => {
+    api.post.mockResolvedValue(undefined);
+    await submitOnboardingProfile(payload); // spiceTolerance: UNSET
+    expect(api.post.mock.calls[0][1]).toMatchObject({ spicinessPreference: -1 });
+    await submitOnboardingProfile({ ...payload, spiceTolerance: 7 });
+    expect(api.post.mock.calls[1][1]).toMatchObject({ spicinessPreference: 7 });
+  });
+
   // P-016(KB-149 최종): 선택 시 업로드 path, 미선택 시 **기본 path 명시 전송** (생략·null 폐기)
   it('profileImageUrl — 선택 시 업로드 path, 미선택 시 기본 path 전송', async () => {
     api.post.mockResolvedValue(undefined);

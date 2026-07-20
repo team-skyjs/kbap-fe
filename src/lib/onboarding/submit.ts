@@ -3,8 +3,8 @@
  * (KB-110 구조 · KB-75 실연결 2026-07-13).
  *
  *   POST /members/me/onboarding { nickname, avoidanceSubstanceCodes,
- *                                 countryCode, appLanguage,
- *                                 spicinessPreference? }   (spice만 optional)
+ *                                 countryCode, appLanguage, spicinessPreference,
+ *                                 profileImageUrl }   (전 필드 required — 7/20 승격)
  *
  * - 스킵 = 빈 배열 (계약 확정): FE 내부의 UNSET 구분은 draft/화면까지만,
  *   와이어에서는 []로 나간다.
@@ -44,11 +44,10 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
 
   const body = {
     nickname: payload.nickname,
-    // KB-150 확정(7/16): 미설정 = -1 센티널. 온보딩 스킵은 필드 생략 유지 —
-    // 계약상 optional이고 BE 정책이 "미설정 유저 = -1 저장"이라 생략 = 미설정으로
-    // 수렴한다 (다르게 저장되는 게 실측되면 -1 명시 전송으로 전환). 진행로그 기록.
-    // 로컬 보관(위)은 구서버 대비 fallback으로 유지 (adaptSpice 참조).
-    ...(payload.spiceTolerance !== UNSET ? { spicinessPreference: payload.spiceTolerance } : {}),
+    // KB-195(P-019): required 승격(스웨거 7/20 실측)으로 전환 완료 — 스킵도
+    // -1(미설정 센티널, KB-150 정책) 명시 전송. 생략하면 서버 검증 400으로
+    // 가입이 깨진다. 로컬 보관(위)은 구서버 대비 fallback으로 유지 (adaptSpice 참조).
+    spicinessPreference: payload.spiceTolerance !== UNSET ? payload.spiceTolerance : -1,
     // KB-149 최종(P-016): 미선택도 기본 path를 명시 전송 — 필드는 항상 값 (null·생략 폐기)
     profileImageUrl: payload.profileImageUrl ?? PROFILE_IMAGE_DEFAULT_PATH,
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
