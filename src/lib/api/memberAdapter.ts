@@ -50,7 +50,7 @@ export interface ProfileUpdateWire {
   countryCode?: string;
   appLanguage?: string;
   spicinessPreference?: number; // 0..10, 해제 = -1 전송 (BE 확정 7/16 — 생략은 유지)
-  profileImageUrl?: string; // 업로드 publicUrl (KB-149) — 생략 = 유지
+  profileImageUrl?: string; // 업로드 path(objectKey) — 생략 = 유지 (KB-149/P-006)
 }
 
 /**
@@ -84,6 +84,17 @@ export function adaptRanking(wire: RankingSummaryWire | MemberRankingWire): Rank
   };
 }
 
+/** 조회 profileImageUrl 방어 — 절대 URL(http…)만 렌더, 그 외 null(플레이스홀더). */
+export function adaptProfileImageUrl(wire: string | null | undefined): string | null {
+  if (typeof wire !== 'string' || !wire) return null;
+  if (!wire.startsWith('http')) {
+    // BE 확인 필요 신호 — 진행로그 참조 (P-006 할 일 2)
+    console.log('[profile] 조회 profileImageUrl이 절대 URL이 아님(path로 옴?) — BE 확인 필요:', wire);
+    return null;
+  }
+  return wire;
+}
+
 export function adaptProfile(wire: MyProfileWire, localSpice: number | null): User {
   return {
     id: String(wire.memberId),
@@ -91,9 +102,10 @@ export function adaptProfile(wire: MyProfileWire, localSpice: number | null): Us
     nationality: wire.countryCode,
     readerLanguage: wire.appLanguage,
     spiceTolerance: adaptSpice(wire.spicinessPreference, localSpice),
-    // 빈 문자열도 미설정 취급 — Image source 에 '' 가 들어가는 것 방지 (KB-149)
-    profileImageUrl:
-      typeof wire.profileImageUrl === 'string' && wire.profileImageUrl ? wire.profileImageUrl : null,
+    // KB-149 후속(P-006): 조회는 서버가 도메인을 조합한 절대 URL 이어야 한다
+    // (FE 는 CDN 도메인을 모름 — 전송은 path 만). 비-http 값(path 로 오는 등)은
+    // 렌더 불가 → 플레이스홀더 + 감지 로그 (빈 문자열 '' Image source 방지 겸).
+    profileImageUrl: adaptProfileImageUrl(wire.profileImageUrl),
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부
       code,

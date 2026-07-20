@@ -46,6 +46,10 @@ describe('adaptProfile.profileImageUrl (P-004 KB-149)', () => {
     expect(adaptProfile({ ...wire, profileImageUrl: '' }, null).profileImageUrl).toBe(null);
   });
 
+  it('비-http 값(path로 오는 등)은 렌더 불가 → null 방어 (P-006 — FE는 CDN 도메인을 모름)', () => {
+    expect(adaptProfile({ ...wire, profileImageUrl: 'profile/1/a.jpg' }, null).profileImageUrl).toBe(null);
+  });
+
   it('함께: -1 센티널도 미설정으로 (통합 경로 확인)', () => {
     expect(adaptProfile(wire, null).spiceTolerance).toBe(null);
   });

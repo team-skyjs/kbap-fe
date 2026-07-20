@@ -61,8 +61,11 @@ export default function Onboarding() {
   // collected LOCALLY (KB-110) — nothing leaves the device until the final
   // batch submit. Nationality defaults to the device region when recognized.
   const [nickname, setNickname] = useState('');
-  // KB-149 프로필 사진 (선택 사항) — 선택 즉시 업로드, 제출 body엔 URL만
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // KB-149 프로필 사진 (선택 사항) — 선택 즉시 업로드. 제출 body엔 path(objectKey)만
+  // (P-006, BE 확정 — 도메인 조합은 서버 몫), 미리보기는 로컬 파일 uri (세션 한정 —
+  // draft 복귀 시 미리보기는 사라져도 path는 유지되어 제출에 포함된다).
+  const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(false);
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
@@ -84,7 +87,7 @@ export default function Onboarding() {
       if (d && !hydrated.current) {
         setAgreed(d.consented);
         setNickname(d.nickname);
-        setPhotoUrl(d.profileImageUrl ?? null);
+        setPhotoPath(d.profileImageUrl ?? null);
         setNationality(d.nationality);
         setLang(d.language as SupportedLang);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
@@ -111,10 +114,10 @@ export default function Onboarding() {
       language: lang,
       restrictions: skipped.restrictions ? null : Array.from(restrictions),
       spice: skipped.spice ? null : spice,
-      profileImageUrl: photoUrl,
+      profileImageUrl: photoPath,
       updatedAt: new Date().toISOString(),
     });
-  }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting, photoUrl]);
+  }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting, photoPath]);
 
   const [natOpen, setNatOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -145,7 +148,7 @@ export default function Onboarding() {
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
         spiceTolerance: skipped.spice ? UNSET : spice,
-        profileImageUrl: photoUrl, // null = 미선택 → 필드 생략 (KB-149)
+        profileImageUrl: photoPath, // path(objectKey), null = 미선택 → 필드 생략 (P-006)
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();
@@ -181,7 +184,8 @@ export default function Onboarding() {
     if (!file) return; // 취소
     setPhotoBusy(true);
     try {
-      setPhotoUrl(await uploadProfileImage(file));
+      setPhotoPath(await uploadProfileImage(file));
+      setPhotoPreview(file.uri); // 업로드 성공분만 미리보기 (path는 렌더 불가)
     } catch (e) {
       console.log('[onboarding] photo upload failed:', (e as Error)?.message ?? e);
       setPhotoError(true);
@@ -223,7 +227,7 @@ export default function Onboarding() {
           <Profile
             nickname={nickname}
             setNickname={setNickname}
-            photoUrl={photoUrl}
+            photoPreview={photoPreview}
             photoBusy={photoBusy}
             photoError={photoError}
             onPickPhoto={() => void pickPhoto()}
@@ -275,7 +279,7 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 function Profile(props: {
   nickname: string;
   setNickname: (s: string) => void;
-  photoUrl: string | null;
+  photoPreview: string | null; // 로컬 파일 uri — 서버 path는 렌더 불가 (P-006)
   photoBusy: boolean;
   photoError: boolean;
   onPickPhoto: () => void;
@@ -286,7 +290,7 @@ function Profile(props: {
   onContinue: () => void;
   t: TFn;
 }) {
-  const { nickname, setNickname, photoUrl, photoBusy, photoError, onPickPhoto, nationality, languageLabel, onPickNationality, onPickLanguage, onContinue, t } = props;
+  const { nickname, setNickname, photoPreview, photoBusy, photoError, onPickPhoto, nationality, languageLabel, onPickNationality, onPickLanguage, onContinue, t } = props;
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.profileTitle')} sub={t('onboarding.profileSub')} />
@@ -294,8 +298,8 @@ function Profile(props: {
         {/* KB-149 프로필 사진 (선택 사항) — 탭 → 갤러리 1:1 크롭 → 즉시 업로드 */}
         <View style={styles.avatarWrap}>
           <Pressable style={styles.av} onPress={photoBusy ? undefined : onPickPhoto}>
-            {photoUrl ? (
-              <Image source={{ uri: photoUrl }} style={styles.avImg} />
+            {photoPreview ? (
+              <Image source={{ uri: photoPreview }} style={styles.avImg} />
             ) : (
               <IconProfile size={40} color={C.primary} />
             )}

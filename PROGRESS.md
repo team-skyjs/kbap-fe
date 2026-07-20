@@ -253,3 +253,10 @@
 - ⚠️ **BE 질의 2건 (진행로그·보고 기록)**: ① 프로필용 purpose 값 미명시(예시 MENU_SCAN뿐) — `PROFILE_IMAGE` 추정 사용(profileImage.ts 상수 한 곳), 확정 시 그 값으로 교체 ② profileImageUrl에 publicUrl vs objectKey 미명시 — **필드명이 Url이라 publicUrl 우선** 채택, 반증되면 path로 전환.
 - 테스트 +4: uploadImage publicUrl 반환(기존 확장) / adaptProfile profileImageUrl 매핑(URL·누락·빈문자열) / PATCH body 포함+invalidate / 온보딩 body 포함·미선택 생략. tsc 0, jest 107/107.
 - 실기기 확인 포인트: 온보딩 사진 선택→가입 후 프로필 탭 표시 / 수정에서 교체 즉시 반영·재조회 유지 / 미설정 플레이스홀더 / 업로드 실패(비행기 모드) 시 에러 문구 + 가입·수정 계속 가능. ⚠️ purpose 추정값이라 발급 400 가능 — 에러 로그 공유 요망.
+
+## P-006 — profileImageUrl 전송값 path(objectKey) 교체 (2026-07-20, KB-149 후속)
+- [x] BE 확정 반영(종한 7/16 저녁): purpose `PROFILE_IMAGE` 확정(추정→확정, 질의 소멸) · 전송값 publicUrl → **path(objectKey)** (CDN distribution 교체 대응 — 도메인 조합은 서버 몫). P-004에 명시해둔 전환 지점 그대로 한 곳(uploadProfileImage) 교체.
+- [x] 조회 방어: `adaptProfileImageUrl()` — 비-http 값(path로 오는 등)은 렌더 불가 → 플레이스홀더(null) + 감지 로그("BE 확인 필요"). 렌더는 서버 조합 절대 URL만.
+- [x] 온보딩 미리보기 분리: 제출용 photoPath(objectKey) + 미리보기용 photoPreview(로컬 파일 uri) — path는 Image 렌더 불가라서. draft 복귀 시 미리보기는 소실돼도 path는 유지·제출됨. 수정 화면은 PATCH→['me'] invalidate 재조회로 서버 URL 렌더(기존 경로 그대로).
+- 테스트 +3: uploadProfileImage가 path 반환+purpose 확정값 잠금(profileImage.test 신규) / 조회 비-http 방어 / PATCH·온보딩 body 잠금 값 path로 갱신. tsc 0, jest 110/110.
+- 실기기 확인 포인트: 프로필 사진 교체→탭·수정 화면 렌더(서버 조합 URL) / Metro에 "절대 URL이 아님" 로그 뜨면 조회 응답이 path로 오는 것 — BE 확인 필요.

@@ -108,11 +108,11 @@ it('spice 0("맵지 않음")은 유효값 그대로 전송 — -1과 경계 잠�
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 0 });
 });
 
-// P-004(KB-149): 프로필 사진 — 업로드된 publicUrl이 PATCH body로 나간다
-it('profileImageUrl 패치 → PATCH body 포함 + ["me"] invalidate (재조회 왕복)', async () => {
+// P-006(KB-149 후속): 프로필 사진 — 업로드된 path(objectKey)가 PATCH body로 나간다
+it('profileImageUrl 패치 → PATCH body에 path 포함 + ["me"] invalidate (서버 조합 URL 재조회)', async () => {
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A' });
-  await runMutation(qc, { profileImageUrl: 'https://cdn/p.jpg' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { profileImageUrl: 'https://cdn/p.jpg' });
+  await runMutation(qc, { profileImageUrl: 'profile/1/a.jpg' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { profileImageUrl: 'profile/1/a.jpg' });
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true);
 });

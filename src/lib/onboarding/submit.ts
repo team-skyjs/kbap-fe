@@ -28,7 +28,7 @@ export interface OnboardingProfilePayload {
   language: string; // reader language (BCP-47, one of the 9)
   avoidIngredients: string[] | Unset; // 81종 codes, or skipped
   spiceTolerance: number | Unset; // 0..10, or skipped — 로컬 보관 전용
-  /** 업로드된 프로필 사진 publicUrl (KB-149). null/생략 = 미선택 → 필드 생략. */
+  /** 업로드된 프로필 사진 path(objectKey) (KB-149/P-006). null/생략 = 미선택 → 필드 생략. */
   profileImageUrl?: string | null;
 }
 

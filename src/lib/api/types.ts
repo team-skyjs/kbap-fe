@@ -65,7 +65,7 @@ export interface UserUpdate {
   readerLanguage?: string;
   spiceTolerance?: number | null;
   restrictions?: DietaryRestriction[];
-  profileImageUrl?: string; // 업로드된 publicUrl (KB-149)
+  profileImageUrl?: string; // 업로드된 path(objectKey) — 도메인 조합은 서버 몫 (KB-149/P-006)
 }
 
 export interface RatingAggregate {
