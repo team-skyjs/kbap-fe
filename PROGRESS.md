@@ -364,3 +364,4 @@
 - [x] **언어 선택 리플**: LanguagePicker row에 `android_ripple={{color:'rgba(226,88,12,0.12)'}}` 명시(안드 기본 회색 리플이 padding까지 번지던 것 → 브랜드 톤) + row `overflow:'hidden'`으로 라운드 코너 클립. 선택 상태는 기존 테두리+틴트(rowOn) 유지. iOS는 android_ripple 무시. 공용 컴포넌트라 프로필 수정·프로필 탭 동시 반영.
 - tsc 0, jest 157/157. 스타일-only, 신규 테스트 없음(렌더 회귀는 기존 스위트가 커버). JS-only — preview OTA.
 - 발행: preview 채널 OTA — ID는 REPORTS 병기. ⚠️ P-018 이전 에셋 스왑 필요(공기계 preview 빌드 fingerprint 매칭 — P-020 선례).
+- 발행 완료: preview OTA — Android update 019f7e9c-bb69-76cd (runtime cbbec117 일치). 에셋 스왑 후 복원.
