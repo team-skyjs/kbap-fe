@@ -372,3 +372,8 @@
 - [x] scan.tsx: Android 전용 useEffect로 DeviceMotion.addListener(200ms) → 기존 camOrientation state에 공급(같은 state 두 소스, 오버레이 로직 무변). iOS는 expo-camera 콜백 현행 유지 — 안드만 추가(회귀 최소화). 언마운트 시 sub.remove().
 - 테스트 +5 (deviceOrientation.test): 세워듦/임계 미만·이상/flat/거꾸로 경계. tsc 0, jest 162/162.
 - ⚠️ **발행**: OTA 아님 — 다음 안드 빌드(빌드2)·다음 iOS 빌드(빌드7과 함께)에 포함. 실기기 확인은 재빌드 후.
+
+## KB-197 재수정 — 언어 선택 회색 = Android elevation (2026-07-20, P-024)
+- [x] P-021 리플 오진 정정: LanguagePicker row의 회색 padding은 android_ripple이 아니라 **sh1(elevation:1) + overflow:'hidden'(P-021 추가) 공존**이 원인(안드 알려진 버그 — elevation 그림자가 클립되며 padding 회색 채움). 증거대로 closeBtn(sh1은 있지만 overflow 없음)은 멀쩡했음.
+- [x] row에서 `...shadow.sh1` 제거 — borderWidth 1(C.hair)로 이미 구분, sh1 opacity 0.04라 시각 손실 미미. overflow:'hidden'은 유지(리플 라운드 클립, elevation 없으면 무해). android_ripple(P-021) 정상이라 유지. rowOn 틴트/테두리 무변.
+- tsc 0, jest 162/162. 스타일-only, JS-only — preview OTA. 발행 ID는 REPORTS 병기.

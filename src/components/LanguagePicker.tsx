@@ -84,8 +84,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 15,
-    overflow: 'hidden', // KB-197: 리플을 라운드 코너 안으로 클립 (코너 회색 번짐 방지)
-    ...shadow.sh1,
+    // KB-197 재수정(P-024): sh1(elevation:1) + overflow:hidden 공존이 안드에서
+    // padding을 회색으로 채우는 원인이었다(P-021 리플 오진 정정). elevation 제거 —
+    // row는 borderWidth 1(C.hair)로 이미 구분되고 sh1 opacity 0.04라 시각 손실 미미.
+    // overflow:hidden은 유지(리플 라운드 클립, elevation 없으면 무해).
+    overflow: 'hidden',
   },
   rowOn: { borderColor: C.primary, backgroundColor: 'rgba(226,88,12,0.06)' },
   endonym: { fontFamily: font.display, fontSize: 16.5, color: C.ink },
