@@ -18,7 +18,7 @@ import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  SkeletonList,
+  SkeletonHome,
   Btn,
   RiskMark,
   CardPhoto,
@@ -87,7 +87,7 @@ export default function Home() {
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         {isLoading ? (
-          <SkeletonList />
+          <SkeletonHome />
         ) : isError ? (
           /* P-007(KB-174) false-empty 제거: 에러를 "아직 스캔이 없어요"로 위장 금지 —
              빈 상태는 성공+0건일 때만. Try again은 이 쿼리만 refetch. */

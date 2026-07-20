@@ -273,3 +273,10 @@
 - [x] useInfiniteFoods·useSearchFoods의 401→빈 목록 특례 제거 (게스트 정숙 임시책 — foods 인증-선택 전환 완료로 소생 조건 충족). try/catch 자체가 그것뿐이라 통째 제거. 남는 401=죽은 토큰 → isError로 표면화되어 P-007 에러 블록이 뜬다(음식 탭 백지 소멸).
 - [x] 겸사 grep 재확인: 같은 패턴 다른 훅에 없음 (beAuth/client의 401은 refresh 로직 — 별개).
 - 테스트 +3 (useFoods401.test 신규): browse·search 401→isError(빈 목록 위장 없음) + 게스트 정상 응답 무변. tsc 0.
+
+## P-009 — 탭별 스켈레톤 (실제 레이아웃 미러) (2026-07-20, KB-174 후속)
+- [x] Skeleton.tsx에 화면별 조립 3종 추가 — Shimmer 원자·톤·애니메이션 재사용, 블록 구성만 상이(새 디자인 결정 없음): SkeletonHome(인사말 2줄→기피 배너→히어로 CTA→섹션+카드 행 2), SkeletonFoodGrid(2열 그리드 카드 ×6 — 사진 102 + 이름/뱃지 줄, 카드 폭 48.5% 실측 일치), SkeletonProfile(아바타 원 56→랭킹 카드→섹션 행 3).
+- [x] 시프트 0 목표: 패딩을 각 화면 body와 동일(18/4/20), 카드·아바타 치수 실측값 미러. 화면 레이아웃 변경 시 동반 갱신 주석 명시.
+- [x] 배선 교체: 홈→SkeletonHome, 음식 탭→SkeletonFoodGrid(FlatList 패딩 안), 프로필→SkeletonProfile. 범용 SkeletonList는 리스트형 화면(검색·카탈로그) 유지.
+- 테스트: 탭별 로딩→전용 스켈레톤 렌더 잠금 3건(기존 1건 강화 + 2건 신규). tsc 0, jest 121/121.
+- 실기기 확인 포인트(예진): 각 탭 첫 로드에서 스켈레톤이 실제 화면 골격과 겹쳐 보이는지 + 로딩→렌더 전환 시 점프 없음.

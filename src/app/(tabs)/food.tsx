@@ -20,7 +20,7 @@ import {
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  SkeletonList,
+  SkeletonFoodGrid,
   Spinner,
   QueryErrorBlock,
   RiskMark,
@@ -86,7 +86,7 @@ export default function Food() {
   );
 
   const Empty = isLoading ? (
-    <SkeletonList />
+    <SkeletonFoodGrid />
   ) : isError ? (
     // P-007(KB-174): 공용 에러/오프라인 렌더로 교체 — J3 err 톤 + J4 분기 통일
     <QueryErrorBlock error={error} onRetry={() => void refetch()} />

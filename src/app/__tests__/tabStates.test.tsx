@@ -70,6 +70,7 @@ jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) })
 import Home from '../(tabs)/index';
 import Food from '../(tabs)/food';
 import Profile from '../(tabs)/profile';
+import { SkeletonHome, SkeletonFoodGrid, SkeletonProfile } from '@/components/Skeleton';
 
 const OK_QUERY = { isLoading: false, isError: false, error: null, refetch: jest.fn() };
 const ERR_500 = { ...OK_QUERY, isError: true, error: new Error('HTTP 500') };
@@ -125,10 +126,24 @@ it('프로필 탭: 에러 → J3 렌더, 백지 아님', () => {
   expect(texts(tree, 'states.errorTitle')).toBeGreaterThanOrEqual(1);
 });
 
-it('프로필 탭: 로딩 → 스켈레톤 (백지 제거)', () => {
+// P-009: 스켈레톤은 그 화면의 레이아웃 미러 변형이어야 함 — 탭별 변형 렌더를 잠근다
+it('프로필 탭: 로딩 → 프로필 전용 스켈레톤 (백지 제거, 레이아웃 미러)', () => {
   mockUseMe.mockReturnValue({ ...OK_QUERY, isLoading: true, data: undefined });
   const tree = render(<Profile />);
   expect(texts(tree, 'states.errorTitle')).toBe(0);
-  // SkeletonList 렌더 확인 — 프로필 본문(body) 미렌더
-  expect(texts(tree, 'profile.nicknameUnset')).toBe(0);
+  expect(tree.root.findAllByType(SkeletonProfile).length).toBe(1);
+  expect(texts(tree, 'profile.nicknameUnset')).toBe(0); // 본문 미렌더
+});
+
+it('홈: 로딩 → 홈 전용 스켈레톤', () => {
+  mockUseHome.mockReturnValue({ ...OK_QUERY, isLoading: true, data: undefined });
+  const tree = render(<Home />);
+  expect(tree.root.findAllByType(SkeletonHome).length).toBe(1);
+  expect(texts(tree, 'home.emptyTitle')).toBe(0);
+});
+
+it('음식 탭: 로딩 → 2열 그리드 스켈레톤', () => {
+  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...FOODS_EXTRA, isLoading: true, data: undefined });
+  const tree = render(<Food />);
+  expect(tree.root.findAllByType(SkeletonFoodGrid).length).toBe(1);
 });
