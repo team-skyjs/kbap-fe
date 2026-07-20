@@ -383,3 +383,8 @@
 - [x] 실기(iOS dev 빌드) 크래시 발견(예진): `Cannot find native module 'ExponentPedometer'`. 원인 — scan.tsx 최상단 `import {DeviceMotion} from 'expo-sensors'`가 파일 로드 시 네이티브 모듈을 즉시 require → expo-sensors 추가 전 빌드(현 dev 빌드)엔 그 모듈이 없어 iOS에서도 앱 전체 크래시(라우트 파일이라). Android 가드는 사용부에만 있어 import 자체를 못 막음.
 - [x] 수정: 최상단 import 제거 → Android 가드 **안에서 try-require** + catch 폴백. iOS는 expo-sensors를 아예 안 건드림(현 dev 빌드 즉시 정상 — metro 리로드만). Android 네이티브 미탑재(재빌드 전)면 조용히 가로 힌트만 비활성, 스캔은 정상.
 - tsc 0, jest 162/162. **iOS는 재빌드 불필요(로컬 metro 리로드로 해결)**. Android 가로 감지 실동작은 여전히 Android 재빌드 필요(변함없음).
+
+## KB-178 재수정 — 기피 재료 요약 줄 0→1 밀림 (2026-07-20, P-026)
+- [x] P-011 보고 유보분("0↔1 전환 높이 변화, placeholder 판단 요망") 확정 처리(Q-11 2·6). 원인: activeCard 안 칩 ScrollView가 selected>0일 때만 렌더 → 첫 선택 시 칩영역+gap이 새로 생기며 아래 목록 1회 밀어냄.
+- [x] 수정: 칩 영역을 항상 고정 높이(36 = rmChip 높이) View로 렌더 — 빈 상태엔 placeholder 텍스트(restrictionsEdit.chipPlaceholder ×10 로케일), 선택 시 기존 horizontal ScrollView. 빈↔선택 레이아웃 높이 불변 → 목록 밀림 0. 공용 IngredientFilter라 온보딩·프로필 동시 반영.
+- 테스트: 0건 placeholder+ScrollView 미렌더 / 0↔1 칩영역 높이 36 불변 잠금(밀림 0 근거). tsc 0, jest 163/163. JS-only — preview OTA.

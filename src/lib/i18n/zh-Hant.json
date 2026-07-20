@@ -498,7 +498,8 @@
     "searchPlaceholder": "搜尋食材…",
     "allIngredients": "所有食材",
     "emptyList": "找不到符合的食材。",
-    "disclaimer": "僅供參考，請務必向店家確認「注意」項目。"
+    "disclaimer": "僅供參考，請務必向店家確認「注意」項目。",
+    "chipPlaceholder": "已選食材會顯示在這裡"
   },
   "ingredients": {
     "egg": "雞蛋",

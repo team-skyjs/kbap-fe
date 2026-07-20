@@ -48,25 +48,32 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
           </Text>
           {selected.length > 0 && <Text style={styles.tag}>{t('restrictionsEdit.tapToRemove')}</Text>}
         </View>
-        {selected.length > 0 && (
-          /* 고정 높이 1줄 — 선택 순서 그대로(selected 배열 순서), 탭=제거 유지 */
-          <ScrollView
-            ref={rowRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
-            keyboardShouldPersistTaps="handled"
-          >
-            {selected.map((code) => (
-              <Pressable key={code} style={styles.rmChip} onPress={() => onToggle(code)}>
-                <Text style={styles.rmChipText}>{ingredientLabel(code)}</Text>
-                <View style={styles.rmX}>
-                  <IconClose size={11} color={C.ink} />
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
+        {/* P-026(KB-178 재수정): 칩 영역을 **항상 고정 높이**로 렌더 — 빈 상태엔
+            placeholder. 0→1 전환 시 영역+gap이 새로 생기며 아래 목록을 밀어내던
+            버그(Q-11 2·6) 해소: 빈↔선택 레이아웃 높이 불변. */}
+        <View style={styles.chipArea}>
+          {selected.length > 0 ? (
+            /* 고정 높이 1줄 — 선택 순서 그대로(selected 배열 순서), 탭=제거 유지 */
+            <ScrollView
+              ref={rowRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+              keyboardShouldPersistTaps="handled"
+            >
+              {selected.map((code) => (
+                <Pressable key={code} style={styles.rmChip} onPress={() => onToggle(code)}>
+                  <Text style={styles.rmChipText}>{ingredientLabel(code)}</Text>
+                  <View style={styles.rmX}>
+                    <IconClose size={11} color={C.ink} />
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.chipPlaceholder}>{t('restrictionsEdit.chipPlaceholder')}</Text>
+          )}
+        </View>
       </View>
 
       {/* search */}
@@ -111,7 +118,11 @@ const styles = StyleSheet.create({
   activeTitle: { flex: 1, fontFamily: font.display, fontSize: 15, color: C.ink, letterSpacing: -0.2 },
   tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chipRow: { flexDirection: 'row', gap: 8, paddingRight: 2 }, // 1줄 고정 — wrap 없음 (B안)
+  // P-026: 칩 1줄 높이 고정(rmChip = paddingV 8·2 + border 2 + 콘텐츠 18 ≈ 36).
+  // 항상 이 높이라 빈↔선택 전환에 레이아웃 점프 0.
+  chipArea: { height: 36, justifyContent: 'center' },
+  chipPlaceholder: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
+  chipRow: { flexDirection: 'row', gap: 8, paddingRight: 2, alignItems: 'center' }, // 1줄 고정 — wrap 없음 (B안)
 
   rmChip: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingLeft: 13, paddingRight: 9, paddingVertical: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line },
   rmChipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },

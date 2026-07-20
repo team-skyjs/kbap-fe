@@ -48,7 +48,26 @@ it('선택 요약이 horizontal ScrollView 1줄로 렌더되고 선택 순서를
   expect([...new Set(chipTexts)]).toEqual([ingredientLabel(A), ingredientLabel(B)]);
 });
 
-it('0건이면 요약 줄 미표시', () => {
+// P-026(KB-178 재수정): 0건일 때 칩 ScrollView는 없지만 **칩 영역은 고정 높이로
+// 존재**(placeholder) — 0→1 전환에 레이아웃 점프가 없도록.
+it('0건: 칩 ScrollView 미렌더 + 고정높이(36) 영역에 placeholder', () => {
   const tree = render(<IngredientFilter selected={[]} onToggle={() => {}} />);
   expect(tree.root.findAllByType(ScrollView).filter((s) => s.props.horizontal)).toHaveLength(0);
+  // placeholder 텍스트 렌더
+  const ph = tree.root.findAll((n) => n.props?.children === 'restrictionsEdit.chipPlaceholder');
+  expect(ph.length).toBeGreaterThanOrEqual(1);
+});
+
+it('0↔1 전환: 칩 영역 높이 불변 (고정 36) — 목록 밀림 0의 근거', () => {
+  const heightOf = (sel: string[]) => {
+    const tree = render(<IngredientFilter selected={sel} onToggle={() => {}} />);
+    // chipArea = height 36 고정 View (placeholder/ScrollView 공통 래퍼)
+    const areas = tree.root.findAll((n) => {
+      const s = Array.isArray(n.props?.style) ? Object.assign({}, ...n.props.style) : n.props?.style;
+      return s && s.height === 36 && s.justifyContent === 'center';
+    });
+    return areas.length ? 36 : null;
+  };
+  expect(heightOf([])).toBe(36);
+  expect(heightOf([INGREDIENTS[0].code])).toBe(36); // 1건도 동일 높이
 });

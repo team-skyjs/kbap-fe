@@ -498,7 +498,8 @@
     "searchPlaceholder": "Buscar ingredientes…",
     "allIngredients": "Todos los ingredientes",
     "emptyList": "Ningún ingrediente coincide con tu búsqueda.",
-    "disclaimer": "Solo orientativo: confirma siempre los elementos de 'Precaución' con el dueño del restaurante."
+    "disclaimer": "Solo orientativo: confirma siempre los elementos de 'Precaución' con el dueño del restaurante.",
+    "chipPlaceholder": "Los ingredientes seleccionados aparecen aquí"
   },
   "ingredients": {
     "egg": "Huevo",

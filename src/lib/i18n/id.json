@@ -498,7 +498,8 @@
     "searchPlaceholder": "Cari bahan…",
     "allIngredients": "Semua bahan",
     "emptyList": "Tidak ada bahan yang cocok dengan pencarian Anda.",
-    "disclaimer": "Hanya panduan — selalu konfirmasi item 'Hati-hati' dengan pemilik restoran."
+    "disclaimer": "Hanya panduan — selalu konfirmasi item 'Hati-hati' dengan pemilik restoran.",
+    "chipPlaceholder": "Bahan yang dipilih muncul di sini"
   },
   "ingredients": {
     "egg": "Telur",

@@ -498,7 +498,8 @@
     "searchPlaceholder": "搜索食材…",
     "allIngredients": "所有食材",
     "emptyList": "没有匹配的食材。",
-    "disclaimer": "仅供参考，“注意”级别的食材请务必向餐厅店主确认。"
+    "disclaimer": "仅供参考，“注意”级别的食材请务必向餐厅店主确认。",
+    "chipPlaceholder": "已选食材会显示在这里"
   },
   "ingredients": {
     "egg": "鸡蛋",

@@ -245,7 +245,8 @@
     "searchPlaceholder": "Search ingredients…",
     "allIngredients": "All ingredients",
     "emptyList": "No ingredients match your search.",
-    "disclaimer": "Guidance only — always confirm 'Caution' items with the restaurant owner."
+    "disclaimer": "Guidance only — always confirm 'Caution' items with the restaurant owner.",
+    "chipPlaceholder": "Selected ingredients appear here"
   },
   "review": {
     "title": "Write a review",

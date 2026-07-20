@@ -498,7 +498,8 @@
     "searchPlaceholder": "食材を検索…",
     "allIngredients": "すべての食材",
     "emptyList": "検索に一致する食材がありません。",
-    "disclaimer": "参考情報です。「注意」項目は必ず店主にご確認ください。"
+    "disclaimer": "参考情報です。「注意」項目は必ず店主にご確認ください。",
+    "chipPlaceholder": "選んだ食材がここに表示されます"
   },
   "ingredients": {
     "egg": "卵",

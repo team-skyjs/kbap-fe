@@ -498,7 +498,8 @@
     "searchPlaceholder": "Tìm nguyên liệu…",
     "allIngredients": "Tất cả nguyên liệu",
     "emptyList": "Không có nguyên liệu khớp.",
-    "disclaimer": "Chỉ mang tính hướng dẫn — luôn xác nhận mục 'Thận trọng' với chủ quán."
+    "disclaimer": "Chỉ mang tính hướng dẫn — luôn xác nhận mục 'Thận trọng' với chủ quán.",
+    "chipPlaceholder": "Nguyên liệu đã chọn sẽ hiện ở đây"
   },
   "ingredients": {
     "egg": "Trứng",

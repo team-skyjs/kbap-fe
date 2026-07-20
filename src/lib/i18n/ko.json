@@ -249,7 +249,8 @@
     "searchPlaceholder": "재료 검색…",
     "allIngredients": "전체 재료",
     "emptyList": "검색과 일치하는 재료가 없어요.",
-    "disclaimer": "참고용이에요 — '주의' 항목은 반드시 사장님께 확인하세요."
+    "disclaimer": "참고용이에요 — '주의' 항목은 반드시 사장님께 확인하세요.",
+    "chipPlaceholder": "선택한 재료가 여기에 표시돼요"
   },
   "review": {
     "title": "리뷰 쓰기",
