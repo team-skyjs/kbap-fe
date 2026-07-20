@@ -17,11 +17,10 @@ import type { Review, User, UserUpdate } from '../api/types';
 import { api } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { hasBeSession } from '../auth/beAuth';
-import { loadLocalSpice } from '../onboarding/submit';
+import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
 import { toBeCode } from '../mocks/ingredients';
 
-const SPICE_KEY = 'kbap.profile.spice.v1'; // submit.ts와 동일 키
 
 export function useMe() {
   return useQuery({

@@ -16,11 +16,31 @@ import { Btn } from '@/components/Btn';
 import { IconProfile } from '@/components/icons';
 import { loadOnboardingDraft } from '@/lib/onboarding/draft';
 import { useMe } from '@/lib/data/useMe';
+import { useIsGuest } from '@/lib/auth/useSession';
+
+/**
+ * 노출 판정 (P-010/KB-177 개정): **로그인 + 온보딩 미완 회원**에게만.
+ * - 게스트는 draft가 있어도 미노출 — 탈퇴/로그아웃 잔재가 게스트를 미완
+ *   회원으로 오인시키는 계열 버그의 방어벽 (일괄 정리와 별개의 이중 방어).
+ * - 회원은 KB-75 그대로: 서버 플래그가 원천(완료=절대 미노출, 미완=draft
+ *   없어도 노출), 플래그 없으면(mock) 로컬 draft 기준.
+ */
+export function shouldShowResume(
+  isGuest: boolean,
+  onboardingCompleted: boolean | undefined,
+  draftExists: boolean,
+): boolean {
+  if (isGuest) return false;
+  if (onboardingCompleted === true) return false;
+  if (onboardingCompleted === false) return true;
+  return draftExists;
+}
 
 export function ResumeOnboardingBanner() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: me } = useMe();
+  const isGuest = useIsGuest();
   const [draftExists, setDraftExists] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -28,16 +48,7 @@ export function ResumeOnboardingBanner() {
     void loadOnboardingDraft().then((d) => setDraftExists(!!d));
   }, []);
 
-  // KB-75: 서버 플래그가 있으면 그게 원천 — 완료 계정엔 절대 안 띄우고,
-  // 미완료 계정엔 (로컬 draft가 없어도, 예: 기기 변경) 띄운다.
-  // 플래그가 없으면(비회원/mock) 기존 로컬 draft 존재 기준.
-  const shouldShow =
-    me?.onboardingCompleted === true
-      ? false
-      : me?.onboardingCompleted === false
-        ? true
-        : draftExists;
-  const visible = shouldShow && !dismissed;
+  const visible = shouldShowResume(isGuest, me?.onboardingCompleted, draftExists) && !dismissed;
   const setVisible = (v: boolean) => setDismissed(!v);
 
   return (

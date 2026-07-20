@@ -39,8 +39,13 @@ export default function DeleteAccount() {
 
   // KB-67: 탈퇴 실호출 → 세션 정리 → 재로그인 화면
   async function doWithdraw() {
-    const { withdrawBe } = await import('@/lib/auth/beAuth');
+    // lazy require — 파일 내 session/appleRevoke와 동일 관례 (웹 번들 안전 + jest 호환)
+    const { withdrawBe } = require('@/lib/auth/beAuth') as typeof import('@/lib/auth/beAuth');
     await withdrawBe().catch(() => {}); // 실패해도 로컬 세션은 정리됨
+    // P-010(KB-177): 탈퇴한 계정의 로컬 잔재(온보딩 draft·맵기) 정리 —
+    // 게스트 진입 시 재개 모달 오노출 방지 (로그아웃과 달리 탈퇴는 무조건 소거)
+    const { clearMemberLocalState } = require('@/lib/auth/clearMemberLocal') as typeof import('@/lib/auth/clearMemberLocal');
+    await clearMemberLocalState().catch(() => {});
     if (Platform.OS !== 'web') {
       const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
       await session.logOut().catch(() => {});

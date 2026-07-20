@@ -32,7 +32,8 @@ export interface OnboardingProfilePayload {
   profileImageUrl?: string | null;
 }
 
-const SPICE_KEY = 'kbap.profile.spice.v1';
+/** 맵기 로컬 fallback 키 — useMe·clearMemberLocal과 공유 (중복 정의 금지). */
+export const SPICE_KEY = 'kbap.profile.spice.v1';
 
 export async function submitOnboardingProfile(payload: OnboardingProfilePayload): Promise<void> {
   // 맵기는 계약 밖 — 로컬 보관 (스킵이면 저장하지 않음)

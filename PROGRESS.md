@@ -280,3 +280,11 @@
 - [x] 배선 교체: 홈→SkeletonHome, 음식 탭→SkeletonFoodGrid(FlatList 패딩 안), 프로필→SkeletonProfile. 범용 SkeletonList는 리스트형 화면(검색·카탈로그) 유지.
 - 테스트: 탭별 로딩→전용 스켈레톤 렌더 잠금 3건(기존 1건 강화 + 2건 신규). tsc 0, jest 121/121.
 - 실기기 확인 포인트(예진): 각 탭 첫 로드에서 스켈레톤이 실제 화면 골격과 겹쳐 보이는지 + 로딩→렌더 전환 시 점프 없음.
+
+## KB-177 탈퇴 후 로컬 잔재 정리 — 게스트 재개 모달 버그 (2026-07-20, P-010)
+- [x] `clearMemberLocal.ts` 신규 — 탈퇴 성공 시 **회원 귀속** 로컬 상태 일괄 정리: 온보딩 draft(kbap.onboardingDraft.v1) + 맵기 로컬(kbap.profile.spice.v1). 유지(기기 귀속 판단): introSeen·lang·installed 센티널·recentSearches(서버 미전송 기기 검색기록). 세션(토큰·서버캐시)은 withdrawBe, Keychain은 freshInstall이 각자 담당 — 계층 분리 주석. 새 회원 키 추가 시 등록 지점 명시. SPICE_KEY 중복 정의(3곳→submit.ts export 1곳) 겸사 해소.
+- [x] doWithdraw 배선: withdrawBe → clearMemberLocalState → logOut 순. 파일 내 관례 따라 lazy require(웹 번들 안전+jest 호환 — 기존 await import는 jest 미지원이라 전환).
+- [x] 방어 분기(이중 방어): `shouldShowResume()` 순수 함수 추출 — **게스트는 draft/플래그 무관 미노출**, 회원은 KB-75 규칙 무변(서버 플래그 원천, 플래그 없으면 draft 기준).
+- [x] 로그아웃 draft 방침 현행 유지 + 판단 기록: 타계정 재로그인 시 이전 draft 노출 리스크는 방어 분기 이후 "플래그 없는 로그인 회원"뿐 — 실회원은 서버 플래그가 원천이라 실해 제한적, 범위 확장 안 함(보고 기록).
+- 테스트 +5: 정리 키 2종+타 키 미접촉 / 게스트 미노출 3케이스 / 회원 무변 4케이스 / 탈퇴 배선 통합(동의→확정→withdrawBe+정리+/login). tsc 0, jest 126/126.
+- 실기기 확인 포인트(예진·DoD): 탈퇴 완주→"둘러보기" 게스트 진입 시 재개 모달 없음 / 정상 회원 온보딩 중단→재개 무변.

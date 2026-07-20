@@ -18,7 +18,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn(), patch: jest.fn().mockResolvedValue(undefined) } }));
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
-jest.mock('@/lib/onboarding/submit', () => ({ loadLocalSpice: jest.fn().mockResolvedValue(null) }));
+jest.mock('@/lib/onboarding/submit', () => ({
+  loadLocalSpice: jest.fn().mockResolvedValue(null),
+  SPICE_KEY: 'kbap.profile.spice.v1', // useMe가 submit에서 import (P-010 중복 해소)
+}));
 
 import { useUpdateMe } from '../useMe';
 import type { UserUpdate } from '@/lib/api/types';
