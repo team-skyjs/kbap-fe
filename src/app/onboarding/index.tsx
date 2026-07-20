@@ -14,7 +14,7 @@
  * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -200,10 +200,19 @@ export default function Onboarding() {
     apply(copy);
   };
 
+  // KB-197: Android 하단 내비바 클리어런스 — edge-to-edge에서 insets.bottom이
+  // 0으로 과소보고되는 기기가 있어(3버튼 내비 등) floor 적용. iOS는 실측값 그대로.
+  const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, 48) : insets.bottom;
+
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
       <ScrollView
-        contentContainerStyle={[styles.body, step === 'restrictions' && { paddingBottom: 130 }]}
+        contentContainerStyle={[
+          styles.body,
+          // restrictions는 CTA가 스티키(아래 stickyFoot) — 목록 하단 여백만.
+          // 그 외 스텝은 CTA가 in-scroll foot이라 내비바 클리어런스를 body에 실어야 함.
+          step === 'restrictions' ? { paddingBottom: 130 } : { paddingBottom: 28 + bottomInset },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -270,7 +279,7 @@ export default function Onboarding() {
       {/* P-011(KB-178, B안): restrictions 스텝 CTA 하단 고정 — 81종 목록 스크롤과
           무관하게 항상 노출. 목록 하단 패딩(130)으로 마지막 칩 가림 방지. */}
       {step === 'restrictions' && (
-        <View style={[styles.stickyFoot, { paddingBottom: insets.bottom + 14 }]}>
+        <View style={[styles.stickyFoot, { paddingBottom: bottomInset + 14 }]}>
           <Btn onPress={answerStep}>
             {t('onboarding.continue')}
             {restrictions.size ? ` · ${t('onboarding.added', { count: restrictions.size })}` : ''}

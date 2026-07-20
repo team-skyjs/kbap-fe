@@ -42,7 +42,14 @@ export function LanguagePicker({ open, onClose }: { open: boolean; onClose: () =
           {SUPPORTED_LANGS.map((code) => {
             const active = code === lang;
             return (
-              <Pressable key={code} style={[styles.row, active && styles.rowOn]} onPress={() => pick(code)}>
+              <Pressable
+                key={code}
+                // KB-197: Android 기본 리플이 회색으로 padding까지 번져 rowOn 틴트와 겹침 →
+                // 브랜드 톤 리플 명시(iOS는 무시). 눌림 피드백은 리플이, 선택 상태는 테두리+틴트가 담당.
+                android_ripple={{ color: 'rgba(226,88,12,0.12)' }}
+                style={[styles.row, active && styles.rowOn]}
+                onPress={() => pick(code)}
+              >
                 <Text style={[styles.endonym, active && styles.endonymOn]}>{LANG_ENDONYM[code]}</Text>
                 {active && <IconCheck size={20} color={C.primary} />}
               </Pressable>
@@ -77,6 +84,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 15,
+    overflow: 'hidden', // KB-197: 리플을 라운드 코너 안으로 클립 (코너 회색 번짐 방지)
     ...shadow.sh1,
   },
   rowOn: { borderColor: C.primary, backgroundColor: 'rgba(226,88,12,0.06)' },

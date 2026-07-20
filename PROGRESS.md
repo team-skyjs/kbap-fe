@@ -358,3 +358,9 @@
 - 테스트 +1 (socialAuthGoogle.test): 네이티브 모킹 수준에서 getTokens 호출 + credential(idToken, accessToken) 2인자 잠금. tsc 0, jest 157/157.
 - 발행: preview 채널 OTA (JS-only, 공기계 재빌드 불요) — 발행 ID는 REPORTS 병기.
 - 발행 완료: preview 채널 OTA — Android update 019f7e7b-929e-7b31 (runtime cbbec117 = 공기계 preview 빌드 일치, 도달 확인). ⚠️ 발행 순간 P-018 이전 에셋(app.json·splash-icon.png)을 096a954~1로 스왑 — preview 빌드가 P-018 네이티브 변경 전이라 fingerprint 매칭 필요(스킬 3-1 선례, iOS _photostyle과 별개). JS 번들은 에셋 무관이라 셔먼 동일. 발행 후 즉시 복원.
+
+## KB-197 Android UI 정리 — 온보딩 제출 버튼 짤림 + 언어 선택 리플 (2026-07-20, P-021)
+- [x] **온보딩 제출 버튼 짤림 원인 정정**: stickyFoot(restrictions만)은 insets 적용 상태였고, 실제 짤린 "제출" 버튼은 **마지막 spice 스텝의 in-scroll `foot`**(marginTop:auto, body paddingBottom 28뿐 — 내비바 클리어런스 없음). 안드 edge-to-edge에서 insets.bottom 과소보고(0) 기기 대비: `bottomInset = Platform.OS==='android' ? Math.max(insets.bottom, 48) : insets.bottom`. in-scroll foot 스텝은 body paddingBottom을 `28+bottomInset`으로, restrictions stickyFoot는 `bottomInset+14`로. iOS는 실측값 그대로(무회귀).
+- [x] **언어 선택 리플**: LanguagePicker row에 `android_ripple={{color:'rgba(226,88,12,0.12)'}}` 명시(안드 기본 회색 리플이 padding까지 번지던 것 → 브랜드 톤) + row `overflow:'hidden'`으로 라운드 코너 클립. 선택 상태는 기존 테두리+틴트(rowOn) 유지. iOS는 android_ripple 무시. 공용 컴포넌트라 프로필 수정·프로필 탭 동시 반영.
+- tsc 0, jest 157/157. 스타일-only, 신규 테스트 없음(렌더 회귀는 기존 스위트가 커버). JS-only — preview OTA.
+- 발행: preview 채널 OTA — ID는 REPORTS 병기. ⚠️ P-018 이전 에셋 스왑 필요(공기계 preview 빌드 fingerprint 매칭 — P-020 선례).
