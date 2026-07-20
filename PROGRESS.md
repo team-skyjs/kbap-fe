@@ -339,3 +339,10 @@
 - [x] 첫 빌드 성공 (빌드 00ba0336, ~26분 — 첫 빌드 콜드 캐시): keystore EAS 자동 생성(Build Credentials 3TdEsf5DKE). preview 채널/브랜치 자동 생성됨.
 - [x] SHA-1 추출: eas credentials가 인터랙티브라 apk 서명 블록(v2)을 직접 파싱 — SHA1 D2:F7:2B:1A:F4:5C:C4:23:13:18:CB:98:D4:65:7D:6D:F8:2A:A3:35. **구글 로그인 동작하려면 예진이 Firebase 콘솔에 이 SHA-1 등록 필요.**
 - 확인 포인트: 애플 로그인 버튼은 Android에서 미노출이 정상(appleAvailable = iOS 전용 기구현) / 코드 변경 0 (PROGRESS 기록만).
+
+## KB-194 스플래시 개선 — 태그라인 제거 + 부트 게이팅 (2026-07-20, P-018)
+- [x] **에셋(네이티브 — 빌드 7 반영)**: splash-icon.png 알파 밴드 분석(900×1200 — 심볼 326..625 / 워드마크 708..815 / 태그라인 838..857) → 태그라인 스트립 제거 + 투명 여백 정리 크롭(391×535, 패딩 24 — 하단은 태그라인 직전 캡). PIL 부재로 PNG 디코드/인코드 직접(stdlib zlib). 미리보기: dropbox/yj/splash-v2-preview.png (푸시됨). app.json imageWidth 280→230 원복(_comment의 예약 이행).
+- [x] **부트 게이팅(JS — OTA 가능)**: bootGate.ts — `gateSplash`(min 1200ms / cap 4000ms, reject=settle 취급 — 오프라인이 스플래시 안 붙잡음) + `prefetchBootData`(홈·목록, 세션 시 me). 프리페치 키는 실키와 일치: 훅 queryFn 3개를 fetchHome/fetchFoodsPage/fetchMe로 추출 공유 + `resolveInitialLang()`으로 저장 언어를 LocaleProvider 마운트 전에 선적용(키·Accept-Language 정합). _layout의 entryChecked 게이트에 합류 — 기존 intro/freshInstall 시맨틱 유지.
+- 테스트 +4 (가짜 타이머): min 전 hide 절대 없음 / min~cap settle 즉시 / cap 강제 / reject 무지연. tsc 0, jest 155/155.
+- ⚠️ **OTA 주의(다음 발행 시)**: 이 커밋은 네이티브(에셋·app.json)+JS 혼합 — 빌드 7 전에 게이팅만 OTA로 내려면 발행 순간 app.json·splash-icon.png를 직전 상태로 스왑(기존 gitignore 스왑에 추가). 빌드 7 재베이스라인 후 소멸.
+- 실기기 확인 포인트: (OTA 후) 빠른 네트워크 ~1.2초 균일 스플래시 / 기내모드 최대 4초 후 스켈레톤·J4 / (빌드 7) 태그라인 없는 스플래시 + 230 크기.

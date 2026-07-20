@@ -26,20 +26,23 @@ interface HomeWire {
   recentScans: MenuSummaryWire[];
 }
 
+/** 홈 피드 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
+export async function fetchHome(): Promise<HomeResponse> {
+  if (MOCK_MODE_HOME) return MOCK_HOME;
+  const wire = await api.get<HomeWire>('/home');
+  return {
+    authenticated: wire.authenticated,
+    avoided: wire.avoidedSubstances ?? [],
+    recommended: (wire.popularFoods ?? []).map(adaptMenuSummary),
+    recent: (wire.recentScans ?? []).map(adaptMenuSummary),
+  };
+}
+
 export function useHome() {
   const query = useQuery({
     // 언어 전환 시 성분명·음식명 재지역화
     queryKey: ['home', i18n.language],
-    queryFn: async (): Promise<HomeResponse> => {
-      if (MOCK_MODE_HOME) return MOCK_HOME;
-      const wire = await api.get<HomeWire>('/home');
-      return {
-        authenticated: wire.authenticated,
-        avoided: wire.avoidedSubstances ?? [],
-        recommended: (wire.popularFoods ?? []).map(adaptMenuSummary),
-        recent: (wire.recentScans ?? []).map(adaptMenuSummary),
-      };
-    },
+    queryFn: fetchHome,
   });
 
   // KB-68 반려 #2: 탭 화면은 언마운트되지 않아 홈 복귀만으로는 재조회가 없다 —

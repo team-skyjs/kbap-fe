@@ -30,6 +30,17 @@ type LocaleCtx = {
 
 const deviceLang = resolveLang(getLocales()[0]?.languageTag ?? getLocales()[0]?.languageCode);
 
+/** 부팅 시점의 최종 언어(저장 선택 > 기기 기본) — 프리페치 키 일치용 (P-018). */
+export async function resolveInitialLang(): Promise<SupportedLang> {
+  try {
+    const saved = await AsyncStorage.getItem(STORAGE_KEY);
+    if (saved && isSupportedLang(saved)) return saved;
+  } catch {
+    /* storage 불능 → 기기 기본 */
+  }
+  return deviceLang;
+}
+
 const Ctx = React.createContext<LocaleCtx>({
   lang: 'en',
   script: 'latin',
@@ -46,15 +57,10 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     let alive = true;
     (async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        const next = saved && isSupportedLang(saved) ? saved : deviceLang;
-        if (!alive) return;
-        if (i18n.language !== next) await i18n.changeLanguage(next);
-        setLangState(next);
-      } catch {
-        // storage unavailable → keep device default
-      }
+      const next = await resolveInitialLang();
+      if (!alive) return;
+      if (i18n.language !== next) await i18n.changeLanguage(next);
+      setLangState(next);
     })();
     return () => {
       alive = false;

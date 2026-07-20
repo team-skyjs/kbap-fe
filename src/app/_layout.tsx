@@ -19,6 +19,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 
 import { queryClient } from '@/lib/queryClient';
+import { gateSplash, prefetchBootData } from '@/lib/bootGate';
 import { installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
 import { hasSeenIntro } from '@/lib/introSeen';
@@ -42,13 +43,16 @@ export default function RootLayout() {
   // 판별 전에 홈/리다이렉트가 먼저 그려지는 race 방지 (실기기 반려분 #1).
   // 신규 설치 잔존 세션 정리(freshInstall)도 이 게이트 안 — entryChecked 전엔
   // 화면이 안 그려지므로 useSession 판정보다 정리가 항상 먼저다.
+  // P-018(KB-194): 여기에 부트 게이팅 추가 — 핵심 데이터 프리페치 + 최소 노출
+  // 1200ms(반짝임 소멸) + 상한 4000ms(무한 스플래시 금지 — 스켈레톤/J4가 이어받음).
   const [entryChecked, setEntryChecked] = useState(false);
   const needsIntro = useRef(false);
 
   useEffect(() => {
-    Promise.all([cleanupIfFreshInstall(), hasSeenIntro()])
+    const ready = Promise.all([cleanupIfFreshInstall(), hasSeenIntro()])
       .then(([, seen]) => { needsIntro.current = !seen; })
-      .finally(() => setEntryChecked(true));
+      .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
+    void gateSplash({ ready, prefetch: prefetchBootData() }).then(() => setEntryChecked(true));
   }, []);
 
   // 네비게이터가 마운트된 뒤 1회만 인트로로 보낸다 (replace라 백스택 없음)

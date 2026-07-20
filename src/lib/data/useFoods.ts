@@ -55,30 +55,33 @@ export function useFoods(query?: string) {
  * Browse list, LIVE (KB-71): newest-first keyset pages. `pageParam` is the
  * BE's nextCursor (last item's foodId — treated as opaque).
  */
+/** 목록 페이지 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
+export async function fetchFoodsPage(pageParam: number | undefined): Promise<PageMenuSummaryWire> {
+  if (MOCK_MODE_FOODS) {
+    return {
+      items: MOCK_FOODS.map((f) => ({
+        foodId: Number(f.foodId) || 0,
+        name: f.name,
+        koreanName: f.nameKo,
+        imageRef: null,
+        spiciness: 0,
+        overallRiskStatus: 'UNKNOWN' as const,
+      })),
+      hasNext: false,
+    };
+  }
+  const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
+  // P-008(KB-174 후속): 401 특례(게스트 정숙 임시책) 제거 — foods 인증-선택
+  // 전환 완료(무토큰 200, 7/20 실측)로 게스트는 401이 없고, 남는 401 =
+  // 죽은 토큰뿐. 빈 목록 위장은 isError를 막아 에러 블록을 무력화한다.
+  return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}`);
+}
+
 export function useInfiniteFoods() {
   return useInfiniteQuery({
     queryKey: ['foods', 'list', i18n.language],
     initialPageParam: undefined as number | undefined,
-    queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
-      if (MOCK_MODE_FOODS) {
-        return {
-          items: MOCK_FOODS.map((f) => ({
-            foodId: Number(f.foodId) || 0,
-            name: f.name,
-            koreanName: f.nameKo,
-            imageRef: null,
-            spiciness: 0,
-            overallRiskStatus: 'UNKNOWN' as const,
-          })),
-          hasNext: false,
-        };
-      }
-      const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
-      // P-008(KB-174 후속): 401 특례(게스트 정숙 임시책) 제거 — foods 인증-선택
-      // 전환 완료(무토큰 200, 7/20 실측)로 게스트는 401이 없고, 남는 401 =
-      // 죽은 토큰뿐. 빈 목록 위장은 isError를 막아 에러 블록을 무력화한다.
-      return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}`);
-    },
+    queryFn: ({ pageParam }) => fetchFoodsPage(pageParam),
     getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });

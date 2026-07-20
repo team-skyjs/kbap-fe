@@ -22,15 +22,18 @@ import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
 import { toBeCode } from '../mocks/ingredients';
 
 
+/** 내 프로필 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
+export async function fetchMe(): Promise<User> {
+  if (!(await hasBeSession())) return MOCK_USER; // guest/dev fallback
+  const wire = await api.get<MyProfileWire>('/members/me/profile');
+  return adaptProfile(wire, await loadLocalSpice());
+}
+
 export function useMe() {
   return useQuery({
     // 언어 전환 시 성분명 지역화 대비(현재 프로필은 코드만이라 무해)
     queryKey: ['me', i18n.language],
-    queryFn: async (): Promise<User> => {
-      if (!(await hasBeSession())) return MOCK_USER; // guest/dev fallback
-      const wire = await api.get<MyProfileWire>('/members/me/profile');
-      return adaptProfile(wire, await loadLocalSpice());
-    },
+    queryFn: fetchMe,
   });
 }
 
