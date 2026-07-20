@@ -389,3 +389,8 @@
 - [x] 수정: 칩 영역을 항상 고정 높이(36 = rmChip 높이) View로 렌더 — 빈 상태엔 placeholder 텍스트(restrictionsEdit.chipPlaceholder ×10 로케일), 선택 시 기존 horizontal ScrollView. 빈↔선택 레이아웃 높이 불변 → 목록 밀림 0. 공용 IngredientFilter라 온보딩·프로필 동시 반영.
 - 테스트: 0건 placeholder+ScrollView 미렌더 / 0↔1 칩영역 높이 36 불변 잠금(밀림 0 근거). tsc 0, jest 163/163. JS-only — preview OTA.
 - 발행: preview OTA — Android update 019f7f46-3946-7b5a (runtime cbbec117 = build1 일치). build1 호환 스왑(app.json·splash·package.json·scan.tsx) 후 복원.
+
+## KB-174 후속 — 음식 탭 오프라인 전체화면 에러 (2026-07-20, P-027)
+- [x] Q-08 실기: 음식 탭 오프라인 시 헤더(제목·부제·검색바)가 그대로 뜨고 그 아래 오프라인 에러 겹침. 원인: FlatList가 ListHeaderComponent(Header)를 항상 렌더 + ListEmptyComponent로 QueryErrorBlock을 아래 깖.
+- [x] 수정: `ListHeaderComponent={isError ? null : Header}` — 에러/오프라인 시 헤더 미렌더 → QueryErrorBlock 전체화면(홈 탭 톤 통일). 로딩(스켈레톤)·정상·빈 상태는 헤더 유지. StickyHeader(브랜드 크롬)는 홈 탭과 동일하게 유지.
+- 테스트 +1: 에러→헤더(food.title·searchPlaceholder) 미렌더 / 정상→헤더 렌더 잠금. tsc 0, jest 164/164. JS-only — preview OTA.

@@ -103,7 +103,9 @@ export default function Food() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110, paddingHorizontal: 18, gap: 12 }}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
-        ListHeaderComponent={Header}
+        // P-027(KB-174 후속): 오프라인/에러 시 헤더(제목·부제·검색바) 미렌더 →
+        // QueryErrorBlock이 전체화면(홈 탭과 톤 통일). 로딩·정상·빈 상태는 헤더 유지.
+        ListHeaderComponent={isError ? null : Header}
         ListEmptyComponent={Empty}
         ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
         onEndReachedThreshold={0.6}

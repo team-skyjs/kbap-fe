@@ -120,6 +120,18 @@ it('음식 탭: 에러 → J3 렌더 (Try again 배선)', () => {
   expect(texts(tree, 'states.errorTitle')).toBeGreaterThanOrEqual(1);
 });
 
+// P-027(KB-174 후속): 에러/오프라인 시 헤더(제목·검색바) 미렌더 — 전체화면 에러
+it('음식 탭: 에러 → 헤더(제목·검색바) 미렌더, 정상 → 렌더', () => {
+  mockUseInfiniteFoods.mockReturnValue({ ...ERR_500, ...FOODS_EXTRA, data: undefined });
+  const errTree = render(<Food />);
+  expect(texts(errTree, 'food.title')).toBe(0);
+  expect(texts(errTree, 'food.searchPlaceholder')).toBe(0);
+
+  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...FOODS_EXTRA, data: [] });
+  const okTree = render(<Food />);
+  expect(texts(okTree, 'food.title')).toBeGreaterThanOrEqual(1); // 정상은 헤더 유지
+});
+
 it('프로필 탭: 에러 → J3 렌더, 백지 아님', () => {
   mockUseMe.mockReturnValue({ ...ERR_500, data: undefined });
   const tree = render(<Profile />);
