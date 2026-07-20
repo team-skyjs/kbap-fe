@@ -332,3 +332,10 @@
 - [x] 실측: 스펙 표기 여전히 optional(MyProfileResponse) — "항상 값" 서버 배포 여부 스펙만으론 확인 불가, 진행로그 기록. 코드 완성 상태.
 - 테스트 갱신 +2: 삭제·온보딩 미선택 전송 기본 path 잠금 / isDefault 판별 5케이스 / 기본 URL 시 삭제 액션 미노출. tsc 0, jest 151/151.
 - ✅ **P-014 OTA 게이트 소멸**: 기본 path는 항상 유효한 string이라 이 커밋부터 서버 무관 OTA 가능.
+
+## KB-176 Android 첫 빌드 — 공기계 스모크용 apk (2026-07-20, P-017)
+- [x] 사전 점검: google-services.json 루트 존재 ✓ (Firebase Android 등록돼 있음 — 즉시 보고 사유 없음), app.json android 설정(com.rocher.kbap) 정상.
+- [x] **eas.json 무변경 판단**: preview(distribution: internal)는 Android 기본 산출물이 apk — buildType 명시는 동작 동일하면서 eas.json이 fingerprint 소스라 다음 iOS 프로덕션 OTA에 eas.json 스왑 부담을 추가함(스킬 3-1 함정 계열) → 생략. 산출물 .apk 확장자로 검증 완료.
+- [x] 첫 빌드 성공 (빌드 00ba0336, ~26분 — 첫 빌드 콜드 캐시): keystore EAS 자동 생성(Build Credentials 3TdEsf5DKE). preview 채널/브랜치 자동 생성됨.
+- [x] SHA-1 추출: eas credentials가 인터랙티브라 apk 서명 블록(v2)을 직접 파싱 — SHA1 D2:F7:2B:1A:F4:5C:C4:23:13:18:CB:98:D4:65:7D:6D:F8:2A:A3:35. **구글 로그인 동작하려면 예진이 Firebase 콘솔에 이 SHA-1 등록 필요.**
+- 확인 포인트: 애플 로그인 버튼은 Android에서 미노출이 정상(appleAvailable = iOS 전용 기구현) / 코드 변경 0 (PROGRESS 기록만).
