@@ -50,7 +50,7 @@ export interface ProfileUpdateWire {
   countryCode?: string;
   appLanguage?: string;
   spicinessPreference?: number; // 0..10, 해제 = -1 전송 (BE 확정 7/16 — 생략은 유지)
-  profileImageUrl?: string; // 업로드 path(objectKey) — 생략 = 유지 (KB-149/P-006)
+  profileImageUrl?: string | null; // path 설정 · null=삭제(서버가 기본 사진으로, BE 확정 7/20) · 생략=유지
 }
 
 /**

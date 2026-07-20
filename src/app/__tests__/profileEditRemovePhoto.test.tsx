@@ -40,7 +40,7 @@ jest.mock('expo-image-picker', () => ({}));
 jest.mock('@/lib/data/profileImage', () => ({
   pickProfileImage: jest.fn(),
   uploadProfileImage: jest.fn(),
-  PROFILE_IMAGE_CLEAR: '',
+  PROFILE_IMAGE_CLEAR: null, // P-014 확정값
 }));
 const mockMutate = jest.fn();
 let mockMe: Record<string, unknown>;
@@ -68,13 +68,13 @@ const removeNode = (tree: ReactTestRenderer) =>
 
 beforeEach(() => jest.clearAllMocks());
 
-it('사진 설정 상태 → 삭제 액션 노출, 탭 시 PATCH profileImageUrl "" (잠정 CLEAR)', () => {
+it('사진 설정 상태 → 삭제 액션 노출, 탭 시 PATCH profileImageUrl null (P-014 확정)', () => {
   mockMe = { ...BASE, profileImageUrl: 'https://cdn/p.jpg' };
   const tree = render(<EditProfile />);
   const btns = removeNode(tree);
   expect(btns.length).toBeGreaterThanOrEqual(1);
   act(() => btns[btns.length - 1].props.onPress());
-  expect(mockMutate).toHaveBeenCalledWith({ profileImageUrl: '' });
+  expect(mockMutate).toHaveBeenCalledWith({ profileImageUrl: null });
 });
 
 it('사진 없음 → 삭제 액션 미노출', () => {

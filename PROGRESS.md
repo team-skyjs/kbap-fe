@@ -309,3 +309,10 @@
 - [x] 삭제 성공 시 기존 useUpdateMe onSuccess의 ['me'] invalidate 재조회 → 탭·수정 화면 플레이스홀더 복귀. 온보딩 무변.
 - 테스트 +3: 삭제 전송값 '' 잠금+invalidate / 노출 조건(설정 시 노출·탭→mutate) / 미설정 시 미노출. i18n removePhoto ×10. tsc 0, jest 137/137.
 - 실기기 확인 포인트(예진·DoD): 삭제 → 플레이스홀더 복귀 + 앱 재시작 후 유지 (**서버가 ''를 삭제로 처리하는지 확정 — 사진이 남으면 null 확정 요청**) / 사진 없으면 액션 없음.
+
+## KB-149 후속 — 기본 프로필 사진 서버 일원화 (2026-07-20, P-014)
+- [x] 기본 아바타 png 산출: IconProfile 글리프를 512×512 png로 재현(rsvg-convert) — 배경 단색 #FDF1EC(흰 배경 위 아바타 버블 rgba(226,88,12,0.08) 합성값 — 원형 크롭·타 배경에서도 동일 룩 판단), 글리프 primary #E2580C stroke 2/24 round. `dropbox/yj/profile-default/`에 svg+png 전달 (종한 서버 서빙용).
+- [x] 삭제 전송값 '' → **null** 교체 (BE 확정 7/20): PROFILE_IMAGE_CLEAR 상수 한 곳 + UserUpdate/ProfileUpdateWire 타입 `string | null`. 생략=유지 보존. 스펙 스키마는 아직 비-nullable 표기 — 진행로그 기록, 종한 배포와 동시 적용.
+- [x] 조회 렌더: 서버 기본 URL 오면 기존 절대 URL 렌더 경로 그대로 동작. FE svg 플레이스홀더 분기·비-http 방어(adaptProfileImageUrl) **유지** — 제거 안 함.
+- 테스트: 삭제 null 잠금으로 교체(PATCH body null + invalidate / 화면 mutate null). tsc 0, jest 137/137.
+- ⚠️ **OTA 주의**: 서버가 null 삭제를 배포하기 전에 이 커밋이 OTA에 실리면 삭제가 무동작(400 가능) — **서버 배포 확인 후 OTA 포함**.

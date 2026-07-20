@@ -17,12 +17,12 @@ import { uploadImage } from '@/lib/api/scanImage';
 export const PROFILE_IMAGE_PURPOSE = 'PROFILE_IMAGE';
 
 /**
- * 프로필 사진 삭제 전송값 (P-013/KB-149 후속) — ⚠️ null vs '' 종한 확정 대기.
- * 잠정 '' 채택: 스키마가 type: string(비-nullable)이라 null은 검증 위반 소지,
- * imagePath '' 선례(required string에 '' 허용 확정)와 동일 계열. 확정되면 이
- * 상수(및 필요시 타입)만 교체. "생략=유지"는 그대로 보존된다.
+ * 프로필 사진 삭제 전송값 — **null 확정** (종한×예진 7/20, P-014: P-013의 잠정
+ * '' 교체). 미설정/삭제 시 서버가 기본 프로필 사진 URL을 응답하는 일원화 방향.
+ * "생략=유지"는 그대로 보존된다(undefined만 미전송). 스펙 스키마는 아직
+ * 비-nullable 표기 — 서버 배포와 동시 적용 (진행로그 기록).
  */
-export const PROFILE_IMAGE_CLEAR = '';
+export const PROFILE_IMAGE_CLEAR = null;
 
 export interface PickedImage {
   uri: string;
