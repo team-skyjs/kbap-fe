@@ -84,6 +84,25 @@ export function formatKrw(n: number): string {
   return '₩' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/* ---- P-012(KB-179): 스캔 결과 → 상세 가격 route param ----
+ * 가격은 음식이 아니라 그 메뉴판의 속성(BE 확정 7/20) — 스캔 진입에만 param으로
+ * 전달·표시하고 저장하지 않는다. 신뢰 경계 낮음(표시 전용): 양의 정수만 통과. */
+
+/** ResultDish.priceKrw → 상세 href 접미사 ('?price=9000' | ''). null/0/비정수 = 미첨부. */
+export function scanPriceParam(priceKrw: number | null | undefined): string {
+  return typeof priceKrw === 'number' && Number.isInteger(priceKrw) && priceKrw > 0
+    ? `?price=${priceKrw}`
+    : '';
+}
+
+/** 상세의 price param 파싱 — 정수 파싱 실패·음수·조작값은 null(미표시). */
+export function parseScanPrice(raw: string | string[] | undefined): number | null {
+  const s = Array.isArray(raw) ? raw[0] : raw;
+  if (!s || !/^\d+$/.test(s)) return null;
+  const n = Number(s);
+  return n > 0 && Number.isSafeInteger(n) ? n : null;
+}
+
 export function segmentMenu(lines: OcrLine[]): SegmentedMenu {
   const classified = lines.map((l) => ({ text: l.text, box: l.box, type: classifyLine(l.text, l.box) }));
 

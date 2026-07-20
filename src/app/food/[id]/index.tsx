@@ -38,6 +38,7 @@ import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
+import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
@@ -46,7 +47,9 @@ import type { FoodDetail, IngredientRisk } from '@/lib/api/types';
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
 
 export default function FoodDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
+  const { id, price } = useLocalSearchParams<{ id: string; price?: string }>();
+  const scanPrice = parseScanPrice(price);
   const isGuest = useIsGuest();
   const router = useRouter();
   const { t } = useTranslation();
@@ -117,6 +120,7 @@ export default function FoodDetailScreen() {
           <View style={styles.body}>
             {food.isRegistered ? (
               <Registered guest={isGuest}
+                scanPrice={scanPrice}
                 food={food}
                 nationality={me?.nationality ?? 'US'}
                 spiceTolerance={me?.spiceTolerance ?? null}
@@ -173,6 +177,7 @@ function Registered({
   spiceTolerance,
   hasRestrictions,
   guest,
+  scanPrice,
   t,
   router,
   id,
@@ -182,6 +187,7 @@ function Registered({
   nationality: string;
   spiceTolerance: number | null;
   hasRestrictions: boolean;
+  scanPrice: number | null; // 스캔 진입 param (P-012) — 그 외 경로는 null
   t: TFn;
   router: Router;
   id: string;
@@ -258,6 +264,13 @@ function Registered({
           </View>
         )}
       </View>
+
+      {/* P-012(KB-179): 스캔한 메뉴판의 가격 — 스캔 진입 param에만 존재, ₩ 포맷만 */}
+      {scanPrice != null && (
+        <Text style={styles.scanPrice}>
+          {formatKrw(scanPrice)} <Text style={styles.scanPriceNote}>· {t('detail.scannedPrice')}</Text>
+        </Text>
+      )}
 
       {!guest && !!verdictBasis && <Text style={styles.verdictBasis}>{verdictBasis}</Text>}
 
@@ -439,6 +452,9 @@ const styles = StyleSheet.create({
   lockTagText: { fontFamily: font.bodyBold, fontSize: 10, color: C.ink2, textTransform: 'uppercase', letterSpacing: 0.4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
   verdictBasis: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: -8 },
+  // P-012 스캔 메뉴판 가격 — meta 구역 보조 라인 톤
+  scanPrice: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink, marginTop: -6 },
+  scanPriceNote: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
   spiceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   spiceText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
   spiceWarn: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary },

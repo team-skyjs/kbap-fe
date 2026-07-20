@@ -504,7 +504,8 @@
     "writeReview": "리뷰 쓰기",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "내 기준보다 매워요",
-    "addProfileHint": "제한을 등록하면 나만의 평가를 볼 수 있어요."
+    "addProfileHint": "제한을 등록하면 나만의 평가를 볼 수 있어요.",
+    "scannedPrice": "스캔한 메뉴판 기준"
   },
   "states": {
     "catalogTitle": "상태",

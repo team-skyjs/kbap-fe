@@ -355,7 +355,8 @@
     "writeReview": "Escribir una reseña",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "más picante de lo que toleras",
-    "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado."
+    "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado.",
+    "scannedPrice": "según el menú que escaneaste"
   },
   "states": {
     "catalogTitle": "Estados",

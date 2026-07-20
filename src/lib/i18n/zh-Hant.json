@@ -355,7 +355,8 @@
     "writeReview": "撰寫評論",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "比你能接受的更辣",
-    "addProfileHint": "新增你的飲食限制以查看個人化評估。"
+    "addProfileHint": "新增你的飲食限制以查看個人化評估。",
+    "scannedPrice": "以您掃描的菜單為準"
   },
   "states": {
     "catalogTitle": "狀態",

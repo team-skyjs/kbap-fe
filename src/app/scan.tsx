@@ -27,7 +27,7 @@ import { Btn, RiskMark, IconClose, IconScanLines, IconGallery, IconFlip, IconChe
 import { useScan } from '@/lib/data/useScan';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
-import { segmentMenu, formatKrw, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
+import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { personalRisk } from '@/lib/risk';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -194,7 +194,9 @@ export default function Scan() {
   // KB-140: unmatched 탭 = 무반응 대신 "아직 등록 안 된 음식" 안내 (중립 톤, 상세 이동은 계속 불가).
   function openDish(dish: ResultDish) {
     if (!dish.matched || !dish.foodId) return setUnmatchedOpen(true);
-    router.push(`/food/${dish.foodId}` as Href);
+    // P-012(KB-179): 가격은 메뉴판 속성 — 스캔 진입에만 param으로 전달 (리스트
+    // 행·오버레이 마커·사진 전용 항목 전부 이 함수를 지나므로 첨부 지점은 여기 하나)
+    router.push(`/food/${dish.foodId}${scanPriceParam(dish.priceKrw)}` as Href);
   }
 
   const GateSheet = <AuthGateSheet context="scan" open={gateOpen} onClose={() => setGateOpen(false)} />;

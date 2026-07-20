@@ -355,7 +355,8 @@
     "writeReview": "เขียนรีวิว",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "เผ็ดกว่าที่คุณชอบ",
-    "addProfileHint": "เพิ่มข้อจำกัดของคุณเพื่อดูผลประเมินเฉพาะบุคคล"
+    "addProfileHint": "เพิ่มข้อจำกัดของคุณเพื่อดูผลประเมินเฉพาะบุคคล",
+    "scannedPrice": "อ้างอิงจากเมนูที่คุณสแกน"
   },
   "states": {
     "catalogTitle": "สถานะ",

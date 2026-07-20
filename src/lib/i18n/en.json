@@ -500,7 +500,8 @@
     "writeReview": "Write a review",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "hotter than your taste",
-    "addProfileHint": "Add your restrictions to see a personalized verdict."
+    "addProfileHint": "Add your restrictions to see a personalized verdict.",
+    "scannedPrice": "on the menu you scanned"
   },
   "states": {
     "catalogTitle": "States",

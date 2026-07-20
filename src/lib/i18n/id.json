@@ -355,7 +355,8 @@
     "writeReview": "Tulis ulasan",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "lebih pedas dari selera Anda",
-    "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi."
+    "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
+    "scannedPrice": "berdasarkan menu yang Anda pindai"
   },
   "states": {
     "catalogTitle": "Status",

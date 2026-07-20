@@ -355,7 +355,8 @@
     "writeReview": "Viết đánh giá",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "cay hơn khẩu vị của bạn",
-    "addProfileHint": "Thêm hạn chế của bạn để xem đánh giá cá nhân hóa."
+    "addProfileHint": "Thêm hạn chế của bạn để xem đánh giá cá nhân hóa.",
+    "scannedPrice": "theo thực đơn bạn đã quét"
   },
   "states": {
     "catalogTitle": "Trạng thái",

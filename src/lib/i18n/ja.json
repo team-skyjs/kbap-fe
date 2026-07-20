@@ -355,7 +355,8 @@
     "writeReview": "レビューを書く",
     "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "あなたの好みより辛い",
-    "addProfileHint": "食事制限を追加すると、あなた専用の判定が表示されます。"
+    "addProfileHint": "食事制限を追加すると、あなた専用の判定が表示されます。",
+    "scannedPrice": "スキャンしたメニュー基準"
   },
   "states": {
     "catalogTitle": "状態",
