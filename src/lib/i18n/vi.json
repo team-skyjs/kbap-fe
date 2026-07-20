@@ -625,5 +625,20 @@
     "undo": "Hoàn tác",
     "toast": "Đã lưu vào danh sách của bạn",
     "view": "Xem"
+  },
+  "spice": {
+    "scale": {
+      "0": "Không cay — cơm trắng",
+      "1": "Rất nhẹ — trứng ngâm tương",
+      "2": "Nhẹ — kim chi dịu",
+      "3": "Hơi cay — tteokbokki cho trẻ em",
+      "4": "Tteokbokki vỉa hè",
+      "5": "Canh kim chi",
+      "6": "Nước súp jjamppong",
+      "7": "Mì buldak siêu cay",
+      "8": "Ớt habanero",
+      "9": "Ớt hiểm",
+      "10": "Ớt Cheongyang cực đại"
+    }
   }
 }

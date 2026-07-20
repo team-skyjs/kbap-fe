@@ -625,5 +625,20 @@
     "undo": "Urungkan",
     "toast": "Disimpan ke daftarmu",
     "view": "Lihat"
+  },
+  "spice": {
+    "scale": {
+      "0": "Tidak pedas — nasi putih",
+      "1": "Sangat ringan — telur kecap",
+      "2": "Ringan — kimchi lembut",
+      "3": "Agak pedas — tteokbokki anak",
+      "4": "Tteokbokki kaki lima",
+      "5": "Sup kimchi",
+      "6": "Kuah jjamppong",
+      "7": "Mi buldak super pedas",
+      "8": "Habanero",
+      "9": "Cabai rawit",
+      "10": "Cabai Cheongyang maksimal"
+    }
   }
 }

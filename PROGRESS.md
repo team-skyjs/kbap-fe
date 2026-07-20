@@ -316,3 +316,11 @@
 - [x] 조회 렌더: 서버 기본 URL 오면 기존 절대 URL 렌더 경로 그대로 동작. FE svg 플레이스홀더 분기·비-http 방어(adaptProfileImageUrl) **유지** — 제거 안 함.
 - 테스트: 삭제 null 잠금으로 교체(PATCH body null + invalidate / 화면 mutate null). tsc 0, jest 137/137.
 - ⚠️ **OTA 주의**: 서버가 null 삭제를 배포하기 전에 이 커밋이 OTA에 실리면 삭제가 무동작(400 가능) — **서버 배포 확인 후 OTA 포함**.
+
+## KB-187 언어 전환 즉시 반영 + 맵기 라벨 i18n (2026-07-20, P-015)
+- [x] **잔상 원인 실조사 결과**: placeholderData/keepPreviousData 아님(미사용 확인). `setLang`이 컨텍스트 리렌더(동기)와 `i18n.changeLanguage`(비동기)를 분리 실행 → 완료 전 리렌더에선 쿼리 키의 `i18n.language`가 이전 언어라 **키가 안 바뀌고**, staleTime 60s 동안 구언어 데이터가 fresh로 유지되는 잔상.
+- [x] 최소 수술: changeLanguage 완료 직후 lang 종속 루트 키(home/foods/food/me)만 1회 invalidate — 활성 쿼리 즉시 재조회, 새 키는 fresh 마운트라 P-009 스켈레톤이 그대로 뜸. 매 탭 진입 재호출 아님(지시 준수).
+- [x] SPICE_SCALE i18n 이전: 영어 하드코딩 11개 → `spice.scale.0~10` 키 ×10 로케일(110 문구), 사용처 4파일 5곳 전부 `t()` 래핑 (온보딩 스텝·프로필 칩·수정 칩·상세).
+- [x] 스캔 리스트 name 한국어 고정은 범위 제외 준수(BE 질의 중 — 무접촉).
+- 테스트 +12: 언어 전환→lang 종속 4키 무효화+비언어 무접촉 잠금 / SPICE 키 11개+패리티 ×10. tsc 0, jest 149/149.
+- 실기기 확인 포인트(예진·DoD): 언어 변경 직후 홈·음식 탭 스켈레톤→새 언어 (이전 언어 잔상 0) / 맵기 설명이 선택 언어로 (온보딩·프로필·상세).

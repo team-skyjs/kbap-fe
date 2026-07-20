@@ -258,7 +258,7 @@ function Registered({
           <View style={styles.spiceMeta}>
             <IconFlame size={16} color={C.primary} />
             <Text style={styles.spiceText}>
-              {t('detail.spice', { level: food.spiceLevel, analogy: SPICE_SCALE[food.spiceLevel] ?? '' })}
+              {t('detail.spice', { level: food.spiceLevel, analogy: t(SPICE_SCALE[food.spiceLevel] ?? '') })}
             </Text>
             {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
           </View>

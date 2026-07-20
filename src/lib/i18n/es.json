@@ -626,5 +626,20 @@
     "undo": "Deshacer",
     "toast": "Guardado en tu lista",
     "view": "Ver"
+  },
+  "spice": {
+    "scale": {
+      "0": "Sin picante — arroz blanco",
+      "1": "Muy suave — huevo en soja",
+      "2": "Suave — kimchi ligero",
+      "3": "Templado — tteokbokki para niños",
+      "4": "Tteokbokki callejero",
+      "5": "Kimchi jjigae",
+      "6": "Caldo jjamppong",
+      "7": "Ramen buldak de fuego",
+      "8": "Habanero",
+      "9": "Chile ojo de pájaro",
+      "10": "Cheongyang al máximo"
+    }
   }
 }

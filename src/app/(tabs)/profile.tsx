@@ -235,7 +235,7 @@ export default function Profile() {
                   <View style={styles.dietChip}>
                     <IconFlame size={13} color={C.primary} />
                     <Text style={styles.dietChipText}>
-                      {t('detail.spice', { level: me.spiceTolerance, analogy: SPICE_SCALE[me.spiceTolerance] ?? '' })}
+                      {t('detail.spice', { level: me.spiceTolerance, analogy: t(SPICE_SCALE[me.spiceTolerance] ?? '') })}
                     </Text>
                   </View>
                 </View>

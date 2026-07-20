@@ -98,19 +98,8 @@ export const LIFESTYLE_GROUPS: RestrictionGroup[] = [
 ];
 
 /** Spice 0–10 analogy labels (index = level). */
-export const SPICE_SCALE = [
-  'No heat — plain rice',
-  'Very mild — soy egg',
-  'Mild — gentle kimchi',
-  "Warm — kids' tteokbokki",
-  'Street tteokbokki',
-  'Kimchi jjigae',
-  'Jjamppong soup',
-  'Buldak fire ramen',
-  'Habanero',
-  "Bird's-eye chili",
-  'Cheongyang overload',
-];
+/** P-015(KB-187): 라벨은 i18n 키 — 사용처에서 `t(SPICE_SCALE[level])` 로 렌더 (영어 하드코딩 제거). */
+export const SPICE_SCALE = Array.from({ length: 11 }, (_, i) => `spice.scale.${i}`);
 
 /** Nationality options (we have Flag glyphs for these codes). `native` = endonym.
  *  `suggested` marks the common picks shown first in the picker (I4). */

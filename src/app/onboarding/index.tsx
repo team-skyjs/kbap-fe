@@ -396,7 +396,7 @@ function Spice({ level, setLevel, onContinue, onSkip, t }: { level: number; setL
         </Text>
         <View style={styles.analogy}>
           <IconFlame size={15} color={C.primary} />
-          <Text style={styles.analogyText}>≈ {SPICE_SCALE[level]}</Text>
+          <Text style={styles.analogyText}>≈ {t(SPICE_SCALE[level])}</Text>
         </View>
       </View>
       <View style={{ marginTop: 22 }}>

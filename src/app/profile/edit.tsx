@@ -162,7 +162,7 @@ export default function EditProfile() {
               ))}
             </View>
             <Text style={[styles.spiceVal, spice == null && styles.spiceValUnset]}>
-              {spice != null ? t('detail.spice', { level: spice, analogy: SPICE_SCALE[spice] ?? '' }) : t('profile.spiceUnset')}
+              {spice != null ? t('detail.spice', { level: spice, analogy: t(SPICE_SCALE[spice] ?? '') }) : t('profile.spiceUnset')}
             </Text>
           </View>
           {spice != null && (
