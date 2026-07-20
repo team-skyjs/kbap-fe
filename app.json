@@ -61,6 +61,10 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-sensors",
+        { "motionPermission": false }
+      ],
       "expo-apple-authentication",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",

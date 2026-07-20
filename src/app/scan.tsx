@@ -14,7 +14,8 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { DeviceMotion } from 'expo-sensors';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import { useScan } from '@/lib/data/useScan';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
+import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
 import { personalRisk } from '@/lib/risk';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -91,12 +93,25 @@ export default function Scan() {
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
-  // KB-141 가로 촬영 차단 — portrait-lock 상태에서도 기기 회전을 알려주는
-  // expo-camera 내장 콜백(iOS) 사용. expo-sensors 불필요 → 재빌드 없음(OTA 가능).
-  // Android는 이 콜백이 없어 미감지(현행 유지) — 출시 타깃 iOS, gap은 KB-141 로그.
+  // KB-141 가로 촬영 차단 — portrait-lock 상태에서도 기기 회전을 알려준다.
+  // iOS: expo-camera 내장 콜백(onResponsiveOrientationChanged). Android(KB-198):
+  // 그 콜백이 @platform ios라 미발생 → DeviceMotion 중력으로 직접 감지(아래 effect).
+  // 두 소스가 같은 camOrientation state를 먹인다 — 오버레이 로직은 무변 재사용.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
+
+  // KB-198: Android 전용 센서 방향 감지 — 앱은 세로 고정, 힌트만 반응.
+  // 임계각+디바운스(같은 값 반복 setState는 React가 무시)로 45° 근처 떨림 방지.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
+    DeviceMotion.setUpdateInterval(200);
+    const sub = DeviceMotion.addListener(({ accelerationIncludingGravity: g }) => {
+      if (!g) return;
+      setCamOrientation(orientationFromGravity({ x: g.x, y: g.y }) as CameraOrientation);
+    });
+    return () => sub.remove();
+  }, []);
 
   function fail(stage: ErrorStage, detail: string) {
     console.log(`[scan] FAIL stage=${stage} detail=${detail}`);

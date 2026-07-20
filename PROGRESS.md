@@ -365,3 +365,10 @@
 - tsc 0, jest 157/157. 스타일-only, 신규 테스트 없음(렌더 회귀는 기존 스위트가 커버). JS-only — preview OTA.
 - 발행: preview 채널 OTA — ID는 REPORTS 병기. ⚠️ P-018 이전 에셋 스왑 필요(공기계 preview 빌드 fingerprint 매칭 — P-020 선례).
 - 발행 완료: preview OTA — Android update 019f7e9c-bb69-76cd (runtime cbbec117 일치). 에셋 스왑 후 복원.
+
+## KB-198 Android 스캔 가로 감지 — expo-sensors 포팅 (2026-07-20, P-022) ⚠️ 재빌드 필요(OTA 불가)
+- [x] **expo-sensors 추가**(~56.0.6) — 네이티브 모듈, autolink. app.json plugins에 `["expo-sensors", {"motionPermission": false}]` 등록: Android DeviceMotion(가속도)은 런타임 권한 불요, iOS는 Platform 가드로 미사용이라 불필요한 NSMotionUsageDescription 선언 회피(App Store 리뷰 클린). ⚠️ 재빌드에만 실림 — preview OTA로 못 감.
+- [x] `deviceOrientation.ts` 순수 함수: 중력 벡터 → portrait/landscapeLeft/landscapeRight. 임계각 35°+flat(위/아래 향함) 가드로 45° 떨림 방지. 좌표계 부호를 KB-141 오버레이 rotate와 일치(landscapeLeft→+90°).
+- [x] scan.tsx: Android 전용 useEffect로 DeviceMotion.addListener(200ms) → 기존 camOrientation state에 공급(같은 state 두 소스, 오버레이 로직 무변). iOS는 expo-camera 콜백 현행 유지 — 안드만 추가(회귀 최소화). 언마운트 시 sub.remove().
+- 테스트 +5 (deviceOrientation.test): 세워듦/임계 미만·이상/flat/거꾸로 경계. tsc 0, jest 162/162.
+- ⚠️ **발행**: OTA 아님 — 다음 안드 빌드(빌드2)·다음 iOS 빌드(빌드7과 함께)에 포함. 실기기 확인은 재빌드 후.
