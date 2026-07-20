@@ -357,3 +357,4 @@
 - [x] 수정: idToken 확보 직후 `GoogleSignin.getTokens()`로 accessToken 받아 `credential(idToken, accessToken)` 2인자 전달. 취소·에러 분기 무변, iOS 무해(회귀 없음).
 - 테스트 +1 (socialAuthGoogle.test): 네이티브 모킹 수준에서 getTokens 호출 + credential(idToken, accessToken) 2인자 잠금. tsc 0, jest 157/157.
 - 발행: preview 채널 OTA (JS-only, 공기계 재빌드 불요) — 발행 ID는 REPORTS 병기.
+- 발행 완료: preview 채널 OTA — Android update 019f7e7b-929e-7b31 (runtime cbbec117 = 공기계 preview 빌드 일치, 도달 확인). ⚠️ 발행 순간 P-018 이전 에셋(app.json·splash-icon.png)을 096a954~1로 스왑 — preview 빌드가 P-018 네이티브 변경 전이라 fingerprint 매칭 필요(스킬 3-1 선례, iOS _photostyle과 별개). JS 번들은 에셋 무관이라 셔먼 동일. 발행 후 즉시 복원.
