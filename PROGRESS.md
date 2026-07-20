@@ -268,3 +268,8 @@
 - [x] 빈 상태는 성공+0건일 때만 — 홈 테스트로 잠금.
 - 테스트 +6 (tabStates.test 신규, 풀스크린 렌더): 탭별 에러→J3 단언 3건 + 홈 false-empty 잠금 + NETWORK→J4 분류 + 프로필 로딩 스켈레톤. tsc 0, jest 116/116.
 - 실기기 확인 포인트(DoD): 기내모드에서 세 탭 J4+Retry / (BE 5xx 시) 세 탭 J3+Try again 재요청 / 홈 정상 0건이면 기존 빈 상태 그대로.
+
+## P-008 — useFoods 401 삼키기 제거 (2026-07-20, KB-174 후속)
+- [x] useInfiniteFoods·useSearchFoods의 401→빈 목록 특례 제거 (게스트 정숙 임시책 — foods 인증-선택 전환 완료로 소생 조건 충족). try/catch 자체가 그것뿐이라 통째 제거. 남는 401=죽은 토큰 → isError로 표면화되어 P-007 에러 블록이 뜬다(음식 탭 백지 소멸).
+- [x] 겸사 grep 재확인: 같은 패턴 다른 훅에 없음 (beAuth/client의 401은 refresh 로직 — 별개).
+- 테스트 +3 (useFoods401.test 신규): browse·search 401→isError(빈 목록 위장 없음) + 게스트 정상 응답 무변. tsc 0.
