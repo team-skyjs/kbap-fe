@@ -7,7 +7,10 @@
  * live in the consuming screen.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+// P-011(KB-178, B안): 선택 요약 = 고정 높이 1줄 가로 스크롤 — 세로 wrap이 자라며
+// 목록을 밀어내던 QA 피드백 해소. 칩은 선택 순서 유지(새 선택이 줄 끝), 추가 시
+// 자동 끝 스크롤. 0건이면 줄 미표시(0↔1 전환 1회 높이 변화 — 실물 확인 후 판단).
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -23,7 +26,16 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
   const list = query
     ? INGREDIENTS.filter((i) => ingredientLabel(i.code).toLowerCase().includes(query) || i.name.toLowerCase().includes(query))
     : INGREDIENTS;
-  const selectedItems = INGREDIENTS.filter((i) => sel.has(i.code));
+
+  // B안: 새 선택이 줄 끝에 붙는 게 보이도록 자동 스크롤 (제거 시엔 안 움직임)
+  const rowRef = React.useRef<ScrollView>(null);
+  const prevCount = React.useRef(selected.length);
+  React.useEffect(() => {
+    if (selected.length > prevCount.current) {
+      requestAnimationFrame(() => rowRef.current?.scrollToEnd({ animated: true }));
+    }
+    prevCount.current = selected.length;
+  }, [selected.length]);
 
   return (
     <View style={{ gap: 14 }}>
@@ -37,16 +49,23 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
           {selected.length > 0 && <Text style={styles.tag}>{t('restrictionsEdit.tapToRemove')}</Text>}
         </View>
         {selected.length > 0 && (
-          <View style={styles.wrap}>
-            {selectedItems.map((i) => (
-              <Pressable key={i.code} style={styles.rmChip} onPress={() => onToggle(i.code)}>
-                <Text style={styles.rmChipText}>{ingredientLabel(i.code)}</Text>
+          /* 고정 높이 1줄 — 선택 순서 그대로(selected 배열 순서), 탭=제거 유지 */
+          <ScrollView
+            ref={rowRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            {selected.map((code) => (
+              <Pressable key={code} style={styles.rmChip} onPress={() => onToggle(code)}>
+                <Text style={styles.rmChipText}>{ingredientLabel(code)}</Text>
                 <View style={styles.rmX}>
                   <IconClose size={11} color={C.ink} />
                 </View>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         )}
       </View>
 
@@ -92,6 +111,7 @@ const styles = StyleSheet.create({
   activeTitle: { flex: 1, fontFamily: font.display, fontSize: 15, color: C.ink, letterSpacing: -0.2 },
   tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chipRow: { flexDirection: 'row', gap: 8, paddingRight: 2 }, // 1줄 고정 — wrap 없음 (B안)
 
   rmChip: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingLeft: 13, paddingRight: 9, paddingVertical: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line },
   rmChipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },

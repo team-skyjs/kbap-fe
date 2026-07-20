@@ -202,7 +202,11 @@ export default function Onboarding() {
 
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.body, step === 'restrictions' && { paddingBottom: 130 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <TopBar
           seg={idx}
           of={ORDER.length - 1}
@@ -244,8 +248,6 @@ export default function Onboarding() {
           <Restrictions
             selected={Array.from(restrictions)}
             onToggle={(code) => toggle(restrictions, code, setRestrictions)}
-            onContinue={answerStep}
-            onSkip={skipStep}
             t={t}
           />
         )}
@@ -264,6 +266,20 @@ export default function Onboarding() {
           />
         )}
       </ScrollView>
+
+      {/* P-011(KB-178, B안): restrictions 스텝 CTA 하단 고정 — 81종 목록 스크롤과
+          무관하게 항상 노출. 목록 하단 패딩(130)으로 마지막 칩 가림 방지. */}
+      {step === 'restrictions' && (
+        <View style={[styles.stickyFoot, { paddingBottom: insets.bottom + 14 }]}>
+          <Btn onPress={answerStep}>
+            {t('onboarding.continue')}
+            {restrictions.size ? ` · ${t('onboarding.added', { count: restrictions.size })}` : ''}
+          </Btn>
+          <Pressable onPress={skipStep} hitSlop={8} style={{ alignSelf: 'center' }}>
+            <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* shared nationality (I4) / language (I5, 9 langs) pickers */}
       <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
@@ -354,7 +370,8 @@ function Profile(props: {
   );
 }
 
-function Restrictions({ selected, onToggle, onContinue, onSkip, t }: { selected: string[]; onToggle: (code: string) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle: (code: string) => void; t: TFn }) {
+  // P-011(B안): CTA는 부모의 하단 스티키 바로 이동 — 81종 목록 아래가 아니라 항상 노출
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.restrictionsSub')} />
@@ -364,15 +381,6 @@ function Restrictions({ selected, onToggle, onContinue, onSkip, t }: { selected:
       </View>
       {/* KB-8 override: flat 81-ingredient filter, shared with the profile editor (I6) */}
       <IngredientFilter selected={selected} onToggle={onToggle} />
-      <View style={styles.foot}>
-        <Btn onPress={onContinue}>
-          {t('onboarding.continue')}
-          {selected.length ? ` · ${t('onboarding.added', { count: selected.length })}` : ''}
-        </Btn>
-        <Pressable onPress={onSkip} hitSlop={8}>
-          <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -501,6 +509,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 
   foot: { marginTop: 'auto', gap: 10, paddingTop: 16 },
+  // P-011(B안): restrictions CTA 스티키 바 — restrictions.tsx savebar 톤과 동일
+  stickyFoot: { paddingHorizontal: 22, paddingTop: 12, gap: 6, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   // 제출 실패 안내 (KB-75)
   submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
   submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
