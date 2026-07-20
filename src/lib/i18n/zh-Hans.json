@@ -477,7 +477,8 @@
     "email": "邮箱",
     "spice": "辣度承受度",
     "spiceClear": "清除设置",
-    "photoError": "照片上传失败。可以重试，也可以不设置照片继续。"
+    "photoError": "照片上传失败。可以重试，也可以不设置照片继续。",
+    "removePhoto": "删除照片"
   },
   "nationalityPicker": {
     "title": "国籍",

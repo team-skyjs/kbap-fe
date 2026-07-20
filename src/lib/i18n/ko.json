@@ -228,7 +228,8 @@
     "email": "이메일",
     "spice": "맵기 허용치",
     "spiceClear": "설정 해제",
-    "photoError": "사진 업로드에 실패했어요. 다시 시도하거나 사진 없이 계속할 수 있어요."
+    "photoError": "사진 업로드에 실패했어요. 다시 시도하거나 사진 없이 계속할 수 있어요.",
+    "removePhoto": "사진 삭제"
   },
   "nationalityPicker": {
     "title": "국적",

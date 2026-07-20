@@ -477,7 +477,8 @@
     "email": "メール",
     "spice": "辛さの許容度",
     "spiceClear": "設定を解除",
-    "photoError": "写真のアップロードに失敗しました。再試行するか、写真なしで続けられます。"
+    "photoError": "写真のアップロードに失敗しました。再試行するか、写真なしで続けられます。",
+    "removePhoto": "写真を削除"
   },
   "nationalityPicker": {
     "title": "国籍",

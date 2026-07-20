@@ -477,7 +477,8 @@
     "email": "Email",
     "spice": "Toleransi pedas",
     "spiceClear": "Hapus pengaturan",
-    "photoError": "Unggah foto gagal. Coba lagi, atau lanjutkan tanpa foto."
+    "photoError": "Unggah foto gagal. Coba lagi, atau lanjutkan tanpa foto.",
+    "removePhoto": "Hapus foto"
   },
   "nationalityPicker": {
     "title": "Kewarganegaraan",

@@ -477,7 +477,8 @@
     "email": "Correo",
     "spice": "Tolerancia al picante",
     "spiceClear": "Quitar ajuste",
-    "photoError": "No se pudo subir la foto. Inténtalo de nuevo o continúa sin ella."
+    "photoError": "No se pudo subir la foto. Inténtalo de nuevo o continúa sin ella.",
+    "removePhoto": "Eliminar foto"
   },
   "nationalityPicker": {
     "title": "Nacionalidad",

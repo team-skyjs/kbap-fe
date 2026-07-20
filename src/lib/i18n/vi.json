@@ -477,7 +477,8 @@
     "email": "Email",
     "spice": "Mức ăn cay",
     "spiceClear": "Bỏ thiết lập",
-    "photoError": "Tải ảnh lên thất bại. Hãy thử lại hoặc tiếp tục mà không cần ảnh."
+    "photoError": "Tải ảnh lên thất bại. Hãy thử lại hoặc tiếp tục mà không cần ảnh.",
+    "removePhoto": "Xoá ảnh"
   },
   "nationalityPicker": {
     "title": "Quốc tịch",

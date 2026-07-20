@@ -20,7 +20,7 @@ import { countryByCode } from '@/lib/onboarding/countries';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
-import { pickProfileImage, uploadProfileImage } from '@/lib/data/profileImage';
+import { pickProfileImage, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -101,6 +101,14 @@ export default function EditProfile() {
           <Text style={photoError ? styles.phErr : styles.phLbl}>
             {photoError ? t('editProfile.photoError') : t('editProfile.changePhoto')}
           </Text>
+          {/* P-013(KB-149 후속): 사진 삭제 — 설정된 상태에서만 노출. 확인 얼럿 없이
+              즉시(재선택으로 복구 용이 — 계정 삭제급 아님, 판단 기록). PATCH '' →
+              ['me'] invalidate 재조회로 플레이스홀더 복귀 (전송값은 PROFILE_IMAGE_CLEAR 참조). */}
+          {!!me?.profileImageUrl && !photoBusy && (
+            <Pressable onPress={() => update.mutate({ profileImageUrl: PROFILE_IMAGE_CLEAR })} hitSlop={8}>
+              <Text style={styles.phRemove}>{t('editProfile.removePhoto')}</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* nickname */}
@@ -209,6 +217,7 @@ const styles = StyleSheet.create({
   cam: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
   phLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
   phErr: { fontFamily: font.bodyBold, fontSize: 13, color: C.riskCaution },
+  phRemove: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.riskDanger, padding: 4 },
 
   fieldset: { gap: 6 },
   fieldLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
