@@ -66,7 +66,11 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       }
       const idToken = res.data?.idToken;
       if (!idToken) throw new Error('google sign-in returned no idToken');
-      await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken));
+      // KB-196: Android 네이티브는 google credential에 accessToken도 요구
+      // ("accessToken cannot be empty"). signIn() 반환엔 없어 getTokens()로 받는다.
+      // iOS는 idToken만으로 통과하지만 accessToken 병행이 무해(회귀 없음).
+      const { accessToken } = await GoogleSignin.getTokens();
+      await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken));
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
       const newMember = await exchange();
       setPhase('idle');

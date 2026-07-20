@@ -351,3 +351,9 @@
 - [x] 스웨거 재실측: `OnboardingRequest.spicinessPreference` **required 승격 확인** (겸사: profileImageUrl도 required 승격 — P-016이 이미 항상 전송이라 무대응 OK). P-003의 전환 예약 주석("실측되면 -1 명시 전송 전환") 이행.
 - [x] submit.ts: 조건부 스프레드 제거 → 스킵(UNSET) 시 `spicinessPreference: -1` 명시 전송 (KB-150 센티널 정책 그대로). 헤더 주석 "전 필드 required" 갱신. 로컬 보관·UNSET 처리 무변.
 - 테스트 +1: 스킵→-1 / 설정→실값 잠금. tsc 0, jest 156/156. JS-only — OTA 가능.
+
+## KB-196 Android 구글 로그인 accessToken 누락 (2026-07-20, P-020)
+- [x] 원인(브릿지 실측 그대로): useSocialAuth.signInWithGoogle이 GoogleAuthProvider.credential(idToken)로 idToken만 전달 — @react-native-firebase Android 네이티브는 accessToken도 요구("accessToken cannot be empty", iOS는 idToken만으로 통과해 iOS만 동작해옴).
+- [x] 수정: idToken 확보 직후 `GoogleSignin.getTokens()`로 accessToken 받아 `credential(idToken, accessToken)` 2인자 전달. 취소·에러 분기 무변, iOS 무해(회귀 없음).
+- 테스트 +1 (socialAuthGoogle.test): 네이티브 모킹 수준에서 getTokens 호출 + credential(idToken, accessToken) 2인자 잠금. tsc 0, jest 157/157.
+- 발행: preview 채널 OTA (JS-only, 공기계 재빌드 불요) — 발행 ID는 REPORTS 병기.
