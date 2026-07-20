@@ -15,7 +15,6 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { DeviceMotion } from 'expo-sensors';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -103,14 +102,26 @@ export default function Scan() {
 
   // KB-198: Android 전용 센서 방향 감지 — 앱은 세로 고정, 힌트만 반응.
   // 임계각+디바운스(같은 값 반복 setState는 React가 무시)로 45° 근처 떨림 방지.
+  // ⚠️ expo-sensors는 **지연 require** — 최상단 import는 파일 로드 시점에 네이티브
+  // 모듈(ExponentPedometer)을 즉시 불러와, 이 모듈이 없는 빌드(expo-sensors 추가
+  // 전 빌드)에선 iOS에서도 앱 전체가 크래시한다. Android 가드 안에서 try-require해
+  // iOS는 아예 안 건드리고, 네이티브 미탑재(재빌드 전)면 조용히 힌트만 비활성.
   useEffect(() => {
     if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
-    DeviceMotion.setUpdateInterval(200);
-    const sub = DeviceMotion.addListener(({ accelerationIncludingGravity: g }) => {
-      if (!g) return;
-      setCamOrientation(orientationFromGravity({ x: g.x, y: g.y }) as CameraOrientation);
-    });
-    return () => sub.remove();
+    let sub: { remove: () => void } | undefined;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { DeviceMotion } = require('expo-sensors') as typeof import('expo-sensors');
+      DeviceMotion.setUpdateInterval(200);
+      sub = DeviceMotion.addListener(({ accelerationIncludingGravity: g }) => {
+        if (!g) return;
+        setCamOrientation(orientationFromGravity({ x: g.x, y: g.y }) as CameraOrientation);
+      });
+    } catch (e) {
+      // 네이티브 미탑재(재빌드 전) — 가로 감지만 비활성, 스캔은 정상 (KB-198)
+      console.log('[scan] expo-sensors 미탑재 — 가로 힌트 비활성(재빌드 필요):', (e as Error)?.message ?? e);
+    }
+    return () => sub?.remove();
   }, []);
 
   function fail(stage: ErrorStage, detail: string) {
