@@ -20,6 +20,7 @@ import { countryByCode } from '@/lib/onboarding/countries';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
+import { isDefaultProfileImage } from '@/lib/api/memberAdapter';
 import { pickProfileImage, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 
 export default function EditProfile() {
@@ -101,10 +102,11 @@ export default function EditProfile() {
           <Text style={photoError ? styles.phErr : styles.phLbl}>
             {photoError ? t('editProfile.photoError') : t('editProfile.changePhoto')}
           </Text>
-          {/* P-013(KB-149 후속): 사진 삭제 — 설정된 상태에서만 노출. 확인 얼럿 없이
-              즉시(재선택으로 복구 용이 — 계정 삭제급 아님, 판단 기록). PATCH '' →
-              ['me'] invalidate 재조회로 플레이스홀더 복귀 (전송값은 PROFILE_IMAGE_CLEAR 참조). */}
-          {!!me?.profileImageUrl && !photoBusy && (
+          {/* P-013/P-016(KB-149 후속): 사진 삭제 — 커스텀 사진일 때만 노출 (서버가
+              항상 URL을 주므로 기본 사진은 사진 없음 취급 — isDefaultProfileImage).
+              확인 얼럿 없이 즉시(재선택으로 복구 용이). PATCH 기본 path →
+              ['me'] invalidate 재조회로 기본 사진 복귀 (전송값 PROFILE_IMAGE_CLEAR). */}
+          {!!me?.profileImageUrl && !isDefaultProfileImage(me.profileImageUrl) && !photoBusy && (
             <Pressable onPress={() => update.mutate({ profileImageUrl: PROFILE_IMAGE_CLEAR })} hitSlop={8}>
               <Text style={styles.phRemove}>{t('editProfile.removePhoto')}</Text>
             </Pressable>

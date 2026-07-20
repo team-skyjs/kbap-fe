@@ -65,7 +65,7 @@ export interface UserUpdate {
   readerLanguage?: string;
   spiceTolerance?: number | null;
   restrictions?: DietaryRestriction[];
-  profileImageUrl?: string | null; // path(objectKey) 설정 · null=삭제(BE 확정 7/20) · 생략=유지 (KB-149)
+  profileImageUrl?: string; // path 설정 · 삭제=기본 path 전송(P-016 확정, null 폐기) · 생략=유지 (KB-149)
 }
 
 export interface RatingAggregate {

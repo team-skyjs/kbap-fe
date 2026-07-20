@@ -324,3 +324,11 @@
 - [x] 스캔 리스트 name 한국어 고정은 범위 제외 준수(BE 질의 중 — 무접촉).
 - 테스트 +12: 언어 전환→lang 종속 4키 무효화+비언어 무접촉 잠금 / SPICE 키 11개+패리티 ×10. tsc 0, jest 149/149.
 - 실기기 확인 포인트(예진·DoD): 언어 변경 직후 홈·음식 탭 스켈레톤→새 언어 (이전 언어 잔상 0) / 맵기 설명이 선택 언어로 (온보딩·프로필·상세).
+
+## KB-149 최종 — 프로필 사진 컨벤션: 기본 path 전송 (2026-07-20, P-016)
+- [x] 3차 최종 확정 반영(''→null→**기본 path**): `PROFILE_IMAGE_DEFAULT_PATH = 'images/default/profile/profile-default-512.png'` (memberAdapter, 경위 주석). PROFILE_IMAGE_CLEAR = 그 값 (상수명 유지 — 화면 무변). 타입 string 원복(null 폐기).
+- [x] 온보딩 미선택도 기본 path **명시 전송** (필드 생략 폐기 — submit.ts, 필드는 항상 값).
+- [x] 삭제 액션 노출 판별: `isDefaultProfileImage(url)` (URL에 images/default/profile/ 포함) — 기본 사진이면 사진 없음 취급·미노출, 커스텀만 노출. 렌더는 서버 URL(기본 포함) 그대로, svg 플레이스홀더는 URL 부재·비-http 방어용 유지.
+- [x] 실측: 스펙 표기 여전히 optional(MyProfileResponse) — "항상 값" 서버 배포 여부 스펙만으론 확인 불가, 진행로그 기록. 코드 완성 상태.
+- 테스트 갱신 +2: 삭제·온보딩 미선택 전송 기본 path 잠금 / isDefault 판별 5케이스 / 기본 URL 시 삭제 액션 미노출. tsc 0, jest 151/151.
+- ✅ **P-014 OTA 게이트 소멸**: 기본 path는 항상 유효한 string이라 이 커밋부터 서버 무관 OTA 가능.

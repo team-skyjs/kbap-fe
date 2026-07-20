@@ -12,17 +12,17 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/api/scanImage';
+import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
 
 /** BE 확정(7/16 저녁) — 백엔드가 이 값으로 개발. */
 export const PROFILE_IMAGE_PURPOSE = 'PROFILE_IMAGE';
 
 /**
- * 프로필 사진 삭제 전송값 — **null 확정** (종한×예진 7/20, P-014: P-013의 잠정
- * '' 교체). 미설정/삭제 시 서버가 기본 프로필 사진 URL을 응답하는 일원화 방향.
- * "생략=유지"는 그대로 보존된다(undefined만 미전송). 스펙 스키마는 아직
- * 비-nullable 표기 — 서버 배포와 동시 적용 (진행로그 기록).
+ * 프로필 사진 삭제 전송값 — 3차 최종 확정(P-016, 종한 7/20 Q-02 답변):
+ * '' (P-013 잠정) → null (P-014) → **기본 path 전송** (null 폐기 — 필드는 항상
+ * 값이 있는 설계, "미설정" 상태 소멸). "생략=유지"는 그대로 보존.
  */
-export const PROFILE_IMAGE_CLEAR = null;
+export const PROFILE_IMAGE_CLEAR = PROFILE_IMAGE_DEFAULT_PATH;
 
 export interface PickedImage {
   uri: string;

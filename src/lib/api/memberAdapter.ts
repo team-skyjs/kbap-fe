@@ -50,7 +50,7 @@ export interface ProfileUpdateWire {
   countryCode?: string;
   appLanguage?: string;
   spicinessPreference?: number; // 0..10, 해제 = -1 전송 (BE 확정 7/16 — 생략은 유지)
-  profileImageUrl?: string | null; // path 설정 · null=삭제(서버가 기본 사진으로, BE 확정 7/20) · 생략=유지
+  profileImageUrl?: string; // path 설정 · 삭제=PROFILE_IMAGE_DEFAULT_PATH 전송(P-016, null 폐기) · 생략=유지
 }
 
 /**
@@ -82,6 +82,18 @@ export function adaptRanking(wire: RankingSummaryWire | MemberRankingWire): Rank
         }
       : {}),
   };
+}
+
+/**
+ * 프로필 사진 최종 컨벤션 (P-016, 종한 최종 확정 7/20 — null 폐기):
+ * 삭제·온보딩 미선택 = 이 기본 path를 **값으로 전송**, 응답도 항상 값(기본 URL 포함).
+ * "미설정" 상태 소멸 — 기본 path가 그 역할.
+ */
+export const PROFILE_IMAGE_DEFAULT_PATH = 'images/default/profile/profile-default-512.png';
+
+/** 서버가 준 URL이 기본 프로필 사진인지 — 기본이면 삭제 액션 미노출(사진 없음 취급). */
+export function isDefaultProfileImage(url: string | null | undefined): boolean {
+  return !!url && url.includes('images/default/profile/');
 }
 
 /** 조회 profileImageUrl 방어 — 절대 URL(http…)만 렌더, 그 외 null(플레이스홀더). */

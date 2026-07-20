@@ -45,13 +45,15 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 
-  // P-006(KB-149 후속): 사진 선택 시 path(objectKey) 포함, 미선택(null/생략) 시 필드 생략
-  it('profileImageUrl — 선택 시 body에 path 포함, 미선택 시 필드 생략', async () => {
+  // P-016(KB-149 최종): 선택 시 업로드 path, 미선택 시 **기본 path 명시 전송** (생략·null 폐기)
+  it('profileImageUrl — 선택 시 업로드 path, 미선택 시 기본 path 전송', async () => {
     api.post.mockResolvedValue(undefined);
     await submitOnboardingProfile({ ...payload, profileImageUrl: 'profile/1/a.jpg' });
     expect(api.post.mock.calls[0][1]).toMatchObject({ profileImageUrl: 'profile/1/a.jpg' });
     await submitOnboardingProfile({ ...payload, profileImageUrl: null });
-    expect(api.post.mock.calls[1][1]).not.toHaveProperty('profileImageUrl');
+    expect(api.post.mock.calls[1][1]).toMatchObject({
+      profileImageUrl: 'images/default/profile/profile-default-512.png',
+    });
   });
 
   it('400 + onboardingCompleted=false → 에러 표면화 (검증 실패를 삼키지 않는다)', async () => {

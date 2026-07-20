@@ -4,7 +4,17 @@
  * 새면 칩에 "-1/10"이 노출되는 오작동 — 0(맵지 않음, 유효값)과의 경계가 핵심.
  * P-004(KB-149): profileImageUrl 왕복 매핑도 잠근다.
  */
-import { adaptProfile, adaptSpice, type MyProfileWire } from '../memberAdapter';
+import { adaptProfile, adaptSpice, isDefaultProfileImage, type MyProfileWire } from '../memberAdapter';
+
+describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)', () => {
+  it('기본 path 포함 URL → true, 커스텀·부재 → false', () => {
+    expect(isDefaultProfileImage('https://cdn/images/default/profile/profile-default-512.png')).toBe(true);
+    expect(isDefaultProfileImage('images/default/profile/profile-default-512.png')).toBe(true);
+    expect(isDefaultProfileImage('https://cdn/profile/1/a.jpg')).toBe(false);
+    expect(isDefaultProfileImage(null)).toBe(false);
+    expect(isDefaultProfileImage(undefined)).toBe(false);
+  });
+});
 
 describe('adaptSpice — -1 센티널 / 0 유효값 경계', () => {
   it('-1(미설정 센티널) → null — 로컬 fallback도 타지 않는다 (서버가 진실)', () => {

@@ -111,13 +111,15 @@ it('spice 0("맵지 않음")은 유효값 그대로 전송 — -1과 경계 잠�
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 0 });
 });
 
-// P-014(KB-149 후속): 사진 삭제 = null 전송 확정 (P-013 잠정 '' 교체) —
-// 생략=유지와 구분: undefined만 미전송, null은 명시적 삭제
-it('profileImageUrl null (삭제) → PATCH body 포함 + ["me"] invalidate', async () => {
+// P-016(KB-149 최종): 사진 삭제 = 기본 path 전송 (null 폐기 — 필드는 항상 값) —
+// 생략=유지와 구분: undefined만 미전송
+it('profileImageUrl 기본 path (삭제) → PATCH body 포함 + ["me"] invalidate', async () => {
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A', profileImageUrl: 'https://cdn/p.jpg' });
-  await runMutation(qc, { profileImageUrl: null });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { profileImageUrl: null });
+  await runMutation(qc, { profileImageUrl: 'images/default/profile/profile-default-512.png' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', {
+    profileImageUrl: 'images/default/profile/profile-default-512.png',
+  });
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true);
 });
 

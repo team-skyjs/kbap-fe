@@ -16,6 +16,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '@/lib/api/client';
+import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { toBeCode } from '@/lib/mocks/ingredients';
 
@@ -48,8 +49,8 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     // 수렴한다 (다르게 저장되는 게 실측되면 -1 명시 전송으로 전환). 진행로그 기록.
     // 로컬 보관(위)은 구서버 대비 fallback으로 유지 (adaptSpice 참조).
     ...(payload.spiceTolerance !== UNSET ? { spicinessPreference: payload.spiceTolerance } : {}),
-    // KB-149: 사진은 선택 사항 — 미선택은 필드 생략 (optional 확인)
-    ...(payload.profileImageUrl ? { profileImageUrl: payload.profileImageUrl } : {}),
+    // KB-149 최종(P-016): 미선택도 기본 path를 명시 전송 — 필드는 항상 값 (null·생략 폐기)
+    profileImageUrl: payload.profileImageUrl ?? PROFILE_IMAGE_DEFAULT_PATH,
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
     avoidanceSubstanceCodes:
