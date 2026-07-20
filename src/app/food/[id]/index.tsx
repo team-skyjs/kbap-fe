@@ -30,6 +30,7 @@ import {
   IconSpeech,
   IconFlame,
 } from '@/components';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
@@ -106,13 +107,9 @@ export default function FoodDetailScreen() {
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
       >
         {error && !food && (
+          /* P-007(KB-174): J3/J4 공용 렌더로 톤 통일 — 탭 루트가 아니라 Go back 포함 */
           <View style={styles.errorState}>
-            <RiskMark state="unable" size={44} />
-            <Text style={styles.errorTitle}>{t('states.errorTitle')}</Text>
-            <Text style={styles.errorBody}>{(error as Error)?.message || t('states.errorBody')}</Text>
-            <View style={{ width: '100%', maxWidth: 260 }}>
-              <Btn onPress={() => refetch()}>{t('common.retry')}</Btn>
-            </View>
+            <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
           </View>
         )}
 
@@ -483,6 +480,4 @@ const styles = StyleSheet.create({
   discText: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink2, lineHeight: 17 },
 
   errorState: { alignItems: 'center', gap: 12, paddingHorizontal: 28, paddingTop: 48 },
-  errorTitle: { fontFamily: font.display, fontSize: 19, color: C.ink, textAlign: 'center' },
-  errorBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 4 },
 });

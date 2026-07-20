@@ -260,3 +260,11 @@
 - [x] 온보딩 미리보기 분리: 제출용 photoPath(objectKey) + 미리보기용 photoPreview(로컬 파일 uri) — path는 Image 렌더 불가라서. draft 복귀 시 미리보기는 소실돼도 path는 유지·제출됨. 수정 화면은 PATCH→['me'] invalidate 재조회로 서버 URL 렌더(기존 경로 그대로).
 - 테스트 +3: uploadProfileImage가 path 반환+purpose 확정값 잠금(profileImage.test 신규) / 조회 비-http 방어 / PATCH·온보딩 body 잠금 값 path로 갱신. tsc 0, jest 110/110.
 - 실기기 확인 포인트: 프로필 사진 교체→탭·수정 화면 렌더(서버 조합 URL) / Metro에 "절대 URL이 아님" 로그 뜨면 조회 응답이 path로 오는 것 — BE 확인 필요.
+
+## KB-174 공통 상태 UI — 에러·오프라인·스켈레톤 적용, false-empty 제거 (2026-07-20, P-007)
+- [x] 사전 확인: 디자인 J 시리즈 원자가 **이미 구현되어 있었음** (StateBlock/SkeletonList/아이콘/states.* i18n ×10 — states.tsx 카탈로그) — 미적용이 문제. 신규 문구 불필요(패리티 검증 완료), 배선만 수행.
+- [x] 공용 렌더 1개: `QueryErrorBlock({error, onRetry, onGoBack?})` (StateBlock.tsx) — J3(err 톤+IconAlertTri+Try again[+Go back]) / J4(IconWifiOff+Retry) 분기. `classifyQueryError`: 'NETWORK' 프리픽스(공용 클라이언트가 fetch 거부 시 부여) = offline, 그 외 = error — **JS-only(NetInfo 없음, 리빌드 회피)**, 한계 주석 명시.
+- [x] 적용: 홈(isError 분기 신설 — 에러가 "아직 스캔이 없어요"로 위장되던 false-empty 제거) · 음식 탭(기존 자체 에러 블록 → 공용 교체, 오프라인 분기 획득) · 프로필 탭(로딩 스켈레톤 + 에러 블록 — 백지 제거) · 음식 상세(톤 통일 + Go back, 자체 스타일 삭제). Try again은 해당 쿼리 refetch만.
+- [x] 빈 상태는 성공+0건일 때만 — 홈 테스트로 잠금.
+- 테스트 +6 (tabStates.test 신규, 풀스크린 렌더): 탭별 에러→J3 단언 3건 + 홈 false-empty 잠금 + NETWORK→J4 분류 + 프로필 로딩 스켈레톤. tsc 0, jest 116/116.
+- 실기기 확인 포인트(DoD): 기내모드에서 세 탭 J4+Retry / (BE 5xx 시) 세 탭 J3+Try again 재요청 / 홈 정상 0건이면 기존 빈 상태 그대로.

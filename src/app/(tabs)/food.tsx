@@ -22,8 +22,7 @@ import {
   useHeaderHeight,
   SkeletonList,
   Spinner,
-  StateBlock,
-  stateIconColor,
+  QueryErrorBlock,
   RiskMark,
   CardPhoto,
   Stars,
@@ -46,7 +45,7 @@ export default function Food() {
   const headerH = useHeaderHeight();
   const [category, setCategory] = useState('all');
 
-  const { data: foods, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data: foods, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteFoods();
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
@@ -89,12 +88,8 @@ export default function Food() {
   const Empty = isLoading ? (
     <SkeletonList />
   ) : isError ? (
-    <StateBlock
-      icon={<IconFood size={34} color={stateIconColor.default} />}
-      title={t('states.errorTitle')}
-      body={t('states.errorBody')}
-      primary={{ label: t('common.retry'), onPress: () => refetch() }}
-    />
+    // P-007(KB-174): 공용 에러/오프라인 렌더로 교체 — J3 err 톤 + J4 분기 통일
+    <QueryErrorBlock error={error} onRetry={() => void refetch()} />
   ) : null;
 
   return (

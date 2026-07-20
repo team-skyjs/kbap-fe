@@ -32,6 +32,8 @@ import {
   IconBookmark,
   IconFlame,
   Spinner,
+  SkeletonList,
+  QueryErrorBlock,
 } from '@/components';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
@@ -56,7 +58,7 @@ export default function Profile() {
   const { lang } = useLocale();
   const [langOpen, setLangOpen] = useState(false);
 
-  const { data: me } = useMe();
+  const { data: me, isLoading: meLoading, isError: meError, error: meErrorObj, refetch: refetchMe } = useMe();
   const { data: reviews } = useMyReviews();
   const { data: foods } = useFoods();
   const { data: bookmarks } = useBookmarks();
@@ -113,6 +115,14 @@ export default function Profile() {
             <View style={{ alignSelf: 'stretch', paddingHorizontal: 24 }}>
               <Btn onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)}>{t('intro.signUp')}</Btn>
             </View>
+          </View>
+        ) : meLoading ? (
+          /* P-007(KB-174) J1: 첫 로드 백지 제거 */
+          <SkeletonList />
+        ) : meError ? (
+          /* P-007 false-empty/백지 제거: 프로필 쿼리 에러는 J3/J4로 정직하게 */
+          <View style={{ paddingTop: 40 }}>
+            <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
           </View>
         ) : me && (
           <View style={styles.body}>

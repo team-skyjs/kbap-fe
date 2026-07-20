@@ -37,6 +37,7 @@ import {
   IconLock,
   type IconProps,
 } from '@/components';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -59,7 +60,7 @@ export default function Home() {
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
 
-  const { data: home, isLoading } = useHome();
+  const { data: home, isLoading, isError, error, refetch } = useHome();
   const { data: me } = useMe();
 
   const recent = home?.recent ?? [];
@@ -87,6 +88,12 @@ export default function Home() {
       >
         {isLoading ? (
           <SkeletonList />
+        ) : isError ? (
+          /* P-007(KB-174) false-empty 제거: 에러를 "아직 스캔이 없어요"로 위장 금지 —
+             빈 상태는 성공+0건일 때만. Try again은 이 쿼리만 refetch. */
+          <View style={{ paddingTop: 40 }}>
+            <QueryErrorBlock error={error} onRetry={() => void refetch()} />
+          </View>
         ) : (
           <View style={styles.body}>
             {/* greeting — 비회원은 이름 없이 (KB-69) */}
