@@ -478,7 +478,11 @@
     "spice": "Tolerancia al picante",
     "spiceClear": "Quitar ajuste",
     "photoError": "No se pudo subir la foto. Inténtalo de nuevo o continúa sin ella.",
-    "removePhoto": "Eliminar foto"
+    "removePhoto": "Eliminar foto",
+    "linkedVia": "Cuenta vinculada",
+    "linkedApple": "Iniciar sesión con Apple",
+    "linkedGoogle": "Iniciar sesión con Google",
+    "linkedSocial": "Cuenta social"
   },
   "nationalityPicker": {
     "title": "Nacionalidad",

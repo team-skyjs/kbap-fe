@@ -401,3 +401,8 @@
 - [x] 표시 언어를 파라미터가 담당 → Q-13 언어 전환 잔상·게스트/미설정 영어도 동시 해결(회원 DB appLanguage 기반 → 요청 언어 기반). appLanguage PATCH(선호 저장)는 무변.
 - 테스트 +1: /home 요청 URL에 lang 포함 잠금. tsc 0, jest 165/165. JS-only.
 - 발행(🔴긴급 홈 400): preview OTA Android 019f827f-1b3d-7727(cbbec117) + production OTA iOS 019f8283-3088-74f7(8d0d5504 = 테플 빌드 일치). 프로덕션 스왑 = _photostyle gitignore 제거 + app.json·splash·package.json·scan.tsx를 pre-P018/P022(0e9f884/eecbe52~1)로, 후 전량 복원.
+
+## KB-203 프로필 계정 연동 — provider 표시 (2026-07-21, P-029)
+- [x] 실측: MyProfileResponse.provider required 배포 확인. MyProfileWire·adaptProfile·User에 provider 매핑(구서버 방어 옵셔널). email 행은 계약에 없어 항상 undefined였음 — provider 행으로 교체.
+- [x] edit.tsx 연동 행: APPLE→IconApple / GOOGLE→IconGoogleG(로그인 화면 SVG 재사용, 헌법 준수) / 미지원·누락→IconProfile+중립 폴백. `providerLabelKey()` 순수 함수 — 빈 값 금지. i18n linkedVia/Apple/Google/Social ×10.
+- 테스트 +2: providerLabelKey 4케이스(APPLE/GOOGLE/미지원/누락) + adaptProfile provider 매핑. tsc 0, jest 167/167. JS-only — preview OTA(공기계), production은 검토 후 묶음.

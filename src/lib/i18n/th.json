@@ -478,7 +478,11 @@
     "spice": "ระดับเผ็ดที่รับได้",
     "spiceClear": "ล้างการตั้งค่า",
     "photoError": "อัปโหลดรูปไม่สำเร็จ ลองอีกครั้งหรือดำเนินการต่อโดยไม่มีรูปได้",
-    "removePhoto": "ลบรูปภาพ"
+    "removePhoto": "ลบรูปภาพ",
+    "linkedVia": "บัญชีที่เชื่อมต่อ",
+    "linkedApple": "เข้าสู่ระบบด้วย Apple",
+    "linkedGoogle": "เข้าสู่ระบบด้วย Google",
+    "linkedSocial": "บัญชีโซเชียล"
   },
   "nationalityPicker": {
     "title": "สัญชาติ",

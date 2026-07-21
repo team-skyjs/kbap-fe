@@ -40,6 +40,8 @@ export interface MyProfileWire {
   spicinessPreference?: number | null;
   /** 프로필 사진 표시 URL (KB-149, 2026-07-16 배포). 미설정 시 null/누락. */
   profileImageUrl?: string | null;
+  /** 가입 소셜 (KB-203, required 배포) — APPLE | GOOGLE. 구서버 방어 옵셔널. */
+  provider?: string;
   onboardingCompleted: boolean;
   ranking: RankingSummaryWire;
 }
@@ -96,6 +98,13 @@ export function isDefaultProfileImage(url: string | null | undefined): boolean {
   return !!url && url.includes('images/default/profile/');
 }
 
+/** provider → 연동 라벨 i18n 키 (KB-203/P-029). 미지원·누락은 폴백 — 빈 값 금지. */
+export function providerLabelKey(provider: string | undefined): string {
+  if (provider === 'APPLE') return 'editProfile.linkedApple';
+  if (provider === 'GOOGLE') return 'editProfile.linkedGoogle';
+  return 'editProfile.linkedSocial';
+}
+
 /** 조회 profileImageUrl 방어 — 절대 URL(http…)만 렌더, 그 외 null(플레이스홀더). */
 export function adaptProfileImageUrl(wire: string | null | undefined): string | null {
   if (typeof wire !== 'string' || !wire) return null;
@@ -118,6 +127,8 @@ export function adaptProfile(wire: MyProfileWire, localSpice: number | null): Us
     // (FE 는 CDN 도메인을 모름 — 전송은 path 만). 비-http 값(path 로 오는 등)은
     // 렌더 불가 → 플레이스홀더 + 감지 로그 (빈 문자열 '' Image source 방지 겸).
     profileImageUrl: adaptProfileImageUrl(wire.profileImageUrl),
+    provider: wire.provider, // KB-203 — 연동 계정 표시용
+
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부
       code,

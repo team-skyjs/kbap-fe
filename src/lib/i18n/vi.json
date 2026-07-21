@@ -478,7 +478,11 @@
     "spice": "Mức ăn cay",
     "spiceClear": "Bỏ thiết lập",
     "photoError": "Tải ảnh lên thất bại. Hãy thử lại hoặc tiếp tục mà không cần ảnh.",
-    "removePhoto": "Xoá ảnh"
+    "removePhoto": "Xoá ảnh",
+    "linkedVia": "Tài khoản liên kết",
+    "linkedApple": "Đăng nhập bằng Apple",
+    "linkedGoogle": "Đăng nhập bằng Google",
+    "linkedSocial": "Tài khoản mạng xã hội"
   },
   "nationalityPicker": {
     "title": "Quốc tịch",

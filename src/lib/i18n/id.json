@@ -478,7 +478,11 @@
     "spice": "Toleransi pedas",
     "spiceClear": "Hapus pengaturan",
     "photoError": "Unggah foto gagal. Coba lagi, atau lanjutkan tanpa foto.",
-    "removePhoto": "Hapus foto"
+    "removePhoto": "Hapus foto",
+    "linkedVia": "Akun tertaut",
+    "linkedApple": "Masuk dengan Apple",
+    "linkedGoogle": "Masuk dengan Google",
+    "linkedSocial": "Akun sosial"
   },
   "nationalityPicker": {
     "title": "Kewarganegaraan",

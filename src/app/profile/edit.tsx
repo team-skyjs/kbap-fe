@@ -3,8 +3,9 @@
  * identity card. Change photo (KB-149 실연결 — 선택 즉시 업로드+PATCH, 국적
  * 행과 같은 즉시 적용 시맨틱), Nickname (staged, saved on Save),
  * Nationality → I4, Reader language → shared LanguagePicker (I5), read-only
- * Email. Nationality + reader language apply immediately when picked (same as
- * the account Language row); Save persists the nickname via PATCH /me.
+ * linked provider (KB-203 — Apple/Google, email은 계약에 없어 교체). Nationality +
+ * reader language apply immediately when picked (same as the account Language
+ * row); Save persists the nickname via PATCH /me.
  */
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -12,7 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconEnvelope, IconCheck, IconFlame } from '@/components';
+import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconFlame, IconApple, IconGoogleG } from '@/components';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
@@ -20,7 +21,7 @@ import { countryByCode } from '@/lib/onboarding/countries';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
-import { isDefaultProfileImage } from '@/lib/api/memberAdapter';
+import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
 import { pickProfileImage, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 
 export default function EditProfile() {
@@ -174,16 +175,24 @@ export default function EditProfile() {
           )}
         </View>
 
-        {/* linked email (read-only) */}
+        {/* linked provider (read-only) — KB-203/P-029: email은 프로필 계약에 없어
+            항상 undefined였음 → 가입 소셜(provider)로 교체. 아이콘은 로그인 화면과
+            동일 SVG(IconApple/IconGoogleG) 재사용, 미지원·누락은 중립 폴백. */}
         <View style={styles.sec}>
           <Text style={styles.secTitle}>{t('editProfile.linkedTitle')}</Text>
           <View style={styles.acctList}>
             <View style={styles.acctRow}>
               <View style={styles.acctIc}>
-                <IconEnvelope size={17} color={C.ink2} />
+                {me?.provider === 'APPLE' ? (
+                  <IconApple size={17} color={C.ink} />
+                ) : me?.provider === 'GOOGLE' ? (
+                  <IconGoogleG size={17} color={C.ink} />
+                ) : (
+                  <IconProfile size={17} color={C.ink2} />
+                )}
               </View>
-              <Text style={styles.acctLabel}>{t('editProfile.email')}</Text>
-              <Text style={styles.acctVal}>{me?.email}</Text>
+              <Text style={styles.acctLabel}>{t('editProfile.linkedVia')}</Text>
+              <Text style={styles.acctVal}>{t(providerLabelKey(me?.provider))}</Text>
             </View>
           </View>
         </View>

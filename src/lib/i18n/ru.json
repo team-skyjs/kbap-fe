@@ -478,7 +478,11 @@
     "spice": "Переносимость остроты",
     "spiceClear": "Сбросить",
     "photoError": "Не удалось загрузить фото. Попробуйте ещё раз или продолжите без него.",
-    "removePhoto": "Удалить фото"
+    "removePhoto": "Удалить фото",
+    "linkedVia": "Привязанный аккаунт",
+    "linkedApple": "Вход через Apple",
+    "linkedGoogle": "Вход через Google",
+    "linkedSocial": "Социальный аккаунт"
   },
   "nationalityPicker": {
     "title": "Гражданство",

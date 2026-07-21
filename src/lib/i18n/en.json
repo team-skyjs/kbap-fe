@@ -225,7 +225,11 @@
     "spice": "Spice tolerance",
     "spiceClear": "Clear (not set)",
     "photoError": "Photo upload failed. Tap to try again — you can continue without one.",
-    "removePhoto": "Remove photo"
+    "removePhoto": "Remove photo",
+    "linkedVia": "Linked account",
+    "linkedApple": "Sign in with Apple",
+    "linkedGoogle": "Sign in with Google",
+    "linkedSocial": "Social account"
   },
   "nationalityPicker": {
     "title": "Nationality",

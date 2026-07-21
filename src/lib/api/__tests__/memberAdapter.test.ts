@@ -4,7 +4,16 @@
  * 새면 칩에 "-1/10"이 노출되는 오작동 — 0(맵지 않음, 유효값)과의 경계가 핵심.
  * P-004(KB-149): profileImageUrl 왕복 매핑도 잠근다.
  */
-import { adaptProfile, adaptSpice, isDefaultProfileImage, type MyProfileWire } from '../memberAdapter';
+import { adaptProfile, adaptSpice, isDefaultProfileImage, providerLabelKey, type MyProfileWire } from '../memberAdapter';
+
+describe('providerLabelKey (P-029/KB-203 — 연동 계정 라벨)', () => {
+  it('APPLE→애플 / GOOGLE→구글 / 미지원·누락→중립 폴백(빈 값 금지)', () => {
+    expect(providerLabelKey('APPLE')).toBe('editProfile.linkedApple');
+    expect(providerLabelKey('GOOGLE')).toBe('editProfile.linkedGoogle');
+    expect(providerLabelKey('KAKAO')).toBe('editProfile.linkedSocial');
+    expect(providerLabelKey(undefined)).toBe('editProfile.linkedSocial');
+  });
+});
 
 describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)', () => {
   it('기본 path 포함 URL → true, 커스텀·부재 → false', () => {
@@ -62,5 +71,10 @@ describe('adaptProfile.profileImageUrl (P-004 KB-149)', () => {
 
   it('함께: -1 센티널도 미설정으로 (통합 경로 확인)', () => {
     expect(adaptProfile(wire, null).spiceTolerance).toBe(null);
+  });
+
+  it('provider 매핑 (P-029) — wire 그대로, 누락은 undefined', () => {
+    expect(adaptProfile({ ...wire, provider: 'APPLE' }, null).provider).toBe('APPLE');
+    expect(adaptProfile(wire, null).provider).toBeUndefined();
   });
 });

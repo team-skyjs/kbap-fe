@@ -478,7 +478,11 @@
     "spice": "辣度承受度",
     "spiceClear": "清除設定",
     "photoError": "照片上傳失敗。可以重試，也可以不設定照片繼續。",
-    "removePhoto": "刪除照片"
+    "removePhoto": "刪除照片",
+    "linkedVia": "連結帳號",
+    "linkedApple": "透過 Apple 登入",
+    "linkedGoogle": "透過 Google 登入",
+    "linkedSocial": "社群帳號"
   },
   "nationalityPicker": {
     "title": "國籍",
