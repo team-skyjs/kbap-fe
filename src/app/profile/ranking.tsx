@@ -352,7 +352,11 @@ const styles = StyleSheet.create({
   breakDetail: { fontFamily: font.body, fontSize: 11.5, color: C.ink2 },
   gain: { backgroundColor: PRIMARY_TINT, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 6 },
   gainText: { fontFamily: font.displayBlack, fontSize: 16, color: C.primary },
-  breakTotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: -16, marginBottom: -6, marginTop: 4, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, borderStyle: 'dashed' },
+  // P-037(Q-15 ②): 음수 마진으로 카드 가장자리까지 확장된 배경이 breakCard의
+  // borderRadius 밖으로 삐져나와 하단 코너가 뚫려 보임 → 하단 radius(카드 20 −
+  // 테두리 1 = 19) 부여. overflow:'hidden'은 금지 — iOS 그림자 클립 + 안드
+  // elevation 회색(P-024 선례) 재발 위험.
+  breakTotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: -16, marginBottom: -6, marginTop: 4, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, borderStyle: 'dashed', borderBottomLeftRadius: radius.lg - 1, borderBottomRightRadius: radius.lg - 1 },
   breakTotalLabel: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
   breakTotalPlus: { fontFamily: font.displayBlack, fontSize: 13.5, color: C.primaryText },
 
@@ -365,7 +369,9 @@ const styles = StyleSheet.create({
   lineHide: { opacity: 0 },
   nodeCur: { borderRadius: 24, padding: 3, backgroundColor: 'rgba(226,88,12,0.16)', ...shadow.sh2 },
   nodeBody: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: 7, paddingBottom: 19 },
-  nodeBodyCur: { backgroundColor: 'rgba(226,88,12,0.07)', borderRadius: radius.sm, borderWidth: 1.5, borderColor: 'rgba(226,88,12,0.28)', paddingHorizontal: 13, paddingVertical: 11, marginVertical: 3 },
+  // P-037(Q-15 ①): 내부 텍스트가 비카드 행들과 같은 좌/우 기준선에 앉도록
+  // 패딩+테두리(13+1.5)만큼 음수 마진 — 카드 테두리는 기준선 바깥으로 나간다.
+  nodeBodyCur: { backgroundColor: 'rgba(226,88,12,0.07)', borderRadius: radius.sm, borderWidth: 1.5, borderColor: 'rgba(226,88,12,0.28)', paddingHorizontal: 13, paddingVertical: 11, marginVertical: 3, marginHorizontal: -14.5 },
   nodeMain: { flex: 1, gap: 1 },
   nodeNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   nodeName: { fontFamily: font.display, fontSize: 15.5, color: C.ink, letterSpacing: -0.2 },

@@ -454,3 +454,6 @@
 - [x] ① food.tsx: 에러/오프라인 시 FlatList 자체를 전체화면 QueryErrorBlock으로 조건부 대체 — P-027의 ListEmptyComponent 경유는 캐시가 있으면 리스트가 비어있지 않아 에러 화면 미표시(캐시 목록+무헤더 어중간 상태). 리스트 미렌더로 onEndReached·푸터 스피너 경로 원천 차단, 헤더 미렌더 유지.
 - [x] ② Spinner.tsx: 회전 래퍼 width/height=size + alignSelf center — 너비 미지정으로 FlatList 푸터 직속에서 전폭 stretch된 띠가 통째로 회전(아이콘 공전). 사용처 전수(scan/search/detail/saved 등 좁은 컨테이너) 무회귀 — 크기 고정은 기존 렌더와 동일 결과.
 - 테스트 +2: 캐시 존재+NETWORK 에러 → J4·캐시 카드/헤더 미렌더(tabStates) · Spinner 래퍼 크기 고정(uiPolish). tsc 0, jest 202/202. JS-only — preview OTA.
+
+## KB-125 랭킹 UI 2건 — 현재 카드 정렬·점수내역 코너 (2026-07-21, P-037, Q-15)
+- [x] ① nodeBodyCur에 marginHorizontal:-14.5(패딩13+테두리1.5 상쇄) — 현재 등급 카드 내부 텍스트가 비카드 행들과 같은 좌/우 기준선, 테두리는 바깥으로. ② breakTotal에 하단 코너 radius 19(카드 20−테두리 1) — 음수 마진 확장 배경의 코너 뚫림 봉합. overflow:hidden 회피(P-024 안드 elevation 회색 선례). 스타일 상수만 — 신규 로직 없음. tsc 0, jest 202/202. JS-only — preview OTA.
