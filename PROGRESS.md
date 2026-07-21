@@ -487,3 +487,7 @@
 - iOS production 빌드+제출 완료 (submission 64870fcb) — Apple 처리 후 테플 노출(수십 분). 새 runtime `c43664ed`로 재베이스라인.
 - 이 빌드에 합류: expo-sensors(P-022)·expo-image-manipulator/WYSIWYG 크롭(P-025)·스플래시 에셋 정식 반영(P-018)·스캔 세그먼트 글라이드/스태거(P-032)·빈 프로필 스캔 배너(P-038) — 그간 OTA 스왑 제외분 전량.
 - **프로덕션 OTA 스왑 절차 소멸**: 이후 production OTA는 스왑 없이 발행(런타임 c43664ed 기준). preview 공기계 build1(cbbec117) 스왑은 Android 빌드2 전까지 존치.
+
+## Android 빌드2 (2026-07-21, P-043, 빌드 24277e9c)
+- preview apk 빌드 완료 — runtime `f96ae4f7`. 합류: expo-sensors 가로 감지(P-022 — 안드 실동작), WYSIWYG 크롭(P-025), 스캔 글라이드/스태거(P-032), 스캔 배너(P-038) + 최신 JS 전량.
+- **preview OTA 스왑 절차 완전 소멸**: 구 build1(cbbec117)은 orphan — 공기계는 새 apk 재설치가 기준, 이후 preview OTA는 스왑 없이 발행. 코드 무변(기록만).
