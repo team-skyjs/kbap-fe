@@ -4,9 +4,25 @@
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font } from '@/lib/theme';
+import { spring } from '@/lib/motion';
 import { IconArrowLeft } from './icons';
+
+/** P-032: Step Progress 노드 팝 — 새로 채워지는 세그먼트가 살짝 팝 (진행 리워드) */
+function Seg({ on }: { on: boolean }) {
+  const s = useSharedValue(1);
+  const prev = React.useRef(on);
+  React.useEffect(() => {
+    if (!prev.current && on) {
+      s.value = withSequence(withTiming(0.8, { duration: 50 }), withSpring(1, spring.pop));
+    }
+    prev.current = on;
+  }, [on, s]);
+  const pop = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  return <Animated.View style={[styles.seg, on && styles.segOn, pop]} />;
+}
 
 export function TopBar({
   seg = 0,
@@ -36,7 +52,7 @@ export function TopBar({
       )}
       <View style={styles.prog}>
         {Array.from({ length: of }).map((_, i) => (
-          <View key={i} style={[styles.seg, i < seg && styles.segOn]} />
+          <Seg key={i} on={i < seg} />
         ))}
       </View>
       {skipLabel ? (

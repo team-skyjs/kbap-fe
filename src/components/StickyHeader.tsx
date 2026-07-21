@@ -19,7 +19,6 @@ import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, {
-  Easing,
   Extrapolation,
   interpolate,
   useAnimatedScrollHandler,
@@ -131,7 +130,8 @@ export function StickyHeader({
     transform: [{ translateY: interpolate(hidden.value, [0, 1], [0, -H], Extrapolation.CLAMP) }],
   }));
 
-  // 북마크 저장 바운스 (디자인 spec: 0.8→1.15→1, 340ms, reduced-motion 시 생략)
+  // 북마크 저장 팝 (P-032: timing 시퀀스 → 스프링 통일 — 움츠렸다 소량 바운스로
+  // 채워지는 드롭인. 탭 모멘텀이 있어 spring.pop, reduced-motion 시 생략)
   const reducedMotion = useReducedMotion();
   const bmScale = useSharedValue(1);
   const prevSaved = React.useRef(bookmarkSaved);
@@ -139,8 +139,7 @@ export function StickyHeader({
     if (!prevSaved.current && bookmarkSaved && !reducedMotion) {
       bmScale.value = withSequence(
         withTiming(0.8, { duration: 60 }),
-        withTiming(1.15, { duration: 160, easing: Easing.out(Easing.back(2)) },),
-        withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) }),
+        withSpring(1, spring.pop),
       );
     }
     prevSaved.current = bookmarkSaved;

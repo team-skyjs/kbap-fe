@@ -431,3 +431,8 @@
 - [x] B4 Btn press: onPressIn 즉시 scale 0.97 damped 스프링(AnimatedPressable) · B5 시트/모달: AuthGateSheet SlideInDown.springify(바운스 0)+Modal fade 유지, Snackbar 등장 스프링/퇴장 페이드, StickyHeader 숨김 timing→withSpring. LanguagePicker는 OS 네이티브 slide 유지(플랫폼 표준 — 커스텀 timing 아님). 스프링 프리셋은 src/lib/motion.ts 일원화(press/sheet/move).
 - [x] B6 루트 ReducedMotionConfig(System) — reduce-motion 시 스프링 전역 비활성, Modal fade만 남아 크로스페이드 폴백.
 - 테스트 +6(uiPolish.test.tsx): WCAG 대비 수식 잠금(ink3·primaryText·ink2 ≥4.5 on card)·위험도 4색 hex 불변·Txt 1.3 기본/override·press 스프링 즉발. 기존 테스트 9본 reanimated mock 표면 보강(withSpring·entering 빌더). tsc 0, jest 198/198. JS-only — preview OTA.
+
+## KB-207 UI 폴리시 2 — kinetics 마이크로 인터랙션 (2026-07-21, P-032)
+- [x] ① 칩 팝인/아웃(IngredientFilter 요약 칩, ZoomIn.springify spring.pop — P-026 고정높이 36 불변) ② 북마크 팝 timing 시퀀스→스프링 통일(StickyHeader) ③ Tab Pill Glide(스캔 세그먼트 — onLayout 실측+스프링 글라이드, 첫 배치 무애니메이션) ④ Error Shake(useShake 공용 훅: 감쇠 진동·재트리거 — 로그인 실패 SocialAuthButtons + 온보딩 제출 에러) ⑤ Success Check(SVG strokeDashoffset 드로잉 — 온보딩 제출 성공 0.9s 오버레이 후 홈) ⑥ Stagger Entrance(스캔 결과 리스트 FadeInDown 60ms 간격·상한 8행) ⑦ Step Progress 노드 팝(TopBar Seg) ⑨ 수량 스테퍼 값 팝(주문카드 bump — 소량 바운스).
+- [x] ⑧ Shimmer는 기구현 확인(P-009 sweep) — 무변. 바운스는 탭 모멘텀 있는 곳(칩·북마크·수량·노드)만 spring.pop, 등장류는 전부 damped. reduced-motion: 전역 ReducedMotionConfig가 entering/스프링 스킵(스태거 생략 요건 충족).
+- 테스트 +1(orderStepper — bump 클램프·비활성·문장 갱신 잠금) + 기존 40 스위트 무회귀. 테스트 mock 표면 2차 보강(withSequence·withDelay·useAnimatedProps·Zoom/FadeInDown 체인). tsc 0, jest 199/199. JS-only — preview OTA.

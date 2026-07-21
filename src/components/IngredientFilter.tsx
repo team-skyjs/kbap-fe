@@ -11,9 +11,11 @@ import * as React from 'react';
 // 목록을 밀어내던 QA 피드백 해소. 칩은 선택 순서 유지(새 선택이 줄 끝), 추가 시
 // 자동 끝 스크롤. 0건이면 줄 미표시(0↔1 전환 1회 높이 변화 — 실물 확인 후 판단).
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Animated, { ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
+import { spring } from '@/lib/motion';
 import { INGREDIENTS, ingredientLabel } from '@/lib/mocks/ingredients';
 import { RiskMark } from './RiskMark';
 import { IconSearch, IconClose, IconCheck, IconPlus } from './icons';
@@ -62,12 +64,20 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
               keyboardShouldPersistTaps="handled"
             >
               {selected.map((code) => (
-                <Pressable key={code} style={styles.rmChip} onPress={() => onToggle(code)}>
-                  <Text style={styles.rmChipText}>{ingredientLabel(code)}</Text>
-                  <View style={styles.rmX}>
-                    <IconClose size={11} color={C.ink} />
-                  </View>
-                </Pressable>
+                /* P-032: 칩 팝인/아웃 — 탭 모멘텀이 있어 소량 바운스(spring.pop).
+                   scale 변형이라 P-026 고정 높이(36) 레이아웃 불변. */
+                <Animated.View
+                  key={code}
+                  entering={ZoomIn.springify().damping(spring.pop.damping).stiffness(spring.pop.stiffness)}
+                  exiting={ZoomOut.duration(120)}
+                >
+                  <Pressable style={styles.rmChip} onPress={() => onToggle(code)}>
+                    <Text style={styles.rmChipText}>{ingredientLabel(code)}</Text>
+                    <View style={styles.rmX}>
+                      <IconClose size={11} color={C.ink} />
+                    </View>
+                  </Pressable>
+                </Animated.View>
               ))}
             </ScrollView>
           ) : (

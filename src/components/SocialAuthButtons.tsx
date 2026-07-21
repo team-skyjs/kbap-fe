@@ -11,13 +11,16 @@
  *    official 4-color "G" mark (exact paths/colors, no tinting), label
  *    "Sign in with Google" (i18n follows Google's own localized strings).
  */
+import * as React from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import Svg, { Path } from 'react-native-svg';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { useSocialAuth } from '@/lib/auth/useSocialAuth';
+import { useShake } from '@/lib/useShake';
 
 const BTN_H = 52;
 
@@ -37,6 +40,14 @@ export function SocialAuthButtons({ onSignedIn }: { onSignedIn: (newMember: bool
   const { t } = useTranslation();
   const { phase, error, appleAvailable, signInWithGoogle, signInWithApple } = useSocialAuth(onSignedIn);
   const busy = phase !== 'idle';
+
+  // P-032: Error Shake — 시도가 에러로 끝날 때마다 감쇠 진동. phase가 idle로
+  // 돌아온 시점 기준이라 같은 에러의 재시도 실패도 재트리거된다.
+  const { shakeStyle, shake } = useShake();
+  React.useEffect(() => {
+    if (error && phase === 'idle') shake();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, phase]);
 
   return (
     <View style={styles.wrap}>
@@ -76,9 +87,11 @@ export function SocialAuthButtons({ onSignedIn }: { onSignedIn: (newMember: bool
       </Pressable>
 
       {!!error && (
-        <Text style={styles.error}>
-          {t(error === 'network' ? 'login.errorNetwork' : 'login.errorGeneric')}
-        </Text>
+        <Animated.View style={shakeStyle}>
+          <Text style={styles.error}>
+            {t(error === 'network' ? 'login.errorNetwork' : 'login.errorGeneric')}
+          </Text>
+        </Animated.View>
       )}
     </View>
   );

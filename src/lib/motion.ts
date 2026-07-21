@@ -13,6 +13,8 @@ export const spring = {
   sheet: { damping: 26, stiffness: 220 },
   /** 헤더 숨김/복귀 등 소거리 UI 이동 — damped, 기존 timing 200ms 상당 */
   move: { damping: 24, stiffness: 260 },
+  /** 탭 모멘텀이 있는 팝(칩 추가·수량 변경·노드 채움) — 소량 바운스 허용 (P-032) */
+  pop: { damping: 14, stiffness: 280 },
 } as const;
 
 /** press 피드백 스케일 (SKILL.md §1 — pointer-down 즉시, 릴리스 대기 금지) */

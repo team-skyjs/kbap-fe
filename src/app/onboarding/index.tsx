@@ -15,6 +15,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +34,8 @@ import {
   IconProfile,
 } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
+import { SuccessCheck } from '@/components/SuccessCheck';
+import { useShake } from '@/lib/useShake';
 import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -77,6 +80,8 @@ export default function Onboarding() {
   const [skipped, setSkipped] = useState({ restrictions: false, spice: false });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
+  const [doneSplash, setDoneSplash] = useState(false); // P-032: 제출 성공 체크 오버레이
+  const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
   const hydrated = useRef(false);
   const done = useRef(false); // permanently stops draft persistence after submit
 
@@ -155,10 +160,14 @@ export default function Onboarding() {
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
       queryClient.clear();
-      router.replace('/(tabs)');
+      // P-032: Success Check — 완료 체크 스트로크 드로잉 0.9s 후 홈 진입.
+      // reduced-motion이면 드로잉이 스킵돼 정적 체크가 잠깐 보이고 넘어간다.
+      setDoneSplash(true);
+      setTimeout(() => router.replace('/(tabs)'), 900);
     } catch (e) {
       console.log('[onboarding] submit failed — staying on screen:', (e as Error)?.message);
       setSubmitError(true);
+      shake(); // P-032: Error Shake — 재제출 실패도 재트리거
     } finally {
       setSubmitting(false);
     }
@@ -224,12 +233,12 @@ export default function Onboarding() {
           onSkip={skipStep}
         />
 
-        {/* 제출 실패 — 화면 유지 + 안내 (KB-75, false-safe) */}
+        {/* 제출 실패 — 화면 유지 + 안내 (KB-75, false-safe) · P-032 Error Shake */}
         {submitError && (
-          <View style={styles.submitErr}>
+          <Animated.View style={[styles.submitErr, shakeStyle]}>
             <RiskMark state="caution" size={16} />
             <Text style={styles.submitErrText}>{t('onboarding.submitError')}</Text>
-          </View>
+          </Animated.View>
         )}
 
         {step === 'consent' && (
@@ -293,6 +302,13 @@ export default function Onboarding() {
       {/* shared nationality (I4) / language (I5, 9 langs) pickers */}
       <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
       <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
+
+      {/* P-032: 제출 성공 — 체크 스트로크 드로잉 오버레이 (0.9s 후 홈) */}
+      {doneSplash && (
+        <Animated.View entering={FadeIn.duration(150)} style={styles.doneSplash} pointerEvents="auto">
+          <SuccessCheck size={104} />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -522,6 +538,8 @@ const styles = StyleSheet.create({
   stickyFoot: { paddingHorizontal: 22, paddingTop: 12, gap: 6, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   // 제출 실패 안내 (KB-75)
   submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  // P-032: 제출 성공 오버레이 — 뒤 터치 차단 + 중앙 체크
+  doneSplash: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(252,245,239,0.96)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
   submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
 
   // titles

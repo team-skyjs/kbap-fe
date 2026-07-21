@@ -15,6 +15,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish 
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
 import { coverCropRect } from '@/lib/scan/coverCrop';
 import { personalRisk } from '@/lib/risk';
+import { spring } from '@/lib/motion';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -316,8 +318,15 @@ export default function Scan() {
       <View style={styles.root}>
         {view === 'list' ? (
           <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 190, paddingHorizontal: 16, gap: 10 }}>
-            {listDishes.map((d) => (
-              <DishRow key={d.itemId} dish={d} unmatchedNote={t('scan.unmatchedNote')} riskLabel={t(`risk.${d.risk}`)} onPress={() => openDish(d)} />
+            {listDishes.map((d, k) => (
+              /* P-032: Stagger Entrance — 분석 완료 리워드감, 60ms 간격(상한 8행).
+                 reduced-motion 시 전역 config가 entering을 스킵 → 즉시 표시. */
+              <Animated.View
+                key={d.itemId}
+                entering={FadeInDown.delay(Math.min(k, 8) * 60).springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}
+              >
+                <DishRow dish={d} unmatchedNote={t('scan.unmatchedNote')} riskLabel={t(`risk.${d.risk}`)} onPress={() => openDish(d)} />
+              </Animated.View>
             ))}
           </ScrollView>
         ) : (
@@ -330,11 +339,15 @@ export default function Scan() {
           {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
           <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: allDishes.length })}</Text>
-          <View style={styles.toggleRow}>
-            <Toggle label={t('scan.showList')} on={view === 'list'} onPress={() => setView('list')} />
-            <Toggle label={t('scan.showResult')} on={view === 'risk'} onPress={() => setView('risk')} />
-            <Toggle label={t('scan.showOriginal')} on={view === 'original'} onPress={() => setView('original')} />
-          </View>
+          <ToggleRow
+            value={view}
+            onChange={setView}
+            options={[
+              { key: 'list', label: t('scan.showList') },
+              { key: 'risk', label: t('scan.showResult') },
+              { key: 'original', label: t('scan.showOriginal') },
+            ]}
+          />
           <Btn variant="ghost" onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setPhase('camera'); }}>
             {t('scan.retake')}
           </Btn>
@@ -456,11 +469,58 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
   );
 }
 
-function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+/**
+ * P-032: Tab Pill Glide — 흰 인디케이터 필이 활성 세그먼트로 스프링 글라이드
+ * (kinetics 직역). 세그먼트 폭은 i18n 라벨 길이에 따라 다르므로 onLayout 실측.
+ * 첫 배치는 무애니메이션(등장 시 글라이드 금지 — 전환에만).
+ */
+function ToggleRow({
+  value,
+  onChange,
+  options,
+}: {
+  value: ResultView;
+  onChange: (v: ResultView) => void;
+  options: { key: ResultView; label: string }[];
+}) {
+  const x = useSharedValue(0);
+  const w = useSharedValue(0);
+  const ready = useRef(false);
+  const layouts = useRef<Partial<Record<ResultView, { x: number; w: number }>>>({});
+  const place = (v: ResultView) => {
+    const l = layouts.current[v];
+    if (!l) return;
+    if (ready.current) {
+      x.value = withSpring(l.x, spring.move);
+      w.value = withSpring(l.w, spring.move);
+    } else {
+      x.value = l.x;
+      w.value = l.w;
+      ready.current = true;
+    }
+  };
+  useEffect(() => {
+    place(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const ind = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }], width: w.value }));
   return (
-    <Pressable style={[styles.toggle, on && styles.toggleOn]} onPress={onPress}>
-      <Text style={[styles.toggleLbl, on && styles.toggleLblOn]}>{label}</Text>
-    </Pressable>
+    <View style={styles.toggleRow}>
+      <Animated.View style={[styles.toggleInd, ind]} />
+      {options.map((o) => (
+        <Pressable
+          key={o.key}
+          style={styles.toggle}
+          onPress={() => onChange(o.key)}
+          onLayout={(e) => {
+            layouts.current[o.key] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
+            if (o.key === value) place(o.key); // 초기/리레이아웃 시 현재 위치 반영
+          }}
+        >
+          <Text style={[styles.toggleLbl, o.key === value && styles.toggleLblOn]}>{o.label}</Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
@@ -518,7 +578,8 @@ const styles = StyleSheet.create({
   resultTitle: { fontFamily: font.display, fontSize: 16, color: '#fff' },
   toggleRow: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12, padding: 4, gap: 3 },
   toggle: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 9 },
-  toggleOn: { backgroundColor: '#fff' },
+  // P-032: 활성 배경은 개별 toggleOn 대신 글라이드 인디케이터가 담당
+  toggleInd: { position: 'absolute', top: 4, bottom: 4, left: 0, borderRadius: 9, backgroundColor: '#fff' },
   toggleLbl: { fontFamily: font.bodyBold, fontSize: 13.5, color: 'rgba(255,255,255,0.7)' },
   toggleLblOn: { color: C.ink },
   // list rows

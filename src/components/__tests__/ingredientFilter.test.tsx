@@ -11,6 +11,24 @@ import { ScrollView } from 'react-native';
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
+// P-032: 칩 팝인/아웃이 reanimated를 끌어옴 — 표면 mock
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['springify', 'damping', 'stiffness', 'mass', 'duration', 'delay', 'easing']) b[k] = () => b;
+    return b;
+  };
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: (c: unknown) => c },
+    useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    withSpring: (v: unknown) => v,
+    ZoomIn: chain(),
+    ZoomOut: chain(),
+  };
+});
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },

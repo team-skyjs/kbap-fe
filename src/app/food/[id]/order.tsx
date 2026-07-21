@@ -8,6 +8,7 @@
  */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +18,7 @@ import { IconClose } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { avoidSentenceKo, lifestyleLinesKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { spring } from '@/lib/motion';
 
 const QTY_MIN = 1;
 const QTY_MAX = 5;
@@ -29,6 +31,15 @@ export default function OrderCard() {
   const { data: food } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
   const [qty, setQty] = useState(QTY_MIN);
+
+  // P-032: Quantity Stepper 값 팝 — 탭 모멘텀이 있어 소량 바운스(spring.pop)
+  const qtyScale = useSharedValue(1);
+  const qtyPop = useAnimatedStyle(() => ({ transform: [{ scale: qtyScale.value }] }));
+  const bump = (next: number) => {
+    if (next === qty) return;
+    setQty(next);
+    qtyScale.value = withSequence(withTiming(1.22, { duration: 60 }), withSpring(1, spring.pop));
+  };
 
   const codes = (me?.restrictions ?? []).map((r) => r.code);
   const avoid = avoidSentenceKo(codes); // 기피 0개 → null → ②③ 생략(순수 주문 카드)
@@ -51,9 +62,11 @@ export default function OrderCard() {
 
         {/* 수량 스테퍼 1~5 — 위 문장의 {n}개가 즉시 바뀐다 */}
         <View style={styles.stepper}>
-          <StepBtn label="−" disabled={qty <= QTY_MIN} onPress={() => setQty((q) => Math.max(QTY_MIN, q - 1))} />
-          <Text style={styles.qty}>{qty}</Text>
-          <StepBtn label="+" disabled={qty >= QTY_MAX} onPress={() => setQty((q) => Math.min(QTY_MAX, q + 1))} />
+          <StepBtn label="−" disabled={qty <= QTY_MIN} onPress={() => bump(Math.max(QTY_MIN, qty - 1))} />
+          <Animated.View style={qtyPop}>
+            <Text style={styles.qty}>{qty}</Text>
+          </Animated.View>
+          <StepBtn label="+" disabled={qty >= QTY_MAX} onPress={() => bump(Math.min(QTY_MAX, qty + 1))} />
         </View>
 
         {!!avoid && <Text style={styles.note}>{avoid}</Text>}
