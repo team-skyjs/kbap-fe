@@ -439,3 +439,6 @@
 
 ## KB-205 정정 — 주문카드 종교·식이 문단 제거 (2026-07-21, P-033)
 - [x] 회피 모델 평면 81종 확정(religion:/diet: 폐기)에 따라 P-030의 ③(lifestyleLinesKo)은 죽은 코드 — orderCard.ts 조립 로직·order.tsx 렌더·테스트 2케이스 제거. ②(기피 재료 고지)가 종교·식이를 재료 단위로 커버. tsc 0, jest 198/198(-1). JS-only — 다음 OTA 편승.
+
+## 프로덕션 OTA 묶음 발행 (2026-07-21)
+- P-024/026/027/028/029/030/031/032/033 묶음 — iOS update 019f82cb-7e3d-7f65, runtime 8d0d5504(테플 빌드 a6aebbf8 일치). 스왑(gitignore _photostyle 제거 + app.json·splash·package.json→0e9f884 + scan.tsx→pre-P022) 후 전량 복원, 트리 클린. 네이티브분(P-022 센서·P-025 크롭)과 scan.tsx 의존 효과(P-032 글라이드·스태거)는 스왑 특성상 미포함 — 차기 iOS 빌드에서 합류. Android 그룹은 무해 orphan(안드 프로덕션 빌드 없음).
