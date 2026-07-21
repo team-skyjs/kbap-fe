@@ -20,7 +20,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
+import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
 import { useFoods, useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -79,9 +79,9 @@ export default function Search() {
     <View style={styles.root}>
       {/* header: back + input + clear */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
+        <PressScale onPress={() => router.back()} hitSlop={8} style={styles.back}>
           <IconArrowLeft size={22} color={C.ink} />
-        </Pressable>
+        </PressScale>
         <View style={styles.box}>
           <IconSearch size={18} color={C.ink2} />
           <TextInput

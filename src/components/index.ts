@@ -13,6 +13,7 @@ export { TopBar } from './TopBar';
 export { StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, type StateTone } from './StateBlock';
 export { SkeletonList, SkeletonHome, SkeletonFoodGrid, SkeletonProfile, Shimmer } from './Skeleton';
 export { CardPhoto } from './CardPhoto';
+export { PressScale } from './PressScale';
 export { Spinner } from './Spinner';
 export { ShellPlaceholder } from './ShellPlaceholder';
 export { NotificationsPanel } from './NotificationsPanel';

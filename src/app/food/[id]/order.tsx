@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
-import { IconClose, IconMinus, IconPlus } from '@/components';
+import { IconClose, IconMinus, IconPlus, PressScale } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
@@ -48,9 +48,9 @@ export default function OrderCard() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <Pressable style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8}>
+      <PressScale style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8}>
         <IconClose size={22} color={C.ink2} />
-      </Pressable>
+      </PressScale>
 
       <View style={styles.center}>
         {!!nameKo && (
@@ -60,9 +60,16 @@ export default function OrderCard() {
           </Text>
         )}
 
-        {/* 수량 스테퍼 1~5 — 위 문장의 {n}개가 즉시 바뀐다.
-            P-040(Q-17): −/+는 텍스트가 아니라 SVG — 폰트 어센트 편향으로 원 중심을
-            벗어나던 문제. 기호는 전부 icons.tsx (영구 규칙). */}
+        {!!avoid && <Text style={styles.note}>{avoid}</Text>}
+
+        <Text style={styles.caption}>{t('order.caption')}</Text>
+      </View>
+
+      <View style={[styles.foot, { paddingBottom: insets.bottom + 18 }]}>
+        {/* P-042(Q-18 5번): 스테퍼는 Done 바로 위 — 문장은 위(사장님 시선),
+            조작은 아래 손 근처. 문장 내 {n}개 갱신은 무변.
+            P-040(Q-17): −/+는 텍스트가 아니라 SVG — 폰트 어센트 편향으로 원
+            중심을 벗어나던 문제. 기호는 전부 icons.tsx (영구 규칙). */}
         <View style={styles.stepper}>
           <StepBtn icon={<IconMinus size={20} color={C.ink} />} disabled={qty <= QTY_MIN} onPress={() => bump(Math.max(QTY_MIN, qty - 1))} />
           <Animated.View style={qtyPop}>
@@ -70,16 +77,9 @@ export default function OrderCard() {
           </Animated.View>
           <StepBtn icon={<IconPlus size={20} color={C.ink} />} disabled={qty >= QTY_MAX} onPress={() => bump(Math.min(QTY_MAX, qty + 1))} />
         </View>
-
-        {!!avoid && <Text style={styles.note}>{avoid}</Text>}
-
-        <Text style={styles.caption}>{t('order.caption')}</Text>
-      </View>
-
-      <View style={[styles.foot, { paddingBottom: insets.bottom + 18 }]}>
-        <Pressable style={styles.done} onPress={() => router.back()}>
+        <PressScale style={styles.done} onPress={() => router.back()}>
           <Text style={styles.doneText}>{t('owner.done')}</Text>
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );
@@ -87,9 +87,9 @@ export default function OrderCard() {
 
 function StepBtn({ icon, disabled, onPress }: { icon: React.ReactNode; disabled: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[styles.step, disabled && styles.stepOff]} onPress={onPress} disabled={disabled} hitSlop={6}>
+    <PressScale style={[styles.step, disabled && styles.stepOff]} onPress={onPress} disabled={disabled} hitSlop={6}>
       {icon}
-    </Pressable>
+    </PressScale>
   );
 }
 
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, gap: 22 },
   order: { fontFamily: font.koBold, fontSize: 34, lineHeight: 46, color: C.ink, textAlign: 'center' },
   menu: { color: C.primary },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 14 },
   step: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   stepOff: { opacity: 0.35 },
   qty: { fontFamily: font.display, fontSize: 24, color: C.ink, minWidth: 30, textAlign: 'center' },

@@ -476,3 +476,9 @@
 ## KB-152 재수정 — 부트 레이스: 정리→프리페치 직렬화 (2026-07-21, P-041 🔴 프라이버시)
 - [x] cleanupIfFreshInstall()과 prefetchBootData()가 같은 틱 병렬 발사 → 신규 설치 첫 부팅에서 프리페치의 hasBeSession()이 아직 안 지워진 옛 Keychain 토큰으로 /home·/me 인증 프리페치 → 홈 캐시 이전 계정 오염(Q-05). bootGate에 prefetchAfterCleanup(cleanupDone, prefetch) 헬퍼 — cleanup settle 후에만 프리페치 시작(실패해도 진행), _layout 배선 + 주석 "정리가 프리페치·렌더 모두보다 선행"으로 갱신. gateSplash min/cap 시맨틱 무변.
 - 테스트 +2(bootGate — cleanup 완료 전 prefetch 미시작 / cleanup reject여도 진행). 기존 게이트 타이밍 4케이스 무회귀. tsc 0, jest 211/211. JS-only — preview+production 양 채널 즉시 OTA.
+
+## Q-18 후속 3건 — press 확산·스테퍼 위치·노드 팝 제거 (2026-07-21, P-042)
+- [x] ① 공용 PressScale 래퍼(Btn과 동일 프리셋) 신설 — 생 Pressable 버튼류 적용: StickyHeader(back·search·bell·bookmark·Sign in pill), SubHeader back, search back, owner/order close·Done, 주문 StepBtn. 제외(과적용 금지): 리스트 행/카드 내비, ranking Cta(기존 pressed 배경 있음), 텍스트 링크, 시트 내부, 스캔 화면(OTA 스왑 표면 밖 — 빌드2 합류 시 별도).
+- [x] ② 주문카드 수량 스테퍼를 문장 아래 → Done 바로 위(foot 내부)로 이동 — 문장은 위, 조작은 손 근처. 문장 내 {n}개 갱신·팝 무변(orderStepper 테스트 통과).
+- [x] ③ TopBar 스텝 노드 팝(P-032 ⑦) 제거 — 즉시 전환, 제거 사유 주석(P-035 선례).
+- 테스트 +1(PressScale 즉발 잠금). tsc 0, jest 212/212. JS-only — preview OTA.

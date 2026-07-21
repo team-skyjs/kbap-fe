@@ -9,6 +9,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
 import { IconArrowLeft } from './icons';
+import { PressScale } from './PressScale';
 
 export function SubHeader({
   title,
@@ -22,9 +23,9 @@ export function SubHeader({
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      <Pressable style={styles.back} onPress={onBack} hitSlop={8}>
+      <PressScale style={styles.back} onPress={onBack} hitSlop={8}>
         <IconArrowLeft size={20} color={C.ink} />
-      </Pressable>
+      </PressScale>
       <Text numberOfLines={1} style={styles.title}>
         {title}
       </Text>

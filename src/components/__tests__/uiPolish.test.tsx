@@ -29,6 +29,7 @@ import { PRESS_SCALE } from '@/lib/motion';
 import { Txt } from '../Txt';
 import { Btn } from '../Btn';
 import { Spinner } from '../Spinner';
+import { PressScale } from '../PressScale';
 
 /** WCAG 2.x 상대 휘도 대비 */
 function contrast(hexA: string, hexB: string): number {
@@ -90,6 +91,23 @@ describe('Spinner (P-036/Q-08 ②) — 회전 래퍼 크기 고정', () => {
     const style = JSON.stringify(wrappers[0].props.style);
     expect(style).toContain('"width":16');
     expect(style).toContain('"height":16');
+  });
+});
+
+describe('PressScale (P-042) — 생 Pressable 버튼용 공용 press 피드백', () => {
+  it('onPressIn 즉시 0.97 스프링, onPressOut 복귀 — Btn과 동일 프리셋', () => {
+    mockWithSpring.mockClear();
+    const tree = render(<PressScale onPress={() => {}} />);
+    const node = tree.root.findAll((n) => !!n.props?.onPressIn && !!n.props?.onPressOut)[0];
+    expect(node).toBeTruthy();
+    act(() => {
+      node.props.onPressIn({});
+    });
+    expect(mockWithSpring).toHaveBeenCalledWith(PRESS_SCALE);
+    act(() => {
+      node.props.onPressOut({});
+    });
+    expect(mockWithSpring).toHaveBeenLastCalledWith(1);
   });
 });
 

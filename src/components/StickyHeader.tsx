@@ -35,6 +35,7 @@ import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
 import { BrandLockup } from './Brand';
+import { PressScale } from './PressScale';
 import { NotificationsPanel } from './NotificationsPanel';
 import { AuthGateSheet } from './AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -151,9 +152,9 @@ export function StickyHeader({
     <Animated.View style={[styles.root, { height: H, paddingTop: insets.top + TOP_PAD }, slide]}>
       <View style={styles.bar}>
         {mode === 'back' ? (
-          <Pressable style={styles.iconBtn} onPress={onBack} hitSlop={8}>
+          <PressScale style={styles.iconBtn} onPress={onBack} hitSlop={8}>
             <IconArrowLeft size={20} color={C.ink} />
-          </Pressable>
+          </PressScale>
         ) : (
           <BrandLockup />
         )}
@@ -173,25 +174,25 @@ export function StickyHeader({
 
         <View style={styles.actions}>
           {search && (
-            <Pressable style={styles.actionBtn} onPress={onSearch} hitSlop={10}>
+            <PressScale style={styles.actionBtn} onPress={onSearch} hitSlop={10}>
               <IconSearch size={23} color={C.ink} sw={1.8} />
-            </Pressable>
+            </PressScale>
           )}
           {bell && (
-            <Pressable style={styles.actionBtn} onPress={onBell} hitSlop={10}>
+            <PressScale style={styles.actionBtn} onPress={onBell} hitSlop={10}>
               <IconBell size={23} color={C.ink} sw={1.8} />
               {bellDot && <View style={styles.dot} />}
-            </Pressable>
+            </PressScale>
           )}
           {signIn && (
-            <Pressable style={styles.signInPill} onPress={onSignIn} hitSlop={8}>
+            <PressScale style={styles.signInPill} onPress={onSignIn} hitSlop={8}>
               <Text style={styles.signInText}>Sign in</Text>
-            </Pressable>
+            </PressScale>
           )}
           {bookmark && (
             /* 디자인(Bookmark Mods B): 흰 칩 없이 bare 아이콘 — search/bell과 동일 처리.
                unsaved=아웃라인, saved=primary 채움 */
-            <Pressable style={styles.actionBtn} onPress={onBookmark} hitSlop={8}>
+            <PressScale style={styles.actionBtn} onPress={onBookmark} hitSlop={8}>
               <Animated.View style={bmPop}>
                 {bookmarkSaved ? (
                   <IconBookmark size={22} color={C.primary} fill={C.primary} sw={0} />
@@ -199,7 +200,7 @@ export function StickyHeader({
                   <IconBookmark size={22} color={C.ink} sw={1.8} />
                 )}
               </Animated.View>
-            </Pressable>
+            </PressScale>
           )}
           {mode === 'back' && !search && !bell && !bookmark && <View style={{ width: 38 }} />}
         </View>

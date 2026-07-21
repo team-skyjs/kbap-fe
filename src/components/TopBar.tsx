@@ -4,24 +4,14 @@
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font } from '@/lib/theme';
-import { spring } from '@/lib/motion';
 import { IconArrowLeft } from './icons';
 
-/** P-032: Step Progress 노드 팝 — 새로 채워지는 세그먼트가 살짝 팝 (진행 리워드) */
+// P-042(Q-18 6번): P-032 ⑦의 노드 팝 제거 — 예진 "이상함". 진행 표시는 상태
+// 전달이 전부라 애니메이션이 소음(기피 칩 P-035와 같은 절제 사례). 즉시 전환.
 function Seg({ on }: { on: boolean }) {
-  const s = useSharedValue(1);
-  const prev = React.useRef(on);
-  React.useEffect(() => {
-    if (!prev.current && on) {
-      s.value = withSequence(withTiming(0.8, { duration: 50 }), withSpring(1, spring.pop));
-    }
-    prev.current = on;
-  }, [on, s]);
-  const pop = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
-  return <Animated.View style={[styles.seg, on && styles.segOn, pop]} />;
+  return <View style={[styles.seg, on && styles.segOn]} />;
 }
 
 export function TopBar({

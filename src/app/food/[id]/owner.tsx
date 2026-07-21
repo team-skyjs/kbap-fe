@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { IconClose } from '@/components';
+import { PressScale } from '@/components';
 import { useOwnerConfirmation } from '@/lib/data/useOwnerConfirmation';
 
 export default function OwnerConfirm() {
@@ -25,9 +26,9 @@ export default function OwnerConfirm() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <Pressable style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8}>
+      <PressScale style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8}>
         <IconClose size={22} color={C.ink2} />
-      </Pressable>
+      </PressScale>
 
       <View style={styles.center}>
         {data && (
@@ -40,9 +41,9 @@ export default function OwnerConfirm() {
       </View>
 
       <View style={[styles.foot, { paddingBottom: insets.bottom + 18 }]}>
-        <Pressable style={styles.done} onPress={() => router.back()}>
+        <PressScale style={styles.done} onPress={() => router.back()}>
           <Text style={styles.doneText}>{t('owner.done')}</Text>
-        </Pressable>
+        </PressScale>
       </View>
     </View>
   );
