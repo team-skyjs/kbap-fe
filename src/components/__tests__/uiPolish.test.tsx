@@ -1,0 +1,98 @@
+/**
+ * P-031(KB-206) UI 폴리시 잠금.
+ *  - 대비: ink3·primaryText가 카드(white) 위 4.5:1 이상 — WCAG 계산 자체를 테스트로
+ *  - 위험도 4색 불변 (헌법 III — 이 파일이 diff 나면 헌법 위반)
+ *  - Txt: maxFontSizeMultiplier 기본 1.3 (시스템 큰글씨 잘림 방지)
+ *  - Btn: onPressIn 즉시 scale 스프링 (릴리스 대기 금지)
+ */
+import * as React from 'react';
+import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+
+const mockWithSpring = jest.fn((v: unknown) => v);
+jest.mock('react-native-reanimated', () => {
+  const { View, ScrollView, FlatList } = require('react-native');
+  return {
+    __esModule: true,
+    default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
+    useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    withSpring: (v: unknown) => mockWithSpring(v),
+    withTiming: (v: unknown) => v,
+  };
+});
+jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', script: 'latin' }) }));
+
+import { color } from '@/lib/theme';
+import { PRESS_SCALE } from '@/lib/motion';
+import { Txt } from '../Txt';
+import { Btn } from '../Btn';
+
+/** WCAG 2.x 상대 휘도 대비 */
+function contrast(hexA: string, hexB: string): number {
+  const lum = (hex: string) => {
+    const h = hex.replace('#', '');
+    const [r, g, b] = [0, 2, 4].map((i) => {
+      const c = parseInt(h.slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [hi, lo] = [lum(hexA), lum(hexB)].sort((a, b) => b - a);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe('대비 (A1) — 소형 텍스트 토큰은 카드(white) 위 4.5:1 이상', () => {
+  it('ink3 ≥ 4.5:1 on card', () => {
+    expect(contrast(color.ink3, color.card)).toBeGreaterThanOrEqual(4.5);
+  });
+  it('primaryText ≥ 4.5:1 on card (소형 주황 링크/라벨용)', () => {
+    expect(contrast(color.primaryText, color.card)).toBeGreaterThanOrEqual(4.5);
+  });
+  it('ink2 ≥ 4.5:1 유지 (회귀 방지)', () => {
+    expect(contrast(color.ink2, color.card)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('위험도 4색 불변 (헌법 III) — P-031 대비 작업이 건드리면 안 됨', () => {
+  it('safe/caution/danger/unable 고정 hex 유지', () => {
+    expect(color.riskSafe).toBe('#2f8f5b');
+    expect(color.riskCaution).toBe('#d28a12');
+    expect(color.riskDanger).toBe('#cf3a2c');
+    expect(color.riskUnable).toBe('#5b6470');
+  });
+});
+
+function render(el: React.ReactElement): ReactTestRenderer {
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(el);
+  });
+  return tree;
+}
+
+describe('Txt (A2) — 시스템 큰글씨 상한', () => {
+  it('기본 maxFontSizeMultiplier 1.3, 명시 prop이 우선', () => {
+    const t1 = render(<Txt>hi</Txt>);
+    expect(t1.root.findAllByProps({ maxFontSizeMultiplier: 1.3 }).length).toBeGreaterThanOrEqual(1);
+    const t2 = render(<Txt maxFontSizeMultiplier={2}>hi</Txt>);
+    expect(t2.root.findAllByProps({ maxFontSizeMultiplier: 2 }).length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('Btn (B4) — press 즉시 피드백', () => {
+  it('onPressIn에서 바로 scale 스프링 (릴리스 대기 금지)', () => {
+    mockWithSpring.mockClear();
+    const tree = render(<Btn onPress={() => {}}>go</Btn>);
+    // Pressable은 memo라 findByType 불가 — press 핸들러 보유 노드로 탐색
+    const pressable = tree.root.findAll((n) => !!n.props?.onPressIn && !!n.props?.onPressOut)[0];
+    expect(pressable).toBeTruthy();
+    act(() => {
+      pressable.props.onPressIn();
+    });
+    expect(mockWithSpring).toHaveBeenCalledWith(PRESS_SCALE);
+    act(() => {
+      pressable.props.onPressOut();
+    });
+    expect(mockWithSpring).toHaveBeenLastCalledWith(1);
+  });
+});

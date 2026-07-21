@@ -424,3 +424,10 @@
 - [x] order.tsx: owner.tsx 동일 패밀리 풀스크린 카드 — 메뉴명 하이라이트+수량 스테퍼(1~5, SVG 없이 텍스트 ±), 고지 문단, reader 요약 캡션(order.caption)+닫기(owner.done 재사용). 상세·프로필 캐시 재사용, BE 호출 0.
 - [x] 상세 최하단 CTA(order.cta): 개인화 판정 safe/caution만 노출(danger·unable·게스트 미노출). 빈 프로필은 false-safe 강등으로 caution → CTA 유지(순수 주문 카드). i18n cta/caption ×10.
 - 테스트 +16(orderCard.test.ts 9 + orderCta.test.tsx 7): 을/를·ko 고정·0개 생략·접기·CTA 노출 조건·카드 문단 유무. tsc 0, jest 192/192. JS-only — preview OTA.
+
+## KB-206 UI 폴리시 1 — 대비·큰글씨·press·시트 스프링·reduced-motion (2026-07-21, P-031)
+- [x] A1 대비: ink3 #B0A395(2.28:1)→#837363(white 4.57✓/surface 4.23) — 토큰 한 곳 수정, 더 어두우면 ink2와 위계 구분 소멸이라 절충. 신규 primaryText(#c44a08, 4.85:1) 토큰 + 소형(≤14px) primary 텍스트 19곳 전환(15px+ 디스플레이 숫자·34px 카드 메뉴명은 brand primary 유지 — 대형 3:1 충족). 위험도 4색 불변.
+- [x] A2 Txt maxFontSizeMultiplier 1.3 기본(전 화면 관통, prop 우선) · A3 스캔 unmatched 안내 numberOfLines 2.
+- [x] B4 Btn press: onPressIn 즉시 scale 0.97 damped 스프링(AnimatedPressable) · B5 시트/모달: AuthGateSheet SlideInDown.springify(바운스 0)+Modal fade 유지, Snackbar 등장 스프링/퇴장 페이드, StickyHeader 숨김 timing→withSpring. LanguagePicker는 OS 네이티브 slide 유지(플랫폼 표준 — 커스텀 timing 아님). 스프링 프리셋은 src/lib/motion.ts 일원화(press/sheet/move).
+- [x] B6 루트 ReducedMotionConfig(System) — reduce-motion 시 스프링 전역 비활성, Modal fade만 남아 크로스페이드 폴백.
+- 테스트 +6(uiPolish.test.tsx): WCAG 대비 수식 잠금(ink3·primaryText·ink2 ≥4.5 on card)·위험도 4색 hex 불변·Txt 1.3 기본/override·press 스프링 즉발. 기존 테스트 9본 reanimated mock 표면 보강(withSpring·entering 빌더). tsc 0, jest 198/198. JS-only — preview OTA.

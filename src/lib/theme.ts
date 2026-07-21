@@ -9,6 +9,10 @@
 export const color = {
   primary: '#E2580C',
   primaryPress: '#c44a08',
+  // P-031(KB-206) 대비: primary(3.73:1)는 소형 텍스트 기준 미달 — fontSize ≤14
+  // 텍스트(링크·라벨)는 이 토큰. white 4.85:1 / surface 4.49:1. 15px+ 디스플레이
+  // 숫자·대형(owner/order 카드 34px)은 brand primary 유지(3:1 대형 기준 충족).
+  primaryText: '#c44a08',
   primary2: '#E8893F', // gradient 2nd stop (≈ color-mix primary 82% + #ffd9a0)
   accent: '#0E9AA7',
 
@@ -20,7 +24,10 @@ export const color = {
 
   ink: '#2A211B',
   ink2: '#7C6B5E',
-  ink3: '#B0A395',
+  // P-031(KB-206) 대비: #B0A395(2.28:1) → 어둡게. white(카드 — 소형 텍스트 대부분)
+  // 4.57:1 ✓ / surface 4.23:1(목표 근접). 더 어두우면 ink2와 시각 구분이 소멸해
+  // 3단 위계가 죽는다 — 여기서 절충, 위계는 크기·굵기가 담당 (apple-design §15).
+  ink3: '#837363',
   hair: '#EFE5D9',
   line: '#E7DACB',
 

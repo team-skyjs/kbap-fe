@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 28, gap: 16 },
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
-  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
+  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
   noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },

@@ -10,8 +10,19 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 // tabStates.test 프렐류드 재사용
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['springify', 'damping', 'stiffness', 'mass', 'duration', 'delay', 'easing']) b[k] = () => b;
+    return b;
+  };
   return {
     __esModule: true,
+    withSpring: (v: unknown) => v,
+    ReducedMotionConfig: () => null,
+    ReduceMotion: { System: 'system' },
+    FadeIn: chain(),
+    FadeOut: chain(),
+    SlideInDown: chain(),
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),

@@ -4,10 +4,14 @@
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
+import { PRESS_SCALE, spring } from '@/lib/motion';
 
 export type BtnVariant = 'primary' | 'ghost' | 'off' | 'danger';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function Btn({
   children,
@@ -27,16 +31,30 @@ export function Btn({
   style?: ViewStyle;
 }) {
   const palette = VARIANTS[variant];
+  // P-031(KB-206): press 즉시 피드백 — onPressIn에서 바로(릴리스 대기 금지),
+  // damped 스프링이라 인터럽트(빠른 탭 연타)에도 현재값에서 자연 재출발.
+  const scale = useSharedValue(1);
+  const pressAnim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const [pressed, setPressed] = React.useState(false);
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      onPressIn={() => {
+        setPressed(true);
+        scale.value = withSpring(PRESS_SCALE, spring.press);
+      }}
+      onPressOut={() => {
+        setPressed(false);
+        scale.value = withSpring(1, spring.press);
+      }}
       disabled={disabled || variant === 'off'}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         sm && styles.sm,
         palette.container,
         pressed && palette.pressed,
         style,
+        pressAnim,
       ]}
     >
       {/* icon+label in a shrink-wrapped inner row (belt-and-suspenders centering). */}
@@ -48,7 +66,7 @@ export function Btn({
           </Text>
         )}
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

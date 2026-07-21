@@ -219,14 +219,14 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 28, gap: 18 },
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
-  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
+  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 
   avatarWrap: { alignItems: 'center', gap: 10, paddingVertical: 4 },
   av: { width: 92, height: 92, borderRadius: 46, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   avImg: { position: 'absolute', top: 0, left: 0, width: 92, height: 92, borderRadius: 46 },
   avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
   cam: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
-  phLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  phLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   phErr: { fontFamily: font.bodyBold, fontSize: 13, color: C.riskCaution },
   phRemove: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.riskDanger, padding: 4 },
 
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   spiceRow: { flexDirection: 'row', justifyContent: 'space-between' },
   spiceVal: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, textAlign: 'center' },
   spiceValUnset: { fontFamily: font.body, color: C.ink3 },
-  spiceClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primary, marginLeft: 2, marginTop: 3 },
+  spiceClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText, marginLeft: 2, marginTop: 3 },
 
   sec: { gap: 10 },
   secTitle: { fontFamily: font.display, fontSize: 16, color: C.ink, letterSpacing: -0.2 },

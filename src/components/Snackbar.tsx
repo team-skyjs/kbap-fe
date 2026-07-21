@@ -4,8 +4,10 @@
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
+import { spring } from '@/lib/motion';
 
 export function Snackbar({
   icon,
@@ -20,7 +22,13 @@ export function Snackbar({
 }) {
   return (
     <View style={styles.root} pointerEvents="box-none">
-      <View style={styles.bar}>
+      {/* P-031: 하단 등장 = damped 스프링, 퇴장 = 짧은 페이드 (등장 경로 대칭은
+          타이머 소멸이라 페이드가 자연스러움 — apple-design §14 비전정 폴백 겸) */}
+      <Animated.View
+        entering={SlideInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}
+        exiting={FadeOut.duration(150)}
+        style={styles.bar}
+      >
         {icon}
         <Text style={styles.text}>{text}</Text>
         {actionLabel != null && (
@@ -28,7 +36,7 @@ export function Snackbar({
             <Text style={styles.action}>{actionLabel}</Text>
           </Pressable>
         )}
-      </View>
+      </Animated.View>
     </View>
   );
 }

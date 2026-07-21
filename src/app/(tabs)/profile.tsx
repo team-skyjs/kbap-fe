@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   finishRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 12 },
   finishText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, lineHeight: 18 },
-  finishCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  finishCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   // 게스트 가입 유도 (KB-78)
   guestAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   guestTitle: { fontFamily: font.displayBlack, fontSize: 20, color: C.ink, textAlign: 'center' },
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   sec: { gap: 11 },
   secHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   secTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
   // ranking
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   rankSegOn: { backgroundColor: C.primary },
   rankTiers: { flexDirection: 'row', justifyContent: 'space-between' },
   rt: { fontFamily: font.body, fontSize: 10, color: C.ink3 },
-  rtOn: { fontFamily: font.bodyBold, color: C.primary },
+  rtOn: { fontFamily: font.bodyBold, color: C.primaryText },
 
   // dietary
   dietWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   dietChipTextDanger: { color: C.riskDanger },
   spiceUnset: { fontFamily: font.body, fontSize: 13.5, color: C.ink3 },
   dietAdd: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 8 },
-  dietAddText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  dietAddText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // my reviews
   myrev: { flexDirection: 'row', gap: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },

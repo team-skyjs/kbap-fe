@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
 
   secHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   secTag: { fontFamily: font.bodyBold, fontSize: 12, letterSpacing: 0.3, color: C.ink2, textTransform: 'uppercase', marginBottom: 8 },
-  clearAll: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primary },
+  clearAll: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
 
   recentHint: { borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: 13, padding: 16, alignItems: 'center' },
   recentHintText: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center' },

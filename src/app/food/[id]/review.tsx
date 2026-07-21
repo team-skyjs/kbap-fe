@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 18, gap: 20 },
 
-  postLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary, marginRight: 8 },
+  postLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, marginRight: 8 },
   postLinkOff: { color: C.ink3 },
 
   foodChip: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },

@@ -7,6 +7,17 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
+// P-031: 배너 → Btn → reanimated 의존 (press 스프링) — 표면 mock
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: (c: unknown) => c },
+    useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    withSpring: (v: unknown) => v,
+  };
+});
 
 import { shouldShowResume } from '../ResumeOnboardingBanner';
 

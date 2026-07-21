@@ -14,14 +14,19 @@ import { Text as RNText, StyleSheet, type TextProps, type TextStyle } from 'reac
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { resolveFont } from '@/lib/i18n/fonts';
 
-export function Txt({ style, ...rest }: TextProps) {
+// P-031(KB-206): 시스템 큰글씨 상한 ×1.3 — 고정높이 레이아웃(칩·행·버튼) 잘림
+// 방지. 전 화면이 Txt를 쓰므로 여기 한 곳이 전역 관통. 정식 Dynamic Type
+// 대응(레이아웃 스케일링)은 출시 후 범위.
+const MAX_FONT_SCALE = 1.3;
+
+export function Txt({ style, maxFontSizeMultiplier = MAX_FONT_SCALE, ...rest }: TextProps) {
   const { script } = useLocale();
   const flat = StyleSheet.flatten(style) as TextStyle | undefined;
   const override = resolveFont(flat?.fontFamily, script);
-  if (!override) return <RNText style={style} {...rest} />;
+  if (!override) return <RNText style={style} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
   // fontFamily를 undefined로 덮어쓸 수 없으므로(flatten이 뒤 값을 채택) 키를 제거한다
   const { fontFamily: _drop, ...restStyle } = flat ?? {};
-  return <RNText style={[restStyle, override]} {...rest} />;
+  return <RNText style={[restStyle, override]} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
 }
 
 export default Txt;

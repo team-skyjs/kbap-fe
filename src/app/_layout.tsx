@@ -14,6 +14,7 @@ import { Stack, useRouter, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
@@ -87,6 +88,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* P-031(KB-206): 시스템 reduce-motion 시 reanimated 애니메이션 전역 비활성
+          (스프링/스태거는 스킵되고 Modal 페이드 등 크로스페이드 경로만 남는다) */}
+      <ReducedMotionConfig mode={ReduceMotion.System} />
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <I18nextProvider i18n={i18n}>

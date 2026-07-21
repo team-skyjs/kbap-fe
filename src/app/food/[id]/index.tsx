@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   scanPriceNote: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
   spiceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   spiceText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
-  spiceWarn: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary },
+  spiceWarn: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primaryText },
   profileHint: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: -8, lineHeight: 18 },
 
   descCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 15, ...shadow.sh1 },

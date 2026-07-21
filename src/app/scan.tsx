@@ -476,7 +476,8 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress }: { dish: ResultDish
           <Text style={styles.rowLatin} numberOfLines={1}>{dish.koreanName}</Text>
         )}
         {!dish.koreanName && !!dish.latin && <Text style={styles.rowLatin} numberOfLines={1}>{dish.latin}</Text>}
-        {!dish.matched && <Text style={styles.rowUnable} numberOfLines={1}>{unmatchedNote}</Text>}
+        {/* P-031: 안전 행동 지시는 말줄임 금지 — 2줄 허용 */}
+        {!dish.matched && <Text style={styles.rowUnable} numberOfLines={2}>{unmatchedNote}</Text>}
       </View>
       {dish.priceKrw != null && <Text style={styles.rowPrice}>{formatKrw(dish.priceKrw)}</Text>}
       <View style={[styles.rowBadge, { backgroundColor: tone.bg }]}>
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
-  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' },
+  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primaryText, textTransform: 'uppercase' },
   errDetail: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', paddingHorizontal: 8 },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },

@@ -5,7 +5,9 @@
  * 로그인 성공 시 보던 맥락으로 복귀한다 (guest-access-policy §0-3).
  */
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
+import { spring } from '@/lib/motion';
 import { usePathname, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
@@ -46,8 +48,12 @@ export function AuthGateSheet({
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* 카드 탭이 backdrop으로 새지 않게 */}
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        {/* P-031: 시트 등장 = damped 스프링(바운스 0 — 모멘텀 없는 등장, apple-design §4).
+            backdrop 페이드·퇴장은 Modal fade가 담당. reduced-motion 시 스프링만
+            비활성(ReducedMotionConfig) → 페이드 등장으로 자연 폴백. */}
+        <Animated.View entering={SlideInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}>
+          {/* 카드 탭이 backdrop으로 새지 않게 */}
+          <Pressable style={styles.sheet} onPress={() => {}}>
           <Pressable style={styles.close} hitSlop={10} onPress={onClose}>
             <IconClose size={18} color={C.ink3} />
           </Pressable>
@@ -60,7 +66,8 @@ export function AuthGateSheet({
           <Pressable onPress={onClose} hitSlop={10}>
             <Text style={styles.later}>{t('onboarding.skip')}</Text>
           </Pressable>
-        </Pressable>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );

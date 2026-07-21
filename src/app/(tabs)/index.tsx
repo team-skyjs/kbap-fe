@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   greetTitle: { fontFamily: font.display, fontSize: 26, color: C.ink, letterSpacing: -0.5 },
   greetSub: { fontFamily: font.body, fontSize: 15, color: C.ink2 },
 
-  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // diet banner
   diet: { borderRadius: radius.lg, backgroundColor: '#fdf0ee', borderWidth: 1, borderColor: '#f1cfca', padding: 14, gap: 11 },
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   guestCta: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: radius.lg, padding: 14 },
   guestCtaIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   guestCtaText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
-  guestCtaBtn: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
+  guestCtaBtn: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // scan CTA
   scanCta: { flexDirection: 'row', alignItems: 'center', gap: 13, borderRadius: radius.lg, padding: 16, ...shadow.sh2 },
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   recBadge: { position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   recMeta: { flex: 1, gap: 1 },
   reviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
-  reviewBtnText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primary },
+  reviewBtnText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
 
   // categories
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

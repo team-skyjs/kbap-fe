@@ -4,7 +4,7 @@
  * Overlay-fixed at the top (absolute); content flows beneath (screens pad content
  * by useHeaderHeight()). Scroll DOWN → header slides up and hides; scroll UP →
  * shows immediately; at the very top it's always shown. Driven by a reanimated
- * `hidden` value (0 shown → 1 hidden) via transform: translateY + withTiming.
+ * `hidden` value (0 shown → 1 hidden) via transform: translateY + withSpring (P-031).
  * A small delta threshold prevents jitter. Compact only (no large-title collapse):
  * always solid background + bottom hairline/shadow while visible.
  *
@@ -27,11 +27,13 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withSequence,
+  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
+import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
 import { BrandLockup } from './Brand';
 import { NotificationsPanel } from './NotificationsPanel';
@@ -43,7 +45,7 @@ const TOP_PAD = 8;
 const BOT_PAD = 6;
 const DELTA = 7; // §6: 6~8px jitter threshold
 const TOP_ALWAYS = 8; // within this of the top → always shown
-const TIMING = { duration: 200, easing: Easing.out(Easing.quad) };
+// P-031(KB-206): 숨김/복귀 이동은 timing → damped 스프링 (spring.move, 바운스 0)
 
 export function headerHeight(topInset: number) {
   return topInset + TOP_PAD + BAR_H + BOT_PAD;
@@ -62,17 +64,17 @@ export function useStickyScroll() {
     if (y < TOP_ALWAYS) {
       if (shown.value !== 1) {
         shown.value = 1;
-        hidden.value = withTiming(0, TIMING);
+        hidden.value = withSpring(0, spring.move);
       }
     } else if (dy > DELTA) {
       if (shown.value !== 0) {
         shown.value = 0;
-        hidden.value = withTiming(1, TIMING);
+        hidden.value = withSpring(1, spring.move);
       }
     } else if (dy < -DELTA) {
       if (shown.value !== 1) {
         shown.value = 1;
-        hidden.value = withTiming(0, TIMING);
+        hidden.value = withSpring(0, spring.move);
       }
     }
     lastY.value = y;

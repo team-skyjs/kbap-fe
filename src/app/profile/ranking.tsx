@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(226,88,12,0.5)',
     ...shadow.sh1,
   },
-  eyebrow: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 3, color: C.primary },
+  eyebrow: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 3, color: C.primaryText },
   heroEmblem: { marginTop: 4, marginBottom: 2, ...shadow.sh2 },
   tierEn: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.6, lineHeight: 40 },
   tierKo: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3, letterSpacing: 0.2 },
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   gainText: { fontFamily: font.displayBlack, fontSize: 16, color: C.primary },
   breakTotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: -16, marginBottom: -6, marginTop: 4, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, borderStyle: 'dashed' },
   breakTotalLabel: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
-  breakTotalPlus: { fontFamily: font.displayBlack, fontSize: 13.5, color: C.primary },
+  breakTotalPlus: { fontFamily: font.displayBlack, fontSize: 13.5, color: C.primaryText },
 
   // path ladder
   path: { paddingHorizontal: 2, paddingTop: 2 },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.58 },
   rankRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   doneText: { fontFamily: font.bodyBold, fontSize: 12, color: C.riskSafe },
-  atCur: { fontFamily: font.bodyBold, fontSize: 11, color: C.primary },
+  atCur: { fontFamily: font.bodyBold, fontSize: 11, color: C.primaryText },
   atLocked: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink3 },
   nowPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 },
   nowPillText: { fontFamily: font.bodyBold, fontSize: 8.5, letterSpacing: 1, color: '#fff' },
@@ -389,6 +389,6 @@ const styles = StyleSheet.create({
   ctaPts: { borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
   ctaPtsFilled: { backgroundColor: 'rgba(255,255,255,0.24)' },
   ctaPtsGhost: { backgroundColor: PRIMARY_TINT },
-  ctaPtsText: { fontFamily: font.bodyBold, fontSize: 12, color: C.primary },
+  ctaPtsText: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
   ctaPtsTextFilled: { color: '#fff' },
 });
