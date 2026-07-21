@@ -129,6 +129,12 @@ export const IconPlus = (p: IconProps) => (
     <Line x1="5" y1="12" x2="19" y2="12" />
   </Glyph>
 );
+/** P-040(Q-17): 스테퍼용 — 기호를 텍스트로 렌더하면 폰트 어센트가 시각 중심을 틀어놓는다 */
+export const IconMinus = (p: IconProps) => (
+  <Glyph {...p}>
+    <Line x1="5" y1="12" x2="19" y2="12" />
+  </Glyph>
+);
 export const IconLock = (p: IconProps) => (
   <Glyph {...p}>
     <Rect x="5" y="10.5" width="14" height="9" rx="1.6" />

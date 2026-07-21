@@ -467,3 +467,8 @@
 - [x] spice useState(5)→null: 미선택으로 시작, 불꽃 조작해야만 값 확정. 미조작+계속=UNSET(-1), 명시 건너뛰기 존치. UI: 대시(–/10)+선택 힌트(i18n spiceUnsetHint ×10)·불꽃 전체 회색·노브 미표시.
 - [x] 근본 정리: 제출식에서 skipped.spice 제거 — **값의 null 여부가 단일 진실**. finish(spiceFinal) 인자화로 같은 탭 setState의 stale closure 경로 봉쇄(발견된 기저 버그: draft 복귀 skipped=true 상태에서 조작 후 계속해도 UNSET 제출 / 조작 후 건너뛰기가 실값 제출). 조작 즉시 skip 해제(setLevel 래퍼 — draft 저장 일관). draft null 왕복 유지, 프로필 수정 화면 무변.
 - 테스트 +3(onboardingSpiceUnset — 미조작+계속=UNSET/조작 7=실값/건너뛰기=UNSET, 화면 레벨. body -1은 기존 submit.test가 잠금). tsc 0, jest 209/209. JS-only — preview OTA.
+
+## KB-205 재수정 — 스테퍼 −/+ SVG 교체 (2026-07-21, P-040, Q-17)
+- [x] 주문카드 StepBtn의 텍스트 글리프(Baloo2 어센트 편향으로 원 중심 이탈) → IconMinus 신규(수평선 1개)+IconPlus 재사용, stepText 스타일 제거. 크기 20·C.ink·비활성 opacity 무변.
+- [x] 전수 점검: 기호를 아이콘 대용 텍스트로 렌더하는 곳은 order.tsx −/+ 뿐 — 나머지(· 구분점, — 빈값 대시, ≈ 근사, –/10 미선택 대시)는 활자 구두점으로 판단(문장 흐름 내 텍스트, 정렬 무관). 영구 규칙(기호=SVG)은 커맨드 센터가 CLAUDE.md 반영.
+- 스타일/마크업 교체만 — 스테퍼 동작 테스트(orderStepper) 기존 잠금 통과. tsc 0, jest 209/209. JS-only — preview OTA.

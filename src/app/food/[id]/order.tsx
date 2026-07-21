@@ -6,6 +6,7 @@
  * 본문은 place=ko 고정 DATA(orderCard.ts 조립 — 번역 아님), 하단 요약/버튼만
  * reader 언어 i18n. BE 호출 0 — 상세·프로필 캐시 재사용.
  */
+import * as React from 'react';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -14,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
-import { IconClose } from '@/components';
+import { IconClose, IconMinus, IconPlus } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
@@ -59,13 +60,15 @@ export default function OrderCard() {
           </Text>
         )}
 
-        {/* 수량 스테퍼 1~5 — 위 문장의 {n}개가 즉시 바뀐다 */}
+        {/* 수량 스테퍼 1~5 — 위 문장의 {n}개가 즉시 바뀐다.
+            P-040(Q-17): −/+는 텍스트가 아니라 SVG — 폰트 어센트 편향으로 원 중심을
+            벗어나던 문제. 기호는 전부 icons.tsx (영구 규칙). */}
         <View style={styles.stepper}>
-          <StepBtn label="−" disabled={qty <= QTY_MIN} onPress={() => bump(Math.max(QTY_MIN, qty - 1))} />
+          <StepBtn icon={<IconMinus size={20} color={C.ink} />} disabled={qty <= QTY_MIN} onPress={() => bump(Math.max(QTY_MIN, qty - 1))} />
           <Animated.View style={qtyPop}>
             <Text style={styles.qty}>{qty}</Text>
           </Animated.View>
-          <StepBtn label="+" disabled={qty >= QTY_MAX} onPress={() => bump(Math.min(QTY_MAX, qty + 1))} />
+          <StepBtn icon={<IconPlus size={20} color={C.ink} />} disabled={qty >= QTY_MAX} onPress={() => bump(Math.min(QTY_MAX, qty + 1))} />
         </View>
 
         {!!avoid && <Text style={styles.note}>{avoid}</Text>}
@@ -82,10 +85,10 @@ export default function OrderCard() {
   );
 }
 
-function StepBtn({ label, disabled, onPress }: { label: string; disabled: boolean; onPress: () => void }) {
+function StepBtn({ icon, disabled, onPress }: { icon: React.ReactNode; disabled: boolean; onPress: () => void }) {
   return (
     <Pressable style={[styles.step, disabled && styles.stepOff]} onPress={onPress} disabled={disabled} hitSlop={6}>
-      <Text style={styles.stepText}>{label}</Text>
+      {icon}
     </Pressable>
   );
 }
@@ -109,7 +112,6 @@ const styles = StyleSheet.create({
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   step: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   stepOff: { opacity: 0.35 },
-  stepText: { fontFamily: font.display, fontSize: 22, color: C.ink, lineHeight: 26 },
   qty: { fontFamily: font.display, fontSize: 24, color: C.ink, minWidth: 30, textAlign: 'center' },
   note: { fontFamily: font.koBold, fontSize: 19, lineHeight: 29, color: C.ink2, textAlign: 'center' },
   caption: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink3, textAlign: 'center', marginTop: 4 },
