@@ -400,3 +400,4 @@
 - [x] BE가 lang을 모든 대상 API에서 필수 승격(7/20 밤) — /home만 미전송이라 홈 조회 400날 상태. fetchHome()을 `/home?lang=${apiLang()}`로(/foods 동일 패턴), apiLang import 추가. bootGate 프리페치 키는 이미 ['home', lang]이라 정합.
 - [x] 표시 언어를 파라미터가 담당 → Q-13 언어 전환 잔상·게스트/미설정 영어도 동시 해결(회원 DB appLanguage 기반 → 요청 언어 기반). appLanguage PATCH(선호 저장)는 무변.
 - 테스트 +1: /home 요청 URL에 lang 포함 잠금. tsc 0, jest 165/165. JS-only.
+- 발행(🔴긴급 홈 400): preview OTA Android 019f827f-1b3d-7727(cbbec117) + production OTA iOS 019f8283-3088-74f7(8d0d5504 = 테플 빌드 일치). 프로덕션 스왑 = _photostyle gitignore 제거 + app.json·splash·package.json·scan.tsx를 pre-P018/P022(0e9f884/eecbe52~1)로, 후 전량 복원.
