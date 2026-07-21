@@ -176,8 +176,8 @@ export default function EditProfile() {
         </View>
 
         {/* linked provider (read-only) — KB-203/P-029: email은 프로필 계약에 없어
-            항상 undefined였음 → 가입 소셜(provider)로 교체. 아이콘은 로그인 화면과
-            동일 SVG(IconApple/IconGoogleG) 재사용, 미지원·누락은 중립 폴백. */}
+            항상 undefined였음 → 가입 소셜(provider)로 교체. P-034(Q-16): 아이콘은
+            공식 로고 — 애플 필드 마크 + 구글 4색 G(로그인 버튼과 SSOT). 미지원·누락 중립 폴백. */}
         <View style={styles.sec}>
           <Text style={styles.secTitle}>{t('editProfile.linkedTitle')}</Text>
           <View style={styles.acctList}>
@@ -186,7 +186,7 @@ export default function EditProfile() {
                 {me?.provider === 'APPLE' ? (
                   <IconApple size={17} color={C.ink} />
                 ) : me?.provider === 'GOOGLE' ? (
-                  <IconGoogleG size={17} color={C.ink} />
+                  <IconGoogleG size={17} />
                 ) : (
                   <IconProfile size={17} color={C.ink2} />
                 )}
