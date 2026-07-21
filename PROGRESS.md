@@ -446,3 +446,6 @@
 ## KB-203 재수정 — 연동 아이콘 공식 로고 (2026-07-21, P-034, Q-16 반려 대응)
 - [x] icons.tsx의 IconApple/IconGoogleG 스트로크 근사치를 공식 로고로 교체(이름 유지 = 사용처 무변): 애플 필드 마크(단색 채움, 기본 ink) + 구글 4색 G. SocialAuthButtons의 로컬 GoogleG 제거하고 공용 IconGoogleG로 SSOT화 — 로그인 버튼과 연동 행이 같은 마크. 로그인 화면 무변(애플은 OS 네이티브 버튼).
 - 테스트 +2(brandIcons — 4색 payload 고정·애플 채움/스트로크 회귀 방지). tsc 0, jest 200/200. JS-only — preview OTA(프로덕션 묶음 후보).
+
+## KB-207 재수정 — 기피 칩 애니메이션 제거 (2026-07-21, P-035, Q-11 피드백)
+- [x] P-032 ①(칩 ZoomIn/ZoomOut) 완전 제거 — 연속 선택 화면에서 매 칩 바운스가 소음(절제 원칙 실사례). 온보딩·프로필 공용 IngredientFilter 한 곳 원복, P-026 고정높이 36·placeholder 무변, 타 화면 P-032 효과 무변. tsc 0, jest 200/200. JS-only — preview OTA.
