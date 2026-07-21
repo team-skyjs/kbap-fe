@@ -12,7 +12,7 @@ import { useFocusEffect } from 'expo-router';
 import i18n from '../i18n';
 import type { HomeResponse } from '../api/types';
 import type { MenuSummaryWire } from '../api/foodListTypes';
-import { api } from '../api/client';
+import { api, apiLang } from '../api/client';
 import { adaptMenuSummary } from '../api/foodAdapter';
 import { MOCK_HOME } from '../mocks/foods';
 
@@ -29,7 +29,10 @@ interface HomeWire {
 /** 홈 피드 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
 export async function fetchHome(): Promise<HomeResponse> {
   if (MOCK_MODE_HOME) return MOCK_HOME;
-  const wire = await api.get<HomeWire>('/home');
+  // KB-199(P-023): lang 필수 승격(BE 7/20 밤) — 미전송 시 홈 400. /foods와 동일 패턴.
+  // 표시 언어를 파라미터가 담당해 Q-13 언어 전환 잔상·게스트/미설정 영어도 해소
+  // (회원 DB appLanguage 기반 번역 → 요청 언어 기반).
+  const wire = await api.get<HomeWire>(`/home?lang=${apiLang()}`);
   return {
     authenticated: wire.authenticated,
     avoided: wire.avoidedSubstances ?? [],

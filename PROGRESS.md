@@ -395,3 +395,8 @@
 - [x] 수정: `ListHeaderComponent={isError ? null : Header}` — 에러/오프라인 시 헤더 미렌더 → QueryErrorBlock 전체화면(홈 탭 톤 통일). 로딩(스켈레톤)·정상·빈 상태는 헤더 유지. StickyHeader(브랜드 크롬)는 홈 탭과 동일하게 유지.
 - 테스트 +1: 에러→헤더(food.title·searchPlaceholder) 미렌더 / 정상→헤더 렌더 잠금. tsc 0, jest 164/164. JS-only — preview OTA.
 - 발행: preview OTA — Android update 019f7f49-e9ad-74bf (runtime cbbec117 = build1 일치). build1 호환 스왑 후 복원.
+
+## KB-199 홈 lang 파라미터 — /home?lang= (2026-07-21, P-023) 🔴긴급
+- [x] BE가 lang을 모든 대상 API에서 필수 승격(7/20 밤) — /home만 미전송이라 홈 조회 400날 상태. fetchHome()을 `/home?lang=${apiLang()}`로(/foods 동일 패턴), apiLang import 추가. bootGate 프리페치 키는 이미 ['home', lang]이라 정합.
+- [x] 표시 언어를 파라미터가 담당 → Q-13 언어 전환 잔상·게스트/미설정 영어도 동시 해결(회원 DB appLanguage 기반 → 요청 언어 기반). appLanguage PATCH(선호 저장)는 무변.
+- 테스트 +1: /home 요청 URL에 lang 포함 잠금. tsc 0, jest 165/165. JS-only.
