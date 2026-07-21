@@ -449,3 +449,8 @@
 
 ## KB-207 재수정 — 기피 칩 애니메이션 제거 (2026-07-21, P-035, Q-11 피드백)
 - [x] P-032 ①(칩 ZoomIn/ZoomOut) 완전 제거 — 연속 선택 화면에서 매 칩 바운스가 소음(절제 원칙 실사례). 온보딩·프로필 공용 IngredientFilter 한 곳 원복, P-026 고정높이 36·placeholder 무변, 타 화면 P-032 효과 무변. tsc 0, jest 200/200. JS-only — preview OTA.
+
+## KB-174 재수정 — 음식탭 캐시+오프라인 J4·스피너 공전 (2026-07-21, P-036, Q-08 반려)
+- [x] ① food.tsx: 에러/오프라인 시 FlatList 자체를 전체화면 QueryErrorBlock으로 조건부 대체 — P-027의 ListEmptyComponent 경유는 캐시가 있으면 리스트가 비어있지 않아 에러 화면 미표시(캐시 목록+무헤더 어중간 상태). 리스트 미렌더로 onEndReached·푸터 스피너 경로 원천 차단, 헤더 미렌더 유지.
+- [x] ② Spinner.tsx: 회전 래퍼 width/height=size + alignSelf center — 너비 미지정으로 FlatList 푸터 직속에서 전폭 stretch된 띠가 통째로 회전(아이콘 공전). 사용처 전수(scan/search/detail/saved 등 좁은 컨테이너) 무회귀 — 크기 고정은 기존 렌더와 동일 결과.
+- 테스트 +2: 캐시 존재+NETWORK 에러 → J4·캐시 카드/헤더 미렌더(tabStates) · Spinner 래퍼 크기 고정(uiPolish). tsc 0, jest 202/202. JS-only — preview OTA.

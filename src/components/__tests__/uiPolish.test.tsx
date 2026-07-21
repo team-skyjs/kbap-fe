@@ -18,6 +18,8 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => mockWithSpring(v),
     withTiming: (v: unknown) => v,
+    withRepeat: (v: unknown) => v,
+    Easing: { linear: () => 0, out: () => () => 0, quad: 0 },
   };
 });
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', script: 'latin' }) }));
@@ -26,6 +28,7 @@ import { color } from '@/lib/theme';
 import { PRESS_SCALE } from '@/lib/motion';
 import { Txt } from '../Txt';
 import { Btn } from '../Btn';
+import { Spinner } from '../Spinner';
 
 /** WCAG 2.x 상대 휘도 대비 */
 function contrast(hexA: string, hexB: string): number {
@@ -76,6 +79,17 @@ describe('Txt (A2) — 시스템 큰글씨 상한', () => {
     expect(t1.root.findAllByProps({ maxFontSizeMultiplier: 1.3 }).length).toBeGreaterThanOrEqual(1);
     const t2 = render(<Txt maxFontSizeMultiplier={2}>hi</Txt>);
     expect(t2.root.findAllByProps({ maxFontSizeMultiplier: 2 }).length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('Spinner (P-036/Q-08 ②) — 회전 래퍼 크기 고정', () => {
+  it('래퍼 width/height = size + alignSelf center (전폭 stretch → 공전 버그 방지)', () => {
+    const tree = render(<Spinner size={16} />);
+    const wrappers = tree.root.findAll((n) => JSON.stringify(n.props?.style ?? '').includes('"alignSelf":"center"'));
+    expect(wrappers.length).toBeGreaterThanOrEqual(1);
+    const style = JSON.stringify(wrappers[0].props.style);
+    expect(style).toContain('"width":16');
+    expect(style).toContain('"height":16');
   });
 });
 

@@ -85,37 +85,38 @@ export default function Food() {
     </View>
   );
 
-  const Empty = isLoading ? (
-    <SkeletonFoodGrid />
-  ) : isError ? (
-    // P-007(KB-174): 공용 에러/오프라인 렌더로 교체 — J3 err 톤 + J4 분기 통일
-    <QueryErrorBlock error={error} onRetry={() => void refetch()} />
-  ) : null;
-
   return (
     <View style={styles.root}>
-      <Animated.FlatList
-        data={list}
-        keyExtractor={(f: FoodCard) => f.foodId}
-        numColumns={2}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110, paddingHorizontal: 18, gap: 12 }}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
-        // P-027(KB-174 후속): 오프라인/에러 시 헤더(제목·부제·검색바) 미렌더 →
-        // QueryErrorBlock이 전체화면(홈 탭과 톤 통일). 로딩·정상·빈 상태는 헤더 유지.
-        ListHeaderComponent={isError ? null : Header}
-        ListEmptyComponent={Empty}
-        ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
-        onEndReachedThreshold={0.6}
-        onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-        }}
-        renderItem={({ item }) => (
-          <BrowseCard food={item} hasRestrictions={hasR} guest={isGuest} onPress={() => router.push(`/food/${item.foodId}` as Href)} />
-        )}
-      />
+      {isError ? (
+        /* P-036(Q-08 ①): 에러/오프라인은 **캐시 유무 무관** 전체화면 J3/J4 —
+           P-027의 ListEmptyComponent 경유는 캐시가 있으면 리스트가 비어있지 않아
+           에러 화면이 안 떴다(캐시 목록+무헤더 어중간 상태). 리스트 자체를 대체
+           하므로 onEndReached·푸터 스피너 경로도 원천 차단. 헤더 미렌더는 유지. */
+        <View style={styles.errorFill}>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} />
+        </View>
+      ) : (
+        <Animated.FlatList
+          data={list}
+          keyExtractor={(f: FoodCard) => f.foodId}
+          numColumns={2}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110, paddingHorizontal: 18, gap: 12 }}
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
+          ListHeaderComponent={Header}
+          ListEmptyComponent={isLoading ? <SkeletonFoodGrid /> : null}
+          ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
+          onEndReachedThreshold={0.6}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+          renderItem={({ item }) => (
+            <BrowseCard food={item} hasRestrictions={hasR} guest={isGuest} onPress={() => router.push(`/food/${item.foodId}` as Href)} />
+          )}
+        />
+      )}
 
       <StickyHeader hidden={hidden} mode="brand" bell signIn={isGuest} onSignIn={() => router.push('/login' as Href)} />
     </View>
@@ -160,6 +161,7 @@ export function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: Fo
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  errorFill: { flex: 1, justifyContent: 'center' }, // P-036: 전체화면 J3/J4
   head: { paddingTop: 4, gap: 16 },
 
   greet: { gap: 2 },

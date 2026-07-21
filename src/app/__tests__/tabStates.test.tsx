@@ -137,6 +137,17 @@ it('음식 탭: 에러 → J3 렌더 (Try again 배선)', () => {
   expect(texts(tree, 'states.errorTitle')).toBeGreaterThanOrEqual(1);
 });
 
+// P-036(Q-08 ① 반려): 캐시가 있어도 에러면 전체화면 J4 — ListEmptyComponent
+// 경유는 캐시 목록이 남아 에러 화면이 안 떴다. 리스트/카드 미렌더까지 잠근다.
+it('음식 탭: 캐시 존재 + NETWORK 에러 → 전체화면 J4, 캐시 카드·헤더 미렌더', () => {
+  const cached = [{ foodId: '1', name: 'Kimchi', nameKo: '김치', photoUrl: null, risk: 'safe' as const, overall: { average: null, count: 0 } }];
+  mockUseInfiniteFoods.mockReturnValue({ ...ERR_NET, ...FOODS_EXTRA, data: cached });
+  const tree = render(<Food />);
+  expect(texts(tree, 'states.offlineTitle')).toBeGreaterThanOrEqual(1);
+  expect(texts(tree, 'Kimchi')).toBe(0); // 캐시 카드 미렌더 (리스트 자체 대체)
+  expect(texts(tree, 'food.title')).toBe(0); // 헤더 미렌더 유지 (P-027)
+});
+
 // P-027(KB-174 후속): 에러/오프라인 시 헤더(제목·검색바) 미렌더 — 전체화면 에러
 it('음식 탭: 에러 → 헤더(제목·검색바) 미렌더, 정상 → 렌더', () => {
   mockUseInfiniteFoods.mockReturnValue({ ...ERR_500, ...FOODS_EXTRA, data: undefined });

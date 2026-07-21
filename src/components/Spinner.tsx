@@ -14,7 +14,9 @@ export function Spinner({ size = 16, color = C.ink2 }: { size?: number; color?: 
   }, [deg]);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${deg.value}deg` }] }));
   return (
-    <Animated.View style={style}>
+    /* P-036(Q-08 ②): 크기 고정 — 너비 미지정 상태로 FlatList 푸터 직속에 놓이면
+       전폭 stretch된 띠가 통째로 회전해 아이콘이 화면을 공전했다. 회전축 = 자기 중심. */
+    <Animated.View style={[{ width: size, height: size, alignSelf: 'center' }, style]}>
       <Svg width={size} height={size} viewBox="0 0 24 24">
         {/* ~3/4 arc: dash of ~42 over circumference 2π·9 ≈ 56.5 */}
         <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray="42 100" />
