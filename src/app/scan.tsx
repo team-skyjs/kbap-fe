@@ -31,6 +31,7 @@ import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
 import { coverCropRect } from '@/lib/scan/coverCrop';
+import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
 import { useMe } from '@/lib/data/useMe';
@@ -101,6 +102,8 @@ export default function Scan() {
   // 두 소스가 같은 camOrientation state를 먹인다 — 오버레이 로직은 무변 재사용.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
+  // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
+  const [nudgeHidden, setNudgeHidden] = useState(isNudgeDismissed());
   const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
 
   // KB-198: Android 전용 센서 방향 감지 — 앱은 세로 고정, 힌트만 반응.
@@ -334,6 +337,26 @@ export default function Scan() {
         )}
         {Close}
         {GateSheet}
+        {/* P-038(KB-212): 빈 프로필 넛지 — 회원 && 기피 0 && 세션 내 미닫음.
+            가치 증명 순간(스캔 직후)의 비차단 1줄 배너, absolute라 레이아웃 안 밀음.
+            게스트는 기존 로그인 게이트 흐름이라 제외. 닫으면 세션 동안만 숨김. */}
+        {!isGuest && !!me && me.restrictions.length === 0 && !nudgeHidden && (
+          <View style={[styles.nudge, { top: insets.top + 8 }]}>
+            <Pressable style={styles.nudgeBody} onPress={() => router.push('/profile/restrictions' as Href)}>
+              <Text style={styles.nudgeText} numberOfLines={2}>{t('scan.nudge')}</Text>
+              <IconChevron size={13} color="rgba(255,255,255,0.75)" />
+            </Pressable>
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                dismissNudge();
+                setNudgeHidden(true);
+              }}
+            >
+              <IconClose size={14} color="rgba(255,255,255,0.75)" />
+            </Pressable>
+          </View>
+        )}
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
           {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
@@ -564,6 +587,10 @@ const styles = StyleSheet.create({
   shutterOff: { opacity: 0.35 },
   rotateOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
   rotateText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff', textAlign: 'center', maxWidth: 260, lineHeight: 22 },
+  // P-038: 빈 프로필 넛지 — Close 버튼(좌 16, 폭 40) 우측에 정렬, 리스트 여백(60) 위 오버레이
+  nudge: { position: 'absolute', left: 64, right: 16, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', borderRadius: 12, paddingLeft: 12, paddingRight: 10, paddingVertical: 8 },
+  nudgeBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  nudgeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 12, color: '#fff', lineHeight: 16 },
   noticeBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },
   noticeCard: { backgroundColor: '#fff', borderRadius: 20, padding: 22, alignItems: 'center', gap: 10, maxWidth: 340, alignSelf: 'stretch' },
   noticeTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, textAlign: 'center' },

@@ -167,7 +167,8 @@
     "resultTitle": "{{count}} dishes scanned",
     "unmatchedNote": "Not in our catalog — confirm with the owner.",
     "degradedNote": "Some items couldn't be assessed this time — treat them with care.",
-    "spikeNote": "Spike: risk comes live from the backend (currently a mock)."
+    "spikeNote": "Spike: risk comes live from the backend (currently a mock).",
+    "nudge": "Set your avoid list and we'll flag what to skip on this menu"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

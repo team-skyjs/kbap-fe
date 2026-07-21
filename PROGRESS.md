@@ -457,3 +457,8 @@
 
 ## KB-125 랭킹 UI 2건 — 현재 카드 정렬·점수내역 코너 (2026-07-21, P-037, Q-15)
 - [x] ① nodeBodyCur에 marginHorizontal:-14.5(패딩13+테두리1.5 상쇄) — 현재 등급 카드 내부 텍스트가 비카드 행들과 같은 좌/우 기준선, 테두리는 바깥으로. ② breakTotal에 하단 코너 radius 19(카드 20−테두리 1) — 음수 마진 확장 배경의 코너 뚫림 봉합. overflow:hidden 회피(P-024 안드 elevation 회색 선례). 스타일 상수만 — 신규 로직 없음. tsc 0, jest 202/202. JS-only — preview OTA.
+
+## KB-212 빈 프로필 첫 스캔 배너 (2026-07-21, P-038)
+- [x] 스캔 결과 상단 비차단 1줄 배너 — 회원 && 기피 0 && 세션 내 미닫음일 때만(게스트 제외 — 라우트 가드로 결과 화면 자체 미진입). absolute 오버레이(Close 버튼 우측 정렬)라 리스트/오버레이 토글 레이아웃 불변. 탭→/profile/restrictions, ×→세션 억제(모듈 플래그 nudgeSession.ts — 영구 아님, 재실행 시 리셋이 사양).
+- [x] i18n scan.nudge ×10, SVG 아이콘만(IconChevron/IconClose).
+- 테스트 +4(scanNudge): 기피0 노출/기피1+ 미노출/게스트 미노출/닫기 후 재마운트 억제. tsc 0, jest 206/206. JS-only — preview OTA(단, 스캔 화면이라 build1 preview에선 스왑 특성상 미확인 — 차기 빌드에서 확인).
