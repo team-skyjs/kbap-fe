@@ -465,7 +465,8 @@
     "groups": {
       "Dietary": "Chế độ ăn",
       "Religion": "Tôn giáo"
-    }
+    },
+    "spiceUnsetHint": "Chạm vào ngọn lửa để chọn"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

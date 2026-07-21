@@ -465,7 +465,8 @@
     "groups": {
       "Dietary": "Dieta",
       "Religion": "Religión"
-    }
+    },
+    "spiceUnsetHint": "Toca una llama para elegir"
   },
   "editProfile": {
     "title": "Editar perfil",

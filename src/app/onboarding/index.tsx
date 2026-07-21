@@ -73,7 +73,10 @@ export default function Onboarding() {
   const [photoError, setPhotoError] = useState(false);
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
-  const [spice, setSpice] = useState(5);
+  // P-039(KB-195 재수정): 기본 **미선택(null)** — useState(5)는 미조작+계속이
+  // "5 선택"으로 제출되는 구멍이었다(미설정=5 혼선의 뿌리). 불꽃을 조작해야만
+  // 값 확정, 미조작 상태의 계속 = UNSET(건너뛰기와 동일).
+  const [spice, setSpice] = useState<number | null>(null);
   const [interests, setInterests] = useState<Set<string>>(new Set());
   const [agreed, setAgreed] = useState(false);
   // skips are explicit states — they submit as UNSET, distinct from "chose none"
@@ -96,7 +99,7 @@ export default function Onboarding() {
         setNationality(d.nationality);
         setLang(d.language as SupportedLang);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
-        setSpice(d.spice ?? 5);
+        setSpice(d.spice ?? null); // P-039: 미선택도 null로 왕복
         setSkipped({ restrictions: d.restrictions === null, spice: d.spice === null });
         setStep(ORDER.includes(d.step) ? d.step : 'spice'); // clamp (e.g. flagged-off step)
       }
@@ -142,7 +145,11 @@ export default function Onboarding() {
   // Skips go out as explicit UNSET; the draft clears only after success.
   // 실패(검증 400·네트워크)는 화면에 남아 에러를 표시한다 — 미저장 상태로
   // 홈 진입 금지 (KB-75 검토 수정, false-safe).
-  const finish = async () => {
+  // P-039: 맵기는 **값의 null 여부가 단일 진실** — skipped.spice 플래그를 제출식에서
+  // 제거. 같은 탭에서 setState 직후 finish()가 실행되면 closure가 stale이라
+  // (draft 복귀 skipped=true → 조작 후에도 UNSET 제출 등) 새는 경로가 있었다.
+  // 호출측(계속/건너뛰기)이 확정값을 인자로 넘긴다 — 기본값은 커밋된 state.
+  const finish = async (spiceFinal: number | null = spice) => {
     if (submitting) return;
     setSubmitting(true);
     setSubmitError(false);
@@ -152,7 +159,8 @@ export default function Onboarding() {
         nationality,
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
-        spiceTolerance: skipped.spice ? UNSET : spice,
+        // P-039: 미조작(null)=건너뛰기=UNSET — 안 건드림은 미설정이다
+        spiceTolerance: spiceFinal == null ? UNSET : spiceFinal,
         profileImageUrl: photoPath, // path(objectKey), null = 미선택 → 필드 생략 (P-006)
       });
       done.current = true; // block any further draft writes before clearing
@@ -177,12 +185,20 @@ export default function Onboarding() {
   const next = () => (idx === ORDER.length - 1 ? void finish() : setStep(ORDER[idx + 1]));
   const skipStep = () => {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: true }));
-    if (step === 'spice') setSkipped((s) => ({ ...s, spice: true }));
+    if (step === 'spice') {
+      // 조작했다가 건너뛰어도 미설정 — 값도 비워 draft·제출 일관 (P-039)
+      setSkipped((s) => ({ ...s, spice: true }));
+      setSpice(null);
+      if (idx === ORDER.length - 1) return void finish(null); // stale closure 회피 — 확정값 명시
+    }
     next();
   };
   const answerStep = () => {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: false }));
-    if (step === 'spice') setSkipped((s) => ({ ...s, spice: false }));
+    if (step === 'spice') {
+      setSkipped((s) => ({ ...s, spice: false }));
+      if (idx === ORDER.length - 1) return void finish(spice); // 화면에 보이는 그 값 그대로
+    }
     next();
   };
 
@@ -271,7 +287,18 @@ export default function Onboarding() {
         )}
 
         {step === 'spice' && (
-          <Spice level={spice} setLevel={setSpice} onContinue={answerStep} onSkip={skipStep} t={t} />
+          <Spice
+            level={spice}
+            // P-039: 조작 즉시 skip 해제 — draft 복귀(skipped=true) 후 조작분이
+            // draft 저장에서 null로 지워지지 않게 (저장식이 skipped를 참조)
+            setLevel={(n) => {
+              setSpice(n);
+              setSkipped((s) => (s.spice ? { ...s, spice: false } : s));
+            }}
+            onContinue={answerStep}
+            onSkip={skipStep}
+            t={t}
+          />
         )}
 
         {step === 'interests' && (
@@ -410,31 +437,34 @@ function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle:
   );
 }
 
-function Spice({ level, setLevel, onContinue, onSkip, t }: { level: number; setLevel: (n: number) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+function Spice({ level, setLevel, onContinue, onSkip, t }: { level: number | null; setLevel: (n: number) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} />
       <View style={{ alignItems: 'center', gap: 8, marginTop: 8 }}>
+        {/* P-039: 미선택은 값처럼 보이는 착시 제거 — 대시 + 선택 힌트, 노브 미표시 */}
         <Text style={styles.bignum}>
-          {level}
+          {level ?? '–'}
           <Text style={styles.bignumDen}>/10</Text>
         </Text>
         <View style={styles.analogy}>
-          <IconFlame size={15} color={C.primary} />
-          <Text style={styles.analogyText}>≈ {t(SPICE_SCALE[level])}</Text>
+          <IconFlame size={15} color={level == null ? C.ink3 : C.primary} />
+          <Text style={[styles.analogyText, level == null && { color: C.ink3 }]}>
+            {level == null ? t('onboarding.spiceUnsetHint') : `≈ ${t(SPICE_SCALE[level])}`}
+          </Text>
         </View>
       </View>
       <View style={{ marginTop: 22 }}>
         <View style={styles.heatRow}>
           {Array.from({ length: 11 }).map((_, i) => (
             <Pressable key={i} onPress={() => setLevel(i)} hitSlop={6}>
-              <IconFlame size={18} color={i <= level ? C.primary : C.ink3} />
+              <IconFlame size={18} color={level != null && i <= level ? C.primary : C.ink3} />
             </Pressable>
           ))}
         </View>
         <View style={styles.track}>
-          <View style={[styles.trackFill, { width: `${level * 10}%` }]} />
-          <View style={[styles.knob, { left: `${level * 10}%` }]} />
+          <View style={[styles.trackFill, { width: `${(level ?? 0) * 10}%` }]} />
+          {level != null && <View style={[styles.knob, { left: `${level * 10}%` }]} />}
         </View>
         <View style={styles.trackLabels}>
           <Text style={styles.tag}>{t('onboarding.spiceNone')}</Text>

@@ -465,7 +465,8 @@
     "groups": {
       "Dietary": "Pola Makan",
       "Religion": "Agama"
-    }
+    },
+    "spiceUnsetHint": "Ketuk api untuk memilih"
   },
   "editProfile": {
     "title": "Edit profil",

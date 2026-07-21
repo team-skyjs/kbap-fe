@@ -465,7 +465,8 @@
     "groups": {
       "Dietary": "飲食",
       "Religion": "宗教"
-    }
+    },
+    "spiceUnsetHint": "點擊火焰進行選擇"
   },
   "editProfile": {
     "title": "編輯個人資料",

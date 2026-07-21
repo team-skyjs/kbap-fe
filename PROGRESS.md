@@ -462,3 +462,8 @@
 - [x] 스캔 결과 상단 비차단 1줄 배너 — 회원 && 기피 0 && 세션 내 미닫음일 때만(게스트 제외 — 라우트 가드로 결과 화면 자체 미진입). absolute 오버레이(Close 버튼 우측 정렬)라 리스트/오버레이 토글 레이아웃 불변. 탭→/profile/restrictions, ×→세션 억제(모듈 플래그 nudgeSession.ts — 영구 아님, 재실행 시 리셋이 사양).
 - [x] i18n scan.nudge ×10, SVG 아이콘만(IconChevron/IconClose).
 - 테스트 +4(scanNudge): 기피0 노출/기피1+ 미노출/게스트 미노출/닫기 후 재마운트 억제. tsc 0, jest 206/206. JS-only — preview OTA(단, 스캔 화면이라 build1 preview에선 스왑 특성상 미확인 — 차기 빌드에서 확인).
+
+## KB-195 재수정 — 맵기 미조작=미설정 (2026-07-21, P-039 🔴)
+- [x] spice useState(5)→null: 미선택으로 시작, 불꽃 조작해야만 값 확정. 미조작+계속=UNSET(-1), 명시 건너뛰기 존치. UI: 대시(–/10)+선택 힌트(i18n spiceUnsetHint ×10)·불꽃 전체 회색·노브 미표시.
+- [x] 근본 정리: 제출식에서 skipped.spice 제거 — **값의 null 여부가 단일 진실**. finish(spiceFinal) 인자화로 같은 탭 setState의 stale closure 경로 봉쇄(발견된 기저 버그: draft 복귀 skipped=true 상태에서 조작 후 계속해도 UNSET 제출 / 조작 후 건너뛰기가 실값 제출). 조작 즉시 skip 해제(setLevel 래퍼 — draft 저장 일관). draft null 왕복 유지, 프로필 수정 화면 무변.
+- 테스트 +3(onboardingSpiceUnset — 미조작+계속=UNSET/조작 7=실값/건너뛰기=UNSET, 화면 레벨. body -1은 기존 submit.test가 잠금). tsc 0, jest 209/209. JS-only — preview OTA.
