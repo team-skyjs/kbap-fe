@@ -177,6 +177,10 @@
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",
     "done": "Xong, tôi đã có câu trả lời!"
   },
+  "order": {
+    "cta": "Đặt món này",
+    "caption": "Đưa màn hình này cho nhân viên — vừa gọi món vừa báo nguyên liệu bạn cần tránh."
+  },
   "profile": {
     "rankingTitle": "Xếp hạng",
     "levelPts": "Cấp {{level}} · {{score}} điểm",

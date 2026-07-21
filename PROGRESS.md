@@ -418,3 +418,9 @@
 - [x] capture 경로에 expo-image-manipulator 크롭 배선(새 API manipulate→renderAsync→saveAsync). **지연 require**(expo-sensors 선례 — 미탑재 빌드 크래시 방지), 실패 시 원본 폴백으로 스캔 지속. 원본(과다 캡처)은 크롭 직후 삭제(KB-137 캐시 위생). 업로드·OCR·결과 "원본 사진" 전부 크롭본. 오버레이 마커는 preview 정규화 공간이라 정합 유지. 갤러리 경로는 대상 아님(미리보기 없음).
 - 테스트 +5(coverCrop.test.ts): 좌우 크롭(4:3 센서×세로 폰 실측 치수)/상하 크롭/비율 일치 null/무효 입력 null/경계 불변식. tsc 0, jest 176/176.
 - ⚠️ **OTA 불가 — 네이티브(expo-image-manipulator) 추가.** expo-sensors(P-022)와 같은 빌드(안드 빌드2/차기 iOS)에 배치. 그 전 빌드에선 lazy-require 폴백으로 크롭만 생략.
+
+## KB-205 음식 상세 주문+고지 원카드 (2026-07-21, P-030)
+- [x] orderCard.ts 순수 조립: 을/를 받침 산술 분기(비한글은 병기 폴백), ko 라벨은 `getFixedT('ko')` 고정(UI 언어 무관 — place=ko 헌법), 기피 나열 6개 초과 "외 n개" 접기(조사는 '개'에), 기피 0개 → 고지 null(순수 주문 카드). 종교·식이 한 줄은 코드 보유 시 조건부 — ⚠️ 현행 와이어는 재료 81종만 왕복이라 live에선 미도달(서버 확장 시 자동 활성).
+- [x] order.tsx: owner.tsx 동일 패밀리 풀스크린 카드 — 메뉴명 하이라이트+수량 스테퍼(1~5, SVG 없이 텍스트 ±), 고지 문단, reader 요약 캡션(order.caption)+닫기(owner.done 재사용). 상세·프로필 캐시 재사용, BE 호출 0.
+- [x] 상세 최하단 CTA(order.cta): 개인화 판정 safe/caution만 노출(danger·unable·게스트 미노출). 빈 프로필은 false-safe 강등으로 caution → CTA 유지(순수 주문 카드). i18n cta/caption ×10.
+- 테스트 +16(orderCard.test.ts 9 + orderCta.test.tsx 7): 을/를·ko 고정·0개 생략·접기·CTA 노출 조건·카드 문단 유무. tsc 0, jest 192/192. JS-only — preview OTA.

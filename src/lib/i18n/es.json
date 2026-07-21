@@ -177,6 +177,10 @@
     "caption": "Muestra esta pantalla al personal del restaurante",
     "done": "¡Listo, tengo mi respuesta!"
   },
+  "order": {
+    "cta": "Pedir este plato",
+    "caption": "Muestra esta pantalla al personal: transmite tu pedido y los ingredientes que no puedes comer."
+  },
   "profile": {
     "rankingTitle": "Clasificación",
     "levelPts": "Nv {{level}} · {{score}} pts",

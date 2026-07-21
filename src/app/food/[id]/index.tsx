@@ -326,6 +326,17 @@ function Registered({
           })}
         </View>
       </View>
+
+      {/* KB-205(P-030): 안전 판정의 다음 행동 = 주문 — safe/caution만 노출.
+          danger는 주문 유도 부적절, unable은 기존 '사장님께 확인' 카드 몫.
+          caution은 위 주의 문구·근거 유지된 채 아래에 붙는다. */}
+      {!guest && (dishRisk === 'safe' || dishRisk === 'caution') && (
+        <View style={styles.sec}>
+          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => router.push(`/food/${id}/order` as Href)}>
+            {t('order.cta')}
+          </Btn>
+        </View>
+      )}
     </>
   );
 }

@@ -177,6 +177,10 @@
     "caption": "Tunjukkan layar ini kepada staf restoran",
     "done": "Selesai, saya sudah dapat jawabannya!"
   },
+  "order": {
+    "cta": "Pesan menu ini",
+    "caption": "Tunjukkan layar ini ke staf — pesanan dan bahan pantangan tersampaikan sekaligus."
+  },
   "profile": {
     "rankingTitle": "Peringkat",
     "levelPts": "Lv {{level}} · {{score}} poin",

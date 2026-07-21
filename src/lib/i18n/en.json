@@ -173,6 +173,10 @@
     "caption": "Show this screen to the restaurant staff",
     "done": "Done, got my answer!"
   },
+  "order": {
+    "cta": "Order this dish",
+    "caption": "Show this screen to the staff — it places your order and lists what you can't eat."
+  },
   "profile": {
     "rankingTitle": "Ranking",
     "levelPts": "Lv {{level}} · {{score}} pts",

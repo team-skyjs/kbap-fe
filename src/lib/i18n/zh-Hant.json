@@ -177,6 +177,10 @@
     "caption": "將此畫面出示給餐廳員工看",
     "done": "完成，我得到答案了！"
   },
+  "order": {
+    "cta": "點這道菜",
+    "caption": "將此畫面出示給店員 — 同時傳達點餐與忌口食材。"
+  },
   "profile": {
     "rankingTitle": "排名",
     "levelPts": "Lv {{level}} · {{score}} 分",
