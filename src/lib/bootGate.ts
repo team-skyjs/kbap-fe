@@ -40,6 +40,20 @@ export async function gateSplash(opts: {
 }
 
 /**
+ * P-041(KB-152 재수정, Q-05): **정리(cleanup)가 프리페치보다 선행** — 순서
+ * 불변식의 단일 구현. 신규 설치 첫 부팅에서 프리페치가 아직 안 지워진 옛
+ * Keychain 토큰(hasBeSession)으로 /home·/me를 인증 프리페치 → 홈 캐시가 이전
+ * 계정으로 오염되던 레이스(프라이버시 — 중고폰·공용폰 타인 데이터 노출).
+ * cleanup 실패도 프리페치는 진행(부트 불막음). gateSplash min/cap 시맨틱 무변.
+ */
+export function prefetchAfterCleanup(
+  cleanupDone: Promise<unknown>,
+  prefetch: () => Promise<void> = prefetchBootData,
+): Promise<void> {
+  return cleanupDone.catch(() => {}).then(() => prefetch());
+}
+
+/**
  * 부트 프리페치 — 홈·음식 목록(+세션 있으면 me). 저장 언어를 먼저 적용해
  * (LocaleProvider 마운트 전) 캐시 키·Accept-Language 가 실키와 일치하게 한다.
  * 어떤 실패도 삼킨다 — 부트를 막지 않고, 화면 쿼리가 정상 경로로 재시도.

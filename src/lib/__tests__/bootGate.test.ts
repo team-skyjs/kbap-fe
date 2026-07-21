@@ -64,3 +64,30 @@ it('프리페치 reject → hide 지연 없음 (min에 정확히 hide)', async (
   await flush();
   expect(s.done).toBe(true);
 });
+
+/* ---- P-041(KB-152 재수정, Q-05): 정리 → 프리페치 직렬화 잠금 ---- */
+import { prefetchAfterCleanup } from '../bootGate';
+
+it('P-041: cleanup 완료 전엔 prefetch 미시작 — 완료 후에만 발사 (신규 설치 레이스)', async () => {
+  let finishCleanup!: () => void;
+  const cleanup = new Promise<void>((r) => (finishCleanup = r));
+  const prefetch = jest.fn().mockResolvedValue(undefined);
+  const s = track(prefetchAfterCleanup(cleanup, prefetch));
+  await flush();
+  expect(prefetch).not.toHaveBeenCalled(); // 옛 토큰 정리 전 인증 프리페치 금지
+  finishCleanup();
+  await flush();
+  expect(prefetch).toHaveBeenCalledTimes(1);
+  expect(s.done).toBe(true);
+});
+
+it('P-041: cleanup 실패(reject)여도 프리페치는 진행 — 부트 불막음', async () => {
+  let failCleanup!: (e: unknown) => void;
+  const cleanup = new Promise<void>((_r, j) => (failCleanup = j));
+  const prefetch = jest.fn().mockResolvedValue(undefined);
+  const s = track(prefetchAfterCleanup(cleanup, prefetch));
+  failCleanup(new Error('keychain read fail'));
+  await flush();
+  expect(prefetch).toHaveBeenCalledTimes(1);
+  expect(s.done).toBe(true);
+});

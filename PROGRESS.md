@@ -472,3 +472,7 @@
 - [x] 주문카드 StepBtn의 텍스트 글리프(Baloo2 어센트 편향으로 원 중심 이탈) → IconMinus 신규(수평선 1개)+IconPlus 재사용, stepText 스타일 제거. 크기 20·C.ink·비활성 opacity 무변.
 - [x] 전수 점검: 기호를 아이콘 대용 텍스트로 렌더하는 곳은 order.tsx −/+ 뿐 — 나머지(· 구분점, — 빈값 대시, ≈ 근사, –/10 미선택 대시)는 활자 구두점으로 판단(문장 흐름 내 텍스트, 정렬 무관). 영구 규칙(기호=SVG)은 커맨드 센터가 CLAUDE.md 반영.
 - 스타일/마크업 교체만 — 스테퍼 동작 테스트(orderStepper) 기존 잠금 통과. tsc 0, jest 209/209. JS-only — preview OTA.
+
+## KB-152 재수정 — 부트 레이스: 정리→프리페치 직렬화 (2026-07-21, P-041 🔴 프라이버시)
+- [x] cleanupIfFreshInstall()과 prefetchBootData()가 같은 틱 병렬 발사 → 신규 설치 첫 부팅에서 프리페치의 hasBeSession()이 아직 안 지워진 옛 Keychain 토큰으로 /home·/me 인증 프리페치 → 홈 캐시 이전 계정 오염(Q-05). bootGate에 prefetchAfterCleanup(cleanupDone, prefetch) 헬퍼 — cleanup settle 후에만 프리페치 시작(실패해도 진행), _layout 배선 + 주석 "정리가 프리페치·렌더 모두보다 선행"으로 갱신. gateSplash min/cap 시맨틱 무변.
+- 테스트 +2(bootGate — cleanup 완료 전 prefetch 미시작 / cleanup reject여도 진행). 기존 게이트 타이밍 4케이스 무회귀. tsc 0, jest 211/211. JS-only — preview+production 양 채널 즉시 OTA.
