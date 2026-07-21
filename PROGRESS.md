@@ -407,3 +407,8 @@
 - [x] edit.tsx 연동 행: APPLE→IconApple / GOOGLE→IconGoogleG(로그인 화면 SVG 재사용, 헌법 준수) / 미지원·누락→IconProfile+중립 폴백. `providerLabelKey()` 순수 함수 — 빈 값 금지. i18n linkedVia/Apple/Google/Social ×10.
 - 테스트 +2: providerLabelKey 4케이스(APPLE/GOOGLE/미지원/누락) + adaptProfile provider 매핑. tsc 0, jest 167/167. JS-only — preview OTA(공기계), production은 검토 후 묶음.
 - 발행: preview OTA — Android 019f828b-21bf-7230 (cbbec117 일치, build1 호환 스왑 후 복원).
+
+## KB-174 후속 검색 오프라인 J4 — search.tsx (2026-07-21, P-028)
+- [x] empty 상태(최근+인기)는 로컬·mock이라 자체 에러 신호가 없음 → 음식탭과 캐시 공유하는 useInfiniteFoods()를 프로브로 재사용(같은 키·추가 트래픽 없음). NETWORK(J4)일 때만 empty를 전체화면 QueryErrorBlock으로 대체 — 서버 5xx(J3)는 로컬 콘텐츠를 가리지 않고 empty 유지.
+- [x] 온라인 동작 무변(인기 6종 정렬·최근 검색 로직 그대로 — 변경 금지 준수). 재량 항목: 제출 검색 에러 StateBlock→QueryErrorBlock 교체(J3/J4 분기 공짜 확보, 홈·음식탭 톤 통일).
+- 테스트 +4(searchOffline.test.tsx): 오프라인→J4+최근/인기 미렌더 / 온라인→무변 잠금 / 프로브 500→empty 유지 / 제출 검색 NETWORK→J4. tsc 0, jest 171/171. JS-only — preview OTA.

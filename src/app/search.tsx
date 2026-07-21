@@ -20,8 +20,8 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { RiskPill, Spinner, StateBlock, stateIconColor, CardPhoto, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
-import { useFoods, useSearchFoods } from '@/lib/data/useFoods';
+import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
+import { useFoods, useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
 import { personalRisk } from '@/lib/risk';
@@ -47,6 +47,12 @@ export default function Search() {
   const isGuest = useIsGuest();
   const search = useSearchFoods(submitted);
   const results = search.data ?? [];
+
+  // P-028(KB-174 후속): 오프라인 판정 프로브 — empty 상태(최근+인기)는 로컬·mock이라
+  // 스스로는 에러가 안 나므로, 음식탭과 같은 live 쿼리(캐시 공유·같은 키)를 신호로 쓴다.
+  // 오프라인(J4)만 empty를 대체 — 서버 5xx(J3)는 로컬 콘텐츠를 가릴 이유가 없다.
+  const probe = useInfiniteFoods();
+  const offline = probe.isError && classifyQueryError(probe.error) === 'offline';
 
   const popular = [...(mockCatalog ?? [])]
     .sort((a, b) => (a.popularityRank ?? 999) - (b.popularityRank ?? 999))
@@ -96,7 +102,12 @@ export default function Search() {
         </View>
       </View>
 
-      {!showingSearch ? (
+      {!showingSearch && offline ? (
+        /* 1a. offline: 전체화면 J4 — 홈·음식탭과 톤 통일 (P-028) */
+        <View style={styles.fill}>
+          <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
+        </View>
+      ) : !showingSearch ? (
         /* 1. empty state: recent (local) + popular (mock) */
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.secHead}>
@@ -140,13 +151,9 @@ export default function Search() {
           <Spinner />
         </View>
       ) : search.isError ? (
+        /* 제출 검색 에러 — 공용 J3/J4 렌더로 톤 통일 (P-028 재량 항목) */
         <View style={[styles.body, styles.noResults]}>
-          <StateBlock
-            icon={<IconSearch size={34} color={stateIconColor.default} />}
-            title={t('states.errorTitle')}
-            body={t('states.errorBody')}
-            primary={{ label: t('common.retry'), onPress: () => search.refetch() }}
-          />
+          <QueryErrorBlock error={search.error} onRetry={() => void search.refetch()} />
         </View>
       ) : results.length > 0 ? (
         /* 2. results: live pages, cursor infinite scroll */
