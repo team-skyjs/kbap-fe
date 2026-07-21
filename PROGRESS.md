@@ -406,3 +406,4 @@
 - [x] 실측: MyProfileResponse.provider required 배포 확인. MyProfileWire·adaptProfile·User에 provider 매핑(구서버 방어 옵셔널). email 행은 계약에 없어 항상 undefined였음 — provider 행으로 교체.
 - [x] edit.tsx 연동 행: APPLE→IconApple / GOOGLE→IconGoogleG(로그인 화면 SVG 재사용, 헌법 준수) / 미지원·누락→IconProfile+중립 폴백. `providerLabelKey()` 순수 함수 — 빈 값 금지. i18n linkedVia/Apple/Google/Social ×10.
 - 테스트 +2: providerLabelKey 4케이스(APPLE/GOOGLE/미지원/누락) + adaptProfile provider 매핑. tsc 0, jest 167/167. JS-only — preview OTA(공기계), production은 검토 후 묶음.
+- 발행: preview OTA — Android 019f828b-21bf-7230 (cbbec117 일치, build1 호환 스왑 후 복원).
