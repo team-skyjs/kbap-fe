@@ -17,7 +17,7 @@ import { color as C, font } from '@/lib/theme';
 import { IconClose } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
-import { avoidSentenceKo, lifestyleLinesKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { spring } from '@/lib/motion';
 
 const QTY_MIN = 1;
@@ -42,8 +42,7 @@ export default function OrderCard() {
   };
 
   const codes = (me?.restrictions ?? []).map((r) => r.code);
-  const avoid = avoidSentenceKo(codes); // 기피 0개 → null → ②③ 생략(순수 주문 카드)
-  const lifestyle = lifestyleLinesKo(codes);
+  const avoid = avoidSentenceKo(codes); // 기피 0개 → null → 고지 생략(순수 주문 카드)
   const nameKo = food?.nameKo ?? '';
 
   return (
@@ -70,9 +69,6 @@ export default function OrderCard() {
         </View>
 
         {!!avoid && <Text style={styles.note}>{avoid}</Text>}
-        {lifestyle.map((line) => (
-          <Text key={line} style={styles.note}>{line}</Text>
-        ))}
 
         <Text style={styles.caption}>{t('order.caption')}</Text>
       </View>

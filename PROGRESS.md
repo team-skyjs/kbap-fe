@@ -436,3 +436,6 @@
 - [x] ① 칩 팝인/아웃(IngredientFilter 요약 칩, ZoomIn.springify spring.pop — P-026 고정높이 36 불변) ② 북마크 팝 timing 시퀀스→스프링 통일(StickyHeader) ③ Tab Pill Glide(스캔 세그먼트 — onLayout 실측+스프링 글라이드, 첫 배치 무애니메이션) ④ Error Shake(useShake 공용 훅: 감쇠 진동·재트리거 — 로그인 실패 SocialAuthButtons + 온보딩 제출 에러) ⑤ Success Check(SVG strokeDashoffset 드로잉 — 온보딩 제출 성공 0.9s 오버레이 후 홈) ⑥ Stagger Entrance(스캔 결과 리스트 FadeInDown 60ms 간격·상한 8행) ⑦ Step Progress 노드 팝(TopBar Seg) ⑨ 수량 스테퍼 값 팝(주문카드 bump — 소량 바운스).
 - [x] ⑧ Shimmer는 기구현 확인(P-009 sweep) — 무변. 바운스는 탭 모멘텀 있는 곳(칩·북마크·수량·노드)만 spring.pop, 등장류는 전부 damped. reduced-motion: 전역 ReducedMotionConfig가 entering/스프링 스킵(스태거 생략 요건 충족).
 - 테스트 +1(orderStepper — bump 클램프·비활성·문장 갱신 잠금) + 기존 40 스위트 무회귀. 테스트 mock 표면 2차 보강(withSequence·withDelay·useAnimatedProps·Zoom/FadeInDown 체인). tsc 0, jest 199/199. JS-only — preview OTA.
+
+## KB-205 정정 — 주문카드 종교·식이 문단 제거 (2026-07-21, P-033)
+- [x] 회피 모델 평면 81종 확정(religion:/diet: 폐기)에 따라 P-030의 ③(lifestyleLinesKo)은 죽은 코드 — orderCard.ts 조립 로직·order.tsx 렌더·테스트 2케이스 제거. ②(기피 재료 고지)가 종교·식이를 재료 단위로 커버. tsc 0, jest 198/198(-1). JS-only — 다음 OTA 편승.

@@ -47,23 +47,6 @@ export function avoidSentenceKo(codes: string[]): string | null {
   return `저는 ${list}${eulReul(particleTarget)} 못 먹어요. 들어가면 알려주세요.`;
 }
 
-/**
- * ③ 종교·식이 한 줄 — 코드 보유 시에만. ⚠️ 현행 와이어(avoidanceSubstanceCodes)
- * 는 재료 81종만 왕복하므로 live 프로필에선 아직 도달 불가 — 서버가 종교·식이
- * 코드를 실어주면 자동 활성되는 확장 지점 (온보딩 수집 코드와 동일 체계).
- */
-const LIFESTYLE_KO: Record<string, string> = {
-  'religion:halal': '무슬림 식단입니다.',
-  'religion:kosher': '코셔 식단입니다.',
-  'religion:nopork': '돼지고기를 먹지 않습니다.',
-  'religion:nobeef': '소고기를 먹지 않습니다.',
-  'diet:vegetarian': '베지테리언입니다.',
-  'diet:vegan': '비건입니다.',
-  'diet:pescatarian': '페스코 베지테리언입니다.',
-  'diet:glutenfree': '글루텐프리 식단입니다.',
-  'diet:lowspice': '맵지 않게 해주세요.',
-};
-
-export function lifestyleLinesKo(codes: string[]): string[] {
-  return codes.map((c) => LIFESTYLE_KO[c]).filter((s): s is string => !!s);
-}
+// P-033(KB-205 정정): 종교·식이 한 줄(③)은 제거 — 회피 모델은 평면 81종 재료로
+// 통일(religion:/diet: 코드 폐기 확정). 종교·식이 제약은 해당 재료가 기피 목록에
+// 포함되는 것으로 ②가 이미 커버한다.

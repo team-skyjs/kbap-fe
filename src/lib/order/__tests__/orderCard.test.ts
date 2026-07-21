@@ -8,7 +8,6 @@ import {
   avoidSentenceKo,
   eulReul,
   ingredientLabelKo,
-  lifestyleLinesKo,
   MAX_AVOID_SHOWN,
   orderSentenceKo,
 } from '../orderCard';
@@ -41,7 +40,7 @@ describe('avoidSentenceKo — ② 기피 고지', () => {
     expect(avoidSentenceKo([])).toBe(null);
   });
 
-  it('재료 아닌 코드만 있으면(종교·식이) ②는 역시 null — ③이 담당', () => {
+  it('81종 카탈로그 밖 코드는 무시 — 미지 코드만이면 null (P-033: 평면 81종 정본)', () => {
     expect(avoidSentenceKo(['religion:halal', 'diet:vegan'])).toBe(null);
   });
 
@@ -58,12 +57,3 @@ describe('avoidSentenceKo — ② 기피 고지', () => {
   });
 });
 
-describe('lifestyleLinesKo — ③ 종교·식이 한 줄', () => {
-  it('보유 코드만 한 줄로, 재료 코드는 무시', () => {
-    expect(lifestyleLinesKo(['religion:halal', 'EGG', 'diet:vegetarian'])).toEqual([
-      '무슬림 식단입니다.',
-      '베지테리언입니다.',
-    ]);
-    expect(lifestyleLinesKo(['EGG'])).toEqual([]);
-  });
-});
