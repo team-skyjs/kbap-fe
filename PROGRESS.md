@@ -412,3 +412,9 @@
 - [x] empty 상태(최근+인기)는 로컬·mock이라 자체 에러 신호가 없음 → 음식탭과 캐시 공유하는 useInfiniteFoods()를 프로브로 재사용(같은 키·추가 트래픽 없음). NETWORK(J4)일 때만 empty를 전체화면 QueryErrorBlock으로 대체 — 서버 5xx(J3)는 로컬 콘텐츠를 가리지 않고 empty 유지.
 - [x] 온라인 동작 무변(인기 6종 정렬·최근 검색 로직 그대로 — 변경 금지 준수). 재량 항목: 제출 검색 에러 StateBlock→QueryErrorBlock 교체(J3/J4 분기 공짜 확보, 홈·음식탭 톤 통일).
 - 테스트 +4(searchOffline.test.tsx): 오프라인→J4+최근/인기 미렌더 / 온라인→무변 잠금 / 프로브 500→empty 유지 / 제출 검색 NETWORK→J4. tsc 0, jest 171/171. JS-only — preview OTA.
+
+## KB-202 스캔 캡처 WYSIWYG — 미리보기 밖 크롭 (2026-07-21, P-025) ⚠️재빌드
+- [x] Q-12 원인: CameraView(cover)는 센서 중앙만 표시, takePictureAsync는 센서 전체 반환 → 미리보기 밖(브라우저 탭·상호명·가격 줄)이 업로드 혼입. `coverCropRect()` 순수 함수로 cover 표시 역산(비율 비교 → 잘린 축만 중앙 크롭, 비율 일치 시 재인코딩 생략) — src/lib/scan/coverCrop.ts.
+- [x] capture 경로에 expo-image-manipulator 크롭 배선(새 API manipulate→renderAsync→saveAsync). **지연 require**(expo-sensors 선례 — 미탑재 빌드 크래시 방지), 실패 시 원본 폴백으로 스캔 지속. 원본(과다 캡처)은 크롭 직후 삭제(KB-137 캐시 위생). 업로드·OCR·결과 "원본 사진" 전부 크롭본. 오버레이 마커는 preview 정규화 공간이라 정합 유지. 갤러리 경로는 대상 아님(미리보기 없음).
+- 테스트 +5(coverCrop.test.ts): 좌우 크롭(4:3 센서×세로 폰 실측 치수)/상하 크롭/비율 일치 null/무효 입력 null/경계 불변식. tsc 0, jest 176/176.
+- ⚠️ **OTA 불가 — 네이티브(expo-image-manipulator) 추가.** expo-sensors(P-022)와 같은 빌드(안드 빌드2/차기 iOS)에 배치. 그 전 빌드에선 lazy-require 폴백으로 크롭만 생략.

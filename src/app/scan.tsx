@@ -29,6 +29,7 @@ import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
+import { coverCropRect } from '@/lib/scan/coverCrop';
 import { personalRisk } from '@/lib/risk';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -181,6 +182,33 @@ export default function Scan() {
     runScan(seg.dishes, captured);
   }
 
+  // KB-202/P-025: CameraView 실측 크기 — cover-크롭 역산의 뷰포트 기준.
+  const previewSize = useRef<{ width: number; height: number } | null>(null);
+
+  /**
+   * KB-202 WYSIWYG: 캡처본(센서 전체)을 미리보기에 보였던 중앙 영역으로 크롭.
+   * expo-image-manipulator는 **지연 require** (expo-sensors와 동일 사유 — 네이티브
+   * 미탑재 빌드에서 최상단 import는 앱 전체 크래시). 미탑재/실패 시 원본 그대로
+   * 반환 — 크롭만 생략되고 스캔은 정상(재빌드 전 동작).
+   */
+  async function cropToPreview(pic: NonNullable<Photo>): Promise<NonNullable<Photo>> {
+    const view = previewSize.current;
+    const rect = view ? coverCropRect(view.width, view.height, pic.width, pic.height) : null;
+    if (!rect) return pic;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ImageManipulator, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+      const rendered = await ImageManipulator.manipulate(pic.uri).crop(rect).renderAsync();
+      const saved = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
+      console.log('[scan] WYSIWYG crop', JSON.stringify({ from: { w: pic.width, h: pic.height }, rect }));
+      deletePhotoFile(pic.uri); // 원본(과다 캡처)은 즉시 삭제 — 이후 수명은 크롭본 몫 (⑦ KB-137)
+      return { uri: saved.uri, width: saved.width ?? rect.width, height: saved.height ?? rect.height };
+    } catch (e) {
+      console.log('[scan] expo-image-manipulator 미탑재/실패 — 크롭 생략(재빌드 필요):', (e as Error)?.message ?? e);
+      return pic;
+    }
+  }
+
   async function capture() {
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
     if (isLandscape) return; // KB-141: 어떤 진입 경로로도 가로 촬영 불가 (함수 단 가드)
@@ -191,7 +219,9 @@ export default function Scan() {
       const pic = await cam.takePictureAsync({ quality: 0.7 });
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
       if (!pic?.uri) return fail('capture', 'takePictureAsync returned no uri');
-      await scanImage({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 });
+      // KB-202: 업로드·표시·OCR 전부 크롭본 기준 — 미리보기 밖은 어디에도 안 간다
+      const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 });
+      await scanImage(cropped);
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
     }
@@ -352,6 +382,7 @@ export default function Scan() {
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
+          onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
           facing={facing}
           responsiveOrientationWhenOrientationLocked
           onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
