@@ -482,3 +482,8 @@
 - [x] ② 주문카드 수량 스테퍼를 문장 아래 → Done 바로 위(foot 내부)로 이동 — 문장은 위, 조작은 손 근처. 문장 내 {n}개 갱신·팝 무변(orderStepper 테스트 통과).
 - [x] ③ TopBar 스텝 노드 팝(P-032 ⑦) 제거 — 즉시 전환, 제거 사유 주석(P-035 선례).
 - 테스트 +1(PressScale 즉발 잠금). tsc 0, jest 212/212. JS-only — preview OTA.
+
+## 테스트플라이트 재빌드·제출 (2026-07-21, 빌드 67ea3cd2)
+- iOS production 빌드+제출 완료 (submission 64870fcb) — Apple 처리 후 테플 노출(수십 분). 새 runtime `c43664ed`로 재베이스라인.
+- 이 빌드에 합류: expo-sensors(P-022)·expo-image-manipulator/WYSIWYG 크롭(P-025)·스플래시 에셋 정식 반영(P-018)·스캔 세그먼트 글라이드/스태거(P-032)·빈 프로필 스캔 배너(P-038) — 그간 OTA 스왑 제외분 전량.
+- **프로덕션 OTA 스왑 절차 소멸**: 이후 production OTA는 스왑 없이 발행(런타임 c43664ed 기준). preview 공기계 build1(cbbec117) 스왑은 Android 빌드2 전까지 존치.
