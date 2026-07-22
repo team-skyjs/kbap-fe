@@ -1,0 +1,21 @@
+# CI (P-050/KB-219) — push(main)+PR에서 tsc+jest. 로컬 완료 기준과 동일
+# (tsc 0 · jest 전체 통과). 빌드/OTA 자동화는 출시 후 — 검토 게이트 원칙.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # 로컬 v20과 일치
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx jest --ci
