@@ -500,3 +500,7 @@
 ## KB-216 스캔 진입 오프라인 게이트 (2026-07-22, P-046)
 - [x] 진입(카메라 phase) 시 오프라인 → 전체 J4(QueryErrorBlock)+Retry, 카메라 미기동 — 판정은 P-027/028과 동일 프로브(useInfiniteFoods 캐시 공유). 촬영 화면 자체를 대체하므로 갤러리·샘플 진입로도 자연 차단. Retry 성공 시 카메라 기동. 서버 5xx는 게이트 미발동(스캔은 오프라인만 불가). 밝은 배경으로 타 탭 J4 톤 통일.
 - 테스트 +3(오프라인→J4·카메라/갤러리/샘플 미렌더, 온라인 무회귀, 5xx 미발동). 기존 scan 테스트 2본 프로브 mock 보강. tsc 0, jest 218/218. JS-only — preview OTA.
+
+## KB-217 헤더 바운싱 — timing 복귀 (2026-07-22, P-047)
+- [x] 원인: P-031이 숨김/복귀를 withSpring으로 바꾼 뒤, 빠른 방향 반복 스크롤에서 재타겟마다 미정착 속도를 승계 → 진동. 수정: 이 헤더만 withTiming(200ms ease-out) 복귀 — 스크롤 크롬은 즉답 우선(절제 원칙, 과제 유력안 B). 북마크 팝 스프링·타 화면 스프링 무변. StickyHeader 전 사용처(홈·음식탭·상세) 공통 반영.
+- 기존 스위트 무회귀(orderStepper mock에 Easing 보강). tsc 0, jest 218/218. JS-only — preview OTA.

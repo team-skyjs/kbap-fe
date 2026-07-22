@@ -15,6 +15,7 @@ jest.mock('react-native-reanimated', () => {
     withSpring: (v: unknown) => v,
     withTiming: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
+    Easing: { out: () => () => 0, quad: 0, linear: () => 0 },
   };
 });
 jest.mock('expo-router', () => ({
