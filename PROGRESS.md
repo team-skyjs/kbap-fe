@@ -524,3 +524,6 @@
 ## KB-215 반려 대응 — 사장님 질문 원문 노출 봉쇄 (2026-07-22, P-052 🔴)
 - [x] P-045 구멍: 상세 IngredientResponse엔 81종 코드가 없어 어댑터 합성 키(ing:{i}:{name})가 질문에 원문 통과("ing:0:Egg이(가)"). resolveIngredientKo 신설 — 직접 코드는 기존, 합성 키는 name 추출 후 81종 en 카탈로그명·현재 언어 라벨·ko 라벨 역인덱스 검색(정규화 비교) → ko 라벨. 실패·미지 형식은 null → ownerQuestionKo가 일반 질문 강등 — 내부 식별자 노출 경로 원천 봉쇄(원문보다 덜 구체적인 게 항상 낫다).
 - 테스트 +3분기(합성 키 en/대소문자/ko 역매핑 · 미지 name·형식→일반 질문 · 직접 코드 기존). tsc 0, jest 229/229. JS-only — preview OTA 즉시.
+
+## KB-206 반려 — 게이트 시트 애니 원복 (2026-07-22, P-053)
+- [x] AuthGateSheet 등장의 SlideInDown.springify(P-031 B5) 제거 — Modal fade 단독 원복(P-031 이전). 게이트 시트엔 스프링 부적합(예진 실기, P-035·047 계열 절제 사례 — 사유 주석). 퇴장·backdrop·Snackbar 스프링(반려 대상 아님) 무변. tsc 0, jest 229/229 무회귀. JS-only — preview OTA.
