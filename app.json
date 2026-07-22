@@ -56,14 +56,20 @@
           "backgroundColor": "#E2580C",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 230,
-          "_comment": "KB-194: 태그라인 제거 에셋 + 230 원복(KB-125 ④ 임시 확대 해소). 네이티브 — 빌드 7 반영",
-          "resizeMode": "contain"
+          "_comment": "KB-194: 태그라인 제거 에셋 + 230 원복(KB-125 ④ 임시 확대 해소). P-054: Android 12+ 원형 마스크 대응 — 안드는 심볼 전용 에셋(정사각·2/3 안전영역), iOS는 기존 조합 이미지. 네이티브 — 안드 빌드3/차기 iOS 반영",
+          "resizeMode": "contain",
+          "android": {
+            "image": "./assets/images/splash-icon-android.png",
+            "imageWidth": 200
+          }
         }
       ],
       "expo-secure-store",
       [
         "expo-sensors",
-        { "motionPermission": false }
+        {
+          "motionPermission": false
+        }
       ],
       "expo-apple-authentication",
       "@react-native-firebase/app",

@@ -527,3 +527,7 @@
 
 ## KB-206 반려 — 게이트 시트 애니 원복 (2026-07-22, P-053)
 - [x] AuthGateSheet 등장의 SlideInDown.springify(P-031 B5) 제거 — Modal fade 단독 원복(P-031 이전). 게이트 시트엔 스프링 부적합(예진 실기, P-035·047 계열 절제 사례 — 사유 주석). 퇴장·backdrop·Snackbar 스프링(반려 대상 아님) 무변. tsc 0, jest 229/229 무회귀. JS-only — preview OTA.
+
+## KB-194 후속 — Android 12+ 스플래시 원형 마스크 (2026-07-22, P-054 ⚠️재빌드)
+- [x] 원인: Android 12+ windowSplashScreenAnimatedIcon이 앱 이미지를 OS 원형 마스크에 강제 배치 — 세로 조합(로고+워드마크)이 원 밖에서 클립("K-Bar"). 수정: 심볼 전용 정사각 에셋 분리(splash-icon-android.png — 기존 png의 심볼 밴드(300×300) 크롭, 450 캔버스 = 2/3 안전영역) + app.json expo-splash-screen android.image/imageWidth 200 오버라이드. iOS는 기존 조합 이미지 무변. 원형 마스크 시뮬 미리보기 spec/bridge/assets/p054-android-splash-preview.png.
+- ⚠️ 네이티브 — OTA 불가, 안드 빌드3/차기 iOS 빌드 합류(제출용 최종 빌드에 배치 — 커맨드 센터 의견). **fingerprint 재회전**(안드 c71456e3·iOS 584a401b) — 빌드3 전 OTA 발행 시 app.json+splash-icon-android.png 2파일 임시 되돌림 필요(축소판 스왑 부활). tsc 0, jest 229/229.
