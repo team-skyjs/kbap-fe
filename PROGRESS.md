@@ -513,3 +513,6 @@
 - [x] 시스템 UI만: choosePhotoSource — iOS ActionSheetIOS(촬영/갤러리/[사진 있으면]삭제 destructive/취소), 안드 시스템 Alert 3버튼(촬영/갤러리/취소 — Alert 3버튼 제약상 삭제는 기존 화면 링크 존치가 커버). captureProfileImage — 기설치 expo-image-picker launchCameraAsync(1:1 크롭, 갤러리와 동일 옵션), 권한 거부는 CAMERA_PERMISSION → pickBySource가 설정 유도 Alert 후 null(흐름 불막음).
 - [x] 프로필 수정+온보딩 공용 배선(pickBySource) — 업로드 파이프라인·삭제(P-016)·busy/에러 표시 무변. iOS NSCameraUsageDescription은 expo-camera 플러그인 기존 문구. i18n photo.* 6키 ×10.
 - 테스트 +6(photoSheet — iOS 시트 옵션/인덱스·안드 3버튼·권한 거부/허용/취소). tsc 0, jest 226/226. JS-only — preview OTA. 실기 권한 플로우 확인은 예진 몫(DoD 명시).
+
+## KB-219 CI (2026-07-22, P-050)
+- [x] .github/workflows/ci.yml — push(main)+PR에서 npm ci → tsc --noEmit → jest --ci (node 20 = 로컬 일치, npm 캐시). 1회 green 확인: https://github.com/team-skyjs/kbap-fe/actions/runs/29887022483 (run #1 success). 브랜치 보호(실패 시 병합 차단)는 예진 콘솔 설정 몫. 참고: actions 런타임 Node20 deprecation 어노테이션은 액션 자체 런타임 경고(스텝의 node 20 사용과 무관·무해).
