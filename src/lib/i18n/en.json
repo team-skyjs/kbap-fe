@@ -649,5 +649,13 @@
       "9": "Bird's-eye chili",
       "10": "Cheongyang overload"
     }
+  },
+  "photo": {
+    "sheetTitle": "Profile photo",
+    "take": "Take photo",
+    "gallery": "Choose from gallery",
+    "permTitle": "Camera access needed",
+    "permBody": "Allow camera access in Settings to take a photo.",
+    "openSettings": "Open Settings"
   }
 }

@@ -652,5 +652,13 @@
       "9": "Ớt hiểm",
       "10": "Ớt Cheongyang cực đại"
     }
+  },
+  "photo": {
+    "sheetTitle": "Ảnh hồ sơ",
+    "take": "Chụp ảnh",
+    "gallery": "Chọn từ thư viện",
+    "permTitle": "Cần quyền truy cập máy ảnh",
+    "permBody": "Hãy cho phép truy cập máy ảnh trong Cài đặt để chụp ảnh.",
+    "openSettings": "Mở Cài đặt"
   }
 }

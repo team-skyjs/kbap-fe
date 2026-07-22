@@ -653,5 +653,13 @@
       "9": "Chile ojo de pájaro",
       "10": "Cheongyang al máximo"
     }
+  },
+  "photo": {
+    "sheetTitle": "Foto de perfil",
+    "take": "Tomar foto",
+    "gallery": "Elegir de la galería",
+    "permTitle": "Se necesita acceso a la cámara",
+    "permBody": "Permite el acceso a la cámara en Ajustes para tomar una foto.",
+    "openSettings": "Abrir Ajustes"
   }
 }

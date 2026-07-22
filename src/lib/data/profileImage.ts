@@ -10,6 +10,7 @@
  * 실패 정책(할 일 5): throw 로 정직하게 표면화 — 호출 화면이 에러 표시 후
  * 사진 없이 진행 가능해야 한다 (가입/수정 자체를 막지 않음).
  */
+import { ActionSheetIOS, Alert, Linking, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/api/scanImage';
 import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
@@ -49,4 +50,92 @@ export async function uploadProfileImage(file: PickedImage): Promise<string> {
   const { path } = await uploadImage(file, PROFILE_IMAGE_PURPOSE);
   console.log('[profile] image uploaded | path =', path);
   return path;
+}
+
+/* ---- P-049(KB-218): 촬영 추가 — 시스템 카메라 + 네이티브 선택 시트 ---- */
+
+export type PhotoSource = 'camera' | 'gallery' | 'remove';
+
+export interface PhotoSheetLabels {
+  title: string;
+  camera: string;
+  gallery: string;
+  /** 있으면 iOS 시트에 destructive 삭제 옵션 노출 (안드는 화면의 기존 삭제 링크가 담당) */
+  remove?: string;
+  cancel: string;
+}
+
+/**
+ * 사진 소스 선택 — **시스템 UI만** (직접 제작 금지 지시): iOS ActionSheetIOS,
+ * Android는 시스템 Alert 3버튼(촬영/갤러리/취소 — 지시 그대로. 삭제는 4버튼이
+ * 불가한 Alert 제약상 화면의 기존 삭제 링크 존치로 커버).
+ */
+export function choosePhotoSource(labels: PhotoSheetLabels): Promise<PhotoSource | null> {
+  return new Promise((resolve) => {
+    if (Platform.OS === 'ios') {
+      const options = [labels.camera, labels.gallery, ...(labels.remove ? [labels.remove] : []), labels.cancel];
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: labels.title,
+          options,
+          cancelButtonIndex: options.length - 1,
+          destructiveButtonIndex: labels.remove ? 2 : undefined,
+        },
+        (i) => resolve(i === 0 ? 'camera' : i === 1 ? 'gallery' : labels.remove && i === 2 ? 'remove' : null),
+      );
+      return;
+    }
+    Alert.alert(
+      labels.title,
+      undefined,
+      [
+        { text: labels.cancel, style: 'cancel', onPress: () => resolve(null) },
+        { text: labels.gallery, onPress: () => resolve('gallery') },
+        { text: labels.camera, onPress: () => resolve('camera') },
+      ],
+      { cancelable: true, onDismiss: () => resolve(null) },
+    );
+  });
+}
+
+/** 시스템 카메라 촬영 (1:1 크롭 — 갤러리 경로와 동일 옵션). 권한 거부 = CAMERA_PERMISSION throw. */
+export async function captureProfileImage(): Promise<PickedImage | null> {
+  const perm = await ImagePicker.requestCameraPermissionsAsync();
+  if (!perm.granted) throw new Error('CAMERA_PERMISSION');
+  const res = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.8,
+  });
+  if (res.canceled || !res.assets?.length) return null;
+  const a = res.assets[0];
+  return { uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 };
+}
+
+export interface PermLabels {
+  permTitle: string;
+  permBody: string;
+  openSettings: string;
+  cancel: string;
+}
+
+/**
+ * 소스별 픽업 공용 경로 (프로필 수정 + 온보딩 공유). 카메라 권한 거부는
+ * 정직한 안내 + 설정 유도(Alert) 후 null — 흐름은 막지 않는다.
+ */
+export async function pickBySource(source: 'camera' | 'gallery', labels: PermLabels): Promise<PickedImage | null> {
+  if (source === 'gallery') return pickProfileImage();
+  try {
+    return await captureProfileImage();
+  } catch (e) {
+    if ((e as Error)?.message === 'CAMERA_PERMISSION') {
+      Alert.alert(labels.permTitle, labels.permBody, [
+        { text: labels.cancel, style: 'cancel' },
+        { text: labels.openSettings, onPress: () => void Linking.openSettings() },
+      ]);
+      return null;
+    }
+    throw e;
+  }
 }

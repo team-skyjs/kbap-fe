@@ -652,5 +652,13 @@
       "9": "Cabai rawit",
       "10": "Cabai Cheongyang maksimal"
     }
+  },
+  "photo": {
+    "sheetTitle": "Foto profil",
+    "take": "Ambil foto",
+    "gallery": "Pilih dari galeri",
+    "permTitle": "Perlu akses kamera",
+    "permBody": "Izinkan akses kamera di Pengaturan untuk mengambil foto.",
+    "openSettings": "Buka Pengaturan"
   }
 }

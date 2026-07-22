@@ -22,7 +22,7 @@ import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
-import { pickProfileImage, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
+import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -55,10 +55,26 @@ export default function EditProfile() {
   // 실패는 정직한 에러 표시, 기존 사진/플레이스홀더 유지 (수정 자체를 막지 않음).
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  // P-049(KB-218): 시스템 선택 시트(촬영/갤러리/[iOS]삭제) → 소스별 픽업 → 업로드.
   const changePhoto = async () => {
     setPhotoError(false);
-    const file = await pickProfileImage().catch(() => null);
-    if (!file) return; // 취소
+    const canRemove = !!me?.profileImageUrl && !isDefaultProfileImage(me.profileImageUrl);
+    const src = await choosePhotoSource({
+      title: t('photo.sheetTitle'),
+      camera: t('photo.take'),
+      gallery: t('photo.gallery'),
+      remove: canRemove ? t('editProfile.removePhoto') : undefined,
+      cancel: t('common.cancel'),
+    });
+    if (!src) return; // 취소
+    if (src === 'remove') return update.mutate({ profileImageUrl: PROFILE_IMAGE_CLEAR }); // P-016 로직 재사용
+    const file = await pickBySource(src, {
+      permTitle: t('photo.permTitle'),
+      permBody: t('photo.permBody'),
+      openSettings: t('photo.openSettings'),
+      cancel: t('common.cancel'),
+    }).catch(() => null);
+    if (!file) return; // 취소/권한 거부(안내 완료)
     setPhotoBusy(true);
     try {
       const url = await uploadProfileImage(file);

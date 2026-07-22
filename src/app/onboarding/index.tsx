@@ -45,7 +45,7 @@ import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
-import { pickProfileImage, uploadProfileImage } from '@/lib/data/profileImage';
+import { choosePhotoSource, pickBySource, uploadProfileImage } from '@/lib/data/profileImage';
 import { queryClient } from '@/lib/queryClient';
 import type { SupportedLang } from '@/lib/i18n/languages';
 
@@ -205,8 +205,22 @@ export default function Onboarding() {
   // KB-149: 선택 즉시 업로드 — 실패는 정직한 에러 표시, 사진 없이 진행 가능
   const pickPhoto = async () => {
     setPhotoError(false);
-    const file = await pickProfileImage().catch(() => null);
-    if (!file) return; // 취소
+    // P-049(KB-218): 시스템 선택 시트(촬영/갤러리) — 프로필 수정과 공용 경로.
+    // 온보딩엔 삭제 옵션 없음(재선택으로 대체 — 기존과 동일).
+    const src = await choosePhotoSource({
+      title: t('photo.sheetTitle'),
+      camera: t('photo.take'),
+      gallery: t('photo.gallery'),
+      cancel: t('common.cancel'),
+    });
+    if (!src || src === 'remove') return;
+    const file = await pickBySource(src, {
+      permTitle: t('photo.permTitle'),
+      permBody: t('photo.permBody'),
+      openSettings: t('photo.openSettings'),
+      cancel: t('common.cancel'),
+    }).catch(() => null);
+    if (!file) return; // 취소/권한 거부(안내 완료)
     setPhotoBusy(true);
     try {
       setPhotoPath(await uploadProfileImage(file));
