@@ -328,7 +328,8 @@
       "gourmet": "미식가",
       "kfood_master": "한식 고수",
       "korean_at_heart": "뼛속까지 한국인"
-    }
+    },
+    "reviewsComing": "Появится в следующем обновлении"
   },
   "detail": {
     "headerTitle": "Блюдо",

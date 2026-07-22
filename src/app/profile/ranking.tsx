@@ -13,7 +13,6 @@ import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
-import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
@@ -48,7 +47,7 @@ export default function RankingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
       >
-        {rk && <RankingBody rk={rk} onReview={() => router.push('/food' as Href)} onScan={() => router.push('/scan' as Href)} />}
+        {rk && <RankingBody rk={rk} onScan={() => router.push('/scan' as Href)} />}
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="back" title={t('ranking.headerTitle')} titleKo={t('ranking.headerTitleKo')} onBack={() => router.back()} />
@@ -56,7 +55,7 @@ export default function RankingScreen() {
   );
 }
 
-function RankingBody({ rk, onReview, onScan }: { rk: Ranking; onReview: () => void; onScan: () => void }) {
+function RankingBody({ rk, onScan }: { rk: Ranking; onScan: () => void }) {
   const { t } = useTranslation();
   const cur: Tier = tierByKey(rk.tier) ?? TIERS[0];
   const next = rk.nextTier ? tierByKey(rk.nextTier) : null;
@@ -125,16 +124,22 @@ function RankingBody({ rk, onReview, onScan }: { rk: Ranking; onReview: () => vo
             <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
           </View>
           <View style={styles.breakCard}>
-            {/* 리뷰 팩터 행 — KB-148 MVP 제외(숨김). 점수 가중치(ranking.ts)는 무변 */}
-            {FLAGS.reviewsEnabled && (
-              <BreakRow icon={<IconSpeech size={20} color={C.primary} />} label={t('ranking.reviewsLabel')} labelKo={t('ranking.reviewsLabelKo')} detail={t('ranking.reviewsDetail', { count: bd.reviews.count })} factor={bd.reviews} first />
-            )}
-            <BreakRow icon={<IconFood size={20} color={C.primary} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} detail={t('ranking.diversityDetail', { count: bd.diversity.count })} factor={bd.diversity} first={!FLAGS.reviewsEnabled} />
-            <BreakRow icon={<IconScanLines size={20} color={C.primary} />} label={t('ranking.scansLabel')} labelKo={t('ranking.scansLabelKo')} detail={t('ranking.scansDetail', { count: bd.scans.count })} factor={bd.scans} />
-            <View style={styles.breakTotal}>
-              <Text style={styles.breakTotalLabel}>{t('ranking.oneMore')}</Text>
-              <Text style={styles.breakTotalPlus}>{t('ranking.oneMorePlus')}</Text>
+            {/* P-048(KB-125): 리뷰 팩터는 dim 예고로 상시 노출 — 리뷰 기능 예고.
+                점수 가중치(ranking.ts) 무변, 탭 요소 아님(무반응). */}
+            <View style={styles.comingRow}>
+              <View style={styles.breakIc}><IconSpeech size={20} color={C.ink3} /></View>
+              <View style={styles.breakMeta}>
+                <View style={styles.breakLabelRow}>
+                  <Text style={styles.breakLabel}>{t('ranking.reviewsLabel')}</Text>
+                  <Text style={styles.breakLabelKo}>{t('ranking.reviewsLabelKo')}</Text>
+                </View>
+                <Text style={styles.breakDetail}>{t('ranking.reviewsComing')}</Text>
+              </View>
+              <IconLock size={14} color={C.ink3} />
             </View>
+            <BreakRow icon={<IconFood size={20} color={C.primary} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} detail={t('ranking.diversityDetail', { count: bd.diversity.count })} factor={bd.diversity} />
+            <BreakRow icon={<IconScanLines size={20} color={C.primary} />} label={t('ranking.scansLabel')} labelKo={t('ranking.scansLabelKo')} detail={t('ranking.scansDetail', { count: bd.scans.count })} factor={bd.scans} />
+            {/* P-048: "리뷰 하나 더 +10점"(breakTotal) 행 제거 — 리뷰 흔적 정리 */}
           </View>
         </View>
       )}
@@ -158,10 +163,9 @@ function RankingBody({ rk, onReview, onScan }: { rk: Ranking; onReview: () => vo
         </View>
       </View>
 
-      {/* 5 · CTAs */}
+      {/* 5 · CTA — P-048: 리뷰 쓰기 CTA 제거(리뷰 흔적 정리), 스캔 단독 filled */}
       <View style={styles.ctaCol}>
-        <Cta onPress={onReview} icon={<IconSpeech size={18} color="#fff" />} label={t('ranking.ctaReview')} pts={t('ranking.ctaReviewPts')} filled />
-        <Cta onPress={onScan} icon={<IconCamera size={18} color={C.ink} />} label={t('ranking.ctaScan')} pts={t('ranking.ctaScanPts')} />
+        <Cta onPress={onScan} icon={<IconCamera size={18} color="#fff" />} label={t('ranking.ctaScan')} pts={t('ranking.ctaScanPts')} filled />
       </View>
     </View>
   );
@@ -352,13 +356,8 @@ const styles = StyleSheet.create({
   breakDetail: { fontFamily: font.body, fontSize: 11.5, color: C.ink2 },
   gain: { backgroundColor: PRIMARY_TINT, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 6 },
   gainText: { fontFamily: font.displayBlack, fontSize: 16, color: C.primary },
-  // P-037(Q-15 ②): 음수 마진으로 카드 가장자리까지 확장된 배경이 breakCard의
-  // borderRadius 밖으로 삐져나와 하단 코너가 뚫려 보임 → 하단 radius(카드 20 −
-  // 테두리 1 = 19) 부여. overflow:'hidden'은 금지 — iOS 그림자 클립 + 안드
-  // elevation 회색(P-024 선례) 재발 위험.
-  breakTotal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: -16, marginBottom: -6, marginTop: 4, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.line, borderStyle: 'dashed', borderBottomLeftRadius: radius.lg - 1, borderBottomRightRadius: radius.lg - 1 },
-  breakTotalLabel: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
-  breakTotalPlus: { fontFamily: font.displayBlack, fontSize: 13.5, color: C.primaryText },
+  // P-048: 리뷰 팩터 dim 예고 행 — 흐림+자물쇠, BreakRow와 같은 골격
+  comingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, opacity: 0.55 },
 
   // path ladder
   path: { paddingHorizontal: 2, paddingTop: 2 },

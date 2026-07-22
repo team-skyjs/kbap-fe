@@ -504,3 +504,7 @@
 ## KB-217 헤더 바운싱 — timing 복귀 (2026-07-22, P-047)
 - [x] 원인: P-031이 숨김/복귀를 withSpring으로 바꾼 뒤, 빠른 방향 반복 스크롤에서 재타겟마다 미정착 속도를 승계 → 진동. 수정: 이 헤더만 withTiming(200ms ease-out) 복귀 — 스크롤 크롬은 즉답 우선(절제 원칙, 과제 유력안 B). 북마크 팝 스프링·타 화면 스프링 무변. StickyHeader 전 사용처(홈·음식탭·상세) 공통 반영.
 - 기존 스위트 무회귀(orderStepper mock에 Easing 보강). tsc 0, jest 218/218. JS-only — preview OTA.
+
+## KB-125 랭킹 리뷰 흔적 정리 (2026-07-22, P-048)
+- [x] ① 리뷰 쓰기 CTA 삭제 — 스캔 CTA 단독 filled로 정리 ② breakTotal("리뷰 하나 더 +10점") 행 삭제 — P-037 하단 radius 이슈도 행 제거로 자연 소멸, 카드 마감 정상 ③ 리뷰 팩터를 FLAGS 무관 dim 예고 행으로 상시 노출(opacity 0.55+IconLock+ranking.reviewsComing ×10, 탭 무반응). 점수 로직 무변.
+- 테스트 +2(oneMore·리뷰CTA 부재/스캔 유지, dim 예고 렌더). tsc 0, jest 220/220. JS-only — preview OTA.
