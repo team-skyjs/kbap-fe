@@ -535,3 +535,8 @@
 ## KB-225 안드 하단 내비바 클리어런스 전수 (2026-07-22, P-055)
 - [x] P-021 국소 처치를 공용 훅 useBottomInset(안드 max(bottom,48)/iOS 실측)으로 승격, 전수 적용: AuthGateSheet(이번 짤림 — 인셋 미반영 고정 34가 원인, 안드만 18+보정 인셋·iOS 34 유지), login, intro, scan(카메라+결과 2곳), owner, order, 온보딩(기존 처치 교체). TabBar는 실기 정상 전제 무변(과보정 회피 — 짤리면 동일 유틸).
 - 테스트 +2(bottomInsetFloor 분기 — 안드 floor·iOS 통과). tsc 0, jest 231/231. JS-only — preview OTA. 실기 확인 목록(3버튼 에뮬): 게이트 시트 '나중에 하기'·로그인 하단·인트로 CTA·스캔 하단 바(카메라/결과)·owner/order Done·온보딩 CTA.
+
+## KB-176 안드 스캔 오버레이 좌표 2배 오프셋 (2026-07-22, P-056 🔴)
+- [x] adb 실측 확정 원인: 안드 저장 파일이 절반 다운스케일(1883×4080→942×2040)인데 ML Kit frame은 원치수 기준 → measured 분모로 y 2배 뻥튀기·y≥1 클램프 미표시("마커 2개"도 동일). 수정: chooseDenominator — frame 최대 좌표를 수용하는 쪽 채택(우선 measured=iOS 정답 유지 → reported → 둘 다 못 담으면 큰 쪽), 2% 반올림 여유, 채택 근거 로그([ocr] denominator basis). 플랫폼 하드코딩 없음 — 정수배 관계면 스케일 보정과 동치.
+- 부수 확인(조사만): 절반 저장은 안드 저장 경로(P-025 ImageManipulator saveAsync 추정) — OCR 인식은 정상 동작, 2040px면 메뉴판 텍스트 해상도 여유. 화질 이슈 미관측 — 필요 시 별도 과제.
+- 테스트 +5(chooseDenominator — 안드 실측 재현·iOS 무회귀·null 폴백·larger-fallback·경계 여유). tsc 0, jest 236/236. JS-only — preview OTA. ⚠️ 스캔 화면 아님·ocr.ts는 OTA 대상(스왑 무관 — lib 파일).

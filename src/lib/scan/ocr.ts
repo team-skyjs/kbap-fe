@@ -46,6 +46,40 @@ function normalize(
   };
 }
 
+export interface Dims {
+  width: number;
+  height: number;
+}
+
+/** frame 우/하단이 치수 안에 드는가 — 반올림 여유 2% */
+const FIT_EPS = 1.02;
+const fits = (d: Dims, maxRight: number, maxBottom: number) =>
+  maxRight <= d.width * FIT_EPS && maxBottom <= d.height * FIT_EPS;
+
+/**
+ * P-056(KB-176 🔴): 정규화 분모 선택 — **ML Kit이 실제 참조한 치수**를 쓴다.
+ * iOS는 measured(디코드 픽셀)가 정답(KB-141 — reported가 point인 기기 존재)인데,
+ * 안드는 저장 파일이 절반 다운스케일되어 measured(942×2040)가 ML Kit 기준
+ * (원치수 1883×4080)과 어긋남 → y 2배 뻥튀기·클램프 미표시. 플랫폼 하드코딩
+ * 대신 **frame 최대 좌표를 수용하는 쪽을 채택** — 두 치수가 정수배 관계면
+ * 스케일 보정과 동치라 견고하다. 우선순위: measured(기존 iOS 정답) → reported →
+ * 둘 다 못 담으면 큰 쪽(클램프 최소화).
+ */
+export function chooseDenominator(
+  measured: Dims | null,
+  reported: Dims,
+  maxRight: number,
+  maxBottom: number,
+): { pxW: number; pxH: number; basis: 'measured' | 'reported' | 'larger-fallback' } {
+  const m = measured && measured.width > 0 && measured.height > 0 ? measured : null;
+  const r = reported.width > 0 && reported.height > 0 ? reported : null;
+  if (m && fits(m, maxRight, maxBottom)) return { pxW: m.width, pxH: m.height, basis: 'measured' };
+  if (r && fits(r, maxRight, maxBottom)) return { pxW: r.width, pxH: r.height, basis: 'reported' };
+  // 어느 쪽도 못 담음 — 큰 쪽으로 클램프 손실 최소화 (측정 실패 시 reported 폴백 겸)
+  const pick = m && r ? (m.width * m.height >= r.width * r.height ? m : r) : (m ?? r ?? { width: 0, height: 0 });
+  return { pxW: pick.width, pxH: pick.height, basis: 'larger-fallback' };
+}
+
 /** Ensure a file path carries a scheme ML Kit's NSURL can resolve. */
 function ensureScheme(uri: string): string {
   if (/^(file|content|https?|ph|asset):/i.test(uri)) return uri;
@@ -76,17 +110,13 @@ export async function recognizeMenuLines(
 ): Promise<OcrLine[]> {
   const safeUri = ensureScheme(uri);
 
-  // Measure the TRUE pixel size (denominator). Fall back to reported dims.
+  // 후보 치수 수집 — 분모 확정은 frame 최대 좌표를 본 뒤(아래, P-056)
   const measured = await getPixelSize(safeUri);
-  const pxW = measured?.width || fallbackW;
-  const pxH = measured?.height || fallbackH;
   console.log(
     '[ocr] dims reported(point?) =',
     JSON.stringify({ fallbackW, fallbackH }),
     '| measured(pixel) =',
     JSON.stringify(measured),
-    '| using =',
-    JSON.stringify({ pxW, pxH }),
   );
 
   console.log('[ocr] recognize ←', safeUri);
@@ -96,7 +126,10 @@ export async function recognizeMenuLines(
   const result = await TextRecognition.recognize(safeUri, TextRecognitionScript.KOREAN);
   console.log('[ocr] blocks =', result.blocks.length, '| fullText =', JSON.stringify(result.text));
 
-  const lines: OcrLine[] = [];
+  // 1차 수집: 텍스트+frame만 — 분모 선택에 frame 최대 좌표가 필요 (P-056)
+  const raw: { text: string; frame: { left: number; top: number; width: number; height: number } }[] = [];
+  let maxRight = 0;
+  let maxBottom = 0;
   result.blocks.forEach((block, bi) => {
     block.lines.forEach((line, li) => {
       console.log(`[ocr] block${bi}.line${li} raw =`, JSON.stringify({ text: line.text, frame: line.frame }));
@@ -105,10 +138,28 @@ export async function recognizeMenuLines(
         console.log(`[ocr] block${bi}.line${li} skipped (empty text or no frame)`);
         return;
       }
-      const box = normalize(line.frame, pxW, pxH);
-      console.log(`[ocr] block${bi}.line${li} norm =`, JSON.stringify({ text, box }));
-      lines.push({ text, box });
+      raw.push({ text, frame: line.frame });
+      maxRight = Math.max(maxRight, line.frame.left + line.frame.width);
+      maxBottom = Math.max(maxBottom, line.frame.top + line.frame.height);
     });
+  });
+
+  // P-056: ML Kit이 실제 참조한 치수 채택 — 채택 근거 로그 필수 (과제 지시)
+  const { pxW, pxH, basis } = chooseDenominator(
+    measured,
+    { width: fallbackW, height: fallbackH },
+    maxRight,
+    maxBottom,
+  );
+  console.log(
+    '[ocr] denominator =',
+    JSON.stringify({ pxW, pxH, basis, maxRight: Math.round(maxRight), maxBottom: Math.round(maxBottom) }),
+  );
+
+  const lines: OcrLine[] = raw.map(({ text, frame }) => {
+    const box = normalize(frame, pxW, pxH);
+    console.log('[ocr] norm =', JSON.stringify({ text, box }));
+    return { text, box };
   });
 
   console.log('[ocr] total usable lines =', lines.length);
