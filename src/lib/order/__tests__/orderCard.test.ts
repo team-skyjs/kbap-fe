@@ -40,6 +40,23 @@ describe('ownerQuestionKo — 사장님 확인 질문 실데이터 조립 (P-045
   it('재료 없음(unregistered 진입): 일반 질문 — 음식명은 항상 실명', () => {
     expect(ownerQuestionKo('된장찌개')).toBe('된장찌개에 제가 못 먹는 재료가 들어가나요?');
   });
+
+  // P-052(반려): 상세의 합성 라우트 키(ing:{i}:{name})가 그대로 통과해
+  // "ing:0:Egg이(가) 들어가나요"가 노출됐다 — 3분기 잠금.
+  it("P-052 ①: 합성 키 'ing:0:Egg' → en 카탈로그명 역매핑 → '달걀이'", () => {
+    expect(ownerQuestionKo('쫄면', 'ing:0:Egg')).toBe('쫄면에 달걀이 들어가나요?');
+    expect(ownerQuestionKo('쫄면', 'ing:3:shrimp')).toBe('쫄면에 새우가 들어가나요?'); // 대소문자 정규화
+    expect(ownerQuestionKo('쫄면', 'ing:2:달걀')).toBe('쫄면에 달걀이 들어가나요?'); // ko 라벨 역매핑
+  });
+
+  it('P-052 ②: 역매핑 실패(미지 name)·미지 형식 → 일반 질문 — 원문/식별자 노출 0', () => {
+    expect(ownerQuestionKo('쫄면', 'ing:1:Mystery Sauce')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?');
+    expect(ownerQuestionKo('쫄면', 'GARBAGE_CODE')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?');
+  });
+
+  it('P-052 ③: 직접 81종 코드는 기존 동작 유지', () => {
+    expect(ownerQuestionKo('김치찌개', 'SHRIMP')).toBe('김치찌개에 새우가 들어가나요?');
+  });
 });
 
 describe('ko 고정 잠금 — UI 언어가 en이어도 카드 라벨은 한국어', () => {

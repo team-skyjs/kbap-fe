@@ -58,15 +58,40 @@ export function avoidSentenceKo(codes: string[]): string | null {
 // 통일(religion:/diet: 코드 폐기 확정). 종교·식이 제약은 해당 재료가 기피 목록에
 // 포함되는 것으로 ②가 이미 커버한다.
 
+const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+
+/**
+ * P-052(KB-215 반려): 재료 식별자 → ko 라벨 **실해석**. 상세 API의
+ * IngredientResponse엔 81종 코드가 없고 name(요청 언어)뿐이라, 어댑터의 합성
+ * 라우트 키(`ing:{i}:{name}`)가 여기로 온다 — name을 추출해 81종의
+ * en 카탈로그명·현재 언어 라벨·ko 라벨 역인덱스에서 찾는다(정규화 비교).
+ * 실패 = null — 호출측이 일반 질문으로 강등(내부 식별자 노출 0).
+ */
+export function resolveIngredientKo(codeOrKey: string): string | null {
+  if (BY_CODE.has(codeOrKey)) return ingredientLabelKo(codeOrKey); // 직접 81종 코드
+  const m = /^ing:\d+:(.+)$/.exec(codeOrKey);
+  if (!m) return null; // 미지 형식 — 원문 통과 금지
+  const q = norm(m[1]);
+  const tko = i18n.getFixedT('ko');
+  for (const ing of INGREDIENTS) {
+    const cands = [ing.name];
+    if (ing.i18nKey) {
+      cands.push(String(i18n.t(`ingredients.${ing.i18nKey}`, { defaultValue: '' }))); // 요청(현재) 언어
+      cands.push(String(tko(`ingredients.${ing.i18nKey}`, { defaultValue: '' }))); // ko
+    }
+    if (cands.some((c) => c && norm(c) === q)) return ingredientLabelKo(ing.code);
+  }
+  return null; // 서버 번역이 FE 라벨과 상이 — 원문보단 덜 구체적인 일반 질문이 낫다
+}
+
 /**
  * P-045(KB-215): 사장님 확인 질문 실데이터 조립 — mock PHRASES 사전 폐기.
  * menuNameKo는 상세 캐시의 실명(스캔 미등록 흐름도 decode된 실명), 재료는
- * 81종 코드→ko 라벨. 재료 없는 진입(unregistered 등)은 일반 질문.
+ * 실해석(resolveIngredientKo) 성공 시에만 구체 질문 — 실패·부재는 일반 질문
+ * (P-052: 내부 식별자/원문이 사장님 화면에 뜨는 경로 원천 봉쇄).
  */
 export function ownerQuestionKo(menuNameKo: string, ingredientCode?: string): string {
-  if (ingredientCode) {
-    const label = ingredientLabelKo(ingredientCode);
-    return `${menuNameKo}에 ${label}${iGa(label)} 들어가나요?`;
-  }
+  const label = ingredientCode ? resolveIngredientKo(ingredientCode) : null;
+  if (label) return `${menuNameKo}에 ${label}${iGa(label)} 들어가나요?`;
   return `${menuNameKo}에 제가 못 먹는 재료가 들어가나요?`;
 }
