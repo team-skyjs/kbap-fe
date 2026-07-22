@@ -496,3 +496,7 @@
 - [x] mocks/owner.ts(PHRASES 사전 — 2개 음식 외 '이 음식') 폐기. useOwnerConfirmation을 클라 조립으로 재작성: 상세 캐시 nameKo(스캔 미등록도 decode 실명) + ownerQuestionKo(81종 코드→ko 라벨, 신규 이/가 조사 유틸) — "{실명}에 {재료ko}이(가) 들어가나요?", 재료 없으면 일반 질문. explanationKo 정적 유지. renderQuestion 하이라이트는 실명 menuNameKo 기준 자연 동작.
 - [x] 사장님 노출 전수: owner.tsx(이번 수정으로 실데이터)·order.tsx(nameKo·81종 라벨 — 기왕 실데이터) 외 mock/하드코딩 잔재 없음.
 - 테스트 +3(iGa 분기·재료 있음/없음 조립·ko 고정). tsc 0, jest 215/215. JS-only — preview OTA(스왑 소멸 후 첫 발행).
+
+## KB-216 스캔 진입 오프라인 게이트 (2026-07-22, P-046)
+- [x] 진입(카메라 phase) 시 오프라인 → 전체 J4(QueryErrorBlock)+Retry, 카메라 미기동 — 판정은 P-027/028과 동일 프로브(useInfiniteFoods 캐시 공유). 촬영 화면 자체를 대체하므로 갤러리·샘플 진입로도 자연 차단. Retry 성공 시 카메라 기동. 서버 5xx는 게이트 미발동(스캔은 오프라인만 불가). 밝은 배경으로 타 탭 J4 톤 통일.
+- 테스트 +3(오프라인→J4·카메라/갤러리/샘플 미렌더, 온라인 무회귀, 5xx 미발동). 기존 scan 테스트 2본 프로브 mock 보강. tsc 0, jest 218/218. JS-only — preview OTA.

@@ -24,8 +24,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone } from '@/lib/theme';
-import { Btn, RiskMark, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
 import { useScan } from '@/lib/data/useScan';
+import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
@@ -96,6 +97,10 @@ export default function Scan() {
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
+  // P-046(KB-216): 진입 시 오프라인 게이트 — 음식탭/검색과 같은 프로브(캐시 공유).
+  // 오프라인이면 카메라 미기동 + 전체 J4, Retry 성공 시 카메라 기동.
+  const probe = useInfiniteFoods();
+  const offline = probe.isError && classifyQueryError(probe.error) === 'offline';
   // KB-141 가로 촬영 차단 — portrait-lock 상태에서도 기기 회전을 알려준다.
   // iOS: expo-camera 내장 콜백(onResponsiveOrientationChanged). Android(KB-198):
   // 그 콜백이 @platform ios라 미발생 → DeviceMotion 중력으로 직접 감지(아래 effect).
@@ -411,6 +416,16 @@ export default function Scan() {
   }
 
   // ---- camera (default) ----
+  // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
+  // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일.
+  if (offline) {
+    return (
+      <View style={[styles.root, styles.center, { backgroundColor: C.surface }]}>
+        {Close}
+        <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
+      </View>
+    );
+  }
   const granted = permission?.granted;
   return (
     <View style={styles.root}>

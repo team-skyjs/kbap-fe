@@ -64,7 +64,9 @@ jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: jest.fn() })); // ML Kit 네이티브 차단
+jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: jest.fn() }));
+// P-046: 스캔 오프라인 프로브 — 기본 온라인
+jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) })); // ML Kit 네이티브 차단
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { restrictions: [] } }),
