@@ -16,6 +16,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, accentTint, radius, shadow } from '@/lib/theme';
 import { Btn, RiskMark, IconCamera, IconSpeech } from '@/components';
@@ -44,6 +45,7 @@ export default function Intro() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { width } = useWindowDimensions();
   const [active, setActive] = useState(0);
   // hero height is dynamic (flex:1); measure it so the horizontal pager's pages
@@ -112,7 +114,7 @@ export default function Intro() {
       </View>
 
       {/* fixed CTA */}
-      <View style={[styles.foot, { paddingBottom: insets.bottom + 24 }]}>
+      <View style={[styles.foot, { paddingBottom: bottom + 24 }]}>
         <Btn onPress={goSignUp} style={styles.cta}>{t('intro.signUp')}</Btn>
         <Pressable onPress={goHome} hitSlop={8}>
           <Text style={styles.secondary}>{t('intro.browseFirst')}</Text>

@@ -19,6 +19,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
@@ -236,9 +237,8 @@ export default function Onboarding() {
     apply(copy);
   };
 
-  // KB-197: Android 하단 내비바 클리어런스 — edge-to-edge에서 insets.bottom이
-  // 0으로 과소보고되는 기기가 있어(3버튼 내비 등) floor 적용. iOS는 실측값 그대로.
-  const bottomInset = Platform.OS === 'android' ? Math.max(insets.bottom, 48) : insets.bottom;
+  // KB-197→P-055: 안드 내비바 클리어런스는 공용 훅으로 승격 (전수 적용)
+  const bottomInset = useBottomInset();
 
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>

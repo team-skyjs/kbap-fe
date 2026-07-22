@@ -531,3 +531,7 @@
 ## KB-194 후속 — Android 12+ 스플래시 원형 마스크 (2026-07-22, P-054 ⚠️재빌드)
 - [x] 원인: Android 12+ windowSplashScreenAnimatedIcon이 앱 이미지를 OS 원형 마스크에 강제 배치 — 세로 조합(로고+워드마크)이 원 밖에서 클립("K-Bar"). 수정: 심볼 전용 정사각 에셋 분리(splash-icon-android.png — 기존 png의 심볼 밴드(300×300) 크롭, 450 캔버스 = 2/3 안전영역) + app.json expo-splash-screen android.image/imageWidth 200 오버라이드. iOS는 기존 조합 이미지 무변. 원형 마스크 시뮬 미리보기 spec/bridge/assets/p054-android-splash-preview.png.
 - ⚠️ 네이티브 — OTA 불가, 안드 빌드3/차기 iOS 빌드 합류(제출용 최종 빌드에 배치 — 커맨드 센터 의견). **fingerprint 재회전**(안드 c71456e3·iOS 584a401b) — 빌드3 전 OTA 발행 시 app.json+splash-icon-android.png 2파일 임시 되돌림 필요(축소판 스왑 부활). tsc 0, jest 229/229.
+
+## KB-225 안드 하단 내비바 클리어런스 전수 (2026-07-22, P-055)
+- [x] P-021 국소 처치를 공용 훅 useBottomInset(안드 max(bottom,48)/iOS 실측)으로 승격, 전수 적용: AuthGateSheet(이번 짤림 — 인셋 미반영 고정 34가 원인, 안드만 18+보정 인셋·iOS 34 유지), login, intro, scan(카메라+결과 2곳), owner, order, 온보딩(기존 처치 교체). TabBar는 실기 정상 전제 무변(과보정 회피 — 짤리면 동일 유틸).
+- 테스트 +2(bottomInsetFloor 분기 — 안드 floor·iOS 통과). tsc 0, jest 231/231. JS-only — preview OTA. 실기 확인 목록(3버튼 에뮬): 게이트 시트 '나중에 하기'·로그인 하단·인트로 CTA·스캔 하단 바(카메라/결과)·owner/order Done·온보딩 CTA.

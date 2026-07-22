@@ -4,8 +4,9 @@
  * context prop이 카피를 분기하고, CTA는 /login?returnTo=<현재 경로>로 —
  * 로그인 성공 시 보던 맥락으로 복귀한다 (guest-access-policy §0-3).
  */
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { usePathname, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
@@ -37,6 +38,11 @@ export function AuthGateSheet({
   const pathname = usePathname();
   const { t } = useTranslation();
   const copy = COPY[context];
+  // P-055(KB-225): 시트가 인셋 미반영 고정 paddingBottom(34)이라 안드 3버튼
+  // 내비바에 '나중에 하기'가 짤렸다. iOS는 기존 34 유지(홈 인디케이터 여유 겸,
+  // 무회귀), 안드만 보정 인셋 반영.
+  const bottom = useBottomInset();
+  const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
 
   const goLogin = () => {
     onClose();
@@ -50,7 +56,7 @@ export function AuthGateSheet({
             시트엔 스프링이 안 맞음(예진 실기 "이상함", P-035·047과 같은 절제
             사례). 원복 = Modal fade 단독(P-031 이전). 퇴장·backdrop 무변. */}
         {/* 카드 탭이 backdrop으로 새지 않게 */}
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}}>
           <Pressable style={styles.close} hitSlop={10} onPress={onClose}>
             <IconClose size={18} color={C.ink3} />
           </Pressable>

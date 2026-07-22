@@ -19,6 +19,7 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } fr
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -72,6 +73,7 @@ function deletePhotoFile(uri: string | null | undefined): void {
 export default function Scan() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { t } = useTranslation();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -363,7 +365,7 @@ export default function Scan() {
           </View>
         )}
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
-        <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
+        <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
           {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
           <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: allDishes.length })}</Text>
@@ -461,7 +463,7 @@ export default function Scan() {
       {Close}
         {GateSheet}
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
         <Text style={styles.hint}>{t('scan.hint')}</Text>
         <View style={styles.camRow}>
           <Pressable style={styles.sideBtn} onPress={pickFromGallery} hitSlop={8} accessibilityLabel={t('scan.gallery')}>

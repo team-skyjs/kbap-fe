@@ -12,6 +12,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
@@ -22,10 +23,11 @@ export default function Login() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 26 }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 10, paddingBottom: bottom + 26 }]}>
       {/* ⑪-3: 뒤로가기 제거 — replace로 진입하면 스택이 비어 GO_BACK 미처리 에러.
           출구는 하단 "먼저 둘러보기"(replace라 스택 상태 무관) 하나로 통일. */}
       <View style={styles.hero}>

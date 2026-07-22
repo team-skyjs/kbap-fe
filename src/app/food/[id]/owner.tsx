@@ -11,6 +11,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { IconClose } from '@/components';
@@ -21,6 +22,7 @@ export default function OwnerConfirm() {
   const { id, ingredient } = useLocalSearchParams<{ id: string; ingredient?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { t } = useTranslation();
   const { data } = useOwnerConfirmation(id ?? '', ingredient);
 
@@ -40,7 +42,7 @@ export default function OwnerConfirm() {
         )}
       </View>
 
-      <View style={[styles.foot, { paddingBottom: insets.bottom + 18 }]}>
+      <View style={[styles.foot, { paddingBottom: bottom + 18 }]}>
         <PressScale style={styles.done} onPress={() => router.back()}>
           <Text style={styles.doneText}>{t('owner.done')}</Text>
         </PressScale>
