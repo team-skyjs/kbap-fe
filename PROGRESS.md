@@ -544,3 +544,7 @@
 ## KB-212 후속 — 스캔 배너 리스트 첫 카드 편입 (2026-07-22, P-057 A안)
 - [x] 어두운 absolute 오버레이 폐기 → 결과 리스트 첫 카드(메뉴 카드와 같은 폭·radius·간격 리듬). 밝은 브랜드 틴트(#fdf0e6/#f0d9c4), 좌측 원형 primary IconBulb(신규 SVG), 본문 ink2 + "기피 재료를 설정"만 primaryText 강조(i18n nudgeAction/nudgeRest 분리 ×10 — 구 nudge 키 제거). 목록 뷰 전용(위험도/원본 미노출). 동작·노출 조건 무변, 스태거 대열 첫 항목으로 합류(delay 0).
 - 테스트 갱신+1(목록 뷰 전용) — 기존 4케이스 카드 구조로 이전. tsc 0, jest 237/237. JS-only — preview OTA.
+
+## KB-125 후속 — 다양성 행 dim 예고 (2026-07-22, P-058)
+- [x] 다양성 점수는 리뷰 작성 적립 구조 — MVP에선 죽은 지표라 리뷰 팩터와 동일 dim 처리. 공용 ComingRow 컴포넌트 추출(P-048 인라인 리뷰 행도 이전), 다양성 행 opacity 0.55+IconLock+reviewsComing 재사용·탭 무반응. 활성 팩터는 스캔뿐 — dim 2행/활성 1행 사이 breakRowBorder로 시각 균형 유지. 점수 로직 무변.
+- 테스트 +1(다양성 dim·실적 detail 부재·예고 2행·스캔 활성). tsc 0, jest 238/238. JS-only — preview OTA.

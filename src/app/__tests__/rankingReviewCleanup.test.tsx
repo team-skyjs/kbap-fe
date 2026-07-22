@@ -72,3 +72,12 @@ it('리뷰 팩터 dim 예고 행 상시 노출 — 라벨+예고 문구', () => 
   expect(texts(tree, 'ranking.reviewsLabel')).toBeGreaterThanOrEqual(1);
   expect(texts(tree, 'ranking.reviewsComing')).toBeGreaterThanOrEqual(1);
 });
+
+// P-058: 다양성도 dim 예고 (리뷰 작성 적립 구조 — MVP에선 죽은 지표)
+it('P-058: 다양성 행 dim 예고 — 실적 detail 미렌더, 예고 2행·스캔만 활성', () => {
+  const tree = render(<RankingScreen />);
+  expect(texts(tree, 'ranking.diversityLabel')).toBeGreaterThanOrEqual(1);
+  expect(texts(tree, 'ranking.diversityDetail')).toBe(0); // 실적 문구 제거
+  expect(texts(tree, 'ranking.reviewsComing')).toBeGreaterThanOrEqual(2); // 리뷰+다양성 (Txt 래퍼 중복 계상 허용)
+  expect(texts(tree, 'ranking.scansDetail')).toBeGreaterThanOrEqual(1); // 스캔은 활성
+});

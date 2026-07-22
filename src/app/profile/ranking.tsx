@@ -124,20 +124,11 @@ function RankingBody({ rk, onScan }: { rk: Ranking; onScan: () => void }) {
             <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
           </View>
           <View style={styles.breakCard}>
-            {/* P-048(KB-125): 리뷰 팩터는 dim 예고로 상시 노출 — 리뷰 기능 예고.
-                점수 가중치(ranking.ts) 무변, 탭 요소 아님(무반응). */}
-            <View style={styles.comingRow}>
-              <View style={styles.breakIc}><IconSpeech size={20} color={C.ink3} /></View>
-              <View style={styles.breakMeta}>
-                <View style={styles.breakLabelRow}>
-                  <Text style={styles.breakLabel}>{t('ranking.reviewsLabel')}</Text>
-                  <Text style={styles.breakLabelKo}>{t('ranking.reviewsLabelKo')}</Text>
-                </View>
-                <Text style={styles.breakDetail}>{t('ranking.reviewsComing')}</Text>
-              </View>
-              <IconLock size={14} color={C.ink3} />
-            </View>
-            <BreakRow icon={<IconFood size={20} color={C.primary} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} detail={t('ranking.diversityDetail', { count: bd.diversity.count })} factor={bd.diversity} />
+            {/* P-048·P-058(KB-125): 리뷰·다양성 팩터는 dim 예고 — 리뷰 기능이
+                MVP 제외라 다양성(리뷰 작성 적립)도 죽은 지표. 점수 가중치
+                (ranking.ts) 무변, 탭 요소 아님(무반응). 활성은 스캔뿐. */}
+            <ComingRow first icon={<IconSpeech size={20} color={C.ink3} />} label={t('ranking.reviewsLabel')} labelKo={t('ranking.reviewsLabelKo')} />
+            <ComingRow icon={<IconFood size={20} color={C.ink3} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} />
             <BreakRow icon={<IconScanLines size={20} color={C.primary} />} label={t('ranking.scansLabel')} labelKo={t('ranking.scansLabelKo')} detail={t('ranking.scansDetail', { count: bd.scans.count })} factor={bd.scans} />
             {/* P-048: "리뷰 하나 더 +10점"(breakTotal) 행 제거 — 리뷰 흔적 정리 */}
           </View>
@@ -208,6 +199,24 @@ function Gauge({ score, from, to }: { score: number; from: number; to: number })
 }
 
 /* ---------- breakdown row ---------- */
+/** P-048·P-058: 예고(dim) 팩터 행 — 자물쇠 + "다음 업데이트에 제공" */
+function ComingRow({ icon, label, labelKo, first }: { icon: React.ReactNode; label: string; labelKo: string; first?: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <View style={[styles.comingRow, !first && styles.breakRowBorder]}>
+      <View style={styles.breakIc}>{icon}</View>
+      <View style={styles.breakMeta}>
+        <View style={styles.breakLabelRow}>
+          <Text style={styles.breakLabel}>{label}</Text>
+          <Text style={styles.breakLabelKo}>{labelKo}</Text>
+        </View>
+        <Text style={styles.breakDetail}>{t('ranking.reviewsComing')}</Text>
+      </View>
+      <IconLock size={14} color={C.ink3} />
+    </View>
+  );
+}
+
 function BreakRow({ icon, label, labelKo, detail, factor, first }: { icon: React.ReactNode; label: string; labelKo: string; detail: string; factor: RankingFactor; first?: boolean }) {
   const { t } = useTranslation();
   return (
