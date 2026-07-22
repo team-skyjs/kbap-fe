@@ -7,9 +7,11 @@ import i18n from '@/lib/i18n';
 import {
   avoidSentenceKo,
   eulReul,
+  iGa,
   ingredientLabelKo,
   MAX_AVOID_SHOWN,
   orderSentenceKo,
+  ownerQuestionKo,
 } from '../orderCard';
 
 describe('eulReul — 받침 조사 분기', () => {
@@ -17,6 +19,26 @@ describe('eulReul — 받침 조사 분기', () => {
     expect(eulReul('달걀')).toBe('을');
     expect(eulReul('새우')).toBe('를');
     expect(eulReul('Egg')).toBe('을(를)');
+  });
+});
+
+describe('iGa — 주격 조사 분기 (P-045)', () => {
+  it('받침 있음→이, 없음→가, 비한글→병기 폴백', () => {
+    expect(iGa('달걀')).toBe('이');
+    expect(iGa('새우')).toBe('가');
+    expect(iGa('Egg')).toBe('이(가)');
+  });
+});
+
+describe('ownerQuestionKo — 사장님 확인 질문 실데이터 조립 (P-045/KB-215)', () => {
+  it("재료 있음: '{실명}에 {재료ko}이(가) 들어가나요?' — mock '이 음식' 잔재 금지", async () => {
+    await i18n.changeLanguage('en'); // ko 고정 잠금 겸
+    expect(ownerQuestionKo('김치찌개', 'SHRIMP')).toBe('김치찌개에 새우가 들어가나요?');
+    expect(ownerQuestionKo('비빔밥', 'EGG')).toBe('비빔밥에 달걀이 들어가나요?');
+  });
+
+  it('재료 없음(unregistered 진입): 일반 질문 — 음식명은 항상 실명', () => {
+    expect(ownerQuestionKo('된장찌개')).toBe('된장찌개에 제가 못 먹는 재료가 들어가나요?');
   });
 });
 

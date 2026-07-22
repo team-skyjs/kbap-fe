@@ -491,3 +491,8 @@
 ## Android 빌드2 (2026-07-21, P-043, 빌드 24277e9c)
 - preview apk 빌드 완료 — runtime `f96ae4f7`. 합류: expo-sensors 가로 감지(P-022 — 안드 실동작), WYSIWYG 크롭(P-025), 스캔 글라이드/스태거(P-032), 스캔 배너(P-038) + 최신 JS 전량.
 - **preview OTA 스왑 절차 완전 소멸**: 구 build1(cbbec117)은 orphan — 공기계는 새 apk 재설치가 기준, 이후 preview OTA는 스왑 없이 발행. 코드 무변(기록만).
+
+## KB-215 사장님 카드 실데이터 조립 (2026-07-22, P-045)
+- [x] mocks/owner.ts(PHRASES 사전 — 2개 음식 외 '이 음식') 폐기. useOwnerConfirmation을 클라 조립으로 재작성: 상세 캐시 nameKo(스캔 미등록도 decode 실명) + ownerQuestionKo(81종 코드→ko 라벨, 신규 이/가 조사 유틸) — "{실명}에 {재료ko}이(가) 들어가나요?", 재료 없으면 일반 질문. explanationKo 정적 유지. renderQuestion 하이라이트는 실명 menuNameKo 기준 자연 동작.
+- [x] 사장님 노출 전수: owner.tsx(이번 수정으로 실데이터)·order.tsx(nameKo·81종 라벨 — 기왕 실데이터) 외 mock/하드코딩 잔재 없음.
+- 테스트 +3(iGa 분기·재료 있음/없음 조립·ko 고정). tsc 0, jest 215/215. JS-only — preview OTA(스왑 소멸 후 첫 발행).

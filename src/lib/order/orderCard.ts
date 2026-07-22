@@ -21,6 +21,13 @@ export function eulReul(word: string): string {
   return '을(를)';
 }
 
+/** 받침 조사(이/가) — eulReul과 동일 산술, 주격용 (P-045 사장님 질문). */
+export function iGa(word: string): string {
+  const c = word.charCodeAt(word.length - 1);
+  if (c >= 0xac00 && c <= 0xd7a3) return (c - 0xac00) % 28 > 0 ? '이' : '가';
+  return '이(가)';
+}
+
 /** 재료 코드 → ko 라벨 (UI 언어 무관 — 사장님 카드는 항상 한국어). */
 export function ingredientLabelKo(code: string): string {
   const e = BY_CODE.get(code);
@@ -50,3 +57,16 @@ export function avoidSentenceKo(codes: string[]): string | null {
 // P-033(KB-205 정정): 종교·식이 한 줄(③)은 제거 — 회피 모델은 평면 81종 재료로
 // 통일(religion:/diet: 코드 폐기 확정). 종교·식이 제약은 해당 재료가 기피 목록에
 // 포함되는 것으로 ②가 이미 커버한다.
+
+/**
+ * P-045(KB-215): 사장님 확인 질문 실데이터 조립 — mock PHRASES 사전 폐기.
+ * menuNameKo는 상세 캐시의 실명(스캔 미등록 흐름도 decode된 실명), 재료는
+ * 81종 코드→ko 라벨. 재료 없는 진입(unregistered 등)은 일반 질문.
+ */
+export function ownerQuestionKo(menuNameKo: string, ingredientCode?: string): string {
+  if (ingredientCode) {
+    const label = ingredientLabelKo(ingredientCode);
+    return `${menuNameKo}에 ${label}${iGa(label)} 들어가나요?`;
+  }
+  return `${menuNameKo}에 제가 못 먹는 재료가 들어가나요?`;
+}
