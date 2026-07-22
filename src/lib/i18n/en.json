@@ -617,8 +617,7 @@
     "groups": {
       "Dietary": "Dietary",
       "Religion": "Religion"
-    },
-    "spiceUnsetHint": "Tap a flame to choose"
+    }
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

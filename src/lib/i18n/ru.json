@@ -466,8 +466,7 @@
     "groups": {
       "Dietary": "Питание",
       "Religion": "Религия"
-    },
-    "spiceUnsetHint": "Нажмите на огонёк, чтобы выбрать"
+    }
   },
   "editProfile": {
     "title": "Профиль",

@@ -466,8 +466,7 @@
     "groups": {
       "Dietary": "食事",
       "Religion": "宗教"
-    },
-    "spiceUnsetHint": "炎をタップして選択"
+    }
   },
   "editProfile": {
     "title": "プロフィール編集",

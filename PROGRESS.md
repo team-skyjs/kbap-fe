@@ -516,3 +516,7 @@
 
 ## KB-219 CI (2026-07-22, P-050)
 - [x] .github/workflows/ci.yml — push(main)+PR에서 npm ci → tsc --noEmit → jest --ci (node 20 = 로컬 일치, npm 캐시). 1회 green 확인: https://github.com/team-skyjs/kbap-fe/actions/runs/29887022483 (run #1 success). 브랜치 보호(실패 시 병합 차단)는 예진 콘솔 설정 몫. 참고: actions 런타임 Node20 deprecation 어노테이션은 액션 자체 런타임 경고(스텝의 node 20 사용과 무관·무해).
+
+## KB-195 후속 — 맵기 UI 원복: 화면=전송 일치 (2026-07-22, P-051)
+- [x] Q-03 피드백으로 P-039 미선택 UI(대시·힌트·회색 불꽃) 원복 — 기본 5 표시, Continue(미조작 포함)=화면값 그대로 제출, Skip=-1(P-019 경로). stale closure 수정(finish 인자화)은 유지 — Continue=finish(spice)/Skip=finish(null). draft null(구 스킵분)→5 표시 호환. i18n spiceUnsetHint ×10 제거.
+- 테스트 교체: 미조작+Continue→5 / 조작 7→7 / Skip→UNSET. tsc 0, jest 226/226. JS-only — preview OTA.

@@ -1,8 +1,9 @@
 /**
- * P-039(KB-195 재수정) 🔴: 맵기 미조작+계속이 "5 선택"으로 제출되던 구멍 잠금.
- *  - 미조작 + 계속 → spiceTolerance UNSET (건너뛰기와 동일 — body -1은 submit.test가 잠금)
- *  - 불꽃 조작 후 계속 → 실값
- *  - 건너뛰기 → UNSET (존치)
+ * P-051(KB-195 후속, Q-03): **화면 그대로 제출** 원칙 잠금 (P-039 UI 롤백).
+ *  - 미조작 + Continue → 화면 기본값 **5** 제출 (표시=전송 일치)
+ *  - 불꽃 조작(7) + Continue → 7
+ *  - Skip → UNSET (body -1은 submit.test가 잠금)
+ * draft spice=null(구 스킵분) 복귀 → 5 표시 호환도 이 하네스가 겸한다.
  * spice가 마지막 스텝(interests 플래그 off)이라 계속 = 제출 — draft 복귀로 직행.
  */
 import * as React from 'react';
@@ -108,13 +109,13 @@ beforeEach(() => {
   mockSubmit.mockClear();
 });
 
-it('미조작 + 계속 → spiceTolerance UNSET (이번 구멍 그대로 — 5 전송 금지)', async () => {
+it('미조작 + Continue → 화면 기본값 5 제출 (표시=전송 일치, null draft→5 호환 겸)', async () => {
   const tree = await renderSpiceStep();
   await act(async () => {
     continueBtn(tree).props.onPress();
   });
   expect(mockSubmit).toHaveBeenCalledTimes(1);
-  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('UNSET');
+  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe(5);
 });
 
 it('불꽃 조작(7) 후 계속 → 실값 7', async () => {
@@ -133,7 +134,7 @@ it('불꽃 조작(7) 후 계속 → 실값 7', async () => {
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe(7);
 });
 
-it('건너뛰기 → UNSET (버튼 존치·동작 동일)', async () => {
+it('Skip → UNSET (P-019 -1 경로 유지)', async () => {
   const tree = await renderSpiceStep();
   const skips = skipLink(tree);
   expect(skips.length).toBeGreaterThanOrEqual(1);
