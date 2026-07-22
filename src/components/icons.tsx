@@ -236,6 +236,14 @@ export const IconEdit = (p: IconProps) => (
     <Line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
   </Glyph>
 );
+/** P-057: 빈 프로필 넛지 배너 — 전구 (기호=SVG 규칙) */
+export const IconBulb = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M12 3.5 a5.5 5.5 0 0 1 3.1 10 c-.7 .5 -1.1 1.2 -1.1 2 v.5 h-4 v-.5 c0 -.8 -.4 -1.5 -1.1 -2 A5.5 5.5 0 0 1 12 3.5 Z" />
+    <Line x1="10" y1="19" x2="14" y2="19" />
+    <Line x1="10.7" y1="21" x2="13.3" y2="21" />
+  </Glyph>
+);
 export const IconGlobe = (p: IconProps) => (
   <Glyph {...p}>
     <Circle cx="12" cy="12" r="8.4" />

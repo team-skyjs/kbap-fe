@@ -172,7 +172,8 @@
     "unmatchedNote": "No está en nuestro catálogo: confírmalo con el dueño.",
     "degradedNote": "Algunos elementos no se pudieron evaluar esta vez: trátalos con precaución.",
     "spikeNote": "Spike: el riesgo llega en vivo desde el backend (actualmente simulado).",
-    "nudge": "Configura tus ingredientes a evitar y te señalaremos qué saltarte en este menú"
+    "nudgeAction": "Configura tus ingredientes a evitar",
+    "nudgeRest": " y te señalaremos qué saltarte en este menú"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

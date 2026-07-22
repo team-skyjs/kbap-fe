@@ -540,3 +540,7 @@
 - [x] adb 실측 확정 원인: 안드 저장 파일이 절반 다운스케일(1883×4080→942×2040)인데 ML Kit frame은 원치수 기준 → measured 분모로 y 2배 뻥튀기·y≥1 클램프 미표시("마커 2개"도 동일). 수정: chooseDenominator — frame 최대 좌표를 수용하는 쪽 채택(우선 measured=iOS 정답 유지 → reported → 둘 다 못 담으면 큰 쪽), 2% 반올림 여유, 채택 근거 로그([ocr] denominator basis). 플랫폼 하드코딩 없음 — 정수배 관계면 스케일 보정과 동치.
 - 부수 확인(조사만): 절반 저장은 안드 저장 경로(P-025 ImageManipulator saveAsync 추정) — OCR 인식은 정상 동작, 2040px면 메뉴판 텍스트 해상도 여유. 화질 이슈 미관측 — 필요 시 별도 과제.
 - 테스트 +5(chooseDenominator — 안드 실측 재현·iOS 무회귀·null 폴백·larger-fallback·경계 여유). tsc 0, jest 236/236. JS-only — preview OTA. ⚠️ 스캔 화면 아님·ocr.ts는 OTA 대상(스왑 무관 — lib 파일).
+
+## KB-212 후속 — 스캔 배너 리스트 첫 카드 편입 (2026-07-22, P-057 A안)
+- [x] 어두운 absolute 오버레이 폐기 → 결과 리스트 첫 카드(메뉴 카드와 같은 폭·radius·간격 리듬). 밝은 브랜드 틴트(#fdf0e6/#f0d9c4), 좌측 원형 primary IconBulb(신규 SVG), 본문 ink2 + "기피 재료를 설정"만 primaryText 강조(i18n nudgeAction/nudgeRest 분리 ×10 — 구 nudge 키 제거). 목록 뷰 전용(위험도/원본 미노출). 동작·노출 조건 무변, 스태거 대열 첫 항목으로 합류(delay 0).
+- 테스트 갱신+1(목록 뷰 전용) — 기존 4케이스 카드 구조로 이전. tsc 0, jest 237/237. JS-only — preview OTA.

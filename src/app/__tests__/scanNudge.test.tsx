@@ -1,7 +1,8 @@
 /**
- * P-038(KB-212): 빈 프로필 첫 스캔 배너 노출 조건 잠금.
+ * P-038→P-057(KB-212): 빈 프로필 첫 스캔 배너 잠금 (A안 — 리스트 첫 카드).
  *  - 회원 + 기피 0 → 노출 / 기피 1+ → 미노출 / 게스트 → 미노출(로그인 게이트 흐름)
  *  - 닫기 → 세션 내 재마운트에도 미노출 (영구 아님 — 모듈 플래그)
+ *  - 목록 뷰 전용 — 위험도/원본 토글 시 미노출 (P-057)
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -114,7 +115,7 @@ function renderResult(): ReactTestRenderer {
   return tree;
 }
 
-const nudgeCount = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.children === 'scan.nudge').length;
+const nudgeCount = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.children === 'scan.nudgeAction').length;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -141,16 +142,34 @@ it('게스트 → 미노출 (기존 로그인 게이트 흐름)', () => {
 it('닫기 → 세션 내 재마운트에도 미노출 (재실행 시 리셋은 모듈 수명이 보장)', () => {
   const tree = renderResult();
   expect(nudgeCount(tree)).toBeGreaterThanOrEqual(1);
-  // 배너의 × (IconClose 중 nudge 내부의 것) — 배너 컨테이너에서 탐색
+  // 배너 내부의 × — 부모 체인(≤3)에 nudgeAction 텍스트가 있는 IconClose Pressable
   const closeBtns = tree.root
-    .findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 8)
-    .filter((n) => n.findAllByType(IconClose).length === 1 && n.findAll((c) => c.props?.children === 'scan.nudge').length === 0);
-  // nudge 행 안의 × Pressable: IconClose를 품고 텍스트는 없는 노드
-  expect(closeBtns.length).toBeGreaterThanOrEqual(1);
+    .findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 8 && n.findAllByType(IconClose).length === 1)
+    .filter((n) => {
+      let p = n.parent;
+      for (let d = 0; p && d < 3; d++, p = p.parent as typeof p) {
+        if (p.findAll((c) => c.props?.children === 'scan.nudgeAction').length > 0) return true;
+      }
+      return false;
+    });
+  expect(closeBtns.length).toBeGreaterThanOrEqual(1); // 컴포지트+호스트 이중 표현 허용
   act(() => {
-    closeBtns[closeBtns.length - 1].props.onPress();
+    closeBtns[0].props.onPress();
   });
   expect(nudgeCount(tree)).toBe(0);
   // 재마운트(같은 세션) — 억제 유지
   expect(nudgeCount(renderResult())).toBe(0);
+});
+
+it('P-057: 목록 뷰 전용 — 위험도 토글로 전환하면 배너 미렌더', () => {
+  const tree = renderResult();
+  expect(nudgeCount(tree)).toBeGreaterThanOrEqual(1);
+  const riskToggle = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showResult').length > 0,
+  );
+  expect(riskToggle.length).toBeGreaterThanOrEqual(1);
+  act(() => {
+    riskToggle[riskToggle.length - 1].props.onPress();
+  });
+  expect(nudgeCount(tree)).toBe(0);
 });
