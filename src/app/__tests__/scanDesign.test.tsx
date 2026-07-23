@@ -193,3 +193,20 @@ it('P-064③ 원본 피크 — 위험도 뷰에서 배경 꾹=버튼 비활성(p
   const barsOn = tree.root.findAll((n) => n.props?.pointerEvents === 'auto' && n.findAll((c) => c.props?.children === 'scan.retake').length > 0);
   expect(barsOn.length).toBeGreaterThanOrEqual(1);
 });
+
+it('P-066 하단 그라데이션 — 위험도 뷰 존재(220)·리스트 뷰 부재, 피크 시 버튼과 동반 페이드 구조', async () => {
+  const tree = render(<Scan />);
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  const shade = () =>
+    tree.root.findAll((n) => JSON.stringify(n.props?.style ?? '').includes('"height":220') && n.props?.pointerEvents === 'none');
+  expect(shade().length).toBe(0); // 기본=리스트: 그라데이션 없음
+  const riskBtn = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showResult').length > 0,
+  );
+  act(() => {
+    riskBtn[riskBtn.length - 1].props.onPress();
+  });
+  expect(shade().length).toBeGreaterThanOrEqual(1); // 사진 뷰: 상시 렌더
+});

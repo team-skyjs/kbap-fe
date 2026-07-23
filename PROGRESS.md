@@ -597,3 +597,9 @@
 - [x] ② appLanguage 전송 중단: onboarding submit body에서 `appLanguage: payload.language` 제거(+주석 정리), useMe PATCH의 readerLanguage→appLanguage 매핑 제거 — 서버는 언어 무저장, 매 요청 lang 쿼리만.
 - [x] ③ /scans lang 부착: `api.post(\`/scans?lang=${apiLang()}\`)` — 타 엔드포인트와 동일 패턴.
 - 테스트 +1(온보딩 body appLanguage 부재 잠금)·반전 3(useScan URL 잠금 → `/scans?lang=en`). tsc 0, jest 251/251. ①(OS 정본 LocaleProvider)·④(피커 제거)는 선행 커밋 탑승 완료, ⑤(supportedLocales)는 네이티브 — 차기 최종 빌드.
+
+## KB-233 파파고식 — 하단 그라데이션 반려 보강 (2026-07-23, P-066)
+- [x] 원인: 렌더 순서·elevation 아님(그라데이션이 오버레이 뒤 형제 = 최상위, pill elevation은 서브트리 내부) — **contain 레터박스**: 카메라 사진(3:4)이 세로 화면 중앙 배치되면 하단 ~220px는 배경(#16110d)뿐 → 검정→검정이라 시각 소멸. 사진·줌이 하단을 채우면 정상 표시되는 구조였음.
+- [x] 보강: 높이 170→220·검정 0→0.6, 사진 뷰(위험도·원본) 상시 렌더 유지 — 레터박스 시에도 배경이 어두워 버튼 가독은 항상 보장. 피크 연동: peekFade 래퍼로 버튼과 동반 페이드(원본 감상 비방해, 파파고 동일).
+- [x] 한계 명시: 레터박스 구간에선 보강 후에도 그라데이션 자체는 비가시(물리적 동일색) — 완전한 파파고 동일감은 촬영 화면비 크롭이 필요(후속 P 후보로 보고).
+- 테스트 +1(사진 뷰 존재·리스트 부재). tsc 0, jest 252/252. 실기기(Metro) 확인 후 preview OTA — P-066 지시 4.

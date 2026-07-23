@@ -388,12 +388,13 @@ export default function Scan() {
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         {/* P-064②: 파파고식 — 다크 시트·캡션·범례 삭제, 사진 풀블리드 위에
             원형 버튼 4개만 플로팅. 사진 뷰(위험도·원본)엔 가독용 하단 그라데이션. */}
+        {/* P-066: 사진이 contain 레터박스일 땐 배경(#16110d)과 겹쳐 안 보이지만,
+            사진·줌이 하단을 채우는 순간 버튼 가독을 보장하는 안전망 — 상시 렌더.
+            피크(원본 감상) 중엔 버튼과 함께 페이드. */}
         {view !== 'list' && (
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
-            style={styles.resultShade}
-            pointerEvents="none"
-          />
+          <Animated.View style={[styles.resultShade, peekFade]} pointerEvents="none">
+            <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']} style={StyleSheet.absoluteFill} />
+          </Animated.View>
         )}
         <Animated.View style={[styles.floatBar, { paddingBottom: bottom + 12 }, peekFade]} pointerEvents={peeking ? 'none' : 'auto'}>
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
@@ -639,7 +640,7 @@ const styles = StyleSheet.create({
   sweepTrail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
   sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
-  resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 170 },
+  resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   floatBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 8 },
   d3Btns: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-evenly', marginTop: 2 },
   d3Btn: { alignItems: 'center', gap: 6, width: 76 },
