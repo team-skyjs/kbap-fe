@@ -554,3 +554,11 @@
 - [x] dev 계약 동일 실증(curl): home/foods/foods/{id} — 엔벨로프·payload 키·아이템 형태 dev=meogo 완전 동일, dev 20종 시딩 확인. Metro 실기 스모크(스캔 포함)는 예진 확인 요청.
 - ⚠️ fingerprint 실측: eas.json·.gitignore 편집이 회전 유발(P-017 선례 재확인) — **발행 스왑 목록 확장**: app.json·eas.json·.gitignore 되돌림 + splash-icon-android.png·.env 치우기 → 베이스라인(f96ae4f7/c43664ed) 복원 검증 완료. 빌드3 재베이스라인 때 전체 소멸.
 - 테스트 +2(BE_BASE env 분기/meogo fallback). tsc 0, jest 240/240. 발행 불요(빌드/OTA 무변 — dev 전용 배선).
+
+## 언어 설정 대개편 1차 — OS 정본화 (2026-07-23, P-060 진행 중)
+- [x] ① LocaleProvider 단순화: kbap.lang 저장·복원/setLang/라이브 전환·무효화(P-015 계열) 전부 제거 — 언어 = getLocales() 기기 언어(미지원 en), resolveInitialLang은 시그니처 유지(bootGate). 온보딩 국적→언어 제안도 소멸.
+- [x] ④ 인앱 피커 철거: LanguagePicker.tsx 삭제, 온보딩 언어 필드 행 삭제(별도 스텝이 아니라 프로필 스텝 내 필드였음 — 스텝 수 무변 실측), 프로필 탭·수정 화면 언어 행 → OS 앱 설정 열기(Linking.openSettings, 안드12- 숨김 Platform.Version<33).
+- [x] ⑤ OS 앱별 언어 선언: expo-localization plugin supportedLocales(ios/android ×10) — CFBundleLocalizations 생성 확인(expo config), localeConfig는 빌드 시 생성. ⚠️ 네이티브 — 최종 빌드(iOS8/안드3) 탑승, app.json 회전은 기존 스왑이 커버.
+- [x] ⑥ 테스트: osLocale(기기 추종·en 폴백·resolveInitialLang=기기) +2, P-015 라이브 전환 테스트 폐기(기능 소멸). tsc 0, jest 241/241.
+- [ ] ②appLanguage 전송 중단·③/scans lang — **BE 스웨거 미갱신(실측: /scans params [], appLanguage 11회 잔존)** — 갱신 신호 후 이어서.
+- OTA 보류 판단: 피커 제거를 OTA로 선발행하면 OS 언어 항목(⑤ 빌드 후 노출) 전까지 언어 변경 수단 공백 — 7/24 최종 빌드에 일괄 탑승이 정합.

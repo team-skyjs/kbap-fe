@@ -2,20 +2,19 @@
  * Edit profile (mockup Screen I3) — reached from the pencil on the profile
  * identity card. Change photo (KB-149 실연결 — 선택 즉시 업로드+PATCH, 국적
  * 행과 같은 즉시 적용 시맨틱), Nickname (staged, saved on Save),
- * Nationality → I4, Reader language → shared LanguagePicker (I5), read-only
+ * Nationality → I4, Reader language → OS 앱 언어 설정(P-060, 안드12- 숨김), read-only
  * linked provider (KB-203 — Apple/Google, email은 계약에 없어 교체). Nationality +
  * reader language apply immediately when picked (same as the account Language
  * row); Save persists the nickname via PATCH /me.
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View, Linking, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconFlame, IconApple, IconGoogleG } from '@/components';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
-import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -34,7 +33,8 @@ export default function EditProfile() {
   const [nickname, setNickname] = useState('');
   const [spice, setSpice] = useState<number | null>(null); // KB-150 — null = 미설정
   const [seeded, setSeeded] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
+  // P-060: 언어 = OS 정본 — OS 앱 설정 열기, 안드12- 숨김
+  const canOpenLangSettings = Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) >= 33);
   const [natOpen, setNatOpen] = useState(false);
   useEffect(() => {
     if (me && !seeded) {
@@ -158,16 +158,17 @@ export default function EditProfile() {
           <Text style={[styles.hint, styles.hintWarn]}>{t('editProfile.nationalityHint')}</Text>
         </View>
 
-        {/* reader language → I5 (shared picker) */}
-        <View style={styles.fieldset}>
-          <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')} *</Text>
-          <Pressable style={styles.field} onPress={() => setLangOpen(true)}>
-            <IconGlobe size={18} color={C.ink2} />
-            <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
-            <IconChevron size={16} color={C.ink3} />
-          </Pressable>
-          <Text style={styles.hint}>{t('editProfile.readerLanguageHint')}</Text>
-        </View>
+        {/* P-060: 언어 = OS 정본 — 탭 시 OS 앱 설정(언어 항목), 안드12- 숨김 */}
+        {canOpenLangSettings && (
+          <View style={styles.fieldset}>
+            <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')}</Text>
+            <Pressable style={styles.field} onPress={() => void Linking.openSettings()}>
+              <IconGlobe size={18} color={C.ink2} />
+              <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
+              <IconChevron size={16} color={C.ink3} />
+            </Pressable>
+          </View>
+        )}
 
         {/* spice tolerance (KB-150) — 온보딩 spice 스텝과 동일 0~10 스케일/라벨(SPICE_SCALE) 재사용 */}
         <View style={styles.fieldset}>
@@ -220,7 +221,6 @@ export default function EditProfile() {
         </Btn>
       </View>
 
-      <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
       <NationalityPicker
         open={natOpen}
         selectedCode={me?.nationality}

@@ -37,18 +37,15 @@ import {
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useShake } from '@/lib/useShake';
-import { LanguagePicker } from '@/components/LanguagePicker';
 import { NationalityPicker } from '@/components/NationalityPicker';
-import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
-import { countryByCode, countryLang, deviceCountry } from '@/lib/onboarding/countries';
+import { countryByCode, deviceCountry } from '@/lib/onboarding/countries';
 import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { choosePhotoSource, pickBySource, uploadProfileImage } from '@/lib/data/profileImage';
 import { queryClient } from '@/lib/queryClient';
-import type { SupportedLang } from '@/lib/i18n/languages';
 
 type Step = 'consent' | 'profile' | 'restrictions' | 'spice' | 'interests';
 // consent leads (it belongs to the signup moment); interests is MVP-flagged off.
@@ -58,7 +55,7 @@ export default function Onboarding() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { lang, setLang } = useLocale(); // reader language = the active app locale (set via the shared picker)
+  const { lang } = useLocale(); // P-060: 언어 = 기기(OS) — 인앱 선택 소멸
 
   const [step, setStep] = useState<Step>('consent');
 
@@ -98,7 +95,6 @@ export default function Onboarding() {
         setNickname(d.nickname);
         setPhotoPath(d.profileImageUrl ?? null);
         setNationality(d.nationality);
-        setLang(d.language as SupportedLang);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
         setSpice(d.spice ?? 5); // P-051: null draft(구 스킵분)도 5 표시로 호환
         setSkipped({ restrictions: d.restrictions === null, spice: d.spice === null });
@@ -129,15 +125,12 @@ export default function Onboarding() {
   }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting, photoPath]);
 
   const [natOpen, setNatOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
   const nation = countryByCode(nationality) ?? countryByCode('US')!;
 
   // Picking a nationality suggests the reader language: the country's language if
   // it's one of our 9, else English. The user can still override it on A3.
-  const pickNationality = (code: string) => {
-    setNationality(code);
-    setLang(countryLang(code));
-  };
+  // P-060: 국적→언어 제안 소멸 — 언어는 기기(OS)가 정본
+  const pickNationality = (code: string) => setNationality(code);
 
   const idx = ORDER.indexOf(step);
   const back = () => (idx > 0 ? setStep(ORDER[idx - 1]) : router.back());
@@ -281,9 +274,7 @@ export default function Onboarding() {
             photoError={photoError}
             onPickPhoto={() => void pickPhoto()}
             nationality={nation}
-            languageLabel={LANG_ENDONYM[lang] ?? lang}
             onPickNationality={() => setNatOpen(true)}
-            onPickLanguage={() => setLangOpen(true)}
             onContinue={next}
             t={t}
           />
@@ -339,7 +330,6 @@ export default function Onboarding() {
 
       {/* shared nationality (I4) / language (I5, 9 langs) pickers */}
       <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
-      <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
 
       {/* P-032: 제출 성공 — 체크 스트로크 드로잉 오버레이 (0.9s 후 홈) */}
       {doneSplash && (
@@ -363,13 +353,11 @@ function Profile(props: {
   photoError: boolean;
   onPickPhoto: () => void;
   nationality: { code: string; name: string };
-  languageLabel: string;
   onPickNationality: () => void;
-  onPickLanguage: () => void;
   onContinue: () => void;
   t: TFn;
 }) {
-  const { nickname, setNickname, photoPreview, photoBusy, photoError, onPickPhoto, nationality, languageLabel, onPickNationality, onPickLanguage, onContinue, t } = props;
+  const { nickname, setNickname, photoPreview, photoBusy, photoError, onPickPhoto, nationality, onPickNationality, onContinue, t } = props;
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.profileTitle')} sub={t('onboarding.profileSub')} />
@@ -412,14 +400,6 @@ function Profile(props: {
           <Text style={styles.fieldLbl}>{t('onboarding.nationality')} *</Text>
           <Pressable style={styles.field} onPress={onPickNationality}>
             <Text style={styles.fieldVal}>{nationality.name}</Text>
-            <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: '90deg' }] }} />
-          </Pressable>
-        </View>
-        <View style={styles.fieldset}>
-          <Text style={styles.fieldLbl}>{t('onboarding.readerLanguage')} *</Text>
-          <Pressable style={styles.field} onPress={onPickLanguage}>
-            <IconGlobe size={18} color={C.ink2} />
-            <Text style={styles.fieldVal}>{languageLabel}</Text>
             <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: '90deg' }] }} />
           </Pressable>
         </View>

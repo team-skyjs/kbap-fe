@@ -6,7 +6,7 @@
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
 import { useState } from 'react';
-import { Alert, Image, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Image, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -46,7 +46,6 @@ import { restrictionLabel } from '@/lib/onboarding/data';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { LanguagePicker } from '@/components/LanguagePicker';
 import type { FoodCard, Review } from '@/lib/api/types';
 
 export default function Profile() {
@@ -56,7 +55,9 @@ export default function Profile() {
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
   const { lang } = useLocale();
-  const [langOpen, setLangOpen] = useState(false);
+  // P-060: 언어 = OS 정본 — 행 탭 시 OS 앱 설정(언어 항목). 안드12-는 앱별
+  // 언어 설정이 없어 행 숨김(폰 전체 언어 추종).
+  const canOpenLangSettings = Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) >= 33);
 
   const { data: me, isLoading: meLoading, isError: meError, error: meErrorObj, refetch: refetchMe } = useMe();
   const { data: reviews } = useMyReviews();
@@ -276,7 +277,9 @@ export default function Profile() {
             {/* account */}
             <Section title={t('profile.accountTitle')}>
               <View style={styles.acctList}>
-                <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => setLangOpen(true)} />
+                {canOpenLangSettings && (
+                  <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+                )}
                 <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
                 <AcctRow
@@ -300,7 +303,6 @@ export default function Profile() {
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="brand" bell />
-      <LanguagePicker open={langOpen} onClose={() => setLangOpen(false)} />
     </View>
   );
 }
