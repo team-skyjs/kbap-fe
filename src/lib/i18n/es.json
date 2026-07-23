@@ -154,8 +154,7 @@
     "degradedNote": "Algunos elementos no se pudieron evaluar esta vez: trátalos con precaución.",
     "spikeNote": "Spike: el riesgo llega en vivo desde el backend (actualmente simulado).",
     "nudgeAction": "Configura tus ingredientes a evitar",
-    "nudgeRest": " y te señalaremos qué saltarte en este menú",
-    "resultCaption": "Toca un plato para ver tu riesgo e ingredientes"
+    "nudgeRest": " y te señalaremos qué saltarte en este menú"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

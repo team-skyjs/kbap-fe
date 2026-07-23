@@ -154,8 +154,7 @@
     "degradedNote": "Beberapa item tidak dapat dinilai kali ini — harap berhati-hati.",
     "spikeNote": "Spike: risiko diambil langsung dari backend (saat ini tiruan).",
     "nudgeAction": "Atur bahan pantanganmu",
-    "nudgeRest": " dan kami akan menandai yang perlu dihindari di menu ini",
-    "resultCaption": "Ketuk menu untuk melihat risiko dan bahanmu"
+    "nudgeRest": " dan kami akan menandai yang perlu dihindari di menu ini"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

@@ -40,6 +40,20 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: () => 0, linear: () => 0 },
   };
 });
+// P-064: ScanResultOverlay가 gesture-handler 사용 — 표면 mock
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled']) b[k] = () => b;
+    return b;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    Gesture: { Pinch: chain, Pan: chain, Tap: chain, Race: () => ({}), Simultaneous: () => ({}) },
+    GestureHandlerRootView: View,
+  };
+});
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));

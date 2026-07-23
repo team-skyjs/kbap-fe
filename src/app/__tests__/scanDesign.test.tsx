@@ -41,6 +41,20 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
   };
 });
+// P-064: ScanResultOverlay가 gesture-handler 사용 — 표면 mock
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled']) b[k] = () => b;
+    return b;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    Gesture: { Pinch: chain, Pan: chain, Tap: chain, Race: () => ({}), Simultaneous: () => ({}) },
+    GestureHandlerRootView: View,
+  };
+});
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -134,13 +148,14 @@ it('① Run sample scan 부재 — 카메라·권한 화면 어디에도 없음'
   expect(texts(tree, 'scan.sample')).toBe(0);
 });
 
-it('③ D3 하단 바 — 캡션·범례·원형 버튼 4(리스트/위험도/원본/다시찍기), 활성=리스트', async () => {
+it('③→P-064② 파파고식 — 캡션·범례 부재, 플로팅 원형 버튼 4(활성=리스트)', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  expect(texts(tree, 'scan.resultCaption')).toBeGreaterThanOrEqual(1);
-  for (const k of ['risk.danger', 'risk.caution', 'risk.safe']) expect(texts(tree, k)).toBeGreaterThanOrEqual(1);
+  expect(texts(tree, 'scan.resultCaption')).toBe(0); // P-064: 캡션 삭제
+  // 범례 삭제 — mock 결과는 safe 1건뿐이라 danger/caution 라벨은 범례에서만 나올 수 있었음
+  for (const k of ['risk.danger', 'risk.caution']) expect(texts(tree, k)).toBe(0);
   for (const k of ['scan.showList', 'scan.showResult', 'scan.showOriginal', 'scan.retake']) {
     expect(texts(tree, k)).toBeGreaterThanOrEqual(1);
   }
@@ -149,4 +164,32 @@ it('③ D3 하단 바 — 캡션·범례·원형 버튼 4(리스트/위험도/�
     (n) => JSON.stringify(n.props?.style ?? '').includes('"backgroundColor":"#E2580C"') && JSON.stringify(n.props?.style ?? '').includes('"borderRadius":26'),
   );
   expect(orange.length).toBeGreaterThanOrEqual(1);
+});
+
+it('P-064③ 원본 피크 — 위험도 뷰에서 배경 꾹=버튼 비활성(pointerEvents none), 뗌=복귀', async () => {
+  const tree = render(<Scan />);
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  // 위험도 뷰로 전환
+  const riskBtn = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showResult').length > 0,
+  );
+  act(() => {
+    riskBtn[riskBtn.length - 1].props.onPress();
+  });
+  // 배경(사진) 롱프레스 진입점 — onLongPress 보유 노드
+  const bg = tree.root.findAll((n) => typeof n.props?.onLongPress === 'function');
+  expect(bg.length).toBeGreaterThanOrEqual(1);
+  act(() => {
+    bg[0].props.onLongPress();
+  });
+  // 플로팅 버튼 컨테이너가 pointerEvents none (페이드아웃 상태)
+  const barsOff = tree.root.findAll((n) => n.props?.pointerEvents === 'none' && n.findAll((c) => c.props?.children === 'scan.retake').length > 0);
+  expect(barsOff.length).toBeGreaterThanOrEqual(1);
+  act(() => {
+    bg[0].props.onPressOut();
+  });
+  const barsOn = tree.root.findAll((n) => n.props?.pointerEvents === 'auto' && n.findAll((c) => c.props?.children === 'scan.retake').length > 0);
+  expect(barsOn.length).toBeGreaterThanOrEqual(1);
 });

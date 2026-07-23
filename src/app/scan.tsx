@@ -108,6 +108,9 @@ export default function Scan() {
   const [capturing, setCapturing] = useState(false);
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
   const [nudgeHidden, setNudgeHidden] = useState(isNudgeDismissed());
+  // P-064③: 원본 피크 — 위험도 뷰에서 빈 영역 꾹 = 오버레이(마커·버튼) 페이드아웃
+  const [peeking, setPeeking] = useState(false);
+  const peekFade = useAnimatedStyle(() => ({ opacity: withTiming(peeking ? 0 : 1, { duration: 150 }) }));
   const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
 
   // KB-198: Android 전용 센서 방향 감지 — 앱은 세로 고정, 힌트만 반응.
@@ -342,7 +345,7 @@ export default function Scan() {
     return (
       <View style={styles.root}>
         {view === 'list' ? (
-          <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 190, paddingHorizontal: 16, gap: 10 }}>
+          <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 150, paddingHorizontal: 16, gap: 10 }}>
             {showNudge && (
               /* 배너도 스태거 대열의 첫 항목으로 (P-032와 간섭 없음 — delay 0) */
               <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}>
@@ -378,24 +381,22 @@ export default function Scan() {
             ))}
           </ScrollView>
         ) : (
-          <ScanResultOverlay photo={photo} dishes={resultDishes} showMarkers={view === 'risk'} onTapDish={openDish} />
+          <ScanResultOverlay photo={photo} dishes={resultDishes} showMarkers={view === 'risk'} onTapDish={openDish} peeking={peeking} onPeekChange={setPeeking} />
         )}
         {Close}
         {GateSheet}
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
-        {/* P-062③: D3 다크 시트 하단 바 — 캡션+위험도 범례+원형 버튼 4(활성 주황) */}
-        <View style={[styles.d3Sheet, { paddingBottom: bottom + 14 }]}>
-          <View style={styles.d3Handle} />
+        {/* P-064②: 파파고식 — 다크 시트·캡션·범례 삭제, 사진 풀블리드 위에
+            원형 버튼 4개만 플로팅. 사진 뷰(위험도·원본)엔 가독용 하단 그라데이션. */}
+        {view !== 'list' && (
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)']}
+            style={styles.resultShade}
+            pointerEvents="none"
+          />
+        )}
+        <Animated.View style={[styles.floatBar, { paddingBottom: bottom + 12 }, peekFade]} pointerEvents={peeking ? 'none' : 'auto'}>
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
-          <Text style={styles.d3Caption}>{t('scan.resultCaption')}</Text>
-          <View style={styles.d3Legend}>
-            {(['danger', 'caution', 'safe'] as const).map((r) => (
-              <View key={r} style={styles.d3LegendChip}>
-                <RiskMark state={r} size={14} />
-                <Text style={styles.d3LegendText}>{t(`risk.${r}`)}</Text>
-              </View>
-            ))}
-          </View>
           <View style={styles.d3Btns}>
             <D3Btn icon={<IconList size={22} color="#fff" />} label={t('scan.showList')} active={view === 'list'} onPress={() => setView('list')} />
             <D3Btn icon={<IconScanLines size={22} color="#fff" />} label={t('scan.showResult')} active={view === 'risk'} onPress={() => setView('risk')} />
@@ -406,7 +407,7 @@ export default function Scan() {
               onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setPhase('camera'); }}
             />
           </View>
-        </View>
+        </Animated.View>
       </View>
     );
   }
@@ -534,7 +535,7 @@ function ScanSweepOverlay() {
   useEffect(() => {
     if (!h) return;
     y.value = 0;
-    y.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, false);
+    y.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, true); // P-064①: 왕복(핑퐁) — 리셋 점프 소멸
   }, [h, y]);
   const sweep = useAnimatedStyle(() => ({ transform: [{ translateY: y.value * Math.max(0, h - 90) }] }));
   return (
@@ -637,13 +638,9 @@ const styles = StyleSheet.create({
   sweepWrap: { position: 'absolute', left: 14, right: 14, top: 0, height: 90 },
   sweepTrail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
   sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
-  // P-062③ D3 하단 바
-  d3Sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,11,8,0.96)', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingHorizontal: 18, alignItems: 'center', gap: 11 },
-  d3Handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.28)' },
-  d3Caption: { fontFamily: font.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
-  d3Legend: { flexDirection: 'row', gap: 8 },
-  d3LegendChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  d3LegendText: { fontFamily: font.bodyBold, fontSize: 11.5, color: 'rgba(255,255,255,0.85)' },
+  // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
+  resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 170 },
+  floatBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 8 },
   d3Btns: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-evenly', marginTop: 2 },
   d3Btn: { alignItems: 'center', gap: 6, width: 76 },
   d3Circle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },

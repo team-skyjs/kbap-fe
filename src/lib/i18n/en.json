@@ -150,8 +150,7 @@
     "degradedNote": "Some items couldn't be assessed this time — treat them with care.",
     "spikeNote": "Spike: risk comes live from the backend (currently a mock).",
     "nudgeAction": "Set your avoid list",
-    "nudgeRest": " and we'll flag what to skip on this menu",
-    "resultCaption": "Tap a dish for your risk & ingredients"
+    "nudgeRest": " and we'll flag what to skip on this menu"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

@@ -581,3 +581,8 @@
 - [x] PathRow·세로 연결선(path) 폐기 → LadderRow 독립 카드 7행(gap 8, 카드 bg+헤어라인+r-sm+sh1): 좌 Medallion 42(done 체크/current 티어색/locked 뮤트), 중 티어명 EN+NOW 필+ko 병기, 우 done ✓/current pts(primaryText — 대비 계열)/locked 자물쇠+pts. current 행 = primary 7% 틴트+2px 30% 링, locked opacity 0.62. 미사용 dim/nodeBody/path류 스타일 정리.
 - [x] 스코프 엄수: 히어로·게이지·점수 내역(리뷰/다양성 dim)·스캔 CTA diff 0.
 - 테스트 +1(7행·상태 3종). tsc 0, jest 247/247. JS-only — preview OTA.
+
+## KB-233 스캔 결과 파파고식 개편 (2026-07-23, P-064)
+- [x] ① 스캔라인 왕복(withRepeat reverse=true) — 리셋 점프 소멸 ② 다크 시트·캡션·범례 삭제(resultCaption ×10 정리) → 사진 풀블리드 + (사진 뷰) 하단 옅은 그라데이션 + 원형 버튼 4개만 플로팅(활성 주황·safe-area) — degradedNote는 안전 고지라 버튼 위 유지.
+- [x] ③ 원본 피크: 위험도 뷰 빈 영역 꾹 → 마커(오버레이 내 Animated fade)+버튼(pointerEvents none) 페이드아웃, 뗌 복귀 — 마커 탭(상위 레이어)과 비간섭 ④ 핀치 줌+팬+더블탭(RNGH Pinch/Pan/Tap Race·Simultaneous): 이미지+마커 동일 transform 컨테이너(확대 시 마커 정위치 추종), zoom.ts 순수 클램프(1~4x·경계 팬·더블탭 2.5x 토글), 1x에선 팬 무시(피크 롱프레스 비간섭), 줌 중 마커 탭 동작.
+- 테스트 +4(왕복은 파라미터 — 클램프 유닛 3·피크 토글·파파고 레이아웃 갱신), scan 테스트 4본 RNGH mock 보강. tsc 0, jest 250/250. JS-only — preview OTA.
