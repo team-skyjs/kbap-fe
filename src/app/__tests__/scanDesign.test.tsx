@@ -210,3 +210,16 @@ it('P-066 하단 그라데이션 — 위험도 뷰 존재(220)·리스트 뷰 �
   });
   expect(shade().length).toBeGreaterThanOrEqual(1); // 사진 뷰: 상시 렌더
 });
+
+it('P-068 리스트 뷰 A안 — paddingBottom=버튼 영역+여유(140+inset)·배경 페이드(150) 존재', async () => {
+  const tree = render(<Scan />);
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  // insets mock bottom=0 → paddingBottom 140 잠금
+  const list = tree.root.findAll((n) => n.props?.contentContainerStyle?.paddingBottom === 140);
+  expect(list.length).toBeGreaterThanOrEqual(1);
+  // 리스트 뷰 배경 페이드(높이 150, 터치 통과)
+  const shade = tree.root.findAll((n) => JSON.stringify(n.props?.style ?? '').includes('"height":150') && n.props?.pointerEvents === 'none');
+  expect(shade.length).toBeGreaterThanOrEqual(1);
+});

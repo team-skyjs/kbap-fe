@@ -345,7 +345,8 @@ export default function Scan() {
     return (
       <View style={styles.root}>
         {view === 'list' ? (
-          <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 150, paddingHorizontal: 16, gap: 10 }}>
+          /* P-068 A안: 바닥 여백 = 버튼 영역+여유 — 끝 스크롤 시 마지막 카드가 버튼 위로 완전 가시 */
+          <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: bottom + 140, paddingHorizontal: 16, gap: 10 }}>
             {showNudge && (
               /* 배너도 스태거 대열의 첫 항목으로 (P-032와 간섭 없음 — delay 0) */
               <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}>
@@ -395,6 +396,10 @@ export default function Scan() {
           <Animated.View style={[styles.resultShade, peekFade]} pointerEvents="none">
             <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']} style={StyleSheet.absoluteFill} />
           </Animated.View>
+        )}
+        {/* P-068 A안: 리스트 뷰 — 배경색 페이드로 버튼 뒤 카드가 자연스럽게 잠김 (배경 #16110d 동색) */}
+        {view === 'list' && (
+          <LinearGradient colors={['rgba(22,17,13,0)', 'rgba(22,17,13,0.96)']} style={styles.listShade} pointerEvents="none" />
         )}
         <Animated.View style={[styles.floatBar, { paddingBottom: bottom + 12 }, peekFade]} pointerEvents={peeking ? 'none' : 'auto'}>
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
@@ -641,6 +646,7 @@ const styles = StyleSheet.create({
   sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
+  listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   floatBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 8 },
   d3Btns: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-evenly', marginTop: 2 },
   d3Btn: { alignItems: 'center', gap: 6, width: 76 },
