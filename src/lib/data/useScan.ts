@@ -10,7 +10,7 @@
  * 전용), plus the `degraded` flag (정제 실패/부재 → 안내 배너).
  */
 import { useMutation } from '@tanstack/react-query';
-import { api } from '@/lib/api/client';
+import { api, apiLang } from '@/lib/api/client';
 import type { ScanPayload, ScanRequest } from '@/lib/api/scanTypes';
 import {
   mergeResults,
@@ -52,7 +52,8 @@ async function postScan({ items, photo }: ScanInput): Promise<ScanOutcome> {
   // api.post resolves `payload` or throws ApiError (incl. "NETWORK:" on fetch
   // reject, which scan.tsx branches on for its network error UI).
   console.log('[scan] POST /scans | items =', body.items.length, '| imagePath =', body.imagePath || '(none)');
-  const payload = await api.post<ScanPayload>('/scans', body);
+  // P-060③: 지역화 응답 — 타 엔드포인트와 동일하게 lang 필수 (스웨거 반영 확인)
+  const payload = await api.post<ScanPayload>(`/scans?lang=${apiLang()}`, body);
   const merged = mergeResults(items, payload.results ?? []);
   const photoOnly = photoOnlyResults(payload.results ?? []);
   console.log(

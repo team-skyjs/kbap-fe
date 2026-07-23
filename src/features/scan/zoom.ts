@@ -7,11 +7,13 @@ export const ZOOM_MAX = 4;
 export const DOUBLE_TAP_ZOOM = 2.5;
 
 export function clampScale(s: number): number {
+  'worklet'; // P-065: 제스처 onUpdate(UI 스레드)에서 호출 — 지시자 필수
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, s));
 }
 
 /** 축 하나의 팬 클램프 — 확대로 생긴 여분(절반)까지만. scale<=1이면 0. */
 export function clampPan(t: number, scale: number, dim: number): number {
+  'worklet'; // P-065: 동상
   const max = Math.max(0, ((scale - 1) * dim) / 2);
   return Math.min(max, Math.max(-max, t));
 }

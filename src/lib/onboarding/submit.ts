@@ -3,7 +3,7 @@
  * (KB-110 구조 · KB-75 실연결 2026-07-13).
  *
  *   POST /members/me/onboarding { nickname, avoidanceSubstanceCodes,
- *                                 countryCode, appLanguage, spicinessPreference,
+ *                                 countryCode, spicinessPreference,
  *                                 profileImageUrl }   (전 필드 required — 7/20 승격)
  *
  * - 스킵 = 빈 배열 (계약 확정): FE 내부의 UNSET 구분은 draft/화면까지만,
@@ -61,7 +61,6 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
             return be ? [be] : [];
           }),
     countryCode: payload.nationality,
-    appLanguage: payload.language,
   };
 
   if (!(await hasBeSession())) {

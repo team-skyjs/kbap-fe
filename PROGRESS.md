@@ -586,3 +586,14 @@
 - [x] ① 스캔라인 왕복(withRepeat reverse=true) — 리셋 점프 소멸 ② 다크 시트·캡션·범례 삭제(resultCaption ×10 정리) → 사진 풀블리드 + (사진 뷰) 하단 옅은 그라데이션 + 원형 버튼 4개만 플로팅(활성 주황·safe-area) — degradedNote는 안전 고지라 버튼 위 유지.
 - [x] ③ 원본 피크: 위험도 뷰 빈 영역 꾹 → 마커(오버레이 내 Animated fade)+버튼(pointerEvents none) 페이드아웃, 뗌 복귀 — 마커 탭(상위 레이어)과 비간섭 ④ 핀치 줌+팬+더블탭(RNGH Pinch/Pan/Tap Race·Simultaneous): 이미지+마커 동일 transform 컨테이너(확대 시 마커 정위치 추종), zoom.ts 순수 클램프(1~4x·경계 팬·더블탭 2.5x 토글), 1x에선 팬 무시(피크 롱프레스 비간섭), 줌 중 마커 탭 동작.
 - 테스트 +4(왕복은 파라미터 — 클램프 유닛 3·피크 토글·파파고 레이아웃 갱신), scan 테스트 4본 RNGH mock 보강. tsc 0, jest 250/250. JS-only — preview OTA.
+
+## KB-233 파파고식 개편 — 워클릿 반려 보수 (2026-07-23, P-065)
+- [x] 실기 반려: 핀치 즉시 `Tried to synchronously call a non-worklet function 'clampScale'` — zoom.ts clampScale/clampPan에 'worklet' 지시자 추가(제스처 onUpdate/onEnd = UI 스레드). ScanResultOverlay 제스처 콜백 전수 감사: 그 외 JS 헬퍼 호출 없음(shared value·reanimated 내장·상수만).
+- [x] 재발 방지: jest는 워클릿 경계를 못 잡음(mock이 JS 실행) — CLAUDE.md에 "제스처·워클릿 코드는 실기기 확인 후 발행" 영구 규칙 추가. Metro 실기 확인은 예진 요청.
+- 테스트 ±0(기존 클램프 유닛 3 통과 — 지시자는 동작 불변). tsc 0, jest 251/251. JS-only — preview OTA 재발행.
+
+## KB-230 언어 OS 정본화 ②③ — 스웨거 게이트 개방분 (2026-07-23, P-060 완결)
+- [x] 게이트 실확인: POST /scans 파라미터에 lang 등장·appLanguage 스웨거 언급 0 (BE 재배포 반영).
+- [x] ② appLanguage 전송 중단: onboarding submit body에서 `appLanguage: payload.language` 제거(+주석 정리), useMe PATCH의 readerLanguage→appLanguage 매핑 제거 — 서버는 언어 무저장, 매 요청 lang 쿼리만.
+- [x] ③ /scans lang 부착: `api.post(\`/scans?lang=${apiLang()}\`)` — 타 엔드포인트와 동일 패턴.
+- 테스트 +1(온보딩 body appLanguage 부재 잠금)·반전 3(useScan URL 잠금 → `/scans?lang=en`). tsc 0, jest 251/251. ①(OS 정본 LocaleProvider)·④(피커 제거)는 선행 커밋 탑승 완료, ⑤(supportedLocales)는 네이티브 — 차기 최종 빌드.

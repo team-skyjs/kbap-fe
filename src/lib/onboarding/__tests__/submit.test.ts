@@ -89,3 +89,19 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 });
+
+// P-060②(KB-230): 언어 OS 정본화 — 서버는 언어 무저장, body에 appLanguage 금지
+it('P-060: 제출 body에 appLanguage 부재 (BE 계약 삭제 동보조)', async () => {
+  api.post.mockClear();
+  api.post.mockResolvedValue(undefined);
+  await submitOnboardingProfile({
+    nickname: 'Yejin',
+    nationality: 'KR',
+    language: 'ko',
+    avoidIngredients: ['EGG'],
+    spiceTolerance: 5,
+    profileImageUrl: null,
+  });
+  const body = api.post.mock.calls[0][1] as Record<string, unknown>;
+  expect('appLanguage' in body).toBe(false);
+});

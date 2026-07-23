@@ -68,7 +68,7 @@ beforeEach(() => {
 
 it('요청 body 에 imagePath 포함 — 사진 없음(샘플) → "" + items 는 idx/rawMenuName 만', async () => {
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: null });
-  expect(api.post).toHaveBeenCalledWith('/scans', {
+  expect(api.post).toHaveBeenCalledWith('/scans?lang=en', {
     imagePath: '',
     items: [{ idx: 0, rawMenuName: '김치찌개' }], // box 는 온디바이스 — 전송 금지
   });
@@ -80,7 +80,7 @@ it('업로드 성공 → 검증된 path 가 imagePath 로 전송 (P-003 실연�
   await runScan({ items: [{ itemId: 0, rawMenuName: '된장찌개', box }], photo });
   expect(mockResolvePath).toHaveBeenCalledWith(photo); // 파일 정리보다 앞 — postScan 초입
   const [path, body] = api.post.mock.calls[0];
-  expect(path).toBe('/scans');
+  expect(path).toBe('/scans?lang=en'); // P-060③: 지역화 lang 필수
   expect(body.imagePath).toBe('scan/1/a.jpg');
 });
 
@@ -90,6 +90,6 @@ it('업로드 실패(null) → imagePath "" 폴백, 스캔은 계속 (텍스트-
     photo: { uri: 'file:///tmp/menu.jpg', width: 1000, height: 1400 },
   });
   const [path, body] = api.post.mock.calls[0];
-  expect(path).toBe('/scans');
+  expect(path).toBe('/scans?lang=en'); // P-060③: 지역화 lang 필수
   expect(body.imagePath).toBe('');
 });
