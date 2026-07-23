@@ -146,10 +146,11 @@ describe('상세 CTA 노출 조건 — safe/caution만', () => {
     expect(flat(render(<FoodDetailScreen />))).not.toContain('order.cta');
   });
 
-  it('기피 프로필 없음 → safe가 caution 강등(false-safe) → CTA는 노출 (순수 주문 카드로 이어짐)', () => {
+  it('기피 프로필 없음 → BE 판정 그대로 safe 표시 (헌법 v2.1.0 — 강등 폐지) + CTA 노출', () => {
     mockUseMe.mockReturnValue(ME([]));
     const s = flat(render(<FoodDetailScreen />));
-    expect(s).toContain('detail.verdictCaution'); // 강등 확인
+    expect(s).toContain('detail.verdictSafe'); // v2.1.0: 미설정=BE 그대로
+    expect(s).not.toContain('detail.verdictCaution');
     expect(s).toContain('order.cta');
   });
 });

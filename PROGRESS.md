@@ -562,3 +562,10 @@
 - [x] ⑥ 테스트: osLocale(기기 추종·en 폴백·resolveInitialLang=기기) +2, P-015 라이브 전환 테스트 폐기(기능 소멸). tsc 0, jest 241/241.
 - [ ] ②appLanguage 전송 중단·③/scans lang — **BE 스웨거 미갱신(실측: /scans params [], appLanguage 11회 잔존)** — 갱신 신호 후 이어서.
 - OTA 보류 판단: 피커 제거를 OTA로 선발행하면 OS 언어 항목(⑤ 빌드 후 노출) 전까지 언어 변경 수단 공백 — 7/24 최종 빌드에 일괄 탑승이 정합.
+
+## 7/23 QA 묶음 (2026-07-23, P-061)
+- [x] ① 셔터/갤러리 중복 방지: capturing 상태로 첫 탭 즉시 비활성(+opacity 피드백), finally 복구 — A90 연타 다중 촬영 봉쇄, 전 플랫폼.
+- [x] ② 미설정=BE 그대로: personalRisk safe→caution 강등 폐지(헌법 v2.1.0 — spec 정본 개정 실확인 후 착수). SAFETY INVARIANT 주석 v2.1.0으로 개정, chokepoint·시그니처 유지(정책 재변경 대비). 강등 잠금 테스트 반전(orderCta) + risk.test 신설. 스캔 배너 안전망 유지.
+- [x] ③ 프로필 안전 고지 행 → kbap-legal/safety.html 열기(Linking.openURL). 실측: 약관·개인정보 행은 코드에 부재 — 안전 고지 행만 존재했고 미연결 상태였음(보고 명시).
+- [x] ④ 알림 UI 전면 삭제: NotificationsPanel.tsx 삭제, StickyHeader bell/bellDot/패널/게이트 제거(+미사용 AuthGateSheet·useIsGuest import 정리), 홈·음식·프로필 진입점 제거, 프로필 알림 행 삭제, GateContext 'notifications' 제거, i18n(notifications.*·profile.notifications·gate.notif*) ×10 정리.
+- 테스트 +2(risk v2.1.0)·반전 1. tsc 0, jest 243/243. JS-only — preview OTA.

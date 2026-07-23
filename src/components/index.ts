@@ -16,7 +16,6 @@ export { CardPhoto } from './CardPhoto';
 export { PressScale } from './PressScale';
 export { Spinner } from './Spinner';
 export { ShellPlaceholder } from './ShellPlaceholder';
-export { NotificationsPanel } from './NotificationsPanel';
 // SocialAuthButtons is intentionally NOT re-exported here: it pulls native-only
 // Firebase/google-signin modules (KB-109) — import it directly from
 // '@/components/SocialAuthButtons' so only auth screens carry that weight.

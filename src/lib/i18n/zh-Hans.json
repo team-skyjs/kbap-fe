@@ -47,8 +47,6 @@
     "scanSub": "注册后用相机对准任意韩文菜单，我们会标出需要避开的菜品。",
     "profileTitle": "你的饮食档案就在这里",
     "profileSub": "注册即可保存忌口食材、查看扫描记录并积累你的排名。",
-    "notifTitle": "不错过任何动态",
-    "notifSub": "注册后即可接收你的点评和关注菜品的通知。",
     "saveTitle": "收藏你想尝试的菜品",
     "saveSub": "注册后即可收藏菜品，打造属于你的安心美食清单。"
   },
@@ -112,22 +110,6 @@
       "虾酱",
       "石锅拌饭"
     ]
-  },
-  "notifications": {
-    "title": "通知",
-    "countNew": "{{count}} 条新消息",
-    "reviewReminder": {
-      "title": "点评提醒",
-      "body": "尝过泡菜汤了吗？来写个点评吧。"
-    },
-    "catalogUpdated": {
-      "title": "目录已更新",
-      "body": "猪蹄现已提供精选食材数据。"
-    },
-    "welcome": {
-      "title": "欢迎使用 K-Bap",
-      "body": "扫描你的第一份菜单，开始体验吧。"
-    }
   },
   "community": {
     "lockedTitle": "社区即将上线",
@@ -195,7 +177,6 @@
     "seeAll": "查看全部",
     "accountTitle": "账户",
     "language": "语言",
-    "notifications": "通知",
     "safetyNotice": "安全须知",
     "logout": "退出登录",
     "nicknameUnset": "未设置昵称",

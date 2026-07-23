@@ -47,8 +47,6 @@
     "scanSub": "登録してカメラを韓国語メニューに向けるだけで、避けるべきものをお知らせします。",
     "profileTitle": "あなたの食のプロフィールはここに",
     "profileSub": "登録すると、避ける食材の保存、スキャン履歴の確認、ランキング作りができます。",
-    "notifTitle": "最新情報を見逃さない",
-    "notifSub": "登録すると、レビューや気になる料理のお知らせが届きます。",
     "saveTitle": "気になる料理を保存しよう",
     "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。"
   },
@@ -112,22 +110,6 @@
       "アミの塩辛",
       "ビビンバ"
     ]
-  },
-  "notifications": {
-    "title": "通知",
-    "countNew": "新着 {{count}} 件",
-    "reviewReminder": {
-      "title": "レビューのリマインダー",
-      "body": "キムチチゲはお試しになりましたか？レビューを投稿しましょう。"
-    },
-    "catalogUpdated": {
-      "title": "カタログを更新しました",
-      "body": "チョッパルに厳選された食材データが追加されました。"
-    },
-    "welcome": {
-      "title": "K-Bapへようこそ",
-      "body": "最初のメニューをスキャンして始めましょう。"
-    }
   },
   "community": {
     "lockedTitle": "コミュニティは近日公開",
@@ -195,7 +177,6 @@
     "seeAll": "すべて見る",
     "accountTitle": "アカウント",
     "language": "言語",
-    "notifications": "通知",
     "safetyNotice": "安全に関する注意",
     "logout": "ログアウト",
     "nicknameUnset": "ニックネーム未設定",

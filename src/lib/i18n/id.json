@@ -47,8 +47,6 @@
     "scanSub": "Daftar lalu arahkan kamera ke menu Korea mana pun — kami akan menandai yang perlu dihindari.",
     "profileTitle": "Profil makanan Anda ada di sini",
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
-    "notifTitle": "Jangan lewatkan info terbaru",
-    "notifSub": "Daftar untuk menerima notifikasi tentang ulasan Anda dan hidangan yang Anda ikuti.",
     "saveTitle": "Simpan hidangan yang ingin kamu coba",
     "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu."
   },
@@ -112,22 +110,6 @@
       "Pasta udang",
       "Bibimbap"
     ]
-  },
-  "notifications": {
-    "title": "Notifikasi",
-    "countNew": "{{count}} baru",
-    "reviewReminder": {
-      "title": "Pengingat ulasan",
-      "body": "Sudah coba Sup Kimchi? Tinggalkan ulasan."
-    },
-    "catalogUpdated": {
-      "title": "Katalog diperbarui",
-      "body": "Jokbal kini punya data bahan yang terkurasi."
-    },
-    "welcome": {
-      "title": "Selamat datang di K-Bap",
-      "body": "Pindai menu pertama Anda untuk memulai."
-    }
   },
   "community": {
     "lockedTitle": "Komunitas segera hadir",
@@ -195,7 +177,6 @@
     "seeAll": "Lihat semua",
     "accountTitle": "Akun",
     "language": "Bahasa",
-    "notifications": "Notifikasi",
     "safetyNotice": "Pemberitahuan keamanan",
     "logout": "Keluar",
     "nicknameUnset": "Nama panggilan belum diatur",

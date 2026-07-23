@@ -34,12 +34,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
-import { IconArrowLeft, IconBell, IconBookmark, IconSearch } from './icons';
+import { IconArrowLeft, IconBookmark, IconSearch } from './icons';
 import { BrandLockup } from './Brand';
 import { PressScale } from './PressScale';
-import { NotificationsPanel } from './NotificationsPanel';
-import { AuthGateSheet } from './AuthGateSheet';
-import { useIsGuest } from '@/lib/auth/useSession';
 
 const BAR_H = 48;
 const TOP_PAD = 8;
@@ -93,11 +90,9 @@ export type StickyHeaderProps = {
   title?: string;
   titleKo?: string; // optional bilingual KO subtitle rendered beside the title
   search?: boolean;
-  bell?: boolean;
   /** 게스트일 때 우측 Sign in pill (KB-78, guest-access-policy §1 헤더) */
   signIn?: boolean;
   onSignIn?: () => void;
-  bellDot?: boolean;
   bookmark?: boolean;
   /** 북마크 저장 상태 — true면 primary로 채워진 아이콘 + 저장 전환 시 1회 바운스 */
   bookmarkSaved?: boolean;
@@ -112,10 +107,8 @@ export function StickyHeader({
   title,
   titleKo,
   search,
-  bell,
   signIn,
   onSignIn,
-  bellDot,
   bookmark,
   bookmarkSaved,
   onBack,
@@ -125,12 +118,7 @@ export function StickyHeader({
   const insets = useSafeAreaInsets();
   const H = headerHeight(insets.top);
 
-  // 멘토링 ③: 알림 동작을 헤더 안으로 — 화면마다 핸들러를 붙이다 빠진 탭에서
-  // 종이 무반응이었다. 게스트=게이트 시트, 회원=알림 패널. 새 진입점도 자동 커버.
-  const isGuest = useIsGuest();
-  const [notifOpen, setNotifOpen] = React.useState(false);
-  const [gateOpen, setGateOpen] = React.useState(false);
-  const onBell = () => (isGuest ? setGateOpen(true) : setNotifOpen(true));
+  // P-061④: 알림 UI 전면 제거(MVP 제외 확정) — 벨·패널·게이트 소멸
 
   const slide = useAnimatedStyle(() => ({
     transform: [{ translateY: interpolate(hidden.value, [0, 1], [0, -H], Extrapolation.CLAMP) }],
@@ -183,12 +171,6 @@ export function StickyHeader({
               <IconSearch size={23} color={C.ink} sw={1.8} />
             </PressScale>
           )}
-          {bell && (
-            <PressScale style={styles.actionBtn} onPress={onBell} hitSlop={10}>
-              <IconBell size={23} color={C.ink} sw={1.8} />
-              {bellDot && <View style={styles.dot} />}
-            </PressScale>
-          )}
           {signIn && (
             <PressScale style={styles.signInPill} onPress={onSignIn} hitSlop={8}>
               <Text style={styles.signInText}>Sign in</Text>
@@ -207,18 +189,12 @@ export function StickyHeader({
               </Animated.View>
             </PressScale>
           )}
-          {mode === 'back' && !search && !bell && !bookmark && <View style={{ width: 38 }} />}
+          {mode === 'back' && !search && !bookmark && <View style={{ width: 38 }} />}
         </View>
       </View>
 
       <View style={styles.hairline} />
     </Animated.View>
-    {bell && (
-      <>
-        <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
-        <AuthGateSheet context="notifications" open={gateOpen} onClose={() => setGateOpen(false)} />
-      </>
-    )}
     </>
   );
 }

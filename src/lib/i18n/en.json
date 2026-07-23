@@ -43,8 +43,6 @@
     "scanSub": "Sign up and point your camera at any Korean menu — we'll flag what to avoid.",
     "profileTitle": "Your food profile lives here",
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
-    "notifTitle": "Never miss an update",
-    "notifSub": "Sign up to get notifications about your reviews and dishes you follow.",
     "saveTitle": "Save dishes you want to try",
     "saveSub": "Sign up to bookmark dishes and build your own safe-to-eat shortlist."
   },
@@ -108,22 +106,6 @@
       "Shrimp paste",
       "Bibimbap"
     ]
-  },
-  "notifications": {
-    "title": "Notifications",
-    "countNew": "{{count}} new",
-    "reviewReminder": {
-      "title": "Review reminder",
-      "body": "Did you try Kimchi Stew? Leave a review."
-    },
-    "catalogUpdated": {
-      "title": "Catalog updated",
-      "body": "Jokbal now has curated ingredient data."
-    },
-    "welcome": {
-      "title": "Welcome to K-Bap",
-      "body": "Scan your first menu to get started."
-    }
   },
   "community": {
     "lockedTitle": "Community is coming soon",
@@ -191,7 +173,6 @@
     "seeAll": "See all",
     "accountTitle": "Account",
     "language": "Language",
-    "notifications": "Notifications",
     "safetyNotice": "Safety notice",
     "logout": "Log out",
     "nicknameUnset": "Nickname not set",

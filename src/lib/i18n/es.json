@@ -47,8 +47,6 @@
     "scanSub": "Regístrate y apunta la cámara a cualquier menú coreano: te marcaremos lo que debes evitar.",
     "profileTitle": "Tu perfil alimentario vive aquí",
     "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
-    "notifTitle": "No te pierdas ninguna novedad",
-    "notifSub": "Regístrate para recibir notificaciones sobre tus reseñas y los platos que sigues.",
     "saveTitle": "Guarda los platos que quieras probar",
     "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura."
   },
@@ -112,22 +110,6 @@
       "Pasta de camarón",
       "Bibimbap"
     ]
-  },
-  "notifications": {
-    "title": "Notificaciones",
-    "countNew": "{{count}} nuevas",
-    "reviewReminder": {
-      "title": "Recordatorio de reseña",
-      "body": "¿Probaste el guiso de kimchi? Deja una reseña."
-    },
-    "catalogUpdated": {
-      "title": "Catálogo actualizado",
-      "body": "Jokbal ya tiene datos de ingredientes curados."
-    },
-    "welcome": {
-      "title": "Bienvenido a K-Bap",
-      "body": "Escanea tu primer menú para comenzar."
-    }
   },
   "community": {
     "lockedTitle": "La comunidad llegará pronto",
@@ -195,7 +177,6 @@
     "seeAll": "Ver todo",
     "accountTitle": "Cuenta",
     "language": "Idioma",
-    "notifications": "Notificaciones",
     "safetyNotice": "Aviso de seguridad",
     "logout": "Cerrar sesión",
     "nicknameUnset": "Apodo sin definir",

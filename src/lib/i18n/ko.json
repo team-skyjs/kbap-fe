@@ -47,8 +47,6 @@
     "scanSub": "가입 후 한국어 메뉴판에 카메라를 대면 피해야 할 음식을 짚어드려요.",
     "profileTitle": "내 음식 프로필이 여기에 저장돼요",
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
-    "notifTitle": "새 소식을 놓치지 마세요",
-    "notifSub": "가입하면 내 리뷰와 관심 요리에 대한 알림을 받을 수 있어요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요."
   },
@@ -112,22 +110,6 @@
       "새우젓",
       "비빔밥"
     ]
-  },
-  "notifications": {
-    "title": "알림",
-    "countNew": "새 알림 {{count}}개",
-    "reviewReminder": {
-      "title": "리뷰 리마인더",
-      "body": "김치찌개 드셔보셨나요? 리뷰를 남겨주세요."
-    },
-    "catalogUpdated": {
-      "title": "카탈로그 업데이트",
-      "body": "족발에 정제된 재료 데이터가 추가됐어요."
-    },
-    "welcome": {
-      "title": "K-Bap에 오신 걸 환영해요",
-      "body": "첫 메뉴판을 스캔하며 시작해 보세요."
-    }
   },
   "community": {
     "lockedTitle": "커뮤니티가 곧 열려요",
@@ -195,7 +177,6 @@
     "seeAll": "전체 보기",
     "accountTitle": "계정",
     "language": "언어",
-    "notifications": "알림",
     "safetyNotice": "안전 고지",
     "logout": "로그아웃",
     "nicknameUnset": "닉네임 미설정",

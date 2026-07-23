@@ -23,7 +23,6 @@ import {
   IconProfile,
   IconEdit,
   IconGlobe,
-  IconBell,
   IconGear,
   IconTrash,
   IconChevron,
@@ -280,8 +279,8 @@ export default function Profile() {
                 {canOpenLangSettings && (
                   <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
                 )}
-                <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('profile.notifications')} />
-                <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} />
+                {/* P-061③: 안전 고지 페이지(EN/KO) — 미설정=BE 그대로(v2.1.0) 고지 포함 */}
+                <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
                 <AcctRow
                   // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘 (우측 chevron은 행 통일 유지 — 예진 확인).
                   // 로그아웃 chevron은 유지 확정 (2026-07-15 예진 — 과거 이중 아이콘 정리 건과 무관). 재제거 금지.
@@ -302,7 +301,7 @@ export default function Profile() {
         )}
       </Animated.ScrollView>
 
-      <StickyHeader hidden={hidden} mode="brand" bell />
+      <StickyHeader hidden={hidden} mode="brand" />
     </View>
   );
 }

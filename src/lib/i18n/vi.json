@@ -47,8 +47,6 @@
     "scanSub": "Đăng ký rồi hướng camera vào bất kỳ thực đơn tiếng Hàn nào — chúng tôi sẽ đánh dấu những món cần tránh.",
     "profileTitle": "Hồ sơ ăn uống của bạn nằm ở đây",
     "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
-    "notifTitle": "Đừng bỏ lỡ cập nhật nào",
-    "notifSub": "Đăng ký để nhận thông báo về đánh giá của bạn và các món ăn bạn theo dõi.",
     "saveTitle": "Lưu những món bạn muốn thử",
     "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn."
   },
@@ -112,22 +110,6 @@
       "Mắm tôm",
       "Cơm trộn Bibimbap"
     ]
-  },
-  "notifications": {
-    "title": "Thông báo",
-    "countNew": "{{count}} mới",
-    "reviewReminder": {
-      "title": "Nhắc đánh giá",
-      "body": "Bạn đã thử canh kimchi chưa? Hãy để lại đánh giá."
-    },
-    "catalogUpdated": {
-      "title": "Danh mục đã cập nhật",
-      "body": "Món Jokbal (chân giò) đã có dữ liệu nguyên liệu được chọn lọc."
-    },
-    "welcome": {
-      "title": "Chào mừng đến với K-Bap",
-      "body": "Quét thực đơn đầu tiên để bắt đầu."
-    }
   },
   "community": {
     "lockedTitle": "Cộng đồng sắp ra mắt",
@@ -195,7 +177,6 @@
     "seeAll": "Xem tất cả",
     "accountTitle": "Tài khoản",
     "language": "Ngôn ngữ",
-    "notifications": "Thông báo",
     "safetyNotice": "Lưu ý an toàn",
     "logout": "Đăng xuất",
     "nicknameUnset": "Chưa đặt biệt danh",

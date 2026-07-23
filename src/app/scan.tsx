@@ -109,6 +109,8 @@ export default function Scan() {
   // 두 소스가 같은 camOrientation state를 먹인다 — 오버레이 로직은 무변 재사용.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
+  // P-061①: 셔터/갤러리 중복 방지 — 첫 탭 즉시 비활성(A90 처리 지연 연타 = 다중 촬영)
+  const [capturing, setCapturing] = useState(false);
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
   const [nudgeHidden, setNudgeHidden] = useState(isNudgeDismissed());
   const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
@@ -222,10 +224,12 @@ export default function Scan() {
   }
 
   async function capture() {
+    if (capturing) return; // P-061①: 처리 완료 전 재탭 무시
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
     if (isLandscape) return; // KB-141: 어떤 진입 경로로도 가로 촬영 불가 (함수 단 가드)
     const cam = cameraRef.current;
     if (!cam) return;
+    setCapturing(true);
     setError(null);
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7 });
@@ -236,11 +240,15 @@ export default function Scan() {
       await scanImage(cropped);
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
+    } finally {
+      setCapturing(false); // 화면 전환(scanning) 후거나 실패 — 어느 쪽이든 셔터 복구
     }
   }
 
   async function pickFromGallery() {
+    if (capturing) return; // P-061①: 셔터와 동일 가드
     if (isGuest) return setGateOpen(true);
+    setCapturing(true);
     setError(null);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -254,6 +262,8 @@ export default function Scan() {
       await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
+    } finally {
+      setCapturing(false);
     }
   }
 
@@ -475,11 +485,11 @@ export default function Scan() {
       <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
         <Text style={styles.hint}>{t('scan.hint')}</Text>
         <View style={styles.camRow}>
-          <Pressable style={styles.sideBtn} onPress={pickFromGallery} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
+          <Pressable style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
             <IconGallery size={22} color="#fff" />
           </Pressable>
           {granted ? (
-            <Pressable style={[styles.shutter, isLandscape && styles.shutterOff]} onPress={capture} disabled={isLandscape}>
+            <Pressable style={[styles.shutter, (isLandscape || capturing) && styles.shutterOff]} onPress={capture} disabled={isLandscape || capturing}>
               <View style={styles.shutterInner} />
             </Pressable>
           ) : (
