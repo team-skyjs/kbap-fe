@@ -19,6 +19,12 @@ export const API_BASE_URL = 'https://api.kbap.example/v1';
  * Env switch (KB-66): point BE_BASE at a different host per environment.
  * `EXPO_PUBLIC_BE_BASE` (set in eas.json / .env) wins when present; otherwise
  * we fall back to the deployed dev host.
+ *
+ * 도메인 로드맵 (P-059/KB-175, 2026-07-22 인프라 전환):
+ *   dev(Metro/.env)      → https://dev.kbap.site   (EC2 — 계약 동일 실증)
+ *   preview·production   → 당분간 meogo(eas.json env 명시 고정)
+ *   prod.kbap.site       → BE 시딩 완료 신호 후 후속 P로 전환 (빈 DB — 조기 전환 금지)
+ *   meogo.handev.site    → prod 전환 완료 시 폐기, 이 fallback도 그때 정리
  */
 export const BE_BASE = process.env.EXPO_PUBLIC_BE_BASE ?? 'https://meogo.handev.site';
 

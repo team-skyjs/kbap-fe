@@ -17,11 +17,17 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_BE_BASE": "https://meogo.handev.site"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_BE_BASE": "https://meogo.handev.site"
+      }
     }
   },
   "submit": {
