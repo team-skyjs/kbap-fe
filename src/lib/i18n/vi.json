@@ -146,7 +146,6 @@
     "retake": "Chụp lại",
     "gallery": "Chọn từ thư viện",
     "flip": "Đổi máy ảnh",
-    "sample": "Chạy quét mẫu (không dùng máy ảnh)",
     "showOriginal": "Ảnh gốc",
     "showResult": "Rủi ro",
     "showList": "Danh sách",
@@ -155,7 +154,8 @@
     "degradedNote": "Một số món chưa thể đánh giá lần này — hãy thận trọng với chúng.",
     "spikeNote": "Spike: rủi ro được lấy trực tiếp từ máy chủ (hiện là dữ liệu giả).",
     "nudgeAction": "Thiết lập nguyên liệu cần tránh",
-    "nudgeRest": " để chúng tôi chỉ ra món nên bỏ qua trong thực đơn này"
+    "nudgeRest": " để chúng tôi chỉ ra món nên bỏ qua trong thực đơn này",
+    "resultCaption": "Chạm vào món ăn để xem rủi ro và nguyên liệu của bạn"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

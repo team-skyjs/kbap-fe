@@ -146,7 +146,6 @@
     "retake": "重拍",
     "gallery": "从相册导入",
     "flip": "翻转相机",
-    "sample": "运行示例扫描（无需相机）",
     "showOriginal": "原图",
     "showResult": "风险",
     "showList": "列表",
@@ -155,7 +154,8 @@
     "degradedNote": "本次有部分项目无法判断——请谨慎对待。",
     "spikeNote": "Spike：风险数据实时来自后端（目前为模拟数据）。",
     "nudgeAction": "设置忌口食材",
-    "nudgeRest": "后，我们会在这份菜单上标出该避开的菜"
+    "nudgeRest": "后，我们会在这份菜单上标出该避开的菜",
+    "resultCaption": "点击菜品查看你的风险和食材"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",

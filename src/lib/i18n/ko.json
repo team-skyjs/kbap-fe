@@ -146,7 +146,6 @@
     "retake": "다시 찍기",
     "gallery": "갤러리에서 가져오기",
     "flip": "카메라 전환",
-    "sample": "샘플 스캔 실행 (카메라 없이)",
     "showOriginal": "원본",
     "showResult": "위험도",
     "showList": "목록",
@@ -155,7 +154,8 @@
     "degradedNote": "이번에 일부 항목은 평가하지 못했어요 — 주의해서 드세요.",
     "spikeNote": "Spike: 위험도는 백엔드에서 실시간으로 와요 (현재는 mock).",
     "nudgeAction": "기피 재료를 설정",
-    "nudgeRest": "하면 이 메뉴판에서 피할 걸 짚어드려요"
+    "nudgeRest": "하면 이 메뉴판에서 피할 걸 짚어드려요",
+    "resultCaption": "메뉴를 누르면 내 위험도와 재료를 볼 수 있어요"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",

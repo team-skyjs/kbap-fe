@@ -48,7 +48,9 @@ jest.mock('expo-camera', () => {
   const { View } = require('react-native');
   return { CameraView: View, useCameraPermissions: () => [{ granted: false }, jest.fn()] };
 });
-jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] }),
+}));
 jest.mock('expo-file-system/legacy', () => ({ deleteAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
@@ -66,7 +68,14 @@ jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: jest.fn() }));
+jest.mock('@/lib/scan/ocr', () => ({
+  recognizeMenuLines: jest.fn().mockResolvedValue([
+    { text: '된장찌개', box: { x: 0.12, y: 0.16, width: 0.5, height: 0.08 } },
+    { text: '김치찌개', box: { x: 0.12, y: 0.33, width: 0.5, height: 0.08 } },
+    { text: '공기밥', box: { x: 0.12, y: 0.5, width: 0.5, height: 0.08 } },
+    { text: '맥북', box: { x: 0.12, y: 0.67, width: 0.5, height: 0.08 } },
+  ]),
+}));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) }));
 const mockIsGuest = jest.fn(() => false);
@@ -93,7 +102,6 @@ jest.mock('@/lib/data/useScan', () => ({
 }));
 
 import Scan from '../scan';
-import { Btn } from '@/components/Btn';
 import { resetNudgeForTest } from '@/lib/scan/nudgeSession';
 import { IconClose } from '@/components/icons';
 
@@ -105,12 +113,13 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-/** 카메라 화면 → 샘플 스캔 → 결과 화면 */
-function renderResult(): ReactTestRenderer {
+/** P-062①: 샘플 스캔 폐기 — 갤러리 경로로 결과 화면 구동 (OCR mock → 실 segmentMenu) */
+async function renderResult(): Promise<ReactTestRenderer> {
   const tree = render(<Scan />);
-  const sample = tree.root.findAllByType(Btn).find((b) => b.props.children === 'scan.sample');
-  act(() => {
-    sample!.props.onPress();
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+  expect(gallery.length).toBeGreaterThanOrEqual(1);
+  await act(async () => {
+    await gallery[0].props.onPress();
   });
   return tree;
 }
@@ -124,13 +133,13 @@ beforeEach(() => {
   mockUseMe.mockReturnValue({ data: { restrictions: [] } });
 });
 
-it('회원 + 기피 0 → 배너 노출', () => {
-  expect(nudgeCount(renderResult())).toBeGreaterThanOrEqual(1);
+it('회원 + 기피 0 → 배너 노출', async () => {
+  expect(nudgeCount(await renderResult())).toBeGreaterThanOrEqual(1);
 });
 
-it('기피 1개 이상 → 미노출', () => {
+it('기피 1개 이상 → 미노출', async () => {
   mockUseMe.mockReturnValue({ data: { restrictions: [{ kind: 'allergy', code: 'EGG' }] } });
-  expect(nudgeCount(renderResult())).toBe(0);
+  expect(nudgeCount(await renderResult())).toBe(0);
 });
 
 it('게스트 → 미노출 (기존 로그인 게이트 흐름)', () => {
@@ -139,8 +148,8 @@ it('게스트 → 미노출 (기존 로그인 게이트 흐름)', () => {
   expect(nudgeCount(render(<Scan />))).toBe(0);
 });
 
-it('닫기 → 세션 내 재마운트에도 미노출 (재실행 시 리셋은 모듈 수명이 보장)', () => {
-  const tree = renderResult();
+it('닫기 → 세션 내 재마운트에도 미노출 (재실행 시 리셋은 모듈 수명이 보장)', async () => {
+  const tree = await renderResult();
   expect(nudgeCount(tree)).toBeGreaterThanOrEqual(1);
   // 배너 내부의 × — 부모 체인(≤3)에 nudgeAction 텍스트가 있는 IconClose Pressable
   const closeBtns = tree.root
@@ -158,11 +167,11 @@ it('닫기 → 세션 내 재마운트에도 미노출 (재실행 시 리셋은 
   });
   expect(nudgeCount(tree)).toBe(0);
   // 재마운트(같은 세션) — 억제 유지
-  expect(nudgeCount(renderResult())).toBe(0);
+  expect(nudgeCount(await renderResult())).toBe(0);
 });
 
-it('P-057: 목록 뷰 전용 — 위험도 토글로 전환하면 배너 미렌더', () => {
-  const tree = renderResult();
+it('P-057: 목록 뷰 전용 — 위험도 토글로 전환하면 배너 미렌더', async () => {
+  const tree = await renderResult();
   expect(nudgeCount(tree)).toBeGreaterThanOrEqual(1);
   const riskToggle = tree.root.findAll(
     (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showResult').length > 0,

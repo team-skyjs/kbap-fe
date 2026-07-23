@@ -14,8 +14,9 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
 import { useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
@@ -53,14 +54,6 @@ const ERROR_MSG: Record<ErrorStage, string> = {
   network: 'scan.errNetwork',
   be: 'scan.errBe',
 };
-
-// §13 fallback fixture (no camera/OCR) — includes a non-food ("맥북") → UNKNOWN → unable.
-const SAMPLE_DISHES: MenuDish[] = [
-  { itemId: 0, rawMenuName: '된장찌개', box: { x: 0.12, y: 0.16, width: 0.5, height: 0.08 }, priceKrw: 8000, latin: 'Doenjang Jjigae' },
-  { itemId: 1, rawMenuName: '김치찌개', box: { x: 0.12, y: 0.33, width: 0.5, height: 0.08 }, priceKrw: 8000, latin: 'Kimchi Jjigae' },
-  { itemId: 2, rawMenuName: '공기밥', box: { x: 0.12, y: 0.5, width: 0.5, height: 0.08 }, priceKrw: 1000, latin: 'Steamed Rice' },
-  { itemId: 3, rawMenuName: '맥북', box: { x: 0.12, y: 0.67, width: 0.5, height: 0.08 }, priceKrw: null, latin: null },
-];
 
 /** ⑦(KB-137) 촬영/갤러리 캐시 파일 삭제 — 실패해도 스캔 흐름엔 무해(로그만). */
 function deletePhotoFile(uri: string | null | undefined): void {
@@ -109,7 +102,9 @@ export default function Scan() {
   // 두 소스가 같은 camOrientation state를 먹인다 — 오버레이 로직은 무변 재사용.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
-  // P-061①: 셔터/갤러리 중복 방지 — 첫 탭 즉시 비활성(A90 처리 지연 연타 = 다중 촬영)
+  // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
+  // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
+  const capturingRef = useRef(false);
   const [capturing, setCapturing] = useState(false);
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
   const [nudgeHidden, setNudgeHidden] = useState(isNudgeDismissed());
@@ -224,11 +219,12 @@ export default function Scan() {
   }
 
   async function capture() {
-    if (capturing) return; // P-061①: 처리 완료 전 재탭 무시
+    if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
     if (isLandscape) return; // KB-141: 어떤 진입 경로로도 가로 촬영 불가 (함수 단 가드)
     const cam = cameraRef.current;
     if (!cam) return;
+    capturingRef.current = true;
     setCapturing(true);
     setError(null);
     try {
@@ -241,13 +237,15 @@ export default function Scan() {
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
     } finally {
+      capturingRef.current = false;
       setCapturing(false); // 화면 전환(scanning) 후거나 실패 — 어느 쪽이든 셔터 복구
     }
   }
 
   async function pickFromGallery() {
-    if (capturing) return; // P-061①: 셔터와 동일 가드
+    if (capturingRef.current) return; // P-062⓪: 셔터와 동일 동기 가드
     if (isGuest) return setGateOpen(true);
+    capturingRef.current = true;
     setCapturing(true);
     setError(null);
     try {
@@ -263,6 +261,7 @@ export default function Scan() {
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
     } finally {
+      capturingRef.current = false;
       setCapturing(false);
     }
   }
@@ -384,35 +383,46 @@ export default function Scan() {
         {Close}
         {GateSheet}
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
-        <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
-          {/* degraded=true: 서버 정제(LLM) 실패/부재 — 비음식이 섞였을 수 있고 전부 조사 대기 */}
+        {/* P-062③: D3 다크 시트 하단 바 — 캡션+위험도 범례+원형 버튼 4(활성 주황) */}
+        <View style={[styles.d3Sheet, { paddingBottom: bottom + 14 }]}>
+          <View style={styles.d3Handle} />
           {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
-          <Text style={styles.resultTitle}>{t('scan.resultTitle', { count: allDishes.length })}</Text>
-          <ToggleRow
-            value={view}
-            onChange={setView}
-            options={[
-              { key: 'list', label: t('scan.showList') },
-              { key: 'risk', label: t('scan.showResult') },
-              { key: 'original', label: t('scan.showOriginal') },
-            ]}
-          />
-          <Btn variant="ghost" onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setPhase('camera'); }}>
-            {t('scan.retake')}
-          </Btn>
+          <Text style={styles.d3Caption}>{t('scan.resultCaption')}</Text>
+          <View style={styles.d3Legend}>
+            {(['danger', 'caution', 'safe'] as const).map((r) => (
+              <View key={r} style={styles.d3LegendChip}>
+                <RiskMark state={r} size={14} />
+                <Text style={styles.d3LegendText}>{t(`risk.${r}`)}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.d3Btns}>
+            <D3Btn icon={<IconList size={22} color="#fff" />} label={t('scan.showList')} active={view === 'list'} onPress={() => setView('list')} />
+            <D3Btn icon={<IconScanLines size={22} color="#fff" />} label={t('scan.showResult')} active={view === 'risk'} onPress={() => setView('risk')} />
+            <D3Btn icon={<IconGallery size={22} color="#fff" />} label={t('scan.showOriginal')} active={view === 'original'} onPress={() => setView('original')} />
+            <D3Btn
+              icon={<IconRetry size={22} color="#fff" />}
+              label={t('scan.retake')}
+              onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setPhase('camera'); }}
+            />
+          </View>
         </View>
       </View>
     );
   }
 
-  // ---- scanning ----
+  // ---- scanning ---- P-062②: D2 오버레이 — 사진 배경 + 코너 브래킷 + 스캔라인 스윕
   if (phase === 'scanning') {
     return (
-      <View style={[styles.root, styles.center]}>
+      <View style={styles.root}>
+        {photo && <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+        <ScanSweepOverlay />
         {Close}
         {GateSheet}
-        <ActivityIndicator color="#fff" />
-        <Text style={styles.statusText}>{t('scan.reading')}</Text>
+        <View style={[styles.scanCaption, { paddingBottom: bottom + 26 }]}>
+          <ActivityIndicator size="small" color="#fff" />
+          <Text style={styles.statusText}>{t('scan.reading')}</Text>
+        </View>
       </View>
     );
   }
@@ -430,7 +440,6 @@ export default function Scan() {
         {!!error?.detail && <Text style={styles.errDetail} numberOfLines={4}>{error.detail}</Text>}
         <View style={styles.errBtns}>
           <Btn variant="ghost" onPress={() => setPhase('camera')}>{t('scan.retake')}</Btn>
-          <Btn onPress={() => runScan(SAMPLE_DISHES, null)}>{t('scan.sample')}</Btn>
         </View>
       </View>
     );
@@ -503,10 +512,47 @@ export default function Scan() {
             <View style={styles.sideBtn} />
           )}
         </View>
-        <View style={{ width: '100%', maxWidth: 320 }}>
-          <Btn variant="ghost" onPress={() => runScan(SAMPLE_DISHES, null)}>{t('scan.sample')}</Btn>
-        </View>
       </View>
+    </View>
+  );
+}
+
+/** P-062③: D3 원형 뷰 버튼 — 활성 = 주황 원(D3 Ask owner 스타일), 라벨 하단 */
+function D3Btn({ icon, label, active, onPress }: { icon: React.ReactNode; label: string; active?: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={styles.d3Btn} onPress={onPress}>
+      <View style={[styles.d3Circle, active && styles.d3CircleOn]}>{icon}</View>
+      <Text style={styles.d3BtnLabel} numberOfLines={1}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** P-062②: D2 스캐닝 오버레이 — 코너 브래킷 4 + 주황 스캔라인 스윕(글로우 트레일) */
+function ScanSweepOverlay() {
+  const [h, setH] = useState(0);
+  const y = useSharedValue(0);
+  useEffect(() => {
+    if (!h) return;
+    y.value = 0;
+    y.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }), -1, false);
+  }, [h, y]);
+  const sweep = useAnimatedStyle(() => ({ transform: [{ translateY: y.value * Math.max(0, h - 90) }] }));
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={(e) => setH(e.nativeEvent.layout.height)}>
+      {/* 어둡게 한 겹 — 사진 위 브래킷/라인 대비 */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.25)' }]} />
+      {/* 코너 브래킷 4 */}
+      <View style={[styles.bracket, { top: 90, left: 26, borderTopWidth: 3, borderLeftWidth: 3 }]} />
+      <View style={[styles.bracket, { top: 90, right: 26, borderTopWidth: 3, borderRightWidth: 3 }]} />
+      <View style={[styles.bracket, { bottom: 150, left: 26, borderBottomWidth: 3, borderLeftWidth: 3 }]} />
+      <View style={[styles.bracket, { bottom: 150, right: 26, borderBottomWidth: 3, borderRightWidth: 3 }]} />
+      {/* 스캔라인 + 글로우 트레일 */}
+      {h > 0 && (
+        <Animated.View style={[styles.sweepWrap, sweep]}>
+          <LinearGradient colors={['rgba(226,88,12,0)', 'rgba(226,88,12,0.35)']} style={styles.sweepTrail} />
+          <View style={styles.sweepLine} />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -525,61 +571,6 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
         </View>
       </Pressable>
     </Pressable>
-  );
-}
-
-/**
- * P-032: Tab Pill Glide — 흰 인디케이터 필이 활성 세그먼트로 스프링 글라이드
- * (kinetics 직역). 세그먼트 폭은 i18n 라벨 길이에 따라 다르므로 onLayout 실측.
- * 첫 배치는 무애니메이션(등장 시 글라이드 금지 — 전환에만).
- */
-function ToggleRow({
-  value,
-  onChange,
-  options,
-}: {
-  value: ResultView;
-  onChange: (v: ResultView) => void;
-  options: { key: ResultView; label: string }[];
-}) {
-  const x = useSharedValue(0);
-  const w = useSharedValue(0);
-  const ready = useRef(false);
-  const layouts = useRef<Partial<Record<ResultView, { x: number; w: number }>>>({});
-  const place = (v: ResultView) => {
-    const l = layouts.current[v];
-    if (!l) return;
-    if (ready.current) {
-      x.value = withSpring(l.x, spring.move);
-      w.value = withSpring(l.w, spring.move);
-    } else {
-      x.value = l.x;
-      w.value = l.w;
-      ready.current = true;
-    }
-  };
-  useEffect(() => {
-    place(value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  const ind = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }], width: w.value }));
-  return (
-    <View style={styles.toggleRow}>
-      <Animated.View style={[styles.toggleInd, ind]} />
-      {options.map((o) => (
-        <Pressable
-          key={o.key}
-          style={styles.toggle}
-          onPress={() => onChange(o.key)}
-          onLayout={(e) => {
-            layouts.current[o.key] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
-            if (o.key === value) place(o.key); // 초기/리레이아웃 시 현재 위치 반영
-          }}
-        >
-          <Text style={[styles.toggleLbl, o.key === value && styles.toggleLblOn]}>{o.label}</Text>
-        </Pressable>
-      ))}
-    </View>
   );
 }
 
@@ -640,13 +631,24 @@ const styles = StyleSheet.create({
   errDetail: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', paddingHorizontal: 8 },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
-  resultTitle: { fontFamily: font.display, fontSize: 16, color: '#fff' },
-  toggleRow: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12, padding: 4, gap: 3 },
-  toggle: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 9 },
-  // P-032: 활성 배경은 개별 toggleOn 대신 글라이드 인디케이터가 담당
-  toggleInd: { position: 'absolute', top: 4, bottom: 4, left: 0, borderRadius: 9, backgroundColor: '#fff' },
-  toggleLbl: { fontFamily: font.bodyBold, fontSize: 13.5, color: 'rgba(255,255,255,0.7)' },
-  toggleLblOn: { color: C.ink },
+  // P-062② D2 스캐닝 오버레이
+  scanCaption: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 10 },
+  bracket: { position: 'absolute', width: 34, height: 34, borderColor: 'rgba(255,255,255,0.9)', borderRadius: 2 },
+  sweepWrap: { position: 'absolute', left: 14, right: 14, top: 0, height: 90 },
+  sweepTrail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
+  sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  // P-062③ D3 하단 바
+  d3Sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,11,8,0.96)', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, paddingHorizontal: 18, alignItems: 'center', gap: 11 },
+  d3Handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.28)' },
+  d3Caption: { fontFamily: font.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
+  d3Legend: { flexDirection: 'row', gap: 8 },
+  d3LegendChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  d3LegendText: { fontFamily: font.bodyBold, fontSize: 11.5, color: 'rgba(255,255,255,0.85)' },
+  d3Btns: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-evenly', marginTop: 2 },
+  d3Btn: { alignItems: 'center', gap: 6, width: 76 },
+  d3Circle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  d3CircleOn: { backgroundColor: C.primary },
+  d3BtnLabel: { fontFamily: font.bodyBold, fontSize: 11, color: 'rgba(255,255,255,0.85)' },
   // list rows
   row: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
   rowName: { fontFamily: font.koBold, fontSize: 15, color: C.ink },

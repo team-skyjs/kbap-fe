@@ -236,6 +236,17 @@ export const IconEdit = (p: IconProps) => (
     <Line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
   </Glyph>
 );
+/** P-062: 결과 하단 바(D3) 리스트 뷰 버튼 */
+export const IconList = (p: IconProps) => (
+  <Glyph {...p}>
+    <Line x1="8.5" y1="6.5" x2="20" y2="6.5" />
+    <Line x1="8.5" y1="12" x2="20" y2="12" />
+    <Line x1="8.5" y1="17.5" x2="20" y2="17.5" />
+    <Circle cx="4.6" cy="6.5" r="0.9" />
+    <Circle cx="4.6" cy="12" r="0.9" />
+    <Circle cx="4.6" cy="17.5" r="0.9" />
+  </Glyph>
+);
 /** P-057: 빈 프로필 넛지 배너 — 전구 (기호=SVG 규칙) */
 export const IconBulb = (p: IconProps) => (
   <Glyph {...p}>

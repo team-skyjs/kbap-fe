@@ -569,3 +569,10 @@
 - [x] ③ 프로필 안전 고지 행 → kbap-legal/safety.html 열기(Linking.openURL). 실측: 약관·개인정보 행은 코드에 부재 — 안전 고지 행만 존재했고 미연결 상태였음(보고 명시).
 - [x] ④ 알림 UI 전면 삭제: NotificationsPanel.tsx 삭제, StickyHeader bell/bellDot/패널/게이트 제거(+미사용 AuthGateSheet·useIsGuest import 정리), 홈·음식·프로필 진입점 제거, 프로필 알림 행 삭제, GateContext 'notifications' 제거, i18n(notifications.*·profile.notifications·gate.notif*) ×10 정리.
 - 테스트 +2(risk v2.1.0)·반전 1. tsc 0, jest 243/243. JS-only — preview OTA.
+
+## KB-232 스캔 화면 디자인 정합 (2026-07-23, P-062)
+- [x] ⓪ [반려 보수] 셔터 가드 레이스: state 가드는 리렌더 전 탭을 못 막음 — capturingRef 동기 가드(진입 즉시 검사·세트)로 실차단, state는 시각 disable 전용. capture·pickFromGallery 동일. 레이스 테스트(pending 중 재탭 → 픽커 1회).
+- [x] ① Run sample scan 제거: SAMPLE_DISHES·카메라/에러 화면 버튼·scan.sample 키(×10) 삭제. 기존 테스트 2본은 갤러리 경로(OCR mock→실 segmentMenu)로 결과 진입 재배선.
+- [x] ② D2 스캐닝 오버레이: 검은 화면+스피너 → 촬영/선택 사진 배경 + 코너 브래킷 4 + 주황 스캔라인 스윕(글로우 트레일, withRepeat 1.8s — reduced-motion 시 전역 config가 정지) + scan.reading 캡션+소형 스피너 + X 유지. 갤러리 경로 동일.
+- [x] ③ D3 하단 바: 다크 시트(상단 라운드+핸들) — resultCaption(신규 ×10)+위험도 범례 칩 3(RiskMark SVG+기존 risk.* 라벨, 색맹 축)+원형 버튼 4(IconList 신규/IconScanLines/IconGallery/IconRetry — 라벨 기존 키, 활성=주황 원, 사진저장 제외). 기존 세그먼트(ToggleRow)·다시찍기 Btn 대체.
+- 테스트 +3(레이스·샘플 부재·D3 4버튼/활성) — P-032 글라이드 테스트는 세그먼트 폐기로 소멸 대상 아님(별도 파일 없었음). tsc 0, jest 246/246. JS-only — preview OTA.

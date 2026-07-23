@@ -46,7 +46,9 @@ jest.mock('expo-camera', () => {
   const { View } = require('react-native');
   return { CameraView: View, useCameraPermissions: () => [{ granted: false }, jest.fn()] };
 });
-jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] }),
+}));
 jest.mock('expo-file-system/legacy', () => ({ deleteAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
@@ -64,7 +66,14 @@ jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('@/lib/scan/ocr', () => ({ recognizeMenuLines: jest.fn() }));
+jest.mock('@/lib/scan/ocr', () => ({
+  recognizeMenuLines: jest.fn().mockResolvedValue([
+    { text: '된장찌개', box: { x: 0.12, y: 0.16, width: 0.5, height: 0.08 } },
+    { text: '김치찌개', box: { x: 0.12, y: 0.33, width: 0.5, height: 0.08 } },
+    { text: '공기밥', box: { x: 0.12, y: 0.5, width: 0.5, height: 0.08 } },
+    { text: '맥북', box: { x: 0.12, y: 0.67, width: 0.5, height: 0.08 } },
+  ]),
+}));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) })); // ML Kit 네이티브 차단
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
@@ -95,7 +104,6 @@ jest.mock('@/lib/data/useScan', () => ({
 
 import Scan from '../scan';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
-import { Btn } from '@/components/Btn';
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -105,15 +113,13 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('스캔 완료 시 기본 화면은 리스트 — 오버레이는 렌더되지 않는다', () => {
+it('스캔 완료 시 기본 화면은 리스트 — 오버레이는 렌더되지 않는다', async () => {
   const tree = render(<Scan />);
-  // 카메라 화면의 "샘플 스캔" 버튼 → BE mock 즉시 성공 → 결과 화면
-  const sample = tree.root
-    .findAllByType(Btn)
-    .find((b) => b.props.children === 'scan.sample');
-  expect(sample).toBeDefined();
-  act(() => {
-    sample!.props.onPress();
+  // P-062①: 샘플 폐기 — 갤러리 경로(OCR mock→실 segmentMenu)로 결과 진입
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+  expect(gallery.length).toBeGreaterThanOrEqual(1);
+  await act(async () => {
+    await gallery[0].props.onPress();
   });
   // 기본 = 리스트: 오버레이 컴포넌트 없음 + 리스트 행(displayName) 렌더
   expect(tree.root.findAllByType(ScanResultOverlay).length).toBe(0);
