@@ -81,3 +81,15 @@ it('P-058: 다양성 행 dim 예고 — 실적 detail 미렌더, 예고 2행·�
   expect(texts(tree, 'ranking.reviewsComing')).toBeGreaterThanOrEqual(2); // 리뷰+다양성 (Txt 래퍼 중복 계상 허용)
   expect(texts(tree, 'ranking.scansDetail')).toBeGreaterThanOrEqual(1); // 스캔은 활성
 });
+
+// P-063: All ranks = 리스트 카드 — 상태 3종(체크/NOW·pts/자물쇠) + 7행 잠금
+it('P-063: 래더 리스트 — 7행·done 체크·current NOW+pts·locked pts', () => {
+  const tree = render(<RankingScreen />);
+  // 7개 티어명(EN 키) 전부 렌더
+  const tierNames = tree.root.findAll((n) => typeof n.props?.children === 'string' && String(n.props.children).startsWith('ranking.tier.'));
+  expect(new Set(tierNames.map((n) => n.props.children)).size).toBe(7);
+  expect(texts(tree, 'ranking.done')).toBeGreaterThanOrEqual(1); // done(레벨1)
+  expect(texts(tree, 'ranking.now')).toBeGreaterThanOrEqual(1); // current NOW 필
+  expect(texts(tree, 'ranking.entryPts')).toBeGreaterThanOrEqual(1); // current pts
+  expect(texts(tree, 'ranking.lockedPts')).toBeGreaterThanOrEqual(1); // locked
+});

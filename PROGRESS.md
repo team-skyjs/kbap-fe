@@ -576,3 +576,8 @@
 - [x] ② D2 스캐닝 오버레이: 검은 화면+스피너 → 촬영/선택 사진 배경 + 코너 브래킷 4 + 주황 스캔라인 스윕(글로우 트레일, withRepeat 1.8s — reduced-motion 시 전역 config가 정지) + scan.reading 캡션+소형 스피너 + X 유지. 갤러리 경로 동일.
 - [x] ③ D3 하단 바: 다크 시트(상단 라운드+핸들) — resultCaption(신규 ×10)+위험도 범례 칩 3(RiskMark SVG+기존 risk.* 라벨, 색맹 축)+원형 버튼 4(IconList 신규/IconScanLines/IconGallery/IconRetry — 라벨 기존 키, 활성=주황 원, 사진저장 제외). 기존 세그먼트(ToggleRow)·다시찍기 Btn 대체.
 - 테스트 +3(레이스·샘플 부재·D3 4버튼/활성) — P-032 글라이드 테스트는 세그먼트 폐기로 소멸 대상 아님(별도 파일 없었음). tsc 0, jest 246/246. JS-only — preview OTA.
+
+## KB-125 랭킹 — All ranks 리스트형 (2026-07-23, P-063)
+- [x] PathRow·세로 연결선(path) 폐기 → LadderRow 독립 카드 7행(gap 8, 카드 bg+헤어라인+r-sm+sh1): 좌 Medallion 42(done 체크/current 티어색/locked 뮤트), 중 티어명 EN+NOW 필+ko 병기, 우 done ✓/current pts(primaryText — 대비 계열)/locked 자물쇠+pts. current 행 = primary 7% 틴트+2px 30% 링, locked opacity 0.62. 미사용 dim/nodeBody/path류 스타일 정리.
+- [x] 스코프 엄수: 히어로·게이지·점수 내역(리뷰/다양성 dim)·스캔 CTA diff 0.
+- 테스트 +1(7행·상태 3종). tsc 0, jest 247/247. JS-only — preview OTA.

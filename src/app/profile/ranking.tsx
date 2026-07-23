@@ -141,15 +141,10 @@ function RankingBody({ rk, onScan }: { rk: Ranking; onScan: () => void }) {
           <Text style={styles.secTitle}>{t('ranking.ladderTitle')}</Text>
           <Text style={styles.secSub}>{t('ranking.ladderSub')}</Text>
         </View>
-        <View style={styles.path}>
-          {TIERS.map((tier, i) => (
-            <PathRow
-              key={tier.key}
-              tier={tier}
-              curLevel={cur.level}
-              first={i === 0}
-              last={i === TIERS.length - 1}
-            />
+        {/* P-063: path(세로 연결선) → 리스트형 독립 카드 행 (디자인 ranksLayout='list' — LadderRow) */}
+        <View style={styles.ladder}>
+          {TIERS.map((tier) => (
+            <LadderRow key={tier.key} tier={tier} curLevel={cur.level} />
           ))}
         </View>
       </View>
@@ -237,50 +232,43 @@ function BreakRow({ icon, label, labelKo, detail, factor, first }: { icon: React
 }
 
 /* ---------- path ladder row (connected climb trail) ---------- */
-function PathRow({ tier, curLevel, first, last }: { tier: Tier; curLevel: number; first: boolean; last: boolean }) {
+function LadderRow({ tier, curLevel }: { tier: Tier; curLevel: number }) {
   const { t } = useTranslation();
   const state: 'done' | 'current' | 'locked' = tier.level < curLevel ? 'done' : tier.level === curLevel ? 'current' : 'locked';
-  const topSolid = tier.level <= curLevel;
-  const botSolid = tier.level < curLevel;
   const dim = state === 'locked';
-
-  const medallion = <Medallion level={tier.level} color={tier.color} muted={dim} done={state === 'done'} />;
-
   return (
-    <View style={styles.pathRow}>
-      <View style={styles.nodeCol}>
-        <View style={[styles.line, { minHeight: 12 }, first && styles.lineHide, topSolid && styles.lineSolid]} />
-        {state === 'current' ? <View style={styles.nodeCur}>{medallion}</View> : medallion}
-        <View style={[styles.line, { minHeight: 12 }, last && styles.lineHide, botSolid && styles.lineSolid]} />
-      </View>
-      <View style={[styles.nodeBody, state === 'current' && styles.nodeBodyCur]}>
-        <View style={styles.nodeMain}>
-          <View style={styles.nodeNameRow}>
-            <Text style={[styles.nodeName, dim && styles.dim]}>{t(`ranking.tier.${tier.key}`)}</Text>
-            {state === 'current' && (
-              <View style={styles.nowPill}>
-                <Text style={styles.nowPillText}>{t('ranking.now')}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.nodeKo, dim && styles.dim]}>{t(`ranking.tierKo.${tier.key}`)}</Text>
+    <View style={[styles.ladderRow, state === 'current' && styles.ladderRowCur, dim && styles.ladderRowLocked]}>
+      {state === 'current' ? (
+        <View style={styles.nodeCur}>
+          <Medallion level={tier.level} color={tier.color} />
         </View>
-        <View style={dim ? styles.dim : undefined}>
-          {state === 'done' && (
-            <View style={styles.rankRight}>
-              <IconCheck size={13} color={C.riskSafe} />
-              <Text style={styles.doneText}>{t('ranking.done')}</Text>
-            </View>
-          )}
-          {state === 'current' && <Text style={styles.atCur}>{t('ranking.entryPts', { at: tier.at })}</Text>}
-          {state === 'locked' && (
-            <View style={styles.rankRight}>
-              <IconLock size={12} color={C.ink3} />
-              <Text style={styles.atLocked}>{t('ranking.lockedPts', { at: tier.at })}</Text>
+      ) : (
+        <Medallion level={tier.level} color={tier.color} muted={dim} done={state === 'done'} />
+      )}
+      <View style={styles.nodeMain}>
+        <View style={styles.nodeNameRow}>
+          <Text style={styles.nodeName}>{t(`ranking.tier.${tier.key}`)}</Text>
+          {state === 'current' && (
+            <View style={styles.nowPill}>
+              <Text style={styles.nowPillText}>{t('ranking.now')}</Text>
             </View>
           )}
         </View>
+        <Text style={styles.nodeKo}>{t(`ranking.tierKo.${tier.key}`)}</Text>
       </View>
+      {state === 'done' && (
+        <View style={styles.rankRight}>
+          <IconCheck size={13} color={C.riskSafe} />
+          <Text style={styles.doneText}>{t('ranking.done')}</Text>
+        </View>
+      )}
+      {state === 'current' && <Text style={styles.atCur}>{t('ranking.entryPts', { at: tier.at })}</Text>}
+      {state === 'locked' && (
+        <View style={styles.rankRight}>
+          <IconLock size={12} color={C.ink3} />
+          <Text style={styles.atLocked}>{t('ranking.lockedPts', { at: tier.at })}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -369,22 +357,16 @@ const styles = StyleSheet.create({
   comingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, opacity: 0.55 },
 
   // path ladder
-  path: { paddingHorizontal: 2, paddingTop: 2 },
-  pathRow: { flexDirection: 'row', gap: 14, alignItems: 'stretch' },
-  nodeCol: { width: 42, alignItems: 'center' },
-  line: { width: 3, flex: 1, borderRadius: 3, backgroundColor: C.surface2 },
-  lineSolid: { backgroundColor: C.primary },
-  lineHide: { opacity: 0 },
+  // P-063: 리스트형 독립 카드 행 (디자인 .rk-rank 미러)
+  ladder: { gap: 8 },
+  ladderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
+  ladderRowCur: { backgroundColor: 'rgba(226,88,12,0.07)', borderWidth: 2, borderColor: 'rgba(226,88,12,0.3)' },
+  ladderRowLocked: { opacity: 0.62 },
   nodeCur: { borderRadius: 24, padding: 3, backgroundColor: 'rgba(226,88,12,0.16)', ...shadow.sh2 },
-  nodeBody: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingTop: 7, paddingBottom: 19 },
-  // P-037(Q-15 ①): 내부 텍스트가 비카드 행들과 같은 좌/우 기준선에 앉도록
-  // 패딩+테두리(13+1.5)만큼 음수 마진 — 카드 테두리는 기준선 바깥으로 나간다.
-  nodeBodyCur: { backgroundColor: 'rgba(226,88,12,0.07)', borderRadius: radius.sm, borderWidth: 1.5, borderColor: 'rgba(226,88,12,0.28)', paddingHorizontal: 13, paddingVertical: 11, marginVertical: 3, marginHorizontal: -14.5 },
   nodeMain: { flex: 1, gap: 1 },
   nodeNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   nodeName: { fontFamily: font.display, fontSize: 15.5, color: C.ink, letterSpacing: -0.2 },
   nodeKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
-  dim: { opacity: 0.58 },
   rankRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   doneText: { fontFamily: font.bodyBold, fontSize: 12, color: C.riskSafe },
   atCur: { fontFamily: font.bodyBold, fontSize: 11, color: C.primaryText },
