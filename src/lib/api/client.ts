@@ -101,6 +101,14 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   }
 
   const text = await res.text();
+
+  // DevTools Network 탭이 dev-launcher 멀티 호스트 이슈(discussions/954)로 비활성 —
+  // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.log(`[api] ${method} ${path} → ${res.status}`, text.length > 2000 ? `${text.slice(0, 2000)}… (${text.length}B)` : text);
+  }
+
   // 204 / empty body (e.g. DELETE) — nothing to unwrap.
   if (res.ok && !text) return undefined as T;
 
