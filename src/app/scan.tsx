@@ -86,8 +86,9 @@ export default function Scan() {
   const [photoOnly, setPhotoOnly] = useState<PhotoOnlyItem[]>([]); // idx=null — 리스트 전용
 
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
-  // KB-140: 기본 화면 = 리스트 (오버레이 버튼 겹침 회피 — 2026-07-14 결정)
-  const [view, setView] = useState<ResultView>('list');
+  // P-071(7/24 예진 확정): 기본 = 사진+마커(risk) — "찍었으니 사진이 보여야지".
+  // KB-140의 리스트 기본(버튼 겹침 회피)은 파파고 개편(P-064~068)으로 근거 소멸.
+  const [view, setView] = useState<ResultView>('risk');
   const [facing, setFacing] = useState<CameraType>('back');
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
@@ -156,7 +157,7 @@ export default function Scan() {
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
-        setView('list'); // KB-140 기본 리스트
+        setView('risk'); // P-071: 기본=사진+마커 — "찍었으니 사진이 보여야지" (KB-140 리스트 기본 폐지)
         setPhase('result');
       },
       onError: (e) => {

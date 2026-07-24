@@ -135,6 +135,13 @@ async function renderResult(): Promise<ReactTestRenderer> {
   await act(async () => {
     await gallery[0].props.onPress();
   });
+  // P-071: 기본=risk — 배너는 목록 뷰 전용(P-057)이라 리스트로 전환해 검증
+  const toList = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showList').length > 0,
+  );
+  act(() => {
+    toList[toList.length - 1].props.onPress();
+  });
   return tree;
 }
 

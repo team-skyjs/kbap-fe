@@ -1,7 +1,7 @@
 /**
- * KB-140 회귀: 스캔 완료 시 기본 화면은 **리스트** — 오버레이(사진 위 마커)가
- * 기본이면 하단 버튼과 메뉴가 겹치는 문제(2026-07-14 결정으로 리스트 전환).
- * 오버레이는 토글로만 진입해야 한다.
+ * P-071(KB-233, 7/24 예진 확정): 스캔 완료 시 기본 화면은 **사진+마커(risk)** —
+ * "찍었으니 사진이 보여야지"(신규 유저 멘탈 모델). KB-140의 리스트 기본은
+ * 파파고 개편으로 근거 소멸. 리스트·원본은 하단 버튼 전환 — 전환 무회귀 잠금.
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -127,7 +127,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('스캔 완료 시 기본 화면은 리스트 — 오버레이는 렌더되지 않는다', async () => {
+it('P-071: 스캔 완료 시 기본 화면은 사진+마커 — 리스트는 버튼 전환으로', async () => {
   const tree = render(<Scan />);
   // P-062①: 샘플 폐기 — 갤러리 경로(OCR mock→실 segmentMenu)로 결과 진입
   const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
@@ -135,7 +135,17 @@ it('스캔 완료 시 기본 화면은 리스트 — 오버레이는 렌더되�
   await act(async () => {
     await gallery[0].props.onPress();
   });
-  // 기본 = 리스트: 오버레이 컴포넌트 없음 + 리스트 행(displayName) 렌더
+  // 기본 = risk: 오버레이(사진+마커) 렌더 + 마커 표시
+  const overlays = tree.root.findAllByType(ScanResultOverlay);
+  expect(overlays.length).toBe(1);
+  expect(overlays[0].props.showMarkers).toBe(true);
+  // 리스트 전환 (하단 버튼) → 행 노출 무회귀
+  const listBtn = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showList').length > 0,
+  );
+  act(() => {
+    listBtn[listBtn.length - 1].props.onPress();
+  });
   expect(tree.root.findAllByType(ScanResultOverlay).length).toBe(0);
   const texts = tree.root.findAll((n) => n.props?.children === 'Doenjang Jjigae');
   expect(texts.length).toBeGreaterThanOrEqual(1);

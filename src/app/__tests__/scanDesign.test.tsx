@@ -201,20 +201,27 @@ it('P-066 하단 그라데이션 — 위험도 뷰 존재(220)·리스트 뷰 �
   });
   const shade = () =>
     tree.root.findAll((n) => JSON.stringify(n.props?.style ?? '').includes('"height":220') && n.props?.pointerEvents === 'none');
-  expect(shade().length).toBe(0); // 기본=리스트: 그라데이션 없음
-  const riskBtn = tree.root.findAll(
-    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showResult').length > 0,
+  expect(shade().length).toBeGreaterThanOrEqual(1); // P-071: 기본=risk — 사진 뷰 상시 렌더
+  const listBtn = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showList').length > 0,
   );
   act(() => {
-    riskBtn[riskBtn.length - 1].props.onPress();
+    listBtn[listBtn.length - 1].props.onPress();
   });
-  expect(shade().length).toBeGreaterThanOrEqual(1); // 사진 뷰: 상시 렌더
+  expect(shade().length).toBe(0); // 리스트 뷰: 그라데이션 없음
 });
 
 it('P-068 리스트 뷰 A안 — paddingBottom=버튼 영역+여유(140+inset)·배경 페이드(150) 존재', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
+  });
+  // P-071: 기본=risk — 리스트 버튼으로 전환 후 검증
+  const toList = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showList').length > 0,
+  );
+  act(() => {
+    toList[toList.length - 1].props.onPress();
   });
   // insets mock bottom=0 → paddingBottom 140 잠금
   const list = tree.root.findAll((n) => n.props?.contentContainerStyle?.paddingBottom === 140);
