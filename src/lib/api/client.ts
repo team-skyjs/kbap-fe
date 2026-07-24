@@ -82,6 +82,15 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   let res: Response;
+  if (__DEV__) {
+    // 요청 측 로그 — fetch 전에 찍어 NETWORK 실패 시에도 보이게. 토큰은 마스킹.
+    // eslint-disable-next-line no-console
+    console.log(
+      `[api] → ${method} ${path}`,
+      { headers: { ...headers, ...(headers.Authorization ? { Authorization: 'Bearer ***' } : {}) } },
+      body != null ? body : '(no body)',
+    );
+  }
   try {
     res = await fetch(`${API_V1_BASE}${path}`, {
       method,
@@ -106,7 +115,7 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
   if (__DEV__) {
     // eslint-disable-next-line no-console
-    console.log(`[api] ${method} ${path} → ${res.status}`, text.length > 2000 ? `${text.slice(0, 2000)}… (${text.length}B)` : text);
+    console.log(`[api] ← ${res.status} ${method} ${path}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
   }
 
   // 204 / empty body (e.g. DELETE) — nothing to unwrap.
