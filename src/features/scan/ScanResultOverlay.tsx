@@ -15,10 +15,8 @@ import { Txt as Text } from '@/components/Txt';
 import { font, riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
+import { estimatePillWidth, layoutPills, PILL_MAX_W } from './pillLayout';
 import { clampPan, clampScale, DOUBLE_TAP_ZOOM } from './zoom';
-
-/** Cap so a pill can't run across the whole photo. */
-const PILL_MAX_W = 220;
 
 type Photo = { uri: string; width: number; height: number } | null;
 
@@ -114,29 +112,19 @@ export function ScanResultOverlay({
     return { x: (w - dispW) / 2, y: 0, w: dispW, h };
   }, [size, photo]);
 
-  // KB-140 마커 겹침 완화 — 같은 x-구역에서 세로로 가까운 pill은 아래로
-  // 스태거(간격 = pill 높이 32 + 2). 원 앵커에서 다소 밀릴 수 있는 best-effort
-  // 휴리스틱이지만 완전 겹침(뒤 pill이 안 눌리는 것)은 방지한다.
+  // KB-140 마커 겹침 완화 → P-070(KB-240) 보수: 실폭 교차 판정 + 스태거 1단 상한
+  // (pillLayout.ts 순수 함수 — 조밀 2열 연쇄 사다리 잠금은 유닛에서).
   const positions = React.useMemo(() => {
     if (!rect.w) return [];
-    const PILL_H = 34;
-    const X_CLUSTER = 150; // 이 이내면 같은 열로 간주
-    const placed: { lx: number; ty: number }[] = [];
-    return [...dishes]
+    const anchored = [...dishes]
       .sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x)
-      .map((d) => {
-        const lx = rect.x + d.box.x * rect.w;
-        let ty = rect.y + (d.box.y + d.box.height / 2) * rect.h - 16;
-        let guard = 0;
-        while (
-          guard++ < dishes.length &&
-          placed.some((p) => Math.abs(p.ty - ty) < PILL_H && Math.abs(p.lx - lx) < X_CLUSTER)
-        ) {
-          ty += PILL_H;
-        }
-        placed.push({ lx, ty });
-        return { d, lx, ty };
-      });
+      .map((d) => ({
+        d,
+        lx: rect.x + d.box.x * rect.w,
+        ty: rect.y + (d.box.y + d.box.height / 2) * rect.h - 16,
+        width: estimatePillWidth(d.displayName, d.priceKrw != null ? formatKrw(d.priceKrw) : null),
+      }));
+    return layoutPills(anchored);
   }, [dishes, rect]);
 
   return (
