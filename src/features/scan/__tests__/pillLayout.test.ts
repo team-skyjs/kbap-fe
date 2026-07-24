@@ -51,7 +51,7 @@ it('근접 무회귀: 성긴 배치(세로 여유·좁은 이름)는 이동 0', 
 });
 
 it('겹침 방지 자체는 유지: 같은 줄 실폭 교차 → 1단 스태거', () => {
-  const w = estimatePillWidth('Doenjang Jjigae Stew', '₩8,000');
+  const w = estimatePillWidth('Doenjang Jjigae Stew');
   const same = [
     { lx: 20, ty: 50, width: w },
     { lx: 40, ty: 50, width: w }, // 실폭 교차
@@ -63,5 +63,5 @@ it('겹침 방지 자체는 유지: 같은 줄 실폭 교차 → 1단 스태거'
 
 it('estimatePillWidth — 전각>반각 가중, 상한 220', () => {
   expect(estimatePillWidth('김치찌개')).toBeGreaterThan(estimatePillWidth('abcd'));
-  expect(estimatePillWidth('아주아주아주아주긴한국음식이름입니다만', '₩12,000')).toBe(220);
+  expect(estimatePillWidth('아주아주아주아주긴한국음식이름입니다만')).toBe(220);
 });

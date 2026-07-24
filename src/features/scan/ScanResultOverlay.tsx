@@ -14,7 +14,7 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 
 import { Txt as Text } from '@/components/Txt';
 import { font, riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
-import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
+import { type ResultDish } from '@/lib/scan/segmentMenu';
 import { estimatePillWidth, layoutPills, PILL_MAX_W } from './pillLayout';
 import { clampPan, clampScale, DOUBLE_TAP_ZOOM } from './zoom';
 
@@ -122,7 +122,7 @@ export function ScanResultOverlay({
         d,
         lx: rect.x + d.box.x * rect.w,
         ty: rect.y + (d.box.y + d.box.height / 2) * rect.h - 16,
-        width: estimatePillWidth(d.displayName, d.priceKrw != null ? formatKrw(d.priceKrw) : null),
+        width: estimatePillWidth(d.displayName),
       }));
     return layoutPills(anchored);
   }, [dishes, rect]);
@@ -162,8 +162,6 @@ export function ScanResultOverlay({
               <Text style={styles.pillText} numberOfLines={1}>
                 {d.displayName}
               </Text>
-              {/* 서버 제공 가격 그대로 — null=미표시 (P-002) */}
-              {d.priceKrw != null && <Text style={styles.pillPrice}>{formatKrw(d.priceKrw)}</Text>}
             </Pressable>
           );
               })}
@@ -198,5 +196,4 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   pillText: { fontFamily: font.ko, fontSize: 12.5, color: '#1c1917', flexShrink: 1 },
-  pillPrice: { fontFamily: font.bodyBold, fontSize: 11, color: '#78716c' },
 });

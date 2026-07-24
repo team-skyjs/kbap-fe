@@ -154,6 +154,7 @@ it('③→P-064② 파파고식 — 캡션·범례 부재, 플로팅 원형 버�
     await galleryBtn(tree).props.onPress();
   });
   expect(texts(tree, 'scan.resultCaption')).toBe(0); // P-064: 캡션 삭제
+  expect(texts(tree, '₩8,000')).toBe(0); // P-071②: 마커 pill 가격 미표시(기본=risk 뷰 — 가격은 리스트·상세만)
   // 범례 삭제 — mock 결과는 safe 1건뿐이라 danger/caution 라벨은 범례에서만 나올 수 있었음
   for (const k of ['risk.danger', 'risk.caution']) expect(texts(tree, k)).toBe(0);
   for (const k of ['scan.showList', 'scan.showResult', 'scan.showOriginal', 'scan.retake']) {
