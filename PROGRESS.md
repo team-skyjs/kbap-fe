@@ -609,3 +609,10 @@
 - [x] 바닥 여백: contentContainer paddingBottom 150(고정) → bottom+140 — 끝 스크롤 시 마지막 카드가 버튼 위로 완전 가시(안드 제스처 내비 inset 포함).
 - [x] 배너·카드·버튼 로직 무변.
 - 테스트 +1(paddingBottom 140+inset·페이드 150 존재). tsc 0, jest 253/253. 실기기 확인 후 P-066과 preview OTA 합류.
+
+## KB-194 QA용 빌드 — iOS 빌드8 + 안드 빌드3, env=dev (2026-07-24, P-069)
+- [x] eas.json preview·production env → dev.kbap.site 임시 배선 (d817c73) — prod 미시딩, 내일 제출 빌드(P-067)에서 prod 교체.
+- [x] iOS 빌드8: 2328c807, runtime 36d1708a — 테플 제출 완료(ASC 처리 중). P-054 스플래시·supportedLocales 등 네이티브 전부 탑승.
+- [x] 안드 빌드3: 29328c51, runtime 13a68799 — 내부 배포 APK (공기계 설치용, AAB는 내일 제출 라운드).
+- [x] production 지문 재베이스라인 c43664ed→36d1708a. **P-054+P-059 확장 스왑 절차 소멸** — 현 HEAD 그대로 OTA 가능(메모리 절차 삭제).
+- 임베드 커밋 d817c73(=P-066·P-068 포함) · tsc 0 · jest 253/253.
