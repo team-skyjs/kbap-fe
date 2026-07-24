@@ -19,14 +19,14 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_BE_BASE": "https://meogo.handev.site"
+        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
       }
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_BE_BASE": "https://meogo.handev.site"
+        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
       }
     }
   },
