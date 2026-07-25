@@ -652,3 +652,8 @@
 - [x] 안드 빌드4: AAB 83db48cf(스토어 제출용) + 공기계 APK a3bcc1f6.
 - [x] runtime 불변 실측(iOS 36d1708a·안드 13a68799 — eas.json env는 지문 비대상) → 재베이스라인·스왑 불요, 기존 OTA 브랜치 그대로 유효.
 - 심사 제출 클릭은 커맨드 센터 prod 시딩 스모크 통과 후(게이트).
+
+## 🚨 Play 제출 블로커 — ACTIVITY_RECOGNITION 제거 (2026-07-25, P-075)
+- [x] 원인: expo-sensors가 자기 매니페스트에 ACTIVITY_RECOGNITION 무조건 주입 — 우리는 DeviceMotion(가로 감지)만 쓰고 Pedometer 안 씀. app.json android.blockedPermissions 추가.
+- [x] prebuild 실증: AndroidManifest에 `tools:node="remove"` 확인(산출물 미커밋). DeviceMotion은 이 권한과 무관(Pedometer 전용) — 가로 감지 로직 변화 없음, 기존 orientationFromGravity 유닛 유효.
+- [x] 안드 production 재빌드(versionCode 4 자동) + 공기계 APK 재빌드.
