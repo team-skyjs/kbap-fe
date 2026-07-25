@@ -639,3 +639,9 @@
 - [x] 재발 방지: [api] 로거 full URL(호스트 포함) + CLAUDE.md "eas update는 env 인라인+export 사전 grep" 영구 규칙 (4d598fd).
 - [x] P-072: PILL_MAX_W 220→150 — 긴 영문명 pill이 열 경계 넘어 우측 열 교차→1단 밀림 잔여 보수. 렌더 말줄임(maxWidth+numberOfLines)·추정 폭 상한 자동 동기. 긴 영문명 2열 정위치 잠금 +1(상한 단언 150 갱신).
 - 테스트 259/259, tsc 0.
+
+## KB-175 도메인 2단계 — prod.kbap.site 전환 (2026-07-25, P-067)
+- [x] eas.json preview·production env → prod.kbap.site. config.ts fallback meogo→prod(주석 정리), .env.example 갱신(로컬 dev 유지). meogo 참조 0(폐기 기록 제외).
+- [x] prod 계약 스모크: /home?lang·/foods 모두 HTTP 200 + 신계약 봉투 정상 — 데이터 0건(시딩 병렬 중, 심사 제출 클릭은 시딩 스모크 후 게이트).
+- [x] beBase fallback 잠금 반전(meogo→prod). eas.json 지문 회전은 P-074 빌드 재베이스라인으로 소멸 — 스왑 불요.
+- 테스트 259/259, tsc 0.
