@@ -22,6 +22,11 @@
 - 완료 기준: tsc 0 · jest 전체 통과 + 신규 로직엔 그 버그를 정확히 잡는 테스트 동반.
 - 위험도 표시는 false-safe 금지(불확실→unable/caution 강등, 헌법 III) — 관련 코드는 보수적으로.
 - 진행 기록은 PROGRESS.md 관례 유지.
+- **`eas update`는 env 인라인 주입 + export 사전 grep 검증 필수** (P-073 사고):
+  `--environment` 플래그는 EAS 서버 env를 쓰므로 로컬 .env/eas.json build env가 안
+  먹는다 — 발행 명령 앞에 `EXPO_PUBLIC_BE_BASE=… npx eas-cli update …` 인라인 강제,
+  그 전에 같은 셸에서 `npx expo export` 후 dist 번들 grep(목표 호스트 1+·이전 호스트 0)
+  확인을 거친다.
 - **제스처·워클릿 코드는 실기기 확인 후 발행** (P-065 교훈): reanimated/gesture-handler의
   UI 스레드 콜백에서 호출되는 JS 함수는 `'worklet';` 지시자 필수 — jest는 워클릿 경계를
   못 잡으므로(mock이 JS로 실행) 핀치·팬 등 제스처 변경은 Metro 실기 확인을 발행 전 거칠 것.

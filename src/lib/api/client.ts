@@ -86,7 +86,7 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
     // 요청 측 로그 — fetch 전에 찍어 NETWORK 실패 시에도 보이게. 토큰은 마스킹.
     // eslint-disable-next-line no-console
     console.log(
-      `[api] → ${method} ${path}`,
+      `[api] → ${method} ${API_V1_BASE}${path}`,
       { headers: { ...headers, ...(headers.Authorization ? { Authorization: 'Bearer ***' } : {}) } },
       body != null ? body : '(no body)',
     );
@@ -115,7 +115,7 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
   if (__DEV__) {
     // eslint-disable-next-line no-console
-    console.log(`[api] ← ${res.status} ${method} ${path}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
+    console.log(`[api] ← ${res.status} ${method} ${API_V1_BASE}${path}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
   }
 
   // 204 / empty body (e.g. DELETE) — nothing to unwrap.
