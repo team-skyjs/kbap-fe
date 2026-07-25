@@ -61,7 +61,18 @@ it('겹침 방지 자체는 유지: 같은 줄 실폭 교차 → 1단 스태거'
   expect(out[1].ty).toBe(50 + PILL_H);
 });
 
-it('estimatePillWidth — 전각>반각 가중, 상한 220', () => {
+it('estimatePillWidth — 전각>반각 가중, 상한 = PILL_MAX_W(150, P-072)', () => {
   expect(estimatePillWidth('김치찌개')).toBeGreaterThan(estimatePillWidth('abcd'));
-  expect(estimatePillWidth('아주아주아주아주긴한국음식이름입니다만')).toBe(220);
+  expect(estimatePillWidth('아주아주아주아주긴한국음식이름입니다만')).toBe(150);
+});
+
+// P-072: 긴 영문명도 상한(150)에 잘려 열 경계를 못 넘는다
+it('P-072 긴 영문명 2열 — 상한 말줄임으로 열 비교차·스태거 0', () => {
+  const name = 'Crab Meat Oyster Sauce Pasta'; // 추정 원폭 244 → 상한 150
+  expect(estimatePillWidth(name)).toBe(150);
+  const twoCol = Array.from({ length: 4 }, (_, row) =>
+    [20, 180].map((lx) => ({ lx, ty: row * 36, width: estimatePillWidth(name) })),
+  ).flat();
+  const out = layoutPills(twoCol);
+  out.forEach((p, i) => expect(p.ty).toBe(twoCol[i].ty)); // 전 마커 정위치
 });

@@ -632,3 +632,10 @@
 - [x] [추가 7/24] 마커 pill 가격 제거 — 번역 메뉴명만(가격은 리스트·상세 유지). Metro 실측: 가격 포함 폭 ~220pt가 좌우 열을 실제 겹침 → P-070 실폭 판정이 한 클러스터로 묶어 전원 1단 밀림. 제거로 열 분리 + 스태거 미발동 = 정위치. estimatePillWidth 가격 항 동기 제거.
 - [x] 잠금: 기본(risk) 뷰 가격 텍스트 부재 +1, pillLayout 테스트 가격 인자 정리.
 - 테스트 258/258(가격 부재는 기존 잠금에 단언 추가), tsc 0. P-066·068·070·071 묶음 preview OTA 발행(빌드8/3 runtime) — 예진 재스캔 실증은 발행 후.
+
+## 🚨 P-073 묶음 OTA env 오염 재발행 + KB-240 P-072 말줄임 상한 (2026-07-25)
+- [x] P-073 원인 2중 확정: ① `--environment` 플래그 = EAS 서버 env 사용(로컬 .env 미적용, 서버에 EXPO_PUBLIC_BE_BASE 부재 → meogo 폴백) ② Metro 변환 캐시가 오염 번들 재사용(캐시 미클리어 재수출에서 iOS meogo 잔존 실측).
+- [x] 발행 전 검증: `EXPO_PUBLIC_BE_BASE=dev npx expo export --clear` → strings grep iOS·안드 모두 dev:1·meogo:0 확인 후, 인라인 env + `--clear-cache`로 재발행 (안드 preview 612df697 · iOS production 628f03b6, 4d598fd).
+- [x] 재발 방지: [api] 로거 full URL(호스트 포함) + CLAUDE.md "eas update는 env 인라인+export 사전 grep" 영구 규칙 (4d598fd).
+- [x] P-072: PILL_MAX_W 220→150 — 긴 영문명 pill이 열 경계 넘어 우측 열 교차→1단 밀림 잔여 보수. 렌더 말줄임(maxWidth+numberOfLines)·추정 폭 상한 자동 동기. 긴 영문명 2열 정위치 잠금 +1(상한 단언 150 갱신).
+- 테스트 259/259, tsc 0.
