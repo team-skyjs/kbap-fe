@@ -657,3 +657,7 @@
 - [x] 원인: expo-sensors가 자기 매니페스트에 ACTIVITY_RECOGNITION 무조건 주입 — 우리는 DeviceMotion(가로 감지)만 쓰고 Pedometer 안 씀. app.json android.blockedPermissions 추가.
 - [x] prebuild 실증: AndroidManifest에 `tools:node="remove"` 확인(산출물 미커밋). DeviceMotion은 이 권한과 무관(Pedometer 전용) — 가로 감지 로직 변화 없음, 기존 orientationFromGravity 유닛 유효.
 - [x] 안드 production 재빌드(versionCode 4 자동) + 공기계 APK 재빌드.
+
+## 🚨 안드 구글 로그인 복구 — google-services.json 교체 (2026-07-28, P-076)
+- [x] vc4 출시본이 구버전 json(웹 클라이언트만)으로 빌드 → DEVELOPER_ERROR 10 전면 불가. 예진 Firebase 지문 2개(업로드 키·Play 앱 서명 키) 등록본 커밋 — type 1×2+웹 실측 재확인, 내용 무수정.
+- [x] 재빌드 2종(AAB vc5 + 공기계 APK) — json은 빌드타임 임베드라 OTA 불가. runtime 지문 변화는 빌드 결과로 실측 보고.
