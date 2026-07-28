@@ -260,7 +260,10 @@
     "postedTitle": "Review posted",
     "postedBody": "Thanks! Your {{rating}}-star review of {{name}} is now in the food's reviews and counts toward your ranking.",
     "backToDish": "Back to dish",
-    "seeMyReviews": "See my reviews"
+    "seeMyReviews": "See my reviews",
+    "photosLabel": "Photos (up to {{max}})",
+    "addPhoto": "Add photo",
+    "removePhoto": "Remove photo"
   },
   "reviews": {
     "headerTitle": "Reviews",
@@ -290,7 +293,8 @@
       "ja": "Japanese",
       "vi": "Vietnamese",
       "ko": "Korean"
-    }
+    },
+    "mine": "My review"
   },
   "ranking": {
     "headerTitle": "My Ranking",

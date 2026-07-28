@@ -150,6 +150,8 @@ export interface Review {
   authorRankTier: string | null;
   anonymized: boolean;
   createdAt: string; // ISO date-time
+  /** P-077 목 선반영 — BE 리뷰 계약(KB-73) 확정 시 필드명 동기화 질의. */
+  photos?: string[];
 }
 
 /* ---- response envelopes ---- */

@@ -221,7 +221,10 @@
     "postedTitle": "Reseña publicada",
     "postedBody": "¡Gracias! Tu reseña de {{rating}} estrellas de {{name}} ya está en las reseñas del plato y cuenta para tu clasificación.",
     "backToDish": "Volver al plato",
-    "seeMyReviews": "Ver mis reseñas"
+    "seeMyReviews": "Ver mis reseñas",
+    "photosLabel": "Fotos (máx. {{max}})",
+    "addPhoto": "Añadir foto",
+    "removePhoto": "Quitar foto"
   },
   "reviews": {
     "headerTitle": "Reseñas",
@@ -251,7 +254,8 @@
       "ja": "Japonés",
       "vi": "Vietnamita",
       "ko": "Coreano"
-    }
+    },
+    "mine": "Mi reseña"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",

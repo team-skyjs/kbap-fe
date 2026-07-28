@@ -221,7 +221,10 @@
     "postedTitle": "Ulasan terkirim",
     "postedBody": "Terima kasih! Ulasan {{rating}} bintang Anda untuk {{name}} kini ada di ulasan makanan ini dan menambah peringkat Anda.",
     "backToDish": "Kembali ke hidangan",
-    "seeMyReviews": "Lihat ulasan saya"
+    "seeMyReviews": "Lihat ulasan saya",
+    "photosLabel": "Foto (maks. {{max}})",
+    "addPhoto": "Tambah foto",
+    "removePhoto": "Hapus foto"
   },
   "reviews": {
     "headerTitle": "Ulasan",
@@ -251,7 +254,8 @@
       "ja": "Jepang",
       "vi": "Vietnam",
       "ko": "Korea"
-    }
+    },
+    "mine": "Ulasan saya"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",

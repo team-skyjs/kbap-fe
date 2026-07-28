@@ -20,11 +20,8 @@ export const FLAGS = {
    */
   guestMode: true,
   /**
-   * 리뷰 기능 — MVP 제외 (KB-148, 2026-07-16 회의). 커뮤니티류로 보이지
-   * 않도록 UI 전면 숨김: 홈 리뷰 버튼·카드 별점, 상세 평점 카드, 프로필
-   * My reviews, 인트로 3번 슬라이드, 랭킹 리뷰 팩터 행, 알림 리뷰 리마인더,
-   * 탈퇴 안내 리뷰 문구 + 리뷰 라우트 4종은 홈 redirect. 코드·i18n·훅은
-   * 유지 — true로 되돌리면 전부 복원.
+   * 리뷰 기능 — 부활 (P-077/KB-16, 2026-07-28 주간 계획; 제외 이력 KB-148).
+   * 화면은 목 데이터로 동작 — 실연결은 KB-73(BE 리뷰 API 배포 후).
    */
-  reviewsEnabled: false,
+  reviewsEnabled: true,
 } as const;

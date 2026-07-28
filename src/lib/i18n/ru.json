@@ -221,7 +221,10 @@
     "postedTitle": "Отзыв опубликован",
     "postedBody": "Спасибо! Ваш отзыв на {{rating}} звёзд о блюде {{name}} теперь в отзывах и идёт в зачёт рейтинга.",
     "backToDish": "К блюду",
-    "seeMyReviews": "Мои отзывы"
+    "seeMyReviews": "Мои отзывы",
+    "photosLabel": "Фото (до {{max}})",
+    "addPhoto": "Добавить фото",
+    "removePhoto": "Удалить фото"
   },
   "reviews": {
     "headerTitle": "Отзывы",
@@ -251,7 +254,8 @@
       "ja": "Японский",
       "vi": "Вьетнамский",
       "ko": "Корейский"
-    }
+    },
+    "mine": "Мой отзыв"
   },
   "ranking": {
     "headerTitle": "Мой рейтинг",

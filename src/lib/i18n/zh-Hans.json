@@ -221,7 +221,10 @@
     "postedTitle": "点评已发布",
     "postedBody": "谢谢！你对 {{name}} 的 {{rating}} 星点评已加入该菜品的点评，并计入你的排名。",
     "backToDish": "返回菜品",
-    "seeMyReviews": "查看我的点评"
+    "seeMyReviews": "查看我的点评",
+    "photosLabel": "照片（最多{{max}}张）",
+    "addPhoto": "添加照片",
+    "removePhoto": "删除照片"
   },
   "reviews": {
     "headerTitle": "点评",
@@ -251,7 +254,8 @@
       "ja": "日文",
       "vi": "越南文",
       "ko": "韩文"
-    }
+    },
+    "mine": "我的评价"
   },
   "ranking": {
     "headerTitle": "我的排名",

@@ -221,7 +221,10 @@
     "postedTitle": "レビューを投稿しました",
     "postedBody": "ありがとうございます！{{name}}への{{rating}}つ星レビューが料理のレビューに反映され、ランキングに加算されました。",
     "backToDish": "料理に戻る",
-    "seeMyReviews": "自分のレビューを見る"
+    "seeMyReviews": "自分のレビューを見る",
+    "photosLabel": "写真（最大{{max}}枚）",
+    "addPhoto": "写真を追加",
+    "removePhoto": "写真を削除"
   },
   "reviews": {
     "headerTitle": "レビュー",
@@ -251,7 +254,8 @@
       "ja": "日本語",
       "vi": "ベトナム語",
       "ko": "韓国語"
-    }
+    },
+    "mine": "自分のレビュー"
   },
   "ranking": {
     "headerTitle": "マイランキング",

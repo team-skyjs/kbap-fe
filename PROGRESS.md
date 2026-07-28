@@ -661,3 +661,11 @@
 ## 🚨 안드 구글 로그인 복구 — google-services.json 교체 (2026-07-28, P-076)
 - [x] vc4 출시본이 구버전 json(웹 클라이언트만)으로 빌드 → DEVELOPER_ERROR 10 전면 불가. 예진 Firebase 지문 2개(업로드 키·Play 앱 서명 키) 등록본 커밋 — type 1×2+웹 실측 재확인, 내용 무수정.
 - [x] 재빌드 2종(AAB vc5 + 공기계 APK) — json은 빌드타임 임베드라 OTA 불가. runtime 지문 변화는 빌드 결과로 실측 보고.
+
+## KB-16 리뷰 CRUD 화면 — 목 선작업 (2026-07-28, P-077)
+- [x] 잔재 재사용 우선(지시 4): KB-148 제외분이 플래그 뒤에 완성형으로 생존 — 작성 폼(별점 필수·텍스트)·음식 리뷰 목록(국기+랭킹·번역·같은국적 필터)·내 리뷰 조회/인라인 수정/삭제(캐시 반영) 3화면 805줄. FLAGS.reviewsEnabled true로 복원(홈·상세·프로필·인트로 진입점 포함), 신규 작성 없음.
+- [x] 사진 첨부(신규): 최대 3장·미리보기·개별 삭제 — reviewPhotos.ts 순수 헬퍼(addReviewPhotos 상한 잘림·removeReviewPhoto·canPostReview 1~5 정수) + 업로드 어댑터(목=URI 패스스루, KB-73 때 presigned 스왑). Review 타입 photos?: string[] 목 선반영(BE 계약 질의).
+- [x] 작성→목 CRUD 반영: post가 ['me','reviews']·['food',id,'reviews'] 캐시에 삽입+overall 재계산 — 목록·프로필 즉시 반영, 기존 수정/삭제 캐시 흐름과 접합.
+- [x] 목록 내 리뷰 진입: useMyReviews id 집합으로 mine 판별 → 내 리뷰 필+chevron → 상세(수정/삭제). 목록·상세에 사진 스트립 렌더. 장소태그 UI 미작성(KB-249 별개).
+- [x] i18n 4키×10언어(photosLabel·addPhoto·removePhoto·mine). 이모지 0(별·국기 기존 SVG).
+- 테스트 +3(사진 상한·개별 삭제·폼 유효성). tsc 0, jest 262/262 — 플래그 복원 회귀 0.

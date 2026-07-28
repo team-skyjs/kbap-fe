@@ -264,7 +264,10 @@
     "postedTitle": "리뷰가 게시됐어요",
     "postedBody": "감사해요! {{name}}에 남긴 별점 {{rating}}개 리뷰가 음식 리뷰에 등록됐고 랭킹에도 반영돼요.",
     "backToDish": "요리로 돌아가기",
-    "seeMyReviews": "내 리뷰 보기"
+    "seeMyReviews": "내 리뷰 보기",
+    "photosLabel": "사진 (최대 {{max}}장)",
+    "addPhoto": "사진 추가",
+    "removePhoto": "사진 삭제"
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -294,7 +297,8 @@
       "ja": "일본어",
       "vi": "베트남어",
       "ko": "한국어"
-    }
+    },
+    "mine": "내 리뷰"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

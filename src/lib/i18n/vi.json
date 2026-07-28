@@ -221,7 +221,10 @@
     "postedTitle": "Đã đăng đánh giá",
     "postedBody": "Cảm ơn! Đánh giá {{rating}} sao của bạn cho {{name}} nay đã có trong phần đánh giá món ăn và được tính vào xếp hạng của bạn.",
     "backToDish": "Về lại món ăn",
-    "seeMyReviews": "Xem đánh giá của tôi"
+    "seeMyReviews": "Xem đánh giá của tôi",
+    "photosLabel": "Ảnh (tối đa {{max}})",
+    "addPhoto": "Thêm ảnh",
+    "removePhoto": "Xóa ảnh"
   },
   "reviews": {
     "headerTitle": "Đánh giá",
@@ -251,7 +254,8 @@
       "ja": "Tiếng Nhật",
       "vi": "Tiếng Việt",
       "ko": "Tiếng Hàn"
-    }
+    },
+    "mine": "Đánh giá của tôi"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",

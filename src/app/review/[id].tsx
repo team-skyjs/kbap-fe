@@ -11,7 +11,7 @@
  * is KB-73 / BE-blocked.
  */
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
@@ -202,6 +202,15 @@ export default function ReviewDetail() {
                 <Text style={styles.bodyEmpty}>{t('editReview.noBody')}</Text>
               )}
             </View>
+
+            {/* P-077: 첨부 사진 표시(조회 전용 — 사진 수정은 실연결 때 검토) */}
+            {!!review.photos?.length && (
+              <View style={styles.photoStrip}>
+                {review.photos.map((uri) => (
+                  <Image key={uri} source={{ uri }} style={styles.photoThumb} />
+                ))}
+              </View>
+            )}
             <Text style={styles.postedTag}>{posted}</Text>
 
             <View style={{ marginTop: 8, gap: 10 }}>
@@ -232,6 +241,8 @@ function relativeDate(iso: string, t: TFn): string {
 }
 
 const styles = StyleSheet.create({
+  photoStrip: { flexDirection: 'row', gap: 8 },
+  photoThumb: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 18, gap: 20 },
 

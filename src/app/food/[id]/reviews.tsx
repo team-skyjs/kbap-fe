@@ -7,7 +7,7 @@
  * header (§6); no emoji (SVG); reader text via i18n (English only for MVP).
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -28,10 +28,11 @@ import {
   IconProfile,
   IconBubbleEmpty,
   IconPlus,
+  IconChevron,
 } from '@/components';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { useMe } from '@/lib/data/useMe';
+import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
@@ -56,6 +57,9 @@ export default function FoodReviews() {
   const { data: reviews } = useFoodReviews(id ?? '');
   const { data: food } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
+  // P-077: 내 리뷰 판별 — 목 단계에선 내 리뷰 캐시(id 집합)로. 실연결 시 서버 mine 플래그.
+  const { data: myReviews } = useMyReviews();
+  const myIds = new Set((myReviews ?? []).map((r) => r.id));
 
   const [sameNatOnly, setSameNatOnly] = useState(false);
   const [sort, setSort] = useState<'recent' | 'rating'>('recent');
@@ -168,7 +172,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} />
+                  <ReviewItem key={r.id} review={r} t={t} mine={myIds.has(r.id)} onEdit={() => router.push(`/review/${r.id}` as Href)} />
                 ))}
               </View>
             )}
@@ -200,7 +204,7 @@ function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; le
   );
 }
 
-function ReviewItem({ review, t }: { review: Review; t: TFn }) {
+function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TFn; mine?: boolean; onEdit?: () => void }) {
   const anon = review.anonymized;
   const tx = useReviewTranslation(review, READER_LANG);
   const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
@@ -224,8 +228,25 @@ function ReviewItem({ review, t }: { review: Review; t: TFn }) {
             </View>
           )}
         </View>
-        <Stars value={review.rating} size={14} />
+        <View style={styles.itemTopRight}>
+          {mine && (
+            <Pressable style={styles.minePill} onPress={onEdit} hitSlop={6}>
+              <Text style={styles.minePillText}>{t('reviews.mine')}</Text>
+              <IconChevron size={11} color={C.primaryText} />
+            </Pressable>
+          )}
+          <Stars value={review.rating} size={14} />
+        </View>
       </View>
+
+      {/* P-077: 첨부 사진(최대 3) — 목 단계는 로컬 URI */}
+      {!!review.photos?.length && (
+        <View style={styles.photoStrip}>
+          {review.photos.map((uri) => (
+            <Image key={uri} source={{ uri }} style={styles.photo} />
+          ))}
+        </View>
+      )}
 
       {!!tx.text && (
         <Text style={[styles.reviewBody, review.bodyLanguage === 'ko' && styles.reviewBodyKo]}>{tx.text}</Text>
@@ -333,6 +354,11 @@ const styles = StyleSheet.create({
 
   item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 },
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  minePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+  minePillText: { fontFamily: font.bodyBold, fontSize: 11, color: C.primaryText },
+  photoStrip: { flexDirection: 'row', gap: 8 },
+  photo: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },
   anonAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
