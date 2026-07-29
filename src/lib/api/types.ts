@@ -63,7 +63,7 @@ export interface User {
 
 export interface UserUpdate {
   nickname?: string;
-  nationality?: string;
+  // nationality: P-078(7/29 정책) — 수정 불가, PATCH 계약에서 제거(온보딩 최초 설정만)
   readerLanguage?: string;
   spiceTolerance?: number | null;
   restrictions?: DietaryRestriction[];

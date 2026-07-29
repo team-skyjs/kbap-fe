@@ -2,10 +2,9 @@
  * Edit profile (mockup Screen I3) — reached from the pencil on the profile
  * identity card. Change photo (KB-149 실연결 — 선택 즉시 업로드+PATCH, 국적
  * 행과 같은 즉시 적용 시맨틱), Nickname (staged, saved on Save),
- * Nationality → I4, Reader language → OS 앱 언어 설정(P-060, 안드12- 숨김), read-only
- * linked provider (KB-203 — Apple/Google, email은 계약에 없어 교체). Nationality +
- * reader language apply immediately when picked (same as the account Language
- * row); Save persists the nickname via PATCH /me.
+ * Nationality read-only(P-078 — 7/29 정책: 국적 수정 불가, 온보딩 최초 설정만),
+ * Reader language → OS 앱 언어 설정(P-060, 안드12- 숨김), read-only linked
+ * provider (KB-203 — Apple/Google). Save persists nickname/spice via PATCH /me.
  */
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View, Linking, Platform } from 'react-native';
@@ -13,10 +12,10 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconFlame, IconApple, IconGoogleG } from '@/components';
+import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconFlame, IconApple, IconGoogleG } from '@/components';
 import { SPICE_SCALE } from '@/lib/onboarding/data';
-import { NationalityPicker } from '@/components/NationalityPicker';
 import { countryByCode } from '@/lib/onboarding/countries';
+import { IconLock } from '@/components/icons';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
@@ -35,7 +34,6 @@ export default function EditProfile() {
   const [seeded, setSeeded] = useState(false);
   // P-060: 언어 = OS 정본 — OS 앱 설정 열기, 안드12- 숨김
   const canOpenLangSettings = Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) >= 33);
-  const [natOpen, setNatOpen] = useState(false);
   useEffect(() => {
     if (me && !seeded) {
       setNickname(me.nickname);
@@ -148,14 +146,15 @@ export default function EditProfile() {
           <Text style={styles.hint}>{t('editProfile.nicknameHint')}</Text>
         </View>
 
-        {/* nationality → I4 */}
+        {/* nationality — P-078: 수정 불가(7/29 정책), 읽기 전용 표시 */}
         <View style={styles.fieldset}>
-          <Text style={styles.fieldLbl}>{t('editProfile.nationality')} *</Text>
-          <Pressable style={styles.field} onPress={() => setNatOpen(true)}>
-            <Text style={styles.val}>{nation?.name ?? me?.nationality}</Text>
-            <IconChevron size={16} color={C.ink3} />
-          </Pressable>
-          <Text style={[styles.hint, styles.hintWarn]}>{t('editProfile.nationalityHint')}</Text>
+          <Text style={styles.fieldLbl}>{t('editProfile.nationality')}</Text>
+          <View style={[styles.field, styles.fieldLocked]}>
+            {!!me?.nationality && <Flag code={me.nationality} size={18} />}
+            <Text style={[styles.val, styles.valLocked]}>{nation?.name ?? me?.nationality}</Text>
+            <IconLock size={15} color={C.ink3} />
+          </View>
+          <Text style={styles.hint}>{t('editProfile.nationalityLocked')}</Text>
         </View>
 
         {/* P-060: 언어 = OS 정본 — 탭 시 OS 앱 설정(언어 항목), 안드12- 숨김 */}
@@ -221,12 +220,6 @@ export default function EditProfile() {
         </Btn>
       </View>
 
-      <NationalityPicker
-        open={natOpen}
-        selectedCode={me?.nationality}
-        onSelect={(code) => update.mutate({ nationality: code })}
-        onClose={() => setNatOpen(false)}
-      />
     </View>
   );
 }
@@ -249,6 +242,8 @@ const styles = StyleSheet.create({
   fieldset: { gap: 6 },
   fieldLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   field: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, minHeight: 52, ...shadow.sh1 },
+  fieldLocked: { backgroundColor: '#F5EEE7', borderColor: 'transparent' },
+  valLocked: { color: C.ink2 },
   input: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, paddingVertical: 13 },
   val: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
   hint: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginLeft: 2, marginTop: 3, lineHeight: 17 },

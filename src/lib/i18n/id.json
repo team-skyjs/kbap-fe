@@ -461,7 +461,6 @@
     "nicknamePlaceholder": "Ingin dipanggil apa?",
     "nicknameHint": "Tampil di ulasan dan peringkat Anda.",
     "nationality": "Kewarganegaraan",
-    "nationalityHint": "Mengubah ini mereset kecocokan ulasan sesama warga negara.",
     "readerLanguage": "Bahasa pembaca",
     "readerLanguageHint": "Semua hidangan, ulasan, dan kartu pemilik diterjemahkan ke bahasa ini.",
     "linkedTitle": "Tertaut ke akun",
@@ -473,7 +472,8 @@
     "linkedVia": "Akun tertaut",
     "linkedApple": "Masuk dengan Apple",
     "linkedGoogle": "Masuk dengan Google",
-    "linkedSocial": "Akun sosial"
+    "linkedSocial": "Akun sosial",
+    "nationalityLocked": "Kewarganegaraan tidak dapat diubah setelah mendaftar."
   },
   "nationalityPicker": {
     "title": "Kewarganegaraan",

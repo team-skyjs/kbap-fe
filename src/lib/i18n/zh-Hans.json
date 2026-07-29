@@ -461,7 +461,6 @@
     "nicknamePlaceholder": "希望我们怎么称呼你？",
     "nicknameHint": "会显示在你的评价和排名中。",
     "nationality": "国籍",
-    "nationalityHint": "更改国籍会重置你的同国籍评价匹配。",
     "readerLanguage": "阅读语言",
     "readerLanguageHint": "所有菜品、评价和店主卡片都会翻译成这种语言。",
     "linkedTitle": "关联账号",
@@ -473,7 +472,8 @@
     "linkedVia": "关联账号",
     "linkedApple": "通过 Apple 登录",
     "linkedGoogle": "通过 Google 登录",
-    "linkedSocial": "社交账号"
+    "linkedSocial": "社交账号",
+    "nationalityLocked": "注册后无法更改国籍。"
   },
   "nationalityPicker": {
     "title": "国籍",

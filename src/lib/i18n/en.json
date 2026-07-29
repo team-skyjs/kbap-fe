@@ -203,7 +203,6 @@
     "nicknamePlaceholder": "How should we call you?",
     "nicknameHint": "Shown on your reviews and ranking.",
     "nationality": "Nationality",
-    "nationalityHint": "Changing this resets your same-nationality review matches.",
     "readerLanguage": "Reader language",
     "readerLanguageHint": "Every dish, review and owner card is translated into this.",
     "linkedTitle": "Linked to account",
@@ -215,7 +214,8 @@
     "linkedVia": "Linked account",
     "linkedApple": "Sign in with Apple",
     "linkedGoogle": "Sign in with Google",
-    "linkedSocial": "Social account"
+    "linkedSocial": "Social account",
+    "nationalityLocked": "Nationality can’t be changed after sign-up."
   },
   "nationalityPicker": {
     "title": "Nationality",

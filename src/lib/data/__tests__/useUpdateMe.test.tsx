@@ -131,3 +131,14 @@ it('profileImageUrl 패치 → PATCH body에 path 포함 + ["me"] invalidate (�
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { profileImageUrl: 'profile/1/a.jpg' });
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true);
 });
+
+// P-078(KB-192 일부, 7/29 정책): 국적 수정 불가 — PATCH body에 countryCode 부재 잠금
+it('P-078: patch에 nationality류가 섞여도 PATCH body에 countryCode 없음', async () => {
+  const qc = seededClient();
+  qc.setQueryData(['me', 'en'], { nickname: 'A' });
+  // UserUpdate에서 필드 자체가 제거됨 — 런타임 우회 주입도 매핑이 무시하는지 잠금
+  await runMutation(qc, { nickname: 'B', nationality: 'KR' } as never);
+  const body = (api.patch as jest.Mock).mock.calls.at(-1)![1] as Record<string, unknown>;
+  expect('countryCode' in body).toBe(false);
+  expect(body.nickname).toBe('B');
+});

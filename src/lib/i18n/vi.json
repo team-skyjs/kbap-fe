@@ -461,7 +461,6 @@
     "nicknamePlaceholder": "Chúng tôi nên gọi bạn là gì?",
     "nicknameHint": "Hiển thị trên đánh giá và xếp hạng của bạn.",
     "nationality": "Quốc tịch",
-    "nationalityHint": "Thay đổi sẽ đặt lại các đánh giá cùng quốc tịch của bạn.",
     "readerLanguage": "Ngôn ngữ đọc",
     "readerLanguageHint": "Mọi món ăn, đánh giá và thẻ chủ quán đều được dịch sang ngôn ngữ này.",
     "linkedTitle": "Đã liên kết tài khoản",
@@ -473,7 +472,8 @@
     "linkedVia": "Tài khoản liên kết",
     "linkedApple": "Đăng nhập bằng Apple",
     "linkedGoogle": "Đăng nhập bằng Google",
-    "linkedSocial": "Tài khoản mạng xã hội"
+    "linkedSocial": "Tài khoản mạng xã hội",
+    "nationalityLocked": "Không thể thay đổi quốc tịch sau khi đăng ký."
   },
   "nationalityPicker": {
     "title": "Quốc tịch",

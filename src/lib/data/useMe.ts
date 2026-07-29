@@ -80,7 +80,7 @@ export function useUpdateMe() {
       }
       if (patch.profileImageUrl !== undefined) body.profileImageUrl = patch.profileImageUrl; // KB-149
       if (patch.nickname !== undefined) body.nickname = patch.nickname;
-      if (patch.nationality !== undefined) body.countryCode = patch.nationality;
+      // P-078: 국적 수정 불가(7/29 정책) — PATCH에서 countryCode 미전송 (BE 필드 제거 동보조)
       // P-060②: appLanguage 철거(BE 계약 삭제 확인) — 언어는 서버 무저장, 매 요청 lang
       if (patch.restrictions !== undefined) {
         // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그

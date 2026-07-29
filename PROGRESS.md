@@ -669,3 +669,9 @@
 - [x] 목록 내 리뷰 진입: useMyReviews id 집합으로 mine 판별 → 내 리뷰 필+chevron → 상세(수정/삭제). 목록·상세에 사진 스트립 렌더. 장소태그 UI 미작성(KB-249 별개).
 - [x] i18n 4키×10언어(photosLabel·addPhoto·removePhoto·mine). 이모지 0(별·국기 기존 SVG).
 - 테스트 +3(사진 상한·개별 삭제·폼 유효성). tsc 0, jest 262/262 — 플래그 복원 회귀 0.
+
+## KB-192 일부 — 프로필 국적 수정 불가 (2026-07-29, P-078)
+- [x] 수정 화면 국적 읽기 전용: 피커·chevron 제거 → 국기+국가명+잠금 아이콘, 회색 필드. NationalityPicker 사용처·natOpen 제거. editProfile.nationalityLocked ×10(구 nationalityHint 전 언어 제거 — 사용처 소멸).
+- [x] payload 제거: useMe PATCH 매핑에서 countryCode 미전송 + UserUpdate 타입에서 nationality 삭제(컴파일 차단). 런타임 우회 주입도 무시하는 부재 잠금 +1.
+- [x] 온보딩 최초 선택 무변(submit.ts countryCode 유지).
+- 테스트 263/263, tsc 0.

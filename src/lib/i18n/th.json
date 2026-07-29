@@ -461,7 +461,6 @@
     "nicknamePlaceholder": "อยากให้เราเรียกคุณว่าอะไร?",
     "nicknameHint": "แสดงในรีวิวและอันดับของคุณ",
     "nationality": "สัญชาติ",
-    "nationalityHint": "การเปลี่ยนจะรีเซ็ตการจับคู่รีวิวสัญชาติเดียวกัน",
     "readerLanguage": "ภาษาที่อ่าน",
     "readerLanguageHint": "ทุกเมนู รีวิว และการ์ดร้านจะถูกแปลเป็นภาษานี้",
     "linkedTitle": "เชื่อมกับบัญชี",
@@ -473,7 +472,8 @@
     "linkedVia": "บัญชีที่เชื่อมต่อ",
     "linkedApple": "เข้าสู่ระบบด้วย Apple",
     "linkedGoogle": "เข้าสู่ระบบด้วย Google",
-    "linkedSocial": "บัญชีโซเชียล"
+    "linkedSocial": "บัญชีโซเชียล",
+    "nationalityLocked": "ไม่สามารถเปลี่ยนสัญชาติได้หลังสมัคร"
   },
   "nationalityPicker": {
     "title": "สัญชาติ",

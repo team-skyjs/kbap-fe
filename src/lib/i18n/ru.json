@@ -461,7 +461,6 @@
     "nicknamePlaceholder": "Как вас называть?",
     "nicknameHint": "Виден в отзывах и рейтинге.",
     "nationality": "Гражданство",
-    "nationalityHint": "Смена сбросит подбор отзывов земляков.",
     "readerLanguage": "Язык чтения",
     "readerLanguageHint": "На него переводятся блюда, отзывы и карточки.",
     "linkedTitle": "Привязано к аккаунту",
@@ -473,7 +472,8 @@
     "linkedVia": "Привязанный аккаунт",
     "linkedApple": "Вход через Apple",
     "linkedGoogle": "Вход через Google",
-    "linkedSocial": "Социальный аккаунт"
+    "linkedSocial": "Социальный аккаунт",
+    "nationalityLocked": "Гражданство нельзя изменить после регистрации."
   },
   "nationalityPicker": {
     "title": "Гражданство",

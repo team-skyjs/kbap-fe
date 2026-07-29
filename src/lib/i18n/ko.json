@@ -207,7 +207,6 @@
     "nicknamePlaceholder": "뭐라고 불러드릴까요?",
     "nicknameHint": "리뷰와 랭킹에 표시돼요.",
     "nationality": "국적",
-    "nationalityHint": "변경하면 같은 국적 리뷰 매칭이 초기화돼요.",
     "readerLanguage": "표시 언어",
     "readerLanguageHint": "모든 요리, 리뷰, 사장님 카드가 이 언어로 번역돼요.",
     "linkedTitle": "계정 연동 정보",
@@ -219,7 +218,8 @@
     "linkedVia": "연동된 계정",
     "linkedApple": "Apple로 로그인",
     "linkedGoogle": "Google로 로그인",
-    "linkedSocial": "소셜 계정"
+    "linkedSocial": "소셜 계정",
+    "nationalityLocked": "국적은 가입 후 변경할 수 없어요."
   },
   "nationalityPicker": {
     "title": "국적",
