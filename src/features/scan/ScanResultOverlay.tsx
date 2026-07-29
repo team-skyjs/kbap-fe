@@ -16,6 +16,7 @@ import { font, riskTone } from '@/lib/theme';
 import { RiskMark } from '@/components';
 import { type ResultDish } from '@/lib/scan/segmentMenu';
 import { estimatePillWidth, layoutPills, PILL_MAX_W } from './pillLayout';
+import { coverDisplayRect, markerVisible } from './coverDisplay';
 import { clampPan, clampScale, DOUBLE_TAP_ZOOM } from './zoom';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -97,19 +98,13 @@ export function ScanResultOverlay({
     setSize({ w: width, h: height });
   };
 
-  // displayed image rect inside the container (contain-fit); full container if no photo
+  // P-079: 표시 = cover(하단 여백 0) — rect가 컨테이너 밖으로 확장될 수 있고,
+  // 마커 투영이 같은 rect를 쓰므로 크롭·스케일 정합. 화면 밖 마커는 숨김.
   const rect = React.useMemo(() => {
     const { w, h } = size;
     if (!w || !h) return { x: 0, y: 0, w: 0, h: 0 };
     if (!photo || !photo.width || !photo.height) return { x: 0, y: 0, w, h };
-    const imgA = photo.width / photo.height;
-    const contA = w / h;
-    if (imgA > contA) {
-      const dispH = w / imgA;
-      return { x: 0, y: (h - dispH) / 2, w, h: dispH };
-    }
-    const dispW = h * imgA;
-    return { x: (w - dispW) / 2, y: 0, w: dispW, h };
+    return coverDisplayRect(w, h, photo.width, photo.height);
   }, [size, photo]);
 
   // KB-140 마커 겹침 완화 → P-070(KB-240) 보수: 실폭 교차 판정 + 스태거 1단 상한
@@ -124,8 +119,10 @@ export function ScanResultOverlay({
         ty: rect.y + (d.box.y + d.box.height / 2) * rect.h - 16,
         width: estimatePillWidth(d.displayName),
       }));
-    return layoutPills(anchored);
-  }, [dishes, rect]);
+    // 스태거(layoutPills)는 전체 마커 기준으로 먼저 — 가시성 필터를 앞에 두면
+    // 숨은 마커와의 겹침 판정이 달라져 크롭 여부에 따라 위치가 흔들린다.
+    return layoutPills(anchored).filter((p) => markerVisible(p.lx, p.ty, size.w, size.h));
+  }, [dishes, rect, size]);
 
   return (
     <View style={styles.root} onLayout={onLayout}>
@@ -139,7 +136,7 @@ export function ScanResultOverlay({
             onPressOut={showMarkers ? endPeek : undefined}
           >
             {photo ? (
-              <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="contain" />
+              <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             ) : (
               <View style={[StyleSheet.absoluteFill, styles.paper]} />
             )}
@@ -174,7 +171,7 @@ export function ScanResultOverlay({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#16110d' },
+  root: { flex: 1, backgroundColor: '#16110d', overflow: 'hidden' },
   paper: { backgroundColor: '#241b14' },
   // icon + name pill (design D3) — replaces the icon-only circle marker
   pill: {

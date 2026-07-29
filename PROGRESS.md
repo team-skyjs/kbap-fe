@@ -675,3 +675,9 @@
 - [x] payload 제거: useMe PATCH 매핑에서 countryCode 미전송 + UserUpdate 타입에서 nationality 삭제(컴파일 차단). 런타임 우회 주입도 무시하는 부재 잠금 +1.
 - [x] 온보딩 최초 선택 무변(submit.ts countryCode 유지).
 - 테스트 263/263, tsc 0.
+
+## KB-238 촬영 화면비 크롭 — 결과 사진 cover (2026-07-29, P-079)
+- [x] 표시 전환: 결과 오버레이 contain → cover(coverDisplay.ts 순수 함수) — 사진이 항상 하단까지 참(레터박스 0, P-066 동색 소멸 문제도 근본 해소). rect가 컨테이너 밖 확장(x·y 음수) 가능, root overflow hidden.
+- [x] 마커 정합(본체): 투영식(lx=rect.x+box.x·rect.w)이 cover rect를 그대로 쓰므로 크롭·스케일 자동 반영. 스태거(layoutPills)는 전체 마커로 먼저 계산 후 화면 밖 앵커 숨김(markerVisible) — 필터 선행 시 크롭 여부에 따라 겹침 판정이 흔들리는 것 방지. 줌 파이프라인 무변(rect는 pre-zoom 레이아웃).
+- [x] 유닛 +5: 화면비 2종(19.5:9·16:9)×3:4 픽스처 — 가득 참·종횡비 보존·투영 좌표 실측·좌우 크롭 구간 숨김·무효 폴백. 기존 사다리·클램프 유닛 회귀 0.
+- Metro 실기 확인(기존 사진 재스캔) 예진 대기 — P-066·068 확인 항목과 합류 가능.
