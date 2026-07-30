@@ -756,3 +756,11 @@
 - [x] 배선: 온보딩 퍼널(스텝 view = step 변화 effect·complete = advance 경로·skip 분리·submit = avoid_count 개수만+skip 여부 2종) · 스캔 완료(degraded·item_count) · 음식 상세 진입(4 진입처에 ?src= 부착 — scan/list/search/home, 그 외 other) · 리뷰 제출 · 로그인 성공(useSocialAuth — provider GOOGLE/APPLE) · 게스트 진입(인트로 둘러보기+로그인 화면 둘러보기).
 - [x] ⚠️ 실측 보정: @amplitude/analytics-react-native 1.6.8은 발주 전제(JS-only)와 달리 **네이티브 모듈 포함** — 단 부재 시 optional chaining 폴백으로 graceful(크래시 없음, 앱 버전 등 컨텍스트 메타만 결손). **기존 빌드 OTA 안전**, 완전 계측은 다음 재빌드(P-089 빌드12)부터 + fingerprint 회전은 그 빌드에서 재베이스라인.
 - [x] 유닛 +4: no-op(SDK 호출 0)·init 1회+track 전달·PII 드롭 실측·전 이벤트 스키마 PII 부재. tsc 0, jest 64스위트 331/331. 실이벤트 수신 확인(Metro)은 예진 몫(DoD 분리).
+
+## 팀 공유 배포 — iOS 테플 빌드12 (2026-07-31, P-089)
+- [x] 지문 실측(발주 게이트): 양 플랫폼 회전 — iOS 36d1708a→5dfae66a·안드 86eb4381→b20b474c. 원인 = P-083 Amplitude 네이티브 모듈(기보고 건). 발주 "회전 시 중단·보고"에 따라 예진 확인 → **iOS 빌드12만 진행, 안드 preview OTA 보류**(현 HEAD 발행 시 runtime 불일치로 기존 vc4·vc5 기기 도달 불가 — 발주 목적 불성립).
+- [x] eas.json preview·production env에 EXPO_PUBLIC_AMPLITUDE_API_KEY 추가(ff16e90 — 클라이언트 공개 키, 빌드12부터 계측 임베드).
+- [x] 발행 전 검증(P-073): 인라인 env export → .hbc grep **prod 1 · dev 0 · meogo 0 · Amplitude 키 1**.
+- [x] iOS 빌드12: eas build production(03f87d90, runtime 5dfae66a) → 테플 제출 완료(submission 7c5c6662, ASC 처리 중 — 수분 내 테플 노출). 심사 대기 빌드11과 독립.
+- [x] iOS production OTA **미발행**(심사 오염 방지 — 발주 준수). 재베이스라인 5dfae66a 커밋(2abacd8).
+- 안드 잔여: 기존 기기 대상 맵기 폴백 선반영이 필요하면 ① P-083 직전 커밋(2dee6f5, 지문 86eb4381)에서 OTA ② vc6 재빌드 중 택일 — 커맨드 센터 재발주 대기.
