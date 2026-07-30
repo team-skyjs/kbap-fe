@@ -86,14 +86,15 @@ export default function DeleteAccount() {
         <Text style={styles.title}>{t('profile.delete.title')}</Text>
 
         <View style={styles.list}>
+          {/* P-082(KB-258): RiskMark 틴트 칩 solid 통일 — 게이트 카드와 filled/outline 혼용 정리 */}
           <View style={styles.row}>
-            <RiskMark state="danger" size={20} variant="outline" />
+            <RiskMark state="danger" size={20} />
             <Text style={styles.rowText}>{t('profile.delete.dataLine')}</Text>
           </View>
           {/* 리뷰 익명화 안내 — KB-148 MVP 제외(숨김) */}
           {FLAGS.reviewsEnabled && (
             <View style={styles.row}>
-              <RiskMark state="safe" size={20} variant="outline" />
+              <RiskMark state="safe" size={20} />
               <Text style={styles.rowText}>{t('profile.delete.reviewsLine')}</Text>
             </View>
           )}

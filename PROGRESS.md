@@ -723,3 +723,11 @@
 - [x] 평점 서버값 필드 부재(prod) 방어 확인: FoodDetailWire 옵셔널 + `?? null`/`?? 0` — 부재 시 '—'/카운트 생략 렌더(P-085 구현이 방어형, 변경 0).
 - [x] 스위칭 유닛 +6: off=목 반환+리뷰 API 호출 0(countryCode 클라 필터 흉내 포함)·on=실 GET(cursor·countryCode 부착)·내리뷰 off 빈 목록/on keyset·작성 off 캐시 직접 반영/on 실 POST. P-085 어댑터 유닛 무변. tsc 0, jest 311/311.
 - 재개 절차(발주 대기): BE 확정 → 계약 diff → reviewAdapter 보정 → 플래그 on.
+
+## KB-258 아이콘 시스템 정비 — Lucide 규격 + circle-flags (2026-07-30, P-082)
+- [x] 규격 확정(icons.tsx 헤더 명문화): 도형 = Lucide(ISC) 세트, 24×24 그리드·스트로크 2px·round cap/join·아웃라인 우선. 공용 29종 전수 교체(이름·IconProps API 무변 — 사용처 diff 0). 미사용 3종(Bell·Envelope·Flame) 삭제. 브랜드 시맨틱(RiskMark·Apple/GoogleG 로고·Cat* 일러스트·SuccessCheck) 교체 금지 명시.
+- [x] 배포 형태 = **벤더링**(경로 데이터 내장 + ISC 고지): lucide-react-native 패키지는 Metro barrel 전량 번들로 **+1.81MB 실측**(5.22→7.03MB) → 기각, 동일 도형 벤더는 +7KB. 신규 아이콘 추가 절차(lucide.dev 복사) 헤더에 명시.
+- [x] 국기 = circle-flags(MIT) 도입: Flag.tsx — 내장 16개국(추천 12 + FR·DE·HK·SG, flagAssets.ts ~11.5KB, mask id 국가별 유니크 치환) 실국기 + 미내장국 모노그램 폴백 유지. 전량(250+국 ~170KB) 대신 상위국 전략 — 번들 실측 근거.
+- [x] 번들 증가량 실측(iOS .hbc): 5,221,824 → **5,233,585B (+11.8KB, +0.23%)** — 아이콘+국기 합산.
+- [x] 탈퇴 화면 RiskMark 틴트 칩 solid 통일(outline 2곳 정리 — 게이트 카드와 문법 일치).
+- tsc 0, jest 61스위트 311/311(회귀 0 — 아이콘 이름·API 유지 효과). 전후 스크린샷은 시뮬레이터 런타임 부재로 예진 실기 캡처 위임(전=현 설치본, 후=Metro — 목록 보고에 명시).

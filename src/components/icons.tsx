@@ -1,20 +1,24 @@
 /**
- * icons.tsx — designed SVG icon set, ported 1:1 from the mockup icons.jsx +
- * hifi-icons.jsx to react-native-svg. NO unicode/system emoji anywhere
- * (Constitution: frontend MUST NOT use default emoji).
+ * icons.tsx — 공용 아이콘 카탈로그 (P-082/KB-258 규격 통일).
  *
- * Web `stroke="currentColor"` has no RN equivalent, so color is an explicit prop
- * applied on a wrapping <G>; children inherit it.
+ * ── 통일 규격 (확정) ─────────────────────────────────────────────
+ * - 도형 = **Lucide** (ISC, © 2022 Lucide Contributors — 라이선스 고지) 세트를
+ *   **벤더링**: 사용하는 글리프의 경로 데이터만 내장. 패키지 직접 의존은
+ *   폐기 — Metro가 barrel 1,757종 전량을 번들해 +1.81MB(실측)라서, 동일
+ *   도형을 ~7KB로 내장하는 쪽을 채택 (규격·형태는 Lucide 그대로).
+ * - 규격: 24×24 그리드 · 스트로크 2px · round cap/join · 아웃라인 우선.
+ * - API: size(기본 24) · color(기본 C.ink) · sw(strokeWidth, 기본 2) ·
+ *   fill(기본 없음 — 채움형은 fill+sw=0) · style.
+ * - **신규 아이콘 추가 = lucide.dev에서 도형 복사** (Glyph로 감싸 아래에 추가,
+ *   kebab 이름을 주석으로 병기). 수제 제작은 Lucide에 없는 형태뿐.
+ * - **교체 금지(브랜드 시맨틱)**: RiskMark(위험도 4상태 — RiskMark.tsx),
+ *   IconApple·IconGoogleG(공식 로고 — 경로/색 수정 금지), Cat*(카테고리
+ *   일러스트, categoryUI 플래그), Flag(국기 — Flag.tsx), SuccessCheck 등.
+ * - NO unicode/system emoji (헌법 — 유일 예외는 맵기 🌶️).
+ * ────────────────────────────────────────────────────────────────
  */
 import * as React from 'react';
-import Svg, {
-  Circle,
-  G,
-  Line,
-  Path,
-  Rect,
-  type SvgProps,
-} from 'react-native-svg';
+import Svg, { Circle, G, Path, Rect, type SvgProps } from 'react-native-svg';
 import { color as C } from '@/lib/theme';
 
 export type IconProps = {
@@ -39,229 +43,216 @@ function Glyph({
 }: IconProps & { vb?: number; children: React.ReactNode }) {
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${vb} ${vb}`} style={style}>
-      <G
-        stroke={color}
-        strokeWidth={sw}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill={fill}
-      >
+      <G stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill={fill}>
         {children}
       </G>
     </Svg>
   );
 }
 
-/* ============ TAB BAR ICONS ============ */
+/* ============ Lucide 벤더 글리프 (ISC) ============ */
 export const IconHome = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M3.5 11 L12 4 l8.5 7" />
-    <Path d="M5.5 9.6 V20 h13 V9.6" />
-    <Path d="M10 20 v-5 h4 v5" />
+    <Path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+    <Path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
   </Glyph>
 );
 export const IconFood = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M3.5 11 h17 a8.5 8.5 0 0 1 -17 0 Z" />
-    <Path d="M2.5 20.5 h19" />
-    <Path d="M9 4 c-1 1.4 -1 2.6 0 4" />
-    <Path d="M13 3.4 c-1 1.4 -1 2.6 0 4" />
+    <Path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" />
+    <Path d="M7 21h10" />
+    <Path d="M19.5 12 22 6" />
+    <Path d="M16.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.73 1.62" />
+    <Path d="M11.25 3c.27.1.8.53.74 1.36-.05.83-.93 1.2-.98 2.02-.06.78.33 1.24.72 1.62" />
+    <Path d="M6.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.74 1.62" />
   </Glyph>
 );
 export const IconCamera = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M4 8.5 h3.4 l1.4 -2 h6.4 l1.4 2 H20 a1.5 1.5 0 0 1 1.5 1.5 v8 a1.5 1.5 0 0 1 -1.5 1.5 H4 a1.5 1.5 0 0 1 -1.5 -1.5 v-8 A1.5 1.5 0 0 1 4 8.5 Z" />
-    <Circle cx="12" cy="14" r="3.3" />
+    <Path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" />
+    <Circle cx="12" cy="13" r="3" />
   </Glyph>
 );
 export const IconCommunity = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M4 5 h12 a1.5 1.5 0 0 1 1.5 1.5 v6 A1.5 1.5 0 0 1 16 14 H9 l-3.5 3 v-3 H4 A1.5 1.5 0 0 1 2.5 12.5 v-6 A1.5 1.5 0 0 1 4 5 Z" />
+    <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <Path d="M16 3.128a4 4 0 0 1 0 7.744" />
+    <Path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <Circle cx="9" cy="7" r="4" />
   </Glyph>
 );
 export const IconProfile = (p: IconProps) => (
   <Glyph {...p}>
-    <Circle cx="12" cy="8.5" r="3.6" />
-    <Path d="M5 20 c0 -4 3.2 -6 7 -6 s7 2 7 6" />
-  </Glyph>
-);
-
-/* ============ HEADER / UI GLYPHS ============ */
-export const IconBell = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M6 16 V11 a6 6 0 0 1 12 0 v5 l1.6 2.4 H4.4 Z" />
-    <Path d="M9.8 18.6 a2.2 2.2 0 0 0 4.4 0" />
+    <Path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <Circle cx="12" cy="7" r="4" />
   </Glyph>
 );
 export const IconSearch = (p: IconProps) => (
   <Glyph {...p}>
-    <Circle cx="11" cy="11" r="6.2" />
-    <Line x1="15.6" y1="15.6" x2="20.5" y2="20.5" />
+    <Path d="m21 21-4.34-4.34" />
+    <Circle cx="11" cy="11" r="8" />
   </Glyph>
 );
 export const IconChevron = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M9 5 l7 7 -7 7" />
+    <Path d="m9 18 6-6-6-6" />
   </Glyph>
 );
 export const IconArrowLeft = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M14.5 5 l-7 7 7 7" />
+    <Path d="m12 19-7-7 7-7" />
+    <Path d="M19 12H5" />
   </Glyph>
 );
-// ponytail: 세트에 log-out 계열 부재(멘토링 ②) — 기존 Glyph 패턴으로 문+화살표 1개 추가
 export const IconLogout = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M10 4.5 H5.5 V19.5 H10" />
-    <Path d="M15 8.5 L18.5 12 L15 15.5" />
-    <Line x1="18.5" y1="12" x2="9.5" y2="12" />
+    <Path d="m16 17 5-5-5-5" />
+    <Path d="M21 12H9" />
+    <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
   </Glyph>
 );
 export const IconClose = (p: IconProps) => (
   <Glyph {...p}>
-    <Line x1="6" y1="6" x2="18" y2="18" />
-    <Line x1="18" y1="6" x2="6" y2="18" />
+    <Path d="M18 6 6 18" />
+    <Path d="m6 6 12 12" />
   </Glyph>
 );
 export const IconPlus = (p: IconProps) => (
   <Glyph {...p}>
-    <Line x1="12" y1="5" x2="12" y2="19" />
-    <Line x1="5" y1="12" x2="19" y2="12" />
+    <Path d="M5 12h14" />
+    <Path d="M12 5v14" />
   </Glyph>
 );
-/** P-040(Q-17): 스테퍼용 — 기호를 텍스트로 렌더하면 폰트 어센트가 시각 중심을 틀어놓는다 */
 export const IconMinus = (p: IconProps) => (
   <Glyph {...p}>
-    <Line x1="5" y1="12" x2="19" y2="12" />
+    <Path d="M5 12h14" />
   </Glyph>
 );
 export const IconLock = (p: IconProps) => (
   <Glyph {...p}>
-    <Rect x="5" y="10.5" width="14" height="9" rx="1.6" />
-    <Path d="M8 10.5 V8 a4 4 0 0 1 8 0 v2.5" />
+    <Rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <Path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </Glyph>
 );
 export const IconRetry = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M20 7 v5 h-5" />
-    <Path d="M19 12 a7.4 7.4 0 1 0 -1.9 6" />
+    <Path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+    <Path d="M21 3v5h-5" />
   </Glyph>
 );
 export const IconWifiOff = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M5 11 a10 10 0 0 1 4.6 -2.6" />
-    <Path d="M2.5 8 a14 14 0 0 1 4.4 -3" />
-    <Path d="M8.2 14 a5 5 0 0 1 6 -.8" />
-    <Circle cx="12" cy="18" r="0.2" strokeWidth={2.6} />
-    <Line x1="3" y1="3" x2="21" y2="21" />
+    <Path d="M12 20h.01" />
+    <Path d="M8.5 16.429a5 5 0 0 1 7 0" />
+    <Path d="M5 12.859a10 10 0 0 1 5.17-2.69" />
+    <Path d="M19 12.859a10 10 0 0 0-2.007-1.523" />
+    <Path d="M2 8.82a15 15 0 0 1 4.177-2.643" />
+    <Path d="M22 8.82a15 15 0 0 0-11.288-3.764" />
+    <Path d="m2 2 20 20" />
   </Glyph>
 );
 export const IconAlertTri = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M12 4 L21 19 H3 Z" />
-    <Line x1="12" y1="10" x2="12" y2="14.5" />
-    <Circle cx="12" cy="17" r="0.6" fill={p.color ?? C.ink} stroke="none" />
+    <Path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+    <Path d="M12 9v4" />
+    <Path d="M12 17h.01" />
   </Glyph>
 );
 export const IconBubbleEmpty = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M4 5 h16 a1.5 1.5 0 0 1 1.5 1.5 v9 A1.5 1.5 0 0 1 20 17 H10 l-4.5 3.5 V17 H4 A1.5 1.5 0 0 1 2.5 15.5 v-9 A1.5 1.5 0 0 1 4 5 Z" />
+    <Path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
   </Glyph>
 );
 export const IconGallery = (p: IconProps) => (
   <Glyph {...p}>
-    <Rect x="3.5" y="4.5" width="17" height="15" rx="2" />
-    <Circle cx="8.5" cy="9.5" r="1.6" />
-    <Path d="M4 18 l5 -5 4 3.4 3 -2.4 4 4" />
+    <Rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+    <Circle cx="9" cy="9" r="2" />
+    <Path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
   </Glyph>
 );
 export const IconBookmark = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M6 4.5 h12 v15.5 l-6 -4 -6 4 Z" />
+    <Path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z" />
   </Glyph>
 );
 export const IconScanLines = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M4 7 V4.5 h2.5" />
-    <Path d="M20 7 V4.5 h-2.5" />
-    <Path d="M4 17 v2.5 h2.5" />
-    <Path d="M20 17 v2.5 h-2.5" />
-    <Line x1="6" y1="12" x2="18" y2="12" strokeWidth={2.4} />
-  </Glyph>
-);
-
-/* ============ auxiliary glyphs (hifi-icons.jsx) ============ */
-export const IconEnvelope = (p: IconProps) => (
-  <Glyph {...p}>
-    <Rect x="3" y="5.5" width="18" height="13" rx="2.2" />
-    <Path d="M4 7.2 l8 6 8 -6" />
+    <Path d="M3 7V5a2 2 0 0 1 2-2h2" />
+    <Path d="M17 3h2a2 2 0 0 1 2 2v2" />
+    <Path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+    <Path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+    <Path d="M7 8h8" />
+    <Path d="M7 12h10" />
+    <Path d="M7 16h6" />
   </Glyph>
 );
 export const IconCheck = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M5 12.5 l4 4 L19 6.5" strokeWidth={2.4} />
+    <Path d="M20 6 9 17l-5-5" />
   </Glyph>
 );
 export const IconSpeech = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M4 5 h16 a1.5 1.5 0 0 1 1.5 1.5 v8 A1.5 1.5 0 0 1 20 16 H11 l-4 3.5 V16 H4 A1.5 1.5 0 0 1 2.5 14.5 v-8 A1.5 1.5 0 0 1 4 5 Z" />
+    <Path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
   </Glyph>
 );
 export const IconFlip = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M4 8 a8 8 0 0 1 13 -2.5 l2 2" />
-    <Path d="M20 16 a8 8 0 0 1 -13 2.5 l-2 -2" />
-    <Path d="M19 3.5 V7.5 H15" />
-    <Path d="M5 20.5 V16.5 H9" />
+    <Path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" />
+    <Path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5" />
+    <Circle cx="12" cy="12" r="3" />
+    <Path d="m18 22-3-3 3-3" />
+    <Path d="m6 2 3 3-3 3" />
   </Glyph>
 );
 export const IconGear = (p: IconProps) => (
   <Glyph {...p}>
-    <Circle cx="12" cy="12" r="3.2" />
-    <Path d="M12 3 v2.5 M12 18.5 V21 M21 12 h-2.5 M5.5 12 H3 M18.4 5.6 l-1.8 1.8 M7.4 16.6 l-1.8 1.8 M18.4 18.4 l-1.8 -1.8 M7.4 7.4 L5.6 5.6" />
+    <Path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+    <Circle cx="12" cy="12" r="3" />
   </Glyph>
 );
 export const IconTrash = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M5 7 h14" />
-    <Path d="M9 7 V5 h6 v2" />
-    <Path d="M6.5 7 l1 12.5 h9 l1 -12.5" />
-    <Line x1="10" y1="10.5" x2="10" y2="16" />
-    <Line x1="14" y1="10.5" x2="14" y2="16" />
+    <Path d="M10 11v6" />
+    <Path d="M14 11v6" />
+    <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <Path d="M3 6h18" />
+    <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </Glyph>
 );
 export const IconEdit = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M5 19 h4 L19 9 l-4 -4 L5 15 Z" />
-    <Line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
+    <Path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+    <Path d="m15 5 4 4" />
   </Glyph>
 );
-/** P-062: 결과 하단 바(D3) 리스트 뷰 버튼 */
 export const IconList = (p: IconProps) => (
   <Glyph {...p}>
-    <Line x1="8.5" y1="6.5" x2="20" y2="6.5" />
-    <Line x1="8.5" y1="12" x2="20" y2="12" />
-    <Line x1="8.5" y1="17.5" x2="20" y2="17.5" />
-    <Circle cx="4.6" cy="6.5" r="0.9" />
-    <Circle cx="4.6" cy="12" r="0.9" />
-    <Circle cx="4.6" cy="17.5" r="0.9" />
+    <Path d="M3 5h.01" />
+    <Path d="M3 12h.01" />
+    <Path d="M3 19h.01" />
+    <Path d="M8 5h13" />
+    <Path d="M8 12h13" />
+    <Path d="M8 19h13" />
   </Glyph>
 );
-/** P-057: 빈 프로필 넛지 배너 — 전구 (기호=SVG 규칙) */
 export const IconBulb = (p: IconProps) => (
   <Glyph {...p}>
-    <Path d="M12 3.5 a5.5 5.5 0 0 1 3.1 10 c-.7 .5 -1.1 1.2 -1.1 2 v.5 h-4 v-.5 c0 -.8 -.4 -1.5 -1.1 -2 A5.5 5.5 0 0 1 12 3.5 Z" />
-    <Line x1="10" y1="19" x2="14" y2="19" />
-    <Line x1="10.7" y1="21" x2="13.3" y2="21" />
+    <Path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+    <Path d="M9 18h6" />
+    <Path d="M10 22h4" />
   </Glyph>
 );
 export const IconGlobe = (p: IconProps) => (
   <Glyph {...p}>
-    <Circle cx="12" cy="12" r="8.4" />
-    <Line x1="3.7" y1="12" x2="20.3" y2="12" />
-    <Path d="M12 3.6 c2.5 2.4 2.5 14.4 0 16.8 M12 3.6 c-2.5 2.4 -2.5 14.4 0 16.8" />
+    <Circle cx="12" cy="12" r="10" />
+    <Path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+    <Path d="M2 12h20" />
   </Glyph>
 );
+
+/* ============ 브랜드 로고 (교체 금지) ============ */
+
 /** 공식 애플 마크 — 필드(채움) 모노크롬 (P-034/KB-203 Q-16: 스트로크 근사치 폐기).
  *  연동 행 전용 — 로그인 화면은 OS 네이티브 애플 버튼이라 무관. */
 export const IconApple = ({ size = 20, color, style }: IconProps) => (
@@ -282,13 +273,8 @@ export const IconGoogleG = ({ size = 20, style }: IconProps) => (
     <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
   </Svg>
 );
-export const IconFlame = (p: IconProps) => (
-  <Glyph {...p} fill={p.color ?? C.ink} sw={0}>
-    <Path d="M12 3.4 c2.4 2.9 4.3 4.9 4.3 8.3 a4.3 4.3 0 0 1 -8.6 0 c0 -1.2 .4 -2.2 1.1 -3 c.2 .9 .8 1.5 1.6 1.7 c-.3 -2.4 .6 -4.6 1.6 -7 Z" />
-  </Glyph>
-);
 
-/* ============ CATEGORY GLYPHS (home / browse) ============ */
+/* ============ 카테고리 일러스트 (categoryUI 플래그, 교체 금지) ============ */
 export const CatStew = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M4 10 h16 a8 8 0 0 1 -16 0 Z" />
