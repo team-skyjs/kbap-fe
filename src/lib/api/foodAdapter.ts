@@ -51,8 +51,9 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     nameKo: wire.koreanName ?? wire.name,
     risk: mapRisk(wire.overallRiskStatus),
     riskBasis: [],
-    overall: NO_RATING,
-    sameNationality: NO_RATING,
+    // P-085(KB-73): 평점 = 서버값 (목 재계산 폐기). sameCountry는 count 미제공 — 0 고정.
+    overall: { average: wire.averageRating ?? null, count: wire.reviewCount ?? 0 },
+    sameNationality: { average: wire.sameCountryAverageRating ?? null, count: 0 },
     description: wire.description ?? '',
     // P-081: 와이어 정수 → 단계 enum (변환은 spiceAdapter 격리 — 스웨거 enum 재배포 시 스왑)
     spiceLevel: wireToFoodSpice(wire.spiciness),

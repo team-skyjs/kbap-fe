@@ -58,7 +58,7 @@ export function useReviewTranslation(review: Review, targetLang: string): Review
     canTranslate,
     showingTranslated,
     text: showingTranslated ? translatedText : review.body,
-    fromLang: review.bodyLanguage,
+    fromLang: review.bodyLanguage ?? '', // P-085: 실계약에 원문 언어 없음 (번역 UI 플래그 비노출)
     loading,
     error,
     translate: () => setWant(true),

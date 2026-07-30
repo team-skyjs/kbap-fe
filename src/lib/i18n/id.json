@@ -224,7 +224,8 @@
     "seeMyReviews": "Lihat ulasan saya",
     "photosLabel": "Foto (maks. {{max}})",
     "addPhoto": "Tambah foto",
-    "removePhoto": "Hapus foto"
+    "removePhoto": "Hapus foto",
+    "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi."
   },
   "reviews": {
     "headerTitle": "Ulasan",
@@ -255,7 +256,8 @@
       "vi": "Vietnam",
       "ko": "Korea"
     },
-    "mine": "Ulasan saya"
+    "mine": "Ulasan saya",
+    "loadMore": "Muat ulasan lainnya"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",

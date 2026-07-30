@@ -263,7 +263,8 @@
     "seeMyReviews": "See my reviews",
     "photosLabel": "Photos (up to {{max}})",
     "addPhoto": "Add photo",
-    "removePhoto": "Remove photo"
+    "removePhoto": "Remove photo",
+    "postError": "Couldn't save your review. Check your connection and try again."
   },
   "reviews": {
     "headerTitle": "Reviews",
@@ -294,7 +295,8 @@
       "vi": "Vietnamese",
       "ko": "Korean"
     },
-    "mine": "My review"
+    "mine": "My review",
+    "loadMore": "Load more reviews"
   },
   "ranking": {
     "headerTitle": "My Ranking",

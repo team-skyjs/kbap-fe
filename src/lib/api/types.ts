@@ -141,19 +141,34 @@ export interface OwnerConfirmation {
   placeLanguage: string; // default "ko"
 }
 
+/** 리뷰 작성자 프로필 (P-085/KB-73 — ReviewAuthorResponse). */
+export interface ReviewAuthor {
+  memberId: string;
+  nickname: string | null; // 미설정이면 null
+  nationality: string | null; // countryCode — 미보유면 null
+  tier: string;
+  level: number;
+}
+
 export interface Review {
   id: string;
   foodId: string;
   rating: number; // 1–5
-  body: string | null;
-  bodyLanguage: string;
-  translatedBody: string | null; // when translateTo requested
+  body: string | null; // content
+  createdAt: string; // ISO date-time
+  /** 조회 사진 = 서버 조합 완전 URL (전송은 path — reviewAdapter.imageUrlToPath). */
+  photos?: string[];
+  /** 작성자 회원 id — 내 리뷰 판별 (P-085). mock 경로는 생략 가능. */
+  memberId?: string;
+  /** 작성자 프로필 — **null = 탈퇴 회원** (P-085 방어 렌더 3케이스의 하나). */
+  author?: ReviewAuthor | null;
+  /** 파생(author.nationality) — 화면 호환 유지. */
   authorNationality: string | null;
   authorRankTier: string | null;
-  anonymized: boolean;
-  createdAt: string; // ISO date-time
-  /** P-077 목 선반영 — BE 리뷰 계약(KB-73) 확정 시 필드명 동기화 질의. */
-  photos?: string[];
+  anonymized: boolean; // author 부재(탈퇴) = true
+  /** 번역 축 — 리뷰 번역 계약 미배포(P-085 지시 7): UI는 FLAGS.reviewTranslationEnabled로 비노출. */
+  bodyLanguage?: string;
+  translatedBody?: string | null;
 }
 
 /* ---- response envelopes ---- */
@@ -176,8 +191,9 @@ export interface ScanResponse {
   results: ScanResultItem[];
 }
 
-export interface FoodReviewsResponse {
-  overall: RatingAggregate;
-  sameNationality: RatingAggregate;
+/** 리뷰 keyset 페이지 (P-085 — PageReviewResponse). 평점 집계는 음식 상세(averageRating 등)로 이동. */
+export interface ReviewPage {
   items: Review[];
+  hasNext: boolean;
+  nextCursor: string | null;
 }

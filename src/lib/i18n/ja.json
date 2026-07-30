@@ -224,7 +224,8 @@
     "seeMyReviews": "自分のレビューを見る",
     "photosLabel": "写真（最大{{max}}枚）",
     "addPhoto": "写真を追加",
-    "removePhoto": "写真を削除"
+    "removePhoto": "写真を削除",
+    "postError": "レビューを保存できませんでした。接続を確認して再試行してください。"
   },
   "reviews": {
     "headerTitle": "レビュー",
@@ -255,7 +256,8 @@
       "vi": "ベトナム語",
       "ko": "韓国語"
     },
-    "mine": "自分のレビュー"
+    "mine": "自分のレビュー",
+    "loadMore": "レビューをもっと見る"
   },
   "ranking": {
     "headerTitle": "マイランキング",

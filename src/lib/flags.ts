@@ -21,7 +21,12 @@ export const FLAGS = {
   guestMode: true,
   /**
    * 리뷰 기능 — 부활 (P-077/KB-16, 2026-07-28 주간 계획; 제외 이력 KB-148).
-   * 화면은 목 데이터로 동작 — 실연결은 KB-73(BE 리뷰 API 배포 후).
+   * P-085(KB-73): 실 API 연결 완료.
    */
   reviewsEnabled: true,
+  /**
+   * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
+   * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
+   */
+  reviewTranslationEnabled: false,
 } as const;

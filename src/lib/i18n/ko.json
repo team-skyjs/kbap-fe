@@ -267,7 +267,8 @@
     "seeMyReviews": "내 리뷰 보기",
     "photosLabel": "사진 (최대 {{max}}장)",
     "addPhoto": "사진 추가",
-    "removePhoto": "사진 삭제"
+    "removePhoto": "사진 삭제",
+    "postError": "리뷰를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요."
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -298,7 +299,8 @@
       "vi": "베트남어",
       "ko": "한국어"
     },
-    "mine": "내 리뷰"
+    "mine": "내 리뷰",
+    "loadMore": "리뷰 더 보기"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

@@ -4,9 +4,7 @@
  * so the same-nationality filter, translation toggle, and anonymization all have
  * data to exercise. Foods without an entry return an empty response (empty state).
  */
-import type { FoodReviewsResponse, Review } from '../api/types';
-
-const agg = (average: number | null, count: number) => ({ average, count });
+import type { Review, ReviewPage } from '../api/types';
 
 const KIMCHI_REVIEWS: Review[] = [
   {
@@ -85,17 +83,14 @@ const KIMCHI_REVIEWS: Review[] = [
   },
 ];
 
-const MOCK_FOOD_REVIEWS: Record<string, FoodReviewsResponse> = {
-  'kimchi-jjigae': {
-    overall: agg(4.4, 312),
-    sameNationality: agg(4.2, 41), // US aggregate for the mock persona
-    items: KIMCHI_REVIEWS,
-  },
+// P-085: 평점 집계는 음식 상세(averageRating 계열)로 이동 — 목록 목은 keyset 페이지 형태
+const MOCK_FOOD_REVIEWS: Record<string, ReviewPage> = {
+  'kimchi-jjigae': { items: KIMCHI_REVIEWS, hasNext: false, nextCursor: null },
 };
 
-const EMPTY: FoodReviewsResponse = { overall: agg(null, 0), sameNationality: agg(null, 0), items: [] };
+const EMPTY: ReviewPage = { items: [], hasNext: false, nextCursor: null };
 
-export function mockFoodReviews(foodId: string): FoodReviewsResponse {
+export function mockFoodReviews(foodId: string): ReviewPage {
   return MOCK_FOOD_REVIEWS[foodId] ?? EMPTY;
 }
 
@@ -126,5 +121,5 @@ export async function translateReviewMock(
     throw new Error('translation service unavailable');
   }
   const translatedBody = review.translatedBody ?? ON_DEMAND[review.id] ?? `[${targetLang}] ${review.body}`;
-  return { translatedBody, from: review.bodyLanguage };
+  return { translatedBody, from: review.bodyLanguage ?? '' };
 }

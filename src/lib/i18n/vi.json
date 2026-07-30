@@ -224,7 +224,8 @@
     "seeMyReviews": "Xem đánh giá của tôi",
     "photosLabel": "Ảnh (tối đa {{max}})",
     "addPhoto": "Thêm ảnh",
-    "removePhoto": "Xóa ảnh"
+    "removePhoto": "Xóa ảnh",
+    "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại."
   },
   "reviews": {
     "headerTitle": "Đánh giá",
@@ -255,7 +256,8 @@
       "vi": "Tiếng Việt",
       "ko": "Tiếng Hàn"
     },
-    "mine": "Đánh giá của tôi"
+    "mine": "Đánh giá của tôi",
+    "loadMore": "Xem thêm đánh giá"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",

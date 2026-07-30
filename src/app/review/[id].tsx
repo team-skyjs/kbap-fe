@@ -5,28 +5,27 @@
  * flips the SAME screen into an inline edit form (rating picker + textarea);
  * "Delete this review" removes it.
  *
- * Data via useMyReviews() (MOCK_MODE); dish name/nameKo/risk joined from
- * useFoods() by foodId. Save/Delete mutate the React Query cache so the change
- * is reflected immediately in the list — real persistence (PATCH/DELETE review)
- * is KB-73 / BE-blocked.
+ * Data via useMyReviews(); dish name/nameKo/risk joined from useFoods() by
+ * foodId. P-085(KB-73): Save = PATCH /reviews/{id} — **항상 풀 페이로드**
+ * (buildReviewUpdate: 생략=제거 시맨틱이라 본문만 고쳐도 사진 전량 유지),
+ * Delete = DELETE /reviews/{id}. 성공 시 무효화 재조회가 진실.
  */
 import { useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconEdit, IconTrash, IconChevron } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
+import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
-import type { Review } from '@/lib/api/types';
 
-const MAX = 500;
+const MAX = 1000; // P-085: 계약 확정값 (구 500)
 
 export default function ReviewDetail() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -36,10 +35,11 @@ export default function ReviewDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const { data: reviews } = useMyReviews();
   const { data: foods } = useFoods();
   const { data: me } = useMe();
+  const updateReview = useUpdateReview();
+  const deleteReview = useDeleteReview();
 
   const review = (reviews ?? []).find((r) => r.id === id);
   const food = foods?.find((f) => f.foodId === review?.foodId);
@@ -58,23 +58,31 @@ export default function ReviewDetail() {
     setEditing(true);
   }
 
+  // P-085: PATCH = 풀 페이로드 (buildReviewUpdate가 rating·현재 사진 전량 포함 —
+  // "생략=제거" 함정 봉쇄). 실패는 Alert 표면화, 편집 화면 유지.
   function save() {
-    qc.setQueryData<Review[]>(['me', 'reviews'], (prev) =>
-      (prev ?? []).map((r) => (r.id === id ? { ...r, rating, body: body.trim() || null } : r)),
+    if (!review || updateReview.isPending) return;
+    updateReview.mutate(
+      { reviewId: review.id, foodId: review.foodId, current: review, changes: { rating, body } },
+      {
+        onSuccess: () => setEditing(false),
+        onError: () => Alert.alert(t('review.postError')),
+      },
     );
-    setEditing(false);
   }
 
   function confirmDelete() {
+    if (!review) return;
     Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('editReview.delete'),
         style: 'destructive',
-        onPress: () => {
-          qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => (prev ?? []).filter((r) => r.id !== id));
-          router.back();
-        },
+        onPress: () =>
+          deleteReview.mutate(
+            { reviewId: review.id, foodId: review.foodId },
+            { onSuccess: () => router.back(), onError: () => Alert.alert(t('review.postError')) },
+          ),
       },
     ]);
   }

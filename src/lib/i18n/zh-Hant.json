@@ -224,7 +224,8 @@
     "seeMyReviews": "查看我的評論",
     "photosLabel": "照片（最多{{max}}張）",
     "addPhoto": "新增照片",
-    "removePhoto": "刪除照片"
+    "removePhoto": "刪除照片",
+    "postError": "評價儲存失敗。請檢查網路後再試一次。"
   },
   "reviews": {
     "headerTitle": "評論",
@@ -255,7 +256,8 @@
       "vi": "越南文",
       "ko": "韓文"
     },
-    "mine": "我的評論"
+    "mine": "我的評論",
+    "loadMore": "查看更多評價"
   },
   "ranking": {
     "headerTitle": "我的排名",

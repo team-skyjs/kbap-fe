@@ -224,7 +224,8 @@
     "seeMyReviews": "Ver mis reseñas",
     "photosLabel": "Fotos (máx. {{max}})",
     "addPhoto": "Añadir foto",
-    "removePhoto": "Quitar foto"
+    "removePhoto": "Quitar foto",
+    "postError": "No se pudo guardar la reseña. Revisa tu conexión e inténtalo de nuevo."
   },
   "reviews": {
     "headerTitle": "Reseñas",
@@ -255,7 +256,8 @@
       "vi": "Vietnamita",
       "ko": "Coreano"
     },
-    "mine": "Mi reseña"
+    "mine": "Mi reseña",
+    "loadMore": "Ver más reseñas"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",

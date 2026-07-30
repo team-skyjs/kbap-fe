@@ -32,4 +32,9 @@ export interface FoodDetailWire {
   bookmarked: boolean;
   overallRiskStatus: BeRiskStatus; // whole-dish verdict
   ingredients: IngredientWire[]; // inclusion% descending
+  /** P-085(KB-73): 리뷰 평점 집계 — 서버값 (리뷰 없으면 null, 소수 첫째 자리). 구서버 방어 옵셔널. */
+  averageRating?: number | null;
+  reviewCount?: number;
+  /** 같은 국적 평균 — 비회원·국적 미보유 null. */
+  sameCountryAverageRating?: number | null;
 }

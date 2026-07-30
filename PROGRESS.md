@@ -706,3 +706,13 @@
 - [x] 스웨거 실측 대조: dev /v3/api-docs — OnboardingRequest·ProfileUpdateRequest·MyProfileResponse 전부 string("SKIP"/"HOT" 예시 포함), 음식 integer. 어댑터 외 코드 변화 0 (P-081 격리 효과 — 화면·훅·타입 무변).
 - [x] 유닛 교체(어댑터 테스트 헤더 예고대로): 문자열 왕복 6종·strict(소문자/오타→SKIP)·정수 폴백 경계값 전수·음식 정수 유지·로컬 마이그레이션 + 송신측(submit 'SKIP'/'HOT', useUpdateMe HOT/SKIP/NONE 문자열)·adaptSpice 문자열 수신. tsc 0, jest 295/295.
 - ⚠️ 발행 순서 제약: **preview·production OTA 발행이 종한 prod enum 배포의 선행 조건** (정수 전송 라이브 앱 보호). Metro 실왕복(온보딩 제출·프로필 저장/해제)은 예진 확인 대기.
+
+## KB-73 리뷰 실연결 — dev 리뷰 API 6종 (2026-07-30, P-085)
+- [x] 목 CRUD → 실 API 스왑: reviewAdapter.ts(와이어 경계 신설 — ReviewWire/PageWire adapt, BaseResponse는 클라이언트 해체) + useFoodReviews(useInfiniteQuery — keyset cursor·hasNext·nextCursor, 하단 더보기) + useMyReviews(GET /members/me/reviews 커서 전량 수집, 상한 20페이지) + useReviewMutations(POST/PATCH/DELETE, 성공 시 ['food',id] 프리픽스+['me','reviews'] 무효화 — 목 캐시 수동 삽입 전부 폐기).
+- [x] ⚠️ PATCH "생략=제거" 함정 봉쇄: buildReviewUpdate 풀 페이로드 — rating·imagePaths(현재 사진 전량, URL→path 역변환) 항상 포함, content는 비면 의도된 제거로 생략. 유닛 4본(본문만 변경 시 사진 소실 0·별점만 변경·본문 비움·빈 사진 명시).
+- [x] 사진 업로드 실연결: uploadReviewImages → 기존 presigned 플로우(scanImage.uploadImage) 재사용, purpose="REVIEW"(스웨거 enum 실측). 전송=path·조회=완전 URL. 무세션 개발 경로만 패스스루 유지.
+- [x] 평점 = 서버값: FoodDetailWire에 averageRating·reviewCount·sameCountryAverageRating 추가, 어댑터가 overall/sameNationality 채움(목 재계산 폐기). 리뷰 화면 집계도 음식 상세 소스로 교체(sameCountry는 count 미제공 — 0이면 표기 생략). 같은 국적 필터 = 서버 countryCode 파라미터(목 경로는 훅이 클라 필터 흉내).
+- [x] author 방어 3케이스: 탈퇴(author null)=익명 렌더·nickname null=국적 코드 폴백·countryCode null=중립 아바타 — 어댑터 유닛 잠금. 랭킹 필은 실 tier·level. 내 리뷰 판별 = 서버 memberId(목 id 집합 폐기).
+- [x] 본문 상한 500→1000(작성·수정, 카운터 동기). 번역 버튼 FLAGS.reviewTranslationEnabled=false 비노출(useReviewTranslation 코드 보존 — 계약 배포 시 복원). i18n +2키×10(loadMore·postError). 작성/수정/삭제 실패는 화면 유지+표면화.
+- 유닛 +10(어댑터 풀 페이로드·author 3케이스·URL→path·페이지 어댑트). tsc 0, jest 60스위트 305/305.
+- Metro 실왕복(작성 사진 2장→목록→본문만 수정→사진 유지→삭제·같은국적 필터·평점 서버값) 예진 확인 대기. BE 질의: 조회 URL→전송 path 역변환 규약(pathname 추출 가정) 확인.

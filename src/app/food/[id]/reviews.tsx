@@ -32,7 +32,7 @@ import {
 } from '@/components';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { useMe, useMyReviews } from '@/lib/data/useMe';
+import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
@@ -54,23 +54,27 @@ export default function FoodReviews() {
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
 
-  const { data: reviews } = useFoodReviews(id ?? '');
   const { data: food } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
-  // P-077: 내 리뷰 판별 — 목 단계에선 내 리뷰 캐시(id 집합)로. 실연결 시 서버 mine 플래그.
-  const { data: myReviews } = useMyReviews();
-  const myIds = new Set((myReviews ?? []).map((r) => r.id));
 
   const [sameNatOnly, setSameNatOnly] = useState(false);
   const [sort, setSort] = useState<'recent' | 'rating'>('recent');
 
   const nationality = me?.nationality ?? 'US';
-  const all = reviews?.items ?? [];
-  const filtered = sameNatOnly ? all.filter((r) => r.authorNationality === nationality) : all;
-  const items = [...filtered].sort((a, b) => {
+  // P-085(KB-73): 같은 국적 필터 = 서버 countryCode 파라미터 (목 경로는 훅이 흉내).
+  // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
+  const reviewsQ = useFoodReviews(id ?? '', sameNatOnly ? nationality : undefined);
+  const loaded = reviewsQ.data != null;
+  const all = reviewsQ.data?.pages.flatMap((p) => p.items) ?? [];
+  const items = [...all].sort((a, b) => {
     const recent = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     return sort === 'rating' ? b.rating - a.rating || recent : recent;
   });
+  // 평점 집계 = 음식 상세 서버값 (P-085 — 목 재계산·리스트 응답 집계 폐기)
+  const overall = food?.overall ?? { average: null, count: 0 };
+  const sameNat = food?.sameNationality ?? { average: null, count: 0 };
+  // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
+  const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
 
   return (
     <View style={styles.root}>
@@ -82,7 +86,7 @@ export default function FoodReviews() {
       >
         {/* 게스트는 리뷰 개수와 무관하게 항상 잠금 (실기기 반려분 #3) —
             빈 상태(쓰기 CTA 포함)는 회원에게만 */}
-        {reviews && (!isGuest && all.length === 0 ? (
+        {loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
           <View style={styles.emptyFill}>
@@ -104,17 +108,17 @@ export default function FoodReviews() {
               <Text style={styles.dishName}>{food?.name ?? ''}</Text>
               <Text style={styles.dishSub}>
                 {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} · ` : ''}
-                {t('reviews.subtitle', { count: reviews.overall.count })}
+                {t('reviews.subtitle', { count: overall.count })}
               </Text>
             </View>
 
-            {/* rating summary */}
+            {/* rating summary — P-085: 서버 집계(음식 상세 averageRating 계열) */}
             <View style={styles.summary}>
-              <RateCol label={t('reviews.overall')} agg={reviews.overall} />
+              <RateCol label={t('reviews.overall')} agg={overall} />
               <View style={styles.divider} />
               <RateCol
                 label={t('reviews.sameNationality')}
-                agg={reviews.sameNationality}
+                agg={sameNat}
                 left={<Flag code={nationality} size={14} />}
               />
             </View>
@@ -172,8 +176,22 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} mine={myIds.has(r.id)} onEdit={() => router.push(`/review/${r.id}` as Href)} />
+                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} onEdit={() => router.push(`/review/${r.id}` as Href)} />
                 ))}
+                {/* P-085: keyset 더보기 — hasNext일 때만 */}
+                {reviewsQ.hasNextPage && (
+                  <Pressable
+                    style={styles.loadMore}
+                    onPress={() => void reviewsQ.fetchNextPage()}
+                    disabled={reviewsQ.isFetchingNextPage}
+                  >
+                    {reviewsQ.isFetchingNextPage ? (
+                      <Spinner size={16} color={C.ink2} />
+                    ) : (
+                      <Text style={styles.loadMoreText}>{t('reviews.loadMore')}</Text>
+                    )}
+                  </Pressable>
+                )}
               </View>
             )}
             </>
@@ -199,13 +217,17 @@ function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; le
       </View>
       <Text style={styles.rateNum}>{agg.average?.toFixed(1) ?? '—'}</Text>
       <Stars value={agg.average ?? 0} size={14} />
-      <Text style={styles.rateCount}>{agg.count}</Text>
+      {/* P-085: sameCountry는 계약에 count 미제공(0 고정) — 0이면 표기 생략 */}
+      {agg.count > 0 && <Text style={styles.rateCount}>{agg.count}</Text>}
     </View>
   );
 }
 
 function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TFn; mine?: boolean; onEdit?: () => void }) {
+  // P-085 author 방어 3케이스: ① author null(탈퇴)=익명 ② nickname null(미설정)
+  // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
+  const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
   const tx = useReviewTranslation(review, READER_LANG);
   const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
 
@@ -220,10 +242,10 @@ function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TF
           ) : (
             <Flag code={review.authorNationality} size={20} />
           )}
-          <Text style={styles.whoName}>{anon ? t('reviews.anonymous') : review.authorNationality}</Text>
+          <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
           {!anon && !!review.authorRankTier && (
             <View style={styles.rankPill}>
-              <Rosette level={3} size={15} />
+              <Rosette level={review.author?.level ?? 1} size={15} />
               <Text style={styles.rankText}>{review.authorRankTier}</Text>
             </View>
           )}
@@ -252,8 +274,9 @@ function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TF
         <Text style={[styles.reviewBody, review.bodyLanguage === 'ko' && styles.reviewBodyKo]}>{tx.text}</Text>
       )}
 
-      {/* per-review translation control (only when not already in reader language) */}
-      {tx.canTranslate && (
+      {/* per-review translation control — P-085 지시 7: 번역 계약 미배포, 플래그 비노출
+          (useReviewTranslation 코드는 보존 — 계약 배포 시 플래그 복원) */}
+      {FLAGS.reviewTranslationEnabled && tx.canTranslate && (
         <View style={styles.txRow}>
           {tx.loading ? (
             <View style={styles.txInline}>
@@ -373,4 +396,7 @@ const styles = StyleSheet.create({
   txError: { fontFamily: font.body, fontSize: 12, color: C.riskDanger },
   dot: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  // P-085 keyset 더보기
+  loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12 },
+  loadMoreText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
 });

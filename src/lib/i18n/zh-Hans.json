@@ -224,7 +224,8 @@
     "seeMyReviews": "查看我的点评",
     "photosLabel": "照片（最多{{max}}张）",
     "addPhoto": "添加照片",
-    "removePhoto": "删除照片"
+    "removePhoto": "删除照片",
+    "postError": "评价保存失败。请检查网络后重试。"
   },
   "reviews": {
     "headerTitle": "点评",
@@ -255,7 +256,8 @@
       "vi": "越南文",
       "ko": "韩文"
     },
-    "mine": "我的评价"
+    "mine": "我的评价",
+    "loadMore": "查看更多评价"
   },
   "ranking": {
     "headerTitle": "我的排名",

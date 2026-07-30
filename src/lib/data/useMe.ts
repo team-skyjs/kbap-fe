@@ -16,6 +16,7 @@ import i18n from '../i18n';
 import type { Review, User, UserUpdate } from '../api/types';
 import { api } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
+import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
@@ -41,10 +42,24 @@ export function useMe() {
 export function useMyReviews() {
   return useQuery({
     queryKey: ['me', 'reviews'],
-    // 리뷰 API 미배포(KB-73). 실계정에 mock 리뷰가 보이면 오해 소지 →
-    // 세션 유저는 빈 목록, mock은 게스트/개발 경로만.
-    queryFn: async (): Promise<Review[]> =>
-      (await hasBeSession()) ? [] : MOCK_MY_REVIEWS,
+    // P-085(KB-73): 실연결 — GET /members/me/reviews (keyset). 화면들이 전체
+    // 배열을 기대하므로(카운트·상세 조회) 커서를 끝까지 수집 — 내 리뷰 수는
+    // 작다. mock은 게스트/웹 개발 경로만.
+    queryFn: async (): Promise<Review[]> => {
+      if (!(await hasBeSession())) return MOCK_MY_REVIEWS;
+      const all: Review[] = [];
+      let cursor: string | null = null;
+      for (let page = 0; page < 20; page++) {
+        // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
+        const res = adaptReviewPage(
+          await api.get<ReviewPageWire>(`/members/me/reviews${cursor ? `?cursor=${cursor}` : ''}`),
+        );
+        all.push(...res.items);
+        if (!res.hasNext || !res.nextCursor) break;
+        cursor = res.nextCursor;
+      }
+      return all;
+    },
   });
 }
 
