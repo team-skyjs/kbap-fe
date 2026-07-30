@@ -19,14 +19,16 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site"
+        "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site",
+        "EXPO_PUBLIC_AMPLITUDE_API_KEY": "e989a20b64845040d8dc43b1b9c8299f"
       }
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site"
+        "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site",
+        "EXPO_PUBLIC_AMPLITUDE_API_KEY": "e989a20b64845040d8dc43b1b9c8299f"
       }
     }
   },
