@@ -30,10 +30,23 @@
         "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site",
         "EXPO_PUBLIC_AMPLITUDE_API_KEY": "e989a20b64845040d8dc43b1b9c8299f"
       }
+    },
+    "teamtest": {
+      "autoIncrement": true,
+      "channel": "teamtest",
+      "env": {
+        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site",
+        "EXPO_PUBLIC_AMPLITUDE_API_KEY": "e989a20b64845040d8dc43b1b9c8299f"
+      }
     }
   },
   "submit": {
     "production": {
+      "ios": {
+        "ascAppId": "6788635067"
+      }
+    },
+    "teamtest": {
       "ios": {
         "ascAppId": "6788635067"
       }
