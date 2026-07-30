@@ -76,7 +76,7 @@ export default function Home() {
   const hasR = avoided.length > 0;
   const hasScans = recent.length > 0;
   // forward links to routes built in later screens (detail #4, review #6)
-  const openFood = (foodId: string) => router.push(`/food/${foodId}` as Href);
+  const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
 
   return (
     <View style={styles.root}>

@@ -59,6 +59,7 @@ import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type Dr
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { choosePhotoSource, pickBySource, uploadProfileImage } from '@/lib/data/profileImage';
 import { queryClient } from '@/lib/queryClient';
+import { EVENTS, track } from '@/lib/analytics';
 
 type Step = 'consent' | 'profile' | 'riskdemo' | 'restrictions' | 'spice' | 'interests' | 'summary';
 // consent leads (it belongs to the signup moment); interests is MVP-flagged off.
@@ -204,6 +205,12 @@ export default function Onboarding() {
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();
+      // P-083: 최종 제출 — 회피 재료는 **개수만**(내용 금지, PII 정책) + 스킵 여부
+      track(EVENTS.onboarding_submit, {
+        avoid_count: skipped.restrictions ? 0 : restrictions.size,
+        avoid_skipped: skipped.restrictions,
+        spice_skipped: skipped.spice,
+      });
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
       queryClient.clear();
@@ -218,6 +225,11 @@ export default function Onboarding() {
     }
   };
 
+  // P-083: 온보딩 퍼널 계측 — 스텝 진입은 step 변화로 1회씩
+  useEffect(() => {
+    track(EVENTS.onboarding_step_view, { step });
+  }, [step]);
+
   // advance — 요약에서 수정하러 온 스텝이면 요약으로 복귀 (마지막 스텝 = summary,
   // 제출은 summary CTA가 전담하므로 next()에 제출 분기 없음)
   const next = () => {
@@ -227,7 +239,13 @@ export default function Onboarding() {
     }
     setStep(ORDER[idx + 1]);
   };
+  /** 계속(완료) 경로 — 계측 후 전진 (스킵 경로와 분리, P-083). */
+  const advance = () => {
+    track(EVENTS.onboarding_step_complete, { step });
+    next();
+  };
   const skipStep = () => {
+    track(EVENTS.onboarding_step_skip, { step });
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: true }));
     if (step === 'spice') setSkipped((s) => ({ ...s, spice: true }));
     next();
@@ -235,7 +253,7 @@ export default function Onboarding() {
   const answerStep = () => {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: false }));
     if (step === 'spice') setSkipped((s) => ({ ...s, spice: false }));
-    next();
+    advance();
   };
   const editFromSummary = (target: Step) => {
     setReturnToSummary(true);
@@ -321,7 +339,7 @@ export default function Onboarding() {
             }
             onOpenDoc={setLegalDoc}
             allAgreed={agreed}
-            onStart={next}
+            onStart={advance}
             t={t}
           />
         )}
@@ -336,12 +354,12 @@ export default function Onboarding() {
             onPickPhoto={() => void pickPhoto()}
             nationality={nation}
             onPickNationality={() => setNatOpen(true)}
-            onContinue={next}
+            onContinue={advance}
             t={t}
           />
         )}
 
-        {step === 'riskdemo' && <RiskDemo onContinue={next} t={t} />}
+        {step === 'riskdemo' && <RiskDemo onContinue={advance} t={t} />}
 
         {step === 'restrictions' && (
           <Restrictions
@@ -370,7 +388,7 @@ export default function Onboarding() {
           <Interests
             selected={interests}
             onToggle={(name) => toggle(interests, name, setInterests)}
-            onContinue={next}
+            onContinue={advance}
             onSkip={next}
             t={t}
           />

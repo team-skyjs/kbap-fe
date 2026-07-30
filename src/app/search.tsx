@@ -59,7 +59,7 @@ export default function Search() {
     .slice(0, POPULAR_N);
 
   const riskOf = (f: FoodCard): RiskState => personalRisk(f.risk, hasR);
-  const openFood = (id: string) => router.push(`/food/${id}` as Href);
+  const openFood = (id: string) => router.push(`/food/${id}?src=search` as Href);
 
   const doSearch = (term: string) => {
     const tterm = term.trim();

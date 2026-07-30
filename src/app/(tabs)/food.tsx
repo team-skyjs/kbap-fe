@@ -113,7 +113,7 @@ export default function Food() {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           renderItem={({ item }) => (
-            <BrowseCard food={item} hasRestrictions={hasR} guest={isGuest} onPress={() => router.push(`/food/${item.foodId}` as Href)} />
+            <BrowseCard food={item} hasRestrictions={hasR} guest={isGuest} onPress={() => router.push(`/food/${item.foodId}?src=list` as Href)} />
           )}
         />
       )}

@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { resetToOnboarding } from '@/lib/nav';
+import { EVENTS, track } from '@/lib/analytics';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
@@ -38,7 +39,7 @@ export default function Login() {
       </View>
 
       <View style={styles.foot}>
-        <Pressable onPress={() => router.replace('/(tabs)' as Href)} hitSlop={8}>
+        <Pressable onPress={() => { track(EVENTS.guest_enter); /* P-083 */ router.replace('/(tabs)' as Href); }} hitSlop={8}>
           <Text style={styles.browse}>{t('intro.browseFirst')}</Text>
         </Pressable>
         {/* KB-67: newMember → 온보딩. 기존 회원도 onboardingCompleted=false면

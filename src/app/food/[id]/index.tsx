@@ -7,7 +7,7 @@
  * false) render the "Unable to assess" state — never assumed safe (FR-033).
  * Scroll-aware back header (§6); no emoji; reader text i18n'd; risk colors fixed.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
@@ -36,6 +36,7 @@ import { Snackbar } from '@/components/Snackbar';
 import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
+import { EVENTS, track } from '@/lib/analytics';
 import { SPICE_LEVEL_LABEL, spiceRank, spicierThanUser, type SpiceChoice } from '@/lib/spice';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -47,7 +48,13 @@ const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
-  const { id, price } = useLocalSearchParams<{ id: string; price?: string }>();
+  const { id, price, src } = useLocalSearchParams<{ id: string; price?: string; src?: string }>();
+  // P-083: 상세 진입 계측 — 진입 경로(스캔/목록/검색/홈, 그 외 other) 1회
+  useEffect(() => {
+    const source = src && ['scan', 'list', 'search', 'home'].includes(src) ? src : 'other';
+    track(EVENTS.food_detail_view, { source });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
   const scanPrice = parseScanPrice(price);
   const isGuest = useIsGuest();
   const router = useRouter();

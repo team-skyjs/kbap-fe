@@ -21,6 +21,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
+import { EVENTS, track } from '@/lib/analytics';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -154,6 +155,8 @@ export default function Scan() {
     console.log('[scan] sending dishNames =', JSON.stringify(scanned.map((s) => s.rawMenuName)));
     scan.mutate({ items: scanned, photo: capturedPhoto }, {
       onSuccess: (res) => {
+        // P-083: 스캔 완료 — 성공/정제실패(degraded) 구분 + 인식 항목 수
+        track(EVENTS.scan_complete, { degraded: res.degraded, item_count: res.items.length });
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
@@ -277,7 +280,10 @@ export default function Scan() {
     if (!dish.matched || !dish.foodId) return setUnmatchedOpen(true);
     // P-012(KB-179): 가격은 메뉴판 속성 — 스캔 진입에만 param으로 전달 (리스트
     // 행·오버레이 마커·사진 전용 항목 전부 이 함수를 지나므로 첨부 지점은 여기 하나)
-    router.push(`/food/${dish.foodId}${scanPriceParam(dish.priceKrw)}` as Href);
+    {
+      const priceQ = scanPriceParam(dish.priceKrw);
+      router.push(`/food/${dish.foodId}${priceQ}${priceQ ? '&' : '?'}src=scan` as Href);
+    }
   }
 
   const GateSheet = <AuthGateSheet context="scan" open={gateOpen} onClose={() => setGateOpen(false)} />;

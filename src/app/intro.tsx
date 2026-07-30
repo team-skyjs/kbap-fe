@@ -15,6 +15,7 @@ import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 're
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
+import { EVENTS, track } from '@/lib/analytics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
@@ -60,6 +61,7 @@ export default function Intro() {
 
   const goHome = () => {
     markIntroSeen();
+    track(EVENTS.guest_enter); // P-083
     router.replace('/(tabs)'); // Browse first / Skip → guest home
   };
 

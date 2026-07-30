@@ -749,3 +749,10 @@
 - [x] ④ 스택 차단: lib/nav.resetToOnboarding(dismissAll+replace) — 진입 4곳(login 2·프로필 이어하기·재개 배너) 교체 + 탈퇴→login도 dismissAll. _layout에 onboarding gestureEnabled:false(iOS 스와이프 백 차단, 이중 방어). 안드 하드웨어 백 = 스텝 back 동일(BackHandler, 첫 스텝은 기본 동작).
 - [x] ⑤ 슬라이더 재작업(SpiceLevelSlider 공용 — 온보딩·프로필 동시 반영): (a) **트랙 고정 + 틱·노브 전부 absolute(i×25%)** — space-between 플로우 재배치 원인 제거, 선택 전환 시 타 요소 이동 0을 레이아웃 유닛으로 잠금 (b) 시안 일치 — 중간 미선택 자리 = 흰 세로 틱·노브 = 흰 원+잉크 보더·라벨 5개 전부(선택 볼드 잉크, adjustsFontSizeToFit로 러시아어 등 축소) (c) 트랙 전체 드래그 — 개별 Pressable 폐기, 트랙 레벨 PanResponder 단일(드래그 중 노브 자유 추종, 릴리즈 최근접 스냅).
 - 유닛 +4(틱 절대 고정 스냅샷·노브 이동·라벨 5+선택 강조·릴리즈 스냅) + 온보딩 Hot 선택 경로를 릴리즈 스냅으로 갱신. tsc 0, jest 63스위트 327/327. Metro 재확인(Q-23 재수행) 예진 대기.
+
+## KB-265 Amplitude 계측 도입 (2026-07-31, P-083)
+- [x] 어댑터 격리: lib/analytics.ts — 화면은 track(event, props?) 하나만. **상단 표 = 이벤트 스키마 정본**(9종: 온보딩 view/complete/skip/submit·scan_complete·food_detail_view·review_submit·login_success·guest_enter, snake_case 상수화). 키(EXPO_PUBLIC_AMPLITUDE_API_KEY — .env 주입 완료) 없으면 no-op(콘솔 debug), 키 주입 시 코드 변경 0. 웹 위저드 지시 무시(발주): unified·autocapture·sessionReplay 미사용 — 명시 이벤트만.
+- [x] PII 방어 2중: ① setUserId/Identify 미호출 — 익명 device id만 ② **이벤트별 허용 키 화이트리스트(sanitize)** — 스키마 밖 prop(닉네임·이메일·국적·재료 내용)은 전송 전 드롭, 유닛 실측.
+- [x] 배선: 온보딩 퍼널(스텝 view = step 변화 effect·complete = advance 경로·skip 분리·submit = avoid_count 개수만+skip 여부 2종) · 스캔 완료(degraded·item_count) · 음식 상세 진입(4 진입처에 ?src= 부착 — scan/list/search/home, 그 외 other) · 리뷰 제출 · 로그인 성공(useSocialAuth — provider GOOGLE/APPLE) · 게스트 진입(인트로 둘러보기+로그인 화면 둘러보기).
+- [x] ⚠️ 실측 보정: @amplitude/analytics-react-native 1.6.8은 발주 전제(JS-only)와 달리 **네이티브 모듈 포함** — 단 부재 시 optional chaining 폴백으로 graceful(크래시 없음, 앱 버전 등 컨텍스트 메타만 결손). **기존 빌드 OTA 안전**, 완전 계측은 다음 재빌드(P-089 빌드12)부터 + fingerprint 회전은 그 빌드에서 재베이스라인.
+- [x] 유닛 +4: no-op(SDK 호출 0)·init 1회+track 전달·PII 드롭 실측·전 이벤트 스키마 PII 부재. tsc 0, jest 64스위트 331/331. 실이벤트 수신 확인(Metro)은 예진 몫(DoD 분리).

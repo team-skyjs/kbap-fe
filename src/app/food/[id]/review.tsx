@@ -21,6 +21,7 @@ import { useCreateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
+import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
@@ -67,6 +68,7 @@ export default function ReviewCompose() {
         content: body.trim() || undefined,
         imagePaths,
       });
+      track(EVENTS.review_submit); // P-083
       setSubmitted(true);
     } catch (e) {
       console.log('[review] post failed — staying on screen:', (e as Error)?.message);
