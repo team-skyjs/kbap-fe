@@ -24,6 +24,7 @@ import {
   IconEdit,
   IconGlobe,
   IconGear,
+  IconUserX,
   IconTrash,
   IconChevron,
   IconPlus,
@@ -281,6 +282,8 @@ export default function Profile() {
                 )}
                 {/* P-061③: 안전 고지 페이지(EN/KO) — 미설정=BE 그대로(v2.1.0) 고지 포함 */}
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+                {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 (설정 내 1화면) */}
+                <AcctRow icon={<IconUserX size={18} color={C.ink2} />} label={t('community.blockedTitle')} onPress={() => router.push('/community/blocked' as Href)} />
                 <AcctRow
                   // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘 (우측 chevron은 행 통일 유지 — 예진 확인).
                   // 로그아웃 chevron은 유지 확정 (2026-07-15 예진 — 과거 이중 아이콘 정리 건과 무관). 재제거 금지.

@@ -15,6 +15,7 @@ export { SkeletonList, SkeletonHome, SkeletonFoodGrid, SkeletonProfile, Shimmer 
 export { CardPhoto } from './CardPhoto';
 export { PressScale } from './PressScale';
 export { Spinner } from './Spinner';
+export { ActionSheet, DESTRUCTIVE, type ActionSheetItem } from './ActionSheet';
 export { ShellPlaceholder } from './ShellPlaceholder';
 // SocialAuthButtons is intentionally NOT re-exported here: it pulls native-only
 // Firebase/google-signin modules (KB-109) — import it directly from

@@ -18,7 +18,7 @@
  * ────────────────────────────────────────────────────────────────
  */
 import * as React from 'react';
-import Svg, { Circle, G, Path, Rect, type SvgProps } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Rect, type SvgProps } from 'react-native-svg';
 import { color as C } from '@/lib/theme';
 
 export type IconProps = {
@@ -248,6 +248,65 @@ export const IconGlobe = (p: IconProps) => (
     <Circle cx="12" cy="12" r="10" />
     <Path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
     <Path d="M2 12h20" />
+  </Glyph>
+);
+
+// lucide: thumbs-up
+export const IconThumbsUp = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+    <Path d="M7 10v12" />
+  </Glyph>
+);
+// lucide: thumbs-down
+export const IconThumbsDown = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
+    <Path d="M17 14V2" />
+  </Glyph>
+);
+// lucide: ellipsis
+export const IconMore = (p: IconProps) => (
+  <Glyph {...p}>
+    <Circle cx="12" cy="12" r="1" />
+    <Circle cx="19" cy="12" r="1" />
+    <Circle cx="5" cy="12" r="1" />
+  </Glyph>
+);
+// lucide: map-pin
+export const IconMapPin = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+    <Circle cx="12" cy="10" r="3" />
+  </Glyph>
+);
+// lucide: flag
+export const IconReport = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />
+  </Glyph>
+);
+// lucide: user-x
+export const IconUserX = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <Circle cx="9" cy="7" r="4" />
+    <Line x1="17" x2="22" y1="8" y2="13" />
+    <Line x1="22" x2="17" y1="8" y2="13" />
+  </Glyph>
+);
+// lucide: send
+export const IconSend = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" />
+    <Path d="m21.854 2.147-10.94 10.939" />
+  </Glyph>
+);
+// lucide: bell
+export const IconBell = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M10.268 21a2 2 0 0 0 3.464 0" />
+    <Path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
   </Glyph>
 );
 

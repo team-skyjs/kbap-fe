@@ -26,7 +26,7 @@ export type TabBarLabels = Record<TabKey | 'scan', string>;
 const TABS: { key: TabKey; Icon: (p: IconProps) => React.JSX.Element; locked?: boolean }[] = [
   { key: 'home', Icon: IconHome },
   { key: 'food', Icon: IconFood },
-  { key: 'community', Icon: IconCommunity, locked: true },
+  { key: 'community', Icon: IconCommunity }, // P-087(KB-251): 커뮤니티 개방 — 잠금 해제
   { key: 'profile', Icon: IconProfile },
 ];
 
