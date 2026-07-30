@@ -8,6 +8,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { StyleSheet } from 'react-native';
 
 // onboardingRestrictionsCta.test 프렐류드 재사용
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -41,6 +42,7 @@ jest.mock('react-native-reanimated', () => {
     useReducedMotion: () => false,
     withTiming: (v: unknown) => v,
     withRepeat: (v: unknown) => v,
+    cancelAnimation: () => {},
     interpolate: () => 0,
     Extrapolation: { CLAMP: 'clamp' },
     Easing: { out: () => () => 0, quad: () => 0, linear: () => 0 },
@@ -101,9 +103,23 @@ const btnWith = (tree: ReactTestRenderer, key: string) =>
     const c = b.props.children;
     return (Array.isArray(c) ? c.join('') : String(c ?? '')).includes(key);
   })!;
-// 5스톱 스냅 슬라이더의 스톱 탭 타깃 (hitSlop 12가 지문)
-const stops = (tree: ReactTestRenderer) =>
-  tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 12);
+// P-088⑤: 슬라이더 = 트랙 레벨 제스처 단일 — onLayout으로 폭 확정 후 릴리즈로 스냅
+// (onLayout과 responder props는 같은 View에 있으나 test renderer 노드가 분리될 수
+// 있어 각각 탐색)
+async function selectStop(tree: ReactTestRenderer, index: 0 | 1 | 2 | 3 | 4) {
+  // 트랙 컨테이너 지문 = height 44 스타일 + responder — ScrollView 등 다른
+  // responder/onLayout 보유 노드 오탐 방지
+  const isTrack = (n: { props?: { style?: unknown; onResponderRelease?: unknown } }) =>
+    typeof n.props?.onResponderRelease === 'function' &&
+    (StyleSheet.flatten(n.props?.style as never) as { height?: number } | undefined)?.height === 44;
+  const track = tree.root.findAll(isTrack)[0];
+  await act(async () => {
+    track.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } });
+  });
+  await act(async () => {
+    tree.root.findAll(isTrack)[0].props.onResponderRelease({ nativeEvent: { locationX: (300 * index) / 4 } });
+  });
+}
 const skipLink = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.skip').length > 0);
 // spice 계속 → 요약 카드 진입 → CTA(onboarding.start)로 제출
@@ -129,11 +145,7 @@ it('미조작 + 계속 → 요약 제출: 기본 MEDIUM (표시=전송, null dra
 
 it('Hot 스톱 조작 → HOT 제출 (P-081 enum — 내부에 정수 없음)', async () => {
   const tree = await renderSpiceStep();
-  const s = stops(tree);
-  expect(s.length).toBe(5); // 5스톱 스냅 — 중간 정지 없음
-  await act(async () => {
-    s[3].props.onPress(); // Hot
-  });
+  await selectStop(tree, 3); // Hot — 릴리즈 스냅 (P-088⑤ 트랙 제스처)
   await continueToSummaryAndSubmit(tree);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('HOT');
 });

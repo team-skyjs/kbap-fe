@@ -110,6 +110,8 @@ export default function RootLayout() {
                 }}
               >
                 <Stack.Screen name="(tabs)" />
+                {/* P-088④: 온보딩 = iOS 스와이프 백 차단 (스택 리셋과 이중 방어) */}
+                <Stack.Screen name="onboarding/index" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
               </Stack>
             </LocaleProvider>

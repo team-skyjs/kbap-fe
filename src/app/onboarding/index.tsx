@@ -13,8 +13,17 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -158,6 +167,22 @@ export default function Onboarding() {
     }
     return idx > 0 ? setStep(ORDER[idx - 1]) : router.back();
   };
+
+  // P-088④: 안드 하드웨어 백 = 온보딩 내 스텝 back과 동일 — 첫 스텝이면 기본
+  // 동작(앱 종료 관례). iOS 스와이프 백은 _layout gestureEnabled:false가 차단.
+  const backRef = useRef({ idx, returnToSummary, back });
+  backRef.current = { idx, returnToSummary, back };
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      const { idx: i, returnToSummary: rts, back: goBack } = backRef.current;
+      if (i > 0 || rts) {
+        goBack();
+        return true;
+      }
+      return false; // 첫 스텝 — 기본(앱 종료)
+    });
+    return () => sub.remove();
+  }, []);
 
   // ONE-SHOT batch submit (KB-110): the only server hand-off in the flow —
   // 이제 요약 카드(⑥)의 CTA에서만 호출된다. Skips go out as explicit UNSET;
@@ -513,18 +538,42 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 }
 
 /** ③ 위험도 마크 인터랙티브 데모 (P-080) — 탭 순환 safe→caution→danger→unable.
- *  마크는 기존 RiskMark 재사용 (신규 제작 금지 — 앱 전체 일관성, 스펙). */
+ *  마크는 기존 RiskMark 재사용 (신규 제작 금지 — 앱 전체 일관성, 스펙).
+ *  P-088②: 카드 사진 = 김치찌개 **번들 에셋 슬롯** — 현재 파일은 플레이스홀더
+ *  (surface2 톤 단색), 예진 에셋 수령 시 같은 파일명으로 교체만 하면 반영.
+ *  서버 이미지 금지(온보딩 첫인상 — 네트워크 의존 X). */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const DEMO_DISH_IMAGE = require('../../../assets/images/onboarding-demo-dish.png');
 const DEMO_CYCLE: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
 function RiskDemo({ onContinue, t }: { onContinue: () => void; t: TFn }) {
   const [i, setI] = useState(0);
+  const [tapped, setTapped] = useState(false); // P-088③: 첫 탭 후 펄스 영구 정지
   const state = DEMO_CYCLE[i];
-  const reduced = useReducedMotion(); // reduced-motion 시 크로스페이드 없이 즉시 전환
+  const reduced = useReducedMotion(); // reduced-motion 시 크로스페이드·펄스 미동작
+  // P-088③: 펄스 링 — 마크 주위 확대·페이드 반복으로 "탭해봐" 유도 (시안 확정
+  // 마이크로 인터랙션. 진행바 애니 절제(P-042)와 별개 — 기능성 유도 애니).
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    if (reduced || tapped) return;
+    pulse.value = withRepeat(withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }), -1, false);
+    return () => cancelAnimation(pulse);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced, tapped]);
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + pulse.value * 0.45 }],
+    opacity: (1 - pulse.value) * 0.55,
+  }));
+  const tapMark = () => {
+    if (!tapped) setTapped(true);
+    setI((n) => (n + 1) % DEMO_CYCLE.length);
+  };
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.demoTitle')} sub={t('onboarding.demoSub')} />
       <View style={styles.demoCard}>
-        <View style={styles.demoImg} />
-        <Pressable onPress={() => setI((n) => (n + 1) % DEMO_CYCLE.length)} hitSlop={14} style={styles.demoMark}>
+        <Image source={DEMO_DISH_IMAGE} style={styles.demoImg} resizeMode="cover" />
+        <Pressable onPress={tapMark} hitSlop={14} style={styles.demoMark}>
+          {!tapped && !reduced && <Animated.View style={[styles.pulseRing, ringStyle]} pointerEvents="none" />}
           <Animated.View key={state} entering={reduced ? undefined : FadeIn.duration(140)}>
             <RiskMark state={state} size={46} />
           </Animated.View>
@@ -828,8 +877,9 @@ const styles = StyleSheet.create({
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginBottom: 18 },
   noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
 
-  // ① consent (P-080)
-  consent: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, padding: 13, ...shadow.sh1 },
+  // ① consent (P-080) · P-088①: 카드를 화면 패딩보다 13 안쪽으로 당기고 내부
+  // 패딩 13 — 카드 안 체크박스 좌측 x가 아래 3행 체크박스와 일직선(카드만 살짝 넓게)
+  consent: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, padding: 13, marginHorizontal: -14.5, ...shadow.sh1 },
   consentAllOn: { borderColor: C.primary },
   check: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: C.primary, borderColor: C.primary },
@@ -841,10 +891,12 @@ const styles = StyleSheet.create({
   requiredTag: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
   consentChevron: { padding: 4 },
 
-  // ③ risk demo (P-080)
+  // ③ risk demo (P-080 · P-088 에셋 슬롯+펄스)
   demoCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, overflow: 'hidden', ...shadow.sh1 },
-  demoImg: { height: 150, backgroundColor: C.surface2 },
+  demoImg: { width: '100%', height: 150, backgroundColor: C.surface2 },
   demoMark: { position: 'absolute', top: 104, right: 16, backgroundColor: '#fff', borderRadius: 33, padding: 10, ...shadow.shPop },
+  // P-088③: 펄스 링 — 마크 버튼과 동심원 (66 = 46 + padding 10×2)
+  pulseRing: { position: 'absolute', top: 0, left: 0, width: 66, height: 66, borderRadius: 33, borderWidth: 2, borderColor: C.primary },
   demoCap: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
   demoName: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
   demoHint: { fontFamily: font.body, fontSize: 12, color: C.ink3 },

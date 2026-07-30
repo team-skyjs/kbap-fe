@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
 import { IconProfile } from '@/components/icons';
+import { resetToOnboarding } from '@/lib/nav';
 import { loadOnboardingDraft } from '@/lib/onboarding/draft';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -64,7 +65,7 @@ export function ResumeOnboardingBanner() {
           <Btn
             onPress={() => {
               setVisible(false);
-              router.push('/onboarding' as Href);
+              resetToOnboarding(router); // P-088④ 스택 리셋
             }}
           >
             {t('onboarding.resumeCta')}

@@ -37,6 +37,7 @@ jest.mock('react-native-reanimated', () => {
     useReducedMotion: () => false,
     withTiming: (v: unknown) => v,
     withRepeat: (v: unknown) => v,
+    cancelAnimation: () => {},
     interpolate: () => 0,
     Extrapolation: { CLAMP: 'clamp' },
     Easing: { out: () => () => 0, quad: () => 0, linear: () => 0 },

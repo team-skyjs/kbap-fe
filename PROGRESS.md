@@ -741,3 +741,11 @@
 - [x] 공용 ActionSheet('context' 변형) 신설: AuthGateSheet 골격 — 헤더(아바타+대상 제목)+X·Cancel 행 없음·스크림 탭/안드 백버튼 닫기·destructive = 버건디 #8e2f3c(위험도 #cf3a2c와 구분). 글·댓글·대댓글 ⋯ 전부 ModerationFlow 경유.
 - [x] 아이콘 8종 추가(lucide 벤더 — thumbs-up/down·ellipsis·map-pin·flag·user-x·send·bell). i18n community 73키×10(구 잠금 카드 2키 폐기), 이모지 0(시드 포함). 유닛 +12(페이징·상호배타·통삭제·차단 필터/해제·신고 적재·수정·답글 멘션). tsc 0, jest 323/323.
 - 비범위 준수: 실 API·알림 인프라·장소 실검색(KB-249)·Amplitude 이벤트·타인 프로필 없음. 실기 확인(예진) 대기.
+
+## KB-261 온보딩 Q-23 실기 보정 1차 (2026-07-31, P-088)
+- [x] ① 약관 정렬: "전체 동의" 카드 marginHorizontal -14.5(보더 1.5 보정 포함) + 내부 패딩 13 — 카드 안 체크박스 좌측 x가 아래 3행과 일직선(카드만 살짝 넓은 문법), border 강조 유지.
+- [x] ② 마크 데모 에셋 슬롯: assets/images/onboarding-demo-dish.png **플레이스홀더**(surface2 톤 단색 PNG) require — 예진 김치찌개 에셋 수령 시 **같은 파일명 교체만으로 반영**(코드 무변). 서버 이미지 금지 준수.
+- [x] ③ 펄스 링 복원: 마크 주위 확대(1→1.45)+페이드 반복 1.5s — **첫 탭 후 영구 정지**(cancelAnimation+비렌더), reduced-motion 미동작. 진행바 애니 절제(P-042)와 별개 명시.
+- [x] ④ 스택 차단: lib/nav.resetToOnboarding(dismissAll+replace) — 진입 4곳(login 2·프로필 이어하기·재개 배너) 교체 + 탈퇴→login도 dismissAll. _layout에 onboarding gestureEnabled:false(iOS 스와이프 백 차단, 이중 방어). 안드 하드웨어 백 = 스텝 back 동일(BackHandler, 첫 스텝은 기본 동작).
+- [x] ⑤ 슬라이더 재작업(SpiceLevelSlider 공용 — 온보딩·프로필 동시 반영): (a) **트랙 고정 + 틱·노브 전부 absolute(i×25%)** — space-between 플로우 재배치 원인 제거, 선택 전환 시 타 요소 이동 0을 레이아웃 유닛으로 잠금 (b) 시안 일치 — 중간 미선택 자리 = 흰 세로 틱·노브 = 흰 원+잉크 보더·라벨 5개 전부(선택 볼드 잉크, adjustsFontSizeToFit로 러시아어 등 축소) (c) 트랙 전체 드래그 — 개별 Pressable 폐기, 트랙 레벨 PanResponder 단일(드래그 중 노브 자유 추종, 릴리즈 최근접 스냅).
+- 유닛 +4(틱 절대 고정 스냅샷·노브 이동·라벨 5+선택 강조·릴리즈 스냅) + 온보딩 Hot 선택 경로를 릴리즈 스냅으로 갱신. tsc 0, jest 63스위트 327/327. Metro 재확인(Q-23 재수행) 예진 대기.

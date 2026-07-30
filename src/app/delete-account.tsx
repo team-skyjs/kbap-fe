@@ -50,6 +50,11 @@ export default function DeleteAccount() {
       const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
       await session.logOut().catch(() => {});
     }
+    // P-088④: 탈퇴 후 로그인 진입도 스택 리셋 — 잔여 스택이 재가입 온보딩의
+    // 스와이프 백 표적이 되는 것 차단
+    try {
+      if (router.canDismiss()) router.dismissAll();
+    } catch { /* 스택 밖 — 무시 */ }
     router.replace('/login' as Href);
   }
 

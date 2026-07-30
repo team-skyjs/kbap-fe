@@ -42,6 +42,7 @@ import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { TIERS } from '@/lib/ranking';
 import { restrictionLabel } from '@/lib/onboarding/data';
+import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -161,7 +162,7 @@ export default function Profile() {
 
             {/* 미완료 프로필(서버 플래그) — 온보딩 이어하기 유도 행 */}
             {me.onboardingCompleted === false && (
-              <Pressable style={styles.finishRow} onPress={() => router.push('/onboarding' as Href)}>
+              <Pressable style={styles.finishRow} onPress={() => resetToOnboarding(router)}>
                 <Text style={styles.finishText}>{t('onboarding.resumeTitle')}</Text>
                 <Text style={styles.finishCta}>{t('onboarding.resumeCta')}</Text>
               </Pressable>

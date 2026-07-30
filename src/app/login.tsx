@@ -13,6 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
+import { resetToOnboarding } from '@/lib/nav';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
@@ -46,12 +47,16 @@ export default function Login() {
         <SocialAuthButtons
           onSignedIn={(newMember) => {
             void (async () => {
-              if (newMember) return router.replace('/onboarding' as Href);
+              if (newMember) return resetToOnboarding(router); // P-088④ 스택 리셋
               const completed = await api
                 .get<{ onboardingCompleted?: boolean }>('/members/me/profile')
                 .then((p) => p.onboardingCompleted === true)
                 .catch(() => true);
-              router.replace((completed ? (returnTo ?? '/(tabs)') : '/onboarding') as Href);
+              if (completed) {
+                router.replace((returnTo ?? '/(tabs)') as Href);
+              } else {
+                resetToOnboarding(router); // P-088④ 스택 리셋
+              }
             })();
           }}
         />
