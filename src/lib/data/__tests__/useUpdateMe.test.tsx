@@ -87,28 +87,28 @@ it('닉네임만 변경 → 개인화 쿼리는 invalidate되지 않는다 (비�
   expect(isInvalidated(qc, ['food', 'bibimbap', 'en'])).toBe(false);
 });
 
-// KB-150 확정(7/16) → P-081 enum: 내부는 enum, 와이어는 앵커 정수(spiceAdapter 격리).
-// 해제(SKIP)는 -1 센티널 전송(서버 왕복 후에도 미설정 유지 — 값 되살아나던 한계 소멸).
-it('spice 패치(HOT) → 앵커 7 전송 + 로컬 fallback enum 보관 (P-081)', async () => {
+// KB-150 → P-081 enum → P-084 스왑: 와이어 = enum 문자열 통과(spiceAdapter 격리).
+// 해제(SKIP)도 문자열 'SKIP' 전송(서버 왕복 후에도 미설정 유지).
+it('spice 패치(HOT) → 문자열 HOT 전송 + 로컬 fallback enum 보관 (P-084)', async () => {
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A' });
   await runMutation(qc, { spiceTolerance: 'HOT' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 7 });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'HOT' });
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', 'HOT'); // 마이그레이션 fallback
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → 서버 값 우선(adaptSpice)
 });
 
-it('spice SKIP(설정 해제) → -1 센티널 전송 + 로컬 키 제거', async () => {
+it('spice SKIP(설정 해제) → 문자열 SKIP 전송 + 로컬 키 제거', async () => {
   const qc = seededClient();
   await runMutation(qc, { spiceTolerance: 'SKIP' });
   expect(AsyncStorage.removeItem).toHaveBeenCalledWith('kbap.profile.spice.v1');
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: -1 });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'SKIP' });
 });
 
-it('spice NONE("맵지 않음")은 유효값 0 전송 — -1(SKIP)과 경계 잠금', async () => {
+it('spice NONE("맵지 않음")은 NONE 전송 — SKIP(미설정)과 구분 잠금', async () => {
   const qc = seededClient();
   await runMutation(qc, { spiceTolerance: 'NONE' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 0 });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'NONE' });
 });
 
 // P-016(KB-149 최종): 사진 삭제 = 기본 path 전송 (null 폐기 — 필드는 항상 값) —

@@ -37,9 +37,9 @@ export interface MyProfileWire {
   avoidanceSubstanceCodes: string[];
   countryCode: string;
   appLanguage: string;
-  /** 0..10 유효값, **-1 = 미설정 센티널** (BE 확정 2026-07-16 회의 — required int,
-   *  미설정 유저는 항상 -1로 옴). 누락 방어 겸 옵셔널은 구서버 대비로만 유지. */
-  spicinessPreference?: number | null;
+  /** P-084(7/30): dev 신계약 = enum 문자열(SKIP/NONE/…strict). 구계약(prod) =
+   *  0..10 정수·-1 미설정 센티널 — 폴백 수신 유지. 누락 방어 옵셔널은 구서버 대비. */
+  spicinessPreference?: number | string | null;
   /** 프로필 사진 표시 URL (KB-149, 2026-07-16 배포). 미설정 시 null/누락. */
   profileImageUrl?: string | null;
   /** 가입 소셜 (KB-203, required 배포) — APPLE | GOOGLE. 구서버 방어 옵셔널. */
@@ -53,18 +53,18 @@ export interface ProfileUpdateWire {
   avoidanceSubstanceCodes?: string[];
   countryCode?: string;
   appLanguage?: string;
-  spicinessPreference?: number; // 0..10, 해제 = -1 전송 (BE 확정 7/16 — 생략은 유지)
+  spicinessPreference?: string; // P-084: enum 문자열(해제 = 'SKIP') — 생략은 유지
   profileImageUrl?: string; // path 설정 · 삭제=PROFILE_IMAGE_DEFAULT_PATH 전송(P-016, null 폐기) · 생략=유지
 }
 
 /**
- * 맵기 wire → 내부 enum (KB-150 -1 센티널 → P-081 enum 6종).
- * -1(미설정) 포함 0..10 밖·비정수는 전부 SKIP(미설정). 서버가 항상 값을 주므로
- * (-1 정책) 서버값이 진실 — 로컬 fallback은 필드 누락/비숫자(구서버·마이그레이션)일 때만.
- * 정수↔enum 변환 자체는 spiceAdapter 격리 (스웨거 enum 재배포 시 스왑).
+ * 맵기 wire → 내부 enum (KB-150 -1 센티널 → P-081 enum → P-084 문자열 신계약).
+ * 문자열(dev 신계약)·정수(prod 구계약) 겸수신 — 변환은 spiceAdapter 격리.
+ * 서버가 항상 값을 주므로 서버값이 진실 — 로컬 fallback은 필드 누락(구서버·
+ * 마이그레이션)일 때만.
  */
-export function adaptSpice(wire: number | null | undefined, localFallback: SpiceChoice | null): SpiceChoice {
-  if (typeof wire !== 'number') return localFallback ?? 'SKIP';
+export function adaptSpice(wire: number | string | null | undefined, localFallback: SpiceChoice | null): SpiceChoice {
+  if (typeof wire !== 'number' && typeof wire !== 'string') return localFallback ?? 'SKIP';
   return wireToSpiceChoice(wire);
 }
 

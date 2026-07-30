@@ -25,7 +25,15 @@ describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)
   });
 });
 
-describe('adaptSpice — P-081 enum: -1 센티널/경계는 SKIP, 유효 정수는 단계 스냅', () => {
+describe('adaptSpice — P-084 문자열 신계약 수신 (strict) + 정수 구계약 폴백', () => {
+  it('enum 문자열 그대로, 비레벨 문자열은 SKIP — 로컬 fallback 미개입', () => {
+    expect(adaptSpice('HOT', null)).toBe('HOT');
+    expect(adaptSpice('SKIP', 'MEDIUM')).toBe('SKIP'); // 서버 SKIP이 진실 — fallback 무시
+    expect(adaptSpice('hot', 'MEDIUM')).toBe('SKIP'); // strict: 소문자·오타는 SKIP
+  });
+});
+
+describe('adaptSpice — 정수 폴백(구계약 prod): -1 센티널/경계는 SKIP, 유효 정수는 단계 스냅', () => {
   it('-1(미설정 센티널) → SKIP — 로컬 fallback도 타지 않는다 (서버가 진실)', () => {
     expect(adaptSpice(-1, 'HOT')).toBe('SKIP');
   });

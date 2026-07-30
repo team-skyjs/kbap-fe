@@ -699,3 +699,10 @@
 - [x] 프로필 5단계 통일(P-080 질의 답변 반영): 슬라이더를 `components/SpiceLevelSlider`로 공용 승격(level=null=미선택 지원) — 프로필 수정 = 동일 5스톱 히트 슬라이더+🌶️ 표시, "설정 해제"=SKIP. 프로필 화면 표시 = 🌶️ 카운트+라벨. 불꽃(IconFlame) 사용처 0. SPICE_SCALE(10단)·detail.spice 키 폐기, spice.example.0~4는 각 언어 scale 앵커값 복사로 승계(신규 번역 0).
 - [x] 유닛: enum 코어 4(순서·SKIP 경고 없음·키 완전성·판별) + 어댑터 6(앵커·왕복·경계값 전수·SKIP·음식 null·로컬 마이그레이션) + 패리티 20(band·example ×10, scale 폐기 잠금) + 기존 갱신(submit -1/7, useUpdateMe HOT/SKIP/NONE, adaptSpice enum, 온보딩 MEDIUM/HOT/SKIP). tsc 0, jest 293/293.
 - 실기 확인(예진) 대기: 프로필 수정 슬라이더 감·미설정 진입 시 무선택 스톱. BE 스웨거 enum 재배포 시 spiceAdapter 스왑 후속(P 발주 대기).
+
+## 🚨 spiceAdapter 스왑 — dev 스웨거 enum 문자열 전환 (2026-07-30, P-084)
+- [x] 스왑(P-081 헤더 예고 지점): 유저 송신 = enum 문자열 통과(spiceChoiceToWire — 앵커 정수 폐기) · 수신 = 문자열 strict 파싱 우선(비레벨 문자열→SKIP) + **정수(구계약 prod) 근사 스냅 폴백** — 같은 빌드가 dev/prod 어느 쪽을 봐도 동작. ProfileUpdateWire.spicinessPreference=string, MyProfileWire=number|string 겸수신.
+- [x] 음식 spiciness = 정수 구간 스냅 유지 (스웨거 실측: FoodDetail/SummaryResponse integer — "음식도 enum"은 BE 후속, 전환 시 wireToFoodSpice만 갱신).
+- [x] 스웨거 실측 대조: dev /v3/api-docs — OnboardingRequest·ProfileUpdateRequest·MyProfileResponse 전부 string("SKIP"/"HOT" 예시 포함), 음식 integer. 어댑터 외 코드 변화 0 (P-081 격리 효과 — 화면·훅·타입 무변).
+- [x] 유닛 교체(어댑터 테스트 헤더 예고대로): 문자열 왕복 6종·strict(소문자/오타→SKIP)·정수 폴백 경계값 전수·음식 정수 유지·로컬 마이그레이션 + 송신측(submit 'SKIP'/'HOT', useUpdateMe HOT/SKIP/NONE 문자열)·adaptSpice 문자열 수신. tsc 0, jest 295/295.
+- ⚠️ 발행 순서 제약: **preview·production OTA 발행이 종한 prod enum 배포의 선행 조건** (정수 전송 라이브 앱 보호). Metro 실왕복(온보딩 제출·프로필 저장/해제)은 예진 확인 대기.

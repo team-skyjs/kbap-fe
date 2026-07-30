@@ -45,14 +45,14 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 
-  // P-019(KB-195): required 승격 — 스킵도 -1 명시 전송 (생략하면 가입 400)
-  // P-081: enum→정수 앵커는 spiceAdapter — SKIP→-1 · HOT→7 왕복 잠금
-  it('spicinessPreference — 스킵(SKIP) 시 -1 명시 전송, 설정 시 앵커 정수', async () => {
+  // P-019(KB-195): required 승격 — 스킵도 명시 전송 (생략하면 가입 400)
+  // P-084: 신계약 = enum 문자열 통과 — SKIP도 문자열 'SKIP'으로 명시 전송
+  it('spicinessPreference — enum 문자열 그대로 전송 (SKIP 포함, P-084 스왑)', async () => {
     api.post.mockResolvedValue(undefined);
     await submitOnboardingProfile(payload); // spiceTolerance: 'SKIP'
-    expect(api.post.mock.calls[0][1]).toMatchObject({ spicinessPreference: -1 });
+    expect(api.post.mock.calls[0][1]).toMatchObject({ spicinessPreference: 'SKIP' });
     await submitOnboardingProfile({ ...payload, spiceTolerance: 'HOT' });
-    expect(api.post.mock.calls[1][1]).toMatchObject({ spicinessPreference: 7 });
+    expect(api.post.mock.calls[1][1]).toMatchObject({ spicinessPreference: 'HOT' });
   });
 
   // P-016(KB-149 최종): 선택 시 업로드 path, 미선택 시 **기본 path 명시 전송** (생략·null 폐기)
