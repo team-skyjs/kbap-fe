@@ -344,7 +344,6 @@
     "noIngredientBody": "Chưa có điểm, mô tả hay dữ liệu nguyên liệu. Chúng tôi đã ghi nhận món này để cải thiện danh mục.",
     "ofShops": "~{{pct}}% số quán",
     "writeReview": "Viết đánh giá",
-    "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "cay hơn khẩu vị của bạn",
     "addProfileHint": "Thêm hạn chế của bạn để xem đánh giá cá nhân hóa.",
     "scannedPrice": "theo thực đơn bạn đã quét"
@@ -640,25 +639,19 @@
     "view": "Xem"
   },
   "spice": {
-    "scale": {
-      "0": "Không cay — cơm trắng",
-      "1": "Rất nhẹ — trứng ngâm tương",
-      "2": "Nhẹ — kim chi dịu",
-      "3": "Hơi cay — tteokbokki cho trẻ em",
-      "4": "Tteokbokki vỉa hè",
-      "5": "Canh kim chi",
-      "6": "Nước súp jjamppong",
-      "7": "Mì buldak siêu cay",
-      "8": "Ớt habanero",
-      "9": "Ớt hiểm",
-      "10": "Ớt Cheongyang cực đại"
-    },
     "band": {
       "0": "Không cay",
       "1": "Cay nhẹ",
       "2": "Cay vừa",
       "3": "Cay",
       "4": "Siêu cay"
+    },
+    "example": {
+      "0": "Không cay — cơm trắng",
+      "1": "Nhẹ — kim chi dịu",
+      "2": "Canh kim chi",
+      "3": "Mì buldak siêu cay",
+      "4": "Ớt Cheongyang cực đại"
     }
   },
   "photo": {

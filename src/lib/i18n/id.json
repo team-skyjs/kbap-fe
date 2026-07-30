@@ -344,7 +344,6 @@
     "noIngredientBody": "Belum ada penilaian, deskripsi, atau data bahan. Kami telah mencatat hidangan ini untuk memperbaiki katalog.",
     "ofShops": "~{{pct}}% dari toko",
     "writeReview": "Tulis ulasan",
-    "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "lebih pedas dari selera Anda",
     "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
     "scannedPrice": "berdasarkan menu yang Anda pindai"
@@ -640,25 +639,19 @@
     "view": "Lihat"
   },
   "spice": {
-    "scale": {
-      "0": "Tidak pedas — nasi putih",
-      "1": "Sangat ringan — telur kecap",
-      "2": "Ringan — kimchi lembut",
-      "3": "Agak pedas — tteokbokki anak",
-      "4": "Tteokbokki kaki lima",
-      "5": "Sup kimchi",
-      "6": "Kuah jjamppong",
-      "7": "Mi buldak super pedas",
-      "8": "Habanero",
-      "9": "Cabai rawit",
-      "10": "Cabai Cheongyang maksimal"
-    },
     "band": {
       "0": "Tidak pedas",
       "1": "Sedikit pedas",
       "2": "Sedang",
       "3": "Pedas",
       "4": "Sangat pedas"
+    },
+    "example": {
+      "0": "Tidak pedas — nasi putih",
+      "1": "Ringan — kimchi lembut",
+      "2": "Sup kimchi",
+      "3": "Mi buldak super pedas",
+      "4": "Cabai Cheongyang maksimal"
     }
   },
   "photo": {

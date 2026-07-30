@@ -13,9 +13,8 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Image, Modal, PanResponder, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,8 +40,10 @@ import { NationalityPicker } from '@/components/NationalityPicker';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { countryByCode, deviceCountry } from '@/lib/onboarding/countries';
-import { POPULAR_DISHES, restrictionLabel, SPICE_SCALE } from '@/lib/onboarding/data';
-import { SPICE_ANCHOR, SPICE_BAND_LABEL, spiceBand } from '@/lib/spice';
+import { POPULAR_DISHES, restrictionLabel } from '@/lib/onboarding/data';
+import { isSpiceLevel, SPICE_LEVEL_EXAMPLE, SPICE_LEVEL_LABEL, spiceRank, type SpiceLevel } from '@/lib/spice';
+import { wireToSpiceLevel } from '@/lib/api/spiceAdapter';
+import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
@@ -86,9 +87,9 @@ export default function Onboarding() {
   const [photoError, setPhotoError] = useState(false);
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
-  // P-051 원칙 유지(화면 그대로 제출) · P-080: 조작은 5단계 스냅 — 저장은 앵커
-  // 값(0/2/5/7/10)의 10-스케일. 기본 Medium(=5)은 종전 기본 5와 와이어 동일.
-  const [spice, setSpice] = useState(5);
+  // P-051 원칙 유지(화면 그대로 제출) · P-081: 내부 표현 = enum (와이어 변환은
+  // spiceAdapter 격리). 기본 MEDIUM은 종전 기본 5(앵커)와 와이어 동일.
+  const [spice, setSpice] = useState<SpiceLevel>('MEDIUM');
   const [interests, setInterests] = useState<Set<string>>(new Set());
   // P-080: 항목별 동의 — 3개 전부 = 기존 consented(단일 기록)와 동치
   const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({ terms: false, privacy: false, safety: false });
@@ -114,7 +115,8 @@ export default function Onboarding() {
         setPhotoPath(d.profileImageUrl ?? null);
         setNationality(d.nationality);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
-        setSpice(d.spice ?? 5); // P-051: null draft(구 스킵분)도 5 표시로 호환
+        // P-081: 구버전 draft(number)는 근사 스냅 마이그레이션, null(스킵)은 기본 MEDIUM 표시
+        setSpice(d.spice == null ? 'MEDIUM' : isSpiceLevel(d.spice) ? d.spice : wireToSpiceLevel(d.spice));
         setSkipped({ restrictions: d.restrictions === null, spice: d.spice === null });
         setStep(ORDER.includes(d.step) ? d.step : 'spice'); // clamp (e.g. flagged-off/구스텝)
       }
@@ -171,8 +173,8 @@ export default function Onboarding() {
         nationality,
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
-        // P-039: 미조작(스킵)=UNSET — 안 건드림은 미설정이다
-        spiceTolerance: skipped.spice ? UNSET : spice,
+        // P-039 계열: 스킵 = SKIP(미설정) — 안 건드림은 미설정이다 (P-081 enum 승계)
+        spiceTolerance: skipped.spice ? 'SKIP' : spice,
         profileImageUrl: photoPath, // path(objectKey), null = 미선택 → 필드 생략 (P-006)
       });
       done.current = true; // block any further draft writes before clearing
@@ -326,11 +328,11 @@ export default function Onboarding() {
 
         {step === 'spice' && (
           <Spice
-            band={spiceBand(spice)}
+            level={spice}
             // P-039 계열: 조작 즉시 skip 해제 — draft 복귀(skipped=true) 후 조작분이
             // draft 저장에서 null로 지워지지 않게 (저장식이 skipped를 참조)
-            setBand={(b) => {
-              setSpice(SPICE_ANCHOR[b]);
+            setLevel={(l) => {
+              setSpice(l);
               setSkipped((s) => (s.spice ? { ...s, spice: false } : s));
             }}
             onContinue={answerStep}
@@ -355,7 +357,7 @@ export default function Onboarding() {
             lang={lang}
             restrictions={Array.from(restrictions)}
             skipped={skipped}
-            band={spiceBand(spice)}
+            level={spice}
             submitting={submitting}
             onEdit={editFromSummary}
             onSubmit={() => void finish()}
@@ -629,28 +631,11 @@ function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle:
   );
 }
 
-/** ⑤ 맵기 (P-080 재설계) — 노랑→빨강 히트 그라데이션 5스톱 스냅 슬라이더 +
- *  🌶️ 카운트 히어로(5C 확정, None=0개 점등). 저장은 앵커 매핑 — 부모가 담당.
+/** ⑤ 맵기 (P-080 재설계 → P-081 enum) — 5스톱 스냅 슬라이더(공용 SpiceLevelSlider)
+ *  + 🌶️ 카운트 히어로(5C 확정, None=0개 점등).
  *  ⚠️ 🌶️는 헌법 v2.2.0의 유일한 유니코드 이모지 예외 (맵기 표시 한정). */
-function Spice({ band, setBand, onContinue, onSkip, t }: { band: number; setBand: (b: number) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
-  const trackW = useRef(0);
-  const bandRef = useRef(band);
-  bandRef.current = band;
-  // 드래그 스냅 — JS 스레드 PanResponder(워클릿 없음). 탭은 아래 스톱 Pressable.
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => snapTo(e.nativeEvent.locationX),
-      onPanResponderMove: (e) => snapTo(e.nativeEvent.locationX),
-    }),
-  ).current;
-  const snapTo = (x: number) => {
-    if (!trackW.current) return;
-    const b = Math.round((x / trackW.current) * 4);
-    const clamped = Math.min(4, Math.max(0, b));
-    if (clamped !== bandRef.current) setBand(clamped);
-  };
+function Spice({ level, setLevel, onContinue, onSkip, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+  const rank = spiceRank(level);
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} />
@@ -658,36 +643,18 @@ function Spice({ band, setBand, onContinue, onSkip, t }: { band: number; setBand
         {/* 🌶️ 카운트 히어로 — 점등 수 = 단계 (None=0개, 시안의 1개 점등은 오류 보정) */}
         <View style={styles.chiliRow}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <Text key={i} style={[styles.chili, i >= band && styles.chiliDim]}>
+            <Text key={i} style={[styles.chili, i >= rank && styles.chiliDim]}>
               {'\u{1F336}\u{FE0F}'}
             </Text>
           ))}
         </View>
-        <Text style={styles.bandName}>{t(SPICE_BAND_LABEL[band])}</Text>
+        <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
         <View style={styles.analogy}>
-          <Text style={styles.analogyText}>≈ {t(SPICE_SCALE[SPICE_ANCHOR[band]])}</Text>
+          <Text style={styles.analogyText}>≈ {t(SPICE_LEVEL_EXAMPLE[level])}</Text>
         </View>
       </View>
       <View style={{ marginTop: 26 }}>
-        <View
-          style={styles.heatTrackBox}
-          onLayout={(e) => {
-            trackW.current = e.nativeEvent.layout.width;
-          }}
-          {...pan.panHandlers}
-        >
-          {/* 히트 그라데이션 = 의미색(열) — 위험도 4색과 무관, 맵기 트랙 한정 허용 */}
-          <LinearGradient colors={['#f2c14e', '#e2580c', '#c22d20']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.heatTrack} />
-          <View style={styles.stopsRow}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Pressable key={i} onPress={() => setBand(i)} hitSlop={12} style={[styles.stop, i === band && styles.stopOn]} />
-            ))}
-          </View>
-        </View>
-        <View style={styles.trackLabels}>
-          <Text style={styles.tag}>{t(SPICE_BAND_LABEL[0])}</Text>
-          <Text style={styles.tag}>{t(SPICE_BAND_LABEL[4])}</Text>
-        </View>
+        <SpiceLevelSlider level={level} onChange={setLevel} />
       </View>
       <View style={styles.foot}>
         <Btn onPress={onContinue}>{t('onboarding.continue')}</Btn>
@@ -742,7 +709,7 @@ function Summary({
   lang,
   restrictions,
   skipped,
-  band,
+  level,
   submitting,
   onEdit,
   onSubmit,
@@ -752,7 +719,7 @@ function Summary({
   lang: string;
   restrictions: string[];
   skipped: { restrictions: boolean; spice: boolean };
-  band: number;
+  level: SpiceLevel;
   submitting: boolean;
   onEdit: (target: Step) => void;
   onSubmit: () => void;
@@ -764,7 +731,8 @@ function Summary({
       ? `${restrictions.slice(0, 3).map(restrictionLabel).join(', ')}${restrictions.length > 3 ? ` +${restrictions.length - 3}` : ''}`
       : t('onboarding.added', { count: 0 });
   // 맵기 행 — 불꽃 아이콘 금지(시안 드리프트 보정), 🌶️ 카운트 또는 텍스트
-  const spiceValue = skipped.spice ? t('profile.spiceUnset') : `${'\u{1F336}\u{FE0F}'.repeat(band)}${band > 0 ? ' ' : ''}${t(SPICE_BAND_LABEL[band])}`;
+  const rank = spiceRank(level);
+  const spiceValue = skipped.spice ? t('profile.spiceUnset') : `${'\u{1F336}\u{FE0F}'.repeat(rank)}${rank > 0 ? ' ' : ''}${t(SPICE_LEVEL_LABEL[level])}`;
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.sumHero}>
@@ -884,19 +852,13 @@ const styles = StyleSheet.create({
   demoLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   demoBody: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: 2 },
 
-  // ⑤ spice (P-080 — 5단계 히트 슬라이더 + 🌶️ 히어로)
+  // ⑤ spice (P-080 → P-081: 슬라이더는 공용 SpiceLevelSlider로 승격 — 히어로만 잔존)
   chiliRow: { flexDirection: 'row', gap: 6, minHeight: 46, alignItems: 'center' },
   chili: { fontSize: 34, lineHeight: 44 },
   chiliDim: { opacity: 0.18 },
   bandName: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.3 },
   analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(226,88,12,0.08)' },
   analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
-  heatTrackBox: { height: 40, justifyContent: 'center' },
-  heatTrack: { position: 'absolute', left: 0, right: 0, height: 10, borderRadius: 6 },
-  stopsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 1 },
-  stop: { width: 14, height: 14, borderRadius: 7, backgroundColor: 'rgba(255,255,255,0.55)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
-  stopOn: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff', borderWidth: 3, borderColor: C.primary, ...shadow.sh1 },
-  trackLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   tag: { fontFamily: font.body, fontSize: 11, color: C.ink3 },
 
   // interests grid

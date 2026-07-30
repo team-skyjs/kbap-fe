@@ -36,7 +36,7 @@ import { Snackbar } from '@/components/Snackbar';
 import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
-import { SPICE_BAND_LABEL, spiceBand, spicierThanUser } from '@/lib/spice';
+import { SPICE_LEVEL_LABEL, spiceRank, spicierThanUser, type SpiceChoice } from '@/lib/spice';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -122,7 +122,7 @@ export default function FoodDetailScreen() {
                 scanPrice={scanPrice}
                 food={food}
                 nationality={me?.nationality ?? 'US'}
-                spiceTolerance={me?.spiceTolerance ?? null}
+                spiceTolerance={me?.spiceTolerance ?? 'SKIP'}
                 hasRestrictions={(me?.restrictions.length ?? 0) > 0}
                 t={t}
                 router={router}
@@ -184,7 +184,7 @@ function Registered({
   guest: boolean;
   food: FoodDetail;
   nationality: string;
-  spiceTolerance: number | null;
+  spiceTolerance: SpiceChoice;
   hasRestrictions: boolean;
   scanPrice: number | null; // 스캔 진입 param (P-012) — 그 외 경로는 null
   t: TFn;
@@ -216,9 +216,9 @@ function Registered({
       ? t(`detail.ingBasis${band}`, { ingredient: ing.name, percent: Math.round(ing.percentage) })
       : t(`detail.ingBasis${band}NoPct`, { ingredient: ing.name });
   };
-  // P-080(KB-261): 경고 = 단계(음식) > 단계(유저) — 원값 비교 금지 (표시와 동일
-  // 구간 함수 공유, "같은 표시 단계인데 경고" 모순 방지)
-  const spicyForYou = food.spiceLevel != null && spiceTolerance != null && spicierThanUser(food.spiceLevel, spiceTolerance);
+  // P-080→P-081(KB-261): 경고 = enum 순서 비교, 단계(음식) > 단계(유저) —
+  // SKIP(미설정)은 경고 없음. 표시와 같은 enum 소스라 "같은 표시인데 경고" 모순 불가.
+  const spicyForYou = food.spiceLevel != null && spicierThanUser(food.spiceLevel, spiceTolerance);
 
   return (
     <>
@@ -259,8 +259,8 @@ function Registered({
           <View style={styles.spiceMeta}>
             {/* P-080: 표시 = 5단계 구간 스냅 · 🌶️는 헌법 v2.2.0 유일 이모지 예외(맵기 한정) */}
             <Text style={styles.spiceText}>
-              {spiceBand(food.spiceLevel) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceBand(food.spiceLevel))} ` : ''}
-              {t(SPICE_BAND_LABEL[spiceBand(food.spiceLevel)])}
+              {spiceRank(food.spiceLevel) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(food.spiceLevel))} ` : ''}
+              {t(SPICE_LEVEL_LABEL[food.spiceLevel])}
             </Text>
             {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
           </View>

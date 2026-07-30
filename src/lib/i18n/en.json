@@ -495,7 +495,6 @@
     "noIngredientBody": "No rating, description, or ingredient data yet. We've logged this dish to improve the catalog.",
     "ofShops": "~{{pct}}% of shops",
     "writeReview": "Write a review",
-    "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "hotter than your taste",
     "addProfileHint": "Add your restrictions to see a personalized verdict.",
     "scannedPrice": "on the menu you scanned"
@@ -637,25 +636,19 @@
     "view": "View"
   },
   "spice": {
-    "scale": {
-      "0": "No heat — plain rice",
-      "1": "Very mild — soy egg",
-      "2": "Mild — gentle kimchi",
-      "3": "Warm — kids' tteokbokki",
-      "4": "Street tteokbokki",
-      "5": "Kimchi jjigae",
-      "6": "Jjamppong soup",
-      "7": "Buldak fire ramen",
-      "8": "Habanero",
-      "9": "Bird's-eye chili",
-      "10": "Cheongyang overload"
-    },
     "band": {
       "0": "None",
       "1": "Mild",
       "2": "Medium",
       "3": "Hot",
       "4": "Extreme"
+    },
+    "example": {
+      "0": "No heat — plain rice",
+      "1": "Mild — gentle kimchi",
+      "2": "Kimchi jjigae",
+      "3": "Buldak fire ramen",
+      "4": "Cheongyang overload"
     }
   },
   "photo": {

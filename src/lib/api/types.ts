@@ -10,6 +10,8 @@
  * (foodId vs menuName) is NOT final — do not hard-couple screen logic to it.
  */
 
+import type { SpiceChoice, SpiceLevel } from '@/lib/spice';
+
 export type RiskState = 'safe' | 'caution' | 'danger' | 'unable';
 
 export interface AuthTokens {
@@ -50,7 +52,7 @@ export interface User {
   nickname: string;
   nationality: string; // ISO 3166-1 alpha-2
   readerLanguage: string; // BCP-47
-  spiceTolerance: number | null; // 0–10
+  spiceTolerance: SpiceChoice; // P-081: enum — 'SKIP' = 미설정(구 null/-1)
   restrictions: DietaryRestriction[];
   rank: Ranking;
   /** 프로필 사진 표시 URL (KB-149). 미설정/mock 은 생략 = 플레이스홀더. */
@@ -65,7 +67,7 @@ export interface UserUpdate {
   nickname?: string;
   // nationality: P-078(7/29 정책) — 수정 불가, PATCH 계약에서 제거(온보딩 최초 설정만)
   readerLanguage?: string;
-  spiceTolerance?: number | null;
+  spiceTolerance?: SpiceChoice; // 'SKIP' = 설정 해제(와이어 -1은 어댑터 몫)
   restrictions?: DietaryRestriction[];
   profileImageUrl?: string; // path 설정 · 삭제=기본 path 전송(P-016 확정, null 폐기) · 생략=유지 (KB-149)
 }
@@ -114,7 +116,7 @@ export interface FoodDetail {
   overall: RatingAggregate;
   sameNationality: RatingAggregate;
   description: string; // reader language, ≤150 chars (EN)
-  spiceLevel: number | null; // 0–10 dish heat (mockup "X/10"); compared to spiceTolerance
+  spiceLevel: SpiceLevel | null; // P-081: enum 단계 (null = 데이터 없음); spiceTolerance와 순서 비교
   photoUrl: string | null;
   ingredients: IngredientRisk[]; // 90%+ inclusion, danger→caution→safe order (FR-014)
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)

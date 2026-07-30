@@ -19,6 +19,8 @@ import { api, ApiError } from '@/lib/api/client';
 import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { toBeCode } from '@/lib/mocks/ingredients';
+import type { SpiceChoice } from '@/lib/spice';
+import { parseStoredSpice, spiceChoiceToWire } from '@/lib/api/spiceAdapter';
 
 export const UNSET = 'UNSET' as const;
 export type Unset = typeof UNSET;
@@ -28,7 +30,7 @@ export interface OnboardingProfilePayload {
   nationality: string; // ISO 3166-1 alpha-2
   language: string; // reader language (BCP-47, one of the 9)
   avoidIngredients: string[] | Unset; // 81종 codes, or skipped
-  spiceTolerance: number | Unset; // 0..10, or skipped — 로컬 보관 전용
+  spiceTolerance: SpiceChoice; // P-081: enum — 'SKIP' = 온보딩 스킵(구 UNSET 승계)
   /** 업로드된 프로필 사진 path(objectKey) (KB-149/P-006). null/생략 = 미선택 → 필드 생략. */
   profileImageUrl?: string | null;
 }
@@ -37,17 +39,16 @@ export interface OnboardingProfilePayload {
 export const SPICE_KEY = 'kbap.profile.spice.v1';
 
 export async function submitOnboardingProfile(payload: OnboardingProfilePayload): Promise<void> {
-  // 맵기는 계약 밖 — 로컬 보관 (스킵이면 저장하지 않음)
-  if (payload.spiceTolerance !== UNSET) {
-    await AsyncStorage.setItem(SPICE_KEY, String(payload.spiceTolerance)).catch(() => {});
+  // 맵기 로컬 보관 — enum 문자열 (구서버 대비 fallback, adaptSpice 참조. 스킵은 미저장)
+  if (payload.spiceTolerance !== 'SKIP') {
+    await AsyncStorage.setItem(SPICE_KEY, payload.spiceTolerance).catch(() => {});
   }
 
   const body = {
     nickname: payload.nickname,
-    // KB-195(P-019): required 승격(스웨거 7/20 실측)으로 전환 완료 — 스킵도
-    // -1(미설정 센티널, KB-150 정책) 명시 전송. 생략하면 서버 검증 400으로
-    // 가입이 깨진다. 로컬 보관(위)은 구서버 대비 fallback으로 유지 (adaptSpice 참조).
-    spicinessPreference: payload.spiceTolerance !== UNSET ? payload.spiceTolerance : -1,
+    // KB-195(P-019): required 승격 — 스킵도 -1 센티널 명시 전송(생략 시 검증 400).
+    // P-081: enum→정수 변환은 spiceAdapter 격리 (스웨거 enum 재배포 시 스왑).
+    spicinessPreference: spiceChoiceToWire(payload.spiceTolerance),
     // KB-149 최종(P-016): 미선택도 기본 path를 명시 전송 — 필드는 항상 값 (null·생략 폐기)
     profileImageUrl: payload.profileImageUrl ?? PROFILE_IMAGE_DEFAULT_PATH,
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
@@ -91,11 +92,10 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
   }
 }
 
-/** 로컬 보관된 맵기 허용도 (계약에 필드 생기면 서버로 이관 — KB-75 질의). */
-export async function loadLocalSpice(): Promise<number | null> {
+/** 로컬 보관된 맵기 (P-081: enum 문자열 — 구 숫자 문자열은 파서가 마이그레이션). */
+export async function loadLocalSpice(): Promise<SpiceChoice | null> {
   try {
-    const v = await AsyncStorage.getItem(SPICE_KEY);
-    return v != null ? Number(v) : null;
+    return parseStoredSpice(await AsyncStorage.getItem(SPICE_KEY));
   } catch {
     return null;
   }

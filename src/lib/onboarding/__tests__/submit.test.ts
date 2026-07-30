@@ -33,7 +33,7 @@ const payload = {
   nationality: 'KR',
   language: 'en',
   avoidIngredients: UNSET,
-  spiceTolerance: UNSET,
+  spiceTolerance: 'SKIP', // P-081: 스킵 = SKIP enum (구 UNSET 승계)
 } as const;
 
 beforeEach(() => jest.clearAllMocks());
@@ -46,11 +46,12 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
   });
 
   // P-019(KB-195): required 승격 — 스킵도 -1 명시 전송 (생략하면 가입 400)
-  it('spicinessPreference — 스킵(UNSET) 시 -1 명시 전송, 설정 시 실값', async () => {
+  // P-081: enum→정수 앵커는 spiceAdapter — SKIP→-1 · HOT→7 왕복 잠금
+  it('spicinessPreference — 스킵(SKIP) 시 -1 명시 전송, 설정 시 앵커 정수', async () => {
     api.post.mockResolvedValue(undefined);
-    await submitOnboardingProfile(payload); // spiceTolerance: UNSET
+    await submitOnboardingProfile(payload); // spiceTolerance: 'SKIP'
     expect(api.post.mock.calls[0][1]).toMatchObject({ spicinessPreference: -1 });
-    await submitOnboardingProfile({ ...payload, spiceTolerance: 7 });
+    await submitOnboardingProfile({ ...payload, spiceTolerance: 'HOT' });
     expect(api.post.mock.calls[1][1]).toMatchObject({ spicinessPreference: 7 });
   });
 

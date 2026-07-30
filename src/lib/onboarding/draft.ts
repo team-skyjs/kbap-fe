@@ -9,6 +9,7 @@
  * chosen level). The submit payload keeps that distinction.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { SpiceLevel } from '@/lib/spice';
 
 const KEY = 'kbap.onboardingDraft.v1';
 
@@ -24,7 +25,8 @@ export interface OnboardingDraft {
   nationality: string; // ISO 3166-1 alpha-2
   language: string; // reader language (one of the 9)
   restrictions: string[] | null; // null = skipped (미설정)
-  spice: number | null; // null = skipped (미설정)
+  /** P-081: enum 단계. 구버전 draft는 number(0~10) — 로더가 근사 스냅 마이그레이션. null = skipped. */
+  spice: SpiceLevel | number | null;
   /** 업로드된 프로필 사진 path(objectKey) (KB-149/P-006). 옵셔널 — 구버전 draft 호환. */
   profileImageUrl?: string | null;
   updatedAt: string; // ISO — freshness/debug

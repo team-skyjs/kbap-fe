@@ -97,9 +97,8 @@ export const LIFESTYLE_GROUPS: RestrictionGroup[] = [
   },
 ];
 
-/** Spice 0–10 analogy labels (index = level). */
-/** P-015(KB-187): 라벨은 i18n 키 — 사용처에서 `t(SPICE_SCALE[level])` 로 렌더 (영어 하드코딩 제거). */
-export const SPICE_SCALE = Array.from({ length: 11 }, (_, i) => `spice.scale.${i}`);
+// P-081: 구 SPICE_SCALE(10단 비유 라벨) 폐기 — 5단계 라벨·예시는 lib/spice.ts
+// (SPICE_LEVEL_LABEL / SPICE_LEVEL_EXAMPLE)로 이관.
 
 /** Nationality options (we have Flag glyphs for these codes). `native` = endonym.
  *  `suggested` marks the common picks shown first in the picker (I4). */

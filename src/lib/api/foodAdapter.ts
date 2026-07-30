@@ -18,6 +18,7 @@
  * NEVER 'safe' (Constitution III, false-safe = 0).
  */
 import type { FoodCard, FoodDetail, IngredientRisk, RatingAggregate } from './types';
+import { wireToFoodSpice } from './spiceAdapter';
 import type { FoodDetailWire } from './foodDetailTypes';
 import type { MenuSummaryWire } from './foodListTypes';
 import { mapRisk } from './scanAdapter';
@@ -53,7 +54,8 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     overall: NO_RATING,
     sameNationality: NO_RATING,
     description: wire.description ?? '',
-    spiceLevel: typeof wire.spiciness === 'number' ? wire.spiciness : null,
+    // P-081: 와이어 정수 → 단계 enum (변환은 spiceAdapter 격리 — 스웨거 enum 재배포 시 스왑)
+    spiceLevel: wireToFoodSpice(wire.spiciness),
     photoUrl: refToUrl(wire.imageRef),
     ingredients,
     isRegistered,

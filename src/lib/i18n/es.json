@@ -344,7 +344,6 @@
     "noIngredientBody": "Aún no hay valoración, descripción ni datos de ingredientes. Hemos registrado este plato para mejorar el catálogo.",
     "ofShops": "~{{pct}}% de los locales",
     "writeReview": "Escribir una reseña",
-    "spice": "{{level}}/10 · {{analogy}}",
     "spiceAboveYou": "más picante de lo que toleras",
     "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado.",
     "scannedPrice": "según el menú que escaneaste"
@@ -641,25 +640,19 @@
     "view": "Ver"
   },
   "spice": {
-    "scale": {
-      "0": "Sin picante — arroz blanco",
-      "1": "Muy suave — huevo en soja",
-      "2": "Suave — kimchi ligero",
-      "3": "Templado — tteokbokki para niños",
-      "4": "Tteokbokki callejero",
-      "5": "Kimchi jjigae",
-      "6": "Caldo jjamppong",
-      "7": "Ramen buldak de fuego",
-      "8": "Habanero",
-      "9": "Chile ojo de pájaro",
-      "10": "Cheongyang al máximo"
-    },
     "band": {
       "0": "Sin picante",
       "1": "Suave",
       "2": "Medio",
       "3": "Picante",
       "4": "Extremo"
+    },
+    "example": {
+      "0": "Sin picante — arroz blanco",
+      "1": "Suave — kimchi ligero",
+      "2": "Kimchi jjigae",
+      "3": "Ramen buldak de fuego",
+      "4": "Cheongyang al máximo"
     }
   },
   "photo": {

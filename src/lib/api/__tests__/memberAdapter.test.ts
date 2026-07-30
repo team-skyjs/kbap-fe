@@ -25,25 +25,25 @@ describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)
   });
 });
 
-describe('adaptSpice — -1 센티널 / 0 유효값 경계', () => {
-  it('-1(미설정 센티널) → null — 로컬 fallback도 타지 않는다 (서버가 진실)', () => {
-    expect(adaptSpice(-1, 7)).toBe(null);
+describe('adaptSpice — P-081 enum: -1 센티널/경계는 SKIP, 유효 정수는 단계 스냅', () => {
+  it('-1(미설정 센티널) → SKIP — 로컬 fallback도 타지 않는다 (서버가 진실)', () => {
+    expect(adaptSpice(-1, 'HOT')).toBe('SKIP');
   });
 
-  it('0은 유효값("맵지 않음") — 미설정으로 오인 금지', () => {
-    expect(adaptSpice(0, 7)).toBe(0);
+  it('0은 유효값(NONE, "맵지 않음") — 미설정(SKIP)으로 오인 금지', () => {
+    expect(adaptSpice(0, 'HOT')).toBe('NONE');
   });
 
-  it('경계 유효값 10 유지, 범위 밖(11)·비정수(3.5)는 미설정 취급', () => {
-    expect(adaptSpice(10, null)).toBe(10);
-    expect(adaptSpice(11, 7)).toBe(null);
-    expect(adaptSpice(3.5, 7)).toBe(null);
+  it('경계 유효값 10=EXTREME, 범위 밖(11)·비정수(3.5)는 SKIP 취급', () => {
+    expect(adaptSpice(10, null)).toBe('EXTREME');
+    expect(adaptSpice(11, 'HOT')).toBe('SKIP');
+    expect(adaptSpice(3.5, 'HOT')).toBe('SKIP');
   });
 
-  it('필드 누락/비숫자(구서버)만 로컬 fallback', () => {
-    expect(adaptSpice(undefined, 7)).toBe(7);
-    expect(adaptSpice(null, 7)).toBe(7);
-    expect(adaptSpice(undefined, null)).toBe(null);
+  it('필드 누락/비숫자(구서버)만 로컬 fallback — fallback 없으면 SKIP', () => {
+    expect(adaptSpice(undefined, 'HOT')).toBe('HOT');
+    expect(adaptSpice(null, 'HOT')).toBe('HOT');
+    expect(adaptSpice(undefined, null)).toBe('SKIP');
   });
 });
 
@@ -69,8 +69,8 @@ describe('adaptProfile.profileImageUrl (P-004 KB-149)', () => {
     expect(adaptProfile({ ...wire, profileImageUrl: 'profile/1/a.jpg' }, null).profileImageUrl).toBe(null);
   });
 
-  it('함께: -1 센티널도 미설정으로 (통합 경로 확인)', () => {
-    expect(adaptProfile(wire, null).spiceTolerance).toBe(null);
+  it('함께: -1 센티널도 미설정(SKIP)으로 (통합 경로 확인)', () => {
+    expect(adaptProfile(wire, null).spiceTolerance).toBe('SKIP');
   });
 
   it('provider 매핑 (P-029) — wire 그대로, 누락은 undefined', () => {

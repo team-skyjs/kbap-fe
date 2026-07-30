@@ -691,3 +691,11 @@
 - [x] ⑥ 요약: 국적(국기)·언어(현행 앱 언어, 표시 전용)·회피(칩 미리보기+개수)·맵기(🌶️ 카운트, 불꽃 금지) + 행별 수정 chevron(요약 복귀 동선). SuccessCheck는 요약 진입 연출로 결합 — 제출 성공 시 홈 직행(구 완료 오버레이 소멸). 제출은 요약 CTA 단일 지점.
 - [x] i18n 신규 18키+밴드 5키 ×10언어(spiceNone/Extreme 폐기), 이모지는 🌶️만(헌법 v2.2.0 예외). 유닛 +9: 구간 경계값(0/1/3/4/6/7/8/9/10)·앵커 왕복·경고 판정 / htmlToPlainText / 약관 게이트(미동의 진행 불가·전체 동의) / 마크 4상태 순환 / 맵기 앵커 제출 실측(5·7·UNSET). tsc 0, jest 277/277.
 - 실기 확인(예진) 대기: 6화면 순서·시트 스크롤·슬라이더 드래그 감·🌶️ 렌더. 프로필 화면·수정의 유저 맵기 표시(0~10 불꽃)는 발주 범위 외 — 5단계 전환 여부 커맨드 센터 질의.
+
+## KB-261 후속 — 맵기 enum 6종 전환 + 프로필 5단계 통일 (2026-07-30, P-081)
+- [x] 내부 표현 = enum: `lib/spice.ts` 재편 — SpiceLevel(NONE~EXTREME)+SpiceChoice(+SKIP), spiceRank 순서 비교, 라벨/예시 키 맵. 숫자 지식(앵커·구간) 전부 퇴거. SKIP = 구 -1/UNSET/null 승계(경고 없음·미설정·설정 해제).
+- [x] 와이어 격리: `api/spiceAdapter.ts` 신설 — 송신 앵커(0/2/5/7/10·SKIP→-1), 수신 구간 스냅(중간값 근사), 유저 수신 무효값→SKIP, 음식 수신 비숫자→null, 로컬 보관 파서(enum+구 숫자 문자열 마이그레이션). **스웨거 enum 문자열 재배포 시 이 파일만 스왑**(주석 명시). 경유지: submit.ts(온보딩)·useMe PATCH·memberAdapter(adaptSpice)·foodAdapter.
+- [x] 타입 전환: User.spiceTolerance=SpiceChoice · UserUpdate 동일 · FoodDetail.spiceLevel=SpiceLevel|null. draft.spice는 enum(구 number 드래프트는 로더 근사 스냅). 음식 상세 표시·경고, 온보딩 ⑤/요약 전부 enum 참조 — 정수 비교 잔재 0(grep 실측).
+- [x] 프로필 5단계 통일(P-080 질의 답변 반영): 슬라이더를 `components/SpiceLevelSlider`로 공용 승격(level=null=미선택 지원) — 프로필 수정 = 동일 5스톱 히트 슬라이더+🌶️ 표시, "설정 해제"=SKIP. 프로필 화면 표시 = 🌶️ 카운트+라벨. 불꽃(IconFlame) 사용처 0. SPICE_SCALE(10단)·detail.spice 키 폐기, spice.example.0~4는 각 언어 scale 앵커값 복사로 승계(신규 번역 0).
+- [x] 유닛: enum 코어 4(순서·SKIP 경고 없음·키 완전성·판별) + 어댑터 6(앵커·왕복·경계값 전수·SKIP·음식 null·로컬 마이그레이션) + 패리티 20(band·example ×10, scale 폐기 잠금) + 기존 갱신(submit -1/7, useUpdateMe HOT/SKIP/NONE, adaptSpice enum, 온보딩 MEDIUM/HOT/SKIP). tsc 0, jest 293/293.
+- 실기 확인(예진) 대기: 프로필 수정 슬라이더 감·미설정 진입 시 무선택 스톱. BE 스웨거 enum 재배포 시 spiceAdapter 스왑 후속(P 발주 대기).

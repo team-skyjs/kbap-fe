@@ -1,28 +1,49 @@
 /**
- * spice.ts — 맵기 5단계 구간 (P-080/KB-261, 7/30 확정).
+ * spice.ts — 맵기 내부 표현 = enum 6종 (P-081/KB-261 후속, 7/30 회의 확정).
  *
- * DB·API는 10-스케일(0~10) 무변 — 화면 표시와 경고 판정만 5단계로 통일한다.
- * 표시와 판정이 **같은 구간 함수 하나**를 공유하는 것이 핵심: 원값 비교를
- * 섞으면 "같은 표시 단계인데 경고가 나는" 모순이 생긴다.
- *   구간: 0=None / 1–3=Mild / 4–6=Medium / 7–8=Hot / 9–10=Extreme
+ *   SKIP / NONE / MILD / MEDIUM / HOT / EXTREME
+ *
+ * 앱 내부(온보딩 draft·프로필·경고 판정·표시)는 **enum만** 쓴다. SKIP은 기존
+ * -1/UNSET 의미 승계 — 경고 미표시·프로필 "미설정"·"설정 해제". 음식 맵기도
+ * 동일 enum(단, SKIP 없음 — 데이터 없음은 null). 정수(0~10) 와이어 변환은
+ * `api/spiceAdapter.ts` 한 곳에만 존재한다 — 여기엔 숫자 지식 금지.
  */
-export type SpiceBand = 0 | 1 | 2 | 3 | 4;
+export type SpiceLevel = 'NONE' | 'MILD' | 'MEDIUM' | 'HOT' | 'EXTREME';
+/** 유저 맵기 설정 — SKIP = 미설정(온보딩 스킵·설정 해제). */
+export type SpiceChoice = SpiceLevel | 'SKIP';
 
-/** 온보딩 선택(단계) → 10-스케일 저장값 앵커 (BE 계약 무변, 종한 합의 7/30). */
-export const SPICE_ANCHOR: readonly number[] = [0, 2, 5, 7, 10];
+/** 순서 정본 (경고 비교·슬라이더 스톱 인덱스의 기준). */
+export const SPICE_LEVELS: readonly SpiceLevel[] = ['NONE', 'MILD', 'MEDIUM', 'HOT', 'EXTREME'];
 
-/** i18n 라벨 키 (None/Mild/Medium/Hot/Extreme) — `t(SPICE_BAND_LABEL[band])`. */
-export const SPICE_BAND_LABEL = [0, 1, 2, 3, 4].map((i) => `spice.band.${i}`);
-
-export function spiceBand(raw: number): SpiceBand {
-  if (raw <= 0) return 0;
-  if (raw <= 3) return 1;
-  if (raw <= 6) return 2;
-  if (raw <= 8) return 3;
-  return 4;
+/** 단계 순위 0..4 — enum 순서 비교용. */
+export function spiceRank(level: SpiceLevel): number {
+  return SPICE_LEVELS.indexOf(level);
 }
 
-/** 경고 판정 = 단계(음식) > 단계(유저). 원값 비교 금지 — 표시와 동일 소스. */
-export function spicierThanUser(foodRaw: number, userRaw: number): boolean {
-  return spiceBand(foodRaw) > spiceBand(userRaw);
+/** i18n 라벨 키 (None/Mild/Medium/Hot/Extreme). */
+export const SPICE_LEVEL_LABEL: Record<SpiceLevel, string> = {
+  NONE: 'spice.band.0',
+  MILD: 'spice.band.1',
+  MEDIUM: 'spice.band.2',
+  HOT: 'spice.band.3',
+  EXTREME: 'spice.band.4',
+};
+
+/** 단계별 대표 음식 예시 i18n 키 (구 spice.scale 10단에서 승계). */
+export const SPICE_LEVEL_EXAMPLE: Record<SpiceLevel, string> = {
+  NONE: 'spice.example.0',
+  MILD: 'spice.example.1',
+  MEDIUM: 'spice.example.2',
+  HOT: 'spice.example.3',
+  EXTREME: 'spice.example.4',
+};
+
+/** 경고 판정 = 단계(음식) > 단계(유저). SKIP(미설정)은 경고 없음. */
+export function spicierThanUser(food: SpiceLevel, user: SpiceChoice): boolean {
+  if (user === 'SKIP') return false;
+  return spiceRank(food) > spiceRank(user);
+}
+
+export function isSpiceLevel(v: unknown): v is SpiceLevel {
+  return typeof v === 'string' && (SPICE_LEVELS as readonly string[]).includes(v);
 }

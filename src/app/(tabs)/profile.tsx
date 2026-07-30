@@ -29,12 +29,11 @@ import {
   IconPlus,
   IconLogout,
   IconBookmark,
-  IconFlame,
   Spinner,
   SkeletonProfile,
   QueryErrorBlock,
 } from '@/components';
-import { SPICE_SCALE } from '@/lib/onboarding/data';
+import { SPICE_LEVEL_LABEL, spiceRank } from '@/lib/spice';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { useFoods } from '@/lib/data/useFoods';
@@ -230,12 +229,13 @@ export default function Profile() {
                 </Pressable>
               }
             >
-              {me.spiceTolerance != null ? (
+              {me.spiceTolerance !== 'SKIP' ? (
                 <View style={styles.dietWrap}>
+                  {/* P-081: 5단계 표시 — 🌶️ 카운트+라벨 (불꽃·10-스케일 폐기, 헌법 v2.2.0 이모지 예외) */}
                   <View style={styles.dietChip}>
-                    <IconFlame size={13} color={C.primary} />
                     <Text style={styles.dietChipText}>
-                      {t('detail.spice', { level: me.spiceTolerance, analogy: t(SPICE_SCALE[me.spiceTolerance] ?? '') })}
+                      {spiceRank(me.spiceTolerance) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(me.spiceTolerance))} ` : ''}
+                      {t(SPICE_LEVEL_LABEL[me.spiceTolerance])}
                     </Text>
                   </View>
                 </View>

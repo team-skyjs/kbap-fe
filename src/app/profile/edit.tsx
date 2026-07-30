@@ -12,8 +12,9 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconFlame, IconApple, IconGoogleG } from '@/components';
-import { SPICE_SCALE } from '@/lib/onboarding/data';
+import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG } from '@/components';
+import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
+import { SPICE_LEVEL_LABEL, spiceRank, type SpiceChoice } from '@/lib/spice';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { IconLock } from '@/components/icons';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -30,7 +31,7 @@ export default function EditProfile() {
   const update = useUpdateMe();
 
   const [nickname, setNickname] = useState('');
-  const [spice, setSpice] = useState<number | null>(null); // KB-150 — null = 미설정
+  const [spice, setSpice] = useState<SpiceChoice>('SKIP'); // KB-150→P-081 — SKIP = 미설정
   const [seeded, setSeeded] = useState(false);
   // P-060: 언어 = OS 정본 — OS 앱 설정 열기, 안드12- 숨김
   const canOpenLangSettings = Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) >= 33);
@@ -45,7 +46,7 @@ export default function EditProfile() {
   const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   function save() {
-    // spice: 해제(null) = -1 센티널 전송 (KB-150 확정 7/16 — useMe 참조)
+    // spice: 해제 = SKIP — 와이어 -1 센티널 변환은 spiceAdapter (KB-150→P-081)
     update.mutate({ nickname: nickname.trim() || me?.nickname, spiceTolerance: spice }, { onSuccess: () => router.back() });
   }
 
@@ -169,23 +170,20 @@ export default function EditProfile() {
           </View>
         )}
 
-        {/* spice tolerance (KB-150) — 온보딩 spice 스텝과 동일 0~10 스케일/라벨(SPICE_SCALE) 재사용 */}
+        {/* spice tolerance (KB-150→P-081) — 온보딩과 동일 5스톱 히트 슬라이더(공용
+            SpiceLevelSlider) + 🌶️ 카운트 표시(불꽃·10-스케일 폐기, 헌법 v2.2.0 예외). */}
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.spice')}</Text>
           <View style={[styles.field, styles.spiceField]}>
-            <View style={styles.spiceRow}>
-              {Array.from({ length: 11 }).map((_, i) => (
-                <Pressable key={i} onPress={() => setSpice(i)} hitSlop={6}>
-                  <IconFlame size={18} color={spice != null && i <= spice ? C.primary : C.ink3} />
-                </Pressable>
-              ))}
-            </View>
-            <Text style={[styles.spiceVal, spice == null && styles.spiceValUnset]}>
-              {spice != null ? t('detail.spice', { level: spice, analogy: t(SPICE_SCALE[spice] ?? '') }) : t('profile.spiceUnset')}
+            <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} />
+            <Text style={[styles.spiceVal, spice === 'SKIP' && styles.spiceValUnset]}>
+              {spice !== 'SKIP'
+                ? `${spiceRank(spice) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(spice))} ` : ''}${t(SPICE_LEVEL_LABEL[spice])}`
+                : t('profile.spiceUnset')}
             </Text>
           </View>
-          {spice != null && (
-            <Pressable hitSlop={8} onPress={() => setSpice(null)}>
+          {spice !== 'SKIP' && (
+            <Pressable hitSlop={8} onPress={() => setSpice('SKIP')}>
               <Text style={styles.spiceClear}>{t('editProfile.spiceClear')}</Text>
             </Pressable>
           )}
@@ -250,7 +248,6 @@ const styles = StyleSheet.create({
   hintWarn: { fontFamily: font.bodyBold, color: C.riskCaution },
 
   spiceField: { flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingVertical: 14 },
-  spiceRow: { flexDirection: 'row', justifyContent: 'space-between' },
   spiceVal: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, textAlign: 'center' },
   spiceValUnset: { fontFamily: font.body, color: C.ink3 },
   spiceClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText, marginLeft: 2, marginTop: 3 },

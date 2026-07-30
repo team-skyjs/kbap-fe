@@ -1,8 +1,8 @@
 /**
- * P-051 원칙(화면 그대로 제출) × P-080(KB-261) 5단계 앵커 잠금:
- *  - 미조작 + Continue → 요약 → 제출: 기본 Medium 앵커 **5** (종전 기본 5와 와이어 동일)
- *  - 스톱 조작(Hot) → 앵커 **7** 제출 (앵커 저장값 실측)
- *  - Skip → UNSET (body -1은 submit.test가 잠금)
+ * P-051 원칙(화면 그대로 제출) × P-081(KB-261 후속) enum 잠금:
+ *  - 미조작 + Continue → 요약 → 제출: 기본 **MEDIUM** (와이어 5는 submit.test/어댑터가 잠금)
+ *  - 스톱 조작(Hot) → **HOT** 제출 (enum 그대로 — 정수 변환은 spiceAdapter 격리)
+ *  - Skip → **SKIP** (body -1은 submit.test가 잠금)
  * P-080 구조: 제출은 spice 스텝이 아니라 **요약 카드 CTA에서만** — 이 하네스가
  * spice→summary→제출 동선(1회 제출 회귀 0)도 겸해서 잠근다.
  */
@@ -120,14 +120,14 @@ beforeEach(() => {
   mockSubmit.mockClear();
 });
 
-it('미조작 + 계속 → 요약 제출: 기본 Medium 앵커 5 (표시=전송, null draft 호환 겸)', async () => {
+it('미조작 + 계속 → 요약 제출: 기본 MEDIUM (표시=전송, null draft 호환 겸)', async () => {
   const tree = await renderSpiceStep();
   await continueToSummaryAndSubmit(tree);
   expect(mockSubmit).toHaveBeenCalledTimes(1);
-  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe(5);
+  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('MEDIUM');
 });
 
-it('Hot 스톱 조작 → 앵커 7 제출 (P-080 앵커 매핑 실측)', async () => {
+it('Hot 스톱 조작 → HOT 제출 (P-081 enum — 내부에 정수 없음)', async () => {
   const tree = await renderSpiceStep();
   const s = stops(tree);
   expect(s.length).toBe(5); // 5스톱 스냅 — 중간 정지 없음
@@ -135,10 +135,10 @@ it('Hot 스톱 조작 → 앵커 7 제출 (P-080 앵커 매핑 실측)', async (
     s[3].props.onPress(); // Hot
   });
   await continueToSummaryAndSubmit(tree);
-  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe(7);
+  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('HOT');
 });
 
-it('Skip → 요약 제출 시 UNSET (P-019 -1 경로 유지)', async () => {
+it('Skip → 요약 제출 시 SKIP (구 UNSET/-1 의미 승계)', async () => {
   const tree = await renderSpiceStep();
   const skips = skipLink(tree);
   expect(skips.length).toBeGreaterThanOrEqual(1);
@@ -149,5 +149,5 @@ it('Skip → 요약 제출 시 UNSET (P-019 -1 경로 유지)', async () => {
     btnWith(tree, 'onboarding.start').props.onPress();
   });
   expect(mockSubmit).toHaveBeenCalledTimes(1);
-  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('UNSET');
+  expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('SKIP');
 });

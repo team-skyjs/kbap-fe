@@ -18,6 +18,7 @@ import { api } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { hasBeSession } from '../auth/beAuth';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
+import { spiceChoiceToWire } from '../api/spiceAdapter';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
 import { toBeCode } from '../mocks/ingredients';
 
@@ -56,9 +57,10 @@ export function useUpdateMe() {
   return useMutation({
     mutationFn: async (patch: UserUpdate): Promise<void> => {
       // spice 로컬 보관은 유지 — 마이그레이션 기간 fallback (adaptProfile 참조, KB-150 후속)
-      if ('spiceTolerance' in patch) {
-        if (patch.spiceTolerance != null) {
-          await AsyncStorage.setItem(SPICE_KEY, String(patch.spiceTolerance)).catch(() => {});
+      // P-081: enum 문자열 저장, SKIP(해제)은 제거
+      if (patch.spiceTolerance !== undefined) {
+        if (patch.spiceTolerance !== 'SKIP') {
+          await AsyncStorage.setItem(SPICE_KEY, patch.spiceTolerance).catch(() => {});
         } else {
           await AsyncStorage.removeItem(SPICE_KEY).catch(() => {});
         }
@@ -73,10 +75,10 @@ export function useUpdateMe() {
 
       // 제공된 키만 와이어로 — 미전송 = 유지, restrictions 빈 배열 = 전부 해제
       const body: ProfileUpdateWire = {};
-      // KB-150 확정(7/16 회의): 해제(null) = -1 센티널 전송 — 서버 왕복 후에도
-      // 미설정 유지(값 되살아나던 한계 소멸). 생략은 여전히 "유지".
+      // KB-150 확정(7/16): 해제 = -1 센티널 전송(SKIP) — 서버 왕복 후에도 미설정
+      // 유지. 생략은 여전히 "유지". P-081: enum→정수는 spiceAdapter 격리.
       if (patch.spiceTolerance !== undefined) {
-        body.spicinessPreference = patch.spiceTolerance ?? -1;
+        body.spicinessPreference = spiceChoiceToWire(patch.spiceTolerance);
       }
       if (patch.profileImageUrl !== undefined) body.profileImageUrl = patch.profileImageUrl; // KB-149
       if (patch.nickname !== undefined) body.nickname = patch.nickname;

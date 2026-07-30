@@ -26,7 +26,7 @@ export const MOCK_USER: User = {
   nickname: 'Mina',
   nationality: 'US',
   readerLanguage: 'en',
-  spiceTolerance: 6,
+  spiceTolerance: 'MEDIUM', // P-081 enum (구 6 근사)
   restrictions: [
     { kind: 'allergy', code: 'SHRIMP' },
     { kind: 'allergy', code: 'CRAB' },

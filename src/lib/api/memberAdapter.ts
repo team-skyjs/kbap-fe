@@ -12,6 +12,8 @@
  *   - email ← 계약에 없음(소셜 전용) → undefined
  */
 import type { Ranking, RestrictionKind, User } from './types';
+import type { SpiceChoice } from '@/lib/spice';
+import { wireToSpiceChoice } from './spiceAdapter';
 
 export interface RankingSummaryWire {
   tier: string;
@@ -56,15 +58,14 @@ export interface ProfileUpdateWire {
 }
 
 /**
- * 맵기 wire → 내부 표현 (KB-150, -1 센티널 확정 7/16).
- * -1(미설정) 포함 0..10 밖·비정수는 전부 null(미설정) — 칩에 "-1/10"이 노출되는
- * 오작동 방지. 서버가 항상 값을 주므로(-1 정책) 서버값이 진실 — 로컬 fallback은
- * 필드 누락/비숫자(구서버·마이그레이션)일 때만.
+ * 맵기 wire → 내부 enum (KB-150 -1 센티널 → P-081 enum 6종).
+ * -1(미설정) 포함 0..10 밖·비정수는 전부 SKIP(미설정). 서버가 항상 값을 주므로
+ * (-1 정책) 서버값이 진실 — 로컬 fallback은 필드 누락/비숫자(구서버·마이그레이션)일 때만.
+ * 정수↔enum 변환 자체는 spiceAdapter 격리 (스웨거 enum 재배포 시 스왑).
  */
-export function adaptSpice(wire: number | null | undefined, localFallback: number | null): number | null {
-  if (typeof wire !== 'number') return localFallback;
-  if (!Number.isInteger(wire) || wire < 0 || wire > 10) return null;
-  return wire;
+export function adaptSpice(wire: number | null | undefined, localFallback: SpiceChoice | null): SpiceChoice {
+  if (typeof wire !== 'number') return localFallback ?? 'SKIP';
+  return wireToSpiceChoice(wire);
 }
 
 export function adaptRanking(wire: RankingSummaryWire | MemberRankingWire): Ranking {
@@ -116,7 +117,7 @@ export function adaptProfileImageUrl(wire: string | null | undefined): string | 
   return wire;
 }
 
-export function adaptProfile(wire: MyProfileWire, localSpice: number | null): User {
+export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null): User {
   return {
     id: String(wire.memberId),
     nickname: wire.nickname,
