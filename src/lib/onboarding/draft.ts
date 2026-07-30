@@ -12,8 +12,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'kbap.onboardingDraft.v1';
 
-/** Steps a draft can resume at (post-consent — consent is the signup moment). */
-export type DraftStep = 'profile' | 'restrictions' | 'spice' | 'interests';
+/** Steps a draft can resume at (post-consent — consent is the signup moment).
+ *  P-080(KB-261): riskdemo·summary 추가 — 구스텝('interests' 등) draft는 사용처의
+ *  ORDER 클램프가 흡수한다. */
+export type DraftStep = 'profile' | 'riskdemo' | 'restrictions' | 'spice' | 'interests' | 'summary';
 
 export interface OnboardingDraft {
   consented: boolean; // signup-time consent already given

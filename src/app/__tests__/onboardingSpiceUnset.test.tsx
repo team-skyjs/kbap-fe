@@ -1,10 +1,10 @@
 /**
- * P-051(KB-195 후속, Q-03): **화면 그대로 제출** 원칙 잠금 (P-039 UI 롤백).
- *  - 미조작 + Continue → 화면 기본값 **5** 제출 (표시=전송 일치)
- *  - 불꽃 조작(7) + Continue → 7
+ * P-051 원칙(화면 그대로 제출) × P-080(KB-261) 5단계 앵커 잠금:
+ *  - 미조작 + Continue → 요약 → 제출: 기본 Medium 앵커 **5** (종전 기본 5와 와이어 동일)
+ *  - 스톱 조작(Hot) → 앵커 **7** 제출 (앵커 저장값 실측)
  *  - Skip → UNSET (body -1은 submit.test가 잠금)
- * draft spice=null(구 스킵분) 복귀 → 5 표시 호환도 이 하네스가 겸한다.
- * spice가 마지막 스텝(interests 플래그 off)이라 계속 = 제출 — draft 복귀로 직행.
+ * P-080 구조: 제출은 spice 스텝이 아니라 **요약 카드 CTA에서만** — 이 하네스가
+ * spice→summary→제출 동선(1회 제출 회귀 0)도 겸해서 잠근다.
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -70,7 +70,7 @@ jest.mock('@/lib/data/useMe', () => ({
   useMyReviews: () => ({ data: [] }),
   useUpdateMe: () => ({ mutate: jest.fn() }),
 }));
-// 드래프트 복귀로 spice 스텝(마지막)에 미조작 상태로 직행
+// 드래프트 복귀로 spice 스텝에 미조작 상태로 직행
 jest.mock('@/lib/onboarding/draft', () => ({
   loadOnboardingDraft: jest.fn().mockResolvedValue({
     consented: true,
@@ -88,7 +88,6 @@ jest.mock('@/lib/onboarding/draft', () => ({
 
 import Onboarding from '../onboarding/index';
 import { Btn } from '@/components/Btn';
-import { IconFlame } from '@/components/icons';
 
 async function renderSpiceStep(): Promise<ReactTestRenderer> {
   let tree!: ReactTestRenderer;
@@ -97,49 +96,58 @@ async function renderSpiceStep(): Promise<ReactTestRenderer> {
   });
   return tree;
 }
-const continueBtn = (tree: ReactTestRenderer) =>
+const btnWith = (tree: ReactTestRenderer, key: string) =>
   tree.root.findAllByType(Btn).find((b) => {
     const c = b.props.children;
-    return (Array.isArray(c) ? c.join('') : String(c ?? '')).includes('onboarding.continue');
+    return (Array.isArray(c) ? c.join('') : String(c ?? '')).includes(key);
   })!;
+// 5스톱 스냅 슬라이더의 스톱 탭 타깃 (hitSlop 12가 지문)
+const stops = (tree: ReactTestRenderer) =>
+  tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 12);
 const skipLink = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.skip').length > 0);
+// spice 계속 → 요약 카드 진입 → CTA(onboarding.start)로 제출
+async function continueToSummaryAndSubmit(tree: ReactTestRenderer) {
+  await act(async () => {
+    btnWith(tree, 'onboarding.continue').props.onPress();
+  });
+  await act(async () => {
+    btnWith(tree, 'onboarding.start').props.onPress();
+  });
+}
 
 beforeEach(() => {
   mockSubmit.mockClear();
 });
 
-it('미조작 + Continue → 화면 기본값 5 제출 (표시=전송 일치, null draft→5 호환 겸)', async () => {
+it('미조작 + 계속 → 요약 제출: 기본 Medium 앵커 5 (표시=전송, null draft 호환 겸)', async () => {
   const tree = await renderSpiceStep();
-  await act(async () => {
-    continueBtn(tree).props.onPress();
-  });
+  await continueToSummaryAndSubmit(tree);
   expect(mockSubmit).toHaveBeenCalledTimes(1);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe(5);
 });
 
-it('불꽃 조작(7) 후 계속 → 실값 7', async () => {
+it('Hot 스톱 조작 → 앵커 7 제출 (P-080 앵커 매핑 실측)', async () => {
   const tree = await renderSpiceStep();
-  // heatRow의 8번째 불꽃(i=7) — IconFlame을 품은 Pressable들 중 인덱스로 탐색
-  const flames = tree.root.findAll(
-    (n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 6 && n.findAllByType(IconFlame).length === 1,
-  );
-  expect(flames.length).toBe(11);
+  const s = stops(tree);
+  expect(s.length).toBe(5); // 5스톱 스냅 — 중간 정지 없음
   await act(async () => {
-    flames[7].props.onPress();
+    s[3].props.onPress(); // Hot
   });
-  await act(async () => {
-    continueBtn(tree).props.onPress();
-  });
+  await continueToSummaryAndSubmit(tree);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe(7);
 });
 
-it('Skip → UNSET (P-019 -1 경로 유지)', async () => {
+it('Skip → 요약 제출 시 UNSET (P-019 -1 경로 유지)', async () => {
   const tree = await renderSpiceStep();
   const skips = skipLink(tree);
   expect(skips.length).toBeGreaterThanOrEqual(1);
   await act(async () => {
     skips[skips.length - 1].props.onPress();
   });
+  await act(async () => {
+    btnWith(tree, 'onboarding.start').props.onPress();
+  });
+  expect(mockSubmit).toHaveBeenCalledTimes(1);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('UNSET');
 });

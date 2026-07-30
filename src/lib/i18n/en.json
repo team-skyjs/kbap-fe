@@ -582,9 +582,7 @@
     "added": "{{count}} added",
     "skip": "Skip for now",
     "spiceTitle": "How spicy can you go?",
-    "spiceSub": "Optional — change it anytime. Every dish shows heat on this same 0–10 scale.",
-    "spiceNone": "0 · none",
-    "spiceExtreme": "10 · extreme",
+    "spiceSub": "Optional — change it anytime. Dishes show heat on the same five levels.",
     "interestsTitle": "Tap what you've tried",
     "interestsSub": "Optional — pick a few favorites to personalize recommendations.",
     "interestsTag": "Top by popularity",
@@ -602,7 +600,26 @@
     "groups": {
       "Dietary": "Dietary",
       "Religion": "Religion"
-    }
+    },
+    "consentSub": "Agree to the required items below to get started.",
+    "agreeAll": "Agree to all",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "requiredTag": "Required",
+    "agree": "Agree",
+    "legalLoadError": "Couldn't load the document. Check your connection and try again.",
+    "demoTitle": "Meet the risk marks",
+    "demoSub": "Every dish gets one of four marks. Tap the mark to see what each one means.",
+    "demoTap": "Tap the mark to try it",
+    "demoDish": "Kimchi stew",
+    "demo": {
+      "safe": "No ingredients you avoid were found — okay for you.",
+      "caution": "May contain something you avoid — confirm with the restaurant.",
+      "danger": "Contains an ingredient you avoid.",
+      "unable": "Not enough information to judge — decide carefully."
+    },
+    "summaryTitle": "Your safety profile is ready",
+    "summarySub": "Check your settings — tap a row to change it."
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
@@ -632,6 +649,13 @@
       "8": "Habanero",
       "9": "Bird's-eye chili",
       "10": "Cheongyang overload"
+    },
+    "band": {
+      "0": "None",
+      "1": "Mild",
+      "2": "Medium",
+      "3": "Hot",
+      "4": "Extreme"
     }
   },
   "photo": {

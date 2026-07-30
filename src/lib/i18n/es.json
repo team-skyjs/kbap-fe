@@ -431,9 +431,7 @@
     "added": "{{count}} agregados",
     "skip": "Omitir por ahora",
     "spiceTitle": "¿Qué tan picante lo toleras?",
-    "spiceSub": "Opcional: cámbialo cuando quieras. Cada plato muestra el picante en esta misma escala de 0 a 10.",
-    "spiceNone": "0 · nada",
-    "spiceExtreme": "10 · extremo",
+    "spiceSub": "Opcional — cámbialo cuando quieras. El picante de los platos se muestra en estos mismos 5 niveles.",
     "interestsTitle": "Toca lo que hayas probado",
     "interestsSub": "Opcional: elige algunos favoritos para personalizar las recomendaciones.",
     "interestsTag": "Los más populares",
@@ -451,7 +449,26 @@
     "groups": {
       "Dietary": "Dieta",
       "Religion": "Religión"
-    }
+    },
+    "consentSub": "Para empezar, acepta los elementos obligatorios de abajo.",
+    "agreeAll": "Aceptar todo",
+    "termsOfService": "Términos del servicio",
+    "privacyPolicy": "Política de privacidad",
+    "requiredTag": "Obligatorio",
+    "agree": "Aceptar",
+    "legalLoadError": "No se pudo cargar el documento. Revisa tu conexión e inténtalo de nuevo.",
+    "demoTitle": "Conoce las marcas de riesgo",
+    "demoSub": "Cada plato lleva una de cuatro marcas. Toca la marca para ver qué significa cada una.",
+    "demoTap": "Toca la marca",
+    "demoDish": "Estofado de kimchi",
+    "demo": {
+      "safe": "No se encontraron ingredientes que evitas — puedes comerlo tranquilo.",
+      "caution": "Puede contener algo que evitas — confírmalo con el restaurante.",
+      "danger": "Contiene un ingrediente que evitas.",
+      "unable": "No hay información suficiente — decide con cuidado."
+    },
+    "summaryTitle": "Tu perfil de seguridad está listo",
+    "summarySub": "Revisa tu configuración — toca una fila para cambiarla."
   },
   "editProfile": {
     "title": "Editar perfil",
@@ -636,6 +653,13 @@
       "8": "Habanero",
       "9": "Chile ojo de pájaro",
       "10": "Cheongyang al máximo"
+    },
+    "band": {
+      "0": "Sin picante",
+      "1": "Suave",
+      "2": "Medio",
+      "3": "Picante",
+      "4": "Extremo"
     }
   },
   "photo": {

@@ -1,55 +1,70 @@
 /**
- * Onboarding flow (KB-110 restructure) — consent first (가입 = OAuth + 동의;
- * /login routes here after the social sheet), then the setup steps collect
- * LOCALLY and batch-submit ONCE at the end (submitOnboardingProfile stub —
- * BE endpoint not deployed). No per-step API calls.
+ * Onboarding flow (KB-110 골격 · P-080/KB-261 재구조 2차) — 6화면:
+ *   ① 약관 동의(전체 동의 + 필수 3: 이용약관·개인정보·안전 고지, 행별 전문 시트)
+ *   ② 프로필 → ③ 위험도 마크 인터랙티브 데모 → ④ 회피재료 → ⑤ 맵기(5단계)
+ *   → ⑥ 완료 요약 카드(행별 수정 chevron, SuccessCheck 진입 연출)
  *
- * Steps: consent → profile → restrictions → spice → (interests: MVP-flagged
- * off, FR-005). Restrictions/spice are skippable — a skip submits as an
- * explicit UNSET (미설정), never a silent default.
+ * The setup steps collect LOCALLY and batch-submit ONCE at the end (summary
+ * CTA). No per-step API calls. 동의는 3항목 전부 필수 — BE `consented` 단일
+ * 기록 무변 (spec onboarding-restructure-2026-07-29).
  *
  * Mid-flow exits persist a draft (position + inputs); re-entry hydrates and
- * resumes from the saved step (the tabs shell shows a resume nudge). The
- * draft clears on successful submit.
- * Constitution: no emoji (SVG), reader text via i18n, risk colors fixed.
+ * resumes from the saved step. The draft clears on successful submit.
+ * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Image, Modal, PanResponder, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
+import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import {
   Btn,
+  Flag,
   RiskMark,
   TopBar,
   IconCheck,
   IconCamera,
   IconChevron,
-  IconFlame,
-  IconGlobe,
   IconPlus,
   IconProfile,
 } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { SuccessCheck } from '@/components/SuccessCheck';
+import { Spinner } from '@/components/Spinner';
 import { useShake } from '@/lib/useShake';
 import { NationalityPicker } from '@/components/NationalityPicker';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
+import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { countryByCode, deviceCountry } from '@/lib/onboarding/countries';
-import { POPULAR_DISHES, SPICE_SCALE } from '@/lib/onboarding/data';
+import { POPULAR_DISHES, restrictionLabel, SPICE_SCALE } from '@/lib/onboarding/data';
+import { SPICE_ANCHOR, SPICE_BAND_LABEL, spiceBand } from '@/lib/spice';
+import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { choosePhotoSource, pickBySource, uploadProfileImage } from '@/lib/data/profileImage';
 import { queryClient } from '@/lib/queryClient';
 
-type Step = 'consent' | 'profile' | 'restrictions' | 'spice' | 'interests';
+type Step = 'consent' | 'profile' | 'riskdemo' | 'restrictions' | 'spice' | 'interests' | 'summary';
 // consent leads (it belongs to the signup moment); interests is MVP-flagged off.
-const ORDER: Step[] = ['consent', 'profile', 'restrictions', 'spice', ...(FLAGS.onboardingTriedDishes ? (['interests'] as Step[]) : [])];
+const ORDER: Step[] = [
+  'consent',
+  'profile',
+  'riskdemo',
+  'restrictions',
+  'spice',
+  ...(FLAGS.onboardingTriedDishes ? (['interests'] as Step[]) : []),
+  'summary',
+];
+
+/** 약관 3항목 — 전부 필수 (안전 고지는 구 consent 화면 흡수분). */
+type ConsentKey = 'terms' | 'privacy' | 'safety';
+const CONSENT_KEYS: ConsentKey[] = ['terms', 'privacy', 'safety'];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -71,17 +86,20 @@ export default function Onboarding() {
   const [photoError, setPhotoError] = useState(false);
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
-  // P-051(KB-195 후속, Q-03): **화면 그대로 제출** 원칙 — 기본 5 표시, 미조작
-  // Continue도 화면값(5) 제출(표시=전송 일치). Skip만 UNSET(-1). P-039의 미선택
-  // UI는 원복, stale closure 수정(finish 인자화)은 유지.
+  // P-051 원칙 유지(화면 그대로 제출) · P-080: 조작은 5단계 스냅 — 저장은 앵커
+  // 값(0/2/5/7/10)의 10-스케일. 기본 Medium(=5)은 종전 기본 5와 와이어 동일.
   const [spice, setSpice] = useState(5);
   const [interests, setInterests] = useState<Set<string>>(new Set());
-  const [agreed, setAgreed] = useState(false);
+  // P-080: 항목별 동의 — 3개 전부 = 기존 consented(단일 기록)와 동치
+  const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({ terms: false, privacy: false, safety: false });
+  const agreed = CONSENT_KEYS.every((k) => consents[k]);
+  const [legalDoc, setLegalDoc] = useState<ConsentKey | null>(null); // 전문 시트
   // skips are explicit states — they submit as UNSET, distinct from "chose none"
   const [skipped, setSkipped] = useState({ restrictions: false, spice: false });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
-  const [doneSplash, setDoneSplash] = useState(false); // P-032: 제출 성공 체크 오버레이
+  // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
+  const [returnToSummary, setReturnToSummary] = useState(false);
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
   const hydrated = useRef(false);
   const done = useRef(false); // permanently stops draft persistence after submit
@@ -91,14 +109,14 @@ export default function Onboarding() {
   useEffect(() => {
     void loadOnboardingDraft().then((d) => {
       if (d && !hydrated.current) {
-        setAgreed(d.consented);
+        if (d.consented) setConsents({ terms: true, privacy: true, safety: true });
         setNickname(d.nickname);
         setPhotoPath(d.profileImageUrl ?? null);
         setNationality(d.nationality);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
         setSpice(d.spice ?? 5); // P-051: null draft(구 스킵분)도 5 표시로 호환
         setSkipped({ restrictions: d.restrictions === null, spice: d.spice === null });
-        setStep(ORDER.includes(d.step) ? d.step : 'spice'); // clamp (e.g. flagged-off step)
+        setStep(ORDER.includes(d.step) ? d.step : 'spice'); // clamp (e.g. flagged-off/구스텝)
       }
       hydrated.current = true;
     });
@@ -127,22 +145,23 @@ export default function Onboarding() {
   const [natOpen, setNatOpen] = useState(false);
   const nation = countryByCode(nationality) ?? countryByCode('US')!;
 
-  // Picking a nationality suggests the reader language: the country's language if
-  // it's one of our 9, else English. The user can still override it on A3.
   // P-060: 국적→언어 제안 소멸 — 언어는 기기(OS)가 정본
   const pickNationality = (code: string) => setNationality(code);
 
   const idx = ORDER.indexOf(step);
-  const back = () => (idx > 0 ? setStep(ORDER[idx - 1]) : router.back());
+  const back = () => {
+    if (returnToSummary) {
+      setReturnToSummary(false);
+      return setStep('summary');
+    }
+    return idx > 0 ? setStep(ORDER[idx - 1]) : router.back();
+  };
 
-  // ONE-SHOT batch submit (KB-110): the only server hand-off in the flow.
-  // Skips go out as explicit UNSET; the draft clears only after success.
-  // 실패(검증 400·네트워크)는 화면에 남아 에러를 표시한다 — 미저장 상태로
-  // 홈 진입 금지 (KB-75 검토 수정, false-safe).
-  // P-039→P-051: 제출식은 skipped 플래그 대신 **호출측이 확정값을 인자로** —
-  // 같은 탭 setState 직후 finish()의 stale closure 경로 봉쇄(P-039 수정 유지).
-  // Continue = finish(spice)(화면값 그대로, 기본 5), Skip = finish(null)(UNSET→-1).
-  const finish = async (spiceFinal: number | null = spice) => {
+  // ONE-SHOT batch submit (KB-110): the only server hand-off in the flow —
+  // 이제 요약 카드(⑥)의 CTA에서만 호출된다. Skips go out as explicit UNSET;
+  // the draft clears only after success. 실패(검증 400·네트워크)는 화면에 남아
+  // 에러를 표시한다 — 미저장 상태로 홈 진입 금지 (KB-75 검토 수정, false-safe).
+  const finish = async () => {
     if (submitting) return;
     setSubmitting(true);
     setSubmitError(false);
@@ -152,8 +171,8 @@ export default function Onboarding() {
         nationality,
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
-        // P-039: 미조작(null)=건너뛰기=UNSET — 안 건드림은 미설정이다
-        spiceTolerance: spiceFinal == null ? UNSET : spiceFinal,
+        // P-039: 미조작(스킵)=UNSET — 안 건드림은 미설정이다
+        spiceTolerance: skipped.spice ? UNSET : spice,
         profileImageUrl: photoPath, // path(objectKey), null = 미선택 → 필드 생략 (P-006)
       });
       done.current = true; // block any further draft writes before clearing
@@ -161,10 +180,8 @@ export default function Onboarding() {
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
       queryClient.clear();
-      // P-032: Success Check — 완료 체크 스트로크 드로잉 0.9s 후 홈 진입.
-      // reduced-motion이면 드로잉이 스킵돼 정적 체크가 잠깐 보이고 넘어간다.
-      setDoneSplash(true);
-      setTimeout(() => router.replace('/(tabs)'), 900);
+      // P-080: SuccessCheck는 요약 카드 진입 연출로 결합(스펙) — 완료 오버레이 없이 직행
+      router.replace('/(tabs)');
     } catch (e) {
       console.log('[onboarding] submit failed — staying on screen:', (e as Error)?.message);
       setSubmitError(true);
@@ -174,23 +191,28 @@ export default function Onboarding() {
     }
   };
 
-  // advance; the last step's continue IS the submit
-  const next = () => (idx === ORDER.length - 1 ? void finish() : setStep(ORDER[idx + 1]));
+  // advance — 요약에서 수정하러 온 스텝이면 요약으로 복귀 (마지막 스텝 = summary,
+  // 제출은 summary CTA가 전담하므로 next()에 제출 분기 없음)
+  const next = () => {
+    if (returnToSummary) {
+      setReturnToSummary(false);
+      return setStep('summary');
+    }
+    setStep(ORDER[idx + 1]);
+  };
   const skipStep = () => {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: true }));
-    if (step === 'spice') {
-      setSkipped((s) => ({ ...s, spice: true })); // draft에 null 저장용
-      if (idx === ORDER.length - 1) return void finish(null); // Skip = UNSET(-1), stale closure 회피
-    }
+    if (step === 'spice') setSkipped((s) => ({ ...s, spice: true }));
     next();
   };
   const answerStep = () => {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: false }));
-    if (step === 'spice') {
-      setSkipped((s) => ({ ...s, spice: false }));
-      if (idx === ORDER.length - 1) return void finish(spice); // 화면에 보이는 그 값 그대로
-    }
+    if (step === 'spice') setSkipped((s) => ({ ...s, spice: false }));
     next();
+  };
+  const editFromSummary = (target: Step) => {
+    setReturnToSummary(true);
+    setStep(target);
   };
 
   // KB-149: 선택 즉시 업로드 — 실패는 정직한 에러 표시, 사진 없이 진행 가능
@@ -245,9 +267,11 @@ export default function Onboarding() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* P-080: 6-세그먼트 진행 바 — 현재 스텝 포함 채움. 채움 애니메이션은
+            P-042 절제 전례(진행 표시 애니는 소음)에 따라 즉시 전환 유지. */}
         <TopBar
-          seg={idx}
-          of={ORDER.length - 1}
+          seg={idx + 1}
+          of={ORDER.length}
           onBack={back}
           skipLabel={['restrictions', 'spice', 'interests'].includes(step) ? t('common.skip') : undefined}
           onSkip={skipStep}
@@ -262,7 +286,17 @@ export default function Onboarding() {
         )}
 
         {step === 'consent' && (
-          <Consent agreed={agreed} setAgreed={setAgreed} onStart={next} t={t} />
+          <Consent
+            consents={consents}
+            onToggle={(k) => setConsents((c) => ({ ...c, [k]: !c[k] }))}
+            onToggleAll={() =>
+              setConsents(agreed ? { terms: false, privacy: false, safety: false } : { terms: true, privacy: true, safety: true })
+            }
+            onOpenDoc={setLegalDoc}
+            allAgreed={agreed}
+            onStart={next}
+            t={t}
+          />
         )}
 
         {step === 'profile' && (
@@ -280,6 +314,8 @@ export default function Onboarding() {
           />
         )}
 
+        {step === 'riskdemo' && <RiskDemo onContinue={next} t={t} />}
+
         {step === 'restrictions' && (
           <Restrictions
             selected={Array.from(restrictions)}
@@ -290,11 +326,11 @@ export default function Onboarding() {
 
         {step === 'spice' && (
           <Spice
-            level={spice}
-            // P-039: 조작 즉시 skip 해제 — draft 복귀(skipped=true) 후 조작분이
+            band={spiceBand(spice)}
+            // P-039 계열: 조작 즉시 skip 해제 — draft 복귀(skipped=true) 후 조작분이
             // draft 저장에서 null로 지워지지 않게 (저장식이 skipped를 참조)
-            setLevel={(n) => {
-              setSpice(n);
+            setBand={(b) => {
+              setSpice(SPICE_ANCHOR[b]);
               setSkipped((s) => (s.spice ? { ...s, spice: false } : s));
             }}
             onContinue={answerStep}
@@ -309,6 +345,20 @@ export default function Onboarding() {
             onToggle={(name) => toggle(interests, name, setInterests)}
             onContinue={next}
             onSkip={next}
+            t={t}
+          />
+        )}
+
+        {step === 'summary' && (
+          <Summary
+            nation={nation}
+            lang={lang}
+            restrictions={Array.from(restrictions)}
+            skipped={skipped}
+            band={spiceBand(spice)}
+            submitting={submitting}
+            onEdit={editFromSummary}
+            onSubmit={() => void finish()}
             t={t}
           />
         )}
@@ -328,15 +378,19 @@ export default function Onboarding() {
         </View>
       )}
 
-      {/* shared nationality (I4) / language (I5, 9 langs) pickers */}
+      {/* shared nationality picker (I4) */}
       <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
 
-      {/* P-032: 제출 성공 — 체크 스트로크 드로잉 오버레이 (0.9s 후 홈) */}
-      {doneSplash && (
-        <Animated.View entering={FadeIn.duration(150)} style={styles.doneSplash} pointerEvents="auto">
-          <SuccessCheck size={104} />
-        </Animated.View>
-      )}
+      {/* P-080: 약관 전문 바텀시트 — Agree 시 해당 행 체크 + 닫힘 */}
+      <LegalSheet
+        doc={legalDoc}
+        onAgree={() => {
+          if (legalDoc) setConsents((c) => ({ ...c, [legalDoc]: true }));
+          setLegalDoc(null);
+        }}
+        onClose={() => setLegalDoc(null)}
+        t={t}
+      />
     </View>
   );
 }
@@ -344,6 +398,153 @@ export default function Onboarding() {
 /* ---------- steps ---------- */
 
 type TFn = ReturnType<typeof useTranslation>['t'];
+
+/** ① 약관 동의 (P-080) — 전체 동의 + 필수 3행, 행별 chevron→전문 시트. */
+function Consent({
+  consents,
+  onToggle,
+  onToggleAll,
+  onOpenDoc,
+  allAgreed,
+  onStart,
+  t,
+}: {
+  consents: Record<ConsentKey, boolean>;
+  onToggle: (k: ConsentKey) => void;
+  onToggleAll: () => void;
+  onOpenDoc: (k: ConsentKey) => void;
+  allAgreed: boolean;
+  onStart: () => void;
+  t: TFn;
+}) {
+  const rows: { k: ConsentKey; label: string }[] = [
+    { k: 'terms', label: t('onboarding.termsOfService') },
+    { k: 'privacy', label: t('onboarding.privacyPolicy') },
+    { k: 'safety', label: t('profile.safetyNotice') },
+  ];
+  return (
+    <View style={{ flex: 1 }}>
+      <ObTitle title={t('onboarding.consentTitle')} sub={t('onboarding.consentSub')} />
+      <Pressable style={[styles.consent, allAgreed && styles.consentAllOn]} onPress={onToggleAll}>
+        <View style={[styles.check, allAgreed && styles.checkOn]}>{allAgreed && <IconCheck size={15} color="#fff" />}</View>
+        <Text style={styles.consentText}>{t('onboarding.agreeAll')}</Text>
+      </Pressable>
+      <View style={styles.consentRows}>
+        {rows.map(({ k, label }) => (
+          <View key={k} style={styles.consentRow}>
+            <Pressable style={styles.consentRowMain} onPress={() => onToggle(k)} hitSlop={6}>
+              <View style={[styles.check, consents[k] && styles.checkOn]}>{consents[k] && <IconCheck size={15} color="#fff" />}</View>
+              <Text style={styles.consentRowText} numberOfLines={2}>
+                {label} <Text style={styles.requiredTag}>({t('onboarding.requiredTag')})</Text>
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => onOpenDoc(k)} hitSlop={10} style={styles.consentChevron}>
+              <IconChevron size={16} color={C.ink3} />
+            </Pressable>
+          </View>
+        ))}
+      </View>
+      <View style={styles.foot}>
+        <Btn variant={allAgreed ? 'primary' : 'off'} icon={allAgreed ? <IconCheck size={18} color="#fff" /> : undefined} onPress={allAgreed ? onStart : undefined}>
+          {t('onboarding.continue')}
+        </Btn>
+        <Text style={[styles.tag, { textAlign: 'center' }]}>{t('onboarding.consentNote')}</Text>
+      </View>
+    </View>
+  );
+}
+
+/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
+function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
+  const bottomInset = useBottomInset();
+  const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
+  const [error, setError] = useState(false);
+  const isRemote = doc === 'terms' || doc === 'privacy';
+
+  const load = useCallback((d: LegalDoc) => {
+    setError(false);
+    setRemote(null);
+    fetchLegalText(d)
+      .then((text) => setRemote({ doc: d, text }))
+      .catch(() => setError(true));
+  }, []);
+  useEffect(() => {
+    if (doc === 'terms' || doc === 'privacy') load(doc);
+  }, [doc, load]);
+
+  const title =
+    doc === 'terms' ? t('onboarding.termsOfService') : doc === 'privacy' ? t('onboarding.privacyPolicy') : t('profile.safetyNotice');
+  // 안전 고지 = 구 consent 화면 문구 재사용 (아이콘 나열만 삭제 — 스펙)
+  const safetyText = [t('onboarding.consentGuidance'), t('onboarding.consentVary'), t('onboarding.consentYours')].join('\n\n');
+  const remoteReady = remote != null && remote.doc === doc;
+
+  return (
+    <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.sheetScrim} onPress={onClose} />
+      <View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }]}>
+        <View style={styles.grab} />
+        <Text style={styles.sheetTitle}>{title}</Text>
+        <ScrollView style={styles.legalScroll} showsVerticalScrollIndicator>
+          {isRemote ? (
+            error ? (
+              <View style={styles.legalError}>
+                <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
+                <Pressable onPress={() => doc && load(doc as LegalDoc)} hitSlop={8}>
+                  <Text style={styles.legalRetry}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
+            ) : remoteReady ? (
+              <Text style={styles.legalText}>{remote.text}</Text>
+            ) : (
+              <View style={styles.legalLoading}>
+                <ActivityIndicator color={C.primary} />
+              </View>
+            )
+          ) : (
+            <Text style={styles.legalText}>{safetyText}</Text>
+          )}
+        </ScrollView>
+        <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
+      </View>
+    </Modal>
+  );
+}
+
+/** ③ 위험도 마크 인터랙티브 데모 (P-080) — 탭 순환 safe→caution→danger→unable.
+ *  마크는 기존 RiskMark 재사용 (신규 제작 금지 — 앱 전체 일관성, 스펙). */
+const DEMO_CYCLE: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
+function RiskDemo({ onContinue, t }: { onContinue: () => void; t: TFn }) {
+  const [i, setI] = useState(0);
+  const state = DEMO_CYCLE[i];
+  const reduced = useReducedMotion(); // reduced-motion 시 크로스페이드 없이 즉시 전환
+  return (
+    <View style={{ flex: 1 }}>
+      <ObTitle title={t('onboarding.demoTitle')} sub={t('onboarding.demoSub')} />
+      <View style={styles.demoCard}>
+        <View style={styles.demoImg} />
+        <Pressable onPress={() => setI((n) => (n + 1) % DEMO_CYCLE.length)} hitSlop={14} style={styles.demoMark}>
+          <Animated.View key={state} entering={reduced ? undefined : FadeIn.duration(140)}>
+            <RiskMark state={state} size={46} />
+          </Animated.View>
+        </Pressable>
+        <View style={styles.demoCap}>
+          <Text style={styles.demoName}>{t('onboarding.demoDish')}</Text>
+          <Text style={styles.demoHint}>{t('onboarding.demoTap')}</Text>
+        </View>
+      </View>
+      <Animated.View key={`m-${state}`} entering={reduced ? undefined : FadeIn.duration(140)} style={styles.demoMeaning}>
+        <RiskMark state={state} size={20} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.demoLabel}>{t(`risk.${state}`)}</Text>
+          <Text style={styles.demoBody}>{t(`onboarding.demo.${state}`)}</Text>
+        </View>
+      </Animated.View>
+      <View style={styles.foot}>
+        <Btn onPress={onContinue}>{t('onboarding.continue')}</Btn>
+      </View>
+    </View>
+  );
+}
 
 function Profile(props: {
   nickname: string;
@@ -428,36 +629,64 @@ function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle:
   );
 }
 
-function Spice({ level, setLevel, onContinue, onSkip, t }: { level: number; setLevel: (n: number) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+/** ⑤ 맵기 (P-080 재설계) — 노랑→빨강 히트 그라데이션 5스톱 스냅 슬라이더 +
+ *  🌶️ 카운트 히어로(5C 확정, None=0개 점등). 저장은 앵커 매핑 — 부모가 담당.
+ *  ⚠️ 🌶️는 헌법 v2.2.0의 유일한 유니코드 이모지 예외 (맵기 표시 한정). */
+function Spice({ band, setBand, onContinue, onSkip, t }: { band: number; setBand: (b: number) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+  const trackW = useRef(0);
+  const bandRef = useRef(band);
+  bandRef.current = band;
+  // 드래그 스냅 — JS 스레드 PanResponder(워클릿 없음). 탭은 아래 스톱 Pressable.
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => snapTo(e.nativeEvent.locationX),
+      onPanResponderMove: (e) => snapTo(e.nativeEvent.locationX),
+    }),
+  ).current;
+  const snapTo = (x: number) => {
+    if (!trackW.current) return;
+    const b = Math.round((x / trackW.current) * 4);
+    const clamped = Math.min(4, Math.max(0, b));
+    if (clamped !== bandRef.current) setBand(clamped);
+  };
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} />
-      <View style={{ alignItems: 'center', gap: 8, marginTop: 8 }}>
-        {/* P-051: 기본 5 표시 원복 — 화면 그대로 제출이라 착시 아님(표시=전송) */}
-        <Text style={styles.bignum}>
-          {level}
-          <Text style={styles.bignumDen}>/10</Text>
-        </Text>
-        <View style={styles.analogy}>
-          <IconFlame size={15} color={C.primary} />
-          <Text style={styles.analogyText}>≈ {t(SPICE_SCALE[level])}</Text>
-        </View>
-      </View>
-      <View style={{ marginTop: 22 }}>
-        <View style={styles.heatRow}>
-          {Array.from({ length: 11 }).map((_, i) => (
-            <Pressable key={i} onPress={() => setLevel(i)} hitSlop={6}>
-              <IconFlame size={18} color={i <= level ? C.primary : C.ink3} />
-            </Pressable>
+      <View style={{ alignItems: 'center', gap: 10, marginTop: 8 }}>
+        {/* 🌶️ 카운트 히어로 — 점등 수 = 단계 (None=0개, 시안의 1개 점등은 오류 보정) */}
+        <View style={styles.chiliRow}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Text key={i} style={[styles.chili, i >= band && styles.chiliDim]}>
+              {'\u{1F336}\u{FE0F}'}
+            </Text>
           ))}
         </View>
-        <View style={styles.track}>
-          <View style={[styles.trackFill, { width: `${level * 10}%` }]} />
-          <View style={[styles.knob, { left: `${level * 10}%` }]} />
+        <Text style={styles.bandName}>{t(SPICE_BAND_LABEL[band])}</Text>
+        <View style={styles.analogy}>
+          <Text style={styles.analogyText}>≈ {t(SPICE_SCALE[SPICE_ANCHOR[band]])}</Text>
+        </View>
+      </View>
+      <View style={{ marginTop: 26 }}>
+        <View
+          style={styles.heatTrackBox}
+          onLayout={(e) => {
+            trackW.current = e.nativeEvent.layout.width;
+          }}
+          {...pan.panHandlers}
+        >
+          {/* 히트 그라데이션 = 의미색(열) — 위험도 4색과 무관, 맵기 트랙 한정 허용 */}
+          <LinearGradient colors={['#f2c14e', '#e2580c', '#c22d20']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.heatTrack} />
+          <View style={styles.stopsRow}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Pressable key={i} onPress={() => setBand(i)} hitSlop={12} style={[styles.stop, i === band && styles.stopOn]} />
+            ))}
+          </View>
         </View>
         <View style={styles.trackLabels}>
-          <Text style={styles.tag}>{t('onboarding.spiceNone')}</Text>
-          <Text style={styles.tag}>{t('onboarding.spiceExtreme')}</Text>
+          <Text style={styles.tag}>{t(SPICE_BAND_LABEL[0])}</Text>
+          <Text style={styles.tag}>{t(SPICE_BAND_LABEL[4])}</Text>
         </View>
       </View>
       <View style={styles.foot}>
@@ -506,34 +735,81 @@ function Interests({ selected, onToggle, onContinue, onSkip, t }: { selected: Se
   );
 }
 
-function Consent({ agreed, setAgreed, onStart, t }: { agreed: boolean; setAgreed: (b: boolean) => void; onStart: () => void; t: TFn }) {
-  const lines: { state: 'caution' | 'unable' | 'safe'; text: string }[] = [
-    { state: 'caution', text: t('onboarding.consentGuidance') },
-    { state: 'unable', text: t('onboarding.consentVary') },
-    { state: 'safe', text: t('onboarding.consentYours') },
-  ];
+/** ⑥ 완료 요약 카드 (P-080) — 국적·언어·회피·맵기 + 행별 수정 chevron.
+ *  SuccessCheck는 요약 진입 연출로 결합(스펙) — 제출 성공 시 홈 직행. */
+function Summary({
+  nation,
+  lang,
+  restrictions,
+  skipped,
+  band,
+  submitting,
+  onEdit,
+  onSubmit,
+  t,
+}: {
+  nation: { code: string; name: string };
+  lang: string;
+  restrictions: string[];
+  skipped: { restrictions: boolean; spice: boolean };
+  band: number;
+  submitting: boolean;
+  onEdit: (target: Step) => void;
+  onSubmit: () => void;
+  t: TFn;
+}) {
+  const restrictionsValue = skipped.restrictions
+    ? t('profile.spiceUnset')
+    : restrictions.length
+      ? `${restrictions.slice(0, 3).map(restrictionLabel).join(', ')}${restrictions.length > 3 ? ` +${restrictions.length - 3}` : ''}`
+      : t('onboarding.added', { count: 0 });
+  // 맵기 행 — 불꽃 아이콘 금지(시안 드리프트 보정), 🌶️ 카운트 또는 텍스트
+  const spiceValue = skipped.spice ? t('profile.spiceUnset') : `${'\u{1F336}\u{FE0F}'.repeat(band)}${band > 0 ? ' ' : ''}${t(SPICE_BAND_LABEL[band])}`;
   return (
     <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.consentTitle')} />
-      <View style={{ gap: 14, marginBottom: 18 }}>
-        {lines.map((l) => (
-          <View key={l.state} style={styles.notice}>
-            <RiskMark state={l.state} size={22} />
-            <Text style={styles.noticeBody}>{l.text}</Text>
-          </View>
-        ))}
+      <View style={styles.sumHero}>
+        <SuccessCheck size={76} />
       </View>
-      <Pressable style={styles.consent} onPress={() => setAgreed(!agreed)}>
-        <View style={[styles.check, agreed && styles.checkOn]}>{agreed && <IconCheck size={15} color="#fff" />}</View>
-        <Text style={styles.consentText}>{t('onboarding.consentAgree')}</Text>
-      </Pressable>
+      <ObTitle title={t('onboarding.summaryTitle')} sub={t('onboarding.summarySub')} />
+      <View style={styles.sumCard}>
+        <SumRow label={t('onboarding.nationality')} onPress={() => onEdit('profile')}>
+          <View style={styles.sumValRow}>
+            <Flag code={nation.code} size={16} />
+            <Text style={styles.sumVal}>{nation.name}</Text>
+          </View>
+        </SumRow>
+        {/* 언어 = 현행 앱 언어(OS 정본, P-060) — 온보딩에 언어 스텝이 없어 표시 전용 */}
+        <SumRow label={t('profile.language')}>
+          <Text style={styles.sumVal}>{LANG_ENDONYM[lang] ?? lang}</Text>
+        </SumRow>
+        <SumRow label={t('profile.restrictionsTitle')} onPress={() => onEdit('restrictions')}>
+          <Text style={[styles.sumVal, skipped.restrictions && styles.sumValMuted]} numberOfLines={2}>
+            {restrictionsValue}
+            {!skipped.restrictions && restrictions.length > 0 ? `  ·  ${t('onboarding.added', { count: restrictions.length })}` : ''}
+          </Text>
+        </SumRow>
+        <SumRow label={t('profile.spiceTitle')} onPress={() => onEdit('spice')} last>
+          <Text style={[styles.sumVal, skipped.spice && styles.sumValMuted]}>{spiceValue}</Text>
+        </SumRow>
+      </View>
       <View style={styles.foot}>
-        <Btn variant={agreed ? 'primary' : 'off'} icon={agreed ? <IconCheck size={18} color="#fff" /> : undefined} onPress={agreed ? onStart : undefined}>
+        <Btn onPress={submitting ? undefined : onSubmit} icon={submitting ? <Spinner size={18} color="#fff" /> : undefined}>
           {t('onboarding.start')}
         </Btn>
-        <Text style={[styles.tag, { textAlign: 'center' }]}>{t('onboarding.consentNote')}</Text>
       </View>
     </View>
+  );
+}
+
+function SumRow({ label, children, onPress, last }: { label: string; children: ReactNode; onPress?: () => void; last?: boolean }) {
+  return (
+    <Pressable style={[styles.sumRow, !last && styles.sumRowDivider]} onPress={onPress} disabled={!onPress}>
+      <Text style={styles.sumLbl}>{label}</Text>
+      <View style={styles.sumRight}>
+        {children}
+        {onPress && <IconChevron size={15} color={C.ink3} />}
+      </View>
+    </Pressable>
   );
 }
 
@@ -557,8 +833,6 @@ const styles = StyleSheet.create({
   stickyFoot: { paddingHorizontal: 22, paddingTop: 12, gap: 6, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   // 제출 실패 안내 (KB-75)
   submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
-  // P-032: 제출 성공 오버레이 — 뒤 터치 차단 + 중앙 체크
-  doneSplash: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(252,245,239,0.96)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
   submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
 
   // titles
@@ -585,28 +859,44 @@ const styles = StyleSheet.create({
   // notice
   notice: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginBottom: 18 },
   noticeText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
-  noticeBody: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
 
-  // chips
-  group: { gap: 8, marginBottom: 14 },
-  groupLbl: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1, color: C.ink3 },
-  chipwrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line },
-  chipOn: { backgroundColor: C.primary, borderColor: C.primary },
-  chipOnRisk: { backgroundColor: C.riskDanger, borderColor: C.riskDanger },
-  chipText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  chipTextOn: { color: '#fff' },
+  // ① consent (P-080)
+  consent: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, padding: 13, ...shadow.sh1 },
+  consentAllOn: { borderColor: C.primary },
+  check: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  checkOn: { backgroundColor: C.primary, borderColor: C.primary },
+  consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 20 },
+  consentRows: { marginTop: 12, gap: 2 },
+  consentRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9 },
+  consentRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  consentRowText: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 19 },
+  requiredTag: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
+  consentChevron: { padding: 4 },
 
-  // spice
-  bignum: { fontFamily: font.displayBlack, fontSize: 60, color: C.primary, lineHeight: 78 },
-  bignumDen: { fontFamily: font.display, fontSize: 24, color: C.ink3 },
+  // ③ risk demo (P-080)
+  demoCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, overflow: 'hidden', ...shadow.sh1 },
+  demoImg: { height: 150, backgroundColor: C.surface2 },
+  demoMark: { position: 'absolute', top: 104, right: 16, backgroundColor: '#fff', borderRadius: 33, padding: 10, ...shadow.shPop },
+  demoCap: { paddingHorizontal: 14, paddingVertical: 12, gap: 2 },
+  demoName: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
+  demoHint: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
+  demoMeaning: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, marginTop: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13 },
+  demoLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  demoBody: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: 2 },
+
+  // ⑤ spice (P-080 — 5단계 히트 슬라이더 + 🌶️ 히어로)
+  chiliRow: { flexDirection: 'row', gap: 6, minHeight: 46, alignItems: 'center' },
+  chili: { fontSize: 34, lineHeight: 44 },
+  chiliDim: { opacity: 0.18 },
+  bandName: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.3 },
   analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(226,88,12,0.08)' },
   analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
-  heatRow: { flexDirection: 'row', gap: 3, justifyContent: 'space-between' },
-  track: { height: 8, borderRadius: 6, backgroundColor: C.surface2, marginVertical: 16, justifyContent: 'center' },
-  trackFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: C.primary, borderRadius: 6 },
-  knob: { position: 'absolute', width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff', borderWidth: 3, borderColor: C.primary, marginLeft: -13, ...shadow.sh1 },
-  trackLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  heatTrackBox: { height: 40, justifyContent: 'center' },
+  heatTrack: { position: 'absolute', left: 0, right: 0, height: 10, borderRadius: 6 },
+  stopsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 1 },
+  stop: { width: 14, height: 14, borderRadius: 7, backgroundColor: 'rgba(255,255,255,0.55)', borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
+  stopOn: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff', borderWidth: 3, borderColor: C.primary, ...shadow.sh1 },
+  trackLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   tag: { fontFamily: font.body, fontSize: 11, color: C.ink3 },
 
   // interests grid
@@ -619,18 +909,28 @@ const styles = StyleSheet.create({
   foodAdd: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: C.ink3, alignItems: 'center', justifyContent: 'center' },
   foodAddOn: { backgroundColor: C.primary, borderColor: C.primary },
 
-  // consent
-  consent: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, padding: 13, ...shadow.sh1 },
-  check: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
-  checkOn: { backgroundColor: C.primary, borderColor: C.primary },
-  consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink, lineHeight: 20 },
+  // ⑥ summary (P-080)
+  sumHero: { alignItems: 'center', paddingVertical: 14 },
+  sumCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, paddingHorizontal: 14, ...shadow.sh1 },
+  sumRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
+  sumRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  sumLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2, width: 96 },
+  sumRight: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
+  sumValRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  sumVal: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink, textAlign: 'right', flexShrink: 1 },
+  sumValMuted: { fontFamily: font.body, color: C.ink3 },
 
-  // picker sheet
+  // legal sheet (P-080)
   sheetScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(42,33,27,0.42)' },
-  sheet: { marginTop: 'auto', backgroundColor: C.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34, gap: 4, ...shadow.shPop },
-  grab: { width: 44, height: 5, borderRadius: 3, backgroundColor: C.ink3, opacity: 0.5, alignSelf: 'center', marginBottom: 10 },
-  sheetTitle: { fontFamily: font.display, fontSize: 18, color: C.ink, marginBottom: 6 },
-  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  sheetRowText: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
+  legalSheet: { marginTop: 'auto', maxHeight: '82%', backgroundColor: C.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, gap: 12, ...shadow.shPop },
+  grab: { width: 44, height: 5, borderRadius: 3, backgroundColor: C.ink3, opacity: 0.5, alignSelf: 'center', marginBottom: 4 },
+  sheetTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
+  legalScroll: { flexGrow: 0, minHeight: 180, borderWidth: 1, borderColor: C.hair, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, backgroundColor: C.surface },
+  legalText: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20, paddingVertical: 10 },
+  legalLoading: { paddingVertical: 40, alignItems: 'center' },
+  legalError: { paddingVertical: 30, alignItems: 'center', gap: 10 },
+  legalErrorText: { fontFamily: font.body, fontSize: 13, color: C.ink2, textAlign: 'center' },
+  legalRetry: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary, padding: 4 },
+
   linkbtn: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', padding: 6 },
 });

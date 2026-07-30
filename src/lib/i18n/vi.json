@@ -431,9 +431,7 @@
     "added": "Đã thêm {{count}}",
     "skip": "Bỏ qua lúc này",
     "spiceTitle": "Bạn ăn cay được đến mức nào?",
-    "spiceSub": "Tùy chọn — thay đổi bất cứ lúc nào. Mỗi món hiển thị độ cay trên cùng thang 0–10 này.",
-    "spiceNone": "0 · không cay",
-    "spiceExtreme": "10 · cực cay",
+    "spiceSub": "Không bắt buộc — đổi lúc nào cũng được. Độ cay món ăn cũng hiển thị theo 5 mức này.",
     "interestsTitle": "Chạm vào những món bạn đã thử",
     "interestsSub": "Tùy chọn — chọn vài món yêu thích để cá nhân hóa gợi ý.",
     "interestsTag": "Nổi bật theo độ phổ biến",
@@ -451,7 +449,26 @@
     "groups": {
       "Dietary": "Chế độ ăn",
       "Religion": "Tôn giáo"
-    }
+    },
+    "consentSub": "Để bắt đầu, hãy đồng ý các mục bắt buộc bên dưới.",
+    "agreeAll": "Đồng ý tất cả",
+    "termsOfService": "Điều khoản dịch vụ",
+    "privacyPolicy": "Chính sách quyền riêng tư",
+    "requiredTag": "Bắt buộc",
+    "agree": "Đồng ý",
+    "legalLoadError": "Không tải được tài liệu. Kiểm tra kết nối và thử lại.",
+    "demoTitle": "Làm quen với dấu rủi ro",
+    "demoSub": "Mỗi món ăn có một trong bốn dấu. Chạm vào dấu để xem ý nghĩa từng loại.",
+    "demoTap": "Chạm vào dấu để thử",
+    "demoDish": "Canh kimchi",
+    "demo": {
+      "safe": "Không tìm thấy nguyên liệu bạn tránh — bạn có thể yên tâm.",
+      "caution": "Có thể chứa nguyên liệu bạn tránh — hãy hỏi lại quán.",
+      "danger": "Có chứa nguyên liệu bạn tránh.",
+      "unable": "Chưa đủ thông tin để đánh giá — hãy cân nhắc kỹ."
+    },
+    "summaryTitle": "Hồ sơ an toàn của bạn đã sẵn sàng",
+    "summarySub": "Kiểm tra cài đặt — chạm vào một hàng để thay đổi."
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",
@@ -635,6 +652,13 @@
       "8": "Ớt habanero",
       "9": "Ớt hiểm",
       "10": "Ớt Cheongyang cực đại"
+    },
+    "band": {
+      "0": "Không cay",
+      "1": "Cay nhẹ",
+      "2": "Cay vừa",
+      "3": "Cay",
+      "4": "Siêu cay"
     }
   },
   "photo": {

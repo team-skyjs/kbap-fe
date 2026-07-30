@@ -28,7 +28,6 @@ import {
   Btn,
   IconChevron,
   IconSpeech,
-  IconFlame,
 } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -37,7 +36,7 @@ import { Snackbar } from '@/components/Snackbar';
 import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
-import { SPICE_SCALE } from '@/lib/onboarding/data';
+import { SPICE_BAND_LABEL, spiceBand, spicierThanUser } from '@/lib/spice';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -217,7 +216,9 @@ function Registered({
       ? t(`detail.ingBasis${band}`, { ingredient: ing.name, percent: Math.round(ing.percentage) })
       : t(`detail.ingBasis${band}NoPct`, { ingredient: ing.name });
   };
-  const spicyForYou = food.spiceLevel != null && spiceTolerance != null && food.spiceLevel > spiceTolerance;
+  // P-080(KB-261): 경고 = 단계(음식) > 단계(유저) — 원값 비교 금지 (표시와 동일
+  // 구간 함수 공유, "같은 표시 단계인데 경고" 모순 방지)
+  const spicyForYou = food.spiceLevel != null && spiceTolerance != null && spicierThanUser(food.spiceLevel, spiceTolerance);
 
   return (
     <>
@@ -256,9 +257,10 @@ function Registered({
         {!guest && <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />}
         {food.spiceLevel != null && (
           <View style={styles.spiceMeta}>
-            <IconFlame size={16} color={C.primary} />
+            {/* P-080: 표시 = 5단계 구간 스냅 · 🌶️는 헌법 v2.2.0 유일 이모지 예외(맵기 한정) */}
             <Text style={styles.spiceText}>
-              {t('detail.spice', { level: food.spiceLevel, analogy: t(SPICE_SCALE[food.spiceLevel] ?? '') })}
+              {spiceBand(food.spiceLevel) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceBand(food.spiceLevel))} ` : ''}
+              {t(SPICE_BAND_LABEL[spiceBand(food.spiceLevel)])}
             </Text>
             {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
           </View>

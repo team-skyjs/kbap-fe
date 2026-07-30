@@ -431,9 +431,7 @@
     "added": "{{count}} ditambahkan",
     "skip": "Lewati dulu",
     "spiceTitle": "Seberapa pedas yang Anda tahan?",
-    "spiceSub": "Opsional — ubah kapan saja. Setiap hidangan menampilkan tingkat pedas pada skala 0–10 yang sama.",
-    "spiceNone": "0 · tidak ada",
-    "spiceExtreme": "10 · ekstrem",
+    "spiceSub": "Opsional — bisa diubah kapan saja. Kepedasan makanan juga tampil dalam 5 tingkat yang sama.",
     "interestsTitle": "Ketuk yang pernah Anda coba",
     "interestsSub": "Opsional — pilih beberapa favorit untuk mempersonalisasi rekomendasi.",
     "interestsTag": "Teratas berdasarkan popularitas",
@@ -451,7 +449,26 @@
     "groups": {
       "Dietary": "Pola Makan",
       "Religion": "Agama"
-    }
+    },
+    "consentSub": "Untuk mulai, setujui item wajib di bawah ini.",
+    "agreeAll": "Setujui semua",
+    "termsOfService": "Ketentuan Layanan",
+    "privacyPolicy": "Kebijakan Privasi",
+    "requiredTag": "Wajib",
+    "agree": "Setuju",
+    "legalLoadError": "Dokumen gagal dimuat. Periksa koneksi lalu coba lagi.",
+    "demoTitle": "Kenali tanda risiko",
+    "demoSub": "Setiap makanan mendapat satu dari empat tanda. Ketuk tandanya untuk melihat artinya.",
+    "demoTap": "Ketuk tandanya",
+    "demoDish": "Sup kimchi",
+    "demo": {
+      "safe": "Tidak ditemukan bahan yang kamu hindari — aman untukmu.",
+      "caution": "Mungkin mengandung bahan yang kamu hindari — pastikan ke restoran.",
+      "danger": "Mengandung bahan yang kamu hindari.",
+      "unable": "Informasi belum cukup untuk menilai — putuskan dengan hati-hati."
+    },
+    "summaryTitle": "Profil keamananmu sudah siap",
+    "summarySub": "Periksa pengaturanmu — ketuk baris untuk mengubah."
   },
   "editProfile": {
     "title": "Edit profil",
@@ -635,6 +652,13 @@
       "8": "Habanero",
       "9": "Cabai rawit",
       "10": "Cabai Cheongyang maksimal"
+    },
+    "band": {
+      "0": "Tidak pedas",
+      "1": "Sedikit pedas",
+      "2": "Sedang",
+      "3": "Pedas",
+      "4": "Sangat pedas"
     }
   },
   "photo": {

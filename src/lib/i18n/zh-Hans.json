@@ -431,9 +431,7 @@
     "added": "已添加 {{count}} 项",
     "skip": "暂时跳过",
     "spiceTitle": "你能吃多辣？",
-    "spiceSub": "可选——随时可改。每道菜都以相同的 0–10 辣度显示。",
-    "spiceNone": "0 · 不辣",
-    "spiceExtreme": "10 · 极辣",
+    "spiceSub": "可选 — 随时可以修改。菜品辣度也用同样的5个等级显示。",
     "interestsTitle": "点击你尝过的菜",
     "interestsSub": "可选——选几样喜欢的，为你个性化推荐。",
     "interestsTag": "按人气排序",
@@ -451,7 +449,26 @@
     "groups": {
       "Dietary": "饮食",
       "Religion": "宗教"
-    }
+    },
+    "consentSub": "开始前请同意以下必选项。",
+    "agreeAll": "全部同意",
+    "termsOfService": "服务条款",
+    "privacyPolicy": "隐私政策",
+    "requiredTag": "必选",
+    "agree": "同意",
+    "legalLoadError": "无法加载文档。请检查网络后重试。",
+    "demoTitle": "认识风险标记",
+    "demoSub": "每道菜都会带有四种标记之一。点按标记看看各自的含义。",
+    "demoTap": "点按标记试试",
+    "demoDish": "泡菜汤",
+    "demo": {
+      "safe": "未发现你回避的食材 — 可以放心吃。",
+      "caution": "可能含有你回避的食材 — 请向店家确认。",
+      "danger": "含有你回避的食材。",
+      "unable": "信息不足，无法判断 — 请谨慎决定。"
+    },
+    "summaryTitle": "你的安全档案已就绪",
+    "summarySub": "确认你的设置，点按行即可修改。"
   },
   "editProfile": {
     "title": "编辑资料",
@@ -635,6 +652,13 @@
       "8": "哈瓦那辣椒",
       "9": "鸟眼辣椒",
       "10": "青阳辣椒爆表"
+    },
+    "band": {
+      "0": "不辣",
+      "1": "微辣",
+      "2": "中辣",
+      "3": "辣",
+      "4": "特辣"
     }
   },
   "photo": {

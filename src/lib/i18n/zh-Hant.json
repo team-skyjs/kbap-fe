@@ -431,9 +431,7 @@
     "added": "已新增 {{count}} 項",
     "skip": "暫時略過",
     "spiceTitle": "你能吃多辣？",
-    "spiceSub": "選填——隨時可以更改。每道菜都以相同的 0–10 辣度標示。",
-    "spiceNone": "0 · 不辣",
-    "spiceExtreme": "10 · 極辣",
+    "spiceSub": "選填 — 隨時可以修改。菜色辣度也以同樣的5個等級顯示。",
     "interestsTitle": "點選你試過的",
     "interestsSub": "選填——挑幾樣最愛以個人化推薦。",
     "interestsTag": "依熱門程度排序",
@@ -451,7 +449,26 @@
     "groups": {
       "Dietary": "飲食",
       "Religion": "宗教"
-    }
+    },
+    "consentSub": "開始前請同意以下必選項目。",
+    "agreeAll": "全部同意",
+    "termsOfService": "服務條款",
+    "privacyPolicy": "隱私權政策",
+    "requiredTag": "必選",
+    "agree": "同意",
+    "legalLoadError": "無法載入文件。請檢查網路後再試一次。",
+    "demoTitle": "認識風險標記",
+    "demoSub": "每道菜都會有四種標記之一。點一下標記看看各自的意思。",
+    "demoTap": "點一下標記試試",
+    "demoDish": "泡菜鍋",
+    "demo": {
+      "safe": "未發現你迴避的食材 — 可以放心吃。",
+      "caution": "可能含有你迴避的食材 — 請向店家確認。",
+      "danger": "含有你迴避的食材。",
+      "unable": "資訊不足，無法判斷 — 請謹慎決定。"
+    },
+    "summaryTitle": "你的安全檔案已就緒",
+    "summarySub": "確認你的設定，點一下列即可修改。"
   },
   "editProfile": {
     "title": "編輯個人資料",
@@ -635,6 +652,13 @@
       "8": "哈瓦那辣椒",
       "9": "鳥眼辣椒",
       "10": "青陽辣椒爆表"
+    },
+    "band": {
+      "0": "不辣",
+      "1": "微辣",
+      "2": "中辣",
+      "3": "辣",
+      "4": "特辣"
     }
   },
   "photo": {
