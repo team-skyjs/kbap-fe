@@ -716,3 +716,10 @@
 - [x] 본문 상한 500→1000(작성·수정, 카운터 동기). 번역 버튼 FLAGS.reviewTranslationEnabled=false 비노출(useReviewTranslation 코드 보존 — 계약 배포 시 복원). i18n +2키×10(loadMore·postError). 작성/수정/삭제 실패는 화면 유지+표면화.
 - 유닛 +10(어댑터 풀 페이로드·author 3케이스·URL→path·페이지 어댑트). tsc 0, jest 60스위트 305/305.
 - Metro 실왕복(작성 사진 2장→목록→본문만 수정→사진 유지→삭제·같은국적 필터·평점 서버값) 예진 확인 대기. BE 질의: 조회 URL→전송 path 역변환 규약(pathname 추출 가정) 확인.
+
+## 🚨 리뷰 실연결 플래그 봉인 (2026-07-30, P-086)
+- [x] FLAGS.reviewsLiveEnabled=false 신설 — **원복 아님**, P-085 코드 보존·런타임 스위칭. 봉인 이유: BE 리뷰 엔드포인트 변경 예고(7/30 종한) + prod 미배포(실연결 OTA 시 라이브 리뷰 화면 파손 — P-084 맵기 OTA 동승 위험).
+- [x] off 경로 = P-077 목 복원(화면 코드 무변): 목록/내리뷰 페처(fetchFoodReviewsPage·fetchMyReviews로 분리 — off면 목·세션 유저 빈 내리뷰) · 뮤테이션 3종(off면 API 호출 0, 캐시 직접 CRUD — 내 리뷰 prepend/수정/삭제 + 음식 목록 infinite 첫 페이지 삽입, 무효화 생략으로 목 삽입분 보존) · 사진 업로드 패스스루.
+- [x] 평점 서버값 필드 부재(prod) 방어 확인: FoodDetailWire 옵셔널 + `?? null`/`?? 0` — 부재 시 '—'/카운트 생략 렌더(P-085 구현이 방어형, 변경 0).
+- [x] 스위칭 유닛 +6: off=목 반환+리뷰 API 호출 0(countryCode 클라 필터 흉내 포함)·on=실 GET(cursor·countryCode 부착)·내리뷰 off 빈 목록/on keyset·작성 off 캐시 직접 반영/on 실 POST. P-085 어댑터 유닛 무변. tsc 0, jest 311/311.
+- 재개 절차(발주 대기): BE 확정 → 계약 diff → reviewAdapter 보정 → 플래그 on.

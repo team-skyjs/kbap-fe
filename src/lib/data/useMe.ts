@@ -18,6 +18,7 @@ import { api } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
+import { FLAGS } from '../flags';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
@@ -39,28 +40,30 @@ export function useMe() {
   });
 }
 
+/** 훅 밖 분리 — 플래그 스위칭 유닛 잠금용 (P-086). */
+export async function fetchMyReviews(): Promise<Review[]> {
+  // P-086 봉인: 실연결 off → P-077 목 경로 그대로(세션 유저 빈 목록 — mock
+  // 리뷰 오해 방지, 목 CRUD는 뮤테이션 훅이 캐시로 반영. mock은 게스트/개발만).
+  if (!FLAGS.reviewsLiveEnabled) return (await hasBeSession()) ? [] : MOCK_MY_REVIEWS;
+  if (!(await hasBeSession())) return MOCK_MY_REVIEWS;
+  // P-085(KB-73): GET /members/me/reviews (keyset) — 화면들이 전체 배열을
+  // 기대하므로(카운트·상세 조회) 커서를 끝까지 수집. 내 리뷰 수는 작다.
+  const all: Review[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < 20; page++) {
+    // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
+    const res = adaptReviewPage(
+      await api.get<ReviewPageWire>(`/members/me/reviews${cursor ? `?cursor=${cursor}` : ''}`),
+    );
+    all.push(...res.items);
+    if (!res.hasNext || !res.nextCursor) break;
+    cursor = res.nextCursor;
+  }
+  return all;
+}
+
 export function useMyReviews() {
-  return useQuery({
-    queryKey: ['me', 'reviews'],
-    // P-085(KB-73): 실연결 — GET /members/me/reviews (keyset). 화면들이 전체
-    // 배열을 기대하므로(카운트·상세 조회) 커서를 끝까지 수집 — 내 리뷰 수는
-    // 작다. mock은 게스트/웹 개발 경로만.
-    queryFn: async (): Promise<Review[]> => {
-      if (!(await hasBeSession())) return MOCK_MY_REVIEWS;
-      const all: Review[] = [];
-      let cursor: string | null = null;
-      for (let page = 0; page < 20; page++) {
-        // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
-        const res = adaptReviewPage(
-          await api.get<ReviewPageWire>(`/members/me/reviews${cursor ? `?cursor=${cursor}` : ''}`),
-        );
-        all.push(...res.items);
-        if (!res.hasNext || !res.nextCursor) break;
-        cursor = res.nextCursor;
-      }
-      return all;
-    },
-  });
+  return useQuery({ queryKey: ['me', 'reviews'], queryFn: fetchMyReviews });
 }
 
 /**
