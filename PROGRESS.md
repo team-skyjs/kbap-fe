@@ -770,3 +770,9 @@
 - [x] 발행 전 검증(P-073): 인라인 env + export --clear → 안드 .hbc grep prod 1 · dev 0 · meogo 0. --non-interactive가 --environment를 강제 → EAS 서버 preview env 실측(변수 0개 — 인라인 유효 확인) 후 발행.
 - [x] 발행: branch preview / android update id 019fb347-3dff-7be8-9198-9fd4553e9deb (group 802b1b20) / runtime 86eb4381 / msg "vc4/vc5 대상 맵기 enum 폴백(P-084·086 포함, ~2dee6f5)".
 - 커맨드 센터 → 종한 "안드 폴백 완료" 전달 예정(prod enum 배포는 iOS 심사 통과 후 순서 유지).
+
+## 테플 팀 공유 재작업 — dev 연결 빌드13 (2026-07-31, P-091)
+- [x] eas.json teamtest 전용 프로필(db07ebb): channel=teamtest(production/preview 완전 분리 — dev OTA 지뢰 원천 차단), env=dev.kbap.site + Amplitude 키, autoIncrement. submit 프로필 동반.
+- [x] 발행 전 grep(이번엔 dev가 정답): dev 1 · prod 0 · meogo 0 · 키 1.
+- [x] iOS 빌드13(64b523ec, runtime 5dfae66a, channel teamtest 실측) → 테플 제출 완료(ASC 처리 수분). production/preview 채널 무오염.
+- [ ] 빌드12 만료(Expire): ASC 웹 조작(비가역) — 예진 처리 안내(ASC > TestFlight > iOS > 1.0.0 (12) > Expire Build). 이후 팀 테플 빌드는 항상 teamtest 프로필.
