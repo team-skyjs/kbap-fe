@@ -764,3 +764,9 @@
 - [x] iOS 빌드12: eas build production(03f87d90, runtime 5dfae66a) → 테플 제출 완료(submission 7c5c6662, ASC 처리 중 — 수분 내 테플 노출). 심사 대기 빌드11과 독립.
 - [x] iOS production OTA **미발행**(심사 오염 방지 — 발주 준수). 재베이스라인 5dfae66a 커밋(2abacd8).
 - 안드 잔여: 기존 기기 대상 맵기 폴백 선반영이 필요하면 ① P-083 직전 커밋(2dee6f5, 지문 86eb4381)에서 OTA ② vc6 재빌드 중 택일 — 커맨드 센터 재발주 대기.
+
+## 안드 preview OTA — 구 runtime 대상 맵기 폴백 (2026-07-31, P-090)
+- [x] 워크트리(2dee6f5)에서 발행 — HEAD 무오염(worktree remove·status clean 확인). 안드 지문 실측 86eb4381 = 기존 vc4·vc5 runtime 정확 일치.
+- [x] 발행 전 검증(P-073): 인라인 env + export --clear → 안드 .hbc grep prod 1 · dev 0 · meogo 0. --non-interactive가 --environment를 강제 → EAS 서버 preview env 실측(변수 0개 — 인라인 유효 확인) 후 발행.
+- [x] 발행: branch preview / android update id 019fb347-3dff-7be8-9198-9fd4553e9deb (group 802b1b20) / runtime 86eb4381 / msg "vc4/vc5 대상 맵기 enum 폴백(P-084·086 포함, ~2dee6f5)".
+- 커맨드 센터 → 종한 "안드 폴백 완료" 전달 예정(prod enum 배포는 iOS 심사 통과 후 순서 유지).
