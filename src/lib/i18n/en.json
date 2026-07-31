@@ -184,7 +184,9 @@
     "blockedNote": "You won’t see posts or comments from blocked users. They can still see yours.",
     "blockedEmptyTitle": "No blocked users",
     "blockedEmptyBody": "People you block will show up here.",
-    "unblock": "Unblock"
+    "unblock": "Unblock",
+    "reviewBy": "Review by {{name}}",
+    "yourReview": "Your review"
   },
   "risk": {
     "safe": "Safe",
@@ -339,7 +341,15 @@
     "photosLabel": "Photos (up to {{max}})",
     "addPhoto": "Add photo",
     "removePhoto": "Remove photo",
-    "postError": "Couldn't save your review. Check your connection and try again."
+    "postError": "Couldn't save your review. Check your connection and try again.",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "Likes don't change the sort",
+    "placeRow": "Tag a place",
+    "placeOptional": "Optional",
+    "placeSheetTitle": "Tag a place",
+    "placeRecent": "Recent",
+    "placeNoResults": "No places match.",
+    "placeSkip": "Skip this — post without a place"
   },
   "reviews": {
     "headerTitle": "Reviews",

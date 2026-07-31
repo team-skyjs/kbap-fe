@@ -6,6 +6,7 @@
  * Anonymized reviews hide author identity (nationality/name). Scroll-aware back
  * header (§6); no emoji (SVG); reader text via i18n (English only for MVP).
  */
+import * as React from 'react';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
@@ -29,6 +30,9 @@ import {
   IconBubbleEmpty,
   IconPlus,
   IconChevron,
+  IconHeart,
+  IconMapPin,
+  IconMore,
 } from '@/components';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -37,6 +41,8 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
+import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
 const READER_LANG = 'en'; // MVP reader language
@@ -56,6 +62,7 @@ export default function FoodReviews() {
 
   const { data: food } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
+  const deleteReview = useDeleteReview();
 
   const [sameNatOnly, setSameNatOnly] = useState(false);
   const [sort, setSort] = useState<'recent' | 'rating'>('recent');
@@ -75,6 +82,20 @@ export default function FoodReviews() {
   const sameNat = food?.sameNationality ?? { average: null, count: 0 };
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
+  // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
+  const [mod, setMod] = React.useState<ModTarget | null>(null);
+  const openDetail = (r: Review) => router.push(`/review/${r.id}?foodId=${id}` as Href);
+  const openMenu = (r: Review) =>
+    setMod({
+      type: 'review',
+      id: r.id,
+      author: {
+        id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`,
+        nickname: r.author?.nickname ?? null,
+        nationality: r.authorNationality,
+      },
+      mine: isMine(r),
+    });
 
   return (
     <View style={styles.root}>
@@ -176,7 +197,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} onEdit={() => router.push(`/review/${r.id}` as Href)} />
+                  <ReviewItem key={r.id} review={r} t={t} onOpen={() => openDetail(r)} onMore={() => openMenu(r)} />
                 ))}
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
@@ -201,6 +222,14 @@ export default function FoodReviews() {
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
+      {/* P-095: 리뷰 ⋯ — 목록발 차단 = 재조회(무효화는 훅), 편집은 디테일로 */}
+      <ModerationFlow
+        target={mod}
+        onClose={() => setMod(null)}
+        onEdit={(m) => router.push(`/review/${m.id}?foodId=${id}` as Href)}
+        onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id ?? '' })}
+        onBlocked={() => void reviewsQ.refetch()}
+      />
       <AuthGateSheet context={gateOpen ?? 'reviews'} open={gateOpen != null} onClose={() => setGateOpen(null)} />
     </View>
   );
@@ -223,7 +252,7 @@ function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; le
   );
 }
 
-function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TFn; mine?: boolean; onEdit?: () => void }) {
+function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onOpen?: () => void; onMore?: () => void }) {
   // P-085 author 방어 3케이스: ① author null(탈퇴)=익명 ② nickname null(미설정)
   // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
@@ -232,7 +261,7 @@ function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TF
   const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
 
   return (
-    <View style={styles.item}>
+    <Pressable style={({ pressed }) => [styles.item, pressed && onOpen != null && styles.itemPressed]} onPress={onOpen} disabled={!onOpen}>
       <View style={styles.itemTop}>
         <View style={styles.who}>
           {anon || !review.authorNationality ? (
@@ -251,13 +280,12 @@ function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TF
           )}
         </View>
         <View style={styles.itemTopRight}>
-          {mine && (
-            <Pressable style={styles.minePill} onPress={onEdit} hitSlop={6}>
-              <Text style={styles.minePillText}>{t('reviews.mine')}</Text>
-              <IconChevron size={11} color={C.primaryText} />
+          <Stars value={review.rating} size={14} />
+          {onMore && (
+            <Pressable hitSlop={10} onPress={onMore}>
+              <IconMore size={16} color={C.ink3} />
             </Pressable>
           )}
-          <Stars value={review.rating} size={14} />
         </View>
       </View>
 
@@ -308,8 +336,26 @@ function ReviewItem({ review, t, mine = false, onEdit }: { review: Review; t: TF
         </View>
       )}
 
-      <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
-    </View>
+      {/* P-095: 장소 한 줄(핀+이름 — 태그 있을 때만) */}
+      {review.place && (
+        <View style={styles.placeLine}>
+          <IconMapPin size={12} color={C.ink3} />
+          <Text style={styles.placeLineText} numberOfLines={1}>{review.place.name}</Text>
+        </View>
+      )}
+      <View style={styles.itemFoot}>
+        <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
+        <View style={styles.itemFootRight}>
+          {(review.likes ?? 0) > 0 && (
+            <View style={styles.likeMeta}>
+              <IconHeart size={12} color={C.ink3} />
+              <Text style={styles.likeMetaText}>{review.likes}</Text>
+            </View>
+          )}
+          {onOpen && <IconChevron size={14} color={C.ink3} />}
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -378,8 +424,13 @@ const styles = StyleSheet.create({
   item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 },
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  minePill: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
-  minePillText: { fontFamily: font.bodyBold, fontSize: 11, color: C.primaryText },
+  itemPressed: { opacity: 0.75 },
+  placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  placeLineText: { fontFamily: font.body, fontSize: 12, color: C.ink2, flexShrink: 1 },
+  itemFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  itemFootRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  likeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  likeMetaText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   photoStrip: { flexDirection: 'row', gap: 8 },
   photo: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
   who: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },

@@ -188,7 +188,9 @@
     "blockedNote": "將不再顯示已封鎖用戶的貼文和留言。對方仍能看到你的內容。",
     "blockedEmptyTitle": "尚無封鎖用戶",
     "blockedEmptyBody": "你封鎖的用戶會顯示在這裡。",
-    "unblock": "解除封鎖"
+    "unblock": "解除封鎖",
+    "reviewBy": "{{name}}的評價",
+    "yourReview": "我的評價"
   },
   "risk": {
     "safe": "安全",
@@ -300,7 +302,15 @@
     "photosLabel": "照片（最多{{max}}張）",
     "addPhoto": "新增照片",
     "removePhoto": "刪除照片",
-    "postError": "評價儲存失敗。請檢查網路後再試一次。"
+    "postError": "評價儲存失敗。請檢查網路後再試一次。",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "按讚不影響排序",
+    "placeRow": "標記地點",
+    "placeOptional": "選填",
+    "placeSheetTitle": "標記地點",
+    "placeRecent": "最近",
+    "placeNoResults": "沒有符合的地點。",
+    "placeSkip": "略過 — 不帶地點發布"
   },
   "reviews": {
     "headerTitle": "評論",

@@ -30,7 +30,10 @@ export async function fetchFoodReviewsPage(
   if (cursor) q.set('cursor', cursor);
   if (countryCode) q.set('countryCode', countryCode);
   const qs = q.toString();
-  return adaptReviewPage(await api.get<ReviewPageWire>(`/foods/${foodId}/reviews${qs ? `?${qs}` : ''}`));
+  // #116(dev 실측 7/31): 경로 통일 — GET /reviews?foodId= (구 /foods/{id}/reviews)
+  const q2 = new URLSearchParams(q);
+  q2.set('foodId', foodId);
+  return adaptReviewPage(await api.get<ReviewPageWire>(`/reviews?${q2.toString()}`));
 }
 
 export function useFoodReviews(foodId: string, countryCode?: string | null) {

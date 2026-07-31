@@ -53,7 +53,7 @@ export async function fetchMyReviews(): Promise<Review[]> {
   for (let page = 0; page < 20; page++) {
     // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
     const res = adaptReviewPage(
-      await api.get<ReviewPageWire>(`/members/me/reviews${cursor ? `?cursor=${cursor}` : ''}`),
+      await api.get<ReviewPageWire>(`/reviews/me${cursor ? `?cursor=${cursor}` : ''}`), // #116 경로 통일
     );
     all.push(...res.items);
     if (!res.hasNext || !res.nextCursor) break;

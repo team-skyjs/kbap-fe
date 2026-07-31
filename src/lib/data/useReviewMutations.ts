@@ -39,7 +39,7 @@ export function useCreateReview() {
   const qc = useQueryClient();
   const invalidate = useInvalidateReviews();
   return useMutation({
-    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[] }) => {
+    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string } | null }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const me = qc.getQueryData<User>(['me', i18n.language]);
         mockInsert(qc, {
@@ -55,6 +55,8 @@ export function useCreateReview() {
           anonymized: false,
           bodyLanguage: i18n.language,
           translatedBody: null,
+          place: input.place ?? null, // P-095: 장소 목 저장 (live 전송은 계약 배포 시 스왑)
+          likes: 0,
         });
         return;
       }
@@ -112,6 +114,32 @@ export function useDeleteReview() {
     },
     onSuccess: (_d, v) => {
       if (FLAGS.reviewsLiveEnabled) invalidate(v.foodId);
+    },
+  });
+}
+
+/**
+ * P-095(KB-257): 리뷰 좋아요 — **BE 계약 미배포, 목 전용**(캐시 토글·표시만,
+ * 정렬 미반영 확정). ⚠️ 스왑 지점: 좋아요 계약 배포 시 이 mutationFn을 실
+ * POST/DELETE + 무효화로 교체 — 화면 무변.
+ */
+export function useToggleReviewLike() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { reviewId: string; foodId: string }) => {
+      const flip = (r: Review): Review =>
+        r.id === input.reviewId
+          ? { ...r, myLike: !r.myLike, likes: Math.max(0, (r.likes ?? 0) + (r.myLike ? -1 : 1)) }
+          : r;
+      qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => prev?.map(flip));
+      // 음식 리뷰 infinite 캐시 — 전 필터 키('all'·국적) 순회 반영
+      qc.getQueryCache()
+        .findAll({ queryKey: ['food', input.foodId, 'reviews'] })
+        .forEach((query) => {
+          qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
+            prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
+          );
+        });
     },
   });
 }

@@ -188,7 +188,9 @@
     "blockedNote": "ブロックしたユーザーの投稿とコメントは表示されません。相手はあなたの投稿を見られます。",
     "blockedEmptyTitle": "ブロック中のユーザーはいません",
     "blockedEmptyBody": "ブロックした相手がここに表示されます。",
-    "unblock": "解除"
+    "unblock": "解除",
+    "reviewBy": "{{name}}さんのレビュー",
+    "yourReview": "自分のレビュー"
   },
   "risk": {
     "safe": "安全",
@@ -300,7 +302,15 @@
     "photosLabel": "写真（最大{{max}}枚）",
     "addPhoto": "写真を追加",
     "removePhoto": "写真を削除",
-    "postError": "レビューを保存できませんでした。接続を確認して再試行してください。"
+    "postError": "レビューを保存できませんでした。接続を確認して再試行してください。",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "いいねは並び順に影響しません",
+    "placeRow": "場所をタグ付け",
+    "placeOptional": "任意",
+    "placeSheetTitle": "場所をタグ付け",
+    "placeRecent": "最近",
+    "placeNoResults": "一致する場所がありません。",
+    "placeSkip": "スキップ — 場所なしで投稿"
   },
   "reviews": {
     "headerTitle": "レビュー",

@@ -787,3 +787,12 @@
 - [x] vc5 production AAB(ad0fb109, 107.9MB) bundletool 실측 — arm64·420dpi·en+ko 기기 스펙: **다운로드 45.5MB** / **설치(비압축 합) ~112MB**(master 75 + arm64 36). 예진 실측 185MB와의 갭 = ART 컴파일 아티팩트(DEX 59MB에 비례)+앱 데이터로 설명 — DEX 감량 시 연쇄 감소.
 - [x] 기여 분해: **DEX 59.4MB(×6 — R8/minify 미적용이 최대 요인)** · .so 36.2MB(ML Kit OCR 10.6·RN 6.5·barhopper 바코드 4.7·hermes 2.3…) · OCR 모델 5.2 · JS 번들 4.2 · 폰트 2.5(미사용 의심 MaterialSymbols 0.91 — expo-router→expo-symbols 연쇄라 제거 불가) · 바코드 모델 0.8.
 - [x] 감량 후보 우선순위: ① R8+resourceShrink 활성(예상 다운로드 -10~15MB·설치 -30MB+, 중리스크 — keep 규칙·전 기능 QA) ② 미사용 의존성 제거: expo-glass-effect·expo-auth-session·expo-device(사용 0 실측, 저리스크, 재빌드 합류) ③ expo-camera의 barcode 계열(5.5MB — 분리 옵션 부재, 고난이도·보류) ④ OCR 모델·엔진(15.8MB — 핵심 기능, unbundled 전환 비권장). 실행은 예진 승인 후 별도 발주.
+
+## KB-257 리뷰 화면 구현 — D-07~10 (2026-07-31, P-095)
+- [x] 디테일 범용화(review/[id] 재작성): 작성자 행(아바타·이름·랭킹 필·시간·⋯)·정수 별점+n/5·본문·사진 스와이프 캐러셀(카운트+도트)·좋아요(하트 SVG 채움 전환 — primaryText, red 금지 준수)+정렬 미반영 캡션·장소 섹션(태그 시에만 — 3사 지도 중립 글리프, tagSheets openMap 재사용). 목록 진입은 ?foodId=로 음식 리뷰 캐시 조회, 프로필 진입은 내 리뷰. 기존 인라인 수정/삭제는 ⋯(Edit/Delete)로 통합.
+- [x] 목록 갱신: 행 전체 탭(press 상태+chevron)→디테일 · ⋯ per row(ModerationFlow) · 장소 한 줄(핀+이름) · 좋아요 카운트 메타 · minePill 폐기.
+- [x] 작성 폼 장소 필드: 접힌 행("Tag a place · Optional")→92% 시트(Recent·typeahead(커뮤니티 목 places 재사용)·무결과·Skip 푸터)→이름 칩(×). create 목 저장(live 전송은 계약 배포 시 스왑 주석). 1000자 유지·성공 화면 기존(SuccessCheck 계열)·언어 자동감지 미구현(보정 ②).
+- [x] 좋아요 목: useToggleReviewLike — 캐시 토글(내 리뷰+음식 리뷰 전 필터 키), API 호출 0, 스왑 주석. 유닛 잠금(토글·재탭 해제·호출 0).
+- [x] 모더레이션: ReportTarget에 'review' 추가 — 공용 ActionSheet('context')+ModerationFlow 재사용(사유 5종·"Blocking…" ≥2s·버건디 destructive). **리뷰발 차단 = 리스트 복귀+재조회**(디테일)·목록발 = refetch. 번역 버튼 플래그 비노출 유지.
+- [x] reviewAdapter 경로 보정(#116): on-경로만 GET /reviews?foodId=·GET /reviews/me — **플래그 off 봉인 그대로**, 유닛 신경로 갱신.
+- [x] IconHeart(lucide 벤더 규격 절차) 추가. i18n +10키×10(ratingOutOf·likesCaption·place 6종·reviewBy·yourReview). Review 타입 place/likes/myLike(목 전용) + 목 시드. tsc 0, jest 64스위트 332/332.

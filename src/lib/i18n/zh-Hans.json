@@ -188,7 +188,9 @@
     "blockedNote": "将不再显示已屏蔽用户的帖子和评论。对方仍能看到你的内容。",
     "blockedEmptyTitle": "暂无屏蔽用户",
     "blockedEmptyBody": "你屏蔽的用户会显示在这里。",
-    "unblock": "解除屏蔽"
+    "unblock": "解除屏蔽",
+    "reviewBy": "{{name}}的评价",
+    "yourReview": "我的评价"
   },
   "risk": {
     "safe": "安全",
@@ -300,7 +302,15 @@
     "photosLabel": "照片（最多{{max}}张）",
     "addPhoto": "添加照片",
     "removePhoto": "删除照片",
-    "postError": "评价保存失败。请检查网络后重试。"
+    "postError": "评价保存失败。请检查网络后重试。",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "点赞不影响排序",
+    "placeRow": "标记地点",
+    "placeOptional": "可选",
+    "placeSheetTitle": "标记地点",
+    "placeRecent": "最近",
+    "placeNoResults": "没有匹配的地点。",
+    "placeSkip": "跳过 — 不带地点发布"
   },
   "reviews": {
     "headerTitle": "点评",

@@ -69,7 +69,7 @@ export function FoodTagSheet({ target, onClose }: { target: { foodId: string; na
 
 /* ---- 장소 시트 — 3사 지도 딥링크 (미설치 시 웹) ---- */
 
-type MapApp = 'naver' | 'kakao' | 'google';
+export type MapApp = 'naver' | 'kakao' | 'google';
 
 function mapUrls(place: PlaceTagRef): Record<MapApp, { app: string; web: string }> {
   const q = encodeURIComponent(place.name);
@@ -80,7 +80,7 @@ function mapUrls(place: PlaceTagRef): Record<MapApp, { app: string; web: string 
   };
 }
 
-async function openMap(kind: MapApp, place: PlaceTagRef): Promise<void> {
+export async function openMap(kind: MapApp, place: PlaceTagRef): Promise<void> {
   const { app, web } = mapUrls(place)[kind];
   try {
     await Linking.openURL(app);

@@ -188,7 +188,9 @@
     "blockedNote": "차단한 사용자의 글과 댓글이 보이지 않아요. 상대는 내 글을 그대로 볼 수 있어요.",
     "blockedEmptyTitle": "차단한 사용자가 없어요",
     "blockedEmptyBody": "차단한 사람이 여기에 표시돼요.",
-    "unblock": "차단 해제"
+    "unblock": "차단 해제",
+    "reviewBy": "{{name}}님의 리뷰",
+    "yourReview": "내 리뷰"
   },
   "risk": {
     "safe": "안전",
@@ -343,7 +345,15 @@
     "photosLabel": "사진 (최대 {{max}}장)",
     "addPhoto": "사진 추가",
     "removePhoto": "사진 삭제",
-    "postError": "리뷰를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요."
+    "postError": "리뷰를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "좋아요는 정렬에 영향을 주지 않아요",
+    "placeRow": "장소 태그",
+    "placeOptional": "선택",
+    "placeSheetTitle": "장소 태그",
+    "placeRecent": "최근",
+    "placeNoResults": "일치하는 장소가 없어요.",
+    "placeSkip": "건너뛰기 — 장소 없이 게시"
   },
   "reviews": {
     "headerTitle": "리뷰",

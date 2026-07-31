@@ -188,7 +188,9 @@
     "blockedNote": "No verás publicaciones ni comentarios de usuarios bloqueados. Ellos sí pueden ver los tuyos.",
     "blockedEmptyTitle": "Sin usuarios bloqueados",
     "blockedEmptyBody": "Las personas que bloquees aparecerán aquí.",
-    "unblock": "Desbloquear"
+    "unblock": "Desbloquear",
+    "reviewBy": "Reseña de {{name}}",
+    "yourReview": "Tu reseña"
   },
   "risk": {
     "safe": "Seguro",
@@ -300,7 +302,15 @@
     "photosLabel": "Fotos (máx. {{max}})",
     "addPhoto": "Añadir foto",
     "removePhoto": "Quitar foto",
-    "postError": "No se pudo guardar la reseña. Revisa tu conexión e inténtalo de nuevo."
+    "postError": "No se pudo guardar la reseña. Revisa tu conexión e inténtalo de nuevo.",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "Los me gusta no cambian el orden",
+    "placeRow": "Etiquetar lugar",
+    "placeOptional": "Opcional",
+    "placeSheetTitle": "Etiquetar lugar",
+    "placeRecent": "Recientes",
+    "placeNoResults": "No hay lugares que coincidan.",
+    "placeSkip": "Omitir — publicar sin lugar"
   },
   "reviews": {
     "headerTitle": "Reseñas",

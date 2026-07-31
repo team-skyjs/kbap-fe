@@ -169,6 +169,11 @@ export interface Review {
   /** 번역 축 — 리뷰 번역 계약 미배포(P-085 지시 7): UI는 FLAGS.reviewTranslationEnabled로 비노출. */
   bodyLanguage?: string;
   translatedBody?: string | null;
+  /** P-095(KB-257): 장소 태그 — BE 계약 미배포, 목 전용(실검색은 KB-249). */
+  place?: { name: string; roadAddress: string } | null;
+  /** P-095: 좋아요 — BE 계약 미배포, 목 전용(표시만 — 정렬 미반영 확정). */
+  likes?: number;
+  myLike?: boolean;
 }
 
 /* ---- response envelopes ---- */

@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Star, Stars, Rosette, RiskMark, IconCheck, IconClose, IconPlus } from '@/components';
+import { SubHeader, Btn, Star, Stars, Rosette, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useCreateReview } from '@/lib/data/useReviewMutations';
@@ -23,6 +23,9 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
+import { searchPlaces } from '@/lib/community/places';
+import type { PlaceTagRef } from '@/lib/community/types';
+import { Modal, TextInput as RNTextInput } from 'react-native';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 
@@ -42,6 +45,9 @@ export default function ReviewCompose() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [postError, setPostError] = useState(false);
+  // P-095: 장소 태그(선택) — 목 데이터(커뮤니티 places 재사용, 실검색은 KB-249)
+  const [place, setPlace] = useState<PlaceTagRef | null>(null);
+  const [placeSheet, setPlaceSheet] = useState(false);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
 
@@ -67,6 +73,7 @@ export default function ReviewCompose() {
         rating,
         content: body.trim() || undefined,
         imagePaths,
+        place,
       });
       track(EVENTS.review_submit); // P-083
       setSubmitted(true);
@@ -197,6 +204,26 @@ export default function ReviewCompose() {
           </View>
         </View>
 
+        {/* P-095: 장소 필드 — 접힌 행("Tag a place · optional") → 92% 검색 시트 → 이름 칩(×) */}
+        <View style={styles.block}>
+          {place ? (
+            <View style={styles.placeChip}>
+              <IconMapPin size={14} color={C.accent} />
+              <Text style={styles.placeChipText} numberOfLines={1}>{place.name}</Text>
+              <Pressable hitSlop={8} onPress={() => setPlace(null)}>
+                <IconClose size={13} color={C.ink3} />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.placeRow} onPress={() => setPlaceSheet(true)}>
+              <IconMapPin size={17} color={C.ink2} />
+              <Text style={styles.placeRowText}>{t('review.placeRow')}</Text>
+              <Text style={styles.placeRowOpt}>{t('review.placeOptional')}</Text>
+              <IconChevron size={15} color={C.ink3} />
+            </Pressable>
+          )}
+        </View>
+
         {postError && (
           <View style={styles.postErr}>
             <RiskMark state="caution" size={16} />
@@ -209,7 +236,73 @@ export default function ReviewCompose() {
           </Btn>
         </View>
       </ScrollView>
+
+      <PlacePickerSheet
+        open={placeSheet}
+        onClose={() => setPlaceSheet(false)}
+        onPick={(p) => {
+          setPlace(p);
+          setPlaceSheet(false);
+        }}
+        t={t}
+      />
     </View>
+  );
+}
+
+/* ---- P-095: 장소 검색 시트(92%) — Recent·typeahead·무결과·Skip 푸터.
+        장소 데이터 = 커뮤니티 목 places 재사용 (실검색 KB-249 때 스왑). ---- */
+type TFn2 = ReturnType<typeof useTranslation>['t'];
+function PlacePickerSheet({ open, onClose, onPick, t }: { open: boolean; onClose: () => void; onPick: (p: PlaceTagRef) => void; t: TFn2 }) {
+  const [q, setQ] = useState('');
+  const results = searchPlaces(q);
+  const isRecent = q.trim().length === 0;
+  if (!open) return null;
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.pickerBackdrop}>
+        <View style={styles.pickerSheet}>
+          <View style={styles.pickerHeader}>
+            <Pressable hitSlop={10} onPress={onClose}>
+              <IconClose size={20} color={C.ink2} />
+            </Pressable>
+            <Text style={styles.pickerTitle}>{t('review.placeSheetTitle')}</Text>
+            <View style={{ width: 20 }} />
+          </View>
+          <View style={styles.searchBox}>
+            <IconSearch size={17} color={C.ink2} />
+            <RNTextInput
+              value={q}
+              onChangeText={setQ}
+              placeholder={t('community.searchPlaces')}
+              placeholderTextColor={C.ink3}
+              style={styles.searchInput}
+              autoCorrect={false}
+            />
+          </View>
+          {isRecent && <Text style={styles.recentLbl}>{t('review.placeRecent')}</Text>}
+          <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+            {results.length === 0 ? (
+              <Text style={styles.noResults}>{t('review.placeNoResults')}</Text>
+            ) : (
+              results.map((p) => (
+                <Pressable key={p.name} style={styles.resultRow} onPress={() => onPick(p)}>
+                  <IconMapPin size={16} color={C.ink3} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>
+                    <Text style={styles.resultSub} numberOfLines={1}>{p.roadAddress}</Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </ScrollView>
+          {/* Skip 푸터 — 장소 없이 게시 (D-09) */}
+          <Pressable style={styles.skipRow} onPress={onClose} hitSlop={6}>
+            <Text style={styles.skipText}>{t('review.placeSkip')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -242,6 +335,26 @@ const styles = StyleSheet.create({
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
   postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
+
+  // P-095 장소 필드·시트
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, paddingVertical: 13, ...shadow.sh1 },
+  placeRowText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  placeRowOpt: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink3 },
+  placeChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
+  placeChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink, flexShrink: 1 },
+  pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, gap: 12, ...shadow.sh2 },
+  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pickerTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13 },
+  searchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  recentLbl: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 0.6, color: C.ink3, textTransform: 'uppercase' },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  resultText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  resultSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
+  skipRow: { alignItems: 'center', paddingVertical: 12 },
+  skipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
 
   // submitted
   okWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, gap: 10 },

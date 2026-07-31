@@ -1,47 +1,72 @@
 /**
- * My review detail (KB-85) — opened by tapping a card in the My reviews list or
- * the profile tab. Read-only "조회" view by default: the reviewed dish, the
- * author's rating + written text, and the posted date. Tapping "Edit review"
- * flips the SAME screen into an inline edit form (rating picker + textarea);
- * "Delete this review" removes it.
+ * Review detail (KB-85 내 리뷰 조회 → P-095/KB-257 D-08 범용 디테일).
  *
- * Data via useMyReviews(); dish name/nameKo/risk joined from useFoods() by
- * foodId. P-085(KB-73): Save = PATCH /reviews/{id} — **항상 풀 페이로드**
- * (buildReviewUpdate: 생략=제거 시맨틱이라 본문만 고쳐도 사진 전량 유지),
- * Delete = DELETE /reviews/{id}. 성공 시 무효화 재조회가 진실.
+ * 목록 행 탭·프로필 내 리뷰에서 진입. 작성자 행(아바타·이름·랭킹 필·시간·⋯) ·
+ * 정수 별점+n/5 · 본문 · 사진 3장 스와이프 캐러셀(카운트+도트) · 좋아요(하트
+ * 채움 전환 — 목, 정렬 미반영 캡션) · 장소 섹션(태그 있을 때만 — 3사 지도
+ * 중립 글리프 딥링크). ⋯ = 공용 ActionSheet('context') — 내 것 Edit(인라인
+ * 편집)/Delete, 남의 것 Report/Block(**리뷰발 차단 = 리스트 복귀 + 재조회**).
+ * 데이터 = 목/봉인 경로 그대로(P-086) — 좋아요·장소는 목 전용(스왑 주석 참조).
  */
-import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconEdit, IconTrash, IconChevron } from '@/components';
+import {
+  SubHeader,
+  Btn,
+  Flag,
+  Rosette,
+  Star,
+  Stars,
+  RiskMark,
+  IconCheck,
+  IconChevron,
+  IconHeart,
+  IconMapPin,
+  IconMore,
+  IconProfile,
+} from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
+import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoods } from '@/lib/data/useFoods';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
+import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
+import { openMap, type MapApp } from '@/features/community/tagSheets';
+import type { Review } from '@/lib/api/types';
 
-const MAX = 1000; // P-085: 계약 확정값 (구 500)
+const MAX = 1000; // P-085: 계약 확정값
 
 export default function ReviewDetail() {
-  // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
-  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  // KB-148: 리뷰 MVP 제외 이력 — 딥링크/백스택 방어 (플래그 켜면 no-op)
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
 
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, foodId } = useLocalSearchParams<{ id: string; foodId?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { data: reviews } = useMyReviews();
+  const qc = useQueryClient();
+  const { width } = useWindowDimensions();
+  const { data: myReviews } = useMyReviews();
+  const foodReviewsQ = useFoodReviews(foodId ?? '');
   const { data: foods } = useFoods();
   const { data: me } = useMe();
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
+  const toggleLike = useToggleReviewLike();
 
-  const review = (reviews ?? []).find((r) => r.id === id);
+  // 조회: 내 리뷰 우선(mine 판별 겸) → 목록 진입이면 음식 리뷰 캐시
+  const mine = (myReviews ?? []).find((r) => r.id === id);
+  const fromList = (foodReviewsQ.data?.pages ?? []).flatMap((p) => p.items).find((r) => r.id === id);
+  const review: Review | undefined = mine ?? fromList;
+  const isMine = mine != null;
+
   const food = foods?.find((f) => f.foodId === review?.foodId);
   const hasR = (me?.restrictions.length ?? 0) > 0;
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
@@ -49,7 +74,10 @@ export default function ReviewDetail() {
   const [editing, setEditing] = useState(false);
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
+  const [mod, setMod] = useState<ModTarget | null>(null);
+  const [photoIndex, setPhotoIndex] = useState(0);
   const isGuest = useIsGuest();
+  const carouselW = useRef(width - 36); // body padding 18×2
 
   function startEdit() {
     if (!review) return;
@@ -58,16 +86,12 @@ export default function ReviewDetail() {
     setEditing(true);
   }
 
-  // P-085: PATCH = 풀 페이로드 (buildReviewUpdate가 rating·현재 사진 전량 포함 —
-  // "생략=제거" 함정 봉쇄). 실패는 Alert 표면화, 편집 화면 유지.
+  // P-085: PATCH 풀 페이로드(buildReviewUpdate — 생략=제거 함정 봉쇄) / 목은 캐시
   function save() {
     if (!review || updateReview.isPending) return;
     updateReview.mutate(
       { reviewId: review.id, foodId: review.foodId, current: review, changes: { rating, body } },
-      {
-        onSuccess: () => setEditing(false),
-        onError: () => Alert.alert(t('review.postError')),
-      },
+      { onSuccess: () => setEditing(false), onError: () => Alert.alert(t('review.postError')) },
     );
   }
 
@@ -87,8 +111,20 @@ export default function ReviewDetail() {
     ]);
   }
 
-  // 라우트 자체 가드 (⑧-b) — 진입로는 프로필 경유(게이트)뿐이지만 딥링크 이중 방어.
-  // 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
+  const openMenu = () => {
+    if (!review) return;
+    setMod({
+      type: 'review',
+      id: review.id,
+      author: {
+        id: review.author?.memberId ?? review.memberId ?? `rv-${review.id}`,
+        nickname: review.author?.nickname ?? null,
+        nationality: review.authorNationality,
+      },
+      mine: isMine,
+    });
+  };
+
   if (isGuest) {
     return (
       <View style={styles.root}>
@@ -111,6 +147,10 @@ export default function ReviewDetail() {
 
   const risk: RiskState = food ? personalRisk(food.risk, hasR) : 'unable';
   const posted = t('editReview.posted', { when: relativeDate(review.createdAt, t) });
+  const authorLabel = review.anonymized
+    ? t('reviews.anonymous')
+    : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
+  const photos = review.photos ?? [];
 
   return (
     <View style={styles.root}>
@@ -126,7 +166,37 @@ export default function ReviewDetail() {
         }
       />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* dish — tappable in view mode (→ food detail); static while editing */}
+        {/* 작성자 행 — 아바타(국기/중립)·이름·랭킹 필·시간·⋯ (D-08) */}
+        {!editing && (
+          <View style={styles.authorRow}>
+            {review.anonymized || !review.authorNationality ? (
+              <View style={styles.anonAvatar}>
+                <IconProfile size={16} color={C.ink3} />
+              </View>
+            ) : (
+              <Flag code={review.authorNationality} size={28} />
+            )}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={styles.authorNameRow}>
+                <Text style={styles.authorName} numberOfLines={1}>
+                  {authorLabel}
+                </Text>
+                {!review.anonymized && !!review.authorRankTier && (
+                  <View style={styles.rankPill}>
+                    <Rosette level={review.author?.level ?? 1} size={14} />
+                    <Text style={styles.rankText}>{review.authorRankTier}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.when}>{posted}</Text>
+            </View>
+            <Pressable hitSlop={10} onPress={openMenu}>
+              <IconMore size={18} color={C.ink3} />
+            </Pressable>
+          </View>
+        )}
+
+        {/* dish chip — 조회 시 탭하면 음식 상세 */}
         {editing ? (
           <View style={styles.foodChip}>
             <View style={styles.foodPh} />
@@ -164,8 +234,6 @@ export default function ReviewDetail() {
                 {rating ? t('review.ratingValue', { value: rating, label: labels[rating] ?? '' }) : t('review.tapToRate')}
               </Text>
             </View>
-
-            {/* body — editable */}
             <View style={styles.block}>
               <Text style={styles.label}>{t('review.reviewLabel')}</Text>
               <TextInput
@@ -182,7 +250,6 @@ export default function ReviewDetail() {
                 <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
               </View>
             </View>
-
             <View style={{ marginTop: 4, gap: 10 }}>
               <Btn icon={<IconCheck size={17} color="#fff" />} onPress={save}>
                 {t('editReview.save')}
@@ -194,48 +261,105 @@ export default function ReviewDetail() {
           </>
         ) : (
           <>
-            {/* rating — read-only */}
-            <View style={styles.ratingView}>
-              <Stars value={review.rating} size={30} />
-              <Text style={styles.ratingCap}>
-                {t('review.ratingValue', { value: review.rating, label: labels[review.rating] ?? '' })}
-              </Text>
+            {/* rating — 정수 별점 + n/5 (D-08) */}
+            <View style={styles.ratingRow}>
+              <Stars value={review.rating} size={22} />
+              <Text style={styles.ratingScore}>{t('review.ratingOutOf', { value: review.rating })}</Text>
             </View>
 
-            {/* body — read-only */}
-            <View style={styles.bodyCard}>
-              {review.body ? (
-                <Text style={styles.bodyText}>{review.body}</Text>
-              ) : (
-                <Text style={styles.bodyEmpty}>{t('editReview.noBody')}</Text>
-              )}
-            </View>
+            {review.body ? (
+              <Text style={styles.bodyText}>{review.body}</Text>
+            ) : (
+              <Text style={styles.bodyEmpty}>{t('editReview.noBody')}</Text>
+            )}
 
-            {/* P-077: 첨부 사진 표시(조회 전용 — 사진 수정은 실연결 때 검토) */}
-            {!!review.photos?.length && (
-              <View style={styles.photoStrip}>
-                {review.photos.map((uri) => (
-                  <Image key={uri} source={{ uri }} style={styles.photoThumb} />
-                ))}
+            {/* 사진 캐러셀 — 스와이프 + 카운트/도트 (D-08) */}
+            {photos.length > 0 && (
+              <View>
+                <ScrollView
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={(e) =>
+                    setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / carouselW.current))
+                  }
+                >
+                  {photos.map((uri) => (
+                    <Image key={uri} source={{ uri }} style={[styles.carouselPhoto, { width: carouselW.current }]} />
+                  ))}
+                </ScrollView>
+                {photos.length > 1 && (
+                  <>
+                    <View style={styles.photoCount}>
+                      <Text style={styles.photoCountText}>{`${photoIndex + 1}/${photos.length}`}</Text>
+                    </View>
+                    <View style={styles.dots}>
+                      {photos.map((_, i) => (
+                        <View key={i} style={[styles.dot, i === photoIndex && styles.dotOn]} />
+                      ))}
+                    </View>
+                  </>
+                )}
               </View>
             )}
-            <Text style={styles.postedTag}>{posted}</Text>
 
-            <View style={{ marginTop: 8, gap: 10 }}>
-              <Btn variant="ghost" icon={<IconEdit size={17} color={C.ink} />} onPress={startEdit}>
-                {t('editReview.title')}
-              </Btn>
-              <Pressable style={styles.delRow} onPress={confirmDelete}>
-                <View style={styles.delIc}>
-                  <IconTrash size={17} color={C.riskDanger} />
-                </View>
-                <Text style={styles.delText}>{t('editReview.delete')}</Text>
-                <IconChevron size={16} color={C.riskDanger} />
+            {/* 좋아요 — 하트 채움 전환(색만 전환 금지) + 정렬 미반영 캡션 (D-08) */}
+            <View style={styles.likeBlock}>
+              <Pressable
+                style={styles.likeBtn}
+                hitSlop={8}
+                onPress={() => toggleLike.mutate({ reviewId: review.id, foodId: review.foodId })}
+              >
+                <IconHeart
+                  size={19}
+                  color={review.myLike ? C.primaryText : C.ink2}
+                  {...(review.myLike ? { fill: C.primaryText, sw: 0 } : {})}
+                />
+                <Text style={[styles.likeCount, review.myLike && styles.likeCountOn]}>{review.likes ?? 0}</Text>
               </Pressable>
+              <Text style={styles.likeCaption}>{t('review.likesCaption')}</Text>
             </View>
+
+            {/* 장소 섹션 — 태그 있을 때만 (D-08, 3사 지도 중립 글리프) */}
+            {review.place && (
+              <View style={styles.placeCard}>
+                <View style={styles.placeTop}>
+                  <View style={styles.placeIc}>
+                    <IconMapPin size={17} color={C.accent} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.placeName} numberOfLines={1}>{review.place.name}</Text>
+                    <Text style={styles.placeAddr} numberOfLines={2}>{review.place.roadAddress}</Text>
+                  </View>
+                </View>
+                <View style={styles.mapRow}>
+                  {(['naver', 'kakao', 'google'] as MapApp[]).map((kind) => (
+                    <Pressable key={kind} style={styles.mapBtn} onPress={() => review.place && void openMap(kind, review.place)}>
+                      <IconMapPin size={15} color={C.ink2} />
+                      <Text style={styles.mapBtnText}>{t(`community.map.${kind}`)}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
+
+      {/* ⋯ — 공용 ActionSheet: 내 것 Edit/Delete · 남의 것 Report/Block */}
+      <ModerationFlow
+        target={mod}
+        onClose={() => setMod(null)}
+        onEdit={() => startEdit()}
+        onDelete={() => confirmDelete()}
+        onBlocked={() => {
+          // 리뷰발 차단 = 리스트 복귀 + 재조회 (확정 정책) — 차단 유저 필터는
+          // BE 몫(실연결 시), 목 단계는 재조회 시맨틱만 유지
+          void qc.invalidateQueries({ queryKey: ['food', review.foodId, 'reviews'] });
+          void qc.invalidateQueries({ queryKey: ['me', 'reviews'] });
+          router.back();
+        }}
+      />
     </View>
   );
 }
@@ -249,44 +373,60 @@ function relativeDate(iso: string, t: TFn): string {
 }
 
 const styles = StyleSheet.create({
-  photoStrip: { flexDirection: 'row', gap: 8 },
-  photoThumb: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
   root: { flex: 1, backgroundColor: C.surface },
-  body: { padding: 18, gap: 20 },
-
+  body: { padding: 18, gap: 16 },
   saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary, marginRight: 8 },
 
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  anonAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  authorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  authorName: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 },
+  rankPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2.5 },
+  rankText: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2 },
+  when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+
   foodChip: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-  foodPh: { width: 48, height: 48, borderRadius: 12, backgroundColor: C.surface2 },
-  foodName: { fontFamily: font.display, fontSize: 16, color: C.ink },
+  foodPh: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2 },
+  foodName: { fontFamily: font.display, fontSize: 15.5, color: C.ink },
   foodKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2, marginTop: 1 },
 
-  // read-only rating
-  ratingView: { alignItems: 'center', gap: 8, paddingVertical: 6 },
-  ratingCap: { fontFamily: font.bodyBold, fontSize: 15, color: C.primary },
-
-  // read-only body
-  bodyCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 13, padding: 16, ...shadow.sh1 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  ratingScore: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink2 },
   bodyText: { fontFamily: font.body, fontSize: 14.5, color: C.ink, lineHeight: 22 },
   bodyEmpty: { fontFamily: font.body, fontSize: 14, color: C.ink3, fontStyle: 'italic' },
-  postedTag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: -8 },
+
+  carouselPhoto: { aspectRatio: 4 / 3, borderRadius: 14, backgroundColor: C.surface2 },
+  photoCount: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  photoCountText: { fontFamily: font.bodyBold, fontSize: 11, color: '#fff' },
+  dots: { flexDirection: 'row', gap: 5, justifyContent: 'center', marginTop: 8 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.line },
+  dotOn: { backgroundColor: C.primary },
+
+  likeBlock: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
+  likeCount: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  likeCountOn: { color: C.primaryText },
+  likeCaption: { flex: 1, fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+
+  placeCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, gap: 11, ...shadow.sh1 },
+  placeTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  placeIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(14,154,167,0.1)', alignItems: 'center', justifyContent: 'center' },
+  placeName: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
+  placeAddr: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 1 },
+  mapRow: { flexDirection: 'row', gap: 8 },
+  mapBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 10, paddingVertical: 9 },
+  mapBtnText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink },
 
   block: { gap: 12 },
   label: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   starPick: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 4 },
   starCap: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary, textAlign: 'center' },
   starCapEmpty: { color: C.ink3 },
-
   textarea: { minHeight: 120, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, padding: 14, fontFamily: font.body, fontSize: 14.5, color: C.ink, lineHeight: 21, ...shadow.sh1 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between' },
   tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
-
   ghostRow: { alignItems: 'center', paddingVertical: 12 },
   ghostText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink2 },
-
-  delRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fdecea', borderWidth: 1, borderColor: '#f3cdc8', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 },
-  delIc: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  delText: { flex: 1, fontFamily: font.bodyBold, fontSize: 14.5, color: C.riskDanger },
 
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   missingText: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center' },

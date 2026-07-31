@@ -64,7 +64,7 @@ describe('목록 페처 — 플래그 스위칭', () => {
     mockFlagState.live = true;
     api.get.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
     await fetchFoodReviewsPage('7', '42', 'VN');
-    expect(api.get).toHaveBeenCalledWith('/foods/7/reviews?cursor=42&countryCode=VN');
+    expect(api.get).toHaveBeenCalledWith('/reviews?cursor=42&countryCode=VN&foodId=7'); // #116 경로 통일
   });
 });
 
@@ -81,7 +81,7 @@ describe('내 리뷰 페처 — 플래그 스위칭', () => {
       hasNext: false,
     });
     const mine = await fetchMyReviews();
-    expect(api.get).toHaveBeenCalledWith('/members/me/reviews');
+    expect(api.get).toHaveBeenCalledWith('/reviews/me'); // #116 경로 통일
     expect(mine).toHaveLength(1);
     expect(mine[0].anonymized).toBe(true); // author null(탈퇴형) 방어 겸
   });
@@ -135,4 +135,45 @@ it('작성 on → 실 POST /reviews (foodId 수치화)', async () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await runCreate(qc, { foodId: '7', rating: 5, content: 'live' });
   expect(api.post).toHaveBeenCalledWith('/reviews', { foodId: 7, rating: 5, content: 'live' });
+});
+
+/* ---- P-095: 리뷰 좋아요 토글 (목 — 캐시 반영·API 호출 0) ---- */
+
+function LikeHarness({ input, onSettled }: { input: { reviewId: string; foodId: string }; onSettled: () => void }) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useToggleReviewLike } = require('../useReviewMutations') as typeof import('../useReviewMutations');
+  const toggle = useToggleReviewLike();
+  React.useEffect(() => {
+    toggle.mutate(input, { onSettled });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
+async function runLike(qc: QueryClient, input: { reviewId: string; foodId: string }) {
+  let settled!: () => void;
+  const done = new Promise<void>((r) => (settled = r));
+  await act(async () => {
+    renderer.create(
+      <QueryClientProvider client={qc}>
+        <LikeHarness input={input} onSettled={settled} />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => {
+    await done;
+  });
+}
+
+it('좋아요 토글(목) → API 호출 0 + 내 리뷰·음식 리뷰 전 필터 캐시에 반영, 재탭 해제', async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const rv = { id: 'r1', foodId: '7', rating: 5, body: null, authorNationality: 'US', authorRankTier: null, anonymized: false, createdAt: '2026-07-31T00:00:00Z', likes: 2, myLike: false } as Review;
+  qc.setQueryData(['me', 'reviews'], [rv]);
+  qc.setQueryData<InfiniteData<ReviewPage>>(['food', '7', 'reviews', 'all'], { pages: [{ items: [rv], hasNext: false, nextCursor: null }], pageParams: [null] });
+  await runLike(qc, { reviewId: 'r1', foodId: '7' });
+  expect(api.post).not.toHaveBeenCalled();
+  expect((qc.getQueryData<Review[]>(['me', 'reviews'])![0])).toMatchObject({ likes: 3, myLike: true });
+  expect(qc.getQueryData<InfiniteData<ReviewPage>>(['food', '7', 'reviews', 'all'])!.pages[0].items[0]).toMatchObject({ likes: 3, myLike: true });
+  await runLike(qc, { reviewId: 'r1', foodId: '7' }); // 재탭 = 해제
+  expect((qc.getQueryData<Review[]>(['me', 'reviews'])![0])).toMatchObject({ likes: 2, myLike: false });
 });

@@ -188,7 +188,9 @@
     "blockedNote": "Postingan dan komentar pengguna yang diblokir tidak akan terlihat. Mereka tetap bisa melihat milikmu.",
     "blockedEmptyTitle": "Tidak ada yang diblokir",
     "blockedEmptyBody": "Pengguna yang kamu blokir akan tampil di sini.",
-    "unblock": "Buka blokir"
+    "unblock": "Buka blokir",
+    "reviewBy": "Ulasan {{name}}",
+    "yourReview": "Ulasanmu"
   },
   "risk": {
     "safe": "Aman",
@@ -300,7 +302,15 @@
     "photosLabel": "Foto (maks. {{max}})",
     "addPhoto": "Tambah foto",
     "removePhoto": "Hapus foto",
-    "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi."
+    "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi.",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "Suka tidak memengaruhi urutan",
+    "placeRow": "Tandai tempat",
+    "placeOptional": "Opsional",
+    "placeSheetTitle": "Tandai tempat",
+    "placeRecent": "Terbaru",
+    "placeNoResults": "Tidak ada tempat yang cocok.",
+    "placeSkip": "Lewati — posting tanpa tempat"
   },
   "reviews": {
     "headerTitle": "Ulasan",

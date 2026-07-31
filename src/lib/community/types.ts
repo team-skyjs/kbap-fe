@@ -56,7 +56,8 @@ export interface CommunityPage<T> {
   nextCursor: string | null;
 }
 
-export type ReportTarget = 'post' | 'comment';
+/** P-095: 신고 대상 3종 확정(댓글·게시글·리뷰 — 7/29 회의). */
+export type ReportTarget = 'post' | 'comment' | 'review';
 export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinfo' | 'other';
 
 export interface BlockedUser {

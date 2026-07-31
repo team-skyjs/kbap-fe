@@ -90,9 +90,9 @@ export function ModerationFlow({
 
   /* ---- ① ⋯ 메뉴 (공용 ActionSheet) ---- */
   if (phase === 'menu') {
-    const title = target.mine
-      ? t(target.type === 'post' ? 'community.yourPost' : 'community.yourComment')
-      : t(target.type === 'post' ? 'community.postBy' : 'community.commentBy', { name });
+    const KIND_MINE = { post: 'community.yourPost', comment: 'community.yourComment', review: 'community.yourReview' } as const;
+    const KIND_BY = { post: 'community.postBy', comment: 'community.commentBy', review: 'community.reviewBy' } as const;
+    const title = target.mine ? t(KIND_MINE[target.type]) : t(KIND_BY[target.type], { name });
     const avatar = target.author.nationality ? (
       <Flag code={target.author.nationality} size={26} />
     ) : (

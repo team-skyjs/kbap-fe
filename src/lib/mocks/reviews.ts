@@ -18,6 +18,8 @@ const KIMCHI_REVIEWS: Review[] = [
     authorRankTier: 'Foodie',
     anonymized: false,
     createdAt: '2026-06-30T09:20:00Z',
+    place: { name: 'Hongdae Kimchi House', roadAddress: '12 Wausan-ro, Mapo-gu, Seoul' }, // P-095 장소 시드
+    likes: 12,
   },
   {
     id: 'rv_2',
@@ -30,6 +32,7 @@ const KIMCHI_REVIEWS: Review[] = [
     authorRankTier: 'Regular',
     anonymized: false,
     createdAt: '2026-06-28T12:00:00Z',
+    likes: 4,
   },
   {
     id: 'rv_3',

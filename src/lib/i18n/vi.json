@@ -188,7 +188,9 @@
     "blockedNote": "Bạn sẽ không thấy bài viết và bình luận của người bị chặn. Họ vẫn thấy nội dung của bạn.",
     "blockedEmptyTitle": "Chưa chặn ai",
     "blockedEmptyBody": "Những người bạn chặn sẽ hiển thị ở đây.",
-    "unblock": "Bỏ chặn"
+    "unblock": "Bỏ chặn",
+    "reviewBy": "Đánh giá của {{name}}",
+    "yourReview": "Đánh giá của bạn"
   },
   "risk": {
     "safe": "An toàn",
@@ -300,7 +302,15 @@
     "photosLabel": "Ảnh (tối đa {{max}})",
     "addPhoto": "Thêm ảnh",
     "removePhoto": "Xóa ảnh",
-    "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại."
+    "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại.",
+    "ratingOutOf": "{{value}}/5",
+    "likesCaption": "Lượt thích không ảnh hưởng thứ tự",
+    "placeRow": "Gắn thẻ địa điểm",
+    "placeOptional": "Tùy chọn",
+    "placeSheetTitle": "Gắn thẻ địa điểm",
+    "placeRecent": "Gần đây",
+    "placeNoResults": "Không có địa điểm phù hợp.",
+    "placeSkip": "Bỏ qua — đăng không kèm địa điểm"
   },
   "reviews": {
     "headerTitle": "Đánh giá",
