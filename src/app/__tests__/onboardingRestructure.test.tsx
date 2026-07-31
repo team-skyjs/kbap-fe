@@ -154,3 +154,16 @@ it('마크 데모 — 탭 순환 safe→caution→danger→unable→safe (4상�
     expect(meaning(next === 'safe' ? 'unable' : 'safe')).toBe(0); // 이전 의미 텍스트는 사라짐
   }
 });
+
+it('P-101 — 공용 푸터: consent(신규)와 spice(드래프트) CTA 프레임 스타일 동일 + Skip 슬롯 고정', async () => {
+  const { StyleSheet } = require('react-native');
+  const footerOf = (tree: ReactTestRenderer) => {
+    const f = tree.root.findAll((n) => n.props?.testID === 'ob-footer')[0];
+    return StyleSheet.flatten(f.props.style) as Record<string, unknown>;
+  };
+  mockDraft = null; // consent
+  const a = footerOf(await render());
+  mockDraft = { consented: true, step: 'spice', nickname: 'Y', nationality: 'KR', language: 'en', restrictions: [], spice: null, updatedAt: '2026-07-20T00:00:00Z' };
+  const b = footerOf(await render());
+  expect(a).toEqual(b); // 스텝이 달라도 푸터 프레임 스타일 동일 (paddingTop·paddingBottom·배경 등)
+});

@@ -810,3 +810,9 @@
 
 ## 게스트 댓글 가림 강화 (2026-07-31, P-100 — 소형, Q-25 반려)
 - [x] opacity 0.25 반투명(내용 판독됨) 폐기 → **고스트 스켈레톤 3줄**(아바타 원+회색 라인 2개, 정적) — 실 댓글 텍스트 미렌더 = 판독 원천 차단 + 실연결 시 비회원엔 댓글 데이터가 안 오는 BE 필터 정책과 정합. 개수("Comments · n") 선명·게이트 카드 현행 유지. expo-blur 미도입(JS-only). tsc 0, jest 332/332.
+
+## 온보딩 CTA 푸터 통일 (2026-07-31, P-101 — Q-23 반려)
+- [x] 공용 푸터 신설(6스텝 전부): 스텝별 제각각이던 in-scroll foot(회피 151pt·맵기 111pt·요약 53.7pt) 폐기 — P-011 restrictions 스티키 방식을 전 스텝으로 확장(스크롤 밖 고정, 배경/보더/패딩 규격 단일). CTA 프레임(y·높이) 전 스텝 픽셀 동일.
+- [x] Skip 슬롯 = CTA 아래 고정 높이 34pt — 회피/맵기(Skip)·약관(consent 노트)·그 외(빈 슬롯) 모두 같은 높이 → 어느 스텝에서도 CTA 미동 0. ScrollView 하단 패딩 전 스텝 24로 통일.
+- [x] 스텝 컴포넌트 정리: Consent/Profile/RiskDemo/Spice/Interests/Summary에서 개별 foot·onContinue/onSkip/onSubmit 프롭 제거 — CTA 상태(비활성 조건·아이콘·라벨 카운트) 전부 푸터 도출식 한 곳으로.
+- [x] 유닛: 푸터 프레임 스타일 동일성(consent vs spice) 잠금 + 기존 스티키(ScrollView 밖) 테스트 라벨 매처 보정. tsc 0, jest 64스위트 333/333. 육안(전환 시 버튼 미동 0)은 예진 Metro.

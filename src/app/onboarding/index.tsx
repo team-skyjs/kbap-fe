@@ -302,16 +302,56 @@ export default function Onboarding() {
   // KB-197→P-055: 안드 내비바 클리어런스는 공용 훅으로 승격 (전수 적용)
   const bottomInset = useBottomInset();
 
+  // P-101(Q-23): 6스텝 CTA 공용 푸터 — 어느 스텝에서도 CTA 프레임(y·높이) 픽셀
+  // 동일. Skip/노트는 CTA 아래 **고정 높이 슬롯**(없는 스텝은 빈 슬롯 유지).
+  const footer = ((): { label: string; variant?: 'primary' | 'off'; onPress?: () => void; icon?: ReactNode; onSkip?: () => void; note?: string } => {
+    switch (step) {
+      case 'consent':
+        return {
+          label: t('onboarding.continue'),
+          variant: agreed ? 'primary' : 'off',
+          onPress: agreed ? advance : undefined,
+          icon: agreed ? <IconCheck size={18} color="#fff" /> : undefined,
+          note: t('onboarding.consentNote'),
+        };
+      case 'profile':
+        return { label: t('onboarding.continue'), variant: nickname.trim() ? 'primary' : 'off', onPress: nickname.trim() ? advance : undefined };
+      case 'riskdemo':
+        return { label: t('onboarding.continue'), onPress: advance };
+      case 'restrictions':
+        return {
+          label: restrictions.size
+            ? `${t('onboarding.continue')} · ${t('onboarding.added', { count: restrictions.size })}`
+            : t('onboarding.continue'),
+          onPress: answerStep,
+          onSkip: skipStep,
+        };
+      case 'spice':
+        return { label: t('onboarding.continue'), onPress: answerStep, onSkip: skipStep };
+      case 'interests':
+        return {
+          label: interests.size
+            ? `${t('onboarding.continue')} · ${t('onboarding.picked', { count: interests.size })}`
+            : t('onboarding.continue'),
+          variant: interests.size ? 'primary' : 'off',
+          onPress: interests.size ? advance : undefined,
+          onSkip: next,
+        };
+      case 'summary':
+        return {
+          label: t('onboarding.start'),
+          onPress: submitting ? undefined : () => void finish(),
+          icon: submitting ? <Spinner size={18} color="#fff" /> : undefined,
+        };
+    }
+  })();
+
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
       <ScrollView
         scrollEnabled={!sliderDragging}
-        contentContainerStyle={[
-          styles.body,
-          // restrictions는 CTA가 스티키(아래 stickyFoot) — 목록 하단 여백만.
-          // 그 외 스텝은 CTA가 in-scroll foot이라 내비바 클리어런스를 body에 실어야 함.
-          step === 'restrictions' ? { paddingBottom: 130 } : { paddingBottom: 28 + bottomInset },
-        ]}
+        // P-101: CTA가 전 스텝 스크롤 밖 공용 푸터로 — 하단 패딩 전 스텝 동일
+        contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -342,7 +382,6 @@ export default function Onboarding() {
             }
             onOpenDoc={setLegalDoc}
             allAgreed={agreed}
-            onStart={advance}
             t={t}
           />
         )}
@@ -357,12 +396,11 @@ export default function Onboarding() {
             onPickPhoto={() => void pickPhoto()}
             nationality={nation}
             onPickNationality={() => setNatOpen(true)}
-            onContinue={advance}
             t={t}
           />
         )}
 
-        {step === 'riskdemo' && <RiskDemo onContinue={advance} t={t} />}
+        {step === 'riskdemo' && <RiskDemo t={t} />}
 
         {step === 'restrictions' && (
           <Restrictions
@@ -381,8 +419,6 @@ export default function Onboarding() {
               setSpice(l);
               setSkipped((s) => (s.spice ? { ...s, spice: false } : s));
             }}
-            onContinue={answerStep}
-            onSkip={skipStep}
             onDragStateChange={setSliderDragging}
             t={t}
           />
@@ -392,8 +428,6 @@ export default function Onboarding() {
           <Interests
             selected={interests}
             onToggle={(name) => toggle(interests, name, setInterests)}
-            onContinue={advance}
-            onSkip={next}
             t={t}
           />
         )}
@@ -405,27 +439,28 @@ export default function Onboarding() {
             restrictions={Array.from(restrictions)}
             skipped={skipped}
             level={spice}
-            submitting={submitting}
             onEdit={editFromSummary}
-            onSubmit={() => void finish()}
             t={t}
           />
         )}
       </ScrollView>
 
-      {/* P-011(KB-178, B안): restrictions 스텝 CTA 하단 고정 — 81종 목록 스크롤과
-          무관하게 항상 노출. 목록 하단 패딩(130)으로 마지막 칩 가림 방지. */}
-      {step === 'restrictions' && (
-        <View style={[styles.stickyFoot, { paddingBottom: bottomInset + 14 }]}>
-          <Btn onPress={answerStep}>
-            {t('onboarding.continue')}
-            {restrictions.size ? ` · ${t('onboarding.added', { count: restrictions.size })}` : ''}
-          </Btn>
-          <Pressable onPress={skipStep} hitSlop={8} style={{ alignSelf: 'center' }}>
-            <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
-          </Pressable>
+      {/* P-101: 공용 OnboardingFooter — 6스텝 전부 (P-011 restrictions 스티키의
+          전 스텝 확장). CTA 프레임 고정 + Skip/노트 고정 높이 슬롯. */}
+      <View testID="ob-footer" style={[styles.footer, { paddingBottom: bottomInset + 14 }]}>
+        <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
+          {footer.label}
+        </Btn>
+        <View style={styles.skipSlot}>
+          {footer.onSkip ? (
+            <Pressable onPress={footer.onSkip} hitSlop={8}>
+              <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
+            </Pressable>
+          ) : footer.note ? (
+            <Text style={[styles.tag, { textAlign: 'center' }]}>{footer.note}</Text>
+          ) : null}
         </View>
-      )}
+      </View>
 
       {/* shared nationality picker (I4) */}
       <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
@@ -455,7 +490,6 @@ function Consent({
   onToggleAll,
   onOpenDoc,
   allAgreed,
-  onStart,
   t,
 }: {
   consents: Record<ConsentKey, boolean>;
@@ -463,7 +497,6 @@ function Consent({
   onToggleAll: () => void;
   onOpenDoc: (k: ConsentKey) => void;
   allAgreed: boolean;
-  onStart: () => void;
   t: TFn;
 }) {
   const rows: { k: ConsentKey; label: string }[] = [
@@ -492,12 +525,6 @@ function Consent({
             </Pressable>
           </View>
         ))}
-      </View>
-      <View style={styles.foot}>
-        <Btn variant={allAgreed ? 'primary' : 'off'} icon={allAgreed ? <IconCheck size={18} color="#fff" /> : undefined} onPress={allAgreed ? onStart : undefined}>
-          {t('onboarding.continue')}
-        </Btn>
-        <Text style={[styles.tag, { textAlign: 'center' }]}>{t('onboarding.consentNote')}</Text>
       </View>
     </View>
   );
@@ -567,7 +594,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DEMO_DISH_IMAGE = require('../../../assets/images/onboarding-demo-dish.jpg'); // P-096: JPG q50 — 2.3MB PNG 다이어트
 const DEMO_CYCLE: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
-function RiskDemo({ onContinue, t }: { onContinue: () => void; t: TFn }) {
+function RiskDemo({ t }: { t: TFn }) {
   const [i, setI] = useState(0);
   const state = DEMO_CYCLE[i];
   const reduced = useReducedMotion(); // reduced-motion 시 크로스페이드·펄스 미동작
@@ -608,9 +635,6 @@ function RiskDemo({ onContinue, t }: { onContinue: () => void; t: TFn }) {
           <Text style={styles.demoBody}>{t(`onboarding.demo.${state}`)}</Text>
         </View>
       </Animated.View>
-      <View style={styles.foot}>
-        <Btn onPress={onContinue}>{t('onboarding.continue')}</Btn>
-      </View>
     </View>
   );
 }
@@ -624,10 +648,9 @@ function Profile(props: {
   onPickPhoto: () => void;
   nationality: { code: string; name: string };
   onPickNationality: () => void;
-  onContinue: () => void;
   t: TFn;
 }) {
-  const { nickname, setNickname, photoPreview, photoBusy, photoError, onPickPhoto, nationality, onPickNationality, onContinue, t } = props;
+  const { nickname, setNickname, photoPreview, photoBusy, photoError, onPickPhoto, nationality, onPickNationality, t } = props;
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.profileTitle')} sub={t('onboarding.profileSub')} />
@@ -674,11 +697,6 @@ function Profile(props: {
           </Pressable>
         </View>
       </View>
-      <View style={styles.foot}>
-        <Btn variant={nickname.trim() ? 'primary' : 'off'} onPress={nickname.trim() ? onContinue : undefined}>
-          {t('onboarding.continue')}
-        </Btn>
-      </View>
     </View>
   );
 }
@@ -701,7 +719,7 @@ function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle:
 /** ⑤ 맵기 (P-080 재설계 → P-081 enum) — 5스톱 스냅 슬라이더(공용 SpiceLevelSlider)
  *  + 🌶️ 카운트 히어로(5C 확정, None=0개 점등).
  *  ⚠️ 🌶️는 헌법 v2.2.0의 유일한 유니코드 이모지 예외 (맵기 표시 한정). */
-function Spice({ level, setLevel, onContinue, onSkip, onDragStateChange, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onContinue: () => void; onSkip: () => void; onDragStateChange?: (d: boolean) => void; t: TFn }) {
+function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onDragStateChange?: (d: boolean) => void; t: TFn }) {
   const rank = spiceRank(level);
   return (
     <View style={{ flex: 1 }}>
@@ -723,17 +741,11 @@ function Spice({ level, setLevel, onContinue, onSkip, onDragStateChange, t }: { 
       <View style={{ marginTop: 26 }}>
         <SpiceLevelSlider level={level} onChange={setLevel} onDragStateChange={onDragStateChange} />
       </View>
-      <View style={styles.foot}>
-        <Btn onPress={onContinue}>{t('onboarding.continue')}</Btn>
-        <Pressable onPress={onSkip} hitSlop={8}>
-          <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
 
-function Interests({ selected, onToggle, onContinue, onSkip, t }: { selected: Set<string>; onToggle: (name: string) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+function Interests({ selected, onToggle, t }: { selected: Set<string>; onToggle: (name: string) => void; t: TFn }) {
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.interestsTitle')} sub={t('onboarding.interestsSub')} />
@@ -756,15 +768,6 @@ function Interests({ selected, onToggle, onContinue, onSkip, t }: { selected: Se
         })}
       </View>
       <Text style={[styles.tag, { marginTop: 12 }]}>{t('onboarding.interestsTag')}</Text>
-      <View style={styles.foot}>
-        <Btn variant={selected.size ? 'primary' : 'off'} onPress={onContinue}>
-          {t('onboarding.continue')}
-          {selected.size ? ` · ${t('onboarding.picked', { count: selected.size })}` : ''}
-        </Btn>
-        <Pressable onPress={onSkip} hitSlop={8}>
-          <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -777,9 +780,7 @@ function Summary({
   restrictions,
   skipped,
   level,
-  submitting,
   onEdit,
-  onSubmit,
   t,
 }: {
   nation: { code: string; name: string };
@@ -787,9 +788,7 @@ function Summary({
   restrictions: string[];
   skipped: { restrictions: boolean; spice: boolean };
   level: SpiceLevel;
-  submitting: boolean;
   onEdit: (target: Step) => void;
-  onSubmit: () => void;
   t: TFn;
 }) {
   const restrictionsValue = skipped.restrictions
@@ -827,11 +826,6 @@ function Summary({
           <Text style={[styles.sumVal, skipped.spice && styles.sumValMuted]}>{spiceValue}</Text>
         </SumRow>
       </View>
-      <View style={styles.foot}>
-        <Btn onPress={submitting ? undefined : onSubmit} icon={submitting ? <Spinner size={18} color="#fff" /> : undefined}>
-          {t('onboarding.start')}
-        </Btn>
-      </View>
     </View>
   );
 }
@@ -863,9 +857,10 @@ const styles = StyleSheet.create({
   app: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 
-  foot: { marginTop: 'auto', gap: 10, paddingTop: 16 },
-  // P-011(B안): restrictions CTA 스티키 바 — restrictions.tsx savebar 톤과 동일
-  stickyFoot: { paddingHorizontal: 22, paddingTop: 12, gap: 6, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+  // P-101: 공용 푸터 (P-011 스티키의 전 스텝 확장) — CTA 프레임 전 스텝 동일,
+  // skipSlot은 고정 높이(Skip/노트 유무와 무관 — CTA y 불변의 핵심)
+  footer: { paddingHorizontal: 22, paddingTop: 12, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+  skipSlot: { height: 34, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   // 제출 실패 안내 (KB-75)
   submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
   submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },

@@ -94,7 +94,11 @@ it('restrictions 스텝 CTA(계속)는 ScrollView 밖 스티키 바에 있다', 
   });
   const continueBtn = tree.root
     .findAllByType(Btn)
-    .find((b) => String(b.props.children?.[0] ?? b.props.children).includes('onboarding.continue'))!;
+    // P-101: 라벨이 단일 문자열이 됨 — 배열/문자열 겸용 판정
+    .find((b) => {
+      const c = b.props.children;
+      return (Array.isArray(c) ? c.join('') : String(c ?? '')).includes('onboarding.continue');
+    })!;
   expect(continueBtn).toBeDefined();
   // 부모 체인에 ScrollView가 없어야 스티키 (스크롤 콘텐츠로 돌아가면 회귀)
   let p = continueBtn.parent;
