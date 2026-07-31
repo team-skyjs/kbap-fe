@@ -103,7 +103,10 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
               return (
                 <Pressable key={i.code} style={[styles.pickChip, on && styles.pickChipOn]} onPress={() => onToggle(i.code)}>
                   <Text style={[styles.pickChipText, on && styles.pickChipTextOn]}>{ingredientLabel(i.code)}</Text>
-                  {on ? <IconCheck size={13} color="#fff" /> : <IconPlus size={12} color={C.ink3} />}
+                  {/* P-103(Q-23): ✓(13)·+(12) 글리프 폭 차 → 고정 폭 슬롯 — 토글 시 칩 총폭 불변 */}
+                  <View style={styles.pickIcon}>
+                    {on ? <IconCheck size={13} color="#fff" /> : <IconPlus size={12} color={C.ink3} />}
+                  </View>
                 </Pressable>
               );
             })}
@@ -140,6 +143,7 @@ const styles = StyleSheet.create({
   pickChipOn: { backgroundColor: C.primary, borderColor: C.primary },
   pickChipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
   pickChipTextOn: { color: '#fff' },
+  pickIcon: { width: 16, alignItems: 'center' },
 });
 
 export default IngredientFilter;
