@@ -799,3 +799,8 @@
 
 ## 온보딩 데모 에셋 최적화 (2026-07-31, P-096)
 - [x] onboarding-demo-dish: PNG 2,301,410B → JPG q50 269,038B(-88%, 1024² 유지 — 발주 품질 ~80으론 538KB라 DoD ≤300KB 우선, 해상도는 유지). require .jpg 갱신·원본 png 삭제. 렌더 확인은 예진 Metro(Q-23 겸사).
+
+## 온보딩 Q-23 보정 2차 — 펄스·슬라이더 제스처 (2026-07-31, P-098)
+- [x] ① 펄스 상시 반복(예진 확정 — "첫 탭 정지" 시안 노트 대체): tapped 정지 로직 제거, 화면 머무는 동안 반복·이탈 시 cleanup(cancelAnimation)·reduced-motion 미동작 유지.
+- [x] ② 슬라이더 제스처 재작업(공용 SpiceLevelSlider — 온보딩·프로필 동시): (a) 부모 스크롤 잠금 — onPanResponderTerminationRequest 거부 + onDragStateChange로 양쪽 ScrollView scrollEnabled 토글 배선 (b) 드래그 중 1:1 추종 — grant 시점 (pageX−locationX) 동기 오프셋으로 절대좌표 정합(measure 레이스 없음), 노브 스냅 없이 손가락 추종·라벨/🌶️ 히어로는 통과 스톱 기준 실시간(onChange), **스냅은 릴리즈만**(최근접 스톱 + LayoutAnimation 짧은 스프링) (c) 히트 영역 상하 ±20pt(터치 래퍼 음수 마진 — 레이아웃 자리 무변).
+- [x] 유닛: 이벤트 pageX 기반·터치 래퍼 지문(84) 갱신 — 스냅 계산·틱 절대 고정·회귀 0. tsc 0, jest 64스위트 332/332. 제스처 실기감(1:1·스크롤 0·착 붙음)은 예진 Metro 재확인.

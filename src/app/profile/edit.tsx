@@ -32,6 +32,7 @@ export default function EditProfile() {
 
   const [nickname, setNickname] = useState('');
   const [spice, setSpice] = useState<SpiceChoice>('SKIP'); // KB-150→P-081 — SKIP = 미설정
+  const [sliderDragging, setSliderDragging] = useState(false); // P-098②a 스크롤 잠금
   const [seeded, setSeeded] = useState(false);
   // P-060: 언어 = OS 정본 — OS 앱 설정 열기, 안드12- 숨김
   const canOpenLangSettings = Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) >= 33);
@@ -97,7 +98,7 @@ export default function EditProfile() {
           </Pressable>
         }
       />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView scrollEnabled={!sliderDragging} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* avatar — KB-149 실연결 */}
         <View style={styles.avatarWrap}>
           <Pressable style={styles.av} onPress={photoBusy ? undefined : () => void changePhoto()}>
@@ -175,7 +176,7 @@ export default function EditProfile() {
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.spice')}</Text>
           <View style={[styles.field, styles.spiceField]}>
-            <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} />
+            <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} onDragStateChange={setSliderDragging} />
             <Text style={[styles.spiceVal, spice === 'SKIP' && styles.spiceValUnset]}>
               {spice !== 'SKIP'
                 ? `${spiceRank(spice) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(spice))} ` : ''}${t(SPICE_LEVEL_LABEL[spice])}`

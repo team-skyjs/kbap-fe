@@ -73,7 +73,7 @@ it('릴리즈 = 최근접 스톱 스냅 (트랙 레벨 제스처 — 개별 탭 
   const tree = await render('NONE', onChange);
   const trackBox = tree.root.findAll((n) => typeof n.props?.onResponderRelease === 'function')[0];
   await act(async () => {
-    trackBox.props.onResponderRelease({ nativeEvent: { locationX: 230 } }); // 230/300*4 ≈ 3.07 → HOT
+    trackBox.props.onResponderRelease({ nativeEvent: { pageX: 230 } }); // P-098: pageX 기반 (offset 0) — 230/300*4 ≈ 3.07 → HOT
   });
   expect(onChange).toHaveBeenCalledWith('HOT');
 });

@@ -155,6 +155,8 @@ export default function Onboarding() {
   }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting, photoPath]);
 
   const [natOpen, setNatOpen] = useState(false);
+  // P-098②a: 슬라이더 드래그 중 부모 스크롤 잠금
+  const [sliderDragging, setSliderDragging] = useState(false);
   const nation = countryByCode(nationality) ?? countryByCode('US')!;
 
   // P-060: 국적→언어 제안 소멸 — 언어는 기기(OS)가 정본
@@ -303,6 +305,7 @@ export default function Onboarding() {
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
       <ScrollView
+        scrollEnabled={!sliderDragging}
         contentContainerStyle={[
           styles.body,
           // restrictions는 CTA가 스티키(아래 stickyFoot) — 목록 하단 여백만.
@@ -380,6 +383,7 @@ export default function Onboarding() {
             }}
             onContinue={answerStep}
             onSkip={skipStep}
+            onDragStateChange={setSliderDragging}
             t={t}
           />
         )}
@@ -565,33 +569,29 @@ const DEMO_DISH_IMAGE = require('../../../assets/images/onboarding-demo-dish.jpg
 const DEMO_CYCLE: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
 function RiskDemo({ onContinue, t }: { onContinue: () => void; t: TFn }) {
   const [i, setI] = useState(0);
-  const [tapped, setTapped] = useState(false); // P-088③: 첫 탭 후 펄스 영구 정지
   const state = DEMO_CYCLE[i];
   const reduced = useReducedMotion(); // reduced-motion 시 크로스페이드·펄스 미동작
-  // P-088③: 펄스 링 — 마크 주위 확대·페이드 반복으로 "탭해봐" 유도 (시안 확정
-  // 마이크로 인터랙션. 진행바 애니 절제(P-042)와 별개 — 기능성 유도 애니).
+  // P-088③ → P-098①: 펄스 링 = **상시 반복**(예진 확정 7/31 — "첫 탭 후 영구
+  // 정지" 시안 노트를 오너 결정으로 대체). 화면 이탈 시 cleanup이 정리.
   const pulse = useSharedValue(0);
   useEffect(() => {
-    if (reduced || tapped) return;
+    if (reduced) return;
     pulse.value = withRepeat(withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }), -1, false);
     return () => cancelAnimation(pulse);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduced, tapped]);
+  }, [reduced]);
   const ringStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + pulse.value * 0.45 }],
     opacity: (1 - pulse.value) * 0.55,
   }));
-  const tapMark = () => {
-    if (!tapped) setTapped(true);
-    setI((n) => (n + 1) % DEMO_CYCLE.length);
-  };
+  const tapMark = () => setI((n) => (n + 1) % DEMO_CYCLE.length);
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.demoTitle')} sub={t('onboarding.demoSub')} />
       <View style={styles.demoCard}>
         <Image source={DEMO_DISH_IMAGE} style={styles.demoImg} resizeMode="cover" />
         <Pressable onPress={tapMark} hitSlop={14} style={styles.demoMark}>
-          {!tapped && !reduced && <Animated.View style={[styles.pulseRing, ringStyle]} pointerEvents="none" />}
+          {!reduced && <Animated.View style={[styles.pulseRing, ringStyle]} pointerEvents="none" />}
           <Animated.View key={state} entering={reduced ? undefined : FadeIn.duration(140)}>
             <RiskMark state={state} size={46} />
           </Animated.View>
@@ -701,7 +701,7 @@ function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle:
 /** ⑤ 맵기 (P-080 재설계 → P-081 enum) — 5스톱 스냅 슬라이더(공용 SpiceLevelSlider)
  *  + 🌶️ 카운트 히어로(5C 확정, None=0개 점등).
  *  ⚠️ 🌶️는 헌법 v2.2.0의 유일한 유니코드 이모지 예외 (맵기 표시 한정). */
-function Spice({ level, setLevel, onContinue, onSkip, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onContinue: () => void; onSkip: () => void; t: TFn }) {
+function Spice({ level, setLevel, onContinue, onSkip, onDragStateChange, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onContinue: () => void; onSkip: () => void; onDragStateChange?: (d: boolean) => void; t: TFn }) {
   const rank = spiceRank(level);
   return (
     <View style={{ flex: 1 }}>
@@ -721,7 +721,7 @@ function Spice({ level, setLevel, onContinue, onSkip, t }: { level: SpiceLevel; 
         </View>
       </View>
       <View style={{ marginTop: 26 }}>
-        <SpiceLevelSlider level={level} onChange={setLevel} />
+        <SpiceLevelSlider level={level} onChange={setLevel} onDragStateChange={onDragStateChange} />
       </View>
       <View style={styles.foot}>
         <Btn onPress={onContinue}>{t('onboarding.continue')}</Btn>
