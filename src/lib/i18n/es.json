@@ -740,7 +740,8 @@
       "2": "Kimchi jjigae",
       "3": "Ramen buldak de fuego",
       "4": "Cheongyang al máximo"
-    }
+    },
+    "foodNone": "No picante"
   },
   "photo": {
     "sheetTitle": "Foto de perfil",

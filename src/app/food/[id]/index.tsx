@@ -37,7 +37,7 @@ import { IconBookmark } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
-import { SPICE_LEVEL_LABEL, spiceRank, spicierThanUser, type SpiceChoice } from '@/lib/spice';
+import { foodSpiceText, spicierThanUser, type SpiceChoice } from '@/lib/spice';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -265,10 +265,8 @@ function Registered({
         {food.spiceLevel != null && (
           <View style={styles.spiceMeta}>
             {/* P-080: 표시 = 5단계 구간 스냅 · 🌶️는 헌법 v2.2.0 유일 이모지 예외(맵기 한정) */}
-            <Text style={styles.spiceText}>
-              {spiceRank(food.spiceLevel) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(food.spiceLevel))} ` : ''}
-              {t(SPICE_LEVEL_LABEL[food.spiceLevel])}
-            </Text>
+            {/* P-104(Q-23): None은 "Not spicy" 자기설명 — foodSpiceText가 단일 소스 */}
+            <Text style={styles.spiceText}>{foodSpiceText(food.spiceLevel, t)}</Text>
             {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
           </View>
         )}

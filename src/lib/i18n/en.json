@@ -736,7 +736,8 @@
       "2": "Kimchi jjigae",
       "3": "Buldak fire ramen",
       "4": "Cheongyang overload"
-    }
+    },
+    "foodNone": "Not spicy"
   },
   "photo": {
     "sheetTitle": "Profile photo",

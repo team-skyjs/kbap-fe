@@ -739,7 +739,8 @@
       "2": "Sup kimchi",
       "3": "Mi buldak super pedas",
       "4": "Cabai Cheongyang maksimal"
-    }
+    },
+    "foodNone": "Tidak pedas"
   },
   "photo": {
     "sheetTitle": "Foto profil",

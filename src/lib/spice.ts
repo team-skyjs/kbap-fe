@@ -38,6 +38,14 @@ export const SPICE_LEVEL_EXAMPLE: Record<SpiceLevel, string> = {
   EXTREME: 'spice.example.4',
 };
 
+/** 음식 맵기 표시 문자열 (P-104/Q-23): 🌶️×rank + 라벨. NONE은 🌶️ 0개라
+ *  밴드 라벨 단독("None") = 맥락 상실 → 자기설명 키(spice.foodNone)로 대체.
+ *  (유저 톨러런스 표시는 라벨 있는 행이라 별개 — 이 함수는 음식 표시 전용.) */
+export function foodSpiceText(level: SpiceLevel, t: (key: string) => string): string {
+  if (level === 'NONE') return t('spice.foodNone');
+  return `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(level))} ${t(SPICE_LEVEL_LABEL[level])}`;
+}
+
 /** 경고 판정 = 단계(음식) > 단계(유저). SKIP(미설정)은 경고 없음. */
 export function spicierThanUser(food: SpiceLevel, user: SpiceChoice): boolean {
   if (user === 'SKIP') return false;

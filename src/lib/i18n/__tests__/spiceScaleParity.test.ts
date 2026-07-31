@@ -5,7 +5,7 @@
  */
 const LANGS = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'];
 
-type SpiceI18n = { spice?: { band?: Record<string, string>; example?: Record<string, string>; scale?: unknown } };
+type SpiceI18n = { spice?: { band?: Record<string, string>; example?: Record<string, string>; foodNone?: string; scale?: unknown } };
 
 it.each(LANGS)('%s 로케일에 spice.band·example 0~4 전부 존재 (패리티)', (lang) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -17,6 +17,17 @@ it.each(LANGS)('%s 로케일에 spice.band·example 0~4 전부 존재 (패리티
       expect((v as string).length).toBeGreaterThan(0);
     }
   }
+});
+
+// P-104: 음식 None 전용 자기설명 라벨 — 10개 로케일 전부 존재·밴드 "None"과 구분
+it.each(LANGS)('%s 로케일에 spice.foodNone 존재 (음식 None 표시 패리티)', (lang) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const json = require(`../${lang}.json`) as SpiceI18n;
+  const v = json.spice?.foodNone;
+  expect(typeof v).toBe('string');
+  expect((v as string).length).toBeGreaterThan(0);
+  // 고아 "None" 재발 방지는 en만 — 타 로케일은 band.0 자체가 "안 맵다"류 자연역이라 일치 정당
+  if (lang === 'en') expect(v).not.toBe(json.spice?.band?.['0']);
 });
 
 it.each(LANGS)('%s — 구 spice.scale(10단)은 폐기됨', (lang) => {

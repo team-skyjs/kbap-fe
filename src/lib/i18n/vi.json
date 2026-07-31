@@ -739,7 +739,8 @@
       "2": "Canh kim chi",
       "3": "Mì buldak siêu cay",
       "4": "Ớt Cheongyang cực đại"
-    }
+    },
+    "foodNone": "Không cay"
   },
   "photo": {
     "sheetTitle": "Ảnh hồ sơ",
