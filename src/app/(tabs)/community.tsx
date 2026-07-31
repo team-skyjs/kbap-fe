@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { IconBell, IconBubbleEmpty, IconPlus, Spinner, stateIconColor, StateBlock } from '@/components';
 import { Snackbar } from '@/components/Snackbar';
-import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { useCommunityFeed, useDeletePost, useReact } from '@/lib/community/hooks';
@@ -32,7 +31,6 @@ export default function Community() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const bottomInset = useBottomInset();
   const isGuest = useIsGuest();
 
   const feed = useCommunityFeed();
@@ -87,7 +85,7 @@ export default function Community() {
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
-        contentContainerStyle={[styles.list, { paddingBottom: bottomInset + 120 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 96 }]} // P-099: FAB 54+18+여백 — 마지막 카드 액션 줄 확보
         showsVerticalScrollIndicator={false}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
@@ -131,8 +129,9 @@ export default function Community() {
       />
 
       {/* 작성 FAB — 쓰기 = 회원 */}
+      {/* P-099(Q-25): 탭 콘텐츠는 탭바 위에서 끝남 — 고정 18pt(관례 위치) */}
       <Pressable
-        style={[styles.fab, { bottom: bottomInset + 86 }]}
+        style={styles.fab}
         onPress={() => requireMember(() => router.push('/community/compose' as Href))}
       >
         <IconPlus size={24} color="#fff" />
@@ -172,5 +171,5 @@ const styles = StyleSheet.create({
   guestGateTitle: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
   guestGateSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
 
-  fab: { position: 'absolute', right: 18, width: 54, height: 54, borderRadius: 27, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', ...shadow.shPop },
+  fab: { position: 'absolute', right: 18, bottom: 18, width: 54, height: 54, borderRadius: 27, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', ...shadow.shPop },
 });
