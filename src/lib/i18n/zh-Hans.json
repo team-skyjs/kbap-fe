@@ -167,7 +167,7 @@
     "composeTitle": "发帖",
     "editTitle": "编辑帖子",
     "post": "发布",
-    "composePlaceholder": "分享发现、心得或提问…",
+    "composePlaceholder": "分享任何关于在韩国吃饭的事…",
     "cover": "封面",
     "leaveTitle": "放弃这篇帖子？",
     "leaveBody": "草稿不会被保存。",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "你屏蔽的用户会显示在这里。",
     "unblock": "解除屏蔽",
     "reviewBy": "{{name}}的评价",
-    "yourReview": "我的评价"
+    "yourReview": "我的评价",
+    "composeHeading": "想告诉其他食客什么?",
+    "tagDish": "标记菜品",
+    "tagPlace": "标记地点",
+    "translateHint": "帖子会自动翻译成读者的语言",
+    "sectionRecent": "最近",
+    "sectionPopular": "热门",
+    "foodSheetCaption": "最多3个菜品标签 · 来自K-Bap美食数据库",
+    "placeSheetCaption": "每帖1个地点 · 韩国各地"
   },
   "risk": {
     "safe": "安全",

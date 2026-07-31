@@ -167,7 +167,7 @@
     "composeTitle": "Bài viết mới",
     "editTitle": "Sửa bài viết",
     "post": "Đăng",
-    "composePlaceholder": "Chia sẻ khám phá, mẹo hay câu hỏi…",
+    "composePlaceholder": "Chia sẻ bất cứ điều gì về ăn uống ở Hàn Quốc…",
     "cover": "Ảnh bìa",
     "leaveTitle": "Bỏ bài viết này?",
     "leaveBody": "Bản nháp sẽ không được lưu.",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "Những người bạn chặn sẽ hiển thị ở đây.",
     "unblock": "Bỏ chặn",
     "reviewBy": "Đánh giá của {{name}}",
-    "yourReview": "Đánh giá của bạn"
+    "yourReview": "Đánh giá của bạn",
+    "composeHeading": "Bạn muốn chia sẻ gì với thực khách khác?",
+    "tagDish": "Gắn thẻ món ăn",
+    "tagPlace": "Gắn thẻ địa điểm",
+    "translateHint": "Bài viết được tự động dịch sang ngôn ngữ người đọc",
+    "sectionRecent": "Gần đây",
+    "sectionPopular": "Phổ biến",
+    "foodSheetCaption": "Tối đa 3 thẻ món ăn · từ cơ sở dữ liệu K-Bap",
+    "placeSheetCaption": "Một địa điểm mỗi bài · khắp Hàn Quốc"
   },
   "risk": {
     "safe": "An toàn",

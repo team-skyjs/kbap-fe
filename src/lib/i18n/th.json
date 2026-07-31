@@ -167,7 +167,7 @@
     "composeTitle": "โพสต์ใหม่",
     "editTitle": "แก้ไขโพสต์",
     "post": "โพสต์",
-    "composePlaceholder": "แชร์การค้นพบ ทิป หรือคำถาม…",
+    "composePlaceholder": "แชร์อะไรก็ได้เกี่ยวกับการกินในเกาหลี…",
     "cover": "ปก",
     "leaveTitle": "ทิ้งโพสต์นี้?",
     "leaveBody": "แบบร่างจะไม่ถูกบันทึก",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "คนที่คุณบล็อกจะแสดงที่นี่",
     "unblock": "ปลดบล็อก",
     "reviewBy": "รีวิวของ {{name}}",
-    "yourReview": "รีวิวของคุณ"
+    "yourReview": "รีวิวของคุณ",
+    "composeHeading": "อยากบอกอะไรนักชิมคนอื่นบ้าง?",
+    "tagDish": "แท็กเมนู",
+    "tagPlace": "แท็กสถานที่",
+    "translateHint": "โพสต์จะถูกแปลเป็นภาษาของผู้อ่านโดยอัตโนมัติ",
+    "sectionRecent": "ล่าสุด",
+    "sectionPopular": "ยอดนิยม",
+    "foodSheetCaption": "แท็กเมนูได้สูงสุด 3 รายการ · จากฐานข้อมูล K-Bap",
+    "placeSheetCaption": "หนึ่งสถานที่ต่อโพสต์ · ทั่วเกาหลี"
   },
   "risk": {
     "safe": "ปลอดภัย",

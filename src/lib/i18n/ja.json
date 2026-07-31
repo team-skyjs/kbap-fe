@@ -167,7 +167,7 @@
     "composeTitle": "新しい投稿",
     "editTitle": "投稿を編集",
     "post": "投稿",
-    "composePlaceholder": "発見・ヒント・質問をシェア…",
+    "composePlaceholder": "韓国での食事について何でもシェアしよう…",
     "cover": "カバー",
     "leaveTitle": "投稿をやめますか？",
     "leaveBody": "下書きは保存されません。",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "ブロックした相手がここに表示されます。",
     "unblock": "解除",
     "reviewBy": "{{name}}さんのレビュー",
-    "yourReview": "自分のレビュー"
+    "yourReview": "自分のレビュー",
+    "composeHeading": "ほかの旅行者に教えたいことは?",
+    "tagDish": "料理をタグ",
+    "tagPlace": "場所をタグ",
+    "translateHint": "投稿は読者の言語に自動翻訳されます",
+    "sectionRecent": "最近",
+    "sectionPopular": "人気",
+    "foodSheetCaption": "料理タグは最大3件 · K-Bapフードデータベース",
+    "placeSheetCaption": "投稿につき場所は1件 · 韓国各地のスポット"
   },
   "risk": {
     "safe": "安全",

@@ -167,7 +167,7 @@
     "composeTitle": "發文",
     "editTitle": "編輯貼文",
     "post": "發布",
-    "composePlaceholder": "分享發現、心得或提問…",
+    "composePlaceholder": "分享任何關於在韓國吃飯的事…",
     "cover": "封面",
     "leaveTitle": "放棄這篇貼文？",
     "leaveBody": "草稿不會被儲存。",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "你封鎖的用戶會顯示在這裡。",
     "unblock": "解除封鎖",
     "reviewBy": "{{name}}的評價",
-    "yourReview": "我的評價"
+    "yourReview": "我的評價",
+    "composeHeading": "想告訴其他食客什麼?",
+    "tagDish": "標記菜品",
+    "tagPlace": "標記地點",
+    "translateHint": "貼文會自動翻譯成讀者的語言",
+    "sectionRecent": "最近",
+    "sectionPopular": "熱門",
+    "foodSheetCaption": "最多3個菜品標籤 · 來自K-Bap美食資料庫",
+    "placeSheetCaption": "每貼文1個地點 · 韓國各地"
   },
   "risk": {
     "safe": "安全",

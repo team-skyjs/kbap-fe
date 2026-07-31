@@ -167,7 +167,7 @@
     "composeTitle": "Postingan baru",
     "editTitle": "Edit postingan",
     "post": "Posting",
-    "composePlaceholder": "Bagikan temuan, tips, atau pertanyaan…",
+    "composePlaceholder": "Bagikan apa saja tentang makan di Korea…",
     "cover": "Sampul",
     "leaveTitle": "Buang postingan ini?",
     "leaveBody": "Draf tidak akan disimpan.",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "Pengguna yang kamu blokir akan tampil di sini.",
     "unblock": "Buka blokir",
     "reviewBy": "Ulasan {{name}}",
-    "yourReview": "Ulasanmu"
+    "yourReview": "Ulasanmu",
+    "composeHeading": "Apa yang perlu diketahui penikmat lain?",
+    "tagDish": "Tandai hidangan",
+    "tagPlace": "Tandai tempat",
+    "translateHint": "Postingan otomatis diterjemahkan ke bahasa pembaca",
+    "sectionRecent": "Terbaru",
+    "sectionPopular": "Populer",
+    "foodSheetCaption": "Maksimal 3 tag hidangan · dari database K-Bap",
+    "placeSheetCaption": "Satu tempat per postingan · seluruh Korea"
   },
   "risk": {
     "safe": "Aman",

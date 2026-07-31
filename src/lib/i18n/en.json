@@ -163,7 +163,7 @@
     "composeTitle": "New post",
     "editTitle": "Edit post",
     "post": "Post",
-    "composePlaceholder": "Share a find, a tip, or a question…",
+    "composePlaceholder": "Share anything about eating in Korea…",
     "cover": "Cover",
     "leaveTitle": "Discard this post?",
     "leaveBody": "Your draft won’t be saved.",
@@ -186,7 +186,15 @@
     "blockedEmptyBody": "People you block will show up here.",
     "unblock": "Unblock",
     "reviewBy": "Review by {{name}}",
-    "yourReview": "Your review"
+    "yourReview": "Your review",
+    "composeHeading": "What should other eaters know?",
+    "tagDish": "Tag a dish",
+    "tagPlace": "Tag a place",
+    "translateHint": "Readers see your post in their own language",
+    "sectionRecent": "Recent",
+    "sectionPopular": "Popular",
+    "foodSheetCaption": "Up to 3 food tags · from the K-Bap food database",
+    "placeSheetCaption": "One place per post · places across Korea"
   },
   "risk": {
     "safe": "Safe",

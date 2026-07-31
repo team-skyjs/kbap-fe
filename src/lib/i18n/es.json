@@ -167,7 +167,7 @@
     "composeTitle": "Nueva publicación",
     "editTitle": "Editar publicación",
     "post": "Publicar",
-    "composePlaceholder": "Comparte un hallazgo, consejo o pregunta…",
+    "composePlaceholder": "Comparte lo que sea sobre comer en Corea…",
     "cover": "Portada",
     "leaveTitle": "¿Descartar esta publicación?",
     "leaveBody": "El borrador no se guardará.",
@@ -190,7 +190,15 @@
     "blockedEmptyBody": "Las personas que bloquees aparecerán aquí.",
     "unblock": "Desbloquear",
     "reviewBy": "Reseña de {{name}}",
-    "yourReview": "Tu reseña"
+    "yourReview": "Tu reseña",
+    "composeHeading": "¿Qué deberían saber otros comensales?",
+    "tagDish": "Etiqueta un plato",
+    "tagPlace": "Etiqueta un lugar",
+    "translateHint": "Tu publicación se traduce al idioma del lector",
+    "sectionRecent": "Recientes",
+    "sectionPopular": "Populares",
+    "foodSheetCaption": "Hasta 3 etiquetas · base de datos de K-Bap",
+    "placeSheetCaption": "Un lugar por publicación · lugares de Corea"
   },
   "risk": {
     "safe": "Seguro",
