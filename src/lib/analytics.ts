@@ -19,10 +19,16 @@
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
  * (setUserId·Identify 호출 없음). 허용 키 밖 prop은 드롭(유닛 잠금).
  *
- * 키: `EXPO_PUBLIC_AMPLITUDE_API_KEY`(.env) — 없으면 **no-op**(콘솔 debug만),
+ * 키: `EXPO_PUBLIC_AMPLITUDE_API_KEY` — 없으면 **no-op**(콘솔 debug만),
  * 키 주입 시 코드 변경 0. ⚠️ Amplitude 웹 위저드 지시 무시(발주 명시):
  * `@amplitude/unified` 설치 금지(브라우저 SDK), autocapture·sessionReplay
  * 금지(웹 DOM 전제 + 알러지 앱 프라이버시) — 이 명시적 이벤트가 정본.
+ *
+ * ── 운영 노트 (P-094, 7/31 예진 확정 — A안) ──────────────────────
+ * Amplitude 프로젝트는 1개 = **실유저 전용**. 키는 eas.json의
+ * production·preview 프로필에만 존재 — dev/Metro(.env)·팀(teamtest)은
+ * 키 없음 = no-op으로 트래픽이 섞이지 않는다. 새 이벤트 검증이 필요할
+ * 때만 로컬 .env에 키를 **일시 주입**해 확인 후 **반드시 제거**(커밋 금지).
  */
 
 export const EVENTS = {

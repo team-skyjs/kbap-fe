@@ -776,3 +776,9 @@
 - [x] 발행 전 grep(이번엔 dev가 정답): dev 1 · prod 0 · meogo 0 · 키 1.
 - [x] iOS 빌드13(64b523ec, runtime 5dfae66a, channel teamtest 실측) → 테플 제출 완료(ASC 처리 수분). production/preview 채널 무오염.
 - [ ] 빌드12 만료(Expire): ASC 웹 조작(비가역) — 예진 처리 안내(ASC > TestFlight > iOS > 1.0.0 (12) > Expire Build). 이후 팀 테플 빌드는 항상 teamtest 프로필.
+
+## Amplitude 트래픽 분리 — A안 (2026-07-31, P-094)
+- [x] 키 제거: .env(Metro — gitignore, 로컬 반영)·eas.json teamtest 프로필 → 두 경로 no-op. production·preview 키 유지(실유저 계측 전용).
+- [x] .env.example 운영 주석 + analytics.ts 헤더 운영 노트("일시 주입→반드시 제거·커밋 금지").
+- [x] 실측: teamtest 에뮬 export → ampKey 0(dev 1) · production 에뮬 export → ampKey 1(prod 1). tsc 0, jest 331/331.
+- 특기: 기제출 빌드13에는 키가 임베드돼 있음(팀 트래픽 Prod 유입) — 차단 원하면 teamtest 채널 OTA(키 없는 현 시점 번들) 1회로 소거 가능(별도 발주 시).
