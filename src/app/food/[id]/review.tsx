@@ -8,13 +8,14 @@
  */
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch } from '@/components';
+import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useCreateReview } from '@/lib/data/useReviewMutations';
@@ -132,7 +133,7 @@ export default function ReviewCompose() {
           </Pressable>
         }
       />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {/* food chip */}
         <View style={styles.foodChip}>
           <View style={styles.foodPh} />
@@ -161,7 +162,7 @@ export default function ReviewCompose() {
         {/* body */}
         <View style={styles.block}>
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
-          <TextInput
+          <Input
             value={body}
             onChangeText={(v) => setBody(v.slice(0, MAX))}
             placeholder={t('review.placeholder')}
@@ -278,7 +279,7 @@ function PlacePickerSheet({ open, onClose, onPick, t }: { open: boolean; onClose
             />
           </View>
           {isRecent && <Text style={styles.recentLbl}>{t('review.placeRecent')}</Text>}
-          <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+          <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
             {results.length === 0 ? (
               <Text style={styles.noResults}>{t('review.placeNoResults')}</Text>
             ) : (
@@ -299,6 +300,7 @@ function PlacePickerSheet({ open, onClose, onPick, t }: { open: boolean; onClose
           </Pressable>
         </View>
       </View>
+      <KeyboardDismissBar modal />
     </Modal>
   );
 }

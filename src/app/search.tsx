@@ -14,13 +14,13 @@
  * the KB-25 RiskPill. Blank keywords never leave the client (server 400s).
  */
 import { useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood } from '@/components';
+import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
 import { useFoods, useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -84,7 +84,7 @@ export default function Search() {
         </PressScale>
         <View style={styles.box}>
           <IconSearch size={18} color={C.ink2} />
-          <TextInput
+          <Input
             style={styles.input}
             value={query}
             onChangeText={setQuery}
@@ -109,7 +109,7 @@ export default function Search() {
         </View>
       ) : !showingSearch ? (
         /* 1. empty state: recent (local) + popular (mock) */
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.secHead}>
             <Text style={styles.secTag}>{t('search.recent')}</Text>
             {recent.length > 0 && (
@@ -157,7 +157,7 @@ export default function Search() {
         </View>
       ) : results.length > 0 ? (
         /* 2. results: live pages, cursor infinite scroll */
-        <FlatList
+        <FlatList keyboardDismissMode="on-drag"
           data={results}
           keyExtractor={(f: FoodCard) => f.foodId}
           contentContainerStyle={styles.body}

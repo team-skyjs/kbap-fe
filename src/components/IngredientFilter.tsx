@@ -10,7 +10,8 @@ import * as React from 'react';
 // P-011(KB-178, B안): 선택 요약 = 고정 높이 1줄 가로 스크롤 — 세로 wrap이 자라며
 // 목록을 밀어내던 QA 피드백 해소. 칩은 선택 순서 유지(새 선택이 줄 끝), 추가 시
 // 자동 끝 스크롤. 0건이면 줄 미표시(0↔1 전환 1회 높이 변화 — 실물 확인 후 판단).
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Input } from './KeyboardDismissBar';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -81,7 +82,7 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
       {/* search */}
       <View style={styles.search}>
         <IconSearch size={18} color={C.ink2} />
-        <TextInput
+        <Input
           style={styles.searchInput}
           value={q}
           onChangeText={setQ}

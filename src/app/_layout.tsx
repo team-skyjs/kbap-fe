@@ -29,6 +29,7 @@ import i18n from '@/lib/i18n';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { color } from '@/lib/theme';
+import { KeyboardDismissBar } from '@/components';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -114,6 +115,8 @@ export default function RootLayout() {
                 <Stack.Screen name="onboarding/index" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
               </Stack>
+              {/* P-106: 키보드 내리기 전역 — iOS 액세서리 바(전 Input 연결)+안드 하단 바 */}
+              <KeyboardDismissBar />
             </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>

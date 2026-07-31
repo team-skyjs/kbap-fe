@@ -7,12 +7,12 @@
  * provider (KB-203 — Apple/Google). Save persists nickname/spice via PATCH /me.
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, TextInput, View, Linking, Platform } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG } from '@/components';
+import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG, Input } from '@/components';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { SPICE_LEVEL_LABEL, spiceRank, type SpiceChoice } from '@/lib/spice';
 import { countryByCode } from '@/lib/onboarding/countries';
@@ -98,7 +98,7 @@ export default function EditProfile() {
           </Pressable>
         }
       />
-      <ScrollView scrollEnabled={!sliderDragging} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardDismissMode="on-drag" scrollEnabled={!sliderDragging} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* avatar — KB-149 실연결 */}
         <View style={styles.avatarWrap}>
           <Pressable style={styles.av} onPress={photoBusy ? undefined : () => void changePhoto()}>
@@ -135,7 +135,7 @@ export default function EditProfile() {
           <Text style={styles.fieldLbl}>{t('editProfile.nickname')} *</Text>
           <View style={styles.field}>
             <IconProfile size={18} color={C.ink2} />
-            <TextInput
+            <Input
               style={styles.input}
               value={nickname}
               onChangeText={setNickname}

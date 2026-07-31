@@ -98,6 +98,11 @@ export const IconChevron = (p: IconProps) => (
     <Path d="m9 18 6-6-6-6" />
   </Glyph>
 );
+export const IconChevronDown = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="m6 9 6 6 6-6" />
+  </Glyph>
+);
 export const IconArrowLeft = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="m12 19-7-7 7-7" />

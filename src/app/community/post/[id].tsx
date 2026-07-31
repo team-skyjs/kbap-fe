@@ -8,12 +8,12 @@
  * ModerationFlow(상세발 차단 = 피드 복귀+토스트).
  */
 import * as React from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, IconClose, IconLock, IconSend, Spinner } from '@/components';
+import { SubHeader, IconClose, IconLock, IconSend, Spinner, Input } from '@/components';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -120,7 +120,7 @@ export default function CommunityPostDetail() {
     <View style={styles.root}>
       <SubHeader title={t('community.postTitle')} onBack={() => router.back()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <AuthorRow
             author={post.author}
             when={timeAgo(post.createdAt, t)}
@@ -220,7 +220,7 @@ export default function CommunityPostDetail() {
               </View>
             )}
             <View style={styles.inputRow}>
-              <TextInput
+              <Input
                 value={input}
                 onChangeText={setInput}
                 placeholder={t('community.commentPlaceholder')}

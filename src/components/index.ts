@@ -17,6 +17,7 @@ export { PressScale } from './PressScale';
 export { Spinner } from './Spinner';
 export { ActionSheet, DESTRUCTIVE, type ActionSheetItem } from './ActionSheet';
 export { ShellPlaceholder } from './ShellPlaceholder';
+export { KeyboardDismissBar, Input, KEYBOARD_ACCESSORY_ID } from './KeyboardDismissBar';
 // SocialAuthButtons is intentionally NOT re-exported here: it pulls native-only
 // Firebase/google-signin modules (KB-109) — import it directly from
 // '@/components/SocialAuthButtons' so only auth screens carry that weight.

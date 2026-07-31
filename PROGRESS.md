@@ -828,3 +828,6 @@
 
 ## 커뮤니티 작성 화면 v2.3 시안 정합 재작업 (2026-07-31, P-105 — 예진 반려, 우선)
 - [x] 2존 재구조: warm hero(X 원형 카드 버튼·Post 필 활성/비활성·아바타 52·헤딩 display 22·작성자 행 이름+국기+랭킹 필) + 흰 시트(top radius 26, 내부 스크롤). 시트 블록 gap 16: 1.5px 보더 본문 필드(포커스 primary+글로우, 카운터 1,800~ 우하단)·76px 사진 타일+대시 추가 타일(+, n/4)·태그 행 2개(틴트 아이콘 타일 26·placeholder·mono 카운터·행 내 제거 칩)·번역 힌트(globe). 글리프 바 44px×3 = KAV로 키보드 위 부착. 태그 시트: 그랩바·Done 회색 텍스트→primary 필 전환·검색 primary 보더+글로우·POPULAR(음식 브라우즈)/RECENT(장소 목) 섹션·38 썸네일 2줄 행·+ 원형 30(선택=✓ primary)·하단 mono 캡션. 모달 라운드 26+원형 일러 슬롯. 기능(2000자·상한·목·커버 승격·이탈 확인) 회귀 0. i18n 신규 8키+placeholder 갱신 ×10. 유닛 3본(구조·Post 게이팅·추가 타일).
+
+## 키보드 내리기 UX 전역 (2026-07-31, P-106 — 예진 확정)
+- [x] 공용 KeyboardDismissBar + Input 래퍼: iOS=InputAccessoryView(공유 nativeID, 루트 1회 마운트 — 전 Input 자동 연결), 안드=키보드 show/hide 이벤트 하단 고정 바(resize 모드 bottom 0). RN Modal은 별도 레이어라 입력 품은 Modal 4곳(작성 태그 시트·리뷰 장소 픽커·신고 모달·국적 픽커)에 `modal` 변형 추가(iOS null — 중복 등록 방지). 전 TextInput(10파일 13개) → Input 코드모드, 키보드 화면 스크롤러 keyboardDismissMode="on-drag" 일괄(10곳). IconChevronDown 벤더 추가. 유닛 5본. 네이티브 신규 의존 0 — 지문 불변, OTA 안전.

@@ -9,7 +9,7 @@
  * 데이터 = 목/봉인 경로 그대로(P-086) — 좋아요·장소는 목 전용(스왑 주석 참조).
  */
 import { useRef, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
@@ -29,8 +29,7 @@ import {
   IconHeart,
   IconMapPin,
   IconMore,
-  IconProfile,
-} from '@/components';
+  IconProfile, Input } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoods } from '@/lib/data/useFoods';
@@ -165,7 +164,7 @@ export default function ReviewDetail() {
           ) : undefined
         }
       />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* 작성자 행 — 아바타(국기/중립)·이름·랭킹 필·시간·⋯ (D-08) */}
         {!editing && (
           <View style={styles.authorRow}>
@@ -236,7 +235,7 @@ export default function ReviewDetail() {
             </View>
             <View style={styles.block}>
               <Text style={styles.label}>{t('review.reviewLabel')}</Text>
-              <TextInput
+              <Input
                 value={body}
                 onChangeText={(v) => setBody(v.slice(0, MAX))}
                 placeholder={t('review.placeholder')}

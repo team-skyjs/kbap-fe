@@ -10,12 +10,13 @@
  * - 전부 공용 ActionSheet('context' 변형) 경유 — 글·댓글·대댓글 동일 배선.
  */
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
-import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX } from '@/components';
+import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
 import type { CommunityAuthor, ReportReason, ReportTarget } from '@/lib/community/types';
 import { authorName } from './parts';
@@ -155,7 +156,7 @@ export function ModerationFlow({
                   </Pressable>
                 ))}
                 {reason === 'other' && (
-                  <TextInput
+                  <Input
                     value={note}
                     onChangeText={(v) => setNote(v.slice(0, NOTE_MAX))}
                     placeholder={t('community.reasonOtherPlaceholder')}
@@ -191,6 +192,7 @@ export function ModerationFlow({
           )}
         </Pressable>
       </Pressable>
+      <KeyboardDismissBar modal />
     </Modal>
   );
 }

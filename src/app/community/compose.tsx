@@ -15,14 +15,15 @@
  * 성공 모달 · 음식 검색 실 API(/foods/search)·장소 목(KB-249 대기).
  */
 import * as React from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
-import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, Rosette, SubHeader } from '@/components';
+import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, Rosette, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -159,7 +160,7 @@ export default function CommunityCompose() {
         <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           {/* ① 본문 필드 — 1.5px 보더 박스, 포커스 primary+틴트 글로우 */}
           <View style={[styles.bodyBox, bodyFocus && styles.bodyBoxFocus]}>
-            <TextInput
+            <Input
               value={body}
               onChangeText={setBody}
               onFocus={() => setBodyFocus(true)}
@@ -431,7 +432,7 @@ function TagPickerSheet({
           {/* 검색 필드 — primary 보더+글로우 (시안 상시) */}
           <View style={styles.searchBox}>
             <IconSearch size={17} color={C.primary} />
-            <TextInput
+            <Input
               value={q}
               onChangeText={setQ}
               placeholder={t(kind === 'food' ? 'community.searchFoods' : 'community.searchPlaces')}
@@ -495,6 +496,7 @@ function TagPickerSheet({
           </Text>
         </View>
       </View>
+      <KeyboardDismissBar modal />
     </Modal>
   );
 }

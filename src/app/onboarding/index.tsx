@@ -13,7 +13,7 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -39,8 +39,7 @@ import {
   IconCamera,
   IconChevron,
   IconPlus,
-  IconProfile,
-} from '@/components';
+  IconProfile, Input } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
@@ -348,7 +347,7 @@ export default function Onboarding() {
 
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
-      <ScrollView
+      <ScrollView keyboardDismissMode="on-drag"
         scrollEnabled={!sliderDragging}
         // P-101: CTA가 전 스텝 스크롤 밖 공용 푸터로 — 하단 패딩 전 스텝 동일
         contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
@@ -560,7 +559,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
       <View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }]}>
         <View style={styles.grab} />
         <Text style={styles.sheetTitle}>{title}</Text>
-        <ScrollView style={styles.legalScroll} showsVerticalScrollIndicator>
+        <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
           {isRemote ? (
             error ? (
               <View style={styles.legalError}>
@@ -680,7 +679,7 @@ function Profile(props: {
           <Text style={styles.fieldLbl}>{t('onboarding.nickname')} *</Text>
           <View style={[styles.field, !!nickname && styles.fieldFocus]}>
             <IconProfile size={18} color={C.ink2} />
-            <TextInput
+            <Input
               value={nickname}
               onChangeText={setNickname}
               placeholder={t('onboarding.nicknamePlaceholder')}

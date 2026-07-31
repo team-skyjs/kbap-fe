@@ -5,7 +5,8 @@
  * the choice on onSelect.
  */
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Input, KeyboardDismissBar } from './KeyboardDismissBar';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -48,10 +49,10 @@ export function NationalityPicker({
             <IconClose size={22} color={C.ink} />
           </Pressable>
         </View>
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.search}>
             <IconSearch size={18} color={C.ink2} />
-            <TextInput style={styles.searchInput} value={q} onChangeText={setQ} placeholder={t('nationalityPicker.searchPlaceholder')} placeholderTextColor={C.ink3} autoCorrect={false} />
+            <Input style={styles.searchInput} value={q} onChangeText={setQ} placeholder={t('nationalityPicker.searchPlaceholder')} placeholderTextColor={C.ink3} autoCorrect={false} />
           </View>
 
           {suggested.length > 0 && <Group label={t('nationalityPicker.suggested')} items={suggested} current={selectedCode} onPick={pick} />}
@@ -59,6 +60,7 @@ export function NationalityPicker({
           {suggested.length === 0 && all.length === 0 && <Text style={styles.empty}>{t('nationalityPicker.empty')}</Text>}
         </ScrollView>
       </View>
+      <KeyboardDismissBar modal />
     </Modal>
   );
 }
