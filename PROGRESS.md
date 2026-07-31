@@ -782,3 +782,8 @@
 - [x] .env.example 운영 주석 + analytics.ts 헤더 운영 노트("일시 주입→반드시 제거·커밋 금지").
 - [x] 실측: teamtest 에뮬 export → ampKey 0(dev 1) · production 에뮬 export → ampKey 1(prod 1). tsc 0, jest 331/331.
 - 특기: 기제출 빌드13에는 키가 임베드돼 있음(팀 트래픽 Prod 유입) — 차단 원하면 teamtest 채널 OTA(키 없는 현 시점 번들) 1회로 소거 가능(별도 발주 시).
+
+## KB-272 앱 용량 조사 1단계 (2026-07-31, P-093 — 조사만, 코드 변경 0)
+- [x] vc5 production AAB(ad0fb109, 107.9MB) bundletool 실측 — arm64·420dpi·en+ko 기기 스펙: **다운로드 45.5MB** / **설치(비압축 합) ~112MB**(master 75 + arm64 36). 예진 실측 185MB와의 갭 = ART 컴파일 아티팩트(DEX 59MB에 비례)+앱 데이터로 설명 — DEX 감량 시 연쇄 감소.
+- [x] 기여 분해: **DEX 59.4MB(×6 — R8/minify 미적용이 최대 요인)** · .so 36.2MB(ML Kit OCR 10.6·RN 6.5·barhopper 바코드 4.7·hermes 2.3…) · OCR 모델 5.2 · JS 번들 4.2 · 폰트 2.5(미사용 의심 MaterialSymbols 0.91 — expo-router→expo-symbols 연쇄라 제거 불가) · 바코드 모델 0.8.
+- [x] 감량 후보 우선순위: ① R8+resourceShrink 활성(예상 다운로드 -10~15MB·설치 -30MB+, 중리스크 — keep 규칙·전 기능 QA) ② 미사용 의존성 제거: expo-glass-effect·expo-auth-session·expo-device(사용 0 실측, 저리스크, 재빌드 합류) ③ expo-camera의 barcode 계열(5.5MB — 분리 옵션 부재, 고난이도·보류) ④ OCR 모델·엔진(15.8MB — 핵심 기능, unbundled 전환 비권장). 실행은 예진 승인 후 별도 발주.
