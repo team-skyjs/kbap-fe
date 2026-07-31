@@ -561,7 +561,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
  *  (surface2 톤 단색), 예진 에셋 수령 시 같은 파일명으로 교체만 하면 반영.
  *  서버 이미지 금지(온보딩 첫인상 — 네트워크 의존 X). */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const DEMO_DISH_IMAGE = require('../../../assets/images/onboarding-demo-dish.png');
+const DEMO_DISH_IMAGE = require('../../../assets/images/onboarding-demo-dish.jpg'); // P-096: JPG q50 — 2.3MB PNG 다이어트
 const DEMO_CYCLE: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
 function RiskDemo({ onContinue, t }: { onContinue: () => void; t: TFn }) {
   const [i, setI] = useState(0);

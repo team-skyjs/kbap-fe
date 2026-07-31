@@ -796,3 +796,6 @@
 - [x] 모더레이션: ReportTarget에 'review' 추가 — 공용 ActionSheet('context')+ModerationFlow 재사용(사유 5종·"Blocking…" ≥2s·버건디 destructive). **리뷰발 차단 = 리스트 복귀+재조회**(디테일)·목록발 = refetch. 번역 버튼 플래그 비노출 유지.
 - [x] reviewAdapter 경로 보정(#116): on-경로만 GET /reviews?foodId=·GET /reviews/me — **플래그 off 봉인 그대로**, 유닛 신경로 갱신.
 - [x] IconHeart(lucide 벤더 규격 절차) 추가. i18n +10키×10(ratingOutOf·likesCaption·place 6종·reviewBy·yourReview). Review 타입 place/likes/myLike(목 전용) + 목 시드. tsc 0, jest 64스위트 332/332.
+
+## 온보딩 데모 에셋 최적화 (2026-07-31, P-096)
+- [x] onboarding-demo-dish: PNG 2,301,410B → JPG q50 269,038B(-88%, 1024² 유지 — 발주 품질 ~80으론 538KB라 DoD ≤300KB 우선, 해상도는 유지). require .jpg 갱신·원본 png 삭제. 렌더 확인은 예진 Metro(Q-23 겸사).
