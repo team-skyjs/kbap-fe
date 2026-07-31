@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Star, Stars, Rosette, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch } from '@/components';
+import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useCreateReview } from '@/lib/data/useReviewMutations';
@@ -106,12 +106,9 @@ export default function ReviewCompose() {
           <Text style={styles.okBody}>
             {t('review.postedBody', { rating, name: food?.name ?? '' })}
           </Text>
+          {/* P-102(Q-22): 랭킹 필 제거 확정 — 별점만 (본문 카피·버튼 현행) */}
           <View style={styles.okMeta}>
             <Stars value={rating} size={18} />
-            <View style={styles.rankPill}>
-              <Rosette level={me?.rank.level ?? 1} size={18} />
-              <Text style={styles.rankText}>{me?.rank.tier ?? ''}</Text>
-            </View>
           </View>
           <View style={{ width: '100%', marginTop: 14, gap: 9 }}>
             <Btn onPress={() => router.back()}>{t('review.backToDish')}</Btn>
@@ -362,6 +359,4 @@ const styles = StyleSheet.create({
   okTitle: { fontFamily: font.display, fontSize: 22, color: C.ink, marginTop: 4 },
   okBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21 },
   okMeta: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 2 },
-  rankPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  rankText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
 });

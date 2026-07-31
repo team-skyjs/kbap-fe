@@ -816,3 +816,6 @@
 - [x] Skip 슬롯 = CTA 아래 고정 높이 34pt — 회피/맵기(Skip)·약관(consent 노트)·그 외(빈 슬롯) 모두 같은 높이 → 어느 스텝에서도 CTA 미동 0. ScrollView 하단 패딩 전 스텝 24로 통일.
 - [x] 스텝 컴포넌트 정리: Consent/Profile/RiskDemo/Spice/Interests/Summary에서 개별 foot·onContinue/onSkip/onSubmit 프롭 제거 — CTA 상태(비활성 조건·아이콘·라벨 카운트) 전부 푸터 도출식 한 곳으로.
 - [x] 유닛: 푸터 프레임 스타일 동일성(consent vs spice) 잠금 + 기존 스티키(ScrollView 밖) 테스트 라벨 매처 보정. tsc 0, jest 64스위트 333/333. 육안(전환 시 버튼 미동 0)은 예진 Metro.
+
+## 리뷰 작성 완료 화면 랭킹 필 제거 (2026-07-31, P-102 — 초소형, Q-22 반려)
+- [x] "Review posted" 성공 화면의 별점 옆 랭킹 필(Rosette+tier) 제거 — 별점·본문 카피·버튼 2개 현행 유지. 미사용 import/스타일 정리. tsc 0, jest 333/333.
