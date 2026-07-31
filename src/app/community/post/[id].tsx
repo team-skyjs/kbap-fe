@@ -155,13 +155,20 @@ export default function CommunityPostDetail() {
           <Text style={styles.commentsTitle}>{t('community.commentsTitle', { count: commentTotal })}</Text>
 
           {isGuest ? (
-            /* 게스트 — 개수는 선명, 목록은 블러 고스트 + 게이트 */
+            /* 게스트 — 개수는 선명, 내용은 **고스트 스켈레톤**(P-100: 실 텍스트
+               미렌더 = 판독 차단 + 실연결 시 비회원엔 댓글 데이터 자체가 안 오는
+               BE 필터 정책과 정합. opacity 반투명 폐기 — 내용이 읽혔음) */
             <View>
-              <View pointerEvents="none" style={styles.guestBlur}>
-                {tops.slice(0, 3).map((c) => (
-                  <CommentBlock key={c.id} top={c} replies={repliesOf(c.id)} t={t} onReact={() => {}} onReply={() => {}} onMore={() => {}} />
+              <View pointerEvents="none" style={styles.guestGhost}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={styles.ghostRow}>
+                    <View style={styles.ghostAvatar} />
+                    <View style={{ flex: 1, gap: 7 }}>
+                      <View style={[styles.ghostLine, { width: `${46 + i * 12}%` }]} />
+                      <View style={[styles.ghostLine, { width: `${82 - i * 9}%` }]} />
+                    </View>
+                  </View>
                 ))}
-                {tops.length === 0 && <View style={{ height: 120 }} />}
               </View>
               <View style={styles.guestPop}>
                 <View style={styles.guestPopIc}>
@@ -362,7 +369,11 @@ const styles = StyleSheet.create({
   repliesToggleText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.accent },
   replyIndent: { paddingLeft: 35 },
 
-  guestBlur: { opacity: 0.25, gap: 14, minHeight: 140 },
+  // P-100: 고스트 스켈레톤 — 정적(애니 없음), 판독 불가
+  guestGhost: { gap: 16, minHeight: 140, paddingVertical: 4 },
+  ghostRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  ghostAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: C.surface2 },
+  ghostLine: { height: 11, borderRadius: 6, backgroundColor: C.surface2 },
   guestPop: { position: 'absolute', left: 8, right: 8, top: 18, alignItems: 'center', gap: 8, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 16, ...shadow.sh2 },
   guestPopIc: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   guestPopText: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, textAlign: 'center' },
