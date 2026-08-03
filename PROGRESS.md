@@ -844,3 +844,4 @@
 ## 안드 1.0.1(vc6) — 목 숨김 + 감량 + AAB (2026-08-03, P-110 — KB-280)
 - [x] 채널 기반 노출 플래그: FLAGS.reviewsEnabled/communityEnabled = production 채널이면 숨김(expo-updates channel, 웹/jest/dev 폴백 노출). 진입점 전수: 탭바 커뮤니티 탭(양측 flex 래퍼로 3탭에도 FAB 정중앙)·커뮤니티 화면 가드·설정 차단 목록 행·리뷰 10개 화면(기존 reviewsEnabled 게이트 재사용).
 - [x] 감량(KB-272 ①②): expo-build-properties android enableProguardInReleaseBuilds+enableShrinkResourcesInReleaseBuilds, 미사용 3종 제거(expo-glass-effect·expo-auth-session·expo-device). 버전 1.0.1(vc autoIncrement). 발행 전 export grep: prod 1·dev 0·meogo 0.
+- [x] 빌드 2벌 완료(둘 다 vc6·1.0.1): production AAB 102.5MB(vc5 107.9 → −5.4MB), 공기계 APK(production-apk 프로필, 동일 구성) 163.0MB(vc5 universal 175.3 → −12.9MB, R8 DEX 감량 부합). 링크는 REPORTS. 전달 순서: 예진 APK 스모크(구글 로그인·스캔·온보딩·상세) → 종한 AAB.
