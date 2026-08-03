@@ -133,6 +133,38 @@ function seedPosts(): CommunityPost[] {
       likes: 42, dislikes: 1, myReaction: 'like', commentCount: 5,
       createdAt: '2026-07-27T09:00:00Z',
     },
+    // P-112: 시드 +3 (총 12 = 3페이지) — 게스트 2페이지 상한 게이트가 실기에서
+    // 보이게(9개=2페이지엔 게이트가 뜰 3페이지 자체가 없었음). 날짜는 기존보다 과거.
+    {
+      id: 'p10',
+      author: A.yuki,
+      body: '明洞の屋台でトッポッキデビューしました。辛さは思ったよりやさしい。アレルギー表示がないので、店の人に聞くのが一番です。',
+      photos: [pic('p10a')],
+      foodTags: [{ foodId: 'tteokbokki', name: 'Tteokbokki' }],
+      placeTag: null,
+      likes: 11, dislikes: 0, myReaction: null, commentCount: 1,
+      createdAt: '2026-07-26T12:30:00Z',
+    },
+    {
+      id: 'p11',
+      author: A.linh,
+      body: 'Mình bị dị ứng đậu phộng — món nào ở Hàn hay có đậu phộng rắc lên trên vậy mọi người? Comment giúp mình với!',
+      photos: [],
+      foodTags: [],
+      placeTag: null,
+      likes: 5, dislikes: 0, myReaction: null, commentCount: 2,
+      createdAt: '2026-07-26T08:05:00Z',
+    },
+    {
+      id: 'p12',
+      author: A.diego,
+      body: 'Gwangjang Market on a rainy day = best decision of the trip. Bindaetteok fresh off the pan, and the ajumma showed me the ingredients when I asked. 10/10.',
+      photos: [pic('p12a'), pic('p12b')],
+      foodTags: [{ foodId: 'bindaetteok', name: 'Bindaetteok' }],
+      placeTag: { name: 'Gwangjang Market', roadAddress: '88 Changgyeonggung-ro, Jongno-gu, Seoul' },
+      likes: 19, dislikes: 0, myReaction: null, commentCount: 3,
+      createdAt: '2026-07-25T19:40:00Z',
+    },
   ];
 }
 

@@ -26,14 +26,17 @@ import {
 beforeEach(() => __resetCommunityStore());
 
 describe('커서 페이징 (최신순 keyset)', () => {
-  it('첫 페이지 = PAGE_SIZE개 + hasNext/nextCursor, 끝 페이지 = hasNext false', () => {
+  it('페이지네이션 — 시드 12개 = 3페이지 (P-112: 게스트 2페이지 게이트 성립 조건)', () => {
     const p1 = feedPage(null);
     expect(p1.items).toHaveLength(PAGE_SIZE);
     expect(p1.hasNext).toBe(true);
     const p2 = feedPage(p1.nextCursor);
-    expect(p2.items.length).toBeGreaterThan(0);
-    expect(p2.hasNext).toBe(false);
-    expect(p2.nextCursor).toBe(null);
+    expect(p2.items).toHaveLength(PAGE_SIZE);
+    expect(p2.hasNext).toBe(true); // 3페이지 존재 — 게스트 상한(2p) 게이트가 뜰 수 있다
+    const p3 = feedPage(p2.nextCursor);
+    expect(p3.items.length).toBeGreaterThan(0);
+    expect(p3.hasNext).toBe(false);
+    expect(p3.nextCursor).toBe(null);
     // 최신순 — 첫 항목이 가장 최근
     const t0 = new Date(p1.items[0].createdAt).getTime();
     const t1 = new Date(p1.items[1].createdAt).getTime();

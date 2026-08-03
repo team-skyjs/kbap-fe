@@ -16,9 +16,13 @@ import { queryClient } from '@/lib/queryClient';
 import { clearTokens, loadTokens, saveTokens } from './beTokens';
 
 /** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
- *  게스트 mock과 회원 실데이터가 섞이는 것을 원천 차단. */
-function resetServerCache(): void {
+ *  게스트 mock과 회원 실데이터가 섞이는 것을 원천 차단.
+ *  P-112: 경계 직후 세션 판별(['auth','session'])은 재조회(비동기 스토리지
+ *  재확인)에 맡기지 않고 **즉시 시드** — 그 사이 hasSession=undefined로
+ *  게스트/회원 UI가 반대 상태로 스치던 지연(로그아웃 직후 커뮤니티 탭) 제거. */
+function resetServerCache(sessionAfter: boolean): void {
   queryClient.clear();
+  queryClient.setQueryData(['auth', 'session'], sessionAfter);
 }
 
 interface LoginResponseWire {
@@ -39,7 +43,7 @@ export function onSessionExpired(handler: (() => void) | null) {
 
 async function sessionExpired(): Promise<void> {
   await clearTokens();
-  resetServerCache();
+  resetServerCache(false);
   expiredHandler?.();
 }
 
@@ -47,7 +51,7 @@ async function sessionExpired(): Promise<void> {
 export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean }> {
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
   await saveTokens(r.accessToken, r.refreshToken);
-  resetServerCache();
+  resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };
 }
@@ -92,7 +96,7 @@ export async function logoutBe(): Promise<void> {
     await api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
   }
   await clearTokens();
-  resetServerCache();
+  resetServerCache(false);
 }
 
 /** 탈퇴: PATCH /auth/withdraw. 성공 여부와 무관하게 로컬 세션은 정리한다. */
@@ -101,7 +105,7 @@ export async function withdrawBe(): Promise<void> {
     await api.patch('/auth/withdraw');
   } finally {
     await clearTokens();
-    resetServerCache();
+    resetServerCache(false);
   }
 }
 

@@ -3,7 +3,7 @@
  * refresh 401 = refresh 만료 → 토큰 삭제(로그아웃). 네트워크/5xx = 일시
  * 장애 → 토큰 보존(지하철 시나리오). 그 구분이 깨지는 회귀를 잠근다.
  */
-jest.mock('@/lib/queryClient', () => ({ queryClient: { clear: jest.fn() } }));
+jest.mock('@/lib/queryClient', () => ({ queryClient: { clear: jest.fn(), setQueryData: jest.fn() } }));
 jest.mock('@/lib/api/client', () => {
   class MockApiError extends Error {
     status?: number;
@@ -61,5 +61,31 @@ describe('refresh 실패 판별 (BE JWT 가이드)', () => {
     api.post.mockRejectedValueOnce(new ApiError('HTTP 503', 503));
     await expect(tryRefresh()).resolves.toBe(false);
     expect(tokens.clearTokens).not.toHaveBeenCalled();
+  });
+});
+
+/* ---- P-112: 인증 경계 = 세션 캐시 즉시 시드 (재조회 지연으로 게스트/회원 UI 스침 방지) ---- */
+describe('P-112: 경계 직후 세션 시드', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { queryClient } = require('@/lib/queryClient');
+
+  it('로그아웃 → clear + 세션 false 즉시 시드', async () => {
+    api.post.mockResolvedValueOnce(undefined); // POST /auth/logout
+    await beAuth.logoutBe();
+    expect(queryClient.clear).toHaveBeenCalled();
+    expect(queryClient.setQueryData).toHaveBeenCalledWith(['auth', 'session'], false);
+  });
+
+  it('로그인 교환 성공 → 세션 true 즉시 시드', async () => {
+    api.post.mockResolvedValueOnce({ newMember: false, accessToken: 'A2', refreshToken: 'R2' });
+    await beAuth.exchangeLogin('firebase-id-token');
+    expect(queryClient.setQueryData).toHaveBeenCalledWith(['auth', 'session'], true);
+  });
+
+  it('탈퇴 → 세션 false 시드 (요청 실패여도)', async () => {
+    api.patch.mockRejectedValueOnce(new ApiError('HTTP 500', 500));
+    await expect(beAuth.withdrawBe()).rejects.toBeTruthy();
+    expect(tokens.clearTokens).toHaveBeenCalled();
+    expect(queryClient.setQueryData).toHaveBeenCalledWith(['auth', 'session'], false);
   });
 });
