@@ -861,3 +861,4 @@
 ## 게스트 게이트 실기 가능화 + 로그아웃 즉시 반영 (2026-08-03, P-112 — Q-25 잔여)
 - [x] 목 시드 +3(p10 일어·사진1 / p11 베트남어·무사진 / p12 영어·사진2, 기존보다 과거 날짜) → 총 12개 = 3페이지 — 게스트 2페이지 상한 게이트가 실기에서 노출 가능. 페이징 유닛 3페이지 기준 보정.
 - [x] 로그아웃 즉시 게스트 반영: 원인 = 인증 경계 clear() 후 세션 판별이 AsyncStorage 재조회(비동기)에 맡겨져 hasSession=undefined 동안 회원 UI 스침. resetServerCache(sessionAfter)로 경계마다 ['auth','session'] 즉시 시드(로그인 true / 로그아웃·탈퇴·만료 false). 유닛 3본(로그아웃 false·로그인 true·탈퇴 실패에도 false).
+- [x] vc7 빌드 2벌 완료(1.0.1): AAB 102MB·APK 163MB(vc6 동급 — 변경이 JS/i18n뿐). 링크 REPORTS. 순서: 예진 APK 재스모크(회원가입 복구+coming-soon+5탭) → 종한 AAB.
