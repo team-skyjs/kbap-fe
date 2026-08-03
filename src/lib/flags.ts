@@ -14,6 +14,12 @@ function isProductionChannel(): boolean {
 }
 const PROD_CHANNEL = isProductionChannel();
 
+/** P-114: 채널 판별 단일 소스 — 플래그 외 소비자(spiceAdapter 송신 분기)용.
+ *  함수형 export(값 아님) — jest에서 목 주입 가능하게. */
+export function isProdChannel(): boolean {
+  return PROD_CHANNEL;
+}
+
 export const FLAGS = {
   /**
    * Category browsing UI: home "Browse by category" section + food-tab

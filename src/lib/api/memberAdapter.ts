@@ -53,7 +53,7 @@ export interface ProfileUpdateWire {
   avoidanceSubstanceCodes?: string[];
   countryCode?: string;
   appLanguage?: string;
-  spicinessPreference?: string; // P-084: enum 문자열(해제 = 'SKIP') — 생략은 유지
+  spicinessPreference?: string | number; // P-084 enum 문자열 · P-114 prod 채널=구정수(해제 = 'SKIP'/-1) — 생략은 유지
   profileImageUrl?: string; // path 설정 · 삭제=PROFILE_IMAGE_DEFAULT_PATH 전송(P-016, null 폐기) · 생략=유지
 }
 

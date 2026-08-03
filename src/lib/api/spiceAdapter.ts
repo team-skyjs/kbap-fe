@@ -1,22 +1,38 @@
 /**
- * spiceAdapter.ts — 맵기 와이어 변환의 **유일한** 격리 지점 (P-081 → P-084 스왑).
+ * spiceAdapter.ts — 맵기 와이어 변환의 **유일한** 격리 지점 (P-081 → P-084 스왑
+ * → P-114 송신 채널 겸용).
  *
  * P-084(7/30 dev 재배포 실측): 유저 맵기 `spicinessPreference` = **enum 문자열**
- * (SKIP/NONE/MILD/MEDIUM/HOT/EXTREME, 서버 strict 파싱) — 송수신 문자열 통과로
- * 스왑 완료. 단 **수신은 정수(구계약) 폴백 유지** — prod은 아직 정수 계약이라
- * 같은 빌드가 dev/prod 어느 쪽을 봐도 동작해야 한다(하위호환).
+ * (SKIP/NONE/MILD/MEDIUM/HOT/EXTREME, 서버 strict 파싱). 수신은 정수(구계약)
+ * 폴백 유지 — 같은 빌드가 dev/prod 어느 쪽을 봐도 동작(하위호환).
+ *
+ * P-114(KB-280, Q-27 vc6 회원가입 400): **송신도 채널 겸용** — prod 스웨거
+ * 실측(8/3) spicinessPreference = integer(구계약)라 enum 문자열을 보내면 본문
+ * 파싱 400. production 채널 = 구정수 앵커(P-081 원규약) / dev·teamtest·Metro =
+ * enum 문자열.
+ * ⚠️ 전환 계획: prod BE enum 전환(겸수신 배포) + production OTA 후 이 분기
+ * 제거 — iOS 심사 통과가 선행 게이트(2026-07-30 조율).
  *
  * 음식 `spiciness`는 **정수(0~10) 유지** — BE 미전환("음식도 enum"은 BE 후속).
- * 전환되면 wireToFoodSpice만 문자열 파싱을 추가하면 된다.
- *
- * 구정수 규약(수신 폴백·참고): 0=NONE / 1–3=MILD / 4–6=MEDIUM / 7–8=HOT /
+ * 구정수 규약(송신 앵커·수신 폴백): 0=NONE / 1–3=MILD / 4–6=MEDIUM / 7–8=HOT /
  * 9–10=EXTREME · -1=미설정(SKIP).
  */
 import { isSpiceLevel, type SpiceChoice, type SpiceLevel } from '@/lib/spice';
+import { isProdChannel } from '@/lib/flags';
 
-/** 유저 설정 → 와이어 — enum 문자열 그대로 (P-084 스왑: 구 앵커 정수 폐기). */
-export function spiceChoiceToWire(choice: SpiceChoice): string {
-  return choice;
+/** P-081 원규약 앵커 정수 (049edff CHOICE_TO_WIRE 복원) — prod 구계약 송신용. */
+const CHOICE_TO_WIRE_INT: Record<SpiceChoice, number> = {
+  SKIP: -1,
+  NONE: 0,
+  MILD: 2,
+  MEDIUM: 5,
+  HOT: 7,
+  EXTREME: 10,
+};
+
+/** 유저 설정 → 와이어 — production 채널 = 구정수(P-114) / 그 외 = enum 문자열(P-084). */
+export function spiceChoiceToWire(choice: SpiceChoice): string | number {
+  return isProdChannel() ? CHOICE_TO_WIRE_INT[choice] : choice;
 }
 
 /** 구계약 정수(0~10) → 단계 — 수신 폴백·음식 공용 구간 스냅. */

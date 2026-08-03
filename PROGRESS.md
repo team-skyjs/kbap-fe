@@ -851,3 +851,6 @@
 
 ## API 타임아웃 도입 (2026-08-03, P-115 — 무한 스켈레톤 구조 봉쇄)
 - [x] api/client 전 요청 타임아웃 기본 15s — AbortController+setTimeout(Hermes 안전, finally 정리·누수 0), 타이머 창은 fetch+본문 읽기까지. 타임아웃 = "NETWORK: timeout after Nms" reject → react-query retry 1회 → 기존 에러 UI 합류(classifyQueryError NETWORK 프리픽스 재사용 → offline 재시도 문구). per-call 오버라이드: /scans ML 60s만. 401 재시도 경로에 타임아웃 전파. 유닛 4본(발화 reject·오버라이드·정상 무영향+타이머 0·분류).
+
+## prod 회원가입 400 — 맵기 송신 채널 겸용 (2026-08-03, P-114 — KB-280, Q-27 반려 ②)
+- [x] spiceChoiceToWire 채널 겸용: production 채널 = P-081 원규약 정수(NONE 0/MILD 2/MEDIUM 5/HOT 7/EXTREME 10·SKIP -1, CHOICE_TO_WIRE 복원) / 비프로덕션 = enum 문자열(P-084 현행). 채널 판별 = flags isProdChannel() 단일 소스 export(중복 구현 0). 어댑터 단일 적용이라 온보딩 제출·프로필 PATCH 자동 커버(memberAdapter 와이어 타입 string|number 확장, tsc 0). 헤더에 분기 제거 전환 계획 명기. 유닛: prod 정수 5종+SKIP·정수 왕복(채널 목 분리 파일), 비프로덕션 기존 유닛 무변.
