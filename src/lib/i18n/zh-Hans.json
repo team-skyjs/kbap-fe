@@ -198,7 +198,9 @@
     "sectionRecent": "最近",
     "sectionPopular": "热门",
     "foodSheetCaption": "最多3个菜品标签 · 来自K-Bap美食数据库",
-    "placeSheetCaption": "每帖1个地点 · 韩国各地"
+    "placeSheetCaption": "每帖1个地点 · 韩国各地",
+    "lockedTitle": "社区即将开放",
+    "lockedBody": "与其他旅行者分享心得和发现——敬请期待。"
   },
   "risk": {
     "safe": "安全",

@@ -194,7 +194,9 @@
     "sectionRecent": "Recent",
     "sectionPopular": "Popular",
     "foodSheetCaption": "Up to 3 food tags · from the K-Bap food database",
-    "placeSheetCaption": "One place per post · places across Korea"
+    "placeSheetCaption": "One place per post · places across Korea",
+    "lockedTitle": "Community is coming soon",
+    "lockedBody": "Share tips and finds with fellow travelers — opening soon."
   },
   "risk": {
     "safe": "Safe",

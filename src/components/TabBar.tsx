@@ -9,7 +9,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
-import { FLAGS } from '@/lib/flags';
 import {
   IconCamera,
   IconCommunity,
@@ -43,12 +42,10 @@ export function TabBar({
   onScan: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  // P-110(KB-280): production 채널 = 커뮤니티 탭 숨김 (스토어 유저 비노출)
-  const tabs = TABS.filter((t) => t.key !== 'community' || FLAGS.communityEnabled);
-  // render order: home, food, [FAB], community?, profile — 양측을 flex 컨테이너로
-  // 감싸 탭 수가 달라도 FAB는 항상 정중앙 (P-110: community 숨김 시 3탭)
-  const left = tabs.slice(0, 2);
-  const right = tabs.slice(2);
+  // P-113(Q-27 반려): P-110의 "prod 채널 탭 제거(3탭)" 폐기 — 탭은 항상 5슬롯,
+  // prod 숨김은 커뮤니티 화면의 coming-soon 플레이스홀더가 담당(community.tsx).
+  const left = TABS.slice(0, 2);
+  const right = TABS.slice(2);
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>

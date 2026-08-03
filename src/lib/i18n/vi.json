@@ -198,7 +198,9 @@
     "sectionRecent": "Gần đây",
     "sectionPopular": "Phổ biến",
     "foodSheetCaption": "Tối đa 3 thẻ món ăn · từ cơ sở dữ liệu K-Bap",
-    "placeSheetCaption": "Một địa điểm mỗi bài · khắp Hàn Quốc"
+    "placeSheetCaption": "Một địa điểm mỗi bài · khắp Hàn Quốc",
+    "lockedTitle": "Cộng đồng sắp ra mắt",
+    "lockedBody": "Chia sẻ mẹo và khám phá với du khách khác — sắp ra mắt."
   },
   "risk": {
     "safe": "An toàn",

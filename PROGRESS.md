@@ -854,3 +854,6 @@
 
 ## prod 회원가입 400 — 맵기 송신 채널 겸용 (2026-08-03, P-114 — KB-280, Q-27 반려 ②)
 - [x] spiceChoiceToWire 채널 겸용: production 채널 = P-081 원규약 정수(NONE 0/MILD 2/MEDIUM 5/HOT 7/EXTREME 10·SKIP -1, CHOICE_TO_WIRE 복원) / 비프로덕션 = enum 문자열(P-084 현행). 채널 판별 = flags isProdChannel() 단일 소스 export(중복 구현 0). 어댑터 단일 적용이라 온보딩 제출·프로필 PATCH 자동 커버(memberAdapter 와이어 타입 string|number 확장, tsc 0). 헤더에 분기 제거 전환 계획 명기. 유닛: prod 정수 5종+SKIP·정수 왕복(채널 목 분리 파일), 비프로덕션 기존 유닛 무변.
+
+## 목 숨김 방식 변경 — coming-soon (2026-08-03, P-113 — KB-280, Q-27 반려 ①)
+- [x] P-110의 prod 채널 탭 제거(3탭) 폐기 — 탭바 항상 5슬롯 복원(양측 flex 래퍼는 유지, 2/2라 시각 동일). prod 채널 커뮤니티 탭 진입 시 원조 잠금 화면(870a942) 재사용한 coming-soon 플레이스홀더(흐린 셸+IconLock 카드), 카피만 스토어 톤으로 재작성(lockedTitle/Body ×10 복원). 리뷰 쪽 게이트는 현행 유지. 유닛 3본(off 플레이스홀더/on 실화면/탭 5슬롯).

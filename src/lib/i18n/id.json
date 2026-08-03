@@ -198,7 +198,9 @@
     "sectionRecent": "Terbaru",
     "sectionPopular": "Populer",
     "foodSheetCaption": "Maksimal 3 tag hidangan · dari database K-Bap",
-    "placeSheetCaption": "Satu tempat per postingan · seluruh Korea"
+    "placeSheetCaption": "Satu tempat per postingan · seluruh Korea",
+    "lockedTitle": "Komunitas segera hadir",
+    "lockedBody": "Bagikan tips dan temuan dengan sesama pelancong — segera hadir."
   },
   "risk": {
     "safe": "Aman",

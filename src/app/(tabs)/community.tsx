@@ -11,8 +11,8 @@ import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color as C, font, radius, shadow } from '@/lib/theme';
-import { IconBell, IconBubbleEmpty, IconPlus, Spinner, stateIconColor, StateBlock } from '@/components';
+import { accentTint, color as C, font, radius, shadow } from '@/lib/theme';
+import { IconBell, IconBubbleEmpty, IconLock, IconPlus, ShellPlaceholder, Spinner, stateIconColor, StateBlock } from '@/components';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
@@ -44,8 +44,9 @@ export default function Community() {
   const [placeSheet, setPlaceSheet] = React.useState<CommunityPost | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
 
-  // P-110(KB-280): production 채널 가드 — 탭이 숨겨져도 잔여 진입 봉쇄
-  if (!FLAGS.communityEnabled) return <View style={styles.root} />;
+  // P-113(KB-280, Q-27 반려): prod 채널 = 탭 유지 + coming-soon 플레이스홀더
+  // (P-110의 빈 화면 가드 대체 — 원조 잠금 화면 870a942 재사용, 카피만 스토어 톤)
+  if (!FLAGS.communityEnabled) return <ComingSoon t={t} />;
 
   const pages = feed.data?.pages ?? [];
   const posts = pages.flatMap((p) => p.items);
@@ -163,8 +164,33 @@ export default function Community() {
   );
 }
 
+/** P-113: prod 채널 플레이스홀더 — 흐린 셸 + 잠금 카드 (이모지 0, SVG only). */
+function ComingSoon({ t }: { t: ReturnType<typeof useTranslation>['t'] }) {
+  return (
+    <View style={styles.root}>
+      <View style={{ flex: 1, opacity: 0.5 }} pointerEvents="none">
+        <ShellPlaceholder />
+      </View>
+      <View style={styles.csScrim}>
+        <View style={styles.csCard}>
+          <View style={styles.csIc}>
+            <IconLock size={26} color={C.accent} />
+          </View>
+          <Text style={styles.csTitle}>{t('community.lockedTitle')}</Text>
+          <Text style={styles.csBody}>{t('community.lockedBody')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  csScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(42,33,27,0.42)', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  csCard: { width: '86%', backgroundColor: C.card, borderRadius: radius.lg, padding: 26, alignItems: 'center', gap: 9, ...shadow.shPop },
+  csIc: { width: 60, height: 60, borderRadius: 30, backgroundColor: accentTint, alignItems: 'center', justifyContent: 'center' },
+  csTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
+  csBody: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink2, textAlign: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 12 },
   headerTitle: { fontFamily: font.display, fontSize: 24, color: C.ink, letterSpacing: -0.4 },
   bell: { padding: 4 },
