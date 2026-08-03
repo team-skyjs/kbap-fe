@@ -757,5 +757,12 @@
     "permTitle": "Perlu akses kamera",
     "permBody": "Izinkan akses kamera di Pengaturan untuk mengambil foto.",
     "openSettings": "Buka Pengaturan"
+  },
+  "versionGate": {
+    "gateTitle": "Perlu pembaruan",
+    "gateBody": "Versi ini tidak lagi didukung. Perbarui agar info keamanan makanan tetap akurat.",
+    "gateCta": "Perbarui sekarang",
+    "nudgeText": "Versi baru tersedia",
+    "nudgeCta": "Perbarui"
   }
 }

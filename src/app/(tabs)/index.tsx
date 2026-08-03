@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
+import { UpdateNudgeBanner } from '@/components/VersionGate';
 import {
   StickyHeader,
   useStickyScroll,
@@ -96,6 +97,8 @@ export default function Home() {
           </View>
         ) : (
           <View style={styles.body}>
+            {/* P-111: 소프트 넛지 — min≤현재<latest, dismiss한 버전 재노출 없음 */}
+            <UpdateNudgeBanner />
             {/* greeting — 비회원은 이름 없이 (KB-69) */}
             <View style={styles.greet}>
               <Text style={styles.greetTitle}>

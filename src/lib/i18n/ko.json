@@ -757,5 +757,12 @@
     "permTitle": "카메라 권한 필요",
     "permBody": "사진을 찍으려면 설정에서 카메라 접근을 허용해 주세요.",
     "openSettings": "설정 열기"
+  },
+  "versionGate": {
+    "gateTitle": "업데이트가 필요해요",
+    "gateBody": "이 버전은 더 이상 지원되지 않아요. 정확한 음식 안전 정보를 위해 업데이트해 주세요.",
+    "gateCta": "지금 업데이트",
+    "nudgeText": "새 버전이 나왔어요",
+    "nudgeCta": "업데이트"
   }
 }

@@ -754,5 +754,12 @@
     "permTitle": "Camera access needed",
     "permBody": "Allow camera access in Settings to take a photo.",
     "openSettings": "Open Settings"
+  },
+  "versionGate": {
+    "gateTitle": "Update required",
+    "gateBody": "This version of K-Bap is no longer supported. Update to keep your food safety info accurate.",
+    "gateCta": "Update now",
+    "nudgeText": "A new version is available",
+    "nudgeCta": "Update"
   }
 }

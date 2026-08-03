@@ -757,5 +757,12 @@
     "permTitle": "需要相机权限",
     "permBody": "要拍照，请在设置中允许访问相机。",
     "openSettings": "打开设置"
+  },
+  "versionGate": {
+    "gateTitle": "需要更新",
+    "gateBody": "此版本已不再受支持。请更新以获取准确的食品安全信息。",
+    "gateCta": "立即更新",
+    "nudgeText": "有新版本可用",
+    "nudgeCta": "更新"
   }
 }

@@ -758,5 +758,12 @@
     "permTitle": "Se necesita acceso a la cámara",
     "permBody": "Permite el acceso a la cámara en Ajustes para tomar una foto.",
     "openSettings": "Abrir Ajustes"
+  },
+  "versionGate": {
+    "gateTitle": "Actualización necesaria",
+    "gateBody": "Esta versión ya no es compatible. Actualiza para mantener tu información de seguridad alimentaria al día.",
+    "gateCta": "Actualizar ahora",
+    "nudgeText": "Hay una nueva versión disponible",
+    "nudgeCta": "Actualizar"
   }
 }

@@ -845,3 +845,6 @@
 - [x] 채널 기반 노출 플래그: FLAGS.reviewsEnabled/communityEnabled = production 채널이면 숨김(expo-updates channel, 웹/jest/dev 폴백 노출). 진입점 전수: 탭바 커뮤니티 탭(양측 flex 래퍼로 3탭에도 FAB 정중앙)·커뮤니티 화면 가드·설정 차단 목록 행·리뷰 10개 화면(기존 reviewsEnabled 게이트 재사용).
 - [x] 감량(KB-272 ①②): expo-build-properties android enableProguardInReleaseBuilds+enableShrinkResourcesInReleaseBuilds, 미사용 3종 제거(expo-glass-effect·expo-auth-session·expo-device). 버전 1.0.1(vc autoIncrement). 발행 전 export grep: prod 1·dev 0·meogo 0.
 - [x] 빌드 2벌 완료(둘 다 vc6·1.0.1): production AAB 102.5MB(vc5 107.9 → −5.4MB), 공기계 APK(production-apk 프로필, 동일 구성) 163.0MB(vc5 universal 175.3 → −12.9MB, R8 DEX 감량 부합). 링크는 REPORTS. 전달 순서: 예진 APK 스모크(구글 로그인·스캔·온보딩·상세) → 종한 AAB.
+
+## 최소 지원 버전 게이트 (2026-08-03, P-111 — KB-269, BE 선행 없이 페일 오픈)
+- [x] GET /app-config 어댑터 격리(appConfigAdapter — 예상 계약, 운영 규칙 주석: min은 심사 중 버전 이하만) + semver 순수 비교(lib/semver, 형식 불량 null) + versionGate 모듈 스토어(시작+포그라운드 복귀 재조회·5분 스킵, useSyncExternalStore 구독). 하드 게이트 = 루트 풀스크린 오버레이(백핸들러 차단·dismiss 불가·스토어 딥링크 CTA), 소프트 넛지 = 홈 상단 배너(dismiss한 latestVersion 저장 — 같은 버전 재노출 없음). **페일 오픈**: 404·네트워크·파싱·필드 누락·semver 불량 전부 통과 + blocked 후 일시 오류론 해제 안 함. i18n versionGate ×10, IconDownload 벤더. JS-only(지문 불변). 유닛 14본.

@@ -30,6 +30,7 @@ import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
+import { VersionGateOverlay } from '@/components/VersionGate';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -117,6 +118,8 @@ export default function RootLayout() {
               </Stack>
               {/* P-106: 키보드 내리기 전역 — iOS 액세서리 바(전 Input 연결)+안드 하단 바 */}
               <KeyboardDismissBar />
+              {/* P-111(KB-269): 최소 지원 버전 하드 게이트 — 내비 전체 덮음, 페일 오픈 */}
+              <VersionGateOverlay />
             </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>
