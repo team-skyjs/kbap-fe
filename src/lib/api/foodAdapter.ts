@@ -19,7 +19,7 @@
  */
 import type { FoodCard, FoodDetail, IngredientRisk, RatingAggregate } from './types';
 import { wireToFoodSpice } from './spiceAdapter';
-import type { FoodDetailWire } from './foodDetailTypes';
+import type { FoodDetailWire, ReviewRatingWire } from './foodDetailTypes';
 import type { MenuSummaryWire } from './foodListTypes';
 import { mapRisk } from './scanAdapter';
 
@@ -28,6 +28,32 @@ const NO_RATING: RatingAggregate = { average: null, count: 0 };
 /** imageRef → usable URL, else null (bare filenames have no host yet). */
 function refToUrl(ref: string | null | undefined): string | null {
   return ref && /^https?:\/\//.test(ref) ? ref : null;
+}
+
+/** 중첩 평점 단위 → 내부 집계. 계약 "리뷰 없으면 0.0·0(null 없음)" → count 0이면
+ *  average null(화면 '—'). blur=true의 기본값(0.0·0)도 같은 경로로 자연 강등. */
+function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
+  const count = r?.reviewCount ?? 0;
+  return { average: count > 0 && typeof r?.averageRating === 'number' ? r.averageRating : null, count };
+}
+
+/** P-107(KB-275, #121): 리뷰 요약 겸수신 — ① 신계약 중첩(스냅샷 8/3 정본
+ *  {overall, sameCountry}) ② 발주문 단층 중첩 ③ 구 평면(prod 폴백) 순. */
+function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 'sameNationality'> {
+  const rv = wire.review;
+  if (rv) {
+    if (rv.overall || rv.sameCountry) {
+      return { overall: aggFromRating(rv.overall), sameNationality: aggFromRating(rv.sameCountry) };
+    }
+    return {
+      overall: { average: rv.averageRating ?? null, count: rv.reviewCount ?? 0 },
+      sameNationality: { average: rv.sameCountryAverageRating ?? null, count: 0 },
+    };
+  }
+  return {
+    overall: { average: wire.averageRating ?? null, count: wire.reviewCount ?? 0 },
+    sameNationality: { average: wire.sameCountryAverageRating ?? null, count: 0 },
+  };
 }
 
 export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetail {
@@ -51,9 +77,8 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     nameKo: wire.koreanName ?? wire.name,
     risk: mapRisk(wire.overallRiskStatus),
     riskBasis: [],
-    // P-085(KB-73): 평점 = 서버값 (목 재계산 폐기). sameCountry는 count 미제공 — 0 고정.
-    overall: { average: wire.averageRating ?? null, count: wire.reviewCount ?? 0 },
-    sameNationality: { average: wire.sameCountryAverageRating ?? null, count: 0 },
+    // P-085(KB-73)→P-107(KB-275): 평점 = 서버값, 중첩 신계약 우선 + 구 평면 폴백.
+    ...adaptReviewSummary(wire),
     description: wire.description ?? '',
     // P-081: 와이어 정수 → 단계 enum (변환은 spiceAdapter 격리 — 스웨거 enum 재배포 시 스왑)
     spiceLevel: wireToFoodSpice(wire.spiciness),

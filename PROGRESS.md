@@ -831,3 +831,6 @@
 
 ## 키보드 내리기 UX 전역 (2026-07-31, P-106 — 예진 확정)
 - [x] 공용 KeyboardDismissBar + Input 래퍼: iOS=InputAccessoryView(공유 nativeID, 루트 1회 마운트 — 전 Input 자동 연결), 안드=키보드 show/hide 이벤트 하단 고정 바(resize 모드 bottom 0). RN Modal은 별도 레이어라 입력 품은 Modal 4곳(작성 태그 시트·리뷰 장소 픽커·신고 모달·국적 픽커)에 `modal` 변형 추가(iOS null — 중복 등록 방지). 전 TextInput(10파일 13개) → Input 코드모드, 키보드 화면 스크롤러 keyboardDismissMode="on-drag" 일괄(10곳). IconChevronDown 벤더 추가. 유닛 5본. 네이티브 신규 의존 0 — 지문 불변, OTA 안전.
+
+## 음식 상세 리뷰 요약 중첩 반영 (2026-08-03, P-107 — KB-275, #121 breaking)
+- [x] foodAdapter 평점 수신 3중 겸수신: ① 신계약 중첩(8/3 스냅샷 정본 review.{overall,sameCountry}.{averageRating,reviewCount}, count 0 = average null 강등 — 0.0점 오표시 금지) ② 발주문 단층 중첩 ③ 구 평면(prod 폴백). sameNationality count 신계약에서 실값 수신. blur 기본값도 null 경로로 자연 강등. 유닛 5본. 표시 로직 무변.

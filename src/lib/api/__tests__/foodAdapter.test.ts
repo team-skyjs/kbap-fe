@@ -26,3 +26,47 @@ it('bookmarked 누락/비불리언은 false로 방어 (비회원 조회 = 항상
   delete noField.bookmarked;
   expect(adaptFoodDetail(noField as FoodDetailWire, '7').bookmarked).toBe(false);
 });
+
+/* ---- P-107(KB-275, #121): 리뷰 요약 겸수신 ---- */
+
+it('신계약 중첩(스냅샷 8/3) — overall·sameCountry 수신, count 0 = average null(0.0 강등)', () => {
+  const d = adaptFoodDetail(
+    { ...WIRE, review: { blur: false, overall: { averageRating: 3.7, reviewCount: 3 }, sameCountry: { averageRating: 4.5, reviewCount: 2 } } },
+    '7',
+  );
+  expect(d.overall).toEqual({ average: 3.7, count: 3 });
+  expect(d.sameNationality).toEqual({ average: 4.5, count: 2 });
+  // 리뷰 없음 = 계약상 0.0·0 (null 없음) → 내부 null (화면 '—', 0.0점 오표시 금지)
+  const empty = adaptFoodDetail(
+    { ...WIRE, review: { blur: false, overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } },
+    '7',
+  );
+  expect(empty.overall).toEqual({ average: null, count: 0 });
+  expect(empty.sameNationality).toEqual({ average: null, count: 0 });
+});
+
+it('blur=true(비회원 기본값 0.0·0) — 수치 미노출용 null/0으로 강등', () => {
+  const d = adaptFoodDetail(
+    { ...WIRE, review: { blur: true, overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } },
+    '7',
+  );
+  expect(d.overall).toEqual({ average: null, count: 0 });
+});
+
+it('발주문 단층 중첩({averageRating,…}) — 겸수신', () => {
+  const d = adaptFoodDetail({ ...WIRE, review: { averageRating: 4.2, reviewCount: 5, sameCountryAverageRating: 3.9 } }, '7');
+  expect(d.overall).toEqual({ average: 4.2, count: 5 });
+  expect(d.sameNationality).toEqual({ average: 3.9, count: 0 });
+});
+
+it('구 평면(prod 폴백) — review 부재 시 평면 필드 수신', () => {
+  const d = adaptFoodDetail({ ...WIRE, averageRating: 4.0, reviewCount: 7, sameCountryAverageRating: null }, '7');
+  expect(d.overall).toEqual({ average: 4.0, count: 7 });
+  expect(d.sameNationality).toEqual({ average: null, count: 0 });
+});
+
+it('둘 다 없음 — null/0 (표시 "—")', () => {
+  const d = adaptFoodDetail({ ...WIRE }, '7');
+  expect(d.overall).toEqual({ average: null, count: 0 });
+  expect(d.sameNationality).toEqual({ average: null, count: 0 });
+});
