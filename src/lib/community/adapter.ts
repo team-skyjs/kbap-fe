@@ -6,6 +6,8 @@
  * 무변이 목표. 커서 페이징(hasNext/nextCursor)은 리뷰 keyset 문법 가정으로
  * 이미 계약 형태를 흉내내고 있다.
  */
+import { api } from '@/lib/api/client';
+import { FLAGS } from '@/lib/flags';
 import * as store from './store';
 import type {
   BlockedUser,
@@ -76,22 +78,74 @@ export async function reactToComment(id: string, r: Exclude<Reaction, null>): Pr
   store.reactToComment(id, r);
 }
 
+/** P-108: UI 사유 → BE enum (8/3 계약 고정 매핑). */
+const REPORT_REASON_WIRE: Record<ReportReason, string> = {
+  spam: 'SPAM',
+  harassment: 'ABUSE',
+  inappropriate: 'SEXUAL',
+  misinfo: 'FALSE_INFO',
+  other: 'OTHER',
+};
+
 export async function submitReport(target: ReportTarget, id: string, reason: ReportReason, note: string | null): Promise<void> {
+  // P-108: **리뷰 신고만 실 API** — 계약 targetType이 REVIEW뿐(POST/COMMENT는 BE 후속, 커뮤니티는 목 유지)
+  if (target === 'review' && FLAGS.reviewsLiveEnabled) {
+    await api.post('/reports', {
+      targetType: 'REVIEW',
+      targetId: Number(id),
+      reason: REPORT_REASON_WIRE[reason],
+      ...(note ? { detail: note } : {}), // FE 300자 상한 유지 (계약 상한 500 내)
+    });
+    return;
+  }
   await delay();
   store.report(target, id, reason, note);
 }
 
+/** 실 회원 id 판별 — 커뮤니티 목 스토어의 시드 작성자('u2' 등)는 BE에 없는 가짜 id. */
+const isRealMemberId = (id: string) => /^\d+$/.test(id);
+
 export async function blockUser(author: CommunityAuthor): Promise<void> {
+  // P-108: 실 차단(BE 필터가 진실). **목 스토어 로컬 차단은 병행 유지** — 커뮤니티
+  // 목 피드/댓글 필터용(실 차단과 별개). 목 시드 작성자(비수치 id)는 로컬만.
+  if (FLAGS.reviewsLiveEnabled && isRealMemberId(author.id)) {
+    await api.post('/members/me/blocks', { memberId: Number(author.id) });
+    store.blockUser(author);
+    return;
+  }
   await delay(300);
   store.blockUser(author);
 }
 
 export async function unblockUser(id: string): Promise<void> {
+  if (FLAGS.reviewsLiveEnabled && isRealMemberId(id)) {
+    await api.del(`/members/me/blocks/${id}`);
+    store.unblockUser(id);
+    return;
+  }
   await delay();
   store.unblockUser(id);
 }
 
+/** GET /members/me/blocks 와이어 — 닉네임·프로필 null 방어 (BlockedMemberResponse). */
+interface BlockedMemberWire {
+  memberId: number;
+  nickname?: string | null;
+  profileImageUrl?: string | null;
+}
+
 export async function fetchBlockedUsers(): Promise<BlockedUser[]> {
+  if (FLAGS.reviewsLiveEnabled) {
+    const wire = await api.get<BlockedMemberWire[]>('/members/me/blocks');
+    const live: BlockedUser[] = (wire ?? []).map((w) => ({
+      id: String(w.memberId),
+      nickname: w.nickname ?? null, // null = 미설정/탈퇴 → 화면 익명 표시
+      nationality: null, // 계약 미제공 — 모노그램 폴백
+    }));
+    // 커뮤니티 목 로컬 차단 병행 노출(해제 동선 보장) — id 충돌 시 실값 우선
+    const local = store.blockedUsers().filter((b) => !live.some((l) => l.id === b.id));
+    return [...live, ...local];
+  }
   await delay();
   return store.blockedUsers();
 }

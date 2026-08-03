@@ -96,3 +96,17 @@ describe('imageUrlToPath — 조회 URL → 전송 path', () => {
     expect(imageUrlToPath('review/9/new.jpg')).toBe('review/9/new.jpg');
   });
 });
+
+/* ---- P-108: 좋아요 서버값 수신 ---- */
+describe('adaptReview — likeCount/likedByMe (8/3 계약)', () => {
+  it('서버값 매핑', () => {
+    const r = adaptReview({ ...WIRE, likeCount: 4, likedByMe: true });
+    expect(r.likes).toBe(4);
+    expect(r.myLike).toBe(true);
+  });
+  it('구응답(필드 부재) 방어 — 0·false', () => {
+    const r = adaptReview(WIRE);
+    expect(r.likes).toBe(0);
+    expect(r.myLike).toBe(false);
+  });
+});

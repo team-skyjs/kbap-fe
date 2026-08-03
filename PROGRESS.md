@@ -834,3 +834,6 @@
 
 ## 음식 상세 리뷰 요약 중첩 반영 (2026-08-03, P-107 — KB-275, #121 breaking)
 - [x] foodAdapter 평점 수신 3중 겸수신: ① 신계약 중첩(8/3 스냅샷 정본 review.{overall,sameCountry}.{averageRating,reviewCount}, count 0 = average null 강등 — 0.0점 오표시 금지) ② 발주문 단층 중첩 ③ 구 평면(prod 폴백). sameNationality count 신계약에서 실값 수신. blur 기본값도 null 경로로 자연 강등. 유닛 5본. 표시 로직 무변.
+
+## 리뷰 실연결 스왑 일괄 (2026-08-03, P-108 — KB-73/257, 종한 계약 확정)
+- [x] FLAGS.reviewsLiveEnabled=true 봉인 해제(목록·내리뷰·CRUD·presigned 실왕복, PATCH 풀 페이로드 유닛 유지). 좋아요 = POST /reviews/{id}/like?liked= 낙관 토글+실패 롤백, 수신 likeCount/likedByMe 서버값(어댑터 매핑, 목 로컬 계산 폐기 — 표시 전용 유지). 신고(리뷰만) = POST /reports 사유 매핑 고정(SPAM/ABUSE/SEXUAL/FALSE_INFO/OTHER, detail 300자) — 커뮤니티 신고는 목 유지(계약 targetType REVIEW뿐). 차단 = POST·DELETE /members/me/blocks + 목록 GET(null 방어), 실 회원(수치 id)만 BE·목 시드는 로컬만, 커뮤니티 목 로컬 차단 병행 유지. 유닛 17본 추가(좋아요 on/롤백·매핑·신고 스왑·차단 스왑·목록 방어). Metro 실왕복 DoD는 예진.

@@ -177,3 +177,27 @@ it('좋아요 토글(목) → API 호출 0 + 내 리뷰·음식 리뷰 전 필�
   await runLike(qc, { reviewId: 'r1', foodId: '7' }); // 재탭 = 해제
   expect((qc.getQueryData<Review[]>(['me', 'reviews'])![0])).toMatchObject({ likes: 2, myLike: false });
 });
+
+/* ---- P-108: 좋아요 실연결 (on — POST + 낙관/롤백) ---- */
+
+const LIKE_RV = { id: 'r1', foodId: '7', rating: 5, body: null, authorNationality: 'US', authorRankTier: null, anonymized: false, createdAt: '2026-08-03T00:00:00Z', likes: 2, myLike: false } as Review;
+
+it('좋아요 on → POST /reviews/{id}/like?liked=목표상태 + 낙관 반영 유지', async () => {
+  mockFlagState.live = true;
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  qc.setQueryData(['me', 'reviews'], [LIKE_RV]);
+  await runLike(qc, { reviewId: 'r1', foodId: '7' });
+  expect(api.post).toHaveBeenCalledWith('/reviews/r1/like?liked=true'); // 현 false → 목표 true
+  expect(qc.getQueryData<Review[]>(['me', 'reviews'])![0]).toMatchObject({ likes: 3, myLike: true });
+  await runLike(qc, { reviewId: 'r1', foodId: '7' }); // 해제 = liked=false
+  expect(api.post).toHaveBeenLastCalledWith('/reviews/r1/like?liked=false');
+});
+
+it('좋아요 on 실패 → 캐시 롤백(원값 복원)', async () => {
+  mockFlagState.live = true;
+  api.post.mockRejectedValueOnce(new Error('boom'));
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  qc.setQueryData(['me', 'reviews'], [LIKE_RV]);
+  await runLike(qc, { reviewId: 'r1', foodId: '7' });
+  expect(qc.getQueryData<Review[]>(['me', 'reviews'])![0]).toMatchObject({ likes: 2, myLike: false });
+});

@@ -118,28 +118,54 @@ export function useDeleteReview() {
   });
 }
 
+/** 캐시 전역 좋아요 반전 — 내리뷰 + 음식 리뷰 infinite 전 필터 키('all'·국적). */
+function flipLikeCaches(qc: QueryClient, input: { reviewId: string; foodId: string }) {
+  const flip = (r: Review): Review =>
+    r.id === input.reviewId
+      ? { ...r, myLike: !r.myLike, likes: Math.max(0, (r.likes ?? 0) + (r.myLike ? -1 : 1)) }
+      : r;
+  qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => prev?.map(flip));
+  qc.getQueryCache()
+    .findAll({ queryKey: ['food', input.foodId, 'reviews'] })
+    .forEach((query) => {
+      qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
+        prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
+      );
+    });
+}
+
+/** 현재 myLike — 캐시가 진실(화면도 이걸 그린다). 내리뷰 → 음식 캐시 순. */
+function currentMyLike(qc: QueryClient, input: { reviewId: string; foodId: string }): boolean {
+  const mine = qc.getQueryData<Review[]>(['me', 'reviews'])?.find((r) => r.id === input.reviewId);
+  if (mine) return mine.myLike === true;
+  for (const query of qc.getQueryCache().findAll({ queryKey: ['food', input.foodId, 'reviews'] })) {
+    const data = query.state.data as InfiniteData<ReviewPage> | undefined;
+    for (const p of data?.pages ?? []) {
+      const r = p.items.find((x) => x.id === input.reviewId);
+      if (r) return r.myLike === true;
+    }
+  }
+  return false;
+}
+
 /**
- * P-095(KB-257): 리뷰 좋아요 — **BE 계약 미배포, 목 전용**(캐시 토글·표시만,
- * 정렬 미반영 확정). ⚠️ 스왑 지점: 좋아요 계약 배포 시 이 mutationFn을 실
- * POST/DELETE + 무효화로 교체 — 화면 무변.
+ * P-095(KB-257) 목 → P-108 실연결: `POST /reviews/{id}/like?liked=` (응답 Unit).
+ * 낙관적 토글(캐시 반전) + 실패 롤백(역반전). 서버값(likeCount·likedByMe)은
+ * 다음 재조회가 진실 — 표시 전용(정렬 미반영) 유지. off = 목 캐시 토글만.
  */
 export function useToggleReviewLike() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { reviewId: string; foodId: string }) => {
-      const flip = (r: Review): Review =>
-        r.id === input.reviewId
-          ? { ...r, myLike: !r.myLike, likes: Math.max(0, (r.likes ?? 0) + (r.myLike ? -1 : 1)) }
-          : r;
-      qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => prev?.map(flip));
-      // 음식 리뷰 infinite 캐시 — 전 필터 키('all'·국적) 순회 반영
-      qc.getQueryCache()
-        .findAll({ queryKey: ['food', input.foodId, 'reviews'] })
-        .forEach((query) => {
-          qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
-            prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
-          );
-        });
+      const next = !currentMyLike(qc, input);
+      flipLikeCaches(qc, input); // 낙관 반영 (off 경로는 이게 전부 — P-095 목 시맨틱)
+      if (!FLAGS.reviewsLiveEnabled) return;
+      try {
+        await api.post(`/reviews/${input.reviewId}/like?liked=${next}`);
+      } catch (e) {
+        flipLikeCaches(qc, input); // 실패 롤백
+        throw e;
+      }
     },
   });
 }

@@ -35,6 +35,9 @@ export interface ReviewWire {
   imageUrls: string[];
   createdAt: string;
   author?: ReviewAuthorWire | null; // 탈퇴 회원이면 null
+  /** P-108(KB-257): 좋아요 — 서버값 (8/3 계약). 구응답 방어 옵셔널. */
+  likeCount?: number;
+  likedByMe?: boolean;
 }
 
 export interface ReviewPageWire {
@@ -80,6 +83,9 @@ export function adaptReview(wire: ReviewWire): Review {
     // 번역 축 — 계약 미배포(지시 7): 원문 언어 미상, UI는 플래그로 비노출
     bodyLanguage: undefined,
     translatedBody: null,
+    // P-108: 좋아요 = 서버값 (목 로컬 계산 폐기 — 토글 낙관 반영은 뮤테이션 몫)
+    likes: wire.likeCount ?? 0,
+    myLike: wire.likedByMe === true,
   };
 }
 

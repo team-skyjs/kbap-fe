@@ -25,12 +25,11 @@ export const FLAGS = {
    */
   reviewsEnabled: true,
   /**
-   * 리뷰 **실 API** 연결 (P-085 구현 · P-086 봉인) — off = P-077 목 경로(화면 무변).
-   * 봉인 이유(7/30 종한): ① BE 리뷰 엔드포인트 변경 예고 ② prod 미배포 — 실연결이
-   * OTA로 나가면 라이브 리뷰 화면이 깨짐. BE 확정 후 계약 diff → 어댑터 보정 →
-   * true 복원 (별도 발주).
+   * 리뷰 **실 API** 연결 (P-085 구현 · P-086 봉인 · P-108 해제 8/3) — off = P-077
+   * 목 경로(화면 무변). 종한 계약 확정(8/3 스냅샷)으로 봉인 해제: 목록·CRUD·
+   * 좋아요·신고(리뷰만)·차단까지 이 플래그가 스위칭. 문제 시 false로 재봉인.
    */
-  reviewsLiveEnabled: false,
+  reviewsLiveEnabled: true,
   /**
    * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
    * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
