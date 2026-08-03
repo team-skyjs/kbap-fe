@@ -66,7 +66,21 @@ export function apiLang(): string {
   return ALLOWED_LANGS.has(l) ? l : 'en';
 }
 
-async function request<T>(method: string, path: string, body?: unknown, isRetry = false): Promise<T> {
+/** P-115: 기본 타임아웃 — 응답 유실(fetch 침묵) 시에도 reject 보장, 무한 스켈레톤
+ *  구조 봉쇄. 장시간 정당 요청만 per-call 오버라이드(예: /scans ML 60s). */
+const DEFAULT_TIMEOUT_MS = 15_000;
+
+export interface RequestOpts {
+  timeoutMs?: number;
+}
+
+async function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  isRetry = false,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept-Language': apiLang(),
@@ -82,6 +96,7 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   let res: Response;
+  let text: string;
   if (__DEV__) {
     // 요청 측 로그 — fetch 전에 찍어 NETWORK 실패 시에도 보이게. 토큰은 마스킹.
     // eslint-disable-next-line no-console
@@ -91,25 +106,46 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
       body != null ? body : '(no body)',
     );
   }
+  // P-115: AbortSignal.timeout은 RN Hermes 미보장 — AbortController+setTimeout
+  // (finally에서 타이머 정리, 누수 없음). 타이머 창은 fetch+본문 읽기까지 —
+  // 헤더만 오고 본문이 침묵하는 유실도 봉쇄.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    res = await fetch(`${API_V1_BASE}${path}`, {
-      method,
-      headers,
-      body: body != null ? JSON.stringify(body) : undefined,
-    });
-  } catch (e) {
-    // No connectivity / DNS / TLS — distinctly a NETWORK failure (not an HTTP status).
-    throw new ApiError(`NETWORK: ${(e as Error)?.message ?? e}`);
-  }
+    try {
+      res = await fetch(`${API_V1_BASE}${path}`, {
+        method,
+        headers,
+        body: body != null ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (e) {
+      // 타임아웃/무연결/DNS/TLS — 전부 NETWORK 프리픽스(classifyQueryError → offline,
+      // 재시도 유도 문구). react-query retry가 reject를 받아야 발동한다.
+      throw new ApiError(
+        controller.signal.aborted
+          ? `NETWORK: timeout after ${timeoutMs}ms`
+          : `NETWORK: ${(e as Error)?.message ?? e}`,
+      );
+    }
 
-  // 401 → refresh(rotation, mutex는 핸들러 몫) 후 원요청 1회 재시도 (KB-67).
-  // /auth/* 자체의 401은 재시도 대상이 아니다(로그인/refresh 실패는 그대로 표면화).
-  if (res.status === 401 && !isRetry && onUnauthorized && !path.startsWith('/auth/')) {
-    const refreshed = await onUnauthorized().catch(() => false);
-    if (refreshed) return request<T>(method, path, body, true);
-  }
+    // 401 → refresh(rotation, mutex는 핸들러 몫) 후 원요청 1회 재시도 (KB-67).
+    // /auth/* 자체의 401은 재시도 대상이 아니다(로그인/refresh 실패는 그대로 표면화).
+    if (res.status === 401 && !isRetry && onUnauthorized && !path.startsWith('/auth/')) {
+      const refreshed = await onUnauthorized().catch(() => false);
+      if (refreshed) return request<T>(method, path, body, true, timeoutMs);
+    }
 
-  const text = await res.text();
+    try {
+      text = await res.text();
+    } catch (e) {
+      throw new ApiError(
+        controller.signal.aborted ? `NETWORK: timeout after ${timeoutMs}ms` : `NETWORK: ${(e as Error)?.message ?? e}`,
+      );
+    }
+  } finally {
+    clearTimeout(timer);
+  }
 
   // DevTools Network 탭이 dev-launcher 멀티 호스트 이슈(discussions/954)로 비활성 —
   // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
@@ -141,8 +177,8 @@ async function request<T>(method: string, path: string, body?: unknown, isRetry 
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  del: <T>(path: string) => request<T>('DELETE', path),
+  get: <T>(path: string, opts?: RequestOpts) => request<T>('GET', path, undefined, false, opts?.timeoutMs),
+  post: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('POST', path, body, false, opts?.timeoutMs),
+  patch: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PATCH', path, body, false, opts?.timeoutMs),
+  del: <T>(path: string, opts?: RequestOpts) => request<T>('DELETE', path, undefined, false, opts?.timeoutMs),
 };

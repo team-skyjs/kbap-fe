@@ -53,7 +53,8 @@ async function postScan({ items, photo }: ScanInput): Promise<ScanOutcome> {
   // reject, which scan.tsx branches on for its network error UI).
   console.log('[scan] POST /scans | items =', body.items.length, '| imagePath =', body.imagePath || '(none)');
   // P-060③: 지역화 응답 — 타 엔드포인트와 동일하게 lang 필수 (스웨거 반영 확인)
-  const payload = await api.post<ScanPayload>(`/scans?lang=${apiLang()}`, body);
+  // P-115: 스캔 ML 처리는 15s 기본을 정당하게 넘을 수 있음 — 60s 오버라이드
+  const payload = await api.post<ScanPayload>(`/scans?lang=${apiLang()}`, body, { timeoutMs: 60_000 });
   const merged = mergeResults(items, payload.results ?? []);
   const photoOnly = photoOnlyResults(payload.results ?? []);
   console.log(

@@ -848,3 +848,6 @@
 
 ## 최소 지원 버전 게이트 (2026-08-03, P-111 — KB-269, BE 선행 없이 페일 오픈)
 - [x] GET /app-config 어댑터 격리(appConfigAdapter — 예상 계약, 운영 규칙 주석: min은 심사 중 버전 이하만) + semver 순수 비교(lib/semver, 형식 불량 null) + versionGate 모듈 스토어(시작+포그라운드 복귀 재조회·5분 스킵, useSyncExternalStore 구독). 하드 게이트 = 루트 풀스크린 오버레이(백핸들러 차단·dismiss 불가·스토어 딥링크 CTA), 소프트 넛지 = 홈 상단 배너(dismiss한 latestVersion 저장 — 같은 버전 재노출 없음). **페일 오픈**: 404·네트워크·파싱·필드 누락·semver 불량 전부 통과 + blocked 후 일시 오류론 해제 안 함. i18n versionGate ×10, IconDownload 벤더. JS-only(지문 불변). 유닛 14본.
+
+## API 타임아웃 도입 (2026-08-03, P-115 — 무한 스켈레톤 구조 봉쇄)
+- [x] api/client 전 요청 타임아웃 기본 15s — AbortController+setTimeout(Hermes 안전, finally 정리·누수 0), 타이머 창은 fetch+본문 읽기까지. 타임아웃 = "NETWORK: timeout after Nms" reject → react-query retry 1회 → 기존 에러 UI 합류(classifyQueryError NETWORK 프리픽스 재사용 → offline 재시도 문구). per-call 오버라이드: /scans ML 60s만. 401 재시도 경로에 타임아웃 전파. 유닛 4본(발화 reject·오버라이드·정상 무영향+타이머 0·분류).

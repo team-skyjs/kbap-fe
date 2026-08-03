@@ -68,10 +68,14 @@ beforeEach(() => {
 
 it('요청 body 에 imagePath 포함 — 사진 없음(샘플) → "" + items 는 idx/rawMenuName 만', async () => {
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: null });
-  expect(api.post).toHaveBeenCalledWith('/scans?lang=en', {
-    imagePath: '',
-    items: [{ idx: 0, rawMenuName: '김치찌개' }], // box 는 온디바이스 — 전송 금지
-  });
+  expect(api.post).toHaveBeenCalledWith(
+    '/scans?lang=en',
+    {
+      imagePath: '',
+      items: [{ idx: 0, rawMenuName: '김치찌개' }], // box 는 온디바이스 — 전송 금지
+    },
+    { timeoutMs: 60_000 }, // P-115: 스캔 ML 정당 장시간 — 60s 오버라이드
+  );
 });
 
 it('업로드 성공 → 검증된 path 가 imagePath 로 전송 (P-003 실연동)', async () => {
