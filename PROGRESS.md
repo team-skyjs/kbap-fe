@@ -837,3 +837,6 @@
 
 ## 리뷰 실연결 스왑 일괄 (2026-08-03, P-108 — KB-73/257, 종한 계약 확정)
 - [x] FLAGS.reviewsLiveEnabled=true 봉인 해제(목록·내리뷰·CRUD·presigned 실왕복, PATCH 풀 페이로드 유닛 유지). 좋아요 = POST /reviews/{id}/like?liked= 낙관 토글+실패 롤백, 수신 likeCount/likedByMe 서버값(어댑터 매핑, 목 로컬 계산 폐기 — 표시 전용 유지). 신고(리뷰만) = POST /reports 사유 매핑 고정(SPAM/ABUSE/SEXUAL/FALSE_INFO/OTHER, detail 300자) — 커뮤니티 신고는 목 유지(계약 targetType REVIEW뿐). 차단 = POST·DELETE /members/me/blocks + 목록 GET(null 방어), 실 회원(수치 id)만 BE·목 시드는 로컬만, 커뮤니티 목 로컬 차단 병행 유지. 유닛 17본 추가(좋아요 on/롤백·매핑·신고 스왑·차단 스왑·목록 방어). Metro 실왕복 DoD는 예진.
+
+## 사장님 확인 카드 계란 일반 폴백 버그 (2026-08-03, P-109 — KB-281)
+- [x] 원인: reader=ko일 때 상세 API 성분명 = BE ko 사전("계란")인데 FE 카탈로그 ko 라벨은 "달걀" — 동의어 불일치로 역인덱스 실패 → 일반 질문 강등(우유는 양쪽 "우유"라 정상). FE 수정: resolveIngredientKo 역인덱스 실패 시 **순한글 실명칭은 그대로 채용**(구조 해결 — 전 성분 커버, 받침 조사 정상). 비한글·혼합 스크립트는 종전대로 강등(P-052 원문 노출 봉쇄 유지). 81종 전 재료 라운드트립 유닛(ko 라벨·en 명칭 각각 일반 폴백 0) + 순한글 동의어 2례 잠금.

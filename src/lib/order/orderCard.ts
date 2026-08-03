@@ -81,7 +81,13 @@ export function resolveIngredientKo(codeOrKey: string): string | null {
     }
     if (cands.some((c) => c && norm(c) === q)) return ingredientLabelKo(ing.code);
   }
-  return null; // 서버 번역이 FE 라벨과 상이 — 원문보단 덜 구체적인 일반 질문이 낫다
+  // P-109(KB-281): 역인덱스 실패라도 **순한글 실명칭은 그대로 채용** — reader=ko일 때
+  // BE 성분 사전의 ko 동의어(실례: BE '계란' vs FE '달걀' → 계란만 일반 폴백 버그)는
+  // 그 자체가 사장님에게 보여줄 한국어다. P-052(원문/식별자 노출 봉쇄)는 비한글
+  // 대상 — 한글 아닌 문자가 섞이면 종전대로 일반 질문 강등.
+  const raw = m[1].trim();
+  if (/^[가-힣\s]+$/.test(raw)) return raw;
+  return null; // 비한글 서버 번역이 FE 라벨과 상이 — 원문보단 덜 구체적인 일반 질문이 낫다
 }
 
 /**

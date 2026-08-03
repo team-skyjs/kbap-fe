@@ -49,13 +49,34 @@ describe('ownerQuestionKo — 사장님 확인 질문 실데이터 조립 (P-045
     expect(ownerQuestionKo('쫄면', 'ing:2:달걀')).toBe('쫄면에 달걀이 들어가나요?'); // ko 라벨 역매핑
   });
 
-  it('P-052 ②: 역매핑 실패(미지 name)·미지 형식 → 일반 질문 — 원문/식별자 노출 0', () => {
+  it('P-052 ②: 역매핑 실패(비한글 미지 name)·미지 형식 → 일반 질문 — 원문/식별자 노출 0', () => {
     expect(ownerQuestionKo('쫄면', 'ing:1:Mystery Sauce')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?');
     expect(ownerQuestionKo('쫄면', 'GARBAGE_CODE')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?');
+    expect(ownerQuestionKo('쫄면', 'ing:1:계란 sauce')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?'); // 혼합 스크립트도 강등
   });
 
   it('P-052 ③: 직접 81종 코드는 기존 동작 유지', () => {
     expect(ownerQuestionKo('김치찌개', 'SHRIMP')).toBe('김치찌개에 새우가 들어가나요?');
+  });
+
+  // P-109(KB-281): BE ko 동의어(계란 vs FE 달걀)가 역인덱스에 없어 계란만 일반
+  // 폴백되던 버그 — 순한글 실명칭은 그대로 채용(받침 조사 포함).
+  it('P-109: 순한글 동의어는 실명칭 채용 — 계란(받침)·오이(무받침)', () => {
+    expect(ownerQuestionKo('계란찜', 'ing:0:계란')).toBe('계란찜에 계란이 들어가나요?');
+    expect(ownerQuestionKo('무침', 'ing:0:오이')).toBe('무침에 오이가 들어가나요?');
+  });
+});
+
+// P-109 회귀 스팟: 81종 전 재료 — ko 라벨·en 카탈로그명 어느 쪽으로 와도 구체 질문
+describe('P-109: 전 재료 라운드트립 (계란 특이 아님을 잠금)', () => {
+  it('81종 전부 — ko 라벨 주입 시 일반 폴백 0', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { INGREDIENTS } = require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients');
+    for (const ing of INGREDIENTS) {
+      const ko = ingredientLabelKo(ing.code);
+      expect(ownerQuestionKo('테스트', `ing:0:${ko}`)).not.toContain('못 먹는 재료');
+      expect(ownerQuestionKo('테스트', `ing:0:${ing.name}`)).not.toContain('못 먹는 재료'); // en 카탈로그명
+    }
   });
 });
 
