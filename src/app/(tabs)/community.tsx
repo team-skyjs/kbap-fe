@@ -15,6 +15,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { IconBell, IconBubbleEmpty, IconPlus, Spinner, stateIconColor, StateBlock } from '@/components';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { FLAGS } from '@/lib/flags';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { useCommunityFeed, useDeletePost, useReact } from '@/lib/community/hooks';
 import { MY_ID } from '@/lib/community/store';
@@ -42,6 +43,9 @@ export default function Community() {
   const [foodSheet, setFoodSheet] = React.useState<{ foodId: string; name: string } | null>(null);
   const [placeSheet, setPlaceSheet] = React.useState<CommunityPost | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
+
+  // P-110(KB-280): production 채널 가드 — 탭이 숨겨져도 잔여 진입 봉쇄
+  if (!FLAGS.communityEnabled) return <View style={styles.root} />;
 
   const pages = feed.data?.pages ?? [];
   const posts = pages.flatMap((p) => p.items);

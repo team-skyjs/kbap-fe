@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
+import { FLAGS } from '@/lib/flags';
 import {
   IconCamera,
   IconCommunity,
@@ -42,15 +43,20 @@ export function TabBar({
   onScan: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  // render order: home, food, [FAB], community, profile
-  const left = TABS.slice(0, 2);
-  const right = TABS.slice(2);
+  // P-110(KB-280): production 채널 = 커뮤니티 탭 숨김 (스토어 유저 비노출)
+  const tabs = TABS.filter((t) => t.key !== 'community' || FLAGS.communityEnabled);
+  // render order: home, food, [FAB], community?, profile — 양측을 flex 컨테이너로
+  // 감싸 탭 수가 달라도 FAB는 항상 정중앙 (P-110: community 숨김 시 3탭)
+  const left = tabs.slice(0, 2);
+  const right = tabs.slice(2);
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      {left.map((t) => (
-        <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
-      ))}
+      <View style={styles.side}>
+        {left.map((t) => (
+          <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
+        ))}
+      </View>
 
       {/* center Scan FAB */}
       <View style={styles.fabWrap}>
@@ -60,9 +66,11 @@ export function TabBar({
         <Text style={[styles.tlbl, { color: C.primary }]}>{labels.scan}</Text>
       </View>
 
-      {right.map((t) => (
-        <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
-      ))}
+      <View style={styles.side}>
+        {right.map((t) => (
+          <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -106,6 +114,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.hair,
   },
+  side: { flex: 1, flexDirection: 'row' },
   tab: { flex: 1, alignItems: 'center', gap: 4 },
   locked: { opacity: 0.42 },
   lockBadge: { position: 'absolute', top: -5, right: -10 },

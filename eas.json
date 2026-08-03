@@ -37,6 +37,14 @@
       "env": {
         "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
