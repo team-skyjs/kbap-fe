@@ -876,3 +876,4 @@
 
 ## 맵기 NONE 전환 UI 하강 — 히어로 프레임 고정 (2026-08-04, P-119 — 테플 빌드14 반려)
 - [x] 상태 가변 줄 전원 고정 슬롯화(P-101/103 원칙): 온보딩 히어로 chiliRow minHeight→height 46·bandName lineHeight/height 38·analogy 필 고정 36 + 🌶️repeat(rank) 혼합 줄 3곳(프로필 수정 spiceVal·프로필 탭 dietChipText·온보딩 요약 sumVal)에 고정 lineHeight — NONE(이모지 0개)에서 줄 높이가 변하던 부류 일괄 봉쇄. 코드 플래튼 비교로는 히어로에 상태 조건 스타일이 없어(4고추 상시+opacity) 발화 지점은 이모지/폰트 폴백 메트릭 추정 — 후보 전원 고정으로 어느 쪽이든 프레임 불변. 유닛: NONE↔HOT 히어로 3줄 스타일 완전 동일+고정값 잠금. CardPhoto 계측은 4a8452b 기제거 확인.
+- [x] teamtest OTA 발행 — iOS 그룹 6061ae44(runtime 7aa41957 = 빌드14). 확인: 테플 완전 종료 → 2회 실행.
