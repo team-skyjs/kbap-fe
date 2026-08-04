@@ -42,6 +42,8 @@ import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
+import { assignScanNumbers } from '@/features/scan/capsuleMarker';
+import { ScanMiniSheet } from '@/features/scan/ScanMiniSheet';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
@@ -100,6 +102,8 @@ export default function Scan() {
   // P-071(7/24 예진 확정): 기본 = 사진+마커(risk) — "찍었으니 사진이 보여야지".
   // KB-140의 리스트 기본(버튼 겹침 회피)은 파파고 개편(P-064~068)으로 근거 소멸.
   const [view, setView] = useState<ResultView>('risk');
+  // P-125: 캡슐 탭 → 미니시트 해당 행 하이라이트 (상세 이동은 시트 행 탭)
+  const [highlightId, setHighlightId] = useState<number | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
@@ -350,6 +354,8 @@ export default function Scan() {
       koreanName: p.koreanName,
     }));
     const allDishes = [...resultDishes, ...photoDishes];
+    // P-125: 캡슐 번호 = itemId 오름차순 안정 — 미니시트 순번과 1:1
+    const numberedDishes = assignScanNumbers(resultDishes);
     // §14-5: unable sorted last, never hidden
     const listDishes = [...allDishes].sort((a, b) => (a.risk === 'unable' ? 1 : 0) - (b.risk === 'unable' ? 1 : 0));
 
@@ -399,7 +405,14 @@ export default function Scan() {
             ))}
           </ScrollView>
         ) : (
-          <ScanResultOverlay photo={photo} dishes={resultDishes} showMarkers={view === 'risk'} onTapDish={openDish} peeking={peeking} onPeekChange={setPeeking} />
+          <ScanResultOverlay
+            photo={photo}
+            dishes={numberedDishes}
+            showMarkers={view === 'risk'}
+            onTapDish={(d) => setHighlightId(d.itemId)}
+            peeking={peeking}
+            onPeekChange={setPeeking}
+          />
         )}
         {Close}
         {GateSheet}
@@ -409,6 +422,18 @@ export default function Scan() {
         {/* P-066: 사진이 contain 레터박스일 땐 배경(#16110d)과 겹쳐 안 보이지만,
             사진·줌이 하단을 채우는 순간 버튼 가독을 보장하는 안전망 — 상시 렌더.
             피크(원본 감상) 중엔 버튼과 함께 페이드. */}
+        {view === 'risk' && (
+          <Animated.View style={[styles.miniSheetWrap, { bottom: bottom + 96 }, peekFade]} pointerEvents={peeking ? 'none' : 'box-none'}>
+            <ScanMiniSheet
+              numbered={numberedDishes}
+              extras={photoDishes}
+              highlightId={highlightId}
+              riskLabel={(r) => t(`risk.${r}`)}
+              onRowPress={openDish}
+              bottomOffset={0}
+            />
+          </Animated.View>
+        )}
         {view !== 'list' && (
           <Animated.View style={[styles.resultShade, peekFade]} pointerEvents="none">
             <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']} style={StyleSheet.absoluteFill} />
@@ -665,6 +690,7 @@ const styles = StyleSheet.create({
   sweepTrail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
   sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
+  miniSheetWrap: { position: 'absolute', left: 10, right: 10 },
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   floatBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 8 },

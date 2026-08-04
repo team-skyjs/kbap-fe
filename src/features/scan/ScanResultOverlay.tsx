@@ -11,11 +11,8 @@ import * as React from 'react';
 import { Image, LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { Txt as Text } from '@/components/Txt';
-import { font, riskTone } from '@/lib/theme';
-import { RiskMark } from '@/components';
 import { type ResultDish } from '@/lib/scan/segmentMenu';
-import { estimatePillWidth, layoutPills, PILL_MAX_W } from './pillLayout';
+import { CapsuleMarker, capsuleWidth, layoutCapsules, type NumberedDish } from './capsuleMarker';
 import { coverDisplayRect, markerVisible } from './coverDisplay';
 import { clampPan, clampScale, DOUBLE_TAP_ZOOM } from './zoom';
 
@@ -30,8 +27,10 @@ export function ScanResultOverlay({
   onPeekChange,
 }: {
   photo: Photo;
-  dishes: ResultDish[];
+  /** P-125: 번호 보유(assignScanNumbers) — 캡슐 숫자 = 미니시트 순번 1:1 */
+  dishes: NumberedDish[];
   showMarkers: boolean;
+  /** P-125: 캡슐 탭 = 상세가 아니라 미니시트 하이라이트(상위 배선) */
   onTapDish: (dish: ResultDish) => void;
   /** P-064③: 원본 피크 — true면 마커 페이드아웃(버튼은 상위가 담당) */
   peeking?: boolean;
@@ -107,21 +106,18 @@ export function ScanResultOverlay({
     return coverDisplayRect(w, h, photo.width, photo.height);
   }, [size, photo]);
 
-  // KB-140 마커 겹침 완화 → P-070(KB-240) 보수: 실폭 교차 판정 + 스태거 1단 상한
-  // (pillLayout.ts 순수 함수 — 조밀 2열 연쇄 사다리 잠금은 유닛에서).
+  // P-125(KB-240 해소): 이름 필 사다리 폐기 — 캡슐(숫자+글리프)은 작아 겹침이
+  // 대부분 자연 해소, 잔여만 미세 오프셋(layoutCapsules 한 단). 이름은 미니시트로.
   const positions = React.useMemo(() => {
     if (!rect.w) return [];
-    const anchored = [...dishes]
-      .sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x)
-      .map((d) => ({
-        d,
-        lx: rect.x + d.box.x * rect.w,
-        ty: rect.y + (d.box.y + d.box.height / 2) * rect.h - 16,
-        width: estimatePillWidth(d.displayName),
-      }));
-    // 스태거(layoutPills)는 전체 마커 기준으로 먼저 — 가시성 필터를 앞에 두면
-    // 숨은 마커와의 겹침 판정이 달라져 크롭 여부에 따라 위치가 흔들린다.
-    return layoutPills(anchored).filter((p) => markerVisible(p.lx, p.ty, size.w, size.h));
+    const anchored = dishes.map((d) => ({
+      d,
+      lx: rect.x + d.box.x * rect.w,
+      ty: rect.y + (d.box.y + d.box.height / 2) * rect.h - 12,
+      width: capsuleWidth(d.no),
+    }));
+    // 오프셋은 전체 마커 기준으로 먼저 — 가시성 필터가 앞이면 크롭 여부에 따라 흔들린다.
+    return layoutCapsules(anchored).filter((p) => markerVisible(p.lx, p.ty, size.w, size.h));
   }, [dishes, rect, size]);
 
   return (
@@ -144,24 +140,9 @@ export function ScanResultOverlay({
 
           {showMarkers && (
             <Animated.View style={[StyleSheet.absoluteFill, markerFade]} pointerEvents={peeking ? 'none' : 'box-none'}>
-              {positions.map(({ d, lx, ty: markerTy }) => {
-          const tone = riskTone[d.risk];
-          // pill의 LEFT는 요리명 박스 왼쪽(box.x) — 메뉴 텍스트가 좌정렬이라
-          // 줄 단위로 자연 정렬. KB-140: unmatched도 탭 가능(안내 UI), 상세 이동은 상위에서 차단.
-          return (
-            <Pressable
-              key={d.itemId}
-              onPress={() => onTapDish(d)}
-              style={[styles.pill, { left: lx, top: markerTy, borderColor: tone.fg }]}
-            >
-              <RiskMark state={d.risk} size={18} />
-              {/* BE 응답 name(없으면 rawMenuName 폴백) — KB-72 신계약으로 임시 라벨 교체 완료 */}
-              <Text style={styles.pillText} numberOfLines={1}>
-                {d.displayName}
-              </Text>
-            </Pressable>
-          );
-              })}
+              {positions.map(({ d, lx, ty: markerTy }) => (
+                <CapsuleMarker key={d.itemId} dish={d} left={lx} top={markerTy} onPress={() => onTapDish(d)} />
+              ))}
             </Animated.View>
           )}
         </Animated.View>
@@ -173,24 +154,4 @@ export function ScanResultOverlay({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#16110d', overflow: 'hidden' },
   paper: { backgroundColor: '#241b14' },
-  // icon + name pill (design D3) — replaces the icon-only circle marker
-  pill: {
-    position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    maxWidth: PILL_MAX_W,
-    height: 32,
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    // subtle lift so markers read over busy photos
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
-  },
-  pillText: { fontFamily: font.ko, fontSize: 12.5, color: '#1c1917', flexShrink: 1 },
 });
