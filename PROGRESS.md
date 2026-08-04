@@ -872,3 +872,4 @@
 ## 탭바 간격 원복 + 높이 축소 → teamtest OTA (2026-08-04, P-118 — 테플 빌드14 반려)
 - [x] 원인 확정 = P-110 양측 flex 래퍼 잔존(P-113이 5탭 복원 시 래퍼가 남아 좌우 묶음 1/3 분배 → 간격 불균등). 평평한 5슬롯 균등(각 flex 1) 원복 — coming-soon·prod 숨김 무변. 높이 -4pt(paddingTop 8→6, 아이콘/라벨 gap 4→2, FAB 랩 동기) — 터치 44pt 유지. 유닛 2본(5슬롯 flex:1 래퍼 부재·높이 값).
 - [x] 사고 처리: P-117 git add -A에 예진 임시 계측(CardPhoto, "커밋 금지" 표기)이 오혼입 커밋·빌드14 포함 → 원복 커밋(4a8452b), 디프는 spec/bridge/cardphoto-instrumentation-backup.patch 백업. 이번 OTA가 빌드14에서 계측 제거.
+- [x] teamtest OTA 발행 — iOS 그룹 2e8df00f(runtime 7aa41957 = 빌드14 일치). 확인: 테플 앱 완전 종료 → 2회 실행.
