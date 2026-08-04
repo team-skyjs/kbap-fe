@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   dietWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dietChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   dietChipDanger: { backgroundColor: '#fdecea', borderColor: '#f3cdc8' },
-  dietChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  dietChipText: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 21, color: C.ink }, // P-119: 🌶️ 유무 불변
   dietChipTextDanger: { color: C.riskDanger },
   spiceUnset: { fontFamily: font.body, fontSize: 13.5, color: C.ink3 },
   dietAdd: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 8 },

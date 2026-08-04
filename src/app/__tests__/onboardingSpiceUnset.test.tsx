@@ -163,3 +163,24 @@ it('Skip → 요약 제출 시 SKIP (구 UNSET/-1 의미 승계)', async () => {
   expect(mockSubmit).toHaveBeenCalledTimes(1);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('SKIP');
 });
+
+/* ---- P-119(테플 빌드14 반려): 히어로 프레임 불변 — NONE 전환 시 ~15pt 하강 봉쇄 ---- */
+it('P-119: 히어로 3줄(고추줄·밴드명·비유 필) = 고정 높이 · NONE(0)↔HOT(3) 스타일 완전 동일', async () => {
+  const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, number | undefined>;
+  const heroStyles = (tree: ReactTestRenderer) => {
+    const chiliRow = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.height === 46)[0];
+    const band = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 38)[0];
+    const pill = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderRadius === 999 && flat(n.props.style)?.height === 36)[0];
+    return { chiliRow: flat(chiliRow.props.style), band: flat(band.props.style), pill: flat(pill.props.style) };
+  };
+  const a = await renderSpiceStep();
+  await selectStop(a, 0); // NONE — 반려 지점
+  const b = await renderSpiceStep();
+  await selectStop(b, 3); // HOT
+  const ha = heroStyles(a);
+  const hb = heroStyles(b);
+  expect(ha).toEqual(hb); // 단계 전환에도 프레임 스타일 픽셀 동일
+  expect(ha.chiliRow.height).toBe(46); // minHeight(가변) 아님 — 고정
+  expect(ha.band.lineHeight).toBe(38);
+  expect(ha.pill.height).toBe(36);
+});

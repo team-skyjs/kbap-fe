@@ -249,7 +249,8 @@ const styles = StyleSheet.create({
   hintWarn: { fontFamily: font.bodyBold, color: C.riskCaution },
 
   spiceField: { flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingVertical: 14 },
-  spiceVal: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, textAlign: 'center' },
+  // P-119: 🌶️ 유무(NONE=0개)로 줄 높이가 변해 화면이 들썩이던 것 고정
+  spiceVal: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 22, color: C.ink2, textAlign: 'center' },
   spiceValUnset: { fontFamily: font.body, color: C.ink3 },
   spiceClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText, marginLeft: 2, marginTop: 3 },
 

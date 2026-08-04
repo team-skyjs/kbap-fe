@@ -917,11 +917,12 @@ const styles = StyleSheet.create({
   demoBody: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: 2 },
 
   // ⑤ spice (P-080 → P-081: 슬라이더는 공용 SpiceLevelSlider로 승격 — 히어로만 잔존)
-  chiliRow: { flexDirection: 'row', gap: 6, minHeight: 46, alignItems: 'center' },
+  // P-119: minHeight→height 고정 — 어느 단계에서도 히어로 줄 프레임 불변(P-101/103 원칙)
+  chiliRow: { flexDirection: 'row', gap: 6, height: 46, alignItems: 'center' },
   chili: { fontSize: 34, lineHeight: 44 },
   chiliDim: { opacity: 0.18 },
-  bandName: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.3 },
-  analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 8, backgroundColor: 'rgba(226,88,12,0.08)' },
+  bandName: { fontFamily: font.displayBlack, fontSize: 30, lineHeight: 38, height: 38, color: C.ink, letterSpacing: -0.3 }, // P-119: 고정
+  analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, height: 36, backgroundColor: 'rgba(226,88,12,0.08)' }, // P-119: paddingV→고정 높이
   analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
   tag: { fontFamily: font.body, fontSize: 11, color: C.ink3 },
 
@@ -943,7 +944,7 @@ const styles = StyleSheet.create({
   sumLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2, width: 96 },
   sumRight: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
   sumValRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  sumVal: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink, textAlign: 'right', flexShrink: 1 },
+  sumVal: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 22, color: C.ink, textAlign: 'right', flexShrink: 1 }, // P-119: 🌶️ 유무 불변
   sumValMuted: { fontFamily: font.body, color: C.ink3 },
 
   // legal sheet (P-080)
