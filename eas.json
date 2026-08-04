@@ -36,6 +36,10 @@
       "channel": "teamtest",
       "env": {
         "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
+      },
+      "android": {
+        "buildType": "apk",
+        "distribution": "internal"
       }
     },
     "production-apk": {

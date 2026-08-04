@@ -881,3 +881,6 @@
 ## 프로필 사진 UX 4종 (2026-08-04, P-120 — KB-192, 테플 실기)
 - [x] ① busy 중 진행 차단: 수정 저장(헤더 disabled+opacity·하단 CTA off)·온보딩 계속(off) — 완료/실패 복원. ② 수정 화면 사진 = 로컬 드래프트: 선택 즉시 업로드(로컬 uri 미리보기+스피너)하되 PATCH는 저장 탭 1회 합류(profileImageUrl 드래프트 있을 때만), 삭제도 드래프트(CLEAR 센티널), 뒤로가기 = 폐기·서버 무변. 실패 = 미리보기 원복+드래프트 미반영+에러 라벨. ③ "사진 변경" 상시 라벨 제거(에러 시에만 그 자리) — 온보딩 라벨은 발주 범위 밖 유지. ④ 삭제 텍스트 버튼 iOS 제거(시트 빨간 삭제 일원화)·안드 잔존(유일 경로, 드래프트로 전환). 온보딩은 기존 드래프트 시맨틱 회귀 확인(제출 시 일괄 — 무변). 유닛 7본(iOS 라벨 부재·안드 잔존/드래프트·busy 양화면·1회 PATCH·무전송·실패 미반영).
 - [x] teamtest OTA — iOS 그룹 8fddde99(runtime 7aa41957 = 빌드14). 테플 완전 종료 → 2회 실행.
+
+## 안드 teamtest APK (2026-08-04, P-121 — 팀 테스트용 커뮤니티 포함)
+- [x] eas.json teamtest에 안드 한정 buildType apk + distribution internal(루트가 아닌 android 블록 — iOS TestFlight 경로 무변). grep dev 1·prod 0·meogo 0. 빌드 → 링크는 REPORTS.
