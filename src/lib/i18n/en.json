@@ -237,7 +237,8 @@
     "degradedNote": "Some items couldn't be assessed this time — treat them with care.",
     "spikeNote": "Spike: risk comes live from the backend (currently a mock).",
     "nudgeAction": "Set your avoid list",
-    "nudgeRest": " and we'll flag what to skip on this menu"
+    "nudgeRest": " and we'll flag what to skip on this menu",
+    "permissionSettingsBody": "Camera access is turned off. Allow it in Settings to scan menus."
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

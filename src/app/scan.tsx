@@ -14,7 +14,7 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, AppState, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
@@ -70,7 +70,17 @@ export default function Scan() {
   const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { t } = useTranslation();
   const cameraRef = useRef<CameraView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission, getPermission] = useCameraPermissions();
+  // P-122: OS는 권한 프롬프트를 1회만 — 거부 이력이면 requestPermission이 무프롬프트
+  // 거부 반환(silent denial). 이 상태 = 설정 딥링크로 분기, 복귀 시 자동 재조회.
+  const permDenied = permission != null && !permission.granted && permission.canAskAgain === false;
+  useEffect(() => {
+    if (!permDenied) return;
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st === 'active') void getPermission(); // 설정에서 허용 후 복귀 → 게이트 자동 해제
+    });
+    return () => sub.remove();
+  }, [permDenied, getPermission]);
   const scan = useScan();
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
@@ -486,9 +496,12 @@ export default function Scan() {
         <View style={[StyleSheet.absoluteFill, styles.permission]}>
           <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
           <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
-          <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
+          <Text style={styles.permBody}>{t(permDenied ? 'scan.permissionSettingsBody' : 'scan.permissionBody')}</Text>
           <View style={{ width: '100%', maxWidth: 280 }}>
-            <Btn onPress={requestPermission}>{t('scan.grant')}</Btn>
+            {/* P-122: 거부 이력 = 설정 열기(photo.openSettings 재사용) / 그 외 = 현행 요청 */}
+            <Btn onPress={permDenied ? () => void Linking.openSettings() : requestPermission}>
+              {t(permDenied ? 'photo.openSettings' : 'scan.grant')}
+            </Btn>
           </View>
         </View>
       )}

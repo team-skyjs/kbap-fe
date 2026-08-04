@@ -241,7 +241,8 @@
     "degradedNote": "本次有部分项目无法判断——请谨慎对待。",
     "spikeNote": "Spike：风险数据实时来自后端（目前为模拟数据）。",
     "nudgeAction": "设置忌口食材",
-    "nudgeRest": "后，我们会在这份菜单上标出该避开的菜"
+    "nudgeRest": "后，我们会在这份菜单上标出该避开的菜",
+    "permissionSettingsBody": "相机权限已关闭。请在设置中允许。"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",

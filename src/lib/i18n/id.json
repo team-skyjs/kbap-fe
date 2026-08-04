@@ -241,7 +241,8 @@
     "degradedNote": "Beberapa item tidak dapat dinilai kali ini — harap berhati-hati.",
     "spikeNote": "Spike: risiko diambil langsung dari backend (saat ini tiruan).",
     "nudgeAction": "Atur bahan pantanganmu",
-    "nudgeRest": " dan kami akan menandai yang perlu dihindari di menu ini"
+    "nudgeRest": " dan kami akan menandai yang perlu dihindari di menu ini",
+    "permissionSettingsBody": "Akses kamera dimatikan. Izinkan di Pengaturan."
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

@@ -885,3 +885,6 @@
 ## 안드 teamtest APK (2026-08-04, P-121 — 팀 테스트용 커뮤니티 포함)
 - [x] eas.json teamtest에 안드 한정 buildType apk + distribution internal(루트가 아닌 android 블록 — iOS TestFlight 경로 무변). grep dev 1·prod 0·meogo 0. 빌드 → 링크는 REPORTS.
 - [x] 안드 teamtest APK vc8(1.0.1) 완료 — 커뮤니티·리뷰 on(teamtest 채널)·dev API. 링크 REPORTS.
+
+## 카메라 권한 거부 후 설정 딥링크 (2026-08-04, P-122 — 예진 실기, iOS·안드 공통)
+- [x] 스캔 권한 게이트 분기: canAskAgain=false(거부 이력·silent denial) → 문구 scan.permissionSettingsBody(신규 ×10)+버튼 photo.openSettings 재사용 → Linking.openSettings / true → 현행 requestPermission. AppState active 복귀 시 getPermission 재조회(설정 허용 후 버튼 재탭 없이 카메라 자동 진입). 갤러리 경로는 시스템 픽커(iOS PHPicker·안드 포토피커)라 권한 불요 — 분기 불필요 확인. 유닛 3본. JS-only.
