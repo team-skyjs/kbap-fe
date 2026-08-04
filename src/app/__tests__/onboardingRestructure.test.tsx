@@ -58,7 +58,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock('expo-image-picker', () => ({}));
-jest.mock('@/lib/data/profileImage', () => ({ pickProfileImage: jest.fn(), uploadProfileImage: jest.fn() }));
+jest.mock('@/lib/data/profileImage', () => ({ choosePhotoSource: jest.fn(), pickBySource: jest.fn(), uploadProfileImage: jest.fn() }));
 jest.mock('@/lib/onboarding/submit', () => ({ UNSET: 'UNSET', submitOnboardingProfile: jest.fn() }));
 jest.mock('@/lib/queryClient', () => ({ queryClient: { clear: jest.fn() } }));
 jest.mock('@/lib/data/useMe', () => ({
@@ -166,4 +166,33 @@ it('P-101 — 공용 푸터: consent(신규)와 spice(드래프트) CTA 프레�
   mockDraft = { consented: true, step: 'spice', nickname: 'Y', nationality: 'KR', language: 'en', restrictions: [], spice: null, updatedAt: '2026-07-20T00:00:00Z' };
   const b = footerOf(await render());
   expect(a).toEqual(b); // 스텝이 달라도 푸터 프레임 스타일 동일 (paddingTop·paddingBottom·배경 등)
+});
+
+/* ---- P-120: 사진 업로드 중 진행 차단 (온보딩 profile 스텝) ---- */
+it('P-120: 업로드 중 계속 off → 완료 시 복원', async () => {
+  mockDraft = null;
+  const tree = await render();
+  // 약관 통과 → 프로필 스텝
+  const agreeAll = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.agreeAll').length > 0,
+  );
+  await act(async () => { agreeAll[0].props.onPress(); });
+  await act(async () => { continueBtn(tree).props.onPress(); });
+  // 닉네임 입력(계속 활성 전제)
+  const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
+  await act(async () => { input.props.onChangeText('Mina'); });
+  expect(continueBtn(tree).props.variant).toBe('primary');
+  // 업로드 pending — 계속 off
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pm = require('@/lib/data/profileImage') as { choosePhotoSource: jest.Mock; pickBySource: jest.Mock; uploadProfileImage: jest.Mock };
+  let resolveUpload!: (v: string) => void;
+  pm.choosePhotoSource.mockResolvedValue('gallery');
+  pm.pickBySource.mockResolvedValue({ uri: 'file://a.jpg', width: 1, height: 1 });
+  pm.uploadProfileImage.mockImplementation(() => new Promise<string>((res) => { resolveUpload = res; }));
+  const avatar = tree.root.findAll((n) => n.props?.testID === 'ob-avatar' && n.props.onPress !== undefined)[0];
+  await act(async () => { avatar.props.onPress(); });
+  expect(continueBtn(tree).props.variant).toBe('off');
+  expect(continueBtn(tree).props.onPress).toBeUndefined();
+  await act(async () => { resolveUpload('images/profile/a.jpg'); });
+  expect(continueBtn(tree).props.variant).toBe('primary'); // 복원
 });

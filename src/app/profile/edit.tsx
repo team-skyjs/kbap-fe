@@ -47,27 +47,52 @@ export default function EditProfile() {
   const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   function save() {
+    if (photoBusy) return; // P-120: 업로드 중 저장 차단(버튼 비활성과 이중 방어)
     // spice: 해제 = SKIP — 와이어 -1 센티널 변환은 spiceAdapter (KB-150→P-081)
-    update.mutate({ nickname: nickname.trim() || me?.nickname, spiceTolerance: spice }, { onSuccess: () => router.back() });
+    update.mutate(
+      {
+        nickname: nickname.trim() || me?.nickname,
+        spiceTolerance: spice,
+        // P-120: 사진 드래프트 — 있을 때만 합류(1회 PATCH), 없으면 필드 생략(유지)
+        ...(photoDraft != null ? { profileImageUrl: photoDraft } : {}),
+      },
+      { onSuccess: () => router.back() },
+    );
   }
 
-  // KB-149: 사진은 국적 행처럼 즉시 적용 — 선택 → 업로드 → PATCH.
-  // 실패는 정직한 에러 표시, 기존 사진/플레이스홀더 유지 (수정 자체를 막지 않음).
+  // P-120(KB-192, 8/4 예진): 사진 = **로컬 드래프트** — 선택 시 업로드는 즉시
+  // (미리보기+스피너)하되 PATCH는 저장 탭에서 다른 필드와 1회 합류. 뒤로가기 =
+  // 드래프트 폐기(서버 무변, 미리보기 원복). 구 즉시-PATCH(KB-149) 폐기.
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [photoDraft, setPhotoDraft] = useState<string | null>(null); // PATCH 값: path 또는 PROFILE_IMAGE_CLEAR
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null); // 로컬 uri — 서버 path는 렌더 불가(P-006)
+
+  // 표시 사진 = 드래프트 우선: 삭제 드래프트 → 플레이스홀더 / 새 사진 드래프트 → 로컬 미리보기
+  const shownPhotoUri = photoDraft === PROFILE_IMAGE_CLEAR ? null : (photoPreview ?? me?.profileImageUrl ?? null);
+  const hasCustomPhoto =
+    photoDraft === PROFILE_IMAGE_CLEAR
+      ? false
+      : photoDraft != null || (!!me?.profileImageUrl && !isDefaultProfileImage(me.profileImageUrl));
+
+  const draftRemovePhoto = () => {
+    setPhotoError(false);
+    setPhotoDraft(PROFILE_IMAGE_CLEAR);
+    setPhotoPreview(null);
+  };
+
   // P-049(KB-218): 시스템 선택 시트(촬영/갤러리/[iOS]삭제) → 소스별 픽업 → 업로드.
   const changePhoto = async () => {
     setPhotoError(false);
-    const canRemove = !!me?.profileImageUrl && !isDefaultProfileImage(me.profileImageUrl);
     const src = await choosePhotoSource({
       title: t('photo.sheetTitle'),
       camera: t('photo.take'),
       gallery: t('photo.gallery'),
-      remove: canRemove ? t('editProfile.removePhoto') : undefined,
+      remove: hasCustomPhoto ? t('editProfile.removePhoto') : undefined,
       cancel: t('common.cancel'),
     });
     if (!src) return; // 취소
-    if (src === 'remove') return update.mutate({ profileImageUrl: PROFILE_IMAGE_CLEAR }); // P-016 로직 재사용
+    if (src === 'remove') return draftRemovePhoto(); // P-120: 즉시 PATCH → 드래프트
     const file = await pickBySource(src, {
       permTitle: t('photo.permTitle'),
       permBody: t('photo.permBody'),
@@ -75,12 +100,15 @@ export default function EditProfile() {
       cancel: t('common.cancel'),
     }).catch(() => null);
     if (!file) return; // 취소/권한 거부(안내 완료)
+    const prevPreview = photoPreview;
+    setPhotoPreview(file.uri); // 미리보기 즉시
     setPhotoBusy(true);
     try {
-      const url = await uploadProfileImage(file);
-      update.mutate({ profileImageUrl: url });
+      const path = await uploadProfileImage(file);
+      setPhotoDraft(path); // 보관만 — 전송은 save()에서
     } catch (e) {
       console.log('[profile] photo upload failed:', (e as Error)?.message ?? e);
+      setPhotoPreview(prevPreview); // 실패 = 드래프트 미반영 + 미리보기 원복
       setPhotoError(true);
     } finally {
       setPhotoBusy(false);
@@ -93,7 +121,7 @@ export default function EditProfile() {
         title={t('editProfile.title')}
         onBack={() => router.back()}
         trailing={
-          <Pressable onPress={save} hitSlop={8} style={styles.saveWrap}>
+          <Pressable onPress={save} disabled={photoBusy} hitSlop={8} style={[styles.saveWrap, photoBusy && { opacity: 0.35 }]}>
             <Text style={styles.saveLink}>{t('common.save')}</Text>
           </Pressable>
         }
@@ -101,9 +129,9 @@ export default function EditProfile() {
       <ScrollView keyboardDismissMode="on-drag" scrollEnabled={!sliderDragging} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* avatar — KB-149 실연결 */}
         <View style={styles.avatarWrap}>
-          <Pressable style={styles.av} onPress={photoBusy ? undefined : () => void changePhoto()}>
-            {me?.profileImageUrl ? (
-              <Image source={{ uri: me.profileImageUrl }} style={styles.avImg} />
+          <Pressable testID='avatar' style={styles.av} onPress={photoBusy ? undefined : () => void changePhoto()}>
+            {shownPhotoUri ? (
+              <Image source={{ uri: shownPhotoUri }} style={styles.avImg} />
             ) : (
               <IconProfile size={44} color={C.primary} />
             )}
@@ -116,15 +144,12 @@ export default function EditProfile() {
               <IconCamera size={16} color="#fff" />
             </View>
           </Pressable>
-          <Text style={photoError ? styles.phErr : styles.phLbl}>
-            {photoError ? t('editProfile.photoError') : t('editProfile.changePhoto')}
-          </Text>
-          {/* P-013/P-016(KB-149 후속): 사진 삭제 — 커스텀 사진일 때만 노출 (서버가
-              항상 URL을 주므로 기본 사진은 사진 없음 취급 — isDefaultProfileImage).
-              확인 얼럿 없이 즉시(재선택으로 복구 용이). PATCH 기본 path →
-              ['me'] invalidate 재조회로 기본 사진 복귀 (전송값 PROFILE_IMAGE_CLEAR). */}
-          {!!me?.profileImageUrl && !isDefaultProfileImage(me.profileImageUrl) && !photoBusy && (
-            <Pressable onPress={() => update.mutate({ profileImageUrl: PROFILE_IMAGE_CLEAR })} hitSlop={8}>
+          {/* P-120: "사진 변경" 상시 라벨 제거(아바타 탭으로 충분) — 에러 시에만 그 자리(P-013 문구) */}
+          {photoError && <Text style={styles.phErr}>{t('editProfile.photoError')}</Text>}
+          {/* P-120: 삭제 텍스트 버튼 = **안드만**(Alert 시트에 삭제 없음 — 유일 경로,
+              시트 개편 확정 후 후속 제거). iOS는 시트의 빨간 삭제(P-049)로 일원화. */}
+          {Platform.OS === 'android' && hasCustomPhoto && !photoBusy && (
+            <Pressable onPress={draftRemovePhoto} hitSlop={8}>
               <Text style={styles.phRemove}>{t('editProfile.removePhoto')}</Text>
             </Pressable>
           )}
@@ -214,7 +239,7 @@ export default function EditProfile() {
       </ScrollView>
 
       <View style={styles.savebar}>
-        <Btn icon={<IconCheck size={17} color="#fff" />} onPress={save}>
+        <Btn variant={photoBusy ? 'off' : 'primary'} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
           {t('editProfile.save')}
         </Btn>
       </View>

@@ -313,8 +313,11 @@ export default function Onboarding() {
           icon: agreed ? <IconCheck size={18} color="#fff" /> : undefined,
           note: t('onboarding.consentNote'),
         };
-      case 'profile':
-        return { label: t('onboarding.continue'), variant: nickname.trim() ? 'primary' : 'off', onPress: nickname.trim() ? advance : undefined };
+      case 'profile': {
+        // P-120: 사진 업로드 중 진행 차단 — 완료/실패 시 복원 (photoBusy)
+        const ready = !!nickname.trim() && !photoBusy;
+        return { label: t('onboarding.continue'), variant: ready ? 'primary' : 'off', onPress: ready ? advance : undefined };
+      }
       case 'riskdemo':
         return { label: t('onboarding.continue'), onPress: advance };
       case 'restrictions':
@@ -656,7 +659,7 @@ function Profile(props: {
       <View style={{ gap: 15 }}>
         {/* KB-149 프로필 사진 (선택 사항) — 탭 → 갤러리 1:1 크롭 → 즉시 업로드 */}
         <View style={styles.avatarWrap}>
-          <Pressable style={styles.av} onPress={photoBusy ? undefined : onPickPhoto}>
+          <Pressable testID="ob-avatar" style={styles.av} onPress={photoBusy ? undefined : onPickPhoto}>
             {photoPreview ? (
               <Image source={{ uri: photoPreview }} style={styles.avImg} />
             ) : (
