@@ -884,3 +884,4 @@
 
 ## 안드 teamtest APK (2026-08-04, P-121 — 팀 테스트용 커뮤니티 포함)
 - [x] eas.json teamtest에 안드 한정 buildType apk + distribution internal(루트가 아닌 android 블록 — iOS TestFlight 경로 무변). grep dev 1·prod 0·meogo 0. 빌드 → 링크는 REPORTS.
+- [x] 안드 teamtest APK vc8(1.0.1) 완료 — 커뮤니티·리뷰 on(teamtest 채널)·dev API. 링크 REPORTS.
