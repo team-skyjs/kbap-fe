@@ -27,9 +27,6 @@ export function CardPhoto({
   borderRadius?: number;
 }) {
   const [settled, setSettled] = React.useState(false);
-  // ── 임시 계측 v2: WebP 전후 비교 (커밋 금지 — 측정 후 원복) ──
-  const t0 = React.useRef(0);
-  const tag = uri.split('/').pop()?.slice(0, 28) ?? uri;
   const round = borderRadius != null ? { borderRadius, overflow: 'hidden' as const } : null;
   const shimmerStyle: ViewStyle[] = round ? [FILL, round] : [FILL];
   const imageStyle: ImageStyle[] = round ? [FILL, round] : [FILL];
@@ -42,19 +39,7 @@ export function CardPhoto({
         contentFit="cover"
         transition={transition}
         style={imageStyle}
-        cachePolicy="disk"
-        onLoadStart={() => {
-          t0.current = performance.now();
-        }}
-        onLoad={(e) => {
-          setSettled(true);
-          const w = e.source?.width ?? '?';
-          const h = e.source?.height ?? '?';
-          console.log(`[IMG] load(다운로드+디코드) ${Math.round(performance.now() - t0.current)}ms · ${w}x${h} · ${tag}`);
-        }}
-        onDisplay={() => {
-          console.log(`[IMG] display(화면 표시) ${Math.round(performance.now() - t0.current)}ms · ${tag}`);
-        }}
+        onLoad={() => setSettled(true)}
         onError={() => setSettled(true)}
       />
     </>
