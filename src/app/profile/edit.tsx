@@ -146,13 +146,8 @@ export default function EditProfile() {
           </Pressable>
           {/* P-120: "사진 변경" 상시 라벨 제거(아바타 탭으로 충분) — 에러 시에만 그 자리(P-013 문구) */}
           {photoError && <Text style={styles.phErr}>{t('editProfile.photoError')}</Text>}
-          {/* P-120: 삭제 텍스트 버튼 = **안드만**(Alert 시트에 삭제 없음 — 유일 경로,
-              시트 개편 확정 후 후속 제거). iOS는 시트의 빨간 삭제(P-049)로 일원화. */}
-          {Platform.OS === 'android' && hasCustomPhoto && !photoBusy && (
-            <Pressable onPress={draftRemovePhoto} hitSlop={8}>
-              <Text style={styles.phRemove}>{t('editProfile.removePhoto')}</Text>
-            </Pressable>
-          )}
+          {/* P-123: 안드 텍스트 삭제 버튼 소멸 — 시트(커뮤니티 ActionSheet 재사용)에
+              빨간 삭제가 생겨 양 플랫폼 시트 일원화. */}
         </View>
 
         {/* nickname */}

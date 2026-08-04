@@ -31,6 +31,7 @@ import { useAppFonts } from '@/lib/useAppFonts';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
+import { PhotoSourceSheetHost } from '@/components/PhotoSourceSheetHost';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -120,6 +121,8 @@ export default function RootLayout() {
               <KeyboardDismissBar />
               {/* P-111(KB-269): 최소 지원 버전 하드 게이트 — 내비 전체 덮음, 페일 오픈 */}
               <VersionGateOverlay />
+              {/* P-123: 안드 사진 소스 시트 호스트 (iOS는 네이티브 시트 — 호스트 미사용) */}
+              <PhotoSourceSheetHost />
             </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>

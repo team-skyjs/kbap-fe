@@ -53,18 +53,18 @@ describe('choosePhotoSource — iOS ActionSheet', () => {
   });
 });
 
-describe('choosePhotoSource — Android 시스템 Alert', () => {
+describe('choosePhotoSource — Android = 커뮤니티 ActionSheet 호스트 위임 (P-123, Alert 폐기)', () => {
   beforeEach(() => {
     Object.defineProperty(Platform, 'OS', { value: 'android', configurable: true });
   });
 
-  it('3버튼(취소/갤러리/촬영) — 촬영 선택 시 camera', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
-      const cam = buttons!.find((b) => b.text === 'Cam')!;
-      cam.onPress!();
-    });
+  it('호스트 requestPhotoSourceSheet로 위임 — 라벨 통과·결과 그대로 반환', async () => {
+    const host = require('@/components/PhotoSourceSheetHost') as typeof import('@/components/PhotoSourceSheetHost');
+    const spy = jest.spyOn(host, 'requestPhotoSourceSheet').mockResolvedValue('camera');
     await expect(choosePhotoSource(LABELS)).resolves.toBe('camera');
-    expect(alert.mock.calls[0][2]).toHaveLength(3);
+    expect(spy).toHaveBeenCalledWith(LABELS);
+    const alert = jest.spyOn(Alert, 'alert');
+    expect(alert).not.toHaveBeenCalled(); // 시스템 Alert 경로 소멸
   });
 });
 

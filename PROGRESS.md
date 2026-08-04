@@ -889,3 +889,6 @@
 ## 카메라 권한 거부 후 설정 딥링크 (2026-08-04, P-122 — 예진 실기, iOS·안드 공통)
 - [x] 스캔 권한 게이트 분기: canAskAgain=false(거부 이력·silent denial) → 문구 scan.permissionSettingsBody(신규 ×10)+버튼 photo.openSettings 재사용 → Linking.openSettings / true → 현행 requestPermission. AppState active 복귀 시 getPermission 재조회(설정 허용 후 버튼 재탭 없이 카메라 자동 진입). 갤러리 경로는 시스템 픽커(iOS PHPicker·안드 포토피커)라 권한 불요 — 분기 불필요 확인. 유닛 3본. JS-only.
 - [x] teamtest OTA 양 플랫폼 — iOS 그룹 953c45f5(7aa41957=빌드14)·안드 그룹 1e358b60(2e6a56f4=vc8 일치 실측). 완전 종료 → 2회 실행.
+
+## 안드 사진 시트 = 커뮤니티 ActionSheet 재사용 (2026-08-04, P-123 — KB-192, P-120 잔여)
+- [x] PhotoSourceSheetHost 신설(루트 1회 마운트) — 명령형 choosePhotoSource(Promise)와 선언형 ActionSheet 브릿지(모듈 스토어, 행 선택 즉시 settle·스크림/X 취소는 지연 판정으로 경합 해소). 안드 분기 = Alert 3버튼 폐기 → 호스트 위임(촬영/갤러리/삭제 destructive 버건디 — remove 라벨은 호출측 hasCustomPhoto 조건 그대로). iOS 네이티브 시트 무변. 안드 텍스트 삭제 버튼 소멸(시트 일원화). 호출부 2곳(수정·온보딩) 자동 커버 — 온보딩은 기존 결정대로 삭제 옵션 없음(재선택 대체) 유지. 유닛 8본(시트 구성/색/resolve/분기 + 기존 2스위트 P-123 갱신).

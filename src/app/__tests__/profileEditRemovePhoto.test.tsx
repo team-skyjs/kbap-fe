@@ -129,25 +129,28 @@ it('iOS — "사진 변경"·"사진 삭제" 텍스트 2종 부재 (시트 빨�
   expect(textNodes(tree, 'editProfile.removePhoto')).toHaveLength(0);
 });
 
-it('안드 — 커스텀 사진이면 삭제 텍스트 버튼 잔존(유일 경로), 탭 = 드래프트(즉시 PATCH 0)', () => {
+it('안드 — 텍스트 삭제 버튼 소멸(P-123: 시트에 삭제 생김 — 일원화)', () => {
   Platform.OS = 'android';
   const tree = render(<EditProfile />);
-  const btns = textNodes(tree, 'editProfile.removePhoto');
-  expect(btns.length).toBeGreaterThanOrEqual(1);
-  act(() => btns[btns.length - 1].props.onPress());
-  expect(mockMutate).not.toHaveBeenCalled(); // P-120: 즉시 PATCH 폐기 — 저장 시 합류
-  // 저장 탭 → 1회 PATCH에 삭제 센티널 합류
+  expect(textNodes(tree, 'editProfile.removePhoto')).toHaveLength(0);
+});
+
+it('시트 remove 선택 = 드래프트(즉시 PATCH 0) → 저장 1회 합류 (P-123, 양 플랫폼 공통 경로)', async () => {
+  pm.choosePhotoSource.mockResolvedValue('remove');
+  const tree = render(<EditProfile />);
+  await act(async () => { avatar(tree).props.onPress(); });
+  expect(mockMutate).not.toHaveBeenCalled(); // 드래프트 — 저장 시 합류
   act(() => headerSave(tree).props.onPress());
   expect(mockMutate).toHaveBeenCalledTimes(1);
   expect(mockMutate.mock.calls[0][0]).toMatchObject({ profileImageUrl: pm.PROFILE_IMAGE_CLEAR });
 });
 
-it('안드 — 사진 없음·서버 기본 사진(P-016 판별)은 삭제 버튼 미노출', () => {
-  Platform.OS = 'android';
-  mockMe = { ...BASE, profileImageUrl: null };
-  expect(textNodes(render(<EditProfile />), 'editProfile.removePhoto')).toHaveLength(0);
+it('시트 remove 노출 조건 — 사진 없음/기본 사진이면 remove 라벨 미전달(P-016 판별 유지)', async () => {
   mockMe = { ...BASE, profileImageUrl: 'https://cdn.example/images/default/profile/profile-default-512.png' };
-  expect(textNodes(render(<EditProfile />), 'editProfile.removePhoto')).toHaveLength(0);
+  pm.choosePhotoSource.mockResolvedValue(null);
+  const tree = render(<EditProfile />);
+  await act(async () => { avatar(tree).props.onPress(); });
+  expect(pm.choosePhotoSource.mock.calls[0][0].remove).toBeUndefined();
 });
 
 it('업로드 중 — 헤더 저장 disabled + 하단 CTA off, 완료 후 복원', async () => {

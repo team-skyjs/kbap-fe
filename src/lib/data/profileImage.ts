@@ -67,10 +67,16 @@ export interface PhotoSheetLabels {
 
 /**
  * 사진 소스 선택 — **시스템 UI만** (직접 제작 금지 지시): iOS ActionSheetIOS,
- * Android는 시스템 Alert 3버튼(촬영/갤러리/취소 — 지시 그대로. 삭제는 4버튼이
- * 불가한 Alert 제약상 화면의 기존 삭제 링크 존치로 커버).
+ * Android는 커뮤니티 ActionSheet 재사용(P-123 — 빨간 삭제 포함, Alert 폐기).
  */
 export function choosePhotoSource(labels: PhotoSheetLabels): Promise<PhotoSource | null> {
+  // P-123(8/4 예진 확정): 안드 = 커뮤니티 ActionSheet 재사용(빨간 삭제 포함) —
+  // 시스템 Alert 3버튼 폐기. iOS는 네이티브 시트 유지(P-049 기승인).
+  if (Platform.OS !== 'ios') {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { requestPhotoSourceSheet } = require('@/components/PhotoSourceSheetHost') as typeof import('@/components/PhotoSourceSheetHost');
+    return requestPhotoSourceSheet(labels);
+  }
   return new Promise((resolve) => {
     if (Platform.OS === 'ios') {
       const options = [labels.camera, labels.gallery, ...(labels.remove ? [labels.remove] : []), labels.cancel];
@@ -85,16 +91,6 @@ export function choosePhotoSource(labels: PhotoSheetLabels): Promise<PhotoSource
       );
       return;
     }
-    Alert.alert(
-      labels.title,
-      undefined,
-      [
-        { text: labels.cancel, style: 'cancel', onPress: () => resolve(null) },
-        { text: labels.gallery, onPress: () => resolve('gallery') },
-        { text: labels.camera, onPress: () => resolve('camera') },
-      ],
-      { cancelable: true, onDismiss: () => resolve(null) },
-    );
   });
 }
 
