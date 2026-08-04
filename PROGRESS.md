@@ -888,3 +888,4 @@
 
 ## 카메라 권한 거부 후 설정 딥링크 (2026-08-04, P-122 — 예진 실기, iOS·안드 공통)
 - [x] 스캔 권한 게이트 분기: canAskAgain=false(거부 이력·silent denial) → 문구 scan.permissionSettingsBody(신규 ×10)+버튼 photo.openSettings 재사용 → Linking.openSettings / true → 현행 requestPermission. AppState active 복귀 시 getPermission 재조회(설정 허용 후 버튼 재탭 없이 카메라 자동 진입). 갤러리 경로는 시스템 픽커(iOS PHPicker·안드 포토피커)라 권한 불요 — 분기 불필요 확인. 유닛 3본. JS-only.
+- [x] teamtest OTA 양 플랫폼 — iOS 그룹 953c45f5(7aa41957=빌드14)·안드 그룹 1e358b60(2e6a56f4=vc8 일치 실측). 완전 종료 → 2회 실행.
