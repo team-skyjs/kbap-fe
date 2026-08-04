@@ -54,6 +54,12 @@ export const FLAGS = {
    */
   reviewsLiveEnabled: true,
   /**
+   * 리뷰 장소 태그 (P-116, 8/4 회의) — 장소 검색 BE(KB-274)가 카카오 월렛
+   * 블록으로 미배포 → 이번 릴리스 전면 숨김(전 채널). 배포 시 true 한 줄 복원.
+   * 커뮤니티 작성의 장소 행은 이 플래그 무관(coming-soon으로 미출시 — 별도).
+   */
+  placeTagsEnabled: false,
+  /**
    * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
    * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
    */

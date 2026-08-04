@@ -337,7 +337,8 @@ function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onO
       )}
 
       {/* P-095: 장소 한 줄(핀+이름 — 태그 있을 때만) */}
-      {review.place && (
+      {/* P-116: 장소 한 줄 — placeTagsEnabled 숨김(KB-274 대기) */}
+      {FLAGS.placeTagsEnabled && review.place && (
         <View style={styles.placeLine}>
           <IconMapPin size={12} color={C.ink3} />
           <Text style={styles.placeLineText} numberOfLines={1}>{review.place.name}</Text>

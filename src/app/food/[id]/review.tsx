@@ -202,7 +202,9 @@ export default function ReviewCompose() {
           </View>
         </View>
 
-        {/* P-095: 장소 필드 — 접힌 행("Tag a place · optional") → 92% 검색 시트 → 이름 칩(×) */}
+        {/* P-095: 장소 필드 — 접힌 행 → 92% 검색 시트 → 이름 칩(×).
+            P-116: KB-274 미배포 — placeTagsEnabled로 전면 숨김(코드 보존) */}
+        {FLAGS.placeTagsEnabled && (
         <View style={styles.block}>
           {place ? (
             <View style={styles.placeChip}>
@@ -221,6 +223,7 @@ export default function ReviewCompose() {
             </Pressable>
           )}
         </View>
+        )}
 
         {postError && (
           <View style={styles.postErr}>
@@ -236,7 +239,7 @@ export default function ReviewCompose() {
       </ScrollView>
 
       <PlacePickerSheet
-        open={placeSheet}
+        open={FLAGS.placeTagsEnabled && placeSheet}
         onClose={() => setPlaceSheet(false)}
         onPick={(p) => {
           setPlace(p);

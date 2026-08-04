@@ -320,7 +320,8 @@ export default function ReviewDetail() {
             </View>
 
             {/* 장소 섹션 — 태그 있을 때만 (D-08, 3사 지도 중립 글리프) */}
-            {review.place && (
+            {/* P-116: 장소 섹션 — placeTagsEnabled 숨김(KB-274 대기) */}
+            {FLAGS.placeTagsEnabled && review.place && (
               <View style={styles.placeCard}>
                 <View style={styles.placeTop}>
                   <View style={styles.placeIc}>
