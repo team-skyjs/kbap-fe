@@ -220,9 +220,9 @@
     "noText": "Tidak ada teks menu ditemukan. Dekatkan dan coba lagi.",
     "failed": "Pemindaian gagal. Periksa koneksi Anda dan coba lagi.",
     "errCapture": "Tidak bisa mengambil foto. Coba lagi.",
-    "errOcr": "Tidak bisa membaca teks dari foto (OCR). Lihat log Metro.",
+    "errOcr": "Tidak bisa membaca teks di foto. Coba lagi dengan menu terlihat jelas.",
     "errNetwork": "Tidak bisa menjangkau layanan pemindaian. Periksa koneksi Anda.",
-    "errBe": "Layanan pemindaian mengembalikan error. Lihat log Metro.",
+    "errBe": "Terjadi masalah sementara saat menganalisis. Silakan coba lagi sebentar lagi.",
     "stage": {
       "capture": "Ambil",
       "ocr": "Pindai teks",

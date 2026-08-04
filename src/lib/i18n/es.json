@@ -220,9 +220,9 @@
     "noText": "No se encontró texto en el menú. Acércate e intenta de nuevo.",
     "failed": "Falló el escaneo. Revisa tu conexión e intenta de nuevo.",
     "errCapture": "No se pudo capturar la foto. Intenta de nuevo.",
-    "errOcr": "No se pudo leer el texto de la foto (OCR). Revisa los registros de Metro.",
+    "errOcr": "No pudimos leer el texto de la foto. Vuelve a intentarlo con el menú bien visible.",
     "errNetwork": "No se puede conectar al servicio de escaneo. Revisa tu conexión.",
-    "errBe": "El servicio de escaneo devolvió un error. Revisa los registros de Metro.",
+    "errBe": "Hubo un problema temporal al analizar. Inténtalo de nuevo en un momento.",
     "stage": {
       "capture": "Captura",
       "ocr": "Lectura de texto",

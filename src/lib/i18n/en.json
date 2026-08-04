@@ -216,9 +216,9 @@
     "noText": "No menu text found. Move closer and try again.",
     "failed": "Scan failed. Check your connection and try again.",
     "errCapture": "Couldn't capture the photo. Try again.",
-    "errOcr": "Couldn't read text from the photo (OCR). See Metro logs.",
+    "errOcr": "Couldn't read any text in the photo. Try again with the menu clearly in view.",
     "errNetwork": "Can't reach the scan service. Check your connection.",
-    "errBe": "The scan service returned an error. See Metro logs.",
+    "errBe": "Something went wrong while analyzing. Please try again in a moment.",
     "stage": {
       "capture": "Capture",
       "ocr": "Text scan",

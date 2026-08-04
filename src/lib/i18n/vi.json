@@ -220,9 +220,9 @@
     "noText": "Không tìm thấy chữ trên thực đơn. Đến gần hơn và thử lại.",
     "failed": "Quét thất bại. Kiểm tra kết nối và thử lại.",
     "errCapture": "Không thể chụp ảnh. Thử lại.",
-    "errOcr": "Không thể đọc chữ từ ảnh (OCR). Xem nhật ký Metro.",
+    "errOcr": "Không đọc được chữ trong ảnh. Hãy chụp lại sao cho thực đơn rõ nét.",
     "errNetwork": "Không kết nối được dịch vụ quét. Kiểm tra kết nối.",
-    "errBe": "Dịch vụ quét trả về lỗi. Xem nhật ký Metro.",
+    "errBe": "Có sự cố tạm thời khi phân tích. Vui lòng thử lại sau giây lát.",
     "stage": {
       "capture": "Chụp",
       "ocr": "Quét chữ",
