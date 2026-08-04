@@ -24,6 +24,25 @@ export function imageContentType(uri: string): string {
   return { png: 'image/png', webp: 'image/webp', heic: 'image/heic', heif: 'image/heif', gif: 'image/gif' }[ext] ?? 'image/jpeg';
 }
 
+/** BE UPLOAD-001 허용 형식 — 그 외(heic/heif/webp/gif)는 업로드 전 JPEG 재인코딩. */
+const UPLOAD_OK = new Set(['image/jpeg', 'image/png']);
+
+/**
+ * P-127(8/4 실측): 아이폰 카메라 원본(HEIC)이 픽커에서 무변환 통과 →
+ * POST /images/upload-url 400 UPLOAD-001. **공용 길목 한 곳 방어** — jpeg/png가
+ * 아니면 expo-image-manipulator로 JPEG(q0.8) 재인코딩(기설치 — 지문 무변).
+ * 재인코딩 실패는 그대로 throw — 호출측 기존 에러 경로 표면화(무한 대기 금지).
+ */
+async function ensureUploadable(file: PhotoFile): Promise<{ file: PhotoFile; contentType: string }> {
+  const contentType = imageContentType(file.uri);
+  if (UPLOAD_OK.has(contentType)) return { file, contentType };
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { manipulateAsync, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
+  const out = await manipulateAsync(file.uri, [], { compress: 0.8, format: SaveFormat.JPEG });
+  console.log(`[upload] ${contentType} → image/jpeg 재인코딩 (P-127) | ${out.width}x${out.height}`);
+  return { file: { uri: out.uri, width: out.width, height: out.height }, contentType: 'image/jpeg' };
+}
+
 /**
  * 업로드 완료 신고 — 서버가 실제 이미지인지 검증 후 경로를 확정한다.
  * 400: IMAGE-001(이미지 아님) / 002(신고값 불일치) / 003(오브젝트 없음).
@@ -42,10 +61,11 @@ export interface UploadedImage {
  * 발급 → PUT 업로드 → 완료 신고. 성공 시 검증된 경로·표시 URL, 실패 시 throw.
  * (호출측이 폴백 정책을 정한다 — 스캔은 null→'', 프로필은 정직한 에러+사진 없이 진행)
  */
-export async function uploadImage(file: PhotoFile, purpose: string): Promise<UploadedImage> {
+export async function uploadImage(rawFile: PhotoFile, purpose: string): Promise<UploadedImage> {
+  // P-127: HEIC 등 비허용 형식은 여기서 JPEG 재인코딩 — 호출처(리뷰·스캔·프로필) 수정 0
+  const { file, contentType } = await ensureUploadable(rawFile);
   const info = await FileSystem.getInfoAsync(file.uri); // size 는 존재 시 기본 포함 (legacy API)
   if (!info.exists || typeof info.size !== 'number') throw new Error(`file missing: ${file.uri}`);
-  const contentType = imageContentType(file.uri);
 
   const issueReq: UploadUrlRequest = { purpose, contentType, contentLength: info.size };
   const issued = await api.post<UploadUrlPayload>('/images/upload-url', issueReq);

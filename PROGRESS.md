@@ -904,3 +904,6 @@
 ## 스캔 에러 개발 카피 제거 (2026-08-04, P-124 — 카피 감사)
 - [x] scan.errOcr/errBe ×10 유저 톤 교체(Metro·개발 용어 0, 다시 찍기 CTA와 연결). i18n 전체 metro 언급 0 잠금 유닛(전 로케일 워크).
 - [x] P-124/125/126 합류 teamtest OTA 양 플랫폼(빌드14·vc8). 완전 종료 → 2회 실행.
+
+## HEIC 업로드 400 방어 (2026-08-04, P-127 — 🚨 시연 전 필수)
+- [x] uploadImage() 진입부 ensureUploadable: contentType이 jpeg/png 아니면(heic/heif/webp/gif) expo-image-manipulator(기설치 — 지문 무변)로 JPEG q0.8 재인코딩 후 산출물 uri·size로 진행 — 호출처(리뷰·스캔 갤러리·프로필) 수정 0, 한 곳 방어. 재인코딩 실패는 throw 표면화(발급 미호출). 유닛 3본(heic→jpeg 발급·산출물 PUT / jpeg·png 무변환 / 실패 throw).

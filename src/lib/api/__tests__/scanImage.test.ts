@@ -11,6 +11,11 @@ jest.mock('expo-file-system/legacy', () => ({
   FileSystemUploadType: { BINARY_CONTENT: 'binary' },
 }));
 jest.mock('@/lib/api/client', () => ({ api: { post: jest.fn() } }));
+const mockManipulate = jest.fn();
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: (...a: unknown[]) => mockManipulate(...a),
+  SaveFormat: { JPEG: 'jpeg' },
+}));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { api } = require('@/lib/api/client');
@@ -89,4 +94,31 @@ it('imageContentType — 확장자 매핑, 기본 jpeg', () => {
   expect(imageContentType('a.heic')).toBe('image/heic');
   expect(imageContentType('a.jpg')).toBe('image/jpeg');
   expect(imageContentType('noext')).toBe('image/jpeg');
+});
+
+
+/* ---- P-127: HEIC 등 비허용 형식 = 공용 길목 JPEG 재인코딩 ---- */
+describe('P-127: 업로드 전 JPEG 재인코딩 (UPLOAD-001 방어)', () => {
+  it('heic → manipulator(JPEG q0.8) 경유 + 발급 contentType=image/jpeg + 재인코딩 uri 업로드', async () => {
+    mockManipulate.mockResolvedValue({ uri: 'file:///cache/menu-reenc.jpg', width: 900, height: 1200 });
+    await uploadImage({ uri: 'file:///cache/IMG_0001.heic', width: 1000, height: 1400 }, 'REVIEW');
+    expect(mockManipulate).toHaveBeenCalledWith('file:///cache/IMG_0001.heic', [], { compress: 0.8, format: 'jpeg' });
+    expect((api.post as jest.Mock).mock.calls.find((c: unknown[]) => c[0] === '/images/upload-url')![1]).toMatchObject({
+      contentType: 'image/jpeg',
+    });
+    expect(mockUploadAsync.mock.calls[0][1]).toBe('file:///cache/menu-reenc.jpg'); // 재인코딩 산출물로 PUT
+    expect(mockGetInfoAsync).toHaveBeenCalledWith('file:///cache/menu-reenc.jpg'); // size도 산출물 기준
+  });
+
+  it('jpeg/png는 무변환 패스 — manipulator 미호출', async () => {
+    await uploadImage(PHOTO, 'MENU_SCAN');
+    await uploadImage({ uri: 'file:///cache/a.png', width: 10, height: 10 }, 'MENU_SCAN');
+    expect(mockManipulate).not.toHaveBeenCalled();
+  });
+
+  it('재인코딩 실패 → throw 표면화 (발급 미호출 — 무한 대기 금지)', async () => {
+    mockManipulate.mockRejectedValue(new Error('decode fail'));
+    await expect(uploadImage({ uri: 'file:///cache/x.heif', width: 1, height: 1 }, 'REVIEW')).rejects.toThrow('decode fail');
+    expect(api.post).not.toHaveBeenCalled();
+  });
 });
