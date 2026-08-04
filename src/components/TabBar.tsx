@@ -42,18 +42,17 @@ export function TabBar({
   onScan: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  // P-113(Q-27 반려): P-110의 "prod 채널 탭 제거(3탭)" 폐기 — 탭은 항상 5슬롯,
-  // prod 숨김은 커뮤니티 화면의 coming-soon 플레이스홀더가 담당(community.tsx).
+  // P-118(테플 반려): P-110의 양측 flex 래퍼 잔존이 좌우 묶음 분배(1/3·1/3·1/3)로
+  // 탭 간격을 불균등하게 만듦 — 원래의 **평평한 5슬롯 균등 분배**(각 flex 1) 원복.
+  // prod 숨김은 커뮤니티 화면의 coming-soon이 담당(P-113) — 탭은 항상 5슬롯.
   const left = TABS.slice(0, 2);
   const right = TABS.slice(2);
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-      <View style={styles.side}>
-        {left.map((t) => (
-          <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
-        ))}
-      </View>
+      {left.map((t) => (
+        <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
+      ))}
 
       {/* center Scan FAB */}
       <View style={styles.fabWrap}>
@@ -63,11 +62,9 @@ export function TabBar({
         <Text style={[styles.tlbl, { color: C.primary }]}>{labels.scan}</Text>
       </View>
 
-      <View style={styles.side}>
-        {right.map((t) => (
-          <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
-        ))}
-      </View>
+      {right.map((t) => (
+        <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
+      ))}
     </View>
   );
 }
@@ -105,18 +102,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 8,
-    paddingTop: 8,
+    // P-118: 높이 -4pt (예진 요청) — paddingTop 8→6, 아이콘·라벨 gap 4→2.
+    // 터치 타깃은 행 전체 높이 + hitSlop 4로 44pt 유지, 세이프에어리어 무변.
+    paddingTop: 6,
     gap: 2,
     backgroundColor: 'rgba(255,255,255,0.96)',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.hair,
   },
-  side: { flex: 1, flexDirection: 'row' },
-  tab: { flex: 1, alignItems: 'center', gap: 4 },
+  tab: { flex: 1, alignItems: 'center', gap: 2 },
   locked: { opacity: 0.42 },
   lockBadge: { position: 'absolute', top: -5, right: -10 },
   tlbl: { fontFamily: font.bodyBold, fontSize: 10, letterSpacing: -0.1 },
-  fabWrap: { flex: 1, alignItems: 'center', gap: 4 },
+  fabWrap: { flex: 1, alignItems: 'center', gap: 2 }, // P-118: 탭 gap과 동기(-2)
   fab: {
     width: 56,
     height: 56,

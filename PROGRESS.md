@@ -868,3 +868,7 @@
 
 ## 테플 빌드14 (2026-08-04, P-117 — 8/5 멘토 시연 대비)
 - [x] iOS teamtest 프로필 빌드14(dev.kbap.site·Amplitude 키 0) → TestFlight 제출 완료(내부 테스터 — 심사 대기 없음). 탑재: P-107~116(리뷰 실왕복·평점 중첩·계란 카드·키보드 ↓바·타임아웃·버전게이트·장소 숨김·시드 12). 발행 전 grep dev 1·prod 0·meogo 0·키 0. 새 runtime 지문 기록(.ota/runtime-fingerprint-teamtest.txt) — 이후 teamtest OTA는 이 지문 기준. 안드 불요(테플 전용 관례).
+
+## 탭바 간격 원복 + 높이 축소 → teamtest OTA (2026-08-04, P-118 — 테플 빌드14 반려)
+- [x] 원인 확정 = P-110 양측 flex 래퍼 잔존(P-113이 5탭 복원 시 래퍼가 남아 좌우 묶음 1/3 분배 → 간격 불균등). 평평한 5슬롯 균등(각 flex 1) 원복 — coming-soon·prod 숨김 무변. 높이 -4pt(paddingTop 8→6, 아이콘/라벨 gap 4→2, FAB 랩 동기) — 터치 44pt 유지. 유닛 2본(5슬롯 flex:1 래퍼 부재·높이 값).
+- [x] 사고 처리: P-117 git add -A에 예진 임시 계측(CardPhoto, "커밋 금지" 표기)이 오혼입 커밋·빌드14 포함 → 원복 커밋(4a8452b), 디프는 spec/bridge/cardphoto-instrumentation-backup.patch 백업. 이번 OTA가 빌드14에서 계측 제거.
