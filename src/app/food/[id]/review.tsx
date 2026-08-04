@@ -232,7 +232,8 @@ export default function ReviewCompose() {
           </View>
         )}
         <View style={{ marginTop: 4 }}>
-          <Btn variant={canPost ? 'primary' : 'off'} icon={<Star size={17} fillPct={100} fillColor="#fff" />} onPress={post}>
+          {/* P-126: 별 아이콘 제거 — 라벨만 (8/4 예진) */}
+          <Btn variant={canPost ? 'primary' : 'off'} onPress={post}>
             {t('review.postReview')}
           </Btn>
         </View>
