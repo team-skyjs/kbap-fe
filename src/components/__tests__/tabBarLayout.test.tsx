@@ -11,7 +11,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-import { TabBar } from '../TabBar';
+import { TabBar, TABBAR_CONTENT_H } from '../TabBar';
 
 const LABELS = { home: 'H', food: 'F', scan: 'S', community: 'C', profile: 'P' };
 const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, unknown>;
@@ -37,10 +37,14 @@ it('바 직계 자식 = 5슬롯 전부 flex:1 — 래퍼 없음(균등 분배 �
   }
 });
 
-it('높이 -4pt — paddingTop 6·아이콘/라벨 gap 2 (터치는 행 전체+hitSlop)', () => {
+it('P-128: 바 높이 = 플랫폼 상수(iOS 49)+세이프에어리어 — FAB 레이아웃 미기여', () => {
   const tree = render();
   const bar = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderTopWidth != null)[0];
-  expect(flat(bar.props.style).paddingTop).toBe(6);
-  const tab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.flex === 1)[0];
-  expect(flat(tab.props.style).gap).toBe(2);
+  const st = flat(bar.props.style);
+  // 테스트 인셋 bottom 0 → pb=10, 높이 = 49+10 (jest 플랫폼 ios)
+  expect(st.height).toBe(TABBAR_CONTENT_H + 10);
+  expect(TABBAR_CONTENT_H).toBe(49);
+  // FAB = 절대 배치(레이아웃 흐름 밖) — 바 높이를 견인하지 않는다
+  const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 28)[0];
+  expect(flat(fab.props.style).position).toBe('absolute');
 });

@@ -5,7 +5,7 @@
  * Labels come from i18n via the consumer (passed in `labels`).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
@@ -18,6 +18,9 @@ import {
   IconProfile,
   type IconProps,
 } from './icons';
+
+/** P-128: 바 콘텐츠 높이(세이프에어리어 제외) = 플랫폼 권장치 — iOS HIG 49pt · 안드 Material 56dp. */
+export const TABBAR_CONTENT_H = Platform.OS === 'ios' ? 49 : 56;
 
 export type TabKey = 'home' | 'food' | 'community' | 'profile';
 
@@ -48,18 +51,23 @@ export function TabBar({
   const left = TABS.slice(0, 2);
   const right = TABS.slice(2);
 
+  const pb = Math.max(insets.bottom, 10);
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    // P-128: 바 높이 = 콘텐츠 고정(iOS 49/안드 56) + 세이프에어리어 — FAB은 레이아웃
+    // 흐름에서 분리(절대 배치 오버행)라 바 높이에 미기여. 예진 "너무 높음" 해소.
+    <View style={[styles.bar, { height: TABBAR_CONTENT_H + pb, paddingBottom: pb }]}>
       {left.map((t) => (
         <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
       ))}
 
-      {/* center Scan FAB */}
-      <View style={styles.fabWrap}>
+      {/* 스캔 슬롯 — 타 탭과 동일 골격(아이콘 자리 스페이서+라벨 = 베이스라인 정렬),
+          FAB은 슬롯 위 절대 배치로 돌출(시각 무변: 56pt·그림자·보더) */}
+      <View style={styles.slot}>
+        <View style={styles.iconSpace} />
+        <Text style={[styles.tlbl, { color: C.primary }]}>{labels.scan}</Text>
         <Pressable style={styles.fab} onPress={onScan} hitSlop={8}>
           <IconCamera size={27} color="#fff" />
         </Pressable>
-        <Text style={[styles.tlbl, { color: C.primary }]}>{labels.scan}</Text>
       </View>
 
       {right.map((t) => (
@@ -100,30 +108,30 @@ function Tab({
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
     paddingHorizontal: 8,
-    // P-118: 높이 -4pt (예진 요청) — paddingTop 8→6, 아이콘·라벨 gap 4→2.
-    // 터치 타깃은 행 전체 높이 + hitSlop 4로 44pt 유지, 세이프에어리어 무변.
-    paddingTop: 6,
     gap: 2,
     backgroundColor: 'rgba(255,255,255,0.96)',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.hair,
   },
-  tab: { flex: 1, alignItems: 'center', gap: 2 },
+  // P-128: 슬롯 = 콘텐츠 높이 전체(터치 49/56 ≥ 44pt), 아이콘+라벨 수직 중앙
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  slot: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  iconSpace: { width: 23, height: 23 }, // 타 탭 아이콘 자리 — 라벨 베이스라인 정렬
   locked: { opacity: 0.42 },
   lockBadge: { position: 'absolute', top: -5, right: -10 },
   tlbl: { fontFamily: font.bodyBold, fontSize: 10, letterSpacing: -0.1 },
-  fabWrap: { flex: 1, alignItems: 'center', gap: 2 }, // P-118: 탭 gap과 동기(-2)
   fab: {
+    // P-128: 레이아웃 미기여 — 절대 배치로 바 위 돌출(시각 현행 유지)
+    position: 'absolute',
+    top: -30, // 바 축소분만큼 위로 — 라벨(중앙 정렬)과 비겹침, 돌출 시각 유지
+    alignSelf: 'center',
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -16 }],
-    marginBottom: -12,
     borderWidth: 3,
     borderColor: C.surface,
     ...shadow.sh2,

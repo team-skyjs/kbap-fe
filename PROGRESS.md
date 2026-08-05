@@ -908,3 +908,6 @@
 ## HEIC 업로드 400 방어 (2026-08-04, P-127 — 🚨 시연 전 필수)
 - [x] uploadImage() 진입부 ensureUploadable: contentType이 jpeg/png 아니면(heic/heif/webp/gif) expo-image-manipulator(기설치 — 지문 무변)로 JPEG q0.8 재인코딩 후 산출물 uri·size로 진행 — 호출처(리뷰·스캔 갤러리·프로필) 수정 0, 한 곳 방어. 재인코딩 실패는 throw 표면화(발급 미호출). 유닛 3본(heic→jpeg 발급·산출물 PUT / jpeg·png 무변환 / 실패 throw).
 - [x] teamtest OTA 양 플랫폼 발행. 완전 종료 → 2회 실행 후 HEIC 3장 재검증(Q-22 1번).
+
+## 탭바 높이 플랫폼 권장치 정렬 (2026-08-05, P-128 — 예진 "너무 높음")
+- [x] FAB 레이아웃 분리: 절대 배치 오버행(top -30, 시각 돌출·그림자·보더 유지) — 바 높이 견인 소멸. 바 콘텐츠 높이 = TABBAR_CONTENT_H 상수(iOS 49 / 안드 56, Platform 분기) + 세이프에어리어(max(insets,10) 현행). 스캔 슬롯 = 타 탭 동일 골격(23pt 아이콘 스페이서+라벨 — 베이스라인 정렬), 슬롯 수직 중앙 정렬. 터치 = 슬롯 전체 49/56 ≥ 44. 유닛: 높이 상수·FAB absolute 미기여·5슬롯 균등(P-118 회귀).
