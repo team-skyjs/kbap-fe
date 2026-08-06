@@ -66,7 +66,7 @@ export function AuthGateSheet({
           <Text style={styles.sub}>{t(copy.sub)}</Text>
           <Btn onPress={goLogin}>{t('intro.signUp')}</Btn>
           <Pressable onPress={onClose} hitSlop={10}>
-            <Text style={styles.later}>{t('onboarding.skip')}</Text>
+            <Text style={styles.later}>{t('gate.keepBrowsing')}</Text>
           </Pressable>
         </Pressable>
       </Pressable>

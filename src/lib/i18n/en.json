@@ -44,7 +44,8 @@
     "profileTitle": "Your food profile lives here",
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
     "saveTitle": "Save dishes you want to try",
-    "saveSub": "Sign up to bookmark dishes and build your own safe-to-eat shortlist."
+    "saveSub": "Sign up to bookmark dishes and build your own safe-to-eat shortlist.",
+    "keepBrowsing": "Keep browsing"
   },
   "lock": {
     "verdictTitle": "Your personal safety rating",
@@ -246,7 +247,8 @@
   },
   "order": {
     "cta": "Order this dish",
-    "caption": "Show this screen to the staff — it places your order and lists what you can't eat."
+    "captionWithAvoids": "Show this screen to the staff — your order and the ingredients you avoid.",
+    "captionNoAvoids": "Show this screen to the staff to order."
   },
   "profile": {
     "rankingTitle": "Ranking",
@@ -342,7 +344,6 @@
     ],
     "reviewLabel": "Your review",
     "placeholder": "Share what it tasted like, and any tips for travelers with your restrictions…",
-    "langDetected": "Written in English · auto-detected",
     "charCount": "{{count}}/500",
     "postReview": "Post review",
     "postedTitle": "Review posted",
@@ -360,7 +361,8 @@
     "placeSheetTitle": "Tag a place",
     "placeRecent": "Recent",
     "placeNoResults": "No places match.",
-    "placeSkip": "Skip this — post without a place"
+    "placeSkip": "Skip this — post without a place",
+    "deleteError": "Couldn't delete the review. Check your connection and try again."
   },
   "reviews": {
     "headerTitle": "Reviews",
@@ -376,12 +378,12 @@
     "retry": "Retry",
     "showOriginal": "Show original",
     "translatedFrom": "Translated from {{lang}}",
-    "anonymous": "Anonymous",
+    "anonymous": "Deleted user",
     "today": "Today",
     "daysAgo": "{{count}}d ago",
     "weeksAgo": "{{count}}w ago",
     "emptyTitle": "No reviews yet",
-    "emptyBody": "Be the first to review this dish — your note helps the next traveler eat with confidence.",
+    "emptyBody": "No reviews yet. Be the first to leave one.",
     "writeReview": "Write a review",
     "lang": {
       "en": "English",
@@ -392,7 +394,8 @@
       "ko": "Korean"
     },
     "mine": "My review",
-    "loadMore": "Load more reviews"
+    "loadMore": "Load more reviews",
+    "emptySameNat": "No reviews from your country yet. Turn off the filter to see all reviews."
   },
   "ranking": {
     "headerTitle": "My Ranking",
@@ -677,7 +680,7 @@
     "restrictionsNotice": "Skip now and dishes show without personal risk until you add restrictions.",
     "allergensLabel": "Allergies & ingredients",
     "added": "{{count}} added",
-    "skip": "Skip for now",
+    "skip": "Skip",
     "spiceTitle": "How spicy can you go?",
     "spiceSub": "Optional — change it anytime. Dishes show heat on the same five levels.",
     "interestsTitle": "Tap what you've tried",
@@ -722,7 +725,8 @@
     "nationalitySearch": "Search countries",
     "detectedTag": "Detected",
     "fromYourPhone": "From your phone",
-    "nationalityNotice": "Nationality can't be changed after setup. Everything else stays editable in Profile."
+    "nationalityNotice": "Nationality can't be changed after setup. Everything else stays editable in Profile.",
+    "resumeLater": "Maybe later"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

@@ -71,7 +71,7 @@ export function ResumeOnboardingBanner() {
             {t('onboarding.resumeCta')}
           </Btn>
           <Pressable onPress={() => setVisible(false)} hitSlop={10}>
-            <Text style={styles.later}>{t('onboarding.skip')}</Text>
+            <Text style={styles.later}>{t('onboarding.resumeLater')}</Text>
           </Pressable>
         </Pressable>
       </Pressable>

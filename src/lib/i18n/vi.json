@@ -48,7 +48,8 @@
     "profileTitle": "Hồ sơ ăn uống của bạn nằm ở đây",
     "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
     "saveTitle": "Lưu những món bạn muốn thử",
-    "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn."
+    "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn.",
+    "keepBrowsing": "Tiếp tục xem"
   },
   "lock": {
     "verdictTitle": "Mức đánh giá an toàn dành riêng cho bạn",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "Đặt món này",
-    "caption": "Đưa màn hình này cho nhân viên — vừa gọi món vừa báo nguyên liệu bạn cần tránh."
+    "captionWithAvoids": "Hãy cho nhân viên xem món bạn gọi và nguyên liệu bạn tránh.",
+    "captionNoAvoids": "Hãy cho nhân viên xem món bạn gọi."
   },
   "profile": {
     "rankingTitle": "Xếp hạng",
@@ -303,7 +305,6 @@
     ],
     "reviewLabel": "Đánh giá của bạn",
     "placeholder": "Chia sẻ mùi vị và bất kỳ mẹo nào cho du khách có cùng hạn chế như bạn…",
-    "langDetected": "Viết bằng tiếng Anh · tự động nhận diện",
     "charCount": "{{count}}/500",
     "postReview": "Đăng đánh giá",
     "postedTitle": "Đã đăng đánh giá",
@@ -321,7 +322,8 @@
     "placeSheetTitle": "Gắn thẻ địa điểm",
     "placeRecent": "Gần đây",
     "placeNoResults": "Không có địa điểm phù hợp.",
-    "placeSkip": "Bỏ qua — đăng không kèm địa điểm"
+    "placeSkip": "Bỏ qua — đăng không kèm địa điểm",
+    "deleteError": "Không xóa được đánh giá. Kiểm tra kết nối và thử lại."
   },
   "reviews": {
     "headerTitle": "Đánh giá",
@@ -337,12 +339,12 @@
     "retry": "Thử lại",
     "showOriginal": "Xem bản gốc",
     "translatedFrom": "Dịch từ {{lang}}",
-    "anonymous": "Ẩn danh",
+    "anonymous": "Người dùng đã rời đi",
     "today": "Hôm nay",
     "daysAgo": "{{count}} ngày trước",
     "weeksAgo": "{{count}} tuần trước",
     "emptyTitle": "Chưa có đánh giá",
-    "emptyBody": "Hãy là người đầu tiên đánh giá món này — ghi chú của bạn giúp du khách sau ăn uống tự tin hơn.",
+    "emptyBody": "Chưa có đánh giá. Hãy là người đầu tiên.",
     "writeReview": "Viết đánh giá",
     "lang": {
       "en": "Tiếng Anh",
@@ -353,7 +355,8 @@
       "ko": "Tiếng Hàn"
     },
     "mine": "Đánh giá của tôi",
-    "loadMore": "Xem thêm đánh giá"
+    "loadMore": "Xem thêm đánh giá",
+    "emptySameNat": "Chưa có đánh giá từ nước bạn. Tắt bộ lọc để xem tất cả."
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
@@ -526,7 +529,7 @@
     "restrictionsNotice": "Bỏ qua bây giờ thì các món sẽ hiển thị không kèm rủi ro cá nhân cho đến khi bạn thêm hạn chế.",
     "allergensLabel": "Dị ứng & nguyên liệu",
     "added": "Đã thêm {{count}}",
-    "skip": "Bỏ qua lúc này",
+    "skip": "Bỏ qua",
     "spiceTitle": "Bạn ăn cay được đến mức nào?",
     "spiceSub": "Không bắt buộc — đổi lúc nào cũng được. Độ cay món ăn cũng hiển thị theo 5 mức này.",
     "interestsTitle": "Chạm vào những món bạn đã thử",
@@ -571,7 +574,8 @@
     "nationalitySearch": "Tìm quốc gia",
     "detectedTag": "Đã phát hiện",
     "fromYourPhone": "Theo cài đặt điện thoại",
-    "nationalityNotice": "Quốc tịch không thể thay đổi sau khi đăng ký. Mọi thứ khác vẫn chỉnh được trong Hồ sơ."
+    "nationalityNotice": "Quốc tịch không thể thay đổi sau khi đăng ký. Mọi thứ khác vẫn chỉnh được trong Hồ sơ.",
+    "resumeLater": "Để sau"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

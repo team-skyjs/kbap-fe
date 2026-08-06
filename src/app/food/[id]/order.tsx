@@ -64,7 +64,8 @@ export default function OrderCard() {
 
         {!!avoid && <Text style={styles.note}>{avoid}</Text>}
 
-        <Text style={styles.caption}>{t('order.caption')}</Text>
+        {/* KC-0210 B(P-132): 기피 유/무 분기 — 고지 문장이 없을 땐 캡션도 순수 주문 톤 */}
+        <Text style={styles.caption}>{t(avoid ? 'order.captionWithAvoids' : 'order.captionNoAvoids')}</Text>
       </View>
 
       <View style={[styles.foot, { paddingBottom: bottom + 18 }]}>

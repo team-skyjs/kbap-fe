@@ -48,7 +48,8 @@
     "profileTitle": "你的饮食档案就在这里",
     "profileSub": "注册即可保存忌口食材、查看扫描记录并积累你的排名。",
     "saveTitle": "收藏你想尝试的菜品",
-    "saveSub": "注册后即可收藏菜品，打造属于你的安心美食清单。"
+    "saveSub": "注册后即可收藏菜品，打造属于你的安心美食清单。",
+    "keepBrowsing": "继续浏览"
   },
   "lock": {
     "verdictTitle": "你的专属安全评级",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "点这道菜",
-    "caption": "把此画面出示给店员 — 同时传达点单和忌口食材。"
+    "captionWithAvoids": "请向店员出示要点的菜和不能吃的食材。",
+    "captionNoAvoids": "请向店员出示要点的菜。"
   },
   "profile": {
     "rankingTitle": "排名",
@@ -303,7 +305,6 @@
     ],
     "reviewLabel": "你的点评",
     "placeholder": "分享一下味道如何，以及给有相同禁忌的旅行者的建议…",
-    "langDetected": "以英文撰写 · 自动检测",
     "charCount": "{{count}}/500",
     "postReview": "发布点评",
     "postedTitle": "点评已发布",
@@ -321,7 +322,8 @@
     "placeSheetTitle": "标记地点",
     "placeRecent": "最近",
     "placeNoResults": "没有匹配的地点。",
-    "placeSkip": "跳过 — 不带地点发布"
+    "placeSkip": "跳过 — 不带地点发布",
+    "deleteError": "无法删除评价。请检查网络后重试。"
   },
   "reviews": {
     "headerTitle": "点评",
@@ -337,12 +339,12 @@
     "retry": "重试",
     "showOriginal": "显示原文",
     "translatedFrom": "译自{{lang}}",
-    "anonymous": "匿名",
+    "anonymous": "已注销用户",
     "today": "今天",
     "daysAgo": "{{count}} 天前",
     "weeksAgo": "{{count}} 周前",
     "emptyTitle": "还没有点评",
-    "emptyBody": "成为第一个点评这道菜的人——你的留言能帮下一位旅行者吃得安心。",
+    "emptyBody": "还没有评价。来写下第一条吧。",
     "writeReview": "撰写点评",
     "lang": {
       "en": "英文",
@@ -353,7 +355,8 @@
       "ko": "韩文"
     },
     "mine": "我的评价",
-    "loadMore": "查看更多评价"
+    "loadMore": "查看更多评价",
+    "emptySameNat": "还没有来自你国家的评价。关闭筛选即可查看全部评价。"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -526,7 +529,7 @@
     "restrictionsNotice": "暂时跳过后，菜品将不显示个人风险，直到你添加禁忌。",
     "allergensLabel": "过敏原与食材",
     "added": "已添加 {{count}} 项",
-    "skip": "暂时跳过",
+    "skip": "跳过",
     "spiceTitle": "你能吃多辣？",
     "spiceSub": "可选 — 随时可以修改。菜品辣度也用同样的5个等级显示。",
     "interestsTitle": "点击你尝过的菜",
@@ -571,7 +574,8 @@
     "nationalitySearch": "搜索国家",
     "detectedTag": "已检测",
     "fromYourPhone": "来自手机设置",
-    "nationalityNotice": "国籍在注册后无法更改。其他信息可随时在个人资料中修改。"
+    "nationalityNotice": "国籍在注册后无法更改。其他信息可随时在个人资料中修改。",
+    "resumeLater": "以后再说"
   },
   "editProfile": {
     "title": "编辑资料",

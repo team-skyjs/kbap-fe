@@ -48,7 +48,8 @@
     "profileTitle": "你的飲食檔案就在這裡",
     "profileSub": "註冊即可儲存忌口食材、追蹤掃描紀錄並累積你的排名。",
     "saveTitle": "收藏你想嘗試的菜色",
-    "saveSub": "註冊後即可收藏菜色，打造屬於你的安心美食清單。"
+    "saveSub": "註冊後即可收藏菜色，打造屬於你的安心美食清單。",
+    "keepBrowsing": "繼續瀏覽"
   },
   "lock": {
     "verdictTitle": "你的專屬安全評級",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "點這道菜",
-    "caption": "將此畫面出示給店員 — 同時傳達點餐與忌口食材。"
+    "captionWithAvoids": "請向店員出示要點的菜和不能吃的食材。",
+    "captionNoAvoids": "請向店員出示要點的菜。"
   },
   "profile": {
     "rankingTitle": "排名",
@@ -303,7 +305,6 @@
     ],
     "reviewLabel": "你的評論",
     "placeholder": "分享它嚐起來如何，以及給有相同飲食限制旅客的任何建議…",
-    "langDetected": "以英文撰寫 · 自動偵測",
     "charCount": "{{count}}/500",
     "postReview": "發布評論",
     "postedTitle": "評論已發布",
@@ -321,7 +322,8 @@
     "placeSheetTitle": "標記地點",
     "placeRecent": "最近",
     "placeNoResults": "沒有符合的地點。",
-    "placeSkip": "略過 — 不帶地點發布"
+    "placeSkip": "略過 — 不帶地點發布",
+    "deleteError": "無法刪除評價。請檢查網路後重試。"
   },
   "reviews": {
     "headerTitle": "評論",
@@ -337,12 +339,12 @@
     "retry": "重試",
     "showOriginal": "顯示原文",
     "translatedFrom": "從{{lang}}翻譯",
-    "anonymous": "匿名",
+    "anonymous": "已註銷用戶",
     "today": "今天",
     "daysAgo": "{{count}} 天前",
     "weeksAgo": "{{count}} 週前",
     "emptyTitle": "尚無評論",
-    "emptyBody": "成為第一個評論這道菜的人——你的筆記能幫助下一位旅客安心用餐。",
+    "emptyBody": "還沒有評價。來寫下第一條吧。",
     "writeReview": "撰寫評論",
     "lang": {
       "en": "英文",
@@ -353,7 +355,8 @@
       "ko": "韓文"
     },
     "mine": "我的評論",
-    "loadMore": "查看更多評價"
+    "loadMore": "查看更多評價",
+    "emptySameNat": "還沒有來自你國家的評價。關閉篩選即可查看全部評價。"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -526,7 +529,7 @@
     "restrictionsNotice": "現在略過的話，菜色會在你新增限制前不顯示個人風險。",
     "allergensLabel": "過敏與食材",
     "added": "已新增 {{count}} 項",
-    "skip": "暫時略過",
+    "skip": "跳過",
     "spiceTitle": "你能吃多辣？",
     "spiceSub": "選填 — 隨時可以修改。菜色辣度也以同樣的5個等級顯示。",
     "interestsTitle": "點選你試過的",
@@ -571,7 +574,8 @@
     "nationalitySearch": "搜尋國家",
     "detectedTag": "已偵測",
     "fromYourPhone": "來自手機設定",
-    "nationalityNotice": "國籍在註冊後無法更改。其他資訊可隨時在個人資料中修改。"
+    "nationalityNotice": "國籍在註冊後無法更改。其他資訊可隨時在個人資料中修改。",
+    "resumeLater": "以後再說"
   },
   "editProfile": {
     "title": "編輯個人資料",

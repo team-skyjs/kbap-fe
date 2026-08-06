@@ -182,12 +182,12 @@ export default function FoodReviews() {
               <SortPill label={t('reviews.sortTopRated')} on={sort === 'rating'} onPress={() => setSort('rating')} />
             </View>
 
-            {/* filtered to empty (reviews exist, current filter hides them all) */}
+            {/* filtered to empty — KC-0329 B: 국적 필터 빈 상태는 전용 문구 */}
             {items.length === 0 ? (
               <StateBlock
                 icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
                 title={t('reviews.emptyTitle')}
-                body={t('reviews.emptyBody')}
+                body={t(sameNatOnly ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
                 primary={{
                   label: t('reviews.writeReview'),
                   icon: <IconPlus size={17} color="#fff" />,

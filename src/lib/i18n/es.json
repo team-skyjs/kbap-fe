@@ -48,7 +48,8 @@
     "profileTitle": "Tu perfil alimentario vive aquí",
     "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
     "saveTitle": "Guarda los platos que quieras probar",
-    "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura."
+    "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura.",
+    "keepBrowsing": "Seguir explorando"
   },
   "lock": {
     "verdictTitle": "Tu calificación de seguridad personal",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "Pedir este plato",
-    "caption": "Muestra esta pantalla al personal: transmite tu pedido y los ingredientes que no puedes comer."
+    "captionWithAvoids": "Muestra al personal tu pedido y los ingredientes que evitas.",
+    "captionNoAvoids": "Muestra al personal tu pedido."
   },
   "profile": {
     "rankingTitle": "Clasificación",
@@ -303,7 +305,6 @@
     ],
     "reviewLabel": "Tu reseña",
     "placeholder": "Comparte a qué sabía y cualquier consejo para viajeros con tus restricciones…",
-    "langDetected": "Escrita en español · detectado automáticamente",
     "charCount": "{{count}}/500",
     "postReview": "Publicar reseña",
     "postedTitle": "Reseña publicada",
@@ -321,7 +322,8 @@
     "placeSheetTitle": "Etiquetar lugar",
     "placeRecent": "Recientes",
     "placeNoResults": "No hay lugares que coincidan.",
-    "placeSkip": "Omitir — publicar sin lugar"
+    "placeSkip": "Omitir — publicar sin lugar",
+    "deleteError": "No se pudo eliminar la reseña. Revisa tu conexión e inténtalo de nuevo."
   },
   "reviews": {
     "headerTitle": "Reseñas",
@@ -337,12 +339,12 @@
     "retry": "Reintentar",
     "showOriginal": "Ver original",
     "translatedFrom": "Traducido del {{lang}}",
-    "anonymous": "Anónimo",
+    "anonymous": "Usuario eliminado",
     "today": "Hoy",
     "daysAgo": "hace {{count}} d",
     "weeksAgo": "hace {{count}} sem",
     "emptyTitle": "Aún no hay reseñas",
-    "emptyBody": "Sé el primero en reseñar este plato: tu nota ayuda al próximo viajero a comer con confianza.",
+    "emptyBody": "Aún no hay reseñas. Sé el primero en dejar una.",
     "writeReview": "Escribir una reseña",
     "lang": {
       "en": "Inglés",
@@ -353,7 +355,8 @@
       "ko": "Coreano"
     },
     "mine": "Mi reseña",
-    "loadMore": "Ver más reseñas"
+    "loadMore": "Ver más reseñas",
+    "emptySameNat": "Aún no hay reseñas de tu país. Desactiva el filtro para ver todas."
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
@@ -526,7 +529,7 @@
     "restrictionsNotice": "Omítelo por ahora y los platos se mostrarán sin riesgo personal hasta que agregues restricciones.",
     "allergensLabel": "Alergias e ingredientes",
     "added": "{{count}} agregados",
-    "skip": "Omitir por ahora",
+    "skip": "Omitir",
     "spiceTitle": "¿Qué tan picante lo toleras?",
     "spiceSub": "Opcional — cámbialo cuando quieras. El picante de los platos se muestra en estos mismos 5 niveles.",
     "interestsTitle": "Toca lo que hayas probado",
@@ -571,7 +574,8 @@
     "nationalitySearch": "Buscar país",
     "detectedTag": "Detectado",
     "fromYourPhone": "Según tu teléfono",
-    "nationalityNotice": "La nacionalidad no se puede cambiar después del registro. Todo lo demás se puede editar en tu perfil."
+    "nationalityNotice": "La nacionalidad no se puede cambiar después del registro. Todo lo demás se puede editar en tu perfil.",
+    "resumeLater": "Quizá luego"
   },
   "editProfile": {
     "title": "Editar perfil",

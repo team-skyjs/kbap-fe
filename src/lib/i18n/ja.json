@@ -48,7 +48,8 @@
     "profileTitle": "あなたの食のプロフィールはここに",
     "profileSub": "登録すると、避ける食材の保存、スキャン履歴の確認、ランキング作りができます。",
     "saveTitle": "気になる料理を保存しよう",
-    "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。"
+    "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。",
+    "keepBrowsing": "このまま見て回る"
   },
   "lock": {
     "verdictTitle": "あなた専用の安全評価",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "このメニューを注文する",
-    "caption": "この画面をお店のスタッフに見せてください — 注文と食べられない食材が一緒に伝わります。"
+    "captionWithAvoids": "注文するメニューと食べられない食材を店員に見せてください。",
+    "captionNoAvoids": "注文するメニューを店員に見せてください。"
   },
   "profile": {
     "rankingTitle": "ランキング",
@@ -303,7 +305,6 @@
     ],
     "reviewLabel": "レビュー",
     "placeholder": "味の感想や、同じ食事制限のある旅行者へのヒントを共有しましょう…",
-    "langDetected": "英語で記入 · 自動検出",
     "charCount": "{{count}}/500",
     "postReview": "レビューを投稿",
     "postedTitle": "レビューを投稿しました",
@@ -321,7 +322,8 @@
     "placeSheetTitle": "場所をタグ付け",
     "placeRecent": "最近",
     "placeNoResults": "一致する場所がありません。",
-    "placeSkip": "スキップ — 場所なしで投稿"
+    "placeSkip": "スキップ — 場所なしで投稿",
+    "deleteError": "レビューを削除できませんでした。接続を確認してもう一度お試しください。"
   },
   "reviews": {
     "headerTitle": "レビュー",
@@ -337,12 +339,12 @@
     "retry": "再試行",
     "showOriginal": "原文を表示",
     "translatedFrom": "{{lang}}から翻訳",
-    "anonymous": "匿名",
+    "anonymous": "退会したユーザー",
     "today": "今日",
     "daysAgo": "{{count}}日前",
     "weeksAgo": "{{count}}週間前",
     "emptyTitle": "まだレビューがありません",
-    "emptyBody": "この料理の最初のレビューを書きましょう — あなたのメモが次の旅行者の安心につながります。",
+    "emptyBody": "まだレビューがありません。最初のレビューを残してみましょう。",
     "writeReview": "レビューを書く",
     "lang": {
       "en": "英語",
@@ -353,7 +355,8 @@
       "ko": "韓国語"
     },
     "mine": "自分のレビュー",
-    "loadMore": "レビューをもっと見る"
+    "loadMore": "レビューをもっと見る",
+    "emptySameNat": "同じ国籍のレビューはまだありません。フィルターを外すと全レビューが見られます。"
   },
   "ranking": {
     "headerTitle": "マイランキング",
@@ -526,7 +529,7 @@
     "restrictionsNotice": "今はスキップすると、制限を追加するまで料理は個別のリスクなしで表示されます。",
     "allergensLabel": "アレルギー・食材",
     "added": "{{count}} 件追加",
-    "skip": "今はスキップ",
+    "skip": "スキップ",
     "spiceTitle": "辛さはどこまで大丈夫？",
     "spiceSub": "任意 — いつでも変更できます。料理の辛さも同じ5段階で表示されます。",
     "interestsTitle": "食べたことのあるものをタップ",
@@ -571,7 +574,8 @@
     "nationalitySearch": "国を検索",
     "detectedTag": "検出",
     "fromYourPhone": "スマートフォンの設定から",
-    "nationalityNotice": "国籍は設定後に変更できません。その他の情報はプロフィールでいつでも編集できます。"
+    "nationalityNotice": "国籍は設定後に変更できません。その他の情報はプロフィールでいつでも編集できます。",
+    "resumeLater": "また今度"
   },
   "editProfile": {
     "title": "プロフィール編集",

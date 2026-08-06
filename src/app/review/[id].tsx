@@ -104,7 +104,7 @@ export default function ReviewDetail() {
         onPress: () =>
           deleteReview.mutate(
             { reviewId: review.id, foodId: review.foodId },
-            { onSuccess: () => router.back(), onError: () => Alert.alert(t('review.postError')) },
+            { onSuccess: () => router.back(), onError: () => Alert.alert(t('review.deleteError')) }, // KC-0302 B
           ),
       },
     ]);

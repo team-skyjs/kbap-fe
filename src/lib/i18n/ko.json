@@ -48,7 +48,8 @@
     "profileTitle": "내 음식 프로필이 여기에 저장돼요",
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
-    "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요."
+    "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
+    "keepBrowsing": "계속 둘러보기"
   },
   "lock": {
     "verdictTitle": "나만의 안전 등급",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "이 메뉴 주문하기",
-    "caption": "이 화면을 가게 직원에게 보여주세요 — 주문과 기피 재료가 함께 전달돼요."
+    "captionWithAvoids": "주문할 메뉴와 못 먹는 재료를 가게 직원에게 보여주세요.",
+    "captionNoAvoids": "주문할 메뉴를 가게 직원에게 보여주세요."
   },
   "profile": {
     "rankingTitle": "랭킹",
@@ -346,7 +348,6 @@
     ],
     "reviewLabel": "리뷰 내용",
     "placeholder": "맛은 어땠나요? 비슷한 식이 제한이 있는 여행자에게 팁을 남겨주세요.",
-    "langDetected": "한국어로 작성 · 자동 감지",
     "charCount": "{{count}}/500",
     "postReview": "리뷰 게시",
     "postedTitle": "리뷰가 게시됐어요",
@@ -364,7 +365,8 @@
     "placeSheetTitle": "장소 태그",
     "placeRecent": "최근",
     "placeNoResults": "일치하는 장소가 없어요.",
-    "placeSkip": "건너뛰기 — 장소 없이 게시"
+    "placeSkip": "건너뛰기 — 장소 없이 게시",
+    "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요."
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -380,12 +382,12 @@
     "retry": "재시도",
     "showOriginal": "원문 보기",
     "translatedFrom": "{{lang}}에서 번역됨",
-    "anonymous": "익명",
+    "anonymous": "탈퇴한 유저",
     "today": "오늘",
     "daysAgo": "{{count}}일 전",
     "weeksAgo": "{{count}}주 전",
     "emptyTitle": "아직 리뷰가 없어요",
-    "emptyBody": "이 요리의 첫 리뷰를 남겨보세요 — 다음 여행자가 안심하고 먹을 수 있어요.",
+    "emptyBody": "아직 리뷰가 없어요. 첫 리뷰를 남겨보세요.",
     "writeReview": "리뷰 쓰기",
     "lang": {
       "en": "영어",
@@ -396,7 +398,8 @@
       "ko": "한국어"
     },
     "mine": "내 리뷰",
-    "loadMore": "리뷰 더 보기"
+    "loadMore": "리뷰 더 보기",
+    "emptySameNat": "같은 국적의 리뷰가 아직 없어요. 필터를 끄면 전체 리뷰를 볼 수 있어요."
   },
   "ranking": {
     "headerTitle": "내 랭킹",
@@ -681,7 +684,7 @@
     "restrictionsNotice": "지금 건너뛰면 제한을 추가할 때까지 요리에 개인 위험도가 표시되지 않아요.",
     "allergensLabel": "알레르기 & 재료",
     "added": "{{count}}개 추가됨",
-    "skip": "나중에 하기",
+    "skip": "건너뛰기",
     "spiceTitle": "매운 음식, 어디까지 괜찮아요?",
     "spiceSub": "나중에 수정할 수 있어요.",
     "interestsTitle": "먹어본 것을 탭하세요",
@@ -726,7 +729,8 @@
     "nationalitySearch": "국가 검색",
     "detectedTag": "자동 감지",
     "fromYourPhone": "휴대폰 설정 기준",
-    "nationalityNotice": "국적은 가입 후 변경할 수 없어요. 다른 정보는 프로필에서 언제든 수정할 수 있어요."
+    "nationalityNotice": "국적은 가입 후 변경할 수 없어요. 다른 정보는 프로필에서 언제든 수정할 수 있어요.",
+    "resumeLater": "나중에 하기"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",

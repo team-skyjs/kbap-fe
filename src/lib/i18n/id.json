@@ -48,7 +48,8 @@
     "profileTitle": "Profil makanan Anda ada di sini",
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
     "saveTitle": "Simpan hidangan yang ingin kamu coba",
-    "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu."
+    "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu.",
+    "keepBrowsing": "Lanjut menjelajah"
   },
   "lock": {
     "verdictTitle": "Peringkat keamanan pribadi Anda",
@@ -250,7 +251,8 @@
   },
   "order": {
     "cta": "Pesan menu ini",
-    "caption": "Tunjukkan layar ini ke staf — pesanan dan bahan pantangan tersampaikan sekaligus."
+    "captionWithAvoids": "Tunjukkan pesanan dan bahan yang Anda hindari kepada staf.",
+    "captionNoAvoids": "Tunjukkan pesanan Anda kepada staf."
   },
   "profile": {
     "rankingTitle": "Peringkat",
@@ -303,7 +305,6 @@
     ],
     "reviewLabel": "Ulasan Anda",
     "placeholder": "Ceritakan rasanya, dan tips untuk pelancong dengan pantangan seperti Anda…",
-    "langDetected": "Ditulis dalam bahasa Inggris · terdeteksi otomatis",
     "charCount": "{{count}}/500",
     "postReview": "Kirim ulasan",
     "postedTitle": "Ulasan terkirim",
@@ -321,7 +322,8 @@
     "placeSheetTitle": "Tandai tempat",
     "placeRecent": "Terbaru",
     "placeNoResults": "Tidak ada tempat yang cocok.",
-    "placeSkip": "Lewati — posting tanpa tempat"
+    "placeSkip": "Lewati — posting tanpa tempat",
+    "deleteError": "Tidak bisa menghapus ulasan. Periksa koneksi dan coba lagi."
   },
   "reviews": {
     "headerTitle": "Ulasan",
@@ -337,12 +339,12 @@
     "retry": "Coba lagi",
     "showOriginal": "Tampilkan asli",
     "translatedFrom": "Diterjemahkan dari {{lang}}",
-    "anonymous": "Anonim",
+    "anonymous": "Pengguna terhapus",
     "today": "Hari ini",
     "daysAgo": "{{count}} hari lalu",
     "weeksAgo": "{{count}} minggu lalu",
     "emptyTitle": "Belum ada ulasan",
-    "emptyBody": "Jadilah yang pertama mengulas hidangan ini — catatan Anda membantu pelancong berikutnya makan dengan percaya diri.",
+    "emptyBody": "Belum ada ulasan. Jadilah yang pertama.",
     "writeReview": "Tulis ulasan",
     "lang": {
       "en": "Inggris",
@@ -353,7 +355,8 @@
       "ko": "Korea"
     },
     "mine": "Ulasan saya",
-    "loadMore": "Muat ulasan lainnya"
+    "loadMore": "Muat ulasan lainnya",
+    "emptySameNat": "Belum ada ulasan dari negara Anda. Matikan filter untuk melihat semua."
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",
@@ -526,7 +529,7 @@
     "restrictionsNotice": "Lewati sekarang dan hidangan ditampilkan tanpa risiko pribadi sampai Anda menambahkan pantangan.",
     "allergensLabel": "Alergi & bahan",
     "added": "{{count}} ditambahkan",
-    "skip": "Lewati dulu",
+    "skip": "Lewati",
     "spiceTitle": "Seberapa pedas yang Anda tahan?",
     "spiceSub": "Opsional — bisa diubah kapan saja. Kepedasan makanan juga tampil dalam 5 tingkat yang sama.",
     "interestsTitle": "Ketuk yang pernah Anda coba",
@@ -571,7 +574,8 @@
     "nationalitySearch": "Cari negara",
     "detectedTag": "Terdeteksi",
     "fromYourPhone": "Dari pengaturan ponsel",
-    "nationalityNotice": "Kewarganegaraan tidak bisa diubah setelah pendaftaran. Lainnya tetap bisa diedit di Profil."
+    "nationalityNotice": "Kewarganegaraan tidak bisa diubah setelah pendaftaran. Lainnya tetap bisa diedit di Profil.",
+    "resumeLater": "Nanti saja"
   },
   "editProfile": {
     "title": "Edit profil",

@@ -172,7 +172,6 @@ export default function ReviewCompose() {
             textAlignVertical="top"
           />
           <View style={styles.metaRow}>
-            <Text style={styles.tag}>{t('review.langDetected')}</Text>
             <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
           </View>
         </View>
