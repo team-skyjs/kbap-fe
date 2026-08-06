@@ -919,3 +919,4 @@
 - [x] 국적 스텝: 리스트 즉시 노출 — deviceCountry 감지국 최상단 하이라이트(Detected 태그)+전 국가(en명 locale 정렬)+검색. 행 = 국기 이모지+모국어명 메인+영어명 보조(동일 시 생략) — countries.ts NATIVE 196개국 전량 보강. 코드 표기 소멸·불변 문구(editProfile.nationalityLocked 재사용) 유지.
 - [x] 국기 이모지 통일: lib/flagEmoji(alpha-2→RI, 방어 '') + components/FlagEmoji — index에서 Flag 별칭 export로 전 노출처(리뷰·프로필·차단·커뮤니티 등) 일괄 전환. Flag.tsx(1.2KB)+flagAssets.ts(11.8KB)+NationalityPicker.tsx(5.8KB) 삭제 — 소스 -18.8KB.
 - [x] 약관: agree-to-all 맨 밑 이동. 유닛: 4스텝 순서·소멸 스텝 잔재 0·감지국 최상단·이모지/모국어 행·구 draft 클램프·즉시 제출 1회+자동 닉네임 형식·flagEmoji 정상/방어·풀 소속(신규 파일). i18n 신규 4키 ×10(nationalityTitle/Sub/Search·detectedTag).
+- [x] teamtest OTA 양 플랫폼(iOS 2da7063d·안드 dbcde3bd).
