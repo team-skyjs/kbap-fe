@@ -49,7 +49,7 @@ jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   const chain = () => {
     const b: Record<string, (..._a: unknown[]) => unknown> = {};
-    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled']) b[k] = () => b;
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled', 'runOnJS']) b[k] = () => b;
     return b;
   };
   return {
@@ -176,4 +176,14 @@ it('설정 복귀(AppState active) — 권한 재조회 호출(게이트 자동 
   expect(handlers.length).toBeGreaterThanOrEqual(1);
   act(() => handlers.forEach((h) => h('active')));
   expect(cam.get).toHaveBeenCalled();
+});
+
+/* ---- P-131: 가로 허용 + 줌 UI ---- */
+it('P-131: granted 카메라 — 세로 유도 오버레이 부재 + 줌 프리셋 1x/2x 렌더', () => {
+  cam.perm = { granted: true, canAskAgain: true };
+  const tree = render(<Scan />);
+  const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children);
+  expect(texts).not.toContain('scan.rotateToPortrait'); // 오버레이 소멸
+  expect(tree.root.findAll((n) => n.props?.testID === 'zoom-x1').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'zoom-x2').length).toBeGreaterThanOrEqual(1);
 });

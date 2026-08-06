@@ -924,3 +924,7 @@
 ## 멘토 피드백 소형 일괄 9건 (2026-08-06, P-129)
 - [x] ① 인트로 CTA "Sign in"·"Start K-Bap" ×10(intro.signUp/browseFirst 값 교체 — 재사용처 홈 카드·프로필도 자동 반영) ② 로그인 뒤로가기 복원 — ⑪-3 빈 스택 GO_BACK 에러는 canGoBack 가드로 해소 ③ 홈: emptyTitle "What's your first Korean menu?" ×10·explore 버튼 제거·헤더 sign in 제거(진입=프로필 탭)·See all 옆 chevron·빈 박스 ⅔(패딩 26→14·아이콘 64→44)+스캔 버튼 풀폭 확대 ④ 프로필 탭 게스트 = 로그인 화면 임베드(소셜 버튼 — 게이트 카드 소멸) ⑤ 상세 저장 아이콘 = 별(IconStar 벤더, StickyHeader+스낵바 — saved 목록 화면 북마크는 발주 범위 밖 유지). 유닛 3본+tabStates 소셜 목 보정.
 - [x] teamtest OTA 양 플랫폼(iOS dcaa3381·안드 9ac0e6a0).
+
+## 스캔 카메라 가로 허용 + 줌 (2026-08-06, P-131 — KB-240 후속)
+- [x] 가로 허용: 세로 유도 오버레이·셔터 가드(KB-141)·rotateOverlay 스타일 폐기 — 방향 감지(iOS 카메라 콜백+안드 DeviceMotion, KB-198 인프라)는 UI 제자리 회전으로 재사용(갤러리·플립·닫기·줌 필 90° 스냅, withTiming 150ms). EXIF 정합은 예진 실기 항목(문제 시 P-127 재인코딩 길목에서 정규화).
+- [x] 줌: cameraZoom 순수 로직(프리셋 1x=0/2x≈0.15 근사·핀치 누적 감도 0.5·clamp01·근사 하이라이트) — CameraView zoom prop + Pinch 제스처 runOnJS(true)(워클릿 0, P-065 준수) + 셔터 위 1x/2x 필(상호 동기). 갤러리 경로 무변. 유닛 4본(매핑/클램프/핀치/회전각+렌더 오버레이 부재·프리셋 존재).

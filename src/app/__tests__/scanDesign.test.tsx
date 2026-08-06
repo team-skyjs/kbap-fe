@@ -46,7 +46,7 @@ jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   const chain = () => {
     const b: Record<string, (..._a: unknown[]) => unknown> = {};
-    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled']) b[k] = () => b;
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled', 'runOnJS']) b[k] = () => b;
     return b;
   };
   return {

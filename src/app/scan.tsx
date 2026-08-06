@@ -23,6 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoomPreset } from '@/features/scan/cameraZoom';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
@@ -105,6 +107,9 @@ export default function Scan() {
   // P-125: 캡슐 탭 → 미니시트 해당 행 하이라이트 (상세 이동은 시트 행 탭)
   const [highlightId, setHighlightId] = useState<number | null>(null);
   const [facing, setFacing] = useState<CameraType>('back');
+  // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
+  const [zoom, setZoom] = useState(0);
+  const pinchBase = useRef(0);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   const isGuest = useIsGuest();
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
@@ -127,7 +132,9 @@ export default function Scan() {
   // P-064③: 원본 피크 — 위험도 뷰에서 빈 영역 꾹 = 오버레이(마커·버튼) 페이드아웃
   const [peeking, setPeeking] = useState(false);
   const peekFade = useAnimatedStyle(() => ({ opacity: withTiming(peeking ? 0 : 1, { duration: 150 }) }));
-  const isLandscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
+  // P-131: 세로 유도 폐기 — 방향 감지는 UI 요소 제자리 회전(90° 스냅)에 재사용
+  const uiDeg = uiRotationDeg(camOrientation);
+  const uiRotate = useAnimatedStyle(() => ({ transform: [{ rotate: withTiming(`${uiDeg}deg`, { duration: 150 }) }] }));
 
   // KB-198: Android 전용 센서 방향 감지 — 앱은 세로 고정, 힌트만 반응.
   // 임계각+디바운스(같은 값 반복 setState는 React가 무시)로 45° 근처 떨림 방지.
@@ -242,7 +249,7 @@ export default function Scan() {
   async function capture() {
     if (capturingRef.current) return; // P-062⓪: 동기 가드 — 리렌더 전 연타도 차단
     if (isGuest) return setGateOpen(true); // 스캔=회원 전용 (게이트)
-    if (isLandscape) return; // KB-141: 어떤 진입 경로로도 가로 촬영 불가 (함수 단 가드)
+    // P-131: 가로 촬영 허용 (KB-141 가드 폐기 — 캡슐 전환으로 겹침 사유 소멸)
     const cam = cameraRef.current;
     if (!cam) return;
     capturingRef.current = true;
@@ -304,7 +311,9 @@ export default function Scan() {
 
   const Close = (
     <Pressable style={[styles.close, { top: insets.top + 8 }]} onPress={() => router.back()} hitSlop={8}>
-      <IconClose size={22} color="#fff" />
+      <Animated.View style={uiRotate}>
+        <IconClose size={22} color="#fff" />
+      </Animated.View>
     </Pressable>
   );
 
@@ -509,14 +518,29 @@ export default function Scan() {
   return (
     <View style={styles.root}>
       {granted ? (
-        <CameraView
-          ref={cameraRef}
-          style={StyleSheet.absoluteFill}
-          onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
-          facing={facing}
-          responsiveOrientationWhenOrientationLocked
-          onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
-        />
+        /* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */
+        <GestureDetector
+          gesture={Gesture.Pinch()
+            .runOnJS(true)
+            .onStart(() => {
+              pinchBase.current = zoom;
+            })
+            .onUpdate((e) => {
+              setZoom(pinchToZoom(pinchBase.current, e.scale));
+            })}
+        >
+          <View style={StyleSheet.absoluteFill}>
+            <CameraView
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              onLayout={(e) => { previewSize.current = { width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height }; }}
+              facing={facing}
+              zoom={zoom}
+              responsiveOrientationWhenOrientationLocked
+              onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
+            />
+          </View>
+        </GestureDetector>
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.permission]}>
           <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
@@ -531,26 +555,36 @@ export default function Scan() {
         </View>
       )}
 
-      {granted && isLandscape && (
-        <View style={styles.rotateOverlay} pointerEvents="none">
-          <View style={{ transform: [{ rotate: camOrientation === 'landscapeLeft' ? '90deg' : '-90deg' }], alignItems: 'center', gap: 10 }}>
-            <IconFlip size={30} color="#fff" />
-            <Text style={styles.rotateText}>{t('scan.rotateToPortrait')}</Text>
-          </View>
-        </View>
-      )}
+      {/* P-131: 세로 유도 오버레이 소멸 — 가로 촬영 허용 (UI는 제자리 회전) */}
 
       {Close}
         {GateSheet}
 
       <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
+        {/* P-131: 배율 프리셋 1x/2x — 핀치와 상호 동기(근사 시 하이라이트) */}
+        {granted && (
+          <View style={styles.zoomRow}>
+            {(['x1', 'x2'] as CamZoomPreset[]).map((pKey) => {
+              const on = activePreset(zoom) === pKey;
+              return (
+                <Pressable key={pKey} style={[styles.zoomPill, on && styles.zoomPillOn]} onPress={() => setZoom(CAM_ZOOM_PRESETS[pKey])} hitSlop={6} testID={`zoom-${pKey}`}>
+                  <Animated.View style={uiRotate}>
+                    <Text style={[styles.zoomPillText, on && styles.zoomPillTextOn]}>{pKey === 'x1' ? '1x' : '2x'}</Text>
+                  </Animated.View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
         <Text style={styles.hint}>{t('scan.hint')}</Text>
         <View style={styles.camRow}>
           <Pressable style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
-            <IconGallery size={22} color="#fff" />
+            <Animated.View style={uiRotate}>
+              <IconGallery size={22} color="#fff" />
+            </Animated.View>
           </Pressable>
           {granted ? (
-            <Pressable style={[styles.shutter, (isLandscape || capturing) && styles.shutterOff]} onPress={capture} disabled={isLandscape || capturing}>
+            <Pressable style={[styles.shutter, capturing && styles.shutterOff]} onPress={capture} disabled={capturing}>
               <View style={styles.shutterInner} />
             </Pressable>
           ) : (
@@ -558,7 +592,9 @@ export default function Scan() {
           )}
           {granted ? (
             <Pressable style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
-              <IconFlip size={22} color="#fff" />
+              <Animated.View style={uiRotate}>
+                <IconFlip size={22} color="#fff" />
+              </Animated.View>
             </Pressable>
           ) : (
             <View style={styles.sideBtn} />
@@ -661,11 +697,14 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
   camRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
+  zoomRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 10 },
+  zoomPill: { minWidth: 40, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  zoomPillOn: { backgroundColor: 'rgba(255,255,255,0.9)', borderColor: '#fff' },
+  zoomPillText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
+  zoomPillTextOn: { color: '#1c1917' },
   sideBtn: { width: 46, height: 46, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   shutter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   shutterOff: { opacity: 0.35 },
-  rotateOverlay: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
-  rotateText: { fontFamily: font.bodyBold, fontSize: 16, color: '#fff', textAlign: 'center', maxWidth: 260, lineHeight: 22 },
   // P-038: 빈 프로필 넛지 — Close 버튼(좌 16, 폭 40) 우측에 정렬, 리스트 여백(60) 위 오버레이
   // P-057: 배너 = 리스트 첫 카드 — 밝은 브랜드 틴트, 메뉴 카드와 같은 radius 리듬
   nudgeCard: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: '#fdf0e6', borderWidth: 1, borderColor: '#f0d9c4', borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
