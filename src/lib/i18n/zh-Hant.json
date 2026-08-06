@@ -567,9 +567,11 @@
     "summaryTitle": "你的安全檔案已就緒",
     "summarySub": "確認你的設定，點一下列即可修改。",
     "nationalityTitle": "你來自哪個國家?",
-    "nationalitySub": "我們會優先展示來自你國家的評價。",
+    "nationalitySub": "用於推薦你所在國家的人喜歡的菜品，並在評價中顯示你的國旗。",
     "nationalitySearch": "搜尋國家",
-    "detectedTag": "已偵測"
+    "detectedTag": "已偵測",
+    "fromYourPhone": "來自手機設定",
+    "nationalityNotice": "國籍在註冊後無法更改。其他資訊可隨時在個人資料中修改。"
   },
   "editProfile": {
     "title": "編輯個人資料",

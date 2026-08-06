@@ -722,9 +722,11 @@
     "summaryTitle": "안전 프로필이 준비됐어요",
     "summarySub": "설정을 확인하고, 바꾸려면 행을 탭하세요.",
     "nationalityTitle": "어느 나라에서 오셨나요?",
-    "nationalitySub": "같은 나라 여행자의 리뷰를 먼저 보여드려요.",
+    "nationalitySub": "같은 나라 사람들이 즐겨 먹는 음식을 추천하고, 리뷰에 국기를 보여주는 데 사용해요.",
     "nationalitySearch": "국가 검색",
-    "detectedTag": "자동 감지"
+    "detectedTag": "자동 감지",
+    "fromYourPhone": "휴대폰 설정 기준",
+    "nationalityNotice": "국적은 가입 후 변경할 수 없어요. 다른 정보는 프로필에서 언제든 수정할 수 있어요."
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",

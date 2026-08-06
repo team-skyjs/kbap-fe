@@ -567,9 +567,11 @@
     "summaryTitle": "Hồ sơ an toàn của bạn đã sẵn sàng",
     "summarySub": "Kiểm tra cài đặt — chạm vào một hàng để thay đổi.",
     "nationalityTitle": "Bạn đến từ nước nào?",
-    "nationalitySub": "Đánh giá từ nước bạn sẽ được ưu tiên hiển thị.",
+    "nationalitySub": "Chúng tôi dùng thông tin này để gợi ý món ăn người nước bạn hay thích và hiển thị quốc kỳ trên đánh giá.",
     "nationalitySearch": "Tìm quốc gia",
-    "detectedTag": "Đã phát hiện"
+    "detectedTag": "Đã phát hiện",
+    "fromYourPhone": "Theo cài đặt điện thoại",
+    "nationalityNotice": "Quốc tịch không thể thay đổi sau khi đăng ký. Mọi thứ khác vẫn chỉnh được trong Hồ sơ."
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

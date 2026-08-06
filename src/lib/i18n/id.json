@@ -567,9 +567,11 @@
     "summaryTitle": "Profil keamananmu sudah siap",
     "summarySub": "Periksa pengaturanmu — ketuk baris untuk mengubah.",
     "nationalityTitle": "Anda berasal dari negara mana?",
-    "nationalitySub": "Ulasan dari negara Anda akan diprioritaskan.",
+    "nationalitySub": "Kami memakainya untuk menyarankan hidangan yang disukai orang dari negara Anda dan menampilkan bendera di ulasan.",
     "nationalitySearch": "Cari negara",
-    "detectedTag": "Terdeteksi"
+    "detectedTag": "Terdeteksi",
+    "fromYourPhone": "Dari pengaturan ponsel",
+    "nationalityNotice": "Kewarganegaraan tidak bisa diubah setelah pendaftaran. Lainnya tetap bisa diedit di Profil."
   },
   "editProfile": {
     "title": "Edit profil",

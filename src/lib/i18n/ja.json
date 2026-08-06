@@ -567,9 +567,11 @@
     "summaryTitle": "安全プロフィールの準備ができました",
     "summarySub": "設定を確認し、変更するには行をタップしてください。",
     "nationalityTitle": "どこの国から来ましたか?",
-    "nationalitySub": "同じ国の旅行者のレビューを優先表示します。",
+    "nationalitySub": "同じ国の人がよく楽しむ料理をおすすめしたり、レビューに国旗を表示するために使います。",
     "nationalitySearch": "国を検索",
-    "detectedTag": "検出"
+    "detectedTag": "検出",
+    "fromYourPhone": "スマートフォンの設定から",
+    "nationalityNotice": "国籍は設定後に変更できません。その他の情報はプロフィールでいつでも編集できます。"
   },
   "editProfile": {
     "title": "プロフィール編集",

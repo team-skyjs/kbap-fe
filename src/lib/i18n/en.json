@@ -718,9 +718,11 @@
     "summaryTitle": "Your safety profile is ready",
     "summarySub": "Check your settings — tap a row to change it.",
     "nationalityTitle": "Where are you from?",
-    "nationalitySub": "Reviews from your country get highlighted for you.",
+    "nationalitySub": "We use this to suggest dishes people from your country tend to enjoy, and to show your flag on reviews.",
     "nationalitySearch": "Search countries",
-    "detectedTag": "Detected"
+    "detectedTag": "Detected",
+    "fromYourPhone": "From your phone",
+    "nationalityNotice": "Nationality can't be changed after setup. Everything else stays editable in Profile."
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

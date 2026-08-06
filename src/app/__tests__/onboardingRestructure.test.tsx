@@ -175,3 +175,27 @@ it('P-101 — 공용 푸터: consent(신규)와 spice(드래프트) CTA 프레�
   const b = footerOf(await render());
   expect(a).toEqual(b); // 스텝이 달라도 푸터 프레임 스타일 동일 (paddingTop·paddingBottom·배경 등)
 });
+
+/* ---- P-133: 국적 화면 시안 정합 ---- */
+it('P-133: 행 62 고정·핀 카드 70·검색 시 핀 숨김·모국어=영어 생략 규칙', async () => {
+  mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
+  const tree = await render();
+  const { StyleSheet } = require('react-native');
+  const flat = (st: unknown) => StyleSheet.flatten(st) as Record<string, unknown>;
+  // 핀 카드(감지국 US) — minHeight 70 + 기본 선택(체크 채움)
+  const pin = tree.root.findAll((n) => n.props?.testID === 'nat-US')[0];
+  expect(flat(pin.props.style).minHeight).toBe(70);
+  // 일반 행 — 62 고정
+  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
+  expect(flat(jp.props.style).minHeight).toBe(62);
+  // 모국어=영어 생략: SG(=Singapore) 행엔 보조 텍스트 없음, JP(日本≠Japan)엔 있음
+  const sg = tree.root.findAll((n) => n.props?.testID === 'nat-SG')[0];
+  expect(sg.findAll((c) => c.type === 'Text' && c.props?.children === 'Singapore').length).toBe(1); // 메인 1개뿐(보조 생략)
+  expect(jp.findAll((c) => c.type === 'Text' && c.props?.children === 'Japan').length).toBe(1); // 보조 존재
+  // 섹션 헤더 존재 → 검색 입력 시 핀 블록 숨김
+  const texts = () => tree.root.findAll((n) => n.props?.children === 'onboarding.fromYourPhone');
+  expect(texts().length).toBeGreaterThanOrEqual(1);
+  const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
+  await act(async () => { input.props.onChangeText('kor'); });
+  expect(texts()).toHaveLength(0);
+});

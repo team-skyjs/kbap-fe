@@ -29,14 +29,16 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
+import { primaryTint, color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import {
   Btn,
-  RiskMark,
   IconCheck,
   IconChevron,
-  Input,
+  IconClose,
+  IconLock,
   IconSearch,
+  Input,
+  RiskMark,
 } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { SuccessCheck } from '@/components/SuccessCheck';
@@ -279,6 +281,17 @@ export default function Onboarding() {
 
   return (
     <View style={[styles.app, { paddingTop: insets.top }]}>
+      {/* P-133: 국적 스텝 = 헤더·검색 고정, 리스트만 스크롤(시안 kbap-ob4) — 자체 스크롤 구조 */}
+      {step === 'nationality' ? (
+        <View style={[styles.body, { flex: 1 }]}>
+          <View style={styles.miniHeader}>
+            <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
+              <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+            </Pressable>
+          </View>
+          <Nationality selected={nationality} onSelect={setNationality} t={t} />
+        </View>
+      ) : (
       <ScrollView keyboardDismissMode="on-drag"
         scrollEnabled={!sliderDragging}
         // P-101: CTA가 전 스텝 스크롤 밖 공용 푸터로 — 하단 패딩 전 스텝 동일
@@ -314,10 +327,6 @@ export default function Onboarding() {
           />
         )}
 
-        {step === 'nationality' && (
-          <Nationality selected={nationality} onSelect={setNationality} t={t} />
-        )}
-
         {step === 'restrictions' && (
           <Restrictions
             selected={Array.from(restrictions)}
@@ -341,11 +350,13 @@ export default function Onboarding() {
         )}
 
       </ScrollView>
+      )}
 
       {/* P-101: 공용 OnboardingFooter — 6스텝 전부 (P-011 restrictions 스티키의
           전 스텝 확장). CTA 프레임 고정 + Skip/노트 고정 높이 슬롯. */}
-      <View testID="ob-footer" style={[styles.footer, { paddingBottom: bottomInset + 14 }]}>
-        <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
+      {/* P-133: 시안 푸터 규격 — 패딩 12/20/34·헤어라인·CTA radius 16/패딩 17·primary 글로우 */}
+      <View testID="ob-footer" style={[styles.footer, { paddingBottom: Math.max(bottomInset, 20) + 14 }]}>
+        <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress} style={styles.obCta}>
           {footer.label}
         </Btn>
         <View style={styles.skipSlot}>
@@ -425,66 +436,95 @@ function Consent({
   );
 }
 
-/** ② 국적 (P-130 v3 — 프로필 스텝 대체, 유일 입력). 리스트 즉시 노출:
- *  감지국 최상단 하이라이트 + 전체(현 UI 언어 기준 영어명 정렬 — 로케일별 국가명
- *  데이터 부재로 en 정렬, 표시는 모국어 메인+영어 보조) + 검색. 국기 = 이모지
- *  (헌법 v2.3.0). 국가 코드 표기 소멸, 국적 불변 문구 유지. */
+/** ② 국적 (P-130 v3 → P-133 시안 kbap-ob4 정합).
+ *  헤더·검색 고정 + 리스트만 스크롤 · 감지국 핀 카드(기본 선택 — 시안 결정:
+ *  대부분 유저는 Continue만) · quiet 불변 안내 · 행 62 고정(리플로 방지) ·
+ *  검색 시 핀/안내 숨김 인플레이스 필터. 국기 = 이모지(26pt/34 슬롯). */
 function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (code: string) => void; t: TFn }) {
   const [q, setQ] = useState('');
+  const [searchFocus, setSearchFocus] = useState(false);
   const detected = deviceCountry();
+  const detectedCountry = detected ? countryByCode(detected) : undefined;
   const query = q.trim().toLowerCase();
   const list = useMemo(() => {
     const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, i18n.language));
     const filtered = query
       ? all.filter((c) => c.name.toLowerCase().includes(query) || (c.native ?? '').toLowerCase().includes(query))
-      : all;
-    // 감지국 최상단 (검색 없을 때만 — 검색은 순수 결과)
-    if (!query && detected) {
-      const hit = filtered.find((c) => c.code === detected);
-      if (hit) return [hit, ...filtered.filter((c) => c.code !== detected)];
-    }
+      : all.filter((c) => c.code !== detected); // 핀 카드가 감지국 담당 — 본 리스트 중복 제거
     return filtered;
   }, [query, detected]);
 
+  const Row = (c: Country, pinned: boolean) => {
+    const on = c.code === selected;
+    return (
+      <Pressable
+        key={c.code}
+        style={[styles.natRow, pinned && styles.natPin]}
+        onPress={() => onSelect(c.code)}
+        testID={`nat-${c.code}`}
+      >
+        <View style={styles.natFlagSlot}>
+          <Text style={styles.natFlag}>{flagEmoji(c.code)}</Text>
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[styles.natName, on && styles.natNameOn]} numberOfLines={1}>{c.native ?? c.name}</Text>
+          {c.native && c.native !== c.name && (
+            <Text style={styles.natSub} numberOfLines={1}>{c.name}</Text>
+          )}
+        </View>
+        <View style={[styles.natCheck, on && styles.natCheckOn]}>
+          {on && <IconCheck size={13} color="#fff" />}
+        </View>
+      </Pressable>
+    );
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.nationalityTitle')} sub={t('onboarding.nationalitySub')} />
-      <View style={styles.natSearch}>
+      {/* 고정부: 타이틀 + 검색 (시안 — display 29·서브 13.5 max 34ch) */}
+      <View style={styles.natHead}>
+        <Text style={styles.natTitle}>{t('onboarding.nationalityTitle')}</Text>
+        <Text style={styles.natTitleSub}>{t('onboarding.nationalitySub')}</Text>
+      </View>
+      <View style={[styles.natSearch, searchFocus && styles.natSearchFocus]}>
         <IconSearch size={17} color={C.ink2} />
         <Input
           value={q}
           onChangeText={setQ}
+          onFocus={() => setSearchFocus(true)}
+          onBlur={() => setSearchFocus(false)}
           placeholder={t('onboarding.nationalitySearch')}
           placeholderTextColor={C.ink3}
           style={styles.natSearchInput}
           autoCorrect={false}
         />
+        {q.length > 0 && (
+          <Pressable style={styles.natClear} hitSlop={8} onPress={() => setQ('')} testID="nat-clear">
+            <IconClose size={12} color={C.ink2} />
+          </Pressable>
+        )}
       </View>
-      <View style={styles.natList}>
-        {list.map((c: Country, i: number) => {
-          const on = c.code === selected;
-          const isDetected = !query && c.code === detected && i === 0;
-          return (
-            <Pressable
-              key={c.code}
-              style={[styles.natRow, on && styles.natRowOn]}
-              onPress={() => onSelect(c.code)}
-              testID={`nat-${c.code}`}
-            >
-              <Text style={styles.natFlag}>{flagEmoji(c.code)}</Text>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.natName} numberOfLines={1}>{c.native ?? c.name}</Text>
-                {c.native && c.native !== c.name && (
-                  <Text style={styles.natSub} numberOfLines={1}>{c.name}</Text>
-                )}
-              </View>
-              {isDetected && <Text style={styles.natDetected}>{t('onboarding.detectedTag')}</Text>}
-              {on && <IconCheck size={16} color={C.primary} />}
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text style={[styles.tag, { marginTop: 10 }]}>{t('editProfile.nationalityLocked')}</Text>
+
+      {/* 리스트만 스크롤 */}
+      <ScrollView style={{ flex: 1 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
+        {!query && detectedCountry && (
+          <>
+            <View style={styles.natSecHead}>
+              <Text style={styles.natSecText}>{t('onboarding.fromYourPhone')}</Text>
+              <View style={styles.natSecLine} />
+            </View>
+            {Row(detectedCountry, true)}
+            {/* quiet 불변 안내 — 자물쇠 13 + 11.5 두 줄 */}
+            <View style={styles.natNotice}>
+              <IconLock size={13} color={C.ink2} />
+              <Text style={styles.natNoticeText}>{t('onboarding.nationalityNotice')}</Text>
+            </View>
+          </>
+        )}
+        <View>
+          {list.map((c) => Row(c, false))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -602,22 +642,36 @@ const styles = StyleSheet.create({
   // P-130 v3
   miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 40 },
   miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
-  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13, marginBottom: 12 },
+  // P-133 국적 화면(시안 kbap-ob4): 헤더 56/14 패딩 골격은 body 공용 — 여기선 스텝 내부 규격
+  natHead: { paddingTop: 8, paddingBottom: 14 },
+  natTitle: { fontFamily: font.displayBlack, fontSize: 29, letterSpacing: -0.72, color: C.ink },
+  natTitleSub: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink2, marginTop: 6, maxWidth: 300 },
+  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
+  natSearchFocus: { borderColor: C.primary },
   natSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
-  natList: { backgroundColor: C.card, borderRadius: radius.lg, borderWidth: 1, borderColor: C.hair, overflow: 'hidden' },
-  natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  natRowOn: { backgroundColor: 'rgba(226,88,12,0.07)' },
-  natFlag: { fontSize: 22, lineHeight: 26 },
-  natName: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  natSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
-  natDetected: { fontFamily: font.bodyBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: C.primaryText, backgroundColor: 'rgba(226,88,12,0.1)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  natClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  natSecHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 7 },
+  natSecText: { fontFamily: font.bodyBold, fontSize: 9.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3 },
+  natSecLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.hair },
+  natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 12 }, // 62 고정 — 리플로 방지
+  natPin: { borderWidth: 1.5, borderColor: C.primary, backgroundColor: primaryTint, borderRadius: 18, minHeight: 70, marginBottom: 8 },
+  natFlagSlot: { width: 34, alignItems: 'center' },
+  natFlag: { fontSize: 26, lineHeight: 32 },
+  natName: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
+  natNameOn: { color: C.primaryText },
+  natSub: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 1 },
+  natCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  natCheckOn: { backgroundColor: C.primary, borderColor: C.primary },
+  natNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, paddingHorizontal: 4, marginBottom: 10 },
+  natNoticeText: { flex: 1, fontFamily: font.body, fontSize: 11.5, lineHeight: 16, color: C.ink2 },
   app: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 
   // P-101: 공용 푸터 (P-011 스티키의 전 스텝 확장) — CTA 프레임 전 스텝 동일,
   // skipSlot은 고정 높이(Skip/노트 유무와 무관 — CTA y 불변의 핵심)
-  footer: { paddingHorizontal: 22, paddingTop: 12, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+  footer: { paddingTop: 12, paddingHorizontal: 20, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, backgroundColor: 'rgba(252,245,239,0.92)' },
   skipSlot: { height: 34, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  obCta: { borderRadius: 16, paddingVertical: 17, shadowColor: C.primary, shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   // 제출 실패 안내 (KB-75)
   submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
   submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },

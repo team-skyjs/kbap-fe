@@ -929,3 +929,7 @@
 - [x] 가로 허용: 세로 유도 오버레이·셔터 가드(KB-141)·rotateOverlay 스타일 폐기 — 방향 감지(iOS 카메라 콜백+안드 DeviceMotion, KB-198 인프라)는 UI 제자리 회전으로 재사용(갤러리·플립·닫기·줌 필 90° 스냅, withTiming 150ms). EXIF 정합은 예진 실기 항목(문제 시 P-127 재인코딩 길목에서 정규화).
 - [x] 줌: cameraZoom 순수 로직(프리셋 1x=0/2x≈0.15 근사·핀치 누적 감도 0.5·clamp01·근사 하이라이트) — CameraView zoom prop + Pinch 제스처 runOnJS(true)(워클릿 0, P-065 준수) + 셔터 위 1x/2x 필(상호 동기). 갤러리 경로 무변. 유닛 4본(매핑/클램프/핀치/회전각+렌더 오버레이 부재·프리셋 존재).
 - [x] teamtest OTA 양 플랫폼(iOS bc937346·안드 154a6b9d).
+
+## 온보딩 국적 화면 시안 정합 + 플랫 로고 (2026-08-06, P-133 — D-15 화면1·D-14)
+- [x] A. 국적 화면(kbap-ob4): 헤더·검색 고정+리스트만 스크롤(스텝 전용 레이아웃 분기) — 타이틀 display 29/-0.72·서브 13.5 시안 카피 ×10(nationalitySub 갱신). 검색 카드 1.5 보더 radius 14·포커스 primary·클리어 X 22 원형. 감지국 = "FROM YOUR PHONE" mono 섹션+핀 카드(primary 1.5 보더+틴트 radius 18 minH 70, 기본 선택 유지 — 본 리스트 중복 제거). quiet 불변 안내(자물쇠 13+11.5 2줄, 신규 키 nationalityNotice — 온보딩만, 수정화면 nationalityLocked 별도 유지). 행 minH 62 고정·이모지 26/34 슬롯·모국어 15.5 볼드(선택 primary)·영어 12(동일 생략)·체크 원 24(선택 primary 채움). 검색 시 핀+안내 숨김. 푸터 시안 규격(패딩 12/20/34·헤어라인·CTA radius 16/패딩 17·primary 글로우 — Btn 오버라이드로 프레임 테스트 보존).
+- [x] B. 플랫 로고(kbap-logo-flat): BrandTile 라디얼 그라데이션 폐기 → 단색 primary+흰 마크(radius 0.224 기존 일치), 워드마크 ls -0.02em. 노출처(로그인·인트로·StickyHeader)는 컴포넌트 공용이라 일괄 반영 — 그라데이션/쉐도우 잔재 0 유닛. i18n 신규 2키+1갱신 ×10. 유닛 3본(행 높이·핀·숨김·생략 규칙·로고).

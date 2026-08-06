@@ -567,9 +567,11 @@
     "summaryTitle": "你的安全档案已就绪",
     "summarySub": "确认你的设置，点按行即可修改。",
     "nationalityTitle": "你来自哪个国家?",
-    "nationalitySub": "我们会优先展示来自你国家的评价。",
+    "nationalitySub": "用于推荐你所在国家的人喜欢的菜品，并在评价中显示你的国旗。",
     "nationalitySearch": "搜索国家",
-    "detectedTag": "已检测"
+    "detectedTag": "已检测",
+    "fromYourPhone": "来自手机设置",
+    "nationalityNotice": "国籍在注册后无法更改。其他信息可随时在个人资料中修改。"
   },
   "editProfile": {
     "title": "编辑资料",
