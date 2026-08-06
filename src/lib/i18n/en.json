@@ -726,7 +726,20 @@
     "detectedTag": "Detected",
     "fromYourPhone": "From your phone",
     "nationalityNotice": "Nationality can't be changed after setup. Everything else stays editable in Profile.",
-    "resumeLater": "Maybe later"
+    "resumeLater": "Maybe later",
+    "avoidSub": "Pick everything you never eat. We mark dishes containing them before you order — allergy, religion or preference, we don't ask which.",
+    "selectedCount": "{{count}} selected",
+    "noneSelectedYet": "None selected yet",
+    "clearSelection": "Clear",
+    "nothingToAvoid": "Nothing to avoid",
+    "kidsBadge": "👶 Kids can eat this",
+    "spiceDesc0": "You'll see every dish's heat level — this marks you as no-spice.",
+    "spiceDesc1": "Dishes hotter than mild will show their heat level clearly.",
+    "spiceDesc2": "The Korean middle — most stews sit here.",
+    "spiceDesc3": "Comfortable with real Korean heat.",
+    "spiceDesc4": "Bring it on — heat levels still show on every dish.",
+    "finishSetup": "Finish setup",
+    "skipDecideLater": "Skip — decide later"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
@@ -774,5 +787,22 @@
     "gateCta": "Update now",
     "nudgeText": "A new version is available",
     "nudgeCta": "Update"
+  },
+  "ingCat": {
+    "dairy": "Dairy & animal",
+    "nuts": "Nuts & seeds",
+    "grains": "Grains & legumes",
+    "seafood": "Seafood",
+    "meat": "Meat",
+    "produce": "Produce & aromatics",
+    "etc": "Other"
+  },
+  "coach": {
+    "title": "What the marks mean",
+    "safe": "None of your avoided ingredients found.",
+    "caution": "May contain something you avoid — check before ordering.",
+    "danger": "Contains ingredients on your avoid list.",
+    "unable": "Not enough ingredient info — ask the staff to be sure.",
+    "caption": "Shown once — tap any mark to see this again."
   }
 }

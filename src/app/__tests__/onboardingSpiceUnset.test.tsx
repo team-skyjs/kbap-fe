@@ -121,11 +121,11 @@ async function selectStop(tree: ReactTestRenderer, index: 0 | 1 | 2 | 3 | 4) {
   });
 }
 const skipLink = (tree: ReactTestRenderer) =>
-  tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.skip').length > 0);
-// P-130(v3): 맵기 = 마지막 스텝 — CTA(onboarding.start)가 즉시 제출(요약 소멸)
+  tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => ['onboarding.skip','onboarding.skipDecideLater','onboarding.nothingToAvoid'].includes(c.props?.children)).length > 0);
+// P-130(v3): 맵기 = 마지막 스텝 — CTA(onboarding.finishSetup)가 즉시 제출(요약 소멸)
 async function submitFromSpice(tree: ReactTestRenderer) {
   await act(async () => {
-    btnWith(tree, 'onboarding.start').props.onPress();
+    btnWith(tree, 'onboarding.finishSetup').props.onPress();
   });
 }
 
@@ -161,12 +161,13 @@ it('Skip → 즉시 제출 SKIP (스킵도 제출 트리거 — v3)', async () =
 });
 
 /* ---- P-119(테플 빌드14 반려): 히어로 프레임 불변 — NONE 전환 시 ~15pt 하강 봉쇄 ---- */
-it('P-119: 히어로 3줄(고추줄·밴드명·비유 필) = 고정 높이 · NONE(0)↔HOT(3) 스타일 완전 동일', async () => {
+it('P-119: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 완전 동일 (P-134 시안 개편 반영 — 비유 필→설명 줄)', async () => {
   const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, number | undefined>;
   const heroStyles = (tree: ReactTestRenderer) => {
     const chiliRow = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.height === 46)[0];
     const band = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 38)[0];
-    const pill = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderRadius === 999 && flat(n.props.style)?.height === 36)[0];
+    // P-134: 비유 필 → 레벨 설명 줄(2줄 고정 슬롯 36) — 배지 줄은 bandRow 38 고정
+    const pill = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 36)[0];
     return { chiliRow: flat(chiliRow.props.style), band: flat(band.props.style), pill: flat(pill.props.style) };
   };
   const a = await renderSpiceStep();
@@ -178,5 +179,5 @@ it('P-119: 히어로 3줄(고추줄·밴드명·비유 필) = 고정 높이 · N
   expect(ha).toEqual(hb); // 단계 전환에도 프레임 스타일 픽셀 동일
   expect(ha.chiliRow.height).toBe(46); // minHeight(가변) 아님 — 고정
   expect(ha.band.lineHeight).toBe(38);
-  expect(ha.pill.height).toBe(36);
+  expect(ha.pill.height).toBe(36); // 설명 슬롯 고정
 });

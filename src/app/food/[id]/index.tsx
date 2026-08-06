@@ -30,6 +30,7 @@ import {
   IconSpeech,
 } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
+import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
@@ -71,6 +72,7 @@ export default function FoodDetailScreen() {
   const saved = food?.bookmarked ?? false;
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false); // P-134: 마크 탭 재열람
   const [saveToast, setSaveToast] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,6 +128,7 @@ export default function FoodDetailScreen() {
           <View style={styles.body}>
             {food.isRegistered ? (
               <Registered guest={isGuest}
+                setCoachOpen={setCoachOpen}
                 scanPrice={scanPrice}
                 food={food}
                 nationality={me?.nationality ?? 'US'}
@@ -149,6 +152,7 @@ export default function FoodDetailScreen() {
 
       <StickyHeader hidden={hidden} mode="back" title={t('detail.headerTitle')} bookmark bookmarkSaved={saved} onBookmark={onBookmark} onBack={() => router.back()} />
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
+      <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
       {saveError && (
         <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />
       )}
@@ -187,7 +191,9 @@ function Registered({
   t,
   router,
   id,
+  setCoachOpen,
 }: {
+  setCoachOpen: (v: boolean) => void;
   guest: boolean;
   food: FoodDetail;
   nationality: string;
@@ -261,7 +267,12 @@ function Registered({
       ) : null}
 
       <View style={styles.metaRow}>
-        {!guest && <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />}
+        {/* P-134: 마크 탭 = 코치마크 재열람 */}
+        {!guest && (
+          <Pressable onPress={() => setCoachOpen(true)} hitSlop={6} testID="detail-mark">
+            <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />
+          </Pressable>
+        )}
         {food.spiceLevel != null && (
           <View style={styles.spiceMeta}>
             {/* P-080: 표시 = 5단계 구간 스냅 · 🌶️는 헌법 v2.2.0 유일 이모지 예외(맵기 한정) */}

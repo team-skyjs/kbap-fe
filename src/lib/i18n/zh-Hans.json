@@ -575,7 +575,20 @@
     "detectedTag": "已检测",
     "fromYourPhone": "来自手机设置",
     "nationalityNotice": "国籍在注册后无法更改。其他信息可随时在个人资料中修改。",
-    "resumeLater": "以后再说"
+    "resumeLater": "以后再说",
+    "avoidSub": "选出你从不吃的所有食材。点餐前我们会标记含有它们的菜品——无论是过敏、宗教还是偏好，我们不会过问。",
+    "selectedCount": "已选 {{count}} 项",
+    "noneSelectedYet": "尚未选择",
+    "clearSelection": "清除",
+    "nothingToAvoid": "没有忌口",
+    "kidsBadge": "👶 小朋友也能吃",
+    "spiceDesc0": "每道菜都会显示辣度——此设置代表你不吃辣。",
+    "spiceDesc1": "比微辣更辣的菜会清楚显示辣度。",
+    "spiceDesc2": "韩式中辣——大多数汤锅在这个水平。",
+    "spiceDesc3": "能自在享受正宗韩式辣度。",
+    "spiceDesc4": "尽管来——每道菜仍会显示辣度。",
+    "finishSetup": "完成设置",
+    "skipDecideLater": "跳过——以后再定"
   },
   "editProfile": {
     "title": "编辑资料",
@@ -777,5 +790,22 @@
     "gateCta": "立即更新",
     "nudgeText": "有新版本可用",
     "nudgeCta": "更新"
+  },
+  "ingCat": {
+    "dairy": "乳制品·动物性",
+    "nuts": "坚果·种子",
+    "grains": "谷物·豆类",
+    "seafood": "海鲜",
+    "meat": "肉类",
+    "produce": "蔬果·香辛料",
+    "etc": "其他"
+  },
+  "coach": {
+    "title": "标记的含义",
+    "safe": "未发现你忌口的食材。",
+    "caution": "可能含有你忌口的食材——点餐前请确认。",
+    "danger": "含有你忌口清单中的食材。",
+    "unable": "食材信息不足——请向店员确认。",
+    "caption": "仅显示一次——点按任意标记可再次查看。"
   }
 }

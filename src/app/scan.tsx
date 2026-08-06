@@ -46,6 +46,7 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { assignScanNumbers } from '@/features/scan/capsuleMarker';
 import { ScanMiniSheet } from '@/features/scan/ScanMiniSheet';
+import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
@@ -106,6 +107,9 @@ export default function Scan() {
   const [view, setView] = useState<ResultView>('risk');
   // P-125: 캡슐 탭 → 미니시트 해당 행 하이라이트 (상세 이동은 시트 행 탭)
   const [highlightId, setHighlightId] = useState<number | null>(null);
+  // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
+  const [coachOpen, setCoachOpen] = useState(false);
+  const coachChecked = useRef(false);
   const [facing, setFacing] = useState<CameraType>('back');
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
   const [zoom, setZoom] = useState(0);
@@ -142,6 +146,18 @@ export default function Scan() {
   // 모듈(ExponentPedometer)을 즉시 불러와, 이 모듈이 없는 빌드(expo-sensors 추가
   // 전 빌드)에선 iOS에서도 앱 전체가 크래시한다. Android 가드 안에서 try-require해
   // iOS는 아예 안 건드리고, 네이티브 미탑재(재빌드 전)면 조용히 힌트만 비활성.
+  // P-134: 첫 스캔 결과 진입 1회 코치마크 (AsyncStorage 플래그)
+  useEffect(() => {
+    if (phase !== 'result' || coachChecked.current) return;
+    coachChecked.current = true;
+    void shouldShowCoachMark().then((show) => {
+      if (show) {
+        setCoachOpen(true);
+        markCoachSeen();
+      }
+    });
+  }, [phase]);
+
   useEffect(() => {
     if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
     let sub: { remove: () => void } | undefined;
@@ -409,7 +425,7 @@ export default function Scan() {
                 key={d.itemId}
                 entering={FadeInDown.delay(Math.min(k, 8) * 60).springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}
               >
-                <DishRow dish={d} unmatchedNote={t('scan.unmatchedNote')} riskLabel={t(`risk.${d.risk}`)} onPress={() => openDish(d)} />
+                <DishRow dish={d} unmatchedNote={t('scan.unmatchedNote')} riskLabel={t(`risk.${d.risk}`)} onPress={() => openDish(d)} onMarkPress={() => setCoachOpen(true)} />
               </Animated.View>
             ))}
           </ScrollView>
@@ -425,6 +441,8 @@ export default function Scan() {
         )}
         {Close}
         {GateSheet}
+        {/* P-134: 코치마크 — 1회 + 리스트 마크 탭 재열람 */}
+        <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         {/* P-064②: 파파고식 — 다크 시트·캡션·범례 삭제, 사진 풀블리드 위에
             원형 버튼 4개만 플로팅. 사진 뷰(위험도·원본)엔 가독용 하단 그라데이션. */}
@@ -662,11 +680,14 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
   );
 }
 
-function DishRow({ dish, unmatchedNote, riskLabel, onPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void }) {
+function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void; onMarkPress?: () => void }) {
   const tone = riskTone[dish.risk];
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <RiskMark state={dish.risk} size={24} />
+      {/* P-134: 마크 탭 = 코치마크 재열람 (마크 데모 대체) */}
+      <Pressable onPress={onMarkPress} hitSlop={8} testID="dishrow-mark">
+        <RiskMark state={dish.risk} size={24} />
+      </Pressable>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.rowName} numberOfLines={1}>{dish.displayName}</Text>
         {/* koreanName 병기 (표시명과 다를 때) · 로마자 라인은 보조 표기 유지 */}

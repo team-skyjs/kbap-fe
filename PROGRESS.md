@@ -937,3 +937,8 @@
 ## 한국어 카피 구조 변경분 (2026-08-06, P-132 — 파일럿 승인, K-06 이후)
 - [x] KC-0603 skip 3문맥 해체: onboarding.skip="건너뛰기"(스텝 전용 복원) · gate.keepBrowsing="계속 둘러보기"(게이트 닫기 신규) · onboarding.resumeLater="나중에 하기"(재개 배너 신규) — 콜사이트 각각 교체. KC-0210 B: order.caption 폐기 → captionWithAvoids/NoAvoids 분기(avoid 유무). KC-0302 B: review.deleteError 신규 — 삭제 뮤테이션 onError 교체. KC-0329 B: reviews.emptySameNat 신규 — 국적 필터 빈 상태 분기(전체 빈은 emptyBody 갱신). KC-0292: langDetected 칩+키 제거 ×10. KC-0324: reviews.anonymous="탈퇴한 유저"(Deleted user) ×10. 전부 ×10 로케일(ko=확정값 그대로 — Codex 재검수 불요). 유닛 13본(키 존재/부재 ×10·값 잠금·게이트/배너 실렌더).
 - [x] P-132/133 합류 teamtest OTA 양 플랫폼(iOS a5dabeaf·안드 dd3e00a5).
+
+## 온보딩 v3 마무리 — 회피 그리드·맵기 히어로·코치마크 (2026-08-06, P-134 — kbap-ob4-b, 온보딩 v3 코드 완결)
+- [x] A. 회피: 칩 → 카테고리 섹션(INGREDIENT_SECTIONS 신설 — 주석 그룹 7군 데이터 승격)+4열 정사각 타일. 실81종 전량, 전 타일 폴백(카테고리 틴트 순환+약어 2글자+이름 — imageRef 슬롯 선반영). 선택 카운트+Clear·0개 안내, 스킵 라벨 "Nothing to avoid", 시안 서브카피 ×10.
+- [x] B. 맵기: 🌶️ 히어로 공존(개정 8/6)+레벨명+👶배지(NONE/MILD, bandRow 38 고정)+슬라이더 무변+사진 레일(레벨당 3장 — dev 실측 15종 CDN 상수 spiceRail.ts, 폴백 색 카드)+레벨 설명(교정 카피 — 기능 약속 0, 2줄 고정 슬롯 36 = P-119 승계). CTA "Finish setup"/스킵 "Skip — decide later".
+- [x] C. 코치마크: ScanCoachMark(스크림+카드·돋보기·RiskMark 24 4행 — 정본 의미 카피·Got it·캡션) — 첫 스캔 결과 1회(AsyncStorage), 재열람 = 스캔 리스트 DishRow 마크 탭 + 상세 verdict 필 탭(마크 데모 대체). 유닛 14본 + 신규 키 패리티 ×10.

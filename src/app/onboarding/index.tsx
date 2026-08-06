@@ -13,7 +13,7 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -40,7 +40,6 @@ import {
   Input,
   RiskMark,
 } from '@/components';
-import { IngredientFilter } from '@/components/IngredientFilter';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
 import { useShake } from '@/lib/useShake';
@@ -55,6 +54,8 @@ import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { generateNickname } from '@/lib/onboarding/autoProfile';
+import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
+import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
 import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
@@ -248,7 +249,7 @@ export default function Onboarding() {
 
   // P-101(Q-23): 6스텝 CTA 공용 푸터 — 어느 스텝에서도 CTA 프레임(y·높이) 픽셀
   // 동일. Skip/노트는 CTA 아래 **고정 높이 슬롯**(없는 스텝은 빈 슬롯 유지).
-  const footer = ((): { label: string; variant?: 'primary' | 'off'; onPress?: () => void; icon?: ReactNode; onSkip?: () => void; note?: string } => {
+  const footer = ((): { label: string; variant?: 'primary' | 'off'; onPress?: () => void; icon?: ReactNode; onSkip?: () => void; skipLabel?: string; note?: string } => {
     switch (step) {
       case 'consent':
         return {
@@ -267,14 +268,16 @@ export default function Onboarding() {
             : t('onboarding.continue'),
           onPress: answerStep,
           onSkip: skipStep,
+          skipLabel: t('onboarding.nothingToAvoid'), // P-134 시안 — 0개 Continue와 동일 동작
         };
       case 'spice':
-        // P-130: 맵기 = 마지막 스텝 — 완료/스킵 즉시 제출(확인 화면 없음)
+        // P-130: 맵기 = 마지막 스텝 — 완료/스킵 즉시 제출. P-134: 시안 라벨
         return {
-          label: t('onboarding.start'),
+          label: t('onboarding.finishSetup'),
           onPress: submitting ? undefined : answerStep,
           icon: submitting ? <Spinner size={18} color="#fff" /> : undefined,
           onSkip: submitting ? undefined : skipStep,
+          skipLabel: t('onboarding.skipDecideLater'),
         };
     }
   })();
@@ -331,6 +334,7 @@ export default function Onboarding() {
           <Restrictions
             selected={Array.from(restrictions)}
             onToggle={(code) => toggle(restrictions, code, setRestrictions)}
+            onClear={() => setRestrictions(new Set())}
             t={t}
           />
         )}
@@ -362,7 +366,7 @@ export default function Onboarding() {
         <View style={styles.skipSlot}>
           {footer.onSkip ? (
             <Pressable onPress={footer.onSkip} hitSlop={8}>
-              <Text style={styles.linkbtn}>{t('onboarding.skip')}</Text>
+              <Text style={styles.linkbtn}>{footer.skipLabel ?? t('onboarding.skip')}</Text>
             </Pressable>
           ) : footer.note ? (
             <Text style={[styles.tag, { textAlign: 'center' }]}>{footer.note}</Text>
@@ -435,6 +439,63 @@ function Consent({
     </View>
   );
 }
+
+/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
+function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
+  const bottomInset = useBottomInset();
+  const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
+  const [error, setError] = useState(false);
+  const isRemote = doc === 'terms' || doc === 'privacy';
+
+  const load = useCallback((d: LegalDoc) => {
+    setError(false);
+    setRemote(null);
+    fetchLegalText(d)
+      .then((text) => setRemote({ doc: d, text }))
+      .catch(() => setError(true));
+  }, []);
+  useEffect(() => {
+    if (doc === 'terms' || doc === 'privacy') load(doc);
+  }, [doc, load]);
+
+  const title =
+    doc === 'terms' ? t('onboarding.termsOfService') : doc === 'privacy' ? t('onboarding.privacyPolicy') : t('profile.safetyNotice');
+  // 안전 고지 = 구 consent 화면 문구 재사용 (아이콘 나열만 삭제 — 스펙)
+  const safetyText = [t('onboarding.consentGuidance'), t('onboarding.consentVary'), t('onboarding.consentYours')].join('\n\n');
+  const remoteReady = remote != null && remote.doc === doc;
+
+  return (
+    <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.sheetScrim} onPress={onClose} />
+      <View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }]}>
+        <View style={styles.grab} />
+        <Text style={styles.sheetTitle}>{title}</Text>
+        <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
+          {isRemote ? (
+            error ? (
+              <View style={styles.legalError}>
+                <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
+                <Pressable onPress={() => doc && load(doc as LegalDoc)} hitSlop={8}>
+                  <Text style={styles.legalRetry}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
+            ) : remoteReady ? (
+              <Text style={styles.legalText}>{remote.text}</Text>
+            ) : (
+              <View style={styles.legalLoading}>
+                <ActivityIndicator color={C.primary} />
+              </View>
+            )
+          ) : (
+            <Text style={styles.legalText}>{safetyText}</Text>
+          )}
+        </ScrollView>
+        <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
+      </View>
+    </Modal>
+  );
+}
+
 
 /** ② 국적 (P-130 v3 → P-133 시안 kbap-ob4 정합).
  *  헤더·검색 고정 + 리스트만 스크롤 · 감지국 핀 카드(기본 선택 — 시안 결정:
@@ -529,87 +590,86 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
   );
 }
 
-/** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
-function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
-  const bottomInset = useBottomInset();
-  const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
-  const [error, setError] = useState(false);
-  const isRemote = doc === 'terms' || doc === 'privacy';
+/** ③ 회피재료 (P-134 시안 Ob4Avoid) — 카테고리 섹션 + 4열 정사각 사진 타일.
+ *  데이터 = 실카탈로그 81종(INGREDIENT_SECTIONS — 시안 30종은 예시). 이미지 URL은
+ *  BE ⑧ 대기 — 현재 전 타일 폴백(카테고리 틴트+약어 2글자+이름, FB_TINT 순환),
+ *  imageRef 생기면 tileImage 슬롯으로 자동 사진 전환. 타일 프레임 불변(P-103). */
+const FB_TINT = ['rgba(226,88,12,0.10)', 'rgba(14,154,167,0.10)', 'rgba(47,143,91,0.10)', 'rgba(160,106,0,0.12)', 'rgba(142,47,60,0.10)', 'rgba(90,82,72,0.10)', 'rgba(226,88,12,0.06)'];
 
-  const load = useCallback((d: LegalDoc) => {
-    setError(false);
-    setRemote(null);
-    fetchLegalText(d)
-      .then((text) => setRemote({ doc: d, text }))
-      .catch(() => setError(true));
-  }, []);
-  useEffect(() => {
-    if (doc === 'terms' || doc === 'privacy') load(doc);
-  }, [doc, load]);
-
-  const title =
-    doc === 'terms' ? t('onboarding.termsOfService') : doc === 'privacy' ? t('onboarding.privacyPolicy') : t('profile.safetyNotice');
-  // 안전 고지 = 구 consent 화면 문구 재사용 (아이콘 나열만 삭제 — 스펙)
-  const safetyText = [t('onboarding.consentGuidance'), t('onboarding.consentVary'), t('onboarding.consentYours')].join('\n\n');
-  const remoteReady = remote != null && remote.doc === doc;
-
-  return (
-    <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} />
-      <View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }]}>
-        <View style={styles.grab} />
-        <Text style={styles.sheetTitle}>{title}</Text>
-        <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
-          {isRemote ? (
-            error ? (
-              <View style={styles.legalError}>
-                <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
-                <Pressable onPress={() => doc && load(doc as LegalDoc)} hitSlop={8}>
-                  <Text style={styles.legalRetry}>{t('common.retry')}</Text>
-                </Pressable>
-              </View>
-            ) : remoteReady ? (
-              <Text style={styles.legalText}>{remote.text}</Text>
-            ) : (
-              <View style={styles.legalLoading}>
-                <ActivityIndicator color={C.primary} />
-              </View>
-            )
-          ) : (
-            <Text style={styles.legalText}>{safetyText}</Text>
-          )}
-        </ScrollView>
-        <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
-      </View>
-    </Modal>
-  );
-}
-
-function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle: (code: string) => void; t: TFn }) {
-  // P-011(B안): CTA는 부모의 하단 스티키 바로 이동 — 81종 목록 아래가 아니라 항상 노출
+function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; onToggle: (code: string) => void; onClear: () => void; t: TFn }) {
+  const [q, setQ] = useState('');
+  const sel = new Set(selected);
+  const query = q.trim().toLowerCase();
+  const match = (code: string) => {
+    if (!query) return true;
+    const item = INGREDIENTS.find((i) => i.code === code);
+    if (!item) return false;
+    return ingredientLabel(item.code).toLowerCase().includes(query) || item.name.toLowerCase().includes(query);
+  };
   return (
     <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.restrictionsSub')} />
-      <View style={styles.notice}>
-        <RiskMark state="caution" size={22} />
-        <Text style={styles.noticeText}>{t('onboarding.restrictionsNotice')}</Text>
+      <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.avoidSub')} />
+      <View style={styles.natSearch}>
+        <IconSearch size={17} color={C.ink2} />
+        <Input value={q} onChangeText={setQ} placeholder={t('restrictionsEdit.searchPlaceholder')} placeholderTextColor={C.ink3} style={styles.natSearchInput} autoCorrect={false} />
       </View>
-      {/* KB-8 override: flat 81-ingredient filter, shared with the profile editor (I6) */}
-      <IngredientFilter selected={selected} onToggle={onToggle} />
+      {/* 선택 카운트 줄 — n selected + Clear / 0개 안내 (시안) */}
+      <View style={styles.avCount}>
+        <Text style={styles.avCountText}>
+          {selected.length ? t('onboarding.selectedCount', { count: selected.length }) : t('onboarding.noneSelectedYet')}
+        </Text>
+        {selected.length > 0 && (
+          <Pressable onPress={onClear} hitSlop={8} testID="avoid-clear">
+            <Text style={styles.avClear}>{t('onboarding.clearSelection')}</Text>
+          </Pressable>
+        )}
+      </View>
+      {INGREDIENT_SECTIONS.map((secDef, si) => {
+        const codes = secDef.codes.filter(match);
+        if (!codes.length) return null;
+        return (
+          <View key={secDef.key} style={{ marginBottom: 14 }}>
+            <Text style={styles.avSecHead}>{t(`ingCat.${secDef.key}`)}</Text>
+            <View style={styles.avGrid}>
+              {codes.map((code) => {
+                const item = INGREDIENTS.find((i) => i.code === code)!;
+                const on = sel.has(code);
+                const label = ingredientLabel(code);
+                return (
+                  <Pressable key={code} style={styles.avTileWrap} onPress={() => onToggle(code)} testID={`avoid-${code}`}>
+                    <View style={[styles.avTile, { backgroundColor: FB_TINT[si % FB_TINT.length] }, on && styles.avTileOn]}>
+                      {/* imageRef 슬롯 — BE ⑧ 배포 시 <Image>로 자동 전환 (현재 전 타일 폴백) */}
+                      <Text style={styles.avAbbr}>{item.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}</Text>
+                      {on && (
+                        <View style={styles.avCheck}>
+                          <IconCheck size={12} color="#fff" />
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.avLabel, on && styles.avLabelOn]} numberOfLines={1}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-/** ⑤ 맵기 (P-080 재설계 → P-081 enum) — 5스톱 스냅 슬라이더(공용 SpiceLevelSlider)
- *  + 🌶️ 카운트 히어로(5C 확정, None=0개 점등).
- *  ⚠️ 🌶️는 헌법 v2.2.0의 유일한 유니코드 이모지 예외 (맵기 표시 한정). */
+/** ④ 맵기 (P-134 시안 Ob4Spice + 개정 8/6) — 🌶️ 히어로(현행 공존 확정) +
+ *  레벨명+👶배지 줄 + 슬라이더(P-098 무변) + 사진 카드 레일(레벨당 3장, DB CDN
+ *  재사용 — 미로드 폴백 색 카드) + 레벨 설명 한 줄(교정 카피 — 기능 약속 금지). */
 function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onDragStateChange?: (d: boolean) => void; t: TFn }) {
   const rank = spiceRank(level);
+  const rail = SPICE_RAIL[level];
+  const kids = level === 'NONE' || level === 'MILD';
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} />
       <View style={{ alignItems: 'center', gap: 10, marginTop: 8 }}>
-        {/* 🌶️ 카운트 히어로 — 점등 수 = 단계 (None=0개, 시안의 1개 점등은 오류 보정) */}
+        {/* 🌶️ 카운트 히어로 — 점등 수 = 단계 (None=0개) · P-119 고정 프레임 유지 */}
         <View style={styles.chiliRow}>
           {Array.from({ length: 4 }).map((_, i) => (
             <Text key={i} style={[styles.chili, i >= rank && styles.chiliDim]}>
@@ -617,14 +677,33 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
             </Text>
           ))}
         </View>
-        <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
-        <View style={styles.analogy}>
-          <Text style={styles.analogyText}>≈ {t(SPICE_LEVEL_EXAMPLE[level])}</Text>
+        {/* 레벨명 + 👶 배지(NONE·MILD 한정 — 헌법 v2.3.1) — 배지 슬롯 고정 높이(프레임 불변) */}
+        <View style={styles.bandRow}>
+          <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
+          {kids && (
+            <View style={styles.kidBadge} testID="kid-badge">
+              <Text style={styles.kidBadgeText}>{t('onboarding.kidsBadge')}</Text>
+            </View>
+          )}
         </View>
       </View>
-      <View style={{ marginTop: 26 }}>
+      <View style={{ marginTop: 18 }}>
         <SpiceLevelSlider level={level} onChange={setLevel} onDragStateChange={onDragStateChange} />
       </View>
+      {/* 사진 카드 레일 — 레벨 전환 시 교체 (DB CDN, 미로드 폴백 = 색 카드) */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 18 }} contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}>
+        {rail.map((f) => (
+          <View key={f.foodId} style={styles.railCard} testID={`rail-${f.foodId}`}>
+            <View style={styles.railImgWrap}>
+              <Image source={{ uri: f.imageUrl }} style={styles.railImg} />
+            </View>
+            <Text style={styles.railName} numberOfLines={1}>{f.name}</Text>
+            <Text style={styles.railKo} numberOfLines={1}>{f.nameKo}</Text>
+          </View>
+        ))}
+      </ScrollView>
+      {/* 레벨 설명 — 교정 카피(맵기 표시 사실만) */}
+      <Text style={styles.spiceDesc}>{t(`onboarding.spiceDesc${rank}`)}</Text>
     </View>
   );
 }
@@ -639,6 +718,29 @@ function ObTitle({ title, sub }: { title: string; sub?: string }) {
 }
 
 const styles = StyleSheet.create({
+  // P-134 회피 타일 그리드 (시안 ob4-tile) — 4열 정사각, 프레임 불변(P-103)
+  avCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, minHeight: 20 },
+  avCountText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  avClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  avSecHead: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3, marginBottom: 7 },
+  avGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  avTileWrap: { width: '22.5%', alignItems: 'center', gap: 4 },
+  avTile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
+  avTileOn: { borderColor: C.primary },
+  avAbbr: { fontFamily: font.displayBlack, fontSize: 18, color: C.ink2, opacity: 0.55 },
+  avCheck: { position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  avLabel: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, maxWidth: '100%' },
+  avLabelOn: { color: C.primaryText },
+  // P-134 맵기 — 배지 줄(고정 높이)·레일·설명
+  bandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38 },
+  kidBadge: { backgroundColor: 'rgba(47,143,91,0.1)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  kidBadgeText: { fontFamily: font.bodyBold, fontSize: 11.5, color: '#2f8f5b' },
+  railCard: { width: 108 },
+  railImgWrap: { width: 108, height: 82, borderRadius: 13, overflow: 'hidden', backgroundColor: C.surface2 },
+  railImg: { width: '100%', height: '100%' },
+  railName: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink, marginTop: 5 },
+  railKo: { fontFamily: font.ko, fontSize: 10.5, color: C.ink3 },
+  spiceDesc: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, height: 36, color: C.ink2, textAlign: 'center', marginTop: 14, paddingHorizontal: 8 }, // P-119 승계: 2줄 고정 슬롯 — 레벨 전환 프레임 불변
   // P-130 v3
   miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 40 },
   miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },

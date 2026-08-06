@@ -575,7 +575,20 @@
     "detectedTag": "Terdeteksi",
     "fromYourPhone": "Dari pengaturan ponsel",
     "nationalityNotice": "Kewarganegaraan tidak bisa diubah setelah pendaftaran. Lainnya tetap bisa diedit di Profil.",
-    "resumeLater": "Nanti saja"
+    "resumeLater": "Nanti saja",
+    "avoidSub": "Pilih semua yang tidak pernah Anda makan. Kami menandai hidangan yang mengandungnya sebelum Anda memesan — alergi, agama, atau selera, kami tidak bertanya.",
+    "selectedCount": "{{count}} dipilih",
+    "noneSelectedYet": "Belum ada yang dipilih",
+    "clearSelection": "Hapus",
+    "nothingToAvoid": "Tidak ada pantangan",
+    "kidsBadge": "👶 Anak-anak bisa makan",
+    "spiceDesc0": "Anda akan melihat tingkat pedas semua hidangan — ini berarti tanpa pedas.",
+    "spiceDesc1": "Hidangan yang lebih pedas dari ringan akan menampilkan tingkatnya dengan jelas.",
+    "spiceDesc2": "Tingkat menengah Korea — kebanyakan sup ada di sini.",
+    "spiceDesc3": "Nyaman dengan pedas Korea yang sesungguhnya.",
+    "spiceDesc4": "Ayo saja — tingkat pedas tetap tampil di semua hidangan.",
+    "finishSetup": "Selesaikan pengaturan",
+    "skipDecideLater": "Lewati — putuskan nanti"
   },
   "editProfile": {
     "title": "Edit profil",
@@ -777,5 +790,22 @@
     "gateCta": "Perbarui sekarang",
     "nudgeText": "Versi baru tersedia",
     "nudgeCta": "Perbarui"
+  },
+  "ingCat": {
+    "dairy": "Susu & hewani",
+    "nuts": "Kacang & biji",
+    "grains": "Biji-bijian & polong",
+    "seafood": "Makanan laut",
+    "meat": "Daging",
+    "produce": "Sayur & rempah",
+    "etc": "Lainnya"
+  },
+  "coach": {
+    "title": "Arti tanda-tanda",
+    "safe": "Tidak ditemukan bahan yang Anda hindari.",
+    "caution": "Mungkin mengandung yang Anda hindari — cek sebelum memesan.",
+    "danger": "Mengandung bahan dalam daftar hindaran Anda.",
+    "unable": "Info bahan kurang — tanyakan staf agar yakin.",
+    "caption": "Tampil sekali — ketuk tanda mana pun untuk melihat lagi."
   }
 }

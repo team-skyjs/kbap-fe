@@ -117,3 +117,14 @@ export function ingredientLabel(code: string): string {
     defaultValue: slug.charAt(0).toUpperCase() + slug.slice(1),
   });
 }
+
+/** P-134(온보딩 v3): 카테고리 섹션 — 파일 내 주석 그룹의 데이터 승격(회피 타일 그리드용). 라벨 = i18n ingCat.<key>. */
+export const INGREDIENT_SECTIONS: { key: string; codes: string[] }[] = [
+  { key: 'dairy', codes: ['EGG', 'MILK', 'DAIRY', 'GOAT_MILK', 'BUTTER', 'GHEE', 'CHEESE', 'GELATIN', 'RENNET', 'HONEY', 'CARMINE'] },
+  { key: 'nuts', codes: ['PEANUT', 'WALNUT', 'PINE_NUT', 'ALMOND', 'CASHEW', 'PISTACHIO', 'HAZELNUT', 'MACADAMIA', 'PECAN', 'BRAZIL_NUT', 'CHESTNUT', 'SESAME', 'SUNFLOWER_SEED', 'MUSTARD'] },
+  { key: 'grains', codes: ['WHEAT', 'BUCKWHEAT', 'BARLEY', 'RYE', 'OAT', 'CORN', 'SOY', 'LUPIN', 'PEA', 'CHICKPEA', 'LENTIL'] },
+  { key: 'seafood', codes: ['SHRIMP', 'SALTED_SHRIMP', 'CRAB', 'CRAYFISH', 'LOBSTER', 'SQUID', 'OCTOPUS', 'OYSTER', 'OYSTER_SAUCE', 'ABALONE', 'MUSSEL', 'CLAM', 'SHORT_NECK_CLAM', 'SCALLOP', 'SEAFOOD', 'FISH', 'MACKEREL', 'SALMON', 'TUNA', 'COD', 'ANCHOVY', 'FISH_SAUCE', 'BROTH', 'DASHI'] },
+  { key: 'meat', codes: ['BEEF', 'PORK', 'LARD', 'TALLOW', 'CHICKEN', 'POULTRY'] },
+  { key: 'produce', codes: ['PEACH', 'TOMATO', 'CELERY', 'POTATO', 'CARROT', 'ONION', 'GARLIC', 'SCALLION', 'CHIVE', 'WILD_CHIVE', 'ASAFOETIDA'] },
+  { key: 'etc', codes: ['ALCOHOL', 'MIRIN', 'COOKING_WINE', 'SULFITES'] },
+];

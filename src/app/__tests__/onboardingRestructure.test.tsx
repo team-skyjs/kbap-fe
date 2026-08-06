@@ -136,9 +136,9 @@ it('P-130: 4스텝 순서 — 약관→국적→회피→맵기(마지막 CTA=�
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 국적
   expect(textNodes(tree, 'onboarding.nationalityTitle').length).toBeGreaterThanOrEqual(1);
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 회피
-  expect(textNodes(tree, 'restrictionsEdit.allIngredients').length).toBeGreaterThanOrEqual(1);
+  expect(textNodes(tree, 'onboarding.avoidSub').length).toBeGreaterThanOrEqual(1); // P-134 타일 그리드
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 맵기 (CTA = 시작하기)
-  const startBtn = tree.root.findAllByType(Btn).find((btn) => String(btn.props.children).includes('onboarding.start'));
+  const startBtn = tree.root.findAllByType(Btn).find((btn) => String(btn.props.children).includes('onboarding.finishSetup'));
   expect(startBtn).toBeTruthy();
   expect(textNodes(tree, 'onboarding.profileTitle')).toHaveLength(0); // 소멸 스텝 잔재 0
 });
@@ -159,7 +159,7 @@ it('P-130: 국적 스텝 — 감지국 최상단 + 국기 이모지 + 모국어�
 it('P-130: 구버전 draft(소멸 스텝) 무해 파싱 — summary → spice로 클램프', async () => {
   mockDraft = { consented: true, step: 'summary', nickname: '구닉네임', nationality: 'JP', language: 'en', restrictions: null, spice: 'HOT', profileImageUrl: 'x', updatedAt: '' };
   const tree = await render();
-  const startBtn = tree.root.findAllByType(Btn).find((btn) => String(btn.props.children).includes('onboarding.start'));
+  const startBtn = tree.root.findAllByType(Btn).find((btn) => String(btn.props.children).includes('onboarding.finishSetup'));
   expect(startBtn).toBeTruthy(); // spice 스텝 도착
 });
 
@@ -198,4 +198,35 @@ it('P-133: 행 62 고정·핀 카드 70·검색 시 핀 숨김·모국어=영어
   const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
   await act(async () => { input.props.onChangeText('kor'); });
   expect(texts()).toHaveLength(0);
+});
+
+/* ---- P-134: 회피 타일 그리드 · 맵기 레일/배지 ---- */
+it('P-134 회피: 81종 타일+폴백 약어·카운트/Clear', async () => {
+  mockDraft = { consented: true, step: 'restrictions', nickname: '', nationality: 'US', language: 'en', restrictions: ['EGG'], spice: 'MEDIUM', updatedAt: '' };
+  const tree = await render();
+  const tiles = new Set(tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('avoid-') && n.props.testID !== 'avoid-clear').map((n) => n.props.testID as string));
+  expect(tiles.size).toBe(81); // 실카탈로그 전량 (시안 30종 아님 — composite/host 중복은 Set으로)
+  const egg = tree.root.findAll((n) => n.props?.testID === 'avoid-EGG')[0];
+  expect(egg.findAll((c) => c.props?.children === 'EG').length).toBeGreaterThanOrEqual(1); // 폴백 약어 2글자
+  expect(textNodes(tree, 'onboarding.selectedCount').length).toBeGreaterThanOrEqual(1); // 1개 선택 카운트
+  const clear = tree.root.findAll((n) => n.props?.testID === 'avoid-clear')[0];
+  await act(async () => { clear.props.onPress(); });
+  expect(textNodes(tree, 'onboarding.noneSelectedYet').length).toBeGreaterThanOrEqual(1); // Clear → 0개 안내
+});
+
+it('P-134 맵기: 레벨 전환 시 레일 교체 · 👶 배지 NONE/MILD 한정', async () => {
+  mockDraft = { consented: true, step: 'spice', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'NONE', updatedAt: '' };
+  const tree = await render();
+  expect(tree.root.findAll((n) => n.props?.testID === 'rail-246').length).toBeGreaterThanOrEqual(1); // NONE 레일(설렁탕)
+  expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBeGreaterThanOrEqual(1); // 👶 NONE
+  // HOT으로 전환 (슬라이더 릴리즈 스냅 — spiceUnset 하네스 지문)
+  const { StyleSheet } = require('react-native');
+  const isTrack = (n: { props?: { style?: unknown; onResponderRelease?: unknown } }) =>
+    typeof n.props?.onResponderRelease === 'function' &&
+    (StyleSheet.flatten(n.props?.style as never) as { height?: number } | undefined)?.height === 84;
+  const track = tree.root.findAll(isTrack)[0];
+  await act(async () => { track.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } }); });
+  await act(async () => { tree.root.findAll(isTrack)[0].props.onResponderRelease({ nativeEvent: { pageX: 225 } }); }); // HOT
+  expect(tree.root.findAll((n) => n.props?.testID === 'rail-483').length).toBeGreaterThanOrEqual(1); // HOT 레일(국물떡볶이)
+  expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0); // 배지 소멸
 });

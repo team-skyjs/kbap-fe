@@ -730,7 +730,20 @@
     "detectedTag": "자동 감지",
     "fromYourPhone": "휴대폰 설정 기준",
     "nationalityNotice": "국적은 가입 후 변경할 수 없어요. 다른 정보는 프로필에서 언제든 수정할 수 있어요.",
-    "resumeLater": "나중에 하기"
+    "resumeLater": "나중에 하기",
+    "avoidSub": "절대 안 먹는 재료를 모두 골라주세요. 주문 전에 그 재료가 든 음식을 표시해 드려요 — 알레르기든 종교든 취향이든, 이유는 묻지 않아요.",
+    "selectedCount": "{{count}}개 선택됨",
+    "noneSelectedYet": "아직 선택한 재료가 없어요",
+    "clearSelection": "모두 해제",
+    "nothingToAvoid": "가리는 재료 없음",
+    "kidsBadge": "👶 아이도 먹을 수 있어요",
+    "spiceDesc0": "모든 음식의 맵기 단계를 보여드려요 — 이 설정은 “맵기 없음”으로 표시돼요.",
+    "spiceDesc1": "순한맛보다 매운 음식은 맵기 단계를 분명하게 보여드려요.",
+    "spiceDesc2": "한국 기준 중간 — 대부분의 찌개가 이 정도예요.",
+    "spiceDesc3": "제대로 매운 한국 음식도 무리 없이 즐겨요.",
+    "spiceDesc4": "얼마든지 — 그래도 모든 음식의 맵기 단계는 계속 보여드려요.",
+    "finishSetup": "설정 마치기",
+    "skipDecideLater": "건너뛰기 — 나중에 정할게요"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
@@ -777,5 +790,22 @@
     "gateCta": "지금 업데이트",
     "nudgeText": "새 버전이 나왔어요",
     "nudgeCta": "업데이트"
+  },
+  "ingCat": {
+    "dairy": "유제품·동물성",
+    "nuts": "견과·씨앗",
+    "grains": "곡물·콩류",
+    "seafood": "해산물",
+    "meat": "육류",
+    "produce": "채소·향신 재료",
+    "etc": "기타"
+  },
+  "coach": {
+    "title": "마크의 의미",
+    "safe": "회피 재료가 발견되지 않았어요.",
+    "caution": "회피 재료가 들어 있을 수 있어요 — 주문 전에 확인하세요.",
+    "danger": "회피 목록의 재료가 들어 있어요.",
+    "unable": "재료 정보가 부족해요 — 직원에게 확인하는 게 안전해요.",
+    "caption": "한 번만 표시돼요 — 마크를 탭하면 다시 볼 수 있어요."
   }
 }

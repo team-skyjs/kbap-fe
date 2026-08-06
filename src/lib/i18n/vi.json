@@ -575,7 +575,20 @@
     "detectedTag": "Đã phát hiện",
     "fromYourPhone": "Theo cài đặt điện thoại",
     "nationalityNotice": "Quốc tịch không thể thay đổi sau khi đăng ký. Mọi thứ khác vẫn chỉnh được trong Hồ sơ.",
-    "resumeLater": "Để sau"
+    "resumeLater": "Để sau",
+    "avoidSub": "Chọn mọi thứ bạn không bao giờ ăn. Chúng tôi đánh dấu món chứa chúng trước khi bạn gọi — dị ứng, tôn giáo hay sở thích, chúng tôi không hỏi.",
+    "selectedCount": "Đã chọn {{count}}",
+    "noneSelectedYet": "Chưa chọn gì",
+    "clearSelection": "Xóa hết",
+    "nothingToAvoid": "Không kiêng gì",
+    "kidsBadge": "👶 Trẻ em ăn được",
+    "spiceDesc0": "Bạn sẽ thấy độ cay của mọi món — thiết lập này nghĩa là không ăn cay.",
+    "spiceDesc1": "Món cay hơn mức nhẹ sẽ hiển thị độ cay rõ ràng.",
+    "spiceDesc2": "Mức trung bình kiểu Hàn — hầu hết món hầm ở mức này.",
+    "spiceDesc3": "Thoải mái với độ cay Hàn Quốc thứ thiệt.",
+    "spiceDesc4": "Cứ tới đi — độ cay vẫn hiển thị trên mọi món.",
+    "finishSetup": "Hoàn tất thiết lập",
+    "skipDecideLater": "Bỏ qua — quyết định sau"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",
@@ -777,5 +790,22 @@
     "gateCta": "Cập nhật ngay",
     "nudgeText": "Đã có phiên bản mới",
     "nudgeCta": "Cập nhật"
+  },
+  "ingCat": {
+    "dairy": "Sữa & nguồn gốc động vật",
+    "nuts": "Hạt & hạt giống",
+    "grains": "Ngũ cốc & đậu",
+    "seafood": "Hải sản",
+    "meat": "Thịt",
+    "produce": "Rau củ & gia vị thơm",
+    "etc": "Khác"
+  },
+  "coach": {
+    "title": "Ý nghĩa các dấu",
+    "safe": "Không thấy nguyên liệu bạn tránh.",
+    "caution": "Có thể chứa thứ bạn tránh — kiểm tra trước khi gọi.",
+    "danger": "Chứa nguyên liệu trong danh sách tránh của bạn.",
+    "unable": "Thiếu thông tin nguyên liệu — hỏi nhân viên cho chắc.",
+    "caption": "Chỉ hiện một lần — chạm vào dấu bất kỳ để xem lại."
   }
 }

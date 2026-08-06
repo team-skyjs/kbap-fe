@@ -575,7 +575,20 @@
     "detectedTag": "Detectado",
     "fromYourPhone": "Según tu teléfono",
     "nationalityNotice": "La nacionalidad no se puede cambiar después del registro. Todo lo demás se puede editar en tu perfil.",
-    "resumeLater": "Quizá luego"
+    "resumeLater": "Quizá luego",
+    "avoidSub": "Elige todo lo que nunca comes. Marcamos los platos que lo contienen antes de pedir — alergia, religión o preferencia, no preguntamos.",
+    "selectedCount": "{{count}} seleccionados",
+    "noneSelectedYet": "Nada seleccionado aún",
+    "clearSelection": "Borrar",
+    "nothingToAvoid": "Nada que evitar",
+    "kidsBadge": "👶 Apto para niños",
+    "spiceDesc0": "Verás el picante de cada plato — esto te marca como sin picante.",
+    "spiceDesc1": "Los platos más picantes que suave mostrarán su nivel claramente.",
+    "spiceDesc2": "El punto medio coreano — la mayoría de los guisos están aquí.",
+    "spiceDesc3": "Cómodo con el picante coreano de verdad.",
+    "spiceDesc4": "A por ello — el picante se sigue mostrando en cada plato.",
+    "finishSetup": "Terminar configuración",
+    "skipDecideLater": "Omitir — decidir luego"
   },
   "editProfile": {
     "title": "Editar perfil",
@@ -778,5 +791,22 @@
     "gateCta": "Actualizar ahora",
     "nudgeText": "Hay una nueva versión disponible",
     "nudgeCta": "Actualizar"
+  },
+  "ingCat": {
+    "dairy": "Lácteos y de origen animal",
+    "nuts": "Frutos secos y semillas",
+    "grains": "Cereales y legumbres",
+    "seafood": "Mariscos",
+    "meat": "Carne",
+    "produce": "Vegetales y aromáticos",
+    "etc": "Otros"
+  },
+  "coach": {
+    "title": "Qué significan las marcas",
+    "safe": "No se encontró ninguno de tus ingredientes evitados.",
+    "caution": "Puede contener algo que evitas — verifica antes de pedir.",
+    "danger": "Contiene ingredientes de tu lista de evitados.",
+    "unable": "Falta información de ingredientes — pregunta al personal.",
+    "caption": "Se muestra una vez — toca cualquier marca para verlo de nuevo."
   }
 }
