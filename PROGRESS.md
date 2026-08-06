@@ -946,3 +946,4 @@
 
 ## 시스템 폰트 전환 (2026-08-06, P-135 — 멘토 #1·25)
 - [x] resolveFont 전면 시스템화 — 전 토큰(display·body·ko 계열)이 스크립트 무관 시스템 폰트+weight 위계(400/500/600/700/800)로 치환(iOS SF/Apple SD Gothic Neo·안드 Roboto/Noto). 키릴 Nunito 강등 분기 소멸. theme.font 키 구조·호출처(fontFamily: font.x) 무수정 — Txt가 전 표면 관통, TextInput은 공용 Input 래퍼에 동일 치환 추가. 워드마크만 Baloo2_800 실로딩(raw Text 우회 — useAppFonts 1종으로 축소). nunito-sans 패키지 제거(참조 0), Noto는 기제거. 폰트 에셋 7종 1,673KB → 1종 409KB(-1.26MB), 번들 총 -1.28MB. 지문 무변(7aa41957) — OTA 발행. 유닛 5본+슬라이더 웨이트 보정.
+- [x] teamtest OTA 양 플랫폼(iOS 8c56dfb8·안드 4bfb389b).
