@@ -89,7 +89,11 @@ jest.mock('@/lib/scan/ocr', () => ({
   ]),
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
-jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) })); // ML Kit 네이티브 차단
+jest.mock('@/lib/data/useFoods', () => ({
+  useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }),
+  // P-136 리치 리스트 행이 상세 프리페치 — 표면 목
+  useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
+})); // ML Kit 네이티브 차단
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { restrictions: [] } }),
@@ -140,9 +144,7 @@ it('P-071: 스캔 완료 시 기본 화면은 사진+마커 — 리스트는 버
   expect(overlays.length).toBe(1);
   expect(overlays[0].props.showMarkers).toBe(true);
   // 리스트 전환 (하단 버튼) → 행 노출 무회귀
-  const listBtn = tree.root.findAll(
-    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showList').length > 0,
-  );
+  const listBtn = tree.root.findAll((n) => n.props?.testID === 'seg-list' && typeof n.props?.onPress === 'function');
   act(() => {
     listBtn[listBtn.length - 1].props.onPress();
   });

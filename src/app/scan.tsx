@@ -47,10 +47,13 @@ import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { assignScanNumbers } from '@/features/scan/capsuleMarker';
 import { ScanMiniSheet } from '@/features/scan/ScanMiniSheet';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
+import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
+import { resolveCurrency } from '@/lib/exchange';
+import { ingredientLabel } from '@/lib/mocks/ingredients';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
-type ResultView = 'original' | 'risk' | 'list';
+type ResultView = 'risk' | 'list';
 type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be';
 
 const ERROR_MSG: Record<ErrorStage, string> = {
@@ -109,6 +112,21 @@ export default function Scan() {
   const [highlightId, setHighlightId] = useState<number | null>(null);
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
+  // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
+  const [cart, setCart] = useState<Map<number, number>>(new Map());
+  const [currency, setCurrency] = useState('USD');
+  useEffect(() => {
+    void resolveCurrency(me?.nationality).then(setCurrency);
+  }, [me?.nationality]);
+  const cartCount = Array.from(cart.values()).reduce((a, b) => a + b, 0);
+  const bumpCart = (itemId: number, delta: number) =>
+    setCart((cur) => {
+      const next = new Map(cur);
+      const q = (next.get(itemId) ?? 0) + delta;
+      if (q <= 0) next.delete(itemId);
+      else next.set(itemId, q);
+      return next;
+    });
   const coachChecked = useRef(false);
   const [facing, setFacing] = useState<CameraType>('back');
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
@@ -390,14 +408,42 @@ export default function Scan() {
     // 사진 위라 부적합. 동작(탭→기피 설정, ×→세션 억제)·노출 조건 무변.
     const showNudge = !isGuest && !!me && me.restrictions.length === 0 && !nudgeHidden;
 
+    // P-136: 주문 카드 진입 — 담기분을 param으로 (2단 확정: 카트 화면 없음)
+    const goOrder = () => {
+      const items = listDishes
+        .filter((d) => (cart.get(d.itemId) ?? 0) > 0)
+        .map((d) => ({ nameKo: d.koreanName ?? d.rawMenuName, name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw }));
+      router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}` as Href);
+    };
+
     return (
-      <View style={styles.root}>
+      <View style={styles.resultRoot}>
+        {/* P-136(S1): 콰이엇 헤더 — 백·타이틀+서브·세그(사진/리스트)·다시찍기
+            (원본 감상 = 사진 뷰 롱프레스 피크 존치 — 원본 세그 소멸) */}
+        <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
+          <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
+            <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+          </Pressable>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
+            <Text style={styles.qhSub}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
+          </View>
+          <View style={styles.seg}>
+            {(['risk', 'list'] as ResultView[]).map((v) => (
+              <Pressable key={v} style={[styles.segBtn, view === v && styles.segBtnOn]} onPress={() => setView(v)} testID={`seg-${v}`}>
+                <Text style={[styles.segText, view === v && styles.segTextOn]}>{t(v === 'risk' ? 'scan.segPhoto' : 'scan.segList')}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable hitSlop={8} onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setPhase('camera'); }} testID="retake">
+            <IconRetry size={19} color={C.ink2} />
+          </Pressable>
+        </View>
+
         {view === 'list' ? (
-          /* P-068 A안: 바닥 여백 = 버튼 영역+여유 — 끝 스크롤 시 마지막 카드가 버튼 위로 완전 가시 */
-          <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: bottom + 140, paddingHorizontal: 16, gap: 10 }}>
+          <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
-              /* 배너도 스태거 대열의 첫 항목으로 (P-032와 간섭 없음 — delay 0) */
-              <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}>
+              <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)} style={{ paddingHorizontal: 16, paddingTop: 10 }}>
                 <Pressable style={styles.nudgeCard} onPress={() => router.push('/profile/restrictions' as Href)}>
                   <View style={styles.nudgeIc}>
                     <IconBulb size={18} color="#fff" />
@@ -406,83 +452,66 @@ export default function Scan() {
                     <Text style={styles.nudgeCardStrong}>{t('scan.nudgeAction')}</Text>
                     {t('scan.nudgeRest')}
                   </Text>
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => {
-                      dismissNudge();
-                      setNudgeHidden(true);
-                    }}
-                  >
+                  <Pressable hitSlop={8} onPress={() => { dismissNudge(); setNudgeHidden(true); }}>
                     <IconClose size={14} color={C.ink3} />
                   </Pressable>
                 </Pressable>
               </Animated.View>
             )}
-            {listDishes.map((d, k) => (
-              /* P-032: Stagger Entrance — 분석 완료 리워드감, 60ms 간격(상한 8행).
-                 reduced-motion 시 전역 config가 entering을 스킵 → 즉시 표시. */
-              <Animated.View
-                key={d.itemId}
-                entering={FadeInDown.delay(Math.min(k, 8) * 60).springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)}
-              >
-                <DishRow dish={d} unmatchedNote={t('scan.unmatchedNote')} riskLabel={t(`risk.${d.risk}`)} onPress={() => openDish(d)} onMarkPress={() => setCoachOpen(true)} />
-              </Animated.View>
-            ))}
+            <ScanRichList
+              dishes={listDishes}
+              avoidNames={(me?.restrictions ?? []).map((r) => ingredientLabel(r.code))}
+              currency={currency}
+              cart={cart}
+              onAdd={(d) => bumpCart(d.itemId, 1)}
+              onRemove={(d) => bumpCart(d.itemId, -1)}
+              onOpen={openDish}
+              onEditProfile={() => router.push('/profile/restrictions' as Href)}
+              t={t}
+            />
           </ScrollView>
         ) : (
-          <ScanResultOverlay
-            photo={photo}
-            dishes={numberedDishes}
-            showMarkers={view === 'risk'}
-            onTapDish={(d) => setHighlightId(d.itemId)}
-            peeking={peeking}
-            onPeekChange={setPeeking}
-          />
+          <View style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
+              <ScanResultOverlay
+                photo={photo}
+                dishes={numberedDishes}
+                showMarkers
+                onTapDish={(d) => setHighlightId(d.itemId)}
+                peeking={peeking}
+                onPeekChange={setPeeking}
+              />
+              <Animated.View style={[styles.miniSheetWrap, { bottom: 12 }, peekFade]} pointerEvents={peeking ? 'none' : 'box-none'} testID="mini-sheet-wrap">
+                <ScanMiniSheet
+                  numbered={numberedDishes}
+                  extras={photoDishes}
+                  highlightId={highlightId}
+                  riskLabel={(r) => t(`risk.${r}`)}
+                  onRowPress={openDish}
+                  bottomOffset={0}
+                />
+              </Animated.View>
+            </View>
+            {/* P-136(S1b 채택분): 범례 4종 + 힌트 — 캡슐·미니시트 유지(KB-240 재발 방지, 번역 패치 이식 금지) */}
+            <View style={styles.legendRow} testID="risk-legend">
+              {(['safe', 'caution', 'danger', 'unable'] as const).map((r) => (
+                <View key={r} style={styles.legendItem}>
+                  <RiskMark state={r} size={13} />
+                  <Text style={styles.legendText}>{t(`risk.${r}`)}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.legendHint}>{t('scan.legendHint')}</Text>
+          </View>
         )}
-        {Close}
+
+        {degraded && <Text style={[styles.degradedNote, { position: 'absolute', bottom: bottom + 78, alignSelf: 'center' }]}>{t('scan.degradedNote')}</Text>}
+        {/* P-136: 하단 주문 필 — 리스트·캡슐 뷰 공유(담김 카운트 동기) */}
+        <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
+
         {GateSheet}
-        {/* P-134: 코치마크 — 1회 + 리스트 마크 탭 재열람 */}
         <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
-        {/* P-064②: 파파고식 — 다크 시트·캡션·범례 삭제, 사진 풀블리드 위에
-            원형 버튼 4개만 플로팅. 사진 뷰(위험도·원본)엔 가독용 하단 그라데이션. */}
-        {/* P-066: 사진이 contain 레터박스일 땐 배경(#16110d)과 겹쳐 안 보이지만,
-            사진·줌이 하단을 채우는 순간 버튼 가독을 보장하는 안전망 — 상시 렌더.
-            피크(원본 감상) 중엔 버튼과 함께 페이드. */}
-        {view === 'risk' && (
-          <Animated.View style={[styles.miniSheetWrap, { bottom: bottom + 96 }, peekFade]} pointerEvents={peeking ? 'none' : 'box-none'}>
-            <ScanMiniSheet
-              numbered={numberedDishes}
-              extras={photoDishes}
-              highlightId={highlightId}
-              riskLabel={(r) => t(`risk.${r}`)}
-              onRowPress={openDish}
-              bottomOffset={0}
-            />
-          </Animated.View>
-        )}
-        {view !== 'list' && (
-          <Animated.View style={[styles.resultShade, peekFade]} pointerEvents="none">
-            <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']} style={StyleSheet.absoluteFill} />
-          </Animated.View>
-        )}
-        {/* P-068 A안: 리스트 뷰 — 배경색 페이드로 버튼 뒤 카드가 자연스럽게 잠김 (배경 #16110d 동색) */}
-        {view === 'list' && (
-          <LinearGradient colors={['rgba(22,17,13,0)', 'rgba(22,17,13,0.96)']} style={styles.listShade} pointerEvents="none" />
-        )}
-        <Animated.View style={[styles.floatBar, { paddingBottom: bottom + 12 }, peekFade]} pointerEvents={peeking ? 'none' : 'auto'}>
-          {degraded && <Text style={styles.degradedNote}>{t('scan.degradedNote')}</Text>}
-          <View style={styles.d3Btns}>
-            <D3Btn icon={<IconList size={22} color="#fff" />} label={t('scan.showList')} active={view === 'list'} onPress={() => setView('list')} />
-            <D3Btn icon={<IconScanLines size={22} color="#fff" />} label={t('scan.showResult')} active={view === 'risk'} onPress={() => setView('risk')} />
-            <D3Btn icon={<IconGallery size={22} color="#fff" />} label={t('scan.showOriginal')} active={view === 'original'} onPress={() => setView('original')} />
-            <D3Btn
-              icon={<IconRetry size={22} color="#fff" />}
-              label={t('scan.retake')}
-              onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setPhase('camera'); }}
-            />
-          </View>
-        </Animated.View>
       </View>
     );
   }
@@ -578,6 +607,16 @@ export default function Scan() {
       {Close}
         {GateSheet}
 
+      {/* P-136 D: 시안 S3 크롬 — 타이틀 줄 + 가로 배지(기능 무변, P-131 위 미세) */}
+      <View style={[styles.camTitleWrap, { top: insets.top + 14 }]} pointerEvents="none">
+        <Text style={styles.camTitle}>{t('scan.cameraTitle')}</Text>
+        {uiDeg !== 0 && (
+          <View style={styles.landscapeBadge} testID="landscape-badge">
+            <Text style={styles.landscapeBadgeText}>{t('scan.landscapeBadge')}</Text>
+          </View>
+        )}
+      </View>
+
       <View style={[styles.bottom, { paddingBottom: bottom + 20 }]}>
         {/* P-131: 배율 프리셋 1x/2x — 핀치와 상호 동기(근사 시 하이라이트) */}
         {granted && (
@@ -594,7 +633,8 @@ export default function Scan() {
             })}
           </View>
         )}
-        <Text style={styles.hint}>{t('scan.hint')}</Text>
+        {/* P-136 D: 방향별 힌트 — 세로 = 줌·전체 담기 / 가로 = 와이드 메뉴판 */}
+        <Text style={styles.hint}>{t(uiDeg === 0 ? 'scan.cameraHintPortrait' : 'scan.cameraHintLandscape')}</Text>
         <View style={styles.camRow}>
           <Pressable style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
             <Animated.View style={uiRotate}>
@@ -620,16 +660,6 @@ export default function Scan() {
         </View>
       </View>
     </View>
-  );
-}
-
-/** P-062③: D3 원형 뷰 버튼 — 활성 = 주황 원(D3 Ask owner 스타일), 라벨 하단 */
-function D3Btn({ icon, label, active, onPress }: { icon: React.ReactNode; label: string; active?: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={styles.d3Btn} onPress={onPress}>
-      <View style={[styles.d3Circle, active && styles.d3CircleOn]}>{icon}</View>
-      <Text style={styles.d3BtnLabel} numberOfLines={1}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -709,6 +739,21 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
 }
 
 const styles = StyleSheet.create({
+  // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
+  resultRoot: { flex: 1, backgroundColor: '#fff' },
+  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair, backgroundColor: '#fff' },
+  qhBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  qhTitle: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
+  qhSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
+  segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
+  segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  segText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink3 },
+  segTextOn: { color: C.ink },
+  legendRow: { flexDirection: 'row', justifyContent: 'center', gap: 14, paddingTop: 9, backgroundColor: '#fff' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendText: { fontFamily: font.body, fontSize: 11, color: C.ink2 },
+  legendHint: { fontFamily: font.body, fontSize: 10.5, color: C.ink3, textAlign: 'center', paddingVertical: 7, backgroundColor: '#fff' },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
   close: { position: 'absolute', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
@@ -717,6 +762,10 @@ const styles = StyleSheet.create({
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
+  camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 8 },
+  camTitle: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff' },
+  landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 11, color: '#fff' },
   camRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   zoomRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 10 },
   zoomPill: { minWidth: 40, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
@@ -753,12 +802,6 @@ const styles = StyleSheet.create({
   miniSheetWrap: { position: 'absolute', left: 10, right: 10 },
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
-  floatBar: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', gap: 8 },
-  d3Btns: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'space-evenly', marginTop: 2 },
-  d3Btn: { alignItems: 'center', gap: 6, width: 76 },
-  d3Circle: { width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
-  d3CircleOn: { backgroundColor: C.primary },
-  d3BtnLabel: { fontFamily: font.bodyBold, fontSize: 11, color: 'rgba(255,255,255,0.85)' },
   // list rows
   row: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderRadius: 14, paddingHorizontal: 13, paddingVertical: 12 },
   rowName: { fontFamily: font.koBold, fontSize: 15, color: C.ink },

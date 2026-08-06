@@ -243,7 +243,20 @@
     "spikeNote": "Spike: rủi ro được lấy trực tiếp từ máy chủ (hiện là dữ liệu giả).",
     "nudgeAction": "Thiết lập nguyên liệu cần tránh",
     "nudgeRest": " để chúng tôi chỉ ra món nên bỏ qua trong thực đơn này",
-    "permissionSettingsBody": "Quyền camera đang tắt. Hãy cho phép trong Cài đặt."
+    "permissionSettingsBody": "Quyền camera đang tắt. Hãy cho phép trong Cài đặt.",
+    "resultsSub": "Đã đọc {{count}} món · KO → EN",
+    "segPhoto": "Ảnh",
+    "segList": "Danh sách",
+    "checkedAgainst": "Đã đối chiếu với hồ sơ của bạn",
+    "mayContain": "Có thể chứa",
+    "notInDb": "Chưa có trong dữ liệu — hãy hỏi nhân viên.",
+    "viewOrder": "{{count}} món · Xem đơn",
+    "legendHint": "Chạm món để xem nguyên liệu · véo để phóng to",
+    "listFootNote": "Thông tin món dựa trên ảnh — hỏi nhân viên nếu chưa chắc.",
+    "cameraTitle": "Quét thực đơn",
+    "cameraHintPortrait": "Véo để phóng to · gọn cả thực đơn",
+    "cameraHintLandscape": "Thực đơn ngang chụp ngang sẽ vừa hơn",
+    "landscapeBadge": "Ngang"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "Đặt món này",
     "captionWithAvoids": "Hãy cho nhân viên xem món bạn gọi và nguyên liệu bạn tránh.",
-    "captionNoAvoids": "Hãy cho nhân viên xem món bạn gọi."
+    "captionNoAvoids": "Hãy cho nhân viên xem món bạn gọi.",
+    "mirrorTitle": "Đây là nội dung nhân viên sẽ đọc",
+    "estimatedTotal": "Tổng ước tính",
+    "done": "Xong",
+    "mirrorAvoid": "Vui lòng bỏ: {{list}}"
   },
   "profile": {
     "rankingTitle": "Xếp hạng",

@@ -243,7 +243,20 @@
     "spikeNote": "Spike：风险数据实时来自后端（目前为模拟数据）。",
     "nudgeAction": "设置忌口食材",
     "nudgeRest": "后，我们会在这份菜单上标出该避开的菜",
-    "permissionSettingsBody": "相机权限已关闭。请在设置中允许。"
+    "permissionSettingsBody": "相机权限已关闭。请在设置中允许。",
+    "resultsSub": "识别 {{count}} 道菜 · KO → EN",
+    "segPhoto": "照片",
+    "segList": "列表",
+    "checkedAgainst": "已按你的资料核对",
+    "mayContain": "可能含有",
+    "notInDb": "尚未收录的菜品——请向店员确认。",
+    "viewOrder": "已选 {{count}} 项 · 查看订单",
+    "legendHint": "点按查看食材 · 捏合缩放",
+    "listFootNote": "菜品信息基于照片匹配——不确定时请向店员确认。",
+    "cameraTitle": "扫描菜单",
+    "cameraHintPortrait": "捏合缩放 · 拍下整份菜单",
+    "cameraHintLandscape": "宽幅菜单横屏更合适",
+    "landscapeBadge": "横屏"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "点这道菜",
     "captionWithAvoids": "请向店员出示要点的菜和不能吃的食材。",
-    "captionNoAvoids": "请向店员出示要点的菜。"
+    "captionNoAvoids": "请向店员出示要点的菜。",
+    "mirrorTitle": "店员将看到的内容",
+    "estimatedTotal": "预计总额",
+    "done": "完成",
+    "mirrorAvoid": "请去掉：{{list}}"
   },
   "profile": {
     "rankingTitle": "排名",

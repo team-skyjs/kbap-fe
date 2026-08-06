@@ -243,7 +243,20 @@
     "spikeNote": "Spike: el riesgo llega en vivo desde el backend (actualmente simulado).",
     "nudgeAction": "Configura tus ingredientes a evitar",
     "nudgeRest": " y te señalaremos qué saltarte en este menú",
-    "permissionSettingsBody": "El acceso a la cámara está desactivado. Permítelo en Ajustes."
+    "permissionSettingsBody": "El acceso a la cámara está desactivado. Permítelo en Ajustes.",
+    "resultsSub": "{{count}} platos leídos · KO → EN",
+    "segPhoto": "Foto",
+    "segList": "Lista",
+    "checkedAgainst": "Comprobado con tu perfil",
+    "mayContain": "Puede contener",
+    "notInDb": "Aún no está en nuestra base — pregunta al personal.",
+    "viewOrder": "{{count}} platos · Ver pedido",
+    "legendHint": "Toca un plato para ver ingredientes · pellizca para zoom",
+    "listFootNote": "La información es nuestra mejor coincidencia — confirma con el personal si dudas.",
+    "cameraTitle": "Escanear menú",
+    "cameraHintPortrait": "Pellizca para zoom · encuadra todo el menú",
+    "cameraHintLandscape": "Los menús anchos caben mejor en horizontal",
+    "landscapeBadge": "Horizontal"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "Pedir este plato",
     "captionWithAvoids": "Muestra al personal tu pedido y los ingredientes que evitas.",
-    "captionNoAvoids": "Muestra al personal tu pedido."
+    "captionNoAvoids": "Muestra al personal tu pedido.",
+    "mirrorTitle": "Esto es lo que leerá el personal",
+    "estimatedTotal": "Total estimado",
+    "done": "Listo",
+    "mirrorAvoid": "Sin: {{list}}, por favor"
   },
   "profile": {
     "rankingTitle": "Clasificación",

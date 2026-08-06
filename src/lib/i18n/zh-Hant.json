@@ -243,7 +243,20 @@
     "spikeNote": "Spike：風險由後端即時提供（目前為模擬資料）。",
     "nudgeAction": "設定忌口食材",
     "nudgeRest": "後，我們會在這份菜單上標出該避開的菜",
-    "permissionSettingsBody": "相機權限已關閉。請在設定中允許。"
+    "permissionSettingsBody": "相機權限已關閉。請在設定中允許。",
+    "resultsSub": "識別 {{count}} 道菜 · KO → EN",
+    "segPhoto": "照片",
+    "segList": "列表",
+    "checkedAgainst": "已按你的資料核對",
+    "mayContain": "可能含有",
+    "notInDb": "尚未收錄的菜品——請向店員確認。",
+    "viewOrder": "已選 {{count}} 項 · 查看訂單",
+    "legendHint": "點按查看食材 · 捏合縮放",
+    "listFootNote": "菜品資訊基於照片匹配——不確定時請向店員確認。",
+    "cameraTitle": "掃描菜單",
+    "cameraHintPortrait": "捏合縮放 · 拍下整份菜單",
+    "cameraHintLandscape": "寬幅菜單橫屏更合適",
+    "landscapeBadge": "橫屏"
   },
   "owner": {
     "caption": "將此畫面出示給餐廳員工看",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "點這道菜",
     "captionWithAvoids": "請向店員出示要點的菜和不能吃的食材。",
-    "captionNoAvoids": "請向店員出示要點的菜。"
+    "captionNoAvoids": "請向店員出示要點的菜。",
+    "mirrorTitle": "店員將看到的內容",
+    "estimatedTotal": "預計總額",
+    "done": "完成",
+    "mirrorAvoid": "請去掉：{{list}}"
   },
   "profile": {
     "rankingTitle": "排名",

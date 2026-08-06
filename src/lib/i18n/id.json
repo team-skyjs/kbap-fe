@@ -243,7 +243,20 @@
     "spikeNote": "Spike: risiko diambil langsung dari backend (saat ini tiruan).",
     "nudgeAction": "Atur bahan pantanganmu",
     "nudgeRest": " dan kami akan menandai yang perlu dihindari di menu ini",
-    "permissionSettingsBody": "Akses kamera dimatikan. Izinkan di Pengaturan."
+    "permissionSettingsBody": "Akses kamera dimatikan. Izinkan di Pengaturan.",
+    "resultsSub": "{{count}} hidangan terbaca · KO → EN",
+    "segPhoto": "Foto",
+    "segList": "Daftar",
+    "checkedAgainst": "Dicek dengan profil Anda",
+    "mayContain": "Mungkin mengandung",
+    "notInDb": "Belum ada di data kami — tanyakan staf.",
+    "viewOrder": "{{count}} item · Lihat pesanan",
+    "legendHint": "Ketuk hidangan untuk bahan · cubit untuk zoom",
+    "listFootNote": "Info hidangan berdasarkan foto — pastikan ke staf jika ragu.",
+    "cameraTitle": "Pindai menu",
+    "cameraHintPortrait": "Cubit untuk zoom · muat seluruh menu",
+    "cameraHintLandscape": "Menu lebar lebih pas dalam mode lanskap",
+    "landscapeBadge": "Lanskap"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "Pesan menu ini",
     "captionWithAvoids": "Tunjukkan pesanan dan bahan yang Anda hindari kepada staf.",
-    "captionNoAvoids": "Tunjukkan pesanan Anda kepada staf."
+    "captionNoAvoids": "Tunjukkan pesanan Anda kepada staf.",
+    "mirrorTitle": "Ini yang akan dibaca staf",
+    "estimatedTotal": "Perkiraan total",
+    "done": "Selesai",
+    "mirrorAvoid": "Tolong tanpa: {{list}}"
   },
   "profile": {
     "rankingTitle": "Peringkat",

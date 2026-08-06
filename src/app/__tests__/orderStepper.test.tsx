@@ -41,6 +41,9 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: { nameKo: '김치찌개' } }),
 }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { restrictions: [] } }) }));
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 
 import OrderCard from '../food/[id]/order';
 
@@ -52,8 +55,11 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
-const stepBtns = (t: ReactTestRenderer) =>
-  t.root.findAll((n) => n.props?.accessibilityState === undefined && typeof n.props?.onPress === 'function' && n.props?.disabled !== undefined);
+// P-136: Done이 Btn(disabled 보유)으로 바뀌어 disabled 휴리스틱이 오탐 — testID 명시
+const stepBtns = (t: ReactTestRenderer) => [
+  t.root.findAll((n) => n.props?.testID === 'qty-dec' && typeof n.props?.onPress === 'function')[0],
+  t.root.findAll((n) => n.props?.testID === 'qty-inc' && typeof n.props?.onPress === 'function')[0],
+];
 
 it('+/−가 문장 {n}개를 갱신하고 1~5에서 클램프·비활성', () => {
   const tree = render(<OrderCard />);

@@ -243,7 +243,20 @@
     "spikeNote": "スパイク：リスクはバックエンドからライブ取得します（現在はモック）。",
     "nudgeAction": "避けたい食材を設定",
     "nudgeRest": "すると、このメニューで避けるべきものをお知らせします",
-    "permissionSettingsBody": "カメラへのアクセスがオフです。設定で許可してください。"
+    "permissionSettingsBody": "カメラへのアクセスがオフです。設定で許可してください。",
+    "resultsSub": "{{count}}品を認識 · KO → EN",
+    "segPhoto": "写真",
+    "segList": "リスト",
+    "checkedAgainst": "あなたのプロフィール基準で確認済み",
+    "mayContain": "含む可能性",
+    "notInDb": "まだデータにないメニューです。店員にご確認ください。",
+    "viewOrder": "{{count}}品 · 注文を見る",
+    "legendHint": "タップで食材を確認 · ピンチでズーム",
+    "listFootNote": "写真から最も近い情報を表示しています — 不確かな場合は店員にご確認を。",
+    "cameraTitle": "メニューをスキャン",
+    "cameraHintPortrait": "ピンチでズーム · メニュー全体を収めて",
+    "cameraHintLandscape": "横長メニューは横向きがぴったり",
+    "landscapeBadge": "横向き"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "このメニューを注文する",
     "captionWithAvoids": "注文するメニューと食べられない食材を店員に見せてください。",
-    "captionNoAvoids": "注文するメニューを店員に見せてください。"
+    "captionNoAvoids": "注文するメニューを店員に見せてください。",
+    "mirrorTitle": "店員が読む内容です",
+    "estimatedTotal": "合計(概算)",
+    "done": "完了",
+    "mirrorAvoid": "抜いてください: {{list}}"
   },
   "profile": {
     "rankingTitle": "ランキング",

@@ -156,12 +156,13 @@ describe('상세 CTA 노출 조건 — safe/caution만', () => {
 });
 
 describe('원카드 화면', () => {
-  it('기피 보유 → 주문 문장 + 고지 문단 렌더', () => {
+  it('기피 보유 → 주문 문장 + 고지 문단 렌더 (P-136: 캡션→정방향 미러)', () => {
     const s = flat(render(<OrderCard />));
     expect(s).toContain('김치찌개');
     expect(s).toContain('개 주세요.');
     expect(s).toContain('저는 ');
-    expect(s).toContain('order.caption');
+    expect(s).toContain('order.mirrorTitle');
+    expect(s).toContain('order.mirrorAvoid');
   });
 
   it('기피 0개 → 고지 생략 (순수 주문 카드)', () => {

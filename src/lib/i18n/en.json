@@ -239,7 +239,20 @@
     "spikeNote": "Spike: risk comes live from the backend (currently a mock).",
     "nudgeAction": "Set your avoid list",
     "nudgeRest": " and we'll flag what to skip on this menu",
-    "permissionSettingsBody": "Camera access is turned off. Allow it in Settings to scan menus."
+    "permissionSettingsBody": "Camera access is turned off. Allow it in Settings to scan menus.",
+    "resultsSub": "{{count}} dishes read · KO → EN",
+    "segPhoto": "Photo",
+    "segList": "List",
+    "checkedAgainst": "Checked against your profile",
+    "mayContain": "May contain",
+    "notInDb": "Not in our database yet — ask the staff to be sure.",
+    "viewOrder": "{{count}} items · View order",
+    "legendHint": "Tap a dish for ingredients · pinch to zoom",
+    "listFootNote": "Dish info is our best match from the photo — confirm with staff if unsure.",
+    "cameraTitle": "Scan menu",
+    "cameraHintPortrait": "Pinch to zoom · fit the whole menu",
+    "cameraHintLandscape": "Wide menus fit better in landscape",
+    "landscapeBadge": "Landscape"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",
@@ -248,7 +261,11 @@
   "order": {
     "cta": "Order this dish",
     "captionWithAvoids": "Show this screen to the staff — your order and the ingredients you avoid.",
-    "captionNoAvoids": "Show this screen to the staff to order."
+    "captionNoAvoids": "Show this screen to the staff to order.",
+    "mirrorTitle": "This is what staff will read",
+    "estimatedTotal": "Estimated total",
+    "done": "Done",
+    "mirrorAvoid": "Please leave out: {{list}}"
   },
   "profile": {
     "rankingTitle": "Ranking",

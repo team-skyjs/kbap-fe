@@ -243,7 +243,20 @@
     "spikeNote": "Spike: 위험도는 백엔드에서 실시간으로 와요 (현재는 mock).",
     "nudgeAction": "못 먹는 재료를 설정",
     "nudgeRest": "하면 내 기준으로 음식별 위험도가 표시돼요",
-    "permissionSettingsBody": "카메라 접근이 꺼져 있어요. 설정에서 허용해 주세요."
+    "permissionSettingsBody": "카메라 접근이 꺼져 있어요. 설정에서 허용해 주세요.",
+    "resultsSub": "{{count}}개 메뉴 인식 · KO → EN",
+    "segPhoto": "사진",
+    "segList": "리스트",
+    "checkedAgainst": "내 프로필 기준으로 확인했어요",
+    "mayContain": "포함 가능",
+    "notInDb": "아직 저희 데이터에 없는 메뉴예요. 직원에게 확인해 주세요.",
+    "viewOrder": "{{count}}개 담김 · 주문 보기",
+    "legendHint": "메뉴를 탭하면 재료 확인 · 핀치로 확대",
+    "listFootNote": "사진 기준으로 가장 가까운 정보를 보여드려요 — 확실하지 않으면 직원에게 확인하세요.",
+    "cameraTitle": "메뉴판 스캔",
+    "cameraHintPortrait": "핀치로 확대 · 메뉴판 전체가 들어오게",
+    "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
+    "landscapeBadge": "가로 모드"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",
@@ -252,7 +265,11 @@
   "order": {
     "cta": "이 메뉴 주문하기",
     "captionWithAvoids": "주문할 메뉴와 못 먹는 재료를 가게 직원에게 보여주세요.",
-    "captionNoAvoids": "주문할 메뉴를 가게 직원에게 보여주세요."
+    "captionNoAvoids": "주문할 메뉴를 가게 직원에게 보여주세요.",
+    "mirrorTitle": "직원이 읽게 될 내용이에요",
+    "estimatedTotal": "예상 합계",
+    "done": "완료",
+    "mirrorAvoid": "빼 주세요: {{list}}"
   },
   "profile": {
     "rankingTitle": "랭킹",

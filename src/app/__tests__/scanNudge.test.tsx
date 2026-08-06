@@ -91,7 +91,11 @@ jest.mock('@/lib/scan/ocr', () => ({
   ]),
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
-jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) }));
+jest.mock('@/lib/data/useFoods', () => ({
+  useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }),
+  // P-136 리치 리스트 행이 상세 프리페치 — 표면 목
+  useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
+}));
 const mockIsGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
 const mockUseMe = jest.fn();
@@ -136,9 +140,7 @@ async function renderResult(): Promise<ReactTestRenderer> {
     await gallery[0].props.onPress();
   });
   // P-071: 기본=risk — 배너는 목록 뷰 전용(P-057)이라 리스트로 전환해 검증
-  const toList = tree.root.findAll(
-    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showList').length > 0,
-  );
+  const toList = tree.root.findAll((n) => n.props?.testID === 'seg-list' && typeof n.props?.onPress === 'function');
   act(() => {
     toList[toList.length - 1].props.onPress();
   });
@@ -194,9 +196,7 @@ it('닫기 → 세션 내 재마운트에도 미노출 (재실행 시 리셋은 
 it('P-057: 목록 뷰 전용 — 위험도 토글로 전환하면 배너 미렌더', async () => {
   const tree = await renderResult();
   expect(nudgeCount(tree)).toBeGreaterThanOrEqual(1);
-  const riskToggle = tree.root.findAll(
-    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'scan.showResult').length > 0,
-  );
+  const riskToggle = tree.root.findAll((n) => n.props?.testID === 'seg-risk' && typeof n.props?.onPress === 'function');
   expect(riskToggle.length).toBeGreaterThanOrEqual(1);
   act(() => {
     riskToggle[riskToggle.length - 1].props.onPress();
