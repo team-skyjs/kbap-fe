@@ -65,7 +65,7 @@ it('라벨 5개 전부 렌더 — 선택(MEDIUM)만 강조 스타일', async () 
   expect(labels).toHaveLength(5);
   const byKey = Object.fromEntries(labels.map((n) => [n.props.children, flat(n.props.style)]));
   expect(byKey['spice.band.2'].color).not.toBe(byKey['spice.band.0'].color); // 선택 잉크 vs 비선택 회색
-  expect(byKey['spice.band.2'].fontFamily).not.toBe(byKey['spice.band.0'].fontFamily); // 볼드 전환
+  expect(byKey['spice.band.2'].fontWeight).not.toBe(byKey['spice.band.0'].fontWeight); // 볼드 전환 (P-135: 시스템 폰트 = weight 위계)
 });
 
 it('릴리즈 = 최근접 스톱 스냅 (트랙 레벨 제스처 — 개별 탭 타깃 없음)', async () => {

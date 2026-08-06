@@ -14,15 +14,22 @@
 import * as React from 'react';
 import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { color as C } from '@/lib/theme';
+import { resolveFont } from '@/lib/i18n/fonts';
 import { IconChevronDown } from './icons';
 
 export const KEYBOARD_ACCESSORY_ID = 'kbap-kbd-dismiss';
 
-/** 공용 TextInput — iOS 액세서리 바 연결 내장. 앱의 모든 텍스트 입력은 이걸로. */
-export const Input = React.forwardRef<TextInput, TextInputProps>(function Input(props, ref) {
+/** 공용 TextInput — iOS 액세서리 바 연결 내장. 앱의 모든 텍스트 입력은 이걸로.
+ *  P-135: Txt와 동일하게 가상 폰트 토큰 → 시스템 폰트+weight 치환(TextInput은
+ *  Txt 미경유라 여기서 — 미치환 시 미등록 패밀리 폴백 경고). */
+export const Input = React.forwardRef<TextInput, TextInputProps>(function Input({ style, ...props }, ref) {
+  const flat = StyleSheet.flatten(style) as { fontFamily?: string } | undefined;
+  const override = resolveFont(flat?.fontFamily, 'latin');
+  const { fontFamily: _drop, ...restStyle } = flat ?? {};
   return (
     <TextInput
       ref={ref}
+      style={override ? [restStyle, override] : style}
       inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_ACCESSORY_ID : undefined}
       {...props}
     />

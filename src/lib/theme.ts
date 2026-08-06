@@ -59,17 +59,18 @@ export const radius = { lg: 20, sm: 15, xs: 11, pill: 999 } as const;
  * Font families. Each (family, weight) is a distinct registered fontFamily key
  * (RN can't synthesize weights for custom fonts) — load via useAppFonts().
  */
+/** P-135(멘토 #1·25): 값은 **가상 패밀리 토큰** — 실제 렌더는 Txt/resolveFont가
+ *  시스템 폰트 + fontWeight로 치환(iOS SF/Apple SD Gothic Neo · 안드 Roboto/Noto).
+ *  예외: 로고 워드마크만 Baloo2_800ExtraBold 실로딩(Brand.tsx — raw Text로 우회).
+ *  키 구조·호출처(`fontFamily: font.x`)는 무수정 유지가 요건. */
 export const font = {
-  // Display (Baloo 2) — titles / wordmark / big numbers
   displaySemi: 'Baloo2_600SemiBold',
   display: 'Baloo2_700Bold',
-  displayBlack: 'Baloo2_800ExtraBold',
-  // Body (Nunito Sans) — reader text (English-first)
+  displayBlack: 'Baloo2_800ExtraBold', // 로고 전용으로만 실존 — 그 외 표면은 시스템 800 치환
   body: 'NunitoSans_400Regular',
   bodySemi: 'NunitoSans_600SemiBold',
   bodyBold: 'NunitoSans_700Bold',
   bodyBlack: 'NunitoSans_800ExtraBold',
-  // Korean (Noto Sans KR) — place=ko strings (owner confirmation, menu names)
   ko: 'NotoSansKR_400Regular',
   koMed: 'NotoSansKR_500Medium',
   koBold: 'NotoSansKR_700Bold',

@@ -943,3 +943,6 @@
 - [x] B. 맵기: 🌶️ 히어로 공존(개정 8/6)+레벨명+👶배지(NONE/MILD, bandRow 38 고정)+슬라이더 무변+사진 레일(레벨당 3장 — dev 실측 15종 CDN 상수 spiceRail.ts, 폴백 색 카드)+레벨 설명(교정 카피 — 기능 약속 0, 2줄 고정 슬롯 36 = P-119 승계). CTA "Finish setup"/스킵 "Skip — decide later".
 - [x] C. 코치마크: ScanCoachMark(스크림+카드·돋보기·RiskMark 24 4행 — 정본 의미 카피·Got it·캡션) — 첫 스캔 결과 1회(AsyncStorage), 재열람 = 스캔 리스트 DishRow 마크 탭 + 상세 verdict 필 탭(마크 데모 대체). 유닛 14본 + 신규 키 패리티 ×10.
 - [x] teamtest OTA 양 플랫폼(iOS ab6c598f·안드 d5f7cec8).
+
+## 시스템 폰트 전환 (2026-08-06, P-135 — 멘토 #1·25)
+- [x] resolveFont 전면 시스템화 — 전 토큰(display·body·ko 계열)이 스크립트 무관 시스템 폰트+weight 위계(400/500/600/700/800)로 치환(iOS SF/Apple SD Gothic Neo·안드 Roboto/Noto). 키릴 Nunito 강등 분기 소멸. theme.font 키 구조·호출처(fontFamily: font.x) 무수정 — Txt가 전 표면 관통, TextInput은 공용 Input 래퍼에 동일 치환 추가. 워드마크만 Baloo2_800 실로딩(raw Text 우회 — useAppFonts 1종으로 축소). nunito-sans 패키지 제거(참조 0), Noto는 기제거. 폰트 에셋 7종 1,673KB → 1종 409KB(-1.26MB), 번들 총 -1.28MB. 지문 무변(7aa41957) — OTA 발행. 유닛 5본+슬라이더 웨이트 보정.

@@ -77,28 +77,17 @@ const KO_WEIGHT: Record<string, TextStyle['fontWeight']> = {
   [latin.koBold]: '700',
 };
 
-// Cyrillic (ru): Baloo 2에 키릴 자모가 없어 display 역할만 Nunito로 강등
-// (Nunito Sans는 키릴 서브셋 보유 — 번들 유지 대상이라 그대로).
-const CYRILLIC_FAMILY: Partial<Record<FontRole, string>> = {
-  display: latin.bodyBold,
-  displaySemi: latin.bodySemi,
-  displayBlack: latin.bodyBlack,
-};
-
 /** Txt가 style에 덧씌울 폰트 치환. null = 그대로 둠. */
 export type FontOverride = { fontFamily?: string; fontWeight?: TextStyle['fontWeight'] };
 
-export function resolveFont(family: string | undefined, script: ScriptKey): FontOverride | null {
+export function resolveFont(family: string | undefined, _script: ScriptKey): FontOverride | null {
   if (!family) return null;
-  // place=ko 가상 패밀리 — 리더 언어와 무관하게 항상 시스템 폰트 + weight
+  // place=ko 가상 패밀리 — 항상 시스템 폰트 + weight
   if (KO_WEIGHT[family]) return { fontWeight: KO_WEIGHT[family] };
   const role = ROLE_OF_LATIN[family];
-  if (!role) return null; // 알 수 없는 패밀리 — 손대지 않음
-  if (script === 'latin') return null; // 라틴은 번들 브랜드 폰트 그대로
-  if (script === 'cyrillic') {
-    const fam = CYRILLIC_FAMILY[role];
-    return fam ? { fontFamily: fam } : null; // body 역할은 이미 Nunito
-  }
-  // kr/sc/tc/jp/thai: 시스템 폰트 + weight
+  if (!role) return null; // 알 수 없는 패밀리(로고 Baloo 등) — 손대지 않음
+  // P-135(멘토 #1·25): 로고 외 전면 시스템 — 라틴 포함 전 스크립트가 시스템 폰트
+  // + weight (iOS SF/Apple SD Gothic Neo · 안드 Roboto/Noto 자동). 키릴 강등
+  // 분기 소멸(시스템이 키릴 네이티브 커버 — Nunito 번들 제거).
   return { fontWeight: ROLE_WEIGHT[role] };
 }

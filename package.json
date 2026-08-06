@@ -5,7 +5,6 @@
   "dependencies": {
     "@amplitude/analytics-react-native": "^1.6.8",
     "@expo-google-fonts/baloo-2": "^0.4.2",
-    "@expo-google-fonts/nunito-sans": "^0.4.2",
     "@expo/ui": "~56.0.18",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-firebase/app": "^25.1.0",
