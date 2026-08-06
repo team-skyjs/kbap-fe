@@ -565,7 +565,11 @@
       "unable": "Informasi belum cukup untuk menilai — putuskan dengan hati-hati."
     },
     "summaryTitle": "Profil keamananmu sudah siap",
-    "summarySub": "Periksa pengaturanmu — ketuk baris untuk mengubah."
+    "summarySub": "Periksa pengaturanmu — ketuk baris untuk mengubah.",
+    "nationalityTitle": "Anda berasal dari negara mana?",
+    "nationalitySub": "Ulasan dari negara Anda akan diprioritaskan.",
+    "nationalitySearch": "Cari negara",
+    "detectedTag": "Terdeteksi"
   },
   "editProfile": {
     "title": "Edit profil",

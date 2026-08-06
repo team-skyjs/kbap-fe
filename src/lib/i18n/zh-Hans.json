@@ -565,7 +565,11 @@
       "unable": "信息不足，无法判断 — 请谨慎决定。"
     },
     "summaryTitle": "你的安全档案已就绪",
-    "summarySub": "确认你的设置，点按行即可修改。"
+    "summarySub": "确认你的设置，点按行即可修改。",
+    "nationalityTitle": "你来自哪个国家?",
+    "nationalitySub": "我们会优先展示来自你国家的评价。",
+    "nationalitySearch": "搜索国家",
+    "detectedTag": "已检测"
   },
   "editProfile": {
     "title": "编辑资料",

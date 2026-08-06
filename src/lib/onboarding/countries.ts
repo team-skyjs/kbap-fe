@@ -54,12 +54,42 @@ const LANG_BY_COUNTRY: Record<string, SupportedLang> = {
   GQ: 'es',
 };
 
-/** Endonyms for the more common picks (decorative; omitted → show name only). */
+/** Endonyms — P-130(온보딩 v3): 전 국가 보강(모국어 국가명 메인 표기).
+ *  영어명과 동일한 곳은 동일 값 — 표시 로직이 보조(영어명)를 생략한다. */
 const NATIVE: Record<string, string> = {
-  JP: '日本', US: 'USA', TH: 'ไทย', VN: 'Việt Nam', FR: 'France', DE: 'Deutschland',
-  CN: '中国', TW: '台灣', HK: '香港', SG: 'Singapore', ID: 'Indonesia', KR: '한국',
-  ES: 'España', MX: 'México', AR: 'Argentina', RU: 'Россия', GB: 'UK', BR: 'Brasil',
-  IT: 'Italia', PH: 'Pilipinas', IN: 'India',
+  AF: 'افغانستان', AL: 'Shqipëria', DZ: 'الجزائر', AD: 'Andorra', AO: 'Angola', AG: 'Antigua and Barbuda',
+  AR: 'Argentina', AM: 'Հայաստան', AU: 'Australia', AT: 'Österreich', AZ: 'Azərbaycan', BS: 'Bahamas',
+  BH: 'البحرين', BD: 'বাংলাদেশ', BB: 'Barbados', BY: 'Беларусь', BE: 'België', BZ: 'Belize',
+  BJ: 'Bénin', BT: 'འབྲུག་ཡུལ', BO: 'Bolivia', BA: 'Bosna i Hercegovina', BW: 'Botswana', BR: 'Brasil',
+  BN: 'Brunei', BG: 'България', BF: 'Burkina Faso', BI: 'Burundi', KH: 'កម្ពុជា', CM: 'Cameroun',
+  CA: 'Canada', CV: 'Cabo Verde', CF: 'Centrafrique', TD: 'Tchad', CL: 'Chile', CN: '中国',
+  CO: 'Colombia', KM: 'Komori', CG: 'Congo', CD: 'RD Congo', CR: 'Costa Rica', HR: 'Hrvatska',
+  CU: 'Cuba', CY: 'Κύπρος', CZ: 'Česko', DK: 'Danmark', DJ: 'Djibouti', DM: 'Dominica',
+  DO: 'República Dominicana', EC: 'Ecuador', EG: 'مصر', SV: 'El Salvador', GQ: 'Guinea Ecuatorial', ER: 'ኤርትራ',
+  EE: 'Eesti', SZ: 'Eswatini', ET: 'ኢትዮጵያ', FJ: 'Fiji', FI: 'Suomi', FR: 'France',
+  GA: 'Gabon', GM: 'Gambia', GE: 'საქართველო', DE: 'Deutschland', GH: 'Ghana', GR: 'Ελλάδα',
+  GD: 'Grenada', GT: 'Guatemala', GN: 'Guinée', GW: 'Guiné-Bissau', GY: 'Guyana', HT: 'Haïti',
+  HN: 'Honduras', HK: '香港', HU: 'Magyarország', IS: 'Ísland', IN: 'भारत', ID: 'Indonesia',
+  IR: 'ایران', IQ: 'العراق', IE: 'Éire', IL: 'ישראל', IT: 'Italia', JM: 'Jamaica',
+  JP: '日本', JO: 'الأردن', KZ: 'Қазақстан', KE: 'Kenya', KI: 'Kiribati', KW: 'الكويت',
+  KG: 'Кыргызстан', LA: 'ລາວ', LV: 'Latvija', LB: 'لبنان', LS: 'Lesotho', LR: 'Liberia',
+  LY: 'ليبيا', LI: 'Liechtenstein', LT: 'Lietuva', LU: 'Luxembourg', MO: '澳門', MG: 'Madagasikara',
+  MW: 'Malawi', MY: 'Malaysia', MV: 'ދިވެހިރާއްޖެ', ML: 'Mali', MT: 'Malta', MH: 'Marshall Islands',
+  MR: 'موريتانيا', MU: 'Mauritius', MX: 'México', FM: 'Micronesia', MD: 'Moldova', MC: 'Monaco',
+  MN: 'Монгол', ME: 'Crna Gora', MA: 'المغرب', MZ: 'Moçambique', MM: 'မြန်မာ', NA: 'Namibia',
+  NR: 'Nauru', NP: 'नेपाल', NL: 'Nederland', NZ: 'New Zealand', NI: 'Nicaragua', NE: 'Niger',
+  NG: 'Nigeria', KP: '조선', MK: 'Северна Македонија', NO: 'Norge', OM: 'عُمان', PK: 'پاکستان',
+  PW: 'Palau', PS: 'فلسطين', PA: 'Panamá', PG: 'Papua New Guinea', PY: 'Paraguay', PE: 'Perú',
+  PH: 'Pilipinas', PL: 'Polska', PT: 'Portugal', QA: 'قطر', RO: 'România', RU: 'Россия',
+  RW: 'Rwanda', KN: 'Saint Kitts and Nevis', LC: 'Saint Lucia', VC: 'Saint Vincent', WS: 'Sāmoa', SM: 'San Marino',
+  ST: 'São Tomé e Príncipe', SA: 'السعودية', SN: 'Sénégal', RS: 'Србија', SC: 'Seychelles', SL: 'Sierra Leone',
+  SG: 'Singapore', SK: 'Slovensko', SI: 'Slovenija', SB: 'Solomon Islands', SO: 'Soomaaliya', ZA: 'South Africa',
+  KR: '한국', SS: 'South Sudan', ES: 'España', LK: 'ශ්‍රී ලංකා', SD: 'السودان', SR: 'Suriname',
+  SE: 'Sverige', CH: 'Schweiz', SY: 'سوريا', TW: '台灣', TJ: 'Тоҷикистон', TZ: 'Tanzania',
+  TH: 'ไทย', TL: 'Timor-Leste', TG: 'Togo', TO: 'Tonga', TT: 'Trinidad and Tobago', TN: 'تونس',
+  TR: 'Türkiye', TM: 'Türkmenistan', TV: 'Tuvalu', UG: 'Uganda', UA: 'Україна', AE: 'الإمارات',
+  GB: 'UK', US: 'USA', UY: 'Uruguay', UZ: "O'zbekiston", VU: 'Vanuatu', VE: 'Venezuela',
+  VN: 'Việt Nam', YE: 'اليمن', ZM: 'Zambia', ZW: 'Zimbabwe',
 };
 
 /** Countries shown first in the "Suggested" section. */

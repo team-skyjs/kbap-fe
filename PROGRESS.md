@@ -912,3 +912,10 @@
 ## 탭바 높이 플랫폼 권장치 정렬 (2026-08-05, P-128 — 예진 "너무 높음")
 - [x] FAB 레이아웃 분리: 절대 배치 오버행(top -30, 시각 돌출·그림자·보더 유지) — 바 높이 견인 소멸. 바 콘텐츠 높이 = TABBAR_CONTENT_H 상수(iOS 49 / 안드 56, Platform 분기) + 세이프에어리어(max(insets,10) 현행). 스캔 슬롯 = 타 탭 동일 골격(23pt 아이콘 스페이서+라벨 — 베이스라인 정렬), 슬롯 수직 중앙 정렬. 터치 = 슬롯 전체 49/56 ≥ 44. 유닛: 높이 상수·FAB absolute 미기여·5슬롯 균등(P-118 회귀).
 - [x] teamtest OTA 양 플랫폼(iOS b245720e·안드 9deba3fb). 완전 종료 → 2회 실행.
+
+## 온보딩 v3 선행 — 4스텝·자동 프로필·국기 이모지 (2026-08-06, P-130 — 정본 onboarding-v3-2026-08-06.md)
+- [x] 플로우 재배선: 약관→국적→회피→맵기 4스텝 — 프로필(닉네임·사진)·마크 데모·요약 스텝·프로그레스 바 소멸(미니 헤더=백만). 맵기 완료/스킵 = 즉시 제출→홈(finish(spiceSkipped) 명시 인자 — stale state 방지), 실패 에러 표면화·드래프트 유지 무변. 구 draft 스텝 무해 파싱(LEGACY_STEP 매핑: profile→국적·riskdemo→회피·summary/interests→맵기).
+- [x] 자동 프로필: lib/onboarding/autoProfile — NICKNAME_POOL 30종 로마자 한식명 + _4자리(형식 ^[A-Za-z]+_\d{4}$), profileImageUrl null→submit 기본 path(BE 색상 세트 TODO). 온보딩 UI 노출 0, 프로필 수정 무변.
+- [x] 국적 스텝: 리스트 즉시 노출 — deviceCountry 감지국 최상단 하이라이트(Detected 태그)+전 국가(en명 locale 정렬)+검색. 행 = 국기 이모지+모국어명 메인+영어명 보조(동일 시 생략) — countries.ts NATIVE 196개국 전량 보강. 코드 표기 소멸·불변 문구(editProfile.nationalityLocked 재사용) 유지.
+- [x] 국기 이모지 통일: lib/flagEmoji(alpha-2→RI, 방어 '') + components/FlagEmoji — index에서 Flag 별칭 export로 전 노출처(리뷰·프로필·차단·커뮤니티 등) 일괄 전환. Flag.tsx(1.2KB)+flagAssets.ts(11.8KB)+NationalityPicker.tsx(5.8KB) 삭제 — 소스 -18.8KB.
+- [x] 약관: agree-to-all 맨 밑 이동. 유닛: 4스텝 순서·소멸 스텝 잔재 0·감지국 최상단·이모지/모국어 행·구 draft 클램프·즉시 제출 1회+자동 닉네임 형식·flagEmoji 정상/방어·풀 소속(신규 파일). i18n 신규 4키 ×10(nationalityTitle/Sub/Search·detectedTag).

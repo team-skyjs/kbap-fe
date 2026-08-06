@@ -12,8 +12,8 @@
  * resumes from the saved step. The draft clears on successful submit.
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -32,22 +32,19 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import {
   Btn,
-  Flag,
   RiskMark,
-  TopBar,
   IconCheck,
-  IconCamera,
   IconChevron,
-  IconPlus,
-  IconProfile, Input } from '@/components';
+  Input,
+  IconSearch,
+} from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
 import { useShake } from '@/lib/useShake';
-import { NationalityPicker } from '@/components/NationalityPicker';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
-import { countryByCode, deviceCountry } from '@/lib/onboarding/countries';
+import { COUNTRIES, countryByCode, deviceCountry, type Country } from '@/lib/onboarding/countries';
 import { POPULAR_DISHES, restrictionLabel } from '@/lib/onboarding/data';
 import { isSpiceLevel, SPICE_LEVEL_EXAMPLE, SPICE_LEVEL_LABEL, spiceRank, type SpiceLevel } from '@/lib/spice';
 import { wireToSpiceLevel } from '@/lib/api/spiceAdapter';
@@ -55,22 +52,24 @@ import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
+import { generateNickname } from '@/lib/onboarding/autoProfile';
+import { flagEmoji } from '@/lib/flagEmoji';
+import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
-import { choosePhotoSource, pickBySource, uploadProfileImage } from '@/lib/data/profileImage';
 import { queryClient } from '@/lib/queryClient';
 import { EVENTS, track } from '@/lib/analytics';
 
-type Step = 'consent' | 'profile' | 'riskdemo' | 'restrictions' | 'spice' | 'interests' | 'summary';
-// consent leads (it belongs to the signup moment); interests is MVP-flagged off.
-const ORDER: Step[] = [
-  'consent',
-  'profile',
-  'riskdemo',
-  'restrictions',
-  'spice',
-  ...(FLAGS.onboardingTriedDishes ? (['interests'] as Step[]) : []),
-  'summary',
-];
+// P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
+// 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
+type Step = 'consent' | 'nationality' | 'restrictions' | 'spice';
+const ORDER: Step[] = ['consent', 'nationality', 'restrictions', 'spice'];
+/** 구버전 draft 스텝 → v3 매핑 (무해 파싱 — 소멸 스텝은 근접 스텝으로). */
+const LEGACY_STEP: Record<string, Step> = {
+  profile: 'nationality',
+  riskdemo: 'restrictions',
+  interests: 'spice',
+  summary: 'spice',
+};
 
 /** 약관 3항목 — 전부 필수 (안전 고지는 구 consent 화면 흡수분). */
 type ConsentKey = 'terms' | 'privacy' | 'safety';
@@ -86,20 +85,12 @@ export default function Onboarding() {
 
   // collected LOCALLY (KB-110) — nothing leaves the device until the final
   // batch submit. Nationality defaults to the device region when recognized.
-  const [nickname, setNickname] = useState('');
-  // KB-149 프로필 사진 (선택 사항) — 선택 즉시 업로드. 제출 body엔 path(objectKey)만
-  // (P-006, BE 확정 — 도메인 조합은 서버 몫), 미리보기는 로컬 파일 uri (세션 한정 —
-  // draft 복귀 시 미리보기는 사라져도 path는 유지되어 제출에 포함된다).
-  const [photoPath, setPhotoPath] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoBusy, setPhotoBusy] = useState(false);
-  const [photoError, setPhotoError] = useState(false);
+  // P-130: 닉네임·사진 = 자동 프로필(제출 시 생성) — 온보딩 UI 무노출
   const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   // P-051 원칙 유지(화면 그대로 제출) · P-081: 내부 표현 = enum (와이어 변환은
   // spiceAdapter 격리). 기본 MEDIUM은 종전 기본 5(앵커)와 와이어 동일.
   const [spice, setSpice] = useState<SpiceLevel>('MEDIUM');
-  const [interests, setInterests] = useState<Set<string>>(new Set());
   // P-080: 항목별 동의 — 3개 전부 = 기존 consented(단일 기록)와 동치
   const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({ terms: false, privacy: false, safety: false });
   const agreed = CONSENT_KEYS.every((k) => consents[k]);
@@ -109,7 +100,6 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
   // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
-  const [returnToSummary, setReturnToSummary] = useState(false);
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
   const hydrated = useRef(false);
   const done = useRef(false); // permanently stops draft persistence after submit
@@ -120,14 +110,14 @@ export default function Onboarding() {
     void loadOnboardingDraft().then((d) => {
       if (d && !hydrated.current) {
         if (d.consented) setConsents({ terms: true, privacy: true, safety: true });
-        setNickname(d.nickname);
-        setPhotoPath(d.profileImageUrl ?? null);
+        // P-130: 구버전 draft의 nickname·profileImageUrl은 무시(자동 프로필) — 무해 파싱
         setNationality(d.nationality);
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
         // P-081: 구버전 draft(number)는 근사 스냅 마이그레이션, null(스킵)은 기본 MEDIUM 표시
         setSpice(d.spice == null ? 'MEDIUM' : isSpiceLevel(d.spice) ? d.spice : wireToSpiceLevel(d.spice));
         setSkipped({ restrictions: d.restrictions === null, spice: d.spice === null });
-        setStep(ORDER.includes(d.step) ? d.step : 'spice'); // clamp (e.g. flagged-off/구스텝)
+        const step3 = (ORDER as string[]).includes(d.step) ? (d.step as Step) : LEGACY_STEP[d.step] ?? 'nationality';
+        setStep(step3); // v3 클램프 — 소멸 스텝 draft도 무해
       }
       hydrated.current = true;
     });
@@ -143,41 +133,29 @@ export default function Onboarding() {
     saveOnboardingDraft({
       consented: true,
       step: step as DraftStep,
-      nickname,
+      nickname: '', // P-130: 자동 프로필 — draft 스키마 호환용 빈 값
       nationality,
       language: lang,
       restrictions: skipped.restrictions ? null : Array.from(restrictions),
       spice: skipped.spice ? null : spice,
-      profileImageUrl: photoPath,
+      profileImageUrl: null,
       updatedAt: new Date().toISOString(),
     });
-  }, [agreed, step, nickname, nationality, lang, restrictions, spice, skipped, submitting, photoPath]);
+  }, [agreed, step, nationality, lang, restrictions, spice, skipped, submitting]);
 
-  const [natOpen, setNatOpen] = useState(false);
   // P-098②a: 슬라이더 드래그 중 부모 스크롤 잠금
   const [sliderDragging, setSliderDragging] = useState(false);
-  const nation = countryByCode(nationality) ?? countryByCode('US')!;
-
-  // P-060: 국적→언어 제안 소멸 — 언어는 기기(OS)가 정본
-  const pickNationality = (code: string) => setNationality(code);
-
   const idx = ORDER.indexOf(step);
-  const back = () => {
-    if (returnToSummary) {
-      setReturnToSummary(false);
-      return setStep('summary');
-    }
-    return idx > 0 ? setStep(ORDER[idx - 1]) : router.back();
-  };
+  const back = () => (idx > 0 ? setStep(ORDER[idx - 1]) : router.back());
 
   // P-088④: 안드 하드웨어 백 = 온보딩 내 스텝 back과 동일 — 첫 스텝이면 기본
   // 동작(앱 종료 관례). iOS 스와이프 백은 _layout gestureEnabled:false가 차단.
-  const backRef = useRef({ idx, returnToSummary, back });
-  backRef.current = { idx, returnToSummary, back };
+  const backRef = useRef({ idx, back });
+  backRef.current = { idx, back };
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      const { idx: i, returnToSummary: rts, back: goBack } = backRef.current;
-      if (i > 0 || rts) {
+      const { idx: i, back: goBack } = backRef.current;
+      if (i > 0) {
         goBack();
         return true;
       }
@@ -190,19 +168,21 @@ export default function Onboarding() {
   // 이제 요약 카드(⑥)의 CTA에서만 호출된다. Skips go out as explicit UNSET;
   // the draft clears only after success. 실패(검증 400·네트워크)는 화면에 남아
   // 에러를 표시한다 — 미저장 상태로 홈 진입 금지 (KB-75 검토 수정, false-safe).
-  const finish = async () => {
+  // P-130: 맵기 완료/스킵 즉시 제출(요약 스텝 소멸). spiceSkipped는 setState 지연을
+  // 피해 명시 인자 — 스킵 탭 직후 stale skipped 상태로 제출되는 버그 방지.
+  const finish = async (spiceSkipped: boolean) => {
     if (submitting) return;
     setSubmitting(true);
     setSubmitError(false);
     try {
       await submitOnboardingProfile({
-        nickname,
+        nickname: generateNickname(), // P-130 자동 프로필 — 유저 무노출, 프로필 수정에서 변경 가능
         nationality,
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
         // P-039 계열: 스킵 = SKIP(미설정) — 안 건드림은 미설정이다 (P-081 enum 승계)
-        spiceTolerance: skipped.spice ? 'SKIP' : spice,
-        profileImageUrl: photoPath, // path(objectKey), null = 미선택 → 필드 생략 (P-006)
+        spiceTolerance: spiceSkipped ? 'SKIP' : spice,
+        profileImageUrl: null, // 자동 — submit이 현행 기본 path로 채움(BE 색상 세트 배포 시 autoProfile에서 스왑)
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();
@@ -210,7 +190,7 @@ export default function Onboarding() {
       track(EVENTS.onboarding_submit, {
         avoid_count: skipped.restrictions ? 0 : restrictions.size,
         avoid_skipped: skipped.restrictions,
-        spice_skipped: skipped.spice,
+        spice_skipped: spiceSkipped,
       });
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
@@ -231,65 +211,28 @@ export default function Onboarding() {
     track(EVENTS.onboarding_step_view, { step });
   }, [step]);
 
-  // advance — 요약에서 수정하러 온 스텝이면 요약으로 복귀 (마지막 스텝 = summary,
-  // 제출은 summary CTA가 전담하므로 next()에 제출 분기 없음)
-  const next = () => {
-    if (returnToSummary) {
-      setReturnToSummary(false);
-      return setStep('summary');
+  /** 계속(완료) 경로 — 계측 후 전진. P-130: 마지막 스텝(spice)은 즉시 제출 → 홈. */
+  const advance = () => {
+    track(EVENTS.onboarding_step_complete, { step });
+    if (step === 'spice') {
+      setSkipped((s) => ({ ...s, spice: false }));
+      return void finish(false);
     }
     setStep(ORDER[idx + 1]);
   };
-  /** 계속(완료) 경로 — 계측 후 전진 (스킵 경로와 분리, P-083). */
-  const advance = () => {
-    track(EVENTS.onboarding_step_complete, { step });
-    next();
-  };
   const skipStep = () => {
     track(EVENTS.onboarding_step_skip, { step });
-    if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: true }));
-    if (step === 'spice') setSkipped((s) => ({ ...s, spice: true }));
-    next();
+    if (step === 'restrictions') {
+      setSkipped((s) => ({ ...s, restrictions: true }));
+      return setStep(ORDER[idx + 1]);
+    }
+    // spice 스킵도 제출 트리거 (v3)
+    setSkipped((s) => ({ ...s, spice: true }));
+    void finish(true);
   };
   const answerStep = () => {
     if (step === 'restrictions') setSkipped((s) => ({ ...s, restrictions: false }));
-    if (step === 'spice') setSkipped((s) => ({ ...s, spice: false }));
     advance();
-  };
-  const editFromSummary = (target: Step) => {
-    setReturnToSummary(true);
-    setStep(target);
-  };
-
-  // KB-149: 선택 즉시 업로드 — 실패는 정직한 에러 표시, 사진 없이 진행 가능
-  const pickPhoto = async () => {
-    setPhotoError(false);
-    // P-049(KB-218): 시스템 선택 시트(촬영/갤러리) — 프로필 수정과 공용 경로.
-    // 온보딩엔 삭제 옵션 없음(재선택으로 대체 — 기존과 동일).
-    const src = await choosePhotoSource({
-      title: t('photo.sheetTitle'),
-      camera: t('photo.take'),
-      gallery: t('photo.gallery'),
-      cancel: t('common.cancel'),
-    });
-    if (!src || src === 'remove') return;
-    const file = await pickBySource(src, {
-      permTitle: t('photo.permTitle'),
-      permBody: t('photo.permBody'),
-      openSettings: t('photo.openSettings'),
-      cancel: t('common.cancel'),
-    }).catch(() => null);
-    if (!file) return; // 취소/권한 거부(안내 완료)
-    setPhotoBusy(true);
-    try {
-      setPhotoPath(await uploadProfileImage(file));
-      setPhotoPreview(file.uri); // 업로드 성공분만 미리보기 (path는 렌더 불가)
-    } catch (e) {
-      console.log('[onboarding] photo upload failed:', (e as Error)?.message ?? e);
-      setPhotoError(true);
-    } finally {
-      setPhotoBusy(false);
-    }
   };
 
   const toggle = (set: Set<string>, key: string, apply: (s: Set<string>) => void) => {
@@ -313,12 +256,7 @@ export default function Onboarding() {
           icon: agreed ? <IconCheck size={18} color="#fff" /> : undefined,
           note: t('onboarding.consentNote'),
         };
-      case 'profile': {
-        // P-120: 사진 업로드 중 진행 차단 — 완료/실패 시 복원 (photoBusy)
-        const ready = !!nickname.trim() && !photoBusy;
-        return { label: t('onboarding.continue'), variant: ready ? 'primary' : 'off', onPress: ready ? advance : undefined };
-      }
-      case 'riskdemo':
+      case 'nationality':
         return { label: t('onboarding.continue'), onPress: advance };
       case 'restrictions':
         return {
@@ -329,21 +267,12 @@ export default function Onboarding() {
           onSkip: skipStep,
         };
       case 'spice':
-        return { label: t('onboarding.continue'), onPress: answerStep, onSkip: skipStep };
-      case 'interests':
-        return {
-          label: interests.size
-            ? `${t('onboarding.continue')} · ${t('onboarding.picked', { count: interests.size })}`
-            : t('onboarding.continue'),
-          variant: interests.size ? 'primary' : 'off',
-          onPress: interests.size ? advance : undefined,
-          onSkip: next,
-        };
-      case 'summary':
+        // P-130: 맵기 = 마지막 스텝 — 완료/스킵 즉시 제출(확인 화면 없음)
         return {
           label: t('onboarding.start'),
-          onPress: submitting ? undefined : () => void finish(),
+          onPress: submitting ? undefined : answerStep,
           icon: submitting ? <Spinner size={18} color="#fff" /> : undefined,
+          onSkip: submitting ? undefined : skipStep,
         };
     }
   })();
@@ -357,15 +286,12 @@ export default function Onboarding() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* P-080: 6-세그먼트 진행 바 — 현재 스텝 포함 채움. 채움 애니메이션은
-            P-042 절제 전례(진행 표시 애니는 소음)에 따라 즉시 전환 유지. */}
-        <TopBar
-          seg={idx + 1}
-          of={ORDER.length}
-          onBack={back}
-          skipLabel={['restrictions', 'spice', 'interests'].includes(step) ? t('common.skip') : undefined}
-          onSkip={skipStep}
-        />
+        {/* P-130: 단계 프로그레스 바 소멸(v3) — 백 버튼만 남긴 미니 헤더 */}
+        <View style={styles.miniHeader}>
+          <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
+            <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+          </Pressable>
+        </View>
 
         {/* 제출 실패 — 화면 유지 + 안내 (KB-75, false-safe) · P-032 Error Shake */}
         {submitError && (
@@ -388,21 +314,9 @@ export default function Onboarding() {
           />
         )}
 
-        {step === 'profile' && (
-          <Profile
-            nickname={nickname}
-            setNickname={setNickname}
-            photoPreview={photoPreview}
-            photoBusy={photoBusy}
-            photoError={photoError}
-            onPickPhoto={() => void pickPhoto()}
-            nationality={nation}
-            onPickNationality={() => setNatOpen(true)}
-            t={t}
-          />
+        {step === 'nationality' && (
+          <Nationality selected={nationality} onSelect={setNationality} t={t} />
         )}
-
-        {step === 'riskdemo' && <RiskDemo t={t} />}
 
         {step === 'restrictions' && (
           <Restrictions
@@ -426,25 +340,6 @@ export default function Onboarding() {
           />
         )}
 
-        {step === 'interests' && (
-          <Interests
-            selected={interests}
-            onToggle={(name) => toggle(interests, name, setInterests)}
-            t={t}
-          />
-        )}
-
-        {step === 'summary' && (
-          <Summary
-            nation={nation}
-            lang={lang}
-            restrictions={Array.from(restrictions)}
-            skipped={skipped}
-            level={spice}
-            onEdit={editFromSummary}
-            t={t}
-          />
-        )}
       </ScrollView>
 
       {/* P-101: 공용 OnboardingFooter — 6스텝 전부 (P-011 restrictions 스티키의
@@ -463,9 +358,6 @@ export default function Onboarding() {
           ) : null}
         </View>
       </View>
-
-      {/* shared nationality picker (I4) */}
-      <NationalityPicker open={natOpen} selectedCode={nationality} onSelect={pickNationality} onClose={() => setNatOpen(false)} />
 
       {/* P-080: 약관 전문 바텀시트 — Agree 시 해당 행 체크 + 닫힘 */}
       <LegalSheet
@@ -509,10 +401,6 @@ function Consent({
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.consentTitle')} sub={t('onboarding.consentSub')} />
-      <Pressable style={[styles.consent, allAgreed && styles.consentAllOn]} onPress={onToggleAll}>
-        <View style={[styles.check, allAgreed && styles.checkOn]}>{allAgreed && <IconCheck size={15} color="#fff" />}</View>
-        <Text style={styles.consentText}>{t('onboarding.agreeAll')}</Text>
-      </Pressable>
       <View style={styles.consentRows}>
         {rows.map(({ k, label }) => (
           <View key={k} style={styles.consentRow}>
@@ -528,6 +416,75 @@ function Consent({
           </View>
         ))}
       </View>
+      {/* P-130(v3): 전체 동의 = 개별 3행 아래(맨 밑) — 그 외 무변 */}
+      <Pressable style={[styles.consent, allAgreed && styles.consentAllOn, { marginTop: 12 }]} onPress={onToggleAll}>
+        <View style={[styles.check, allAgreed && styles.checkOn]}>{allAgreed && <IconCheck size={15} color="#fff" />}</View>
+        <Text style={styles.consentText}>{t('onboarding.agreeAll')}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/** ② 국적 (P-130 v3 — 프로필 스텝 대체, 유일 입력). 리스트 즉시 노출:
+ *  감지국 최상단 하이라이트 + 전체(현 UI 언어 기준 영어명 정렬 — 로케일별 국가명
+ *  데이터 부재로 en 정렬, 표시는 모국어 메인+영어 보조) + 검색. 국기 = 이모지
+ *  (헌법 v2.3.0). 국가 코드 표기 소멸, 국적 불변 문구 유지. */
+function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (code: string) => void; t: TFn }) {
+  const [q, setQ] = useState('');
+  const detected = deviceCountry();
+  const query = q.trim().toLowerCase();
+  const list = useMemo(() => {
+    const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, i18n.language));
+    const filtered = query
+      ? all.filter((c) => c.name.toLowerCase().includes(query) || (c.native ?? '').toLowerCase().includes(query))
+      : all;
+    // 감지국 최상단 (검색 없을 때만 — 검색은 순수 결과)
+    if (!query && detected) {
+      const hit = filtered.find((c) => c.code === detected);
+      if (hit) return [hit, ...filtered.filter((c) => c.code !== detected)];
+    }
+    return filtered;
+  }, [query, detected]);
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ObTitle title={t('onboarding.nationalityTitle')} sub={t('onboarding.nationalitySub')} />
+      <View style={styles.natSearch}>
+        <IconSearch size={17} color={C.ink2} />
+        <Input
+          value={q}
+          onChangeText={setQ}
+          placeholder={t('onboarding.nationalitySearch')}
+          placeholderTextColor={C.ink3}
+          style={styles.natSearchInput}
+          autoCorrect={false}
+        />
+      </View>
+      <View style={styles.natList}>
+        {list.map((c: Country, i: number) => {
+          const on = c.code === selected;
+          const isDetected = !query && c.code === detected && i === 0;
+          return (
+            <Pressable
+              key={c.code}
+              style={[styles.natRow, on && styles.natRowOn]}
+              onPress={() => onSelect(c.code)}
+              testID={`nat-${c.code}`}
+            >
+              <Text style={styles.natFlag}>{flagEmoji(c.code)}</Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.natName} numberOfLines={1}>{c.native ?? c.name}</Text>
+                {c.native && c.native !== c.name && (
+                  <Text style={styles.natSub} numberOfLines={1}>{c.name}</Text>
+                )}
+              </View>
+              {isDetected && <Text style={styles.natDetected}>{t('onboarding.detectedTag')}</Text>}
+              {on && <IconCheck size={16} color={C.primary} />}
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={[styles.tag, { marginTop: 10 }]}>{t('editProfile.nationalityLocked')}</Text>
     </View>
   );
 }
@@ -588,121 +545,6 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
   );
 }
 
-/** ③ 위험도 마크 인터랙티브 데모 (P-080) — 탭 순환 safe→caution→danger→unable.
- *  마크는 기존 RiskMark 재사용 (신규 제작 금지 — 앱 전체 일관성, 스펙).
- *  P-088②: 카드 사진 = 김치찌개 **번들 에셋 슬롯** — 현재 파일은 플레이스홀더
- *  (surface2 톤 단색), 예진 에셋 수령 시 같은 파일명으로 교체만 하면 반영.
- *  서버 이미지 금지(온보딩 첫인상 — 네트워크 의존 X). */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const DEMO_DISH_IMAGE = require('../../../assets/images/onboarding-demo-dish.jpg'); // P-096: JPG q50 — 2.3MB PNG 다이어트
-const DEMO_CYCLE: RiskState[] = ['safe', 'caution', 'danger', 'unable'];
-function RiskDemo({ t }: { t: TFn }) {
-  const [i, setI] = useState(0);
-  const state = DEMO_CYCLE[i];
-  const reduced = useReducedMotion(); // reduced-motion 시 크로스페이드·펄스 미동작
-  // P-088③ → P-098①: 펄스 링 = **상시 반복**(예진 확정 7/31 — "첫 탭 후 영구
-  // 정지" 시안 노트를 오너 결정으로 대체). 화면 이탈 시 cleanup이 정리.
-  const pulse = useSharedValue(0);
-  useEffect(() => {
-    if (reduced) return;
-    pulse.value = withRepeat(withTiming(1, { duration: 1500, easing: Easing.out(Easing.quad) }), -1, false);
-    return () => cancelAnimation(pulse);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduced]);
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pulse.value * 0.45 }],
-    opacity: (1 - pulse.value) * 0.55,
-  }));
-  const tapMark = () => setI((n) => (n + 1) % DEMO_CYCLE.length);
-  return (
-    <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.demoTitle')} sub={t('onboarding.demoSub')} />
-      <View style={styles.demoCard}>
-        <Image source={DEMO_DISH_IMAGE} style={styles.demoImg} resizeMode="cover" />
-        <Pressable onPress={tapMark} hitSlop={14} style={styles.demoMark}>
-          {!reduced && <Animated.View style={[styles.pulseRing, ringStyle]} pointerEvents="none" />}
-          <Animated.View key={state} entering={reduced ? undefined : FadeIn.duration(140)}>
-            <RiskMark state={state} size={46} />
-          </Animated.View>
-        </Pressable>
-        <View style={styles.demoCap}>
-          <Text style={styles.demoName}>{t('onboarding.demoDish')}</Text>
-          <Text style={styles.demoHint}>{t('onboarding.demoTap')}</Text>
-        </View>
-      </View>
-      <Animated.View key={`m-${state}`} entering={reduced ? undefined : FadeIn.duration(140)} style={styles.demoMeaning}>
-        <RiskMark state={state} size={20} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.demoLabel}>{t(`risk.${state}`)}</Text>
-          <Text style={styles.demoBody}>{t(`onboarding.demo.${state}`)}</Text>
-        </View>
-      </Animated.View>
-    </View>
-  );
-}
-
-function Profile(props: {
-  nickname: string;
-  setNickname: (s: string) => void;
-  photoPreview: string | null; // 로컬 파일 uri — 서버 path는 렌더 불가 (P-006)
-  photoBusy: boolean;
-  photoError: boolean;
-  onPickPhoto: () => void;
-  nationality: { code: string; name: string };
-  onPickNationality: () => void;
-  t: TFn;
-}) {
-  const { nickname, setNickname, photoPreview, photoBusy, photoError, onPickPhoto, nationality, onPickNationality, t } = props;
-  return (
-    <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.profileTitle')} sub={t('onboarding.profileSub')} />
-      <View style={{ gap: 15 }}>
-        {/* KB-149 프로필 사진 (선택 사항) — 탭 → 갤러리 1:1 크롭 → 즉시 업로드 */}
-        <View style={styles.avatarWrap}>
-          <Pressable testID="ob-avatar" style={styles.av} onPress={photoBusy ? undefined : onPickPhoto}>
-            {photoPreview ? (
-              <Image source={{ uri: photoPreview }} style={styles.avImg} />
-            ) : (
-              <IconProfile size={40} color={C.primary} />
-            )}
-            {photoBusy && (
-              <View style={[styles.avImg, styles.avBusy]}>
-                <ActivityIndicator color="#fff" />
-              </View>
-            )}
-            <View style={styles.cam}>
-              <IconCamera size={15} color="#fff" />
-            </View>
-          </Pressable>
-          <Text style={photoError ? styles.phErr : styles.phLbl}>
-            {photoError ? t('editProfile.photoError') : t('editProfile.changePhoto')}
-          </Text>
-        </View>
-        <View style={styles.fieldset}>
-          <Text style={styles.fieldLbl}>{t('onboarding.nickname')} *</Text>
-          <View style={[styles.field, !!nickname && styles.fieldFocus]}>
-            <IconProfile size={18} color={C.ink2} />
-            <Input
-              value={nickname}
-              onChangeText={setNickname}
-              placeholder={t('onboarding.nicknamePlaceholder')}
-              placeholderTextColor={C.ink3}
-              style={styles.fieldInput}
-            />
-          </View>
-        </View>
-        <View style={styles.fieldset}>
-          <Text style={styles.fieldLbl}>{t('onboarding.nationality')} *</Text>
-          <Pressable style={styles.field} onPress={onPickNationality}>
-            <Text style={styles.fieldVal}>{nationality.name}</Text>
-            <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: '90deg' }] }} />
-          </Pressable>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function Restrictions({ selected, onToggle, t }: { selected: string[]; onToggle: (code: string) => void; t: TFn }) {
   // P-011(B안): CTA는 부모의 하단 스티키 바로 이동 — 81종 목록 아래가 아니라 항상 노출
   return (
@@ -747,105 +589,6 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
   );
 }
 
-function Interests({ selected, onToggle, t }: { selected: Set<string>; onToggle: (name: string) => void; t: TFn }) {
-  return (
-    <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.interestsTitle')} sub={t('onboarding.interestsSub')} />
-      <View style={styles.foodGrid}>
-        {POPULAR_DISHES.map((name) => {
-          const on = selected.has(name);
-          return (
-            <Pressable key={name} style={[styles.foodCard, on && styles.foodCardOn]} onPress={() => onToggle(name)}>
-              <View style={styles.foodImg} />
-              <View style={styles.foodCap}>
-                <Text style={styles.foodName} numberOfLines={1}>
-                  {name}
-                </Text>
-                <View style={[styles.foodAdd, on && styles.foodAddOn]}>
-                  {on ? <IconCheck size={12} color="#fff" /> : <IconPlus size={12} color={C.ink3} />}
-                </View>
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text style={[styles.tag, { marginTop: 12 }]}>{t('onboarding.interestsTag')}</Text>
-    </View>
-  );
-}
-
-/** ⑥ 완료 요약 카드 (P-080) — 국적·언어·회피·맵기 + 행별 수정 chevron.
- *  SuccessCheck는 요약 진입 연출로 결합(스펙) — 제출 성공 시 홈 직행. */
-function Summary({
-  nation,
-  lang,
-  restrictions,
-  skipped,
-  level,
-  onEdit,
-  t,
-}: {
-  nation: { code: string; name: string };
-  lang: string;
-  restrictions: string[];
-  skipped: { restrictions: boolean; spice: boolean };
-  level: SpiceLevel;
-  onEdit: (target: Step) => void;
-  t: TFn;
-}) {
-  const restrictionsValue = skipped.restrictions
-    ? t('profile.spiceUnset')
-    : restrictions.length
-      ? `${restrictions.slice(0, 3).map(restrictionLabel).join(', ')}${restrictions.length > 3 ? ` +${restrictions.length - 3}` : ''}`
-      : t('onboarding.added', { count: 0 });
-  // 맵기 행 — 불꽃 아이콘 금지(시안 드리프트 보정), 🌶️ 카운트 또는 텍스트
-  const rank = spiceRank(level);
-  const spiceValue = skipped.spice ? t('profile.spiceUnset') : `${'\u{1F336}\u{FE0F}'.repeat(rank)}${rank > 0 ? ' ' : ''}${t(SPICE_LEVEL_LABEL[level])}`;
-  return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.sumHero}>
-        <SuccessCheck size={76} />
-      </View>
-      <ObTitle title={t('onboarding.summaryTitle')} sub={t('onboarding.summarySub')} />
-      <View style={styles.sumCard}>
-        <SumRow label={t('onboarding.nationality')} onPress={() => onEdit('profile')}>
-          <View style={styles.sumValRow}>
-            <Flag code={nation.code} size={16} />
-            <Text style={styles.sumVal}>{nation.name}</Text>
-          </View>
-        </SumRow>
-        {/* 언어 = 현행 앱 언어(OS 정본, P-060) — 온보딩에 언어 스텝이 없어 표시 전용 */}
-        <SumRow label={t('profile.language')}>
-          <Text style={styles.sumVal}>{LANG_ENDONYM[lang] ?? lang}</Text>
-        </SumRow>
-        <SumRow label={t('profile.restrictionsTitle')} onPress={() => onEdit('restrictions')}>
-          <Text style={[styles.sumVal, skipped.restrictions && styles.sumValMuted]} numberOfLines={2}>
-            {restrictionsValue}
-            {!skipped.restrictions && restrictions.length > 0 ? `  ·  ${t('onboarding.added', { count: restrictions.length })}` : ''}
-          </Text>
-        </SumRow>
-        <SumRow label={t('profile.spiceTitle')} onPress={() => onEdit('spice')} last>
-          <Text style={[styles.sumVal, skipped.spice && styles.sumValMuted]}>{spiceValue}</Text>
-        </SumRow>
-      </View>
-    </View>
-  );
-}
-
-function SumRow({ label, children, onPress, last }: { label: string; children: ReactNode; onPress?: () => void; last?: boolean }) {
-  return (
-    <Pressable style={[styles.sumRow, !last && styles.sumRowDivider]} onPress={onPress} disabled={!onPress}>
-      <Text style={styles.sumLbl}>{label}</Text>
-      <View style={styles.sumRight}>
-        {children}
-        {onPress && <IconChevron size={15} color={C.ink3} />}
-      </View>
-    </Pressable>
-  );
-}
-
-/* ---------- shared bits ---------- */
-
 function ObTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <View style={{ marginBottom: 18 }}>
@@ -856,6 +599,18 @@ function ObTitle({ title, sub }: { title: string; sub?: string }) {
 }
 
 const styles = StyleSheet.create({
+  // P-130 v3
+  miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 40 },
+  miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
+  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13, marginBottom: 12 },
+  natSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  natList: { backgroundColor: C.card, borderRadius: radius.lg, borderWidth: 1, borderColor: C.hair, overflow: 'hidden' },
+  natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  natRowOn: { backgroundColor: 'rgba(226,88,12,0.07)' },
+  natFlag: { fontSize: 22, lineHeight: 26 },
+  natName: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  natSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  natDetected: { fontFamily: font.bodyBold, fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', color: C.primaryText, backgroundColor: 'rgba(226,88,12,0.1)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   app: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 

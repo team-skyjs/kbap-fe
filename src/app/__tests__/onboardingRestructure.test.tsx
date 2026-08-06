@@ -119,40 +119,48 @@ it('약관 게이트 — 전체 동의 한 번으로 3항목 일괄 체크·진�
     agreeAll[0].props.onPress();
   });
   expect(continueBtn(tree).props.variant).toBe('primary');
-  // 계속 → 프로필 스텝 진입 (닉네임 필드 존재)
+  // 계속 → 국적 스텝 진입 (P-130 v3: 프로필 스텝 소멸)
   await act(async () => {
     continueBtn(tree).props.onPress();
   });
-  expect(textNodes(tree, 'onboarding.profileTitle').length).toBeGreaterThanOrEqual(1);
+  expect(textNodes(tree, 'onboarding.nationalityTitle').length).toBeGreaterThanOrEqual(1);
 });
 
-it('마크 데모 — 탭 순환 safe→caution→danger→unable→safe (4상태 전부)', async () => {
-  mockDraft = {
-    consented: true,
-    step: 'riskdemo',
-    nickname: 'Yejin',
-    nationality: 'KR',
-    language: 'en',
-    restrictions: [],
-    spice: null,
-    updatedAt: '2026-07-20T00:00:00Z',
-  };
+it('P-130: 4스텝 순서 — 약관→국적→회피→맵기(마지막 CTA=시작하기)', async () => {
+  mockDraft = null;
   const tree = await render();
-  const markTap = () => tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 14)[0];
-  const bigMark = () => tree.root.findAllByType(RiskMark).find((m) => m.props.size === 46)!;
-  // Txt 래퍼가 RN Text를 감싸 같은 children이 중첩 노드로 2회 잡힌다 — ≥1로 판정
-  const meaning = (s: string) => textNodes(tree, `onboarding.demo.${s}`).length;
+  const agreeAll = tree.root.findAll(
+    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.agreeAll').length > 0,
+  );
+  await act(async () => { agreeAll[0].props.onPress(); });
+  await act(async () => { continueBtn(tree).props.onPress(); }); // → 국적
+  expect(textNodes(tree, 'onboarding.nationalityTitle').length).toBeGreaterThanOrEqual(1);
+  await act(async () => { continueBtn(tree).props.onPress(); }); // → 회피
+  expect(textNodes(tree, 'restrictionsEdit.allIngredients').length).toBeGreaterThanOrEqual(1);
+  await act(async () => { continueBtn(tree).props.onPress(); }); // → 맵기 (CTA = 시작하기)
+  const startBtn = tree.root.findAllByType(Btn).find((btn) => String(btn.props.children).includes('onboarding.start'));
+  expect(startBtn).toBeTruthy();
+  expect(textNodes(tree, 'onboarding.profileTitle')).toHaveLength(0); // 소멸 스텝 잔재 0
+});
 
-  expect(bigMark().props.state).toBe('safe');
-  expect(meaning('safe')).toBeGreaterThanOrEqual(1);
-  for (const next of ['caution', 'danger', 'unable', 'safe'] as const) {
-    await act(async () => {
-      markTap().props.onPress();
-    });
-    expect(bigMark().props.state).toBe(next);
-    expect(meaning(next)).toBeGreaterThanOrEqual(1);
-    expect(meaning(next === 'safe' ? 'unable' : 'safe')).toBe(0); // 이전 의미 텍스트는 사라짐
-  }
+it('P-130: 국적 스텝 — 감지국 최상단 + 국기 이모지 + 모국어명 메인', async () => {
+  mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
+  const tree = await render();
+  // expo-localization 목: 감지국 = KR (프렐류드 getLocales)
+  const rows = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('nat-'));
+  expect(rows[0].props.testID).toBe('nat-US'); // 감지국(목 regionCode US) 최상단
+  expect(rows.length).toBeGreaterThan(100); // 전 국가 리스트 즉시 노출
+  // 이모지·모국어명 확인 (KR 행)
+  const kr = tree.root.findAll((n) => n.props?.testID === 'nat-KR')[0];
+  expect(kr.findAll((c) => c.props?.children === '🇰🇷').length).toBeGreaterThanOrEqual(1);
+  expect(kr.findAll((c) => c.props?.children === '한국').length).toBeGreaterThanOrEqual(1);
+});
+
+it('P-130: 구버전 draft(소멸 스텝) 무해 파싱 — summary → spice로 클램프', async () => {
+  mockDraft = { consented: true, step: 'summary', nickname: '구닉네임', nationality: 'JP', language: 'en', restrictions: null, spice: 'HOT', profileImageUrl: 'x', updatedAt: '' };
+  const tree = await render();
+  const startBtn = tree.root.findAllByType(Btn).find((btn) => String(btn.props.children).includes('onboarding.start'));
+  expect(startBtn).toBeTruthy(); // spice 스텝 도착
 });
 
 it('P-101 — 공용 푸터: consent(신규)와 spice(드래프트) CTA 프레임 스타일 동일 + Skip 슬롯 고정', async () => {
@@ -166,33 +174,4 @@ it('P-101 — 공용 푸터: consent(신규)와 spice(드래프트) CTA 프레�
   mockDraft = { consented: true, step: 'spice', nickname: 'Y', nationality: 'KR', language: 'en', restrictions: [], spice: null, updatedAt: '2026-07-20T00:00:00Z' };
   const b = footerOf(await render());
   expect(a).toEqual(b); // 스텝이 달라도 푸터 프레임 스타일 동일 (paddingTop·paddingBottom·배경 등)
-});
-
-/* ---- P-120: 사진 업로드 중 진행 차단 (온보딩 profile 스텝) ---- */
-it('P-120: 업로드 중 계속 off → 완료 시 복원', async () => {
-  mockDraft = null;
-  const tree = await render();
-  // 약관 통과 → 프로필 스텝
-  const agreeAll = tree.root.findAll(
-    (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.agreeAll').length > 0,
-  );
-  await act(async () => { agreeAll[0].props.onPress(); });
-  await act(async () => { continueBtn(tree).props.onPress(); });
-  // 닉네임 입력(계속 활성 전제)
-  const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
-  await act(async () => { input.props.onChangeText('Mina'); });
-  expect(continueBtn(tree).props.variant).toBe('primary');
-  // 업로드 pending — 계속 off
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pm = require('@/lib/data/profileImage') as { choosePhotoSource: jest.Mock; pickBySource: jest.Mock; uploadProfileImage: jest.Mock };
-  let resolveUpload!: (v: string) => void;
-  pm.choosePhotoSource.mockResolvedValue('gallery');
-  pm.pickBySource.mockResolvedValue({ uri: 'file://a.jpg', width: 1, height: 1 });
-  pm.uploadProfileImage.mockImplementation(() => new Promise<string>((res) => { resolveUpload = res; }));
-  const avatar = tree.root.findAll((n) => n.props?.testID === 'ob-avatar' && n.props.onPress !== undefined)[0];
-  await act(async () => { avatar.props.onPress(); });
-  expect(continueBtn(tree).props.variant).toBe('off');
-  expect(continueBtn(tree).props.onPress).toBeUndefined();
-  await act(async () => { resolveUpload('images/profile/a.jpg'); });
-  expect(continueBtn(tree).props.variant).toBe('primary'); // 복원
 });

@@ -716,7 +716,11 @@
       "unable": "Not enough information to judge — decide carefully."
     },
     "summaryTitle": "Your safety profile is ready",
-    "summarySub": "Check your settings — tap a row to change it."
+    "summarySub": "Check your settings — tap a row to change it.",
+    "nationalityTitle": "Where are you from?",
+    "nationalitySub": "Reviews from your country get highlighted for you.",
+    "nationalitySearch": "Search countries",
+    "detectedTag": "Detected"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

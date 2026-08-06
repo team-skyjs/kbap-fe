@@ -122,11 +122,8 @@ async function selectStop(tree: ReactTestRenderer, index: 0 | 1 | 2 | 3 | 4) {
 }
 const skipLink = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.skip').length > 0);
-// spice 계속 → 요약 카드 진입 → CTA(onboarding.start)로 제출
-async function continueToSummaryAndSubmit(tree: ReactTestRenderer) {
-  await act(async () => {
-    btnWith(tree, 'onboarding.continue').props.onPress();
-  });
+// P-130(v3): 맵기 = 마지막 스텝 — CTA(onboarding.start)가 즉시 제출(요약 소멸)
+async function submitFromSpice(tree: ReactTestRenderer) {
   await act(async () => {
     btnWith(tree, 'onboarding.start').props.onPress();
   });
@@ -136,29 +133,28 @@ beforeEach(() => {
   mockSubmit.mockClear();
 });
 
-it('미조작 + 계속 → 요약 제출: 기본 MEDIUM (표시=전송, null draft 호환 겸)', async () => {
+it('미조작 + 시작하기 → 즉시 제출: 기본 MEDIUM + 자동 닉네임 형식 (P-130)', async () => {
   const tree = await renderSpiceStep();
-  await continueToSummaryAndSubmit(tree);
-  expect(mockSubmit).toHaveBeenCalledTimes(1);
+  await submitFromSpice(tree);
+  expect(mockSubmit).toHaveBeenCalledTimes(1); // 맵기 완료 = 제출 1회
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('MEDIUM');
+  expect(mockSubmit.mock.calls[0][0].nickname).toMatch(/^[A-Za-z]+_\d{4}$/); // 자동 프로필
+  expect(mockSubmit.mock.calls[0][0].profileImageUrl).toBe(null); // 기본 path는 submit 계층이 채움
 });
 
 it('Hot 스톱 조작 → HOT 제출 (P-081 enum — 내부에 정수 없음)', async () => {
   const tree = await renderSpiceStep();
   await selectStop(tree, 3); // Hot — 릴리즈 스냅 (P-088⑤ 트랙 제스처)
-  await continueToSummaryAndSubmit(tree);
+  await submitFromSpice(tree);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('HOT');
 });
 
-it('Skip → 요약 제출 시 SKIP (구 UNSET/-1 의미 승계)', async () => {
+it('Skip → 즉시 제출 SKIP (스킵도 제출 트리거 — v3)', async () => {
   const tree = await renderSpiceStep();
   const skips = skipLink(tree);
   expect(skips.length).toBeGreaterThanOrEqual(1);
   await act(async () => {
     skips[skips.length - 1].props.onPress();
-  });
-  await act(async () => {
-    btnWith(tree, 'onboarding.start').props.onPress();
   });
   expect(mockSubmit).toHaveBeenCalledTimes(1);
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('SKIP');

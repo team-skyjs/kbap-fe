@@ -565,7 +565,11 @@
       "unable": "判断できる情報が足りません — 慎重に決めてください。"
     },
     "summaryTitle": "安全プロフィールの準備ができました",
-    "summarySub": "設定を確認し、変更するには行をタップしてください。"
+    "summarySub": "設定を確認し、変更するには行をタップしてください。",
+    "nationalityTitle": "どこの国から来ましたか?",
+    "nationalitySub": "同じ国の旅行者のレビューを優先表示します。",
+    "nationalitySearch": "国を検索",
+    "detectedTag": "検出"
   },
   "editProfile": {
     "title": "プロフィール編集",

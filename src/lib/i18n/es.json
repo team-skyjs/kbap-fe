@@ -565,7 +565,11 @@
       "unable": "No hay información suficiente — decide con cuidado."
     },
     "summaryTitle": "Tu perfil de seguridad está listo",
-    "summarySub": "Revisa tu configuración — toca una fila para cambiarla."
+    "summarySub": "Revisa tu configuración — toca una fila para cambiarla.",
+    "nationalityTitle": "¿De dónde eres?",
+    "nationalitySub": "Las reseñas de tu país se destacan para ti.",
+    "nationalitySearch": "Buscar país",
+    "detectedTag": "Detectado"
   },
   "editProfile": {
     "title": "Editar perfil",

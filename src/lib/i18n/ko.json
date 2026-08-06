@@ -720,7 +720,11 @@
       "unable": "판단할 정보가 부족해요 — 신중히 결정하세요."
     },
     "summaryTitle": "안전 프로필이 준비됐어요",
-    "summarySub": "설정을 확인하고, 바꾸려면 행을 탭하세요."
+    "summarySub": "설정을 확인하고, 바꾸려면 행을 탭하세요.",
+    "nationalityTitle": "어느 나라에서 오셨나요?",
+    "nationalitySub": "같은 나라 여행자들의 리뷰를 우선으로 보여드려요.",
+    "nationalitySearch": "국가 검색",
+    "detectedTag": "감지됨"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",

@@ -565,7 +565,11 @@
       "unable": "Chưa đủ thông tin để đánh giá — hãy cân nhắc kỹ."
     },
     "summaryTitle": "Hồ sơ an toàn của bạn đã sẵn sàng",
-    "summarySub": "Kiểm tra cài đặt — chạm vào một hàng để thay đổi."
+    "summarySub": "Kiểm tra cài đặt — chạm vào một hàng để thay đổi.",
+    "nationalityTitle": "Bạn đến từ nước nào?",
+    "nationalitySub": "Đánh giá từ nước bạn sẽ được ưu tiên hiển thị.",
+    "nationalitySearch": "Tìm quốc gia",
+    "detectedTag": "Đã phát hiện"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

@@ -565,7 +565,11 @@
       "unable": "資訊不足，無法判斷 — 請謹慎決定。"
     },
     "summaryTitle": "你的安全檔案已就緒",
-    "summarySub": "確認你的設定，點一下列即可修改。"
+    "summarySub": "確認你的設定，點一下列即可修改。",
+    "nationalityTitle": "你來自哪個國家?",
+    "nationalitySub": "我們會優先展示來自你國家的評價。",
+    "nationalitySearch": "搜尋國家",
+    "detectedTag": "已偵測"
   },
   "editProfile": {
     "title": "編輯個人資料",
