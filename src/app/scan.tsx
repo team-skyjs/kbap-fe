@@ -14,7 +14,7 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
@@ -50,6 +50,7 @@ import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/sc
 import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
+import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
@@ -328,6 +329,49 @@ export default function Scan() {
     }
   }
 
+  /**
+   * P-137: 시스템 카메라 경로 (FLAGS.systemCamera) — launchCameraAsync 촬영 후
+   * 기존 처리(scanImage → OCR → 세그 → BE)로 그대로 합류. 취소 = 런처 복귀.
+   * 권한 거부 = P-122 설정 딥링크 분기 재사용(프로필 pickBySource 관례 — Alert).
+   * HEIC/EXIF는 P-127 uploadImage 길목이 커버(산출물도 같은 경로).
+   */
+  async function captureViaSystem() {
+    if (capturingRef.current) return; // P-062⓪ 동기 가드 공유
+    if (isGuest) return setGateOpen(true);
+    capturingRef.current = true;
+    setCapturing(true);
+    setError(null);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('photo.openSettings'), onPress: () => void Linking.openSettings() },
+        ]);
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+      if (res.canceled || !res.assets?.length) return; // 취소 → 런처 복귀(무동작)
+      const a = res.assets[0];
+      await scanImage({ uri: a.uri, width: a.width ?? 0, height: a.height ?? 0 });
+    } catch (e) {
+      fail('capture', (e as Error)?.message ?? String(e));
+    } finally {
+      capturingRef.current = false;
+      setCapturing(false);
+    }
+  }
+
+  // P-137 autolaunch 변형 — 탭 진입 즉시 시스템 카메라(1회), 취소 시 런처 표시
+  const autoLaunched = useRef(false);
+  useEffect(() => {
+    if (!FLAGS.systemCamera || !SYSTEM_CAMERA_AUTOLAUNCH) return;
+    if (phase !== 'camera' || autoLaunched.current || isGuest || offline) return;
+    autoLaunched.current = true;
+    void captureViaSystem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, isGuest, offline]);
+
   // Detail navigation: matched dishes only (KB-72 신계약). matched=false is
   // 조사 대기 — there is no detail screen even when foodId exists (Swagger 명시).
   // KB-140: unmatched 탭 = 무반응 대신 "아직 등록 안 된 음식" 안내 (중립 톤, 상세 이동은 계속 불가).
@@ -561,6 +605,32 @@ export default function Scan() {
       </View>
     );
   }
+  // P-137: 시스템 카메라 on = 커스텀 뷰파인더 대신 콰이엇 런처 — 안내 한 줄 +
+  // 촬영(주 CTA) + 갤러리(보조). 권한은 launchCameraAsync가 자체 처리.
+  if (FLAGS.systemCamera) {
+    return (
+      <View style={styles.launcherRoot}>
+        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8}>
+          <IconClose size={22} color={C.ink2} />
+        </Pressable>
+        <View style={styles.launcherBody}>
+          <IconScanLines size={44} color={C.ink3} />
+          <Text style={styles.launcherTitle}>{t('scan.cameraTitle')}</Text>
+          <Text style={styles.launcherHint}>{t('scan.launcherHint')}</Text>
+          <View style={{ alignSelf: 'stretch', marginTop: 10 }} testID="sys-capture-wrap">
+            <Btn onPress={() => void captureViaSystem()} disabled={capturing}>
+              {t('photo.take')}
+            </Btn>
+          </View>
+          <Pressable onPress={() => void pickFromGallery()} disabled={capturing} hitSlop={8} testID="sys-gallery">
+            <Text style={styles.launcherGallery}>{t('scan.gallery')}</Text>
+          </Pressable>
+        </View>
+        {GateSheet}
+      </View>
+    );
+  }
+
   const granted = permission?.granted;
   return (
     <View style={styles.root}>
@@ -763,6 +833,11 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
   camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 8 },
+  launcherRoot: { flex: 1, backgroundColor: '#fff' },
+  launcherBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, gap: 12 },
+  launcherTitle: { fontFamily: font.bodyBold, fontSize: 21, color: C.ink },
+  launcherHint: { fontFamily: font.body, fontSize: 13.5, lineHeight: 20, color: C.ink2, textAlign: 'center' },
+  launcherGallery: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, paddingVertical: 8 },
   camTitle: { fontFamily: font.bodyBold, fontSize: 15, color: '#fff' },
   landscapeBadge: { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   landscapeBadgeText: { fontFamily: font.bodyBold, fontSize: 11, color: '#fff' },

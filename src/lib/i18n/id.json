@@ -256,7 +256,8 @@
     "cameraTitle": "Pindai menu",
     "cameraHintPortrait": "Cubit untuk zoom · muat seluruh menu",
     "cameraHintLandscape": "Menu lebar lebih pas dalam mode lanskap",
-    "landscapeBadge": "Lanskap"
+    "landscapeBadge": "Lanskap",
+    "launcherHint": "Foto menunya — kami cocokkan setiap hidangan dengan profil Anda."
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

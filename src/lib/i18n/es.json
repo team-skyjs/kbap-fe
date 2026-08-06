@@ -256,7 +256,8 @@
     "cameraTitle": "Escanear menú",
     "cameraHintPortrait": "Pellizca para zoom · encuadra todo el menú",
     "cameraHintLandscape": "Los menús anchos caben mejor en horizontal",
-    "landscapeBadge": "Horizontal"
+    "landscapeBadge": "Horizontal",
+    "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil."
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

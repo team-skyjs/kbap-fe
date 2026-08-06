@@ -256,7 +256,8 @@
     "cameraTitle": "สแกนเมนู",
     "cameraHintPortrait": "บีบเพื่อซูม · ให้เห็นเมนูทั้งแผ่น",
     "cameraHintLandscape": "เมนูแนวกว้างถ่ายแนวนอนพอดีกว่า",
-    "landscapeBadge": "แนวนอน"
+    "landscapeBadge": "แนวนอน",
+    "launcherHint": "ถ่ายเมนู แล้วเราจะตรวจทุกจานกับโปรไฟล์ของคุณ"
   },
   "owner": {
     "caption": "แสดงหน้าจอนี้ให้พนักงานร้านอาหารดู",

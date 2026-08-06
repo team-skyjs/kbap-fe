@@ -256,7 +256,8 @@
     "cameraTitle": "Quét thực đơn",
     "cameraHintPortrait": "Véo để phóng to · gọn cả thực đơn",
     "cameraHintLandscape": "Thực đơn ngang chụp ngang sẽ vừa hơn",
-    "landscapeBadge": "Ngang"
+    "landscapeBadge": "Ngang",
+    "launcherHint": "Chụp thực đơn — chúng tôi sẽ đối chiếu từng món với hồ sơ của bạn."
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

@@ -64,4 +64,14 @@ export const FLAGS = {
    * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
    */
   reviewTranslationEnabled: false,
+  /**
+   * 시스템 카메라 경로 (P-137, 8/6 예진 A/B) — true면 스캔 탭 = 런처 화면 +
+   * launchCameraAsync(네이티브 줌·가로·플래시). false = 현행 커스텀 인앱 카메라.
+   * 비교 확정 전 — 커스텀 코드 삭제 금지.
+   */
+  systemCamera: false,
 } as const;
+
+/** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).
+ *  false = 런처에서 촬영 버튼 탭. 예진 실기 비교용 상수. */
+export const SYSTEM_CAMERA_AUTOLAUNCH = false;

@@ -256,7 +256,8 @@
     "cameraTitle": "メニューをスキャン",
     "cameraHintPortrait": "ピンチでズーム · メニュー全体を収めて",
     "cameraHintLandscape": "横長メニューは横向きがぴったり",
-    "landscapeBadge": "横向き"
+    "landscapeBadge": "横向き",
+    "launcherHint": "メニューを撮ると、全品をあなたのプロフィールと照合します。"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",

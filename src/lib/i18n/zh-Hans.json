@@ -256,7 +256,8 @@
     "cameraTitle": "扫描菜单",
     "cameraHintPortrait": "捏合缩放 · 拍下整份菜单",
     "cameraHintLandscape": "宽幅菜单横屏更合适",
-    "landscapeBadge": "横屏"
+    "landscapeBadge": "横屏",
+    "launcherHint": "拍下菜单，我们会将每道菜与您的档案比对。"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",

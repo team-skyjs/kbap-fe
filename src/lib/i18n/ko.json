@@ -256,7 +256,8 @@
     "cameraTitle": "메뉴판 스캔",
     "cameraHintPortrait": "핀치로 확대 · 메뉴판 전체가 들어오게",
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
-    "landscapeBadge": "가로 모드"
+    "landscapeBadge": "가로 모드",
+    "launcherHint": "메뉴판을 찍으면 모든 메뉴를 회원님 프로필과 대조해 드려요."
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",
