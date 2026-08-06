@@ -942,3 +942,4 @@
 - [x] A. 회피: 칩 → 카테고리 섹션(INGREDIENT_SECTIONS 신설 — 주석 그룹 7군 데이터 승격)+4열 정사각 타일. 실81종 전량, 전 타일 폴백(카테고리 틴트 순환+약어 2글자+이름 — imageRef 슬롯 선반영). 선택 카운트+Clear·0개 안내, 스킵 라벨 "Nothing to avoid", 시안 서브카피 ×10.
 - [x] B. 맵기: 🌶️ 히어로 공존(개정 8/6)+레벨명+👶배지(NONE/MILD, bandRow 38 고정)+슬라이더 무변+사진 레일(레벨당 3장 — dev 실측 15종 CDN 상수 spiceRail.ts, 폴백 색 카드)+레벨 설명(교정 카피 — 기능 약속 0, 2줄 고정 슬롯 36 = P-119 승계). CTA "Finish setup"/스킵 "Skip — decide later".
 - [x] C. 코치마크: ScanCoachMark(스크림+카드·돋보기·RiskMark 24 4행 — 정본 의미 카피·Got it·캡션) — 첫 스캔 결과 1회(AsyncStorage), 재열람 = 스캔 리스트 DishRow 마크 탭 + 상세 verdict 필 탭(마크 데모 대체). 유닛 14본 + 신규 키 패리티 ×10.
+- [x] teamtest OTA 양 플랫폼(iOS ab6c598f·안드 d5f7cec8).
