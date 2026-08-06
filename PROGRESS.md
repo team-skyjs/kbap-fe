@@ -947,3 +947,9 @@
 ## 시스템 폰트 전환 (2026-08-06, P-135 — 멘토 #1·25)
 - [x] resolveFont 전면 시스템화 — 전 토큰(display·body·ko 계열)이 스크립트 무관 시스템 폰트+weight 위계(400/500/600/700/800)로 치환(iOS SF/Apple SD Gothic Neo·안드 Roboto/Noto). 키릴 Nunito 강등 분기 소멸. theme.font 키 구조·호출처(fontFamily: font.x) 무수정 — Txt가 전 표면 관통, TextInput은 공용 Input 래퍼에 동일 치환 추가. 워드마크만 Baloo2_800 실로딩(raw Text 우회 — useAppFonts 1종으로 축소). nunito-sans 패키지 제거(참조 0), Noto는 기제거. 폰트 에셋 7종 1,673KB → 1종 409KB(-1.26MB), 번들 총 -1.28MB. 지문 무변(7aa41957) — OTA 발행. 유닛 5본+슬라이더 웨이트 보정.
 - [x] teamtest OTA 양 플랫폼(iOS 8c56dfb8·안드 4bfb389b).
+
+## 스캔 플로우 시안 정합 (2026-08-06, P-136 — D-16 확정, 콰이엇 스타일 공식 허용 표면)
+- [x] A. 리치 리스트: 결과 목록 전면 교체 — 콰이엇 헤더(백·타이틀·n dishes read·사진/리스트 세그·다시찍기)+프로필 체크 줄(회피명+Edit)+행(마크·한글명·번역명·설명·경고 칩 wrap·₩+환산 이중 통화·썸네일 72 매칭분만·[+]/스테퍼, 담김 초록 틴트)+안내문+sticky View order 필. 경고 칩 = AvoidChip 승격(danger/caution variant), 상세 프리페치 매칭분만. exchange.ts 고정 환율 20통화(어댑터 격리, 통화 = 저장>국적>로케일>USD).
+- [x] B. 주문 카드: FlippedOrderCard 공용 — 180° 뒤집힌 primary 틴트 카드(확대→풀스크린)+정방향 미러+Estimated total+Done. 한국어 = orderCard.ts 조립 잠금(시안 문구 0, 유닛 봉인). scan-order 라우트(items JSON)+food/[id]/order.tsx 대체(스테퍼 존치).
+- [x] C. 사진 뷰: 캡슐+미니시트 유지, 범례 4종+힌트, 필 공유(카운트 동기). D. 카메라: Scan menu 타이틀+방향 힌트+가로 배지. 구 D3 크롬·original 세그 제거(피크 존치).
+- [x] tsc 0 · jest 85스위트 477/477(신규 scanRichOrder 3본+구 크롬 5스위트 보정) · i18n 17키 ×10 · teamtest OTA 양 플랫폼(iOS b0789e85·안드 8effd885) — e03efb3.
