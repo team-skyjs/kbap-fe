@@ -953,3 +953,7 @@
 - [x] B. 주문 카드: FlippedOrderCard 공용 — 180° 뒤집힌 primary 틴트 카드(확대→풀스크린)+정방향 미러+Estimated total+Done. 한국어 = orderCard.ts 조립 잠금(시안 문구 0, 유닛 봉인). scan-order 라우트(items JSON)+food/[id]/order.tsx 대체(스테퍼 존치).
 - [x] C. 사진 뷰: 캡슐+미니시트 유지, 범례 4종+힌트, 필 공유(카운트 동기). D. 카메라: Scan menu 타이틀+방향 힌트+가로 배지. 구 D3 크롬·original 세그 제거(피크 존치).
 - [x] tsc 0 · jest 85스위트 477/477(신규 scanRichOrder 3본+구 크롬 5스위트 보정) · i18n 17키 ×10 · teamtest OTA 양 플랫폼(iOS b0789e85·안드 8effd885) — e03efb3.
+
+## 시스템 카메라 경로 A/B (2026-08-06, P-137 — 예진 실기 비교용, 기본 off)
+- [x] FLAGS.systemCamera(기본 off)+SYSTEM_CAMERA_AUTOLAUNCH 상수 — on = 콰이엇 런처(안내+촬영 CTA+갤러리)→launchCameraAsync→기존 scanImage 합류, 취소 = 런처 복귀. autolaunch = 탭 진입 즉시 실행. 권한 거부 = P-122 딥링크 Alert 재사용, HEIC = P-127 길목 커버, 연타 가드 공유. 커스텀 카메라 무변(비교 확정 전 삭제 금지).
+- [x] tsc 0 · jest 86스위트 482/482(신규 5본) · i18n 1키 ×10(scan.launcherHint — 나머지 전부 기존 키 재사용) · teamtest OTA(iOS 62ff3015·안드 fccbced0) — eaa06db.
