@@ -923,3 +923,4 @@
 
 ## 멘토 피드백 소형 일괄 9건 (2026-08-06, P-129)
 - [x] ① 인트로 CTA "Sign in"·"Start K-Bap" ×10(intro.signUp/browseFirst 값 교체 — 재사용처 홈 카드·프로필도 자동 반영) ② 로그인 뒤로가기 복원 — ⑪-3 빈 스택 GO_BACK 에러는 canGoBack 가드로 해소 ③ 홈: emptyTitle "What's your first Korean menu?" ×10·explore 버튼 제거·헤더 sign in 제거(진입=프로필 탭)·See all 옆 chevron·빈 박스 ⅔(패딩 26→14·아이콘 64→44)+스캔 버튼 풀폭 확대 ④ 프로필 탭 게스트 = 로그인 화면 임베드(소셜 버튼 — 게이트 카드 소멸) ⑤ 상세 저장 아이콘 = 별(IconStar 벤더, StickyHeader+스낵바 — saved 목록 화면 북마크는 발주 범위 밖 유지). 유닛 3본+tabStates 소셜 목 보정.
+- [x] teamtest OTA 양 플랫폼(iOS dcaa3381·안드 9ac0e6a0).
