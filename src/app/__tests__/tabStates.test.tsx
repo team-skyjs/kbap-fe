@@ -62,6 +62,8 @@ jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+// P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 네이티브 소셜 버튼은 표면 목
+jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );

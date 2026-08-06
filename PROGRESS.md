@@ -920,3 +920,6 @@
 - [x] 국기 이모지 통일: lib/flagEmoji(alpha-2→RI, 방어 '') + components/FlagEmoji — index에서 Flag 별칭 export로 전 노출처(리뷰·프로필·차단·커뮤니티 등) 일괄 전환. Flag.tsx(1.2KB)+flagAssets.ts(11.8KB)+NationalityPicker.tsx(5.8KB) 삭제 — 소스 -18.8KB.
 - [x] 약관: agree-to-all 맨 밑 이동. 유닛: 4스텝 순서·소멸 스텝 잔재 0·감지국 최상단·이모지/모국어 행·구 draft 클램프·즉시 제출 1회+자동 닉네임 형식·flagEmoji 정상/방어·풀 소속(신규 파일). i18n 신규 4키 ×10(nationalityTitle/Sub/Search·detectedTag).
 - [x] teamtest OTA 양 플랫폼(iOS 2da7063d·안드 dbcde3bd).
+
+## 멘토 피드백 소형 일괄 9건 (2026-08-06, P-129)
+- [x] ① 인트로 CTA "Sign in"·"Start K-Bap" ×10(intro.signUp/browseFirst 값 교체 — 재사용처 홈 카드·프로필도 자동 반영) ② 로그인 뒤로가기 복원 — ⑪-3 빈 스택 GO_BACK 에러는 canGoBack 가드로 해소 ③ 홈: emptyTitle "What's your first Korean menu?" ×10·explore 버튼 제거·헤더 sign in 제거(진입=프로필 탭)·See all 옆 chevron·빈 박스 ⅔(패딩 26→14·아이콘 64→44)+스캔 버튼 풀폭 확대 ④ 프로필 탭 게스트 = 로그인 화면 임베드(소셜 버튼 — 게이트 카드 소멸) ⑤ 상세 저장 아이콘 = 별(IconStar 벤더, StickyHeader+스낵바 — saved 목록 화면 북마크는 발주 범위 밖 유지). 유닛 3본+tabStates 소셜 목 보정.

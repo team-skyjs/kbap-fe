@@ -157,16 +157,14 @@ export default function Home() {
             ) : (
               <View style={styles.empty}>
                 <View style={styles.emptyIc}>
-                  <IconScanLines size={34} color={C.primary} />
+                  <IconScanLines size={26} color={C.primary} />
                 </View>
                 <Text style={styles.emptyTitle}>{t('home.emptyTitle')}</Text>
                 <Text style={styles.emptyBody}>{t('home.emptyBody')}</Text>
+                {/* P-129: explore 제거·스캔 버튼 확대(멘토 피드백) */}
                 <View style={styles.emptyBtns}>
-                  <Btn sm icon={<IconScanLines size={16} color="#fff" />} onPress={() => router.push('/scan')}>
+                  <Btn icon={<IconScanLines size={17} color="#fff" />} onPress={() => router.push('/scan')}>
                     {t('home.scan')}
-                  </Btn>
-                  <Btn sm variant="ghost" icon={<IconFood size={16} color={C.ink} />} onPress={() => router.push('/food')}>
-                    {t('home.explore')}
                   </Btn>
                 </View>
               </View>
@@ -248,8 +246,7 @@ export default function Home() {
         hidden={hidden}
         mode="brand"
         search
-        signIn={isGuest}
-        onSignIn={() => router.push('/login' as Href)}
+        // P-129: 헤더 sign in 제거 — 로그인 진입 = 프로필 탭
         onSearch={() => router.push('/search' as Href)}
       />
     </View>
@@ -279,8 +276,9 @@ function Section({
         {icon}
         <Text style={styles.secTitle}>{title}</Text>
         {seeAll && (
-          <Pressable onPress={onSeeAll} hitSlop={8}>
+          <Pressable onPress={onSeeAll} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
             <Text style={styles.link}>{seeAll}</Text>
+            <IconChevron size={13} color={C.primaryText} />
           </Pressable>
         )}
       </View>
@@ -393,11 +391,11 @@ const styles = StyleSheet.create({
   scanSub: { fontFamily: font.body, fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 1 },
 
   // empty
-  empty: { alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingVertical: 26, paddingHorizontal: 22, ...shadow.sh1 },
-  emptyIc: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center' },
+  empty: { alignItems: 'center', gap: 7, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 18, ...shadow.sh1 }, // P-129: 높이 ⅔
+  emptyIc: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
   emptyBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', maxWidth: 260, lineHeight: 19 },
-  emptyBtns: { flexDirection: 'row', gap: 9, marginTop: 6 },
+  emptyBtns: { alignSelf: 'stretch', marginTop: 6 },
 
   // sections
   sec: { gap: 11 },

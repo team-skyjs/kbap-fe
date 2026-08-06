@@ -34,7 +34,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
-import { IconArrowLeft, IconBookmark, IconSearch } from './icons';
+import { IconArrowLeft, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별
 import { BrandLockup } from './Brand';
 import { PressScale } from './PressScale';
 
@@ -182,9 +182,9 @@ export function StickyHeader({
             <PressScale style={styles.actionBtn} onPress={onBookmark} hitSlop={8}>
               <Animated.View style={bmPop}>
                 {bookmarkSaved ? (
-                  <IconBookmark size={22} color={C.primary} fill={C.primary} sw={0} />
+                  <IconStar size={22} color={C.primary} fill={C.primary} sw={0} />
                 ) : (
-                  <IconBookmark size={22} color={C.ink} sw={1.8} />
+                  <IconStar size={22} color={C.ink} sw={1.8} />
                 )}
               </Animated.View>
             </PressScale>

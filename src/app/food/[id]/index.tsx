@@ -33,7 +33,7 @@ import { QueryErrorBlock } from '@/components/StateBlock';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
-import { IconBookmark } from '@/components/icons';
+import { IconStar } from '@/components/icons'; // P-129: 저장 = 별
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -150,11 +150,11 @@ export default function FoodDetailScreen() {
       <StickyHeader hidden={hidden} mode="back" title={t('detail.headerTitle')} bookmark bookmarkSaved={saved} onBookmark={onBookmark} onBack={() => router.back()} />
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
       {saveError && (
-        <Snackbar icon={<IconBookmark size={15} color="#fff" />} text={t('saved.error')} />
+        <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />
       )}
       {saveToast && (
         <Snackbar
-          icon={<IconBookmark size={15} color="#fff" fill="#fff" sw={0} />}
+          icon={<IconStar size={15} color="#fff" fill="#fff" sw={0} />}
           text={t('saved.toast')}
           actionLabel={t('saved.view')}
           onAction={() => {

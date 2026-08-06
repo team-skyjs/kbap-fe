@@ -48,6 +48,12 @@ import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard, Review } from '@/lib/api/types';
 
+// P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
+import LoginScreen from '../login';
+function GuestLogin() {
+  return <LoginScreen />;
+}
+
 export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -105,18 +111,8 @@ export default function Profile() {
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         {isGuest ? (
-          /* 게스트: 프로필 전체 잠금 — 탭 진입 자체가 가입 유도 (policy §1) */
-          <View style={[styles.body, { paddingTop: 40, alignItems: 'center', gap: 14 }]}>
-            <View style={styles.guestAvatar}>
-              <IconProfile size={34} color={C.ink3} />
-            </View>
-            <Text style={styles.guestTitle}>{t('gate.profileTitle')}</Text>
-            <Text style={styles.guestSub}>{t('gate.profileSub')}</Text>
-            {/* width:'100%'는 RN 0.85 flex 버그(중앙정렬 깨짐) — 공용 Btn 사용 */}
-            <View style={{ alignSelf: 'stretch', paddingHorizontal: 24 }}>
-              <Btn onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)}>{t('intro.signUp')}</Btn>
-            </View>
-          </View>
+          /* P-129(멘토): 게이트 화면 대신 로그인 화면 자체(애플/구글) — 탭 안 임베드 */
+          <GuestLogin />
         ) : meLoading ? (
           /* P-007(KB-174) J1: 첫 로드 백지 제거 */
           <SkeletonProfile />
