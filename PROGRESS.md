@@ -936,3 +936,4 @@
 
 ## 한국어 카피 구조 변경분 (2026-08-06, P-132 — 파일럿 승인, K-06 이후)
 - [x] KC-0603 skip 3문맥 해체: onboarding.skip="건너뛰기"(스텝 전용 복원) · gate.keepBrowsing="계속 둘러보기"(게이트 닫기 신규) · onboarding.resumeLater="나중에 하기"(재개 배너 신규) — 콜사이트 각각 교체. KC-0210 B: order.caption 폐기 → captionWithAvoids/NoAvoids 분기(avoid 유무). KC-0302 B: review.deleteError 신규 — 삭제 뮤테이션 onError 교체. KC-0329 B: reviews.emptySameNat 신규 — 국적 필터 빈 상태 분기(전체 빈은 emptyBody 갱신). KC-0292: langDetected 칩+키 제거 ×10. KC-0324: reviews.anonymous="탈퇴한 유저"(Deleted user) ×10. 전부 ×10 로케일(ko=확정값 그대로 — Codex 재검수 불요). 유닛 13본(키 존재/부재 ×10·값 잠금·게이트/배너 실렌더).
+- [x] P-132/133 합류 teamtest OTA 양 플랫폼(iOS a5dabeaf·안드 dd3e00a5).
