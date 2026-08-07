@@ -5,8 +5,10 @@
  * 수정에서 언제든 변경. 중복 정책은 BE 유니크 여부 확인 중(종한 ⑧) — 충돌 시
  * 서버 에러가 표면화되므로 클라 재시도는 그때 판단.
  *
- * 아바타: BE 색상별 기본 이미지 세트가 정석(종한 ⑧) — 준비 전 임시 = 현행 기본
- * path. TODO(BE 색상 세트 배포 시): 세트 경로 배열에서 랜덤으로 스왑.
+ * 아바타(P-140): 색상 변형 6종(D-19, S3 `images/webp/default_profile/`) 중
+ * 랜덤 — 전송은 **path**(P-016 컨벤션: FE는 CDN 도메인을 모름, 조회는 BE가
+ * CDN 풀 URL로 에코). CloudFront 6종 200 실측(2026-08-07). 구 단일 기본
+ * path(PROFILE_IMAGE_DEFAULT_PATH)는 폴백으로 보존.
  */
 
 /** 로마자 한식명 풀 (~30종) — 라틴 전용(닉네임 형식 ^[A-Za-z]+_\\d{4}$). */
@@ -22,4 +24,17 @@ export function generateNickname(): string {
   const name = NICKNAME_POOL[Math.floor(Math.random() * NICKNAME_POOL.length)];
   const digits = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
   return `${name}_${digits}`;
+}
+
+/** 기본 아바타 색상 slug 6종 (D-19 확정 — 종한 공유 목록과 동일). */
+export const AVATAR_SLUGS = ['orange', 'teal', 'amber', 'olive', 'plum', 'navy'] as const;
+
+/** 전송용 path 6종 — CDN 조합은 BE 몫(⚠️ S3 직링크 403, CloudFront 경유만). */
+export const DEFAULT_AVATAR_PATHS = AVATAR_SLUGS.map(
+  (slug) => `images/webp/default_profile/avatar-${slug}.png`,
+);
+
+/** 신규 가입 아바타 — 6색 중 랜덤 path. */
+export function pickDefaultAvatarPath(): string {
+  return DEFAULT_AVATAR_PATHS[Math.floor(Math.random() * DEFAULT_AVATAR_PATHS.length)];
 }

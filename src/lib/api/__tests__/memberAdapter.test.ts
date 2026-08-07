@@ -23,6 +23,15 @@ describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)
     expect(isDefaultProfileImage(null)).toBe(false);
     expect(isDefaultProfileImage(undefined)).toBe(false);
   });
+
+  it('P-140: 색상 아바타 6종(webp/default_profile) 경로도 기본 취급 — CDN URL·path 모두', () => {
+    const { DEFAULT_AVATAR_PATHS } = require('@/lib/onboarding/autoProfile') as typeof import('@/lib/onboarding/autoProfile');
+    expect(DEFAULT_AVATAR_PATHS).toHaveLength(6);
+    for (const p of DEFAULT_AVATAR_PATHS) {
+      expect(isDefaultProfileImage(p)).toBe(true);
+      expect(isDefaultProfileImage(`https://d29c1cr2ng7w0.cloudfront.net/${p}`)).toBe(true);
+    }
+  });
 });
 
 describe('adaptSpice — P-084 문자열 신계약 수신 (strict) + 정수 구계약 폴백', () => {

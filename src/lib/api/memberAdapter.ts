@@ -94,9 +94,10 @@ export function adaptRanking(wire: RankingSummaryWire | MemberRankingWire): Rank
  */
 export const PROFILE_IMAGE_DEFAULT_PATH = 'images/default/profile/profile-default-512.png';
 
-/** 서버가 준 URL이 기본 프로필 사진인지 — 기본이면 삭제 액션 미노출(사진 없음 취급). */
+/** 서버가 준 URL이 기본 프로필 사진인지 — 기본이면 삭제 액션 미노출(사진 없음 취급).
+ *  P-140: 색상 아바타 6종 경로(webp/default_profile)도 기본 취급 — 삭제 미노출·재선택 가능. */
 export function isDefaultProfileImage(url: string | null | undefined): boolean {
-  return !!url && url.includes('images/default/profile/');
+  return !!url && (url.includes('images/default/profile/') || url.includes('images/webp/default_profile/'));
 }
 
 /** provider → 연동 라벨 i18n 키 (KB-203/P-029). 미지원·누락은 폴백 — 빈 값 금지. */

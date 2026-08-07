@@ -53,7 +53,7 @@ import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
-import { generateNickname } from '@/lib/onboarding/autoProfile';
+import { generateNickname, pickDefaultAvatarPath } from '@/lib/onboarding/autoProfile';
 import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
 import { flagEmoji } from '@/lib/flagEmoji';
@@ -185,7 +185,7 @@ export default function Onboarding() {
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
         // P-039 계열: 스킵 = SKIP(미설정) — 안 건드림은 미설정이다 (P-081 enum 승계)
         spiceTolerance: spiceSkipped ? 'SKIP' : spice,
-        profileImageUrl: null, // 자동 — submit이 현행 기본 path로 채움(BE 색상 세트 배포 시 autoProfile에서 스왑)
+        profileImageUrl: pickDefaultAvatarPath(), // P-140: 색상 아바타 6종 랜덤(path 전송 — P-016 컨벤션)
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();

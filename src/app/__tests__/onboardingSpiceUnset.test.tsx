@@ -139,7 +139,8 @@ it('미조작 + 시작하기 → 즉시 제출: 기본 MEDIUM + 자동 닉네임
   expect(mockSubmit).toHaveBeenCalledTimes(1); // 맵기 완료 = 제출 1회
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('MEDIUM');
   expect(mockSubmit.mock.calls[0][0].nickname).toMatch(/^[A-Za-z]+_\d{4}$/); // 자동 프로필
-  expect(mockSubmit.mock.calls[0][0].profileImageUrl).toBe(null); // 기본 path는 submit 계층이 채움
+  // P-140: 자동 아바타 — 6색 풀 소속 path 전송(기본 path 폴백은 submit 계층 보존)
+  expect(mockSubmit.mock.calls[0][0].profileImageUrl).toMatch(/^images\/webp\/default_profile\/avatar-\w+\.png$/);
 });
 
 it('Hot 스톱 조작 → HOT 제출 (P-081 enum — 내부에 정수 없음)', async () => {
