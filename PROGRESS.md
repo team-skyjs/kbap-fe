@@ -957,3 +957,8 @@
 ## 시스템 카메라 경로 A/B (2026-08-06, P-137 — 예진 실기 비교용, 기본 off)
 - [x] FLAGS.systemCamera(기본 off)+SYSTEM_CAMERA_AUTOLAUNCH 상수 — on = 콰이엇 런처(안내+촬영 CTA+갤러리)→launchCameraAsync→기존 scanImage 합류, 취소 = 런처 복귀. autolaunch = 탭 진입 즉시 실행. 권한 거부 = P-122 딥링크 Alert 재사용, HEIC = P-127 길목 커버, 연타 가드 공유. 커스텀 카메라 무변(비교 확정 전 삭제 금지).
 - [x] tsc 0 · jest 86스위트 482/482(신규 5본) · i18n 1키 ×10(scan.launcherHint — 나머지 전부 기존 키 재사용) · teamtest OTA(iOS 62ff3015·안드 fccbced0) — eaa06db.
+
+## 스캔 리스트·주문 카드 반려 재작업 (2026-08-07, P-138 — emo급 정돈)
+- [x] 행 프레임 불변(우측 열 72 고정+[+]↔스테퍼 슬롯 72×30 공유, 담김 틴트 제거)·행 밀도 조임·미매칭 안내문 삭제+[+] 담기 허용(P-045)·카테고리 헤더 소멸·기본 뷰=List(P-071 대체, 오너 결정 기록).
+- [x] 주문 카드 시안 S2 재정합 — 콰이엇 헤더(Your order+서브)·카드 확대 중앙·IconExpand 좌상단·미러 캡션 하단. KRW 병기 생략 유닛 잠금.
+- [x] tsc 0 · jest 86스위트 484/484 · i18n 2키 ×10 · teamtest OTA(iOS 62f904b2·안드 8d8fbc2b) — c33e9d3.
