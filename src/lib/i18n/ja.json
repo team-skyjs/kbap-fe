@@ -467,7 +467,14 @@
     "writeReview": "レビューを書く",
     "spiceAboveYou": "あなたの好みより辛い",
     "addProfileHint": "食事制限を追加すると、あなた専用の判定が表示されます。",
-    "scannedPrice": "スキャンしたメニュー基準"
+    "scannedPrice": "スキャンしたメニュー基準",
+    "translatedPill": "翻訳された名前です",
+    "verdictContains": "{{list}}を含む — あなたの回避リストにあります",
+    "aboutTitle": "この料理について",
+    "dataDisclaimer": "食材情報は参考であり医療アドバイスではありません — 不確かな場合はお店に確認を。",
+    "lockVerdict": "あなたの安全判定はロック中",
+    "lockIngredients": "ログインするとプロフィールとの適合が見られます",
+    "readAll": "すべて見る"
   },
   "states": {
     "catalogTitle": "状態",

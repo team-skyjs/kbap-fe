@@ -467,7 +467,14 @@
     "writeReview": "Tulis ulasan",
     "spiceAboveYou": "lebih pedas dari selera Anda",
     "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
-    "scannedPrice": "berdasarkan menu yang Anda pindai"
+    "scannedPrice": "berdasarkan menu yang Anda pindai",
+    "translatedPill": "Diterjemahkan untuk Anda",
+    "verdictContains": "Mengandung {{list}} — ada di daftar hindaran Anda",
+    "aboutTitle": "Tentang hidangan ini",
+    "dataDisclaimer": "Data bahan hanya panduan, bukan saran medis — jika ragu, tanyakan ke restoran.",
+    "lockVerdict": "Penilaian keamanan Anda terkunci",
+    "lockIngredients": "Masuk untuk melihat kecocokan hidangan ini dengan profil Anda",
+    "readAll": "Lihat semua"
   },
   "states": {
     "catalogTitle": "Status",

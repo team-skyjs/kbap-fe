@@ -467,7 +467,14 @@
     "writeReview": "Viết đánh giá",
     "spiceAboveYou": "cay hơn khẩu vị của bạn",
     "addProfileHint": "Thêm hạn chế của bạn để xem đánh giá cá nhân hóa.",
-    "scannedPrice": "theo thực đơn bạn đã quét"
+    "scannedPrice": "theo thực đơn bạn đã quét",
+    "translatedPill": "Đã dịch cho bạn",
+    "verdictContains": "Chứa {{list}} — có trong danh sách tránh của bạn",
+    "aboutTitle": "Về món này",
+    "dataDisclaimer": "Dữ liệu nguyên liệu chỉ mang tính tham khảo, không phải tư vấn y tế — khi không chắc, hãy hỏi nhà hàng.",
+    "lockVerdict": "Đánh giá an toàn của bạn đang khóa",
+    "lockIngredients": "Đăng nhập để xem món này hợp với hồ sơ của bạn không",
+    "readAll": "Xem tất cả"
   },
   "states": {
     "catalogTitle": "Trạng thái",

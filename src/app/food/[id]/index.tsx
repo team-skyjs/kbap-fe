@@ -1,40 +1,36 @@
 /**
- * Food detail (mockup Screen E) — personalized risk verdict + ratings +
- * description + risk-ordered ingredient list (each row expands to its basis,
- * with an "Ask the owner" path for caution/danger items).
+ * Food detail v2 (P-139, D-17 시안 정합) — 히어로 4:3 풀블리드 + 플로팅 헤더
+ * (스크롤 210 지나면 크림 글래스 솔리드+음식명 페이드인) + verdict(성분 조립
+ * 이유) + 헤어라인 재료 행(전부 오픈 — 접힘 0) + 평점 2열 + 리뷰 프리뷰 2.
  *
- * Data via useFoodDetail(id) (MOCK_MODE). Unregistered dishes (isRegistered
- * false) render the "Unable to assess" state — never assumed safe (FR-033).
- * Scroll-aware back header (§6); no emoji; reader text i18n'd; risk colors fixed.
+ * ⚠️ 시안 이식 금지 3곳 준수: 맵기 = 현행 5단계 foodSpiceText(6/10 금지),
+ * verdict 이유 = 성분 기준 조립만(맵기-위험도 결합 허위 — 맵기 문자열 0),
+ * caution 사유 = 기존 중립 조립(ingBasis, 조리법 상세 설명 금지).
+ *
+ * 게스트(시안 fd3·fd4): verdict = 조용한 잠금 슬롯, 재료 = 고스트 5행+잠금 줄
+ * (섹션 내 유일 CTA). 평점·설명·사진·리뷰 프리뷰는 풀 오픈. 현행도 게스트에
+ * 판정 마크 미노출(중립 락카드)이라 정책 무회귀.
+ *
+ * Unregistered(미등록)는 "Unable to assess" 상태 유지 — never assumed safe
+ * (FR-033). false-safe 가드(personalRisk)·저장 토글·계측 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import {
-  StickyHeader,
-  useStickyScroll,
-  useHeaderHeight,
-  RiskMark,
-  RiskPill,
-  CardPhoto,
-  Stars,
-  Star,
-  Flag,
-  Btn,
-  IconChevron,
-  IconSpeech,
-} from '@/components';
+import { color as C, font, radius, riskTone, type RiskState } from '@/lib/theme';
+import { RiskMark, RiskPill, CardPhoto, Star, Flag, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
+import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
-import { IconStar } from '@/components/icons'; // P-129: 저장 = 별
+import { IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -42,10 +38,11 @@ import { foodSpiceText, spicierThanUser, type SpiceChoice } from '@/lib/spice';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { IconLock } from '@/components/icons';
-import type { FoodDetail, IngredientRisk } from '@/lib/api/types';
+import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
+/** 시안 노트 03 — 히어로를 이만큼 지나면 헤더 솔리드+타이틀 페이드인 */
+const HEADER_SOLID_Y = 210;
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
@@ -59,16 +56,19 @@ export default function FoodDetailScreen() {
   const scanPrice = parseScanPrice(price);
   const isGuest = useIsGuest();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { onScroll, hidden } = useStickyScroll();
-  const headerH = useHeaderHeight();
 
   const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
 
-  // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142 실연결: POST/PATCH, 낙관적+실패 롤백)
-  // saved는 상세 응답의 서버 필드(bookmarked) 기반 — 계약 갭 해소(2026-07-15 배포).
-  // 낙관 토글이 이 캐시 값을 즉시 뒤집는다(useToggleBookmark onMutate).
+  // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 크림 글래스 솔리드+타이틀 페이드인
+  const [solid, setSolid] = useState(false);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) =>
+    setSolid(e.nativeEvent.contentOffset.y > HEADER_SOLID_Y);
+  const solidFade = useAnimatedStyle(() => ({ opacity: withTiming(solid ? 1 : 0, { duration: 180 }) }));
+
+  // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142: 낙관적+실패 롤백, 무변)
   const saved = food?.bookmarked ?? false;
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
@@ -90,7 +90,6 @@ export default function FoodDetailScreen() {
         add: adding,
       },
       {
-        // 실패: 낙관적 반영은 훅이 롤백 — 여기선 에러 토스트만 (BE message 미노출, i18n)
         onError: () => {
           setSaveToast(false);
           setSaveError(true);
@@ -99,7 +98,6 @@ export default function FoodDetailScreen() {
         },
       },
     );
-    // 저장 시 매번 토스트 (예진 결정 7/14 — 디자인 spec의 1회 교육안 대신 상시 View 바로가기)
     if (adding) {
       setSaveToast(true);
       if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -111,51 +109,72 @@ export default function FoodDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
-      >
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {error && !food && (
-          /* P-007(KB-174): J3/J4 공용 렌더로 톤 통일 — 탭 루트가 아니라 Go back 포함 */
-          <View style={styles.errorState}>
+          <View style={[styles.errorState, { paddingTop: insets.top + 70 }]}>
             <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
           </View>
         )}
 
         {!isLoading && food && (
-          <View style={styles.body}>
-            {food.isRegistered ? (
-              <Registered guest={isGuest}
-                setCoachOpen={setCoachOpen}
-                scanPrice={scanPrice}
-                food={food}
-                nationality={me?.nationality ?? 'US'}
-                spiceTolerance={me?.spiceTolerance ?? 'SKIP'}
-                hasRestrictions={(me?.restrictions.length ?? 0) > 0}
-                t={t}
-                router={router}
-                id={id ?? ''}
-              />
+          <>
+            {/* P-139 ①: 히어로 — 사진 4:3 풀블리드(오버레이 금지 — 타이틀은 아래 크림 바닥).
+                무사진 폴백 = 낮은 크림 블록(재량 보고: 현행 200 카드 → 120 플랫) */}
+            {food.photoUrl ? (
+              <View style={styles.hero} testID="detail-hero">
+                <CardPhoto uri={food.photoUrl} transition={200} borderRadius={0} />
+              </View>
             ) : (
-              <Unregistered food={food} t={t} onAsk={() => router.push(`/food/${id}/owner` as Href)} />
+              <View style={[styles.heroFallback, { height: 96 + insets.top }]} testID="detail-hero-fallback" />
             )}
 
-            <View style={styles.disc}>
-              <RiskMark state="caution" size={15} variant="outline" />
-              <Text style={styles.discText}>{t('detail.disclaimer')}</Text>
-            </View>
-          </View>
-        )}
-      </Animated.ScrollView>
+            <View style={styles.body}>
+              {food.isRegistered ? (
+                <Registered
+                  guest={isGuest}
+                  setCoachOpen={setCoachOpen}
+                  scanPrice={scanPrice}
+                  food={food}
+                  nationality={me?.nationality ?? 'US'}
+                  spiceTolerance={me?.spiceTolerance ?? 'SKIP'}
+                  hasRestrictions={(me?.restrictions.length ?? 0) > 0}
+                  t={t}
+                  router={router}
+                  id={id ?? ''}
+                />
+              ) : (
+                <Unregistered food={food} t={t} onAsk={() => router.push(`/food/${id}/owner` as Href)} />
+              )}
 
-      <StickyHeader hidden={hidden} mode="back" title={t('detail.headerTitle')} bookmark bookmarkSaved={saved} onBookmark={onBookmark} onBack={() => router.back()} />
+              {/* P-139 ⑦: 데이터 한계 디스클레이머(신규 키) */}
+              <View style={styles.disc}>
+                <RiskMark state="caution" size={15} variant="outline" />
+                <Text style={styles.discText}>{t('detail.dataDisclaimer')}</Text>
+              </View>
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 다크 원 → 솔리드 크림+타이틀 */}
+      <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
+        <Animated.View style={[StyleSheet.absoluteFill, styles.fheadBg, solidFade]} pointerEvents="none" testID="fhead-bg" />
+        <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={() => router.back()} hitSlop={8} testID="detail-back">
+          <IconChevron size={18} color={solid ? C.ink : '#fff'} style={{ transform: [{ rotate: '180deg' }] }} />
+        </Pressable>
+        <Animated.View style={[{ flex: 1, minWidth: 0 }, solidFade]}>
+          <Text style={styles.fTitle} numberOfLines={1}>
+            {food?.name ?? ''}
+          </Text>
+        </Animated.View>
+        <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={onBookmark} hitSlop={8} testID="detail-save">
+          <IconStar size={18} color={saved ? C.primary : solid ? C.ink : '#fff'} fill={saved ? C.primary : 'none'} />
+        </Pressable>
+      </View>
+
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
-      {saveError && (
-        <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />
-      )}
+      {saveError && <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />}
       {saveToast && (
         <Snackbar
           icon={<IconStar size={15} color="#fff" fill="#fff" sw={0} />}
@@ -199,7 +218,7 @@ function Registered({
   nationality: string;
   spiceTolerance: SpiceChoice;
   hasRestrictions: boolean;
-  scanPrice: number | null; // 스캔 진입 param (P-012) — 그 외 경로는 null
+  scanPrice: number | null;
   t: TFn;
   router: Router;
   id: string;
@@ -208,20 +227,23 @@ function Registered({
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
+  // P-139 ⑥: 리뷰 프리뷰 2 — 게스트 풀 오픈(시안 노트 08). 채널 플래그는 유지.
+  const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled ? id : '');
+  const previewReviews = (reviewsQ.data?.pages[0]?.items ?? []).slice(0, 2);
 
-  // one-line basis under the verdict (why this state) — false-safe: unable says so.
-  const verdictBasis =
+  // P-139 ④: verdict 이유 = **성분 기준 조립만** — 회피 매칭(danger/caution)
+  // 재료명 나열. 맵기-위험도 결합(시안 카피)은 허위라 금지 — 맵기 문자열 0.
+  const flagged = ingredients.filter((i) => i.risk === 'danger' || i.risk === 'caution');
+  const verdictReason =
     dishRisk === 'unable'
       ? t('detail.basisUnable')
       : dishRisk === 'safe'
         ? t('detail.basisSafe')
-        : t('detail.basisFlagged');
+        : flagged.length > 0
+          ? t('detail.verdictContains', { list: flagged.map((i) => i.name).join(', ') })
+          : t('detail.basisFlagged');
 
-  // Per-ingredient explanation is generated HERE, not by the BE (2026-07-08
-  // 회의): the contract carries only inclusionPercent + riskStatus. Templates
-  // are per risk band and NEUTRAL — the user registered "an ingredient they
-  // avoid"; we never assume why (no "allergy"). Percent-less variants cover
-  // rows without inclusion data.
+  // 재료별 사유 — 기존 중립 조립 유지(2026-07-08 회의: FE 템플릿, "알레르기" 단정 금지)
   const ingBasis = (ing: IngredientRisk, dRisk: RiskState): string => {
     if (dRisk === 'unable') return t('detail.ingBasisUnable', { ingredient: ing.name });
     const band = dRisk === 'safe' ? 'Safe' : dRisk === 'caution' ? 'Caution' : 'Danger';
@@ -229,76 +251,111 @@ function Registered({
       ? t(`detail.ingBasis${band}`, { ingredient: ing.name, percent: Math.round(ing.percentage) })
       : t(`detail.ingBasis${band}NoPct`, { ingredient: ing.name });
   };
-  // P-080→P-081(KB-261): 경고 = enum 순서 비교, 단계(음식) > 단계(유저) —
-  // SKIP(미설정)은 경고 없음. 표시와 같은 enum 소스라 "같은 표시인데 경고" 모순 불가.
+  // P-080→P-081(KB-261): 경고 = enum 순서 비교 — 맵기끼리의 비교(위험도 무관)
   const spicyForYou = food.spiceLevel != null && spicierThanUser(food.spiceLevel, spiceTolerance);
 
   return (
     <>
-      <View style={styles.head}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{food.name}</Text>
-          {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
-        </View>
-        <View style={styles.thumb}>
-          {!!food.photoUrl && (
-            <CardPhoto uri={food.photoUrl} borderRadius={16} />
+      {/* P-139 ③: 타이틀 블록 — 크림 바닥(사진 오버레이 금지) */}
+      <View style={styles.titleBlock}>
+        <Text style={styles.name}>{food.name}</Text>
+        {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
+        <View style={styles.metaRow}>
+          <View style={styles.transPill}>
+            <Text style={styles.transPillText}>{t('detail.translatedPill')}</Text>
+          </View>
+          {food.spiceLevel != null && (
+            <View style={styles.spiceMeta}>
+              {/* 현행 5단계 foodSpiceText — 시안 "6/10 · hot" 이식 금지 */}
+              <Text style={styles.spiceText}>{foodSpiceText(food.spiceLevel, t)}</Text>
+              {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
+            </View>
           )}
         </View>
+        {/* P-012(KB-179): 스캔한 메뉴판의 가격 — 스캔 진입 param에만 존재 */}
+        {scanPrice != null && (
+          <Text style={styles.scanPrice}>
+            {formatKrw(scanPrice)} <Text style={styles.scanPriceNote}>· {t('detail.scannedPrice')}</Text>
+          </Text>
+        )}
       </View>
 
       {guest ? (
-        /* 게스트: 개인화 verdict 절대 미표시 — 중립 락카드(블러 고스트+CTA)
-           → 게이트 시트 (guest-access-policy §0-2/§1) */
-        <Pressable style={styles.lockCard} onPress={() => setGateOpen(true)}>
-          <View style={styles.lockRow}>
-            <View style={styles.lockIc}>
-              <IconLock size={18} color={C.ink2} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.lockTitle}>{t('lock.verdictTitle')}</Text>
-              <Text style={styles.lockSub}>{t('lock.verdictSub')}</Text>
-            </View>
-            <View style={styles.lockTag}>
-              <Text style={styles.lockTagText}>{t('lock.afterSignup')}</Text>
-            </View>
+        /* P-139 ⑩: verdict 자리 = 조용한 잠금 슬롯 — 현행도 게스트에 판정 미노출(무회귀) */
+        <Pressable style={styles.lockSlot} onPress={() => setGateOpen(true)} testID="verdict-lock">
+          <IconLock size={16} color={C.ink2} />
+          <Text style={styles.lockSlotText}>{t('detail.lockVerdict')}</Text>
+          <Text style={styles.lockSlotCta}>{t('intro.signUp')}</Text>
+        </Pressable>
+      ) : (
+        /* P-139 ④: verdict — 마크 26+라벨+성분 조립 이유, 4상태 틴트 유지.
+           마크 탭 = 코치마크 재열람(P-134) */
+        <Pressable
+          style={[styles.verdict, { backgroundColor: riskTone[dishRisk].bg, borderColor: riskTone[dishRisk].line }]}
+          onPress={() => setCoachOpen(true)}
+          testID="detail-verdict"
+        >
+          <RiskMark state={dishRisk} size={26} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.verdictLabel, { color: riskTone[dishRisk].fg }]}>{t(VERDICT[dishRisk])}</Text>
+            <Text style={styles.verdictReason}>{verdictReason}</Text>
           </View>
         </Pressable>
-      ) : null}
-
-      <View style={styles.metaRow}>
-        {/* P-134: 마크 탭 = 코치마크 재열람 */}
-        {!guest && (
-          <Pressable onPress={() => setCoachOpen(true)} hitSlop={6} testID="detail-mark">
-            <RiskPill state={dishRisk} size="lg" label={t(VERDICT[dishRisk])} />
-          </Pressable>
-        )}
-        {food.spiceLevel != null && (
-          <View style={styles.spiceMeta}>
-            {/* P-080: 표시 = 5단계 구간 스냅 · 🌶️는 헌법 v2.2.0 유일 이모지 예외(맵기 한정) */}
-            {/* P-104(Q-23): None은 "Not spicy" 자기설명 — foodSpiceText가 단일 소스 */}
-            <Text style={styles.spiceText}>{foodSpiceText(food.spiceLevel, t)}</Text>
-            {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
-          </View>
-        )}
-      </View>
-
-      {/* P-012(KB-179): 스캔한 메뉴판의 가격 — 스캔 진입 param에만 존재, ₩ 포맷만 */}
-      {scanPrice != null && (
-        <Text style={styles.scanPrice}>
-          {formatKrw(scanPrice)} <Text style={styles.scanPriceNote}>· {t('detail.scannedPrice')}</Text>
-        </Text>
       )}
-
-      {!guest && !!verdictBasis && <Text style={styles.verdictBasis}>{verdictBasis}</Text>}
 
       {!guest && !hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
 
-      <View style={styles.descCard}>
+      {/* P-139 ⑥: 설명 — 카드 폐지, 플랫 "About this dish" */}
+      <View style={styles.sec}>
+        <Text style={styles.secTitle}>{t('detail.aboutTitle')}</Text>
         <Text style={styles.desc}>{food.description}</Text>
       </View>
 
-      {/* 평점 카드 2종(→ 리뷰 목록) — KB-148 MVP 제외(숨김) */}
+      {/* P-139 ⑤: 재료 — 헤어라인 행(카드·그림자 폐지), 전부 오픈(접힘 0) */}
+      <View style={styles.sec}>
+        <Text style={styles.secTitle}>{t('detail.insideTitle')}</Text>
+        {guest ? (
+          <GhostIngredients t={t} onSignIn={() => setGateOpen(true)} />
+        ) : (
+          <View>
+            {ingredients.map((ing) => {
+              const dRisk = personalRisk(ing.risk, hasRestrictions);
+              const freq =
+                ing.percentage != null
+                  ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) + (ing.note ? ` · ${ing.note}` : '')
+                  : (ing.note ?? '');
+              return (
+                <View key={ing.code} style={styles.ingRow} testID={`ing-${ing.code}`}>
+                  <RiskMark state={dRisk} size={22} />
+                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                    <Text style={styles.ingName}>{ing.name}</Text>
+                    {!!freq && <Text style={styles.ingPct}>{freq}</Text>}
+                    {/* caution 행에만: 중립 조립 사유 + 사장님 확인(기존 흐름) */}
+                    {dRisk === 'caution' && (
+                      <>
+                        <Text style={styles.ingReason}>{ingBasis(ing, dRisk)}</Text>
+                        <Pressable
+                          style={styles.askLink}
+                          onPress={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
+                          hitSlop={6}
+                          testID={`ask-${ing.code}`}
+                        >
+                          <IconSpeech size={15} color={C.primaryText} />
+                          <Text style={styles.askLinkText}>{t('detail.askOwner')}</Text>
+                          <IconChevron size={13} color={C.primaryText} />
+                        </Pressable>
+                      </>
+                    )}
+                  </View>
+                  <RiskPill state={dRisk} size="sm" />
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* 평점 2열 — 현행 데이터·진입, 플랫(그림자 제거) */}
       {FLAGS.reviewsEnabled && (
         <View style={styles.rate2}>
           <RatingMini
@@ -315,39 +372,27 @@ function Registered({
         </View>
       )}
 
-      <View style={styles.photo}>
-        {!!food.photoUrl && (
-          <CardPhoto uri={food.photoUrl} transition={200} borderRadius={radius.lg} />
-        )}
-      </View>
+      {/* P-139 ⑥: 리뷰 프리뷰 2 + Read all + Write a review — 게스트 풀 오픈 */}
+      {FLAGS.reviewsEnabled && (
+        <View style={styles.sec} testID="review-preview">
+          {previewReviews.map((r) => (
+            <ReviewPreviewRow key={r.id} review={r} t={t} />
+          ))}
+          <View style={styles.reviewActions}>
+            <Pressable style={styles.readAll} onPress={() => router.push(`/food/${id}/reviews` as Href)} hitSlop={6} testID="read-all">
+              <Text style={styles.readAllText}>{t('detail.readAll')}</Text>
+              <IconChevron size={13} color={C.primaryText} />
+            </Pressable>
+            <Btn sm icon={<IconStar size={15} color="#fff" />} onPress={() => router.push(`/food/${id}/review` as Href)}>
+              {t('reviews.writeReview')}
+            </Btn>
+          </View>
+        </View>
+      )}
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
 
-      <View style={styles.sec}>
-        <Text style={styles.insideTitle}>{t('detail.insideTitle')}</Text>
-        <Text style={styles.insideSub}>{t('detail.insideSub')}</Text>
-        <View style={{ gap: 10 }}>
-          {ingredients.map((ing) => {
-            const dRisk = personalRisk(ing.risk, hasRestrictions);
-            return (
-              <IngredientRow
-                key={ing.code}
-                ing={ing}
-                guest={guest}
-                displayRisk={dRisk}
-                reason={ingBasis(ing, dRisk)}
-                ofShops={ing.percentage != null ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) : ing.note ?? ''}
-                askLabel={t('detail.askOwner')}
-                onAsk={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
-              />
-            );
-          })}
-        </View>
-      </View>
-
-      {/* KB-205(P-030): 안전 판정의 다음 행동 = 주문 — safe/caution만 노출.
-          danger는 주문 유도 부적절, unable은 기존 '사장님께 확인' 카드 몫.
-          caution은 위 주의 문구·근거 유지된 채 아래에 붙는다. */}
+      {/* KB-205(P-030): 안전 판정의 다음 행동 = 주문 — safe/caution만 노출 */}
       {!guest && (dishRisk === 'safe' || dishRisk === 'caution') && (
         <View style={styles.sec}>
           <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => router.push(`/food/${id}/order` as Href)}>
@@ -356,6 +401,54 @@ function Registered({
         </View>
       )}
     </>
+  );
+}
+
+/** P-139 ⑨: 게스트 재료 고스트 — 스켈레톤 5행(아래로 페이드, P-100 문법) + 잠금 줄 1(유일 CTA) */
+function GhostIngredients({ t, onSignIn }: { t: TFn; onSignIn: () => void }) {
+  return (
+    <View testID="ing-ghost">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <View key={i} style={[styles.ghostRow, { opacity: 1 - i * 0.17 }]}>
+          <View style={styles.ghostMark} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <View style={[styles.ghostBar, { width: `${58 - i * 6}%` }]} />
+            <View style={[styles.ghostBar, { width: '30%', height: 8 }]} />
+          </View>
+          <View style={styles.ghostPill} />
+        </View>
+      ))}
+      <View style={styles.lockLine} testID="ing-lock">
+        <IconLock size={16} color={C.ink2} />
+        <Text style={styles.lockLineText}>{t('detail.lockIngredients')}</Text>
+        <Btn sm onPress={onSignIn}>
+          {t('intro.signUp')}
+        </Btn>
+      </View>
+    </View>
+  );
+}
+
+function ReviewPreviewRow({ review, t }: { review: Review; t: TFn }) {
+  const name = review.author?.nickname ?? t('reviews.anonymous');
+  return (
+    <View style={styles.rvRow}>
+      <View style={styles.rvHead}>
+        <Text style={styles.rvName} numberOfLines={1}>
+          {name}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 2 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star key={n} size={12} fillPct={review.rating >= n ? 100 : 0} fillColor={C.primary} />
+          ))}
+        </View>
+      </View>
+      {!!review.body && (
+        <Text style={styles.rvBody} numberOfLines={2}>
+          {review.body}
+        </Text>
+      )}
+    </View>
   );
 }
 
@@ -377,64 +470,12 @@ function RatingMini({ value, label, left, onPress }: { value: number | null; lab
   );
 }
 
-function IngredientRow({
-  ing,
-  guest,
-  displayRisk,
-  reason,
-  ofShops,
-  askLabel,
-  onAsk,
-}: {
-  ing: IngredientRisk;
-  guest: boolean;
-  displayRisk: RiskState;
-  reason: string | null;
-  ofShops: string;
-  askLabel: string;
-  onAsk: () => void;
-}) {
-  // 게스트: 성분명+포함%는 사실이라 공개, 개인화 위험 pill·문구는 잠금(미렌더,
-  // 중립) — 확장/Ask 동선도 없음 (guest-access-policy §1)
-  const [open, setOpen] = useState(!guest && displayRisk === 'caution');
-  const canAsk = !guest && (displayRisk === 'caution' || displayRisk === 'danger');
-  return (
-    <View style={styles.ingRow}>
-      <Pressable style={styles.ingMain} onPress={() => !guest && setOpen((o) => !o)}>
-        <View style={styles.ingMeta}>
-          <Text style={styles.ingName}>{ing.name}</Text>
-          {!!ofShops && <Text style={styles.ingPct}>{ofShops}</Text>}
-        </View>
-        {!guest && <IconChevron size={16} color={C.ink3} style={{ transform: [{ rotate: open ? '90deg' : '0deg' }] }} />}
-        {!guest && <RiskPill state={displayRisk} size="sm" />}
-      </Pressable>
-      {open && (
-        <View style={styles.ingExpand}>
-          {!!reason && <Text style={styles.ingReason}>{reason}</Text>}
-          {canAsk && (
-            <Pressable style={styles.askBtn} onPress={onAsk}>
-              <IconSpeech size={18} color="#fff" />
-              <Text style={styles.askBtnText}>{askLabel}</Text>
-              <IconChevron size={16} color="#fff" />
-            </Pressable>
-          )}
-        </View>
-      )}
-    </View>
-  );
-}
-
 function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () => void }) {
   return (
     <>
-      <View style={styles.head}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{food.name}</Text>
-          {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
-        </View>
-        <View style={[styles.thumb, { alignItems: 'center', justifyContent: 'center' }]}>
-          <RiskMark state="unable" size={26} />
-        </View>
+      <View style={styles.titleBlock}>
+        <Text style={styles.name}>{food.name}</Text>
+        {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
       </View>
 
       <View style={styles.unreg}>
@@ -450,8 +491,7 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
       </Btn>
 
       <View style={styles.sec}>
-        <Text style={styles.insideTitle}>{t('detail.insideTitle')}</Text>
-        <Text style={styles.insideSub}>{t('detail.noIngredientData')}</Text>
+        <Text style={styles.secTitle}>{t('detail.insideTitle')}</Text>
         <View style={styles.emptyBlock}>
           <Text style={styles.emptyBlockText}>{t('detail.noIngredientBody')}</Text>
         </View>
@@ -462,58 +502,77 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
+  body: { paddingHorizontal: 18, paddingTop: 16, gap: 18 },
 
-  head: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14 },
-  // lineHeight 38 + paddingTop: Korean glyphs (닭/볶…) have a taller ascent than
-  // Latin in the display font — 36 clipped the first line's top on device.
-  name: { fontFamily: font.display, fontSize: 28, color: C.ink, letterSpacing: -0.6, lineHeight: 38, paddingTop: 2 },
-  ko: { fontFamily: font.ko, fontSize: 15, color: C.ink2, marginTop: 5 },
-  thumb: { width: 60, height: 60, borderRadius: 16, backgroundColor: C.surface2, ...shadow.sh1 },
+  // P-139 ①: 히어로 — 엣지-투-엣지 4:3 (오버레이 금지)
+  hero: { width: '100%', aspectRatio: 4 / 3, backgroundColor: C.surface2 },
+  heroFallback: { width: '100%', backgroundColor: C.surface2 },
 
-  // 게스트 verdict 락카드 (블러 고스트 + CTA)
-  lockCard: { backgroundColor: C.surface2, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 14, overflow: 'hidden' },
-  lockRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  lockIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  lockTitle: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  lockSub: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 2, lineHeight: 16 },
-  lockTag: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  lockTagText: { fontFamily: font.bodyBold, fontSize: 10, color: C.ink2, textTransform: 'uppercase', letterSpacing: 0.4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  verdictBasis: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18, marginTop: -8 },
-  // P-012 스캔 메뉴판 가격 — meta 구역 보조 라인 톤
-  scanPrice: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink, marginTop: -6 },
-  scanPriceNote: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
+  // P-139 ②: 플로팅 헤더
+  fhead: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 8 },
+  fheadBg: { backgroundColor: 'rgba(251,247,240,0.96)', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  fBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
+  fBtnSolid: { backgroundColor: 'transparent' },
+  fTitle: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink, textAlign: 'center' },
+
+  titleBlock: { gap: 5 },
+  name: { fontFamily: font.display, fontSize: 27, color: C.ink, letterSpacing: -0.6, lineHeight: 37, paddingTop: 2 },
+  ko: { fontFamily: font.ko, fontSize: 15, color: C.ink2 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 3 },
+  transPill: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3.5 },
+  transPillText: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, letterSpacing: 0.3 },
   spiceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  spiceText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
-  spiceWarn: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primaryText },
-  profileHint: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: -8, lineHeight: 18 },
+  spiceText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  spiceWarn: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  scanPrice: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink, marginTop: 3 },
+  scanPriceNote: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
 
-  descCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 15, ...shadow.sh1 },
-  desc: { fontFamily: font.body, fontSize: 14.5, color: C.ink, lineHeight: 22 },
+  // P-139 ④: verdict 블록 — 4상태 틴트
+  verdict: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: radius.lg, paddingHorizontal: 15, paddingVertical: 13 },
+  verdictLabel: { fontFamily: font.display, fontSize: 17 },
+  verdictReason: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17, marginTop: 2 },
+  // P-139 ⑩: 게스트 잠금 슬롯 — 조용한 헤어라인 행
+  lockSlot: { flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingHorizontal: 15, paddingVertical: 13, backgroundColor: C.surface2 },
+  lockSlotText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2 },
+  lockSlotCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+
+  profileHint: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: -6, lineHeight: 18 },
+
+  sec: { gap: 8 },
+  secTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
+  desc: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 21 },
+
+  // P-139 ⑤: 재료 헤어라인 행
+  ingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  ingName: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  ingPct: { fontFamily: font.body, fontSize: 12, color: C.ink2 },
+  ingReason: { fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 18, marginTop: 3 },
+  askLink: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4, alignSelf: 'flex-start' },
+  askLinkText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+
+  // 게스트 고스트(P-100 문법)
+  ghostRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  ghostMark: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.surface2 },
+  ghostBar: { height: 11, borderRadius: 6, backgroundColor: C.surface2 },
+  ghostPill: { width: 52, height: 20, borderRadius: 999, backgroundColor: C.surface2 },
+  lockLine: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13 },
+  lockLineText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17 },
 
   rate2: { flexDirection: 'row', gap: 11 },
-  rateMini: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 6, ...shadow.sh1 },
+  rateMini: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, gap: 6 },
   rateBig: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rateBigNum: { fontFamily: font.display, fontSize: 26, color: C.ink, lineHeight: 34 },
+  rateBigNum: { fontFamily: font.display, fontSize: 24, color: C.ink, lineHeight: 32 },
   rateLbl: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rateLblText: { flex: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
 
-  photo: { height: 200, borderRadius: radius.lg, backgroundColor: C.surface2 },
-
-  sec: { gap: 11 },
-  insideTitle: { fontFamily: font.display, fontSize: 19, color: C.ink },
-  insideSub: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: -6 },
-
-  ingRow: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, overflow: 'hidden', ...shadow.sh1 },
-  ingMain: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 13 },
-  ingMeta: { flex: 1, gap: 2 },
-  ingName: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  ingPct: { fontFamily: font.body, fontSize: 12, color: C.ink2 },
-  ingExpand: { paddingHorizontal: 14, paddingBottom: 14, gap: 10 },
-  ingReason: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 19 },
-  askBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 12, ...shadow.sh1 },
-  askBtnText: { fontFamily: font.display, fontSize: 14.5, color: '#fff' },
+  // 리뷰 프리뷰
+  rvRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair, gap: 4 },
+  rvHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  rvName: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  rvBody: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 19 },
+  reviewActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  readAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  readAllText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primaryText },
 
   unreg: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: radius.lg, padding: 16, backgroundColor: '#eef0f2', borderWidth: 1, borderColor: '#d8dde2' },
   unregTitle: { fontFamily: font.display, fontSize: 19, color: C.riskUnable },
@@ -524,5 +583,5 @@ const styles = StyleSheet.create({
   disc: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, paddingTop: 14 },
   discText: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink2, lineHeight: 17 },
 
-  errorState: { alignItems: 'center', gap: 12, paddingHorizontal: 28, paddingTop: 48 },
+  errorState: { alignItems: 'center', gap: 12, paddingHorizontal: 28 },
 });

@@ -622,7 +622,14 @@
     "writeReview": "리뷰 쓰기",
     "spiceAboveYou": "내 기준보다 매워요",
     "addProfileHint": "제한을 등록하면 나만의 평가를 볼 수 있어요.",
-    "scannedPrice": "스캔한 메뉴판 기준"
+    "scannedPrice": "스캔한 메뉴판 기준",
+    "translatedPill": "번역된 이름이에요",
+    "verdictContains": "{{list}} 포함 — 회원님의 회피 목록에 있어요",
+    "aboutTitle": "이 음식에 대해",
+    "dataDisclaimer": "재료 정보는 참고용이며 의학적 조언이 아니에요 — 확실하지 않으면 가게에 확인하세요.",
+    "lockVerdict": "내 안전 판정은 잠겨 있어요",
+    "lockIngredients": "로그인하면 이 음식이 내 프로필과 맞는지 볼 수 있어요",
+    "readAll": "전체 보기"
   },
   "states": {
     "catalogTitle": "상태",

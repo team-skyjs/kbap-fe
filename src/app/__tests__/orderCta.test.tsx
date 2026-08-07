@@ -84,6 +84,8 @@ jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
 jest.mock('@/lib/data/bookmarks', () => ({ useToggleBookmark: () => ({ mutate: jest.fn() }) }));
+// P-139: 상세가 리뷰 프리뷰 프리페치 — 표면 목
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined }) }));
 
 import FoodDetailScreen from '../food/[id]/index';
 import OrderCard from '../food/[id]/order';

@@ -467,7 +467,14 @@
     "writeReview": "Escribir una reseña",
     "spiceAboveYou": "más picante de lo que toleras",
     "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado.",
-    "scannedPrice": "según el menú que escaneaste"
+    "scannedPrice": "según el menú que escaneaste",
+    "translatedPill": "Traducido para ti",
+    "verdictContains": "Contiene {{list}} — en tu lista a evitar",
+    "aboutTitle": "Sobre este plato",
+    "dataDisclaimer": "Los datos de ingredientes son orientativos, no consejo médico — ante la duda, confirma con el restaurante.",
+    "lockVerdict": "Tu lectura de seguridad está bloqueada",
+    "lockIngredients": "Inicia sesión para ver cómo encaja este plato con tu perfil",
+    "readAll": "Ver todas"
   },
   "states": {
     "catalogTitle": "Estados",

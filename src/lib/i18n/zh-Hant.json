@@ -467,7 +467,14 @@
     "writeReview": "撰寫評論",
     "spiceAboveYou": "比你能接受的更辣",
     "addProfileHint": "新增你的飲食限制以查看個人化評估。",
-    "scannedPrice": "以您掃描的菜單為準"
+    "scannedPrice": "以您掃描的菜單為準",
+    "translatedPill": "已為您翻譯",
+    "verdictContains": "含{{list}} — 在您的迴避清單中",
+    "aboutTitle": "關於這道菜",
+    "dataDisclaimer": "食材資料僅供參考,並非醫療建議 — 不確定時請向餐廳確認。",
+    "lockVerdict": "您的安全判定已鎖定",
+    "lockIngredients": "登入後即可查看這道菜與您檔案的匹配情況",
+    "readAll": "查看全部"
   },
   "states": {
     "catalogTitle": "狀態",

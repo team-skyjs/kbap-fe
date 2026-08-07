@@ -618,7 +618,14 @@
     "writeReview": "Write a review",
     "spiceAboveYou": "hotter than your taste",
     "addProfileHint": "Add your restrictions to see a personalized verdict.",
-    "scannedPrice": "on the menu you scanned"
+    "scannedPrice": "on the menu you scanned",
+    "translatedPill": "Translated for you",
+    "verdictContains": "Contains {{list}} — on your avoid list",
+    "aboutTitle": "About this dish",
+    "dataDisclaimer": "Ingredient data is guidance, not medical advice — when unsure, confirm with the restaurant.",
+    "lockVerdict": "Your safety read is locked",
+    "lockIngredients": "Sign in to see how this dish matches your profile",
+    "readAll": "Read all"
   },
   "states": {
     "catalogTitle": "States",
