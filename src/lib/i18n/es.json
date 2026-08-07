@@ -270,7 +270,9 @@
     "mirrorTitle": "Esto es lo que leerá el personal",
     "estimatedTotal": "Total estimado",
     "done": "Listo",
-    "mirrorAvoid": "Sin: {{list}}, por favor"
+    "mirrorAvoid": "Sin: {{list}}, por favor",
+    "title": "Tu pedido",
+    "headerSub": "{{count}} platos"
   },
   "profile": {
     "rankingTitle": "Clasificación",

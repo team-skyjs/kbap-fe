@@ -270,7 +270,9 @@
     "mirrorTitle": "직원이 읽게 될 내용이에요",
     "estimatedTotal": "예상 합계",
     "done": "완료",
-    "mirrorAvoid": "빼 주세요: {{list}}"
+    "mirrorAvoid": "빼 주세요: {{list}}",
+    "title": "주문 카드",
+    "headerSub": "{{count}}개 메뉴"
   },
   "profile": {
     "rankingTitle": "랭킹",

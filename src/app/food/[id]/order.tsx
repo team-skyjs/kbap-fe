@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
-import { IconClose, IconMinus, IconPlus, PressScale } from '@/components';
+import { IconChevron, IconMinus, IconPlus, PressScale } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { resolveCurrency } from '@/lib/exchange';
@@ -52,10 +52,17 @@ export default function OrderCard() {
   const nameKo = food?.nameKo ?? '';
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 54, paddingBottom: bottom + 18 }]}>
-      <PressScale style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8}>
-        <IconClose size={22} color={C.ink2} />
-      </PressScale>
+    <View style={[styles.root, { paddingTop: insets.top + 6, paddingBottom: bottom + 18 }]}>
+      {/* P-138 ⑥: 모달풍 X 폐기 → 콰이엇 헤더(scan-order와 동일 패밀리) */}
+      <View style={styles.header}>
+        <PressScale style={styles.back} onPress={() => router.back()} hitSlop={10}>
+          <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+        </PressScale>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{t('order.title')}</Text>
+          <Text style={styles.sub}>{t('order.headerSub', { count: qty })}</Text>
+        </View>
+      </View>
       <FlippedOrderCard
         items={nameKo ? [{ nameKo, name: food?.name ?? nameKo, qty, priceKrw: null }] : []}
         avoidCodes={codes}
@@ -88,17 +95,10 @@ function StepBtn({ icon, disabled, onPress, testID }: { icon: React.ReactNode; d
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
-  close: {
-    position: 'absolute',
-    left: 18,
-    zIndex: 5,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10 },
+  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily: font.bodyBold, fontSize: 17, color: C.ink },
+  sub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
   stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 14 },
   step: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   stepOff: { opacity: 0.35 },

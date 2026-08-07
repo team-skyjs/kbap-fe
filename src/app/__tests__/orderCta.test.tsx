@@ -163,6 +163,9 @@ describe('원카드 화면', () => {
     expect(s).toContain('저는 ');
     expect(s).toContain('order.mirrorTitle');
     expect(s).toContain('order.mirrorAvoid');
+    // P-138 ⑥: 콰이엇 헤더(타이틀+서브) — 모달풍 X 소멸
+    expect(s).toContain('order.title');
+    expect(s).toContain('order.headerSub');
   });
 
   it('기피 0개 → 고지 생략 (순수 주문 카드)', () => {

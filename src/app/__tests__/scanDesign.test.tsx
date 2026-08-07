@@ -153,20 +153,23 @@ it('① Run sample scan 부재 — 카메라·권한 화면 어디에도 없음'
   expect(texts(tree, 'scan.sample')).toBe(0);
 });
 
-it('③→P-136 콰이엇 크롬 — 세그 토글·다시찍기·범례 4종, 구 플로팅 라벨·캡션 부재', async () => {
+it('③→P-136/138 콰이엇 크롬 — 세그·다시찍기, 기본 List에 가격, Photo 뷰에 범례 4종', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
   expect(texts(tree, 'scan.resultCaption')).toBe(0); // P-064: 캡션 삭제 유지
-  expect(texts(tree, '₩8,000')).toBe(0); // 기본=risk 뷰 — 가격은 리스트 행만
+  expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // P-138⑤ 기본=List — 가격 행 노출
   // 구 D3 플로팅 라벨 소멸 (원본 세그 소멸 — 피크로 존치)
   for (const k of ['scan.showList', 'scan.showResult', 'scan.showOriginal']) expect(texts(tree, k)).toBe(0);
   // 콰이엇 헤더: 세그 2 + 다시찍기 아이콘 버튼
   for (const id of ['seg-risk', 'seg-list', 'retake']) {
     expect(tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
   }
-  // P-136(S1b 채택): 위험도 범례 4종 줄
+  // P-136(S1b 채택): 위험도 범례 4종 줄 — Photo 뷰 전환 후
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
+  });
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBeGreaterThanOrEqual(1);
   for (const k of ['risk.safe', 'risk.caution', 'risk.danger', 'risk.unable']) {
     expect(texts(tree, k)).toBeGreaterThanOrEqual(1);
@@ -178,7 +181,10 @@ it('P-064③→P-136 원본 피크 존치 — 배경 꾹=미니시트 pointerEve
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  // 기본=risk 뷰 — 배경(사진) 롱프레스 진입점
+  // P-138⑤ 기본=List — Photo 뷰 전환 후 배경(사진) 롱프레스 진입점
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
+  });
   const bg = tree.root.findAll((n) => typeof n.props?.onLongPress === 'function');
   expect(bg.length).toBeGreaterThanOrEqual(1);
   act(() => {
@@ -191,20 +197,25 @@ it('P-064③→P-136 원본 피크 존치 — 배경 꾹=미니시트 pointerEve
   expect(tree.root.findAll((n) => n.props?.testID === 'mini-sheet-wrap' && n.props?.pointerEvents === 'box-none').length).toBeGreaterThanOrEqual(1);
 });
 
-it('P-136 뷰 전환 — 범례는 risk 뷰 전용, 리스트 뷰=프로필 체크 줄+하단 안내문', async () => {
+it('P-136/138 뷰 전환 — 기본 List=프로필 체크 줄+안내문(헤더·범례 없음), Photo=범례', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBeGreaterThanOrEqual(1);
-  const toList = tree.root.findAll((n) => n.props?.testID === 'seg-list')[0];
-  act(() => {
-    toList.props.onPress();
-  });
+  // P-138⑤ 기본=List: 범례 없음, 프로필 체크 줄+하단 안내문+스크롤 여백
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBe(0);
   const s = JSON.stringify(tree.toJSON());
   expect(s).toContain('scan.checkedAgainst');
   expect(s).toContain('scan.listFootNote');
-  // 리스트 스크롤 여백 — 필/탭바 클리어런스 (mock inset 0 → 120)
+  expect(s).not.toContain('scan.notInDb'); // P-138③ 행 내 안내문 소음 제거
   expect(tree.root.findAll((n) => n.props?.contentContainerStyle?.paddingBottom === 120).length).toBeGreaterThanOrEqual(1);
+  // Photo 전환 → 범례 등장, List 복귀 → 소멸
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBeGreaterThanOrEqual(1);
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'seg-list')[0].props.onPress();
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBe(0);
 });

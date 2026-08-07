@@ -1,16 +1,18 @@
 /**
- * scan-order (P-136 발주 B8) — 스캔 리스트에서 담은 다중 항목의 주문 카드.
- * 진입 = 리치 리스트/캡슐 뷰 "View order" 필(카트 화면 없음 — 2단 확정).
+ * scan-order (P-136 발주 B8 → P-138 시안 재정합) — 스캔 리스트에서 담은 다중
+ * 항목의 주문 카드. 진입 = 리치 리스트/캡슐 뷰 "View order" 필(카트 화면 없음).
  * items = 쿼리 param JSON(스캔 세션 한정 데이터라 전역 스토어 불필요).
+ * P-138 ⑥: 모달풍 X 폐기 → 콰이엇 헤더(백+"Your order"+서브).
  */
 import * as React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
-import { color as C } from '@/lib/theme';
-import { IconClose, PressScale } from '@/components';
+import { color as C, font } from '@/lib/theme';
+import { IconChevron } from '@/components';
 import { useMe } from '@/lib/data/useMe';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -39,12 +41,19 @@ export default function ScanOrder() {
   }, [me?.nationality]);
 
   const codes = (me?.restrictions ?? []).map((r) => r.code);
+  const count = items.reduce((a, i) => a + i.qty, 0);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 54, paddingBottom: bottom + 18 }]}>
-      <PressScale style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8} testID="order-close">
-        <IconClose size={22} color={C.ink2} />
-      </PressScale>
+    <View style={[styles.root, { paddingTop: insets.top + 6, paddingBottom: bottom + 18 }]}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back} testID="order-back">
+          <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{t('order.title')}</Text>
+          <Text style={styles.sub}>{t('order.headerSub', { count })}</Text>
+        </View>
+      </View>
       <FlippedOrderCard
         items={items}
         avoidCodes={codes}
@@ -59,15 +68,8 @@ export default function ScanOrder() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
-  close: {
-    position: 'absolute',
-    left: 18,
-    zIndex: 5,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10 },
+  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily: font.bodyBold, fontSize: 17, color: C.ink },
+  sub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
 });

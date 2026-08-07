@@ -93,6 +93,15 @@ export const IconSearch = (p: IconProps) => (
     <Circle cx="11" cy="11" r="8" />
   </Glyph>
 );
+/** P-138: 주문 카드 풀스크린 확대 — 네 모서리 확장(돋보기 아님, 시안 S2) */
+export const IconExpand = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M15 3h6v6" />
+    <Path d="M9 21H3v-6" />
+    <Path d="M21 3l-7 7" />
+    <Path d="M3 21l7-7" />
+  </Glyph>
+);
 export const IconChevron = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="m9 18 6-6-6-6" />

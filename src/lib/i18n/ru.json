@@ -270,7 +270,9 @@
     "mirrorTitle": "Это увидит персонал",
     "estimatedTotal": "Примерный итог",
     "done": "Готово",
-    "mirrorAvoid": "Пожалуйста, без: {{list}}"
+    "mirrorAvoid": "Пожалуйста, без: {{list}}",
+    "title": "Ваш заказ",
+    "headerSub": "Блюд: {{count}}"
   },
   "profile": {
     "rankingTitle": "Рейтинг",

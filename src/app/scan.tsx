@@ -106,9 +106,9 @@ export default function Scan() {
   const [photoOnly, setPhotoOnly] = useState<PhotoOnlyItem[]>([]); // idx=null — 리스트 전용
 
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
-  // P-071(7/24 예진 확정): 기본 = 사진+마커(risk) — "찍었으니 사진이 보여야지".
-  // KB-140의 리스트 기본(버튼 겹침 회피)은 파파고 개편(P-064~068)으로 근거 소멸.
-  const [view, setView] = useState<ResultView>('risk');
+  // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
+  // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
+  const [view, setView] = useState<ResultView>('list');
   // P-125: 캡슐 탭 → 미니시트 해당 행 하이라이트 (상세 이동은 시트 행 탭)
   const [highlightId, setHighlightId] = useState<number | null>(null);
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
@@ -216,7 +216,7 @@ export default function Scan() {
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
-        setView('risk'); // P-071: 기본=사진+마커 — "찍었으니 사진이 보여야지" (KB-140 리스트 기본 폐지)
+        setView('list'); // P-138⑤: 기본=List (예진 8/6 오너 결정 — P-071 대체)
         setPhase('result');
       },
       onError: (e) => {

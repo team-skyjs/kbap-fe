@@ -131,7 +131,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('P-071: 스캔 완료 시 기본 화면은 사진+마커 — 리스트는 버튼 전환으로', async () => {
+it('P-138⑤(예진 8/6, P-071 대체): 스캔 완료 기본 = List — Photo는 세그 전환으로', async () => {
   const tree = render(<Scan />);
   // P-062①: 샘플 폐기 — 갤러리 경로(OCR mock→실 segmentMenu)로 결과 진입
   const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
@@ -139,15 +139,7 @@ it('P-071: 스캔 완료 시 기본 화면은 사진+마커 — 리스트는 버
   await act(async () => {
     await gallery[0].props.onPress();
   });
-  // 기본 = risk: 오버레이(사진+마커) 렌더 + 마커 표시
-  const overlays = tree.root.findAllByType(ScanResultOverlay);
-  expect(overlays.length).toBe(1);
-  expect(overlays[0].props.showMarkers).toBe(true);
-  // 리스트 전환 (하단 버튼) → 행 노출 무회귀
-  const listBtn = tree.root.findAll((n) => n.props?.testID === 'seg-list' && typeof n.props?.onPress === 'function');
-  act(() => {
-    listBtn[listBtn.length - 1].props.onPress();
-  });
+  // 기본 = list: 오버레이 없음, 리치 리스트 행 노출
   expect(tree.root.findAllByType(ScanResultOverlay).length).toBe(0);
   const texts = tree.root.findAll((n) => n.props?.children === 'Doenjang Jjigae');
   expect(texts.length).toBeGreaterThanOrEqual(1);
@@ -156,4 +148,12 @@ it('P-071: 스캔 완료 시 기본 화면은 사진+마커 — 리스트는 버
   expect(photoOnlyRow.length).toBeGreaterThanOrEqual(1);
   // §14-5: unmatched(맥북)도 리스트에서 숨겨지지 않는다
   expect(tree.root.findAll((n) => n.props?.children === '맥북').length).toBeGreaterThanOrEqual(1);
+  // Photo 세그 전환 → 오버레이(사진+마커) 렌더 무회귀
+  const riskBtn = tree.root.findAll((n) => n.props?.testID === 'seg-risk' && typeof n.props?.onPress === 'function');
+  act(() => {
+    riskBtn[riskBtn.length - 1].props.onPress();
+  });
+  const overlays = tree.root.findAllByType(ScanResultOverlay);
+  expect(overlays.length).toBe(1);
+  expect(overlays[0].props.showMarkers).toBe(true);
 });

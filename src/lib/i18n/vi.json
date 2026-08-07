@@ -270,7 +270,9 @@
     "mirrorTitle": "Đây là nội dung nhân viên sẽ đọc",
     "estimatedTotal": "Tổng ước tính",
     "done": "Xong",
-    "mirrorAvoid": "Vui lòng bỏ: {{list}}"
+    "mirrorAvoid": "Vui lòng bỏ: {{list}}",
+    "title": "Đơn của bạn",
+    "headerSub": "{{count}} món"
   },
   "profile": {
     "rankingTitle": "Xếp hạng",

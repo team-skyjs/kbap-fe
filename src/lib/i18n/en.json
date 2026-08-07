@@ -266,7 +266,9 @@
     "mirrorTitle": "This is what staff will read",
     "estimatedTotal": "Estimated total",
     "done": "Done",
-    "mirrorAvoid": "Please leave out: {{list}}"
+    "mirrorAvoid": "Please leave out: {{list}}",
+    "title": "Your order",
+    "headerSub": "{{count}} dishes"
   },
   "profile": {
     "rankingTitle": "Ranking",

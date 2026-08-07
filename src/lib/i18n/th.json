@@ -270,7 +270,9 @@
     "mirrorTitle": "นี่คือสิ่งที่พนักงานจะอ่าน",
     "estimatedTotal": "ยอดรวมโดยประมาณ",
     "done": "เสร็จ",
-    "mirrorAvoid": "กรุณาไม่ใส่: {{list}}"
+    "mirrorAvoid": "กรุณาไม่ใส่: {{list}}",
+    "title": "ออเดอร์ของคุณ",
+    "headerSub": "{{count}} จาน"
   },
   "profile": {
     "rankingTitle": "อันดับ",

@@ -270,7 +270,9 @@
     "mirrorTitle": "Ini yang akan dibaca staf",
     "estimatedTotal": "Perkiraan total",
     "done": "Selesai",
-    "mirrorAvoid": "Tolong tanpa: {{list}}"
+    "mirrorAvoid": "Tolong tanpa: {{list}}",
+    "title": "Pesanan Anda",
+    "headerSub": "{{count}} hidangan"
   },
   "profile": {
     "rankingTitle": "Peringkat",

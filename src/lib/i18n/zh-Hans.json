@@ -270,7 +270,9 @@
     "mirrorTitle": "店员将看到的内容",
     "estimatedTotal": "预计总额",
     "done": "完成",
-    "mirrorAvoid": "请去掉：{{list}}"
+    "mirrorAvoid": "请去掉：{{list}}",
+    "title": "您的订单",
+    "headerSub": "{{count}} 道菜"
   },
   "profile": {
     "rankingTitle": "排名",

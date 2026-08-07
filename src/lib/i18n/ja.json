@@ -270,7 +270,9 @@
     "mirrorTitle": "店員が読む内容です",
     "estimatedTotal": "合計(概算)",
     "done": "完了",
-    "mirrorAvoid": "抜いてください: {{list}}"
+    "mirrorAvoid": "抜いてください: {{list}}",
+    "title": "注文カード",
+    "headerSub": "{{count}}品"
   },
   "profile": {
     "rankingTitle": "ランキング",
