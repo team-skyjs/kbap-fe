@@ -244,20 +244,20 @@
     "nudgeAction": "못 먹는 재료를 설정",
     "nudgeRest": "하면 내 기준으로 음식별 위험도가 표시돼요",
     "permissionSettingsBody": "카메라 접근이 꺼져 있어요. 설정에서 허용해 주세요.",
-    "resultsSub": "{{count}}개 메뉴 인식 · KO → EN",
+    "resultsSub": "메뉴 {{count}}개 인식 · 한국어 → 영어",
     "segPhoto": "사진",
-    "segList": "리스트",
+    "segList": "목록",
     "checkedAgainst": "내 프로필 기준으로 확인했어요",
-    "mayContain": "포함 가능",
+    "mayContain": "들어 있을 수 있는 재료",
     "notInDb": "아직 저희 데이터에 없는 메뉴예요. 직원에게 확인해 주세요.",
-    "viewOrder": "{{count}}개 담김 · 주문 보기",
-    "legendHint": "메뉴를 탭하면 재료 확인 · 핀치로 확대",
-    "listFootNote": "사진 기준으로 가장 가까운 정보를 보여드려요 — 확실하지 않으면 직원에게 확인하세요.",
+    "viewOrder": "담은 메뉴 {{count}}개 · 주문 보기",
+    "legendHint": "메뉴를 탭해 재료 확인 · 두 손가락으로 확대",
+    "listFootNote": "사진에서 찾은 메뉴와 가장 가까운 음식 정보를 보여드려요. 확실하지 않다면 직원에게 확인해 주세요.",
     "cameraTitle": "메뉴판 스캔",
-    "cameraHintPortrait": "핀치로 확대 · 메뉴판 전체가 들어오게",
+    "cameraHintPortrait": "두 손가락으로 확대 · 메뉴판 전체가 보이게 촬영",
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
     "landscapeBadge": "가로 모드",
-    "launcherHint": "메뉴판을 찍으면 모든 메뉴를 회원님 프로필과 대조해 드려요."
+    "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요."
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",
@@ -272,7 +272,7 @@
     "done": "완료",
     "mirrorAvoid": "빼 주세요: {{list}}",
     "title": "주문 카드",
-    "headerSub": "{{count}}개 메뉴"
+    "headerSub": "메뉴 {{count}}개"
   },
   "profile": {
     "rankingTitle": "랭킹",
@@ -625,10 +625,10 @@
     "scannedPrice": "스캔한 메뉴판 기준",
     "translatedPill": "번역된 이름이에요",
     "verdictContains": "{{list}} 포함 — 회원님의 회피 목록에 있어요",
-    "aboutTitle": "이 음식에 대해",
+    "aboutTitle": "음식 소개",
     "dataDisclaimer": "재료 정보는 참고용이며 의학적 조언이 아니에요 — 확실하지 않으면 가게에 확인하세요.",
     "lockVerdict": "내 안전 판정은 잠겨 있어요",
-    "lockIngredients": "로그인하면 이 음식이 내 프로필과 맞는지 볼 수 있어요",
+    "lockIngredients": "로그인하면 이 음식과 내 프로필을 비교할 수 있어요",
     "readAll": "전체 보기"
   },
   "states": {
@@ -752,25 +752,25 @@
     "summaryTitle": "안전 프로필이 준비됐어요",
     "summarySub": "설정을 확인하고, 바꾸려면 행을 탭하세요.",
     "nationalityTitle": "어느 나라에서 오셨나요?",
-    "nationalitySub": "같은 나라 사람들이 즐겨 먹는 음식을 추천하고, 리뷰에 국기를 보여주는 데 사용해요.",
+    "nationalitySub": "같은 나라 사람들이 즐겨 먹는 음식을 추천하고 리뷰에 내 국기를 표시하는 데 사용해요.",
     "nationalitySearch": "국가 검색",
     "detectedTag": "자동 감지",
     "fromYourPhone": "휴대폰 설정 기준",
     "nationalityNotice": "국적은 가입 후 변경할 수 없어요. 다른 정보는 프로필에서 언제든 수정할 수 있어요.",
     "resumeLater": "나중에 하기",
-    "avoidSub": "절대 안 먹는 재료를 모두 골라주세요. 주문 전에 그 재료가 든 음식을 표시해 드려요 — 알레르기든 종교든 취향이든, 이유는 묻지 않아요.",
-    "selectedCount": "{{count}}개 선택됨",
+    "avoidSub": "못 먹는 재료를 모두 골라 주세요. 주문 전에 해당 재료가 든 음식을 표시해요. 알레르기나 종교, 취향 등 이유는 묻지 않아요.",
+    "selectedCount": "선택한 재료 {{count}}개",
     "noneSelectedYet": "아직 선택한 재료가 없어요",
     "clearSelection": "모두 해제",
-    "nothingToAvoid": "가리는 재료 없음",
+    "nothingToAvoid": "못 먹는 재료 없어요",
     "kidsBadge": "👶 아이도 먹을 수 있어요",
-    "spiceDesc0": "모든 음식의 맵기 단계를 보여드려요 — 이 설정은 “맵기 없음”으로 표시돼요.",
-    "spiceDesc1": "순한맛보다 매운 음식은 맵기 단계를 분명하게 보여드려요.",
-    "spiceDesc2": "한국 기준 중간 — 대부분의 찌개가 이 정도예요.",
+    "spiceDesc0": "안 매움으로 설정돼요. 음식마다 맵기 단계가 표시돼요.",
+    "spiceDesc1": "순한맛보다 매운 음식에는 맵기 단계가 분명히 표시돼요.",
+    "spiceDesc2": "한국 음식의 중간 정도예요. 대부분의 찌개가 이 단계예요.",
     "spiceDesc3": "제대로 매운 한국 음식도 무리 없이 즐겨요.",
-    "spiceDesc4": "얼마든지 — 그래도 모든 음식의 맵기 단계는 계속 보여드려요.",
+    "spiceDesc4": "아주 매운맛도 괜찮아요. 음식마다 맵기 단계는 계속 표시돼요.",
     "finishSetup": "설정 마치기",
-    "skipDecideLater": "건너뛰기 — 나중에 정할게요"
+    "skipDecideLater": "건너뛰고 나중에 정하기"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
@@ -833,6 +833,6 @@
     "caution": "회피 재료가 들어 있을 수 있어요 — 주문 전에 확인하세요.",
     "danger": "회피 목록의 재료가 들어 있어요.",
     "unable": "재료 정보가 부족해요 — 직원에게 확인하는 게 안전해요.",
-    "caption": "한 번만 표시돼요 — 마크를 탭하면 다시 볼 수 있어요."
+    "caption": "처음 한 번만 표시돼요. 마크를 탭하면 다시 볼 수 있어요."
   }
 }
