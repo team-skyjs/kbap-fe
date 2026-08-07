@@ -967,3 +967,7 @@
 - [x] 히어로 4:3 풀블리드+플로팅 헤더(스크롤 210 솔리드 전환)+타이틀 블록(Translated 필·현행 5단계 맵기)+verdict 성분 조립 이유(맵기-위험도 결합 교정)+재료 헤어라인 행 전부 오픈(caution만 사유+Ask)+About 플랫+평점 2열+리뷰 프리뷰 2.
 - [x] 게스트: verdict 잠금 슬롯(현행 미노출 정책 무회귀)+재료 고스트 5행+잠금 줄 단일 CTA. 평점·리뷰 풀 오픈.
 - [x] tsc 0 · jest 87스위트 490/490(신규 6본) · i18n 7키 ×10 · teamtest OTA(iOS 1df26651·안드 35b6368e) — 1ff82ae.
+
+## 자동 아바타 6종 랜덤 (2026-08-07, P-140 — D-19 에셋)
+- [x] autoProfile 6종 path 랜덤(orange/teal/amber/olive/plum/navy) — path 전송(P-016 컨벤션), 구 기본 path 폴백 보존. isDefaultProfileImage에 webp/default_profile 추가(삭제 미노출 정합). CloudFront 6종 200 실측.
+- [x] tsc 0 · jest 87스위트 492/492 · teamtest OTA(iOS 52f68b39·안드 f3c36277) — 8e0961b.
