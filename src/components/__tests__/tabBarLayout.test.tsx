@@ -11,7 +11,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-import { TabBar, TABBAR_CONTENT_H } from '../TabBar';
+import { TabBar, TABBAR_CONTENT_H, TABBAR_V_SHIFT, FAB_OVERHANG } from '../TabBar';
 
 const LABELS = { home: 'H', food: 'F', scan: 'S', community: 'C', profile: 'P' };
 const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, unknown>;
@@ -43,8 +43,20 @@ it('P-128: 바 높이 = 플랫폼 상수(iOS 49)+세이프에어리어 — FAB �
   const st = flat(bar.props.style);
   // 테스트 인셋 bottom 0 → pb=10, 높이 = 49+10 (jest 플랫폼 ios)
   expect(st.height).toBe(TABBAR_CONTENT_H + 10);
-  expect(TABBAR_CONTENT_H).toBe(49);
+  expect(TABBAR_CONTENT_H).toBe(49); // iOS HIG 공식(P-146 재확인 — 안드는 M3 80)
   // FAB = 절대 배치(레이아웃 흐름 밖) — 바 높이를 견인하지 않는다
   const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 28)[0];
   expect(flat(fab.props.style).position).toBe('absolute');
+});
+
+it('P-146: 콘텐츠 존 시각 센터 보정 — 존 높이 불변(하향 시프트) + FAB 돌출 24', () => {
+  const tree = render();
+  const bar = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderTopWidth != null)[0];
+  const st = flat(bar.props.style);
+  // 존 높이 = height − paddingTop − paddingBottom = CONTENT_H (시프트가 존을 줄이지 않는다)
+  expect((st.height as number) - (st.paddingTop as number) - (st.paddingBottom as number)).toBe(TABBAR_CONTENT_H);
+  expect(st.paddingTop).toBe(TABBAR_V_SHIFT); // iOS 6pt 하향(예진 "위로 몰림" 보정)
+  const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 28)[0];
+  expect(flat(fab.props.style).top).toBe(-FAB_OVERHANG);
+  expect(FAB_OVERHANG).toBe(24); // 전 30 → 24 완화
 });

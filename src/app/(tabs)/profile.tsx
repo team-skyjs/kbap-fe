@@ -51,7 +51,8 @@ import type { FoodCard, Review } from '@/lib/api/types';
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 import LoginScreen from '../login';
 function GuestLogin() {
-  return <LoginScreen />;
+  // P-146: 탭 소속 렌더 — 로고·백 제거(독립 /login 라우트는 무변)
+  return <LoginScreen embedded />;
 }
 
 export default function Profile() {

@@ -22,7 +22,10 @@ import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { BrandLockup } from '@/components/Brand';
 import { api } from '@/lib/api/client';
 
-export default function Login() {
+/** P-146: embedded = 프로필 탭 소속 렌더 — 화면 내 로고 블록·백 화살표 제거
+ *  (앱 헤더 로고와 중복 + 탭 컨텍스트에 뒤로가기 무의미). 독립 /login 진입
+ *  (라우트 — 게이트 시트→로그인 등 푸시 컨텍스트)은 embedded 미전달 = 현행 무변. */
+export default function Login({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -32,13 +35,13 @@ export default function Login() {
   return (
     <View style={[styles.root, { paddingTop: insets.top + 10, paddingBottom: bottom + 26 }]}>
       {/* P-129: 뒤로가기 복원(멘토) — ⑪-3의 빈 스택 GO_BACK 에러는 canGoBack 가드로 해소 */}
-      {router.canGoBack() && (
+      {!embedded && router.canGoBack() && (
         <Pressable onPress={() => router.back()} hitSlop={10} style={styles.backBtn} testID="login-back">
           <IconArrowLeft size={22} color={C.ink2} />
         </Pressable>
       )}
       <View style={styles.hero}>
-        <BrandLockup tileSize={44} />
+        {!embedded && <BrandLockup tileSize={44} />}
         <Text style={styles.title}>{t('login.title')}</Text>
         <Text style={styles.sub}>{t('login.sub')}</Text>
       </View>

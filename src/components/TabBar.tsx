@@ -19,8 +19,16 @@ import {
   type IconProps,
 } from './icons';
 
-/** P-128: 바 콘텐츠 높이(세이프에어리어 제외) = 플랫폼 권장치 — iOS HIG 49pt · 안드 Material 56dp. */
-export const TABBAR_CONTENT_H = Platform.OS === 'ios' ? 49 : 56;
+/** P-128→P-146: 바 콘텐츠 높이(세이프에어리어 제외) = 플랫폼 **공식** 규격 —
+ *  iOS HIG 바 콘텐츠 49pt(하단 세이프에어리어는 배경만 연장) · 안드 Material 3
+ *  navigation bar 총 80dp. 아이콘+라벨 스택은 이 존 안에서 상하 센터. */
+export const TABBAR_CONTENT_H = Platform.OS === 'ios' ? 49 : 80;
+/** P-146: iOS 시각 센터 보정 — 홈 인디케이터 여백이 커서 스택이 위로 몰려 보임
+ *  (예진 실기) → 콘텐츠 존을 6pt 하향(전: 오프셋 0 / 후: +6, 실측 보고). 안드는
+ *  80dp 존 센터로 충분. */
+export const TABBAR_V_SHIFT = Platform.OS === 'ios' ? 6 : 0;
+/** P-146: 중앙 스캔 FAB 돌출(바 위 오버행) — 전 30pt → 24pt(완화, 예진 육안 판정). */
+export const FAB_OVERHANG = 24;
 
 export type TabKey = 'home' | 'food' | 'community' | 'profile';
 
@@ -53,9 +61,9 @@ export function TabBar({
 
   const pb = Math.max(insets.bottom, 10);
   return (
-    // P-128: 바 높이 = 콘텐츠 고정(iOS 49/안드 56) + 세이프에어리어 — FAB은 레이아웃
-    // 흐름에서 분리(절대 배치 오버행)라 바 높이에 미기여. 예진 "너무 높음" 해소.
-    <View style={[styles.bar, { height: TABBAR_CONTENT_H + pb, paddingBottom: pb }]}>
+    // P-146: 바 높이 = 공식 콘텐츠 존 + 세이프에어리어. 콘텐츠 존은 V_SHIFT만큼
+    // 하향(시각 센터) — 존 높이 자체는 불변(height − paddings = CONTENT_H).
+    <View style={[styles.bar, { height: TABBAR_CONTENT_H + pb, paddingTop: TABBAR_V_SHIFT, paddingBottom: Math.max(pb - TABBAR_V_SHIFT, 0) }]}>
       {left.map((t) => (
         <Tab key={t.key} tab={t} active={active === t.key} label={labels[t.key]} onPress={() => onPress(t.key)} />
       ))}
@@ -124,7 +132,7 @@ const styles = StyleSheet.create({
   fab: {
     // P-128: 레이아웃 미기여 — 절대 배치로 바 위 돌출(시각 현행 유지)
     position: 'absolute',
-    top: -30, // 바 축소분만큼 위로 — 라벨(중앙 정렬)과 비겹침, 돌출 시각 유지
+    top: -FAB_OVERHANG, // P-146: 돌출 30→24 완화 — 바와의 정렬감(예진 육안 판정)
     alignSelf: 'center',
     width: 56,
     height: 56,
