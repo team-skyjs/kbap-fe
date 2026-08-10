@@ -197,6 +197,10 @@ export default function Scan() {
 
   function fail(stage: ErrorStage, detail: string) {
     console.log(`[scan] FAIL stage=${stage} detail=${detail}`);
+    // P-144: 실패도 scan_complete로 — fail_reason은 CSV enum 3종(ocr|network|server)
+    // 매핑: capture·empty(기기 단 실패) → ocr / network → network / be → server
+    const reason = stage === 'network' ? 'network' : stage === 'be' ? 'server' : 'ocr';
+    track(EVENTS.scan_complete, { success: false, fail_reason: reason, item_count: 0, degraded: false });
     setError({ stage, detail });
     setPhase('error');
   }
@@ -212,7 +216,7 @@ export default function Scan() {
     scan.mutate({ items: scanned, photo: capturedPhoto }, {
       onSuccess: (res) => {
         // P-083: 스캔 완료 — 성공/정제실패(degraded) 구분 + 인식 항목 수
-        track(EVENTS.scan_complete, { degraded: res.degraded, item_count: res.items.length });
+        track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length });
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
@@ -290,6 +294,7 @@ export default function Scan() {
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
+    track(EVENTS.scan_start, { source: 'camera' }); // P-144
     try {
       const pic = await cam.takePictureAsync({ quality: 0.7 });
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
@@ -311,6 +316,7 @@ export default function Scan() {
     capturingRef.current = true;
     setCapturing(true);
     setError(null);
+    track(EVENTS.scan_start, { source: 'gallery' }); // P-144
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -350,6 +356,7 @@ export default function Scan() {
         ]);
         return;
       }
+      track(EVENTS.scan_start, { source: 'camera' }); // P-144 (시스템 카메라도 camera)
       const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
       if (res.canceled || !res.assets?.length) return; // 취소 → 런처 복귀(무동작)
       const a = res.assets[0];
@@ -376,6 +383,7 @@ export default function Scan() {
   // 조사 대기 — there is no detail screen even when foodId exists (Swagger 명시).
   // KB-140: unmatched 탭 = 무반응 대신 "아직 등록 안 된 음식" 안내 (중립 톤, 상세 이동은 계속 불가).
   function openDish(dish: ResultDish) {
+    track(EVENTS.scan_result_item_tap, { risk: dish.risk }); // P-144
     if (!dish.matched || !dish.foodId) return setUnmatchedOpen(true);
     // P-012(KB-179): 가격은 메뉴판 속성 — 스캔 진입에만 param으로 전달 (리스트
     // 행·오버레이 마커·사진 전용 항목 전부 이 함수를 지나므로 첨부 지점은 여기 하나)

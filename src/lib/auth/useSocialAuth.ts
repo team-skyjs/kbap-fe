@@ -18,7 +18,7 @@
 import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { EVENTS, track } from '@/lib/analytics';
+import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import * as Crypto from 'expo-crypto';
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
@@ -75,6 +75,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
       const newMember = await exchange();
       track(EVENTS.login_success, { provider: 'GOOGLE' }); // P-083
+      setUserProps({ is_registered: true }); // P-144: NRU 기준(false→true 전환)
       setPhase('idle');
       onSignedIn(newMember);
     } catch (e) {
@@ -103,6 +104,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
       const newMember = await exchange();
       track(EVENTS.login_success, { provider: 'APPLE' }); // P-083
+      setUserProps({ is_registered: true }); // P-144
       setPhase('idle');
       onSignedIn(newMember);
     } catch (e) {

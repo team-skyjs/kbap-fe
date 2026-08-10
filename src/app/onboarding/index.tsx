@@ -61,13 +61,16 @@ import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { queryClient } from '@/lib/queryClient';
-import { EVENTS, track } from '@/lib/analytics';
+import { EVENTS, setUserProps, track } from '@/lib/analytics';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
 type Step = 'consent' | 'nationality' | 'restrictions' | 'spice';
 const ORDER: Step[] = ['consent', 'nationality', 'restrictions', 'spice'];
 /** 구버전 draft 스텝 → v3 매핑 (무해 파싱 — 소멸 스텝은 근접 스텝으로). */
+/** P-144: 계측 step 와이어명 — amplitude-taxonomy.csv (terms|nationality|avoid|spice). */
+const STEP_WIRE: Record<Step, string> = { consent: 'terms', nationality: 'nationality', restrictions: 'avoid', spice: 'spice' };
+
 const LEGACY_STEP: Record<string, Step> = {
   profile: 'nationality',
   riskdemo: 'restrictions',
@@ -196,6 +199,13 @@ export default function Onboarding() {
         avoid_skipped: skipped.restrictions,
         spice_skipped: spiceSkipped,
       });
+      // P-144: user property — CSV 트리거(온보딩 제출 시 갱신). 재료명 아닌 개수·enum·코드만.
+      setUserProps({
+        country: nationality,
+        spice_level: spiceSkipped ? 'SKIP' : spice,
+        avoid_count: skipped.restrictions ? 0 : restrictions.size,
+        is_registered: true,
+      });
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
       queryClient.clear();
@@ -210,14 +220,15 @@ export default function Onboarding() {
     }
   };
 
-  // P-083: 온보딩 퍼널 계측 — 스텝 진입은 step 변화로 1회씩
+  // P-083: 온보딩 퍼널 계측 — 스텝 진입은 step 변화로 1회씩.
+  // P-144: step 값 = CSV v3 스텝명(consent→terms, restrictions→avoid)
   useEffect(() => {
-    track(EVENTS.onboarding_step_view, { step });
+    track(EVENTS.onboarding_step_view, { step: STEP_WIRE[step] });
   }, [step]);
 
   /** 계속(완료) 경로 — 계측 후 전진. P-130: 마지막 스텝(spice)은 즉시 제출 → 홈. */
   const advance = () => {
-    track(EVENTS.onboarding_step_complete, { step });
+    track(EVENTS.onboarding_step_complete, { step: STEP_WIRE[step] });
     if (step === 'spice') {
       setSkipped((s) => ({ ...s, spice: false }));
       return void finish(false);
@@ -225,7 +236,7 @@ export default function Onboarding() {
     setStep(ORDER[idx + 1]);
   };
   const skipStep = () => {
-    track(EVENTS.onboarding_step_skip, { step });
+    track(EVENTS.onboarding_step_skip, { step: STEP_WIRE[step] });
     if (step === 'restrictions') {
       setSkipped((s) => ({ ...s, restrictions: true }));
       return setStep(ORDER[idx + 1]);

@@ -76,7 +76,7 @@ export default function ReviewCompose() {
         imagePaths,
         place,
       });
-      track(EVENTS.review_submit); // P-083
+      track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
       setSubmitted(true);
     } catch (e) {
       console.log('[review] post failed — staying on screen:', (e as Error)?.message);

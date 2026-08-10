@@ -11,6 +11,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { setUserProps } from '@/lib/analytics';
 import { color as C, font } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
@@ -50,7 +51,12 @@ export default function EditRestrictions() {
   function save() {
     update.mutate(
       { restrictions: sel.map((code) => ({ kind: 'allergy' as const, code })) },
-      { onSuccess: () => router.back() },
+      {
+        onSuccess: () => {
+          setUserProps({ avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+          router.back();
+        },
+      },
     );
   }
 

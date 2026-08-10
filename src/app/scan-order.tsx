@@ -17,6 +17,7 @@ import { useMe } from '@/lib/data/useMe';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { FlippedOrderCard, type OrderItem } from '@/features/order/FlippedOrderCard';
+import { EVENTS, track } from '@/lib/analytics';
 
 export default function ScanOrder() {
   const { items: itemsParam } = useLocalSearchParams<{ items: string }>();
@@ -42,6 +43,12 @@ export default function ScanOrder() {
 
   const codes = (me?.restrictions ?? []).map((r) => r.code);
   const count = items.reduce((a, i) => a + i.qty, 0);
+
+  // P-144: 스캔→주문 퍼널 종점 (멘토 퍼널 2)
+  React.useEffect(() => {
+    track(EVENTS.order_card_open, { item_count: count, has_avoids: codes.length > 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 6, paddingBottom: bottom + 18 }]}>

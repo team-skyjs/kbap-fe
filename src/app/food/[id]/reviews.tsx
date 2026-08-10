@@ -14,6 +14,7 @@ import Animated from 'react-native-reanimated';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
+import { EVENTS, track } from '@/lib/analytics';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
@@ -118,7 +119,7 @@ export default function FoodReviews() {
               primary={{
                 label: t('reviews.writeReview'),
                 icon: <IconPlus size={17} color="#fff" />,
-                onPress: () => router.push(`/food/${id}/review` as Href),
+                onPress: () => { track(EVENTS.review_write_tap, { source: 'list' }); router.push(`/food/${id}/review` as Href); }, // P-144
               }}
             />
           </View>
@@ -191,7 +192,7 @@ export default function FoodReviews() {
                 primary={{
                   label: t('reviews.writeReview'),
                   icon: <IconPlus size={17} color="#fff" />,
-                  onPress: () => router.push(`/food/${id}/review` as Href),
+                  onPress: () => { track(EVENTS.review_write_tap, { source: 'list' }); router.push(`/food/${id}/review` as Href); }, // P-144
                 }}
               />
             ) : (

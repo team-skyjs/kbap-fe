@@ -11,6 +11,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View, Link
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { setUserProps } from '@/lib/analytics';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG, Input } from '@/components';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
@@ -56,7 +57,12 @@ export default function EditProfile() {
         // P-120: 사진 드래프트 — 있을 때만 합류(1회 PATCH), 없으면 필드 생략(유지)
         ...(photoDraft != null ? { profileImageUrl: photoDraft } : {}),
       },
-      { onSuccess: () => router.back() },
+      {
+        onSuccess: () => {
+          setUserProps({ spice_level: spice }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+          router.back();
+        },
+      },
     );
   }
 

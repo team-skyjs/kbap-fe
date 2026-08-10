@@ -20,6 +20,7 @@ import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { FlippedOrderCard } from '@/features/order/FlippedOrderCard';
 import { spring } from '@/lib/motion';
+import { EVENTS, track } from '@/lib/analytics';
 
 const QTY_MIN = 1;
 const QTY_MAX = 5;
@@ -50,6 +51,12 @@ export default function OrderCard() {
 
   const codes = (me?.restrictions ?? []).map((r) => r.code);
   const nameKo = food?.nameKo ?? '';
+
+  // P-144: 주문 카드 진입(단일 음식 경로) — item_count 1 고정
+  React.useEffect(() => {
+    track(EVENTS.order_card_open, { item_count: 1, has_avoids: codes.length > 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 6, paddingBottom: bottom + 18 }]}>

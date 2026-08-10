@@ -50,7 +50,7 @@ export default function FoodDetailScreen() {
   // P-083: 상세 진입 계측 — 진입 경로(스캔/목록/검색/홈, 그 외 other) 1회
   useEffect(() => {
     const source = src && ['scan', 'list', 'search', 'home'].includes(src) ? src : 'other';
-    track(EVENTS.food_detail_view, { source });
+    track(EVENTS.food_detail_view, { source, food_id: id ?? '' }); // P-144: food_id 추가
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   const scanPrice = parseScanPrice(price);
@@ -83,6 +83,7 @@ export default function FoodDetailScreen() {
     }
     if (!food) return;
     const adding = !saved;
+    track(EVENTS.bookmark_toggle, { on: adding }); // P-144
     setSaveError(false);
     toggleBm.mutate(
       {
@@ -383,7 +384,7 @@ function Registered({
               <Text style={styles.readAllText}>{t('detail.readAll')}</Text>
               <IconChevron size={13} color={C.primaryText} />
             </Pressable>
-            <Btn sm icon={<IconStar size={15} color="#fff" />} onPress={() => router.push(`/food/${id}/review` as Href)}>
+            <Btn sm icon={<IconStar size={15} color="#fff" />} onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
               {t('reviews.writeReview')}
             </Btn>
           </View>

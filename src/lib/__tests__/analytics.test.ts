@@ -7,7 +7,15 @@
  */
 const mockInit = jest.fn();
 const mockTrack = jest.fn();
-jest.mock('@amplitude/analytics-react-native', () => ({ init: mockInit, track: mockTrack }));
+const mockIdentify = jest.fn();
+class MockIdentify {
+  ops: Record<string, unknown> = {};
+  set(k: string, v: unknown) {
+    this.ops[k] = v;
+    return this;
+  }
+}
+jest.mock('@amplitude/analytics-react-native', () => ({ init: mockInit, track: mockTrack, identify: mockIdentify, Identify: MockIdentify }));
 
 const KEY_NAME = 'EXPO_PUBLIC_AMPLITUDE_API_KEY';
 
@@ -22,6 +30,7 @@ function loadAnalytics(key: string | undefined) {
 beforeEach(() => {
   mockInit.mockClear();
   mockTrack.mockClear();
+  mockIdentify.mockClear();
 });
 
 afterAll(() => {
@@ -76,4 +85,54 @@ it('스키마 표에 PII성 키 자체가 없다 (sanitize가 전 이벤트에�
     const out = a.sanitize(ev, { ...PII }) ?? {};
     expect(Object.keys(out)).toHaveLength(0);
   }
+});
+
+
+/* ---- P-144(KB-316): amplitude-taxonomy.csv 전사 잠금 ---- */
+
+it('P-144: CSV 이벤트·속성 스키마 1:1 — 신규 7종 + 확장 2종', () => {
+  const a = loadAnalytics('test-key');
+  // CSV 이벤트명 그대로(임의 개명 금지)
+  for (const e of ['application_opened', 'scan_start', 'scan_result_item_tap', 'order_card_open', 'search_query', 'review_write_tap', 'bookmark_toggle']) {
+    expect((a.EVENTS as Record<string, string>)[e]).toBe(e);
+  }
+  // 속성 스키마 — CSV 열 그대로 통과, 그 외 드롭
+  expect(a.sanitize(a.EVENTS.scan_start, { source: 'camera', junk: 1 })).toEqual({ source: 'camera' });
+  expect(a.sanitize(a.EVENTS.scan_result_item_tap, { risk: 'danger' })).toEqual({ risk: 'danger' });
+  expect(a.sanitize(a.EVENTS.order_card_open, { item_count: 2, has_avoids: true })).toEqual({ item_count: 2, has_avoids: true });
+  expect(a.sanitize(a.EVENTS.search_query, { keyword: 'kimchi', result_count: 4 })).toEqual({ keyword: 'kimchi', result_count: 4 });
+  expect(a.sanitize(a.EVENTS.review_write_tap, { source: 'detail' })).toEqual({ source: 'detail' });
+  expect(a.sanitize(a.EVENTS.bookmark_toggle, { on: true })).toEqual({ on: true });
+  // 확장: scan_complete success/fail_reason · review_submit has_photos/photo_count/rating
+  expect(a.sanitize(a.EVENTS.scan_complete, { success: false, fail_reason: 'ocr', item_count: 0, degraded: false })).toEqual({ success: false, fail_reason: 'ocr', item_count: 0, degraded: false });
+  expect(a.sanitize(a.EVENTS.review_submit, { has_photos: true, photo_count: 3, rating: 5 })).toEqual({ has_photos: true, photo_count: 3, rating: 5 });
+  expect(a.sanitize(a.EVENTS.food_detail_view, { source: 'scan', food_id: '7' })).toEqual({ source: 'scan', food_id: '7' });
+});
+
+it('P-144: user property — 허용 키만 통과(PII 키 드롭) + Identify 경유(익명 유지)', () => {
+  const a = loadAnalytics('test-key');
+  // sanitize: 재료명·닉네임·이메일 등 허용 밖 키 드롭
+  expect(
+    a.sanitizeUserProps({
+      country: 'US',
+      spice_level: 'MEDIUM',
+      avoid_count: 3,
+      is_registered: true,
+      // @ts-expect-error — PII 침투 시나리오
+      nickname: 'Yejin',
+      email: 'a@b.c',
+      avoid_ingredients: ['EGG'],
+    }),
+  ).toEqual({ country: 'US', spice_level: 'MEDIUM', avoid_count: 3, is_registered: true });
+  // Identify 호출 — setUserId 없음(익명 device id 유지)
+  a.setUserProps({ lang: 'en', os: 'ios' });
+  expect(mockIdentify).toHaveBeenCalledTimes(1);
+  expect((mockIdentify.mock.calls[0][0] as { ops: Record<string, unknown> }).ops).toEqual({ lang: 'en', os: 'ios' });
+});
+
+it('P-144: 키 없음 → setUserProps도 no-op', () => {
+  const a = loadAnalytics(undefined);
+  a.setUserProps({ country: 'US' });
+  expect(mockIdentify).not.toHaveBeenCalled();
+  expect(mockInit).not.toHaveBeenCalled();
 });

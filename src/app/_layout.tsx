@@ -9,7 +9,7 @@
  */
 import 'react-native-gesture-handler';
 import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -28,6 +28,7 @@ import { FLAGS } from '@/lib/flags';
 import i18n from '@/lib/i18n';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { useAppFonts } from '@/lib/useAppFonts';
+import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
@@ -64,6 +65,17 @@ export default function RootLayout() {
       .then(([, seen]) => { needsIntro.current = !seen; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
     void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
+  }, []);
+
+  // P-144(KB-316): application_opened = 실행 + 포그라운드 복귀마다 (DAU 분모,
+  // 멘토 지시) · 시작 시 user property(lang·os) 세팅 — CSV 트리거 준수.
+  useEffect(() => {
+    track(EVENTS.application_opened);
+    setUserProps({ lang: i18n.language, os: Platform.OS, os_version: String(Platform.Version) });
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st === 'active') track(EVENTS.application_opened);
+    });
+    return () => sub.remove();
   }, []);
 
   // 네비게이터가 마운트된 뒤 1회만 인트로로 보낸다 (replace라 백스택 없음)
