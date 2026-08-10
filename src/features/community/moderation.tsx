@@ -18,6 +18,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
+import { FLAGS } from '@/lib/flags';
 import type { CommunityAuthor, ReportReason, ReportTarget } from '@/lib/community/types';
 import { authorName } from './parts';
 
@@ -114,7 +115,10 @@ export function ModerationFlow({
                 { key: 'delete', label: t('community.delete'), icon: <IconTrash size={17} color={DESTRUCTIVE} />, destructive: true, onPress: () => onDelete(target) },
               ]
             : [
-                { key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, onPress: () => setPhase('report') },
+                // P-142: 커뮤니티 신고 = 플래그 off(/reports targetType이 REVIEW뿐) — 리뷰 타깃만 노출
+                ...(target.type === 'review' || FLAGS.communityReportEnabled
+                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, onPress: () => setPhase('report') }]
+                  : []),
                 { key: 'block', label: t('community.blockUser', { name }), icon: <IconUserX size={17} color={DESTRUCTIVE} />, destructive: true, onPress: () => setPhase('blockConfirm') },
               ]
         }

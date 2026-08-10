@@ -26,7 +26,8 @@ import {
   useReact,
   useUpdateComment,
 } from '@/lib/community/hooks';
-import { MY_ID } from '@/lib/community/store';
+import { useMe } from '@/lib/data/useMe';
+import { FLAGS } from '@/lib/flags';
 import { setPendingToast } from '@/lib/community/pendingToast';
 import type { CommunityComment } from '@/lib/community/types';
 import { AuthorRow, PhotoGrid, ReactionBar, TagChip, authorName, timeAgo } from '@/features/community/parts';
@@ -47,6 +48,7 @@ export default function CommunityPostDetail() {
   const { t } = useTranslation();
   const bottomInset = useBottomInset();
   const isGuest = useIsGuest();
+  const myId = useMe().data?.id ?? ''; // P-142: 내 글 판별 = 실 회원 id (목 MY_ID 소멸)
 
   const { data: post, isLoading } = useCommunityPost(id ?? '');
   const { data: comments } = useCommunityComments(id ?? '');
@@ -124,16 +126,19 @@ export default function CommunityPostDetail() {
           <AuthorRow
             author={post.author}
             when={timeAgo(post.createdAt, t)}
-            onMore={() => setMod({ type: 'post', id: post.id, author: post.author, mine: post.author.id === MY_ID })}
+            onMore={() => setMod({ type: 'post', id: post.id, author: post.author, mine: post.author.id === myId })}
             t={t}
           />
           <Text style={styles.postBody}>{post.body}</Text>
 
-          {/* 번역 토글 — 모든 글 표시 (7/30 확정, 언어 감지 없음). 목 = 상태 전환만 */}
-          <Pressable hitSlop={6} onPress={() => setTranslated((v) => !v)} style={styles.txRow}>
-            <Text style={styles.txLink}>{translated ? t('reviews.showOriginal') : t('reviews.translate')}</Text>
-            {translated && <Text style={styles.txState}>{t('community.translatedState')}</Text>}
-          </Pressable>
+          {/* P-142: 번역 토글 = 플래그 off — lang 하드 필수 계약이라 원문 조회 수단
+              부재(본문은 항상 서버측 리더 언어 응답). 원문 규약 배포 시 재개. */}
+          {FLAGS.communityTranslateEnabled && (
+            <Pressable hitSlop={6} onPress={() => setTranslated((v) => !v)} style={styles.txRow}>
+              <Text style={styles.txLink}>{translated ? t('reviews.showOriginal') : t('reviews.translate')}</Text>
+              {translated && <Text style={styles.txState}>{t('community.translatedState')}</Text>}
+            </Pressable>
+          )}
 
           <PhotoGrid photos={post.photos} />
           {(post.foodTags.length > 0 || post.placeTag) && (
@@ -192,7 +197,7 @@ export default function CommunityPostDetail() {
                   t={t}
                   onReact={(target, r) => requireMember(() => react.mutate({ target: 'comment', id: target.id, reaction: r }))}
                   onReply={(top, source) => startReply(top, source)}
-                  onMore={(cm) => setMod({ type: 'comment', id: cm.id, author: cm.author, mine: cm.author.id === MY_ID })}
+                  onMore={(cm) => setMod({ type: 'comment', id: cm.id, author: cm.author, mine: cm.author.id === myId })}
                 />
               ))}
             </View>

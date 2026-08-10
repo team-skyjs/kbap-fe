@@ -180,5 +180,6 @@ export const api = {
   get: <T>(path: string, opts?: RequestOpts) => request<T>('GET', path, undefined, false, opts?.timeoutMs),
   post: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('POST', path, body, false, opts?.timeoutMs),
   patch: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PATCH', path, body, false, opts?.timeoutMs),
+  put: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PUT', path, body, false, opts?.timeoutMs),
   del: <T>(path: string, opts?: RequestOpts) => request<T>('DELETE', path, undefined, false, opts?.timeoutMs),
 };

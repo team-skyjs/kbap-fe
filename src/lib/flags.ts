@@ -70,6 +70,24 @@ export const FLAGS = {
    * 비교 확정 전 — 커스텀 코드 삭제 금지.
    */
   systemCamera: false,
+  /**
+   * 커뮤니티 글/댓글 리액션 토글 (P-142) — 계약에 토글 API 부재(응답에
+   * likeCount·dislikeCount만, 댓글은 카운트도 없음) → off = 카운트 표시만.
+   * BE 리액션 API 배포 시 true + adapter 배선.
+   */
+  communityReactionsEnabled: false,
+  /**
+   * 커뮤니티 글/댓글 신고 (P-142) — /reports targetType enum이 REVIEW뿐
+   * (스웨거 8/10 실확인) → off = 신고 메뉴 미노출(리뷰 신고는 무관·유지).
+   * BE enum 확장 시 true + adapter 배선.
+   */
+  communityReportEnabled: false,
+  /**
+   * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
+   * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
+   * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.
+   */
+  communityTranslateEnabled: false,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

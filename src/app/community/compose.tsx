@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
+import { FLAGS } from '@/lib/flags';
 import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, Rosette, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -213,13 +214,16 @@ export default function CommunityCompose() {
             chips={foodTags.map((f) => ({ key: f.foodId, label: f.name, onRemove: () => setFoodTags((cur) => cur.filter((x) => x.foodId !== f.foodId)) }))}
             onPress={() => setTagSheet('food')}
           />
-          <TagRow
-            iconTile={<View style={[styles.tagIconTile, { backgroundColor: accentTint }]}><IconMapPin size={15} color={C.accent} /></View>}
-            placeholder={t('community.tagPlace')}
-            counter={`${placeTag ? 1 : 0}/1`}
-            chips={placeTag ? [{ key: placeTag.name, label: placeTag.name, onRemove: () => setPlaceTag(null) }] : []}
-            onPress={() => setTagSheet('place')}
-          />
+          {/* P-142: 장소 태그 = 계약 부재(foodTags만) — placeTagsEnabled로 게이트(KB-274 복원 시 재개) */}
+          {FLAGS.placeTagsEnabled && (
+            <TagRow
+              iconTile={<View style={[styles.tagIconTile, { backgroundColor: accentTint }]}><IconMapPin size={15} color={C.accent} /></View>}
+              placeholder={t('community.tagPlace')}
+              counter={`${placeTag ? 1 : 0}/1`}
+              chips={placeTag ? [{ key: placeTag.name, label: placeTag.name, onRemove: () => setPlaceTag(null) }] : []}
+              onPress={() => setTagSheet('place')}
+            />
+          )}
 
           {/* ④ 번역 힌트 */}
           <View style={styles.hintRow}>
@@ -240,11 +244,13 @@ export default function CommunityCompose() {
             tinted={foodTags.length > 0 && foodTags.length < FOOD_TAG_MAX}
             onPress={() => setTagSheet('food')}
           />
-          <ToolBtn
-            icon={<IconMapPin size={20} color={placeTag ? C.ink3 : C.ink2} />}
-            tinted={false}
-            onPress={() => setTagSheet('place')}
-          />
+          {FLAGS.placeTagsEnabled && (
+            <ToolBtn
+              icon={<IconMapPin size={20} color={placeTag ? C.ink3 : C.ink2} />}
+              tinted={false}
+              onPress={() => setTagSheet('place')}
+            />
+          )}
         </View>
       </View>
 

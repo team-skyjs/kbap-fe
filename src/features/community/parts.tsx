@@ -8,6 +8,7 @@ import * as React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
+import { FLAGS } from '@/lib/flags';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Flag, IconBubbleEmpty, IconMore, IconThumbsDown, IconThumbsUp, IconProfile, IconFood, IconMapPin } from '@/components';
 import type { CommunityAuthor, CommunityPost, Reaction } from '@/lib/community/types';
@@ -87,7 +88,9 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
   );
 }
 
-/** 리액션 버튼 — 활성=채움(형태+채움 전환, 색만 금지). 싫어요 카운트 0은 숨김. */
+/** 리액션 버튼 — 활성=채움(형태+채움 전환, 색만 금지). 싫어요 카운트 0은 숨김.
+ *  P-142: 토글 API 부재 → 플래그 off = **카운트 표시만**(비인터랙티브), 댓글
+ *  이동 버튼은 유지. 표시할 것이 하나도 없으면 행 자체 미렌더(댓글 행 등). */
 export function ReactionBar({
   likes,
   dislikes,
@@ -103,24 +106,30 @@ export function ReactionBar({
   onReact: (r: 'like' | 'dislike') => void;
   onComment?: () => void;
 }) {
+  const interactive = FLAGS.communityReactionsEnabled;
+  if (!interactive && likes <= 0 && dislikes <= 0 && !onComment) return null;
   return (
     <View style={styles.reactRow}>
-      <Pressable style={styles.reactBtn} hitSlop={8} onPress={() => onReact('like')}>
-        <IconThumbsUp
-          size={17}
-          color={myReaction === 'like' ? C.primary : C.ink2}
-          {...(myReaction === 'like' ? { fill: C.primary, sw: 0 } : {})}
-        />
-        {likes > 0 && <Text style={[styles.reactCount, myReaction === 'like' && styles.reactCountOn]}>{likes}</Text>}
-      </Pressable>
-      <Pressable style={styles.reactBtn} hitSlop={8} onPress={() => onReact('dislike')}>
-        <IconThumbsDown
-          size={17}
-          color={myReaction === 'dislike' ? C.ink : C.ink2}
-          {...(myReaction === 'dislike' ? { fill: C.ink, sw: 0 } : {})}
-        />
-        {dislikes > 0 && <Text style={styles.reactCount}>{dislikes}</Text>}
-      </Pressable>
+      {(interactive || likes > 0) && (
+        <Pressable style={styles.reactBtn} hitSlop={8} onPress={() => onReact('like')} disabled={!interactive} testID="react-like">
+          <IconThumbsUp
+            size={17}
+            color={myReaction === 'like' ? C.primary : C.ink2}
+            {...(myReaction === 'like' ? { fill: C.primary, sw: 0 } : {})}
+          />
+          {likes > 0 && <Text style={[styles.reactCount, myReaction === 'like' && styles.reactCountOn]}>{likes}</Text>}
+        </Pressable>
+      )}
+      {(interactive || dislikes > 0) && (
+        <Pressable style={styles.reactBtn} hitSlop={8} onPress={() => onReact('dislike')} disabled={!interactive} testID="react-dislike">
+          <IconThumbsDown
+            size={17}
+            color={myReaction === 'dislike' ? C.ink : C.ink2}
+            {...(myReaction === 'dislike' ? { fill: C.ink, sw: 0 } : {})}
+          />
+          {dislikes > 0 && <Text style={styles.reactCount}>{dislikes}</Text>}
+        </Pressable>
+      )}
       {onComment && (
         <Pressable style={styles.reactBtn} hitSlop={8} onPress={onComment}>
           <IconBubbleEmpty size={17} color={C.ink2} />

@@ -18,7 +18,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { useCommunityFeed, useDeletePost, useReact } from '@/lib/community/hooks';
-import { MY_ID } from '@/lib/community/store';
+import { useMe } from '@/lib/data/useMe';
 import { consumePendingToast } from '@/lib/community/pendingToast';
 import type { CommunityPost } from '@/lib/community/types';
 import { PostCard } from '@/features/community/parts';
@@ -33,6 +33,7 @@ export default function Community() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isGuest = useIsGuest();
+  const myId = useMe().data?.id ?? ''; // P-142: 내 글 판별 = 실 회원 id
 
   const feed = useCommunityFeed();
   const react = useReact();
@@ -99,7 +100,7 @@ export default function Community() {
             post={item}
             t={t}
             onOpen={() => router.push(`/community/post/${item.id}` as Href)}
-            onMore={() => setMod({ type: 'post', id: item.id, author: item.author, mine: item.author.id === MY_ID })}
+            onMore={() => setMod({ type: 'post', id: item.id, author: item.author, mine: item.author.id === myId })}
             onReact={(r) => requireMember(() => react.mutate({ target: 'post', id: item.id, reaction: r }))}
             onTagFood={(foodId, name) => setFoodSheet({ foodId, name })}
             onTagPlace={() => setPlaceSheet(item)}

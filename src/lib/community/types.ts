@@ -8,7 +8,9 @@ export type Reaction = 'like' | 'dislike' | null;
 export interface CommunityAuthor {
   id: string;
   nickname: string | null; // null = 탈퇴한 사용자 (content 유지 + 기본 프로필)
-  nationality: string | null;
+  nationality: string | null; // P-142: 실계약 미제공 — 항상 null(모노그램 폴백)
+  /** P-142: 실계약 제공(CDN URL) — 화면은 옵셔널 소비. */
+  profileImageUrl?: string | null;
 }
 
 export interface FoodTagRef {
