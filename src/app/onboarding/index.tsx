@@ -13,7 +13,7 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -532,7 +532,9 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     return (
       <Pressable
         key={c.code}
-        style={[styles.natRow, pinned && styles.natPin]}
+        // P-148 ①: 핀 카드 강조(보더·틴트)는 **선택 상태에 바인딩** — 타국 선택 시
+        // 일반 행과 같은 무강조(핀 위치·섹션 라벨은 유지). 강조는 항상 1곳.
+        style={[styles.natRow, pinned && on && styles.natPin]}
         onPress={() => onSelect(c.code)}
         testID={`nat-${c.code}`}
       >
@@ -676,6 +678,14 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
   const rank = spiceRank(level);
   const rail = SPICE_RAIL[level];
   const kids = level === 'NONE' || level === 'MILD';
+  // P-148 ③: 캐러셀 카드 = 화면폭 58%(다음 카드 피크 — emo 톤, 재량 보고)
+  const { width: winW } = useWindowDimensions();
+  const cardW = Math.round(winW * 0.58);
+  const railRef = useRef<ScrollView>(null);
+  // 레벨 전환 시 스크롤 처음으로 리셋
+  useEffect(() => {
+    railRef.current?.scrollTo({ x: 0, animated: false });
+  }, [level]);
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} />
@@ -688,9 +698,10 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
             </Text>
           ))}
         </View>
-        {/* 레벨명 + 👶 배지(NONE·MILD 한정 — 헌법 v2.3.1) — 배지 슬롯 고정 높이(프레임 불변) */}
-        <View style={styles.bandRow}>
-          <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
+        {/* P-148 ②: 레벨명 **아래** 👶 배지(NONE·MILD 한정 — 헌법 v2.3.1) —
+            배지 줄 = 고정 높이 슬롯(레벨 전환에도 아래 슬라이더 프레임 불변, P-134 승계) */}
+        <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
+        <View style={styles.kidSlot} testID="kid-slot">
           {kids && (
             <View style={styles.kidBadge} testID="kid-badge">
               <Text style={styles.kidBadgeText}>{t('onboarding.kidsBadge')}</Text>
@@ -701,11 +712,21 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
       <View style={{ marginTop: 18 }}>
         <SpiceLevelSlider level={level} onChange={setLevel} onDragStateChange={onDragStateChange} />
       </View>
-      {/* 사진 카드 레일 — 레벨 전환 시 교체 (DB CDN, 미로드 폴백 = 색 카드) */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 18 }} contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}>
+      {/* P-148 ③: 사진 캐러셀 — 크게(화면폭 58%)+가로 스크롤+다음 카드 피크,
+          레벨 전환 시 처음으로 리셋. 데이터 = spiceRail 상수 그대로(레벨당 3장) */}
+      <ScrollView
+        ref={railRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginTop: 16 }}
+        contentContainerStyle={{ gap: 12, paddingHorizontal: 2 }}
+        snapToInterval={cardW + 12}
+        decelerationRate="fast"
+        testID="spice-rail"
+      >
         {rail.map((f) => (
-          <View key={f.foodId} style={styles.railCard} testID={`rail-${f.foodId}`}>
-            <View style={styles.railImgWrap}>
+          <View key={f.foodId} style={{ width: cardW }} testID={`rail-${f.foodId}`}>
+            <View style={[styles.railImgWrap, { width: cardW, height: Math.round(cardW * 0.68) }]}>
               <Image source={{ uri: f.imageUrl }} style={styles.railImg} />
             </View>
             <Text style={styles.railName} numberOfLines={1}>{f.name}</Text>
@@ -743,14 +764,14 @@ const styles = StyleSheet.create({
   avLabel: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, maxWidth: '100%' },
   avLabelOn: { color: C.primaryText },
   // P-134 맵기 — 배지 줄(고정 높이)·레일·설명
-  bandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 38 },
+  // P-148 ②: 배지 슬롯 — 고정 높이(배지 부재 레벨에서도 프레임 불변)
+  kidSlot: { height: 26, alignItems: 'center', justifyContent: 'center' },
   kidBadge: { backgroundColor: 'rgba(47,143,91,0.1)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   kidBadgeText: { fontFamily: font.bodyBold, fontSize: 11.5, color: '#2f8f5b' },
-  railCard: { width: 108 },
-  railImgWrap: { width: 108, height: 82, borderRadius: 13, overflow: 'hidden', backgroundColor: C.surface2 },
+  railImgWrap: { borderRadius: 15, overflow: 'hidden', backgroundColor: C.surface2 }, // P-148: 크기 동적(화면폭 58%)
   railImg: { width: '100%', height: '100%' },
-  railName: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink, marginTop: 5 },
-  railKo: { fontFamily: font.ko, fontSize: 10.5, color: C.ink3 },
+  railName: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, marginTop: 6 },
+  railKo: { fontFamily: font.ko, fontSize: 11, color: C.ink3 },
   spiceDesc: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, height: 36, color: C.ink2, textAlign: 'center', marginTop: 14, paddingHorizontal: 8 }, // P-119 승계: 2줄 고정 슬롯 — 레벨 전환 프레임 불변
   // P-130 v3
   miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 40 },

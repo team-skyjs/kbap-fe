@@ -182,3 +182,35 @@ it('P-119: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 완전 동�
   expect(ha.band.lineHeight).toBe(38);
   expect(ha.pill.height).toBe(36); // 설명 슬롯 고정
 });
+
+/* ---- P-148: 배지 = 레벨명 아래 고정 슬롯 · 캐러셀 확대+레벨 리셋 ---- */
+it('P-148 ②: 👶 배지 슬롯 — 레벨명 아래 고정 높이(NONE=배지 有, HOT=無 — 슬롯 동일)', async () => {
+  const flat = (s2: unknown) => StyleSheet.flatten(s2) as Record<string, number | undefined>;
+  const slotOf = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'kid-slot')[0];
+  const a = await renderSpiceStep();
+  await selectStop(a, 0); // NONE — 배지 표시
+  expect(a.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBeGreaterThanOrEqual(1);
+  const b = await renderSpiceStep();
+  await selectStop(b, 3); // HOT — 배지 없음
+  expect(b.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBe(0);
+  // 슬롯 자체는 두 상태에서 동일 고정 높이 — 아래 슬라이더 프레임 불변
+  expect(flat(slotOf(a).props.style).height).toBe(26);
+  expect(flat(slotOf(b).props.style)).toEqual(flat(slotOf(a).props.style));
+});
+
+it('P-148 ③: 사진 캐러셀 — 화면폭 비율 카드(가로 스크롤) + 레벨 전환 시 처음 리셋', async () => {
+  const tree = await renderSpiceStep();
+  const rail = tree.root.findAll((n) => n.props?.testID === 'spice-rail')[0];
+  expect(rail.props.horizontal).toBe(true);
+  // 카드 폭 = 화면폭 58% (jest 기본 window 750 → 435) — 구 108 고정 소멸
+  const cards = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('rail-'));
+  expect(cards.length).toBeGreaterThanOrEqual(3);
+  const w = (StyleSheet.flatten(cards[0].props.style) as { width?: number }).width!;
+  expect(w).toBeGreaterThan(200); // 108 고정 그리드 아님 — 확대 캐러셀
+  // 레벨 전환 → scrollTo(0) 리셋
+  const scrollTo = jest.fn();
+  const inst = rail.instance as { scrollTo?: unknown } | null;
+  if (inst) (inst as { scrollTo: unknown }).scrollTo = scrollTo;
+  await selectStop(tree, 3);
+  expect(scrollTo).toHaveBeenCalledWith({ x: 0, animated: false });
+});

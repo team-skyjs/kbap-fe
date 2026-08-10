@@ -230,3 +230,19 @@ it('P-134 맵기: 레벨 전환 시 레일 교체 · 👶 배지 NONE/MILD 한�
   expect(tree.root.findAll((n) => n.props?.testID === 'rail-483').length).toBeGreaterThanOrEqual(1); // HOT 레일(국물떡볶이)
   expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0); // 배지 소멸
 });
+
+/* ---- P-148 ①: 핀 카드 강조 = 선택 상태 바인딩 ---- */
+it('P-148: 타국 선택 시 감지국 핀 카드 강조(보더·틴트) 완전 해제 — 강조는 항상 1곳', async () => {
+  mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
+  const tree = await render();
+  const { StyleSheet: RNSheet } = require('react-native') as typeof import('react-native');
+  const flatS = (s2: unknown) => JSON.stringify(RNSheet.flatten(s2) ?? {});
+  const pin = () => tree.root.findAll((n) => n.props?.testID === 'nat-US')[0];
+  // 감지국(US)이 선택 상태 — 핀 카드 강조(주황 보더) 존재
+  expect(flatS(pin().props.style)).toContain('"borderColor":"#E2580C"');
+  // 타국(JP) 선택 → 핀 카드 무강조(일반 행과 동일 — 보더·틴트 소멸)
+  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
+  await act(async () => { jp.props.onPress(); });
+  expect(flatS(pin().props.style)).not.toContain('"borderColor":"#E2580C"');
+  expect(flatS(pin().props.style)).not.toContain('rgba(226,88,12');
+});
