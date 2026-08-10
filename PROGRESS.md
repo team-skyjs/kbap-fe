@@ -976,3 +976,7 @@
 - [x] adapter 전면 실 API: 피드/상세 lang 필수+cursor·작성/수정 imagePaths(COMMUNITY 업로드/URL 역변환)+foodIds·댓글 replies 1뎁스 평탄화(parentCommentId). 목 스토어·시드 삭제, 내 글 판별 = 실 회원 id. client PUT 추가.
 - [x] 계약 부재 표면 플래그 off: 리액션 토글(카운트만)·장소 태그·커뮤니티 신고(REVIEW뿐). 차단 = 멤버 단위 상시 연결. 번역 토글 = 원문 수단 부재로 off+BE 질의.
 - [x] tsc 0 · jest 88스위트 486/486 · teamtest OTA(iOS 07f29b7b·안드 7687943e) — 16cebb5.
+
+## 안드 vc9 production 빌드 (2026-08-10, P-141 — Play 스토어 UI 개편분)
+- [x] prod 계약 감사(vc7 이후 diff 전수 — 신규 표면 P-111 /app-config 1건, 페일 오픈)·P-114 유닛·목 숨김 확인 통과. 코드 변경 0, 기준 커밋 2d3931d(K-10 포함).
+- [x] AAB(fb718b38)+스모크 APK(bce3b543) vc9 빌드 성공 — 스토어 업로드는 예진 스모크 후.
