@@ -988,3 +988,7 @@
 ## 앰플리튜드 계측 1차 (2026-08-10, P-144 — 멘토 #39, taxonomy CSV 전사)
 - [x] 신규 7종(application_opened·scan_start·scan_result_item_tap·order_card_open·search_query·review_write_tap·bookmark_toggle)+확장 3종(scan_complete success/fail_reason·review_submit 사진/평점·food_detail_view food_id)+온보딩 step v3 와이어명. user property 6종(setUserProps — Identify 익명 유지, 화이트리스트 드롭).
 - [x] tsc 0 · jest 91스위트 493/493 · teamtest OTA(iOS db486c0f·안드 4dc84688) — 188ddbf. ⚠️ teamtest는 키 무존재 no-op(P-094) — 수신 확인 경로 질의 보고.
+
+## 검색 유도 (2026-08-10, P-143 — 멘토 #13·14·17)
+- [x] discovery.ts 격리(BE ⑥ 스왑 지점) — placeholder 시드 = 랭크 상위 12 로테이션(진입마다·리더 언어 번역명), 빈 상태 인기 사진 레일(사진 우선 8, 탭=상세 진입, 게스트 노출).
+- [x] tsc 0 · jest 93스위트 497/497 · i18n 1키 ×10 · teamtest OTA(iOS 8e234875·안드 7c805ac5) — 69628df.
