@@ -148,12 +148,12 @@ it('P-138⑤(예진 8/6, P-071 대체): 스캔 완료 기본 = List — Photo는
   expect(photoOnlyRow.length).toBeGreaterThanOrEqual(1);
   // §14-5: unmatched(맥북)도 리스트에서 숨겨지지 않는다
   expect(tree.root.findAll((n) => n.props?.children === '맥북').length).toBeGreaterThanOrEqual(1);
-  // Photo 세그 전환 → 오버레이(사진+마커) 렌더 무회귀
+  // Photo 세그 전환 → 원본 뷰(P-149: 쌩 원본+줌 — 마커 prop 소멸)
   const riskBtn = tree.root.findAll((n) => n.props?.testID === 'seg-risk' && typeof n.props?.onPress === 'function');
   act(() => {
     riskBtn[riskBtn.length - 1].props.onPress();
   });
   const overlays = tree.root.findAllByType(ScanResultOverlay);
   expect(overlays.length).toBe(1);
-  expect(overlays[0].props.showMarkers).toBe(true);
+  expect(overlays[0].props.photo).toBeTruthy();
 });

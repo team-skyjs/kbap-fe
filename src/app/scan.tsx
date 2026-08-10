@@ -44,8 +44,6 @@ import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
-import { assignScanNumbers } from '@/features/scan/capsuleMarker';
-import { ScanMiniSheet } from '@/features/scan/ScanMiniSheet';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { resolveCurrency } from '@/lib/exchange';
@@ -109,8 +107,6 @@ export default function Scan() {
   // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
   // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
   const [view, setView] = useState<ResultView>('list');
-  // P-125: 캡슐 탭 → 미니시트 해당 행 하이라이트 (상세 이동은 시트 행 탭)
-  const [highlightId, setHighlightId] = useState<number | null>(null);
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
   // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
@@ -152,9 +148,6 @@ export default function Scan() {
   const [capturing, setCapturing] = useState(false);
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
   const [nudgeHidden, setNudgeHidden] = useState(isNudgeDismissed());
-  // P-064③: 원본 피크 — 위험도 뷰에서 빈 영역 꾹 = 오버레이(마커·버튼) 페이드아웃
-  const [peeking, setPeeking] = useState(false);
-  const peekFade = useAnimatedStyle(() => ({ opacity: withTiming(peeking ? 0 : 1, { duration: 150 }) }));
   // P-131: 세로 유도 폐기 — 방향 감지는 UI 요소 제자리 회전(90° 스냅)에 재사용
   const uiDeg = uiRotationDeg(camOrientation);
   const uiRotate = useAnimatedStyle(() => ({ transform: [{ rotate: withTiming(`${uiDeg}deg`, { duration: 150 }) }] }));
@@ -449,8 +442,6 @@ export default function Scan() {
       koreanName: p.koreanName,
     }));
     const allDishes = [...resultDishes, ...photoDishes];
-    // P-125: 캡슐 번호 = itemId 오름차순 안정 — 미니시트 순번과 1:1
-    const numberedDishes = assignScanNumbers(resultDishes);
     // §14-5: unable sorted last, never hidden
     const listDishes = [...allDishes].sort((a, b) => (a.risk === 'unable' ? 1 : 0) - (b.risk === 'unable' ? 1 : 0));
 
@@ -518,43 +509,14 @@ export default function Scan() {
               onAdd={(d) => bumpCart(d.itemId, 1)}
               onRemove={(d) => bumpCart(d.itemId, -1)}
               onOpen={openDish}
+              onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               onEditProfile={() => router.push('/profile/restrictions' as Href)}
               t={t}
             />
           </ScrollView>
         ) : (
-          <View style={{ flex: 1 }}>
-            <View style={{ flex: 1 }}>
-              <ScanResultOverlay
-                photo={photo}
-                dishes={numberedDishes}
-                showMarkers
-                onTapDish={(d) => setHighlightId(d.itemId)}
-                peeking={peeking}
-                onPeekChange={setPeeking}
-              />
-              <Animated.View style={[styles.miniSheetWrap, { bottom: 12 }, peekFade]} pointerEvents={peeking ? 'none' : 'box-none'} testID="mini-sheet-wrap">
-                <ScanMiniSheet
-                  numbered={numberedDishes}
-                  extras={photoDishes}
-                  highlightId={highlightId}
-                  riskLabel={(r) => t(`risk.${r}`)}
-                  onRowPress={openDish}
-                  bottomOffset={0}
-                />
-              </Animated.View>
-            </View>
-            {/* P-136(S1b 채택분): 범례 4종 + 힌트 — 캡슐·미니시트 유지(KB-240 재발 방지, 번역 패치 이식 금지) */}
-            <View style={styles.legendRow} testID="risk-legend">
-              {(['safe', 'caution', 'danger', 'unable'] as const).map((r) => (
-                <View key={r} style={styles.legendItem}>
-                  <RiskMark state={r} size={13} />
-                  <Text style={styles.legendText}>{t(`risk.${r}`)}</Text>
-                </View>
-              ))}
-            </View>
-            <Text style={styles.legendHint}>{t('scan.legendHint')}</Text>
-          </View>
+          /* P-149(예진 확정): Photo 뷰 = 쌩 원본 + 핀치 줌만 — 캡슐·미니시트·범례·힌트 철거 */
+          <ScanResultOverlay photo={photo} />
         )}
 
         {degraded && <Text style={[styles.degradedNote, { position: 'absolute', bottom: bottom + 78, alignSelf: 'center' }]}>{t('scan.degradedNote')}</Text>}
@@ -828,10 +790,6 @@ const styles = StyleSheet.create({
   segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
   segText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink3 },
   segTextOn: { color: C.ink },
-  legendRow: { flexDirection: 'row', justifyContent: 'center', gap: 14, paddingTop: 9, backgroundColor: '#fff' },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendText: { fontFamily: font.body, fontSize: 11, color: C.ink2 },
-  legendHint: { fontFamily: font.body, fontSize: 10.5, color: C.ink3, textAlign: 'center', paddingVertical: 7, backgroundColor: '#fff' },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
   close: { position: 'absolute', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
@@ -882,7 +840,6 @@ const styles = StyleSheet.create({
   sweepTrail: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 2 },
   sweepLine: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, borderRadius: 2, backgroundColor: '#E2580C', shadowColor: '#E2580C', shadowOpacity: 0.9, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
   // P-064② 파파고식 플로팅 버튼 + 사진 하단 섀도
-  miniSheetWrap: { position: 'absolute', left: 10, right: 10 },
   resultShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 220 },
   listShade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 150 },
   // list rows

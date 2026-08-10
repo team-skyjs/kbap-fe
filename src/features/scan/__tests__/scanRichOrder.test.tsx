@@ -191,3 +191,20 @@ it('주문 카드 문구 잠금 — 기존 orderCard.ts 조립 결과만, 시안
   expect(s).toContain('order.mirrorAvoid');
   expect(s).toContain('₩19,000');
 });
+
+it('P-149 ①: 주문 카드 = 전체 스크롤 컨테이너(항목 多 도달) + 확대 뷰도 스크롤·명시 닫기', () => {
+  const many = Array.from({ length: 14 }, (_, i) => ({ nameKo: `메뉴${i}`, name: `Menu${i}`, qty: 1, priceKrw: 1000 }));
+  const tree = render(
+    <FlippedOrderCard items={many} avoidCodes={[]} avoidNames={[]} currency="USD" onDone={() => {}} t={t} />,
+  );
+  // 본문 = ScrollView (14개여도 내역·미러·합계·Done 도달)
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-scroll').length).toBeGreaterThanOrEqual(1);
+  const s2 = flat(tree);
+  expect(s2).toContain('메뉴13'); // 마지막 항목 렌더
+  expect(s2).toContain('order.done'); // Done 접근 가능(스크롤 끝)
+  // 확대 열기 → 풀스크린도 스크롤 + 명시 닫기 버튼
+  const zoomOpen = tree.root.findAll((n) => n.props?.testID === 'zoom-open' && typeof n.props?.onPress === 'function')[0];
+  act(() => zoomOpen.props.onPress());
+  expect(tree.root.findAll((n) => n.props?.testID === 'zoom-scroll').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'zoom-close' && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
+});

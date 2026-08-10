@@ -38,6 +38,7 @@ export function ScanRichList({
   onAdd,
   onRemove,
   onOpen,
+  onMarkPress,
   onEditProfile,
   t,
 }: {
@@ -49,6 +50,8 @@ export function ScanRichList({
   onAdd: (d: ResultDish) => void;
   onRemove: (d: ResultDish) => void;
   onOpen: (d: ResultDish) => void;
+  /** P-149: 행 RiskMark 탭 = 코치마크 재열람(P-134 표면 — 캡슐 철거 후 리스트가 담당) */
+  onMarkPress?: () => void;
   onEditProfile: () => void;
   t: TFn;
 }) {
@@ -68,7 +71,7 @@ export function ScanRichList({
 
       {/* P-138 ④: 카테고리 헤더 없음 — 스캔 API에 카테고리 부재 → 플랫 리스트 */}
       {dishes.map((d) => (
-        <RichRow key={d.itemId} dish={d} currency={currency} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} t={t} />
+        <RichRow key={d.itemId} dish={d} currency={currency} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} t={t} />
       ))}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
@@ -83,6 +86,7 @@ function RichRow({
   onAdd,
   onRemove,
   onOpen,
+  onMarkPress,
   t,
 }: {
   dish: ResultDish;
@@ -91,6 +95,7 @@ function RichRow({
   onAdd: () => void;
   onRemove: () => void;
   onOpen: () => void;
+  onMarkPress?: () => void;
   t: TFn;
 }) {
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
@@ -104,7 +109,10 @@ function RichRow({
     <Pressable style={styles.row} onPress={onOpen} testID={`rich-${dish.itemId}`}>
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <View style={styles.nameLine}>
-          <RiskMark state={dish.risk} size={16} />
+          {/* P-134→149: 마크 탭 = 코치마크 재열람 */}
+          <Pressable hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
+            <RiskMark state={dish.risk} size={16} />
+          </Pressable>
           <Text style={styles.nameKo} numberOfLines={1}>
             {dish.koreanName ?? dish.rawMenuName}
           </Text>

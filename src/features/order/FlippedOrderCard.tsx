@@ -10,10 +10,10 @@
  * 데이터의 리더 언어 표현(신규 한국어 0).
  */
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { Btn, IconExpand } from '@/components';
+import { Btn, IconClose, IconExpand } from '@/components';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { convertKrw } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
@@ -65,7 +65,9 @@ export function FlippedOrderCard({
   );
 
   return (
-    <View style={styles.body}>
+    /* P-149 ①: 화면 전체 스크롤 — 항목 多(실증 14개)면 카드가 세로 성장해도
+       내역·미러·합계·Done 전부 도달. 짧은 내용은 flexGrow로 Done 하단 유지. */
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} testID="order-scroll">
       {/* 뒤집힌 카드 — 크게 중앙(시안), 맞은편에서 정방향으로 읽힌다 */}
       <View style={styles.flipCard} testID="flip-card">
         {/* 확대 = IconExpand 좌상단(시안 — 돋보기 아님) */}
@@ -103,18 +105,23 @@ export function FlippedOrderCard({
         <Btn onPress={onDone}>{t('order.done')}</Btn>
       </View>
 
-      {/* 풀스크린 확대 — 방향 유지(직원에게 크게 보여주는 용도) */}
+      {/* 풀스크린 확대 — 방향 유지. P-149: 긴 내용도 스크롤 가능 + 명시 닫기 버튼 */}
       <Modal visible={zoomed} animationType="fade" onRequestClose={() => setZoomed(false)}>
-        <Pressable style={styles.zoomFull} onPress={() => setZoomed(false)} testID="zoom-close">
-          <View style={styles.flipInner}>{koCard(true)}</View>
-        </Pressable>
+        <View style={styles.zoomFull}>
+          <ScrollView contentContainerStyle={styles.zoomContent} showsVerticalScrollIndicator={false} testID="zoom-scroll">
+            <View style={styles.flipInner}>{koCard(true)}</View>
+          </ScrollView>
+          <Pressable style={styles.zoomClose} hitSlop={10} onPress={() => setZoomed(false)} testID="zoom-close">
+            <IconClose size={20} color={C.ink2} />
+          </Pressable>
+        </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, paddingHorizontal: 18 },
+  body: { flexGrow: 1, paddingHorizontal: 18, paddingBottom: 8 },
   flipCard: {
     backgroundColor: primaryTint,
     borderWidth: 1.5,
@@ -170,5 +177,7 @@ const styles = StyleSheet.create({
   totalLabel: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
   totalVal: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, fontVariant: ['tabular-nums'] },
   foot: { marginTop: 'auto', paddingTop: 12 },
-  zoomFull: { flex: 1, backgroundColor: '#fff', justifyContent: 'center', padding: 28 },
+  zoomContent: { flexGrow: 1, justifyContent: 'center', padding: 28, paddingTop: 64 },
+  zoomClose: { position: 'absolute', top: 54, right: 18, width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  zoomFull: { flex: 1, backgroundColor: '#fff' },
 });

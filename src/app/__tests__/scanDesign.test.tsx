@@ -166,35 +166,26 @@ it('③→P-136/138 콰이엇 크롬 — 세그·다시찍기, 기본 List에 �
   for (const id of ['seg-risk', 'seg-list', 'retake']) {
     expect(tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
   }
-  // P-136(S1b 채택): 위험도 범례 4종 줄 — Photo 뷰 전환 후
+  // P-149(예진 확정): Photo 뷰 = 쌩 원본 + 줌만 — 범례·힌트·마커·미니시트 부재
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBeGreaterThanOrEqual(1);
-  for (const k of ['risk.safe', 'risk.caution', 'risk.danger', 'risk.unable']) {
-    expect(texts(tree, k)).toBeGreaterThanOrEqual(1);
-  }
+  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBe(0);
+  expect(texts(tree, 'scan.legendHint')).toBe(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'mini-sheet-wrap').length).toBe(0);
 });
 
-it('P-064③→P-136 원본 피크 존치 — 배경 꾹=미니시트 pointerEvents none, 뗌=복귀', async () => {
+it('P-149: Photo 뷰 = 원본+줌 전용 — 피크 롱프레스·캡슐 잔재 0 (원본이 기본이라 피크 소멸)', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  // P-138⑤ 기본=List — Photo 뷰 전환 후 배경(사진) 롱프레스 진입점
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
   });
-  const bg = tree.root.findAll((n) => typeof n.props?.onLongPress === 'function');
-  expect(bg.length).toBeGreaterThanOrEqual(1);
-  act(() => {
-    bg[0].props.onLongPress();
-  });
-  expect(tree.root.findAll((n) => n.props?.testID === 'mini-sheet-wrap' && n.props?.pointerEvents === 'none').length).toBeGreaterThanOrEqual(1);
-  act(() => {
-    bg[0].props.onPressOut();
-  });
-  expect(tree.root.findAll((n) => n.props?.testID === 'mini-sheet-wrap' && n.props?.pointerEvents === 'box-none').length).toBeGreaterThanOrEqual(1);
+  // 원본이 그대로 보이므로 피크(롱프레스) 표면 소멸 + 미니시트 부재
+  expect(tree.root.findAll((n) => typeof n.props?.onLongPress === 'function').length).toBe(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'mini-sheet-wrap').length).toBe(0);
 });
 
 it('P-136/138 뷰 전환 — 기본 List=프로필 체크 줄+안내문(헤더·범례 없음), Photo=범례', async () => {
@@ -209,13 +200,23 @@ it('P-136/138 뷰 전환 — 기본 List=프로필 체크 줄+안내문(헤더·
   expect(s).toContain('scan.listFootNote');
   expect(s).not.toContain('scan.notInDb'); // P-138③ 행 내 안내문 소음 제거
   expect(tree.root.findAll((n) => n.props?.contentContainerStyle?.paddingBottom === 120).length).toBeGreaterThanOrEqual(1);
-  // Photo 전환 → 범례 등장, List 복귀 → 소멸
+  // P-149: Photo 전환해도 범례 없음(원본+줌만), List 복귀 시 리치 리스트 무회귀
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBe(0);
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-list')[0].props.onPress();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBe(0);
+  expect(JSON.stringify(tree.toJSON())).toContain('scan.checkedAgainst');
+});
+
+it('P-149: 코치마크 표면 생존 — 리스트 행 마크 탭(재열람) 배선 존재 (캡슐 철거 무관)', async () => {
+  const tree = render(<Scan />);
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  // 기본=List — 행 RiskMark가 탭 가능(코치마크 재열람, P-134 표면)
+  const marks = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('mark-') && typeof n.props?.onPress === 'function');
+  expect(marks.length).toBeGreaterThanOrEqual(1);
 });
