@@ -971,3 +971,8 @@
 ## 자동 아바타 6종 랜덤 (2026-08-07, P-140 — D-19 에셋)
 - [x] autoProfile 6종 path 랜덤(orange/teal/amber/olive/plum/navy) — path 전송(P-016 컨벤션), 구 기본 path 폴백 보존. isDefaultProfileImage에 webp/default_profile 추가(삭제 미노출 정합). CloudFront 6종 200 실측.
 - [x] tsc 0 · jest 87스위트 492/492 · teamtest OTA(iOS 52f68b39·안드 f3c36277) — 8e0961b.
+
+## 커뮤니티 실 API 연결 (2026-08-10, P-142 — BE #129~132)
+- [x] adapter 전면 실 API: 피드/상세 lang 필수+cursor·작성/수정 imagePaths(COMMUNITY 업로드/URL 역변환)+foodIds·댓글 replies 1뎁스 평탄화(parentCommentId). 목 스토어·시드 삭제, 내 글 판별 = 실 회원 id. client PUT 추가.
+- [x] 계약 부재 표면 플래그 off: 리액션 토글(카운트만)·장소 태그·커뮤니티 신고(REVIEW뿐). 차단 = 멤버 단위 상시 연결. 번역 토글 = 원문 수단 부재로 off+BE 질의.
+- [x] tsc 0 · jest 88스위트 486/486 · teamtest OTA(iOS 07f29b7b·안드 7687943e) — 16cebb5.
