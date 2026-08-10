@@ -980,3 +980,7 @@
 ## 안드 vc9 production 빌드 (2026-08-10, P-141 — Play 스토어 UI 개편분)
 - [x] prod 계약 감사(vc7 이후 diff 전수 — 신규 표면 P-111 /app-config 1건, 페일 오픈)·P-114 유닛·목 숨김 확인 통과. 코드 변경 0, 기준 커밋 2d3931d(K-10 포함).
 - [x] AAB(fb718b38)+스모크 APK(bce3b543) vc9 빌드 성공 — 스토어 업로드는 예진 스모크 후.
+
+## 회피 타일 실사진 81종 (2026-08-10, P-145 — 예진 S3 업로드분)
+- [x] ingredientImageUrl(CDN+code 소문자 webp, imageRef 스왑 지점 주석)+AvoidTile(사진 fill+onError 색 폴백 보존, 프레임 불변) — 온보딩 회피 스텝 배선(노출처 유일 확인).
+- [x] tsc 0 · jest 90스위트 490/490 · teamtest OTA(iOS 4dcccae1·안드 17a469e0) — 6a38b0b.
