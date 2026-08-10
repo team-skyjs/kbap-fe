@@ -532,9 +532,9 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     return (
       <Pressable
         key={c.code}
-        // P-148 ①: 핀 카드 강조(보더·틴트)는 **선택 상태에 바인딩** — 타국 선택 시
-        // 일반 행과 같은 무강조(핀 위치·섹션 라벨은 유지). 강조는 항상 1곳.
-        style={[styles.natRow, pinned && on && styles.natPin]}
+        // P-148①→P-151: 핀 카드 프레임(보더 폭·minHeight·라운딩·마진)은 **상시 고정**
+        // (미선택 = 동폭 투명 보더) — 선택 바인딩은 색(보더·틴트)만. 강조는 항상 1곳.
+        style={[styles.natRow, pinned && styles.natPinFrame, pinned && on && styles.natPinOn]}
         onPress={() => onSelect(c.code)}
         testID={`nat-${c.code}`}
       >
@@ -788,7 +788,10 @@ const styles = StyleSheet.create({
   natSecText: { fontFamily: font.bodyBold, fontSize: 9.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3 },
   natSecLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.hair },
   natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 12 }, // 62 고정 — 리플로 방지
-  natPin: { borderWidth: 1.5, borderColor: C.primary, backgroundColor: primaryTint, borderRadius: 18, minHeight: 70, marginBottom: 8 },
+  // P-151(P-148 회귀 교정): 핀 카드 **프레임은 상시 고정**(투명 보더 동폭·minHeight 70)
+  // — 선택 상태는 색만 바꾼다(P-103 원칙). 선택 이동 시 아래 목록 픽셀 이동 0.
+  natPinFrame: { borderWidth: 1.5, borderColor: 'transparent', borderRadius: 18, minHeight: 70, marginBottom: 8 },
+  natPinOn: { borderColor: C.primary, backgroundColor: primaryTint },
   natFlagSlot: { width: 34, alignItems: 'center' },
   natFlag: { fontSize: 26, lineHeight: 32 },
   natName: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },

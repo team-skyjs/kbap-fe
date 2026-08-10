@@ -231,18 +231,31 @@ it('P-134 맵기: 레벨 전환 시 레일 교체 · 👶 배지 NONE/MILD 한�
   expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0); // 배지 소멸
 });
 
-/* ---- P-148 ①: 핀 카드 강조 = 선택 상태 바인딩 ---- */
-it('P-148: 타국 선택 시 감지국 핀 카드 강조(보더·틴트) 완전 해제 — 강조는 항상 1곳', async () => {
+/* ---- P-148① → P-151: 핀 카드 강조 = 선택 바인딩 + 프레임 메트릭 불변 ---- */
+it('P-148/151: 타국 선택 시 핀 카드 색 강조만 해제 — 프레임 메트릭(높이·보더 폭·패딩·라운딩·마진) 완전 동일', async () => {
   mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
   const tree = await render();
   const { StyleSheet: RNSheet } = require('react-native') as typeof import('react-native');
-  const flatS = (s2: unknown) => JSON.stringify(RNSheet.flatten(s2) ?? {});
+  const flat2 = (s2: unknown) => RNSheet.flatten(s2) as Record<string, unknown>;
+  const metrics = (st: Record<string, unknown>) => ({
+    minHeight: st.minHeight, borderWidth: st.borderWidth, borderRadius: st.borderRadius,
+    marginBottom: st.marginBottom, paddingHorizontal: st.paddingHorizontal,
+  });
   const pin = () => tree.root.findAll((n) => n.props?.testID === 'nat-US')[0];
-  // 감지국(US)이 선택 상태 — 핀 카드 강조(주황 보더) 존재
-  expect(flatS(pin().props.style)).toContain('"borderColor":"#E2580C"');
-  // 타국(JP) 선택 → 핀 카드 무강조(일반 행과 동일 — 보더·틴트 소멸)
+  const selectedStyle = flat2(pin().props.style);
+  // 선택 상태 — 주황 보더·틴트 존재
+  expect(selectedStyle.borderColor).toBe('#E2580C');
+  // 타국(JP) 선택 → 색 강조만 소멸(투명 보더 동폭), 메트릭은 픽셀 동일 (P-103)
   const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
   await act(async () => { jp.props.onPress(); });
-  expect(flatS(pin().props.style)).not.toContain('"borderColor":"#E2580C"');
-  expect(flatS(pin().props.style)).not.toContain('rgba(226,88,12');
+  const unselectedStyle = flat2(pin().props.style);
+  expect(unselectedStyle.borderColor).toBe('transparent'); // 색만 소멸 — 폭은 유지
+  expect(String(unselectedStyle.backgroundColor ?? '')).not.toContain('rgba(226,88,12');
+  expect(metrics(unselectedStyle)).toEqual(metrics(selectedStyle)); // 8pt 밀림 봉쇄
+  expect(unselectedStyle.minHeight).toBe(70);
+  expect(unselectedStyle.borderWidth).toBe(1.5);
+  // 일반 목록 행(JP — 선택됨)도 메트릭 무변: 선택 강조는 색뿐(natRow 62 고정)
+  const jpStyle = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
+  expect(jpStyle.minHeight).toBe(62);
+  expect(jpStyle.borderWidth).toBeUndefined(); // 일반 행 — 선택돼도 보더 미부여
 });
