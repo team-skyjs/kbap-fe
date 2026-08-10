@@ -54,6 +54,7 @@ import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { generateNickname, pickDefaultAvatarPath } from '@/lib/onboarding/autoProfile';
+import { AvoidTile } from '@/components/AvoidTile';
 import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
 import { flagEmoji } from '@/lib/flagEmoji';
@@ -637,15 +638,14 @@ function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; 
                 const label = ingredientLabel(code);
                 return (
                   <Pressable key={code} style={styles.avTileWrap} onPress={() => onToggle(code)} testID={`avoid-${code}`}>
-                    <View style={[styles.avTile, { backgroundColor: FB_TINT[si % FB_TINT.length] }, on && styles.avTileOn]}>
-                      {/* imageRef 슬롯 — BE ⑧ 배포 시 <Image>로 자동 전환 (현재 전 타일 폴백) */}
-                      <Text style={styles.avAbbr}>{item.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}</Text>
+                    {/* P-145: 실사진 81종(S3 CDN) — 실패 시 P-134 색 폴백 그대로 */}
+                    <AvoidTile code={code} abbr={item.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()} tint={FB_TINT[si % FB_TINT.length]} selected={on}>
                       {on && (
                         <View style={styles.avCheck}>
                           <IconCheck size={12} color="#fff" />
                         </View>
                       )}
-                    </View>
+                    </AvoidTile>
                     <Text style={[styles.avLabel, on && styles.avLabelOn]} numberOfLines={1}>{label}</Text>
                   </Pressable>
                 );
