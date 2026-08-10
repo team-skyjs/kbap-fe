@@ -62,7 +62,8 @@
     "statReviews": "ulasan",
     "statAvgGiven": "rata-rata diberi",
     "emptyTitle": "Belum ada ulasan",
-    "emptyBody": "Hidangan yang Anda ulas akan muncul di sini. Bagikan pendapat pertama Anda untuk membantu pelancong lain."
+    "emptyBody": "Hidangan yang Anda ulas akan muncul di sini. Bagikan pendapat pertama Anda untuk membantu pelancong lain.",
+    "viewDish": "Lihat hidangan"
   },
   "editReview": {
     "title": "Edit ulasan",

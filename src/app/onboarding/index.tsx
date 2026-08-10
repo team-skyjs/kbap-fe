@@ -54,7 +54,7 @@ import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { generateNickname, pickDefaultAvatarPath } from '@/lib/onboarding/autoProfile';
-import { AvoidTile } from '@/components/AvoidTile';
+import { IngredientTileSections } from '@/components/IngredientTileSections';
 import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
 import { flagEmoji } from '@/lib/flagEmoji';
@@ -608,18 +608,10 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
  *  데이터 = 실카탈로그 81종(INGREDIENT_SECTIONS — 시안 30종은 예시). 이미지 URL은
  *  BE ⑧ 대기 — 현재 전 타일 폴백(카테고리 틴트+약어 2글자+이름, FB_TINT 순환),
  *  imageRef 생기면 tileImage 슬롯으로 자동 사진 전환. 타일 프레임 불변(P-103). */
-const FB_TINT = ['rgba(226,88,12,0.10)', 'rgba(14,154,167,0.10)', 'rgba(47,143,91,0.10)', 'rgba(160,106,0,0.12)', 'rgba(142,47,60,0.10)', 'rgba(90,82,72,0.10)', 'rgba(226,88,12,0.06)'];
-
 function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; onToggle: (code: string) => void; onClear: () => void; t: TFn }) {
   const [q, setQ] = useState('');
   const sel = new Set(selected);
   const query = q.trim().toLowerCase();
-  const match = (code: string) => {
-    if (!query) return true;
-    const item = INGREDIENTS.find((i) => i.code === code);
-    if (!item) return false;
-    return ingredientLabel(item.code).toLowerCase().includes(query) || item.name.toLowerCase().includes(query);
-  };
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.avoidSub')} />
@@ -638,35 +630,8 @@ function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; 
           </Pressable>
         )}
       </View>
-      {INGREDIENT_SECTIONS.map((secDef, si) => {
-        const codes = secDef.codes.filter(match);
-        if (!codes.length) return null;
-        return (
-          <View key={secDef.key} style={{ marginBottom: 14 }}>
-            <Text style={styles.avSecHead}>{t(`ingCat.${secDef.key}`)}</Text>
-            <View style={styles.avGrid}>
-              {codes.map((code) => {
-                const item = INGREDIENTS.find((i) => i.code === code)!;
-                const on = sel.has(code);
-                const label = ingredientLabel(code);
-                return (
-                  <Pressable key={code} style={styles.avTileWrap} onPress={() => onToggle(code)} testID={`avoid-${code}`}>
-                    {/* P-145: 실사진 81종(S3 CDN) — 실패 시 P-134 색 폴백 그대로 */}
-                    <AvoidTile code={code} abbr={item.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()} tint={FB_TINT[si % FB_TINT.length]} selected={on}>
-                      {on && (
-                        <View style={styles.avCheck}>
-                          <IconCheck size={12} color="#fff" />
-                        </View>
-                      )}
-                    </AvoidTile>
-                    <Text style={[styles.avLabel, on && styles.avLabelOn]} numberOfLines={1}>{label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        );
-      })}
+      {/* P-150 ①: 섹션+타일 그리드 = 공용 컴포넌트(프로필 회피 수정과 공유) */}
+      <IngredientTileSections selected={sel} onToggle={onToggle} query={query} />
     </View>
   );
 }
@@ -754,15 +719,9 @@ const styles = StyleSheet.create({
   avCount: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, minHeight: 20 },
   avCountText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   avClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
-  avSecHead: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3, marginBottom: 7 },
-  avGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  avTileWrap: { width: '22.5%', alignItems: 'center', gap: 4 },
   avTile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent' },
   avTileOn: { borderColor: C.primary },
   avAbbr: { fontFamily: font.displayBlack, fontSize: 18, color: C.ink2, opacity: 0.55 },
-  avCheck: { position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  avLabel: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, maxWidth: '100%' },
-  avLabelOn: { color: C.primaryText },
   // P-134 맵기 — 배지 줄(고정 높이)·레일·설명
   // P-148 ②: 배지 슬롯 — 고정 높이(배지 부재 레벨에서도 프레임 불변)
   kidSlot: { height: 26, alignItems: 'center', justifyContent: 'center' },

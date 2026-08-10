@@ -58,7 +58,8 @@
     "statReviews": "reviews",
     "statAvgGiven": "avg given",
     "emptyTitle": "No reviews yet",
-    "emptyBody": "Dishes you review will show up here. Share your first take to help other travelers."
+    "emptyBody": "Dishes you review will show up here. Share your first take to help other travelers.",
+    "viewDish": "View dish"
   },
   "editReview": {
     "title": "Edit review",

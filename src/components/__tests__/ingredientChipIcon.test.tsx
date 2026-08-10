@@ -1,7 +1,7 @@
 /**
- * P-103(Q-23): 재료 칩 +/✓ 아이콘 = 고정 폭 슬롯 잠금 — 선택 토글 시 칩 총폭
- * 불변(✓13 vs +12 글리프 폭 차가 칩을 1pt 키우던 반려). 텍스트 웨이트도 양
- * 상태 동일(bodyBold) 확인 — 폭 변인은 아이콘 슬롯뿐이어야 한다.
+ * P-103(Q-23) → P-150 ①: 회피 카탈로그가 칩 → 온보딩 공용 사진 타일로 교체 —
+ * 프레임 불변 잠금 승계: 선택 토글 = 체크 오버레이(absolute)+색만, 타일 메트릭
+ * (보더 폭·비율·라운딩) 불변. 요약 칩·검색은 현행 유지 확인.
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -15,39 +15,49 @@ jest.mock('@/lib/i18n', () => ({
   __esModule: true,
   default: { language: 'en', t: (_k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? _k },
 }));
+jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', script: 'latin' }) }));
 
 import { IngredientFilter } from '../IngredientFilter';
-import { INGREDIENTS } from '@/lib/mocks/ingredients';
 
 const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, unknown>;
-const CODE = INGREDIENTS[0].code;
 
-async function render(selected: string[]): Promise<ReactTestRenderer> {
+function Host({ initial = [] as string[] }) {
+  const [sel, setSel] = React.useState<string[]>(initial);
+  return <IngredientFilter selected={sel} onToggle={(c) => setSel((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]))} />;
+}
+
+function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
-  await act(async () => {
-    tree = renderer.create(<IngredientFilter selected={selected} onToggle={jest.fn()} />);
+  act(() => {
+    tree = renderer.create(el);
   });
   return tree;
 }
 
-/** 카탈로그 첫 칩(Pressable)과 그 아이콘 슬롯/텍스트를 찾는다. */
-function firstChip(tree: ReactTestRenderer) {
-  const chip = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderWidth === 1.5)[0];
-  const slot = chip.findAll((n) => n.type === 'View' && flat(n.props.style)?.width != null)[0];
-  const text = chip.findAll((n) => n.type === 'Text')[0];
-  return { slot: flat(slot.props.style), text: flat(text.props.style) };
-}
-
-it('아이콘 슬롯 = 고정 폭 — 선택/해제 동일 (칩 총폭 불변 잠금)', async () => {
-  const off = firstChip(await render([]));
-  const on = firstChip(await render([CODE]));
-  expect(off.slot.width).toBe(16);
-  expect(on.slot.width).toBe(16); // ✓든 +든 슬롯 폭 동일 → 칩 프레임 이동 0
+it('P-150: 카탈로그 = 온보딩 공용 사진 타일(카테고리 섹션) — 구 플랫 칩 소멸, 요약·검색 유지', () => {
+  const tree = render(<Host />);
+  const s = JSON.stringify(tree.toJSON());
+  // 타일 렌더(공용 컴포넌트 — avoid-* testID) + 카테고리 헤더 키
+  expect(tree.root.findAll((n) => n.props?.testID === 'avoid-EGG').length).toBeGreaterThanOrEqual(1);
+  expect(s).toContain('ingCat.');
+  // 요약 카드·검색 현행 유지
+  expect(s).toContain('restrictionsEdit.avoidNone');
+  expect(s).toContain('restrictionsEdit.searchPlaceholder');
 });
 
-it('텍스트 웨이트 = 양 상태 동일 (폰트로 인한 폭 변화 없음)', async () => {
-  const off = firstChip(await render([]));
-  const on = firstChip(await render([CODE]));
-  expect(on.text.fontFamily).toBe(off.text.fontFamily);
-  expect(on.text.fontSize).toBe(off.text.fontSize);
+it('타일 프레임 불변(P-103 승계) — 선택 토글 = 체크 오버레이+색만, 보더 폭·비율 동일', () => {
+  const tree = render(<Host />);
+  const tileStyle = () => flat(tree.root.findAll((n) => n.props?.testID === 'avtile-EGG')[0].props.style);
+  const before = tileStyle();
+  const egg = tree.root.findAll((n) => n.props?.testID === 'avoid-EGG' && typeof n.props?.onPress === 'function')[0];
+  act(() => egg.props.onPress());
+  const after = tileStyle();
+  // 메트릭 불변 — 상태 차이는 borderColor뿐
+  expect(after.borderWidth).toBe(before.borderWidth);
+  expect(after.aspectRatio).toBe(before.aspectRatio);
+  expect(after.borderRadius).toBe(before.borderRadius);
+  expect(after.borderColor).not.toBe(before.borderColor); // 선택 = 색 전환
+  // 체크 오버레이 = absolute(프레임 미기여)
+  const check = tree.root.findAll((n) => flat(n.props?.style ?? {}).position === 'absolute' && flat(n.props?.style ?? {}).top === 5);
+  expect(check.length).toBeGreaterThanOrEqual(1);
 });

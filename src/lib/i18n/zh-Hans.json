@@ -62,7 +62,8 @@
     "statReviews": "条点评",
     "statAvgGiven": "平均评分",
     "emptyTitle": "还没有点评",
-    "emptyBody": "你点评过的菜品会显示在这里。分享你的第一条感受，帮助其他旅行者。"
+    "emptyBody": "你点评过的菜品会显示在这里。分享你的第一条感受，帮助其他旅行者。",
+    "viewDish": "查看菜品"
   },
   "editReview": {
     "title": "编辑点评",

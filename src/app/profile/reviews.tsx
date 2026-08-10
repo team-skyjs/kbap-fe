@@ -128,6 +128,7 @@ function SortPill({ label, on, onPress }: { label: string; on: boolean; onPress:
 }
 
 function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; food?: FoodCard; hasR: boolean; when: string; onPress: () => void }) {
+  const { t } = useTranslation(); // P-150 ④: 중립 라벨용
   const risk: RiskState = food ? personalRisk(food.risk, hasR) : 'unable';
   return (
     <Pressable style={styles.card} onPress={onPress}>
@@ -140,7 +141,7 @@ function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; foo
       <View style={styles.main}>
         <View style={styles.top}>
           <Text style={styles.name} numberOfLines={1}>
-            {food?.name ?? review.foodId}
+            {food?.name ?? t('myReviews.viewDish') /* P-150 ④: 계약에 이름 부재 — id 숫자 노출 금지, BE foodName 오면 스왑 */}
           </Text>
           <Stars value={review.rating} size={13} />
         </View>

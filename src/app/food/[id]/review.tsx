@@ -6,8 +6,8 @@
  * 성공 시 서버 재조회(무효화)가 진실 (목 캐시 삽입 폐기). Rating required
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
-import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { findNodeHandle, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -95,6 +95,19 @@ export default function ReviewCompose() {
     );
   }
 
+  // P-150 ②: 멀티라인 성장/포커스 시 입력 최하단(커서 줄)을 키보드 위로 —
+  // RN 스크롤 리스폰더의 키보드 스크롤 헬퍼 사용(측정 수동 계산 불요)
+  const scrollRef = useRef<ScrollView>(null);
+  const bodyInputRef = useRef<TextInput>(null);
+  const scrollInputVisible = () => {
+    const node = findNodeHandle(bodyInputRef.current);
+    if (!node) return;
+    const responder = scrollRef.current?.getScrollResponder() as unknown as {
+      scrollResponderScrollNativeHandleToKeyboard?: (n: number, offset: number, prevent: boolean) => void;
+    } | undefined;
+    responder?.scrollResponderScrollNativeHandleToKeyboard?.(node, 96, true);
+  };
+
   if (submitted) {
     return (
       <View style={styles.root}>
@@ -107,10 +120,7 @@ export default function ReviewCompose() {
           <Text style={styles.okBody}>
             {t('review.postedBody', { rating, name: food?.name ?? '' })}
           </Text>
-          {/* P-102(Q-22): 랭킹 필 제거 확정 — 별점만 (본문 카피·버튼 현행) */}
-          <View style={styles.okMeta}>
-            <Stars value={rating} size={18} />
-          </View>
+          {/* P-102 별점 줄 → P-150 ③ 제거 — 본문 "{rating}-star" 텍스트가 담당 */}
           <View style={{ width: '100%', marginTop: 14, gap: 9 }}>
             <Btn onPress={() => router.back()}>{t('review.backToDish')}</Btn>
             <Btn variant="ghost" onPress={() => router.replace('/profile' as Href)}>
@@ -133,7 +143,9 @@ export default function ReviewCompose() {
           </Pressable>
         }
       />
-      <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      {/* P-150 ②: iOS = 키보드 인셋 자동(automaticallyAdjustKeyboardInsets),
+          공통 = 입력 포커스/성장 시 커서 줄을 키보드 위로 스크롤(아래 Input 배선) */}
+      <ScrollView ref={scrollRef} keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {/* food chip */}
         <View style={styles.foodChip}>
           <View style={styles.foodPh} />
@@ -163,6 +175,7 @@ export default function ReviewCompose() {
         <View style={styles.block}>
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
           <Input
+            ref={bodyInputRef}
             value={body}
             onChangeText={(v) => setBody(v.slice(0, MAX))}
             placeholder={t('review.placeholder')}
@@ -170,6 +183,8 @@ export default function ReviewCompose() {
             multiline
             style={styles.textarea}
             textAlignVertical="top"
+            onFocus={scrollInputVisible}
+            onContentSizeChange={scrollInputVisible}
           />
           <View style={styles.metaRow}>
             <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>

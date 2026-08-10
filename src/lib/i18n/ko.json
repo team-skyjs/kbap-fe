@@ -62,7 +62,8 @@
     "statReviews": "리뷰",
     "statAvgGiven": "평균 별점",
     "emptyTitle": "아직 리뷰가 없어요",
-    "emptyBody": "리뷰를 남긴 요리가 여기에 표시돼요. 첫 리뷰로 다른 여행자를 도와주세요."
+    "emptyBody": "리뷰를 남긴 요리가 여기에 표시돼요. 첫 리뷰로 다른 여행자를 도와주세요.",
+    "viewDish": "메뉴 보기"
   },
   "editReview": {
     "title": "리뷰 수정",

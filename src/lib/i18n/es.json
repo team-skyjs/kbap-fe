@@ -62,7 +62,8 @@
     "statReviews": "reseñas",
     "statAvgGiven": "media otorgada",
     "emptyTitle": "Aún no hay reseñas",
-    "emptyBody": "Los platos que reseñes aparecerán aquí. Comparte tu primera opinión para ayudar a otros viajeros."
+    "emptyBody": "Los platos que reseñes aparecerán aquí. Comparte tu primera opinión para ayudar a otros viajeros.",
+    "viewDish": "Ver plato"
   },
   "editReview": {
     "title": "Editar reseña",

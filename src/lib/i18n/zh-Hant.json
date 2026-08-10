@@ -62,7 +62,8 @@
     "statReviews": "則評論",
     "statAvgGiven": "平均評分",
     "emptyTitle": "尚無評論",
-    "emptyBody": "你評論過的菜色會顯示在這裡。分享你的第一則心得，幫助其他旅客。"
+    "emptyBody": "你評論過的菜色會顯示在這裡。分享你的第一則心得，幫助其他旅客。",
+    "viewDish": "查看菜品"
   },
   "editReview": {
     "title": "編輯評論",

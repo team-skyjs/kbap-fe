@@ -191,7 +191,6 @@ export default function Profile() {
                     <View key={tier.key} style={[styles.rankSeg, tier.level <= curLevel && styles.rankSegOn]} />
                   ))}
                 </View>
-                <Text style={styles.tag}>{t('profile.scoreNote')}</Text>
               </Pressable>
             </Section>
 
@@ -218,30 +217,7 @@ export default function Profile() {
               </View>
             </Section>
 
-            {/* spice tolerance (KB-150) — restrictions와 같은 톤(칩), 미설정은 muted(nicknameUnset 패턴) */}
-            <Section
-              title={t('profile.spiceTitle')}
-              action={
-                <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/edit' as Href)}>
-                  <IconEdit size={14} color={C.primary} />
-                  <Text style={styles.link}>{t('profile.edit')}</Text>
-                </Pressable>
-              }
-            >
-              {me.spiceTolerance !== 'SKIP' ? (
-                <View style={styles.dietWrap}>
-                  {/* P-081: 5단계 표시 — 🌶️ 카운트+라벨 (불꽃·10-스케일 폐기, 헌법 v2.2.0 이모지 예외) */}
-                  <View style={styles.dietChip}>
-                    <Text style={styles.dietChipText}>
-                      {spiceRank(me.spiceTolerance) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(me.spiceTolerance))} ` : ''}
-                      {t(SPICE_LEVEL_LABEL[me.spiceTolerance])}
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <Text style={styles.spiceUnset}>{t('profile.spiceUnset')}</Text>
-              )}
-            </Section>
+            {/* P-150 ⑤①: Spice tolerance 섹션 제거 — 맵기 수정은 프로필 수정 화면만 */}
 
             {/* saved (Bookmark Mods A) — My reviews 바로 위: 개인 콘텐츠 클러스터.
                 카운트는 조용한 tag(“My reviews · 12”와 동일 톤), 뱃지 아님 */}

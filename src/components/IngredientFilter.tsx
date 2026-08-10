@@ -15,18 +15,16 @@ import { Input } from './KeyboardDismissBar';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { INGREDIENTS, ingredientLabel } from '@/lib/mocks/ingredients';
+import { ingredientLabel } from '@/lib/mocks/ingredients';
+import { IngredientTileSections } from './IngredientTileSections';
 import { RiskMark } from './RiskMark';
-import { IconSearch, IconClose, IconCheck, IconPlus } from './icons';
+import { IconSearch, IconClose } from './icons';
 
 export function IngredientFilter({ selected, onToggle }: { selected: string[]; onToggle: (code: string) => void }) {
   const { t } = useTranslation();
   const [q, setQ] = React.useState('');
   const sel = React.useMemo(() => new Set(selected), [selected]);
   const query = q.trim().toLowerCase();
-  const list = query
-    ? INGREDIENTS.filter((i) => ingredientLabel(i.code).toLowerCase().includes(query) || i.name.toLowerCase().includes(query))
-    : INGREDIENTS;
 
   // B안: 새 선택이 줄 끝에 붙는 게 보이도록 자동 스크롤 (제거 시엔 안 움직임)
   const rowRef = React.useRef<ScrollView>(null);
@@ -92,28 +90,9 @@ export function IngredientFilter({ selected, onToggle }: { selected: string[]; o
         />
       </View>
 
-      {/* flat catalog */}
-      <View style={{ gap: 9 }}>
-        <Text style={styles.group}>{t('restrictionsEdit.allIngredients')}</Text>
-        {list.length === 0 ? (
-          <Text style={styles.empty}>{t('restrictionsEdit.emptyList')}</Text>
-        ) : (
-          <View style={styles.wrap}>
-            {list.map((i) => {
-              const on = sel.has(i.code);
-              return (
-                <Pressable key={i.code} style={[styles.pickChip, on && styles.pickChipOn]} onPress={() => onToggle(i.code)}>
-                  <Text style={[styles.pickChipText, on && styles.pickChipTextOn]}>{ingredientLabel(i.code)}</Text>
-                  {/* P-103(Q-23): ✓(13)·+(12) 글리프 폭 차 → 고정 폭 슬롯 — 토글 시 칩 총폭 불변 */}
-                  <View style={styles.pickIcon}>
-                    {on ? <IconCheck size={13} color="#fff" /> : <IconPlus size={12} color={C.ink3} />}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-        )}
-      </View>
+      {/* P-150 ①: 카탈로그 = 온보딩과 동일 카테고리 섹션+사진 타일(공용 컴포넌트) —
+          구 플랫 칩 그리드 대체. 요약 칩·검색은 현행 유지. */}
+      <IngredientTileSections selected={sel} onToggle={onToggle} query={query} emptyText={t('restrictionsEdit.emptyList')} />
     </View>
   );
 }
@@ -123,7 +102,6 @@ const styles = StyleSheet.create({
   activeHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   activeTitle: { flex: 1, fontFamily: font.display, fontSize: 15, color: C.ink, letterSpacing: -0.2 },
   tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   // P-026: 칩 1줄 높이 고정(rmChip = paddingV 8·2 + border 2 + 콘텐츠 18 ≈ 36).
   // 항상 이 높이라 빈↔선택 전환에 레이아웃 점프 0.
   chipArea: { height: 36, justifyContent: 'center' },
@@ -137,14 +115,7 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
   searchInput: { flex: 1, fontFamily: font.body, fontSize: 14.5, color: C.ink, padding: 0 },
 
-  group: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1.2, textTransform: 'uppercase', color: C.ink3, marginLeft: 2 },
-  empty: { fontFamily: font.body, fontSize: 13.5, color: C.ink3, paddingVertical: 8 },
 
-  pickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line },
-  pickChipOn: { backgroundColor: C.primary, borderColor: C.primary },
-  pickChipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
-  pickChipTextOn: { color: '#fff' },
-  pickIcon: { width: 16, alignItems: 'center' },
 });
 
 export default IngredientFilter;

@@ -62,7 +62,8 @@
     "statReviews": "đánh giá",
     "statAvgGiven": "sao TB đã chấm",
     "emptyTitle": "Chưa có đánh giá nào",
-    "emptyBody": "Những món bạn đánh giá sẽ hiển thị ở đây. Chia sẻ cảm nhận đầu tiên để giúp các du khách khác."
+    "emptyBody": "Những món bạn đánh giá sẽ hiển thị ở đây. Chia sẻ cảm nhận đầu tiên để giúp các du khách khác.",
+    "viewDish": "Xem món"
   },
   "editReview": {
     "title": "Chỉnh sửa đánh giá",
