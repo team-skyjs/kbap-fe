@@ -18,7 +18,14 @@
 ## 불변 규칙
 
 - **Jira 전환/체크 금지** — 완료 판정은 spec 레포의 검토 게이트가 한다. 자기 완료 선언 금지.
-- API 계약 SSOT는 **BE Swagger** https://meogo.handev.site/swagger-ui (spec 레포 openapi.yaml은 참고용).
+- API 계약 SSOT는 **BE Swagger** — dev https://dev.kbap.site/swagger-ui · prod https://prod.kbap.site/swagger-ui (~~meogo.handev.site~~ 폐기 7/24. spec 레포 openapi.yaml은 참고용).
+- **서버가 아는 사실은 서버가 정본** (P-147 사고, 2026-08-10): 회원 속성(provider·가입 상태·
+  판정·권한)을 **클라 로컬 상태(Firebase providerData·AsyncStorage·Keychain)로 판별 금지** —
+  프로필/서버 API 응답이 정본. 로컬 상태는 기기에 잔존물이 쌓여(탈퇴 후 재가입·재설치·
+  계정 전환) 서버와 어긋난다 — KB-152 Keychain 잔존·P-147 애플 링크 잔존이 같은 족보.
+  로컬 판별이 불가피하면(오프라인 등) 발주문에 명시된 경우만 + 서버값 도착 시 서버 우선.
+- **계정 생애주기 유닛 상비**: 인증·프로필·게이팅 로직 변경 시 "탈퇴→재가입 / 재설치 /
+  계정 전환(애플↔구글)" 시나리오 중 해당되는 것을 테스트에 포함 — 잔존 상태 버그의 표준 재발 지점.
 - 완료 기준: tsc 0 · jest 전체 통과 + 신규 로직엔 그 버그를 정확히 잡는 테스트 동반.
 - 위험도 표시는 false-safe 금지(불확실→unable/caution 강등, 헌법 III) — 관련 코드는 보수적으로.
 - 진행 기록은 PROGRESS.md 관례 유지.
