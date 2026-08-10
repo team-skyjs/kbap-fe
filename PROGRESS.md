@@ -984,3 +984,7 @@
 ## 회피 타일 실사진 81종 (2026-08-10, P-145 — 예진 S3 업로드분)
 - [x] ingredientImageUrl(CDN+code 소문자 webp, imageRef 스왑 지점 주석)+AvoidTile(사진 fill+onError 색 폴백 보존, 프레임 불변) — 온보딩 회피 스텝 배선(노출처 유일 확인).
 - [x] tsc 0 · jest 90스위트 490/490 · teamtest OTA(iOS 4dcccae1·안드 17a469e0) — 6a38b0b.
+
+## 앰플리튜드 계측 1차 (2026-08-10, P-144 — 멘토 #39, taxonomy CSV 전사)
+- [x] 신규 7종(application_opened·scan_start·scan_result_item_tap·order_card_open·search_query·review_write_tap·bookmark_toggle)+확장 3종(scan_complete success/fail_reason·review_submit 사진/평점·food_detail_view food_id)+온보딩 step v3 와이어명. user property 6종(setUserProps — Identify 익명 유지, 화이트리스트 드롭).
+- [x] tsc 0 · jest 91스위트 493/493 · teamtest OTA(iOS db486c0f·안드 4dc84688) — 188ddbf. ⚠️ teamtest는 키 무존재 no-op(P-094) — 수신 확인 경로 질의 보고.
