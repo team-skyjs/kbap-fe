@@ -9,9 +9,13 @@
  * KB-162 (경로 A — 심사 요건): 애플 가입 회원은 탈퇴 확정 전에 Apple 재인증
  * 게이트를 통과해야 한다 — 시트 재호출 → 본인 대조 → 토큰 revoke 성공 시에만
  * 탈퇴 진행. 취소/타계정/실패 = 탈퇴 중단 + 안내 (revoke 없는 탈퇴 금지).
- * 구글 회원·웹은 기존 흐름 무변 (provider 판별: appleRevoke.currentIsAppleUser).
+ *
+ * P-147: 게이트 판별 = **서버 profile.provider 정본** — Firebase providerData
+ * 판별 폐기(링크 잔존 오판, 8/10 실사례). 프로필 미로드/오류 = 보수적으로
+ * 게이트 발동(revoke 없는 애플 탈퇴를 만들지 않는 KB-162 원칙). 탈퇴 성공
+ * 후 Firebase 계정 클린업(best effort — 재가입 시 링크 잔존 재발 방지).
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -19,6 +23,7 @@ import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck, IconTrash } from '@/components';
+import { useMe } from '@/lib/data/useMe';
 
 /** Apple 재인증 게이트 카드 상태 — null=닫힘, prompt=안내+시트 진입, 나머지=중단 사유. */
 type AppleGateState = null | 'prompt' | 'cancelled' | 'mismatch' | 'failed';
@@ -33,6 +38,7 @@ const GATE_MSG: Record<Exclude<AppleGateState, null>, string> = {
 export default function DeleteAccount() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { data: me } = useMe(); // P-147: provider 정본 — 탈퇴 화면 진입 시 이미 캐시됨
   const [agreed, setAgreed] = useState(false);
   const [gate, setGate] = useState<AppleGateState>(null);
   const [revoking, setRevoking] = useState(false);
@@ -47,6 +53,10 @@ export default function DeleteAccount() {
     const { clearMemberLocalState } = require('@/lib/auth/clearMemberLocal') as typeof import('@/lib/auth/clearMemberLocal');
     await clearMemberLocalState().catch(() => {});
     if (Platform.OS !== 'web') {
+      // P-147 ②: Firebase 계정 잔재 정리(best effort) — 재가입 시 링크 잔존 재발 방지.
+      // signOut 전에 수행(정리엔 currentUser 필요). 실패해도 탈퇴 흐름 계속.
+      const { cleanupFirebaseAccount } = require('@/lib/auth/firebaseCleanup') as typeof import('@/lib/auth/firebaseCleanup');
+      await cleanupFirebaseAccount().catch(() => {});
       const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
       await session.logOut().catch(() => {});
     }
@@ -58,11 +68,24 @@ export default function DeleteAccount() {
     router.replace('/login' as Href);
   }
 
-  // KB-162: 애플 회원만 재인증 게이트 — 구글 회원·웹은 바로 기존 탈퇴 흐름
+  // P-147 ③: provider drift 진단 — 서버 정본 ≠ Firebase providerData 구성이면 로그
+  useEffect(() => {
+    if (Platform.OS === 'web' || !me?.provider) return;
+    try {
+      const rev = require('@/lib/auth/appleRevoke') as typeof import('@/lib/auth/appleRevoke');
+      const fbApple = rev.currentIsAppleUser();
+      if ((me.provider === 'APPLE') !== fbApple) {
+        console.log(`[auth] provider drift — server=${me.provider} firebaseAppleLink=${fbApple} (링크 잔존/재결합 의심)`);
+      }
+    } catch { /* 네이티브 모듈 부재(웹 등) — 진단 생략 */ }
+  }, [me?.provider]);
+
+  // KB-162→P-147: 애플 게이트 판별 = **서버 profile.provider** (Firebase 판별 폐기).
+  // 미로드/오류(me 없음)는 보수적으로 게이트 발동 — revoke 없는 애플 탈퇴 금지 원칙.
   function onConfirm() {
     if (Platform.OS === 'ios') {
-      const rev = require('@/lib/auth/appleRevoke') as typeof import('@/lib/auth/appleRevoke');
-      if (rev.currentIsAppleUser()) return setGate('prompt');
+      const provider = me?.provider;
+      if (provider === 'APPLE' || provider == null) return setGate('prompt');
     }
     void doWithdraw();
   }

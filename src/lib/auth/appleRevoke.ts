@@ -15,12 +15,17 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { getAuth, revokeToken } from '@react-native-firebase/auth';
 
-/** 애플 가입 회원 여부 — providerData 기준. 구글 회원 분기의 단일 판별점. */
+/** 애플 링크 존재 여부 — providerData 기준. */
 export function isAppleUser(providerData: ReadonlyArray<{ providerId: string }>): boolean {
   return providerData.some((p) => p.providerId === 'apple.com');
 }
 
-/** 현재 로그인 사용자가 애플 가입 회원인지 (미로그인 = false). */
+/**
+ * ⚠️ 폐기(P-147, 8/10 실사례) — **게이트 판별에 쓰지 말 것**: 탈퇴가 Firebase
+ * 유저를 안 지워 과거 애플 링크가 잔존 + 같은 이메일 구글 재가입 시 동일 계정
+ * 재결합 → 구글 회원을 애플로 오판. 게이트 정본 = 서버 profile.provider
+ * (delete-account.tsx). 이 함수는 provider drift 진단 로그 전용으로만 남긴다.
+ */
 export function currentIsAppleUser(): boolean {
   return isAppleUser(getAuth().currentUser?.providerData ?? []);
 }

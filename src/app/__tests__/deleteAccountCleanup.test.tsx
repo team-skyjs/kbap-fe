@@ -60,32 +60,82 @@ jest.mock('@/lib/auth/beAuth', () => ({ withdrawBe: (...a: unknown[]) => mockWit
 const mockClearMember = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/lib/auth/clearMemberLocal', () => ({ clearMemberLocalState: (...a: unknown[]) => mockClearMember(...a) }));
 jest.mock('@/lib/auth/session', () => ({ logOut: jest.fn().mockResolvedValue(undefined) }));
+// P-147: Firebase엔 애플 링크가 "잔존"하는 시나리오 — 서버 정본 판별이면 무시돼야 한다
 jest.mock('@/lib/auth/appleRevoke', () => ({
-  currentIsAppleUser: () => false, // 구글 회원 경로 — 게이트 없이 바로 탈퇴
+  currentIsAppleUser: () => true, // 링크 잔존(과거 애플 로그인) — 구 판별이면 오판됐을 상태
   reauthAndRevokeApple: jest.fn(),
 }));
+const mockCleanup = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/auth/firebaseCleanup', () => ({ cleanupFirebaseAccount: (...a: unknown[]) => mockCleanup(...a) }));
+const mockUseMe = jest.fn();
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
 
 import DeleteAccount from '../delete-account';
 import { Btn } from '@/components/Btn';
 import { Txt } from '@/components/Txt';
 
-it('구글 회원 탈퇴 확정 → withdrawBe 후 회원 로컬 잔재 정리 호출', async () => {
-  let tree!: ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<DeleteAccount />);
-  });
-  // 동의 체크 (consent Pressable — 텍스트 profile.delete.confirm 포함 행)
+const ME = (provider?: string) => ({ data: provider === undefined ? undefined : { id: '1', nickname: 'A', nationality: 'US', readerLanguage: 'en', spiceTolerance: null, restrictions: [], provider, rank: { tier: 'bronze', level: 1, score: 0, nextTier: null, pointsToNext: null } } });
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUseMe.mockReturnValue(ME('GOOGLE'));
+});
+
+async function confirmDelete(tree: ReactTestRenderer) {
   const consent = tree.root
     .findAll((n) => n.props?.onPress && n.findAllByType(Txt).some((t) => t.props.children === 'profile.delete.confirm'))
     .pop()!;
   act(() => consent.props.onPress());
-  // 탈퇴 버튼 (agreed 후 활성)
   const del = tree.root.findAllByType(Btn).find((b) => b.props.children === 'profile.delete.confirmBtn')!;
   await act(async () => {
     del.props.onPress();
-    await new Promise((r) => setTimeout(r, 0)); // dynamic import + async 흐름 해소
+    await new Promise((r) => setTimeout(r, 0));
   });
+}
+
+it('P-147: GOOGLE 회원 + 애플 링크 잔존 → 게이트 미발동, 바로 탈퇴 + Firebase 클린업', async () => {
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<DeleteAccount />);
+  });
+  await confirmDelete(tree);
+  // 서버 정본(GOOGLE) — Firebase 애플 링크 잔존(currentIsAppleUser=true)이어도 게이트 안 뜸
+  expect(JSON.stringify(tree.toJSON())).not.toContain('profile.delete.appleGateBody');
   expect(mockWithdrawBe).toHaveBeenCalled();
   expect(mockClearMember).toHaveBeenCalled(); // 탈퇴한 계정 draft·맵기 소거
+  expect(mockCleanup).toHaveBeenCalled(); // P-147 ②: 잔존 링크 재발 방지
+  expect(mockReplace).toHaveBeenCalledWith('/login');
+});
+
+it('P-147: APPLE 회원 → 재인증 게이트 발동(탈퇴 미진행 — KB-162 현행)', async () => {
+  mockUseMe.mockReturnValue(ME('APPLE'));
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<DeleteAccount />);
+  });
+  await confirmDelete(tree);
+  expect(JSON.stringify(tree.toJSON())).toContain('profile.delete.appleGateBody');
+  expect(mockWithdrawBe).not.toHaveBeenCalled();
+});
+
+it('P-147: 프로필 미로드 → 보수적으로 게이트 발동(revoke 없는 애플 탈퇴 금지)', async () => {
+  mockUseMe.mockReturnValue(ME(undefined));
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<DeleteAccount />);
+  });
+  await confirmDelete(tree);
+  expect(JSON.stringify(tree.toJSON())).toContain('profile.delete.appleGateBody');
+  expect(mockWithdrawBe).not.toHaveBeenCalled();
+});
+
+it('P-147: 클린업 실패해도 탈퇴 흐름 계속(best effort)', async () => {
+  mockCleanup.mockRejectedValueOnce(new Error('recent-auth required'));
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<DeleteAccount />);
+  });
+  await confirmDelete(tree);
+  expect(mockWithdrawBe).toHaveBeenCalled();
   expect(mockReplace).toHaveBeenCalledWith('/login');
 });
