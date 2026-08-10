@@ -1008,3 +1008,7 @@
 ## 스캔 실기 반려 2건 (2026-08-10, P-149)
 - [x] 주문 카드 전체 ScrollView(14항목 도달, Done=스크롤 끝)+확대 뷰 스크롤·명시 닫기. Photo 뷰 = 쌩 원본+핀치 줌만 — 캡슐·미니시트·범례·피크 철거(capsuleMarker/ScanMiniSheet/coverDisplay 삭제). 코치마크 리스트 마크 탭 재열람 복원.
 - [x] tsc 0 · jest 94스위트 497/497 · teamtest OTA(iOS e4333297·안드 014b7dbd) — edeb1b9.
+
+## P-148 회귀 교정 (2026-08-10, P-151 — 핀 카드 8pt 밀림)
+- [x] natPin 프레임/색 분리(투명 보더 동폭 상시 + 선택 색만) — P-103 복원, 메트릭 동일 유닛 잠금.
+- [x] tsc 0 · jest 497/497 · teamtest OTA(iOS 29129d9b·안드 5a22933e) — f2c08f1.
