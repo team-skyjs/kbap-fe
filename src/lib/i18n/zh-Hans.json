@@ -110,7 +110,8 @@
       "泡菜汤",
       "虾酱",
       "石锅拌饭"
-    ]
+    ],
+    "placeholderSeed": "试试搜索\"{{name}}\""
   },
   "community": {
     "title": "社区",

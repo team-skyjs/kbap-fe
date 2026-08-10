@@ -110,7 +110,8 @@
       "Sup Kimchi",
       "Pasta udang",
       "Bibimbap"
-    ]
+    ],
+    "placeholderSeed": "Coba cari \"{{name}}\""
   },
   "community": {
     "title": "Komunitas",

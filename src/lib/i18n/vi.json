@@ -110,7 +110,8 @@
       "Canh kimchi",
       "Mắm tôm",
       "Cơm trộn Bibimbap"
-    ]
+    ],
+    "placeholderSeed": "Thử tìm \"{{name}}\""
   },
   "community": {
     "title": "Cộng đồng",

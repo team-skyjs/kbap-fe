@@ -110,7 +110,8 @@
       "泡菜鍋",
       "蝦醬",
       "石鍋拌飯"
-    ]
+    ],
+    "placeholderSeed": "試試搜尋「{{name}}」"
   },
   "community": {
     "title": "社群",

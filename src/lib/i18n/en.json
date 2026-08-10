@@ -106,7 +106,8 @@
       "Kimchi Stew",
       "Shrimp paste",
       "Bibimbap"
-    ]
+    ],
+    "placeholderSeed": "Try \"{{name}}\""
   },
   "community": {
     "title": "Community",

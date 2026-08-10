@@ -13,7 +13,7 @@
  * Risk badges are personalized (personalRisk false-safe guard) and rendered with
  * the KB-25 RiskPill. Blank keywords never leave the client (server 400s).
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -22,14 +22,13 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
 import { useFoods, useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
+import { placeholderKeyword, popularPhotoFoods } from '@/lib/search/discovery';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
 import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard } from '@/lib/api/types';
-
-const POPULAR_N = 6;
 
 export default function Search() {
   const router = useRouter();
@@ -55,9 +54,10 @@ export default function Search() {
   const probe = useInfiniteFoods();
   const offline = probe.isError && classifyQueryError(probe.error) === 'offline';
 
-  const popular = [...(mockCatalog ?? [])]
-    .sort((a, b) => (a.popularityRank ?? 999) - (b.popularityRank ?? 999))
-    .slice(0, POPULAR_N);
+  // P-143: 검색 유도 — placeholder 시드(진입 시마다 로테이션·재량 보고)+인기 사진
+  // 섹션. 큐레이션·스왑 지점은 discovery.ts 격리(BE ⑥ 배포 시 그쪽만 교체).
+  const seedKeyword = useMemo(() => placeholderKeyword(mockCatalog), [mockCatalog]);
+  const popular = popularPhotoFoods(mockCatalog);
 
   const riskOf = (f: FoodCard): RiskState => personalRisk(f.risk, hasR);
   const openFood = (id: string) => router.push(`/food/${id}?src=search` as Href);
@@ -99,7 +99,7 @@ export default function Search() {
             style={styles.input}
             value={query}
             onChangeText={setQuery}
-            placeholder={t('search.placeholder')}
+            placeholder={seedKeyword ? t('search.placeholderSeed', { name: seedKeyword }) : t('search.placeholder')}
             placeholderTextColor={C.ink3}
             autoFocus
             returnKeyType="search"
@@ -149,13 +149,19 @@ export default function Search() {
             </View>
           )}
 
-          {/* popular editorial — MOCK (인기순 API 미배포) */}
+          {/* P-143: 인기 사진 섹션 — 랭크 큐레이션(discovery), 탭 = 상세 진입. 게스트 노출(열람 영역) */}
           <Text style={[styles.secTag, { marginTop: 22 }]}>{t('search.popular')}</Text>
-          <View style={{ gap: 2 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRail}>
             {popular.map((f) => (
-              <PopularRow key={f.foodId} food={f} onPress={() => doSearch(f.nameKo)} />
+              <Pressable key={f.foodId} style={styles.popCard} onPress={() => openFood(f.foodId)} testID={`pop-${f.foodId}`}>
+                <View style={styles.popThumb}>
+                  {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={14} /> : <IconFood size={22} color={C.ink3} />}
+                </View>
+                <Text style={styles.popCardName} numberOfLines={1}>{f.name}</Text>
+                {f.nameKo !== f.name && <Text style={styles.popCardKo} numberOfLines={1}>{f.nameKo}</Text>}
+              </Pressable>
             ))}
-          </View>
+          </ScrollView>
         </ScrollView>
       ) : search.isLoading ? (
         <View style={styles.fill}>
@@ -197,22 +203,6 @@ export default function Search() {
         </View>
       )}
     </View>
-  );
-}
-
-// Popularity chart is editorial (what's popular), not a personalized safety
-// read — no risk badge here (per canonical design); badges live on results.
-function PopularRow({ food, onPress }: { food: FoodCard; onPress: () => void }) {
-  const top = food.popularityRank === 1;
-  return (
-    <Pressable style={styles.popRow} onPress={onPress}>
-      <Text style={[styles.rank, top && styles.rankTop]}>{food.popularityRank ?? '·'}</Text>
-      <View style={styles.popMeta}>
-        <Text style={styles.popName} numberOfLines={1}>{food.name}</Text>
-        {food.nameKo !== food.name && <Text style={styles.popKo} numberOfLines={1}>{food.nameKo}</Text>}
-      </View>
-      <IconChevron size={16} color={C.ink3} />
-    </Pressable>
   );
 }
 
@@ -280,12 +270,12 @@ const styles = StyleSheet.create({
   recentTap: { flex: 1 },
   recentText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
 
-  popRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 11 },
-  rank: { width: 22, textAlign: 'center', fontFamily: font.display, fontSize: 16, color: C.ink3 },
-  rankTop: { color: C.primary },
-  popMeta: { flex: 1, minWidth: 0 },
-  popName: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  popKo: { fontFamily: font.ko, fontSize: 12.5, color: C.ink2, marginTop: 1 },
+  // P-143 인기 사진 레일
+  popRail: { gap: 10, paddingRight: 8 },
+  popCard: { width: 108 },
+  popThumb: { width: 108, height: 84, borderRadius: 14, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  popCardName: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, marginTop: 6 },
+  popCardKo: { fontFamily: font.ko, fontSize: 11, color: C.ink2, marginTop: 1 },
 
   count: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, marginBottom: 12 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },

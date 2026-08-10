@@ -110,7 +110,8 @@
       "Guiso de kimchi",
       "Pasta de camarón",
       "Bibimbap"
-    ]
+    ],
+    "placeholderSeed": "Prueba \"{{name}}\""
   },
   "community": {
     "title": "Comunidad",

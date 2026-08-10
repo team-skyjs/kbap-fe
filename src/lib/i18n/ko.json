@@ -110,7 +110,8 @@
       "김치찌개",
       "새우젓",
       "비빔밥"
-    ]
+    ],
+    "placeholderSeed": "\"{{name}}\" 검색해 보세요"
   },
   "community": {
     "title": "커뮤니티",
