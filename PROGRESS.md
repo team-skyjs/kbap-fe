@@ -1000,3 +1000,7 @@
 ## 탈퇴 provider 판별 교정 (2026-08-10, P-147 — 예진 실기 버그)
 - [x] 애플 게이트 = 서버 profile.provider 정본(Firebase providerData 판별 폐기 — 링크 잔존 오판), 미로드 시 보수 발동. firebaseCleanup(delete→unlink 폴백, best effort)으로 재발 방지 + drift 진단 로그.
 - [x] tsc 0 · jest 96스위트 503/503 · teamtest OTA(iOS 7b21e994·안드 b4908b8f) — 7dd5ca8.
+
+## 온보딩 실기 반려 2건 (2026-08-10, P-148)
+- [x] 국적 핀 카드 강조 = 선택 상태 바인딩(타국 선택 시 무강조 — 강조 항상 1곳). 맵기 👶 배지 = 레벨명 아래 고정 슬롯 26(프레임 불변)·사진 캐러셀 화면폭 58%+피크+snap+레벨 전환 리셋.
+- [x] tsc 0 · jest 96스위트 506/506 · teamtest OTA(iOS fc736cc9·안드 871ceee0) — 88e66bb.
