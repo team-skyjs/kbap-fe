@@ -38,8 +38,8 @@ export default function ScanOrder() {
 
   const [currency, setCurrency] = React.useState('USD');
   React.useEffect(() => {
-    void resolveCurrency(me?.nationality).then(setCurrency);
-  }, [me?.nationality]);
+    void resolveCurrency(me?.nationality, me?.currency).then(setCurrency); // P-165: 서버 통화 정본
+  }, [me?.nationality, me?.currency]);
 
   const codes = (me?.restrictions ?? []).map((r) => r.code);
   const count = items.reduce((a, i) => a + i.qty, 0);

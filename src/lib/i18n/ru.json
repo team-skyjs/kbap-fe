@@ -648,7 +648,10 @@
     "linkedApple": "Вход через Apple",
     "linkedGoogle": "Вход через Google",
     "linkedSocial": "Социальный аккаунт",
-    "nationalityLocked": "Гражданство нельзя изменить после регистрации."
+    "nationalityLocked": "Гражданство нельзя изменить после регистрации.",
+    "currency": "Валюта",
+    "currencyAuto": "Автоматически ({{code}}, по гражданству)",
+    "currencySearch": "Поиск валюты"
   },
   "nationalityPicker": {
     "title": "Гражданство",

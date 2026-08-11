@@ -44,6 +44,8 @@ export interface MyProfileWire {
   profileImageUrl?: string | null;
   /** 가입 소셜 (KB-203, required 배포) — APPLE | GOOGLE. 구서버 방어 옵셔널. */
   provider?: string;
+  /** P-165(#145): 유저 통화(ISO-4217) — 미설정 null/누락(국적 폴백은 클라 exchange 몫). */
+  currency?: string | null;
   onboardingCompleted: boolean;
   ranking: RankingSummaryWire;
 }
@@ -55,6 +57,7 @@ export interface ProfileUpdateWire {
   appLanguage?: string;
   spicinessPreference?: string | number; // P-084 enum 문자열 · P-114 prod 채널=구정수(해제 = 'SKIP'/-1) — 생략은 유지
   profileImageUrl?: string; // path 설정 · 삭제=PROFILE_IMAGE_DEFAULT_PATH 전송(P-016, null 폐기) · 생략=유지
+  currency?: string | null; // P-165(#145): null = 미설정(국적 폴백) · 생략=유지
 }
 
 /**
@@ -130,6 +133,7 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     // 렌더 불가 → 플레이스홀더 + 감지 로그 (빈 문자열 '' Image source 방지 겸).
     profileImageUrl: adaptProfileImageUrl(wire.profileImageUrl),
     provider: wire.provider, // KB-203 — 연동 계정 표시용
+    currency: wire.currency ?? null, // P-165(#145): 서버 정본 — 결정 체인 1순위(exchange)
 
     restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부

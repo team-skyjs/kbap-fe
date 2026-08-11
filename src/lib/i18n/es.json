@@ -648,7 +648,10 @@
     "linkedApple": "Iniciar sesión con Apple",
     "linkedGoogle": "Iniciar sesión con Google",
     "linkedSocial": "Cuenta social",
-    "nationalityLocked": "La nacionalidad no se puede cambiar después de registrarte."
+    "nationalityLocked": "La nacionalidad no se puede cambiar después de registrarte.",
+    "currency": "Moneda",
+    "currencyAuto": "Automática ({{code}}, según nacionalidad)",
+    "currencySearch": "Buscar moneda"
   },
   "nationalityPicker": {
     "title": "Nacionalidad",

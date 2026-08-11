@@ -115,12 +115,17 @@ export function unregisteredFoodDetail(label: string): FoodDetail {
 
 /** List summary → the FoodCard the browse grid renders (KB-71). */
 export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
+  // P-165(#146): 리뷰 요약 실값 — count 0이면 average null(화면 '— · 0'), 구응답(필드 부재)도 동일 강등
+  const rvCount = wire.review?.count ?? 0;
   return {
     foodId: String(wire.foodId),
     name: wire.name,
     nameKo: wire.koreanName ?? wire.name,
     photoUrl: refToUrl(wire.imageRef),
     risk: mapRisk(wire.overallRiskStatus),
-    overall: NO_RATING, // review aggregates land with KB-73
+    overall:
+      rvCount > 0 && typeof wire.review?.averageRating === 'number'
+        ? { average: wire.review.averageRating, count: rvCount }
+        : NO_RATING,
   };
 }

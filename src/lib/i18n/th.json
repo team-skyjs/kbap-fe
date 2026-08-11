@@ -648,7 +648,10 @@
     "linkedApple": "เข้าสู่ระบบด้วย Apple",
     "linkedGoogle": "เข้าสู่ระบบด้วย Google",
     "linkedSocial": "บัญชีโซเชียล",
-    "nationalityLocked": "ไม่สามารถเปลี่ยนสัญชาติได้หลังสมัคร"
+    "nationalityLocked": "ไม่สามารถเปลี่ยนสัญชาติได้หลังสมัคร",
+    "currency": "สกุลเงิน",
+    "currencyAuto": "อัตโนมัติ ({{code}} ตามสัญชาติ)",
+    "currencySearch": "ค้นหาสกุลเงิน"
   },
   "nationalityPicker": {
     "title": "สัญชาติ",

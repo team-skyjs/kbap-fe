@@ -339,7 +339,10 @@
     "linkedApple": "Apple로 로그인",
     "linkedGoogle": "Google로 로그인",
     "linkedSocial": "소셜 계정",
-    "nationalityLocked": "국적은 가입 후 변경할 수 없어요."
+    "nationalityLocked": "국적은 가입 후 변경할 수 없어요.",
+    "currency": "통화",
+    "currencyAuto": "자동 ({{code}} — 국적 기준)",
+    "currencySearch": "통화 검색"
   },
   "nationalityPicker": {
     "title": "국적",

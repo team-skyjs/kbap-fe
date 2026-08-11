@@ -113,8 +113,8 @@ export default function Scan() {
   const [cart, setCart] = useState<Map<number, number>>(new Map());
   const [currency, setCurrency] = useState('USD');
   useEffect(() => {
-    void resolveCurrency(me?.nationality).then(setCurrency);
-  }, [me?.nationality]);
+    void resolveCurrency(me?.nationality, me?.currency).then(setCurrency); // P-165: 서버 통화 정본
+  }, [me?.nationality, me?.currency]);
   const cartCount = Array.from(cart.values()).reduce((a, b) => a + b, 0);
   const bumpCart = (itemId: number, delta: number) =>
     setCart((cur) => {

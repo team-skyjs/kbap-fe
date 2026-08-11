@@ -648,7 +648,10 @@
     "linkedApple": "Appleでログイン",
     "linkedGoogle": "Googleでログイン",
     "linkedSocial": "ソーシャルアカウント",
-    "nationalityLocked": "国籍は登録後に変更できません。"
+    "nationalityLocked": "国籍は登録後に変更できません。",
+    "currency": "通貨",
+    "currencyAuto": "自動（{{code}}・国籍から）",
+    "currencySearch": "通貨を検索"
   },
   "nationalityPicker": {
     "title": "国籍",

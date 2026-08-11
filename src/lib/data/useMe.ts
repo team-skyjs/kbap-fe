@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
 import type { Review, User, UserUpdate } from '../api/types';
-import { api } from '../api/client';
+import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
@@ -46,14 +46,14 @@ export async function fetchMyReviews(): Promise<Review[]> {
   // 리뷰 오해 방지, 목 CRUD는 뮤테이션 훅이 캐시로 반영. mock은 게스트/개발만).
   if (!FLAGS.reviewsLiveEnabled) return (await hasBeSession()) ? [] : MOCK_MY_REVIEWS;
   if (!(await hasBeSession())) return MOCK_MY_REVIEWS;
-  // P-085(KB-73): GET /members/me/reviews (keyset) — 화면들이 전체 배열을
-  // 기대하므로(카운트·상세 조회) 커서를 끝까지 수집. 내 리뷰 수는 작다.
+  // P-085(KB-73) → P-165(#144) 버전리스: GET /api/reviews/me (lang 필수, keyset) —
+  // 화면들이 전체 배열을 기대하므로(카운트·상세 조회) 커서를 끝까지 수집. 내 리뷰 수는 작다.
   const all: Review[] = [];
   let cursor: string | null = null;
   for (let page = 0; page < 20; page++) {
     // ponytail: 20페이지 안전 상한 — 초과분은 잘림(개인 리뷰 수백 건이면 그때 페이지네이션 UI)
     const res = adaptReviewPage(
-      await api.get<ReviewPageWire>(`/reviews/me${cursor ? `?cursor=${cursor}` : ''}`), // #116 경로 통일
+      await api.get<ReviewPageWire>(`/api/reviews/me?lang=${apiLang()}${cursor ? `&cursor=${cursor}` : ''}`),
     );
     all.push(...res.items);
     if (!res.hasNext || !res.nextCursor) break;
@@ -102,6 +102,7 @@ export function useUpdateMe() {
       if (patch.nickname !== undefined) body.nickname = patch.nickname;
       // P-078: 국적 수정 불가(7/29 정책) — PATCH에서 countryCode 미전송 (BE 필드 제거 동보조)
       // P-060②: appLanguage 철거(BE 계약 삭제 확인) — 언어는 서버 무저장, 매 요청 lang
+      if (patch.currency !== undefined) body.currency = patch.currency; // P-165(#145) — null = 미설정(국적 폴백)
       if (patch.restrictions !== undefined) {
         // 와이어 경계: BE 표준 코드만 (KB-75) — unmapped 드롭+로그
         body.avoidanceSubstanceCodes = patch.restrictions.flatMap((r) => {

@@ -8,7 +8,7 @@
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ReviewPage } from '@/lib/api/types';
-import { api } from '@/lib/api/client';
+import { api, apiLang } from '@/lib/api/client';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { FLAGS } from '@/lib/flags';
@@ -26,14 +26,14 @@ export async function fetchFoodReviewsPage(
       ? { ...page, items: page.items.filter((r) => r.authorNationality === countryCode) }
       : page;
   }
+  // P-165(#144): 버전리스 이관 — GET /api/reviews (lang 필수, foodId는 선택이나
+  // 이 훅은 음식별 호출만 — 전역 피드는 KB-307 별도).
   const q = new URLSearchParams();
+  q.set('lang', apiLang());
+  q.set('foodId', foodId);
   if (cursor) q.set('cursor', cursor);
   if (countryCode) q.set('countryCode', countryCode);
-  const qs = q.toString();
-  // #116(dev 실측 7/31): 경로 통일 — GET /reviews?foodId= (구 /foods/{id}/reviews)
-  const q2 = new URLSearchParams(q);
-  q2.set('foodId', foodId);
-  return adaptReviewPage(await api.get<ReviewPageWire>(`/reviews?${q2.toString()}`));
+  return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
 }
 
 export function useFoodReviews(foodId: string, countryCode?: string | null) {

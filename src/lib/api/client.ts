@@ -23,7 +23,7 @@
  * No provider (web/tests/signed-out) ⇒ no Authorization header.
  */
 import i18n from '../i18n';
-import { API_V1_BASE } from '../data/config';
+import { API_V1_BASE, BE_BASE } from '../data/config';
 
 /** Normalized client error — message is user-presentable (BE `message` or HTTP). */
 export class ApiError extends Error {
@@ -94,6 +94,9 @@ async function request<T>(
   // 공개 인증 엔드포인트(login/refresh/logout)에는 붙이지 않는다 — 만료된
   // access가 붙으면 서버가 요청 자체를 401시켜 refresh가 영원히 실패한다
   // (BE JWT 가이드: 만료·무효 토큰 부착 시 공개 API도 401).
+  // P-165(#144): 버전리스 이관 — '/api/'로 시작하는 절대 API 경로는 BE_BASE만
+  // 프리픽스(예: '/api/reviews'), 그 외 상대 경로는 종전대로 /api/v1 아래.
+  const url = path.startsWith('/api/') ? `${BE_BASE}${path}` : `${API_V1_BASE}${path}`;
   const skipAuth = OPEN_AUTH_PATHS.some((p) => path.startsWith(p));
   const accessToken =
     !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
@@ -105,7 +108,7 @@ async function request<T>(
     // 요청 측 로그 — fetch 전에 찍어 NETWORK 실패 시에도 보이게. 토큰은 마스킹.
     // eslint-disable-next-line no-console
     console.log(
-      `[api] → ${method} ${API_V1_BASE}${path}`,
+      `[api] → ${method} ${url}`,
       { headers: { ...headers, ...(headers.Authorization ? { Authorization: 'Bearer ***' } : {}) } },
       body != null ? body : '(no body)',
     );
@@ -117,7 +120,7 @@ async function request<T>(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     try {
-      res = await fetch(`${API_V1_BASE}${path}`, {
+      res = await fetch(url, {
         method,
         headers,
         body: body != null ? JSON.stringify(body) : undefined,
@@ -155,7 +158,7 @@ async function request<T>(
   // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
   if (__DEV__) {
     // eslint-disable-next-line no-console
-    console.log(`[api] ← ${res.status} ${method} ${API_V1_BASE}${path}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
+    console.log(`[api] ← ${res.status} ${method} ${url}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
   }
 
   // 204 / empty body (e.g. DELETE) — nothing to unwrap.

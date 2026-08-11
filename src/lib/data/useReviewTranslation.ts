@@ -42,7 +42,7 @@ export function useReviewTranslation(review: Review, targetLang: string): Review
     queryFn: () =>
       MOCK_MODE
         ? translateReviewMock(review, targetLang)
-        : api.post<{ translatedBody: string; from: string }>(`/reviews/${review.id}/translate`, { targetLang }),
+        : api.post<{ translatedBody: string; from: string }>(`/api/reviews/${review.id}/translate` /* P-165 버전리스 정합(계약 미배포 — 플래그 off) */, { targetLang }),
     enabled,
     retry: 0,
     staleTime: Infinity,

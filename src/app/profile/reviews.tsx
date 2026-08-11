@@ -4,8 +4,9 @@
  * Top-rated sort + review cards. Tapping a card opens that dish's detail
  * (review editing is KB-73, out of scope here). Empty state when no reviews.
  *
- * Data via useMyReviews() (MOCK_MODE); food name/nameKo/risk joined from
- * useFoods() by foodId. Risk passes through personalRisk() (false-safe guard).
+ * Data via useMyReviews(). P-165(#144): 음식 이름·썸네일 = **서버 food 요약 우선**
+ * (lang 해석) → 카탈로그 캐시 폴백 → 중립 라벨(P-150 ④) 최후. risk는 캐시 조인만
+ * (서버 요약에 위험도 없음) — personalRisk() (false-safe guard) 경유.
  * Helpful-votes / "most helpful" sort from the design are omitted — not in the
  * review contract yet (BE 논의).
  */
@@ -16,7 +17,7 @@ import { Redirect, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { SubHeader, RiskMark, Stars, IconChevron, IconFood } from '@/components';
+import { SubHeader, RiskMark, Stars, IconChevron, IconFood, CardPhoto } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -133,7 +134,8 @@ function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; foo
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.thumb}>
-        <IconFood size={22} color={C.ink3} />
+        {/* P-165: 서버 썸네일 우선 — 부재 시 기존 플레이스홀더 */}
+        {review.foodImageUrl ? <CardPhoto uri={review.foodImageUrl} borderRadius={12} /> : <IconFood size={22} color={C.ink3} />}
         <View style={styles.bdg}>
           <RiskMark state={risk} size={14} />
         </View>
@@ -141,7 +143,7 @@ function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; foo
       <View style={styles.main}>
         <View style={styles.top}>
           <Text style={styles.name} numberOfLines={1}>
-            {food?.name ?? t('myReviews.viewDish') /* P-150 ④: 계약에 이름 부재 — id 숫자 노출 금지, BE foodName 오면 스왑 */}
+            {review.foodName ?? food?.name ?? t('myReviews.viewDish') /* P-165: 서버 이름(lang) 우선 → 캐시 → 중립 라벨(P-150 ④ — id 숫자 노출 금지) */}
           </Text>
           <Stars value={review.rating} size={13} />
         </View>
@@ -183,7 +185,7 @@ const styles = StyleSheet.create({
   pillTextOn: { color: '#fff' },
 
   card: { flexDirection: 'row', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-  thumb: { width: 48, height: 48, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: 48, height: 48, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   bdg: { position: 'absolute', bottom: -3, right: -3, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
   main: { flex: 1, minWidth: 0, gap: 4 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },

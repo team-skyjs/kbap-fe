@@ -648,7 +648,10 @@
     "linkedApple": "Masuk dengan Apple",
     "linkedGoogle": "Masuk dengan Google",
     "linkedSocial": "Akun sosial",
-    "nationalityLocked": "Kewarganegaraan tidak dapat diubah setelah mendaftar."
+    "nationalityLocked": "Kewarganegaraan tidak dapat diubah setelah mendaftar.",
+    "currency": "Mata uang",
+    "currencyAuto": "Otomatis ({{code}}, sesuai kewarganegaraan)",
+    "currencySearch": "Cari mata uang"
   },
   "nationalityPicker": {
     "title": "Kewarganegaraan",

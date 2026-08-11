@@ -648,7 +648,10 @@
     "linkedApple": "Đăng nhập bằng Apple",
     "linkedGoogle": "Đăng nhập bằng Google",
     "linkedSocial": "Tài khoản mạng xã hội",
-    "nationalityLocked": "Không thể thay đổi quốc tịch sau khi đăng ký."
+    "nationalityLocked": "Không thể thay đổi quốc tịch sau khi đăng ký.",
+    "currency": "Tiền tệ",
+    "currencyAuto": "Tự động ({{code}}, theo quốc tịch)",
+    "currencySearch": "Tìm tiền tệ"
   },
   "nationalityPicker": {
     "title": "Quốc tịch",

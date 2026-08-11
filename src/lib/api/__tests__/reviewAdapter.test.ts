@@ -110,3 +110,33 @@ describe('adaptReview — likeCount/likedByMe (8/3 계약)', () => {
     expect(r.myLike).toBe(false);
   });
 });
+
+describe('P-165(#144): 버전리스 계약 — food/author 중첩 매핑', () => {
+  const base = { reviewId: 42, rating: 4, imageUrls: [], createdAt: '2026-08-11T00:00:00Z', likeCount: 0, likedByMe: false };
+
+  it('foodId = food.foodId · memberId = author.memberId · 서버 이름/썸네일 운반', () => {
+    const r = adaptReview({
+      ...base,
+      food: { foodId: 7, name: 'Kimbap', imageUrl: 'https://cdn/kimbap.jpg' },
+      author: { memberId: 9, nickname: 'A', countryCode: 'VN', tier: 'GOURMET', level: 2, score: 15 },
+    });
+    expect(r.foodId).toBe('7');
+    expect(r.memberId).toBe('9');
+    expect(r.foodName).toBe('Kimbap');
+    expect(r.foodImageUrl).toBe('https://cdn/kimbap.jpg');
+  });
+
+  it('food null(작성 응답·삭제 음식) → foodId ""·foodName null — 화면 캐시 폴백 축', () => {
+    const r = adaptReview({ ...base, food: null, author: null });
+    expect(r.foodId).toBe('');
+    expect(r.foodName).toBeNull();
+    expect(r.memberId).toBeUndefined();
+    expect(r.anonymized).toBe(true);
+  });
+
+  it('구응답(최상위 foodId·memberId) 폴백 유지', () => {
+    const r = adaptReview({ ...base, foodId: 3, memberId: 5 });
+    expect(r.foodId).toBe('3');
+    expect(r.memberId).toBe('5');
+  });
+});

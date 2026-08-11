@@ -31,6 +31,7 @@ jest.mock('@/lib/api/client', () => ({
     patch: jest.fn().mockResolvedValue(undefined),
     del: jest.fn().mockResolvedValue(undefined),
   },
+  apiLang: () => 'en', // P-165: lang 필수 파라미터
 }));
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
 jest.mock('@/lib/onboarding/submit', () => ({
@@ -64,7 +65,7 @@ describe('목록 페처 — 플래그 스위칭', () => {
     mockFlagState.live = true;
     api.get.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
     await fetchFoodReviewsPage('7', '42', 'VN');
-    expect(api.get).toHaveBeenCalledWith('/reviews?cursor=42&countryCode=VN&foodId=7'); // #116 경로 통일
+    expect(api.get).toHaveBeenCalledWith('/api/reviews?lang=en&foodId=7&cursor=42&countryCode=VN'); // P-165(#144) 버전리스 + lang 필수
   });
 });
 
@@ -81,7 +82,7 @@ describe('내 리뷰 페처 — 플래그 스위칭', () => {
       hasNext: false,
     });
     const mine = await fetchMyReviews();
-    expect(api.get).toHaveBeenCalledWith('/reviews/me'); // #116 경로 통일
+    expect(api.get).toHaveBeenCalledWith('/api/reviews/me?lang=en'); // P-165(#144) 버전리스 + lang 필수
     expect(mine).toHaveLength(1);
     expect(mine[0].anonymized).toBe(true); // author null(탈퇴형) 방어 겸
   });
@@ -134,7 +135,7 @@ it('작성 on → 실 POST /reviews (foodId 수치화)', async () => {
   mockFlagState.live = true;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await runCreate(qc, { foodId: '7', rating: 5, content: 'live' });
-  expect(api.post).toHaveBeenCalledWith('/reviews', { foodId: 7, rating: 5, content: 'live' });
+  expect(api.post).toHaveBeenCalledWith('/api/reviews', { foodId: 7, rating: 5, content: 'live' });
 });
 
 /* ---- P-095: 리뷰 좋아요 토글 (목 — 캐시 반영·API 호출 0) ---- */
@@ -187,10 +188,10 @@ it('좋아요 on → POST /reviews/{id}/like?liked=목표상태 + 낙관 반영 
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   qc.setQueryData(['me', 'reviews'], [LIKE_RV]);
   await runLike(qc, { reviewId: 'r1', foodId: '7' });
-  expect(api.post).toHaveBeenCalledWith('/reviews/r1/like?liked=true'); // 현 false → 목표 true
+  expect(api.post).toHaveBeenCalledWith('/api/reviews/r1/like?liked=true'); // 현 false → 목표 true
   expect(qc.getQueryData<Review[]>(['me', 'reviews'])![0]).toMatchObject({ likes: 3, myLike: true });
   await runLike(qc, { reviewId: 'r1', foodId: '7' }); // 해제 = liked=false
-  expect(api.post).toHaveBeenLastCalledWith('/reviews/r1/like?liked=false');
+  expect(api.post).toHaveBeenLastCalledWith('/api/reviews/r1/like?liked=false');
 });
 
 it('좋아요 on 실패 → 캐시 롤백(원값 복원)', async () => {
@@ -200,4 +201,18 @@ it('좋아요 on 실패 → 캐시 롤백(원값 복원)', async () => {
   qc.setQueryData(['me', 'reviews'], [LIKE_RV]);
   await runLike(qc, { reviewId: 'r1', foodId: '7' });
   expect(qc.getQueryData<Review[]>(['me', 'reviews'])![0]).toMatchObject({ likes: 2, myLike: false });
+});
+
+it('P-165(#144): 리뷰 경로 전수 버전리스 — v1 상대 경로(`/reviews`) 잔재 0', () => {
+  const fs = require('fs');
+  for (const f of [
+    'src/lib/data/useFoodReviews.ts',
+    'src/lib/data/useMe.ts',
+    'src/lib/data/useReviewMutations.ts',
+    'src/lib/data/useReviewTranslation.ts',
+  ]) {
+    const src = fs.readFileSync(f, 'utf8') as string;
+    // api.*('/reviews…') 형태(=/api/v1/reviews로 나가는 상대 경로) 금지 — /api/reviews만 허용
+    expect(src).not.toMatch(/api\.(get|post|patch|del)[^\n]*[`'"]\/reviews/);
+  }
 });

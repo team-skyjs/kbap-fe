@@ -1,10 +1,11 @@
 /**
  * reviewAdapter.ts — 리뷰 API 와이어 경계 (P-085/KB-73 실연결).
  *
- * 계약(dev 스웨거 스냅샷 2026-07-30):
- *   POST /reviews {foodId, rating, content?, imagePaths?} · PATCH /reviews/{id}
- *   · DELETE /reviews/{id} · GET /foods/{id}/reviews?cursor&countryCode ·
- *   GET /members/me/reviews?cursor — 전부 BaseResponse 봉투(클라이언트가 해체).
+ * 계약(dev 스웨거 스냅샷 2026-08-11 — P-165/#144 **버전리스 이관**, /api/v1/reviews* 삭제):
+ *   POST /api/reviews {foodId, rating, content?, imagePaths?} · PATCH /api/reviews/{id}
+ *   · DELETE /api/reviews/{id} · GET /api/reviews?lang&foodId&cursor&countryCode
+ *   · GET /api/reviews/me?lang&cursor — 전부 BaseResponse 봉투(클라이언트가 해체).
+ *   breaking: 최상위 foodId·memberId 소멸 → food.foodId·author.memberId(구응답 폴백 유지).
  *
  * ⚠️ PATCH 시맨틱 = **"생략 = 제거"** (rating만 필수): 본문만 고칠 때도
  * imagePaths를 안 보내면 서버가 사진을 삭제한다 — buildReviewUpdate가 항상
@@ -26,10 +27,21 @@ export interface ReviewAuthorWire {
   score: number;
 }
 
+/** P-165(#144): 리뷰 대상 음식 요약 — 목록 조회에서만, 음식 삭제 시 null. name은 lang 해석값. */
+export interface ReviewFoodWire {
+  foodId: number;
+  name: string;
+  imageUrl?: string | null;
+}
+
 export interface ReviewWire {
   reviewId: number;
-  foodId: number;
-  memberId: number;
+  /** P-165: 계약에서 소멸 — 구응답 방어 폴백으로만 유지. 정본은 food.foodId. */
+  foodId?: number;
+  /** P-165: 계약에서 소멸 — 정본은 author.memberId. */
+  memberId?: number;
+  /** P-165(#144): 음식 요약(서버 이름·썸네일) — 작성/수정 응답·삭제된 음식이면 null. */
+  food?: ReviewFoodWire | null;
   rating: number;
   content?: string | null;
   imageUrls: string[];
@@ -67,15 +79,21 @@ function adaptAuthor(wire: ReviewAuthorWire | null | undefined): ReviewAuthor | 
 
 export function adaptReview(wire: ReviewWire): Review {
   const author = adaptAuthor(wire.author);
+  // P-165(#144): foodId·memberId 정본 = 중첩(food/author), 최상위는 구응답 폴백
+  const foodId = wire.food?.foodId ?? wire.foodId;
+  const memberId = wire.author?.memberId ?? wire.memberId;
   return {
     id: String(wire.reviewId),
-    foodId: String(wire.foodId),
+    foodId: foodId != null ? String(foodId) : '',
     rating: wire.rating,
     body: wire.content ?? null,
     createdAt: wire.createdAt,
     photos: wire.imageUrls ?? [],
-    memberId: String(wire.memberId),
+    memberId: memberId != null ? String(memberId) : undefined,
     author,
+    // P-165: 서버 해석 음식 이름·썸네일(내 리뷰 화면 우선 소스) — 부재 시 화면이 캐시 폴백
+    foodName: wire.food?.name ?? null,
+    foodImageUrl: wire.food?.imageUrl ?? null,
     // 파생 — 기존 화면 호환 축 (author null=탈퇴 → 익명 표시)
     authorNationality: author?.nationality ?? null,
     authorRankTier: author?.tier ?? null,

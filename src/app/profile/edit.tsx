@@ -7,13 +7,13 @@
  * provider (KB-203 — Apple/Google). Save persists nickname/spice via PATCH /me.
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { setUserProps } from '@/lib/analytics';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG, Input } from '@/components';
+import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG, IconSearch, Input } from '@/components';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { SPICE_LEVEL_LABEL, spiceRank, type SpiceChoice } from '@/lib/spice';
 import { countryByCode } from '@/lib/onboarding/countries';
@@ -23,6 +23,7 @@ import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
 import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
+import { clearCurrencyCache, currencyForCountry, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -33,6 +34,10 @@ export default function EditProfile() {
 
   const [nickname, setNickname] = useState('');
   const [spice, setSpice] = useState<SpiceChoice>('SKIP'); // KB-150→P-081 — SKIP = 미설정
+  // P-165(#145): 통화 — null = 미설정(국적 폴백), 저장 시 PATCH currency(null 허용)
+  const [currency, setCurrency] = useState<string | null>(null);
+  const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [currencyQ, setCurrencyQ] = useState('');
   const [sliderDragging, setSliderDragging] = useState(false); // P-098②a 스크롤 잠금
   const [seeded, setSeeded] = useState(false);
   // P-060: 언어 = OS 정본 — OS 앱 설정 열기, 안드12- 숨김
@@ -41,6 +46,7 @@ export default function EditProfile() {
     if (me && !seeded) {
       setNickname(me.nickname);
       setSpice(me.spiceTolerance);
+      setCurrency(me.currency ?? null); // P-165
       setSeeded(true);
     }
   }, [me, seeded]);
@@ -54,12 +60,19 @@ export default function EditProfile() {
       {
         nickname: nickname.trim() || me?.nickname,
         spiceTolerance: spice,
+        // P-165(#145): 변경 시에만 전송(생략=유지) — null = 미설정(국적 폴백)
+        ...(currency !== (me?.currency ?? null) ? { currency } : {}),
         // P-120: 사진 드래프트 — 있을 때만 합류(1회 PATCH), 없으면 필드 생략(유지)
         ...(photoDraft != null ? { profileImageUrl: photoDraft } : {}),
       },
       {
         onSuccess: () => {
           setUserProps({ spice_level: spice }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+          // P-165: 로컬 캐시 동기화 — 서버 정본 원칙(resolveCurrency 체인의 캐시 강등)
+          if (currency !== (me?.currency ?? null)) {
+            if (currency) saveCurrency(currency);
+            else clearCurrencyCache();
+          }
           router.back();
         },
       },
@@ -185,6 +198,20 @@ export default function EditProfile() {
           <Text style={styles.hint}>{t('editProfile.nationalityLocked')}</Text>
         </View>
 
+        {/* P-165(#145): 통화 — 국가 피커 문법(검색+리스트) 재사용, 미설정 = 국적 폴백 표시 */}
+        <View style={styles.fieldset}>
+          <Text style={styles.fieldLbl}>{t('editProfile.currency')}</Text>
+          <Pressable style={styles.field} onPress={() => setCurrencyOpen(true)} testID="currency-row">
+            <IconGlobe size={18} color={C.ink2} />
+            <Text style={styles.val}>
+              {currency
+                ? `${currency} (${SUPPORTED_CURRENCIES.find((c) => c.code === currency)?.symbol ?? ''})`
+                : t('editProfile.currencyAuto', { code: currencyForCountry(me?.nationality) })}
+            </Text>
+            <IconChevron size={16} color={C.ink3} />
+          </Pressable>
+        </View>
+
         {/* P-060: 언어 = OS 정본 — 탭 시 OS 앱 설정(언어 항목), 안드12- 숨김 */}
         {canOpenLangSettings && (
           <View style={styles.fieldset}>
@@ -239,6 +266,57 @@ export default function EditProfile() {
         </View>
       </ScrollView>
 
+      {/* P-165: 통화 피커 — 온보딩 국가 피커 문법(natSearch 검색 + 행 리스트) 재사용 */}
+      <Modal visible={currencyOpen} animationType="slide" onRequestClose={() => setCurrencyOpen(false)}>
+        <View style={[styles.root, { paddingTop: 8 }]}>
+          <SubHeader title={t('editProfile.currency')} onBack={() => setCurrencyOpen(false)} />
+          <View style={styles.curBody}>
+            <View style={styles.curSearch}>
+              <IconSearch size={17} color={C.ink2} />
+              <Input
+                value={currencyQ}
+                onChangeText={setCurrencyQ}
+                placeholder={t('editProfile.currencySearch')}
+                placeholderTextColor={C.ink3}
+                style={styles.curSearchInput}
+                autoCorrect={false}
+                autoCapitalize="characters"
+              />
+            </View>
+            <FlatList
+              testID="currency-list"
+              data={SUPPORTED_CURRENCIES.filter((c) => {
+                const q = currencyQ.trim().toLowerCase();
+                return !q || c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+              })}
+              keyExtractor={(c) => c.code}
+              keyboardShouldPersistTaps="handled"
+              ListHeaderComponent={
+                <Pressable
+                  style={styles.curRow}
+                  onPress={() => { setCurrency(null); setCurrencyOpen(false); setCurrencyQ(''); }}
+                  testID="currency-auto"
+                >
+                  <Text style={styles.curName}>{t('editProfile.currencyAuto', { code: currencyForCountry(me?.nationality) })}</Text>
+                  {currency == null && <IconCheck size={16} color={C.primary} />}
+                </Pressable>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.curRow}
+                  onPress={() => { setCurrency(item.code); setCurrencyOpen(false); setCurrencyQ(''); }}
+                  testID={`currency-${item.code}`}
+                >
+                  <Text style={styles.curSym}>{item.symbol}</Text>
+                  <Text style={styles.curName}>{item.code} · {item.name}</Text>
+                  {currency === item.code && <IconCheck size={16} color={C.primary} />}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.savebar}>
         <Btn variant={photoBusy ? 'off' : 'primary'} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
           {t('editProfile.save')}
@@ -289,4 +367,12 @@ const styles = StyleSheet.create({
   acctVal: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
 
   savebar: { padding: 18, paddingBottom: 30, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+
+  // P-165 통화 피커 — 온보딩 natSearch/natRow 문법 수치 재사용
+  curBody: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
+  curSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
+  curSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  curRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 56, paddingHorizontal: 12, borderRadius: 14 },
+  curSym: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, minWidth: 34 },
+  curName: { flex: 1, fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
 });

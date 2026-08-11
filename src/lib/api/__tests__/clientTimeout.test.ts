@@ -4,7 +4,7 @@
  * (classifyQueryError → offline, 재시도 유도).
  */
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
-jest.mock('@/lib/data/config', () => ({ API_V1_BASE: 'https://test.host/api/v1' }));
+jest.mock('@/lib/data/config', () => ({ API_V1_BASE: 'https://test.host/api/v1', BE_BASE: 'https://test.host' }));
 // StateBlock(classifyQueryError) 경유로 딸려오는 reanimated — jest 표준 목
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
@@ -74,4 +74,16 @@ it('정상 응답 무영향 — 페이로드 해체 + 타이머 정리(추가 �
 it('타임아웃 에러 = NETWORK 분류 (offline UI — 재시도 유도 문구 경로)', () => {
   expect(classifyQueryError(new ApiError('NETWORK: timeout after 15000ms'))).toBe('offline');
   expect(classifyQueryError(new ApiError('HTTP 500'))).toBe('error');
+});
+
+it("P-165(#144): '/api/' 절대 경로 = 버전리스(BE_BASE만) · 상대 경로 = /api/v1 유지", async () => {
+  const calls: string[] = [];
+  global.fetch = jest.fn((url: unknown) => {
+    calls.push(String(url));
+    return Promise.resolve(okEnvelope({}) as unknown as Response);
+  }) as unknown as typeof fetch;
+  await api.get('/api/reviews?lang=en');
+  await api.get('/home');
+  expect(calls[0]).toBe('https://test.host/api/reviews?lang=en'); // v1 미포함
+  expect(calls[1]).toBe('https://test.host/api/v1/home');
 });

@@ -648,7 +648,10 @@
     "linkedApple": "透過 Apple 登入",
     "linkedGoogle": "透過 Google 登入",
     "linkedSocial": "社群帳號",
-    "nationalityLocked": "註冊後無法變更國籍。"
+    "nationalityLocked": "註冊後無法變更國籍。",
+    "currency": "貨幣",
+    "currencyAuto": "自動（{{code}}，依國籍）",
+    "currencySearch": "搜尋貨幣"
   },
   "nationalityPicker": {
     "title": "國籍",

@@ -2,7 +2,7 @@
  * foodAdapter — 상세 bookmarked 매핑 (KB-142 후속, 계약 갭 해소 2026-07-15).
  * 서버 필드가 저장 버튼의 진실이 됐으므로 true/false/누락(방어) 매핑을 잠근다.
  */
-import { adaptFoodDetail } from '../foodAdapter';
+import { adaptFoodDetail, adaptMenuSummary } from '../foodAdapter';
 import type { FoodDetailWire } from '../foodDetailTypes';
 
 const WIRE: FoodDetailWire = {
@@ -69,4 +69,23 @@ it('둘 다 없음 — null/0 (표시 "—")', () => {
   const d = adaptFoodDetail({ ...WIRE }, '7');
   expect(d.overall).toEqual({ average: null, count: 0 });
   expect(d.sameNationality).toEqual({ average: null, count: 0 });
+});
+
+describe('P-165(#146): 목록 리뷰 요약(FoodSummaryResponse.review) 실값', () => {
+  const base = { foodId: 1, name: 'Kimbap', koreanName: '김밥', spiciness: 0, overallRiskStatus: 'SAFE' as const };
+
+  it('count>0 → 별점·수 실값', () => {
+    const c = adaptMenuSummary({ ...base, review: { averageRating: 4.2, count: 5 } });
+    expect(c.overall).toEqual({ average: 4.2, count: 5 });
+  });
+
+  it('리뷰 0개(0.0·0) → average null·count 0 ("— · 0"은 이때만)', () => {
+    const c = adaptMenuSummary({ ...base, review: { averageRating: 0, count: 0 } });
+    expect(c.overall).toEqual({ average: null, count: 0 });
+  });
+
+  it('구응답(review 부재) → 동일 강등(무크래시)', () => {
+    const c = adaptMenuSummary(base);
+    expect(c.overall).toEqual({ average: null, count: 0 });
+  });
 });

@@ -61,6 +61,8 @@ export interface User {
   provider?: string;
   /** 서버 온보딩 완료 플래그 (KB-75 재유도 판정의 원천). mock/비회원에선 생략. */
   onboardingCompleted?: boolean;
+  /** P-165(#145): 유저 통화(ISO-4217) — 서버 정본, null/생략 = 미설정(국적 폴백). */
+  currency?: string | null;
 }
 
 export interface UserUpdate {
@@ -70,6 +72,7 @@ export interface UserUpdate {
   spiceTolerance?: SpiceChoice; // 'SKIP' = 설정 해제(와이어 -1은 어댑터 몫)
   restrictions?: DietaryRestriction[];
   profileImageUrl?: string; // path 설정 · 삭제=기본 path 전송(P-016 확정, null 폐기) · 생략=유지 (KB-149)
+  currency?: string | null; // P-165(#145): null = 미설정(국적 폴백) · 생략 = 유지
 }
 
 export interface RatingAggregate {
@@ -158,8 +161,12 @@ export interface Review {
   createdAt: string; // ISO date-time
   /** 조회 사진 = 서버 조합 완전 URL (전송은 path — reviewAdapter.imageUrlToPath). */
   photos?: string[];
-  /** 작성자 회원 id — 내 리뷰 판별 (P-085). mock 경로는 생략 가능. */
+  /** 작성자 회원 id — 내 리뷰 판별 (P-085 → P-165: 정본 author.memberId에서 파생). mock 경로는 생략 가능. */
   memberId?: string;
+  /** P-165(#144): 서버 해석(lang) 음식 이름 — 목록 응답에서만, 부재/삭제 시 null(화면 캐시 폴백). */
+  foodName?: string | null;
+  /** P-165(#144): 음식 대표 썸네일 URL — 부재 시 null. */
+  foodImageUrl?: string | null;
   /** 작성자 프로필 — **null = 탈퇴 회원** (P-085 방어 렌더 3케이스의 하나). */
   author?: ReviewAuthor | null;
   /** 파생(author.nationality) — 화면 호환 유지. */

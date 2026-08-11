@@ -335,7 +335,10 @@
     "linkedApple": "Sign in with Apple",
     "linkedGoogle": "Sign in with Google",
     "linkedSocial": "Social account",
-    "nationalityLocked": "Nationality can’t be changed after sign-up."
+    "nationalityLocked": "Nationality can’t be changed after sign-up.",
+    "currency": "Currency",
+    "currencyAuto": "Automatic ({{code}}, by nationality)",
+    "currencySearch": "Search currencies"
   },
   "nationalityPicker": {
     "title": "Nationality",

@@ -78,7 +78,11 @@ const ME = {
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: ME, isLoading: false, error: null, refetch: jest.fn() }),
   useMyReviews: () => ({
-    data: [{ id: 'r1', foodId: '499', rating: 4, body: 'good', createdAt: '2026-08-01', authorNationality: 'US', authorRankTier: null }],
+    data: [
+      { id: 'r1', foodId: '499', rating: 4, body: 'good', createdAt: '2026-08-01', authorNationality: 'US', authorRankTier: null },
+      // P-165: 서버 food 요약 보유분 — 이름·썸네일 서버값 우선 렌더 잠금용
+      { id: 'r2', foodId: '7', foodName: 'Server Kimbap', foodImageUrl: 'https://cdn/kimbap.jpg', rating: 5, body: 'nice', createdAt: '2026-08-02', authorNationality: 'US', authorRankTier: null },
+    ],
     isLoading: false,
     error: null,
     refetch: jest.fn(),
@@ -249,4 +253,12 @@ it('P-159: 저장 빈 상태 CTA = alignSelf center(소스 잠금 — Btn sm fle
   const btnIdx = src.lastIndexOf('<Btn sm', ctaIdx);
   expect(btnIdx).toBeGreaterThan(-1);
   expect(src.slice(btnIdx, ctaIdx)).toContain("alignSelf: 'center'");
+});
+
+it('P-165(#144): 내 리뷰 — 서버 food.name(lang 해석)·썸네일 우선, 캐시 미스 시 중립 라벨 폴백', () => {
+  const tree = render(<MyReviews />);
+  const s2 = flatJson(tree);
+  expect(s2).toContain('Server Kimbap'); // 서버 이름 우선
+  expect(s2).toContain('https://cdn/kimbap.jpg'); // 서버 썸네일
+  expect(s2).toContain('myReviews.viewDish'); // 서버 요약 無 + 캐시 미스(r1) → 중립 라벨 유지
 });

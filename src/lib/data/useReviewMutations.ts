@@ -60,7 +60,7 @@ export function useCreateReview() {
         });
         return;
       }
-      await api.post('/reviews', {
+      await api.post('/api/reviews', { // P-165(#144) 버전리스
         foodId: Number(input.foodId),
         rating: input.rating,
         ...(input.content ? { content: input.content } : {}),
@@ -93,7 +93,7 @@ export function useUpdateReview() {
         return;
       }
       const body: ReviewUpdateWire = buildReviewUpdate(input.current, input.changes);
-      await api.patch(`/reviews/${input.reviewId}`, body);
+      await api.patch(`/api/reviews/${input.reviewId}`, body); // P-165 버전리스
     },
     onSuccess: (_d, v) => {
       if (FLAGS.reviewsLiveEnabled) invalidate(v.foodId);
@@ -110,7 +110,7 @@ export function useDeleteReview() {
         qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => (prev ?? []).filter((r) => r.id !== input.reviewId));
         return;
       }
-      await api.del(`/reviews/${input.reviewId}`);
+      await api.del(`/api/reviews/${input.reviewId}`); // P-165 버전리스
     },
     onSuccess: (_d, v) => {
       if (FLAGS.reviewsLiveEnabled) invalidate(v.foodId);
@@ -161,7 +161,7 @@ export function useToggleReviewLike() {
       flipLikeCaches(qc, input); // 낙관 반영 (off 경로는 이게 전부 — P-095 목 시맨틱)
       if (!FLAGS.reviewsLiveEnabled) return;
       try {
-        await api.post(`/reviews/${input.reviewId}/like?liked=${next}`);
+        await api.post(`/api/reviews/${input.reviewId}/like?liked=${next}`); // P-165 버전리스
       } catch (e) {
         flipLikeCaches(qc, input); // 실패 롤백
         throw e;

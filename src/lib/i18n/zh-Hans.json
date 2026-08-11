@@ -648,7 +648,10 @@
     "linkedApple": "通过 Apple 登录",
     "linkedGoogle": "通过 Google 登录",
     "linkedSocial": "社交账号",
-    "nationalityLocked": "注册后无法更改国籍。"
+    "nationalityLocked": "注册后无法更改国籍。",
+    "currency": "货币",
+    "currencyAuto": "自动（{{code}}，按国籍）",
+    "currencySearch": "搜索货币"
   },
   "nationalityPicker": {
     "title": "国籍",

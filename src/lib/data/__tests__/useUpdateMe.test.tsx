@@ -142,3 +142,10 @@ it('P-078: patch에 nationality류가 섞여도 PATCH body에 countryCode 없음
   expect('countryCode' in body).toBe(false);
   expect(body.nickname).toBe('B');
 });
+
+it('P-165(#145): currency 패치 → PATCH body 포함 · null(해제)도 전송(국적 폴백 복귀)', async () => {
+  await runMutation(seededClient(), { currency: 'THB' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { currency: 'THB' });
+  await runMutation(seededClient(), { currency: null });
+  expect(api.patch).toHaveBeenLastCalledWith('/members/me/profile', { currency: null });
+});

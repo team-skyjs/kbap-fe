@@ -38,8 +38,43 @@ export function currencyForCountry(code: string | null | undefined): string {
   return 'USD';
 }
 
-/** 유저 통화 결정 — 저장값 > 국적 > 기기 로케일 region > USD. */
-export async function resolveCurrency(nationality: string | null | undefined): Promise<string> {
+/** P-165(#145): 피커 카탈로그 — 환산 테이블 보유 통화만(선택 = 실제 병기 동작 보장). */
+export const SUPPORTED_CURRENCIES: { code: string; symbol: string; name: string }[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
+  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'TWD', symbol: 'NT$', name: 'New Taiwan Dollar' },
+  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
+  { code: 'VND', symbol: '₫', name: 'Vietnamese Dong' },
+  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
+  { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
+  { code: 'RUB', symbol: '₽', name: 'Russian Ruble' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
+  { code: 'MXN', symbol: 'MX$', name: 'Mexican Peso' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won' },
+];
+
+/**
+ * 유저 통화 결정 — P-165(#145) 서버 정본 체인:
+ * **서버 프로필 currency(정본)** > AsyncStorage(캐시 강등 — 오프라인/게스트용)
+ * > 국적 > 기기 로케일 region > USD. 서버값 도착 시 캐시 동기화(서버 우선 원칙).
+ */
+export async function resolveCurrency(
+  nationality: string | null | undefined,
+  serverCurrency?: string | null,
+): Promise<string> {
+  if (serverCurrency && RATE_FROM_KRW[serverCurrency]) {
+    saveCurrency(serverCurrency); // 캐시 동기화 — 다음 오프라인 폴백 대비
+    return serverCurrency;
+  }
   try {
     const saved = await AsyncStorage.getItem(STORE_KEY);
     if (saved && RATE_FROM_KRW[saved]) return saved;
@@ -53,6 +88,11 @@ export async function resolveCurrency(nationality: string | null | undefined): P
 
 export function saveCurrency(code: string): void {
   void AsyncStorage.setItem(STORE_KEY, code).catch(() => {});
+}
+
+/** P-165: 통화 해제(null 저장) 시 캐시도 비움 — 낡은 캐시가 국적 폴백을 가리는 것 방지. */
+export function clearCurrencyCache(): void {
+  void AsyncStorage.removeItem(STORE_KEY).catch(() => {});
 }
 
 /** KRW → 유저 통화 환산 문자열 (예: "$6.32"). 미지 통화·KRW = null(환산 배지 생략). */

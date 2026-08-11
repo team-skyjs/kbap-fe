@@ -10,6 +10,12 @@
  */
 import type { BeRiskStatus } from './foodDetailTypes';
 
+/** P-165(#146): 목록 리뷰 요약 (ReviewInfoResponse — 필드명 스냅샷 8/11 실확인: count, reviewCount 아님). */
+export interface ReviewInfoWire {
+  averageRating: number; // 리뷰 없으면 0.0 — null 없음
+  count: number; // int64
+}
+
 export interface MenuSummaryWire {
   foodId: number; // int64 — the stable id the detail endpoint keys on
   name: string; // request-language display name (falls back to Korean)
@@ -17,6 +23,9 @@ export interface MenuSummaryWire {
   imageRef?: string | null; // bare image filename (no host defined yet)
   spiciness: number; // 0..10
   overallRiskStatus: BeRiskStatus; // SAFE|CAUTION|DANGER|UNKNOWN
+  bookmarked?: boolean;
+  /** P-165(#146): 리뷰 요약 신설 — 구응답 방어 옵셔널. */
+  review?: ReviewInfoWire | null;
 }
 
 export interface PageMenuSummaryWire {
