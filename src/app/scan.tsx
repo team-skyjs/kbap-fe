@@ -560,16 +560,17 @@ export default function Scan() {
                 <Btn variant="ghost" onPress={() => setRetakeConfirm(false)}>
                   {t('profile.delete.cancel')}
                 </Btn>
-                <Pressable
-                  style={styles.discardRow}
+                {/* P-175: destructive도 보더 버튼 프레임 — 텍스트 행이 버튼처럼 안 보이던 지적 */}
+                <Btn
+                  variant="dangerGhost"
                   onPress={() => {
                     setRetakeConfirm(false);
                     setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setPhase('camera');
                   }}
                   testID="retake-go"
                 >
-                  <Text style={styles.discardText}>{t('scan.retakeConfirm')}</Text>
-                </Pressable>
+                  {t('scan.retakeConfirm')}
+                </Btn>
               </View>
             </View>
           </View>
@@ -832,8 +833,6 @@ const styles = StyleSheet.create({
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
-  discardRow: { alignItems: 'center', paddingVertical: 11 },
-  discardText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.riskDanger },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
   quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair, backgroundColor: '#fff' },

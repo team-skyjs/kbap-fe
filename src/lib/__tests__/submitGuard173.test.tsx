@@ -78,3 +78,27 @@ it('Btn busy — 탭 차단 + 스피너 + 원 라벨 투명 보존(메트릭 불
   const pressable = tree.root.findAll((n) => n.props?.accessibilityState?.disabled === true);
   expect(pressable.length).toBeGreaterThanOrEqual(1);
 });
+
+it('P-175: dangerGhost — 취소(ghost)와 같은 버튼 프레임(보더+라운딩+패딩), 색만 destructive', () => {
+  const { StyleSheet } = require('react-native');
+  const tree = render(<Btn variant="dangerGhost">Rescan</Btn>);
+  const framed = tree.root.findAll((n) => {
+    const st = StyleSheet.flatten(n.props?.style ?? {}) as { borderWidth?: number; borderRadius?: number };
+    return st.borderWidth === 1.5 && (st.borderRadius ?? 0) >= 12; // ghost와 동일 프레임 문법
+  });
+  expect(framed.length).toBeGreaterThanOrEqual(1);
+  const label = tree.root.findAll((n) => {
+    const st = StyleSheet.flatten(n.props?.style ?? {}) as { color?: string };
+    return st.color === '#cf3a2c'; // destructive 텍스트(기존 riskDanger 토큰)
+  });
+  expect(label.length).toBeGreaterThanOrEqual(1);
+});
+
+it('P-175: 노출처 전수 — 재스캔·커뮤니티 이탈 destructive 행 = dangerGhost(텍스트 행 잔존 0)', () => {
+  const fs = require('fs');
+  for (const f of ['src/app/scan.tssx'.replace('tssx', 'tsx'), 'src/app/community/compose.tsx']) {
+    const src = fs.readFileSync(f, 'utf8') as string;
+    expect(src).toContain('variant="dangerGhost"');
+    expect(src).not.toContain('discardRow'); // 구 텍스트 행 문법 소멸
+  }
+});

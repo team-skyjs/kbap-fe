@@ -9,7 +9,7 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
 import { PRESS_SCALE, spring } from '@/lib/motion';
 
-export type BtnVariant = 'primary' | 'ghost' | 'off' | 'danger';
+export type BtnVariant = 'primary' | 'ghost' | 'off' | 'danger' | 'dangerGhost';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -17,6 +17,7 @@ export function Btn({
   children,
   variant = 'primary',
   busy = false,
+  testID,
   icon,
   sm,
   disabled,
@@ -27,6 +28,7 @@ export function Btn({
   variant?: BtnVariant;
   /** P-173: 제출 중 — 라벨 자리 스피너(원 라벨 투명 보존 = 메트릭 불변) + 탭 차단. */
   busy?: boolean;
+  testID?: string;
   icon?: React.ReactNode;
   sm?: boolean;
   disabled?: boolean;
@@ -51,6 +53,7 @@ export function Btn({
         scale.value = withSpring(1, spring.press);
       }}
       disabled={disabled || busy || variant === 'off'}
+      testID={testID}
       style={[
         styles.base,
         sm && styles.sm,
@@ -141,6 +144,12 @@ const VARIANTS: Record<
     container: { backgroundColor: C.riskDanger, ...shadow.sh2 },
     pressed: { backgroundColor: '#b5301f' },
     label: { color: '#fff' },
+  },
+  // P-175: destructive 확인 행 — ghost와 같은 버튼 프레임(보더+라운딩+패딩), 색만 destructive
+  dangerGhost: {
+    container: { backgroundColor: C.card, borderWidth: 1.5, borderColor: 'rgba(207,58,44,0.45)', ...shadow.sh1 },
+    pressed: { backgroundColor: 'rgba(207,58,44,0.06)' },
+    label: { color: C.riskDanger },
   },
 };
 

@@ -286,9 +286,10 @@ export default function CommunityCompose() {
               <Btn variant="ghost" onPress={() => setLeaveConfirm(false)}>
                 {t('community.keepWriting')}
               </Btn>
-              <Pressable style={styles.discardRow} onPress={() => { setLeaveConfirm(false); router.back(); }}>
-                <Text style={styles.discardText}>{t('community.discard')}</Text>
-              </Pressable>
+              {/* P-175: destructive도 보더 버튼 프레임(재스캔 모달과 동일 문법) */}
+              <Btn variant="dangerGhost" onPress={() => { setLeaveConfirm(false); router.back(); }} testID="discard-go">
+                {t('community.discard')}
+              </Btn>
             </View>
           </View>
         </View>
@@ -608,8 +609,6 @@ const styles = StyleSheet.create({
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
-  discardRow: { alignItems: 'center', paddingVertical: 11 },
-  discardText: { fontFamily: font.bodyBold, fontSize: 14, color: '#8e2f3c' },
   illoSlot: { width: 88, height: 88, borderRadius: 44, backgroundColor: primaryTint2, alignItems: 'center', justifyContent: 'center' },
 
   /* tag picker sheet — 시안 4 */
