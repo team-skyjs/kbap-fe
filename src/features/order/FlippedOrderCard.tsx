@@ -14,6 +14,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
+import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { convertKrw } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
@@ -50,6 +51,13 @@ export function FlippedOrderCard({
   const [zoomed, setZoomed] = React.useState(false);
   // P-162: Done = 무반응 아님 — 완료 확인 모달 경유 후 onDone(홈 이동)
   const [doneOpen, setDoneOpen] = React.useState(false);
+  // P-166: 모달 등장과 동시 폭죽 — DURATION 후 자연 소멸(언마운트), 매 완료마다
+  const [confetti, setConfetti] = React.useState(false);
+  React.useEffect(() => {
+    if (!confetti) return;
+    const timer = setTimeout(() => setConfetti(false), CONFETTI_DURATION_MS + 200);
+    return () => clearTimeout(timer);
+  }, [confetti]);
   const lines = items.map((i) => orderSentenceKo(i.nameKo, i.qty));
   const avoid = avoidSentenceKo(avoidCodes);
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
@@ -104,7 +112,14 @@ export function FlippedOrderCard({
 
       <View style={styles.foot}>
         {stepper}
-        <Btn onPress={() => setDoneOpen(true)}>{t('order.done')}</Btn>
+        <Btn
+          onPress={() => {
+            setDoneOpen(true);
+            setConfetti(true); // P-166: 모달 등장과 동시 버스트
+          }}
+        >
+          {t('order.done')}
+        </Btn>
       </View>
 
       {/* P-162: 주문 완료 확인 모달 — 스캔 재촬영 모달과 같은 카드 문법, 성공 체크 톤 */}
@@ -120,6 +135,8 @@ export function FlippedOrderCard({
               <Btn onPress={onDone}>{t('order.doneHome')}</Btn>
             </View>
           </View>
+          {/* P-166: 폭죽 = 모달 위 전면 통과 레이어(pointerEvents none — 확인 즉시 탭 가능) */}
+          {confetti && <ConfettiBurst />}
         </View>
       </Modal>
 
