@@ -20,7 +20,7 @@ import {
   SubHeader,
   Btn,
   Flag,
-  Rosette,
+  MedalEmblem,
   Star,
   Stars,
   RiskMark,
@@ -182,7 +182,7 @@ export default function ReviewDetail() {
                 </Text>
                 {!review.anonymized && !!review.authorRankTier && (
                   <View style={styles.rankPill}>
-                    <Rosette level={review.author?.level ?? 1} size={14} />
+                    <MedalEmblem level={review.author?.level ?? 1} size={14} />
                     <Text style={styles.rankText}>{review.authorRankTier}</Text>
                   </View>
                 )}
@@ -316,7 +316,6 @@ export default function ReviewDetail() {
                 />
                 <Text style={[styles.likeCount, review.myLike && styles.likeCountOn]}>{review.likes ?? 0}</Text>
               </Pressable>
-              <Text style={styles.likeCaption}>{t('review.likesCaption')}</Text>
             </View>
 
             {/* 장소 섹션 — 태그 있을 때만 (D-08, 3사 지도 중립 글리프) */}

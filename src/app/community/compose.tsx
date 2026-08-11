@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
-import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, Rosette, SubHeader, Input } from '@/components';
+import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, MedalEmblem, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -148,7 +148,7 @@ export default function CommunityCompose() {
             {!!me?.nationality && <Flag code={me.nationality} size={16} />}
             {me && (
               <View style={styles.rankPill}>
-                <Rosette level={me.rank.level} size={14} />
+                <MedalEmblem level={me.rank.level} size={14} />
                 <Text style={styles.rankText}>{t(`ranking.tier.${me.rank.tier}`)}</Text>
               </View>
             )}

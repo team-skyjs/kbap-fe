@@ -6,8 +6,8 @@
  * 성공 시 서버 재조회(무효화)가 진실 (목 캐시 삽입 폐기). Rating required
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
-import { useRef, useState } from 'react';
-import { findNodeHandle, Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -112,17 +112,31 @@ export default function ReviewCompose() {
     );
   }
 
-  // P-150 ②: 멀티라인 성장/포커스 시 입력 최하단(커서 줄)을 키보드 위로 —
-  // RN 스크롤 리스폰더의 키보드 스크롤 헬퍼 사용(측정 수동 계산 불요)
+  // P-150② → P-158① 재작업(실기 재반려): 접근 교체 —
+  // ⓐ 키보드 높이 실측(Keyboard 이벤트) → 컨테이너 하단 패딩 = 키보드+여유
+  //    (맨 아래 줄이 항상 키보드 위 공간에 존재)
+  // ⓑ 입력 블록 하단 y(onLayout — 성장 시 재발화)를 커서 하단 프록시로,
+  //    포커스/성장/셀렉션 변경마다 가시 영역(뷰포트−키보드) 하단 위로 스크롤.
   const scrollRef = useRef<ScrollView>(null);
   const bodyInputRef = useRef<TextInput>(null);
-  const scrollInputVisible = () => {
-    const node = findNodeHandle(bodyInputRef.current);
-    if (!node) return;
-    const responder = scrollRef.current?.getScrollResponder() as unknown as {
-      scrollResponderScrollNativeHandleToKeyboard?: (n: number, offset: number, prevent: boolean) => void;
-    } | undefined;
-    responder?.scrollResponderScrollNativeHandleToKeyboard?.(node, 96, true);
+  const [kbH, setKbH] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKbH(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const svH = useRef(0); // ScrollView 뷰포트 높이 실측
+  const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
+  const kbHRef = useRef(0);
+  kbHRef.current = kbH;
+  const ensureCursorVisible = () => {
+    const visible = svH.current - kbHRef.current;
+    if (visible <= 0 || !blockBottom.current) return;
+    const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
+    if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
 
   if (submitted) {
@@ -163,7 +177,13 @@ export default function ReviewCompose() {
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-150 ②: iOS = 키보드 인셋 자동(automaticallyAdjustKeyboardInsets),
           공통 = 입력 포커스/성장 시 커서 줄을 키보드 위로 스크롤(아래 Input 배선) */}
-      <ScrollView ref={scrollRef} keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+      <ScrollView
+        ref={scrollRef}
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={[styles.body, { paddingBottom: 28 + kbH }]}
+        keyboardShouldPersistTaps="handled"
+        onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
+      >
         {/* food chip */}
         <View style={styles.foodChip}>
           <View style={styles.foodPh} />
@@ -189,8 +209,11 @@ export default function ReviewCompose() {
           </Text>
         </View>
 
-        {/* body */}
-        <View style={styles.block}>
+        {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
+        <View
+          style={styles.block}
+          onLayout={(e) => { blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
+        >
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
           <Input
             ref={bodyInputRef}
@@ -201,8 +224,9 @@ export default function ReviewCompose() {
             multiline
             style={styles.textarea}
             textAlignVertical="top"
-            onFocus={scrollInputVisible}
-            onContentSizeChange={scrollInputVisible}
+            onFocus={ensureCursorVisible}
+            onContentSizeChange={ensureCursorVisible}
+            onSelectionChange={ensureCursorVisible}
           />
           <View style={styles.metaRow}>
             <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>

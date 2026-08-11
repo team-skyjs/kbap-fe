@@ -115,17 +115,48 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const flatJson = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
-it('P-150 ②: 리뷰 인풋 키보드 배선 — 스크롤 인셋 + 포커스/성장 시 가시 스크롤 훅', () => {
+it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + 셀렉션/성장 스크롤 배선', () => {
+  const { Keyboard } = require('react-native') as typeof import('react-native');
+  const listeners: Record<string, (e: unknown) => void> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e: unknown) => void) => {
+    listeners[ev] = cb;
+    return { remove: jest.fn() } as never;
+  }) as never);
   const tree = render(<ReviewCompose />);
-  // iOS 키보드 인셋 자동
-  const sv = tree.root.findAll((n) => n.props?.automaticallyAdjustKeyboardInsets === true);
-  expect(sv.length).toBeGreaterThanOrEqual(1);
-  // 멀티라인 인풋에 onFocus·onContentSizeChange(성장 추종) 배선
+  // 구 방식 잔재 0
+  expect(tree.root.findAll((n) => n.props?.automaticallyAdjustKeyboardInsets === true).length).toBe(0);
+  // 키보드 표시 → 컨테이너 하단 패딩 = 키보드 높이 + 여유(28)
+  act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const pad = (require('react-native').StyleSheet.flatten(sv.props.contentContainerStyle) as { paddingBottom?: number }).paddingBottom;
+  expect(pad).toBe(28 + 336);
+  // 셀렉션·성장·포커스 배선 — scrollTo 호출(블록/뷰포트 실측 주입 후)
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+  const block = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.style && n !== sv)[0];
+  act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } })); // blockBottom 700
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
-  expect(typeof input.props.onFocus).toBe('function');
-  expect(typeof input.props.onContentSizeChange).toBe('function');
-  // 배선 호출이 크래시 없이 통과(스크롤 리스폰더 best effort)
-  act(() => input.props.onContentSizeChange());
+  expect(typeof input.props.onSelectionChange).toBe('function');
+  act(() => input.props.onSelectionChange());
+  // target = 700 − (700−336) + 16 = 352
+  expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  spy.mockRestore();
+});
+
+it('P-158 ③: 리뷰 디테일 좋아요 캡션 부재 — 소스 잠금(하트+카운트만)', () => {
+  const src = require('fs').readFileSync('src/app/review/[id].tsx', 'utf8') as string;
+  expect(src).not.toContain('likesCaption');
+});
+
+it('P-158 ②: 뱃지 자산 통일 — 리뷰 계열 Rosette 사용 0(MedalEmblem), 소스 잠금', () => {
+  const fs = require('fs');
+  for (const f of ['src/app/food/[id]/reviews.tsx', 'src/app/review/[id].tsx', 'src/app/community/compose.tsx']) {
+    const src = fs.readFileSync(f, 'utf8') as string;
+    expect(src).not.toContain('Rosette');
+    expect(src).toContain('MedalEmblem');
+  }
 });
 
 it('P-150 ④: 내 리뷰 — foodId 해석 실패 시 숫자("499") 미노출, 중립 라벨', () => {

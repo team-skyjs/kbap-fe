@@ -22,7 +22,7 @@ import {
   useHeaderHeight,
   Stars,
   Flag,
-  Rosette,
+  MedalEmblem,
   StateBlock,
   stateIconColor,
   Spinner,
@@ -275,7 +275,7 @@ function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onO
           <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
           {!anon && !!review.authorRankTier && (
             <View style={styles.rankPill}>
-              <Rosette level={review.author?.level ?? 1} size={15} />
+              <MedalEmblem level={review.author?.level ?? 1} size={15} />
               <Text style={styles.rankText}>{review.authorRankTier}</Text>
             </View>
           )}
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
 
   item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 },
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   itemPressed: { opacity: 0.75 },
   placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   placeLineText: { fontFamily: font.body, fontSize: 12, color: C.ink2, flexShrink: 1 },
@@ -435,10 +435,11 @@ const styles = StyleSheet.create({
   likeMetaText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   photoStrip: { flexDirection: 'row', gap: 8 },
   photo: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
-  who: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },
+  // P-158 ②: i18n 가변 길이 내성 — 이름만 말줄임(shrink), 필·별점은 고정폭(겹침 0)
+  who: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1, minWidth: 0, marginRight: 8 },
   anonAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
-  rankPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 },
+  whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, flexShrink: 1 },
+  rankPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
   rankText: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2 },
   reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
   reviewBodyKo: { fontFamily: font.ko },

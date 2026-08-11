@@ -164,7 +164,7 @@ export default function Profile() {
               <Pressable style={styles.rank} onPress={() => router.push('/profile/ranking' as Href)}>
                 <View style={styles.rankTop}>
                   <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                    {/* KB-125: 랭킹 디테일과 동일한 메달 뱃지로 통일 (구 Rosette는 리뷰 화면에서 계속 사용) */}
+                    {/* KB-125→P-158: 메달 뱃지 자산 전면 통일 — 구 Rosette 노출처 0(정의 보존) */}
                     <MedalEmblem level={me.rank.level} size={42} />
                     <View>
                       <Text style={styles.rankTier}>{t(`ranking.tier.${me.rank.tier}`)}</Text>
