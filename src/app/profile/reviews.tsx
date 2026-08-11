@@ -136,15 +136,19 @@ function SortPill({ label, on, onPress }: { label: string; on: boolean; onPress:
 
 function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; food?: FoodCard; hasR: boolean; when: string; onPress: () => void }) {
   const { t } = useTranslation(); // P-150 ④: 중립 라벨용
-  const risk: RiskState = food ? personalRisk(food.risk, hasR) : 'unable';
+  // P-178 ②: 캐시 미스 = 뱃지 숨김 — unable 의미 예약(재료 정보 부족) 오염 방지.
+  // BE food.riskStatus(개인화) 배포 시 서버값 스왑.
+  const risk: RiskState | null = food ? personalRisk(food.risk, hasR) : null;
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.thumb}>
         {/* P-165: 서버 썸네일 우선 — 부재 시 기존 플레이스홀더 */}
         {review.foodImageUrl ? <CardPhoto uri={review.foodImageUrl} borderRadius={12} /> : <IconFood size={22} color={C.ink3} />}
-        <View style={styles.bdg}>
-          <RiskMark state={risk} size={14} />
-        </View>
+        {risk != null && (
+          <View style={styles.bdg}>
+            <RiskMark state={risk} size={14} />
+          </View>
+        )}
       </View>
       <View style={styles.main}>
         <View style={styles.top}>

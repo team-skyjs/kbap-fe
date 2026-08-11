@@ -16,7 +16,7 @@ import { FLAGS } from '@/lib/flags';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import {
+import { CardPhoto,
   SubHeader,
   Btn,
   Flag,
@@ -165,7 +165,9 @@ export default function ReviewDetail() {
     );
   }
 
-  const risk: RiskState = food ? personalRisk(food.risk, hasR) : 'unable';
+  // P-178 ②: 캐시 미스 = 뱃지 숨김 — unable은 "재료 정보 부족" 예약 의미(캐시 미스에 오용 금지).
+  // 근본은 BE ReviewResponse.food의 개인화 riskStatus(커맨드 센터 요청 중) — 오면 여기 스왑.
+  const risk: RiskState | null = food ? personalRisk(food.risk, hasR) : null;
   const posted = t('editReview.posted', { when: relativeDate(review.createdAt, t) });
   const authorLabel = review.anonymized
     ? t('reviews.anonymous')
@@ -219,21 +221,34 @@ export default function ReviewDetail() {
         {/* dish chip — 조회 시 탭하면 음식 상세 */}
         {editing ? (
           <View style={styles.foodChip}>
-            <View style={styles.foodPh} />
+            {/* P-178 ①: 서버 food 우선(P-165 목록과 동일 체계) — 썸네일·이름, id 숫자 노출 0 */}
+            {review.foodImageUrl ? (
+              <View style={styles.foodPh}>
+                <CardPhoto uri={review.foodImageUrl} borderRadius={12} />
+              </View>
+            ) : (
+              <View style={styles.foodPh} />
+            )}
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
+              <Text style={styles.foodName} numberOfLines={1}>{review.foodName ?? food?.name ?? t('myReviews.viewDish')}</Text>
               {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
             </View>
-            <RiskMark state={risk} size={22} />
+            {risk != null && <RiskMark state={risk} size={22} />}
           </View>
         ) : (
           <Pressable style={styles.foodChip} onPress={() => router.push(`/food/${review.foodId}` as Href)}>
-            <View style={styles.foodPh} />
+            {review.foodImageUrl ? (
+              <View style={styles.foodPh}>
+                <CardPhoto uri={review.foodImageUrl} borderRadius={12} />
+              </View>
+            ) : (
+              <View style={styles.foodPh} />
+            )}
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? review.foodId}</Text>
+              <Text style={styles.foodName} numberOfLines={1}>{review.foodName ?? food?.name ?? t('myReviews.viewDish')}</Text>
               {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
             </View>
-            <RiskMark state={risk} size={22} />
+            {risk != null && <RiskMark state={risk} size={22} />}
             <IconChevron size={16} color={C.ink3} />
           </Pressable>
         )}
@@ -404,7 +419,7 @@ const styles = StyleSheet.create({
   when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
 
   foodChip: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-  foodPh: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2 },
+  foodPh: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.surface2 , overflow: 'hidden' },
   foodName: { fontFamily: font.display, fontSize: 15.5, color: C.ink },
   foodKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2, marginTop: 1 },
 
