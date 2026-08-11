@@ -374,10 +374,11 @@ function Registered({
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
 
-      {/* P-162: 하단 CTA = 사장님 확인(재료 행 링크와 동일 목적지·라벨 통일) — safe/caution만 노출.
-          재료 파라미터 없음 = orderCard.ts 기존 일반 질문("제가 못 먹는 재료가 들어가나요?")
-          → 회피 매칭 0(safe)이어도 식당별 재료 편차 확인용으로 자연스럽게 성립. */}
-      {!guest && (dishRisk === 'safe' || dishRisk === 'caution') && (
+      {/* P-162→P-167: 하단 CTA = 사장님 확인(재료 행 링크와 동일 목적지·라벨 통일) —
+          확인 버튼은 위험할수록 필요하므로 **전 위험도 노출**(위험도 분기는 구 주문 CTA
+          잔재로 제거, 예진 확정 8/11). 게스트만 제외 — 회피 프로필이 없어 질문 조립이
+          무의미. 재료 파라미터 없음 = orderCard.ts 기존 조립(P-163 회피 나열, 0개=일반 질문). */}
+      {!guest && (
         <View style={styles.sec}>
           <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => router.push(`/food/${id}/owner` as Href)}>
             {t('detail.askOwner')}

@@ -1,6 +1,6 @@
 /**
- * P-030(KB-205) → P-162: 상세 하단 CTA = 사장님 확인(Ask the owner) + 원카드 화면 잠금.
- *  - 상세 CTA는 개인화 판정 safe/caution만 (danger 미노출, unable=owner 카드 자리)
+ * P-030(KB-205) → P-162 → P-167: 상세 하단 CTA = 사장님 확인(Ask the owner) + 원카드 화면 잠금.
+ *  - P-167: 위험도 분기 제거 — **전 위험도 노출**(확인 버튼은 위험할수록 필요), 게스트만 제외
  *  - 게스트 미노출 (프로필 기피 없이는 고지 카드가 성립 안 함)
  *  - 카드: 기피 0개 → 고지 문단 생략(순수 주문), 보유 → 고지 렌더
  */
@@ -132,12 +132,12 @@ beforeEach(() => {
   mockUseFoodDetail.mockReturnValue({ data: FOOD('safe'), isLoading: false, error: null, refetch: jest.fn() });
 });
 
-describe('상세 CTA 노출 조건 — safe/caution만', () => {
+describe('상세 CTA 노출 조건 — P-167: 전 위험도, 게스트만 제외', () => {
   it.each<[RiskState, boolean]>([
     ['safe', true],
     ['caution', true],
-    ['danger', false],
-    ['unable', false],
+    ['danger', true], // P-167: 위험할수록 확인 필요 — 구 주문 CTA 잔재 분기 제거
+    ['unable', true],
   ])('%s → CTA %s', (risk, shown) => {
     mockUseFoodDetail.mockReturnValue({ data: FOOD(risk), isLoading: false, error: null, refetch: jest.fn() });
     const s = flat(render(<FoodDetailScreen />));
