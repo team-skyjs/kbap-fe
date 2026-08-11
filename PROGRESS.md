@@ -1095,3 +1095,7 @@
 - [x] 칩 1줄 고정(danger 우선·onLayout 실측+fitAvoidChips 근사·"+n" 접기·nowrap+hidden 이중 방어), 탭=행 전체=상세.
 - [x] 홈 You avoid 칸 = FLAGS.homeAvoidBanner(false) 보존형 숨김(복원 한 줄).
 - [x] tsc 0 · jest 95스위트 563/563 · teamtest OTA(iOS 3493de12·안드 6f9fbd51) — 4d64627.
+
+## 사장님 화면 스크롤 (2026-08-11, P-172)
+- [x] 본문 ScrollView(flexGrow 센터 — 짧은 질문 무변)·X/Done 고정·상단 패딩으로 겹침 봉쇄. 40자 초과 = 34→27 축소(하한).
+- [x] tsc 0 · jest 96스위트 566/566 · teamtest OTA(iOS d44dab96·안드 7bba71ef) — 65efbf9.
