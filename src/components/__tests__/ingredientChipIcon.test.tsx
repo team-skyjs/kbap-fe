@@ -47,8 +47,8 @@ it('P-150: 카탈로그 = 온보딩 공용 사진 타일(카테고리 섹션) �
   // 타일 렌더(공용 컴포넌트 — avoid-* testID) + 카테고리 헤더 키
   expect(tree.root.findAll((n) => n.props?.testID === 'avoid-EGG').length).toBeGreaterThanOrEqual(1);
   expect(s).toContain('ingCat.');
-  // 요약 카드·검색 현행 유지
-  expect(s).toContain('restrictionsEdit.avoidNone');
+  // P-177: 요약 카드 소멸 → 온보딩 카운트 줄 문법·검색 유지
+  expect(s).toContain('onboarding.noneSelectedYet');
   expect(s).toContain('restrictionsEdit.searchPlaceholder');
 });
 

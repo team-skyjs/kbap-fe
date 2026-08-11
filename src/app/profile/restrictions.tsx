@@ -85,7 +85,7 @@ export default function EditRestrictions() {
           <Text style={styles.noticeText}>{t('restrictionsEdit.notice')}</Text>
         </View>
 
-        <IngredientFilter selected={sel} onToggle={toggle} />
+        <IngredientFilter selected={sel} onToggle={toggle} onClear={() => setSel([])} />
 
         <View style={styles.disc}>
           <RiskMark state="caution" size={15} variant="outline" />

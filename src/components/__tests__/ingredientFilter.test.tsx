@@ -56,43 +56,36 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-// 카탈로그 순서와 다른 삽입 순서 (뒤 항목을 먼저 선택)
+// P-177: 요약 칩 카드("You avoid n things"+×칩) 소멸 — 온보딩 Ob4Avoid 문법
+// (검색 → "n selected"+Clear 카운트 줄 → 타일 그리드)으로 완전 통일.
 const A = INGREDIENTS[5].code;
-const B = INGREDIENTS[0].code;
 
-it('선택 요약이 horizontal ScrollView 1줄로 렌더되고 선택 순서를 유지한다', () => {
-  const tree = render(<IngredientFilter selected={[A, B]} onToggle={() => {}} />);
-  const rows = tree.root.findAllByType(ScrollView).filter((s) => s.props.horizontal);
-  expect(rows).toHaveLength(1);
-  // 줄 안의 칩 텍스트가 삽입 순서 [A, B] 그대로 (카탈로그 순서 [B, A] 아님)
-  const chipTexts = rows[0]
-    .findAll((n) => typeof n.props?.children === 'string')
-    .map((n) => n.props.children as string)
-    .filter((s) => [ingredientLabel(A), ingredientLabel(B)].includes(s));
-  // Txt 래핑으로 같은 문자열이 중첩 노드에 반복 — 등장 순서만 잠근다
-  expect([...new Set(chipTexts)]).toEqual([ingredientLabel(A), ingredientLabel(B)]);
+it('P-177: 요약 카드 소멸 — 가로 칩 ScrollView·×제거·placeholder 잔존 0', () => {
+  const tree = render(<IngredientFilter selected={[A]} onToggle={() => {}} />);
+  const { ScrollView: SV } = require('react-native');
+  expect(tree.root.findAllByType(SV).filter((s2: { props: { horizontal?: boolean } }) => s2.props.horizontal)).toHaveLength(0);
+  const flat = JSON.stringify(tree.toJSON());
+  expect(flat).not.toContain('restrictionsEdit.avoidCount');
+  expect(flat).not.toContain('restrictionsEdit.tapToRemove');
+  expect(flat).not.toContain('restrictionsEdit.chipPlaceholder');
 });
 
-// P-026(KB-178 재수정): 0건일 때 칩 ScrollView는 없지만 **칩 영역은 고정 높이로
-// 존재**(placeholder) — 0→1 전환에 레이아웃 점프가 없도록.
-it('0건: 칩 ScrollView 미렌더 + 고정높이(36) 영역에 placeholder', () => {
-  const tree = render(<IngredientFilter selected={[]} onToggle={() => {}} />);
-  expect(tree.root.findAllByType(ScrollView).filter((s) => s.props.horizontal)).toHaveLength(0);
-  // placeholder 텍스트 렌더
-  const ph = tree.root.findAll((n) => n.props?.children === 'restrictionsEdit.chipPlaceholder');
-  expect(ph.length).toBeGreaterThanOrEqual(1);
+it('P-177: 카운트 줄 = 온보딩 문법 — n selected + Clear(0건은 안내문·Clear 미노출)', () => {
+  const onClear = jest.fn();
+  const tree = render(<IngredientFilter selected={[A]} onToggle={() => {}} onClear={onClear} />);
+  const flat = JSON.stringify(tree.toJSON());
+  expect(flat).toContain('onboarding.selectedCount');
+  const clear = tree.root.findAll((n) => n.props?.testID === 'avoid-clear')[0];
+  act(() => clear.props.onPress());
+  expect(onClear).toHaveBeenCalled();
+  const empty = render(<IngredientFilter selected={[]} onToggle={() => {}} onClear={onClear} />);
+  const flatE = JSON.stringify(empty.toJSON());
+  expect(flatE).toContain('onboarding.noneSelectedYet');
+  expect(empty.root.findAll((n) => n.props?.testID === 'avoid-clear')).toHaveLength(0);
 });
 
-it('0↔1 전환: 칩 영역 높이 불변 (고정 36) — 목록 밀림 0의 근거', () => {
-  const heightOf = (sel: string[]) => {
-    const tree = render(<IngredientFilter selected={sel} onToggle={() => {}} />);
-    // chipArea = height 36 고정 View (placeholder/ScrollView 공통 래퍼)
-    const areas = tree.root.findAll((n) => {
-      const s = Array.isArray(n.props?.style) ? Object.assign({}, ...n.props.style) : n.props?.style;
-      return s && s.height === 36 && s.justifyContent === 'center';
-    });
-    return areas.length ? 36 : null;
-  };
-  expect(heightOf([])).toBe(36);
-  expect(heightOf([INGREDIENTS[0].code])).toBe(36); // 1건도 동일 높이
+it('P-177: 타일 그리드·검색은 유지(공용 IngredientTileSections)', () => {
+  const tree = render(<IngredientFilter selected={[A]} onToggle={() => {}} />);
+  expect(tree.root.findAll((n) => n.props?.testID === `avtile-${A}`).length).toBeGreaterThanOrEqual(1);
+  expect(JSON.stringify(tree.toJSON())).toContain('restrictionsEdit.searchPlaceholder');
 });
