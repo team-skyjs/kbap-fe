@@ -1063,3 +1063,8 @@
 - [x] 폴백 질문 = 회피 ko 라벨 전부 나열(+iGa, 미등재 제외·전부 미해석 강등) + 무단정 서브라인(K-큐 검수 요청). ingredient 경로 무변.
 - [x] 커서 추종 = 끝-커서만(중간/상단 편집 무개입), onFocus → keyboardDidShow 게이트 이관.
 - [x] tsc 0 · jest 93스위트 531/531 · teamtest OTA(iOS e48aafdb·안드 c92bcf75) — 31f03a5.
+
+## 리뷰 버전리스 이관·목록 평점·통화 (2026-08-11, P-165)
+- [x] 🚨 dev 리뷰 404 복구 — 전 경로 /api/reviews*(lang 필수), client '/api/' 절대 경로 규칙 1곳. food/author 중첩 매핑(구응답 폴백), 내 리뷰 서버 이름·썸네일 우선.
+- [x] 목록 평점 실값(adaptMenuSummary 한 곳 — 목록·홈·검색 공용) · 통화 서버 정본 체인+프로필 통화 행/피커(20종+자동, ko 3키 임시).
+- [x] tsc 0 · jest 94스위트 545/545 · teamtest OTA(iOS abd6ad54·안드 56f03a8e) — 8581184.
