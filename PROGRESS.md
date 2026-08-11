@@ -1127,3 +1127,7 @@
 ## 내 리뷰 카드 2건 (2026-08-11, P-178 — OTA 게이트 대기)
 - [x] 디테일 = 서버 foodName/foodImageUrl(P-165 체계, id 숫자 0) · 뱃지 = 캐시 미스 미렌더(unable 오염 방지, BE riskStatus 스왑 주석).
 - [x] tsc 0 · jest 101스위트 588/588 — 29bd85f. ⚠️ OTA 미발행(P-166 게이트 — P-177과 일괄 발행 대기).
+
+## 커뮤니티 탭 → 리뷰 피드 (2026-08-11, P-179 — OTA 게이트 대기)
+- [x] useGlobalReviews(foodId 생략 전역·게스트 호출 0) + ReviewFeed(P-169 문법·서버 food 카드·Helpful) + FAB=TagPickerSheet 재사용→작성. 글 기능 communityPostsEnabled(false) 보존 숨김, 분기는 coming-soon 가드 뒤(유닛이 순서 실버그 검출·교정).
+- [x] tsc 0 · jest 102스위트 594/594 — 26d32b3. ⚠️ OTA 미발행(P-166 게이트 — 177·178과 일괄 대기).
