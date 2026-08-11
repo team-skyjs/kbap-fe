@@ -45,7 +45,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
-import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
+import { OrderPill, ScanProfileBar, ScanRichList } from '@/features/scan/ScanRichList';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
@@ -494,6 +494,13 @@ export default function Scan() {
         </View>
 
         {view === 'list' ? (
+          <>
+          {/* P-160 B안: 프로필 체크 줄 — ScrollView 밖 상단 고정(스크롤 시 스티키, 목업대로) */}
+          <ScanProfileBar
+            avoidNames={(me?.restrictions ?? []).map((r) => ingredientLabel(r.code))}
+            onEditProfile={() => router.push('/profile/restrictions' as Href)}
+            t={t}
+          />
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
               <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)} style={{ paddingHorizontal: 16, paddingTop: 10 }}>
@@ -513,7 +520,6 @@ export default function Scan() {
             )}
             <ScanRichList
               dishes={listDishes}
-              avoidNames={(me?.restrictions ?? []).map((r) => ingredientLabel(r.code))}
               currency={currency}
               cart={cart}
               onAdd={(d) => bumpCart(d.itemId, 1)}
@@ -521,10 +527,10 @@ export default function Scan() {
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               onOpenSimilar={(foodId) => router.push(`/food/${foodId}?src=scan` as Href)} // P-153: 유사 제안 → 상세
-              onEditProfile={() => router.push('/profile/restrictions' as Href)}
               t={t}
             />
           </ScrollView>
+          </>
         ) : (
           /* P-149(예진 확정): Photo 뷰 = 쌩 원본 + 핀치 줌만 — 캡슐·미니시트·범례·힌트 철거 */
           <ScanResultOverlay photo={photo} />

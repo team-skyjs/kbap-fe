@@ -1,7 +1,7 @@
 /**
- * AvoidChip (P-136) — 기피 재료 칩. 홈 diet 배너 칩(achip)의 공용 승격 +
- * 색상 variant: danger(위험 red 계열 틴트) · caution(amber 계열).
- * 스캔 리치 리스트의 기피 경고 줄이 재사용(예진 확정 — 시안 텍스트 줄 대체).
+ * AvoidChip (P-136 → P-160) — 스캔 행 기피 재료 칩. P-160(예진 확정, 목업
+ * scan-profile-bar-options ② '후'): **solid 진한 배경** — danger #cf3a2c ·
+ * caution #d28a12, 흰 글자 800. "May contain" 라벨은 소멸(칩 색이 말한다).
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -17,11 +17,11 @@ export function AvoidChip({ label, variant = 'danger' }: { label: string; varian
 }
 
 const styles = StyleSheet.create({
-  // 홈 achip 규격 승계 — 배경/보더 틴트만 variant
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff', borderWidth: 1, borderColor: '#eeccc8', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  chipCaution: { borderColor: '#ecd9b0', backgroundColor: '#fffdf7' },
-  text: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.riskDanger },
-  textCaution: { color: '#a06a00' },
+  // P-160 목업 .chip/.ch-d/.ch-c 전사 — solid, 12.5/800, padding 4/11, radius 999
+  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#cf3a2c', borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
+  chipCaution: { backgroundColor: '#d28a12' },
+  text: { fontFamily: font.displayBlack, fontSize: 12.5, color: '#fff' },
+  textCaution: { color: '#fff' },
 });
 
 export default AvoidChip;

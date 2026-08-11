@@ -15,7 +15,7 @@
  * AvoidChip으로(flex-wrap).
  */
 import * as React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';
 import { AvoidChip } from '@/components/AvoidChip';
@@ -30,9 +30,34 @@ type TFn = (k: string, o?: Record<string, unknown>) => string;
 export const RIGHT_COL_W = 72;
 export const ADD_SLOT_H = 30;
 
+/** P-160(예진 확정, 목업 B안): 프로필 체크 줄 — surface2 바탕+하단 보더로 리스트와
+ *  톤 분리, 캡션 소형 대문자(**✓ 없음** — 전부 통과로 오독 방지), 우측 Edit,
+ *  아래 회피 재료 개별 칩 가로 스트립. 스크롤 시 상단 고정은 배치 몫(scan.tsx —
+ *  ScrollView 밖 상단). */
+export function ScanProfileBar({ avoidNames, onEditProfile, t }: { avoidNames: string[]; onEditProfile: () => void; t: TFn }) {
+  return (
+    <View style={styles.bar} testID="profile-bar">
+      <View style={styles.barCap}>
+        <Text style={styles.barCapText}>{t('scan.checkedAgainst')}</Text>
+        <Pressable hitSlop={8} onPress={onEditProfile} testID="profile-edit-link">
+          <Text style={styles.editLink}>{t('community.edit')}</Text>
+        </Pressable>
+      </View>
+      {avoidNames.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.barStrip} testID="profile-strip">
+          {avoidNames.map((n) => (
+            <View key={n} style={styles.barChip}>
+              <Text style={styles.barChipText}>{n}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
 export function ScanRichList({
   dishes,
-  avoidNames,
   currency,
   cart,
   onAdd,
@@ -40,12 +65,9 @@ export function ScanRichList({
   onOpen,
   onMarkPress,
   onOpenSimilar,
-  onEditProfile,
   t,
 }: {
   dishes: ResultDish[];
-  /** 내 회피 재료 표시명(프로필 체크 줄) */
-  avoidNames: string[];
   currency: string;
   cart: Map<number, number>;
   onAdd: (d: ResultDish) => void;
@@ -55,23 +77,10 @@ export function ScanRichList({
   onMarkPress?: () => void;
   /** P-153 v2: 미등록 행 유사 제안 탭 → 해당 음식 상세 */
   onOpenSimilar?: (foodId: string) => void;
-  onEditProfile: () => void;
   t: TFn;
 }) {
   return (
     <View style={styles.body}>
-      {/* 프로필 체크 줄 */}
-      <View style={styles.profileLine}>
-        <RiskMark state="safe" size={16} />
-        <Text style={styles.profileText} numberOfLines={2}>
-          {t('scan.checkedAgainst')}
-          {avoidNames.length > 0 && <Text style={styles.profileAvoids}> · {avoidNames.join(', ')}</Text>}
-        </Text>
-        <Pressable hitSlop={8} onPress={onEditProfile} testID="profile-edit-link">
-          <Text style={styles.editLink}>{t('community.edit')}</Text>
-        </Pressable>
-      </View>
-
       {/* P-138 ④: 카테고리 헤더 없음 — 스캔 API에 카테고리 부재 → 플랫 리스트 */}
       {dishes.map((d) => (
         <RichRow key={d.itemId} dish={d} currency={currency} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onOpenSimilar={onOpenSimilar} t={t} />
@@ -131,7 +140,7 @@ function RichRow({
         {/* 기피 경고 — 칩 재사용(flex-wrap, 여러 개여도 안 밀림) */}
         {warns.length > 0 && (
           <View style={styles.warnWrap} testID={`warn-${dish.itemId}`}>
-            <Text style={styles.warnLead}>{t('scan.mayContain')}</Text>
+            {/* P-160: "May contain" 라벨 제거 — solid 칩 색이 위험도를 말한다 */}
             {warns.map((w) => (
               <AvoidChip key={w.code} label={w.name} variant={w.risk === 'danger' ? 'danger' : 'caution'} />
             ))}
@@ -194,17 +203,20 @@ export function OrderPill({ count, onPress, t, bottom }: { count: number; onPres
 
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, paddingBottom: 120 },
-  profileLine: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  profileText: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink2 },
-  profileAvoids: { fontFamily: font.bodyBold, color: C.ink },
-  editLink: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
+  bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
+  barCap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  barCapText: { flex: 1, fontFamily: font.displayBlack, fontSize: 11.5, color: C.ink3, letterSpacing: 0.5, textTransform: 'uppercase' },
+  barStrip: { flexDirection: 'row', gap: 6, marginTop: 7 },
+  barChip: { backgroundColor: '#fff', borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
+  barChipText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
+  editLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   row: { flexDirection: 'row', gap: 12, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   nameKo: { fontFamily: font.koBold, fontSize: 15.5, color: C.ink, flexShrink: 1 },
   nameEn: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink },
   desc: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   warnWrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
-  warnLead: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink2 },
   price: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink2, marginTop: 2, fontVariant: ['tabular-nums'] },
   similarRow: { marginTop: 3 },
   similarText: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.primaryText },

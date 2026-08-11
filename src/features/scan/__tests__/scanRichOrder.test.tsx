@@ -35,7 +35,7 @@ jest.mock('@/lib/i18n', () => ({
 const mockDetail = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: (id: string) => mockDetail(id) }));
 
-import { ScanRichList, OrderPill } from '@/features/scan/ScanRichList';
+import { ScanRichList, ScanProfileBar, OrderPill } from '@/features/scan/ScanRichList';
 import { FlippedOrderCard } from '@/features/order/FlippedOrderCard';
 import { orderSentenceKo, avoidSentenceKo } from '@/lib/order/orderCard';
 import type { ResultDish } from '@/lib/scan/segmentMenu';
@@ -74,13 +74,11 @@ function Harness({ dishes }: { dishes: ResultDish[] }) {
     <View>
       <ScanRichList
         dishes={dishes}
-        avoidNames={['Egg']}
         currency="USD"
         cart={cart}
         onAdd={(d) => bump(d.itemId, 1)}
         onRemove={(d) => bump(d.itemId, -1)}
         onOpen={() => {}}
-        onEditProfile={() => {}}
         t={t}
       />
       <OrderPill count={count} onPress={() => {}} t={t} bottom={0} />
@@ -163,7 +161,7 @@ it('P-138 ⑦: 환산 병기 — KRW 계정 = 생략(설계 정상), 타 통화 
   const usd = render(<Harness dishes={DISHES} />); // Harness currency=USD
   expect(flat(usd).replace(/","/g, '')).toContain('₩9,000 · $'); // 병기 렌더(children 배열 평탄화)
   const krwTree = render(
-    <ScanRichList dishes={DISHES} avoidNames={[]} currency="KRW" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} onEditProfile={() => {}} t={t} />,
+    <ScanRichList dishes={DISHES} currency="KRW" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
   const s = flat(krwTree).replace(/","/g, '');
   expect(s).toContain('₩9,000');
@@ -216,7 +214,7 @@ it('P-153: 미등록 행 유사 제안 — 주의 톤 링크+탭 상세 라우�
   ];
   const onOpenSimilar = jest.fn();
   const tree = render(
-    <ScanRichList dishes={withSimilar} avoidNames={[]} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} onOpenSimilar={onOpenSimilar} onEditProfile={() => {}} t={t} />,
+    <ScanRichList dishes={withSimilar} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} onOpenSimilar={onOpenSimilar} t={t} />,
   );
   const s = flat(tree);
   expect(s).toContain('scan.similarSuggest'); // "정확 매칭 아님" 주의 톤 병기
@@ -232,4 +230,25 @@ it('P-153: 미등록 행 유사 제안 — 주의 톤 링크+탭 상세 라우�
   const cs = flat(card);
   expect(cs).toContain(orderSentenceKo('수제비', 1));
   expect(cs).not.toContain('Sujebi');
+});
+
+it('P-160: 프로필 체크 줄 B안 — ✓ 마크 부재·대문자 캡션·회피 칩 스트립·Edit, 행 May contain 라벨 0·solid 칩', () => {
+  const onEdit = jest.fn();
+  const bar = render(<ScanProfileBar avoidNames={['Egg', 'Shrimp']} onEditProfile={onEdit} t={t} />);
+  const bs = flat(bar);
+  expect(bs).toContain('scan.checkedAgainst');
+  expect(bar.root.findAll((n) => n.props?.testID === 'profile-strip').length).toBeGreaterThanOrEqual(1);
+  expect(bs).toContain('Egg');
+  expect(bs).toContain('Shrimp');
+  // ✓ 아이콘(RiskMark) 부재 — 전부 통과 오독 방지(B안 수정 1건)
+  expect(bs).not.toContain('RNSVG'); // 바 안에 SVG 마크 없음
+  const edit = bar.root.findAll((n) => n.props?.testID === 'profile-edit-link' && typeof n.props?.onPress === 'function')[0];
+  act(() => edit.props.onPress());
+  expect(onEdit).toHaveBeenCalled();
+  // 행: May contain 라벨 0 + solid 칩 색(목업 .ch-d/.ch-c)
+  const tree = render(<Harness dishes={DISHES} />);
+  const s2 = flat(tree);
+  expect(s2).not.toContain('scan.mayContain');
+  expect(s2).toContain('"backgroundColor":"#cf3a2c"'); // danger solid
+  expect(s2).toContain('"backgroundColor":"#d28a12"'); // caution solid
 });
