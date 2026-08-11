@@ -1077,3 +1077,7 @@
 - [x] 빈 화면 방치 8곳(리뷰 목록·디테일·내 리뷰·저장·랭킹·커뮤니티 피드/상세·차단) 공용 QueryErrorBlock 적용 — 리뷰 목록은 loaded 게이트 밖으로(원인 구조). 감사 표 REPORTS.
 - [x] 전역 retry 한 곳 교정 — 4xx 무재시도(shouldRetry), 5xx·NETWORK만 1회.
 - [x] tsc 0 · jest 95스위트 551/551 · teamtest OTA(iOS a59f50a5·안드 29ed30c0) — c58e9d0.
+
+## 리뷰 제출 연타 봉쇄 외 3건 (2026-08-11, P-168)
+- [x] 🚨 연타 = 업로드 선행 구간 미가드가 원인 — posting+동기 ref 가드+스피너(동일 메트릭), 삭제 가드 보강. 완료 = P-162 모달(풀화면 소멸), 헤더 Post 제거, 빈 별 = 옅은 주황(STAR_EMPTY 한 곳).
+- [x] tsc 0 · jest 95스위트 555/555 · teamtest OTA(iOS 09a13665·안드 8362910b) — b75622f.
