@@ -18,8 +18,6 @@ import {
   useStickyScroll,
   useHeaderHeight,
   MedalEmblem,
-  RiskMark,
-  Stars,
   IconProfile,
   IconEdit,
   IconGlobe,
@@ -29,7 +27,8 @@ import {
   IconChevron,
   IconPlus,
   IconLogout,
-  IconBookmark,
+  IconSpeech,
+  IconStar,
   Spinner,
   SkeletonProfile,
   QueryErrorBlock,
@@ -37,8 +36,6 @@ import {
 import { SPICE_LEVEL_LABEL, spiceRank } from '@/lib/spice';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useBookmarks } from '@/lib/data/bookmarks';
-import { useFoods } from '@/lib/data/useFoods';
-import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { TIERS } from '@/lib/ranking';
 import { restrictionLabel } from '@/lib/onboarding/data';
@@ -46,7 +43,6 @@ import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
-import type { FoodCard, Review } from '@/lib/api/types';
 
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 import LoginScreen from '../login';
@@ -68,10 +64,8 @@ export default function Profile() {
 
   const { data: me, isLoading: meLoading, isError: meError, error: meErrorObj, refetch: refetchMe } = useMe();
   const { data: reviews } = useMyReviews();
-  const { data: foods } = useFoods();
   const { data: bookmarks } = useBookmarks();
 
-  const foodMap = new Map((foods ?? []).map((f) => [f.foodId, f]));
   const curLevel = me?.rank.level ?? 1;
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -221,32 +215,25 @@ export default function Profile() {
 
             {/* saved (Bookmark Mods A) — My reviews 바로 위: 개인 콘텐츠 클러스터.
                 카운트는 조용한 tag(“My reviews · 12”와 동일 톤), 뱃지 아님 */}
+            {/* P-157 ①: Saved + My reviews = 같은 카드의 AcctRow 행 2개(컴포넌트 공용).
+                구 "My reviews · n | See all" 텍스트 헤더+인라인 리스트 소멸.
+                P-157 ②: 저장 아이콘 = 별(P-129 상세와 동일 SVG 통일). */}
             <View style={styles.acctList}>
               <AcctRow
-                icon={<IconBookmark size={17} color={C.ink2} />}
+                icon={<IconStar size={17} color={C.ink2} />}
                 label={t('profile.saved')}
                 value={String(bookmarks?.length ?? 0)}
                 onPress={() => router.push('/profile/saved' as Href)}
               />
+              {FLAGS.reviewsEnabled && (
+                <AcctRow
+                  icon={<IconSpeech size={17} color={C.ink2} />}
+                  label={t('myReviews.title')}
+                  value={String(reviews?.length ?? 0)}
+                  onPress={() => router.push('/profile/reviews' as Href)}
+                />
+              )}
             </View>
-
-            {/* my reviews — KB-148 MVP 제외(숨김) */}
-            {FLAGS.reviewsEnabled && (
-              <Section
-                title={t('profile.myReviewsTitle', { count: reviews?.length ?? 0 })}
-                action={
-                  <Pressable hitSlop={8} onPress={() => router.push('/profile/reviews' as Href)}>
-                    <Text style={styles.link}>{t('profile.seeAll')}</Text>
-                  </Pressable>
-                }
-              >
-                <View style={{ gap: 10 }}>
-                  {(reviews ?? []).map((rv) => (
-                    <MyReview key={rv.id} review={rv} food={foodMap.get(rv.foodId)} hasRestrictions={me.restrictions.length > 0} onPress={() => router.push(`/review/${rv.id}` as Href)} />
-                  ))}
-                </View>
-              </Section>
-            )}
 
             {/* account */}
             <Section title={t('profile.accountTitle')}>
@@ -297,28 +284,6 @@ function Section({ title, action, children }: { title: string; action?: React.Re
   );
 }
 
-function MyReview({ review, food, hasRestrictions, onPress }: { review: Review; food?: FoodCard; hasRestrictions: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={styles.myrev} onPress={onPress}>
-      <View style={styles.myrevPh}>
-        <RiskMark state={food ? personalRisk(food.risk, hasRestrictions) : 'unable'} size={20} />
-      </View>
-      <View style={{ flex: 1, gap: 3 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-          <Text style={styles.myrevName} numberOfLines={1}>
-            {food?.name ?? review.foodId}
-          </Text>
-          <Stars value={review.rating} size={13} />
-        </View>
-        {!!review.body && (
-          <Text style={styles.myrevBody} numberOfLines={2}>
-            {review.body}
-          </Text>
-        )}
-      </View>
-    </Pressable>
-  );
-}
 
 function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNode; label: string; value?: string; danger?: boolean; onPress?: () => void }) {
   return (
@@ -381,9 +346,6 @@ const styles = StyleSheet.create({
 
   // my reviews
   myrev: { flexDirection: 'row', gap: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-  myrevPh: { width: 44, height: 44, borderRadius: 11, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  myrevName: { flex: 1, fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  myrevBody: { fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
 
   // account
   acctList: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sh1 },

@@ -16,7 +16,7 @@ import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/R
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, riskTone, shadow } from '@/lib/theme';
-import { SubHeader, RiskMark, Btn, CardPhoto, Spinner, IconBookmark, IconChevron, IconFood, IconTrash } from '@/components';
+import { SubHeader, RiskMark, Btn, CardPhoto, Spinner, IconChevron, IconFood, IconStar, IconTrash } from '@/components';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -78,7 +78,7 @@ export default function SavedScreen() {
       {isLoading ? null : items.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIc}>
-            <IconBookmark size={30} color={C.ink3} />
+            <IconStar size={30} color={C.ink3} />
           </View>
           <Text style={styles.emptyTitle}>{t('saved.emptyTitle')}</Text>
           <Text style={styles.emptyBody}>{t('saved.emptyBody')}</Text>
@@ -121,7 +121,7 @@ export default function SavedScreen() {
 
       {undo && (
         <Snackbar
-          icon={<IconBookmark size={15} color="#fff" />}
+          icon={<IconStar size={15} color="#fff" />}
           text={t('saved.removed')}
           actionLabel={t('saved.undo')}
           onAction={onUndo}

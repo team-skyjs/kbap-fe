@@ -103,6 +103,7 @@ jest.mock('@/lib/review/reviewPhotos', () => ({
 import ReviewCompose from '../food/[id]/review';
 import MyReviews from '../profile/reviews';
 import Profile from '../(tabs)/profile';
+import { IconBookmark } from '@/components/icons';
 import { Stars } from '@/components/Stars';
 
 function render(el: React.ReactElement): ReactTestRenderer {
@@ -159,4 +160,25 @@ it('P-154 ②: 내 리뷰 빈 상태 = 상하 센터(앱 통일 규칙)', () => 
   const src = require('fs').readFileSync('src/app/profile/reviews.tsx', 'utf8') as string;
   expect(src).toContain("justifyContent: 'center'");
   expect(src).not.toContain('paddingTop: 60');
+});
+
+it('P-157: My reviews = Saved와 같은 카드의 AcctRow(카운트+라우팅) — 구 헤더·See all 소멸', () => {
+  const tree = render(<Profile />);
+  const s = flatJson(tree);
+  // Saved 행 + My reviews 행 — 같은 acctList 카드(공용 AcctRow)
+  expect(s).toContain('profile.saved');
+  expect(s).toContain('myReviews.title');
+  expect(s).not.toContain('profile.myReviewsTitle'); // 구 텍스트 헤더 소멸
+  expect(s).not.toContain('profile.seeAll'); // See all 소멸
+  // 카운트(리뷰 1건 목) 렌더
+  const row = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'myReviews.title').length > 0);
+  expect(row.length).toBeGreaterThanOrEqual(1);
+});
+
+it('P-157 ②: 저장 아이콘 별 전면 통일 — 프로필에 북마크 글리프 0 + saved 화면 소스 잠금', () => {
+  const tree = render(<Profile />);
+  expect(tree.root.findAllByType(IconBookmark).length).toBe(0);
+  const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
+  expect(src).not.toContain('IconBookmark');
+  expect(src).toContain('IconStar');
 });
