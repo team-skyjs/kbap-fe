@@ -1099,3 +1099,7 @@
 ## 사장님 화면 스크롤 (2026-08-11, P-172)
 - [x] 본문 ScrollView(flexGrow 센터 — 짧은 질문 무변)·X/Done 고정·상단 패딩으로 겹침 봉쇄. 40자 초과 = 34→27 축소(하한).
 - [x] tsc 0 · jest 96스위트 566/566 · teamtest OTA(iOS d44dab96·안드 7bba71ef) — 65efbf9.
+
+## 제출 연타 전수 가드 (2026-08-11, P-173)
+- [x] useSubmitGuard 공용화(동기 ref+busy) + Btn busy(메트릭 불변 스피너). 적용: 탈퇴·revoke·로그아웃·온보딩·프로필/회피 저장·커뮤 글/댓글·신고/차단, 리뷰 작성 마이그레이션. 토글류(멱등)는 예외 명시.
+- [x] tsc 0 · jest 97스위트 570/570 · teamtest OTA(iOS a50f68cb·안드 82f4737e) — 4864823.
