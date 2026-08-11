@@ -101,6 +101,7 @@ jest.mock('@/lib/data/useMe', () => ({
 }));
 // BE 왕복 mock: 전 항목 즉시 판정 반환 (맥북=unmatched)
 jest.mock('@/lib/data/useScan', () => ({
+  scanV2Enabled: () => false, // P-153: 이 스위트 픽스처는 v1(온디바이스 OCR) 경로 잠금
   useScan: () => ({
     mutate: (
       _vars: unknown,

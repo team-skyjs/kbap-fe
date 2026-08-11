@@ -8,6 +8,9 @@ import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
+// P-153: 채널 목 — 기존 계약 잠금은 v1(prod), 신규는 v2(dev 계열)
+let mockProd = true;
+jest.mock('@/lib/flags', () => ({ isProdChannel: () => mockProd }));
 jest.mock('@/lib/api/client', () => ({
   api: {
     post: jest.fn().mockResolvedValue({ degraded: false, results: [] }),
@@ -27,6 +30,10 @@ const { api } = require('@/lib/api/client');
 import { useScan, type ScanInput } from '../useScan';
 
 const box = { x: 0.1, y: 0.3, width: 0.4, height: 0.05 };
+
+beforeEach(() => {
+  mockProd = true; // 기본 = v1 (기존 계약 잠금 유지)
+});
 
 function Harness({ input, onSettled }: { input: ScanInput; onSettled: () => void }) {
   const scan = useScan();
@@ -96,4 +103,26 @@ it('업로드 실패(null) → imagePath "" 폴백, 스캔은 계속 (텍스트-
   const [path, body] = api.post.mock.calls[0];
   expect(path).toBe('/scans?lang=en'); // P-060③: 지역화 lang 필수
   expect(body.imagePath).toBe('');
+});
+
+
+/* ---- P-153: 스캔 v2 채널 분기 ---- */
+it('P-153 v2(dev 계열): items 미전송(빈 배열) + X-API-Version 헤더 — imagePath만으로 성립', async () => {
+  mockProd = false;
+  mockResolvePath.mockResolvedValue('scans/1/a.jpg');
+  await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 } });
+  const [path, body, opts] = api.post.mock.calls[0];
+  expect(path).toContain('/scans');
+  expect(body.items).toEqual([]); // 서버 비전 OCR — 클라 items 무시 경로
+  expect(body.imagePath).toBe('scans/1/a.jpg');
+  expect(opts.headers).toEqual({ 'X-API-Version': '2026.08.07' });
+});
+
+it('P-153 v1(production): 현행 무변 — items 전송 + 버전 헤더 없음 (prod 서버 v2 미지원)', async () => {
+  mockProd = true;
+  mockResolvePath.mockResolvedValue('scans/1/a.jpg');
+  await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 } });
+  const [, body, opts] = api.post.mock.calls[0];
+  expect(body.items).toEqual([{ idx: 0, rawMenuName: '김치찌개' }]);
+  expect(opts.headers).toBeUndefined();
 });

@@ -259,7 +259,8 @@
     "cameraHintPortrait": "두 손가락으로 확대 · 메뉴판 전체가 보이게 촬영",
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
     "landscapeBadge": "가로 모드",
-    "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요."
+    "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요.",
+    "similarSuggest": "비슷한 등록 메뉴(정확한 매칭 아님):"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",

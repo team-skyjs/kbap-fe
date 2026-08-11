@@ -259,7 +259,8 @@
     "cameraHintPortrait": "ピンチでズーム · メニュー全体を収めて",
     "cameraHintLandscape": "横長メニューは横向きがぴったり",
     "landscapeBadge": "横向き",
-    "launcherHint": "メニューを撮ると、全品をあなたのプロフィールと照合します。"
+    "launcherHint": "メニューを撮ると、全品をあなたのプロフィールと照合します。",
+    "similarSuggest": "似ている登録メニュー(完全一致ではありません):"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",

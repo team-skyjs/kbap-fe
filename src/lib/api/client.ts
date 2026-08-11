@@ -72,6 +72,8 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 
 export interface RequestOpts {
   timeoutMs?: number;
+  /** P-153: 엔드포인트 한정 추가 헤더(예: X-API-Version) — 기본 헤더에 병합. */
+  headers?: Record<string, string>;
 }
 
 async function request<T>(
@@ -80,10 +82,12 @@ async function request<T>(
   body?: unknown,
   isRetry = false,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept-Language': apiLang(),
+    ...extraHeaders, // P-153: 엔드포인트 한정(예: X-API-Version)
   };
   // BE access token (silently skipped when signed out / provider absent —
   // a token fetch failure must not turn every API call into an auth error).
@@ -133,7 +137,7 @@ async function request<T>(
     // /auth/* 자체의 401은 재시도 대상이 아니다(로그인/refresh 실패는 그대로 표면화).
     if (res.status === 401 && !isRetry && onUnauthorized && !path.startsWith('/auth/')) {
       const refreshed = await onUnauthorized().catch(() => false);
-      if (refreshed) return request<T>(method, path, body, true, timeoutMs);
+      if (refreshed) return request<T>(method, path, body, true, timeoutMs, extraHeaders);
     }
 
     try {
@@ -177,9 +181,9 @@ async function request<T>(
 }
 
 export const api = {
-  get: <T>(path: string, opts?: RequestOpts) => request<T>('GET', path, undefined, false, opts?.timeoutMs),
-  post: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('POST', path, body, false, opts?.timeoutMs),
-  patch: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PATCH', path, body, false, opts?.timeoutMs),
-  put: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PUT', path, body, false, opts?.timeoutMs),
-  del: <T>(path: string, opts?: RequestOpts) => request<T>('DELETE', path, undefined, false, opts?.timeoutMs),
+  get: <T>(path: string, opts?: RequestOpts) => request<T>('GET', path, undefined, false, opts?.timeoutMs, opts?.headers),
+  post: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('POST', path, body, false, opts?.timeoutMs, opts?.headers),
+  patch: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PATCH', path, body, false, opts?.timeoutMs, opts?.headers),
+  put: <T>(path: string, body?: unknown, opts?: RequestOpts) => request<T>('PUT', path, body, false, opts?.timeoutMs, opts?.headers),
+  del: <T>(path: string, opts?: RequestOpts) => request<T>('DELETE', path, undefined, false, opts?.timeoutMs, opts?.headers),
 };

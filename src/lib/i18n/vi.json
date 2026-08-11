@@ -259,7 +259,8 @@
     "cameraHintPortrait": "Véo để phóng to · gọn cả thực đơn",
     "cameraHintLandscape": "Thực đơn ngang chụp ngang sẽ vừa hơn",
     "landscapeBadge": "Ngang",
-    "launcherHint": "Chụp thực đơn — chúng tôi sẽ đối chiếu từng món với hồ sơ của bạn."
+    "launcherHint": "Chụp thực đơn — chúng tôi sẽ đối chiếu từng món với hồ sơ của bạn.",
+    "similarSuggest": "Món tương tự (không khớp chính xác):"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

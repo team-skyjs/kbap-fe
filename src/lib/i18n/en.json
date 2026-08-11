@@ -255,7 +255,8 @@
     "cameraHintPortrait": "Pinch to zoom · fit the whole menu",
     "cameraHintLandscape": "Wide menus fit better in landscape",
     "landscapeBadge": "Landscape",
-    "launcherHint": "Snap the menu — we'll check every dish against your profile."
+    "launcherHint": "Snap the menu — we'll check every dish against your profile.",
+    "similarSuggest": "Similar dish (not an exact match):"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

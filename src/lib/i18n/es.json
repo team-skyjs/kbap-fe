@@ -259,7 +259,8 @@
     "cameraHintPortrait": "Pellizca para zoom · encuadra todo el menú",
     "cameraHintLandscape": "Los menús anchos caben mejor en horizontal",
     "landscapeBadge": "Horizontal",
-    "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil."
+    "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil.",
+    "similarSuggest": "Plato similar (no es coincidencia exacta):"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

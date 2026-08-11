@@ -47,6 +47,15 @@ export interface ScanRequest {
   items: ScanReqItem[];
 }
 
+/** P-153(스캔 v2): 미등록 메뉴의 유사 등록 음식 제안 — X-API-Version 2026.08.07 응답 한정. */
+export interface SimilarFoodWire {
+  foodId: number;
+  name?: string | null;
+  koreanName?: string | null;
+  description?: string | null;
+  imageRef?: string | null;
+}
+
 export interface ScanResultWire {
   idx?: number | null; // null = 사진에서만 추출(대응 OCR 항목 없음 — 그릴 박스 없음)
   matched: boolean; // false = 조사 대기 (riskLevel UNKNOWN, no detail screen)
@@ -55,6 +64,8 @@ export interface ScanResultWire {
   name?: string | null; // display name (ko for now; localizes once auth lands)
   koreanName?: string | null;
   price?: number | null; // 메뉴판 표기 가격(KRW 정수), 미표기 = null — 응답 전용
+  /** P-153 v2: matched=false 항목의 유사 음식 폴백(v1 응답엔 부재). */
+  similarFood?: SimilarFoodWire | null;
 }
 
 /** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */

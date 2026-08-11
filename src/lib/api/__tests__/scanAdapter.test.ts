@@ -113,3 +113,33 @@ describe('mapRisk', () => {
     expect(mapRisk(undefined)).toBe('unable');
   });
 });
+
+
+/* ---- P-153: similarFood(v2) — 링크 전용, 행 판정 불변 ---- */
+describe('P-153 similarFood', () => {
+  it('matched=false + similarFood → similar 매핑, 행 판정은 여전히 unable (위험도 이식 금지)', () => {
+    const out = photoOnlyResults([
+      { idx: null, matched: false, foodId: null, riskLevel: 'SAFE', name: '수제비', koreanName: null, price: null,
+        similarFood: { foodId: 12, name: 'Sujebi', koreanName: '수제비', description: 'd', imageRef: 'x' } } as never,
+    ]);
+    expect(out[0].risk).toBe('unable'); // 유사 ≠ 동일 — false-safe 방지(헌법 III)
+    expect(out[0].similar).toEqual({ foodId: '12', name: 'Sujebi', koreanName: '수제비' });
+  });
+
+  it('matched=true → similar 항상 null · similarFood 부재/name 없음 → null (v1 하위호환)', () => {
+    const matched = photoOnlyResults([
+      { idx: null, matched: true, foodId: 3, riskLevel: 'SAFE', name: 'A', koreanName: null, price: null,
+        similarFood: { foodId: 9, name: 'B' } } as never,
+    ]);
+    expect(matched[0].similar).toBe(null);
+    const v1 = photoOnlyResults([
+      { idx: null, matched: false, foodId: null, riskLevel: 'UNKNOWN', name: 'C', koreanName: null, price: null } as never,
+    ]);
+    expect(v1[0].similar).toBe(null);
+    const noName = photoOnlyResults([
+      { idx: null, matched: false, foodId: null, riskLevel: 'UNKNOWN', name: 'D', koreanName: null, price: null,
+        similarFood: { foodId: 5, name: null, koreanName: null } } as never,
+    ]);
+    expect(noName[0].similar).toBe(null);
+  });
+});

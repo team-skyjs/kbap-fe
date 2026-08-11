@@ -208,3 +208,28 @@ it('P-149 ①: 주문 카드 = 전체 스크롤 컨테이너(항목 多 도달) 
   expect(tree.root.findAll((n) => n.props?.testID === 'zoom-scroll').length).toBeGreaterThanOrEqual(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'zoom-close' && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
 });
+
+it('P-153: 미등록 행 유사 제안 — 주의 톤 링크+탭 상세 라우팅, 행 판정 unable·주문은 rawMenuName 잠금', () => {
+  const withSimilar: ResultDish[] = [
+    { itemId: 1, rawMenuName: '수제비', box: BOX, priceKrw: null, latin: null, risk: 'unable', matched: false, foodId: null, displayName: '수제비', koreanName: null,
+      similar: { foodId: '12', name: 'Sujebi', koreanName: '수제비' } },
+  ];
+  const onOpenSimilar = jest.fn();
+  const tree = render(
+    <ScanRichList dishes={withSimilar} avoidNames={[]} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} onOpenSimilar={onOpenSimilar} onEditProfile={() => {}} t={t} />,
+  );
+  const s = flat(tree);
+  expect(s).toContain('scan.similarSuggest'); // "정확 매칭 아님" 주의 톤 병기
+  expect(s).toContain('Sujebi');
+  // 탭 → 상세 라우팅 콜백
+  const link = tree.root.findAll((n) => n.props?.testID === 'similar-1' && typeof n.props?.onPress === 'function')[0];
+  act(() => link.props.onPress());
+  expect(onOpenSimilar).toHaveBeenCalledWith('12');
+  // 주문 카드 = rawMenuName 그대로(P-045) — 유사 음식명 조립 금지
+  const card = render(
+    <FlippedOrderCard items={[{ nameKo: '수제비', name: '수제비', qty: 1, priceKrw: null }]} avoidCodes={[]} avoidNames={[]} currency="USD" onDone={() => {}} t={t} />,
+  );
+  const cs = flat(card);
+  expect(cs).toContain(orderSentenceKo('수제비', 1));
+  expect(cs).not.toContain('Sujebi');
+});

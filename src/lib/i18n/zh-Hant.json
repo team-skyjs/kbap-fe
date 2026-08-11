@@ -259,7 +259,8 @@
     "cameraHintPortrait": "捏合縮放 · 拍下整份菜單",
     "cameraHintLandscape": "寬幅菜單橫屏更合適",
     "landscapeBadge": "橫屏",
-    "launcherHint": "拍下菜單,我們會將每道菜與您的檔案比對。"
+    "launcherHint": "拍下菜單,我們會將每道菜與您的檔案比對。",
+    "similarSuggest": "相似的已登記菜品(非精確匹配):"
   },
   "owner": {
     "caption": "將此畫面出示給餐廳員工看",

@@ -30,7 +30,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
-import { useScan } from '@/lib/data/useScan';
+import { scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
@@ -235,6 +235,14 @@ export default function Scan() {
     setPhoto(captured);
     setPhase('scanning');
 
+    // P-153: v2(dev 계열) = 서버 비전 OCR — 온디바이스 ML Kit·세그먼트 스킵
+    // (촬영→업로드→요청 단축). 결과는 전부 idx=null → photoOnly로 수확된다.
+    if (scanV2Enabled()) {
+      console.log('[scan] v2 — on-device OCR skipped (server vision)');
+      runScan([], captured);
+      return;
+    }
+
     let lines;
     try {
       lines = await recognizeMenuLines(captured.uri, captured.width, captured.height);
@@ -425,6 +433,7 @@ export default function Scan() {
         displayName: it.displayName,
         koreanName: it.koreanName,
         priceKrw: it.price, // 서버 제공값 그대로 — OCR 추정가 대체, null=미표시 (P-002)
+        similar: it.similar, // P-153 v2
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -440,6 +449,7 @@ export default function Scan() {
       foodId: p.foodId,
       displayName: p.displayName,
       koreanName: p.koreanName,
+      similar: p.similar, // P-153 v2: 미등록 유사 제안(링크 전용 — 판정 무관)
     }));
     const allDishes = [...resultDishes, ...photoDishes];
     // §14-5: unable sorted last, never hidden
@@ -510,6 +520,7 @@ export default function Scan() {
               onRemove={(d) => bumpCart(d.itemId, -1)}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
+              onOpenSimilar={(foodId) => router.push(`/food/${foodId}?src=scan` as Href)} // P-153: 유사 제안 → 상세
               onEditProfile={() => router.push('/profile/restrictions' as Href)}
               t={t}
             />

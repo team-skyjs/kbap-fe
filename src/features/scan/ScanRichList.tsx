@@ -39,6 +39,7 @@ export function ScanRichList({
   onRemove,
   onOpen,
   onMarkPress,
+  onOpenSimilar,
   onEditProfile,
   t,
 }: {
@@ -52,6 +53,8 @@ export function ScanRichList({
   onOpen: (d: ResultDish) => void;
   /** P-149: 행 RiskMark 탭 = 코치마크 재열람(P-134 표면 — 캡슐 철거 후 리스트가 담당) */
   onMarkPress?: () => void;
+  /** P-153 v2: 미등록 행 유사 제안 탭 → 해당 음식 상세 */
+  onOpenSimilar?: (foodId: string) => void;
   onEditProfile: () => void;
   t: TFn;
 }) {
@@ -71,7 +74,7 @@ export function ScanRichList({
 
       {/* P-138 ④: 카테고리 헤더 없음 — 스캔 API에 카테고리 부재 → 플랫 리스트 */}
       {dishes.map((d) => (
-        <RichRow key={d.itemId} dish={d} currency={currency} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} t={t} />
+        <RichRow key={d.itemId} dish={d} currency={currency} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onOpenSimilar={onOpenSimilar} t={t} />
       ))}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
@@ -87,6 +90,7 @@ function RichRow({
   onRemove,
   onOpen,
   onMarkPress,
+  onOpenSimilar,
   t,
 }: {
   dish: ResultDish;
@@ -96,6 +100,7 @@ function RichRow({
   onRemove: () => void;
   onOpen: () => void;
   onMarkPress?: () => void;
+  onOpenSimilar?: (foodId: string) => void;
   t: TFn;
 }) {
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
@@ -131,6 +136,17 @@ function RichRow({
               <AvoidChip key={w.code} label={w.name} variant={w.risk === 'danger' ? 'danger' : 'caution'} />
             ))}
           </View>
+        )}
+        {/* P-153 v2: 미등록 행 유사 제안 — 링크 전용, 행 판정 unable 불변(헌법 III).
+            "정확 매칭 아님" 주의 톤 병기 — 유사 음식의 안전 정보 이식 금지. */}
+        {!dish.matched && dish.similar && (
+          <Pressable style={styles.similarRow} hitSlop={6} onPress={() => onOpenSimilar?.(dish.similar!.foodId)} testID={`similar-${dish.itemId}`}>
+            <Text style={styles.similarText} numberOfLines={2}>
+              <Text style={styles.similarLead}>{t('scan.similarSuggest')} </Text>
+              {dish.similar.name}
+              {dish.similar.koreanName && dish.similar.koreanName !== dish.similar.name ? ` (${dish.similar.koreanName})` : ''}
+            </Text>
+          </Pressable>
         )}
         {/* P-138 ③: 미매칭 행 안내문 삭제 — unable 마크가 상태를 말한다(조용) */}
         {dish.priceKrw != null && (
@@ -190,6 +206,9 @@ const styles = StyleSheet.create({
   warnWrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
   warnLead: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink2 },
   price: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink2, marginTop: 2, fontVariant: ['tabular-nums'] },
+  similarRow: { marginTop: 3 },
+  similarText: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.primaryText },
+  similarLead: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   // 우측 열 = 항상 RIGHT_COL_W — 썸네일 유무와 무관하게 텍스트 열 폭 불변
   rightCol: { width: RIGHT_COL_W, alignItems: 'flex-end', gap: 6 },
   thumb: { width: RIGHT_COL_W, height: RIGHT_COL_W, borderRadius: radius.sm, backgroundColor: C.surface2 },

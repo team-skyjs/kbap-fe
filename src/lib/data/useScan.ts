@@ -20,6 +20,7 @@ import {
   type ScannedItem,
 } from '@/lib/api/scanAdapter';
 import { resolveScanImagePath } from '@/lib/api/scanImage';
+import { isProdChannel } from '@/lib/flags';
 
 export interface ScanPhoto {
   uri: string;
@@ -39,22 +40,35 @@ export interface ScanOutcome {
   photoOnly: PhotoOnlyItem[];
 }
 
-async function postScan({ items, photo }: ScanInput): Promise<ScanOutcome> {
+/** P-153: 스캔 v2(서버 비전 OCR) — dev 계열 채널만. prod 서버 미배포라 채널 분기 필수(P-114 관례). */
+export const SCAN_API_VERSION = '2026.08.07';
+export function scanV2Enabled(): boolean {
+  return !isProdChannel();
+}
+
+export async function postScan({ items, photo }: ScanInput): Promise<ScanOutcome> {
   // ⑦(KB-137) 순서: 업로드 해석은 촬영 파일 삭제(사진 교체/화면 언마운트 시)보다
   // 먼저 여기서 실행된다 — 스캔 중에는 삭제 트리거가 없다(언마운트=스캔 폐기).
   const imagePath = await resolveScanImagePath(photo);
-  const body: ScanRequest = {
-    imagePath: imagePath ?? '', // '' = 텍스트-only 폴백 (BE 허용 확정 7/16 — 업로드 실패해도 스캔 지속)
-    items: items.map((it) => ({ idx: it.itemId, rawMenuName: it.rawMenuName })),
-  };
+  const v2 = scanV2Enabled();
+  // v2: imagePath만으로 성립(items 무시 — 서버 OCR). v1(prod): items 필수(누락 400).
+  const body: ScanRequest = v2
+    ? { imagePath: imagePath ?? '', items: [] }
+    : {
+        imagePath: imagePath ?? '', // '' = 텍스트-only 폴백 (BE 허용 확정 7/16 — 업로드 실패해도 스캔 지속)
+        items: items.map((it) => ({ idx: it.itemId, rawMenuName: it.rawMenuName })),
+      };
   // Stage logs (prefix "[scan]") — watch in Metro to confirm the BE roundtrip.
   // Envelope unwrap + error normalization live in the shared client (KB-66):
   // api.post resolves `payload` or throws ApiError (incl. "NETWORK:" on fetch
   // reject, which scan.tsx branches on for its network error UI).
-  console.log('[scan] POST /scans | items =', body.items.length, '| imagePath =', body.imagePath || '(none)');
+  console.log(`[scan] POST /scans ${v2 ? `(v2 ${SCAN_API_VERSION} — 서버 OCR)` : '(v1)'} | items =`, body.items.length, '| imagePath =', body.imagePath || '(none)');
   // P-060③: 지역화 응답 — 타 엔드포인트와 동일하게 lang 필수 (스웨거 반영 확인)
   // P-115: 스캔 ML 처리는 15s 기본을 정당하게 넘을 수 있음 — 60s 오버라이드
-  const payload = await api.post<ScanPayload>(`/scans?lang=${apiLang()}`, body, { timeoutMs: 60_000 });
+  const payload = await api.post<ScanPayload>(`/scans?lang=${apiLang()}`, body, {
+    timeoutMs: 60_000,
+    ...(v2 ? { headers: { 'X-API-Version': SCAN_API_VERSION } } : {}),
+  });
   const merged = mergeResults(items, payload.results ?? []);
   const photoOnly = photoOnlyResults(payload.results ?? []);
   console.log(
