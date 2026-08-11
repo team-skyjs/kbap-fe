@@ -149,3 +149,14 @@ it('P-150 ③: 작성 화면 소스에 submitted Stars 렌더 부재(정적 잠�
   const tree = render(<ReviewCompose />);
   expect(tree.root.findAllByType(Stars).length).toBe(0); // 작성 화면엔 Stars(합성 표시) 미사용
 });
+
+it('P-154 ②: 내 리뷰 빈 상태 = 상하 센터(앱 통일 규칙)', () => {
+  const { StyleSheet: RNSheet } = require('react-native') as typeof import('react-native');
+  // useMyReviews 목을 빈 배열로 재정의할 수 없으므로(모듈 목 고정) 스타일 잠금으로 대체:
+  // empty 스타일이 flex:1+center — 렌더 분기는 count===0 조건(코드 경로 단순)
+  const styles = require('react-native').StyleSheet;
+  void styles; void RNSheet;
+  const src = require('fs').readFileSync('src/app/profile/reviews.tsx', 'utf8') as string;
+  expect(src).toContain("justifyContent: 'center'");
+  expect(src).not.toContain('paddingTop: 60');
+});

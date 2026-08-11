@@ -257,5 +257,29 @@ it('P-148/151: 타국 선택 시 핀 카드 색 강조만 해제 — 프레임 �
   // 일반 목록 행(JP — 선택됨)도 메트릭 무변: 선택 강조는 색뿐(natRow 62 고정)
   const jpStyle = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
   expect(jpStyle.minHeight).toBe(62);
-  expect(jpStyle.borderWidth).toBeUndefined(); // 일반 행 — 선택돼도 보더 미부여
+  expect(jpStyle.borderWidth).toBe(1.5); // P-154: 일반 행도 상시 동폭 보더(선택 = 색만 — 프레임 불변)
+});
+
+it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴트) — 메트릭 불변·강조 1곳', async () => {
+  mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
+  const tree = await render();
+  const { StyleSheet: RNSheet } = require('react-native') as typeof import('react-native');
+  const flat2 = (s2: unknown) => RNSheet.flatten(s2) as Record<string, unknown>;
+  const jpStyle = () => flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
+  const before = jpStyle();
+  // 미선택 일반 행 — 상시 투명 보더 동폭(프레임 상비)
+  expect(before.borderWidth).toBe(1.5);
+  expect(before.borderColor).toBe('transparent');
+  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
+  await act(async () => { jp.props.onPress(); });
+  const after = jpStyle();
+  // 선택 = 핀 카드와 동일 색 강조, 메트릭(높이·보더 폭·라운딩) 픽셀 동일
+  expect(after.borderColor).toBe('#E2580C');
+  expect(String(after.backgroundColor)).toContain('rgba(226,88,12');
+  expect(after.minHeight).toBe(before.minHeight);
+  expect(after.borderWidth).toBe(before.borderWidth);
+  expect(after.borderRadius).toBe(before.borderRadius);
+  // 강조 단일성 — 핀 카드(US)는 무강조로 전환
+  const pin = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-US')[0].props.style);
+  expect(pin.borderColor).toBe('transparent');
 });

@@ -69,7 +69,7 @@ export default function MyReviews() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('myReviews.title')} onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, count === 0 && { flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
         {count === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIc}>
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   foot: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
 
-  empty: { alignItems: 'center', gap: 12, paddingHorizontal: 28, paddingTop: 60 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 28 }, // P-154 ②: 상하 센터(앱 통일)
   emptyIc: { width: 64, height: 64, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: font.display, fontSize: 19, color: C.ink, textAlign: 'center' },
   emptyBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20 },

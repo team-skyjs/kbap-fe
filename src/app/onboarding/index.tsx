@@ -532,9 +532,9 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     return (
       <Pressable
         key={c.code}
-        // P-148①→P-151: 핀 카드 프레임(보더 폭·minHeight·라운딩·마진)은 **상시 고정**
-        // (미선택 = 동폭 투명 보더) — 선택 바인딩은 색(보더·틴트)만. 강조는 항상 1곳.
-        style={[styles.natRow, pinned && styles.natPinFrame, pinned && on && styles.natPinOn]}
+        // P-148①→P-151→P-154: 프레임은 상시 고정(투명 보더 동폭) — 선택 바인딩은
+        // 색(보더·틴트)만. P-154 ①: 일반 행도 선택 시 핀 카드와 동일 강조(natPinOn 공유).
+        style={[styles.natRow, pinned && styles.natPinFrame, on && styles.natPinOn]}
         onPress={() => onSelect(c.code)}
         testID={`nat-${c.code}`}
       >
@@ -746,7 +746,9 @@ const styles = StyleSheet.create({
   natSecHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 7 },
   natSecText: { fontFamily: font.bodyBold, fontSize: 9.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3 },
   natSecLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.hair },
-  natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 12 }, // 62 고정 — 리플로 방지
+  // P-154 ①: 전 행 상시 투명 보더 동폭+라운딩 — 선택 시 색만 전환(natPinOn 공유),
+  // 행 높이 62·간격 픽셀 무변(P-151 방식). 강조는 항상 화면 1곳.
+  natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 12, borderWidth: 1.5, borderColor: 'transparent', borderRadius: 18 }, // 62 고정 — 리플로 방지
   // P-151(P-148 회귀 교정): 핀 카드 **프레임은 상시 고정**(투명 보더 동폭·minHeight 70)
   // — 선택 상태는 색만 바꾼다(P-103 원칙). 선택 이동 시 아래 목록 픽셀 이동 0.
   natPinFrame: { borderWidth: 1.5, borderColor: 'transparent', borderRadius: 18, minHeight: 70, marginBottom: 8 },

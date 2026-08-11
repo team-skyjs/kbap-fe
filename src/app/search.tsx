@@ -286,5 +286,5 @@ const styles = StyleSheet.create({
   cardKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
   cardBlurb: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
 
-  noResults: { paddingTop: 40 },
+  noResults: { flex: 1, justifyContent: 'center', paddingBottom: 60 }, // P-154 ②: 상하 센터(앱 통일 — 키보드 감안 소폭 상향)
 });

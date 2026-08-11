@@ -91,7 +91,7 @@ export default function Community() {
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
-        contentContainerStyle={[styles.list, { paddingBottom: 96 }]} // P-099: FAB 54+18+여백 — 마지막 카드 액션 줄 확보
+        contentContainerStyle={[styles.list, { paddingBottom: 96, flexGrow: 1 }]} // P-099 여백 + P-154: 빈 상태 센터를 위한 flexGrow
         showsVerticalScrollIndicator={false}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
@@ -112,11 +112,14 @@ export default function Community() {
               <Spinner size={22} color={C.ink2} />
             </View>
           ) : (
-            <StateBlock
-              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-              title={t('community.emptyTitle')}
-              body={t('community.emptyBody')}
-            />
+            /* P-154 ②: 빈 상태 = 상하 센터(앱 통일 — 화면 소유 빈 상태 규칙) */
+            <View style={styles.emptyFill}>
+              <StateBlock
+                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+                title={t('community.emptyTitle')}
+                body={t('community.emptyBody')}
+              />
+            </View>
           )
         }
         ListFooterComponent={
@@ -186,6 +189,7 @@ function ComingSoon({ t }: { t: ReturnType<typeof useTranslation>['t'] }) {
 }
 
 const styles = StyleSheet.create({
+  emptyFill: { flex: 1, justifyContent: 'center' }, // P-154 ②
   root: { flex: 1, backgroundColor: C.surface },
   csScrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(42,33,27,0.42)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   csCard: { width: '86%', backgroundColor: C.card, borderRadius: radius.lg, padding: 26, alignItems: 'center', gap: 9, ...shadow.shPop },
