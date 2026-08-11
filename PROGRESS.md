@@ -1052,3 +1052,9 @@
 ## 다시찍기 확인 모달 (2026-08-11, P-161)
 - [x] ↻ = 확인 모달 선노출(이탈 모달 문법 재사용, 담은 개수 문구 반영) — 확인 시에만 리셋, 취소 보존. i18n 4키 ×10.
 - [x] tsc 0 · jest 98스위트 519/519 · teamtest OTA(iOS 9f959f32·안드 8d27a5bf) — fea03fd.
+
+## 주문 완료 모달·상세 CTA·저장 스낵바 (2026-08-11, P-162)
+- [x] Done = 완료 확인 모달(공용 FlippedOrderCard, 체크 톤) → 확인 시 홈. i18n 3키 ×10(ko 임시).
+- [x] 상세 하단 CTA = Ask the owner(라벨·목적지 재료 행과 통일, safe도 일반 질문으로 자연 커버) — order.cta 미사용화.
+- [x] 저장 성공 스낵바 제거(실패 스낵바 유지) — saved.toast/view 미사용화.
+- [x] tsc 0 · jest 92스위트 523/523 · teamtest OTA(iOS ffb790fc·안드 63f1abab) — c75bce1.
