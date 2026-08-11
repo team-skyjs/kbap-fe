@@ -1111,3 +1111,7 @@
 ## 주문 완료 폭죽 (2026-08-11, P-166 — OTA 실기 대기)
 - [x] ConfettiBurst 48파티클(reanimated 커스텀·결정적 의사난수·1.8s 소멸) — 모달 동시 버스트, pointerEvents none, Reduce Motion 스킵, 위험도 4색 미사용.
 - [x] tsc 0 · jest 99스위트 579/579 — ab7f601. ⚠️ OTA 미발행(P-065 — 예진 실기 확인 후).
+
+## 확인 모달 destructive 보더 (2026-08-11, P-175)
+- [x] Btn dangerGhost(ghost 프레임+destructive 색) + testID — 재스캔·커뮤 이탈 2곳 스왑(텍스트 행 소멸).
+- [x] tsc 0 · jest 99스위트 581/581 · teamtest OTA(iOS 4480ea74·안드 0ba36299) — 370f5e2. ⚠️ P-166 폭죽 동승 발행(REPORTS 특이 참조).
