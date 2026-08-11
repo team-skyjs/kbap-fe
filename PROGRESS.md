@@ -1085,3 +1085,8 @@
 ## 작성 카드 썸네일·마크 제거 (2026-08-11, P-170)
 - [x] 썸네일 = useFoodDetail 캐시 photoUrl(A안 — 요청 0, 무사진 폴백) · 위험도 마크 소멸(오독) + personalRisk/useMe 의존 정리.
 - [x] tsc 0 · jest 95스위트 558/558 · teamtest OTA(iOS ada12fc2·안드 c01aff07) — a6ea3b1.
+
+## 리뷰 브리프 쿠팡 개편 (2026-08-11, P-169)
+- [x] CTA 위계(솔리드=Ask the owner 1개, Write=고스트 소형) · 헤더 병기(같은 국적 보조 줄, 2열 카드 소멸) · 프리뷰 5(썸네일·날짜·Helpful·신고=ModerationFlow 재사용) · 전체보기 풀폭 고스트.
+- [x] Helpful 텍스트 전수(목록·디테일 — IconHeart 리뷰 계열 0). reviews.helpful ×10(ko 임시).
+- [x] tsc 0 · jest 95스위트 560/560 · teamtest OTA(iOS 3e19a4a4·안드 a5a7ebbf) — 5cdb69b.
