@@ -279,7 +279,10 @@
     "done": "Selesai",
     "mirrorAvoid": "Tolong tanpa: {{list}}",
     "title": "Pesanan Anda",
-    "headerSub": "{{count}} hidangan"
+    "headerSub": "{{count}} hidangan",
+    "doneTitle": "Pesanan selesai!",
+    "doneBody": "Selamat makan!",
+    "doneHome": "Ke Beranda"
   },
   "profile": {
     "rankingTitle": "Peringkat",

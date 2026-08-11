@@ -279,7 +279,10 @@
     "done": "Xong",
     "mirrorAvoid": "Vui lòng bỏ: {{list}}",
     "title": "Đơn của bạn",
-    "headerSub": "{{count}} món"
+    "headerSub": "{{count}} món",
+    "doneTitle": "Đặt món xong!",
+    "doneBody": "Chúc ngon miệng!",
+    "doneHome": "Về trang chủ"
   },
   "profile": {
     "rankingTitle": "Xếp hạng",

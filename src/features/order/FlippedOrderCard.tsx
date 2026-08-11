@@ -13,7 +13,7 @@ import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { Btn, IconClose, IconExpand } from '@/components';
+import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { convertKrw } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
@@ -48,6 +48,8 @@ export function FlippedOrderCard({
   t: TFn;
 }) {
   const [zoomed, setZoomed] = React.useState(false);
+  // P-162: Done = 무반응 아님 — 완료 확인 모달 경유 후 onDone(홈 이동)
+  const [doneOpen, setDoneOpen] = React.useState(false);
   const lines = items.map((i) => orderSentenceKo(i.nameKo, i.qty));
   const avoid = avoidSentenceKo(avoidCodes);
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
@@ -102,8 +104,24 @@ export function FlippedOrderCard({
 
       <View style={styles.foot}>
         {stepper}
-        <Btn onPress={onDone}>{t('order.done')}</Btn>
+        <Btn onPress={() => setDoneOpen(true)}>{t('order.done')}</Btn>
       </View>
+
+      {/* P-162: 주문 완료 확인 모달 — 스캔 재촬영 모달과 같은 카드 문법, 성공 체크 톤 */}
+      <Modal visible={doneOpen} transparent animationType="fade" onRequestClose={() => setDoneOpen(false)}>
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard} testID="order-done-confirm">
+            <View style={styles.doneCheck}>
+              <IconCheck size={26} color={C.primary} />
+            </View>
+            <Text style={styles.confirmTitle}>{t('order.doneTitle')}</Text>
+            <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
+            <View style={{ marginTop: 6 }}>
+              <Btn onPress={onDone}>{t('order.doneHome')}</Btn>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* 풀스크린 확대 — 방향 유지. P-149: 긴 내용도 스크롤 가능 + 명시 닫기 버튼 */}
       <Modal visible={zoomed} animationType="fade" onRequestClose={() => setZoomed(false)}>
@@ -122,6 +140,12 @@ export function FlippedOrderCard({
 
 const styles = StyleSheet.create({
   body: { flexGrow: 1, paddingHorizontal: 18, paddingBottom: 8 },
+  // P-162 완료 모달 (scan.tsx confirm 문법과 동일 수치)
+  confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   flipCard: {
     backgroundColor: primaryTint,
     borderWidth: 1.5,

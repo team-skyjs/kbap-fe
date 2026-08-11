@@ -279,7 +279,10 @@
     "done": "완료",
     "mirrorAvoid": "빼 주세요: {{list}}",
     "title": "주문 카드",
-    "headerSub": "메뉴 {{count}}개"
+    "headerSub": "메뉴 {{count}}개",
+    "doneTitle": "주문 완료!",
+    "doneBody": "맛있게 드세요!",
+    "doneHome": "홈으로"
   },
   "profile": {
     "rankingTitle": "랭킹",

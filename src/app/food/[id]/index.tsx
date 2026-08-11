@@ -73,7 +73,6 @@ export default function FoodDetailScreen() {
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false); // P-134: 마크 탭 재열람
-  const [saveToast, setSaveToast] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onBookmark = () => {
@@ -92,20 +91,13 @@ export default function FoodDetailScreen() {
       },
       {
         onError: () => {
-          setSaveToast(false);
           setSaveError(true);
           if (toastTimer.current) clearTimeout(toastTimer.current);
           toastTimer.current = setTimeout(() => setSaveError(false), 4000);
         },
       },
     );
-    if (adding) {
-      setSaveToast(true);
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-      toastTimer.current = setTimeout(() => setSaveToast(false), 5000);
-    } else {
-      setSaveToast(false);
-    }
+    // P-162: 저장 성공 스낵바 제거 — 별 토글 상태 변화만으로 충분 (실패 스낵바만 유지)
   };
 
   return (
@@ -176,17 +168,6 @@ export default function FoodDetailScreen() {
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
       {saveError && <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />}
-      {saveToast && (
-        <Snackbar
-          icon={<IconStar size={15} color="#fff" fill="#fff" sw={0} />}
-          text={t('saved.toast')}
-          actionLabel={t('saved.view')}
-          onAction={() => {
-            setSaveToast(false);
-            router.push('/profile/saved' as Href);
-          }}
-        />
-      )}
     </View>
   );
 }
@@ -393,11 +374,13 @@ function Registered({
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
 
-      {/* KB-205(P-030): 안전 판정의 다음 행동 = 주문 — safe/caution만 노출 */}
+      {/* P-162: 하단 CTA = 사장님 확인(재료 행 링크와 동일 목적지·라벨 통일) — safe/caution만 노출.
+          재료 파라미터 없음 = orderCard.ts 기존 일반 질문("제가 못 먹는 재료가 들어가나요?")
+          → 회피 매칭 0(safe)이어도 식당별 재료 편차 확인용으로 자연스럽게 성립. */}
       {!guest && (dishRisk === 'safe' || dishRisk === 'caution') && (
         <View style={styles.sec}>
-          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => router.push(`/food/${id}/order` as Href)}>
-            {t('order.cta')}
+          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => router.push(`/food/${id}/owner` as Href)}>
+            {t('detail.askOwner')}
           </Btn>
         </View>
       )}

@@ -85,7 +85,11 @@ export default function OrderCard() {
             <StepBtn testID="qty-inc" icon={<IconPlus size={20} color={C.ink} />} disabled={qty >= QTY_MAX} onPress={() => bump(Math.min(QTY_MAX, qty + 1))} />
           </View>
         }
-        onDone={() => router.back()}
+        onDone={() => {
+          // P-162: 완료 모달 확인 = 홈으로 (상세 스택 정리 후 탭 홈)
+          if (router.canDismiss()) router.dismissAll();
+          router.replace('/(tabs)');
+        }}
         t={t}
       />
     </View>

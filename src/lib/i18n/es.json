@@ -279,7 +279,10 @@
     "done": "Listo",
     "mirrorAvoid": "Sin: {{list}}, por favor",
     "title": "Tu pedido",
-    "headerSub": "{{count}} platos"
+    "headerSub": "{{count}} platos",
+    "doneTitle": "¡Pedido completado!",
+    "doneBody": "¡Buen provecho!",
+    "doneHome": "Ir al inicio"
   },
   "profile": {
     "rankingTitle": "Clasificación",

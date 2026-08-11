@@ -279,7 +279,10 @@
     "done": "完了",
     "mirrorAvoid": "抜いてください: {{list}}",
     "title": "注文カード",
-    "headerSub": "{{count}}品"
+    "headerSub": "{{count}}品",
+    "doneTitle": "注文完了！",
+    "doneBody": "どうぞお召し上がりください！",
+    "doneHome": "ホームへ"
   },
   "profile": {
     "rankingTitle": "ランキング",

@@ -279,7 +279,10 @@
     "done": "完成",
     "mirrorAvoid": "請去掉：{{list}}",
     "title": "您的訂單",
-    "headerSub": "{{count}} 道菜"
+    "headerSub": "{{count}} 道菜",
+    "doneTitle": "點餐完成！",
+    "doneBody": "祝您用餐愉快！",
+    "doneHome": "回首頁"
   },
   "profile": {
     "rankingTitle": "排名",

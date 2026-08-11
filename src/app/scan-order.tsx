@@ -66,7 +66,11 @@ export default function ScanOrder() {
         avoidCodes={codes}
         avoidNames={codes.map((c) => ingredientLabel(c))}
         currency={currency}
-        onDone={() => router.back()}
+        onDone={() => {
+          // P-162: 완료 모달 확인 = 홈으로 (스캔 스택 정리 후 탭 홈)
+          if (router.canDismiss()) router.dismissAll();
+          router.replace('/(tabs)');
+        }}
         t={t}
       />
     </View>

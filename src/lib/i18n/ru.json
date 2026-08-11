@@ -279,7 +279,10 @@
     "done": "Готово",
     "mirrorAvoid": "Пожалуйста, без: {{list}}",
     "title": "Ваш заказ",
-    "headerSub": "Блюд: {{count}}"
+    "headerSub": "Блюд: {{count}}",
+    "doneTitle": "Заказ оформлен!",
+    "doneBody": "Приятного аппетита!",
+    "doneHome": "На главную"
   },
   "profile": {
     "rankingTitle": "Рейтинг",

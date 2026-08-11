@@ -279,7 +279,10 @@
     "done": "เสร็จ",
     "mirrorAvoid": "กรุณาไม่ใส่: {{list}}",
     "title": "ออเดอร์ของคุณ",
-    "headerSub": "{{count}} จาน"
+    "headerSub": "{{count}} จาน",
+    "doneTitle": "สั่งอาหารเรียบร้อย!",
+    "doneBody": "ทานให้อร่อยนะ!",
+    "doneHome": "กลับหน้าหลัก"
   },
   "profile": {
     "rankingTitle": "อันดับ",

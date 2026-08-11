@@ -1,5 +1,5 @@
 /**
- * P-030(KB-205): 주문 CTA 노출 조건 + 원카드 화면 잠금.
+ * P-030(KB-205) → P-162: 상세 하단 CTA = 사장님 확인(Ask the owner) + 원카드 화면 잠금.
  *  - 상세 CTA는 개인화 판정 safe/caution만 (danger 미노출, unable=owner 카드 자리)
  *  - 게스트 미노출 (프로필 기피 없이는 고지 카드가 성립 안 함)
  *  - 카드: 기피 0개 → 고지 문단 생략(순수 주문), 보유 → 고지 렌더
@@ -49,8 +49,9 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
 });
+const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canDismiss: () => true, dismissAll: jest.fn() };
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => mockRouter,
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',
   useFocusEffect: () => {},
@@ -140,12 +141,12 @@ describe('상세 CTA 노출 조건 — safe/caution만', () => {
   ])('%s → CTA %s', (risk, shown) => {
     mockUseFoodDetail.mockReturnValue({ data: FOOD(risk), isLoading: false, error: null, refetch: jest.fn() });
     const s = flat(render(<FoodDetailScreen />));
-    expect(s.includes('order.cta')).toBe(shown);
+    expect(s.includes('detail.askOwner')).toBe(shown);
   });
 
   it('게스트 → 미노출 (판정 safe여도)', () => {
     mockIsGuest.mockReturnValue(true);
-    expect(flat(render(<FoodDetailScreen />))).not.toContain('order.cta');
+    expect(flat(render(<FoodDetailScreen />))).not.toContain('detail.askOwner');
   });
 
   it('기피 프로필 없음 → BE 판정 그대로 safe 표시 (헌법 v2.1.0 — 강등 폐지) + CTA 노출', () => {
@@ -153,7 +154,7 @@ describe('상세 CTA 노출 조건 — safe/caution만', () => {
     const s = flat(render(<FoodDetailScreen />));
     expect(s).toContain('detail.verdictSafe'); // v2.1.0: 미설정=BE 그대로
     expect(s).not.toContain('detail.verdictCaution');
-    expect(s).toContain('order.cta');
+    expect(s).toContain('detail.askOwner');
   });
 });
 
@@ -175,5 +176,43 @@ describe('원카드 화면', () => {
     const s = flat(render(<OrderCard />));
     expect(s).toContain('개 주세요.');
     expect(s).not.toContain('저는 ');
+  });
+});
+
+describe('P-162: 상세 CTA 목적지·주문 완료 모달·저장 스낵바', () => {
+  const pressByText = (tree: ReactTestRenderer, text: string) =>
+    tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === text).length > 0).pop()!;
+
+  it('상세 CTA 탭 → 사장님 확인 화면(재료 행 링크와 동일 목적지, 파라미터 없음 = 일반 질문)', () => {
+    const tree = render(<FoodDetailScreen />);
+    act(() => pressByText(tree, 'detail.askOwner').props.onPress());
+    expect(mockRouter.push).toHaveBeenCalledWith('/food/7/owner');
+  });
+
+  it('회피 매칭 0(safe) → CTA 동일 노출·동일 목적지 (orderCard.ts 일반 질문 경로)', () => {
+    mockUseMe.mockReturnValue(ME([]));
+    const tree = render(<FoodDetailScreen />);
+    act(() => pressByText(tree, 'detail.askOwner').props.onPress());
+    expect(mockRouter.push).toHaveBeenCalledWith('/food/7/owner');
+  });
+
+  it('Done 탭 → 완료 확인 모달 노출(즉시 이동 아님) → 확인 시 홈 이동', () => {
+    const tree = render(<OrderCard />);
+    expect(tree.root.findAll((n) => n.props?.testID === 'order-done-confirm').length).toBe(0);
+    act(() => pressByText(tree, 'order.done').props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'order-done-confirm').length).toBeGreaterThanOrEqual(1);
+    expect(flat(tree)).toContain('order.doneTitle');
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+    act(() => pressByText(tree, 'order.doneHome').props.onPress());
+    expect(mockRouter.dismissAll).toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('저장(별) 토글 성공 → 스낵바 없음 (실패 스낵바만 유지)', () => {
+    const tree = render(<FoodDetailScreen />);
+    act(() => tree.root.findAll((n) => n.props?.testID === 'detail-save')[0].props.onPress());
+    const s = flat(tree);
+    expect(s).not.toContain('saved.toast');
+    expect(s).not.toContain('saved.error');
   });
 });

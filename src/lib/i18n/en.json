@@ -275,7 +275,10 @@
     "done": "Done",
     "mirrorAvoid": "Please leave out: {{list}}",
     "title": "Your order",
-    "headerSub": "{{count}} dishes"
+    "headerSub": "{{count}} dishes",
+    "doneTitle": "Order complete!",
+    "doneBody": "Enjoy your meal!",
+    "doneHome": "Back to Home"
   },
   "profile": {
     "rankingTitle": "Ranking",
