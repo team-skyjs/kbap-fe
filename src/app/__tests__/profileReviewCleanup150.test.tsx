@@ -213,3 +213,11 @@ it('P-157 ②: 저장 아이콘 별 전면 통일 — 프로필에 북마크 글
   expect(src).not.toContain('IconBookmark');
   expect(src).toContain('IconStar');
 });
+
+it('P-159: 저장 빈 상태 CTA = alignSelf center(소스 잠금 — Btn sm flex-start 함정 상쇄)', () => {
+  const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
+  const ctaIdx = src.indexOf('saved.emptyCta');
+  const btnIdx = src.lastIndexOf('<Btn sm', ctaIdx);
+  expect(btnIdx).toBeGreaterThan(-1);
+  expect(src.slice(btnIdx, ctaIdx)).toContain("alignSelf: 'center'");
+});

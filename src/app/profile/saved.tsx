@@ -82,7 +82,8 @@ export default function SavedScreen() {
           </View>
           <Text style={styles.emptyTitle}>{t('saved.emptyTitle')}</Text>
           <Text style={styles.emptyBody}>{t('saved.emptyBody')}</Text>
-          <Btn sm icon={<IconFood size={17} color="#fff" />} onPress={() => router.push('/(tabs)/food' as Href)}>
+          {/* P-159: Btn sm 기본 alignSelf flex-start가 부모 센터를 오버라이드 — 명시 센터 */}
+          <Btn sm style={{ alignSelf: 'center' }} icon={<IconFood size={17} color="#fff" />} onPress={() => router.push('/(tabs)/food' as Href)}>
             {t('saved.emptyCta')}
           </Btn>
         </View>

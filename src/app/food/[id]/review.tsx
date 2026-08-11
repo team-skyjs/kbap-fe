@@ -175,8 +175,8 @@ export default function ReviewCompose() {
         }
       />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
-      {/* P-150 ②: iOS = 키보드 인셋 자동(automaticallyAdjustKeyboardInsets),
-          공통 = 입력 포커스/성장 시 커서 줄을 키보드 위로 스크롤(아래 Input 배선) */}
+      {/* P-158 ①: 키보드 실측 패딩(contentContainer) + 블록 하단 프록시 스크롤 —
+          커서 추종은 위 ensureCursorVisible 참조 (P-150② 인셋 방식은 폐기됨) */}
       <ScrollView
         ref={scrollRef}
         keyboardDismissMode="on-drag"

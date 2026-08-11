@@ -95,6 +95,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     width: 'auto',
+    // ⚠️ P-159 함정: 의도적 좌측 정렬 기본(인라인 액션용) — 센터 맥락(빈 상태 등)에선
+    // 부모 alignItems를 오버라이드하니 호출측에서 style alignSelf:'center' 명시할 것.
     alignSelf: 'flex-start',
   },
   label: { fontFamily: font.display, fontSize: 16, color: '#fff' },
