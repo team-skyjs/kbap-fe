@@ -103,7 +103,9 @@ export default function ReviewDetail() {
         text: t('editReview.delete'),
         style: 'destructive',
         onPress: () =>
-          deleteReview.mutate(
+          deleteReview.isPending
+            ? undefined
+            : deleteReview.mutate(
             { reviewId: review.id, foodId: review.foodId },
             { onSuccess: () => router.back(), onError: () => Alert.alert(t('review.deleteError')) }, // KC-0302 B
           ),
@@ -245,7 +247,7 @@ export default function ReviewDetail() {
               <View style={styles.starPick}>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
-                    <Star size={44} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} emptyColor={C.ink3} />
+                    <Star size={44} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} />
                   </Pressable>
                 ))}
               </View>

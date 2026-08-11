@@ -7,14 +7,14 @@
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
@@ -54,7 +54,12 @@ export default function ReviewCompose() {
   const createReview = useCreateReview();
 
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
-  const canPost = canPostReview(rating) && !createReview.isPending;
+  // P-168 🚨: isPending은 mutateAsync 구간만 커버 — 사진 업로드(uploadReviewImages) 중엔
+  // false라 연타가 전부 통과(중복 5건 실사고 원인). posting = 제출 전 구간 포함 상태,
+  // postingRef = 동기 가드(P-062⓪ 관례 — setState 지연 레이스 차단).
+  const [posting, setPosting] = useState(false);
+  const postingRef = useRef(false);
+  const canPost = canPostReview(rating) && !posting;
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
   // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
@@ -82,7 +87,9 @@ export default function ReviewCompose() {
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
   // 성공 시 무효화(useCreateReview)가 목록·평점을 서버값으로 갱신. 실패는 화면 유지+표시.
   const post = async () => {
-    if (!canPost) return;
+    if (postingRef.current || !canPost) return; // P-168: 동기 가드 — 응답 전 재탭 무발사
+    postingRef.current = true;
+    setPosting(true);
     setPostError(false);
     try {
       const imagePaths = await uploadReviewImages(photos);
@@ -97,7 +104,10 @@ export default function ReviewCompose() {
       setSubmitted(true);
     } catch (e) {
       console.log('[review] post failed — staying on screen:', (e as Error)?.message);
-      setPostError(true);
+      setPostError(true); // 실패 = 버튼 복구(finally) + 기존 에러 표면
+    } finally {
+      postingRef.current = false;
+      setPosting(false);
     }
   };
 
@@ -151,41 +161,11 @@ export default function ReviewCompose() {
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
 
-  if (submitted) {
-    return (
-      <View style={styles.root}>
-        <SubHeader title={t('review.title')} onBack={() => router.back()} />
-        <View style={styles.okWrap}>
-          <View style={styles.okIc}>
-            <IconCheck size={34} color="#fff" />
-          </View>
-          <Text style={styles.okTitle}>{t('review.postedTitle')}</Text>
-          <Text style={styles.okBody}>
-            {t('review.postedBody', { rating, name: food?.name ?? '' })}
-          </Text>
-          {/* P-102 별점 줄 → P-150 ③ 제거 — 본문 "{rating}-star" 텍스트가 담당 */}
-          <View style={{ width: '100%', marginTop: 14, gap: 9 }}>
-            <Btn onPress={() => router.back()}>{t('review.backToDish')}</Btn>
-            <Btn variant="ghost" onPress={() => router.replace('/profile' as Href)}>
-              {t('review.seeMyReviews')}
-            </Btn>
-          </View>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.root}>
-      <SubHeader
-        title={t('review.title')}
-        onBack={() => router.back()}
-        trailing={
-          <Pressable onPress={post} hitSlop={8} disabled={!canPost}>
-            <Text style={[styles.postLink, !canPost && styles.postLinkOff]}>{t('review.post')}</Text>
-          </Pressable>
-        }
-      />
+      {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
+      <SubHeader title={t('review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-158 ①: 키보드 실측 패딩(contentContainer) + 블록 하단 프록시 스크롤 —
           커서 추종은 위 ensureCursorVisible 참조 (P-150② 인셋 방식은 폐기됨) */}
@@ -212,7 +192,7 @@ export default function ReviewCompose() {
           <View style={styles.starPick}>
             {[1, 2, 3, 4, 5].map((i) => (
               <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
-                <Star size={44} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} emptyColor={C.ink3} />
+                <Star size={44} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} />
               </Pressable>
             ))}
           </View>
@@ -305,12 +285,34 @@ export default function ReviewCompose() {
           </View>
         )}
         <View style={{ marginTop: 4 }}>
-          {/* P-126: 별 아이콘 제거 — 라벨만 (8/4 예진) */}
-          <Btn variant={canPost ? 'primary' : 'off'} onPress={post}>
-            {t('review.postReview')}
-          </Btn>
+          {/* P-126: 별 아이콘 제거 — 라벨만 (8/4 예진). P-168: 제출 중 = 스피너(재탭 불가) */}
+          {posting ? (
+            <View style={styles.postingBtn} testID="posting">
+              <ActivityIndicator color="#fff" />
+            </View>
+          ) : (
+            <Btn variant={canPost ? 'primary' : 'off'} onPress={post}>
+              {t('review.postReview')}
+            </Btn>
+          )}
         </View>
       </ScrollView>
+
+      {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
+      <Modal visible={submitted} transparent animationType="fade" onRequestClose={() => router.back()}>
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard} testID="review-posted-confirm">
+            <View style={styles.doneCheck}>
+              <IconCheck size={26} color={C.primary} />
+            </View>
+            <Text style={styles.confirmTitle}>{t('review.postedTitle')}</Text>
+            <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: food?.name ?? '' })}</Text>
+            <View style={{ marginTop: 6 }}>
+              <Btn onPress={() => router.back()}>{t('review.backToDish')}</Btn>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <PlacePickerSheet
         open={FLAGS.placeTagsEnabled && placeSheet}
@@ -433,9 +435,13 @@ const styles = StyleSheet.create({
   skipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
 
   // submitted
-  okWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, gap: 10 },
-  okIc: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.riskSafe, alignItems: 'center', justifyContent: 'center' },
-  okTitle: { fontFamily: font.display, fontSize: 22, color: C.ink, marginTop: 4 },
-  okBody: { fontFamily: font.body, fontSize: 14, color: C.ink2, textAlign: 'center', lineHeight: 21 },
+  // P-168 ②: 완료 모달 (P-162 confirm 문법과 동일 수치)
+  confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  // P-168 ①: 제출 중 로딩 — Btn primary와 같은 메트릭(높이 리플로 0)
+  postingBtn: { backgroundColor: C.primary, borderRadius: 16, minHeight: 52, alignItems: 'center', justifyContent: 'center', opacity: 0.85 },
   okMeta: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 2 },
 });

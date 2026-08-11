@@ -45,8 +45,9 @@ jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
 });
+const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => mockRouter,
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',
 }));
@@ -70,7 +71,8 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'safe' }, isLoading: false, error: null, refetch: jest.fn() }),
 }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { restrictions: [] } }) }));
-jest.mock('@/lib/data/useReviewMutations', () => ({ useCreateReview: () => ({ mutateAsync: jest.fn(), isPending: false }) }));
+const mockMutateAsync = jest.fn();
+jest.mock('@/lib/data/useReviewMutations', () => ({ useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));
 // 업로드 목 — HEIC 경유(per-file uploadImage) 검증용
@@ -95,7 +97,14 @@ const addTile = (tree: ReactTestRenderer) =>
 beforeEach(() => {
   jest.clearAllMocks();
   mockUpload.mockResolvedValue({ path: 'review/1/x.jpg', publicUrl: 'https://cdn/x.jpg' });
+  mockMutateAsync.mockResolvedValue(undefined);
 });
+
+/* ---- P-168 헬퍼: 별점 세팅(star pick = hitSlop 4 Pressable) + 하단 Post 버튼 ---- */
+const pickStar = (tree: ReactTestRenderer) =>
+  act(() => tree.root.findAll((n) => n.props?.hitSlop === 4 && typeof n.props?.onPress === 'function')[4].props.onPress());
+const postBtn = (tree: ReactTestRenderer) =>
+  tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.postReview').length > 0).pop()!;
 
 it('selectionLimit = 남은 슬롯 — 0장→3, 1장 첨부 후→2 (allowsMultipleSelection)', async () => {
   mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:a.jpg' }] });
@@ -135,4 +144,55 @@ it('다중 업로드 — 각 파일이 uploadImage(REVIEW) 경유(HEIC 재인코
     expect(mockUpload.mock.calls[i][1]).toBe('REVIEW');
   }
   expect(out).toEqual(['review/1/x.jpg', 'review/1/x.jpg', 'review/1/x.jpg']);
+});
+
+describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 복구', () => {
+  it('연타 → 제출 1건만 발사(동기 ref 가드 — 업로드 선행 구간 포함)', async () => {
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    const press = postBtn(tree).props.onPress;
+    await act(async () => {
+      void press();
+      void press();
+      void press();
+      await Promise.resolve();
+    });
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('성공 → P-162 문법 완료 모달(화면 전환 아님) + 확인 = 상세 복귀', async () => {
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    await act(async () => {
+      await postBtn(tree).props.onPress();
+    });
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-posted-confirm').length).toBeGreaterThanOrEqual(1);
+    const back = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.backToDish').length > 0).pop()!;
+    act(() => back.props.onPress());
+    expect(mockRouter.back).toHaveBeenCalled();
+    // 구 풀화면 요소(내 리뷰 보기) 소멸
+    expect(JSON.stringify(tree.toJSON())).not.toContain('review.seeMyReviews');
+  });
+
+  it('헤더 상단 Post 부재 — 제출 진입점 하단 단일화', () => {
+    const tree = render(<ReviewCompose />);
+    expect(tree.root.findAll((n) => n.props?.children === 'review.post').length).toBe(0);
+    expect(JSON.stringify(tree.toJSON())).toContain('review.postReview');
+  });
+
+  it('실패 → 에러 표면 + 버튼 복구(재제출 가능)', async () => {
+    mockMutateAsync.mockRejectedValueOnce(new Error('HTTP 500'));
+    const tree = render(<ReviewCompose />);
+    pickStar(tree);
+    await act(async () => {
+      await postBtn(tree).props.onPress();
+    });
+    const s2 = JSON.stringify(tree.toJSON());
+    expect(s2).toContain('review.postError');
+    expect(tree.root.findAll((n) => n.props?.testID === 'posting').length).toBe(0); // 스피너 해제
+    await act(async () => {
+      await postBtn(tree).props.onPress(); // 복구 후 재제출 가능
+    });
+    expect(mockMutateAsync).toHaveBeenCalledTimes(2);
+  });
 });
