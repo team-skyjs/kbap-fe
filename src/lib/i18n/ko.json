@@ -433,7 +433,8 @@
     },
     "mine": "내 리뷰",
     "loadMore": "리뷰 더 보기",
-    "emptySameNat": "같은 국적의 리뷰가 아직 없어요. 필터를 끄면 전체 리뷰를 볼 수 있어요."
+    "emptySameNat": "같은 국적의 리뷰가 아직 없어요. 필터를 끄면 전체 리뷰를 볼 수 있어요.",
+    "helpful": "도움돼요 ({{count}})"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

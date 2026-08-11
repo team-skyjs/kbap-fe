@@ -26,7 +26,6 @@ import {
   RiskMark,
   IconCheck,
   IconChevron,
-  IconHeart,
   IconMapPin,
   IconMore,
   IconProfile, Input } from '@/components';
@@ -324,19 +323,17 @@ export default function ReviewDetail() {
               </View>
             )}
 
-            {/* 좋아요 — 하트 채움 전환(색만 전환 금지) + 정렬 미반영 캡션 (D-08) */}
+            {/* P-169 ⑤: Helpful (n) 텍스트 버튼 — 하트 소멸(같은 좋아요 API, 상태 전환은 색만) */}
             <View style={styles.likeBlock}>
               <Pressable
                 style={styles.likeBtn}
                 hitSlop={8}
                 onPress={() => toggleLike.mutate({ reviewId: review.id, foodId: review.foodId })}
+                testID="helpful-toggle"
               >
-                <IconHeart
-                  size={19}
-                  color={review.myLike ? C.primaryText : C.ink2}
-                  {...(review.myLike ? { fill: C.primaryText, sw: 0 } : {})}
-                />
-                <Text style={[styles.likeCount, review.myLike && styles.likeCountOn]}>{review.likes ?? 0}</Text>
+                <Text style={[styles.likeCount, review.myLike && styles.likeCountOn]}>
+                  {t('reviews.helpful', { count: review.likes ?? 0 })}
+                </Text>
               </Pressable>
             </View>
 

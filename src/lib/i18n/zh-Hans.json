@@ -387,7 +387,8 @@
     },
     "mine": "我的评价",
     "loadMore": "查看更多评价",
-    "emptySameNat": "还没有来自你国家的评价。关闭筛选即可查看全部评价。"
+    "emptySameNat": "还没有来自你国家的评价。关闭筛选即可查看全部评价。",
+    "helpful": "有帮助（{{count}}）"
   },
   "ranking": {
     "headerTitle": "我的排名",

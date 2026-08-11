@@ -387,7 +387,8 @@
     },
     "mine": "Ulasan saya",
     "loadMore": "Muat ulasan lainnya",
-    "emptySameNat": "Belum ada ulasan dari negara Anda. Matikan filter untuk melihat semua."
+    "emptySameNat": "Belum ada ulasan dari negara Anda. Matikan filter untuk melihat semua.",
+    "helpful": "Membantu ({{count}})"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",

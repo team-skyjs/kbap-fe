@@ -23,11 +23,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, riskTone, type RiskState } from '@/lib/theme';
-import { RiskMark, RiskPill, CardPhoto, Star, Flag, Btn, IconChevron, IconSpeech } from '@/components';
+import { RiskMark, RiskPill, CardPhoto, Star, Stars, Flag, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
+import { useDeleteReview, useToggleReviewLike } from '@/lib/data/useReviewMutations';
+import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
 import { IconLock, IconStar } from '@/components/icons';
@@ -128,6 +130,7 @@ export default function FoodDetailScreen() {
                   setCoachOpen={setCoachOpen}
                   scanPrice={scanPrice}
                   food={food}
+                  myId={me?.id}
                   nationality={me?.nationality ?? 'US'}
                   spiceTolerance={me?.spiceTolerance ?? 'SKIP'}
                   hasRestrictions={(me?.restrictions.length ?? 0) > 0}
@@ -184,6 +187,7 @@ const VERDICT: Record<RiskState, string> = {
 
 function Registered({
   food,
+  myId,
   nationality,
   spiceTolerance,
   hasRestrictions,
@@ -197,6 +201,8 @@ function Registered({
   setCoachOpen: (v: boolean) => void;
   guest: boolean;
   food: FoodDetail;
+  /** P-169: 프리뷰 신고 내 글 판별 — 게스트/미로그인 undefined */
+  myId?: string;
   nationality: string;
   spiceTolerance: SpiceChoice;
   hasRestrictions: boolean;
@@ -209,9 +215,13 @@ function Registered({
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
-  // P-139 ⑥: 리뷰 프리뷰 2 — 게스트 풀 오픈(시안 노트 08). 채널 플래그는 유지.
+  // P-139 ⑥ → P-169: 리뷰 프리뷰 5(쿠팡 브리프) — 게스트 풀 오픈(시안 노트 08). 채널 플래그는 유지.
   const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled ? id : '');
-  const previewReviews = (reviewsQ.data?.pages[0]?.items ?? []).slice(0, 2);
+  const previewReviews = (reviewsQ.data?.pages[0]?.items ?? []).slice(0, 5);
+  // P-169: Helpful(기존 좋아요 API — 표현만 교체) + 신고(기존 ModerationFlow 재사용)
+  const toggleLike = useToggleReviewLike();
+  const deleteReview = useDeleteReview();
+  const [mod, setMod] = useState<ModTarget | null>(null);
 
   // P-139 ④: verdict 이유 = **성분 기준 조립만** — 회피 매칭(danger/caution)
   // 재료명 나열. 맵기-위험도 결합(시안 카피)은 허위라 금지 — 맵기 문자열 0.
@@ -337,40 +347,66 @@ function Registered({
         )}
       </View>
 
-      {/* 평점 2열 — 현행 데이터·진입, 플랫(그림자 제거) */}
+      {/* P-169: 리뷰 브리프(쿠팡 문법) — 2열 카드 소멸 → 헤더(큰 별+수치+리뷰 수,
+          같은 국적 병기 보조 줄 = 차별점 유지) + 프리뷰 5 + 풀폭 전체보기.
+          솔리드 CTA는 Ask the owner 하나만 — Write a review는 고스트 소형 강등. */}
       {FLAGS.reviewsEnabled && (
-        <View style={styles.rate2}>
-          <RatingMini
-            value={food.overall.average}
-            label={t('detail.allUsers', { count: food.overall.count })}
-            onPress={() => router.push(`/food/${id}/reviews` as Href)}
-          />
-          <RatingMini
-            value={food.sameNationality.average}
-            label={t('detail.sameNationality')}
-            left={<Flag code={nationality} size={15} />}
-            onPress={() => router.push(`/food/${id}/reviews` as Href)}
-          />
-        </View>
-      )}
-
-      {/* P-139 ⑥: 리뷰 프리뷰 2 + Read all + Write a review — 게스트 풀 오픈 */}
-      {FLAGS.reviewsEnabled && (
-        <View style={styles.sec} testID="review-preview">
-          {previewReviews.map((r) => (
-            <ReviewPreviewRow key={r.id} review={r} t={t} />
-          ))}
-          <View style={styles.reviewActions}>
-            <Pressable style={styles.readAll} onPress={() => router.push(`/food/${id}/reviews` as Href)} hitSlop={6} testID="read-all">
-              <Text style={styles.readAllText}>{t('detail.readAll')}</Text>
-              <IconChevron size={13} color={C.primaryText} />
-            </Pressable>
-            <Btn sm icon={<IconStar size={15} color="#fff" />} onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
+        <View style={styles.sec} testID="review-brief">
+          <View style={styles.rvBriefHead}>
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <View style={styles.rvScoreRow}>
+                <Stars value={food.overall.average ?? 0} size={19} />
+                <Text style={styles.rvScoreNum}>{food.overall.average?.toFixed(1) ?? '—'}</Text>
+                <Text style={styles.rvScoreCount}>· {t('reviews.subtitle', { count: food.overall.count })}</Text>
+              </View>
+              {/* 같은 국적 병기 — 보조 줄(재량: 메인 아래, 탭 = 목록) */}
+              <Pressable style={styles.rvSameNat} onPress={() => router.push(`/food/${id}/reviews` as Href)} hitSlop={6} testID="same-nat-line">
+                <Flag code={nationality} size={13} />
+                <Text style={styles.rvSameNatText}>{t('detail.sameNationality')}</Text>
+                <Star size={12} fillPct={100} fillColor={C.primary} />
+                <Text style={styles.rvSameNatText}>
+                  {food.sameNationality.average?.toFixed(1) ?? '—'} · {food.sameNationality.count}
+                </Text>
+              </Pressable>
+            </View>
+            <Btn sm variant="ghost" onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
               {t('reviews.writeReview')}
             </Btn>
           </View>
+
+          {previewReviews.map((r) => (
+            <ReviewPreviewRow
+              key={r.id}
+              review={r}
+              t={t}
+              onOpen={() => router.push(`/review/${r.id}?foodId=${id}` as Href)}
+              onHelpful={() => (guest ? setGateOpen(true) : toggleLike.mutate({ reviewId: r.id, foodId: id }))}
+              onReport={() =>
+                setMod({
+                  type: 'review',
+                  id: r.id,
+                  author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
+                  mine: r.memberId != null && r.memberId === myId,
+                })
+              }
+            />
+          ))}
+
+          {/* P-169 ④: 전체보기 = 풀폭 아웃라인(고스트) — Read all 텍스트 링크 대체 */}
+          <Btn variant="ghost" onPress={() => router.push(`/food/${id}/reviews` as Href)}>
+            {t('detail.readAll')}
+          </Btn>
         </View>
       )}
+
+      {/* P-169: 프리뷰 신고 — 목록 화면과 동일 기존 플로우 재사용 */}
+      <ModerationFlow
+        target={mod}
+        onClose={() => setMod(null)}
+        onEdit={(m) => router.push(`/review/${m.id}?foodId=${id}` as Href)}
+        onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
+        onBlocked={() => void reviewsQ.refetch()}
+      />
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
 
@@ -414,42 +450,64 @@ function GhostIngredients({ t, onSignIn }: { t: TFn; onSignIn: () => void }) {
   );
 }
 
-function ReviewPreviewRow({ review, t }: { review: Review; t: TFn }) {
+/** P-169: 상대 날짜 — 목록 화면 relativeDate와 동일 키(reviews.today/daysAgo/weeksAgo). */
+function previewDate(iso: string, t: TFn): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return t('reviews.today');
+  if (days < 7) return t('reviews.daysAgo', { count: days });
+  return t('reviews.weeksAgo', { count: Math.floor(days / 7) });
+}
+
+function ReviewPreviewRow({
+  review,
+  t,
+  onOpen,
+  onHelpful,
+  onReport,
+}: {
+  review: Review;
+  t: TFn;
+  onOpen: () => void;
+  onHelpful: () => void;
+  onReport: () => void;
+}) {
   const name = review.author?.nickname ?? t('reviews.anonymous');
+  const thumb = review.photos?.[0];
   return (
-    <View style={styles.rvRow}>
+    <Pressable style={styles.rvRow} onPress={onOpen} testID={`rv-preview-${review.id}`}>
       <View style={styles.rvHead}>
-        <Text style={styles.rvName} numberOfLines={1}>
-          {name}
-        </Text>
         <View style={{ flexDirection: 'row', gap: 2 }}>
           {[1, 2, 3, 4, 5].map((n) => (
             <Star key={n} size={12} fillPct={review.rating >= n ? 100 : 0} fillColor={C.primary} />
           ))}
         </View>
-      </View>
-      {!!review.body && (
-        <Text style={styles.rvBody} numberOfLines={2}>
-          {review.body}
+        <Text style={styles.rvName} numberOfLines={1}>
+          {name}
         </Text>
-      )}
-    </View>
-  );
-}
-
-function RatingMini({ value, label, left, onPress }: { value: number | null; label: string; left?: React.ReactNode; onPress?: () => void }) {
-  return (
-    <Pressable style={styles.rateMini} onPress={onPress}>
-      <View style={styles.rateBig}>
-        <Star size={20} fillPct={100} fillColor={C.primary} />
-        <Text style={styles.rateBigNum}>{value?.toFixed(1) ?? '—'}</Text>
+        <Text style={styles.rvWhen}>{previewDate(review.createdAt, t)}</Text>
       </View>
-      <View style={styles.rateLbl}>
-        {left}
-        <Text style={styles.rateLblText} numberOfLines={1}>
-          {label}
-        </Text>
-        <IconChevron size={13} color={C.ink3} />
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        {thumb && (
+          <View style={styles.rvThumb}>
+            <CardPhoto uri={thumb} borderRadius={10} />
+          </View>
+        )}
+        {!!review.body && (
+          <Text style={[styles.rvBody, { flex: 1 }]} numberOfLines={3}>
+            {review.body}
+          </Text>
+        )}
+      </View>
+      <View style={styles.rvFoot}>
+        {/* P-169 ③: Helpful (n) 텍스트 버튼 — 기존 좋아요 API, 상태 전환은 색만 */}
+        <Pressable hitSlop={8} onPress={onHelpful} testID={`helpful-${review.id}`}>
+          <Text style={[styles.helpfulText, review.myLike && styles.helpfulOn]}>
+            {t('reviews.helpful', { count: review.likes ?? 0 })}
+          </Text>
+        </Pressable>
+        <Pressable hitSlop={8} onPress={onReport} testID={`report-${review.id}`}>
+          <Text style={styles.reportLink}>{t('community.report')}</Text>
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -543,6 +601,19 @@ const styles = StyleSheet.create({
   lockLine: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13 },
   lockLineText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17 },
 
+  // P-169 리뷰 브리프
+  rvBriefHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  rvScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  rvScoreNum: { fontFamily: font.display, fontSize: 21, color: C.ink },
+  rvScoreCount: { fontFamily: font.body, fontSize: 13, color: C.ink2 },
+  rvSameNat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  rvSameNatText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  rvWhen: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  rvThumb: { width: 52, height: 52, borderRadius: 10, backgroundColor: C.surface2, overflow: 'hidden' },
+  rvFoot: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 2 },
+  helpfulText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  helpfulOn: { color: C.primaryText },
+  reportLink: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
   rate2: { flexDirection: 'row', gap: 11 },
   rateMini: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, gap: 6 },
   rateBig: { flexDirection: 'row', alignItems: 'center', gap: 8 },

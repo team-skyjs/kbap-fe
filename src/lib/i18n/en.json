@@ -429,7 +429,8 @@
     },
     "mine": "My review",
     "loadMore": "Load more reviews",
-    "emptySameNat": "No reviews from your country yet. Turn off the filter to see all reviews."
+    "emptySameNat": "No reviews from your country yet. Turn off the filter to see all reviews.",
+    "helpful": "Helpful ({{count}})"
   },
   "ranking": {
     "headerTitle": "My Ranking",

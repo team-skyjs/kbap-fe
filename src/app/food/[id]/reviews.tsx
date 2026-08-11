@@ -32,7 +32,6 @@ import {
   IconBubbleEmpty,
   IconPlus,
   IconChevron,
-  IconHeart,
   IconMapPin,
   IconMore,
 } from '@/components';
@@ -356,11 +355,9 @@ function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onO
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
         <View style={styles.itemFootRight}>
+          {/* P-169 ⑤: Helpful (n) 텍스트 — 하트 소멸(표시 전용 유지, 토글은 디테일) */}
           {(review.likes ?? 0) > 0 && (
-            <View style={styles.likeMeta}>
-              <IconHeart size={12} color={C.ink3} />
-              <Text style={styles.likeMetaText}>{review.likes}</Text>
-            </View>
+            <Text style={styles.likeMetaText}>{t('reviews.helpful', { count: review.likes })}</Text>
           )}
           {onOpen && <IconChevron size={14} color={C.ink3} />}
         </View>

@@ -387,7 +387,8 @@
     },
     "mine": "Đánh giá của tôi",
     "loadMore": "Xem thêm đánh giá",
-    "emptySameNat": "Chưa có đánh giá từ nước bạn. Tắt bộ lọc để xem tất cả."
+    "emptySameNat": "Chưa có đánh giá từ nước bạn. Tắt bộ lọc để xem tất cả.",
+    "helpful": "Hữu ích ({{count}})"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",

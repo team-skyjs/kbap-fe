@@ -82,15 +82,26 @@ jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
 jest.mock('@/lib/data/bookmarks', () => ({ useToggleBookmark: () => ({ mutate: jest.fn() }) }));
+// P-169: 상세가 Helpful/신고 뮤테이션·모더레이션 직접 배선 — 표면 목
+const mockToggleLike = jest.fn();
+jest.mock('@/lib/data/useReviewMutations', () => ({
+  useToggleReviewLike: () => ({ mutate: mockToggleLike }),
+  useDeleteReview: () => ({ mutate: jest.fn() }),
+}));
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
 jest.mock('@/lib/data/useFoodReviews', () => ({
   useFoodReviews: () => ({
+    refetch: jest.fn(),
     data: {
       pages: [
         {
           items: [
             { id: 'r1', foodId: '7', rating: 5, body: 'Great and safe for me', createdAt: '2026-08-01', authorNationality: 'US', authorRankTier: null, author: { nickname: 'Amy' } },
             { id: 'r2', foodId: '7', rating: 4, body: 'Loved it', createdAt: '2026-08-02', authorNationality: 'JP', authorRankTier: null, author: { nickname: 'Ken' } },
-            { id: 'r3', foodId: '7', rating: 3, body: 'Third — must not render', createdAt: '2026-08-03', authorNationality: 'US', authorRankTier: null, author: { nickname: 'Zed' } },
+            { id: 'r3', foodId: '7', rating: 3, body: 'Third now renders', createdAt: '2026-08-03', authorNationality: 'US', authorRankTier: null, author: { nickname: 'Zed' } },
+            { id: 'r4', foodId: '7', rating: 4, body: 'Fourth', createdAt: '2026-08-04', authorNationality: 'US', authorRankTier: null, author: { nickname: 'D' }, likes: 3, myLike: false },
+            { id: 'r5', foodId: '7', rating: 5, body: 'Fifth', createdAt: '2026-08-05', authorNationality: 'US', authorRankTier: null, author: { nickname: 'E' }, photos: ['https://cdn/rv5.jpg'] },
+            { id: 'r6', foodId: '7', rating: 2, body: 'Sixth — must not render', createdAt: '2026-08-06', authorNationality: 'US', authorRankTier: null, author: { nickname: 'F' } },
           ],
           hasNext: false,
           nextCursor: null,
@@ -210,17 +221,48 @@ it('게스트 — verdict 잠금 슬롯 + 재료 고스트 5행 + 잠금 줄(섹
   // 재료 실명·사유 미노출
   expect(s).not.toContain('Pork');
   expect(s).not.toContain('detail.ingBasisCaution');
-  // 리뷰 프리뷰·평점은 풀 오픈(시안 노트 08)
+  // 리뷰 프리뷰·평점은 풀 오픈(시안 노트 08) — P-169 브리프 헤더로 대체
   expect(s).toContain('Great and safe for me');
-  expect(s).toContain('detail.allUsers');
+  expect(s).toContain('reviews.subtitle');
 });
 
-it('리뷰 프리뷰 — 2개만 + Read all + Write a review', () => {
+it('P-169: 리뷰 브리프 — 프리뷰 5 제한·헤더 병기·전체보기·Write 고스트 강등', () => {
   const tree = render(<FoodDetailScreen />);
   const s = flat(tree);
+  // 프리뷰 5 제한
   expect(s).toContain('Great and safe for me');
-  expect(s).toContain('Loved it');
-  expect(s).not.toContain('Third — must not render');
-  expect(byId(tree, 'read-all').length).toBeGreaterThanOrEqual(1);
+  expect(s).toContain('Fifth');
+  expect(s).not.toContain('Sixth — must not render');
+  // 헤더: 리뷰 수 + 같은 국적 병기 보조 줄(차별점) — 구 2열 카드 소멸
+  expect(s).toContain('reviews.subtitle');
+  expect(byId(tree, 'same-nat-line').length).toBeGreaterThanOrEqual(1);
+  expect(s).not.toContain('detail.allUsers');
+  // 전체보기 풀폭(고스트 Btn — Read all 라벨 재사용) + Write a review 존재
+  expect(s).toContain('detail.readAll');
   expect(s).toContain('reviews.writeReview');
+  // 프리뷰 아이템: 날짜·썸네일·Helpful·신고
+  expect(s).toContain('https://cdn/rv5.jpg');
+  expect(s).toContain('reviews.helpful');
+  expect(s).toContain('community.report');
+});
+
+it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () => {
+  const tree = render(<FoodDetailScreen />);
+  // Btn 라벨 중 솔리드(primary)는 detail.askOwner만 — writeReview·readAll은 ghost
+  const btnLabels = tree.root
+    .findAll((n) => n.props?.accessibilityState !== undefined && typeof n.props?.onPress === 'function')
+    .map((n) => JSON.stringify(n.children?.toString?.() ?? ''));
+  const s = flat(tree);
+  const solidCount = (s.match(/"backgroundColor":"#E2580C"/g) ?? []).length;
+  expect(s).toContain('detail.askOwner');
+  expect(solidCount).toBe(1); // Ask the owner 하나만 솔리드 주황
+  void btnLabels;
+});
+
+it('P-169: Helpful 탭 → 좋아요 API 배선(회원) — 행 오픈과 독립', () => {
+  const tree = render(<FoodDetailScreen />);
+  const helpful = tree.root.findAll((n) => n.props?.testID === 'helpful-r4')[0];
+  const { act } = require('react-test-renderer');
+  act(() => helpful.props.onPress());
+  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r4', foodId: '7' });
 });

@@ -387,7 +387,8 @@
     },
     "mine": "我的評論",
     "loadMore": "查看更多評價",
-    "emptySameNat": "還沒有來自你國家的評價。關閉篩選即可查看全部評價。"
+    "emptySameNat": "還沒有來自你國家的評價。關閉篩選即可查看全部評價。",
+    "helpful": "有幫助（{{count}}）"
   },
   "ranking": {
     "headerTitle": "我的排名",

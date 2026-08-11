@@ -387,7 +387,8 @@
     },
     "mine": "Mi reseña",
     "loadMore": "Ver más reseñas",
-    "emptySameNat": "Aún no hay reseñas de tu país. Desactiva el filtro para ver todas."
+    "emptySameNat": "Aún no hay reseñas de tu país. Desactiva el filtro para ver todas.",
+    "helpful": "Útil ({{count}})"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
