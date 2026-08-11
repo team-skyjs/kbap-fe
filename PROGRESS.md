@@ -1115,3 +1115,7 @@
 ## 확인 모달 destructive 보더 (2026-08-11, P-175)
 - [x] Btn dangerGhost(ghost 프레임+destructive 색) + testID — 재스캔·커뮤 이탈 2곳 스왑(텍스트 행 소멸).
 - [x] tsc 0 · jest 99스위트 581/581 · teamtest OTA(iOS 4480ea74·안드 0ba36299) — 370f5e2. ⚠️ P-166 폭죽 동승 발행(REPORTS 특이 참조).
+
+## 프로필 회피 사진 타일 (2026-08-11, P-176)
+- [x] 칩 → AvoidTile 4열(선택분·플랫·서버 이미지/번역명 승계), 탭=Edit 진입, 8개 초과 접기 토글(ko 2키 임시). dietChip 소멸.
+- [x] tsc 0 · jest 100스위트 584/584 · teamtest OTA(iOS e1e07d34·안드 95b0e155) — 06905e8.
