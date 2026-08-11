@@ -20,7 +20,7 @@ import {
   type ScannedItem,
 } from '@/lib/api/scanAdapter';
 import { resolveScanImagePath } from '@/lib/api/scanImage';
-import { isProdChannel } from '@/lib/flags';
+import { FLAGS, isProdChannel } from '@/lib/flags';
 
 export interface ScanPhoto {
   uri: string;
@@ -40,10 +40,11 @@ export interface ScanOutcome {
   photoOnly: PhotoOnlyItem[];
 }
 
-/** P-153: 스캔 v2(서버 비전 OCR) — dev 계열 채널만. prod 서버 미배포라 채널 분기 필수(P-114 관례). */
+/** P-153: 스캔 v2(서버 비전 OCR) — dev 계열 채널만(prod 서버 미배포, P-114 관례).
+ *  P-155: FLAGS.scanV2 킬스위치 경유 — BE 내부 로직 완성 전까지 전 채널 v1. */
 export const SCAN_API_VERSION = '2026.08.07';
 export function scanV2Enabled(): boolean {
-  return !isProdChannel();
+  return FLAGS.scanV2 && !isProdChannel();
 }
 
 export async function postScan({ items, photo }: ScanInput): Promise<ScanOutcome> {

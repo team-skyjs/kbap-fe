@@ -389,7 +389,8 @@
     "placeRecent": "최근",
     "placeNoResults": "일치하는 장소가 없어요.",
     "placeSkip": "건너뛰기 — 장소 없이 게시",
-    "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요."
+    "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
+    "photoCapNote": "사진은 최대 {{max}}장 — 초과 선택은 제외됐어요"
   },
   "reviews": {
     "headerTitle": "리뷰",

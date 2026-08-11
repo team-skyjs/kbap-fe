@@ -346,7 +346,8 @@
     "placeRecent": "Terbaru",
     "placeNoResults": "Tidak ada tempat yang cocok.",
     "placeSkip": "Lewati — posting tanpa tempat",
-    "deleteError": "Tidak bisa menghapus ulasan. Periksa koneksi dan coba lagi."
+    "deleteError": "Tidak bisa menghapus ulasan. Periksa koneksi dan coba lagi.",
+    "photoCapNote": "Maksimal {{max}} foto — kelebihan dilewati"
   },
   "reviews": {
     "headerTitle": "Ulasan",

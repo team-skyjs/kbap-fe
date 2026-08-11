@@ -83,6 +83,12 @@ export const FLAGS = {
    */
   communityReportEnabled: false,
   /**
+   * 스캔 v2(X-API-Version 서버 OCR, P-153) — **P-155 일시 off**: BE v2 내부
+   * 로직 미완성(종한 8/11 확인, dev가 반쪽 파이프라인). 완성 신호 오면 true
+   * 한 줄 복귀 — 채널 분기(prod 제외)는 scanV2Enabled()에 보존.
+   */
+  scanV2: false,
+  /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.

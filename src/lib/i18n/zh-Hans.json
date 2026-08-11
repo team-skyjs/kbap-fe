@@ -346,7 +346,8 @@
     "placeRecent": "最近",
     "placeNoResults": "没有匹配的地点。",
     "placeSkip": "跳过 — 不带地点发布",
-    "deleteError": "无法删除评价。请检查网络后重试。"
+    "deleteError": "无法删除评价。请检查网络后重试。",
+    "photoCapNote": "最多{{max}}张照片 — 超出部分已跳过"
   },
   "reviews": {
     "headerTitle": "点评",

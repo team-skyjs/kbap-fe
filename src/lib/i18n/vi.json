@@ -346,7 +346,8 @@
     "placeRecent": "Gần đây",
     "placeNoResults": "Không có địa điểm phù hợp.",
     "placeSkip": "Bỏ qua — đăng không kèm địa điểm",
-    "deleteError": "Không xóa được đánh giá. Kiểm tra kết nối và thử lại."
+    "deleteError": "Không xóa được đánh giá. Kiểm tra kết nối và thử lại.",
+    "photoCapNote": "Tối đa {{max}} ảnh — phần chọn thừa đã bị bỏ qua"
   },
   "reviews": {
     "headerTitle": "Đánh giá",

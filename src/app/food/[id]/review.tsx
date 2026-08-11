@@ -20,6 +20,7 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useCreateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -55,9 +56,25 @@ export default function ReviewCompose() {
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
   const canPost = canPostReview(rating) && !createReview.isPending;
 
+  // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
+  // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
+  const [capNote, setCapNote] = useState(false);
+  const capTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pickPhoto = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    const remaining = REVIEW_MAX_PHOTOS - photos.length;
+    if (remaining <= 0) return;
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+    });
     if (!res.canceled && res.assets?.length) {
+      if (res.assets.length > remaining) {
+        setCapNote(true);
+        if (capTimer.current) clearTimeout(capTimer.current);
+        capTimer.current = setTimeout(() => setCapNote(false), 4000);
+      }
       setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
     }
   };
@@ -143,6 +160,7 @@ export default function ReviewCompose() {
           </Pressable>
         }
       />
+      {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-150 ②: iOS = 키보드 인셋 자동(automaticallyAdjustKeyboardInsets),
           공통 = 입력 포커스/성장 시 커서 줄을 키보드 위로 스크롤(아래 Input 배선) */}
       <ScrollView ref={scrollRef} keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>

@@ -385,7 +385,8 @@
     "placeRecent": "Recent",
     "placeNoResults": "No places match.",
     "placeSkip": "Skip this — post without a place",
-    "deleteError": "Couldn't delete the review. Check your connection and try again."
+    "deleteError": "Couldn't delete the review. Check your connection and try again.",
+    "photoCapNote": "Up to {{max}} photos — extra selections were skipped"
   },
   "reviews": {
     "headerTitle": "Reviews",
