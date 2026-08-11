@@ -7,7 +7,7 @@
  * Korean text is DATA (OwnerConfirmation), not i18n. menuNameKo matches the
  * scanned menu name (FR-019). Reader caption/button are i18n.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,15 +32,24 @@ export default function OwnerConfirm() {
         <IconClose size={22} color={C.ink2} />
       </PressScale>
 
-      <View style={styles.center}>
+      {/* P-172: 본문 = 스크롤(회피 나열로 긴 질문도 끝까지) — 짧은 질문은 flexGrow 센터
+          유지(P-149 주문 카드 문법). X·Done은 스크롤 밖 고정, 상단 패딩이 X 겹침 봉쇄. */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.center}
+        showsVerticalScrollIndicator={false}
+        testID="owner-scroll"
+      >
         {data && (
           <>
-            <Text style={styles.question}>{renderQuestion(data.questionKo, data.menuNameKo)}</Text>
+            <Text style={[styles.question, isLongQuestion(data.questionKo) && styles.questionLong]}>
+              {renderQuestion(data.questionKo, data.menuNameKo)}
+            </Text>
             <Text style={styles.note}>{data.explanationKo}</Text>
             <Text style={styles.caption}>{t('owner.caption')}</Text>
           </>
         )}
-      </View>
+      </ScrollView>
 
       <View style={[styles.foot, { paddingBottom: bottom + 18 }]}>
         <PressScale style={styles.done} onPress={() => router.back()}>
@@ -49,6 +58,12 @@ export default function OwnerConfirm() {
       </View>
     </View>
   );
+}
+
+/** P-172 재량: 나열 질문 가독 보정 — 40자 초과 시 1단계 축소(34→27).
+ *  사장님이 읽는 화면이라 27/40이 하한(추가 축소 없음 — 초과분은 스크롤 몫). */
+export function isLongQuestion(q: string): boolean {
+  return q.length > 40;
 }
 
 /** Highlight the menu name (primary) within the Korean question. */
@@ -77,8 +92,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, gap: 26 },
+  // P-172: flex→flexGrow(스크롤 콘텐츠) — 짧으면 센터, 길면 스크롤. 상단 패딩 = X(40)+여유 클리어
+  center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, paddingTop: 64, paddingBottom: 20, gap: 26 },
   question: { fontFamily: font.koBold, fontSize: 34, lineHeight: 46, color: C.ink, textAlign: 'center' },
+  questionLong: { fontSize: 27, lineHeight: 40 },
   menu: { color: C.primary },
   note: { fontFamily: font.koBold, fontSize: 19, lineHeight: 29, color: C.ink2, textAlign: 'center' },
   caption: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink3, textAlign: 'center', marginTop: 4 },
