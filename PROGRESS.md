@@ -1081,3 +1081,7 @@
 ## 리뷰 제출 연타 봉쇄 외 3건 (2026-08-11, P-168)
 - [x] 🚨 연타 = 업로드 선행 구간 미가드가 원인 — posting+동기 ref 가드+스피너(동일 메트릭), 삭제 가드 보강. 완료 = P-162 모달(풀화면 소멸), 헤더 Post 제거, 빈 별 = 옅은 주황(STAR_EMPTY 한 곳).
 - [x] tsc 0 · jest 95스위트 555/555 · teamtest OTA(iOS 09a13665·안드 8362910b) — b75622f.
+
+## 작성 카드 썸네일·마크 제거 (2026-08-11, P-170)
+- [x] 썸네일 = useFoodDetail 캐시 photoUrl(A안 — 요청 0, 무사진 폴백) · 위험도 마크 소멸(오독) + personalRisk/useMe 의존 정리.
+- [x] tsc 0 · jest 95스위트 558/558 · teamtest OTA(iOS ada12fc2·안드 c01aff07) — a6ea3b1.
