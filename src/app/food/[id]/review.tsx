@@ -15,14 +15,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
+import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { useMe } from '@/lib/data/useMe';
 import { useCreateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
 import { searchPlaces } from '@/lib/community/places';
@@ -40,7 +38,6 @@ export default function ReviewCompose() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: food } = useFoodDetail(id ?? '');
-  const { data: me } = useMe();
 
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
@@ -178,12 +175,18 @@ export default function ReviewCompose() {
       >
         {/* food chip */}
         <View style={styles.foodChip}>
-          <View style={styles.foodPh} />
+          {/* P-170 A안: 썸네일 = 상세 캐시(useFoodDetail) 재사용 — 네트워크 0, 무사진 폴백 */}
+          {food?.photoUrl ? (
+            <View style={styles.foodPh}>
+              <CardPhoto uri={food.photoUrl} borderRadius={12} />
+            </View>
+          ) : (
+            <View style={styles.foodPh} testID="food-ph" />
+          )}
           <View style={{ flex: 1 }}>
             <Text style={styles.foodName}>{food?.name ?? ''}</Text>
             {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
           </View>
-          {food && <RiskMark state={personalRisk(food.risk, (me?.restrictions.length ?? 0) > 0)} size={22} />}
         </View>
 
         {/* rating */}
@@ -392,7 +395,7 @@ const styles = StyleSheet.create({
   postLinkOff: { color: C.ink3 },
 
   foodChip: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-  foodPh: { width: 48, height: 48, borderRadius: 12, backgroundColor: C.surface2 },
+  foodPh: { width: 48, height: 48, borderRadius: 12, backgroundColor: C.surface2, overflow: 'hidden' },
   foodName: { fontFamily: font.display, fontSize: 16, color: C.ink },
   foodKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
 

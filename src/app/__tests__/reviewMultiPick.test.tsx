@@ -67,10 +67,9 @@ jest.mock('@/lib/i18n', () => ({
   default: { language: 'en', t: (k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? k, getFixedT: () => (k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? k },
 }));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
-jest.mock('@/lib/data/useFoods', () => ({
-  useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'safe' }, isLoading: false, error: null, refetch: jest.fn() }),
-}));
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { restrictions: [] } }) }));
+const mockFoodDetail = jest.fn();
+jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockFoodDetail() }));
+
 const mockMutateAsync = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({ useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
 const mockLaunchLibrary = jest.fn();
@@ -98,6 +97,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockUpload.mockResolvedValue({ path: 'review/1/x.jpg', publicUrl: 'https://cdn/x.jpg' });
   mockMutateAsync.mockResolvedValue(undefined);
+  mockFoodDetail.mockImplementation(() => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'danger', photoUrl: 'https://cdn/food.jpg' }, isLoading: false, error: null, refetch: jest.fn() }));
 });
 
 /* ---- P-168 헬퍼: 별점 세팅(star pick = hitSlop 4 Pressable) + 하단 Post 버튼 ---- */
@@ -194,5 +194,25 @@ describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 �
       await postBtn(tree).props.onPress(); // 복구 후 재제출 가능
     });
     expect(mockMutateAsync).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('P-170: 작성 음식 카드 — 썸네일 캐시 재사용 + 위험도 마크 제거', () => {
+  it('상세 캐시 photoUrl → 썸네일 렌더 (A안 — 신규 요청 0은 useFoodDetail 목 자체가 잠금)', () => {
+    const tree = render(<ReviewCompose />);
+    const s2 = JSON.stringify(tree.toJSON());
+    expect(s2).toContain('https://cdn/food.jpg');
+    expect(tree.root.findAll((n) => n.props?.testID === 'food-ph').length).toBe(0); // placeholder 아님
+  });
+
+  it('무사진 → 현행 placeholder 폴백', () => {
+    mockFoodDetail.mockImplementation(() => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'safe', photoUrl: null }, isLoading: false, error: null, refetch: jest.fn() }));
+    const tree = render(<ReviewCompose />);
+    expect(tree.root.findAll((n) => n.props?.testID === 'food-ph').length).toBeGreaterThanOrEqual(1); // 컴포지트+호스트 이중 매칭
+  });
+
+  it('카드 위험도 마크 부재 — danger여도 마크(size 22) 렌더 0 (X = 제거 버튼 오독 소멸)', () => {
+    const tree = render(<ReviewCompose />);
+    expect(tree.root.findAll((n) => n.props?.size === 22 && n.props?.state != null).length).toBe(0);
   });
 });
