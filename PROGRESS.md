@@ -1044,3 +1044,7 @@
 ## 저장 빈 상태 CTA 센터 (2026-08-11, P-159)
 - [x] Btn sm alignSelf 함정 상쇄(저장 CTA 명시 센터) — 전수 3곳(교정 1·row 무해 2), Btn.tsx 함정 주석, P-150 낡은 주석 갱신.
 - [x] tsc 0 · jest 98스위트 517/517 · teamtest OTA(iOS 03295268·안드 ad9ba147) — e6aedbe.
+
+## 스캔 프로필 바 B안 + solid 칩 (2026-08-11, P-160)
+- [x] ScanProfileBar(✓ 없는 대문자 캡션+칩 스트립, ScrollView 밖 스티키)·AvoidChip solid(#cf3a2c/#d28a12)·May contain 제거·정렬 무변.
+- [x] tsc 0 · jest 98스위트 518/518 · teamtest OTA(iOS 7b99b2d2·안드 685f1259) — 9fc9782.
