@@ -1019,3 +1019,8 @@
 
 ## iOS 테플 빌드15 (2026-08-10, P-152 — teamtest 베이스라인 갱신)
 - [x] 게이트(tsc 0·jest 501/501·지문 7aa41957 무변) → teamtest 빌드15(ece85932, 407f0d1 기준) → TestFlight 제출 완료(Apple 처리 대기). BE = dev 게이트 준수.
+
+## 스캔 v2 채택 (2026-08-11, P-153 — BE #141)
+- [x] 채널 분기: dev 계열 = X-API-Version 2026.08.07 + imagePath만(ML Kit 스킵, photoOnly 파이프 수확) · production = v1 무변. client opts.headers 신설.
+- [x] similarFood: 미등록 행 유사 제안 링크(주의 톤+상세 라우팅) — 행 판정 unable·주문 rawMenuName 잠금(헌법 III·P-045). 기존 스캔 스위트 v1 픽스처 고정.
+- [x] tsc 0 · jest 96스위트 506/506 · i18n 1키 ×10 · teamtest OTA(iOS c7dfcec9·안드 b1943929) — 214b959.
