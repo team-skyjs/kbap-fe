@@ -1107,3 +1107,7 @@
 ## 재료 카탈로그 서버 스왑 (2026-08-11, P-174)
 - [x] useIngredientCatalog(공개 /api/ingredients·lang·24h 캐시) — code 머지로 name·imageUrl 보강. 타일 3단 폴백(서버→조립→색), 표시명 서버 우선(타일 공용+요약 칩 3사이트). 사장님 카드 ko 조립 무변(소스 잠금).
 - [x] tsc 0 · jest 98스위트 575/575 · teamtest OTA(iOS fd5f72f1·안드 9c584854) — 86f09ca.
+
+## 주문 완료 폭죽 (2026-08-11, P-166 — OTA 실기 대기)
+- [x] ConfettiBurst 48파티클(reanimated 커스텀·결정적 의사난수·1.8s 소멸) — 모달 동시 버스트, pointerEvents none, Reduce Motion 스킵, 위험도 4색 미사용.
+- [x] tsc 0 · jest 99스위트 579/579 — ab7f601. ⚠️ OTA 미발행(P-065 — 예진 실기 확인 후).
