@@ -1028,3 +1028,7 @@
 ## 실기 피드백 3건 (2026-08-11, P-154)
 - [x] 국적 일반 행 = 핀 카드 동일 강조(natPinOn 공유·상시 투명 보더 — 프레임 불변·강조 1곳). 빈 상태 전수 조사(2:3) → "화면 소유 = 상하 센터" 채택, 커뮤니티·내 리뷰·검색 센터 정합. kidsBadge → Kid-friendly(ko 임시 — Codex).
 - [x] tsc 0 · jest 96스위트 508/508 · teamtest OTA(iOS d9ef65b7·안드 2cdca37b) — 6fb2504.
+
+## 스캔 v2 off + 리뷰 멀티 선택 (2026-08-11, P-155·156)
+- [x] FLAGS.scanV2 킬스위치(BE 미완성 — 전 채널 v1 복귀, v2 코드 보존·유닛 강제 on 유지). 리뷰 픽커 멀티(남은 슬롯 limit·slice 방어+토스트·per-file HEIC), 커뮤니티는 기존 동일(확인).
+- [x] tsc 0 · jest 97스위트 512/512 · i18n 1키 ×10 · teamtest OTA(iOS fadf7456·안드 89d883aa) — da590a0.
