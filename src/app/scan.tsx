@@ -48,6 +48,7 @@ import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/sc
 import { OrderPill, ScanProfileBar, ScanRichList } from '@/features/scan/ScanRichList';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
+import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -90,6 +91,7 @@ export default function Scan() {
   }, [permDenied, getPermission]);
   const scan = useScan();
   const { data: me } = useMe();
+  const ingCat = useIngredientCatalog(); // P-174: 요약 칩 서버 번역명 우선
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
@@ -500,7 +502,7 @@ export default function Scan() {
           <>
           {/* P-160 B안: 프로필 체크 줄 — ScrollView 밖 상단 고정(스크롤 시 스티키, 목업대로) */}
           <ScanProfileBar
-            avoidNames={(me?.restrictions ?? []).map((r) => ingredientLabel(r.code))}
+            avoidNames={(me?.restrictions ?? []).map((r) => ingCat.name(r.code))}
             onEditProfile={() => router.push('/profile/restrictions' as Href)}
             t={t}
           />

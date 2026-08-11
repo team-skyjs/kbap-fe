@@ -18,6 +18,7 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
+import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FlippedOrderCard } from '@/features/order/FlippedOrderCard';
 import { spring } from '@/lib/motion';
 import { EVENTS, track } from '@/lib/analytics';
@@ -33,6 +34,7 @@ export default function OrderCard() {
   const { t } = useTranslation();
   const { data: food } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
+  const ingCat = useIngredientCatalog(); // P-174: 요약 칩 서버 번역명 우선
   const [qty, setQty] = useState(QTY_MIN);
 
   // P-032: Quantity Stepper 값 팝 — 탭 모멘텀이 있어 소량 바운스(spring.pop)
@@ -73,7 +75,7 @@ export default function OrderCard() {
       <FlippedOrderCard
         items={nameKo ? [{ nameKo, name: food?.name ?? nameKo, qty, priceKrw: null }] : []}
         avoidCodes={codes}
-        avoidNames={codes.map((c) => ingredientLabel(c))}
+        avoidNames={codes.map((c) => ingCat.name(c))}
         currency={currency}
         stepper={
           <View style={styles.stepper}>

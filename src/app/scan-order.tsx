@@ -16,6 +16,7 @@ import { IconChevron } from '@/components';
 import { useMe } from '@/lib/data/useMe';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
+import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FlippedOrderCard, type OrderItem } from '@/features/order/FlippedOrderCard';
 import { EVENTS, track } from '@/lib/analytics';
 
@@ -26,6 +27,7 @@ export default function ScanOrder() {
   const bottom = useBottomInset();
   const { t } = useTranslation();
   const { data: me } = useMe();
+  const ingCat = useIngredientCatalog(); // P-174: 요약 칩 서버 번역명 우선
 
   const items = React.useMemo<OrderItem[]>(() => {
     try {
@@ -64,7 +66,7 @@ export default function ScanOrder() {
       <FlippedOrderCard
         items={items}
         avoidCodes={codes}
-        avoidNames={codes.map((c) => ingredientLabel(c))}
+        avoidNames={codes.map((c) => ingCat.name(c))}
         currency={currency}
         onDone={() => {
           // P-162: 완료 모달 확인 = 홈으로 (스캔 스택 정리 후 탭 홈)

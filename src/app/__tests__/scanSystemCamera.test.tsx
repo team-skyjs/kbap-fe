@@ -9,6 +9,13 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-137: 플래그 게터 목 — 케이스별로 autolaunch 변형 토글
 let mockAuto = false;
+// P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('@/lib/data/useIngredientCatalog', () => ({
+  useIngredientCatalog: () => ({
+    name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
+    imageUrl: () => null,
+  }),
+}));
 jest.mock('@/lib/flags', () => ({
   get FLAGS() {
     return { ...jest.requireActual('@/lib/flags').FLAGS, systemCamera: true };

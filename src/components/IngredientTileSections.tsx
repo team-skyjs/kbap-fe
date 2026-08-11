@@ -12,6 +12,7 @@ import { color as C, font } from '@/lib/theme';
 import { AvoidTile } from './AvoidTile';
 import { IconCheck } from './icons';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
+import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 
 /** P-134 카테고리 틴트 순환 — 폴백 타일 배경. */
 export const FB_TINT = ['rgba(226,88,12,0.10)', 'rgba(14,154,167,0.10)', 'rgba(47,143,91,0.10)', 'rgba(160,106,0,0.12)', 'rgba(142,47,60,0.10)', 'rgba(90,82,72,0.10)', 'rgba(226,88,12,0.06)'];
@@ -30,11 +31,13 @@ export function IngredientTileSections({
   emptyText?: string;
 }) {
   const { t } = useTranslation();
+  // P-174: 서버 카탈로그 병합 — 이름·이미지만 보강(카테고리 그룹·검색 구조는 FE 유지)
+  const cat = useIngredientCatalog();
   const match = (code: string) => {
     if (!query) return true;
     const item = INGREDIENTS.find((i) => i.code === code);
     if (!item) return false;
-    return ingredientLabel(item.code).toLowerCase().includes(query) || item.name.toLowerCase().includes(query);
+    return cat.name(code).toLowerCase().includes(query) || item.name.toLowerCase().includes(query);
   };
   const sections = INGREDIENT_SECTIONS.map((secDef, si) => ({ secDef, si, codes: secDef.codes.filter(match) })).filter(
     (s) => s.codes.length > 0,
@@ -52,14 +55,14 @@ export function IngredientTileSections({
               return (
                 <Pressable key={code} style={styles.tileWrap} onPress={() => onToggle(code)} testID={`avoid-${code}`}>
                   {/* P-145: 실사진 81종(S3 CDN) — 실패 시 P-134 색 폴백 그대로 */}
-                  <AvoidTile code={code} abbr={item.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()} tint={FB_TINT[si % FB_TINT.length]} selected={on}>
+                  <AvoidTile code={code} imageUrl={cat.imageUrl(code)} abbr={item.name.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()} tint={FB_TINT[si % FB_TINT.length]} selected={on}>
                     {on && (
                       <View style={styles.check}>
                         <IconCheck size={12} color="#fff" />
                       </View>
                     )}
                   </AvoidTile>
-                  <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>{ingredientLabel(code)}</Text>
+                  <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>{cat.name(code)}</Text>
                 </Pressable>
               );
             })}

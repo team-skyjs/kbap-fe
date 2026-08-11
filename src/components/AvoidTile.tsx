@@ -13,6 +13,7 @@ import { ingredientImageUrl } from '@/lib/onboarding/ingredientImages';
 
 export function AvoidTile({
   code,
+  imageUrl,
   abbr,
   tint,
   selected,
@@ -20,6 +21,8 @@ export function AvoidTile({
   children,
 }: {
   code: string;
+  /** P-174: 서버 카탈로그 imageUrl(우선) — null/실패 시 클라 조립(P-145) → 색 폴백(P-134) 3단 */
+  imageUrl?: string | null;
   /** 폴백 약어(2글자) — 사진 로드 전/실패 시 표시 */
   abbr: string;
   /** 폴백 카테고리 틴트 */
@@ -29,15 +32,23 @@ export function AvoidTile({
   /** 선택 체크 배지 등 오버레이 */
   children?: React.ReactNode;
 }) {
-  const [failed, setFailed] = React.useState(false);
+  // P-174: 소스 체인 — 서버 imageUrl → 클라 조립 URL(중복 제거), 소진 시 색 폴백
+  const sources = React.useMemo(() => {
+    const chain = [imageUrl, ingredientImageUrl(code)].filter((u): u is string => !!u);
+    return chain.filter((u, i) => chain.indexOf(u) === i);
+  }, [imageUrl, code]);
+  const [srcIdx, setSrcIdx] = React.useState(0);
+  React.useEffect(() => setSrcIdx(0), [sources]); // 카탈로그 도착/언어 전환 시 체인 리셋
+  const uri = sources[srcIdx];
   return (
     <View style={[styles.tile, { backgroundColor: tint }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>
       <Text style={styles.abbr}>{abbr}</Text>
-      {!failed && (
+      {!!uri && (
         <Image
-          source={{ uri: ingredientImageUrl(code) }}
+          key={uri}
+          source={{ uri }}
           style={styles.photo}
-          onError={() => setFailed(true)}
+          onError={() => setSrcIdx((i) => i + 1)}
           testID={`avtile-img-${code}`}
         />
       )}
