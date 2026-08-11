@@ -1032,3 +1032,7 @@
 ## 스캔 v2 off + 리뷰 멀티 선택 (2026-08-11, P-155·156)
 - [x] FLAGS.scanV2 킬스위치(BE 미완성 — 전 채널 v1 복귀, v2 코드 보존·유닛 강제 on 유지). 리뷰 픽커 멀티(남은 슬롯 limit·slice 방어+토스트·per-file HEIC), 커뮤니티는 기존 동일(확인).
 - [x] tsc 0 · jest 97스위트 512/512 · i18n 1키 ×10 · teamtest OTA(iOS fadf7456·안드 89d883aa) — da590a0.
+
+## 프로필 탭 2건 (2026-08-11, P-157)
+- [x] My reviews = Saved와 같은 카드의 AcctRow(공용 재활용 — 구 헤더·See all·인라인 리스트 소멸). 저장 아이콘 별 전면 통일(노출처 전수 5곳 — 북마크 글리프 잔존 0, 정의 보존).
+- [x] tsc 0 · jest 98스위트 514/514 · teamtest OTA(iOS 7fb202c3·안드 70b83a7d) — 9bc35ee.
