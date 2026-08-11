@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, riskTone, shadow } from '@/lib/theme';
 import { SubHeader, RiskMark, Btn, CardPhoto, Spinner, IconChevron, IconFood, IconStar, IconTrash } from '@/components';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
@@ -38,7 +39,7 @@ export default function SavedScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
-  const { data: list, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useBookmarks();
+  const { data: list, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useBookmarks(); // P-164
   const { data: me } = useMe();
   const remove = useRemoveBookmark();
   const restore = useRestoreBookmark();
@@ -75,7 +76,12 @@ export default function SavedScreen() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('saved.title')} onBack={() => router.back()} />
-      {isLoading ? null : items.length === 0 ? (
+      {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
+      {isError && !list ? (
+        <View style={styles.errorFill}>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
+        </View>
+      ) : isLoading ? null : items.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIc}>
             <IconStar size={30} color={C.ink3} />
@@ -193,6 +199,7 @@ function SavedRow({
 }
 
 const styles = StyleSheet.create({
+  errorFill: { flex: 1, justifyContent: 'center' }, // P-164
   root: { flex: 1, backgroundColor: C.surface },
   body: { padding: 16, paddingBottom: 40, gap: 10 },
   meta: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },

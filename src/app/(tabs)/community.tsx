@@ -12,7 +12,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { accentTint, color as C, font, radius, shadow } from '@/lib/theme';
-import { IconBell, IconBubbleEmpty, IconLock, IconPlus, ShellPlaceholder, Spinner, stateIconColor, StateBlock } from '@/components';
+import { IconBell, IconBubbleEmpty, IconLock, IconPlus, QueryErrorBlock, ShellPlaceholder, Spinner, stateIconColor, StateBlock } from '@/components';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
@@ -110,6 +110,11 @@ export default function Community() {
           feed.isLoading ? (
             <View style={styles.center}>
               <Spinner size={22} color={C.ink2} />
+            </View>
+          ) : feed.isError ? (
+            /* P-164: 로드 실패 = 공용 에러(+재시도) — 탭 루트라 goBack 생략(홈 탭 문법) */
+            <View style={styles.emptyFill}>
+              <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
             </View>
           ) : (
             /* P-154 ②: 빈 상태 = 상하 센터(앱 통일 — 화면 소유 빈 상태 규칙) */

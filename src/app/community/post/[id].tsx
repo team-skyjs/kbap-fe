@@ -17,6 +17,7 @@ import { SubHeader, IconClose, IconLock, IconSend, Spinner, Input } from '@/comp
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import {
   useCommunityComments,
   useCommunityPost,
@@ -50,7 +51,7 @@ export default function CommunityPostDetail() {
   const isGuest = useIsGuest();
   const myId = useMe().data?.id ?? ''; // P-142: 내 글 판별 = 실 회원 id (목 MY_ID 소멸)
 
-  const { data: post, isLoading } = useCommunityPost(id ?? '');
+  const { data: post, isLoading, error, refetch } = useCommunityPost(id ?? ''); // P-164
   const { data: comments } = useCommunityComments(id ?? '');
   const react = useReact();
   const createComment = useCreateComment();
@@ -103,6 +104,17 @@ export default function CommunityPostDetail() {
         <SubHeader title={t('community.postTitle')} onBack={() => router.back()} />
         <View style={styles.center}>
           <Spinner size={22} color={C.ink2} />
+        </View>
+      </View>
+    );
+  }
+  // P-164: 로드 실패 = 공용 에러(+재시도) — postGone(삭제됨) 위장 금지
+  if (!post && error) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('community.postTitle')} onBack={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
         </View>
       </View>
     );

@@ -24,6 +24,7 @@ import {
   Flag,
   MedalEmblem,
   StateBlock,
+  QueryErrorBlock,
   stateIconColor,
   Spinner,
   IconGlobe,
@@ -106,9 +107,16 @@ export default function FoodReviews() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40, flexGrow: 1 }}
       >
+        {/* P-164: 로드 실패 = 공용 에러(+재시도) — loaded 게이트 밖(에러 시 헤더만
+            남던 빈 화면이 바로 이 구멍). 로드된 항목이 있으면 그 목록 유지. */}
+        {reviewsQ.isError && all.length === 0 ? (
+          <View style={styles.emptyFill}>
+            <QueryErrorBlock error={reviewsQ.error} onRetry={() => void reviewsQ.refetch()} onGoBack={() => router.back()} />
+          </View>
+        ) : null}
         {/* 게스트는 리뷰 개수와 무관하게 항상 잠금 (실기기 반려분 #3) —
             빈 상태(쓰기 CTA 포함)는 회원에게만 */}
-        {loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
+        {!(reviewsQ.isError && all.length === 0) && loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
           <View style={styles.emptyFill}>

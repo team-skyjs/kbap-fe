@@ -22,6 +22,7 @@ import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { personalRisk } from '@/lib/risk';
 import type { FoodCard, Review } from '@/lib/api/types';
 
@@ -35,7 +36,7 @@ export default function MyReviews() {
 
   const router = useRouter();
   const { t } = useTranslation();
-  const { data: reviews } = useMyReviews();
+  const { data: reviews, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
   const { data: foods } = useFoods();
   const { data: me } = useMe();
   const [sort, setSort] = useState<SortKey>('recent');
@@ -71,7 +72,12 @@ export default function MyReviews() {
     <View style={styles.root}>
       <SubHeader title={t('myReviews.title')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={[styles.body, count === 0 && { flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
-        {count === 0 ? (
+        {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
+        {reviewsError && !reviews ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <QueryErrorBlock error={reviewsError} onRetry={() => void refetchReviews()} onGoBack={() => router.back()} />
+          </View>
+        ) : count === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIc}>
               <IconFood size={30} color={C.ink3} />

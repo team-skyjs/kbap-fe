@@ -28,6 +28,7 @@ import {
   IconCamera,
 } from '@/components';
 import { useRanking } from '@/lib/data/useRanking';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { TIERS, tierByKey, type Tier } from '@/lib/ranking';
 import type { Ranking, RankingFactor } from '@/lib/api/types';
 
@@ -37,7 +38,7 @@ export default function RankingScreen() {
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
 
-  const { data: rk } = useRanking();
+  const { data: rk, error, refetch } = useRanking(); // P-164: 에러 표면
 
   return (
     <View style={styles.root}>
@@ -47,7 +48,14 @@ export default function RankingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
       >
-        {rk && <RankingBody rk={rk} onScan={() => router.push('/scan' as Href)} />}
+        {/* P-164: 로드 실패 = 공용 에러(+재시도) */}
+        {error && !rk ? (
+          <View style={{ paddingTop: 40 }}>
+            <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
+          </View>
+        ) : (
+          rk && <RankingBody rk={rk} onScan={() => router.push('/scan' as Href)} />
+        )}
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="back" title={t('ranking.headerTitle')} titleKo={t('ranking.headerTitleKo')} onBack={() => router.back()} />

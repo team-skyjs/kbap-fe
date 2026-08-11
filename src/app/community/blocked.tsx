@@ -8,13 +8,14 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Flag, IconProfile, IconUserX, SubHeader } from '@/components';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { useBlockedUsers, useUnblockUser } from '@/lib/community/hooks';
 import { authorName } from '@/features/community/parts';
 
 export default function BlockedUsers() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { data: blocked } = useBlockedUsers();
+  const { data: blocked, error, refetch } = useBlockedUsers(); // P-164: 에러 표면
   const unblock = useUnblockUser();
 
   return (
@@ -23,7 +24,12 @@ export default function BlockedUsers() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {/* 단방향 설명 — "You won't see their posts or comments" 계열 (양방향 카피 불채택) */}
         <Text style={styles.note}>{t('community.blockedNote')}</Text>
-        {(blocked ?? []).length === 0 ? (
+        {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 화면 방치 금지 */}
+        {error && !blocked ? (
+          <View style={{ paddingTop: 60 }}>
+            <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
+          </View>
+        ) : (blocked ?? []).length === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIc}>
               <IconUserX size={26} color={C.ink3} />

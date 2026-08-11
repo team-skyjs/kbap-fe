@@ -36,6 +36,7 @@ import { useFoods } from '@/lib/data/useFoods';
 import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { QueryErrorBlock } from '@/components/StateBlock';
 import { personalRisk } from '@/lib/risk';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { openMap, type MapApp } from '@/features/community/tagSheets';
@@ -52,7 +53,7 @@ export default function ReviewDetail() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { width } = useWindowDimensions();
-  const { data: myReviews } = useMyReviews();
+  const { data: myReviews, error: myReviewsError, refetch: refetchMyReviews } = useMyReviews(); // P-164
   const foodReviewsQ = useFoodReviews(foodId ?? '');
   const { data: foods } = useFoods();
   const { data: me } = useMe();
@@ -129,6 +130,25 @@ export default function ReviewDetail() {
       <View style={styles.root}>
         <SubHeader title={t('editReview.viewTitle')} onBack={() => router.back()} />
         <AuthGateSheet context="profile" open onClose={() => router.back()} />
+      </View>
+    );
+  }
+
+  // P-164: 캐시 미발견이 "로드 실패" 때문이면 not-found 위장 금지 — 공용 에러(+재시도)
+  if (!review && (myReviewsError || foodReviewsQ.isError)) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('editReview.viewTitle')} onBack={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <QueryErrorBlock
+            error={myReviewsError ?? foodReviewsQ.error}
+            onRetry={() => {
+              void refetchMyReviews();
+              void foodReviewsQ.refetch();
+            }}
+            onGoBack={() => router.back()}
+          />
+        </View>
       </View>
     );
   }
