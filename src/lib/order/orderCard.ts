@@ -96,8 +96,17 @@ export function resolveIngredientKo(codeOrKey: string): string | null {
  * 실해석(resolveIngredientKo) 성공 시에만 구체 질문 — 실패·부재는 일반 질문
  * (P-052: 내부 식별자/원문이 사장님 화면에 뜨는 경로 원천 봉쇄).
  */
-export function ownerQuestionKo(menuNameKo: string, ingredientCode?: string): string {
+/** P-163: 폴백 질문에 나열할 회피 ko 라벨 — 81종 미등재 코드는 제외(식별자 노출 봉쇄, P-052 계열). */
+export function avoidLabelsKo(codes: string[]): string[] {
+  return codes.filter((c) => BY_CODE.has(c)).map(ingredientLabelKo);
+}
+
+export function ownerQuestionKo(menuNameKo: string, ingredientCode?: string, avoidCodes?: string[]): string {
   const label = ingredientCode ? resolveIngredientKo(ingredientCode) : null;
   if (label) return `${menuNameKo}에 ${label}${iGa(label)} 들어가나요?`;
+  // P-163: 폴백도 뭉뚱그리지 않는다 — 프로필 회피 재료 전부 나열(사장님이 봐야 할
+  // 정보라 생략·상한 없음), 조사는 마지막 항목 받침 기준(iGa 기존 로직).
+  const labels = avoidLabelsKo(avoidCodes ?? []);
+  if (labels.length) return `${menuNameKo}에 ${labels.join(', ')}${iGa(labels[labels.length - 1])} 들어가나요?`;
   return `${menuNameKo}에 제가 못 먹는 재료가 들어가나요?`;
 }

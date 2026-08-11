@@ -117,3 +117,20 @@ describe('avoidSentenceKo — ② 기피 고지', () => {
   });
 });
 
+
+describe('P-163: 폴백 질문 = 프로필 회피 재료 실나열', () => {
+  it('회피 ≥1: 전부 나열 + 마지막 항목 받침 조사(달걀→이 / 새우→가)', () => {
+    expect(ownerQuestionKo('김치찌개', undefined, ['SHRIMP', 'EGG'])).toBe('김치찌개에 새우, 달걀이 들어가나요?');
+    expect(ownerQuestionKo('김치찌개', undefined, ['EGG', 'SHRIMP'])).toBe('김치찌개에 달걀, 새우가 들어가나요?');
+  });
+
+  it('미등재 코드는 나열에서 제외(식별자 노출 봉쇄) — 전부 미등재면 일반 질문 강등', () => {
+    expect(ownerQuestionKo('김치찌개', undefined, ['GARBAGE', 'EGG'])).toBe('김치찌개에 달걀이 들어가나요?');
+    expect(ownerQuestionKo('김치찌개', undefined, ['GARBAGE'])).toBe('김치찌개에 제가 못 먹는 재료가 들어가나요?');
+    expect(ownerQuestionKo('김치찌개', undefined, [])).toBe('김치찌개에 제가 못 먹는 재료가 들어가나요?');
+  });
+
+  it('ingredient 파라미터 경로는 무변 — 나열보다 특정 재료 질문 우선', () => {
+    expect(ownerQuestionKo('김치찌개', 'SHRIMP', ['EGG'])).toBe('김치찌개에 새우가 들어가나요?');
+  });
+});

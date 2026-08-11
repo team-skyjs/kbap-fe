@@ -116,22 +116,34 @@ export default function ReviewCompose() {
   // ⓐ 키보드 높이 실측(Keyboard 이벤트) → 컨테이너 하단 패딩 = 키보드+여유
   //    (맨 아래 줄이 항상 키보드 위 공간에 존재)
   // ⓑ 입력 블록 하단 y(onLayout — 성장 시 재발화)를 커서 하단 프록시로,
-  //    포커스/성장/셀렉션 변경마다 가시 영역(뷰포트−키보드) 하단 위로 스크롤.
+  //    성장/셀렉션 변경마다 가시 영역(뷰포트−키보드) 하단 위로 스크롤.
+  //    P-163: 단, 프록시가 유효한 "커서 = 문서 끝"일 때만(중간 편집 무개입).
   const scrollRef = useRef<ScrollView>(null);
   const bodyInputRef = useRef<TextInput>(null);
   const [kbH, setKbH] = useState(0);
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => setKbH(e.endCoordinates?.height ?? 0));
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      kbHRef.current = e.endCoordinates?.height ?? 0;
+      setKbH(kbHRef.current);
+      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
+      if (atEnd.current) ensureCursorVisible();
+    });
     const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
     return () => {
       show.remove();
       hide.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const svH = useRef(0); // ScrollView 뷰포트 높이 실측
   const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
   const kbHRef = useRef(0);
   kbHRef.current = kbH;
+  // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
+  // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
+  const atEnd = useRef(true);
+  const bodyLenRef = useRef(0);
+  bodyLenRef.current = body.length;
   const ensureCursorVisible = () => {
     const visible = svH.current - kbHRef.current;
     if (visible <= 0 || !blockBottom.current) return;
@@ -224,9 +236,14 @@ export default function ReviewCompose() {
             multiline
             style={styles.textarea}
             textAlignVertical="top"
-            onFocus={ensureCursorVisible}
-            onContentSizeChange={ensureCursorVisible}
-            onSelectionChange={ensureCursorVisible}
+            onContentSizeChange={() => {
+              if (atEnd.current) ensureCursorVisible();
+            }}
+            onSelectionChange={(e) => {
+              // P-163: 끝 커서만 추종, 중간/상단 편집은 무개입(OS 캐럿 처리에 위임)
+              atEnd.current = (e?.nativeEvent?.selection?.end ?? 0) >= bodyLenRef.current;
+              if (atEnd.current) ensureCursorVisible();
+            }}
           />
           <View style={styles.metaRow}>
             <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>

@@ -145,6 +145,35 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   spy.mockRestore();
 });
 
+it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 커서만 추종', () => {
+  const { Keyboard } = require('react-native') as typeof import('react-native');
+  const listeners: Record<string, (e: unknown) => void> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e: unknown) => void) => {
+    listeners[ev] = cb;
+    return { remove: jest.fn() } as never;
+  }) as never);
+  const tree = render(<ReviewCompose />);
+  act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+  const block = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.style && n !== sv)[0];
+  act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } }));
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onChangeText('0123456789')); // len 10
+  scrollTo.mockClear();
+  // 중간 커서 → 무개입 (성장 이벤트도 게이트)
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 3, end: 3 } } }));
+  act(() => input.props.onContentSizeChange());
+  expect(scrollTo).not.toHaveBeenCalled();
+  // 끝 커서 → 추종 재개 (target = 700 − (700−336) + 16 = 352)
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 10, end: 10 } } }));
+  expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  spy.mockRestore();
+});
+
 it('P-158 ③: 리뷰 디테일 좋아요 캡션 부재 — 소스 잠금(하트+카운트만)', () => {
   const src = require('fs').readFileSync('src/app/review/[id].tsx', 'utf8') as string;
   expect(src).not.toContain('likesCaption');
