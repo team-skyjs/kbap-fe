@@ -1090,3 +1090,8 @@
 - [x] CTA 위계(솔리드=Ask the owner 1개, Write=고스트 소형) · 헤더 병기(같은 국적 보조 줄, 2열 카드 소멸) · 프리뷰 5(썸네일·날짜·Helpful·신고=ModerationFlow 재사용) · 전체보기 풀폭 고스트.
 - [x] Helpful 텍스트 전수(목록·디테일 — IconHeart 리뷰 계열 0). reviews.helpful ×10(ko 임시).
 - [x] tsc 0 · jest 95스위트 560/560 · teamtest OTA(iOS 3e19a4a4·안드 a5a7ebbf) — 5cdb69b.
+
+## 스캔 칩 1줄·홈 회피 칸 (2026-08-11, P-171)
+- [x] 칩 1줄 고정(danger 우선·onLayout 실측+fitAvoidChips 근사·"+n" 접기·nowrap+hidden 이중 방어), 탭=행 전체=상세.
+- [x] 홈 You avoid 칸 = FLAGS.homeAvoidBanner(false) 보존형 숨김(복원 한 줄).
+- [x] tsc 0 · jest 95스위트 563/563 · teamtest OTA(iOS 3493de12·안드 6f9fbd51) — 4d64627.
