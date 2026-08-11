@@ -1048,3 +1048,7 @@
 ## 스캔 프로필 바 B안 + solid 칩 (2026-08-11, P-160)
 - [x] ScanProfileBar(✓ 없는 대문자 캡션+칩 스트립, ScrollView 밖 스티키)·AvoidChip solid(#cf3a2c/#d28a12)·May contain 제거·정렬 무변.
 - [x] tsc 0 · jest 98스위트 518/518 · teamtest OTA(iOS 7b99b2d2·안드 685f1259) — 9fc9782.
+
+## 다시찍기 확인 모달 (2026-08-11, P-161)
+- [x] ↻ = 확인 모달 선노출(이탈 모달 문법 재사용, 담은 개수 문구 반영) — 확인 시에만 리셋, 취소 보존. i18n 4키 ×10.
+- [x] tsc 0 · jest 98스위트 519/519 · teamtest OTA(iOS 9f959f32·안드 8d27a5bf) — fea03fd.
