@@ -317,7 +317,9 @@
     },
     "saved": "Đã lưu",
     "spiceTitle": "Mức ăn cay",
-    "spiceUnset": "Chưa đặt"
+    "spiceUnset": "Chưa đặt",
+    "showAll": "Xem tất cả ({{count}})",
+    "showLess": "Thu gọn"
   },
   "review": {
     "title": "Viết đánh giá",

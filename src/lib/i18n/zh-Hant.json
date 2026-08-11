@@ -317,7 +317,9 @@
     },
     "saved": "已收藏",
     "spiceTitle": "辣度承受度",
-    "spiceUnset": "未設定"
+    "spiceUnset": "未設定",
+    "showAll": "查看全部（{{count}}）",
+    "showLess": "收起"
   },
   "review": {
     "title": "撰寫評論",

@@ -313,7 +313,9 @@
     },
     "saved": "Saved",
     "spiceTitle": "Spice tolerance",
-    "spiceUnset": "Not set"
+    "spiceUnset": "Not set",
+    "showAll": "Show all {{count}}",
+    "showLess": "Show less"
   },
   "editProfile": {
     "title": "Edit profile",

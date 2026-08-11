@@ -317,7 +317,9 @@
     },
     "saved": "Tersimpan",
     "spiceTitle": "Toleransi pedas",
-    "spiceUnset": "Belum diatur"
+    "spiceUnset": "Belum diatur",
+    "showAll": "Lihat semua ({{count}})",
+    "showLess": "Lihat lebih sedikit"
   },
   "review": {
     "title": "Tulis ulasan",

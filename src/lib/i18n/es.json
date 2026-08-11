@@ -317,7 +317,9 @@
     },
     "saved": "Guardados",
     "spiceTitle": "Tolerancia al picante",
-    "spiceUnset": "Sin definir"
+    "spiceUnset": "Sin definir",
+    "showAll": "Ver todos ({{count}})",
+    "showLess": "Ver menos"
   },
   "review": {
     "title": "Escribir una reseña",

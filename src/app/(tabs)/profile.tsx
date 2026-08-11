@@ -39,7 +39,10 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { FLAGS } from '@/lib/flags';
 import { TIERS } from '@/lib/ranking';
-import { restrictionLabel } from '@/lib/onboarding/data';
+import { AvoidTile } from '@/components/AvoidTile';
+import { FB_TINT } from '@/components/IngredientTileSections';
+import { INGREDIENTS } from '@/lib/mocks/ingredients';
+import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -69,6 +72,9 @@ export default function Profile() {
 
   const curLevel = me?.rank.level ?? 1;
   const [loggingOut, setLoggingOut] = useState(false);
+  // P-176: 회피 표시 = 사진 미니 타일(온보딩 문법·P-174 서버 이미지 승계) — 8개(2줄) 초과 시 접기
+  const ingCat = useIngredientCatalog();
+  const [showAllAvoid, setShowAllAvoid] = useState(false);
 
   // ⑪-1: 무반응 버튼 연타 방지 — 확인 모달로 depth 추가, 진행 중엔 스피너+재진입 차단
   function confirmLogout() {
@@ -190,7 +196,9 @@ export default function Profile() {
               </Pressable>
             </Section>
 
-            {/* dietary restrictions — flat ingredient chips (no per-item risk color) */}
+            {/* P-176: dietary restrictions = 사진 미니 타일 4열(선택분만·플랫 — 카테고리 섹션 없음,
+                프로필 탭은 요약 표면). 타일 탭 = Edit 진입(재량 — 읽기 전용 표시 + 수정 유도).
+                8개(2줄) 초과는 접기 + "Show all n" 토글(38종 수용). */}
             <Section
               title={t('profile.restrictionsTitle')}
               action={
@@ -200,17 +208,35 @@ export default function Profile() {
                 </Pressable>
               }
             >
-              <View style={styles.dietWrap}>
-                {me.restrictions.map((r) => (
-                  <View key={r.code} style={styles.dietChip}>
-                    <Text style={styles.dietChipText}>{restrictionLabel(r.code)}</Text>
-                  </View>
-                ))}
-                <Pressable style={styles.dietAdd} hitSlop={6} onPress={() => router.push('/profile/restrictions' as Href)}>
-                  <IconPlus size={13} color={C.primary} />
-                  <Text style={styles.dietAddText}>{t('profile.add')}</Text>
-                </Pressable>
+              <View style={styles.dietGrid}>
+                {(showAllAvoid ? me.restrictions : me.restrictions.slice(0, 8)).map((r) => {
+                  const item = INGREDIENTS.find((i) => i.code === r.code);
+                  return (
+                    <Pressable key={r.code} style={styles.dietTileWrap} onPress={() => router.push('/profile/restrictions' as Href)}>
+                      <AvoidTile
+                        code={r.code}
+                        imageUrl={ingCat.imageUrl(r.code)}
+                        abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
+                        tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
+                      />
+                      <Text style={styles.dietTileLabel} numberOfLines={1}>
+                        {ingCat.name(r.code)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+              {me.restrictions.length > 8 && (
+                <Pressable style={styles.dietMore} hitSlop={8} onPress={() => setShowAllAvoid((v) => !v)} testID="avoid-toggle">
+                  <Text style={styles.dietMoreText}>
+                    {showAllAvoid ? t('profile.showLess') : t('profile.showAll', { count: me.restrictions.length })}
+                  </Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.dietAdd} hitSlop={6} onPress={() => router.push('/profile/restrictions' as Href)}>
+                <IconPlus size={13} color={C.primary} />
+                <Text style={styles.dietAddText}>{t('profile.add')}</Text>
+              </Pressable>
             </Section>
 
             {/* P-150 ⑤①: Spice tolerance 섹션 제거 — 맵기 수정은 프로필 수정 화면만 */}
@@ -337,13 +363,13 @@ const styles = StyleSheet.create({
   rtOn: { fontFamily: font.bodyBold, color: C.primaryText },
 
   // dietary
-  dietWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dietChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  dietChipDanger: { backgroundColor: '#fdecea', borderColor: '#f3cdc8' },
-  dietChipText: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 21, color: C.ink }, // P-119: 🌶️ 유무 불변
-  dietChipTextDanger: { color: C.riskDanger },
   spiceUnset: { fontFamily: font.body, fontSize: 13.5, color: C.ink3 },
-  dietAdd: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 8 },
+  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  dietTileWrap: { width: '22.5%', alignItems: 'center', gap: 4 },
+  dietTileLabel: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, maxWidth: '100%' },
+  dietMore: { alignSelf: 'flex-start', marginTop: 10 },
+  dietMoreText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  dietAdd: { marginTop: 10, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 8 },
   dietAddText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // my reviews

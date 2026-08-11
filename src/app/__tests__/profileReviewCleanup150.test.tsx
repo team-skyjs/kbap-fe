@@ -6,6 +6,13 @@ import * as React from 'react';
 import { TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
+jest.mock('@/lib/data/useIngredientCatalog', () => ({
+  useIngredientCatalog: () => ({
+    name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
+    imageUrl: () => null,
+  }),
+}));
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   const chain = () => {

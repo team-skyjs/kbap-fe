@@ -317,7 +317,9 @@
     },
     "saved": "저장됨",
     "spiceTitle": "맵기 허용치",
-    "spiceUnset": "미설정"
+    "spiceUnset": "미설정",
+    "showAll": "전체 보기 ({{count}})",
+    "showLess": "접기"
   },
   "editProfile": {
     "title": "프로필 수정",

@@ -317,7 +317,9 @@
     },
     "saved": "保存済み",
     "spiceTitle": "辛さの許容度",
-    "spiceUnset": "未設定"
+    "spiceUnset": "未設定",
+    "showAll": "すべて表示（{{count}}）",
+    "showLess": "折りたたむ"
   },
   "review": {
     "title": "レビューを書く",
