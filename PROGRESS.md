@@ -1058,3 +1058,8 @@
 - [x] 상세 하단 CTA = Ask the owner(라벨·목적지 재료 행과 통일, safe도 일반 질문으로 자연 커버) — order.cta 미사용화.
 - [x] 저장 성공 스낵바 제거(실패 스낵바 유지) — saved.toast/view 미사용화.
 - [x] tsc 0 · jest 92스위트 523/523 · teamtest OTA(iOS ffb790fc·안드 63f1abab) — c75bce1.
+
+## 사장님 폴백 실나열·커서 추종 게이트 (2026-08-11, P-163)
+- [x] 폴백 질문 = 회피 ko 라벨 전부 나열(+iGa, 미등재 제외·전부 미해석 강등) + 무단정 서브라인(K-큐 검수 요청). ingredient 경로 무변.
+- [x] 커서 추종 = 끝-커서만(중간/상단 편집 무개입), onFocus → keyboardDidShow 게이트 이관.
+- [x] tsc 0 · jest 93스위트 531/531 · teamtest OTA(iOS e48aafdb·안드 c92bcf75) — 31f03a5.
