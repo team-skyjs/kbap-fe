@@ -365,7 +365,7 @@ function ToolBtn({ icon, tinted, onPress }: { icon: React.ReactNode; tinted: boo
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
-function TagPickerSheet({
+export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 재사용
   kind,
   foodTags,
   placeTag,

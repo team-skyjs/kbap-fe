@@ -94,6 +94,11 @@ export const FLAGS = {
    */
   homeAvoidBanner: false,
   /**
+   * 커뮤니티 "글" 기능(피드·작성·댓글) — P-179: 탭을 전역 리뷰 피드로 전환하며
+   * 보존형 숨김(코드 무삭제 — 홈 배너·scanV2 킬스위치 문법). true 한 줄 복원.
+   */
+  communityPostsEnabled: false,
+  /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.

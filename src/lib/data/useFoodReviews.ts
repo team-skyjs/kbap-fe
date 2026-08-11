@@ -36,6 +36,26 @@ export async function fetchFoodReviewsPage(
   return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
 }
 
+/** P-179(KB-307): 전역 최신 리뷰 피드 — GET /api/reviews에서 **foodId 생략**(#144).
+ *  bearerAuth 필수(계약) — 게스트/봉인은 빈 페이지(화면이 게이트 담당). */
+export async function fetchGlobalReviewsPage(cursor: string | null): Promise<ReviewPage> {
+  if (!FLAGS.reviewsLiveEnabled || !(await hasBeSession())) return { items: [], hasNext: false, nextCursor: null };
+  const q = new URLSearchParams();
+  q.set('lang', apiLang());
+  if (cursor) q.set('cursor', cursor);
+  return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
+}
+
+export function useGlobalReviews(enabled = true) {
+  return useInfiniteQuery({
+    queryKey: ['reviews', 'global'],
+    queryFn: ({ pageParam }) => fetchGlobalReviewsPage(pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),
+    enabled,
+  });
+}
+
 export function useFoodReviews(foodId: string, countryCode?: string | null) {
   return useInfiniteQuery({
     queryKey: ['food', foodId, 'reviews', countryCode ?? 'all'],

@@ -16,6 +16,7 @@ import { IconBell, IconBubbleEmpty, IconLock, IconPlus, QueryErrorBlock, ShellPl
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
+import { ReviewFeed } from '@/features/community/ReviewFeed';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { useCommunityFeed, useDeletePost, useReact } from '@/lib/community/hooks';
 import { useMe } from '@/lib/data/useMe';
@@ -48,6 +49,9 @@ export default function Community() {
   // P-113(KB-280, Q-27 반려): prod 채널 = 탭 유지 + coming-soon 플레이스홀더
   // (P-110의 빈 화면 가드 대체 — 원조 잠금 화면 870a942 재사용, 카피만 스토어 톤)
   if (!FLAGS.communityEnabled) return <ComingSoon t={t} />;
+  // P-179: 탭 = 전역 리뷰 피드(⚠️ 반드시 coming-soon 가드 **뒤** — prod는 버전리스
+  // /api/reviews 미배포라 현행 유지). 글 기능은 보존형 플래그 뒤(코드 무삭제).
+  if (!FLAGS.communityPostsEnabled) return <ReviewFeed />;
 
   const pages = feed.data?.pages ?? [];
   const posts = pages.flatMap((p) => p.items);

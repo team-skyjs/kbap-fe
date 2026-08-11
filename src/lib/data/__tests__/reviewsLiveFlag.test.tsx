@@ -39,7 +39,7 @@ jest.mock('@/lib/onboarding/submit', () => ({
   SPICE_KEY: 'kbap.profile.spice.v1',
 }));
 
-import { fetchFoodReviewsPage } from '../useFoodReviews';
+import { fetchFoodReviewsPage, fetchGlobalReviewsPage } from '../useFoodReviews';
 import { fetchMyReviews } from '../useMe';
 import { useCreateReview } from '../useReviewMutations';
 import type { Review, ReviewPage } from '@/lib/api/types';
@@ -215,4 +215,20 @@ it('P-165(#144): 리뷰 경로 전수 버전리스 — v1 상대 경로(`/review
     // api.*('/reviews…') 형태(=/api/v1/reviews로 나가는 상대 경로) 금지 — /api/reviews만 허용
     expect(src).not.toMatch(/api\.(get|post|patch|del)[^\n]*[`'"]\/reviews/);
   }
+});
+
+describe('P-179: 전역 리뷰 피드 페처', () => {
+  it('on + 세션 → GET /api/reviews — foodId 무전송(전역) + lang 필수 + cursor', async () => {
+    mockFlagState.live = true;
+    api.get.mockResolvedValue({ items: [], hasNext: false, nextCursor: null });
+    await fetchGlobalReviewsPage(null);
+    expect(api.get).toHaveBeenCalledWith('/api/reviews?lang=en');
+    await fetchGlobalReviewsPage('42');
+    expect(api.get).toHaveBeenLastCalledWith('/api/reviews?lang=en&cursor=42');
+  });
+
+  it('off(봉인) → 호출 0 · 빈 페이지(게이트는 화면 몫)', async () => {
+    await expect(fetchGlobalReviewsPage(null)).resolves.toEqual({ items: [], hasNext: false, nextCursor: null });
+    expect(api.get).not.toHaveBeenCalled();
+  });
 });
