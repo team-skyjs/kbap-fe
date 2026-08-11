@@ -89,6 +89,11 @@ export const FLAGS = {
    */
   scanV2: false,
   /**
+   * 홈 "You avoid n things" 칸 (P-171, 8/11 예진) — 홈에서 불필요 판정.
+   * 컴포넌트·코드 보존(타 화면 재활용 대비) — true 한 줄로 복원.
+   */
+  homeAvoidBanner: false,
+  /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.

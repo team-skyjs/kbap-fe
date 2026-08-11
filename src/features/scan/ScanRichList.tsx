@@ -19,6 +19,32 @@ import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';
 import { AvoidChip } from '@/components/AvoidChip';
+
+/** P-171 ①: 칩 폭 근사 — AvoidChip 메트릭(padding 11×2, 폰트 12.5/800) 기반.
+ *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
+ *  접히는 쪽(1줄 보장은 nowrap+overflow hidden이 이중 방어), 실측 레이아웃 패스 불요. */
+export function estChipW(label: string): number {
+  let w = 22; // 좌우 패딩
+  for (const ch of label) w += ch.charCodeAt(0) > 0x2e80 ? 12.5 : 7;
+  return w;
+}
+
+/** P-171 ①: 1줄에 들어가는 칩만(danger 우선 정렬 전제) + 초과분 "+n" 접기.
+ *  availW 미측정(0)이면 전부 표시(측정 전 1프레임 — nowrap이 밀림 방지). */
+export function fitAvoidChips<T extends { name: string }>(
+  warns: T[],
+  availW: number,
+  gap = 5,
+): { shown: T[]; rest: number } {
+  if (availW <= 0 || warns.length <= 1) return { shown: warns, rest: 0 };
+  for (let n = warns.length; n >= 1; n--) {
+    const moreW = n < warns.length ? gap + estChipW(`+${warns.length - n}`) : 0;
+    let w = moreW;
+    for (let i = 0; i < n; i++) w += (i > 0 ? gap : 0) + estChipW(warns[i].name);
+    if (w <= availW) return { shown: warns.slice(0, n), rest: warns.length - n };
+  }
+  return { shown: warns.slice(0, 1), rest: warns.length - 1 };
+}
 import { IconMinus, IconPlus, RiskMark } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw } from '@/lib/exchange';
@@ -115,7 +141,12 @@ function RichRow({
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
   const detail = useFoodDetail(dish.matched && dish.foodId ? dish.foodId : '');
   const food = dish.matched ? detail.data : undefined;
-  const warns = (food?.ingredients ?? []).filter((i) => i.risk === 'danger' || i.risk === 'caution');
+  // P-171: danger 우선 정렬 — 접혀도 위험한 것부터 보인다
+  const warns = (food?.ingredients ?? [])
+    .filter((i) => i.risk === 'danger' || i.risk === 'caution')
+    .sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
+  const [warnW, setWarnW] = React.useState(0);
+  const { shown: shownWarns, rest: restWarns } = fitAvoidChips(warns, warnW);
   const converted = dish.priceKrw != null ? convertKrw(dish.priceKrw, currency) : null;
   const added = qty > 0;
 
@@ -139,11 +170,22 @@ function RichRow({
         )}
         {/* 기피 경고 — 칩 재사용(flex-wrap, 여러 개여도 안 밀림) */}
         {warns.length > 0 && (
-          <View style={styles.warnWrap} testID={`warn-${dish.itemId}`}>
-            {/* P-160: "May contain" 라벨 제거 — solid 칩 색이 위험도를 말한다 */}
-            {warns.map((w) => (
+          <View
+            style={styles.warnWrap}
+            testID={`warn-${dish.itemId}`}
+            onLayout={(e) => setWarnW(e.nativeEvent.layout.width)}
+          >
+            {/* P-160: "May contain" 라벨 제거 — solid 칩 색이 위험도를 말한다.
+                P-171: 1줄 고정 — 들어가는 만큼(danger 우선)+"+n" 접기, 탭(행 전체) = 상세
+                (What's inside가 전체 재료+사유 담당 — 인라인 펼침 대신 기존 화면 재활용). */}
+            {shownWarns.map((w) => (
               <AvoidChip key={w.code} label={w.name} variant={w.risk === 'danger' ? 'danger' : 'caution'} />
             ))}
+            {restWarns > 0 && (
+              <View style={styles.moreChip} testID={`warn-more-${dish.itemId}`}>
+                <Text style={styles.moreChipText}>+{restWarns}</Text>
+              </View>
+            )}
           </View>
         )}
         {/* P-153 v2: 미등록 행 유사 제안 — 링크 전용, 행 판정 unable 불변(헌법 III).
@@ -216,7 +258,10 @@ const styles = StyleSheet.create({
   nameKo: { fontFamily: font.koBold, fontSize: 15.5, color: C.ink, flexShrink: 1 },
   nameEn: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink },
   desc: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
-  warnWrap: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5, marginTop: 2 },
+  // P-171: 1줄 고정 — nowrap+hidden(근사 오차 이중 방어), 행 높이 균일 회복
+  warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 5, marginTop: 2 },
+  moreChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
+  moreChipText: { fontFamily: font.displayBlack, fontSize: 12.5, color: C.ink2 },
   price: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink2, marginTop: 2, fontVariant: ['tabular-nums'] },
   similarRow: { marginTop: 3 },
   similarText: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.primaryText },

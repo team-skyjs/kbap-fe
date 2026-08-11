@@ -110,8 +110,9 @@ export default function Home() {
               </Text>
             </View>
 
-            {/* diet banner — LIVE는 지역화 성분명 (비회원은 빈 배열 → 숨김) */}
-            {avoided.length > 0 && (
+            {/* diet banner — LIVE는 지역화 성분명 (비회원은 빈 배열 → 숨김).
+                P-171: 홈에서 불필요(예진) — 플래그 보존형 숨김(타 화면 재활용 대비). */}
+            {FLAGS.homeAvoidBanner && avoided.length > 0 && (
               <View style={styles.diet}>
                 <View style={styles.dietHead}>
                   <RiskMark state="danger" size={20} />

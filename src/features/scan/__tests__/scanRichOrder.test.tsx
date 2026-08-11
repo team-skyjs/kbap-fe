@@ -101,7 +101,7 @@ beforeEach(() => {
   });
 });
 
-it('행 구성 — 경고 칩 = 기피 성분만(safe 제외) flex-wrap, 미매칭 = 무썸네일·무안내문·담기 가능', () => {
+it('행 구성 — 경고 칩 = 기피 성분만(safe 제외) 1줄 nowrap, 미매칭 = 무썸네일·무안내문·담기 가능', () => {
   const tree = render(<Harness dishes={DISHES} />);
   // 매칭 행: danger/caution 성분만 칩으로 (safe Onion 제외)
   const warn = tree.root.findAll((n) => n.props?.testID === 'warn-0');
@@ -110,7 +110,9 @@ it('행 구성 — 경고 칩 = 기피 성분만(safe 제외) flex-wrap, 미매�
   expect(s).toContain('Soybean');
   expect(s).toContain('Shrimp');
   expect(s).not.toContain('Onion');
-  expect(JSON.stringify(warn[0].props.style ?? '')).toContain('"flexWrap":"wrap"');
+  // P-171: 1줄 고정 — wrap → nowrap+hidden (오버플로는 "+n" 접기)
+  expect(JSON.stringify(warn[0].props.style ?? '')).toContain('"flexWrap":"nowrap"');
+  expect(JSON.stringify(warn[0].props.style ?? '')).toContain('"overflow":"hidden"');
   // 이중 통화 — ₩9,000 + 고정 테이블 환산 존재
   expect(s).toContain('₩9,000');
   // P-138 ③: 미매칭 행 = 무썸네일 + 행 내 안내문 0 + [+] 담기 가능(P-045 실명 주문)
@@ -251,4 +253,25 @@ it('P-160: 프로필 체크 줄 B안 — ✓ 마크 부재·대문자 캡션·�
   expect(s2).not.toContain('scan.mayContain');
   expect(s2).toContain('"backgroundColor":"#cf3a2c"'); // danger solid
   expect(s2).toContain('"backgroundColor":"#d28a12"'); // caution solid
+});
+
+describe('P-171: 칩 1줄 오버플로', () => {
+  const { fitAvoidChips, estChipW } = require('../ScanRichList');
+  const W = (names: string[]) => names.map((name) => ({ name }));
+
+  it('전부 들어가면 접기 없음 · 안 들어가면 "+n" 폭까지 고려해 접기', () => {
+    expect(fitAvoidChips(W(['우유', '달걀']), 500)).toEqual({ shown: W(['우유', '달걀']), rest: 0 });
+    const many = W(['알코올', '미림', '우유', '버터', '계란']);
+    const avail = estChipW('알코올') + 5 + estChipW('미림') + 5 + estChipW('+3') + 1;
+    const r = fitAvoidChips(many, avail);
+    expect(r.shown.map((x: { name: string }) => x.name)).toEqual(['알코올', '미림']);
+    expect(r.rest).toBe(3);
+  });
+
+  it('미측정(availW 0) = 전부 표시(nowrap이 밀림 방지) · 극단 협소 = 최소 1개+나머지 접기', () => {
+    expect(fitAvoidChips(W(['우유', '달걀']), 0).rest).toBe(0);
+    const r = fitAvoidChips(W(['알코올', '미림', '우유']), 10);
+    expect(r.shown.length).toBe(1);
+    expect(r.rest).toBe(2);
+  });
 });

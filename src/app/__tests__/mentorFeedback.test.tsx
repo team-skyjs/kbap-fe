@@ -114,3 +114,16 @@ it('프로필 탭 게스트 — 게이트 카드 대신 로그인 화면(소셜 
   expect(tree.root.findAll((n) => n.props?.testID === 'social-auth').length).toBeGreaterThanOrEqual(1);
   expect(allTexts(tree)).not.toContain('gate.profileTitle'); // 구 게이트 카피 잔재 0
 });
+
+it('P-171 ②: 홈 회피 카운트 칸 숨김 — 플래그 보존형(코드 잔존·false 한 줄 복원)', () => {
+  // 렌더 부재 (avoided가 있어도 — 위 useHome 목은 빈 배열이지만 소스 게이트가 정본)
+  const tree = render(<Home />);
+  expect(JSON.stringify(tree.toJSON())).not.toContain('home.avoidCount');
+  // 소스 잠금: 배너 코드는 보존 + FLAGS.homeAvoidBanner 게이트 + 플래그 기본 false
+  const fs = require('fs');
+  const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
+  expect(home).toContain('FLAGS.homeAvoidBanner && avoided.length > 0');
+  expect(home).toContain('home.avoidCount'); // 컴포넌트 코드 잔존(재활용 대비)
+  const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;
+  expect(flags).toContain('homeAvoidBanner: false');
+});
