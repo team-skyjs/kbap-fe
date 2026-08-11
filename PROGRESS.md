@@ -1103,3 +1103,7 @@
 ## 제출 연타 전수 가드 (2026-08-11, P-173)
 - [x] useSubmitGuard 공용화(동기 ref+busy) + Btn busy(메트릭 불변 스피너). 적용: 탈퇴·revoke·로그아웃·온보딩·프로필/회피 저장·커뮤 글/댓글·신고/차단, 리뷰 작성 마이그레이션. 토글류(멱등)는 예외 명시.
 - [x] tsc 0 · jest 97스위트 570/570 · teamtest OTA(iOS a50f68cb·안드 82f4737e) — 4864823.
+
+## 재료 카탈로그 서버 스왑 (2026-08-11, P-174)
+- [x] useIngredientCatalog(공개 /api/ingredients·lang·24h 캐시) — code 머지로 name·imageUrl 보강. 타일 3단 폴백(서버→조립→색), 표시명 서버 우선(타일 공용+요약 칩 3사이트). 사장님 카드 ko 조립 무변(소스 잠금).
+- [x] tsc 0 · jest 98스위트 575/575 · teamtest OTA(iOS fd5f72f1·안드 9c584854) — 86f09ca.
