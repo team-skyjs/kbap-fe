@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, MedalEmblem, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -78,6 +79,7 @@ export default function CommunityCompose() {
   const len = body.length;
   const overLimit = len > BODY_MAX;
   const canPost = body.trim().length > 0 && !overLimit && !createPost.isPending && !updatePost.isPending;
+
   const dirty = body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
 
   const back = () => {
@@ -103,14 +105,19 @@ export default function CommunityCompose() {
     setPhotos((cur) => [uri, ...cur.filter((u) => u !== uri)]);
   };
 
+  // P-173: 글 작성은 비멱등(연타 = 중복 글) — 공용 가드(동기 ref, isPending 상태 가드는 레이스)
+  const { busy: submitting, run: runSubmit } = useSubmitGuard();
   const submit = () => {
-    if (!canPost) return;
+    if (!canPost || submitting) return;
     const input = { body: body.trim(), photos, foodTags, placeTag };
-    if (editId) {
-      updatePost.mutate({ id: editId, ...input }, { onSuccess: () => setPosted(true) });
-    } else {
-      createPost.mutate(input, { onSuccess: () => setPosted(true) });
-    }
+    void runSubmit(
+      () =>
+        new Promise<void>((resolve) => {
+          const opts = { onSuccess: () => setPosted(true), onSettled: () => resolve() };
+          if (editId) updatePost.mutate({ id: editId, ...input }, opts);
+          else createPost.mutate(input, opts);
+        }),
+    );
   };
 
   if (isGuest) {

@@ -139,3 +139,31 @@ it('P-147: 클린업 실패해도 탈퇴 흐름 계속(best effort)', async () =
   expect(mockWithdrawBe).toHaveBeenCalled();
   expect(mockReplace).toHaveBeenCalledWith('/login');
 });
+
+it('P-173 🚨: 탈퇴 확정 연타 → withdrawBe 1회(동기 가드 — PATCH 7발 로그 실증 봉쇄)', async () => {
+  // 응답을 지연시켜 연타 창 재현
+  let release!: () => void;
+  mockWithdrawBe.mockImplementation(() => new Promise<void>((r) => (release = r)));
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<DeleteAccount />);
+  });
+  const consent = tree.root
+    .findAll((n) => n.props?.onPress && n.findAllByType(Txt).some((t2) => t2.props.children === 'profile.delete.confirm'))
+    .pop()!;
+  act(() => consent.props.onPress());
+  const del = tree.root.findAllByType(Btn).find((b) => b.props.children === 'profile.delete.confirmBtn')!;
+  await act(async () => {
+    del.props.onPress?.();
+    del.props.onPress?.();
+    del.props.onPress?.();
+    await Promise.resolve();
+  });
+  expect(mockWithdrawBe).toHaveBeenCalledTimes(1);
+  // 진행 중 = 버튼 busy(스피너) 표시
+  expect(tree.root.findAll((n) => n.props?.testID === 'btn-busy').length).toBeGreaterThanOrEqual(1);
+  await act(async () => {
+    release();
+    await new Promise((r) => setTimeout(r, 0));
+  });
+});

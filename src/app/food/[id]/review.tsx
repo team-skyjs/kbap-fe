@@ -23,6 +23,7 @@ import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { searchPlaces } from '@/lib/community/places';
 import type { PlaceTagRef } from '@/lib/community/types';
 import { Modal, TextInput as RNTextInput } from 'react-native';
@@ -51,11 +52,9 @@ export default function ReviewCompose() {
   const createReview = useCreateReview();
 
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
-  // P-168 🚨: isPending은 mutateAsync 구간만 커버 — 사진 업로드(uploadReviewImages) 중엔
-  // false라 연타가 전부 통과(중복 5건 실사고 원인). posting = 제출 전 구간 포함 상태,
-  // postingRef = 동기 가드(P-062⓪ 관례 — setState 지연 레이스 차단).
-  const [posting, setPosting] = useState(false);
-  const postingRef = useRef(false);
+  // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
+  // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
+  const { busy: posting, run: runPost } = useSubmitGuard();
   const canPost = canPostReview(rating) && !posting;
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
@@ -83,30 +82,26 @@ export default function ReviewCompose() {
 
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
   // 성공 시 무효화(useCreateReview)가 목록·평점을 서버값으로 갱신. 실패는 화면 유지+표시.
-  const post = async () => {
-    if (postingRef.current || !canPost) return; // P-168: 동기 가드 — 응답 전 재탭 무발사
-    postingRef.current = true;
-    setPosting(true);
-    setPostError(false);
-    try {
-      const imagePaths = await uploadReviewImages(photos);
-      await createReview.mutateAsync({
-        foodId: id ?? '',
-        rating,
-        content: body.trim() || undefined,
-        imagePaths,
-        place,
-      });
-      track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
-      setSubmitted(true);
-    } catch (e) {
-      console.log('[review] post failed — staying on screen:', (e as Error)?.message);
-      setPostError(true); // 실패 = 버튼 복구(finally) + 기존 에러 표면
-    } finally {
-      postingRef.current = false;
-      setPosting(false);
-    }
-  };
+  const post = () =>
+    runPost(async () => {
+      if (!canPostReview(rating)) return;
+      setPostError(false);
+      try {
+        const imagePaths = await uploadReviewImages(photos);
+        await createReview.mutateAsync({
+          foodId: id ?? '',
+          rating,
+          content: body.trim() || undefined,
+          imagePaths,
+          place,
+        });
+        track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
+        setSubmitted(true);
+      } catch (e) {
+        console.log('[review] post failed — staying on screen:', (e as Error)?.message);
+        setPostError(true); // 실패 = 버튼 복구(가드 finally) + 기존 에러 표면
+      }
+    });
 
   // 라우트 자체 가드 — 작성은 회원 전용. 진입 버튼 게이트와 별개의 이중 방어
   // (딥링크/직접 라우트 포함, 실기기 반려분 #2와 동일 원칙).

@@ -18,6 +18,7 @@ import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { QueryErrorBlock } from '@/components/StateBlock';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import {
   useCommunityComments,
   useCommunityPost,
@@ -77,17 +78,25 @@ export default function CommunityPostDetail() {
   const repliesOf = (topId: string) => (comments ?? []).filter((c) => c.parentId === topId);
   const commentTotal = comments?.length ?? post?.commentCount ?? 0;
 
+  // P-173: 댓글 작성/수정 비멱등 — 공용 가드
+  const { busy: sending, run: runSend } = useSubmitGuard();
   const send = () => {
     const body = input.trim();
-    if (!body || !id) return;
-    if (editing) {
-      updateComment.mutate({ id: editing.id, body });
-      setEditing(null);
-    } else {
-      createComment.mutate({ postId: id, parentId: reply?.parentId ?? null, mention: reply?.mention ?? null, body });
-      setReply(null);
-    }
-    setInput('');
+    if (!body || !id || sending) return;
+    void runSend(
+      () =>
+        new Promise<void>((resolve) => {
+          const opts = { onSettled: () => resolve() };
+          if (editing) {
+            updateComment.mutate({ id: editing.id, body }, opts);
+            setEditing(null);
+          } else {
+            createComment.mutate({ postId: id, parentId: reply?.parentId ?? null, mention: reply?.mention ?? null, body }, opts);
+            setReply(null);
+          }
+          setInput('');
+        }),
+    );
   };
 
   const startReply = (top: CommunityComment, source: CommunityComment) => {
@@ -245,7 +254,7 @@ export default function CommunityPostDetail() {
                 style={styles.input}
                 multiline
               />
-              <Pressable style={[styles.sendBtn, !input.trim() && styles.sendBtnOff]} onPress={send} disabled={!input.trim()}>
+              <Pressable style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnOff]} onPress={send} disabled={!input.trim() || sending}>
                 <IconSend size={17} color="#fff" />
               </Pressable>
             </View>

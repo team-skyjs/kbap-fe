@@ -35,6 +35,7 @@ import {
 } from '@/components';
 import { SPICE_LEVEL_LABEL, spiceRank } from '@/lib/spice';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { FLAGS } from '@/lib/flags';
 import { TIERS } from '@/lib/ranking';
@@ -74,10 +75,11 @@ export default function Profile() {
     if (loggingOut) return;
     Alert.alert(t('profile.logoutConfirmTitle'), t('profile.logoutConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('profile.logout'), style: 'destructive', onPress: () => void doLogout() },
+      { text: t('profile.logout'), style: 'destructive', onPress: () => void runLogout(doLogout) }, // P-173
     ]);
   }
 
+  const { run: runLogout } = useSubmitGuard(); // P-173: Alert 확인 연타 = 이중 로그아웃 봉쇄
   async function doLogout() {
     setLoggingOut(true);
     try {

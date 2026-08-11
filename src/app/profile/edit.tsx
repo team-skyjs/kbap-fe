@@ -21,6 +21,7 @@ import { IconLock } from '@/components/icons';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
 import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 import { clearCurrencyCache, currencyForCountry, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
@@ -53,8 +54,11 @@ export default function EditProfile() {
 
   const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
+  const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 = PATCH 중복 봉쇄
   function save() {
     if (photoBusy) return; // P-120: 업로드 중 저장 차단(버튼 비활성과 이중 방어)
+    void runSave(async () => {
+      await new Promise<void>((resolve) => {
     // spice: 해제 = SKIP — 와이어 -1 센티널 변환은 spiceAdapter (KB-150→P-081)
     update.mutate(
       {
@@ -75,8 +79,11 @@ export default function EditProfile() {
           }
           router.back();
         },
+        onSettled: () => resolve(), // P-173: 응답(성공/실패)까지 busy 유지
       },
     );
+      });
+    });
   }
 
   // P-120(KB-192, 8/4 예진): 사진 = **로컬 드래프트** — 선택 시 업로드는 즉시
@@ -140,7 +147,7 @@ export default function EditProfile() {
         title={t('editProfile.title')}
         onBack={() => router.back()}
         trailing={
-          <Pressable onPress={save} disabled={photoBusy} hitSlop={8} style={[styles.saveWrap, photoBusy && { opacity: 0.35 }]}>
+          <Pressable onPress={save} disabled={photoBusy || saving} hitSlop={8} style={[styles.saveWrap, (photoBusy || saving) && { opacity: 0.35 }]}>
             <Text style={styles.saveLink}>{t('common.save')}</Text>
           </Pressable>
         }
@@ -318,7 +325,7 @@ export default function EditProfile() {
       </Modal>
 
       <View style={styles.savebar}>
-        <Btn variant={photoBusy ? 'off' : 'primary'} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
+        <Btn variant={photoBusy ? 'off' : 'primary'} busy={saving} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
           {t('editProfile.save')}
         </Btn>
       </View>

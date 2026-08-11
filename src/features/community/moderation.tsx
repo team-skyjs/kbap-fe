@@ -74,12 +74,14 @@ export function ModerationFlow({
   };
 
   const doReport = () => {
-    if (!reason) return;
+    // P-173: reported 전환 전 같은-틱 더블탭 = 이중 신고 — 동기 가드
+    if (!reason || reported || submitReport.isPending) return;
     submitReport.mutate({ target: target.type, id: target.id, reason, note: reason === 'other' && note.trim() ? note.trim() : null });
     setReported(true); // 적재만 — 확인 상태로 전환 (즉시 숨김 없음)
   };
 
   const doBlock = async () => {
+    if (phase === 'blocking' || blockUser.isPending) return; // P-173: 재진입 봉쇄
     setPhase('blocking');
     // 목이어도 ≥2초 유지 — 실 API가 2초를 넘으면 응답까지 대기 (Promise.all)
     await Promise.all([

@@ -60,6 +60,7 @@ import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/i
 import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { queryClient } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 
@@ -105,6 +106,7 @@ export default function Onboarding() {
   // skips are explicit states — they submit as UNSET, distinct from "chose none"
   const [skipped, setSkipped] = useState({ restrictions: false, spice: false });
   const [submitting, setSubmitting] = useState(false);
+  const { run: runSubmit } = useSubmitGuard(); // P-173: 동기 가드 보강(상태 가드는 같은 틱 레이스)
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
   // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
@@ -177,7 +179,8 @@ export default function Onboarding() {
   // 에러를 표시한다 — 미저장 상태로 홈 진입 금지 (KB-75 검토 수정, false-safe).
   // P-130: 맵기 완료/스킵 즉시 제출(요약 스텝 소멸). spiceSkipped는 setState 지연을
   // 피해 명시 인자 — 스킵 탭 직후 stale skipped 상태로 제출되는 버그 방지.
-  const finish = async (spiceSkipped: boolean) => {
+  const finish = (spiceSkipped: boolean) =>
+    runSubmit(async () => {
     if (submitting) return;
     setSubmitting(true);
     setSubmitError(false);
@@ -218,7 +221,7 @@ export default function Onboarding() {
     } finally {
       setSubmitting(false);
     }
-  };
+    });
 
   // P-083: 온보딩 퍼널 계측 — 스텝 진입은 step 변화로 1회씩.
   // P-144: step 값 = CSV v3 스텝명(consent→terms, restrictions→avoid)

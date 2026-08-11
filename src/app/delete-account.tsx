@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck, IconTrash } from '@/components';
 import { useMe } from '@/lib/data/useMe';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 
 /** Apple 재인증 게이트 카드 상태 — null=닫힘, prompt=안내+시트 진입, 나머지=중단 사유. */
 type AppleGateState = null | 'prompt' | 'cancelled' | 'mismatch' | 'failed';
@@ -42,6 +43,8 @@ export default function DeleteAccount() {
   const [agreed, setAgreed] = useState(false);
   const [gate, setGate] = useState<AppleGateState>(null);
   const [revoking, setRevoking] = useState(false);
+  // P-173: 탈퇴 흐름 전체 단일 비행 — withdraw PATCH 7발·cleanup 5회 중복(로그 실증) 봉쇄
+  const { busy: withdrawing, run: runWithdraw } = useSubmitGuard();
 
   // KB-67: 탈퇴 실호출 → 세션 정리 → 재로그인 화면
   async function doWithdraw() {
@@ -87,7 +90,7 @@ export default function DeleteAccount() {
       const provider = me?.provider;
       if (provider === 'APPLE' || provider == null) return setGate('prompt');
     }
-    void doWithdraw();
+    void runWithdraw(doWithdraw); // P-173: 성공 시 화면 이탈까지 busy 유지 — 재발사 0
   }
 
   // 게이트 계속: 시트 → 본인 대조 → revoke. 'revoked'일 때만 탈퇴 진행.
@@ -137,7 +140,8 @@ export default function DeleteAccount() {
           <Btn
             variant={agreed ? 'danger' : 'off'}
             icon={agreed ? <IconTrash size={16} color="#fff" /> : undefined}
-            onPress={agreed ? onConfirm : undefined}
+            onPress={agreed && !withdrawing ? onConfirm : undefined}
+            busy={withdrawing}
           >
             {t('profile.delete.confirmBtn')}
           </Btn>
@@ -155,7 +159,7 @@ export default function DeleteAccount() {
             <Text style={styles.gateText}>{t(GATE_MSG[gate])}</Text>
             <View style={{ alignSelf: 'stretch', gap: 9 }}>
               {gate === 'prompt' && (
-                <Btn variant={revoking ? 'off' : 'primary'} onPress={revoking ? undefined : () => void onAppleContinue()}>
+                <Btn variant={revoking ? 'off' : 'primary'} onPress={revoking ? undefined : () => void runWithdraw(onAppleContinue)}>
                   {t('profile.delete.appleGateBtn')}
                 </Btn>
               )}

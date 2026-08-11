@@ -16,6 +16,7 @@ import { color as C, font } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 
@@ -48,15 +49,22 @@ export default function EditRestrictions() {
     );
   }
 
+  const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄
   function save() {
-    update.mutate(
-      { restrictions: sel.map((code) => ({ kind: 'allergy' as const, code })) },
-      {
-        onSuccess: () => {
-          setUserProps({ avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)
-          router.back();
-        },
-      },
+    void runSave(
+      () =>
+        new Promise<void>((resolve) => {
+          update.mutate(
+            { restrictions: sel.map((code) => ({ kind: 'allergy' as const, code })) },
+            {
+              onSuccess: () => {
+                setUserProps({ avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+                router.back();
+              },
+              onSettled: () => resolve(),
+            },
+          );
+        }),
     );
   }
 
@@ -66,7 +74,7 @@ export default function EditRestrictions() {
         title={t('restrictionsEdit.title')}
         onBack={() => router.back()}
         trailing={
-          <Pressable onPress={save} hitSlop={8} style={styles.saveWrap}>
+          <Pressable onPress={save} disabled={saving} hitSlop={8} style={[styles.saveWrap, saving && { opacity: 0.35 }]}>
             <Text style={styles.saveLink}>{t('common.save')}</Text>
           </Pressable>
         }

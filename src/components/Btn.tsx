@@ -3,7 +3,7 @@
  * Ported from hifi-g.css `.btn`. Label is i18n text passed by the caller.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
@@ -16,6 +16,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function Btn({
   children,
   variant = 'primary',
+  busy = false,
   icon,
   sm,
   disabled,
@@ -24,6 +25,8 @@ export function Btn({
 }: {
   children?: React.ReactNode;
   variant?: BtnVariant;
+  /** P-173: 제출 중 — 라벨 자리 스피너(원 라벨 투명 보존 = 메트릭 불변) + 탭 차단. */
+  busy?: boolean;
   icon?: React.ReactNode;
   sm?: boolean;
   disabled?: boolean;
@@ -47,7 +50,7 @@ export function Btn({
         setPressed(false);
         scale.value = withSpring(1, spring.press);
       }}
-      disabled={disabled || variant === 'off'}
+      disabled={disabled || busy || variant === 'off'}
       style={[
         styles.base,
         sm && styles.sm,
@@ -59,11 +62,19 @@ export function Btn({
     >
       {/* icon+label in a shrink-wrapped inner row (belt-and-suspenders centering). */}
       <View style={styles.content}>
-        {icon}
-        {children != null && (
-          <Text style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}>
-            {children}
-          </Text>
+        {/* P-173: busy = 원 콘텐츠 투명 보존(프레임 불변) + 스피너 오버레이 */}
+        <View style={[styles.inner, busy && styles.innerHidden]} pointerEvents={busy ? 'none' : undefined}>
+          {icon}
+          {children != null && (
+            <Text style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}>
+              {children}
+            </Text>
+          )}
+        </View>
+        {busy && (
+          <View style={[StyleSheet.absoluteFill, styles.busyFill]} testID="btn-busy">
+            <ActivityIndicator color={palette.label.color} />
+          </View>
         )}
       </View>
     </AnimatedPressable>
@@ -90,6 +101,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  inner: { flexDirection: 'row', alignItems: 'center' },
+  innerHidden: { opacity: 0 },
+  busyFill: { alignItems: 'center', justifyContent: 'center' },
   sm: {
     paddingVertical: 11,
     paddingHorizontal: 16,
