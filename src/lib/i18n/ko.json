@@ -260,7 +260,11 @@
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
     "landscapeBadge": "가로 모드",
     "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요.",
-    "similarSuggest": "비슷한 등록 메뉴(정확한 매칭 아님):"
+    "similarSuggest": "비슷한 등록 메뉴(정확한 매칭 아님):",
+    "retakeTitle": "다시 스캔할까요?",
+    "retakeBody": "지금 결과가 사라져요.",
+    "retakeBodyWithCart": "지금 결과와 담은 {{count}}개 항목이 사라져요.",
+    "retakeConfirm": "다시 스캔"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",

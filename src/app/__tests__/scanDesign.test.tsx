@@ -221,3 +221,30 @@ it('P-149: 코치마크 표면 생존 — 리스트 행 마크 탭(재열람) �
   const marks = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('mark-') && typeof n.props?.onPress === 'function');
   expect(marks.length).toBeGreaterThanOrEqual(1);
 });
+
+it('P-161: 다시찍기 = 확인 모달 선노출 — 취소 시 결과 보존, 확인 시에만 카메라 복귀', async () => {
+  const tree = render(<Scan />);
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  // ↻ 탭 → 즉시 리셋 아님, 모달 노출
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'retake')[0].props.onPress();
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm').length).toBeGreaterThanOrEqual(1);
+  expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // 결과 아직 보존
+  // 취소 → 모달 닫힘 + 결과 무변
+  const cancel = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'profile.delete.cancel').length > 0).pop()!;
+  act(() => cancel.props.onPress());
+  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm').length).toBe(0);
+  expect(JSON.stringify(tree.toJSON())).toContain('₩8,000');
+  // 재탭 → 확인(Rescan) → 카메라 복귀(결과 소멸)
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'retake')[0].props.onPress();
+  });
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'retake-go')[0].props.onPress();
+  });
+  expect(JSON.stringify(tree.toJSON())).not.toContain('₩8,000');
+  expect(tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery').length).toBeGreaterThanOrEqual(1); // 카메라 화면
+});

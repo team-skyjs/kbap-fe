@@ -260,7 +260,11 @@
     "cameraHintLandscape": "Los menús anchos caben mejor en horizontal",
     "landscapeBadge": "Horizontal",
     "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil.",
-    "similarSuggest": "Plato similar (no es coincidencia exacta):"
+    "similarSuggest": "Plato similar (no es coincidencia exacta):",
+    "retakeTitle": "¿Escanear de nuevo?",
+    "retakeBody": "Se descartarán los resultados actuales.",
+    "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
+    "retakeConfirm": "Reescanear"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

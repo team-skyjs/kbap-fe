@@ -260,7 +260,11 @@
     "cameraHintLandscape": "横長メニューは横向きがぴったり",
     "landscapeBadge": "横向き",
     "launcherHint": "メニューを撮ると、全品をあなたのプロフィールと照合します。",
-    "similarSuggest": "似ている登録メニュー(完全一致ではありません):"
+    "similarSuggest": "似ている登録メニュー(完全一致ではありません):",
+    "retakeTitle": "もう一度スキャンしますか?",
+    "retakeBody": "今の結果は破棄されます。",
+    "retakeBodyWithCart": "今の結果と追加した{{count}}件が破棄されます。",
+    "retakeConfirm": "再スキャン"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",

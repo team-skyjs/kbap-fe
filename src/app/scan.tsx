@@ -14,7 +14,7 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Image, Linking, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
@@ -28,7 +28,7 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskTone } from '@/lib/theme';
+import { color as C, font, riskTone, shadow } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
 import { scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
@@ -142,6 +142,8 @@ export default function Scan() {
   // 두 소스가 같은 camOrientation state를 먹인다 — 오버레이 로직은 무변 재사용.
   const [camOrientation, setCamOrientation] = useState<CameraOrientation>('portrait');
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
+  // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
+  const [retakeConfirm, setRetakeConfirm] = useState(false);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -488,7 +490,8 @@ export default function Scan() {
               </Pressable>
             ))}
           </View>
-          <Pressable hitSlop={8} onPress={() => { setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setPhase('camera'); }} testID="retake">
+          {/* P-161: 즉시 리셋 → 확인 모달 선노출(결과 유실 경고) */}
+          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} testID="retake">
             <IconRetry size={19} color={C.ink2} />
           </Pressable>
         </View>
@@ -543,6 +546,32 @@ export default function Scan() {
         {GateSheet}
         <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
+        {/* P-161: 다시찍기 확인 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 재사용 */}
+        <Modal visible={retakeConfirm} transparent animationType="fade" onRequestClose={() => setRetakeConfirm(false)}>
+          <View style={styles.confirmBackdrop}>
+            <View style={styles.confirmCard} testID="retake-confirm">
+              <Text style={styles.confirmTitle}>{t('scan.retakeTitle')}</Text>
+              <Text style={styles.confirmBody}>
+                {cartCount > 0 ? t('scan.retakeBodyWithCart', { count: cartCount }) : t('scan.retakeBody')}
+              </Text>
+              <View style={{ gap: 9, marginTop: 6 }}>
+                <Btn variant="ghost" onPress={() => setRetakeConfirm(false)}>
+                  {t('profile.delete.cancel')}
+                </Btn>
+                <Pressable
+                  style={styles.discardRow}
+                  onPress={() => {
+                    setRetakeConfirm(false);
+                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setPhase('camera');
+                  }}
+                  testID="retake-go"
+                >
+                  <Text style={styles.discardText}>{t('scan.retakeConfirm')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -796,6 +825,13 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
 }
 
 const styles = StyleSheet.create({
+  // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
+  confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  discardRow: { alignItems: 'center', paddingVertical: 11 },
+  discardText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.riskDanger },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
   quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair, backgroundColor: '#fff' },

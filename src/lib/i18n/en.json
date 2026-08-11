@@ -256,7 +256,11 @@
     "cameraHintLandscape": "Wide menus fit better in landscape",
     "landscapeBadge": "Landscape",
     "launcherHint": "Snap the menu — we'll check every dish against your profile.",
-    "similarSuggest": "Similar dish (not an exact match):"
+    "similarSuggest": "Similar dish (not an exact match):",
+    "retakeTitle": "Scan again?",
+    "retakeBody": "Your current results will be discarded.",
+    "retakeBodyWithCart": "Your results and {{count}} added item(s) will be discarded.",
+    "retakeConfirm": "Rescan"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

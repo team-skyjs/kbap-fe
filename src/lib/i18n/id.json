@@ -260,7 +260,11 @@
     "cameraHintLandscape": "Menu lebar lebih pas dalam mode lanskap",
     "landscapeBadge": "Lanskap",
     "launcherHint": "Foto menunya — kami cocokkan setiap hidangan dengan profil Anda.",
-    "similarSuggest": "Hidangan serupa (bukan padanan persis):"
+    "similarSuggest": "Hidangan serupa (bukan padanan persis):",
+    "retakeTitle": "Pindai ulang?",
+    "retakeBody": "Hasil saat ini akan dihapus.",
+    "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
+    "retakeConfirm": "Pindai ulang"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",
