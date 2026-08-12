@@ -96,6 +96,7 @@ jest.mock('@/lib/data/bookmarks', () => ({ useToggleBookmark: () => ({ mutate: j
 jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, refetch: jest.fn() }) }));
 // P-169: 상세가 Helpful/신고 뮤테이션·모더레이션 직접 배선 — 표면 목
 jest.mock('@/lib/data/useReviewMutations', () => ({
+  useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useToggleReviewLike: () => ({ mutate: jest.fn() }),
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));

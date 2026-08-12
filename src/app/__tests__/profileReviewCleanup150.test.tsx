@@ -102,7 +102,11 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'safe' }, isLoading: false, error: null, refetch: jest.fn() }),
 }));
 jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
-jest.mock('@/lib/data/useReviewMutations', () => ({ useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }) }));
+jest.mock('@/lib/data/useReviewMutations', () => ({
+  useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }),
+  useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
+  useDeleteReview: () => ({ mutate: jest.fn() }),
+}));
 jest.mock('@/lib/review/reviewPhotos', () => ({
   uploadReviewImages: jest.fn().mockResolvedValue([]),
   removeReviewPhoto: (arr: string[], u: string) => arr.filter((x) => x !== u),
@@ -186,13 +190,14 @@ it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 �
 });
 
 it('P-158 ③: 리뷰 디테일 좋아요 캡션 부재 — 소스 잠금(하트+카운트만)', () => {
-  const src = require('fs').readFileSync('src/app/review/[id].tsx', 'utf8') as string;
+  // P-182: review/[id] 소멸 — 좋아요 캡션 잠금은 대체 표면(피드 셀 파츠)으로 이관
+  const src = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
   expect(src).not.toContain('likesCaption');
 });
 
 it('P-158 ②: 뱃지 자산 통일 — 리뷰 계열 Rosette 사용 0(MedalEmblem), 소스 잠금', () => {
   const fs = require('fs');
-  for (const f of ['src/app/food/[id]/reviews.tsx', 'src/app/review/[id].tsx', 'src/app/community/compose.tsx']) {
+  for (const f of ['src/app/food/[id]/reviews.tsx', 'src/app/community/compose.tsx']) { // P-182: review/[id] 소멸
     const src = fs.readFileSync(f, 'utf8') as string;
     expect(src).not.toContain('Rosette');
     expect(src).toContain('MedalEmblem');

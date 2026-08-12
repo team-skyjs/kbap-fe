@@ -10,19 +10,22 @@
  * FLAGS.communityEnabled(!PROD_CHANNEL)로 숨김 — 이 화면 도달 불가(채널 분기).
  */
 import * as React from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, IconBubbleEmpty, IconFood, IconPlus, IconProfile } from '@/components';
+import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, IconBubbleEmpty, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
 import { QueryErrorBlock, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
-import { useToggleReviewLike } from '@/lib/data/useReviewMutations';
+import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
+import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
+import { useMe } from '@/lib/data/useMe';
 import type { Review } from '@/lib/api/types';
 import type { FoodTagRef } from '@/lib/community/types';
 
@@ -35,8 +38,13 @@ export function ReviewFeed() {
   const isGuest = useIsGuest();
   const feed = useGlobalReviews(!isGuest); // 게스트 = 호출 0(인증 필수 계약)
   const toggleLike = useToggleReviewLike();
+  const updateReview = useUpdateReview();
+  const deleteReview = useDeleteReview();
+  const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별
   const [gateOpen, setGateOpen] = React.useState(false);
   const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [mod, setMod] = React.useState<ModTarget | null>(null);
+  const [editTarget, setEditTarget] = React.useState<Review | null>(null);
 
   const reviews = (feed.data?.pages ?? []).flatMap((p) => p.items);
   const loadMore = () => {
@@ -66,9 +74,17 @@ export function ReviewFeed() {
           <FeedCard
             review={item}
             t={t}
-            onOpen={() => router.push(`/review/${item.id}?foodId=${item.foodId}` as Href)}
+            mine={item.memberId != null && item.memberId === myId}
             onOpenFood={() => item.foodId && router.push(`/food/${item.foodId}` as Href)}
             onHelpful={() => (isGuest ? setGateOpen(true) : toggleLike.mutate({ reviewId: item.id, foodId: item.foodId }))}
+            onMore={() =>
+              setMod({
+                type: 'review',
+                id: item.id,
+                author: { id: item.author?.memberId ?? item.memberId ?? `rv-${item.id}`, nickname: item.author?.nickname ?? null, nationality: item.authorNationality },
+                mine: true, // P-182: ⋯ = 본인 셀 전용
+              })
+            }
           />
         )}
         ListEmptyComponent={
@@ -125,6 +141,30 @@ export function ReviewFeed() {
         onClose={() => setPickerOpen(false)}
         t={t}
       />
+      {/* P-182: 본인 셀 ⋯ → 기존 액션시트(수정/삭제) + 공용 수정 시트 */}
+      <ModerationFlow
+        target={mod}
+        onClose={() => setMod(null)}
+        onEdit={(m) => setEditTarget(reviews.find((r) => r.id === m.id) ?? null)}
+        onDelete={(m) => {
+          const r = reviews.find((x) => x.id === m.id);
+          if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
+        }}
+        onBlocked={() => void feed.refetch()}
+      />
+      <ReviewEditSheet
+        review={editTarget}
+        onClose={() => setEditTarget(null)}
+        saving={updateReview.isPending}
+        onSave={({ rating, body }) => {
+          if (!editTarget) return;
+          updateReview.mutate(
+            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body } },
+            { onSettled: () => setEditTarget(null) },
+          );
+        }}
+        t={t}
+      />
       <AuthGateSheet context="reviews" open={gateOpen} onClose={() => setGateOpen(false)} />
     </View>
   );
@@ -134,20 +174,23 @@ export function ReviewFeed() {
 function FeedCard({
   review,
   t,
-  onOpen,
+  mine,
   onOpenFood,
   onHelpful,
+  onMore,
 }: {
   review: Review;
   t: TFn;
-  onOpen: () => void;
+  mine: boolean;
   onOpenFood: () => void;
   onHelpful: () => void;
+  onMore: () => void;
 }) {
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
   return (
-    <Pressable style={styles.card} onPress={onOpen} testID={`feed-${review.id}`}>
+    /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
+    <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
         <View style={styles.who}>
           {anon || !review.authorNationality ? (
@@ -165,6 +208,11 @@ function FeedCard({
           )}
         </View>
         <Stars value={review.rating} size={14} />
+        {mine && (
+          <Pressable hitSlop={10} onPress={onMore} testID={`feed-more-${review.id}`}>
+            <IconMore size={15} color={C.ink3} />
+          </Pressable>
+        )}
       </View>
 
       {/* 음식 미니 카드 — 서버 food(P-178 체계), 탭 = 음식 상세 */}
@@ -183,24 +231,14 @@ function FeedCard({
         </Text>
       </Pressable>
 
-      {!!review.body && (
-        <Text style={styles.body} numberOfLines={3}>
-          {review.body}
-        </Text>
-      )}
-      {!!review.photos?.length && (
-        <View style={styles.photoStrip}>
-          {review.photos.slice(0, 3).map((uri) => (
-            <Image key={uri} source={{ uri }} style={styles.photo} />
-          ))}
-        </View>
-      )}
+      {!!review.body && <ExpandableBody body={review.body} t={t} />}
+      <ReviewPhotoStrip photos={review.photos ?? []} />
       <Pressable hitSlop={8} onPress={onHelpful} testID={`feed-helpful-${review.id}`}>
         <Text style={[styles.helpful, review.myLike && styles.helpfulOn]}>
           {t('reviews.helpful', { count: review.likes ?? 0 })}
         </Text>
       </Pressable>
-    </Pressable>
+    </View>
   );
 }
 
@@ -225,8 +263,6 @@ const styles = StyleSheet.create({
   foodMiniName: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
 
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
-  photoStrip: { flexDirection: 'row', gap: 6 },
-  photo: { width: 72, height: 72, borderRadius: 10, backgroundColor: C.surface2 },
   helpful: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   helpfulOn: { color: C.primaryText },
 

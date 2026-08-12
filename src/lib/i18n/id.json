@@ -390,7 +390,9 @@
     "mine": "Ulasan saya",
     "loadMore": "Muat ulasan lainnya",
     "emptySameNat": "Belum ada ulasan dari negara Anda. Matikan filter untuk melihat semua.",
-    "helpful": "Membantu ({{count}})"
+    "helpful": "Membantu ({{count}})",
+    "seeMore": "Lihat selengkapnya",
+    "seeLess": "Sembunyikan"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",
@@ -488,7 +490,8 @@
     "dataDisclaimer": "Data bahan hanya panduan, bukan saran medis — jika ragu, tanyakan ke restoran.",
     "lockVerdict": "Penilaian keamanan Anda terkunci",
     "lockIngredients": "Masuk untuk melihat kecocokan hidangan ini dengan profil Anda",
-    "readAll": "Lihat semua"
+    "readAll": "Lihat semua",
+    "beFirstReview": "Belum ada ulasan — jadilah yang pertama!"
   },
   "states": {
     "catalogTitle": "Status",

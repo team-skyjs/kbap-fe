@@ -390,7 +390,9 @@
     "mine": "我的评价",
     "loadMore": "查看更多评价",
     "emptySameNat": "还没有来自你国家的评价。关闭筛选即可查看全部评价。",
-    "helpful": "有帮助（{{count}}）"
+    "helpful": "有帮助（{{count}}）",
+    "seeMore": "展开",
+    "seeLess": "收起"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -488,7 +490,8 @@
     "dataDisclaimer": "食材数据仅供参考，并非医疗建议 — 不确定时请向餐厅确认。",
     "lockVerdict": "您的安全判定已锁定",
     "lockIngredients": "登录后即可查看这道菜与您档案的匹配情况",
-    "readAll": "查看全部"
+    "readAll": "查看全部",
+    "beFirstReview": "还没有评价 — 来写第一条吧！"
   },
   "states": {
     "catalogTitle": "状态",

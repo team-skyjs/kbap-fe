@@ -390,7 +390,9 @@
     "mine": "Mi reseña",
     "loadMore": "Ver más reseñas",
     "emptySameNat": "Aún no hay reseñas de tu país. Desactiva el filtro para ver todas.",
-    "helpful": "Útil ({{count}})"
+    "helpful": "Útil ({{count}})",
+    "seeMore": "Ver más",
+    "seeLess": "Ver menos"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
@@ -488,7 +490,8 @@
     "dataDisclaimer": "Los datos de ingredientes son orientativos, no consejo médico — ante la duda, confirma con el restaurante.",
     "lockVerdict": "Tu lectura de seguridad está bloqueada",
     "lockIngredients": "Inicia sesión para ver cómo encaja este plato con tu perfil",
-    "readAll": "Ver todas"
+    "readAll": "Ver todas",
+    "beFirstReview": "Aún no hay reseñas — ¡sé el primero!"
   },
   "states": {
     "catalogTitle": "Estados",

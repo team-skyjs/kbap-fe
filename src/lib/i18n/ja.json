@@ -390,7 +390,9 @@
     "mine": "自分のレビュー",
     "loadMore": "レビューをもっと見る",
     "emptySameNat": "同じ国籍のレビューはまだありません。フィルターを外すと全レビューが見られます。",
-    "helpful": "参考になった（{{count}}）"
+    "helpful": "参考になった（{{count}}）",
+    "seeMore": "もっと見る",
+    "seeLess": "閉じる"
   },
   "ranking": {
     "headerTitle": "マイランキング",
@@ -488,7 +490,8 @@
     "dataDisclaimer": "食材情報は参考であり医療アドバイスではありません — 不確かな場合はお店に確認を。",
     "lockVerdict": "あなたの安全判定はロック中",
     "lockIngredients": "ログインするとプロフィールとの適合が見られます",
-    "readAll": "すべて見る"
+    "readAll": "すべて見る",
+    "beFirstReview": "まだレビューがありません — 最初のレビューを！"
   },
   "states": {
     "catalogTitle": "状態",

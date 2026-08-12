@@ -43,7 +43,8 @@ import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
-import { useDeleteReview } from '@/lib/data/useReviewMutations';
+import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
 const READER_LANG = 'en'; // MVP reader language
@@ -85,7 +86,10 @@ export default function FoodReviews() {
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
   const [mod, setMod] = React.useState<ModTarget | null>(null);
-  const openDetail = (r: Review) => router.push(`/review/${r.id}?foodId=${id}` as Href);
+  // P-182: 개별 디테일 소멸 — 셀 확장이 전문·사진·수정을 담당
+  const updateReview = useUpdateReview();
+  const toggleLike = useToggleReviewLike();
+  const [editTarget, setEditTarget] = useState<Review | null>(null);
   const openMenu = (r: Review) =>
     setMod({
       type: 'review',
@@ -205,7 +209,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} onOpen={() => openDetail(r)} onMore={() => openMenu(r)} />
+                  <ReviewItem key={r.id} review={r} t={t} onMore={isMine(r) ? () => openMenu(r) : undefined} onHelpful={() => toggleLike.mutate({ reviewId: r.id, foodId: id ?? '' })} />
                 ))}
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
@@ -234,9 +238,22 @@ export default function FoodReviews() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => router.push(`/review/${m.id}?foodId=${id}` as Href)}
+        onEdit={(m) => setEditTarget(all.find((r) => r.id === m.id) ?? null)} /* P-182: 공용 수정 시트 */
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id ?? '' })}
         onBlocked={() => void reviewsQ.refetch()}
+      />
+      <ReviewEditSheet
+        review={editTarget}
+        onClose={() => setEditTarget(null)}
+        saving={updateReview.isPending}
+        onSave={({ rating, body }) => {
+          if (!editTarget) return;
+          updateReview.mutate(
+            { reviewId: editTarget.id, foodId: id ?? '', current: editTarget, changes: { rating, body } },
+            { onSettled: () => setEditTarget(null) },
+          );
+        }}
+        t={t}
       />
       <AuthGateSheet context={gateOpen ?? 'reviews'} open={gateOpen != null} onClose={() => setGateOpen(null)} />
     </View>
@@ -260,7 +277,7 @@ function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; le
   );
 }
 
-function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onOpen?: () => void; onMore?: () => void }) {
+function ReviewItem({ review, t, onMore, onHelpful }: { review: Review; t: TFn; onMore?: () => void; onHelpful?: () => void }) {
   // P-085 author 방어 3케이스: ① author null(탈퇴)=익명 ② nickname null(미설정)
   // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
@@ -269,7 +286,8 @@ function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onO
   const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
 
   return (
-    <Pressable style={({ pressed }) => [styles.item, pressed && onOpen != null && styles.itemPressed]} onPress={onOpen} disabled={!onOpen}>
+    /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
+    <View style={styles.item}>
       <View style={styles.itemTop}>
         <View style={styles.who}>
           {anon || !review.authorNationality ? (
@@ -297,18 +315,10 @@ function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onO
         </View>
       </View>
 
-      {/* P-077: 첨부 사진(최대 3) — 목 단계는 로컬 URI */}
-      {!!review.photos?.length && (
-        <View style={styles.photoStrip}>
-          {review.photos.map((uri) => (
-            <Image key={uri} source={{ uri }} style={styles.photo} />
-          ))}
-        </View>
-      )}
+      {/* P-182 ②: 사진 = 공용 스트립+풀스크린 뷰어 */}
+      <ReviewPhotoStrip photos={review.photos ?? []} />
 
-      {!!tx.text && (
-        <Text style={[styles.reviewBody, review.bodyLanguage === 'ko' && styles.reviewBodyKo]}>{tx.text}</Text>
-      )}
+      {!!tx.text && <ExpandableBody body={tx.text} t={t} />}
 
       {/* per-review translation control — P-085 지시 7: 번역 계약 미배포, 플래그 비노출
           (useReviewTranslation 코드는 보존 — 계약 배포 시 플래그 복원) */}
@@ -355,14 +365,15 @@ function ReviewItem({ review, t, onOpen, onMore }: { review: Review; t: TFn; onO
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
         <View style={styles.itemFootRight}>
-          {/* P-169 ⑤: Helpful (n) 텍스트 — 하트 소멸(표시 전용 유지, 토글은 디테일) */}
-          {(review.likes ?? 0) > 0 && (
-            <Text style={styles.likeMetaText}>{t('reviews.helpful', { count: review.likes })}</Text>
-          )}
-          {onOpen && <IconChevron size={14} color={C.ink3} />}
+          {/* P-169 ⑤ → P-182: Helpful = 토글(요소별 액션 — 디테일 소멸로 셀이 담당) */}
+          <Pressable hitSlop={8} onPress={onHelpful} disabled={!onHelpful} testID={`helpful-${review.id}`}>
+            <Text style={[styles.likeMetaText, review.myLike && styles.likeMetaOn]}>
+              {t('reviews.helpful', { count: review.likes ?? 0 })}
+            </Text>
+          </Pressable>
         </View>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -437,6 +448,7 @@ const styles = StyleSheet.create({
   itemFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemFootRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   likeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  likeMetaOn: { color: C.primaryText },
   likeMetaText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   photoStrip: { flexDirection: 'row', gap: 8 },
   photo: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },

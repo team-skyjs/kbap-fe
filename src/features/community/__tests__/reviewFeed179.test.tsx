@@ -50,7 +50,13 @@ jest.mock('@/app/community/compose', () => ({ TagPickerSheet: (p: unknown) => mo
 const mockIsGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
 const mockToggle = jest.fn();
-jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => ({ mutate: mockToggle }) }));
+jest.mock('@/lib/data/useReviewMutations', () => ({
+  useToggleReviewLike: () => ({ mutate: mockToggle }),
+  useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
+  useDeleteReview: () => ({ mutate: jest.fn() }),
+}));
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '9' } }) }));
 const mockFeed = jest.fn();
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean) => mockFeed(enabled) }));
 
@@ -95,8 +101,10 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
     .map((n) => (typeof n.props.source === 'string' ? n.props.source : (n.props.source?.uri as string)))
     .filter(Boolean);
   expect(imgs).toContain('https://cdn/kimbap.jpg');
-  act(() => tree.root.findAll((n) => n.props?.testID === 'feed-r1')[0].props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/review/r1?foodId=7');
+  // P-182: 카드 전체 탭 제거 — feed 카드에 onPress 없음, ⋯는 본인(memberId 9 = me) 셀에 존재
+  const card = tree.root.findAll((n) => n.props?.testID === 'feed-r1');
+  expect(card.every((n) => typeof n.props?.onPress !== 'function')).toBe(true);
+  expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r1')[0].props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/food/7');
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-helpful-r1')[0].props.onPress());

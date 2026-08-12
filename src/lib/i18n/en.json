@@ -432,7 +432,9 @@
     "mine": "My review",
     "loadMore": "Load more reviews",
     "emptySameNat": "No reviews from your country yet. Turn off the filter to see all reviews.",
-    "helpful": "Helpful ({{count}})"
+    "helpful": "Helpful ({{count}})",
+    "seeMore": "See more",
+    "seeLess": "See less"
   },
   "ranking": {
     "headerTitle": "My Ranking",
@@ -642,7 +644,8 @@
     "dataDisclaimer": "Ingredient data is guidance, not medical advice — when unsure, confirm with the restaurant.",
     "lockVerdict": "Your safety read is locked",
     "lockIngredients": "Sign in to see how this dish matches your profile",
-    "readAll": "Read all"
+    "readAll": "Read all",
+    "beFirstReview": "No reviews yet — be the first!"
   },
   "states": {
     "catalogTitle": "States",

@@ -30,9 +30,12 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview, useToggleReviewLike } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
+import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { useUpdateReview } from '@/lib/data/useReviewMutations';
+import { buildReviewUpdate } from '@/lib/api/reviewAdapter';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { Snackbar } from '@/components/Snackbar';
-import { IconLock, IconStar } from '@/components/icons';
+import { IconLock, IconMore, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -221,7 +224,10 @@ function Registered({
   // P-169: Helpful(기존 좋아요 API — 표현만 교체) + 신고(기존 ModerationFlow 재사용)
   const toggleLike = useToggleReviewLike();
   const deleteReview = useDeleteReview();
+  const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
+  // P-182: 개별 디테일 소멸 — 본인 셀 ⋯ 수정은 공용 수정 시트로
+  const [editTarget, setEditTarget] = useState<Review | null>(null);
 
   // P-139 ④: verdict 이유 = **성분 기준 조립만** — 회피 매칭(danger/caution)
   // 재료명 나열. 맵기-위험도 결합(시안 카피)은 허위라 금지 — 맵기 문자열 0.
@@ -350,7 +356,16 @@ function Registered({
       {/* P-169: 리뷰 브리프(쿠팡 문법) — 2열 카드 소멸 → 헤더(큰 별+수치+리뷰 수,
           같은 국적 병기 보조 줄 = 차별점 유지) + 프리뷰 5 + 풀폭 전체보기.
           솔리드 CTA는 Ask the owner 하나만 — Write a review는 고스트 소형 강등. */}
-      {FLAGS.reviewsEnabled && (
+      {/* P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김(평점·병기·프리뷰·전체보기) — 첫 리뷰 유도만 */}
+      {FLAGS.reviewsEnabled && food.overall.count === 0 && (
+        <View style={styles.sec} testID="review-empty-cta">
+          <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
+          <Btn variant="ghost" onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
+            {t('reviews.writeReview')}
+          </Btn>
+        </View>
+      )}
+      {FLAGS.reviewsEnabled && food.overall.count > 0 && (
         <View style={styles.sec} testID="review-brief">
           <View style={styles.rvBriefHead}>
             <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
@@ -379,14 +394,14 @@ function Registered({
               key={r.id}
               review={r}
               t={t}
-              onOpen={() => router.push(`/review/${r.id}?foodId=${id}` as Href)}
+              mine={r.memberId != null && r.memberId === myId}
               onHelpful={() => (guest ? setGateOpen(true) : toggleLike.mutate({ reviewId: r.id, foodId: id }))}
-              onReport={() =>
+              onMore={() =>
                 setMod({
                   type: 'review',
                   id: r.id,
                   author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
-                  mine: r.memberId != null && r.memberId === myId,
+                  mine: true, // P-182: ⋯ = 본인 셀 전용(신고 진입은 보류 해소 때)
                 })
               }
             />
@@ -403,9 +418,23 @@ function Registered({
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => router.push(`/review/${m.id}?foodId=${id}` as Href)}
+        onEdit={(m) => setEditTarget(previewReviews.find((r) => r.id === m.id) ?? null)} /* P-182: 디테일 소멸 — 공용 수정 시트 */
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
         onBlocked={() => void reviewsQ.refetch()}
+      />
+      {/* P-182: 본인 리뷰 수정 시트 — 구 디테일 editing 이식(buildReviewUpdate 풀 페이로드) */}
+      <ReviewEditSheet
+        review={editTarget}
+        onClose={() => setEditTarget(null)}
+        saving={updateReview.isPending}
+        onSave={({ rating, body }) => {
+          if (!editTarget) return;
+          updateReview.mutate(
+            { reviewId: editTarget.id, foodId: id, current: editTarget, changes: { rating, body } },
+            { onSettled: () => setEditTarget(null) },
+          );
+        }}
+        t={t}
       />
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
@@ -461,20 +490,20 @@ function previewDate(iso: string, t: TFn): string {
 function ReviewPreviewRow({
   review,
   t,
-  onOpen,
+  mine,
   onHelpful,
-  onReport,
+  onMore,
 }: {
   review: Review;
   t: TFn;
-  onOpen: () => void;
+  mine: boolean;
   onHelpful: () => void;
-  onReport: () => void;
+  onMore: () => void;
 }) {
   const name = review.author?.nickname ?? t('reviews.anonymous');
-  const thumb = review.photos?.[0];
   return (
-    <Pressable style={styles.rvRow} onPress={onOpen} testID={`rv-preview-${review.id}`}>
+    /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만(펼침·사진 뷰어·Helpful·⋯) */
+    <View style={styles.rvRow} testID={`rv-preview-${review.id}`}>
       <View style={styles.rvHead}>
         <View style={{ flexDirection: 'row', gap: 2 }}>
           {[1, 2, 3, 4, 5].map((n) => (
@@ -485,31 +514,22 @@ function ReviewPreviewRow({
           {name}
         </Text>
         <Text style={styles.rvWhen}>{previewDate(review.createdAt, t)}</Text>
-      </View>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        {thumb && (
-          <View style={styles.rvThumb}>
-            <CardPhoto uri={thumb} borderRadius={10} />
-          </View>
-        )}
-        {!!review.body && (
-          <Text style={[styles.rvBody, { flex: 1 }]} numberOfLines={3}>
-            {review.body}
-          </Text>
+        {mine && (
+          <Pressable hitSlop={10} onPress={onMore} testID={`rv-more-${review.id}`}>
+            <IconMore size={15} color={C.ink3} />
+          </Pressable>
         )}
       </View>
+      {!!review.body && <ExpandableBody body={review.body} t={t} />}
+      <ReviewPhotoStrip photos={review.photos ?? []} size={64} />
       <View style={styles.rvFoot}>
-        {/* P-169 ③: Helpful (n) 텍스트 버튼 — 기존 좋아요 API, 상태 전환은 색만 */}
         <Pressable hitSlop={8} onPress={onHelpful} testID={`helpful-${review.id}`}>
           <Text style={[styles.helpfulText, review.myLike && styles.helpfulOn]}>
             {t('reviews.helpful', { count: review.likes ?? 0 })}
           </Text>
         </Pressable>
-        <Pressable hitSlop={8} onPress={onReport} testID={`report-${review.id}`}>
-          <Text style={styles.reportLink}>{t('community.report')}</Text>
-        </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -609,6 +629,7 @@ const styles = StyleSheet.create({
   rvSameNat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rvSameNatText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   rvWhen: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  rvBeFirst: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', marginBottom: 4 },
   rvThumb: { width: 52, height: 52, borderRadius: 10, backgroundColor: C.surface2, overflow: 'hidden' },
   rvFoot: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 2 },
   helpfulText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },

@@ -17,12 +17,15 @@ import { Redirect, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
-import { SubHeader, RiskMark, Stars, IconChevron, IconFood, CardPhoto } from '@/components';
+import { SubHeader, RiskMark, Stars, IconFood, IconMore, CardPhoto } from '@/components';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { QueryErrorBlock } from '@/components/StateBlock';
+import { ExpandableBody, ReviewEditSheet } from '@/features/review/ReviewCellParts';
+import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { Alert } from 'react-native';
 import { personalRisk } from '@/lib/risk';
 import type { FoodCard, Review } from '@/lib/api/types';
 
@@ -40,6 +43,16 @@ export default function MyReviews() {
   const { data: foods } = useFoods();
   const { data: me } = useMe();
   const [sort, setSort] = useState<SortKey>('recent');
+  // P-182: 디테일 소멸 — 수정/삭제는 셀 ⋯(항상 본인 화면)
+  const updateReview = useUpdateReview();
+  const deleteReview = useDeleteReview();
+  const [editTarget, setEditTarget] = useState<Review | null>(null);
+  const confirmDelete = (rv: Review) => {
+    Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('editReview.delete'), style: 'destructive', onPress: () => deleteReview.mutate({ reviewId: rv.id, foodId: rv.foodId }) },
+    ]);
+  };
 
   const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]);
   const hasR = (me?.restrictions.length ?? 0) > 0;
@@ -106,13 +119,28 @@ export default function MyReviews() {
                   food={foodMap.get(rv.foodId)}
                   hasR={hasR}
                   when={relativeDate(rv.createdAt, t)}
-                  onPress={() => router.push(`/review/${rv.id}` as Href)}
+                  onOpenFood={() => rv.foodId && router.push(`/food/${rv.foodId}` as Href)}
+                  onEdit={() => setEditTarget(rv)}
+                  onDelete={() => confirmDelete(rv)}
                 />
               ))}
             </View>
           </>
         )}
       </ScrollView>
+      <ReviewEditSheet
+        review={editTarget}
+        onClose={() => setEditTarget(null)}
+        saving={updateReview.isPending}
+        onSave={({ rating, body }) => {
+          if (!editTarget) return;
+          updateReview.mutate(
+            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body } },
+            { onSettled: () => setEditTarget(null) },
+          );
+        }}
+        t={t}
+      />
     </View>
   );
 }
@@ -134,14 +162,22 @@ function SortPill({ label, on, onPress }: { label: string; on: boolean; onPress:
   );
 }
 
-function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; food?: FoodCard; hasR: boolean; when: string; onPress: () => void }) {
+function ReviewCard({ review, food, hasR, when, onOpenFood, onEdit, onDelete }: { review: Review; food?: FoodCard; hasR: boolean; when: string; onOpenFood: () => void; onEdit: () => void; onDelete: () => void }) {
   const { t } = useTranslation(); // P-150 ④: 중립 라벨용
   // P-178 ②: 캐시 미스 = 뱃지 숨김 — unable 의미 예약(재료 정보 부족) 오염 방지.
   // BE food.riskStatus(개인화) 배포 시 서버값 스왑.
   const risk: RiskState | null = food ? personalRisk(food.risk, hasR) : null;
+  // P-182: 전체 탭 제거 — 음식 영역 탭 = 음식 상세, ⋯ = 수정/삭제(기존 액션시트 문법)
+  const onMore = () => {
+    Alert.alert(review.foodName ?? food?.name ?? t('myReviews.viewDish'), undefined, [
+      { text: t('editReview.title'), onPress: onEdit },
+      { text: t('editReview.delete'), style: 'destructive', onPress: onDelete },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  };
   return (
-    <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.thumb}>
+    <View style={styles.card}>
+      <Pressable style={styles.thumb} onPress={onOpenFood} testID={`my-food-${review.id}`}>
         {/* P-165: 서버 썸네일 우선 — 부재 시 기존 플레이스홀더 */}
         {review.foodImageUrl ? <CardPhoto uri={review.foodImageUrl} borderRadius={12} /> : <IconFood size={22} color={C.ink3} />}
         {risk != null && (
@@ -149,7 +185,7 @@ function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; foo
             <RiskMark state={risk} size={14} />
           </View>
         )}
-      </View>
+      </Pressable>
       <View style={styles.main}>
         <View style={styles.top}>
           <Text style={styles.name} numberOfLines={1}>
@@ -157,17 +193,16 @@ function ReviewCard({ review, food, hasR, when, onPress }: { review: Review; foo
           </Text>
           <Stars value={review.rating} size={13} />
         </View>
-        {!!review.body && (
-          <Text style={styles.cardBody} numberOfLines={2}>
-            {review.body}
-          </Text>
-        )}
+        {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.cardBody} />}
         <View style={styles.foot}>
           <Text style={styles.tag}>{when}</Text>
         </View>
       </View>
-      <IconChevron size={16} color={C.ink3} style={{ alignSelf: 'center' }} />
-    </Pressable>
+      {/* P-182: ⋯ = 수정/삭제(항상 본인 화면) — chevron(디테일 진입) 소멸 */}
+      <Pressable hitSlop={10} onPress={onMore} style={{ alignSelf: 'flex-start' }} testID={`my-more-${review.id}`}>
+        <IconMore size={16} color={C.ink3} />
+      </Pressable>
+    </View>
   );
 }
 

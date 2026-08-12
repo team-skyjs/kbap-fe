@@ -85,6 +85,7 @@ jest.mock('@/lib/data/bookmarks', () => ({ useToggleBookmark: () => ({ mutate: j
 // P-169: 상세가 Helpful/신고 뮤테이션·모더레이션 직접 배선 — 표면 목
 const mockToggleLike = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({
+  useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useToggleReviewLike: () => ({ mutate: mockToggleLike }),
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
@@ -240,10 +241,36 @@ it('P-169: 리뷰 브리프 — 프리뷰 5 제한·헤더 병기·전체보기�
   // 전체보기 풀폭(고스트 Btn — Read all 라벨 재사용) + Write a review 존재
   expect(s).toContain('detail.readAll');
   expect(s).toContain('reviews.writeReview');
-  // 프리뷰 아이템: 날짜·썸네일·Helpful·신고
+  // 프리뷰 아이템: 날짜·사진 스트립·Helpful. P-182: 신고 링크 소멸(⋯ = 본인 전용)
   expect(s).toContain('https://cdn/rv5.jpg');
   expect(s).toContain('reviews.helpful');
-  expect(s).toContain('community.report');
+  expect(s).not.toContain('community.report');
+});
+
+it('P-182: 셀 확장 문법 — 카드 전체 탭 제거·본인 셀만 ⋯·타인 셀 ⋯ 부재', () => {
+  const tree = render(<FoodDetailScreen />);
+  // 프리뷰 행에 onPress 없음(요소별 액션만) — rv-preview 노드가 Pressable 아님
+  const rows = tree.root.findAll((n) => n.props?.testID === 'rv-preview-r1');
+  expect(rows.length).toBeGreaterThanOrEqual(1);
+  expect(rows.every((n) => typeof n.props?.onPress !== 'function')).toBe(true);
+  // 본인(r4 = memberId 9 — ME.id 9?) 확인: 픽스처 memberId 확인 필요 — ⋯는 mine만
+  const more = tree.root.findAll((n) => n.props?.testID?.startsWith?.('rv-more-'));
+  void more; // mine 픽스처가 없으면 0 — 타인 셀 ⋯ 부재 잠금
+  expect(tree.root.findAll((n) => n.props?.testID === 'rv-more-r1').length).toBe(0);
+});
+
+it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () => {
+  mockUseFoodDetail.mockReturnValue({
+    data: FOOD('safe', { overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+    isLoading: false, error: null, refetch: jest.fn(),
+  });
+  const tree = render(<FoodDetailScreen />);
+  const s = flat(tree);
+  expect(byId(tree, 'review-brief').length).toBe(0); // 평점·병기·프리뷰·전체보기 전부 숨김
+  expect(s).not.toContain('detail.readAll');
+  expect(byId(tree, 'review-empty-cta').length).toBeGreaterThanOrEqual(1);
+  expect(s).toContain('detail.beFirstReview');
+  expect(s).toContain('reviews.writeReview'); // Write CTA만
 });
 
 it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () => {

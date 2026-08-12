@@ -71,7 +71,9 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
   useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
 }));
-jest.mock('@/lib/data/useReviewMutations', () => ({ useDeleteReview: () => ({ mutate: jest.fn() }) }));
+jest.mock('@/lib/data/useReviewMutations', () => ({
+  useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
+  useToggleReviewLike: () => ({ mutate: jest.fn() }), useDeleteReview: () => ({ mutate: jest.fn() }) }));
 jest.mock('@/lib/data/useReviewTranslation', () => ({ useReviewTranslation: () => ({ translate: jest.fn(), state: {} }) }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
 
