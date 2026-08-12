@@ -1131,3 +1131,7 @@
 ## 커뮤니티 탭 → 리뷰 피드 (2026-08-11, P-179 — OTA 게이트 대기)
 - [x] useGlobalReviews(foodId 생략 전역·게스트 호출 0) + ReviewFeed(P-169 문법·서버 food 카드·Helpful) + FAB=TagPickerSheet 재사용→작성. 글 기능 communityPostsEnabled(false) 보존 숨김, 분기는 coming-soon 가드 뒤(유닛이 순서 실버그 검출·교정).
 - [x] tsc 0 · jest 102스위트 594/594 — 26d32b3. ⚠️ OTA 미발행(P-166 게이트 — 177·178과 일괄 대기).
+
+## 스캔 체크 줄 Edit 제거 (2026-08-12, P-180 — OTA 게이트 대기)
+- [x] ScanProfileBar Edit 소멸(회의 결정 6 주석 명기) — 수정 진입점 전수 확인(넛지 = 최초 설정 유도라 존치·질의).
+- [x] tsc 0 · jest 102스위트 594/594 — 3cfcc34. ⚠️ OTA 미발행(P-166 게이트 — 4건 일괄 대기).
