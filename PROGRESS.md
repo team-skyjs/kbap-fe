@@ -1138,3 +1138,7 @@
 
 ## 게이트 해소 일괄 발행 (2026-08-12)
 - [x] Q-37① 폭죽 실기 통과 → P-166 ✅. P-177~180 일괄 teamtest OTA(iOS c92a465a·안드 3d05e468) → 전부 ✅.
+
+## 실기 QA 소형 5건 (2026-08-12, P-181)
+- [x] 홈 타이틀 Popular dishes(ko 초안)·프로필 Recently scanned(RecentRow 재사용)·벨 제거(피드 포함)·연필 박스 소멸·국가 필 국기+국가명·anonymized=authorWithdrawn 정본.
+- [x] tsc 0 · jest 102스위트 601/601 · teamtest OTA(iOS c9feb8bc·안드 096d0b27) — c04995a. flags.ts 동승 0 확인.
