@@ -151,7 +151,7 @@
     "reason": {
       "spam": "垃圾信息或诈骗",
       "harassment": "骚扰或仇恨言论",
-      "inappropriate": "不当内容",
+      "inappropriate": "色情或露骨内容",
       "misinfo": "食品安全虚假信息",
       "other": "其他"
     },

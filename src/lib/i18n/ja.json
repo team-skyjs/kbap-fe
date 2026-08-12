@@ -151,7 +151,7 @@
     "reason": {
       "spam": "スパム・詐欺",
       "harassment": "嫌がらせ・ヘイト",
-      "inappropriate": "不適切なコンテンツ",
+      "inappropriate": "性的・露骨なコンテンツ",
       "misinfo": "食の安全に関する誤情報",
       "other": "その他"
     },

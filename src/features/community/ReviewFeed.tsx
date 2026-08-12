@@ -21,6 +21,7 @@ import { QueryErrorBlock, StateBlock, stateIconColor } from '@/components/StateB
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
+import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
 import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
@@ -46,7 +47,13 @@ export function ReviewFeed() {
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const [editTarget, setEditTarget] = React.useState<Review | null>(null);
 
-  const reviews = (feed.data?.pages ?? []).flatMap((p) => p.items);
+  // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
+  const { data: blockedUsers } = useBlockedUsers();
+  const blockedIds = React.useMemo(() => new Set((blockedUsers ?? []).map((u) => u.id)), [blockedUsers]);
+  const reviews = (feed.data?.pages ?? []).flatMap((p) => p.items).filter((r) => {
+    const author = r.author?.memberId ?? r.memberId;
+    return author == null || !blockedIds.has(author);
+  });
   const loadMore = () => {
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   };
@@ -82,7 +89,7 @@ export function ReviewFeed() {
                 type: 'review',
                 id: item.id,
                 author: { id: item.author?.memberId ?? item.memberId ?? `rv-${item.id}`, nickname: item.author?.nickname ?? null, nationality: item.authorNationality },
-                mine: true, // P-182: ⋯ = 본인 셀 전용
+                mine: item.memberId != null && item.memberId === myId, // P-186: 실값 — 타인 = 신고/차단
               })
             }
           />
@@ -205,7 +212,8 @@ function FeedCard({
           )}
         </View>
         <Stars value={review.rating} size={14} />
-        {mine && (
+        {/* P-186: ⋯ = 본인+타인(익명 제외) */}
+        {!anon && (
           <Pressable hitSlop={10} onPress={onMore} testID={`feed-more-${review.id}`}>
             <IconMore size={15} color={C.ink3} />
           </Pressable>

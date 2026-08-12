@@ -217,12 +217,21 @@ export async function submitReport(target: ReportTarget, id: string, reason: Rep
     console.log('[community] 신고 targetType 미지원(REVIEW뿐) — 플래그 off 표면 (도달 불가 경로)');
     return;
   }
-  await api.post('/reports', {
-    targetType: 'REVIEW',
-    targetId: Number(id),
-    reason: REPORT_REASON_WIRE[reason],
-    ...(note ? { detail: note } : {}), // FE 300자 상한 유지 (계약 상한 500 내)
-  });
+  try {
+    await api.post('/reports', {
+      targetType: 'REVIEW',
+      targetId: Number(id),
+      reason: REPORT_REASON_WIRE[reason],
+      ...(note ? { detail: note } : {}), // FE 300자 상한 유지 (계약 상한 500 내)
+    });
+  } catch (e) {
+    // P-186: 중복 신고 방어 — 409(이미 접수)는 멱등 취급(접수 확인 UX 유지), 그 외 전파
+    if ((e as { status?: number })?.status === 409) {
+      console.log('[report] 중복 신고(409) — 기접수 멱등 처리');
+      return;
+    }
+    throw e;
+  }
 }
 
 /* ---- 차단 — 멤버 단위 기존 API(리뷰와 공유), 커뮤니티 작성자도 실 memberId ---- */

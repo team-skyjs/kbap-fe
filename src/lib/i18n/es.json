@@ -151,7 +151,7 @@
     "reason": {
       "spam": "Spam o estafa",
       "harassment": "Acoso u odio",
-      "inappropriate": "Contenido inapropiado",
+      "inappropriate": "Contenido sexual o explícito",
       "misinfo": "Desinformación sobre seguridad alimentaria",
       "other": "Otra cosa"
     },

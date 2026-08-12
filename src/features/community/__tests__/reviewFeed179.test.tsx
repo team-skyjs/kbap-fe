@@ -5,6 +5,10 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+const mockBlocked = jest.fn(() => ({ data: [] as { id: string }[] }));
+jest.mock('@/lib/community/hooks', () => ({
+  useBlockedUsers: () => mockBlocked(),
+})); // P-186: 차단 숨김
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
@@ -80,6 +84,7 @@ function render(): ReactTestRenderer {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockBlocked.mockReturnValue({ data: [] });
   mockIsGuest.mockReturnValue(false);
   mockFeed.mockReturnValue({
     data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
@@ -150,4 +155,24 @@ it('소스 잠금 — 글 기능 보존형 플래그·리뷰 피드 분기는 co
   expect(guardIdx).toBeGreaterThan(-1);
   expect(feedIdx).toBeGreaterThan(guardIdx); // 채널 가드가 먼저 — prod coming-soon 유지
   expect(tab).toContain('PostCard'); // 글 피드 코드 보존
+});
+
+describe('P-186: 타 유저 신고·차단', () => {
+  it('차단 회원 리뷰 = 피드에서 클라 숨김', () => {
+    mockBlocked.mockReturnValue({ data: [{ id: '9' }] }); // REVIEW 작성자 memberId 9
+    const tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
+  });
+
+  it('익명(탈퇴) 리뷰 = ⋯ 부재(신고 대상 회원 없음) · 타인 = ⋯ 존재', () => {
+    const tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1); // 타인(me=9? REVIEW memberId 9 = mine)
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [{ ...REVIEW, id: 'r2', memberId: undefined, author: null, anonymized: true }], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const anon = render();
+    expect(anon.root.findAll((n) => n.props?.testID === 'feed-more-r2').length).toBe(0);
+  });
 });

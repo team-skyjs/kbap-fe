@@ -5,6 +5,9 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('@/lib/community/hooks', () => ({
+  useBlockedUsers: () => ({ data: [] }),
+})); // P-186: 차단 숨김 훅 표면 목
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   const chain = () => {

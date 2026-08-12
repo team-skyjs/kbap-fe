@@ -147,7 +147,7 @@
     "reason": {
       "spam": "Spam or scam",
       "harassment": "Harassment or hate",
-      "inappropriate": "Inappropriate content",
+      "inappropriate": "Sexual or explicit content",
       "misinfo": "Misinformation about food safety",
       "other": "Something else"
     },

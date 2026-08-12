@@ -395,13 +395,15 @@ function Registered({
               review={r}
               t={t}
               mine={r.memberId != null && r.memberId === myId}
+              anonymized={r.anonymized}
               onHelpful={() => (guest ? setGateOpen(true) : toggleLike.mutate({ reviewId: r.id, foodId: id }))}
               onMore={() =>
                 setMod({
                   type: 'review',
                   id: r.id,
                   author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
-                  mine: true, // P-182: ⋯ = 본인 셀 전용(신고 진입은 보류 해소 때)
+                  // P-186: mine 실값 — 본인 = 수정/삭제 · 타인 = 신고/차단(ModerationFlow 기존 문법)
+                  mine: r.memberId != null && r.memberId === myId,
                 })
               }
             />
@@ -491,12 +493,15 @@ function ReviewPreviewRow({
   review,
   t,
   mine,
+  anonymized,
   onHelpful,
   onMore,
 }: {
   review: Review;
   t: TFn;
   mine: boolean;
+  /** P-186: 익명(탈퇴) = ⋯ 없음 — 신고 대상 회원 부재 */
+  anonymized: boolean;
   onHelpful: () => void;
   onMore: () => void;
 }) {
@@ -514,7 +519,8 @@ function ReviewPreviewRow({
           {name}
         </Text>
         <Text style={styles.rvWhen}>{previewDate(review.createdAt, t)}</Text>
-        {mine && (
+        {/* P-186: ⋯ = 본인(수정/삭제)+타인(신고/차단), 익명(탈퇴)만 제외 */}
+        {!anonymized && (
           <Pressable hitSlop={10} onPress={onMore} testID={`rv-more-${review.id}`}>
             <IconMore size={15} color={C.ink3} />
           </Pressable>

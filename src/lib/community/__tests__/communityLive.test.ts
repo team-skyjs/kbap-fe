@@ -149,3 +149,19 @@ describe('댓글 — replies 1뎁스 평탄화 + cursor 루프', () => {
     expect(api.del).toHaveBeenCalledWith('/community/comments/5');
   });
 });
+
+describe('P-186: 신고 중복 방어', () => {
+  it('409(기접수) = 멱등 처리(무throw) · 그 외 에러는 전파', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { api } = require('@/lib/api/client');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ApiError } = jest.requireActual('@/lib/api/client') as { ApiError: new (m: string, s?: number) => Error };
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const adapter = require('../adapter') as typeof import('../adapter');
+    api.post.mockRejectedValueOnce(Object.assign(new Error('dup'), { status: 409 }));
+    await expect(adapter.submitReport('review', '7', 'spam', null)).resolves.toBeUndefined();
+    api.post.mockRejectedValueOnce(Object.assign(new Error('boom'), { status: 500 }));
+    await expect(adapter.submitReport('review', '7', 'spam', null)).rejects.toThrow('boom');
+    void ApiError;
+  });
+});

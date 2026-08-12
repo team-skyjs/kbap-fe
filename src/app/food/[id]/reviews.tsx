@@ -43,6 +43,7 @@ import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
+import { useBlockedUsers } from '@/lib/community/hooks';
 import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
 import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
@@ -74,7 +75,13 @@ export default function FoodReviews() {
   // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
   const reviewsQ = useFoodReviews(id ?? '', sameNatOnly ? nationality : undefined);
   const loaded = reviewsQ.data != null;
-  const all = reviewsQ.data?.pages.flatMap((p) => p.items) ?? [];
+  // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증 보조(확인되면 제거)
+  const { data: blockedUsers } = useBlockedUsers();
+  const blockedIds = React.useMemo(() => new Set((blockedUsers ?? []).map((u) => u.id)), [blockedUsers]);
+  const all = (reviewsQ.data?.pages.flatMap((p) => p.items) ?? []).filter((r) => {
+    const author = r.author?.memberId ?? r.memberId;
+    return author == null || !blockedIds.has(author);
+  });
   const items = [...all].sort((a, b) => {
     const recent = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     return sort === 'rating' ? b.rating - a.rating || recent : recent;
@@ -206,7 +213,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} onMore={isMine(r) ? () => openMenu(r) : undefined} onHelpful={() => toggleLike.mutate({ reviewId: r.id, foodId: id ?? '' })} />
+                  <ReviewItem key={r.id} review={r} t={t} onMore={!r.anonymized ? () => openMenu(r) : undefined} /* P-186: 타인 = 신고/차단(익명 제외) */ onHelpful={() => toggleLike.mutate({ reviewId: r.id, foodId: id ?? '' })} />
                 ))}
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (

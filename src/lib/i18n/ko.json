@@ -151,7 +151,7 @@
     "reason": {
       "spam": "스팸·사기",
       "harassment": "괴롭힘·혐오",
-      "inappropriate": "부적절한 콘텐츠",
+      "inappropriate": "성적·선정적 콘텐츠",
       "misinfo": "음식 안전 허위 정보",
       "other": "기타"
     },

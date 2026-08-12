@@ -9,6 +9,9 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('@/lib/community/hooks', () => ({
+  useBlockedUsers: () => ({ data: [] }),
+})); // P-186: 차단 숨김 훅 표면 목
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   const chain = () => {
@@ -247,16 +250,13 @@ it('P-169: 리뷰 브리프 — 프리뷰 5 제한·헤더 병기·전체보기�
   expect(s).not.toContain('community.report');
 });
 
-it('P-182: 셀 확장 문법 — 카드 전체 탭 제거·본인 셀만 ⋯·타인 셀 ⋯ 부재', () => {
+it('P-182→P-186: 카드 전체 탭 제거 · ⋯ = 본인+타인(신고/차단), 익명(탈퇴)만 부재', () => {
   const tree = render(<FoodDetailScreen />);
-  // 프리뷰 행에 onPress 없음(요소별 액션만) — rv-preview 노드가 Pressable 아님
   const rows = tree.root.findAll((n) => n.props?.testID === 'rv-preview-r1');
   expect(rows.length).toBeGreaterThanOrEqual(1);
   expect(rows.every((n) => typeof n.props?.onPress !== 'function')).toBe(true);
-  // 본인(r4 = memberId 9 — ME.id 9?) 확인: 픽스처 memberId 확인 필요 — ⋯는 mine만
-  const more = tree.root.findAll((n) => n.props?.testID?.startsWith?.('rv-more-'));
-  void more; // mine 픽스처가 없으면 0 — 타인 셀 ⋯ 부재 잠금
-  expect(tree.root.findAll((n) => n.props?.testID === 'rv-more-r1').length).toBe(0);
+  // P-186: 타인 리뷰에도 ⋯(신고·차단 진입 — 스토어 UGC 정책)
+  expect(tree.root.findAll((n) => n.props?.testID === 'rv-more-r1').length).toBeGreaterThanOrEqual(1);
 });
 
 it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () => {
