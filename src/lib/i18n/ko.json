@@ -260,10 +260,10 @@
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
     "landscapeBadge": "가로 모드",
     "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요.",
-    "similarSuggest": "비슷한 등록 메뉴(정확한 매칭 아님):",
+    "similarSuggest": "비슷한 메뉴(정확히 일치하지 않음):",
     "retakeTitle": "다시 스캔할까요?",
     "retakeBody": "지금 결과가 사라져요.",
-    "retakeBodyWithCart": "지금 결과와 담은 {{count}}개 항목이 사라져요.",
+    "retakeBodyWithCart": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
     "retakeConfirm": "다시 스캔"
   },
   "owner": {
@@ -343,7 +343,7 @@
     "linkedSocial": "소셜 계정",
     "nationalityLocked": "국적은 가입 후 변경할 수 없어요.",
     "currency": "통화",
-    "currencyAuto": "자동 ({{code}} — 국적 기준)",
+    "currencyAuto": "자동({{code}}, 국적 기준)",
     "currencySearch": "통화 검색"
   },
   "nationalityPicker": {
@@ -402,7 +402,7 @@
     "placeNoResults": "일치하는 장소가 없어요.",
     "placeSkip": "건너뛰기 — 장소 없이 게시",
     "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
-    "photoCapNote": "사진은 최대 {{max}}장 — 초과 선택은 제외됐어요"
+    "photoCapNote": "사진은 {{max}}장까지 추가할 수 있어요. 나머지는 제외했어요."
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -780,7 +780,7 @@
     "noneSelectedYet": "아직 선택한 재료가 없어요",
     "clearSelection": "모두 해제",
     "nothingToAvoid": "못 먹는 재료 없어요",
-    "kidsBadge": "👶 아이 친화",
+    "kidsBadge": "👶 아이에게도 순해요",
     "spiceDesc0": "안 매움으로 설정돼요. 음식마다 맵기 단계가 표시돼요.",
     "spiceDesc1": "순한맛보다 매운 음식에는 맵기 단계가 분명히 표시돼요.",
     "spiceDesc2": "한국 음식의 중간 정도예요. 대부분의 찌개가 이 단계예요.",
