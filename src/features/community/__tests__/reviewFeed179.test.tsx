@@ -123,6 +123,15 @@ it('게스트 = 피드 호출 0(인증 필수 계약) + 게이트 카드', () =>
   expect(tree.root.findAll((n) => n.props?.testID === 'feed-guest-gate').length).toBeGreaterThanOrEqual(1);
 });
 
+it('P-181 ③: 헤더 장식 벨 부재(피드·구 글 피드 소스 모두)', () => {
+  const tree = render();
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-feed').length).toBeGreaterThanOrEqual(1);
+  const fs = require('fs');
+  expect(fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8')).not.toContain('IconBell');
+  const tab = fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8') as string;
+  expect(tab.includes('<IconBell')).toBe(false);
+});
+
 it('소스 잠금 — 글 기능 보존형 플래그·리뷰 피드 분기는 coming-soon 가드 뒤(prod 무변)', () => {
   const fs = require('fs');
   const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;

@@ -140,3 +140,19 @@ describe('P-165(#144): 버전리스 계약 — food/author 중첩 매핑', () =>
     expect(r.memberId).toBe('5');
   });
 });
+
+describe('P-181(BE #152): 탈퇴 판정 = authorWithdrawn 서버 정본', () => {
+  const base = { reviewId: 1, rating: 4, imageUrls: [], createdAt: '2026-08-12T00:00:00Z', likeCount: 0, likedByMe: false };
+  const AUTHOR = { memberId: 9, nickname: 'A', countryCode: 'US', tier: 'taster', level: 2, score: 1 };
+
+  it('true → 익명(anonymized) — author null 동반 계약', () => {
+    expect(adaptReview({ ...base, authorWithdrawn: true, author: null }).anonymized).toBe(true);
+  });
+  it('false → 비익명(서버 정본이 author 유무보다 우선)', () => {
+    expect(adaptReview({ ...base, authorWithdrawn: false, author: AUTHOR }).anonymized).toBe(false);
+  });
+  it('부재(구 응답) → author==null 폴백 유지', () => {
+    expect(adaptReview({ ...base, author: null }).anonymized).toBe(true);
+    expect(adaptReview({ ...base, author: AUTHOR }).anonymized).toBe(false);
+  });
+});

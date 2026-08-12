@@ -16,7 +16,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, IconBell, IconBubbleEmpty, IconFood, IconPlus, IconProfile } from '@/components';
+import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, IconBubbleEmpty, IconFood, IconPlus, IconProfile } from '@/components';
 import { QueryErrorBlock, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -50,12 +50,9 @@ export function ReviewFeed() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]} testID="review-feed">
-      {/* 헤더 — 기존 커뮤니티 탭 문법(타이틀+벨 자리) 유지, 신규 카피 0 */}
+      {/* 헤더 — 기존 커뮤니티 탭 문법. P-181: 장식 벨 제거(무동작) */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('community.title')}</Text>
-        <Pressable hitSlop={8} style={styles.bell}>
-          <IconBell size={21} color={C.ink2} />
-        </Pressable>
       </View>
 
       <FlatList
@@ -211,7 +208,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 12 },
   headerTitle: { fontFamily: font.display, fontSize: 22, color: C.ink, letterSpacing: -0.3 },
-  bell: { width: 38, height: 38, borderRadius: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: 18, gap: 12 },
   center: { paddingVertical: 30, alignItems: 'center' },
   emptyFill: { flex: 1, justifyContent: 'center' },

@@ -84,12 +84,9 @@ export default function Community() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* 헤더 — 알림 벨은 자리만 예약(무동작, 인프라 다음 주) */}
+      {/* 헤더 — P-181: 장식 벨 제거(무동작) */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('community.title')}</Text>
-        <Pressable hitSlop={8} style={styles.bell}>
-          <IconBell size={21} color={C.ink2} />
-        </Pressable>
       </View>
 
       <FlatList

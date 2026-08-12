@@ -45,6 +45,8 @@ jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => nu
 jest.mock('@/lib/auth/session', () => ({ logOut: jest.fn() }));
 jest.mock('@/lib/data/useFoods', () => ({ useFoods: () => ({ data: [] }) }));
 jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+const mockHome = jest.fn(() => ({ data: { recent: [] } }));
+jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome() })); // P-181 ②
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => `srv:${c}`,
@@ -119,4 +121,35 @@ it('타일 탭 = Edit restrictions 진입(재량 채택)', () => {
   const tile = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.testID === 'avtile-EGG').length > 0)[0];
   act(() => tile.props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/profile/restrictions');
+});
+
+describe('P-181: 프로필 소형 4건', () => {
+  it('② Recently scanned — useHome().recent 재사용(RecentRow) 렌더·빈 상태 미노출', () => {
+    const empty = render();
+    expect(JSON.stringify(empty.toJSON())).not.toContain('home.recentTitle');
+    mockHome.mockReturnValue({ data: { recent: [{ foodId: '7', name: 'Kimbap', nameKo: '김밥', photoUrl: null, risk: 'safe', overall: { average: null, count: 0 } }] } } as never);
+    const tree = render();
+    const s2 = JSON.stringify(tree.toJSON());
+    expect(s2).toContain('home.recentTitle');
+    expect(s2).toContain('Kimbap');
+  });
+
+  it('⑤ 국가 필 = 국기+국가명(코드 생짜 0) · ④ 연필 박스 배경 제거', () => {
+    const tree = render();
+    const { StyleSheet } = require('react-native');
+    const pill = tree.root.findAll((n) => n.props?.testID === 'nation-pill')[0];
+    const pillTexts = pill.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(pillTexts).toContain('United States'); // 온보딩 국가명 재사용
+    expect(pillTexts).not.toContain('US'); // 코드 생짜 소멸
+    const pencil = tree.root.findAll((n) => n.props?.testID === 'profile-edit-pencil')[0];
+    const st = StyleSheet.flatten(pencil.props.style ?? {}) as { backgroundColor?: string; borderWidth?: number };
+    expect(st.backgroundColor).toBeUndefined(); // 박스 소멸
+    expect(st.borderWidth).toBeUndefined();
+    expect(pencil.props.hitSlop).toBeGreaterThanOrEqual(13); // 44pt 터치 유지
+  });
+
+  it('① 홈 추천 타이틀 en 정본 = "Popular dishes"(안전 보증 오인 소지 문구 소멸)', () => {
+    const en = require('fs').readFileSync('src/lib/i18n/en.json', 'utf8') as string;
+    expect(JSON.parse(en).home.safeTitle).toBe('Popular dishes');
+  });
 });

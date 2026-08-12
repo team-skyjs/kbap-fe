@@ -47,6 +47,8 @@ export interface ReviewWire {
   imageUrls: string[];
   createdAt: string;
   author?: ReviewAuthorWire | null; // 탈퇴 회원이면 null
+  /** P-181(BE #152): 탈퇴 작성자 플래그 — true면 author null. 서버 정본(불변 규칙 1). */
+  authorWithdrawn?: boolean;
   /** P-108(KB-257): 좋아요 — 서버값 (8/3 계약). 구응답 방어 옵셔널. */
   likeCount?: number;
   likedByMe?: boolean;
@@ -94,10 +96,11 @@ export function adaptReview(wire: ReviewWire): Review {
     // P-165: 서버 해석 음식 이름·썸네일(내 리뷰 화면 우선 소스) — 부재 시 화면이 캐시 폴백
     foodName: wire.food?.name ?? null,
     foodImageUrl: wire.food?.imageUrl ?? null,
-    // 파생 — 기존 화면 호환 축 (author null=탈퇴 → 익명 표시)
+    // 파생 — 기존 화면 호환 축. P-181: 탈퇴 판정 = authorWithdrawn **서버 정본 우선**,
+    // 필드 부재(구 응답)만 author==null 폴백. 렌더(익명)는 무변.
     authorNationality: author?.nationality ?? null,
     authorRankTier: author?.tier ?? null,
-    anonymized: author == null,
+    anonymized: wire.authorWithdrawn ?? (author == null),
     // 번역 축 — 계약 미배포(지시 7): 원문 언어 미상, UI는 플래그로 비노출
     bodyLanguage: undefined,
     translatedBody: null,

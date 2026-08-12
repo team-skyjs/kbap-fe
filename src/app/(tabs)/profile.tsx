@@ -43,6 +43,10 @@ import { AvoidTile } from '@/components/AvoidTile';
 import { FB_TINT } from '@/components/IngredientTileSections';
 import { INGREDIENTS } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
+import { useHome } from '@/lib/data/useHome';
+import { RecentRow } from './index';
+import { FlagEmoji } from '@/components';
+import { countryByCode } from '@/lib/onboarding/countries';
 import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -74,6 +78,7 @@ export default function Profile() {
   const [loggingOut, setLoggingOut] = useState(false);
   // P-176: 회피 표시 = 사진 미니 타일(온보딩 문법·P-174 서버 이미지 승계) — 8개(2줄) 초과 시 접기
   const ingCat = useIngredientCatalog();
+  const recentScans = useHome().data?.recent ?? []; // P-181 ②: 서버 보관 이력 — 신규 API 0
   const [showAllAvoid, setShowAllAvoid] = useState(false);
 
   // ⑪-1: 무반응 버튼 연타 방지 — 확인 모달로 depth 추가, 진행 중엔 스피너+재진입 차단
@@ -145,8 +150,10 @@ export default function Profile() {
                 )}
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   {!!me.nationality && (
-                    <View style={styles.pill}>
-                      <Text style={styles.pillText}>{me.nationality}</Text>
+                    <View style={styles.pill} testID="nation-pill">
+                      {/* P-181 ⑤: 코드 생짜 → 국기(FlagEmoji — 기채택 예외)+국가명(온보딩 목록 재사용) */}
+                      <FlagEmoji code={me.nationality} size={13} />
+                      <Text style={styles.pillText}>{countryByCode(me.nationality)?.name ?? me.nationality}</Text>
                     </View>
                   )}
                   <View style={styles.pill}>
@@ -154,7 +161,8 @@ export default function Profile() {
                   </View>
                 </View>
               </View>
-              <Pressable style={styles.edit} hitSlop={8} onPress={() => router.push('/profile/edit' as Href)}>
+              {/* P-181 ④: 박스 배경 제거 — SVG만, 터치 44pt는 hitSlop */}
+              <Pressable style={styles.edit} hitSlop={14} onPress={() => router.push('/profile/edit' as Href)} testID="profile-edit-pencil">
                 <IconEdit size={18} color={C.ink2} />
               </Pressable>
             </View>
@@ -238,6 +246,26 @@ export default function Profile() {
                 <Text style={styles.dietAddText}>{t('profile.add')}</Text>
               </Pressable>
             </Section>
+
+            {/* P-181 ②: Recently scanned — 홈과 동일 데이터(useHome().recent)·카드(RecentRow)
+                재사용, 배치 = 개인 콘텐츠 클러스터(Saved/My reviews) 위 재량. 빈 상태 = 홈
+                규칙(미노출), 게스트는 프로필 자체가 로그인 임베드라 미도달. */}
+            {recentScans.length > 0 && (
+              <Section title={t('home.recentTitle')}>
+                <View style={{ gap: 10 }}>
+                  {recentScans.map((d) => (
+                    <RecentRow
+                      key={d.foodId}
+                      food={d}
+                      hasRestrictions={(me.restrictions.length ?? 0) > 0}
+                      guest={false}
+                      reviewLabel={t('home.review')}
+                      onPress={() => router.push(`/food/${d.foodId}?src=list` as Href)}
+                    />
+                  ))}
+                </View>
+              </Section>
+            )}
 
             {/* P-150 ⑤①: Spice tolerance 섹션 제거 — 맵기 수정은 프로필 수정 화면만 */}
 
@@ -342,7 +370,7 @@ const styles = StyleSheet.create({
   nameUnset: { fontFamily: font.body, fontSize: 17, color: C.ink3 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
   pillText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
-  edit: { width: 40, height: 40, borderRadius: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  edit: { padding: 4, alignItems: 'center', justifyContent: 'center' }, // P-181 ④: 박스 소멸 — 아이콘만(hitSlop 14 = 44pt)
 
   sec: { gap: 11 },
   secHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
