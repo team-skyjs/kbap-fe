@@ -8,7 +8,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-localization', () => ({ getLocales: () => [{ regionCode: 'JP' }] }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { resolveCurrency, SUPPORTED_CURRENCIES } from '../exchange';
+import { convertKrw, resolveCurrency, SUPPORTED_CURRENCIES } from '../exchange';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -35,4 +35,21 @@ it('서버 미설정(null) → 캐시 > 국적 > 로케일 기존 체인 유지'
 it('피커 카탈로그 = 환산 테이블 보유 통화만(선택 즉시 병기 동작 보장)', () => {
   expect(SUPPORTED_CURRENCIES.length).toBe(20);
   expect(SUPPORTED_CURRENCIES.map((c) => c.code)).toContain('KRW');
+});
+
+describe('P-185: 환산가 ≈ 접두(근사 오인 예방)', () => {
+  it('환산 문자열 = ≈ 접두 · KRW/미지 통화 = null(무변)', () => {
+    expect(convertKrw(8000, 'USD')).toMatch(/^≈\$/);
+    expect(convertKrw(8000, 'KRW')).toBeNull();
+    expect(convertKrw(8000, 'XXX')).toBeNull();
+  });
+
+  it('사장님 확인 화면 = 환산 노출 0(place=ko 원화만) — 소스 잠금', () => {
+    const fs = require('fs');
+    const owner = fs.readFileSync('src/app/food/[id]/owner.tsx', 'utf8') as string;
+    expect(owner).not.toContain('convertKrw');
+    // 주문 카드 뒤집힌 ko 면(koCard)도 환산 미노출 — 환산은 리더 면(미러·합계)만
+    const card = fs.readFileSync('src/features/order/FlippedOrderCard.tsx', 'utf8') as string;
+    expect(card.split('koCard = ')[1].split('return (')[0]).not.toContain('converted');
+  });
 });
