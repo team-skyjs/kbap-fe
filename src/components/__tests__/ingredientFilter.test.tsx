@@ -9,6 +9,10 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { ScrollView } from 'react-native';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('expo-image', () => {
+  const { View } = require('react-native');
+  return { Image: View };
+});
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
@@ -27,6 +31,13 @@ jest.mock('react-native-reanimated', () => {
     return b;
   };
   return {
+    withRepeat: (v) => v,
+    withSequence: (...vals) => vals[vals.length - 1],
+    withDelay: (_d, v) => v,
+    withTiming: (v) => v,
+    cancelAnimation: () => {},
+    useReducedMotion: () => false,
+    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
     useSharedValue: (v: unknown) => ({ value: v }),

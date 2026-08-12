@@ -5,6 +5,23 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: (c: unknown) => c },
+    useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    withTiming: (v: unknown) => v,
+    withRepeat: (v: unknown) => v,
+    withSequence: (...vals: unknown[]) => vals[vals.length - 1],
+    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
+  };
+});
+jest.mock('expo-image', () => {
+  const { View } = require('react-native');
+  return { Image: View };
+});
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
@@ -41,7 +58,6 @@ it('code 머지 — 서버 name 우선, 누락 code·무데이터는 기존 ingr
 });
 
 describe('AvoidTile 이미지 3단 폴백 — 서버 → 클라 조립(P-145) → 색(P-134)', () => {
-  const { Image } = require('react-native');
   const render = (el: React.ReactElement) => {
     let tree!: ReactTestRenderer;
     act(() => {
@@ -49,21 +65,21 @@ describe('AvoidTile 이미지 3단 폴백 — 서버 → 클라 조립(P-145) �
     });
     return tree;
   };
-  const img = (tree: ReactTestRenderer) => tree.root.findAllByType(Image)[0];
+  const img = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID?.startsWith?.('avtile-img-'))[0];
 
   it('서버 imageUrl 우선 → 실패 시 클라 조립 URL → 재실패 시 색 폴백(이미지 언마운트)', () => {
     const tree = render(<AvoidTile code="EGG" imageUrl="https://cdn/server-egg.webp" abbr="EG" tint="#eee" />);
-    expect(img(tree).props.source.uri).toBe('https://cdn/server-egg.webp');
+    expect(img(tree).props.source).toBe('https://cdn/server-egg.webp');
     act(() => img(tree).props.onError());
-    expect(img(tree).props.source.uri).toContain('images/webp/ingredients/egg.webp'); // 클라 조립
+    expect(img(tree).props.source).toContain('images/webp/ingredients/egg.webp'); // 클라 조립
     act(() => img(tree).props.onError());
-    expect(tree.root.findAllByType(Image).length).toBe(0); // 색 폴백(약어 잔존)
+    expect(tree.root.findAll((n) => n.props?.testID?.startsWith?.('avtile-img-')).length).toBe(0); // 색 폴백(약어 = 실패시)
     expect(JSON.stringify(tree.toJSON())).toContain('EG');
   });
 
   it('서버 null → 종전 클라 조립부터 시작(P-145 무변)', () => {
     const tree = render(<AvoidTile code="EGG" imageUrl={null} abbr="EG" tint="#eee" />);
-    expect(img(tree).props.source.uri).toContain('images/webp/ingredients/egg.webp');
+    expect(img(tree).props.source).toContain('images/webp/ingredients/egg.webp');
   });
 });
 

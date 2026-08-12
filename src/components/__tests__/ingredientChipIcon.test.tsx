@@ -8,6 +8,29 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { StyleSheet } from 'react-native';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('react-native-reanimated', () => {
+  const { View, ScrollView, FlatList } = require('react-native');
+  return {
+    __esModule: true,
+    default: { View, ScrollView, FlatList, createAnimatedComponent: (c) => c },
+    useSharedValue: (v) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    useAnimatedScrollHandler: () => () => {},
+    useReducedMotion: () => false,
+    withSpring: (v) => v,
+    withTiming: (v) => v,
+    withRepeat: (v) => v,
+    withSequence: (...vals) => vals[vals.length - 1],
+    withDelay: (_d, v) => v,
+    interpolate: () => 0,
+    Extrapolation: { CLAMP: 'clamp' },
+    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
+  };
+});
+jest.mock('expo-image', () => {
+  const { View } = require('react-native');
+  return { Image: View };
+});
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),

@@ -7,6 +7,10 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('expo-image', () => {
+  const { View } = require('react-native');
+  return { Image: View };
+});
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),
@@ -214,7 +218,11 @@ it('P-134 회피: 81종 타일+폴백 약어·카운트/Clear', async () => {
   const tiles = new Set(tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('avoid-') && n.props.testID !== 'avoid-clear').map((n) => n.props.testID as string));
   expect(tiles.size).toBe(81); // 실카탈로그 전량 (시안 30종 아님 — composite/host 중복은 Set으로)
   const egg = tree.root.findAll((n) => n.props?.testID === 'avoid-EGG')[0];
-  expect(egg.findAll((c) => c.props?.children === 'EG').length).toBeGreaterThanOrEqual(1); // 폴백 약어 2글자
+  // P-188: 약어는 로드 **실패시에만** — 체인 소진(onError) 후 노출, 로딩 중엔 스켈레톤
+  expect(egg.findAll((c) => c.props?.testID?.startsWith?.('avtile-skel-')).length).toBeGreaterThanOrEqual(1);
+  const eggImg = egg.findAll((c) => c.props?.testID === 'avtile-img-EGG')[0];
+  await act(async () => { eggImg.props.onError(); });
+  expect(egg.findAll((c) => c.props?.children === 'EG').length).toBeGreaterThanOrEqual(1); // 실패 폴백 약어
   expect(textNodes(tree, 'onboarding.selectedCount').length).toBeGreaterThanOrEqual(1); // 1개 선택 카운트
   const clear = tree.root.findAll((n) => n.props?.testID === 'avoid-clear')[0];
   await act(async () => { clear.props.onPress(); });

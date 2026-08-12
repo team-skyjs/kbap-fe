@@ -8,6 +8,9 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   return {
+    withRepeat: (v) => v,
+    withSequence: (...vals) => vals[vals.length - 1],
+    withDelay: (_d, v) => v,
     __esModule: true,
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
     useSharedValue: (v: unknown) => ({ value: v }),
@@ -105,7 +108,7 @@ it('8개 이하 = 토글 없음 · 초과 = 8개 접기 + Show all/less 토글',
   const many = render();
   const tileIds = new Set(
     many.root
-      .findAll((n) => n.props?.testID?.startsWith?.('avtile-') && !String(n.props.testID).includes('-img-'))
+      .findAll((n) => n.props?.testID?.startsWith?.('avtile-') && !String(n.props.testID).includes('-img-') && !String(n.props.testID).includes('-skel-'))
       .map((n) => String(n.props.testID)),
   );
   expect(tileIds.size).toBeLessThanOrEqual(8); // 접힘 = 8개(2줄)만
