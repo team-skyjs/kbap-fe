@@ -1151,3 +1151,7 @@
 - [x] QueryErrorBlock fill 자체 소유(+StateBlock fill prop) — 13표면 전수(수동 paddingTop 5 제거·래퍼 8 이관·제외 3 보고), 상세 실패 별 숨김.
 - [x] 홈 hasScans 분기 제거(false-safe safeSub 소멸) — popularTitle "Popular dishes" 일원화 ×10.
 - [x] tsc 0 · jest 101스위트 605/605 · teamtest OTA(iOS 73847f2b·안드 04da6635) — 6cba891.
+
+## 환산가 ≈ 접두 (2026-08-12, P-185)
+- [x] convertKrw ≈ 접두(포매터 한 곳 — 스캔 행·주문 카드 자동), 사장님 카드/ko 면 환산 0 잠금.
+- [x] tsc 0 · jest 101스위트 607/607 · teamtest OTA(iOS 598181d2·안드 a795dbcc) — 3d938ae.
