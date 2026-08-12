@@ -1155,3 +1155,7 @@
 ## 환산가 ≈ 접두 (2026-08-12, P-185)
 - [x] convertKrw ≈ 접두(포매터 한 곳 — 스캔 행·주문 카드 자동), 사장님 카드/ko 면 환산 0 잠금.
 - [x] tsc 0 · jest 101스위트 607/607 · teamtest OTA(iOS 598181d2·안드 a795dbcc) — 3d938ae.
+
+## 신고/차단·스캔 contain·타일 캐시 (2026-08-12, P-186~188)
+- [x] P-188 AvoidTile expo-image(디스크 캐시)+스켈레톤/실패 분리 — de52e41. P-187 진행 화면 contain(결과 토글 cover는 P-079 의도 무변) — aa8a53c. P-186 ⋯ 타인 신고/차단(익명 제외·mine 실값 교정)+409 멱등+차단 클라 숨김+SEXUAL 라벨 정합 — 14c0c7b.
+- [x] tsc 0 · jest 101스위트 612/612 · teamtest OTA(iOS 40f46733·안드 bc4177c0).
