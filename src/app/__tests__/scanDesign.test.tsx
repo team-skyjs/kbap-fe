@@ -255,3 +255,10 @@ it('P-161: 다시찍기 = 확인 모달 선노출 — 취소 시 결과 보존, 
   expect(JSON.stringify(tree.toJSON())).not.toContain('₩8,000');
   expect(tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery').length).toBeGreaterThanOrEqual(1); // 카메라 화면
 });
+
+it('P-187: 진행 화면 미리보기 = contain(레터박스) — cover 크롭 소멸(소스 잠금)', () => {
+  const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  const scanning = src.split("phase === 'scanning'")[1].split('// ---- error ----')[0];
+  expect(scanning).toContain('resizeMode="contain"');
+  expect(scanning).not.toContain('resizeMode="cover"');
+});

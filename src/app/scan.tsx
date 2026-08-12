@@ -582,7 +582,9 @@ export default function Scan() {
   if (phase === 'scanning') {
     return (
       <View style={styles.root}>
-        {photo && <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+        {/* P-187: cover 크롭 → contain 레터박스(어두운 root 배경) — 가로 사진도 전체 표시,
+            "잘려서 분석되나?" 오인 소멸(OCR·업로드는 원래 원본 전체 — 표시 문제였음) */}
+        {photo && <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="contain" testID="scanning-preview" />}
         <ScanSweepOverlay />
         {Close}
         {GateSheet}
