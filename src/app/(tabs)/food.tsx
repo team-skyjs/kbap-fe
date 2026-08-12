@@ -92,9 +92,7 @@ export default function Food() {
            P-027의 ListEmptyComponent 경유는 캐시가 있으면 리스트가 비어있지 않아
            에러 화면이 안 떴다(캐시 목록+무헤더 어중간 상태). 리스트 자체를 대체
            하므로 onEndReached·푸터 스피너 경로도 원천 차단. 헤더 미렌더는 유지. */
-        <View style={styles.errorFill}>
-          <QueryErrorBlock error={error} onRetry={() => void refetch()} />
-        </View>
+        <QueryErrorBlock error={error} onRetry={() => void refetch()} />
       ) : (
         <Animated.FlatList
           data={list}

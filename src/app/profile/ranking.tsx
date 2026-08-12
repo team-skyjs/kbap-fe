@@ -48,11 +48,9 @@ export default function RankingScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
       >
-        {/* P-164: 로드 실패 = 공용 에러(+재시도) */}
+        {/* P-164 → P-184: 로드 실패 = 공용 에러 — 정중앙은 블록 소유(수동 배치 금지) */}
         {error && !rk ? (
-          <View style={{ paddingTop: 40 }}>
-            <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-          </View>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
         ) : (
           rk && <RankingBody rk={rk} onScan={() => router.push('/scan' as Href)} />
         )}

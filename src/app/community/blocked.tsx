@@ -26,9 +26,7 @@ export default function BlockedUsers() {
         <Text style={styles.note}>{t('community.blockedNote')}</Text>
         {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 화면 방치 금지 */}
         {error && !blocked ? (
-          <View style={{ paddingTop: 60 }}>
-            <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-          </View>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
         ) : (blocked ?? []).length === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIc}>

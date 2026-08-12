@@ -122,9 +122,7 @@ export default function CommunityPostDetail() {
     return (
       <View style={styles.root}>
         <SubHeader title={t('community.postTitle')} onBack={() => router.back()} />
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-        </View>
+        <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
       </View>
     );
   }

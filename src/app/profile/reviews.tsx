@@ -87,9 +87,7 @@ export default function MyReviews() {
       <ScrollView contentContainerStyle={[styles.body, count === 0 && { flexGrow: 1 }]} showsVerticalScrollIndicator={false}>
         {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
         {reviewsError && !reviews ? (
-          <View style={{ flex: 1, justifyContent: 'center' }}>
-            <QueryErrorBlock error={reviewsError} onRetry={() => void refetchReviews()} onGoBack={() => router.back()} />
-          </View>
+          <QueryErrorBlock error={reviewsError} onRetry={() => void refetchReviews()} onGoBack={() => router.back()} />
         ) : count === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIc}>

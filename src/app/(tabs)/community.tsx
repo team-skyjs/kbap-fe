@@ -114,18 +114,15 @@ export default function Community() {
             </View>
           ) : feed.isError ? (
             /* P-164: 로드 실패 = 공용 에러(+재시도) — 탭 루트라 goBack 생략(홈 탭 문법) */
-            <View style={styles.emptyFill}>
-              <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
-            </View>
+            <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
           ) : (
             /* P-154 ②: 빈 상태 = 상하 센터(앱 통일 — 화면 소유 빈 상태 규칙) */
-            <View style={styles.emptyFill}>
-              <StateBlock
-                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-                title={t('community.emptyTitle')}
-                body={t('community.emptyBody')}
-              />
-            </View>
+            <StateBlock
+              fill
+              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+              title={t('community.emptyTitle')}
+              body={t('community.emptyBody')}
+            />
           )
         }
         ListFooterComponent={

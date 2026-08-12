@@ -162,3 +162,39 @@ describe('P-164 ②: 대표 적용분 — 내 리뷰', () => {
     expect(s).not.toContain('myReviews.emptyTitle');
   });
 });
+
+describe('P-184: 상태 화면 센터 구조 승격', () => {
+  it('QueryErrorBlock = fill 자체 소유(수동 배치 불요 구조)', () => {
+    const src = require('fs').readFileSync('src/components/StateBlock.tsx', 'utf8') as string;
+    expect(src).toContain("fill: { flex: 1, flexGrow: 1, justifyContent: 'center' }");
+    // QueryErrorBlock 두 변형(J3/J4) 모두 fill
+    expect((src.match(/<StateBlock\n      fill/g) ?? []).length + (src.match(/fill\n        icon=\{<IconWifiOff/g) ?? []).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('전 표면 수동 배치 잔존 0 — QueryErrorBlock 주변 paddingTop 래퍼 소스 잠금', () => {
+    const fs = require('fs');
+    const files = [
+      'src/app/(tabs)/index.tsx', 'src/app/(tabs)/profile.tsx', 'src/app/(tabs)/food.tsx',
+      'src/app/(tabs)/community.tsx', 'src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx',
+      'src/app/profile/ranking.tsx', 'src/app/profile/saved.tsx', 'src/app/profile/reviews.tsx',
+      'src/app/community/blocked.tsx', 'src/app/community/post/[id].tsx',
+      'src/features/community/ReviewFeed.tsx', 'src/app/search.tsx',
+    ];
+    for (const f of files) {
+      const src = fs.readFileSync(f, 'utf8') as string;
+      // 상태 블록을 paddingTop 뷰로 감싸는 구 문법 금지
+      expect(src).not.toMatch(/paddingTop:[^\n]*\n\s*<QueryErrorBlock/);
+    }
+  });
+});
+
+describe('P-183: 홈 부제 false-safe', () => {
+  it('홈 추천 = hasScans 무관 popular 계열 — safeTitle/safeSub 소스 잔존 0', () => {
+    const src = require('fs').readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
+    expect(src).not.toContain('home.safeTitle');
+    expect(src).not.toContain('home.safeSub');
+    expect(src).toContain('home.popularTitle');
+    const en = JSON.parse(require('fs').readFileSync('src/lib/i18n/en.json', 'utf8'));
+    expect(en.home.popularTitle).toBe('Popular dishes'); // P-181 확정값 일원화
+  });
+});

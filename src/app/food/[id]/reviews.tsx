@@ -113,27 +113,24 @@ export default function FoodReviews() {
         {/* P-164: 로드 실패 = 공용 에러(+재시도) — loaded 게이트 밖(에러 시 헤더만
             남던 빈 화면이 바로 이 구멍). 로드된 항목이 있으면 그 목록 유지. */}
         {reviewsQ.isError && all.length === 0 ? (
-          <View style={styles.emptyFill}>
-            <QueryErrorBlock error={reviewsQ.error} onRetry={() => void reviewsQ.refetch()} onGoBack={() => router.back()} />
-          </View>
+          <QueryErrorBlock error={reviewsQ.error} onRetry={() => void reviewsQ.refetch()} onGoBack={() => router.back()} />
         ) : null}
         {/* 게스트는 리뷰 개수와 무관하게 항상 잠금 (실기기 반려분 #3) —
             빈 상태(쓰기 CTA 포함)는 회원에게만 */}
         {!(reviewsQ.isError && all.length === 0) && loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
-          <View style={styles.emptyFill}>
-            <StateBlock
-              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-              title={t('reviews.emptyTitle')}
-              body={t('reviews.emptyBody')}
-              primary={{
-                label: t('reviews.writeReview'),
-                icon: <IconPlus size={17} color="#fff" />,
-                onPress: () => { track(EVENTS.review_write_tap, { source: 'list' }); router.push(`/food/${id}/review` as Href); }, // P-144
-              }}
-            />
-          </View>
+          <StateBlock
+            fill
+            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+            title={t('reviews.emptyTitle')}
+            body={t('reviews.emptyBody')}
+            primary={{
+              label: t('reviews.writeReview'),
+              icon: <IconPlus size={17} color="#fff" />,
+              onPress: () => { track(EVENTS.review_write_tap, { source: 'list' }); router.push(`/food/${id}/review` as Href); }, // P-144
+            }}
+          />
         ) : (
           <View style={styles.body}>
             {/* dish header */}

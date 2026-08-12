@@ -101,17 +101,14 @@ export function ReviewFeed() {
               <Spinner size={22} color={C.ink2} />
             </View>
           ) : feed.isError ? (
-            <View style={styles.emptyFill}>
-              <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
-            </View>
+            <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
           ) : (
-            <View style={styles.emptyFill}>
-              <StateBlock
-                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-                title={t('reviews.emptyTitle')}
-                body={t('reviews.emptyBody')}
-              />
-            </View>
+            <StateBlock
+              fill
+              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+              title={t('reviews.emptyTitle')}
+              body={t('reviews.emptyBody')}
+            />
           )
         }
         ListFooterComponent={

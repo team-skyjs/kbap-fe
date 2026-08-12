@@ -126,9 +126,7 @@ export default function Profile() {
           <SkeletonProfile />
         ) : meError ? (
           /* P-007 false-empty/백지 제거: 프로필 쿼리 에러는 J3/J4로 정직하게 */
-          <View style={{ paddingTop: 40 }}>
-            <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
-          </View>
+          <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
         ) : me && (
           <View style={styles.body}>
             {/* identity */}

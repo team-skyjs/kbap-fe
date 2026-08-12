@@ -92,9 +92,7 @@ export default function Home() {
         ) : isError ? (
           /* P-007(KB-174) false-empty 제거: 에러를 "아직 스캔이 없어요"로 위장 금지 —
              빈 상태는 성공+0건일 때만. Try again은 이 쿼리만 refetch. */
-          <View style={{ paddingTop: 40 }}>
-            <QueryErrorBlock error={error} onRetry={() => void refetch()} />
-          </View>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         ) : (
           <View style={styles.body}>
             {/* P-111: 소프트 넛지 — min≤현재<latest, dismiss한 버전 재노출 없음 */}
@@ -176,9 +174,11 @@ export default function Home() {
               <Section
                 // ⑦ 게스트에겐 safe 마크가 안전 주장으로 읽힘 → 중립 음식 아이콘
                 icon={isGuest ? <IconFood size={22} color={C.primary} /> : <RiskMark state="safe" size={22} />}
-                title={hasScans ? t('home.safeTitle') : t('home.popularTitle')}
+                // P-183: hasScans 분기 제거 — 데이터가 분기 무관 서버 랜덤 5(popularFoods)라
+                // safeTitle/safeSub는 회피 필터링 허위 보증(false-safe). 항상 popular 계열.
+                title={t('home.popularTitle')}
                 // ⑧-a 게스트에겐 개인화 판정이 존재한다는 카피도 금지 (원칙 2)
-                sub={hasScans ? t('home.safeSub') : isGuest ? t('home.popularSubGuest') : t('home.popularSub')}
+                sub={isGuest ? t('home.popularSubGuest') : t('home.popularSub')}
                 seeAll={t('home.seeAll')}
                 onSeeAll={() => router.push('/food')}
               >

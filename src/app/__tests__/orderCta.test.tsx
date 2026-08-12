@@ -230,3 +230,10 @@ describe('P-162: 상세 CTA 목적지·주문 완료 모달·저장 스낵바', 
     expect(s).not.toContain('saved.error');
   });
 });
+
+it('P-184 ③: 음식 상세 로드 실패 → 저장(별) 부재(대상 없음) · 뒤로가기 유지', () => {
+  mockUseFoodDetail.mockReturnValue({ data: undefined, isLoading: false, error: new Error('HTTP 500'), refetch: jest.fn() });
+  const tree = render(<FoodDetailScreen />);
+  expect(tree.root.findAll((n) => n.props?.testID === 'detail-save').length).toBe(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'detail-back').length).toBeGreaterThanOrEqual(1);
+});

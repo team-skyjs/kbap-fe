@@ -78,9 +78,7 @@ export default function SavedScreen() {
       <SubHeader title={t('saved.title')} onBack={() => router.back()} />
       {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
       {isError && !list ? (
-        <View style={styles.errorFill}>
-          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-        </View>
+        <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
       ) : isLoading ? null : items.length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIc}>

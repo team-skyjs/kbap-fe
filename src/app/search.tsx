@@ -115,9 +115,7 @@ export default function Search() {
 
       {!showingSearch && offline ? (
         /* 1a. offline: 전체화면 J4 — 홈·음식탭과 톤 통일 (P-028) */
-        <View style={styles.fill}>
-          <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
-        </View>
+        <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
       ) : !showingSearch ? (
         /* 1. empty state: recent (local) + popular (mock) */
         <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>

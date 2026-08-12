@@ -23,6 +23,7 @@ export function StateBlock({
   tone = 'default',
   primary,
   secondary,
+  fill = false,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -30,9 +31,11 @@ export function StateBlock({
   tone?: StateTone;
   primary?: { label: string; icon?: React.ReactNode; onPress?: () => void };
   secondary?: { label: string; onPress?: () => void };
+  /** P-184: 화면 잔여 높이 세로 정중앙을 블록이 소유 — 화면별 수동 배치 금지(재발 방지 구조). */
+  fill?: boolean;
 }) {
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, fill && styles.fill]}>
       <View style={[styles.ic, TONE_BG[tone]]}>{icon}</View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.body}>{body}</Text>
@@ -69,6 +72,8 @@ const TONE_BG: Record<StateTone, { backgroundColor: string }> = {
 
 const styles = StyleSheet.create({
   root: { alignItems: 'center', gap: 11, paddingHorizontal: 24, paddingVertical: 24, maxWidth: 320, alignSelf: 'center' },
+  // P-184: 잔여 높이 정중앙 — flex(플렉스 부모)+flexGrow(스크롤 콘텐츠) 겸용
+  fill: { flex: 1, flexGrow: 1, justifyContent: 'center' },
   ic: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.display, fontSize: 20, color: C.ink, textAlign: 'center' },
   body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 21, textAlign: 'center' },
@@ -96,9 +101,11 @@ export function QueryErrorBlock({
   onGoBack?: () => void;
 }) {
   const { t } = useTranslation();
+  // P-184: 에러/오프라인은 항상 전체 표면 상태 — 세로 정중앙 자체 소유(수동 배치 금지)
   if (classifyQueryError(error) === 'offline') {
     return (
       <StateBlock
+        fill
         icon={<IconWifiOff size={38} color={stateIconColor.default} />}
         title={t('states.offlineTitle')}
         body={t('states.offlineBody')}
@@ -108,6 +115,7 @@ export function QueryErrorBlock({
   }
   return (
     <StateBlock
+      fill
       tone="err"
       icon={<IconAlertTri size={38} color={stateIconColor.err} />}
       title={t('states.errorTitle')}

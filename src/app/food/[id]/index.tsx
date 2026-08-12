@@ -107,12 +107,9 @@ export default function FoodDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {error && !food && (
-          <View style={[styles.errorState, { paddingTop: insets.top + 70 }]}>
-            <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-          </View>
-        )}
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: 40 }, error && !food ? { flexGrow: 1 } : null]}>
+        {/* P-184(Q-34③ 반려): 수동 paddingTop 배치 소멸 — 정중앙은 블록 소유 */}
+        {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
 
         {!isLoading && food && (
           <>
@@ -166,9 +163,12 @@ export default function FoodDetailScreen() {
             {food?.name ?? ''}
           </Text>
         </Animated.View>
-        <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={onBookmark} hitSlop={8} testID="detail-save">
-          <IconStar size={18} color={saved ? C.primary : solid ? C.ink : '#fff'} fill={saved ? C.primary : 'none'} />
-        </Pressable>
+        {/* P-184 ③: 음식 데이터 없으면 저장 대상 없음 — 별 숨김(뒤로가기만) */}
+        {!!food && (
+          <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={onBookmark} hitSlop={8} testID="detail-save">
+            <IconStar size={18} color={saved ? C.primary : solid ? C.ink : '#fff'} fill={saved ? C.primary : 'none'} />
+          </Pressable>
+        )}
       </View>
 
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
