@@ -57,17 +57,15 @@ export const RIGHT_COL_W = 72;
 export const ADD_SLOT_H = 30;
 
 /** P-160(예진 확정, 목업 B안): 프로필 체크 줄 — surface2 바탕+하단 보더로 리스트와
- *  톤 분리, 캡션 소형 대문자(**✓ 없음** — 전부 통과로 오독 방지), 우측 Edit,
- *  아래 회피 재료 개별 칩 가로 스트립. 스크롤 시 상단 고정은 배치 몫(scan.tsx —
- *  ScrollView 밖 상단). */
-export function ScanProfileBar({ avoidNames, onEditProfile, t }: { avoidNames: string[]; onEditProfile: () => void; t: TFn }) {
+ *  톤 분리, 캡션 소형 대문자(**✓ 없음** — 전부 통과로 오독 방지), 아래 회피 재료
+ *  개별 칩 가로 스트립. 스크롤 시 상단 고정은 배치 몫(scan.tsx — ScrollView 밖 상단).
+ *  P-180(회의 결정 6, 8/12): 우측 Edit 소멸 — 스캔 후 주문 플로우에서 회피 수정
+ *  진입 차단(앞으로도 미개방). 회피 수정은 프로필 경유만. */
+export function ScanProfileBar({ avoidNames, t }: { avoidNames: string[]; t: TFn }) {
   return (
     <View style={styles.bar} testID="profile-bar">
       <View style={styles.barCap}>
         <Text style={styles.barCapText}>{t('scan.checkedAgainst')}</Text>
-        <Pressable hitSlop={8} onPress={onEditProfile} testID="profile-edit-link">
-          <Text style={styles.editLink}>{t('community.edit')}</Text>
-        </Pressable>
       </View>
       {avoidNames.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.barStrip} testID="profile-strip">

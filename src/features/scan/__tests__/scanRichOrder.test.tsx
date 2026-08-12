@@ -234,9 +234,8 @@ it('P-153: 미등록 행 유사 제안 — 주의 톤 링크+탭 상세 라우�
   expect(cs).not.toContain('Sujebi');
 });
 
-it('P-160: 프로필 체크 줄 B안 — ✓ 마크 부재·대문자 캡션·회피 칩 스트립·Edit, 행 May contain 라벨 0·solid 칩', () => {
-  const onEdit = jest.fn();
-  const bar = render(<ScanProfileBar avoidNames={['Egg', 'Shrimp']} onEditProfile={onEdit} t={t} />);
+it('P-160→P-180: 프로필 체크 줄 — ✓ 마크 부재·대문자 캡션·회피 칩 스트립, Edit 소멸(회의 결정 6), 행 May contain 라벨 0·solid 칩', () => {
+  const bar = render(<ScanProfileBar avoidNames={['Egg', 'Shrimp']} t={t} />);
   const bs = flat(bar);
   expect(bs).toContain('scan.checkedAgainst');
   expect(bar.root.findAll((n) => n.props?.testID === 'profile-strip').length).toBeGreaterThanOrEqual(1);
@@ -244,9 +243,9 @@ it('P-160: 프로필 체크 줄 B안 — ✓ 마크 부재·대문자 캡션·�
   expect(bs).toContain('Shrimp');
   // ✓ 아이콘(RiskMark) 부재 — 전부 통과 오독 방지(B안 수정 1건)
   expect(bs).not.toContain('RNSVG'); // 바 안에 SVG 마크 없음
-  const edit = bar.root.findAll((n) => n.props?.testID === 'profile-edit-link' && typeof n.props?.onPress === 'function')[0];
-  act(() => edit.props.onPress());
-  expect(onEdit).toHaveBeenCalled();
+  // P-180: Edit 진입점 소멸 — 스캔 플로우 회피 수정 차단
+  expect(bar.root.findAll((n) => n.props?.testID === 'profile-edit-link').length).toBe(0);
+  expect(bs).not.toContain('community.edit');
   // 행: May contain 라벨 0 + solid 칩 색(목업 .ch-d/.ch-c)
   const tree = render(<Harness dishes={DISHES} />);
   const s2 = flat(tree);

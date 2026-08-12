@@ -503,7 +503,6 @@ export default function Scan() {
           {/* P-160 B안: 프로필 체크 줄 — ScrollView 밖 상단 고정(스크롤 시 스티키, 목업대로) */}
           <ScanProfileBar
             avoidNames={(me?.restrictions ?? []).map((r) => ingCat.name(r.code))}
-            onEditProfile={() => router.push('/profile/restrictions' as Href)}
             t={t}
           />
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
