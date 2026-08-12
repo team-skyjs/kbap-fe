@@ -1142,3 +1142,7 @@
 ## 실기 QA 소형 5건 (2026-08-12, P-181)
 - [x] 홈 타이틀 Popular dishes(ko 초안)·프로필 Recently scanned(RecentRow 재사용)·벨 제거(피드 포함)·연필 박스 소멸·국가 필 국기+국가명·anonymized=authorWithdrawn 정본.
 - [x] tsc 0 · jest 102스위트 601/601 · teamtest OTA(iOS c9feb8bc·안드 096d0b27) — c04995a. flags.ts 동승 0 확인.
+
+## 리뷰 2depth 전환 (2026-08-12, P-182)
+- [x] review/[id] 삭제 · 공용 셀 파츠(펼침·뷰어 신설·수정 시트) 4표면 적용 · 카드 탭 제거(요소별) · 본인 ⋯ 수정/삭제 · 0건 = Write CTA만. 신규 카피 3키 ×10(ko 초안).
+- [x] tsc 0 · jest 101스위트 601/601 · teamtest OTA(iOS 2aa362d3·안드 5e9bcf7f) — 7eab57a.
