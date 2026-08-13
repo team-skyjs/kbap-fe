@@ -22,8 +22,37 @@
  * 프로바이더+401 핸들러를 주입). 401 → refresh rotation 후 1회 재시도.
  * No provider (web/tests/signed-out) ⇒ no Authorization header.
  */
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import i18n from '../i18n';
 import { API_V1_BASE, BE_BASE } from '../data/config';
+import { isProdChannel } from '../flags';
+
+/**
+ * P-199(BE #160·161): dev 대개편 — **전 API 버전리스 + 헤더 3종 필수**
+ * (X-API-Version 누락 = 400 COMMON-002). prod 서버는 구계약(v1 경로·무헤더)
+ * 유지 실측 → **채널 분기**(P-114 isProdChannel 단일 소스 — 스토어 앱 안전).
+ * prod 서버 배포 신호 오면 이 분기 해제 발주.
+ */
+const LEGACY_CONTRACT = isProdChannel();
+
+/** 유일 헤더 예외 엔드포인트 — 무인증·X-API-Version 자체가 없는 버전 게이트. */
+export const APP_VERSION_PATH = '/api/app-version';
+
+const API_VERSION_HEADER = '1.0';
+
+/** 기기/앱 헤더 — 형식 고정: `iOS 18.1` / `AOS 14`(안드는 API 레벨 아닌 릴리스). */
+function deviceHeaders(): Record<string, string> {
+  const os =
+    Platform.OS === 'ios'
+      ? `iOS ${Platform.Version}`
+      : `AOS ${(Platform.constants as { Release?: string } | undefined)?.Release ?? Platform.Version}`;
+  return {
+    'X-API-Version': API_VERSION_HEADER,
+    'X-OS-Version': os,
+    'X-App-Version': Constants.expoConfig?.version ?? '0.0.0',
+  };
+}
 
 /** Normalized client error — message is user-presentable (BE `message` or HTTP). */
 export class ApiError extends Error {
@@ -87,16 +116,22 @@ async function request<T>(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept-Language': apiLang(),
-    ...extraHeaders, // P-153: 엔드포인트 한정(예: X-API-Version)
+    // P-199: dev 계열 = 헤더 3종 전 요청 부착(app-version만 예외) — prod 채널 무헤더
+    ...(!LEGACY_CONTRACT && path !== APP_VERSION_PATH ? deviceHeaders() : {}),
+    ...extraHeaders, // P-153: 엔드포인트 한정 오버라이드(예: 스캔 v2 X-API-Version 날짜판)
   };
   // BE access token (silently skipped when signed out / provider absent —
   // a token fetch failure must not turn every API call into an auth error).
   // 공개 인증 엔드포인트(login/refresh/logout)에는 붙이지 않는다 — 만료된
   // access가 붙으면 서버가 요청 자체를 401시켜 refresh가 영원히 실패한다
   // (BE JWT 가이드: 만료·무효 토큰 부착 시 공개 API도 401).
-  // P-165(#144): 버전리스 이관 — '/api/'로 시작하는 절대 API 경로는 BE_BASE만
-  // 프리픽스(예: '/api/reviews'), 그 외 상대 경로는 종전대로 /api/v1 아래.
-  const url = path.startsWith('/api/') ? `${BE_BASE}${path}` : `${API_V1_BASE}${path}`;
+  // P-165 → P-199: '/api/' 절대 경로 = BE_BASE만 프리픽스(종전 버전리스 경로 무변).
+  // 상대 경로 = dev 계열 `/api` 아래(버전리스 전환) · prod 채널만 구 `/api/v1` 유지.
+  const url = path.startsWith('/api/')
+    ? `${BE_BASE}${path}`
+    : LEGACY_CONTRACT
+      ? `${API_V1_BASE}${path}`
+      : `${BE_BASE}/api${path}`;
   const skipAuth = OPEN_AUTH_PATHS.some((p) => path.startsWith(p));
   const accessToken =
     !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;

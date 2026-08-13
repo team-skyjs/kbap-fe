@@ -76,7 +76,7 @@ it('타임아웃 에러 = NETWORK 분류 (offline UI — 재시도 유도 문구
   expect(classifyQueryError(new ApiError('HTTP 500'))).toBe('error');
 });
 
-it("P-165(#144): '/api/' 절대 경로 = 버전리스(BE_BASE만) · 상대 경로 = /api/v1 유지", async () => {
+it("P-165 → P-199: '/api/' 절대 경로 = BE_BASE만 · 상대 경로 = dev 계열 버전리스(/api)", async () => {
   const calls: string[] = [];
   global.fetch = jest.fn((url: unknown) => {
     calls.push(String(url));
@@ -85,5 +85,5 @@ it("P-165(#144): '/api/' 절대 경로 = 버전리스(BE_BASE만) · 상대 경�
   await api.get('/api/reviews?lang=en');
   await api.get('/home');
   expect(calls[0]).toBe('https://test.host/api/reviews?lang=en'); // v1 미포함
-  expect(calls[1]).toBe('https://test.host/api/v1/home');
+  expect(calls[1]).toBe('https://test.host/api/home'); // P-199: /api/v1 전멸(dev) — prod 분기는 apiOverhaul199
 });

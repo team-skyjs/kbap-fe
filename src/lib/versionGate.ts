@@ -16,7 +16,7 @@
 import * as React from 'react';
 import { AppState, Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { api } from './api/client';
+import { api, APP_VERSION_PATH } from './api/client';
 import { adaptAppConfig, type AppConfig } from './api/appConfigAdapter';
 import { compareSemver } from './semver';
 
@@ -63,7 +63,8 @@ export async function refreshVersionGate(force = false): Promise<void> {
   if (!force && now - lastFetchAt < REFRESH_MIN_MS) return; // 5분 내 재조회 스킵
   lastFetchAt = now;
   try {
-    const cfg = adaptAppConfig(await api.get<unknown>('/app-config'));
+    // P-199(KB-269): 실계약 배선 — GET /api/app-version(무인증·헤더 예외, 404 페일오픈 해소)
+    const cfg = adaptAppConfig(await api.get<unknown>(APP_VERSION_PATH));
     setState(evaluateGate(cfg, Constants.expoConfig?.version, Platform.OS));
   } catch {
     // 페일 오픈 — 상태 유지(초기값 pass). 이미 blocked면 유지(일시 오프라인으로 게이트 해제 금지).
