@@ -202,7 +202,7 @@ function RichRow({
         {dish.priceKrw != null && (
           <Text style={styles.price}>
             {formatKrw(dish.priceKrw)}
-            {converted ? ` · ${converted}` : ''}
+            {converted ? ` ${converted}` : ''}
           </Text>
         )}
       </View>

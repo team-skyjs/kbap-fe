@@ -28,9 +28,9 @@ import { QueryErrorBlock } from '@/components/StateBlock';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
-import { useDeleteReview, useToggleReviewLike } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
-import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
 import { useUpdateReview } from '@/lib/data/useReviewMutations';
 import { buildReviewUpdate } from '@/lib/api/reviewAdapter';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
@@ -222,7 +222,6 @@ function Registered({
   const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled ? id : '');
   const previewReviews = (reviewsQ.data?.pages[0]?.items ?? []).slice(0, 5);
   // P-169: Helpful(기존 좋아요 API — 표현만 교체) + 신고(기존 ModerationFlow 재사용)
-  const toggleLike = useToggleReviewLike();
   const deleteReview = useDeleteReview();
   const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
@@ -266,14 +265,14 @@ function Registered({
             <View style={styles.spiceMeta}>
               {/* 현행 5단계 foodSpiceText — 시안 "6/10 · hot" 이식 금지 */}
               <Text style={styles.spiceText}>{foodSpiceText(food.spiceLevel, t)}</Text>
-              {spicyForYou && <Text style={styles.spiceWarn}>· {t('detail.spiceAboveYou')}</Text>}
+              {spicyForYou && <Text style={styles.spiceWarn}>{t('detail.spiceAboveYou')}</Text>}
             </View>
           )}
         </View>
         {/* P-012(KB-179): 스캔한 메뉴판의 가격 — 스캔 진입 param에만 존재 */}
         {scanPrice != null && (
           <Text style={styles.scanPrice}>
-            {formatKrw(scanPrice)} <Text style={styles.scanPriceNote}>· {t('detail.scannedPrice')}</Text>
+            {formatKrw(scanPrice)} <Text style={styles.scanPriceNote}>{t('detail.scannedPrice')}</Text>
           </Text>
         )}
       </View>
@@ -320,7 +319,7 @@ function Registered({
               const dRisk = personalRisk(ing.risk, hasRestrictions);
               const freq =
                 ing.percentage != null
-                  ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) + (ing.note ? ` · ${ing.note}` : '')
+                  ? t('detail.ofShops', { pct: Math.round(ing.percentage) }) + (ing.note ? ` (${ing.note})` : '')
                   : (ing.note ?? '');
               return (
                 <View key={ing.code} style={styles.ingRow} testID={`ing-${ing.code}`}>
@@ -372,7 +371,7 @@ function Registered({
               <View style={styles.rvScoreRow}>
                 <Stars value={food.overall.average ?? 0} size={19} />
                 <Text style={styles.rvScoreNum}>{food.overall.average?.toFixed(1) ?? '—'}</Text>
-                <Text style={styles.rvScoreCount}>· {t('reviews.subtitle', { count: food.overall.count })}</Text>
+                <Text style={styles.rvScoreCount}>{t('reviews.subtitle', { count: food.overall.count })}</Text>
               </View>
               {/* 같은 국적 병기 — 보조 줄(재량: 메인 아래, 탭 = 목록) */}
               <Pressable style={styles.rvSameNat} onPress={() => router.push(`/food/${id}/reviews` as Href)} hitSlop={6} testID="same-nat-line">
@@ -380,7 +379,7 @@ function Registered({
                 <Text style={styles.rvSameNatText}>{t('detail.sameNationality')}</Text>
                 <Star size={12} fillPct={100} fillColor={C.primary} />
                 <Text style={styles.rvSameNatText}>
-                  {food.sameNationality.average?.toFixed(1) ?? '—'} · {food.sameNationality.count}
+                  {food.sameNationality.average?.toFixed(1) ?? '—'} ({food.sameNationality.count})
                 </Text>
               </Pressable>
             </View>
@@ -396,7 +395,8 @@ function Registered({
               t={t}
               mine={r.memberId != null && r.memberId === myId}
               anonymized={r.anonymized}
-              onHelpful={() => (guest ? setGateOpen(true) : toggleLike.mutate({ reviewId: r.id, foodId: id }))}
+              foodId={id}
+              onGuestHelpful={() => setGateOpen(true)}
               onMore={() =>
                 setMod({
                   type: 'review',
@@ -494,7 +494,8 @@ function ReviewPreviewRow({
   t,
   mine,
   anonymized,
-  onHelpful,
+  foodId,
+  onGuestHelpful,
   onMore,
 }: {
   review: Review;
@@ -502,7 +503,8 @@ function ReviewPreviewRow({
   mine: boolean;
   /** P-186: 익명(탈퇴) = ⋯ 없음 — 신고 대상 회원 부재 */
   anonymized: boolean;
-  onHelpful: () => void;
+  foodId: string;
+  onGuestHelpful: () => void;
   onMore: () => void;
 }) {
   const name = review.author?.nickname ?? t('reviews.anonymous');
@@ -529,11 +531,8 @@ function ReviewPreviewRow({
       {!!review.body && <ExpandableBody body={review.body} t={t} />}
       <ReviewPhotoStrip photos={review.photos ?? []} size={64} />
       <View style={styles.rvFoot}>
-        <Pressable hitSlop={8} onPress={onHelpful} testID={`helpful-${review.id}`}>
-          <Text style={[styles.helpfulText, review.myLike && styles.helpfulOn]}>
-            {t('reviews.helpful', { count: review.likes ?? 0 })}
-          </Text>
-        </Pressable>
+        {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
+        <HelpfulButton review={review} mine={mine} foodId={foodId} t={t} onGuest={onGuestHelpful} />
       </View>
     </View>
   );
@@ -638,8 +637,6 @@ const styles = StyleSheet.create({
   rvBeFirst: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', marginBottom: 4 },
   rvThumb: { width: 52, height: 52, borderRadius: 10, backgroundColor: C.surface2, overflow: 'hidden' },
   rvFoot: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 2 },
-  helpfulText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  helpfulOn: { color: C.primaryText },
   reportLink: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
   rate2: { flexDirection: 'row', gap: 11 },
   rateMini: { flex: 1, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, gap: 6 },

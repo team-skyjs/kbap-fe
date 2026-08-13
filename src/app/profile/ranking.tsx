@@ -77,7 +77,7 @@ function RankingBody({ rk, onScan }: { rk: Ranking; onScan: () => void }) {
         </View>
         <Text style={styles.tierEn}>{t(`ranking.tier.${cur.key}`)}</Text>
         <Text style={styles.tierKo}>
-          {t(`ranking.tierKo.${cur.key}`)} · {t('ranking.levelLabel', { level: cur.level })}
+          {t(`ranking.tierKo.${cur.key}`)} {t('ranking.levelLabel', { level: cur.level })}
         </Text>
         <View style={styles.heroDivider} />
         {bd && (

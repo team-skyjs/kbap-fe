@@ -783,6 +783,10 @@ export default function Scan() {
 /** P-062②: D2 스캐닝 오버레이 — 코너 브래킷 4 + 주황 스캔라인 스윕(글로우 트레일) */
 function ScanSweepOverlay() {
   const [h, setH] = useState(0);
+  // P-196 ③: 상단 브래킷을 X 닫기(top: insets.top+8, 40pt) 세이프존 아래로 —
+  // 노치/다이내믹 아일랜드 기기에서 X와 브래킷이 겹치던 실기 반려. 겹침 0 보장.
+  const insets = useSafeAreaInsets();
+  const bracketTop = Math.max(90, insets.top + 60);
   const y = useSharedValue(0);
   useEffect(() => {
     if (!h) return;
@@ -795,8 +799,8 @@ function ScanSweepOverlay() {
       {/* 어둡게 한 겹 — 사진 위 브래킷/라인 대비 */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.25)' }]} />
       {/* 코너 브래킷 4 */}
-      <View style={[styles.bracket, { top: 90, left: 26, borderTopWidth: 3, borderLeftWidth: 3 }]} />
-      <View style={[styles.bracket, { top: 90, right: 26, borderTopWidth: 3, borderRightWidth: 3 }]} />
+      <View style={[styles.bracket, { top: bracketTop, left: 26, borderTopWidth: 3, borderLeftWidth: 3 }]} testID="bracket-tl" />
+      <View style={[styles.bracket, { top: bracketTop, right: 26, borderTopWidth: 3, borderRightWidth: 3 }]} />
       <View style={[styles.bracket, { bottom: 150, left: 26, borderBottomWidth: 3, borderLeftWidth: 3 }]} />
       <View style={[styles.bracket, { bottom: 150, right: 26, borderBottomWidth: 3, borderRightWidth: 3 }]} />
       {/* 스캔라인 + 글로우 트레일 */}

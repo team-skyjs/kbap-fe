@@ -44,8 +44,8 @@ import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
-import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
 const READER_LANG = 'en'; // MVP reader language
@@ -95,7 +95,6 @@ export default function FoodReviews() {
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   // P-182: 개별 디테일 소멸 — 셀 확장이 전문·사진·수정을 담당
   const updateReview = useUpdateReview();
-  const toggleLike = useToggleReviewLike();
   const [editTarget, setEditTarget] = useState<Review | null>(null);
   const openMenu = (r: Review) =>
     setMod({
@@ -144,7 +143,7 @@ export default function FoodReviews() {
             <View>
               <Text style={styles.dishName}>{food?.name ?? ''}</Text>
               <Text style={styles.dishSub}>
-                {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} · ` : ''}
+                {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} ` : ''}
                 {t('reviews.subtitle', { count: overall.count })}
               </Text>
             </View>
@@ -167,7 +166,7 @@ export default function FoodReviews() {
                 {/* 리뷰 0건이어도 lock-pop이 뜰 공간 확보 (게스트에겐 빈 상태 없음) */}
                 <View pointerEvents="none" style={{ opacity: 0.3, gap: 12, minHeight: 180 }}>
                   {items.slice(0, 3).map((r) => (
-                    <ReviewItem key={r.id} review={r} t={t} />
+                    <ReviewItem key={r.id} review={r} t={t} mine={false} foodId={id ?? ''} />
                   ))}
                 </View>
                 <View style={styles.lockPop}>
@@ -213,7 +212,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} onMore={!r.anonymized ? () => openMenu(r) : undefined} /* P-186: 타인 = 신고/차단(익명 제외) */ onHelpful={() => toggleLike.mutate({ reviewId: r.id, foodId: id ?? '' })} />
+                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} foodId={id ?? ''} onMore={!r.anonymized ? () => openMenu(r) : undefined} /* P-186: 타인 = 신고/차단(익명 제외) */ />
                 ))}
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
@@ -281,7 +280,7 @@ function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; le
   );
 }
 
-function ReviewItem({ review, t, onMore, onHelpful }: { review: Review; t: TFn; onMore?: () => void; onHelpful?: () => void }) {
+function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TFn; mine: boolean; foodId: string; onMore?: () => void }) {
   // P-085 author 방어 3케이스: ① author null(탈퇴)=익명 ② nickname null(미설정)
   // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
@@ -369,12 +368,8 @@ function ReviewItem({ review, t, onMore, onHelpful }: { review: Review; t: TFn; 
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
         <View style={styles.itemFootRight}>
-          {/* P-169 ⑤ → P-182: Helpful = 토글(요소별 액션 — 디테일 소멸로 셀이 담당) */}
-          <Pressable hitSlop={8} onPress={onHelpful} disabled={!onHelpful} testID={`helpful-${review.id}`}>
-            <Text style={[styles.likeMetaText, review.myLike && styles.likeMetaOn]}>
-              {t('reviews.helpful', { count: review.likes ?? 0 })}
-            </Text>
-          </Pressable>
+          {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
+          <HelpfulButton review={review} mine={mine} foodId={foodId} t={t} />
         </View>
       </View>
     </View>
@@ -452,8 +447,6 @@ const styles = StyleSheet.create({
   itemFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemFootRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   likeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  likeMetaOn: { color: C.primaryText },
-  likeMetaText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   photoStrip: { flexDirection: 'row', gap: 8 },
   photo: { width: 84, height: 84, borderRadius: 10, backgroundColor: C.surface2 },
   // P-158 ②: i18n 가변 길이 내성 — 이름만 말줄임(shrink), 필·별점은 고정폭(겹침 0)

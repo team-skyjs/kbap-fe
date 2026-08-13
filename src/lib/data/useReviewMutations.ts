@@ -118,27 +118,36 @@ export function useDeleteReview() {
   });
 }
 
-/** 캐시 전역 좋아요 반전 — 내리뷰 + 음식 리뷰 infinite 전 필터 키('all'·국적). */
+/** 좋아요가 사는 infinite 캐시 전부 — 음식 리뷰(전 필터 키) + **전역 피드**.
+ *  P-196 반려: 전역 피드(['reviews','global']) 누락으로 커뮤니티탭 낙관 반영 0이던
+ *  원인 — 캐시 목록은 이 함수 한 곳만 만진다(표면 추가 시 여기). */
+function likeInfiniteQueries(qc: QueryClient, foodId: string) {
+  return [
+    ...qc.getQueryCache().findAll({ queryKey: ['food', foodId, 'reviews'] }),
+    ...qc.getQueryCache().findAll({ queryKey: ['reviews', 'global'] }),
+  ];
+}
+
+/** 캐시 전역 좋아요 반전 — 내리뷰 + likeInfiniteQueries 전부. */
 function flipLikeCaches(qc: QueryClient, input: { reviewId: string; foodId: string }) {
   const flip = (r: Review): Review =>
     r.id === input.reviewId
       ? { ...r, myLike: !r.myLike, likes: Math.max(0, (r.likes ?? 0) + (r.myLike ? -1 : 1)) }
       : r;
   qc.setQueryData<Review[]>(['me', 'reviews'], (prev) => prev?.map(flip));
-  qc.getQueryCache()
-    .findAll({ queryKey: ['food', input.foodId, 'reviews'] })
-    .forEach((query) => {
-      qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
-        prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
-      );
-    });
+  likeInfiniteQueries(qc, input.foodId).forEach((query) => {
+    qc.setQueryData<InfiniteData<ReviewPage>>(query.queryKey, (prev) =>
+      prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
+    );
+  });
 }
 
-/** 현재 myLike — 캐시가 진실(화면도 이걸 그린다). 내리뷰 → 음식 캐시 순. */
+/** 현재 myLike — 캐시가 진실(화면도 이걸 그린다). 내리뷰 → infinite 캐시 순.
+ *  P-196: 전역 피드 포함 — 피드에만 있는 리뷰의 next 계산 오류(항상 true 송신) 보수. */
 function currentMyLike(qc: QueryClient, input: { reviewId: string; foodId: string }): boolean {
   const mine = qc.getQueryData<Review[]>(['me', 'reviews'])?.find((r) => r.id === input.reviewId);
   if (mine) return mine.myLike === true;
-  for (const query of qc.getQueryCache().findAll({ queryKey: ['food', input.foodId, 'reviews'] })) {
+  for (const query of likeInfiniteQueries(qc, input.foodId)) {
     const data = query.state.data as InfiniteData<ReviewPage> | undefined;
     for (const p of data?.pages ?? []) {
       const r = p.items.find((x) => x.id === input.reviewId);

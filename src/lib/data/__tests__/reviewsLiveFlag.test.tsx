@@ -179,6 +179,25 @@ it('좋아요 토글(목) → API 호출 0 + 내 리뷰·음식 리뷰 전 필�
   expect((qc.getQueryData<Review[]>(['me', 'reviews'])![0])).toMatchObject({ likes: 2, myLike: false });
 });
 
+/* ---- P-196: 전역 피드 캐시(['reviews','global']) — 커뮤니티탭 무반영 반려 보수 ---- */
+
+it('P-196: 피드에만 있는 리뷰 — 낙관 반영·next 정확(재탭=해제)·실패 롤백 전부 피드 캐시 포함', async () => {
+  mockFlagState.live = true;
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  const feedRv = { ...LIKE_RV } as Review;
+  qc.setQueryData<InfiniteData<ReviewPage>>(['reviews', 'global'], { pages: [{ items: [feedRv], hasNext: false, nextCursor: null }], pageParams: [null] });
+  const feedItem = () => qc.getQueryData<InfiniteData<ReviewPage>>(['reviews', 'global'])!.pages[0].items[0];
+  await runLike(qc, { reviewId: 'r1', foodId: '7' });
+  expect(api.post).toHaveBeenCalledWith('/api/reviews/r1/like?liked=true');
+  expect(feedItem()).toMatchObject({ likes: 3, myLike: true }); // 반려 전: 피드 캐시 미순회 = 반영 0
+  await runLike(qc, { reviewId: 'r1', foodId: '7' }); // 재탭 — 반려 전: next가 항상 true(피드 미조회)
+  expect(api.post).toHaveBeenLastCalledWith('/api/reviews/r1/like?liked=false');
+  expect(feedItem()).toMatchObject({ likes: 2, myLike: false });
+  api.post.mockRejectedValueOnce(new Error('boom'));
+  await runLike(qc, { reviewId: 'r1', foodId: '7' }); // 실패 → 피드 캐시도 롤백
+  expect(feedItem()).toMatchObject({ likes: 2, myLike: false });
+});
+
 /* ---- P-108: 좋아요 실연결 (on — POST + 낙관/롤백) ---- */
 
 const LIKE_RV = { id: 'r1', foodId: '7', rating: 5, body: null, authorNationality: 'US', authorRankTier: null, anonymized: false, createdAt: '2026-08-03T00:00:00Z', likes: 2, myLike: false } as Review;

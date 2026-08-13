@@ -57,6 +57,16 @@ export function StateBlock({
   );
 }
 
+/**
+ * ScreenCenterFill (P-196) — 탭 상태 블록(오프라인/에러/빈)의 **화면 기준 정중앙**
+ * 공용 기준(스캔탭 문법). 탭마다 헤더 포함 여부·스크롤 구조가 달라 fill 기준
+ * 높이가 제각각이던 편차의 단일 해법: absoluteFill이라 헤더/스크롤 무관하게
+ * 화면 전체 기준 센터. 탭 루트(View flex:1) 직속에서만 사용.
+ */
+export function ScreenCenterFill({ children }: { children: React.ReactNode }) {
+  return <View style={[StyleSheet.absoluteFill, styles.screenCenter]}>{children}</View>;
+}
+
 /** Icon tint color for each tone (pass to the icon's color prop). */
 export const stateIconColor: Record<StateTone, string> = {
   default: C.primary,
@@ -78,6 +88,8 @@ const styles = StyleSheet.create({
   title: { fontFamily: font.display, fontSize: 20, color: C.ink, textAlign: 'center' },
   body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 21, textAlign: 'center' },
   btns: { width: '100%', gap: 9, marginTop: 6 },
+  // P-196: 화면 기준 정중앙 — 4탭 공용(paddingHorizontal은 게이트 카드류 대비)
+  screenCenter: { justifyContent: 'center', paddingHorizontal: 18 },
 });
 
 /**

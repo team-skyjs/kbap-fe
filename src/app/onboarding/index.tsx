@@ -288,7 +288,7 @@ export default function Onboarding() {
       case 'restrictions':
         return {
           label: restrictions.size
-            ? `${t('onboarding.continue')} · ${t('onboarding.added', { count: restrictions.size })}`
+            ? `${t('onboarding.continue')} (${t('onboarding.added', { count: restrictions.size })})` // P-196 ④: 가운뎃점 폐지 — 소괄호 병기
             : t('onboarding.continue'),
           onPress: answerStep,
           onSkip: skipStep,

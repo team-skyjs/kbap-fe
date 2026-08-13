@@ -107,6 +107,7 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }),
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useDeleteReview: () => ({ mutate: jest.fn() }),
+  useToggleReviewLike: () => ({ mutate: jest.fn() }), // P-196: 공용 HelpfulButton 표면 목
 }));
 jest.mock('@/lib/review/reviewPhotos', () => ({
   uploadReviewImages: jest.fn().mockResolvedValue([]),

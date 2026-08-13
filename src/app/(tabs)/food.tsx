@@ -23,6 +23,7 @@ import {
   SkeletonFoodGrid,
   Spinner,
   QueryErrorBlock,
+  ScreenCenterFill,
   RiskMark,
   CardPhoto,
   RatingLine,
@@ -91,8 +92,11 @@ export default function Food() {
         /* P-036(Q-08 ①): 에러/오프라인은 **캐시 유무 무관** 전체화면 J3/J4 —
            P-027의 ListEmptyComponent 경유는 캐시가 있으면 리스트가 비어있지 않아
            에러 화면이 안 떴다(캐시 목록+무헤더 어중간 상태). 리스트 자체를 대체
-           하므로 onEndReached·푸터 스피너 경로도 원천 차단. 헤더 미렌더는 유지. */
-        <QueryErrorBlock error={error} onRetry={() => void refetch()} />
+           하므로 onEndReached·푸터 스피너 경로도 원천 차단. 헤더 미렌더는 유지.
+           P-196 ②: 화면 기준 정중앙 공용 기준(ScreenCenterFill — 4탭 통일). */
+        <ScreenCenterFill>
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} />
+        </ScreenCenterFill>
       ) : (
         <Animated.FlatList
           data={list}

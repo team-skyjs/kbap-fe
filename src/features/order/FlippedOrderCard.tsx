@@ -108,7 +108,7 @@ export function FlippedOrderCard({
           <Text style={styles.totalLabel}>{t('order.estimatedTotal')}</Text>
           <Text style={styles.totalVal}>
             {formatKrw(totalKrw)}
-            {converted ? ` · ${converted}` : ''}
+            {converted ? ` ${converted}` : ''}
           </Text>
         </View>
       )}

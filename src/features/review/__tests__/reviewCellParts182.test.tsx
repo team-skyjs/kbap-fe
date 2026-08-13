@@ -21,8 +21,12 @@ jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
+const mockLikeToggle = jest.fn();
+jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => ({ mutate: mockLikeToggle }) }));
+const mockGuest = jest.fn(() => false);
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest() }));
 
-import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '../ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '../ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 const t = (k: string) => k;
@@ -74,6 +78,58 @@ it('P-193: 뷰어 X = 아이콘만 — 배경·보더·고정 박스 소멸(스�
   expect(st.borderWidth).toBeUndefined();
   expect(st.width).toBeUndefined(); // 고정 원형 박스 소멸 — 터치는 hitSlop
   expect(close.props.hitSlop).toBeGreaterThanOrEqual(10);
+});
+
+describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', () => {
+  const RV = { id: 'r1', foodId: '7', rating: 4, likes: 3, myLike: false, anonymized: false, authorNationality: 'US', authorRankTier: null, createdAt: '2026-08-13' } as never;
+  const tapHelpful = (tree: ReactTestRenderer) =>
+    act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0].props.onPress());
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGuest.mockReturnValue(false);
+  });
+
+  it('타인 = 탭 → 공용 뮤테이션 토글(reviewId·foodId)', () => {
+    const tree = render(<HelpfulButton review={RV} mine={false} t={t} />);
+    tapHelpful(tree);
+    expect(mockLikeToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+  });
+
+  it('본인(mine) = 카운트 표시 유지 + 탭 무반응(자기 투표·알림 자가 트리거 차단)', () => {
+    const tree = render(<HelpfulButton review={RV} mine t={t} />);
+    expect(flat(tree)).toContain('reviews.helpful'); // 숨김 아님 — 카운트 표시
+    tapHelpful(tree);
+    expect(mockLikeToggle).not.toHaveBeenCalled();
+  });
+
+  it('게스트 = onGuest 게이트(미전달이면 무반응 — 401 송신 0)', () => {
+    mockGuest.mockReturnValue(true);
+    const onGuest = jest.fn();
+    const tree = render(<HelpfulButton review={RV} mine={false} t={t} onGuest={onGuest} />);
+    tapHelpful(tree);
+    expect(onGuest).toHaveBeenCalled();
+    expect(mockLikeToggle).not.toHaveBeenCalled();
+    const bare = render(<HelpfulButton review={RV} mine={false} t={t} />);
+    tapHelpful(bare);
+    expect(mockLikeToggle).not.toHaveBeenCalled();
+  });
+
+  it('4표면 동일 경유 소스 잠금 — 개별 배선(직접 toggle/인라인 Helpful 텍스트) 0', () => {
+    const fs = require('fs');
+    const surfaces = [
+      'src/features/community/ReviewFeed.tsx',
+      'src/app/food/[id]/index.tsx',
+      'src/app/food/[id]/reviews.tsx',
+      'src/app/profile/reviews.tsx',
+    ];
+    for (const f of surfaces) {
+      const src = fs.readFileSync(f, 'utf8') as string;
+      expect(src).toContain('<HelpfulButton'); // 공용 버튼 경유
+      expect(src).not.toContain('useToggleReviewLike'); // 표면 직접 뮤테이션 금지
+      expect(src).not.toContain("t('reviews.helpful'"); // 인라인 렌더 금지
+    }
+  });
 });
 
 it('ReviewEditSheet — 기존 값 프리필·저장 콜백에 변경값 전달(구 디테일 editing 대체)', () => {

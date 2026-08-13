@@ -10,7 +10,7 @@ export { StickyHeader, useStickyScroll, useHeaderHeight, type StickyHeaderProps 
 export { SubHeader } from './SubHeader';
 export { TabBar, type TabKey, type TabBarLabels } from './TabBar';
 export { TopBar } from './TopBar';
-export { StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, type StateTone } from './StateBlock';
+export { StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, ScreenCenterFill, type StateTone } from './StateBlock';
 export { SkeletonList, SkeletonHome, SkeletonFoodGrid, SkeletonProfile, Shimmer } from './Skeleton';
 export { CardPhoto } from './CardPhoto';
 export { PressScale } from './PressScale';

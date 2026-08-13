@@ -17,14 +17,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, IconBubbleEmpty, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
-import { QueryErrorBlock, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { useDeleteReview, useToggleReviewLike, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
-import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
 import type { Review } from '@/lib/api/types';
@@ -38,7 +38,6 @@ export function ReviewFeed() {
   const { t } = useTranslation();
   const isGuest = useIsGuest();
   const feed = useGlobalReviews(!isGuest); // 게스트 = 호출 0(인증 필수 계약)
-  const toggleLike = useToggleReviewLike();
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
   const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별
@@ -101,7 +100,7 @@ export function ReviewFeed() {
             t={t}
             mine={item.memberId != null && item.memberId === myId}
             onOpenFood={() => item.foodId && router.push(`/food/${item.foodId}` as Href)}
-            onHelpful={() => (isGuest ? setGateOpen(true) : toggleLike.mutate({ reviewId: item.id, foodId: item.foodId }))}
+            onGuestHelpful={() => setGateOpen(true)}
             onMore={() =>
               setMod({
                 type: 'review',
@@ -113,28 +112,11 @@ export function ReviewFeed() {
           />
         )}
         ListEmptyComponent={
-          isGuest ? (
-            /* 게스트 — 전역 피드는 인증 필수(계약): 기존 게이트 카피 재사용 */
-            <View style={styles.emptyFill}>
-              <Pressable style={styles.guestGate} onPress={() => setGateOpen(true)} testID="feed-guest-gate">
-                <Text style={styles.guestGateTitle}>{t('community.guestGateTitle')}</Text>
-                <Text style={styles.guestGateSub}>{t('community.guestGateSub')}</Text>
-              </Pressable>
-            </View>
-          ) : feed.isLoading ? (
+          !isGuest && feed.isLoading ? (
             <View style={styles.center}>
               <Spinner size={22} color={C.ink2} />
             </View>
-          ) : feed.isError ? (
-            <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
-          ) : (
-            <StateBlock
-              fill
-              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-              title={t('reviews.emptyTitle')}
-              body={t('reviews.emptyBody')}
-            />
-          )
+          ) : null /* P-196 ②: 게이트/에러/빈 = 화면 정중앙 오버레이(아래) — 리스트 영역 센터 폐기 */
         }
         ListFooterComponent={
           feed.isFetchingNextPage ? (
@@ -144,6 +126,30 @@ export function ReviewFeed() {
           ) : null
         }
       />
+
+      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙(4탭 공용 기준 — ScreenCenterFill) */}
+      {isGuest ? (
+        /* 게스트 — 전역 피드는 인증 필수(계약): 기존 게이트 카피 재사용 */
+        <ScreenCenterFill>
+          <Pressable style={styles.guestGate} onPress={() => setGateOpen(true)} testID="feed-guest-gate">
+            <Text style={styles.guestGateTitle}>{t('community.guestGateTitle')}</Text>
+            <Text style={styles.guestGateSub}>{t('community.guestGateSub')}</Text>
+          </Pressable>
+        </ScreenCenterFill>
+      ) : !feed.isLoading && feed.isError ? (
+        <ScreenCenterFill>
+          <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
+        </ScreenCenterFill>
+      ) : !feed.isLoading && reviews.length === 0 ? (
+        <ScreenCenterFill>
+          <StateBlock
+            fill
+            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
+            title={t('reviews.emptyTitle')}
+            body={t('reviews.emptyBody')}
+          />
+        </ScreenCenterFill>
+      ) : null}
 
       {/* FAB = 리뷰 쓰기 — 음식 픽커(작성 시트 재사용) 경유 */}
       <Pressable
@@ -198,14 +204,14 @@ function FeedCard({
   t,
   mine,
   onOpenFood,
-  onHelpful,
+  onGuestHelpful,
   onMore,
 }: {
   review: Review;
   t: TFn;
   mine: boolean;
   onOpenFood: () => void;
-  onHelpful: () => void;
+  onGuestHelpful: () => void;
   onMore: () => void;
 }) {
   const anon = review.anonymized;
@@ -256,11 +262,8 @@ function FeedCard({
 
       {!!review.body && <ExpandableBody body={review.body} t={t} />}
       <ReviewPhotoStrip photos={review.photos ?? []} />
-      <Pressable hitSlop={8} onPress={onHelpful} testID={`feed-helpful-${review.id}`}>
-        <Text style={[styles.helpful, review.myLike && styles.helpfulOn]}>
-          {t('reviews.helpful', { count: review.likes ?? 0 })}
-        </Text>
-      </Pressable>
+      {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
+      <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
     </View>
   );
 }
@@ -271,7 +274,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: font.display, fontSize: 22, color: C.ink, letterSpacing: -0.3 },
   list: { paddingHorizontal: 18, gap: 12 },
   center: { paddingVertical: 30, alignItems: 'center' },
-  emptyFill: { flex: 1, justifyContent: 'center' },
 
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 14, gap: 10, ...shadow.sh1 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
@@ -286,8 +288,6 @@ const styles = StyleSheet.create({
   foodMiniName: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
 
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
-  helpful: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  helpfulOn: { color: C.primaryText },
 
   guestGate: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 18, alignItems: 'center', gap: 5, ...shadow.sh1 },
   guestGateTitle: { fontFamily: font.display, fontSize: 15.5, color: C.ink },

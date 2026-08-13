@@ -13,6 +13,8 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Btn, IconClose, Star } from '@/components';
 import { Input } from '@/components/KeyboardDismissBar';
+import { useToggleReviewLike } from '@/lib/data/useReviewMutations';
+import { useIsGuest } from '@/lib/auth/useSession';
 import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -88,6 +90,43 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
   );
 }
 
+/**
+ * Helpful 토글 (P-196) — 4표면(피드·상세 프리뷰·전체 목록·내 리뷰) **유일 경유**.
+ * 표면별 개별 배선 금지(이번 반려 = 표면별 상이 동작 사례) — 버튼·뮤테이션·게스트/
+ * 본인 분기 전부 여기 한 곳. **본인(mine) = 카운트 표시 전용**(탭 무반응·비활성 톤,
+ * 숨김 아님 — 자기 투표 왜곡·Helpful 알림 자가 트리거 차단, 예진 확정 8/13).
+ * 게스트 = onGuest(게이트 시트, 미전달 표면은 무반응 — 401 송신 0).
+ */
+export function HelpfulButton({
+  review,
+  mine,
+  foodId,
+  t,
+  onGuest,
+}: {
+  review: Review;
+  mine: boolean;
+  /** 뮤테이션 캐시 키용 — 생략 시 review.foodId */
+  foodId?: string;
+  t: TFn;
+  onGuest?: () => void;
+}) {
+  const toggle = useToggleReviewLike();
+  const isGuest = useIsGuest();
+  const onPress = () => {
+    if (mine) return; // 카운트 표시 전용
+    if (isGuest) return onGuest?.();
+    toggle.mutate({ reviewId: review.id, foodId: foodId ?? review.foodId }); // 낙관 토글(멱등 — 가드 예외)
+  };
+  return (
+    <Pressable hitSlop={8} onPress={onPress} disabled={mine} testID={`helpful-${review.id}`}>
+      <Text style={[styles.helpful, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]}>
+        {t('reviews.helpful', { count: review.likes ?? 0 })}
+      </Text>
+    </Pressable>
+  );
+}
+
 /** 본인 리뷰 수정 시트 — 구 디테일 editing(별점+본문, 사진은 buildReviewUpdate가 보존) 이식. */
 export function ReviewEditSheet({
   review,
@@ -147,6 +186,10 @@ export function ReviewEditSheet({
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
   toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
+  helpful: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  helpfulOn: { color: C.primaryText },
+  helpfulMine: { color: C.ink3 },
   strip: { flexDirection: 'row', gap: 6 },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', justifyContent: 'center' },
   viewerClose: { position: 'absolute', top: 54, right: 18 },

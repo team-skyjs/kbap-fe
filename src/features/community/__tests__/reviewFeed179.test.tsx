@@ -114,8 +114,20 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
   expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r1')[0].props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/food/7');
-  act(() => tree.root.findAll((n) => n.props?.testID === 'feed-helpful-r1')[0].props.onPress());
-  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+  // P-196: 본인 리뷰(memberId 9 = me) Helpful = 카운트 표시 전용 — 탭 무반응
+  act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockToggle).not.toHaveBeenCalled();
+});
+
+it('P-196: 타인 리뷰 Helpful = 공용 버튼 경유 토글 · 본인 = 비활성(위 케이스)', () => {
+  mockFeed.mockReturnValue({
+    data: { pages: [{ items: [{ ...REVIEW, id: 'r3', memberId: '5', author: { ...REVIEW.author, memberId: '5', nickname: 'Bob' } }], hasNext: false, nextCursor: null }] },
+    isLoading: false, isError: false, error: null, refetch: jest.fn(),
+    hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  const tree = render();
+  act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r3' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r3', foodId: '7' });
 });
 
 it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리뷰 작성 라우팅', () => {

@@ -34,6 +34,7 @@ import {
   Spinner,
   SkeletonProfile,
   QueryErrorBlock,
+  ScreenCenterFill,
 } from '@/components';
 import { SPICE_LEVEL_LABEL, spiceRank } from '@/lib/spice';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
@@ -112,6 +113,19 @@ export default function Profile() {
     }
   }
 
+  // P-196 ②: 에러/오프라인 = 화면 기준 정중앙(4탭 공용 기준) — 스크롤/헤더 패딩 밖
+  // (P-007 false-empty/백지 제거 원칙 무변 — 위치 기준만 통일)
+  if (!isGuest && !meLoading && meError) {
+    return (
+      <View style={styles.root}>
+        <ScreenCenterFill>
+          <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
+        </ScreenCenterFill>
+        <StickyHeader hidden={hidden} mode="brand" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <Animated.ScrollView
@@ -126,9 +140,6 @@ export default function Profile() {
         ) : meLoading ? (
           /* P-007(KB-174) J1: 첫 로드 백지 제거 */
           <SkeletonProfile />
-        ) : meError ? (
-          /* P-007 false-empty/백지 제거: 프로필 쿼리 에러는 J3/J4로 정직하게 */
-          <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
         ) : me && (
           <View style={styles.body}>
             {/* identity */}
