@@ -1172,3 +1172,7 @@
 ## 내 리뷰 사진 스트립·뷰어 X (2026-08-13, P-193)
 - [x] 내 리뷰 셀 ReviewPhotoStrip 장착(P-182 4표면 공백 보수) · 뷰어 X 아이콘만(배경·보더 소멸, hitSlop 14) — 5cd31d4.
 - [x] tsc 0 · jest 102스위트 621/621 · teamtest OTA(iOS 69aedf86·안드 337f7529).
+
+## 신고 시트 키보드·피드 새로고침 (2026-08-13, P-194)
+- [x] 신고 시트 iOS 키보드 리프트(P-158 실측 문법, 안드 resize 자동) · 피드 RefreshControl+포커스 stale 재조회(KB-68 문법, 게스트 차단) — e012ade.
+- [x] tsc 0 · jest 102스위트 625/625 · teamtest OTA(iOS c4fbaf8b·안드 c06ee27f).
