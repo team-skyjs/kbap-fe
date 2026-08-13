@@ -1176,3 +1176,7 @@
 ## 신고 시트 키보드·피드 새로고침 (2026-08-13, P-194)
 - [x] 신고 시트 iOS 키보드 리프트(P-158 실측 문법, 안드 resize 자동) · 피드 RefreshControl+포커스 stale 재조회(KB-68 문법, 게스트 차단) — e012ade.
 - [x] tsc 0 · jest 102스위트 625/625 · teamtest OTA(iOS c4fbaf8b·안드 c06ee27f).
+
+## 푸시 알림 클라 선구현 (2026-08-13, P-192) ⚠️ OTA 미발행
+- [x] expo-notifications+plugin(네이티브 — 다음 빌드), pushAdapter 지연 require 유일 관문(정적 import 0 잠금), 프라이머(온보딩·스캔 완료), 토큰 upsert 골격(BE 계약 대기), 로컬 리뷰 유도(1h 예약/작성 시 취소), 알림 설정 화면(넛지 동의 일시), 딥링크 어댑터, i18n 15키 ×10 — 239ab8c.
+- [x] tsc 0 · jest 104스위트 639/639 · OTA 발행 금지 준수(커밋만).
