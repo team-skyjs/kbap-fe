@@ -120,16 +120,19 @@ export default function EditProfile() {
     });
     if (!src) return; // 취소
     if (src === 'remove') return draftRemovePhoto(); // P-120: 즉시 PATCH → 드래프트
+    setPhotoBusy(true); // P-191: 픽커 복귀~원본 준비(iCloud) 구간도 스피너 커버
     const file = await pickBySource(src, {
       permTitle: t('photo.permTitle'),
       permBody: t('photo.permBody'),
       openSettings: t('photo.openSettings'),
       cancel: t('common.cancel'),
     }).catch(() => null);
-    if (!file) return; // 취소/권한 거부(안내 완료)
+    if (!file) {
+      setPhotoBusy(false); // 취소/권한 거부 — 복구
+      return;
+    }
     const prevPreview = photoPreview;
     setPhotoPreview(file.uri); // 미리보기 즉시
-    setPhotoBusy(true);
     try {
       const path = await uploadProfileImage(file);
       setPhotoDraft(path); // 보관만 — 전송은 save()에서

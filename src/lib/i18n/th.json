@@ -264,7 +264,8 @@
     "retakeTitle": "สแกนใหม่ไหม?",
     "retakeBody": "ผลปัจจุบันจะถูกลบ",
     "retakeBodyWithCart": "ผลและ {{count}} รายการที่เพิ่มจะถูกลบ",
-    "retakeConfirm": "สแกนใหม่"
+    "retakeConfirm": "สแกนใหม่",
+    "loadingPhoto": "กำลังโหลดรูป…"
   },
   "owner": {
     "caption": "แสดงหน้าจอนี้ให้พนักงานร้านอาหารดู",

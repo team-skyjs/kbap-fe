@@ -264,7 +264,8 @@
     "retakeTitle": "重新掃描?",
     "retakeBody": "當前結果將被清除。",
     "retakeBodyWithCart": "當前結果和已加入的{{count}}項將被清除。",
-    "retakeConfirm": "重新掃描"
+    "retakeConfirm": "重新掃描",
+    "loadingPhoto": "正在載入照片…"
   },
   "owner": {
     "caption": "將此畫面出示給餐廳員工看",

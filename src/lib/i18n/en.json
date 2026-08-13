@@ -260,7 +260,8 @@
     "retakeTitle": "Scan again?",
     "retakeBody": "Your current results will be discarded.",
     "retakeBodyWithCart": "Your results and {{count}} added item(s) will be discarded.",
-    "retakeConfirm": "Rescan"
+    "retakeConfirm": "Rescan",
+    "loadingPhoto": "Loading photo…"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

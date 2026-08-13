@@ -216,3 +216,22 @@ describe('P-170: 작성 음식 카드 — 썸네일 캐시 재사용 + 위험도
     expect(tree.root.findAll((n) => n.props?.size === 22 && n.props?.state != null).length).toBe(0);
   });
 });
+
+it('P-191: 리뷰 갤러리 원본 로드 중 = 추가 타일 스피너(프레임 불변) + 재탭 무시', async () => {
+  let release!: (v: { canceled: boolean }) => void;
+  mockLaunchLibrary.mockImplementation(() => new Promise((r) => (release = r)));
+  const tree = render(<ReviewCompose />);
+  const add = () => tree.root.findAll((n) => n.props?.testID === 'photo-add' && typeof n.props?.onPress !== 'undefined')[0];
+  await act(async () => {
+    void tree.root.findAll((n) => n.props?.testID === 'photo-add')[0].props.onPress();
+    await Promise.resolve();
+  });
+  const { ActivityIndicator } = require('react-native');
+  expect(tree.root.findAllByType(ActivityIndicator).length).toBeGreaterThanOrEqual(1);
+  await act(async () => {
+    release({ canceled: true });
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  expect(tree.root.findAllByType(ActivityIndicator).length).toBe(0);
+  void add;
+});

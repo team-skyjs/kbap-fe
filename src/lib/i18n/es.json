@@ -264,7 +264,8 @@
     "retakeTitle": "¿Escanear de nuevo?",
     "retakeBody": "Se descartarán los resultados actuales.",
     "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
-    "retakeConfirm": "Reescanear"
+    "retakeConfirm": "Reescanear",
+    "loadingPhoto": "Cargando foto…"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

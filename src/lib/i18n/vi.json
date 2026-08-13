@@ -264,7 +264,8 @@
     "retakeTitle": "Quét lại?",
     "retakeBody": "Kết quả hiện tại sẽ bị xóa.",
     "retakeBodyWithCart": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
-    "retakeConfirm": "Quét lại"
+    "retakeConfirm": "Quét lại",
+    "loadingPhoto": "Đang tải ảnh…"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

@@ -264,7 +264,8 @@
     "retakeTitle": "もう一度スキャンしますか?",
     "retakeBody": "今の結果は破棄されます。",
     "retakeBodyWithCart": "今の結果と追加した{{count}}件が破棄されます。",
-    "retakeConfirm": "再スキャン"
+    "retakeConfirm": "再スキャン",
+    "loadingPhoto": "写真を読み込み中…"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",

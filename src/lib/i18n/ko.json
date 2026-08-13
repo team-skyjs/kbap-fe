@@ -264,7 +264,8 @@
     "retakeTitle": "다시 스캔할까요?",
     "retakeBody": "지금 결과가 사라져요.",
     "retakeBodyWithCart": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
-    "retakeConfirm": "다시 스캔"
+    "retakeConfirm": "다시 스캔",
+    "loadingPhoto": "사진 불러오는 중…"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",

@@ -150,6 +150,15 @@ export default function Scan() {
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
   const [capturing, setCapturing] = useState(false);
+  const [importing, setImporting] = useState(false); // P-191: 갤러리 원본 로드 구간
+  // P-191: 픽커 닫힘~원본 준비 사이 무표시 구간(예진 실기 — "멈췄나?") — 스피너 오버레이.
+  // "Reading the menu..."(scanning 페이즈)와 구분되는 선행 단계 표시.
+  const ImportingOverlay = importing ? (
+    <View style={styles.importingOverlay} pointerEvents="none" testID="importing-overlay">
+      <ActivityIndicator size="small" color="#fff" />
+      <Text style={styles.statusText}>{t('scan.loadingPhoto')}</Text>
+    </View>
+  ) : null;
   // P-038(KB-212): 빈 프로필 넛지 — 세션 억제 플래그를 마운트 시점에 읽는다
   const [nudgeHidden, setNudgeHidden] = useState(isNudgeDismissed());
   // P-131: 세로 유도 폐기 — 방향 감지는 UI 요소 제자리 회전(90° 스냅)에 재사용
@@ -320,6 +329,7 @@ export default function Scan() {
     if (isGuest) return setGateOpen(true);
     capturingRef.current = true;
     setCapturing(true);
+    setImporting(true); // P-191: 픽커 복귀~원본 준비(iCloud 다운로드 수 초) 구간 표시
     setError(null);
     track(EVENTS.scan_start, { source: 'gallery' }); // P-144
     try {
@@ -337,6 +347,7 @@ export default function Scan() {
     } finally {
       capturingRef.current = false;
       setCapturing(false);
+      setImporting(false);
     }
   }
 
@@ -646,6 +657,7 @@ export default function Scan() {
             <Text style={styles.launcherGallery}>{t('scan.gallery')}</Text>
           </Pressable>
         </View>
+        {ImportingOverlay}
         {GateSheet}
       </View>
     );
@@ -695,6 +707,7 @@ export default function Scan() {
       {/* P-131: 세로 유도 오버레이 소멸 — 가로 촬영 허용 (UI는 제자리 회전) */}
 
       {Close}
+        {ImportingOverlay}
         {GateSheet}
 
       {/* P-136 D: 시안 S3 크롬 — 타이틀 줄 + 가로 배지(기능 무변, P-131 위 미세) */}
@@ -884,6 +897,8 @@ const styles = StyleSheet.create({
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
+  // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
+  importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
   errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primaryText, textTransform: 'uppercase' },
   errDetail: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', paddingHorizontal: 8 },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },

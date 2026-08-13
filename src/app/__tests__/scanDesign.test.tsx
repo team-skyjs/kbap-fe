@@ -262,3 +262,20 @@ it('P-187: 진행 화면 미리보기 = contain(레터박스) — cover 크롭 �
   expect(scanning).toContain('resizeMode="contain"');
   expect(scanning).not.toContain('resizeMode="cover"');
 });
+
+it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto), 완료 후 소멸', async () => {
+  let release!: (v: { canceled: boolean; assets?: { uri: string; width: number; height: number }[] }) => void;
+  mockLaunchLibrary.mockImplementation(() => new Promise((r) => (release = r)));
+  const tree = render(<Scan />);
+  const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery')[0];
+  await act(async () => {
+    void gallery.props.onPress();
+    await Promise.resolve();
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBeGreaterThanOrEqual(1);
+  await act(async () => {
+    release({ canceled: true });
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBe(0); // 취소 = 복구
+});

@@ -61,9 +61,11 @@ export default function ReviewCompose() {
   // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
   const [capNote, setCapNote] = useState(false);
   const capTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [photoImporting, setPhotoImporting] = useState(false); // P-191: 픽커 복귀~원본 준비 표시
   const pickPhoto = async () => {
     const remaining = REVIEW_MAX_PHOTOS - photos.length;
     if (remaining <= 0) return;
+    setPhotoImporting(true);
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
@@ -78,6 +80,7 @@ export default function ReviewCompose() {
       }
       setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
     }
+    setPhotoImporting(false);
   };
 
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
@@ -246,8 +249,9 @@ export default function ReviewCompose() {
               </View>
             ))}
             {photos.length < REVIEW_MAX_PHOTOS && (
-              <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={pickPhoto}>
-                <IconPlus size={20} color={C.ink3} />
+              <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={photoImporting ? undefined : pickPhoto} testID="photo-add">
+                {/* P-191: 픽커 복귀~원본 준비(iCloud) — 타일 자리 스피너(프레임 불변) */}
+                {photoImporting ? <ActivityIndicator size="small" color={C.ink3} /> : <IconPlus size={20} color={C.ink3} />}
               </Pressable>
             )}
           </View>

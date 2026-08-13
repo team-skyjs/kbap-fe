@@ -264,7 +264,8 @@
     "retakeTitle": "Pindai ulang?",
     "retakeBody": "Hasil saat ini akan dihapus.",
     "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
-    "retakeConfirm": "Pindai ulang"
+    "retakeConfirm": "Pindai ulang",
+    "loadingPhoto": "Memuat foto…"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",
