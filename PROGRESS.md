@@ -1205,3 +1205,7 @@
 ## dev API 대개편 대응 (2026-08-13, P-199)
 - [x] 버전리스 경로(dev)+헤더 3종(공용 클라 한 곳)+prod 채널 구계약 분기+app-version 게이트 실연결(aos 키)+CLAUDE.md fp 대조 승격 — ef38ae9.
 - [x] tsc 0 · jest 108스위트 662/662 · teamtest OTA(ios d9bf6248·and 287a9ed5) — fp 게이트 첫 적용(로컬==빌드 일치 확인 후 발행).
+
+## 리뷰 장소 태그 실연결 (2026-08-13, P-201)
+- [x] places nearby/search 실호출(고정 좌표 상수 1곳)·PlacePickerSheet 파츠 승격(작성·수정 공용, MANUAL 직접 입력)·place 전송(생성+수정 유지/해제 시맨틱)·ReviewPlaceLine 4표면+3사 좌표 딥링크(placeMap 분리)·reviewPlaceEnabled dev 한정 — 8303e47.
+- [x] tsc 0 · jest 109스위트 669/669 · teamtest OTA(ios 8cc14619·and fe8f05d0, fp 게이트 일치) · KB-249 검토 중 전환.
