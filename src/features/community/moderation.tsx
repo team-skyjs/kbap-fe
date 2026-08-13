@@ -118,18 +118,20 @@ export function ModerationFlow({
               ]
             : [
                 // P-142: 커뮤니티 신고 = 플래그 off(/reports targetType이 REVIEW뿐) — 리뷰 타깃만 노출
+                // P-190: keepOpen — 조기 onClose(setMod null = 플로우 언마운트)가 페이즈
+                // 전환을 죽이던 반려 버그(Q-40①②) 수정. 전환 렌더가 시트를 대체한다.
                 ...(target.type === 'review' || FLAGS.communityReportEnabled
-                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, onPress: () => setPhase('report') }]
+                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => setPhase('report') }]
                   : []),
-                { key: 'block', label: t('community.blockUser', { name }), icon: <IconUserX size={17} color={DESTRUCTIVE} />, destructive: true, onPress: () => setPhase('blockConfirm') },
+                { key: 'block', label: t('community.blockUser', { name }), icon: <IconUserX size={17} color={DESTRUCTIVE} />, destructive: true, keepOpen: true, onPress: () => setPhase('blockConfirm') },
               ]
         }
       />
     );
   }
 
-  /* ---- 이후 단계는 별도 모달 (ActionSheet의 onPress가 onClose를 먼저 부르므로
-          phase 전환은 setState로 즉시 재마운트) ---- */
+  /* ---- 이후 단계는 별도 모달 — P-190: 메뉴의 신고/차단은 keepOpen이라
+          onClose 없이 페이즈 전환, 이 렌더가 시트를 대체한다 ---- */
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={phase === 'blocking' ? undefined : close}>

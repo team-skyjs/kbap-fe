@@ -28,6 +28,9 @@ export interface ActionSheetItem {
   icon?: ReactNode;
   destructive?: boolean;
   onPress: () => void;
+  /** P-190: 탭 시 자동 onClose 생략 — 페이즈 전환형(신고/차단)용. onClose가 플로우
+   *  전체를 언마운트하는 소비처에서 조기 close가 전환을 죽이던 버그의 구조 수정. */
+  keepOpen?: boolean;
 }
 
 export function ActionSheet({
@@ -66,7 +69,9 @@ export function ActionSheet({
                 key={it.key}
                 style={[styles.row, i > 0 && styles.rowDivider]}
                 onPress={() => {
-                  onClose();
+                  // P-190: keepOpen = 페이즈 전환형 — onClose(플로우 언마운트) 생략,
+                  // 전환된 페이즈 렌더가 시트를 대체한다. 그 외는 현행(자동 닫힘) 무변.
+                  if (!it.keepOpen) onClose();
                   it.onPress();
                 }}
               >
