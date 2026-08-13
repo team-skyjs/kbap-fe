@@ -5,7 +5,8 @@
  * 전환 — 색만 전환 금지, 싫어요 0 숨김).
  */
 import * as React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { FLAGS } from '@/lib/flags';

@@ -15,7 +15,8 @@
  * 성공 모달 · 음식 검색 실 API(/foods/search)·장소 목(KB-249 대기).
  */
 import * as React from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';

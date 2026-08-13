@@ -110,15 +110,37 @@ describe('P-127: 업로드 전 JPEG 재인코딩 (UPLOAD-001 방어)', () => {
     expect(mockGetInfoAsync).toHaveBeenCalledWith('file:///cache/menu-reenc.jpg'); // size도 산출물 기준
   });
 
-  it('jpeg/png는 무변환 패스 — manipulator 미호출', async () => {
+  it('jpeg만 무변환 패스 — manipulator 미호출 (P-189: png는 허용 목록 제외)', async () => {
     await uploadImage(PHOTO, 'MENU_SCAN');
-    await uploadImage({ uri: 'file:///cache/a.png', width: 10, height: 10 }, 'MENU_SCAN');
     expect(mockManipulate).not.toHaveBeenCalled();
+  });
+
+  it('P-189: png(스크린샷) → JPEG 재인코딩 경유 + contentType=image/jpeg 발급', async () => {
+    await uploadImage({ uri: 'file:///cache/a.png', width: 10, height: 10 }, 'REVIEW');
+    expect(mockManipulate).toHaveBeenCalledWith('file:///cache/a.png', [], { compress: 0.8, format: 'jpeg' });
+    const issued = (api.post as jest.Mock).mock.calls.find((c) => String(c[0]).includes('upload-url'))!;
+    expect(issued[1]).toMatchObject({ contentType: 'image/jpeg' });
   });
 
   it('재인코딩 실패 → throw 표면화 (발급 미호출 — 무한 대기 금지)', async () => {
     mockManipulate.mockRejectedValue(new Error('decode fail'));
     await expect(uploadImage({ uri: 'file:///cache/x.heif', width: 1, height: 1 }, 'REVIEW')).rejects.toThrow('decode fail');
     expect(api.post).not.toHaveBeenCalled();
+  });
+});
+
+describe('P-189: 원격 사진 렌더 = expo-image(디스크 캐시) 소스 잠금', () => {
+  it('원격 렌더 파일 7곳 — RN Image import 잔존 0 (로컬 촬영 표면은 제외)', () => {
+    const fs = require('fs');
+    const files = [
+      'src/app/(tabs)/profile.tsx', 'src/app/community/compose.tsx', 'src/app/onboarding/index.tsx',
+      'src/app/profile/edit.tsx', 'src/features/community/parts.tsx',
+      'src/features/review/ReviewCellParts.tsx', 'src/features/scan/ScanRichList.tsx',
+    ];
+    for (const f of files) {
+      const src = fs.readFileSync(f, 'utf8') as string;
+      expect(src).toContain("from 'expo-image'");
+      expect(src).not.toMatch(/import \{[^}]*\bImage\b[^}]*\} from 'react-native'/);
+    }
   });
 });

@@ -24,8 +24,10 @@ export function imageContentType(uri: string): string {
   return { png: 'image/png', webp: 'image/webp', heic: 'image/heic', heif: 'image/heif', gif: 'image/gif' }[ext] ?? 'image/jpeg';
 }
 
-/** BE UPLOAD-001 허용 형식 — 그 외(heic/heif/webp/gif)는 업로드 전 JPEG 재인코딩. */
-const UPLOAD_OK = new Set(['image/jpeg', 'image/png']);
+/** P-189: 업로드 = **JPEG만**(쿠팡 관례 — PNG 스크린샷 렌더 느림). png 포함 그 외
+ *  전부 JPEG(q0.8) 재인코딩. 향후 신규 표면도 uploadImage() 경유가 규칙 —
+ *  upload-url 직접 호출 금지(이 관문 한 곳이 형식 정책 전체를 소유). */
+const UPLOAD_OK = new Set(['image/jpeg']);
 
 /**
  * P-127(8/4 실측): 아이폰 카메라 원본(HEIC)이 픽커에서 무변환 통과 →

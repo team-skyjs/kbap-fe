@@ -5,8 +5,9 @@
  * Data via useMe()/useMyReviews()/useFoods() (MOCK_MODE). Scroll-aware brand
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
+import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { useState } from 'react';
-import { Alert, Image, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';

@@ -7,7 +7,8 @@
  *   - ReviewEditSheet: 본인 리뷰 수정(별점+본문 — 구 디테일 editing 이식, buildReviewUpdate 경유)
  */
 import * as React from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Btn, IconClose, Star } from '@/components';
@@ -66,7 +67,7 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
           >
             {photos.map((uri) => (
               <View key={uri} style={{ width, justifyContent: 'center' }}>
-                <Image source={{ uri }} style={{ width, height: width * 1.2 }} resizeMode="contain" />
+                <Image source={{ uri }} style={{ width, height: width * 1.2 }} contentFit="contain" />
               </View>
             ))}
           </ScrollView>

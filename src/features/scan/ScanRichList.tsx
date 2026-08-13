@@ -15,7 +15,8 @@
  * AvoidChip으로(flex-wrap).
  */
 import * as React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';
 import { AvoidChip } from '@/components/AvoidChip';

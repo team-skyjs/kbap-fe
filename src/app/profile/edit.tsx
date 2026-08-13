@@ -6,8 +6,9 @@
  * Reader language → OS 앱 언어 설정(P-060, 안드12- 숨김), read-only linked
  * provider (KB-203 — Apple/Google). Save persists nickname/spice via PATCH /me.
  */
+import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
