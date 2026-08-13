@@ -1168,3 +1168,7 @@
 - [x] P-190 ActionSheet keepOpen(페이즈 전환형만 자동 close 생략) — 재현 경로(아이템 탭 경유) 유닛 3 — 3310bed.
 - [x] P-191 갤러리 원본 로드 오버레이(스캔)+프로필 busy 당김+리뷰 타일 스피너, scan.loadingPhoto ×10 — 6bbbc51.
 - [x] tsc 0 · jest 102스위트 619/619 · teamtest OTA(iOS fb0b01f6·안드 88fc26a8).
+
+## 내 리뷰 사진 스트립·뷰어 X (2026-08-13, P-193)
+- [x] 내 리뷰 셀 ReviewPhotoStrip 장착(P-182 4표면 공백 보수) · 뷰어 X 아이콘만(배경·보더 소멸, hitSlop 14) — 5cd31d4.
+- [x] tsc 0 · jest 102스위트 621/621 · teamtest OTA(iOS 69aedf86·안드 337f7529).
