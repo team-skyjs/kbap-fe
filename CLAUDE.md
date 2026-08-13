@@ -49,8 +49,8 @@
   **발행은 성공해도 설치 빌드에 도달 0**이 된다(runtimeVersion policy = fingerprint) —
   발행 전 `npx expo-updates fingerprint:generate --platform ios|android`의 해시를
   `eas build:list`의 최신 설치 빌드 runtimeVersion과 **양 플랫폼 대조**, 불일치면
-  발행 중단·보고(네이티브 재빌드 필요 신호). 기준(빌드 ios17/and11):
-  ios `d6ddb65a…` · and `ff05c134…` — 재빌드 시 갱신.
+  발행 중단·보고(네이티브 재빌드 필요 신호). 기준(빌드18 — ios vc18/and vc12, P-200):
+  ios `57d46bc8…` · and `2c73e616…` — 재빌드 시 갱신.
 - **제스처·워클릿 코드는 실기기 확인 후 발행** (P-065 교훈): reanimated/gesture-handler의
   UI 스레드 콜백에서 호출되는 JS 함수는 `'worklet';` 지시자 필수 — jest는 워클릿 경계를
   못 잡으므로(mock이 JS로 실행) 핀치·팬 등 제스처 변경은 Metro 실기 확인을 발행 전 거칠 것.

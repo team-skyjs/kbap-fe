@@ -1209,3 +1209,6 @@
 ## 리뷰 장소 태그 실연결 (2026-08-13, P-201)
 - [x] places nearby/search 실호출(고정 좌표 상수 1곳)·PlacePickerSheet 파츠 승격(작성·수정 공용, MANUAL 직접 입력)·place 전송(생성+수정 유지/해제 시맨틱)·ReviewPlaceLine 4표면+3사 좌표 딥링크(placeMap 분리)·reviewPlaceEnabled dev 한정 — 8303e47.
 - [x] tsc 0 · jest 109스위트 669/669 · teamtest OTA(ios 8cc14619·and fe8f05d0, fp 게이트 일치) · KB-249 검토 중 전환.
+
+## 장소 실위치 + 빌드18 완료 (2026-08-14, P-200)
+- [x] expo-location 실위치 스왑(권한 분기·강남 폴백·지연 require·60s 메모)+Sentry 노브 제거 — 5c6cbc8. 빌드18: iOS 6c19fda5(vc18, 테플 제출)·안드 bef9f1ee(vc12, APK). fp 로컬==빌드 일치(ios 57d46bc8·and 2c73e616 — CLAUDE.md 기준 갱신). 소스맵 업로드 정상.
