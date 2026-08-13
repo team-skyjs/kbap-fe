@@ -1201,3 +1201,7 @@
 
 ## 빌드16 완료 (2026-08-13, P-198)
 - [x] iOS 982a8196(vc17, 예진 인터랙티브 — push capability·APNs) 테플 제출 완료 · 안드 3f1eb36a(vc11) APK 배포. fingerprint 로컬==빌드 일치(ios d6ddb65a·and ff05c134) — 이후 OTA 도달 기준 확립. pushEnabled off 유지.
+
+## dev API 대개편 대응 (2026-08-13, P-199)
+- [x] 버전리스 경로(dev)+헤더 3종(공용 클라 한 곳)+prod 채널 구계약 분기+app-version 게이트 실연결(aos 키)+CLAUDE.md fp 대조 승격 — ef38ae9.
+- [x] tsc 0 · jest 108스위트 662/662 · teamtest OTA(ios d9bf6248·and 287a9ed5) — fp 게이트 첫 적용(로컬==빌드 일치 확인 후 발행).
