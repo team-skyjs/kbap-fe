@@ -1191,3 +1191,7 @@
 
 ## P-195/196 OTA 도달 0 실측 (2026-08-13)
 - [!] "발행 가" 회신로 teamtest 발행(ios e1d731a6·and b6c1ada3)했으나 P-192 fingerprint 회전으로 설치 빌드(7aa41957/2e6a56f4) 미매칭 — 수신 0대. 선택지 3안 보고·지시 대기(REPORTS 참조). 추가 OTA 발행 중지.
+
+## Sentry 통합 + 빌드16 착수 (2026-08-13, P-197→198)
+- [x] P-197 Sentry — expo plugin 수동·sentry.ts 관문(enabled !__DEV__·PII memberId만)·유닛 3 — ffd8229 (OTA 미발행).
+- [~] P-198 빌드16 — grep 게이트 통과, teamtest 양 플랫폼 빌드 진행(ios c2720313·and 494969f0). SENTRY_AUTH_TOKEN은 소스맵 전용(빌드 무영향) — 예진 콘솔 몫.
