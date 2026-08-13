@@ -1198,3 +1198,6 @@
 
 ## 빌드16 진행 (2026-08-13, P-198)
 - [~] 1차 양 플랫폼 실패 — 안드: Sentry 업로드 토큰 하드 실패 → SENTRY_DISABLE_AUTO_UPLOAD(0c203ac) 재빌드 성공(3f1eb36a·vc11·rv ff05c134·APK 배포됨) / iOS: 프로필 push capability 부재 — 예진 인터랙티브 빌드 대기. P-197 plugin이 fingerprint 재회전 — P-195/196 OTA 그룹 사장(빌드 임베드로 도달 대체).
+
+## 빌드16 완료 (2026-08-13, P-198)
+- [x] iOS 982a8196(vc17, 예진 인터랙티브 — push capability·APNs) 테플 제출 완료 · 안드 3f1eb36a(vc11) APK 배포. fingerprint 로컬==빌드 일치(ios d6ddb65a·and ff05c134) — 이후 OTA 도달 기준 확립. pushEnabled off 유지.
