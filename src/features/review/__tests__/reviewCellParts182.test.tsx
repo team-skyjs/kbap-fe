@@ -64,6 +64,18 @@ it('ReviewPhotoStrip — 사진 탭 = 풀스크린 뷰어, X = 닫기, 0장 = �
   expect(tree.root.findAll((n) => n.props?.testID === 'photo-viewer').length).toBe(0);
 });
 
+it('P-193: 뷰어 X = 아이콘만 — 배경·보더·고정 박스 소멸(스타일 메트릭 잠금)', () => {
+  const { StyleSheet } = require('react-native') as typeof import('react-native');
+  const tree = render(<ReviewPhotoStrip photos={['https://cdn/a.jpg']} />);
+  act(() => tree.root.findAll((n) => n.props?.testID === 'photo-0')[0].props.onPress());
+  const close = tree.root.findAll((n) => n.props?.testID === 'viewer-close')[0];
+  const st = StyleSheet.flatten(close.props.style) as Record<string, unknown>;
+  expect(st.backgroundColor).toBeUndefined();
+  expect(st.borderWidth).toBeUndefined();
+  expect(st.width).toBeUndefined(); // 고정 원형 박스 소멸 — 터치는 hitSlop
+  expect(close.props.hitSlop).toBeGreaterThanOrEqual(10);
+});
+
 it('ReviewEditSheet — 기존 값 프리필·저장 콜백에 변경값 전달(구 디테일 editing 대체)', () => {
   const onSave = jest.fn();
   const review = { id: 'r1', foodId: '7', rating: 4, body: 'old body', authorNationality: null, authorRankTier: null, anonymized: false, createdAt: '2026-08-12' } as Review;

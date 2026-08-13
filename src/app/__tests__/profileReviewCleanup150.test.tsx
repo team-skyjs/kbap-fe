@@ -88,7 +88,8 @@ jest.mock('@/lib/data/useMe', () => ({
     data: [
       { id: 'r1', foodId: '499', rating: 4, body: 'good', createdAt: '2026-08-01', authorNationality: 'US', authorRankTier: null },
       // P-165: 서버 food 요약 보유분 — 이름·썸네일 서버값 우선 렌더 잠금용
-      { id: 'r2', foodId: '7', foodName: 'Server Kimbap', foodImageUrl: 'https://cdn/kimbap.jpg', rating: 5, body: 'nice', createdAt: '2026-08-02', authorNationality: 'US', authorRankTier: null },
+      // P-193: 사진 보유 리뷰 — 내 리뷰 셀 사진 스트립 렌더 잠금용
+      { id: 'r2', foodId: '7', foodName: 'Server Kimbap', foodImageUrl: 'https://cdn/kimbap.jpg', rating: 5, body: 'nice', createdAt: '2026-08-02', authorNationality: 'US', authorRankTier: null, photos: ['https://cdn/rv-a.jpg', 'https://cdn/rv-b.jpg'] },
     ],
     isLoading: false,
     error: null,
@@ -265,6 +266,15 @@ it('P-159: 저장 빈 상태 CTA = alignSelf center(소스 잠금 — Btn sm fle
   const btnIdx = src.lastIndexOf('<Btn sm', ctaIdx);
   expect(btnIdx).toBeGreaterThan(-1);
   expect(src.slice(btnIdx, ctaIdx)).toContain("alignSelf: 'center'");
+});
+
+it('P-193(Q-39): 내 리뷰 셀 — 사진 스트립 렌더 + 탭 = 풀스크린 뷰어(4표면 공유 공백 보수)', () => {
+  const tree = render(<MyReviews />);
+  // 스트립 렌더(사진 보유 r2)
+  expect(flatJson(tree)).toContain('https://cdn/rv-a.jpg');
+  // 재현 경로: 사진 탭 경유로 뷰어 도달 (P-190 교훈 — 상태 직접 호출 검증 금지)
+  act(() => tree.root.findAll((n) => n.props?.testID === 'photo-0')[0].props.onPress());
+  expect(tree.root.findAll((n) => n.props?.testID === 'photo-viewer').length).toBeGreaterThanOrEqual(1);
 });
 
 it('P-165(#144): 내 리뷰 — 서버 food.name(lang 해석)·썸네일 우선, 캐시 미스 시 중립 라벨 폴백', () => {

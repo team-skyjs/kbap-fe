@@ -23,7 +23,7 @@ import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { QueryErrorBlock } from '@/components/StateBlock';
-import { ExpandableBody, ReviewEditSheet } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { Alert } from 'react-native';
 import { personalRisk } from '@/lib/risk';
@@ -192,6 +192,8 @@ function ReviewCard({ review, food, hasR, when, onOpenFood, onEdit, onDelete }: 
           <Stars value={review.rating} size={13} />
         </View>
         {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.cardBody} />}
+        {/* P-193: 사진 스트립+뷰어 — 다른 3표면과 동일 문법(P-182 4표면 공유의 구현 공백 보수) */}
+        <ReviewPhotoStrip photos={review.photos ?? []} size={64} />
         <View style={styles.foot}>
           <Text style={styles.tag}>{when}</Text>
         </View>

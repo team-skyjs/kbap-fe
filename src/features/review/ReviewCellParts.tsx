@@ -71,8 +71,9 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
               </View>
             ))}
           </ScrollView>
-          <Pressable style={styles.viewerClose} hitSlop={10} onPress={() => setOpenAt(null)} testID="viewer-close">
-            <IconClose size={20} color="#fff" />
+          {/* P-193: X = 아이콘만(배경·보더 소멸 — P-181 연필 문법), 터치는 hitSlop */}
+          <Pressable style={styles.viewerClose} hitSlop={14} onPress={() => setOpenAt(null)} testID="viewer-close">
+            <IconClose size={22} color="#fff" />
           </Pressable>
           {photos.length > 1 && (
             <View style={styles.dots}>
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
   toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
   strip: { flexDirection: 'row', gap: 6 },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', justifyContent: 'center' },
-  viewerClose: { position: 'absolute', top: 54, right: 18, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
+  viewerClose: { position: 'absolute', top: 54, right: 18 },
   dots: { position: 'absolute', bottom: 42, alignSelf: 'center', flexDirection: 'row', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.35)' },
   dotOn: { backgroundColor: '#fff' },
