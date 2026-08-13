@@ -1188,3 +1188,6 @@
 ## 실기 4건 — Helpful 단일화 외 (2026-08-13, P-196) ⚠️ OTA 보류
 - [x] 피드 Helpful 캐시 보수(전역 피드 포함 낙관/next/롤백)+HelpfulButton 4표면 단일화(본인 카운트 전용) · 상태 블록 4탭 화면-정중앙(ScreenCenterFill) · X-브래킷 겹침 0(inset-aware) · " · " 전수 제거(i18n ×10+코드 10곳) — a3a60fd.
 - [x] tsc 0 · jest 106스위트 653/653 · OTA 보류(P-192 동승 판단 대기 — P-195와 동일).
+
+## P-195/196 OTA 도달 0 실측 (2026-08-13)
+- [!] "발행 가" 회신로 teamtest 발행(ios e1d731a6·and b6c1ada3)했으나 P-192 fingerprint 회전으로 설치 빌드(7aa41957/2e6a56f4) 미매칭 — 수신 0대. 선택지 3안 보고·지시 대기(REPORTS 참조). 추가 OTA 발행 중지.
