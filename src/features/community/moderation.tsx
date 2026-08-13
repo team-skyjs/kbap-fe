@@ -10,7 +10,7 @@
  * - 전부 공용 ActionSheet('context' 변형) 경유 — 글·댓글·대댓글 동일 배선.
  */
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Keyboard, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
@@ -56,6 +56,20 @@ export function ModerationFlow({
   const [reported, setReported] = React.useState(false);
   const submitReport = useSubmitReport();
   const blockUser = useBlockUser();
+
+  // P-194: "Something else" 자유입력이 키보드에 가림 — P-158 실측 문법(keyboardDidShow
+  // 높이) 재사용, 시트를 키보드 위로 리프트. iOS만 — Android는 resize 모드가 창을
+  // 줄여 자동 회피(중복 리프트 방지).
+  const [kbH, setKbH] = React.useState(0);
+  React.useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKbH(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // 대상이 바뀔 때 플로우 리셋
   React.useEffect(() => {
@@ -135,7 +149,7 @@ export function ModerationFlow({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <Pressable style={styles.backdrop} onPress={phase === 'blocking' ? undefined : close}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, kbH > 0 && { marginBottom: kbH }]} onPress={() => {}} testID="mod-sheet">
           {phase === 'report' &&
             (reported ? (
               /* 확인 상태 + 차단 2차 제안 */

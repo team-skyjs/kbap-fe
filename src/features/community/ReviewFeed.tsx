@@ -10,9 +10,9 @@
  * FLAGS.communityEnabled(!PROD_CHANNEL)로 숨김 — 이 화면 도달 불가(채널 분기).
  */
 import * as React from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -58,6 +58,23 @@ export function ReviewFeed() {
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   };
 
+  // P-194: 당겨서 새로고침(1페이지부터 재조회) + 탭 포커스 시 stale 재조회(KB-68 문법 —
+  // 탭 화면은 언마운트되지 않아 재진입만으론 재조회 없음. fresh면 no-op, 폴링 아님).
+  // 게스트 가드 — refetch는 enabled를 우회하므로(인증 필수 계약, 호출 0 유지) 별도 차단.
+  const [refreshing, setRefreshing] = React.useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    void feed.refetch().finally(() => setRefreshing(false));
+  };
+  const staleRef = React.useRef(false);
+  staleRef.current = !isGuest && feed.isStale;
+  const refetch = feed.refetch;
+  useFocusEffect(
+    React.useCallback(() => {
+      if (staleRef.current) void refetch();
+    }, [refetch]),
+  );
+
   const onPickFood = (f: FoodTagRef) => {
     setPickerOpen(false);
     router.push(`/food/${f.foodId}/review` as Href);
@@ -77,6 +94,7 @@ export function ReviewFeed() {
         showsVerticalScrollIndicator={false}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
+        refreshControl={isGuest ? undefined : <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} />}
         renderItem={({ item }) => (
           <FeedCard
             review={item}

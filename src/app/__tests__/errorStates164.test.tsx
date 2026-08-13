@@ -48,6 +48,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',
+  useFocusEffect: () => {}, // P-194: 피드 포커스 재조회 훅 표면 목
   Redirect: () => null,
 }));
 jest.mock('react-i18next', () => ({

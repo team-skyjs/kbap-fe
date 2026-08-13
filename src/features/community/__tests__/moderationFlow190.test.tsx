@@ -81,6 +81,24 @@ it('⛔️ 재현 경로: "차단" 아이템 탭 → 차단 확인 도달 — on
   expect(flat(tree)).toContain('community.blockConfirmTitle');
 });
 
+it('P-194: 신고 시트 — 키보드 실측 리프트(iOS marginBottom = 키보드 높이, 숨김 시 복원)', () => {
+  const { Keyboard, StyleSheet } = require('react-native') as typeof import('react-native');
+  // KeyboardDismissBar도 같은 이벤트를 구독 — 배열로 수집해 전부 발화
+  const listeners: Record<string, ((e: unknown) => void)[]> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e: unknown) => void) => {
+    (listeners[ev] ??= []).push(cb);
+    return { remove: jest.fn() } as never;
+  }) as never);
+  const tree = render(OTHER);
+  tapItem(tree, 'community.report'); // 재현 경로 — 신고 시트 도달 후 입력 포커스 상황
+  const sheetStyle = () => StyleSheet.flatten(tree.root.findAll((n) => n.props?.testID === 'mod-sheet')[0].props.style) as { marginBottom?: number };
+  act(() => listeners['keyboardDidShow']?.forEach((cb) => cb({ endCoordinates: { height: 336 } })));
+  expect(sheetStyle().marginBottom).toBe(336); // 시트가 키보드 위로 — 필드+제출 가시
+  act(() => listeners['keyboardDidHide']?.forEach((cb) => cb({})));
+  expect(sheetStyle().marginBottom).toBeUndefined();
+  spy.mockRestore();
+});
+
 it('회귀 무사고: 본인 수정/삭제 = 현행 자동 닫힘(onClose) + 콜백', () => {
   const onClose = jest.fn();
   const onEdit = jest.fn();

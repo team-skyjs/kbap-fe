@@ -36,6 +36,8 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/community',
+  // P-194: 포커스 재조회 — 렌더마다 cb 즉시 발화 = "포커스 중" 시뮬레이션
+  useFocusEffect: (cb: () => void) => cb(),
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
@@ -155,6 +157,55 @@ it('소스 잠금 — 글 기능 보존형 플래그·리뷰 피드 분기는 co
   expect(guardIdx).toBeGreaterThan(-1);
   expect(feedIdx).toBeGreaterThan(guardIdx); // 채널 가드가 먼저 — prod coming-soon 유지
   expect(tab).toContain('PostCard'); // 글 피드 코드 보존
+});
+
+describe('P-194: 당겨서 새로고침 + 포커스 stale 재조회', () => {
+  it('RefreshControl 존재 — 당김 = refetch(1페이지부터)', () => {
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch, isStale: false,
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    const { RefreshControl } = require('react-native') as typeof import('react-native');
+    const rc = tree.root.findAllByType(RefreshControl);
+    expect(rc.length).toBeGreaterThanOrEqual(1);
+    act(() => rc[0].props.onRefresh());
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it('게스트 = RefreshControl 부재(refetch는 enabled 우회 — 호출 0 계약 보존)', () => {
+    mockIsGuest.mockReturnValue(true);
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    mockFeed.mockReturnValue({
+      data: undefined, isLoading: false, isError: false, error: null, refetch, isStale: true,
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    const { RefreshControl } = require('react-native') as typeof import('react-native');
+    expect(tree.root.findAllByType(RefreshControl).length).toBe(0);
+    expect(refetch).not.toHaveBeenCalled(); // stale이어도 게스트는 포커스 재조회 0
+  });
+
+  it('탭 포커스(KB-68 문법) — stale이면 재조회, fresh면 no-op', () => {
+    const refetch = jest.fn().mockResolvedValue(undefined);
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch, isStale: true,
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    render();
+    expect(refetch).toHaveBeenCalled(); // stale + 포커스 = 재조회
+    const fresh = jest.fn().mockResolvedValue(undefined);
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: fresh, isStale: false,
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    render();
+    expect(fresh).not.toHaveBeenCalled(); // fresh = no-op(폴링 아님)
+  });
 });
 
 describe('P-186: 타 유저 신고·차단', () => {
