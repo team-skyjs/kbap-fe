@@ -855,5 +855,24 @@
     "danger": "Mengandung bahan dalam daftar hindaran Anda.",
     "unable": "Info bahan kurang — tanyakan staf agar yakin.",
     "caption": "Tampil sekali — ketuk tanda mana pun untuk melihat lagi."
+  },
+  "push": {
+    "primerTitle": "Terima info bermanfaat?",
+    "primerBody": "Kami akan memberi tahu saat ulasanmu dianggap membantu, dan mengingatkanmu menilai hidangan yang sudah dicoba. Bisa diubah kapan saja di pengaturan.",
+    "primerYes": "Aktifkan notifikasi",
+    "primerLater": "Nanti saja",
+    "reviewReminderTitle": "Bagaimana makanannya?",
+    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain."
+  },
+  "notif": {
+    "title": "Pengaturan notifikasi",
+    "helpful": "Reaksi ulasan",
+    "helpfulSub": "Saat seseorang menganggap ulasanmu membantu",
+    "reminder": "Pengingat ulasan",
+    "reminderSub": "Satu jam setelah memesan, tanya bagaimana rasanya",
+    "nudge": "Saran pindai",
+    "nudgeSub": "Sesekali mengingatkan memindai menu saat makan siang",
+    "osOff": "Notifikasi K-Bap dimatikan di pengaturan sistem.",
+    "osOffCta": "Buka pengaturan sistem"
   }
 }

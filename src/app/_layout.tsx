@@ -106,6 +106,22 @@ export default function RootLayout() {
     return () => onSessionExpired(null);
   }, [router]);
 
+  // P-192: 푸시 배선 — 앱 시작 토큰 upsert + 언어 변경 재등록(토큰=기기 속성이라
+  // lang 저장 필요, 정본 문서) + 알림 탭 딥링크. 전부 플래그+lazy(어댑터) 게이트 —
+  // pushEnabled off·구 런타임 = 전 구간 no-op.
+  useEffect(() => {
+    if (!FLAGS.pushEnabled) return;
+    const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
+    void push.registerPushToken();
+    const unsub = push.addNotificationTapListener((href) => router.push(href as Href));
+    const onLang = () => void push.registerPushToken();
+    i18n.on('languageChanged', onLang);
+    return () => {
+      unsub();
+      i18n.off('languageChanged', onLang);
+    };
+  }, [router]);
+
   if ((!fontsLoaded && !fontError) || !entryChecked) return null;
 
   return (

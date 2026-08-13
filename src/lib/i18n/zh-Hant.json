@@ -855,5 +855,24 @@
     "danger": "含有你忌口清單中的食材。",
     "unable": "食材資訊不足——請向店員確認。",
     "caption": "僅顯示一次——點按任意標記可再次查看。"
+  },
+  "push": {
+    "primerTitle": "接收實用通知？",
+    "primerBody": "當有人覺得你的評價有幫助時通知你，並提醒你為吃過的菜寫評價。可隨時在設定中更改。",
+    "primerYes": "開啟通知",
+    "primerLater": "暫不",
+    "reviewReminderTitle": "這頓飯怎麼樣？",
+    "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。"
+  },
+  "notif": {
+    "title": "通知設定",
+    "helpful": "評價回饋",
+    "helpfulSub": "有人覺得你的評價有幫助時",
+    "reminder": "評價提醒",
+    "reminderSub": "點餐1小時後詢問用餐感受",
+    "nudge": "掃描推薦",
+    "nudgeSub": "偶爾在午餐時間提醒你掃描菜單",
+    "osOff": "系統設定中已關閉 K-Bap 的通知。",
+    "osOffCta": "開啟系統設定"
   }
 }

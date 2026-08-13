@@ -852,5 +852,24 @@
     "danger": "Contains ingredients on your avoid list.",
     "unable": "Not enough ingredient info — ask the staff to be sure.",
     "caption": "Shown once — tap any mark to see this again."
+  },
+  "push": {
+    "primerTitle": "Get helpful updates?",
+    "primerBody": "We'll let you know when someone finds your review helpful, and remind you to rate a dish you tried. You can change this anytime in settings.",
+    "primerYes": "Turn on notifications",
+    "primerLater": "Not now",
+    "reviewReminderTitle": "How was your meal?",
+    "reviewReminderBody": "Tell us how the {{name}} was — a quick rating helps other travelers."
+  },
+  "notif": {
+    "title": "Notifications",
+    "helpful": "Review reactions",
+    "helpfulSub": "When someone finds your review helpful",
+    "reminder": "Review reminders",
+    "reminderSub": "An hour after you order, ask how it was",
+    "nudge": "Scan suggestions",
+    "nudgeSub": "Occasional lunch-time reminders to scan a menu",
+    "osOff": "Notifications are turned off for K-Bap in system settings.",
+    "osOffCta": "Open system settings"
   }
 }

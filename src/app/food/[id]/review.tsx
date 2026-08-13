@@ -24,6 +24,7 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { searchPlaces } from '@/lib/community/places';
 import type { PlaceTagRef } from '@/lib/community/types';
 import { Modal, TextInput as RNTextInput } from 'react-native';
@@ -99,6 +100,7 @@ export default function ReviewCompose() {
           place,
         });
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
+        if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
         setSubmitted(true);
       } catch (e) {
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);

@@ -856,5 +856,24 @@
     "danger": "Contiene ingredientes de tu lista de evitados.",
     "unable": "Falta información de ingredientes — pregunta al personal.",
     "caption": "Se muestra una vez — toca cualquier marca para verlo de nuevo."
+  },
+  "push": {
+    "primerTitle": "¿Recibir avisos útiles?",
+    "primerBody": "Te avisaremos cuando tu reseña resulte útil y te recordaremos valorar el plato que probaste. Puedes cambiarlo en ajustes cuando quieras.",
+    "primerYes": "Activar notificaciones",
+    "primerLater": "Ahora no",
+    "reviewReminderTitle": "¿Qué tal la comida?",
+    "reviewReminderBody": "Cuéntanos qué tal estuvo {{name}} — una valoración rápida ayuda a otros viajeros."
+  },
+  "notif": {
+    "title": "Ajustes de notificaciones",
+    "helpful": "Reacciones a reseñas",
+    "helpfulSub": "Cuando alguien marca tu reseña como útil",
+    "reminder": "Recordatorios de reseña",
+    "reminderSub": "Una hora después de pedir, te preguntamos qué tal",
+    "nudge": "Sugerencias de escaneo",
+    "nudgeSub": "Recordatorios ocasionales para escanear un menú al mediodía",
+    "osOff": "Las notificaciones de K-Bap están desactivadas en los ajustes del sistema.",
+    "osOffCta": "Abrir ajustes del sistema"
   }
 }

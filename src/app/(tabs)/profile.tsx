@@ -21,6 +21,7 @@ import {
   MedalEmblem,
   IconProfile,
   IconEdit,
+  IconBell,
   IconGlobe,
   IconGear,
   IconUserX,
@@ -295,6 +296,10 @@ export default function Profile() {
               <View style={styles.acctList}>
                 {canOpenLangSettings && (
                   <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+                )}
+                {/* P-192: 알림 설정 — 푸시 빌드 전 플래그 뒤(진입점 자체 숨김) */}
+                {FLAGS.pushEnabled && (
+                  <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('notif.title')} onPress={() => router.push('/profile/notifications' as Href)} />
                 )}
                 {/* P-061③: 안전 고지 페이지(EN/KO) — 미설정=BE 그대로(v2.1.0) 고지 포함 */}
                 <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />

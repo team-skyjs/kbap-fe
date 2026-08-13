@@ -73,7 +73,7 @@ export default function OrderCard() {
         </View>
       </View>
       <FlippedOrderCard
-        items={nameKo ? [{ nameKo, name: food?.name ?? nameKo, qty, priceKrw: null }] : []}
+        items={nameKo ? [{ nameKo, name: food?.name ?? nameKo, qty, priceKrw: null, foodId: id }] : []}
         avoidCodes={codes}
         avoidNames={codes.map((c) => ingCat.name(c))}
         currency={currency}

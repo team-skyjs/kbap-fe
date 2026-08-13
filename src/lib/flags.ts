@@ -99,6 +99,13 @@ export const FLAGS = {
    */
   communityPostsEnabled: false,
   /**
+   * 푸시 알림 클라이언트 (P-192/KB-39) — **네이티브 모듈(expo-notifications config
+   * plugin) 대기: 다음 네이티브 빌드 전까지 off 고정.** on 조건 = 알림 포함 빌드가
+   * 스토어/테스터에 깔린 뒤. 구 런타임 OTA 안전을 위해 expo-notifications 접근은
+   * 전부 lib/push/pushAdapter의 지연 require 경유 — 화면/훅에서 직접 import 금지.
+   */
+  pushEnabled: false,
+  /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.

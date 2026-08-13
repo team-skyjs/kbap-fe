@@ -84,6 +84,14 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#E2580C",
+          "_comment": "P-192: 안드 상태바 아이콘 = 모노크롬 실루엣(흰 단색 규격), 틴트 = 브랜드. 네이티브 — 다음 빌드 반영(OTA 동승 금지)"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#E2580C",

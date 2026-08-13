@@ -50,6 +50,8 @@ import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
+import { PushPrimerModal } from '@/features/push/PushPrimerModal';
+import { getPrimerResult } from '@/lib/push/pushAdapter';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
@@ -146,6 +148,14 @@ export default function Scan() {
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
+  // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter)
+  const [pushPrimer, setPushPrimer] = useState(false);
+  useEffect(() => {
+    if (phase !== 'result' || !FLAGS.pushEnabled) return;
+    void getPrimerResult().then((r) => {
+      if (r == null) setPushPrimer(true);
+    });
+  }, [phase]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -480,7 +490,7 @@ export default function Scan() {
     const goOrder = () => {
       const items = listDishes
         .filter((d) => (cart.get(d.itemId) ?? 0) > 0)
-        .map((d) => ({ nameKo: d.koreanName ?? d.rawMenuName, name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw }));
+        .map((d) => ({ nameKo: d.koreanName ?? d.rawMenuName, name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw, foodId: d.foodId ?? null }));
       router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}` as Href);
     };
 
@@ -585,6 +595,10 @@ export default function Scan() {
             </View>
           </View>
         </Modal>
+
+        {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
+            온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
+        <PushPrimerModal open={pushPrimer} onDone={() => setPushPrimer(false)} />
       </View>
     );
   }

@@ -855,5 +855,24 @@
     "danger": "Chứa nguyên liệu trong danh sách tránh của bạn.",
     "unable": "Thiếu thông tin nguyên liệu — hỏi nhân viên cho chắc.",
     "caption": "Chỉ hiện một lần — chạm vào dấu bất kỳ để xem lại."
+  },
+  "push": {
+    "primerTitle": "Nhận thông báo hữu ích?",
+    "primerBody": "Chúng tôi sẽ báo khi có người thấy đánh giá của bạn hữu ích, và nhắc bạn đánh giá món đã ăn. Có thể thay đổi bất cứ lúc nào trong cài đặt.",
+    "primerYes": "Bật thông báo",
+    "primerLater": "Để sau",
+    "reviewReminderTitle": "Bữa ăn thế nào?",
+    "reviewReminderBody": "Cho chúng tôi biết {{name}} thế nào — một đánh giá nhanh sẽ giúp các du khách khác."
+  },
+  "notif": {
+    "title": "Cài đặt thông báo",
+    "helpful": "Phản hồi đánh giá",
+    "helpfulSub": "Khi có người thấy đánh giá của bạn hữu ích",
+    "reminder": "Nhắc viết đánh giá",
+    "reminderSub": "Hỏi cảm nhận sau khi gọi món 1 tiếng",
+    "nudge": "Gợi ý quét menu",
+    "nudgeSub": "Thỉnh thoảng nhắc quét menu vào giờ ăn trưa",
+    "osOff": "Thông báo của K-Bap đang tắt trong cài đặt hệ thống.",
+    "osOffCta": "Mở cài đặt hệ thống"
   }
 }

@@ -16,6 +16,7 @@ import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { scheduleReviewReminder } from '@/lib/push/pushAdapter';
 import { convertKrw } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
 
@@ -25,6 +26,8 @@ export interface OrderItem {
   name: string;
   qty: number;
   priceKrw: number | null;
+  /** P-192: 리뷰 유도 로컬 알림 컨텍스트 — 미매칭(스캔 unmatched)은 null */
+  foodId?: string | null;
 }
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -132,7 +135,17 @@ export function FlippedOrderCard({
             <Text style={styles.confirmTitle}>{t('order.doneTitle')}</Text>
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
-              <Btn onPress={onDone}>{t('order.doneHome')}</Btn>
+              <Btn
+                onPress={() => {
+                  // P-192: 완료 모달 닫힘 = 리뷰 유도 로컬 알림 예약(1h) — 복수면 첫
+                  // foodId 보유 항목(발주 재량). 플래그·설정·권한 게이트는 어댑터 몫.
+                  const target = items.find((i) => i.foodId != null && i.qty > 0);
+                  if (target?.foodId) void scheduleReviewReminder({ foodId: String(target.foodId), name: target.name });
+                  onDone();
+                }}
+              >
+                {t('order.doneHome')}
+              </Btn>
             </View>
           </View>
           {/* P-166: 폭죽 = 모달 위 전면 통과 레이어(pointerEvents none — 확인 즉시 탭 가능) */}
