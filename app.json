@@ -84,6 +84,13 @@
         }
       ],
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "K-Bap uses your location to find nearby restaurants you can tag in a review.",
+          "_comment": "P-200: 리뷰 장소 태그 nearby용 — 사용 중 권한만(백그라운드 없음). 네이티브 — 빌드18 반영"
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/images/android-icon-monochrome.png",

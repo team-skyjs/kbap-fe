@@ -1,15 +1,52 @@
 /**
- * api/places.ts — 리뷰 장소 태그 실연결 (P-201/KB-249).
+ * api/places.ts — 리뷰 장소 태그 실연결 (P-201 고정 좌표 → P-200 실위치/KB-249).
  *
  * GET /api/places/nearby(좌표 → 탑10) · GET /api/places/search(query+좌표).
- * ⚠️ P-201 = 좌표 **고정값**(스웨거 예시 — 강남역) 기반: 유저 실위치 획득만 빼고
- * 전부 실동작(nearby가 강남역 기준인 것이 알려진 한계). expo-location 불필요 =
- * 네이티브 무변(OTA 가능). 응답 어댑터는 방어적(주소 키 이형 수용).
+ * P-200: 좌표 = **실위치**(권한 허용 시) — 미결정이면 OS 팝업 바로(사전 모달 없음,
+ * 예진 확정), 거절/불가/오류 = 강남 폴백(P-201 경로 그대로 — 기능 전부 동작,
+ * 정렬만 강남 기준). 재요청 없음(iOS 1회성 — 거절 후엔 조용히 폴백).
+ * expo-location 접근 = 지연 require(P-192 관례 — 구 런타임 번들 동승 시 크래시 0).
+ * 응답 어댑터는 방어적(주소 키 이형 수용).
  */
 import { api } from './client';
 
-/** P-200에서 expo-location 실위치로 스왑 — 좌표 소스는 이 상수 한 곳. */
-export const REVIEW_PLACE_FALLBACK_COORD = { latitude: 37.4979502, longitude: 127.0276368 }; // 강남역(스웨거 예시)
+/** 실위치 불가 시 폴백 — 강남역(스웨거 예시). 검색 좌표 옵셔널 확정 시 폴백 제거 지점. */
+export const REVIEW_PLACE_FALLBACK_COORD = { latitude: 37.4979502, longitude: 127.0276368 };
+
+export interface Coord {
+  latitude: number;
+  longitude: number;
+}
+
+/* ---- P-200: 실위치 — 60초 메모(시트 세션 내 키 입력마다 GPS 재조회 방지) ---- */
+let coordCache: { at: number; coord: Coord } | null = null;
+const COORD_TTL_MS = 60_000;
+
+/** 유닛용 — 메모 리셋. */
+export function _resetCoordCacheForTest(): void {
+  coordCache = null;
+}
+
+async function currentCoord(): Promise<Coord> {
+  if (coordCache && Date.now() - coordCache.at < COORD_TTL_MS) return coordCache.coord;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Location = require('expo-location') as typeof import('expo-location');
+    const perm = await Location.getForegroundPermissionsAsync();
+    let status = perm.status;
+    // 미결정 = OS 팝업 바로(사전 모달 없음 — 예진 확정). 거절 이력은 재요청 없음.
+    if (status === 'undetermined' && perm.canAskAgain !== false) {
+      status = (await Location.requestForegroundPermissionsAsync()).status;
+    }
+    if (status !== 'granted') return REVIEW_PLACE_FALLBACK_COORD;
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+    coordCache = { at: Date.now(), coord };
+    return coord;
+  } catch {
+    return REVIEW_PLACE_FALLBACK_COORD; // 모듈 부재(구 런타임)·GPS 오류 — 조용히 폴백
+  }
+}
 
 /** 리뷰 장소 — MANUAL(직접 입력)은 name만, 좌표 부재. */
 export interface ReviewPlace {
@@ -38,14 +75,14 @@ function adaptPlaceList(wire: unknown): ReviewPlace[] {
   return arr.map(adaptPlace).filter((p): p is ReviewPlace => p != null);
 }
 
-const coordQ = () => `latitude=${REVIEW_PLACE_FALLBACK_COORD.latitude}&longitude=${REVIEW_PLACE_FALLBACK_COORD.longitude}`;
+const coordQ = (c: Coord) => `latitude=${c.latitude}&longitude=${c.longitude}`;
 
-/** 근처 탑10 — 시트 열림 프리로드. */
+/** 근처 탑10 — 시트 열림 프리로드(첫 호출이 권한 확인/OS 팝업 트리거). */
 export async function fetchNearbyPlaces(): Promise<ReviewPlace[]> {
-  return adaptPlaceList(await api.get<unknown>(`/api/places/nearby?${coordQ()}`));
+  return adaptPlaceList(await api.get<unknown>(`/api/places/nearby?${coordQ(await currentCoord())}`));
 }
 
-/** 장소 검색(query+좌표 — 좌표 옵셔널화는 P-200 종한 확답 대기). */
+/** 장소 검색(query+좌표 — 좌표 옵셔널화는 종한 확답 대기). */
 export async function fetchSearchPlaces(query: string): Promise<ReviewPlace[]> {
-  return adaptPlaceList(await api.get<unknown>(`/api/places/search?query=${encodeURIComponent(query)}&${coordQ()}`));
+  return adaptPlaceList(await api.get<unknown>(`/api/places/search?query=${encodeURIComponent(query)}&${coordQ(await currentCoord())}`));
 }

@@ -35,8 +35,7 @@
       "autoIncrement": true,
       "channel": "teamtest",
       "env": {
-        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "EXPO_PUBLIC_BE_BASE": "https://dev.kbap.site"
       },
       "android": {
         "buildType": "apk",
