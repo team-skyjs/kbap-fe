@@ -357,7 +357,9 @@
     "placeNoResults": "No hay lugares que coincidan.",
     "placeSkip": "Omitir — publicar sin lugar",
     "deleteError": "No se pudo eliminar la reseña. Revisa tu conexión e inténtalo de nuevo.",
-    "photoCapNote": "Máximo {{max}} fotos — se omitieron las adicionales"
+    "photoCapNote": "Máximo {{max}} fotos — se omitieron las adicionales",
+    "placeNearby": "Cerca",
+    "placeManual": "Usar \"{{name}}\" tal cual"
   },
   "reviews": {
     "headerTitle": "Reseñas",

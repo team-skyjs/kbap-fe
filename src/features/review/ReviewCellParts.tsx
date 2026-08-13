@@ -8,13 +8,19 @@
  */
 import * as React from 'react';
 import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
-import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Btn, IconClose, Star } from '@/components';
+import { Btn, IconClose, IconMapPin, Star } from '@/components';
+import { PlaceTagSheet } from '@/features/community/placeMap';
+import { useQuery } from '@tanstack/react-query';
+import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
+import { IconPlus, IconSearch } from '@/components';
+import { KeyboardDismissBar } from '@/components/KeyboardDismissBar';
 import { Input } from '@/components/KeyboardDismissBar';
 import { useToggleReviewLike } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { FLAGS } from '@/lib/flags';
 import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -90,6 +96,122 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
   );
 }
 
+/** P-201: 리뷰 장소 태그 — MANUAL(직접 입력)은 좌표·주소 null. */
+export type ReviewPlaceTag = { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null };
+const toTag = (p: ReviewPlace): ReviewPlaceTag => ({ name: p.name, roadAddress: p.address, latitude: p.latitude, longitude: p.longitude });
+
+/**
+ * 장소 픽커 시트 (P-095 목 → P-201 실연결) — 작성·수정 공용:
+ * 열림 = nearby(고정 좌표 — 강남역) 탑10 프리로드 · 입력 = search 실호출 ·
+ * 직접 입력(MANUAL) = 결과 미선택 채로 이름만 태그. Recent·typeahead·Skip 푸터.
+ */
+export function PlacePickerSheet({
+  open,
+  onClose,
+  onPick,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (p: ReviewPlaceTag) => void;
+  t: TFn;
+}) {
+  const [q, setQ] = React.useState('');
+  const term = q.trim();
+  const nearby = useQuery({ queryKey: ['places', 'nearby'], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
+  const search = useQuery({ queryKey: ['places', 'search', term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
+  const active = term ? search : nearby;
+  const results = active.data ?? [];
+  if (!open) return null;
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.pickerBackdrop}>
+        <View style={styles.pickerSheet}>
+          <View style={styles.pickerHeader}>
+            <Pressable hitSlop={10} onPress={onClose}>
+              <IconClose size={20} color={C.ink2} />
+            </Pressable>
+            <Text style={styles.pickerTitle}>{t('review.placeSheetTitle')}</Text>
+            <View style={{ width: 20 }} />
+          </View>
+          <View style={styles.searchBox}>
+            <IconSearch size={17} color={C.ink2} />
+            <Input
+              value={q}
+              onChangeText={setQ}
+              placeholder={t('community.searchPlaces')}
+              placeholderTextColor={C.ink3}
+              style={styles.searchInput}
+              autoCorrect={false}
+            />
+          </View>
+          {!term && <Text style={styles.recentLbl}>{t('review.placeNearby')}</Text>}
+          <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+            {/* P-201: 직접 입력(MANUAL) — 결과 미선택 채로 이름만 태그(좌표·주소 없음) */}
+            {!!term && (
+              <Pressable style={styles.resultRow} onPress={() => onPick({ name: term, roadAddress: null })} testID="place-manual">
+                <IconPlus size={16} color={C.ink3} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.resultText} numberOfLines={1}>{t('review.placeManual', { name: term })}</Text>
+                </View>
+              </Pressable>
+            )}
+            {active.isLoading ? (
+              <View style={{ paddingVertical: 18, alignItems: 'center' }}>
+                <ActivityIndicator color={C.ink3} />
+              </View>
+            ) : results.length === 0 && !term ? (
+              <Text style={styles.noResults}>{t('review.placeNoResults')}</Text>
+            ) : (
+              results.map((p) => (
+                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => onPick(toTag(p))} testID={`place-pick-${p.name}`}>
+                  <IconMapPin size={16} color={C.ink3} />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>
+                    {!!p.address && <Text style={styles.resultSub} numberOfLines={1}>{p.address}</Text>}
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </ScrollView>
+          {/* Skip 푸터 — 장소 없이 게시 (D-09) */}
+          <Pressable style={styles.skipRow} onPress={onClose} hitSlop={6}>
+            <Text style={styles.skipText}>{t('review.placeSkip')}</Text>
+          </Pressable>
+        </View>
+      </View>
+      <KeyboardDismissBar modal />
+    </Modal>
+  );
+}
+
+/**
+ * 장소 줄 (P-201/KB-249) — 전 리뷰 표면 공용: 핀+장소명 한 줄, 탭 = 3사 지도 시트.
+ * 좌표 보유(카카오 선택분) = 좌표 딥링크 · MANUAL(이름만) = 이름 검색 폴백 —
+ * 분기는 tagSheets mapUrls 한 곳. 무태그 = 미렌더. 플래그 게이트는 호출측 아닌
+ * 여기서(표면 4곳 개별 게이트 금지 — P-196 단일화 원칙 승계).
+ */
+export function ReviewPlaceLine({ place }: { place: Review['place'] }) {
+  const [open, setOpen] = React.useState(false);
+  if (!FLAGS.reviewPlaceEnabled || !place?.name) return null;
+  return (
+    <>
+      <Pressable style={styles.placeLine} hitSlop={6} onPress={() => setOpen(true)} testID="review-place">
+        <IconMapPin size={13} color={C.ink3} />
+        <Text style={styles.placeLineText} numberOfLines={1}>
+          {place.name}
+        </Text>
+      </Pressable>
+      {open && (
+        <PlaceTagSheet
+          place={{ name: place.name, roadAddress: place.roadAddress ?? '', latitude: place.latitude, longitude: place.longitude }}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
 /**
  * Helpful 토글 (P-196) — 4표면(피드·상세 프리뷰·전체 목록·내 리뷰) **유일 경유**.
  * 표면별 개별 배선 금지(이번 반려 = 표면별 상이 동작 사례) — 버튼·뮤테이션·게스트/
@@ -127,7 +249,8 @@ export function HelpfulButton({
   );
 }
 
-/** 본인 리뷰 수정 시트 — 구 디테일 editing(별점+본문, 사진은 buildReviewUpdate가 보존) 이식. */
+/** 본인 리뷰 수정 시트 — 구 디테일 editing(별점+본문, 사진은 buildReviewUpdate가 보존) 이식.
+ *  P-201: 장소 행 추가 — 프리필·교체·해제(항상 명시 전송: 값 = 유지/교체, null = 해제). */
 export function ReviewEditSheet({
   review,
   onClose,
@@ -138,16 +261,19 @@ export function ReviewEditSheet({
   review: Review | null;
   onClose: () => void;
   /** 호출측이 updateReview.mutate(buildReviewUpdate 경유) 배선 */
-  onSave: (changes: { rating: number; body: string }) => void;
+  onSave: (changes: { rating: number; body: string; place: Review['place'] }) => void;
   saving?: boolean;
   t: TFn;
 }) {
   const [rating, setRating] = React.useState(0);
   const [body, setBody] = React.useState('');
+  const [place, setPlace] = React.useState<Review['place']>(null);
+  const [placeSheet, setPlaceSheet] = React.useState(false);
   React.useEffect(() => {
     if (review) {
       setRating(review.rating);
       setBody(review.body ?? '');
+      setPlace(review.place ?? null);
     }
   }, [review]);
   return (
@@ -171,14 +297,42 @@ export function ReviewEditSheet({
             placeholder={t('review.placeholder')}
             placeholderTextColor={C.ink3}
           />
+          {/* P-201: 장소 행 — 작성 화면과 같은 문법(칩+해제 / 태그 행) */}
+          {FLAGS.reviewPlaceEnabled &&
+            (place?.name ? (
+              <Pressable style={styles.editPlaceChip} onPress={() => setPlaceSheet(true)} testID="edit-place-chip">
+                <IconMapPin size={13} color={C.ink2} />
+                <Text style={styles.editPlaceText} numberOfLines={1}>{place.name}</Text>
+                <Pressable hitSlop={8} onPress={() => setPlace(null)} testID="edit-place-clear">
+                  <IconClose size={13} color={C.ink3} />
+                </Pressable>
+              </Pressable>
+            ) : (
+              <Pressable style={styles.editPlaceRow} onPress={() => setPlaceSheet(true)} hitSlop={4} testID="edit-place-add">
+                <IconMapPin size={15} color={C.ink2} />
+                <Text style={styles.editPlaceAdd}>{t('review.placeRow')}</Text>
+              </Pressable>
+            ))}
           <View style={{ gap: 9, marginTop: 4 }}>
-            <Btn busy={saving} onPress={() => onSave({ rating, body })} testID="edit-save">
+            <Btn busy={saving} onPress={() => onSave({ rating, body, place })} testID="edit-save">
               {t('common.save')}
             </Btn>
             <Btn variant="ghost" onPress={onClose}>{t('common.cancel')}</Btn>
           </View>
         </View>
       </View>
+      {/* 열렸을 때만 마운트 — 픽커의 useQuery가 닫힌 시트에서 QueryClient를 요구하지 않게 */}
+      {placeSheet && (
+        <PlacePickerSheet
+          open
+          onClose={() => setPlaceSheet(false)}
+          onPick={(p) => {
+            setPlace(p);
+            setPlaceSheet(false);
+          }}
+          t={t}
+        />
+      )}
     </Modal>
   );
 }
@@ -186,6 +340,9 @@ export function ReviewEditSheet({
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
   toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
+  placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
+  placeLineText: { flexShrink: 1, fontFamily: font.body, fontSize: 12, color: C.ink3 },
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   helpful: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   helpfulOn: { color: C.primaryText },
@@ -201,4 +358,23 @@ const styles = StyleSheet.create({
   editTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
   editStars: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
   editInput: { minHeight: 110, maxHeight: 220, backgroundColor: C.surface2, borderRadius: radius.sm, padding: 12, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
+  // P-201: 수정 시트 장소 행/칩 — 작성 화면 문법 축약
+  editPlaceChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 10 },
+  editPlaceText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  editPlaceRow: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 2 },
+  editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  // P-201: 장소 픽커 시트 (review.tsx P-095 스타일 이식 — 작성·수정 공용화로 이동)
+  pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, gap: 12, ...shadow.sh2 },
+  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pickerTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13 },
+  searchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  recentLbl: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 0.6, color: C.ink3, textTransform: 'uppercase' },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  resultText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  resultSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
+  skipRow: { alignItems: 'center', paddingVertical: 12 },
+  skipText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
 });

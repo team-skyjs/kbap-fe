@@ -399,7 +399,9 @@
     "placeNoResults": "No places match.",
     "placeSkip": "Skip this — post without a place",
     "deleteError": "Couldn't delete the review. Check your connection and try again.",
-    "photoCapNote": "Up to {{max}} photos — extra selections were skipped"
+    "photoCapNote": "Up to {{max}} photos — extra selections were skipped",
+    "placeNearby": "Nearby",
+    "placeManual": "Use \"{{name}}\" as typed"
   },
   "reviews": {
     "headerTitle": "Reviews",

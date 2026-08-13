@@ -140,5 +140,5 @@ it('ReviewEditSheet — 기존 값 프리필·저장 콜백에 변경값 전달(
   act(() => tree.root.findAll((n) => n.props?.testID === 'edit-star-5')[0].props.onPress());
   const save = tree.root.findAll((n) => n.props?.testID === 'edit-save' && typeof n.props?.onPress === 'function')[0];
   act(() => save.props.onPress());
-  expect(onSave).toHaveBeenCalledWith({ rating: 5, body: 'old body' });
+  expect(onSave).toHaveBeenCalledWith({ rating: 5, body: 'old body', place: null }); // P-201: 장소 명시 전송(무태그 = null)
 });

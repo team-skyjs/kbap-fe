@@ -99,6 +99,12 @@ export const FLAGS = {
    */
   communityPostsEnabled: false,
   /**
+   * 리뷰 장소 태그 실연결 (P-201/KB-249) — **dev 계열만**(prod 서버에 place 계약
+   * 미배포). 고정 좌표(강남역) 기반 — P-200에서 expo-location 실위치 스왑 예정.
+   * prod 배포 신호 오면 채널 조건 해제.
+   */
+  reviewPlaceEnabled: !PROD_CHANNEL,
+  /**
    * 푸시 알림 클라이언트 (P-192/KB-39) — **네이티브 모듈(expo-notifications config
    * plugin) 대기: 다음 네이티브 빌드 전까지 off 고정.** on 조건 = 알림 포함 빌드가
    * 스토어/테스터에 깔린 뒤. 구 런타임 OTA 안전을 위해 expo-notifications 접근은

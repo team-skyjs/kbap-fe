@@ -39,7 +39,7 @@ export function useCreateReview() {
   const qc = useQueryClient();
   const invalidate = useInvalidateReviews();
   return useMutation({
-    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string } | null }) => {
+    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const me = qc.getQueryData<User>(['me', i18n.language]);
         mockInsert(qc, {
@@ -65,6 +65,20 @@ export function useCreateReview() {
         rating: input.rating,
         ...(input.content ? { content: input.content } : {}),
         ...(input.imagePaths?.length ? { imagePaths: input.imagePaths } : {}),
+        // P-201(KB-249): 장소 실전송 — MANUAL(좌표 null) = name만
+        ...(input.place
+          ? {
+              place:
+                input.place.latitude == null || input.place.longitude == null
+                  ? { name: input.place.name }
+                  : {
+                      name: input.place.name,
+                      ...(input.place.roadAddress ? { address: input.place.roadAddress } : {}),
+                      latitude: input.place.latitude,
+                      longitude: input.place.longitude,
+                    },
+            }
+          : {}),
       });
     },
     onSuccess: (_d, v) => {
@@ -80,8 +94,8 @@ export function useUpdateReview() {
     mutationFn: async (input: {
       reviewId: string;
       foodId: string;
-      current: { rating: number; body: string | null; photos?: string[] };
-      changes: { rating?: number; body?: string | null };
+      current: { rating: number; body: string | null; photos?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null };
+      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null };
     }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const body = (input.changes.body !== undefined ? input.changes.body : input.current.body)?.trim() || null;

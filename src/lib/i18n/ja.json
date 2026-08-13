@@ -357,7 +357,9 @@
     "placeNoResults": "一致する場所がありません。",
     "placeSkip": "スキップ — 場所なしで投稿",
     "deleteError": "レビューを削除できませんでした。接続を確認してもう一度お試しください。",
-    "photoCapNote": "写真は最大{{max}}枚 — 超過分は除外しました"
+    "photoCapNote": "写真は最大{{max}}枚 — 超過分は除外しました",
+    "placeNearby": "近くの場所",
+    "placeManual": "\"{{name}}\"のまま使う"
   },
   "reviews": {
     "headerTitle": "レビュー",

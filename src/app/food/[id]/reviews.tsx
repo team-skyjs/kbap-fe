@@ -44,7 +44,7 @@ import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
@@ -249,7 +249,7 @@ export default function FoodReviews() {
         review={editTarget}
         onClose={() => setEditTarget(null)}
         saving={updateReview.isPending}
-        onSave={({ rating, body }) => {
+        onSave={({ rating, body, place }) => {
           if (!editTarget) return;
           updateReview.mutate(
             { reviewId: editTarget.id, foodId: id ?? '', current: editTarget, changes: { rating, body } },
@@ -320,6 +320,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
 
       {/* P-182 ②: 사진 = 공용 스트립+풀스크린 뷰어 */}
       <ReviewPhotoStrip photos={review.photos ?? []} />
+      <ReviewPlaceLine place={review.place ?? null} />
 
       {!!tx.text && <ExpandableBody body={tx.text} t={t} />}
 

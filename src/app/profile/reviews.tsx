@@ -23,7 +23,7 @@ import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { QueryErrorBlock } from '@/components/StateBlock';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { Alert } from 'react-native';
 import { personalRisk } from '@/lib/risk';
@@ -130,10 +130,10 @@ export default function MyReviews() {
         review={editTarget}
         onClose={() => setEditTarget(null)}
         saving={updateReview.isPending}
-        onSave={({ rating, body }) => {
+        onSave={({ rating, body, place }) => {
           if (!editTarget) return;
           updateReview.mutate(
-            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body } },
+            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place } },
             { onSettled: () => setEditTarget(null) },
           );
         }}
@@ -194,6 +194,7 @@ function ReviewCard({ review, food, hasR, when, onOpenFood, onEdit, onDelete }: 
         {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.cardBody} />}
         {/* P-193: 사진 스트립+뷰어 — 다른 3표면과 동일 문법(P-182 4표면 공유의 구현 공백 보수) */}
         <ReviewPhotoStrip photos={review.photos ?? []} size={64} />
+        <ReviewPlaceLine place={review.place ?? null} />
         <View style={styles.foot}>
           <Text style={styles.tag}>{when}</Text>
           {/* P-196: 본인 리뷰 = Helpful 카운트 표시 전용(공용 버튼 mine 분기 — 탭 무반응) */}

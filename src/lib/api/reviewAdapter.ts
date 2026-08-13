@@ -52,6 +52,8 @@ export interface ReviewWire {
   /** P-108(KB-257): 좋아요 — 서버값 (8/3 계약). 구응답 방어 옵셔널. */
   likeCount?: number;
   likedByMe?: boolean;
+  /** P-201(KB-249): 장소 태그 — source = KAKAO_PLACE/MANUAL/AUTHOR_LOCATION. */
+  place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null } | null;
 }
 
 export interface ReviewPageWire {
@@ -64,6 +66,8 @@ export interface ReviewUpdateWire {
   rating: number;
   content?: string;
   imagePaths?: string[];
+  /** P-201: 장소 — 생략 = 제거(전 필드 공통 시맨틱), MANUAL = name만. */
+  place?: { name: string; address?: string; latitude?: number; longitude?: number };
 }
 
 /* ---- adapt (wire → 내부) ---- */
@@ -107,6 +111,15 @@ export function adaptReview(wire: ReviewWire): Review {
     // P-108: 좋아요 = 서버값 (목 로컬 계산 폐기 — 토글 낙관 반영은 뮤테이션 몫)
     likes: wire.likeCount ?? 0,
     myLike: wire.likedByMe === true,
+    // P-201: 장소 — name 없으면 무태그. MANUAL = 좌표 null(딥링크는 이름 검색 폴백)
+    place: wire.place?.name
+      ? {
+          name: wire.place.name,
+          roadAddress: wire.place.address ?? null,
+          latitude: wire.place.latitude ?? null,
+          longitude: wire.place.longitude ?? null,
+        }
+      : null,
   };
 }
 
@@ -131,19 +144,29 @@ export function imageUrlToPath(url: string): string {
   return m ? m[1] : url;
 }
 
+/** P-201: 내부 place → 전송 wire. MANUAL(좌표 null) = name만. */
+type ReviewPlaceLike = { name: string; roadAddress?: string | null; latitude?: number | null; longitude?: number | null };
+function placeWire(p: ReviewPlaceLike): NonNullable<ReviewUpdateWire['place']> {
+  if (p.latitude == null || p.longitude == null) return { name: p.name };
+  return { name: p.name, ...(p.roadAddress ? { address: p.roadAddress } : {}), latitude: p.latitude, longitude: p.longitude };
+}
+
 /**
  * PATCH 풀 페이로드 — "생략=제거" 함정 방지: rating·imagePaths는 항상 포함
  * (사진은 현재 보유분 전량 유지), content는 최종 본문이 비면 **의도된 제거**로
- * 생략, 있으면 포함.
+ * 생략, 있으면 포함. P-201 place 동일 시맨틱: changes.place undefined = 현행 유지
+ * (있으면 재전송 — 소실 방지), null = 해제 의도 → 생략, 값 = 교체.
  */
 export function buildReviewUpdate(
-  current: { rating: number; body: string | null; photos?: string[] },
-  changes: { rating?: number; body?: string | null },
+  current: { rating: number; body: string | null; photos?: string[]; place?: ReviewPlaceLike | null },
+  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null },
 ): ReviewUpdateWire {
   const body = (changes.body !== undefined ? changes.body : current.body)?.trim() ?? '';
+  const place = changes.place !== undefined ? changes.place : (current.place ?? null);
   return {
     rating: changes.rating ?? current.rating,
     ...(body ? { content: body } : {}), // 빈 본문 = 제거 의도 → 생략
     imagePaths: (current.photos ?? []).map(imageUrlToPath), // 항상 전송 — 사진 소실 방지
+    ...(place ? { place: placeWire(place) } : {}), // null = 해제 → 생략
   };
 }
