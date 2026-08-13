@@ -1163,3 +1163,8 @@
 ## 업로드 JPEG·원격 렌더 캐시 (2026-08-13, P-189)
 - [x] UPLOAD_OK jpeg만(png → 재인코딩 경유, 관문 규칙 주석) · 원격 렌더 7파일 expo-image 스왑(로컬 표면 제외 보고).
 - [x] tsc 0 · jest 101스위트 614/614 · teamtest OTA(iOS af38b340·안드 6cde3db3) — c0b466f.
+
+## 신고/차단 무반응·갤러리 로딩 (2026-08-13, P-190+191)
+- [x] P-190 ActionSheet keepOpen(페이즈 전환형만 자동 close 생략) — 재현 경로(아이템 탭 경유) 유닛 3 — 3310bed.
+- [x] P-191 갤러리 원본 로드 오버레이(스캔)+프로필 busy 당김+리뷰 타일 스피너, scan.loadingPhoto ×10 — 6bbbc51.
+- [x] tsc 0 · jest 102스위트 619/619 · teamtest OTA(iOS fb0b01f6·안드 88fc26a8).
