@@ -2,7 +2,7 @@
 export * from './icons';
 export { RiskMark, RiskDot, RISK } from './RiskMark';
 export { RiskPill } from './RiskPill';
-export { Stars, Star } from './Stars';
+export { Stars, Star, RatingLine } from './Stars';
 export { FlagEmoji as Flag, FlagEmoji } from './FlagEmoji'; // P-130: 국기 = 이모지 (구 Flag SVG 벤더 소멸)
 export { Rosette, MedalEmblem } from './Rosette';
 export { Btn, type BtnVariant } from './Btn';

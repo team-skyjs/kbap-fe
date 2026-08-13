@@ -25,7 +25,7 @@ import {
   QueryErrorBlock,
   RiskMark,
   CardPhoto,
-  Stars,
+  RatingLine,
   IconSearch,
   IconFood,
 } from '@/components';
@@ -144,14 +144,8 @@ export function BrowseCard({ food, hasRestrictions, guest, onPress }: { food: Fo
             {food.nameKo}
           </Text>
         )}
-        {FLAGS.reviewsEnabled && (
-          <View style={styles.rate}>
-            <Stars value={food.overall.average ?? 0} size={13} />
-            <Text style={styles.rateNum}>
-              {food.overall.average?.toFixed(1) ?? '—'} · {food.overall.count}
-            </Text>
-          </View>
-        )}
+        {/* P-195: "★들 (n)"·0건 = 줄 제거(세로 목록 — 쿠팡 문법, 높이 차 허용) */}
+        {FLAGS.reviewsEnabled && <RatingLine overall={food.overall} />}
       </View>
     </Pressable>
   );
@@ -180,6 +174,4 @@ const styles = StyleSheet.create({
   cardB: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, gap: 4 },
   name: { fontFamily: font.display, fontSize: 14.5, color: C.ink },
   ko: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
-  rate: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
-  rateNum: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink2 },
 });

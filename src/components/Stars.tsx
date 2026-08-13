@@ -5,7 +5,8 @@
 import * as React from 'react';
 import { View } from 'react-native';
 import Svg, { ClipPath, Defs, Path, Rect } from 'react-native-svg';
-import { color as C } from '@/lib/theme';
+import { color as C, font } from '@/lib/theme';
+import { Txt } from './Txt';
 
 /** P-168 ④: 빈 별 아웃라인 = 채움 주황의 옅은 톤(쿠팡 문법) — 갈/검정 아웃라인 과함. */
 export const STAR_EMPTY = 'rgba(226,88,12,0.4)';
@@ -55,6 +56,37 @@ export function Stars({
         const pct = Math.max(0, Math.min(1, value - i)) * 100;
         return <Star key={i} size={size} fillPct={pct} fillColor={color} emptyColor={STAR_EMPTY} />;
       })}
+    </View>
+  );
+}
+
+/**
+ * RatingLine (P-195) — 목록 카드 평점 줄 공용("없는 정보는 0으로 전시하지 않는다").
+ * 1건+: "★들 (n)" — 하이픈·가운뎃점·평점 숫자 병기 전부 폐지(쿠팡 정합).
+ * 0건: 미노출 — 세로 목록은 줄 제거(null), 가로 캐러셀은 fixedSlot으로 카드 높이
+ * 균일 유지(빈 고정 슬롯). 상세 리뷰 브리프(큰 별+수치 — P-169)는 대상 아님.
+ */
+export function RatingLine({
+  overall,
+  size = 13,
+  fixedSlot = false,
+}: {
+  overall: { average: number | null; count: number };
+  size?: number;
+  fixedSlot?: boolean;
+}) {
+  const empty = overall.count === 0;
+  if (empty && !fixedSlot) return null;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1, height: size + 4 }} testID="rating-line">
+      {!empty && (
+        <>
+          <Stars value={overall.average ?? 0} size={size} />
+          <Txt style={{ fontFamily: font.bodyBold, fontSize: 12, color: C.ink2 }} testID="rating-count">
+            ({overall.count})
+          </Txt>
+        </>
+      )}
     </View>
   );
 }

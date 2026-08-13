@@ -23,7 +23,7 @@ import {
   Btn,
   RiskMark,
   CardPhoto,
-  Stars,
+  RatingLine,
   Star,
   CatStew,
   CatBowl,
@@ -312,14 +312,8 @@ export function SafeCard({ food, hasRestrictions, guest, onPress }: { food: Food
             {food.nameKo}
           </Text>
         )}
-        {FLAGS.reviewsEnabled && (
-          <View style={styles.rate}>
-            <Stars value={food.overall.average ?? 0} size={13} />
-            <Text style={styles.rateNum}>
-              {food.overall.average?.toFixed(1) ?? '—'} · {food.overall.count}
-            </Text>
-          </View>
-        )}
+        {/* P-195: "★들 (n)"·0건 미노출 — 가로 캐러셀 = 고정 슬롯(카드 높이 균일) */}
+        {FLAGS.reviewsEnabled && <RatingLine overall={food.overall} fixedSlot />}
       </View>
     </Pressable>
   );
@@ -411,8 +405,6 @@ const styles = StyleSheet.create({
   cardB: { padding: 11, gap: 5 },
   nm: { fontFamily: font.display, fontSize: 15, color: C.ink },
   koSm: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
-  rate: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
-  rateNum: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink2 },
 
   // recent rows
   rec: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 10, ...shadow.sh1 },
