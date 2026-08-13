@@ -1159,3 +1159,7 @@
 ## 신고/차단·스캔 contain·타일 캐시 (2026-08-12, P-186~188)
 - [x] P-188 AvoidTile expo-image(디스크 캐시)+스켈레톤/실패 분리 — de52e41. P-187 진행 화면 contain(결과 토글 cover는 P-079 의도 무변) — aa8a53c. P-186 ⋯ 타인 신고/차단(익명 제외·mine 실값 교정)+409 멱등+차단 클라 숨김+SEXUAL 라벨 정합 — 14c0c7b.
 - [x] tsc 0 · jest 101스위트 612/612 · teamtest OTA(iOS 40f46733·안드 bc4177c0).
+
+## 업로드 JPEG·원격 렌더 캐시 (2026-08-13, P-189)
+- [x] UPLOAD_OK jpeg만(png → 재인코딩 경유, 관문 규칙 주석) · 원격 렌더 7파일 expo-image 스왑(로컬 표면 제외 보고).
+- [x] tsc 0 · jest 101스위트 614/614 · teamtest OTA(iOS af38b340·안드 6cde3db3) — c0b466f.
