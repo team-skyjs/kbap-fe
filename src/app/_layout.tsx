@@ -19,6 +19,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 
+import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
 import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
 import { installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
@@ -35,6 +36,10 @@ import { VersionGateOverlay } from '@/components/VersionGate';
 import { PhotoSourceSheetHost } from '@/components/PhotoSourceSheetHost';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// P-197: 크래시·미처리 예외 자동 수집 — 앱 엔트리 최상단(컴포넌트 밖) 1회.
+// enabled: !__DEV__ + PII 최소화는 sentry.ts 관문이 잠근다.
+initSentry();
 
 // KB-67: API 공통 레이어에 BE 토큰 배선(프로바이더 + 401 refresh 핸들러).
 // beAuth는 RNFB를 임포트하지 않아 웹 번들에서도 안전하다.

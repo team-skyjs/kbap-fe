@@ -10,6 +10,7 @@
  * export never executes this module.
  */
 import { getAuth, onAuthStateChanged, signOut } from '@react-native-firebase/auth';
+import { setSentryUser } from '@/lib/sentry';
 
 /** Firebase user, derived from the modular API (namespaced types mismatch it). */
 export type AuthUser = NonNullable<ReturnType<typeof getAuth>['currentUser']>;
@@ -30,5 +31,6 @@ export function currentUser(): AuthUser | null {
 
 /** 로그아웃 — Firebase 세션 종료. (탈퇴 revoke는 추후 BE와 — KB-109) */
 export async function logOut(): Promise<void> {
+  setSentryUser(null); // P-197: 식별 해제 — 로그아웃 후 이벤트에 memberId 잔존 방지
   await signOut(getAuth());
 }

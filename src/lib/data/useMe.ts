@@ -18,6 +18,7 @@ import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
+import { setSentryUser } from '../sentry';
 import { FLAGS } from '../flags';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
@@ -27,9 +28,14 @@ import { toBeCode } from '../mocks/ingredients';
 
 /** 내 프로필 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
 export async function fetchMe(): Promise<User> {
-  if (!(await hasBeSession())) return MOCK_USER; // guest/dev fallback
+  if (!(await hasBeSession())) {
+    setSentryUser(null); // P-197: 게스트 = 식별 해제
+    return MOCK_USER; // guest/dev fallback
+  }
   const wire = await api.get<MyProfileWire>('/members/me/profile');
-  return adaptProfile(wire, await loadLocalSpice());
+  const user = adaptProfile(wire, await loadLocalSpice());
+  setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
+  return user;
 }
 
 export function useMe() {

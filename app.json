@@ -132,6 +132,14 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "skyjs",
+          "project": "react-native",
+          "_comment": "P-197: 소스맵 업로드는 빌드 시 SENTRY_AUTH_TOKEN(EAS env — 예진 콘솔 생성) 필요, 미설정 시 업로드만 스킵(빌드 무영향)"
+        }
       ]
     ],
     "experiments": {
