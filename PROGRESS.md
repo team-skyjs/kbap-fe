@@ -1195,3 +1195,6 @@
 ## Sentry 통합 + 빌드16 착수 (2026-08-13, P-197→198)
 - [x] P-197 Sentry — expo plugin 수동·sentry.ts 관문(enabled !__DEV__·PII memberId만)·유닛 3 — ffd8229 (OTA 미발행).
 - [~] P-198 빌드16 — grep 게이트 통과, teamtest 양 플랫폼 빌드 진행(ios c2720313·and 494969f0). SENTRY_AUTH_TOKEN은 소스맵 전용(빌드 무영향) — 예진 콘솔 몫.
+
+## 빌드16 진행 (2026-08-13, P-198)
+- [~] 1차 양 플랫폼 실패 — 안드: Sentry 업로드 토큰 하드 실패 → SENTRY_DISABLE_AUTO_UPLOAD(0c203ac) 재빌드 성공(3f1eb36a·vc11·rv ff05c134·APK 배포됨) / iOS: 프로필 push capability 부재 — 예진 인터랙티브 빌드 대기. P-197 plugin이 fingerprint 재회전 — P-195/196 OTA 그룹 사장(빌드 임베드로 도달 대체).
