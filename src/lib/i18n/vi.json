@@ -359,7 +359,11 @@
     "deleteError": "Không xóa được đánh giá. Kiểm tra kết nối và thử lại.",
     "photoCapNote": "Tối đa {{max}} ảnh — phần chọn thừa đã bị bỏ qua",
     "placeNearby": "Gần đây",
-    "placeManual": "Dùng nguyên \"{{name}}\""
+    "placeManual": "Dùng nguyên \"{{name}}\"",
+    "extrasTitle": "Nhà hàng thế nào? (tuỳ chọn)",
+    "extrasSpeed": "Tốc độ phục vụ",
+    "extrasService": "Thái độ phục vụ",
+    "extrasAccess": "Dễ tìm đường"
   },
   "reviews": {
     "headerTitle": "Đánh giá",

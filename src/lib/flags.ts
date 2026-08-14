@@ -99,6 +99,11 @@ export const FLAGS = {
    */
   communityPostsEnabled: false,
   /**
+   * 리뷰 확장 별점 3축 (P-202/KB-32) — 디자이너 시안용 러프, dev 계열만.
+   * BE 계약(3필드) 회신 시 buildReviewExtras 배선 + 채널 조건 재검토.
+   */
+  reviewExtrasEnabled: !PROD_CHANNEL,
+  /**
    * 리뷰 장소 태그 실연결 (P-201/KB-249) — **dev 계열만**(prod 서버에 place 계약
    * 미배포). 고정 좌표(강남역) 기반 — P-200에서 expo-location 실위치 스왑 예정.
    * prod 배포 신호 오면 채널 조건 해제.

@@ -24,7 +24,7 @@ import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
 import type { Review } from '@/lib/api/types';
@@ -262,6 +262,7 @@ function FeedCard({
 
       {/* P-201: 장소 줄 — 음식 미니카드 아래(발주 권장), 탭 = 지도 시트 */}
       <ReviewPlaceLine place={review.place ?? null} />
+      <ReviewExtrasLine review={review} mine={mine} />
       {!!review.body && <ExpandableBody body={review.body} t={t} />}
       <ReviewPhotoStrip photos={review.photos ?? []} />
       {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}

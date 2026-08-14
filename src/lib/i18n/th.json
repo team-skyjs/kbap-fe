@@ -359,7 +359,11 @@
     "deleteError": "ลบรีวิวไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองใหม่",
     "photoCapNote": "รูปได้สูงสุด {{max}} รูป — ส่วนเกินถูกข้าม",
     "placeNearby": "ใกล้เคียง",
-    "placeManual": "ใช้ \"{{name}}\" ตามที่พิมพ์"
+    "placeManual": "ใช้ \"{{name}}\" ตามที่พิมพ์",
+    "extrasTitle": "ร้านเป็นอย่างไรบ้าง? (ไม่บังคับ)",
+    "extrasSpeed": "ความเร็วในการเสิร์ฟ",
+    "extrasService": "ความเป็นมิตร",
+    "extrasAccess": "หาร้านง่ายไหม"
   },
   "reviews": {
     "headerTitle": "รีวิว",

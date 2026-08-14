@@ -11,7 +11,8 @@ import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Btn, IconClose, IconMapPin, Star } from '@/components';
+import { Btn, IconClose, IconMapPin, IconSmile, IconZap, Star } from '@/components';
+import { EMPTY_EXTRAS, getLocalExtras, hasAnyExtras, saveLocalExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
@@ -219,6 +220,78 @@ export function ReviewPlaceLine({ place }: { place: Review['place'] }) {
  * 숨김 아님 — 자기 투표 왜곡·Helpful 알림 자가 트리거 차단, 예진 확정 8/13).
  * 게스트 = onGuest(게이트 시트, 미전달 표면은 무반응 — 401 송신 0).
  */
+/**
+ * 리뷰 확장 별점 3축 (P-202/KB-32 — 쿠팡이츠식 섹션, 디자이너 시안용 러프).
+ * "How was the restaurant? (optional)" — Speed·Service 항상(속도 노출 조건은
+ * 종한 답 대기 — 우선 항상, 조정 1줄 준비) · Getting there = 장소 태그 있을 때만.
+ * 각 1~5 전부 선택 · **재탭 = 해제**. 보조 별 = 기존 Star 소형 변형(총점과 위계 구분).
+ */
+const EXTRA_AXES: { key: keyof ReviewExtras; labelKey: string; Icon: typeof IconZap; needsPlace?: boolean }[] = [
+  { key: 'speed', labelKey: 'review.extrasSpeed', Icon: IconZap },
+  { key: 'service', labelKey: 'review.extrasService', Icon: IconSmile },
+  { key: 'access', labelKey: 'review.extrasAccess', Icon: IconMapPin, needsPlace: true },
+];
+
+export function ExtrasRater({
+  extras,
+  onChange,
+  hasPlace,
+  t,
+}: {
+  extras: ReviewExtras;
+  onChange: (next: ReviewExtras) => void;
+  /** 장소 태그 보유 — false면 찾아가기 행 미노출(값 소거는 호출측 setPlace 연동) */
+  hasPlace: boolean;
+  t: TFn;
+}) {
+  if (!FLAGS.reviewExtrasEnabled) return null;
+  return (
+    <View style={styles.extrasBox} testID="review-extras">
+      <Text style={styles.extrasTitle}>{t('review.extrasTitle')}</Text>
+      {EXTRA_AXES.filter((a) => !a.needsPlace || hasPlace).map(({ key, labelKey, Icon }) => (
+        <View key={key} style={styles.extrasRow} testID={`extras-row-${key}`}>
+          <View style={styles.extrasLabelWrap}>
+            <Icon size={14} color={C.ink2} />
+            <Text style={styles.extrasLabel}>{t(labelKey)}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 5 }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <Pressable
+                key={n}
+                hitSlop={5}
+                testID={`extras-${key}-${n}`}
+                onPress={() => onChange({ ...extras, [key]: extras[key] === n ? null : n })} // 재탭 = 해제
+              >
+                <Star size={20} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} fillColor={C.primary} />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * 셀 축약 표시 (P-202) — 값 있는 축만 아이콘+숫자(SVG — 이모지 금지·헌법).
+ * BE 미저장이라 **본인 작성 직후 로컬만 표시**(메모리 — 재시작 소실, 시안용 한계).
+ */
+export function ReviewExtrasLine({ review, mine }: { review: Review; mine: boolean }) {
+  if (!FLAGS.reviewExtrasEnabled || !mine) return null;
+  const extras = getLocalExtras(review.foodId);
+  if (!extras || !hasAnyExtras(extras)) return null;
+  return (
+    <View style={styles.extrasLine} testID="extras-line">
+      {EXTRA_AXES.filter((a) => extras[a.key] != null).map(({ key, Icon }) => (
+        <View key={key} style={styles.extrasChip}>
+          <Icon size={12} color={C.ink3} />
+          <Text style={styles.extrasChipText}>{extras[key]}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function HelpfulButton({
   review,
   mine,
@@ -269,13 +342,21 @@ export function ReviewEditSheet({
   const [body, setBody] = React.useState('');
   const [place, setPlace] = React.useState<Review['place']>(null);
   const [placeSheet, setPlaceSheet] = React.useState(false);
+  // P-202: 3축 — 프리필 = 로컬 보관분(BE 미저장), 저장 시 로컬 갱신(전송은 계약 후)
+  const [extras, setExtras] = React.useState<ReviewExtras>(EMPTY_EXTRAS);
   React.useEffect(() => {
     if (review) {
       setRating(review.rating);
       setBody(review.body ?? '');
       setPlace(review.place ?? null);
+      setExtras(getLocalExtras(review.foodId) ?? EMPTY_EXTRAS);
     }
   }, [review]);
+  // P-202: 장소 태그 해제 = 찾아가기 값 소거(발주 1)
+  const clearPlace = () => {
+    setPlace(null);
+    setExtras((e) => ({ ...e, access: null }));
+  };
   return (
     <Modal visible={review != null} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.editBackdrop}>
@@ -303,7 +384,7 @@ export function ReviewEditSheet({
               <Pressable style={styles.editPlaceChip} onPress={() => setPlaceSheet(true)} testID="edit-place-chip">
                 <IconMapPin size={13} color={C.ink2} />
                 <Text style={styles.editPlaceText} numberOfLines={1}>{place.name}</Text>
-                <Pressable hitSlop={8} onPress={() => setPlace(null)} testID="edit-place-clear">
+                <Pressable hitSlop={8} onPress={clearPlace} testID="edit-place-clear">
                   <IconClose size={13} color={C.ink3} />
                 </Pressable>
               </Pressable>
@@ -313,8 +394,17 @@ export function ReviewEditSheet({
                 <Text style={styles.editPlaceAdd}>{t('review.placeRow')}</Text>
               </Pressable>
             ))}
+          {/* P-202: 3축 섹션(수정) — 찾아가기 = 장소 태그 연동 */}
+          <ExtrasRater extras={extras} onChange={setExtras} hasPlace={place?.name != null} t={t} />
           <View style={{ gap: 9, marginTop: 4 }}>
-            <Btn busy={saving} onPress={() => onSave({ rating, body, place })} testID="edit-save">
+            <Btn
+              busy={saving}
+              onPress={() => {
+                if (review) saveLocalExtras(review.foodId, extras); // 로컬 프리뷰 갱신(전송은 계약 후)
+                onSave({ rating, body, place });
+              }}
+              testID="edit-save"
+            >
               {t('common.save')}
             </Btn>
             <Btn variant="ghost" onPress={onClose}>{t('common.cancel')}</Btn>
@@ -340,6 +430,15 @@ export function ReviewEditSheet({
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
   toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
+  extrasBox: { gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14 },
+  extrasTitle: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  extrasLabel: { fontFamily: font.body, fontSize: 13, color: C.ink2 },
+  extrasLine: { flexDirection: 'row', gap: 8, alignSelf: 'flex-start' },
+  extrasChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  extrasChipText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
   placeLineText: { flexShrink: 1, fontFamily: font.body, fontSize: 12, color: C.ink3 },

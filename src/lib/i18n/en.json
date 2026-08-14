@@ -401,7 +401,11 @@
     "deleteError": "Couldn't delete the review. Check your connection and try again.",
     "photoCapNote": "Up to {{max}} photos — extra selections were skipped",
     "placeNearby": "Nearby",
-    "placeManual": "Use \"{{name}}\" as typed"
+    "placeManual": "Use \"{{name}}\" as typed",
+    "extrasTitle": "How was the restaurant? (optional)",
+    "extrasSpeed": "Speed",
+    "extrasService": "Service",
+    "extrasAccess": "Getting there"
   },
   "reviews": {
     "headerTitle": "Reviews",

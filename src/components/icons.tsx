@@ -306,6 +306,21 @@ export const IconMapPin = (p: IconProps) => (
     <Circle cx="12" cy="10" r="3" />
   </Glyph>
 );
+// lucide: zap — P-202 리뷰 3축(속도)
+export const IconZap = (p: IconProps) => (
+  <Glyph {...p}>
+    <Path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+  </Glyph>
+);
+// lucide: smile — P-202 리뷰 3축(친절)
+export const IconSmile = (p: IconProps) => (
+  <Glyph {...p}>
+    <Circle cx="12" cy="12" r="10" />
+    <Path d="M8 14s1.5 2 4 2 4-2 4-2" />
+    <Path d="M9 9h.01" />
+    <Path d="M15 9h.01" />
+  </Glyph>
+);
 // lucide: flag
 export const IconReport = (p: IconProps) => (
   <Glyph {...p}>

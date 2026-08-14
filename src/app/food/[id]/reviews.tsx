@@ -44,7 +44,7 @@ import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
@@ -321,6 +321,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
       {/* P-182 ②: 사진 = 공용 스트립+풀스크린 뷰어 */}
       <ReviewPhotoStrip photos={review.photos ?? []} />
       <ReviewPlaceLine place={review.place ?? null} />
+      <ReviewExtrasLine review={review} mine={mine} />
 
       {!!tx.text && <ExpandableBody body={tx.text} t={t} />}
 

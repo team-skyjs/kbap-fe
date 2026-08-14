@@ -359,7 +359,11 @@
     "deleteError": "Не удалось удалить отзыв. Проверьте соединение и попробуйте снова.",
     "photoCapNote": "До {{max}} фото — лишние пропущены",
     "placeNearby": "Рядом",
-    "placeManual": "Использовать «{{name}}» как есть"
+    "placeManual": "Использовать «{{name}}» как есть",
+    "extrasTitle": "Как вам ресторан? (необязательно)",
+    "extrasSpeed": "Скорость подачи",
+    "extrasService": "Сервис",
+    "extrasAccess": "Легко найти"
   },
   "reviews": {
     "headerTitle": "Отзывы",

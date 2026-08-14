@@ -359,7 +359,11 @@
     "deleteError": "No se pudo eliminar la reseña. Revisa tu conexión e inténtalo de nuevo.",
     "photoCapNote": "Máximo {{max}} fotos — se omitieron las adicionales",
     "placeNearby": "Cerca",
-    "placeManual": "Usar \"{{name}}\" tal cual"
+    "placeManual": "Usar \"{{name}}\" tal cual",
+    "extrasTitle": "¿Qué tal el restaurante? (opcional)",
+    "extrasSpeed": "Rapidez",
+    "extrasService": "Atención",
+    "extrasAccess": "Fácil de encontrar"
   },
   "reviews": {
     "headerTitle": "Reseñas",

@@ -359,7 +359,11 @@
     "deleteError": "无法删除评价。请检查网络后重试。",
     "photoCapNote": "最多{{max}}张照片 — 超出部分已跳过",
     "placeNearby": "附近地点",
-    "placeManual": "直接使用\"{{name}}\""
+    "placeManual": "直接使用\"{{name}}\"",
+    "extrasTitle": "餐厅怎么样？（可选）",
+    "extrasSpeed": "上菜速度",
+    "extrasService": "服务态度",
+    "extrasAccess": "是否好找"
   },
   "reviews": {
     "headerTitle": "点评",

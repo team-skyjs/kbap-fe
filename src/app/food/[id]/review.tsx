@@ -25,7 +25,8 @@ import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { cancelReviewReminder } from '@/lib/push/pushAdapter';
-import { PlacePickerSheet, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
+import { ExtrasRater, PlacePickerSheet, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
+import { EMPTY_EXTRAS, saveLocalExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { Modal } from 'react-native';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
@@ -48,6 +49,8 @@ export default function ReviewCompose() {
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [placeSheet, setPlaceSheet] = useState(false);
+  // P-202: 3축(속도·친절·찾아가기 — 선택) — 전송은 계약 후(buildReviewExtras), 우선 로컬 보관
+  const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
 
@@ -99,6 +102,7 @@ export default function ReviewCompose() {
           place,
         });
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
+        if (id) saveLocalExtras(id, extras); // P-202: 로컬 프리뷰(전송은 계약 후 buildReviewExtras 배선)
         if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
         setSubmitted(true);
       } catch (e) {
@@ -203,6 +207,9 @@ export default function ReviewCompose() {
           </Text>
         </View>
 
+        {/* P-202: 확장 별점 3축 — 쿠팡이츠식 별도 섹션(선택), 찾아가기 = 장소 태그 연동 */}
+        <ExtrasRater extras={extras} onChange={setExtras} hasPlace={place != null} t={t} />
+
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         <View
           style={styles.block}
@@ -266,7 +273,7 @@ export default function ReviewCompose() {
             <View style={styles.placeChip}>
               <IconMapPin size={14} color={C.accent} />
               <Text style={styles.placeChipText} numberOfLines={1}>{place.name}</Text>
-              <Pressable hitSlop={8} onPress={() => setPlace(null)}>
+              <Pressable hitSlop={8} onPress={() => { setPlace(null); setExtras((e) => ({ ...e, access: null })); /* P-202: 태그 해제 = 찾아가기 소거 */ }}>
                 <IconClose size={13} color={C.ink3} />
               </Pressable>
             </View>

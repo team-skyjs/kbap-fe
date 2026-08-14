@@ -30,7 +30,7 @@ import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { useUpdateReview } from '@/lib/data/useReviewMutations';
 import { buildReviewUpdate } from '@/lib/api/reviewAdapter';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
@@ -531,6 +531,7 @@ function ReviewPreviewRow({
       {!!review.body && <ExpandableBody body={review.body} t={t} />}
       <ReviewPhotoStrip photos={review.photos ?? []} size={64} />
       <ReviewPlaceLine place={review.place ?? null} />
+      <ReviewExtrasLine review={review} mine={mine} />
       <View style={styles.rvFoot}>
         {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
         <HelpfulButton review={review} mine={mine} foodId={foodId} t={t} onGuest={onGuestHelpful} />
