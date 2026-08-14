@@ -1255,3 +1255,8 @@
 - [x] 리뷰 퍼널 유입 2곳(home·feed) 발화 + food_detail_view src 4곳(saved·my_reviews·feed·tag_sheet) — 06bd78e.
 - [x] country 로케일 선심기 · tab_view(탭 레이아웃 한 곳)·auth_gate_view(게이트 시트 한 곳, community trigger 명시) · STEP_WIRE presets 개시.
 - [x] tsc 0 · jest 119스위트 724/724 · teamtest OTA(update group 90857224).
+
+## 계측 2차 확장 (2026-08-15, P-214)
+- [x] 🔒 search_query 자유 텍스트 전송 중단 — keywordPrivacy 경계(카탈로그 매칭 시에만 카탈로그 값, 미매칭 = matched/len_bucket만) — 41a7d52.
+- [x] 신규 14종: 스캔 퍼널 4(item_add/remove·order_done·owner_ask_open·scan_permission) · 공용 1곳 3(error_state_view·review_helpful_toggle·translate_toggle) · 푸시 2 · 공급측 4 + bookmark_toggle 저장목록 보정.
+- [x] 전송 금지 키(장소·note·memberId·본문·프리셋 항목명) 화이트리스트 드롭 유닛 실측 · tsc 0 · jest 120스위트 734/734 · teamtest OTA(update group fc8e0ee4).
