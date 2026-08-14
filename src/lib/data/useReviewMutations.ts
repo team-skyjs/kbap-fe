@@ -21,6 +21,9 @@ function useInvalidateReviews() {
   return (foodId: string) => {
     void qc.invalidateQueries({ queryKey: ['food', foodId] }); // 상세(평점)·리뷰 목록
     void qc.invalidateQueries({ queryKey: ['me', 'reviews'] });
+    // P-211 ③: 전역 피드 — 누락 시 피드 발 작성이 복귀 후에도 안 보임(P-196 like와 같은 족보).
+    // 생성/수정/삭제 전부 이 함수 경유 — 무효화 대상 추가는 여기 한 곳만.
+    void qc.invalidateQueries({ queryKey: ['reviews', 'global'] });
   };
 }
 

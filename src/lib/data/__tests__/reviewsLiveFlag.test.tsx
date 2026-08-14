@@ -138,6 +138,21 @@ it('작성 on → 실 POST /reviews (foodId 수치화)', async () => {
   expect(api.post).toHaveBeenCalledWith('/api/reviews', { foodId: 7, rating: 5, content: 'live' });
 });
 
+// P-211 ③ 재현 경로: 피드 발 작성 → 전역 피드(['reviews','global'])가 stale 마킹돼야
+// 복귀 시 재조회로 새 리뷰가 보인다 — 누락 시 이 단언이 실패(P-196 like 족보의 무효화판).
+it('P-211: 작성 성공 → 전역 피드·음식·내 리뷰 캐시 전부 무효화', async () => {
+  mockFlagState.live = true;
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const seed = { pages: [{ items: [], hasNext: false, nextCursor: null }], pageParams: [null] };
+  qc.setQueryData<InfiniteData<ReviewPage>>(['reviews', 'global'], seed);
+  qc.setQueryData<InfiniteData<ReviewPage>>(['food', '7', 'reviews', 'all'], seed);
+  qc.setQueryData<Review[]>(['me', 'reviews'], []);
+  await runCreate(qc, { foodId: '7', rating: 5 });
+  expect(qc.getQueryState(['reviews', 'global'])?.isInvalidated).toBe(true);
+  expect(qc.getQueryState(['food', '7', 'reviews', 'all'])?.isInvalidated).toBe(true);
+  expect(qc.getQueryState(['me', 'reviews'])?.isInvalidated).toBe(true);
+});
+
 /* ---- P-095: 리뷰 좋아요 토글 (목 — 캐시 반영·API 호출 0) ---- */
 
 function LikeHarness({ input, onSettled }: { input: { reviewId: string; foodId: string }; onSettled: () => void }) {

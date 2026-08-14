@@ -388,7 +388,7 @@
     "postReview": "리뷰 게시",
     "postedTitle": "리뷰가 게시됐어요",
     "postedBody": "{{name}}에 {{rating}}점 리뷰를 등록했어요. 랭킹에도 반영돼요.",
-    "backToDish": "요리로 돌아가기",
+    "done": "완료",
     "seeMyReviews": "내 리뷰 보기",
     "photosLabel": "사진 (최대 {{max}}장)",
     "addPhoto": "사진 추가",

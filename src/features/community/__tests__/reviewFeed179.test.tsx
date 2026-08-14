@@ -13,8 +13,9 @@ jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
     __esModule: true,
-    default: { View, createAnimatedComponent: (c: unknown) => c },
+    default: { View, FlatList: require('react-native').FlatList, createAnimatedComponent: (c: unknown) => c },
     useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedScrollHandler: () => () => {},
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
     withTiming: (v: unknown) => v,

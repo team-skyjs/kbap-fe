@@ -342,7 +342,7 @@
     "postReview": "Đăng đánh giá",
     "postedTitle": "Đã đăng đánh giá",
     "postedBody": "Cảm ơn! Đánh giá {{rating}} sao của bạn cho {{name}} nay đã có trong phần đánh giá món ăn và được tính vào xếp hạng của bạn.",
-    "backToDish": "Về lại món ăn",
+    "done": "Xong",
     "seeMyReviews": "Xem đánh giá của tôi",
     "photosLabel": "Ảnh (tối đa {{max}})",
     "addPhoto": "Thêm ảnh",

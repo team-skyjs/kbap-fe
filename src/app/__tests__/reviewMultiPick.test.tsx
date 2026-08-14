@@ -167,7 +167,7 @@ describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 �
       await postBtn(tree).props.onPress();
     });
     expect(tree.root.findAll((n) => n.props?.testID === 'review-posted-confirm').length).toBeGreaterThanOrEqual(1);
-    const back = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.backToDish').length > 0).pop()!;
+    const back = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.done').length > 0).pop()!;
     act(() => back.props.onPress());
     expect(mockRouter.back).toHaveBeenCalled();
     // 구 풀화면 요소(내 리뷰 보기) 소멸

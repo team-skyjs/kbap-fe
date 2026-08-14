@@ -142,9 +142,9 @@ export function ReactionBar({
 }
 
 /** 태그 칩 (음식/장소) — 탭 시 바텀시트 미리보기는 호출측. */
-export function TagChip({ kind, label, onPress }: { kind: 'food' | 'place'; label: string; onPress?: () => void }) {
+export function TagChip({ kind, label, onPress, testID }: { kind: 'food' | 'place'; label: string; onPress?: () => void; testID?: string }) {
   return (
-    <Pressable style={styles.tagChip} onPress={onPress} hitSlop={4}>
+    <Pressable style={styles.tagChip} onPress={onPress} hitSlop={4} testID={testID}>
       {kind === 'food' ? <IconFood size={13} color={C.primary} /> : <IconMapPin size={13} color={C.accent} />}
       <Text style={styles.tagChipText} numberOfLines={1}>
         {label}

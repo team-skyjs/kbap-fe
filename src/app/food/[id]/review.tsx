@@ -318,7 +318,8 @@ export default function ReviewCompose() {
             <Text style={styles.confirmTitle}>{t('review.postedTitle')}</Text>
             <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: food?.name ?? '' })}</Text>
             <View style={{ marginTop: 6 }}>
-              <Btn onPress={() => router.back()}>{t('review.backToDish')}</Btn>
+              {/* P-211 ①: 진입점 무관 "Done" 단일 문구 — 피드 발 작성은 목적지가 상세가 아님 */}
+              <Btn onPress={() => router.back()}>{t('review.done')}</Btn>
             </View>
           </View>
         </View>

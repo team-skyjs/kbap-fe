@@ -10,13 +10,13 @@
  * FLAGS.communityEnabled(!PROD_CHANNEL)로 숨김 — 이 화면 도달 불가(채널 분기).
  */
 import * as React from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, IconBubbleEmpty, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
+import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -34,7 +34,6 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 
 export function ReviewFeed() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
   const feed = useGlobalReviews(!isGuest); // 게스트 = 호출 0(인증 필수 계약)
@@ -45,6 +44,9 @@ export function ReviewFeed() {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const [editTarget, setEditTarget] = React.useState<Review | null>(null);
+  // P-211 ④: 헤더 = 타 탭 공용 StickyHeader(스크롤 반응) — 자체 헤더 소멸
+  const { onScroll, hidden } = useStickyScroll();
+  const headerH = useHeaderHeight();
 
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
   const { data: blockedUsers } = useBlockedUsers();
@@ -80,17 +82,14 @@ export function ReviewFeed() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]} testID="review-feed">
-      {/* 헤더 — 기존 커뮤니티 탭 문법. P-181: 장식 벨 제거(무동작) */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('community.title')}</Text>
-      </View>
-
-      <FlatList
+    <View style={styles.root} testID="review-feed">
+      <Animated.FlatList
         data={isGuest ? [] : reviews}
         keyExtractor={(r) => r.id}
-        contentContainerStyle={[styles.list, { paddingBottom: 96, flexGrow: 1 }]}
+        contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: 96, flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         refreshControl={isGuest ? undefined : <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} />}
@@ -126,6 +125,9 @@ export function ReviewFeed() {
           ) : null
         }
       />
+
+      {/* P-211 ④: 타이틀 유지 — 브랜드 모드 + 센터 타이틀(공용 title 슬롯) */}
+      <StickyHeader hidden={hidden} mode="brand" title={t('community.title')} />
 
       {/* P-196 ②: 상태 블록 = 화면 기준 정중앙(4탭 공용 기준 — ScreenCenterFill) */}
       {isGuest ? (
@@ -273,8 +275,6 @@ function FeedCard({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingVertical: 12 },
-  headerTitle: { fontFamily: font.display, fontSize: 22, color: C.ink, letterSpacing: -0.3 },
   list: { paddingHorizontal: 18, gap: 12 },
   center: { paddingVertical: 30, alignItems: 'center' },
 

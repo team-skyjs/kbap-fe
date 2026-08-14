@@ -342,7 +342,7 @@
     "postReview": "レビューを投稿",
     "postedTitle": "レビューを投稿しました",
     "postedBody": "ありがとうございます！{{name}}への{{rating}}つ星レビューが料理のレビューに反映され、ランキングに加算されました。",
-    "backToDish": "料理に戻る",
+    "done": "完了",
     "seeMyReviews": "自分のレビューを見る",
     "photosLabel": "写真（最大{{max}}枚）",
     "addPhoto": "写真を追加",

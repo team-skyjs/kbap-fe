@@ -384,7 +384,7 @@
     "postReview": "Post review",
     "postedTitle": "Review posted",
     "postedBody": "Thanks! Your {{rating}}-star review of {{name}} is now in the food's reviews and counts toward your ranking.",
-    "backToDish": "Back to dish",
+    "done": "Done",
     "seeMyReviews": "See my reviews",
     "photosLabel": "Photos (up to {{max}})",
     "addPhoto": "Add photo",

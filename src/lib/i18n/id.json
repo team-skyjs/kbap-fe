@@ -342,7 +342,7 @@
     "postReview": "Kirim ulasan",
     "postedTitle": "Ulasan terkirim",
     "postedBody": "Terima kasih! Ulasan {{rating}} bintang Anda untuk {{name}} kini ada di ulasan makanan ini dan menambah peringkat Anda.",
-    "backToDish": "Kembali ke hidangan",
+    "done": "Selesai",
     "seeMyReviews": "Lihat ulasan saya",
     "photosLabel": "Foto (maks. {{max}})",
     "addPhoto": "Tambah foto",

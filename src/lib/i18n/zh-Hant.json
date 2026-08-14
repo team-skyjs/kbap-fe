@@ -342,7 +342,7 @@
     "postReview": "發布評論",
     "postedTitle": "評論已發布",
     "postedBody": "謝謝你！你對 {{name}} 的 {{rating}} 星評論已列入該美食的評論中，並計入你的排名。",
-    "backToDish": "返回菜色",
+    "done": "完成",
     "seeMyReviews": "查看我的評論",
     "photosLabel": "照片（最多{{max}}張）",
     "addPhoto": "新增照片",

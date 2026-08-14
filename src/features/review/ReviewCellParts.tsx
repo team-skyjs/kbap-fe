@@ -14,6 +14,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Btn, IconClose, IconMapPin, IconSmile, IconZap, Star } from '@/components';
 import { EMPTY_EXTRAS, getLocalExtras, hasAnyExtras, saveLocalExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
+import { TagChip } from '@/features/community/parts';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
 import { IconPlus, IconSearch } from '@/components';
@@ -187,7 +188,8 @@ export function PlacePickerSheet({
 }
 
 /**
- * 장소 줄 (P-201/KB-249) — 전 리뷰 표면 공용: 핀+장소명 한 줄, 탭 = 3사 지도 시트.
+ * 장소 줄 (P-201/KB-249) — 전 리뷰 표면 공용: 장소 칩(P-211 ② — 핀+회색 텍스트가
+ * 묻혀서 커뮤니티 게시글 TagChip 배경 칩으로 교체, 새 발명 0), 탭 = 3사 지도 시트.
  * 좌표 보유(카카오 선택분) = 좌표 딥링크 · MANUAL(이름만) = 이름 검색 폴백 —
  * 분기는 tagSheets mapUrls 한 곳. 무태그 = 미렌더. 플래그 게이트는 호출측 아닌
  * 여기서(표면 4곳 개별 게이트 금지 — P-196 단일화 원칙 승계).
@@ -197,12 +199,9 @@ export function ReviewPlaceLine({ place }: { place: Review['place'] }) {
   if (!FLAGS.reviewPlaceEnabled || !place?.name) return null;
   return (
     <>
-      <Pressable style={styles.placeLine} hitSlop={6} onPress={() => setOpen(true)} testID="review-place">
-        <IconMapPin size={13} color={C.ink3} />
-        <Text style={styles.placeLineText} numberOfLines={1}>
-          {place.name}
-        </Text>
-      </Pressable>
+      <View style={{ alignSelf: 'flex-start' }}>
+        <TagChip kind="place" label={place.name} onPress={() => setOpen(true)} testID="review-place" />
+      </View>
       {open && (
         <PlaceTagSheet
           place={{ name: place.name, roadAddress: place.roadAddress ?? '', latitude: place.latitude, longitude: place.longitude }}
@@ -440,8 +439,6 @@ const styles = StyleSheet.create({
   extrasChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   extrasChipText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
-  placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
-  placeLineText: { flexShrink: 1, fontFamily: font.body, fontSize: 12, color: C.ink3 },
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   helpful: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   helpfulOn: { color: C.primaryText },
