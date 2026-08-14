@@ -11,6 +11,7 @@
  *   원칙 통일: 빌드16 전 OTA에 동승하지 않는다.
  */
 import * as Sentry from '@sentry/react-native';
+import Constants from 'expo-constants';
 import { isProdChannel } from '@/lib/flags';
 
 const DSN = 'https://c6471e5cf050aaa65dd9067d4a119de6@o4511895920574464.ingest.us.sentry.io/4511895936761856';
@@ -28,4 +29,34 @@ export function initSentry(): void {
 /** 유저 식별 — memberId만(닉네임·이메일 금지). null = 해제(로그아웃·게스트). */
 export function setSentryUser(memberId: string | null): void {
   Sentry.setUser(memberId ? { id: memberId } : null);
+}
+
+/**
+ * P-212(KB-39): 수신 검증 트리거 — 프로필 버전 줄 7연타(2s 창).
+ * 대시보드 이벤트 0 → 크래시 외 검증 수단 상비. 반환 = 토스트 메시지 or null
+ * (화면은 표시만 — 카운터·채널 게이트·전송 전부 여기 한 곳).
+ * - prod 채널 = 트리거 무동작(P-114 분기 — 라벨만 남음)
+ * - __DEV__(Metro) = Sentry off(enabled:false)라 전송 불가 — 안내만
+ * - 태그: 채널·앱 버전(대시보드 식별용). PII 무변(memberId 외 0).
+ * 토스트 문구는 dev 계열 진단 전용이라 i18n 제외(하드코딩).
+ */
+const selfcheckTaps = { n: 0, last: 0 };
+const SELFCHECK_WINDOW_MS = 2000;
+export function tapSentrySelfcheck(now = Date.now()): string | null {
+  if (isProdChannel()) return null;
+  selfcheckTaps.n = now - selfcheckTaps.last < SELFCHECK_WINDOW_MS ? selfcheckTaps.n + 1 : 1;
+  selfcheckTaps.last = now;
+  if (selfcheckTaps.n < 7) return null;
+  selfcheckTaps.n = 0;
+  if (__DEV__) return 'Metro에선 Sentry off — 빌드에서 확인하세요';
+  // 메시지 고정(수신 시각은 Sentry가 기록) — 유니크 문자열은 이슈 그루핑만 파편화
+  Sentry.captureMessage('sentry-selfcheck', {
+    tags: { channel: 'dev', appVersion: Constants.expoConfig?.version ?? '0.0.0' },
+  });
+  return 'Sentry 테스트 이벤트 전송됨';
+}
+
+export function _resetSelfcheckForTest(): void {
+  selfcheckTaps.n = 0;
+  selfcheckTaps.last = 0;
 }

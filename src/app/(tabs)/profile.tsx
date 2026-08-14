@@ -52,6 +52,9 @@ import { FlagEmoji } from '@/components';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
+import Constants from 'expo-constants';
+import { tapSentrySelfcheck } from '@/lib/sentry';
+import { Snackbar } from '@/components/Snackbar';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
 
@@ -94,6 +97,14 @@ export default function Profile() {
   }
 
   const { run: runLogout } = useSubmitGuard(); // P-173: Alert 확인 연타 = 이중 로그아웃 봉쇄
+  // P-212: 버전 줄 7연타 = Sentry 수신 검증 — 로직은 tapSentrySelfcheck 한 곳(화면은 표시만)
+  const [verToast, setVerToast] = useState<string | null>(null);
+  const onVersionTap = () => {
+    const msg = tapSentrySelfcheck();
+    if (!msg) return;
+    setVerToast(msg);
+    setTimeout(() => setVerToast(null), 3000);
+  };
   async function doLogout() {
     setLoggingOut(true);
     try {
@@ -334,9 +345,15 @@ export default function Profile() {
                 />
               </View>
             </Section>
+
+            {/* P-212: 앱 버전 줄 — 라벨은 전 채널, 7연타 트리거는 dev 계열만(내부 게이트) */}
+            <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
+              <Text style={styles.verText}>v{Constants.expoConfig?.version ?? '0.0.0'}</Text>
+            </Pressable>
           </View>
         )}
       </Animated.ScrollView>
+      {verToast && <Snackbar icon={null} text={verToast} />}
 
       <StickyHeader hidden={hidden} mode="brand" />
     </View>
@@ -368,6 +385,8 @@ function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNod
 }
 
 const styles = StyleSheet.create({
+  verRow: { alignItems: 'center', paddingVertical: 10 },
+  verText: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   root: { flex: 1, backgroundColor: C.surface },
   finishRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 12 },
   finishText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, lineHeight: 18 },
