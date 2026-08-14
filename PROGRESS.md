@@ -1241,3 +1241,8 @@
 ## 온보딩 1.1 전환 (2026-08-14, P-209)
 - [x] 온보딩 POST·프로필 PATCH = dev 1.1 헤더(nickname·profileImageUrl 미전송 — 서버 자동 지정), prod = 구 1.0 폴백(autoProfile 강등 — prod 1.1 배포 시 파일 삭제) — 0cbca8c.
 - [x] tsc 0 · jest 116스위트 706/706 · teamtest OTA(update group 0575cd61).
+
+## 리뷰 작성·피드 실기 4건 + 재료 빈 응답 (2026-08-14, P-211+210)
+- [x] P-211 Done 단일 문구(×10)·ReviewPlaceLine=TagChip 배경 칩·전역 피드 무효화(재현 경로 양방향)·ReviewFeed=공용 StickyHeader — 90600cd.
+- [x] P-210 재료 빈 배열 = 섹션·면책 고지 미노출(회원·게스트 공통, ghost 소멸) — 99a392b.
+- [x] tsc 0 · jest 117스위트 712/712 · teamtest OTA 동승(update group 9e812660).
