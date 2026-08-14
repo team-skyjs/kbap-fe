@@ -1228,3 +1228,8 @@
 ## 🚨 세션 고착 수정 (2026-08-14, P-205)
 - [x] 재현 유닛 선행(양방향 고착 실측) → 원인 = clear() 후 옵저버-엔트리 단절(Infinity 복구 0). 세션 = 동기 스토어+useSyncExternalStore 승격(경계 동기 emit·부팅 init 미확정 한정), 소비 16표면 훅 경유 무변 — e0b6cd1.
 - [x] tsc 0 · jest 114스위트 692/692 · teamtest OTA(ios 1aaf0885·and 4cf4ba5c).
+
+## 스켈레톤 전수·게스트 열람 개편 (2026-08-14, P-207+206)
+- [x] P-207 RemoteImage 공용 신설+직접 expo-image 원격 12곳 스왑(로컬 첨부 제외)+CLAUDE.md 불변 규칙 승격+허용 목록 소스 잠금 — de75bb9.
+- [x] P-206 reviewsMasked(blur) 구분(be-first 오표시 소멸)+게스트 재료 공개(판정 미노출·빈 배열 ghost 유지)+피드 401 실측 보류 — 6b780a6.
+- [x] tsc 0 · jest 115스위트 701/701 · teamtest OTA(ios 6d7ad8f2·and 923d387e, fp 게이트 일치).
