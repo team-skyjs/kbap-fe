@@ -117,7 +117,7 @@ export default function MyReviews() {
                   food={foodMap.get(rv.foodId)}
                   hasR={hasR}
                   when={relativeDate(rv.createdAt, t)}
-                  onOpenFood={() => rv.foodId && router.push(`/food/${rv.foodId}` as Href)}
+                  onOpenFood={() => rv.foodId && router.push(`/food/${rv.foodId}?src=my_reviews` as Href)}
                   onEdit={() => setEditTarget(rv)}
                   onDelete={() => confirmDelete(rv)}
                 />

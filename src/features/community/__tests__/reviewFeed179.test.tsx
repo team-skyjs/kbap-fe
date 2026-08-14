@@ -114,7 +114,7 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
   expect(card.every((n) => typeof n.props?.onPress !== 'function')).toBe(true);
   expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
   act(() => tree.root.findAll((n) => n.props?.testID === 'feed-food-r1')[0].props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/food/7');
+  expect(mockPush).toHaveBeenCalledWith('/food/7?src=feed'); // P-213: 유입 source 부여
   // P-196: 본인 리뷰(memberId 9 = me) Helpful = 카운트 표시 전용 — 탭 무반응
   act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(mockToggle).not.toHaveBeenCalled();

@@ -117,7 +117,7 @@ export default function SavedScreen() {
               snap={item}
               risk={personalRisk(item.risk, hasR)}
               riskLabel={t(RISK_LABEL[personalRisk(item.risk, hasR)])}
-              onPress={() => router.push(`/food/${item.foodId}` as Href)}
+              onPress={() => router.push(`/food/${item.foodId}?src=saved` as Href)}
               onRemove={() => onRemove(item)}
             />
           )}

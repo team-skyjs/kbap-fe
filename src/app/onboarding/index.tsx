@@ -77,7 +77,7 @@ const ORDER: Step[] = FLAGS.dietPresetsEnabled
   : ['consent', 'nationality', 'restrictions', 'spice'];
 /** 구버전 draft 스텝 → v3 매핑 (무해 파싱 — 소멸 스텝은 근접 스텝으로). */
 /** P-144: 계측 step 와이어명 — amplitude-taxonomy.csv (terms|nationality|avoid|spice). */
-const STEP_WIRE: Record<Step, string | null> = { consent: 'terms', nationality: 'nationality', presets: null, restrictions: 'avoid', spice: 'spice' }; // presets = CSV taxonomy 미등재 — 계측 스킵(P-203 러프, 등재 시 값 교체)
+const STEP_WIRE: Record<Step, string | null> = { consent: 'terms', nationality: 'nationality', presets: 'presets', restrictions: 'avoid', spice: 'spice' }; // P-213: presets 계측 개시(CSV 등재 예정 — P-203 스킵 해제)
 
 const LEGACY_STEP: Record<string, Step> = {
   profile: 'nationality',

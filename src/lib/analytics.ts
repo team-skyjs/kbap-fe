@@ -15,6 +15,8 @@
  * | review_submit            | (props 없음)                                |
  * | login_success            | provider (APPLE|GOOGLE)                    |
  * | guest_enter              | (props 없음)                                |
+ * | tab_view                 | tab (home|food|community|profile)          |
+ * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
  * (setUserId·Identify 호출 없음). 허용 키 밖 prop은 드롭(유닛 잠금).
@@ -49,6 +51,9 @@ export const EVENTS = {
   search_query: 'search_query',
   review_write_tap: 'review_write_tap',
   bookmark_toggle: 'bookmark_toggle',
+  // P-213(KB-316, 태소노미 공백 보완 8/15) — CSV 등재 예정
+  tab_view: 'tab_view',
+  auth_gate_view: 'auth_gate_view',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -71,6 +76,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   search_query: ['keyword', 'result_count'], // keyword = 소문자 정규화(호출처) — 재료명 아닌 검색어
   review_write_tap: ['source'],
   bookmark_toggle: ['on'],
+  tab_view: ['tab'], // home|food|community|profile
+  auth_gate_view: ['trigger'], // bookmark|review|scan|community|risk|profile
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정

@@ -62,7 +62,7 @@ export function FoodTagSheet({ target, onClose }: { target: { foodId: string; na
         <RiskMark state={risk} size={20} />
         <Text style={styles.riskText}>{t(`risk.${risk}`)}</Text>
       </View>
-      <Btn onPress={() => { onClose(); router.push(`/food/${target.foodId}` as Href); }}>{t('community.viewDetails')}</Btn>
+      <Btn onPress={() => { onClose(); router.push(`/food/${target.foodId}?src=tag_sheet` as Href); }}>{t('community.viewDetails')}</Btn>
     </SheetShell>
   );
 }

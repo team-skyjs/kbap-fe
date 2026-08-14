@@ -54,7 +54,8 @@ export default function FoodDetailScreen() {
   const { id, price, src } = useLocalSearchParams<{ id: string; price?: string; src?: string }>();
   // P-083: 상세 진입 계측 — 진입 경로(스캔/목록/검색/홈, 그 외 other) 1회
   useEffect(() => {
-    const source = src && ['scan', 'list', 'search', 'home'].includes(src) ? src : 'other';
+    // P-213: 유입 4곳(저장·내 리뷰·피드·태그 시트) 추가 — other 누수 해소
+    const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet'].includes(src) ? src : 'other';
     track(EVENTS.food_detail_view, { source, food_id: id ?? '' }); // P-144: food_id 추가
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

@@ -27,6 +27,7 @@ import { TagPickerSheet } from '@/app/community/compose';
 import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
+import { EVENTS, track } from '@/lib/analytics';
 import type { Review } from '@/lib/api/types';
 import type { FoodTagRef } from '@/lib/community/types';
 
@@ -78,6 +79,7 @@ export function ReviewFeed() {
 
   const onPickFood = (f: FoodTagRef) => {
     setPickerOpen(false);
+    track(EVENTS.review_write_tap, { source: 'feed' }); // P-213: 퍼널 유입 누락분
     router.push(`/food/${f.foodId}/review` as Href);
   };
 
@@ -98,7 +100,7 @@ export function ReviewFeed() {
             review={item}
             t={t}
             mine={item.memberId != null && item.memberId === myId}
-            onOpenFood={() => item.foodId && router.push(`/food/${item.foodId}` as Href)}
+            onOpenFood={() => item.foodId && router.push(`/food/${item.foodId}?src=feed` as Href)}
             onGuestHelpful={() => setGateOpen(true)}
             onMore={() =>
               setMod({
@@ -195,7 +197,8 @@ export function ReviewFeed() {
         }}
         t={t}
       />
-      <AuthGateSheet context="reviews" open={gateOpen} onClose={() => setGateOpen(false)} />
+      {/* P-213: 커뮤니티 표면 게이트 = trigger community(카피는 reviews 유지) */}
+      <AuthGateSheet context="reviews" trigger="community" open={gateOpen} onClose={() => setGateOpen(false)} />
     </View>
   );
 }

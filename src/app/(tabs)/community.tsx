@@ -165,7 +165,7 @@ export default function Community() {
         }}
       />
 
-      <AuthGateSheet context={gate ?? 'profile'} open={gate != null} onClose={() => setGate(null)} />
+      <AuthGateSheet context={gate ?? 'profile'} trigger="community" open={gate != null} onClose={() => setGate(null)} />
       {toast && <Snackbar text={toast} />}
     </View>
   );

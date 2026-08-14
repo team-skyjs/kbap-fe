@@ -4,6 +4,7 @@
  * context prop이 카피를 분기하고, CTA는 /login?returnTo=<현재 경로>로 —
  * 로그인 성공 시 보던 맥락으로 복귀한다 (guest-access-policy §0-3).
  */
+import * as React from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -12,8 +13,24 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
 import { IconClose, IconLock } from '@/components/icons';
+import { EVENTS, track } from '@/lib/analytics';
 
 export type GateContext = 'risk' | 'reviews' | 'writeReview' | 'scan' | 'profile' | 'save';
+
+/**
+ * P-213: auth_gate_view trigger — 게이트 시트는 게스트 전환 퍼널의 단일 관문이라
+ * 계측도 여기 한 곳(표면별 배선 금지). 기본값은 context 파생, 커뮤니티처럼
+ * context만으론 구분 안 되는 표면은 호출측이 trigger로 명시한다.
+ */
+export type GateTrigger = 'bookmark' | 'review' | 'scan' | 'community' | 'risk' | 'profile';
+const CONTEXT_TRIGGER: Record<GateContext, GateTrigger> = {
+  save: 'bookmark',
+  reviews: 'review',
+  writeReview: 'review',
+  scan: 'scan',
+  risk: 'risk',
+  profile: 'profile',
+};
 
 const COPY: Record<GateContext, { title: string; sub: string }> = {
   risk: { title: 'gate.riskTitle', sub: 'gate.riskSub' },
@@ -28,10 +45,13 @@ export function AuthGateSheet({
   context,
   open,
   onClose,
+  trigger,
 }: {
   context: GateContext;
   open: boolean;
   onClose: () => void;
+  /** P-213: context 파생값 대신 명시할 때만(커뮤니티 등). */
+  trigger?: GateTrigger;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -42,6 +62,11 @@ export function AuthGateSheet({
   // 무회귀), 안드만 보정 인셋 반영.
   const bottom = useBottomInset();
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
+
+  // P-213: 노출 1회 계측 — 열릴 때만(리렌더 무발화)
+  React.useEffect(() => {
+    if (open) track(EVENTS.auth_gate_view, { trigger: trigger ?? CONTEXT_TRIGGER[context] });
+  }, [open, trigger, context]);
 
   const goLogin = () => {
     onClose();

@@ -43,6 +43,7 @@ import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
+import { EVENTS, track } from '@/lib/analytics';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -357,7 +358,7 @@ export function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }
         )}
       </View>
       {FLAGS.reviewsEnabled && (
-        <Pressable style={styles.reviewBtn} onPress={() => router.push(`/food/${food.foodId}/review` as Href)} hitSlop={6}>
+        <Pressable style={styles.reviewBtn} onPress={() => { track(EVENTS.review_write_tap, { source: 'home' }); router.push(`/food/${food.foodId}/review` as Href); }} hitSlop={6}>
           <Star size={13} fillPct={100} fillColor={C.primary} />
           <Text style={styles.reviewBtnText}>{reviewLabel}</Text>
         </Pressable>

@@ -9,9 +9,11 @@
  * NOTE: react-navigation is vendored inside expo-router (SDK 56), so we don't
  * import @react-navigation/bottom-tabs — the tabBar render prop infers its type.
  */
+import * as React from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
+import { EVENTS, track } from '@/lib/analytics';
 import { ResumeOnboardingBanner } from '@/components/ResumeOnboardingBanner';
 
 // route name (file) ↔ TabBar key
@@ -39,6 +41,15 @@ function AppTabBar({
   const router = useRouter();
   const { t } = useTranslation();
   const active = ROUTE_TO_KEY[activeRoute] ?? 'home';
+
+  // P-213: tab_view — 활성 탭이 바뀔 때 1회(탭 탭·프로그램 전환·첫 진입 전부 포함,
+  // 같은 탭 재탭은 무발화). 4탭 계측을 여기 한 곳으로 — 화면별 배선 금지.
+  const lastTab = React.useRef<TabKey | null>(null);
+  React.useEffect(() => {
+    if (lastTab.current === active) return;
+    lastTab.current = active;
+    track(EVENTS.tab_view, { tab: active });
+  }, [active]);
 
   return (
     <TabBar
