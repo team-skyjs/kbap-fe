@@ -1233,3 +1233,7 @@
 - [x] P-207 RemoteImage 공용 신설+직접 expo-image 원격 12곳 스왑(로컬 첨부 제외)+CLAUDE.md 불변 규칙 승격+허용 목록 소스 잠금 — de75bb9.
 - [x] P-206 reviewsMasked(blur) 구분(be-first 오표시 소멸)+게스트 재료 공개(판정 미노출·빈 배열 ghost 유지)+피드 401 실측 보류 — 6b780a6.
 - [x] tsc 0 · jest 115스위트 701/701 · teamtest OTA(ios 6d7ad8f2·and 923d387e, fp 게이트 일치).
+
+## 프리셋 매핑 서버 스왑 (2026-08-14, P-208)
+- [x] useDietPresets(서버 우선·상수 폴백·24h)+unionResolvedCodes 소비처 2곳 스왑. diets[].name lang 미해석 실측 — i18n 라벨 유지·운반만(BE 수정 시 전환) — ed6946e.
+- [x] tsc 0 · jest 115스위트 703/703 · teamtest OTA(ios d7a589de·and 6f6b73fc).
