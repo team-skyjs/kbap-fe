@@ -4,6 +4,7 @@
  */
 process.env.EXPO_PUBLIC_BE_BASE = 'https://dev.kbap.site';
 
+jest.mock('@/lib/installationId', () => ({ getInstallationId: () => Promise.resolve('test-install-id') })); // P-204: expo-secure-store 로드가 jest에서 fetch 폴리필 오염 — 표면 목
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('expo-constants', () => ({ __esModule: true, default: { expoConfig: { version: '1.0.1' } } }));
 

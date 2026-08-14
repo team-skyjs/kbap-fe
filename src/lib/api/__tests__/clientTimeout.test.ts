@@ -3,6 +3,7 @@
  * (무한 스켈레톤 구조 봉쇄), 정상 응답 무영향, 타임아웃은 NETWORK로 분류
  * (classifyQueryError → offline, 재시도 유도).
  */
+jest.mock('@/lib/installationId', () => ({ getInstallationId: () => Promise.resolve('test-install-id') })); // P-204: expo-secure-store 로드가 jest에서 fetch 폴리필 오염 — 표면 목
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/data/config', () => ({ API_V1_BASE: 'https://test.host/api/v1', BE_BASE: 'https://test.host' }));
 // StateBlock(classifyQueryError) 경유로 딸려오는 reanimated — jest 표준 목
@@ -44,6 +45,8 @@ it('타임아웃 발화 → NETWORK timeout reject (침묵 fetch도 reject 보�
 
   const p = api.get('/home');
   const assertion = expect(p).rejects.toThrow(/NETWORK: timeout after 15000ms/);
+  await Promise.resolve(); // P-204: 설치 ID await 양보 — 타이머 arm 후 advance
+  await Promise.resolve();
   jest.advanceTimersByTime(15_001);
   await assertion;
 });
@@ -58,6 +61,8 @@ it('per-call 오버라이드 — 60s 전엔 미발화, 60s에 발화', async () 
 
   const p = api.post('/scans', {}, { timeoutMs: 60_000 });
   const assertion = expect(p).rejects.toThrow(/timeout after 60000ms/);
+  await Promise.resolve(); // P-204: 설치 ID await 양보 — 타이머 arm 후 advance
+  await Promise.resolve();
   jest.advanceTimersByTime(15_001); // 기본값이었다면 여기서 이미 발화
   jest.advanceTimersByTime(45_000);
   await assertion;

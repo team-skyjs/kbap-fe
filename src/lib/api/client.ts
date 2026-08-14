@@ -27,6 +27,7 @@ import Constants from 'expo-constants';
 import i18n from '../i18n';
 import { API_V1_BASE, BE_BASE } from '../data/config';
 import { isProdChannel } from '../flags';
+import { getInstallationId } from '../installationId';
 
 /**
  * P-199(BE #160·161): dev 대개편 — **전 API 버전리스 + 헤더 3종 필수**
@@ -118,6 +119,8 @@ async function request<T>(
     'Accept-Language': apiLang(),
     // P-199: dev 계열 = 헤더 3종 전 요청 부착(app-version만 예외) — prod 채널 무헤더
     ...(!LEGACY_CONTRACT && path !== APP_VERSION_PATH ? deviceHeaders() : {}),
+    // P-204(KB-317): 설치 ID — 전 요청·채널 무관(서버 미인식 시 무시, 데이터 선축적)
+    'X-Installation-Id': await getInstallationId(),
     ...extraHeaders, // P-153: 엔드포인트 한정 오버라이드(예: 스캔 v2 X-API-Version 날짜판)
   };
   // BE access token (silently skipped when signed out / provider absent —
