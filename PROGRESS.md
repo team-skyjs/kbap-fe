@@ -1246,3 +1246,7 @@
 - [x] P-211 Done 단일 문구(×10)·ReviewPlaceLine=TagChip 배경 칩·전역 피드 무효화(재현 경로 양방향)·ReviewFeed=공용 StickyHeader — 90600cd.
 - [x] P-210 재료 빈 배열 = 섹션·면책 고지 미노출(회원·게스트 공통, ghost 소멸) — 99a392b.
 - [x] tsc 0 · jest 117스위트 712/712 · teamtest OTA 동승(update group 9e812660).
+
+## Sentry 수신 검증 트리거 (2026-08-14, P-212)
+- [x] 프로필 버전 줄 신설 + 7연타(2s 창) = sentry-selfcheck 전송(dev 계열만, 태그 channel·appVersion) — 로직은 sentry.ts 관문 한 곳 — 6bd0bd2.
+- [x] tsc 0 · jest 118스위트 718/718 · teamtest OTA 단독 발행(update group 6274cd9f).
