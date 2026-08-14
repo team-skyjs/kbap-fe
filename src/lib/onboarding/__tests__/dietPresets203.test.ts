@@ -54,9 +54,34 @@ it('배선 소스 잠금 — 온보딩 스텝 플래그 분기·스킵 무주입
   const fs = require('fs');
   const ob = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
   expect(ob).toContain("FLAGS.dietPresetsEnabled\n  ? ['consent', 'nationality', 'presets', 'restrictions', 'spice']"); // off = 현행 4스텝
-  expect(ob).toContain("if (step === 'presets') setRestrictions((cur) => unionPresetCodes(Array.from(presets), cur));"); // 기본 체크 주입(기존 보존)
+  expect(ob).toContain("if (step === 'presets') setRestrictions((cur) => unionResolvedCodes(dietPresets, Array.from(presets), cur));"); // 기본 체크 주입(기존 보존 — P-208 서버 매핑 기준)
   expect(ob).toContain("if (step === 'presets') return setStep(ORDER[idx + 1]);"); // 스킵 = 주입 없음(현행 동일)
   const pr = fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8') as string;
-  expect(pr).toContain('unionPresetCodes(Array.from(presetSel), cur)'); // 프로필 = 합집합 적용
+  expect(pr).toContain('unionResolvedCodes(dietPresets, Array.from(presetSel), cur)'); // 프로필 = 합집합 적용(P-208)
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('dietPresetsEnabled: !PROD_CHANNEL');
+});
+
+/* ---- P-208: 서버 스왑 — 파싱·폴백 ---- */
+describe('P-208: useDietPresets 서버 스왑', () => {
+  it('서버 매핑 파싱 — diets[].code·ingredients[].code 채택(서버 우선)', async () => {
+    jest.resetModules();
+    jest.doMock('@/lib/api/client', () => ({
+      api: { get: jest.fn().mockResolvedValue({ diets: [{ code: 'NO_ALCOHOL', name: '무알코올', ingredients: [{ code: 'ALCOHOL' }, { code: 'MIRIN' }] }] }) },
+      apiLang: () => 'en',
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { _fetchDietPresetsForTest } = require('@/lib/data/useDietPresets') as typeof import('@/lib/data/useDietPresets');
+    const map = await _fetchDietPresetsForTest();
+    expect(map.get('NO_ALCOHOL')?.codes).toEqual(['ALCOHOL', 'MIRIN']);
+    expect(map.get('NO_ALCOHOL')?.name).toBe('무알코올'); // 운반만(표시는 lang 미해석 실측으로 i18n 유지)
+  });
+
+  it('배선 소스 잠금 — 소비처 = 서버 우선 resolved 경유(unionResolvedCodes)·폴백 = 상수', () => {
+    const fs = require('fs');
+    const ob = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
+    expect(ob).toContain('unionResolvedCodes(dietPresets, Array.from(presets), cur)');
+    expect(fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8')).toContain('unionResolvedCodes(dietPresets, Array.from(presetSel), cur)');
+    // 폴백 = 상수 파생(오프라인 온보딩 생존)
+    expect(fs.readFileSync('src/lib/data/useDietPresets.ts', 'utf8')).toContain('hit?.codes ?? presetSubstanceCodes(p)');
+  });
 });

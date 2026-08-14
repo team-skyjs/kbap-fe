@@ -71,3 +71,17 @@ export function unionPresetCodes(presetIds: string[], base: Iterable<string> = [
   }
   return out;
 }
+
+/** P-208: 서버 스왑판 합집합 — resolved(서버 우선·상수 폴백) codes 기준. */
+export function unionResolvedCodes(
+  presets: { id: string; codes: string[] }[],
+  presetIds: string[],
+  base: Iterable<string> = [],
+): Set<string> {
+  const out = new Set(base);
+  for (const id of presetIds) {
+    const p = presets.find((x) => x.id === id);
+    if (p) for (const code of p.codes) out.add(code);
+  }
+  return out;
+}

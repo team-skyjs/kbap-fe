@@ -21,7 +21,8 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
 import { Modal } from 'react-native';
-import { DIET_PRESETS, unionPresetCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
+import { unionResolvedCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
+import { useDietPresets } from '@/lib/data/useDietPresets';
 
 export default function EditRestrictions() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function EditRestrictions() {
   // P-203: 카테고리 재적용 — 적용 = 기존 선택과 합집합(기존 삭제 금지·안전)
   const [presetOpen, setPresetOpen] = useState(false);
   const [presetSel, setPresetSel] = useState<Set<string>>(new Set());
+  const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
   useEffect(() => {
     if (me && !seeded) {
       setSel(me.restrictions.map((r) => r.code));
@@ -113,7 +115,7 @@ export default function EditRestrictions() {
             <Text style={styles.presetTitle}>{t('onboarding.presets.title')}</Text>
             {(['diet', 'religion', 'allergy'] as PresetGroup[]).map((g) => (
               <View key={g} style={styles.presetGrid}>
-                {DIET_PRESETS.filter((pr) => pr.group === g).map((pr) => {
+                {dietPresets.filter((pr) => pr.group === g).map((pr) => {
                   const on = presetSel.has(pr.id);
                   return (
                     <Pressable
@@ -137,7 +139,7 @@ export default function EditRestrictions() {
             <View style={{ gap: 9, marginTop: 6 }}>
               <Btn
                 onPress={() => {
-                  setSel((cur) => Array.from(unionPresetCodes(Array.from(presetSel), cur))); // 합집합 — 기존 보존
+                  setSel((cur) => Array.from(unionResolvedCodes(dietPresets, Array.from(presetSel), cur))); // P-208: 서버 매핑 기준 합집합 — 기존 보존
                   setPresetOpen(false);
                 }}
                 testID="preset-apply"

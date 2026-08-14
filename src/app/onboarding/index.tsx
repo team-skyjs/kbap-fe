@@ -58,7 +58,8 @@ import { generateNickname, pickDefaultAvatarPath } from '@/lib/onboarding/autoPr
 import { IngredientTileSections } from '@/components/IngredientTileSections';
 import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
-import { DIET_PRESETS, unionPresetCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
+import { unionResolvedCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
+import { useDietPresets, type ResolvedPreset } from '@/lib/data/useDietPresets';
 import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
@@ -116,6 +117,7 @@ export default function Onboarding() {
   const { run: runSubmit } = useSubmitGuard(); // P-173: 동기 가드 보강(상태 가드는 같은 틱 레이스)
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
   const [presets, setPresets] = useState<Set<string>>(new Set()); // P-203: 프리셋 선택(복수 = 합집합)
+  const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
   const [pushPrimer, setPushPrimer] = useState(false); // P-192: 회원 진입점 — 제출 성공 직후 1회
   // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
@@ -247,7 +249,7 @@ export default function Onboarding() {
   const advance = () => {
     if (STEP_WIRE[step]) track(EVENTS.onboarding_step_complete, { step: STEP_WIRE[step] });
     // P-203: 프리셋 → 회피 진입 = 매핑 합집합을 기본 체크로 주입(기존 선택 보존)
-    if (step === 'presets') setRestrictions((cur) => unionPresetCodes(Array.from(presets), cur));
+    if (step === 'presets') setRestrictions((cur) => unionResolvedCodes(dietPresets, Array.from(presets), cur)); // P-208: 서버 매핑 기준
     if (step === 'spice') {
       setSkipped((s) => ({ ...s, spice: false }));
       return void finish(false);
@@ -373,7 +375,7 @@ export default function Onboarding() {
         )}
 
         {step === 'presets' && (
-          <PresetsStep selected={presets} onToggle={(id) => toggle(presets, id, setPresets)} t={t} />
+          <PresetsStep presets={dietPresets} selected={presets} onToggle={(id) => toggle(presets, id, setPresets)} t={t} />
         )}
 
         {step === 'restrictions' && (
@@ -645,7 +647,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
 /** ③-0 프리셋 (P-203 러프 — 디자이너 폴리시 전): 식이/종교/알레르기 묶음 15종
  *  칩 그리드(그룹 3섹션). 복수 선택 = 합집합, 스킵 가능. 선택 상태 = 색만
  *  (동일 보더 폭 투명 유지 — P-103 프레임 불변). */
-function PresetsStep({ selected, onToggle, t }: { selected: Set<string>; onToggle: (id: string) => void; t: TFn }) {
+function PresetsStep({ presets, selected, onToggle, t }: { presets: ResolvedPreset[]; selected: Set<string>; onToggle: (id: string) => void; t: TFn }) {
   const groups: { key: PresetGroup; labelKey: string }[] = [
     { key: 'diet', labelKey: 'onboarding.presets.groupDiet' },
     { key: 'religion', labelKey: 'onboarding.presets.groupReligion' },
@@ -658,7 +660,7 @@ function PresetsStep({ selected, onToggle, t }: { selected: Set<string>; onToggl
         <View key={g.key} style={{ marginBottom: 14 }}>
           <Text style={styles.presetGroup}>{t(g.labelKey)}</Text>
           <View style={styles.presetGrid}>
-            {DIET_PRESETS.filter((p) => p.group === g.key).map((p) => {
+            {presets.filter((p) => p.group === g.key).map((p) => {
               const on = selected.has(p.id);
               return (
                 <Pressable

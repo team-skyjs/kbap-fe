@@ -7,6 +7,11 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { ScrollView } from 'react-native';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
+jest.mock('@/lib/data/useDietPresets', () => {
+  // P-208: 프리셋 서버 훅 표면 목 — 상수 폴백 형태(react-query 무의존)
+  const { DIET_PRESETS, presetSubstanceCodes } = jest.requireActual('@/lib/onboarding/dietPresets');
+  return { useDietPresets: () => DIET_PRESETS.map((p: { id: string; group: string; labelKey: string }) => ({ ...p, codes: presetSubstanceCodes(p), serverName: null })) };
+});
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };

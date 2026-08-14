@@ -11,6 +11,11 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { StyleSheet } from 'react-native';
 
 // onboardingRestrictionsCta.test 프렐류드 재사용
+jest.mock('@/lib/data/useDietPresets', () => {
+  // P-208: 프리셋 서버 훅 표면 목 — 상수 폴백 형태(react-query 무의존)
+  const { DIET_PRESETS, presetSubstanceCodes } = jest.requireActual('@/lib/onboarding/dietPresets');
+  return { useDietPresets: () => DIET_PRESETS.map((p: { id: string; group: string; labelKey: string }) => ({ ...p, codes: presetSubstanceCodes(p), serverName: null })) };
+});
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
