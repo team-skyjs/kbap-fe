@@ -7,7 +7,7 @@
  *   - ReviewEditSheet: 본인 리뷰 수정(별점+본문 — 구 디테일 editing 이식, buildReviewUpdate 경유)
  */
 import * as React from 'react';
-import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { RemoteImage } from '@/components/RemoteImage';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -61,7 +61,7 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
       <View style={styles.strip}>
         {photos.slice(0, 3).map((uri, i) => (
           <Pressable key={uri} hitSlop={4} onPress={() => { setPage(i); setOpenAt(i); }} testID={`photo-${i}`}>
-            <Image source={{ uri }} style={{ width: size, height: size, borderRadius: 10, backgroundColor: C.surface2 }} />
+            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: 10, backgroundColor: C.surface2 }} />
           </Pressable>
         ))}
       </View>
@@ -76,7 +76,7 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
           >
             {photos.map((uri) => (
               <View key={uri} style={{ width, justifyContent: 'center' }}>
-                <Image source={{ uri }} style={{ width, height: width * 1.2 }} contentFit="contain" />
+                <RemoteImage uri={uri} style={{ width, height: width * 1.2 }} contentFit="contain" />
               </View>
             ))}
           </ScrollView>

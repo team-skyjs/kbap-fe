@@ -15,7 +15,7 @@
  * AvoidChip으로(flex-wrap).
  */
 import * as React from 'react';
-import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { RemoteImage } from '@/components/RemoteImage';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';
@@ -209,7 +209,7 @@ function RichRow({
 
       {/* 우측 고정 열 — 썸네일(매칭분만) + 담기 슬롯(풋프린트 불변) */}
       <View style={styles.rightCol}>
-        {dish.matched && !!food?.photoUrl && <Image source={{ uri: food.photoUrl }} style={styles.thumb} />}
+        {dish.matched && !!food?.photoUrl && <RemoteImage uri={food.photoUrl} style={styles.thumb} />}
         <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
           {added ? (
             <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>

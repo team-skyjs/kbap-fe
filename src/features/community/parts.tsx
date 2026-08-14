@@ -5,7 +5,7 @@
  * 전환 — 색만 전환 금지, 싫어요 0 숨김).
  */
 import * as React from 'react';
-import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { RemoteImage } from '@/components/RemoteImage';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
@@ -59,12 +59,12 @@ export function AuthorRow({ author, when, onMore, t }: { author: CommunityAuthor
 export function PhotoGrid({ photos }: { photos: string[] }) {
   const n = photos.length;
   if (n === 0) return null;
-  if (n === 1) return <Image source={{ uri: photos[0] }} style={[styles.photoBase, styles.photoFull]} />;
+  if (n === 1) return <RemoteImage uri={photos[0]} style={[styles.photoBase, styles.photoFull]} />;
   if (n === 2) {
     return (
       <View style={styles.photoRow}>
         {photos.map((uri) => (
-          <Image key={uri} source={{ uri }} style={[styles.photoBase, styles.photoHalf]} />
+          <RemoteImage key={uri} uri={uri} style={[styles.photoBase, styles.photoHalf]} />
         ))}
       </View>
     );
@@ -72,10 +72,10 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
   if (n === 3) {
     return (
       <View style={styles.photoRow}>
-        <Image source={{ uri: photos[0] }} style={[styles.photoBase, styles.photoTall]} />
+        <RemoteImage uri={photos[0]} style={[styles.photoBase, styles.photoTall]} />
         <View style={styles.photoCol}>
-          <Image source={{ uri: photos[1] }} style={[styles.photoBase, styles.photoQuarter]} />
-          <Image source={{ uri: photos[2] }} style={[styles.photoBase, styles.photoQuarter]} />
+          <RemoteImage uri={photos[1]} style={[styles.photoBase, styles.photoQuarter]} />
+          <RemoteImage uri={photos[2]} style={[styles.photoBase, styles.photoQuarter]} />
         </View>
       </View>
     );
@@ -83,7 +83,7 @@ export function PhotoGrid({ photos }: { photos: string[] }) {
   return (
     <View style={styles.photoGrid2}>
       {photos.slice(0, 4).map((uri) => (
-        <Image key={uri} source={{ uri }} style={[styles.photoBase, styles.photoQuad]} />
+        <RemoteImage key={uri} uri={uri} style={[styles.photoBase, styles.photoQuad]} />
       ))}
     </View>
   );

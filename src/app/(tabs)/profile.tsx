@@ -5,7 +5,7 @@
  * Data via useMe()/useMyReviews()/useFoods() (MOCK_MODE). Scroll-aware brand
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
-import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
@@ -147,7 +147,7 @@ export default function Profile() {
               <View style={styles.avatar}>
                 {/* KB-149: 서버 프로필 사진 — 없으면 기존 플레이스홀더 */}
                 {me.profileImageUrl ? (
-                  <Image source={{ uri: me.profileImageUrl }} style={styles.avatarImg} />
+                  <RemoteImage uri={me.profileImageUrl} style={styles.avatarImg} />
                 ) : (
                   <IconProfile size={30} color={C.primary} />
                 )}

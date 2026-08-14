@@ -16,6 +16,7 @@
  */
 import * as React from 'react';
 import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { RemoteImage } from '@/components/RemoteImage';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
@@ -145,7 +146,7 @@ export default function CommunityCompose() {
         <View style={styles.heroCenter}>
           <View style={styles.avatar}>
             {me?.profileImageUrl ? (
-              <Image source={{ uri: me.profileImageUrl }} style={styles.avatarImg} />
+              <RemoteImage uri={me.profileImageUrl} style={styles.avatarImg} />
             ) : (
               <IconProfile size={26} color={C.primary} />
             )}
@@ -472,7 +473,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                       key={f.foodId}
                       thumb={
                         f.photoUrl ? (
-                          <Image source={{ uri: f.photoUrl }} style={styles.rowThumb} />
+                          <RemoteImage uri={f.photoUrl} style={styles.rowThumb} />
                         ) : (
                           <View style={[styles.rowThumb, styles.rowThumbFallback]}>
                             <IconFood size={17} color={C.primary} />

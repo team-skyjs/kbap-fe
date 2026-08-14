@@ -130,7 +130,7 @@ describe('P-127: 업로드 전 JPEG 재인코딩 (UPLOAD-001 방어)', () => {
 });
 
 describe('P-189: 원격 사진 렌더 = expo-image(디스크 캐시) 소스 잠금', () => {
-  it('원격 렌더 파일 7곳 — RN Image import 잔존 0 (로컬 촬영 표면은 제외)', () => {
+  it('원격 렌더 파일 7곳 — RN Image import 잔존 0 (P-207: 직접 expo-image 또는 공용 경유)', () => {
     const fs = require('fs');
     const files = [
       'src/app/(tabs)/profile.tsx', 'src/app/community/compose.tsx', 'src/app/onboarding/index.tsx',
@@ -139,7 +139,8 @@ describe('P-189: 원격 사진 렌더 = expo-image(디스크 캐시) 소스 잠�
     ];
     for (const f of files) {
       const src = fs.readFileSync(f, 'utf8') as string;
-      expect(src).toContain("from 'expo-image'");
+      // P-207: 원격 렌더 = expo-image 직접 또는 공용 래퍼(RemoteImage/CardPhoto — 내부 expo-image+스켈레톤)
+      expect(/from 'expo-image'|RemoteImage|CardPhoto/.test(src)).toBe(true);
       expect(src).not.toMatch(/import \{[^}]*\bImage\b[^}]*\} from 'react-native'/);
     }
   });

@@ -12,7 +12,7 @@
  * resumes from the saved step. The draft clears on successful submit.
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
-import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
+import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
@@ -767,7 +767,7 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
         {rail.map((f) => (
           <View key={f.foodId} style={{ width: cardW }} testID={`rail-${f.foodId}`}>
             <View style={[styles.railImgWrap, { width: cardW, height: Math.round(cardW * 0.68) }]}>
-              <Image source={{ uri: f.imageUrl }} style={styles.railImg} />
+              <RemoteImage uri={f.imageUrl} style={styles.railImg} />
             </View>
             <Text style={styles.railName} numberOfLines={1}>{f.name}</Text>
             <Text style={styles.railKo} numberOfLines={1}>{f.nameKo}</Text>
