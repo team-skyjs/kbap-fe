@@ -39,20 +39,25 @@ function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
 
 /** P-107(KB-275, #121): 리뷰 요약 겸수신 — ① 신계약 중첩(스냅샷 8/3 정본
  *  {overall, sameCountry}) ② 발주문 단층 중첩 ③ 구 평면(prod 폴백) 순. */
-function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 'sameNationality'> {
+function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 'sameNationality' | 'reviewsMasked'> {
   const rv = wire.review;
+  // P-206: blur=true = 요약 마스킹(게스트 실측 — 0.0/0은 실측 아님) → 0건과 구분.
+  // 화면의 be-first("아직 리뷰가 없어요")는 masked=false의 실측 count 0에서만.
+  const reviewsMasked = rv?.blur === true;
   if (rv) {
     if (rv.overall || rv.sameCountry) {
-      return { overall: aggFromRating(rv.overall), sameNationality: aggFromRating(rv.sameCountry) };
+      return { overall: aggFromRating(rv.overall), sameNationality: aggFromRating(rv.sameCountry), reviewsMasked };
     }
     return {
       overall: { average: rv.averageRating ?? null, count: rv.reviewCount ?? 0 },
       sameNationality: { average: rv.sameCountryAverageRating ?? null, count: 0 },
+      reviewsMasked,
     };
   }
   return {
     overall: { average: wire.averageRating ?? null, count: wire.reviewCount ?? 0 },
     sameNationality: { average: wire.sameCountryAverageRating ?? null, count: 0 },
+    reviewsMasked: false,
   };
 }
 

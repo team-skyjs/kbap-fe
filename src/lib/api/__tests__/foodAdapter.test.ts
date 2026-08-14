@@ -89,3 +89,27 @@ describe('P-165(#146): 목록 리뷰 요약(FoodSummaryResponse.review) 실값',
     expect(c.overall).toEqual({ average: null, count: 0 });
   });
 });
+
+/* ---- P-206: 리뷰 요약 마스킹(blur) vs 실측 0건 구분 ---- */
+describe('P-206: reviewsMasked', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { adaptFoodDetail } = require('../foodAdapter') as typeof import('../foodAdapter');
+  const base = { name: 'Squid', koreanName: '오징어튀김', overallRiskStatus: 'SAFE', ingredients: [] };
+
+  it('blur=true(게스트 실측 — 0.0/0은 마스킹 값) → reviewsMasked true, count 0 유지', () => {
+    const d = adaptFoodDetail({ ...base, review: { blur: true, overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } } as never, '501');
+    expect(d.reviewsMasked).toBe(true);
+    expect(d.overall.count).toBe(0);
+  });
+
+  it('blur=false + 실측 0건 → masked false(진짜 be-first 대상)', () => {
+    const d = adaptFoodDetail({ ...base, review: { blur: false, overall: { averageRating: 0.0, reviewCount: 0 } } } as never, '501');
+    expect(d.reviewsMasked).toBe(false);
+  });
+
+  it('구 평면 응답(review 부재) → masked false(prod 폴백 무변)', () => {
+    const d = adaptFoodDetail({ ...base, averageRating: 4.2, reviewCount: 5 } as never, '501');
+    expect(d.reviewsMasked).toBe(false);
+    expect(d.overall.count).toBe(5);
+  });
+});

@@ -311,7 +311,24 @@ function Registered({
       {/* P-139 ⑤: 재료 — 헤어라인 행(카드·그림자 폐지), 전부 오픈(접힘 0) */}
       <View style={styles.sec}>
         <Text style={styles.secTitle}>{t('detail.insideTitle')}</Text>
-        {guest ? (
+        {/* P-206: 재료 자체는 게스트 공개(정책 개정) — 위험 판정(마크·필·사유)만 잠금.
+            실측(8/14): dev 서버가 게스트에 ingredients 빈 배열 — 데이터 없을 땐 현행
+            ghost 유지, BE가 개방하면 이 분기로 자동 공개(코드 무변). */}
+        {guest && ingredients.length > 0 ? (
+          <View testID="ing-guest-open">
+            {ingredients.map((ing) => (
+              <View key={ing.code} style={styles.ingRow} testID={`ing-${ing.code}`}>
+                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                  <Text style={styles.ingName}>{ing.name}</Text>
+                  {ing.percentage != null && (
+                    <Text style={styles.ingPct}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
+                  )}
+                </View>
+                {/* 위험 마크·필 미표시 — 개인화 판정 노출 금지(false-safe: 근거 없는 safe 인상 금지) */}
+              </View>
+            ))}
+          </View>
+        ) : guest ? (
           <GhostIngredients t={t} onSignIn={() => setGateOpen(true)} />
         ) : (
           <View>
@@ -355,8 +372,9 @@ function Registered({
       {/* P-169: 리뷰 브리프(쿠팡 문법) — 2열 카드 소멸 → 헤더(큰 별+수치+리뷰 수,
           같은 국적 병기 보조 줄 = 차별점 유지) + 프리뷰 5 + 풀폭 전체보기.
           솔리드 CTA는 Ask the owner 하나만 — Write a review는 고스트 소형 강등. */}
-      {/* P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김(평점·병기·프리뷰·전체보기) — 첫 리뷰 유도만 */}
-      {FLAGS.reviewsEnabled && food.overall.count === 0 && (
+      {/* P-182 ③ → P-206: be-first = **회원+마스킹 아님+실측 0건**만 — 게스트의
+          요약 마스킹(blur, 0/0)을 "아직 리뷰가 없어요"로 오표시하던 혼동 교정 */}
+      {FLAGS.reviewsEnabled && !guest && !food.reviewsMasked && food.overall.count === 0 && (
         <View style={styles.sec} testID="review-empty-cta">
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
           <Btn variant="ghost" onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
@@ -364,7 +382,20 @@ function Registered({
           </Btn>
         </View>
       )}
-      {FLAGS.reviewsEnabled && food.overall.count > 0 && (
+      {/* P-206: 게스트/마스킹 = 잠금 게이트(기존 lock 키 재사용) — 쓰기는 가입 시트 경유 */}
+      {FLAGS.reviewsEnabled && (guest || food.reviewsMasked) && (
+        <View style={styles.sec} testID="review-guest-lock">
+          <View style={styles.rvLockRow}>
+            <IconLock size={16} color={C.ink2} />
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+              <Text style={styles.rvLockTitle}>{t('lock.reviewsLocked')}</Text>
+              <Text style={styles.rvLockSub}>{t('gate.reviewsSub')}</Text>
+            </View>
+            <Btn sm onPress={() => setGateOpen(true)}>{t('intro.signUp')}</Btn>
+          </View>
+        </View>
+      )}
+      {FLAGS.reviewsEnabled && !guest && !food.reviewsMasked && food.overall.count > 0 && (
         <View style={styles.sec} testID="review-brief">
           <View style={styles.rvBriefHead}>
             <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
@@ -636,6 +667,10 @@ const styles = StyleSheet.create({
   rvSameNat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   rvSameNatText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   rvWhen: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  // P-206: 게스트/마스킹 리뷰 잠금 행
+  rvLockRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 14, padding: 14 },
+  rvLockTitle: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
+  rvLockSub: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
   rvBeFirst: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', marginBottom: 4 },
   rvThumb: { width: 52, height: 52, borderRadius: 10, backgroundColor: C.surface2, overflow: 'hidden' },
   rvFoot: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 2 },

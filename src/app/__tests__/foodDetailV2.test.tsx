@@ -213,21 +213,17 @@ it('재료 — danger→caution→safe 정렬, 전부 오픈, caution 행에만 
   expect(s).toContain('detail.ofShops');
 });
 
-it('게스트 — verdict 잠금 슬롯 + 재료 고스트 5행 + 잠금 줄(섹션 유일 CTA), 리뷰·평점 풀 오픈', () => {
+it('게스트(P-206 개정) — verdict 잠금 유지 + 재료 공개(판정 없음) + 사유 미노출', () => {
   mockIsGuest.mockReturnValue(true);
   const tree = render(<FoodDetailScreen />);
-  expect(byId(tree, 'verdict-lock').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'verdict-lock').length).toBeGreaterThanOrEqual(1); // 개인화 verdict 잠금 무변
   expect(byId(tree, 'detail-verdict').length).toBe(0);
-  expect(byId(tree, 'ing-ghost').length).toBeGreaterThanOrEqual(1);
-  expect(byId(tree, 'ing-lock').length).toBeGreaterThanOrEqual(1);
+  // P-206: 재료 자체 공개(이름·빈도) — 스켈레톤 잠금 소멸, 위험 판정·사유만 미노출
+  expect(byId(tree, 'ing-guest-open').length).toBeGreaterThanOrEqual(1);
   const s = flat(tree);
-  expect(s).toContain('detail.lockIngredients');
-  // 재료 실명·사유 미노출
-  expect(s).not.toContain('Pork');
-  expect(s).not.toContain('detail.ingBasisCaution');
-  // 리뷰 프리뷰·평점은 풀 오픈(시안 노트 08) — P-169 브리프 헤더로 대체
-  expect(s).toContain('Great and safe for me');
-  expect(s).toContain('reviews.subtitle');
+  expect(s).toContain('Pork'); // 재료 실명 공개(정책 개정)
+  expect(s).not.toContain('detail.ingBasisCaution'); // 판정 사유는 여전히 미노출
+  mockIsGuest.mockReturnValue(false);
 });
 
 it('P-169: 리뷰 브리프 — 프리뷰 5 제한·헤더 병기·전체보기·Write 고스트 강등', () => {
@@ -271,6 +267,59 @@ it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () 
   expect(byId(tree, 'review-empty-cta').length).toBeGreaterThanOrEqual(1);
   expect(s).toContain('detail.beFirstReview');
   expect(s).toContain('reviews.writeReview'); // Write CTA만
+});
+
+describe('P-206: 게스트 열람 개편', () => {
+  afterEach(() => mockIsGuest.mockReturnValue(false));
+
+  it('게스트+재료 수신 = 이름·빈도 공개, 위험 판정(마크) 미표시 — false-safe', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { reviewsMasked: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    const open = byId(tree, 'ing-guest-open');
+    expect(open.length).toBeGreaterThanOrEqual(1); // 재료 공개
+    expect(flat(tree)).toContain('Onion');
+    // 공개 리스트 내부에 위험 마크·필 0 (개인화 판정 노출 금지)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { RiskMark } = require('@/components') as typeof import('@/components');
+    expect(open[0].findAllByType(RiskMark).length).toBe(0);
+    expect(byId(tree, 'ing-ghost').length).toBe(0); // 스켈레톤 잠금 소멸
+  });
+
+  it('게스트+재료 빈 배열(서버 미개방 실측) = 현행 ghost 유지 — BE 개방 시 자동 공개', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { ingredients: [], reviewsMasked: true }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'ing-ghost').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('마스킹(blur) 요약 = be-first 오표시 소멸 — 잠금 게이트 카피로 대체(기존 lock 키)', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { reviewsMasked: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'review-empty-cta').length).toBe(0); // "아직 리뷰가 없어요" 오표시 소멸
+    expect(byId(tree, 'review-guest-lock').length).toBeGreaterThanOrEqual(1);
+    expect(flat(tree)).toContain('lock.reviewsLocked'); // 기존 lock 키 재사용
+  });
+
+  it('회원 + 실측 0건(마스킹 아님) = be-first 현행 유지', () => {
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { reviewsMasked: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'review-empty-cta').length).toBeGreaterThanOrEqual(1);
+    expect(byId(tree, 'review-guest-lock').length).toBe(0);
+  });
 });
 
 it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () => {
