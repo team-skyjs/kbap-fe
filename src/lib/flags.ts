@@ -99,6 +99,11 @@ export const FLAGS = {
    */
   communityPostsEnabled: false,
   /**
+   * 식이/종교 프리셋 온보딩 스텝 (P-203/KB-305) — 디자이너 시안용 러프, dev 계열만.
+   * BE diet-presets API 확정 시 dietPresets.ts 상수 스왑.
+   */
+  dietPresetsEnabled: !PROD_CHANNEL,
+  /**
    * 리뷰 확장 별점 3축 (P-202/KB-32) — 디자이너 시안용 러프, dev 계열만.
    * BE 계약(3필드) 회신 시 buildReviewExtras 배선 + 채널 조건 재검토.
    */

@@ -137,7 +137,7 @@ it('약관 게이트 — 전체 동의 한 번으로 3항목 일괄 체크·진�
   expect(textNodes(tree, 'onboarding.nationalityTitle').length).toBeGreaterThanOrEqual(1);
 });
 
-it('P-130: 4스텝 순서 — 약관→국적→회피→맵기(마지막 CTA=시작하기)', async () => {
+it('P-130 → P-203: 스텝 순서 — 약관→국적→프리셋(신설)→회피→맵기(마지막 CTA=시작하기)', async () => {
   mockDraft = null;
   const tree = await render();
   const agreeAll = tree.root.findAll(
@@ -146,6 +146,8 @@ it('P-130: 4스텝 순서 — 약관→국적→회피→맵기(마지막 CTA=�
   await act(async () => { agreeAll[0].props.onPress(); });
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 국적
   expect(textNodes(tree, 'onboarding.nationalityTitle').length).toBeGreaterThanOrEqual(1);
+  await act(async () => { continueBtn(tree).props.onPress(); }); // → 프리셋(P-203 — dev 계열)
+  expect(textNodes(tree, 'onboarding.presets.title').length).toBeGreaterThanOrEqual(1);
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 회피
   expect(textNodes(tree, 'onboarding.avoidSub').length).toBeGreaterThanOrEqual(1); // P-134 타일 그리드
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 맵기 (CTA = 시작하기)

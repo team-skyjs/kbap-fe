@@ -639,7 +639,32 @@
     "spiceDesc3": "能自在享受正宗韓式辣度。",
     "spiceDesc4": "儘管來——每道菜仍會顯示辣度。",
     "finishSetup": "完成設定",
-    "skipDecideLater": "跳過——以後再定"
+    "skipDecideLater": "跳過——以後再定",
+    "presets": {
+      "vegan": "純素",
+      "vegetarian": "素食",
+      "lacto_vegetarian": "乳素食",
+      "ovo_vegetarian": "蛋素食",
+      "pescatarian": "魚素食",
+      "gluten_free": "無麩質",
+      "lactose_free": "乳糖不耐症",
+      "no_alcohol": "無酒精",
+      "muslim": "穆斯林(清真)",
+      "hindu": "印度教",
+      "kosher": "猶太教(潔食)",
+      "buddhist": "佛教(素齋)",
+      "jain": "耆那教",
+      "nut_allergy": "堅果過敏",
+      "shellfish_allergy": "甲殼類·貝類過敏",
+      "title": "有飲食習慣或信仰嗎?",
+      "sub": "選擇適用項目,我們會預先勾選相關成分。下一步可自由調整。",
+      "skip": "跳過 — 我自己選",
+      "groupDiet": "飲食",
+      "groupReligion": "宗教",
+      "groupAllergy": "過敏組合",
+      "apply": "套用到我的清單",
+      "applyRow": "依飲食/宗教填入"
+    }
   },
   "editProfile": {
     "title": "編輯個人資料",

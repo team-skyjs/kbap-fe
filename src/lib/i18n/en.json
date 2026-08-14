@@ -793,7 +793,32 @@
     "spiceDesc3": "Comfortable with real Korean heat.",
     "spiceDesc4": "Bring it on — heat levels still show on every dish.",
     "finishSetup": "Finish setup",
-    "skipDecideLater": "Skip — decide later"
+    "skipDecideLater": "Skip — decide later",
+    "presets": {
+      "vegan": "Vegan",
+      "vegetarian": "Vegetarian",
+      "lacto_vegetarian": "Lacto-vegetarian",
+      "ovo_vegetarian": "Ovo-vegetarian",
+      "pescatarian": "Pescatarian",
+      "gluten_free": "Gluten-free",
+      "lactose_free": "Lactose-free",
+      "no_alcohol": "No alcohol",
+      "muslim": "Muslim (Halal)",
+      "hindu": "Hindu",
+      "kosher": "Jewish (Kosher)",
+      "buddhist": "Buddhist",
+      "jain": "Jain",
+      "nut_allergy": "Tree nut allergy",
+      "shellfish_allergy": "Shellfish allergy",
+      "title": "Any diet or beliefs we should know?",
+      "sub": "Pick any that apply — we'll pre-check the matching ingredients. You can adjust them next.",
+      "skip": "Skip — I'll pick ingredients myself",
+      "groupDiet": "Diet",
+      "groupReligion": "Religion",
+      "groupAllergy": "Allergy bundles",
+      "apply": "Apply to my list",
+      "applyRow": "Fill from a diet or religion"
+    }
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

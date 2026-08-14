@@ -19,6 +19,9 @@ import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { FLAGS } from '@/lib/flags';
+import { Modal } from 'react-native';
+import { DIET_PRESETS, unionPresetCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
 
 export default function EditRestrictions() {
   const router = useRouter();
@@ -28,6 +31,9 @@ export default function EditRestrictions() {
 
   const [sel, setSel] = useState<string[]>([]);
   const [seeded, setSeeded] = useState(false);
+  // P-203: 카테고리 재적용 — 적용 = 기존 선택과 합집합(기존 삭제 금지·안전)
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [presetSel, setPresetSel] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (me && !seeded) {
       setSel(me.restrictions.map((r) => r.code));
@@ -85,6 +91,13 @@ export default function EditRestrictions() {
           <Text style={styles.noticeText}>{t('restrictionsEdit.notice')}</Text>
         </View>
 
+        {/* P-203: 카테고리로 채우기(러프 배치 재량 — 상단 행) → 시트에서 합집합 적용 */}
+        {FLAGS.dietPresetsEnabled && (
+          <Pressable style={styles.presetRow} onPress={() => setPresetOpen(true)} hitSlop={4} testID="preset-open">
+            <Text style={styles.presetRowText}>{t('onboarding.presets.applyRow')}</Text>
+          </Pressable>
+        )}
+
         <IngredientFilter selected={sel} onToggle={toggle} onClear={() => setSel([])} />
 
         <View style={styles.disc}>
@@ -92,6 +105,50 @@ export default function EditRestrictions() {
           <Text style={styles.discText}>{t('restrictionsEdit.disclaimer')}</Text>
         </View>
       </ScrollView>
+
+      {/* P-203: 카테고리 시트 — 러프(온보딩 칩 문법 축약) */}
+      <Modal visible={presetOpen} transparent animationType="slide" onRequestClose={() => setPresetOpen(false)}>
+        <View style={styles.presetBackdrop}>
+          <View style={styles.presetSheet}>
+            <Text style={styles.presetTitle}>{t('onboarding.presets.title')}</Text>
+            {(['diet', 'religion', 'allergy'] as PresetGroup[]).map((g) => (
+              <View key={g} style={styles.presetGrid}>
+                {DIET_PRESETS.filter((pr) => pr.group === g).map((pr) => {
+                  const on = presetSel.has(pr.id);
+                  return (
+                    <Pressable
+                      key={pr.id}
+                      style={[styles.presetChip, on && styles.presetChipOn]}
+                      onPress={() =>
+                        setPresetSel((cur) => {
+                          const next = new Set(cur);
+                          next.has(pr.id) ? next.delete(pr.id) : next.add(pr.id);
+                          return next;
+                        })
+                      }
+                      testID={`preset-${pr.id}`}
+                    >
+                      <Text style={[styles.presetChipText, on && styles.presetChipTextOn]}>{t(pr.labelKey)}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
+            <View style={{ gap: 9, marginTop: 6 }}>
+              <Btn
+                onPress={() => {
+                  setSel((cur) => Array.from(unionPresetCodes(Array.from(presetSel), cur))); // 합집합 — 기존 보존
+                  setPresetOpen(false);
+                }}
+                testID="preset-apply"
+              >
+                {t('onboarding.presets.apply')}
+              </Btn>
+              <Btn variant="ghost" onPress={() => setPresetOpen(false)}>{t('common.cancel')}</Btn>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.savebar}>
         <Btn icon={<IconCheck size={17} color="#fff" />} onPress={save}>
@@ -105,6 +162,17 @@ export default function EditRestrictions() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 28, gap: 16 },
+  // P-203: 카테고리 프리셋(러프)
+  presetRow: { alignSelf: 'flex-start', borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  presetRowText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  presetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  presetSheet: { backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, paddingBottom: 34, gap: 12 },
+  presetTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
+  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: { borderWidth: 1.5, borderColor: C.line, backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  presetChipOn: { borderColor: C.primary, backgroundColor: 'rgba(226,88,12,0.08)' },
+  presetChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  presetChipTextOn: { color: C.primaryText },
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
   saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
 

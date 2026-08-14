@@ -639,7 +639,32 @@
     "spiceDesc3": "本場の韓国の辛さも平気。",
     "spiceDesc4": "どんと来い — それでも全料理の辛さレベルは表示されます。",
     "finishSetup": "設定を完了",
-    "skipDecideLater": "スキップ — あとで決める"
+    "skipDecideLater": "スキップ — あとで決める",
+    "presets": {
+      "vegan": "ヴィーガン",
+      "vegetarian": "ベジタリアン",
+      "lacto_vegetarian": "ラクトベジタリアン",
+      "ovo_vegetarian": "オボベジタリアン",
+      "pescatarian": "ペスカタリアン",
+      "gluten_free": "グルテンフリー",
+      "lactose_free": "乳糖不耐症",
+      "no_alcohol": "ノンアルコール",
+      "muslim": "ムスリム(ハラール)",
+      "hindu": "ヒンドゥー教",
+      "kosher": "ユダヤ教(コーシャ)",
+      "buddhist": "仏教(精進)",
+      "jain": "ジャイナ教",
+      "nut_allergy": "ナッツアレルギー",
+      "shellfish_allergy": "甲殻類・貝アレルギー",
+      "title": "食事方針や信仰はありますか?",
+      "sub": "当てはまるものを選ぶと関連成分を事前にチェックします。次の画面で自由に調整できます。",
+      "skip": "スキップ — 自分で選びます",
+      "groupDiet": "食事",
+      "groupReligion": "宗教",
+      "groupAllergy": "アレルギーセット",
+      "apply": "リストに適用",
+      "applyRow": "食事・宗教から選ぶ"
+    }
   },
   "editProfile": {
     "title": "プロフィール編集",

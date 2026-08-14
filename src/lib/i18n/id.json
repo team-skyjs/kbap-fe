@@ -639,7 +639,32 @@
     "spiceDesc3": "Nyaman dengan pedas Korea yang sesungguhnya.",
     "spiceDesc4": "Ayo saja — tingkat pedas tetap tampil di semua hidangan.",
     "finishSetup": "Selesaikan pengaturan",
-    "skipDecideLater": "Lewati — putuskan nanti"
+    "skipDecideLater": "Lewati — putuskan nanti",
+    "presets": {
+      "vegan": "Vegan",
+      "vegetarian": "Vegetarian",
+      "lacto_vegetarian": "Lakto-vegetarian",
+      "ovo_vegetarian": "Ovo-vegetarian",
+      "pescatarian": "Pescatarian",
+      "gluten_free": "Bebas gluten",
+      "lactose_free": "Intoleransi laktosa",
+      "no_alcohol": "Tanpa alkohol",
+      "muslim": "Muslim (Halal)",
+      "hindu": "Hindu",
+      "kosher": "Yahudi (Kosher)",
+      "buddhist": "Buddha (vegetarian)",
+      "jain": "Jain",
+      "nut_allergy": "Alergi kacang pohon",
+      "shellfish_allergy": "Alergi kerang·udang",
+      "title": "Ada pola makan atau keyakinan tertentu?",
+      "sub": "Pilih yang sesuai — bahan terkait akan dicentang lebih dulu. Bisa disesuaikan di langkah berikutnya.",
+      "skip": "Lewati — pilih sendiri",
+      "groupDiet": "Pola makan",
+      "groupReligion": "Agama",
+      "groupAllergy": "Paket alergi",
+      "apply": "Terapkan ke daftar saya",
+      "applyRow": "Isi dari pola makan/agama"
+    }
   },
   "editProfile": {
     "title": "Edit profil",

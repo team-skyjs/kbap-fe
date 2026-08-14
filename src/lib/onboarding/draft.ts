@@ -16,7 +16,7 @@ const KEY = 'kbap.onboardingDraft.v1';
 /** Steps a draft can resume at (post-consent — consent is the signup moment).
  *  P-080(KB-261): riskdemo·summary 추가 — 구스텝('interests' 등) draft는 사용처의
  *  ORDER 클램프가 흡수한다. */
-export type DraftStep = 'nationality' | 'profile' | 'riskdemo' | 'restrictions' | 'spice' | 'interests' | 'summary'; // P-130: v3 스텝 + 구스텝(무해 파싱용) 겸용
+export type DraftStep = 'nationality' | 'profile' | 'riskdemo' | 'presets' | 'restrictions' | 'spice' | 'interests' | 'summary'; // P-130: v3 스텝 + 구스텝(무해 파싱용) 겸용
 
 export interface OnboardingDraft {
   consented: boolean; // signup-time consent already given

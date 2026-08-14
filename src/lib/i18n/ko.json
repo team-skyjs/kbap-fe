@@ -797,7 +797,32 @@
     "spiceDesc3": "제대로 매운 한국 음식도 무리 없이 즐겨요.",
     "spiceDesc4": "아주 매운맛도 괜찮아요. 음식마다 맵기 단계는 계속 표시돼요.",
     "finishSetup": "설정 마치기",
-    "skipDecideLater": "건너뛰고 나중에 정하기"
+    "skipDecideLater": "건너뛰고 나중에 정하기",
+    "presets": {
+      "vegan": "비건",
+      "vegetarian": "베지테리언",
+      "lacto_vegetarian": "락토 베지테리언",
+      "ovo_vegetarian": "오보 베지테리언",
+      "pescatarian": "페스코테리언",
+      "gluten_free": "글루텐 프리",
+      "lactose_free": "유당 불내증",
+      "no_alcohol": "무알코올",
+      "muslim": "무슬림(할랄)",
+      "hindu": "힌두교",
+      "kosher": "유대교(코셔)",
+      "buddhist": "불교(사찰식)",
+      "jain": "자이나교",
+      "nut_allergy": "견과류 알레르기",
+      "shellfish_allergy": "갑각류·조개 알레르기",
+      "title": "식단이나 신념이 있으신가요?",
+      "sub": "해당하는 걸 고르면 연결된 성분을 미리 체크해 드려요. 다음 화면에서 자유롭게 조정할 수 있어요.",
+      "skip": "건너뛰기 — 직접 고를게요",
+      "groupDiet": "식이",
+      "groupReligion": "종교",
+      "groupAllergy": "알레르기 묶음",
+      "apply": "내 목록에 적용",
+      "applyRow": "식단·종교로 채우기"
+    }
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",

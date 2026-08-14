@@ -58,6 +58,7 @@ import { generateNickname, pickDefaultAvatarPath } from '@/lib/onboarding/autoPr
 import { IngredientTileSections } from '@/components/IngredientTileSections';
 import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
+import { DIET_PRESETS, unionPresetCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
 import { flagEmoji } from '@/lib/flagEmoji';
 import i18n from '@/lib/i18n';
 import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
@@ -69,11 +70,14 @@ import { getPrimerResult } from '@/lib/push/pushAdapter';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
-type Step = 'consent' | 'nationality' | 'restrictions' | 'spice';
-const ORDER: Step[] = ['consent', 'nationality', 'restrictions', 'spice'];
+type Step = 'consent' | 'nationality' | 'presets' | 'restrictions' | 'spice';
+// P-203: 프리셋 스텝 = 회피 앞·플래그 게이트(off = 현행 4스텝 그대로)
+const ORDER: Step[] = FLAGS.dietPresetsEnabled
+  ? ['consent', 'nationality', 'presets', 'restrictions', 'spice']
+  : ['consent', 'nationality', 'restrictions', 'spice'];
 /** 구버전 draft 스텝 → v3 매핑 (무해 파싱 — 소멸 스텝은 근접 스텝으로). */
 /** P-144: 계측 step 와이어명 — amplitude-taxonomy.csv (terms|nationality|avoid|spice). */
-const STEP_WIRE: Record<Step, string> = { consent: 'terms', nationality: 'nationality', restrictions: 'avoid', spice: 'spice' };
+const STEP_WIRE: Record<Step, string | null> = { consent: 'terms', nationality: 'nationality', presets: null, restrictions: 'avoid', spice: 'spice' }; // presets = CSV taxonomy 미등재 — 계측 스킵(P-203 러프, 등재 시 값 교체)
 
 const LEGACY_STEP: Record<string, Step> = {
   profile: 'nationality',
@@ -111,6 +115,7 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const { run: runSubmit } = useSubmitGuard(); // P-173: 동기 가드 보강(상태 가드는 같은 틱 레이스)
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
+  const [presets, setPresets] = useState<Set<string>>(new Set()); // P-203: 프리셋 선택(복수 = 합집합)
   const [pushPrimer, setPushPrimer] = useState(false); // P-192: 회원 진입점 — 제출 성공 직후 1회
   // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
@@ -235,12 +240,14 @@ export default function Onboarding() {
   // P-083: 온보딩 퍼널 계측 — 스텝 진입은 step 변화로 1회씩.
   // P-144: step 값 = CSV v3 스텝명(consent→terms, restrictions→avoid)
   useEffect(() => {
-    track(EVENTS.onboarding_step_view, { step: STEP_WIRE[step] });
+    if (STEP_WIRE[step]) track(EVENTS.onboarding_step_view, { step: STEP_WIRE[step] });
   }, [step]);
 
   /** 계속(완료) 경로 — 계측 후 전진. P-130: 마지막 스텝(spice)은 즉시 제출 → 홈. */
   const advance = () => {
-    track(EVENTS.onboarding_step_complete, { step: STEP_WIRE[step] });
+    if (STEP_WIRE[step]) track(EVENTS.onboarding_step_complete, { step: STEP_WIRE[step] });
+    // P-203: 프리셋 → 회피 진입 = 매핑 합집합을 기본 체크로 주입(기존 선택 보존)
+    if (step === 'presets') setRestrictions((cur) => unionPresetCodes(Array.from(presets), cur));
     if (step === 'spice') {
       setSkipped((s) => ({ ...s, spice: false }));
       return void finish(false);
@@ -248,7 +255,8 @@ export default function Onboarding() {
     setStep(ORDER[idx + 1]);
   };
   const skipStep = () => {
-    track(EVENTS.onboarding_step_skip, { step: STEP_WIRE[step] });
+    if (STEP_WIRE[step]) track(EVENTS.onboarding_step_skip, { step: STEP_WIRE[step] });
+    if (step === 'presets') return setStep(ORDER[idx + 1]); // 스킵 = 주입 없이 현행 그대로
     if (step === 'restrictions') {
       setSkipped((s) => ({ ...s, restrictions: true }));
       return setStep(ORDER[idx + 1]);
@@ -285,6 +293,16 @@ export default function Onboarding() {
         };
       case 'nationality':
         return { label: t('onboarding.continue'), onPress: advance };
+      case 'presets':
+        // P-203: 선택사항 — Continue(선택분 주입)·Skip(주입 없음)
+        return {
+          label: presets.size
+            ? `${t('onboarding.continue')} (${presets.size})`
+            : t('onboarding.continue'),
+          onPress: advance,
+          onSkip: skipStep,
+          skipLabel: t('onboarding.presets.skip'),
+        };
       case 'restrictions':
         return {
           label: restrictions.size
@@ -352,6 +370,10 @@ export default function Onboarding() {
             allAgreed={agreed}
             t={t}
           />
+        )}
+
+        {step === 'presets' && (
+          <PresetsStep selected={presets} onToggle={(id) => toggle(presets, id, setPresets)} t={t} />
         )}
 
         {step === 'restrictions' && (
@@ -619,6 +641,44 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
   );
 }
 
+
+/** ③-0 프리셋 (P-203 러프 — 디자이너 폴리시 전): 식이/종교/알레르기 묶음 15종
+ *  칩 그리드(그룹 3섹션). 복수 선택 = 합집합, 스킵 가능. 선택 상태 = 색만
+ *  (동일 보더 폭 투명 유지 — P-103 프레임 불변). */
+function PresetsStep({ selected, onToggle, t }: { selected: Set<string>; onToggle: (id: string) => void; t: TFn }) {
+  const groups: { key: PresetGroup; labelKey: string }[] = [
+    { key: 'diet', labelKey: 'onboarding.presets.groupDiet' },
+    { key: 'religion', labelKey: 'onboarding.presets.groupReligion' },
+    { key: 'allergy', labelKey: 'onboarding.presets.groupAllergy' },
+  ];
+  return (
+    <View style={{ flex: 1 }}>
+      <ObTitle title={t('onboarding.presets.title')} sub={t('onboarding.presets.sub')} />
+      {groups.map((g) => (
+        <View key={g.key} style={{ marginBottom: 14 }}>
+          <Text style={styles.presetGroup}>{t(g.labelKey)}</Text>
+          <View style={styles.presetGrid}>
+            {DIET_PRESETS.filter((p) => p.group === g.key).map((p) => {
+              const on = selected.has(p.id);
+              return (
+                <Pressable
+                  key={p.id}
+                  style={[styles.presetChip, on && styles.presetChipOn]}
+                  onPress={() => onToggle(p.id)}
+                  hitSlop={4}
+                  testID={`preset-${p.id}`}
+                >
+                  <Text style={[styles.presetChipText, on && styles.presetChipTextOn]}>{t(p.labelKey)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /** ③ 회피재료 (P-134 시안 Ob4Avoid) — 카테고리 섹션 + 4열 정사각 사진 타일.
  *  데이터 = 실카탈로그 81종(INGREDIENT_SECTIONS — 시안 30종은 예시). 이미지 URL은
  *  BE ⑧ 대기 — 현재 전 타일 폴백(카테고리 틴트+약어 2글자+이름, FB_TINT 순환),
@@ -754,6 +814,13 @@ const styles = StyleSheet.create({
   natHead: { paddingTop: 8, paddingBottom: 14 },
   natTitle: { fontFamily: font.displayBlack, fontSize: 29, letterSpacing: -0.72, color: C.ink },
   natTitleSub: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink2, marginTop: 6, maxWidth: 300 },
+  // P-203: 프리셋 칩 — 선택 = 색만(보더 폭 동일 — 프레임 불변)
+  presetGroup: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 0.6, color: C.ink3, textTransform: 'uppercase', marginBottom: 8 },
+  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: { borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  presetChipOn: { borderColor: C.primary, backgroundColor: primaryTint },
+  presetChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  presetChipTextOn: { color: C.primaryText },
   natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
   natSearchFocus: { borderColor: C.primary },
   natSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },

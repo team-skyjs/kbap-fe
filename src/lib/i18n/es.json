@@ -639,7 +639,32 @@
     "spiceDesc3": "Cómodo con el picante coreano de verdad.",
     "spiceDesc4": "A por ello — el picante se sigue mostrando en cada plato.",
     "finishSetup": "Terminar configuración",
-    "skipDecideLater": "Omitir — decidir luego"
+    "skipDecideLater": "Omitir — decidir luego",
+    "presets": {
+      "vegan": "Vegano",
+      "vegetarian": "Vegetariano",
+      "lacto_vegetarian": "Lactovegetariano",
+      "ovo_vegetarian": "Ovovegetariano",
+      "pescatarian": "Pescetariano",
+      "gluten_free": "Sin gluten",
+      "lactose_free": "Intolerancia a la lactosa",
+      "no_alcohol": "Sin alcohol",
+      "muslim": "Musulmán (halal)",
+      "hindu": "Hindú",
+      "kosher": "Judío (kosher)",
+      "buddhist": "Budista (vegetariano)",
+      "jain": "Jainista",
+      "nut_allergy": "Alergia a frutos secos",
+      "shellfish_allergy": "Alergia a mariscos",
+      "title": "¿Alguna dieta o creencia que debamos saber?",
+      "sub": "Elige lo que aplique — marcaremos los ingredientes relacionados. Podrás ajustarlos después.",
+      "skip": "Omitir — elegiré yo",
+      "groupDiet": "Dieta",
+      "groupReligion": "Religión",
+      "groupAllergy": "Grupos de alergia",
+      "apply": "Aplicar a mi lista",
+      "applyRow": "Rellenar por dieta/religión"
+    }
   },
   "editProfile": {
     "title": "Editar perfil",

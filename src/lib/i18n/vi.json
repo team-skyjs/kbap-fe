@@ -639,7 +639,32 @@
     "spiceDesc3": "Thoải mái với độ cay Hàn Quốc thứ thiệt.",
     "spiceDesc4": "Cứ tới đi — độ cay vẫn hiển thị trên mọi món.",
     "finishSetup": "Hoàn tất thiết lập",
-    "skipDecideLater": "Bỏ qua — quyết định sau"
+    "skipDecideLater": "Bỏ qua — quyết định sau",
+    "presets": {
+      "vegan": "Thuần chay",
+      "vegetarian": "Ăn chay",
+      "lacto_vegetarian": "Chay lacto",
+      "ovo_vegetarian": "Chay ovo",
+      "pescatarian": "Pescatarian",
+      "gluten_free": "Không gluten",
+      "lactose_free": "Không dung nạp lactose",
+      "no_alcohol": "Không cồn",
+      "muslim": "Hồi giáo (Halal)",
+      "hindu": "Ấn Độ giáo",
+      "kosher": "Do Thái giáo (Kosher)",
+      "buddhist": "Phật giáo (chay)",
+      "jain": "Kỳ Na giáo",
+      "nut_allergy": "Dị ứng hạt cây",
+      "shellfish_allergy": "Dị ứng tôm cua·sò",
+      "title": "Bạn có chế độ ăn hay tín ngưỡng nào không?",
+      "sub": "Chọn mục phù hợp — chúng tôi sẽ đánh dấu sẵn các thành phần liên quan. Bạn có thể chỉnh ở bước sau.",
+      "skip": "Bỏ qua — tôi tự chọn",
+      "groupDiet": "Chế độ ăn",
+      "groupReligion": "Tôn giáo",
+      "groupAllergy": "Nhóm dị ứng",
+      "apply": "Áp dụng vào danh sách",
+      "applyRow": "Điền theo chế độ ăn/tôn giáo"
+    }
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",
