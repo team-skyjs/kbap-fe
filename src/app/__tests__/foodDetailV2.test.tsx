@@ -289,14 +289,34 @@ describe('P-206: 게스트 열람 개편', () => {
     expect(byId(tree, 'ing-ghost').length).toBe(0); // 스켈레톤 잠금 소멸
   });
 
-  it('게스트+재료 빈 배열(서버 미개방 실측) = 현행 ghost 유지 — BE 개방 시 자동 공개', () => {
+  // P-206 ghost 유지 → P-210 개정: 빈 배열 = 섹션(제목 포함)·면책 고지 전체 미노출
+  it('P-210: 게스트+재료 빈 배열 = "What\'s inside" 섹션·면책 고지 미노출(ghost 소멸)', () => {
     mockIsGuest.mockReturnValue(true);
     mockUseFoodDetail.mockReturnValue({
       data: FOOD('safe', { ingredients: [], reviewsMasked: true }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
-    expect(byId(tree, 'ing-ghost').length).toBeGreaterThanOrEqual(1);
+    expect(byId(tree, 'ing-ghost').length).toBe(0);
+    expect(flat(tree)).not.toContain('detail.insideTitle');
+    expect(flat(tree)).not.toContain('detail.dataDisclaimer');
+  });
+
+  it('P-210: 회원+재료 빈 배열도 동일 — 섹션·고지 미노출, 재료 있으면 현행(제목 존재)', () => {
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { ingredients: [] }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    let tree = render(<FoodDetailScreen />);
+    expect(flat(tree)).not.toContain('detail.insideTitle');
+    expect(flat(tree)).not.toContain('detail.dataDisclaimer');
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe'),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    tree = render(<FoodDetailScreen />);
+    expect(flat(tree)).toContain('detail.insideTitle');
+    expect(flat(tree)).toContain('detail.dataDisclaimer');
   });
 
   it('마스킹(blur) 요약 = be-first 오표시 소멸 — 잠금 게이트 카피로 대체(기존 lock 키)', () => {

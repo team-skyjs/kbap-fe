@@ -142,11 +142,14 @@ export default function FoodDetailScreen() {
                 <Unregistered food={food} t={t} onAsk={() => router.push(`/food/${id}/owner` as Href)} />
               )}
 
-              {/* P-139 ⑦: 데이터 한계 디스클레이머(신규 키) */}
-              <View style={styles.disc}>
-                <RiskMark state="caution" size={15} variant="outline" />
-                <Text style={styles.discText}>{t('detail.dataDisclaimer')}</Text>
-              </View>
+              {/* P-139 ⑦ → P-210 ②(재량): 재료 면책 고지는 재료가 있을 때만 —
+                  재료 없는데 재료 면책은 무의미(미등록 상세도 같은 규칙) */}
+              {food.ingredients.length > 0 && (
+                <View style={styles.disc}>
+                  <RiskMark state="caution" size={15} variant="outline" />
+                  <Text style={styles.discText}>{t('detail.dataDisclaimer')}</Text>
+                </View>
+              )}
             </View>
           </>
         )}
@@ -308,13 +311,16 @@ function Registered({
         <Text style={styles.desc}>{food.description}</Text>
       </View>
 
-      {/* P-139 ⑤: 재료 — 헤어라인 행(카드·그림자 폐지), 전부 오픈(접힘 0) */}
+      {/* P-139 ⑤: 재료 — 헤어라인 행(카드·그림자 폐지), 전부 오픈(접힘 0).
+          P-210: 빈 배열/부재 = 섹션(제목 포함) 전체 미노출 — 회원·게스트 공통.
+          서버가 현재 회피 겹침만 필터해 safe 음식 = 빈 배열(제목만 덩그러니 방지).
+          BE "전 재료+riskStatus" 개편 배포 시 자연 복귀(코드 무변). 구 게스트
+          ghost(P-206 빈 배열 자리)는 이 규칙으로 도달 불가 — 소멸. */}
+      {ingredients.length > 0 && (
       <View style={styles.sec}>
         <Text style={styles.secTitle}>{t('detail.insideTitle')}</Text>
-        {/* P-206: 재료 자체는 게스트 공개(정책 개정) — 위험 판정(마크·필·사유)만 잠금.
-            실측(8/14): dev 서버가 게스트에 ingredients 빈 배열 — 데이터 없을 땐 현행
-            ghost 유지, BE가 개방하면 이 분기로 자동 공개(코드 무변). */}
-        {guest && ingredients.length > 0 ? (
+        {/* P-206: 재료 자체는 게스트 공개(정책 개정) — 위험 판정(마크·필·사유)만 잠금. */}
+        {guest ? (
           <View testID="ing-guest-open">
             {ingredients.map((ing) => (
               <View key={ing.code} style={styles.ingRow} testID={`ing-${ing.code}`}>
@@ -328,8 +334,6 @@ function Registered({
               </View>
             ))}
           </View>
-        ) : guest ? (
-          <GhostIngredients t={t} onSignIn={() => setGateOpen(true)} />
         ) : (
           <View>
             {ingredients.map((ing) => {
@@ -368,6 +372,7 @@ function Registered({
           </View>
         )}
       </View>
+      )}
 
       {/* P-169: 리뷰 브리프(쿠팡 문법) — 2열 카드 소멸 → 헤더(큰 별+수치+리뷰 수,
           같은 국적 병기 보조 줄 = 차별점 유지) + 프리뷰 5 + 풀폭 전체보기.
@@ -484,31 +489,6 @@ function Registered({
         </View>
       )}
     </>
-  );
-}
-
-/** P-139 ⑨: 게스트 재료 고스트 — 스켈레톤 5행(아래로 페이드, P-100 문법) + 잠금 줄 1(유일 CTA) */
-function GhostIngredients({ t, onSignIn }: { t: TFn; onSignIn: () => void }) {
-  return (
-    <View testID="ing-ghost">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <View key={i} style={[styles.ghostRow, { opacity: 1 - i * 0.17 }]}>
-          <View style={styles.ghostMark} />
-          <View style={{ flex: 1, gap: 6 }}>
-            <View style={[styles.ghostBar, { width: `${58 - i * 6}%` }]} />
-            <View style={[styles.ghostBar, { width: '30%', height: 8 }]} />
-          </View>
-          <View style={styles.ghostPill} />
-        </View>
-      ))}
-      <View style={styles.lockLine} testID="ing-lock">
-        <IconLock size={16} color={C.ink2} />
-        <Text style={styles.lockLineText}>{t('detail.lockIngredients')}</Text>
-        <Btn sm onPress={onSignIn}>
-          {t('intro.signUp')}
-        </Btn>
-      </View>
-    </View>
   );
 }
 
@@ -652,12 +632,6 @@ const styles = StyleSheet.create({
   askLinkText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
   // 게스트 고스트(P-100 문법)
-  ghostRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  ghostMark: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.surface2 },
-  ghostBar: { height: 11, borderRadius: 6, backgroundColor: C.surface2 },
-  ghostPill: { width: 52, height: 20, borderRadius: 999, backgroundColor: C.surface2 },
-  lockLine: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13 },
-  lockLineText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17 },
 
   // P-169 리뷰 브리프
   rvBriefHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
