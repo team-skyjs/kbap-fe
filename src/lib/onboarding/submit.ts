@@ -16,6 +16,8 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '@/lib/api/client';
+import { isProdChannel } from '@/lib/flags';
+import { generateNickname, pickDefaultAvatarPath } from './autoProfile';
 import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { toBeCode } from '@/lib/mocks/ingredients';
@@ -26,7 +28,8 @@ export const UNSET = 'UNSET' as const;
 export type Unset = typeof UNSET;
 
 export interface OnboardingProfilePayload {
-  nickname: string;
+  /** P-209: dev(1.1) = 서버 자동 지정이라 미사용 — prod(구 1.0 계약) 폴백만 소비. 생략 시 내부 생성. */
+  nickname?: string;
   nationality: string; // ISO 3166-1 alpha-2
   language: string; // reader language (BCP-47, one of the 9)
   avoidIngredients: string[] | Unset; // 81종 codes, or skipped
@@ -44,13 +47,17 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     await AsyncStorage.setItem(SPICE_KEY, payload.spiceTolerance).catch(() => {});
   }
 
+  // P-209(KB-51): 온보딩 1.1 — 닉네임·아바타 = **서버 자동 지정**(한식명_4자리 풀
+  // 30종·기본 아바타). dev 계열 = 1.1(nickname·profileImageUrl 미전송), prod 채널 =
+  // 구 1.0 계약(전 필드 required — 서버 1.1 배포·분기 해제 발주까지 폴백 유지).
+  const legacy = isProdChannel();
   const body = {
-    nickname: payload.nickname,
+    ...(legacy ? { nickname: payload.nickname ?? generateNickname() } : {}),
     // KB-195(P-019): required 승격 — 스킵도 -1 센티널 명시 전송(생략 시 검증 400).
     // P-081: enum→정수 변환은 spiceAdapter 격리 (스웨거 enum 재배포 시 스왑).
     spicinessPreference: spiceChoiceToWire(payload.spiceTolerance),
-    // KB-149 최종(P-016): 미선택도 기본 path를 명시 전송 — 필드는 항상 값 (null·생략 폐기)
-    profileImageUrl: payload.profileImageUrl ?? PROFILE_IMAGE_DEFAULT_PATH,
+    // KB-149 최종(P-016): 1.0에서만 — 1.1은 서버 지정(전송 자체 정리)
+    ...(legacy ? { profileImageUrl: payload.profileImageUrl ?? pickDefaultAvatarPath() ?? PROFILE_IMAGE_DEFAULT_PATH } : {}),
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
     avoidanceSubstanceCodes:
@@ -71,7 +78,8 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
   }
 
   try {
-    await api.post('/members/me/onboarding', body);
+    // P-209: dev = 1.1 헤더 오버라이드(스캔 v2 날짜판과 같은 엔드포인트 한정 문법)
+    await api.post('/members/me/onboarding', body, legacy ? undefined : { headers: { 'X-API-Version': '1.1' } });
     console.log('[onboarding] batch submit ok');
   } catch (e) {
     // ⚠️ 400은 "입력 검증 실패"와 "이미 온보딩 완료"를 겸용한다(계약 확인,

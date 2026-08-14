@@ -55,15 +55,14 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.post.mock.calls[1][1]).toMatchObject({ spicinessPreference: 'HOT' });
   });
 
-  // P-016(KB-149 최종): 선택 시 업로드 path, 미선택 시 **기본 path 명시 전송** (생략·null 폐기)
-  it('profileImageUrl — 선택 시 업로드 path, 미선택 시 기본 path 전송', async () => {
+  // P-016 → P-209: dev(1.1) = 닉네임·아바타 서버 자동 지정 — 전송 자체 정리(미전송)
+  it('P-209: dev(1.1) — profileImageUrl·nickname 미전송 + 1.1 헤더', async () => {
     api.post.mockResolvedValue(undefined);
     await submitOnboardingProfile({ ...payload, profileImageUrl: 'profile/1/a.jpg' });
-    expect(api.post.mock.calls[0][1]).toMatchObject({ profileImageUrl: 'profile/1/a.jpg' });
-    await submitOnboardingProfile({ ...payload, profileImageUrl: null });
-    expect(api.post.mock.calls[1][1]).toMatchObject({
-      profileImageUrl: 'images/default/profile/profile-default-512.png',
-    });
+    const [, body, opts] = api.post.mock.calls[0] as [string, Record<string, unknown>, { headers?: Record<string, string> }];
+    expect(body.profileImageUrl).toBeUndefined();
+    expect(body.nickname).toBeUndefined();
+    expect(opts?.headers?.['X-API-Version']).toBe('1.1');
   });
 
   it('400 + onboardingCompleted=false → 에러 표면화 (검증 실패를 삼키지 않는다)', async () => {

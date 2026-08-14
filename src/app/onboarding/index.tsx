@@ -54,7 +54,6 @@ import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
-import { generateNickname, pickDefaultAvatarPath } from '@/lib/onboarding/autoProfile';
 import { IngredientTileSections } from '@/components/IngredientTileSections';
 import { SPICE_RAIL } from '@/lib/onboarding/spiceRail';
 import { INGREDIENTS, INGREDIENT_SECTIONS, ingredientLabel } from '@/lib/mocks/ingredients';
@@ -197,13 +196,12 @@ export default function Onboarding() {
     setSubmitError(false);
     try {
       await submitOnboardingProfile({
-        nickname: generateNickname(), // P-130 자동 프로필 — 유저 무노출, 프로필 수정에서 변경 가능
         nationality,
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
         // P-039 계열: 스킵 = SKIP(미설정) — 안 건드림은 미설정이다 (P-081 enum 승계)
         spiceTolerance: spiceSkipped ? 'SKIP' : spice,
-        profileImageUrl: pickDefaultAvatarPath(), // P-140: 색상 아바타 6종 랜덤(path 전송 — P-016 컨벤션)
+        // P-209: 닉네임·아바타 = 서버 자동 지정(1.1) — 클라 생성 소멸(prod 폴백은 submit 내부)
       });
       done.current = true; // block any further draft writes before clearing
       await clearOnboardingDraft();

@@ -93,7 +93,7 @@ it('spice 패치(HOT) → 문자열 HOT 전송 + 로컬 fallback enum 보관 (P-
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A' });
   await runMutation(qc, { spiceTolerance: 'HOT' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'HOT' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'HOT' }, { headers: { 'X-API-Version': '1.1' } });
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', 'HOT'); // 마이그레이션 fallback
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → 서버 값 우선(adaptSpice)
 });
@@ -102,13 +102,13 @@ it('spice SKIP(설정 해제) → 문자열 SKIP 전송 + 로컬 키 제거', as
   const qc = seededClient();
   await runMutation(qc, { spiceTolerance: 'SKIP' });
   expect(AsyncStorage.removeItem).toHaveBeenCalledWith('kbap.profile.spice.v1');
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'SKIP' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'SKIP' }, { headers: { 'X-API-Version': '1.1' } });
 });
 
 it('spice NONE("맵지 않음")은 NONE 전송 — SKIP(미설정)과 구분 잠금', async () => {
   const qc = seededClient();
   await runMutation(qc, { spiceTolerance: 'NONE' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'NONE' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'NONE' }, { headers: { 'X-API-Version': '1.1' } });
 });
 
 // P-016(KB-149 최종): 사진 삭제 = 기본 path 전송 (null 폐기 — 필드는 항상 값) —
@@ -119,7 +119,7 @@ it('profileImageUrl 기본 path (삭제) → PATCH body 포함 + ["me"] invalida
   await runMutation(qc, { profileImageUrl: 'images/default/profile/profile-default-512.png' });
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', {
     profileImageUrl: 'images/default/profile/profile-default-512.png',
-  });
+  }, { headers: { 'X-API-Version': '1.1' } });
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true);
 });
 
@@ -128,7 +128,7 @@ it('profileImageUrl 패치 → PATCH body에 path 포함 + ["me"] invalidate (�
   const qc = seededClient();
   qc.setQueryData(['me', 'en'], { nickname: 'A' });
   await runMutation(qc, { profileImageUrl: 'profile/1/a.jpg' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { profileImageUrl: 'profile/1/a.jpg' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { profileImageUrl: 'profile/1/a.jpg' }, { headers: { 'X-API-Version': '1.1' } });
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true);
 });
 
@@ -145,7 +145,7 @@ it('P-078: patch에 nationality류가 섞여도 PATCH body에 countryCode 없음
 
 it('P-165(#145): currency 패치 → PATCH body 포함 · null(해제)도 전송(국적 폴백 복귀)', async () => {
   await runMutation(seededClient(), { currency: 'THB' });
-  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { currency: 'THB' });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { currency: 'THB' }, { headers: { 'X-API-Version': '1.1' } });
   await runMutation(seededClient(), { currency: null });
-  expect(api.patch).toHaveBeenLastCalledWith('/members/me/profile', { currency: null });
+  expect(api.patch).toHaveBeenLastCalledWith('/members/me/profile', { currency: null }, { headers: { 'X-API-Version': '1.1' } });
 });
