@@ -1216,3 +1216,7 @@
 ## 리뷰 확장 별점 3축 선구현 (2026-08-14, P-202)
 - [x] ExtrasRater 작성·수정 공용(찾아가기 = 장소 태그 연동·재탭 해제)+buildReviewExtras no-op 격리+로컬 프리뷰+셀 축약 4표면(IconZap·IconSmile 신설)+reviewExtrasEnabled dev 한정 — 5e21271.
 - [x] tsc 0 · jest 111스위트 681/681 · teamtest OTA(ios 8a040b2f·and a548754a, fp 빌드18 일치).
+
+## 게스트 설치 ID (2026-08-14, P-204)
+- [x] SecureStore UUID(재설치 생존·클린업 3파일 제외 잠금)+전 요청 X-Installation-Id(채널 무관). jest fetch 폴리필 오염(expo-modules-core) 실측·표면 목 해소 — 60617fc.
+- [x] tsc 0 · jest 112스위트 685/685 · teamtest OTA(ios d29f8508·and 3baa22f5).
