@@ -91,6 +91,13 @@ export default function Scan() {
     });
     return () => sub.remove();
   }, [permDenied, getPermission]);
+  // P-214: 권한 게이트 노출 1회 — 스캔 퍼널 최상단 이탈 분모(요청·거절·설정열기는 버튼에서)
+  const permViewed = useRef(false);
+  useEffect(() => {
+    if (permission == null || permission.granted || permViewed.current) return;
+    permViewed.current = true;
+    track(EVENTS.scan_permission, { state: 'view' });
+  }, [permission]);
   const scan = useScan();
   const { data: me } = useMe();
   const ingCat = useIngredientCatalog(); // P-174: 요약 칩 서버 번역명 우선
@@ -376,9 +383,10 @@ export default function Scan() {
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
+        track(EVENTS.scan_permission, { state: 'deny' }); // P-214
         Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('photo.openSettings'), onPress: () => void Linking.openSettings() },
+          { text: t('photo.openSettings'), onPress: () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); } },
         ]);
         return;
       }
@@ -547,8 +555,8 @@ export default function Scan() {
               dishes={listDishes}
               currency={currency}
               cart={cart}
-              onAdd={(d) => bumpCart(d.itemId, 1)}
-              onRemove={(d) => bumpCart(d.itemId, -1)}
+              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); bumpCart(d.itemId, 1); }}
+              onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               onOpenSimilar={(foodId) => router.push(`/food/${foodId}?src=scan` as Href)} // P-153: 유사 제안 → 상세
@@ -598,7 +606,7 @@ export default function Scan() {
 
         {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
             온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
-        <PushPrimerModal open={pushPrimer} onDone={() => setPushPrimer(false)} />
+        <PushPrimerModal surface="scan" open={pushPrimer} onDone={() => setPushPrimer(false)} />
       </View>
     );
   }
@@ -711,7 +719,14 @@ export default function Scan() {
           <Text style={styles.permBody}>{t(permDenied ? 'scan.permissionSettingsBody' : 'scan.permissionBody')}</Text>
           <View style={{ width: '100%', maxWidth: 280 }}>
             {/* P-122: 거부 이력 = 설정 열기(photo.openSettings 재사용) / 그 외 = 현행 요청 */}
-            <Btn onPress={permDenied ? () => void Linking.openSettings() : requestPermission}>
+            {/* P-214: 권한 퍼널 — 설정 열기 / 요청 후 결과(grant|deny) 구분 */}
+            <Btn
+              onPress={
+                permDenied
+                  ? () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }
+                  : () => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))
+              }
+            >
               {t(permDenied ? 'photo.openSettings' : 'scan.grant')}
             </Btn>
           </View>

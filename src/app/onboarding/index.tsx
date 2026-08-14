@@ -432,7 +432,7 @@ export default function Onboarding() {
       />
 
       {/* P-192: 회원 푸시 프라이머 — 제출 성공 직후 1회, 응답 후 홈 직행 */}
-      <PushPrimerModal open={pushPrimer} onDone={() => router.replace('/(tabs)')} />
+      <PushPrimerModal surface="onboarding" open={pushPrimer} onDone={() => router.replace('/(tabs)')} />
     </View>
   );
 }

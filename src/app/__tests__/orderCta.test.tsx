@@ -58,6 +58,7 @@ jest.mock('expo-linear-gradient', () => {
 });
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canDismiss: () => true, dismissAll: jest.fn() };
 jest.mock('expo-router', () => ({
+  useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => mockRouter,
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',

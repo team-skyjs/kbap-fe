@@ -37,6 +37,7 @@ import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { useCommunityPost, useCreatePost, useUpdatePost } from '@/lib/community/hooks';
 import { searchPlaces } from '@/lib/community/places';
 import type { FoodTagRef, PlaceTagRef } from '@/lib/community/types';
+import { EVENTS, track } from '@/lib/analytics';
 
 const BODY_MAX = 2000;
 const COUNTER_SHOW = 1800;
@@ -117,7 +118,15 @@ export default function CommunityCompose() {
         new Promise<void>((resolve) => {
           const opts = { onSuccess: () => setPosted(true), onSettled: () => resolve() };
           if (editId) updatePost.mutate({ id: editId, ...input }, opts);
-          else createPost.mutate(input, opts);
+          else {
+            // P-214: 공급측 계측 — 본문·사진 URI·장소명 전송 금지(개수·boolean만)
+            track(EVENTS.post_submit, {
+              photo_count: photos.length,
+              food_tag_count: foodTags.length,
+              has_place: placeTag != null,
+            });
+            createPost.mutate(input, opts);
+          }
         }),
     );
   };

@@ -11,6 +11,7 @@
  */
 import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { EVENTS, track } from '@/lib/analytics';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
@@ -139,6 +140,8 @@ export function FlippedOrderCard({
                 onPress={() => {
                   // P-192: 완료 모달 닫힘 = 리뷰 유도 로컬 알림 예약(1h) — 복수면 첫
                   // foodId 보유 항목(발주 재량). 플래그·설정·권한 게이트는 어댑터 몫.
+                  // P-214: 주문 퍼널 종점 — 항목 수만(음식명·장소 금지)
+                  track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
                   const target = items.find((i) => i.foodId != null && i.qty > 0);
                   if (target?.foodId) void scheduleReviewReminder({ foodId: String(target.foodId), name: target.name });
                   onDone();

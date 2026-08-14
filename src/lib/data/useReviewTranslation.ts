@@ -13,6 +13,7 @@ import type { Review } from '@/lib/api/types';
 import { api } from '@/lib/api/client';
 import { translateReviewMock } from '@/lib/mocks/reviews';
 import { MOCK_MODE } from './config';
+import { EVENTS, track } from '@/lib/analytics';
 
 export interface ReviewTranslation {
   /** false when the review is already in the reader language (no button shown). */
@@ -61,8 +62,9 @@ export function useReviewTranslation(review: Review, targetLang: string): Review
     fromLang: review.bodyLanguage ?? '', // P-085: 실계약에 원문 언어 없음 (번역 UI 플래그 비노출)
     loading,
     error,
-    translate: () => setWant(true),
-    showOriginal: () => setWant(false),
+    // P-214: 번역 토글 계측 — 훅 한 곳(표면별 배선 금지)
+    translate: () => { track(EVENTS.translate_toggle, { action: 'translate', target: 'review' }); setWant(true); },
+    showOriginal: () => { track(EVENTS.translate_toggle, { action: 'original', target: 'review' }); setWant(false); },
     retry: () => q.refetch(),
   };
 }

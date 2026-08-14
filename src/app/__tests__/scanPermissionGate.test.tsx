@@ -70,7 +70,12 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 jest.mock('expo-camera', () => {
   const { View } = require('react-native');
-  const state = { perm: { granted: false, canAskAgain: true } as { granted: boolean; canAskAgain: boolean }, request: jest.fn(), get: jest.fn() };
+  // 실 API 계약 = Promise<PermissionResponse> 반환(P-214 권한 결과 계측이 이걸 소비)
+  const state = {
+    perm: { granted: false, canAskAgain: true } as { granted: boolean; canAskAgain: boolean },
+    request: jest.fn(() => Promise.resolve({ granted: false, canAskAgain: true })),
+    get: jest.fn(),
+  };
   return { CameraView: View, useCameraPermissions: () => [state.perm, state.request, state.get], __camState: state };
 });
 jest.mock('expo-image-picker', () => ({
@@ -82,6 +87,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 jest.mock('expo-router', () => ({
+  useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
 }));

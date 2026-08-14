@@ -25,6 +25,7 @@ import { color as C, font, radius } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck, IconTrash } from '@/components';
 import { useMe } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { EVENTS, track } from '@/lib/analytics';
 
 /** Apple 재인증 게이트 카드 상태 — null=닫힘, prompt=안내+시트 진입, 나머지=중단 사유. */
 type AppleGateState = null | 'prompt' | 'cancelled' | 'mismatch' | 'failed';
@@ -48,6 +49,7 @@ export default function DeleteAccount() {
 
   // KB-67: 탈퇴 실호출 → 세션 정리 → 재로그인 화면
   async function doWithdraw() {
+    track(EVENTS.account_delete); // P-214: 이탈 지표(props 없음 — 사유·식별자 금지)
     // lazy require — 파일 내 session/appleRevoke와 동일 관례 (웹 번들 안전 + jest 호환)
     const { withdrawBe } = require('@/lib/auth/beAuth') as typeof import('@/lib/auth/beAuth');
     await withdrawBe().catch(() => {}); // 실패해도 로컬 세션은 정리됨

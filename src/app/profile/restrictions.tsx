@@ -6,12 +6,12 @@
  * (MOCK_MODE merges the cache). The picker UI is the shared IngredientFilter
  * (also used by onboarding KB-8).
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { setUserProps } from '@/lib/analytics';
+import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { color as C, font } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
@@ -36,9 +36,13 @@ export default function EditRestrictions() {
   const [presetOpen, setPresetOpen] = useState(false);
   const [presetSel, setPresetSel] = useState<Set<string>>(new Set());
   const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
+  // P-214: 변경 폭(delta)·경로(via) 계측 재료 — 시딩 시점 개수가 기준선
+  const initialCount = useRef(0);
+  const viaPreset = useRef(false);
   useEffect(() => {
     if (me && !seeded) {
       setSel(me.restrictions.map((r) => r.code));
+      initialCount.current = me.restrictions.length;
       setSeeded(true);
     }
   }, [me, seeded]);
@@ -67,6 +71,12 @@ export default function EditRestrictions() {
             {
               onSuccess: () => {
                 setUserProps({ avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+                // P-214: 변경 시점·폭 계측(user property는 현재값만 남음). 항목명 금지 — 개수만.
+                track(EVENTS.profile_avoid_update, {
+                  count: sel.length,
+                  delta: sel.length - initialCount.current,
+                  via: viaPreset.current ? 'preset' : 'manual',
+                });
                 router.back();
               },
               onSettled: () => resolve(),
@@ -139,6 +149,7 @@ export default function EditRestrictions() {
             <View style={{ gap: 9, marginTop: 6 }}>
               <Btn
                 onPress={() => {
+                  viaPreset.current = true; // P-214: 저장 시 via=preset 판별
                   setSel((cur) => Array.from(unionResolvedCodes(dietPresets, Array.from(presetSel), cur))); // P-208: 서버 매핑 기준 합집합 — 기존 보존
                   setPresetOpen(false);
                 }}

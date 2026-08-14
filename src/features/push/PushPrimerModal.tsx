@@ -14,13 +14,24 @@ import { color as C, font, shadow } from '@/lib/theme';
 import { Btn, IconBell } from '@/components';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { markPrimerResult, registerPushToken, requestPermission } from '@/lib/push/pushAdapter';
+import { EVENTS, track } from '@/lib/analytics';
 
-export function PushPrimerModal({ open, onDone }: { open: boolean; onDone: () => void }) {
+export function PushPrimerModal({
+  open,
+  onDone,
+  surface,
+}: {
+  open: boolean;
+  onDone: () => void;
+  /** P-214: 노출 표면 — 승낙률 비교(온보딩 vs 스캔 결과). */
+  surface: 'onboarding' | 'scan';
+}) {
   const { t } = useTranslation();
   const { busy, run } = useSubmitGuard();
 
   const accept = () =>
     run(async () => {
+      track(EVENTS.push_primer, { action: 'accept', surface }); // P-214
       await markPrimerResult('accepted');
       const granted = await requestPermission(); // 여기서만 OS 팝업
       if (granted) await registerPushToken();
@@ -28,6 +39,7 @@ export function PushPrimerModal({ open, onDone }: { open: boolean; onDone: () =>
     });
   const decline = () =>
     run(async () => {
+      track(EVENTS.push_primer, { action: 'later', surface }); // P-214
       await markPrimerResult('declined');
       onDone();
     });

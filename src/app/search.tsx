@@ -27,6 +27,7 @@ import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
+import { searchKeywordProps } from '@/lib/search/keywordPrivacy';
 import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -70,13 +71,16 @@ export default function Search() {
     add(tterm);
   };
 
-  // P-144: search_query — 결과 수신 후 1회(keyword 소문자 정규화 + result_count).
-  // 인기 검색어·메타데이터 보완 재료(멘토 #39). 검색어는 PII 아님(재료명/닉네임 미포함 규정과 별개 축).
+  // P-144 → P-214 🔒 교정: 검색어 자유 텍스트 전송 중단 — 카탈로그 매칭 시에만
+  // 매칭된 카탈로그 값 전송, 미매칭은 matched:false + 길이 버킷만(keywordPrivacy).
   const trackedFor = useRef<string | null>(null);
   useEffect(() => {
     if (!submitted || search.isLoading || trackedFor.current === submitted) return;
     trackedFor.current = submitted;
-    track(EVENTS.search_query, { keyword: submitted.toLowerCase(), result_count: results.length });
+    track(
+      EVENTS.search_query,
+      searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[])),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted, search.isLoading]);
   const reset = () => {

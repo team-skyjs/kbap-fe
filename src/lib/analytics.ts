@@ -54,6 +54,21 @@ export const EVENTS = {
   // P-213(KB-316, 태소노미 공백 보완 8/15) — CSV 등재 예정
   tab_view: 'tab_view',
   auth_gate_view: 'auth_gate_view',
+  // P-214(KB-316, 전수 조사 8/15) — 스캔 퍼널·공용 지점·푸시·공급측. CSV 등재 예정
+  scan_item_add: 'scan_item_add',
+  scan_item_remove: 'scan_item_remove',
+  order_done: 'order_done',
+  owner_ask_open: 'owner_ask_open',
+  scan_permission: 'scan_permission',
+  error_state_view: 'error_state_view',
+  review_helpful_toggle: 'review_helpful_toggle',
+  translate_toggle: 'translate_toggle',
+  push_primer: 'push_primer',
+  notif_pref_toggle: 'notif_pref_toggle',
+  profile_avoid_update: 'profile_avoid_update',
+  post_submit: 'post_submit',
+  comment_submit: 'comment_submit',
+  account_delete: 'account_delete',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -73,11 +88,29 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_start: ['source'],
   scan_result_item_tap: ['risk'],
   order_card_open: ['item_count', 'has_avoids'],
-  search_query: ['keyword', 'result_count'], // keyword = 소문자 정규화(호출처) — 재료명 아닌 검색어
+  // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
+  // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
+  search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
   review_write_tap: ['source'],
   bookmark_toggle: ['on'],
   tab_view: ['tab'], // home|food|community|profile
   auth_gate_view: ['trigger'], // bookmark|review|scan|community|risk|profile
+  // P-214 — ⛔ 전송 금지(발주 고정): 장소명·주소·좌표 / 신고 note / 대상 memberId·닉네임 /
+  // 본문·사진 URI / 프리셋 항목명. 아래 키 밖은 어댑터가 드롭(화이트리스트가 방어선).
+  scan_item_add: ['risk'],
+  scan_item_remove: ['risk'],
+  order_done: ['item_count'],
+  owner_ask_open: ['source', 'food_id'], // cta|ingredient|unregistered
+  scan_permission: ['state'], // view|grant|deny|settings_open
+  error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
+  review_helpful_toggle: ['on', 'surface'],
+  translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
+  push_primer: ['action', 'surface'], // accept|later · onboarding|scan
+  notif_pref_toggle: ['key', 'on'],
+  profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
+  post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
+  comment_submit: ['is_reply'],
+  account_delete: [],
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정

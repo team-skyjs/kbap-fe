@@ -22,6 +22,7 @@ import { QueryErrorBlock } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
+import { EVENTS, track } from '@/lib/analytics';
 import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnapshot } from '@/lib/data/bookmarks';
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
@@ -48,6 +49,7 @@ export default function SavedScreen() {
   const [undo, setUndo] = useState<BookmarkSnapshot | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onRemove = (snap: BookmarkSnapshot) => {
+    track(EVENTS.bookmark_toggle, { on: false }); // P-214: 해제가 상세분만 잡히던 집계 왜곡 보정
     remove.mutate(snap.foodId);
     if (undoTimer.current) clearTimeout(undoTimer.current);
     setUndo(snap);
@@ -55,6 +57,7 @@ export default function SavedScreen() {
   };
   const onUndo = () => {
     if (!undo) return;
+    track(EVENTS.bookmark_toggle, { on: true }); // P-214: 되돌리기 = 재등록(기존 이벤트 재사용 — 신규 없음)
     restore.mutate(undo);
     if (undoTimer.current) clearTimeout(undoTimer.current);
     setUndo(null);

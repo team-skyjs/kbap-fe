@@ -13,8 +13,21 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, riskTone } from '@/lib/theme';
 import { Btn } from './Btn';
 import { IconAlertTri, IconRetry, IconWifiOff } from './icons';
+import { useSegments } from 'expo-router';
+import { EVENTS, track } from '@/lib/analytics';
 
 export type StateTone = 'default' | 'err' | 'unable';
+
+/**
+ * P-214: 실패·빈 상태 계측 — **이 컴포넌트 한 곳**(전 화면 실패율). 화면 식별은
+ * 라우트 **세그먼트 패턴**(`food/[id]` 형태 — 실제 id 미포함, PII 0)이라 호출처
+ * 배선이 필요 없다. kind 미지정 시 tone에서 파생(err=error, 그 외 empty).
+ */
+export type StateKind = 'error' | 'offline' | 'empty';
+function useScreenKey(): string {
+  const segments = useSegments() as string[];
+  return segments.join('/') || 'root';
+}
 
 export function StateBlock({
   icon,
@@ -24,6 +37,7 @@ export function StateBlock({
   primary,
   secondary,
   fill = false,
+  kind,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -33,7 +47,22 @@ export function StateBlock({
   secondary?: { label: string; onPress?: () => void };
   /** P-184: 화면 잔여 높이 세로 정중앙을 블록이 소유 — 화면별 수동 배치 금지(재발 방지 구조). */
   fill?: boolean;
+  /** P-214: 계측 종류 — 미지정이면 tone 파생(QueryErrorBlock만 offline/error 명시). */
+  kind?: StateKind;
 }) {
+  const screen = useScreenKey();
+  const resolvedKind: StateKind = kind ?? (tone === 'err' ? 'error' : 'empty');
+  React.useEffect(() => {
+    track(EVENTS.error_state_view, { screen, kind: resolvedKind, action: 'view' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const onPrimary = primary?.onPress
+    ? () => {
+        // 재시도 = 실패 상태에서만 의미(빈 상태의 primary는 유도 CTA라 제외)
+        if (resolvedKind !== 'empty') track(EVENTS.error_state_view, { screen, kind: resolvedKind, action: 'retry' });
+        primary.onPress?.();
+      }
+    : undefined;
   return (
     <View style={[styles.root, fill && styles.fill]}>
       <View style={[styles.ic, TONE_BG[tone]]}>{icon}</View>
@@ -42,7 +71,7 @@ export function StateBlock({
       {(primary || secondary) && (
         <View style={styles.btns}>
           {primary && (
-            <Btn icon={primary.icon} onPress={primary.onPress}>
+            <Btn icon={primary.icon} onPress={onPrimary}>
               {primary.label}
             </Btn>
           )}
@@ -118,6 +147,7 @@ export function QueryErrorBlock({
     return (
       <StateBlock
         fill
+        kind="offline"
         icon={<IconWifiOff size={38} color={stateIconColor.default} />}
         title={t('states.offlineTitle')}
         body={t('states.offlineBody')}

@@ -140,7 +140,7 @@ export default function FoodDetailScreen() {
                   id={id ?? ''}
                 />
               ) : (
-                <Unregistered food={food} t={t} onAsk={() => router.push(`/food/${id}/owner` as Href)} />
+                <Unregistered food={food} t={t} onAsk={() => { track(EVENTS.owner_ask_open, { source: 'unregistered', food_id: id ?? '' }); router.push(`/food/${id}/owner` as Href); }} />
               )}
 
               {/* P-139 ⑦ → P-210 ②(재량): 재료 면책 고지는 재료가 있을 때만 —
@@ -355,7 +355,7 @@ function Registered({
                         <Text style={styles.ingReason}>{ingBasis(ing, dRisk)}</Text>
                         <Pressable
                           style={styles.askLink}
-                          onPress={() => router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href)}
+                          onPress={() => { track(EVENTS.owner_ask_open, { source: 'ingredient', food_id: id }); router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(ing.code)}` as Href); }}
                           hitSlop={6}
                           testID={`ask-${ing.code}`}
                         >
@@ -484,7 +484,7 @@ function Registered({
           무의미. 재료 파라미터 없음 = orderCard.ts 기존 조립(P-163 회피 나열, 0개=일반 질문). */}
       {!guest && (
         <View style={styles.sec}>
-          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => router.push(`/food/${id}/owner` as Href)}>
+          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => { track(EVENTS.owner_ask_open, { source: 'cta', food_id: id ?? '' }); router.push(`/food/${id}/owner` as Href); }}>
             {t('detail.askOwner')}
           </Btn>
         </View>

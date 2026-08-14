@@ -35,6 +35,7 @@ jest.mock('expo-image', () => {
 });
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
+  useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/community',
   // P-194: 포커스 재조회 — 렌더마다 cb 즉시 발화 = "포커스 중" 시뮬레이션
