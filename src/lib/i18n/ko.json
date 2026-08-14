@@ -405,11 +405,11 @@
     "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
     "photoCapNote": "사진은 {{max}}장까지 추가할 수 있어요. 나머지는 제외했어요.",
     "placeNearby": "주변 장소",
-    "placeManual": "\"{{name}}\" 그대로 태그",
+    "placeManual": "\"{{name}}\" 그대로 태그하기",
     "extrasTitle": "식당은 어땠나요? (선택)",
     "extrasSpeed": "음식 나오는 속도",
     "extrasService": "친절도",
-    "extrasAccess": "찾아가기"
+    "extrasAccess": "찾아가기 편한 정도"
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -800,11 +800,11 @@
     "skipDecideLater": "건너뛰고 나중에 정하기",
     "presets": {
       "vegan": "비건",
-      "vegetarian": "베지테리언",
+      "vegetarian": "베지테리언(락토오보)",
       "lacto_vegetarian": "락토 베지테리언",
       "ovo_vegetarian": "오보 베지테리언",
       "pescatarian": "페스코테리언",
-      "gluten_free": "글루텐 프리",
+      "gluten_free": "글루텐 프리(셀리악)",
       "lactose_free": "유당 불내증",
       "no_alcohol": "무알코올",
       "muslim": "무슬림(할랄)",
@@ -814,14 +814,14 @@
       "jain": "자이나교",
       "nut_allergy": "견과류 알레르기",
       "shellfish_allergy": "갑각류·조개 알레르기",
-      "title": "식단이나 신념이 있으신가요?",
-      "sub": "해당하는 걸 고르면 연결된 성분을 미리 체크해 드려요. 다음 화면에서 자유롭게 조정할 수 있어요.",
-      "skip": "건너뛰기 — 직접 고를게요",
-      "groupDiet": "식이",
+      "title": "식단·종교·알레르기를 알려주세요",
+      "sub": "해당하는 항목을 고르면 관련 성분을 미리 선택해 드려요. 다음 화면에서 자유롭게 바꿀 수 있어요.",
+      "skip": "건너뛰고 직접 고를게요",
+      "groupDiet": "식단",
       "groupReligion": "종교",
-      "groupAllergy": "알레르기 묶음",
+      "groupAllergy": "알레르기",
       "apply": "내 목록에 적용",
-      "applyRow": "식단·종교로 채우기"
+      "applyRow": "식단·종교·알레르기로 채우기"
     }
   },
   "saved": {
@@ -888,21 +888,21 @@
     "caption": "처음 한 번만 표시돼요. 마크를 탭하면 다시 볼 수 있어요."
   },
   "push": {
-    "primerTitle": "유용한 소식을 알려드릴까요?",
-    "primerBody": "내 리뷰가 도움이 됐을 때 알려드리고, 먹어본 메뉴의 리뷰 작성도 잊지 않게 챙겨드려요. 설정에서 언제든 바꿀 수 있어요.",
+    "primerTitle": "리뷰 알림을 받아보실래요?",
+    "primerBody": "주문 1시간 후 리뷰 작성 알림을 보내드려요. 설정에서 언제든 바꿀 수 있어요.",
     "primerYes": "알림 켜기",
-    "primerLater": "나중에",
+    "primerLater": "지금은 안 할게요",
     "reviewReminderTitle": "식사 어떠셨어요?",
-    "reviewReminderBody": "{{name}} 어땠는지 알려주세요 — 별점 하나가 다른 여행자에게 큰 도움이 돼요."
+    "reviewReminderBody": "{{name}} 메뉴에 별점을 남겨주세요. 다른 여행자에게 큰 도움이 돼요."
   },
   "notif": {
     "title": "알림 설정",
     "helpful": "리뷰 반응",
-    "helpfulSub": "내 리뷰가 도움됐어요를 받았을 때",
-    "reminder": "리뷰 리마인더",
-    "reminderSub": "주문 1시간 후 어땠는지 물어봐요",
-    "nudge": "스캔 추천",
-    "nudgeSub": "가끔 점심시간에 메뉴 스캔을 제안해요",
+    "helpfulSub": "내 리뷰에 ‘도움돼요’ 반응이 달렸을 때",
+    "reminder": "리뷰 작성 알림",
+    "reminderSub": "주문 1시간 후 식사가 어땠는지 물어봐요",
+    "nudge": "메뉴 스캔 알림",
+    "nudgeSub": "가끔 점심시간에 메뉴판 스캔 알림을 보내요",
     "osOff": "시스템 설정에서 K-Bap 알림이 꺼져 있어요.",
     "osOffCta": "시스템 설정 열기"
   }
