@@ -1212,3 +1212,7 @@
 
 ## 장소 실위치 + 빌드18 완료 (2026-08-14, P-200)
 - [x] expo-location 실위치 스왑(권한 분기·강남 폴백·지연 require·60s 메모)+Sentry 노브 제거 — 5c6cbc8. 빌드18: iOS 6c19fda5(vc18, 테플 제출)·안드 bef9f1ee(vc12, APK). fp 로컬==빌드 일치(ios 57d46bc8·and 2c73e616 — CLAUDE.md 기준 갱신). 소스맵 업로드 정상.
+
+## 리뷰 확장 별점 3축 선구현 (2026-08-14, P-202)
+- [x] ExtrasRater 작성·수정 공용(찾아가기 = 장소 태그 연동·재탭 해제)+buildReviewExtras no-op 격리+로컬 프리뷰+셀 축약 4표면(IconZap·IconSmile 신설)+reviewExtrasEnabled dev 한정 — 5e21271.
+- [x] tsc 0 · jest 111스위트 681/681 · teamtest OTA(ios 8a040b2f·and a548754a, fp 빌드18 일치).
