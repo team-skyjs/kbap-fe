@@ -1250,3 +1250,8 @@
 ## Sentry 수신 검증 트리거 (2026-08-14, P-212)
 - [x] 프로필 버전 줄 신설 + 7연타(2s 창) = sentry-selfcheck 전송(dev 계열만, 태그 channel·appVersion) — 로직은 sentry.ts 관문 한 곳 — 6bd0bd2.
 - [x] tsc 0 · jest 118스위트 718/718 · teamtest OTA 단독 발행(update group 6274cd9f).
+
+## 계측 공백 보완 (2026-08-15, P-213)
+- [x] 리뷰 퍼널 유입 2곳(home·feed) 발화 + food_detail_view src 4곳(saved·my_reviews·feed·tag_sheet) — 06bd78e.
+- [x] country 로케일 선심기 · tab_view(탭 레이아웃 한 곳)·auth_gate_view(게이트 시트 한 곳, community trigger 명시) · STEP_WIRE presets 개시.
+- [x] tsc 0 · jest 119스위트 724/724 · teamtest OTA(update group 90857224).
