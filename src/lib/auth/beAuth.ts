@@ -14,6 +14,7 @@
 import { api, ApiError, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
 import { clearTokens, loadTokens, saveTokens } from './beTokens';
+import { initSessionState, setSessionState } from './useSession';
 
 /** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
  *  게스트 mock과 회원 실데이터가 섞이는 것을 원천 차단.
@@ -22,7 +23,9 @@ import { clearTokens, loadTokens, saveTokens } from './beTokens';
  *  게스트/회원 UI가 반대 상태로 스치던 지연(로그아웃 직후 커뮤니티 탭) 제거. */
 function resetServerCache(sessionAfter: boolean): void {
   queryClient.clear();
-  queryClient.setQueryData(['auth', 'session'], sessionAfter);
+  // P-205: 세션은 쿼리가 아니라 동기 스토어 — clear()로 엔트리·옵저버 연결이
+  // 끊겨도 무관하게 구독 화면에 즉시 전파(구 setQueryData 시딩은 고착 원인).
+  setSessionState(sessionAfter);
 }
 
 interface LoginResponseWire {
@@ -121,4 +124,6 @@ export async function hasBeSession(): Promise<boolean> {
 export function installBeAuth(): void {
   setAuthTokenProvider(async () => (await loadTokens())?.access ?? null);
   setOnUnauthorized(tryRefresh); // true 반환 시 client가 원요청 1회 재시도
+  // P-205: 세션 스토어 부팅 초기화 — 미확정일 때만(경계 선행 시 덮지 않음)
+  void hasBeSession().then(initSessionState);
 }

@@ -64,28 +64,31 @@ describe('refresh 실패 판별 (BE JWT 가이드)', () => {
   });
 });
 
-/* ---- P-112: 인증 경계 = 세션 캐시 즉시 시드 (재조회 지연으로 게스트/회원 UI 스침 방지) ---- */
-describe('P-112: 경계 직후 세션 시드', () => {
+/* ---- P-112 → P-205: 인증 경계 = 세션 스토어 동기 전파(구 setQueryData 시딩은
+        clear()와의 옵저버 단절로 고착 원인 — sessionPropagation205 재현 잠금) ---- */
+describe('P-205: 경계 직후 세션 스토어 전파', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { queryClient } = require('@/lib/queryClient');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sessionStore = require('../useSession') as typeof import('../useSession');
 
-  it('로그아웃 → clear + 세션 false 즉시 시드', async () => {
+  it('로그아웃 → clear + 세션 false 동기 전파', async () => {
     api.post.mockResolvedValueOnce(undefined); // POST /auth/logout
     await beAuth.logoutBe();
     expect(queryClient.clear).toHaveBeenCalled();
-    expect(queryClient.setQueryData).toHaveBeenCalledWith(['auth', 'session'], false);
+    expect(sessionStore.getSessionState()).toBe(false);
   });
 
-  it('로그인 교환 성공 → 세션 true 즉시 시드', async () => {
+  it('로그인 교환 성공 → 세션 true 동기 전파', async () => {
     api.post.mockResolvedValueOnce({ newMember: false, accessToken: 'A2', refreshToken: 'R2' });
     await beAuth.exchangeLogin('firebase-id-token');
-    expect(queryClient.setQueryData).toHaveBeenCalledWith(['auth', 'session'], true);
+    expect(sessionStore.getSessionState()).toBe(true);
   });
 
-  it('탈퇴 → 세션 false 시드 (요청 실패여도)', async () => {
+  it('탈퇴 → 세션 false 전파 (요청 실패여도)', async () => {
     api.patch.mockRejectedValueOnce(new ApiError('HTTP 500', 500));
     await expect(beAuth.withdrawBe()).rejects.toBeTruthy();
     expect(tokens.clearTokens).toHaveBeenCalled();
-    expect(queryClient.setQueryData).toHaveBeenCalledWith(['auth', 'session'], false);
+    expect(sessionStore.getSessionState()).toBe(false);
   });
 });
