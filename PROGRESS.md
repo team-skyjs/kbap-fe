@@ -1237,3 +1237,7 @@
 ## 프리셋 매핑 서버 스왑 (2026-08-14, P-208)
 - [x] useDietPresets(서버 우선·상수 폴백·24h)+unionResolvedCodes 소비처 2곳 스왑. diets[].name lang 미해석 실측 — i18n 라벨 유지·운반만(BE 수정 시 전환) — ed6946e.
 - [x] tsc 0 · jest 115스위트 703/703 · teamtest OTA(ios d7a589de·and 6f6b73fc).
+
+## 온보딩 1.1 전환 (2026-08-14, P-209)
+- [x] 온보딩 POST·프로필 PATCH = dev 1.1 헤더(nickname·profileImageUrl 미전송 — 서버 자동 지정), prod = 구 1.0 폴백(autoProfile 강등 — prod 1.1 배포 시 파일 삭제) — 0cbca8c.
+- [x] tsc 0 · jest 116스위트 706/706 · teamtest OTA(update group 0575cd61).
