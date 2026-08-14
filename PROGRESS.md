@@ -1220,3 +1220,7 @@
 ## 게스트 설치 ID (2026-08-14, P-204)
 - [x] SecureStore UUID(재설치 생존·클린업 3파일 제외 잠금)+전 요청 X-Installation-Id(채널 무관). jest fetch 폴리필 오염(expo-modules-core) 실측·표면 목 해소 — 60617fc.
 - [x] tsc 0 · jest 112스위트 685/685 · teamtest OTA(ios d29f8508·and 3baa22f5).
+
+## 식이/종교 프리셋 러프 (2026-08-14, P-203)
+- [x] dietPresets.ts 15종(정본 번호 전사·스냅샷 잠금)+온보딩 프리셋 스텝(플래그 게이트·합집합 주입·스킵)+프로필 채우기 시트(합집합)+i18n 23키 ×10 — 4485321.
+- [x] tsc 0 · jest 113스위트 690/690 · teamtest OTA(ios 4c3521a8·and 7576949a).
