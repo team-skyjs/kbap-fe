@@ -99,6 +99,17 @@ export const FLAGS = {
    */
   communityPostsEnabled: false,
   /**
+   * 홈 전 콘텐츠 노출 (P-216/KB-310, 멘토 #9·12·37) — **디자이너 캡쳐용 러프**,
+   * dev 계열만. 음식 탐색·리뷰 피드·인기 검색·저장 목록 섹션을 홈에 얹는다
+   * (전부 기존 컴포넌트 재사용). 디자인 확정 후 채널 조건 재검토.
+   */
+  homeAllContent: !PROD_CHANNEL,
+  /**
+   * 알림함 (P-216/KB-39, 멘토링 8/15) — **러프**, dev 계열만. 목록 데이터는
+   * 로컬 목(notifications/inbox.ts) — BE 알림 목록 계약 오면 그 파일 한 곳 스왑.
+   */
+  notificationCenter: !PROD_CHANNEL,
+  /**
    * 식이/종교 프리셋 온보딩 스텝 (P-203/KB-305) — 디자이너 시안용 러프, dev 계열만.
    * BE diet-presets API 확정 시 dietPresets.ts 상수 스왑.
    */

@@ -905,5 +905,19 @@
     "nudgeSub": "偶爾在午餐時間提醒你掃描菜單",
     "osOff": "系統設定中已關閉 K-Bap 的通知。",
     "osOffCta": "開啟系統設定"
+  },
+  "inbox": {
+    "title": "通知",
+    "empty": "目前沒有通知",
+    "emptyBody": "關於評價和掃描的消息會顯示在這裡。",
+    "markAllRead": "全部標為已讀",
+    "helpfulTitle": "有人覺得你的評價有幫助",
+    "helpfulBody": "你對泡菜鍋的評價獲得了一個有幫助。",
+    "reminderTitle": "這餐如何？",
+    "reminderBody": "為你點的菜寫個簡短評價吧。",
+    "noticeTitle": "歡迎使用 K-Bap",
+    "noticeBody": "掃描菜單即可了解哪些菜對你是安全的。",
+    "nudgeTitle": "今天在外面用餐嗎？",
+    "nudgeBody": "點餐前先掃描菜單吧。"
   }
 }

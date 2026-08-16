@@ -902,5 +902,19 @@
     "nudgeSub": "Occasional lunch-time reminders to scan a menu",
     "osOff": "Notifications are turned off for K-Bap in system settings.",
     "osOffCta": "Open system settings"
+  },
+  "inbox": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "emptyBody": "Updates about your reviews and scans will show up here.",
+    "markAllRead": "Mark all as read",
+    "helpfulTitle": "Someone found your review helpful",
+    "helpfulBody": "Your review on Kimchi Stew got a helpful vote.",
+    "reminderTitle": "How was your meal?",
+    "reminderBody": "Leave a quick review of the dish you ordered.",
+    "noticeTitle": "Welcome to K-Bap",
+    "noticeBody": "Scan a menu to see which dishes are safe for you.",
+    "nudgeTitle": "Eating out today?",
+    "nudgeBody": "Scan the menu before you order."
   }
 }

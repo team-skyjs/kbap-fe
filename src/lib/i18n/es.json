@@ -906,5 +906,19 @@
     "nudgeSub": "Recordatorios ocasionales para escanear un menú al mediodía",
     "osOff": "Las notificaciones de K-Bap están desactivadas en los ajustes del sistema.",
     "osOffCta": "Abrir ajustes del sistema"
+  },
+  "inbox": {
+    "title": "Notificaciones",
+    "empty": "Aún no hay notificaciones",
+    "emptyBody": "Aquí verás novedades sobre tus reseñas y escaneos.",
+    "markAllRead": "Marcar todo como leído",
+    "helpfulTitle": "Tu reseña le resultó útil a alguien",
+    "helpfulBody": "Tu reseña del estofado de kimchi recibió un voto útil.",
+    "reminderTitle": "¿Qué tal la comida?",
+    "reminderBody": "Deja una reseña rápida del plato que pediste.",
+    "noticeTitle": "Bienvenido a K-Bap",
+    "noticeBody": "Escanea un menú para ver qué platos son seguros para ti.",
+    "nudgeTitle": "¿Comes fuera hoy?",
+    "nudgeBody": "Escanea el menú antes de pedir."
   }
 }

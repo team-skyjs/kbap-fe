@@ -905,5 +905,19 @@
     "nudgeSub": "가끔 점심시간에 메뉴판 스캔 알림을 보내요",
     "osOff": "시스템 설정에서 K-Bap 알림이 꺼져 있어요.",
     "osOffCta": "시스템 설정 열기"
+  },
+  "inbox": {
+    "title": "알림",
+    "empty": "아직 알림이 없어요",
+    "emptyBody": "리뷰·스캔 관련 소식이 여기에 표시됩니다.",
+    "markAllRead": "모두 읽음으로 표시",
+    "helpfulTitle": "리뷰가 도움이 됐어요",
+    "helpfulBody": "김치찌개 리뷰에 도움돼요를 받았어요.",
+    "reminderTitle": "식사는 어떠셨나요?",
+    "reminderBody": "주문한 음식의 리뷰를 남겨보세요.",
+    "noticeTitle": "K-Bap에 오신 걸 환영해요",
+    "noticeBody": "메뉴를 스캔하면 안전한 음식을 알려드려요.",
+    "nudgeTitle": "오늘 외식하시나요?",
+    "nudgeBody": "주문 전에 메뉴를 스캔해 보세요."
   }
 }

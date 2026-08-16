@@ -905,5 +905,19 @@
     "nudgeSub": "Thỉnh thoảng nhắc quét menu vào giờ ăn trưa",
     "osOff": "Thông báo của K-Bap đang tắt trong cài đặt hệ thống.",
     "osOffCta": "Mở cài đặt hệ thống"
+  },
+  "inbox": {
+    "title": "Thông báo",
+    "empty": "Chưa có thông báo",
+    "emptyBody": "Tin tức về đánh giá và lượt quét sẽ hiện ở đây.",
+    "markAllRead": "Đánh dấu tất cả đã đọc",
+    "helpfulTitle": "Đánh giá của bạn hữu ích",
+    "helpfulBody": "Đánh giá món canh kimchi của bạn nhận được một lượt hữu ích.",
+    "reminderTitle": "Bữa ăn thế nào?",
+    "reminderBody": "Hãy viết nhanh một đánh giá cho món bạn đã gọi.",
+    "noticeTitle": "Chào mừng đến với K-Bap",
+    "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
+    "nudgeTitle": "Hôm nay ăn ngoài chứ?",
+    "nudgeBody": "Hãy quét thực đơn trước khi gọi món."
   }
 }

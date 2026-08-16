@@ -34,7 +34,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
-import { IconArrowLeft, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별
+import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
 import { BrandLockup } from './Brand';
 import { PressScale } from './PressScale';
 
@@ -96,6 +96,14 @@ export type StickyHeaderProps = {
   bookmark?: boolean;
   /** 북마크 저장 상태 — true면 primary로 채워진 아이콘 + 저장 전환 시 1회 바운스 */
   bookmarkSaved?: boolean;
+  /**
+   * P-216: 알림함 진입(홈 전용 opt-in — P-061④로 전면 제거됐던 벨의 부활이라
+   * 켠 화면에만 렌더된다. 커뮤니티·기타 탭은 미전달 = 무노출 회귀 유지).
+   */
+  bell?: boolean;
+  /** 안 읽은 알림 수 — 0이면 뱃지 미표시(숫자는 9+ 상한) */
+  bellCount?: number;
+  onBell?: () => void;
   onBack?: () => void;
   onSearch?: () => void;
   onBookmark?: () => void;
@@ -111,6 +119,9 @@ export function StickyHeader({
   onSignIn,
   bookmark,
   bookmarkSaved,
+  bell,
+  bellCount = 0,
+  onBell,
   onBack,
   onSearch,
   onBookmark,
@@ -174,6 +185,18 @@ export function StickyHeader({
           {signIn && (
             <PressScale style={styles.signInPill} onPress={onSignIn} hitSlop={8}>
               <Text style={styles.signInText}>Sign in</Text>
+            </PressScale>
+          )}
+          {bell && (
+            /* P-216: 벨 + 안 읽은 수 뱃지 — bare 아이콘(search와 동일 처리),
+               뱃지는 기존 dot 스타일 재사용(숫자만 얹음 — 새 문법 발명 0) */
+            <PressScale style={styles.actionBtn} onPress={onBell} hitSlop={8} testID="header-bell">
+              <IconBell size={22} color={C.ink} sw={1.8} />
+              {bellCount > 0 && (
+                <View style={styles.dot} testID="header-bell-badge">
+                  <Text style={styles.dotText}>{bellCount > 9 ? '9+' : String(bellCount)}</Text>
+                </View>
+              )}
             </PressScale>
           )}
           {bookmark && (
@@ -249,15 +272,19 @@ const styles = StyleSheet.create({
   signInText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
   dot: {
     position: 'absolute',
-    top: 6,
-    right: 7,
-    minWidth: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 4,
+    right: 3,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: C.riskDanger,
     borderWidth: 2,
     borderColor: C.surface,
   },
+  dotText: { fontFamily: font.bodyBold, fontSize: 9.5, color: '#fff' },
   hairline: {
     position: 'absolute',
     left: 0,

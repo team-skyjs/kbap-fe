@@ -204,13 +204,14 @@ export function ReviewFeed() {
 }
 
 /** 카드 — P-169 아이템 문법(작성자 줄·별점·본문·사진·Helpful) + 음식 미니 카드(P-178 서버 food 체계). */
-function FeedCard({
+export function FeedCard({
   review,
   t,
   mine,
   onOpenFood,
   onGuestHelpful,
   onMore,
+  showMore = true,
 }: {
   review: Review;
   t: TFn;
@@ -218,6 +219,8 @@ function FeedCard({
   onOpenFood: () => void;
   onGuestHelpful: () => void;
   onMore: () => void;
+  /** P-216: 홈 프리뷰처럼 모더레이션이 없는 표면은 ⋯ 숨김(동작 없는 버튼 금지) */
+  showMore?: boolean;
 }) {
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
@@ -242,7 +245,7 @@ function FeedCard({
         </View>
         <Stars value={review.rating} size={14} />
         {/* P-186: ⋯ = 본인+타인(익명 제외) */}
-        {!anon && (
+        {!anon && showMore && (
           <Pressable hitSlop={10} onPress={onMore} testID={`feed-more-${review.id}`}>
             <IconMore size={15} color={C.ink3} />
           </Pressable>

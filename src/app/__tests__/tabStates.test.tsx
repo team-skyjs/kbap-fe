@@ -93,6 +93,8 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
 }));
 jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+// P-216: 홈 전 콘텐츠 훅 표면 목 — 빈 데이터 = 섹션 숨김(이 스위트의 관심사 밖)
+jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: undefined }) }));
 
 import Home from '../(tabs)/index';
 import Food from '../(tabs)/food';

@@ -44,6 +44,13 @@ import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+// P-216(러프): 홈 전 콘텐츠 — 전부 기존 화면 컴포넌트·훅 재사용(새 문법 발명 0)
+import { useInfiniteFoods, useFoods } from '@/lib/data/useFoods';
+import { useGlobalReviews } from '@/lib/data/useFoodReviews';
+import { useBookmarks } from '@/lib/data/bookmarks';
+import { popularPhotoFoods } from '@/lib/search/discovery';
+import { FeedCard } from '@/features/community/ReviewFeed';
+import { useUnreadCount } from '@/lib/notifications/inbox';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -79,6 +86,18 @@ export default function Home() {
   const hasScans = recent.length > 0;
   // forward links to routes built in later screens (detail #4, review #6)
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
+
+  // P-216: 홈 전 콘텐츠(러프·dev 계열) — 훅은 무조건 호출(순서 고정), 렌더만 플래그 분기.
+  // 빈 데이터 = 섹션 자체 숨김(P-210 원칙). 게스트는 피드·저장이 비어 자동 숨김.
+  const browse = useInfiniteFoods();
+  const feed = useGlobalReviews(!isGuest);
+  const saved = useBookmarks();
+  const { data: mockCatalog } = useFoods();
+  const unread = useUnreadCount();
+  const browseFoods = (browse.data ?? []).slice(0, 6);
+  const feedReviews = ((feed.data?.pages ?? []).flatMap((p) => p.items) ?? []).slice(0, 2);
+  const savedFoods = (saved.data ?? []).slice(0, 6);
+  const popularSearch = popularPhotoFoods(mockCatalog).slice(0, 6);
 
   // P-196 ②: 에러/오프라인 = 화면 기준 정중앙(4탭 공용 기준) — 스크롤/헤더 패딩 밖
   if (isError && !isLoading) {
@@ -228,6 +247,57 @@ export default function Home() {
               )
             )}
 
+            {/* ─── P-216(러프·dev): 홈에 전 탭 콘텐츠 꺼내기 — 멘토 #9·12·37.
+                전부 기존 컴포넌트 재사용(SafeCard·FeedCard), 빈 데이터면 섹션 숨김 ─── */}
+            {FLAGS.homeAllContent && browseFoods.length > 0 && (
+              <Section title={t('tabs.food')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
+                <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 13, paddingVertical: 4 }}>
+                  {browseFoods.map((d) => (
+                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
+                  ))}
+                </Animated.ScrollView>
+              </Section>
+            )}
+
+            {FLAGS.homeAllContent && feedReviews.length > 0 && (
+              <Section title={t('tabs.community')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/community')}>
+                <View style={{ gap: 12 }}>
+                  {feedReviews.map((rv) => (
+                    <FeedCard
+                      key={rv.id}
+                      review={rv}
+                      t={t}
+                      mine={false}
+                      showMore={false} /* 홈 프리뷰 = 모더레이션 없음(동작 없는 ⋯ 금지) */
+                      onOpenFood={() => rv.foodId && openFood(rv.foodId)}
+                      onGuestHelpful={() => router.push('/login' as Href)}
+                      onMore={() => router.push('/community')}
+                    />
+                  ))}
+                </View>
+              </Section>
+            )}
+
+            {FLAGS.homeAllContent && popularSearch.length > 0 && (
+              <Section title={t('search.popular')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/search' as Href)}>
+                <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 13, paddingVertical: 4 }}>
+                  {popularSearch.map((d) => (
+                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
+                  ))}
+                </Animated.ScrollView>
+              </Section>
+            )}
+
+            {FLAGS.homeAllContent && savedFoods.length > 0 && (
+              <Section title={t('saved.title')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/profile/saved' as Href)}>
+                <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 13, paddingVertical: 4 }}>
+                  {savedFoods.map((d) => (
+                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
+                  ))}
+                </Animated.ScrollView>
+              </Section>
+            )}
+
             {/* categories — MVP-excluded behind a flag (KB-108); flip to restore */}
             {FLAGS.categoryUI && (
               <Section title={t('home.categoriesTitle')}>
@@ -258,6 +328,10 @@ export default function Home() {
         hidden={hidden}
         mode="brand"
         search
+        /* P-216: 알림함 진입 — dev 계열만(플래그), 뱃지 = 안 읽은 수 */
+        bell={FLAGS.notificationCenter}
+        bellCount={unread}
+        onBell={() => router.push('/notifications' as Href)}
         // P-129: 헤더 sign in 제거 — 로그인 진입 = 프로필 탭
         onSearch={() => router.push('/search' as Href)}
       />

@@ -905,5 +905,19 @@
     "nudgeSub": "Sesekali mengingatkan memindai menu saat makan siang",
     "osOff": "Notifikasi K-Bap dimatikan di pengaturan sistem.",
     "osOffCta": "Buka pengaturan sistem"
+  },
+  "inbox": {
+    "title": "Notifikasi",
+    "empty": "Belum ada notifikasi",
+    "emptyBody": "Kabar tentang ulasan dan pemindaian akan muncul di sini.",
+    "markAllRead": "Tandai semua sudah dibaca",
+    "helpfulTitle": "Ulasanmu dinilai membantu",
+    "helpfulBody": "Ulasanmu tentang sup kimchi mendapat satu suara membantu.",
+    "reminderTitle": "Bagaimana makanannya?",
+    "reminderBody": "Tulis ulasan singkat untuk hidangan yang kamu pesan.",
+    "noticeTitle": "Selamat datang di K-Bap",
+    "noticeBody": "Pindai menu untuk tahu hidangan mana yang aman untukmu.",
+    "nudgeTitle": "Makan di luar hari ini?",
+    "nudgeBody": "Pindai menu sebelum memesan."
   }
 }
