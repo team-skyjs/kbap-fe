@@ -1260,3 +1260,8 @@
 - [x] 🔒 search_query 자유 텍스트 전송 중단 — keywordPrivacy 경계(카탈로그 매칭 시에만 카탈로그 값, 미매칭 = matched/len_bucket만) — 41a7d52.
 - [x] 신규 14종: 스캔 퍼널 4(item_add/remove·order_done·owner_ask_open·scan_permission) · 공용 1곳 3(error_state_view·review_helpful_toggle·translate_toggle) · 푸시 2 · 공급측 4 + bookmark_toggle 저장목록 보정.
 - [x] 전송 금지 키(장소·note·memberId·본문·프리셋 항목명) 화이트리스트 드롭 유닛 실측 · tsc 0 · jest 120스위트 734/734 · teamtest OTA(update group fc8e0ee4).
+
+## 홈 전 콘텐츠 + 알림함 / 계측 네이밍 (2026-08-17, P-216·215)
+- [x] P-216 홈 섹션 4종(음식·리뷰 FeedCard 재사용·인기검색·저장, 빈 데이터 숨김) + 알림함(헤더 벨·뱃지·/notifications·목 4건 스왑 지점 1곳) — 플래그 dev 한정 — 53f38ee · OTA 4bcfeeea.
+- [x] P-215 계측 개명(user_info_ 접두 8종·이벤트 11종) + 네이밍 규칙 주석 + 구 이름 잔존 0 전 소스 스캔 유닛 — c06a5f4 · OTA d723dc41.
+- [x] tsc 0 · jest 123스위트 748/748.
