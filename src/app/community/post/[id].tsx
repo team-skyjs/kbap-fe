@@ -92,7 +92,7 @@ export default function CommunityPostDetail() {
             updateComment.mutate({ id: editing.id, body }, opts);
             setEditing(null);
           } else {
-            track(EVENTS.comment_submit, { is_reply: reply?.parentId != null }); // P-214: 본문·대상 금지
+            track(EVENTS.community_comment_submit, { is_reply: reply?.parentId != null }); // P-214: 본문·대상 금지
             createComment.mutate({ postId: id, parentId: reply?.parentId ?? null, mention: reply?.mention ?? null, body }, opts);
             setReply(null);
           }
@@ -155,7 +155,7 @@ export default function CommunityPostDetail() {
           {/* P-142: 번역 토글 = 플래그 off — lang 하드 필수 계약이라 원문 조회 수단
               부재(본문은 항상 서버측 리더 언어 응답). 원문 규약 배포 시 재개. */}
           {FLAGS.communityTranslateEnabled && (
-            <Pressable hitSlop={6} onPress={() => setTranslated((v) => { track(EVENTS.translate_toggle, { action: v ? 'original' : 'translate', target: 'post' }); return !v; })} style={styles.txRow}>
+            <Pressable hitSlop={6} onPress={() => setTranslated((v) => { track(EVENTS.review_translate_toggle, { action: v ? 'original' : 'translate', target: 'post' }); return !v; })} style={styles.txRow}>
               <Text style={styles.txLink}>{translated ? t('reviews.showOriginal') : t('reviews.translate')}</Text>
               {translated && <Text style={styles.txState}>{t('community.translatedState')}</Text>}
             </Pressable>

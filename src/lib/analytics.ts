@@ -2,6 +2,13 @@
  * analytics.ts — Amplitude 계측 어댑터 (P-083/KB-265). 화면 코드는 `track()`
  * 하나만 호출한다 — SDK 교체·키 주입·스키마 변경 전부 이 파일에서.
  *
+ * ── 네이밍 규칙 (P-215/KB-316 — 태소노미 CSV와 1:1) ────────────────
+ * 이벤트 = `<도메인>_<행동>`. 도메인 =
+ *   app · auth · onboarding · scan · order · owner · food · search ·
+ *   review · community · profile · push · error
+ * user property = `user_info_` 접두 (예: user_info_country).
+ * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
+ *
  * ── 1차 이벤트 스키마 (이 표가 정본 — 커뮤니티 등 이벤트 추가는 여기만) ──
  * | event                    | props (허용 키 — 그 외는 어댑터가 드롭)        |
  * |--------------------------|--------------------------------------------|
@@ -13,9 +20,9 @@
  * | scan_complete            | degraded(성공/정제실패 구분), item_count     |
  * | food_detail_view         | source (scan|list|search|home|other)       |
  * | review_submit            | (props 없음)                                |
- * | login_success            | provider (APPLE|GOOGLE)                    |
- * | guest_enter              | (props 없음)                                |
- * | tab_view                 | tab (home|food|community|profile)          |
+ * | auth_login_success            | provider (APPLE|GOOGLE)                    |
+ * | auth_guest_enter              | (props 없음)                                |
+ * | app_tab_view                 | tab (home|food|community|profile)          |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
@@ -41,18 +48,18 @@ export const EVENTS = {
   scan_complete: 'scan_complete',
   food_detail_view: 'food_detail_view',
   review_submit: 'review_submit',
-  login_success: 'login_success',
-  guest_enter: 'guest_enter',
+  auth_login_success: 'auth_login_success',
+  auth_guest_enter: 'auth_guest_enter',
   // P-144(KB-316, 멘토 #39) — amplitude-taxonomy.csv 전사 (임의 개명 금지)
-  application_opened: 'application_opened',
+  app_opened: 'app_opened',
   scan_start: 'scan_start',
   scan_result_item_tap: 'scan_result_item_tap',
   order_card_open: 'order_card_open',
   search_query: 'search_query',
   review_write_tap: 'review_write_tap',
-  bookmark_toggle: 'bookmark_toggle',
+  food_bookmark_toggle: 'food_bookmark_toggle',
   // P-213(KB-316, 태소노미 공백 보완 8/15) — CSV 등재 예정
-  tab_view: 'tab_view',
+  app_tab_view: 'app_tab_view',
   auth_gate_view: 'auth_gate_view',
   // P-214(KB-316, 전수 조사 8/15) — 스캔 퍼널·공용 지점·푸시·공급측. CSV 등재 예정
   scan_item_add: 'scan_item_add',
@@ -62,13 +69,13 @@ export const EVENTS = {
   scan_permission: 'scan_permission',
   error_state_view: 'error_state_view',
   review_helpful_toggle: 'review_helpful_toggle',
-  translate_toggle: 'translate_toggle',
-  push_primer: 'push_primer',
-  notif_pref_toggle: 'notif_pref_toggle',
+  review_translate_toggle: 'review_translate_toggle',
+  push_primer_response: 'push_primer_response',
+  push_pref_toggle: 'push_pref_toggle',
   profile_avoid_update: 'profile_avoid_update',
-  post_submit: 'post_submit',
-  comment_submit: 'comment_submit',
-  account_delete: 'account_delete',
+  community_post_submit: 'community_post_submit',
+  community_comment_submit: 'community_comment_submit',
+  auth_account_delete: 'auth_account_delete',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -82,9 +89,9 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_complete: ['degraded', 'item_count', 'success', 'fail_reason'], // P-144 확장
   food_detail_view: ['source', 'food_id'], // P-144: food_id 추가(카탈로그 id — PII 아님)
   review_submit: ['has_photos', 'photo_count', 'rating'], // P-144 확장
-  login_success: ['provider'],
-  guest_enter: [],
-  application_opened: [],
+  auth_login_success: ['provider'],
+  auth_guest_enter: [],
+  app_opened: [],
   scan_start: ['source'],
   scan_result_item_tap: ['risk'],
   order_card_open: ['item_count', 'has_avoids'],
@@ -92,8 +99,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   // 자유 텍스트는 matched:false + len_bucket만(알레르기·신념 추론 차단)
   search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
   review_write_tap: ['source'],
-  bookmark_toggle: ['on'],
-  tab_view: ['tab'], // home|food|community|profile
+  food_bookmark_toggle: ['on'],
+  app_tab_view: ['tab'], // home|food|community|profile
   auth_gate_view: ['trigger'], // bookmark|review|scan|community|risk|profile
   // P-214 — ⛔ 전송 금지(발주 고정): 장소명·주소·좌표 / 신고 note / 대상 memberId·닉네임 /
   // 본문·사진 URI / 프리셋 항목명. 아래 키 밖은 어댑터가 드롭(화이트리스트가 방어선).
@@ -104,19 +111,19 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
   review_helpful_toggle: ['on', 'surface'],
-  translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
-  push_primer: ['action', 'surface'], // accept|later · onboarding|scan
-  notif_pref_toggle: ['key', 'on'],
+  review_translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
+  push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
+  push_pref_toggle: ['key', 'on'],
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
-  post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
-  comment_submit: ['is_reply'],
-  account_delete: [],
+  community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
+  community_comment_submit: ['is_reply'],
+  auth_account_delete: [],
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정
  *  정본 — KB-265 통과 기준 = 닉네임·이메일·재료명 미전송, 개수·enum·코드는 허용).
  *  currency는 ⑪ 도입 후(이번 범위 아님). ip_country는 SDK 자동. */
-const ALLOWED_USER_PROPS = ['country', 'lang', 'os', 'os_version', 'spice_level', 'avoid_count', 'is_registered'] as const;
+const ALLOWED_USER_PROPS = ['user_info_country', 'user_info_lang', 'user_info_os', 'user_info_os_version', 'user_info_spice_level', 'user_info_avoid_count', 'user_info_is_registered', 'user_info_currency'] as const;
 export type UserPropKey = (typeof ALLOWED_USER_PROPS)[number];
 
 const KEY = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY;

@@ -8,15 +8,15 @@ import { EVENTS, sanitize, sanitizeUserProps } from '../analytics';
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
 it('④ 신규 이벤트 2종 — 화이트리스트 통과(tab/trigger)·밖의 키 드롭', () => {
-  expect(EVENTS.tab_view).toBe('tab_view');
+  expect(EVENTS.app_tab_view).toBe('app_tab_view'); // P-215: 도메인 접두
   expect(EVENTS.auth_gate_view).toBe('auth_gate_view');
-  expect(sanitize(EVENTS.tab_view, { tab: 'community', nickname: 'x' })).toEqual({ tab: 'community' });
+  expect(sanitize(EVENTS.app_tab_view, { tab: 'community', nickname: 'x' })).toEqual({ tab: 'community' });
   expect(sanitize(EVENTS.auth_gate_view, { trigger: 'bookmark', email: 'x' })).toEqual({ trigger: 'bookmark' });
 });
 
 it('④ tab_view = 탭 레이아웃 한 곳(활성 탭 변화 시), auth_gate_view = 게이트 시트 한 곳', () => {
   const tabs = read('src/app/(tabs)/_layout.tsx');
-  expect(tabs).toContain('track(EVENTS.tab_view, { tab: active })');
+  expect(tabs).toContain('track(EVENTS.app_tab_view, { tab: active })');
   expect(tabs).toContain('if (lastTab.current === active) return;'); // 같은 탭 재탭 무발화
   const gate = read('src/components/AuthGateSheet.tsx');
   expect(gate).toContain('if (open) track(EVENTS.auth_gate_view');
@@ -44,11 +44,11 @@ it('② food_detail_view — 유입 4곳 src 부여 + 상세 화이트리스트 
 });
 
 it('③ country — 첫 실행 로케일 선심기(허용 프로퍼티), 온보딩 제출 시 실제 국적 갱신', () => {
-  expect(sanitizeUserProps({ country: 'KR' })).toEqual({ country: 'KR' });
+  expect(sanitizeUserProps({ user_info_country: 'KR' })).toEqual({ user_info_country: 'KR' }); // P-215 접두
   const layout = read('src/app/_layout.tsx');
   expect(layout).toContain('getLocales()[0]?.regionCode');
-  expect(layout).toContain('...(region ? { country: region } : {})'); // region 없으면 미전송
-  expect(read('src/app/onboarding/index.tsx')).toContain('country: nationality'); // 제출 시 덮어씀
+  expect(layout).toContain('...(region ? { user_info_country: region } : {})'); // region 없으면 미전송
+  expect(read('src/app/onboarding/index.tsx')).toContain('user_info_country: nationality'); // 제출 시 덮어씀
 });
 
 it('⑤ presets 스텝 계측 개시 — STEP_WIRE null 해제', () => {

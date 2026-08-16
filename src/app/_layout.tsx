@@ -72,22 +72,22 @@ export default function RootLayout() {
     void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
   }, []);
 
-  // P-144(KB-316): application_opened = 실행 + 포그라운드 복귀마다 (DAU 분모,
+  // P-144(KB-316): app_opened(P-215 개명) = 실행 + 포그라운드 복귀마다 (DAU 분모,
   // 멘토 지시) · 시작 시 user property(lang·os) 세팅 — CSV 트리거 준수.
   useEffect(() => {
-    track(EVENTS.application_opened);
+    track(EVENTS.app_opened);
     // P-213: country 선심기 — 기기 로케일 region(게스트 세그먼트 복구).
     // 온보딩 제출 시 실제 국적으로 덮어씀(설계 원문 — 서버가 아는 값이 정본).
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const region = (require('expo-localization') as typeof import('expo-localization')).getLocales()[0]?.regionCode;
     setUserProps({
-      lang: i18n.language,
-      os: Platform.OS,
-      os_version: String(Platform.Version),
-      ...(region ? { country: region } : {}),
+      user_info_lang: i18n.language,
+      user_info_os: Platform.OS,
+      user_info_os_version: String(Platform.Version),
+      ...(region ? { user_info_country: region } : {}),
     });
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') track(EVENTS.application_opened);
+      if (st === 'active') track(EVENTS.app_opened);
     });
     return () => sub.remove();
   }, []);

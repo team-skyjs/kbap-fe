@@ -31,7 +31,7 @@ export function PushPrimerModal({
 
   const accept = () =>
     run(async () => {
-      track(EVENTS.push_primer, { action: 'accept', surface }); // P-214
+      track(EVENTS.push_primer_response, { action: 'accept', surface }); // P-214
       await markPrimerResult('accepted');
       const granted = await requestPermission(); // 여기서만 OS 팝업
       if (granted) await registerPushToken();
@@ -39,7 +39,7 @@ export function PushPrimerModal({
     });
   const decline = () =>
     run(async () => {
-      track(EVENTS.push_primer, { action: 'later', surface }); // P-214
+      track(EVENTS.push_primer_response, { action: 'later', surface }); // P-214
       await markPrimerResult('declined');
       onDone();
     });

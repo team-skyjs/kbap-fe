@@ -88,7 +88,7 @@ export default function FoodDetailScreen() {
     }
     if (!food) return;
     const adding = !saved;
-    track(EVENTS.bookmark_toggle, { on: adding }); // P-144
+    track(EVENTS.food_bookmark_toggle, { on: adding }); // P-144
     setSaveError(false);
     toggleBm.mutate(
       {

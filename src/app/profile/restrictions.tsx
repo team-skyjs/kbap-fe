@@ -70,7 +70,7 @@ export default function EditRestrictions() {
             { restrictions: sel.map((code) => ({ kind: 'allergy' as const, code })) },
             {
               onSuccess: () => {
-                setUserProps({ avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+                setUserProps({ user_info_avoid_count: sel.length }); // P-144: CSV 트리거(프로필 수정 시 갱신)
                 // P-214: 변경 시점·폭 계측(user property는 현재값만 남음). 항목명 금지 — 개수만.
                 track(EVENTS.profile_avoid_update, {
                   count: sel.length,

@@ -61,7 +61,7 @@ export default function Intro() {
 
   const goHome = () => {
     markIntroSeen();
-    track(EVENTS.guest_enter); setUserProps({ is_registered: false }); // P-083+144
+    track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); // P-083+144
     router.replace('/(tabs)'); // Browse first / Skip → guest home
   };
 

@@ -63,8 +63,8 @@ export function useReviewTranslation(review: Review, targetLang: string): Review
     loading,
     error,
     // P-214: 번역 토글 계측 — 훅 한 곳(표면별 배선 금지)
-    translate: () => { track(EVENTS.translate_toggle, { action: 'translate', target: 'review' }); setWant(true); },
-    showOriginal: () => { track(EVENTS.translate_toggle, { action: 'original', target: 'review' }); setWant(false); },
+    translate: () => { track(EVENTS.review_translate_toggle, { action: 'translate', target: 'review' }); setWant(true); },
+    showOriginal: () => { track(EVENTS.review_translate_toggle, { action: 'original', target: 'review' }); setWant(false); },
     retry: () => q.refetch(),
   };
 }

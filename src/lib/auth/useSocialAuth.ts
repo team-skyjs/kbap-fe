@@ -74,8 +74,8 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken));
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
       const newMember = await exchange();
-      track(EVENTS.login_success, { provider: 'GOOGLE' }); // P-083
-      setUserProps({ is_registered: true }); // P-144: NRU 기준(false→true 전환)
+      track(EVENTS.auth_login_success, { provider: 'GOOGLE' }); // P-083
+      setUserProps({ user_info_is_registered: true }); // P-144: NRU 기준(false→true 전환)
       setPhase('idle');
       onSignedIn(newMember);
     } catch (e) {
@@ -103,8 +103,8 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
       const newMember = await exchange();
-      track(EVENTS.login_success, { provider: 'APPLE' }); // P-083
-      setUserProps({ is_registered: true }); // P-144
+      track(EVENTS.auth_login_success, { provider: 'APPLE' }); // P-083
+      setUserProps({ user_info_is_registered: true }); // P-144
       setPhase('idle');
       onSignedIn(newMember);
     } catch (e) {

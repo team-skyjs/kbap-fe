@@ -50,20 +50,20 @@ describe('④·⑦ 화이트리스트 = PII 방어선', () => {
     expect(sanitize(EVENTS.error_state_view, { screen: 'food/[id]', kind: 'offline', action: 'view' })).toEqual({
       screen: 'food/[id]', kind: 'offline', action: 'view',
     });
-    expect(sanitize(EVENTS.push_primer, { action: 'accept', surface: 'scan' })).toEqual({ action: 'accept', surface: 'scan' });
-    expect(sanitize(EVENTS.notif_pref_toggle, { key: 'nudge', on: true })).toEqual({ key: 'nudge', on: true });
-    expect(sanitize(EVENTS.account_delete, { reason: '너무 비싸요' })).toEqual({}); // props 없는 이벤트
+    expect(sanitize(EVENTS.push_primer_response, { action: 'accept', surface: 'scan' })).toEqual({ action: 'accept', surface: 'scan' });
+    expect(sanitize(EVENTS.push_pref_toggle, { key: 'nudge', on: true })).toEqual({ key: 'nudge', on: true });
+    expect(sanitize(EVENTS.auth_account_delete, { reason: '너무 비싸요' })).toEqual({}); // props 없는 이벤트
   });
 
   it('⛔ 전송 금지 키 드롭 — 장소명·주소·좌표·note·대상 memberId·본문·사진 URI·프리셋 항목명', () => {
     expect(
-      sanitize(EVENTS.post_submit, {
+      sanitize(EVENTS.community_post_submit, {
         photo_count: 2, food_tag_count: 1, has_place: true,
         place_name: '히뎅', address: '서울시…', latitude: 37.5, longitude: 127.0,
         body: '본문', photos: ['file://a.jpg'],
       }),
     ).toEqual({ photo_count: 2, food_tag_count: 1, has_place: true });
-    expect(sanitize(EVENTS.comment_submit, { is_reply: true, body: '내용', target_member_id: '42', nickname: 'x' })).toEqual({
+    expect(sanitize(EVENTS.community_comment_submit, { is_reply: true, body: '내용', target_member_id: '42', nickname: 'x' })).toEqual({
       is_reply: true,
     });
     // 프리셋 항목명(종교·신념 추론) — 개수만 통과
@@ -76,8 +76,8 @@ describe('④·⑦ 화이트리스트 = PII 방어선', () => {
 describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
   it('② 저장 목록 스와이프 해제·되돌리기 = 기존 bookmark_toggle 재사용', () => {
     const src = read('src/app/profile/saved.tsx');
-    expect(src).toContain('track(EVENTS.bookmark_toggle, { on: false })');
-    expect(src).toContain('track(EVENTS.bookmark_toggle, { on: true })');
+    expect(src).toContain('track(EVENTS.food_bookmark_toggle, { on: false })');
+    expect(src).toContain('track(EVENTS.food_bookmark_toggle, { on: true })');
   });
 
   it('③ 스캔 퍼널 — 담기/빼기·Done 확정·사장님 확인 3진입·권한 4상태', () => {
@@ -99,19 +99,19 @@ describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
     expect(sb).toContain('useSegments'); // 화면 식별 = 라우트 패턴(실 id 미포함)
     const parts = read('src/features/review/ReviewCellParts.tsx');
     expect(parts).toContain('EVENTS.review_helpful_toggle');
-    expect(read('src/lib/data/useReviewTranslation.ts')).toContain('EVENTS.translate_toggle');
+    expect(read('src/lib/data/useReviewTranslation.ts')).toContain('EVENTS.review_translate_toggle');
     // 소비 표면은 자체 배선 금지
     expect(read('src/features/community/ReviewFeed.tsx')).not.toContain('review_helpful_toggle');
     expect(read('src/app/food/[id]/reviews.tsx')).not.toContain('translate_toggle');
   });
 
   it('⑤ ⑥ 푸시 표면 구분·알림 토글 단일 경유·공급측 3종', () => {
-    expect(read('src/features/push/PushPrimerModal.tsx')).toContain('EVENTS.push_primer');
+    expect(read('src/features/push/PushPrimerModal.tsx')).toContain('EVENTS.push_primer_response');
     expect(read('src/app/onboarding/index.tsx')).toContain('surface="onboarding"');
     expect(read('src/app/scan.tsx')).toContain('surface="scan"');
-    expect(read('src/app/profile/notifications.tsx')).toContain('EVENTS.notif_pref_toggle');
+    expect(read('src/app/profile/notifications.tsx')).toContain('EVENTS.push_pref_toggle');
     expect(read('src/app/profile/restrictions.tsx')).toContain('EVENTS.profile_avoid_update');
-    expect(read('src/app/community/compose.tsx')).toContain('EVENTS.post_submit');
-    expect(read('src/app/delete-account.tsx')).toContain('EVENTS.account_delete');
+    expect(read('src/app/community/compose.tsx')).toContain('EVENTS.community_post_submit');
+    expect(read('src/app/delete-account.tsx')).toContain('EVENTS.auth_account_delete');
   });
 });

@@ -213,10 +213,10 @@ export default function Onboarding() {
       });
       // P-144: user property — CSV 트리거(온보딩 제출 시 갱신). 재료명 아닌 개수·enum·코드만.
       setUserProps({
-        country: nationality,
-        spice_level: spiceSkipped ? 'SKIP' : spice,
-        avoid_count: skipped.restrictions ? 0 : restrictions.size,
-        is_registered: true,
+        user_info_country: nationality,
+        user_info_spice_level: spiceSkipped ? 'SKIP' : spice,
+        user_info_avoid_count: skipped.restrictions ? 0 : restrictions.size,
+        user_info_is_registered: true,
       });
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.

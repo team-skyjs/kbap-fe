@@ -42,13 +42,13 @@ function AppTabBar({
   const { t } = useTranslation();
   const active = ROUTE_TO_KEY[activeRoute] ?? 'home';
 
-  // P-213: tab_view — 활성 탭이 바뀔 때 1회(탭 탭·프로그램 전환·첫 진입 전부 포함,
+  // P-213: app_tab_view(P-215 개명) — 활성 탭이 바뀔 때 1회(탭 탭·프로그램 전환·첫 진입 전부 포함,
   // 같은 탭 재탭은 무발화). 4탭 계측을 여기 한 곳으로 — 화면별 배선 금지.
   const lastTab = React.useRef<TabKey | null>(null);
   React.useEffect(() => {
     if (lastTab.current === active) return;
     lastTab.current = active;
-    track(EVENTS.tab_view, { tab: active });
+    track(EVENTS.app_tab_view, { tab: active });
   }, [active]);
 
   return (

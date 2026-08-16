@@ -49,7 +49,7 @@ export default function DeleteAccount() {
 
   // KB-67: 탈퇴 실호출 → 세션 정리 → 재로그인 화면
   async function doWithdraw() {
-    track(EVENTS.account_delete); // P-214: 이탈 지표(props 없음 — 사유·식별자 금지)
+    track(EVENTS.auth_account_delete); // P-214: 이탈 지표(props 없음 — 사유·식별자 금지)
     // lazy require — 파일 내 session/appleRevoke와 동일 관례 (웹 번들 안전 + jest 호환)
     const { withdrawBe } = require('@/lib/auth/beAuth') as typeof import('@/lib/auth/beAuth');
     await withdrawBe().catch(() => {}); // 실패해도 로컬 세션은 정리됨

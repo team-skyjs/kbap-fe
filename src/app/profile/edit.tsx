@@ -72,7 +72,7 @@ export default function EditProfile() {
       },
       {
         onSuccess: () => {
-          setUserProps({ spice_level: spice }); // P-144: CSV 트리거(프로필 수정 시 갱신)
+          setUserProps({ user_info_spice_level: spice }); // P-144: CSV 트리거(프로필 수정 시 갱신)
           // P-165: 로컬 캐시 동기화 — 서버 정본 원칙(resolveCurrency 체인의 캐시 강등)
           if (currency !== (me?.currency ?? null)) {
             if (currency) saveCurrency(currency);

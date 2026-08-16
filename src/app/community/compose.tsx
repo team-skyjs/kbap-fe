@@ -120,7 +120,7 @@ export default function CommunityCompose() {
           if (editId) updatePost.mutate({ id: editId, ...input }, opts);
           else {
             // P-214: 공급측 계측 — 본문·사진 URI·장소명 전송 금지(개수·boolean만)
-            track(EVENTS.post_submit, {
+            track(EVENTS.community_post_submit, {
               photo_count: photos.length,
               food_tag_count: foodTags.length,
               has_place: placeTag != null,

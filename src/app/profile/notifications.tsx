@@ -42,7 +42,7 @@ export default function NotificationSettings() {
 
   const toggle = (key: 'helpful' | 'reviewReminder' | 'nudge') => {
     // 낙관 즉시 반영(로컬 저장 멱등) — 저장 결과(nudgeOptInAt 스탬프 포함)로 재동기
-    track(EVENTS.notif_pref_toggle, { key, on: !settings[key] }); // P-214: 옵트아웃률
+    track(EVENTS.push_pref_toggle, { key, on: !settings[key] }); // P-214: 옵트아웃률
     const next = { ...settings, [key]: !settings[key] };
     setSettings(next);
     void savePushSettings(next).then((saved) => {

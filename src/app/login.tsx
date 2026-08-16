@@ -47,7 +47,7 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
       </View>
 
       <View style={styles.foot}>
-        <Pressable onPress={() => { track(EVENTS.guest_enter); setUserProps({ is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); }} hitSlop={8}>
+        <Pressable onPress={() => { track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); }} hitSlop={8}>
           <Text style={styles.browse}>{t('intro.browseFirst')}</Text>
         </Pressable>
         {/* KB-67: newMember → 온보딩. 기존 회원도 onboardingCompleted=false면
