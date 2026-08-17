@@ -162,7 +162,7 @@ export default function CommunityCompose() {
           </View>
           <Text style={styles.heading}>{t('community.composeHeading')}</Text>
           <View style={styles.authorRow}>
-            <Text style={styles.authorName}>{me?.nickname ?? ''}</Text>
+            <Text style={styles.authorName} numberOfLines={1}>{me?.nickname ?? ''}</Text>
             {!!me?.nationality && <Flag code={me.nationality} size={16} />}
             {me && (
               <View style={styles.rankPill}>
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   avatarImg: { width: 52, height: 52 },
   heading: { fontFamily: font.display, fontSize: 22, color: C.ink, letterSpacing: -0.3, textAlign: 'center', maxWidth: 280 },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  authorName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2 },
+  authorName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink2, flexShrink: 1 }, // P-224: 국기·랭크 옆 1줄 방어
   rankPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: C.card },
   rankText: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2 },
 

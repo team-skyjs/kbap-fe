@@ -44,6 +44,7 @@ import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+import { displayNickname } from '@/lib/nickname';
 // P-216(러프): 홈 전 콘텐츠 — 전부 기존 화면 컴포넌트·훅 재사용(새 문법 발명 0)
 import { useInfiniteFoods, useFoods } from '@/lib/data/useFoods';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
@@ -129,9 +130,11 @@ export default function Home() {
             <UpdateNudgeBanner />
             {/* greeting — 비회원은 이름 없이 (KB-69) */}
             <View style={styles.greet}>
-              <Text style={styles.greetTitle}>
-                {/* 닉네임 없는 미완료 프로필도 'Hi, ' 대신 일반 인사 */}
-                {isGuest || !me?.nickname ? t('home.greetingGuest') : t('home.greeting', { name: me.nickname })}
+              <Text style={styles.greetTitle} numberOfLines={1}>
+                {/* 닉네임 없는 미완료 프로필도 'Hi, ' 대신 일반 인사.
+                    P-224: 1줄 + 이름 절단 병용 — ko "님"·ja "さん"처럼 이름 뒤 접미
+                    로케일에서 tail ellipsis가 접미를 지우는 것 방지 */}
+                {isGuest || !me?.nickname ? t('home.greetingGuest') : t('home.greeting', { name: displayNickname(me.nickname) })}
               </Text>
               <Text style={styles.greetSub}>
                 {hasScans ? t('home.greetingSub') : t('home.greetingSubEmpty')}

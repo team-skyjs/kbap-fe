@@ -76,7 +76,7 @@ export function ActionSheet({
                 }}
               >
                 {it.icon}
-                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive]}>{it.label}</Text>
+                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive]} numberOfLines={1}>{it.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, ...shadow.sh1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
-  rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
   rowTextDestructive: { color: DESTRUCTIVE },
 });
 

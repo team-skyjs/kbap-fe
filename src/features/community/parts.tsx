@@ -12,12 +12,15 @@ import { useTranslation } from 'react-i18next';
 import { FLAGS } from '@/lib/flags';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Flag, IconBubbleEmpty, IconMore, IconThumbsDown, IconThumbsUp, IconProfile, IconFood, IconMapPin } from '@/components';
+import { displayNickname } from '@/lib/nickname';
 import type { CommunityAuthor, CommunityPost, Reaction } from '@/lib/community/types';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
 export function authorName(author: CommunityAuthor, t: TFn): string {
-  return author.nickname ?? t('community.deletedUser'); // 탈퇴 = content 유지 + 표시명 대체
+  // P-224: 절단을 여기(공용 지점)에 내장 — "Block {name}?" 류 보간 문장이 이름
+  // 때문에 꺾이지 않는다(문장을 살리고 이름을 자른다). 호출처 수정 0.
+  return displayNickname(author.nickname) || t('community.deletedUser'); // 탈퇴 = content 유지 + 표시명 대체
 }
 
 export function timeAgo(iso: string, t: TFn): string {

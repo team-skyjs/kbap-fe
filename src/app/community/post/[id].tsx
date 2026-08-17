@@ -36,6 +36,7 @@ import { AuthorRow, PhotoGrid, ReactionBar, TagChip, authorName, timeAgo } from 
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { FoodTagSheet, PlaceTagSheet } from '@/features/community/tagSheets';
 import { EVENTS, track } from '@/lib/analytics';
+import { displayNickname } from '@/lib/nickname';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
@@ -231,7 +232,7 @@ export default function CommunityPostDetail() {
             {(reply || editing) && (
               <View style={styles.inputState}>
                 <Text style={styles.inputStateText} numberOfLines={1}>
-                  {editing ? t('community.editingComment') : t('community.replyingTo', { name: reply!.mention })}
+                  {editing ? t('community.editingComment') : t('community.replyingTo', { name: displayNickname(reply!.mention) })}
                 </Text>
                 <Pressable
                   hitSlop={8}

@@ -166,7 +166,7 @@ export default function Profile() {
               <View style={{ flex: 1, gap: 6 }}>
                 {/* KB-125: 미완료 프로필 — 검정 '—' 대신 흐린 "미설정" 표기 */}
                 {me.nickname ? (
-                  <Text style={styles.name}>{me.nickname}</Text>
+                  <Text style={styles.name} numberOfLines={1}>{me.nickname}</Text>
                 ) : (
                   <Text style={styles.nameUnset}>{t('profile.nicknameUnset')}</Text>
                 )}
