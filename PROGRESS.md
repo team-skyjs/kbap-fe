@@ -1280,3 +1280,8 @@
 - [x] FLAGS.pushEnabled = !PROD_CHANNEL(빌드18 네이티브 충족) — prod는 차단 유지, 리뷰 리마인더 1h 로컬 알림 실동작 — 7097d12.
 - [x] prod 차단 유닛 신설(모듈 목에 폭탄 → 미접근 실측) · 지연 require 규약·취소 배선·프라이머 경로 확인 · 상수 3600 불변.
 - [x] tsc 0 · jest 127스위트 781/781 · teamtest OTA(update group 5cf11144, fp 빌드18 일치).
+
+## 회피 칩 통합 · 진행 화면 안내 (2026-08-17, P-223·222)
+- [x] P-223 회피 칩 이중 표시 통합 — P-219 섹션 삭제, 1줄 칩 줄이 v2 avoidances 우선 소비(없으면 v1 조인 폴백), 신형 칩(색+형태) 채택. scan.avoidTitle 10 로케일 제거(K-원장 반영 필요) — 3e8df7e.
+- [x] P-222 진행 화면 이탈 자제 보조 한 줄(scan.stayHint ×10) + network 재시도 버튼 재량 보강, 과잉 개입 0 잠금 — a21a55a.
+- [x] tsc 0 · jest 127스위트 787/787 · teamtest OTA(update group 75e1b0f0, K-28~29 카피 동승).
