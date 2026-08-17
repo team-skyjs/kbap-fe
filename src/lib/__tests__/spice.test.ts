@@ -26,9 +26,11 @@ it('라벨·예시 i18n 키 — 5단계 전부 존재 (표시 소스 단일화)'
 
 it('음식 맵기 표시(P-104) — NONE은 자기설명 키, 나머지는 🌶️×rank+밴드 라벨', () => {
   const t = (k: string) => k;
-  expect(foodSpiceText('NONE', t)).toBe('spice.foodNone'); // 고아 "None" 소멸 — 🌶️ 0개+밴드 라벨 금지
-  expect(foodSpiceText('MILD', t)).toBe('\u{1F336}\u{FE0F} spice.band.1');
-  expect(foodSpiceText('EXTREME', t)).toBe('\u{1F336}\u{FE0F}'.repeat(4) + ' spice.band.4');
+  expect(foodSpiceText('NONE', t)).toBe('spice.foodNone'); // 고아 "None" 소멸(자기설명 키)
+  // P-231: 라벨만 — 고추는 SpicePeppers 5개 프레임이 담당(반복 이모지 조립 소멸)
+  expect(foodSpiceText('MILD', t)).toBe('spice.band.1');
+  expect(foodSpiceText('MILD', t)).not.toContain('\u{1F336}');
+  expect(foodSpiceText('EXTREME', t)).toBe('spice.band.4'); // P-231: 라벨만(EXTREME도 밴드 4 라벨 공유 무변)
 });
 
 it('isSpiceLevel — enum 판별 (SKIP·임의 문자열·숫자는 아님)', () => {

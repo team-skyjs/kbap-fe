@@ -38,12 +38,13 @@ export const SPICE_LEVEL_EXAMPLE: Record<SpiceLevel, string> = {
   EXTREME: 'spice.example.4',
 };
 
-/** 음식 맵기 표시 문자열 (P-104/Q-23): 🌶️×rank + 라벨. NONE은 🌶️ 0개라
- *  밴드 라벨 단독("None") = 맥락 상실 → 자기설명 키(spice.foodNone)로 대체.
- *  (유저 톨러런스 표시는 라벨 있는 행이라 별개 — 이 함수는 음식 표시 전용.) */
+/** 음식 맵기 라벨 (P-104/Q-23 → P-231): 라벨 텍스트만 — 고추 표시는 SpicePeppers
+ *  (5개 고정 프레임)가 담당한다. 반복 이모지 조립 경로는 P-231에서 제거(사용처 0
+ *  확인) — MILD 1개가 "그냥 매운 음식"으로 읽히던 문제의 원인이었다.
+ *  NONE = 자기설명 키(spice.foodNone — 밴드 라벨 단독 "None"은 맥락 상실). */
 export function foodSpiceText(level: SpiceLevel, t: (key: string) => string): string {
   if (level === 'NONE') return t('spice.foodNone');
-  return `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(level))} ${t(SPICE_LEVEL_LABEL[level])}`;
+  return t(SPICE_LEVEL_LABEL[level]);
 }
 
 /** 경고 판정 = 단계(음식) > 단계(유저). SKIP(미설정)은 경고 없음. */

@@ -39,7 +39,8 @@ import { IconLock, IconMore, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
-import { foodSpiceText, spicierThanUser, type SpiceChoice } from '@/lib/spice';
+import { foodSpiceText, spiceRank, spicierThanUser, type SpiceChoice } from '@/lib/spice';
+import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
@@ -281,7 +282,10 @@ function Registered({
           </View>
           {food.spiceLevel != null && (
             <View style={styles.spiceMeta}>
-              {/* 현행 5단계 foodSpiceText — 시안 "6/10 · hot" 이식 금지 */}
+              {/* P-231: 고추 5개 고정 프레임(미달분 투명) + 라벨 — MILD 1개가 "5단계 중 1"로
+                  읽히게(멘토 오징어튀김 사례). NONE도 같은 프레임(0채움 + "Not spicy" —
+                  일관 재량 채택). 시안 "6/10 · hot" 이식 금지 유지. */}
+              <SpicePeppers rank={spiceRank(food.spiceLevel)} size={13} />
               <Text style={styles.spiceText}>{foodSpiceText(food.spiceLevel, t)}</Text>
               {spicyForYou && <Text style={styles.spiceWarn}>{t('detail.spiceAboveYou')}</Text>}
             </View>

@@ -270,6 +270,41 @@ it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () 
   expect(s).toContain('reviews.writeReview'); // Write CTA만
 });
 
+describe('P-231: 상세 맵기 = 고추 5개 프레임(SpicePeppers)', () => {
+  it('MILD = 5개 중 1개 채움 + 라벨(멘토 오징어튀김 사례) — 반복 이모지 소멸', () => {
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { spiceLevel: 'MILD' as FoodDetail['spiceLevel'] }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'spice-peppers').length).toBeGreaterThanOrEqual(1);
+    expect(byId(tree, 'pepper-1-on').length).toBeGreaterThanOrEqual(1); // 1개 채움
+    expect(byId(tree, 'pepper-2-off').length).toBeGreaterThanOrEqual(1); // 나머지 투명
+    expect(byId(tree, 'pepper-5-off').length).toBeGreaterThanOrEqual(1);
+    expect(flat(tree)).toContain('spice.band.1'); // 라벨 우측 유지
+  });
+
+  it('NONE = 같은 5개 프레임(0채움) + "Not spicy" 라벨 — 일관 재량 채택', () => {
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { spiceLevel: 'NONE' as FoodDetail['spiceLevel'] }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'pepper-1-off').length).toBeGreaterThanOrEqual(1); // 전부 투명
+    expect(byId(tree, 'spice-peppers').length).toBeGreaterThanOrEqual(1);
+    expect(flat(tree)).toContain('spice.foodNone');
+  });
+
+  it('경고(spiceAboveYou) 존치 + foodSpiceText 반복 이모지 조립 잔존 0(소스 잠금)', () => {
+    const fs = require('fs');
+    const detail = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+    expect(detail).toContain("t('detail.spiceAboveYou')"); // 현행 유지
+    expect(detail).toContain('<SpicePeppers rank={spiceRank(food.spiceLevel)}');
+    const spice = fs.readFileSync('src/lib/spice.ts', 'utf8') as string;
+    expect(spice).not.toContain(".repeat("); // 반복 이모지 조립 소멸(라벨 함수만 존치)
+  });
+});
+
 describe('P-228: Ask the owner 플로팅', () => {
   afterEach(() => mockIsGuest.mockReturnValue(false));
 
