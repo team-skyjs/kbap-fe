@@ -620,6 +620,10 @@ export default function Scan() {
         <View style={[styles.scanCaption, { paddingBottom: bottom + 26 }]}>
           <ActivityIndicator size="small" color="#fff" />
           <Text style={styles.statusText}>{t('scan.reading')}</Text>
+          {/* P-222: 서버 처리 10~20초를 HTTP 응답 대기로 버티므로, 오래 이탈하면 OS가
+              연결을 끊어 결과가 소실된다(재조회 API 부재 — BE 안건). 정적 보조 한 줄만
+              — AppState 감시·경고 모달 같은 과잉 개입은 금지(발주 고정). */}
+          <Text style={styles.stayHint} testID="scan-stay-hint">{t('scan.stayHint')}</Text>
         </View>
       </View>
     );
@@ -639,7 +643,9 @@ export default function Scan() {
         <View style={styles.errBtns}>
           {/* P-219: 분기별 행동 — 메뉴판 아님·촬영 실패 = 재촬영(사용자 행동),
               인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
-          {stage === 'busy' || stage === 'upload' ? (
+          {/* P-222 재량: network도 재시도 대상 — 사진은 그대로이고 연결만 회복하면 되는
+              상황이라 "재촬영"보다 "재시도"가 맞다(대기 중 이탈로 끊긴 경우 포함). */}
+          {stage === 'busy' || stage === 'upload' || stage === 'network' ? (
             <Btn onPress={() => photo && scanImage(photo)} testID="scan-err-retry">{t('common.retry')}</Btn>
           ) : (
             <Btn variant="ghost" onPress={() => setPhase('camera')} testID="scan-err-retake">{t('scan.retake')}</Btn>
@@ -931,6 +937,8 @@ const styles = StyleSheet.create({
   noticeBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20 },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterSpacer: { width: 76, height: 76 },
+  // P-222: 주 문구를 밀어내지 않는 보조 톤(작게·흐리게)
+  stayHint: { fontFamily: font.body, fontSize: 12, color: 'rgba(255,255,255,0.72)', textAlign: 'center', marginTop: 2, paddingHorizontal: 24, lineHeight: 17 },
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
   // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
   importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },

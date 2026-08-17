@@ -263,6 +263,24 @@ it('P-187: 진행 화면 미리보기 = contain(레터박스) — cover 크롭 �
   expect(scanning).not.toContain('resizeMode="cover"');
 });
 
+it('P-222: 진행 화면 = 이탈 자제 안내 보조 한 줄(주 문구 유지·과잉 개입 0)', () => {
+  const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  const scanning = src.split("phase === 'scanning'")[1].split('// ---- error ----')[0];
+  expect(scanning).toContain("t('scan.reading')"); // 주 문구 존치
+  expect(scanning).toContain("t('scan.stayHint')"); // 보조 안내 신설
+  expect(scanning).toContain('testID="scan-stay-hint"');
+  // 10 로케일 문구 존재(하드코딩 0)
+  for (const lang of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'ru', 'th', 'es', 'id']) {
+    const dict = JSON.parse(require('fs').readFileSync(`src/lib/i18n/${lang}.json`, 'utf8')) as { scan: Record<string, string> };
+    expect(typeof dict.scan.stayHint).toBe('string');
+  }
+  // 발주 고정: 진행 화면에서 백그라운드 감지 구독·경고 모달·keep-awake 도입 금지
+  // (권한 복귀 재조회용 AppState 구독은 별건 — 진행 블록 밖이라 무관)
+  expect(scanning).not.toContain('AppState.addEventListener');
+  expect(scanning).not.toContain('Alert.alert');
+  expect(src).not.toContain('expo-keep-awake');
+});
+
 it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto), 완료 후 소멸', async () => {
   let release!: (v: { canceled: boolean; assets?: { uri: string; width: number; height: number }[] }) => void;
   mockLaunchLibrary.mockImplementation(() => new Promise((r) => (release = r)));

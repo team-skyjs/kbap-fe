@@ -272,7 +272,7 @@
     "errNotMenu": "Ảnh này không giống thực đơn. Hãy chụp lại nhé.",
     "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
-    "avoidTitle": "Chứa nguyên liệu bạn tránh"
+    "stayHint": "Chờ một chút — rời khỏi ứng dụng có thể làm mất kết quả."
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

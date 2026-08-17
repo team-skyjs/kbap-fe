@@ -272,7 +272,7 @@
     "errNotMenu": "Ini sepertinya bukan menu. Coba foto ulang.",
     "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
-    "avoidTitle": "Mengandung bahan yang kamu hindari"
+    "stayHint": "Tunggu sebentar — keluar dari aplikasi bisa membuat hasilnya hilang."
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

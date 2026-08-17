@@ -272,7 +272,7 @@
     "errNotMenu": "Esto no parece un menú. Vuelve a tomar la foto.",
     "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
-    "avoidTitle": "Contiene lo que evitas"
+    "stayHint": "Espera un momento: si sales de la app, puedes perder el resultado."
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",
