@@ -246,12 +246,62 @@ it('P-160→P-180: 프로필 체크 줄 — ✓ 마크 부재·대문자 캡션�
   // P-180: Edit 진입점 소멸 — 스캔 플로우 회피 수정 차단
   expect(bar.root.findAll((n) => n.props?.testID === 'profile-edit-link').length).toBe(0);
   expect(bs).not.toContain('community.edit');
-  // 행: May contain 라벨 0 + solid 칩 색(목업 .ch-d/.ch-c)
+  // 행: May contain 라벨 0 유지. P-223: 칩은 solid → 톤+RiskMark(색+형태) 통합형.
   const tree = render(<Harness dishes={DISHES} />);
   const s2 = flat(tree);
   expect(s2).not.toContain('scan.mayContain');
-  expect(s2).toContain('"backgroundColor":"#cf3a2c"'); // danger solid
-  expect(s2).toContain('"backgroundColor":"#d28a12"'); // caution solid
+  // riskTone 배경 + 텍스트 색으로 danger/caution 구분(1줄 접기에서도 판별 가능)
+  expect(s2).toContain('"color":"#cf3a2c"'); // danger 톤
+  expect(s2).toContain('"color":"#d28a12"'); // caution 톤
+});
+
+describe('P-223: 회피 칩 통합 — v2 서버 겹침 우선 / v1 조인 폴백', () => {
+  it('v2 avoidances가 있으면 그것을 쓴다 — 서버 번역명 렌더 + 클라 조인 무시', () => {
+    const dish: ResultDish = {
+      ...DISHES[0],
+      avoidances: [
+        { code: 'PERILLA', name: 'Perilla seed', risk: 'danger' },
+        { code: 'WHEAT', name: 'Wheat', risk: 'caution' },
+      ],
+    };
+    const s = flat(render(<Harness dishes={[dish]} />));
+    expect(s).toContain('Perilla seed'); // 서버 번역명(클라 재번역 0)
+    expect(s).toContain('Wheat');
+    expect(s).not.toContain('Soybean'); // 상세 ingredients 조인은 쓰이지 않음
+  });
+
+  it('v2 미제공(prod v1 경로) = 상세 ingredients 클라 조인 폴백 — 회귀 무사고', () => {
+    const s = flat(render(<Harness dishes={[{ ...DISHES[0], avoidances: [] }]} />));
+    expect(s).toContain('Soybean'); // danger
+    expect(s).toContain('Shrimp'); // caution
+    expect(s).not.toContain('Onion'); // safe는 칩 대상 아님
+  });
+
+  it('danger 우선 정렬 — v2 소스도 동일(접혀도 위험한 것부터)', () => {
+    const dish: ResultDish = {
+      ...DISHES[0],
+      avoidances: [
+        { code: 'A', name: 'CautionOne', risk: 'caution' },
+        { code: 'B', name: 'DangerOne', risk: 'danger' },
+      ],
+    };
+    const s = flat(render(<Harness dishes={[dish]} />));
+    expect(s.indexOf('DangerOne')).toBeLessThan(s.indexOf('CautionOne'));
+  });
+
+  it('구 P-219 전용 섹션 소멸 — 표시는 칩 줄(warn-*) 하나뿐', () => {
+    const dish: ResultDish = { ...DISHES[0], avoidances: [{ code: 'X', name: 'OnlyOne', risk: 'danger' }] };
+    const tree = render(<Harness dishes={[dish]} />);
+    expect(tree.root.findAll((n) => n.props?.testID === 'warn-0').length).toBeGreaterThanOrEqual(1);
+    expect(tree.root.findAll((n) => n.props?.testID === 'avoid-0')).toHaveLength(0);
+    expect(flat(tree)).not.toContain('scan.avoidTitle');
+  });
+
+  it('회피 0건 = 칩 줄 자체 미렌더(P-210 — 빈 컨테이너 금지)', () => {
+    mockDetail.mockReturnValue({ data: { foodId: '1', description: null, photoUrl: null, ingredients: [] } });
+    const tree = render(<Harness dishes={[{ ...DISHES[0], avoidances: [] }]} />);
+    expect(tree.root.findAll((n) => n.props?.testID === 'warn-0')).toHaveLength(0);
+  });
 });
 
 describe('P-171: 칩 1줄 오버플로', () => {

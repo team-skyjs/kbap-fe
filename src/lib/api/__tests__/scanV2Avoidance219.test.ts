@@ -93,7 +93,13 @@ describe('⑤ ⑦ 에러 3분기 · similarFood · OCR 미호출 — 소스 잠�
     expect(read('src/features/scan/ScanRichList.tsx')).toContain('{!dish.matched && dish.similar && (');
   });
 
-  it('빈 회피 배열 = 컨테이너·제목 자체 미렌더(P-210 원칙)', () => {
-    expect(read('src/features/scan/ScanRichList.tsx')).toContain('{!!dish.avoidances?.length && (');
+  it('P-223: 회피 표시는 칩 줄 1곳으로 통합 — 구 avoidances 전용 섹션 소멸', () => {
+    const list = read('src/features/scan/ScanRichList.tsx');
+    expect(list).not.toContain('styles.avoidRow'); // P-219 신설 섹션 제거(이중 표시 정정)
+    expect(list).not.toContain('scan.avoidTitle');
+    // 통합 줄이 v2 데이터를 우선 소비(없으면 v1 조인 폴백)
+    expect(list).toContain('dish.avoidances?.length');
+    expect(list).toContain("(food?.ingredients ?? [])");
+    expect(list).toContain('{warns.length > 0 && ('); // 표시 조건 = 통합 줄 하나
   });
 });

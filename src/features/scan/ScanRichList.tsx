@@ -12,20 +12,20 @@
  *
  * 행 상세(설명·사진·기피 재료)는 useFoodDetail 프리페치 — **매칭 항목만** 조회
  * (react-query 캐시 공유·dedupe로 과호출 방어). 경고 칩 = 개인화 ingredients를
- * AvoidChip으로(flex-wrap).
+ * 통합 회피 칩으로(1줄 고정·+n 접기 — P-223).
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, radius, riskTone } from '@/lib/theme';
-import { AvoidChip } from '@/components/AvoidChip';
+import { color as C, font, radius, riskTone, type RiskState } from '@/lib/theme';
 
-/** P-171 ①: 칩 폭 근사 — AvoidChip 메트릭(padding 11×2, 폰트 12.5/800) 기반.
+/** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
  *  접히는 쪽(1줄 보장은 nowrap+overflow hidden이 이중 방어), 실측 레이아웃 패스 불요. */
 export function estChipW(label: string): number {
-  let w = 22; // 좌우 패딩
+  // P-223: 신형 칩 = 패딩 8×2 + 보더 1×2 + RiskMark(11) + gap(4)
+  let w = 33;
   for (const ch of label) w += ch.charCodeAt(0) > 0x2e80 ? 12.5 : 7;
   return w;
 }
@@ -140,10 +140,17 @@ function RichRow({
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
   const detail = useFoodDetail(dish.matched && dish.foodId ? dish.foodId : '');
   const food = dish.matched ? detail.data : undefined;
-  // P-171: danger 우선 정렬 — 접혀도 위험한 것부터 보인다
-  const warns = (food?.ingredients ?? [])
-    .filter((i) => i.risk === 'danger' || i.risk === 'caution')
-    .sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
+  // P-171 → P-223: 회피 칩 줄 **단일화**. 데이터는 v2 서버 겹침 우선, 없으면 v1 조인 폴백.
+  //  - v2(dev 계열): dish.avoidances = overlapped만·서버 번역명·성분별 riskLevel
+  //    (결측 CAUTION 강등은 어댑터가 이미 처리 — P-219)
+  //  - v1(prod 채널): 서버가 avoidances를 안 주므로 상세 ingredients 클라 조인 유지
+  // 정렬은 양쪽 동일 — danger 우선(접혀도 위험한 것부터 보인다)
+  const warnSource: { code: string; name: string; risk: RiskState }[] = dish.avoidances?.length
+    ? dish.avoidances
+    : (food?.ingredients ?? [])
+        .filter((i) => i.risk === 'danger' || i.risk === 'caution')
+        .map((i) => ({ code: i.code, name: i.name, risk: i.risk }));
+  const warns = [...warnSource].sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
   const [warnW, setWarnW] = React.useState(0);
   const { shown: shownWarns, rest: restWarns } = fitAvoidChips(warns, warnW);
   const converted = dish.priceKrw != null ? convertKrw(dish.priceKrw, currency) : null;
@@ -177,8 +184,13 @@ function RichRow({
             {/* P-160: "May contain" 라벨 제거 — solid 칩 색이 위험도를 말한다.
                 P-171: 1줄 고정 — 들어가는 만큼(danger 우선)+"+n" 접기, 탭(행 전체) = 상세
                 (What's inside가 전체 재료+사유 담당 — 인라인 펼침 대신 기존 화면 재활용). */}
+            {/* P-223: 칩 비주얼 = 색+형태 둘 다(헌법·색맹 접근성) — 1줄 접기에서도
+                caution/danger가 구분된다. 구 solid AvoidChip은 다른 표면에서 계속 사용. */}
             {shownWarns.map((w) => (
-              <AvoidChip key={w.code} label={w.name} variant={w.risk === 'danger' ? 'danger' : 'caution'} />
+              <View key={w.code} style={[styles.warnChip, { backgroundColor: riskTone[w.risk].bg, borderColor: riskTone[w.risk].line }]}>
+                <RiskMark state={w.risk} size={11} />
+                <Text style={[styles.warnChipText, { color: riskTone[w.risk].fg }]} numberOfLines={1}>{w.name}</Text>
+              </View>
             ))}
             {restWarns > 0 && (
               <View style={styles.moreChip} testID={`warn-more-${dish.itemId}`}>
@@ -199,22 +211,6 @@ function RichRow({
           </Pressable>
         )}
         {/* P-138 ③: 미매칭 행 안내문 삭제 — unable 마크가 상태를 말한다(조용) */}
-        {/* P-219 v2: 내 기피 재료 중 이 메뉴에 겹치는 것만 — 비면 섹션 자체 미렌더
-            (P-210 원칙: 빈 컨테이너·빈 제목 금지). 색+형태 둘 다로 구분(헌법),
-            성분명은 서버 번역값 그대로(클라 재번역 금지). */}
-        {!!dish.avoidances?.length && (
-          <View style={styles.avoidRow} testID={`avoid-${dish.itemId}`}>
-            <Text style={styles.avoidLead}>{t('scan.avoidTitle')}</Text>
-            <View style={styles.avoidChips}>
-              {dish.avoidances.map((a) => (
-                <View key={a.code} style={[styles.avoidChip, { backgroundColor: riskTone[a.risk].bg, borderColor: riskTone[a.risk].line }]}>
-                  <RiskMark state={a.risk} size={11} />
-                  <Text style={[styles.avoidChipText, { color: riskTone[a.risk].fg }]} numberOfLines={1}>{a.name}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
         {dish.priceKrw != null && (
           <Text style={styles.price}>
             {formatKrw(dish.priceKrw)}
@@ -277,11 +273,9 @@ const styles = StyleSheet.create({
   warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 5, marginTop: 2 },
   moreChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
   moreChipText: { fontFamily: font.displayBlack, fontSize: 12.5, color: C.ink2 },
-  avoidRow: { marginTop: 6, gap: 4 },
-  avoidLead: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink3 },
-  avoidChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  avoidChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, maxWidth: 190 },
-  avoidChipText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 11.5 },
+  // P-223: 통합 칩(색+형태) — 구 avoidRow 섹션 스타일 대체
+  warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  warnChipText: { fontFamily: font.bodySemi, fontSize: 11.5 },
   price: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink2, marginTop: 2, fontVariant: ['tabular-nums'] },
   similarRow: { marginTop: 3 },
   similarText: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.primaryText },
