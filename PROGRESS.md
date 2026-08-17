@@ -1285,3 +1285,8 @@
 - [x] P-223 회피 칩 이중 표시 통합 — P-219 섹션 삭제, 1줄 칩 줄이 v2 avoidances 우선 소비(없으면 v1 조인 폴백), 신형 칩(색+형태) 채택. scan.avoidTitle 10 로케일 제거(K-원장 반영 필요) — 3e8df7e.
 - [x] P-222 진행 화면 이탈 자제 보조 한 줄(scan.stayHint ×10) + network 재시도 버튼 재량 보강, 과잉 개입 0 잠금 — a21a55a.
 - [x] tsc 0 · jest 127스위트 787/787 · teamtest OTA(update group 75e1b0f0, K-28~29 카피 동승).
+
+## 리뷰 카피 정리 · 닉네임 잘림 (2026-08-18, P-225·224)
+- [x] P-225 탭명 Reviews ×10(피드 헤더 = 탭 키 정합)·optional 제거(온보딩 3키 제외)·Where did you eat?·리뷰 픽커 캡션 분기 — 0edd8bf.
+- [x] P-224 닉네임 잘림 두 계층 — displayNickname(14자·코드포인트) authorName 내장 + 단독형 numberOfLines 1(홈 인사는 접미 보호 병용) + ActionSheet 공용 방어 — 5f1d908.
+- [x] tsc 0 · jest 129스위트 797/797 · teamtest OTA(update group f8bbc901).
