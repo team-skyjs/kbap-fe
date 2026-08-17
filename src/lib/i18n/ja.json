@@ -274,7 +274,7 @@
     "errUpload": "写真をアップロードできませんでした。もう一度お試しください。",
     "stayHint": "少しお待ちください — アプリを離れると結果が失われることがあります。",
     "sortMenu": "メニュー順",
-    "sortSafety": "安全な順",
+    "sortSafety": "リスクが低い順",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。"
   },
   "owner": {
@@ -331,7 +331,7 @@
     "spiceUnset": "未設定",
     "showAll": "すべて表示（{{count}}）",
     "showLess": "折りたたむ",
-    "dietTitle": "食事タイプ",
+    "dietTitle": "食事・宗教・アレルギー",
     "showAllLink": "すべて見る",
     "presetFillTitle": "回避食材を更新しますか？",
     "presetFillBody": "選択に合わせて回避リストに食材を追加します。すでに回避中の食材は削除されません。",

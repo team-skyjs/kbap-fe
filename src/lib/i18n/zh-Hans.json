@@ -274,7 +274,7 @@
     "errUpload": "照片上传失败，请重试。",
     "stayHint": "请稍候 — 离开应用可能会丢失结果。",
     "sortMenu": "菜单顺序",
-    "sortSafety": "安全优先",
+    "sortSafety": "风险从低到高",
     "missNote": "尚未收录在数据库中 — 几天内会添加。"
   },
   "owner": {
@@ -331,7 +331,7 @@
     "spiceUnset": "未设置",
     "showAll": "查看全部（{{count}}）",
     "showLess": "收起",
-    "dietTitle": "饮食类型",
+    "dietTitle": "饮食、宗教与过敏",
     "showAllLink": "查看全部",
     "presetFillTitle": "更新回避食材？",
     "presetFillBody": "我们会根据你的选择向回避清单添加食材。已回避的食材不会被移除。",

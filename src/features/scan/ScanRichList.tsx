@@ -187,7 +187,7 @@ function RichRow({
                 P-171: 1줄 고정 — 들어가는 만큼(danger 우선)+"+n" 접기, 탭(행 전체) = 상세
                 (What's inside가 전체 재료+사유 담당 — 인라인 펼침 대신 기존 화면 재활용). */}
             {/* P-223: 칩 비주얼 = 색+형태 둘 다(헌법·색맹 접근성) — 1줄 접기에서도
-                caution/danger가 구분된다. 구 solid AvoidChip은 다른 표면에서 계속 사용. */}
+                caution/danger가 구분된다. 구 solid AvoidChip은 사용처 0 확인 후 삭제(P-230). */}
             {shownWarns.map((w) => (
               <View key={w.code} style={[styles.warnChip, { backgroundColor: riskTone[w.risk].bg, borderColor: riskTone[w.risk].line }]}>
                 <RiskMark state={w.risk} size={11} />

@@ -274,7 +274,7 @@
     "errUpload": "照片上傳失敗，請重試。",
     "stayHint": "請稍候 — 離開應用程式可能會遺失結果。",
     "sortMenu": "菜單順序",
-    "sortSafety": "安全優先",
+    "sortSafety": "風險從低到高",
     "missNote": "尚未收錄在資料庫中 — 幾天內會新增。"
   },
   "owner": {
@@ -331,7 +331,7 @@
     "spiceUnset": "未設定",
     "showAll": "查看全部（{{count}}）",
     "showLess": "收起",
-    "dietTitle": "飲食類型",
+    "dietTitle": "飲食、宗教與過敏",
     "showAllLink": "查看全部",
     "presetFillTitle": "更新迴避食材？",
     "presetFillBody": "我們會根據你的選擇向迴避清單新增食材。已迴避的食材不會被移除。",

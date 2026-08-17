@@ -270,7 +270,7 @@
     "errUpload": "We couldn't upload the photo. Please try again.",
     "stayHint": "Hang tight — leaving the app may lose your result.",
     "sortMenu": "Menu order",
-    "sortSafety": "Safest first",
+    "sortSafety": "Lowest risk first",
     "missNote": "Not in our database yet — it should be added within a few days."
   },
   "owner": {
@@ -327,7 +327,7 @@
     "spiceUnset": "Not set",
     "showAll": "Show all {{count}}",
     "showLess": "Show less",
-    "dietTitle": "Dietary preferences",
+    "dietTitle": "Diet, religion & allergies",
     "showAllLink": "Show all",
     "presetFillTitle": "Update avoided ingredients?",
     "presetFillBody": "We'll add the ingredients for your selection to your avoid list. Nothing you already avoid will be removed.",

@@ -274,7 +274,7 @@
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
     "stayHint": "Tunggu sebentar — keluar dari aplikasi bisa membuat hasilnya hilang.",
     "sortMenu": "Urutan menu",
-    "sortSafety": "Aman dulu",
+    "sortSafety": "Risiko terendah dulu",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari."
   },
   "owner": {
@@ -331,7 +331,7 @@
     "spiceUnset": "Belum diatur",
     "showAll": "Lihat semua ({{count}})",
     "showLess": "Lihat lebih sedikit",
-    "dietTitle": "Pola makan",
+    "dietTitle": "Diet, agama & alergi",
     "showAllLink": "Lihat semua",
     "presetFillTitle": "Perbarui bahan yang dihindari?",
     "presetFillBody": "Kami akan menambahkan bahan sesuai pilihanmu ke daftar hindaran. Yang sudah kamu hindari tidak akan dihapus.",

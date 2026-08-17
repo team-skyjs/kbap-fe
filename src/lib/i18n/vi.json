@@ -274,7 +274,7 @@
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
     "stayHint": "Chờ một chút — rời khỏi ứng dụng có thể làm mất kết quả.",
     "sortMenu": "Theo thực đơn",
-    "sortSafety": "An toàn trước",
+    "sortSafety": "Rủi ro thấp trước",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới."
   },
   "owner": {
@@ -331,7 +331,7 @@
     "spiceUnset": "Chưa đặt",
     "showAll": "Xem tất cả ({{count}})",
     "showLess": "Thu gọn",
-    "dietTitle": "Chế độ ăn",
+    "dietTitle": "Chế độ ăn, tôn giáo & dị ứng",
     "showAllLink": "Xem tất cả",
     "presetFillTitle": "Cập nhật nguyên liệu tránh?",
     "presetFillBody": "Chúng tôi sẽ thêm nguyên liệu phù hợp với lựa chọn của bạn vào danh sách tránh. Những gì bạn đang tránh sẽ không bị xóa.",

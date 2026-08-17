@@ -79,3 +79,32 @@ describe('①④⑤⑥⑦ 소스 잠금', () => {
     expect(list).toMatch(/addBtn: \{ width: ADD_SLOT_H, height: ADD_SLOT_H/); // 크기 불변
   });
 });
+
+describe('P-230: sortSafety false-safe 교정 · AvoidChip 삭제', () => {
+  const LOCALES = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'ru', 'th', 'es', 'id'];
+
+  it('전 로케일 = "위험도 낮은 순" 서술 — safest/안전 계열(보장 뉘앙스) 금지', () => {
+    // 정렬 순서 서술이어야 한다 — 상단 항목의 안전을 보장하는 어휘 금지(K-31 파생)
+    const BANNED = [/safest/i, /안전/, /安全/, /an toàn/i, /безопасн/i, /ปลอดภัย/, /segur/i, /\baman\b/i];
+    for (const lang of LOCALES) {
+      const v = (JSON.parse(read(`src/lib/i18n/${lang}.json`)) as { scan: Record<string, string> }).scan.sortSafety;
+      for (const re of BANNED) expect(v).not.toMatch(re);
+    }
+    expect((JSON.parse(read('src/lib/i18n/en.json')) as { scan: Record<string, string> }).scan.sortSafety).toBe('Lowest risk first');
+    expect((JSON.parse(read('src/lib/i18n/ko.json')) as { scan: Record<string, string> }).scan.sortSafety).toBe('위험도 낮은 순');
+  });
+
+  it('profile.dietTitle = 식단·종교·알레르기 의미 폭(en 기준) ×10', () => {
+    expect((JSON.parse(read('src/lib/i18n/en.json')) as { profile: Record<string, string> }).profile.dietTitle).toBe('Diet, religion & allergies');
+    expect((JSON.parse(read('src/lib/i18n/ko.json')) as { profile: Record<string, string> }).profile.dietTitle).toBe('식단·종교·알레르기'); // K-27 검수분 무변
+  });
+
+  it('AvoidChip 잔존 0 — 파일 삭제 + import 부재(커맨드 센터 승인)', () => {
+    expect(fs.existsSync('src/components/AvoidChip.tsx')).toBe(false);
+    const files = require('child_process').execFileSync('git', ['ls-files', 'src'], { encoding: 'utf8' })
+      .split('\n').filter((f: string) => /\.tsx?$/.test(f));
+    for (const f of files) {
+      expect(read(f)).not.toMatch(/from '@\/components\/AvoidChip'/);
+    }
+  });
+});

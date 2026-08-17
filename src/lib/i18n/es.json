@@ -274,7 +274,7 @@
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
     "stayHint": "Espera un momento: si sales de la app, puedes perder el resultado.",
     "sortMenu": "Orden del menú",
-    "sortSafety": "Más seguros primero",
+    "sortSafety": "Menor riesgo primero",
     "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días."
   },
   "owner": {
@@ -331,7 +331,7 @@
     "spiceUnset": "Sin definir",
     "showAll": "Ver todos ({{count}})",
     "showLess": "Ver menos",
-    "dietTitle": "Tipo de dieta",
+    "dietTitle": "Dieta, religión y alergias",
     "showAllLink": "Ver todo",
     "presetFillTitle": "¿Actualizar ingredientes evitados?",
     "presetFillBody": "Añadiremos los ingredientes de tu selección a tu lista. Lo que ya evitas no se eliminará.",
