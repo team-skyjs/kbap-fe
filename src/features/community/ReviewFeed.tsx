@@ -15,8 +15,8 @@ import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
-import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
+import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
+import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconClose, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -37,10 +37,19 @@ export function ReviewFeed() {
   const router = useRouter();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
-  const feed = useGlobalReviews(!isGuest); // 게스트 = 호출 0(인증 필수 계약)
+  // P-229: 피드 필터 — 국가(같은 국적 토글 = 음식별 목록 문법 재사용)·음식(픽커 재사용).
+  // 서버 파라미터 2종뿐(스웨거 실측) — 소팅·별점은 BE 대기(be-agenda).
+  const [sameNatOnly, setSameNatOnly] = React.useState(false);
+  const [foodFilter, setFoodFilter] = React.useState<FoodTagRef | null>(null);
+  const [filterPickerOpen, setFilterPickerOpen] = React.useState(false);
+  const nationality = useMe().data?.nationality ?? null;
+  const feed = useGlobalReviews(!isGuest, {
+    countryCode: sameNatOnly ? nationality : null,
+    foodId: foodFilter?.foodId ?? null,
+  }); // 게스트 = 호출 0(인증 필수 계약)
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
-  const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별
+  const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별(위 nationality와 같은 캐시 — 중복 호출 아님)
   const [gateOpen, setGateOpen] = React.useState(false);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
@@ -86,6 +95,37 @@ export function ReviewFeed() {
   return (
     <View style={styles.root} testID="review-feed">
       <Animated.FlatList
+        ListHeaderComponent={
+          isGuest ? null : (
+            <View style={styles.filterRow}>
+              {/* 국가 — 음식별 리뷰 목록의 같은 국적 토글 문법 재사용 */}
+              {!!nationality && (
+                <Pressable
+                  style={[styles.filterChip, sameNatOnly && styles.filterChipOn]}
+                  onPress={() => setSameNatOnly((v) => !v)}
+                  testID="feed-filter-country"
+                >
+                  <Flag code={nationality} size={14} />
+                  <Text style={[styles.filterChipText, sameNatOnly && styles.filterChipTextOn]} numberOfLines={1}>
+                    {t('reviews.sameNationality')}
+                  </Text>
+                </Pressable>
+              )}
+              {/* 음식 — 픽커 재사용, 선택 시 이름 칩 + 해제 */}
+              {foodFilter ? (
+                <Pressable style={[styles.filterChip, styles.filterChipOn]} onPress={() => setFoodFilter(null)} testID="feed-filter-food-clear">
+                  <Text style={[styles.filterChipText, styles.filterChipTextOn]} numberOfLines={1}>{foodFilter.name}</Text>
+                  <IconClose size={12} color={C.primaryText} />
+                </Pressable>
+              ) : (
+                <Pressable style={styles.filterChip} onPress={() => setFilterPickerOpen(true)} testID="feed-filter-food">
+                  <IconFood size={13} color={C.ink2} />
+                  <Text style={styles.filterChipText} numberOfLines={1}>{t('reviews.filterByFood')}</Text>
+                </Pressable>
+              )}
+            </View>
+          )
+        }
         data={isGuest ? [] : reviews}
         keyExtractor={(r) => r.id}
         contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: 96, flexGrow: 1 }]}
@@ -150,7 +190,12 @@ export function ReviewFeed() {
             fill
             icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
             title={t('reviews.emptyTitle')}
-            body={t('reviews.emptyBody')}
+            body={t(sameNatOnly || foodFilter ? 'reviews.emptyFiltered' : 'reviews.emptyBody')}
+            primary={
+              sameNatOnly || foodFilter
+                ? { label: t('reviews.clearFilters'), onPress: () => { setSameNatOnly(false); setFoodFilter(null); } }
+                : undefined
+            }
           />
         </ScreenCenterFill>
       ) : null}
@@ -164,6 +209,17 @@ export function ReviewFeed() {
         <IconPlus size={24} color="#fff" />
       </Pressable>
 
+      {/* P-229: 음식 필터 픽커 — 작성 픽커와 동일 컴포넌트 재사용(선택 = 필터) */}
+      <TagPickerSheet
+        context="review"
+        kind={filterPickerOpen ? 'food' : null}
+        foodTags={foodFilter ? [foodFilter] : []}
+        placeTag={null}
+        onToggleFood={(f) => { setFoodFilter(f); setFilterPickerOpen(false); }}
+        onTogglePlace={() => {}}
+        onClose={() => setFilterPickerOpen(false)}
+        t={t}
+      />
       <TagPickerSheet
         context="review" /* P-225 ④: 리뷰 픽커 = 캡션 미렌더(3태그 정책은 글 작성 전용) */
         kind={pickerOpen ? 'food' : null}
@@ -283,6 +339,12 @@ export function FeedCard({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   list: { paddingHorizontal: 18, gap: 12 },
+  // P-229: 필터 행 — 칩 문법(음식별 목록 필터 톤)
+  filterRow: { flexDirection: 'row', gap: 8, paddingBottom: 2 },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, maxWidth: 200 },
+  filterChipOn: { backgroundColor: primaryTint, borderColor: C.primary },
+  filterChipText: { flexShrink: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  filterChipTextOn: { color: C.primaryText },
   center: { paddingVertical: 30, alignItems: 'center' },
 
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 14, gap: 10, ...shadow.sh1 },

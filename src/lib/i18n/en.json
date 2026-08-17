@@ -447,7 +447,10 @@
     "emptySameNat": "No reviews from your country yet. Turn off the filter to see all reviews.",
     "helpful": "Helpful ({{count}})",
     "seeMore": "See more",
-    "seeLess": "See less"
+    "seeLess": "See less",
+    "filterByFood": "Filter by dish",
+    "emptyFiltered": "No reviews match these filters.",
+    "clearFilters": "Clear filters"
   },
   "ranking": {
     "headerTitle": "My Ranking",

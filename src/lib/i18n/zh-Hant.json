@@ -405,7 +405,10 @@
     "emptySameNat": "還沒有來自你國家的評價。關閉篩選即可查看全部評價。",
     "helpful": "有幫助（{{count}}）",
     "seeMore": "展開",
-    "seeLess": "收起"
+    "seeLess": "收起",
+    "filterByFood": "依菜色篩選",
+    "emptyFiltered": "沒有符合篩選條件的評價。",
+    "clearFilters": "清除篩選"
   },
   "ranking": {
     "headerTitle": "我的排名",

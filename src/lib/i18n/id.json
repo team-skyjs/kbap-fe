@@ -405,7 +405,10 @@
     "emptySameNat": "Belum ada ulasan dari negara Anda. Matikan filter untuk melihat semua.",
     "helpful": "Membantu ({{count}})",
     "seeMore": "Lihat selengkapnya",
-    "seeLess": "Sembunyikan"
+    "seeLess": "Sembunyikan",
+    "filterByFood": "Filter menurut hidangan",
+    "emptyFiltered": "Tidak ada ulasan yang cocok dengan filter.",
+    "clearFilters": "Hapus filter"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",

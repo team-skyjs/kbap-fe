@@ -405,7 +405,10 @@
     "emptySameNat": "Aún no hay reseñas de tu país. Desactiva el filtro para ver todas.",
     "helpful": "Útil ({{count}})",
     "seeMore": "Ver más",
-    "seeLess": "Ver menos"
+    "seeLess": "Ver menos",
+    "filterByFood": "Filtrar por plato",
+    "emptyFiltered": "No hay reseñas con estos filtros.",
+    "clearFilters": "Borrar filtros"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",

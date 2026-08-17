@@ -36,20 +36,32 @@ export async function fetchFoodReviewsPage(
   return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
 }
 
-/** P-179(KB-307): 전역 최신 리뷰 피드 — GET /api/reviews에서 **foodId 생략**(#144).
+/** P-229: 피드 필터 — 스웨거 실측(8/18) 지원 파라미터 2종뿐(countryCode ISO-2 정확
+ *  일치 · foodId). 소팅·별점은 파라미터 부재 — 커서 페이지네이션이라 클라 로컬
+ *  소팅은 로드된 페이지만 정렬하는 왜곡이므로 금지(BE 추가 대기, be-agenda). */
+export interface GlobalFeedFilters {
+  countryCode?: string | null;
+  foodId?: string | null;
+}
+
+/** P-179(KB-307): 전역 최신 리뷰 피드 — GET /api/reviews (P-229: 서버 필터 2종).
  *  bearerAuth 필수(계약) — 게스트/봉인은 빈 페이지(화면이 게이트 담당). */
-export async function fetchGlobalReviewsPage(cursor: string | null): Promise<ReviewPage> {
+export async function fetchGlobalReviewsPage(cursor: string | null, filters: GlobalFeedFilters = {}): Promise<ReviewPage> {
   if (!FLAGS.reviewsLiveEnabled || !(await hasBeSession())) return { items: [], hasNext: false, nextCursor: null };
   const q = new URLSearchParams();
   q.set('lang', apiLang());
   if (cursor) q.set('cursor', cursor);
+  if (filters.countryCode) q.set('countryCode', filters.countryCode); // 서버 필터 — 클라 필터 금지
+  if (filters.foodId) q.set('foodId', filters.foodId);
   return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
 }
 
-export function useGlobalReviews(enabled = true) {
+export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}) {
   return useInfiniteQuery({
-    queryKey: ['reviews', 'global'],
-    queryFn: ({ pageParam }) => fetchGlobalReviewsPage(pageParam),
+    // ⚠️ ['reviews','global'] 프리픽스 유지 — 좋아요 낙관 반영(likeInfiniteQueries)·
+    // 작성 무효화(useInvalidateReviews)가 프리픽스 매칭이라 필터 키 확장에도 안전.
+    queryKey: ['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all'],
+    queryFn: ({ pageParam }) => fetchGlobalReviewsPage(pageParam, filters),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),
     enabled,

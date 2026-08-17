@@ -451,7 +451,10 @@
     "emptySameNat": "같은 국적의 리뷰가 아직 없어요. 필터를 끄면 전체 리뷰를 볼 수 있어요.",
     "helpful": "도움돼요 ({{count}})",
     "seeMore": "더보기",
-    "seeLess": "접기"
+    "seeLess": "접기",
+    "filterByFood": "음식으로 필터",
+    "emptyFiltered": "필터에 맞는 리뷰가 없어요.",
+    "clearFilters": "필터 초기화"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

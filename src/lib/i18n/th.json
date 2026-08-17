@@ -405,7 +405,10 @@
     "emptySameNat": "ยังไม่มีรีวิวจากประเทศคุณ ปิดตัวกรองเพื่อดูรีวิวทั้งหมด",
     "helpful": "มีประโยชน์ ({{count}})",
     "seeMore": "ดูเพิ่มเติม",
-    "seeLess": "ย่อ"
+    "seeLess": "ย่อ",
+    "filterByFood": "กรองตามเมนู",
+    "emptyFiltered": "ไม่มีรีวิวที่ตรงกับตัวกรอง",
+    "clearFilters": "ล้างตัวกรอง"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",

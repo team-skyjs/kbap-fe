@@ -405,7 +405,10 @@
     "emptySameNat": "Chưa có đánh giá từ nước bạn. Tắt bộ lọc để xem tất cả.",
     "helpful": "Hữu ích ({{count}})",
     "seeMore": "Xem thêm",
-    "seeLess": "Thu gọn"
+    "seeLess": "Thu gọn",
+    "filterByFood": "Lọc theo món",
+    "emptyFiltered": "Không có đánh giá phù hợp với bộ lọc.",
+    "clearFilters": "Xóa bộ lọc"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",

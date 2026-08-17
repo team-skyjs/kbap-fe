@@ -405,7 +405,10 @@
     "emptySameNat": "同じ国籍のレビューはまだありません。フィルターを外すと全レビューが見られます。",
     "helpful": "参考になった（{{count}}）",
     "seeMore": "もっと見る",
-    "seeLess": "閉じる"
+    "seeLess": "閉じる",
+    "filterByFood": "料理で絞り込む",
+    "emptyFiltered": "条件に合うレビューがありません。",
+    "clearFilters": "フィルターをクリア"
   },
   "ranking": {
     "headerTitle": "マイランキング",

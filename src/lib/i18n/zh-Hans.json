@@ -405,7 +405,10 @@
     "emptySameNat": "还没有来自你国家的评价。关闭筛选即可查看全部评价。",
     "helpful": "有帮助（{{count}}）",
     "seeMore": "展开",
-    "seeLess": "收起"
+    "seeLess": "收起",
+    "filterByFood": "按菜品筛选",
+    "emptyFiltered": "没有符合筛选条件的评价。",
+    "clearFilters": "清除筛选"
   },
   "ranking": {
     "headerTitle": "我的排名",
