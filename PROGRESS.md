@@ -1271,3 +1271,7 @@
 - [x] P-217 인트로 폐지 — 최초 실행 = 로그인 직행(freshInstall 센티널로 판별 통합, introSeen 소멸). 재설치 온보딩 미표시 = 서버 onboardingCompleted 정본대로의 정상 동작으로 결론 — 735522a.
 - [x] P-219 스캔 v2 활성(dev/teamtest) — 2.0 헤더+lang·currency 필수(USD 강제 폴백), 에러 3분기(BE code 기반), avoidances 겹침 칩(결측 CAUTION 강등), prod v1 고정 잠금 — 5adb254.
 - [x] tsc 0 · jest 125스위트 766/766 · teamtest OTA 일괄(update group febc8796, fp 빌드18 일치).
+
+## 계측 fail_reason 분해 (2026-08-17, P-220)
+- [x] 스캔 실패 5종(not_menu·ocr·upload·network·server) — 분류·매핑을 순수 모듈 scanErrors.ts로 분리, 전수 유닛 잠금 — bff0ecd.
+- [x] tsc 0 · jest 126스위트 775/775 · teamtest OTA(update group 73ff5ef6).
