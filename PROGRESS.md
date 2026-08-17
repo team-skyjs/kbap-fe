@@ -1265,3 +1265,9 @@
 - [x] P-216 홈 섹션 4종(음식·리뷰 FeedCard 재사용·인기검색·저장, 빈 데이터 숨김) + 알림함(헤더 벨·뱃지·/notifications·목 4건 스왑 지점 1곳) — 플래그 dev 한정 — 53f38ee · OTA 4bcfeeea.
 - [x] P-215 계측 개명(user_info_ 접두 8종·이벤트 11종) + 네이밍 규칙 주석 + 구 이름 잔존 0 전 소스 스캔 유닛 — c06a5f4 · OTA d723dc41.
 - [x] tsc 0 · jest 123스위트 748/748.
+
+## 환율 표기 · 인트로 제거 · 스캔 v2 (2026-08-17, P-218·217·219)
+- [x] P-218 convertKrw 접두 = (단일 생산 지점, ≈ 잔존 0 잠금) — efc51c7.
+- [x] P-217 인트로 폐지 — 최초 실행 = 로그인 직행(freshInstall 센티널로 판별 통합, introSeen 소멸). 재설치 온보딩 미표시 = 서버 onboardingCompleted 정본대로의 정상 동작으로 결론 — 735522a.
+- [x] P-219 스캔 v2 활성(dev/teamtest) — 2.0 헤더+lang·currency 필수(USD 강제 폴백), 에러 3분기(BE code 기반), avoidances 겹침 칩(결측 CAUTION 강등), prod v1 고정 잠금 — 5adb254.
+- [x] tsc 0 · jest 125스위트 766/766 · teamtest OTA 일괄(update group febc8796, fp 빌드18 일치).
