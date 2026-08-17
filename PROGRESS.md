@@ -1306,3 +1306,8 @@
 - [x] P-232 [TEMP] 스캔 v2 타임아웃 600s + elapsed 로그(성공/실패 초) — 종한 진단 후 원복 대기 — ebb5ef2.
 - [x] P-231 상세 맵기 = SpicePeppers 5개 프레임(NONE 0채움 일관 재량), foodSpiceText 라벨 전용 축소(repeat 잔존 0 잠금) — 34b1097.
 - [x] tsc 0 · jest 132스위트 825/825 · teamtest OTA(update group 6dfa9748 — P-232 TEMP 동승 명기).
+
+## 프로필 식이 전체 페이지 (2026-08-18, P-233)
+- [x] /profile/diet 신설(15종 카테고리 그리드·역추론 프리셀렉트) + Show all 진입(프리셋 시트 경로 대체) — efa57dd.
+- [x] 확정 흐름: 저장=신규분 합집합 즉시 PATCH→사후 모달(Yes 회피 편집/No 복귀·반영 유지) · 해제=회피 불변 · 무변경=무모달.
+- [x] tsc 0 · jest 133스위트 831/831 · teamtest OTA(update group 0fb8eb30).
