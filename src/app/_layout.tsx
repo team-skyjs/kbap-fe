@@ -24,7 +24,6 @@ import { queryClient } from '@/lib/queryClient';
 import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
 import { installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
-import { hasSeenIntro } from '@/lib/introSeen';
 import { FLAGS } from '@/lib/flags';
 import i18n from '@/lib/i18n';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
@@ -49,7 +48,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const router = useRouter();
 
-  // 첫 실행 게이트 (KB-76): introSeen 판별이 끝날 때까지 스플래시 유지 —
+  // 첫 실행 게이트 (KB-76 → P-217): 최초 실행 판별이 끝날 때까지 스플래시 유지 —
   // 판별 전에 홈/리다이렉트가 먼저 그려지는 race 방지 (실기기 반려분 #1).
   // 신규 설치 잔존 세션 정리(freshInstall)도 이 게이트 안 — **정리가 프리페치·
   // 렌더 모두보다 선행**(P-041): 렌더는 entryChecked가 막고, 프리페치는
@@ -57,7 +56,9 @@ export default function RootLayout() {
   // P-018(KB-194): 여기에 부트 게이팅 추가 — 핵심 데이터 프리페치 + 최소 노출
   // 1200ms(반짝임 소멸) + 상한 4000ms(무한 스플래시 금지 — 스켈레톤/J4가 이어받음).
   const [entryChecked, setEntryChecked] = useState(false);
-  const needsIntro = useRef(false);
+  // P-217: 인트로 3슬라이드 폐지(멘토링 8/15) — 최초 실행 = **로그인 직행**.
+  // 판별은 freshInstall 센티널 하나(구 introSeen 플래그·모듈 소멸).
+  const needsLogin = useRef(false);
 
   useEffect(() => {
     // P-041(KB-152 재수정): **정리가 프리페치·렌더 모두보다 선행**. 기존 주석
@@ -65,9 +66,9 @@ export default function RootLayout() {
     // 같은 틱에 병렬 발사되며 그 가정을 깼다 — 신규 설치 첫 부팅에서 옛 토큰으로
     // /home 인증 프리페치 → 이전 계정 홈 잔상(Q-05, 프라이버시). cleanup은
     // AsyncStorage 체크 1회라 비신규 설치의 직렬화 지연은 무시 가능.
-    const cleanupDone = cleanupIfFreshInstall().catch(() => {});
-    const ready = Promise.all([cleanupDone, hasSeenIntro()])
-      .then(([, seen]) => { needsIntro.current = !seen; })
+    const cleanupDone = cleanupIfFreshInstall().catch(() => false);
+    const ready = cleanupDone
+      .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
     void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
   }, []);
@@ -92,11 +93,12 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // 네비게이터가 마운트된 뒤 1회만 인트로로 보낸다 (replace라 백스택 없음)
+  // 네비게이터가 마운트된 뒤 1회만 로그인으로 보낸다 (replace라 백스택 없음 —
+  // 로그인 화면의 백버튼은 canGoBack 가드라 첫 진입엔 자동 미노출)
   useEffect(() => {
-    if (entryChecked && needsIntro.current) {
-      needsIntro.current = false;
-      router.replace('/intro' as Href);
+    if (entryChecked && needsLogin.current) {
+      needsLogin.current = false;
+      router.replace('/login' as Href);
     }
   }, [entryChecked, router]);
 

@@ -15,12 +15,17 @@ import { clearTokens } from './beTokens';
 
 const KEY = 'kbap.installed.v1';
 
-/** 부팅 게이트(루트 _layout)에서 세션 판정 전에 await할 것. */
-export async function cleanupIfFreshInstall(): Promise<void> {
+/**
+ * 부팅 게이트(루트 _layout)에서 세션 판정 전에 await할 것.
+ * @returns **최초 실행(신규·재설치) 여부** — P-217: 인트로 플래그(introSeen)를
+ *   없애고 이 센티널 하나로 "첫 화면 = 로그인" 분기까지 겸한다(부팅 경로 단순화).
+ *   ⚠️ P-204 설치 ID는 이 정리 대상이 아니다(clearTokens = 액세스·리프레시만).
+ */
+export async function cleanupIfFreshInstall(): Promise<boolean> {
   try {
-    if ((await AsyncStorage.getItem(KEY)) != null) return; // 기설치 — 세션 유지
+    if ((await AsyncStorage.getItem(KEY)) != null) return false; // 기설치 — 세션 유지
   } catch {
-    return; // 스토리지 불능: 기존 사용자 오탐 로그아웃보다 미정리가 낫다
+    return false; // 스토리지 불능: 기존 사용자 오탐 로그아웃보다 미정리가 낫다
   }
   await clearTokens();
   if (Platform.OS !== 'web') {
@@ -33,4 +38,5 @@ export async function cleanupIfFreshInstall(): Promise<void> {
     }
   }
   await AsyncStorage.setItem(KEY, '1').catch(() => {});
+  return true;
 }

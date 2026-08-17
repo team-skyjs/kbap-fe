@@ -5,7 +5,7 @@
  * (재개 모달 노출). 정리 대상 = **계정에 귀속된** 상태만:
  *   - 온보딩 draft (kbap.onboardingDraft.v1) — 중단 저장분
  *   - 맵기 로컬 fallback (kbap.profile.spice.v1)
- * 유지(기기 귀속): introSeen · lang · installed 센티널 · recentSearches(기기
+ * 유지(기기 귀속): lang · installed 센티널(P-217: 최초 실행 판별 겸용) · recentSearches(기기
  * 로컬 검색 기록 — 서버 미전송, 계정 비귀속 판단. 보고 명시).
  *
  * 세션(BE 토큰·서버 캐시)은 withdrawBe/logoutBe 가, Keychain 잔존은
