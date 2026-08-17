@@ -37,6 +37,7 @@ import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
+import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
 import { coverCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
@@ -110,6 +111,8 @@ export default function Scan() {
   // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
   // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
   const [view, setView] = useState<ResultView>('list');
+  // P-226 ②③: 리스트 소팅 — safety 토글은 소팅 세그와 통합(컨트롤 수 최소화 재량)
+  const [sortMode, setSortMode] = useState<ResultSortMode>('menu');
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
   // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
@@ -481,8 +484,11 @@ export default function Scan() {
       avoidances: p.avoidances, // P-219 v2
     }));
     const allDishes = [...resultDishes, ...photoDishes];
-    // §14-5: unable sorted last, never hidden
-    const listDishes = [...allDishes].sort((a, b) => (a.risk === 'unable' ? 1 : 0) - (b.risk === 'unable' ? 1 : 0));
+    // §14-5: unable sorted last, never hidden.
+    // P-226 ②③: 소팅 세그 — 기본 = 메뉴판 그대로 순(unable만 최하단, 현행 유지),
+    // 안전한 순 = safe→caution→danger→unable. ⚠️ unable은 어느 모드에서도 **최하단**
+    // — 불확실을 안전해 보이는 위치에 두지 않는다(false-safe, 유닛 잠금).
+    const listDishes = sortResultDishes(allDishes, sortMode);
 
     // P-038→P-057(KB-212 후속, A안): 빈 프로필 넛지 — 회원 && 기피 0 && 세션 내
     // 미닫음. 어두운 absolute 오버레이(배경에 묻힘·카드 밀착)를 폐기하고 결과
@@ -530,6 +536,14 @@ export default function Scan() {
             avoidNames={(me?.restrictions ?? []).map((r) => ingCat.name(r.code))}
             t={t}
           />
+          {/* P-226 ②③: 소팅 세그(메뉴판 순 기본 / 안전한 순) — 뷰 세그와 동일 문법 */}
+          <View style={styles.sortSegRow}>
+            {(['menu', 'safety'] as ResultSortMode[]).map((m) => (
+              <Pressable key={m} style={[styles.segBtn, sortMode === m && styles.segBtnOn]} onPress={() => setSortMode(m)} testID={`sort-${m}`}>
+                <Text style={[styles.segText, sortMode === m && styles.segTextOn]}>{t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
+              </Pressable>
+            ))}
+          </View>
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
               <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)} style={{ paddingHorizontal: 16, paddingTop: 10 }}>
@@ -883,6 +897,8 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
 }
 
 const styles = StyleSheet.create({
+  // P-226 ②: 소팅 세그 행 — 프로필 바 아래 얇게
+  sortSegRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.surface },
   // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },

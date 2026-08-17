@@ -190,7 +190,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadow.sh1,
   },
-  flipInner: { transform: [{ rotate: '180deg' }] },
+  // P-226 ⑥: 뒤집기 연출 제거(멘토 "굳이 돌려서 보여주기 ㄴㄴ") — 내 시점 그대로.
+  // 카드 한국어 문구는 불변(연출만 변경 — 문구는 Codex 금지 영역).
+  flipInner: {},
   // 시안: 확대 버튼은 카드 좌상단 — 뒤집힌 텍스트 기준으론 우하단이라 본문과 안 겹침
   zoomBtn: {
     position: 'absolute',

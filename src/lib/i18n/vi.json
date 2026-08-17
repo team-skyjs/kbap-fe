@@ -249,7 +249,7 @@
     "nudgeAction": "Thiết lập nguyên liệu cần tránh",
     "nudgeRest": " để chúng tôi chỉ ra món nên bỏ qua trong thực đơn này",
     "permissionSettingsBody": "Quyền camera đang tắt. Hãy cho phép trong Cài đặt.",
-    "resultsSub": "Đã đọc {{count}} món, KO → EN",
+    "resultsSub": "{{count}} món",
     "segPhoto": "Ảnh",
     "segList": "Danh sách",
     "checkedAgainst": "Đã đối chiếu với hồ sơ của bạn",
@@ -272,7 +272,10 @@
     "errNotMenu": "Ảnh này không giống thực đơn. Hãy chụp lại nhé.",
     "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
-    "stayHint": "Chờ một chút — rời khỏi ứng dụng có thể làm mất kết quả."
+    "stayHint": "Chờ một chút — rời khỏi ứng dụng có thể làm mất kết quả.",
+    "sortMenu": "Theo thực đơn",
+    "sortSafety": "An toàn trước",
+    "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới."
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

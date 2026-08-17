@@ -249,7 +249,7 @@
     "nudgeAction": "Configura tus ingredientes a evitar",
     "nudgeRest": " y te señalaremos qué saltarte en este menú",
     "permissionSettingsBody": "El acceso a la cámara está desactivado. Permítelo en Ajustes.",
-    "resultsSub": "{{count}} platos leídos, KO → EN",
+    "resultsSub": "{{count}} platos",
     "segPhoto": "Foto",
     "segList": "Lista",
     "checkedAgainst": "Comprobado con tu perfil",
@@ -272,7 +272,10 @@
     "errNotMenu": "Esto no parece un menú. Vuelve a tomar la foto.",
     "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
-    "stayHint": "Espera un momento: si sales de la app, puedes perder el resultado."
+    "stayHint": "Espera un momento: si sales de la app, puedes perder el resultado.",
+    "sortMenu": "Orden del menú",
+    "sortSafety": "Más seguros primero",
+    "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días."
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

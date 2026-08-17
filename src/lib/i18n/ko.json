@@ -249,7 +249,7 @@
     "nudgeAction": "못 먹는 재료를 설정",
     "nudgeRest": "하면 내 기준으로 음식별 위험도가 표시돼요",
     "permissionSettingsBody": "카메라 접근이 꺼져 있어요. 설정에서 허용해 주세요.",
-    "resultsSub": "메뉴 {{count}}개 인식, 한국어 → 영어",
+    "resultsSub": "{{count}}개 메뉴",
     "segPhoto": "사진",
     "segList": "목록",
     "checkedAgainst": "내 프로필 기준으로 확인했어요",
@@ -272,7 +272,10 @@
     "errNotMenu": "메뉴판으로 보이지 않아요. 다시 찍어 주세요.",
     "errBusy": "메뉴를 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
     "errUpload": "사진을 올리지 못했어요. 다시 시도해 주세요.",
-    "stayHint": "잠시만요 — 앱을 벗어나면 결과를 놓칠 수 있어요."
+    "stayHint": "잠시만요 — 앱을 벗어나면 결과를 놓칠 수 있어요.",
+    "sortMenu": "메뉴판 순",
+    "sortSafety": "안전한 순",
+    "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요."
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",

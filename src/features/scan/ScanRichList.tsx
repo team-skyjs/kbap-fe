@@ -16,9 +16,9 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, radius, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, primaryTint, radius, riskTone, type RiskState } from '@/lib/theme';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -164,12 +164,14 @@ function RichRow({
           <Pressable hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
             <RiskMark state={dish.risk} size={16} />
           </Pressable>
-          <Text style={styles.nameKo} numberOfLines={1}>
-            {dish.koreanName ?? dish.rawMenuName}
+          {/* P-226 ①: 위계 반전(멘토) — 영문(요청 lang 번역명) 타이틀, 한글은 서브 작게 회색.
+              번역명 부재(미매칭 등) = 한글이 타이틀 폴백 */}
+          <Text style={styles.nameTitle} numberOfLines={1}>
+            {dish.displayName || (dish.koreanName ?? dish.rawMenuName)}
           </Text>
         </View>
-        {!!dish.displayName && dish.displayName !== (dish.koreanName ?? dish.rawMenuName) && (
-          <Text style={styles.nameEn} numberOfLines={1}>{dish.displayName}</Text>
+        {!!dish.displayName && dish.displayName !== (dish.koreanName ?? dish.rawMenuName) && !!(dish.koreanName ?? dish.rawMenuName) && (
+          <Text style={styles.nameSubKo} numberOfLines={1}>{dish.koreanName ?? dish.rawMenuName}</Text>
         )}
         {!!food?.description && (
           <Text style={styles.desc} numberOfLines={1}>{food.description}</Text>
@@ -197,6 +199,22 @@ function RichRow({
                 <Text style={styles.moreChipText}>+{restWarns}</Text>
               </View>
             )}
+          </View>
+        )}
+        {/* P-226 ⑤: 미등록 행 — 등록 예정 안내 + 외부 검색 딥링크(구글/네이버, 한글 키워드) */}
+        {!dish.matched && (
+          <View style={styles.missRow} testID={`miss-${dish.itemId}`}>
+            <Text style={styles.missText}>{t('scan.missNote')}</Text>
+            <View style={styles.missLinks}>
+              {([
+                ['Google', `https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
+                ['NAVER', `https://search.naver.com/search.naver?query=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
+              ] as const).map(([label, url]) => (
+                <Pressable key={label} style={styles.missLink} hitSlop={6} onPress={() => void Linking.openURL(url)} testID={`miss-${label.toLowerCase()}-${dish.itemId}`}>
+                  <Text style={styles.missLinkText}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         )}
         {/* P-153 v2: 미등록 행 유사 제안 — 링크 전용, 행 판정 unable 불변(헌법 III).
@@ -234,8 +252,10 @@ function RichRow({
               </Pressable>
             </View>
           ) : (
-            <Pressable style={styles.addBtn} hitSlop={8} onPress={onAdd} testID={`add-${dish.itemId}`}>
-              <IconPlus size={15} color={C.ink} />
+            /* P-226 ⑦(재량 1안): 터치 44pt+(hitSlop 12) + primary 톤(시인성).
+               크기 30 유지 — ADD_SLOT 고정 풋프린트 프레임 불변(P-138 ①) */
+            <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
+              <IconPlus size={15} color={C.primary} />
             </Pressable>
           )}
         </View>
@@ -255,6 +275,12 @@ export function OrderPill({ count, onPress, t, bottom }: { count: number; onPres
 }
 
 const styles = StyleSheet.create({
+  // P-226 ⑤: 미등록 안내 + 외부 검색 링크
+  missRow: { marginTop: 4, gap: 5 },
+  missText: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 17 },
+  missLinks: { flexDirection: 'row', gap: 8 },
+  missLink: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  missLinkText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink2 },
   body: { paddingHorizontal: 16, paddingBottom: 120 },
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
@@ -266,8 +292,8 @@ const styles = StyleSheet.create({
   editLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   row: { flexDirection: 'row', gap: 12, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  nameKo: { fontFamily: font.koBold, fontSize: 15.5, color: C.ink, flexShrink: 1 },
-  nameEn: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink },
+  nameTitle: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink, flexShrink: 1 },
+  nameSubKo: { fontFamily: font.ko, fontSize: 12.5, color: C.ink3 },
   desc: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   // P-171: 1줄 고정 — nowrap+hidden(근사 오차 이중 방어), 행 높이 균일 회복
   warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 5, marginTop: 2 },
@@ -285,7 +311,7 @@ const styles = StyleSheet.create({
   thumb: { width: RIGHT_COL_W, height: RIGHT_COL_W, borderRadius: radius.sm, backgroundColor: C.surface2 },
   // 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H)를 공유
   addSlot: { width: RIGHT_COL_W, height: ADD_SLOT_H, alignItems: 'flex-end', justifyContent: 'center' },
-  addBtn: { width: ADD_SLOT_H, height: ADD_SLOT_H, borderRadius: ADD_SLOT_H / 2, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: ADD_SLOT_H, height: ADD_SLOT_H, borderRadius: ADD_SLOT_H / 2, borderWidth: 1.5, borderColor: C.primary, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
   stepper: { width: RIGHT_COL_W, height: ADD_SLOT_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderColor: C.line, borderRadius: 999, paddingHorizontal: 8 },
   qty: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, fontVariant: ['tabular-nums'], textAlign: 'center' },
   footNote: { fontFamily: font.body, fontSize: 11.5, lineHeight: 16, color: C.ink3, paddingVertical: 14 },

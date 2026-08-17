@@ -249,7 +249,7 @@
     "nudgeAction": "Atur bahan pantanganmu",
     "nudgeRest": " dan kami akan menandai yang perlu dihindari di menu ini",
     "permissionSettingsBody": "Akses kamera dimatikan. Izinkan di Pengaturan.",
-    "resultsSub": "{{count}} hidangan terbaca, KO → EN",
+    "resultsSub": "{{count}} hidangan",
     "segPhoto": "Foto",
     "segList": "Daftar",
     "checkedAgainst": "Dicek dengan profil Anda",
@@ -272,7 +272,10 @@
     "errNotMenu": "Ini sepertinya bukan menu. Coba foto ulang.",
     "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
-    "stayHint": "Tunggu sebentar — keluar dari aplikasi bisa membuat hasilnya hilang."
+    "stayHint": "Tunggu sebentar — keluar dari aplikasi bisa membuat hasilnya hilang.",
+    "sortMenu": "Urutan menu",
+    "sortSafety": "Aman dulu",
+    "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari."
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

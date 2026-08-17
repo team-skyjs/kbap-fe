@@ -249,7 +249,7 @@
     "nudgeAction": "设置忌口食材",
     "nudgeRest": "后，我们会在这份菜单上标出该避开的菜",
     "permissionSettingsBody": "相机权限已关闭。请在设置中允许。",
-    "resultsSub": "识别 {{count}} 道菜，KO → EN",
+    "resultsSub": "{{count}} 道菜",
     "segPhoto": "照片",
     "segList": "列表",
     "checkedAgainst": "已按你的资料核对",
@@ -272,7 +272,10 @@
     "errNotMenu": "这看起来不像菜单，请重新拍照。",
     "errBusy": "未能识别菜单，请稍后再试。",
     "errUpload": "照片上传失败，请重试。",
-    "stayHint": "请稍候 — 离开应用可能会丢失结果。"
+    "stayHint": "请稍候 — 离开应用可能会丢失结果。",
+    "sortMenu": "菜单顺序",
+    "sortSafety": "安全优先",
+    "missNote": "尚未收录在数据库中 — 几天内会添加。"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",
