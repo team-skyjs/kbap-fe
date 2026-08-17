@@ -35,6 +35,10 @@ jest.mock('expo-router', () => ({
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 jest.mock('@/components/ConfettiBurst', () => ({ ConfettiBurst: () => null, CONFETTI_DURATION_MS: 0 }));
 // 팩토리 즉시 평가(호이스팅) TDZ 회피 — 목 객체는 factory 안에서 만들고 requireMock으로 취득
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+})); // P-221: 설정 화면이 실제 렌더되며 SubHeader 인셋 필요
+const MOCK_SETTINGS = { helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null };
 jest.mock('@/lib/push/pushAdapter', () => ({
   markPrimerResult: jest.fn().mockResolvedValue(undefined),
   requestPermission: jest.fn().mockResolvedValue(true),
@@ -42,6 +46,13 @@ jest.mock('@/lib/push/pushAdapter', () => ({
   scheduleReviewReminder: jest.fn().mockResolvedValue(undefined),
   cancelReviewReminder: jest.fn().mockResolvedValue(undefined),
   getPrimerResult: jest.fn().mockResolvedValue(null),
+  // P-221: 플래그가 켜지며 설정 화면이 실제로 렌더된다 — 화면이 쓰는 API 전부 목
+  DEFAULT_PUSH_SETTINGS: { helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null },
+  REVIEW_REMINDER_SECONDS: 3600,
+  getPushSettings: jest.fn().mockResolvedValue({ helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null }),
+  savePushSettings: jest.fn((n: unknown) => Promise.resolve(n)),
+  getPermissionStatus: jest.fn().mockResolvedValue('granted'),
+  pushAvailable: jest.fn(() => true),
 }));
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
   'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'scheduleReviewReminder' | 'cancelReviewReminder' | 'getPrimerResult',
@@ -84,16 +95,19 @@ const tap = async (tree: ReactTestRenderer, testID: string) => {
   });
 };
 
-it('플래그 off 고정(네이티브 빌드 대기) — 설정 화면 = 홈 리다이렉트(딥링크 방어)', () => {
-  expect(FLAGS.pushEnabled).toBe(false); // 다음 네이티브 빌드 전 on 금지
+// P-192 "off 고정" → P-221: dev 계열 활성화(빌드18이 네이티브 모듈 보유).
+// 🔴 prod는 여전히 차단 — 스토어 배포판에 모듈이 없어 켜면 크래시.
+it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 화면은 게이트 뒤', () => {
+  expect(FLAGS.pushEnabled).toBe(true); // 유닛 = dev 계열(PROD_CHANNEL false)
   const tree = render(<NotificationSettings />);
-  // 컴포지트+호스트 노드 이중 매칭 — 존재만 잠금
-  expect(tree.root.findAll((n) => n.props?.testID === 'redirect').length).toBeGreaterThanOrEqual(1);
+  // 게이트가 열렸으므로 리다이렉트 없이 실제 설정 화면이 뜬다
+  expect(tree.root.findAll((n) => n.props?.testID === 'redirect')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'notif-reminder').length).toBeGreaterThanOrEqual(1);
 });
 
-it('플래그 off = 전 표면 무노출·무동작 배선 잠금(소스)', () => {
+it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + 채널 조건 유지', () => {
   const fs = require('fs');
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: false');
+  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: !PROD_CHANNEL');
   // 프로필 행·스캔 프라이머·루트 배선·온보딩 프라이머 — 전부 플래그 게이트 뒤
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled) return");
