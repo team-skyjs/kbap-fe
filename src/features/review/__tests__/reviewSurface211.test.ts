@@ -37,7 +37,7 @@ it('③ 무효화 — 전역 피드(["reviews","global"]) 포함, 생성/수정/
 it('④ 커뮤니티 탭 헤더 — 공용 StickyHeader + useStickyScroll, 자체 헤더 스타일 소멸', () => {
   const feed = read('src/features/community/ReviewFeed.tsx');
   expect(feed).toContain('useStickyScroll()');
-  expect(feed).toContain('<StickyHeader hidden={hidden} mode="brand" title={t(\'community.title\')} />');
+  expect(feed).toContain('<StickyHeader hidden={hidden} mode="brand" title={t(\'tabs.community\')} />'); // P-225: 헤더 = 탭 라벨 키(Reviews)
   expect(feed).toContain('paddingTop: headerH');
   expect(feed).not.toContain('headerTitle');
 });

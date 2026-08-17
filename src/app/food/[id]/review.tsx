@@ -280,8 +280,8 @@ export default function ReviewCompose() {
           ) : (
             <Pressable style={styles.placeRow} onPress={() => setPlaceSheet(true)}>
               <IconMapPin size={17} color={C.ink2} />
-              <Text style={styles.placeRowText}>{t('review.placeRow')}</Text>
-              <Text style={styles.placeRowOpt}>{t('review.placeOptional')}</Text>
+              {/* P-225: Optional 라벨 제거(멘토 8/15) — flex 자리는 텍스트가 이어받음 */}
+              <Text style={[styles.placeRowText, { flex: 1 }]}>{t('review.placeRow')}</Text>
               <IconChevron size={15} color={C.ink3} />
             </Pressable>
           )}
@@ -373,7 +373,6 @@ const styles = StyleSheet.create({
   // P-095 장소 필드·시트
   placeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, paddingVertical: 13, ...shadow.sh1 },
   placeRowText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  placeRowOpt: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink3 },
   placeChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
   placeChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink, flexShrink: 1 },
 

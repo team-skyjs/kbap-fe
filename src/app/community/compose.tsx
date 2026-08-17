@@ -384,6 +384,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   onTogglePlace,
   onClose,
   t,
+  context = 'compose',
 }: {
   kind: 'food' | 'place' | null;
   foodTags: FoodTagRef[];
@@ -392,6 +393,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   onTogglePlace: (p: PlaceTagRef) => void;
   onClose: () => void;
   t: TFn;
+  /** P-225 ④: 하단 캡션(3태그·장소 정책)은 글 작성 전용 — 리뷰 픽커는 미렌더. */
+  context?: 'compose' | 'review';
 }) {
   const bottomInset = useBottomInset();
   const [q, setQ] = React.useState('');
@@ -515,10 +518,13 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             )}
           </ScrollView>
 
-          {/* 하단 mono 캡션 */}
-          <Text style={[styles.sheetCaption, { paddingBottom: bottomInset + 6 }]}>
-            {t(kind === 'food' ? 'community.foodSheetCaption' : 'community.placeSheetCaption')}
-          </Text>
+          {/* 하단 mono 캡션 — P-225 ④: 글 작성 맥락 전용(3개 정책·게시글 장소 정책).
+              리뷰 픽커(음식 1개 선택)에선 틀린 정책 문구라 미렌더 */}
+          {context === 'compose' && (
+            <Text style={[styles.sheetCaption, { paddingBottom: bottomInset + 6 }]} testID="picker-caption">
+              {t(kind === 'food' ? 'community.foodSheetCaption' : 'community.placeSheetCaption')}
+            </Text>
+          )}
         </View>
       </View>
       <KeyboardDismissBar modal />

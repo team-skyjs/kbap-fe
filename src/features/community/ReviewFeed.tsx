@@ -129,7 +129,7 @@ export function ReviewFeed() {
       />
 
       {/* P-211 ④: 타이틀 유지 — 브랜드 모드 + 센터 타이틀(공용 title 슬롯) */}
-      <StickyHeader hidden={hidden} mode="brand" title={t('community.title')} />
+      <StickyHeader hidden={hidden} mode="brand" title={t('tabs.community')} /> {/* P-225: 헤더 = 탭 라벨 키 재사용(Reviews) — 단일 소스 */}
 
       {/* P-196 ②: 상태 블록 = 화면 기준 정중앙(4탭 공용 기준 — ScreenCenterFill) */}
       {isGuest ? (
@@ -165,6 +165,7 @@ export function ReviewFeed() {
       </Pressable>
 
       <TagPickerSheet
+        context="review" /* P-225 ④: 리뷰 픽커 = 캡션 미렌더(3태그 정책은 글 작성 전용) */
         kind={pickerOpen ? 'food' : null}
         foodTags={[]}
         placeTag={null}

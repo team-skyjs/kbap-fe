@@ -79,7 +79,7 @@ it('on(dev·teamtest) → 실화면 (플레이스홀더 없음)', () => {
   mockFlags.communityEnabled = true;
   const tree = render(<Community />);
   const all = texts(tree);
-  expect(all).toContain('community.title');
+  expect(all).toContain('tabs.community'); // P-225: 실피드 헤더 = 탭 라벨 키(Reviews)
   expect(all).not.toContain('community.lockedTitle');
 });
 
