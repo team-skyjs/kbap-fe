@@ -249,7 +249,7 @@
     "nudgeAction": "못 먹는 재료를 설정",
     "nudgeRest": "하면 내 기준으로 음식별 위험도가 표시돼요",
     "permissionSettingsBody": "카메라 접근이 꺼져 있어요. 설정에서 허용해 주세요.",
-    "resultsSub": "{{count}}개 메뉴",
+    "resultsSub": "메뉴 {{count}}개",
     "segPhoto": "사진",
     "segList": "목록",
     "checkedAgainst": "내 프로필 기준으로 확인했어요",
@@ -274,7 +274,7 @@
     "errUpload": "사진을 올리지 못했어요. 다시 시도해 주세요.",
     "stayHint": "잠시만요. 앱을 벗어나면 결과를 놓칠 수 있어요.",
     "sortMenu": "메뉴판 순",
-    "sortSafety": "안전한 순",
+    "sortSafety": "위험도 낮은 순",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요."
   },
   "owner": {
@@ -331,10 +331,10 @@
     "spiceUnset": "미설정",
     "showAll": "전체 보기 ({{count}})",
     "showLess": "접기",
-    "dietTitle": "식이 유형",
+    "dietTitle": "식단·종교·알레르기",
     "showAllLink": "전체 보기",
-    "presetFillTitle": "회피 성분을 채울까요?",
-    "presetFillBody": "선택한 식이 유형에 맞는 성분을 회피 목록에 추가해요. 이미 회피 중인 성분은 지워지지 않아요.",
+    "presetFillTitle": "못 먹는 재료를 추가할까요?",
+    "presetFillBody": "선택한 식단·종교·알레르기에 맞는 재료를 추가해요. 이미 등록한 재료는 지워지지 않아요.",
     "presetFillYes": "성분 추가"
   },
   "editProfile": {
@@ -460,7 +460,7 @@
     "helpful": "도움돼요 ({{count}})",
     "seeMore": "더보기",
     "seeLess": "접기",
-    "filterByFood": "음식으로 필터",
+    "filterByFood": "음식별로 보기",
     "emptyFiltered": "필터에 맞는 리뷰가 없어요.",
     "clearFilters": "필터 초기화"
   },
