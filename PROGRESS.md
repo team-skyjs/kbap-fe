@@ -1301,3 +1301,8 @@
 ## 정리 묶음 (2026-08-18, P-230)
 - [x] sortSafety 9로케일 "위험도 낮은 순" 교정(safest/안전 어휘 전 로케일 금지 유닛) · dietTitle 의미 폭 정합 · AvoidChip 삭제 — 4fe7fb8.
 - [x] tsc 0 · jest 132스위트 822/822 · teamtest OTA(update group ac3a34d5, K-30·31 카피 동승).
+
+## 진단 타임아웃 · 상세 맵기 프레임 (2026-08-18, P-232·231)
+- [x] P-232 [TEMP] 스캔 v2 타임아웃 600s + elapsed 로그(성공/실패 초) — 종한 진단 후 원복 대기 — ebb5ef2.
+- [x] P-231 상세 맵기 = SpicePeppers 5개 프레임(NONE 0채움 일관 재량), foodSpiceText 라벨 전용 축소(repeat 잔존 0 잠금) — 34b1097.
+- [x] tsc 0 · jest 132스위트 825/825 · teamtest OTA(update group 6dfa9748 — P-232 TEMP 동승 명기).
