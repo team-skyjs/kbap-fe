@@ -327,7 +327,12 @@
     "spiceTitle": "辛さの許容度",
     "spiceUnset": "未設定",
     "showAll": "すべて表示（{{count}}）",
-    "showLess": "折りたたむ"
+    "showLess": "折りたたむ",
+    "dietTitle": "食事タイプ",
+    "showAllLink": "すべて見る",
+    "presetFillTitle": "回避食材を更新しますか？",
+    "presetFillBody": "選択に合わせて回避リストに食材を追加します。すでに回避中の食材は削除されません。",
+    "presetFillYes": "食材を追加"
   },
   "review": {
     "title": "レビューを書く",

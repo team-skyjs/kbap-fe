@@ -9,6 +9,14 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // guestListBadges.test 프렐류드 재사용 — reanimated/expo 표면 mock
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
+// P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
+jest.mock('@/lib/data/useDietPresets', () => ({
+  useDietPresets: () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DIET_PRESETS, presetSubstanceCodes } = require('@/lib/onboarding/dietPresets');
+    return DIET_PRESETS.map((p: { id: string }) => ({ ...p, codes: [...presetSubstanceCodes(p)], serverName: null }));
+  },
+}));
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => (require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients')).ingredientLabel(c),

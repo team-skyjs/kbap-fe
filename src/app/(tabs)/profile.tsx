@@ -6,13 +6,13 @@
  * header; no emoji; reader text i18n'd; risk colors fixed.
  */
 import { RemoteImage } from '@/components/RemoteImage';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
+import { color as C, font, radius, shadow, primaryTint } from '@/lib/theme';
 import {
   Btn,
   StickyHeader,
@@ -46,6 +46,7 @@ import { AvoidTile } from '@/components/AvoidTile';
 import { FB_TINT } from '@/components/IngredientTileSections';
 import { INGREDIENTS } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
+import { useDietPresets } from '@/lib/data/useDietPresets';
 import { useHome } from '@/lib/data/useHome';
 import { RecentRow } from './index';
 import { FlagEmoji } from '@/components';
@@ -85,7 +86,12 @@ export default function Profile() {
   // P-176: 회피 표시 = 사진 미니 타일(온보딩 문법·P-174 서버 이미지 승계) — 8개(2줄) 초과 시 접기
   const ingCat = useIngredientCatalog();
   const recentScans = useHome().data?.recent ?? []; // P-181 ②: 서버 보관 이력 — 신규 API 0
-  const [showAllAvoid, setShowAllAvoid] = useState(false);
+  // P-227 ②: 활성 식이 = 역추론(프리셋 코드 전부 ⊆ 현재 회피) — 선택 상태는 서버에 없음
+  const dietPresets = useDietPresets();
+  const activePresets = useMemo(() => {
+    const have = new Set((me?.restrictions ?? []).map((r) => r.code));
+    return dietPresets.filter((p) => p.codes.length > 0 && p.codes.every((c) => have.has(c)));
+  }, [dietPresets, me?.restrictions]);
 
   // ⑪-1: 무반응 버튼 연타 방지 — 확인 모달로 depth 추가, 진행 중엔 스피너+재진입 차단
   function confirmLogout() {
@@ -197,6 +203,64 @@ export default function Profile() {
               </Pressable>
             )}
 
+            {/* P-227 ①②: 식이 카테고리 = 최상단(멘토 8/15). 선택 상태는 서버에
+                없어(회피 코드만 저장) **역추론** — 프리셋 코드 전부가 현재 회피에
+                포함되면 활성. 수정 = 기존 프리셋 시트 재사용(restrictions?presets=1). */}
+            {FLAGS.dietPresetsEnabled && activePresets.length > 0 && (
+              <Section
+                title={t('profile.dietTitle')}
+                action={
+                  <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/restrictions?presets=1' as Href)} testID="diet-edit">
+                    <IconEdit size={14} color={C.primary} />
+                    <Text style={styles.link}>{t('profile.edit')}</Text>
+                  </Pressable>
+                }
+              >
+                <View style={styles.presetChips}>
+                  {activePresets.map((pr) => (
+                    <View key={pr.id} style={styles.presetChip} testID={`diet-${pr.id}`}>
+                      <Text style={styles.presetChipText}>{t(pr.labelKey)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </Section>
+            )}
+
+            {/* P-176: dietary restrictions = 사진 미니 타일 4열(선택분만·플랫 — 카테고리 섹션 없음,
+                프로필 탭은 요약 표면). 타일 탭 = Edit 진입(재량 — 읽기 전용 표시 + 수정 유도).
+                8개(2줄) 초과는 접기 + "Show all n" 토글(38종 수용). */}
+            <Section
+              title={t('profile.restrictionsTitle')}
+              action={
+                /* P-227 ④: Edit → "Show all" 개명, 탭 = 전체 조회 페이지(81종 카테고리
+                   섹션 + 수정 = 기존 restrictions 화면이 정확히 그 문법 — 신설 불요) */
+                <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
+                  <Text style={styles.link}>{t('profile.showAllLink')}</Text>
+                  <IconChevron size={13} color={C.primaryText} />
+                </Pressable>
+              }
+            >
+              <View style={styles.dietGrid}>
+                {me.restrictions.slice(0, 4).map((r) => {
+                  const item = INGREDIENTS.find((i) => i.code === r.code);
+                  return (
+                    <Pressable key={r.code} style={styles.dietTileWrap} onPress={() => router.push('/profile/restrictions' as Href)}>
+                      <AvoidTile
+                        code={r.code}
+                        imageUrl={ingCat.imageUrl(r.code)}
+                        abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
+                        tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
+                      />
+                      <Text style={styles.dietTileLabel} numberOfLines={1}>
+                        {ingCat.name(r.code)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {/* P-227 ④: "Show all 41" 토글·"+Add" 소멸 — 전체·수정은 Show all 페이지 */}
+            </Section>
+
             {/* ranking → tap opens the ranking-detail screen (7-tier FR-025 data) */}
             <Section title={t('profile.rankingTitle')}>
               <Pressable style={styles.rank} onPress={() => router.push('/profile/ranking' as Href)}>
@@ -223,49 +287,6 @@ export default function Profile() {
                     <View key={tier.key} style={[styles.rankSeg, tier.level <= curLevel && styles.rankSegOn]} />
                   ))}
                 </View>
-              </Pressable>
-            </Section>
-
-            {/* P-176: dietary restrictions = 사진 미니 타일 4열(선택분만·플랫 — 카테고리 섹션 없음,
-                프로필 탭은 요약 표면). 타일 탭 = Edit 진입(재량 — 읽기 전용 표시 + 수정 유도).
-                8개(2줄) 초과는 접기 + "Show all n" 토글(38종 수용). */}
-            <Section
-              title={t('profile.restrictionsTitle')}
-              action={
-                <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/restrictions' as Href)}>
-                  <IconEdit size={14} color={C.primary} />
-                  <Text style={styles.link}>{t('profile.edit')}</Text>
-                </Pressable>
-              }
-            >
-              <View style={styles.dietGrid}>
-                {(showAllAvoid ? me.restrictions : me.restrictions.slice(0, 8)).map((r) => {
-                  const item = INGREDIENTS.find((i) => i.code === r.code);
-                  return (
-                    <Pressable key={r.code} style={styles.dietTileWrap} onPress={() => router.push('/profile/restrictions' as Href)}>
-                      <AvoidTile
-                        code={r.code}
-                        imageUrl={ingCat.imageUrl(r.code)}
-                        abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
-                        tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
-                      />
-                      <Text style={styles.dietTileLabel} numberOfLines={1}>
-                        {ingCat.name(r.code)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {me.restrictions.length > 8 && (
-                <Pressable style={styles.dietMore} hitSlop={8} onPress={() => setShowAllAvoid((v) => !v)} testID="avoid-toggle">
-                  <Text style={styles.dietMoreText}>
-                    {showAllAvoid ? t('profile.showLess') : t('profile.showAll', { count: me.restrictions.length })}
-                  </Text>
-                </Pressable>
-              )}
-              <Pressable style={styles.dietAdd} hitSlop={6} onPress={() => router.push('/profile/restrictions' as Href)}>
-                <IconPlus size={13} color={C.primary} />
-                <Text style={styles.dietAddText}>{t('profile.add')}</Text>
               </Pressable>
             </Section>
 
@@ -385,6 +406,10 @@ function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNod
 }
 
 const styles = StyleSheet.create({
+  // P-227 ②: 식이 칩(온보딩 프리셋 칩 톤)
+  presetChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: { backgroundColor: primaryTint, borderWidth: 1, borderColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
+  presetChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   verRow: { alignItems: 'center', paddingVertical: 10 },
   verText: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   root: { flex: 1, backgroundColor: C.surface },

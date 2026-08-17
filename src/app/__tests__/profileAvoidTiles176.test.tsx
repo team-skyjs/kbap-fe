@@ -50,6 +50,14 @@ jest.mock('@/lib/data/useFoods', () => ({ useFoods: () => ({ data: [] }) }));
 jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
 const mockHome = jest.fn(() => ({ data: { recent: [] } }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome() })); // P-181 ②
+// P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
+jest.mock('@/lib/data/useDietPresets', () => ({
+  useDietPresets: () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DIET_PRESETS, presetSubstanceCodes } = require('@/lib/onboarding/dietPresets');
+    return DIET_PRESETS.map((p: { id: string }) => ({ ...p, codes: [...presetSubstanceCodes(p)], serverName: null }));
+  },
+}));
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({
     name: (c: string) => `srv:${c}`,
@@ -96,27 +104,26 @@ it('회피 = 사진 미니 타일(선택분만) — 서버 이미지·번역명,
   expect(s).toContain('srv:EGG'); // P-174 서버 번역명 승계
   expect(s).toContain('https://cdn/egg.webp'); // 서버 이미지 승계
   const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
-  expect(src).not.toContain('dietChip'); // 구 칩 문법 소멸
-  expect(src).toContain('profile.add'); // "+ Add" 현행 유지
+  expect(src).not.toContain('AvoidChip'); // 구 solid 칩 문법 소멸(P-227 식이 presetChip과 무관)
+  expect(src).not.toContain('profile.add'); // P-227 ④: "+ Add" 소멸 — 수정은 Show all 페이지
 });
 
-it('8개 이하 = 토글 없음 · 초과 = 8개 접기 + Show all/less 토글', () => {
-  const few = render();
-  expect(few.root.findAll((n) => n.props?.testID === 'avoid-toggle').length).toBe(0);
-  const codes = ['EGG', 'SHRIMP', 'MILK', 'PEANUT', 'WHEAT', 'SOY', 'CRAB', 'SQUID', 'BEEF', 'PORK'];
-  mockUseMe.mockReturnValue(ME(codes));
-  const many = render();
-  const tileIds = new Set(
+it('P-227 ④: 요약 = 4타일 한 줄 고정 — Show all n 토글·+Add 소멸, Show all 링크 = 전체 페이지', () => {
+  mockUseMe.mockReturnValue(ME(['PORK', 'BEEF', 'EGG', 'MILK', 'SHRIMP', 'CRAB', 'PEANUT', 'WALNUT', 'WHEAT', 'SOYBEAN', 'ONION', 'GARLIC']));
+  const many = render(<Profile />); // 12종 — 4개만 렌더돼야 한다
+  // 4개만 렌더(초과분 미노출 — 전체는 Show all 페이지). skel/img 변형 제외, 고유 코드만
+  const codes = new Set(
     many.root
-      .findAll((n) => n.props?.testID?.startsWith?.('avtile-') && !String(n.props.testID).includes('-img-') && !String(n.props.testID).includes('-skel-'))
-      .map((n) => String(n.props.testID)),
+      .findAll((n) => typeof n.props?.testID === 'string' && /^avtile-[A-Z_]+$/.test(n.props.testID))
+      .map((n) => n.props.testID as string),
   );
-  expect(tileIds.size).toBeLessThanOrEqual(8); // 접힘 = 8개(2줄)만
-  expect(flat(many)).toContain('profile.showAll');
-  const toggle = many.root.findAll((n) => n.props?.testID === 'avoid-toggle')[0];
-  act(() => toggle.props.onPress());
-  expect(many.root.findAll((n) => n.props?.testID === 'avtile-PORK').length).toBeGreaterThanOrEqual(1); // 전체 펼침
-  expect(flat(many)).toContain('profile.showLess');
+  expect(codes.size).toBe(4);
+  expect(many.root.findAll((n) => n.props?.testID === 'avoid-toggle')).toHaveLength(0); // 토글 소멸
+  expect(flat(many)).not.toContain('profile.add'); // +Add 소멸
+  expect(flat(many)).toContain('profile.showAllLink'); // Edit → Show all 개명
+  const showAll = many.root.findAll((n) => n.props?.testID === 'avoid-show-all' && typeof n.props?.onPress === 'function')[0];
+  act(() => showAll.props.onPress());
+  expect(mockPush).toHaveBeenCalledWith('/profile/restrictions'); // 전체 조회 페이지 = 기존 수정 화면(81종 카테고리+수정)
 });
 
 it('타일 탭 = Edit restrictions 진입(재량 채택)', () => {

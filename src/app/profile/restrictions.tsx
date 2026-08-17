@@ -9,10 +9,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
-import { color as C, font } from '@/lib/theme';
+import { color as C, font, shadow } from '@/lib/theme';
 import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
@@ -33,7 +33,11 @@ export default function EditRestrictions() {
   const [sel, setSel] = useState<string[]>([]);
   const [seeded, setSeeded] = useState(false);
   // P-203: 카테고리 재적용 — 적용 = 기존 선택과 합집합(기존 삭제 금지·안전)
-  const [presetOpen, setPresetOpen] = useState(false);
+  // P-227 ②: 프로필 식이 Edit 진입 = 프리셋 시트 자동 오픈(기존 시트 재사용)
+  const { presets: presetsParam } = useLocalSearchParams<{ presets?: string }>();
+  const [presetOpen, setPresetOpen] = useState(presetsParam === '1');
+  // P-227 ③: 프리셋 적용 전 확인 팝업 — "회피 성분을 이에 맞게 채울까요?"
+  const [presetConfirm, setPresetConfirm] = useState(false);
   const [presetSel, setPresetSel] = useState<Set<string>>(new Set());
   const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
   // P-214: 변경 폭(delta)·경로(via) 계측 재료 — 시딩 시점 개수가 기준선
@@ -148,11 +152,7 @@ export default function EditRestrictions() {
             ))}
             <View style={{ gap: 9, marginTop: 6 }}>
               <Btn
-                onPress={() => {
-                  viaPreset.current = true; // P-214: 저장 시 via=preset 판별
-                  setSel((cur) => Array.from(unionResolvedCodes(dietPresets, Array.from(presetSel), cur))); // P-208: 서버 매핑 기준 합집합 — 기존 보존
-                  setPresetOpen(false);
-                }}
+                onPress={() => setPresetConfirm(true)} /* P-227 ③: 즉시 적용 → 확인 팝업 경유 */
                 testID="preset-apply"
               >
                 {t('onboarding.presets.apply')}
@@ -168,11 +168,40 @@ export default function EditRestrictions() {
           {t('restrictionsEdit.save')}
         </Btn>
       </View>
-    </View>
+    
+      {/* P-227 ③: diet → 성분 연동 확인 — 승인 시에만 합집합(P-203, 임의 덮어쓰기 금지) */}
+      <Modal visible={presetConfirm} transparent animationType="fade" onRequestClose={() => setPresetConfirm(false)}>
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard} testID="preset-confirm">
+            <Text style={styles.confirmTitle}>{t('profile.presetFillTitle')}</Text>
+            <Text style={styles.confirmBody}>{t('profile.presetFillBody')}</Text>
+            <View style={{ gap: 9, marginTop: 8 }}>
+              <Btn
+                onPress={() => {
+                  viaPreset.current = true; // P-214: 저장 시 via=preset 판별
+                  setSel((cur) => Array.from(unionResolvedCodes(dietPresets, Array.from(presetSel), cur))); // P-208: 합집합 — 기존 보존
+                  setPresetConfirm(false);
+                  setPresetOpen(false);
+                }}
+                testID="preset-confirm-yes"
+              >
+                {t('profile.presetFillYes')}
+              </Btn>
+              <Btn variant="ghost" onPress={() => setPresetConfirm(false)}>{t('common.cancel')}</Btn>
+            </View>
+          </View>
+        </View>
+      </Modal>
+</View>
   );
 }
 
 const styles = StyleSheet.create({
+  // P-227 ③: 확인 팝업(P-162 confirm 카드 문법)
+  confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 28, gap: 16 },
   // P-203: 카테고리 프리셋(러프)

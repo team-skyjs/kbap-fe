@@ -327,7 +327,12 @@
     "spiceTitle": "Tolerancia al picante",
     "spiceUnset": "Sin definir",
     "showAll": "Ver todos ({{count}})",
-    "showLess": "Ver menos"
+    "showLess": "Ver menos",
+    "dietTitle": "Tipo de dieta",
+    "showAllLink": "Ver todo",
+    "presetFillTitle": "¿Actualizar ingredientes evitados?",
+    "presetFillBody": "Añadiremos los ingredientes de tu selección a tu lista. Lo que ya evitas no se eliminará.",
+    "presetFillYes": "Añadir ingredientes"
   },
   "review": {
     "title": "Escribir una reseña",

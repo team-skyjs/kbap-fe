@@ -16,6 +16,7 @@ import { setUserProps } from '@/lib/analytics';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG, IconSearch, Input } from '@/components';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
+import { SpicePeppers } from '@/components/SpicePeppers';
 import { SPICE_LEVEL_LABEL, spiceRank, type SpiceChoice } from '@/lib/spice';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { IconLock } from '@/components/icons';
@@ -241,11 +242,13 @@ export default function EditProfile() {
           <Text style={styles.fieldLbl}>{t('editProfile.spice')}</Text>
           <View style={[styles.field, styles.spiceField]}>
             <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} onDragStateChange={setSliderDragging} />
-            <Text style={[styles.spiceVal, spice === 'SKIP' && styles.spiceValUnset]}>
-              {spice !== 'SKIP'
-                ? `${spiceRank(spice) > 0 ? `${'\u{1F336}\u{FE0F}'.repeat(spiceRank(spice))} ` : ''}${t(SPICE_LEVEL_LABEL[spice])}`
-                : t('profile.spiceUnset')}
-            </Text>
+            {/* P-227 ⑤: 고추 5개 상시 + 미달분 투명도(멘토 제안) — repeat 문자열 폐기 */}
+            <View style={styles.spiceValRow}>
+              {spice !== 'SKIP' && <SpicePeppers rank={spiceRank(spice)} />}
+              <Text style={[styles.spiceVal, spice === 'SKIP' && styles.spiceValUnset]}>
+                {spice !== 'SKIP' ? t(SPICE_LEVEL_LABEL[spice]) : t('profile.spiceUnset')}
+              </Text>
+            </View>
           </View>
           {spice !== 'SKIP' && (
             <Pressable hitSlop={8} onPress={() => setSpice('SKIP')}>
@@ -339,6 +342,7 @@ export default function EditProfile() {
 }
 
 const styles = StyleSheet.create({
+  spiceValRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 28, gap: 18 },
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },

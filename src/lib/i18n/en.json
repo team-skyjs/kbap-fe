@@ -323,7 +323,12 @@
     "spiceTitle": "Spice tolerance",
     "spiceUnset": "Not set",
     "showAll": "Show all {{count}}",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "dietTitle": "Dietary preferences",
+    "showAllLink": "Show all",
+    "presetFillTitle": "Update avoided ingredients?",
+    "presetFillBody": "We'll add the ingredients for your selection to your avoid list. Nothing you already avoid will be removed.",
+    "presetFillYes": "Add ingredients"
   },
   "editProfile": {
     "title": "Edit profile",

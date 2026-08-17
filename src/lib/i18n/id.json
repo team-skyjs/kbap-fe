@@ -327,7 +327,12 @@
     "spiceTitle": "Toleransi pedas",
     "spiceUnset": "Belum diatur",
     "showAll": "Lihat semua ({{count}})",
-    "showLess": "Lihat lebih sedikit"
+    "showLess": "Lihat lebih sedikit",
+    "dietTitle": "Pola makan",
+    "showAllLink": "Lihat semua",
+    "presetFillTitle": "Perbarui bahan yang dihindari?",
+    "presetFillBody": "Kami akan menambahkan bahan sesuai pilihanmu ke daftar hindaran. Yang sudah kamu hindari tidak akan dihapus.",
+    "presetFillYes": "Tambah bahan"
   },
   "review": {
     "title": "Tulis ulasan",

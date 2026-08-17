@@ -327,7 +327,12 @@
     "spiceTitle": "辣度承受度",
     "spiceUnset": "未設定",
     "showAll": "查看全部（{{count}}）",
-    "showLess": "收起"
+    "showLess": "收起",
+    "dietTitle": "飲食類型",
+    "showAllLink": "查看全部",
+    "presetFillTitle": "更新迴避食材？",
+    "presetFillBody": "我們會根據你的選擇向迴避清單新增食材。已迴避的食材不會被移除。",
+    "presetFillYes": "新增食材"
   },
   "review": {
     "title": "撰寫評論",

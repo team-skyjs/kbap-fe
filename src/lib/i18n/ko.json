@@ -327,7 +327,12 @@
     "spiceTitle": "맵기 허용치",
     "spiceUnset": "미설정",
     "showAll": "전체 보기 ({{count}})",
-    "showLess": "접기"
+    "showLess": "접기",
+    "dietTitle": "식이 유형",
+    "showAllLink": "전체 보기",
+    "presetFillTitle": "회피 성분을 채울까요?",
+    "presetFillBody": "선택한 식이 유형에 맞는 성분을 회피 목록에 추가해요. 이미 회피 중인 성분은 지워지지 않아요.",
+    "presetFillYes": "성분 추가"
   },
   "editProfile": {
     "title": "프로필 수정",
