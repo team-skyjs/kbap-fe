@@ -210,9 +210,11 @@ export default function Profile() {
               <Section
                 title={t('profile.dietTitle')}
                 action={
-                  <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/restrictions?presets=1' as Href)} testID="diet-edit">
-                    <IconEdit size={14} color={C.primary} />
-                    <Text style={styles.link}>{t('profile.edit')}</Text>
+                  /* P-233: 기피 성분 섹션과 같은 행 문법 — Show all = 식이 전체 페이지
+                     (P-227의 Edit→프리셋 시트 자동 오픈 경로는 이 진입으로 대체) */
+                  <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/diet' as Href)} testID="diet-show-all">
+                    <Text style={styles.link}>{t('profile.showAllLink')}</Text>
+                    <IconChevron size={13} color={C.primaryText} />
                   </Pressable>
                 }
               >

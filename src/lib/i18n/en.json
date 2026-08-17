@@ -331,7 +331,12 @@
     "showAllLink": "Show all",
     "presetFillTitle": "Update avoided ingredients?",
     "presetFillBody": "We'll add the ingredients for your selection to your avoid list. Nothing you already avoid will be removed.",
-    "presetFillYes": "Add ingredients"
+    "presetFillYes": "Add ingredients",
+    "dietUncheckHint": "Unchecking here doesn't remove ingredients from your avoid list — you can remove them directly in the avoid list.",
+    "dietSavedTitle": "Dietary info updated",
+    "dietSavedBody": "Want to fine-tune your avoided ingredients to match?",
+    "dietSavedYes": "Edit avoided ingredients",
+    "dietSavedNo": "Done"
   },
   "editProfile": {
     "title": "Edit profile",

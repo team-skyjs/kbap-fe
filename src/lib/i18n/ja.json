@@ -335,7 +335,12 @@
     "showAllLink": "すべて見る",
     "presetFillTitle": "回避食材を更新しますか？",
     "presetFillBody": "選択に合わせて回避リストに食材を追加します。すでに回避中の食材は削除されません。",
-    "presetFillYes": "食材を追加"
+    "presetFillYes": "食材を追加",
+    "dietUncheckHint": "ここでチェックを外しても回避リストの食材は削除されません — 回避リストから直接削除できます。",
+    "dietSavedTitle": "食事情報を更新しました",
+    "dietSavedBody": "これに合わせて避ける食材も調整しますか？",
+    "dietSavedYes": "避ける食材を編集",
+    "dietSavedNo": "完了"
   },
   "review": {
     "title": "レビューを書く",

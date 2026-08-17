@@ -335,7 +335,12 @@
     "showAllLink": "Lihat semua",
     "presetFillTitle": "Perbarui bahan yang dihindari?",
     "presetFillBody": "Kami akan menambahkan bahan sesuai pilihanmu ke daftar hindaran. Yang sudah kamu hindari tidak akan dihapus.",
-    "presetFillYes": "Tambah bahan"
+    "presetFillYes": "Tambah bahan",
+    "dietUncheckHint": "Menghapus centang di sini tidak menghapus bahan dari daftar hindaran — kamu bisa menghapusnya langsung di daftar.",
+    "dietSavedTitle": "Info pola makan diperbarui",
+    "dietSavedBody": "Mau menyesuaikan bahan yang dihindari juga?",
+    "dietSavedYes": "Edit bahan hindaran",
+    "dietSavedNo": "Selesai"
   },
   "review": {
     "title": "Tulis ulasan",

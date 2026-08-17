@@ -124,10 +124,10 @@ it('② 식이 표시 = 역추론(프리셋 코드 전부 ⊆ 회피) — NO_ALC
   const tree = render();
   expect(tree.root.findAll((n) => n.props?.testID === 'diet-NO_ALCOHOL').length).toBeGreaterThanOrEqual(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'diet-VEGAN')).toHaveLength(0);
-  // 수정 진입 = 기존 프리셋 시트 자동 오픈 파라미터
-  const edit = tree.root.findAll((n) => n.props?.testID === 'diet-edit' && typeof n.props?.onPress === 'function')[0];
-  act(() => edit.props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/profile/restrictions?presets=1');
+  // P-233: 수정 진입 = Show all → 식이 전체 페이지(구 프리셋 시트 자동 오픈 경로 대체)
+  const showAll = tree.root.findAll((n) => n.props?.testID === 'diet-show-all' && typeof n.props?.onPress === 'function')[0];
+  act(() => showAll.props.onPress());
+  expect(mockPush).toHaveBeenCalledWith('/profile/diet');
 });
 
 it('②-b 활성 프리셋 0 = 식이 섹션 자체 숨김(P-210 원칙)', () => {
