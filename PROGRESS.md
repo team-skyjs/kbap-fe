@@ -1297,3 +1297,7 @@
 - [x] P-227 프로필 재배치(식이 역추론 칩→기피 4타일+Show all→랭킹, 프리셋 팝업 합집합, SpicePeppers 투명도) — 15d6643.
 - [x] P-226 주문 개편(영문 타이틀 위계·소팅 세그 unable 최하단 잠금·배지 제거·미등록 딥링크·무플립·담기 버튼 톤) — 1d68943.
 - [x] tsc 0 · jest 132스위트 819/819 · teamtest OTA 일괄(update group b7b0678f).
+
+## 정리 묶음 (2026-08-18, P-230)
+- [x] sortSafety 9로케일 "위험도 낮은 순" 교정(safest/안전 어휘 전 로케일 금지 유닛) · dietTitle 의미 폭 정합 · AvoidChip 삭제 — 4fe7fb8.
+- [x] tsc 0 · jest 132스위트 822/822 · teamtest OTA(update group ac3a34d5, K-30·31 카피 동승).
