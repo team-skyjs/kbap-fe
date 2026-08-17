@@ -75,10 +75,21 @@ export async function postScan({ items, photo, currency }: ScanInput): Promise<S
   // (400보다 근사 환산이 낫다 — 발주 명시). v1 경로는 쿼리를 붙이지 않는다.
   const cur = v2 ? (currency && currency.trim() ? currency : 'USD') : null;
   const query = `?lang=${apiLang()}${cur ? `&currency=${encodeURIComponent(cur)}` : ''}`;
-  const payload = await api.post<ScanPayload>(`/scans${query}`, body, {
-    timeoutMs: 60_000,
-    ...(v2 ? { headers: { 'X-API-Version': SCAN_API_VERSION } } : {}),
-  });
+  // TEMP(P-232): 진단용 10분 — v2 서버 vision(추론 모델)이 "느리지만 완료"인지
+  // "무한 행"인지 판독용(be-agenda 6번 🔴). 종한 진단 후 원복/확정 — 실사용 잔류 금지.
+  const startedAt = Date.now();
+  let payload: ScanPayload;
+  try {
+    payload = await api.post<ScanPayload>(`/scans${query}`, body, {
+      timeoutMs: 600_000, // TEMP(P-232): 진단용 10분 — 종한 진단 후 원복/확정
+      ...(v2 ? { headers: { 'X-API-Version': SCAN_API_VERSION } } : {}),
+    });
+  } catch (e) {
+    // 실패도 소요 초가 진단 데이터 — 몇 초에 무슨 에러인지
+    console.log(`[scan] v2 응답 ${Math.round((Date.now() - startedAt) / 1000)}초 — 실패:`, (e as Error)?.message ?? e);
+    throw e;
+  }
+  console.log(`[scan] v2 응답 ${Math.round((Date.now() - startedAt) / 1000)}초`);
   const merged = mergeResults(items, payload.results ?? []);
   const photoOnly = photoOnlyResults(payload.results ?? []);
   console.log(
