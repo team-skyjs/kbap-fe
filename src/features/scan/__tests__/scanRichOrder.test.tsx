@@ -161,7 +161,7 @@ it('담기 전환 + 필 카운트 동기 — [+]→스테퍼, 0으로 내리면 
 
 it('P-138 ⑦: 환산 병기 — KRW 계정 = 생략(설계 정상), 타 통화 = 병기', () => {
   const usd = render(<Harness dishes={DISHES} />); // Harness currency=USD
-  expect(flat(usd).replace(/","/g, '')).toContain('₩9,000 ≈$'); // P-185: 근사 ≈ 접두 병기
+  expect(flat(usd).replace(/","/g, '')).toContain('₩9,000 =$'); // P-218: 접두 = (예진 확정)
   const krwTree = render(
     <ScanRichList dishes={DISHES} currency="KRW" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );

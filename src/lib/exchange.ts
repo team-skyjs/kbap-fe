@@ -95,13 +95,16 @@ export function clearCurrencyCache(): void {
   void AsyncStorage.removeItem(STORE_KEY).catch(() => {});
 }
 
-/** KRW → 유저 통화 환산 문자열 (예: "≈$6.32"). 미지 통화·KRW = null(환산 배지 생략).
- *  P-185: ≈ 접두 — 클라 고정 테이블 근사(실환율 아님) 오인 예방. v2 서버 환율
- *  전환 후에도 시점 환율이라 유지. 원화 원가(formatKrw)는 무변. */
+/** KRW → 유저 통화 환산 문자열 (예: "=$6.32"). 미지 통화·KRW = null(환산 배지 생략).
+ *  **환산 문자열의 유일한 생산 지점** — 표면(스캔 행·주문 카드 등 5곳)에서 접두를
+ *  따로 붙이지 않는다.
+ *  P-218(예진 확정 8/17): 접두 `≈` → `=`. ⚠️ 값 자체는 여전히 **클라 고정 테이블
+ *  근사**(실환율 아님 — 서버도 현재 고정 스냅샷). 종한 우리은행 API 연동 시
+ *  **여기가 교체 지점** — 서버 krwPerUnit 채택은 v2 전면 전환 후 별도 발주. */
 export function convertKrw(krw: number, currency: string): string | null {
   const rate = RATE_FROM_KRW[currency];
   if (!rate || currency === 'KRW') return null;
   const v = krw * rate;
   const digits = v >= 100 ? 0 : 2; // 큰 액면 통화(JPY·VND 등)는 정수 표기
-  return `≈${SYMBOL[currency] ?? currency + ' '}${v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  return `=${SYMBOL[currency] ?? currency + ' '}${v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }

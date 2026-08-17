@@ -37,11 +37,31 @@ it('피커 카탈로그 = 환산 테이블 보유 통화만(선택 즉시 병기
   expect(SUPPORTED_CURRENCIES.map((c) => c.code)).toContain('KRW');
 });
 
-describe('P-185: 환산가 ≈ 접두(근사 오인 예방)', () => {
-  it('환산 문자열 = ≈ 접두 · KRW/미지 통화 = null(무변)', () => {
-    expect(convertKrw(8000, 'USD')).toMatch(/^≈\$/);
+describe('P-185 → P-218: 환산가 접두 = "="(예진 확정 8/17)', () => {
+  it('환산 문자열 = "=" 접두 · KRW/미지 통화 = null(무변)', () => {
+    expect(convertKrw(8000, 'USD')).toMatch(/^=\$/);
     expect(convertKrw(8000, 'KRW')).toBeNull();
     expect(convertKrw(8000, 'XXX')).toBeNull();
+  });
+
+  it('P-218: 환산 경로에 ≈ 잔존 0 — 생산 지점 1곳 + 소비처 5곳 소스 잠금', () => {
+    const fs = require('fs');
+    const FILES = [
+      'src/lib/exchange.ts',
+      'src/features/scan/ScanRichList.tsx',
+      'src/features/order/FlippedOrderCard.tsx',
+      'src/app/scan.tsx',
+      'src/app/scan-order.tsx',
+      'src/app/food/[id]/order.tsx',
+    ];
+    for (const f of FILES) {
+      const src = fs.readFileSync(f, 'utf8') as string;
+      // 문자폭 근사 휴리스틱 주석(ScanRichList)은 환산과 무관 — 환산 문자열 조립 라인만 검사
+      const lines = src.split('\n').filter((l: string) => l.includes('convertKrw') || l.includes('SYMBOL['));
+      expect(lines.join('\n')).not.toContain('≈');
+    }
+    // 고정 테이블 사실은 주석에 존치(실환율 연동 시 교체 지점 표식)
+    expect(fs.readFileSync('src/lib/exchange.ts', 'utf8')).toContain('고정 테이블');
   });
 
   it('사장님 확인 화면 = 환산 노출 0(place=ko 원화만) — 소스 잠금', () => {
