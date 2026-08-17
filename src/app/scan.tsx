@@ -56,7 +56,9 @@ import { getPrimerResult } from '@/lib/push/pushAdapter';
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
 type ResultView = 'risk' | 'list';
-type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be';
+// P-219: v2 에러 3분기 — BE `code` 필드로 분기(HTTP 상태 아님). BE message는
+// 사용자 노출 금지 — 아래 FE i18n 키로만 렌더한다.
+type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be' | 'notMenu' | 'busy' | 'upload';
 
 const ERROR_MSG: Record<ErrorStage, string> = {
   capture: 'scan.errCapture',
@@ -64,7 +66,25 @@ const ERROR_MSG: Record<ErrorStage, string> = {
   empty: 'scan.noText',
   network: 'scan.errNetwork',
   be: 'scan.errBe',
+  notMenu: 'scan.errNotMenu', // SCAN-003(400) — 메뉴판 아님: 사용자 행동 필요(재촬영)
+  busy: 'scan.errBusy', // SCAN-002(503) — 인식 실패: 사용자 잘못 아님(잠시 후 재시도)
+  upload: 'scan.errUpload', // SCAN-001(400) — 이미지 접근 불가: 업로드부터 재시도
 };
+
+/** BE 코드 → 화면 분기. 미지 코드는 기존 'be'(일반 서버 오류)로. */
+function stageForCode(code: string | undefined, msg: string): ErrorStage {
+  if (msg.startsWith('NETWORK')) return 'network';
+  switch (code) {
+    case 'SCAN-003':
+      return 'notMenu';
+    case 'SCAN-002':
+      return 'busy';
+    case 'SCAN-001':
+      return 'upload';
+    default:
+      return 'be';
+  }
+}
 
 /** ⑦(KB-137) 촬영/갤러리 캐시 파일 삭제 — 실패해도 스캔 흐름엔 무해(로그만). */
 function deletePhotoFile(uri: string | null | undefined): void {
@@ -222,7 +242,12 @@ export default function Scan() {
     console.log(`[scan] FAIL stage=${stage} detail=${detail}`);
     // P-144: 실패도 scan_complete로 — fail_reason은 CSV enum 3종(ocr|network|server)
     // 매핑: capture·empty(기기 단 실패) → ocr / network → network / be → server
-    const reason = stage === 'network' ? 'network' : stage === 'be' ? 'server' : 'ocr';
+    // P-219: v2 3분기도 이 3종에 흡수 — notMenu는 사용자 입력 문제라 ocr,
+    // busy·upload는 서버측이라 server (CSV enum 확장이 필요하면 커맨드 센터 판단)
+    const reason =
+      stage === 'network' ? 'network'
+      : stage === 'be' || stage === 'busy' || stage === 'upload' ? 'server'
+      : 'ocr';
     track(EVENTS.scan_complete, { success: false, fail_reason: reason, item_count: 0, degraded: false });
     setError({ stage, detail });
     setPhase('error');
@@ -236,7 +261,8 @@ export default function Scan() {
     // §14-2.2 — send ONLY dish names (no descriptions/prices/origin/junk)
     const scanned = menuDishes.map((d) => ({ itemId: d.itemId, rawMenuName: d.rawMenuName, box: d.box }));
     console.log('[scan] sending dishNames =', JSON.stringify(scanned.map((s) => s.rawMenuName)));
-    scan.mutate({ items: scanned, photo: capturedPhoto }, {
+    // P-219: v2 필수 쿼리 — 프로필 통화 → 국적 → 로케일 → USD 폴백(resolveCurrency)
+    scan.mutate({ items: scanned, photo: capturedPhoto, currency }, {
       onSuccess: (res) => {
         // P-083: 스캔 완료 — 성공/정제실패(degraded) 구분 + 인식 항목 수
         track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length });
@@ -248,7 +274,8 @@ export default function Scan() {
       },
       onError: (e) => {
         const msg = (e as Error)?.message ?? String(e);
-        fail(msg.startsWith('NETWORK') ? 'network' : 'be', msg);
+        // P-219: 래퍼 code로 분기(HTTP 상태 아님) — 미지 코드는 기존 'be'
+        fail(stageForCode((e as { code?: string })?.code, msg), msg);
       },
     });
   }
@@ -467,6 +494,7 @@ export default function Scan() {
         koreanName: it.koreanName,
         priceKrw: it.price, // 서버 제공값 그대로 — OCR 추정가 대체, null=미표시 (P-002)
         similar: it.similar, // P-153 v2
+        avoidances: it.avoidances, // P-219 v2: 메뉴별 회피 겹침
       }];
     });
     // idx=null(사진에서만 추출) — 좌표 부재로 리스트 전용, 오버레이 마커 없음.
@@ -483,6 +511,7 @@ export default function Scan() {
       displayName: p.displayName,
       koreanName: p.koreanName,
       similar: p.similar, // P-153 v2: 미등록 유사 제안(링크 전용 — 판정 무관)
+      avoidances: p.avoidances, // P-219 v2
     }));
     const allDishes = [...resultDishes, ...photoDishes];
     // §14-5: unable sorted last, never hidden
@@ -641,7 +670,13 @@ export default function Scan() {
         <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
         {!!error?.detail && <Text style={styles.errDetail} numberOfLines={4}>{error.detail}</Text>}
         <View style={styles.errBtns}>
-          <Btn variant="ghost" onPress={() => setPhase('camera')}>{t('scan.retake')}</Btn>
+          {/* P-219: 분기별 행동 — 메뉴판 아님·촬영 실패 = 재촬영(사용자 행동),
+              인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
+          {stage === 'busy' || stage === 'upload' ? (
+            <Btn onPress={() => photo && scanImage(photo)} testID="scan-err-retry">{t('common.retry')}</Btn>
+          ) : (
+            <Btn variant="ghost" onPress={() => setPhase('camera')} testID="scan-err-retake">{t('scan.retake')}</Btn>
+          )}
         </View>
       </View>
     );

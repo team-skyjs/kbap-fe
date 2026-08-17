@@ -35,6 +35,8 @@ export interface ResultDish extends MenuDish {
   koreanName: string | null;
   /** P-153 v2: 미등록 항목 유사 제안(링크 전용 — 행 판정 unable 불변). */
   similar?: import('@/lib/api/scanAdapter').SimilarFood | null;
+  /** P-219 v2: 겹친 회피 성분(overlapped=true만) — 비면 섹션 자체 미렌더. */
+  avoidances?: import('@/lib/api/scanAdapter').AvoidanceHit[];
 }
 
 export interface SegmentedMenu {

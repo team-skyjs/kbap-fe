@@ -231,7 +231,10 @@
       "ocr": "Quét chữ",
       "empty": "Không có chữ",
       "network": "Mạng",
-      "be": "Dịch vụ"
+      "be": "Dịch vụ",
+      "notMenu": "Không phải thực đơn",
+      "busy": "Nhận dạng",
+      "upload": "Tải lên"
     },
     "retake": "Chụp lại",
     "gallery": "Chọn từ thư viện",
@@ -265,7 +268,11 @@
     "retakeBody": "Kết quả hiện tại sẽ bị xóa.",
     "retakeBodyWithCart": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
     "retakeConfirm": "Quét lại",
-    "loadingPhoto": "Đang tải ảnh…"
+    "loadingPhoto": "Đang tải ảnh…",
+    "errNotMenu": "Ảnh này không giống thực đơn. Hãy chụp lại nhé.",
+    "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",
+    "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
+    "avoidTitle": "Chứa nguyên liệu bạn tránh"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

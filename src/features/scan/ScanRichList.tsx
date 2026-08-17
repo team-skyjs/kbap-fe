@@ -18,7 +18,7 @@ import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, radius } from '@/lib/theme';
+import { color as C, font, radius, riskTone } from '@/lib/theme';
 import { AvoidChip } from '@/components/AvoidChip';
 
 /** P-171 ①: 칩 폭 근사 — AvoidChip 메트릭(padding 11×2, 폰트 12.5/800) 기반.
@@ -199,6 +199,22 @@ function RichRow({
           </Pressable>
         )}
         {/* P-138 ③: 미매칭 행 안내문 삭제 — unable 마크가 상태를 말한다(조용) */}
+        {/* P-219 v2: 내 기피 재료 중 이 메뉴에 겹치는 것만 — 비면 섹션 자체 미렌더
+            (P-210 원칙: 빈 컨테이너·빈 제목 금지). 색+형태 둘 다로 구분(헌법),
+            성분명은 서버 번역값 그대로(클라 재번역 금지). */}
+        {!!dish.avoidances?.length && (
+          <View style={styles.avoidRow} testID={`avoid-${dish.itemId}`}>
+            <Text style={styles.avoidLead}>{t('scan.avoidTitle')}</Text>
+            <View style={styles.avoidChips}>
+              {dish.avoidances.map((a) => (
+                <View key={a.code} style={[styles.avoidChip, { backgroundColor: riskTone[a.risk].bg, borderColor: riskTone[a.risk].line }]}>
+                  <RiskMark state={a.risk} size={11} />
+                  <Text style={[styles.avoidChipText, { color: riskTone[a.risk].fg }]} numberOfLines={1}>{a.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
         {dish.priceKrw != null && (
           <Text style={styles.price}>
             {formatKrw(dish.priceKrw)}
@@ -261,6 +277,11 @@ const styles = StyleSheet.create({
   warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 5, marginTop: 2 },
   moreChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
   moreChipText: { fontFamily: font.displayBlack, fontSize: 12.5, color: C.ink2 },
+  avoidRow: { marginTop: 6, gap: 4 },
+  avoidLead: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink3 },
+  avoidChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  avoidChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, maxWidth: 190 },
+  avoidChipText: { flexShrink: 1, fontFamily: font.bodySemi, fontSize: 11.5 },
   price: { fontFamily: font.bodySemi, fontSize: 12.5, color: C.ink2, marginTop: 2, fontVariant: ['tabular-nums'] },
   similarRow: { marginTop: 3 },
   similarText: { fontFamily: font.body, fontSize: 12, lineHeight: 17, color: C.primaryText },

@@ -56,6 +56,15 @@ export interface SimilarFoodWire {
   imageRef?: string | null;
 }
 
+/** P-219 v2: 메뉴별 회피 성분 겹침. `overlapped=true`만 표시(전체 81종 나열 금지). */
+export interface AvoidanceOverlapWire {
+  code: string;
+  /** 요청 lang으로 서버가 번역해 준다 — **클라 재번역 금지**. */
+  name?: string | null;
+  overlapped: boolean;
+  riskLevel?: BeRiskLevel | null;
+}
+
 export interface ScanResultWire {
   idx?: number | null; // null = 사진에서만 추출(대응 OCR 항목 없음 — 그릴 박스 없음)
   matched: boolean; // false = 조사 대기 (riskLevel UNKNOWN, no detail screen)
@@ -66,6 +75,8 @@ export interface ScanResultWire {
   price?: number | null; // 메뉴판 표기 가격(KRW 정수), 미표기 = null — 응답 전용
   /** P-153 v2: matched=false 항목의 유사 음식 폴백(v1 응답엔 부재). */
   similarFood?: SimilarFoodWire | null;
+  /** P-219 v2: null = 온보딩 미완료 회원 · [] = 기피 미등록 or matched=false. */
+  avoidances?: AvoidanceOverlapWire[] | null;
 }
 
 /** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */
@@ -98,4 +109,6 @@ export interface ImageCompletePayload {
 export interface ScanPayload {
   degraded: boolean;
   results: ScanResultWire[];
+  /** P-219 v2: 서버 환율 스냅샷 — 채택은 v2 전면 전환 후 별도(P-218 주석 참조). */
+  currency?: { code: string; krwPerUnit: number } | null;
 }

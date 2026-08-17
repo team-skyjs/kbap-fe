@@ -115,16 +115,41 @@ it('업로드 실패(null) → imagePath "" 폴백, 스캔은 계속 (텍스트-
 
 
 /* ---- P-153: 스캔 v2 채널 분기 ---- */
-it('P-153 v2(dev 계열): items 미전송(빈 배열) + X-API-Version 헤더 — imagePath만으로 성립', async () => {
+it('P-153 → P-219 v2(dev 계열): items 미전송 + X-API-Version 2.0 + lang·currency 쿼리', async () => {
   mockProd = false;
-  mockScanV2 = true; // P-155: v2 유닛은 플래그 강제 on으로 유지(코드 보존 잠금)
+  mockScanV2 = true; // P-155 킬스위치 — v2 유닛은 강제 on(코드 보존 잠금)
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
-  await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 } });
+  await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 }, currency: 'JPY' });
   const [path, body, opts] = api.post.mock.calls[0];
-  expect(path).toContain('/scans');
+  expect(path).toBe('/scans?lang=en&currency=JPY'); // P-219: 둘 다 필수(누락 = 400)
   expect(body.items).toEqual([]); // 서버 비전 OCR — 클라 items 무시 경로
   expect(body.imagePath).toBe('scans/1/a.jpg');
-  expect(opts.headers).toEqual({ 'X-API-Version': '2026.08.07' });
+  expect(opts.headers).toEqual({ 'X-API-Version': '2.0' });
+});
+
+// P-219 ②: currency 누락 = 스캔 전면 사망(400)이라 끝단에서 USD 강제 — 3케이스 실측
+it.each([
+  ['프로필 통화 있음', 'THB', 'THB'],
+  ['해석 결과 없음(빈 문자열) → USD 강제', '', 'USD'],
+  ['미전달(undefined) → USD 강제', undefined, 'USD'],
+])('P-219: v2 요청 쿼리에 currency가 반드시 실린다 — %s', async (_label, input, expected) => {
+  mockProd = false;
+  mockScanV2 = true;
+  mockResolvePath.mockResolvedValue('scans/1/a.jpg');
+  await runScan({ items: [], photo: { uri: 'file:a.jpg', width: 1, height: 1 }, currency: input as string | undefined });
+  const [path] = api.post.mock.calls[0];
+  expect(path).toBe(`/scans?lang=en&currency=${expected}`);
+});
+
+it('P-219: prod 채널은 currency 쿼리·2.0 헤더 없이 v1 고정(구 계약 보호)', async () => {
+  mockProd = true;
+  mockScanV2 = true; // 플래그가 켜져 있어도 prod는 v1
+  mockResolvePath.mockResolvedValue('scans/1/a.jpg');
+  await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 }, currency: 'USD' });
+  const [path, body, opts] = api.post.mock.calls[0];
+  expect(path).toBe('/scans?lang=en');
+  expect(body.items).toEqual([{ idx: 0, rawMenuName: '김치찌개' }]);
+  expect(opts.headers).toBeUndefined();
 });
 
 it('P-153 v1(production): 현행 무변 — items 전송 + 버전 헤더 없음 (prod 서버 v2 미지원)', async () => {

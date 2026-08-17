@@ -58,10 +58,14 @@ function deviceHeaders(): Record<string, string> {
 /** Normalized client error — message is user-presentable (BE `message` or HTTP). */
 export class ApiError extends Error {
   readonly status?: number;
-  constructor(message: string, status?: number) {
+  /** P-219: BE 에러 코드(SCAN-002·SCAN-003 등) — **HTTP 상태가 아니라 이걸로 분기**한다.
+   *  래퍼가 코드를 안 줄 때만 undefined. `message`는 BE 문구라 사용자 노출 금지(FE i18n). */
+  readonly code?: string;
+  constructor(message: string, status?: number, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -70,6 +74,8 @@ export interface BaseResponse<T> {
   success: boolean;
   payload: T | null;
   message: string | null;
+  /** P-219: 에러 식별 코드(COMMON-002·SCAN-001~003 …) — 성공 응답엔 없다. */
+  code?: string | null;
 }
 
 /* ---- BE 토큰 배선 (KB-67) — auth/beAuth.ts installBeAuth()가 주입 ---- */
@@ -211,11 +217,11 @@ async function request<T>(
 
   // 4xx/5xx: BE wraps errors in the same envelope, so prefer its message (§0).
   if (!res.ok) {
-    throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status);
+    throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status, json?.code ?? undefined);
   }
   // 200 but success:false — never trust HTTP status alone.
   if (!json || !json.success) {
-    throw new ApiError(json?.message ?? `Malformed response (HTTP ${res.status})`, res.status);
+    throw new ApiError(json?.message ?? `Malformed response (HTTP ${res.status})`, res.status, json?.code ?? undefined);
   }
   // Unit 응답(BaseResponseUnit)은 payload 필드 자체가 없다 — success면 통과.
   return json.payload as T;

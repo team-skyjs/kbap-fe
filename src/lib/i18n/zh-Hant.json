@@ -231,7 +231,10 @@
       "ocr": "文字掃描",
       "empty": "無文字",
       "network": "網路",
-      "be": "服務"
+      "be": "服務",
+      "notMenu": "非菜單",
+      "busy": "辨識",
+      "upload": "上傳"
     },
     "retake": "重拍",
     "gallery": "從相簿匯入",
@@ -265,7 +268,11 @@
     "retakeBody": "當前結果將被清除。",
     "retakeBodyWithCart": "當前結果和已加入的{{count}}項將被清除。",
     "retakeConfirm": "重新掃描",
-    "loadingPhoto": "正在載入照片…"
+    "loadingPhoto": "正在載入照片…",
+    "errNotMenu": "這看起來不像菜單，請重新拍照。",
+    "errBusy": "未能識別菜單，請稍後再試。",
+    "errUpload": "照片上傳失敗，請重試。",
+    "avoidTitle": "含有你迴避的食材"
   },
   "owner": {
     "caption": "將此畫面出示給餐廳員工看",

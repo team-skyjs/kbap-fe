@@ -231,7 +231,10 @@
       "ocr": "文字识别",
       "empty": "无文字",
       "network": "网络",
-      "be": "服务"
+      "be": "服务",
+      "notMenu": "非菜单",
+      "busy": "识别",
+      "upload": "上传"
     },
     "retake": "重拍",
     "gallery": "从相册导入",
@@ -265,7 +268,11 @@
     "retakeBody": "当前结果将被清除。",
     "retakeBodyWithCart": "当前结果和已加入的{{count}}项将被清除。",
     "retakeConfirm": "重新扫描",
-    "loadingPhoto": "正在加载照片…"
+    "loadingPhoto": "正在加载照片…",
+    "errNotMenu": "这看起来不像菜单，请重新拍照。",
+    "errBusy": "未能识别菜单，请稍后再试。",
+    "errUpload": "照片上传失败，请重试。",
+    "avoidTitle": "含有你回避的食材"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",

@@ -83,11 +83,14 @@ export const FLAGS = {
    */
   communityReportEnabled: false,
   /**
-   * 스캔 v2(X-API-Version 서버 OCR, P-153) — **P-155 일시 off**: BE v2 내부
-   * 로직 미완성(종한 8/11 확인, dev가 반쪽 파이프라인). 완성 신호 오면 true
-   * 한 줄 복귀 — 채널 분기(prod 제외)는 scanV2Enabled()에 보존.
+   * 스캔 v2(X-API-Version 2.0 — 서버 OCR·판정, P-153 → P-155 일시 off).
+   * **P-219(8/17): 재활성화** — 보류 사유였던 확인 3종이 dev 스웨거 실측으로
+   * 해소(currency 필수 확정 · similarFood 스키마 정의 · SCAN-003/002 분리).
+   * 채널 분기(prod 제외)는 scanV2Enabled()가 보존 — **prod는 1.0 계약이라
+   * 절대 v2로 가면 안 된다**(유닛 잠금). 문제 시 이 한 줄 false로 즉시 롤백
+   * (온디바이스 OCR 코드는 삭제하지 않고 경로 분기로 보존).
    */
-  scanV2: false,
+  scanV2: true,
   /**
    * 홈 "You avoid n things" 칸 (P-171, 8/11 예진) — 홈에서 불필요 판정.
    * 컴포넌트·코드 보존(타 화면 재활용 대비) — true 한 줄로 복원.

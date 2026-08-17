@@ -231,7 +231,10 @@
       "ocr": "Lectura de texto",
       "empty": "Sin texto",
       "network": "Red",
-      "be": "Servicio"
+      "be": "Servicio",
+      "notMenu": "No es un menú",
+      "busy": "Reconocimiento",
+      "upload": "Subida"
     },
     "retake": "Repetir",
     "gallery": "Importar de la galería",
@@ -265,7 +268,11 @@
     "retakeBody": "Se descartarán los resultados actuales.",
     "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
     "retakeConfirm": "Reescanear",
-    "loadingPhoto": "Cargando foto…"
+    "loadingPhoto": "Cargando foto…",
+    "errNotMenu": "Esto no parece un menú. Vuelve a tomar la foto.",
+    "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
+    "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
+    "avoidTitle": "Contiene lo que evitas"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",

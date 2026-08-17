@@ -231,7 +231,10 @@
       "ocr": "Pindai teks",
       "empty": "Tidak ada teks",
       "network": "Jaringan",
-      "be": "Layanan"
+      "be": "Layanan",
+      "notMenu": "Bukan menu",
+      "busy": "Pengenalan",
+      "upload": "Unggah"
     },
     "retake": "Ambil ulang",
     "gallery": "Impor dari galeri",
@@ -265,7 +268,11 @@
     "retakeBody": "Hasil saat ini akan dihapus.",
     "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
     "retakeConfirm": "Pindai ulang",
-    "loadingPhoto": "Memuat foto…"
+    "loadingPhoto": "Memuat foto…",
+    "errNotMenu": "Ini sepertinya bukan menu. Coba foto ulang.",
+    "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",
+    "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
+    "avoidTitle": "Mengandung bahan yang kamu hindari"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

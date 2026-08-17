@@ -12,7 +12,7 @@
  *   when foodId is present — branch on `matched`, never foodId (Swagger 명시).
  */
 import type { RiskState } from '@/lib/theme';
-import type { BeRiskLevel, BoundingBox, ScanResultWire, SimilarFoodWire } from './scanTypes';
+import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, ScanResultWire, SimilarFoodWire } from './scanTypes';
 
 const RISK_MAP: Record<BeRiskLevel, RiskState> = {
   SAFE: 'safe',
@@ -45,6 +45,36 @@ export interface ScanOverlayItem extends ScannedItem {
   price: number | null;
   /** P-153 v2: 미등록 항목 유사 제안(링크 전용). v1/매칭 항목 = null. */
   similar: SimilarFood | null;
+  /** P-219 v2: 겹친 회피 성분(overlapped=true만). 빈 배열 = 미표시. */
+  avoidances: AvoidanceHit[];
+}
+
+/**
+ * P-219 v2: 메뉴별 회피 성분 겹침 — 표시용. `overlapped=true`만 담는다
+ * (전체 목록 나열 금지 — 81종이 올 수 있다). `name`은 서버가 요청 lang으로
+ * 번역해 준 값 그대로(클라 재번역 금지).
+ * ⚠️ false-safe: riskLevel 결측·미지 = **caution 강등**(safe로 올리지 않는다 —
+ * 회피 성분 확률 결측 정책 미결, 헌법 III).
+ */
+export interface AvoidanceHit {
+  code: string;
+  name: string;
+  risk: RiskState;
+}
+
+function mapAvoidances(w: AvoidanceOverlapWire[] | null | undefined): AvoidanceHit[] {
+  if (!Array.isArray(w)) return []; // null(온보딩 미완료) = 표시 안 함
+  return w
+    .filter((a) => a.overlapped === true)
+    .map((a) => {
+      const risk = mapRisk(a.riskLevel ?? 'UNKNOWN');
+      return {
+        code: a.code,
+        name: a.name ?? a.code,
+        // unable(미지)·safe 결측 → caution 강등. danger/caution은 그대로.
+        risk: risk === 'danger' || risk === 'caution' ? risk : 'caution',
+      };
+    });
 }
 
 /** P-153: 유사 음식 제안(v2) — 상세 진입용 최소 필드. ⚠️ 위험도는 운반하지
@@ -73,6 +103,8 @@ function verdict(r: ScanResultWire) {
     price: typeof r.price === 'number' && Number.isFinite(r.price) ? r.price : null,
     // P-153 v2: 미등록 항목의 유사 제안(제안 링크 전용 — 행 판정과 무관)
     similar: r.matched ? null : mapSimilar(r.similarFood),
+    // P-219 v2: 내 회피 재료 중 겹치는 것만(빈 배열 = 표시 안 함 — 빈 컨테이너 금지)
+    avoidances: mapAvoidances(r.avoidances),
   } as const;
 }
 
@@ -103,6 +135,8 @@ export interface PhotoOnlyItem {
   price: number | null;
   /** P-153 v2: 미등록 항목 유사 제안(링크 전용). */
   similar: SimilarFood | null;
+  /** P-219 v2: 겹친 회피 성분(overlapped=true만). 빈 배열 = 미표시. */
+  avoidances: AvoidanceHit[];
 }
 
 /**
