@@ -1275,3 +1275,8 @@
 ## 계측 fail_reason 분해 (2026-08-17, P-220)
 - [x] 스캔 실패 5종(not_menu·ocr·upload·network·server) — 분류·매핑을 순수 모듈 scanErrors.ts로 분리, 전수 유닛 잠금 — bff0ecd.
 - [x] tsc 0 · jest 126스위트 775/775 · teamtest OTA(update group 73ff5ef6).
+
+## 푸시 활성화 (2026-08-17, P-221)
+- [x] FLAGS.pushEnabled = !PROD_CHANNEL(빌드18 네이티브 충족) — prod는 차단 유지, 리뷰 리마인더 1h 로컬 알림 실동작 — 7097d12.
+- [x] prod 차단 유닛 신설(모듈 목에 폭탄 → 미접근 실측) · 지연 require 규약·취소 배선·프라이머 경로 확인 · 상수 3600 불변.
+- [x] tsc 0 · jest 127스위트 781/781 · teamtest OTA(update group 5cf11144, fp 빌드18 일치).
