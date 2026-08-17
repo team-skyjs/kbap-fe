@@ -1290,3 +1290,10 @@
 - [x] P-225 탭명 Reviews ×10(피드 헤더 = 탭 키 정합)·optional 제거(온보딩 3키 제외)·Where did you eat?·리뷰 픽커 캡션 분기 — 0edd8bf.
 - [x] P-224 닉네임 잘림 두 계층 — displayNickname(14자·코드포인트) authorName 내장 + 단독형 numberOfLines 1(홈 인사는 접미 보호 병용) + ActionSheet 공용 방어 — 5f1d908.
 - [x] tsc 0 · jest 129스위트 797/797 · teamtest OTA(update group f8bbc901).
+
+## 멘토링 8/15 구조 개편 4건 (2026-08-18, P-229·228·227·226)
+- [x] P-229 피드 필터(국가·음식 = 서버 쿼리 2종, 빈 결과 초기화 CTA) — e1c2388.
+- [x] P-228 Ask the owner 플로팅(전 위험도·게스트 제외 무변, 바닥 여백 118) — b06730f.
+- [x] P-227 프로필 재배치(식이 역추론 칩→기피 4타일+Show all→랭킹, 프리셋 팝업 합집합, SpicePeppers 투명도) — 15d6643.
+- [x] P-226 주문 개편(영문 타이틀 위계·소팅 세그 unable 최하단 잠금·배지 제거·미등록 딥링크·무플립·담기 버튼 톤) — 1d68943.
+- [x] tsc 0 · jest 132스위트 819/819 · teamtest OTA 일괄(update group b7b0678f).
