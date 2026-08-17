@@ -270,6 +270,42 @@ it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () 
   expect(s).toContain('reviews.writeReview'); // Write CTA만
 });
 
+describe('P-228: Ask the owner 플로팅', () => {
+  afterEach(() => mockIsGuest.mockReturnValue(false));
+
+  it('회원+등록 음식 = 플로팅 상시 노출(스크롤 무관) + 콘텐츠 바닥 여백', () => {
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'ask-owner-float').length).toBeGreaterThanOrEqual(1);
+    expect(flat(tree)).toContain('detail.askOwner');
+    // 인라인 섹션 잔존 0 — CTA는 플로팅 하나(소스 잠금)
+    const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+    expect(src).toContain("paddingBottom: showAskCta ? 118 : 40"); // P-068 여백 문법
+    // 라벨 3곳 = 플로팅 1 + caution 재료 행 링크 + 미등록 본문 CTA(둘 다 유지 대상).
+    // 구 인라인 하단 섹션은 소멸 — Registered 반환부에 Btn CTA 부재로 잠금
+    expect(src.match(/detail\.askOwner/g)?.length).toBe(3);
+    expect(src).not.toContain('{!guest && (\n        <View style={styles.sec}>'); // 구 인라인 CTA 소멸
+  });
+
+  it('게스트 = 플로팅 미노출(회피 프로필 없어 질문 조립 무의미 — 정책 무변)', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { reviewsMasked: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'ask-owner-float')).toHaveLength(0);
+  });
+
+  it('미등록 음식 = 플로팅 미노출(Unregistered 본문 CTA 현행 유지)', () => {
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('unable', { isRegistered: false }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'ask-owner-float')).toHaveLength(0);
+  });
+});
+
 describe('P-206: 게스트 열람 개편', () => {
   afterEach(() => mockIsGuest.mockReturnValue(false));
 

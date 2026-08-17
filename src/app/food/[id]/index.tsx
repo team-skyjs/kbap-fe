@@ -76,6 +76,8 @@ export default function FoodDetailScreen() {
 
   // 북마크 — 게스트=게이트 시트, 회원=BE 토글 (KB-142: 낙관적+실패 롤백, 무변)
   const saved = food?.bookmarked ?? false;
+  // P-228: 플로팅 CTA 노출 조건 — 등록 음식 + 회원(정책 무변)
+  const showAskCta = !!food && food.isRegistered && !isGuest;
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false); // P-134: 마크 탭 재열람
@@ -108,7 +110,7 @@ export default function FoodDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: 40 }, error && !food ? { flexGrow: 1 } : null]}>
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showAskCta ? 118 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
         {/* P-184(Q-34③ 반려): 수동 paddingTop 배치 소멸 — 정중앙은 블록 소유 */}
         {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
 
@@ -155,6 +157,18 @@ export default function FoodDetailScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* P-228: Ask the owner 플로팅 CTA(멘토 8/15) — 스크롤 무관 상시 노출 +
+          primary 필 톤(clickable 시인성). 전 위험도 노출(P-167 유지 — 확인 버튼은
+          위험할수록 필요), 게스트 제외(회피 프로필 없어 질문 조립 무의미).
+          미등록 음식은 Unregistered 본문 CTA가 스크롤 없이 보이므로 현행 유지. */}
+      {showAskCta && (
+        <View style={[styles.askFloat, { paddingBottom: insets.bottom + 14 }]} pointerEvents="box-none" testID="ask-owner-float">
+          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => { track(EVENTS.owner_ask_open, { source: 'cta', food_id: id ?? '' }); router.push(`/food/${id}/owner` as Href); }}>
+            {t('detail.askOwner')}
+          </Btn>
+        </View>
+      )}
 
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 다크 원 → 솔리드 크림+타이틀 */}
       <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
@@ -478,17 +492,8 @@ function Registered({
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
 
-      {/* P-162→P-167: 하단 CTA = 사장님 확인(재료 행 링크와 동일 목적지·라벨 통일) —
-          확인 버튼은 위험할수록 필요하므로 **전 위험도 노출**(위험도 분기는 구 주문 CTA
-          잔재로 제거, 예진 확정 8/11). 게스트만 제외 — 회피 프로필이 없어 질문 조립이
-          무의미. 재료 파라미터 없음 = orderCard.ts 기존 조립(P-163 회피 나열, 0개=일반 질문). */}
-      {!guest && (
-        <View style={styles.sec}>
-          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={() => { track(EVENTS.owner_ask_open, { source: 'cta', food_id: id ?? '' }); router.push(`/food/${id}/owner` as Href); }}>
-            {t('detail.askOwner')}
-          </Btn>
-        </View>
-      )}
+      {/* P-228: 하단 CTA는 화면 루트의 플로팅으로 이동(스크롤 무관 상시 노출) —
+          전 위험도 노출(P-167)·게스트 제외 정책 무변. */}
     </>
   );
 }
@@ -583,6 +588,8 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
 }
 
 const styles = StyleSheet.create({
+  // P-228: 플로팅 CTA 컨테이너 — 하단 고정, 표면색 배경으로 스크롤 콘텐츠와 분리(P-068 여백 문법)
+  askFloat: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 18, paddingTop: 10, backgroundColor: C.surface, zIndex: 5 },
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 18, paddingTop: 16, gap: 18 },
 
