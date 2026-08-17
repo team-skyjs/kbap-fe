@@ -62,13 +62,15 @@ describe('⑤ ⑦ 에러 3분기 · similarFood · OCR 미호출 — 소스 잠�
   const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
   it('BE code로 분기(HTTP 상태 아님) — SCAN-003/002/001 각각 다른 안내', () => {
-    const scan = read('src/app/scan.tsx');
-    expect(scan).toContain("case 'SCAN-003':");
-    expect(scan).toContain("case 'SCAN-002':");
-    expect(scan).toContain("case 'SCAN-001':");
-    expect(scan).toContain('stageForCode((e as { code?: string })?.code, msg)');
+    // P-220: 분류 로직은 순수 모듈로 이전(scanErrors.ts) — 화면은 경유만
+    const errors = read('src/lib/scan/scanErrors.ts');
+    expect(errors).toContain("case 'SCAN-003':");
+    expect(errors).toContain("case 'SCAN-002':");
+    expect(errors).toContain("case 'SCAN-001':");
     // 각 분기가 서로 다른 FE i18n 키(= 서로 다른 안내). BE message 노출 금지
-    for (const k of ['scan.errNotMenu', 'scan.errBusy', 'scan.errUpload']) expect(scan).toContain(k);
+    for (const k of ['scan.errNotMenu', 'scan.errBusy', 'scan.errUpload']) expect(errors).toContain(k);
+    const scan = read('src/app/scan.tsx');
+    expect(scan).toContain('stageForCode((e as { code?: string })?.code, msg)');
     // 메뉴판 아님 = 재촬영 / 인식 실패·업로드 = 재시도
     expect(scan).toContain("stage === 'busy' || stage === 'upload'");
     // 클라가 code를 받을 수 있어야 한다(래퍼 전파)

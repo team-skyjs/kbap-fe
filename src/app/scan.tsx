@@ -35,6 +35,8 @@ import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
 import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
+// P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
+import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
 import { coverCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
@@ -56,36 +58,6 @@ import { getPrimerResult } from '@/lib/push/pushAdapter';
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
 type ResultView = 'risk' | 'list';
-// P-219: v2 에러 3분기 — BE `code` 필드로 분기(HTTP 상태 아님). BE message는
-// 사용자 노출 금지 — 아래 FE i18n 키로만 렌더한다.
-type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be' | 'notMenu' | 'busy' | 'upload';
-
-const ERROR_MSG: Record<ErrorStage, string> = {
-  capture: 'scan.errCapture',
-  ocr: 'scan.errOcr',
-  empty: 'scan.noText',
-  network: 'scan.errNetwork',
-  be: 'scan.errBe',
-  notMenu: 'scan.errNotMenu', // SCAN-003(400) — 메뉴판 아님: 사용자 행동 필요(재촬영)
-  busy: 'scan.errBusy', // SCAN-002(503) — 인식 실패: 사용자 잘못 아님(잠시 후 재시도)
-  upload: 'scan.errUpload', // SCAN-001(400) — 이미지 접근 불가: 업로드부터 재시도
-};
-
-/** BE 코드 → 화면 분기. 미지 코드는 기존 'be'(일반 서버 오류)로. */
-function stageForCode(code: string | undefined, msg: string): ErrorStage {
-  if (msg.startsWith('NETWORK')) return 'network';
-  switch (code) {
-    case 'SCAN-003':
-      return 'notMenu';
-    case 'SCAN-002':
-      return 'busy';
-    case 'SCAN-001':
-      return 'upload';
-    default:
-      return 'be';
-  }
-}
-
 /** ⑦(KB-137) 촬영/갤러리 캐시 파일 삭제 — 실패해도 스캔 흐름엔 무해(로그만). */
 function deletePhotoFile(uri: string | null | undefined): void {
   if (!uri || !uri.startsWith('file:')) return; // 웹 blob/샘플(null)은 대상 아님
@@ -240,14 +212,9 @@ export default function Scan() {
 
   function fail(stage: ErrorStage, detail: string) {
     console.log(`[scan] FAIL stage=${stage} detail=${detail}`);
-    // P-144: 실패도 scan_complete로 — fail_reason은 CSV enum 3종(ocr|network|server)
-    // 매핑: capture·empty(기기 단 실패) → ocr / network → network / be → server
-    // P-219: v2 3분기도 이 3종에 흡수 — notMenu는 사용자 입력 문제라 ocr,
-    // busy·upload는 서버측이라 server (CSV enum 확장이 필요하면 커맨드 센터 판단)
-    const reason =
-      stage === 'network' ? 'network'
-      : stage === 'be' || stage === 'busy' || stage === 'upload' ? 'server'
-      : 'ocr';
+    // P-144 → P-220: fail_reason = CSV enum **5종**(not_menu·ocr·upload·network·server).
+    // 매핑 전수는 scanErrors.failReasonForStage 한 곳 — 차트 축이라 유닛으로 잠근다.
+    const reason = failReasonForStage(stage);
     track(EVENTS.scan_complete, { success: false, fail_reason: reason, item_count: 0, degraded: false });
     setError({ stage, detail });
     setPhase('error');

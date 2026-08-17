@@ -17,7 +17,9 @@
  * | onboarding_step_skip     | step                                       |
  * | onboarding_submit        | avoid_count(개수만 — 재료 내용 금지),        |
  * |                          | avoid_skipped, spice_skipped               |
- * | scan_complete            | degraded(성공/정제실패 구분), item_count     |
+ * | scan_complete            | degraded, item_count, success,              |
+ * |                          | fail_reason (P-220 5종: not_menu·ocr·      |
+ * |                          | upload·network·server)                     |
  * | food_detail_view         | source (scan|list|search|home|other)       |
  * | review_submit            | (props 없음)                                |
  * | auth_login_success            | provider (APPLE|GOOGLE)                    |
@@ -86,6 +88,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   onboarding_step_complete: ['step'],
   onboarding_step_skip: ['step'],
   onboarding_submit: ['avoid_count', 'avoid_skipped', 'spice_skipped'],
+  // P-220: fail_reason 값 = not_menu|ocr|upload|network|server (매핑은 scanErrors.ts).
+  // ⚠️ not_menu(사용자 촬영 문제)와 ocr(우리 인식 실패)은 개선 투자처가 반대라 분리.
   scan_complete: ['degraded', 'item_count', 'success', 'fail_reason'], // P-144 확장
   food_detail_view: ['source', 'food_id'], // P-144: food_id 추가(카탈로그 id — PII 아님)
   review_submit: ['has_photos', 'photo_count', 'rating'], // P-144 확장
