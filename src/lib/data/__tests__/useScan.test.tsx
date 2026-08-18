@@ -89,7 +89,7 @@ it('요청 body 에 imagePath 포함 — 사진 없음(샘플) → "" + items �
       imagePath: '',
       items: [{ idx: 0, rawMenuName: '김치찌개' }], // box 는 온디바이스 — 전송 금지
     },
-    { timeoutMs: 600_000 }, // P-115 60s → TEMP(P-232) 진단 10분 — 종한 진단 후 원복/확정
+    { timeoutMs: 120_000 }, // P-234 확정: 실측 58초 × 2 (P-232 진단 → TEMP 원복)
   );
 });
 

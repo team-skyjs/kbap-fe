@@ -75,13 +75,13 @@ export async function postScan({ items, photo, currency }: ScanInput): Promise<S
   // (400보다 근사 환산이 낫다 — 발주 명시). v1 경로는 쿼리를 붙이지 않는다.
   const cur = v2 ? (currency && currency.trim() ? currency : 'USD') : null;
   const query = `?lang=${apiLang()}${cur ? `&currency=${encodeURIComponent(cur)}` : ''}`;
-  // TEMP(P-232): 진단용 10분 — v2 서버 vision(추론 모델)이 "느리지만 완료"인지
-  // "무한 행"인지 판독용(be-agenda 6번 🔴). 종한 진단 후 원복/확정 — 실사용 잔류 금지.
   const startedAt = Date.now();
   let payload: ScanPayload;
   try {
     payload = await api.post<ScanPayload>(`/scans${query}`, body, {
-      timeoutMs: 600_000, // TEMP(P-232): 진단용 10분 — 종한 진단 후 원복/확정
+      // P-234 확정: P-232 실측 — v2 vision 정상 완료 ~58초(행 아님·추론 모델 지연).
+      // 58초 × 여유 2배 = 120초. 종한 모델/비동기 개선 시 재조정.
+      timeoutMs: 120_000,
       ...(v2 ? { headers: { 'X-API-Version': SCAN_API_VERSION } } : {}),
     });
   } catch (e) {

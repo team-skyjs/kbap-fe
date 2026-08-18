@@ -235,7 +235,10 @@ export default function Scan() {
     scan.mutate({ items: scanned, photo: capturedPhoto, currency }, {
       onSuccess: (res) => {
         // P-083: 스캔 완료 — 성공/정제실패(degraded) 구분 + 인식 항목 수
-        track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length });
+        // P-234: v2는 결과 전부가 photoOnly 경로(res.items 항상 [])라 items.length만
+        // 세면 107개 스캔이 0으로 발화(8/18 실측) — 전체 결과 수(매칭+미매칭)로 교정.
+        // v1은 items가 본 경로라 현행 합산식으로도 동일(photoOnly는 idx=null 보충분).
+        track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length + res.photoOnly.length });
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
