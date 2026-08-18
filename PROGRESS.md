@@ -1311,3 +1311,8 @@
 - [x] /profile/diet 신설(15종 카테고리 그리드·역추론 프리셀렉트) + Show all 진입(프리셋 시트 경로 대체) — efa57dd.
 - [x] 확정 흐름: 저장=신규분 합집합 즉시 PATCH→사후 모달(Yes 회피 편집/No 복귀·반영 유지) · 해제=회피 불변 · 무변경=무모달.
 - [x] tsc 0 · jest 133스위트 831/831 · teamtest OTA(update group 0fb8eb30).
+
+## v2 계측 교정·타임아웃 확정 (2026-08-18, P-234)
+- [x] scan_complete.item_count = items+photoOnly 합산(v2 107→0 발화 버그 교정, 화이트리스트 통과 실측) — d08f9c9.
+- [x] 타임아웃 TEMP 10분 → 120초 확정(P-232 실측 58초 × 2, TEMP 잔존 0 잠금).
+- [x] tsc 0 · jest 134스위트 835/835 · teamtest OTA(update group 96bd6170).
