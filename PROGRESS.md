@@ -1323,3 +1323,8 @@
 - [x] P-236 2축(servingSpeed·staffKindness) 서버 배선 — Getting there·로컬 프리뷰 폐기, 0 비표시, 풀 페이로드 함정 봉쇄 — 6a5fef4.
 - [x] P-235 게스트 열람 개방 — 세션 게이트·blur·잠금 UI 소멸, review:null 방어(reviewSummaryMissing) — a705b60.
 - [x] tsc 0 · jest 135스위트 851/851 · teamtest OTA 일괄(update group 9600a9e5).
+
+## 상세 신스키마 핫픽스 (2026-08-19, P-239)
+- [x] adaptReviewSummary = reviewSummary 1순위(필드 존재 겸수신·prod 폴백 존치) — dev ★요약 소실 복구 — 0909856.
+- [x] 재료 마크 avoidedIngredients 조인(회원 겹침·비회원 unable·구스키마 무변·실코드 채택) · recentReviews 인라인(목록 호출 절감·undefined/[] 구분).
+- [x] tsc 0 · jest 136스위트 861/861 · teamtest OTA 우선 발행(update group 50058374).
