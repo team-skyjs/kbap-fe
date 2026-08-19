@@ -324,7 +324,7 @@ describe('P-228: Ask the owner 플로팅', () => {
   it('게스트 = 플로팅 미노출(회피 프로필 없어 질문 조립 무의미 — 정책 무변)', () => {
     mockIsGuest.mockReturnValue(true);
     mockUseFoodDetail.mockReturnValue({
-      data: FOOD('safe', { reviewsMasked: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      data: FOOD('safe', { reviewSummaryMissing: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
@@ -347,7 +347,7 @@ describe('P-206: 게스트 열람 개편', () => {
   it('게스트+재료 수신 = 이름·빈도 공개, 위험 판정(마크) 미표시 — false-safe', () => {
     mockIsGuest.mockReturnValue(true);
     mockUseFoodDetail.mockReturnValue({
-      data: FOOD('safe', { reviewsMasked: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      data: FOOD('safe', { reviewSummaryMissing: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
@@ -391,21 +391,31 @@ describe('P-206: 게스트 열람 개편', () => {
     expect(flat(tree)).toContain('detail.dataDisclaimer');
   });
 
-  it('마스킹(blur) 요약 = be-first 오표시 소멸 — 잠금 게이트 카피로 대체(기존 lock 키)', () => {
+  it('P-235: review:null(요약 미상) = 브리프·be-first 전부 미렌더(빈 컨테이너 금지) + 잠금 게이트 소멸', () => {
     mockIsGuest.mockReturnValue(true);
     mockUseFoodDetail.mockReturnValue({
-      data: FOOD('safe', { reviewsMasked: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      data: FOOD('safe', { reviewSummaryMissing: true, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
-    expect(byId(tree, 'review-empty-cta').length).toBe(0); // "아직 리뷰가 없어요" 오표시 소멸
-    expect(byId(tree, 'review-guest-lock').length).toBeGreaterThanOrEqual(1);
-    expect(flat(tree)).toContain('lock.reviewsLocked'); // 기존 lock 키 재사용
+    expect(byId(tree, 'review-empty-cta')).toHaveLength(0);
+    expect(byId(tree, 'review-brief')).toHaveLength(0); // 미상 = 섹션 자체 미렌더
+    expect(byId(tree, 'review-guest-lock')).toHaveLength(0); // 게스트 잠금 게이트 소멸(열람 개방)
+  });
+
+  it('P-235: 게스트 + 요약 존재 = 브리프 실데이터 표시(서버가 review를 주면 코드 무변 자동)', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe', { reviewSummaryMissing: false, overall: { average: 4.5, count: 12 } }),
+      isLoading: false, error: null, refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'review-brief').length).toBeGreaterThanOrEqual(1); // 게스트도 열람
   });
 
   it('회원 + 실측 0건(마스킹 아님) = be-first 현행 유지', () => {
     mockUseFoodDetail.mockReturnValue({
-      data: FOOD('safe', { reviewsMasked: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
+      data: FOOD('safe', { reviewSummaryMissing: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);

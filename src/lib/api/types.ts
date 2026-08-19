@@ -118,8 +118,8 @@ export interface FoodDetail {
   riskBasis: RiskBasis[];
   overall: RatingAggregate;
   sameNationality: RatingAggregate;
-  /** P-206: 서버 blur=true — 게스트 등에 요약 마스킹(0/0은 실측 아님). 0건과 구분 축. */
-  reviewsMasked?: boolean;
+  /** P-235: review:null 방어 — 요약 미상(브리프 섹션 미렌더). blur 축은 소멸(8/19). */
+  reviewSummaryMissing?: boolean;
   description: string; // reader language, ≤150 chars (EN)
   spiceLevel: SpiceLevel | null; // P-081: enum 단계 (null = 데이터 없음); spiceTolerance와 순서 비교
   photoUrl: string | null;

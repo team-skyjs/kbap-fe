@@ -141,15 +141,13 @@ it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리�
   expect(mockPush).toHaveBeenCalledWith('/food/7/review');
 });
 
-it('게스트 = 피드 호출 0(인증 필수 계약) + 게이트 카드', () => {
+it('P-235: 게스트 = 열람 개방(무토큰 200) — 실데이터 렌더 + 게이트 카드 소멸', () => {
   mockIsGuest.mockReturnValue(true);
-  mockFeed.mockReturnValue({
-    data: undefined, isLoading: false, isError: false, error: null, refetch: jest.fn(),
-    hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
-  });
   const tree = render();
-  expect(mockFeed).toHaveBeenCalledWith(false); // enabled=false — 호출 0
-  expect(tree.root.findAll((n) => n.props?.testID === 'feed-guest-gate').length).toBeGreaterThanOrEqual(1);
+  expect(mockFeed).toHaveBeenCalledWith(true); // 게스트도 호출(목이 enabled만 전달)
+  const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+  expect(texts).toContain('Amy'); // 실데이터
+  expect(tree.root.findAll((n) => n.props?.testID === 'feed-guest-gate')).toHaveLength(0);
 });
 
 it('P-181 ③: 헤더 장식 벨 부재(피드·구 글 피드 소스 모두)', () => {
@@ -189,7 +187,7 @@ describe('P-194: 당겨서 새로고침 + 포커스 stale 재조회', () => {
     expect(refetch).toHaveBeenCalled();
   });
 
-  it('게스트 = RefreshControl 부재(refetch는 enabled 우회 — 호출 0 계약 보존)', () => {
+  it('P-235: 게스트도 RefreshControl 존재 + 포커스 stale 재조회(열람 개방)', () => {
     mockIsGuest.mockReturnValue(true);
     const refetch = jest.fn().mockResolvedValue(undefined);
     mockFeed.mockReturnValue({
@@ -198,8 +196,8 @@ describe('P-194: 당겨서 새로고침 + 포커스 stale 재조회', () => {
     });
     const tree = render();
     const { RefreshControl } = require('react-native') as typeof import('react-native');
-    expect(tree.root.findAllByType(RefreshControl).length).toBe(0);
-    expect(refetch).not.toHaveBeenCalled(); // stale이어도 게스트는 포커스 재조회 0
+    expect(tree.root.findAllByType(RefreshControl).length).toBeGreaterThanOrEqual(1);
+    expect(refetch).toHaveBeenCalled(); // stale = 포커스 재조회(게스트 포함)
   });
 
   it('탭 포커스(KB-68 문법) — stale이면 재조회, fresh면 no-op', () => {

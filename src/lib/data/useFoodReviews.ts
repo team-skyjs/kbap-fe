@@ -10,7 +10,6 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ReviewPage } from '@/lib/api/types';
 import { api, apiLang } from '@/lib/api/client';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
-import { hasBeSession } from '@/lib/auth/beAuth';
 import { FLAGS } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
 
@@ -20,7 +19,8 @@ export async function fetchFoodReviewsPage(
   cursor: string | null,
   countryCode?: string | null,
 ): Promise<ReviewPage> {
-  if (!FLAGS.reviewsLiveEnabled || !(await hasBeSession())) {
+  // P-235: 게스트 개방(8/19 무토큰 200 실측) — 세션 게이트 소멸, 봉인 플래그만 유지
+  if (!FLAGS.reviewsLiveEnabled) {
     const page = mockFoodReviews(foodId);
     return countryCode
       ? { ...page, items: page.items.filter((r) => r.authorNationality === countryCode) }
@@ -54,7 +54,7 @@ export interface GlobalFeedFilters {
 /** P-179(KB-307): 전역 최신 리뷰 피드 — GET /api/reviews (P-229: 서버 필터 2종).
  *  bearerAuth 필수(계약) — 게스트/봉인은 빈 페이지(화면이 게이트 담당). */
 export async function fetchGlobalReviewsPage(cursor: string | null, filters: GlobalFeedFilters = {}): Promise<ReviewPage> {
-  if (!FLAGS.reviewsLiveEnabled || !(await hasBeSession())) return { items: [], hasNext: false, nextCursor: null };
+  if (!FLAGS.reviewsLiveEnabled) return { items: [], hasNext: false, nextCursor: null }; // P-235: 게스트 개방
   const q = new URLSearchParams();
   q.set('lang', apiLang());
   if (cursor) q.set('cursor', cursor);

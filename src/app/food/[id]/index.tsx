@@ -396,9 +396,10 @@ function Registered({
       {/* P-169: 리뷰 브리프(쿠팡 문법) — 2열 카드 소멸 → 헤더(큰 별+수치+리뷰 수,
           같은 국적 병기 보조 줄 = 차별점 유지) + 프리뷰 5 + 풀폭 전체보기.
           솔리드 CTA는 Ask the owner 하나만 — Write a review는 고스트 소형 강등. */}
-      {/* P-182 ③ → P-206: be-first = **회원+마스킹 아님+실측 0건**만 — 게스트의
-          요약 마스킹(blur, 0/0)을 "아직 리뷰가 없어요"로 오표시하던 혼동 교정 */}
-      {FLAGS.reviewsEnabled && !guest && !food.reviewsMasked && food.overall.count === 0 && (
+      {/* P-206 → P-235: 게스트 리뷰 열람 개방 — 잠금 게이트 소멸, 브리프는 게스트도
+          실데이터. review:null(요약 미상)은 섹션 자체 미렌더(빈 컨테이너 금지 —
+          서버 수정 시 코드 무변 자동 표시). be-first(쓰기 유도)는 회원+실측 0건만. */}
+      {FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && (
         <View style={styles.sec} testID="review-empty-cta">
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
           <Btn variant="ghost" onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
@@ -406,20 +407,7 @@ function Registered({
           </Btn>
         </View>
       )}
-      {/* P-206: 게스트/마스킹 = 잠금 게이트(기존 lock 키 재사용) — 쓰기는 가입 시트 경유 */}
-      {FLAGS.reviewsEnabled && (guest || food.reviewsMasked) && (
-        <View style={styles.sec} testID="review-guest-lock">
-          <View style={styles.rvLockRow}>
-            <IconLock size={16} color={C.ink2} />
-            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-              <Text style={styles.rvLockTitle}>{t('lock.reviewsLocked')}</Text>
-              <Text style={styles.rvLockSub}>{t('gate.reviewsSub')}</Text>
-            </View>
-            <Btn sm onPress={() => setGateOpen(true)}>{t('intro.signUp')}</Btn>
-          </View>
-        </View>
-      )}
-      {FLAGS.reviewsEnabled && !guest && !food.reviewsMasked && food.overall.count > 0 && (
+      {FLAGS.reviewsEnabled && !food.reviewSummaryMissing && food.overall.count > 0 && (
         <View style={styles.sec} testID="review-brief">
           <View style={styles.rvBriefHead}>
             <View style={{ flex: 1, minWidth: 0, gap: 4 }}>

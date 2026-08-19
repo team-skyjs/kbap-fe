@@ -27,12 +27,11 @@ export interface ReviewRatingWire {
   reviewCount?: number;
 }
 
-/** 음식 상세 리뷰 요약 묶음 — 8/3 스냅샷 정본 {blur, overall, sameCountry}.
+/** 음식 상세 리뷰 요약 묶음 — 8/3 스냅샷 → P-235: blur 소멸(8/19).
  *  발주문의 단층 형태({averageRating, reviewCount, sameCountryAverageRating})도
  *  겸수신(필드 비충돌 — overall 존재 여부로 판별). */
 export interface ReviewSummaryWire extends ReviewRatingWire {
   /** 비회원 가림 — true면 수치는 기본값(0.0·0). */
-  blur?: boolean;
   overall?: ReviewRatingWire;
   sameCountry?: ReviewRatingWire;
   sameCountryAverageRating?: number | null;

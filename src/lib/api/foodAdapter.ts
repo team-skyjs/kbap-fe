@@ -31,7 +31,7 @@ function refToUrl(ref: string | null | undefined): string | null {
 }
 
 /** 중첩 평점 단위 → 내부 집계. 계약 "리뷰 없으면 0.0·0(null 없음)" → count 0이면
- *  average null(화면 '—'). blur=true의 기본값(0.0·0)도 같은 경로로 자연 강등. */
+ *  average null(화면 '—'). */
 function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
   const count = r?.reviewCount ?? 0;
   return { average: count > 0 && typeof r?.averageRating === 'number' ? r.averageRating : null, count };
@@ -39,25 +39,28 @@ function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
 
 /** P-107(KB-275, #121): 리뷰 요약 겸수신 — ① 신계약 중첩(스냅샷 8/3 정본
  *  {overall, sameCountry}) ② 발주문 단층 중첩 ③ 구 평면(prod 폴백) 순. */
-function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 'sameNationality' | 'reviewsMasked'> {
+function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 'sameNationality' | 'reviewSummaryMissing'> {
   const rv = wire.review;
-  // P-206: blur=true = 요약 마스킹(게스트 실측 — 0.0/0은 실측 아님) → 0건과 구분.
-  // 화면의 be-first("아직 리뷰가 없어요")는 masked=false의 실측 count 0에서만.
-  const reviewsMasked = rv?.blur === true;
+  // P-235: blur 소멸(8/19 응답 실측). 🔴 review:null 방어 — 현재 서버가 비회원
+  // 상세의 요약을 null로 준다(리뷰 있는 음식도 — 종한 확인 중 버그 후보, 합의
+  // 규격은 overall 공개·sameCountry만 null). null = 브리프 섹션 미렌더
+  // (reviewSummaryMissing — 빈 컨테이너 금지), 서버가 고치면 **코드 무변**으로
+  // 표시된다(옵셔널 배선 — 필드 존재 가정 없음).
   if (rv) {
     if (rv.overall || rv.sameCountry) {
-      return { overall: aggFromRating(rv.overall), sameNationality: aggFromRating(rv.sameCountry), reviewsMasked };
+      return { overall: aggFromRating(rv.overall), sameNationality: aggFromRating(rv.sameCountry), reviewSummaryMissing: false };
     }
     return {
       overall: { average: rv.averageRating ?? null, count: rv.reviewCount ?? 0 },
       sameNationality: { average: rv.sameCountryAverageRating ?? null, count: 0 },
-      reviewsMasked,
+      reviewSummaryMissing: false,
     };
   }
   return {
     overall: { average: wire.averageRating ?? null, count: wire.reviewCount ?? 0 },
     sameNationality: { average: wire.sameCountryAverageRating ?? null, count: 0 },
-    reviewsMasked: false,
+    // 구응답 최상위 필드 폴백 — 그것도 없으면 요약 미상(missing)
+    reviewSummaryMissing: wire.averageRating == null && wire.reviewCount == null,
   };
 }
 

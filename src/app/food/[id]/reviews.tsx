@@ -159,30 +159,16 @@ export default function FoodReviews() {
               />
             </View>
 
-            {isGuest ? (
-              /* KB-84: 게스트 — 요약(위)은 공개, 본문 리스트는 블러 고스트 +
-                 lock CTA → 게이트 시트 (guest-access-policy §1) */
-              <View>
-                {/* 리뷰 0건이어도 lock-pop이 뜰 공간 확보 (게스트에겐 빈 상태 없음) */}
-                <View pointerEvents="none" style={{ opacity: 0.3, gap: 12, minHeight: 180 }}>
-                  {items.slice(0, 3).map((r) => (
-                    <ReviewItem key={r.id} review={r} t={t} mine={false} foodId={id ?? ''} />
-                  ))}
-                </View>
-                <View style={styles.lockPop}>
-                  <View style={styles.lockPopIc}>
-                    <IconLock size={20} color={C.ink2} />
-                  </View>
-                  <Text style={styles.lockPopTitle}>{t('lock.reviewsLocked')}</Text>
-                  <Text style={styles.lockPopSub}>{t('gate.reviewsSub')}</Text>
-                  <Pressable style={styles.lockPopBtn} onPress={() => setGateOpen('reviews')}>
-                    <Text style={styles.lockPopBtnText}>{t('intro.signUp')}</Text>
-                  </Pressable>
-                </View>
-              </View>
+            {/* P-235: 게스트 열람 개방(무토큰 200 실측) — 블러 고스트·lock CTA 소멸.
+                같은 국적 필터는 국적 미상이라 게스트 미노출(멘토 "내 국가 필터만 제외").
+                쓰기·Helpful은 기존 게이트 유지. */}
+            {false ? (
+              <View />
             ) : (
             <>
-            {/* controls — same-nationality filter + sort (translation is per-review) */}
+            {/* controls — same-nationality filter + sort (translation is per-review).
+                P-235: 같은 국적 필터 = 회원만(게스트 국적 미상) */}
+            {!isGuest && (
             <View style={styles.filters}>
               <Pressable style={styles.filter} onPress={() => setSameNatOnly((v) => !v)}>
                 <Flag code={nationality} size={16} />
@@ -192,6 +178,7 @@ export default function FoodReviews() {
                 <Switch on={sameNatOnly} />
               </Pressable>
             </View>
+            )}
             <View style={styles.sortRow}>
               <SortPill label={t('reviews.sortRecent')} on={sort === 'recent'} onPress={() => setSort('recent')} />
               <SortPill label={t('reviews.sortTopRated')} on={sort === 'rating'} onPress={() => setSort('rating')} />

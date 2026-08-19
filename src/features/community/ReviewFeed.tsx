@@ -48,13 +48,14 @@ export function ReviewFeed() {
   const [minRating, setMinRating] = React.useState<number | null>(null); // 프리셋: null(전체)·3·4
   const [sortSheet, setSortSheet] = React.useState(false);
   const nationality = useMe().data?.nationality ?? null;
-  const feed = useGlobalReviews(!isGuest, {
+  // P-235: 게스트 열람 개방(무토큰 200 실측) — 호출 게이트 소멸. 쓰기·Helpful 게이트 유지.
+  const feed = useGlobalReviews(true, {
     countryCode: sameNatOnly ? nationality : null,
     foodId: foodFilter?.foodId ?? null,
     sort,
     minRating,
     maxRating: null, // 프리셋이 "N점 이상"뿐이라 상한 미사용(min≤max 방어는 훅)
-  }); // 게스트 = 호출 0(인증 필수 계약)
+  });
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
   const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별(위 nationality와 같은 캐시 — 중복 호출 아님)
@@ -86,7 +87,7 @@ export function ReviewFeed() {
     void feed.refetch().finally(() => setRefreshing(false));
   };
   const staleRef = React.useRef(false);
-  staleRef.current = !isGuest && feed.isStale;
+  staleRef.current = feed.isStale;
   const refetch = feed.refetch;
   useFocusEffect(
     React.useCallback(() => {
@@ -104,7 +105,7 @@ export function ReviewFeed() {
     <View style={styles.root} testID="review-feed">
       <Animated.FlatList
         ListHeaderComponent={
-          isGuest ? null : (
+          (
             <View style={styles.filterRow}>
               {/* 국가 — 음식별 리뷰 목록의 같은 국적 토글 문법 재사용 */}
               {!!nationality && (
@@ -150,7 +151,7 @@ export function ReviewFeed() {
             </View>
           )
         }
-        data={isGuest ? [] : reviews}
+        data={reviews}
         keyExtractor={(r) => r.id}
         contentContainerStyle={[styles.list, { paddingTop: headerH + 4, paddingBottom: 96, flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
@@ -158,7 +159,7 @@ export function ReviewFeed() {
         scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
-        refreshControl={isGuest ? undefined : <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} />}
         renderItem={({ item }) => (
           <FeedCard
             review={item}
@@ -177,7 +178,7 @@ export function ReviewFeed() {
           />
         )}
         ListEmptyComponent={
-          !isGuest && feed.isLoading ? (
+          feed.isLoading ? (
             <View style={styles.center}>
               <Spinner size={22} color={C.ink2} />
             </View>
@@ -196,15 +197,7 @@ export function ReviewFeed() {
       <StickyHeader hidden={hidden} mode="brand" title={t('tabs.community')} /> {/* P-225: 헤더 = 탭 라벨 키 재사용(Reviews) — 단일 소스 */}
 
       {/* P-196 ②: 상태 블록 = 화면 기준 정중앙(4탭 공용 기준 — ScreenCenterFill) */}
-      {isGuest ? (
-        /* 게스트 — 전역 피드는 인증 필수(계약): 기존 게이트 카피 재사용 */
-        <ScreenCenterFill>
-          <Pressable style={styles.guestGate} onPress={() => setGateOpen(true)} testID="feed-guest-gate">
-            <Text style={styles.guestGateTitle}>{t('community.guestGateTitle')}</Text>
-            <Text style={styles.guestGateSub}>{t('community.guestGateSub')}</Text>
-          </Pressable>
-        </ScreenCenterFill>
-      ) : !feed.isLoading && feed.isError ? (
+      {!feed.isLoading && feed.isError ? (
         <ScreenCenterFill>
           <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
         </ScreenCenterFill>

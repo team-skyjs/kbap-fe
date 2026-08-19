@@ -31,23 +31,23 @@ it('bookmarked 누락/비불리언은 false로 방어 (비회원 조회 = 항상
 
 it('신계약 중첩(스냅샷 8/3) — overall·sameCountry 수신, count 0 = average null(0.0 강등)', () => {
   const d = adaptFoodDetail(
-    { ...WIRE, review: { blur: false, overall: { averageRating: 3.7, reviewCount: 3 }, sameCountry: { averageRating: 4.5, reviewCount: 2 } } },
+    { ...WIRE, review: { overall: { averageRating: 3.7, reviewCount: 3 }, sameCountry: { averageRating: 4.5, reviewCount: 2 } } },
     '7',
   );
   expect(d.overall).toEqual({ average: 3.7, count: 3 });
   expect(d.sameNationality).toEqual({ average: 4.5, count: 2 });
   // 리뷰 없음 = 계약상 0.0·0 (null 없음) → 내부 null (화면 '—', 0.0점 오표시 금지)
   const empty = adaptFoodDetail(
-    { ...WIRE, review: { blur: false, overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } },
+    { ...WIRE, review: { overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } },
     '7',
   );
   expect(empty.overall).toEqual({ average: null, count: 0 });
   expect(empty.sameNationality).toEqual({ average: null, count: 0 });
 });
 
-it('blur=true(비회원 기본값 0.0·0) — 수치 미노출용 null/0으로 강등', () => {
+it('0.0·0 요약 — 수치 미노출용 null/0으로 강등(P-235: blur 필드 소멸 후에도 동일)', () => {
   const d = adaptFoodDetail(
-    { ...WIRE, review: { blur: true, overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } },
+    { ...WIRE, review: { overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } },
     '7',
   );
   expect(d.overall).toEqual({ average: null, count: 0 });
@@ -90,26 +90,32 @@ describe('P-165(#146): 목록 리뷰 요약(FoodSummaryResponse.review) 실값',
   });
 });
 
-/* ---- P-206: 리뷰 요약 마스킹(blur) vs 실측 0건 구분 ---- */
-describe('P-206: reviewsMasked', () => {
+/* ---- P-206 → P-235: blur 소멸 — review:null 방어(reviewSummaryMissing) ---- */
+describe('P-235: reviewSummaryMissing', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { adaptFoodDetail } = require('../foodAdapter') as typeof import('../foodAdapter');
   const base = { name: 'Squid', koreanName: '오징어튀김', overallRiskStatus: 'SAFE', ingredients: [] };
 
-  it('blur=true(게스트 실측 — 0.0/0은 마스킹 값) → reviewsMasked true, count 0 유지', () => {
-    const d = adaptFoodDetail({ ...base, review: { blur: true, overall: { averageRating: 0.0, reviewCount: 0 }, sameCountry: { averageRating: 0.0, reviewCount: 0 } } } as never, '501');
-    expect(d.reviewsMasked).toBe(true);
-    expect(d.overall.count).toBe(0);
+  it('review:null + 최상위 부재(현 게스트 실측 — 종한 확인 중) → missing = 브리프 미렌더', () => {
+    const d = adaptFoodDetail({ ...base } as never, '501');
+    expect(d.reviewSummaryMissing).toBe(true);
   });
 
-  it('blur=false + 실측 0건 → masked false(진짜 be-first 대상)', () => {
-    const d = adaptFoodDetail({ ...base, review: { blur: false, overall: { averageRating: 0.0, reviewCount: 0 } } } as never, '501');
-    expect(d.reviewsMasked).toBe(false);
+  it('review 있음(중첩) → missing false — 서버가 고치면 코드 무변 자동 표시', () => {
+    const d = adaptFoodDetail({ ...base, review: { overall: { averageRating: 4.0, reviewCount: 3 } } } as never, '501');
+    expect(d.reviewSummaryMissing).toBe(false);
+    expect(d.overall.count).toBe(3);
   });
 
-  it('구 평면 응답(review 부재) → masked false(prod 폴백 무변)', () => {
+  it('구 평면 응답(review 부재·최상위 존재 — prod 폴백) → missing false 무변', () => {
     const d = adaptFoodDetail({ ...base, averageRating: 4.2, reviewCount: 5 } as never, '501');
-    expect(d.reviewsMasked).toBe(false);
+    expect(d.reviewSummaryMissing).toBe(false);
     expect(d.overall.count).toBe(5);
+  });
+
+  it('blur 잔존 0 — 어댑터·타입에서 소멸(8/19 응답 실측)', () => {
+    const fs = require('fs');
+    expect(fs.readFileSync('src/lib/api/foodDetailTypes.ts', 'utf8')).not.toContain('blur?:');
+    expect(fs.readFileSync('src/lib/api/types.ts', 'utf8')).not.toContain('reviewsMasked');
   });
 });
