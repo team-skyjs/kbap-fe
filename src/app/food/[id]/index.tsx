@@ -484,7 +484,7 @@ function Registered({
         review={editTarget}
         onClose={() => setEditTarget(null)}
         saving={updateReview.isPending}
-        onSave={({ rating, body, place }) => {
+        onSave={({ rating, body, place, extras }) => {
           if (!editTarget) return;
           updateReview.mutate(
             { reviewId: editTarget.id, foodId: id, current: editTarget, changes: { rating, body } },

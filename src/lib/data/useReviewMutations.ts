@@ -15,6 +15,7 @@ import { api } from '@/lib/api/client';
 import { buildReviewUpdate, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
 import type { Review, ReviewPage, User } from '@/lib/api/types';
 import { FLAGS } from '@/lib/flags';
+import { buildReviewExtras, EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
 
 function useInvalidateReviews() {
   const qc = useQueryClient();
@@ -42,7 +43,7 @@ export function useCreateReview() {
   const qc = useQueryClient();
   const invalidate = useInvalidateReviews();
   return useMutation({
-    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null }) => {
+    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const me = qc.getQueryData<User>(['me', i18n.language]);
         mockInsert(qc, {
@@ -66,6 +67,8 @@ export function useCreateReview() {
       await api.post('/api/reviews', { // P-165(#144) 버전리스
         foodId: Number(input.foodId),
         rating: input.rating,
+        // P-236(KB-347): 2축 — 미평가 = 0(서버 규약)
+        ...buildReviewExtras(input.extras ?? EMPTY_EXTRAS),
         ...(input.content ? { content: input.content } : {}),
         ...(input.imagePaths?.length ? { imagePaths: input.imagePaths } : {}),
         // P-201(KB-249): 장소 실전송 — MANUAL(좌표 null) = name만
@@ -97,8 +100,8 @@ export function useUpdateReview() {
     mutationFn: async (input: {
       reviewId: string;
       foodId: string;
-      current: { rating: number; body: string | null; photos?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null };
-      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null };
+      current: { rating: number; body: string | null; photos?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; servingSpeed?: number; staffKindness?: number };
+      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras };
     }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const body = (input.changes.body !== undefined ? input.changes.body : input.current.body)?.trim() || null;
@@ -109,7 +112,11 @@ export function useUpdateReview() {
         );
         return;
       }
-      const body: ReviewUpdateWire = buildReviewUpdate(input.current, input.changes);
+      const body: ReviewUpdateWire = buildReviewUpdate(input.current, {
+        ...input.changes,
+        // P-236: extras → 와이어 2필드(풀 페이로드 — 누락 = 0 리셋이라 항상 채움)
+        ...(input.changes.extras ? buildReviewExtras(input.changes.extras) : {}),
+      });
       await api.patch(`/api/reviews/${input.reviewId}`, body); // P-165 버전리스
     },
     onSuccess: (_d, v) => {

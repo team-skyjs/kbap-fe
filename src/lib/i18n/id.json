@@ -383,8 +383,7 @@
     "placeManual": "Pakai \"{{name}}\" apa adanya",
     "extrasTitle": "Bagaimana restorannya?",
     "extrasSpeed": "Kecepatan penyajian",
-    "extrasService": "Keramahan",
-    "extrasAccess": "Mudah ditemukan"
+    "extrasService": "Keramahan"
   },
   "reviews": {
     "headerTitle": "Ulasan",

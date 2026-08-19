@@ -133,7 +133,7 @@ it('수정 왕복 — 프리필 칩 · 해제(X) 후 저장 = place null(제거 
   expect(flat(tree)).toContain('강남 김밥'); // 프리필 칩
   act(() => tree.root.findAll((n) => n.props?.testID === 'edit-place-clear')[0].props.onPress()); // 해제
   act(() => tree.root.findAll((n) => n.props?.testID === 'edit-save' && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(onSave).toHaveBeenCalledWith({ rating: 4, body: 'b', place: null });
+  expect(onSave).toHaveBeenCalledWith({ rating: 4, body: 'b', place: null, extras: { speed: null, service: null } }); // P-236: extras 동반
 });
 
 it('플래그 게이트 — reviewPlaceEnabled = 채널 분기(prod 무노출) 소스 잠금', () => {

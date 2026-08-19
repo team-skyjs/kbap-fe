@@ -383,8 +383,7 @@
     "placeManual": "Dùng nguyên \"{{name}}\"",
     "extrasTitle": "Nhà hàng thế nào?",
     "extrasSpeed": "Tốc độ phục vụ",
-    "extrasService": "Thái độ phục vụ",
-    "extrasAccess": "Dễ tìm đường"
+    "extrasService": "Thái độ phục vụ"
   },
   "reviews": {
     "headerTitle": "Đánh giá",

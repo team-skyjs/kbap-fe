@@ -24,6 +24,8 @@ describe('buildReviewUpdate — 풀 페이로드 (생략=제거 함정 봉쇄)',
   it('본문만 변경 → rating 유지 + imagePaths(URL→path) 전량 포함 — 사진 소실 0', () => {
     const body = buildReviewUpdate(current, { body: '고친 본문' });
     expect(body).toEqual({
+      servingSpeed: 0, // P-236: 풀 페이로드 — 미보유 = 0
+      staffKindness: 0,
       rating: 4,
       content: '고친 본문',
       imagePaths: ['review/9/a.jpg', 'review/9/b.jpg'],

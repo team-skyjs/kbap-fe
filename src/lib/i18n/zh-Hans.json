@@ -383,8 +383,7 @@
     "placeManual": "直接使用\"{{name}}\"",
     "extrasTitle": "餐厅怎么样？",
     "extrasSpeed": "上菜速度",
-    "extrasService": "服务态度",
-    "extrasAccess": "是否好找"
+    "extrasService": "服务态度"
   },
   "reviews": {
     "headerTitle": "点评",

@@ -383,8 +383,7 @@
     "placeManual": "ใช้ \"{{name}}\" ตามที่พิมพ์",
     "extrasTitle": "ร้านอาหารเป็นอย่างไรบ้าง",
     "extrasSpeed": "ความเร็วในการเสิร์ฟ",
-    "extrasService": "ความเป็นมิตร",
-    "extrasAccess": "หาร้านง่ายไหม"
+    "extrasService": "ความเป็นมิตร"
   },
   "reviews": {
     "headerTitle": "รีวิว",

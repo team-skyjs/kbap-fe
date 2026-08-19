@@ -35,6 +35,8 @@ export interface ReviewFoodWire {
 }
 
 export interface ReviewWire {
+  servingSpeed?: number;
+  staffKindness?: number;
   reviewId: number;
   /** P-165: 계약에서 소멸 — 구응답 방어 폴백으로만 유지. 정본은 food.foodId. */
   foodId?: number;
@@ -63,6 +65,8 @@ export interface ReviewPageWire {
 }
 
 export interface ReviewUpdateWire {
+  servingSpeed?: number;
+  staffKindness?: number;
   rating: number;
   content?: string;
   imagePaths?: string[];
@@ -111,6 +115,9 @@ export function adaptReview(wire: ReviewWire): Review {
     // P-108: 좋아요 = 서버값 (목 로컬 계산 폐기 — 토글 낙관 반영은 뮤테이션 몫)
     likes: wire.likeCount ?? 0,
     myLike: wire.likedByMe === true,
+    // P-236: 2축(0 = 평가 안 함) — 누락 = 0과 동일 취급
+    servingSpeed: wire.servingSpeed ?? 0,
+    staffKindness: wire.staffKindness ?? 0,
     // P-201: 장소 — name 없으면 무태그. MANUAL = 좌표 null(딥링크는 이름 검색 폴백)
     place: wire.place?.name
       ? {
@@ -158,13 +165,16 @@ function placeWire(p: ReviewPlaceLike): NonNullable<ReviewUpdateWire['place']> {
  * (있으면 재전송 — 소실 방지), null = 해제 의도 → 생략, 값 = 교체.
  */
 export function buildReviewUpdate(
-  current: { rating: number; body: string | null; photos?: string[]; place?: ReviewPlaceLike | null },
-  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null },
+  current: { rating: number; body: string | null; photos?: string[]; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number },
+  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number },
 ): ReviewUpdateWire {
   const body = (changes.body !== undefined ? changes.body : current.body)?.trim() ?? '';
   const place = changes.place !== undefined ? changes.place : (current.place ?? null);
   return {
     rating: changes.rating ?? current.rating,
+    // P-236: 2축 — 풀 페이로드 규약상 누락 = 0 리셋이므로 항상 현행/변경 값 전송
+    servingSpeed: changes.servingSpeed ?? current.servingSpeed ?? 0,
+    staffKindness: changes.staffKindness ?? current.staffKindness ?? 0,
     ...(body ? { content: body } : {}), // 빈 본문 = 제거 의도 → 생략
     imagePaths: (current.photos ?? []).map(imageUrlToPath), // 항상 전송 — 사진 소실 방지
     ...(place ? { place: placeWire(place) } : {}), // null = 해제 → 생략

@@ -26,7 +26,7 @@ import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, u
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
-import { EMPTY_EXTRAS, saveLocalExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
+import { EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { Modal } from 'react-native';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
@@ -100,9 +100,10 @@ export default function ReviewCompose() {
           content: body.trim() || undefined,
           imagePaths,
           place,
+          extras, // P-236: servingSpeed·staffKindness(미평가 = 0)
         });
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
-        if (id) saveLocalExtras(id, extras); // P-202: 로컬 프리뷰(전송은 계약 후 buildReviewExtras 배선)
+        // P-236: extras는 mutateAsync 페이로드로 서버 전송(로컬 프리뷰 폐기)
         if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
         setSubmitted(true);
       } catch (e) {
@@ -208,7 +209,7 @@ export default function ReviewCompose() {
         </View>
 
         {/* P-202: 확장 별점 3축 — 쿠팡이츠식 별도 섹션(선택), 찾아가기 = 장소 태그 연동 */}
-        <ExtrasRater extras={extras} onChange={setExtras} hasPlace={place != null} t={t} />
+        <ExtrasRater extras={extras} onChange={setExtras} t={t} />
 
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         <View
@@ -273,7 +274,7 @@ export default function ReviewCompose() {
             <View style={styles.placeChip}>
               <IconMapPin size={14} color={C.accent} />
               <Text style={styles.placeChipText} numberOfLines={1}>{place.name}</Text>
-              <Pressable hitSlop={8} onPress={() => { setPlace(null); setExtras((e) => ({ ...e, access: null })); /* P-202: 태그 해제 = 찾아가기 소거 */ }}>
+              <Pressable hitSlop={8} onPress={() => setPlace(null)}>
                 <IconClose size={13} color={C.ink3} />
               </Pressable>
             </View>

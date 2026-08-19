@@ -12,7 +12,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, useW
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Btn, IconClose, IconMapPin, IconSmile, IconZap, Star } from '@/components';
-import { EMPTY_EXTRAS, getLocalExtras, hasAnyExtras, saveLocalExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
+import { EMPTY_EXTRAS, extrasFromReview, hasAnyExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
 import { TagChip } from '@/features/community/parts';
 import { useSegments } from 'expo-router';
@@ -227,29 +227,26 @@ export function ReviewPlaceLine({ place }: { place: Review['place'] }) {
  * 종한 답 대기 — 우선 항상, 조정 1줄 준비) · Getting there = 장소 태그 있을 때만.
  * 각 1~5 전부 선택 · **재탭 = 해제**. 보조 별 = 기존 Star 소형 변형(총점과 위계 구분).
  */
-const EXTRA_AXES: { key: keyof ReviewExtras; labelKey: string; Icon: typeof IconZap; needsPlace?: boolean }[] = [
+// P-236: 서버 정본 2축 — 'Getting there'는 서버 필드 부재로 제거(멘토 결정 반영)
+const EXTRA_AXES: { key: keyof ReviewExtras; labelKey: string; Icon: typeof IconZap }[] = [
   { key: 'speed', labelKey: 'review.extrasSpeed', Icon: IconZap },
   { key: 'service', labelKey: 'review.extrasService', Icon: IconSmile },
-  { key: 'access', labelKey: 'review.extrasAccess', Icon: IconMapPin, needsPlace: true },
 ];
 
 export function ExtrasRater({
   extras,
   onChange,
-  hasPlace,
   t,
 }: {
   extras: ReviewExtras;
   onChange: (next: ReviewExtras) => void;
-  /** 장소 태그 보유 — false면 찾아가기 행 미노출(값 소거는 호출측 setPlace 연동) */
-  hasPlace: boolean;
   t: TFn;
 }) {
   if (!FLAGS.reviewExtrasEnabled) return null;
   return (
     <View style={styles.extrasBox} testID="review-extras">
       <Text style={styles.extrasTitle}>{t('review.extrasTitle')}</Text>
-      {EXTRA_AXES.filter((a) => !a.needsPlace || hasPlace).map(({ key, labelKey, Icon }) => (
+      {EXTRA_AXES.map(({ key, labelKey, Icon }) => (
         <View key={key} style={styles.extrasRow} testID={`extras-row-${key}`}>
           <View style={styles.extrasLabelWrap}>
             <Icon size={14} color={C.ink2} />
@@ -274,13 +271,14 @@ export function ExtrasRater({
 }
 
 /**
- * 셀 축약 표시 (P-202) — 값 있는 축만 아이콘+숫자(SVG — 이모지 금지·헌법).
- * BE 미저장이라 **본인 작성 직후 로컬만 표시**(메모리 — 재시작 소실, 시안용 한계).
+ * 셀 축약 표시 (P-202 → P-236) — **서버 값** 기반(전 리뷰 표시 — 로컬 프리뷰 폐기).
+ * 값 있는 축만 아이콘+숫자(SVG — 이모지 금지·헌법). 0(미평가) = 그 축 비표시
+ * (0점으로 그리면 오독), 둘 다 0(구 리뷰 전부) = 줄 자체 미렌더(빈 컨테이너 금지).
  */
-export function ReviewExtrasLine({ review, mine }: { review: Review; mine: boolean }) {
-  if (!FLAGS.reviewExtrasEnabled || !mine) return null;
-  const extras = getLocalExtras(review.foodId);
-  if (!extras || !hasAnyExtras(extras)) return null;
+export function ReviewExtrasLine({ review, mine: _mine }: { review: Review; mine: boolean }) {
+  if (!FLAGS.reviewExtrasEnabled) return null;
+  const extras = extrasFromReview(review);
+  if (!hasAnyExtras(extras)) return null;
   return (
     <View style={styles.extrasLine} testID="extras-line">
       {EXTRA_AXES.filter((a) => extras[a.key] != null).map(({ key, Icon }) => (
@@ -337,7 +335,7 @@ export function ReviewEditSheet({
   review: Review | null;
   onClose: () => void;
   /** 호출측이 updateReview.mutate(buildReviewUpdate 경유) 배선 */
-  onSave: (changes: { rating: number; body: string; place: Review['place'] }) => void;
+  onSave: (changes: { rating: number; body: string; place: Review['place']; extras: ReviewExtras }) => void;
   saving?: boolean;
   t: TFn;
 }) {
@@ -352,13 +350,12 @@ export function ReviewEditSheet({
       setRating(review.rating);
       setBody(review.body ?? '');
       setPlace(review.place ?? null);
-      setExtras(getLocalExtras(review.foodId) ?? EMPTY_EXTRAS);
+      setExtras(extrasFromReview(review)); // P-236: 프리필 = 서버 값(0 = 미평가)
     }
   }, [review]);
   // P-202: 장소 태그 해제 = 찾아가기 값 소거(발주 1)
   const clearPlace = () => {
     setPlace(null);
-    setExtras((e) => ({ ...e, access: null }));
   };
   return (
     <Modal visible={review != null} transparent animationType="fade" onRequestClose={onClose}>
@@ -398,13 +395,13 @@ export function ReviewEditSheet({
               </Pressable>
             ))}
           {/* P-202: 3축 섹션(수정) — 찾아가기 = 장소 태그 연동 */}
-          <ExtrasRater extras={extras} onChange={setExtras} hasPlace={place?.name != null} t={t} />
+          <ExtrasRater extras={extras} onChange={setExtras} t={t} />
           <View style={{ gap: 9, marginTop: 4 }}>
             <Btn
               busy={saving}
               onPress={() => {
-                if (review) saveLocalExtras(review.foodId, extras); // 로컬 프리뷰 갱신(전송은 계약 후)
-                onSave({ rating, body, place });
+                // P-236: 로컬 프리뷰 폐기 — extras는 onSave 페이로드로 서버 전송
+                onSave({ rating, body, place, extras }); // P-236: 2축 서버 전송
               }}
               testID="edit-save"
             >

@@ -135,7 +135,7 @@ it('작성 on → 실 POST /reviews (foodId 수치화)', async () => {
   mockFlagState.live = true;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   await runCreate(qc, { foodId: '7', rating: 5, content: 'live' });
-  expect(api.post).toHaveBeenCalledWith('/api/reviews', { foodId: 7, rating: 5, content: 'live' });
+  expect(api.post).toHaveBeenCalledWith('/api/reviews', { foodId: 7, rating: 5, servingSpeed: 0, staffKindness: 0, content: 'live' }); // P-236: 미평가 = 0
 });
 
 // P-211 ③ 재현 경로: 피드 발 작성 → 전역 피드(['reviews','global'])가 stale 마킹돼야

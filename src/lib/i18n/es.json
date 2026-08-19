@@ -383,8 +383,7 @@
     "placeManual": "Usar \"{{name}}\" tal cual",
     "extrasTitle": "¿Qué tal el restaurante?",
     "extrasSpeed": "Rapidez",
-    "extrasService": "Atención",
-    "extrasAccess": "Fácil de encontrar"
+    "extrasService": "Atención"
   },
   "reviews": {
     "headerTitle": "Reseñas",

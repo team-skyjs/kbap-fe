@@ -1,48 +1,37 @@
 /**
- * reviewExtras.ts (P-202/KB-32) — 리뷰 확장 별점 3축(속도·친절·찾아가기) 어댑터.
+ * reviewExtras.ts (P-202 → P-236/KB-347) — 리뷰 확장 별점 **2축**(속도·친절).
  *
- * BE 계약(3필드) 요청 중 — **전송은 buildReviewExtras 한 곳에서 격리된 no-op**:
- * 계약 회신(예정 필드명 speedRating·serviceRating·accessRating) 시 이 함수만
- * 배선하면 화면 무변. 그전까지는 **로컬 프리뷰 보관**(메모리 — 본인 작성 직후
- * 셀 축약 표시용, 앱 재시작 시 소실 = 디자이너 시안용 알려진 한계).
+ * 서버 정본(8/19 배포 실측): `servingSpeed`·`staffKindness` 0~5 정수 —
+ * **0 = 평가 안 함**(누락 시 0). 작성·수정 요청 동일, 조회 응답(피드·목록·
+ * 내 리뷰)에도 포함.
+ *
+ * P-202의 'Getting there(찾아가기)' 축은 서버 필드가 없어 제거(멘토 "식당
+ * 속성 — 지금 신경 안 씀"). 로컬 임시 저장(메모리 프리뷰)도 전면 폐기 —
+ * 이제 서버가 정본이라 조회 응답이 표시를 담당한다.
  */
 
 export interface ReviewExtras {
-  /** 음식 나오는 속도 1~5 (null = 미선택) */
+  /** 음식 나오는 속도 1~5 (null = 미평가 → 전송 0) */
   speed: number | null;
   /** 친절도 1~5 */
   service: number | null;
-  /** 찾아가기 1~5 — 장소 태그 있을 때만 노출·태그 해제 시 소거 */
-  access: number | null;
 }
 
-export const EMPTY_EXTRAS: ReviewExtras = { speed: null, service: null, access: null };
+export const EMPTY_EXTRAS: ReviewExtras = { speed: null, service: null };
 
 export function hasAnyExtras(e: ReviewExtras): boolean {
-  return e.speed != null || e.service != null || e.access != null;
+  return e.speed != null || e.service != null;
 }
 
-/**
- * 전송 페이로드 — **현재 no-op(null 반환 = 전송 필드 0)**. BE 계약 확정 발주에서
- * `{ ...(e.speed != null ? { speedRating: e.speed } : {}), … }` 형태로 이 함수만 배선.
- */
-export function buildReviewExtras(_extras: ReviewExtras): Record<string, number> | null {
-  return null; // 계약 전 — 전송 0
+/** 전송 페이로드 — 미평가 = 0(서버 규약: 0 = 평가 안 함). */
+export function buildReviewExtras(e: ReviewExtras): { servingSpeed: number; staffKindness: number } {
+  return { servingSpeed: e.speed ?? 0, staffKindness: e.service ?? 0 };
 }
 
-/* ---- 로컬 프리뷰 보관 (메모리 — 내 리뷰는 음식당 1개라 foodId 키로 충분) ---- */
-const localExtras = new Map<string, ReviewExtras>();
-
-export function saveLocalExtras(foodId: string, extras: ReviewExtras): void {
-  if (hasAnyExtras(extras)) localExtras.set(foodId, extras);
-  else localExtras.delete(foodId);
-}
-
-export function getLocalExtras(foodId: string): ReviewExtras | null {
-  return localExtras.get(foodId) ?? null;
-}
-
-/** 유닛용 리셋. */
-export function _clearLocalExtrasForTest(): void {
-  localExtras.clear();
+/** 조회 응답 → UI 상태(수정 프리필용). 0 = 미평가 = null. */
+export function extrasFromReview(r: { servingSpeed?: number; staffKindness?: number }): ReviewExtras {
+  return {
+    speed: r.servingSpeed && r.servingSpeed > 0 ? r.servingSpeed : null,
+    service: r.staffKindness && r.staffKindness > 0 ? r.staffKindness : null,
+  };
 }

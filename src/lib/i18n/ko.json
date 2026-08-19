@@ -429,8 +429,7 @@
     "placeManual": "\"{{name}}\" 그대로 태그하기",
     "extrasTitle": "식당은 어땠나요?",
     "extrasSpeed": "음식 나오는 속도",
-    "extrasService": "친절도",
-    "extrasAccess": "찾아가기 편한 정도"
+    "extrasService": "친절도"
   },
   "reviews": {
     "headerTitle": "리뷰",

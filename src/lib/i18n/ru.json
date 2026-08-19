@@ -383,8 +383,7 @@
     "placeManual": "Использовать «{{name}}» как есть",
     "extrasTitle": "Как вам ресторан?",
     "extrasSpeed": "Скорость подачи",
-    "extrasService": "Сервис",
-    "extrasAccess": "Легко найти"
+    "extrasService": "Сервис"
   },
   "reviews": {
     "headerTitle": "Отзывы",

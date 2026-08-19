@@ -182,6 +182,9 @@ export interface Review {
   place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null;
   /** P-095: 좋아요 — BE 계약 미배포, 목 전용(표시만 — 정렬 미반영 확정). */
   likes?: number;
+  /** P-236(KB-347): 2축 평가 — 0 = 평가 안 함(구 리뷰 전부 0). */
+  servingSpeed?: number;
+  staffKindness?: number;
   myLike?: boolean;
 }
 

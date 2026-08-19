@@ -269,10 +269,10 @@ export function ReviewFeed() {
         review={editTarget}
         onClose={() => setEditTarget(null)}
         saving={updateReview.isPending}
-        onSave={({ rating, body, place }) => {
+        onSave={({ rating, body, place, extras }) => {
           if (!editTarget) return;
           updateReview.mutate(
-            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place } },
+            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place, extras } },
             { onSettled: () => setEditTarget(null) },
           );
         }}

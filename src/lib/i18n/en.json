@@ -425,8 +425,7 @@
     "placeManual": "Use \"{{name}}\" as typed",
     "extrasTitle": "How was the restaurant?",
     "extrasSpeed": "Speed",
-    "extrasService": "Service",
-    "extrasAccess": "Getting there"
+    "extrasService": "Service"
   },
   "reviews": {
     "headerTitle": "Reviews",

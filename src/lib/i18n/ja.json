@@ -383,8 +383,7 @@
     "placeManual": "\"{{name}}\"のまま使う",
     "extrasTitle": "お店はいかがでしたか？",
     "extrasSpeed": "提供スピード",
-    "extrasService": "接客",
-    "extrasAccess": "行きやすさ"
+    "extrasService": "接客"
   },
   "reviews": {
     "headerTitle": "レビュー",
