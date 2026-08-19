@@ -16,11 +16,12 @@ import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconClose, IconFood, IconMore, IconPlus, IconProfile } from '@/components';
+import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconClose, IconFood, IconMore, IconPlus, IconProfile, IconCheck } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { useGlobalReviews } from '@/lib/data/useFoodReviews';
+import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
@@ -42,10 +43,17 @@ export function ReviewFeed() {
   const [sameNatOnly, setSameNatOnly] = React.useState(false);
   const [foodFilter, setFoodFilter] = React.useState<FoodTagRef | null>(null);
   const [filterPickerOpen, setFilterPickerOpen] = React.useState(false);
+  // P-237: 소팅 5종 + 별점 프리셋(러프 — 디자이너 시안 오면 교체 전제)
+  const [sort, setSort] = React.useState<FeedSort>('latest');
+  const [minRating, setMinRating] = React.useState<number | null>(null); // 프리셋: null(전체)·3·4
+  const [sortSheet, setSortSheet] = React.useState(false);
   const nationality = useMe().data?.nationality ?? null;
   const feed = useGlobalReviews(!isGuest, {
     countryCode: sameNatOnly ? nationality : null,
     foodId: foodFilter?.foodId ?? null,
+    sort,
+    minRating,
+    maxRating: null, // 프리셋이 "N점 이상"뿐이라 상한 미사용(min≤max 방어는 훅)
   }); // 게스트 = 호출 0(인증 필수 계약)
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
@@ -111,6 +119,22 @@ export function ReviewFeed() {
                   </Text>
                 </Pressable>
               )}
+              {/* P-237: 소팅 — 칩 탭 = 5종 액션시트(공용 ActionSheet 재사용) */}
+              <Pressable style={[styles.filterChip, sort !== 'latest' && styles.filterChipOn]} onPress={() => setSortSheet(true)} testID="feed-sort">
+                <Text style={[styles.filterChipText, sort !== 'latest' && styles.filterChipTextOn]} numberOfLines={1}>
+                  {t(`reviews.sort_${sort}`)}
+                </Text>
+              </Pressable>
+              {/* P-237: 별점 프리셋 순환(전체 → 3+ → 4+ → 전체) — 러프 재량 */}
+              <Pressable
+                style={[styles.filterChip, minRating != null && styles.filterChipOn]}
+                onPress={() => setMinRating((v) => (v == null ? 3 : v === 3 ? 4 : null))}
+                testID="feed-rating"
+              >
+                <Text style={[styles.filterChipText, minRating != null && styles.filterChipTextOn]} numberOfLines={1}>
+                  {minRating == null ? t('reviews.ratingAll') : t('reviews.ratingMin', { min: minRating })}
+                </Text>
+              </Pressable>
               {/* 음식 — 픽커 재사용, 선택 시 이름 칩 + 해제 */}
               {foodFilter ? (
                 <Pressable style={[styles.filterChip, styles.filterChipOn]} onPress={() => setFoodFilter(null)} testID="feed-filter-food-clear">
@@ -255,6 +279,19 @@ export function ReviewFeed() {
         t={t}
       />
       {/* P-213: 커뮤니티 표면 게이트 = trigger community(카피는 reviews 유지) */}
+      {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
+      <ActionSheet
+        open={sortSheet}
+        title={t('reviews.sortTitle')}
+        items={(['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'] as FeedSort[]).map((v) => ({
+          key: v,
+          label: t(`reviews.sort_${v}`),
+          // 현재값 표시 = SVG 체크(기호 텍스트 렌더 금지 — CLAUDE.md·P-040 계열)
+          icon: v === sort ? <IconCheck size={15} color={C.primary} /> : undefined,
+          onPress: () => setSort(v),
+        }))}
+        onClose={() => setSortSheet(false)}
+      />
       <AuthGateSheet context="reviews" trigger="community" open={gateOpen} onClose={() => setGateOpen(false)} />
     </View>
   );

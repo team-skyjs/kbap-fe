@@ -423,7 +423,15 @@
     "seeLess": "收起",
     "filterByFood": "依菜色篩選",
     "emptyFiltered": "沒有符合篩選條件的評價。",
-    "clearFilters": "清除篩選"
+    "clearFilters": "清除篩選",
+    "sortTitle": "排序",
+    "sort_latest": "最新",
+    "sort_rating_high": "評分從高到低",
+    "sort_rating_low": "評分從低到高",
+    "sort_food_review_count": "評價最多的菜色",
+    "sort_helpful": "最有幫助",
+    "ratingAll": "全部評分",
+    "ratingMin": "{{min}}分以上"
   },
   "ranking": {
     "headerTitle": "我的排名",

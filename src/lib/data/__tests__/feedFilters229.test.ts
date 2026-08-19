@@ -50,6 +50,46 @@ it('배선 소스 잠금 — 필터 UI·쿼리키 프리픽스·클라 소팅 �
   // 클라 로컬 소팅 금지(커서 페이지네이션 왜곡) — sort 호출 부재
   expect(feed).not.toMatch(/reviews\s*\.\s*sort\(/);
   const hook = fs.readFileSync('src/lib/data/useFoodReviews.ts', 'utf8') as string;
-  // 프리픽스 유지 — 좋아요 낙관·작성 무효화의 프리픽스 매칭 안전
-  expect(hook).toContain("queryKey: ['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all']");
+  // 프리픽스 유지 — 좋아요 낙관·작성 무효화의 프리픽스 매칭 안전(P-237에서 sort·rating 키 확장)
+  expect(hook).toContain("'reviews', 'global',");
+  expect(hook).toContain("filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5,");
+});
+
+/* ---- P-237(KB-346): 소팅 5종 + 별점 필터 ---- */
+describe('P-237: sort·rating 서버 쿼리', () => {
+  it.each([
+    ['rating_high'], ['rating_low'], ['food_review_count'], ['helpful'],
+  ] as const)('sort=%s 쿼리 실측(소문자 정확 일치)', async (sort) => {
+    await fetchGlobalReviewsPage(null, { sort });
+    expect(mockGet).toHaveBeenCalledWith(`/api/reviews?lang=en&sort=${sort}`);
+  });
+
+  it('latest(기본) = sort 미전송 — 현행 쿼리 무변', async () => {
+    await fetchGlobalReviewsPage(null, { sort: 'latest' });
+    expect(mockGet).toHaveBeenCalledWith('/api/reviews?lang=en');
+  });
+
+  it('별점 페어 — min만/페어/min>max(클라 방어 = 미전송)', async () => {
+    await fetchGlobalReviewsPage(null, { minRating: 4 });
+    expect(mockGet).toHaveBeenCalledWith('/api/reviews?lang=en&minRating=4');
+    await fetchGlobalReviewsPage(null, { minRating: 2, maxRating: 4 });
+    expect(mockGet).toHaveBeenCalledWith('/api/reviews?lang=en&minRating=2&maxRating=4');
+    mockGet.mockClear();
+    await fetchGlobalReviewsPage(null, { minRating: 5, maxRating: 2 }); // 잘못된 페어
+    expect(mockGet).toHaveBeenCalledWith('/api/reviews?lang=en'); // 아예 안 보냄(400 예방)
+  });
+
+  it('복합 — 국가+음식+소팅+별점 동시', async () => {
+    await fetchGlobalReviewsPage('tok', { countryCode: 'US', foodId: '7', sort: 'helpful', minRating: 3 });
+    expect(mockGet).toHaveBeenCalledWith('/api/reviews?lang=en&cursor=tok&countryCode=US&foodId=7&sort=helpful&minRating=3');
+  });
+
+  it('🔴 커서 규약 — 정렬·필터 변경 = 쿼리키 분리(구 커서가 새 정렬로 전달될 경로 없음)', () => {
+    const hook = require('fs').readFileSync('src/lib/data/useFoodReviews.ts', 'utf8') as string;
+    // 키에 sort·rating 포함(react-query 키 분리 = 첫 페이지 자연 재조회) + 수동 리셋 부재
+    expect(hook).toContain("filters.sort ?? 'latest'");
+    expect(hook).not.toContain('resetQueries'); // 수동 리셋 금지
+    // 커서는 불투명 토큰 그대로 전달(해석·조립 없음)
+    expect(hook).toContain("q.set('cursor', cursor)");
+  });
 });

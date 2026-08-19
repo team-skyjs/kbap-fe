@@ -469,7 +469,15 @@
     "seeLess": "접기",
     "filterByFood": "음식별로 보기",
     "emptyFiltered": "필터에 맞는 리뷰가 없어요.",
-    "clearFilters": "필터 초기화"
+    "clearFilters": "필터 초기화",
+    "sortTitle": "정렬",
+    "sort_latest": "최신순",
+    "sort_rating_high": "별점 높은 순",
+    "sort_rating_low": "별점 낮은 순",
+    "sort_food_review_count": "리뷰 많은 음식 순",
+    "sort_helpful": "도움돼요 순",
+    "ratingAll": "전체 별점",
+    "ratingMin": "{{min}}점 이상"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

@@ -423,7 +423,15 @@
     "seeLess": "Свернуть",
     "filterByFood": "Фильтр по блюду",
     "emptyFiltered": "Нет отзывов по этим фильтрам.",
-    "clearFilters": "Сбросить фильтры"
+    "clearFilters": "Сбросить фильтры",
+    "sortTitle": "Сортировка",
+    "sort_latest": "Сначала новые",
+    "sort_rating_high": "С высоким рейтингом",
+    "sort_rating_low": "С низким рейтингом",
+    "sort_food_review_count": "Блюда с наибольшим числом отзывов",
+    "sort_helpful": "Самые полезные",
+    "ratingAll": "Все оценки",
+    "ratingMin": "От {{min}} звёзд"
   },
   "ranking": {
     "headerTitle": "Мой рейтинг",

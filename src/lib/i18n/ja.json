@@ -423,7 +423,15 @@
     "seeLess": "閉じる",
     "filterByFood": "料理で絞り込む",
     "emptyFiltered": "条件に合うレビューがありません。",
-    "clearFilters": "フィルターをクリア"
+    "clearFilters": "フィルターをクリア",
+    "sortTitle": "並び替え",
+    "sort_latest": "新着順",
+    "sort_rating_high": "評価が高い順",
+    "sort_rating_low": "評価が低い順",
+    "sort_food_review_count": "レビューが多い料理順",
+    "sort_helpful": "役に立った順",
+    "ratingAll": "すべての評価",
+    "ratingMin": "{{min}}点以上"
   },
   "ranking": {
     "headerTitle": "マイランキング",

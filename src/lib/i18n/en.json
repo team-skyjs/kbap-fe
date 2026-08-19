@@ -465,7 +465,15 @@
     "seeLess": "See less",
     "filterByFood": "Filter by dish",
     "emptyFiltered": "No reviews match these filters.",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "sortTitle": "Sort by",
+    "sort_latest": "Latest",
+    "sort_rating_high": "Highest rated",
+    "sort_rating_low": "Lowest rated",
+    "sort_food_review_count": "Most reviewed dishes",
+    "sort_helpful": "Most helpful",
+    "ratingAll": "All ratings",
+    "ratingMin": "{{min}}+ stars"
   },
   "ranking": {
     "headerTitle": "My Ranking",

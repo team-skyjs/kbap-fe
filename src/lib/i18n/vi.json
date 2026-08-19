@@ -423,7 +423,15 @@
     "seeLess": "Thu gọn",
     "filterByFood": "Lọc theo món",
     "emptyFiltered": "Không có đánh giá phù hợp với bộ lọc.",
-    "clearFilters": "Xóa bộ lọc"
+    "clearFilters": "Xóa bộ lọc",
+    "sortTitle": "Sắp xếp",
+    "sort_latest": "Mới nhất",
+    "sort_rating_high": "Điểm cao nhất",
+    "sort_rating_low": "Điểm thấp nhất",
+    "sort_food_review_count": "Món nhiều đánh giá nhất",
+    "sort_helpful": "Hữu ích nhất",
+    "ratingAll": "Mọi mức sao",
+    "ratingMin": "Từ {{min}} sao"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",

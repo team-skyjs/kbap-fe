@@ -39,9 +39,16 @@ export async function fetchFoodReviewsPage(
 /** P-229: 피드 필터 — 스웨거 실측(8/18) 지원 파라미터 2종뿐(countryCode ISO-2 정확
  *  일치 · foodId). 소팅·별점은 파라미터 부재 — 커서 페이지네이션이라 클라 로컬
  *  소팅은 로드된 페이지만 정렬하는 왜곡이므로 금지(BE 추가 대기, be-agenda). */
+/** P-237(KB-346 실측): sort enum 소문자 정확 일치 — latest(기본)·rating_high·
+ *  rating_low·food_review_count·helpful. minRating/maxRating = 1~5, min≤max. */
+export type FeedSort = 'latest' | 'rating_high' | 'rating_low' | 'food_review_count' | 'helpful';
+
 export interface GlobalFeedFilters {
   countryCode?: string | null;
   foodId?: string | null;
+  sort?: FeedSort | null;
+  minRating?: number | null;
+  maxRating?: number | null;
 }
 
 /** P-179(KB-307): 전역 최신 리뷰 피드 — GET /api/reviews (P-229: 서버 필터 2종).
@@ -53,6 +60,13 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   if (cursor) q.set('cursor', cursor);
   if (filters.countryCode) q.set('countryCode', filters.countryCode); // 서버 필터 — 클라 필터 금지
   if (filters.foodId) q.set('foodId', filters.foodId);
+  // P-237: 전부 서버 파라미터(클라 로컬 정렬·필터 금지 — P-229 원칙). latest = 기본이라 미전송.
+  if (filters.sort && filters.sort !== 'latest') q.set('sort', filters.sort);
+  // min>max 조합 클라 방어 — 잘못된 페어는 아예 안 보낸다(400 예방)
+  const min = filters.minRating ?? null;
+  const max = filters.maxRating ?? null;
+  if (min != null && (max == null || min <= max)) q.set('minRating', String(min));
+  if (max != null && (min == null || min <= max)) q.set('maxRating', String(max));
   return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
 }
 
@@ -60,7 +74,14 @@ export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}
   return useInfiniteQuery({
     // ⚠️ ['reviews','global'] 프리픽스 유지 — 좋아요 낙관 반영(likeInfiniteQueries)·
     // 작성 무효화(useInvalidateReviews)가 프리픽스 매칭이라 필터 키 확장에도 안전.
-    queryKey: ['reviews', 'global', filters.countryCode ?? 'all', filters.foodId ?? 'all'],
+    // 🔴 커서 규약(스웨거): 불투명 토큰 — 정렬·필터가 바뀌면 기존 커서 무효.
+    // 쿼리키에 sort·rating 포함 = react-query 키 분리로 첫 페이지부터 자연 재조회
+    // (수동 리셋 금지 — 구 커서가 새 정렬에 전달될 경로 자체가 없다).
+    queryKey: [
+      'reviews', 'global',
+      filters.countryCode ?? 'all', filters.foodId ?? 'all',
+      filters.sort ?? 'latest', filters.minRating ?? 0, filters.maxRating ?? 5,
+    ],
     queryFn: ({ pageParam }) => fetchGlobalReviewsPage(pageParam, filters),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => (last.hasNext ? last.nextCursor : undefined),

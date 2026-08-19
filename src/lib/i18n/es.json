@@ -423,7 +423,15 @@
     "seeLess": "Ver menos",
     "filterByFood": "Filtrar por plato",
     "emptyFiltered": "No hay reseñas con estos filtros.",
-    "clearFilters": "Borrar filtros"
+    "clearFilters": "Borrar filtros",
+    "sortTitle": "Ordenar por",
+    "sort_latest": "Más recientes",
+    "sort_rating_high": "Mejor valoradas",
+    "sort_rating_low": "Peor valoradas",
+    "sort_food_review_count": "Platos con más reseñas",
+    "sort_helpful": "Más útiles",
+    "ratingAll": "Todas las valoraciones",
+    "ratingMin": "{{min}}+ estrellas"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",

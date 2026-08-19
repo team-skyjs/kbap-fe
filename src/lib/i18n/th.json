@@ -423,7 +423,15 @@
     "seeLess": "ย่อ",
     "filterByFood": "กรองตามเมนู",
     "emptyFiltered": "ไม่มีรีวิวที่ตรงกับตัวกรอง",
-    "clearFilters": "ล้างตัวกรอง"
+    "clearFilters": "ล้างตัวกรอง",
+    "sortTitle": "เรียงตาม",
+    "sort_latest": "ล่าสุด",
+    "sort_rating_high": "คะแนนสูงสุด",
+    "sort_rating_low": "คะแนนต่ำสุด",
+    "sort_food_review_count": "เมนูที่มีรีวิวมากสุด",
+    "sort_helpful": "มีประโยชน์ที่สุด",
+    "ratingAll": "ทุกคะแนน",
+    "ratingMin": "{{min}} ดาวขึ้นไป"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",

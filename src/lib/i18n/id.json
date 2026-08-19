@@ -423,7 +423,15 @@
     "seeLess": "Sembunyikan",
     "filterByFood": "Filter menurut hidangan",
     "emptyFiltered": "Tidak ada ulasan yang cocok dengan filter.",
-    "clearFilters": "Hapus filter"
+    "clearFilters": "Hapus filter",
+    "sortTitle": "Urutkan",
+    "sort_latest": "Terbaru",
+    "sort_rating_high": "Rating tertinggi",
+    "sort_rating_low": "Rating terendah",
+    "sort_food_review_count": "Hidangan paling banyak diulas",
+    "sort_helpful": "Paling membantu",
+    "ratingAll": "Semua rating",
+    "ratingMin": "{{min}}+ bintang"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",
