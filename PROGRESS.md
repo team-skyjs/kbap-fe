@@ -1316,3 +1316,10 @@
 - [x] scan_complete.item_count = items+photoOnly 합산(v2 107→0 발화 버그 교정, 화이트리스트 통과 실측) — d08f9c9.
 - [x] 타임아웃 TEMP 10분 → 120초 확정(P-232 실측 58초 × 2, TEMP 잔존 0 잠금).
 - [x] tsc 0 · jest 134스위트 835/835 · teamtest OTA(update group 96bd6170).
+
+## BE 8/19 배포 배선 4건 (2026-08-19, P-238·237·236·235)
+- [x] P-238 리뷰 픽커 = 최근 스캔 우선(/foods/scanned)·scope=scanned 검색(0건 = 전체 재검색 행)·타 표면 무변 — c63fad4.
+- [x] P-237 피드 소팅 5종+별점(전부 서버 쿼리, 쿼리키 분리 = 커서 규약, ActionSheet+SVG 체크) — 8f515e2.
+- [x] P-236 2축(servingSpeed·staffKindness) 서버 배선 — Getting there·로컬 프리뷰 폐기, 0 비표시, 풀 페이로드 함정 봉쇄 — 6a5fef4.
+- [x] P-235 게스트 열람 개방 — 세션 게이트·blur·잠금 UI 소멸, review:null 방어(reviewSummaryMissing) — a705b60.
+- [x] tsc 0 · jest 135스위트 851/851 · teamtest OTA 일괄(update group 9600a9e5).
