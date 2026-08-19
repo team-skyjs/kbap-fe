@@ -15,9 +15,18 @@ import type { BeRiskLevel } from './scanTypes';
 export type BeRiskStatus = BeRiskLevel;
 
 export interface IngredientWire {
+  /** P-239 신스키마: 성분 코드(81종) — 구스키마엔 부재(합성 키 폴백). */
+  code?: string;
   name: string; // ingredient name, request language
-  iconRef: string | null; // nullable, currently not provided
+  iconRef?: string | null; // nullable, currently not provided
   inclusionPercent: number; // 1..100
+  /** P-239: 신스키마(8/19 낮 배포)는 필드 자체 부재 — avoidedIngredients 조인이 대체. */
+  riskStatus?: BeRiskStatus;
+}
+
+/** P-239 신스키마: 회원 회피 겹침 — 비회원 null. */
+export interface AvoidedIngredientWire {
+  code: string;
   riskStatus: BeRiskStatus;
 }
 
@@ -53,6 +62,12 @@ export interface FoodDetailWire {
   reviewCount?: number;
   /** 같은 국적 평균 — 비회원·국적 미보유 null. */
   sameCountryAverageRating?: number | null;
-  /** P-107(KB-275, #121 breaking): 신계약 중첩 리뷰 요약 — 있으면 이쪽 우선. */
+  /** P-107(KB-275, #121 breaking): 구 중첩 리뷰 요약(8/19 낮 배포 전) — prod 폴백. */
   review?: ReviewSummaryWire | null;
+  /** P-239 신스키마(버전 무관 단일 핸들러) — 1순위. overall 공개·sameCountry 비회원 null. */
+  reviewSummary?: ReviewSummaryWire | null;
+  /** P-239 신스키마: 최신 리뷰 5건 인라인(food null·게스트 likedByMe false) — 있으면 목록 호출 생략. */
+  recentReviews?: import('./reviewAdapter').ReviewWire[] | null;
+  /** P-239 신스키마: 회원 회피 겹침(비회원 null) — 재료 마크 클라 조인용. */
+  avoidedIngredients?: AvoidedIngredientWire[] | null;
 }

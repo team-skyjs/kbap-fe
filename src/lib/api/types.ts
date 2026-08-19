@@ -120,6 +120,8 @@ export interface FoodDetail {
   sameNationality: RatingAggregate;
   /** P-235: review:null 방어 — 요약 미상(브리프 섹션 미렌더). blur 축은 소멸(8/19). */
   reviewSummaryMissing?: boolean;
+  /** P-239: 신스키마 인라인 최신 리뷰 — 있으면 상세가 목록 호출 생략. 부재 = prod 폴백. */
+  recentReviews?: Review[];
   description: string; // reader language, ≤150 chars (EN)
   spiceLevel: SpiceLevel | null; // P-081: enum 단계 (null = 데이터 없음); spiceTolerance와 순서 비교
   photoUrl: string | null;

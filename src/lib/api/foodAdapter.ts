@@ -22,6 +22,7 @@ import { wireToFoodSpice } from './spiceAdapter';
 import type { FoodDetailWire, ReviewRatingWire } from './foodDetailTypes';
 import type { MenuSummaryWire } from './foodListTypes';
 import { mapRisk } from './scanAdapter';
+import { adaptReview } from './reviewAdapter';
 
 const NO_RATING: RatingAggregate = { average: null, count: 0 };
 
@@ -40,7 +41,10 @@ function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
 /** P-107(KB-275, #121): 리뷰 요약 겸수신 — ① 신계약 중첩(스냅샷 8/3 정본
  *  {overall, sameCountry}) ② 발주문 단층 중첩 ③ 구 평면(prod 폴백) 순. */
 function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 'sameNationality' | 'reviewSummaryMissing'> {
-  const rv = wire.review;
+  // P-239 핫픽스: 신스키마 reviewSummary 1순위(8/19 낮 배포 — 버전 무관 단일 핸들러.
+  // 구 review만 읽던 어댑터가 dev ★요약을 소실시키던 원인). 채널이 아니라 **필드
+  // 존재 기준** 겸수신 — 신필드 있으면 신, 없으면 구(review·평면 = prod 폴백).
+  const rv = wire.reviewSummary ?? wire.review;
   // P-235: blur 소멸(8/19 응답 실측). 🔴 review:null 방어 — 현재 서버가 비회원
   // 상세의 요약을 null로 준다(리뷰 있는 음식도 — 종한 확인 중 버그 후보, 합의
   // 규격은 overall 공개·sameCountry만 null). null = 브리프 섹션 미렌더
@@ -65,13 +69,25 @@ function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 
 }
 
 export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetail {
+  // P-239: 신스키마 재료 마크 = avoidedIngredients(회원 겹침) 클라 조인.
+  // 배열 = 회원 신스키마(미겹침 = 서버 의미상 SAFE — 구계약의 재료별 SAFE와 동일 정보량),
+  // null/부재 = 비회원 신스키마(판정 자체 없음 → unable, 게스트 렌더는 마크 슬롯 미렌더)
+  // 또는 구스키마(재료 내 riskStatus — prod 폴백 경로가 우선 처리).
+  const avoidedMap = Array.isArray(wire.avoidedIngredients)
+    ? new Map(wire.avoidedIngredients.map((a) => [a.code, a.riskStatus]))
+    : null;
   const ingredients: IngredientRisk[] = (wire.ingredients ?? []).map((ing, i) => ({
-    // stable key for React + the "ask the owner" route param (name is user-facing,
-    // index keeps it unique when the BE repeats a name).
-    code: `ing:${i}:${ing.name}`,
+    // 신스키마 = 실코드(81종 — 스캔 v1 폴백 조인·owner 파라미터 정확도↑),
+    // 구스키마 = 합성 키 유지(stable key + owner 라우트 파라미터).
+    code: ing.code ?? `ing:${i}:${ing.name}`,
     name: ing.name,
     percentage: typeof ing.inclusionPercent === 'number' ? ing.inclusionPercent : null,
-    risk: mapRisk(ing.riskStatus),
+    risk:
+      ing.riskStatus != null
+        ? mapRisk(ing.riskStatus) // 구스키마(prod) — 기존 경로 무변
+        : avoidedMap
+          ? mapRisk(avoidedMap.get(ing.code ?? '') ?? 'SAFE') // 회원 조인 — 겹침만 위험 마크
+          : 'unable', // 비회원 — 판정 없음(마크 미렌더)
     note: null,
   }));
 
@@ -94,6 +110,9 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     ingredients,
     isRegistered,
     bookmarked: wire.bookmarked === true, // 계약: 비회원 항상 false (KB-142)
+    // P-239: 신스키마 인라인 최신 5건 — 있으면 상세가 목록 호출 생략(요청 1개 절감).
+    // 부재(prod 구스키마) = undefined → 화면이 기존 목록 호출 폴백.
+    recentReviews: Array.isArray(wire.recentReviews) ? wire.recentReviews.map(adaptReview) : undefined,
   };
 }
 

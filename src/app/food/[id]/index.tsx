@@ -237,9 +237,11 @@ function Registered({
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
   const ingredients = [...food.ingredients].sort((a, b) => RISK_ORDER[a.risk] - RISK_ORDER[b.risk]);
-  // P-139 ⑥ → P-169: 리뷰 프리뷰 5(쿠팡 브리프) — 게스트 풀 오픈(시안 노트 08). 채널 플래그는 유지.
-  const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled ? id : '');
-  const previewReviews = (reviewsQ.data?.pages[0]?.items ?? []).slice(0, 5);
+  // P-139 ⑥ → P-169 → P-239: 리뷰 프리뷰 5 — 신스키마 recentReviews 인라인이 있으면
+  // 별도 목록 호출 생략(요청 1개 절감). 부재(prod 구스키마) = 기존 호출 폴백.
+  const hasInline = food.recentReviews !== undefined;
+  const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled && !hasInline ? id : '');
+  const previewReviews = (hasInline ? food.recentReviews! : (reviewsQ.data?.pages[0]?.items ?? [])).slice(0, 5);
   // P-169: Helpful(기존 좋아요 API — 표현만 교체) + 신고(기존 ModerationFlow 재사용)
   const deleteReview = useDeleteReview();
   const updateReview = useUpdateReview();
