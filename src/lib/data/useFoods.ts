@@ -94,18 +94,39 @@ export function useInfiniteFoods() {
  * blank — the `enabled` flag is the client guard). Empty items on page 1 is a
  * NORMAL response (no match), not an error.
  */
-export function useSearchFoods(keyword: string) {
+/** P-238: scope — 'scanned' = 본인 스캔 한정(회원 전용·**페이징 없이 전체 반환,
+ *  cursor 무시** — 스웨거 규약이라 scanned에선 cursor를 아예 안 보낸다).
+ *  미전달 = all 기본(음식탭·홈 검색 무변 — 회귀 유닛 잠금). */
+export function useSearchFoods(keyword: string, scope?: 'scanned') {
   const term = keyword.trim();
   return useInfiniteQuery({
-    queryKey: ['foods', 'search', term, i18n.language],
+    queryKey: ['foods', 'search', term, scope ?? 'all', i18n.language],
     initialPageParam: undefined as number | undefined,
     enabled: term.length > 0,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
-      const cursor = pageParam != null ? `&cursor=${encodeURIComponent(String(pageParam))}` : '';
+      // scanned = 페이징 없음(cursor 전송 금지 — 서버가 무시하지만 규약 준수)
+      const cursor = scope !== 'scanned' && pageParam != null ? `&cursor=${encodeURIComponent(String(pageParam))}` : '';
+      const scopeQ = scope ? `&scope=${scope}` : '';
       // P-008: 401 특례 제거 (browse와 동일 — 위 주석 참조)
       return api.get<PageMenuSummaryWire>(
-        `/foods/search?keyword=${encodeURIComponent(term)}${cursor}&lang=${apiLang()}`,
+        `/foods/search?keyword=${encodeURIComponent(term)}${cursor}${scopeQ}&lang=${apiLang()}`,
       );
+    },
+    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
+  });
+}
+
+/** P-238: 본인 스캔 음식(최신 스캔순) — GET /api/foods/scanned. 회원 전용(게스트 =
+ *  호출 0, 화면이 인기 폴백 담당). 커서 = 마지막 foodId. 리뷰 픽커 초기 목록용. */
+export function useScannedFoods(enabled = true) {
+  return useInfiniteQuery({
+    queryKey: ['foods', 'scanned', i18n.language],
+    initialPageParam: undefined as number | undefined,
+    enabled,
+    queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
+      const cursor = pageParam != null ? `?cursor=${encodeURIComponent(String(pageParam))}&lang=${apiLang()}` : `?lang=${apiLang()}`;
+      return api.get<PageMenuSummaryWire>(`/api/foods/scanned${cursor}`);
     },
     getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),

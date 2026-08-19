@@ -203,7 +203,9 @@
     "foodSheetCaption": "料理タグは最大3件、K-Bapフードデータベース",
     "placeSheetCaption": "投稿につき場所は1件、韓国各地のスポット",
     "lockedTitle": "コミュニティはまもなくオープン",
-    "lockedBody": "旅行者同士でヒントや発見をシェアする場所 — もうすぐ。"
+    "lockedBody": "旅行者同士でヒントや発見をシェアする場所 — もうすぐ。",
+    "sectionRecentlyScanned": "最近のスキャン",
+    "searchAllFoods": "すべての料理から探す"
   },
   "risk": {
     "safe": "安全",

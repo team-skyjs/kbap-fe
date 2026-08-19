@@ -203,7 +203,9 @@
     "foodSheetCaption": "Hasta 3 etiquetas, base de datos de K-Bap",
     "placeSheetCaption": "Un lugar por publicación, lugares de Corea",
     "lockedTitle": "La comunidad llegará pronto",
-    "lockedBody": "Comparte consejos y hallazgos con otros viajeros — muy pronto."
+    "lockedBody": "Comparte consejos y hallazgos con otros viajeros — muy pronto.",
+    "sectionRecentlyScanned": "ESCANEADOS RECIENTEMENTE",
+    "searchAllFoods": "Buscar en todos los platos"
   },
   "risk": {
     "safe": "Seguro",

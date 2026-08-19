@@ -73,6 +73,7 @@ jest.mock('@/lib/data/useMe', () => ({
 jest.mock('@/lib/data/useFoods', () => ({
   useSearchFoods: () => ({ data: [] }),
   useInfiniteFoods: () => ({ data: [] }),
+  useScannedFoods: () => ({ data: [] }), // P-238: 픽커 초기 스캔 목록 표면 목
 }));
 
 import CommunityCompose from '../community/compose';

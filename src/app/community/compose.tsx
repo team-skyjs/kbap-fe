@@ -33,7 +33,7 @@ import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useMe } from '@/lib/data/useMe';
-import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
+import { useInfiniteFoods, useSearchFoods, useScannedFoods } from '@/lib/data/useFoods';
 import { useCommunityPost, useCreatePost, useUpdatePost } from '@/lib/community/hooks';
 import { searchPlaces } from '@/lib/community/places';
 import type { FoodTagRef, PlaceTagRef } from '@/lib/community/types';
@@ -398,19 +398,37 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
 }) {
   const bottomInset = useBottomInset();
   const [q, setQ] = React.useState('');
-  const foods = useSearchFoods(kind === 'food' ? q : '');
+  // P-238: 리뷰 픽커 검색 = 본인 스캔 한정(scope=scanned) 우선 — 0건이면
+  // "전체에서 찾기" 행으로 all 재검색 제안(자격 강제는 KB-344 후속 — 전체 경로 유지).
+  const isReview = context === 'review';
+  const isGuest = useIsGuest(); // scanned 계열은 회원 전용(401 방어) — 게스트는 현행(인기+all)
+  const useScanScope = isReview && !isGuest;
+  const [searchAll, setSearchAll] = React.useState(false); // scanned 0건 → 전체 재검색 전환
+  const foods = useSearchFoods(kind === 'food' ? q : '', useScanScope && !searchAll ? 'scanned' : undefined);
   // 빈 검색 = POPULAR 섹션(브라우즈 1페이지). RECENT(개인 최근 태그) 저장소는 목 단계 미도입 —
   // 장소는 목 전체가 RECENT 섹션으로 노출(리뷰 장소 픽커 P-095와 동일 관례).
   const browse = useInfiniteFoods();
+  // P-238: 리뷰 픽커 초기 목록 = 내 최근 스캔(스웨거 명시 — 검색 API가 아니라 스캔 내역
+  // 조회). 스캔 이력 0건 = 기존 인기 목록 폴백(빈 화면 금지 — P-210).
+  const scanned = useScannedFoods(useScanScope && kind === 'food');
   React.useEffect(() => {
-    if (kind == null) setQ('');
+    if (kind == null) { setQ(''); setSearchAll(false); }
   }, [kind]);
+  React.useEffect(() => {
+    setSearchAll(false); // 검색어가 바뀌면 scanned 우선으로 복귀
+  }, [q]);
   if (!kind) return null;
 
   const hasSelection = kind === 'food' ? foodTags.length > 0 : placeTag != null;
   const atCap = kind === 'food' ? foodTags.length >= FOOD_TAG_MAX : placeTag != null;
   const isBrowse = q.trim().length === 0;
-  const foodList = isBrowse ? (browse.data ?? []).slice(0, 20) : (foods.data ?? []);
+  const scannedList = scanned.data ?? [];
+  const reviewInitial = useScanScope && scannedList.length > 0; // 0건 = 인기 폴백
+  const foodList = isBrowse
+    ? reviewInitial
+      ? scannedList.slice(0, 20)
+      : (browse.data ?? []).slice(0, 20)
+    : (foods.data ?? []);
   const places = kind === 'place' ? searchPlaces(q) : [];
 
   return (
@@ -474,7 +492,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             {/* 섹션 헤더 — mono 대문자. 빈 검색: 음식=POPULAR(브라우즈)·장소=RECENT(목) */}
             {isBrowse && (
               <Text style={styles.sectionHead}>
-                {t(kind === 'food' ? 'community.sectionPopular' : 'community.sectionRecent')}
+                {t(kind === 'food' ? (reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')}
               </Text>
             )}
             {kind === 'food'
@@ -513,7 +531,14 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                     onPress={() => onTogglePlace(p)}
                   />
                 ))}
-            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (
+            {/* P-238: scanned 0건 → 전체에서 재검색 제안 행(스캔 안 한 음식 리뷰 허용) */}
+            {kind === 'food' && !isBrowse && foods.data?.length === 0 && useScanScope && !searchAll && (
+              <Pressable style={styles.searchAllRow} hitSlop={6} onPress={() => setSearchAll(true)} testID="picker-search-all">
+                <IconSearch size={15} color={C.primaryText} />
+                <Text style={styles.searchAllText}>{t('community.searchAllFoods')}</Text>
+              </Pressable>
+            )}
+            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || searchAll) && (
               <Text style={styles.searchHint}>{t('community.searchFoodsHint')}</Text>
             )}
           </ScrollView>
@@ -565,6 +590,9 @@ function ResultRow({
 }
 
 const styles = StyleSheet.create({
+  // P-238: 전체 재검색 제안 행
+  searchAllRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingVertical: 12 },
+  searchAllText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primaryText },
   root: { flex: 1, backgroundColor: C.surface },
 
   /* hero — 시안 1존 */

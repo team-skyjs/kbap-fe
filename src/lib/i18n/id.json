@@ -203,7 +203,9 @@
     "foodSheetCaption": "Maksimal 3 tag hidangan, dari database K-Bap",
     "placeSheetCaption": "Satu tempat per postingan, seluruh Korea",
     "lockedTitle": "Komunitas segera hadir",
-    "lockedBody": "Bagikan tips dan temuan dengan sesama pelancong — segera hadir."
+    "lockedBody": "Bagikan tips dan temuan dengan sesama pelancong — segera hadir.",
+    "sectionRecentlyScanned": "BARU DIPINDAI",
+    "searchAllFoods": "Cari di semua hidangan"
   },
   "risk": {
     "safe": "Aman",
