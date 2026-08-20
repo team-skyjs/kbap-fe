@@ -146,5 +146,6 @@ export function convertKrw(krw: number, currency: string, fx?: ServerFx): string
     v = krw * rate;
   }
   const digits = v >= 100 ? 0 : 2; // 큰 액면 통화(JPY 등)는 정수 표기
-  return `=${SYMBOL[code] ?? code + ' '}${v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+  // P-249: `= ` 공백 1 — "₩7,000 = $5.80" 대칭(예진 실기 확정 8/21)
+  return `= ${SYMBOL[code] ?? code + ' '}${v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 }

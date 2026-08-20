@@ -52,13 +52,13 @@ it('P-242 ③: 피커 카탈로그 = 서버 CurrencyCode enum 30종 스냅샷 �
 describe('P-242 ①②: v2 서버 실환율(krwPerUnit) 채택', () => {
   it('fx 제공 = price ÷ krwPerUnit(서버 명시 산식) — 테이블 미참조', () => {
     // 1390 KRW/USD 실환율: 13900원 → $10.00 (테이블 근사 0.00072였다면 $10.01)
-    expect(convertKrw(13900, 'USD', { code: 'USD', krwPerUnit: 1390 })).toBe('=$10.00');
+    expect(convertKrw(13900, 'USD', { code: 'USD', krwPerUnit: 1390 })).toBe('= $10.00');
     // 큰 액면(JPY) 정수 표기 유지: 9.2 KRW/JPY, 13900원 → ¥1,511
-    expect(convertKrw(13900, 'JPY', { code: 'JPY', krwPerUnit: 9.2 })).toBe('=¥1,511');
+    expect(convertKrw(13900, 'JPY', { code: 'JPY', krwPerUnit: 9.2 })).toBe('= ¥1,511');
   });
 
   it('fx.code가 정본(요청 통화와 달라도 서버 응답 기준 심볼)', () => {
-    expect(convertKrw(13900, 'THB', { code: 'USD', krwPerUnit: 1390 })).toBe('=$10.00');
+    expect(convertKrw(13900, 'THB', { code: 'USD', krwPerUnit: 1390 })).toBe('= $10.00');
   });
 
   it('fx=null(환율 조회 실패 규약) = 배지 생략 — 에러 아님·₩만 표시', () => {
@@ -72,7 +72,7 @@ describe('P-242 ①②: v2 서버 실환율(krwPerUnit) 채택', () => {
   });
 
   it('fx 생략 = v1(prod) 테이블 폴백 무변 + KRW = null', () => {
-    expect(convertKrw(8000, 'USD')).toMatch(/^=\$/);
+    expect(convertKrw(8000, 'USD')).toMatch(/^= \$/);
     expect(convertKrw(8000, 'KRW', { code: 'KRW', krwPerUnit: 1 })).toBeNull();
   });
 
@@ -86,7 +86,7 @@ describe('P-242 ①②: v2 서버 실환율(krwPerUnit) 채택', () => {
 
 describe('P-185 → P-218: 환산가 접두 = "="(예진 확정 8/17)', () => {
   it('환산 문자열 = "=" 접두 · KRW/미지 통화 = null(무변)', () => {
-    expect(convertKrw(8000, 'USD')).toMatch(/^=\$/);
+    expect(convertKrw(8000, 'USD')).toMatch(/^= \$/); // P-249: `= ` 공백 1 잠금
     expect(convertKrw(8000, 'KRW')).toBeNull();
     expect(convertKrw(8000, 'XXX')).toBeNull();
   });
