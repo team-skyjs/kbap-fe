@@ -1328,3 +1328,10 @@
 - [x] adaptReviewSummary = reviewSummary 1순위(필드 존재 겸수신·prod 폴백 존치) — dev ★요약 소실 복구 — 0909856.
 - [x] 재료 마크 avoidedIngredients 조인(회원 겹침·비회원 unable·구스키마 무변·실코드 채택) · recentReviews 인라인(목록 호출 절감·undefined/[] 구분).
 - [x] tsc 0 · jest 136스위트 861/861 · teamtest OTA 우선 발행(update group 50058374).
+
+## BE 8/20 배포 배선 4건 (2026-08-20, P-240·243·242·241)
+- [x] P-240 🚨 장소 구글 전환 핫픽스 — nearby/search lang 필수(누락 400 복구)·placeId 작성/수정/조회 관통(MANUAL 미전송) — 0500c1d, 핫픽스 OTA b043711b.
+- [x] P-243 diet 서버 정본 — dietCategories 파싱/온보딩 전송(1.1)/식이 페이지 한 PATCH(해제 실동작·회피 불변)/프로필·시트 표시 소스 교체(역추론 잔존 0), 서버 15종 = FE 1:1 실측, dietUncheckHint ×10 개정 — 58f3354.
+- [x] P-242 환율 실시간 — convertKrw fx 인자(price ÷ krwPerUnit·null = 배지 생략·0/NaN 방어), 스캔→행→주문 카드 관통, 30종 정합(VND·RUB·TWD 제거 = USD 조용한 강등·13개국 매핑 추가), 테이블 = v1 폴백 전용 — 227be7b.
+- [x] P-241 스캔 2.0 — similarFood 전면 철거(잔존 0 잠금)·행 썸네일 = imageRef 인라인(비매칭 = 서버 디폴트·URL만 통과)·SCAN-006 outage 분기(errOutage ×10·fail_reason=server) — 8157bc3.
+- [x] tsc 0 · jest 136스위트 876/876 · teamtest OTA 일괄(ios b633e457·and 8213f663).
