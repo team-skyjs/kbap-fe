@@ -205,7 +205,10 @@
     "lockedTitle": "La comunidad llegará pronto",
     "lockedBody": "Comparte consejos y hallazgos con otros viajeros — muy pronto.",
     "sectionRecentlyScanned": "ESCANEADOS RECIENTEMENTE",
-    "searchAllFoods": "Buscar en todos los platos"
+    "searchAllFoods": "Buscar en todos los platos",
+    "reviewEligibleNote": "Solo puedes reseñar platos que hayas escaneado.",
+    "goScanCta": "Escanear",
+    "sectionAllFoods": "Todos los platos"
   },
   "risk": {
     "safe": "Seguro",

@@ -205,7 +205,10 @@
     "lockedTitle": "Komunitas segera hadir",
     "lockedBody": "Bagikan tips dan temuan dengan sesama pelancong — segera hadir.",
     "sectionRecentlyScanned": "BARU DIPINDAI",
-    "searchAllFoods": "Cari di semua hidangan"
+    "searchAllFoods": "Cari di semua hidangan",
+    "reviewEligibleNote": "Kamu hanya bisa mengulas makanan yang sudah kamu pindai.",
+    "goScanCta": "Pindai sekarang",
+    "sectionAllFoods": "Semua makanan"
   },
   "risk": {
     "safe": "Aman",

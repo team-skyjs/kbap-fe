@@ -205,7 +205,10 @@
     "lockedTitle": "社群即將開放",
     "lockedBody": "與其他旅行者分享心得和發現——敬請期待。",
     "sectionRecentlyScanned": "最近掃描",
-    "searchAllFoods": "在全部菜色中搜尋"
+    "searchAllFoods": "在全部菜色中搜尋",
+    "reviewEligibleNote": "只能給你掃描過的菜品寫評價。",
+    "goScanCta": "去掃描",
+    "sectionAllFoods": "全部菜品"
   },
   "risk": {
     "safe": "安全",

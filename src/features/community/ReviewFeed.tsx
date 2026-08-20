@@ -229,9 +229,10 @@ export function ReviewFeed() {
         <IconPlus size={24} color="#fff" />
       </Pressable>
 
-      {/* P-229: 음식 필터 픽커 — 작성 픽커와 동일 컴포넌트 재사용(선택 = 필터) */}
+      {/* P-229: 음식 필터 픽커 — 작성 픽커와 동일 컴포넌트 재사용(선택 = 필터).
+          P-245: 필터는 자격 무관 — 'filter' 컨텍스트(전체 활성 유지, 스캔 우선 정렬만 공유) */}
       <TagPickerSheet
-        context="review"
+        context="filter"
         kind={filterPickerOpen ? 'food' : null}
         foodTags={foodFilter ? [foodFilter] : []}
         placeTag={null}

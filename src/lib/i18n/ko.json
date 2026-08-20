@@ -205,7 +205,10 @@
     "lockedTitle": "커뮤니티가 곧 열려요",
     "lockedBody": "다른 여행자들과 팁과 새로운 발견을 나누는 공간이에요. 곧 만나요.",
     "sectionRecentlyScanned": "최근 스캔",
-    "searchAllFoods": "전체 음식에서 찾기"
+    "searchAllFoods": "전체 음식에서 찾기",
+    "reviewEligibleNote": "리뷰는 스캔한 음식에만 쓸 수 있어요.",
+    "goScanCta": "스캔하러 가기",
+    "sectionAllFoods": "전체 음식"
   },
   "risk": {
     "safe": "안전",

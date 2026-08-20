@@ -205,7 +205,10 @@
     "lockedTitle": "Cộng đồng sắp ra mắt",
     "lockedBody": "Chia sẻ mẹo và khám phá với du khách khác — sắp ra mắt.",
     "sectionRecentlyScanned": "QUÉT GẦN ĐÂY",
-    "searchAllFoods": "Tìm trong tất cả món"
+    "searchAllFoods": "Tìm trong tất cả món",
+    "reviewEligibleNote": "Bạn chỉ có thể đánh giá món ăn mà bạn đã quét.",
+    "goScanCta": "Quét ngay",
+    "sectionAllFoods": "Tất cả món ăn"
   },
   "risk": {
     "safe": "An toàn",

@@ -205,7 +205,10 @@
     "lockedTitle": "コミュニティはまもなくオープン",
     "lockedBody": "旅行者同士でヒントや発見をシェアする場所 — もうすぐ。",
     "sectionRecentlyScanned": "最近のスキャン",
-    "searchAllFoods": "すべての料理から探す"
+    "searchAllFoods": "すべての料理から探す",
+    "reviewEligibleNote": "レビューはスキャンした料理にのみ書けます。",
+    "goScanCta": "スキャンする",
+    "sectionAllFoods": "すべての料理"
   },
   "risk": {
     "safe": "安全",

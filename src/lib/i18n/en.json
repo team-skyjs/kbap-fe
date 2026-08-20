@@ -201,7 +201,10 @@
     "lockedTitle": "Community is coming soon",
     "lockedBody": "Share tips and finds with fellow travelers — opening soon.",
     "sectionRecentlyScanned": "RECENTLY SCANNED",
-    "searchAllFoods": "Search all dishes"
+    "searchAllFoods": "Search all dishes",
+    "reviewEligibleNote": "You can only review foods you've scanned.",
+    "goScanCta": "Go scan",
+    "sectionAllFoods": "All foods"
   },
   "risk": {
     "safe": "Safe",
