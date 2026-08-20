@@ -55,7 +55,7 @@ export interface ReviewWire {
   likeCount?: number;
   likedByMe?: boolean;
   /** P-201(KB-249): 장소 태그 — source = KAKAO_PLACE/MANUAL/AUTHOR_LOCATION. */
-  place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null } | null;
+  place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null; placeId?: string | null } | null;
 }
 
 export interface ReviewPageWire {
@@ -125,6 +125,7 @@ export function adaptReview(wire: ReviewWire): Review {
           roadAddress: wire.place.address ?? null,
           latitude: wire.place.latitude ?? null,
           longitude: wire.place.longitude ?? null,
+          placeId: wire.place.placeId ?? null, // P-240: null 가능 — 표시 분기는 좌표 유무 현행
         }
       : null,
   };
@@ -152,10 +153,16 @@ export function imageUrlToPath(url: string): string {
 }
 
 /** P-201: 내부 place → 전송 wire. MANUAL(좌표 null) = name만. */
-type ReviewPlaceLike = { name: string; roadAddress?: string | null; latitude?: number | null; longitude?: number | null };
+type ReviewPlaceLike = { name: string; roadAddress?: string | null; latitude?: number | null; longitude?: number | null; placeId?: string | null };
 function placeWire(p: ReviewPlaceLike): NonNullable<ReviewUpdateWire['place']> {
-  if (p.latitude == null || p.longitude == null) return { name: p.name };
-  return { name: p.name, ...(p.roadAddress ? { address: p.roadAddress } : {}), latitude: p.latitude, longitude: p.longitude };
+  if (p.latitude == null || p.longitude == null) return { name: p.name }; // MANUAL — placeId 없음
+  return {
+    name: p.name,
+    ...(p.roadAddress ? { address: p.roadAddress } : {}),
+    latitude: p.latitude,
+    longitude: p.longitude,
+    ...(p.placeId ? { placeId: p.placeId } : {}), // P-240: 구글 placeId 동반(수정도 — 가게 단위 기능 열쇠)
+  };
 }
 
 /**

@@ -8,7 +8,7 @@
  * expo-location 접근 = 지연 require(P-192 관례 — 구 런타임 번들 동승 시 크래시 0).
  * 응답 어댑터는 방어적(주소 키 이형 수용).
  */
-import { api } from './client';
+import { api, apiLang } from './client';
 
 /** 실위치 불가 시 폴백 — 강남역(스웨거 예시). 검색 좌표 옵셔널 확정 시 폴백 제거 지점. */
 export const REVIEW_PLACE_FALLBACK_COORD = { latitude: 37.4979502, longitude: 127.0276368 };
@@ -48,12 +48,15 @@ async function currentCoord(): Promise<Coord> {
   }
 }
 
-/** 리뷰 장소 — MANUAL(직접 입력)은 name만, 좌표 부재. */
+/** 리뷰 장소 — MANUAL(직접 입력)은 name만, 좌표·placeId 부재. */
 export interface ReviewPlace {
   name: string;
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** P-240(KB-350 구글 전환): 검색 결과 장소의 Google placeId — 가게 단위 기능의
+   *  열쇠(종한). 리뷰 작성·수정 시 동반 전송, MANUAL은 없음. */
+  placeId: string | null;
 }
 
 function adaptPlace(w: unknown): ReviewPlace | null {
@@ -67,6 +70,7 @@ function adaptPlace(w: unknown): ReviewPlace | null {
     address: addr,
     latitude: typeof o.latitude === 'number' ? o.latitude : null,
     longitude: typeof o.longitude === 'number' ? o.longitude : null,
+    placeId: typeof o.placeId === 'string' ? o.placeId : null,
   };
 }
 
@@ -77,12 +81,15 @@ function adaptPlaceList(wire: unknown): ReviewPlace[] {
 
 const coordQ = (c: Coord) => `latitude=${c.latitude}&longitude=${c.longitude}`;
 
-/** 근처 탑10 — 시트 열림 프리로드(첫 호출이 권한 확인/OS 팝업 트리거). */
+/** P-240 🚨 핫픽스: KB-350 구글 전환으로 `lang` 필수(누락 400 — 현행이 dev 즉사).
+ *  최대 20건 단일 응답(PlaceSearchPageResponse 소멸 — 페이징 없음). */
 export async function fetchNearbyPlaces(): Promise<ReviewPlace[]> {
-  return adaptPlaceList(await api.get<unknown>(`/api/places/nearby?${coordQ(await currentCoord())}`));
+  return adaptPlaceList(await api.get<unknown>(`/api/places/nearby?${coordQ(await currentCoord())}&lang=${apiLang()}`));
 }
 
-/** 장소 검색(query+좌표 — 좌표 옵셔널화는 종한 확답 대기). */
+/** 장소 검색(query+좌표+lang — P-240 구글 전환). */
 export async function fetchSearchPlaces(query: string): Promise<ReviewPlace[]> {
-  return adaptPlaceList(await api.get<unknown>(`/api/places/search?query=${encodeURIComponent(query)}&${coordQ(await currentCoord())}`));
+  return adaptPlaceList(
+    await api.get<unknown>(`/api/places/search?query=${encodeURIComponent(query)}&${coordQ(await currentCoord())}&lang=${apiLang()}`),
+  );
 }

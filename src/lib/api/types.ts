@@ -181,7 +181,7 @@ export interface Review {
   bodyLanguage?: string;
   translatedBody?: string | null;
   /** P-095 목 → P-201(KB-249) 실계약: 장소 태그 — MANUAL은 name만(좌표·주소 null). */
-  place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null;
+  place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null; placeId?: string | null } | null;
   /** P-095: 좋아요 — BE 계약 미배포, 목 전용(표시만 — 정렬 미반영 확정). */
   likes?: number;
   /** P-236(KB-347): 2축 평가 — 0 = 평가 안 함(구 리뷰 전부 0). */

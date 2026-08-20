@@ -43,7 +43,7 @@ export function useCreateReview() {
   const qc = useQueryClient();
   const invalidate = useInvalidateReviews();
   return useMutation({
-    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras }) => {
+    mutationFn: async (input: { foodId: string; rating: number; content?: string; imagePaths?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null; placeId?: string | null } | null; extras?: ReviewExtras }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const me = qc.getQueryData<User>(['me', i18n.language]);
         mockInsert(qc, {
@@ -76,12 +76,14 @@ export function useCreateReview() {
           ? {
               place:
                 input.place.latitude == null || input.place.longitude == null
-                  ? { name: input.place.name }
+                  ? { name: input.place.name } // MANUAL — placeId 없음(현행)
                   : {
                       name: input.place.name,
                       ...(input.place.roadAddress ? { address: input.place.roadAddress } : {}),
                       latitude: input.place.latitude,
                       longitude: input.place.longitude,
+                      // P-240: 구글 placeId 동반(가게 단위 기능 열쇠). source는 계속 미전송(서버 유도)
+                      ...(input.place.placeId ? { placeId: input.place.placeId } : {}),
                     },
             }
           : {}),

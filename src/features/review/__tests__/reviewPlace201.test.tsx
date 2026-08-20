@@ -56,10 +56,10 @@ it('nearby/search — 고정 좌표(강남역 스웨거 예시) 쿼리로 실호
   api.get.mockResolvedValue([]);
   await fetchNearbyPlaces();
   const { latitude, longitude } = REVIEW_PLACE_FALLBACK_COORD;
-  expect(api.get).toHaveBeenCalledWith(`/api/places/nearby?latitude=${latitude}&longitude=${longitude}`);
+  expect(api.get).toHaveBeenCalledWith(`/api/places/nearby?latitude=${latitude}&longitude=${longitude}&lang=en`); // P-240
   await fetchSearchPlaces('김밥 천국');
   expect(api.get).toHaveBeenLastCalledWith(
-    `/api/places/search?query=${encodeURIComponent('김밥 천국')}&latitude=${latitude}&longitude=${longitude}`,
+    `/api/places/search?query=${encodeURIComponent('김밥 천국')}&latitude=${latitude}&longitude=${longitude}&lang=en`,
   );
 });
 
@@ -103,7 +103,7 @@ it('픽커 — 검색 결과 선택 = 좌표 포함 태그 · 직접 입력(MANU
   });
   // nearby 프리로드 결과 선택 → 좌표 포함
   await act(async () => tree.root.findAll((n) => n.props?.testID === 'place-pick-강남 김밥')[0].props.onPress());
-  expect(onPick).toHaveBeenCalledWith({ name: '강남 김밥', roadAddress: '강남대로 1', latitude: 37.49, longitude: 127.02 });
+  expect(onPick).toHaveBeenCalledWith({ name: '강남 김밥', roadAddress: '강남대로 1', latitude: 37.49, longitude: 127.02, placeId: null }); // P-240: placeId 관통(응답 부재 = null)
   // 검색어 입력 → MANUAL 행 → 이름만
   const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
   await act(async () => input.props.onChangeText('우리집앞 분식'));
@@ -141,4 +141,30 @@ it('플래그 게이트 — reviewPlaceEnabled = 채널 분기(prod 무노출) �
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewPlaceEnabled: !PROD_CHANNEL');
   const parts = fs.readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
   expect(parts).toContain('!FLAGS.reviewPlaceEnabled || !place?.name) return null'); // 셀 줄 게이트(표면 공통 — 한 곳)
+});
+
+/* ---- P-240(KB-350): 구글 전환 — placeId 전송·MANUAL 미전송 ---- */
+it('P-240: placeWire — 검색 선택(좌표+placeId) = placeId 동반 · MANUAL = name만 · placeId 없는 좌표 장소 = 미전송', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { buildReviewUpdate } = require('@/lib/api/reviewAdapter') as typeof import('@/lib/api/reviewAdapter');
+  const withId = buildReviewUpdate(
+    { rating: 4, body: null, photos: [], place: { name: '히뎅', roadAddress: '주소', latitude: 37.5, longitude: 127.0, placeId: 'ChIJabc123' } },
+    {},
+  );
+  expect(withId.place).toEqual({ name: '히뎅', address: '주소', latitude: 37.5, longitude: 127.0, placeId: 'ChIJabc123' });
+  const manual = buildReviewUpdate({ rating: 4, body: null, photos: [], place: { name: '우리집앞 분식' } }, {});
+  expect(manual.place).toEqual({ name: '우리집앞 분식' }); // MANUAL — placeId 없음(현행)
+  const noId = buildReviewUpdate(
+    { rating: 4, body: null, photos: [], place: { name: '옛집', roadAddress: null, latitude: 37.5, longitude: 127.0, placeId: null } },
+    {},
+  );
+  expect(noId.place).not.toHaveProperty('placeId'); // null = 미전송(source도 계속 미전송 — 서버 유도)
+});
+
+it('P-240: 페이징 제거 회귀 — 픽커에 더보기/hasNext 배선 부재(단일 20건 응답)', () => {
+  const fs = require('fs');
+  const parts = fs.readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
+  // PlacePickerSheet 블록에 페이지네이션 배선이 없다(원래 없음 — 회귀 잠금)
+  expect(parts).not.toMatch(/fetchNextPage.*[Pp]lace/);
+  expect(fs.readFileSync('src/lib/api/places.ts', 'utf8')).toContain('&lang=${apiLang()}'); // lang 필수 핫픽스
 });

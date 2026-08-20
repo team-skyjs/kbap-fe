@@ -101,8 +101,8 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
 }
 
 /** P-201: 리뷰 장소 태그 — MANUAL(직접 입력)은 좌표·주소 null. */
-export type ReviewPlaceTag = { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null };
-const toTag = (p: ReviewPlace): ReviewPlaceTag => ({ name: p.name, roadAddress: p.address, latitude: p.latitude, longitude: p.longitude });
+export type ReviewPlaceTag = { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null; placeId?: string | null };
+const toTag = (p: ReviewPlace): ReviewPlaceTag => ({ name: p.name, roadAddress: p.address, latitude: p.latitude, longitude: p.longitude, placeId: p.placeId }); // P-240: placeId 관통
 
 /**
  * 장소 픽커 시트 (P-095 목 → P-201 실연결) — 작성·수정 공용:

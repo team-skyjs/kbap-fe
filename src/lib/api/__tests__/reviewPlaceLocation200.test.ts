@@ -30,7 +30,7 @@ it('허용 = 실위치 좌표로 nearby 호출(강남 폴백 아님)', async () 
   mockLoc.getForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
   mockLoc.getCurrentPositionAsync.mockResolvedValue({ coords: { latitude: 35.1796, longitude: 129.0756 } }); // 부산
   await fetchNearbyPlaces();
-  expect(lastUrl()).toBe('/api/places/nearby?latitude=35.1796&longitude=129.0756');
+  expect(lastUrl()).toBe('/api/places/nearby?latitude=35.1796&longitude=129.0756&lang=en'); // P-240: lang 필수
   expect(mockLoc.requestForegroundPermissionsAsync).not.toHaveBeenCalled(); // 기허용 = 팝업 없음
 });
 
@@ -40,20 +40,20 @@ it('미결정 = OS 팝업 바로(사전 모달 없음) → 허용 시 실위치'
   mockLoc.getCurrentPositionAsync.mockResolvedValue({ coords: { latitude: 37.5665, longitude: 126.978 } });
   await fetchNearbyPlaces();
   expect(mockLoc.requestForegroundPermissionsAsync).toHaveBeenCalled();
-  expect(lastUrl()).toBe('/api/places/nearby?latitude=37.5665&longitude=126.978');
+  expect(lastUrl()).toBe('/api/places/nearby?latitude=37.5665&longitude=126.978&lang=en');
 });
 
 it('거절 = 재요청 없이 강남 폴백(P-201 경로 그대로 — 기능 전부 동작)', async () => {
   mockLoc.getForegroundPermissionsAsync.mockResolvedValue({ status: 'denied', canAskAgain: false });
   await fetchNearbyPlaces();
   expect(mockLoc.requestForegroundPermissionsAsync).not.toHaveBeenCalled(); // iOS 1회성 — 조용히 폴백
-  expect(lastUrl()).toBe(`/api/places/nearby?${FALLBACK_Q}`);
+  expect(lastUrl()).toBe(`/api/places/nearby?${FALLBACK_Q}&lang=en`);
 });
 
 it('GPS 오류/모듈 부재 = 강남 폴백(크래시 0 — 구 런타임 동승 안전)', async () => {
   mockLoc.getForegroundPermissionsAsync.mockRejectedValue(new Error('native missing'));
   await fetchNearbyPlaces();
-  expect(lastUrl()).toBe(`/api/places/nearby?${FALLBACK_Q}`);
+  expect(lastUrl()).toBe(`/api/places/nearby?${FALLBACK_Q}&lang=en`);
 });
 
 it('실위치 60초 메모 — 시트 세션 내 키 입력마다 GPS 재조회 없음', async () => {
