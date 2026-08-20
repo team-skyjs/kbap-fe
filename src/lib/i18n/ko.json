@@ -206,7 +206,7 @@
     "lockedBody": "다른 여행자들과 팁과 새로운 발견을 나누는 공간이에요. 곧 만나요.",
     "sectionRecentlyScanned": "최근 스캔",
     "searchAllFoods": "전체 음식에서 찾기",
-    "reviewEligibleNote": "리뷰는 스캔한 음식에만 쓸 수 있어요.",
+    "reviewEligibleNote": "스캔한 음식에만 리뷰를 쓸 수 있어요.",
     "goScanCta": "스캔하러 가기",
     "sectionAllFoods": "전체 음식"
   },
@@ -278,7 +278,7 @@
     "errBusy": "메뉴를 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
     "errOutage": "메뉴 인식 서비스에 일시적인 문제가 있어요. 잠시 후 다시 시도해 주세요.",
     "errUpload": "사진을 올리지 못했어요. 다시 시도해 주세요.",
-    "stayHint": "30~40초 정도 걸릴 수 있어요 — 앱을 벗어나면 결과를 놓칠 수 있어요.",
+    "stayHint": "30~40초 정도 걸릴 수 있어요. 앱을 벗어나면 결과를 놓칠 수 있어요.",
     "sortMenu": "메뉴판 순",
     "sortSafety": "위험도 낮은 순",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요."
