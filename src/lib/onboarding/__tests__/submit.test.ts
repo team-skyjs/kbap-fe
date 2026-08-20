@@ -55,6 +55,17 @@ describe('submitOnboardingProfile 4xx 판별 (KB-75)', () => {
     expect(api.post.mock.calls[1][1]).toMatchObject({ spicinessPreference: 'HOT' });
   });
 
+  // P-243(BE #179): 프리셋 선택 = dietCategories 전송(1.1) — 빈/생략 = 필드 미전송
+  it('P-243: dietCategories — 선택분 전송·빈 배열/생략 = 미전송(스킵 시맨틱)', async () => {
+    api.post.mockResolvedValue(undefined);
+    await submitOnboardingProfile({ ...payload, dietCategories: ['VEGAN', 'MUSLIM'] });
+    expect(api.post.mock.calls[0][1]).toMatchObject({ dietCategories: ['VEGAN', 'MUSLIM'] });
+    await submitOnboardingProfile({ ...payload, dietCategories: [] });
+    expect(api.post.mock.calls[1][1]).not.toHaveProperty('dietCategories');
+    await submitOnboardingProfile(payload);
+    expect(api.post.mock.calls[2][1]).not.toHaveProperty('dietCategories');
+  });
+
   // P-016 → P-209: dev(1.1) = 닉네임·아바타 서버 자동 지정 — 전송 자체 정리(미전송)
   it('P-209: dev(1.1) — profileImageUrl·nickname 미전송 + 1.1 헤더', async () => {
     api.post.mockResolvedValue(undefined);

@@ -338,7 +338,7 @@
     "presetFillTitle": "更新回避食材？",
     "presetFillBody": "我们会根据你的选择向回避清单添加食材。已回避的食材不会被移除。",
     "presetFillYes": "添加食材",
-    "dietUncheckHint": "在此取消勾选不会从回避清单中移除食材 — 你可以在回避清单中直接移除。",
+    "dietUncheckHint": "取消勾选会关闭该类别，但已加入回避清单的成分会保留 — 如有需要，请在回避清单中直接移除。",
     "dietSavedTitle": "饮食信息已更新",
     "dietSavedBody": "要相应调整回避的食材吗？",
     "dietSavedYes": "编辑回避食材",

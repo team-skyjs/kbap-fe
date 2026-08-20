@@ -36,6 +36,8 @@ export interface OnboardingProfilePayload {
   spiceTolerance: SpiceChoice; // P-081: enum — 'SKIP' = 온보딩 스킵(구 UNSET 승계)
   /** 업로드된 프로필 사진 path(objectKey) (KB-149/P-006). null/생략 = 미선택 → 필드 생략. */
   profileImageUrl?: string | null;
+  /** P-243(BE #179): 프리셋 스텝 선택 식이 카테고리 — dev(1.1)만 전송(prod 구계약 미전송 무해). */
+  dietCategories?: string[];
 }
 
 /** 맵기 로컬 fallback 키 — useMe·clearMemberLocal과 공유 (중복 정의 금지). */
@@ -58,6 +60,8 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
     spicinessPreference: spiceChoiceToWire(payload.spiceTolerance),
     // KB-149 최종(P-016): 1.0에서만 — 1.1은 서버 지정(전송 자체 정리)
     ...(legacy ? { profileImageUrl: payload.profileImageUrl ?? pickDefaultAvatarPath() ?? PROFILE_IMAGE_DEFAULT_PATH } : {}),
+    // P-243(BE #179): 식이 카테고리 — dev(1.1)만(prod 구계약은 필드 미인지·미전송 무해)
+    ...(!legacy && payload.dietCategories?.length ? { dietCategories: payload.dietCategories } : {}),
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
     avoidanceSubstanceCodes:

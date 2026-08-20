@@ -338,7 +338,7 @@
     "presetFillTitle": "못 먹는 재료를 추가할까요?",
     "presetFillBody": "선택한 식단·종교·알레르기에 맞는 재료를 추가해요. 이미 등록한 재료는 지워지지 않아요.",
     "presetFillYes": "성분 추가",
-    "dietUncheckHint": "여기서 체크를 해제해도 회피 목록의 성분은 지워지지 않아요 — 회피 목록에서 직접 뺄 수 있어요.",
+    "dietUncheckHint": "체크를 해제하면 카테고리는 꺼지지만, 이미 회피 목록에 담긴 성분은 남아요 — 필요하면 회피 목록에서 직접 빼 주세요.",
     "dietSavedTitle": "식이 정보가 바뀌었어요",
     "dietSavedBody": "이에 맞게 못 먹는 재료도 수정할까요?",
     "dietSavedYes": "못 먹는 재료 수정",

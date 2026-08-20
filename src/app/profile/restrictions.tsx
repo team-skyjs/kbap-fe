@@ -38,6 +38,7 @@ export default function EditRestrictions() {
   const [presetOpen, setPresetOpen] = useState(presetsParam === '1');
   // P-227 ③: 프리셋 적용 전 확인 팝업 — "회피 성분을 이에 맞게 채울까요?"
   const [presetConfirm, setPresetConfirm] = useState(false);
+  // P-243: 시트 초기 표시 = 서버 정본(me.dietCategories) — me 도착 후 seeding(아래 effect)
   const [presetSel, setPresetSel] = useState<Set<string>>(new Set());
   const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
   // P-214: 변경 폭(delta)·경로(via) 계측 재료 — 시딩 시점 개수가 기준선
@@ -46,6 +47,7 @@ export default function EditRestrictions() {
   useEffect(() => {
     if (me && !seeded) {
       setSel(me.restrictions.map((r) => r.code));
+      setPresetSel(new Set(me.dietCategories ?? [])); // P-243: 시트 활성 표시 = 서버
       initialCount.current = me.restrictions.length;
       setSeeded(true);
     }

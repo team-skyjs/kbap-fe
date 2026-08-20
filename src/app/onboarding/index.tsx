@@ -199,6 +199,8 @@ export default function Onboarding() {
         nationality,
         language: lang,
         avoidIngredients: skipped.restrictions ? UNSET : Array.from(restrictions),
+        // P-243(BE #179): 프리셋 스텝 선택 = 식이 카테고리 서버 저장(스킵 = 미전송)
+        dietCategories: Array.from(presets),
         // P-039 계열: 스킵 = SKIP(미설정) — 안 건드림은 미설정이다 (P-081 enum 승계)
         spiceTolerance: spiceSkipped ? 'SKIP' : spice,
         // P-209: 닉네임·아바타 = 서버 자동 지정(1.1) — 클라 생성 소멸(prod 폴백은 submit 내부)

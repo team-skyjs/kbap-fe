@@ -61,6 +61,8 @@ export interface User {
   provider?: string;
   /** 서버 온보딩 완료 플래그 (KB-75 재유도 판정의 원천). mock/비회원에선 생략. */
   onboardingCompleted?: boolean;
+  /** P-243(KB-340): 식이 카테고리 서버 정본 — 역추론 표시 대체. 부재/빈 배열 = 섹션 숨김. */
+  dietCategories?: string[];
   /** P-165(#145): 유저 통화(ISO-4217) — 서버 정본, null/생략 = 미설정(국적 폴백). */
   currency?: string | null;
 }
@@ -73,6 +75,7 @@ export interface UserUpdate {
   restrictions?: DietaryRestriction[];
   profileImageUrl?: string; // path 설정 · 삭제=기본 path 전송(P-016 확정, null 폐기) · 생략=유지 (KB-149)
   currency?: string | null; // P-165(#145): null = 미설정(국적 폴백) · 생략 = 유지
+  dietCategories?: string[]; // P-243(BE #179): 식이 카테고리 풀 셋 교체 · 생략 = 유지
 }
 
 export interface RatingAggregate {

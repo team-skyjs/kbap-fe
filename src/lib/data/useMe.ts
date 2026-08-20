@@ -117,6 +117,8 @@ export function useUpdateMe() {
           return be ? [be] : [];
         });
       }
+      // P-243(BE #179): 식이 카테고리 — 풀 셋 교체(해제 실동작). 회피와 한 요청 가능.
+      if (patch.dietCategories !== undefined) body.dietCategories = patch.dietCategories;
       if (Object.keys(body).length === 0) return; // 와이어 필드 없는 패치 — 서버 호출 불필요
       // P-209: dev = 1.1(ProfileUpdateNoCountryRequest 그룹 — countryCode 무필드,
       // 전송은 P-078부터 이미 0), prod = 구 1.0 유지(서버 미배포)

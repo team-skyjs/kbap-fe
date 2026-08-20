@@ -32,6 +32,7 @@ export interface MemberRankingWire extends RankingSummaryWire {
 }
 
 export interface MyProfileWire {
+  dietCategories?: string[];
   memberId: number;
   nickname: string;
   avoidanceSubstanceCodes: string[];
@@ -51,6 +52,7 @@ export interface MyProfileWire {
 }
 
 export interface ProfileUpdateWire {
+  dietCategories?: string[]; // P-243(BE #179): 풀 셋 교체
   nickname?: string;
   avoidanceSubstanceCodes?: string[];
   countryCode?: string;
@@ -141,5 +143,7 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     })),
     rank: adaptRanking(wire.ranking),
     onboardingCompleted: wire.onboardingCompleted,
+    // P-243: 식이 카테고리 서버 정본(BE #179) — 부재(구응답) = 빈 배열
+    dietCategories: Array.isArray(wire.dietCategories) ? wire.dietCategories : [],
   };
 }

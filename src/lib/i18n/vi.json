@@ -338,7 +338,7 @@
     "presetFillTitle": "Cập nhật nguyên liệu tránh?",
     "presetFillBody": "Chúng tôi sẽ thêm nguyên liệu phù hợp với lựa chọn của bạn vào danh sách tránh. Những gì bạn đang tránh sẽ không bị xóa.",
     "presetFillYes": "Thêm nguyên liệu",
-    "dietUncheckHint": "Bỏ chọn ở đây không xóa nguyên liệu khỏi danh sách tránh — bạn có thể xóa trực tiếp trong danh sách tránh.",
+    "dietUncheckHint": "Bỏ chọn sẽ tắt danh mục này, nhưng các nguyên liệu đã có trong danh sách tránh vẫn được giữ — hãy xóa trực tiếp trong danh sách tránh nếu cần.",
     "dietSavedTitle": "Đã cập nhật chế độ ăn",
     "dietSavedBody": "Bạn có muốn tinh chỉnh nguyên liệu tránh cho phù hợp không?",
     "dietSavedYes": "Chỉnh nguyên liệu tránh",

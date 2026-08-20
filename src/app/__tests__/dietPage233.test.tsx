@@ -1,6 +1,7 @@
 /**
- * P-233(KB-305): 식이 전체 페이지 — 역추론 프리셀렉트·저장=신규분 합집합(기존
- * 보존)·해제=회피 불변·사후 모달 Yes/No 라우팅·무변경 무모달.
+ * P-233(KB-305) → P-243(KB-340) 서버 정본 전환: 식이 전체 페이지 —
+ * 프리셀렉트 = me.dietCategories · 저장 = dietCategories 풀 셋 + 신규분 회피
+ * 합집합 **한 PATCH** · 해제 = dietCategories만 감소(회피 불변) · 역추론 잔존 0.
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -59,7 +60,8 @@ import { DIET_PRESETS, presetSubstanceCodes } from '@/lib/onboarding/dietPresets
 const NO_ALCOHOL = [...presetSubstanceCodes(DIET_PRESETS.find((p) => p.id === 'NO_ALCOHOL')!)];
 const VEGAN = [...presetSubstanceCodes(DIET_PRESETS.find((p) => p.id === 'VEGAN')!)];
 
-const ME = (codes: string[]) => ({ data: { id: '1', restrictions: codes.map((code) => ({ kind: 'allergy' as const, code })) } });
+const ME = (codes: string[], dietCategories: string[] = []) =>
+  ({ data: { id: '1', restrictions: codes.map((code) => ({ kind: 'allergy' as const, code })), dietCategories } });
 
 const trees: ReactTestRenderer[] = [];
 function render(): ReactTestRenderer {
@@ -77,21 +79,27 @@ const tap = async (tree: ReactTestRenderer, id: string) => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseMe.mockReturnValue(ME([...NO_ALCOHOL, 'EGG']));
+  mockUseMe.mockReturnValue(ME([...NO_ALCOHOL, 'EGG'], ['NO_ALCOHOL']));
   mockMutate.mockImplementation((_input: unknown, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.());
 });
 
-it('프리셀렉트 = 역추론(NO_ALCOHOL 활성 칩) — P-227과 동일 규칙', () => {
+it('P-243: 프리셀렉트 = me.dietCategories(서버 정본) — 역추론 아님', () => {
+  // 회피에 VEGAN 전 코드가 있어도(역추론이면 활성일 상황) dietCategories에 없으면 꺼짐
+  mockUseMe.mockReturnValue(ME([...VEGAN, ...NO_ALCOHOL], ['NO_ALCOHOL']));
   const tree = render();
-  const chip = tree.root.findAll((n) => n.props?.testID === 'dietpage-NO_ALCOHOL')[0];
-  expect(JSON.stringify(chip.props.style)).toContain('"borderColor":"#E2580C"'); // 활성 톤
+  const on = tree.root.findAll((n) => n.props?.testID === 'dietpage-NO_ALCOHOL')[0];
+  expect(JSON.stringify(on.props.style)).toContain('"borderColor":"#E2580C"'); // 활성 톤
+  const off = tree.root.findAll((n) => n.props?.testID === 'dietpage-VEGAN')[0];
+  expect(JSON.stringify(off.props.style)).not.toContain('"borderColor":"#E2580C"');
 });
 
-it('추가 저장 = 신규 선택분 합집합 PATCH(기존 회피 보존) → 사후 모달 → Yes = 회피 편집', async () => {
+it('추가 저장 = dietCategories 풀 셋 + 신규분 합집합 회피 — 한 PATCH → 사후 모달 → Yes = 회피 편집', async () => {
   const tree = render();
   await tap(tree, 'dietpage-VEGAN'); // Vegan 추가
   await tap(tree, 'diet-save');
-  const body = mockMutate.mock.calls[0][0] as { restrictions: { code: string }[] };
+  expect(mockMutate).toHaveBeenCalledTimes(1); // 두 필드 한 요청(P-243)
+  const body = mockMutate.mock.calls[0][0] as { dietCategories: string[]; restrictions: { code: string }[] };
+  expect(new Set(body.dietCategories)).toEqual(new Set(['NO_ALCOHOL', 'VEGAN'])); // 풀 셋 교체
   const codes = body.restrictions.map((r) => r.code);
   for (const c of VEGAN) expect(codes).toContain(c); // 신규분 반영
   for (const c of [...NO_ALCOHOL, 'EGG']) expect(codes).toContain(c); // 기존 보존(합집합 — 오삭제 0)
@@ -109,13 +117,14 @@ it('사후 모달 No = 프로필 복귀(반영은 이미 됨 — PATCH 1회 유�
   expect(mockBack).toHaveBeenCalled();
 });
 
-it('해제만 하고 저장 = 회피 불변(PATCH 0) + 모달 없이 조용히 복귀', async () => {
+it('P-243 해제 실동작 = dietCategories만 감소(restrictions 미전송 — 회피 불변)', async () => {
   const tree = render();
   await tap(tree, 'dietpage-NO_ALCOHOL'); // 활성 해제
   await tap(tree, 'diet-save');
-  expect(mockMutate).not.toHaveBeenCalled(); // 해제 = 성분 안 건드림(오삭제 방지)
-  expect(mockBack).toHaveBeenCalled();
-  expect(tree.root.findAll((n) => n.props?.testID === 'diet-saved-modal')).toHaveLength(0);
+  expect(mockMutate).toHaveBeenCalledTimes(1); // 이제 해제도 서버 저장(칩 꺼짐)
+  const body = mockMutate.mock.calls[0][0] as { dietCategories: string[]; restrictions?: unknown };
+  expect(body.dietCategories).toEqual([]); // NO_ALCOHOL 빠짐
+  expect(body.restrictions).toBeUndefined(); // 회피 불변 — 필드 자체 미전송(오삭제 0)
 });
 
 it('무변경 저장 = 무모달·조용한 복귀(재량 확인 반영)', async () => {
@@ -133,4 +142,13 @@ it('배선 소스 잠금 — 프로필 Show all 진입·해제 안내 문구·P-
   expect(page).toContain('unionResolvedCodes(dietPresets, added, cur)'); // 신규분만 합집합
   // P-227 승인형 팝업은 회피 편집 화면 경로에 존치(두 경로 의도적 상이)
   expect(fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8')).toContain('setPresetConfirm(true)');
+});
+
+it('P-243 역추론 잔존 0 — 활성 판정에 codes.every(⊆회피) 패턴 소멸(서버 정본)', () => {
+  const fs = require('fs');
+  for (const f of ['src/app/profile/diet.tsx', 'src/app/(tabs)/profile.tsx']) {
+    const src = fs.readFileSync(f, 'utf8') as string;
+    expect(src).not.toContain('codes.every'); // 역추론 판정식
+    expect(src).toContain('me?.dietCategories'); // 서버 정본 소스
+  }
 });

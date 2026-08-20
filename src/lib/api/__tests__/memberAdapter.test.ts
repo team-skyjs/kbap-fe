@@ -90,6 +90,11 @@ describe('adaptProfile.profileImageUrl (P-004 KB-149)', () => {
     expect(adaptProfile(wire, null).spiceTolerance).toBe('SKIP');
   });
 
+  it('P-243: dietCategories — 서버 배열 그대로 · 부재(구응답) = 빈 배열(섹션 숨김 안전)', () => {
+    expect(adaptProfile({ ...wire, dietCategories: ['VEGAN', 'MUSLIM'] }, null).dietCategories).toEqual(['VEGAN', 'MUSLIM']);
+    expect(adaptProfile(wire, null).dietCategories).toEqual([]);
+  });
+
   it('provider 매핑 (P-029) — wire 그대로, 누락은 undefined', () => {
     expect(adaptProfile({ ...wire, provider: 'APPLE' }, null).provider).toBe('APPLE');
     expect(adaptProfile(wire, null).provider).toBeUndefined();

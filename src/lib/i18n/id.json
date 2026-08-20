@@ -338,7 +338,7 @@
     "presetFillTitle": "Perbarui bahan yang dihindari?",
     "presetFillBody": "Kami akan menambahkan bahan sesuai pilihanmu ke daftar hindaran. Yang sudah kamu hindari tidak akan dihapus.",
     "presetFillYes": "Tambah bahan",
-    "dietUncheckHint": "Menghapus centang di sini tidak menghapus bahan dari daftar hindaran — kamu bisa menghapusnya langsung di daftar.",
+    "dietUncheckHint": "Menghapus centang akan menonaktifkan kategori, tetapi bahan yang sudah ada di daftar hindaran tetap tersimpan — hapus langsung di daftar hindaran jika perlu.",
     "dietSavedTitle": "Info pola makan diperbarui",
     "dietSavedBody": "Mau menyesuaikan bahan yang dihindari juga?",
     "dietSavedYes": "Edit bahan hindaran",

@@ -143,6 +143,18 @@ it('P-078: patch에 nationality류가 섞여도 PATCH body에 countryCode 없음
   expect(body.nickname).toBe('B');
 });
 
+it('P-243(BE #179): dietCategories 패치 → 풀 셋 전송 · 빈 배열(전부 해제)도 전송 · 회피와 한 요청', async () => {
+  await runMutation(seededClient(), { dietCategories: ['VEGAN'] });
+  expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { dietCategories: ['VEGAN'] }, { headers: { 'X-API-Version': '1.1' } });
+  await runMutation(seededClient(), { dietCategories: [] }); // 해제 실동작 — 빈 배열 = 전부 끔
+  expect(api.patch).toHaveBeenLastCalledWith('/members/me/profile', { dietCategories: [] }, { headers: { 'X-API-Version': '1.1' } });
+  // 식이 페이지 저장 = 두 필드 한 요청(P-243 ②)
+  await runMutation(seededClient(), { dietCategories: ['VEGAN'], restrictions: [{ kind: 'allergy', code: 'EGG' }] });
+  const body = (api.patch as jest.Mock).mock.calls.at(-1)![1] as Record<string, unknown>;
+  expect(body.dietCategories).toEqual(['VEGAN']);
+  expect(body.avoidanceSubstanceCodes).toEqual(['EGG']);
+});
+
 it('P-165(#145): currency 패치 → PATCH body 포함 · null(해제)도 전송(국적 폴백 복귀)', async () => {
   await runMutation(seededClient(), { currency: 'THB' });
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { currency: 'THB' }, { headers: { 'X-API-Version': '1.1' } });

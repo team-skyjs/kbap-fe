@@ -82,10 +82,10 @@ import { DIET_PRESETS, presetSubstanceCodes } from '@/lib/onboarding/dietPresets
 
 const NO_ALCOHOL_CODES = [...presetSubstanceCodes(DIET_PRESETS.find((p) => p.id === 'NO_ALCOHOL')!)];
 
-const ME = (codes: string[]) => ({
+const ME = (codes: string[], dietCategories: string[] = []) => ({
   data: {
     id: '1', nickname: 'A', nationality: 'US', readerLanguage: 'en', spiceTolerance: 'SKIP',
-    restrictions: codes.map((code) => ({ kind: 'allergy' as const, code })),
+    restrictions: codes.map((code) => ({ kind: 'allergy' as const, code })), dietCategories,
     rank: { tier: 'bronze', level: 1, score: 0, nextTier: null, pointsToNext: null },
     profileImageUrl: null, onboardingCompleted: true, currency: null,
   },
@@ -107,7 +107,7 @@ const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockUseMe.mockReturnValue(ME([...NO_ALCOHOL_CODES, 'EGG']));
+  mockUseMe.mockReturnValue(ME([...NO_ALCOHOL_CODES, 'EGG'], ['NO_ALCOHOL']));
 });
 
 it('① 섹션 순서 = 식이 → 기피 → 랭킹(랭킹은 아래로)', () => {
@@ -120,7 +120,8 @@ it('① 섹션 순서 = 식이 → 기피 → 랭킹(랭킹은 아래로)', () =
   expect(avoid).toBeLessThan(rank);
 });
 
-it('② 식이 표시 = 역추론(프리셋 코드 전부 ⊆ 회피) — NO_ALCOHOL 활성, 미충족 프리셋 비표시', () => {
+it('② P-243: 식이 표시 = me.dietCategories(서버 정본) — 역추론 폐기', () => {
+  // 회피가 프리셋을 완전 포함해도(역추론이면 활성) dietCategories에 없으면 비표시
   const tree = render();
   expect(tree.root.findAll((n) => n.props?.testID === 'diet-NO_ALCOHOL').length).toBeGreaterThanOrEqual(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'diet-VEGAN')).toHaveLength(0);
@@ -130,8 +131,8 @@ it('② 식이 표시 = 역추론(프리셋 코드 전부 ⊆ 회피) — NO_ALC
   expect(mockPush).toHaveBeenCalledWith('/profile/diet');
 });
 
-it('②-b 활성 프리셋 0 = 식이 섹션 자체 숨김(P-210 원칙)', () => {
-  mockUseMe.mockReturnValue(ME(['EGG'])); // 어떤 프리셋도 완전 포함 안 됨
+it('②-b dietCategories 빈 배열/부재 = 식이 섹션 자체 숨김(P-210 원칙)', () => {
+  mockUseMe.mockReturnValue(ME([...NO_ALCOHOL_CODES, 'EGG'])); // 회피만 있고 서버 식이 없음
   expect(flat(render())).not.toContain('profile.dietTitle');
 });
 

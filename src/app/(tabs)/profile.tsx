@@ -86,12 +86,12 @@ export default function Profile() {
   // P-176: 회피 표시 = 사진 미니 타일(온보딩 문법·P-174 서버 이미지 승계) — 8개(2줄) 초과 시 접기
   const ingCat = useIngredientCatalog();
   const recentScans = useHome().data?.recent ?? []; // P-181 ②: 서버 보관 이력 — 신규 API 0
-  // P-227 ②: 활성 식이 = 역추론(프리셋 코드 전부 ⊆ 현재 회피) — 선택 상태는 서버에 없음
   const dietPresets = useDietPresets();
+  // P-243: 활성 칩 = 서버 정본(me.dietCategories) — 역추론(프리셋 ⊆ 회피) 폐기(BE #179)
   const activePresets = useMemo(() => {
-    const have = new Set((me?.restrictions ?? []).map((r) => r.code));
-    return dietPresets.filter((p) => p.codes.length > 0 && p.codes.every((c) => have.has(c)));
-  }, [dietPresets, me?.restrictions]);
+    const on = new Set(me?.dietCategories ?? []);
+    return dietPresets.filter((p) => on.has(p.id));
+  }, [dietPresets, me?.dietCategories]);
 
   // ⑪-1: 무반응 버튼 연타 방지 — 확인 모달로 depth 추가, 진행 중엔 스피너+재진입 차단
   function confirmLogout() {
@@ -203,9 +203,8 @@ export default function Profile() {
               </Pressable>
             )}
 
-            {/* P-227 ①②: 식이 카테고리 = 최상단(멘토 8/15). 선택 상태는 서버에
-                없어(회피 코드만 저장) **역추론** — 프리셋 코드 전부가 현재 회피에
-                포함되면 활성. 수정 = 기존 프리셋 시트 재사용(restrictions?presets=1). */}
+            {/* P-227 ①②: 식이 카테고리 = 최상단(멘토 8/15). P-243: 활성 = 서버
+                정본(me.dietCategories). 수정 = 기존 프리셋 시트 재사용(restrictions?presets=1). */}
             {FLAGS.dietPresetsEnabled && activePresets.length > 0 && (
               <Section
                 title={t('profile.dietTitle')}

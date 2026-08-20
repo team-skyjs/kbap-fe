@@ -338,7 +338,7 @@
     "presetFillTitle": "¿Actualizar ingredientes evitados?",
     "presetFillBody": "Añadiremos los ingredientes de tu selección a tu lista. Lo que ya evitas no se eliminará.",
     "presetFillYes": "Añadir ingredientes",
-    "dietUncheckHint": "Desmarcar aquí no elimina ingredientes de tu lista; puedes quitarlos directamente en la lista de evitados.",
+    "dietUncheckHint": "Al desmarcar se desactiva la categoría, pero los ingredientes que ya están en tu lista de evitados se mantienen; elimínalos directamente en la lista si lo necesitas.",
     "dietSavedTitle": "Información dietética actualizada",
     "dietSavedBody": "¿Quieres ajustar los ingredientes evitados en consecuencia?",
     "dietSavedYes": "Editar ingredientes",
