@@ -48,7 +48,7 @@ export function fitAvoidChips<T extends { name: string }>(
 }
 import { IconMinus, IconPlus, RiskMark } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { convertKrw } from '@/lib/exchange';
+import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -84,6 +84,7 @@ export function ScanProfileBar({ avoidNames, t }: { avoidNames: string[]; t: TFn
 export function ScanRichList({
   dishes,
   currency,
+  fx,
   cart,
   onAdd,
   onRemove,
@@ -94,6 +95,7 @@ export function ScanRichList({
 }: {
   dishes: ResultDish[];
   currency: string;
+  fx?: ServerFx; // P-242: v2 서버 실환율(undefined = v1 테이블)
   cart: Map<number, number>;
   onAdd: (d: ResultDish) => void;
   onRemove: (d: ResultDish) => void;
@@ -108,7 +110,7 @@ export function ScanRichList({
     <View style={styles.body}>
       {/* P-138 ④: 카테고리 헤더 없음 — 스캔 API에 카테고리 부재 → 플랫 리스트 */}
       {dishes.map((d) => (
-        <RichRow key={d.itemId} dish={d} currency={currency} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onOpenSimilar={onOpenSimilar} t={t} />
+        <RichRow key={d.itemId} dish={d} currency={currency} fx={fx} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onOpenSimilar={onOpenSimilar} t={t} />
       ))}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
@@ -119,6 +121,7 @@ export function ScanRichList({
 function RichRow({
   dish,
   currency,
+  fx,
   qty,
   onAdd,
   onRemove,
@@ -129,6 +132,7 @@ function RichRow({
 }: {
   dish: ResultDish;
   currency: string;
+  fx?: ServerFx;
   qty: number;
   onAdd: () => void;
   onRemove: () => void;
@@ -153,7 +157,7 @@ function RichRow({
   const warns = [...warnSource].sort((a, b) => (a.risk === b.risk ? 0 : a.risk === 'danger' ? -1 : 1));
   const [warnW, setWarnW] = React.useState(0);
   const { shown: shownWarns, rest: restWarns } = fitAvoidChips(warns, warnW);
-  const converted = dish.priceKrw != null ? convertKrw(dish.priceKrw, currency) : null;
+  const converted = dish.priceKrw != null ? convertKrw(dish.priceKrw, currency, fx) : null; // P-242: v2 = 실환율
   const added = qty > 0;
 
   return (

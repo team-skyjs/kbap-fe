@@ -108,6 +108,8 @@ export default function Scan() {
   const [photoOnly, setPhotoOnly] = useState<PhotoOnlyItem[]>([]); // idx=null — 리스트 전용
 
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
+  // P-242: v2 서버 실환율(null = 조회 실패 — 배지 생략 규약·undefined = v1 테이블)
+  const [fx, setFx] = useState<import('@/lib/exchange').ServerFx | undefined>(undefined);
   // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
   // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
   const [view, setView] = useState<ResultView>('list');
@@ -242,6 +244,7 @@ export default function Scan() {
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
+        setFx(res.fx); // P-242: v2 실환율 관통(스캔 1회 = 환율 1스냅샷)
         setView('list'); // P-138⑤: 기본=List (예진 8/6 오너 결정 — P-071 대체)
         setPhase('result');
       },
@@ -504,7 +507,9 @@ export default function Scan() {
       const items = listDishes
         .filter((d) => (cart.get(d.itemId) ?? 0) > 0)
         .map((d) => ({ nameKo: d.koreanName ?? d.rawMenuName, name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw, foodId: d.foodId ?? null }));
-      router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}` as Href);
+      // P-242: 스캔 세션의 서버 환율을 주문 카드에도 동승(fx 생략 = v1 테이블)
+      const fxParam = fx !== undefined ? `&fx=${encodeURIComponent(JSON.stringify(fx))}` : '';
+      router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}${fxParam}` as Href);
     };
 
     return (
@@ -567,6 +572,7 @@ export default function Scan() {
             <ScanRichList
               dishes={listDishes}
               currency={currency}
+              fx={fx}
               cart={cart}
               onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); bumpCart(d.itemId, 1); }}
               onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}

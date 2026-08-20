@@ -18,7 +18,7 @@ import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { scheduleReviewReminder } from '@/lib/push/pushAdapter';
-import { convertKrw } from '@/lib/exchange';
+import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
 
 export interface OrderItem {
@@ -38,6 +38,7 @@ export function FlippedOrderCard({
   avoidCodes,
   avoidNames,
   currency,
+  fx,
   stepper,
   onDone,
   t,
@@ -47,6 +48,7 @@ export function FlippedOrderCard({
   /** 리더 언어 재료명(미러 기피 줄) — codes와 같은 순서 */
   avoidNames: string[];
   currency: string;
+  fx?: ServerFx; // P-242: 스캔 발 주문 = v2 실환율 관통(상세 발 주문 = 테이블 폴백)
   /** 단일 모드(음식 상세)의 수량 스테퍼 슬롯 — Done 위에 렌더 */
   stepper?: React.ReactNode;
   onDone: () => void;
@@ -65,7 +67,7 @@ export function FlippedOrderCard({
   const lines = items.map((i) => orderSentenceKo(i.nameKo, i.qty));
   const avoid = avoidSentenceKo(avoidCodes);
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
-  const converted = totalKrw > 0 ? convertKrw(totalKrw, currency) : null;
+  const converted = totalKrw > 0 ? convertKrw(totalKrw, currency, fx) : null; // P-242
 
   const koCard = (big = false) => (
     <View style={{ gap: big ? 18 : 10 }}>

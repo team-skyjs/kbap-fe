@@ -21,7 +21,7 @@ import { FlippedOrderCard, type OrderItem } from '@/features/order/FlippedOrderC
 import { EVENTS, track } from '@/lib/analytics';
 
 export default function ScanOrder() {
-  const { items: itemsParam } = useLocalSearchParams<{ items: string }>();
+  const { items: itemsParam, fx: fxParam } = useLocalSearchParams<{ items: string; fx?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottom = useBottomInset();
@@ -37,6 +37,16 @@ export default function ScanOrder() {
       return [];
     }
   }, [itemsParam]);
+
+  // P-242: 스캔 세션 서버 실환율 — param 부재 = v1(테이블 폴백)
+  const fx = React.useMemo<import('@/lib/exchange').ServerFx | undefined>(() => {
+    if (fxParam == null) return undefined;
+    try {
+      return JSON.parse(fxParam) as import('@/lib/exchange').ServerFx;
+    } catch {
+      return undefined;
+    }
+  }, [fxParam]);
 
   const [currency, setCurrency] = React.useState('USD');
   React.useEffect(() => {
@@ -68,6 +78,7 @@ export default function ScanOrder() {
         avoidCodes={codes}
         avoidNames={codes.map((c) => ingCat.name(c))}
         currency={currency}
+        fx={fx}
         onDone={() => {
           // P-162: 완료 모달 확인 = 홈으로 (스캔 스택 정리 후 탭 홈)
           if (router.canDismiss()) router.dismissAll();

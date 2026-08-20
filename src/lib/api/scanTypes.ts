@@ -109,6 +109,7 @@ export interface ImageCompletePayload {
 export interface ScanPayload {
   degraded: boolean;
   results: ScanResultWire[];
-  /** P-219 v2: 서버 환율 스냅샷 — 채택은 v2 전면 전환 후 별도(P-218 주석 참조). */
+  /** P-219 → P-242 채택: v2 서버 실환율(frankfurter/ECB) — null = 조회 실패
+   *  (스캔 정상·배지 생략 규약, BE #182). 환산 = price ÷ krwPerUnit. */
   currency?: { code: string; krwPerUnit: number } | null;
 }

@@ -40,6 +40,8 @@ export interface ScanOutcome {
   items: ScanOverlayItem[];
   /** idx=null — 사진에서만 추출된 메뉴 (좌표 없음 → 리스트 전용, 숨김 금지). */
   photoOnly: PhotoOnlyItem[];
+  /** P-242: v2 서버 실환율 — null = 조회 실패(배지 생략)·undefined = v1(테이블 폴백). */
+  fx?: { code: string; krwPerUnit: number } | null;
 }
 
 /** P-153: 스캔 v2(서버 비전 OCR) — dev 계열 채널만(prod 서버 미배포, P-114 관례).
@@ -97,7 +99,8 @@ export async function postScan({ items, photo, currency }: ScanInput): Promise<S
     '| results =', JSON.stringify(merged.map((m) => ({ name: m.displayName, matched: m.matched, risk: m.risk, price: m.price }))),
     '| photoOnly =', photoOnly.length,
   );
-  return { degraded: payload.degraded, items: merged, photoOnly };
+  // P-242: v2 = 서버 환율 관통(null = 실패 규약 — 배지 생략), v1 = undefined(테이블)
+  return { degraded: payload.degraded, items: merged, photoOnly, ...(v2 ? { fx: payload.currency ?? null } : {}) };
 }
 
 export function useScan() {
