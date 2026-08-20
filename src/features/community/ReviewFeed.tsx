@@ -194,7 +194,10 @@ export function ReviewFeed() {
       />
 
       {/* P-211 ④: 타이틀 유지 — 브랜드 모드 + 센터 타이틀(공용 title 슬롯) */}
-      <StickyHeader hidden={hidden} mode="brand" title={t('tabs.community')} /> {/* P-225: 헤더 = 탭 라벨 키 재사용(Reviews) — 단일 소스 */}
+      {/* P-225: 헤더 = 탭 라벨 키 재사용(Reviews) — 단일 소스.
+          P-244: 같은 줄 주석 금지 — `/>`와 `{` 사이 공백이 JSX 텍스트 노드로 렌더되어
+          네이티브에서 "Text strings must be rendered within a <Text>" 에러(정적 잠금 유닛). */}
+      <StickyHeader hidden={hidden} mode="brand" title={t('tabs.community')} />
 
       {/* P-196 ②: 상태 블록 = 화면 기준 정중앙(4탭 공용 기준 — ScreenCenterFill) */}
       {!feed.isLoading && feed.isError ? (
