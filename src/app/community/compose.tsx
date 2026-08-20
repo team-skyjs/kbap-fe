@@ -453,7 +453,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   const eligNote = (
     <View style={[styles.eligNote, noticeHot && styles.eligNoteHot]} testID="picker-elig-note">
       <Text style={styles.eligNoteText}>{t('community.reviewEligibleNote')}</Text>
-      <Pressable style={styles.eligCta} hitSlop={6} onPress={() => { onClose(); router.push('/scan'); }} testID="picker-go-scan">
+      <Pressable style={styles.eligCta} hitSlop={6} onPress={() => { onClose(); router.navigate('/scan'); }} testID="picker-go-scan">
         <Text style={styles.eligCtaText}>{t('community.goScanCta')}</Text>
       </Pressable>
     </View>

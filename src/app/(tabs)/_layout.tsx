@@ -62,7 +62,7 @@ function AppTabBar({
         profile: t('tabs.profile'),
       }}
       onPress={(key) => navigate(KEY_TO_ROUTE[key])}
-      onScan={() => router.push('/scan')}
+      onScan={() => router.navigate('/scan')}
     />
   );
 }

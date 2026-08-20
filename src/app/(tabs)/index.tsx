@@ -169,7 +169,7 @@ export default function Home() {
 
             {/* scan CTA or empty block */}
             {hasScans ? (
-              <Pressable onPress={() => router.push('/scan')}>
+              <Pressable onPress={() => router.navigate('/scan')}>
                 <LinearGradient
                   colors={[C.primary, C.primary2]}
                   start={{ x: 0, y: 0 }}
@@ -195,7 +195,7 @@ export default function Home() {
                 <Text style={styles.emptyBody}>{t('home.emptyBody')}</Text>
                 {/* P-129: explore 제거·스캔 버튼 확대(멘토 피드백) */}
                 <View style={styles.emptyBtns}>
-                  <Btn icon={<IconScanLines size={17} color="#fff" />} onPress={() => router.push('/scan')}>
+                  <Btn icon={<IconScanLines size={17} color="#fff" />} onPress={() => router.navigate('/scan')}>
                     {t('home.scan')}
                   </Btn>
                 </View>

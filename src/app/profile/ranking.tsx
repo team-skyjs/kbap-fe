@@ -52,7 +52,7 @@ export default function RankingScreen() {
         {error && !rk ? (
           <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
         ) : (
-          rk && <RankingBody rk={rk} onScan={() => router.push('/scan' as Href)} />
+          rk && <RankingBody rk={rk} onScan={() => router.navigate('/scan' as Href)} />
         )}
       </Animated.ScrollView>
 

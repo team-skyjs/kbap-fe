@@ -35,7 +35,7 @@ jest.mock('expo-image-picker', () => ({}));
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useSegments: () => [],
-  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, navigate: mockPush, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({}),
   usePathname: () => '/community',
 }));
