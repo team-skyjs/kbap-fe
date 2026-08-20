@@ -278,7 +278,7 @@
     "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",
     "errOutage": "Layanan pembacaan menu sedang bermasalah sementara. Silakan coba lagi sebentar lagi.",
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
-    "stayHint": "Tunggu sebentar — keluar dari aplikasi bisa membuat hasilnya hilang.",
+    "stayHint": "Proses ini bisa memakan waktu 30–40 detik — keluar dari aplikasi dapat menghilangkan hasilnya.",
     "sortMenu": "Urutan menu",
     "sortSafety": "Risiko terendah dulu",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari."

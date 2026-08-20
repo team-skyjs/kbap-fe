@@ -278,7 +278,7 @@
     "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",
     "errOutage": "Dịch vụ đọc thực đơn tạm thời gặp sự cố. Vui lòng thử lại sau giây lát.",
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
-    "stayHint": "Chờ một chút — rời khỏi ứng dụng có thể làm mất kết quả.",
+    "stayHint": "Quá trình này có thể mất 30–40 giây — rời khỏi ứng dụng có thể làm mất kết quả.",
     "sortMenu": "Theo thực đơn",
     "sortSafety": "Rủi ro thấp trước",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới."

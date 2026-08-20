@@ -274,7 +274,7 @@
     "errBusy": "We couldn't read the menu. Please try again in a moment.",
     "errOutage": "The menu-reading service is temporarily unavailable. Please try again shortly.",
     "errUpload": "We couldn't upload the photo. Please try again.",
-    "stayHint": "Hang tight — leaving the app may lose your result.",
+    "stayHint": "This can take 30–40 seconds — leaving the app may lose your result.",
     "sortMenu": "Menu order",
     "sortSafety": "Lowest risk first",
     "missNote": "Not in our database yet — it should be added within a few days."

@@ -661,7 +661,8 @@ export default function Scan() {
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         <Text style={styles.errStage}>{t(`scan.stage.${stage}`)}</Text>
         <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
-        {!!error?.detail && <Text style={styles.errDetail} numberOfLines={4}>{error.detail}</Text>}
+        {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
+            노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
           {/* P-219: 분기별 행동 — 메뉴판 아님·촬영 실패 = 재촬영(사용자 행동),
               인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
@@ -967,7 +968,6 @@ const styles = StyleSheet.create({
   // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
   importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
   errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primaryText, textTransform: 'uppercase' },
-  errDetail: { fontFamily: font.body, fontSize: 11, color: 'rgba(255,255,255,0.5)', textAlign: 'center', paddingHorizontal: 8 },
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
   // P-062② D2 스캐닝 오버레이

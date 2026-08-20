@@ -278,7 +278,7 @@
     "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
     "errOutage": "El servicio de lectura del menú no está disponible temporalmente. Inténtalo de nuevo en unos momentos.",
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
-    "stayHint": "Espera un momento: si sales de la app, puedes perder el resultado.",
+    "stayHint": "Puede tardar entre 30 y 40 segundos; si sales de la app, podrías perder el resultado.",
     "sortMenu": "Orden del menú",
     "sortSafety": "Menor riesgo primero",
     "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días."
