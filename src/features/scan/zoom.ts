@@ -11,9 +11,12 @@ export function clampScale(s: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, s));
 }
 
-/** 축 하나의 팬 클램프 — 확대로 생긴 여분(절반)까지만. scale<=1이면 0. */
-export function clampPan(t: number, scale: number, dim: number): number {
+/** 축 하나의 팬 클램프 — 스케일된 콘텐츠가 컨테이너를 넘는 여분(절반)까지만.
+ *  P-248: contain 레터박스 대응 — contentDim(실표시 이미지 치수)과 containerDim을
+ *  분리. 콘텐츠가 컨테이너에 다 들어오면 팬 0(레터박스 여백으로 안 끌려간다).
+ *  cover(content=container)면 기존 (scale-1)*dim/2와 동일 — 하위호환. */
+export function clampPan(t: number, scale: number, contentDim: number, containerDim: number = contentDim): number {
   'worklet'; // P-065: 동상
-  const max = Math.max(0, ((scale - 1) * dim) / 2);
+  const max = Math.max(0, (contentDim * scale - containerDim) / 2);
   return Math.min(max, Math.max(-max, t));
 }

@@ -13,6 +13,14 @@ type Photo = { uri: string; width: number; height: number } | null;
 
 export function ScanResultOverlay({ photo }: { photo: Photo }) {
   const [size, setSize] = React.useState({ w: 0, h: 0 });
+  // P-248: contain 실표시 치수 — 팬 클램프를 레터박스가 아닌 이미지 콘텐츠 기준으로.
+  // 사진 비율 미상(0 등)이면 컨테이너 치수 폴백(cover 시절 시맨틱).
+  const fit =
+    photo && photo.width > 0 && photo.height > 0 && size.w > 0 && size.h > 0
+      ? Math.min(size.w / photo.width, size.h / photo.height)
+      : 0;
+  const contentW = fit > 0 ? photo!.width * fit : size.w;
+  const contentH = fit > 0 ? photo!.height * fit : size.h;
 
   // P-064④: 핀치 줌+팬+더블탭 — 스케일 1~4·경계 팬 클램프 (무변 유지)
   const scale = useSharedValue(1);
@@ -28,8 +36,8 @@ export function ScanResultOverlay({ photo }: { photo: Photo }) {
     })
     .onEnd(() => {
       savedScale.value = scale.value;
-      tx.value = clampPan(tx.value, scale.value, size.w);
-      ty.value = clampPan(ty.value, scale.value, size.h);
+      tx.value = clampPan(tx.value, scale.value, contentW, size.w);
+      ty.value = clampPan(ty.value, scale.value, contentH, size.h);
       savedTx.value = tx.value;
       savedTy.value = ty.value;
     });
@@ -38,8 +46,8 @@ export function ScanResultOverlay({ photo }: { photo: Photo }) {
     .maxPointers(2)
     .onUpdate((e) => {
       if (scale.value <= 1) return;
-      tx.value = clampPan(savedTx.value + e.translationX, scale.value, size.w);
-      ty.value = clampPan(savedTy.value + e.translationY, scale.value, size.h);
+      tx.value = clampPan(savedTx.value + e.translationX, scale.value, contentW, size.w);
+      ty.value = clampPan(savedTy.value + e.translationY, scale.value, contentH, size.h);
     })
     .onEnd(() => {
       savedTx.value = tx.value;
@@ -72,7 +80,9 @@ export function ScanResultOverlay({ photo }: { photo: Photo }) {
       <GestureDetector gesture={gestures}>
         <Animated.View style={[StyleSheet.absoluteFill, zoomStyle]}>
           {photo ? (
-            <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            /* P-248: cover → contain — 세로·가로 원본 전체 표시(상하/좌우 레터박스,
+               어두운 배경 = P-187 진행 프리뷰와 동일 문법). 잘림 = 결함(예진 실기). */
+            <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} resizeMode="contain" />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.paper]} />
           )}
