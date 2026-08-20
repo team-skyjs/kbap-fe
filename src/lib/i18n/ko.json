@@ -203,7 +203,7 @@
     "foodSheetCaption": "음식 태그 최대 3개, K-Bap 음식 데이터베이스",
     "placeSheetCaption": "게시글당 장소 1곳, 한국 전역의 장소",
     "lockedTitle": "커뮤니티가 곧 열려요",
-    "lockedBody": "다른 여행자들과 팁과 발견을 나누는 공간 — 곧 만나요.",
+    "lockedBody": "다른 여행자들과 팁과 새로운 발견을 나누는 공간이에요. 곧 만나요.",
     "sectionRecentlyScanned": "최근 스캔",
     "searchAllFoods": "전체 음식에서 찾기"
   },
@@ -339,9 +339,9 @@
     "presetFillTitle": "못 먹는 재료를 추가할까요?",
     "presetFillBody": "선택한 식단·종교·알레르기에 맞는 재료를 추가해요. 이미 등록한 재료는 지워지지 않아요.",
     "presetFillYes": "성분 추가",
-    "dietUncheckHint": "체크를 해제하면 카테고리는 꺼지지만, 이미 회피 목록에 담긴 성분은 남아요 — 필요하면 회피 목록에서 직접 빼 주세요.",
+    "dietUncheckHint": "체크를 해제하면 선택한 항목은 꺼져요. 이미 추가된 못 먹는 재료는 그대로 남아요. 필요하면 목록에서 직접 빼 주세요.",
     "dietSavedTitle": "식이 정보가 바뀌었어요",
-    "dietSavedBody": "이에 맞게 못 먹는 재료도 수정할까요?",
+    "dietSavedBody": "못 먹는 재료 목록도 확인하고 수정할까요?",
     "dietSavedYes": "못 먹는 재료 수정",
     "dietSavedNo": "완료"
   },
@@ -475,7 +475,7 @@
     "sort_rating_high": "별점 높은 순",
     "sort_rating_low": "별점 낮은 순",
     "sort_food_review_count": "리뷰 많은 음식 순",
-    "sort_helpful": "도움돼요 순",
+    "sort_helpful": "도움 많이 된 순",
     "ratingAll": "전체 별점",
     "ratingMin": "{{min}}점 이상"
   },
