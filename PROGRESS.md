@@ -1344,3 +1344,9 @@
 
 ## 스캔 진입 연타 가드 (2026-08-21, P-246)
 - [x] 진입 5표면 push('/scan') → navigate 전환(StackRouter 계약 = 공용 가드) + 계약 실측·PUSH 대조군·잔존 0 전수 잠금 유닛 — 0101264, teamtest OTA(ios bd6b4f81·and 4a18d450).
+
+## 스캔 QA 3건 (2026-08-21, P-247·248·249)
+- [x] P-249 환산 접두 '= '(공백 대칭) — bd08c94.
+- [x] P-248 Photo 뷰 cover→contain 레터박스 + 콘텐츠 기준 팬 클램프 일반화 — b1acd9c.
+- [x] P-247 stayHint 30~40초 결합 ×10 + 🔴 error.detail(BE 원문) 렌더 삭제·잔존 0 잠금 — dba5371.
+- [x] tsc 0 · jest 140스위트 893/893 · teamtest OTA 일괄(ios a83e3d73·and 15e90d01).
