@@ -1335,3 +1335,6 @@
 - [x] P-242 환율 실시간 — convertKrw fx 인자(price ÷ krwPerUnit·null = 배지 생략·0/NaN 방어), 스캔→행→주문 카드 관통, 30종 정합(VND·RUB·TWD 제거 = USD 조용한 강등·13개국 매핑 추가), 테이블 = v1 폴백 전용 — 227be7b.
 - [x] P-241 스캔 2.0 — similarFood 전면 철거(잔존 0 잠금)·행 썸네일 = imageRef 인라인(비매칭 = 서버 디폴트·URL만 통과)·SCAN-006 outage 분기(errOutage ×10·fail_reason=server) — 8157bc3.
 - [x] tsc 0 · jest 136스위트 876/876 · teamtest OTA 일괄(ios b633e457·and 8213f663).
+
+## 리뷰 피드 콘솔 에러 핫픽스 (2026-08-21, P-244)
+- [x] ReviewFeed 같은 줄 주석 공백 = JSX 텍스트 노드 렌더 → 별도 줄 이동 + .tsx 전수 정적 잠금 유닛 — 7605422, teamtest OTA(ios 1b3f84d5·and c4503d73, K-32~34 f505191 동승).
