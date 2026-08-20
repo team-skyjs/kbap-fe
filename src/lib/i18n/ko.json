@@ -236,7 +236,8 @@
       "be": "서비스",
       "notMenu": "메뉴판 아님",
       "busy": "인식",
-      "upload": "업로드"
+      "upload": "업로드",
+      "outage": "서비스 장애"
     },
     "retake": "다시 찍기",
     "gallery": "갤러리에서 가져오기",
@@ -265,7 +266,6 @@
     "cameraHintLandscape": "옆으로 긴 메뉴판은 가로가 잘 맞아요",
     "landscapeBadge": "가로 모드",
     "launcherHint": "메뉴판을 찍으면 모든 메뉴를 내 프로필과 대조해요.",
-    "similarSuggest": "비슷한 메뉴(정확히 일치하지 않음):",
     "retakeTitle": "다시 스캔할까요?",
     "retakeBody": "지금 결과가 사라져요.",
     "retakeBodyWithCart": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
@@ -273,6 +273,7 @@
     "loadingPhoto": "사진 불러오는 중…",
     "errNotMenu": "메뉴판으로 보이지 않아요. 다시 찍어 주세요.",
     "errBusy": "메뉴를 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
+    "errOutage": "메뉴 인식 서비스에 일시적인 문제가 있어요. 잠시 후 다시 시도해 주세요.",
     "errUpload": "사진을 올리지 못했어요. 다시 시도해 주세요.",
     "stayHint": "잠시만요. 앱을 벗어나면 결과를 놓칠 수 있어요.",
     "sortMenu": "메뉴판 순",

@@ -47,15 +47,6 @@ export interface ScanRequest {
   items: ScanReqItem[];
 }
 
-/** P-153(스캔 v2): 미등록 메뉴의 유사 등록 음식 제안 — X-API-Version 2026.08.07 응답 한정. */
-export interface SimilarFoodWire {
-  foodId: number;
-  name?: string | null;
-  koreanName?: string | null;
-  description?: string | null;
-  imageRef?: string | null;
-}
-
 /** P-219 v2: 메뉴별 회피 성분 겹침. `overlapped=true`만 표시(전체 81종 나열 금지). */
 export interface AvoidanceOverlapWire {
   code: string;
@@ -73,8 +64,10 @@ export interface ScanResultWire {
   name?: string | null; // display name (ko for now; localizes once auth lands)
   koreanName?: string | null;
   price?: number | null; // 메뉴판 표기 가격(KRW 정수), 미표기 = null — 응답 전용
-  /** P-153 v2: matched=false 항목의 유사 음식 폴백(v1 응답엔 부재). */
-  similarFood?: SimilarFoodWire | null;
+  /** P-241(BE #180, KB-343): 음식 사진 URL — 매칭 = 대표 이미지, 비매칭·부재 =
+   *  디폴트 음식 이미지(서버가 항상 채움). v1 응답엔 부재. similarFood는 서버
+   *  필드 소멸로 철거(P-241). */
+  imageRef?: string | null;
   /** P-219 v2: null = 온보딩 미완료 회원 · [] = 기피 미등록 or matched=false. */
   avoidances?: AvoidanceOverlapWire[] | null;
 }

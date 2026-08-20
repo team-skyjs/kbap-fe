@@ -1,6 +1,6 @@
 /**
  * P-219(KB-29): 스캔 v2 — 회피 겹침(avoidances) 매핑·false-safe 강등,
- * 에러 3분기(BE code 기반), similarFood 정책, OCR 미호출 경로 잠금.
+ * 에러 분기(BE code 기반), OCR 미호출 경로 잠금. (similarFood는 P-241 철거)
  */
 jest.mock('@/lib/flags', () => ({ FLAGS: { scanV2: true }, isProdChannel: () => false }));
 
@@ -58,7 +58,7 @@ describe('⑥ avoidances — 겹친 것만·null/빈 배열 구분', () => {
   });
 });
 
-describe('⑤ ⑦ 에러 3분기 · similarFood · OCR 미호출 — 소스 잠금', () => {
+describe('⑤ ⑦ 에러 분기 · OCR 미호출 — 소스 잠금', () => {
   const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
   it('BE code로 분기(HTTP 상태 아님) — SCAN-003/002/001 각각 다른 안내', () => {
@@ -85,13 +85,6 @@ describe('⑤ ⑦ 에러 3분기 · similarFood · OCR 미호출 — 소스 잠�
     expect(read('src/lib/flags.ts')).toContain('scanV2: true');
   });
 
-  it('similarFood = matched=false일 때만 링크로 노출(행 판정엔 미이식 — 유사 ≠ 동일)', () => {
-    expect(one({ matched: true, similarFood: { foodId: 9, name: 'Other' } }).similar).toBeNull();
-    const un = one({ matched: false, riskLevel: 'UNKNOWN', similarFood: { foodId: 9, name: 'Other' } });
-    expect(un.similar).toEqual({ foodId: '9', name: 'Other', koreanName: null });
-    expect(un.risk).toBe('unable'); // 유사 제안이 있어도 판정은 unable 유지
-    expect(read('src/features/scan/ScanRichList.tsx')).toContain('{!dish.matched && dish.similar && (');
-  });
 
   it('P-223: 회피 표시는 칩 줄 1곳으로 통합 — 구 avoidances 전용 섹션 소멸', () => {
     const list = read('src/features/scan/ScanRichList.tsx');

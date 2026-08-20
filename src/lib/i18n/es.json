@@ -236,7 +236,8 @@
       "be": "Servicio",
       "notMenu": "No es un menú",
       "busy": "Reconocimiento",
-      "upload": "Subida"
+      "upload": "Subida",
+      "outage": "Interrupción del servicio"
     },
     "retake": "Repetir",
     "gallery": "Importar de la galería",
@@ -265,7 +266,6 @@
     "cameraHintLandscape": "Los menús anchos caben mejor en horizontal",
     "landscapeBadge": "Horizontal",
     "launcherHint": "Fotografía el menú y compararemos cada plato con tu perfil.",
-    "similarSuggest": "Plato similar (no es coincidencia exacta):",
     "retakeTitle": "¿Escanear de nuevo?",
     "retakeBody": "Se descartarán los resultados actuales.",
     "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
@@ -273,6 +273,7 @@
     "loadingPhoto": "Cargando foto…",
     "errNotMenu": "Esto no parece un menú. Vuelve a tomar la foto.",
     "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
+    "errOutage": "El servicio de lectura del menú no está disponible temporalmente. Inténtalo de nuevo en unos momentos.",
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
     "stayHint": "Espera un momento: si sales de la app, puedes perder el resultado.",
     "sortMenu": "Orden del menú",

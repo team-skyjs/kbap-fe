@@ -469,7 +469,7 @@ export default function Scan() {
         displayName: it.displayName,
         koreanName: it.koreanName,
         priceKrw: it.price, // 서버 제공값 그대로 — OCR 추정가 대체, null=미표시 (P-002)
-        similar: it.similar, // P-153 v2
+        imageUrl: it.imageUrl, // P-241 v2: 행 썸네일(비매칭 = 서버 디폴트)
         avoidances: it.avoidances, // P-219 v2: 메뉴별 회피 겹침
       }];
     });
@@ -486,7 +486,7 @@ export default function Scan() {
       foodId: p.foodId,
       displayName: p.displayName,
       koreanName: p.koreanName,
-      similar: p.similar, // P-153 v2: 미등록 유사 제안(링크 전용 — 판정 무관)
+      imageUrl: p.imageUrl, // P-241 v2
       avoidances: p.avoidances, // P-219 v2
     }));
     const allDishes = [...resultDishes, ...photoDishes];
@@ -578,7 +578,6 @@ export default function Scan() {
               onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
-              onOpenSimilar={(foodId) => router.push(`/food/${foodId}?src=scan` as Href)} // P-153: 유사 제안 → 상세
               t={t}
             />
           </ScrollView>
@@ -668,7 +667,7 @@ export default function Scan() {
               인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
           {/* P-222 재량: network도 재시도 대상 — 사진은 그대로이고 연결만 회복하면 되는
               상황이라 "재촬영"보다 "재시도"가 맞다(대기 중 이탈로 끊긴 경우 포함). */}
-          {stage === 'busy' || stage === 'upload' || stage === 'network' ? (
+          {stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
             <Btn onPress={() => photo && scanImage(photo)} testID="scan-err-retry">{t('common.retry')}</Btn>
           ) : (
             <Btn variant="ghost" onPress={() => setPhase('camera')} testID="scan-err-retake">{t('scan.retake')}</Btn>

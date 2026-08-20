@@ -8,7 +8,7 @@
  * 섞여 있다). BE `message`는 사용자 노출 금지 — 화면은 아래 i18n 키만 렌더.
  */
 
-export type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be' | 'notMenu' | 'busy' | 'upload';
+export type ErrorStage = 'capture' | 'ocr' | 'empty' | 'network' | 'be' | 'notMenu' | 'busy' | 'upload' | 'outage';
 
 export const ERROR_MSG: Record<ErrorStage, string> = {
   capture: 'scan.errCapture',
@@ -19,6 +19,7 @@ export const ERROR_MSG: Record<ErrorStage, string> = {
   notMenu: 'scan.errNotMenu', // SCAN-003(400) — 메뉴판 아님: 사용자 행동 필요(재촬영)
   busy: 'scan.errBusy', // SCAN-002(503) — 인식 실패: 사용자 잘못 아님(잠시 후 재시도)
   upload: 'scan.errUpload', // SCAN-001(400) — 이미지 접근 불가: 업로드부터 재시도
+  outage: 'scan.errOutage', // SCAN-006(503, P-241) — LLM 서버 장애: "일시적 서비스 문제" 톤(SCAN-002 인식 실패와 분리)
 };
 
 /** BE 코드 → 화면 분기. 미지 코드는 기존 'be'(일반 서버 오류)로. */
@@ -31,6 +32,8 @@ export function stageForCode(code: string | undefined, msg: string): ErrorStage 
       return 'busy';
     case 'SCAN-001':
       return 'upload';
+    case 'SCAN-006': // P-241(BE #180): LLM 서버 장애 — 인식 실패(SCAN-002)와 분리
+      return 'outage';
     default:
       return 'be';
   }
@@ -57,6 +60,7 @@ export function failReasonForStage(stage: ErrorStage): FailReason {
       return 'network';
     case 'be': // 일반 서버 오류
     case 'busy': // SCAN-002 = 서버측 인식 실패(사용자 잘못 아님)
+    case 'outage': // SCAN-006 = LLM 서버 장애(P-241 — 기존 enum 재사용, 신설 불요 판단)
       return 'server';
     default: // capture·empty(기기 단 실패)·ocr
       return 'ocr';

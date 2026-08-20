@@ -33,8 +33,8 @@ export interface ResultDish extends MenuDish {
   foodId: string | null; // detail route param when matched
   displayName: string; // BE name (rawMenuName fallback) — pill/list label
   koreanName: string | null;
-  /** P-153 v2: 미등록 항목 유사 제안(링크 전용 — 행 판정 unable 불변). */
-  similar?: import('@/lib/api/scanAdapter').SimilarFood | null;
+  /** P-241 v2: 행 썸네일 URL(비매칭 = 디폴트 — 서버가 채움). v1 = null. */
+  imageUrl?: string | null;
   /** P-219 v2: 겹친 회피 성분(overlapped=true만) — 비면 섹션 자체 미렌더. */
   avoidances?: import('@/lib/api/scanAdapter').AvoidanceHit[];
 }

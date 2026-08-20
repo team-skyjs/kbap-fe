@@ -236,7 +236,8 @@
       "be": "Dịch vụ",
       "notMenu": "Không phải thực đơn",
       "busy": "Nhận dạng",
-      "upload": "Tải lên"
+      "upload": "Tải lên",
+      "outage": "Sự cố dịch vụ"
     },
     "retake": "Chụp lại",
     "gallery": "Chọn từ thư viện",
@@ -265,7 +266,6 @@
     "cameraHintLandscape": "Thực đơn ngang chụp ngang sẽ vừa hơn",
     "landscapeBadge": "Ngang",
     "launcherHint": "Chụp thực đơn — chúng tôi sẽ đối chiếu từng món với hồ sơ của bạn.",
-    "similarSuggest": "Món tương tự (không khớp chính xác):",
     "retakeTitle": "Quét lại?",
     "retakeBody": "Kết quả hiện tại sẽ bị xóa.",
     "retakeBodyWithCart": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
@@ -273,6 +273,7 @@
     "loadingPhoto": "Đang tải ảnh…",
     "errNotMenu": "Ảnh này không giống thực đơn. Hãy chụp lại nhé.",
     "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",
+    "errOutage": "Dịch vụ đọc thực đơn tạm thời gặp sự cố. Vui lòng thử lại sau giây lát.",
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
     "stayHint": "Chờ một chút — rời khỏi ứng dụng có thể làm mất kết quả.",
     "sortMenu": "Theo thực đơn",

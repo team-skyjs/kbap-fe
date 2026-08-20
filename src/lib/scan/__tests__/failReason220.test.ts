@@ -11,6 +11,7 @@ const CASES: { label: string; code?: string; msg: string; stage: ErrorStage; rea
   { label: 'SCAN-003 메뉴판 아님(사용자 촬영 문제)', code: 'SCAN-003', msg: 'not a menu', stage: 'notMenu', reason: 'not_menu' },
   { label: 'SCAN-001 이미지 접근 불가', code: 'SCAN-001', msg: 'image', stage: 'upload', reason: 'upload' },
   { label: 'SCAN-002 서버 인식 실패(사용자 잘못 아님)', code: 'SCAN-002', msg: 'unavailable', stage: 'busy', reason: 'server' },
+  { label: 'SCAN-006 LLM 서버 장애(P-241 — 인식 실패와 분리·재시도 안내)', code: 'SCAN-006', msg: 'llm outage', stage: 'outage', reason: 'server' },
   { label: '통신 실패', code: undefined, msg: 'NETWORK: timeout', stage: 'network', reason: 'network' },
   { label: '미지 코드 = 일반 서버 오류', code: 'COMMON-002', msg: 'bad request', stage: 'be', reason: 'server' },
 ];
@@ -22,6 +23,13 @@ it.each(CASES)('$label → stage=$stage → fail_reason=$reason', ({ code, msg, 
 
 it('v1 온디바이스 OCR 실패 계열(capture·empty·ocr) = ocr — v2에선 발생하지 않는다', () => {
   for (const s of ['capture', 'empty', 'ocr'] as ErrorStage[]) expect(failReasonForStage(s)).toBe('ocr');
+});
+
+it('P-241: outage는 별도 stage(전용 안내문) — 계측은 server 재사용(신설 불요 판단)', () => {
+  expect(ERROR_MSG.outage).toBe('scan.errOutage'); // SCAN-002(errBusy)와 문구 분리
+  // 화면 분기 — outage도 재시도 대상(같은 사진 유지·일시 장애)
+  const fs = require('fs');
+  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("stage === 'outage'");
 });
 
 it('최종 5종 전부 도달 가능 — 값 하나라도 누락되면 차트 축이 비뚤어진다', () => {

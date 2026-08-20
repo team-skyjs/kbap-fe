@@ -12,7 +12,7 @@
  *   when foodId is present — branch on `matched`, never foodId (Swagger 명시).
  */
 import type { RiskState } from '@/lib/theme';
-import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, ScanResultWire, SimilarFoodWire } from './scanTypes';
+import type { AvoidanceOverlapWire, BeRiskLevel, BoundingBox, ScanResultWire } from './scanTypes';
 
 const RISK_MAP: Record<BeRiskLevel, RiskState> = {
   SAFE: 'safe',
@@ -43,8 +43,9 @@ export interface ScanOverlayItem extends ScannedItem {
   koreanName: string | null;
   /** 서버 판독 가격(KRW 정수, 제공값 그대로). 미표기/비정상 wire 값 = null = 미표시. */
   price: number | null;
-  /** P-153 v2: 미등록 항목 유사 제안(링크 전용). v1/매칭 항목 = null. */
-  similar: SimilarFood | null;
+  /** P-241 v2: 행 썸네일 URL(매칭 = 대표·비매칭 = 디폴트, 서버가 항상 채움).
+   *  v1/비-URL 값 = null(상세 프리페치 photoUrl 폴백). */
+  imageUrl: string | null;
   /** P-219 v2: 겹친 회피 성분(overlapped=true만). 빈 배열 = 미표시. */
   avoidances: AvoidanceHit[];
 }
@@ -77,21 +78,6 @@ function mapAvoidances(w: AvoidanceOverlapWire[] | null | undefined): AvoidanceH
     });
 }
 
-/** P-153: 유사 음식 제안(v2) — 상세 진입용 최소 필드. ⚠️ 위험도는 운반하지
- *  않는다: 유사 ≠ 동일 — 행 판정에 이식 금지(헌법 III, false-safe). */
-export interface SimilarFood {
-  foodId: string;
-  name: string;
-  koreanName: string | null;
-}
-
-function mapSimilar(w: SimilarFoodWire | null | undefined): SimilarFood | null {
-  if (!w || w.foodId == null) return null;
-  const name = w.name ?? w.koreanName;
-  if (!name) return null; // 표시명 없으면 제안 불성립
-  return { foodId: String(w.foodId), name, koreanName: w.koreanName ?? null };
-}
-
 /** 공통 판정 매핑 — matched=false 는 wire 값 무관 unable (false-safe, 헌법 III). */
 function verdict(r: ScanResultWire) {
   return {
@@ -101,8 +87,8 @@ function verdict(r: ScanResultWire) {
     koreanName: r.koreanName ?? null,
     // 가격은 제공값 그대로(환율·추정 금지) — 숫자가 아니면 미표기와 동일하게 null
     price: typeof r.price === 'number' && Number.isFinite(r.price) ? r.price : null,
-    // P-153 v2: 미등록 항목의 유사 제안(제안 링크 전용 — 행 판정과 무관)
-    similar: r.matched ? null : mapSimilar(r.similarFood),
+    // P-241 v2: 행 썸네일 — 절대 URL만 통과(refToUrl 규칙과 동일·비-URL = null)
+    imageUrl: r.imageRef && /^https?:\/\//.test(r.imageRef) ? r.imageRef : null,
     // P-219 v2: 내 회피 재료 중 겹치는 것만(빈 배열 = 표시 안 함 — 빈 컨테이너 금지)
     avoidances: mapAvoidances(r.avoidances),
   } as const;
@@ -133,8 +119,8 @@ export interface PhotoOnlyItem {
   displayName: string;
   koreanName: string | null;
   price: number | null;
-  /** P-153 v2: 미등록 항목 유사 제안(링크 전용). */
-  similar: SimilarFood | null;
+  /** P-241 v2: 행 썸네일 URL(비매칭 = 디폴트 이미지 — 서버가 채움). */
+  imageUrl: string | null;
   /** P-219 v2: 겹친 회피 성분(overlapped=true만). 빈 배열 = 미표시. */
   avoidances: AvoidanceHit[];
 }

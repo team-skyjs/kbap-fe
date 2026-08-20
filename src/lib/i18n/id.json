@@ -236,7 +236,8 @@
       "be": "Layanan",
       "notMenu": "Bukan menu",
       "busy": "Pengenalan",
-      "upload": "Unggah"
+      "upload": "Unggah",
+      "outage": "Gangguan layanan"
     },
     "retake": "Ambil ulang",
     "gallery": "Impor dari galeri",
@@ -265,7 +266,6 @@
     "cameraHintLandscape": "Menu lebar lebih pas dalam mode lanskap",
     "landscapeBadge": "Lanskap",
     "launcherHint": "Foto menunya — kami cocokkan setiap hidangan dengan profil Anda.",
-    "similarSuggest": "Hidangan serupa (bukan padanan persis):",
     "retakeTitle": "Pindai ulang?",
     "retakeBody": "Hasil saat ini akan dihapus.",
     "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
@@ -273,6 +273,7 @@
     "loadingPhoto": "Memuat foto…",
     "errNotMenu": "Ini sepertinya bukan menu. Coba foto ulang.",
     "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",
+    "errOutage": "Layanan pembacaan menu sedang bermasalah sementara. Silakan coba lagi sebentar lagi.",
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
     "stayHint": "Tunggu sebentar — keluar dari aplikasi bisa membuat hasilnya hilang.",
     "sortMenu": "Urutan menu",

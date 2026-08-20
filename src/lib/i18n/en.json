@@ -232,7 +232,8 @@
       "be": "Service",
       "notMenu": "Not a menu",
       "busy": "Recognition",
-      "upload": "Upload"
+      "upload": "Upload",
+      "outage": "Service outage"
     },
     "retake": "Retake",
     "gallery": "Import from gallery",
@@ -261,7 +262,6 @@
     "cameraHintLandscape": "Wide menus fit better in landscape",
     "landscapeBadge": "Landscape",
     "launcherHint": "Snap the menu — we'll check every dish against your profile.",
-    "similarSuggest": "Similar dish (not an exact match):",
     "retakeTitle": "Scan again?",
     "retakeBody": "Your current results will be discarded.",
     "retakeBodyWithCart": "Your results and {{count}} added item(s) will be discarded.",
@@ -269,6 +269,7 @@
     "loadingPhoto": "Loading photo…",
     "errNotMenu": "That doesn't look like a menu. Try taking the photo again.",
     "errBusy": "We couldn't read the menu. Please try again in a moment.",
+    "errOutage": "The menu-reading service is temporarily unavailable. Please try again shortly.",
     "errUpload": "We couldn't upload the photo. Please try again.",
     "stayHint": "Hang tight — leaving the app may lose your result.",
     "sortMenu": "Menu order",

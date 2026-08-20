@@ -236,7 +236,8 @@
       "be": "服务",
       "notMenu": "非菜单",
       "busy": "识别",
-      "upload": "上传"
+      "upload": "上传",
+      "outage": "服务故障"
     },
     "retake": "重拍",
     "gallery": "从相册导入",
@@ -265,7 +266,6 @@
     "cameraHintLandscape": "宽幅菜单横屏更合适",
     "landscapeBadge": "横屏",
     "launcherHint": "拍下菜单，我们会将每道菜与您的档案比对。",
-    "similarSuggest": "相似的已登记菜品(非精确匹配):",
     "retakeTitle": "重新扫描?",
     "retakeBody": "当前结果将被清除。",
     "retakeBodyWithCart": "当前结果和已加入的{{count}}项将被清除。",
@@ -273,6 +273,7 @@
     "loadingPhoto": "正在加载照片…",
     "errNotMenu": "这看起来不像菜单，请重新拍照。",
     "errBusy": "未能识别菜单，请稍后再试。",
+    "errOutage": "菜单识别服务暂时不可用，请稍后再试。",
     "errUpload": "照片上传失败，请重试。",
     "stayHint": "请稍候 — 离开应用可能会丢失结果。",
     "sortMenu": "菜单顺序",

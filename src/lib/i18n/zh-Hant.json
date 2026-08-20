@@ -236,7 +236,8 @@
       "be": "服務",
       "notMenu": "非菜單",
       "busy": "辨識",
-      "upload": "上傳"
+      "upload": "上傳",
+      "outage": "服務故障"
     },
     "retake": "重拍",
     "gallery": "從相簿匯入",
@@ -265,7 +266,6 @@
     "cameraHintLandscape": "寬幅菜單橫屏更合適",
     "landscapeBadge": "橫屏",
     "launcherHint": "拍下菜單,我們會將每道菜與您的檔案比對。",
-    "similarSuggest": "相似的已登記菜品(非精確匹配):",
     "retakeTitle": "重新掃描?",
     "retakeBody": "當前結果將被清除。",
     "retakeBodyWithCart": "當前結果和已加入的{{count}}項將被清除。",
@@ -273,6 +273,7 @@
     "loadingPhoto": "正在載入照片…",
     "errNotMenu": "這看起來不像菜單，請重新拍照。",
     "errBusy": "未能識別菜單，請稍後再試。",
+    "errOutage": "菜單識別服務暫時無法使用，請稍後再試。",
     "errUpload": "照片上傳失敗，請重試。",
     "stayHint": "請稍候 — 離開應用程式可能會遺失結果。",
     "sortMenu": "菜單順序",

@@ -115,31 +115,35 @@ describe('mapRisk', () => {
 });
 
 
-/* ---- P-153: similarFood(v2) — 링크 전용, 행 판정 불변 ---- */
-describe('P-153 similarFood', () => {
-  it('matched=false + similarFood → similar 매핑, 행 판정은 여전히 unable (위험도 이식 금지)', () => {
+/* ---- P-241(KB-343): imageRef 썸네일 — 매칭/비매칭/부재 · similarFood 철거 ---- */
+describe('P-241 imageRef', () => {
+  it('imageRef(절대 URL) → imageUrl 그대로 — 비매칭 행도 값 유지(서버 디폴트 이미지)', () => {
     const out = photoOnlyResults([
-      { idx: null, matched: false, foodId: null, riskLevel: 'SAFE', name: '수제비', koreanName: null, price: null,
-        similarFood: { foodId: 12, name: 'Sujebi', koreanName: '수제비', description: 'd', imageRef: 'x' } } as never,
+      { idx: null, matched: false, foodId: null, riskLevel: 'UNKNOWN', name: '수제비', koreanName: null, price: null,
+        imageRef: 'https://cdn.kbap.site/images/default-food.webp' } as never,
     ]);
-    expect(out[0].risk).toBe('unable'); // 유사 ≠ 동일 — false-safe 방지(헌법 III)
-    expect(out[0].similar).toEqual({ foodId: '12', name: 'Sujebi', koreanName: '수제비' });
+    expect(out[0].risk).toBe('unable'); // 썸네일이 있어도 판정은 unable 유지(헌법 III)
+    expect(out[0].imageUrl).toBe('https://cdn.kbap.site/images/default-food.webp');
   });
 
-  it('matched=true → similar 항상 null · similarFood 부재/name 없음 → null (v1 하위호환)', () => {
-    const matched = photoOnlyResults([
-      { idx: null, matched: true, foodId: 3, riskLevel: 'SAFE', name: 'A', koreanName: null, price: null,
-        similarFood: { foodId: 9, name: 'B' } } as never,
-    ]);
-    expect(matched[0].similar).toBe(null);
+  it('부재(v1)·비-URL(bare 파일명) = null — refToUrl 규칙 동일(렌더 불가 값 차단)', () => {
     const v1 = photoOnlyResults([
-      { idx: null, matched: false, foodId: null, riskLevel: 'UNKNOWN', name: 'C', koreanName: null, price: null } as never,
+      { idx: null, matched: true, foodId: 3, riskLevel: 'SAFE', name: 'A', koreanName: null, price: null } as never,
     ]);
-    expect(v1[0].similar).toBe(null);
-    const noName = photoOnlyResults([
-      { idx: null, matched: false, foodId: null, riskLevel: 'UNKNOWN', name: 'D', koreanName: null, price: null,
-        similarFood: { foodId: 5, name: null, koreanName: null } } as never,
+    expect(v1[0].imageUrl).toBe(null);
+    const bare = photoOnlyResults([
+      { idx: null, matched: true, foodId: 3, riskLevel: 'SAFE', name: 'A', koreanName: null, price: null,
+        imageRef: 'kimchi.png' } as never,
     ]);
-    expect(noName[0].similar).toBe(null);
+    expect(bare[0].imageUrl).toBe(null);
+  });
+
+  it('P-241: similarFood 잔존 0 — 어댑터·타입·리스트·화면 전면 철거(서버 필드 소멸)', () => {
+    const fs = require('fs');
+    for (const f of ['src/lib/api/scanAdapter.ts', 'src/lib/api/scanTypes.ts', 'src/features/scan/ScanRichList.tsx', 'src/app/scan.tsx', 'src/lib/scan/segmentMenu.ts']) {
+      const src = fs.readFileSync(f, 'utf8') as string;
+      expect(src).not.toContain('SimilarFood');
+      expect(src).not.toContain('onOpenSimilar');
+    }
   });
 });
