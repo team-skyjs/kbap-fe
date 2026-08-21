@@ -1359,3 +1359,8 @@
 
 ## My Foods 러프 (2026-08-21, P-253)
 - [x] /profile/my-foods(세그·주문 카드 4분할 썸네일·커서)·주문 상세(스냅샷·뷰어·리뷰 연결)·Scanned 재사용·빈 상태 CTA, read-only 잠금, myFoods i18n ×10 — 76ef2f5, teamtest OTA(ios 59e23b10·and 8f9f76eb).
+
+## 스캔 선제 안내·진입점 (2026-08-21, P-255·254)
+- [x] P-255 /scan 진입 시 티켓 선발급 — SCAN-004 즉시 잠금(카메라 미표시·계측 오염 0)·선발급 재사용·복귀 재발급(잠금 한정 복원) — 2b5514a.
+- [x] P-254 My Foods = 프로필 계정 메뉴 행(AcctRow·Saved 위), P-253 헤더 링크 소멸 — 56a2334.
+- [x] tsc 0 · jest 144스위트 924/924 · teamtest OTA(ios 6fbb869c·and 2b8edf2b).
