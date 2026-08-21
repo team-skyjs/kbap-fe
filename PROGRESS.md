@@ -1364,3 +1364,6 @@
 - [x] P-255 /scan 진입 시 티켓 선발급 — SCAN-004 즉시 잠금(카메라 미표시·계측 오염 0)·선발급 재사용·복귀 재발급(잠금 한정 복원) — 2b5514a.
 - [x] P-254 My Foods = 프로필 계정 메뉴 행(AcctRow·Saved 위), P-253 헤더 링크 소멸 — 56a2334.
 - [x] tsc 0 · jest 144스위트 924/924 · teamtest OTA(ios 6fbb869c·and 2b8edf2b).
+
+## 주문 이력 저장 보정 (2026-08-21, P-256)
+- [x] 저장·계측·리마인더 = done 탭 시점(1회 가드·go home = 복귀만), 실패 로그 status·code 동반(400 관찰 — 필터는 종한 회신 대기) — caad941, teamtest OTA(ios 01b9e39d·and 26f1269a).
