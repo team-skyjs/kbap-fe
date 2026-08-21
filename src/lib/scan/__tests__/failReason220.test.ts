@@ -12,6 +12,8 @@ const CASES: { label: string; code?: string; msg: string; stage: ErrorStage; rea
   { label: 'SCAN-001 이미지 접근 불가', code: 'SCAN-001', msg: 'image', stage: 'upload', reason: 'upload' },
   { label: 'SCAN-002 서버 인식 실패(사용자 잘못 아님)', code: 'SCAN-002', msg: 'unavailable', stage: 'busy', reason: 'server' },
   { label: 'SCAN-006 LLM 서버 장애(P-241 — 인식 실패와 분리·재시도 안내)', code: 'SCAN-006', msg: 'llm outage', stage: 'outage', reason: 'server' },
+  { label: 'SCAN-004 무료 3회 소진(P-250 — 리뷰 작성 유도)', code: 'SCAN-004', msg: 'quota', stage: 'quota', reason: 'server' },
+  { label: 'SCAN-005 같은 티켓 처리 중(P-250 — 자동 재발급 금지)', code: 'SCAN-005', msg: 'dup', stage: 'processing', reason: 'server' },
   { label: '통신 실패', code: undefined, msg: 'NETWORK: timeout', stage: 'network', reason: 'network' },
   { label: '미지 코드 = 일반 서버 오류', code: 'COMMON-002', msg: 'bad request', stage: 'be', reason: 'server' },
 ];

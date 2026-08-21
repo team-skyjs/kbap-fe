@@ -77,9 +77,15 @@ async function runScan(input: ScanInput) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  api.post.mockResolvedValue({ degraded: false, results: [] });
+  // P-250: v2는 /api/scans/tickets 발급이 선행 — 경로별 응답(스캔 응답과 구분)
+  api.post.mockImplementation(async (path: string) =>
+    path === '/api/scans/tickets' ? { ticket: 'TICKET-1', expiresInSeconds: 300 } : { degraded: false, results: [] },
+  );
   mockResolvePath.mockResolvedValue(null);
 });
+
+/** v2 케이스용 — 티켓 발급 호출을 제외한 스캔 호출만 (v1 = 전체와 동일). */
+const scanCalls = () => (api.post.mock.calls as unknown[][]).filter(([p]) => p !== '/api/scans/tickets');
 
 it('요청 body 에 imagePath 포함 — 사진 없음(샘플) → "" + items 는 idx/rawMenuName 만', async () => {
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: null });
@@ -120,11 +126,12 @@ it('P-153 → P-219 v2(dev 계열): items 미전송 + X-API-Version 2.0 + lang·
   mockScanV2 = true; // P-155 킬스위치 — v2 유닛은 강제 on(코드 보존 잠금)
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 }, currency: 'JPY' });
-  const [path, body, opts] = api.post.mock.calls[0];
+  const [path, body, opts] = scanCalls()[0] as [string, { items: unknown[]; imagePath: string }, { headers: Record<string, string> }];
   expect(path).toBe('/scans?lang=en&currency=JPY'); // P-219: 둘 다 필수(누락 = 400)
   expect(body.items).toEqual([]); // 서버 비전 OCR — 클라 items 무시 경로
   expect(body.imagePath).toBe('scans/1/a.jpg');
-  expect(opts.headers).toEqual({ 'X-API-Version': '2.0' });
+  // P-250: 티켓 헤더 동시 탑재(가이드 QA #2) — 발급받은 그 시도의 값
+  expect(opts.headers).toEqual({ 'X-API-Version': '2.0', 'X-Scan-Ticket': 'TICKET-1' });
 });
 
 // P-219 ②: currency 누락 = 스캔 전면 사망(400)이라 끝단에서 USD 강제 — 3케이스 실측
@@ -137,7 +144,7 @@ it.each([
   mockScanV2 = true;
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
   await runScan({ items: [], photo: { uri: 'file:a.jpg', width: 1, height: 1 }, currency: input as string | undefined });
-  const [path] = api.post.mock.calls[0];
+  const [path] = scanCalls()[0] as [string];
   expect(path).toBe(`/scans?lang=en&currency=${expected}`);
 });
 

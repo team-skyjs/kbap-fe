@@ -42,6 +42,9 @@ export interface ScanOutcome {
   photoOnly: PhotoOnlyItem[];
   /** P-242: v2 서버 실환율 — null = 조회 실패(배지 생략)·undefined = v1(테이블 폴백). */
   fx?: { code: string; krwPerUnit: number } | null;
+  /** P-252: 이 스캔의 검증된 이미지 경로 — 주문 이력(POST /api/orders) 식별자 재사용.
+   *  '' = 업로드 실패(텍스트-only) — 이력에선 생략 처리. */
+  imagePath?: string;
 }
 
 /** P-153: 스캔 v2(서버 비전 OCR) — dev 계열 채널만(prod 서버 미배포, P-114 관례).
@@ -54,11 +57,24 @@ export function scanV2Enabled(): boolean {
   return FLAGS.scanV2 && !isProdChannel();
 }
 
+/** P-250(KB-345): 스캔 티켓 발급 — v2 필수 선행(가이드 PR #181). body 없음.
+ *  티켓은 **스캔 시도 스코프**에서만 산다(전역·영구 저장 금지 — 시도마다 신규 발급,
+ *  만료 클라 판정 금지: expiresInSeconds는 판정에 안 쓴다·SCAN-007 응답이 기준). */
+export async function issueScanTicket(): Promise<string> {
+  const p = await api.post<{ ticket: string; expiresInSeconds: number }>('/api/scans/tickets', undefined, {
+    headers: { 'X-API-Version': SCAN_API_VERSION },
+  });
+  return p.ticket;
+}
+
 export async function postScan({ items, photo, currency }: ScanInput): Promise<ScanOutcome> {
+  const v2 = scanV2Enabled();
+  // P-250: 티켓 발급이 업로드보다 먼저 — SCAN-004(무료 소진)면 업로드 비용 자체가
+  // 발생하지 않아야 한다(가이드 명시·시나리오 B). v1 = 티켓 로직 0(가이드 비대상).
+  let ticket = v2 ? await issueScanTicket() : null;
   // ⑦(KB-137) 순서: 업로드 해석은 촬영 파일 삭제(사진 교체/화면 언마운트 시)보다
   // 먼저 여기서 실행된다 — 스캔 중에는 삭제 트리거가 없다(언마운트=스캔 폐기).
   const imagePath = await resolveScanImagePath(photo);
-  const v2 = scanV2Enabled();
   // v2: imagePath만으로 성립(items 무시 — 서버 OCR). v1(prod): items 필수(누락 400).
   const body: ScanRequest = v2
     ? { imagePath: imagePath ?? '', items: [] }
@@ -78,14 +94,30 @@ export async function postScan({ items, photo, currency }: ScanInput): Promise<S
   const cur = v2 ? (currency && currency.trim() ? currency : 'USD') : null;
   const query = `?lang=${apiLang()}${cur ? `&currency=${encodeURIComponent(cur)}` : ''}`;
   const startedAt = Date.now();
-  let payload: ScanPayload;
-  try {
-    payload = await api.post<ScanPayload>(`/scans${query}`, body, {
+  const doPost = () =>
+    api.post<ScanPayload>(`/scans${query}`, body, {
       // P-234 확정: P-232 실측 — v2 vision 정상 완료 ~58초(행 아님·추론 모델 지연).
       // 58초 × 여유 2배 = 120초. 종한 모델/비동기 개선 시 재조정.
       timeoutMs: 120_000,
-      ...(v2 ? { headers: { 'X-API-Version': SCAN_API_VERSION } } : {}),
+      // P-250: X-Scan-Ticket — v2 필수(누락 400). 티켓은 이 시도의 값만.
+      ...(v2 ? { headers: { 'X-API-Version': SCAN_API_VERSION, 'X-Scan-Ticket': ticket! } } : {}),
     });
+  let payload: ScanPayload;
+  try {
+    try {
+      payload = await doPost();
+    } catch (e) {
+      // P-250: SCAN-007(티켓 무효·만료 — 시나리오 F) = 조용히 새 티켓 1회 재발급 후
+      // 재시도(이미지 재업로드 없음 — path 재사용). 반복 실패는 아래로 던져 안내.
+      // SCAN-005(처리 중)는 자동 재발급 금지(가이드) — 그대로 던진다.
+      if (v2 && (e as { code?: string })?.code === 'SCAN-007') {
+        console.log('[scan] SCAN-007 — 티켓 재발급 후 1회 재시도');
+        ticket = await issueScanTicket();
+        payload = await doPost();
+      } else {
+        throw e;
+      }
+    }
   } catch (e) {
     // 실패도 소요 초가 진단 데이터 — 몇 초에 무슨 에러인지
     console.log(`[scan] v2 응답 ${Math.round((Date.now() - startedAt) / 1000)}초 — 실패:`, (e as Error)?.message ?? e);
@@ -100,7 +132,7 @@ export async function postScan({ items, photo, currency }: ScanInput): Promise<S
     '| photoOnly =', photoOnly.length,
   );
   // P-242: v2 = 서버 환율 관통(null = 실패 규약 — 배지 생략), v1 = undefined(테이블)
-  return { degraded: payload.degraded, items: merged, photoOnly, ...(v2 ? { fx: payload.currency ?? null } : {}) };
+  return { degraded: payload.degraded, items: merged, photoOnly, imagePath: imagePath ?? '', ...(v2 ? { fx: payload.currency ?? null } : {}) };
 }
 
 export function useScan() {

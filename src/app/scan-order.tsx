@@ -21,7 +21,7 @@ import { FlippedOrderCard, type OrderItem } from '@/features/order/FlippedOrderC
 import { EVENTS, track } from '@/lib/analytics';
 
 export default function ScanOrder() {
-  const { items: itemsParam, fx: fxParam } = useLocalSearchParams<{ items: string; fx?: string }>();
+  const { items: itemsParam, fx: fxParam, img: imgParam } = useLocalSearchParams<{ items: string; fx?: string; img?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottom = useBottomInset();
@@ -79,6 +79,7 @@ export default function ScanOrder() {
         avoidNames={codes.map((c) => ingCat.name(c))}
         currency={currency}
         fx={fx}
+        orderImagePath={imgParam || null} // P-252: 주문 이력 식별자(스캔 이미지 경로)
         onDone={() => {
           // P-162: 완료 모달 확인 = 홈으로 (스캔 스택 정리 후 탭 홈)
           if (router.canDismiss()) router.dismissAll();

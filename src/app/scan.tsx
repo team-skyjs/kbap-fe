@@ -49,6 +49,7 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 import { OrderPill, ScanProfileBar, ScanRichList } from '@/features/scan/ScanRichList';
+import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
@@ -110,6 +111,8 @@ export default function Scan() {
   const [degraded, setDegraded] = useState(false); // 정제 실패/부재 (KB-72 신계약)
   // P-242: v2 서버 실환율(null = 조회 실패 — 배지 생략 규약·undefined = v1 테이블)
   const [fx, setFx] = useState<import('@/lib/exchange').ServerFx | undefined>(undefined);
+  // P-252: 스캔 이미지 경로 — 주문 이력 식별자로 주문 카드에 동승('' = 업로드 실패)
+  const [scanPath, setScanPath] = useState('');
   // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
   // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
   const [view, setView] = useState<ResultView>('list');
@@ -138,6 +141,8 @@ export default function Scan() {
   const [zoom, setZoom] = useState(0);
   const pinchBase = useRef(0);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
+  // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
+  const [quotaPicker, setQuotaPicker] = useState(false);
   const isGuest = useIsGuest();
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
   // P-046(KB-216): 진입 시 오프라인 게이트 — 음식탭/검색과 같은 프로브(캐시 공유).
@@ -245,6 +250,7 @@ export default function Scan() {
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
         setFx(res.fx); // P-242: v2 실환율 관통(스캔 1회 = 환율 1스냅샷)
+        setScanPath(res.imagePath ?? ''); // P-252: 주문 이력 식별자
         setView('list'); // P-138⑤: 기본=List (예진 8/6 오너 결정 — P-071 대체)
         setPhase('result');
       },
@@ -509,7 +515,9 @@ export default function Scan() {
         .map((d) => ({ nameKo: d.koreanName ?? d.rawMenuName, name: d.displayName, qty: cart.get(d.itemId)!, priceKrw: d.priceKrw, foodId: d.foodId ?? null }));
       // P-242: 스캔 세션의 서버 환율을 주문 카드에도 동승(fx 생략 = v1 테이블)
       const fxParam = fx !== undefined ? `&fx=${encodeURIComponent(JSON.stringify(fx))}` : '';
-      router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}${fxParam}` as Href);
+      // P-252: 스캔 경로 동승 — 주문 완료 시 이력 저장(POST /api/orders) 식별자
+      const imgParam = scanPath ? `&img=${encodeURIComponent(scanPath)}` : '';
+      router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}${fxParam}${imgParam}` as Href);
     };
 
     return (
@@ -659,7 +667,8 @@ export default function Scan() {
         {Close}
         {GateSheet}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-        <Text style={styles.errStage}>{t(`scan.stage.${stage}`)}</Text>
+        {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
+        <Text style={styles.errStage}>{stage === 'quota' ? t('scan.quotaTitle') : t(`scan.stage.${stage}`)}</Text>
         <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
@@ -668,12 +677,39 @@ export default function Scan() {
               인식 실패(503)·업로드 실패 = 재시도(같은 사진으로 다시) */}
           {/* P-222 재량: network도 재시도 대상 — 사진은 그대로이고 연결만 회복하면 되는
               상황이라 "재촬영"보다 "재시도"가 맞다(대기 중 이탈로 끊긴 경우 포함). */}
-          {stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
-            <Btn onPress={() => photo && scanImage(photo)} testID="scan-err-retry">{t('common.retry')}</Btn>
+          {/* P-250: quota = 리뷰 작성하기(픽커) + 나중에 · outage = 다시 시도(새 티켓
+              발급부터 — postScan이 시도마다 신규 발급) + 나중에 · processing = 재촬영만
+              (새 티켓 자동 재발급 금지 — 재촬영 = 사용자 주도 새 시도) */}
+          {stage === 'quota' ? (
+            <>
+              <Btn onPress={() => setQuotaPicker(true)} testID="scan-quota-review">{t('scan.quotaCta')}</Btn>
+              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+            </>
+          ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
+            <>
+              <Btn onPress={() => photo && scanImage(photo)} testID="scan-err-retry">{t('common.retry')}</Btn>
+              {stage === 'outage' && (
+                <Btn variant="ghost" onPress={() => router.back()} testID="scan-outage-later">{t('scan.later')}</Btn>
+              )}
+            </>
           ) : (
             <Btn variant="ghost" onPress={() => setPhase('camera')} testID="scan-err-retake">{t('scan.retake')}</Btn>
           )}
         </View>
+        {/* P-250: 무료 소진 → 리뷰 픽커(P-245 자격 UX 그대로 — 스캔분만 선택 가능).
+            작성 성공 후 스캔 재진입 시 새 티켓 발급부터(해금 즉시 반영 — 가이드 C). */}
+        {quotaPicker && (
+          <TagPickerSheet
+            context="review"
+            kind="food"
+            foodTags={[]}
+            placeTag={null}
+            onToggleFood={(f) => { setQuotaPicker(false); router.push(`/food/${f.foodId}/review` as Href); }}
+            onTogglePlace={() => {}}
+            onClose={() => setQuotaPicker(false)}
+            t={t}
+          />
+        )}
       </View>
     );
   }

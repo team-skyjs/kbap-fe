@@ -18,6 +18,7 @@ import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { scheduleReviewReminder } from '@/lib/push/pushAdapter';
+import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
 
@@ -39,6 +40,7 @@ export function FlippedOrderCard({
   avoidNames,
   currency,
   fx,
+  orderImagePath,
   stepper,
   onDone,
   t,
@@ -49,6 +51,8 @@ export function FlippedOrderCard({
   avoidNames: string[];
   currency: string;
   fx?: ServerFx; // P-242: 스캔 발 주문 = v2 실환율 관통(상세 발 주문 = 테이블 폴백)
+  /** P-252: 주문 이력 식별자(스캔 이미지 경로) — 상세 발 주문 = 없음(필드 생략 저장). */
+  orderImagePath?: string | null;
   /** 단일 모드(음식 상세)의 수량 스테퍼 슬롯 — Done 위에 렌더 */
   stepper?: React.ReactNode;
   onDone: () => void;
@@ -146,6 +150,8 @@ export function FlippedOrderCard({
                   track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
                   const target = items.find((i) => i.foodId != null && i.qty > 0);
                   if (target?.foodId) void scheduleReviewReminder({ foodId: String(target.foodId), name: target.name });
+                  // P-252(KB-337): 주문 이력 저장 — 실패 무해(내부 흡수), UX 무영향
+                  void saveOrderHistory({ imagePath: orderImagePath, items });
                   onDone();
                 }}
               >
