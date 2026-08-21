@@ -4,6 +4,7 @@
  * 목 스토어가 진실이라 재조회로 화면 갱신 (실 API와 동일 시맨틱).
  */
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsGuest } from '@/lib/auth/useSession';
 import * as adapter from './adapter';
 import type { CommunityAuthor, FoodTagRef, PlaceTagRef, Reaction, ReportReason, ReportTarget } from './types';
 
@@ -33,7 +34,10 @@ export function useCommunityComments(postId: string) {
 }
 
 export function useBlockedUsers() {
-  return useQuery({ queryKey: ['community', 'blocked'], queryFn: adapter.fetchBlockedUsers });
+  // P-260: 게스트 = 호출 0 — /members/me/blocks는 인증 필수(무토큰 401 = AUTH-003)
+  // + 게스트는 차단 개념 자체가 없다. 데이터 없음 = 소비처 `?? []` 폴백(필터 무동작).
+  const isGuest = useIsGuest();
+  return useQuery({ queryKey: ['community', 'blocked'], queryFn: adapter.fetchBlockedUsers, enabled: !isGuest });
 }
 
 function useInvalidateCommunity() {

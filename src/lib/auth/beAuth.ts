@@ -129,12 +129,17 @@ export async function hasBeSession(): Promise<boolean> {
  *  - 기타 401(COMMUNITY-005 로그인 필요 등) = 무반응(기존 에러 흐름 — 게이트는 화면 몫).
  *  - code null(비JSON 401 — 프록시 등) = 현행 refresh 1회 폴백(fail-safe:
  *    진짜 만료였는데 body가 깨진 경우 세션 유실 방지). */
-function handleUnauthorized(code: string | null): Promise<boolean> {
+async function handleUnauthorized(code: string | null): Promise<boolean> {
   if (code === 'AUTH-004' || code == null) return tryRefresh();
   if (code === 'AUTH-003' || code === 'AUTH-005' || code === 'AUTH-006') {
-    return sessionExpired().then(() => false);
+    // P-260 🔴: 게스트(저장 토큰 없음)의 무토큰 401도 AUTH-003으로 온다 —
+    // 지울 세션이 없으므로 sessionExpired(= queryClient.clear) 생략(doRefresh의
+    // `if (!t) return false` 철학 동일). 안 그러면 게스트 화면의 인증 쿼리 401이
+    // 전 캐시를 소거해 배경이 로딩으로 리셋된다(예진 실기 회귀).
+    if ((await loadTokens()) != null) await sessionExpired();
+    return false;
   }
-  return Promise.resolve(false);
+  return false;
 }
 
 export function installBeAuth(): void {

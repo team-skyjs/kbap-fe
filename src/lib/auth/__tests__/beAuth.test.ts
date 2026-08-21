@@ -110,6 +110,26 @@ describe('P-257: 401 code 분기(종한 요청) — AUTH-004만 refresh', () => 
     },
   );
 
+  // P-260 🔴: 게스트 무토큰 401도 AUTH-003으로 온다 — 지울 세션이 없으므로
+  // sessionExpired(= queryClient.clear 전 캐시 소거) 미발동(배경 리셋 회귀 방지)
+  it.each(['AUTH-003', 'AUTH-005', 'AUTH-006'])(
+    'P-260: 토큰 부재(게스트) + %s → sessionExpired 미호출·clear 미발동·false만',
+    async (code) => {
+      (tokens.loadTokens as jest.Mock).mockResolvedValueOnce(null);
+      await expect(handleUnauthorized(code)).resolves.toBe(false);
+      expect(tokens.clearTokens).not.toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      expect(require('@/lib/queryClient').queryClient.clear).not.toHaveBeenCalled();
+      expect(api.post).not.toHaveBeenCalled();
+    },
+  );
+
+  it('P-260: 게스트 blocked 쿼리 미발화 — enabled: !isGuest 소스 잠금', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync('src/lib/community/hooks.ts', 'utf8') as string;
+    expect(src).toContain('enabled: !isGuest'); // /members/me/blocks 게스트 호출 0
+  });
+
   it('기타 401(COMMUNITY-005 등) → refresh·세션만료 모두 없음(기존 에러 흐름)', async () => {
     await expect(handleUnauthorized('COMMUNITY-005')).resolves.toBe(false);
     expect(api.post).not.toHaveBeenCalled();
