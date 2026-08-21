@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconClose, IconFood, IconMore, IconPlus, IconProfile, IconCheck } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
@@ -59,7 +59,8 @@ export function ReviewFeed() {
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
   const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별(위 nationality와 같은 캐시 — 중복 호출 아님)
-  const [gateOpen, setGateOpen] = React.useState(false);
+  // P-258: 트리거별 컨텍스트 — Helpful = 'helpful'(읽기 개방 후 신카피)·FAB = 'writeReview'
+  const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const [editTarget, setEditTarget] = React.useState<Review | null>(null);
@@ -166,7 +167,7 @@ export function ReviewFeed() {
             t={t}
             mine={item.memberId != null && item.memberId === myId}
             onOpenFood={() => item.foodId && router.push(`/food/${item.foodId}?src=feed` as Href)}
-            onGuestHelpful={() => setGateOpen(true)}
+            onGuestHelpful={() => setGateOpen('helpful')}
             onMore={() =>
               setMod({
                 type: 'review',
@@ -224,7 +225,7 @@ export function ReviewFeed() {
       <Pressable
         style={styles.fab}
         testID="feed-write-fab"
-        onPress={() => (isGuest ? setGateOpen(true) : setPickerOpen(true))}
+        onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
         <IconPlus size={24} color="#fff" />
       </Pressable>
@@ -289,7 +290,7 @@ export function ReviewFeed() {
         }))}
         onClose={() => setSortSheet(false)}
       />
-      <AuthGateSheet context="reviews" trigger="community" open={gateOpen} onClose={() => setGateOpen(false)} />
+      <AuthGateSheet context={gateOpen ?? 'helpful'} trigger="community" open={gateOpen != null} onClose={() => setGateOpen(null)} />
     </View>
   );
 }

@@ -40,7 +40,6 @@ import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -57,7 +56,6 @@ export default function FoodReviews() {
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
 
   const isGuest = useIsGuest();
-  const [gateOpen, setGateOpen] = useState<GateContext | null>(null);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -257,7 +255,6 @@ export default function FoodReviews() {
         }}
         t={t}
       />
-      <AuthGateSheet context={gateOpen ?? 'reviews'} open={gateOpen != null} onClose={() => setGateOpen(null)} />
     </View>
   );
 }

@@ -15,7 +15,8 @@ import { Btn } from '@/components/Btn';
 import { IconClose, IconLock } from '@/components/icons';
 import { EVENTS, track } from '@/lib/analytics';
 
-export type GateContext = 'risk' | 'reviews' | 'writeReview' | 'scan' | 'profile' | 'save';
+// P-258: 'reviews'(읽기 차단 시절 유물 — P-235 게스트 열람 개방으로 소멸) → 'helpful'
+export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save';
 
 /**
  * P-213: auth_gate_view trigger — 게이트 시트는 게스트 전환 퍼널의 단일 관문이라
@@ -25,7 +26,7 @@ export type GateContext = 'risk' | 'reviews' | 'writeReview' | 'scan' | 'profile
 export type GateTrigger = 'bookmark' | 'review' | 'scan' | 'community' | 'risk' | 'profile';
 const CONTEXT_TRIGGER: Record<GateContext, GateTrigger> = {
   save: 'bookmark',
-  reviews: 'review',
+  helpful: 'review',
   writeReview: 'review',
   scan: 'scan',
   risk: 'risk',
@@ -34,7 +35,7 @@ const CONTEXT_TRIGGER: Record<GateContext, GateTrigger> = {
 
 const COPY: Record<GateContext, { title: string; sub: string }> = {
   risk: { title: 'gate.riskTitle', sub: 'gate.riskSub' },
-  reviews: { title: 'gate.reviewsTitle', sub: 'gate.reviewsSub' },
+  helpful: { title: 'gate.helpfulTitle', sub: 'gate.helpfulSub' },
   writeReview: { title: 'gate.writeTitle', sub: 'gate.writeSub' },
   scan: { title: 'gate.scanTitle', sub: 'gate.scanSub' },
   profile: { title: 'gate.profileTitle', sub: 'gate.profileSub' },
