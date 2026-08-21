@@ -353,7 +353,8 @@
     "dietSavedTitle": "Información dietética actualizada",
     "dietSavedBody": "¿Quieres ajustar los ingredientes evitados en consecuencia?",
     "dietSavedYes": "Editar ingredientes",
-    "dietSavedNo": "Listo"
+    "dietSavedNo": "Listo",
+    "myFoods": "Mis comidas"
   },
   "review": {
     "title": "Escribir una reseña",
@@ -962,5 +963,17 @@
     "noticeBody": "Escanea un menú para ver qué platos son seguros para ti.",
     "nudgeTitle": "¿Comes fuera hoy?",
     "nudgeBody": "Escanea el menú antes de pedir."
+  },
+  "myFoods": {
+    "ordered": "Pedidos",
+    "scanned": "Escaneados",
+    "orderTitle": "Pedido",
+    "total": "Total",
+    "itemCount_one": "{{count}} plato",
+    "itemCount_other": "{{count}} platos",
+    "emptyOrdersTitle": "Aún no hay pedidos",
+    "emptyOrdersBody": "Pide desde un menú escaneado y tu historial aparecerá aquí.",
+    "emptyScansTitle": "Aún no hay escaneos",
+    "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí."
   }
 }

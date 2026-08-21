@@ -353,7 +353,8 @@
     "dietSavedTitle": "Info pola makan diperbarui",
     "dietSavedBody": "Mau menyesuaikan bahan yang dihindari juga?",
     "dietSavedYes": "Edit bahan hindaran",
-    "dietSavedNo": "Selesai"
+    "dietSavedNo": "Selesai",
+    "myFoods": "Makananku"
   },
   "review": {
     "title": "Tulis ulasan",
@@ -961,5 +962,17 @@
     "noticeBody": "Pindai menu untuk tahu hidangan mana yang aman untukmu.",
     "nudgeTitle": "Makan di luar hari ini?",
     "nudgeBody": "Pindai menu sebelum memesan."
+  },
+  "myFoods": {
+    "ordered": "Dipesan",
+    "scanned": "Dipindai",
+    "orderTitle": "Pesanan",
+    "total": "Total",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} item",
+    "emptyOrdersTitle": "Belum ada pesanan",
+    "emptyOrdersBody": "Pesan dari menu yang dipindai dan riwayatmu muncul di sini.",
+    "emptyScansTitle": "Belum ada pemindaian",
+    "emptyScansBody": "Pindai menu dan makanan yang kamu periksa terkumpul di sini."
   }
 }

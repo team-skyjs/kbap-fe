@@ -295,7 +295,15 @@ export default function Profile() {
                 재사용, 배치 = 개인 콘텐츠 클러스터(Saved/My reviews) 위 재량. 빈 상태 = 홈
                 규칙(미노출), 게스트는 프로필 자체가 로그인 임베드라 미도달. */}
             {recentScans.length > 0 && (
-              <Section title={t('home.recentTitle')}>
+              <Section
+                title={t('home.recentTitle')}
+                /* P-253: My Foods 진입점 — Ordered/Scanned 모아보기(러프) */
+                action={
+                  <Pressable hitSlop={8} onPress={() => router.push('/profile/my-foods' as Href)} testID="profile-my-foods">
+                    <Text style={styles.link}>{t('profile.myFoods')}</Text>
+                  </Pressable>
+                }
+              >
                 <View style={{ gap: 10 }}>
                   {recentScans.map((d) => (
                     <RecentRow

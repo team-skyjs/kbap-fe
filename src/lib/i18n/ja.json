@@ -353,7 +353,8 @@
     "dietSavedTitle": "食事情報を更新しました",
     "dietSavedBody": "これに合わせて避ける食材も調整しますか？",
     "dietSavedYes": "避ける食材を編集",
-    "dietSavedNo": "完了"
+    "dietSavedNo": "完了",
+    "myFoods": "マイフード"
   },
   "review": {
     "title": "レビューを書く",
@@ -961,5 +962,17 @@
     "noticeBody": "メニューをスキャンすると安全な料理がわかります。",
     "nudgeTitle": "今日は外食ですか？",
     "nudgeBody": "注文する前にメニューをスキャンしましょう。"
+  },
+  "myFoods": {
+    "ordered": "注文した料理",
+    "scanned": "スキャンした料理",
+    "orderTitle": "注文履歴",
+    "total": "合計",
+    "itemCount_one": "{{count}}点",
+    "itemCount_other": "{{count}}点",
+    "emptyOrdersTitle": "まだ注文履歴がありません",
+    "emptyOrdersBody": "スキャンしたメニューから注文するとここに記録されます。",
+    "emptyScansTitle": "まだスキャン履歴がありません",
+    "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。"
   }
 }

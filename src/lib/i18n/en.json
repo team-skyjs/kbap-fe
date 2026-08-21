@@ -349,7 +349,8 @@
     "dietSavedTitle": "Dietary info updated",
     "dietSavedBody": "Want to fine-tune your avoided ingredients to match?",
     "dietSavedYes": "Edit avoided ingredients",
-    "dietSavedNo": "Done"
+    "dietSavedNo": "Done",
+    "myFoods": "My Foods"
   },
   "editProfile": {
     "title": "Edit profile",
@@ -958,5 +959,17 @@
     "noticeBody": "Scan a menu to see which dishes are safe for you.",
     "nudgeTitle": "Eating out today?",
     "nudgeBody": "Scan the menu before you order."
+  },
+  "myFoods": {
+    "ordered": "Ordered",
+    "scanned": "Scanned",
+    "orderTitle": "Order",
+    "total": "Total",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items",
+    "emptyOrdersTitle": "No orders yet",
+    "emptyOrdersBody": "Order from a scanned menu and your history shows up here.",
+    "emptyScansTitle": "No scans yet",
+    "emptyScansBody": "Scan a menu and the dishes you've checked show up here."
   }
 }

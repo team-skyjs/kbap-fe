@@ -353,7 +353,8 @@
     "dietSavedTitle": "Đã cập nhật chế độ ăn",
     "dietSavedBody": "Bạn có muốn tinh chỉnh nguyên liệu tránh cho phù hợp không?",
     "dietSavedYes": "Chỉnh nguyên liệu tránh",
-    "dietSavedNo": "Xong"
+    "dietSavedNo": "Xong",
+    "myFoods": "Món của tôi"
   },
   "review": {
     "title": "Viết đánh giá",
@@ -961,5 +962,17 @@
     "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
     "nudgeTitle": "Hôm nay ăn ngoài chứ?",
     "nudgeBody": "Hãy quét thực đơn trước khi gọi món."
+  },
+  "myFoods": {
+    "ordered": "Đã gọi món",
+    "scanned": "Đã quét",
+    "orderTitle": "Đơn hàng",
+    "total": "Tổng cộng",
+    "itemCount_one": "{{count}} món",
+    "itemCount_other": "{{count}} món",
+    "emptyOrdersTitle": "Chưa có đơn hàng nào",
+    "emptyOrdersBody": "Gọi món từ thực đơn đã quét và lịch sử sẽ hiện ở đây.",
+    "emptyScansTitle": "Chưa có lượt quét nào",
+    "emptyScansBody": "Quét thực đơn và các món bạn đã xem sẽ tập hợp ở đây."
   }
 }

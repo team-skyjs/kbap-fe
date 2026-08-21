@@ -353,7 +353,8 @@
     "dietSavedTitle": "飲食資訊已更新",
     "dietSavedBody": "要相應調整迴避的食材嗎？",
     "dietSavedYes": "編輯迴避食材",
-    "dietSavedNo": "完成"
+    "dietSavedNo": "完成",
+    "myFoods": "我的美食"
   },
   "review": {
     "title": "撰寫評論",
@@ -961,5 +962,17 @@
     "noticeBody": "掃描菜單即可了解哪些菜對你是安全的。",
     "nudgeTitle": "今天在外面用餐嗎？",
     "nudgeBody": "點餐前先掃描菜單吧。"
+  },
+  "myFoods": {
+    "ordered": "點過的菜",
+    "scanned": "掃描過的菜",
+    "orderTitle": "訂單記錄",
+    "total": "合計",
+    "itemCount_one": "{{count}}份",
+    "itemCount_other": "{{count}}份",
+    "emptyOrdersTitle": "還沒有訂單記錄",
+    "emptyOrdersBody": "從掃描的菜單下單後會記錄在這裡。",
+    "emptyScansTitle": "還沒有掃描記錄",
+    "emptyScansBody": "掃描菜單後，你查看過的菜品會匯集在這裡。"
   }
 }
