@@ -1373,3 +1373,8 @@
 
 ## 게스트 Helpful 게이트 카피 (2026-08-21, P-258)
 - [x] 'reviews' 유물 → 'helpful' 신설(카피 ×10·ko 임시값 K-등록 대상), FAB = writeReview 분리, 사어 게이트(food 리뷰 목록) 제거·잔존 0 잠금 — 151672e, teamtest OTA(ios b1a5f922·and 5802eaa1).
+
+## 게스트 401 회귀·ready 게이트 (2026-08-21, P-260·259)
+- [x] P-260 🔴 무토큰 401 = sessionExpired 생략(전 캐시 소거 리셋 복구)·blocked 쿼리 게스트 차단·인증 쿼리 스윕 보고 — ecc9a21.
+- [x] P-259 주문 상세 ready === false = 행 비활성+"등록 준비 중"+리뷰 숏컷 숨김(URL 판단 금지), itemPending ×10, matched 필터 폐기 확정 — 9db8d34.
+- [x] tsc 0 · jest 145스위트 940/940 · teamtest OTA(ios de3949b9·and 19acd0da).
