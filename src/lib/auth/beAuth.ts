@@ -121,9 +121,25 @@ export async function hasBeSession(): Promise<boolean> {
  * client.ts에 BE 토큰 배선 설치 — 앱 시작 시 1회(루트 레이아웃).
  * KB-109의 Firebase ID토큰 부착 구조를 이걸로 교체한다.
  */
+/** P-257(종한 요청): 401 분기 정책 — 이 한 곳.
+ *  서버 ErrorCode 정본: AUTH-003(무효 access)·AUTH-004(만료 access)·
+ *  AUTH-005(무효 refresh)·AUTH-006(만료 refresh) — 전부 401.
+ *  - AUTH-004만 refresh 가치 → tryRefresh(mutex·rotation 현행).
+ *  - 003/005/006 = 위조·무효 — refresh 왕복 없이 즉시 세션 만료.
+ *  - 기타 401(COMMUNITY-005 로그인 필요 등) = 무반응(기존 에러 흐름 — 게이트는 화면 몫).
+ *  - code null(비JSON 401 — 프록시 등) = 현행 refresh 1회 폴백(fail-safe:
+ *    진짜 만료였는데 body가 깨진 경우 세션 유실 방지). */
+function handleUnauthorized(code: string | null): Promise<boolean> {
+  if (code === 'AUTH-004' || code == null) return tryRefresh();
+  if (code === 'AUTH-003' || code === 'AUTH-005' || code === 'AUTH-006') {
+    return sessionExpired().then(() => false);
+  }
+  return Promise.resolve(false);
+}
+
 export function installBeAuth(): void {
   setAuthTokenProvider(async () => (await loadTokens())?.access ?? null);
-  setOnUnauthorized(tryRefresh); // true 반환 시 client가 원요청 1회 재시도
+  setOnUnauthorized(handleUnauthorized); // true 반환 시 client가 원요청 1회 재시도
   // P-205: 세션 스토어 부팅 초기화 — 미확정일 때만(경계 선행 시 덮지 않음)
   void hasBeSession().then(initSessionState);
 }

@@ -84,9 +84,11 @@ export function setAuthTokenProvider(provider: (() => Promise<string | null>) | 
   authTokenProvider = provider;
 }
 
-/** 401 핸들러 — true 반환(=refresh 성공) 시 원요청을 1회 재시도한다. */
-let onUnauthorized: (() => Promise<boolean>) | null = null;
-export function setOnUnauthorized(handler: (() => Promise<boolean>) | null) {
+/** 401 핸들러 — true 반환(=refresh 성공) 시 원요청을 1회 재시도한다.
+ *  P-257(종한 요청): 응답 `code`(AUTH-003~006 등)를 전달 — 분기 정책은 핸들러
+ *  (beAuth) 한 곳. code null = 비JSON 401(프록시 등 — 파싱 불가 폴백). */
+let onUnauthorized: ((code: string | null) => Promise<boolean>) | null = null;
+export function setOnUnauthorized(handler: ((code: string | null) => Promise<boolean>) | null) {
   onUnauthorized = handler;
 }
 
@@ -180,19 +182,28 @@ async function request<T>(
       );
     }
 
-    // 401 → refresh(rotation, mutex는 핸들러 몫) 후 원요청 1회 재시도 (KB-67).
-    // /auth/* 자체의 401은 재시도 대상이 아니다(로그인/refresh 실패는 그대로 표면화).
-    if (res.status === 401 && !isRetry && onUnauthorized && !path.startsWith('/auth/')) {
-      const refreshed = await onUnauthorized().catch(() => false);
-      if (refreshed) return request<T>(method, path, body, true, timeoutMs, extraHeaders);
-    }
-
+    // P-257: body 선독(res.text()는 1회만 — 아래 401 code 파싱과 에러 생성 경로가
+    // 이 text를 그대로 재사용, 이중 read 금지).
     try {
       text = await res.text();
     } catch (e) {
       throw new ApiError(
         controller.signal.aborted ? `NETWORK: timeout after ${timeoutMs}ms` : `NETWORK: ${(e as Error)?.message ?? e}`,
       );
+    }
+
+    // 401 → code 기반 분기(핸들러 몫 — AUTH-004만 refresh, KB-67 → P-257) 후
+    // true(=refresh 성공)면 원요청 1회 재시도.
+    // /auth/* 자체의 401은 재시도 대상이 아니다(로그인/refresh 실패는 그대로 표면화).
+    if (res.status === 401 && !isRetry && onUnauthorized && !path.startsWith('/auth/')) {
+      let authCode: string | null = null;
+      try {
+        authCode = (JSON.parse(text) as BaseResponse<T> | null)?.code ?? null;
+      } catch {
+        /* 비JSON 401(프록시/게이트웨이) — null = 핸들러 폴백(refresh 1회 fail-safe) */
+      }
+      const refreshed = await onUnauthorized(authCode).catch(() => false);
+      if (refreshed) return request<T>(method, path, body, true, timeoutMs, extraHeaders);
     }
   } finally {
     clearTimeout(timer);

@@ -31,9 +31,10 @@ const tokens = require('../beTokens');
 const beAuth = require('../beAuth') as typeof import('../beAuth');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-// installBeAuth가 등록하는 401 핸들러(=tryRefresh)를 캡처
+// installBeAuth가 등록하는 401 핸들러(P-257: code 분기 — null = refresh 폴백)를 캡처
 beAuth.installBeAuth();
-const tryRefresh: () => Promise<boolean> = (setOnUnauthorized as jest.Mock).mock.calls[0][0];
+const handleUnauthorized: (code?: string | null) => Promise<boolean> = (setOnUnauthorized as jest.Mock).mock.calls[0][0];
+const tryRefresh = () => handleUnauthorized(null); // 기존 케이스 = refresh 경로(폴백과 동일)
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -90,5 +91,43 @@ describe('P-205: 경계 직후 세션 스토어 전파', () => {
     await expect(beAuth.withdrawBe()).rejects.toBeTruthy();
     expect(tokens.clearTokens).toHaveBeenCalled();
     expect(sessionStore.getSessionState()).toBe(false);
+  });
+});
+
+describe('P-257: 401 code 분기(종한 요청) — AUTH-004만 refresh', () => {
+  it('AUTH-004(만료 access) → refresh 발화(현행 rotation)', async () => {
+    api.post.mockResolvedValueOnce({ accessToken: 'A2', refreshToken: 'R2' });
+    await expect(handleUnauthorized('AUTH-004')).resolves.toBe(true);
+    expect(api.post).toHaveBeenCalledWith('/auth/refresh', { refreshToken: 'R' });
+  });
+
+  it.each(['AUTH-003', 'AUTH-005', 'AUTH-006'])(
+    '%s(위조·무효) → refresh 왕복 0 + 즉시 세션 만료(토큰 삭제) + false',
+    async (code) => {
+      await expect(handleUnauthorized(code)).resolves.toBe(false);
+      expect(api.post).not.toHaveBeenCalled(); // refresh 시도 없음
+      expect(tokens.clearTokens).toHaveBeenCalled(); // sessionExpired
+    },
+  );
+
+  it('기타 401(COMMUNITY-005 등) → refresh·세션만료 모두 없음(기존 에러 흐름)', async () => {
+    await expect(handleUnauthorized('COMMUNITY-005')).resolves.toBe(false);
+    expect(api.post).not.toHaveBeenCalled();
+    expect(tokens.clearTokens).not.toHaveBeenCalled(); // 게스트 유도는 화면 몫 — 토큰 보존
+  });
+
+  it('code null(비JSON 401 — 프록시 등) → 현행 refresh 1회 폴백(fail-safe)', async () => {
+    api.post.mockResolvedValueOnce({ accessToken: 'A2', refreshToken: 'R2' });
+    await expect(handleUnauthorized(null)).resolves.toBe(true);
+    expect(api.post).toHaveBeenCalledWith('/auth/refresh', { refreshToken: 'R' });
+  });
+
+  it('client 배선 — 401 body 선독(1회 read)·code 전달·/auth/* 제외·재시도 1회(무변) 소스 잠금', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
+    expect(src).toContain('await onUnauthorized(authCode)'); // code 전달
+    expect(src).toContain("!path.startsWith('/auth/')"); // /auth/* 제외(현행)
+    expect(src.split('text = await res.text()').length).toBe(2); // res.text() 1회만(이중 read 금지)
+    expect(src).toContain('!isRetry'); // 재시도 1회 한정(현행)
   });
 });
