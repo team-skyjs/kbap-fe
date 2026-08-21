@@ -13,12 +13,12 @@
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
@@ -30,7 +30,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
-import { scanV2Enabled, useScan } from '@/lib/data/useScan';
+import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
@@ -143,7 +143,39 @@ export default function Scan() {
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
   const [quotaPicker, setQuotaPicker] = useState(false);
+  // P-255: 진입 시 티켓 선발급 — 소진(SCAN-004)이면 사진 고르기 전에 즉시 잠금
+  // (게스트 가드가 상위 — 아래 preflight는 회원·v2만). 티켓은 화면 스코프 1회용.
+  const preTicket = useRef<string | null>(null);
   const isGuest = useIsGuest();
+  // P-255: 최선 노력 사전 확인 — 004만 즉시 잠금(fail() 미경유 = scan_complete 계측
+  // 오염 0 — 스캔 시도가 아니다), 그 외 실패는 무시(최종 판정 = 스캔 단계 분기·시나리오 E).
+  const quotaLockRef = useRef(false); // 선발급 잠금 판별 — 타 에러 화면 오복원 방지
+  const preflight = useCallback(async () => {
+    if (!scanV2Enabled()) return;
+    try {
+      preTicket.current = await issueScanTicket();
+      if (quotaLockRef.current) {
+        // 리뷰 작성 후 복귀(시나리오 C) — 해금 반영해 카메라 복원(잠금이었을 때만)
+        quotaLockRef.current = false;
+        setError(null);
+        setPhase('camera');
+      }
+    } catch (e) {
+      if ((e as { code?: string })?.code === 'SCAN-004') {
+        preTicket.current = null;
+        quotaLockRef.current = true;
+        setError({ stage: 'quota', detail: 'preflight SCAN-004' });
+        setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
+      }
+    }
+  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입
+      // 진입·복귀 시: 카메라 대기 중이거나 쿼터 잠금이면 선발급(잠금은 해금 확인 겸)
+      void preflight();
+    }, [isGuest, preflight]),
+  );
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
   // P-046(KB-216): 진입 시 오프라인 게이트 — 음식탭/검색과 같은 프로브(캐시 공유).
   // 오프라인이면 카메라 미기동 + 전체 J4, Retry 성공 시 카메라 기동.
@@ -239,7 +271,9 @@ export default function Scan() {
     const scanned = menuDishes.map((d) => ({ itemId: d.itemId, rawMenuName: d.rawMenuName, box: d.box }));
     console.log('[scan] sending dishNames =', JSON.stringify(scanned.map((s) => s.rawMenuName)));
     // P-219: v2 필수 쿼리 — 프로필 통화 → 국적 → 로케일 → USD 폴백(resolveCurrency)
-    scan.mutate({ items: scanned, photo: capturedPhoto, currency }, {
+    const ticket = preTicket.current; // P-255: 선발급분 재사용(1회용 — 소모)
+    preTicket.current = null;
+    scan.mutate({ items: scanned, photo: capturedPhoto, currency, ticket }, {
       onSuccess: (res) => {
         // P-083: 스캔 완료 — 성공/정제실패(degraded) 구분 + 인식 항목 수
         // P-234: v2는 결과 전부가 photoOnly 경로(res.items 항상 [])라 items.length만

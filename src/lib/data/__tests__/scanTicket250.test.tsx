@@ -166,6 +166,33 @@ it('가이드 #7: SCAN-005(처리 중) = 새 티켓 자동 재발급·재호출 
   expect(scanCalls()).toHaveLength(1); // 연속 호출 0
 });
 
+it('P-255: 선발급 티켓 전달 = postScan 자체 발급 0(재사용 — 왕복 절감)', async () => {
+  await runScan({ ...INPUT, ticket: 'PRE-1' });
+  expect(ticketCalls()).toHaveLength(0); // 자체 발급 생략
+  const [, , opts] = scanCalls()[0] as [string, unknown, { headers: Record<string, string> }];
+  expect(opts.headers['X-Scan-Ticket']).toBe('PRE-1');
+});
+
+it('P-255: 선발급 부재(null/미전달) = 현행 자체 발급 폴백(흐름 차단 금지)', async () => {
+  await runScan({ ...INPUT, ticket: null });
+  expect(ticketCalls()).toHaveLength(1);
+  const [, , opts] = scanCalls()[0] as [string, unknown, { headers: Record<string, string> }];
+  expect(opts.headers['X-Scan-Ticket']).toBe('T-1');
+});
+
+it('P-255 배선 소스 잠금 — 진입 선발급(focus)·004 즉시 잠금·계측 미발화·1회용 소모·게스트 상위', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(src).toContain('useFocusEffect'); // 진입·복귀 시 선발급(시나리오 C 복귀 재발급 겸)
+  expect(src).toContain("if (isGuest) return; // 게스트 가드 상위(순서 유지)");
+  expect(src).toContain("setError({ stage: 'quota', detail: 'preflight SCAN-004' })"); // 즉시 잠금(카메라 미표시)
+  // fail() 미경유 = scan_complete 계측 오염 0(진입 잠금은 스캔 시도가 아님)
+  const pre = src.split('const preflight')[1].split('useFocusEffect')[0];
+  expect(pre).not.toContain('fail(');
+  expect(pre).not.toContain('track(');
+  expect(src).toContain('preTicket.current = null;\n    scan.mutate'); // 1회용 소모 후 전달
+});
+
 it('v1(prod) 무변 — 티켓 발급 0·헤더 없음(가이드 비대상)', async () => {
   mockProd = true;
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box: { x: 0, y: 0, width: 1, height: 1 } }], photo: PHOTO });

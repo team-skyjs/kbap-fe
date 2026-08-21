@@ -87,6 +87,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 jest.mock('expo-router', () => ({
+  useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',

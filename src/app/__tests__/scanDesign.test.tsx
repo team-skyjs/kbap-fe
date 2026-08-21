@@ -81,6 +81,7 @@ jest.mock('expo-linear-gradient', () => {
   return { LinearGradient: View };
 });
 jest.mock('expo-router', () => ({
+  useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
 }));

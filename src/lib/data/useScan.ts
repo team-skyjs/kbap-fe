@@ -33,6 +33,9 @@ export interface ScanInput {
   photo: ScanPhoto | null; // null = 샘플 스캔 (사진 없음)
   /** P-219 v2 필수 — 화면이 resolveCurrency()로 해석해 넘긴다(누락 = 400). */
   currency?: string | null;
+  /** P-255: 화면 선발급 티켓(진입 시 소진 선제 안내용) — 있으면 재사용(발급 1회 절감),
+   *  없으면 자체 발급 폴백. 만료는 SCAN-007 조용한 재발급이 처리(P-250 무변). */
+  ticket?: string | null;
 }
 
 export interface ScanOutcome {
@@ -67,11 +70,12 @@ export async function issueScanTicket(): Promise<string> {
   return p.ticket;
 }
 
-export async function postScan({ items, photo, currency }: ScanInput): Promise<ScanOutcome> {
+export async function postScan({ items, photo, currency, ticket: preTicket }: ScanInput): Promise<ScanOutcome> {
   const v2 = scanV2Enabled();
   // P-250: 티켓 발급이 업로드보다 먼저 — SCAN-004(무료 소진)면 업로드 비용 자체가
   // 발생하지 않아야 한다(가이드 명시·시나리오 B). v1 = 티켓 로직 0(가이드 비대상).
-  let ticket = v2 ? await issueScanTicket() : null;
+  // P-255: 화면 선발급분이 있으면 재사용(진입 시 소진 선제 확인의 부산물).
+  let ticket = v2 ? (preTicket ?? (await issueScanTicket())) : null;
   // ⑦(KB-137) 순서: 업로드 해석은 촬영 파일 삭제(사진 교체/화면 언마운트 시)보다
   // 먼저 여기서 실행된다 — 스캔 중에는 삭제 트리거가 없다(언마운트=스캔 폐기).
   const imagePath = await resolveScanImagePath(photo);

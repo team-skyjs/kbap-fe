@@ -78,6 +78,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 jest.mock('expo-router', () => ({
+  useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
   useSegments: () => [], // P-214: 계측 화면 식별(StateBlock·HelpfulButton)
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
@@ -98,7 +99,7 @@ jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { restrictions: [] } }),
   useMyReviews: () => ({ data: [] }),
 }));
-jest.mock('@/lib/data/useScan', () => ({ useScan: () => ({ mutate: jest.fn() }) }));
+jest.mock('@/lib/data/useScan', () => ({ useScan: () => ({ mutate: jest.fn() }), scanV2Enabled: () => false, issueScanTicket: jest.fn() })); // P-255: 선발급 훅 의존 목
 
 import Scan from '../scan';
 import { CameraView } from 'expo-camera';
