@@ -15,6 +15,7 @@ import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-route
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { EVENTS, track } from '@/lib/analytics';
+import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
   StickyHeader,
@@ -64,6 +65,16 @@ export default function FoodReviews() {
   const headerH = useHeaderHeight();
 
   const { data: food } = useFoodDetail(id ?? '');
+  // P-251: 리뷰 자격 게이트 — 회원 && reviewEligible === false만(게스트 = 빈 상태 CTA 자체 미노출)
+  const [eligGate, setEligGate] = useState(false);
+  const writeReview = () => {
+    if (!isGuest && food?.reviewEligible === false) {
+      setEligGate(true);
+      return;
+    }
+    track(EVENTS.review_write_tap, { source: 'list' });
+    router.push(`/food/${id}/review` as Href);
+  };
   const { data: me } = useMe();
   const deleteReview = useDeleteReview();
 
@@ -118,6 +129,7 @@ export default function FoodReviews() {
       >
         {/* P-164: 로드 실패 = 공용 에러(+재시도) — loaded 게이트 밖(에러 시 헤더만
             남던 빈 화면이 바로 이 구멍). 로드된 항목이 있으면 그 목록 유지. */}
+        <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
         {reviewsQ.isError && all.length === 0 ? (
           <QueryErrorBlock error={reviewsQ.error} onRetry={() => void reviewsQ.refetch()} onGoBack={() => router.back()} />
         ) : null}
@@ -134,7 +146,7 @@ export default function FoodReviews() {
             primary={{
               label: t('reviews.writeReview'),
               icon: <IconPlus size={17} color="#fff" />,
-              onPress: () => { track(EVENTS.review_write_tap, { source: 'list' }); router.push(`/food/${id}/review` as Href); }, // P-144
+              onPress: writeReview, // P-144 계측 + P-251 자격 게이트
             }}
           />
         ) : (
@@ -193,7 +205,7 @@ export default function FoodReviews() {
                 primary={{
                   label: t('reviews.writeReview'),
                   icon: <IconPlus size={17} color="#fff" />,
-                  onPress: () => { track(EVENTS.review_write_tap, { source: 'list' }); router.push(`/food/${id}/review` as Href); }, // P-144
+                  onPress: writeReview, // P-144 계측 + P-251 자격 게이트
                 }}
               />
             ) : (

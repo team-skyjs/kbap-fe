@@ -39,6 +39,7 @@ import { IconLock, IconMore, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
+import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { foodSpiceText, spiceRank, spicierThanUser, type SpiceChoice } from '@/lib/spice';
 import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
@@ -233,6 +234,19 @@ function Registered({
   router: Router;
   id: string;
 }) {
+  // P-251(BE #185): 리뷰 자격 게이트 — 회원 && reviewEligible === false(서버 정본)만.
+  // 게스트 = 기존 가입 게이트 우선(작성 화면 AuthGateSheet — 순서 유닛 잠금).
+  // undefined(prod 구응답) = 게이트 없음(강제 미배포 호환).
+  const [eligGate, setEligGate] = useState(false);
+  const writeReview = (source: 'detail') => {
+    if (!guest && food.reviewEligible === false) {
+      setEligGate(true);
+      return;
+    }
+    track(EVENTS.review_write_tap, { source });
+    router.push(`/food/${id}/review` as Href);
+  };
+
   const [gateOpen, setGateOpen] = useState(false); // 게이트 시트 (KB-77)
   // false-safe guard (Constitution III · SC-003): empty profile never shows safe
   const dishRisk = personalRisk(food.risk, hasRestrictions);
@@ -404,11 +418,12 @@ function Registered({
       {FLAGS.reviewsEnabled && !guest && !food.reviewSummaryMissing && food.overall.count === 0 && (
         <View style={styles.sec} testID="review-empty-cta">
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
-          <Btn variant="ghost" onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
+          <Btn variant="ghost" onPress={() => writeReview('detail')}>
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
+      <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
       {FLAGS.reviewsEnabled && !food.reviewSummaryMissing && food.overall.count > 0 && (
         <View style={styles.sec} testID="review-brief">
           <View style={styles.rvBriefHead}>
@@ -428,7 +443,7 @@ function Registered({
                 </Text>
               </Pressable>
             </View>
-            <Btn sm variant="ghost" onPress={() => { track(EVENTS.review_write_tap, { source: 'detail' }); router.push(`/food/${id}/review` as Href); }}>
+            <Btn sm variant="ghost" onPress={() => writeReview('detail')}>
               {t('reviews.writeReview')}
             </Btn>
           </View>

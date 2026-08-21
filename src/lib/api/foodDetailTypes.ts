@@ -47,6 +47,8 @@ export interface ReviewSummaryWire extends ReviewRatingWire {
 }
 
 export interface FoodDetailWire {
+  /** P-251(BE #185): 리뷰 작성 자격 — 본인 스캔 이력 보유 = true·비회원 = false. 구응답 부재. */
+  reviewEligible?: boolean;
   name: string; // request-language name (falls back to Korean)
   /** Korean name regardless of lang. null when the localized name IS Korean (lang=ko / fallback). */
   koreanName: string | null;
