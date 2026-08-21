@@ -1378,3 +1378,8 @@
 - [x] P-260 🔴 무토큰 401 = sessionExpired 생략(전 캐시 소거 리셋 복구)·blocked 쿼리 게스트 차단·인증 쿼리 스윕 보고 — ecc9a21.
 - [x] P-259 주문 상세 ready === false = 행 비활성+"등록 준비 중"+리뷰 숏컷 숨김(URL 판단 금지), itemPending ×10, matched 필터 폐기 확정 — 9db8d34.
 - [x] tsc 0 · jest 145스위트 940/940 · teamtest OTA(ios de3949b9·and 19acd0da).
+
+## 프로필 UX 2건 (2026-08-21, P-262·261)
+- [x] P-262 맵기 슬라이더 팬 = 트랙+라벨 전체 래퍼(±32pt) — 라벨 가림 해소·양 표면 수혜 — f2fb8b9.
+- [x] P-261 식이 Yes = replace — 회피 편집 후 프로필 직행 — 35a0331.
+- [x] tsc 0 · jest 145스위트 941/941 · teamtest OTA(ios 7a153f9c·and 1a3b3701).
