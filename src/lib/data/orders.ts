@@ -46,7 +46,9 @@ export async function saveOrderHistory(input: { imagePath?: string | null; items
       ...(coord ?? {}),
     });
   } catch (e) {
-    // 비치명 — 주문 완료 UX 무영향(이력만 유실)
-    console.log('[order] 이력 저장 실패(비치명):', (e as Error)?.message ?? e);
+    // 비치명 — 주문 완료 UX 무영향(이력만 유실).
+    // P-256: code·status 동반 — 400 원인(조사 대기 foodId 거부 추정, 종한 확인 중) 관찰용.
+    const err = e as { message?: string; status?: number; code?: string };
+    console.log(`[order] 이력 저장 실패(비치명) ${err?.status ?? '?'} ${err?.code ?? 'NO-CODE'}:`, err?.message ?? e);
   }
 }

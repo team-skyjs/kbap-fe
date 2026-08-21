@@ -72,13 +72,30 @@ it('실패 무해 — POST reject·위치 오류 모두 throw 없이 종료(주�
   expect(body).not.toHaveProperty('latitude'); // GPS 오류 = 좌표만 조용히 생략
 });
 
+it('P-256: 실패 로그 = status·code 동반(400 진단 — 조사 대기 foodId 거부 관찰)', async () => {
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const err = Object.assign(new Error('잘못된 요청입니다'), { status: 400, code: 'ORDER-001' });
+  mockPost.mockRejectedValue(err);
+  await saveOrderHistory({ imagePath: 'p', items: ITEMS });
+  expect(spy).toHaveBeenCalledWith('[order] 이력 저장 실패(비치명) 400 ORDER-001:', '잘못된 요청입니다');
+  spy.mockRestore();
+});
+
 it('배선 소스 잠금 — 완료 지점(P-192 리마인더와 동일) 저장 + 스캔 경로 관통', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   const card = fs.readFileSync('src/features/order/FlippedOrderCard.tsx', 'utf8') as string;
-  const done = card.split('order-done-confirm')[1] ?? '';
-  expect(done).toContain('scheduleReviewReminder'); // 같은 지점(발주 ①)
-  expect(done).toContain('saveOrderHistory({ imagePath: orderImagePath, items })');
+  // P-256: 호출 시점 = done 탭(모달 전) — go home 미탭 이탈에도 저장·계측·리마인더 발화
+  const beforeModal = card.split('order-done-confirm')[0];
+  const afterModal = card.split('order-done-confirm')[1] ?? '';
+  expect(beforeModal).toContain('saveOrderHistory({ imagePath: orderImagePath, items })');
+  expect(beforeModal).toContain('scheduleReviewReminder'); // 동일 시점 동반 이동(재량 ②)
+  expect(beforeModal).toContain('EVENTS.order_done');
+  expect(beforeModal).toContain('if (committedRef.current) return;'); // 1회 가드(재탭 이중 발화 0)
+  // 모달 go home = 복귀만 — 저장/계측/리마인더 잔존 0
+  expect(afterModal).not.toContain('saveOrderHistory');
+  expect(afterModal).not.toContain('scheduleReviewReminder');
+  expect(afterModal).not.toContain('EVENTS.order_done');
   expect(fs.readFileSync('src/app/scan-order.tsx', 'utf8')).toContain('orderImagePath={imgParam || null}');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain('&img=');
 });

@@ -61,6 +61,8 @@ export function FlippedOrderCard({
   const [zoomed, setZoomed] = React.useState(false);
   // P-162: Done = 무반응 아님 — 완료 확인 모달 경유 후 onDone(홈 이동)
   const [doneOpen, setDoneOpen] = React.useState(false);
+  // P-256: 완료 확정 1회 가드 — done 재탭·모달 재경유에도 저장/계측/리마인더 1회
+  const committedRef = React.useRef(false);
   // P-166: 모달 등장과 동시 폭죽 — DURATION 후 자연 소멸(언마운트), 매 완료마다
   const [confetti, setConfetti] = React.useState(false);
   React.useEffect(() => {
@@ -126,6 +128,17 @@ export function FlippedOrderCard({
           onPress={() => {
             setDoneOpen(true);
             setConfetti(true); // P-166: 모달 등장과 동시 버스트
+            // P-256(예진 HAR 판독): 완료 확정 = **이 done 탭** — go home 전 이탈해도
+            // 저장·계측·리마인더가 남도록 전부 여기서 발화. 재탭·모달 경유 이중 발화는
+            // 1회 가드(ref)로 봉쇄. order_done·리마인더 동반 이동(재량 ② — 퍼널 종점
+            // 정확도·go home 미탭 유실 방지, 발주 권고안 그대로).
+            if (committedRef.current) return;
+            committedRef.current = true;
+            track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
+            const target = items.find((i) => i.foodId != null && i.qty > 0);
+            if (target?.foodId) void scheduleReviewReminder({ foodId: String(target.foodId), name: target.name });
+            // P-252→256: 주문 이력 저장 — 실패 무해(내부 흡수·code 로그), UX 무영향
+            void saveOrderHistory({ imagePath: orderImagePath, items });
           }}
         >
           {t('order.done')}
@@ -143,17 +156,7 @@ export function FlippedOrderCard({
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
               <Btn
-                onPress={() => {
-                  // P-192: 완료 모달 닫힘 = 리뷰 유도 로컬 알림 예약(1h) — 복수면 첫
-                  // foodId 보유 항목(발주 재량). 플래그·설정·권한 게이트는 어댑터 몫.
-                  // P-214: 주문 퍼널 종점 — 항목 수만(음식명·장소 금지)
-                  track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
-                  const target = items.find((i) => i.foodId != null && i.qty > 0);
-                  if (target?.foodId) void scheduleReviewReminder({ foodId: String(target.foodId), name: target.name });
-                  // P-252(KB-337): 주문 이력 저장 — 실패 무해(내부 흡수), UX 무영향
-                  void saveOrderHistory({ imagePath: orderImagePath, items });
-                  onDone();
-                }}
+                onPress={onDone} /* P-256: 저장·계측·리마인더는 done 탭으로 이동 — 여기는 복귀만 */
               >
                 {t('order.doneHome')}
               </Btn>
