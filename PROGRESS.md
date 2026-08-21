@@ -1370,3 +1370,6 @@
 
 ## 401 재발급 code 분기 (2026-08-21, P-257)
 - [x] client 401 body 선독+code 전달, beAuth 분기(AUTH-004만 refresh·003/005/006 즉시 세션 만료·기타 무반응·null = refresh 폴백), 무변 3종 잠금 — 283df85, teamtest OTA(ios e031e5e8·and b1a2ae10).
+
+## 게스트 Helpful 게이트 카피 (2026-08-21, P-258)
+- [x] 'reviews' 유물 → 'helpful' 신설(카피 ×10·ko 임시값 K-등록 대상), FAB = writeReview 분리, 사어 게이트(food 리뷰 목록) 제거·잔존 0 잠금 — 151672e, teamtest OTA(ios b1a5f922·and 5802eaa1).
