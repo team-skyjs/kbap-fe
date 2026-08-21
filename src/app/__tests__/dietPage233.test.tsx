@@ -32,9 +32,10 @@ jest.mock('react-native-reanimated', () => {
 });
 const mockPush = jest.fn();
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useSegments: () => [],
-  useRouter: () => ({ push: mockPush, back: mockBack, replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: mockBack, replace: mockReplace }),
   usePathname: () => '/',
 }));
 jest.mock('react-i18next', () => ({
@@ -105,7 +106,9 @@ it('추가 저장 = dietCategories 풀 셋 + 신규분 합집합 회피 — 한 
   for (const c of [...NO_ALCOHOL, 'EGG']) expect(codes).toContain(c); // 기존 보존(합집합 — 오삭제 0)
   expect(tree.root.findAll((n) => n.props?.testID === 'diet-saved-modal').length).toBeGreaterThanOrEqual(1);
   await tap(tree, 'diet-saved-yes');
-  expect(mockPush).toHaveBeenCalledWith('/profile/restrictions'); // 미세 조정 진입
+  // P-261: replace(push 아님) — 회피 저장 back()이 식이를 거치지 않고 프로필 직행
+  expect(mockReplace).toHaveBeenCalledWith('/profile/restrictions');
+  expect(mockPush).not.toHaveBeenCalled();
 });
 
 it('사후 모달 No = 프로필 복귀(반영은 이미 됨 — PATCH 1회 유지)', async () => {

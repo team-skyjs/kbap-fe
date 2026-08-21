@@ -119,7 +119,10 @@ export default function DietPresetsScreen() {
             <Text style={styles.confirmBody}>{t('profile.dietSavedBody')}</Text>
             <View style={{ gap: 9, marginTop: 8 }}>
               <Btn
-                onPress={() => { setSavedModal(false); router.push('/profile/restrictions' as Href); }}
+                /* P-261(예진 지시): push → replace — 식이 화면을 회피 편집으로 교체.
+                   회피 저장/뒤로 = back() 그대로 → 프로필 직행(식이 저장은 이미 완료라
+                   돌아갈 이유 없는 화면·스택 잔존 제거) */
+                onPress={() => { setSavedModal(false); router.replace('/profile/restrictions' as Href); }}
                 testID="diet-saved-yes"
               >
                 {t('profile.dietSavedYes')}
