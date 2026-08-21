@@ -10,7 +10,9 @@
  *    통과 스톱 기준 실시간(onChange).
  *  - **부모 스크롤 잠금** — onPanResponderTerminationRequest 거부 + 드래그
  *    상태를 onDragStateChange로 부모에 알림(부모 ScrollView scrollEnabled 토글).
- *  - **히트 영역 확대** — 터치 래퍼 상하 ±20pt(마진 음수로 레이아웃 자리 무변).
+ *  - **히트 영역 확대** — P-262: 팬 핸들러를 트랙+라벨 전체 래퍼로 승격(라벨 줄이
+ *    음수 마진 확장 영역을 도로 덮어 히트를 뺏던 문제 해소) + 상하 ±32pt
+ *    (마진 음수로 레이아웃 자리 무변). 라벨 터치도 pageX 기반이라 자연 동작.
  *
  * 시안(D-11) 문법 유지: 얇은 그라데이션 트랙·중간 미선택 흰 틱·흰 원+잉크
  * 보더 노브·라벨 5개(선택 볼드). 절대 위치 = 선택 전환 시 타 요소 이동 0
@@ -27,7 +29,7 @@ import { SPICE_LEVEL_LABEL, SPICE_LEVELS, spiceRank, type SpiceLevel } from '@/l
 
 const KNOB = 26;
 const STOPS = 4; // 구간 수 (스톱 5개)
-const TOUCH_PAD = 20; // 히트 영역 상하 확장(pt)
+const TOUCH_PAD = 32; // 히트 영역 상하 확장(pt) — P-262: 20 → 32(전체 ≈130pt)
 
 export function SpiceLevelSlider({
   level,
@@ -101,22 +103,23 @@ export function SpiceLevelSlider({
   const labelW = trackW > 0 ? trackW / 4 : 0;
 
   return (
-    <View>
-      {/* 터치 래퍼 — 상하 ±20pt 확장(음수 마진으로 레이아웃 자리 무변) */}
+    // P-262: 팬 = 트랙+라벨 전체 래퍼(±32pt 확장) — 내부는 전부 pointerEvents none
+    <View style={styles.hitArea} {...pan.panHandlers}>
       <View
-        style={styles.touchArea}
+        style={styles.trackWrap}
         onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
-        {...pan.panHandlers}
+        pointerEvents="none"
       >
-        <View style={styles.trackBox} pointerEvents="none">
+        <View style={styles.trackBox}>
           <LinearGradient colors={['#f2c14e', '#e2580c', '#c22d20']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.track} />
           {/* 중간 스톱 틱(1~3) — absolute 고정: 선택이 바뀌어도 이동 0 */}
           {trackW > 0 && [1, 2, 3].map((i) => <View key={i} style={[styles.tick, { left: toX(i) - 1 }]} />)}
           {knobX != null && <View style={[styles.knob, { left: knobX - KNOB / 2 }]} />}
         </View>
       </View>
-      {/* 라벨 5개 전부 — 선택 볼드 잉크·비선택 회색. 끝 라벨은 안쪽 정렬(오버플로 방지) */}
-      <View style={styles.labels}>
+      {/* 라벨 5개 전부 — 선택 볼드 잉크·비선택 회색. 끝 라벨은 안쪽 정렬(오버플로 방지).
+          P-262: 팬 영역 안(터치 통과) — 라벨 위 터치도 슬라이더가 먼저 받는다 */}
+      <View style={styles.labels} pointerEvents="none">
         {trackW > 0 &&
           SPICE_LEVELS.map((l, i) => {
             const on = i === rank;
@@ -144,7 +147,9 @@ export function SpiceLevelSlider({
 }
 
 const styles = StyleSheet.create({
-  touchArea: { height: 44 + TOUCH_PAD * 2, marginVertical: -TOUCH_PAD, justifyContent: 'center' },
+  // P-262: 히트 = 트랙(44)+라벨(22)+상하 확장(64) ≈ 130pt — 음수 마진 = 레이아웃 자리 무변
+  hitArea: { paddingVertical: TOUCH_PAD, marginVertical: -TOUCH_PAD },
+  trackWrap: { justifyContent: 'center' },
   trackBox: { height: 44, justifyContent: 'center' },
   track: { position: 'absolute', left: 0, right: 0, height: 6, borderRadius: 3, top: 19 },
   tick: { position: 'absolute', top: 16, width: 2, height: 12, borderRadius: 1, backgroundColor: '#fff' },

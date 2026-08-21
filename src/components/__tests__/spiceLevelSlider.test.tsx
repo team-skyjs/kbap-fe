@@ -77,3 +77,16 @@ it('릴리즈 = 최근접 스톱 스냅 (트랙 레벨 제스처 — 개별 탭 
   });
   expect(onChange).toHaveBeenCalledWith('HOT');
 });
+
+it('P-262: 팬 = 트랙+라벨 전체 래퍼(±32pt) — 라벨 줄이 히트를 못 뺏는다(소스 잠금)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/components/SpiceLevelSlider.tsx', 'utf8') as string;
+  expect(src).toContain('const TOUCH_PAD = 32;'); // 20 → 32 상향
+  expect(src).toContain('<View style={styles.hitArea} {...pan.panHandlers}>'); // 팬 = 최상위 래퍼
+  expect(src).toContain('<View style={styles.labels} pointerEvents="none">'); // 라벨 = 터치 통과
+  // 내부(트랙 래퍼)에 팬 잔존 0 — 핸들러는 hitArea 한 곳
+  expect(src.split('pan.panHandlers').length).toBe(2);
+  // onLayout(trackW 측정)은 트랙 래퍼 유지 + 음수 마진(레이아웃 자리 무변)
+  expect(src).toContain('style={styles.trackWrap}');
+  expect(src).toContain('marginVertical: -TOUCH_PAD');
+});

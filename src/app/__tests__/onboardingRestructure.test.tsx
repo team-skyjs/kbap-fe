@@ -243,12 +243,14 @@ it('P-134 맵기: 레벨 전환 시 레일 교체 · 👶 배지 NONE/MILD 한�
   expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBeGreaterThanOrEqual(1); // 👶 NONE
   // HOT으로 전환 (슬라이더 릴리즈 스냅 — spiceUnset 하네스 지문)
   const { StyleSheet } = require('react-native');
-  const isTrack = (n: { props?: { style?: unknown; onResponderRelease?: unknown } }) =>
+  // P-262: 팬 래퍼 = paddingVertical 32 지문·onLayout = 내부 트랙 래퍼(분리)
+  const isPan = (n: { props?: { style?: unknown; onResponderRelease?: unknown } }) =>
     typeof n.props?.onResponderRelease === 'function' &&
-    (StyleSheet.flatten(n.props?.style as never) as { height?: number } | undefined)?.height === 84;
-  const track = tree.root.findAll(isTrack)[0];
-  await act(async () => { track.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } }); });
-  await act(async () => { tree.root.findAll(isTrack)[0].props.onResponderRelease({ nativeEvent: { pageX: 225 } }); }); // HOT
+    (StyleSheet.flatten(n.props?.style as never) as { paddingVertical?: number } | undefined)?.paddingVertical === 32;
+  const pan = tree.root.findAll(isPan)[0];
+  const layoutNode = pan.findAll((n) => typeof n.props?.onLayout === 'function')[0];
+  await act(async () => { layoutNode.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } }); });
+  await act(async () => { tree.root.findAll(isPan)[0].props.onResponderRelease({ nativeEvent: { pageX: 225 } }); }); // HOT
   expect(tree.root.findAll((n) => n.props?.testID === 'rail-483').length).toBeGreaterThanOrEqual(1); // HOT 레일(국물떡볶이)
   expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0); // 배지 소멸
 });

@@ -112,17 +112,18 @@ const btnWith = (tree: ReactTestRenderer, key: string) =>
 // (onLayout과 responder props는 같은 View에 있으나 test renderer 노드가 분리될 수
 // 있어 각각 탐색)
 async function selectStop(tree: ReactTestRenderer, index: 0 | 1 | 2 | 3 | 4) {
-  // 터치 래퍼 지문 = height 84(44+±20 확장, P-098) + responder — ScrollView 등
-  // 다른 responder/onLayout 보유 노드 오탐 방지
-  const isTrack = (n: { props?: { style?: unknown; onResponderRelease?: unknown } }) =>
+  // P-262: 팬 래퍼 지문 = paddingVertical 32(±32 확장) + responder — ScrollView 등
+  // 다른 responder 보유 노드 오탐 방지. onLayout은 내부 트랙 래퍼(자식)로 분리됨.
+  const isPan = (n: { props?: { style?: unknown; onResponderRelease?: unknown } }) =>
     typeof n.props?.onResponderRelease === 'function' &&
-    (StyleSheet.flatten(n.props?.style as never) as { height?: number } | undefined)?.height === 84;
-  const track = tree.root.findAll(isTrack)[0];
+    (StyleSheet.flatten(n.props?.style as never) as { paddingVertical?: number } | undefined)?.paddingVertical === 32;
+  const pan = tree.root.findAll(isPan)[0];
+  const layoutNode = pan.findAll((n) => typeof n.props?.onLayout === 'function')[0];
   await act(async () => {
-    track.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } });
+    layoutNode.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } });
   });
   await act(async () => {
-    tree.root.findAll(isTrack)[0].props.onResponderRelease({ nativeEvent: { pageX: (300 * index) / 4 } }); // P-098 pageX
+    tree.root.findAll(isPan)[0].props.onResponderRelease({ nativeEvent: { pageX: (300 * index) / 4 } }); // P-098 pageX
   });
 }
 const skipLink = (tree: ReactTestRenderer) =>
