@@ -1367,3 +1367,6 @@
 
 ## 주문 이력 저장 보정 (2026-08-21, P-256)
 - [x] 저장·계측·리마인더 = done 탭 시점(1회 가드·go home = 복귀만), 실패 로그 status·code 동반(400 관찰 — 필터는 종한 회신 대기) — caad941, teamtest OTA(ios 01b9e39d·and 26f1269a).
+
+## 401 재발급 code 분기 (2026-08-21, P-257)
+- [x] client 401 body 선독+code 전달, beAuth 분기(AUTH-004만 refresh·003/005/006 즉시 세션 만료·기타 무반응·null = refresh 폴백), 무변 3종 잠금 — 283df85, teamtest OTA(ios e031e5e8·and b1a2ae10).
