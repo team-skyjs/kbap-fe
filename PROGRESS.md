@@ -1356,3 +1356,6 @@
 - [x] P-251 🚨 리뷰 자격 강제 — reviewEligible 게이트(상세·목록 4 CTA, P-245 문구 재사용·게스트 = 가입 게이트 우선)·REVIEW-004 제출 분기 — 37ee4bd.
 - [x] P-252 주문 이력 저장 — 완료 지점 POST /api/orders(imagePath 관통·foodId 필수 드롭·좌표 = 보유 권한만·실패 무해) — 4a8b5cb.
 - [x] tsc 0 · jest 143스위트 915/915 · teamtest OTA 일괄(ios ff0fb455·and d73e6220).
+
+## My Foods 러프 (2026-08-21, P-253)
+- [x] /profile/my-foods(세그·주문 카드 4분할 썸네일·커서)·주문 상세(스냅샷·뷰어·리뷰 연결)·Scanned 재사용·빈 상태 CTA, read-only 잠금, myFoods i18n ×10 — 76ef2f5, teamtest OTA(ios 59e23b10·and 8f9f76eb).
