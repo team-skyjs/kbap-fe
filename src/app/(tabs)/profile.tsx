@@ -31,6 +31,7 @@ import {
   IconLogout,
   IconSpeech,
   IconStar,
+  IconFood,
   Spinner,
   SkeletonProfile,
   QueryErrorBlock,
@@ -295,15 +296,7 @@ export default function Profile() {
                 재사용, 배치 = 개인 콘텐츠 클러스터(Saved/My reviews) 위 재량. 빈 상태 = 홈
                 규칙(미노출), 게스트는 프로필 자체가 로그인 임베드라 미도달. */}
             {recentScans.length > 0 && (
-              <Section
-                title={t('home.recentTitle')}
-                /* P-253: My Foods 진입점 — Ordered/Scanned 모아보기(러프) */
-                action={
-                  <Pressable hitSlop={8} onPress={() => router.push('/profile/my-foods' as Href)} testID="profile-my-foods">
-                    <Text style={styles.link}>{t('profile.myFoods')}</Text>
-                  </Pressable>
-                }
-              >
+              <Section title={t('home.recentTitle')}>
                 <View style={{ gap: 10 }}>
                   {recentScans.map((d) => (
                     <RecentRow
@@ -327,6 +320,12 @@ export default function Profile() {
                 구 "My reviews · n | See all" 텍스트 헤더+인라인 리스트 소멸.
                 P-157 ②: 저장 아이콘 = 별(P-129 상세와 동일 SVG 통일). */}
             <View style={styles.acctList}>
+              {/* P-254: My Foods = 계정 메뉴 행(예진 지시 — P-253 헤더 링크 대체) */}
+              <AcctRow
+                icon={<IconFood size={17} color={C.ink2} />}
+                label={t('profile.myFoods')}
+                onPress={() => router.push('/profile/my-foods' as Href)}
+              />
               <AcctRow
                 icon={<IconStar size={17} color={C.ink2} />}
                 label={t('profile.saved')}

@@ -181,7 +181,10 @@ it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·�
     }
     expect(src).not.toMatch(/api\.(post|patch|del)/); // read-only(조회 전용)
   }
-  // 진입점 + 상세 리뷰 연결 배선
-  expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain("'/profile/my-foods' as Href");
+  // 진입점(P-254: 계정 메뉴 행 — P-253 헤더 링크 소멸) + 상세 리뷰 연결 배선
+  const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
+  expect(profile).toContain("'/profile/my-foods' as Href");
+  expect(profile).toContain("label={t('profile.myFoods')}"); // AcctRow 행 문법
+  expect(profile).not.toContain('testID="profile-my-foods"'); // 구 헤더 링크 잔존 0
   expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).toContain('/review` as Href');
 });
