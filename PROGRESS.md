@@ -1350,3 +1350,9 @@
 - [x] P-248 Photo 뷰 cover→contain 레터박스 + 콘텐츠 기준 팬 클램프 일반화 — b1acd9c.
 - [x] P-247 stayHint 30~40초 결합 ×10 + 🔴 error.detail(BE 원문) 렌더 삭제·잔존 0 잠금 — dba5371.
 - [x] tsc 0 · jest 140스위트 893/893 · teamtest OTA 일괄(ios a83e3d73·and 15e90d01).
+
+## BE 8/21 배포 배선 3건 (2026-08-21, P-250·251·252)
+- [x] P-250 🚨 스캔 티켓 3회 정책 — 발급 선행·X-Scan-Ticket·SCAN-004(quota → 리뷰 픽커 직결)/005/007 분기·errOutage 개정 ×10, v2 스캔 복구 — 4a8b5cb.
+- [x] P-251 🚨 리뷰 자격 강제 — reviewEligible 게이트(상세·목록 4 CTA, P-245 문구 재사용·게스트 = 가입 게이트 우선)·REVIEW-004 제출 분기 — 37ee4bd.
+- [x] P-252 주문 이력 저장 — 완료 지점 POST /api/orders(imagePath 관통·foodId 필수 드롭·좌표 = 보유 권한만·실패 무해) — 4a8b5cb.
+- [x] tsc 0 · jest 143스위트 915/915 · teamtest OTA 일괄(ios ff0fb455·and d73e6220).
