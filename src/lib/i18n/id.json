@@ -968,6 +968,7 @@
     "scanned": "Dipindai",
     "orderTitle": "Pesanan",
     "total": "Total",
+    "itemPending": "Segera hadir di K-Bap",
     "itemCount_one": "{{count}} item",
     "itemCount_other": "{{count}} item",
     "emptyOrdersTitle": "Belum ada pesanan",

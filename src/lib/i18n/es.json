@@ -969,6 +969,7 @@
     "scanned": "Escaneados",
     "orderTitle": "Pedido",
     "total": "Total",
+    "itemPending": "Próximamente en K-Bap",
     "itemCount_one": "{{count}} plato",
     "itemCount_other": "{{count}} platos",
     "emptyOrdersTitle": "Aún no hay pedidos",

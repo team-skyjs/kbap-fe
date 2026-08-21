@@ -968,6 +968,7 @@
     "scanned": "スキャンした料理",
     "orderTitle": "注文履歴",
     "total": "合計",
+    "itemPending": "K-Bapに登録準備中",
     "itemCount_one": "{{count}}点",
     "itemCount_other": "{{count}}点",
     "emptyOrdersTitle": "まだ注文履歴がありません",

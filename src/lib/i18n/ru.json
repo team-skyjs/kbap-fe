@@ -971,6 +971,7 @@
     "scanned": "Отсканированные",
     "orderTitle": "Заказ",
     "total": "Итого",
+    "itemPending": "Скоро появится в K-Bap",
     "itemCount_one": "{{count}} блюдо",
     "itemCount_other": "{{count}} блюд",
     "emptyOrdersTitle": "Заказов пока нет",

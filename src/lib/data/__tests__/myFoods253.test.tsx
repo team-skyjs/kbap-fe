@@ -171,6 +171,24 @@ it('세그 전환 — Scanned 탭 = /foods/scanned 재사용(P-238)·행 탭 = �
   expect(mockPush).toHaveBeenCalledWith('/food/7?src=list');
 });
 
+it('P-259: ready 게이트 — false = 행 비활성+배지+리뷰 숏컷 0 · true/부재 = 현행(소스 잠금)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('fs');
+  const detail = fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8') as string;
+  expect(detail).toContain('disabled={it.foodId == null || it.ready === false}'); // 진입 비활성
+  expect(detail).toContain("it.ready !== false && router.push"); // 탭 무반응
+  expect(detail).toContain("t('myFoods.itemPending')"); // 준비중 배지
+  expect(detail).toContain('it.foodId != null && it.ready !== false && ('); // 리뷰 숏컷 숨김
+  // 기본 이미지 URL 문자열로 준비중 판단 금지(종한 명시) — ready 필드가 유일 기준
+  expect(detail).not.toMatch(/default[-_]?food|imageUrl[^\n]*(includes|match)/);
+  const hooks = fs.readFileSync('src/lib/data/useOrders.ts', 'utf8') as string;
+  expect(hooks).toContain("typeof i.ready === 'boolean'"); // boolean만 통과(부재 = 공개 폴백)
+  // 카피 ×10 존재
+  for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
+    expect(typeof JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).myFoods.itemPending).toBe('string');
+  }
+});
+
 it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·공유·dish 위험도) 잔존 0', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');

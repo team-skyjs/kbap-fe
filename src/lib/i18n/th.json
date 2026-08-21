@@ -968,6 +968,7 @@
     "scanned": "ที่สแกนแล้ว",
     "orderTitle": "ประวัติการสั่ง",
     "total": "รวม",
+    "itemPending": "เร็ว ๆ นี้ใน K-Bap",
     "itemCount_one": "{{count}} รายการ",
     "itemCount_other": "{{count}} รายการ",
     "emptyOrdersTitle": "ยังไม่มีประวัติการสั่ง",

@@ -48,8 +48,10 @@ export default function OrderDetailScreen() {
               <Pressable
                 key={`${it.foodId ?? 'x'}-${k}`}
                 style={[styles.itemRow, k > 0 && styles.itemRowDivider]}
-                disabled={it.foodId == null}
-                onPress={() => it.foodId && router.push(`/food/${it.foodId}?src=list` as Href)}
+                /* P-259: ready === false = 준비중(상세 = FOOD-001) — 진입 비활성.
+                   판단은 서버 ready 필드만(기본 이미지 URL 판단 금지 — 종한 명시) */
+                disabled={it.foodId == null || it.ready === false}
+                onPress={() => it.foodId && it.ready !== false && router.push(`/food/${it.foodId}?src=list` as Href)}
                 testID={`order-item-${k}`}
               >
                 {it.imageUrl ? (
@@ -63,9 +65,14 @@ export default function OrderDetailScreen() {
                     {t('myFoods.itemCount', { count: it.quantity })}
                     {it.price != null ? `  ${formatKrw(it.price)}` : ''}
                   </Text>
+                  {/* P-259: 준비중 표시 — 기존 행 문법 내 보조 텍스트(새 시각 문법 0) */}
+                  {it.ready === false && (
+                    <Text style={styles.itemPending} testID={`order-item-pending-${k}`}>{t('myFoods.itemPending')}</Text>
+                  )}
                 </View>
-                {/* 리뷰 쓰기 — 주문 = 스캔 경유라 자격 상시 보유(P-251 게이트 불요) */}
-                {it.foodId != null && (
+                {/* 리뷰 쓰기 — 주문 = 스캔 경유라 자격 상시 보유(P-251 게이트 불요).
+                    P-259: 준비중(ready false) = 숏컷 숨김(작성도 400 — 예진 지시 "디비 히트만") */}
+                {it.foodId != null && it.ready !== false && (
                   <Pressable
                     hitSlop={8}
                     style={styles.reviewLink}
@@ -116,6 +123,7 @@ const styles = StyleSheet.create({
   itemThumb: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: C.surface2 },
   itemName: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   itemSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink3, fontVariant: ['tabular-nums'] },
+  itemPending: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3, marginTop: 2 },
   reviewLink: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: C.line },
   reviewLinkText: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
 

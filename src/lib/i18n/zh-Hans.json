@@ -968,6 +968,7 @@
     "scanned": "扫描过的菜",
     "orderTitle": "订单记录",
     "total": "合计",
+    "itemPending": "即将登陆 K-Bap",
     "itemCount_one": "{{count}}份",
     "itemCount_other": "{{count}}份",
     "emptyOrdersTitle": "还没有订单记录",

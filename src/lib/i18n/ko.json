@@ -968,6 +968,7 @@
     "scanned": "스캔한 음식",
     "orderTitle": "주문 내역",
     "total": "합계",
+    "itemPending": "등록 준비 중이에요",
     "itemCount_one": "{{count}}개",
     "itemCount_other": "{{count}}개",
     "emptyOrdersTitle": "아직 주문 내역이 없어요",

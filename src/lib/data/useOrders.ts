@@ -27,6 +27,8 @@ interface OrderItemWire {
   price?: number | null; // null = 스캔 가격 미인식(총액 제외)
   foodId?: number | null;
   imageRef?: string | null;
+  /** P-259(계약 8/21): false = 준비중 음식(상세 호출 시 FOOD-001). 부재 = 공개 취급. */
+  ready?: boolean;
 }
 
 interface OrderDetailWire extends OrderSummaryWire {
@@ -51,7 +53,7 @@ export interface OrderSummary {
 
 export interface OrderDetail extends OrderSummary {
   totalPrice: number | null;
-  items: { menuName: string; quantity: number; price: number | null; foodId: string | null; imageUrl: string | null }[];
+  items: { menuName: string; quantity: number; price: number | null; foodId: string | null; imageUrl: string | null; ready?: boolean }[];
 }
 
 function adaptSummary(w: OrderSummaryWire): OrderSummary {
@@ -92,6 +94,9 @@ export function useOrderDetail(orderId: string) {
           price: typeof i.price === 'number' ? i.price : null, // null = 단가 미표시
           foodId: i.foodId != null ? String(i.foodId) : null,
           imageUrl: urlOrNull(i.imageRef),
+          // P-259: ready = 서버 boolean만 통과(부재 = 공개 폴백 — 게이트는 === false).
+          // 기본 이미지 URL 문자열로 준비중 판단 금지(종한 명시) — 이 필드가 유일 기준.
+          ...(typeof i.ready === 'boolean' ? { ready: i.ready } : {}),
         })),
       };
     },

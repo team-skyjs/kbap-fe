@@ -965,6 +965,7 @@
     "scanned": "Scanned",
     "orderTitle": "Order",
     "total": "Total",
+    "itemPending": "Coming soon to K-Bap",
     "itemCount_one": "{{count}} item",
     "itemCount_other": "{{count}} items",
     "emptyOrdersTitle": "No orders yet",
