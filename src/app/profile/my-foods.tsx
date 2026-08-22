@@ -143,16 +143,18 @@ function ThumbGrid({ urls }: { urls: string[] }) {
   if (n === 2) {
     return (
       <View style={styles.thumbBox} testID="thumb-2">
-        {urls.map((u) => (
-          <RemoteImage key={u} uri={u} style={{ flex: 1 }} />
+        {urls.map((u, i) => (
+          <RemoteImage key={i} uri={u} style={{ flex: 1 }} />
         ))}
       </View>
     );
   }
   return (
     <View style={[styles.thumbBox, styles.thumbGrid]} testID={`thumb-${n}`}>
-      {urls.map((u) => (
-        <RemoteImage key={u} uri={u} style={n === 3 && u === urls[2] ? styles.thumbCellWide : styles.thumbCell} />
+      {/* P-263: key·풀폭 판정 = 인덱스 — 준비중 음식 2+ 주문은 기본 대체 이미지
+          URL이 중복이라 URL key = React 중복 key 에러 + 값 비교 풀폭 오적용 */}
+      {urls.map((u, i) => (
+        <RemoteImage key={i} uri={u} style={n === 3 && i === 2 ? styles.thumbCellWide : styles.thumbCell} />
       ))}
     </View>
   );

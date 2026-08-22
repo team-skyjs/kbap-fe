@@ -129,6 +129,23 @@ it('Ordered 카드 — 4분할 썸네일·주소·수량 + 탭 = 상세 라우�
   expect(mockPush).toHaveBeenCalledWith('/profile/order/123');
 });
 
+it('P-263: 중복 URL(준비중 기본 이미지 2+) = 렌더 에러 0 + 풀폭 = 인덱스 판정(마지막 칸만)', async () => {
+  const DUP = 'https://cdn/default-food.webp';
+  const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  mockGet.mockResolvedValue({ items: [ORDER({ thumbnails: [DUP, DUP, DUP] })], hasNext: false, nextCursor: null });
+  const tree = renderScreen();
+  await flush();
+  const grid = tree.root.findAll((n) => n.props?.testID === 'thumb-3')[0];
+  expect(grid).toBeTruthy();
+  // React 중복 key 에러 0 (key = 인덱스)
+  expect(errSpy.mock.calls.map((c) => String(c[0])).join('\n')).not.toMatch(/same key|unique "key"/);
+  errSpy.mockRestore();
+  // 풀폭(thumbCellWide) = 3장째 하나만 — 값 비교였으면 중복 URL 전부 풀폭 오적용
+  const src = flat(tree);
+  const wideCount = (src.match(/"width":76,"height":38/g) ?? []).length;
+  expect(wideCount).toBe(1);
+});
+
 it('썸네일 1장 = 크게(thumb-1) · roadAddress null = 주소 미표시', async () => {
   mockGet.mockResolvedValue({ items: [ORDER({ thumbnails: ['https://cdn/a.jpg'], roadAddress: null })], hasNext: false, nextCursor: null });
   const tree = renderScreen();
