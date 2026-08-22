@@ -1383,3 +1383,6 @@
 - [x] P-262 맵기 슬라이더 팬 = 트랙+라벨 전체 래퍼(±32pt) — 라벨 가림 해소·양 표면 수혜 — f2fb8b9.
 - [x] P-261 식이 Yes = replace — 회피 편집 후 프로필 직행 — 35a0331.
 - [x] tsc 0 · jest 145스위트 941/941 · teamtest OTA(ios 7a153f9c·and 1a3b3701).
+
+## My Foods 썸네일 key 핫픽스 (2026-08-22, P-263)
+- [x] ThumbGrid key·풀폭 판정 인덱스화(중복 기본 이미지 URL 대응) + 중복 URL 렌더 유닛 — 1408ca3, teamtest OTA(ios 2fccf0e6·and 823d21d4).
