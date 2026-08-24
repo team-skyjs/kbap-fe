@@ -1,15 +1,16 @@
 /**
- * P-030(KB-205): 주문+고지 원카드 문장 조립 잠금.
+ * P-030(KB-205) → P-265 재설계: 주문+고지 원카드 문장 조립 잠금.
  * 핵심 불변식: 카드 본문은 UI 언어와 무관하게 **한국어 고정**(헌법 place=ko),
- * 기피 0개면 고지 생략(순수 주문 카드), 을/를 받침 분기, "외 n개" 접기.
+ * 기피 0개면 고지 생략(순수 주문 카드), 받침 조사 분기, 회피 전체 나열(접기 0).
  */
 import i18n from '@/lib/i18n';
 import {
-  avoidSentenceKo,
+  avoidNoticeKo,
   eulReul,
   iGa,
   ingredientLabelKo,
-  MAX_AVOID_SHOWN,
+  orderClosingKo,
+  orderItemLineKo,
   orderSentenceKo,
   ownerQuestionKo,
 } from '../orderCard';
@@ -88,32 +89,49 @@ describe('ko 고정 잠금 — UI 언어가 en이어도 카드 라벨은 한국�
   });
 });
 
-describe('orderSentenceKo — ① 주문 문장', () => {
+describe('orderSentenceKo — ① 주문 문장 (단일 품목 카드 전용 — P-265 무변)', () => {
   it('{koreanName} {n}개 주세요.', () => {
     expect(orderSentenceKo('김치찌개', 1)).toBe('김치찌개 1개 주세요.');
     expect(orderSentenceKo('비빔밥', 3)).toBe('비빔밥 3개 주세요.');
   });
 });
 
-describe('avoidSentenceKo — ② 기피 고지', () => {
-  it('기피 0개 → null (순수 주문 카드 — ②③ 생략)', () => {
-    expect(avoidSentenceKo([])).toBe(null);
+describe('P-265: 품목 줄 + 맺음 한 줄 (2개 이상 카드)', () => {
+  it('품목 줄 = "주세요" 없이 나열', () => {
+    expect(orderItemLineKo('설렁탕', 1)).toBe('설렁탕 1개');
+    expect(orderItemLineKo('오징어덮밥', 3)).toBe('오징어덮밥 3개');
+  });
+
+  it('맺음 한 줄 = 총 수량 합 (1+3+1 → 총 5개)', () => {
+    expect(orderClosingKo(1 + 3 + 1)).toBe('위 메뉴 주세요. (총 5개)');
+    expect(orderClosingKo(2)).toBe('위 메뉴 주세요. (총 2개)');
+  });
+});
+
+describe('avoidNoticeKo — ② 기피 고지 (P-265: 문장+전체 나열, 접기 폐기)', () => {
+  it('기피 0개 → null (순수 주문 카드 — 섹션 생략)', () => {
+    expect(avoidNoticeKo([])).toBe(null);
   });
 
   it('81종 카탈로그 밖 코드는 무시 — 미지 코드만이면 null (P-033: 평면 81종 정본)', () => {
-    expect(avoidSentenceKo(['religion:halal', 'diet:vegan'])).toBe(null);
+    expect(avoidNoticeKo(['religion:halal', 'diet:vegan'])).toBe(null);
   });
 
-  it('받침 분기: 달걀→을 / 새우→를', () => {
-    expect(avoidSentenceKo(['EGG'])).toBe('저는 달걀을 못 먹어요. 들어가면 알려주세요.');
-    expect(avoidSentenceKo(['SHRIMP'])).toBe('저는 새우를 못 먹어요. 들어가면 알려주세요.');
+  it('문장 고정 + 라벨 " · " 조인 (ko 라벨만 — 코드 노출 0)', () => {
+    const n = avoidNoticeKo(['EGG', 'SHRIMP'])!;
+    expect(n.sentence).toBe('저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.');
+    expect(n.list).toBe('달걀 · 새우');
   });
 
-  it(`${MAX_AVOID_SHOWN}개 초과 → "외 n개" 접기 (조사는 '개'에 붙어 '를')`, () => {
-    const eight = ['EGG', 'MILK', 'SHRIMP', 'CRAB', 'PEANUT', 'WALNUT', 'BEEF', 'PORK'];
-    const s = avoidSentenceKo(eight)!;
-    expect(s).toContain('외 2개를 못 먹어요');
-    expect(s.split(',').length).toBe(MAX_AVOID_SHOWN); // 표시 라벨 수 상한
+  it('51개 → 전부 나열, "외 n개" 접기 잔재 0 (사장님이 전 항목 확인 가능)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { INGREDIENTS } = require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients');
+    const codes = INGREDIENTS.slice(0, 51).map((i) => i.code);
+    const n = avoidNoticeKo(codes)!;
+    expect(n.list.split(' · ').length).toBe(51);
+    for (const c of codes) expect(n.list).toContain(ingredientLabelKo(c));
+    expect(n.sentence + n.list).not.toContain('외 ');
+    expect(n.list).not.toMatch(/[A-Z_]{2,}/); // 원코드(UPPER_SNAKE) 누출 0
   });
 });
 

@@ -35,23 +35,33 @@ export function ingredientLabelKo(code: string): string {
   return e.i18nKey ? i18n.getFixedT('ko')(`ingredients.${e.i18nKey}`, { defaultValue: e.name }) : e.name;
 }
 
-/** 주요 노출 상한 — 초과분은 "외 n개" 접기 (기획 §2-2). */
-export const MAX_AVOID_SHOWN = 6;
-
-/** ① 주문 문장. 수량 단위는 MVP "1개" 통일 (분류 데이터 생기면 개선 — 백로그). */
+/** ① 주문 문장 — **단일 품목 카드**(음식 상세 발) 전용. 수량 단위는 MVP "1개" 통일. */
 export function orderSentenceKo(koreanName: string, qty: number): string {
   return `${koreanName} ${qty}개 주세요.`;
 }
 
-/** ② 기피 고지 문장 — 프로필 기피 전체. 재료 코드 0개면 null(순수 주문 카드). */
-export function avoidSentenceKo(codes: string[]): string | null {
-  const labels = codes.filter((c) => BY_CODE.has(c)).map(ingredientLabelKo);
+/** ①-a (P-265) 품목 줄 — 2개 이상 카드: 품목마다 "주세요" 반복 대신 나열만. */
+export function orderItemLineKo(koreanName: string, qty: number): string {
+  return `${koreanName} ${qty}개`;
+}
+
+/** ①-b (P-265) 맺음 한 줄 — 2개 이상 카드의 마지막 줄. totalQty = 전 품목 수량 합. */
+export function orderClosingKo(totalQty: number): string {
+  return `위 메뉴 주세요. (총 ${totalQty}개)`;
+}
+
+/**
+ * ② (P-265) 기피 고지 — 문장 + 전체 나열. 구 avoidSentenceKo의 "외 n개" 접기 폐기:
+ * 사장님이 숨은 재료를 확인할 수 없어 안전 목적에 반했다 — 상한 없이 전부 나열한다.
+ * 81종 해석 가능 코드 0개면 null(순수 주문 카드 — 섹션 생략, 종전 동작 유지).
+ */
+export function avoidNoticeKo(codes: string[]): { sentence: string; list: string } | null {
+  const labels = avoidLabelsKo(codes);
   if (!labels.length) return null;
-  const shown = labels.slice(0, MAX_AVOID_SHOWN);
-  const rest = labels.length - shown.length;
-  const list = rest > 0 ? `${shown.join(', ')} 외 ${rest}개` : shown.join(', ');
-  const particleTarget = rest > 0 ? '개' : shown[shown.length - 1];
-  return `저는 ${list}${eulReul(particleTarget)} 못 먹어요. 들어가면 알려주세요.`;
+  return {
+    sentence: '저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.',
+    list: labels.join(' · '),
+  };
 }
 
 // P-033(KB-205 정정): 종교·식이 한 줄(③)은 제거 — 회피 모델은 평면 81종 재료로

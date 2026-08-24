@@ -5,9 +5,10 @@
  * 좌상단, 내부 타이포 시안 비율) → 정방향 미러 박스(하단 캡션) → Estimated
  * total → Done. 모달풍 X·여백 낭비 제거 — 헤더는 스크린 몫(백+타이틀+서브).
  *
- * 🚫 한국어 문구는 시안 이식 금지(P-136 발주 7 유지) — 기존 orderCard.ts 조립
- * (orderSentenceKo·avoidSentenceKo, P-045·052·109 무변)만 렌더. 미러는 같은
- * 데이터의 리더 언어 표현(신규 한국어 0).
+ * 🚫 한국어 문구는 시안 이식 금지(P-136 발주 7 유지) — orderCard.ts 조립만 렌더
+ * (P-265: 단일 = orderSentenceKo · 2개 이상 = orderItemLineKo+orderClosingKo,
+ * 기피 = avoidNoticeKo 문장+전체 나열). 미러는 같은 데이터의 리더 언어 표현
+ * (신규 한국어 0).
  */
 import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -16,7 +17,7 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
-import { avoidSentenceKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
 import { scheduleReviewReminder } from '@/lib/push/pushAdapter';
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
@@ -70,8 +71,11 @@ export function FlippedOrderCard({
     const timer = setTimeout(() => setConfetti(false), CONFETTI_DURATION_MS + 200);
     return () => clearTimeout(timer);
   }, [confetti]);
-  const lines = items.map((i) => orderSentenceKo(i.nameKo, i.qty));
-  const avoid = avoidSentenceKo(avoidCodes);
+  // P-265: 2개 이상 = 품목 나열(주세요 X) + 맺음 한 줄(총 N개) / 단일 = 종전 한 문장
+  const multi = items.length >= 2;
+  const lines = items.map((i) => (multi ? orderItemLineKo(i.nameKo, i.qty) : orderSentenceKo(i.nameKo, i.qty)));
+  const closing = multi ? orderClosingKo(items.reduce((a, i) => a + i.qty, 0)) : null;
+  const avoid = avoidNoticeKo(avoidCodes);
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
   const converted = totalKrw > 0 ? convertKrw(totalKrw, currency, fx) : null; // P-242
 
@@ -82,7 +86,19 @@ export function FlippedOrderCard({
           {l}
         </Text>
       ))}
-      {!!avoid && <Text style={[styles.koAvoid, big && styles.koAvoidBig]} testID={big ? undefined : 'ko-avoid'}>{avoid}</Text>}
+      {/* P-265: 맺음 한 줄 — 사장님이 소리내 읽는 본문의 일부라 품목 줄과 같은 타이포 */}
+      {!!closing && (
+        <Text style={[styles.koLine, big && styles.koLineBig]} testID={big ? undefined : 'ko-closing'}>
+          {closing}
+        </Text>
+      )}
+      {!!avoid && (
+        <>
+          <Text style={[styles.koAvoid, big && styles.koAvoidBig]} testID={big ? undefined : 'ko-avoid'}>{avoid.sentence}</Text>
+          {/* P-265: 회피 전체 나열 — 접기 없음(사장님이 전 항목 확인 가능해야 안전) */}
+          <Text style={[styles.koAvoidList, big && styles.koAvoidListBig]} testID={big ? undefined : 'ko-avoid-list'}>{avoid.list}</Text>
+        </>
+      )}
     </View>
   );
 
@@ -222,6 +238,9 @@ const styles = StyleSheet.create({
   koLineBig: { fontSize: 34, lineHeight: 48 },
   koAvoid: { fontFamily: font.koBold, fontSize: 16, lineHeight: 24, color: C.ink2, textAlign: 'center', marginTop: 6 },
   koAvoidBig: { fontSize: 21, lineHeight: 31 },
+  // P-265: 회피 전체 나열 — 고지 문장보다 한 단계 작은 뮤트(항목 多에도 카드 안 정돈)
+  koAvoidList: { fontFamily: font.koBold, fontSize: 14, lineHeight: 22, color: C.ink2, textAlign: 'center' },
+  koAvoidListBig: { fontSize: 18, lineHeight: 28 },
   mirror: {
     marginTop: 14,
     backgroundColor: C.card,

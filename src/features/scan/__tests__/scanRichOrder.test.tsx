@@ -37,7 +37,7 @@ jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: (id: string) => mockDet
 
 import { ScanRichList, ScanProfileBar, OrderPill } from '@/features/scan/ScanRichList';
 import { FlippedOrderCard } from '@/features/order/FlippedOrderCard';
-import { orderSentenceKo, avoidSentenceKo } from '@/lib/order/orderCard';
+import { orderSentenceKo, orderItemLineKo, orderClosingKo, avoidNoticeKo } from '@/lib/order/orderCard';
 import type { ResultDish } from '@/lib/scan/segmentMenu';
 
 const t = (k: string) => k;
@@ -179,10 +179,14 @@ it('주문 카드 문구 잠금 — 기존 orderCard.ts 조립 결과만, 시안
     <FlippedOrderCard items={items} avoidCodes={['EGG', 'SHRIMP']} avoidNames={['Egg', 'Shrimp']} currency="USD" onDone={() => {}} t={t} />,
   );
   const s = flat(tree);
-  // 항목별 주문 줄 + 기피 고지 1회 = 기존 조립 함수 출력 그대로
-  expect(s).toContain(orderSentenceKo('된장찌개', 2));
-  expect(s).toContain(orderSentenceKo('공기밥', 1));
-  expect(s).toContain(avoidSentenceKo(['EGG', 'SHRIMP'])!);
+  // P-265: 2개 이상 = 품목 줄(주세요 X) + 맺음 한 줄(총 N개) + 기피 문장·전체 나열
+  expect(s).toContain(orderItemLineKo('된장찌개', 2));
+  expect(s).toContain(orderItemLineKo('공기밥', 1));
+  expect(s).not.toContain(orderSentenceKo('된장찌개', 2)); // 품목 줄에 "주세요" 반복 0
+  expect(s).toContain(orderClosingKo(3)); // qty 2+1
+  const notice = avoidNoticeKo(['EGG', 'SHRIMP'])!;
+  expect(s).toContain(notice.sentence);
+  expect(s).toContain(notice.list);
   expect(s).not.toContain('알레르기'); // 🚫 시안 문구("알레르기가 있습니다") 이식 금지
   // 뒤집힌 카드 + 정방향 미러 + 합계(₩19,000)
   expect(tree.root.findAll((n) => n.props?.testID === 'flip-card').length).toBeGreaterThanOrEqual(1);
