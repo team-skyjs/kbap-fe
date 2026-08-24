@@ -1386,3 +1386,6 @@
 
 ## My Foods 썸네일 key 핫픽스 (2026-08-22, P-263)
 - [x] ThumbGrid key·풀폭 판정 인덱스화(중복 기본 이미지 URL 대응) + 중복 URL 렌더 유닛 — 1408ca3, teamtest OTA(ios 2fccf0e6·and 823d21d4).
+
+## dev BE 인프라 전환 (2026-08-24, P-264)
+- [x] dev.kbap.site → dev-eks.kbap.site(EKS) — .env·eas.json teamtest·주석·픽스처 교체(prod 2곳 무변), 잔존 0, API 스모크 3종 200 — 5d2299f, teamtest OTA(ios 4326422a·and 9e0965e1).
