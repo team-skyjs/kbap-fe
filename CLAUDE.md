@@ -18,7 +18,7 @@
 ## 불변 규칙
 
 - **Jira 전환/체크 금지** — 완료 판정은 spec 레포의 검토 게이트가 한다. 자기 완료 선언 금지.
-- API 계약 SSOT는 **BE Swagger** — dev https://dev.kbap.site/swagger-ui · prod https://prod.kbap.site/swagger-ui (~~meogo.handev.site~~ 폐기 7/24. spec 레포 openapi.yaml은 참고용).
+- API 계약 SSOT는 **BE Swagger** — dev https://dev-eks.kbap.site/swagger-ui (EKS 전환 8/24) · prod https://prod.kbap.site/swagger-ui (~~meogo.handev.site~~ 폐기 7/24. spec 레포 openapi.yaml은 참고용).
 - **서버가 아는 사실은 서버가 정본** (P-147 사고, 2026-08-10): 회원 속성(provider·가입 상태·
   판정·권한)을 **클라 로컬 상태(Firebase providerData·AsyncStorage·Keychain)로 판별 금지** —
   프로필/서버 API 응답이 정본. 로컬 상태는 기기에 잔존물이 쌓여(탈퇴 후 재가입·재설치·
