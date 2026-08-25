@@ -50,7 +50,7 @@ it('클린업 생존 소스 잠금 — 탈퇴/로그아웃/재설치 정리 어�
 });
 
 it('전 요청 X-Installation-Id 부착(공용 클라 — 채널 무관)', async () => {
-  process.env.EXPO_PUBLIC_BE_BASE = 'https://dev-eks.kbap.site';
+  process.env.EXPO_PUBLIC_BE_BASE = 'https://dev.kbap.site';
   jest.resetModules();
   jest.doMock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => false }));
   jest.doMock('@/lib/installationId', () => ({ getInstallationId: jest.fn().mockResolvedValue('uuid-fixed-0001') }));

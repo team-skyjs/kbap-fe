@@ -21,7 +21,7 @@ export const API_BASE_URL = 'https://api.kbap.example/v1';
  * we fall back to the deployed dev host.
  *
  * 도메인 로드맵 (P-059/KB-175, 2026-07-22 인프라 전환):
- *   dev(Metro/.env)      → https://dev-eks.kbap.site (EKS 전환 P-264, 8/24 — 계약 동일 실측)
+ *   dev(Metro/.env)      → https://dev.kbap.site (P-266 복귀 8/25 — dev-eks 503·구 도메인 재활성 실측)
  *   preview·production   → https://prod.kbap.site  (eas.json env 명시, P-067 전환 완료)
  *   meogo.handev.site    → 폐기 (P-067, 2026-07-25)
  */
