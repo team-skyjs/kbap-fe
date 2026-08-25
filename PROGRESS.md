@@ -1389,3 +1389,7 @@
 
 ## dev BE 인프라 전환 (2026-08-24, P-264)
 - [x] dev.kbap.site → dev-eks.kbap.site(EKS) — .env·eas.json teamtest·주석·픽스처 교체(prod 2곳 무변), 잔존 0, API 스모크 3종 200 — 5d2299f, teamtest OTA(ios 4326422a·and 9e0965e1).
+
+## 사장님 카드 카피 재설계 (2026-08-25, P-265)
+- [x] 2개 이상 = 품목 줄(주세요 X)+맺음 한 줄 "위 메뉴 주세요. (총 N개)" / 단일 = 종전 한 문장 유지, 회피 = 문장+ko 라벨 " · " 전체 나열(외 n개 접기·MAX_AVOID_SHOWN 폐기) — 조립은 orderCard.ts 전담, ko-closing·ko-avoid-list testID — 4147ace.
+- [x] tsc 0 · jest 145스위트 944/944.
