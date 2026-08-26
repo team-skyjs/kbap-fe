@@ -98,8 +98,8 @@ function render(el: React.ReactElement): ReactTestRenderer {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseMe.mockReturnValue({ ...OK_QUERY, data: { nickname: 'A', restrictions: [], rank: { tier: 'bronze', level: 1, score: 0, nextTier: null, pointsToNext: null }, spiceTolerance: null, nationality: 'US', readerLanguage: 'en', id: '1' } });
-  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: CATALOG });
-  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, data: undefined });
+  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: undefined }); // KB-310: 화면이 더는 소비 안 함
+  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, data: CATALOG }); // 카탈로그 = probe(라이브)
   mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, data: undefined, fetchNextPage: jest.fn(), hasNextPage: false, isFetchingNextPage: false });
 });
 
@@ -109,7 +109,7 @@ it('placeholder — 카탈로그 시드 로테이션(리더 언어 번역명), �
   // 시드 키 + 랭크 풀의 번역명 중 하나 (2종 카탈로그 — Name 값 소속 잠금)
   expect(input.props.placeholder).toMatch(/^search\.placeholderSeed:(Kimchi Jjigae|Bibimbap)$/);
   // 미로드 → 기본 placeholder
-  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: undefined });
+  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, data: undefined }); // KB-310: 미로드 = probe 데이터 부재
   const tree2 = render(<Search />);
   expect(tree2.root.findAllByType(TextInput)[0].props.placeholder).toBe('search.placeholder');
 });

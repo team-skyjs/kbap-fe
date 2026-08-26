@@ -108,8 +108,8 @@ const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseMe.mockReturnValue({ ...OK_QUERY, data: { nickname: 'A', restrictions: [], rank: { tier: 'bronze', level: 1, score: 0, nextTier: null, pointsToNext: null }, spiceTolerance: null, nationality: 'US', readerLanguage: 'en', id: '1' } });
-  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: POPULAR });
-  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, data: [] });
+  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: undefined }); // KB-310: 화면이 더는 소비 안 함
+  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, data: POPULAR }); // 카탈로그 = probe(라이브)
   mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, data: [] });
   mockRecent.mockReturnValue({ recent: ['bibimbap'], add: jest.fn(), remove: jest.fn(), clear: jest.fn() });
 });

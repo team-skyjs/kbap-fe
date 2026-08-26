@@ -4,7 +4,7 @@
  *   1. empty  → recent searches (local, per-row delete + clear all; dashed hint
  *      when none) + editorial "popular" list.
  *      ⚠️ popular block is still MOCK — 인기순 계약 미배포. 인기 API가 배포되면
- *      useFoods() 몫을 실호출로 교체할 것.
+ *      (KB-310에서 완료 — 카탈로그 = probe 라이브 재사용, 목 잔재 소멸.)
  *   2. results → LIVE GET /foods/search (KB-71): submit-only (자동완성 MVP 제외),
  *      keyword 부분일치(한국어명+리더 언어 번역명, 대소문자 무시는 서버 몫),
  *      nextCursor 무한스크롤(hasNext=false까지) — 목록과 같은 커서 패턴.
@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
 import { RiskPill, Spinner, StateBlock, stateIconColor, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
-import { useFoods, useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
+import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { placeholderKeyword, popularPhotoFoods } from '@/lib/search/discovery';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -37,7 +37,6 @@ export default function Search() {
   const insets = useSafeAreaInsets();
 
   // MOCK — 인기 한식 블록 전용 (인기순 API 미배포; 배포 시 교체)
-  const { data: mockCatalog } = useFoods();
   const { data: me } = useMe();
   const { recent, add, remove, clear } = useRecentSearches();
 
@@ -57,8 +56,11 @@ export default function Search() {
 
   // P-143: 검색 유도 — placeholder 시드(진입 시마다 로테이션·재량 보고)+인기 사진
   // 섹션. 큐레이션·스왑 지점은 discovery.ts 격리(BE ⑥ 배포 시 그쪽만 교체).
-  const seedKeyword = useMemo(() => placeholderKeyword(mockCatalog), [mockCatalog]);
-  const popular = popularPhotoFoods(mockCatalog);
+  // KB-310: 카탈로그 = probe(useInfiniteFoods) 재사용 — 구 useFoods() 목(photoUrl
+  // 전부 null) 잔재 제거. 인기 랭크는 BE ⑥ 대기(999 폴백 = 서버 순서·사진 우선 유지).
+  const catalog = probe.data;
+  const seedKeyword = useMemo(() => placeholderKeyword(catalog), [catalog]);
+  const popular = popularPhotoFoods(catalog);
 
   const riskOf = (f: FoodCard): RiskState => personalRisk(f.risk, hasR);
   const openFood = (id: string) => router.push(`/food/${id}?src=search` as Href);
