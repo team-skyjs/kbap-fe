@@ -39,6 +39,19 @@
 - 완료 기준: tsc 0 · jest 전체 통과 + 신규 로직엔 그 버그를 정확히 잡는 테스트 동반.
 - 위험도 표시는 false-safe 금지(불확실→unable/caution 강등, 헌법 III) — 관련 코드는 보수적으로.
 - 진행 기록은 PROGRESS.md 관례 유지.
+
+## 배포 절차 (2026-08-26 브랜치 체계 이후)
+
+- **소스 브랜치 게이트**: teamtest 빌드·OTA = **develop 체크아웃**에서만 / production = **main**에서만.
+  발행 전 `git branch --show-current` 확인.
+- **캐시 클리어 강제** (8/26 실측 — env만 바뀐 재수출은 Metro 캐시가 이전 호스트 변환을
+  재사용한다): 게이트 export는 `expo export --clear`, 발행은 `eas update --clear-cache`.
+  번들 grep(목표 호스트 1+·타 호스트 0)이 최후 방어선 — 기존 P-073 인라인 env·fp 대조
+  게이트와 함께 3중.
+- **네이티브 빌드 = "푸시된 클린 커밋"에서만** (8/25 유실 커밋 빌드 재발 방지): 워킹트리
+  클린 확인 → HEAD가 origin에 존재 확인 → 빌드 → 해당 커밋에 `build-vX.Y.Z-bNN.vcNN`
+  태그 푸시까지가 한 절차. 태그 3종 = build-* (빌드 커밋) · vX.Y.Z (스토어 출시) ·
+  ota-prod-날짜 (production OTA).
 - **`eas update`는 env 인라인 주입 + export 사전 grep 검증 필수** (P-073 사고):
   `--environment` 플래그는 EAS 서버 env를 쓰므로 로컬 .env/eas.json build env가 안
   먹는다 — 발행 명령 앞에 `EXPO_PUBLIC_BE_BASE=… npx eas-cli update …` 인라인 강제,
