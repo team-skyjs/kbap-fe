@@ -32,9 +32,21 @@ const ROWS: { risk: RiskState; nameKey: string; descKey: string }[] = [
   { risk: 'unable', nameKey: 'risk.unable', descKey: 'coach.unable' },
 ];
 
-export function ScanCoachMark({ open, onClose, t }: { open: boolean; onClose: () => void; t: (k: string) => string }) {
+export function ScanCoachMark({
+  open,
+  onClose,
+  onDismiss,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** iOS 전용 — 네이티브 dismiss **완료 후** 발화(P-267 Codex P1: 후속 모달
+   *  present는 이 시점 이후여야 presentation race가 없다). 안드는 미발화. */
+  onDismiss?: () => void;
+  t: (k: string) => string;
+}) {
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
       <View style={styles.scrim}>
         <View style={styles.card} testID="scan-coach">
           <View style={styles.ic}>

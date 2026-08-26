@@ -645,7 +645,15 @@ export default function Scan() {
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
         {GateSheet}
-        <ScanCoachMark open={coachOpen} onClose={() => { setCoachOpen(false); maybeShowPrimer(); /* P-267: 코치 닫힌 뒤에만 */ }} t={t} />
+        {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
+            후 — onClose 직후 present는 잔존 race), 안드는 onClose(onDismiss 미지원
+            플랫폼 — 교착 자체가 iOS UIKit 이슈라 무해) */}
+        <ScanCoachMark
+          open={coachOpen}
+          onClose={() => { setCoachOpen(false); if (Platform.OS !== 'ios') maybeShowPrimer(); }}
+          onDismiss={Platform.OS === 'ios' ? maybeShowPrimer : undefined}
+          t={t}
+        />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         {/* P-161: 다시찍기 확인 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 재사용 */}
         <Modal visible={retakeConfirm} transparent animationType="fade" onRequestClose={() => setRetakeConfirm(false)}>

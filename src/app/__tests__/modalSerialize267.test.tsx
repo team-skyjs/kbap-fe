@@ -189,16 +189,29 @@ it('① 첫 스캔(코치 대상·프라이머 후보) — 동시 present 불가
   expect(primerOpen(tree)).toBe(false); // KB-377 교착 원인 — 동시 true 절대 금지
 });
 
-it('② 코치마크 닫힘 → 그 뒤에만 프라이머 present(순차 — 어느 쪽도 소실 0)', async () => {
+it('② iOS: onClose(JS 닫힘) 시점엔 프라이머 미발화 — 네이티브 dismiss 완료(onDismiss) 후에만', async () => {
   const tree = render(<Scan />);
   await reachResult(tree);
   const coach = tree.root.findAllByType(ScanCoachMark)[0];
   await act(async () => {
-    coach.props.onClose();
+    coach.props.onClose(); // visible=false 커밋 — 네이티브 dismissal은 아직 진행 중
     await new Promise((r) => setTimeout(r, 0));
   });
   expect(coachOpen(tree)).toBe(false);
-  expect(primerOpen(tree)).toBe(true); // 보류분이 닫힘 후 표시 — 소실 금지
+  expect(primerOpen(tree)).toBe(false); // Codex P1: 여기서 present 시작하면 잔존 race
+  await act(async () => {
+    tree.root.findAllByType(ScanCoachMark)[0].props.onDismiss(); // 네이티브 dismiss 완료
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  expect(primerOpen(tree)).toBe(true); // 보류분이 dismiss 완료 후 표시 — 소실 금지
+});
+
+it('②-b 배선 — Modal onDismiss 연결 + 안드는 onClose 경로(플랫폼 분기) 소스 잠금', () => {
+  const fs = require('fs');
+  expect(fs.readFileSync('src/features/scan/ScanCoachMark.tsx', 'utf8')).toContain('onDismiss={onDismiss}');
+  const scan = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(scan).toContain("onDismiss={Platform.OS === 'ios' ? maybeShowPrimer : undefined}");
+  expect(scan).toContain("if (Platform.OS !== 'ios') maybeShowPrimer();"); // 안드 = onDismiss 미지원
 });
 
 it('③ 코치마크 비대상(기존자) = 프라이머 단독 present(현행 무변)', async () => {
@@ -216,6 +229,7 @@ it('④ 프라이머 기응답자 = 코치 닫혀도 프라이머 안 뜸(기록
   const coach = tree.root.findAllByType(ScanCoachMark)[0];
   await act(async () => {
     coach.props.onClose();
+    coach.props.onDismiss(); // iOS 완주 경로로도 미발화(기응답 기록이 막는다)
     await new Promise((r) => setTimeout(r, 0));
   });
   expect(primerOpen(tree)).toBe(false);
