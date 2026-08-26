@@ -92,6 +92,13 @@ it('토큰 upsert — 권한 granted면 발급, 아니면 조용히 스킵(게�
   expect(mockNotifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
 });
 
+it('P-268: 원격 토큰 발급 실패 = 비치명(reject 미전파 — 리마인더는 로컬이라 무관)', async () => {
+  mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
+  mockNotifications.getExpoPushTokenAsync.mockRejectedValueOnce(new Error('APNs unavailable'));
+  await expect(registerPushToken()).resolves.toBeUndefined(); // throw 없이 종료
+  mockNotifications.getExpoPushTokenAsync.mockResolvedValue({ data: 'ExponentPushToken[test]' });
+});
+
 it('딥링크 매핑 — HELPFUL=내 리뷰 · NUDGE=스캔 · REVIEW_REMINDER=작성 · 미지=무동작', () => {
   expect(routeForNotificationData({ type: 'HELPFUL' })).toBe('/profile/reviews');
   expect(routeForNotificationData({ type: 'NUDGE' })).toBe('/scan');

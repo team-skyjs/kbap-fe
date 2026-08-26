@@ -1,15 +1,12 @@
 /**
- * P-221(KB-39) 🔴 **핵심 안전장치**: prod 채널 푸시 전면 차단.
+ * P-221(KB-39) prod 차단 → **P-268(KB-378) 전 채널 개방 후 = 킬스위치 가드**.
  *
- * 스토어 배포판(iOS 1.0.0·and vc9)에는 expo-notifications 네이티브 모듈이 없다 —
- * prod에서 켜지면 **모듈 로드 시점에 크래시**한다. 그래서 ① 플래그가 채널 게이트
- * (`!PROD_CHANNEL`)여야 하고 ② 게이트가 닫히면 어댑터의 모든 표면이 no-op이어야
- * 하며(= require 자체에 도달하지 않아야) ③ expo-notifications 정적 import가
- * 어디에도 없어야 한다.
- *
- * 이 스위트는 **prod 채널을 강제**해 실측한다.
+ * 개방 후에도 안전장치는 유지된다: ① 플래그가 꺼지면(킬스위치) 어댑터의 모든
+ * 표면이 no-op이어야 하고(= require 자체에 도달하지 않아야) ② expo-notifications
+ * 정적 import가 어디에도 없어야 한다(구 런타임 방어선 — fp 정책상 도달 0이지만
+ * 이중 방어). 이 스위트는 **플래그 off를 강제**해 그 계약을 실측한다.
  */
-jest.mock('@/lib/flags', () => ({ FLAGS: { pushEnabled: false }, isProdChannel: () => true })); // = prod 채널
+jest.mock('@/lib/flags', () => ({ FLAGS: { pushEnabled: false }, isProdChannel: () => true })); // = 킬스위치 off 강제
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
@@ -45,7 +42,7 @@ import {
   unregisterPushToken,
 } from '../pushAdapter';
 
-it('prod 채널 = pushAvailable false (네이티브 모듈 미탑재 전제)', () => {
+it('플래그 off(킬스위치) = pushAvailable false', () => {
   expect(pushAvailable()).toBe(false);
 });
 
@@ -70,10 +67,16 @@ it('알림 탭 리스너 = 구독 0(해제 함수만 반환 — 호출해도 안
   expect(() => off()).not.toThrow();
 });
 
-it('소스 잠금 — 채널 게이트 유지 + expo-notifications 접근은 어댑터 지연 require 1곳뿐', () => {
+it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어댑터 지연 require 1곳뿐', () => {
   const fs = require('fs');
   const path = require('path') as typeof import('path');
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: !PROD_CHANNEL');
+  // P-268(KB-378): prod 개방 — 다른 채널 게이트(reviews·community 등)는 무변
+  const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;
+  expect(flags).toContain('pushEnabled: true');
+  expect(flags).not.toContain('pushEnabled: !PROD_CHANNEL');
+  for (const gate of ['reviewsEnabled', 'communityEnabled', 'reviewPlaceEnabled', 'dietPresetsEnabled']) {
+    expect(flags).toContain(`${gate}: !PROD_CHANNEL`); // 타 게이트 무변(P-268 불변식)
+  }
   const adapter = fs.readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;
   expect(adapter).toContain("require('expo-notifications')");
   expect(adapter).toContain('if (!FLAGS.pushEnabled) return null;'); // 게이트가 require보다 앞

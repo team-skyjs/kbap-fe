@@ -129,18 +129,17 @@ export const FLAGS = {
    */
   reviewPlaceEnabled: !PROD_CHANNEL,
   /**
-   * 푸시 알림 클라이언트 (P-192/KB-39) — **P-221: dev 계열 활성화**.
-   * 구 on 조건("알림 포함 네이티브 빌드가 깔린 뒤")은 **빌드18(ios vc18·and vc12,
-   * 8/14)에서 충족** — P-219 OTA에서 로컬 fingerprint가 빌드18과 일치함이
-   * 확인됐다(= 네이티브 구성 동일 = expo-notifications 포함).
+   * 푸시 알림 클라이언트 (P-192/KB-39) — P-221 dev 계열 → **P-268(KB-378) 전 채널
+   * 개방**. 구 🔴 전역 true 금지 조건("알림 포함 prod 스토어 빌드")은 **8/25 prod
+   * 빌드(iOS 19·and vc13 — expo-notifications 포함, app.json:94)로 충족**.
+   * 리뷰 리마인더 = 로컬 알림(서버·APNs/FCM 인증서 불필요 — 커맨드 센터 실측).
    *
-   * 🔴 **전역 true 금지**: 스토어 배포판(iOS 1.0.0·and vc9)에는 이 네이티브 모듈이
-   * 없어 OTA가 가면 모듈 로드 시점에 크래시한다. 남은 조건 = **알림 포함 prod
-   * 스토어 빌드** — 그 뒤 별도 발주로 채널 조건 해제.
-   * 구 런타임 OTA 안전을 위해 expo-notifications 접근은 전부 lib/push/pushAdapter의
-   * 지연 require 경유 — 화면/훅에서 직접 import 금지(유닛 잠금).
+   * ⚠️ 구 스토어 배포판(iOS 1.0.0·and vc9)은 runtimeVersion=fingerprint 정책상
+   * 새 fp OTA가 도달하지 않아 구조적으로 안전 — 그래도 방어선 유지:
+   * expo-notifications 접근은 전부 lib/push/pushAdapter의 지연 require 경유,
+   * 화면/훅 정적 import 금지(pushProdGuard221 유닛 잠금 — 이제 킬스위치 가드).
    */
-  pushEnabled: !PROD_CHANNEL,
+  pushEnabled: true,
   /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
