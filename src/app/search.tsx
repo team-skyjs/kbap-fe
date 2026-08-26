@@ -153,7 +153,11 @@ export default function Search() {
             </View>
           )}
 
-          {/* P-143: 인기 사진 섹션 — 랭크 큐레이션(discovery), 탭 = 상세 진입. 게스트 노출(열람 영역) */}
+          {/* P-143: 인기 사진 섹션 — 랭크 큐레이션(discovery), 탭 = 상세 진입. 게스트 노출(열람 영역).
+              KB-310 Codex P2: 프로브 실패·콜드 캐시(popular 0) = 섹션 통째 미렌더 —
+              빈 레일 잔존 금지(홈 popularSearch.length>0 게이트와 동일 문법). */}
+          {popular.length > 0 && (
+          <>
           <Text style={[styles.secTag, { marginTop: 22 }]}>{t('search.popular')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRail}>
             {popular.map((f) => (
@@ -166,6 +170,8 @@ export default function Search() {
               </Pressable>
             ))}
           </ScrollView>
+          </>
+          )}
         </ScrollView>
       ) : search.isLoading ? (
         <View style={styles.fill}>
