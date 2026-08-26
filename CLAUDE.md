@@ -49,9 +49,10 @@
   번들 grep(목표 호스트 1+·타 호스트 0)이 최후 방어선 — 기존 P-073 인라인 env·fp 대조
   게이트와 함께 3중.
 - **네이티브 빌드 = "푸시된 클린 커밋"에서만** (8/25 유실 커밋 빌드 재발 방지): 워킹트리
-  클린 확인 → HEAD가 origin에 존재 확인 → 빌드 → 해당 커밋에 `build-vX.Y.Z-bNN.vcNN`
-  태그 푸시까지가 한 절차. 태그 3종 = build-* (빌드 커밋) · vX.Y.Z (스토어 출시) ·
-  ota-prod-날짜 (production OTA).
+  클린 확인 → HEAD가 origin에 존재 확인 → 빌드 → 해당 커밋에 build 태그 푸시까지가
+  한 절차 — **prod 빌드 = `build-vX.Y.Z-bNN.vcNN` / teamtest 빌드 = `build-tt-bNN.vcNN`**
+  (플랫폼 비대칭 빌드는 해당 플랫폼만 기재). 태그 3종 = build-* (빌드 커밋) ·
+  vX.Y.Z (스토어 출시) · ota-prod-날짜 (production OTA). 상세는 README.
 - **`eas update`는 env 인라인 주입 + export 사전 grep 검증 필수** (P-073 사고):
   `--environment` 플래그는 EAS 서버 env를 쓰므로 로컬 .env/eas.json build env가 안
   먹는다 — 발행 명령 앞에 `EXPO_PUBLIC_BE_BASE=… npx eas-cli update …` 인라인 강제,
