@@ -108,8 +108,8 @@ const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseMe.mockReturnValue({ ...OK_QUERY, data: { nickname: 'A', restrictions: [], rank: { tier: 'bronze', level: 1, score: 0, nextTier: null, pointsToNext: null }, spiceTolerance: null, nationality: 'US', readerLanguage: 'en', id: '1' } });
-  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: POPULAR });
-  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, data: [] });
+  mockUseFoods.mockReturnValue({ ...OK_QUERY, data: undefined }); // KB-310: 화면이 더는 소비 안 함
+  mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, data: POPULAR }); // 카탈로그 = probe(라이브)
   mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, data: [] });
   mockRecent.mockReturnValue({ recent: ['bibimbap'], add: jest.fn(), remove: jest.fn(), clear: jest.fn() });
 });
@@ -137,6 +137,18 @@ it('서버 장애(프로브 500, J3) → empty 유지 — 로컬 최근/인기�
   expect(texts(tree, 'search.recent')).toBeGreaterThanOrEqual(1);
   expect(texts(tree, 'states.errorTitle')).toBe(0);
   expect(texts(tree, 'states.offlineTitle')).toBe(0);
+});
+
+it('KB-310 Codex P2: 프로브 실패·콜드 캐시 = 인기 레일 통째 미렌더 + 기본 placeholder', () => {
+  // 5xx + data undefined(콜드 캐시): 오프라인 아님 → 화면은 empty 유지하되,
+  // 인기 레일은 빈 영역 잔존 금지(홈 length 게이트와 동일 문법)
+  mockUseInfiniteFoods.mockReturnValue({ ...ERR_500, ...PAGED, data: undefined });
+  const tree = render(<Search />);
+  expect(texts(tree, 'search.popular')).toBe(0); // 섹션 헤더·레일 통째 미렌더
+  expect(tree.root.findAll((n) => String(n.props?.testID ?? '').startsWith('pop-'))).toHaveLength(0);
+  // placeholder = 기본 문구 폴백(시드 로테이션 미적용)
+  const input = tree.root.findAll((n) => typeof n.props?.placeholder === 'string')[0];
+  expect(input.props.placeholder).toBe('search.placeholder');
 });
 
 it('제출 검색 NETWORK 에러 → J4 (StateBlock→QueryErrorBlock 톤 통일)', () => {
