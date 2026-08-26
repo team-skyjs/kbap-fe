@@ -189,14 +189,17 @@ export default function Scan() {
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
-  // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter)
+  // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter).
+  // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
+  // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
+  // present → iOS UIKit presentation 교착(첫 스캔 먹통 — 실기 2건).
   const [pushPrimer, setPushPrimer] = useState(false);
-  useEffect(() => {
-    if (phase !== 'result' || !FLAGS.pushEnabled) return;
+  const maybeShowPrimer = useCallback(() => {
+    if (!FLAGS.pushEnabled) return;
     void getPrimerResult().then((r) => {
       if (r == null) setPushPrimer(true);
     });
-  }, [phase]);
+  }, []);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -222,17 +225,25 @@ export default function Scan() {
   // 모듈(ExponentPedometer)을 즉시 불러와, 이 모듈이 없는 빌드(expo-sensors 추가
   // 전 빌드)에선 iOS에서도 앱 전체가 크래시한다. Android 가드 안에서 try-require해
   // iOS는 아예 안 건드리고, 네이티브 미탑재(재빌드 전)면 조용히 힌트만 비활성.
-  // P-134: 첫 스캔 결과 진입 1회 코치마크 (AsyncStorage 플래그)
+  // P-134: 첫 스캔 결과 진입 1회 코치마크 (AsyncStorage 플래그).
+  // P-267(KB-377): 일회성 모달 직렬화 — 결과 도달마다 **한 흐름에서 순차 판정**.
+  // 코치마크 우선, 뜨면 프라이머는 보류(코치 onClose에서 재평가). 코치마크가 없으면
+  // (이번에 안 뜸·기존자 재도달) 프라이머 단독 판정 = 현행 시맨틱 무변.
   useEffect(() => {
-    if (phase !== 'result' || coachChecked.current) return;
-    coachChecked.current = true;
-    void shouldShowCoachMark().then((show) => {
-      if (show) {
-        setCoachOpen(true);
-        markCoachSeen();
+    if (phase !== 'result') return;
+    void (async () => {
+      if (!coachChecked.current) {
+        coachChecked.current = true;
+        const show = await shouldShowCoachMark();
+        if (show) {
+          setCoachOpen(true);
+          markCoachSeen();
+          return; // 프라이머 보류 — 동시 present 절대 금지(KB-377 교착)
+        }
       }
-    });
-  }, [phase]);
+      maybeShowPrimer();
+    })();
+  }, [phase, maybeShowPrimer]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
@@ -634,7 +645,15 @@ export default function Scan() {
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
         {GateSheet}
-        <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
+        {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
+            후 — onClose 직후 present는 잔존 race), 안드는 onClose(onDismiss 미지원
+            플랫폼 — 교착 자체가 iOS UIKit 이슈라 무해) */}
+        <ScanCoachMark
+          open={coachOpen}
+          onClose={() => { setCoachOpen(false); if (Platform.OS !== 'ios') maybeShowPrimer(); }}
+          onDismiss={Platform.OS === 'ios' ? maybeShowPrimer : undefined}
+          t={t}
+        />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         {/* P-161: 다시찍기 확인 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 재사용 */}
         <Modal visible={retakeConfirm} transparent animationType="fade" onRequestClose={() => setRetakeConfirm(false)}>
