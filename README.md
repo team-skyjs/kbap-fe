@@ -10,9 +10,25 @@
 
 ```sh
 npm install
-npx expo start        # dev client 필요 (Expo Go 아님 — EAS development 빌드 설치)
+npx expo start        # dev client 필요 (Expo Go 아님 — 아래 참조)
 npx tsc --noEmit && npx jest   # 머지 전 필수 그린
 ```
+
+### Metro를 볼 기기 준비 (dev client)
+
+Expo Go로는 안 열린다(커스텀 네이티브 모듈) — **EAS development 빌드(dev client)**를 설치해야 한다.
+Metro를 켠 맥과 **같은 네트워크**에서 dev client를 실행하면 자동 연결(QR/URL도 가능).
+
+| 방법 | 기기 등록 | 준비 |
+|---|---|---|
+| **iOS 시뮬레이터 (가장 간단)** | 불요 | EAS `development-sim` 빌드 다운로드 → 시뮬레이터에 드래그 설치 |
+| Android 실기기 | 불요 | `development` 프로필 안드 APK 설치 |
+| iOS 실기기 | **필요** — Apple 프로비저닝에 UDID 등록(예진 계정) | ① 예진이 `eas device:create` 링크 발급 → 기기에서 열어 등록 ② development 빌드 재생성 → 설치 |
+
+- 빌드 산출물은 expo.dev 프로젝트의 Builds 탭에서 받는다(프로필 컬럼 = development / development-sim).
+- dev client는 **dev API(.env의 EXPO_PUBLIC_BE_BASE)** 를 따른다. 앱 확인만 필요하면 TestFlight
+  teamtest 빌드(dev API 연결)로도 충분 — 코드 수정을 실시간으로 볼 때만 Metro가 필요하다.
+- BE를 로컬로 띄웠다면 `.env`의 호스트를 로컬 주소로 바꾸면 된다(커밋 금지).
 
 ## 브랜치 체계 (2026-08-26~)
 
