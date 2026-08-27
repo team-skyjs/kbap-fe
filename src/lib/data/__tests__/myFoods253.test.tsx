@@ -43,6 +43,7 @@ const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (p: string) => mockGet(p) }, apiLang: () => 'en' }));
 
 import MyFoodsScreen from '@/app/profile/my-foods';
+import OrderDetailScreen from '@/app/profile/order/[id]';
 import { useOrders } from '../useOrders';
 
 const ORDER = (over: Record<string, unknown> = {}) => ({
@@ -186,6 +187,53 @@ it('세그 전환 — Scanned 탭 = /foods/scanned 재사용(P-238)·행 탭 = �
   const row = tree.root.findAll((n) => n.props?.testID === 'myfoods-food-7' && typeof n.props?.onPress === 'function')[0];
   act(() => row.props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/food/7?src=list');
+});
+
+it('KB-360: 상세 메뉴판 사진 — scanImageUrl 렌더 게이트(있음 = 표시+뷰어, 부재 = 통째 미렌더)', async () => {
+  // 서버 #192 실배포 정합 — 어댑터·렌더는 P-253 기배선, 여기서 게이트를 실측 잠금
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 2, totalPrice: 18000,
+          scanImageUrl: 'https://cdn/scan/42/menu.jpg',
+          items: [{ menuName: '순두부찌개', quantity: 2, price: 9000, foodId: 7, imageRef: null }] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc1 = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc1}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree);
+  await flush();
+  const photo = tree.root.findAll((n) => n.props?.testID === 'order-scan-image' && typeof n.props?.onPress === 'function');
+  expect(photo.length).toBeGreaterThanOrEqual(1); // CardPhoto 관례 계열(RemoteImage — 스켈레톤 공용 경유)
+  act(() => photo[0].props.onPress());
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-viewer-close').length).toBeGreaterThanOrEqual(1); // 풀스크린 뷰어(contain)
+
+  // 부재(구 주문·prod 구계약) = 사진 영역 통째 미렌더 — 빈 슬롯 금지
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 1, totalPrice: null,
+          items: [{ menuName: '수제비', quantity: 1, price: null, foodId: 9, imageRef: null }] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc2 = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree2!: ReactTestRenderer;
+  act(() => {
+    tree2 = renderer.create(
+      <QueryClientProvider client={qc2}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree2);
+  await flush();
+  expect(tree2.root.findAll((n) => n.props?.testID === 'order-scan-image')).toHaveLength(0);
+  expect(JSON.stringify(tree2.toJSON())).toContain('수제비'); // 사진만 빠지고 스냅샷은 정상
 });
 
 it('P-259: ready 게이트 — false = 행 비활성+배지+리뷰 숏컷 0 · true/부재 = 현행(소스 잠금)', () => {

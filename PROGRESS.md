@@ -1395,4 +1395,9 @@
 - [x] tsc 0 · jest 145스위트 944/944.
 
 ## prod push 활성화 (2026-08-24, P-268 — 메시지 발주 1호)
-- [x] pushEnabled 전 채널 개방(타 게이트 7종 무변), pushProdGuard221 = 킬스위치 가드 전환, 원격 토큰 실패 비치명 유닛, KB-377 프라이머 정합 확인 — 6461f09. 번들·OTA 미발행(배포 별도 지시 대기).
+- [x] pushEnabled 전 채널 개방(타 게이트 7종 무변), pushProdGuard221 = 킬스위치 가드 전환, 원격 토큰 실패 비치명 유닛, KB-377 프라이머 정합 확인 — 6461f09.
+- [x] production OTA 발행(8/26 예진 승인 A안 — 재번들 없이 b19/vc13에 태움): ios 1dc187b8·and 85f6532c (태그 ota-prod-20260826).
+
+## KB-377 직렬화 + OTA 2발 (2026-08-26, PR #2 — 새 사이클 첫 건)
+- [x] 코치마크·푸시 프라이머 직렬화(iOS onDismiss 트리거 — Codex P1 반영) — abab832(squash), main 릴리스 9a04ccb.
+- [x] teamtest OTA(ios 912128ff·and 74ca706d) · production OTA(ios 79cd453a·and 226fe568, 태그 ota-prod-20260826-2) — Metro 캐시 함정 발견으로 --clear 게이트 승격.

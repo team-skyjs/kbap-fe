@@ -46,7 +46,7 @@ import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { displayNickname } from '@/lib/nickname';
 // P-216(러프): 홈 전 콘텐츠 — 전부 기존 화면 컴포넌트·훅 재사용(새 문법 발명 0)
-import { useInfiniteFoods, useFoods } from '@/lib/data/useFoods';
+import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { popularPhotoFoods } from '@/lib/search/discovery';
@@ -93,12 +93,15 @@ export default function Home() {
   const browse = useInfiniteFoods();
   const feed = useGlobalReviews(!isGuest);
   const saved = useBookmarks();
-  const { data: mockCatalog } = useFoods();
   const unread = useUnreadCount();
   const browseFoods = (browse.data ?? []).slice(0, 6);
   const feedReviews = ((feed.data?.pages ?? []).flatMap((p) => p.items) ?? []).slice(0, 2);
   const savedFoods = (saved.data ?? []).slice(0, 6);
-  const popularSearch = popularPhotoFoods(mockCatalog).slice(0, 6);
+  // KB-310: 인기 검색 소스 = 라이브 카탈로그(browse 캐시 재사용 — 왕복 0 추가).
+  // 구 useFoods()는 MOCK_MODE 하드코딩이라 photoUrl 전부 null인 목이 나가고 있었다
+  // (항목만 뜨고 사진 미표시 — 예진 실기). popularityRank는 서버 미제공(BE ⑥ 대기)
+  // → rankSorted 999 폴백 = 서버 기본 순서 유지, 사진 보유 우선 정렬은 그대로.
+  const popularSearch = popularPhotoFoods(browse.data).slice(0, 6);
 
   // P-196 ②: 에러/오프라인 = 화면 기준 정중앙(4탭 공용 기준) — 스크롤/헤더 패딩 밖
   if (isError && !isLoading) {
