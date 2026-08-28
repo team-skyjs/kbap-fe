@@ -1,6 +1,8 @@
 /**
- * P-199: dev API 대개편 — 버전리스 경로·헤더 3종 전 요청 부착·app-version 예외·
- * prod 채널 구계약 분기·storeUrls aos 키.
+ * P-199 → P-270(KB-389): 전 채널 신계약 통일 — 버전리스 경로·헤더 3종 전 요청
+ * 부착·app-version 예외·storeUrls aos 키. 구 prod 채널 분기(/api/v1·무헤더)는
+ * 스토어 앱 전 API 404(iOS 19 심사 거부 2.1a)의 원인으로 제거 — prod 채널
+ * 상태에서도 신계약으로 나가는지 이 스위트가 잠근다.
  */
 process.env.EXPO_PUBLIC_BE_BASE = 'https://dev.kbap.site';
 
@@ -59,8 +61,8 @@ describe('dev 계열(기본 채널)', () => {
   });
 });
 
-describe('production 채널 = 구계약 유지(스토어 앱 안전 — 서버 미배포)', () => {
-  it('상대 경로 = /api/v1 + 헤더 3종 미부착', async () => {
+describe('P-270: production 채널 = 신계약 동일(구계약 분기 소멸 — 2.1a 원인 제거)', () => {
+  it('prod 채널 상태에서도 버전리스 /api 경로 + 헤더 3종 부착(dev와 동일)', async () => {
     jest.resetModules();
     jest.doMock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => true }));
     const fetchMock = jest.fn(okEnvelope);
@@ -69,9 +71,19 @@ describe('production 채널 = 구계약 유지(스토어 앱 안전 — 서버 �
     const { api } = require('../client') as typeof import('../client');
     await api.get('/foods');
     const [url, init] = fetchMock.mock.calls[0] as [string, { headers: Record<string, string> }];
-    expect(url).toBe('https://dev.kbap.site/api/v1/foods'); // BE_BASE는 env, 경로만 구계약
-    expect(init.headers['X-API-Version']).toBeUndefined();
-    expect(init.headers['X-OS-Version']).toBeUndefined();
+    expect(url).toBe('https://dev.kbap.site/api/foods'); // /api/v1 잔존 0
+    expect(init.headers['X-API-Version']).toBe('1.0');
+    expect(init.headers['X-OS-Version']).toBeDefined();
+    expect(init.headers['X-App-Version']).toBe('1.0.1');
+  });
+
+  it('소스 잠금 — LEGACY_CONTRACT·API_V1_BASE 실코드 잔존 0(주석 제외)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs');
+    const client = fs.readFileSync('src/lib/api/client.ts', 'utf8') as string;
+    expect(client).not.toMatch(/const LEGACY_CONTRACT|LEGACY_CONTRACT\s*\?/); // 선언·분기 소멸
+    expect(client).not.toContain('API_V1_BASE');
+    expect(fs.readFileSync('src/lib/data/config.ts', 'utf8')).not.toMatch(/export const API_V1_BASE/);
   });
 });
 

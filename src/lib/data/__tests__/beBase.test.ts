@@ -12,9 +12,8 @@ it('env 설정 시 그 값 사용 (dev.kbap.site 배선)', () => {
   process.env.EXPO_PUBLIC_BE_BASE = 'https://dev.kbap.site';
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { BE_BASE, API_V1_BASE } = require('../config');
+    const { BE_BASE } = require('../config');
     expect(BE_BASE).toBe('https://dev.kbap.site');
-    expect(API_V1_BASE).toBe('https://dev.kbap.site/api/v1');
   });
 });
 
