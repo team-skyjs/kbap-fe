@@ -27,5 +27,4 @@ export const API_BASE_URL = 'https://api.kbap.example/v1';
  */
 export const BE_BASE = process.env.EXPO_PUBLIC_BE_BASE ?? 'https://prod.kbap.site';
 
-/** Versioned REST base — every real endpoint hangs off this (KB-66 common layer). */
-export const API_V1_BASE = `${BE_BASE}/api/v1`;
+// (구 API_V1_BASE는 P-270에서 소멸 — 전 채널 버전리스 신계약, client.ts가 BE_BASE만 사용.)
