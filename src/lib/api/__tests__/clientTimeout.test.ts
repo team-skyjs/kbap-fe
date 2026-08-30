@@ -5,7 +5,7 @@
  */
 jest.mock('@/lib/installationId', () => ({ getInstallationId: () => Promise.resolve('test-install-id') })); // P-204: expo-secure-store 로드가 jest에서 fetch 폴리필 오염 — 표면 목
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
-jest.mock('@/lib/data/config', () => ({ API_V1_BASE: 'https://test.host/api/v1', BE_BASE: 'https://test.host' }));
+jest.mock('@/lib/data/config', () => ({ BE_BASE: 'https://test.host' }));
 // StateBlock(classifyQueryError) 경유로 딸려오는 reanimated — jest 표준 목
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');

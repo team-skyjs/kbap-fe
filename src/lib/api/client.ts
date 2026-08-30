@@ -25,17 +25,16 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import i18n from '../i18n';
-import { API_V1_BASE, BE_BASE } from '../data/config';
-import { isProdChannel } from '../flags';
+import { BE_BASE } from '../data/config';
 import { getInstallationId } from '../installationId';
 
 /**
- * P-199(BE #160·161): dev 대개편 — **전 API 버전리스 + 헤더 3종 필수**
- * (X-API-Version 누락 = 400 COMMON-002). prod 서버는 구계약(v1 경로·무헤더)
- * 유지 실측 → **채널 분기**(P-114 isProdChannel 단일 소스 — 스토어 앱 안전).
- * prod 서버 배포 신호 오면 이 분기 해제 발주.
+ * P-199(BE #160·161) → P-270(KB-389): **전 채널 신계약 통일** — 버전리스 경로 +
+ * 헤더 3종(X-API-Version·X-OS-Version·X-App-Version) 전 요청(app-version만 예외).
+ * 구 prod 채널 분기(LEGACY_CONTRACT — /api/v1·무헤더)는 prod 서버 신계약 배포
+ * 실측(8/28: 구경로 404·신경로 401 AUTH-001)으로 제거 — 그 분기가 스토어 앱
+ * 전 API 404 = iOS 1.0.1(19) 심사 거부(2.1a, 로그인 실패)의 원인이었다.
  */
-const LEGACY_CONTRACT = isProdChannel();
 
 /** 유일 헤더 예외 엔드포인트 — 무인증·X-API-Version 자체가 없는 버전 게이트. */
 export const APP_VERSION_PATH = '/api/app-version';
@@ -125,8 +124,8 @@ async function request<T>(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept-Language': apiLang(),
-    // P-199: dev 계열 = 헤더 3종 전 요청 부착(app-version만 예외) — prod 채널 무헤더
-    ...(!LEGACY_CONTRACT && path !== APP_VERSION_PATH ? deviceHeaders() : {}),
+    // P-199 → P-270: 헤더 3종 전 채널·전 요청 부착(app-version만 예외)
+    ...(path !== APP_VERSION_PATH ? deviceHeaders() : {}),
     // P-204(KB-317): 설치 ID — 전 요청·채널 무관(서버 미인식 시 무시, 데이터 선축적)
     'X-Installation-Id': await getInstallationId(),
     ...extraHeaders, // P-153: 엔드포인트 한정 오버라이드(예: 스캔 v2 X-API-Version 날짜판)
@@ -136,13 +135,9 @@ async function request<T>(
   // 공개 인증 엔드포인트(login/refresh/logout)에는 붙이지 않는다 — 만료된
   // access가 붙으면 서버가 요청 자체를 401시켜 refresh가 영원히 실패한다
   // (BE JWT 가이드: 만료·무효 토큰 부착 시 공개 API도 401).
-  // P-165 → P-199: '/api/' 절대 경로 = BE_BASE만 프리픽스(종전 버전리스 경로 무변).
-  // 상대 경로 = dev 계열 `/api` 아래(버전리스 전환) · prod 채널만 구 `/api/v1` 유지.
-  const url = path.startsWith('/api/')
-    ? `${BE_BASE}${path}`
-    : LEGACY_CONTRACT
-      ? `${API_V1_BASE}${path}`
-      : `${BE_BASE}/api${path}`;
+  // P-165 → P-199 → P-270: '/api/' 절대 경로 = BE_BASE만 프리픽스, 상대 경로 =
+  // `/api` 아래 버전리스 — 전 채널 동일(구 /api/v1 분기 소멸).
+  const url = path.startsWith('/api/') ? `${BE_BASE}${path}` : `${BE_BASE}/api${path}`;
   const skipAuth = OPEN_AUTH_PATHS.some((p) => path.startsWith(p));
   const accessToken =
     !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
