@@ -38,10 +38,11 @@ export const FLAGS = {
    */
   guestMode: true,
   /**
-   * 리뷰 기능 — 부활 (P-077/KB-16; 제외 이력 KB-148). P-110(KB-280): **production
-   * 채널에선 숨김**(1.0.1 스토어 배포 — 미완 기능 비노출, teamtest·dev는 노출).
+   * 리뷰 기능 — 부활 (P-077/KB-16; 제외 이력 KB-148). P-110(KB-280) prod 숨김
+   * (당시 미완 기능 비노출) → **KB-403 전 채널 공개**(8/31 예진 확정 — 기능 완성).
+   * 발행은 b20/vc15 심사 승인 후 별도(전략 A — PR 선행·발행 대기).
    */
-  reviewsEnabled: !PROD_CHANNEL,
+  reviewsEnabled: true,
   /**
    * 커뮤니티 탭/화면 (P-087 목 선작업) — P-110: production 채널 숨김(탭바·설정
    * 차단 목록 행·화면 가드). teamtest·dev만 노출.
@@ -121,13 +122,13 @@ export const FLAGS = {
    * 리뷰 확장 별점 3축 (P-202/KB-32) — 디자이너 시안용 러프, dev 계열만.
    * BE 계약(3필드) 회신 시 buildReviewExtras 배선 + 채널 조건 재검토.
    */
-  reviewExtrasEnabled: !PROD_CHANNEL,
+  reviewExtrasEnabled: true, // P-236 도입 → KB-403 전 채널 공개(8/31 예진 확정 — 리뷰 본체와 동시)
   /**
    * 리뷰 장소 태그 실연결 (P-201/KB-249) — **dev 계열만**(prod 서버에 place 계약
    * 미배포). 고정 좌표(강남역) 기반 — P-200에서 expo-location 실위치 스왑 예정.
    * prod 배포 신호 오면 채널 조건 해제.
    */
-  reviewPlaceEnabled: !PROD_CHANNEL,
+  reviewPlaceEnabled: true, // P-201 dev 한정 → KB-403 전 채널 공개(prod places 라우트 존재 실측 8/31)
   /**
    * 푸시 알림 클라이언트 (P-192/KB-39) — P-221 dev 계열 → **P-268(KB-378) 전 채널
    * 개방**. 구 🔴 전역 true 금지 조건("알림 포함 prod 스토어 빌드")은 **8/25 prod

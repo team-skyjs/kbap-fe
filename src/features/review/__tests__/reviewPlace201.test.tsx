@@ -138,7 +138,7 @@ it('수정 왕복 — 프리필 칩 · 해제(X) 후 저장 = place null(제거 
 
 it('플래그 게이트 — reviewPlaceEnabled = 채널 분기(prod 무노출) 소스 잠금', () => {
   const fs = require('fs');
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewPlaceEnabled: !PROD_CHANNEL');
+  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewPlaceEnabled: true' /* KB-403 전 채널 공개 */);
   const parts = fs.readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
   expect(parts).toContain('!FLAGS.reviewPlaceEnabled || !place?.name) return null'); // 셀 줄 게이트(표면 공통 — 한 곳)
 });
