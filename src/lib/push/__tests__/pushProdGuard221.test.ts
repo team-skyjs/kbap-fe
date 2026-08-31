@@ -74,8 +74,8 @@ it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어
   const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;
   expect(flags).toContain('pushEnabled: true');
   expect(flags).not.toContain('pushEnabled: !PROD_CHANNEL');
-  // KB-403: reviewsEnabled는 전 채널 공개로 전환(P-268 불변식 목록에서 제외)
-  for (const gate of ['communityEnabled', 'reviewPlaceEnabled', 'dietPresetsEnabled']) {
+  // KB-403: reviews·reviewExtras·reviewPlace는 전 채널 공개로 전환(불변식 목록에서 제외)
+  for (const gate of ['communityEnabled', 'dietPresetsEnabled']) {
     expect(flags).toContain(`${gate}: !PROD_CHANNEL`); // 타 게이트 무변(P-268 불변식)
   }
   expect(flags).toContain('reviewsEnabled: true'); // KB-403 공개(8/31 예진 확정)

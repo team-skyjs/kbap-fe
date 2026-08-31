@@ -12,6 +12,11 @@ it('prod 채널에서도 reviewsEnabled = true — 리뷰 표면 전부 개방',
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { FLAGS, isProdChannel } = require('@/lib/flags');
   expect(FLAGS.reviewsEnabled).toBe(true);
+  // KB-403 추가(8/31): 부속 표면도 동시 공개 — extras(2축 별점)·장소 태그
+  expect(FLAGS.reviewExtrasEnabled).toBe(true);
+  expect(FLAGS.reviewPlaceEnabled).toBe(true);
+  // KB-274 카카오 블록(placeTagsEnabled)은 별개 — 전 채널 false 무변
+  expect(FLAGS.placeTagsEnabled).toBe(false);
   // 커뮤니티 계열은 prod 잠금 유지(분리 확인 — 발주 ②)
   if (isProdChannel()) expect(FLAGS.communityEnabled).toBe(false);
 });
