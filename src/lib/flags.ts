@@ -38,10 +38,11 @@ export const FLAGS = {
    */
   guestMode: true,
   /**
-   * 리뷰 기능 — 부활 (P-077/KB-16; 제외 이력 KB-148). P-110(KB-280): **production
-   * 채널에선 숨김**(1.0.1 스토어 배포 — 미완 기능 비노출, teamtest·dev는 노출).
+   * 리뷰 기능 — 부활 (P-077/KB-16; 제외 이력 KB-148). P-110(KB-280) prod 숨김
+   * (당시 미완 기능 비노출) → **KB-403 전 채널 공개**(8/31 예진 확정 — 기능 완성).
+   * 발행은 b20/vc15 심사 승인 후 별도(전략 A — PR 선행·발행 대기).
    */
-  reviewsEnabled: !PROD_CHANNEL,
+  reviewsEnabled: true,
   /**
    * 커뮤니티 탭/화면 (P-087 목 선작업) — P-110: production 채널 숨김(탭바·설정
    * 차단 목록 행·화면 가드). teamtest·dev만 노출.
