@@ -146,7 +146,7 @@ describe('P-185 → P-218: 환산가 접두 = "="(예진 확정 8/17)', () => {
       'src/features/order/FlippedOrderCard.tsx',
       'src/app/scan.tsx',
       'src/app/scan-order.tsx',
-      'src/app/food/[id]/order.tsx',
+      // KB-419: food/[id]/order.tsx 삭제(고아 라우트 — 인앱 진입 P-162에서 소멸)
     ];
     for (const f of FILES) {
       const src = fs.readFileSync(f, 'utf8') as string;
