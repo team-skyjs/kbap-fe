@@ -8,7 +8,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-localization', () => ({ getLocales: () => [{ regionCode: 'JP' }] }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { convertKrw, resolveCurrency, SUPPORTED_CURRENCIES } from '../exchange';
+import { convertKrw, currencyForCountry, currencyUpdateFor, resolveCurrency, SUPPORTED_CURRENCIES } from '../exchange';
+import { COUNTRIES } from '../onboarding/countries';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -71,8 +72,8 @@ describe('P-242 ①②: v2 서버 실환율(krwPerUnit) 채택', () => {
     expect(convertKrw(13900, 'USD', { code: 'USD', krwPerUnit: NaN })).toBeNull();
   });
 
-  it('fx 생략 = v1(prod) 테이블 폴백 무변 + KRW = null', () => {
-    expect(convertKrw(8000, 'USD')).toMatch(/^= \$/);
+  it('KB-418: fx 생략 = 배지 생략(null) — v1 고정 테이블 소멸 + KRW = null', () => {
+    expect(convertKrw(8000, 'USD')).toBeNull(); // 구 테이블 폴백 경로 제거
     expect(convertKrw(8000, 'KRW', { code: 'KRW', krwPerUnit: 1 })).toBeNull();
   });
 
@@ -84,11 +85,51 @@ describe('P-242 ①②: v2 서버 실환율(krwPerUnit) 채택', () => {
   });
 });
 
+describe('KB-418(P-201): 통화 "자동" = 국가 파생 명시 송신 (서버 null=유지라 null 송신은 무동작)', () => {
+  // 서버 파생 SSOT: kbap-server CountryCode.kt(enum, Member.kt:147 온보딩 파생) —
+  // 2026-09-04 추출 스냅샷. 아래는 non-USD 전량, 나머지 국가 = 전부 USD(서버 리터럴).
+  const SERVER_NON_USD: Record<string, string> = {
+    JP: 'JPY', CN: 'CNY', HK: 'HKD', TH: 'THB', ID: 'IDR', PH: 'PHP', MY: 'MYR',
+    SG: 'SGD', GB: 'GBP', CA: 'CAD', MX: 'MXN', BR: 'BRL', IN: 'INR', KR: 'KRW',
+    CH: 'CHF', LI: 'CHF', CZ: 'CZK', DK: 'DKK', HU: 'HUF', IL: 'ILS', PS: 'ILS',
+    IS: 'ISK', NO: 'NOK', NZ: 'NZD', PL: 'PLN', RO: 'RON', SE: 'SEK', TR: 'TRY', ZA: 'ZAR',
+    AU: 'AUD', KI: 'AUD', NR: 'AUD', TV: 'AUD',
+    AD: 'EUR', AT: 'EUR', BE: 'EUR', HR: 'EUR', CY: 'EUR', EE: 'EUR', FI: 'EUR',
+    FR: 'EUR', DE: 'EUR', GR: 'EUR', IE: 'EUR', IT: 'EUR', LV: 'EUR', LT: 'EUR',
+    LU: 'EUR', MT: 'EUR', MC: 'EUR', ME: 'EUR', NL: 'EUR', PT: 'EUR', SM: 'EUR',
+    SK: 'EUR', SI: 'EUR', ES: 'EUR',
+  };
+
+  it('앱 국가 카탈로그 전수 — currencyForCountry가 서버 온보딩 파생과 일치', () => {
+    for (const { code } of COUNTRIES) {
+      expect(`${code}:${currencyForCountry(code)}`).toBe(`${code}:${SERVER_NON_USD[code] ?? 'USD'}`);
+    }
+  });
+
+  it('자동 선택(null) = 국가 파생 코드 송신 — 명시 해제가 서버에 실반영되는 유일 경로', () => {
+    expect(currencyUpdateFor(null, 'DE', 'USD')).toBe('EUR'); // 명시 USD → 자동 = EUR 전송
+    expect(currencyUpdateFor(null, 'DE', 'EUR')).toBeUndefined(); // 이미 파생값 = 미전송(유지)
+    expect(currencyUpdateFor(null, 'DE', null)).toBe('EUR'); // 구 미설정 유저 = 파생값으로 치유
+  });
+
+  it('명시 선택 = 그 코드 송신 · 무변 = 미전송', () => {
+    expect(currencyUpdateFor('JPY', 'DE', 'EUR')).toBe('JPY');
+    expect(currencyUpdateFor('JPY', 'DE', 'JPY')).toBeUndefined();
+  });
+
+  it('배선 소스 잠금 — edit 저장 경로 = currencyUpdateFor 경유·null 송신·캐시 클리어 소멸', () => {
+    const fs = require('fs');
+    const edit = fs.readFileSync('src/app/profile/edit.tsx', 'utf8') as string;
+    expect(edit).toContain('currencyUpdateFor(');
+    expect(edit).not.toContain('clearCurrencyCache'); // null 미송신 — 캐시는 항상 실값 동기화
+  });
+});
+
 describe('P-185 → P-218: 환산가 접두 = "="(예진 확정 8/17)', () => {
-  it('환산 문자열 = "=" 접두 · KRW/미지 통화 = null(무변)', () => {
-    expect(convertKrw(8000, 'USD')).toMatch(/^= \$/); // P-249: `= ` 공백 1 잠금
-    expect(convertKrw(8000, 'KRW')).toBeNull();
-    expect(convertKrw(8000, 'XXX')).toBeNull();
+  it('환산 문자열 = "=" 접두 · KRW/미지 심볼 폴백(무변)', () => {
+    expect(convertKrw(11120, 'USD', { code: 'USD', krwPerUnit: 1390 })).toMatch(/^= \$/); // P-249: `= ` 공백 1 잠금
+    expect(convertKrw(8000, 'KRW', { code: 'KRW', krwPerUnit: 1 })).toBeNull();
+    expect(convertKrw(8000, 'USD', { code: 'XXX', krwPerUnit: 1000 })).toBe('= XXX 8.00'); // 미지 심볼 = 코드+공백
   });
 
   it('P-218: 환산 경로에 ≈ 잔존 0 — 생산 지점 1곳 + 소비처 5곳 소스 잠금', () => {
@@ -107,8 +148,8 @@ describe('P-185 → P-218: 환산가 접두 = "="(예진 확정 8/17)', () => {
       const lines = src.split('\n').filter((l: string) => l.includes('convertKrw') || l.includes('SYMBOL['));
       expect(lines.join('\n')).not.toContain('≈');
     }
-    // 고정 테이블 사실은 주석에 존치(실환율 연동 시 교체 지점 표식)
-    expect(fs.readFileSync('src/lib/exchange.ts', 'utf8')).toContain('고정 테이블');
+    // KB-418: v1 근사 고정 테이블 소멸 — 환산은 서버 실환율(krwPerUnit)만
+    expect(fs.readFileSync('src/lib/exchange.ts', 'utf8')).not.toContain('RATE_FROM_KRW');
   });
 
   it('사장님 확인 화면 = 환산 노출 0(place=ko 원화만) — 소스 잠금', () => {
