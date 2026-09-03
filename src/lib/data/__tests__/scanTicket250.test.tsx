@@ -193,12 +193,14 @@ it('P-255 배선 소스 잠금 — 진입 선발급(focus)·004 즉시 잠금·�
   expect(src).toContain('preTicket.current = null;\n    scan.mutate'); // 1회용 소모 후 전달
 });
 
-it('v1(prod) 무변 — 티켓 발급 0·헤더 없음(가이드 비대상)', async () => {
+// KB-418: P-219 채널 게이트 소멸 — prod 채널도 v2 = 티켓 발급 선행(구 "prod=v1
+// 티켓 0" 잠금 반전).
+it('prod 채널 목에서도 v2 — 티켓 발급 선행 + 2.0/티켓 헤더', async () => {
   mockProd = true;
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box: { x: 0, y: 0, width: 1, height: 1 } }], photo: PHOTO });
-  expect(ticketCalls()).toHaveLength(0);
-  const [, , opts] = scanCalls()[0] as [string, unknown, { headers?: unknown }];
-  expect(opts.headers).toBeUndefined();
+  expect(ticketCalls()).toHaveLength(1);
+  const [, , opts] = scanCalls()[0] as [string, unknown, { headers?: Record<string, string> }];
+  expect(opts.headers).toEqual({ 'X-API-Version': '2.0', 'X-Scan-Ticket': 'T-1' }); // 이 스위트의 티켓 목 값
 });
 
 it('소스 잠금 — 잔여 횟수 계산·티켓 영구 저장·만료 클라 판정 잔존 0 + quota UI 배선', () => {

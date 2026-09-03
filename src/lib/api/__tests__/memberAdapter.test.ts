@@ -25,8 +25,11 @@ describe('isDefaultProfileImage (P-016 — 기본 사진 = 사진 없음 취급)
   });
 
   it('P-140: 색상 아바타 6종(webp/default_profile) 경로도 기본 취급 — CDN URL·path 모두', () => {
-    const { DEFAULT_AVATAR_PATHS } = require('@/lib/onboarding/autoProfile') as typeof import('@/lib/onboarding/autoProfile');
-    expect(DEFAULT_AVATAR_PATHS).toHaveLength(6);
+    // KB-418: autoProfile 삭제(서버 지정 전환) — 기존 유저 응답에 잔존하는 6종
+    // 경로는 수신 판정 대상으로 여전히 유효, 리터럴로 잠근다.
+    const DEFAULT_AVATAR_PATHS = ['orange', 'teal', 'amber', 'olive', 'plum', 'navy'].map(
+      (c) => `images/webp/default_profile/avatar-${c}.png`,
+    );
     for (const p of DEFAULT_AVATAR_PATHS) {
       expect(isDefaultProfileImage(p)).toBe(true);
       expect(isDefaultProfileImage(`https://d29c1cr2ng7w0.cloudfront.net/${p}`)).toBe(true);

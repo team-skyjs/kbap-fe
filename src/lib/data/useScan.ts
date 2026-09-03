@@ -20,7 +20,7 @@ import {
   type ScannedItem,
 } from '@/lib/api/scanAdapter';
 import { resolveScanImagePath } from '@/lib/api/scanImage';
-import { FLAGS, isProdChannel } from '@/lib/flags';
+import { FLAGS } from '@/lib/flags';
 
 export interface ScanPhoto {
   uri: string;
@@ -50,14 +50,17 @@ export interface ScanOutcome {
   imagePath?: string;
 }
 
-/** P-153: 스캔 v2(서버 비전 OCR) — dev 계열 채널만(prod 서버 미배포, P-114 관례).
- *  P-155: FLAGS.scanV2 킬스위치 경유(되돌리면 v1 즉시 복귀 — OCR 코드 보존).
+/** P-153: 스캔 v2(서버 비전 OCR) — P-155: FLAGS.scanV2 킬스위치 경유(되돌리면
+ *  v1 즉시 복귀 — OCR 코드 보존).
  *  P-219(8/17 dev 스웨거 실측): 버전 헤더 = **'2.0'**(구 날짜판 폐기),
  *  쿼리 `lang`·**`currency` 둘 다 필수**(누락 시 400 — 스캔 전면 사망), 본문 =
- *  `{ imagePath }`만. ⚠️ prod 채널은 1.0 계약이라 절대 v2로 가지 않는다. */
+ *  `{ imagePath }`만.
+ *  KB-418: 채널 게이트 제거 — prod 서버도 신계약(v2 라우트) 통일.
+ *  ⚠️ 킬스위치 롤백(v1)은 이제 전 채널 공통 — prod 서버의 v1 계약 유지 여부는
+ *  롤백 시점에 재확인 필요(구계약 정리 진행 중). */
 export const SCAN_API_VERSION = '2.0';
 export function scanV2Enabled(): boolean {
-  return FLAGS.scanV2 && !isProdChannel();
+  return FLAGS.scanV2;
 }
 
 /** P-250(KB-345): 스캔 티켓 발급 — v2 필수 선행(가이드 PR #181). body 없음.

@@ -2,7 +2,8 @@
  * exchange (P-136/B-3 → P-242 실환율 전환) — 이중 통화 표시.
  * P-242(KB-349, BE #182): 스캔 v2 응답의 `currency.krwPerUnit`(frankfurter/ECB
  * 실환율)이 정본 — convertKrw에 fx로 전달하면 `price ÷ krwPerUnit`.
- * 아래 고정 테이블(RATE_FROM_KRW)은 **v1(prod 구계약) 폴백 전용** 근사값.
+ * KB-418: v1(prod 구계약) 폴백 근사 환율 테이블 소멸 — 환산은 서버 실환율만,
+ * fx 부재 = 배지 생략(에러 아님).
  * 통화 기본값 = 국적 기반, 게스트 = 기기 로케일. 지원 30종(서버 enum) 밖의
  * 저장 통화는 표시·요청 모두 USD 강등(KB-349 정책 — VND·RUB·TWD 제거).
  */
@@ -10,18 +11,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
 
 const STORE_KEY = 'kbap.currency.v1';
-
-/** KRW 1 기준 환산율 — **v1(prod) 폴백 전용** 2026-08 근사 고정값(P-242 이후
- *  v2 경로는 서버 krwPerUnit 사용, 이 테이블 미참조). 30종 전 커버. */
-const RATE_FROM_KRW: Record<string, number> = {
-  USD: 0.00072, EUR: 0.00066, JPY: 0.113, CNY: 0.0052, HKD: 0.0056,
-  THB: 0.026, IDR: 11.8, PHP: 0.042, MYR: 0.0034, SGD: 0.00097,
-  GBP: 0.00056, AUD: 0.0011, CAD: 0.00099, MXN: 0.0134, BRL: 0.004,
-  INR: 0.062, KRW: 1,
-  CHF: 0.00058, CZK: 0.0177, DKK: 0.0049, HUF: 0.264, ILS: 0.0027, ISK: 0.099,
-  NOK: 0.0076, NZD: 0.0012, PLN: 0.0028, RON: 0.0033, SEK: 0.0074, TRY: 0.0295,
-  ZAR: 0.0127,
-};
 
 /** 통화 기호 (표시 접두) — 30종(P-242). 라틴 약칭 통화(CHF 등)는 코드+공백. */
 const SYMBOL: Record<string, string> = {
@@ -34,14 +23,21 @@ const SYMBOL: Record<string, string> = {
 };
 
 /** 국적(ISO alpha-2) → 통화. 미지 국가는 USD.
- *  P-242: VN·RU·TW 매핑 제거(frankfurter 미지원 통화) — USD 폴백(KB-349 정책). */
+ *  P-242: VN·RU·TW 매핑 제거(frankfurter 미지원 통화) — USD 폴백(KB-349 정책).
+ *  KB-418: 서버 온보딩 파생(kbap-server CountryCode.kt, Member.kt 온보딩)과
+ *  **동일 테이블**로 정합 — 유로존 잔여 13국·AUD 3국·LI(CHF)·PS(ILS) 보강.
+ *  나머지 미기재 국가 = 서버도 전부 USD(리터럴 일치 — exchangeCurrency 유닛 전수 대조). */
 const COUNTRY_CURRENCY: Record<string, string> = {
   US: 'USD', JP: 'JPY', CN: 'CNY', HK: 'HKD', TH: 'THB',
-  ID: 'IDR', PH: 'PHP', MY: 'MYR', SG: 'SGD', GB: 'GBP', AU: 'AUD',
+  ID: 'IDR', PH: 'PHP', MY: 'MYR', SG: 'SGD', GB: 'GBP',
   CA: 'CAD', MX: 'MXN', BR: 'BRL', IN: 'INR', KR: 'KRW',
   DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', PT: 'EUR', IE: 'EUR',
   AT: 'EUR', BE: 'EUR', FI: 'EUR', GR: 'EUR',
-  CH: 'CHF', CZ: 'CZK', DK: 'DKK', HU: 'HUF', IL: 'ILS', IS: 'ISK',
+  AD: 'EUR', HR: 'EUR', CY: 'EUR', EE: 'EUR', LV: 'EUR', LT: 'EUR', LU: 'EUR',
+  MT: 'EUR', MC: 'EUR', ME: 'EUR', SM: 'EUR', SK: 'EUR', SI: 'EUR',
+  AU: 'AUD', KI: 'AUD', NR: 'AUD', TV: 'AUD',
+  CH: 'CHF', LI: 'CHF', IL: 'ILS', PS: 'ILS',
+  CZ: 'CZK', DK: 'DKK', HU: 'HUF', IS: 'ISK',
   NO: 'NOK', NZ: 'NZD', PL: 'PLN', RO: 'RON', SE: 'SEK', TR: 'TRY', ZA: 'ZAR',
 };
 
@@ -117,12 +113,25 @@ export function saveCurrency(code: string): void {
   void AsyncStorage.setItem(STORE_KEY, code).catch(() => {});
 }
 
-/** P-165: 통화 해제(null 저장) 시 캐시도 비움 — 낡은 캐시가 국적 폴백을 가리는 것 방지. */
-export function clearCurrencyCache(): void {
-  void AsyncStorage.removeItem(STORE_KEY).catch(() => {});
+/**
+ * KB-418(P-201): 프로필 통화 저장값 결정 — "자동" 선택(null) = **국가 파생 코드를
+ * 명시 송신**. 서버 PATCH는 null = "유지"(MemberProfile 계약)라 null 송신으로는
+ * 해제가 반영되지 않던 무동작 버그의 해소 지점. 반환 undefined = 무변(미전송).
+ * 파생 규칙은 서버 온보딩(Member.kt — CountryCode.currency)과 동일 테이블.
+ */
+export function currencyUpdateFor(
+  selected: string | null,
+  nationality: string | null | undefined,
+  server: string | null | undefined,
+): string | undefined {
+  // Codex #15 P2: 프로필 미로드(국가 부재) 상태의 "자동"은 파생 불가 — USD 오폭
+  // 송신 대신 필드 생략(서버 null=유지라 안전). 명시 선택은 국가 무관 그대로.
+  if (selected == null && nationality == null) return undefined;
+  const wire = selected ?? currencyForCountry(nationality);
+  return wire !== (server ?? null) ? wire : undefined;
 }
 
-/** 스캔 v2 응답의 서버 환율(P-242) — null = 조회 실패(배지 생략)·undefined = v1. */
+/** 스캔 v2 응답의 서버 환율(P-242) — null = 조회 실패·undefined = 부재(둘 다 배지 생략). */
 export type ServerFx = { code: string; krwPerUnit: number } | null;
 
 /** KRW → 유저 통화 환산 문자열 (예: "=$6.32"). 미지 통화·KRW = null(환산 배지 생략).
@@ -131,20 +140,15 @@ export type ServerFx = { code: string; krwPerUnit: number } | null;
  *  P-242(BE #182): fx 인자 = 스캔 v2 서버 실환율(frankfurter/ECB) —
  *  **price ÷ krwPerUnit**(서버 명시 산식·반올림 클라 몫). fx === null은
  *  "환율 조회 실패·스캔 정상" 규약 — 배지 생략(₩만, 에러 아님).
- *  fx 생략(undefined) = v1(prod 구계약) — 근사 고정 테이블 폴백. */
+ *  KB-418: fx 생략(undefined)도 배지 생략 — v1 근사 테이블 소멸(실환율 없는
+ *  환산 표시는 하지 않는다. 유일 무-fx 소비처였던 상세 주문 카드는 priceKrw
+ *  자체가 없어 환산 미도달 — 실표시 변화 0). */
 export function convertKrw(krw: number, currency: string, fx?: ServerFx): string | null {
-  if (fx === null) return null; // v2 환율 실패 — 배지 생략(에러 아님)
-  const code = fx ? fx.code : currency;
+  if (fx == null) return null; // 환율 실패(null)·부재(undefined) — 배지 생략(에러 아님)
+  const code = fx.code;
   if (code === 'KRW') return null;
-  let v: number;
-  if (fx) {
-    if (!(fx.krwPerUnit > 0)) return null; // 0/음수/NaN 방어 — 나눗셈 오염 금지
-    v = krw / fx.krwPerUnit;
-  } else {
-    const rate = RATE_FROM_KRW[code];
-    if (!rate) return null;
-    v = krw * rate;
-  }
+  if (!(fx.krwPerUnit > 0)) return null; // 0/음수/NaN 방어 — 나눗셈 오염 금지
+  const v = krw / fx.krwPerUnit;
   const digits = v >= 100 ? 0 : 2; // 큰 액면 통화(JPY 등)는 정수 표기
   // P-249: `= ` 공백 1 — "₩7,000 = $5.80" 대칭(예진 실기 확정 8/21)
   return `= ${SYMBOL[code] ?? code + ' '}${v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;

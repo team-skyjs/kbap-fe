@@ -148,18 +148,20 @@ it.each([
   expect(path).toBe(`/scans?lang=en&currency=${expected}`);
 });
 
-it('P-219: prod 채널은 currency 쿼리·2.0 헤더 없이 v1 고정(구 계약 보호)', async () => {
+// KB-418(P-201): P-219 채널 게이트 소멸 — prod 서버도 신계약(v2)이라 채널 무관
+// 플래그만 본다. 구 "prod = v1 고정" 잠금을 뒤집어 재잠금.
+it('KB-418: prod 채널 + 플래그 on = v2 (채널 게이트 소멸 — 티켓·2.0 헤더·currency 쿼리)', async () => {
   mockProd = true;
-  mockScanV2 = true; // 플래그가 켜져 있어도 prod는 v1
+  mockScanV2 = true;
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 }, currency: 'USD' });
-  const [path, body, opts] = api.post.mock.calls[0];
-  expect(path).toBe('/scans?lang=en');
-  expect(body.items).toEqual([{ idx: 0, rawMenuName: '김치찌개' }]);
-  expect(opts.headers).toBeUndefined();
+  const [path, body, opts] = scanCalls()[0] as [string, { items: unknown[] }, { headers: Record<string, string> }];
+  expect(path).toBe('/scans?lang=en&currency=USD');
+  expect(body.items).toEqual([]); // 서버 비전 OCR
+  expect(opts.headers).toEqual({ 'X-API-Version': '2.0', 'X-Scan-Ticket': 'TICKET-1' });
 });
 
-it('P-153 v1(production): 현행 무변 — items 전송 + 버전 헤더 없음 (prod 서버 v2 미지원)', async () => {
+it('P-155 킬스위치 off = 채널 무관 v1 (prod 채널) — 롤백 경로 보존', async () => {
   mockProd = true;
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box }], photo: { uri: 'file:a.jpg', width: 1, height: 1 } });
