@@ -124,6 +124,9 @@ export function currencyUpdateFor(
   nationality: string | null | undefined,
   server: string | null | undefined,
 ): string | undefined {
+  // Codex #15 P2: 프로필 미로드(국가 부재) 상태의 "자동"은 파생 불가 — USD 오폭
+  // 송신 대신 필드 생략(서버 null=유지라 안전). 명시 선택은 국가 무관 그대로.
+  if (selected == null && nationality == null) return undefined;
   const wire = selected ?? currencyForCountry(nationality);
   return wire !== (server ?? null) ? wire : undefined;
 }

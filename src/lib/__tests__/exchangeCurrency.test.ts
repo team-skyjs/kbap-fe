@@ -117,6 +117,12 @@ describe('KB-418(P-201): 통화 "자동" = 국가 파생 명시 송신 (서버 n
     expect(currencyUpdateFor('JPY', 'DE', 'JPY')).toBeUndefined();
   });
 
+  it('Codex #15 P2: 프로필 미로드(국가 부재) + 자동 = 필드 생략 — USD 오폭 송신 금지', () => {
+    expect(currencyUpdateFor(null, undefined, undefined)).toBeUndefined(); // me 미로드 저장
+    expect(currencyUpdateFor(null, null, 'EUR')).toBeUndefined(); // 파생 불가 = 유지
+    expect(currencyUpdateFor('JPY', undefined, null)).toBe('JPY'); // 명시 선택은 국가 무관
+  });
+
   it('배선 소스 잠금 — edit 저장 경로 = currencyUpdateFor 경유·null 송신·캐시 클리어 소멸', () => {
     const fs = require('fs');
     const edit = fs.readFileSync('src/app/profile/edit.tsx', 'utf8') as string;
