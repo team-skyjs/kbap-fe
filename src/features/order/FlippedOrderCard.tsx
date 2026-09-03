@@ -42,7 +42,6 @@ export function FlippedOrderCard({
   currency,
   fx,
   orderImagePath,
-  stepper,
   onDone,
   t,
 }: {
@@ -51,11 +50,9 @@ export function FlippedOrderCard({
   /** 리더 언어 재료명(미러 기피 줄) — codes와 같은 순서 */
   avoidNames: string[];
   currency: string;
-  fx?: ServerFx; // P-242: 스캔 발 주문 = v2 실환율 관통(상세 발 주문 = 테이블 폴백)
-  /** P-252: 주문 이력 식별자(스캔 이미지 경로) — 상세 발 주문 = 없음(필드 생략 저장). */
+  fx?: ServerFx; // P-242: 스캔 발 주문 v2 실환율 관통 — 부재 = 환산 배지 생략(KB-418)
+  /** P-252: 주문 이력 식별자(스캔 이미지 경로) — KB-419: 스캔 주문이 유일 경로. */
   orderImagePath?: string | null;
-  /** 단일 모드(음식 상세)의 수량 스테퍼 슬롯 — Done 위에 렌더 */
-  stepper?: React.ReactNode;
   onDone: () => void;
   t: TFn;
 }) {
@@ -139,7 +136,6 @@ export function FlippedOrderCard({
       )}
 
       <View style={styles.foot}>
-        {stepper}
         <Btn
           onPress={() => {
             setDoneOpen(true);
