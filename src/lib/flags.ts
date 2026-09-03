@@ -14,8 +14,9 @@ function isProductionChannel(): boolean {
 }
 const PROD_CHANNEL = isProductionChannel();
 
-/** P-114: 채널 판별 단일 소스 — 플래그 외 소비자(spiceAdapter 송신 분기)용.
- *  함수형 export(값 아님) — jest에서 목 주입 가능하게. */
+/** P-114: 채널 판별 단일 소스 — 함수형 export(값 아님), jest 목 주입 가능하게.
+ *  (spiceAdapter 송신 분기는 KB-389 2차로 소멸 — 송신 계약 소비자 없음. 잔존
+ *  소비 = sentry 환경 라벨·scanV2/온보딩 1.1 등 버전 게이트.) */
 export function isProdChannel(): boolean {
   return PROD_CHANNEL;
 }
@@ -38,10 +39,11 @@ export const FLAGS = {
    */
   guestMode: true,
   /**
-   * 리뷰 기능 — 부활 (P-077/KB-16; 제외 이력 KB-148). P-110(KB-280): **production
-   * 채널에선 숨김**(1.0.1 스토어 배포 — 미완 기능 비노출, teamtest·dev는 노출).
+   * 리뷰 기능 — 부활 (P-077/KB-16; 제외 이력 KB-148). P-110(KB-280) prod 숨김
+   * (당시 미완 기능 비노출) → **KB-403 전 채널 공개**(8/31 예진 확정 — 기능 완성).
+   * 발행은 b20/vc15 심사 승인 후 별도(전략 A — PR 선행·발행 대기).
    */
-  reviewsEnabled: !PROD_CHANNEL,
+  reviewsEnabled: true,
   /**
    * 커뮤니티 탭/화면 (P-087 목 선작업) — P-110: production 채널 숨김(탭바·설정
    * 차단 목록 행·화면 가드). teamtest·dev만 노출.
@@ -86,9 +88,9 @@ export const FLAGS = {
    * 스캔 v2(X-API-Version 2.0 — 서버 OCR·판정, P-153 → P-155 일시 off).
    * **P-219(8/17): 재활성화** — 보류 사유였던 확인 3종이 dev 스웨거 실측으로
    * 해소(currency 필수 확정 · similarFood 스키마 정의 · SCAN-003/002 분리).
-   * 채널 분기(prod 제외)는 scanV2Enabled()가 보존 — **prod는 1.0 계약이라
-   * 절대 v2로 가면 안 된다**(유닛 잠금). 문제 시 이 한 줄 false로 즉시 롤백
-   * (온디바이스 OCR 코드는 삭제하지 않고 경로 분기로 보존).
+   * **KB-418: 채널 게이트 소멸** — prod 서버 신계약 통일(KB-389)로 전 채널 v2.
+   * 문제 시 이 한 줄 false로 즉시 롤백(온디바이스 OCR 코드는 삭제하지 않고
+   * 경로 분기로 보존 — 단 v1 서버 계약 유지 여부는 롤백 시점 재확인).
    */
   scanV2: true,
   /**
@@ -121,13 +123,13 @@ export const FLAGS = {
    * 리뷰 확장 별점 3축 (P-202/KB-32) — 디자이너 시안용 러프, dev 계열만.
    * BE 계약(3필드) 회신 시 buildReviewExtras 배선 + 채널 조건 재검토.
    */
-  reviewExtrasEnabled: !PROD_CHANNEL,
+  reviewExtrasEnabled: true, // P-236 도입 → KB-403 전 채널 공개(8/31 예진 확정 — 리뷰 본체와 동시)
   /**
    * 리뷰 장소 태그 실연결 (P-201/KB-249) — **dev 계열만**(prod 서버에 place 계약
    * 미배포). 고정 좌표(강남역) 기반 — P-200에서 expo-location 실위치 스왑 예정.
    * prod 배포 신호 오면 채널 조건 해제.
    */
-  reviewPlaceEnabled: !PROD_CHANNEL,
+  reviewPlaceEnabled: true, // P-201 dev 한정 → KB-403 전 채널 공개(prod places 라우트 존재 실측 8/31)
   /**
    * 푸시 알림 클라이언트 (P-192/KB-39) — P-221 dev 계열 → **P-268(KB-378) 전 채널
    * 개방**. 구 🔴 전역 true 금지 조건("알림 포함 prod 스토어 빌드")은 **8/25 prod

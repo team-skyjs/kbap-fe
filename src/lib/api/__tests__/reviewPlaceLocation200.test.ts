@@ -71,5 +71,5 @@ it('소스 잠금 — 플러그인 문구(iOS 사용 중 권한)·폴백 상수 
   expect(appJson).toContain('locationWhenInUsePermission');
   expect(appJson).toContain('nearby restaurants you can tag in a review');
   expect(fs.readFileSync('src/lib/api/places.ts', 'utf8')).toContain('REVIEW_PLACE_FALLBACK_COORD = { latitude: 37.4979502, longitude: 127.0276368 }');
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewPlaceEnabled: !PROD_CHANNEL'); // 플래그 현행(발주 4)
+  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewPlaceEnabled: true' /* KB-403 전 채널 공개 */); // 플래그 현행(발주 4)
 });

@@ -140,10 +140,13 @@ function RichRow({
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
   const detail = useFoodDetail(dish.matched && dish.foodId ? dish.foodId : '');
   const food = dish.matched ? detail.data : undefined;
-  // P-171 → P-223: 회피 칩 줄 **단일화**. 데이터는 v2 서버 겹침 우선, 없으면 v1 조인 폴백.
-  //  - v2(dev 계열): dish.avoidances = overlapped만·서버 번역명·성분별 riskLevel
+  // P-171 → P-223: 회피 칩 줄 **단일화**. 데이터는 서버 겹침(avoidances) 우선.
+  //  - dish.avoidances = overlapped만·서버 번역명·성분별 riskLevel
   //    (결측 CAUTION 강등은 어댑터가 이미 처리 — P-219)
-  //  - v1(prod 채널): 서버가 avoidances를 안 주므로 상세 ingredients 클라 조인 유지
+  //  - 클라 조인 폴백: KB-418 검수 — v1 전용이 **아니라** v2에서도 도달한다
+  //    (avoidances 빈 배열 = 무겹침·게스트·온보딩 미완료, mapAvoidances가 항상
+  //    배열 반환). 상세 ingredients의 danger/caution을 보수적으로 표면화하는
+  //    안전망(헌법 III — 지우면 경고 표면이 줄어든다)이라 존치.
   // 정렬은 양쪽 동일 — danger 우선(접혀도 위험한 것부터 보인다)
   const warnSource: { code: string; name: string; risk: RiskState }[] = dish.avoidances?.length
     ? dish.avoidances

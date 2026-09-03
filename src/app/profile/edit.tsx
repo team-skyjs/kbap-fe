@@ -26,7 +26,7 @@ import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
 import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
-import { clearCurrencyCache, currencyForCountry, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
+import { currencyForCountry, currencyUpdateFor, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -49,7 +49,9 @@ export default function EditProfile() {
     if (me && !seeded) {
       setNickname(me.nickname);
       setSpice(me.spiceTolerance);
-      setCurrency(me.currency ?? null); // P-165
+      // P-165 → KB-418: 서버값이 국가 파생값과 같으면 "자동"으로 시딩 — 자동
+      // 저장 후에도(서버엔 파생 코드가 실제로 저장됨) UI는 자동으로 보인다.
+      setCurrency(me.currency == null || me.currency === currencyForCountry(me.nationality) ? null : me.currency);
       setSeeded(true);
     }
   }, [me, seeded]);
@@ -59,6 +61,9 @@ export default function EditProfile() {
   const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 = PATCH 중복 봉쇄
   function save() {
     if (photoBusy) return; // P-120: 업로드 중 저장 차단(버튼 비활성과 이중 방어)
+    // KB-418: "자동" = 국가 파생 코드 명시 송신(서버 null=유지라 null 송신은 무동작).
+    // undefined = 무변(필드 생략=유지).
+    const currencyWire = currencyUpdateFor(currency, me?.nationality, me?.currency);
     void runSave(async () => {
       await new Promise<void>((resolve) => {
     // spice: 해제 = SKIP — 와이어 -1 센티널 변환은 spiceAdapter (KB-150→P-081)
@@ -66,19 +71,16 @@ export default function EditProfile() {
       {
         nickname: nickname.trim() || me?.nickname,
         spiceTolerance: spice,
-        // P-165(#145): 변경 시에만 전송(생략=유지) — null = 미설정(국적 폴백)
-        ...(currency !== (me?.currency ?? null) ? { currency } : {}),
+        ...(currencyWire !== undefined ? { currency: currencyWire } : {}),
         // P-120: 사진 드래프트 — 있을 때만 합류(1회 PATCH), 없으면 필드 생략(유지)
         ...(photoDraft != null ? { profileImageUrl: photoDraft } : {}),
       },
       {
         onSuccess: () => {
           setUserProps({ user_info_spice_level: spice }); // P-144: CSV 트리거(프로필 수정 시 갱신)
-          // P-165: 로컬 캐시 동기화 — 서버 정본 원칙(resolveCurrency 체인의 캐시 강등)
-          if (currency !== (me?.currency ?? null)) {
-            if (currency) saveCurrency(currency);
-            else clearCurrencyCache();
-          }
+          // P-165: 로컬 캐시 동기화 — 서버 정본 원칙(resolveCurrency 체인의 캐시 강등).
+          // KB-418: 항상 실코드 저장(자동도 파생 코드가 나감 — null 캐시 클리어 소멸)
+          if (currencyWire !== undefined) saveCurrency(currencyWire);
           router.back();
         },
         onSettled: () => resolve(), // P-173: 응답(성공/실패)까지 busy 유지

@@ -18,6 +18,9 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn(), patch: jest.fn().mockResolvedValue(undefined) } }));
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
+// KB-389 2차: 채널 목 — 기본 dev(1.1 헤더), prod 케이스만 플립(spice 송신은 채널 무관 문자열)
+const CHANNEL = { prod: false };
+jest.mock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => CHANNEL.prod }));
 jest.mock('@/lib/onboarding/submit', () => ({
   loadLocalSpice: jest.fn().mockResolvedValue(null),
   SPICE_KEY: 'kbap.profile.spice.v1', // useMe가 submit에서 import (P-010 중복 해소)
@@ -96,6 +99,18 @@ it('spice 패치(HOT) → 문자열 HOT 전송 + 로컬 fallback enum 보관 (P-
   expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'HOT' }, { headers: { 'X-API-Version': '1.1' } });
   expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.profile.spice.v1', 'HOT'); // 마이그레이션 fallback
   expect(isInvalidated(qc, ['me', 'en'])).toBe(true); // 재조회 → 서버 값 우선(adaptSpice)
+});
+
+it('prod 채널 목에서도 spice = enum 문자열 + 1.1 헤더 (KB-389 2차 + KB-418 P-209 분기 소멸)', async () => {
+  CHANNEL.prod = true;
+  try {
+    const qc = seededClient();
+    await runMutation(qc, { spiceTolerance: 'HOT' });
+    // KB-418: PATCH 헤더 채널 분기 제거 — 전 채널 1.1(prod 서버 1.1+ 핸들러 실측)
+    expect(api.patch).toHaveBeenCalledWith('/members/me/profile', { spicinessPreference: 'HOT' }, { headers: { 'X-API-Version': '1.1' } });
+  } finally {
+    CHANNEL.prod = false;
+  }
 });
 
 it('spice SKIP(설정 해제) → 문자열 SKIP 전송 + 로컬 키 제거', async () => {

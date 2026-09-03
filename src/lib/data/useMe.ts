@@ -19,7 +19,7 @@ import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
 import { setSentryUser } from '../sentry';
-import { FLAGS, isProdChannel } from '../flags';
+import { FLAGS } from '../flags';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
 import { MOCK_MY_REVIEWS, MOCK_USER } from '../mocks/me';
@@ -120,9 +120,9 @@ export function useUpdateMe() {
       // P-243(BE #179): 식이 카테고리 — 풀 셋 교체(해제 실동작). 회피와 한 요청 가능.
       if (patch.dietCategories !== undefined) body.dietCategories = patch.dietCategories;
       if (Object.keys(body).length === 0) return; // 와이어 필드 없는 패치 — 서버 호출 불필요
-      // P-209: dev = 1.1(ProfileUpdateNoCountryRequest 그룹 — countryCode 무필드,
-      // 전송은 P-078부터 이미 0), prod = 구 1.0 유지(서버 미배포)
-      await api.patch('/members/me/profile', body, isProdChannel() ? undefined : { headers: { 'X-API-Version': '1.1' } });
+      // P-209 → KB-418: 전 채널 1.1(ProfileUpdateNoCountryRequest 그룹 — countryCode
+      // 무필드, 전송은 P-078부터 이미 0. prod 서버 1.1+ 핸들러 실측으로 분기 제거)
+      await api.patch('/members/me/profile', body, { headers: { 'X-API-Version': '1.1' } });
     },
     onSuccess: async (_data, patch) => {
       // KB-68 반려 수정: restrictions 변경은 개인화의 기준 자체가 바뀌는 것 —

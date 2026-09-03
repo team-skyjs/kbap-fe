@@ -103,7 +103,7 @@ it('extrasFromReview — 0 = 미평가 = null(프리필·표시 공용 변환)',
 
 it('플래그·잔존 소스 잠금 — access·로컬 프리뷰 전면 소멸', () => {
   const fs = require('fs');
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewExtrasEnabled: !PROD_CHANNEL');
+  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewExtrasEnabled: true'); // KB-403 공개
   const parts = fs.readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
   expect(parts).toContain('if (!FLAGS.reviewExtrasEnabled) return null;');
   expect(parts).not.toContain("'access'"); // Getting there 잔존 0

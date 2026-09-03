@@ -38,7 +38,7 @@ export default function ScanOrder() {
     }
   }, [itemsParam]);
 
-  // P-242: 스캔 세션 서버 실환율 — param 부재 = v1(테이블 폴백)
+  // P-242: 스캔 세션 서버 실환율 — param 부재 = 환산 배지 생략(KB-418: v1 테이블 소멸)
   const fx = React.useMemo<import('@/lib/exchange').ServerFx | undefined>(() => {
     if (fxParam == null) return undefined;
     try {

@@ -8,8 +8,8 @@
  *   않는다, 발주 명시. places.ts currentCoord와 달리 request 경로 자체가 없다).
  * - items: foodId 필수(스키마) — 미매칭(foodId null) 항목은 이력에서 제외.
  *   menuName = 한국어 스냅샷(주문 카드 문법)·price = 스캔 단가(미인식 = 생략).
- * - imagePath = 스캔 식별자(스캔 1회당 주문 1회) — 스캔 경로 없으면(상세 발 주문·
- *   업로드 실패 '') 필드 생략(스키마 optional).
+ * - imagePath = 스캔 식별자(스캔 1회당 주문 1회) — KB-419: 호출 경로 = 스캔 주문
+ *   카드뿐(상세 발 주문 라우트 삭제)이라 항상 존재. 업로드 실패('')만 필드 생략.
  */
 import { api } from '@/lib/api/client';
 import type { OrderItem } from '@/features/order/FlippedOrderCard';

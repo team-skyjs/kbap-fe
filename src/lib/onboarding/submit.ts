@@ -16,9 +16,6 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ApiError } from '@/lib/api/client';
-import { isProdChannel } from '@/lib/flags';
-import { generateNickname, pickDefaultAvatarPath } from './autoProfile';
-import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { toBeCode } from '@/lib/mocks/ingredients';
 import type { SpiceChoice } from '@/lib/spice';
@@ -28,15 +25,11 @@ export const UNSET = 'UNSET' as const;
 export type Unset = typeof UNSET;
 
 export interface OnboardingProfilePayload {
-  /** P-209: dev(1.1) = 서버 자동 지정이라 미사용 — prod(구 1.0 계약) 폴백만 소비. 생략 시 내부 생성. */
-  nickname?: string;
   nationality: string; // ISO 3166-1 alpha-2
   language: string; // reader language (BCP-47, one of the 9)
   avoidIngredients: string[] | Unset; // 81종 codes, or skipped
   spiceTolerance: SpiceChoice; // P-081: enum — 'SKIP' = 온보딩 스킵(구 UNSET 승계)
-  /** 업로드된 프로필 사진 path(objectKey) (KB-149/P-006). null/생략 = 미선택 → 필드 생략. */
-  profileImageUrl?: string | null;
-  /** P-243(BE #179): 프리셋 스텝 선택 식이 카테고리 — dev(1.1)만 전송(prod 구계약 미전송 무해). */
+  /** P-243(BE #179): 프리셋 스텝 선택 식이 카테고리. */
   dietCategories?: string[];
 }
 
@@ -50,18 +43,14 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
   }
 
   // P-209(KB-51): 온보딩 1.1 — 닉네임·아바타 = **서버 자동 지정**(한식명_4자리 풀
-  // 30종·기본 아바타). dev 계열 = 1.1(nickname·profileImageUrl 미전송), prod 채널 =
-  // 구 1.0 계약(전 필드 required — 서버 1.1 배포·분기 해제 발주까지 폴백 유지).
-  const legacy = isProdChannel();
+  // 30종·기본 아바타), 클라 생성 소멸. KB-418: prod 구 1.0 폴백 분기 제거 —
+  // 전 채널 1.1(prod 서버 1.1+ 핸들러 실측, MemberController.kt:28).
   const body = {
-    ...(legacy ? { nickname: payload.nickname ?? generateNickname() } : {}),
-    // KB-195(P-019): required 승격 — 스킵도 -1 센티널 명시 전송(생략 시 검증 400).
-    // P-081: enum→정수 변환은 spiceAdapter 격리 (스웨거 enum 재배포 시 스왑).
+    // KB-195(P-019): required 승격 — 스킵도 'SKIP' 명시 전송(생략 시 검증 400).
+    // KB-389 2차: 전 채널 enum 문자열(prod 구정수 분기 소멸) — 변환은 spiceAdapter 격리.
     spicinessPreference: spiceChoiceToWire(payload.spiceTolerance),
-    // KB-149 최종(P-016): 1.0에서만 — 1.1은 서버 지정(전송 자체 정리)
-    ...(legacy ? { profileImageUrl: payload.profileImageUrl ?? pickDefaultAvatarPath() ?? PROFILE_IMAGE_DEFAULT_PATH } : {}),
-    // P-243(BE #179): 식이 카테고리 — dev(1.1)만(prod 구계약은 필드 미인지·미전송 무해)
-    ...(!legacy && payload.dietCategories?.length ? { dietCategories: payload.dietCategories } : {}),
+    // P-243(BE #179): 식이 카테고리 — 스킵/빈 선택 = 미전송(서버 기본 빈 목록)
+    ...(payload.dietCategories?.length ? { dietCategories: payload.dietCategories } : {}),
     // 와이어 경계: BE 표준 코드로 변환 — 서버가 모르는 코드(레거시 잔재)는
     // 드롭+로그 (400 '지원하지 않는 기피 성분 코드' 방지, KB-75 버그)
     avoidanceSubstanceCodes:
@@ -82,8 +71,8 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
   }
 
   try {
-    // P-209: dev = 1.1 헤더 오버라이드(스캔 v2 날짜판과 같은 엔드포인트 한정 문법)
-    await api.post('/members/me/onboarding', body, legacy ? undefined : { headers: { 'X-API-Version': '1.1' } });
+    // P-209 → KB-418: 전 채널 1.1 헤더(엔드포인트 한정 오버라이드 문법)
+    await api.post('/members/me/onboarding', body, { headers: { 'X-API-Version': '1.1' } });
     console.log('[onboarding] batch submit ok');
   } catch (e) {
     // ⚠️ 400은 "입력 검증 실패"와 "이미 온보딩 완료"를 겸용한다(계약 확인,

@@ -75,6 +75,7 @@ function Harness({ dishes }: { dishes: ResultDish[] }) {
       <ScanRichList
         dishes={dishes}
         currency="USD"
+        fx={{ code: 'USD', krwPerUnit: 1390 }} // KB-418: 환산 = 서버 실환율만(v1 테이블 소멸)
         cart={cart}
         onAdd={(d) => bump(d.itemId, 1)}
         onRemove={(d) => bump(d.itemId, -1)}
