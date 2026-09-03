@@ -57,7 +57,7 @@ export interface ProfileUpdateWire {
   avoidanceSubstanceCodes?: string[];
   countryCode?: string;
   appLanguage?: string;
-  spicinessPreference?: string | number; // P-084 enum 문자열 · P-114 prod 채널=구정수(해제 = 'SKIP'/-1) — 생략은 유지
+  spicinessPreference?: string; // P-084 enum 문자열(전 채널 — KB-389 2차로 prod 구정수 분기 소멸, 해제 = 'SKIP') — 생략은 유지
   profileImageUrl?: string; // path 설정 · 삭제=PROFILE_IMAGE_DEFAULT_PATH 전송(P-016, null 폐기) · 생략=유지
   currency?: string | null; // P-165(#145): null = 미설정(국적 폴백) · 생략=유지
 }

@@ -55,8 +55,8 @@ export async function submitOnboardingProfile(payload: OnboardingProfilePayload)
   const legacy = isProdChannel();
   const body = {
     ...(legacy ? { nickname: payload.nickname ?? generateNickname() } : {}),
-    // KB-195(P-019): required 승격 — 스킵도 -1 센티널 명시 전송(생략 시 검증 400).
-    // P-081: enum→정수 변환은 spiceAdapter 격리 (스웨거 enum 재배포 시 스왑).
+    // KB-195(P-019): required 승격 — 스킵도 'SKIP' 명시 전송(생략 시 검증 400).
+    // KB-389 2차: 전 채널 enum 문자열(prod 구정수 분기 소멸) — 변환은 spiceAdapter 격리.
     spicinessPreference: spiceChoiceToWire(payload.spiceTolerance),
     // KB-149 최종(P-016): 1.0에서만 — 1.1은 서버 지정(전송 자체 정리)
     ...(legacy ? { profileImageUrl: payload.profileImageUrl ?? pickDefaultAvatarPath() ?? PROFILE_IMAGE_DEFAULT_PATH } : {}),

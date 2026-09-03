@@ -14,8 +14,9 @@ function isProductionChannel(): boolean {
 }
 const PROD_CHANNEL = isProductionChannel();
 
-/** P-114: 채널 판별 단일 소스 — 플래그 외 소비자(spiceAdapter 송신 분기)용.
- *  함수형 export(값 아님) — jest에서 목 주입 가능하게. */
+/** P-114: 채널 판별 단일 소스 — 함수형 export(값 아님), jest 목 주입 가능하게.
+ *  (spiceAdapter 송신 분기는 KB-389 2차로 소멸 — 송신 계약 소비자 없음. 잔존
+ *  소비 = sentry 환경 라벨·scanV2/온보딩 1.1 등 버전 게이트.) */
 export function isProdChannel(): boolean {
   return PROD_CHANNEL;
 }
