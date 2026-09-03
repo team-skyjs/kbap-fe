@@ -45,6 +45,8 @@ it('prod 채널 = 구 1.0 폴백 — 헤더 오버라이드 없음 + 클라 생�
   expect(opts).toBeUndefined();
   expect(String(body.nickname)).toMatch(/^[A-Za-z]+_\d{4}$/); // 폴백 생성(한식명_4자리)
   expect(typeof body.profileImageUrl).toBe('string');
+  // KB-389 2차: prod도 맵기 = enum 문자열(구정수 5 전송이 MEMBER-009 400의 원인)
+  expect(body.spicinessPreference).toBe('MILD');
 });
 
 it('배선 소스 잠금 — 온보딩 화면 클라 생성 소멸 · PATCH dev 1.1 헤더·countryCode 미전송', () => {
