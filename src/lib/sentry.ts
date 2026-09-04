@@ -23,6 +23,29 @@ export function initSentry(): void {
     environment: isProdChannel() ? 'prod' : 'dev',
     // 1차 최소 — 자동 수집만: 트레이싱·리플레이·프로파일링 전부 off(기본값 유지)
     sendDefaultPii: false, // PII 발주 고정(기본값이지만 명시 잠금)
+    // 9/5 프리즈(강제종료로 끝난 행 = AppHang V1 미보고) 대응: fatal hang을 다음
+    // 실행 때 보고하는 cocoa 8.39+ 옵션. RN 7.11 JS 타입엔 미노출이지만 래퍼가
+    // 함수형 옵션만 걸러내고 전 키를 네이티브 dict로 관통(wrapper.js initNativeSdk)
+    // → cocoa 8.58(b21 포함)이 파싱. JS-only — 재빌드 불요·OTA 가능.
+    ...({ enableAppHangTrackingV2: true } as object),
+  });
+}
+
+/** 9/5 예진 승인: 5xx 관측 — 경로(쿼리 제거)·status·code 태그만(본문·헤더·PII 0),
+ *  /auth/* 포함. react-query 5xx 재시도(1회)로 같은 실패가 이중 캡처되는 것 억제 —
+ *  같은 status+path는 20초 중복창 1회만. */
+const recent5xx = new Map<string, number>();
+export function captureApi5xx(path: string, status: number, code?: string): void {
+  // Codex #24 P2: 숫자 세그먼트 정규화 — 회원/리소스 id가 태그로 유입되는 것 방지
+  // + 중복 억제 키 안정(같은 라우트의 id 변주가 별개 캡처로 새는 것 차단)
+  const cleanPath = path.split('?')[0].replace(/\/\d+(?=\/|$)/g, '/:id');
+  const key = `${status}:${cleanPath}`;
+  const now = Date.now();
+  if ((recent5xx.get(key) ?? 0) > now - 20_000) return;
+  recent5xx.set(key, now);
+  Sentry.captureMessage('api_5xx', {
+    level: 'warning',
+    tags: { path: cleanPath, status: String(status), ...(code ? { code } : {}) },
   });
 }
 
