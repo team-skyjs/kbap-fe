@@ -8,7 +8,7 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Btn, IconClose, IconMapPin, IconSmile, IconZap, Star } from '@/components';
@@ -105,6 +105,31 @@ export type ReviewPlaceTag = { name: string; roadAddress: string | null; latitud
 const toTag = (p: ReviewPlace): ReviewPlaceTag => ({ name: p.name, roadAddress: p.address, latitude: p.latitude, longitude: p.longitude, placeId: p.placeId }); // P-240: placeId 관통
 
 /**
+ * 예진 실기 프리즈(9/5, 리뷰 제출 직후 행): iOS에서 **포커스 TextInput을 품은
+ * Modal을 키보드 해제와 같은 프레임에 unmount**하면 메인 스레드 행 계열 —
+ * persistTaps 리스트의 수동 확정 행이 키보드 올라온 채 탭 관통되는 게 전제조건
+ * (검색 결과 행은 보통 스크롤(on-drag dismiss) 뒤 탭이라 평소엔 안 굳음).
+ * 시트를 닫는 **모든 경로**(확정·결과 선택·X·Skip·백버튼)가 이 헬퍼 경유 —
+ * 키보드를 먼저 내리고(didHide 대기, 400ms 안전망) 닫는다. 미표시면 즉시.
+ */
+export function runAfterKeyboardHidden(fn: () => void): void {
+  if (!Keyboard.isVisible()) {
+    fn();
+    return;
+  }
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    sub.remove();
+    fn();
+  };
+  const sub = Keyboard.addListener('keyboardDidHide', finish);
+  Keyboard.dismiss();
+  setTimeout(finish, 400); // didHide 유실(드물게) 안전망 — 중복은 done 가드
+}
+
+/**
  * 장소 픽커 시트 (P-095 목 → P-201 실연결) — 작성·수정 공용:
  * 열림 = nearby(고정 좌표 — 강남역) 탑10 프리로드 · 입력 = search 실호출 ·
  * 직접 입력(MANUAL) = 결과 미선택 채로 이름만 태그. Recent·typeahead·Skip 푸터.
@@ -126,13 +151,16 @@ export function PlacePickerSheet({
   const search = useQuery({ queryKey: ['places', 'search', term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
   const active = term ? search : nearby;
   const results = active.data ?? [];
+  // 프리즈 픽스: 닫힘·확정 전부 키보드 선해제 경유(위 runAfterKeyboardHidden 참조)
+  const close = () => runAfterKeyboardHidden(onClose);
+  const pick = (p: ReviewPlaceTag) => runAfterKeyboardHidden(() => onPick(p));
   if (!open) return null;
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible transparent animationType="slide" onRequestClose={close}>
       <View style={styles.pickerBackdrop}>
         <View style={styles.pickerSheet}>
           <View style={styles.pickerHeader}>
-            <Pressable hitSlop={10} onPress={onClose}>
+            <Pressable hitSlop={10} onPress={close}>
               <IconClose size={20} color={C.ink2} />
             </Pressable>
             <Text style={styles.pickerTitle}>{t('review.placeSheetTitle')}</Text>
@@ -153,7 +181,7 @@ export function PlacePickerSheet({
           <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
             {/* P-201: 직접 입력(MANUAL) — 결과 미선택 채로 이름만 태그(좌표·주소 없음) */}
             {!!term && (
-              <Pressable style={styles.resultRow} onPress={() => onPick({ name: term, roadAddress: null })} testID="place-manual">
+              <Pressable style={styles.resultRow} onPress={() => pick({ name: term, roadAddress: null })} testID="place-manual">
                 <IconPlus size={16} color={C.ink3} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.resultText} numberOfLines={1}>{t('review.placeManual', { name: term })}</Text>
@@ -168,7 +196,7 @@ export function PlacePickerSheet({
               <Text style={styles.noResults}>{t('review.placeNoResults')}</Text>
             ) : (
               results.map((p) => (
-                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => onPick(toTag(p))} testID={`place-pick-${p.name}`}>
+                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>
                   <IconMapPin size={16} color={C.ink3} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>
@@ -179,7 +207,7 @@ export function PlacePickerSheet({
             )}
           </ScrollView>
           {/* Skip 푸터 — 장소 없이 게시 (D-09) */}
-          <Pressable style={styles.skipRow} onPress={onClose} hitSlop={6}>
+          <Pressable style={styles.skipRow} onPress={close} hitSlop={6}>
             <Text style={styles.skipText}>{t('review.placeSkip')}</Text>
           </Pressable>
         </View>

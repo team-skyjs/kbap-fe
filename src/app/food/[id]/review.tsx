@@ -107,6 +107,7 @@ export default function ReviewCompose() {
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
         // P-236: extras는 mutateAsync 페이로드로 서버 전송(로컬 프리뷰 폐기)
         if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
+        Keyboard.dismiss(); // 프리즈 방어(9/5) — 확인 Modal 표시와 키보드 해제 프레임 분리
         setSubmitted(true);
       } catch (e) {
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
