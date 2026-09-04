@@ -6,7 +6,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: { getItem: jest.fn(), setItem: jest.fn(async () => {}) },
 }));
-jest.mock('../beTokens', () => ({ clearTokens: jest.fn(async () => {}) }));
+jest.mock('../beTokens', () => ({ clearTokens: jest.fn(async () => {}), bumpSessionGen: jest.fn(), currentGen: jest.fn(() => 0), loadTokens: jest.fn(async () => null), saveTokens: jest.fn(async () => true) }));
 jest.mock('../session', () => ({
   currentUser: jest.fn(() => ({ uid: 'u1' })),
   logOut: jest.fn(async () => {}),
@@ -51,14 +51,17 @@ describe('cleanupIfFreshInstall', () => {
     expect(AsyncStorage.setItem).not.toHaveBeenCalled();
   });
 
-  it('Firebase 미로그인 상태면 signOut을 부르지 않되 토큰 정리는 수행', async () => {
+  // KB-421: 구 "미로그인이면 signOut 생략" 잠금 반전 — RNFB 세션 복원이 비동기라
+  // 부트 초입 currentUser()=null이어도 잔존 세션이 있을 수 있다 → 무조건 signOut
+  // (미로그인 signOut은 무해·resolve — P-205 mina Firebase 잔존 경로 봉쇄).
+  it('Firebase currentUser()=null(복원 전)이어도 signOut을 무조건 시도한다', async () => {
     (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
     (session.currentUser as jest.Mock).mockReturnValue(null);
 
     await cleanupIfFreshInstall();
 
     expect(clearTokens).toHaveBeenCalledTimes(1);
-    expect(session.logOut).not.toHaveBeenCalled();
+    expect(session.logOut).toHaveBeenCalledTimes(1);
     expect(AsyncStorage.setItem).toHaveBeenCalledWith('kbap.installed.v1', '1');
   });
 });

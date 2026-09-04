@@ -22,7 +22,7 @@ import { I18nextProvider } from 'react-i18next';
 import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
 import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
-import { installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
+import { initSessionFromStorage, installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
 import { FLAGS } from '@/lib/flags';
 import i18n from '@/lib/i18n';
@@ -68,6 +68,9 @@ export default function RootLayout() {
     // /home 인증 프리페치 → 이전 계정 홈 잔상(Q-05, 프라이버시). cleanup은
     // AsyncStorage 체크 1회라 비신규 설치의 직렬화 지연은 무시 가능.
     const cleanupDone = cleanupIfFreshInstall().catch(() => false);
+    // KB-421: 세션 스토어 부팅 초기화도 **cleanup 이후 직렬** — 모듈 스코프 선읽기가
+    // 삭제 전 Keychain을 읽어 회원으로 선고착하던 레이스(P-205 mina 부활) 봉쇄.
+    void cleanupDone.then(() => initSessionFromStorage()).catch(() => {});
     const ready = cleanupDone
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)

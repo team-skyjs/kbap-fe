@@ -8,6 +8,7 @@
  * privacy notice is i18n'd (9 languages); Apple button localizes natively and
  * the Google label follows Google's own localized strings.
  */
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { IconArrowLeft } from '@/components/icons';
@@ -15,6 +16,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { resetToOnboarding } from '@/lib/nav';
+import { logoutLocalFirst } from '@/lib/auth/beAuth';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
@@ -31,6 +33,9 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
   const insets = useSafeAreaInsets();
   const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  // KB-421(Codex #19 P1-4): 소셜 로그인 진행 중 = 게스트 진입 잠금(UX 이중 방어 —
+  // 근본 가드는 exchangeLogin 세대 폐기)
+  const [authBusy, setAuthBusy] = useState(false);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 10, paddingBottom: bottom + 26 }]}>
@@ -47,13 +52,17 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
       </View>
 
       <View style={styles.foot}>
-        <Pressable onPress={() => { track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); }} hitSlop={8}>
-          <Text style={styles.browse}>{t('intro.browseFirst')}</Text>
+        {/* KB-421: 게스트 진입 = 명시적 세션 클리어 — 부트 레이스 등으로 남은 반쪽
+            세션을 신뢰하지 않는다. **로컬 정리를 await한 뒤 이동**(Codex #19 P1 —
+            서버 logout은 logoutLocalFirst 내부에서 백그라운드), 무세션이면 사실상 no-op. */}
+        <Pressable disabled={authBusy} onPress={() => { void (async () => { await logoutLocalFirst().catch(() => {}); track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); })(); }} hitSlop={8} testID="browse-first">
+          <Text style={[styles.browse, authBusy && styles.browseDim]}>{t('intro.browseFirst')}</Text>
         </Pressable>
         {/* KB-67: newMember → 온보딩. 기존 회원도 onboardingCompleted=false면
             온보딩으로 (계정만 생기고 프로필 미저장인 미완료 회원 — 400 이탈 등).
             판별 실패 시엔 홈 — resume 모달이 안전망. */}
         <SocialAuthButtons
+          onBusyChange={setAuthBusy}
           onSignedIn={(newMember) => {
             void (async () => {
               if (newMember) return resetToOnboarding(router); // P-088④ 스택 리셋
@@ -86,4 +95,5 @@ const styles = StyleSheet.create({
   foot: { gap: 14 },
   terms: { fontFamily: font.body, fontSize: 12, color: C.ink3, textAlign: 'center', lineHeight: 17, paddingHorizontal: 10 },
   browse: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink2, textAlign: 'center', padding: 10 },
+  browseDim: { opacity: 0.35 }, // KB-421: 소셜 진행 중 — 색/불투명도만(프레임 불변 P-151)
 });

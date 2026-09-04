@@ -47,11 +47,12 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
 
   // Firebase 세션 → BE 토큰 교환 (KB-67): POST /auth/login {idToken} →
   // access/refresh 저장. newMember로 온보딩/홈 분기.
-  const exchange = async (): Promise<boolean> => {
+  // KB-421: cancelled = 교환 중 게스트 진입 경계가 선행(세션 미설치) — 호출측은
+  // 내비게이션·계측 없이 idle 복귀.
+  const exchange = async (): Promise<{ newMember: boolean; cancelled?: boolean }> => {
     const idToken = await getAuth().currentUser?.getIdToken();
     if (!idToken) throw new Error('no firebase id token after sign-in');
-    const { newMember } = await exchangeLogin(idToken);
-    return newMember;
+    return exchangeLogin(idToken);
   };
 
   const signInWithGoogle = async () => {
@@ -73,11 +74,15 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       const { accessToken } = await GoogleSignin.getTokens();
       await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken));
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
-      const newMember = await exchange();
+      const exch = await exchange();
+      if (exch.cancelled) {
+        setPhase('idle'); // KB-421: 게스트 진입이 선행 — 세션 미설치, 내비·계측 생략
+        return;
+      }
       track(EVENTS.auth_login_success, { provider: 'GOOGLE' }); // P-083
       setUserProps({ user_info_is_registered: true }); // P-144: NRU 기준(false→true 전환)
       setPhase('idle');
-      onSignedIn(newMember);
+      onSignedIn(exch.newMember);
     } catch (e) {
       setPhase('idle');
       if (isErrorWithCode(e) && e.code === statusCodes.SIGN_IN_CANCELLED) return; // silent
@@ -102,11 +107,15 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       if (!c.identityToken) throw new Error('apple sign-in returned no identityToken');
       await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
-      const newMember = await exchange();
+      const res = await exchange();
+      if (res.cancelled) {
+        setPhase('idle'); // KB-421: 게스트 진입 선행 — 내비·계측 생략
+        return;
+      }
       track(EVENTS.auth_login_success, { provider: 'APPLE' }); // P-083
       setUserProps({ user_info_is_registered: true }); // P-144
       setPhase('idle');
-      onSignedIn(newMember);
+      onSignedIn(res.newMember);
     } catch (e) {
       setPhase('idle');
       const code = (e as { code?: string })?.code ?? '';
