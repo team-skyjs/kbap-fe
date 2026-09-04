@@ -49,9 +49,14 @@ async function sessionExpired(): Promise<void> {
   expiredHandler?.();
 }
 
-/** Firebase idToken → BE 토큰 교환. 성공 시 저장, newMember 반환. */
-export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean }> {
+/** Firebase idToken → BE 토큰 교환. 성공 시 저장, newMember 반환.
+ *  KB-421(Codex #19 P1-4): 교환도 세대 가드 — pending 중 게스트 진입(경계)이
+ *  끼면 응답을 폐기(cancelled)해 회원 복귀를 막는다. 이로써 saveTokens의 전
+ *  호출자(doRefresh·exchangeLogin)가 "경계 이후 도착 결과 무효" 원칙 아래. */
+export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
+  const gen = sessionGen; // 출발 세대 캡처
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
+  if (gen !== sessionGen) return { newMember: r.newMember, cancelled: true }; // 저장·리셋·로그 생략
   await saveTokens(r.accessToken, r.refreshToken);
   resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);

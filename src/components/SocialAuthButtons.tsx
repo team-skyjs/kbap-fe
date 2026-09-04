@@ -24,10 +24,21 @@ import { IconGoogleG } from './icons';
 
 const BTN_H = 52;
 
-export function SocialAuthButtons({ onSignedIn }: { onSignedIn: (newMember: boolean) => void }) {
+export function SocialAuthButtons({
+  onSignedIn,
+  onBusyChange,
+}: {
+  onSignedIn: (newMember: boolean) => void;
+  /** KB-421: 소셜 진행 중(busy) 전파 — 로그인 화면이 게스트 진입을 잠그는 용도. */
+  onBusyChange?: (busy: boolean) => void;
+}) {
   const { t } = useTranslation();
   const { phase, error, appleAvailable, signInWithGoogle, signInWithApple } = useSocialAuth(onSignedIn);
   const busy = phase !== 'idle';
+  React.useEffect(() => {
+    onBusyChange?.(busy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
 
   // P-032: Error Shake — 시도가 에러로 끝날 때마다 감쇠 진동. phase가 idle로
   // 돌아온 시점 기준이라 같은 에러의 재시도 실패도 재트리거된다.

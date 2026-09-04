@@ -194,6 +194,23 @@ it('낡은 refresh의 finally가 새 뮤텍스를 지우지 않는다 — 자기
   void b; // B는 pending 유지 — 워커 릭 방지용 명시 no-op
 });
 
+it('pending 로그인 교환 중 게스트 진입 → 교환 응답 폐기(cancelled) — 회원 복귀 금지', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  let resolveLogin!: (v: unknown) => void;
+  mockPost.mockImplementation((path: string) =>
+    path === '/auth/login' ? new Promise((r) => (resolveLogin = r)) : new Promise(() => {}),
+  );
+  const exch = be.exchangeLogin('firebase-idtoken'); // 소셜 성공 → 교환 pending
+  await new Promise((r) => setTimeout(r, 0));
+  await be.logoutLocalFirst(); // 그 사이 "Start K-Bap"(게스트 진입 경계)
+  resolveLogin({ newMember: false, accessToken: 'mina-a', refreshToken: 'mina-r' });
+  const res = await exch;
+  expect(res.cancelled).toBe(true); // 호출측 내비게이션 스킵 신호
+  await expect(tokens().loadTokens()).resolves.toBeNull(); // saveTokens 미실행
+  expect(sess().getSessionState()).toBe(false); // resetServerCache(true) 미실행
+});
+
 it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
   mockStore.set('kbap.auth.access.v1', 'old-a');
   mockStore.set('kbap.auth.refresh.v1', 'old-r');
