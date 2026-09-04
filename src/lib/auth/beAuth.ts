@@ -45,6 +45,7 @@ export function onSessionExpired(handler: (() => void) | null) {
 }
 
 async function sessionExpired(): Promise<void> {
+  endSessionBoundary(); // KB-421: 진행 중 refresh 결과 무효화
   await clearTokens();
   resetServerCache(false);
   expiredHandler?.();
@@ -57,6 +58,19 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
   resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };
+}
+
+/* ---- 세션 세대 (KB-421, Codex #19) ----
+ * "세션 끝" 경계(로그아웃/탈퇴/만료/freshInstall 정리)마다 증가 — 경계 **이전에
+ * 출발한** refresh 응답이 늦게 도착해 saveTokens로 세션을 재부활시키는
+ * 쓰기-후-지움 레이스 차단(beTokens 스테일 읽기와 동일 클래스). */
+let sessionGen = 0;
+
+/** 세션 끝 경계 선언 — 진행 중 refresh 결과를 무효화하고 뮤텍스를 해제한다.
+ *  freshInstall 정리도 이 경계를 타야 한다(부트 중 refresh 겹침 대비). */
+export function endSessionBoundary(): void {
+  sessionGen++;
+  refreshing = null; // 다음 tryRefresh는 새 세대로 — 낡은 promise 공유 금지
 }
 
 /* ---- refresh rotation (mutex: 동시 401 다발에도 한 번만) ---- */
@@ -72,12 +86,15 @@ function tryRefresh(): Promise<boolean> {
 async function doRefresh(): Promise<boolean> {
   const t = await loadTokens();
   if (!t) return false; // 로그인한 적 없음 — 만료 이벤트도 불필요
+  const gen = sessionGen; // KB-421: 출발 세대 캡처
   try {
     const r = await api.post<TokenResponseWire>('/auth/refresh', { refreshToken: t.refresh });
+    if (gen !== sessionGen) return false; // 경계 개입 — 결과 폐기(세션 재부활 금지)
     await saveTokens(r.accessToken, r.refreshToken); // rotation: 구 refresh 폐기
     console.log('[auth] token refreshed (rotation)');
     return true;
   } catch (e) {
+    if (gen !== sessionGen) return false; // 이미 끝난 세션 — 만료 처리도 생략
     // BE JWT 가이드: refresh 401 = refresh 만료/무효 → 이때만 로그아웃.
     // 네트워크/5xx는 일시 장애 — 토큰을 지우면 지하철에서 앱 열었다고
     // 로그아웃되는 꼴이다 → 토큰 보존, 원요청 에러 표면화(다음 시도에 재도전).
@@ -94,6 +111,7 @@ async function doRefresh(): Promise<boolean> {
 
 /** 로그아웃: BE 세션 폐기(+실패해도 로컬은 정리). Firebase signOut은 호출측(native). */
 export async function logoutBe(): Promise<void> {
+  endSessionBoundary(); // KB-421
   const t = await loadTokens();
   if (t) {
     await api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
@@ -107,6 +125,7 @@ export async function logoutBe(): Promise<void> {
  *  기다린 뒤에야 로컬을 정리해, await 없이 화면 전환하면 잔존 세션 그대로
  *  회원 UI에 진입한다(막으려던 바로 그 상태) — 순서 규칙은 이 함수 한 곳. */
 export async function logoutLocalFirst(): Promise<void> {
+  endSessionBoundary(); // KB-421: 진행 중 refresh의 늦은 응답도 이 경계로 폐기
   const t = await loadTokens(); // 메모리 캐시/로컬 읽기 — 네트워크 아님
   await clearTokens();
   resetServerCache(false);
@@ -115,6 +134,7 @@ export async function logoutLocalFirst(): Promise<void> {
 
 /** 탈퇴: PATCH /auth/withdraw. 성공 여부와 무관하게 로컬 세션은 정리한다. */
 export async function withdrawBe(): Promise<void> {
+  endSessionBoundary(); // KB-421
   try {
     await api.patch('/auth/withdraw');
   } finally {

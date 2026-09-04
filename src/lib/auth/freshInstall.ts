@@ -12,6 +12,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { clearTokens } from './beTokens';
+import { endSessionBoundary } from './beAuth';
 import { queryClient } from '@/lib/queryClient';
 import { setSessionState } from './useSession';
 
@@ -29,6 +30,7 @@ export async function cleanupIfFreshInstall(): Promise<boolean> {
   } catch {
     return false; // 스토리지 불능: 기존 사용자 오탐 로그아웃보다 미정리가 낫다
   }
+  endSessionBoundary(); // KB-421: 부트 중 겹친 refresh의 늦은 응답도 폐기 대상
   await clearTokens();
   // KB-421(P-205): 정리는 **인증 경계**를 온전히 타야 한다 — 토큰만 지우고 세션
   // 스토어를 안 건드리면, 모듈 스코프 부트 읽기(installBeAuth 시절)가 선고착시킨

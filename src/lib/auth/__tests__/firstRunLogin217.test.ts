@@ -15,6 +15,9 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 const mockClearTokens = jest.fn(() => Promise.resolve());
 jest.mock('../beTokens', () => ({ clearTokens: () => mockClearTokens() }));
 jest.mock('react-native', () => ({ Platform: { OS: 'web' } })); // RNFB 경로 회피
+// KB-421: freshInstall → beAuth(세션 경계) 의존 신설 — client 체인의 네이티브
+// 상수 접근 회피(표면 목, 동작 무관)
+jest.mock('../beAuth', () => ({ endSessionBoundary: jest.fn() }));
 
 import { cleanupIfFreshInstall } from '../freshInstall';
 

@@ -43,11 +43,12 @@ jest.mock('../session', () => ({ currentUser: () => null, logOut: mockLogOut }))
 // beAuth(logoutLocalFirst) 케이스용 — 서버 logout은 영원히 pending: 로컬 경계가
 // 네트워크를 기다리지 않음을 그 자체로 실측
 const mockPost = jest.fn(() => new Promise(() => {}));
+const mockSetOnUnauthorized = jest.fn(); // 401 핸들러 캡처 — refresh 흐름 구동용
 jest.mock('@/lib/api/client', () => ({
   api: { post: (...a: unknown[]) => mockPost(...a), get: jest.fn(), patch: jest.fn() },
   ApiError: class extends Error {},
   setAuthTokenProvider: jest.fn(),
-  setOnUnauthorized: jest.fn(),
+  setOnUnauthorized: (...a: unknown[]) => mockSetOnUnauthorized(...a),
 }));
 
 const flushReads = () => {
@@ -61,6 +62,8 @@ beforeEach(async () => {
   mockPendingReads = [];
   mockDelayReads = false;
   mockLogOut.mockClear();
+  mockSetOnUnauthorized.mockClear(); // 테스트별 최신 install의 핸들러만 참조
+  mockPost.mockClear();
   // resetModules 이후의 레지스트리 인스턴스를 비워야 한다(상단 import 인스턴스 아님)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   await (require('@react-native-async-storage/async-storage') as typeof AsyncStorageMock).clear();
@@ -122,6 +125,36 @@ it('게스트 진입(logoutLocalFirst) — 로컬 경계 먼저, 서버 logout�
   await expect(tokens().loadTokens()).resolves.toBeNull();
   expect(sess().getSessionState()).toBe(false);
   expect(mockPost).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'mina-refresh' }); // 서버 폐기는 발사됨
+});
+
+it('진행 중 refresh가 로그아웃 경계 이후 resolve해도 재부활 금지 (세션 세대 가드)', async () => {
+  mockStore.set('kbap.auth.access.v1', 'mina-access');
+  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  let resolveRefresh!: (v: unknown) => void;
+  mockPost.mockImplementationOnce(() => new Promise((r) => (resolveRefresh = r))); // /auth/refresh 유예
+  const refreshP = handle('AUTH-004'); // 401 → tryRefresh 출발(pending)
+  await new Promise((r) => setTimeout(r, 0)); // loadTokens 완료 → post 도달
+  await be.logoutLocalFirst(); // "세션 끝" 경계 — 이후 도착 응답은 폐기돼야 한다
+  resolveRefresh({ accessToken: 'revived-a', refreshToken: 'revived-r' });
+  await expect(refreshP).resolves.toBe(false); // 폐기 — 재시도 신호도 없음
+  await expect(tokens().loadTokens()).resolves.toBeNull(); // saveTokens 미실행(재부활 금지)
+  expect(sess().getSessionState()).toBe(false);
+});
+
+it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
+  mockStore.set('kbap.auth.access.v1', 'old-a');
+  mockStore.set('kbap.auth.refresh.v1', 'old-r');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  mockPost.mockImplementationOnce(async () => ({ accessToken: 'new-a', refreshToken: 'new-r' }));
+  await expect(handle('AUTH-004')).resolves.toBe(true);
+  await expect(tokens().loadTokens()).resolves.toEqual({ access: 'new-a', refresh: 'new-r' });
 });
 
 it('배선 소스 잠금 — 부트 세션 초기화는 cleanup 직렬화 이후(installBeAuth에 부트 읽기 없음)', () => {
