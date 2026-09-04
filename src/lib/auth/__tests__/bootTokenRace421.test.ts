@@ -40,6 +40,15 @@ jest.mock('expo-secure-store', () => ({
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 const mockLogOut = jest.fn(async () => {});
 jest.mock('../session', () => ({ currentUser: () => null, logOut: mockLogOut }));
+// beAuth(logoutLocalFirst) 케이스용 — 서버 logout은 영원히 pending: 로컬 경계가
+// 네트워크를 기다리지 않음을 그 자체로 실측
+const mockPost = jest.fn(() => new Promise(() => {}));
+jest.mock('@/lib/api/client', () => ({
+  api: { post: (...a: unknown[]) => mockPost(...a), get: jest.fn(), patch: jest.fn() },
+  ApiError: class extends Error {},
+  setAuthTokenProvider: jest.fn(),
+  setOnUnauthorized: jest.fn(),
+}));
 
 const flushReads = () => {
   mockPendingReads.forEach((f) => f());
@@ -103,6 +112,18 @@ it('freshInstall: 마커 있음 → 토큰·세션 유지(정리 미실행)', as
   expect(mockLogOut).not.toHaveBeenCalled();
 });
 
+it('게스트 진입(logoutLocalFirst) — 로컬 경계 먼저, 서버 logout은 백그라운드(pending이어도 resolve)', async () => {
+  mockStore.set('kbap.auth.access.v1', 'mina-access');
+  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  sess().initSessionState(true); // 반쪽 세션(회원 고착) 상황
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  await be.logoutLocalFirst(); // mockPost는 영원히 pending — 이 await가 통과 = 네트워크 비대기 실증
+  await expect(tokens().loadTokens()).resolves.toBeNull();
+  expect(sess().getSessionState()).toBe(false);
+  expect(mockPost).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'mina-refresh' }); // 서버 폐기는 발사됨
+});
+
 it('배선 소스 잠금 — 부트 세션 초기화는 cleanup 직렬화 이후(installBeAuth에 부트 읽기 없음)', () => {
   const fs = require('fs') as typeof import('fs');
   const beAuth = fs.readFileSync('src/lib/auth/beAuth.ts', 'utf8') as string;
@@ -114,5 +135,8 @@ it('배선 소스 잠금 — 부트 세션 초기화는 cleanup 직렬화 이후
   expect(layout).toMatch(/cleanupDone\.then\(\(\) => initSessionFromStorage\(\)\)/); // 정리 후 초기화(직렬화)
   // ⑶ 게스트 진입(Start K-Bap) = 명시적 세션 클리어 — 스토어 신뢰 금지
   const login = fs.readFileSync('src/app/login.tsx', 'utf8') as string;
-  expect(login).toContain('logoutBe()');
+  // Codex #19 P1: 로컬 정리를 **await한 뒤** 이동 — fire-and-forget이면 replace
+  // 시점에 잔존 세션 그대로 회원 UI 진입(막으려던 상태)
+  expect(login).toContain('await logoutLocalFirst()');
+  expect(login.indexOf('await logoutLocalFirst()')).toBeLessThan(login.indexOf("router.replace('/(tabs)'"));
 });

@@ -102,6 +102,17 @@ export async function logoutBe(): Promise<void> {
   resetServerCache(false);
 }
 
+/** KB-421(Codex #19 P1): 게스트 진입용 — **로컬 경계 먼저**(토큰·세션·캐시),
+ *  서버 폐기는 백그라운드 fire-and-forget(실패 무시). logoutBe는 서버 응답을
+ *  기다린 뒤에야 로컬을 정리해, await 없이 화면 전환하면 잔존 세션 그대로
+ *  회원 UI에 진입한다(막으려던 바로 그 상태) — 순서 규칙은 이 함수 한 곳. */
+export async function logoutLocalFirst(): Promise<void> {
+  const t = await loadTokens(); // 메모리 캐시/로컬 읽기 — 네트워크 아님
+  await clearTokens();
+  resetServerCache(false);
+  if (t) void api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
+}
+
 /** 탈퇴: PATCH /auth/withdraw. 성공 여부와 무관하게 로컬 세션은 정리한다. */
 export async function withdrawBe(): Promise<void> {
   try {
