@@ -118,7 +118,7 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(yml.indexOf('ota-fp-gate.sh')).toBeLessThan(yml.indexOf('eas-cli update'));
   });
 
-  it('fp 게이트 셸 — 일치=통과·불일치=실패·빌드 부재=경고 통과 (실행 실측)', () => {
+  it('fp 게이트 셸 — 일치=통과·불일치=실패·명시적 빌드 0건=경고 통과·조회 실패=fail closed', () => {
     const { spawnSync } = require('child_process') as typeof import('child_process');
     const run = (args: string[]) => spawnSync('bash', ['scripts/ota-fp-gate.sh', ...args], { encoding: 'utf8' });
     expect(run(['A', 'B', 'A', 'B']).status).toBe(0); // 양 플랫폼 일치
@@ -128,9 +128,15 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     const andMiss = run(['A', 'B2', 'A', 'B']);
     expect(andMiss.status).toBe(1);
     expect(andMiss.stdout).toContain('android fp 불일치');
-    const noBuilds = run(['A', 'B', '', '']);
-    expect(noBuilds.status).toBe(0); // 설치 빌드 없음 = 경고만
+    const noBuilds = run(['A', 'B', 'NONE', 'NONE']);
+    expect(noBuilds.status).toBe(0); // 명시적 빌드 0건([]) = 경고만(도달 대상 없음)
     expect(noBuilds.stdout).toContain('WARN');
+    // Codex #18 P2: 조회/파싱 실패는 게이트가 열린 채 통과하면 안 된다 — fail closed
+    for (const bad of [['A', 'B', 'LOOKUP_FAIL', 'B'], ['A', 'B', 'A', '']]) {
+      const r = run(bad);
+      expect(r.status).toBe(1);
+      expect(r.stdout).toContain('조회 실패');
+    }
   });
 
   it('i18n — ota.ready·ota.apply 10로케일 전부 존재(빈 값 금지)', () => {

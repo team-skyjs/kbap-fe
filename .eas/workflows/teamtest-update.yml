@@ -32,7 +32,8 @@ jobs:
       - name: Fingerprint gate (P-199 — 네이티브 변경 시 발행 중단)
         run: |
           RV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).hash)}catch{console.log('')}})"; }
-          BRV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s);console.log(a[0]?.runtimeVersion||'')}catch{console.log('')}})"; }
+          # P2(fail closed): 빈 목록([]) = NONE(빌드 0건 — 통과) / 파싱·필드 실패 = LOOKUP_FAIL(잡 실패)
+          BRV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s);if(!Array.isArray(a)){console.log('LOOKUP_FAIL')}else if(a.length===0){console.log('NONE')}else{console.log(a[0].runtimeVersion||'LOOKUP_FAIL')}}catch{console.log('LOOKUP_FAIL')}})"; }
           CUR_IOS=$(npx expo-updates fingerprint:generate --platform ios | RV)
           CUR_AND=$(npx expo-updates fingerprint:generate --platform android | RV)
           BUILD_IOS=$(npx eas-cli build:list --platform ios --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
