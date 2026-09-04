@@ -131,17 +131,16 @@ export const FLAGS = {
    */
   reviewPlaceEnabled: true, // P-201 dev 한정 → KB-403 전 채널 공개(prod places 라우트 존재 실측 8/31)
   /**
-   * 푸시 알림 클라이언트 (P-192/KB-39) — P-221 dev 계열 → **P-268(KB-378) 전 채널
-   * 개방**. 구 🔴 전역 true 금지 조건("알림 포함 prod 스토어 빌드")은 **8/25 prod
-   * 빌드(iOS 19·and vc13 — expo-notifications 포함, app.json:94)로 충족**.
-   * 리뷰 리마인더 = 로컬 알림(서버·APNs/FCM 인증서 불필요 — 커맨드 센터 실측).
-   *
-   * ⚠️ 구 스토어 배포판(iOS 1.0.0·and vc9)은 runtimeVersion=fingerprint 정책상
-   * 새 fp OTA가 도달하지 않아 구조적으로 안전 — 그래도 방어선 유지:
-   * expo-notifications 접근은 전부 lib/push/pushAdapter의 지연 require 경유,
-   * 화면/훅 정적 import 금지(pushProdGuard221 유닛 잠금 — 이제 킬스위치 가드).
+   * 푸시 알림 클라이언트 (P-192/KB-39) — P-221 dev 계열 → P-268 전 채널 개방 →
+   * **KB-422(9/5 예진): v1.0.1 스토어는 prod 재숨김**. 실푸시 미구현 상태
+   * (토큰 등록 no-op·서버 알림 API 없음 = 로컬 목)라 OS 권한 거부와 무관하게
+   * 설정 토글이 ON으로 보이는 등 미완성 노출 = 심사 리스크. 실푸시 도입
+   * (KB-423, 종한) 시 true 복원 + OS 권한 연동 토글.
+   * teamtest/dev 무변. 방어선 유지: expo-notifications 접근은 전부
+   * lib/push/pushAdapter의 지연 require 경유, 화면/훅 정적 import 금지
+   * (pushProdGuard221 유닛 잠금).
    */
-  pushEnabled: true,
+  pushEnabled: !PROD_CHANNEL,
   /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
