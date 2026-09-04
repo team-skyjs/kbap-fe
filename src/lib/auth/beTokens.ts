@@ -18,8 +18,13 @@ export async function loadTokens(): Promise<{ access: string; refresh: string } 
       SecureStore.getItemAsync(ACCESS_KEY),
       SecureStore.getItemAsync(REFRESH_KEY),
     ]);
+    // KB-421(P-205): await 사이에 clear/save 경계가 개입했으면(defined) 그쪽이 정본 —
+    // 삭제 전 Keychain에서 읽은 스테일 값으로 cached를 재대입하면 지운 세션이
+    // 부활한다(재설치 mina 사고). 읽기 결과는 폐기.
+    if (cached !== undefined) return cached;
     cached = access && refresh ? { access, refresh } : null;
   } catch {
+    if (cached !== undefined) return cached;
     cached = null;
   }
   return cached;

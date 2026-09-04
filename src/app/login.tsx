@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { resetToOnboarding } from '@/lib/nav';
+import { logoutBe } from '@/lib/auth/beAuth';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
@@ -47,7 +48,9 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
       </View>
 
       <View style={styles.foot}>
-        <Pressable onPress={() => { track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); }} hitSlop={8}>
+        {/* KB-421: 게스트 진입 = 명시적 세션 클리어 — 부트 레이스 등으로 남은 반쪽
+            세션(스토어 true·토큰 잔존)을 신뢰하지 않는다. 무세션이면 사실상 no-op. */}
+        <Pressable onPress={() => { void logoutBe().catch(() => {}); track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); }} hitSlop={8}>
           <Text style={styles.browse}>{t('intro.browseFirst')}</Text>
         </Pressable>
         {/* KB-67: newMember → 온보딩. 기존 회원도 onboardingCompleted=false면

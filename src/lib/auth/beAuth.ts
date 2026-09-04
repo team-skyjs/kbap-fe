@@ -145,6 +145,12 @@ async function handleUnauthorized(code: string | null): Promise<boolean> {
 export function installBeAuth(): void {
   setAuthTokenProvider(async () => (await loadTokens())?.access ?? null);
   setOnUnauthorized(handleUnauthorized); // true 반환 시 client가 원요청 1회 재시도
-  // P-205: 세션 스토어 부팅 초기화 — 미확정일 때만(경계 선행 시 덮지 않음)
-  void hasBeSession().then(initSessionState);
+  // KB-421(P-205 사고): 구 모듈 스코프 부팅 선읽기는 제거 —
+  // freshInstall 정리와 경합해 지운 세션을 회원으로 선고착시켰다. 부팅 초기화는
+  // 루트 레이아웃이 cleanup 완료 **이후** initSessionFromStorage()로 직렬 호출.
+}
+
+/** KB-421: 부팅 세션 초기화 — cleanup 직렬화 이후에만 호출할 것(_layout). */
+export function initSessionFromStorage(): Promise<void> {
+  return hasBeSession().then(initSessionState);
 }
