@@ -21,8 +21,10 @@ jest.mock('@/lib/api/client', () => {
 });
 jest.mock('../beTokens', () => ({
   loadTokens: jest.fn(async () => ({ access: 'A', refresh: 'R' })),
-  saveTokens: jest.fn(async () => {}),
+  saveTokens: jest.fn(async () => true), // KB-421: 싱크 가드 — true = 커밋 진행
   clearTokens: jest.fn(async () => {}),
+  bumpSessionGen: jest.fn(),
+  currentGen: jest.fn(() => 0),
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */

@@ -13,7 +13,7 @@
  */
 import { api, ApiError, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
-import { clearTokens, loadTokens, saveTokens } from './beTokens';
+import { bumpSessionGen, clearTokens, currentGen, loadTokens, saveTokens } from './beTokens';
 import { initSessionState, setSessionState } from './useSession';
 
 /** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
@@ -54,29 +54,26 @@ async function sessionExpired(): Promise<void> {
  *  끼면 응답을 폐기(cancelled)해 회원 복귀를 막는다. 이로써 saveTokens의 전
  *  호출자(doRefresh·exchangeLogin)가 "경계 이후 도착 결과 무효" 원칙 아래. */
 export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
-  const gen = sessionGen; // 출발 세대 캡처
+  const gen = currentGen(); // 출발 세대 캡처(조기 폐기용 — 최종 방어는 싱크)
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
-  if (gen !== sessionGen) return { newMember: r.newMember, cancelled: true }; // 저장·리셋·로그 생략
-  await saveTokens(r.accessToken, r.refreshToken);
+  if (gen !== currentGen()) return { newMember: r.newMember, cancelled: true }; // 저장 자체 생략
+  if (!(await saveTokens(r.accessToken, r.refreshToken))) {
+    return { newMember: r.newMember, cancelled: true }; // 쓰기 중 경계 — 싱크가 되돌림, 커밋 생략
+  }
   resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };
 }
 
-/* ---- 세션 세대 (KB-421, Codex #19) ----
- * "세션 끝" 경계(로그아웃/탈퇴/만료/freshInstall 정리)마다 증가 — 경계 **이전에
- * 출발한** refresh 응답이 늦게 도착해 saveTokens로 세션을 재부활시키는
- * 쓰기-후-지움 레이스 차단(beTokens 스테일 읽기와 동일 클래스). */
-let sessionGen = 0;
-
-/** 세션 끝 경계 — **유일한 경계 구현**(Codex #19 P1-3: 로그아웃/만료/freshInstall
- *  전부 이 헬퍼). 핵심 불변식: **세대 증가와 토큰 무효(cached=null)가 같은 동기
- *  구간** — 경계 이전 출발 refresh는 세대 불일치로, 이후 출발분은 무토큰으로,
- *  어느 창에서도 재부활 불가. 서버 폐기는 호출측이 뒤에 best-effort. */
+/** 세션 끝 경계 — **유일한 경계 구현**(Codex #19: 로그아웃/만료/freshInstall
+ *  전부 이 헬퍼). 순서 고정: ① 세대 bump(동기 — 싱크 saveTokens가 이후 도착
+ *  쓰기를 자가 되돌림) ② clearTokens(cached=null 동기 선행) ③ 세션 false·캐시
+ *  clear ④ 뮤텍스 소유권 해제(자기확인은 tryRefresh 몫). 서버 폐기는 호출측
+ *  best-effort. 세대의 정본은 beTokens(저장소 싱크) — 최종 라운드 구조. */
 export async function endSessionBoundary(): Promise<void> {
-  sessionGen++; // ① 동기 — 이전 출발분 즉시 무효
-  refreshing = null; // 현재 참조 해제 — 새 뮤텍스 보호는 tryRefresh의 자기확인 몫
-  const done = clearTokens(); // clearTokens는 cached=null을 **동기로** 먼저 수행
+  bumpSessionGen(); // ① 이전 출발분 무효 — 싱크가 최종 방어
+  refreshing = null;
+  const done = clearTokens(); // cached=null 동기 선행
   resetServerCache(false);
   await done;
 }
@@ -100,18 +97,18 @@ function tryRefresh(): Promise<boolean> {
 async function doRefresh(): Promise<boolean> {
   const t = await loadTokens();
   if (!t) return false; // 로그인한 적 없음 — 만료 이벤트도 불필요
-  const gen = sessionGen; // KB-421: 출발 세대 캡처
+  const gen = currentGen(); // KB-421: 출발 세대 캡처(조기 폐기 — 최종 방어는 싱크)
   try {
     const r = await api.post<TokenResponseWire>('/auth/refresh', { refreshToken: t.refresh });
-    if (gen !== sessionGen) return false; // 경계 개입 — 결과 폐기(세션 재부활 금지)
+    if (gen !== currentGen()) return false; // 경계 개입 — 결과 폐기(세션 재부활 금지)
     // 이중 방어(withdraw처럼 경계가 뒤에 오는 흐름): 경계가 토큰을 비웠으면
     // 세대와 무관하게 회전 결과도 폐기 — cached=null은 경계의 동기 첫 동작.
     if ((await loadTokens()) == null) return false;
-    await saveTokens(r.accessToken, r.refreshToken); // rotation: 구 refresh 폐기
+    if (!(await saveTokens(r.accessToken, r.refreshToken))) return false; // 쓰기 중 경계 — 싱크 되돌림
     console.log('[auth] token refreshed (rotation)');
     return true;
   } catch (e) {
-    if (gen !== sessionGen) return false; // 이미 끝난 세션 — 만료 처리도 생략
+    if (gen !== currentGen()) return false; // 이미 끝난 세션 — 만료 처리도 생략
     // BE JWT 가이드: refresh 401 = refresh 만료/무효 → 이때만 로그아웃.
     // 네트워크/5xx는 일시 장애 — 토큰을 지우면 지하철에서 앱 열었다고
     // 로그아웃되는 꼴이다 → 토큰 보존, 원요청 에러 표면화(다음 시도에 재도전).

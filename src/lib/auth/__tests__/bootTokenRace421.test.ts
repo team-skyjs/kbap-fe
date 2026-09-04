@@ -12,25 +12,30 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-// SecureStore — resolve 시점을 테스트가 쥔다(지연 읽기 재현)
+// SecureStore — resolve 시점을 테스트가 쥔다(지연 읽기/쓰기 재현)
 const mockStore = new Map<string, string>();
 let mockPendingReads: Array<() => void> = [];
 let mockDelayReads = false;
+let mockPendingWrites: Array<() => void> = [];
+let mockDelayWrites = false;
 jest.mock('expo-secure-store', () => ({
   getItemAsync: (k: string) =>
     new Promise<string | null>((resolve) => {
-      const fire = () => resolve(mockStore.get(k) ?? null); // ⚠️ resolve 시점의 mockStore가 아니라
       // 읽기 "시작" 시점 값을 캡처해야 실기와 같다 — Keychain은 호출 시점에 읽는다.
       const captured = mockStore.get(k) ?? null;
       const fireCaptured = () => resolve(captured);
-      void fire; // (미사용 — 캡처 방식 사용)
       if (mockDelayReads) mockPendingReads.push(fireCaptured);
       else fireCaptured();
     }),
-  setItemAsync: (k: string, v: string) => {
-    mockStore.set(k, v);
-    return Promise.resolve();
-  },
+  setItemAsync: (k: string, v: string) =>
+    new Promise<void>((resolve) => {
+      const commit = () => {
+        mockStore.set(k, v); // 쓰기는 완료 시점에 반영 — 지연 쓰기 인터리빙 재현
+        resolve();
+      };
+      if (mockDelayWrites) mockPendingWrites.push(commit);
+      else commit();
+    }),
   deleteItemAsync: (k: string) => {
     mockStore.delete(k);
     return Promise.resolve();
@@ -55,12 +60,18 @@ const flushReads = () => {
   mockPendingReads.forEach((f) => f());
   mockPendingReads = [];
 };
+const flushWrites = () => {
+  mockPendingWrites.forEach((f) => f());
+  mockPendingWrites = [];
+};
 
 beforeEach(async () => {
   jest.resetModules();
   mockStore.clear();
   mockPendingReads = [];
   mockDelayReads = false;
+  mockPendingWrites = [];
+  mockDelayWrites = false;
   mockLogOut.mockClear();
   mockSetOnUnauthorized.mockClear(); // 테스트별 최신 install의 핸들러만 참조
   mockPost.mockClear();
@@ -192,6 +203,21 @@ it('낡은 refresh의 finally가 새 뮤텍스를 지우지 않는다 — 자기
   // (핸들러가 async 래퍼라 프라미스 참조 동일성 대신 네트워크 호출 수로 판정.)
   expect(refreshCalls()).toBe(2);
   void b; // B는 pending 유지 — 워커 릭 방지용 명시 no-op
+});
+
+it('saveTokens 쓰기 중 경계 → 자가 되돌림 — 저장소 빈 상태·false 반환 (싱크 가드)', async () => {
+  const t = tokens();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  mockDelayWrites = true;
+  const saveP = t.saveTokens('late-a', 'late-r'); // SecureStore 쓰기 pending
+  await be.endSessionBoundary(); // 쓰기 대기 중 "세션 끝" 경계
+  mockDelayWrites = false;
+  flushWrites(); // 삭제 뒤에 완료되는 setItemAsync — 재영속 시도
+  await expect(saveP).resolves.toBe(false); // 싱크가 자가 되돌림 + 커밋 생략 신호
+  await expect(t.loadTokens()).resolves.toBeNull();
+  expect(mockStore.size).toBe(0); // Keychain 잔존 0
+  expect(sess().getSessionState()).toBe(false);
 });
 
 it('pending 로그인 교환 중 게스트 진입 → 교환 응답 폐기(cancelled) — 회원 복귀 금지', async () => {

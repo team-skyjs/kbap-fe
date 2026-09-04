@@ -6,7 +6,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: { getItem: jest.fn(), setItem: jest.fn(async () => {}) },
 }));
-jest.mock('../beTokens', () => ({ clearTokens: jest.fn(async () => {}) }));
+jest.mock('../beTokens', () => ({ clearTokens: jest.fn(async () => {}), bumpSessionGen: jest.fn(), currentGen: jest.fn(() => 0), loadTokens: jest.fn(async () => null), saveTokens: jest.fn(async () => true) }));
 jest.mock('../session', () => ({
   currentUser: jest.fn(() => ({ uid: 'u1' })),
   logOut: jest.fn(async () => {}),
