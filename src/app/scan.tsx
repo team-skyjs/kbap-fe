@@ -85,6 +85,16 @@ export default function Scan() {
     });
     return () => sub.remove();
   }, [permDenied, getPermission]);
+  // KB-426(예진 실기 b21): 진입 즉시 OS 권한 팝업 — 안내 화면은 거부 후 폴백으로
+  // 강등. 세션당 1회(ref) — OS도 프롬프트를 1회만 주므로(canAskAgain) 중복 무해하나
+  // 계측 오염 방지. 거부 이력(canAskAgain=false)은 설정 CTA 경로 그대로.
+  const autoPrompted = useRef(false);
+  useEffect(() => {
+    if (autoPrompted.current || permission == null || permission.granted || !permission.canAskAgain) return;
+    autoPrompted.current = true;
+    track(EVENTS.scan_permission, { state: 'auto_prompt' });
+    void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }));
+  }, [permission, requestPermission]);
   // P-214: 권한 게이트 노출 1회 — 스캔 퍼널 최상단 이탈 분모(요청·거절·설정열기는 버튼에서)
   const permViewed = useRef(false);
   useEffect(() => {
