@@ -42,41 +42,63 @@ export async function loadTokens(): Promise<{ access: string; refresh: string } 
   return cached;
 }
 
+/** KB-421 최종: 저장소 **쓰기 직렬화 체인** — save/clear가 순서대로만 실행돼
+ *  교체 세션(B)의 쓰기가 낡은 save(A)와 인터리빙되지 않는다(ABA 1차 방어).
+ *  cached·세대의 동기 갱신은 체인 밖(즉시성 유지). */
+let writeChain: Promise<unknown> = Promise.resolve();
+function serialized<T>(op: () => Promise<T>): Promise<T> {
+  const p = writeChain.then(op, op);
+  writeChain = p.catch(() => {});
+  return p;
+}
+
 /** Rotation 규칙: 항상 2종을 함께 저장 — 구 refresh는 재사용 금지(KB-67).
- *  @returns false = 쓰기 전/중 세션 끝 경계가 개입 — **자가 되돌림 완료**(쓴 것
- *  삭제·cached null). 호출자는 커밋 단계(세션 점등·로그·내비게이션)를 생략할 것. */
-export async function saveTokens(access: string, refresh: string): Promise<boolean> {
-  const g = sessionGen;
-  cached = { access, refresh };
-  try {
-    await Promise.all([
-      SecureStore.setItemAsync(ACCESS_KEY, access),
-      SecureStore.setItemAsync(REFRESH_KEY, refresh),
-    ]);
-  } catch {
-    /* web/test: memory-only */
-  }
-  if (g !== sessionGen) {
-    // 쓰기 대기 중 경계 — 삭제 뒤에 완료된 setItemAsync가 재영속했을 수 있다 → 되돌림
-    cached = null;
+ *  @returns false = 쓰기 전/중 세션 끝 경계가 개입 — 자가 되돌림 후 폐기. 호출자는
+ *  커밋 단계(세션 점등·로그·내비게이션)를 생략할 것.
+ *  ABA 안전(2차 방어): 되돌림은 **자기 쓰기일 때만** — cached·저장소 값이 자기
+ *  것과 일치할 때만 지운다(교체 세션 B의 토큰 보존). */
+export function saveTokens(access: string, refresh: string): Promise<boolean> {
+  const g = sessionGen; // 호출 시점 세대(동기)
+  const mine = { access, refresh };
+  cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)
+  return serialized(async () => {
     try {
-      await Promise.all([SecureStore.deleteItemAsync(ACCESS_KEY), SecureStore.deleteItemAsync(REFRESH_KEY)]);
+      await Promise.all([
+        SecureStore.setItemAsync(ACCESS_KEY, access),
+        SecureStore.setItemAsync(REFRESH_KEY, refresh),
+      ]);
+    } catch {
+      /* web/test: memory-only */
+    }
+    if (g !== sessionGen) {
+      if (cached === mine) cached = null; // 자기 것일 때만 — B가 덮었으면 보존
+      try {
+        const [a, r] = await Promise.all([
+          SecureStore.getItemAsync(ACCESS_KEY),
+          SecureStore.getItemAsync(REFRESH_KEY),
+        ]);
+        if (a === access && r === refresh) {
+          await Promise.all([SecureStore.deleteItemAsync(ACCESS_KEY), SecureStore.deleteItemAsync(REFRESH_KEY)]);
+        }
+      } catch {
+        /* nothing persisted */
+      }
+      return false;
+    }
+    return true;
+  });
+}
+
+export function clearTokens(): Promise<void> {
+  cached = null; // 동기 — 경계의 즉시성 유지
+  return serialized(async () => {
+    try {
+      await Promise.all([
+        SecureStore.deleteItemAsync(ACCESS_KEY),
+        SecureStore.deleteItemAsync(REFRESH_KEY),
+      ]);
     } catch {
       /* nothing persisted */
     }
-    return false;
-  }
-  return true;
-}
-
-export async function clearTokens(): Promise<void> {
-  cached = null;
-  try {
-    await Promise.all([
-      SecureStore.deleteItemAsync(ACCESS_KEY),
-      SecureStore.deleteItemAsync(REFRESH_KEY),
-    ]);
-  } catch {
-    /* nothing persisted */
-  }
+  });
 }

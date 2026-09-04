@@ -211,13 +211,31 @@ it('saveTokens 쓰기 중 경계 → 자가 되돌림 — 저장소 빈 상태·
   const be = require('../beAuth') as typeof import('../beAuth');
   mockDelayWrites = true;
   const saveP = t.saveTokens('late-a', 'late-r'); // SecureStore 쓰기 pending
-  await be.endSessionBoundary(); // 쓰기 대기 중 "세션 끝" 경계
+  const boundaryP = be.endSessionBoundary(); // 쓰기 대기 중 "세션 끝" 경계(직렬화 — A 뒤에 줄섬)
   mockDelayWrites = false;
-  flushWrites(); // 삭제 뒤에 완료되는 setItemAsync — 재영속 시도
+  flushWrites(); // 유예된 setItemAsync 커밋 — 재영속 시도
+  await boundaryP;
   await expect(saveP).resolves.toBe(false); // 싱크가 자가 되돌림 + 커밋 생략 신호
   await expect(t.loadTokens()).resolves.toBeNull();
   expect(mockStore.size).toBe(0); // Keychain 잔존 0
   expect(sess().getSessionState()).toBe(false);
+});
+
+it('ABA: save A 유예 → 경계 → 새 로그인 save B → A 재개 — B 토큰 보존(A만 폐기)', async () => {
+  const t = tokens();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  mockDelayWrites = true;
+  const saveA = t.saveTokens('old-a', 'old-r'); // A 쓰기 pending
+  const boundaryP = be.endSessionBoundary(); // 로그아웃 경계(세대 bump·cached null은 동기)
+  mockDelayWrites = false;
+  const saveB = t.saveTokens('new-a', 'new-r'); // 새 로그인(교체 세션) — 체인상 A·clear 뒤
+  flushWrites(); // A의 늦은 쓰기 커밋 → 체인 진행(A undo → clear → B)
+  await boundaryP;
+  await expect(saveA).resolves.toBe(false); // A는 폐기
+  await expect(saveB).resolves.toBe(true); // B는 정상 커밋
+  await expect(t.loadTokens()).resolves.toEqual({ access: 'new-a', refresh: 'new-r' }); // B 보존
+  expect(mockStore.get('kbap.auth.access.v1')).toBe('new-a'); // A의 되돌림이 B를 지우면 안 된다
 });
 
 it('pending 로그인 교환 중 게스트 진입 → 교환 응답 폐기(cancelled) — 회원 복귀 금지', async () => {
