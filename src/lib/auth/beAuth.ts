@@ -14,7 +14,7 @@
 import { api, ApiError, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
-import { initSessionState, setSessionState } from './useSession';
+import { getSessionState, initSessionState, setSessionState } from './useSession';
 
 /** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
  *  게스트 mock과 회원 실데이터가 섞이는 것을 원천 차단.
@@ -185,7 +185,10 @@ async function handleUnauthorized(code: string | null): Promise<boolean> {
     // 지울 세션이 없으므로 sessionExpired(= queryClient.clear) 생략(doRefresh의
     // `if (!t) return false` 철학 동일). 안 그러면 게스트 화면의 인증 쿼리 401이
     // 전 캐시를 소거해 배경이 로딩으로 리셋된다(예진 실기 회귀).
-    if ((await loadTokens()) != null) await sessionExpired();
+    // KB-421 자기치유(b21 실기): **세션 스토어가 회원인데 토큰이 없는 반쪽 상태**는
+    // P-260 조건을 비켜가 회원 UI에 고착됐다 — 스토어 회원이면 토큰 유무와 무관하게
+    // 만료 처리(첫 401에서 게스트 강하). 게스트(false/null+무토큰)는 종전대로 무반응.
+    if (getSessionState() === true || (await loadTokens()) != null) await sessionExpired();
     return false;
   }
   return false;

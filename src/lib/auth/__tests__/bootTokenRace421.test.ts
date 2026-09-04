@@ -321,6 +321,32 @@ it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
   await expect(tokens().loadTokens()).resolves.toEqual({ access: 'new-a', refresh: 'new-r' });
 });
 
+it('반쪽 상태 자기치유 — 세션 회원+토큰 없음의 AUTH-003 = sessionExpired(게스트 강하)', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  const expired = jest.fn();
+  be.onSessionExpired(expired);
+  sess().initSessionState(true); // 반쪽 상태: 스토어 회원, 토큰 없음(실기 b21 재현분)
+  await expect(handle('AUTH-003')).resolves.toBe(false);
+  expect(expired).toHaveBeenCalledTimes(1); // 첫 401에서 자기치유
+  expect(sess().getSessionState()).toBe(false);
+});
+
+it('P-260 회귀 유지 — 게스트(스토어 false·토큰 없음)의 AUTH-003 = 무반응', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  const expired = jest.fn();
+  be.onSessionExpired(expired);
+  sess().initSessionState(false); // 게스트 확정 상태
+  await expect(handle('AUTH-003')).resolves.toBe(false);
+  expect(expired).not.toHaveBeenCalled(); // 캐시 소거·만료 이벤트 없음
+  expect(sess().getSessionState()).toBe(false);
+});
+
 it('배선 소스 잠금 — 부트 세션 초기화는 cleanup 직렬화 이후(installBeAuth에 부트 읽기 없음)', () => {
   const fs = require('fs') as typeof import('fs');
   const beAuth = fs.readFileSync('src/lib/auth/beAuth.ts', 'utf8') as string;
