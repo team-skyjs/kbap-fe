@@ -17,6 +17,7 @@ on:
 # (EAS Workflows 지원 문법: docs.expo.dev/eas/workflows/syntax — "concurrency:
 #  Currently only allows setting cancel_in_progress for same-branch workflows")
 concurrency:
+  group: teamtest-update # eas workflow:validate 실측 — group 필수(스키마), 값은 자리표시
   cancel_in_progress: true
 
 jobs:
