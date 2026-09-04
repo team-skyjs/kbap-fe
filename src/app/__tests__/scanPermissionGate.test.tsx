@@ -110,7 +110,8 @@ jest.mock('@/lib/scan/ocr', () => ({
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) })); // ML Kit 네이티브 차단
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+let mockGuest = false;
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { restrictions: [] } }),
   useMyReviews: () => ({ data: [] }),
@@ -157,6 +158,53 @@ const gateBtn = (tree: ReactTestRenderer, key: string) =>
   tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === key).length > 0);
 
 afterEach(() => jest.restoreAllMocks());
+
+/* ---- KB-426: 진입 즉시 OS 팝업(자동 요청) ---- */
+it('KB-426: 미결정(canAskAgain=true) — 마운트 시 자동 requestPermission 1회(재렌더에도 1회)', () => {
+  cam.perm = { granted: false, canAskAgain: true };
+  cam.request.mockClear();
+  const tree = render(<Scan />);
+  expect(cam.request).toHaveBeenCalledTimes(1); // 진입 즉시 OS 팝업
+  act(() => tree.update(<Scan />)); // 리렌더(동일 인스턴스) — ref 가드로 재요청 없음
+  expect(cam.request).toHaveBeenCalledTimes(1);
+});
+
+it('KB-426(P1): 게스트 = 자동 요청 0회 — 로그인으로 자격 전환 시 그때 1회', () => {
+  cam.perm = { granted: false, canAskAgain: true };
+  cam.request.mockClear();
+  mockGuest = true;
+  try {
+    const tree = render(<Scan />);
+    expect(cam.request).not.toHaveBeenCalled(); // 게스트 — 맥락 없는 OS 팝업 금지
+    mockGuest = false; // 로그인 완료(세션 스토어 전파) 시뮬
+    act(() => tree.update(<Scan />));
+    expect(cam.request).toHaveBeenCalledTimes(1); // 자격 전환 후 1회(ref 가드 유지)
+  } finally {
+    mockGuest = false;
+  }
+});
+
+it('KB-426: granted — 자동 요청 0회', () => {
+  cam.perm = { granted: true, canAskAgain: true };
+  cam.request.mockClear();
+  render(<Scan />);
+  expect(cam.request).not.toHaveBeenCalled();
+});
+
+it('KB-426: 거부 이력(canAskAgain=false) — 자동 요청 0회(설정 CTA 경로 유지)', () => {
+  cam.perm = { granted: false, canAskAgain: false };
+  cam.request.mockClear();
+  const tree = render(<Scan />);
+  expect(cam.request).not.toHaveBeenCalled();
+  expect(gateBtn(tree, 'photo.openSettings').length).toBeGreaterThanOrEqual(1);
+});
+
+it('KB-426 소스 잠금 — auto_prompt 계측 + 요청 결과 grant/deny 계측 동반', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(src).toContain("state: 'auto_prompt'");
+  expect(src.split("state: 'auto_prompt'")[1]).toContain("r?.granted ? 'grant' : 'deny'");
+});
 
 it('canAskAgain=true — 현행 requestPermission 버튼(scan.grant)', () => {
   cam.perm = { granted: false, canAskAgain: true };

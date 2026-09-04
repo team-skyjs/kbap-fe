@@ -147,6 +147,18 @@ export default function Scan() {
   // (게스트 가드가 상위 — 아래 preflight는 회원·v2만). 티켓은 화면 스코프 1회용.
   const preTicket = useRef<string | null>(null);
   const isGuest = useIsGuest();
+  // KB-426(예진 실기 b21): 진입 즉시 OS 권한 팝업 — 안내 화면은 거부 후 폴백으로
+  // 강등. 세션당 1회(ref) — OS도 프롬프트를 1회만 주므로(canAskAgain) 중복 무해하나
+  // 계측 오염 방지. 거부 이력(canAskAgain=false)은 설정 CTA 경로 그대로.
+  // Codex #21 P1: 게스트는 로그인 시트로 막히는 경로 — 맥락 없는 OS 팝업 금지
+  // (기존 isGuest 게이트 재사용). 로그인으로 자격이 바뀌면 그때 1회(ref 가드).
+  const autoPrompted = useRef(false);
+  useEffect(() => {
+    if (autoPrompted.current || isGuest || permission == null || permission.granted || !permission.canAskAgain) return;
+    autoPrompted.current = true;
+    track(EVENTS.scan_permission, { state: 'auto_prompt' });
+    void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }));
+  }, [isGuest, permission, requestPermission]);
   // P-255: 최선 노력 사전 확인 — 004만 즉시 잠금(fail() 미경유 = scan_complete 계측
   // 오염 0 — 스캔 시도가 아니다), 그 외 실패는 무시(최종 판정 = 스캔 단계 분기·시나리오 E).
   const quotaLockRef = useRef(false); // 선발급 잠금 판별 — 타 에러 화면 오복원 방지
