@@ -39,13 +39,27 @@ jobs:
           echo "host guard OK (dev hits: $HITS files)"
       - name: Fingerprint gate (P-199 — 네이티브 변경 시 발행 중단)
         run: |
+          # 진단(런 01a06ac4 LOOKUP_FAIL 원인 추적): 러너 인증 컨텍스트 확인 —
+          # "not logged in"이면 잡에 EXPO_TOKEN 자동 주입이 안 되는 케이스로 확정
+          npx eas-cli whoami || echo "WHOAMI_FAIL: 러너에 EAS 인증 컨텍스트 없음"
           RV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).hash)}catch{console.log('')}})"; }
-          # P2(fail closed): 빈 목록([]) = NONE(빌드 0건 — 통과) / 파싱·필드 실패 = LOOKUP_FAIL(잡 실패)
-          BRV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s);if(!Array.isArray(a)){console.log('LOOKUP_FAIL')}else if(a.length===0){console.log('NONE')}else{console.log(a[0].runtimeVersion||'LOOKUP_FAIL')}}catch{console.log('LOOKUP_FAIL')}})"; }
           CUR_IOS=$(npx expo-updates fingerprint:generate --platform ios | RV)
           CUR_AND=$(npx expo-updates fingerprint:generate --platform android | RV)
-          BUILD_IOS=$(npx eas-cli build:list --platform ios --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
-          BUILD_AND=$(npx eas-cli build:list --platform android --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
+          # 원출력 파일 캡처 — 실패 시 head를 로그로 남겨 빈 출력/비JSON/에러를 구분
+          npx eas-cli build:list --platform ios --channel teamtest --status finished --limit 1 --json --non-interactive > /tmp/bl-ios.json 2> /tmp/bl-ios.err || true
+          npx eas-cli build:list --platform android --channel teamtest --status finished --limit 1 --json --non-interactive > /tmp/bl-and.json 2> /tmp/bl-and.err || true
+          # P2(fail closed): NONE = 명시적 빈 목록(통과) / LOOKUP_FAIL = 빈 출력·비JSON·필드 누락(잡 실패)
+          # 방어: 23.x 계열의 {builds:[...]} 객체 형태도 수용
+          PARSE() { node -e "const s=require('fs').readFileSync(process.argv[1],'utf8');if(!s.trim()){console.log('LOOKUP_FAIL');process.exit(0)}try{const j=JSON.parse(s);const a=Array.isArray(j)?j:j.builds;if(!Array.isArray(a)){console.log('LOOKUP_FAIL')}else if(a.length===0){console.log('NONE')}else{console.log(a[0].runtimeVersion||'LOOKUP_FAIL')}}catch{console.log('LOOKUP_FAIL')}" "$1"; }
+          BUILD_IOS=$(PARSE /tmp/bl-ios.json)
+          BUILD_AND=$(PARSE /tmp/bl-and.json)
+          if [ "$BUILD_IOS" = "LOOKUP_FAIL" ] || [ "$BUILD_AND" = "LOOKUP_FAIL" ]; then
+            echo "== 진단: build:list 원출력 head =="
+            echo "-- ios stdout:"; head -c 800 /tmp/bl-ios.json || true; echo
+            echo "-- ios stderr:"; head -c 800 /tmp/bl-ios.err || true; echo
+            echo "-- android stdout:"; head -c 800 /tmp/bl-and.json || true; echo
+            echo "-- android stderr:"; head -c 800 /tmp/bl-and.err || true; echo
+          fi
           bash scripts/ota-fp-gate.sh "$CUR_IOS" "$CUR_AND" "$BUILD_IOS" "$BUILD_AND"
       - name: Publish to teamtest
         run: |
