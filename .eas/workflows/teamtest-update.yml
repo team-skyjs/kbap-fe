@@ -1,0 +1,41 @@
+# KB-420(P-204) — develop 푸시마다 teamtest 채널 OTA 자동 발행 (EAS Workflows).
+#
+# 가드(8/26 Metro 캐시 사고 재발 방지 — CLAUDE.md 배포 절차 규칙):
+#   1) export는 --clear, 발행은 --clear-cache 강제.
+#   2) 발행 전 export 산출물 grep — 목표 호스트(dev.kbap.site) 1건 이상,
+#      prod 호스트(prod.kbap.site) 0건. 아니면 잡 실패(발행 미도달).
+# env는 eas.json build.teamtest와 동일하게 인라인 주입(P-073 — eas update는
+# 로컬/서버 env 혼동 여지가 있어 명령 앞 인라인이 규칙).
+name: teamtest OTA (develop auto-publish)
+
+on:
+  push:
+    branches: ['develop']
+
+jobs:
+  publish_teamtest:
+    name: guarded teamtest update
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Export + host guard (dev 1+ / prod 0)
+        run: |
+          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx expo export --clear
+          if grep -R "prod.kbap.site" dist -l; then
+            echo "FAIL: prod host leaked into teamtest bundle"; exit 1
+          fi
+          HITS=$(grep -R "dev.kbap.site" dist -l | wc -l)
+          if [ "$HITS" -lt 1 ]; then
+            echo "FAIL: target host (dev.kbap.site) not found in bundle"; exit 1
+          fi
+          echo "host guard OK (dev hits: $HITS files)"
+      - name: Publish to teamtest
+        run: |
+          SHA7=$(git rev-parse --short HEAD)
+          SUBJECT=$(git log -1 --pretty=%s)
+          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx eas-cli update \
+            --channel teamtest --clear-cache --non-interactive \
+            --message "$SHA7 $SUBJECT"
+      - name: Summary
+        run: |
+          npx eas-cli update:list --branch teamtest --limit 1 --non-interactive || true

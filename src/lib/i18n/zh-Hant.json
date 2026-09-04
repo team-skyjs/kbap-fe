@@ -975,5 +975,9 @@
     "emptyOrdersBody": "從掃描的菜單下單後會記錄在這裡。",
     "emptyScansTitle": "還沒有掃描記錄",
     "emptyScansBody": "掃描菜單後，你查看過的菜品會匯集在這裡。"
+  },
+  "ota": {
+    "ready": "更新已準備好",
+    "apply": "套用"
   }
 }
