@@ -110,7 +110,8 @@ jest.mock('@/lib/scan/ocr', () => ({
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }) })); // ML Kit 네이티브 차단
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+let mockGuest = false;
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { restrictions: [] } }),
   useMyReviews: () => ({ data: [] }),
@@ -166,6 +167,21 @@ it('KB-426: 미결정(canAskAgain=true) — 마운트 시 자동 requestPermissi
   expect(cam.request).toHaveBeenCalledTimes(1); // 진입 즉시 OS 팝업
   act(() => tree.update(<Scan />)); // 리렌더(동일 인스턴스) — ref 가드로 재요청 없음
   expect(cam.request).toHaveBeenCalledTimes(1);
+});
+
+it('KB-426(P1): 게스트 = 자동 요청 0회 — 로그인으로 자격 전환 시 그때 1회', () => {
+  cam.perm = { granted: false, canAskAgain: true };
+  cam.request.mockClear();
+  mockGuest = true;
+  try {
+    const tree = render(<Scan />);
+    expect(cam.request).not.toHaveBeenCalled(); // 게스트 — 맥락 없는 OS 팝업 금지
+    mockGuest = false; // 로그인 완료(세션 스토어 전파) 시뮬
+    act(() => tree.update(<Scan />));
+    expect(cam.request).toHaveBeenCalledTimes(1); // 자격 전환 후 1회(ref 가드 유지)
+  } finally {
+    mockGuest = false;
+  }
 });
 
 it('KB-426: granted — 자동 요청 0회', () => {
