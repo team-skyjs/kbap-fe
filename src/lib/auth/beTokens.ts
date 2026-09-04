@@ -89,6 +89,25 @@ export function saveTokens(access: string, refresh: string): Promise<boolean> {
   });
 }
 
+/** commit undo 전용(KB-421 P1-8) — 캐시·저장소가 **해당 값일 때만** 지운다.
+ *  교체 세션(B)이 이미 덮었으면 무손대. 경계의 clearTokens(무조건)와 구분. */
+export function revertTokensIf(access: string, refresh: string): Promise<void> {
+  return serialized(async () => {
+    if (cached && cached.access === access && cached.refresh === refresh) cached = null;
+    try {
+      const [a, r] = await Promise.all([
+        SecureStore.getItemAsync(ACCESS_KEY),
+        SecureStore.getItemAsync(REFRESH_KEY),
+      ]);
+      if (a === access && r === refresh) {
+        await Promise.all([SecureStore.deleteItemAsync(ACCESS_KEY), SecureStore.deleteItemAsync(REFRESH_KEY)]);
+      }
+    } catch {
+      /* nothing persisted */
+    }
+  });
+}
+
 export function clearTokens(): Promise<void> {
   cached = null; // 동기 — 경계의 즉시성 유지
   return serialized(async () => {

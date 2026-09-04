@@ -272,6 +272,43 @@ it('saveTokens 통과 직후·커밋 직전 경계 → 세션 점등 금지(canc
   expect(sess().getSessionState()).toBe(false); // resetServerCache(true) 미실행
 });
 
+it('커밋-직전 캔슬의 undo도 소유자 범위 — 교체 로그인 B 토큰 보존', async () => {
+  const t = tokens();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  const orig = t.saveTokens;
+  jest.spyOn(t, 'saveTokens').mockImplementation(async (a: string, r: string) => {
+    const ok = await orig(a, r); // A 저장 완료
+    jest.restoreAllMocks(); // 이후 저장(B)은 실구현
+    await be.endSessionBoundary(); // 로그아웃
+    await orig('b-a', 'b-r'); // 교체 로그인 B 저장
+    return ok;
+  });
+  mockPost.mockImplementationOnce(async () => ({ newMember: false, accessToken: 'a-a', refreshToken: 'a-r' }));
+  const res = await be.exchangeLogin('idtoken');
+  expect(res.cancelled).toBe(true);
+  await expect(t.loadTokens()).resolves.toEqual({ access: 'b-a', refresh: 'b-r' }); // A 캔슬 undo가 B를 지우면 안 됨
+  expect(mockStore.get('kbap.auth.access.v1')).toBe('b-a');
+});
+
+it('doRefresh — 저장 resolve 직후 경계 = 성공 보고 금지(재시도 취소)', async () => {
+  mockStore.set('kbap.auth.access.v1', 'old-a');
+  mockStore.set('kbap.auth.refresh.v1', 'old-r');
+  const t = tokens();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  const orig = t.saveTokens;
+  jest.spyOn(t, 'saveTokens').mockImplementation(async (a: string, r: string) => {
+    const ok = await orig(a, r);
+    await be.endSessionBoundary(); // 저장 통과 직후·반환 직전 경계
+    return ok;
+  });
+  mockPost.mockImplementationOnce(async () => ({ accessToken: 'n-a', refreshToken: 'n-r' }));
+  await expect(handle('AUTH-004')).resolves.toBe(false); // true면 로그아웃된 세션 토큰으로 재시도가 나간다
+});
+
 it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
   mockStore.set('kbap.auth.access.v1', 'old-a');
   mockStore.set('kbap.auth.refresh.v1', 'old-r');

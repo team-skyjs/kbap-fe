@@ -13,7 +13,7 @@
  */
 import { api, ApiError, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
-import { bumpSessionGen, clearTokens, currentGen, loadTokens, saveTokens } from './beTokens';
+import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { initSessionState, setSessionState } from './useSession';
 
 /** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
@@ -60,11 +60,11 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
   if (!(await saveTokens(r.accessToken, r.refreshToken))) {
     return { newMember: r.newMember, cancelled: true }; // 쓰기 중 경계 — 싱크가 되돌림, 커밋 생략
   }
-  // Codex #19 P1-7: 커밋 지점 최종 재검증 — 저장 통과 후 ~ 세션 점등 전 경계가
-  // 오면 방금 저장분 회수 후 취소(세션 true 재점등 금지). 세션을 켜는 유일한
-  // 커밋 지점이 여기라 이 검사가 최종 방어.
+  // Codex #19 P1-7/8: 커밋 지점 최종 재검증 — 저장 통과 후 ~ 세션 점등 전 경계가
+  // 오면 **자기 저장분만** 회수(소유자 범위 undo — 교체 로그인 B 보존) 후 취소.
+  // 세션을 켜는 유일한 커밋 지점이 여기라 이 검사가 최종 방어.
   if (gen !== currentGen()) {
-    await clearTokens();
+    await revertTokensIf(r.accessToken, r.refreshToken);
     return { newMember: r.newMember, cancelled: true };
   }
   resetServerCache(true);
@@ -112,6 +112,9 @@ async function doRefresh(): Promise<boolean> {
     // 세대와 무관하게 회전 결과도 폐기 — cached=null은 경계의 동기 첫 동작.
     if ((await loadTokens()) == null) return false;
     if (!(await saveTokens(r.accessToken, r.refreshToken))) return false; // 쓰기 중 경계 — 싱크 되돌림
+    // P1-8: 저장 resolve ~ 반환 사이 경계 — 성공 보고 금지(재시도가 로그아웃된
+    // 세션 토큰으로 나가는 것 방지). 토큰 자체는 경계의 clearTokens가 지운다.
+    if (gen !== currentGen()) return false;
     console.log('[auth] token refreshed (rotation)');
     return true;
   } catch (e) {
