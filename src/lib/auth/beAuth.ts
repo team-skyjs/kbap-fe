@@ -45,9 +45,7 @@ export function onSessionExpired(handler: (() => void) | null) {
 }
 
 async function sessionExpired(): Promise<void> {
-  endSessionBoundary(); // KB-421: 진행 중 refresh 결과 무효화
-  await clearTokens();
-  resetServerCache(false);
+  await endSessionBoundary(); // KB-421: 로컬 정리+세대 증가(단일 경계 구현)
   expiredHandler?.();
 }
 
@@ -66,20 +64,31 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
  * 쓰기-후-지움 레이스 차단(beTokens 스테일 읽기와 동일 클래스). */
 let sessionGen = 0;
 
-/** 세션 끝 경계 선언 — 진행 중 refresh 결과를 무효화하고 뮤텍스를 해제한다.
- *  freshInstall 정리도 이 경계를 타야 한다(부트 중 refresh 겹침 대비). */
-export function endSessionBoundary(): void {
-  sessionGen++;
-  refreshing = null; // 다음 tryRefresh는 새 세대로 — 낡은 promise 공유 금지
+/** 세션 끝 경계 — **유일한 경계 구현**(Codex #19 P1-3: 로그아웃/만료/freshInstall
+ *  전부 이 헬퍼). 핵심 불변식: **세대 증가와 토큰 무효(cached=null)가 같은 동기
+ *  구간** — 경계 이전 출발 refresh는 세대 불일치로, 이후 출발분은 무토큰으로,
+ *  어느 창에서도 재부활 불가. 서버 폐기는 호출측이 뒤에 best-effort. */
+export async function endSessionBoundary(): Promise<void> {
+  sessionGen++; // ① 동기 — 이전 출발분 즉시 무효
+  refreshing = null; // 현재 참조 해제 — 새 뮤텍스 보호는 tryRefresh의 자기확인 몫
+  const done = clearTokens(); // clearTokens는 cached=null을 **동기로** 먼저 수행
+  resetServerCache(false);
+  await done;
 }
 
 /* ---- refresh rotation (mutex: 동시 401 다발에도 한 번만) ---- */
 let refreshing: Promise<boolean> | null = null;
 
 function tryRefresh(): Promise<boolean> {
-  refreshing ??= doRefresh().finally(() => {
-    refreshing = null;
-  });
+  if (!refreshing) {
+    // Codex #19 P1-2b: finally는 **자기 프라미스일 때만** 해제 — 경계가 뮤텍스를
+    // 비운 뒤 설치된 새 refresh(B)를 낡은 A의 정리가 지우면 동시 refresh(회전
+    // 토큰 재사용 충돌)가 열린다.
+    const p: Promise<boolean> = doRefresh().finally(() => {
+      if (refreshing === p) refreshing = null;
+    });
+    refreshing = p;
+  }
   return refreshing;
 }
 
@@ -90,6 +99,9 @@ async function doRefresh(): Promise<boolean> {
   try {
     const r = await api.post<TokenResponseWire>('/auth/refresh', { refreshToken: t.refresh });
     if (gen !== sessionGen) return false; // 경계 개입 — 결과 폐기(세션 재부활 금지)
+    // 이중 방어(withdraw처럼 경계가 뒤에 오는 흐름): 경계가 토큰을 비웠으면
+    // 세대와 무관하게 회전 결과도 폐기 — cached=null은 경계의 동기 첫 동작.
+    if ((await loadTokens()) == null) return false;
     await saveTokens(r.accessToken, r.refreshToken); // rotation: 구 refresh 폐기
     console.log('[auth] token refreshed (rotation)');
     return true;
@@ -109,37 +121,31 @@ async function doRefresh(): Promise<boolean> {
   }
 }
 
-/** 로그아웃: BE 세션 폐기(+실패해도 로컬은 정리). Firebase signOut은 호출측(native). */
-export async function logoutBe(): Promise<void> {
-  endSessionBoundary(); // KB-421
-  const t = await loadTokens();
-  if (t) {
-    await api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
-  }
-  await clearTokens();
-  resetServerCache(false);
-}
-
-/** KB-421(Codex #19 P1): 게스트 진입용 — **로컬 경계 먼저**(토큰·세션·캐시),
- *  서버 폐기는 백그라운드 fire-and-forget(실패 무시). logoutBe는 서버 응답을
- *  기다린 뒤에야 로컬을 정리해, await 없이 화면 전환하면 잔존 세션 그대로
- *  회원 UI에 진입한다(막으려던 바로 그 상태) — 순서 규칙은 이 함수 한 곳. */
+/** KB-421(Codex #19 P1): **로컬-우선 로그아웃 — 유일한 로그아웃 구현.**
+ *  ① 서버 폐기용 refresh 캡처 ② 경계(endSessionBoundary — 토큰·세션·캐시·세대
+ *  동기 무효) await ③ 서버 /auth/logout은 best-effort 백그라운드(실패 무시).
+ *  서버를 먼저 기다리면 그 창에서 시작한 refresh가 세션을 재부활시킨다(P1-3). */
 export async function logoutLocalFirst(): Promise<void> {
-  endSessionBoundary(); // KB-421: 진행 중 refresh의 늦은 응답도 이 경계로 폐기
-  const t = await loadTokens(); // 메모리 캐시/로컬 읽기 — 네트워크 아님
-  await clearTokens();
-  resetServerCache(false);
+  const t = await loadTokens(); // 서버 폐기용 — 정리 전에 확보(로컬 읽기)
+  await endSessionBoundary();
   if (t) void api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
 }
 
-/** 탈퇴: PATCH /auth/withdraw. 성공 여부와 무관하게 로컬 세션은 정리한다. */
+/** 로그아웃(프로필 등) — 구현은 logoutLocalFirst 하나로 통일(Codex #19 P1-3).
+ *  Firebase signOut은 호출측(native). */
+export async function logoutBe(): Promise<void> {
+  return logoutLocalFirst();
+}
+
+/** 탈퇴: PATCH /auth/withdraw → 경계. ⚠️ 서버 호출이 **인증 토큰을 요구**하므로
+ *  여기만 서버-선행 유지(토큰을 먼저 지우면 탈퇴 자체가 401로 실패) — 그 창에서
+ *  출발/도착하는 refresh는 finally 경계의 세대 증가 + doRefresh의 무토큰 재확인
+ *  이중 가드로 폐기된다(재부활 불가). */
 export async function withdrawBe(): Promise<void> {
-  endSessionBoundary(); // KB-421
   try {
     await api.patch('/auth/withdraw');
   } finally {
-    await clearTokens();
-    resetServerCache(false);
+    await endSessionBoundary();
   }
 }
 

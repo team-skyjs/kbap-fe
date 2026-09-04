@@ -145,6 +145,55 @@ it('진행 중 refresh가 로그아웃 경계 이후 resolve해도 재부활 금
   expect(sess().getSessionState()).toBe(false);
 });
 
+it('logoutBe 서버 대기 창에서 시작한 refresh도 부활 금지 — 경계 = 로컬 정리 선행 통일', async () => {
+  mockStore.set('kbap.auth.access.v1', 'mina-access');
+  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  const deferred: Array<(v: unknown) => void> = [];
+  mockPost.mockImplementation(() => new Promise((r) => deferred.push(r))); // 전 호출 유예
+  const logoutP = be.logoutBe(); // 서버 /auth/logout 대기 창(구현에 따라 pending일 수 있음)
+  await new Promise((r) => setTimeout(r, 0));
+  const refreshP = handle('AUTH-004'); // 그 창에서 **시작**한 refresh
+  await new Promise((r) => setTimeout(r, 0));
+  deferred.forEach((r) => r({ accessToken: 'revived-a', refreshToken: 'revived-r' })); // 전부 늦게 응답
+  await refreshP;
+  await logoutP;
+  await expect(tokens().loadTokens()).resolves.toBeNull(); // 어느 창이든 부활 금지
+  expect(sess().getSessionState()).toBe(false);
+});
+
+it('낡은 refresh의 finally가 새 뮤텍스를 지우지 않는다 — 자기 프라미스일 때만 해제', async () => {
+  mockStore.set('kbap.auth.access.v1', 'a1');
+  mockStore.set('kbap.auth.refresh.v1', 'r1');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  be.installBeAuth();
+  const handle = mockSetOnUnauthorized.mock.calls[0][0] as (c: string | null) => Promise<boolean>;
+  const refreshCalls = () => mockPost.mock.calls.filter((c: unknown[]) => c[0] === '/auth/refresh').length;
+  const deferred: Array<(v: unknown) => void> = [];
+  mockPost.mockImplementation((path: string) =>
+    path === '/auth/refresh' ? new Promise((r) => deferred.push(r)) : new Promise(() => {}),
+  );
+  const a = handle('AUTH-004'); // A 출발(pending)
+  await new Promise((r) => setTimeout(r, 0));
+  await be.logoutLocalFirst(); // 경계 — A 무효화 + 뮤텍스 해제
+  await tokens().saveTokens('b-a', 'b-r'); // 재로그인 시뮬(새 세션)
+  const b = handle('AUTH-004'); // B 출발(pending) — 새 뮤텍스 점유
+  await new Promise((r) => setTimeout(r, 0));
+  expect(refreshCalls()).toBe(2);
+  deferred[0]({ accessToken: 'x', refreshToken: 'y' }); // A 늦은 응답 → finally 실행
+  await a;
+  void handle('AUTH-004'); // C — 뮤텍스가 살아 있으면 B의 진행분 공유(3번째 post 없음)
+  await new Promise((r) => setTimeout(r, 0));
+  // A의 finally가 B 뮤텍스를 지웠다면 C가 새 refresh를 쏴 3이 된다(Red 근거).
+  // (핸들러가 async 래퍼라 프라미스 참조 동일성 대신 네트워크 호출 수로 판정.)
+  expect(refreshCalls()).toBe(2);
+  void b; // B는 pending 유지 — 워커 릭 방지용 명시 no-op
+});
+
 it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
   mockStore.set('kbap.auth.access.v1', 'old-a');
   mockStore.set('kbap.auth.refresh.v1', 'old-r');
