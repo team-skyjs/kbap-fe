@@ -1,0 +1,58 @@
+# KB-420(P-204) — develop 푸시마다 teamtest 채널 OTA 자동 발행 (EAS Workflows).
+#
+# 가드(8/26 Metro 캐시 사고 재발 방지 — CLAUDE.md 배포 절차 규칙):
+#   1) export는 --clear, 발행은 --clear-cache 강제.
+#   2) 발행 전 export 산출물 grep — 목표 호스트(dev.kbap.site) 1건 이상,
+#      prod 호스트(prod.kbap.site) 0건. 아니면 잡 실패(발행 미도달).
+# env는 eas.json build.teamtest와 동일하게 인라인 주입(P-073 — eas update는
+# 로컬/서버 env 혼동 여지가 있어 명령 앞 인라인이 규칙).
+name: teamtest OTA (develop auto-publish)
+
+on:
+  push:
+    branches: ['develop']
+
+# Codex #18 P2(직렬화): develop 연속 push 시 옛 런이 늦게 끝나며 최신 번들을
+# 되덮는 OTA 롤백 방지 — 같은 브랜치 신규 런이 진행 중 런을 종료한다.
+# (EAS Workflows 지원 문법: docs.expo.dev/eas/workflows/syntax — "concurrency:
+#  Currently only allows setting cancel_in_progress for same-branch workflows")
+concurrency:
+  cancel_in_progress: true
+
+jobs:
+  publish_teamtest:
+    name: guarded teamtest update
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Export + host guard (dev 1+ / prod 0)
+        run: |
+          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx expo export --clear
+          if grep -R "prod.kbap.site" dist -l; then
+            echo "FAIL: prod host leaked into teamtest bundle"; exit 1
+          fi
+          HITS=$(grep -R "dev.kbap.site" dist -l | wc -l)
+          if [ "$HITS" -lt 1 ]; then
+            echo "FAIL: target host (dev.kbap.site) not found in bundle"; exit 1
+          fi
+          echo "host guard OK (dev hits: $HITS files)"
+      - name: Fingerprint gate (P-199 — 네이티브 변경 시 발행 중단)
+        run: |
+          RV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).hash)}catch{console.log('')}})"; }
+          # P2(fail closed): 빈 목록([]) = NONE(빌드 0건 — 통과) / 파싱·필드 실패 = LOOKUP_FAIL(잡 실패)
+          BRV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s);if(!Array.isArray(a)){console.log('LOOKUP_FAIL')}else if(a.length===0){console.log('NONE')}else{console.log(a[0].runtimeVersion||'LOOKUP_FAIL')}}catch{console.log('LOOKUP_FAIL')}})"; }
+          CUR_IOS=$(npx expo-updates fingerprint:generate --platform ios | RV)
+          CUR_AND=$(npx expo-updates fingerprint:generate --platform android | RV)
+          BUILD_IOS=$(npx eas-cli build:list --platform ios --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
+          BUILD_AND=$(npx eas-cli build:list --platform android --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
+          bash scripts/ota-fp-gate.sh "$CUR_IOS" "$CUR_AND" "$BUILD_IOS" "$BUILD_AND"
+      - name: Publish to teamtest
+        run: |
+          SHA7=$(git rev-parse --short HEAD)
+          SUBJECT=$(git log -1 --pretty=%s)
+          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx eas-cli update \
+            --channel teamtest --clear-cache --non-interactive \
+            --message "$SHA7 $SUBJECT"
+      - name: Summary
+        run: |
+          npx eas-cli update:list --branch teamtest --limit 1 --non-interactive || true

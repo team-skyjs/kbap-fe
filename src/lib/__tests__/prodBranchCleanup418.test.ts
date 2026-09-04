@@ -14,6 +14,7 @@ import * as path from 'path';
 const ALLOWED = new Set([
   'src/lib/flags.ts', // 정의부
   'src/lib/sentry.ts', // 환경 라벨(prod/dev)·prod 셀프체크 트리거 무동작
+  'src/lib/ota/OtaAutoApplyHost.tsx', // KB-420: OTA 적용 정책(즉시/안전 순간) — API 송신 아님
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
