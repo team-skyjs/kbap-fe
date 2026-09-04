@@ -104,7 +104,7 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(host).toContain('useIsMutating');
   });
 
-  it('EAS Workflow — develop 푸시 트리거 + prod 호스트 유출 가드 + clear 캐시', () => {
+  it('EAS Workflow — develop 푸시 트리거 + prod 호스트 유출 가드 + clear 캐시 + fp 게이트', () => {
     const yml = fs.readFileSync('.eas/workflows/teamtest-update.yml', 'utf8') as string;
     expect(yml).toContain('develop');
     expect(yml).toContain('prod.kbap.site'); // grep 가드(0건 아니면 실패)
@@ -112,6 +112,25 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(yml).toContain('--channel teamtest');
     expect(yml).toContain('--clear-cache');
     expect(yml).toMatch(/export[^\n]*--clear/); // Metro 캐시 클리어(8/26 규칙)
+    // Codex #18 P1: fp 게이트 — 발행 스텝보다 앞에서 스크립트 경유
+    expect(yml).toContain('fingerprint:generate');
+    expect(yml.indexOf('ota-fp-gate.sh')).toBeGreaterThan(-1);
+    expect(yml.indexOf('ota-fp-gate.sh')).toBeLessThan(yml.indexOf('eas-cli update'));
+  });
+
+  it('fp 게이트 셸 — 일치=통과·불일치=실패·빌드 부재=경고 통과 (실행 실측)', () => {
+    const { spawnSync } = require('child_process') as typeof import('child_process');
+    const run = (args: string[]) => spawnSync('bash', ['scripts/ota-fp-gate.sh', ...args], { encoding: 'utf8' });
+    expect(run(['A', 'B', 'A', 'B']).status).toBe(0); // 양 플랫폼 일치
+    const iosMiss = run(['A2', 'B', 'A', 'B']);
+    expect(iosMiss.status).toBe(1);
+    expect(iosMiss.stdout).toContain('ios fp 불일치');
+    const andMiss = run(['A', 'B2', 'A', 'B']);
+    expect(andMiss.status).toBe(1);
+    expect(andMiss.stdout).toContain('android fp 불일치');
+    const noBuilds = run(['A', 'B', '', '']);
+    expect(noBuilds.status).toBe(0); // 설치 빌드 없음 = 경고만
+    expect(noBuilds.stdout).toContain('WARN');
   });
 
   it('i18n — ota.ready·ota.apply 10로케일 전부 존재(빈 값 금지)', () => {

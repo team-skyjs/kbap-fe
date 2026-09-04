@@ -29,6 +29,15 @@ jobs:
             echo "FAIL: target host (dev.kbap.site) not found in bundle"; exit 1
           fi
           echo "host guard OK (dev hits: $HITS files)"
+      - name: Fingerprint gate (P-199 — 네이티브 변경 시 발행 중단)
+        run: |
+          RV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).hash)}catch{console.log('')}})"; }
+          BRV() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s);console.log(a[0]?.runtimeVersion||'')}catch{console.log('')}})"; }
+          CUR_IOS=$(npx expo-updates fingerprint:generate --platform ios | RV)
+          CUR_AND=$(npx expo-updates fingerprint:generate --platform android | RV)
+          BUILD_IOS=$(npx eas-cli build:list --platform ios --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
+          BUILD_AND=$(npx eas-cli build:list --platform android --channel teamtest --status finished --limit 1 --json --non-interactive | BRV)
+          bash scripts/ota-fp-gate.sh "$CUR_IOS" "$CUR_AND" "$BUILD_IOS" "$BUILD_AND"
       - name: Publish to teamtest
         run: |
           SHA7=$(git rev-parse --short HEAD)
