@@ -60,6 +60,13 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
   if (!(await saveTokens(r.accessToken, r.refreshToken))) {
     return { newMember: r.newMember, cancelled: true }; // 쓰기 중 경계 — 싱크가 되돌림, 커밋 생략
   }
+  // Codex #19 P1-7: 커밋 지점 최종 재검증 — 저장 통과 후 ~ 세션 점등 전 경계가
+  // 오면 방금 저장분 회수 후 취소(세션 true 재점등 금지). 세션을 켜는 유일한
+  // 커밋 지점이 여기라 이 검사가 최종 방어.
+  if (gen !== currentGen()) {
+    await clearTokens();
+    return { newMember: r.newMember, cancelled: true };
+  }
   resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };

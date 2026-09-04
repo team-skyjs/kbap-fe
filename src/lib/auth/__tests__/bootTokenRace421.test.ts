@@ -255,6 +255,23 @@ it('pending 로그인 교환 중 게스트 진입 → 교환 응답 폐기(cance
   expect(sess().getSessionState()).toBe(false); // resetServerCache(true) 미실행
 });
 
+it('saveTokens 통과 직후·커밋 직전 경계 → 세션 점등 금지(cancelled) — 커밋 지점 최종 재검증', async () => {
+  const t = tokens();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const be = require('../beAuth') as typeof import('../beAuth');
+  const orig = t.saveTokens;
+  jest.spyOn(t, 'saveTokens').mockImplementation(async (a: string, r: string) => {
+    const ok = await orig(a, r);
+    await be.endSessionBoundary(); // 저장 통과 "직후·커밋 직전"에 경계 주입
+    return ok;
+  });
+  mockPost.mockImplementationOnce(async () => ({ newMember: false, accessToken: 'x', refreshToken: 'y' }));
+  const res = await be.exchangeLogin('idtoken');
+  expect(res.cancelled).toBe(true); // 세션 점등·내비 생략 신호
+  await expect(t.loadTokens()).resolves.toBeNull(); // 저장분 회수
+  expect(sess().getSessionState()).toBe(false); // resetServerCache(true) 미실행
+});
+
 it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
   mockStore.set('kbap.auth.access.v1', 'old-a');
   mockStore.set('kbap.auth.refresh.v1', 'old-r');
