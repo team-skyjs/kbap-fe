@@ -70,10 +70,10 @@ it('알림 탭 리스너 = 구독 0(해제 함수만 반환 — 호출해도 안
 it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어댑터 지연 require 1곳뿐', () => {
   const fs = require('fs');
   const path = require('path') as typeof import('path');
-  // P-268(KB-378): prod 개방 — 다른 채널 게이트(reviews·community 등)는 무변
+  // P-268 개방 → KB-422(9/5): 실푸시 미구현이라 prod 재숨김 — 잠금 반전
   const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;
-  expect(flags).toContain('pushEnabled: true');
-  expect(flags).not.toContain('pushEnabled: !PROD_CHANNEL');
+  expect(flags).toContain('pushEnabled: !PROD_CHANNEL');
+  expect(flags).not.toContain('pushEnabled: true');
   // KB-403: reviews·reviewExtras·reviewPlace는 전 채널 공개로 전환(불변식 목록에서 제외)
   for (const gate of ['communityEnabled', 'dietPresetsEnabled']) {
     expect(flags).toContain(`${gate}: !PROD_CHANNEL`); // 타 게이트 무변(P-268 불변식)

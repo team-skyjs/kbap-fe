@@ -107,7 +107,7 @@ it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 �
 
 it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + P-268 전 채널 개방', () => {
   const fs = require('fs');
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: true'); // P-268(KB-378)
+  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: !PROD_CHANNEL'); // KB-422: prod 재숨김(실푸시 미구현)
   // 프로필 행·스캔 프라이머·루트 배선·온보딩 프라이머 — 전부 플래그 게이트 뒤
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled) return");
