@@ -112,6 +112,9 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(yml).toContain('--channel teamtest');
     expect(yml).toContain('--clear-cache');
     expect(yml).toMatch(/export[^\n]*--clear/); // Metro 캐시 클리어(8/26 규칙)
+    // Codex #18 P2: 연속 push 직렬화 — 옛 런의 스테일 발행(OTA 롤백) 방지
+    expect(yml).toContain('concurrency:');
+    expect(yml).toContain('cancel_in_progress: true');
     // Codex #18 P1: fp 게이트 — 발행 스텝보다 앞에서 스크립트 경유
     expect(yml).toContain('fingerprint:generate');
     expect(yml.indexOf('ota-fp-gate.sh')).toBeGreaterThan(-1);

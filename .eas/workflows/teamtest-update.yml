@@ -12,6 +12,13 @@ on:
   push:
     branches: ['develop']
 
+# Codex #18 P2(직렬화): develop 연속 push 시 옛 런이 늦게 끝나며 최신 번들을
+# 되덮는 OTA 롤백 방지 — 같은 브랜치 신규 런이 진행 중 런을 종료한다.
+# (EAS Workflows 지원 문법: docs.expo.dev/eas/workflows/syntax — "concurrency:
+#  Currently only allows setting cancel_in_progress for same-branch workflows")
+concurrency:
+  cancel_in_progress: true
+
 jobs:
   publish_teamtest:
     name: guarded teamtest update
