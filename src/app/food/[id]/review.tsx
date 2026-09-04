@@ -109,7 +109,7 @@ export default function ReviewCompose() {
         if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
         // 프리즈 방어(9/5, Codex #24): dismiss 직후 동기 present는 hide 애니메이션과
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)
-        runAfterKeyboardHidden(() => setSubmitted(true));
+        await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
         // P-251(BE #185): 403 REVIEW-004 = 자격 없음(진입 게이트를 뚫은 엣지 —

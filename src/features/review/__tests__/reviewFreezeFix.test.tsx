@@ -62,13 +62,20 @@ beforeEach(() => {
 afterEach(() => jest.useRealTimers());
 
 describe('(a) runAfterKeyboardHidden — 키보드 선해제 후 실행', () => {
-  it('키보드 표시 중 = dismiss 선행 + didHide 도착까지 fn 보류', () => {
+  it('키보드 표시 중 = dismiss 선행 + didHide 도착까지 fn·Promise 모두 보류(P-173 가드 유지)', async () => {
     const fn = jest.fn();
-    runAfterKeyboardHidden(fn);
+    let settled = false;
+    const p = runAfterKeyboardHidden(fn).then(() => {
+      settled = true;
+    });
+    await Promise.resolve(); // 마이크로태스크 flush
     expect(mockKb.dismiss).toHaveBeenCalledTimes(1);
     expect(fn).not.toHaveBeenCalled(); // Modal unmount와 키보드 해제 프레임 분리가 목적
+    expect(settled).toBe(false); // Codex #24 P1: await 호출부의 busy 가드가 지연 창에도 유지
     mockKb.listeners.forEach((cb) => cb());
+    await p;
     expect(fn).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(true);
     jest.advanceTimersByTime(500); // 안전망 타이머가 중복 실행하면 안 된다
     expect(fn).toHaveBeenCalledTimes(1);
   });
@@ -101,6 +108,16 @@ describe('(d) captureApi5xx — 태그만·중복창 억제', () => {
     captureApi5xx('/api/reviews', 500); // 다른 경로 = 별도 캡처(코드 태그 생략)
     expect(mockCapture).toHaveBeenCalledTimes(2);
   });
+
+  it('숫자 세그먼트 정규화 — 리소스/회원 id 태그 유입 방지 + 키 안정(Codex #24 P2)', () => {
+    captureApi5xx('/members/me/blocks/123', 500);
+    expect(mockCapture).toHaveBeenLastCalledWith('api_5xx', {
+      level: 'warning',
+      tags: { path: '/members/me/blocks/:id', status: '500' },
+    });
+    captureApi5xx('/members/me/blocks/456', 500); // id 변주 = 같은 키 → 중복 억제
+    expect(mockCapture).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('배선 소스 잠금', () => {
@@ -118,7 +135,7 @@ describe('배선 소스 잠금', () => {
 
   it('(b) 제출 확인 Modal = 헬퍼 경유(직결 0) — dismiss 직후 동기 present 금지(Codex #24)', () => {
     const src = fs.readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
-    expect(src).toContain('runAfterKeyboardHidden(() => setSubmitted(true))');
+    expect(src).toContain('await runAfterKeyboardHidden(() => setSubmitted(true))'); // P1: 가드 유지 await
     expect(src.match(/setSubmitted\(true\)/g)).toHaveLength(1); // 직결 경로 잔존 0
   });
 

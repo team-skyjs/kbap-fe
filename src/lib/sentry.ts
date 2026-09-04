@@ -36,7 +36,9 @@ export function initSentry(): void {
  *  같은 status+path는 20초 중복창 1회만. */
 const recent5xx = new Map<string, number>();
 export function captureApi5xx(path: string, status: number, code?: string): void {
-  const cleanPath = path.split('?')[0];
+  // Codex #24 P2: 숫자 세그먼트 정규화 — 회원/리소스 id가 태그로 유입되는 것 방지
+  // + 중복 억제 키 안정(같은 라우트의 id 변주가 별개 캡처로 새는 것 차단)
+  const cleanPath = path.split('?')[0].replace(/\/\d+(?=\/|$)/g, '/:id');
   const key = `${status}:${cleanPath}`;
   const now = Date.now();
   if ((recent5xx.get(key) ?? 0) > now - 20_000) return;

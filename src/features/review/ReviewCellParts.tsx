@@ -112,21 +112,29 @@ const toTag = (p: ReviewPlace): ReviewPlaceTag => ({ name: p.name, roadAddress: 
  * 시트를 닫는 **모든 경로**(확정·결과 선택·X·Skip·백버튼)가 이 헬퍼 경유 —
  * 키보드를 먼저 내리고(didHide 대기, 400ms 안전망) 닫는다. 미표시면 즉시.
  */
-export function runAfterKeyboardHidden(fn: () => void): void {
-  if (!Keyboard.isVisible()) {
-    fn();
-    return;
-  }
-  let done = false;
-  const finish = () => {
-    if (done) return;
-    done = true;
-    sub.remove();
-    fn();
-  };
-  const sub = Keyboard.addListener('keyboardDidHide', finish);
-  Keyboard.dismiss();
-  setTimeout(finish, 400); // didHide 유실(드물게) 안전망 — 중복은 done 가드
+export function runAfterKeyboardHidden(fn: () => void): Promise<void> {
+  // Codex #24 P1: 실행 완료를 resolve하는 Promise — 호출부(제출 등)가 await해
+  // 지연 창(didHide/400ms) 동안 busy 가드(P-173 useSubmitGuard)가 풀리지 않게 한다.
+  return new Promise((resolve) => {
+    const run = () => {
+      fn();
+      resolve();
+    };
+    if (!Keyboard.isVisible()) {
+      run();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      sub.remove();
+      run();
+    };
+    const sub = Keyboard.addListener('keyboardDidHide', finish);
+    Keyboard.dismiss();
+    setTimeout(finish, 400); // didHide 유실(드물게) 안전망 — 중복은 done 가드
+  });
 }
 
 /**
