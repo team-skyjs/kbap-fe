@@ -116,9 +116,10 @@ describe('배선 소스 잠금', () => {
     expect(sheet).toContain('onRequestClose={close}');
   });
 
-  it('(b) 제출 확인 Modal 직전 Keyboard.dismiss 방어 1줄', () => {
+  it('(b) 제출 확인 Modal = 헬퍼 경유(직결 0) — dismiss 직후 동기 present 금지(Codex #24)', () => {
     const src = fs.readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
-    expect(src.split('setSubmitted(true)')[0]).toContain('Keyboard.dismiss();');
+    expect(src).toContain('runAfterKeyboardHidden(() => setSubmitted(true))');
+    expect(src.match(/setSubmitted\(true\)/g)).toHaveLength(1); // 직결 경로 잔존 0
   });
 
   it('(c) Sentry init에 enableAppHangTrackingV2 관통 키', () => {
