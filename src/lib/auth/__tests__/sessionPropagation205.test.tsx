@@ -34,7 +34,7 @@ jest.mock('@/lib/api/client', () => ({
 }));
 
 import { queryClient } from '@/lib/queryClient';
-import { exchangeLogin, installBeAuth, logoutBe } from '../beAuth';
+import { exchangeLogin, initSessionFromStorage, installBeAuth, logoutBe } from '../beAuth';
 import { useIsGuest, _resetSessionForTest } from '../useSession';
 
 function Probe() {
@@ -59,7 +59,8 @@ afterEach(() => {
 
 it('⛔️ 재현: 게스트 확립(탭 마운트 유지) → 로그인 경계 → 재시작 없이 member 즉시 전환', async () => {
   mockSecure.clear();
-  installBeAuth(); // 부팅 초기화(hasBeSession → 게스트 확립)
+  installBeAuth();
+  void initSessionFromStorage(); // KB-421: 부팅 초기화는 직렬 헬퍼로 분리(정리 이후 호출 계약)
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(

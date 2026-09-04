@@ -26,6 +26,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import i18n from '../i18n';
 import { BE_BASE } from '../data/config';
+import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
 
 /**
@@ -223,6 +224,8 @@ async function request<T>(
 
   // 4xx/5xx: BE wraps errors in the same envelope, so prefer its message (§0).
   if (!res.ok) {
+    // 9/5 예진 승인: 5xx 관측(PLACE-001 502 계열) — 경로·상태·코드 태그만, PII 0
+    if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined);
     throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status, json?.code ?? undefined);
   }
   // 200 but success:false — never trust HTTP status alone.

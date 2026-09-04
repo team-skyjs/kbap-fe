@@ -15,6 +15,10 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 const mockClearTokens = jest.fn(() => Promise.resolve());
 jest.mock('../beTokens', () => ({ clearTokens: () => mockClearTokens() }));
 jest.mock('react-native', () => ({ Platform: { OS: 'web' } })); // RNFB 경로 회피
+// KB-421: freshInstall → beAuth(세션 경계) 의존 신설 — client 체인의 네이티브
+// 상수 접근 회피(표면 목, 동작 무관)
+jest.mock('../beAuth', () => ({ endSessionBoundary: () => mockEndBoundary() }));
+const mockEndBoundary = jest.fn(async () => {});
 
 import { cleanupIfFreshInstall } from '../freshInstall';
 
@@ -25,20 +29,20 @@ beforeEach(() => {
 
 it('최초 실행(센티널 부재) = true 반환 + 잔존 세션 정리 → 로그인 직행 신호', async () => {
   await expect(cleanupIfFreshInstall()).resolves.toBe(true);
-  expect(mockClearTokens).toHaveBeenCalledTimes(1);
+  expect(mockEndBoundary).toHaveBeenCalledTimes(1); // KB-421: 정리 = 경계 헬퍼 단일 구현
 });
 
 it('기설치(센티널 존재) = false + 정리 0 — 게스트가 매 실행 로그인으로 튀지 않는다', async () => {
   await cleanupIfFreshInstall(); // 첫 실행 — 센티널 기록
   jest.clearAllMocks();
   await expect(cleanupIfFreshInstall()).resolves.toBe(false);
-  expect(mockClearTokens).not.toHaveBeenCalled();
+  expect(mockEndBoundary).not.toHaveBeenCalled();
 });
 
 it('P-204 설치 ID 무관 — 정리 대상은 액세스·리프레시 토큰뿐(SecureStore 설치 ID 생존)', () => {
   const fs = require('fs');
   const src = fs.readFileSync('src/lib/auth/freshInstall.ts', 'utf8') as string;
-  expect(src).toContain('clearTokens');
+  expect(src).toContain('endSessionBoundary'); // KB-421: 토큰 정리는 경계 헬퍼 경유
   expect(src).not.toContain('installationId');
   expect(fs.readFileSync('src/lib/auth/beTokens.ts', 'utf8')).not.toContain('kbap.installation.id');
 });
