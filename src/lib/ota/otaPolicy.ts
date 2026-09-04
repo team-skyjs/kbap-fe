@@ -14,11 +14,14 @@ export const OTA_CHECK_THROTTLE_MS = 120_000; // 포그라운드 복귀 체크 �
 export const SAFE_ROUTES = ['/', '/food', '/profile'] as const;
 
 /** 진행 중 작업 화면(명시 제외) — 스캔 전 과정(+주문 카드 /scan-order 포함)·
- *  온보딩·프로필 수정·리뷰 작성/수정. */
+ *  온보딩·프로필 하위 전체·리뷰 작성/수정.
+ *  Codex #18: /profile 하위는 **탭 루트만 허용**(SAFE_ROUTES '/profile' — 접두
+ *  불일치), 그 외 /profile/*(edit·diet·restrictions 등)는 전부 편집/작업 화면
+ *  간주 — 회피 재료 입력 등 안전 데이터 유실 방지(비저장 화면도 막히지만 무해). */
 const BLOCKED_ROUTE_RE: readonly RegExp[] = [
   /^\/scan/, // /scan(카메라·결과) + /scan-order(주문 카드) 접두 일치
   /^\/onboarding/,
-  /^\/profile\/edit/,
+  /^\/profile\//, // 하위 전체 — 탭 루트 '/profile'은 슬래시 없음 = 비차단
   /\/review$/, // food/[id]/review 작성/수정 — /reviews(목록)는 제외 아님
 ];
 

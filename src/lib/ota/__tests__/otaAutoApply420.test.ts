@@ -33,13 +33,13 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
     }
   });
 
-  it('제외 화면 명시 목록 — 스캔 전 과정·주문 카드·리뷰 작성·온보딩·프로필 수정', () => {
-    for (const p of ['/scan', '/scan-order', '/food/7/review', '/onboarding', '/profile/edit']) {
+  it('제외 화면 — 스캔 전 과정·주문 카드·리뷰 작성·온보딩·프로필 하위 전체(Codex #18)', () => {
+    for (const p of ['/scan', '/scan-order', '/food/7/review', '/onboarding', '/profile/edit', '/profile/diet', '/profile/restrictions', '/profile/saved']) {
       expect(isBlockedRoute(p)).toBe(true);
       expect(otaApplyDecision({ prod: true, pathname: p, mutating: 0 })).toBe('defer');
     }
     for (const p of ['/', '/food', '/profile', '/food/7', '/food/7/reviews']) {
-      expect(isBlockedRoute(p)).toBe(false); // 리뷰 "목록"은 제외 아님 — 작성만
+      expect(isBlockedRoute(p)).toBe(false); // 탭 루트·리뷰 "목록"은 제외 아님
     }
   });
 });
