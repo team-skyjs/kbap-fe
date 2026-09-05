@@ -445,7 +445,8 @@
     "sort_food_review_count": "เมนูที่มีรีวิวมากสุด",
     "sort_helpful": "มีประโยชน์ที่สุด",
     "ratingAll": "ทุกคะแนน",
-    "ratingMin": "{{min}} ดาวขึ้นไป"
+    "ratingMin": "{{min}} ดาวขึ้นไป",
+    "filterByProfile": "กรองตามโปรไฟล์"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",
@@ -604,7 +605,9 @@
       "sides": "เครื่องเคียง"
     },
     "filterAll": "ทั้งหมด",
-    "reviewsSub": "อ่านก่อนสั่ง"
+    "reviewsSub": "อ่านก่อนสั่ง",
+    "chipForYou": "สำหรับคุณ",
+    "chipNearby": "ใกล้เคียง"
   },
   "onboarding": {
     "welcomeTag": "รู้ว่าอะไรกินได้อย่างปลอดภัย — ก่อนสั่ง",

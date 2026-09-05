@@ -445,7 +445,8 @@
     "sort_food_review_count": "Блюда с наибольшим числом отзывов",
     "sort_helpful": "Самые полезные",
     "ratingAll": "Все оценки",
-    "ratingMin": "От {{min}} звёзд"
+    "ratingMin": "От {{min}} звёзд",
+    "filterByProfile": "Фильтр по профилю"
   },
   "ranking": {
     "headerTitle": "Мой рейтинг",
@@ -604,7 +605,9 @@
       "sides": "Гарниры"
     },
     "filterAll": "Все",
-    "reviewsSub": "Прочитайте перед заказом"
+    "reviewsSub": "Прочитайте перед заказом",
+    "chipForYou": "Для вас",
+    "chipNearby": "Рядом"
   },
   "onboarding": {
     "welcomeTag": "Узнайте, что безопасно есть — ещё до заказа.",

@@ -445,7 +445,8 @@
     "sort_food_review_count": "Hidangan paling banyak diulas",
     "sort_helpful": "Paling membantu",
     "ratingAll": "Semua rating",
-    "ratingMin": "{{min}}+ bintang"
+    "ratingMin": "{{min}}+ bintang",
+    "filterByProfile": "Filter sesuai profil"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",
@@ -604,7 +605,9 @@
       "sides": "Lauk"
     },
     "filterAll": "Semua",
-    "reviewsSub": "Baca sebelum memesan"
+    "reviewsSub": "Baca sebelum memesan",
+    "chipForYou": "Untukmu",
+    "chipNearby": "Terdekat"
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",

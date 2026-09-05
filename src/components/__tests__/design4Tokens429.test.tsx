@@ -74,7 +74,7 @@ it('② TabBar — 5슬롯 키·순서: home, food, [scan], reviews, profile', (
   expect(src).toContain("'home' | 'food' | 'reviews' | 'profile'");
 });
 
-it('③ RiskMark — 상태별 실루엣 유지(헌법 형태 채널, Codex #27 P1 판정) + 글리프 상이', () => {
+it('③ RiskMark — 4상태 원형 통일(9/5 예진 확정 "싹 다 시안대로") + 글리프 상이', () => {
   const trees = (['safe', 'caution', 'danger', 'unable'] as const).map((state) => {
     let t!: renderer.ReactTestRenderer;
     renderer.act(() => {
@@ -82,16 +82,12 @@ it('③ RiskMark — 상태별 실루엣 유지(헌법 형태 채널, Codex #27 
     });
     return JSON.stringify(t.toJSON());
   });
-  expect(new Set(trees).size).toBe(4);
+  expect(new Set(trees).size).toBe(4); // 색 소거 전제로도 렌더 트리(글리프)가 전부 다름
   const src = require('fs').readFileSync('src/components/RiskMark.tsx', 'utf8') as string;
-  // 실루엣 4종 전부 실존 — 원(safe)·삼각(caution)·팔각(danger)·마름모(unable)
-  expect(src).toContain('r="10.2"');
-  expect(src).toContain('M12 2.6 L22 20 H2 Z');
-  expect(src).toContain('M8.2 2.5 H15.8');
-  expect(src).toContain('M12 1.8 L22.2 12');
-  // 글리프(보조 채널) 유지 + RiskBadge 내부 마크 = 동일 실루엣 재사용
+  expect(src).toContain('r="10.2"'); // 원형 실루엣
+  expect(src).not.toContain('M12 2.6 L22 20 H2 Z'); // 상태별 실루엣(삼각 등) 소멸
+  // 글리프(형태 구분 담당) 유지
   expect(src).toContain('M7.5 12.4 l3 3 L16.6 8.8');
-  expect(require('fs').readFileSync('src/components/RiskBadge.tsx', 'utf8') as string).toContain('<Silhouette state={state} />');
 });
 
 it('④ Btn — disabled(off) = bg line(#EAEBEE)·텍스트 inkDisabled / secondary 신설', () => {

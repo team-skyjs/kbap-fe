@@ -445,7 +445,8 @@
     "sort_food_review_count": "評價最多的菜色",
     "sort_helpful": "最有幫助",
     "ratingAll": "全部評分",
-    "ratingMin": "{{min}}分以上"
+    "ratingMin": "{{min}}分以上",
+    "filterByProfile": "按個人資料篩選"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -604,7 +605,9 @@
       "sides": "小菜"
     },
     "filterAll": "全部",
-    "reviewsSub": "點餐前先看看"
+    "reviewsSub": "點餐前先看看",
+    "chipForYou": "為你推薦",
+    "chipNearby": "附近"
   },
   "onboarding": {
     "welcomeTag": "點餐前，先知道什麼能安心吃。",

@@ -480,8 +480,9 @@ const styles = StyleSheet.create({
   extrasChipText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
-  helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 30, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 4 },
-  helpful: { fontSize: 12, fontWeight: '500', color: C.ink2 },
+  // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
+  helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 30, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 4, backgroundColor: '#FFFFFF' },
+  helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },
   strip: { flexDirection: 'row', gap: 6 },

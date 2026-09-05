@@ -487,7 +487,8 @@
     "sort_food_review_count": "Most reviewed dishes",
     "sort_helpful": "Most helpful",
     "ratingAll": "All ratings",
-    "ratingMin": "{{min}}+ stars"
+    "ratingMin": "{{min}}+ stars",
+    "filterByProfile": "Filter by profile"
   },
   "ranking": {
     "headerTitle": "My Ranking",
@@ -758,7 +759,9 @@
       "sides": "Sides"
     },
     "filterAll": "All",
-    "reviewsSub": "Read before you order"
+    "reviewsSub": "Read before you order",
+    "chipForYou": "For You",
+    "chipNearby": "Nearby"
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",

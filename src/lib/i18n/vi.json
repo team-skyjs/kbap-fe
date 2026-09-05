@@ -445,7 +445,8 @@
     "sort_food_review_count": "Món nhiều đánh giá nhất",
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
-    "ratingMin": "Từ {{min}} sao"
+    "ratingMin": "Từ {{min}} sao",
+    "filterByProfile": "Lọc theo hồ sơ"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
@@ -604,7 +605,9 @@
       "sides": "Món phụ"
     },
     "filterAll": "Tất cả",
-    "reviewsSub": "Đọc trước khi gọi món"
+    "reviewsSub": "Đọc trước khi gọi món",
+    "chipForYou": "Dành cho bạn",
+    "chipNearby": "Gần đây"
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
