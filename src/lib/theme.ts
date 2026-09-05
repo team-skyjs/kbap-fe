@@ -11,7 +11,7 @@
  *  riskText·shadowGlow·shBadge·type). */
 export const color = {
   primary: '#FF7134', // Button/Primary 4123:3985 · FAB 4095:1858
-  primaryPress: '#9A08C2', // 시안 Pressed 그대로 — 9/5 예진 확정("싹 다 시안대로")
+  primaryPress: '#E8602A', // 9/5 예진 실기 수정 — 시안 보라(#9A08C2) 거부, primary 10% 어둡게
   // 9/5 예진 확정: 대비 조정 변형 폐기 — 소형 텍스트도 시안 원색(P-031 4.5:1 계약 종료)
   primaryText: '#FF7134',
   primary2: '#FF9A6E', // gradient 2nd stop(현 규칙 유지)

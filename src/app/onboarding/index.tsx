@@ -683,7 +683,6 @@ function PresetsStep({ presets, selected, onToggle, t }: { presets: ResolvedPres
                   hitSlop={4}
                   testID={`preset-${p.id}`}
                 >
-                  {on && <IconCheck size={14} color={C.primary} />}
                   <Text style={[styles.presetChipText, on && styles.presetChipTextOn]}>{t(p.labelKey)}</Text>
                 </Pressable>
               );
@@ -811,13 +810,13 @@ const styles = StyleSheet.create({
   // P-133 국적 화면(시안 kbap-ob4): 헤더 56/14 패딩 골격은 body 공용 — 여기선 스텝 내부 규격
   natHead: { paddingTop: 8 },
   // P-203: 프리셋 칩 — 선택 = 색만(보더 폭 동일 — 프레임 불변)
-  // KB-433 §4-③: 그룹 라벨 14/500 + Tag(D-1 — 선택 primaryTint+primary+check / 비선택 #EAEBEE)
+  // KB-433 §4-③ → 9/5 예진 수정: Tag 선택 = 색만(체크 아이콘 소멸 — 폭 밀림 방지, P-103/151 프레임 불변)
   presetGroup: { fontSize: 14, fontWeight: '500', color: C.ink2, marginBottom: 8 },
   presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   presetChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   presetChipOn: { borderColor: C.primary, backgroundColor: primaryTint },
   presetChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  presetChipTextOn: { color: C.primaryText },
+  presetChipTextOn: { color: C.primaryText }, // 굵기 400→400 유지(폭 고정) — 색만 변화
   natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
   natSearchFocus: { borderColor: C.primary },
   natSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
