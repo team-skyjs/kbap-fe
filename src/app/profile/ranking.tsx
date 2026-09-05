@@ -3,7 +3,7 @@
  * → 메달 히어로(RankMedal 56 — 월계수 일러스트 SVG 부재 생략) → 등급명 20/700 +
  * ko 등급 필 → 시식 카운트 문구 → 진행 카드(별 그리드 6열 — 1별=1pt, 다음 등급
  * 간격 30pt 초과 구간은 규칙 불일치로 진행 바 대체(발주 규정·REPORTS)) →
- * Score breakdown 3열 카드(reviews·variety 잠금 표기 — 현 매핑 무변, scans 활성) →
+ * Score breakdown 3열 카드(P-283: 리뷰·다양성·스캔 3칸 전부 서버 breakdown 실배선) →
  * All ranks 3열 그리드(현재 = primary 보더 + NOW 배지) → FixedBottom "Scan a menu +2".
  *
  * Data via useRanking() — 계약·계산 무변. 등급명 i18n 키(BE 번역 미송신).
@@ -15,8 +15,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
-import { Btn, RankMedal, SubHeader, IconScanLines } from '@/components';
-import { D4Lock, D4ForkKnife } from '@/components/design4Assets';
+import { Btn, RankMedal, SubHeader, IconScanLines, IconTabReviews } from '@/components';
+import { D4ForkKnife } from '@/components/design4Assets';
 import { ScrollView } from 'react-native';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useRanking } from '@/lib/data/useRanking';
@@ -140,24 +140,26 @@ function RankingBody({ rk }: { rk: Ranking }) {
         <Text style={styles.secTitle}>{t('ranking.breakdownTitle')}</Text>
         <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
       </View>
-      {/* 내역 카드 3열 — reviews·variety = 잠금(현 매핑 무변 — P-048·P-058), scans 활성 */}
+      {/* P-283(9/5 예진 확정): 3칸 전부 실배선 — 서버 breakdown 실값(리뷰 10·고유 음식 5·
+          스캔 2pt, Ranking.kt). 자물쇠+Coming 하드코딩 소멸. 리뷰 아이콘 = 시안
+          점수 내역 카드에 활성 리뷰 아이콘 부재 → 리뷰 탭 아이콘 통일(발주 규정·REPORTS) */}
       <View style={styles.breakCard}>
         <BreakCol
-          icon={<D4Lock size={20} color={C.ink3} />}
+          icon={<IconTabReviews size={20} color={C.primary} />}
           label={t('ranking.reviewsLabel')}
           labelKo={t('ranking.reviewsLabelKo')}
-          detail={t('ranking.reviewsComing')}
-          detailColor="#30C120"
-          locked
+          detail={bd ? t('ranking.reviewsDetail', { count: bd.reviews.count }) : ''}
+          detailColor={C.ink3}
+          pts={bd ? t('ranking.gain', { points: bd.reviews.points }) : undefined}
         />
         <View style={styles.breakDiv} />
         <BreakCol
-          icon={<D4Lock size={20} color={C.ink3} />}
+          icon={<D4ForkKnife size={20} color={C.primary} />}
           label={t('ranking.diversityLabel')}
           labelKo={t('ranking.diversityLabelKo')}
-          detail={t('ranking.reviewsComing')}
-          detailColor="#30C120"
-          locked
+          detail={bd ? t('ranking.diversityDetail', { count: bd.diversity.count }) : ''}
+          detailColor={C.ink3}
+          pts={bd ? t('ranking.gain', { points: bd.diversity.points }) : undefined}
         />
         <View style={styles.breakDiv} />
         <BreakCol
@@ -201,7 +203,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
   );
 }
 
-/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(잠금 = opacity 0.2 "-"). */
+/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(P-283: 3칸 전부 활성 — locked 소멸). */
 function BreakCol({
   icon,
   label,
@@ -209,7 +211,6 @@ function BreakCol({
   detail,
   detailColor,
   pts,
-  locked,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -217,7 +218,6 @@ function BreakCol({
   detail: string;
   detailColor: string;
   pts?: string;
-  locked?: boolean;
 }) {
   return (
     <View style={styles.breakCol}>
@@ -225,8 +225,8 @@ function BreakCol({
       <Text style={styles.breakLabel} numberOfLines={1}>{label}</Text>
       <Text style={styles.breakKo} numberOfLines={1}>{labelKo}</Text>
       <Text style={[styles.breakDetail, { color: detailColor }]} numberOfLines={2}>{detail}</Text>
-      <View style={[styles.gainPill, locked && { opacity: 0.2 }]}>
-        <Text style={styles.gainText}>{locked ? '-' : pts}</Text>
+      <View style={styles.gainPill}>
+        <Text style={styles.gainText}>{pts}</Text>
       </View>
     </View>
   );
