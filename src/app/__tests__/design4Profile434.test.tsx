@@ -142,6 +142,27 @@ it('③-b 탈퇴 확정 = primary 오렌지(예진 확정 9/5) — danger 빨강
   expect(src).toContain('bulletDivider'); // 첫 카드 하단 line 1px
 });
 
+it('Codex #33 P2 4건 — 진행 바 티어 상대·식이 진입 복원·영수증 i18n·리뷰 대상 선택', () => {
+  const fs = require('fs');
+  const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
+  // ④ 진행 바 = (score-cur.at)/(next.at-cur.at) — 랭킹 화면 동일식
+  expect(profile).toContain('rank.score - (curTier?.at ?? 0)');
+  expect(profile).toContain('nextTier.at - (curTier?.at ?? 0)');
+  // ② /profile/diet 진입 복원(dietCategories 유일 편집 경로)
+  expect(profile).toContain("router.push('/profile/diet' as Href)");
+  const detail = fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8') as string;
+  // ③ 영수증 라벨 i18n 경유(하드코딩 0)
+  for (const k of ['receiptDate', 'receiptLocation', 'receiptTotal']) expect(detail).toContain(`t('myFoods.${k}')`);
+  expect(detail).not.toMatch(/>DATE<|>LOCATION<|>TOTAL</);
+  for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
+    const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
+    for (const k of ['receiptDate', 'receiptLocation', 'receiptTotal', 'dishes']) expect(typeof j.myFoods[k]).toBe('string');
+  }
+  // ① 다품목 = 선택 시트(전 dish 리뷰 가능), 1개 = 직행
+  expect(detail).toContain('reviewables.length === 1');
+  expect(detail).toContain('...reviewables.map((it) => ({');
+});
+
 it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(All·Safe·Avoid·Warning) 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
   expect(src).toContain('<FoodGridCard'); // D-2 카드 재사용

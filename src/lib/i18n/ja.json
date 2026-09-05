@@ -986,7 +986,10 @@
     "emptyOrdersBody": "スキャンしたメニューから注文するとここに記録されます。",
     "emptyScansTitle": "まだスキャン履歴がありません",
     "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。",
-    "dishes": "料理"
+    "dishes": "料理",
+    "receiptDate": "日付",
+    "receiptLocation": "場所",
+    "receiptTotal": "合計"
   },
   "ota": {
     "ready": "アップデートの準備ができました",

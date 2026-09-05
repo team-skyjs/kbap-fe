@@ -124,6 +124,7 @@ export default function Profile() {
   }
 
   const rank = me?.rank;
+  const curTier = rank ? tierByKey(rank.tier) : null;
   const nextTier = rank?.nextTier ? tierByKey(rank.nextTier) : null;
 
   return (
@@ -203,7 +204,8 @@ export default function Profile() {
                         style={[
                           styles.rankFill,
                           {
-                            width: `${nextTier ? Math.min(100, Math.round((rank.score / Math.max(1, nextTier.at)) * 100)) : 100}%`,
+                            // Codex #33 P2: 티어 상대 진행 — 랭킹 화면과 동일식 (score-cur.at)/(next.at-cur.at)
+                            width: `${nextTier ? Math.min(100, Math.max(0, Math.round(((rank.score - (curTier?.at ?? 0)) / Math.max(1, nextTier.at - (curTier?.at ?? 0))) * 100))) : 100}%`,
                           },
                         ]}
                       />
@@ -254,6 +256,11 @@ export default function Profile() {
               <MenuRow label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
               {FLAGS.reviewsEnabled && (
                 <MenuRow label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
+              )}
+              {/* Codex #33 P2: 식이 카테고리 편집 = /profile/diet 유일 편집 경로(1.1 dietCategories) —
+                  섹션 소멸로 진입 0이 되던 것 복원. 시안 §1-4 목록 부재 = 질문 누적(My Foods 행 계열) */}
+              {FLAGS.dietPresetsEnabled && (
+                <MenuRow label={t('profile.dietTitle')} onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
                 <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />

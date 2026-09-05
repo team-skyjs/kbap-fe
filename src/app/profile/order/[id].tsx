@@ -8,7 +8,7 @@
  * 카드/다운로드 — 공유 기능 부재, 기획 필요). 데이터 훅·뷰어 무변.
  */
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -36,8 +36,18 @@ export default function OrderDetailScreen() {
   const cur = me?.currency ?? currencyForCountry(me?.nationality);
   const conv = (krw: number) => convertKrw(krw, cur)?.replace(/^= /, '') ?? null;
 
-  // FixedBottom Write a review — 시안 단일 버튼: 첫 리뷰 가능 항목(질문 누적 — 다중 dish 대상)
-  const reviewable = (q.data?.items ?? []).find((it) => it.foodId != null && it.ready !== false);
+  // Codex #33 P2: 시안 단일 버튼 + 전 dish 리뷰 가능 유지 — 1개 = 직행, 2+ = 선택 시트
+  const reviewables = (q.data?.items ?? []).filter((it) => it.foodId != null && it.ready !== false);
+  const onWriteReview = () => {
+    if (reviewables.length === 1) return router.push(`/food/${reviewables[0].foodId}/review` as Href);
+    Alert.alert(t('reviews.writeReview'), undefined, [
+      ...reviewables.map((it) => ({
+        text: it.menuName,
+        onPress: () => router.push(`/food/${it.foodId}/review` as Href),
+      })),
+      { text: t('common.cancel'), style: 'cancel' as const },
+    ]);
+  };
 
   return (
     <View style={styles.root}>
@@ -63,12 +73,12 @@ export default function OrderDetailScreen() {
           {/* 영수증 카드(4150:14634) — 라벨 12/600 #B1B5BD + 값 14/500 #1C1E21 */}
           <View style={styles.receipt} testID="order-receipt">
             <View style={styles.rcptRow}>
-              <Text style={styles.rcptLbl}>DATE</Text>
+              <Text style={styles.rcptLbl}>{t('myFoods.receiptDate')}</Text>
               <Text style={styles.rcptVal}>{formatOrderDate(q.data.orderedAt)}</Text>
             </View>
             {!!q.data.roadAddress && (
               <View style={styles.rcptRow}>
-                <Text style={styles.rcptLbl}>LOCATION</Text>
+                <Text style={styles.rcptLbl}>{t('myFoods.receiptLocation')}</Text>
                 <Text style={[styles.rcptVal, styles.rcptValWrap]} numberOfLines={2}>{q.data.roadAddress}</Text>
               </View>
             )}
@@ -76,7 +86,7 @@ export default function OrderDetailScreen() {
               <>
                 <View style={styles.rcptLine} />
                 <View style={styles.rcptRow} testID="order-total">
-                  <Text style={styles.rcptLbl}>TOTAL</Text>
+                  <Text style={styles.rcptLbl}>{t('myFoods.receiptTotal')}</Text>
                   <Text style={styles.rcptTotal}>
                     {formatKrw(q.data.totalPrice)}
                     {conv(q.data.totalPrice) ? ` · ${conv(q.data.totalPrice)}` : ''}
@@ -130,10 +140,10 @@ export default function OrderDetailScreen() {
         </ScrollView>
       )}
 
-      {/* FixedBottom — outline Write a review(시안 단일 버튼) */}
-      {!!q.data && !!reviewable && (
+      {/* FixedBottom — outline Write a review(시안 단일 버튼, 다품목 = 선택 시트) */}
+      {!!q.data && reviewables.length > 0 && (
         <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="order-bottom-bar">
-          <Btn variant="ghost" onPress={() => router.push(`/food/${reviewable.foodId}/review` as Href)} testID="order-write-review">
+          <Btn variant="ghost" onPress={onWriteReview} testID="order-write-review">
             {t('reviews.writeReview')}
           </Btn>
         </View>

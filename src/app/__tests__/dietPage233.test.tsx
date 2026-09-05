@@ -138,9 +138,9 @@ it('무변경 저장 = 무모달·조용한 복귀(재량 확인 반영)', async
 });
 
 it('배선 소스 잠금 — 해제 안내 문구·P-227 승인 팝업 존치(경로 분리)', () => {
-  // KB-434 D-6: 프로필 탭 식이 섹션 소멸 — /profile/diet 전체 페이지는 무변(진입 = 회피 편집 경로)
+  // KB-434 D-6: 프로필 탭 식이 '칩 섹션' 소멸 — 진입은 메뉴 행(/profile/diet, Codex #33 P2 복원)
   const fs = require('fs');
-  expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).not.toContain('profile.dietTitle');
+  expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain("router.push('/profile/diet' as Href)");
   const page = fs.readFileSync('src/app/profile/diet.tsx', 'utf8') as string;
   expect(page).toContain("t('profile.dietUncheckHint')"); // 해제 = 회피 불변 안내
   expect(page).toContain('unionResolvedCodes(dietPresets, added, cur)'); // 신규분만 합집합

@@ -983,7 +983,10 @@
     "emptyOrdersBody": "Order from a scanned menu and your history shows up here.",
     "emptyScansTitle": "No scans yet",
     "emptyScansBody": "Scan a menu and the dishes you've checked show up here.",
-    "dishes": "Dishes"
+    "dishes": "Dishes",
+    "receiptDate": "DATE",
+    "receiptLocation": "LOCATION",
+    "receiptTotal": "TOTAL"
   },
   "ota": {
     "ready": "An update is ready",

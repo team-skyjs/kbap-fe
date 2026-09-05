@@ -987,7 +987,10 @@
     "emptyOrdersBody": "Pide desde un menú escaneado y tu historial aparecerá aquí.",
     "emptyScansTitle": "Aún no hay escaneos",
     "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí.",
-    "dishes": "Platos"
+    "dishes": "Platos",
+    "receiptDate": "FECHA",
+    "receiptLocation": "UBICACIÓN",
+    "receiptTotal": "TOTAL"
   },
   "ota": {
     "ready": "Hay una actualización lista",

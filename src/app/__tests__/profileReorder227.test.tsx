@@ -110,13 +110,13 @@ beforeEach(() => {
   mockUseMe.mockReturnValue(ME([...NO_ALCOHOL_CODES, 'EGG'], ['NO_ALCOHOL']));
 });
 
-it('① KB-434 D-6: 식이 칩 섹션 = 프로필 탭에서 소멸(시안 부재) — 랭킹 카드·기피 섹션 렌더', () => {
+it('① KB-434 D-6: 식이 칩 섹션 = 프로필 탭에서 소멸(시안 부재) — 진입은 메뉴 행으로 존치', () => {
   const tree = render();
   const s = flat(tree);
-  expect(s).not.toContain('profile.dietTitle'); // 식이 섹션 소멸(전체 페이지 /profile/diet는 무변)
+  expect(tree.root.findAll((n) => n.props?.testID === 'diet-NO_ALCOHOL')).toHaveLength(0); // 칩 소멸
   expect(s).toContain('profile.restrictionsTitle');
+  expect(s).toContain('profile.dietTitle'); // Codex #33 P2: /profile/diet 진입 행(dietCategories 유일 편집 경로)
   expect(tree.root.findAll((n) => n.props?.testID === 'profile-rank-card').length).toBeGreaterThanOrEqual(1);
-  expect(tree.root.findAll((n) => n.props?.testID === 'diet-NO_ALCOHOL')).toHaveLength(0);
 });
 
 it('② KB-434: 랭킹 카드 = 기피 섹션 위(시안 순서 헤더→랭킹→기피→메뉴)', () => {

@@ -986,7 +986,10 @@
     "emptyOrdersBody": "Gọi món từ thực đơn đã quét và lịch sử sẽ hiện ở đây.",
     "emptyScansTitle": "Chưa có lượt quét nào",
     "emptyScansBody": "Quét thực đơn và các món bạn đã xem sẽ tập hợp ở đây.",
-    "dishes": "Món ăn"
+    "dishes": "Món ăn",
+    "receiptDate": "NGÀY",
+    "receiptLocation": "ĐỊA ĐIỂM",
+    "receiptTotal": "TỔNG"
   },
   "ota": {
     "ready": "Bản cập nhật đã sẵn sàng",
