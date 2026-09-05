@@ -1,14 +1,13 @@
 /**
  * RiskBadge (KB-429, 4095:1428) — 썸네일 좌상단 리본형 위험도 배지.
  * 26×34: 사각 22×31(radius 1) 상태색 fill + 흰 1.5px 보더 + shBadge 그림자,
- * 내부 = 흰 **상태별 실루엣**(RiskMark Silhouette 재사용 — 헌법 형태 채널) + 상태색 글리프.
+ * 내부 = 흰 원 14 + 상태색 글리프(9/5 예진 확정 — 시안 4095:1428 그대로, 실루엣 폐기).
  * 텍스트형 RiskPill과 별개(공존) — 썸네일 위 오프셋은 호출측(x 3~9, y 0).
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 import { color as C, shadow, type RiskState } from '@/lib/theme';
-import { Silhouette } from './RiskMark';
 
 const STATE_COLOR: Record<RiskState, string> = {
   safe: C.riskSafe,
@@ -50,12 +49,11 @@ export function RiskBadge({ state, testID }: { state: RiskState; testID?: string
   const c = STATE_COLOR[state];
   return (
     <View style={[styles.ribbon, { backgroundColor: c }]} testID={testID ?? `risk-badge-${state}`}>
-      <Svg width={14} height={14} viewBox="0 0 24 24">
-        <G fill="#FFFFFF">
-          <Silhouette state={state} />
-        </G>
-        <Glyph state={state} stroke={c} />
-      </Svg>
+      <View style={styles.dot}>
+        <Svg width={11} height={11} viewBox="0 0 24 24">
+          <Glyph state={state} stroke={c} />
+        </Svg>
+      </View>
     </View>
   );
 }
@@ -71,6 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadow.shBadge,
   },
+  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
 });
 
 export default RiskBadge;

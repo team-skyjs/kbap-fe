@@ -50,7 +50,15 @@ type GridTab = 'popular' | 'saved' | 'food';
 /** 위험 칩 4종 — All + personalRisk 3상태(라벨은 현 위험 키: Avoid=danger·Warning=caution). */
 type RiskChip = 'all' | 'safe' | 'danger' | 'caution';
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
-type ReviewChip = 'all' | 'popular';
+/** 9/5 예진 확정("싹 다 시안대로"): For You·Nearby도 시안대로 렌더 — 서버 파라미터
+ *  부재라 선택해도 결과는 현재(latest) 유지(무동작), Popular만 sort=helpful. */
+type ReviewChip = 'all' | 'foryou' | 'nearby' | 'popular';
+const REVIEW_CHIPS: [ReviewChip, string][] = [
+  ['all', 'home.filterAll'],
+  ['foryou', 'home.chipForYou'],
+  ['nearby', 'home.chipNearby'],
+  ['popular', 'reviews.sort_helpful'],
+];
 
 const GRID_N = 4; // 발주: 첫 화면 2행(4장) 후 More
 const RECENT_N = 4;
@@ -250,10 +258,10 @@ export default function Home() {
               <>
                 <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-reviews-head" />
                 <View style={styles.chipRow}>
-                  {(['all', 'popular'] as ReviewChip[]).map((c) => (
+                  {REVIEW_CHIPS.map(([c, key]) => (
                     <Chip
                       key={c}
-                      label={c === 'all' ? t('home.filterAll') : t('reviews.sort_helpful')}
+                      label={t(key)}
                       selected={reviewChip === c}
                       onPress={() => setReviewChip(c)}
                       testID={`home-review-chip-${c}`}

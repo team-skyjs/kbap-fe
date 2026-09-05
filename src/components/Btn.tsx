@@ -138,9 +138,10 @@ const VARIANTS: Record<
     label: { color: '#fff' },
   },
   // KB-429(4123:3640): 흰 bg + line2 1px + ink 14/500
+  // 9/5 시안 실측: Outline Pressed = bg #F2F3F6 + border #B1B5BD
   ghost: {
     container: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line2 },
-    pressed: { backgroundColor: C.surface2 },
+    pressed: { backgroundColor: '#F2F3F6', borderColor: C.inkMute },
     label: { color: C.ink, fontSize: 14, fontWeight: '500' as const },
   },
   // KB-429(4123:3997): disabled — bg line(#EAEBEE) / 텍스트 inkDisabled
@@ -149,10 +150,10 @@ const VARIANTS: Record<
     pressed: {},
     label: { color: C.inkDisabled },
   },
-  // KB-429(4123:4002): Alert 취소 등 — bg inkMute + 흰 텍스트
+  // KB-429(4123:4002): Alert 취소 등 — bg inkMute + 흰 텍스트. Pressed = 시안 실측 #9196A1
   secondary: {
     container: { backgroundColor: C.inkMute },
-    pressed: { backgroundColor: '#9EA3AC' },
+    pressed: { backgroundColor: '#9196A1' },
     label: { color: '#fff' },
   },
   danger: {

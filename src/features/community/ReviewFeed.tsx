@@ -2,9 +2,9 @@
  * ReviewFeed (P-179/KB-307 → KB-430 D-2) — 리뷰 탭 = 전역 최신 리뷰 피드.
  * 디자인 4차(4150:17070): AppBar(로고+벨, 홈 공용 StickyHeader) · 컨트롤 행 =
  * 정렬 드롭다운(FeedSort 5종 — 커맨드 센터 판정) · 리뷰 카드(4150:13934) ·
- * 플로팅 "Write a review" 필. 프로필 필터 토글·쿼터 넛지 카드는 서버 파라미터/
- * 클라 상태 부재로 숨김, 구 국가·음식·별점 칩도 시안 컨트롤 행 부재로 숨김 —
- * 전부 REPORTS [P-275] 기재(훅 계약은 무변).
+ * 플로팅 "Write a review" 필. 9/5 예진 확정("싹 다 시안대로"): "Filter by profile"
+ * 토글은 시안대로 렌더(서버 파라미터 부재 = 무동작). 구 국가·음식·별점 칩은
+ * 시안 컨트롤 행 부재로 숨김 유지(훅 계약은 무변).
  *
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
@@ -42,9 +42,11 @@ export function ReviewFeed() {
   const router = useRouter();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
-  // KB-430: 서버 필터 = sort만 노출(커맨드 센터 판정 — 프로필/국가/음식/별점 칩 숨김, 훅 계약 무변)
+  // KB-430 → 9/5 예진 확정: "Filter by profile" 토글도 시안대로 렌더 — 서버 파라미터
+  // 부재라 무동작(토글 상태만, 결과 = 현재 유지). 구 국가·음식·별점 칩은 시안 부재 = 숨김 유지.
   const [sort, setSort] = React.useState<FeedSort>('latest');
   const [sortSheet, setSortSheet] = React.useState(false);
+  const [profileFilter, setProfileFilter] = React.useState(false); // 무동작(시안 렌더 전용)
   const feed = useGlobalReviews(true, { sort });
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
@@ -94,8 +96,14 @@ export function ReviewFeed() {
       <Animated.FlatList
         ListHeaderComponent={
           (
-            /* KB-430 §2-2: 컨트롤 행 — 우측 정렬 드롭다운(bg #F2F3F6 r8, 14/700) */
+            /* KB-430 §2-2: 컨트롤 행 — 좌 프로필 토글(4150:17070 — 무동작) / 우 정렬 드롭다운 */
             <View style={styles.controlRow}>
+              <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
+                <View style={[styles.sw, profileFilter && styles.swOn]}>
+                  <View style={[styles.knob, profileFilter && styles.knobOn]} />
+                </View>
+                <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+              </Pressable>
               <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
                 <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
                 <IconChevronDown size={16} color="#4B4F58" />
@@ -324,8 +332,15 @@ export function FeedCard({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   list: { gap: 0 },
-  // KB-430 §2-2: 컨트롤 행
-  controlRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
+  // KB-430 §2-2: 컨트롤 행(4150:17070 — 좌 토글 + 우 드롭다운)
+  controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 8 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  // Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on primary, 노브 20 흰 + 그림자 2/2 b4 15%
+  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  swOn: { backgroundColor: C.primary },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knobOn: { alignSelf: 'flex-end' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
