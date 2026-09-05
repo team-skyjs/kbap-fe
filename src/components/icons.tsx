@@ -19,6 +19,8 @@
  */
 import * as React from 'react';
 import Svg, { Circle, G, Line, Path, Rect, type SvgProps } from 'react-native-svg';
+// 9/5 시안 원본 SVG(.fig 디코드 — 형태·치수 무수정): 시안 실존 아이콘은 D4 경로로 위임
+import { D4Camera, D4Check, D4ChevronDown, D4ChevronLeft, D4ChevronRight, D4Close, D4Download, D4FilePen, D4ForkKnife, D4Lock, D4MapPin, D4MoreVertical, D4OctagonAlert, D4Plus, D4Search, D4ThumbsUp } from './design4Assets';
 import { color as C } from '@/lib/theme';
 
 export type IconProps = {
@@ -57,22 +59,8 @@ export const IconHome = (p: IconProps) => (
     <Path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
   </Glyph>
 );
-export const IconFood = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" />
-    <Path d="M7 21h10" />
-    <Path d="M19.5 12 22 6" />
-    <Path d="M16.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.73 1.62" />
-    <Path d="M11.25 3c.27.1.8.53.74 1.36-.05.83-.93 1.2-.98 2.02-.06.78.33 1.24.72 1.62" />
-    <Path d="M6.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.74 1.62" />
-  </Glyph>
-);
-export const IconCamera = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" />
-    <Circle cx="12" cy="13" r="3" />
-  </Glyph>
-);
+export const IconFood = (p: IconProps) => <D4ForkKnife size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconCamera = (p: IconProps) => <D4Camera size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconCommunity = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -87,12 +75,7 @@ export const IconProfile = (p: IconProps) => (
     <Circle cx="12" cy="7" r="4" />
   </Glyph>
 );
-export const IconSearch = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="m21 21-4.34-4.34" />
-    <Circle cx="11" cy="11" r="8" />
-  </Glyph>
-);
+export const IconSearch = (p: IconProps) => <D4Search size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 /** P-138: 주문 카드 풀스크린 확대 — 네 모서리 확장(돋보기 아님, 시안 S2) */
 export const IconExpand = (p: IconProps) => (
   <Glyph {...p}>
@@ -102,29 +85,10 @@ export const IconExpand = (p: IconProps) => (
     <Path d="M3 21l7-7" />
   </Glyph>
 );
-export const IconChevron = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="m9 18 6-6-6-6" />
-  </Glyph>
-);
-export const IconDownload = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <Path d="m7 10 5 5 5-5" />
-    <Path d="M12 15V3" />
-  </Glyph>
-);
-export const IconChevronDown = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="m6 9 6 6 6-6" />
-  </Glyph>
-);
-export const IconArrowLeft = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="m12 19-7-7 7-7" />
-    <Path d="M19 12H5" />
-  </Glyph>
-);
+export const IconChevron = (p: IconProps) => <D4ChevronRight size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconDownload = (p: IconProps) => <D4Download size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconChevronDown = (p: IconProps) => <D4ChevronDown size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconArrowLeft = (p: IconProps) => <D4ChevronLeft size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconLogout = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="m16 17 5-5-5-5" />
@@ -132,29 +96,14 @@ export const IconLogout = (p: IconProps) => (
     <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
   </Glyph>
 );
-export const IconClose = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M18 6 6 18" />
-    <Path d="m6 6 12 12" />
-  </Glyph>
-);
-export const IconPlus = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M5 12h14" />
-    <Path d="M12 5v14" />
-  </Glyph>
-);
+export const IconClose = (p: IconProps) => <D4Close size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconPlus = (p: IconProps) => <D4Plus size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconMinus = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M5 12h14" />
   </Glyph>
 );
-export const IconLock = (p: IconProps) => (
-  <Glyph {...p}>
-    <Rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-    <Path d="M7 11V7a5 5 0 0 1 10 0v4" />
-  </Glyph>
-);
+export const IconLock = (p: IconProps) => <D4Lock size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconRetry = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
@@ -172,13 +121,7 @@ export const IconWifiOff = (p: IconProps) => (
     <Path d="m2 2 20 20" />
   </Glyph>
 );
-export const IconAlertTri = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-    <Path d="M12 9v4" />
-    <Path d="M12 17h.01" />
-  </Glyph>
-);
+export const IconAlertTri = (p: IconProps) => <D4OctagonAlert size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconBubbleEmpty = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
@@ -212,11 +155,7 @@ export const IconScanLines = (p: IconProps) => (
     <Path d="M7 16h6" />
   </Glyph>
 );
-export const IconCheck = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M20 6 9 17l-5-5" />
-  </Glyph>
-);
+export const IconCheck = (p: IconProps) => <D4Check size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconSpeech = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
@@ -246,12 +185,7 @@ export const IconTrash = (p: IconProps) => (
     <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </Glyph>
 );
-export const IconEdit = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-    <Path d="m15 5 4 4" />
-  </Glyph>
-);
+export const IconEdit = (p: IconProps) => <D4FilePen size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 export const IconList = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M3 5h.01" />
@@ -278,12 +212,7 @@ export const IconGlobe = (p: IconProps) => (
 );
 
 // lucide: thumbs-up
-export const IconThumbsUp = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
-    <Path d="M7 10v12" />
-  </Glyph>
-);
+export const IconThumbsUp = (p: IconProps) => <D4ThumbsUp size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 // lucide: thumbs-down
 export const IconThumbsDown = (p: IconProps) => (
   <Glyph {...p}>
@@ -292,20 +221,9 @@ export const IconThumbsDown = (p: IconProps) => (
   </Glyph>
 );
 // lucide: ellipsis
-export const IconMore = (p: IconProps) => (
-  <Glyph {...p}>
-    <Circle cx="12" cy="12" r="1" />
-    <Circle cx="19" cy="12" r="1" />
-    <Circle cx="5" cy="12" r="1" />
-  </Glyph>
-);
+export const IconMore = (p: IconProps) => <D4MoreVertical size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 // lucide: map-pin
-export const IconMapPin = (p: IconProps) => (
-  <Glyph {...p}>
-    <Path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
-    <Circle cx="12" cy="10" r="3" />
-  </Glyph>
-);
+export const IconMapPin = (p: IconProps) => <D4MapPin size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
 // lucide: zap — P-202 리뷰 3축(속도)
 export const IconZap = (p: IconProps) => (
   <Glyph {...p}>

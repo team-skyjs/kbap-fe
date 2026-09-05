@@ -10,6 +10,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, shadow } from '@/lib/theme';
 import { IconClose } from '@/components/icons';
+import { BrandGoogle, BrandKakao, BrandNaver } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
 import type { PlaceTagRef } from '@/lib/community/types';
 
@@ -63,10 +64,10 @@ function SheetShell({ children, onClose }: { children: React.ReactNode; onClose:
 
 /** KB-431 §2-6(4150:16861): 브랜드 색 버튼 3종(세로 스택) — 로고 에셋 없음 = 텍스트만.
  *  딥링크·좌표 폴백 로직은 무변(mapUrls). */
-const MAP_BTN: Record<MapApp, { bg: string; border?: string; text: string }> = {
-  google: { bg: '#FFFFFF', border: '#DCDEE3', text: '#1C1E21' },
-  naver: { bg: '#1EC800', text: '#FFFFFF' },
-  kakao: { bg: '#FFE812', text: '#1C1E21' },
+const MAP_BTN: Record<MapApp, { bg: string; border?: string; text: string; Icon: typeof BrandGoogle }> = {
+  google: { bg: '#FFFFFF', border: '#DCDEE3', text: '#1C1E21', Icon: BrandGoogle },
+  naver: { bg: '#1EC800', text: '#FFFFFF', Icon: BrandNaver },
+  kakao: { bg: '#FFE812', text: '#1C1E21', Icon: BrandKakao },
 };
 
 export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onClose: () => void }) {
@@ -95,6 +96,7 @@ export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onCl
             onPress={() => void openMap(kind, place)}
             testID={`map-${kind}`}
           >
+            {(() => { const I = MAP_BTN[kind].Icon; return <I height={20} />; })()}
             <Text style={[styles.mapBtnText, { color: MAP_BTN[kind].text }]}>{t(`community.map.${kind}`)}</Text>
           </Pressable>
         ))}
@@ -111,6 +113,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', color: C.ink },
   sub: { fontSize: 14, fontWeight: '400', color: C.ink2 },
   mapCol: { gap: 8 },
-  mapBtn: { minHeight: 48, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  mapBtn: { minHeight: 48, borderRadius: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   mapBtnText: { fontSize: 16, fontWeight: '500' },
 });
