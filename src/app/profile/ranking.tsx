@@ -1,396 +1,286 @@
 /**
- * Ranking detail (mockup "My Ranking", fe-handoff §15) — 1:1 port of
- * my-ranking.jsx with the confirmed combo: cardStyle=department (VIP plate) ·
- * emblem=medal (starburst) · gauge=bar · ranksLayout=path.
+ * Ranking — KB-434 D-6(4150:14720, 375×1503). AppBar "My Ranking" → VIP MEMBERSHIP
+ * → 메달 히어로(RankMedal 56 — 월계수 일러스트 SVG 부재 생략) → 등급명 20/700 +
+ * ko 등급 필 → 시식 카운트 문구 → 진행 카드(별 그리드 6열 — 1별=1pt, 다음 등급
+ * 간격 30pt 초과 구간은 규칙 불일치로 진행 바 대체(발주 규정·REPORTS)) →
+ * Score breakdown 3열 카드(reviews·variety 잠금 표기 — 현 매핑 무변, scans 활성) →
+ * All ranks 3열 그리드(현재 = primary 보더 + NOW 배지) → FixedBottom "Scan a menu +2".
  *
- * Data via useRanking() (MOCK_MODE) — contract Ranking with breakdown. Tier
- * names are i18n'd by stable key (BE sends no translated name). No risk render.
- * All glyphs SVG (no emoji); hide-on-scroll header (§6).
+ * Data via useRanking() — 계약·계산 무변. 등급명 i18n 키(BE 번역 미송신).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import Animated from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
-import {
-  MedalEmblem,
-  StickyHeader,
-  useStickyScroll,
-  useHeaderHeight,
-  IconCheck,
-  IconLock,
-  IconSpeech,
-  IconFood,
-  IconScanLines,
-  IconCamera,
-} from '@/components';
+import { color as C } from '@/lib/theme';
+import { Btn, RankMedal, SubHeader, IconScanLines } from '@/components';
+import { D4Lock, D4ForkKnife } from '@/components/design4Assets';
+import { ScrollView } from 'react-native';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useRanking } from '@/lib/data/useRanking';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { TIERS, tierByKey, type Tier } from '@/lib/ranking';
-import type { Ranking, RankingFactor } from '@/lib/api/types';
+import type { Ranking } from '@/lib/api/types';
+
+const INK_TITLE = '#2F3137';
+const PRIMARY_10 = 'rgba(255,113,52,0.10)';
+/** 별 그리드 규칙(발주): 1별 = 1pt — 다음 등급 간격이 30pt(6×5)를 넘으면 규칙
+ *  불일치 → 진행 바 대체. export = 유닛 잠금용. */
+export const STAR_GRID_MAX = 30;
+
+// Stars.tsx STAR_D(시안 16그리드)를 46px로 스케일 — 채움 primary + 흰 20% 3px stroke
+const STAR_D =
+  'M8 1.3l2.06 4.18 4.61.67-3.34 3.25.79 4.59L8 11.82l-4.12 2.17.79-4.59L1.33 6.15l4.61-.67L8 1.3z';
+
+function PointStar({ filled }: { filled: boolean }) {
+  return (
+    <View style={styles.starCell}>
+      <Svg width={46} height={46} viewBox="0 0 16 16">
+        <Path
+          d={STAR_D}
+          fill={filled ? C.primary : C.hair}
+          stroke={filled ? 'rgba(255,255,255,0.2)' : C.hair}
+          strokeWidth={3 * (16 / 46)}
+          strokeLinejoin="round"
+        />
+      </Svg>
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <D4ForkKnife size={24} color={filled ? '#FFFFFF' : C.line2} />
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export default function RankingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { onScroll, hidden } = useStickyScroll();
-  const headerH = useHeaderHeight();
-
+  const bottom = useBottomInset(); // P-055
   const { data: rk, error, refetch } = useRanking(); // P-164: 에러 표면
 
   return (
     <View style={styles.root}>
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 40 }}
-      >
-        {/* P-164 → P-184: 로드 실패 = 공용 에러 — 정중앙은 블록 소유(수동 배치 금지) */}
+      <SubHeader title={t('ranking.headerTitle')} onBack={() => router.back()} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, { paddingBottom: 110 + bottom }]}>
+        {/* P-164 → P-184: 로드 실패 = 공용 에러 — 정중앙은 블록 소유 */}
         {error && !rk ? (
           <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
         ) : (
-          rk && <RankingBody rk={rk} onScan={() => router.navigate('/scan' as Href)} />
+          rk && <RankingBody rk={rk} />
         )}
-      </Animated.ScrollView>
+      </ScrollView>
 
-      <StickyHeader hidden={hidden} mode="back" title={t('ranking.headerTitle')} titleKo={t('ranking.headerTitleKo')} onBack={() => router.back()} />
+      {/* FixedBottom — outline "Scan a menu +2" */}
+      <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="ranking-bottom-bar">
+        <Btn variant="ghost" onPress={() => router.navigate('/scan' as Href)} testID="ranking-cta-scan">
+          {`${t('ranking.ctaScan')} ${t('ranking.ctaScanPts')}`}
+        </Btn>
+      </View>
     </View>
   );
 }
 
-function RankingBody({ rk, onScan }: { rk: Ranking; onScan: () => void }) {
+function RankingBody({ rk }: { rk: Ranking }) {
   const { t } = useTranslation();
   const cur: Tier = tierByKey(rk.tier) ?? TIERS[0];
   const next = rk.nextTier ? tierByKey(rk.nextTier) : null;
   const bd = rk.breakdown;
+  const span = next ? next.at - cur.at : 0;
+  const gained = Math.max(0, Math.min(span, rk.score - cur.at));
 
   return (
     <View style={styles.body}>
-      {/* 1 · VIP plate hero (department) */}
+      {/* 히어로 — VIP MEMBERSHIP + RankMedal 56 + 등급명 + ko 필 + 시식 문구 */}
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>{t('ranking.vipEyebrow')}</Text>
-        <View style={styles.heroEmblem}>
-          <MedalEmblem level={cur.level} size={84} />
+        <RankMedal level={cur.level} size={56} />
+        <Text style={styles.tierName}>{t(`ranking.tier.${cur.key}`)}</Text>
+        <View style={styles.tierPill}>
+          <Text style={styles.tierPillText}>
+            {t(`ranking.tierKo.${cur.key}`)} {t('ranking.levelLabel', { level: cur.level })}
+          </Text>
         </View>
-        <Text style={styles.tierEn}>{t(`ranking.tier.${cur.key}`)}</Text>
-        <Text style={styles.tierKo}>
-          {t(`ranking.tierKo.${cur.key}`)} {t('ranking.levelLabel', { level: cur.level })}
-        </Text>
-        <View style={styles.heroDivider} />
         {bd && (
           <Text style={styles.flavor}>
-            {t('ranking.flavorPre')} <Text style={styles.flavorB}>{bd.diversity.count}</Text> {t('ranking.flavorPost')}
+            {t('ranking.flavorPre')} {bd.diversity.count} {t('ranking.flavorPost')}
           </Text>
         )}
-        <Text style={styles.totalPts}>
-          <Text style={styles.totalPtsB}>{rk.score}</Text> {t('ranking.totalPointsSuffix')}
-        </Text>
       </View>
 
-      {/* 2 · next-tier bar gauge */}
-      {next ? (
-        <View style={styles.card}>
-          <View style={styles.gaugeHead}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.toNext}>
-                <Text style={styles.toNextNum}>{rk.pointsToNext}</Text> {t('ranking.ptsTo', { tier: t(`ranking.tier.${next.key}`) })}
-              </Text>
-              <Text style={styles.toNextKo}>{t('ranking.ptsToKo', { tier: t(`ranking.tierKo.${next.key}`) })}</Text>
+      {/* 진행 카드 — "pts to {tier}" + 점수, 별 그리드(1별=1pt) 또는 진행 바 대체 */}
+      {next && (
+        <View style={styles.progCard} testID="ranking-progress-card">
+          <View style={styles.progHead}>
+            <Text style={styles.progTo}>{t('ranking.ptsTo', { tier: t(`ranking.tier.${next.key}`) })}</Text>
+            <Text style={styles.progPts}>
+              <Text style={styles.progPtsCur}>{t('ranking.totalChip', { score: rk.score })}</Text>
+              <Text style={styles.progPtsGoal}> / {t('ranking.tickPts', { at: next.at })}</Text>
+            </Text>
+          </View>
+          {span > 0 && span <= STAR_GRID_MAX ? (
+            <View style={styles.starGrid} testID="ranking-star-grid">
+              {Array.from({ length: span }, (_, i) => (
+                <PointStar key={i} filled={i < gained} />
+              ))}
             </View>
-            <View style={styles.totalChip}>
-              <Text style={styles.totalChipText}>{t('ranking.totalChip', { score: rk.score })}</Text>
-            </View>
-          </View>
-          <Gauge score={rk.score} from={cur.at} to={next.at} />
-          <View style={styles.tickRow}>
-            <Text style={styles.tick}>{t('ranking.tickPts', { at: cur.at })}</Text>
-            <Text style={styles.tick}>{t('ranking.tickPts', { at: next.at })}</Text>
-          </View>
-        </View>
-      ) : (
-        <View style={[styles.card, styles.maxed]}>
-          <View style={styles.maxedIc}>
-            <IconCheck size={22} color={C.riskSafe} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.maxedTitle}>{t('ranking.topTier')}</Text>
-            <Text style={styles.maxedSub}>{t('ranking.topTierSub')}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* 3 · score breakdown */}
-      {bd && (
-        <View style={styles.sec}>
-          <View style={styles.secHead}>
-            <Text style={styles.secTitle}>{t('ranking.breakdownTitle')}</Text>
-            <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
-          </View>
-          <View style={styles.breakCard}>
-            {/* P-048·P-058(KB-125): 리뷰·다양성 팩터는 dim 예고 — 리뷰 기능이
-                MVP 제외라 다양성(리뷰 작성 적립)도 죽은 지표. 점수 가중치
-                (ranking.ts) 무변, 탭 요소 아님(무반응). 활성은 스캔뿐. */}
-            <ComingRow first icon={<IconSpeech size={20} color={C.ink3} />} label={t('ranking.reviewsLabel')} labelKo={t('ranking.reviewsLabelKo')} />
-            <ComingRow icon={<IconFood size={20} color={C.ink3} />} label={t('ranking.diversityLabel')} labelKo={t('ranking.diversityLabelKo')} />
-            <BreakRow icon={<IconScanLines size={20} color={C.primary} />} label={t('ranking.scansLabel')} labelKo={t('ranking.scansLabelKo')} detail={t('ranking.scansDetail', { count: bd.scans.count })} factor={bd.scans} />
-            {/* P-048: "리뷰 하나 더 +10점"(breakTotal) 행 제거 — 리뷰 흔적 정리 */}
-          </View>
-        </View>
-      )}
-
-      {/* 4 · all ranks (path ladder) */}
-      <View style={styles.sec}>
-        <View style={styles.secHead}>
-          <Text style={styles.secTitle}>{t('ranking.ladderTitle')}</Text>
-          <Text style={styles.secSub}>{t('ranking.ladderSub')}</Text>
-        </View>
-        {/* P-063: path(세로 연결선) → 리스트형 독립 카드 행 (디자인 ranksLayout='list' — LadderRow) */}
-        <View style={styles.ladder}>
-          {TIERS.map((tier) => (
-            <LadderRow key={tier.key} tier={tier} curLevel={cur.level} />
-          ))}
-        </View>
-      </View>
-
-      {/* 5 · CTA — P-048: 리뷰 쓰기 CTA 제거(리뷰 흔적 정리), 스캔 단독 filled */}
-      <View style={styles.ctaCol}>
-        <Cta onPress={onScan} icon={<IconCamera size={18} color="#fff" />} label={t('ranking.ctaScan')} pts={t('ranking.ctaScanPts')} filled />
-      </View>
-    </View>
-  );
-}
-
-/* ---------- ladder medallion (plain disc) ---------- */
-function Medallion({ level, color, muted, done, size = 42 }: { level: number; color: string; muted?: boolean; done?: boolean; size?: number }) {
-  const gid = React.useId();
-  return (
-    <Svg width={size} height={size} viewBox="0 0 42 42">
-      <Defs>
-        <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={muted ? '#EFE7DC' : color} />
-          <Stop offset="1" stopColor={muted ? '#E4D8C8' : color} stopOpacity={muted ? 1 : 0.82} />
-        </LinearGradient>
-      </Defs>
-      <Circle cx={21} cy={21} r={18} fill={`url(#${gid})`} />
-      <Circle cx={21} cy={21} r={18} fill="none" stroke={muted ? '#D8C9B6' : '#fff'} strokeOpacity={muted ? 1 : 0.5} strokeWidth={1.6} />
-      {done ? (
-        <Path d="M13 21.5 l5 5 L30 15" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-      ) : (
-        <SvgText x={21} y={27} textAnchor="middle" fill={muted ? '#B0A395' : '#fff'} fontFamily={font.displayBlack} fontSize={17}>
-          {String(level)}
-        </SvgText>
-      )}
-    </Svg>
-  );
-}
-
-/* ---------- bar gauge ---------- */
-function Gauge({ score, from, to }: { score: number; from: number; to: number }) {
-  const pct = to > from ? Math.max(0, Math.min(1, (score - from) / (to - from))) : 1;
-  return (
-    <View style={styles.track}>
-      <View style={[styles.fill, { width: `${Math.round(pct * 100)}%` }]}>
-        <View style={styles.knob} />
-      </View>
-    </View>
-  );
-}
-
-/* ---------- breakdown row ---------- */
-/** P-048·P-058: 예고(dim) 팩터 행 — 자물쇠 + "다음 업데이트에 제공" */
-function ComingRow({ icon, label, labelKo, first }: { icon: React.ReactNode; label: string; labelKo: string; first?: boolean }) {
-  const { t } = useTranslation();
-  return (
-    <View style={[styles.comingRow, !first && styles.breakRowBorder]}>
-      <View style={styles.breakIc}>{icon}</View>
-      <View style={styles.breakMeta}>
-        <View style={styles.breakLabelRow}>
-          <Text style={styles.breakLabel}>{label}</Text>
-          <Text style={styles.breakLabelKo}>{labelKo}</Text>
-        </View>
-        <Text style={styles.breakDetail}>{t('ranking.reviewsComing')}</Text>
-      </View>
-      <IconLock size={14} color={C.ink3} />
-    </View>
-  );
-}
-
-function BreakRow({ icon, label, labelKo, detail, factor, first }: { icon: React.ReactNode; label: string; labelKo: string; detail: string; factor: RankingFactor; first?: boolean }) {
-  const { t } = useTranslation();
-  return (
-    <View style={[styles.breakRow, !first && styles.breakRowBorder]}>
-      <View style={styles.breakIc}>{icon}</View>
-      <View style={styles.breakMeta}>
-        <View style={styles.breakLabelRow}>
-          <Text style={styles.breakLabel}>{label}</Text>
-          <Text style={styles.breakLabelKo}>{labelKo}</Text>
-        </View>
-        <Text style={styles.breakDetail}>{detail}</Text>
-      </View>
-      <View style={styles.gain}>
-        <Text style={styles.gainText}>{t('ranking.gain', { points: factor.points })}</Text>
-      </View>
-    </View>
-  );
-}
-
-/* ---------- path ladder row (connected climb trail) ---------- */
-function LadderRow({ tier, curLevel }: { tier: Tier; curLevel: number }) {
-  const { t } = useTranslation();
-  const state: 'done' | 'current' | 'locked' = tier.level < curLevel ? 'done' : tier.level === curLevel ? 'current' : 'locked';
-  const dim = state === 'locked';
-  return (
-    <View style={[styles.ladderRow, state === 'current' && styles.ladderRowCur, dim && styles.ladderRowLocked]}>
-      {state === 'current' ? (
-        <View style={styles.nodeCur}>
-          <Medallion level={tier.level} color={tier.color} />
-        </View>
-      ) : (
-        <Medallion level={tier.level} color={tier.color} muted={dim} done={state === 'done'} />
-      )}
-      <View style={styles.nodeMain}>
-        <View style={styles.nodeNameRow}>
-          <Text style={styles.nodeName}>{t(`ranking.tier.${tier.key}`)}</Text>
-          {state === 'current' && (
-            <View style={styles.nowPill}>
-              <Text style={styles.nowPillText}>{t('ranking.now')}</Text>
+          ) : (
+            /* 간격 30pt 초과 = 1별=1pt 규칙 불일치 — 진행 바 대체(발주 규정) */
+            <View style={styles.track} testID="ranking-progress-bar">
+              <View style={[styles.fill, { width: `${span > 0 ? Math.round((gained / span) * 100) : 100}%` }]} />
             </View>
           )}
         </View>
-        <Text style={styles.nodeKo}>{t(`ranking.tierKo.${tier.key}`)}</Text>
+      )}
+
+      {/* Score breakdown — 제목 16/500 + ko 13/500 */}
+      <View style={styles.secHead}>
+        <Text style={styles.secTitle}>{t('ranking.breakdownTitle')}</Text>
+        <Text style={styles.secSub}>{t('ranking.breakdownSub')}</Text>
       </View>
-      {state === 'done' && (
-        <View style={styles.rankRight}>
-          <IconCheck size={13} color={C.riskSafe} />
-          <Text style={styles.doneText}>{t('ranking.done')}</Text>
-        </View>
-      )}
-      {state === 'current' && <Text style={styles.atCur}>{t('ranking.entryPts', { at: tier.at })}</Text>}
-      {state === 'locked' && (
-        <View style={styles.rankRight}>
-          <IconLock size={12} color={C.ink3} />
-          <Text style={styles.atLocked}>{t('ranking.lockedPts', { at: tier.at })}</Text>
-        </View>
-      )}
+      {/* 내역 카드 3열 — reviews·variety = 잠금(현 매핑 무변 — P-048·P-058), scans 활성 */}
+      <View style={styles.breakCard}>
+        <BreakCol
+          icon={<D4Lock size={20} color={C.ink3} />}
+          label={t('ranking.reviewsLabel')}
+          labelKo={t('ranking.reviewsLabelKo')}
+          detail={t('ranking.reviewsComing')}
+          detailColor="#30C120"
+          locked
+        />
+        <View style={styles.breakDiv} />
+        <BreakCol
+          icon={<D4Lock size={20} color={C.ink3} />}
+          label={t('ranking.diversityLabel')}
+          labelKo={t('ranking.diversityLabelKo')}
+          detail={t('ranking.reviewsComing')}
+          detailColor="#30C120"
+          locked
+        />
+        <View style={styles.breakDiv} />
+        <BreakCol
+          icon={<IconScanLines size={20} color={C.primary} />}
+          label={t('ranking.scansLabel')}
+          labelKo={t('ranking.scansLabelKo')}
+          detail={bd ? t('ranking.scansDetail', { count: bd.scans.count }) : ''}
+          detailColor={C.ink3}
+          pts={bd ? t('ranking.gain', { points: bd.scans.points }) : undefined}
+        />
+      </View>
+
+      {/* All ranks — 3열 × 2행 + 마지막 full */}
+      <View style={styles.secHead}>
+        <Text style={styles.secTitle}>{t('ranking.ladderTitle')}</Text>
+        <Text style={styles.secSub}>{t('ranking.ladderSub')}</Text>
+      </View>
+      <View style={styles.rankGrid}>
+        {TIERS.map((tier) => {
+          const now = tier.level === cur.level;
+          return (
+            <View
+              key={tier.key}
+              style={[styles.rankCard, tier.level === 7 && styles.rankCardFull, now && styles.rankCardNow]}
+              testID={now ? 'rank-now' : `rank-${tier.key}`}
+            >
+              {now && (
+                <View style={styles.nowBadge}>
+                  <Text style={styles.nowBadgeText}>{t('ranking.now')}</Text>
+                </View>
+              )}
+              <RankMedal level={tier.level} size={28} />
+              <Text style={styles.rankName} numberOfLines={1}>{t(`ranking.tier.${tier.key}`)}</Text>
+              <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
+              <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
-/* ---------- CTA ---------- */
-function Cta({ icon, label, pts, filled, onPress }: { icon: React.ReactNode; label: string; pts: string; filled?: boolean; onPress: () => void }) {
+/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(잠금 = opacity 0.2 "-"). */
+function BreakCol({
+  icon,
+  label,
+  labelKo,
+  detail,
+  detailColor,
+  pts,
+  locked,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  labelKo: string;
+  detail: string;
+  detailColor: string;
+  pts?: string;
+  locked?: boolean;
+}) {
   return (
-    <Pressable style={({ pressed }) => [styles.cta, filled ? styles.ctaFilled : styles.ctaGhost, pressed && styles.ctaPressed]} onPress={onPress}>
-      {icon}
-      <Text style={[styles.ctaLabel, filled && styles.ctaLabelFilled]}>{label}</Text>
-      <View style={[styles.ctaPts, filled ? styles.ctaPtsFilled : styles.ctaPtsGhost]}>
-        <Text style={[styles.ctaPtsText, filled && styles.ctaPtsTextFilled]}>{pts}</Text>
+    <View style={styles.breakCol}>
+      <View style={styles.breakIc}>{icon}</View>
+      <Text style={styles.breakLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.breakKo} numberOfLines={1}>{labelKo}</Text>
+      <Text style={[styles.breakDetail, { color: detailColor }]} numberOfLines={2}>{detail}</Text>
+      <View style={[styles.gainPill, locked && { opacity: 0.2 }]}>
+        <Text style={styles.gainText}>{locked ? '-' : pts}</Text>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
-const PRIMARY_TINT = 'rgba(226,88,12,0.08)';
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 6, gap: 18 },
+  scroll: { paddingTop: 8 },
+  body: { gap: 16 },
 
-  // hero VIP plate
-  hero: {
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 20,
-    borderRadius: radius.lg,
-    backgroundColor: '#FFFDFB',
-    borderWidth: 1.5,
-    borderColor: 'rgba(226,88,12,0.5)',
-    ...shadow.sh1,
-  },
-  eyebrow: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 3, color: C.primaryText },
-  heroEmblem: { marginTop: 4, marginBottom: 2, ...shadow.sh2 },
-  tierEn: { fontFamily: font.displayBlack, fontSize: 30, color: C.ink, letterSpacing: -0.6, lineHeight: 40 },
-  tierKo: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3, letterSpacing: 0.2 },
-  heroDivider: { width: 44, height: 2, borderRadius: 2, backgroundColor: 'rgba(226,88,12,0.35)', marginTop: 8, marginBottom: 6 },
-  flavor: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, color: C.ink2, textAlign: 'center', maxWidth: 280 },
-  flavorB: { fontFamily: font.bodyBlack, color: C.ink2 },
-  totalPts: { marginTop: 8, fontFamily: font.body, fontSize: 12, letterSpacing: 0.4, color: C.ink2 },
-  totalPtsB: { fontFamily: font.display, fontSize: 15, color: C.primary },
+  hero: { alignItems: 'center', gap: 8, paddingTop: 12, paddingHorizontal: 20 },
+  eyebrow: { fontSize: 14, fontWeight: '500', color: INK_TITLE, textAlign: 'center' },
+  tierName: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', marginTop: 4 },
+  tierPill: { backgroundColor: PRIMARY_10, borderRadius: 24, paddingVertical: 4, paddingHorizontal: 12 },
+  tierPillText: { fontSize: 13, fontWeight: '500', color: C.primary },
+  flavor: { fontSize: 14, fontWeight: '400', color: C.ink3, textAlign: 'center', lineHeight: 20, maxWidth: 300 },
 
-  // cards / sections
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 16, ...shadow.sh1 },
-  sec: { gap: 11 },
-  secHead: { flexDirection: 'row', alignItems: 'baseline', gap: 9 },
-  secTitle: { fontFamily: font.display, fontSize: 17, color: C.ink, letterSpacing: -0.2 },
-  secSub: { fontFamily: font.koBold, fontSize: 12.5, color: C.ink3 },
+  // 진행 카드 — mx 20 pad 20 r8 border #F2F3F6
+  progCard: { marginHorizontal: 20, padding: 20, borderRadius: 8, borderWidth: 1, borderColor: C.hair, gap: 14 },
+  progHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
+  progTo: { fontSize: 16, fontWeight: '500', color: '#1C1E21', flexShrink: 1 },
+  progPts: { fontSize: 12 },
+  progPtsCur: { fontSize: 18, fontWeight: '600', color: '#1C1E21' },
+  progPtsGoal: { fontSize: 12, fontWeight: '400', color: C.inkMute },
+  starGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  starCell: { width: 46, height: 46 },
+  track: { height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
+  fill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
 
-  // gauge
-  gaugeHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
-  toNext: { fontFamily: font.bodyBold, fontSize: 18, color: C.ink, letterSpacing: -0.2 },
-  toNextNum: { fontFamily: font.displayBlack, fontSize: 18, color: C.primary },
-  toNextKo: { fontFamily: font.koBold, fontSize: 12, color: C.ink3, marginTop: 1 },
-  totalChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
-  totalChipText: { fontFamily: font.displayBlack, fontSize: 16, color: C.ink },
-  track: { height: 12, borderRadius: 999, backgroundColor: C.surface2, position: 'relative', justifyContent: 'center' },
-  fill: { height: 12, minWidth: 12, borderRadius: 999, backgroundColor: C.primary, position: 'relative' },
-  knob: { position: 'absolute', right: -3, top: '50%', marginTop: -10, width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', borderWidth: 3, borderColor: C.primary, ...shadow.sh1 },
-  tickRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  tick: { fontFamily: font.body, fontSize: 10.5, color: C.ink3 },
+  secHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingHorizontal: 20, marginTop: 4 },
+  secTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
+  secSub: { fontSize: 13, fontWeight: '500', color: C.ink2 },
 
-  // maxed (top tier)
-  maxed: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  maxedIc: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#e8f4ec', alignItems: 'center', justifyContent: 'center' },
-  maxedTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  maxedSub: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2, marginTop: 3 },
+  // 내역 카드 3열 — pad 16 r20, 열 구분선 #EAEBEE
+  breakCard: { marginHorizontal: 20, flexDirection: 'row', padding: 16, borderRadius: 20, borderWidth: 1, borderColor: C.hair },
+  breakCol: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 6 },
+  breakDiv: { width: 1, backgroundColor: C.line },
+  breakIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  breakLabel: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
+  breakKo: { fontSize: 12, fontWeight: '500', color: C.ink3 },
+  breakDetail: { fontSize: 12, fontWeight: '400', textAlign: 'center', lineHeight: 16, minHeight: 32 },
+  gainPill: { backgroundColor: C.primary, borderRadius: 100, paddingVertical: 6, paddingHorizontal: 10, marginTop: 2 },
+  gainText: { fontSize: 13, fontWeight: '500', color: '#FFFFFF' },
 
-  // breakdown
-  breakCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 6, ...shadow.sh1 },
-  breakRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 13 },
-  breakRowBorder: { borderTopWidth: 1, borderTopColor: C.hair },
-  breakIc: { width: 40, height: 40, borderRadius: 12, backgroundColor: PRIMARY_TINT, alignItems: 'center', justifyContent: 'center' },
-  breakMeta: { flex: 1, gap: 2 },
-  breakLabelRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  breakLabel: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  breakLabelKo: { fontFamily: font.ko, fontSize: 12, color: C.ink3 },
-  breakDetail: { fontFamily: font.body, fontSize: 11.5, color: C.ink2 },
-  gain: { backgroundColor: PRIMARY_TINT, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 6 },
-  gainText: { fontFamily: font.displayBlack, fontSize: 16, color: C.primary },
-  // P-048: 리뷰 팩터 dim 예고 행 — 흐림+자물쇠, BreakRow와 같은 골격
-  comingRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11, opacity: 0.55 },
+  // All ranks 그리드 — 106w h145 gap 8 pad 12/8 r8(3열, 마지막 full)
+  rankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20 },
+  rankCard: { width: '31.5%', flexGrow: 1, height: 145, borderRadius: 8, borderWidth: 1, borderColor: C.hair, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  rankCardFull: { width: '100%' },
+  rankCardNow: { borderColor: C.primary },
+  nowBadge: { position: 'absolute', top: 6, left: 6, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 5 },
+  nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 4 },
+  rankKo: { fontSize: 12, fontWeight: '400', color: C.ink3 },
+  rankPts: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 2 },
 
-  // path ladder
-  // P-063: 리스트형 독립 카드 행 (디자인 .rk-rank 미러)
-  ladder: { gap: 8 },
-  ladderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
-  ladderRowCur: { backgroundColor: 'rgba(226,88,12,0.07)', borderWidth: 2, borderColor: 'rgba(226,88,12,0.3)' },
-  ladderRowLocked: { opacity: 0.62 },
-  nodeCur: { borderRadius: 24, padding: 3, backgroundColor: 'rgba(226,88,12,0.16)', ...shadow.sh2 },
-  nodeMain: { flex: 1, gap: 1 },
-  nodeNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  nodeName: { fontFamily: font.display, fontSize: 15.5, color: C.ink, letterSpacing: -0.2 },
-  nodeKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
-  rankRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  doneText: { fontFamily: font.bodyBold, fontSize: 12, color: C.riskSafe },
-  atCur: { fontFamily: font.bodyBold, fontSize: 11, color: C.primaryText },
-  atLocked: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink3 },
-  nowPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3 },
-  nowPillText: { fontFamily: font.bodyBold, fontSize: 8.5, letterSpacing: 1, color: '#fff' },
-
-  // CTAs
-  ctaCol: { gap: 10, marginTop: 4 },
-  cta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 14 },
-  ctaPressed: { opacity: 0.9 },
-  ctaFilled: { backgroundColor: C.primary, ...shadow.sh2 },
-  ctaGhost: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, ...shadow.sh1 },
-  ctaLabel: { fontFamily: font.display, fontSize: 16, color: C.ink },
-  ctaLabelFilled: { color: '#fff' },
-  ctaPts: { borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
-  ctaPtsFilled: { backgroundColor: 'rgba(255,255,255,0.24)' },
-  ctaPtsGhost: { backgroundColor: PRIMARY_TINT },
-  ctaPtsText: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
-  ctaPtsTextFilled: { color: '#fff' },
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 });

@@ -986,7 +986,8 @@
     "emptyOrdersTitle": "Aún no hay pedidos",
     "emptyOrdersBody": "Pide desde un menú escaneado y tu historial aparecerá aquí.",
     "emptyScansTitle": "Aún no hay escaneos",
-    "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí."
+    "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí.",
+    "dishes": "Platos"
   },
   "ota": {
     "ready": "Hay una actualización lista",

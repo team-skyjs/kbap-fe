@@ -985,7 +985,8 @@
     "emptyOrdersTitle": "まだ注文履歴がありません",
     "emptyOrdersBody": "スキャンしたメニューから注文するとここに記録されます。",
     "emptyScansTitle": "まだスキャン履歴がありません",
-    "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。"
+    "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。",
+    "dishes": "料理"
   },
   "ota": {
     "ready": "アップデートの準備ができました",

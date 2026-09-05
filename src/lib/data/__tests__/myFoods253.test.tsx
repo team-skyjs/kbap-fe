@@ -22,6 +22,12 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+// KB-434: 화면이 useMe(개인화 위험)·RecentRow(FoodCards)를 소비 — 표면 목
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { restrictions: [] } }) }));
+jest.mock('@/lib/analytics', () => ({ EVENTS: { review_write_tap: 'review_write_tap' }, track: jest.fn() }));
 const mockPush = jest.fn();
 const mockNavigate = jest.fn();
 jest.mock('expo-router', () => ({
@@ -118,40 +124,23 @@ it('훅 — 커서 페이징 쿼리 실측 + 어댑터 null 방어(주소·비UR
   qc.clear();
 });
 
-it('Ordered 카드 — 4분할 썸네일·주소·수량 + 탭 = 상세 라우팅', async () => {
+it('KB-434 D-6 주문 카드 — map-pin 박스·주소·수량 필 + 탭 = 상세 라우팅(구 4분할 썸네일 소멸)', async () => {
   const tree = renderScreen();
   await flush();
-  expect(tree.root.findAll((n) => n.props?.testID === 'thumb-4').length).toBeGreaterThanOrEqual(1);
   const s = flat(tree);
   expect(s).toContain('서울 중구 소공로 51');
   expect(s).toContain('myFoods.itemCount:6');
+  expect(s).not.toContain('thumb-4'); // ThumbGrid 소멸(시안 = map-pin 70 박스)
   const card = tree.root.findAll((n) => n.props?.testID === 'order-123' && typeof n.props?.onPress === 'function')[0];
   act(() => card.props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/profile/order/123');
 });
 
-it('P-263: 중복 URL(준비중 기본 이미지 2+) = 렌더 에러 0 + 풀폭 = 인덱스 판정(마지막 칸만)', async () => {
-  const DUP = 'https://cdn/default-food.webp';
-  const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-  mockGet.mockResolvedValue({ items: [ORDER({ thumbnails: [DUP, DUP, DUP] })], hasNext: false, nextCursor: null });
+it('KB-434: roadAddress null = "+ tag a place" 아웃라인 필(무동작 — 태그 기능 부재, 시안 렌더)', async () => {
+  mockGet.mockResolvedValue({ items: [ORDER({ roadAddress: null })], hasNext: false, nextCursor: null });
   const tree = renderScreen();
   await flush();
-  const grid = tree.root.findAll((n) => n.props?.testID === 'thumb-3')[0];
-  expect(grid).toBeTruthy();
-  // React 중복 key 에러 0 (key = 인덱스)
-  expect(errSpy.mock.calls.map((c) => String(c[0])).join('\n')).not.toMatch(/same key|unique "key"/);
-  errSpy.mockRestore();
-  // 풀폭(thumbCellWide) = 3장째 하나만 — 값 비교였으면 중복 URL 전부 풀폭 오적용
-  const src = flat(tree);
-  const wideCount = (src.match(/"width":76,"height":38/g) ?? []).length;
-  expect(wideCount).toBe(1);
-});
-
-it('썸네일 1장 = 크게(thumb-1) · roadAddress null = 주소 미표시', async () => {
-  mockGet.mockResolvedValue({ items: [ORDER({ thumbnails: ['https://cdn/a.jpg'], roadAddress: null })], hasNext: false, nextCursor: null });
-  const tree = renderScreen();
-  await flush();
-  expect(tree.root.findAll((n) => n.props?.testID === 'thumb-1').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-tag-place-123').length).toBeGreaterThanOrEqual(1);
   expect(flat(tree)).not.toContain('소공로');
 });
 
@@ -184,7 +173,8 @@ it('세그 전환 — Scanned 탭 = /foods/scanned 재사용(P-238)·행 탭 = �
   act(() => seg.props.onPress());
   await flush();
   expect(mockGet.mock.calls.some(([p]) => String(p).startsWith('/api/foods/scanned'))).toBe(true);
-  const row = tree.root.findAll((n) => n.props?.testID === 'myfoods-food-7' && typeof n.props?.onPress === 'function')[0];
+  // KB-434: Scanned 행 = D-2 recent-row(RecentRow 재사용) — testID 홈 문법 승계
+  const row = tree.root.findAll((n) => n.props?.testID === 'home-recent-7' && typeof n.props?.onPress === 'function')[0];
   act(() => row.props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/food/7?src=list');
 });
@@ -243,7 +233,8 @@ it('P-259: ready 게이트 — false = 행 비활성+배지+리뷰 숏컷 0 · t
   expect(detail).toContain('disabled={it.foodId == null || it.ready === false}'); // 진입 비활성
   expect(detail).toContain("it.ready !== false && router.push"); // 탭 무반응
   expect(detail).toContain("t('myFoods.itemPending')"); // 준비중 배지
-  expect(detail).toContain('it.foodId != null && it.ready !== false && ('); // 리뷰 숏컷 숨김
+  // KB-434: 행별 리뷰 숏컷 → FixedBottom 단일 버튼(첫 리뷰 가능 항목) — ready 게이트 승계
+  expect(detail).toContain('(it) => it.foodId != null && it.ready !== false'); // 준비중 = 리뷰 대상 제외
   // 기본 이미지 URL 문자열로 준비중 판단 금지(종한 명시) — ready 필드가 유일 기준
   expect(detail).not.toMatch(/default[-_]?food|imageUrl[^\n]*(includes|match)/);
   const hooks = fs.readFileSync('src/lib/data/useOrders.ts', 'utf8') as string;
@@ -259,7 +250,8 @@ it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·�
   const fs = require('fs');
   for (const f of ['src/app/profile/my-foods.tsx', 'src/app/profile/order/[id].tsx']) {
     const src = fs.readFileSync(f, 'utf8') as string;
-    for (const banned of ['tag a place', 'Replace', 'Share', 'Download', 'RiskMark']) {
+    // KB-434: "+ tag a place" 필 = 시안 렌더·무동작(태그 기능 부재 — 발주 규정), 금지 목록에서 해제
+    for (const banned of ['Replace', 'Share', 'Download', 'RiskMark']) {
       expect(src).not.toContain(banned);
     }
     expect(src).not.toMatch(/api\.(post|patch|del)/); // read-only(조회 전용)
@@ -267,7 +259,7 @@ it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·�
   // 진입점(P-254: 계정 메뉴 행 — P-253 헤더 링크 소멸) + 상세 리뷰 연결 배선
   const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
   expect(profile).toContain("'/profile/my-foods' as Href");
-  expect(profile).toContain("label={t('profile.myFoods')}"); // AcctRow 행 문법
+  expect(profile).toContain("label={t('profile.myFoods')}"); // 메뉴 행 문법(KB-434 MenuRow)
   expect(profile).not.toContain('testID="profile-my-foods"'); // 구 헤더 링크 잔존 0
   expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).toContain('/review` as Href');
 });

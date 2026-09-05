@@ -6,7 +6,7 @@
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -30,6 +30,7 @@ import {
   IconTabScan,
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
+import { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
@@ -309,106 +310,8 @@ export default function Home() {
 }
 
 /* ---------- pieces ---------- */
-
-/** 2열 그리드 카드 (4150:13806) — 히어로 이미지 + RiskBadge + 북마크 버튼. */
-export function FoodGridCard({
-  food,
-  risk,
-  guest,
-  saved,
-  riskLabel,
-  onPress,
-  onBookmark,
-}: {
-  food: FoodCard;
-  risk: RiskState;
-  guest: boolean;
-  saved: boolean;
-  riskLabel: string;
-  onPress: () => void;
-  onBookmark: () => void;
-}) {
-  return (
-    <Pressable style={styles.gcard} onPress={onPress} testID={`home-food-${food.foodId}`}>
-      <View style={styles.gphoto}>
-        {!!food.photoUrl && <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} />}
-        {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
-        {!guest && (
-          <View style={styles.gbadge}>
-            <RiskBadge state={risk} />
-          </View>
-        )}
-      </View>
-      <View style={styles.gmeta}>
-        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <Text style={styles.gname} numberOfLines={2}>
-            {food.name}
-          </Text>
-          {food.nameKo !== food.name && (
-            <Text style={styles.gko} numberOfLines={1}>
-              {food.nameKo}
-            </Text>
-          )}
-          {!guest && <Text style={[styles.gstatus, { color: riskText[risk] }]}>{riskLabel}</Text>}
-        </View>
-        <Pressable style={styles.gbm} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
-          {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
-          <BookmarkStar saved={saved} size={16} />
-        </Pressable>
-      </View>
-    </Pressable>
-  );
-}
-
-/** recent-list 행 (4129:10705) — 썸네일 100 + RiskBadge + Review 소형 버튼.
- *  장소 칩·스캔 날짜는 홈 데이터(FoodCard)에 필드 부재 — 미표시(REPORTS 기재). */
-export function RecentRow({
-  food,
-  risk,
-  reviewLabel,
-  onPress,
-  onReview,
-}: {
-  food: FoodCard;
-  risk: RiskState;
-  reviewLabel: string;
-  onPress: () => void;
-  onReview: () => void;
-}) {
-  return (
-    <Pressable style={styles.rrow} onPress={onPress} testID={`home-recent-${food.foodId}`}>
-      <View style={styles.rthumb}>
-        {food.photoUrl ? (
-          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
-        ) : (
-          <View style={styles.rthumbFb}>
-            <IconFood size={24} color={C.ink3} />
-          </View>
-        )}
-        <View style={styles.rbadge}>
-          <RiskBadge state={risk} />
-        </View>
-      </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-        <Text style={styles.gname} numberOfLines={2}>
-          {food.name}
-        </Text>
-        {food.nameKo !== food.name && (
-          <Text style={styles.gko} numberOfLines={1}>
-            {food.nameKo}
-          </Text>
-        )}
-        {FLAGS.reviewsEnabled && (
-          <View style={{ marginTop: 2 }}>
-            <Btn sm variant="ghost" onPress={onReview} testID={`home-recent-review-${food.foodId}`}>
-              {reviewLabel}
-            </Btn>
-          </View>
-        )}
-      </View>
-    </Pressable>
-  );
-}
+// KB-434: 카드 2종 = features/food/FoodCards 분리(경량 그래프) — 재수출로 기존 임포트 호환
+export { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
@@ -441,40 +344,10 @@ const styles = StyleSheet.create({
 
   // 2열 그리드 (§1-5)
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
-  gcard: { width: '47%', flexGrow: 1 },
-  gphoto: { aspectRatio: 174 / 203, borderRadius: 4, backgroundColor: C.surface2, overflow: 'visible' },
-  gbadge: { position: 'absolute', top: 0, left: 9 },
-  gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
-  gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
-  gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  gstatus: { fontSize: 12, fontWeight: '700', marginTop: 2 },
-  gbm: {
-    width: 36,
-    height: 36,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: C.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.sh1,
-  },
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
   moreWrap: { paddingHorizontal: 20, paddingTop: 20 },
 
   // recent-list (§1-7)
-  rrow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: C.line,
-  },
-  rthumb: { width: 100, height: 100, borderRadius: 4, backgroundColor: C.surface2 },
-  rthumbFb: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  rbadge: { position: 'absolute', top: 0, left: 3 },
 
   // 비회원 가입 유도 (KB-69 유지 — 스타일만 토큰)
   guestCta: {

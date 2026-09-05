@@ -985,7 +985,8 @@
     "emptyOrdersTitle": "아직 주문 내역이 없어요",
     "emptyOrdersBody": "스캔한 메뉴판에서 주문하면 여기에 쌓여요.",
     "emptyScansTitle": "아직 스캔 기록이 없어요",
-    "emptyScansBody": "메뉴판을 스캔하면 확인한 음식이 여기에 모여요."
+    "emptyScansBody": "메뉴판을 스캔하면 확인한 음식이 여기에 모여요.",
+    "dishes": "메뉴"
   },
   "ota": {
     "ready": "업데이트가 준비됐어요",

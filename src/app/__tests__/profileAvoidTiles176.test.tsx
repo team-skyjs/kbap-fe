@@ -108,19 +108,18 @@ it('회피 = 사진 미니 타일(선택분만) — 서버 이미지·번역명,
   expect(src).not.toContain('profile.add'); // P-227 ④: "+ Add" 소멸 — 수정은 Show all 페이지
 });
 
-it('P-227 ④: 요약 = 4타일 한 줄 고정 — Show all n 토글·+Add 소멸, Show all 링크 = 전체 페이지', () => {
+it('KB-434 D-6: 요약 = 상위 8타일(4열 2행) — "Show all n" 아웃라인 버튼 = 전체 페이지', () => {
   mockUseMe.mockReturnValue(ME(['PORK', 'BEEF', 'EGG', 'MILK', 'SHRIMP', 'CRAB', 'PEANUT', 'WALNUT', 'WHEAT', 'SOYBEAN', 'ONION', 'GARLIC']));
-  const many = render(<Profile />); // 12종 — 4개만 렌더돼야 한다
-  // 4개만 렌더(초과분 미노출 — 전체는 Show all 페이지). skel/img 변형 제외, 고유 코드만
+  const many = render(); // 12종 — 8개만 렌더(시안 4열 2행)
   const codes = new Set(
     many.root
       .findAll((n) => typeof n.props?.testID === 'string' && /^avtile-[A-Z_]+$/.test(n.props.testID))
       .map((n) => n.props.testID as string),
   );
-  expect(codes.size).toBe(4);
+  expect(codes.size).toBe(8);
   expect(many.root.findAll((n) => n.props?.testID === 'avoid-toggle')).toHaveLength(0); // 토글 소멸
   expect(flat(many)).not.toContain('profile.add'); // +Add 소멸
-  expect(flat(many)).toContain('profile.showAllLink'); // Edit → Show all 개명
+  expect(flat(many)).toContain('profile.showAll'); // "Show all {{count}}" 수량 동적 버튼
   const showAll = many.root.findAll((n) => n.props?.testID === 'avoid-show-all' && typeof n.props?.onPress === 'function')[0];
   act(() => showAll.props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/profile/restrictions'); // 전체 조회 페이지 = 기존 수정 화면(81종 카테고리+수정)
@@ -134,28 +133,26 @@ it('타일 탭 = Edit restrictions 진입(재량 채택)', () => {
 });
 
 describe('P-181: 프로필 소형 4건', () => {
-  it('② Recently scanned — useHome().recent 재사용(RecentRow) 렌더·빈 상태 미노출', () => {
-    const empty = render();
-    expect(JSON.stringify(empty.toJSON())).not.toContain('home.recentTitle');
+  it('② KB-434 D-6: Recently scanned 섹션 = 프로필 탭에서 소멸(시안 부재 — 홈·My Foods로 이관)', () => {
     mockHome.mockReturnValue({ data: { recent: [{ foodId: '7', name: 'Kimbap', nameKo: '김밥', photoUrl: null, risk: 'safe', overall: { average: null, count: 0 } }] } } as never);
     const tree = render();
-    const s2 = JSON.stringify(tree.toJSON());
-    expect(s2).toContain('home.recentTitle');
-    expect(s2).toContain('Kimbap');
+    expect(JSON.stringify(tree.toJSON())).not.toContain('home.recentTitle');
   });
 
-  it('⑤ 국가 필 = 국기+국가명(코드 생짜 0) · ④ 연필 박스 배경 제거', () => {
+  it('⑤ 국가 줄 = 국기+국가명(코드 생짜 0) · KB-434: 정보수정 = 아웃라인 68×36 r8 #DCDEE3', () => {
     const tree = render();
     const { StyleSheet } = require('react-native');
-    const pill = tree.root.findAll((n) => n.props?.testID === 'nation-pill')[0];
-    const pillTexts = pill.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
-    expect(pillTexts).toContain('United States'); // 온보딩 국가명 재사용
-    expect(pillTexts).not.toContain('US'); // 코드 생짜 소멸
-    const pencil = tree.root.findAll((n) => n.props?.testID === 'profile-edit-pencil')[0];
-    const st = StyleSheet.flatten(pencil.props.style ?? {}) as { backgroundColor?: string; borderWidth?: number };
-    expect(st.backgroundColor).toBeUndefined(); // 박스 소멸
-    expect(st.borderWidth).toBeUndefined();
-    expect(pencil.props.hitSlop).toBeGreaterThanOrEqual(13); // 44pt 터치 유지
+    const flatten = (st: unknown) => StyleSheet.flatten(st ?? {}) as Record<string, unknown>;
+    const nat = tree.root.findAll((n) => n.props?.testID === 'nation-pill')[0];
+    expect(JSON.stringify(nat.props.children)).toContain('United States'); // 온보딩 국가명 재사용
+    expect(nat.props.children).not.toBe('US'); // 코드 생짜 소멸
+    const btn = tree.root.findAll((n) => n.props?.testID === 'profile-edit-pencil' && typeof n.props?.style !== 'function')[0];
+    const st = flatten(btn.props.style);
+    expect(st.width).toBe(68);
+    expect(st.height).toBe(36);
+    expect(st.borderRadius).toBe(8);
+    expect(st.borderColor).toBe('#DCDEE3');
+    expect(btn.findAll((n) => n.props?.children === 'profile.edit').length).toBeGreaterThanOrEqual(1); // "정보수정" 현 키
   });
 
   it('① 홈 추천 타이틀 en 정본 = "Popular dishes"(안전 보증 오인 소지 문구 소멸)', () => {

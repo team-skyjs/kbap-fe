@@ -118,8 +118,9 @@ it('⑥ 탭 계측(Codex #27 P1) — 이벤트 값 reviews 스키마 반영 + �
 
 it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 = riskText, fg는 아이콘·fill 전용', () => {
   const fs = require('fs') as typeof import('fs');
-  // KB-431: 상세 위험 요약 행·KB-432: 스캔 회피 칩(시안 #2F3137 텍스트)은 riskText 소비처에서 제외
-  for (const p of ['src/components/RiskPill.tsx', 'src/app/scan.tsx', 'src/app/profile/saved.tsx']) {
+  // KB-431: 상세 위험 요약 행·KB-432: 스캔 회피 칩(시안 #2F3137 텍스트)은 riskText 소비처에서 제외.
+  // KB-434: saved = FoodGridCard 재사용(riskText 소비는 홈 카드 내부 gstatus)
+  for (const p of ['src/components/RiskPill.tsx', 'src/app/scan.tsx', 'src/features/food/FoodCards.tsx']) {
     expect(fs.readFileSync(p, 'utf8')).toContain('riskText[');
   }
   for (const p of [

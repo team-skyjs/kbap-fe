@@ -1,24 +1,31 @@
 /**
- * My Foods (P-253/KB-360 1차 러프) — Ordered/Scanned 모아보기.
- * D-20 러프 **구조만** 참고(세그·카드 위계) — 디자이너 시안 오면 리스타일 전제라
- * 기존 컴포넌트(SubHeader·StateBlock·RemoteImage) 재사용·새 시각 문법 없음(P-216 방식).
- * read-only 확정(수정·장소 태그·공유 카드 = 비범위 — 예진×종한 합의). prod 미배포.
- * Scanned = 러프의 '세션 카드'가 아니라 **음식 단위 리스트**(/foods/scanned 계약 정본).
+ * My Foods — KB-434 D-6(4150:14562). AppBar → 언더라인 탭 2개(Ordered|Scanned,
+ * 현 scope 무변) → 주문 카드 리스트(좌 70 map-pin 박스 · 정보 컬럼 · "n items" 필 ·
+ * 장소 미태그 = "+ tag a place" 아웃라인 필(장소 태그 기능 부재 — 시안 렌더·무동작) ·
+ * chevron · 하단 line). Scanned 탭 = D-2 recent-row(홈 RecentRow 재사용).
+ *
+ * 통계 패널(14 orders / 41 dishes)은 전체 카운트 소스 부재(커서 페이지네이션 —
+ * 서버 total 없음)로 생략(발주 규정 — REPORTS 기재). 데이터 훅 무변.
  */
 import * as React from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, radius } from '@/lib/theme';
-import { IconScanLines, SubHeader, Spinner } from '@/components';
+import { color as C } from '@/lib/theme';
+import { IconScanLines, IconChevron, SubHeader, Spinner } from '@/components';
+import { D4MapPin } from '@/components/design4Assets';
 import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
-import { RemoteImage } from '@/components/RemoteImage';
 import { useOrders, type OrderSummary } from '@/lib/data/useOrders';
 import { useScannedFoods } from '@/lib/data/useFoods';
+import { useMe } from '@/lib/data/useMe';
+import { personalRisk } from '@/lib/risk';
+import { EVENTS, track } from '@/lib/analytics';
+import { RecentRow } from '@/features/food/FoodCards';
 import i18n from '@/lib/i18n';
 
 type Tab = 'ordered' | 'scanned';
+const INK_TITLE = '#2F3137';
 
 export default function MyFoodsScreen() {
   const router = useRouter();
@@ -26,6 +33,8 @@ export default function MyFoodsScreen() {
   const [tab, setTab] = React.useState<Tab>('ordered');
   const orders = useOrders(tab === 'ordered');
   const scanned = useScannedFoods(tab === 'scanned');
+  const { data: me } = useMe();
+  const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const goScan = () => router.navigate('/scan'); // P-246: 연타 가드 승계
   const empty = (titleKey: string, bodyKey: string) => (
@@ -42,19 +51,16 @@ export default function MyFoodsScreen() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('profile.myFoods')} onBack={() => router.back()} />
-      {/* D-20 구조: 상단 대형 세그(가로 꽉) — 상태 전환은 색만(프레임 불변, P-103) */}
-      <View style={styles.seg}>
+      {/* 언더라인 탭 2개(responsive) — 전환은 색만(프레임 불변 P-103/151) */}
+      <View style={styles.tabsRow}>
         {(['ordered', 'scanned'] as Tab[]).map((k) => (
-          <Pressable
-            key={k}
-            style={[styles.segBtn, tab === k && styles.segBtnOn]}
-            onPress={() => setTab(k)}
-            testID={`myfoods-tab-${k}`}
-          >
-            <Text style={[styles.segText, tab === k && styles.segTextOn]}>{t(`myFoods.${k}`)}</Text>
+          <Pressable key={k} style={styles.tab} onPress={() => setTab(k)} testID={`myfoods-tab-${k}`}>
+            <Text style={[styles.tabLabel, tab === k && styles.tabLabelOn]}>{t(`myFoods.${k}`)}</Text>
+            <View style={[styles.tabBar, tab === k && styles.tabBarOn]} />
           </Pressable>
         ))}
       </View>
+      <View style={styles.tabsDivider} />
 
       {tab === 'ordered' ? (
         orders.isError ? (
@@ -88,30 +94,24 @@ export default function MyFoodsScreen() {
         <FlatList
           data={scanned.data}
           keyExtractor={(f) => f.foodId}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.recentList}
           onEndReached={() => {
             if (scanned.hasNextPage && !scanned.isFetchingNextPage) void scanned.fetchNextPage();
           }}
           onEndReachedThreshold={0.4}
           ListFooterComponent={scanned.isFetchingNextPage ? <Spinner /> : null}
           renderItem={({ item }) => (
-            <Pressable
-              style={styles.foodRow}
+            /* Scanned = D-2 recent-row(4129:10705) 재사용 — 개인화 위험·리뷰 숏컷 동일 문법 */
+            <RecentRow
+              food={item}
+              risk={personalRisk(item.risk, hasR)}
+              reviewLabel={t('home.review')}
               onPress={() => router.push(`/food/${item.foodId}?src=list` as Href)}
-              testID={`myfoods-food-${item.foodId}`}
-            >
-              {item.photoUrl ? (
-                <RemoteImage uri={item.photoUrl} style={styles.foodThumb} />
-              ) : (
-                <View style={[styles.foodThumb, styles.thumbFallback]} />
-              )}
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.foodName} numberOfLines={1}>{item.name}</Text>
-                {!!item.nameKo && item.nameKo !== item.name && (
-                  <Text style={styles.foodSub} numberOfLines={1}>{item.nameKo}</Text>
-                )}
-              </View>
-            </Pressable>
+              onReview={() => {
+                track(EVENTS.review_write_tap, { source: 'home' });
+                router.push(`/food/${item.foodId}/review` as Href);
+              }}
+            />
           )}
         />
       )}
@@ -119,7 +119,7 @@ export default function MyFoodsScreen() {
   );
 }
 
-/** 주문 시각 표기 — 리더 언어 로케일 날짜(러프 — 시안 후 형식 확정). */
+/** 주문 시각 표기 — 리더 언어 로케일 날짜. */
 export function formatOrderDate(epochMs: number): string {
   try {
     return new Date(epochMs).toLocaleDateString(i18n.language, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -128,82 +128,60 @@ export function formatOrderDate(epochMs: number): string {
   }
 }
 
-/** D-20: 4분할 썸네일 — 서버 thumbnails(1~4장) 그대로. 1장 = 크게, 2장 = 세로 반씩,
- *  3~4장 = 2×2(3장째는 하단 풀폭). 부재 = 빈 타일(서버가 기본 이미지를 채워 오는 계약). */
-function ThumbGrid({ urls }: { urls: string[] }) {
-  const n = urls.length;
-  if (n === 0) return <View style={[styles.thumbBox, styles.thumbFallback]} testID="thumb-0" />;
-  if (n === 1) {
-    return (
-      <View style={styles.thumbBox} testID="thumb-1">
-        <RemoteImage uri={urls[0]} style={{ flex: 1 }} />
-      </View>
-    );
-  }
-  if (n === 2) {
-    return (
-      <View style={styles.thumbBox} testID="thumb-2">
-        {urls.map((u, i) => (
-          <RemoteImage key={i} uri={u} style={{ flex: 1 }} />
-        ))}
-      </View>
-    );
-  }
-  return (
-    <View style={[styles.thumbBox, styles.thumbGrid]} testID={`thumb-${n}`}>
-      {/* P-263: key·풀폭 판정 = 인덱스 — 준비중 음식 2+ 주문은 기본 대체 이미지
-          URL이 중복이라 URL key = React 중복 key 에러 + 값 비교 풀폭 오적용 */}
-      {urls.map((u, i) => (
-        <RemoteImage key={i} uri={u} style={n === 3 && i === 2 ? styles.thumbCellWide : styles.thumbCell} />
-      ))}
-    </View>
-  );
-}
-
+/** 주문 카드(4150:14562) — 좌 70 map-pin 박스(장소 썸네일 데이터 부재 대체) ·
+ *  정보 컬럼(주소 15/600 2줄 → 메타 행: 날짜 12/400 + "n items" 필) · chevron. */
 function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => void }) {
   const { t } = useTranslation();
   return (
     <Pressable style={styles.card} onPress={onPress} testID={`order-${order.orderId}`}>
-      <ThumbGrid urls={order.thumbnails} />
-      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-        <Text style={styles.cardDate}>{formatOrderDate(order.orderedAt)}</Text>
-        {/* roadAddress null = 미표시(위치 미동의 — "Unknown place" 표기 대신 생략 재량) */}
-        {!!order.roadAddress && (
-          <Text style={styles.cardAddr} numberOfLines={1}>{order.roadAddress}</Text>
+      <View style={styles.pinBox}>
+        <D4MapPin size={24} color={C.ink3} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+        {/* 장소명 데이터 부재 — roadAddress가 장소 줄(있을 때), 없으면 미태그 변형 필 */}
+        {order.roadAddress ? (
+          <Text style={styles.placeName} numberOfLines={2}>{order.roadAddress}</Text>
+        ) : (
+          <View style={styles.tagPill} testID={`order-tag-place-${order.orderId}`}>
+            <Text style={styles.tagPillText}>+ {t('community.tagPlace')}</Text>
+          </View>
         )}
-        {/* 기호(×) 텍스트 렌더 금지(P-040 계열) — 수량은 i18n 문구로 */}
-        <View style={styles.qtyBadge}>
-          <Text style={styles.qtyBadgeText}>{t('myFoods.itemCount', { count: order.totalQuantity })}</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.metaDate}>{formatOrderDate(order.orderedAt)}</Text>
+          <View style={styles.qtyPill}>
+            <Text style={styles.qtyPillText}>{t('myFoods.itemCount', { count: order.totalQuantity })}</Text>
+          </View>
         </View>
       </View>
+      <IconChevron size={16} color={C.ink3} />
     </Pressable>
   );
 }
 
-const THUMB = 76;
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  seg: { flexDirection: 'row', marginHorizontal: 16, marginTop: 6, marginBottom: 10, borderRadius: 999, backgroundColor: C.surface2, padding: 3 },
-  segBtn: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 999, borderWidth: 1, borderColor: 'transparent' },
-  segBtnOn: { backgroundColor: '#fff', borderColor: C.line },
-  segText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink3 },
-  segTextOn: { color: C.ink },
-  list: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
 
-  card: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: C.line, padding: 12 },
-  cardDate: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  cardAddr: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
-  qtyBadge: { alignSelf: 'flex-start', marginTop: 2, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: primaryTint },
-  qtyBadgeText: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
+  // 언더라인 탭(responsive 2분할)
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 8 },
+  tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabLabelOn: { color: INK_TITLE },
+  tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  tabBarOn: { backgroundColor: INK_TITLE },
+  tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
-  thumbBox: { width: THUMB, height: THUMB, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: C.surface2 },
-  thumbGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  thumbCell: { width: THUMB / 2, height: THUMB / 2 },
-  thumbCellWide: { width: THUMB, height: THUMB / 2 },
-  thumbFallback: { backgroundColor: C.surface2 },
+  list: { paddingBottom: 40 },
+  recentList: { paddingBottom: 40 },
 
-  foodRow: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: C.line, padding: 12 },
-  foodThumb: { width: 44, height: 44, borderRadius: radius.sm, backgroundColor: C.surface2 },
-  foodName: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  foodSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
+  // 주문 카드 — pad 16/20 gap 14 하단 line
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.hair },
+  pinBox: { width: 70, height: 70, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  placeName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', lineHeight: 20 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaDate: { fontSize: 12, fontWeight: '400', color: C.ink3 },
+  qtyPill: { backgroundColor: C.hair, borderRadius: 100, paddingVertical: 2, paddingHorizontal: 8 },
+  qtyPillText: { fontSize: 12, fontWeight: '500', color: C.ink2 },
+  // 장소 미태그 변형 — 아웃라인 필(primary 1px r8 pad 4/8, 12/600) · 태그 기능 부재 = 무동작
+  tagPill: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8 },
+  tagPillText: { fontSize: 12, fontWeight: '600', color: C.primary },
 });
