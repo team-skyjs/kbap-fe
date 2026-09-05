@@ -464,15 +464,9 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
       <View style={styles.pickerBackdrop}>
         <View style={styles.pickerSheet}>
           <View style={styles.grabBar} />
+          {/* KB-432 §2-9(4150:16622): 제목 18/600 중앙 — 닫기/완료는 하단 FixedBottom */}
           <View style={styles.pickerHeader}>
-            <Pressable hitSlop={10} onPress={onClose}>
-              <IconClose size={20} color={C.ink2} />
-            </Pressable>
             <Text style={styles.pickerTitle}>{t(kind === 'food' ? 'community.tagFoodTitle' : 'community.tagPlaceTitle')}</Text>
-            {/* Done — 선택 전 회색 텍스트 → 선택 후 primary 필 */}
-            <Pressable hitSlop={10} onPress={onClose} style={hasSelection ? styles.donePill : undefined}>
-              <Text style={hasSelection ? styles.donePillText : styles.doneLinkOff}>{t('community.done')}</Text>
-            </Pressable>
           </View>
 
           {/* 상한 안내 — 상한 도달 시에도 시트는 열린다(제거 동선) */}
@@ -603,8 +597,22 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             )}
           </ScrollView>
 
+          {/* KB-432 §2-9: FixedBottom — outline Close + primary Done */}
+          <View style={styles.pickerBottom} testID="picker-bottom">
+            <View style={styles.pickerBottomClose}>
+              <Btn variant="ghost" onPress={onClose} testID="picker-close">
+                {t('common.close')}
+              </Btn>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Btn onPress={onClose} testID="picker-done">
+                {t('community.done')}
+              </Btn>
+            </View>
+          </View>
+
           {/* 하단 mono 캡션 — P-225 ④: 글 작성 맥락 전용(3개 정책·게시글 장소 정책).
-              리뷰 픽커(음식 1개 선택)에선 틀린 정책 문구라 미렌더 */}
+              리뷰 픽커(음식 1개 선택)에선 틀린 문구라 미렌더 */}
           {context === 'compose' && (
             <Text style={[styles.sheetCaption, { paddingBottom: bottomInset + 6 }]} testID="picker-caption">
               {t(kind === 'food' ? 'community.foodSheetCaption' : 'community.placeSheetCaption')}
@@ -654,17 +662,17 @@ function ResultRow({
 
 const styles = StyleSheet.create({
   // P-245: 자격 안내(리뷰 = 스캔한 음식만) + 스캔 CTA — 강조는 색만(프레임 불변)
+  // KB-432 §2-9: 안내 카드(4150:16622) — bg #FFF4ED border #FFE5D5 r12 pad 12
   eligNote: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginVertical: 10, paddingHorizontal: 12, paddingVertical: 11,
-    borderRadius: radius.sm, backgroundColor: C.surface2,
-    borderWidth: 1, borderColor: 'transparent',
+    marginVertical: 10, padding: 12,
+    borderRadius: 12, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5',
   },
   eligNoteHot: { backgroundColor: primaryTint, borderColor: C.primary },
-  eligNoteText: { flex: 1, fontFamily: font.body, fontSize: 12.5, lineHeight: 17, color: C.ink2 },
-  eligCta: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: C.primary },
-  eligCtaText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
-  resultRowOff: { opacity: 0.45 }, // P-245: 자격 밖 행 흐림(선택 불가)
+  eligNoteText: { flex: 1, fontSize: 14, fontWeight: '400', lineHeight: 19, color: C.ink2 },
+  eligCta: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: '#FF7327' },
+  eligCtaText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  resultRowOff: { opacity: 0.6 }, // §2-9: 미스캔 = 썸네일/텍스트 흐림(선택 불가 — P-245 유지)
   // P-238: 전체 재검색 제안 행
   searchAllRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingVertical: 12 },
   searchAllText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primaryText },
@@ -733,10 +741,12 @@ const styles = StyleSheet.create({
 
   /* tag picker sheet — 시안 4 */
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  pickerSheet: { height: '92%', backgroundColor: C.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 8, gap: 12, ...shadow.sh2 },
+  pickerSheet: { height: '92%', backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 16, paddingTop: 8, gap: 12, ...shadow.sh2 },
   grabBar: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line },
-  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pickerTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
+  pickerBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, paddingBottom: 4, borderTopWidth: 1, borderTopColor: C.line },
+  pickerBottomClose: { flexShrink: 0, minWidth: 119 },
+  pickerHeader: { alignItems: 'center', paddingVertical: 4 },
+  pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
   donePill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 7, ...shadow.sh1 },
   donePillText: { fontFamily: font.bodyBold, fontSize: 13.5, color: '#fff' },
   doneLinkOff: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink3 },
@@ -746,15 +756,16 @@ const styles = StyleSheet.create({
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.primary, borderRadius: 13, paddingHorizontal: 13, shadowColor: C.primary, shadowOpacity: 0.15, shadowRadius: 9, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   searchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
 
-  sectionHead: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1.2, textTransform: 'uppercase', color: C.ink3, paddingTop: 4, paddingBottom: 7 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  rowThumb: { width: 38, height: 38, borderRadius: 10, backgroundColor: C.surface2 },
+  sectionHead: { fontSize: 12, fontWeight: '500', textTransform: 'uppercase', color: C.ink3, paddingTop: 4, paddingBottom: 7 },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 66, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  rowThumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2 }, // §2-9: 원형 40
   rowThumbFallback: { backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
   rowThumbPlace: { backgroundColor: accentTint, alignItems: 'center', justifyContent: 'center' },
-  resultText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  resultText: { fontSize: 15, fontWeight: '600', color: C.ink },
   resultTextOn: { color: C.primaryText },
-  resultSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
-  addCircle: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  resultSub: { fontSize: 13, fontWeight: '500', color: C.ink2, marginTop: 1 },
+  // §2-9: add 36 버튼(홈 북마크 버튼 프레임 문법 — 흰 bg·#EAEBEE 1px·r4)
+  addCircle: { width: 36, height: 36, borderRadius: 4, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
   addCircleOn: { backgroundColor: C.primary, borderColor: C.primary },
   searchHint: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
 

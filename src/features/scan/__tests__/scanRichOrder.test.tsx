@@ -162,7 +162,11 @@ it('담기 전환 + 필 카운트 동기 — [+]→스테퍼, 0으로 내리면 
 
 it('P-138 ⑦: 환산 병기 — KRW 계정 = 생략(설계 정상), 타 통화 = 병기', () => {
   const usd = render(<Harness dishes={DISHES} />); // Harness currency=USD
-  expect(flat(usd).replace(/","/g, '')).toContain('₩9,000 = $'); // P-218→P-249: 접두 '= '(공백 1)
+  // KB-432 §1-1: 환산가 먼저(#6B95FF) + 원가 뒤 — '= ' 접두는 표시에서 제거
+  const u = flat(usd).replace(/","/g, '');
+  expect(u).toContain('$');
+  expect(u).toContain('₩9,000');
+  expect(u.indexOf('$')).toBeLessThan(u.indexOf('₩9,000'));
   const krwTree = render(
     <ScanRichList dishes={DISHES} currency="KRW" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
@@ -225,7 +229,9 @@ it('P-241: 행 썸네일 = imageRef 인라인 — 비매칭 행도 표시(디폴
     <ScanRichList dishes={dishes} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
   const s = flat(tree);
-  expect(s).toContain('default-food.webp'); // 비매칭 = 서버 디폴트 이미지 표시
+  // KB-432(16314): 비매칭 = #F2F3F6 박스 + unable 마크(서버 디폴트 이미지 소멸 — 시안)
+  expect(s).toContain('#F2F3F6');
+  expect(s).not.toContain('default-food.webp');
   // 주문 카드 = rawMenuName 그대로(P-045) — 표시명 조립 금지(기존 잠금 승계)
   const card = render(
     <FlippedOrderCard items={[{ nameKo: '수제비', name: '수제비', qty: 1, priceKrw: null }]} avoidCodes={[]} avoidNames={[]} currency="USD" onDone={() => {}} t={t} />,
@@ -250,9 +256,9 @@ it('P-160→P-180: 프로필 체크 줄 — ✓ 마크 부재·대문자 캡션�
   const tree = render(<Harness dishes={DISHES} />);
   const s2 = flat(tree);
   expect(s2).not.toContain('scan.mayContain');
-  // 9/5 예진 확정: riskText = 상태 원색(대비 변형 폐기)
-  expect(s2).toContain('"color":"#F76661"'); // danger riskText(=원색)
-  expect(s2).toContain('"color":"#FFA526"'); // caution riskText(=원색)
+  // KB-432 §1-1: 칩 텍스트 = 12/700 #2F3137(시안), 위험 구분 = RiskMark 16(색+글리프)
+  expect(s2).toContain('"color":"#2F3137"');
+  expect(s2).toContain('"fontWeight":"700"');
 });
 
 describe('P-223: 회피 칩 통합 — v2 서버 겹침 우선 / v1 조인 폴백', () => {

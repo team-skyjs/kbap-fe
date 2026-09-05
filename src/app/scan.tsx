@@ -28,8 +28,9 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
+import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
@@ -116,8 +117,10 @@ export default function Scan() {
   // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
   // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
   const [view, setView] = useState<ResultView>('list');
-  // P-226 ②③: 리스트 소팅 — safety 토글은 소팅 세그와 통합(컨트롤 수 최소화 재량)
+  // P-226 ②③ → KB-432 §1-1: 소팅 = 정렬 드롭다운(ActionSheet) — 옵션 2종 무변
   const [sortMode, setSortMode] = useState<ResultSortMode>('menu');
+  const [sortSheet, setSortSheet] = useState(false);
+  const [profileFilter, setProfileFilter] = useState(false); // 시안 렌더 전용(무동작 — 상태 부재)
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
   // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
@@ -579,27 +582,32 @@ export default function Scan() {
 
     return (
       <View style={styles.resultRoot}>
-        {/* P-136(S1): 콰이엇 헤더 — 백·타이틀+서브·세그(사진/리스트)·다시찍기
-            (원본 감상 = 사진 뷰 롱프레스 피크 존치 — 원본 세그 소멸) */}
+        {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
-            <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconChevron size={18} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
-            <Text style={styles.qhSub}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
-          </View>
-          <View style={styles.seg}>
-            {(['risk', 'list'] as ResultView[]).map((v) => (
-              <Pressable key={v} style={[styles.segBtn, view === v && styles.segBtnOn]} onPress={() => setView(v)} testID={`seg-${v}`}>
-                <Text style={[styles.segText, view === v && styles.segTextOn]}>{t(v === 'risk' ? 'scan.segPhoto' : 'scan.segList')}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
           {/* P-161: 즉시 리셋 → 확인 모달 선노출(결과 유실 경고) */}
-          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} testID="retake">
+          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} style={styles.qhBack} testID="retake">
             <IconRetry size={19} color={C.ink2} />
           </Pressable>
+        </View>
+        {/* §1-1: 언더라인 탭 2개 responsive 반반(4123:3853) — Photo | List(현 세그 매핑) */}
+        <View style={styles.resultTabs}>
+          {(['risk', 'list'] as ResultView[]).map((v) => (
+            <Pressable key={v} style={styles.resultTab} onPress={() => setView(v)} testID={`seg-${v}`}>
+              <Text style={[styles.resultTabLabel, view === v && styles.resultTabLabelOn]}>
+                {t(v === 'risk' ? 'scan.segPhoto' : 'scan.segList')}
+              </Text>
+              <View style={[styles.resultTabBar, view === v && styles.resultTabBarOn]} />
+            </Pressable>
+          ))}
+        </View>
+        {/* §1-1: 인식 배너 — h48 primaryTint, 스캔 아이콘 24 + 인식 수 15/500 primary */}
+        <View style={styles.recogBanner} testID="recog-banner">
+          <IconTabScan size={24} color={C.primary} />
+          <Text style={styles.recogBannerText}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
         </View>
 
         {view === 'list' ? (
@@ -609,13 +617,19 @@ export default function Scan() {
             avoidNames={(me?.restrictions ?? []).map((r) => ingCat.name(r.code))}
             t={t}
           />
-          {/* P-226 ②③: 소팅 세그(메뉴판 순 기본 / 안전한 순) — 뷰 세그와 동일 문법 */}
-          <View style={styles.sortSegRow}>
-            {(['menu', 'safety'] as ResultSortMode[]).map((m) => (
-              <Pressable key={m} style={[styles.segBtn, sortMode === m && styles.segBtnOn]} onPress={() => setSortMode(m)} testID={`sort-${m}`}>
-                <Text style={[styles.segText, sortMode === m && styles.segTextOn]}>{t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
-              </Pressable>
-            ))}
+          {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
+              D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}
+          <View style={styles.controlRow}>
+            <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="scan-profile-toggle">
+              <View style={[styles.sw, profileFilter && styles.swOn]}>
+                <View style={[styles.knob, profileFilter && styles.knobOn]} />
+              </View>
+              <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+            </Pressable>
+            <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="scan-sort">
+              <Text style={styles.sortLabel} numberOfLines={1}>{t(sortMode === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
+              <IconChevronDown size={16} color="#4B4F58" />
+            </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
@@ -656,6 +670,18 @@ export default function Scan() {
         {/* P-136: 하단 주문 필 — 리스트·캡슐 뷰 공유(담김 카운트 동기) */}
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
+        {/* §1-1: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
+        <ActionSheet
+          open={sortSheet}
+          title={t('reviews.sortTitle')}
+          items={(['menu', 'safety'] as ResultSortMode[]).map((m) => ({
+            key: m,
+            label: t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety'),
+            icon: m === sortMode ? <IconCheck size={15} color={C.primary} /> : undefined,
+            onPress: () => setSortMode(m),
+          }))}
+          onClose={() => setSortSheet(false)}
+        />
         {GateSheet}
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
             후 — onClose 직후 present는 잔존 race), 안드는 onClose(onDismiss 미지원
@@ -1007,8 +1033,24 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
 }
 
 const styles = StyleSheet.create({
-  // P-226 ②: 소팅 세그 행 — 프로필 바 아래 얇게
-  sortSegRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.surface },
+  // KB-432 §1-1: 언더라인 탭 2개(반반) + 인식 배너 + 컨트롤 행
+  resultTabs: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: C.line2, backgroundColor: '#fff' },
+  resultTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
+  resultTabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  resultTabLabelOn: { color: '#2F3137' },
+  resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  resultTabBarOn: { backgroundColor: '#2F3137' },
+  recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 },
+  recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primary },
+  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: C.surface },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  swOn: { backgroundColor: C.primary },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knobOn: { alignSelf: 'flex-end' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
@@ -1016,10 +1058,9 @@ const styles = StyleSheet.create({
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
-  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair, backgroundColor: '#fff' },
-  qhBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  qhTitle: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
-  qhSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, backgroundColor: '#fff' },
+  qhBack: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  qhTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
   seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
   segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
