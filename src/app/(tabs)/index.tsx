@@ -40,7 +40,7 @@ import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
 import { popularPhotoFoods } from '@/lib/search/discovery';
-import { FeedCard } from '@/features/community/ReviewFeed';
+import { FeedCard } from '@/features/review/FeedCard';
 import { useUnreadCount } from '@/lib/notifications/inbox';
 import type { FoodCard } from '@/lib/api/types';
 

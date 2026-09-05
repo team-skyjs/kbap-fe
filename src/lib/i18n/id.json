@@ -11,7 +11,8 @@
     "goBack": "Kembali",
     "retry": "Coba lagi",
     "skip": "Lewati",
-    "save": "Simpan"
+    "save": "Simpan",
+    "close": "Tutup"
   },
   "intro": {
     "skip": "Lewati",

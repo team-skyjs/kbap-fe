@@ -11,7 +11,8 @@
     "goBack": "返回",
     "retry": "重试",
     "skip": "跳过",
-    "save": "保存"
+    "save": "保存",
+    "close": "关闭"
   },
   "intro": {
     "skip": "跳过",

@@ -11,7 +11,8 @@
     "tryAgain": "다시 시도",
     "goBack": "돌아가기",
     "retry": "재시도",
-    "skip": "건너뛰기"
+    "skip": "건너뛰기",
+    "close": "닫기"
   },
   "intro": {
     "skip": "건너뛰기",

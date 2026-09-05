@@ -32,10 +32,14 @@ import {
   IconProfile,
   IconBubbleEmpty,
   IconPlus,
+  IconCheck,
   IconChevron,
+  IconChevronDown,
   IconMapPin,
   IconMore,
+  CardPhoto,
 } from '@/components';
+import { ActionSheet } from '@/components/ActionSheet';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
@@ -78,6 +82,7 @@ export default function FoodReviews() {
 
   const [sameNatOnly, setSameNatOnly] = useState(false);
   const [sort, setSort] = useState<'recent' | 'rating'>('recent');
+  const [sortSheet, setSortSheet] = useState(false); // KB-431 §2-4: 드롭다운 → ActionSheet
 
   const nationality = me?.nationality ?? 'US';
   // P-085(KB-73): 같은 국적 필터 = 서버 countryCode 파라미터 (목 경로는 훅이 흉내).
@@ -97,7 +102,20 @@ export default function FoodReviews() {
   });
   // 평점 집계 = 음식 상세 서버값 (P-085 — 목 재계산·리스트 응답 집계 폐기)
   const overall = food?.overall ?? { average: null, count: 0 };
-  const sameNat = food?.sameNationality ?? { average: null, count: 0 };
+  // KB-431 §2-3: 축 평균 — Taste = 서버 overall / Speed·Service = 서버 축 집계 부재라
+  // 로드된 리뷰(값 있는 것만) 클라 평균. 무데이터 축 = null(바 미표시).
+  const axisAverages = React.useMemo(() => {
+    const avg = (pick: (r: Review) => number | undefined) => {
+      const vals = all.map(pick).filter((v): v is number => typeof v === 'number' && v > 0);
+      return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+    return {
+      taste: overall.average,
+      speed: avg((r) => r.servingSpeed),
+      service: avg((r) => r.staffKindness),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewsQ.data, overall.average]);
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
@@ -149,25 +167,25 @@ export default function FoodReviews() {
           />
         ) : (
           <View style={styles.body}>
-            {/* dish header */}
-            <View>
-              <Text style={styles.dishName}>{food?.name ?? ''}</Text>
-              <Text style={styles.dishSub}>
-                {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} ` : ''}
-                {t('reviews.subtitle', { count: overall.count })}
-              </Text>
+            {/* KB-431 §2-2: 음식 요약 카드 — 이미지 48 + 이름 + "ko · n reviews" */}
+            <View style={styles.dishCard}>
+              <View style={styles.dishThumb}>
+                {food?.photoUrl ? <CardPhoto uri={food.photoUrl} borderRadius={4} /> : <IconBubbleEmpty size={20} color={C.ink3} />}
+              </View>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Text style={styles.dishName} numberOfLines={1}>{food?.name ?? ''}</Text>
+                {/* 시안의 " · " 구분은 P-196 ④(가운뎃점 전수 제거) 잠금과 충돌 — 공백 유지(REPORTS) */}
+                <Text style={styles.dishSub} numberOfLines={1}>
+                  {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} ` : ''}
+                  {t('reviews.subtitle', { count: overall.count })}
+                </Text>
+              </View>
             </View>
 
-            {/* rating summary — P-085: 서버 집계(음식 상세 averageRating 계열) */}
-            <View style={styles.summary}>
-              <RateCol label={t('reviews.overall')} agg={overall} />
-              <View style={styles.divider} />
-              <RateCol
-                label={t('reviews.sameNationality')}
-                agg={sameNat}
-                left={<Flag code={nationality} size={14} />}
-              />
-            </View>
+            {/* KB-431 §2-3: 평점 요약 박스(4150:16775) — 좌 총점 / 우 3축 세로 바.
+                축 평균: Taste = 서버 overall · Speed/Service = 로드된 리뷰 클라 평균
+                (서버 축 집계 부재 — REPORTS). 값 없는 축 = 미표시. */}
+            <RatingSummaryBox overall={overall} axes={axisAverages} t={t} />
 
             {/* P-235: 게스트 열람 개방(무토큰 200 실측) — 블러 고스트·lock CTA 소멸.
                 같은 국적 필터는 국적 미상이라 게스트 미노출(멘토 "내 국가 필터만 제외").
@@ -176,22 +194,27 @@ export default function FoodReviews() {
               <View />
             ) : (
             <>
-            {/* controls — same-nationality filter + sort (translation is per-review).
-                P-235: 같은 국적 필터 = 회원만(게스트 국적 미상) */}
-            {!isGuest && (
-            <View style={styles.filters}>
-              <Pressable style={styles.filter} onPress={() => setSameNatOnly((v) => !v)}>
-                <Flag code={nationality} size={16} />
-                <Text style={styles.filterLbl} numberOfLines={1}>
-                  {t('reviews.sameNationalityOnly', { country: nationality })}
+            {/* KB-431 §2-4: 컨트롤 행 — 좌 토글(회원만 — 게스트 국적 미상, P-235) /
+                우 정렬 드롭다운(현 2옵션 → ActionSheet). "KR only" 시안 = 현
+                같은 국적 필터에 매핑(전용 KR 파라미터 아님 — 카피는 현 키). */}
+            <View style={styles.controlRow}>
+              {!isGuest ? (
+                <Pressable style={styles.filterToggle} onPress={() => setSameNatOnly((v) => !v)} testID="same-nat-toggle">
+                  <Switch on={sameNatOnly} />
+                  <Flag code={nationality} size={14} />
+                  <Text style={styles.filterLbl} numberOfLines={1}>
+                    {t('reviews.sameNationalityOnly', { country: nationality })}
+                  </Text>
+                </Pressable>
+              ) : (
+                <View />
+              )}
+              <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="reviews-sort">
+                <Text style={styles.sortLabel} numberOfLines={1}>
+                  {t(sort === 'recent' ? 'reviews.sortRecent' : 'reviews.sortTopRated')}
                 </Text>
-                <Switch on={sameNatOnly} />
+                <IconChevronDown size={16} color={C.ink2} />
               </Pressable>
-            </View>
-            )}
-            <View style={styles.sortRow}>
-              <SortPill label={t('reviews.sortRecent')} on={sort === 'recent'} onPress={() => setSort('recent')} />
-              <SortPill label={t('reviews.sortTopRated')} on={sort === 'rating'} onPress={() => setSort('rating')} />
             </View>
 
             {/* filtered to empty — KC-0329 B: 국적 필터 빈 상태는 전용 문구 */}
@@ -234,6 +257,18 @@ export default function FoodReviews() {
       </Animated.ScrollView>
 
       <StickyHeader hidden={hidden} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
+      {/* KB-431 §2-4: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
+      <ActionSheet
+        open={sortSheet}
+        title={t('reviews.sortTitle')}
+        items={(['recent', 'rating'] as const).map((v) => ({
+          key: v,
+          label: t(v === 'recent' ? 'reviews.sortRecent' : 'reviews.sortTopRated'),
+          icon: v === sort ? <IconCheck size={15} color={C.primary} /> : undefined,
+          onPress: () => setSort(v),
+        }))}
+        onClose={() => setSortSheet(false)}
+      />
       {/* P-095: 리뷰 ⋯ — 목록발 차단 = 재조회(무효화는 훅), 편집은 디테일로 */}
       <ModerationFlow
         target={mod}
@@ -261,17 +296,55 @@ export default function FoodReviews() {
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
-function RateCol({ label, agg, left }: { label: string; agg: RatingAggregate; left?: React.ReactNode }) {
+/** KB-431 §2-3: 세로 바 1개 — 뱃지(최고값 강조) + 바(fill 높이 = 점수/5 × 46) + 라벨. */
+export function AxisBar({ label, value, top, testID }: { label: string; value: number; top: boolean; testID?: string }) {
+  const fillH = Math.max(0, Math.min(1, value / 5)) * 46;
   return (
-    <View style={styles.rateCol}>
-      <View style={styles.rateLblRow}>
-        {left}
-        <Text style={styles.rateLbl}>{label}</Text>
+    <View style={styles.axisCol} testID={testID}>
+      <View style={[styles.axisBadge, top ? styles.axisBadgeTop : styles.axisBadgeRest]}>
+        <Text style={[styles.axisBadgeText, top && { color: '#FFFFFF' }]}>{value.toFixed(1)}</Text>
       </View>
-      <Text style={styles.rateNum}>{agg.average?.toFixed(1) ?? '—'}</Text>
-      <Stars value={agg.average ?? 0} size={14} />
-      {/* P-085: sameCountry는 계약에 count 미제공(0 고정) — 0이면 표기 생략 */}
-      {agg.count > 0 && <Text style={styles.rateCount}>{agg.count}</Text>}
+      <View style={styles.axisTrack}>
+        <View style={[styles.axisFill, { height: fillH }, top ? styles.axisFillTop : styles.axisFillRest]} testID={testID ? `${testID}-fill` : undefined} />
+      </View>
+      <Text style={styles.axisLbl} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
+/** KB-431 §2-3: 평점 요약 박스(4150:16775). */
+function RatingSummaryBox({
+  overall,
+  axes,
+  t,
+}: {
+  overall: RatingAggregate;
+  axes: { taste: number | null; speed: number | null; service: number | null };
+  t: TFn;
+}) {
+  const bars: [string, string, number][] = [
+    ['taste', t('review.extrasTaste'), axes.taste],
+    ['speed', t('review.extrasSpeed'), axes.speed],
+    ['service', t('review.extrasService'), axes.service],
+  ].flatMap(([key, label, v]) => (v != null ? [[key as string, label as string, v as number]] : []));
+  const max = Math.max(...bars.map((b) => b[2]), 0);
+  return (
+    <View style={styles.summaryBox} testID="rating-summary-box">
+      <View style={styles.summaryLeft}>
+        <Stars value={overall.average ?? 0} size={16} />
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+          <Text style={styles.bigScore}>{overall.average?.toFixed(1) ?? '—'}</Text>
+          <Text style={styles.bigScoreOf}>/ 5</Text>
+        </View>
+        <Text style={styles.overallLbl}>{t('reviews.overall').toUpperCase()}</Text>
+      </View>
+      {bars.length > 0 && (
+        <View style={styles.summaryRight}>
+          {bars.map(([key, label, value]) => (
+            <AxisBar key={key} label={label} value={value} top={value === max} testID={`axis-${key}`} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -390,13 +463,6 @@ function Switch({ on }: { on: boolean }) {
   );
 }
 
-function SortPill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.sortPill, on && styles.sortPillOn]} onPress={onPress}>
-      <Text style={[styles.sortPillText, on && styles.sortPillTextOn]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
@@ -411,29 +477,41 @@ const styles = StyleSheet.create({
   lockPopBtn: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10, marginTop: 4 },
   lockPopBtnText: { fontFamily: font.bodyBold, fontSize: 13.5, color: '#fff' },
 
-  dishName: { fontFamily: font.display, fontSize: 22, color: C.ink },
-  dishSub: { fontFamily: font.ko, fontSize: 13, color: C.ink2, marginTop: 3 },
+  // KB-431 §2-2: 음식 요약 카드
+  dishCard: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, padding: 8 },
+  dishThumb: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  dishName: { fontSize: 14, fontWeight: '600', color: C.ink },
+  dishSub: { fontSize: 13, fontWeight: '400', color: C.ink3 },
 
-  summary: { flexDirection: 'row', alignItems: 'stretch', backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 16, ...shadow.sh1 },
-  rateCol: { flex: 1, alignItems: 'center', gap: 4 },
-  rateLblRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  rateLbl: { fontFamily: font.body, fontSize: 11, letterSpacing: 0.3, color: C.ink3, textTransform: 'uppercase' },
-  rateNum: { fontFamily: font.displayBlack, fontSize: 32, color: C.ink, lineHeight: 42 },
-  rateCount: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
-  divider: { width: 1, backgroundColor: C.hair, marginHorizontal: 6 },
+  // KB-431 §2-3: 평점 요약 박스
+  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, padding: 16, gap: 29 },
+  summaryLeft: { flex: 1, gap: 6, justifyContent: 'center' },
+  bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
+  bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
+  overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
+  axisCol: { alignItems: 'center', gap: 5 },
+  axisBadge: { width: 34, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  axisBadgeTop: { backgroundColor: '#2F3137' },
+  axisBadgeRest: { backgroundColor: C.inkDisabled },
+  axisBadgeText: { fontSize: 12, fontWeight: '600', color: '#2F3137' },
+  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: C.hair, justifyContent: 'flex-end', overflow: 'hidden' },
+  axisFill: { width: 8, borderRadius: 4 },
+  axisFillTop: { backgroundColor: '#2F3137' },
+  axisFillRest: { backgroundColor: C.inkDisabled },
+  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3 },
+  summaryRight: { flexDirection: 'row', gap: 13, alignItems: 'flex-end' },
 
-  filters: { flexDirection: 'row', gap: 10 },
-  filter: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, ...shadow.sh1 },
-  filterLbl: { flex: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
-  sortRow: { flexDirection: 'row', gap: 6, backgroundColor: C.surface2, borderRadius: 12, padding: 4 },
-  sortPill: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 9 },
-  sortPillOn: { backgroundColor: C.card, ...shadow.sh1 },
-  sortPillText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
-  sortPillTextOn: { color: C.primary },
+  // KB-431 §2-4: 컨트롤 행
+  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  filterLbl: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 14, fontWeight: '700', color: C.ink2 },
 
-  sw: { width: 34, height: 20, borderRadius: 10, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
+  // 시안 Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on 트랙 primary, 노브 20 흰
+  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
-  knob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', ...shadow.sh1 },
   knobOn: { alignSelf: 'flex-end' },
 
   item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 },

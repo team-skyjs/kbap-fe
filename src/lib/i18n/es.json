@@ -11,7 +11,8 @@
     "goBack": "Volver",
     "retry": "Reintentar",
     "skip": "Omitir",
-    "save": "Guardar"
+    "save": "Guardar",
+    "close": "Cerrar"
   },
   "intro": {
     "skip": "Omitir",

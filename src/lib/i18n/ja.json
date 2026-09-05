@@ -11,7 +11,8 @@
     "goBack": "戻る",
     "retry": "再試行",
     "skip": "スキップ",
-    "save": "保存"
+    "save": "保存",
+    "close": "閉じる"
   },
   "intro": {
     "skip": "スキップ",
