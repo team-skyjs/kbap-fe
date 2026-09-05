@@ -38,11 +38,13 @@ export function Star({
   fillPct = 100,
   fillColor = STAR_FILL, // KB-429
   emptyColor = STAR_EMPTY,
+  sw = 1, // KB-432(4150:16468): 작성 화면 대형 별 = stroke 3 / 세부 별 = 2
 }: {
   size?: number;
   fillPct?: number;
   fillColor?: string;
   emptyColor?: string;
+  sw?: number;
 }) {
   const rawId = React.useId();
   const id = `st${rawId.replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -53,8 +55,8 @@ export function Star({
           <Rect x="0" y="0" width={(16 * fillPct) / 100} height="16" />
         </ClipPath>
       </Defs>
-      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={1} strokeLinejoin="round" />
-      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={1} strokeLinejoin="round" clipPath={`url(#${id})`} />
+      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={sw} strokeLinejoin="round" />
+      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={sw} strokeLinejoin="round" clipPath={`url(#${id})`} />
     </Svg>
   );
 }

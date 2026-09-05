@@ -161,7 +161,8 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   const svInst = sv.instance as { scrollTo?: unknown } | null;
   if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
-  const block = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.style && n !== sv)[0];
+  // KB-432: 별 행에도 onLayout이 생겨 첫 매칭이 어긋남 — 본문 블록 testID로 특정
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } })); // blockBottom 700
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
   expect(typeof input.props.onSelectionChange).toBe('function');
@@ -185,7 +186,8 @@ it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 �
   const svInst = sv.instance as { scrollTo?: unknown } | null;
   if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
-  const block = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.style && n !== sv)[0];
+  // KB-432: 별 행에도 onLayout이 생겨 첫 매칭이 어긋남 — 본문 블록 testID로 특정
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } }));
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
   act(() => input.props.onChangeText('0123456789')); // len 10

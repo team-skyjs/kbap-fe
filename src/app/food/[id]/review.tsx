@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
+import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCamera, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useCreateReview } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -25,6 +25,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
@@ -50,11 +51,13 @@ export default function ReviewCompose() {
   const [eligGate, setEligGate] = useState(false); // P-251: REVIEW-004 자격 안내
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
+  const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
   const [placeSheet, setPlaceSheet] = useState(false);
   // P-202: 3축(속도·친절·찾아가기 — 선택) — 전송은 계약 후(buildReviewExtras), 우선 로컬 보관
   const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
+  const bottomInset = useBottomInset(); // Codex #31 P1: 안드 내비바 플로어 포함
 
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
@@ -187,29 +190,41 @@ export default function ReviewCompose() {
         keyboardShouldPersistTaps="handled"
         onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
       >
-        {/* food chip */}
+        {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
         <View style={styles.foodChip}>
           {/* P-170 A안: 썸네일 = 상세 캐시(useFoodDetail) 재사용 — 네트워크 0, 무사진 폴백 */}
           {food?.photoUrl ? (
             <View style={styles.foodPh}>
-              <CardPhoto uri={food.photoUrl} borderRadius={12} />
+              <CardPhoto uri={food.photoUrl} borderRadius={4} />
             </View>
           ) : (
             <View style={styles.foodPh} testID="food-ph" />
           )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.foodName}>{food?.name ?? ''}</Text>
-            {!!food?.nameKo && food.nameKo !== food.name && <Text style={styles.foodKo}>{food.nameKo}</Text>}
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? ''}</Text>
+            {/* " · " 구분은 P-196 잠금과 충돌 — 공백(D-3 Q9 판정과 동일) */}
+            <Text style={styles.foodKo} numberOfLines={1}>
+              {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} ` : ''}
+              {t('reviews.subtitle', { count: food?.overall?.count ?? 0 })}
+            </Text>
           </View>
         </View>
+        {/* §2-2: 장소 선택됨 = 장소 카드 변형(4150:16530 — 이미지 없음 pad 8/12) */}
+        {FLAGS.reviewPlaceEnabled && place && (
+          <View style={styles.placeCard} testID="place-card">
+            <Text style={styles.foodName} numberOfLines={1}>{place.name}</Text>
+            {!!place.roadAddress && <Text style={styles.foodKo} numberOfLines={1}>{place.roadAddress}</Text>}
+          </View>
+        )}
 
         {/* rating */}
         <View style={styles.block}>
           <Text style={styles.label}>{t('review.ratingLabel')}</Text>
+          {/* §2-3(4150:16468): 별 48 gap 11, stroke 3 — 채움/빈 색은 시안(D-1 Stars 토큰) */}
           <View style={styles.starPick}>
             {[1, 2, 3, 4, 5].map((i) => (
               <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
-                <Star size={44} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} />
+                <Star size={48} fillPct={i <= rating ? 100 : 0} sw={3} />
               </Pressable>
             ))}
           </View>
@@ -224,6 +239,7 @@ export default function ReviewCompose() {
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         <View
           style={styles.block}
+          testID="body-block"
           onLayout={(e) => { blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
         >
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
@@ -232,9 +248,11 @@ export default function ReviewCompose() {
             value={body}
             onChangeText={(v) => setBody(v.slice(0, MAX))}
             placeholder={t('review.placeholder')}
-            placeholderTextColor={C.ink3}
+            placeholderTextColor={C.inkDisabled}
             multiline
-            style={styles.textarea}
+            style={[styles.textarea, bodyFocused && styles.textareaFocus]}
+            onFocus={() => setBodyFocused(true)}
+            onBlur={() => setBodyFocused(false)}
             textAlignVertical="top"
             onContentSizeChange={() => {
               if (atEnd.current) ensureCursorVisible();
@@ -248,12 +266,29 @@ export default function ReviewCompose() {
           <View style={styles.metaRow}>
             <Text style={styles.tag}>{t('review.charCount', { count: body.length })}</Text>
           </View>
+          {/* §2-7(4150:16511): 장소 필 — 좌하단 pill h38(선택 = 장소명 + Clear) */}
+          {FLAGS.reviewPlaceEnabled && (
+            place ? (
+              <View style={styles.placePill} testID="place-pill-selected">
+                <IconMapPin size={12} color={C.ink} />
+                <Text style={styles.placePillText} numberOfLines={1}>{place.name}</Text>
+                <Pressable style={styles.pillClear} hitSlop={8} onPress={() => setPlace(null)} testID="place-clear">
+                  <IconClose size={10} color="#fff" />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.placePill} onPress={() => setPlaceSheet(true)} testID="place-pill">
+                <IconMapPin size={12} color={C.ink} />
+                <Text style={styles.placePillText}>{t('review.placeRow')}</Text>
+              </Pressable>
+            )
+          )}
         </View>
 
         {/* photos — P-077: 최대 3장, 미리보기 + 개별 삭제. 선택 사항 */}
         <View style={styles.block}>
-          <Text style={styles.label}>{t('review.photosLabel', { max: REVIEW_MAX_PHOTOS })}</Text>
-          <View style={styles.photoRow}>
+          {/* §2-5(4150:16463 @y428): 슬롯 100 r8, 빈 = #F4F6F6 50% + #DCDEE3, 카메라 24 */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
             {photos.map((uri) => (
               <View key={uri} style={styles.photoThumbWrap}>
                 <Image source={{ uri }} style={styles.photoThumb} />
@@ -263,41 +298,20 @@ export default function ReviewCompose() {
                   hitSlop={8}
                   onPress={() => setPhotos((cur) => removeReviewPhoto(cur, uri))}
                 >
-                  <IconClose size={11} color="#fff" />
+                  <IconClose size={10} color="#fff" />
                 </Pressable>
               </View>
             ))}
             {photos.length < REVIEW_MAX_PHOTOS && (
               <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={photoImporting ? undefined : pickPhoto} testID="photo-add">
                 {/* P-191: 픽커 복귀~원본 준비(iCloud) — 타일 자리 스피너(프레임 불변) */}
-                {photoImporting ? <ActivityIndicator size="small" color={C.ink3} /> : <IconPlus size={20} color={C.ink3} />}
+                {photoImporting ? <ActivityIndicator size="small" color={C.ink3} /> : <IconCamera size={24} color={C.ink3} />}
               </Pressable>
             )}
-          </View>
+          </ScrollView>
+          <Text style={styles.photoCap}>{t('review.photosLabel', { max: REVIEW_MAX_PHOTOS })}</Text>
         </View>
 
-        {/* P-095: 장소 필드 — 접힌 행 → 92% 검색 시트 → 이름 칩(×).
-            P-116 봉인 → P-201 해제: reviewPlaceEnabled(dev 계열만 — prod 서버 계약 미배포) */}
-        {FLAGS.reviewPlaceEnabled && (
-        <View style={styles.block}>
-          {place ? (
-            <View style={styles.placeChip}>
-              <IconMapPin size={14} color={C.accent} />
-              <Text style={styles.placeChipText} numberOfLines={1}>{place.name}</Text>
-              <Pressable hitSlop={8} onPress={() => setPlace(null)}>
-                <IconClose size={13} color={C.ink3} />
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable style={styles.placeRow} onPress={() => setPlaceSheet(true)}>
-              <IconMapPin size={17} color={C.ink2} />
-              {/* P-225: Optional 라벨 제거(멘토 8/15) — flex 자리는 텍스트가 이어받음 */}
-              <Text style={[styles.placeRowText, { flex: 1 }]}>{t('review.placeRow')}</Text>
-              <IconChevron size={15} color={C.ink3} />
-            </Pressable>
-          )}
-        </View>
-        )}
 
         <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
         {postError && (
@@ -306,19 +320,15 @@ export default function ReviewCompose() {
             <Text style={styles.postErrText}>{t('review.postError')}</Text>
           </View>
         )}
-        <View style={{ marginTop: 4 }}>
-          {/* P-126: 별 아이콘 제거 — 라벨만 (8/4 예진). P-168: 제출 중 = 스피너(재탭 불가) */}
-          {posting ? (
-            <View style={styles.postingBtn} testID="posting">
-              <ActivityIndicator color="#fff" />
-            </View>
-          ) : (
-            <Btn variant={canPost ? 'primary' : 'off'} onPress={post}>
-              {t('review.postReview')}
-            </Btn>
-          )}
-        </View>
       </ScrollView>
+
+      {/* §2-8: FixedBottom — primary "Post review" full-width. P-173 가드 = useSubmitGuard +
+          Btn busy(공용 문법 — 메트릭 불변 스피너). */}
+      <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
+        <Btn variant={canPost || posting ? 'primary' : 'off'} busy={posting} onPress={post} testID="post-review">
+          {t('review.postReview')}
+        </Btn>
+      </View>
 
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
       <Modal visible={submitted} transparent animationType="fade" onRequestClose={() => router.back()}>
@@ -359,34 +369,43 @@ const styles = StyleSheet.create({
   postLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, marginRight: 8 },
   postLinkOff: { color: C.ink3 },
 
-  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-  foodPh: { width: 48, height: 48, borderRadius: 12, backgroundColor: C.surface2, overflow: 'hidden' },
-  foodName: { fontFamily: font.display, fontSize: 16, color: C.ink },
-  foodKo: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
+  // KB-432 §2-2: 대상 카드(4150:16477) — #DCDEE3 1px r8 pad 8 gap 13
+  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, padding: 8 },
+  foodPh: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, overflow: 'hidden' },
+  foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
+  foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
+  // §2-2: 장소 카드 변형(4150:16530 — 이미지 없음 pad 8/12)
+  placeCard: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingVertical: 8, paddingHorizontal: 12, gap: 2 },
 
   block: { gap: 12 },
-  label: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  starPick: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 4 },
-  starCap: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary, textAlign: 'center' },
+  label: { fontSize: 13, fontWeight: '500', color: C.ink2 },
+  // §2-3: 별 48 gap 11 + 수치 18/600 #4B4F58
+  starPick: { flexDirection: 'row', gap: 11, justifyContent: 'center', marginTop: 4 },
+  starCap: { fontSize: 18, fontWeight: '600', color: '#4B4F58', textAlign: 'center' },
   starCapEmpty: { color: C.ink3 },
 
-  textarea: { minHeight: 120, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, padding: 14, fontFamily: font.body, fontSize: 14.5, color: C.ink, lineHeight: 21, ...shadow.sh1 },
-  photoRow: { flexDirection: 'row', gap: 10 },
-  photoThumbWrap: { width: 76, height: 76 },
-  photoThumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: C.surface2 },
-  photoDel: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 10, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  photoAdd: { width: 76, height: 76, borderRadius: 12, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  // §2-6(4150:16505): h156 흰 bg line 1px r8 pad 14/16, focus = primary
+  textarea: { minHeight: 156, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, paddingVertical: 14, paddingHorizontal: 16, fontSize: 15, fontWeight: '500', color: C.ink, lineHeight: 21 },
+  textareaFocus: { borderColor: C.primary },
+  // §2-5: 사진 슬롯 100 r8
+  photoRow: { flexDirection: 'row', gap: 8 },
+  photoThumbWrap: { width: 100, height: 100 },
+  photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
+  photoDel: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
+  photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center' },
+  photoCap: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  metaRow: { flexDirection: 'row', justifyContent: 'flex-end' },
+  tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },
+  // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12
+  placePill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: 24, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' },
+  placePillText: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.ink },
+  pillClear: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
+  // §2-8: FixedBottom
+  // Codex #31 P1: 하단 = 10 + useBottomInset(인라인)
+  bottomBar: { paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
   postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
-
-  // P-095 장소 필드·시트
-  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, paddingVertical: 13, ...shadow.sh1 },
-  placeRowText: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  placeChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, maxWidth: '100%' },
-  placeChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink, flexShrink: 1 },
 
   // submitted
   // P-168 ②: 완료 모달 (P-162 confirm 문법과 동일 수치)
@@ -395,7 +414,5 @@ const styles = StyleSheet.create({
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  // P-168 ①: 제출 중 로딩 — Btn primary와 같은 메트릭(높이 리플로 0)
-  postingBtn: { backgroundColor: C.primary, borderRadius: 16, minHeight: 52, alignItems: 'center', justifyContent: 'center', opacity: 0.85 },
   okMeta: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 2 },
 });

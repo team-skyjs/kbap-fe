@@ -47,7 +47,9 @@ describe('①④⑤⑥⑦ 소스 잠금', () => {
     const scan = read('src/app/scan.tsx');
     expect(scan).toContain("useState<ResultSortMode>('menu')"); // 기본 = 메뉴판 순
     expect(scan).toContain('sortResultDishes(allDishes, sortMode)');
-    expect(scan).toContain('testID={`sort-${m}`}');
+    // KB-432 §1-1: 소팅 세그 → 정렬 드롭다운(ActionSheet — 옵션 2종 무변)
+    expect(scan).toContain('testID="scan-sort"');
+    expect(scan).toContain("(['menu', 'safety'] as ResultSortMode[]).map");
   });
 
   it('④ ko→en 배지 제거 — 카운트만', () => {

@@ -118,8 +118,8 @@ it('⑥ 탭 계측(Codex #27 P1) — 이벤트 값 reviews 스키마 반영 + �
 
 it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 = riskText, fg는 아이콘·fill 전용', () => {
   const fs = require('fs') as typeof import('fs');
-  // KB-431: 상세 위험 요약 행은 시안이 잉크 텍스트(riskTone.bg 틴트만) — riskText 소비처에서 제외
-  for (const p of ['src/components/RiskPill.tsx', 'src/features/scan/ScanRichList.tsx', 'src/app/scan.tsx', 'src/app/profile/saved.tsx']) {
+  // KB-431: 상세 위험 요약 행·KB-432: 스캔 회피 칩(시안 #2F3137 텍스트)은 riskText 소비처에서 제외
+  for (const p of ['src/components/RiskPill.tsx', 'src/app/scan.tsx', 'src/app/profile/saved.tsx']) {
     expect(fs.readFileSync(p, 'utf8')).toContain('riskText[');
   }
   for (const p of [
