@@ -194,18 +194,47 @@ it('P-101 — 공용 푸터: consent(신규)와 spice(드래프트) CTA 프레�
   expect(a).toEqual(b); // 스텝이 달라도 푸터 프레임 스타일 동일 (paddingTop·paddingBottom·배경 등)
 });
 
-/* ---- P-133: 국적 화면 시안 정합 ---- */
-it('P-133: 행 62 고정·핀 카드 70·검색 시 핀 숨김·모국어=영어 생략 규칙', async () => {
+/* ---- KB-433 §0·§3: ORDER 현행 유지 + 진행 점 활성 인덱스 ---- */
+it('KB-433 §0: ORDER = consent→nationality→[presets]→restrictions→spice (현행 유지 — 예진 확정 9/5)', () => {
+  const src = require('fs').readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
+  expect(src).toContain("['consent', 'nationality', 'presets', 'restrictions', 'spice']");
+  expect(src).toContain("['consent', 'nationality', 'restrictions', 'spice']");
+  expect(src).toContain("ORDER.filter((st) => st !== 'consent')"); // 진행 점 = consent 제외
+});
+
+it('KB-433 §3: 진행 점 — 국가 스텝 = 첫 점 활성, 나머지 비활성(17×4 primary/#DCDEE3)', async () => {
+  mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
+  const tree = await render();
+  expect(tree.root.findAll((n) => n.props?.testID === 'ob-dot-0-on').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'ob-dot-1-off').length).toBeGreaterThanOrEqual(1);
+  const { StyleSheet } = require('react-native');
+  const on = tree.root.findAll((n) => n.props?.testID === 'ob-dot-0-on')[0];
+  const st = StyleSheet.flatten(on.props.style) as Record<string, unknown>;
+  expect(st.width).toBe(17);
+  expect(st.height).toBe(4);
+  expect(st.backgroundColor).toBe('#FF7134');
+});
+
+it('KB-433 §2: 로그인 콜라주 — 정적(애니메이션 배선 0) + 12장 + 그라데이션 소스 잠금', () => {
+  const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
+  expect((src.match(/dish-\d\d\.jpg/g) ?? []).length).toBe(12);
+  expect(src).not.toContain('useAnimatedStyle'); // 정적 배치(예진 확정)
+  expect(src).toContain('collageFade'); // 상단 흰→투명 그라데이션
+  expect(src).toContain('<Wordmark height={46} />'); // 워드마크 144×46
+});
+
+/* ---- P-133 → KB-433 §4-①: 국적 화면 시안 정합 ---- */
+it('KB-433: 추천 행(pad16 r8) + 2열 그리드 타일·검색 시 핀 숨김·모국어=영어 생략 규칙', async () => {
   mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
   const tree = await render();
   const { StyleSheet } = require('react-native');
   const flat = (st: unknown) => StyleSheet.flatten(st) as Record<string, unknown>;
-  // 핀 카드(감지국 US) — minHeight 70 + 기본 선택(체크 채움)
+  // 추천 행(감지국 US) — pad 16 r8(4150:13845)
   const pin = tree.root.findAll((n) => n.props?.testID === 'nat-US')[0];
-  expect(flat(pin.props.style).minHeight).toBe(70);
-  // 일반 행 — 62 고정
+  expect(flat(pin.props.style).padding).toBe(16);
+  // 일반 = 2열 그리드 타일(47%)
   const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
-  expect(flat(jp.props.style).minHeight).toBe(62);
+  expect(flat(jp.props.style).width).toBe('47%');
   // 모국어=영어 생략: SG(=Singapore) 행엔 보조 텍스트 없음, JP(日本≠Japan)엔 있음
   const sg = tree.root.findAll((n) => n.props?.testID === 'nat-SG')[0];
   expect(sg.findAll((c) => c.type === 'Text' && c.props?.children === 'Singapore').length).toBe(1); // 메인 1개뿐(보조 생략)
@@ -236,11 +265,11 @@ it('P-134 회피: 81종 타일+폴백 약어·카운트/Clear', async () => {
   expect(textNodes(tree, 'onboarding.noneSelectedYet').length).toBeGreaterThanOrEqual(1); // Clear → 0개 안내
 });
 
-it('P-134 맵기: 레벨 전환 시 레일 교체 · 👶 배지 NONE/MILD 한정', async () => {
+it('P-134 → KB-433 맵기: 레벨 전환 시 예시 타일 교체 (kids 배지 = 시안 부재로 소멸)', async () => {
   mockDraft = { consented: true, step: 'spice', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'NONE', updatedAt: '' };
   const tree = await render();
-  expect(tree.root.findAll((n) => n.props?.testID === 'rail-246').length).toBeGreaterThanOrEqual(1); // NONE 레일(설렁탕)
-  expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBeGreaterThanOrEqual(1); // 👶 NONE
+  expect(tree.root.findAll((n) => n.props?.testID === 'rail-246').length).toBeGreaterThanOrEqual(1); // NONE 타일(설렁탕)
+  expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0); // KB-433: 배지 소멸
   // HOT으로 전환 (슬라이더 릴리즈 스냅 — spiceUnset 하네스 지문)
   const { StyleSheet } = require('react-native');
   // P-262: 팬 래퍼 = paddingVertical 32 지문·onLayout = 내부 트랙 래퍼(분리)
@@ -251,8 +280,7 @@ it('P-134 맵기: 레벨 전환 시 레일 교체 · 👶 배지 NONE/MILD 한�
   const layoutNode = pan.findAll((n) => typeof n.props?.onLayout === 'function')[0];
   await act(async () => { layoutNode.props.onLayout({ nativeEvent: { layout: { width: 300, height: 44 } } }); });
   await act(async () => { tree.root.findAll(isPan)[0].props.onResponderRelease({ nativeEvent: { pageX: 225 } }); }); // HOT
-  expect(tree.root.findAll((n) => n.props?.testID === 'rail-483').length).toBeGreaterThanOrEqual(1); // HOT 레일(국물떡볶이)
-  expect(tree.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0); // 배지 소멸
+  expect(tree.root.findAll((n) => n.props?.testID === 'rail-483').length).toBeGreaterThanOrEqual(1); // HOT 타일(국물떡볶이)
 });
 
 /* ---- P-148① → P-151: 핀 카드 강조 = 선택 바인딩 + 프레임 메트릭 불변 ---- */
@@ -269,19 +297,17 @@ it('P-148/151: 타국 선택 시 핀 카드 색 강조만 해제 — 프레임 �
   const selectedStyle = flat2(pin().props.style);
   // 선택 상태 — 주황 보더·틴트 존재
   expect(selectedStyle.borderColor).toBe('#FF7134');
-  // 타국(JP) 선택 → 색 강조만 소멸(투명 보더 동폭), 메트릭은 픽셀 동일 (P-103)
+  // 타국(JP) 선택 → 색 강조만 소멸(#EAEBEE 동폭 보더 — KB-433 시안), 메트릭 픽셀 동일 (P-103)
   const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
   await act(async () => { jp.props.onPress(); });
   const unselectedStyle = flat2(pin().props.style);
-  expect(unselectedStyle.borderColor).toBe('transparent'); // 색만 소멸 — 폭은 유지
+  expect(unselectedStyle.borderColor).toBe('#EAEBEE'); // 색만 전환 — 폭 1 유지
   expect(String(unselectedStyle.backgroundColor ?? '')).not.toContain('rgba(255,113,52');
-  expect(metrics(unselectedStyle)).toEqual(metrics(selectedStyle)); // 8pt 밀림 봉쇄
-  expect(unselectedStyle.minHeight).toBe(70);
-  expect(unselectedStyle.borderWidth).toBe(1.5);
-  // 일반 목록 행(JP — 선택됨)도 메트릭 무변: 선택 강조는 색뿐(natRow 62 고정)
+  expect(metrics(unselectedStyle)).toEqual(metrics(selectedStyle)); // 밀림 봉쇄
+  expect(unselectedStyle.borderWidth).toBe(1);
+  // 그리드 타일(JP — 선택됨)도 메트릭 무변: 선택 강조는 색뿐
   const jpStyle = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
-  expect(jpStyle.minHeight).toBe(62);
-  expect(jpStyle.borderWidth).toBe(1.5); // P-154: 일반 행도 상시 동폭 보더(선택 = 색만 — 프레임 불변)
+  expect(jpStyle.borderWidth).toBe(1);
 });
 
 it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴트) — 메트릭 불변·강조 1곳', async () => {
@@ -291,9 +317,9 @@ it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴
   const flat2 = (s2: unknown) => RNSheet.flatten(s2) as Record<string, unknown>;
   const jpStyle = () => flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
   const before = jpStyle();
-  // 미선택 일반 행 — 상시 투명 보더 동폭(프레임 상비)
-  expect(before.borderWidth).toBe(1.5);
-  expect(before.borderColor).toBe('transparent');
+  // 미선택 그리드 타일 — 상시 동폭 보더(#EAEBEE — KB-433 시안, 프레임 상비)
+  expect(before.borderWidth).toBe(1);
+  expect(before.borderColor).toBe('#EAEBEE');
   const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
   await act(async () => { jp.props.onPress(); });
   const after = jpStyle();
@@ -303,7 +329,7 @@ it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴
   expect(after.minHeight).toBe(before.minHeight);
   expect(after.borderWidth).toBe(before.borderWidth);
   expect(after.borderRadius).toBe(before.borderRadius);
-  // 강조 단일성 — 핀 카드(US)는 무강조로 전환
+  // 강조 단일성 — 추천 행(US)은 무강조로 전환(#EAEBEE)
   const pin = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-US')[0].props.style);
-  expect(pin.borderColor).toBe('transparent');
+  expect(pin.borderColor).toBe('#EAEBEE');
 });

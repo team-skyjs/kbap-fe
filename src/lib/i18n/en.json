@@ -870,7 +870,8 @@
       "groupAllergy": "Allergy bundles",
       "apply": "Apply to my list",
       "applyRow": "Fill from a diet or religion"
-    }
+    },
+    "countryLabel": "Country"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

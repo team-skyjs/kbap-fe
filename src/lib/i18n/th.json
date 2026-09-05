@@ -716,7 +716,8 @@
       "groupAllergy": "ชุดภูมิแพ้",
       "apply": "ใช้กับรายการของฉัน",
       "applyRow": "เติมตามการกิน/ศาสนา"
-    }
+    },
+    "countryLabel": "ประเทศ"
   },
   "editProfile": {
     "title": "แก้ไขโปรไฟล์",

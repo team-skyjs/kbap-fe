@@ -716,7 +716,8 @@
       "groupAllergy": "Nhóm dị ứng",
       "apply": "Áp dụng vào danh sách",
       "applyRow": "Điền theo chế độ ăn/tôn giáo"
-    }
+    },
+    "countryLabel": "Quốc gia"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

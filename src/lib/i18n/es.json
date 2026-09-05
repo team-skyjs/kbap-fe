@@ -716,7 +716,8 @@
       "groupAllergy": "Grupos de alergia",
       "apply": "Aplicar a mi lista",
       "applyRow": "Rellenar por dieta/religión"
-    }
+    },
+    "countryLabel": "País"
   },
   "editProfile": {
     "title": "Editar perfil",
