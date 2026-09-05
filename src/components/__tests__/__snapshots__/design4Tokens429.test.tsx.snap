@@ -1,0 +1,62 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`① 토큰 스냅샷 — 4차 신값 잠금(키 유지·값 교체 + 신규 4종) 1`] = `
+{
+  "glow": {
+    "elevation": 4,
+    "shadowColor": "#FFC700",
+    "shadowOffset": {
+      "height": 3,
+      "width": 0,
+    },
+    "shadowOpacity": 0.4,
+    "shadowRadius": 8,
+  },
+  "hair": "#F2F3F6",
+  "ink": "#1C1E21",
+  "ink2": "#6A6F7C",
+  "ink3": "#9196A1",
+  "inkDisabled": "#D1D3D8",
+  "inkMute": "#B1B5BD",
+  "line": "#EAEBEE",
+  "line2": "#DCDEE3",
+  "primary": "#FF7134",
+  "primaryPress": "#E8602A",
+  "primaryText": "#C9491A",
+  "radius": {
+    "lg": 10,
+    "pill": 999,
+    "sm": 8,
+    "xs": 4,
+  },
+  "riskCaution": "#FFA526",
+  "riskDanger": "#F76661",
+  "riskSafe": "#00BE65",
+  "riskTextSafe": "#008147",
+  "riskToneLine": "#D5DFE7",
+  "riskToneSafeBg": "#EFFFF7",
+  "riskUnable": "#B1B5BD",
+  "sh1": {
+    "elevation": 1,
+    "shadowColor": "#000000",
+    "shadowOffset": {
+      "height": 1,
+      "width": 0,
+    },
+    "shadowOpacity": 0.07,
+    "shadowRadius": 7.3,
+  },
+  "shBadge": {
+    "elevation": 3,
+    "shadowColor": "#000000",
+    "shadowOffset": {
+      "height": 1,
+      "width": 1,
+    },
+    "shadowOpacity": 0.6,
+    "shadowRadius": 3.7,
+  },
+  "surface": "#FFFFFF",
+  "surface2": "#F7F8FA",
+}
+`;

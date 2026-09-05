@@ -81,7 +81,8 @@
     "food": "料理",
     "scan": "スキャン",
     "community": "レビュー",
-    "profile": "プロフィール"
+    "profile": "プロフィール",
+    "reviews": "レビュー"
   },
   "food": {
     "title": "料理を探す",

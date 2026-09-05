@@ -22,7 +22,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, radius, riskText, riskTone, type RiskState } from '@/lib/theme';
 import { RiskMark, RiskPill, CardPhoto, Star, Stars, Flag, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
@@ -332,7 +332,7 @@ function Registered({
         >
           <RiskMark state={dishRisk} size={26} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.verdictLabel, { color: riskTone[dishRisk].fg }]}>{t(VERDICT[dishRisk])}</Text>
+            <Text style={[styles.verdictLabel, { color: riskText[dishRisk] }]}>{t(VERDICT[dishRisk])}</Text>
             <Text style={styles.verdictReason}>{verdictReason}</Text>
           </View>
         </Pressable>

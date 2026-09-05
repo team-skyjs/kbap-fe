@@ -84,12 +84,12 @@ it('P-175: dangerGhost — 취소(ghost)와 같은 버튼 프레임(보더+라�
   const tree = render(<Btn variant="dangerGhost">Rescan</Btn>);
   const framed = tree.root.findAll((n) => {
     const st = StyleSheet.flatten(n.props?.style ?? {}) as { borderWidth?: number; borderRadius?: number };
-    return st.borderWidth === 1.5 && (st.borderRadius ?? 0) >= 12; // ghost와 동일 프레임 문법
+    return st.borderWidth === 1 && (st.borderRadius ?? 0) >= 4; // ghost와 동일 프레임 문법(KB-429: 1px·radius 4)
   });
   expect(framed.length).toBeGreaterThanOrEqual(1);
   const label = tree.root.findAll((n) => {
     const st = StyleSheet.flatten(n.props?.style ?? {}) as { color?: string };
-    return st.color === '#cf3a2c'; // destructive 텍스트(기존 riskDanger 토큰)
+    return st.color === '#F76661'; // destructive 텍스트(KB-429 riskDanger)
   });
   expect(label.length).toBeGreaterThanOrEqual(1);
 });

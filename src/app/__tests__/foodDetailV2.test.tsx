@@ -431,7 +431,7 @@ it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () =>
     .findAll((n) => n.props?.accessibilityState !== undefined && typeof n.props?.onPress === 'function')
     .map((n) => JSON.stringify(n.children?.toString?.() ?? ''));
   const s = flat(tree);
-  const solidCount = (s.match(/"backgroundColor":"#E2580C"/g) ?? []).length;
+  const solidCount = (s.match(/"backgroundColor":"#FF7134"/g) ?? []).length;
   expect(s).toContain('detail.askOwner');
   expect(solidCount).toBe(1); // Ask the owner 하나만 솔리드 주황
   void btnLabels;

@@ -1,11 +1,10 @@
 /**
  * RiskMark — the fixed 4-state risk badge (Constitution III, NON-NEGOTIABLE).
- * Each state = unique SILHOUETTE (colorblind-safe) + unique GLYPH + fixed color:
- *   safe = circle + check       (#2f8f5b)
- *   caution = triangle + !       (#d28a12)
- *   danger = octagon + ✕         (#cf3a2c)
- *   unable = diamond + ?         (#5b6470)
- * Ported 1:1 from mockup icons.jsx. NEVER recolor/reshape these.
+ * KB-429 재리뷰 판정(커맨드 센터, Codex #27 P1): 11px급에서 글리프 대비가 형태
+ * 채널로 부족 → **상태별 실루엣 유지**가 헌법 정본, 시안에서는 색·글리프만 채택:
+ *   safe = 원 + ✓ · caution = 삼각 + ! · danger = 팔각 + ✕ · unable = 마름모 + ?
+ * 실루엣·글리프·색 페어링은 불변 — 리컬러/리셰이프/교차 금지. 색맹 시뮬 스냅샷 =
+ * docs/design/riskmark-colorblind.svg (PR 첨부분).
  */
 import * as React from 'react';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
@@ -20,7 +19,7 @@ export const RISK: Record<RiskState, { color: string }> = {
   unable: { color: C.riskUnable },
 };
 
-function Silhouette({ state }: { state: RiskState }) {
+export function Silhouette({ state }: { state: RiskState }) {
   switch (state) {
     case 'safe':
       return <Circle cx="12" cy="12" r="10.2" />;
@@ -36,7 +35,7 @@ function Silhouette({ state }: { state: RiskState }) {
 function GlyphInner({ state, stroke }: { state: RiskState; stroke: string }) {
   switch (state) {
     case 'safe':
-      return <Path d="M7.5 12.4 l3 3 L16.6 8.8" fill="none" stroke={stroke} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />;
+      return <Path d="M7.5 12.4 l3 3 L16.6 8.8" fill="none" stroke={stroke} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />;
     case 'caution':
       return (
         <G stroke={stroke} strokeWidth={2.4} strokeLinecap="round">

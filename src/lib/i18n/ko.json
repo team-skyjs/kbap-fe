@@ -81,7 +81,8 @@
     "food": "음식",
     "scan": "스캔",
     "community": "리뷰",
-    "profile": "프로필"
+    "profile": "프로필",
+    "reviews": "리뷰"
   },
   "food": {
     "title": "음식 둘러보기",

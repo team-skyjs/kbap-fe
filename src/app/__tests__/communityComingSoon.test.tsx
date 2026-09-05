@@ -85,7 +85,7 @@ it('on(dev·teamtest) → 실화면 (플레이스홀더 없음)', () => {
 
 it('탭바 — 플래그 무관 4탭+스캔 5슬롯 (P-110 탭 제거 폐기)', () => {
   mockFlags.communityEnabled = false;
-  const labels = { home: 'H', food: 'F', scan: 'S', community: 'C', profile: 'P' };
+  const labels = { home: 'H', food: 'F', scan: 'S', reviews: 'C' /* KB-429: 슬롯 키 교체 */, profile: 'P' };
   const tree = render(<TabBar active="home" labels={labels} onPress={jest.fn()} onScan={jest.fn()} />);
   const shown = texts(tree);
   for (const l of ['H', 'F', 'S', 'C', 'P']) expect(shown).toContain(l);

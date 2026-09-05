@@ -81,7 +81,8 @@
     "food": "Makanan",
     "scan": "Pindai",
     "community": "Ulasan",
-    "profile": "Profil"
+    "profile": "Profil",
+    "reviews": "Ulasan"
   },
   "food": {
     "title": "Jelajahi makanan",

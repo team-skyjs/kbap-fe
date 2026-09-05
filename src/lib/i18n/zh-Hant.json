@@ -81,7 +81,8 @@
     "food": "美食",
     "scan": "掃描",
     "community": "評價",
-    "profile": "個人檔案"
+    "profile": "個人檔案",
+    "reviews": "評價"
   },
   "food": {
     "title": "探索美食",

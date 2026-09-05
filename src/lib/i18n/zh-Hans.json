@@ -81,7 +81,8 @@
     "food": "美食",
     "scan": "扫描",
     "community": "评价",
-    "profile": "我的"
+    "profile": "我的",
+    "reviews": "评价"
   },
   "food": {
     "title": "探索美食",
