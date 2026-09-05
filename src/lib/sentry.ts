@@ -50,6 +50,17 @@ export function captureApi5xx(path: string, status: number, code?: string): void
 }
 
 /** 유저 식별 — memberId만(닉네임·이메일 금지). null = 해제(로그아웃·게스트). */
+/** KB-434 후속: 프로필 계약 드리프트 — 필수 필드 부재를 조용한 강등 대신 경고로.
+ *  PII 0(필드명만). dev/prod 공통 — 어댑터는 throw 대신 방어값을 쓰고 이걸 남긴다. */
+export function reportProfileContractDrift(missing: string[]): void {
+  if (missing.length === 0) return;
+  console.warn('[profile] contract drift — 응답 필드 부재:', missing.join(','));
+  Sentry.captureMessage('profile_contract_drift', {
+    level: 'warning',
+    tags: { missing: missing.join(',') },
+  });
+}
+
 export function setSentryUser(memberId: string | null): void {
   Sentry.setUser(memberId ? { id: memberId } : null);
 }
