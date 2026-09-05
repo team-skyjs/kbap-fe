@@ -55,7 +55,9 @@
     "profileSub": "注册即可保存忌口食材、查看扫描记录并积累你的排名。",
     "saveTitle": "收藏你想尝试的菜品",
     "saveSub": "注册后即可收藏菜品，打造属于你的安心美食清单。",
-    "keepBrowsing": "继续浏览"
+    "keepBrowsing": "继续浏览",
+    "reportTitle": "帮助保持评价的可信度",
+    "reportSub": "注册后即可举报评价，我们会进行核查。"
   },
   "lock": {
     "verdictTitle": "你的专属安全评级",

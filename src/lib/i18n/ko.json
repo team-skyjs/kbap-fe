@@ -55,7 +55,9 @@
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
-    "keepBrowsing": "계속 둘러보기"
+    "keepBrowsing": "계속 둘러보기",
+    "reportTitle": "리뷰를 신뢰할 수 있게 지켜주세요",
+    "reportSub": "가입하면 리뷰를 신고할 수 있고, 저희가 검토해 드려요."
   },
   "lock": {
     "verdictTitle": "나만의 안전 등급",

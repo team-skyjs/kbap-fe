@@ -51,7 +51,9 @@
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
     "saveTitle": "Save dishes you want to try",
     "saveSub": "Sign up to bookmark dishes and build your own safe-to-eat shortlist.",
-    "keepBrowsing": "Keep browsing"
+    "keepBrowsing": "Keep browsing",
+    "reportTitle": "Help keep reviews trustworthy",
+    "reportSub": "Sign up to report a review so we can look into it."
   },
   "lock": {
     "verdictTitle": "Your personal safety rating",
