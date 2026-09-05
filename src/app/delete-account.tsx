@@ -21,8 +21,10 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius } from '@/lib/theme';
-import { SubHeader, Btn, RiskMark, IconCheck, IconTrash } from '@/components';
+import { color as C } from '@/lib/theme';
+import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
+import { D4OctagonAlert } from '@/components/design4Assets';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { useMe } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { EVENTS, track } from '@/lib/analytics';
@@ -42,6 +44,7 @@ export default function DeleteAccount() {
   const { t } = useTranslation();
   const { data: me } = useMe(); // P-147: provider 정본 — 탈퇴 화면 진입 시 이미 캐시됨
   const [agreed, setAgreed] = useState(false);
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const [gate, setGate] = useState<AppleGateState>(null);
   const [revoking, setRevoking] = useState(false);
   // P-173: 탈퇴 흐름 전체 단일 비행 — withdraw PATCH 7발·cleanup 5회 중복(로그 실증) 봉쇄
@@ -113,42 +116,46 @@ export default function DeleteAccount() {
     <View style={styles.root}>
       <SubHeader title={t('profile.deleteAccount')} onBack={() => router.back()} />
       <View style={styles.body}>
-        <View style={styles.icon}>
-          <IconTrash size={30} color={C.riskDanger} />
-        </View>
+        {/* 제목 20/700 중앙 2줄(4150:14547 @y198) */}
         <Text style={styles.title}>{t('profile.delete.title')}</Text>
 
-        <View style={styles.list}>
-          {/* P-082(KB-258): RiskMark 틴트 칩 solid 통일 — 게이트 카드와 filled/outline 혼용 정리 */}
-          <View style={styles.row}>
-            <RiskMark state="danger" size={20} />
-            <Text style={styles.rowText}>{t('profile.delete.dataLine')}</Text>
+        {/* 불릿 카드 2개 — pad 16 gap 12, 첫 카드 하단 line 1px */}
+        <View>
+          <View style={[styles.bullet, FLAGS.reviewsEnabled && styles.bulletDivider]}>
+            <D4OctagonAlert size={20} color={C.ink2} />
+            <Text style={styles.bulletText}>{t('profile.delete.dataLine')}</Text>
           </View>
-          {/* 리뷰 익명화 안내 — KB-148 MVP 제외(숨김) */}
+          {/* 리뷰 익명화 안내 — reviewsEnabled 게이트 유지 */}
           {FLAGS.reviewsEnabled && (
-            <View style={styles.row}>
-              <RiskMark state="safe" size={20} />
-              <Text style={styles.rowText}>{t('profile.delete.reviewsLine')}</Text>
+            <View style={styles.bullet}>
+              <D4OctagonAlert size={20} color={C.ink2} />
+              <Text style={styles.bulletText}>{t('profile.delete.reviewsLine')}</Text>
             </View>
           )}
         </View>
 
+        {/* 체크박스 행 중앙 — Checkbox 20 r4(D-5 consent 문법) */}
         <Pressable style={styles.consent} onPress={() => setAgreed(!agreed)}>
-          <View style={[styles.check, agreed && styles.checkOn]}>{agreed && <IconCheck size={14} color="#fff" />}</View>
+          <View style={[styles.check, agreed && styles.checkOn]}>{agreed && <IconCheck size={13} color="#fff" />}</View>
           <Text style={styles.consentText}>{t('profile.delete.confirm')}</Text>
         </Pressable>
+      </View>
 
-        <View style={{ gap: 9 }}>
-          <Btn
-            variant={agreed ? 'danger' : 'off'}
-            icon={agreed ? <IconTrash size={16} color="#fff" /> : undefined}
-            onPress={agreed && !withdrawing ? onConfirm : undefined}
-            busy={withdrawing}
-          >
-            {t('profile.delete.confirmBtn')}
-          </Btn>
+      {/* FixedBottom — outline Cancel + primary Delete(시안 primary 오렌지 — danger 빨강 금지, 예진 확정 9/5) */}
+      <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="delete-bottom-bar">
+        <View style={{ flex: 1 }}>
           <Btn variant="ghost" onPress={() => router.back()}>
             {t('profile.delete.cancel')}
+          </Btn>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Btn
+            variant={agreed ? 'primary' : 'off'}
+            onPress={agreed && !withdrawing ? onConfirm : undefined}
+            busy={withdrawing}
+            testID="delete-confirm"
+          >
+            {t('profile.delete.confirmBtn')}
           </Btn>
         </View>
       </View>
@@ -178,18 +185,22 @@ export default function DeleteAccount() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { flex: 1, justifyContent: 'center', paddingHorizontal: 22, gap: 18 },
-  icon: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fdecea', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
-  title: { fontFamily: font.display, fontSize: 22, color: C.ink, textAlign: 'center' },
-  list: { gap: 12 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13 },
-  rowText: { flex: 1, fontFamily: font.body, fontSize: 13.5, color: C.ink, lineHeight: 19 },
-  consent: { flexDirection: 'row', alignItems: 'center', gap: 11, justifyContent: 'center' },
-  check: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 96, gap: 24 },
+  title: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', lineHeight: 28, paddingHorizontal: 24 },
+
+  bullet: { alignItems: 'center', gap: 12, padding: 16 },
+  bulletDivider: { borderBottomWidth: 1, borderBottomColor: C.line },
+  bulletText: { fontSize: 14, fontWeight: '500', color: '#4B4F58', textAlign: 'center', lineHeight: 20 },
+
+  consent: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center' },
+  check: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: C.primary, borderColor: C.primary },
-  consentText: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
-  // KB-162 Apple 재인증 게이트 (scan.tsx UnmatchedNotice 카드 패턴)
+  consentText: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
+
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+
+  // KB-162 Apple 재인증 게이트 (D-1 Alert 카드 문법)
   gateBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },
   gateCard: { backgroundColor: C.card, borderRadius: 20, padding: 22, alignItems: 'center', gap: 12, maxWidth: 340, alignSelf: 'stretch' },
-  gateText: { fontFamily: font.body, fontSize: 13.5, color: C.ink, textAlign: 'center', lineHeight: 20 },
+  gateText: { fontSize: 13.5, fontWeight: '400', color: C.ink, textAlign: 'center', lineHeight: 20 },
 });

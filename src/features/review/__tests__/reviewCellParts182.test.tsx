@@ -126,7 +126,7 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
       ['src/features/community/ReviewFeed.tsx', 'card'],
       ['src/app/food/[id]/index.tsx', 'card'],
       ['src/app/food/[id]/reviews.tsx', 'button'],
-      ['src/app/profile/reviews.tsx', 'button'],
+      ['src/app/profile/reviews.tsx', 'card'], // KB-434 D-6: 내 리뷰 = FeedCard 경유
     ];
     for (const [f, via] of surfaces) {
       const src = fs.readFileSync(f, 'utf8') as string;

@@ -229,8 +229,8 @@ it('P-150 ⑤: 프로필 탭 — Spice tolerance 섹션·Score 공식 줄 부재
   const s = flatJson(tree);
   expect(s).not.toContain('profile.spiceTitle');
   expect(s).not.toContain('profile.scoreNote');
-  // 랭킹 섹션 자체는 유지
-  expect(s).toContain('profile.rankingTitle');
+  // 랭킹 표면 자체는 유지(KB-434 D-6: 섹션 타이틀 → 카드)
+  expect(s).toContain('profile-rank-card');
 });
 
 void Stars; // ③ posted 별 부재는 submit 상태 도달이 비용 커서 코드 삭제+타 스위트(orderCta류) 간접 — 아래 잠금으로 대체

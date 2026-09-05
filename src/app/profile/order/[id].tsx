@@ -1,19 +1,25 @@
 /**
- * 주문 상세 (P-253/KB-360 1차 러프) — GET /api/orders/{orderId} 스냅샷 read-only.
- * 메뉴판 사진(탭 = 풀스크린 contain 뷰어 — P-149 문법 간단판)·메뉴별 행(행 탭 =
- * 음식 상세·우측 리뷰 쓰기 = 작성 — 주문했으니 자격 상시 보유, P-251)·총액·주소·날짜.
- * 비범위: 수정·장소 태그·공유 카드·dish 위험도(서버 items에 riskLevel 없음).
+ * 주문 상세 — KB-434 D-6(4150:14634). 메뉴판 사진(기능 유지 — 탭 = 풀스크린 뷰어) ·
+ * 영수증 카드(DATE/LOCATION/TOTAL — PLACE 행은 장소명 데이터 부재로 생략, 조립 금지) ·
+ * 8px 디바이더 · "Dishes" + dish-item 리스트(4150:14675 — 썸네일 58 r4, xN + 환산가.
+ * RiskBadge는 items 위험도 계약 부재로 생략) · FixedBottom outline "Write a review".
+ *
+ * 생략(발주 규정·REPORTS): 사진 슬롯 4개(주문 사진 기능 부재) · 공유 섹션(스토리
+ * 카드/다운로드 — 공유 기능 부재, 기획 필요). 데이터 훅·뷰어 무변.
  */
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius } from '@/lib/theme';
-import { IconClose, SubHeader, Spinner } from '@/components';
+import { color as C } from '@/lib/theme';
+import { Btn, IconClose, SubHeader, Spinner } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RemoteImage } from '@/components/RemoteImage';
 import { useOrderDetail } from '@/lib/data/useOrders';
+import { useMe } from '@/lib/data/useMe';
+import { useBottomInset } from '@/lib/useBottomInset';
+import { convertKrw, currencyForCountry } from '@/lib/exchange';
 import { formatOrderDate } from '../my-foods';
 import { formatKrw } from '@/lib/scan/segmentMenu';
 
@@ -22,34 +28,90 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const q = useOrderDetail(id ?? '');
+  const { data: me } = useMe();
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const [viewer, setViewer] = React.useState(false);
+
+  // 환산 통화 = 서버 정본(me.currency) → 국적 파생 폴백(P-165 체인 간단판)
+  const cur = me?.currency ?? currencyForCountry(me?.nationality);
+  const conv = (krw: number) => convertKrw(krw, cur)?.replace(/^= /, '') ?? null;
+
+  // Codex #33 P2: 시안 단일 버튼 + 전 dish 리뷰 가능 유지 — 1개 = 직행, 2+ = 선택 시트
+  const reviewables = (q.data?.items ?? []).filter((it) => it.foodId != null && it.ready !== false);
+  const onWriteReview = () => {
+    if (reviewables.length === 1) return router.push(`/food/${reviewables[0].foodId}/review` as Href);
+    Alert.alert(t('reviews.writeReview'), undefined, [
+      ...reviewables.map((it) => ({
+        text: it.menuName,
+        onPress: () => router.push(`/food/${it.foodId}/review` as Href),
+      })),
+      { text: t('common.cancel'), style: 'cancel' as const },
+    ]);
+  };
 
   return (
     <View style={styles.root}>
-      <SubHeader title={t('myFoods.orderTitle')} onBack={() => router.back()} />
+      <SubHeader title={t('profile.myFoods')} onBack={() => router.back()} />
       {q.isError ? (
         <QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} onGoBack={() => router.back()} />
       ) : !q.data ? (
         <ScreenCenterFill><Spinner /></ScreenCenterFill>
       ) : (
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <Text style={styles.date}>{formatOrderDate(q.data.orderedAt)}</Text>
-          {!!q.data.roadAddress && <Text style={styles.addr}>{q.data.roadAddress}</Text>}
-
-          {/* 메뉴판 사진 — 탭 = 풀스크린 뷰어(contain — P-248 잘림 금지 문법) */}
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: 110 + bottom }]} showsVerticalScrollIndicator={false}>
+          {/* 메뉴판 사진 — 시안 외(기능 유지) — 탭 = 풀스크린 contain 뷰어(P-248) */}
           {!!q.data.scanImageUrl && (
-            <Pressable onPress={() => setViewer(true)} testID="order-scan-image">
+            <Pressable onPress={() => setViewer(true)} testID="order-scan-image" style={{ paddingHorizontal: 20 }}>
               <RemoteImage uri={q.data.scanImageUrl} style={styles.scanImage} contentFit="cover" />
             </Pressable>
           )}
 
-          <View style={styles.itemsCard}>
+          {/* 장소명 18/600 — 데이터 부재라 주소가 대체(있을 때만, 조립 금지) */}
+          {!!q.data.roadAddress && (
+            <Text style={styles.placeTitle} numberOfLines={2}>{q.data.roadAddress}</Text>
+          )}
+
+          {/* 영수증 카드(4150:14634) — 라벨 12/600 #B1B5BD + 값 14/500 #1C1E21 */}
+          <View style={styles.receipt} testID="order-receipt">
+            <View style={styles.rcptRow}>
+              <Text style={styles.rcptLbl}>{t('myFoods.receiptDate')}</Text>
+              <Text style={styles.rcptVal}>{formatOrderDate(q.data.orderedAt)}</Text>
+            </View>
+            {!!q.data.roadAddress && (
+              <View style={styles.rcptRow}>
+                <Text style={styles.rcptLbl}>{t('myFoods.receiptLocation')}</Text>
+                <Text style={[styles.rcptVal, styles.rcptValWrap]} numberOfLines={2}>{q.data.roadAddress}</Text>
+              </View>
+            )}
+            {q.data.totalPrice != null && q.data.totalPrice > 0 && (
+              <>
+                <View style={styles.rcptLine} />
+                <View style={styles.rcptRow} testID="order-total">
+                  <Text style={styles.rcptLbl}>{t('myFoods.receiptTotal')}</Text>
+                  <Text style={styles.rcptTotal}>
+                    {formatKrw(q.data.totalPrice)}
+                    {conv(q.data.totalPrice) ? ` · ${conv(q.data.totalPrice)}` : ''}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* 8px 디바이더 */}
+          <View style={styles.divider8} />
+
+          {/* Dishes 16/500 + 수량 14/500 #9196A1 */}
+          <View style={styles.dishesHead}>
+            <Text style={styles.dishesTitle}>{t('myFoods.dishes')}</Text>
+            <Text style={styles.dishesCount}>{q.data.items.length}</Text>
+          </View>
+
+          {/* dish-item 리스트(4150:14675) — h86 gap 12, 썸네일 58 r4(RiskBadge = 계약 부재 생략) */}
+          <View style={styles.items}>
             {q.data.items.map((it, k) => (
               <Pressable
                 key={`${it.foodId ?? 'x'}-${k}`}
-                style={[styles.itemRow, k > 0 && styles.itemRowDivider]}
-                /* P-259: ready === false = 준비중(상세 = FOOD-001) — 진입 비활성.
-                   판단은 서버 ready 필드만(기본 이미지 URL 판단 금지 — 종한 명시) */
+                style={styles.itemRow}
+                /* P-259: ready === false = 준비중(FOOD-001) — 진입 비활성(서버 ready만 판단) */
                 disabled={it.foodId == null || it.ready === false}
                 onPress={() => it.foodId && it.ready !== false && router.push(`/food/${it.foodId}?src=list` as Href)}
                 testID={`order-item-${k}`}
@@ -59,40 +121,32 @@ export default function OrderDetailScreen() {
                 ) : (
                   <View style={[styles.itemThumb, { backgroundColor: C.surface2 }]} />
                 )}
-                <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                   <Text style={styles.itemName} numberOfLines={1}>{it.menuName}</Text>
-                  <Text style={styles.itemSub}>
-                    {t('myFoods.itemCount', { count: it.quantity })}
-                    {it.price != null ? `  ${formatKrw(it.price)}` : ''}
-                  </Text>
-                  {/* P-259: 준비중 표시 — 기존 행 문법 내 보조 텍스트(새 시각 문법 0) */}
+                  {/* P-259: 준비중 표시 — 보조 텍스트 */}
                   {it.ready === false && (
                     <Text style={styles.itemPending} testID={`order-item-pending-${k}`}>{t('myFoods.itemPending')}</Text>
                   )}
                 </View>
-                {/* 리뷰 쓰기 — 주문 = 스캔 경유라 자격 상시 보유(P-251 게이트 불요).
-                    P-259: 준비중(ready false) = 숏컷 숨김(작성도 400 — 예진 지시 "디비 히트만") */}
-                {it.foodId != null && it.ready !== false && (
-                  <Pressable
-                    hitSlop={8}
-                    style={styles.reviewLink}
-                    onPress={() => router.push(`/food/${it.foodId}/review` as Href)}
-                    testID={`order-item-review-${k}`}
-                  >
-                    <Text style={styles.reviewLinkText}>{t('reviews.writeReview')}</Text>
-                  </Pressable>
-                )}
+                <View style={styles.itemRight}>
+                  <Text style={styles.itemQty}>x{it.quantity}</Text>
+                  {it.price != null && (
+                    <Text style={styles.itemPrice}>{conv(it.price) ?? formatKrw(it.price)}</Text>
+                  )}
+                </View>
               </Pressable>
             ))}
-            {/* 총액 — 가격 있는 항목만 합산(서버 계산 그대로) */}
-            {q.data.totalPrice != null && q.data.totalPrice > 0 && (
-              <View style={styles.totalRow} testID="order-total">
-                <Text style={styles.totalLabel}>{t('myFoods.total')}</Text>
-                <Text style={styles.totalValue}>{formatKrw(q.data.totalPrice)}</Text>
-              </View>
-            )}
           </View>
         </ScrollView>
+      )}
+
+      {/* FixedBottom — outline Write a review(시안 단일 버튼, 다품목 = 선택 시트) */}
+      {!!q.data && reviewables.length > 0 && (
+        <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="order-bottom-bar">
+          <Btn variant="ghost" onPress={onWriteReview} testID="order-write-review">
+            {t('reviews.writeReview')}
+          </Btn>
+        </View>
       )}
 
       {/* 풀스크린 메뉴판 뷰어 — contain(전체 표시) + 명시 닫기 */}
@@ -112,24 +166,35 @@ export default function OrderDetailScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 16, paddingBottom: 40, gap: 10 },
-  date: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink },
-  addr: { fontFamily: font.body, fontSize: 13, color: C.ink3, marginTop: -6 },
-  scanImage: { height: 160, borderRadius: radius.lg, backgroundColor: C.surface2 },
+  body: { paddingTop: 8, gap: 16 },
+  scanImage: { height: 160, borderRadius: 8, backgroundColor: C.surface2 },
+  placeTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21', paddingHorizontal: 20 },
 
-  itemsCard: { backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: C.line, paddingHorizontal: 12 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
-  itemRowDivider: { borderTopWidth: 0.5, borderTopColor: C.line },
-  itemThumb: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: C.surface2 },
-  itemName: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-  itemSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink3, fontVariant: ['tabular-nums'] },
-  itemPending: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3, marginTop: 2 },
-  reviewLink: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: C.line },
-  reviewLinkText: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
+  // 영수증 카드 — pad 16, 행 space-between, line #DCDEE3
+  receipt: { marginHorizontal: 20, borderWidth: 1, borderColor: C.line, borderRadius: 8, padding: 16, gap: 12 },
+  rcptRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  rcptLbl: { fontSize: 12, fontWeight: '600', color: C.inkMute },
+  rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
+  rcptValWrap: { flex: 1, textAlign: 'right' },
+  rcptLine: { height: 1, backgroundColor: C.line2 },
+  rcptTotal: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: C.line },
-  totalLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2 },
-  totalValue: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, fontVariant: ['tabular-nums'] },
+  divider8: { height: 8, backgroundColor: C.hair },
+
+  dishesHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingHorizontal: 20 },
+  dishesTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
+  dishesCount: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+
+  items: { paddingHorizontal: 20, gap: 12 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, paddingVertical: 14 },
+  itemThumb: { width: 58, height: 58, borderRadius: 4, backgroundColor: C.surface2 },
+  itemName: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
+  itemPending: { fontSize: 11.5, fontWeight: '500', color: C.ink3 },
+  itemRight: { alignItems: 'flex-end', gap: 2 },
+  itemQty: { fontSize: 13, fontWeight: '500', color: C.ink3 },
+  itemPrice: { fontSize: 14, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
+
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 
   viewerRoot: { flex: 1, backgroundColor: '#16110d' },
   viewerClose: { position: 'absolute', top: 54, right: 18, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },

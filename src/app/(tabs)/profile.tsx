@@ -1,58 +1,45 @@
 /**
- * Profile tab (mockup Screen I1) — identity, ranking ladder, dietary
- * restrictions, my reviews, and account rows (incl. delete account).
+ * Profile tab (KB-434 D-6, 4150:14371) — 헤더 행(아바타 48+닉네임+국적·언어) +
+ * 정보수정 아웃라인 버튼 · 랭킹 카드(그라데이션+RankMedal 28+진행 바) ·
+ * 회피 재료 타일 4열 2행 + Show all · 메뉴 행 리스트(tab_box h58).
  *
- * Data via useMe()/useMyReviews()/useFoods() (MOCK_MODE). Scroll-aware brand
- * header; no emoji; reader text i18n'd; risk colors fixed.
+ * 시안 부재로 소멸: 식이 프리셋 칩 섹션·Recently scanned 섹션(진입은 홈·My Foods 유지).
+ * 시안 부재지만 기능 유지(REPORTS 기재): 온보딩 이어하기 행·버전 줄(P-212 셀프체크)·
+ * My Foods 행(§5 화면 진입점 — 시안 §1-4 목록에 없음, 질문 누적).
+ * Data via useMe()/useMyReviews()/useBookmarks() — 훅·로그아웃·게이트 로직 무변.
  */
 import { RemoteImage } from '@/components/RemoteImage';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow, primaryTint } from '@/lib/theme';
+import { color as C } from '@/lib/theme';
 import {
-  Btn,
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
-  MedalEmblem,
-  IconProfile,
-  IconEdit,
-  IconBell,
-  IconGlobe,
-  IconGear,
-  IconUserX,
-  IconTrash,
   IconChevron,
-  IconPlus,
-  IconLogout,
-  IconSpeech,
-  IconStar,
-  IconFood,
   Spinner,
   SkeletonProfile,
   QueryErrorBlock,
   ScreenCenterFill,
+  RankMedal,
+  Btn,
 } from '@/components';
-import { SPICE_LEVEL_LABEL, spiceRank } from '@/lib/spice';
 import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { FLAGS } from '@/lib/flags';
-import { TIERS } from '@/lib/ranking';
+import { tierByKey, TIERS } from '@/lib/ranking';
 import { AvoidTile } from '@/components/AvoidTile';
 import { FB_TINT } from '@/components/IngredientTileSections';
 import { INGREDIENTS } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { useDietPresets } from '@/lib/data/useDietPresets';
-import { useHome } from '@/lib/data/useHome';
-import { RecentRow } from './index';
-import { personalRisk } from '@/lib/risk';
-import { EVENTS, track } from '@/lib/analytics';
 import { FlagEmoji } from '@/components';
+import { AvatarPlaceholder } from '@/components/design4Assets';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -84,17 +71,8 @@ export default function Profile() {
   const { data: reviews } = useMyReviews();
   const { data: bookmarks } = useBookmarks();
 
-  const curLevel = me?.rank.level ?? 1;
   const [loggingOut, setLoggingOut] = useState(false);
-  // P-176: 회피 표시 = 사진 미니 타일(온보딩 문법·P-174 서버 이미지 승계) — 8개(2줄) 초과 시 접기
   const ingCat = useIngredientCatalog();
-  const recentScans = useHome().data?.recent ?? []; // P-181 ②: 서버 보관 이력 — 신규 API 0
-  const dietPresets = useDietPresets();
-  // P-243: 활성 칩 = 서버 정본(me.dietCategories) — 역추론(프리셋 ⊆ 회피) 폐기(BE #179)
-  const activePresets = useMemo(() => {
-    const on = new Set(me?.dietCategories ?? []);
-    return dietPresets.filter((p) => on.has(p.id));
-  }, [dietPresets, me?.dietCategories]);
 
   // ⑪-1: 무반응 버튼 연타 방지 — 확인 모달로 depth 추가, 진행 중엔 스피너+재진입 차단
   function confirmLogout() {
@@ -134,7 +112,6 @@ export default function Profile() {
   }
 
   // P-196 ②: 에러/오프라인 = 화면 기준 정중앙(4탭 공용 기준) — 스크롤/헤더 패딩 밖
-  // (P-007 false-empty/백지 제거 원칙 무변 — 위치 기준만 통일)
   if (!isGuest && !meLoading && meError) {
     return (
       <View style={styles.root}>
@@ -145,6 +122,10 @@ export default function Profile() {
       </View>
     );
   }
+
+  const rank = me?.rank;
+  const curTier = rank ? tierByKey(rank.tier) : null;
+  const nextTier = rank?.nextTier ? tierByKey(rank.nextTier) : null;
 
   return (
     <View style={styles.root}>
@@ -162,43 +143,47 @@ export default function Profile() {
           <SkeletonProfile />
         ) : me && (
           <View style={styles.body}>
-            {/* identity */}
+            {/* 헤더 행(4150:14371 @y99) — 아바타 48 + 닉네임 16/600 + 국적·언어 14/400 */}
             <View style={styles.id}>
               <View style={styles.avatar}>
-                {/* KB-149: 서버 프로필 사진 — 없으면 기존 플레이스홀더 */}
+                {/* KB-149: 서버 프로필 사진 — 없으면 시안 플레이스홀더(D-1) */}
                 {me.profileImageUrl ? (
                   <RemoteImage uri={me.profileImageUrl} style={styles.avatarImg} />
                 ) : (
-                  <IconProfile size={30} color={C.primary} />
+                  <AvatarPlaceholder height={48} />
                 )}
               </View>
-              <View style={{ flex: 1, gap: 6 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                 {/* KB-125: 미완료 프로필 — 검정 '—' 대신 흐린 "미설정" 표기 */}
                 {me.nickname ? (
                   <Text style={styles.name} numberOfLines={1}>{me.nickname}</Text>
                 ) : (
                   <Text style={styles.nameUnset}>{t('profile.nicknameUnset')}</Text>
                 )}
-                <View style={{ flexDirection: 'row', gap: 6 }}>
+                <View style={styles.natRow}>
                   {!!me.nationality && (
-                    <View style={styles.pill} testID="nation-pill">
-                      {/* P-181 ⑤: 코드 생짜 → 국기(FlagEmoji — 기채택 예외)+국가명(온보딩 목록 재사용) */}
-                      <FlagEmoji code={me.nationality} size={13} />
-                      <Text style={styles.pillText}>{countryByCode(me.nationality)?.name ?? me.nationality}</Text>
-                    </View>
+                    <>
+                      <FlagEmoji code={me.nationality} size={14} />
+                      <Text style={styles.natText} numberOfLines={1} testID="nation-pill">
+                        {countryByCode(me.nationality)?.name ?? me.nationality}
+                      </Text>
+                      <Text style={styles.natText}>·</Text>
+                    </>
                   )}
-                  <View style={styles.pill}>
-                    <Text style={styles.pillText}>{lang.split('-')[0].toUpperCase()}</Text>
-                  </View>
+                  <Text style={styles.natText}>{lang.split('-')[0].toUpperCase()}</Text>
                 </View>
               </View>
-              {/* P-181 ④: 박스 배경 제거 — SVG만, 터치 44pt는 hitSlop */}
-              <Pressable style={styles.edit} hitSlop={14} onPress={() => router.push('/profile/edit' as Href)} testID="profile-edit-pencil">
-                <IconEdit size={18} color={C.ink2} />
+              {/* 정보수정 — 아웃라인 68×36 r8 border #DCDEE3, 13/500 */}
+              <Pressable
+                style={({ pressed }) => [styles.editBtn, pressed && { backgroundColor: C.surface2 }]}
+                onPress={() => router.push('/profile/edit' as Href)}
+                testID="profile-edit-pencil"
+              >
+                <Text style={styles.editBtnText}>{t('profile.edit')}</Text>
               </Pressable>
             </View>
 
-            {/* 미완료 프로필(서버 플래그) — 온보딩 이어하기 유도 행 */}
+            {/* 미완료 프로필(서버 플래그) — 온보딩 이어하기 유도 행(시안 부재 — 기능 유지) */}
             {me.onboardingCompleted === false && (
               <Pressable style={styles.finishRow} onPress={() => resetToOnboarding(router)}>
                 <Text style={styles.finishText}>{t('onboarding.resumeTitle')}</Text>
@@ -206,179 +191,101 @@ export default function Profile() {
               </Pressable>
             )}
 
-            {/* P-227 ①②: 식이 카테고리 = 최상단(멘토 8/15). P-243: 활성 = 서버
-                정본(me.dietCategories). 수정 = 기존 프리셋 시트 재사용(restrictions?presets=1). */}
-            {FLAGS.dietPresetsEnabled && activePresets.length > 0 && (
-              <Section
-                title={t('profile.dietTitle')}
-                action={
-                  /* P-233: 기피 성분 섹션과 같은 행 문법 — Show all = 식이 전체 페이지
-                     (P-227의 Edit→프리셋 시트 자동 오픈 경로는 이 진입으로 대체) */
-                  <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/diet' as Href)} testID="diet-show-all">
-                    <Text style={styles.link}>{t('profile.showAllLink')}</Text>
-                    <IconChevron size={13} color={C.primaryText} />
-                  </Pressable>
-                }
-              >
-                <View style={styles.presetChips}>
-                  {activePresets.map((pr) => (
-                    <View key={pr.id} style={styles.presetChip} testID={`diet-${pr.id}`}>
-                      <Text style={styles.presetChipText}>{t(pr.labelKey)}</Text>
+            {/* 랭킹 카드(4150:14390) — h147 그라데이션 + RankMedal 28 + 진행 바 h10 */}
+            {rank && (
+              <Pressable onPress={() => router.push('/profile/ranking' as Href)} testID="profile-rank-card">
+                <LinearGradient colors={['#FFFFFF', '#FFF7F2']} style={styles.rankCard}>
+                  <RankMedal level={rank.level} size={28} />
+                  <Text style={styles.rankTier}>{t(`ranking.tier.${rank.tier}`)}</Text>
+                  <Text style={styles.rankLv}>{t('ranking.levelLabel', { level: rank.level })}</Text>
+                  <View style={styles.rankBarRow}>
+                    <View style={styles.rankTrack}>
+                      <View
+                        style={[
+                          styles.rankFill,
+                          {
+                            // Codex #33 P2: 티어 상대 진행 — 랭킹 화면과 동일식 (score-cur.at)/(next.at-cur.at)
+                            width: `${nextTier ? Math.min(100, Math.max(0, Math.round(((rank.score - (curTier?.at ?? 0)) / Math.max(1, nextTier.at - (curTier?.at ?? 0))) * 100))) : 100}%`,
+                          },
+                        ]}
+                      />
                     </View>
-                  ))}
-                </View>
-              </Section>
+                    <Text style={styles.rankPts} numberOfLines={1}>
+                      <Text style={styles.rankPtsCur}>{rank.score}</Text>
+                      <Text style={styles.rankPtsSep}> / </Text>
+                      <Text style={styles.rankPtsGoal}>{t('ranking.tickPts', { at: nextTier ? nextTier.at : TIERS[TIERS.length - 1].at })}</Text>
+                    </Text>
+                    <IconChevron size={16} color={C.ink3} />
+                  </View>
+                </LinearGradient>
+              </Pressable>
             )}
 
-            {/* P-176: dietary restrictions = 사진 미니 타일 4열(선택분만·플랫 — 카테고리 섹션 없음,
-                프로필 탭은 요약 표면). 타일 탭 = Edit 진입(재량 — 읽기 전용 표시 + 수정 유도).
-                8개(2줄) 초과는 접기 + "Show all n" 토글(38종 수용). */}
-            <Section
-              title={t('profile.restrictionsTitle')}
-              action={
-                /* P-227 ④: Edit → "Show all" 개명, 탭 = 전체 조회 페이지(81종 카테고리
-                   섹션 + 수정 = 기존 restrictions 화면이 정확히 그 문법 — 신설 불요) */
-                <Pressable style={styles.linkRow} hitSlop={8} onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
-                  <Text style={styles.link}>{t('profile.showAllLink')}</Text>
-                  <IconChevron size={13} color={C.primaryText} />
-                </Pressable>
-              }
-            >
+            {/* Dietary restrictions(@y334) — 타일 4열 2행(80×86) + Show all n */}
+            <View style={styles.sec}>
+              <Text style={styles.secLabel}>{t('profile.restrictionsTitle')}</Text>
               <View style={styles.dietGrid}>
-                {me.restrictions.slice(0, 4).map((r) => {
+                {me.restrictions.slice(0, 8).map((r) => {
                   const item = INGREDIENTS.find((i) => i.code === r.code);
                   return (
-                    <Pressable key={r.code} style={styles.dietTileWrap} onPress={() => router.push('/profile/restrictions' as Href)}>
-                      <AvoidTile
-                        code={r.code}
-                        imageUrl={ingCat.imageUrl(r.code)}
-                        abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
-                        tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
-                      />
-                      <Text style={styles.dietTileLabel} numberOfLines={1}>
+                    <Pressable key={r.code} style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
+                      <View style={styles.dietImg}>
+                        <AvoidTile
+                          code={r.code}
+                          imageUrl={ingCat.imageUrl(r.code)}
+                          abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
+                          tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
+                        />
+                      </View>
+                      <Text style={styles.dietLabel} numberOfLines={1}>
                         {ingCat.name(r.code)}
                       </Text>
                     </Pressable>
                   );
                 })}
               </View>
-              {/* P-227 ④: "Show all 41" 토글·"+Add" 소멸 — 전체·수정은 Show all 페이지 */}
-            </Section>
-
-            {/* ranking → tap opens the ranking-detail screen (7-tier FR-025 data) */}
-            <Section title={t('profile.rankingTitle')}>
-              <Pressable style={styles.rank} onPress={() => router.push('/profile/ranking' as Href)}>
-                <View style={styles.rankTop}>
-                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-                    {/* KB-125→P-158: 메달 뱃지 자산 전면 통일 — 구 Rosette 노출처 0(정의 보존) */}
-                    <MedalEmblem level={me.rank.level} size={42} />
-                    <View>
-                      <Text style={styles.rankTier}>{t(`ranking.tier.${me.rank.tier}`)}</Text>
-                      <Text style={styles.tag}>{t('profile.levelPts', { level: me.rank.level, score: me.rank.score })}</Text>
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {me.rank.nextTier && me.rank.pointsToNext != null && (
-                      <View style={styles.pill}>
-                        <Text style={styles.pillText}>{t('profile.toNext', { points: me.rank.pointsToNext, tier: t(`ranking.tier.${me.rank.nextTier}`) })}</Text>
-                      </View>
-                    )}
-                    <IconChevron size={16} color={C.ink3} />
-                  </View>
-                </View>
-                <View style={styles.rankProg}>
-                  {TIERS.map((tier) => (
-                    <View key={tier.key} style={[styles.rankSeg, tier.level <= curLevel && styles.rankSegOn]} />
-                  ))}
-                </View>
-              </Pressable>
-            </Section>
-
-            {/* P-181 ②: Recently scanned — 홈과 동일 데이터(useHome().recent)·카드(RecentRow)
-                재사용, 배치 = 개인 콘텐츠 클러스터(Saved/My reviews) 위 재량. 빈 상태 = 홈
-                규칙(미노출), 게스트는 프로필 자체가 로그인 임베드라 미도달. */}
-            {recentScans.length > 0 && (
-              <Section title={t('home.recentTitle')}>
-                <View style={{ gap: 10 }}>
-                  {recentScans.map((d) => (
-                    <RecentRow
-                      key={d.foodId}
-                      food={d}
-                      risk={personalRisk(d.risk, (me.restrictions.length ?? 0) > 0)}
-                      reviewLabel={t('home.review')}
-                      onPress={() => router.push(`/food/${d.foodId}?src=list` as Href)}
-                      onReview={() => {
-                        track(EVENTS.review_write_tap, { source: 'home' });
-                        router.push(`/food/${d.foodId}/review` as Href);
-                      }}
-                    />
-                  ))}
-                </View>
-              </Section>
-            )}
-
-            {/* P-150 ⑤①: Spice tolerance 섹션 제거 — 맵기 수정은 프로필 수정 화면만 */}
-
-            {/* saved (Bookmark Mods A) — My reviews 바로 위: 개인 콘텐츠 클러스터.
-                카운트는 조용한 tag(“My reviews · 12”와 동일 톤), 뱃지 아님 */}
-            {/* P-157 ①: Saved + My reviews = 같은 카드의 AcctRow 행 2개(컴포넌트 공용).
-                구 "My reviews · n | See all" 텍스트 헤더+인라인 리스트 소멸.
-                P-157 ②: 저장 아이콘 = 별(P-129 상세와 동일 SVG 통일). */}
-            <View style={styles.acctList}>
-              {/* P-254: My Foods = 계정 메뉴 행(예진 지시 — P-253 헤더 링크 대체) */}
-              <AcctRow
-                icon={<IconFood size={17} color={C.ink2} />}
-                label={t('profile.myFoods')}
-                onPress={() => router.push('/profile/my-foods' as Href)}
-              />
-              <AcctRow
-                icon={<IconStar size={17} color={C.ink2} />}
-                label={t('profile.saved')}
-                value={String(bookmarks?.length ?? 0)}
-                onPress={() => router.push('/profile/saved' as Href)}
-              />
-              {FLAGS.reviewsEnabled && (
-                <AcctRow
-                  icon={<IconSpeech size={17} color={C.ink2} />}
-                  label={t('myReviews.title')}
-                  value={String(reviews?.length ?? 0)}
-                  onPress={() => router.push('/profile/reviews' as Href)}
-                />
-              )}
+              <Btn variant="ghost" onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
+                {t('profile.showAll', { count: me.restrictions.length })}
+              </Btn>
             </View>
 
-            {/* account */}
-            <Section title={t('profile.accountTitle')}>
-              <View style={styles.acctList}>
-                {canOpenLangSettings && (
-                  <AcctRow icon={<IconGlobe size={18} color={C.ink2} />} label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
-                )}
-                {/* P-192: 알림 설정 — 푸시 빌드 전 플래그 뒤(진입점 자체 숨김) */}
-                {FLAGS.pushEnabled && (
-                  <AcctRow icon={<IconBell size={18} color={C.ink2} />} label={t('notif.title')} onPress={() => router.push('/profile/notifications' as Href)} />
-                )}
-                {/* P-061③: 안전 고지 페이지(EN/KO) — 미설정=BE 그대로(v2.1.0) 고지 포함 */}
-                <AcctRow icon={<IconGear size={18} color={C.ink2} />} label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
-                {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 (설정 내 1화면) */}
-                {FLAGS.communityEnabled && (
-                  <AcctRow icon={<IconUserX size={18} color={C.ink2} />} label={t('community.blockedTitle')} onPress={() => router.push('/community/blocked' as Href)} />
-                )}
-                <AcctRow
-                  // 멘토링 ②: 좌측 화살표 → 로그아웃 아이콘 (우측 chevron은 행 통일 유지 — 예진 확인).
-                  // 로그아웃 chevron은 유지 확정 (2026-07-15 예진 — 과거 이중 아이콘 정리 건과 무관). 재제거 금지.
-                  // ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지).
-                  icon={loggingOut ? <Spinner size={18} /> : <IconLogout size={18} color={C.ink2} />}
-                  label={t('profile.logout')}
-                  onPress={confirmLogout}
-                />
-                <AcctRow
-                  icon={<IconTrash size={18} color={C.riskDanger} />}
-                  label={t('profile.deleteAccount')}
-                  danger
-                  onPress={() => router.push('/delete-account' as Href)}
-                />
-              </View>
-            </Section>
+            {/* 메뉴 행 리스트(tab_box h58 pad 17/22) — 구분선 없음, 탭 하이라이트 surface2 */}
+            <View style={styles.menuList}>
+              {/* My Foods — 시안 §1-4 목록 부재·§5 화면 진입점(질문 누적, 기능 유지) */}
+              <MenuRow label={t('profile.myFoods')} onPress={() => router.push('/profile/my-foods' as Href)} />
+              <MenuRow label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
+              {FLAGS.reviewsEnabled && (
+                <MenuRow label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
+              )}
+              {/* Codex #33 P2: 식이 카테고리 편집 = /profile/diet 유일 편집 경로(1.1 dietCategories) —
+                  섹션 소멸로 진입 0이 되던 것 복원. 시안 §1-4 목록 부재 = 질문 누적(My Foods 행 계열) */}
+              {FLAGS.dietPresetsEnabled && (
+                <MenuRow label={t('profile.dietTitle')} onPress={() => router.push('/profile/diet' as Href)} />
+              )}
+              {canOpenLangSettings && (
+                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+              )}
+              {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
+              {FLAGS.pushEnabled && (
+                <MenuRow label={t('notif.title')} onPress={() => router.push('/profile/notifications' as Href)} />
+              )}
+              {/* P-061③: 안전 고지 페이지(EN/KO) */}
+              <MenuRow label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+              {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}
+              {FLAGS.communityEnabled && (
+                <MenuRow label={t('community.blockedTitle')} onPress={() => router.push('/community/blocked' as Href)} />
+              )}
+              {/* 로그아웃 chevron 유지 확정(2026-07-15 예진 — 시안 무chevron이지만 예진 확정 우선). 재제거 금지.
+                  ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지). */}
+              <MenuRow
+                label={t('profile.logout')}
+                dim
+                chevron
+                trailing={loggingOut ? <Spinner size={16} /> : undefined}
+                onPress={confirmLogout}
+              />
+              <MenuRow label={t('profile.deleteAccount')} dim onPress={() => router.push('/delete-account' as Href)} />
+            </View>
 
             {/* P-212: 앱 버전 줄 — 라벨은 전 채널, 7연타 트리거는 dev 계열만(내부 게이트) */}
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
@@ -394,90 +301,75 @@ export default function Profile() {
   );
 }
 
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+/** tab_box 행(h58 pad 17/22) — 라벨 15/500 #1C1E21 · 카운트 15/500 #9196A1 · 구분선 없음. */
+function MenuRow({
+  label,
+  value,
+  dim,
+  chevron,
+  trailing,
+  onPress,
+}: {
+  label: string;
+  value?: string;
+  dim?: boolean;
+  chevron?: boolean;
+  trailing?: React.ReactNode;
+  onPress?: () => void;
+}) {
   return (
-    <View style={styles.sec}>
-      <View style={styles.secHead}>
-        <Text style={styles.secTitle}>{title}</Text>
-        {action}
-      </View>
-      {children}
-    </View>
-  );
-}
-
-
-function AcctRow({ icon, label, value, danger, onPress }: { icon: React.ReactNode; label: string; value?: string; danger?: boolean; onPress?: () => void }) {
-  return (
-    <Pressable style={styles.acctRow} onPress={onPress}>
-      <View style={styles.acctIc}>{icon}</View>
-      <Text style={[styles.acctLabel, danger && { color: C.riskDanger }]}>{label}</Text>
-      {value && <Text style={styles.tag}>{value}</Text>}
-      <IconChevron size={16} color={danger ? C.riskDanger : C.ink2} />
+    <Pressable style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: C.surface2 }]} onPress={onPress}>
+      <Text style={[styles.menuLabel, dim && { color: C.ink3 }]}>{label}</Text>
+      {value != null && <Text style={styles.menuValue}>{value}</Text>}
+      {trailing}
+      {chevron && <IconChevron size={16} color={C.ink3} />}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  // P-227 ②: 식이 칩(온보딩 프리셋 칩 톤)
-  presetChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  presetChip: { backgroundColor: primaryTint, borderWidth: 1, borderColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
-  presetChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  verRow: { alignItems: 'center', paddingVertical: 10 },
-  verText: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   root: { flex: 1, backgroundColor: C.surface },
-  finishRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 12 },
-  finishText: { flex: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, lineHeight: 18 },
-  finishCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  // 게스트 가입 유도 (KB-78)
-  guestAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  guestTitle: { fontFamily: font.displayBlack, fontSize: 20, color: C.ink, textAlign: 'center' },
-  guestSub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, maxWidth: 300 },
-  body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
+  body: { paddingTop: 4, gap: 20 },
+  verRow: { alignItems: 'center', paddingVertical: 10 },
+  verText: { fontSize: 12, fontWeight: '400', color: C.ink3 },
+  finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
+  finishText: { flex: 1, fontSize: 13.5, fontWeight: '600', color: C.ink, lineHeight: 18 },
+  finishCta: { fontSize: 13, fontWeight: '600', color: C.primaryText },
 
-  id: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  avatarImg: { width: 56, height: 56, borderRadius: 28 },
-  name: { fontFamily: font.display, fontSize: 20, color: C.ink },
-  nameUnset: { fontFamily: font.body, fontSize: 17, color: C.ink3 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6 },
-  pillText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
-  edit: { padding: 4, alignItems: 'center', justifyContent: 'center' }, // P-181 ④: 박스 소멸 — 아이콘만(hitSlop 14 = 44pt)
+  // 헤더 행 — pad 20
+  id: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F6FF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: 48, height: 48, borderRadius: 24 },
+  name: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
+  nameUnset: { fontSize: 16, fontWeight: '400', color: C.ink3 },
+  natRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
+  natText: { fontSize: 14, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
+  editBtn: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
+  editBtnText: { fontSize: 13, fontWeight: '500', color: '#1C1E21' },
 
-  sec: { gap: 11 },
-  secHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  secTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  // 랭킹 카드(4150:14390) — mx 20 h147 r8 border #F2F3F6 + 그라데이션
+  rankCard: { marginHorizontal: 20, height: 147, borderRadius: 8, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 16 },
+  rankTier: { fontSize: 15, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 2 },
+  rankLv: { fontSize: 12, fontWeight: '500', color: C.ink3 },
+  rankBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch', marginTop: 6 },
+  rankTrack: { flex: 1, height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
+  rankFill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
+  rankPts: { fontSize: 12 },
+  rankPtsCur: { fontSize: 12, fontWeight: '500', color: C.primary },
+  rankPtsSep: { fontSize: 12, fontWeight: '400', color: C.inkMute },
+  rankPtsGoal: { fontSize: 12, fontWeight: '400', color: '#4B4F58' },
 
-  // ranking
-  rank: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 16, gap: 12, ...shadow.sh1 },
-  rankTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rankTier: { fontFamily: font.display, fontSize: 16, color: C.ink },
-  tag: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
-  rankProg: { flexDirection: 'row', gap: 4 },
-  rankSeg: { flex: 1, height: 6, borderRadius: 3, backgroundColor: C.surface2 },
-  rankSegOn: { backgroundColor: C.primary },
-  rankTiers: { flexDirection: 'row', justifyContent: 'space-between' },
-  rt: { fontFamily: font.body, fontSize: 10, color: C.ink3 },
-  rtOn: { fontFamily: font.bodyBold, color: C.primaryText },
+  // Dietary restrictions — 4열 2행 80×86 타일
+  sec: { paddingHorizontal: 20, gap: 12 },
+  secLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
+  dietTile: { width: 80, height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  dietImg: { width: 48, height: 48, borderRadius: 4, overflow: 'hidden' },
+  dietLabel: { fontSize: 12, fontWeight: '500', color: '#1C1E21', maxWidth: 72, textAlign: 'center' },
 
-  // dietary
-  spiceUnset: { fontFamily: font.body, fontSize: 13.5, color: C.ink3 },
-  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
-  dietTileWrap: { width: '22.5%', alignItems: 'center', gap: 4 },
-  dietTileLabel: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, maxWidth: '100%' },
-  dietMore: { alignSelf: 'flex-start', marginTop: 10 },
-  dietMoreText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  dietAdd: { marginTop: 10, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', paddingHorizontal: 12, paddingVertical: 8 },
-  dietAddText: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-
-  // my reviews
-  myrev: { flexDirection: 'row', gap: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 12, ...shadow.sh1 },
-
-  // account
-  acctList: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sh1 },
-  acctRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
-  acctIc: { width: 30, alignItems: 'center' },
-  acctLabel: { flex: 1, fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  // 메뉴 행 리스트(tab_box)
+  menuList: { gap: 0 },
+  menuRow: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 17, paddingHorizontal: 22 },
+  menuLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
+  menuValue: { fontSize: 15, fontWeight: '500', color: C.ink3 },
 });

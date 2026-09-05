@@ -1,22 +1,20 @@
 /**
- * Saved (bookmarks) list — design "K-Bap Saved" (hifi-saved, Direction G).
- * Member-only stack-push from the Profile tab. Food-tab card vocab + KB-25
- * 4-state personalized badge (always shown — no guest case on this screen;
- * guests hit the route guard). Newest-first, no sort/filter UI.
- * Un-save = swipe-left → Remove, immediate + Undo snackbar (~5s), no confirm.
+ * Saved (bookmarks) — KB-434 D-6(4150:14448). AppBar "Saved" → 헤더 메타
+ * ("n dishes · Newest first") → 위험 칩(All·Safe·Avoid·Warning — D-2 홈 동일 문법)
+ * → 음식 카드 2열 그리드(4150:13816 — 홈 FoodGridCard 재사용, 북마크 별 = 해제 토글).
  *
- * Data: LIVE GET /bookmarks 커서 무한스크롤 (KB-142 실연결 2026-07-15).
- * 카드는 목록과 동일 어댑터(FoodCard) — risk는 다른 목록과 동일하게
- * personalRisk() false-safe 가드 경유. 해제=PATCH(낙관적 제거), Undo=재등록.
+ * Data: LIVE GET /bookmarks 커서 무한스크롤(KB-142) — 훅·언세이브(낙관적 제거+Undo
+ * 스낵바) 무변. 구 스와이프 행 문법 소멸(시안 = 그리드 + 별 토글).
+ * risk = personalRisk() false-safe 가드 경유(칩 필터도 동일 값 기준).
  */
 import { useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, riskText, riskTone, shadow } from '@/lib/theme';
-import { SubHeader, RiskMark, Btn, CardPhoto, Spinner, IconChevron, IconFood, IconStar, IconTrash } from '@/components';
+import { color as C } from '@/lib/theme';
+import { SubHeader, Spinner, Btn, IconStar, IconFood } from '@/components';
+import { Chip } from '@/components/Chip';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
@@ -27,14 +25,11 @@ import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnaps
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
 import type { RiskState } from '@/lib/theme';
+import { FoodGridCard } from '@/features/food/FoodCards';
 
-const RISK_LABEL: Record<RiskState, string> = {
-  safe: 'risk.safe',
-  caution: 'risk.caution',
-  danger: 'risk.danger',
-  unable: 'risk.unable',
-};
 const UNDO_MS = 5000;
+type RiskChip = 'all' | RiskState;
+const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 
 export default function SavedScreen() {
   const router = useRouter();
@@ -44,6 +39,7 @@ export default function SavedScreen() {
   const { data: me } = useMe();
   const remove = useRemoveBookmark();
   const restore = useRestoreBookmark();
+  const [chip, setChip] = useState<RiskChip>('all');
 
   // Undo snackbar: 마지막 제거 스냅샷을 ~5s 보관 (즉시 제거 + 되돌리기 — 확인 모달 없음)
   const [undo, setUndo] = useState<BookmarkSnapshot | null>(null);
@@ -74,7 +70,7 @@ export default function SavedScreen() {
   }
 
   const hasR = (me?.restrictions.length ?? 0) > 0;
-  const items = list ?? [];
+  const items = (list ?? []).filter((b) => chip === 'all' || personalRisk(b.risk, hasR) === chip);
 
   return (
     <View style={styles.root}>
@@ -82,7 +78,7 @@ export default function SavedScreen() {
       {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
       {isError && !list ? (
         <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-      ) : isLoading ? null : items.length === 0 ? (
+      ) : isLoading ? null : (list ?? []).length === 0 ? (
         <View style={styles.empty}>
           <View style={styles.emptyIc}>
             <IconStar size={30} color={C.ink3} />
@@ -98,6 +94,8 @@ export default function SavedScreen() {
         <FlatList
           data={items}
           keyExtractor={(b: FoodCard) => b.foodId}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.body}
           showsVerticalScrollIndicator={false}
           onEndReachedThreshold={0.6}
@@ -106,23 +104,39 @@ export default function SavedScreen() {
           }}
           ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
           ListHeaderComponent={
-            <View style={{ gap: 8, marginBottom: 12 }}>
+            <View style={{ gap: 4 }}>
+              {/* 헤더 메타(pad 8/24 상당) — "2 dishes" 16/600 + "· Newest first" 14/400 */}
               <View style={styles.meta}>
-                <Text style={styles.metaCount}>{t('saved.count', { count: items.length })}</Text>
-                <Text style={styles.metaDot}>·</Text>
-                <Text style={styles.metaSub}>{t('saved.newestFirst')}</Text>
+                <Text style={styles.metaCount}>{t('saved.count', { count: (list ?? []).length })}</Text>
+                <Text style={styles.metaSub}>· {t('saved.newestFirst')}</Text>
               </View>
-              <Text style={styles.hint}>{t('saved.swipeHint')}</Text>
+              {/* 위험 칩 필터(@y146) — D-2 홈과 동일 칩·순서 */}
+              <View style={styles.chipRow}>
+                {RISK_CHIPS.map((c) => (
+                  <Chip
+                    key={c}
+                    label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+                    selected={chip === c}
+                    onPress={() => setChip(c)}
+                    testID={`saved-chip-${c}`}
+                  />
+                ))}
+              </View>
             </View>
           }
           renderItem={({ item }) => (
-            <SavedRow
-              snap={item}
-              risk={personalRisk(item.risk, hasR)}
-              riskLabel={t(RISK_LABEL[personalRisk(item.risk, hasR)])}
-              onPress={() => router.push(`/food/${item.foodId}?src=saved` as Href)}
-              onRemove={() => onRemove(item)}
-            />
+            <View style={styles.gridCell}>
+              <FoodGridCard
+                style={styles.gridCard}
+                food={item}
+                risk={personalRisk(item.risk, hasR)}
+                guest={false}
+                saved
+                riskLabel={t(`risk.${personalRisk(item.risk, hasR)}`)}
+                onPress={() => router.push(`/food/${item.foodId}?src=saved` as Href)}
+                onBookmark={() => onRemove(item)}
+              />
+            </View>
           )}
         />
       )}
@@ -139,127 +153,19 @@ export default function SavedScreen() {
   );
 }
 
-function SavedRow({
-  snap,
-  risk,
-  riskLabel,
-  onPress,
-  onRemove,
-}: {
-  snap: BookmarkSnapshot;
-  risk: RiskState;
-  riskLabel: string;
-  onPress: () => void;
-  onRemove: () => void;
-}) {
-  const ref = useRef<SwipeableMethods>(null);
-  return (
-    <Swipeable
-      ref={ref}
-      friction={2}
-      rightThreshold={36}
-      overshootRight={false}
-      renderRightActions={() => (
-        <Pressable
-          style={styles.removeBg}
-          onPress={() => {
-            ref.current?.close();
-            onRemove();
-          }}
-        >
-          <IconTrash size={20} color="#fff" />
-        </Pressable>
-      )}
-    >
-      <Pressable style={styles.card} onPress={onPress}>
-        <View style={styles.thumb}>
-          {snap.photoUrl ? (
-            <CardPhoto uri={snap.photoUrl} borderRadius={radius.sm} />
-          ) : (
-            <IconFood size={22} color={C.ink3} />
-          )}
-        </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-          <View style={styles.nameRow}>
-            <Text numberOfLines={1} style={styles.name}>
-              {snap.name}
-            </Text>
-            <Text numberOfLines={1} style={styles.ko}>
-              {snap.nameKo}
-            </Text>
-          </View>
-          <View style={[styles.pill, { backgroundColor: riskTone[risk].bg, borderColor: riskTone[risk].line }]}>
-            <RiskMark state={risk} size={15} />
-            <Text style={[styles.pillText, { color: riskText[risk] }]}>{riskLabel}</Text>
-          </View>
-        </View>
-        <IconChevron size={17} color={C.ink3} />
-      </Pressable>
-    </Swipeable>
-  );
-}
-
 const styles = StyleSheet.create({
-  errorFill: { flex: 1, justifyContent: 'center' }, // P-164
   root: { flex: 1, backgroundColor: C.surface },
-  body: { padding: 16, paddingBottom: 40, gap: 10 },
-  meta: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  metaCount: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  metaDot: { color: C.ink3 },
-  metaSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
-  hint: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.hair,
-    borderRadius: radius.lg,
-    padding: 10,
-    ...shadow.sh1,
-  },
-  thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.sm,
-    backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 7, minWidth: 0 },
-  name: { fontFamily: font.display, fontSize: 15.5, color: C.ink, flexShrink: 1 },
-  ko: { fontFamily: font.ko, fontSize: 12, color: C.ink3 },
-  pill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderWidth: 1,
-  },
-  pillText: { fontFamily: font.bodyBold, fontSize: 12 },
-  removeBg: {
-    width: 72,
-    marginLeft: 10,
-    borderRadius: radius.lg,
-    backgroundColor: C.riskDanger,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  body: { paddingHorizontal: 20, paddingBottom: 40 },
+  meta: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingVertical: 8 },
+  metaCount: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
+  metaSub: { fontSize: 14, fontWeight: '400', color: C.ink3 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 12 },
+  gridRow: { gap: 10 },
+  gridCell: { flex: 1, marginBottom: 10 },
+  gridCard: { width: '100%' }, // 셀(FlatList numColumns)이 폭 소유 — 홈 47% 오버라이드
+
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },
-  emptyIc: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: C.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  emptyTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  emptyBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 6 },
+  emptyIc: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  emptyTitle: { fontSize: 17, fontWeight: '600', color: C.ink },
+  emptyBody: { fontSize: 13.5, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 6 },
 });

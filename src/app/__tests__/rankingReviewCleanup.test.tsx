@@ -35,6 +35,7 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', script: 'latin' }) }));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => 0 }));
 jest.mock('@/lib/data/useRanking', () => ({
   useRanking: () => ({
     data: {
@@ -59,12 +60,12 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n.props?.children === s).length;
 
-it('oneMore 행·리뷰 쓰기 CTA 부재, 스캔 CTA 유지', () => {
+it('oneMore 행·리뷰 쓰기 CTA 부재, 스캔 CTA 유지(KB-434: "Scan a menu +2" 합성 라벨)', () => {
   const tree = render(<RankingScreen />);
   expect(texts(tree, 'ranking.oneMore')).toBe(0);
   expect(texts(tree, 'ranking.oneMorePlus')).toBe(0);
   expect(texts(tree, 'ranking.ctaReview')).toBe(0);
-  expect(texts(tree, 'ranking.ctaScan')).toBeGreaterThanOrEqual(1);
+  expect(texts(tree, 'ranking.ctaScan ranking.ctaScanPts')).toBeGreaterThanOrEqual(1);
 });
 
 it('리뷰 팩터 dim 예고 행 상시 노출 — 라벨+예고 문구', () => {
@@ -82,14 +83,26 @@ it('P-058: 다양성 행 dim 예고 — 실적 detail 미렌더, 예고 2행·�
   expect(texts(tree, 'ranking.scansDetail')).toBeGreaterThanOrEqual(1); // 스캔은 활성
 });
 
-// P-063: All ranks = 리스트 카드 — 상태 3종(체크/NOW·pts/자물쇠) + 7행 잠금
-it('P-063: 래더 리스트 — 7행·done 체크·current NOW+pts·locked pts', () => {
+// KB-434 D-6: All ranks = 3열 그리드 카드 — 현재 등급 primary 보더 + NOW 배지
+it('KB-434: 등급 그리드 — 7카드·NOW 배지·현재 카드 primary 보더·진행 바 대체(간격>30)', () => {
   const tree = render(<RankingScreen />);
-  // 7개 티어명(EN 키) 전부 렌더
+  const { StyleSheet } = require('react-native');
   const tierNames = tree.root.findAll((n) => typeof n.props?.children === 'string' && String(n.props.children).startsWith('ranking.tier.'));
   expect(new Set(tierNames.map((n) => n.props.children)).size).toBe(7);
-  expect(texts(tree, 'ranking.done')).toBeGreaterThanOrEqual(1); // done(레벨1)
-  expect(texts(tree, 'ranking.now')).toBeGreaterThanOrEqual(1); // current NOW 필
-  expect(texts(tree, 'ranking.entryPts')).toBeGreaterThanOrEqual(1); // current pts
-  expect(texts(tree, 'ranking.lockedPts')).toBeGreaterThanOrEqual(1); // locked
+  expect(texts(tree, 'ranking.now')).toBeGreaterThanOrEqual(1); // NOW 배지
+  const now = tree.root.findAll((n) => n.props?.testID === 'rank-now' && typeof n.props?.style === 'object')[0];
+  expect((StyleSheet.flatten(now.props.style) as { borderColor?: string }).borderColor).toBe('#FF7134');
+  // taster→explorer 간격 50pt > 30 = 1별=1pt 규칙 불일치 — 진행 바 대체(발주 규정)
+  expect(tree.root.findAll((n) => n.props?.testID === 'ranking-progress-bar').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'ranking-star-grid')).toHaveLength(0);
+});
+
+// KB-434: 별 그리드 — newcomer→taster(30pt) = 1별=1pt 그리드, 획득분 채움
+it('KB-434: 진행 별 그리드 — 간격 30 이하 = 별 30개(스캔 CTA·규칙은 STAR_GRID_MAX 잠금)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { STAR_GRID_MAX } = require('../profile/ranking') as typeof import('../profile/ranking');
+  expect(STAR_GRID_MAX).toBe(30); // 6열 × 5행(시안 4150:14720)
+  const src = require('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
+  expect(src).toContain('span > 0 && span <= STAR_GRID_MAX'); // 그리드/바 분기 소스 잠금
+  expect(src).toContain('<PointStar key={i} filled={i < gained} />');
 });

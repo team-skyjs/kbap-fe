@@ -110,30 +110,23 @@ beforeEach(() => {
   mockUseMe.mockReturnValue(ME([...NO_ALCOHOL_CODES, 'EGG'], ['NO_ALCOHOL']));
 });
 
-it('① 섹션 순서 = 식이 → 기피 → 랭킹(랭킹은 아래로)', () => {
-  const s = flat(render());
-  const diet = s.indexOf('profile.dietTitle');
-  const avoid = s.indexOf('profile.restrictionsTitle');
-  const rank = s.indexOf('profile.rankingTitle');
-  expect(diet).toBeGreaterThan(-1);
-  expect(diet).toBeLessThan(avoid);
-  expect(avoid).toBeLessThan(rank);
-});
-
-it('② P-243: 식이 표시 = me.dietCategories(서버 정본) — 역추론 폐기', () => {
-  // 회피가 프리셋을 완전 포함해도(역추론이면 활성) dietCategories에 없으면 비표시
+it('① KB-434 D-6: 식이 칩 섹션 = 프로필 탭에서 소멸(시안 부재) — 진입은 메뉴 행으로 존치', () => {
   const tree = render();
-  expect(tree.root.findAll((n) => n.props?.testID === 'diet-NO_ALCOHOL').length).toBeGreaterThanOrEqual(1);
-  expect(tree.root.findAll((n) => n.props?.testID === 'diet-VEGAN')).toHaveLength(0);
-  // P-233: 수정 진입 = Show all → 식이 전체 페이지(구 프리셋 시트 자동 오픈 경로 대체)
-  const showAll = tree.root.findAll((n) => n.props?.testID === 'diet-show-all' && typeof n.props?.onPress === 'function')[0];
-  act(() => showAll.props.onPress());
-  expect(mockPush).toHaveBeenCalledWith('/profile/diet');
+  const s = flat(tree);
+  expect(tree.root.findAll((n) => n.props?.testID === 'diet-NO_ALCOHOL')).toHaveLength(0); // 칩 소멸
+  expect(s).toContain('profile.restrictionsTitle');
+  expect(s).toContain('profile.dietTitle'); // Codex #33 P2: /profile/diet 진입 행(dietCategories 유일 편집 경로)
+  expect(tree.root.findAll((n) => n.props?.testID === 'profile-rank-card').length).toBeGreaterThanOrEqual(1);
 });
 
-it('②-b dietCategories 빈 배열/부재 = 식이 섹션 자체 숨김(P-210 원칙)', () => {
-  mockUseMe.mockReturnValue(ME([...NO_ALCOHOL_CODES, 'EGG'])); // 회피만 있고 서버 식이 없음
-  expect(flat(render())).not.toContain('profile.dietTitle');
+it('② KB-434: 랭킹 카드 = 기피 섹션 위(시안 순서 헤더→랭킹→기피→메뉴)', () => {
+  const s = flat(render());
+  const rank = s.indexOf('profile-rank-card');
+  const avoid = s.indexOf('profile.restrictionsTitle');
+  const menu = s.indexOf('profile.saved');
+  expect(rank).toBeGreaterThan(-1);
+  expect(rank).toBeLessThan(avoid);
+  expect(avoid).toBeLessThan(menu);
 });
 
 it('③④ 소스 잠금 — 팝업 승인 시에만 합집합(unionResolvedCodes 유지)·자동 오픈·고추 투명도', () => {
@@ -147,5 +140,6 @@ it('③④ 소스 잠금 — 팝업 승인 시에만 합집합(unionResolvedCode
   expect(peppers).toContain('i <= rank ? <PepperOn'); // 시안 SVG on/off 스왑
   expect(peppers).toContain("from './design4Assets'");
   expect(peppers).not.toContain('\u{1F336}'); // 🌶️ 이모지 소멸(헌법)
-  expect(fs.readFileSync('src/app/profile/edit.tsx', 'utf8')).toContain('<SpicePeppers rank={spiceRank(spice)} />');
+  // KB-434 D-6: 편집 화면 = 슬라이더 박스만(고추 카운트 행 소멸 — 시안 h81)
+  expect(fs.readFileSync('src/app/profile/edit.tsx', 'utf8')).toContain('<SpiceLevelSlider');
 });

@@ -985,7 +985,11 @@
     "emptyOrdersTitle": "还没有订单记录",
     "emptyOrdersBody": "从扫描的菜单下单后会记录在这里。",
     "emptyScansTitle": "还没有扫描记录",
-    "emptyScansBody": "扫描菜单后，你查看过的菜品会汇集在这里。"
+    "emptyScansBody": "扫描菜单后，你查看过的菜品会汇集在这里。",
+    "dishes": "菜品",
+    "receiptDate": "日期",
+    "receiptLocation": "地点",
+    "receiptTotal": "合计"
   },
   "ota": {
     "ready": "更新已准备好",

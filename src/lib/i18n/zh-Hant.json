@@ -985,7 +985,11 @@
     "emptyOrdersTitle": "還沒有訂單記錄",
     "emptyOrdersBody": "從掃描的菜單下單後會記錄在這裡。",
     "emptyScansTitle": "還沒有掃描記錄",
-    "emptyScansBody": "掃描菜單後，你查看過的菜品會匯集在這裡。"
+    "emptyScansBody": "掃描菜單後，你查看過的菜品會匯集在這裡。",
+    "dishes": "菜品",
+    "receiptDate": "日期",
+    "receiptLocation": "地點",
+    "receiptTotal": "合計"
   },
   "ota": {
     "ready": "更新已準備好",
