@@ -304,10 +304,11 @@ describe('P-231: 상세 맵기 = 고추 5개 프레임(SpicePeppers)', () => {
     expect(flat(tree)).toContain('spice.foodNone');
   });
 
-  it('경고(spiceAboveYou) 존치 + foodSpiceText 반복 이모지 조립 잔존 0(소스 잠금)', () => {
+  it('P-282: 경고(spiceAboveYou) 제거 + foodSpiceText 반복 이모지 조립 잔존 0(소스 잠금)', () => {
     const fs = require('fs');
     const detail = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    expect(detail).toContain("t('detail.spiceAboveYou')"); // 현행 유지
+    expect(detail).not.toContain("t('detail.spiceAboveYou')"); // 9/5 예진 확정 제거(키는 미사용 방치)
+    expect(detail).not.toContain('spicierThanUser');
     expect(detail).toContain('<SpicePeppers rank={spiceRank(food.spiceLevel)}');
     const spice = fs.readFileSync('src/lib/spice.ts', 'utf8') as string;
     expect(spice).not.toContain(".repeat("); // 반복 이모지 조립 소멸(라벨 함수만 존치)
