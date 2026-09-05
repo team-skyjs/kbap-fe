@@ -444,7 +444,8 @@
     "sort_food_review_count": "评价最多的菜品",
     "sort_helpful": "最有帮助",
     "ratingAll": "全部评分",
-    "ratingMin": "{{min}}分以上"
+    "ratingMin": "{{min}}分以上",
+    "filterByProfile": "按个人资料筛选"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -603,7 +604,9 @@
       "sides": "配菜"
     },
     "filterAll": "全部",
-    "reviewsSub": "点餐前先看看"
+    "reviewsSub": "点餐前先看看",
+    "chipForYou": "为你推荐",
+    "chipNearby": "附近"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",

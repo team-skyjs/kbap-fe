@@ -250,9 +250,9 @@ it('P-160→P-180: 프로필 체크 줄 — ✓ 마크 부재·대문자 캡션�
   const tree = render(<Harness dishes={DISHES} />);
   const s2 = flat(tree);
   expect(s2).not.toContain('scan.mayContain');
-  // riskTone 배경 + riskText 텍스트 색으로 danger/caution 구분(Codex #27: 소형 텍스트 대비 변형)
-  expect(s2).toContain('"color":"#D93025"'); // danger riskText
-  expect(s2).toContain('"color":"#9A6700"'); // caution riskText
+  // 9/5 예진 확정: riskText = 상태 원색(대비 변형 폐기)
+  expect(s2).toContain('"color":"#F76661"'); // danger riskText(=원색)
+  expect(s2).toContain('"color":"#FFA526"'); // caution riskText(=원색)
 });
 
 describe('P-223: 회피 칩 통합 — v2 서버 겹침 우선 / v1 조인 폴백', () => {

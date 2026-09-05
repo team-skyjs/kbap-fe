@@ -39,9 +39,10 @@ import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-12
 import { KbowlMark } from './Brand';
 import { PressScale } from './PressScale';
 
+// 9/5 예진 확정(AppBar 4123:3609 h56): 4+48+4 = 56 — 구 62(8+48+6) 근사 폐기
 const BAR_H = 48;
-const TOP_PAD = 8;
-const BOT_PAD = 6;
+const TOP_PAD = 4;
+const BOT_PAD = 4;
 const DELTA = 7; // §6: 6~8px jitter threshold
 const TOP_ALWAYS = 8; // within this of the top → always shown
 // P-047(KB-217): 숨김/복귀는 timing **복귀** — P-031이 스프링으로 바꾼 뒤, 빠른
@@ -272,19 +273,18 @@ const styles = StyleSheet.create({
   },
   signInPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
   signInText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
-  // KB-430: NEW 배지(type.newBadge 10/600) — primary pill
+  // 9/5 예진 확정: NEW 배지 = primary pill h18 pad 1/5, 10/600 흰(시안값 — 근사 보더 폐기)
   dot: {
     position: 'absolute',
-    top: 2,
-    right: -4,
-    height: 15,
-    borderRadius: 8,
-    paddingHorizontal: 4,
+    top: 0,
+    right: -6,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: C.primary,
-    borderWidth: 1.5,
-    borderColor: C.surface,
   },
   dotText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   hairline: {

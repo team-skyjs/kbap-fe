@@ -11,10 +11,9 @@
  *  riskText·shadowGlow·shBadge·type). */
 export const color = {
   primary: '#FF7134', // Button/Primary 4123:3985 · FAB 4095:1858
-  primaryPress: '#E8602A', // 시안 Pressed(보라)는 잔재 — primary 10% 어둡게
-  // P-031 대비 규칙 유지: primary(#FF7134)는 흰 배경 2.9:1 — fontSize ≤14 텍스트는
-  // 이 토큰(FE 산출 #C9491A = white 4.70:1 ✓). 15px+ 대형은 primary 그대로.
-  primaryText: '#C9491A',
+  primaryPress: '#9A08C2', // 시안 Pressed 그대로 — 9/5 예진 확정("싹 다 시안대로")
+  // 9/5 예진 확정: 대비 조정 변형 폐기 — 소형 텍스트도 시안 원색(P-031 4.5:1 계약 종료)
+  primaryText: '#FF7134',
   primary2: '#FF9A6E', // gradient 2nd stop(현 규칙 유지)
   accent: '#0E9AA7',
 
@@ -46,19 +45,19 @@ export const color = {
  */
 export const riskTone = {
   safe: { fg: color.riskSafe, bg: '#EFFFF7', line: '#D5DFE7' },
-  caution: { fg: color.riskCaution, bg: '#FFFDEF', line: '#D5DFE7' },
-  danger: { fg: color.riskDanger, bg: '#FFF3EF', line: '#D5DFE7' },
+  // 9/5 예진 확정: 시안 인스턴스(4150:16971/16972) 그대로 — caution=붉은/danger=노란 틴트
+  caution: { fg: color.riskCaution, bg: '#FFF3EF', line: '#D5DFE7' },
+  danger: { fg: color.riskDanger, bg: '#FFFDEF', line: '#D5DFE7' },
   unable: { fg: color.riskUnable, bg: '#ECECEC', line: '#D5DFE7' },
 } as const;
 
-/** 12~14px 위험 텍스트("Safe" 12/700 등) 대비용 어두운 변형 — 시안 원색은 흰 배경
- *  4.5:1 미달(safe 2.1·caution 1.9·danger 2.9). FE 산출(white 기준): safe 4.97 ·
- *  caution 4.84 · danger 4.77 · unable 6.9. 예진이 원색 고집 시 이 한 곳만 되돌림. */
+/** 9/5 예진 확정("싹 다 시안대로"): 소형 위험 텍스트도 상태 원색 — 대비 변형 폐기.
+ *  토큰은 유지(소비처 5곳 무수정), 값 = riskSafe 계열과 동일. */
 export const riskText = {
-  safe: '#008147',
-  caution: '#9A6700',
-  danger: '#D93025',
-  unable: '#5B6470',
+  safe: color.riskSafe,
+  caution: color.riskCaution,
+  danger: color.riskDanger,
+  unable: color.riskUnable,
 } as const;
 
 export const primaryTint = 'rgba(255,113,52,0.05)'; // 시안 "primary 5%"

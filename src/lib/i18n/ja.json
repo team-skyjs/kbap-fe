@@ -444,7 +444,8 @@
     "sort_food_review_count": "レビューが多い料理順",
     "sort_helpful": "役に立った順",
     "ratingAll": "すべての評価",
-    "ratingMin": "{{min}}点以上"
+    "ratingMin": "{{min}}点以上",
+    "filterByProfile": "プロフィールで絞り込み"
   },
   "ranking": {
     "headerTitle": "マイランキング",
@@ -603,7 +604,9 @@
       "sides": "おかず"
     },
     "filterAll": "すべて",
-    "reviewsSub": "注文前にチェック"
+    "reviewsSub": "注文前にチェック",
+    "chipForYou": "おすすめ",
+    "chipNearby": "近く"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
