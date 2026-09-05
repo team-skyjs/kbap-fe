@@ -5,10 +5,27 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('react-native-reanimated', () => {
+  const { View, ScrollView, FlatList } = require('react-native');
+  return {
+    __esModule: true,
+    default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
+    useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    withTiming: (v: unknown) => v,
+    withRepeat: (v: unknown) => v,
+    cancelAnimation: () => {},
+    Easing: { linear: () => 0, out: () => () => 0, quad: 0 },
+  };
+});
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => true }),
   useLocalSearchParams: () => ({}),
   usePathname: () => '/',
+  useFocusEffect: (cb: () => (() => void) | undefined) => {
+    const React2 = require('react');
+    React2.useEffect(() => cb(), [cb]);
+  },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),

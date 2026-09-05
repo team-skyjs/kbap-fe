@@ -8,12 +8,13 @@
  * 콜라주 사진 = 스펙 bridge/design/4th/dishes 12장(30장 2.4MB > 1MB 상한 —
  * 발주 규정대로 12장 축소, 1.0MB). JS 번들 자산 — OTA 가능.
  */
-import { useState } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { AccessibilityInfo, AppState, Image, Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { IconArrowLeft } from '@/components/icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { resetToOnboarding } from '@/lib/nav';
@@ -24,7 +25,8 @@ import { color as C } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
-import { collageHeight } from '@/lib/loginCollage';
+import { GAP, MIN_COLLAGE_H, TILE, collageRows, embedAvailableH, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
+import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { LEGAL_URLS } from '@/lib/legalText';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -44,21 +46,52 @@ const DISHES = [
 ];
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-const TILE = 136; // 시안: 136×136 radius 21, 간격 11
-const GAP = 11;
 
-/** 시안(4150:14197): 타일 3행, offset x -101 / y -24 — 정적 배치(예진 확정). */
-function Collage({ height }: { height: number }) {
-  const rows = [DISHES.slice(0, 4), DISHES.slice(4, 8), DISHES.slice(8, 12)];
+/** 시안(4150:14197) 행 오프셋(x -101 + r·73.5)·타일 4열 문법 유지 — 9/5 후속:
+ *  각 행 = 가로 마퀴(홀수 행 좌→우·짝수 행 우→좌, ~20px/s 선형 무한 루프).
+ *  seamless: 타일 4개 주기를 3배 복제 + 기본 -span 시프트 — x∈[-span,0] 어느
+ *  위상에서도 화면 전폭 커버. 12장 자산 순환(추가 에셋 0). */
+function MarqueeRow({ row, animate }: { row: number; animate: boolean }) {
+  const span = marqueeSpan(4);
+  const ltr = row % 2 === 0; // 1·3·5번째 행 = 좌→우
+  const x = useSharedValue(ltr ? -span : 0);
+  useEffect(() => {
+    cancelAnimation(x);
+    x.value = ltr ? -span : 0;
+    if (!animate) return; // reduce-motion·언포커스·백그라운드 = 정지(정적)
+    x.value = withRepeat(
+      withTiming(ltr ? 0 : -span, { duration: marqueeDuration(span), easing: Easing.linear }),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(x);
+  }, [animate, ltr, span, x]);
+  const anim = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  // 4열 주기 ×3 — 자산 12장 순환(행마다 시작 타일 4칸 시프트)
+  const tiles = Array.from({ length: 12 }, (_, i) => DISHES[(row * 4 + (i % 4)) % DISHES.length]);
   return (
-    <View style={[styles.collage, { height }]} pointerEvents="none" testID="login-collage">
+    <Animated.View style={[styles.collageRow, { marginLeft: -101 + row * ((TILE + GAP) / 2) - span }, anim]}>
+      {tiles.map((src, i) => (
+        <Image key={i} source={src} style={styles.tile} />
+      ))}
+    </Animated.View>
+  );
+}
+
+/** 콜라주 = 남는 공간 전부(flex 채움, 최소 220) — 행 수는 측정 높이로 3~5 자동. */
+function Collage({ animate }: { animate: boolean }) {
+  const [h, setH] = useState(0);
+  const rows = collageRows(h);
+  return (
+    <View
+      style={styles.collage}
+      pointerEvents="none"
+      testID="login-collage"
+      onLayout={(e) => setH(e.nativeEvent.layout.height)}
+    >
       <View style={{ marginTop: -24 }}>
-        {rows.map((row, r) => (
-          <View key={r} style={[styles.collageRow, { marginLeft: -101 + r * ((TILE + GAP) / 2) }]}>
-            {row.map((src, i) => (
-              <Image key={i} source={src} style={styles.tile} />
-            ))}
-          </View>
+        {Array.from({ length: rows }, (_, r) => (
+          <MarqueeRow key={r} row={r} animate={animate} />
         ))}
       </View>
       {/* 상단 흰→투명 그라데이션 186h(4150:20076) — 상태바 가독 */}
@@ -78,9 +111,38 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
   const [authBusy, setAuthBusy] = useState(false);
   const { height: winH } = useWindowDimensions();
 
+  // 9/5 후속: 마퀴 정지 조건 — 언포커스·백그라운드·reduce-motion(정적 유지)
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+  const [appActive, setAppActive] = useState(true);
+  // null = 판정 전 — 알기 전엔 시작 안 함(reduce-motion 사용자에게 첫 프레임 움직임 0)
+  const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then((v) => setReduceMotion(!!v)).catch(() => setReduceMotion(false));
+    const rm = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => setReduceMotion(!!v));
+    const app = AppState.addEventListener('change', (st) => setAppActive(st === 'active'));
+    return () => {
+      rm?.remove();
+      app.remove();
+    };
+  }, []);
+  const animate = focused && appActive && reduceMotion === false;
+
   return (
-    <View style={[styles.root, { paddingBottom: bottom + 26 }]}>
-      <Collage height={collageHeight(winH)} />
+    <View
+      style={[
+        styles.root,
+        { paddingBottom: bottom + 26 },
+        // 임베드(프로필 탭 ScrollView 소속) = flex 무경계 — 가용 높이를 명시(헤더·탭바 차감)
+        embedded && { flex: undefined, height: embedAvailableH(winH, TABBAR_CONTENT_H, insets.bottom) },
+      ]}
+    >
+      <Collage animate={animate} />
       {/* P-129: 뒤로가기 복원 — 빈 스택 GO_BACK 에러는 canGoBack 가드 */}
       {!embedded && router.canGoBack() && (
         <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.backBtn, { top: insets.top + 6 }]} testID="login-back">
@@ -139,14 +201,14 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   backBtn: { position: 'absolute', left: 16, zIndex: 5, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 
-  // 콜라주(시안): 3행 오프셋 배치 — 레이아웃 플로우 소속 고정 높이(overflow hidden, Codex #32)
-  collage: { overflow: 'hidden' },
+  // 콜라주(시안 오프셋) — 9/5 후속: 남는 공간 전부 채움(flex, 최소 220) + overflow hidden
+  collage: { flex: 1, minHeight: MIN_COLLAGE_H, overflow: 'hidden' },
   collageRow: { flexDirection: 'row', gap: GAP, marginBottom: GAP },
   tile: { width: TILE, height: TILE, borderRadius: 21, backgroundColor: C.surface2 },
   collageFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 186 },
 
-  // welcome(@y435 비율) — 콜라주 아래 중앙
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingHorizontal: 26, paddingBottom: 24 },
+  // welcome — 콜라주가 flex를 소유, 하단 블록은 safe-area 위 고정
+  hero: { alignItems: 'center', gap: 10, paddingHorizontal: 26, paddingTop: 20, paddingBottom: 24 },
   sub: { fontSize: 16, fontWeight: '400', color: '#2F3137', textAlign: 'center', lineHeight: 23, maxWidth: 300 },
 
   foot: { gap: 10, paddingHorizontal: 20 },

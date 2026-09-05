@@ -215,24 +215,25 @@ it('KB-433 §3: 진행 점 — 국가 스텝 = 첫 점 활성, 나머지 비활�
   expect(st.backgroundColor).toBe('#FF7134');
 });
 
-it('KB-433 §2: 로그인 콜라주 — 정적(애니메이션 배선 0) + 12장 + 그라데이션 소스 잠금', () => {
+it('KB-433 §2 → 9/5 후속: 로그인 콜라주 — 12장 순환 + 마퀴(포커스·모션 게이트) + 그라데이션', () => {
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  expect((src.match(/dish-\d\d\.jpg/g) ?? []).length).toBe(12);
-  expect(src).not.toContain('useAnimatedStyle'); // 정적 배치(예진 확정)
+  expect((src.match(/dish-\d\d\.jpg/g) ?? []).length).toBe(12); // 추가 에셋 0
+  expect(src).toContain('withRepeat'); // 9/5 예진 지시: 행 가로 흐름 무한 루프
+  expect(src).toContain('reduceMotion'); // reduce-motion = 정적
   expect(src).toContain('collageFade'); // 상단 흰→투명 그라데이션
   expect(src).toContain('<Wordmark height={46} />'); // 워드마크 144×46
 });
 
-it('KB-433(Codex #32 P2): 콜라주 = 레이아웃 플로우 고정 높이 — 소형 기기 겹침 0', () => {
+it('KB-433(Codex #32 → 9/5 후속): 콜라주 = 남는 공간 전부(flex, 최소 220) — 겹침 0 유지', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { collageHeight } = require('@/lib/loginCollage') as typeof import('@/lib/loginCollage');
-  expect(collageHeight(812)).toBe(430); // 시안 기준 프레임
-  expect(collageHeight(667)).toBe(353); // 비례 축소 — welcome/버튼은 플로우로 아래 배치(비중첩)
-  expect(collageHeight(400)).toBe(220); // 최소 플로어
+  const { collageRows, MIN_COLLAGE_H } = require('@/lib/loginCollage') as typeof import('@/lib/loginCollage');
+  expect(MIN_COLLAGE_H).toBe(220); // 최소 플로어(소형 기기 비중첩)
+  expect(collageRows(353)).toBe(3);
+  expect(collageRows(900)).toBe(5); // 행 3~5 자동
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  // 절대 배치 소멸 — 콜라주 컨테이너는 플로우 소속(overflow hidden)
-  expect(src).toContain("collage: { overflow: 'hidden' }");
-  expect(src).toContain('<Collage height={collageHeight(winH)} />');
+  // flex 채움 — 하단 블록은 safe-area 위 고정(절대 배치 아님)
+  expect(src).toContain("collage: { flex: 1, minHeight: MIN_COLLAGE_H, overflow: 'hidden' }");
+  expect(src).toContain('<Collage animate={animate} />');
 });
 
 /* ---- P-133 → KB-433 §4-①: 국적 화면 시안 정합 ---- */
