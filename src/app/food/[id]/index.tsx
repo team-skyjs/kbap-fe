@@ -39,7 +39,7 @@ import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
 import { EligibilityGate } from '@/features/review/EligibilityGate';
-import { foodSpiceText, spiceRank, spicierThanUser, type SpiceChoice } from '@/lib/spice';
+import { foodSpiceText, spiceRank } from '@/lib/spice';
 import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -139,7 +139,6 @@ export default function FoodDetailScreen() {
                 onBookmark={onBookmark}
                 myId={me?.id}
                 nationality={me?.nationality ?? 'US'}
-                spiceTolerance={me?.spiceTolerance ?? 'SKIP'}
                 hasRestrictions={(me?.restrictions.length ?? 0) > 0}
                 t={t}
                 router={router}
@@ -255,7 +254,6 @@ function Registered({
   onBookmark,
   myId,
   nationality,
-  spiceTolerance,
   hasRestrictions,
   guest,
   scanPrice,
@@ -271,7 +269,6 @@ function Registered({
   onBookmark: () => void;
   myId?: string;
   nationality: string;
-  spiceTolerance: SpiceChoice;
   hasRestrictions: boolean;
   scanPrice: number | null;
   t: TFn;
@@ -332,8 +329,7 @@ function Registered({
       ? t(`detail.ingBasis${band}`, { ingredient: ing.name, percent: Math.round(ing.percentage) })
       : t(`detail.ingBasis${band}NoPct`, { ingredient: ing.name });
   };
-  // P-080→P-081(KB-261): 경고 = enum 순서 비교
-  const spicyForYou = food.spiceLevel != null && spicierThanUser(food.spiceLevel, spiceTolerance);
+  // P-282(9/5 예진 확정): "hotter than your taste" 비교 경고 제거 — 시안 = 맵기 칩+고추만
 
   return (
     <>
@@ -370,7 +366,6 @@ function Registered({
                 <Text style={styles.spiceChipText}>{foodSpiceText(food.spiceLevel, t)}</Text>
               </View>
               <SpicePeppers rank={spiceRank(food.spiceLevel)} size={16} />
-              {spicyForYou && <Text style={styles.spiceWarn}>{t('detail.spiceAboveYou')}</Text>}
             </View>
           )}
           <View style={styles.nameRow}>
@@ -658,7 +653,6 @@ const styles = StyleSheet.create({
   spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   spiceChip: { backgroundColor: '#F2F3F6', borderRadius: 4, paddingVertical: 1, paddingHorizontal: 5 },
   spiceChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  spiceWarn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
