@@ -716,7 +716,8 @@
       "groupAllergy": "过敏组合",
       "apply": "应用到我的列表",
       "applyRow": "按饮食/宗教填充"
-    }
+    },
+    "countryLabel": "国家"
   },
   "editProfile": {
     "title": "编辑资料",

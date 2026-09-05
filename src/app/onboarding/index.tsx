@@ -41,6 +41,7 @@ import {
   Input,
   RiskMark,
 } from '@/components';
+import { PepperOn, PepperOff } from '@/components/design4Assets';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
 import { useShake } from '@/lib/useShake';
@@ -78,6 +79,9 @@ const ORDER: Step[] = FLAGS.dietPresetsEnabled
 /** 구버전 draft 스텝 → v3 매핑 (무해 파싱 — 소멸 스텝은 근접 스텝으로). */
 /** P-144: 계측 step 와이어명 — amplitude-taxonomy.csv (terms|nationality|avoid|spice). */
 const STEP_WIRE: Record<Step, string | null> = { consent: 'terms', nationality: 'nationality', presets: 'presets', restrictions: 'avoid', spice: 'spice' }; // P-213: presets 계측 개시(CSV 등재 예정 — P-203 스킵 해제)
+
+/** §0(예진 확정): 진행 점 = consent 제외 스텝(국가·[식단]·회피·맵기) — 현 순서대로 활성. */
+const DOT_STEPS: Step[] = ORDER.filter((st) => st !== 'consent');
 
 const LEGACY_STEP: Record<string, Step> = {
   profile: 'nationality',
@@ -407,18 +411,25 @@ export default function Onboarding() {
       {/* P-101: 공용 OnboardingFooter — 6스텝 전부 (P-011 restrictions 스티키의
           전 스텝 확장). CTA 프레임 고정 + Skip/노트 고정 높이 슬롯. */}
       {/* P-133: 시안 푸터 규격 — 패딩 12/20/34·헤어라인·CTA radius 16/패딩 17·primary 글로우 */}
+      {/* KB-433 §3: FixedBottom — Default = outline(좌 119w) + primary(grow) /
+          Variant2(스킵 없는 스텝) = primary 단독. 노트는 고정 슬롯 유지(CTA y 불변). */}
       <View testID="ob-footer" style={[styles.footer, { paddingBottom: Math.max(bottomInset, 20) + 14 }]}>
-        <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress} style={styles.obCta}>
-          {footer.label}
-        </Btn>
+        <View style={styles.footerRow}>
+          {footer.onSkip && (
+            <View style={styles.footerSkip}>
+              <Btn variant="ghost" onPress={footer.onSkip} testID="ob-skip">
+                {footer.skipLabel ?? t('onboarding.skip')}
+              </Btn>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
+              {footer.label}
+            </Btn>
+          </View>
+        </View>
         <View style={styles.skipSlot}>
-          {footer.onSkip ? (
-            <Pressable onPress={footer.onSkip} hitSlop={8}>
-              <Text style={styles.linkbtn}>{footer.skipLabel ?? t('onboarding.skip')}</Text>
-            </Pressable>
-          ) : footer.note ? (
-            <Text style={[styles.tag, { textAlign: 'center' }]}>{footer.note}</Text>
-          ) : null}
+          {footer.note ? <Text style={[styles.tag, { textAlign: 'center' }]}>{footer.note}</Text> : null}
         </View>
       </View>
 
@@ -571,9 +582,9 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     return (
       <Pressable
         key={c.code}
-        // P-148①→P-151→P-154: 프레임은 상시 고정(투명 보더 동폭) — 선택 바인딩은
-        // 색(보더·틴트)만. P-154 ①: 일반 행도 선택 시 핀 카드와 동일 강조(natPinOn 공유).
-        style={[styles.natRow, pinned && styles.natPinFrame, on && styles.natPinOn]}
+        // 프레임 상시 고정(투명 보더 동폭 — P-151/P-103) — 선택은 색만.
+        // 시안: 선택 = primaryTint bg + primary 1px r8 / 비선택 = #EAEBEE 1px
+        style={[pinned ? styles.natPinRow : styles.natTile, on && styles.natOn]}
         onPress={() => onSelect(c.code)}
         testID={`nat-${c.code}`}
       >
@@ -581,24 +592,27 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
           <Text style={styles.natFlag}>{flagEmoji(c.code)}</Text>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[styles.natName, on && styles.natNameOn]} numberOfLines={1}>{c.native ?? c.name}</Text>
+          <Text style={styles.natName} numberOfLines={2}>{c.native ?? c.name}</Text>
           {c.native && c.native !== c.name && (
             <Text style={styles.natSub} numberOfLines={1}>{c.name}</Text>
           )}
         </View>
-        <View style={[styles.natCheck, on && styles.natCheckOn]}>
-          {on && <IconCheck size={13} color="#fff" />}
-        </View>
+        {/* 시안: Radio 16(D-1 Choice 문법) — 선택 = primary 5px 링 */}
+        <View style={[styles.natRadio, on && styles.natRadioOn]} />
       </Pressable>
     );
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {/* 고정부: 타이틀 + 검색 (시안 — display 29·서브 13.5 max 34ch) */}
+      {/* KB-433 §4-①(4150:14246): title-stack + "From your phone" 추천 + 안내 + Country 그리드 */}
       <View style={styles.natHead}>
-        <Text style={styles.natTitle}>{t('onboarding.nationalityTitle')}</Text>
-        <Text style={styles.natTitleSub}>{t('onboarding.nationalitySub')}</Text>
+        <ObTitle
+          title={t('onboarding.nationalityTitle')}
+          sub={t('onboarding.nationalitySub')}
+          dotCount={DOT_STEPS.length}
+          dotActive={DOT_STEPS.indexOf('nationality')}
+        />
       </View>
       <View style={[styles.natSearch, searchFocus && styles.natSearchFocus]}>
         <IconSearch size={17} color={C.ink2} />
@@ -623,19 +637,18 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
       <ScrollView style={{ flex: 1 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
         {!query && detectedCountry && (
           <>
-            <View style={styles.natSecHead}>
-              <Text style={styles.natSecText}>{t('onboarding.fromYourPhone')}</Text>
-              <View style={styles.natSecLine} />
-            </View>
+            <Text style={styles.natSecText}>{t('onboarding.fromYourPhone')}</Text>
             {Row(detectedCountry, true)}
-            {/* quiet 불변 안내 — 자물쇠 13 + 11.5 두 줄 */}
+            {/* 시안: RiskMark caution 16 + 12/400 #9196A1 안내 */}
             <View style={styles.natNotice}>
-              <IconLock size={13} color={C.ink2} />
+              <RiskMark state="caution" size={16} />
               <Text style={styles.natNoticeText}>{t('onboarding.nationalityNotice')}</Text>
             </View>
           </>
         )}
-        <View>
+        {!query && <Text style={styles.natSecText}>{t('onboarding.countryLabel')}</Text>}
+        {/* 시안(4150:13850): 국가 2열 그리드(163w gap 12) — 긴 이름 2줄 허용(hug) */}
+        <View style={styles.natGrid}>
           {list.map((c) => Row(c, false))}
         </View>
       </ScrollView>
@@ -655,7 +668,7 @@ function PresetsStep({ presets, selected, onToggle, t }: { presets: ResolvedPres
   ];
   return (
     <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.presets.title')} sub={t('onboarding.presets.sub')} />
+      <ObTitle title={t('onboarding.presets.title')} sub={t('onboarding.presets.sub')} dotCount={DOT_STEPS.length} dotActive={DOT_STEPS.indexOf('presets')} />
       {groups.map((g) => (
         <View key={g.key} style={{ marginBottom: 14 }}>
           <Text style={styles.presetGroup}>{t(g.labelKey)}</Text>
@@ -670,6 +683,7 @@ function PresetsStep({ presets, selected, onToggle, t }: { presets: ResolvedPres
                   hitSlop={4}
                   testID={`preset-${p.id}`}
                 >
+                  {on && <IconCheck size={14} color={C.primary} />}
                   <Text style={[styles.presetChipText, on && styles.presetChipTextOn]}>{t(p.labelKey)}</Text>
                 </Pressable>
               );
@@ -691,7 +705,7 @@ function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; 
   const query = q.trim().toLowerCase();
   return (
     <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.avoidSub')} />
+      <ObTitle title={t('onboarding.restrictionsTitle')} sub={t('onboarding.avoidSub')} dotCount={DOT_STEPS.length} dotActive={DOT_STEPS.indexOf('restrictions')} />
       <View style={styles.natSearch}>
         <IconSearch size={17} color={C.ink2} />
         <Input value={q} onChangeText={setQ} placeholder={t('restrictionsEdit.searchPlaceholder')} placeholderTextColor={C.ink3} style={styles.natSearchInput} autoCorrect={false} />
@@ -719,72 +733,54 @@ function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; 
 function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; setLevel: (l: SpiceLevel) => void; onDragStateChange?: (d: boolean) => void; t: TFn }) {
   const rank = spiceRank(level);
   const rail = SPICE_RAIL[level];
-  const kids = level === 'NONE' || level === 'MILD';
-  // P-148 ③: 캐러셀 카드 = 화면폭 58%(다음 카드 피크 — emo 톤, 재량 보고)
-  const { width: winW } = useWindowDimensions();
-  const cardW = Math.round(winW * 0.58);
-  const railRef = useRef<ScrollView>(null);
-  // 레벨 전환 시 스크롤 처음으로 리셋
-  useEffect(() => {
-    railRef.current?.scrollTo({ x: 0, animated: false });
-  }, [level]);
   return (
     <View style={{ flex: 1 }}>
-      <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} />
-      <View style={{ alignItems: 'center', gap: 10, marginTop: 8 }}>
-        {/* 🌶️ 카운트 히어로 — 점등 수 = 단계 (None=0개) · P-119 고정 프레임 유지 */}
+      <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} dotCount={DOT_STEPS.length} dotActive={DOT_STEPS.indexOf('spice')} />
+      {/* KB-433 §4-②(4150:14286): 고추 SVG 20 × 점등 rank(0~4) + 레벨명 20/700 + 설명 12/400
+          (이모지·kids 배지·캐러셀 = 시안 부재로 소멸 — 이모지 예외 종료) */}
+      <View style={{ alignItems: 'center', gap: 8, marginTop: 8 }}>
         <View style={styles.chiliRow}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <Text key={i} style={[styles.chili, i >= rank && styles.chiliDim]}>
-              {'\u{1F336}\u{FE0F}'}
-            </Text>
+            <View key={i} testID={`spice-pepper-${i}-${i < rank ? 'on' : 'off'}`}>
+              {i < rank ? <PepperOn height={20} /> : <PepperOff height={20} />}
+            </View>
           ))}
         </View>
-        {/* P-148 ②: 레벨명 **아래** 👶 배지(NONE·MILD 한정 — 헌법 v2.3.1) —
-            배지 줄 = 고정 높이 슬롯(레벨 전환에도 아래 슬라이더 프레임 불변, P-134 승계) */}
         <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
-        <View style={styles.kidSlot} testID="kid-slot">
-          {kids && (
-            <View style={styles.kidBadge} testID="kid-badge">
-              <Text style={styles.kidBadgeText}>{t('onboarding.kidsBadge')}</Text>
-            </View>
-          )}
-        </View>
+        <Text style={styles.spiceDesc}>{t(`onboarding.spiceDesc${rank}`)}</Text>
       </View>
-      <View style={{ marginTop: 18 }}>
-        <SpiceLevelSlider level={level} onChange={setLevel} onDragStateChange={onDragStateChange} />
-      </View>
-      {/* P-148 ③: 사진 캐러셀 — 크게(화면폭 58%)+가로 스크롤+다음 카드 피크,
-          레벨 전환 시 처음으로 리셋. 데이터 = spiceRail 상수 그대로(레벨당 3장) */}
-      <ScrollView
-        ref={railRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginTop: 16 }}
-        contentContainerStyle={{ gap: 12, paddingHorizontal: 2 }}
-        snapToInterval={cardW + 12}
-        decelerationRate="fast"
-        testID="spice-rail"
-      >
-        {rail.map((f) => (
-          <View key={f.foodId} style={{ width: cardW }} testID={`rail-${f.foodId}`}>
-            <View style={[styles.railImgWrap, { width: cardW, height: Math.round(cardW * 0.68) }]}>
+      {/* 예시 음식 타일 3개(107×133 — SPICE_RAIL 데이터 재사용, 원형 62 썸네일) */}
+      <View style={styles.railRow} testID="spice-rail">
+        {rail.slice(0, 3).map((f) => (
+          <View key={f.foodId} style={styles.railTile} testID={`rail-${f.foodId}`}>
+            <View style={styles.railImgWrap}>
               <RemoteImage uri={f.imageUrl} style={styles.railImg} />
             </View>
             <Text style={styles.railName} numberOfLines={1}>{f.name}</Text>
             <Text style={styles.railKo} numberOfLines={1}>{f.nameKo}</Text>
           </View>
         ))}
-      </ScrollView>
-      {/* 레벨 설명 — 교정 카피(맵기 표시 사실만) */}
-      <Text style={styles.spiceDesc}>{t(`onboarding.spiceDesc${rank}`)}</Text>
+      </View>
+      {/* 슬라이더 박스(bg #F7F8FA r8) — 트랙·노브·라벨은 SpiceLevelSlider 시안 재스타일 */}
+      <View style={styles.sliderBox}>
+        <SpiceLevelSlider level={level} onChange={setLevel} onDragStateChange={onDragStateChange} />
+      </View>
     </View>
   );
 }
 
-function ObTitle({ title, sub }: { title: string; sub?: string }) {
+/** KB-433 §3: title-stack — 진행 점(17×4 r8, 활성 primary/나머지 #DCDEE3) +
+ *  제목 20/700 + 부제 14/500 #9196A1. dots = consent 제외 스텝 수(발주 §0). */
+function ObTitle({ title, sub, dotCount, dotActive }: { title: string; sub?: string; dotCount?: number; dotActive?: number }) {
   return (
-    <View style={{ marginBottom: 18 }}>
+    <View style={{ marginBottom: 18, gap: 8 }}>
+      {dotCount != null && dotActive != null && (
+        <View style={styles.dotRow} testID="ob-dots">
+          {Array.from({ length: dotCount }).map((_, i) => (
+            <View key={i} style={[styles.dot, i === dotActive && styles.dotOn]} testID={`ob-dot-${i}-${i === dotActive ? 'on' : 'off'}`} />
+          ))}
+        </View>
+      )}
       <Text style={styles.obTitle}>{title}</Text>
       {!!sub && <Text style={styles.obSub}>{sub}</Text>}
     </View>
@@ -800,67 +796,68 @@ const styles = StyleSheet.create({
   avTileOn: { borderColor: C.primary },
   avAbbr: { fontFamily: font.displayBlack, fontSize: 18, color: C.ink2, opacity: 0.55 },
   // P-134 맵기 — 배지 줄(고정 높이)·레일·설명
-  // P-148 ②: 배지 슬롯 — 고정 높이(배지 부재 레벨에서도 프레임 불변)
-  kidSlot: { height: 26, alignItems: 'center', justifyContent: 'center' },
-  kidBadge: { backgroundColor: 'rgba(47,143,91,0.1)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  kidBadgeText: { fontFamily: font.bodyBold, fontSize: 11.5, color: '#2f8f5b' },
-  railImgWrap: { borderRadius: 15, overflow: 'hidden', backgroundColor: C.surface2 }, // P-148: 크기 동적(화면폭 58%)
+  // KB-433 §4-②: 예시 타일 107×133(border #ECEDF0 r4, 원형 62) — 3개 고정 행
+  railRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 16 },
+  railTile: { width: 107, height: 133, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 12, gap: 4 },
+  railImgWrap: { width: 62, height: 62, borderRadius: 31, overflow: 'hidden', backgroundColor: C.surface2 },
   railImg: { width: '100%', height: '100%' },
-  railName: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, marginTop: 6 },
-  railKo: { fontFamily: font.ko, fontSize: 11, color: C.ink3 },
-  spiceDesc: { fontFamily: font.body, fontSize: 12.5, lineHeight: 18, height: 36, color: C.ink2, textAlign: 'center', marginTop: 14, paddingHorizontal: 8 }, // P-119 승계: 2줄 고정 슬롯 — 레벨 전환 프레임 불변
+  railName: { fontSize: 12, fontWeight: '500', color: C.ink, marginTop: 2, paddingHorizontal: 6 },
+  railKo: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
+  sliderBox: { backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 16, marginTop: 22 },
+  spiceDesc: { fontSize: 12, fontWeight: '400', lineHeight: 18, height: 36, color: C.ink2, textAlign: 'center', paddingHorizontal: 8 }, // 2줄 고정 슬롯 — 프레임 불변 유지
   // P-130 v3
   miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 40 },
   miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
   // P-133 국적 화면(시안 kbap-ob4): 헤더 56/14 패딩 골격은 body 공용 — 여기선 스텝 내부 규격
-  natHead: { paddingTop: 8, paddingBottom: 14 },
-  natTitle: { fontFamily: font.displayBlack, fontSize: 29, letterSpacing: -0.72, color: C.ink },
-  natTitleSub: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink2, marginTop: 6, maxWidth: 300 },
+  natHead: { paddingTop: 8 },
   // P-203: 프리셋 칩 — 선택 = 색만(보더 폭 동일 — 프레임 불변)
-  presetGroup: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 0.6, color: C.ink3, textTransform: 'uppercase', marginBottom: 8 },
+  // KB-433 §4-③: 그룹 라벨 14/500 + Tag(D-1 — 선택 primaryTint+primary+check / 비선택 #EAEBEE)
+  presetGroup: { fontSize: 14, fontWeight: '500', color: C.ink2, marginBottom: 8 },
   presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  presetChip: { borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  presetChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   presetChipOn: { borderColor: C.primary, backgroundColor: primaryTint },
-  presetChipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  presetChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
   presetChipTextOn: { color: C.primaryText },
   natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
   natSearchFocus: { borderColor: C.primary },
   natSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
   natClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  natSecHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 7 },
-  natSecText: { fontFamily: font.bodyBold, fontSize: 9.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3 },
-  natSecLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: C.hair },
+  natSecText: { fontSize: 14, fontWeight: '500', color: C.ink2, marginTop: 4, marginBottom: 8 },
   // P-154 ①: 전 행 상시 투명 보더 동폭+라운딩 — 선택 시 색만 전환(natPinOn 공유),
   // 행 높이 62·간격 픽셀 무변(P-151 방식). 강조는 항상 화면 1곳.
-  natRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 62, paddingHorizontal: 12, borderWidth: 1.5, borderColor: 'transparent', borderRadius: 18 }, // 62 고정 — 리플로 방지
-  // P-151(P-148 회귀 교정): 핀 카드 **프레임은 상시 고정**(투명 보더 동폭·minHeight 70)
-  // — 선택 상태는 색만 바꾼다(P-103 원칙). 선택 이동 시 아래 목록 픽셀 이동 0.
-  natPinFrame: { borderWidth: 1.5, borderColor: 'transparent', borderRadius: 18, minHeight: 70, marginBottom: 8 },
-  natPinOn: { borderColor: C.primary, backgroundColor: primaryTint },
-  natFlagSlot: { width: 34, alignItems: 'center' },
-  natFlag: { fontSize: 26, lineHeight: 32 },
-  natName: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
-  natNameOn: { color: C.primaryText },
-  natSub: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginTop: 1 },
-  natCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
-  natCheckOn: { backgroundColor: C.primary, borderColor: C.primary },
+  // KB-433 §4-①: 추천 행(4150:13845) = pad 16 gap 12 r8 / 2열 그리드 타일(4150:13850)
+  natPinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, marginBottom: 8 },
+  natGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  natTile: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm },
+  natOn: { borderColor: C.primary, backgroundColor: primaryTint },
+  natFlagSlot: { width: 30, alignItems: 'center' },
+  natFlag: { fontSize: 24, lineHeight: 30 },
+  natName: { fontSize: 15, fontWeight: '600', color: C.ink },
+  natSub: { fontSize: 12, fontWeight: '400', color: C.ink2, marginTop: 1 },
+  // Radio 16(D-1 Choice) — 선택 = primary 5px 링
+  natRadio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: C.line2, backgroundColor: '#FFFFFF' },
+  natRadioOn: { borderWidth: 5, borderColor: C.primary },
   natNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, paddingHorizontal: 4, marginBottom: 10 },
-  natNoticeText: { flex: 1, fontFamily: font.body, fontSize: 11.5, lineHeight: 16, color: C.ink2 },
+  natNoticeText: { flex: 1, fontSize: 12, fontWeight: '400', lineHeight: 17, color: C.ink3 },
   app: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
 
   // P-101: 공용 푸터 (P-011 스티키의 전 스텝 확장) — CTA 프레임 전 스텝 동일,
   // skipSlot은 고정 높이(Skip/노트 유무와 무관 — CTA y 불변의 핵심)
-  footer: { paddingTop: 12, paddingHorizontal: 20, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, backgroundColor: 'rgba(252,245,239,0.92)' },
-  skipSlot: { height: 34, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  obCta: { borderRadius: 16, paddingVertical: 17, shadowColor: C.primary, shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  footer: { paddingTop: 12, paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: '#FFFFFF' },
+  footerRow: { flexDirection: 'row', gap: 16 },
+  footerSkip: { width: 119 },
+  skipSlot: { height: 22, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   // 제출 실패 안내 (KB-75)
   submitErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
   submitErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
 
-  // titles
-  obTitle: { fontFamily: font.display, fontSize: 25, color: C.ink, letterSpacing: -0.4 },
-  obSub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 20, marginTop: 6 },
+  // titles (KB-433 §3: 20/700 + 14/500 #9196A1 + 진행 점)
+  obTitle: { fontSize: 20, fontWeight: '700', color: C.ink },
+  obSub: { fontSize: 14, fontWeight: '500', color: C.ink3, lineHeight: 20, marginTop: 2 },
+  dotRow: { flexDirection: 'row', gap: 4 },
+  dot: { width: 17, height: 4, borderRadius: 8, backgroundColor: C.line2 },
+  dotOn: { backgroundColor: C.primary },
 
   // fields
   // KB-149 프로필 사진 (edit.tsx avatar 패턴)
@@ -887,7 +884,7 @@ const styles = StyleSheet.create({
   // 패딩 13 — 카드 안 체크박스 좌측 x가 아래 3행 체크박스와 일직선(카드만 살짝 넓게)
   consent: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: radius.sm, padding: 13, marginHorizontal: -14.5, ...shadow.sh1 },
   consentAllOn: { borderColor: C.primary },
-  check: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  check: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: C.line2, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, // D-1 Choice 20 r4
   checkOn: { backgroundColor: C.primary, borderColor: C.primary },
   consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 20 },
   consentRows: { marginTop: 12, gap: 2 },
@@ -912,10 +909,8 @@ const styles = StyleSheet.create({
 
   // ⑤ spice (P-080 → P-081: 슬라이더는 공용 SpiceLevelSlider로 승격 — 히어로만 잔존)
   // P-119: minHeight→height 고정 — 어느 단계에서도 히어로 줄 프레임 불변(P-101/103 원칙)
-  chiliRow: { flexDirection: 'row', gap: 6, height: 46, alignItems: 'center' },
-  chili: { fontSize: 34, lineHeight: 44 },
-  chiliDim: { opacity: 0.18 },
-  bandName: { fontFamily: font.displayBlack, fontSize: 30, lineHeight: 38, height: 38, color: C.ink, letterSpacing: -0.3 }, // P-119: 고정
+  chiliRow: { flexDirection: 'row', gap: 6, height: 28, alignItems: 'center' }, // 고정 프레임 유지(P-119)
+  bandName: { fontSize: 20, fontWeight: '700', lineHeight: 28, height: 28, color: C.ink }, // 고정
   analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, height: 36, backgroundColor: 'rgba(226,88,12,0.08)' }, // P-119: paddingV→고정 높이
   analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },
   tag: { fontFamily: font.body, fontSize: 11, color: C.ink3 },

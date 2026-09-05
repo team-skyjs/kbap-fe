@@ -167,15 +167,15 @@ it('Skip → 즉시 제출 SKIP (스킵도 제출 트리거 — v3)', async () =
   expect(mockSubmit.mock.calls[0][0].spiceTolerance).toBe('SKIP');
 });
 
-/* ---- P-119(테플 빌드14 반려): 히어로 프레임 불변 — NONE 전환 시 ~15pt 하강 봉쇄 ---- */
-it('P-119: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 완전 동일 (P-134 시안 개편 반영 — 비유 필→설명 줄)', async () => {
+/* ---- P-119(테플 빌드14 반려) → KB-433: 히어로 프레임 불변 — NONE 전환 하강 봉쇄 ---- */
+it('P-119 → KB-433: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 완전 동일', async () => {
   const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, number | undefined>;
   const heroStyles = (tree: ReactTestRenderer) => {
-    const chiliRow = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.height === 46)[0];
-    const band = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 38)[0];
-    // P-134: 비유 필 → 레벨 설명 줄(2줄 고정 슬롯 36) — 배지 줄은 bandRow 38 고정
-    const pill = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 36)[0];
-    return { chiliRow: flat(chiliRow.props.style), band: flat(band.props.style), pill: flat(pill.props.style) };
+    // KB-433: 고추 행 28 고정 · 레벨명 28 고정 · 설명 슬롯 36 고정
+    const chiliRow = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.height === 28 && flat(n.props.style)?.flexDirection === 'row')[0];
+    const band = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 28)[0];
+    const desc = tree.root.findAll((n) => n.type === 'Text' && flat(n.props.style)?.height === 36)[0];
+    return { chiliRow: flat(chiliRow.props.style), band: flat(band.props.style), desc: flat(desc.props.style) };
   };
   const a = await renderSpiceStep();
   await selectStop(a, 0); // NONE — 반려 지점
@@ -184,39 +184,28 @@ it('P-119: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 완전 동�
   const ha = heroStyles(a);
   const hb = heroStyles(b);
   expect(ha).toEqual(hb); // 단계 전환에도 프레임 스타일 픽셀 동일
-  expect(ha.chiliRow.height).toBe(46); // minHeight(가변) 아님 — 고정
-  expect(ha.band.lineHeight).toBe(38);
-  expect(ha.pill.height).toBe(36); // 설명 슬롯 고정
+  expect(ha.band.lineHeight).toBe(28);
+  expect(ha.desc.height).toBe(36); // 설명 슬롯 고정
 });
 
-/* ---- P-148: 배지 = 레벨명 아래 고정 슬롯 · 캐러셀 확대+레벨 리셋 ---- */
-it('P-148 ②: 👶 배지 슬롯 — 레벨명 아래 고정 높이(NONE=배지 有, HOT=無 — 슬롯 동일)', async () => {
-  const flat = (s2: unknown) => StyleSheet.flatten(s2) as Record<string, number | undefined>;
-  const slotOf = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'kid-slot')[0];
+/* ---- KB-433 §4-②: SVG 고추 점등 · 예시 타일 3개 고정 행 + 레벨 전환 교체 ---- */
+it('KB-433: SVG 고추 점등 = rank(HOT=3점등) — 이모지·kids 배지 소멸', async () => {
   const a = await renderSpiceStep();
-  await selectStop(a, 0); // NONE — 배지 표시
-  expect(a.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBeGreaterThanOrEqual(1);
-  const b = await renderSpiceStep();
-  await selectStop(b, 3); // HOT — 배지 없음
-  expect(b.root.findAll((n) => n.props?.testID === 'kid-badge').length).toBe(0);
-  // 슬롯 자체는 두 상태에서 동일 고정 높이 — 아래 슬라이더 프레임 불변
-  expect(flat(slotOf(a).props.style).height).toBe(26);
-  expect(flat(slotOf(b).props.style)).toEqual(flat(slotOf(a).props.style));
+  await selectStop(a, 3); // HOT
+  const ons = new Set(a.root.filter ? [] : a.root.findAll((n) => typeof n.props?.testID === 'string' && /^spice-pepper-\d-on$/.test(n.props.testID)).map((n) => n.props.testID as string));
+  expect(ons.size).toBe(3);
+  expect(a.root.findAll((n) => n.props?.testID === 'spice-pepper-3-off').length).toBeGreaterThanOrEqual(1);
+  expect(a.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0);
 });
 
-it('P-148 ③: 사진 캐러셀 — 화면폭 비율 카드(가로 스크롤) + 레벨 전환 시 처음 리셋', async () => {
+it('KB-433: 예시 타일 3개(107×133) 고정 행 + 레벨 전환 시 타일 교체', async () => {
   const tree = await renderSpiceStep();
-  const rail = tree.root.findAll((n) => n.props?.testID === 'spice-rail')[0];
-  expect(rail.props.horizontal).toBe(true);
-  // 카드 폭 = 화면폭 58% (jest 기본 window 750 → 435) — 구 108 고정 소멸
-  const cards = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('rail-'));
-  expect(cards.length).toBeGreaterThanOrEqual(3);
-  const w = (StyleSheet.flatten(cards[0].props.style) as { width?: number }).width!;
-  expect(w).toBeGreaterThan(200); // 108 고정 그리드 아님 — 확대 캐러셀
-  // 레벨 전환 → scrollTo(0) 리셋
-  const scrollTo = jest.fn();
-  const inst = rail.instance as { scrollTo?: unknown } | null;
-  if (inst) (inst as { scrollTo: unknown }).scrollTo = scrollTo;
-  await selectStop(tree, 3);
-  expect(scrollTo).toHaveBeenCalledWith({ x: 0, animated: false });
+  const cards = () => tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('rail-'));
+  expect(cards().length).toBeGreaterThanOrEqual(3);
+  const w = (StyleSheet.flatten(cards()[0].props.style) as { width?: number }).width!;
+  expect(w).toBe(107); // 시안 타일 폭
+  const before = cards().map((n) => n.props.testID as string);
+  await selectStop(tree, 3); // HOT — 타일 교체
+  const after = cards().map((n) => n.props.testID as string);
+  expect(after).not.toEqual(before);
 });

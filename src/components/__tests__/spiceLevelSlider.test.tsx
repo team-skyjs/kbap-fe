@@ -35,26 +35,27 @@ async function render(level: SpiceLevel | null, onChange = jest.fn()): Promise<R
 }
 
 const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, unknown>;
+// KB-433(4150:14286): 점 6px(width 6) · 노브 28(r14)
 const ticksOf = (tree: ReactTestRenderer) =>
   tree.root
-    .findAll((n) => n.type === 'View' && flat(n.props.style)?.width === 2)
+    .findAll((n) => n.type === 'View' && flat(n.props.style)?.width === 6 && flat(n.props.style)?.height === 6)
     .map((n) => flat(n.props.style).left as number);
 const knobOf = (tree: ReactTestRenderer) => {
-  const k = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderRadius === 13);
+  const k = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderRadius === 14);
   return k.length ? (flat(k[0].props.style).left as number) : null;
 };
 
-it('중간 틱 3개 = i×25% 절대 고정 — 선택이 바뀌어도 좌표 동일(이동 0)', async () => {
+it('스텝 점 5개 = i×25% 절대 고정 — 선택이 바뀌어도 좌표 동일(이동 0)', async () => {
   const a = await render('NONE');
   const b = await render('HOT');
-  const expected = [1, 2, 3].map((i) => (W * i) / 4 - 1); // toX(i) - 1
+  const expected = [0, 1, 2, 3, 4].map((i) => (W * i) / 4 - 3); // toX(i) - 3
   expect(ticksOf(a)).toEqual(expected);
   expect(ticksOf(b)).toEqual(expected); // 선택 무관 동일 — 레이아웃 스냅샷 잠금
 });
 
 it('노브 = 선택 스톱 위치만 이동 · 미설정(null)은 노브 없음', async () => {
-  expect(knobOf(await render('NONE'))).toBe(0 - 13);
-  expect(knobOf(await render('HOT'))).toBe((W * 3) / 4 - 13);
+  expect(knobOf(await render('NONE'))).toBe(0 - 14);
+  expect(knobOf(await render('HOT'))).toBe((W * 3) / 4 - 14);
   expect(knobOf(await render(null))).toBe(null);
 });
 
@@ -64,8 +65,9 @@ it('라벨 5개 전부 렌더 — 선택(MEDIUM)만 강조 스타일', async () 
   const labels = tree.root.findAll((n) => n.type === 'Text' && typeof n.props?.adjustsFontSizeToFit === 'boolean');
   expect(labels).toHaveLength(5);
   const byKey = Object.fromEntries(labels.map((n) => [n.props.children, flat(n.props.style)]));
-  expect(byKey['spice.band.2'].color).not.toBe(byKey['spice.band.0'].color); // 선택 잉크 vs 비선택 회색
-  expect(byKey['spice.band.2'].fontWeight).not.toBe(byKey['spice.band.0'].fontWeight); // 볼드 전환 (P-135: 시스템 폰트 = weight 위계)
+  // KB-433: 활성 = primary / 비활성 = #B1B5BD — 색만 전환(웨이트 12/500 동일, 시안)
+  expect(byKey['spice.band.2'].color).toBe('#FF7134');
+  expect(byKey['spice.band.0'].color).toBe('#B1B5BD');
 });
 
 it('릴리즈 = 최근접 스톱 스냅 (트랙 레벨 제스처 — 개별 탭 타깃 없음)', async () => {

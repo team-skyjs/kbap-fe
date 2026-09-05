@@ -716,7 +716,8 @@
       "groupAllergy": "Paket alergi",
       "apply": "Terapkan ke daftar saya",
       "applyRow": "Isi dari pola makan/agama"
-    }
+    },
+    "countryLabel": "Negara"
   },
   "editProfile": {
     "title": "Edit profil",

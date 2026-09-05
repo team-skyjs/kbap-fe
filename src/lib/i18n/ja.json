@@ -716,7 +716,8 @@
       "groupAllergy": "アレルギーセット",
       "apply": "リストに適用",
       "applyRow": "食事・宗教から選ぶ"
-    }
+    },
+    "countryLabel": "国"
   },
   "editProfile": {
     "title": "プロフィール編集",
