@@ -100,7 +100,7 @@ jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => mockUseInfiniteFoods(),
   useFoods: () => ({ data: [] }),
 }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
 // P-216: 홈 전 콘텐츠 훅 표면 목 — 빈 데이터 = 섹션 숨김(이 스위트의 관심사 밖)
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: undefined }) }));
 
@@ -138,10 +138,11 @@ it('홈: 에러 → J3 렌더, "아직 스캔이 없어요"(빈 상태) 미렌�
   expect(texts(tree, 'home.emptyTitle')).toBe(0);
 });
 
-it('홈: 성공 + 진짜 0건 → 빈 상태 렌더 (빈 상태는 성공일 때만)', () => {
+it('홈: 성공 + 진짜 0건 → 에러 미렌더·본문 렌더 (KB-430: 전용 빈 카드 소멸 — 시안 부재, 섹션 자체 축소)', () => {
   const tree = render(<Home />);
-  expect(texts(tree, 'home.emptyTitle')).toBeGreaterThanOrEqual(1);
+  expect(texts(tree, 'home.emptyTitle')).toBe(0);
   expect(texts(tree, 'states.errorTitle')).toBe(0);
+  expect(texts(tree, 'home.disclaimer')).toBeGreaterThanOrEqual(1); // 본문은 렌더됨(백지 아님)
 });
 
 it('홈: NETWORK 에러 → J4 오프라인 렌더 (JS-only 분류)', () => {

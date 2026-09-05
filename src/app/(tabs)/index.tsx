@@ -1,19 +1,17 @@
 /**
- * Home tab (mockup Screen C) — personalized hub. Scroll-aware brand header
- * (shared StickyHeader) over: greeting · diet banner · scan CTA · "Safe for you
- * today" (recommended) · recently scanned · browse categories · safety notice.
- *
- * Data via useHome()/useMe() hooks (MOCK_MODE). Empty state when no recent scans.
- * No emoji (SVG), reader text i18n'd, risk colors fixed (Constitution).
+ * Home tab — KB-430(P-275) 디자인 4차 D-2 (Figma 4150:16377).
+ * AppBar(로고+벨) · 검색 행(+스캔 버튼) · 언더라인 탭(Popular/Saved/Food) ·
+ * 위험도 칩 필터 · 음식 카드 2열 그리드(+More) · RECENTLY SCANNED 리스트 ·
+ * REVIEWS 카드 3장(+More) · 면책. 데이터 훅·라우트 무변(발주 전제) — 표시만 교체.
+ * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
+import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
 import {
   StickyHeader,
@@ -21,48 +19,42 @@ import {
   useHeaderHeight,
   SkeletonHome,
   Btn,
-  RiskMark,
+  Chip,
+  SectionHead,
+  RiskBadge,
   CardPhoto,
-  RatingLine,
-  Star,
-  CatStew,
-  CatBowl,
-  CatNoodle,
-  CatBBQ,
-  CatStreet,
-  CatSides,
-  IconCamera,
-  IconChevron,
-  IconScanLines,
-  IconFood,
+  IconSearch,
   IconLock,
-  type IconProps,
+  IconFood,
+  IconPlus,
+  IconTabScan,
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
-import { displayNickname } from '@/lib/nickname';
-// P-216(러프): 홈 전 콘텐츠 — 전부 기존 화면 컴포넌트·훅 재사용(새 문법 발명 0)
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
-import { useBookmarks } from '@/lib/data/bookmarks';
+import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
 import { popularPhotoFoods } from '@/lib/search/discovery';
 import { FeedCard } from '@/features/community/ReviewFeed';
 import { useUnreadCount } from '@/lib/notifications/inbox';
-import { restrictionLabel } from '@/lib/onboarding/data';
 import type { FoodCard } from '@/lib/api/types';
 
-const CATEGORIES: { key: string; Icon: (p: IconProps) => React.JSX.Element }[] = [
-  { key: 'stews', Icon: CatStew },
-  { key: 'rice', Icon: CatBowl },
-  { key: 'noodles', Icon: CatNoodle },
-  { key: 'bbq', Icon: CatBBQ },
-  { key: 'street', Icon: CatStreet },
-  { key: 'sides', Icon: CatSides },
-];
+const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
+
+type GridTab = 'popular' | 'saved' | 'food';
+/** 위험 칩 4종 — All + personalRisk 3상태(라벨은 현 위험 키: Avoid=danger·Warning=caution). */
+type RiskChip = 'all' | 'safe' | 'danger' | 'caution';
+const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
+type ReviewChip = 'all' | 'popular';
+
+const GRID_N = 4; // 발주: 첫 화면 2행(4장) 후 More
+const RECENT_N = 4;
+const REVIEW_N = 3;
 
 export default function Home() {
   const { t } = useTranslation();
@@ -72,47 +64,60 @@ export default function Home() {
 
   const { data: home, isLoading, isError, error, refetch } = useHome();
   const { data: me } = useMe();
-
   const recent = home?.recent ?? [];
-  const recommended = home?.recommended ?? [];
   const restrictions = me?.restrictions ?? [];
-  // LIVE(/home)는 지역화된 성분명을 직접 준다 — 게스트의 빈 배열도 그대로 존중
-  // (배너 숨김). avoided 필드 자체가 없을 때(mock)만 restrictionLabel 폴백 (KB-69).
-  const avoided =
-    home?.avoided != null
-      ? home.avoided
-      : restrictions.map((r) => ({ code: r.code, name: restrictionLabel(r.code) }));
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
-  const hasR = avoided.length > 0;
-  const hasScans = recent.length > 0;
-  // forward links to routes built in later screens (detail #4, review #6)
+  const hasR = restrictions.length > 0;
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
 
-  // P-216: 홈 전 콘텐츠(러프·dev 계열) — 훅은 무조건 호출(순서 고정), 렌더만 플래그 분기.
-  // 빈 데이터 = 섹션 자체 숨김(P-210 원칙). 게스트는 피드·저장이 비어 자동 숨김.
+  // 훅은 무조건 호출(순서 고정) — 렌더만 분기 (P-216 원칙 유지)
   const browse = useInfiniteFoods();
-  const feed = useGlobalReviews(!isGuest);
   const saved = useBookmarks();
   const unread = useUnreadCount();
-  const browseFoods = (browse.data ?? []).slice(0, 6);
-  const feedReviews = ((feed.data?.pages ?? []).flatMap((p) => p.items) ?? []).slice(0, 2);
-  const savedFoods = (saved.data ?? []).slice(0, 6);
-  // KB-310: 인기 검색 소스 = 라이브 카탈로그(browse 캐시 재사용 — 왕복 0 추가).
-  // 구 useFoods()는 MOCK_MODE 하드코딩이라 photoUrl 전부 null인 목이 나가고 있었다
-  // (항목만 뜨고 사진 미표시 — 예진 실기). popularityRank는 서버 미제공(BE ⑥ 대기)
-  // → rankSorted 999 폴백 = 서버 기본 순서 유지, 사진 보유 우선 정렬은 그대로.
-  const popularSearch = popularPhotoFoods(browse.data).slice(0, 6);
+  const toggleBookmark = useToggleBookmark();
 
-  // P-196 ②: 에러/오프라인 = 화면 기준 정중앙(4탭 공용 기준) — 스크롤/헤더 패딩 밖
+  const [gridTab, setGridTab] = useState<GridTab>('popular');
+  const [riskChip, setRiskChip] = useState<RiskChip>('all');
+  const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
+  const [gate, setGate] = useState(false);
+
+  // 리뷰 3장 — 칩 판정(spec-12): All=latest · Popular=sort helpful. 게스트 열람 개방(P-235).
+  const feed = useGlobalReviews(true, { sort: reviewChip === 'popular' ? 'helpful' : 'latest' });
+  const feedReviews = (feed.data?.pages ?? []).flatMap((p) => p.items).slice(0, REVIEW_N);
+
+  // Codex #28: 북마크는 커서 페이지네이션 — 1페이지만으론 2페이지 이후 저장분이
+  // 그리드에서 미저장으로 보여 토글이 역전된다. 홈은 저장 판정 소스라 전 페이지
+  // 드레인(페이지당 1회, hasNextPage 소진까지). wire.bookmarked 플래그(①)는 낙관
+  // 토글이 foods 캐시를 안 갱신해 탭 직후 stale — 집합 방식 유지가 정본.
+  useEffect(() => {
+    if (saved.hasNextPage && !saved.isFetchingNextPage) void saved.fetchNextPage();
+  }, [saved, saved.hasNextPage, saved.isFetchingNextPage]);
+  const savedFoods = saved.data ?? [];
+  const savedIds = new Set(savedFoods.map((f) => f.foodId));
+  const gridSource: FoodCard[] =
+    gridTab === 'popular' ? popularPhotoFoods(browse.data) : gridTab === 'saved' ? savedFoods : (browse.data ?? []);
+  // 칩 = 클라이언트 위험도 필터(personalRisk 결과 기준 — 발주 §1-4)
+  const gridFoods = (
+    riskChip === 'all' ? gridSource : gridSource.filter((f) => personalRisk(f.risk, hasR) === riskChip)
+  ).slice(0, GRID_N);
+  const gridMoreHref: Href = gridTab === 'saved' ? ('/profile/saved' as Href) : ('/food' as Href);
+
+  const onBookmark = (f: FoodCard) => {
+    if (isGuest) return setGate(true);
+    toggleBookmark.mutate({
+      snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
+      add: !savedIds.has(f.foodId),
+    });
+  };
+
   if (isError && !isLoading) {
     return (
       <View style={styles.root}>
         <ScreenCenterFill>
-          {/* P-007(KB-174) false-empty 제거: 에러를 "아직 스캔이 없어요"로 위장 금지 —
-              빈 상태는 성공+0건일 때만. Try again은 이 쿼리만 refetch. */}
+          {/* P-007 false-empty 금지 유지 — 에러는 에러로 */}
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} mode="brand" />
+        <StickyHeader hidden={hidden} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
       </View>
     );
   }
@@ -128,146 +133,134 @@ export default function Home() {
         {isLoading ? (
           <SkeletonHome />
         ) : (
-          <View style={styles.body}>
-            {/* P-111: 소프트 넛지 — min≤현재<latest, dismiss한 버전 재노출 없음 */}
+          <View>
             <UpdateNudgeBanner />
-            {/* greeting — 비회원은 이름 없이 (KB-69) */}
-            <View style={styles.greet}>
-              <Text style={styles.greetTitle} numberOfLines={1}>
-                {/* 닉네임 없는 미완료 프로필도 'Hi, ' 대신 일반 인사.
-                    P-224: 1줄 + 이름 절단 병용 — ko "님"·ja "さん"처럼 이름 뒤 접미
-                    로케일에서 tail ellipsis가 접미를 지우는 것 방지 */}
-                {isGuest || !me?.nickname ? t('home.greetingGuest') : t('home.greeting', { name: displayNickname(me.nickname) })}
-              </Text>
-              <Text style={styles.greetSub}>
-                {hasScans ? t('home.greetingSub') : t('home.greetingSubEmpty')}
-              </Text>
+
+            {/* 검색 행 + 스캔 버튼 (4150:16377 @y100) */}
+            <View style={styles.searchRow}>
+              <Pressable style={styles.searchBox} onPress={() => router.push('/search' as Href)} testID="home-search">
+                <Text style={styles.searchPh} numberOfLines={1}>
+                  {t('food.searchPlaceholder')}
+                </Text>
+                <IconSearch size={20} color={C.ink3} />
+              </Pressable>
+              <Pressable style={styles.scanBtn} onPress={() => router.navigate('/scan')} testID="home-scan">
+                <IconTabScan size={24} color="#FFFFFF" />
+              </Pressable>
             </View>
 
-            {/* diet banner — LIVE는 지역화 성분명 (비회원은 빈 배열 → 숨김).
-                P-171: 홈에서 불필요(예진) — 플래그 보존형 숨김(타 화면 재활용 대비). */}
-            {FLAGS.homeAvoidBanner && avoided.length > 0 && (
-              <View style={styles.diet}>
-                <View style={styles.dietHead}>
-                  <RiskMark state="danger" size={20} />
-                  <Text style={styles.dietTitle}>{t('home.avoidCount', { count: avoided.length })}</Text>
-                  <Pressable onPress={() => router.push('/profile/restrictions' as Href)} hitSlop={8}>
-                    <Text style={styles.link}>{t('home.edit')}</Text>
-                  </Pressable>
-                </View>
-                <Animated.ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 7, paddingVertical: 1 }}
-                >
-                  {avoided.map((a) => (
-                    // ponytail: 멘토링 피드백 — 칩 내 ✕ 배지가 삭제 버튼으로 오독됨 → 텍스트만
-                    <View key={a.code} style={styles.achip}>
-                      <Text style={styles.achipText}>{a.name}</Text>
-                    </View>
-                  ))}
-                </Animated.ScrollView>
+            {/* 언더라인 탭 (4123:3884): Popular | Saved | Food */}
+            <View style={styles.tabsRow}>
+              {(
+                [
+                  ['popular', t('home.popularTitle')],
+                  ['saved', t('saved.title')],
+                  ['food', t('food.title')],
+                ] as [GridTab, string][]
+              ).map(([key, label]) => (
+                <Pressable key={key} style={styles.tab} onPress={() => setGridTab(key)} testID={`home-tab-${key}`}>
+                  <Text style={[styles.tabLabel, gridTab === key && styles.tabLabelOn]} numberOfLines={1}>
+                    {label}
+                  </Text>
+                  {/* 활성 바 — 프레임 불변(P-151): 비활성도 같은 높이의 투명 바 */}
+                  <View style={[styles.tabBar, gridTab === key && styles.tabBarOn]} />
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.tabsDivider} />
+
+            {/* 위험도 칩 필터 (§1-4) — 게스트는 개인화 위험이 없어 미노출(guest-access-policy §1) */}
+            {!isGuest && (
+              <View style={styles.chipRow}>
+                {RISK_CHIPS.map((c) => (
+                  <Chip
+                    key={c}
+                    label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+                    selected={riskChip === c}
+                    onPress={() => setRiskChip(c)}
+                    testID={`home-chip-${c}`}
+                  />
+                ))}
               </View>
             )}
 
-            {/* scan CTA or empty block */}
-            {hasScans ? (
-              <Pressable onPress={() => router.navigate('/scan')}>
-                <LinearGradient
-                  colors={[C.primary, C.primary2]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.scanCta}
-                >
-                  <View style={styles.scanIc}>
-                    <IconCamera size={28} color="#fff" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.scanTitle}>{t('home.scanTitle')}</Text>
-                    <Text style={styles.scanSub}>{t('home.scanSub')}</Text>
-                  </View>
-                  <IconChevron size={20} color="#fff" />
-                </LinearGradient>
+            {/* 음식 카드 2열 그리드 (4150:13806) */}
+            <View style={styles.grid}>
+              {gridFoods.map((f) => (
+                <FoodGridCard
+                  key={f.foodId}
+                  food={f}
+                  risk={personalRisk(f.risk, hasR)}
+                  guest={isGuest}
+                  saved={savedIds.has(f.foodId)}
+                  riskLabel={t(`risk.${personalRisk(f.risk, hasR)}`)}
+                  onPress={() => openFood(f.foodId)}
+                  onBookmark={() => onBookmark(f)}
+                />
+              ))}
+              {gridFoods.length === 0 && gridTab === 'saved' && (
+                <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text>
+              )}
+            </View>
+            {gridSource.length > GRID_N && (
+              <View style={styles.moreWrap}>
+                <Btn variant="ghost" onPress={() => router.push(gridMoreHref)} testID="home-grid-more">
+                  {t('home.seeAll')}
+                </Btn>
+              </View>
+            )}
+
+            {/* RECENTLY SCANNED (§1-6~7) */}
+            <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
+            {isGuest ? (
+              <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
+                <View style={styles.guestCtaIc}>
+                  <IconLock size={18} color={C.ink2} />
+                </View>
+                <Text style={styles.guestCtaText}>{t('home.guestScansTitle')}</Text>
+                <Text style={styles.guestCtaBtn}>{t('intro.signUp')}</Text>
               </Pressable>
             ) : (
-              <View style={styles.empty}>
-                <View style={styles.emptyIc}>
-                  <IconScanLines size={26} color={C.primary} />
-                </View>
-                <Text style={styles.emptyTitle}>{t('home.emptyTitle')}</Text>
-                <Text style={styles.emptyBody}>{t('home.emptyBody')}</Text>
-                {/* P-129: explore 제거·스캔 버튼 확대(멘토 피드백) */}
-                <View style={styles.emptyBtns}>
-                  <Btn icon={<IconScanLines size={17} color="#fff" />} onPress={() => router.navigate('/scan')}>
-                    {t('home.scan')}
-                  </Btn>
-                </View>
-              </View>
-            )}
-
-            {/* safe for you / popular */}
-            {recommended.length > 0 && (
-              <Section
-                // ⑦ 게스트에겐 safe 마크가 안전 주장으로 읽힘 → 중립 음식 아이콘
-                icon={isGuest ? <IconFood size={22} color={C.primary} /> : <RiskMark state="safe" size={22} />}
-                // P-183: hasScans 분기 제거 — 데이터가 분기 무관 서버 랜덤 5(popularFoods)라
-                // safeTitle/safeSub는 회피 필터링 허위 보증(false-safe). 항상 popular 계열.
-                title={t('home.popularTitle')}
-                // ⑧-a 게스트에겐 개인화 판정이 존재한다는 카피도 금지 (원칙 2)
-                sub={isGuest ? t('home.popularSubGuest') : t('home.popularSub')}
-                seeAll={t('home.seeAll')}
-                onSeeAll={() => router.push('/food')}
-              >
-                <Animated.ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 13, paddingVertical: 4 }}
-                >
-                  {recommended.map((d) => (
-                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
-                  ))}
-                </Animated.ScrollView>
-              </Section>
-            )}
-
-            {/* recently scanned — 비회원은 가입 유도 카드 (KB-69, 이력은 서버 보관) */}
-            {isGuest ? (
-              <Section title={t('home.recentTitle')}>
-                <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
-                  <View style={styles.guestCtaIc}>
-                    <IconLock size={18} color={C.ink2} />
+              <>
+                {recent.slice(0, RECENT_N).map((f) => (
+                  <RecentRow
+                    key={f.foodId}
+                    food={f}
+                    risk={personalRisk(f.risk, hasR)}
+                    reviewLabel={t('home.review')}
+                    onPress={() => openFood(f.foodId)}
+                    onReview={() => {
+                      track(EVENTS.review_write_tap, { source: 'home' });
+                      router.push(`/food/${f.foodId}/review` as Href);
+                    }}
+                  />
+                ))}
+                {recent.length > RECENT_N && (
+                  <View style={styles.moreWrap}>
+                    <Btn variant="ghost" onPress={() => router.push('/profile/my-foods' as Href)} testID="home-recent-more">
+                      {t('home.seeAll')}
+                    </Btn>
                   </View>
-                  <Text style={styles.guestCtaText}>{t('home.guestScansTitle')}</Text>
-                  <Text style={styles.guestCtaBtn}>{t('intro.signUp')}</Text>
-                </Pressable>
-              </Section>
-            ) : (
-              hasScans && (
-                <Section title={t('home.recentTitle')} sub={t('home.recentSub')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
-                  <View style={{ gap: 10 }}>
-                    {recent.map((d) => (
-                      <RecentRow key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} reviewLabel={t('home.review')} onPress={() => openFood(d.foodId)} />
-                    ))}
-                  </View>
-                </Section>
-              )
+                )}
+              </>
             )}
 
-            {/* ─── P-216(러프·dev): 홈에 전 탭 콘텐츠 꺼내기 — 멘토 #9·12·37.
-                전부 기존 컴포넌트 재사용(SafeCard·FeedCard), 빈 데이터면 섹션 숨김 ─── */}
-            {FLAGS.homeAllContent && browseFoods.length > 0 && (
-              <Section title={t('tabs.food')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/food')}>
-                <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 13, paddingVertical: 4 }}>
-                  {browseFoods.map((d) => (
-                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
+            {/* REVIEWS (§1-8~9) — 칩 = All·Popular(sort=helpful), For You/Nearby 파라미터 부재로 숨김 */}
+            {FLAGS.reviewsEnabled && feedReviews.length > 0 && (
+              <>
+                <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-reviews-head" />
+                <View style={styles.chipRow}>
+                  {(['all', 'popular'] as ReviewChip[]).map((c) => (
+                    <Chip
+                      key={c}
+                      label={c === 'all' ? t('home.filterAll') : t('reviews.sort_helpful')}
+                      selected={reviewChip === c}
+                      onPress={() => setReviewChip(c)}
+                      testID={`home-review-chip-${c}`}
+                    />
                   ))}
-                </Animated.ScrollView>
-              </Section>
-            )}
-
-            {FLAGS.homeAllContent && feedReviews.length > 0 && (
-              <Section title={t('tabs.community')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/community')}>
-                <View style={{ gap: 12 }}>
+                </View>
+                <View>
                   {feedReviews.map((rv) => (
                     <FeedCard
                       key={rv.id}
@@ -281,51 +274,16 @@ export default function Home() {
                     />
                   ))}
                 </View>
-              </Section>
-            )}
-
-            {FLAGS.homeAllContent && popularSearch.length > 0 && (
-              <Section title={t('search.popular')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/search' as Href)}>
-                <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 13, paddingVertical: 4 }}>
-                  {popularSearch.map((d) => (
-                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
-                  ))}
-                </Animated.ScrollView>
-              </Section>
-            )}
-
-            {FLAGS.homeAllContent && savedFoods.length > 0 && (
-              <Section title={t('saved.title')} seeAll={t('home.seeAll')} onSeeAll={() => router.push('/profile/saved' as Href)}>
-                <Animated.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 13, paddingVertical: 4 }}>
-                  {savedFoods.map((d) => (
-                    <SafeCard key={d.foodId} food={d} hasRestrictions={hasR} guest={isGuest} onPress={() => openFood(d.foodId)} />
-                  ))}
-                </Animated.ScrollView>
-              </Section>
-            )}
-
-            {/* categories — MVP-excluded behind a flag (KB-108); flip to restore */}
-            {FLAGS.categoryUI && (
-              <Section title={t('home.categoriesTitle')}>
-                <View style={styles.catGrid}>
-                  {CATEGORIES.map(({ key, Icon }) => (
-                    <Pressable key={key} style={styles.cat} onPress={() => router.push('/food')}>
-                      <View style={styles.catGlyph}>
-                        <Icon size={18} color={C.accent} />
-                      </View>
-                      <Text style={styles.catLbl}>{t(`home.categories.${key}`)}</Text>
-                      <IconChevron size={16} color={C.ink3} />
-                    </Pressable>
-                  ))}
+                <View style={styles.moreWrap}>
+                  <Btn variant="ghost" onPress={() => router.push('/community')} testID="home-reviews-more">
+                    {t('home.seeAll')}
+                  </Btn>
                 </View>
-              </Section>
+              </>
             )}
 
-            {/* safety notice (FR-030) */}
-            <View style={styles.disc}>
-              <RiskMark state="caution" size={15} variant="outline" />
-              <Text style={styles.discText}>{t('home.disclaimer')}</Text>
-            </View>
+            {/* 면책 (FR-030 유지 — §1-10) */}
+            <Text style={styles.disc}>{t('home.disclaimer')}</Text>
           </View>
         )}
       </Animated.ScrollView>
@@ -333,185 +291,198 @@ export default function Home() {
       <StickyHeader
         hidden={hidden}
         mode="brand"
-        search
-        /* P-216: 알림함 진입 — dev 계열만(플래그), 뱃지 = 안 읽은 수 */
         bell={FLAGS.notificationCenter}
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
-        // P-129: 헤더 sign in 제거 — 로그인 진입 = 프로필 탭
-        onSearch={() => router.push('/search' as Href)}
       />
+      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }
 
 /* ---------- pieces ---------- */
 
-function Section({
-  icon,
-  title,
-  sub,
-  seeAll,
-  onSeeAll,
-  children,
+/** 2열 그리드 카드 (4150:13806) — 히어로 이미지 + RiskBadge + 북마크 버튼. */
+export function FoodGridCard({
+  food,
+  risk,
+  guest,
+  saved,
+  riskLabel,
+  onPress,
+  onBookmark,
 }: {
-  icon?: React.ReactNode;
-  title: string;
-  sub?: string;
-  seeAll?: string;
-  onSeeAll?: () => void;
-  children: React.ReactNode;
+  food: FoodCard;
+  risk: RiskState;
+  guest: boolean;
+  saved: boolean;
+  riskLabel: string;
+  onPress: () => void;
+  onBookmark: () => void;
 }) {
   return (
-    <View style={styles.sec}>
-      <View style={styles.secHead}>
-        {icon}
-        <Text style={styles.secTitle}>{title}</Text>
-        {seeAll && (
-          <Pressable onPress={onSeeAll} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-            <Text style={styles.link}>{seeAll}</Text>
-            <IconChevron size={13} color={C.primaryText} />
-          </Pressable>
-        )}
-      </View>
-      {!!sub && <Text style={styles.secSub}>{sub}</Text>}
-      {children}
-    </View>
-  );
-}
-
-export function SafeCard({ food, hasRestrictions, guest, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={styles.safeCard} onPress={onPress}>
-      <View style={styles.photo}>
-        {!!food.photoUrl && (
-          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} />
-        )}
-        {/* 게스트에겐 개인화 뱃지 미렌더 — 자리 비움 (guest-access-policy §1) */}
+    <Pressable style={styles.gcard} onPress={onPress} testID={`home-food-${food.foodId}`}>
+      <View style={styles.gphoto}>
+        {!!food.photoUrl && <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} />}
+        {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
         {!guest && (
-          <View style={styles.photoBadge}>
-            <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={20} />
+          <View style={styles.gbadge}>
+            <RiskBadge state={risk} />
           </View>
         )}
       </View>
-      <View style={styles.cardB}>
-        <Text style={styles.nm} numberOfLines={1}>
-          {food.name}
-        </Text>
-        {food.nameKo !== food.name && (
-          <Text style={styles.koSm} numberOfLines={1}>
-            {food.nameKo}
+      <View style={styles.gmeta}>
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <Text style={styles.gname} numberOfLines={2}>
+            {food.name}
           </Text>
-        )}
-        {/* P-195: "★들 (n)"·0건 미노출 — 가로 캐러셀 = 고정 슬롯(카드 높이 균일) */}
-        {FLAGS.reviewsEnabled && <RatingLine overall={food.overall} fixedSlot />}
+          {food.nameKo !== food.name && (
+            <Text style={styles.gko} numberOfLines={1}>
+              {food.nameKo}
+            </Text>
+          )}
+          {!guest && <Text style={[styles.gstatus, { color: riskText[risk] }]}>{riskLabel}</Text>}
+        </View>
+        <Pressable style={styles.gbm} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
+          <IconPlus size={24} color={saved ? C.primary : C.ink2} />
+        </Pressable>
       </View>
     </Pressable>
   );
 }
 
-export function RecentRow({ food, hasRestrictions, guest, reviewLabel, onPress }: { food: FoodCard; hasRestrictions: boolean; guest: boolean; reviewLabel: string; onPress: () => void }) {
-  const router = useRouter();
+/** recent-list 행 (4129:10705) — 썸네일 100 + RiskBadge + Review 소형 버튼.
+ *  장소 칩·스캔 날짜는 홈 데이터(FoodCard)에 필드 부재 — 미표시(REPORTS 기재). */
+export function RecentRow({
+  food,
+  risk,
+  reviewLabel,
+  onPress,
+  onReview,
+}: {
+  food: FoodCard;
+  risk: RiskState;
+  reviewLabel: string;
+  onPress: () => void;
+  onReview: () => void;
+}) {
   return (
-    <Pressable style={styles.rec} onPress={onPress}>
-      <View style={styles.recThumb}>
+    <Pressable style={styles.rrow} onPress={onPress} testID={`home-recent-${food.foodId}`}>
+      <View style={styles.rthumb}>
         {food.photoUrl ? (
-          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={12} />
+          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
         ) : (
-          <IconFood size={24} color={C.primary} />
-        )}
-        {/* 게스트 도달 불가 분기지만 뱃지 정책은 카드 자체에서도 방어 (⑦ 이중 방어) */}
-        {!guest && (
-          <View style={styles.recBadge}>
-            <RiskMark state={personalRisk(food.risk, hasRestrictions)} size={15} />
+          <View style={styles.rthumbFb}>
+            <IconFood size={24} color={C.ink3} />
           </View>
         )}
+        <View style={styles.rbadge}>
+          <RiskBadge state={risk} />
+        </View>
       </View>
-      <View style={styles.recMeta}>
-        <Text style={styles.nm} numberOfLines={1}>
+      <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+        <Text style={styles.gname} numberOfLines={2}>
           {food.name}
         </Text>
         {food.nameKo !== food.name && (
-          <Text style={styles.koSm} numberOfLines={1}>
+          <Text style={styles.gko} numberOfLines={1}>
             {food.nameKo}
           </Text>
         )}
+        {FLAGS.reviewsEnabled && (
+          <View style={{ marginTop: 2 }}>
+            <Btn sm variant="ghost" onPress={onReview} testID={`home-recent-review-${food.foodId}`}>
+              {reviewLabel}
+            </Btn>
+          </View>
+        )}
       </View>
-      {FLAGS.reviewsEnabled && (
-        <Pressable style={styles.reviewBtn} onPress={() => { track(EVENTS.review_write_tap, { source: 'home' }); router.push(`/food/${food.foodId}/review` as Href); }} hitSlop={6}>
-          <Star size={13} fillPct={100} fillColor={C.primary} />
-          <Text style={styles.reviewBtnText}>{reviewLabel}</Text>
-        </Pressable>
-      )}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 4, gap: 20 },
 
-  greet: { gap: 2 },
-  greetTitle: { fontFamily: font.display, fontSize: 26, color: C.ink, letterSpacing: -0.5 },
-  greetSub: { fontFamily: font.body, fontSize: 15, color: C.ink2 },
+  // 검색 행 (§1-2)
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 12 },
+  searchBox: {
+    flex: 1,
+    height: 48,
+    borderRadius: 4,
+    backgroundColor: C.surface2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+  },
+  searchPh: { flex: 1, fontSize: 15, fontWeight: '400', color: C.ink3, marginRight: 8 },
+  scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
-  link: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  // 언더라인 탭 (§1-3)
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 20, gap: 4 },
+  tab: { paddingHorizontal: 8, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabLabelOn: { color: INK_TITLE },
+  tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  tabBarOn: { backgroundColor: INK_TITLE },
+  tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
-  // diet banner
-  diet: { borderRadius: radius.lg, backgroundColor: '#fdf0ee', borderWidth: 1, borderColor: '#f1cfca', padding: 14, gap: 11 },
-  dietHead: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  dietTitle: { flex: 1, fontFamily: font.display, fontSize: 15, color: C.ink },
-  achip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#fff', borderWidth: 1, borderColor: '#eeccc8', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  achipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.riskDanger },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingVertical: 16 },
 
-  // 비회원 가입 유도 카드 (KB-69)
-  guestCta: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1.5, borderColor: C.line, borderStyle: 'dashed', borderRadius: radius.lg, padding: 14 },
+  // 2열 그리드 (§1-5)
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
+  gcard: { width: '47%', flexGrow: 1 },
+  gphoto: { aspectRatio: 174 / 203, borderRadius: 4, backgroundColor: C.surface2, overflow: 'visible' },
+  gbadge: { position: 'absolute', top: 0, left: 9 },
+  gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
+  gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
+  gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  gstatus: { fontSize: 12, fontWeight: '700', marginTop: 2 },
+  gbm: {
+    width: 36,
+    height: 36,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: C.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.sh1,
+  },
+  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
+  moreWrap: { paddingHorizontal: 20, paddingTop: 20 },
+
+  // recent-list (§1-7)
+  rrow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: C.line,
+  },
+  rthumb: { width: 100, height: 100, borderRadius: 4, backgroundColor: C.surface2 },
+  rthumbFb: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  rbadge: { position: 'absolute', top: 0, left: 3 },
+
+  // 비회원 가입 유도 (KB-69 유지 — 스타일만 토큰)
+  guestCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    borderWidth: 1,
+    borderColor: C.line2,
+    borderStyle: 'dashed',
+    borderRadius: 4,
+    padding: 14,
+    marginHorizontal: 20,
+  },
   guestCtaIc: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  guestCtaText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
-  guestCtaBtn: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
+  guestCtaText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18 },
+  guestCtaBtn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
 
-  // scan CTA
-  scanCta: { flexDirection: 'row', alignItems: 'center', gap: 13, borderRadius: radius.lg, padding: 16, ...shadow.sh2 },
-  scanIc: { width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  scanTitle: { fontFamily: font.display, fontSize: 18, color: '#fff' },
-  scanSub: { fontFamily: font.body, fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 1 },
-
-  // empty
-  empty: { alignItems: 'center', gap: 7, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 18, ...shadow.sh1 }, // P-129: 높이 ⅔
-  emptyIc: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
-  emptyBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', maxWidth: 260, lineHeight: 19 },
-  emptyBtns: { alignSelf: 'stretch', marginTop: 6 },
-
-  // sections
-  sec: { gap: 11 },
-  secHead: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  secTitle: { flex: 1, fontFamily: font.display, fontSize: 17, color: C.ink },
-  secSub: { fontFamily: font.body, fontSize: 13, color: C.ink2, marginTop: -6 },
-
-  // safe card
-  safeCard: { width: 162, backgroundColor: C.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.hair, ...shadow.sh2 },
-  photo: { height: 112, backgroundColor: C.surface2 },
-  photoBadge: { position: 'absolute', top: 9, right: 9, width: 30, height: 30, borderRadius: 15, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  cardB: { padding: 11, gap: 5 },
-  nm: { fontFamily: font.display, fontSize: 15, color: C.ink },
-  koSm: { fontFamily: font.ko, fontSize: 12, color: C.ink2 },
-
-  // recent rows
-  rec: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 12, paddingVertical: 10, ...shadow.sh1 },
-  recThumb: { width: 52, height: 52, borderRadius: 12, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center' },
-  recBadge: { position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  recMeta: { flex: 1, gap: 1 },
-  reviewBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: C.card, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
-  reviewBtnText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
-
-  // categories
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  cat: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 13, paddingVertical: 14, ...shadow.sh1 },
-  catGlyph: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(14,154,167,0.08)', alignItems: 'center', justifyContent: 'center' },
-  catLbl: { flex: 1, fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
-
-  // disclaimer
-  disc: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, paddingTop: 14 },
-  discText: { flex: 1, fontFamily: font.body, fontSize: 12, color: C.ink2, lineHeight: 17 },
+  // 면책 (§1-10)
+  disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });

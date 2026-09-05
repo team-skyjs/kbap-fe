@@ -42,11 +42,8 @@ describe('배선 — 두 계층 일원화(표면별 땜질 금지)', () => {
     expect(read('src/app/community/post/[id].tsx')).toContain('displayNickname(reply!.mention)');
   });
 
-  it('단독형: 홈 인사·프로필 탭·compose 작성자 = numberOfLines 1(레이아웃 잘림)', () => {
-    const home = read('src/app/(tabs)/index.tsx');
-    // 홈 인사(26pt): 1줄 + ko "님"·ja "さん" 접미 보호를 위한 절단 병용
-    expect(home).toContain('style={styles.greetTitle} numberOfLines={1}');
-    expect(home).toContain('displayNickname(me.nickname)');
+  it('단독형: 프로필 탭·compose 작성자 = numberOfLines 1(레이아웃 잘림)', () => {
+    // KB-430: 홈 인사말 소멸(디자인 4차 시안 부재) — 홈 잠금은 프로필·compose로 축소
     expect(read('src/app/(tabs)/profile.tsx')).toContain('style={styles.name} numberOfLines={1}');
     const compose = read('src/app/community/compose.tsx');
     expect(compose).toContain('style={styles.authorName} numberOfLines={1}');

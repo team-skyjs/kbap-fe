@@ -396,7 +396,8 @@
     "placeManual": "Pakai \"{{name}}\" apa adanya",
     "extrasTitle": "Bagaimana restorannya?",
     "extrasSpeed": "Kecepatan penyajian",
-    "extrasService": "Keramahan"
+    "extrasService": "Keramahan",
+    "extrasTaste": "Rasa"
   },
   "reviews": {
     "headerTitle": "Ulasan",
@@ -600,7 +601,9 @@
       "bbq": "BBQ & Daging",
       "street": "Jajanan Kaki Lima",
       "sides": "Lauk"
-    }
+    },
+    "filterAll": "Semua",
+    "reviewsSub": "Baca sebelum memesan"
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",
@@ -962,7 +965,8 @@
     "noticeTitle": "Selamat datang di K-Bap",
     "noticeBody": "Pindai menu untuk tahu hidangan mana yang aman untukmu.",
     "nudgeTitle": "Makan di luar hari ini?",
-    "nudgeBody": "Pindai menu sebelum memesan."
+    "nudgeBody": "Pindai menu sebelum memesan.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Dipesan",

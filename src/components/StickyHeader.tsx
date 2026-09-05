@@ -32,10 +32,11 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
-import { BrandLockup } from './Brand';
+import { KbowlMark } from './Brand';
 import { PressScale } from './PressScale';
 
 const BAR_H = 48;
@@ -127,6 +128,7 @@ export function StickyHeader({
   onBookmark,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const H = headerHeight(insets.top);
 
   // P-061④: 알림 UI 전면 제거(MVP 제외 확정) — 벨·패널·게이트 소멸
@@ -160,7 +162,8 @@ export function StickyHeader({
             <IconArrowLeft size={20} color={C.ink} />
           </PressScale>
         ) : (
-          <BrandLockup />
+          /* KB-430(AppBar Dropdown 4123:3609): 로고 마크 단독(primary) — 워드마크 록업 대체 */
+          <KbowlMark size={30} color={C.primary} />
         )}
 
         {title != null && (
@@ -188,13 +191,12 @@ export function StickyHeader({
             </PressScale>
           )}
           {bell && (
-            /* P-216: 벨 + 안 읽은 수 뱃지 — bare 아이콘(search와 동일 처리),
-               뱃지는 기존 dot 스타일 재사용(숫자만 얹음 — 새 문법 발명 0) */
+            /* P-216 → KB-430(4123:3609): 벨 + 미읽음 시 NEW 배지(시안 — 수치 대신 NEW) */
             <PressScale style={styles.actionBtn} onPress={onBell} hitSlop={8} testID="header-bell">
               <IconBell size={22} color={C.ink} sw={1.8} />
               {bellCount > 0 && (
                 <View style={styles.dot} testID="header-bell-badge">
-                  <Text style={styles.dotText}>{bellCount > 9 ? '9+' : String(bellCount)}</Text>
+                  <Text style={styles.dotText}>{t('inbox.newBadge')}</Text>
                 </View>
               )}
             </PressScale>
@@ -270,21 +272,21 @@ const styles = StyleSheet.create({
   },
   signInPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
   signInText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
+  // KB-430: NEW 배지(type.newBadge 10/600) — primary pill
   dot: {
     position: 'absolute',
-    top: 4,
-    right: 3,
-    minWidth: 16,
-    height: 16,
+    top: 2,
+    right: -4,
+    height: 15,
     borderRadius: 8,
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.riskDanger,
-    borderWidth: 2,
+    backgroundColor: C.primary,
+    borderWidth: 1.5,
     borderColor: C.surface,
   },
-  dotText: { fontFamily: font.bodyBold, fontSize: 9.5, color: '#fff' },
+  dotText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   hairline: {
     position: 'absolute',
     left: 0,

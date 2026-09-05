@@ -11,7 +11,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius } from '@/lib/theme';
+import { color as C, primaryTint } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
 import { StateBlock, stateIconColor } from '@/components/StateBlock';
 import { FLAGS } from '@/lib/flags';
@@ -59,12 +59,11 @@ export default function Notifications() {
         keyExtractor={(n) => n.id}
         contentContainerStyle={[styles.list, items.length === 0 && { flexGrow: 1 }]}
         renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => open(item)} testID={`inbox-${item.id}`}>
-            <View style={[styles.ic, !item.read && styles.icUnread]}>
-              <IconBell size={17} color={item.read ? C.ink3 : C.primary} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-              <Text style={[styles.title, !item.read && styles.titleUnread]} numberOfLines={1}>
+          /* KB-430(4123:4113/4120): 좌측 아이콘 소멸 — unread = primaryTint bg + 우측 8px 점.
+             프레임 불변(P-103): 점 슬롯·패딩은 읽음/안읽음 동일, 바뀌는 건 색뿐. */
+          <Pressable style={[styles.row, !item.read && styles.rowUnread]} onPress={() => open(item)} testID={`inbox-${item.id}`}>
+            <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+              <Text style={styles.title} numberOfLines={1}>
                 {t(item.titleKey)}
               </Text>
               <Text style={styles.body} numberOfLines={2}>
@@ -72,7 +71,6 @@ export default function Notifications() {
               </Text>
               <Text style={styles.when}>{relativeDate(item.at, t)}</Text>
             </View>
-            {/* 안 읽음 표식 = 점 하나(프레임 불변 — 읽음도 같은 슬롯 유지, P-103) */}
             <View style={styles.dotSlot}>{!item.read && <View style={styles.dot} testID={`unread-${item.id}`} />}</View>
           </Pressable>
         )}
@@ -89,17 +87,16 @@ export default function Notifications() {
   );
 }
 
+// KB-430(4150:17104): 카드 톤 → 구분선 리스트, unread = primaryTint + 점
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  list: { padding: 18, gap: 10 },
-  markAll: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14 },
-  ic: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  icUnread: { backgroundColor: C.surface2 },
-  title: { fontFamily: font.body, fontSize: 14, color: C.ink2 },
-  titleUnread: { fontFamily: font.bodyBold, color: C.ink },
-  body: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 18 },
-  when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
+  list: { paddingBottom: 24 },
+  markAll: { fontSize: 13, fontWeight: '600', color: C.ink },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.hair },
+  rowUnread: { backgroundColor: primaryTint },
+  title: { fontSize: 15, fontWeight: '600', color: C.ink },
+  body: { fontSize: 14, fontWeight: '500', color: '#4B4F58', lineHeight: 20 },
+  when: { fontSize: 13, fontWeight: '500', color: C.inkMute },
   dotSlot: { width: 8, alignItems: 'center', paddingTop: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
 });

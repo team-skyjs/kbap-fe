@@ -396,7 +396,8 @@
     "placeManual": "Использовать «{{name}}» как есть",
     "extrasTitle": "Как вам ресторан?",
     "extrasSpeed": "Скорость подачи",
-    "extrasService": "Сервис"
+    "extrasService": "Сервис",
+    "extrasTaste": "Вкус"
   },
   "reviews": {
     "headerTitle": "Отзывы",
@@ -600,7 +601,9 @@
       "bbq": "Гриль и мясо",
       "street": "Уличная еда",
       "sides": "Гарниры"
-    }
+    },
+    "filterAll": "Все",
+    "reviewsSub": "Прочитайте перед заказом"
   },
   "onboarding": {
     "welcomeTag": "Узнайте, что безопасно есть — ещё до заказа.",
@@ -965,7 +968,8 @@
     "noticeTitle": "Добро пожаловать в K-Bap",
     "noticeBody": "Отсканируйте меню, чтобы узнать, какие блюда вам безопасны.",
     "nudgeTitle": "Сегодня едите вне дома?",
-    "nudgeBody": "Отсканируйте меню перед заказом."
+    "nudgeBody": "Отсканируйте меню перед заказом.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Заказанные",

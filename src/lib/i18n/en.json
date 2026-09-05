@@ -438,7 +438,8 @@
     "placeManual": "Use \"{{name}}\" as typed",
     "extrasTitle": "How was the restaurant?",
     "extrasSpeed": "Speed",
-    "extrasService": "Service"
+    "extrasService": "Service",
+    "extrasTaste": "Taste"
   },
   "reviews": {
     "headerTitle": "Reviews",
@@ -754,7 +755,9 @@
       "bbq": "BBQ & Meat",
       "street": "Street Food",
       "sides": "Sides"
-    }
+    },
+    "filterAll": "All",
+    "reviewsSub": "Read before you order"
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",
@@ -959,7 +962,8 @@
     "noticeTitle": "Welcome to K-Bap",
     "noticeBody": "Scan a menu to see which dishes are safe for you.",
     "nudgeTitle": "Eating out today?",
-    "nudgeBody": "Scan the menu before you order."
+    "nudgeBody": "Scan the menu before you order.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Ordered",

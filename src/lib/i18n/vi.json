@@ -396,7 +396,8 @@
     "placeManual": "Dùng nguyên \"{{name}}\"",
     "extrasTitle": "Nhà hàng thế nào?",
     "extrasSpeed": "Tốc độ phục vụ",
-    "extrasService": "Thái độ phục vụ"
+    "extrasService": "Thái độ phục vụ",
+    "extrasTaste": "Hương vị"
   },
   "reviews": {
     "headerTitle": "Đánh giá",
@@ -600,7 +601,9 @@
       "bbq": "Nướng & Thịt",
       "street": "Đồ ăn đường phố",
       "sides": "Món phụ"
-    }
+    },
+    "filterAll": "Tất cả",
+    "reviewsSub": "Đọc trước khi gọi món"
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -962,7 +965,8 @@
     "noticeTitle": "Chào mừng đến với K-Bap",
     "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
     "nudgeTitle": "Hôm nay ăn ngoài chứ?",
-    "nudgeBody": "Hãy quét thực đơn trước khi gọi món."
+    "nudgeBody": "Hãy quét thực đơn trước khi gọi món.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Đã gọi món",

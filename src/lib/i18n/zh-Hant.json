@@ -396,7 +396,8 @@
     "placeManual": "直接使用\"{{name}}\"",
     "extrasTitle": "餐廳怎麼樣？",
     "extrasSpeed": "上菜速度",
-    "extrasService": "服務態度"
+    "extrasService": "服務態度",
+    "extrasTaste": "味道"
   },
   "reviews": {
     "headerTitle": "評論",
@@ -600,7 +601,9 @@
       "bbq": "燒烤與肉類",
       "street": "街頭小吃",
       "sides": "小菜"
-    }
+    },
+    "filterAll": "全部",
+    "reviewsSub": "點餐前先看看"
   },
   "onboarding": {
     "welcomeTag": "點餐前，先知道什麼能安心吃。",
@@ -962,7 +965,8 @@
     "noticeTitle": "歡迎使用 K-Bap",
     "noticeBody": "掃描菜單即可了解哪些菜對你是安全的。",
     "nudgeTitle": "今天在外面用餐嗎？",
-    "nudgeBody": "點餐前先掃描菜單吧。"
+    "nudgeBody": "點餐前先掃描菜單吧。",
+    "newBadge": "新"
   },
   "myFoods": {
     "ordered": "點過的菜",
