@@ -44,7 +44,20 @@ it('embedded(프로필 탭) — 백 화살표 없음, 워드마크·카피·약�
   expect(tree.root.findAll((n) => n.props?.testID === 'login-back').length).toBe(0);
   const s = JSON.stringify(tree.toJSON());
   expect(s).toContain('login.sub'); // KB-433: 타이틀 → 워드마크 SVG + 안내 문구
-  expect(s).toContain('login.terms');
+  expect(s).toContain('login.termsPrefix'); // KB-433 → 9/5 3분할
+});
+
+it('9/5 판정(D-5 ⑥): 약관 = 밑줄 3분할 — prefix/ToS/and/Privacy/suffix 렌더 + 링크 URL 정본', () => {
+  const tree = render(<Login embedded />);
+  const s = JSON.stringify(tree.toJSON());
+  for (const k of ['login.termsPrefix', 'login.termsTos', 'login.termsAnd', 'login.termsPrivacy', 'login.termsSuffix']) {
+    expect(s).toContain(k);
+  }
+  expect(s).not.toContain('"login.terms"'); // 구 통문장 소멸
+  expect(s).toContain('"textDecorationLine":"underline"');
+  const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
+  expect(src).toContain('LEGAL_URLS.terms'); // 기존 kbap-legal 정본 링크
+  expect(src).toContain('LEGAL_URLS.privacy');
 });
 
 it('독립 /login(embedded 미전달) — 워드마크 + 백 버튼(KB-433: BrandLockup → 시안 Wordmark)', () => {

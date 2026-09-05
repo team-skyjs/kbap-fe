@@ -182,8 +182,8 @@ it('촬영 → launchCameraAsync 산출물이 기존 처리(OCR→BE→결과)�
     await captureBtn(tree).props.onPress();
   });
   expect(mockLaunchCamera).toHaveBeenCalledWith(expect.objectContaining({ quality: 0.8 }));
-  // 결과 화면 도달 — P-138⑤ 기본=List(프로필 체크 줄)
-  expect(flat(tree)).toContain('scan.checkedAgainst');
+  // 결과 화면 도달 — 기본=List(9/5 판정: 체크 줄 소멸 — 하단 안내문으로 판정)
+  expect(flat(tree)).toContain('scan.listFootNote');
 });
 
 it('취소 → 런처 복귀(에러 없음)', async () => {

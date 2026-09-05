@@ -35,7 +35,12 @@
     "google": "Đăng nhập bằng Google",
     "terms": "Khi tiếp tục, bạn đồng ý với Điều khoản dịch vụ và xác nhận đã đọc Chính sách quyền riêng tư của chúng tôi.",
     "errorGeneric": "Đăng nhập chưa hoàn tất. Vui lòng thử lại.",
-    "errorNetwork": "Lỗi mạng — hãy kiểm tra kết nối và thử lại."
+    "errorNetwork": "Lỗi mạng — hãy kiểm tra kết nối và thử lại.",
+    "termsPrefix": "Khi tiếp tục, bạn đồng ý với ",
+    "termsTos": "Điều khoản dịch vụ",
+    "termsAnd": " và xác nhận ",
+    "termsPrivacy": "Chính sách quyền riêng tư",
+    "termsSuffix": " của chúng tôi."
   },
   "gate": {
     "riskTitle": "Xem mức đánh giá an toàn dành riêng cho bạn",

@@ -9,7 +9,7 @@
  * 발주 규정대로 12장 축소, 1.0MB). JS 번들 자산 — OTA 가능.
  */
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { IconArrowLeft } from '@/components/icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +25,7 @@ import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
 import { collageHeight } from '@/lib/loginCollage';
+import { LEGAL_URLS } from '@/lib/legalText';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const DISHES = [
@@ -117,7 +118,18 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
         <Pressable disabled={authBusy} onPress={() => { void (async () => { await logoutLocalFirst().catch(() => {}); track(EVENTS.auth_guest_enter); setUserProps({ user_info_is_registered: false }); /* P-083+144 */ router.replace('/(tabs)' as Href); })(); }} hitSlop={8} testID="browse-first">
           <Text style={[styles.browse, authBusy && styles.browseDim]}>{t('intro.browseFirst')}</Text>
         </Pressable>
-        <Text style={styles.terms}>{t('login.terms')}</Text>
+        {/* 9/5 예진 판정(D-5 ⑥): 약관 = 시안대로 밑줄 3분할 — 링크는 기존 kbap-legal 정본(LEGAL_URLS) */}
+        <Text style={styles.terms}>
+          {t('login.termsPrefix')}
+          <Text style={[styles.terms, styles.termsLink]} onPress={() => void Linking.openURL(LEGAL_URLS.terms)} testID="terms-tos">
+            {t('login.termsTos')}
+          </Text>
+          {t('login.termsAnd')}
+          <Text style={[styles.terms, styles.termsLink]} onPress={() => void Linking.openURL(LEGAL_URLS.privacy)} testID="terms-privacy">
+            {t('login.termsPrivacy')}
+          </Text>
+          {t('login.termsSuffix')}
+        </Text>
       </View>
     </View>
   );
@@ -139,6 +151,7 @@ const styles = StyleSheet.create({
 
   foot: { gap: 10, paddingHorizontal: 20 },
   terms: { fontSize: 13, fontWeight: '400', color: C.ink3, textAlign: 'center', lineHeight: 18, paddingHorizontal: 10 },
+  termsLink: { textDecorationLine: 'underline', paddingHorizontal: 0 },
   browse: { fontSize: 13, fontWeight: '500', color: C.ink2, textAlign: 'center', padding: 10 },
   browseDim: { opacity: 0.35 }, // KB-421: 색/불투명도만(프레임 불변 P-151)
 });

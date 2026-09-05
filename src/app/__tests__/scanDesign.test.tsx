@@ -171,10 +171,11 @@ it('③→P-136/138 콰이엇 크롬 — 세그·다시찍기, 기본 List에 �
   expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // P-138⑤ 기본=List — 가격 행 노출
   // 구 D3 플로팅 라벨 소멸 (원본 세그 소멸 — 피크로 존치)
   for (const k of ['scan.showList', 'scan.showResult', 'scan.showOriginal']) expect(texts(tree, k)).toBe(0);
-  // 콰이엇 헤더: 세그 2 + 다시찍기 아이콘 버튼
-  for (const id of ['seg-risk', 'seg-list', 'retake']) {
+  // 콰이엇 헤더: 세그 2 — 다시찍기 표면은 9/5 예진 판정으로 제거(새 .fig 리프레시 아이콘 때 복원)
+  for (const id of ['seg-risk', 'seg-list']) {
     expect(tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
   }
+  expect(tree.root.findAll((n) => n.props?.testID === 'retake')).toHaveLength(0);
   // P-149(예진 확정): Photo 뷰 = 쌩 원본 + 줌만 — 범례·힌트·마커·미니시트 부재
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
@@ -197,15 +198,16 @@ it('P-149: Photo 뷰 = 원본+줌 전용 — 피크 롱프레스·캡슐 잔재 
   expect(tree.root.findAll((n) => n.props?.testID === 'mini-sheet-wrap').length).toBe(0);
 });
 
-it('P-136/138 뷰 전환 — 기본 List=프로필 체크 줄+안내문(헤더·범례 없음), Photo=범례', async () => {
+it('P-136/138 뷰 전환 — 기본 List(9/5 판정: 프로필 체크 줄 소멸)+안내문, Photo=원본만', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  // P-138⑤ 기본=List: 범례 없음, 프로필 체크 줄+하단 안내문+스크롤 여백
+  // P-138⑤ 기본=List: 범례 없음 · 9/5 예진 판정 — ScanProfileBar(체크 줄) 화면 제거(시안 토글 행만)
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-legend').length).toBe(0);
   const s = JSON.stringify(tree.toJSON());
-  expect(s).toContain('scan.checkedAgainst');
+  expect(s).not.toContain('scan.checkedAgainst');
+  expect(tree.root.findAll((n) => n.props?.testID === 'profile-bar')).toHaveLength(0);
   expect(s).toContain('scan.listFootNote');
   expect(s).not.toContain('scan.notInDb'); // P-138③ 행 내 안내문 소음 제거
   expect(tree.root.findAll((n) => n.props?.contentContainerStyle?.paddingBottom === 120).length).toBeGreaterThanOrEqual(1);
@@ -217,7 +219,7 @@ it('P-136/138 뷰 전환 — 기본 List=프로필 체크 줄+안내문(헤더·
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-list')[0].props.onPress();
   });
-  expect(JSON.stringify(tree.toJSON())).toContain('scan.checkedAgainst');
+  expect(JSON.stringify(tree.toJSON())).not.toContain('scan.checkedAgainst'); // 9/5 판정: 체크 줄 소멸
 });
 
 it('P-149: 코치마크 표면 생존 — 리스트 행 마크 탭(재열람) 배선 존재 (캡슐 철거 무관)', async () => {
@@ -230,31 +232,18 @@ it('P-149: 코치마크 표면 생존 — 리스트 행 마크 탭(재열람) �
   expect(marks.length).toBeGreaterThanOrEqual(1);
 });
 
-it('P-161: 다시찍기 = 확인 모달 선노출 — 취소 시 결과 보존, 확인 시에만 카메라 복귀', async () => {
+it('P-161 → 9/5 판정: 다시찍기 표면 제거(트리거 0) — 확인 모달·리셋 기능 코드는 보존(복원 대비)', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  // ↻ 탭 → 즉시 리셋 아님, 모달 노출
-  act(() => {
-    tree.root.findAll((n) => n.props?.testID === 'retake')[0].props.onPress();
-  });
-  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm').length).toBeGreaterThanOrEqual(1);
-  expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // 결과 아직 보존
-  // 취소 → 모달 닫힘 + 결과 무변
-  const cancel = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'profile.delete.cancel').length > 0).pop()!;
-  act(() => cancel.props.onPress());
-  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm').length).toBe(0);
-  expect(JSON.stringify(tree.toJSON())).toContain('₩8,000');
-  // 재탭 → 확인(Rescan) → 카메라 복귀(결과 소멸)
-  act(() => {
-    tree.root.findAll((n) => n.props?.testID === 'retake')[0].props.onPress();
-  });
-  act(() => {
-    tree.root.findAll((n) => n.props?.testID === 'retake-go')[0].props.onPress();
-  });
-  expect(JSON.stringify(tree.toJSON())).not.toContain('₩8,000');
-  expect(tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery').length).toBeGreaterThanOrEqual(1); // 카메라 화면
+  expect(tree.root.findAll((n) => n.props?.testID === 'retake')).toHaveLength(0); // 표면 부재
+  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm')).toHaveLength(0);
+  // 기능 코드 보존 소스 잠금 — 새 .fig 리프레시 아이콘 수신 시 표면만 복원
+  const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(src).toContain('setRetakeConfirm');
+  expect(src).toContain('testID="retake-confirm"');
+  expect(src).toContain('testID="retake-go"');
 });
 
 it('P-187: 진행 화면 미리보기 = contain(레터박스) — cover 크롭 소멸(소스 잠금)', () => {

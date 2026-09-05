@@ -35,7 +35,12 @@
     "google": "使用 Google 帳戶登入",
     "terms": "繼續即表示你同意我們的服務條款，並知悉我們的隱私權政策。",
     "errorGeneric": "登入未完成，請再試一次。",
-    "errorNetwork": "網路錯誤——請檢查你的連線後再試一次。"
+    "errorNetwork": "網路錯誤——請檢查你的連線後再試一次。",
+    "termsPrefix": "繼續即表示您同意我們的",
+    "termsTos": "服務條款",
+    "termsAnd": "，並確認我們的",
+    "termsPrivacy": "隱私政策",
+    "termsSuffix": "。"
   },
   "gate": {
     "riskTitle": "查看你的專屬安全評級",

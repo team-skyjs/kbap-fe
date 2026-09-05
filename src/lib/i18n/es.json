@@ -35,7 +35,12 @@
     "google": "Iniciar sesión con Google",
     "terms": "Al continuar, aceptas nuestros Términos de Servicio y reconoces nuestra Política de Privacidad.",
     "errorGeneric": "No se pudo completar el inicio de sesión. Inténtalo de nuevo.",
-    "errorNetwork": "Error de red: revisa tu conexión e inténtalo de nuevo."
+    "errorNetwork": "Error de red: revisa tu conexión e inténtalo de nuevo.",
+    "termsPrefix": "Al continuar, aceptas nuestros ",
+    "termsTos": "Términos de servicio",
+    "termsAnd": " y reconoces nuestra ",
+    "termsPrivacy": "Política de privacidad",
+    "termsSuffix": "."
   },
   "gate": {
     "riskTitle": "Descubre tu calificación de seguridad personal",

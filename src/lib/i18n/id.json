@@ -35,7 +35,12 @@
     "google": "Login dengan Google",
     "terms": "Dengan melanjutkan, Anda menyetujui Persyaratan Layanan kami dan memahami Kebijakan Privasi kami.",
     "errorGeneric": "Proses masuk belum selesai. Silakan coba lagi.",
-    "errorNetwork": "Kesalahan jaringan — periksa koneksi Anda dan coba lagi."
+    "errorNetwork": "Kesalahan jaringan — periksa koneksi Anda dan coba lagi.",
+    "termsPrefix": "Dengan melanjutkan, Anda menyetujui ",
+    "termsTos": "Ketentuan Layanan",
+    "termsAnd": " dan mengakui ",
+    "termsPrivacy": "Kebijakan Privasi",
+    "termsSuffix": " kami."
   },
   "gate": {
     "riskTitle": "Lihat peringkat keamanan pribadi Anda",
