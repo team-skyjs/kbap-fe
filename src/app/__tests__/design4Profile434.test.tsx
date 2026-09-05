@@ -108,6 +108,15 @@ it('① 메뉴 행 순서 스냅샷 — My Foods→Saved→My reviews→Language
   expect(src).not.toContain('borderBottomWidth: StyleSheet.hairlineWidth'); // 구 AcctRow 구분선 소멸
 });
 
+it('①-b KB-434 후속: rank null(계약 드리프트 방어) = 랭킹 카드 미렌더 — 나머지 표면 정상', () => {
+  mockUseMe.mockReturnValue({ ...ME, data: { ...ME.data, rank: null } });
+  const tree = render(<Profile />);
+  expect(tree.root.findAll((n) => n.props?.testID === 'profile-rank-card')).toHaveLength(0);
+  const s = JSON.stringify(tree.toJSON());
+  expect(s).toContain('profile.restrictionsTitle'); // 화면 전체 에러 아님 — 섹션만 미렌더
+  expect(s).toContain('profile.saved');
+});
+
 it('② 편집 폼 — 국적 Disabled 필드(bg #F7F8FA + 자물쇠 + 헬퍼) · 저장 = P-173 가드 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/profile/edit.tsx', 'utf8') as string;
   expect(src).toContain('styles.fieldDisabled'); // Disabled 변형(수정 불가 — P-078 정책 무변)

@@ -55,7 +55,7 @@ export function useCreateReview() {
           createdAt: new Date().toISOString(),
           memberId: me?.id,
           authorNationality: me?.nationality ?? null,
-          authorRankTier: me?.rank.tier ?? null,
+          authorRankTier: me?.rank?.tier ?? null,
           anonymized: false,
           bodyLanguage: i18n.language,
           translatedBody: null,

@@ -164,7 +164,8 @@ export default function CommunityCompose() {
           <View style={styles.authorRow}>
             <Text style={styles.authorName} numberOfLines={1}>{me?.nickname ?? ''}</Text>
             {!!me?.nationality && <Flag code={me.nationality} size={16} />}
-            {me && (
+            {/* KB-434 후속: rank null(계약 드리프트 방어) = 필 미렌더 */}
+            {me?.rank && (
               <View style={styles.rankPill}>
                 <MedalEmblem level={me.rank.level} size={14} />
                 <Text style={styles.rankText}>{t(`ranking.tier.${me.rank.tier}`)}</Text>
