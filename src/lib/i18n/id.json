@@ -55,7 +55,9 @@
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
     "saveTitle": "Simpan hidangan yang ingin kamu coba",
     "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu.",
-    "keepBrowsing": "Lanjut menjelajah"
+    "keepBrowsing": "Lanjut menjelajah",
+    "reportTitle": "Bantu jaga ulasan tetap tepercaya",
+    "reportSub": "Daftar untuk melaporkan ulasan agar kami dapat meninjaunya."
   },
   "lock": {
     "verdictTitle": "Peringkat keamanan pribadi Anda",

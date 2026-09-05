@@ -55,7 +55,9 @@
     "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
     "saveTitle": "Guarda los platos que quieras probar",
     "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura.",
-    "keepBrowsing": "Seguir explorando"
+    "keepBrowsing": "Seguir explorando",
+    "reportTitle": "Ayuda a mantener reseñas confiables",
+    "reportSub": "Regístrate para reportar una reseña y la revisaremos."
   },
   "lock": {
     "verdictTitle": "Tu calificación de seguridad personal",
