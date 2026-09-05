@@ -68,19 +68,18 @@ it('oneMore 행·리뷰 쓰기 CTA 부재, 스캔 CTA 유지(KB-434: "Scan a men
   expect(texts(tree, 'ranking.ctaScan ranking.ctaScanPts')).toBeGreaterThanOrEqual(1);
 });
 
-it('리뷰 팩터 dim 예고 행 상시 노출 — 라벨+예고 문구', () => {
+it('P-283(9/5 예진): 점수 내역 3칸 전부 활성 — 리뷰·다양성·스캔 detail+pts, 잠금 문구 0', () => {
   const tree = render(<RankingScreen />);
   expect(texts(tree, 'ranking.reviewsLabel')).toBeGreaterThanOrEqual(1);
-  expect(texts(tree, 'ranking.reviewsComing')).toBeGreaterThanOrEqual(1);
-});
-
-// P-058: 다양성도 dim 예고 (리뷰 작성 적립 구조 — MVP에선 죽은 지표)
-it('P-058: 다양성 행 dim 예고 — 실적 detail 미렌더, 예고 2행·스캔만 활성', () => {
-  const tree = render(<RankingScreen />);
-  expect(texts(tree, 'ranking.diversityLabel')).toBeGreaterThanOrEqual(1);
-  expect(texts(tree, 'ranking.diversityDetail')).toBe(0); // 실적 문구 제거
-  expect(texts(tree, 'ranking.reviewsComing')).toBeGreaterThanOrEqual(2); // 리뷰+다양성 (Txt 래퍼 중복 계상 허용)
-  expect(texts(tree, 'ranking.scansDetail')).toBeGreaterThanOrEqual(1); // 스캔은 활성
+  expect(texts(tree, 'ranking.reviewsDetail')).toBeGreaterThanOrEqual(1); // n reviews × 10 pts
+  expect(texts(tree, 'ranking.diversityDetail')).toBeGreaterThanOrEqual(1); // n unique dishes × 5 pts
+  expect(texts(tree, 'ranking.scansDetail')).toBeGreaterThanOrEqual(1); // n menu scans × 2 pts
+  expect(texts(tree, 'ranking.reviewsComing')).toBe(0); // 잠금 하드코딩 소멸
+  expect(texts(tree, 'ranking.gain')).toBeGreaterThanOrEqual(3); // 점수 필 3개(+points)
+  const src = require('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
+  expect(src).not.toContain('D4Lock'); // 자물쇠 소멸
+  expect(src).not.toContain('#30C120'); // 하드코드 색 소멸
+  expect(src).not.toContain('locked?:'); // BreakCol locked 프롭 소멸
 });
 
 // KB-434 D-6: All ranks = 3열 그리드 카드 — 현재 등급 primary 보더 + NOW 배지
