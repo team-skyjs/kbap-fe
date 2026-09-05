@@ -195,10 +195,11 @@ describe('P-184: 상태 화면 센터 구조 승격', () => {
 
 describe('P-183: 홈 부제 false-safe', () => {
   it('홈 추천 = hasScans 무관 popular 계열 — safeTitle/safeSub 소스 잔존 0', () => {
+    // KB-430 후속: 탭 라벨(popularTitle) = FoodExplorer 이동 — 홈은 safe* 잔존 0만 잠금
     const src = require('fs').readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
     expect(src).not.toContain('home.safeTitle');
     expect(src).not.toContain('home.safeSub');
-    expect(src).toContain('home.popularTitle');
+    expect(require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8')).toContain('home.popularTitle');
     const en = JSON.parse(require('fs').readFileSync('src/lib/i18n/en.json', 'utf8'));
     expect(en.home.popularTitle).toBe('Popular dishes'); // P-181 확정값 일원화
   });

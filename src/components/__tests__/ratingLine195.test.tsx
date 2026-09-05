@@ -52,7 +52,9 @@ it('표면 배선 소스 잠금 — 음식탭 목록=줄 제거, 구 형식 부�
   const fs = require('fs');
   const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
   const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8') as string;
-  expect(food).toContain('<RatingLine overall={food.overall} />'); // 세로 목록 = 줄 제거
+  // KB-430 후속(9/5): 음식 탭 = FoodExplorer(FoodGridCard — 별점 없는 시안) 재사용, BrowseCard·RatingLine 소멸
+  expect(food).toContain('FoodExplorer');
+  expect(food).not.toContain('RatingLine');
   for (const src of [home, food]) {
     expect(src).not.toContain("toFixed(1) ?? '—'"); // 구 "— · n" 조립 소멸
     expect(src).not.toContain('rateNum');

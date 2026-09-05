@@ -5,7 +5,7 @@
  * REVIEWS 카드 3장(+More) · 면책. 데이터 훅·라우트 무변(발주 전제) — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
@@ -19,38 +19,25 @@ import {
   useHeaderHeight,
   SkeletonHome,
   Btn,
-  BookmarkStar,
   Chip,
   SectionHead,
-  RiskBadge,
-  CardPhoto,
-  IconSearch,
   IconLock,
-  IconFood,
-  IconTabScan,
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
-import { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { RecentRow } from '@/features/food/FoodCards';
+import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
-import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
-import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
-import { popularPhotoFoods } from '@/lib/search/discovery';
 import { FeedCard } from '@/features/review/FeedCard';
 import { useUnreadCount } from '@/lib/notifications/inbox';
 import type { FoodCard } from '@/lib/api/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
-type GridTab = 'popular' | 'saved' | 'food';
-/** 위험 칩 4종 — All + personalRisk 3상태(라벨은 현 위험 키: Avoid=danger·Warning=caution). */
-type RiskChip = 'all' | 'safe' | 'danger' | 'caution';
-const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 /** 9/5 예진 확정("싹 다 시안대로"): For You·Nearby도 시안대로 렌더 — 서버 파라미터
  *  부재라 선택해도 결과는 현재(latest) 유지(무동작), Popular만 sort=helpful. */
 type ReviewChip = 'all' | 'foryou' | 'nearby' | 'popular';
@@ -61,7 +48,6 @@ const REVIEW_CHIPS: [ReviewChip, string][] = [
   ['popular', 'reviews.sort_helpful'],
 ];
 
-const GRID_N = 4; // 발주: 첫 화면 2행(4장) 후 More
 const RECENT_N = 4;
 const REVIEW_N = 3;
 
@@ -79,45 +65,13 @@ export default function Home() {
   const hasR = restrictions.length > 0;
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
 
-  // 훅은 무조건 호출(순서 고정) — 렌더만 분기 (P-216 원칙 유지)
-  const browse = useInfiniteFoods();
-  const saved = useBookmarks();
   const unread = useUnreadCount();
-  const toggleBookmark = useToggleBookmark();
-
-  const [gridTab, setGridTab] = useState<GridTab>('popular');
-  const [riskChip, setRiskChip] = useState<RiskChip>('all');
   const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
-  const [gate, setGate] = useState(false);
 
   // 리뷰 3장 — 칩 판정(spec-12): All=latest · Popular=sort helpful. 게스트 열람 개방(P-235).
   const feed = useGlobalReviews(true, { sort: reviewChip === 'popular' ? 'helpful' : 'latest' });
   const feedReviews = (feed.data?.pages ?? []).flatMap((p) => p.items).slice(0, REVIEW_N);
 
-  // Codex #28: 북마크는 커서 페이지네이션 — 1페이지만으론 2페이지 이후 저장분이
-  // 그리드에서 미저장으로 보여 토글이 역전된다. 홈은 저장 판정 소스라 전 페이지
-  // 드레인(페이지당 1회, hasNextPage 소진까지). wire.bookmarked 플래그(①)는 낙관
-  // 토글이 foods 캐시를 안 갱신해 탭 직후 stale — 집합 방식 유지가 정본.
-  useEffect(() => {
-    if (saved.hasNextPage && !saved.isFetchingNextPage) void saved.fetchNextPage();
-  }, [saved, saved.hasNextPage, saved.isFetchingNextPage]);
-  const savedFoods = saved.data ?? [];
-  const savedIds = new Set(savedFoods.map((f) => f.foodId));
-  const gridSource: FoodCard[] =
-    gridTab === 'popular' ? popularPhotoFoods(browse.data) : gridTab === 'saved' ? savedFoods : (browse.data ?? []);
-  // 칩 = 클라이언트 위험도 필터(personalRisk 결과 기준 — 발주 §1-4)
-  const gridFoods = (
-    riskChip === 'all' ? gridSource : gridSource.filter((f) => personalRisk(f.risk, hasR) === riskChip)
-  ).slice(0, GRID_N);
-  const gridMoreHref: Href = gridTab === 'saved' ? ('/profile/saved' as Href) : ('/food' as Href);
-
-  const onBookmark = (f: FoodCard) => {
-    if (isGuest) return setGate(true);
-    toggleBookmark.mutate({
-      snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
-      add: !savedIds.has(f.foodId),
-    });
-  };
 
   if (isError && !isLoading) {
     return (
@@ -145,79 +99,8 @@ export default function Home() {
           <View>
             <UpdateNudgeBanner />
 
-            {/* 검색 행 + 스캔 버튼 (4150:16377 @y100) */}
-            <View style={styles.searchRow}>
-              <Pressable style={styles.searchBox} onPress={() => router.push('/search' as Href)} testID="home-search">
-                <Text style={styles.searchPh} numberOfLines={1}>
-                  {t('food.searchPlaceholder')}
-                </Text>
-                <IconSearch size={20} color={C.ink3} />
-              </Pressable>
-              <Pressable style={styles.scanBtn} onPress={() => router.navigate('/scan')} testID="home-scan">
-                <IconTabScan size={24} color="#FFFFFF" />
-              </Pressable>
-            </View>
-
-            {/* 언더라인 탭 (4123:3884): Popular | Saved | Food */}
-            <View style={styles.tabsRow}>
-              {(
-                [
-                  ['popular', t('home.popularTitle')],
-                  ['saved', t('saved.title')],
-                  ['food', t('food.title')],
-                ] as [GridTab, string][]
-              ).map(([key, label]) => (
-                <Pressable key={key} style={styles.tab} onPress={() => setGridTab(key)} testID={`home-tab-${key}`}>
-                  <Text style={[styles.tabLabel, gridTab === key && styles.tabLabelOn]} numberOfLines={1}>
-                    {label}
-                  </Text>
-                  {/* 활성 바 — 프레임 불변(P-151): 비활성도 같은 높이의 투명 바 */}
-                  <View style={[styles.tabBar, gridTab === key && styles.tabBarOn]} />
-                </Pressable>
-              ))}
-            </View>
-            <View style={styles.tabsDivider} />
-
-            {/* 위험도 칩 필터 (§1-4) — 게스트는 개인화 위험이 없어 미노출(guest-access-policy §1) */}
-            {!isGuest && (
-              <View style={styles.chipRow}>
-                {RISK_CHIPS.map((c) => (
-                  <Chip
-                    key={c}
-                    label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-                    selected={riskChip === c}
-                    onPress={() => setRiskChip(c)}
-                    testID={`home-chip-${c}`}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* 음식 카드 2열 그리드 (4150:13806) */}
-            <View style={styles.grid}>
-              {gridFoods.map((f) => (
-                <FoodGridCard
-                  key={f.foodId}
-                  food={f}
-                  risk={personalRisk(f.risk, hasR)}
-                  guest={isGuest}
-                  saved={savedIds.has(f.foodId)}
-                  riskLabel={t(`risk.${personalRisk(f.risk, hasR)}`)}
-                  onPress={() => openFood(f.foodId)}
-                  onBookmark={() => onBookmark(f)}
-                />
-              ))}
-              {gridFoods.length === 0 && gridTab === 'saved' && (
-                <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text>
-              )}
-            </View>
-            {gridSource.length > GRID_N && (
-              <View style={styles.moreWrap}>
-                <Btn variant="ghost" onPress={() => router.push(gridMoreHref)} testID="home-grid-more">
-                  {t('home.seeAll')}
-                </Btn>
-              </View>
-            )}
+            {/* KB-430 후속(9/5): 검색·탭·칩·그리드 = FoodExplorer 공용(음식 탭과 공유) */}
+            <FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />
 
             {/* RECENTLY SCANNED (§1-6~7) */}
             <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
@@ -304,7 +187,6 @@ export default function Home() {
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
       />
-      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }

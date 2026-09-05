@@ -65,8 +65,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-import { FoodGridCard, RecentRow } from '../(tabs)/index';
-import { BrowseCard } from '../(tabs)/food';
+import { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 import { ResultCard } from '../search';
 import { RiskMark } from '@/components/RiskMark';
 import { RiskBadge } from '@/components/RiskBadge';
@@ -96,7 +95,8 @@ const riskMarkCount = (tree: ReactTestRenderer) =>
 // [라벨, guest만 바꿔 렌더하는 팩토리] — 새 리스트 카드는 여기에 한 줄 추가
 const CARDS: [string, (guest: boolean) => React.ReactElement][] = [
   ['홈 FoodGridCard', (guest) => <FoodGridCard food={FOOD} risk="safe" guest={guest} saved={false} riskLabel="Safe" onPress={() => {}} onBookmark={() => {}} />],
-  ['음식탭 BrowseCard', (guest) => <BrowseCard food={FOOD} hasRestrictions={false} guest={guest} onPress={() => {}} />],
+  // KB-430 후속: 음식 탭 = FoodGridCard 재사용(BrowseCard 소멸) — 게스트 배지 미렌더 잠금 승계
+  ['음식탭 FoodGridCard', (guest) => <FoodGridCard food={FOOD} risk="safe" guest={guest} saved={false} riskLabel="risk.safe" onPress={() => {}} onBookmark={() => {}} />],
   ['검색 ResultCard', (guest) => <ResultCard food={FOOD} risk="safe" guest={guest} onPress={() => {}} />],
 ];
 
