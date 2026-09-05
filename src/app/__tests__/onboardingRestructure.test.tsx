@@ -235,6 +235,21 @@ it('KB-433(Codex #32 P2): 콜라주 = 레이아웃 플로우 고정 높이 — �
   expect(src).toContain('<Collage height={collageHeight(winH)} />');
 });
 
+it('9/5 예진 수정: primary 눌림 = #E8602A(보라 폐기) · Tag 선택 = 색만(체크 0·메트릭 불변)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { color } = require('@/lib/theme') as typeof import('@/lib/theme');
+  expect(color.primaryPress).toBe('#E8602A'); // primary 10% 어둡게 — 시안 보라 거부(실기)
+  const src = require('fs').readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
+  expect(src).not.toContain('IconCheck size={14}'); // Tag 체크 아이콘 소멸(폭 밀림 방지)
+  // 선택/비선택 = 색 키만 상이(P-103/151 프레임 불변 — P-138① 방식)
+  const on = src.match(/presetChipOn: \{([^}]*)\}/)?.[1] ?? '';
+  expect(on.replace(/\s/g, '')).toBe('borderColor:C.primary,backgroundColor:primaryTint');
+  const offKeys = src.match(/presetChip: \{([^}]*)\}/)?.[1] ?? '';
+  expect(offKeys).toContain('borderWidth: 1'); // 양 상태 같은 폭 보더(자리 유지)
+  const textOn = src.match(/presetChipTextOn: \{([^}]*)\}/)?.[1] ?? '';
+  expect(textOn).not.toContain('fontWeight'); // 굵기 무변(폭 고정) — 색만
+});
+
 /* ---- P-133 → KB-433 §4-①: 국적 화면 시안 정합 ---- */
 it('KB-433: 추천 행(pad16 r8) + 2열 그리드 타일·검색 시 핀 숨김·모국어=영어 생략 규칙', async () => {
   mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };

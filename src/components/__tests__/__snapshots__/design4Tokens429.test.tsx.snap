@@ -21,7 +21,7 @@ exports[`① 토큰 스냅샷 — 4차 신값 잠금(키 유지·값 교체 + �
   "line": "#EAEBEE",
   "line2": "#DCDEE3",
   "primary": "#FF7134",
-  "primaryPress": "#9A08C2",
+  "primaryPress": "#E8602A",
   "primaryText": "#FF7134",
   "radius": {
     "lg": 10,
