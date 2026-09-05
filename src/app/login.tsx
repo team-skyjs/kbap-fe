@@ -1,6 +1,7 @@
 /**
  * Login / sign-up (KB-10 → KB-433 디자인 4차, 4150:14197) — SOCIAL ONLY.
- * 상단 음식 콜라주(정적 — 예진 확정 9/5, 애니메이션 없음) + 흰→투명 그라데이션,
+ * 음식 콜라주 = 화면 전면 배경(P-280 — 행 마퀴가 텍스트·버튼 뒤까지 흐름, 하단은
+ * blurRadius+흰 워시로 가독) + 상단 흰→투명 그라데이션,
  * welcome 블록(시안 워드마크 144×46 + 안내), SocialAuthButtons(공용 — Apple은
  * OS 공식 네이티브 버튼이라 시안 primary 재스타일 불가: HIG/심사 리스크, 질문 누적),
  * Browse first = 버튼 아래 텍스트 링크 유지(예진 확정 9/5), 약관 문구.
@@ -25,7 +26,7 @@ import { color as C } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
-import { GAP, MIN_COLLAGE_H, TILE, collageRows, embedAvailableH, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
+import { GAP, TILE, blurredFromRow, collageRows, embedAvailableH, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { LEGAL_URLS } from '@/lib/legalText';
 
@@ -51,7 +52,7 @@ const DISHES = [
  *  각 행 = 가로 마퀴(홀수 행 좌→우·짝수 행 우→좌, ~20px/s 선형 무한 루프).
  *  seamless: 타일 4개 주기를 3배 복제 + 기본 -span 시프트 — x∈[-span,0] 어느
  *  위상에서도 화면 전폭 커버. 12장 자산 순환(추가 에셋 0). */
-function MarqueeRow({ row, animate }: { row: number; animate: boolean }) {
+function MarqueeRow({ row, animate, blur }: { row: number; animate: boolean; blur: boolean }) {
   const span = marqueeSpan(4);
   const ltr = row % 2 === 0; // 1·3·5번째 행 = 좌→우
   const x = useSharedValue(ltr ? -span : 0);
@@ -72,16 +73,19 @@ function MarqueeRow({ row, animate }: { row: number; animate: boolean }) {
   return (
     <Animated.View style={[styles.collageRow, { marginLeft: -101 + row * ((TILE + GAP) / 2) - span }, anim]}>
       {tiles.map((src, i) => (
-        <Image key={i} source={src} style={styles.tile} />
+        /* P-280: hero 하단 구간 행 = 블러(RN 기본 blurRadius — expo-blur 금지, OTA-able) */
+        <Image key={i} source={src} style={styles.tile} blurRadius={blur ? 14 : 0} />
       ))}
     </Animated.View>
   );
 }
 
-/** 콜라주 = 남는 공간 전부(flex 채움, 최소 220) — 행 수는 측정 높이로 3~5 자동. */
-function Collage({ animate }: { animate: boolean }) {
+/** P-280: 콜라주 = 화면 전면 배경(absoluteFill) — 행 수 = 높이 채움(ceil, 3~8),
+ *  hero 상단(heroTop)부터는 블러 행 + 흰 워시로 텍스트·버튼 가독. */
+function Collage({ animate, heroTop }: { animate: boolean; heroTop: number }) {
   const [h, setH] = useState(0);
   const rows = collageRows(h);
+  const blurFrom = blurredFromRow(heroTop);
   return (
     <View
       style={styles.collage}
@@ -91,11 +95,19 @@ function Collage({ animate }: { animate: boolean }) {
     >
       <View style={{ marginTop: -24 }}>
         {Array.from({ length: rows }, (_, r) => (
-          <MarqueeRow key={r} row={r} animate={animate} />
+          <MarqueeRow key={r} row={r} animate={animate} blur={r >= blurFrom} />
         ))}
       </View>
       {/* 상단 흰→투명 그라데이션 186h(4150:20076) — 상태바 가독 */}
       <LinearGradient colors={['#FFFFFF', 'rgba(255,255,255,0)']} style={styles.collageFade} />
+      {/* P-280 하단 흰 워시 — 워드마크·안내·약관이 흰 0.9 위에서 판독 */}
+      {heroTop > 0 && (
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.86)', 'rgba(255,255,255,0.92)']}
+          locations={[0, 0.28, 1]}
+          style={[styles.collageWash, { top: heroTop - 40 }]}
+        />
+      )}
     </View>
   );
 }
@@ -132,6 +144,7 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
     };
   }, []);
   const animate = focused && appActive && reduceMotion === false;
+  const [heroTop, setHeroTop] = useState(0); // P-280: 하단 가독 구간 기준(root 좌표)
 
   return (
     <View
@@ -139,10 +152,11 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
         styles.root,
         { paddingBottom: bottom + 26 },
         // 임베드(프로필 탭 ScrollView 소속) = flex 무경계 — 가용 높이를 명시(헤더·탭바 차감)
-        embedded && { flex: undefined, height: embedAvailableH(winH, TABBAR_CONTENT_H, insets.bottom) },
+        // P-280: 게스트 프로필 탭 = 헤더 미렌더(headerH 0) — 상태바 뒤까지 콜라주
+        embedded && { flex: undefined, height: embedAvailableH(winH, 0, TABBAR_CONTENT_H, insets.bottom) },
       ]}
     >
-      <Collage animate={animate} />
+      <Collage animate={animate} heroTop={heroTop} />
       {/* P-129: 뒤로가기 복원 — 빈 스택 GO_BACK 에러는 canGoBack 가드 */}
       {!embedded && router.canGoBack() && (
         <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.backBtn, { top: insets.top + 6 }]} testID="login-back">
@@ -150,8 +164,11 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
         </Pressable>
       )}
 
+      {/* P-280: 콜라주가 absoluteFill 배경 — 스페이서가 hero를 하단으로 민다 */}
+      <View style={{ flex: 1 }} pointerEvents="none" />
+
       {/* welcome 블록(@y435) — 워드마크 144×46 + 안내 16/400 #2F3137 */}
-      <View style={styles.hero}>
+      <View style={styles.hero} onLayout={(e) => setHeroTop(e.nativeEvent.layout.y)}>
         <Wordmark height={46} />
         <Text style={styles.sub}>{t('login.sub')}</Text>
       </View>
@@ -201,11 +218,12 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   backBtn: { position: 'absolute', left: 16, zIndex: 5, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 
-  // 콜라주(시안 오프셋) — 9/5 후속: 남는 공간 전부 채움(flex, 최소 220) + overflow hidden
-  collage: { flex: 1, minHeight: MIN_COLLAGE_H, overflow: 'hidden' },
+  // P-280: 콜라주 = 전면 배경(absoluteFill + overflow hidden) — 콘텐츠는 위 레이어
+  collage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   collageRow: { flexDirection: 'row', gap: GAP, marginBottom: GAP },
   tile: { width: TILE, height: TILE, borderRadius: 21, backgroundColor: C.surface2 },
   collageFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 186 },
+  collageWash: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 
   // welcome — 콜라주가 flex를 소유, 하단 블록은 safe-area 위 고정
   hero: { alignItems: 'center', gap: 10, paddingHorizontal: 26, paddingTop: 20, paddingBottom: 24 },

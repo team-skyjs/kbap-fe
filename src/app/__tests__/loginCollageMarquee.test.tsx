@@ -58,7 +58,7 @@ jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => nu
 jest.mock('@/lib/useAppFonts', () => ({ useAppFonts: () => [true, null] }));
 
 import Login from '../login';
-import { collageRows, embedAvailableH, marqueeDuration, marqueeSpan, MIN_COLLAGE_H } from '@/lib/loginCollage';
+import { blurredFromRow, collageRows, embedAvailableH, marqueeDuration, marqueeSpan, MIN_COLLAGE_H } from '@/lib/loginCollage';
 
 const trees: ReactTestRenderer[] = [];
 async function render(el: React.ReactElement): Promise<ReactTestRenderer> {
@@ -78,16 +78,21 @@ beforeEach(() => {
   focusCleanup = undefined;
 });
 
-it('① 순수 함수 — 행수 3~5 자동·스팬 588·20px/s 지속시간·임베드 가용 높이', () => {
+it('① 순수 함수 — 행수 ceil 3~8(P-280 전면 채움)·스팬 588·20px/s·임베드 가용 높이·블러 시작 행', () => {
   expect(collageRows(0)).toBe(3); // 미측정 = 최소
-  expect(collageRows(353)).toBe(3); // 구 기본 높이대
-  expect(collageRows(560)).toBe(4);
-  expect(collageRows(900)).toBe(5); // 상한 5
+  expect(collageRows(353)).toBe(3); // (353+35)/147 = 2.64 → ceil 3
+  expect(collageRows(560)).toBe(5); // ceil — 마지막 행 하단 잘림 허용(빈 띠 금지)
+  expect(collageRows(844)).toBe(6); // 전면 배경(화면 전체)
+  expect(collageRows(2000)).toBe(8); // 상한 8
   expect(marqueeSpan(4)).toBe(588); // 4×(136+11)
   expect(marqueeDuration(588)).toBe(29400); // 588px ÷ 20px/s
   expect(MIN_COLLAGE_H).toBe(220);
-  // 임베드 = 화면 − 헤더 56 − 탭바(콘텐츠+safe-bottom)
-  expect(embedAvailableH(844, 49, 34)).toBe(844 - 56 - 83);
+  // 임베드 = 화면 − 헤더(headerH — P-280 게스트 = 0) − 탭바(콘텐츠+safe-bottom)
+  expect(embedAvailableH(844, 56, 49, 34)).toBe(844 - 56 - 83);
+  expect(embedAvailableH(844, 0, 49, 34)).toBe(844 - 83); // 게스트 = 상태바 뒤까지
+  // 블러 시작 행 — 발주 예시: heroTop 520 → 3행부터 blurRadius 14
+  expect(blurredFromRow(520)).toBe(3);
+  expect(blurredFromRow(0)).toBe(Number.MAX_SAFE_INTEGER); // 미측정 = 블러 없음
 });
 
 it('② 기본(포커스·모션 허용) = 행마다 무한 마퀴 시작 — 행 수 = 측정 전 3', async () => {
@@ -115,11 +120,14 @@ it('④ 언포커스 = 정지(cancelAnimation) — 재시작 없음', async () =
   expect(mockWithRepeat.mock.calls.length).toBe(started); // 재시작 0
 });
 
-it('⑤ 소스 잠금 — flex 채움(최소 220)·시안 오프셋·3배 복제 seamless·그라데이션 유지', () => {
+it('⑤ 소스 잠금 — 전면 배경(absoluteFill)·시안 오프셋·seamless·워시·블러 배선(P-280)', () => {
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  expect(src).toContain('collage: { flex: 1, minHeight: MIN_COLLAGE_H, overflow: \'hidden\' }');
+  expect(src).toContain("collage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }");
+  expect(src).toContain('blurRadius={blur ? 14 : 0}'); // 하단 행 블러(expo-blur 금지 — RN 기본)
+  expect(src).toContain("'rgba(255,255,255,0.86)', 'rgba(255,255,255,0.92)'"); // 흰 워시
+  expect(src).toContain('top: heroTop - 40');
   expect(src).toContain('-101 + row * ((TILE + GAP) / 2) - span'); // 시안 좌우 오프셋 + seamless 기저 시프트
   expect(src).toContain('Array.from({ length: 12 }, (_, i) => DISHES[(row * 4 + (i % 4)) % DISHES.length])');
   expect(src).toContain('collageFade'); // 흰→투명 그라데이션 유지
-  expect(src).toContain('embedAvailableH(winH, TABBAR_CONTENT_H, insets.bottom)'); // 임베드 = 탭바 차감
+  expect(src).toContain('embedAvailableH(winH, 0, TABBAR_CONTENT_H, insets.bottom)'); // P-280: 게스트 임베드 = 헤더 0
 });

@@ -224,16 +224,15 @@ it('KB-433 §2 → 9/5 후속: 로그인 콜라주 — 12장 순환 + 마퀴(포
   expect(src).toContain('<Wordmark height={46} />'); // 워드마크 144×46
 });
 
-it('KB-433(Codex #32 → 9/5 후속): 콜라주 = 남는 공간 전부(flex, 최소 220) — 겹침 0 유지', () => {
+it('KB-433(Codex #32 → P-280): 콜라주 = 전면 배경(ceil 3~8행) — 하단 블록 위 레이어 고정', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { collageRows, MIN_COLLAGE_H } = require('@/lib/loginCollage') as typeof import('@/lib/loginCollage');
-  expect(MIN_COLLAGE_H).toBe(220); // 최소 플로어(소형 기기 비중첩)
+  expect(MIN_COLLAGE_H).toBe(220);
   expect(collageRows(353)).toBe(3);
-  expect(collageRows(900)).toBe(5); // 행 3~5 자동
+  expect(collageRows(2000)).toBe(8); // 상한 8(전면 채움)
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  // flex 채움 — 하단 블록은 safe-area 위 고정(절대 배치 아님)
-  expect(src).toContain("collage: { flex: 1, minHeight: MIN_COLLAGE_H, overflow: 'hidden' }");
-  expect(src).toContain('<Collage animate={animate} />');
+  expect(src).toContain("collage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }");
+  expect(src).toContain('<Collage animate={animate} heroTop={heroTop} />');
 });
 
 it('9/5 예진 수정: primary 눌림 = #E8602A(보라 폐기) · Tag 선택 = 색만(체크 0·메트릭 불변)', () => {

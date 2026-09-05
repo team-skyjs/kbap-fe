@@ -133,7 +133,12 @@ export default function Profile() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
+        // Codex #40 P2: 스크롤 잠금은 짧은 뷰포트(멀티윈도우)에서 약관·Browse first 도달 불가 —
+        // 스크롤은 살리고 튕김만 끔(콜라주 전면 배경에서 바운스가 어색한 것이 원 목적)
+        bounces={!isGuest}
+        alwaysBounceVertical={!isGuest}
+        overScrollMode={isGuest ? 'never' : 'auto'}
+        contentContainerStyle={{ paddingTop: isGuest ? 0 : headerH, paddingBottom: isGuest ? 0 : 110 }}
       >
         {isGuest ? (
           /* P-129(멘토): 게이트 화면 대신 로그인 화면 자체(애플/구글) — 탭 안 임베드 */
@@ -296,7 +301,8 @@ export default function Profile() {
       </Animated.ScrollView>
       {verToast && <Snackbar icon={null} text={verToast} />}
 
-      <StickyHeader hidden={hidden} mode="brand" />
+      {/* P-280(9/5 예진): 게스트 = 임베드 로그인 위 브랜드 헤더 미렌더 — 콜라주가 상태바 뒤까지 */}
+      {!isGuest && <StickyHeader hidden={hidden} mode="brand" />}
     </View>
   );
 }
