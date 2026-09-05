@@ -177,14 +177,14 @@ it('⑤ 북마크 전 페이지 드레인(Codex #28) — hasNextPage면 fetchNex
   mockBookmarks.hasNextPage = true;
   const tree = render(<Home />);
   expect(mockBookmarks.fetchNextPage).toHaveBeenCalled(); // 드레인 개시(소진까지 페이지당 1회)
-  // 저장 집합이 전 페이지 데이터 기준 — id 2 카드의 북마크 아이콘 = primary
-  const iconColor = (id: string) => {
+  // 저장 집합이 전 페이지 데이터 기준 — id 2 카드 = 저장 별(#FFE812 fill, 9/5 판정 4129:10701)
+  const fills = (id: string) => {
     const bm = byId(tree, `home-bm-${id}`)[0];
     expect(bm).toBeTruthy();
-    return bm.findAll((n) => n.props?.color != null).map((n) => n.props.color as string);
+    return bm.findAll((n) => n.props?.fill != null).map((n) => n.props.fill as string);
   };
-  expect(iconColor('2')).toContain('#FF7134');
-  expect(iconColor('1')).not.toContain('#FF7134'); // 미저장 카드는 primary 아님
+  expect(fills('2')).toContain('#FFE812');
+  expect(fills('1')).not.toContain('#FFE812'); // 미저장 카드 = 아웃라인(무채움)
 });
 
 it('⑥ 벨 NEW 배지 — i18n 키 경유(리터럴 금지) 소스 잠금', () => {

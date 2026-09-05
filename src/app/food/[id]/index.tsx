@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
-import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, Btn, IconChevron, IconSpeech } from '@/components';
+import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { RemoteImage } from '@/components/RemoteImage';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
@@ -399,7 +399,8 @@ function Registered({
           )}
         </View>
         <Pressable style={styles.bmBtn} onPress={onBookmark} hitSlop={6} testID="detail-save">
-          <IconStar size={20} color={saved ? C.primary : C.ink2} fill={saved ? C.primary : 'none'} />
+          {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
+          <BookmarkStar saved={saved} size={16} />
         </Pressable>
       </View>
 
