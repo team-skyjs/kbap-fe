@@ -30,7 +30,9 @@ export function RiskBadge({ state, testID }: { state: RiskState; testID?: string
         <Path d={RIBBON} fill={c} fillRule="nonzero" transform="matrix(1,0,0,1,2,2)" />
         <Path d={RIBBON_BORDER} fill="#FFFFFF" transform="matrix(1,0,0,1,2,2)" />
         <Circle cx={13} cy={14} r={7} fill="#FFFFFF" />
-        <G transform="matrix(1,0,0,1,6,7)">
+        {/* Codex #30 P1: RiskGlyph는 22그리드 마크 중심(11,11) 정렬 내장 — 흰 원
+            중심(13,14)으로 +2/+3만 이동(구 +6/+7은 이중 이동으로 글리프가 밀렸음) */}
+        <G transform="matrix(1,0,0,1,2,3)">
           <RiskGlyph state={state} fill={c} />
         </G>
       </Svg>

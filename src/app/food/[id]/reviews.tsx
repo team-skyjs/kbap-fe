@@ -115,7 +115,7 @@ export default function FoodReviews() {
       service: avg((r) => r.staffKindness),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewsQ.data, overall.average]);
+  }, [reviewsQ.data, blockedIds, overall.average]); // Codex #30 P2: 차단 필터 반영
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)

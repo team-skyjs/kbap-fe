@@ -303,10 +303,11 @@ function Registered({
   // P-139 ⑥ → P-239: 리뷰 프리뷰 — 신스키마 recentReviews 인라인 우선, 부재 시 호출 폴백
   const hasInline = food.recentReviews !== undefined;
   const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled && !hasInline ? id : '');
-  const previewReviews = (hasInline ? food.recentReviews! : (reviewsQ.data?.pages[0]?.items ?? [])).slice(0, REVIEW_PREVIEW_N);
-  // Q12: "{국가} only" 클라 필터 — 프리뷰 소스엔 서버 파라미터가 없어 작성자 국적으로 필터
+  const previewSource = hasInline ? food.recentReviews! : (reviewsQ.data?.pages[0]?.items ?? []);
+  // Q12: "{국가} only" 클라 필터 — 프리뷰 소스엔 서버 파라미터가 없어 작성자 국적으로
+  // 필터. Codex #30 P2: 필터를 slice **앞에**(필터 후 3개 — 뒤에 걸면 상위 3개 중 교집합만 남음)
   const [natOnly, setNatOnly] = useState(false);
-  const shownPreviews = natOnly ? previewReviews.filter((r) => r.authorNationality === nationality) : previewReviews;
+  const shownPreviews = (natOnly ? previewSource.filter((r) => r.authorNationality === nationality) : previewSource).slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
   const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
@@ -537,7 +538,7 @@ function Registered({
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(previewReviews.find((r) => r.id === m.id) ?? null)}
+        onEdit={(m) => setEditTarget(previewSource.find((r) => r.id === m.id) ?? null)}
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
         onBlocked={() => void reviewsQ.refetch()}
       />

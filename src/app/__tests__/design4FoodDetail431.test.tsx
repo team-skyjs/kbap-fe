@@ -83,6 +83,23 @@ it('③ 평점 세로 바 — fill 높이 = 점수/5 × 46(트랙), 최고값 �
   expect(JSON.stringify(t5.toJSON())).toContain('#2F3137');
 });
 
+it('⑤ RiskBadge 글리프 정렬(Codex #30 P1) — 이중 이동 소멸, 흰 원 중심 +2/+3 단일 이동', () => {
+  const src = require('fs').readFileSync('src/components/RiskBadge.tsx', 'utf8') as string;
+  expect(src).toContain('"matrix(1,0,0,1,2,3)"');
+  expect(src).not.toContain('"matrix(1,0,0,1,6,7)"');
+  const { RiskBadge } = require('@/components/RiskBadge') as typeof import('@/components/RiskBadge');
+  const tree = render(<RiskBadge state="safe" />);
+  expect(byId(tree, 'risk-badge-safe').length).toBeGreaterThanOrEqual(1);
+});
+
+it('⑥ RankMedal(Codex #30 P2) — 레벨 숫자 텍스트 오버레이 렌더(14/900 흰)', () => {
+  const { RankMedal } = require('@/components/RankMedal') as typeof import('@/components/RankMedal');
+  const tree = render(<RankMedal level={3} />);
+  const num = tree.root.findAll((n) => n.props?.children === 3 || n.props?.children === '3');
+  expect(num.length).toBeGreaterThanOrEqual(1);
+  expect(JSON.stringify(tree.toJSON())).toContain('"fontWeight":"900"');
+});
+
 it('④ 재료 타일 — 태그(타일) 단위 줄바꿈: flexWrap + flexShrink 0 + 이름 1줄(§3 규칙)', () => {
   const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
   expect(src).toMatch(/ingGrid: \{[^}]*flexWrap: 'wrap'/);

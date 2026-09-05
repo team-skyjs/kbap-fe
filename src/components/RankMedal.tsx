@@ -6,6 +6,7 @@
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Txt as Text } from './Txt';
 import { shadowGlow } from '@/lib/theme';
 import { Medal1, Medal2, Medal3, Medal4, Medal5, Medal6, Medal7 } from './design4Assets';
 
@@ -19,6 +20,11 @@ export function RankMedal({ level, size = 28, testID }: { level: number; size?: 
   return (
     <View style={[styles.wrap, shadowGlow(GLOW[lv])]} testID={testID ?? `rank-medal-${lv}`}>
       <Medal height={height} />
+      {/* Codex #30 P2: 시안 place-number는 TEXT 노드(SVG 추출 미포함) — 14/900 흰,
+          메달 원 중심(28×35 그리드에서 원 중심 y21) 오버레이. 크기 비례 축소. */}
+      <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', paddingTop: height * (7 / 35) }]} pointerEvents="none">
+        <Text style={{ fontSize: (size * 14) / 28, fontWeight: '900', color: '#FFFFFF' }}>{lv}</Text>
+      </View>
     </View>
   );
 }
