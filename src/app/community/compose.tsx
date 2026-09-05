@@ -598,7 +598,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
           </ScrollView>
 
           {/* KB-432 §2-9: FixedBottom — outline Close + primary Done */}
-          <View style={styles.pickerBottom} testID="picker-bottom">
+          <View style={[styles.pickerBottom, { paddingBottom: 4 + bottomInset }]} testID="picker-bottom">
             <View style={styles.pickerBottomClose}>
               <Btn variant="ghost" onPress={onClose} testID="picker-close">
                 {t('common.close')}
@@ -743,7 +743,7 @@ const styles = StyleSheet.create({
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   pickerSheet: { height: '92%', backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 16, paddingTop: 8, gap: 12, ...shadow.sh2 },
   grabBar: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line },
-  pickerBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, paddingBottom: 4, borderTopWidth: 1, borderTopColor: C.line },
+  pickerBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, // 하단 = 4 + bottomInset(인라인)
   pickerBottomClose: { flexShrink: 0, minWidth: 119 },
   pickerHeader: { alignItems: 'center', paddingVertical: 4 },
   pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },

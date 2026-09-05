@@ -21,6 +21,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
 import { IconPlus, IconSearch } from '@/components';
 import { KeyboardDismissBar } from '@/components/KeyboardDismissBar';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { Input } from '@/components/KeyboardDismissBar';
 import { useToggleReviewLike } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -155,6 +156,7 @@ export function PlacePickerSheet({
 }) {
   const [q, setQ] = React.useState('');
   const term = q.trim();
+  const bottomInset = useBottomInset(); // Codex #31: 푸터 하단 인셋
   const nearby = useQuery({ queryKey: ['places', 'nearby'], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
   const search = useQuery({ queryKey: ['places', 'search', term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
   const active = term ? search : nearby;
@@ -215,7 +217,7 @@ export function PlacePickerSheet({
             )}
           </ScrollView>
           {/* KB-432 §2-10(4150:16737): FixedBottom — outline "장소 없이 게시" + primary "Done" */}
-          <View style={styles.sheetBottom} testID="place-sheet-bottom">
+          <View style={[styles.sheetBottom, { paddingBottom: 8 + bottomInset }]} testID="place-sheet-bottom">
             <View style={styles.sheetBottomSkip}>
               <Btn variant="ghost" onPress={() => void close()} testID="place-skip">
                 {t('review.placeSkip')}
@@ -278,6 +280,16 @@ const EXTRA_AXES: { key: keyof ReviewExtras; labelKey: string; Icon: typeof Icon
   { key: 'service', labelKey: 'review.extrasService', Icon: IconSmile },
 ];
 
+/** Codex #31 P2: 세부 별 행 폭 적응 — 기본 32/16(=224pt)이 협폭(320 폰·편집 모달)에서
+ *  넘침: 가용폭에 맞춰 gap 축소(최소 8) → 그래도 넘치면 별 스케일 다운(시안 비율 유지). */
+export function fitExtrasStars(availW: number): { size: number; gap: number } {
+  const BASE = { size: 32, gap: 16 };
+  if (availW <= 0 || BASE.size * 5 + BASE.gap * 4 <= availW) return BASE;
+  const gap = Math.max(8, Math.floor((availW - BASE.size * 5) / 4));
+  if (BASE.size * 5 + gap * 4 <= availW) return { size: BASE.size, gap };
+  return { size: Math.max(16, Math.floor((availW - 8 * 4) / 5)), gap: 8 };
+}
+
 export function ExtrasRater({
   extras,
   onChange,
@@ -287,8 +299,10 @@ export function ExtrasRater({
   onChange: (next: ReviewExtras) => void;
   t: TFn;
 }) {
+  const [starW, setStarW] = React.useState(0);
   if (!FLAGS.reviewExtrasEnabled) return null;
   // KB-432 §2-4(4150:16482): 2행 mx39 gap18 — 라벨 13/500 + 수치 13/600 / 별 32 gap 16(빈 stroke 2)
+  const { size, gap } = fitExtrasStars(starW);
   return (
     <View style={styles.extrasBox} testID="review-extras">
       {EXTRA_AXES.map(({ key, labelKey }) => (
@@ -297,7 +311,11 @@ export function ExtrasRater({
             <Text style={styles.extrasLabel}>{t(labelKey)}</Text>
             {extras[key] != null && <Text style={styles.extrasValue}>{extras[key]}</Text>}
           </View>
-          <View style={{ flexDirection: 'row', gap: 16 }}>
+          <View
+            style={{ flexDirection: 'row', gap, flexShrink: 1 }}
+            onLayout={(e) => setStarW((cur) => (cur === 0 ? e.nativeEvent.layout.width : cur))}
+            testID={`extras-stars-${key}`}
+          >
             {[1, 2, 3, 4, 5].map((n) => (
               <Pressable
                 key={n}
@@ -305,7 +323,7 @@ export function ExtrasRater({
                 testID={`extras-${key}-${n}`}
                 onPress={() => onChange({ ...extras, [key]: extras[key] === n ? null : n })} // 재탭 = 해제
               >
-                <Star size={32} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />
+                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />
               </Pressable>
             ))}
           </View>
@@ -525,6 +543,6 @@ const styles = StyleSheet.create({
   resultSub: { fontSize: 13, fontWeight: '500', color: C.ink2, marginTop: 1 },
   noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },
   // §2-10 FixedBottom
-  sheetBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, paddingBottom: 8, borderTopWidth: 1, borderTopColor: C.line },
+  sheetBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, // 하단 = 8 + bottomInset(인라인)
   sheetBottomSkip: { flexShrink: 0, minWidth: 119 },
 });

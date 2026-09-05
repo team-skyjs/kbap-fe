@@ -96,7 +96,22 @@ it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사�
   expect(review).toContain('testID="review-bottom-bar"'); // FixedBottom primary Post
   expect(review).toContain('busy={posting}'); // P-173 공용 가드 문법(Btn busy)
   const parts = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
-  expect(parts).toContain('<Star size={32} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />');
+  expect(parts).toContain('<Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />');
+});
+
+it('③-b 세부 별 폭 적응(Codex #31 P2) — 협폭에서 gap 축소→별 스케일, overflow 0', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { fitExtrasStars } = require('@/features/review/ReviewCellParts') as typeof import('@/features/review/ReviewCellParts');
+  expect(fitExtrasStars(0)).toEqual({ size: 32, gap: 16 }); // 미측정 = 시안 기본
+  expect(fitExtrasStars(300)).toEqual({ size: 32, gap: 16 }); // 여유 = 기본
+  // 320 폰: extrasBox(mx39) 내 별 행 가용 ≈ 180 — gap 최소 8로도 초과 → 별 스케일 다운
+  for (const w of [224, 200, 180, 150]) {
+    const { size, gap } = fitExtrasStars(w);
+    expect(size * 5 + gap * 4).toBeLessThanOrEqual(w); // overflow 0
+    expect(gap).toBeGreaterThanOrEqual(8);
+  }
+  expect(fitExtrasStars(200).size).toBe(32); // gap 축소만으로 해결되는 구간
+  expect(fitExtrasStars(180).size).toBeLessThan(32); // 스케일 다운 구간(비율 유지)
 });
 
 it('④ 태그 시트 2종 — FixedBottom(Close/Done·장소 스킵/Done) + 안내 카드 시안값 소스 잠금', () => {

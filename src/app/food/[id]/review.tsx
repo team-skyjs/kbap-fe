@@ -25,6 +25,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
@@ -56,6 +57,7 @@ export default function ReviewCompose() {
   const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
+  const bottomInset = useBottomInset(); // Codex #31 P1: 안드 내비바 플로어 포함
 
   const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
@@ -237,6 +239,7 @@ export default function ReviewCompose() {
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
         <View
           style={styles.block}
+          testID="body-block"
           onLayout={(e) => { blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
         >
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
@@ -321,7 +324,7 @@ export default function ReviewCompose() {
 
       {/* §2-8: FixedBottom — primary "Post review" full-width. P-173 가드 = useSubmitGuard +
           Btn busy(공용 문법 — 메트릭 불변 스피너). */}
-      <View style={styles.bottomBar} testID="review-bottom-bar">
+      <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
         <Btn variant={canPost || posting ? 'primary' : 'off'} busy={posting} onPress={post} testID="post-review">
           {t('review.postReview')}
         </Btn>
@@ -398,7 +401,8 @@ const styles = StyleSheet.create({
   placePillText: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.ink },
   pillClear: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
   // §2-8: FixedBottom
-  bottomBar: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  // Codex #31 P1: 하단 = 10 + useBottomInset(인라인)
+  bottomBar: { paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
   postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
