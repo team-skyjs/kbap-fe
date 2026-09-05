@@ -163,8 +163,9 @@ export function StickyHeader({
             <IconArrowLeft size={20} color={C.ink} />
           </PressScale>
         ) : (
-          /* KB-430(AppBar Dropdown 4123:3609): 로고 마크 단독(primary) — 워드마크 록업 대체 */
-          <KbowlMark size={30} color={C.primary} />
+          /* KB-430(AppBar Dropdown 4123:3609): 로고 마크 단독(primary) — 워드마크 록업 대체.
+             9/5 시안 실측(4123:3613): 18.55×20 — 마크 높이 20 */
+          <KbowlMark size={20} color={C.primary} />
         )}
 
         {title != null && (
