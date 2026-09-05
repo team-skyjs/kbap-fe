@@ -251,8 +251,8 @@ it('P-160→P-180: 프로필 체크 줄 — ✓ 마크 부재·대문자 캡션�
   const s2 = flat(tree);
   expect(s2).not.toContain('scan.mayContain');
   // riskTone 배경 + 텍스트 색으로 danger/caution 구분(1줄 접기에서도 판별 가능)
-  expect(s2).toContain('"color":"#cf3a2c"'); // danger 톤
-  expect(s2).toContain('"color":"#d28a12"'); // caution 톤
+  expect(s2).toContain('"color":"#F76661"'); // danger 톤
+  expect(s2).toContain('"color":"#FFA526"'); // caution 톤
 });
 
 describe('P-223: 회피 칩 통합 — v2 서버 겹침 우선 / v1 조인 폴백', () => {

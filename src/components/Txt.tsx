@@ -22,11 +22,21 @@ const MAX_FONT_SCALE = 1.3;
 export function Txt({ style, maxFontSizeMultiplier = MAX_FONT_SCALE, ...rest }: TextProps) {
   const { script } = useLocale();
   const flat = StyleSheet.flatten(style) as TextStyle | undefined;
+  // KB-429(디자인 4차): 전역 자간 -1%(fontSize×-0.01) — 명시 letterSpacing이
+  // 있으면 존중. 전 화면이 Txt 경유라 여기 한 곳이 관통(시안 Pretendard -1%).
+  const ls =
+    flat?.letterSpacing !== undefined ? undefined : flat?.fontSize ? { letterSpacing: flat.fontSize * -0.01 } : undefined;
   const override = resolveFont(flat?.fontFamily, script);
-  if (!override) return <RNText style={style} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
+  if (!override && !ls) return <RNText style={style} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
   // fontFamily를 undefined로 덮어쓸 수 없으므로(flatten이 뒤 값을 채택) 키를 제거한다
   const { fontFamily: _drop, ...restStyle } = flat ?? {};
-  return <RNText style={[restStyle, override]} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
+  return (
+    <RNText
+      style={[override ? restStyle : flat, ls, override ?? undefined]}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
+      {...rest}
+    />
+  );
 }
 
 export default Txt;

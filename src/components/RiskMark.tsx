@@ -1,11 +1,10 @@
 /**
  * RiskMark — the fixed 4-state risk badge (Constitution III, NON-NEGOTIABLE).
- * Each state = unique SILHOUETTE (colorblind-safe) + unique GLYPH + fixed color:
- *   safe = circle + check       (#2f8f5b)
- *   caution = triangle + !       (#d28a12)
- *   danger = octagon + ✕         (#cf3a2c)
- *   unable = diamond + ?         (#5b6470)
- * Ported 1:1 from mockup icons.jsx. NEVER recolor/reshape these.
+ * KB-429(디자인 4차, 4064:789 — 커맨드 센터 헌법 게이트 판단): 실루엣은 4상태
+ * **원형 통일**, 색맹 안전의 "형태 구분"은 **글리프 상이**가 담당:
+ *   safe = ✓ · danger = ✕ · caution = ! · unable = ?  (+ 고정 색)
+ * 글리프·색 페어링은 불변 — 리컬러/글리프 교차 금지. 색맹 시뮬 스냅샷 =
+ * docs/design/riskmark-colorblind.svg (PR 첨부분).
  */
 import * as React from 'react';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
@@ -20,23 +19,15 @@ export const RISK: Record<RiskState, { color: string }> = {
   unable: { color: C.riskUnable },
 };
 
-function Silhouette({ state }: { state: RiskState }) {
-  switch (state) {
-    case 'safe':
-      return <Circle cx="12" cy="12" r="10.2" />;
-    case 'caution':
-      return <Path d="M12 2.6 L22 20 H2 Z" />;
-    case 'danger':
-      return <Path d="M8.2 2.5 H15.8 L21.5 8.2 V15.8 L15.8 21.5 H8.2 L2.5 15.8 V8.2 Z" />;
-    case 'unable':
-      return <Path d="M12 1.8 L22.2 12 L12 22.2 L1.8 12 Z" />;
-  }
+function Silhouette(_props: { state: RiskState }) {
+  // KB-429: 4상태 전부 원형(4064:789) — 상태 구분은 글리프(✓ ✕ ! ?)와 색.
+  return <Circle cx="12" cy="12" r="10.2" />;
 }
 
 function GlyphInner({ state, stroke }: { state: RiskState; stroke: string }) {
   switch (state) {
     case 'safe':
-      return <Path d="M7.5 12.4 l3 3 L16.6 8.8" fill="none" stroke={stroke} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />;
+      return <Path d="M7.5 12.4 l3 3 L16.6 8.8" fill="none" stroke={stroke} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />;
     case 'caution':
       return (
         <G stroke={stroke} strokeWidth={2.4} strokeLinecap="round">

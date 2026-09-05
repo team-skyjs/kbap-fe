@@ -268,13 +268,13 @@ it('P-148/151: 타국 선택 시 핀 카드 색 강조만 해제 — 프레임 �
   const pin = () => tree.root.findAll((n) => n.props?.testID === 'nat-US')[0];
   const selectedStyle = flat2(pin().props.style);
   // 선택 상태 — 주황 보더·틴트 존재
-  expect(selectedStyle.borderColor).toBe('#E2580C');
+  expect(selectedStyle.borderColor).toBe('#FF7134');
   // 타국(JP) 선택 → 색 강조만 소멸(투명 보더 동폭), 메트릭은 픽셀 동일 (P-103)
   const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
   await act(async () => { jp.props.onPress(); });
   const unselectedStyle = flat2(pin().props.style);
   expect(unselectedStyle.borderColor).toBe('transparent'); // 색만 소멸 — 폭은 유지
-  expect(String(unselectedStyle.backgroundColor ?? '')).not.toContain('rgba(226,88,12');
+  expect(String(unselectedStyle.backgroundColor ?? '')).not.toContain('rgba(255,113,52');
   expect(metrics(unselectedStyle)).toEqual(metrics(selectedStyle)); // 8pt 밀림 봉쇄
   expect(unselectedStyle.minHeight).toBe(70);
   expect(unselectedStyle.borderWidth).toBe(1.5);
@@ -298,8 +298,8 @@ it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴
   await act(async () => { jp.props.onPress(); });
   const after = jpStyle();
   // 선택 = 핀 카드와 동일 색 강조, 메트릭(높이·보더 폭·라운딩) 픽셀 동일
-  expect(after.borderColor).toBe('#E2580C');
-  expect(String(after.backgroundColor)).toContain('rgba(226,88,12');
+  expect(after.borderColor).toBe('#FF7134');
+  expect(String(after.backgroundColor)).toContain('rgba(255,113,52');
   expect(after.minHeight).toBe(before.minHeight);
   expect(after.borderWidth).toBe(before.borderWidth);
   expect(after.borderRadius).toBe(before.borderRadius);

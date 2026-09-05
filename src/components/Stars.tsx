@@ -8,8 +8,12 @@ import Svg, { ClipPath, Defs, Path, Rect } from 'react-native-svg';
 import { color as C, font } from '@/lib/theme';
 import { Txt } from './Txt';
 
-/** P-168 ④: 빈 별 아웃라인 = 채움 주황의 옅은 톤(쿠팡 문법) — 갈/검정 아웃라인 과함. */
-export const STAR_EMPTY = 'rgba(226,88,12,0.4)';
+/** KB-429(4095:1561/1582): 빈 별 = #EAEBEE + stroke #DCDEE3 1px. */
+export const STAR_EMPTY = '#DCDEE3';
+/** KB-429: 채움 별 = #FFED47 + stroke #F4D27D 1px. */
+export const STAR_FILL = '#FFED47';
+const STAR_FILL_STROKE = '#F4D27D';
+const STAR_EMPTY_FILL = '#EAEBEE';
 
 const STAR_D =
   'M12 2.6 l2.7 5.95 6.5.62 -4.9 4.32 1.45 6.36 L12 16.9 l-5.75 3.55 1.45 -6.36 -4.9 -4.32 6.5 -.62 Z';
@@ -17,7 +21,7 @@ const STAR_D =
 export function Star({
   size = 20,
   fillPct = 100,
-  fillColor = C.ink,
+  fillColor = STAR_FILL, // KB-429
   emptyColor = STAR_EMPTY,
 }: {
   size?: number;
@@ -34,8 +38,8 @@ export function Star({
           <Rect x="0" y="0" width={(24 * fillPct) / 100} height="24" />
         </ClipPath>
       </Defs>
-      <Path d={STAR_D} fill="none" stroke={emptyColor} strokeWidth={1.6} strokeLinejoin="round" />
-      <Path d={STAR_D} fill={fillColor} clipPath={`url(#${id})`} />
+      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={1} strokeLinejoin="round" />
+      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={1} strokeLinejoin="round" clipPath={`url(#${id})`} />
     </Svg>
   );
 }
@@ -44,7 +48,7 @@ export function Star({
 export function Stars({
   value,
   size = 16,
-  color = C.primary,
+  color = STAR_FILL, // KB-429
 }: {
   value: number;
   size?: number;

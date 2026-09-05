@@ -81,7 +81,8 @@
     "food": "Comida",
     "scan": "Escanear",
     "community": "Reseñas",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "reviews": "Reseñas"
   },
   "food": {
     "title": "Explorar comida",

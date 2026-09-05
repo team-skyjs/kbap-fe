@@ -81,7 +81,8 @@
     "food": "Блюда",
     "scan": "Скан",
     "community": "Отзывы",
-    "profile": "Профиль"
+    "profile": "Профиль",
+    "reviews": "Отзывы"
   },
   "food": {
     "title": "Выбор блюд",

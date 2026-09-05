@@ -21,3 +21,9 @@ export { KeyboardDismissBar, Input, KEYBOARD_ACCESSORY_ID } from './KeyboardDism
 // SocialAuthButtons is intentionally NOT re-exported here: it pulls native-only
 // Firebase/google-signin modules (KB-109) — import it directly from
 // '@/components/SocialAuthButtons' so only auth screens carry that weight.
+// KB-429 디자인 4차 프리미티브
+export { RiskBadge } from './RiskBadge';
+export { Chip } from './Chip';
+export { SectionHead } from './SectionHead';
+export { Checkbox, Radio } from './Choice';
+export { RankMedal } from './RankMedal';

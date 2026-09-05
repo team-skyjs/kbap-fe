@@ -45,9 +45,12 @@ function contrast(hexA: string, hexB: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-describe('대비 (A1) — 소형 텍스트 토큰은 카드(white) 위 4.5:1 이상', () => {
-  it('ink3 ≥ 4.5:1 on card', () => {
-    expect(contrast(color.ink3, color.card)).toBeGreaterThanOrEqual(4.5);
+describe('대비 (A1→KB-429) — 소형 텍스트 토큰 카드(white) 대비', () => {
+  // ⚠️ KB-429: 시안이 ink3=#9196A1(2.97:1)을 12px 섹션 라벨에 지정 — P-031의
+  // 4.5:1 계약과 충돌(시안값 우선, 예진 육안 게이트 — REPORTS [P-274] 기재).
+  // 여기선 시안값 잠금으로 전환, 대비 회귀는 primaryText·ink2가 담당.
+  it('ink3 = 시안값 잠금(#9196A1 — 대비 2.97:1, 예진 게이트 항목)', () => {
+    expect(color.ink3).toBe('#9196A1');
   });
   it('primaryText ≥ 4.5:1 on card (소형 주황 링크/라벨용)', () => {
     expect(contrast(color.primaryText, color.card)).toBeGreaterThanOrEqual(4.5);
@@ -57,12 +60,12 @@ describe('대비 (A1) — 소형 텍스트 토큰은 카드(white) 위 4.5:1 이
   });
 });
 
-describe('위험도 4색 불변 (헌법 III) — P-031 대비 작업이 건드리면 안 됨', () => {
+describe('위험도 4색 불변 (헌법 III) — KB-429 시안 4차 값으로 갱신·재잠금', () => {
   it('safe/caution/danger/unable 고정 hex 유지', () => {
-    expect(color.riskSafe).toBe('#2f8f5b');
-    expect(color.riskCaution).toBe('#d28a12');
-    expect(color.riskDanger).toBe('#cf3a2c');
-    expect(color.riskUnable).toBe('#5b6470');
+    expect(color.riskSafe).toBe('#00BE65');
+    expect(color.riskCaution).toBe('#FFA526');
+    expect(color.riskDanger).toBe('#F76661');
+    expect(color.riskUnable).toBe('#B1B5BD');
   });
 });
 

@@ -9,7 +9,7 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
 import { PRESS_SCALE, spring } from '@/lib/motion';
 
-export type BtnVariant = 'primary' | 'ghost' | 'off' | 'danger' | 'dangerGhost';
+export type BtnVariant = 'primary' | 'ghost' | 'off' | 'secondary' | 'danger' | 'dangerGhost';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -95,8 +95,10 @@ const styles = StyleSheet.create({
     // device (web was fine). Element-inspector confirmed. alignSelf:stretch
     // gives the same full width without tripping that path.
     alignSelf: 'stretch',
-    borderRadius: 14,
-    paddingVertical: 14,
+    // KB-429(4123:3985): h48 · radius xs(4) · pad 10
+    minHeight: 48,
+    borderRadius: 4,
+    paddingVertical: 10,
     paddingHorizontal: 14,
   },
   // inner row: shrink-wraps icon+label; spacing via labelGap (marginLeft).
@@ -107,47 +109,60 @@ const styles = StyleSheet.create({
   inner: { flexDirection: 'row', alignItems: 'center' },
   innerHidden: { opacity: 0 },
   busyFill: { alignItems: 'center', justifyContent: 'center' },
+  // KB-429(btn/review 4123:3696): h30 · pad 7/13 · radius 4 · line 보더 + sh1
   sm: {
-    paddingVertical: 11,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    minHeight: 30,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: 4,
     width: 'auto',
+    borderWidth: 1,
+    borderColor: C.line,
+    ...shadow.sh1,
     // ⚠️ P-159 함정: 의도적 좌측 정렬 기본(인라인 액션용) — 센터 맥락(빈 상태 등)에선
     // 부모 alignItems를 오버라이드하니 호출측에서 style alignSelf:'center' 명시할 것.
     alignSelf: 'flex-start',
   },
-  label: { fontFamily: font.display, fontSize: 16, color: '#fff' },
-  labelSm: { fontSize: 14.5 },
+  label: { fontFamily: font.bodySemi, fontSize: 15, color: '#fff' }, // 15/600
+  labelSm: { fontSize: 12, fontWeight: '500' }, // 12/500
   labelGap: { marginLeft: 9 },
 });
 
 const VARIANTS: Record<
   BtnVariant,
-  { container: ViewStyle; pressed: ViewStyle; label: { color: string } }
+  { container: ViewStyle; pressed: ViewStyle; label: { color: string } & import('react-native').TextStyle }
 > = {
   primary: {
-    container: { backgroundColor: C.primary, ...shadow.sh2 },
+    container: { backgroundColor: C.primary },
     pressed: { backgroundColor: C.primaryPress },
     label: { color: '#fff' },
   },
+  // KB-429(4123:3640): 흰 bg + line2 1px + ink 14/500
   ghost: {
-    container: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, ...shadow.sh1 },
+    container: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line2 },
     pressed: { backgroundColor: C.surface2 },
-    label: { color: C.ink },
+    label: { color: C.ink, fontSize: 14, fontWeight: '500' as const },
   },
+  // KB-429(4123:3997): disabled — bg line(#EAEBEE) / 텍스트 inkDisabled
   off: {
-    container: { backgroundColor: C.surface2 },
+    container: { backgroundColor: C.line },
     pressed: {},
-    label: { color: C.ink3 },
+    label: { color: C.inkDisabled },
+  },
+  // KB-429(4123:4002): Alert 취소 등 — bg inkMute + 흰 텍스트
+  secondary: {
+    container: { backgroundColor: C.inkMute },
+    pressed: { backgroundColor: '#9EA3AC' },
+    label: { color: '#fff' },
   },
   danger: {
-    container: { backgroundColor: C.riskDanger, ...shadow.sh2 },
-    pressed: { backgroundColor: '#b5301f' },
+    container: { backgroundColor: C.riskDanger },
+    pressed: { backgroundColor: '#d94f4a' },
     label: { color: '#fff' },
   },
   // P-175: destructive 확인 행 — ghost와 같은 버튼 프레임(보더+라운딩+패딩), 색만 destructive
   dangerGhost: {
-    container: { backgroundColor: C.card, borderWidth: 1.5, borderColor: 'rgba(207,58,44,0.45)', ...shadow.sh1 },
+    container: { backgroundColor: C.card, borderWidth: 1, borderColor: 'rgba(247,102,97,0.5)', ...shadow.sh1 },
     pressed: { backgroundColor: 'rgba(207,58,44,0.06)' },
     label: { color: C.riskDanger },
   },

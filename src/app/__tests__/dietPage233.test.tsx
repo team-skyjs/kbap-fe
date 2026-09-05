@@ -89,9 +89,9 @@ it('P-243: 프리셀렉트 = me.dietCategories(서버 정본) — 역추론 아�
   mockUseMe.mockReturnValue(ME([...VEGAN, ...NO_ALCOHOL], ['NO_ALCOHOL']));
   const tree = render();
   const on = tree.root.findAll((n) => n.props?.testID === 'dietpage-NO_ALCOHOL')[0];
-  expect(JSON.stringify(on.props.style)).toContain('"borderColor":"#E2580C"'); // 활성 톤
+  expect(JSON.stringify(on.props.style)).toContain('"borderColor":"#FF7134"'); // 활성 톤
   const off = tree.root.findAll((n) => n.props?.testID === 'dietpage-VEGAN')[0];
-  expect(JSON.stringify(off.props.style)).not.toContain('"borderColor":"#E2580C"');
+  expect(JSON.stringify(off.props.style)).not.toContain('"borderColor":"#FF7134"');
 });
 
 it('추가 저장 = dietCategories 풀 셋 + 신규분 합집합 회피 — 한 PATCH → 사후 모달 → Yes = 회피 편집', async () => {

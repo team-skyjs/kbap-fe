@@ -81,7 +81,8 @@
     "food": "อาหาร",
     "scan": "สแกน",
     "community": "รีวิว",
-    "profile": "โปรไฟล์"
+    "profile": "โปรไฟล์",
+    "reviews": "รีวิว"
   },
   "food": {
     "title": "สำรวจอาหาร",

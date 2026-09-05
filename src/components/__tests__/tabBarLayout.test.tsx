@@ -13,7 +13,7 @@ jest.mock('react-native-safe-area-context', () => ({
 
 import { TabBar, TABBAR_CONTENT_H, TABBAR_V_SHIFT, FAB_OVERHANG } from '../TabBar';
 
-const LABELS = { home: 'H', food: 'F', scan: 'S', community: 'C', profile: 'P' };
+const LABELS = { home: 'H', food: 'F', scan: 'S', reviews: 'R', profile: 'P' }; // KB-429: reviews 슬롯
 const flat = (s: unknown) => StyleSheet.flatten(s) as Record<string, unknown>;
 
 function render(): ReactTestRenderer {
@@ -28,7 +28,7 @@ it('바 직계 자식 = 5슬롯 전부 flex:1 — 래퍼 없음(균등 분배 �
   const tree = render();
   const bar = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderTopWidth != null)[0];
   const slots = bar.children.filter((c) => typeof c !== 'string');
-  expect(slots).toHaveLength(5); // home·food·FAB·community·profile — 묶음 래퍼면 3이 된다
+  expect(slots).toHaveLength(5); // home·food·FAB·reviews·profile — 묶음 래퍼면 3이 된다
   for (const slot of slots) {
     // 컴포지트(Tab)는 호스트 루트로 내려가 flex 확인 — 어느 슬롯도 묶음 래퍼(비 flex:1) 금지
     const el = slot as { type: unknown; props: { style?: unknown }; children: unknown[] };
@@ -45,18 +45,18 @@ it('P-128: 바 높이 = 플랫폼 상수(iOS 49)+세이프에어리어 — FAB �
   expect(st.height).toBe(TABBAR_CONTENT_H + 10);
   expect(TABBAR_CONTENT_H).toBe(49); // iOS HIG 공식(P-146 재확인 — 안드는 M3 80)
   // FAB = 절대 배치(레이아웃 흐름 밖) — 바 높이를 견인하지 않는다
-  const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 28)[0];
+  const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 26)[0] // KB-429: FAB 52(반지름 26);
   expect(flat(fab.props.style).position).toBe('absolute');
 });
 
-it('P-146: 콘텐츠 존 시각 센터 보정 — 존 높이 불변(하향 시프트) + FAB 돌출 24', () => {
+it('P-146: 콘텐츠 존 시각 센터 보정 — 존 높이 불변(하향 시프트) + FAB 돌출 22(KB-429)', () => {
   const tree = render();
   const bar = tree.root.findAll((n) => n.type === 'View' && flat(n.props.style)?.borderTopWidth != null)[0];
   const st = flat(bar.props.style);
   // 존 높이 = height − paddingTop − paddingBottom = CONTENT_H (시프트가 존을 줄이지 않는다)
   expect((st.height as number) - (st.paddingTop as number) - (st.paddingBottom as number)).toBe(TABBAR_CONTENT_H);
   expect(st.paddingTop).toBe(TABBAR_V_SHIFT); // iOS 6pt 하향(예진 "위로 몰림" 보정)
-  const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 28)[0];
+  const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 26)[0] // KB-429: FAB 52(반지름 26);
   expect(flat(fab.props.style).top).toBe(-FAB_OVERHANG);
-  expect(FAB_OVERHANG).toBe(24); // 전 30 → 24 완화
+  expect(FAB_OVERHANG).toBe(22); // KB-429: 24 → 22(시안)
 });

@@ -77,7 +77,8 @@
     "food": "Food",
     "scan": "Scan",
     "community": "Reviews",
-    "profile": "Profile"
+    "profile": "Profile",
+    "reviews": "Reviews"
   },
   "food": {
     "title": "Explore food",
