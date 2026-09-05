@@ -223,6 +223,18 @@ it('KB-433 §2: 로그인 콜라주 — 정적(애니메이션 배선 0) + 12장
   expect(src).toContain('<Wordmark height={46} />'); // 워드마크 144×46
 });
 
+it('KB-433(Codex #32 P2): 콜라주 = 레이아웃 플로우 고정 높이 — 소형 기기 겹침 0', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { collageHeight } = require('@/lib/loginCollage') as typeof import('@/lib/loginCollage');
+  expect(collageHeight(812)).toBe(430); // 시안 기준 프레임
+  expect(collageHeight(667)).toBe(353); // 비례 축소 — welcome/버튼은 플로우로 아래 배치(비중첩)
+  expect(collageHeight(400)).toBe(220); // 최소 플로어
+  const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
+  // 절대 배치 소멸 — 콜라주 컨테이너는 플로우 소속(overflow hidden)
+  expect(src).toContain("collage: { overflow: 'hidden' }");
+  expect(src).toContain('<Collage height={collageHeight(winH)} />');
+});
+
 /* ---- P-133 → KB-433 §4-①: 국적 화면 시안 정합 ---- */
 it('KB-433: 추천 행(pad16 r8) + 2열 그리드 타일·검색 시 핀 숨김·모국어=영어 생략 규칙', async () => {
   mockDraft = { consented: true, step: 'nationality', nickname: '', nationality: 'US', language: 'en', restrictions: [], spice: 'MEDIUM', updatedAt: '' };
