@@ -46,11 +46,15 @@ export default function Community() {
   const [placeSheet, setPlaceSheet] = React.useState<CommunityPost | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
 
-  // P-113(KB-280, Q-27 반려): prod 채널 = 탭 유지 + coming-soon 플레이스홀더
-  // (P-110의 빈 화면 가드 대체 — 원조 잠금 화면 870a942 재사용, 카피만 스토어 톤)
+  // KB-436 핫픽스: 게이트 순서 교정 — 리뷰 피드가 살아 있으면(reviewsLiveEnabled,
+  // KB-403으로 전 채널 신계약) communityEnabled(글 기능 채널 게이트)와 무관하게
+  // ReviewFeed. 구 순서는 prod(communityEnabled=false)에서 탭 전체가 ComingSoon으로
+  // 잠기는 회귀(P-113 가드가 P-179 리뷰 피드 분기를 선점).
+  if (FLAGS.reviewsLiveEnabled && !FLAGS.communityPostsEnabled) return <ReviewFeed />;
+  // P-113(KB-280, Q-27 반려): 리뷰 계열 off + prod 채널 = 탭 유지 + coming-soon
+  // 플레이스홀더(원조 잠금 화면 870a942 재사용, 카피만 스토어 톤)
   if (!FLAGS.communityEnabled) return <ComingSoon t={t} />;
-  // P-179: 탭 = 전역 리뷰 피드(⚠️ 반드시 coming-soon 가드 **뒤** — prod는 버전리스
-  // /api/reviews 미배포라 현행 유지). 글 기능은 보존형 플래그 뒤(코드 무삭제).
+  // P-179: 글 기능은 보존형 플래그 뒤(코드 무삭제).
   if (!FLAGS.communityPostsEnabled) return <ReviewFeed />;
 
   const pages = feed.data?.pages ?? [];

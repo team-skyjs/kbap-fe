@@ -159,16 +159,18 @@ it('P-181 ③: 헤더 장식 벨 부재(피드·구 글 피드 소스 모두)', 
   expect(tab.includes('<IconBell')).toBe(false);
 });
 
-it('소스 잠금 — 글 기능 보존형 플래그·리뷰 피드 분기는 coming-soon 가드 뒤(prod 무변)', () => {
+it('소스 잠금(KB-436 재잠금) — 리뷰 생존 분기가 coming-soon 가드보다 먼저(prod 리뷰 탭 개방)', () => {
   const fs = require('fs');
   const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;
   expect(flags).toContain('communityPostsEnabled: false');
   const tab = fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8') as string;
+  // KB-436: 구 순서(채널 가드 선행)는 prod에서 리뷰 탭 전체가 ComingSoon으로 잠기는
+  // 회귀(b22 실기) — reviewsLiveEnabled 분기가 반드시 가드 앞.
+  const liveIdx = tab.indexOf('FLAGS.reviewsLiveEnabled && !FLAGS.communityPostsEnabled) return <ReviewFeed');
   const guardIdx = tab.indexOf('FLAGS.communityEnabled) return <ComingSoon');
-  const feedIdx = tab.indexOf('FLAGS.communityPostsEnabled) return <ReviewFeed');
-  expect(guardIdx).toBeGreaterThan(-1);
-  expect(feedIdx).toBeGreaterThan(guardIdx); // 채널 가드가 먼저 — prod coming-soon 유지
-  expect(tab).toContain('PostCard'); // 글 피드 코드 보존
+  expect(liveIdx).toBeGreaterThan(-1);
+  expect(guardIdx).toBeGreaterThan(liveIdx);
+  expect(tab).toContain('PostCard'); // 글 피드 코드 보존(플래그 뒤 무삭제)
 });
 
 describe('P-194: 당겨서 새로고침 + 포커스 stale 재조회', () => {
