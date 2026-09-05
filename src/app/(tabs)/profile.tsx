@@ -133,7 +133,11 @@ export default function Profile() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!isGuest}
+        // Codex #40 P2: 스크롤 잠금은 짧은 뷰포트(멀티윈도우)에서 약관·Browse first 도달 불가 —
+        // 스크롤은 살리고 튕김만 끔(콜라주 전면 배경에서 바운스가 어색한 것이 원 목적)
+        bounces={!isGuest}
+        alwaysBounceVertical={!isGuest}
+        overScrollMode={isGuest ? 'never' : 'auto'}
         contentContainerStyle={{ paddingTop: isGuest ? 0 : headerH, paddingBottom: isGuest ? 0 : 110 }}
       >
         {isGuest ? (
