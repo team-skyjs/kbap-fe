@@ -199,11 +199,12 @@ export default function FoodReviews() {
                 같은 국적 필터에 매핑(전용 KR 파라미터 아님 — 카피는 현 키). */}
             <View style={styles.controlRow}>
               {!isGuest ? (
+                /* 9/5 예진 판정(Q12): 라벨 = "{국가코드} only"(reviews.countryOnly) — 필터 의미는
+                   현 같은 국적 리뷰(서버 countryCode 파라미터) 그대로 */
                 <Pressable style={styles.filterToggle} onPress={() => setSameNatOnly((v) => !v)} testID="same-nat-toggle">
                   <Switch on={sameNatOnly} />
-                  <Flag code={nationality} size={14} />
                   <Text style={styles.filterLbl} numberOfLines={1}>
-                    {t('reviews.sameNationalityOnly', { country: nationality })}
+                    {t('reviews.countryOnly', { code: nationality })}
                   </Text>
                 </Pressable>
               ) : (

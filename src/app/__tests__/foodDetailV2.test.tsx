@@ -242,8 +242,9 @@ it('P-169→KB-431: 리뷰 브리프 — 프리뷰 3 제한(D-2 카드)·같은 
   expect(s).toContain('Great and safe for me');
   expect(s).toContain('Third now renders');
   expect(s).not.toContain('Fourth');
-  // 같은 국적 병기 보조 줄(차별점 — 보수 유지)
-  expect(byId(tree, 'same-nat-line').length).toBeGreaterThanOrEqual(1);
+  // 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거 — 대신 "{국가} only" 토글(Q12)
+  expect(byId(tree, 'same-nat-line').length).toBe(0);
+  expect(byId(tree, 'detail-nat-toggle').length).toBeGreaterThanOrEqual(1);
   expect(s).not.toContain('detail.allUsers');
   // 전체보기 풀폭(고스트 Btn) + FixedBottom Write a review
   expect(s).toContain('detail.readAll');
@@ -442,7 +443,7 @@ it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () =>
   const s = flat(tree);
   const solidCount = (s.match(/"backgroundColor":"#FF7134"/g) ?? []).length;
   expect(s).toContain('detail.askOwner');
-  expect(solidCount).toBe(1); // Ask the owner 하나만 솔리드 주황
+  expect(solidCount).toBe(2); // Ask the owner + NEW 배지(Q4 상시) — 버튼 솔리드는 1개
   void btnLabels;
 });
 

@@ -446,7 +446,8 @@
     "sort_helpful": "役に立った順",
     "ratingAll": "すべての評価",
     "ratingMin": "{{min}}点以上",
-    "filterByProfile": "プロフィールで絞り込み"
+    "filterByProfile": "プロフィールで絞り込み",
+    "countryOnly": "{{code}}のみ"
   },
   "ranking": {
     "headerTitle": "マイランキング",

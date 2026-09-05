@@ -144,8 +144,8 @@ it('③④ 소스 잠금 — 팝업 승인 시에만 합집합(unionResolvedCode
   expect(rest).toContain("presetsParam === '1'"); // 프로필 식이 Edit = 시트 자동 오픈
   const peppers = fs.readFileSync('src/components/SpicePeppers.tsx', 'utf8') as string;
   // KB-431: 이모지 → SVG 2색 고추 — 5개 상시 프레임 + 미달분 회색 변형(자리 유지 불변)
-  expect(peppers).toContain('i <= rank ? ON : OFF');
-  expect(peppers).toContain('IconPepper');
+  expect(peppers).toContain('i <= rank ? <PepperOn'); // 시안 SVG on/off 스왑
+  expect(peppers).toContain("from './design4Assets'");
   expect(peppers).not.toContain('\u{1F336}'); // 🌶️ 이모지 소멸(헌법)
   expect(fs.readFileSync('src/app/profile/edit.tsx', 'utf8')).toContain('<SpicePeppers rank={spiceRank(spice)} />');
 });

@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
-import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, Flag, Btn, IconChevron, IconSpeech } from '@/components';
+import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { RemoteImage } from '@/components/RemoteImage';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
@@ -304,6 +304,9 @@ function Registered({
   const hasInline = food.recentReviews !== undefined;
   const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled && !hasInline ? id : '');
   const previewReviews = (hasInline ? food.recentReviews! : (reviewsQ.data?.pages[0]?.items ?? [])).slice(0, REVIEW_PREVIEW_N);
+  // Q12: "{국가} only" 클라 필터 — 프리뷰 소스엔 서버 파라미터가 없어 작성자 국적으로 필터
+  const [natOnly, setNatOnly] = useState(false);
+  const shownPreviews = natOnly ? previewReviews.filter((r) => r.authorNationality === nationality) : previewReviews;
   const deleteReview = useDeleteReview();
   const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
@@ -369,7 +372,13 @@ function Registered({
               {spicyForYou && <Text style={styles.spiceWarn}>{t('detail.spiceAboveYou')}</Text>}
             </View>
           )}
-          <Text style={styles.name}>{food.name}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{food.name}</Text>
+            {/* 9/5 예진 판정(Q4): NEW 배지 항상 표시 — 신규 등록 판별 데이터는 BE TODO */}
+            <View style={styles.newBadge} testID="detail-new-badge">
+              <Text style={styles.newBadgeText}>{t('inbox.newBadge')}</Text>
+            </View>
+          </View>
           {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
           {!!food.description && <Text style={styles.desc}>{food.description}</Text>}
           {/* P-012(KB-179): 스캔한 메뉴판의 가격 — 스캔 진입 param에만 존재 */}
@@ -478,23 +487,23 @@ function Registered({
           <View style={styles.thickDivider} />
           <View style={styles.rvHead}>
             <Stars value={food.overall.average ?? 0} size={16} />
-            <Text style={styles.rvHeadScore}>
+            <Text style={[styles.rvHeadScore, { flex: 1 }]}>
               {food.overall.average?.toFixed(1) ?? '—'} ({food.overall.count})
             </Text>
-            {/* "KR only" 토글(시안): 프리뷰 소스(인라인 recentReviews)에 국가 필터 파라미터
-                없음 — 숨김(REPORTS). 전체 필터는 리뷰 화면(§2) 토글이 담당. */}
+            {/* 9/5 예진 판정(Q12): "{국가} only" 토글 — 프리뷰는 클라 필터(작성자 국적 =
+                뷰어 국적). 게스트 = 국적 미상이라 미노출(P-235 컨벤션). */}
+            {!guest && (
+              <Pressable style={styles.natToggleRow} onPress={() => setNatOnly((v) => !v)} testID="detail-nat-toggle">
+                <View style={[styles.sw, natOnly && styles.swOn]}>
+                  <View style={[styles.knob, natOnly && styles.knobOn]} />
+                </View>
+                <Text style={styles.natToggleLabel}>{t('reviews.countryOnly', { code: nationality })}</Text>
+              </Pressable>
+            )}
           </View>
-          {/* 같은 국적 병기(P-169 차별점) — 시안 무언급, 보수 유지 */}
-          <Pressable style={styles.rvSameNat} onPress={() => router.push(`/food/${id}/reviews` as Href)} hitSlop={6} testID="same-nat-line">
-            <Flag code={nationality} size={13} />
-            <Text style={styles.rvSameNatText}>{t('detail.sameNationality')}</Text>
-            <Star size={12} fillPct={100} />
-            <Text style={styles.rvSameNatText}>
-              {food.sameNationality.average?.toFixed(1) ?? '—'} ({food.sameNationality.count})
-            </Text>
-          </Pressable>
+          {/* 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거(시안 부재) */}
 
-          {previewReviews.map((r) => (
+          {shownPreviews.map((r) => (
             <FeedCard
               key={r.id}
               review={r}
@@ -648,7 +657,11 @@ const styles = StyleSheet.create({
   spiceChip: { backgroundColor: '#F2F3F6', borderRadius: 4, paddingVertical: 1, paddingHorizontal: 5 },
   spiceChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
   spiceWarn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
-  name: { fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
+  // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
+  newBadge: { height: 18, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  newBadgeText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   ko: { fontSize: 14, fontWeight: '400', color: INK_TITLE },
   desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
   scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },
@@ -689,8 +702,13 @@ const styles = StyleSheet.create({
   reviewSec: { gap: 14, paddingBottom: 8 },
   rvHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 20 },
   rvHeadScore: { fontSize: 13, fontWeight: '600', color: C.ink },
-  rvSameNat: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 20, paddingTop: 6 },
-  rvSameNatText: { fontSize: 12.5, fontWeight: '500', color: C.ink2 },
+  // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
+  natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
+  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  swOn: { backgroundColor: C.primary },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knobOn: { alignSelf: 'flex-end' },
   rvBeFirst: { fontSize: 14, fontWeight: '600', color: C.ink2, textAlign: 'center', paddingTop: 16 },
   rvMore: { paddingHorizontal: 20, paddingTop: 16 },
 

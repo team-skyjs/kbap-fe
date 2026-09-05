@@ -26,6 +26,7 @@ import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations'
 import { TagPickerSheet } from '@/app/community/compose';
 import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { FeedCard } from '@/features/review/FeedCard';
+import { IlloSpeechBubble } from '@/components/design4Assets';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
 import { useUnreadCount } from '@/lib/notifications/inbox';
@@ -38,6 +39,10 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
 const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'];
+// Q1(9/5)·KB-435: GET /api/members/me/profile(MyProfileResponse)에 scanCount·
+// freeScanLimit·scanUnlocked·scanRemaining 추가 예정(BE PR #234) — prod 배포 후
+// `me.scanUnlocked === false && me.scanRemaining === 0`으로 교체(그 전까지 숨김).
+const SHOW_QUOTA_NUDGE = false;
 
 export function ReviewFeed() {
   const router = useRouter();
@@ -97,18 +102,31 @@ export function ReviewFeed() {
       <Animated.FlatList
         ListHeaderComponent={
           (
-            /* KB-430 §2-2: 컨트롤 행 — 좌 프로필 토글(4150:17070 — 무동작) / 우 정렬 드롭다운 */
-            <View style={styles.controlRow}>
-              <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
-                <View style={[styles.sw, profileFilter && styles.swOn]}>
-                  <View style={[styles.knob, profileFilter && styles.knobOn]} />
+            <View>
+              {/* KB-430 §2-2: 컨트롤 행 — 좌 프로필 토글(4150:17070 — 무동작) / 우 정렬 드롭다운 */}
+              <View style={styles.controlRow}>
+                <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
+                  <View style={[styles.sw, profileFilter && styles.swOn]}>
+                    <View style={[styles.knob, profileFilter && styles.knobOn]} />
+                  </View>
+                  <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+                </Pressable>
+                <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
+                  <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
+                  <IconChevronDown size={16} color="#4B4F58" />
+                </Pressable>
+              </View>
+              {/* 9/5 예진 판정(Q1)·KB-435: 쿼터 넛지 카드(4150:17089) — 구현해두고 숨김.
+                  배선 지점: 위 SHOW_QUOTA_NUDGE (profile 응답 scanUnlocked/scanRemaining). */}
+              {SHOW_QUOTA_NUDGE && (
+                <View style={styles.nudge} testID="quota-nudge">
+                  <IlloSpeechBubble height={40} />
+                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                    <Text style={styles.nudgeTitle}>{t('scan.quotaTitle')}</Text>
+                    <Text style={styles.nudgeBody}>{t('scan.quotaBody')}</Text>
+                  </View>
                 </View>
-                <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
-              </Pressable>
-              <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
-                <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
-                <IconChevronDown size={16} color="#4B4F58" />
-              </Pressable>
+              )}
             </View>
           )
         }
@@ -260,6 +278,10 @@ const styles = StyleSheet.create({
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
+  // Q1: 쿼터 넛지 카드(4150:17089) — mx 24, bg #FFFBF4 r16 pad 20/12/20/20
+  nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: 16, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
+  nudgeTitle: { fontSize: 15, fontWeight: '700', color: '#262C31' },
+  nudgeBody: { fontSize: 14, fontWeight: '400', color: '#4B4F58' },
 
   // KB-430 §2-5: 플로팅 필(4150:17079)
   fab: {

@@ -454,14 +454,3 @@ export const IconTabScan = (p: IconProps) => (
   </Glyph>
 );
 
-/** ic-pepper (KB-431, 4150:16891 맵기 행) — 2색 SVG 고추: 몸통(fill)+꼭지(stem).
- *  이모지 🌶️ 대체(헌법 "이모지 금지·SVG only") — 활성/비활성 색은 소비처가 전달. */
-export const IconPepper = ({ size = 16, body, stem }: { size?: number; body: string; stem: string }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24">
-    <Path
-      d="M17.5 7.5 C20 9 21 12 20 15 C18.7 19 14.5 21.5 10 21 C6.5 20.6 4 18.5 3.5 16.5 C3.4 16 4 15.7 4.4 16 C6 17.3 8.5 18 11 17.5 C14.5 16.8 16.5 14 16.3 10.5 C16.2 9.2 16.6 8 17.5 7.5 Z"
-      fill={body}
-    />
-    <Path d="M17.3 7.8 C17 5.8 18 4.2 20 3.5 C20.5 3.3 20.9 3.9 20.6 4.3 C19.8 5.3 19.5 6.3 19.7 7.5" fill="none" stroke={stem} strokeWidth={1.6} strokeLinecap="round" />
-  </Svg>
-);

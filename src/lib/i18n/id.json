@@ -446,7 +446,8 @@
     "sort_helpful": "Paling membantu",
     "ratingAll": "Semua rating",
     "ratingMin": "{{min}}+ bintang",
-    "filterByProfile": "Filter sesuai profil"
+    "filterByProfile": "Filter sesuai profil",
+    "countryOnly": "Hanya {{code}}"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",

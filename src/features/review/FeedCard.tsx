@@ -12,7 +12,7 @@ import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C } from '@/lib/theme';
-import { CardPhoto, Flag, RankMedal, Star, IconChevron, IconFood, IconMore, IconProfile } from '@/components';
+import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore, IconProfile } from '@/components';
 import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
@@ -58,13 +58,11 @@ export function FeedCard({
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
         <View style={styles.who}>
-          {anon || !review.authorNationality ? (
-            <View style={styles.anonAvatar}>
-              <IconProfile size={14} color={C.ink3} />
-            </View>
-          ) : (
-            <Flag code={review.authorNationality} size={24} />
-          )}
+          {/* 9/5 예진 판정(Q3): 아바타 = 현 아바타 컴포넌트 24 통일(국기 대체).
+              프로필 사진 URL은 리뷰 작성자 계약에 없음 — 실사진은 BE 필드 추가 시. */}
+          <View style={styles.avatar}>
+            <IconProfile size={14} color={C.ink3} />
+          </View>
           <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
           {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
         </View>
@@ -115,7 +113,7 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 7 },
   whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: C.ink },
-  anonAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
 
   axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
   axis: { flexDirection: 'row', alignItems: 'center', gap: 4 },

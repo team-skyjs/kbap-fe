@@ -446,7 +446,8 @@
     "sort_helpful": "最有幫助",
     "ratingAll": "全部評分",
     "ratingMin": "{{min}}分以上",
-    "filterByProfile": "按個人資料篩選"
+    "filterByProfile": "按個人資料篩選",
+    "countryOnly": "僅{{code}}"
   },
   "ranking": {
     "headerTitle": "我的排名",

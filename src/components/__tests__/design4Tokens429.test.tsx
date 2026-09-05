@@ -84,10 +84,10 @@ it('③ RiskMark — 4상태 원형 통일(9/5 예진 확정 "싹 다 시안대�
   });
   expect(new Set(trees).size).toBe(4); // 색 소거 전제로도 렌더 트리(글리프)가 전부 다름
   const src = require('fs').readFileSync('src/components/RiskMark.tsx', 'utf8') as string;
-  expect(src).toContain('r="10.2"'); // 원형 실루엣
+  // 9/5 시안 원본(22 그리드): 원 실루엣 + 상태별 글리프 경로(mark-*.svg 디코드)
+  expect(src).toContain('viewBox="0 0 22 22"');
   expect(src).not.toContain('M12 2.6 L22 20 H2 Z'); // 상태별 실루엣(삼각 등) 소멸
-  // 글리프(형태 구분 담당) 유지
-  expect(src).toContain('M7.5 12.4 l3 3 L16.6 8.8');
+  expect(src).toContain('M9.061 1.061'); // safe ✓ 글리프(시안 경로)
 });
 
 it('④ Btn — disabled(off) = bg line(#EAEBEE)·텍스트 inkDisabled / secondary 신설', () => {

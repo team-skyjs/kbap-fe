@@ -492,7 +492,8 @@
     "sort_helpful": "도움 많이 된 순",
     "ratingAll": "전체 별점",
     "ratingMin": "{{min}}점 이상",
-    "filterByProfile": "프로필 필터"
+    "filterByProfile": "프로필 필터",
+    "countryOnly": "{{code}}만"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

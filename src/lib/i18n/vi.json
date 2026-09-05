@@ -446,7 +446,8 @@
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
-    "filterByProfile": "Lọc theo hồ sơ"
+    "filterByProfile": "Lọc theo hồ sơ",
+    "countryOnly": "Chỉ {{code}}"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
