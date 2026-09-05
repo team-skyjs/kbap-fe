@@ -5,7 +5,7 @@
  * REVIEWS 카드 3장(+More) · 면책. 데이터 훅·라우트 무변(발주 전제) — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
@@ -85,6 +85,13 @@ export default function Home() {
   const feed = useGlobalReviews(true, { sort: reviewChip === 'popular' ? 'helpful' : 'latest' });
   const feedReviews = (feed.data?.pages ?? []).flatMap((p) => p.items).slice(0, REVIEW_N);
 
+  // Codex #28: 북마크는 커서 페이지네이션 — 1페이지만으론 2페이지 이후 저장분이
+  // 그리드에서 미저장으로 보여 토글이 역전된다. 홈은 저장 판정 소스라 전 페이지
+  // 드레인(페이지당 1회, hasNextPage 소진까지). wire.bookmarked 플래그(①)는 낙관
+  // 토글이 foods 캐시를 안 갱신해 탭 직후 stale — 집합 방식 유지가 정본.
+  useEffect(() => {
+    if (saved.hasNextPage && !saved.isFetchingNextPage) void saved.fetchNextPage();
+  }, [saved, saved.hasNextPage, saved.isFetchingNextPage]);
   const savedFoods = saved.data ?? [];
   const savedIds = new Set(savedFoods.map((f) => f.foodId));
   const gridSource: FoodCard[] =

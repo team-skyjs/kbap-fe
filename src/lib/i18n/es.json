@@ -966,7 +966,8 @@
     "noticeTitle": "Bienvenido a K-Bap",
     "noticeBody": "Escanea un menú para ver qué platos son seguros para ti.",
     "nudgeTitle": "¿Comes fuera hoy?",
-    "nudgeBody": "Escanea el menú antes de pedir."
+    "nudgeBody": "Escanea el menú antes de pedir.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Pedidos",

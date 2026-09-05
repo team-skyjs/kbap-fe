@@ -75,8 +75,14 @@ jest.mock('@/lib/data/useMe', () => ({
 }));
 const mockCatalog = [mockFood('1', 'safe'), mockFood('2', 'danger'), mockFood('3', 'caution'), mockFood('4', 'safe'), mockFood('5', 'unable'), mockFood('6', 'safe')];
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ data: mockCatalog }) }));
+const mockBookmarks = {
+  data: [] as ReturnType<typeof mockFood>[],
+  hasNextPage: false,
+  isFetchingNextPage: false,
+  fetchNextPage: jest.fn(),
+};
 jest.mock('@/lib/data/bookmarks', () => ({
-  useBookmarks: () => ({ data: [] }),
+  useBookmarks: () => ({ ...mockBookmarks }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({
@@ -102,6 +108,13 @@ function render(el: React.ReactElement): ReactTestRenderer {
   });
   return tree;
 }
+beforeEach(() => {
+  mockBookmarks.data = [];
+  mockBookmarks.hasNextPage = false;
+  mockBookmarks.isFetchingNextPage = false;
+  mockBookmarks.fetchNextPage = jest.fn();
+});
+
 const byId = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id);
 // composite+host 중복 계수 방지 — 고유 testID 집합으로 센다
 const uniqueIds = (tree: ReactTestRenderer, prefix: string) => [
@@ -156,6 +169,33 @@ it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 
   // 구 좌측 벨 아이콘 소멸(시안) — 소스 잠금
   const src = require('fs').readFileSync('src/app/notifications.tsx', 'utf8') as string;
   expect(src).not.toContain('icUnread');
+});
+
+it('⑤ 북마크 전 페이지 드레인(Codex #28) — hasNextPage면 fetchNextPage + 후속 페이지 저장분이 그리드에 저장 표시', () => {
+  // 2페이지째에서 합류한 저장분이라 가정(첫 페이지엔 없던 id 2)
+  mockBookmarks.data = [mockFood('2', 'danger')];
+  mockBookmarks.hasNextPage = true;
+  const tree = render(<Home />);
+  expect(mockBookmarks.fetchNextPage).toHaveBeenCalled(); // 드레인 개시(소진까지 페이지당 1회)
+  // 저장 집합이 전 페이지 데이터 기준 — id 2 카드의 북마크 아이콘 = primary
+  const iconColor = (id: string) => {
+    const bm = byId(tree, `home-bm-${id}`)[0];
+    expect(bm).toBeTruthy();
+    return bm.findAll((n) => n.props?.color != null).map((n) => n.props.color as string);
+  };
+  expect(iconColor('2')).toContain('#FF7134');
+  expect(iconColor('1')).not.toContain('#FF7134'); // 미저장 카드는 primary 아님
+});
+
+it('⑥ 벨 NEW 배지 — i18n 키 경유(리터럴 금지) 소스 잠금', () => {
+  const src = require('fs').readFileSync('src/components/StickyHeader.tsx', 'utf8') as string;
+  expect(src).toContain("t('inbox.newBadge')");
+  expect(src).not.toContain('>NEW<');
+  const fs = require('fs') as typeof import('fs');
+  for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+    const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${loc}.json`, 'utf8')) as { inbox: { newBadge?: string } };
+    expect((j.inbox.newBadge ?? '').length).toBeGreaterThan(0);
+  }
 });
 
 it('④ 리뷰 탭 컨트롤 — 정렬 드롭다운만(프로필 토글·구 필터 칩·원형 FAB 부재) 소스 잠금', () => {

@@ -965,7 +965,8 @@
     "noticeTitle": "歡迎使用 K-Bap",
     "noticeBody": "掃描菜單即可了解哪些菜對你是安全的。",
     "nudgeTitle": "今天在外面用餐嗎？",
-    "nudgeBody": "點餐前先掃描菜單吧。"
+    "nudgeBody": "點餐前先掃描菜單吧。",
+    "newBadge": "新"
   },
   "myFoods": {
     "ordered": "點過的菜",

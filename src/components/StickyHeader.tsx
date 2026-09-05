@@ -32,6 +32,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
@@ -127,6 +128,7 @@ export function StickyHeader({
   onBookmark,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const H = headerHeight(insets.top);
 
   // P-061④: 알림 UI 전면 제거(MVP 제외 확정) — 벨·패널·게이트 소멸
@@ -194,7 +196,7 @@ export function StickyHeader({
               <IconBell size={22} color={C.ink} sw={1.8} />
               {bellCount > 0 && (
                 <View style={styles.dot} testID="header-bell-badge">
-                  <Text style={styles.dotText}>NEW</Text>
+                  <Text style={styles.dotText}>{t('inbox.newBadge')}</Text>
                 </View>
               )}
             </PressScale>

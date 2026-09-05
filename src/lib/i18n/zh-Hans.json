@@ -965,7 +965,8 @@
     "noticeTitle": "欢迎使用 K-Bap",
     "noticeBody": "扫描菜单即可了解哪些菜对你是安全的。",
     "nudgeTitle": "今天在外面吃饭吗？",
-    "nudgeBody": "点餐前先扫一下菜单吧。"
+    "nudgeBody": "点餐前先扫一下菜单吧。",
+    "newBadge": "新"
   },
   "myFoods": {
     "ordered": "点过的菜",

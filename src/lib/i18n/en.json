@@ -962,7 +962,8 @@
     "noticeTitle": "Welcome to K-Bap",
     "noticeBody": "Scan a menu to see which dishes are safe for you.",
     "nudgeTitle": "Eating out today?",
-    "nudgeBody": "Scan the menu before you order."
+    "nudgeBody": "Scan the menu before you order.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Ordered",

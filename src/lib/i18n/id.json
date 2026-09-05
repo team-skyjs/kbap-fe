@@ -965,7 +965,8 @@
     "noticeTitle": "Selamat datang di K-Bap",
     "noticeBody": "Pindai menu untuk tahu hidangan mana yang aman untukmu.",
     "nudgeTitle": "Makan di luar hari ini?",
-    "nudgeBody": "Pindai menu sebelum memesan."
+    "nudgeBody": "Pindai menu sebelum memesan.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Dipesan",

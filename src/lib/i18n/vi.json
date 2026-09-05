@@ -965,7 +965,8 @@
     "noticeTitle": "Chào mừng đến với K-Bap",
     "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
     "nudgeTitle": "Hôm nay ăn ngoài chứ?",
-    "nudgeBody": "Hãy quét thực đơn trước khi gọi món."
+    "nudgeBody": "Hãy quét thực đơn trước khi gọi món.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Đã gọi món",

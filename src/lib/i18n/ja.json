@@ -965,7 +965,8 @@
     "noticeTitle": "K-Bapへようこそ",
     "noticeBody": "メニューをスキャンすると安全な料理がわかります。",
     "nudgeTitle": "今日は外食ですか？",
-    "nudgeBody": "注文する前にメニューをスキャンしましょう。"
+    "nudgeBody": "注文する前にメニューをスキャンしましょう。",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "注文した料理",
