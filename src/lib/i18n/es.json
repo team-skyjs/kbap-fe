@@ -396,7 +396,8 @@
     "placeManual": "Usar \"{{name}}\" tal cual",
     "extrasTitle": "¿Qué tal el restaurante?",
     "extrasSpeed": "Rapidez",
-    "extrasService": "Atención"
+    "extrasService": "Atención",
+    "extrasTaste": "Sabor"
   },
   "reviews": {
     "headerTitle": "Reseñas",
@@ -600,7 +601,9 @@
       "bbq": "Parrilla y carne",
       "street": "Comida callejera",
       "sides": "Acompañamientos"
-    }
+    },
+    "filterAll": "Todos",
+    "reviewsSub": "Lee antes de pedir"
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",

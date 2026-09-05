@@ -396,7 +396,8 @@
     "placeManual": "Использовать «{{name}}» как есть",
     "extrasTitle": "Как вам ресторан?",
     "extrasSpeed": "Скорость подачи",
-    "extrasService": "Сервис"
+    "extrasService": "Сервис",
+    "extrasTaste": "Вкус"
   },
   "reviews": {
     "headerTitle": "Отзывы",
@@ -600,7 +601,9 @@
       "bbq": "Гриль и мясо",
       "street": "Уличная еда",
       "sides": "Гарниры"
-    }
+    },
+    "filterAll": "Все",
+    "reviewsSub": "Прочитайте перед заказом"
   },
   "onboarding": {
     "welcomeTag": "Узнайте, что безопасно есть — ещё до заказа.",

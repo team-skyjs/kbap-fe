@@ -38,15 +38,13 @@ it('무필터 = 현행 쿼리 무변(회귀 방지)', async () => {
   expect(mockGet).toHaveBeenCalledWith('/api/reviews?lang=en');
 });
 
-it('배선 소스 잠금 — 필터 UI·쿼리키 프리픽스·클라 소팅 부재', () => {
+it('배선 소스 잠금 — 쿼리키 프리픽스·클라 소팅 부재 (KB-430: 국가·음식·별점 칩 UI 숨김 — 훅 계약은 위 케이스로 유지)', () => {
   const fs = require('fs');
   const feed = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8') as string;
-  expect(feed).toContain("testID=\"feed-filter-country\"");
-  expect(feed).toContain("testID=\"feed-filter-food\"");
-  expect(feed).toContain('countryCode: sameNatOnly ? nationality : null');
-  expect(feed).toContain("foodId: foodFilter?.foodId ?? null");
-  // 빈 결과 = 필터 초기화 CTA(재량 채택)
-  expect(feed).toContain("t('reviews.clearFilters')");
+  // KB-430 시안(4150:17070) 컨트롤 행 = 정렬 드롭다운만 — 구 필터 칩 UI 소멸
+  expect(feed).toContain('testID="feed-sort"');
+  expect(feed).not.toContain('feed-filter-country');
+  expect(feed).not.toContain('feed-filter-food');
   // 클라 로컬 소팅 금지(커서 페이지네이션 왜곡) — sort 호출 부재
   expect(feed).not.toMatch(/reviews\s*\.\s*sort\(/);
   const hook = fs.readFileSync('src/lib/data/useFoodReviews.ts', 'utf8') as string;

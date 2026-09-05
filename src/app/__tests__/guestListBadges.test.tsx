@@ -65,10 +65,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-import { SafeCard, RecentRow } from '../(tabs)/index';
+import { FoodGridCard, RecentRow } from '../(tabs)/index';
 import { BrowseCard } from '../(tabs)/food';
 import { ResultCard } from '../search';
 import { RiskMark } from '@/components/RiskMark';
+import { RiskBadge } from '@/components/RiskBadge';
 import type { FoodCard } from '@/lib/api/types';
 
 const FOOD: FoodCard = {
@@ -88,12 +89,13 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-const riskMarkCount = (tree: ReactTestRenderer) => tree.root.findAllByType(RiskMark).length;
+// KB-430: 홈 그리드는 RiskBadge(리본) — 마크·배지 둘 다 위험도 아이콘으로 계수
+const riskMarkCount = (tree: ReactTestRenderer) =>
+  tree.root.findAllByType(RiskMark).length + tree.root.findAllByType(RiskBadge).length;
 
 // [라벨, guest만 바꿔 렌더하는 팩토리] — 새 리스트 카드는 여기에 한 줄 추가
 const CARDS: [string, (guest: boolean) => React.ReactElement][] = [
-  ['홈 SafeCard', (guest) => <SafeCard food={FOOD} hasRestrictions={false} guest={guest} onPress={() => {}} />],
-  ['홈 RecentRow', (guest) => <RecentRow food={FOOD} hasRestrictions={false} guest={guest} reviewLabel="Review" onPress={() => {}} />],
+  ['홈 FoodGridCard', (guest) => <FoodGridCard food={FOOD} risk="safe" guest={guest} saved={false} riskLabel="Safe" onPress={() => {}} onBookmark={() => {}} />],
   ['음식탭 BrowseCard', (guest) => <BrowseCard food={FOOD} hasRestrictions={false} guest={guest} onPress={() => {}} />],
   ['검색 ResultCard', (guest) => <ResultCard food={FOOD} risk="safe" guest={guest} onPress={() => {}} />],
 ];
@@ -106,6 +108,15 @@ describe.each(CARDS)('%s', (_label, make) => {
 
   it('회원이면 위험도 아이콘이 렌더된다 (가드 오버슈트 방지)', () => {
     const tree = render(make(false));
+    expect(riskMarkCount(tree)).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('홈 RecentRow', () => {
+  // KB-430: 회원 전용 표면(홈 게스트 분기 = 가입 CTA 카드, 프로필 = 로그인 임베드) —
+  // guest prop 소멸. 배지 렌더만 잠근다.
+  it('위험도 배지가 렌더된다', () => {
+    const tree = render(<RecentRow food={FOOD} risk="safe" reviewLabel="Review" onPress={() => {}} onReview={() => {}} />);
     expect(riskMarkCount(tree)).toBeGreaterThanOrEqual(1);
   });
 });

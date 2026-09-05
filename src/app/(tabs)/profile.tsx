@@ -50,6 +50,8 @@ import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { useDietPresets } from '@/lib/data/useDietPresets';
 import { useHome } from '@/lib/data/useHome';
 import { RecentRow } from './index';
+import { personalRisk } from '@/lib/risk';
+import { EVENTS, track } from '@/lib/analytics';
 import { FlagEmoji } from '@/components';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { resetToOnboarding } from '@/lib/nav';
@@ -302,10 +304,13 @@ export default function Profile() {
                     <RecentRow
                       key={d.foodId}
                       food={d}
-                      hasRestrictions={(me.restrictions.length ?? 0) > 0}
-                      guest={false}
+                      risk={personalRisk(d.risk, (me.restrictions.length ?? 0) > 0)}
                       reviewLabel={t('home.review')}
                       onPress={() => router.push(`/food/${d.foodId}?src=list` as Href)}
+                      onReview={() => {
+                        track(EVENTS.review_write_tap, { source: 'home' });
+                        router.push(`/food/${d.foodId}/review` as Href);
+                      }}
                     />
                   ))}
                 </View>

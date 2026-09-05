@@ -1,13 +1,12 @@
 /**
- * ReviewFeed (P-179/KB-307) — 커뮤니티 탭 = 전역 최신 리뷰 피드 (멘토 #18·33).
- * GET /api/reviews (foodId 생략) 무한스크롤. 카드 = P-169 리뷰 아이템 문법 재사용
- * (작성자 국기·닉네임·뱃지 + 별점 + 음식 미니 카드(서버 food) + 본문 접기 + 사진 +
- * Helpful(n)) — 새 시각 문법 발명 0. 카드 탭 = 리뷰 디테일, 음식 카드 탭 = 음식 상세.
- * FAB = 리뷰 쓰기(음식 픽커 = 커뮤니티 작성 TagPickerSheet 재사용 → 작성 화면).
+ * ReviewFeed (P-179/KB-307 → KB-430 D-2) — 리뷰 탭 = 전역 최신 리뷰 피드.
+ * 디자인 4차(4150:17070): AppBar(로고+벨, 홈 공용 StickyHeader) · 컨트롤 행 =
+ * 정렬 드롭다운(FeedSort 5종 — 커맨드 센터 판정) · 리뷰 카드(4150:13934) ·
+ * 플로팅 "Write a review" 필. 프로필 필터 토글·쿼터 넛지 카드는 서버 파라미터/
+ * 클라 상태 부재로 숨김, 구 국가·음식·별점 칩도 시안 컨트롤 행 부재로 숨김 —
+ * 전부 REPORTS [P-275] 기재(훅 계약은 무변).
  *
- * 게스트: 계약이 bearerAuth 필수(전역 피드 인증) — 열람 불가 확인, 기존 게이트
- * 문법(guestGate 카피+AuthGateSheet)으로 가입 유도. production 채널은 탭 자체가
- * FLAGS.communityEnabled(!PROD_CHANNEL)로 숨김 — 이 화면 도달 불가(채널 분기).
+ * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
 import * as React from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
@@ -15,8 +14,8 @@ import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { CardPhoto, Flag, MedalEmblem, Spinner, Stars, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconClose, IconFood, IconMore, IconPlus, IconProfile, IconCheck } from '@/components';
+import { color as C, radius } from '@/lib/theme';
+import { CardPhoto, Flag, RankMedal, Spinner, Star, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconChevron, IconChevronDown, IconCheck, IconEdit, IconFood, IconMore, IconProfile } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
@@ -25,46 +24,36 @@ import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
+import { useUnreadCount } from '@/lib/notifications/inbox';
+import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import type { Review } from '@/lib/api/types';
 import type { FoodTagRef } from '@/lib/community/types';
 
 type TFn = ReturnType<typeof useTranslation>['t'];
 
+const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
+const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'];
+
 export function ReviewFeed() {
   const router = useRouter();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
-  // P-229: 피드 필터 — 국가(같은 국적 토글 = 음식별 목록 문법 재사용)·음식(픽커 재사용).
-  // 서버 파라미터 2종뿐(스웨거 실측) — 소팅·별점은 BE 대기(be-agenda).
-  const [sameNatOnly, setSameNatOnly] = React.useState(false);
-  const [foodFilter, setFoodFilter] = React.useState<FoodTagRef | null>(null);
-  const [filterPickerOpen, setFilterPickerOpen] = React.useState(false);
-  // P-237: 소팅 5종 + 별점 프리셋(러프 — 디자이너 시안 오면 교체 전제)
+  // KB-430: 서버 필터 = sort만 노출(커맨드 센터 판정 — 프로필/국가/음식/별점 칩 숨김, 훅 계약 무변)
   const [sort, setSort] = React.useState<FeedSort>('latest');
-  const [minRating, setMinRating] = React.useState<number | null>(null); // 프리셋: null(전체)·3·4
   const [sortSheet, setSortSheet] = React.useState(false);
-  const nationality = useMe().data?.nationality ?? null;
-  // P-235: 게스트 열람 개방(무토큰 200 실측) — 호출 게이트 소멸. 쓰기·Helpful 게이트 유지.
-  const feed = useGlobalReviews(true, {
-    countryCode: sameNatOnly ? nationality : null,
-    foodId: foodFilter?.foodId ?? null,
-    sort,
-    minRating,
-    maxRating: null, // 프리셋이 "N점 이상"뿐이라 상한 미사용(min≤max 방어는 훅)
-  });
+  const feed = useGlobalReviews(true, { sort });
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
-  const myId = useMe().data?.id; // P-182: 본인 셀 ⋯ 판별(위 nationality와 같은 캐시 — 중복 호출 아님)
-  // P-258: 트리거별 컨텍스트 — Helpful = 'helpful'(읽기 개방 후 신카피)·FAB = 'writeReview'
+  const myId = useMe().data?.id;
+  const unread = useUnreadCount();
   const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const [editTarget, setEditTarget] = React.useState<Review | null>(null);
-  // P-211 ④: 헤더 = 타 탭 공용 StickyHeader(스크롤 반응) — 자체 헤더 소멸
   const { onScroll, hidden } = useStickyScroll();
   const headerH = useHeaderHeight();
 
@@ -79,9 +68,7 @@ export function ReviewFeed() {
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   };
 
-  // P-194: 당겨서 새로고침(1페이지부터 재조회) + 탭 포커스 시 stale 재조회(KB-68 문법 —
-  // 탭 화면은 언마운트되지 않아 재진입만으론 재조회 없음. fresh면 no-op, 폴링 아님).
-  // 게스트 가드 — refetch는 enabled를 우회하므로(인증 필수 계약, 호출 0 유지) 별도 차단.
+  // P-194: 당겨서 새로고침 + 탭 포커스 시 stale 재조회(폴링 아님)
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = () => {
     setRefreshing(true);
@@ -107,48 +94,12 @@ export function ReviewFeed() {
       <Animated.FlatList
         ListHeaderComponent={
           (
-            <View style={styles.filterRow}>
-              {/* 국가 — 음식별 리뷰 목록의 같은 국적 토글 문법 재사용 */}
-              {!!nationality && (
-                <Pressable
-                  style={[styles.filterChip, sameNatOnly && styles.filterChipOn]}
-                  onPress={() => setSameNatOnly((v) => !v)}
-                  testID="feed-filter-country"
-                >
-                  <Flag code={nationality} size={14} />
-                  <Text style={[styles.filterChipText, sameNatOnly && styles.filterChipTextOn]} numberOfLines={1}>
-                    {t('reviews.sameNationality')}
-                  </Text>
-                </Pressable>
-              )}
-              {/* P-237: 소팅 — 칩 탭 = 5종 액션시트(공용 ActionSheet 재사용) */}
-              <Pressable style={[styles.filterChip, sort !== 'latest' && styles.filterChipOn]} onPress={() => setSortSheet(true)} testID="feed-sort">
-                <Text style={[styles.filterChipText, sort !== 'latest' && styles.filterChipTextOn]} numberOfLines={1}>
-                  {t(`reviews.sort_${sort}`)}
-                </Text>
+            /* KB-430 §2-2: 컨트롤 행 — 우측 정렬 드롭다운(bg #F2F3F6 r8, 14/700) */
+            <View style={styles.controlRow}>
+              <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
+                <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
+                <IconChevronDown size={16} color="#4B4F58" />
               </Pressable>
-              {/* P-237: 별점 프리셋 순환(전체 → 3+ → 4+ → 전체) — 러프 재량 */}
-              <Pressable
-                style={[styles.filterChip, minRating != null && styles.filterChipOn]}
-                onPress={() => setMinRating((v) => (v == null ? 3 : v === 3 ? 4 : null))}
-                testID="feed-rating"
-              >
-                <Text style={[styles.filterChipText, minRating != null && styles.filterChipTextOn]} numberOfLines={1}>
-                  {minRating == null ? t('reviews.ratingAll') : t('reviews.ratingMin', { min: minRating })}
-                </Text>
-              </Pressable>
-              {/* 음식 — 픽커 재사용, 선택 시 이름 칩 + 해제 */}
-              {foodFilter ? (
-                <Pressable style={[styles.filterChip, styles.filterChipOn]} onPress={() => setFoodFilter(null)} testID="feed-filter-food-clear">
-                  <Text style={[styles.filterChipText, styles.filterChipTextOn]} numberOfLines={1}>{foodFilter.name}</Text>
-                  <IconClose size={12} color={C.primaryText} />
-                </Pressable>
-              ) : (
-                <Pressable style={styles.filterChip} onPress={() => setFilterPickerOpen(true)} testID="feed-filter-food">
-                  <IconFood size={13} color={C.ink2} />
-                  <Text style={styles.filterChipText} numberOfLines={1}>{t('reviews.filterByFood')}</Text>
-                </Pressable>
-              )}
             </View>
           )
         }
@@ -183,7 +134,7 @@ export function ReviewFeed() {
             <View style={styles.center}>
               <Spinner size={22} color={C.ink2} />
             </View>
-          ) : null /* P-196 ②: 게이트/에러/빈 = 화면 정중앙 오버레이(아래) — 리스트 영역 센터 폐기 */
+          ) : null /* P-196 ②: 게이트/에러/빈 = 화면 정중앙 오버레이(아래) */
         }
         ListFooterComponent={
           feed.isFetchingNextPage ? (
@@ -194,13 +145,16 @@ export function ReviewFeed() {
         }
       />
 
-      {/* P-211 ④: 타이틀 유지 — 브랜드 모드 + 센터 타이틀(공용 title 슬롯) */}
-      {/* P-225: 헤더 = 탭 라벨 키 재사용(Reviews) — 단일 소스.
-          P-244: 같은 줄 주석 금지 — `/>`와 `{` 사이 공백이 JSX 텍스트 노드로 렌더되어
-          네이티브에서 "Text strings must be rendered within a <Text>" 에러(정적 잠금 유닛). */}
-      <StickyHeader hidden={hidden} mode="brand" title={t('tabs.community')} />
+      {/* KB-430 §2-1: AppBar = 홈과 동일 컴포넌트(로고+벨) */}
+      <StickyHeader
+        hidden={hidden}
+        mode="brand"
+        bell={FLAGS.notificationCenter}
+        bellCount={unread}
+        onBell={() => router.push('/notifications' as Href)}
+      />
 
-      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙(4탭 공용 기준 — ScreenCenterFill) */}
+      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙 */}
       {!feed.isLoading && feed.isError ? (
         <ScreenCenterFill>
           <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
@@ -211,39 +165,23 @@ export function ReviewFeed() {
             fill
             icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
             title={t('reviews.emptyTitle')}
-            body={t(sameNatOnly || foodFilter ? 'reviews.emptyFiltered' : 'reviews.emptyBody')}
-            primary={
-              sameNatOnly || foodFilter
-                ? { label: t('reviews.clearFilters'), onPress: () => { setSameNatOnly(false); setFoodFilter(null); } }
-                : undefined
-            }
+            body={t('reviews.emptyBody')}
           />
         </ScreenCenterFill>
       ) : null}
 
-      {/* FAB = 리뷰 쓰기 — 음식 픽커(작성 시트 재사용) 경유 */}
+      {/* KB-430 §2-5: 플로팅 "Write a review" 필(4150:17079) — 진입점 = 음식 픽커(현행) */}
       <Pressable
         style={styles.fab}
         testID="feed-write-fab"
         onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
-        <IconPlus size={24} color="#fff" />
+        <IconEdit size={20} color="#fff" />
+        <Text style={styles.fabLabel}>{t('reviews.writeReview')}</Text>
       </Pressable>
 
-      {/* P-229: 음식 필터 픽커 — 작성 픽커와 동일 컴포넌트 재사용(선택 = 필터).
-          P-245: 필터는 자격 무관 — 'filter' 컨텍스트(전체 활성 유지, 스캔 우선 정렬만 공유) */}
       <TagPickerSheet
-        context="filter"
-        kind={filterPickerOpen ? 'food' : null}
-        foodTags={foodFilter ? [foodFilter] : []}
-        placeTag={null}
-        onToggleFood={(f) => { setFoodFilter(f); setFilterPickerOpen(false); }}
-        onTogglePlace={() => {}}
-        onClose={() => setFilterPickerOpen(false)}
-        t={t}
-      />
-      <TagPickerSheet
-        context="review" /* P-225 ④: 리뷰 픽커 = 캡션 미렌더(3태그 정책은 글 작성 전용) */
+        context="review" /* P-225 ④: 리뷰 픽커 = 캡션 미렌더 */
         kind={pickerOpen ? 'food' : null}
         foodTags={[]}
         placeTag={null}
@@ -276,12 +214,11 @@ export function ReviewFeed() {
         }}
         t={t}
       />
-      {/* P-213: 커뮤니티 표면 게이트 = trigger community(카피는 reviews 유지) */}
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet
         open={sortSheet}
         title={t('reviews.sortTitle')}
-        items={(['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'] as FeedSort[]).map((v) => ({
+        items={SORT_OPTIONS.map((v) => ({
           key: v,
           label: t(`reviews.sort_${v}`),
           // 현재값 표시 = SVG 체크(기호 텍스트 렌더 금지 — CLAUDE.md·P-040 계열)
@@ -295,7 +232,22 @@ export function ReviewFeed() {
   );
 }
 
-/** 카드 — P-169 아이템 문법(작성자 줄·별점·본문·사진·Helpful) + 음식 미니 카드(P-178 서버 food 체계). */
+/** 평점 축 1개 — 라벨 13/500 + 별 16 + 수치 13/600 (KB-430 4150:13934). */
+function RatingAxis({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.axis}>
+      <Text style={styles.axisLabel}>{label}</Text>
+      <Star size={16} fillPct={100} />
+      <Text style={styles.axisValue}>{value}</Text>
+    </View>
+  );
+}
+
+/**
+ * 리뷰 카드 (4150:13934, KB-430 재작성) — pad 22/20 + 하단 line 1px(카드 보더·그림자
+ * 소멸 — 리스트 구분선형). 상단 작성자 행 + Helpful · 평점 3축(Taste=총점 ·
+ * Speed/Service = P-236 2축, 0=미평가 비표시) · 본문 · 사진 104 · 음식/장소 칩.
+ */
 export function FeedCard({
   review,
   t,
@@ -311,13 +263,12 @@ export function FeedCard({
   onOpenFood: () => void;
   onGuestHelpful: () => void;
   onMore: () => void;
-  /** P-216: 홈 프리뷰처럼 모더레이션이 없는 표면은 ⋯ 숨김(동작 없는 버튼 금지) */
+  /** P-216: 모더레이션 없는 표면(홈 프리뷰)은 ⋯ 숨김(동작 없는 버튼 금지) */
   showMore?: boolean;
 }) {
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
   return (
-    /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
         <View style={styles.who}>
@@ -326,17 +277,13 @@ export function FeedCard({
               <IconProfile size={14} color={C.ink3} />
             </View>
           ) : (
-            <Flag code={review.authorNationality} size={20} />
+            <Flag code={review.authorNationality} size={24} />
           )}
           <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
-          {!anon && !!review.authorRankTier && (
-            <View style={styles.rankPill}>
-              <MedalEmblem level={review.author?.level ?? 1} size={15} />
-            </View>
-          )}
+          {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
         </View>
-        <Stars value={review.rating} size={14} />
-        {/* P-186: ⋯ = 본인+타인(익명 제외) */}
+        {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
+        <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
         {!anon && showMore && (
           <Pressable hitSlop={10} onPress={onMore} testID={`feed-more-${review.id}`}>
             <IconMore size={15} color={C.ink3} />
@@ -344,63 +291,77 @@ export function FeedCard({
         )}
       </View>
 
-      {/* 음식 미니 카드 — 서버 food(P-178 체계), 탭 = 음식 상세 */}
-      <Pressable style={styles.foodMini} onPress={onOpenFood} testID={`feed-food-${review.id}`}>
+      {/* 평점 행 — Taste(총점) 항상 · Speed/Service는 값 있을 때만(0 = 미평가, P-236) */}
+      <View style={styles.axisRow}>
+        <RatingAxis label={t('review.extrasTaste')} value={review.rating} />
+        {!!review.servingSpeed && <RatingAxis label={t('review.extrasSpeed')} value={review.servingSpeed} />}
+        {!!review.staffKindness && <RatingAxis label={t('review.extrasService')} value={review.staffKindness} />}
+      </View>
+
+      {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.body} />}
+      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} />
+
+      {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
+      <Pressable style={styles.foodChip} onPress={onOpenFood} testID={`feed-food-${review.id}`}>
         {review.foodImageUrl ? (
-          <View style={styles.foodThumb}>
-            <CardPhoto uri={review.foodImageUrl} borderRadius={10} />
+          <View style={styles.foodChipThumb}>
+            <CardPhoto uri={review.foodImageUrl} borderRadius={4} />
           </View>
         ) : (
-          <View style={[styles.foodThumb, styles.foodThumbFb]}>
-            <IconFood size={16} color={C.ink3} />
-          </View>
+          <IconFood size={16} color={C.ink2} />
         )}
-        <Text style={styles.foodMiniName} numberOfLines={1}>
+        <Text style={styles.foodChipName} numberOfLines={1}>
           {review.foodName ?? t('myReviews.viewDish')}
         </Text>
+        <IconChevron size={12} color={C.ink3} />
       </Pressable>
-
-      {/* P-201: 장소 줄 — 음식 미니카드 아래(발주 권장), 탭 = 지도 시트 */}
+      {/* P-201: 장소 칩 — 탭 = 지도 시트 */}
       <ReviewPlaceLine place={review.place ?? null} />
-      <ReviewExtrasLine review={review} mine={mine} />
-      {!!review.body && <ExpandableBody body={review.body} t={t} />}
-      <ReviewPhotoStrip photos={review.photos ?? []} />
-      {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
-      <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  list: { paddingHorizontal: 18, gap: 12 },
-  // P-229: 필터 행 — 칩 문법(음식별 목록 필터 톤)
-  filterRow: { flexDirection: 'row', gap: 8, paddingBottom: 2 },
-  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, maxWidth: 200 },
-  filterChipOn: { backgroundColor: primaryTint, borderColor: C.primary },
-  filterChipText: { flexShrink: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  filterChipTextOn: { color: C.primaryText },
+  list: { gap: 0 },
+  // KB-430 §2-2: 컨트롤 행
+  controlRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
 
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 14, gap: 10, ...shadow.sh1 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  // 카드(4150:13934) — 구분선형(보더·그림자 소멸)
+  card: { paddingVertical: 22, paddingHorizontal: 20, gap: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  whoName: { flexShrink: 1, fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink },
-  anonAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  rankPill: { flexShrink: 0 },
+  whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: C.ink },
+  anonAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
 
-  foodMini: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.surface2, borderRadius: 12, padding: 8 },
-  foodThumb: { width: 34, height: 34, borderRadius: 10, overflow: 'hidden', backgroundColor: C.card },
-  foodThumbFb: { alignItems: 'center', justifyContent: 'center' },
-  foodMiniName: { flex: 1, fontFamily: font.bodyBold, fontSize: 13, color: C.ink },
+  axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
+  axis: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  axisLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
+  axisValue: { fontSize: 13, fontWeight: '600', color: INK_TITLE },
 
-  body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  body: { fontSize: 14, fontWeight: '400', color: INK_TITLE, lineHeight: 20 },
 
-  guestGate: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, padding: 18, alignItems: 'center', gap: 5, ...shadow.sh1 },
-  guestGateTitle: { fontFamily: font.display, fontSize: 15.5, color: C.ink },
-  guestGateSub: { fontFamily: font.body, fontSize: 12.5, color: C.ink3, textAlign: 'center' },
+  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', maxWidth: '100%' },
+  foodChipThumb: { width: 16, height: 16, borderRadius: 4, overflow: 'hidden', backgroundColor: C.surface2 },
+  foodChipName: { flexShrink: 1, fontSize: 12, fontWeight: '500', color: C.ink2 },
 
-  fab: { position: 'absolute', right: 18, bottom: 18, width: 54, height: 54, borderRadius: 27, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', ...shadow.shPop },
+  // KB-430 §2-5: 플로팅 필(4150:17079)
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1C1E21',
+    borderRadius: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  fabLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
 });
 
 export default ReviewFeed;

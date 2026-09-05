@@ -396,7 +396,8 @@
     "placeManual": "\"{{name}}\"のまま使う",
     "extrasTitle": "お店はいかがでしたか？",
     "extrasSpeed": "提供スピード",
-    "extrasService": "接客"
+    "extrasService": "接客",
+    "extrasTaste": "味"
   },
   "reviews": {
     "headerTitle": "レビュー",
@@ -600,7 +601,9 @@
       "bbq": "焼肉・肉料理",
       "street": "屋台グルメ",
       "sides": "おかず"
-    }
+    },
+    "filterAll": "すべて",
+    "reviewsSub": "注文前にチェック"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",

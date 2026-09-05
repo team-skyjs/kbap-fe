@@ -396,7 +396,8 @@
     "placeManual": "直接使用\"{{name}}\"",
     "extrasTitle": "餐厅怎么样？",
     "extrasSpeed": "上菜速度",
-    "extrasService": "服务态度"
+    "extrasService": "服务态度",
+    "extrasTaste": "味道"
   },
   "reviews": {
     "headerTitle": "点评",
@@ -600,7 +601,9 @@
       "bbq": "烧烤与肉类",
       "street": "街边小吃",
       "sides": "配菜"
-    }
+    },
+    "filterAll": "全部",
+    "reviewsSub": "点餐前先看看"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",

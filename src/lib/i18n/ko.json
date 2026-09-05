@@ -442,7 +442,8 @@
     "placeManual": "\"{{name}}\" 그대로 태그하기",
     "extrasTitle": "식당은 어땠나요?",
     "extrasSpeed": "음식 나오는 속도",
-    "extrasService": "친절도"
+    "extrasService": "친절도",
+    "extrasTaste": "맛"
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -758,7 +759,9 @@
       "bbq": "구이·고기",
       "street": "분식",
       "sides": "반찬"
-    }
+    },
+    "filterAll": "전체",
+    "reviewsSub": "주문 전에 읽어보세요"
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",

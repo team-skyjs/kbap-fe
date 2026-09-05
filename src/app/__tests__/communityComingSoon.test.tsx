@@ -79,7 +79,9 @@ it('on(dev·teamtest) → 실화면 (플레이스홀더 없음)', () => {
   mockFlags.communityEnabled = true;
   const tree = render(<Community />);
   const all = texts(tree);
-  expect(all).toContain('tabs.community'); // P-225: 실피드 헤더 = 탭 라벨 키(Reviews)
+  // KB-430: 헤더 타이틀 소멸(로고 AppBar) — 실피드 판별 = 컨트롤 행·작성 필
+  expect(all).toContain('reviews.sort_latest');
+  expect(all).toContain('reviews.writeReview');
   expect(all).not.toContain('community.lockedTitle');
 });
 

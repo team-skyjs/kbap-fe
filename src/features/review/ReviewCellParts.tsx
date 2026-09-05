@@ -11,7 +11,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Btn, IconClose, IconMapPin, IconSmile, IconZap, Star } from '@/components';
+import { Btn, IconClose, IconMapPin, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
 import { EMPTY_EXTRAS, extrasFromReview, hasAnyExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
 import { TagChip } from '@/features/community/parts';
@@ -54,7 +54,7 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
 }
 
 /** 사진 가로 스트립 + 탭 = 풀스크린 뷰어(가로 페이징·X 닫기·인덱스). */
-export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size?: number }) {
+export function ReviewPhotoStrip({ photos, size = 72, radius = 10 }: { photos: string[]; size?: number; radius?: number }) {
   const [openAt, setOpenAt] = React.useState<number | null>(null);
   const { width } = useWindowDimensions();
   const [page, setPage] = React.useState(0);
@@ -64,7 +64,7 @@ export function ReviewPhotoStrip({ photos, size = 72 }: { photos: string[]; size
       <View style={styles.strip}>
         {photos.slice(0, 3).map((uri, i) => (
           <Pressable key={uri} hitSlop={4} onPress={() => { setPage(i); setOpenAt(i); }} testID={`photo-${i}`}>
-            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: 10, backgroundColor: C.surface2 }} />
+            <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: radius, backgroundColor: C.surface2 }} />
           </Pressable>
         ))}
       </View>
@@ -351,7 +351,10 @@ export function HelpfulButton({
     toggle.mutate({ reviewId: review.id, foodId: foodId ?? review.foodId }); // 낙관 토글(멱등 — 가드 예외)
   };
   return (
-    <Pressable hitSlop={8} onPress={onPress} disabled={mine} testID={`helpful-${review.id}`}>
+    /* KB-430(4150:13934): 버튼형 — h30 pad 7/13 line 1px r4, thumbs-up 16 + 12/500.
+       로직·경유는 무변(전 표면 공용) — 스타일만 시안. */
+    <Pressable hitSlop={8} onPress={onPress} disabled={mine} style={styles.helpfulBtn} testID={`helpful-${review.id}`}>
+      <IconThumbsUp size={16} color={mine ? C.ink3 : review.myLike ? C.primary : C.ink2} />
       <Text style={[styles.helpful, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]}>
         {t('reviews.helpful', { count: review.likes ?? 0 })}
       </Text>
@@ -477,7 +480,8 @@ const styles = StyleSheet.create({
   extrasChipText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink3 },
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
-  helpful: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
+  helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 30, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 4 },
+  helpful: { fontSize: 12, fontWeight: '500', color: C.ink2 },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },
   strip: { flexDirection: 'row', gap: 6 },

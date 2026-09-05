@@ -438,7 +438,8 @@
     "placeManual": "Use \"{{name}}\" as typed",
     "extrasTitle": "How was the restaurant?",
     "extrasSpeed": "Speed",
-    "extrasService": "Service"
+    "extrasService": "Service",
+    "extrasTaste": "Taste"
   },
   "reviews": {
     "headerTitle": "Reviews",
@@ -754,7 +755,9 @@
       "bbq": "BBQ & Meat",
       "street": "Street Food",
       "sides": "Sides"
-    }
+    },
+    "filterAll": "All",
+    "reviewsSub": "Read before you order"
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",

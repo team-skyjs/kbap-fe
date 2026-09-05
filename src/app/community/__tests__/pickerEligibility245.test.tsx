@@ -194,9 +194,8 @@ it('글 작성(compose) 컨텍스트 무변 — 인기 목록 활성 + 캡션 �
   expect(onToggleFood).toHaveBeenCalledWith({ foodId: '11', name: 'Gimbap' });
 });
 
-it('배선 소스 잠금 — 피드 필터 픽커 = context="filter"(자격 분기 밖)', () => {
+it('배선 소스 잠금 — 작성 픽커 = context="review" (KB-430: 피드 음식 필터 UI 숨김 — filter 컨텍스트는 컴포넌트 계약으로 존치)', () => {
   const fs = require('fs');
   const feed = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8') as string;
-  expect(feed).toContain('context="filter"');
   expect(feed).toContain('context="review"'); // 작성 픽커는 자격 UX 대상 유지
 });
