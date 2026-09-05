@@ -14,7 +14,7 @@ import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { font, radius, riskTone, type RiskState } from '@/lib/theme';
+import { font, radius, riskText, riskTone, type RiskState } from '@/lib/theme';
 import { RiskMark } from './RiskMark';
 
 export function RiskPill({
@@ -41,7 +41,8 @@ export function RiskPill({
       ]}
     >
       <RiskMark state={state} size={lg ? 20 : 14} />
-      <Text style={[lg ? styles.lgText : styles.smText, { color: tone.fg }]}>{text}</Text>
+      {/* KB-429(Codex #27): 소형 텍스트는 riskText(대비 변형) — 아이콘·bg는 riskTone 유지 */}
+      <Text style={[lg ? styles.lgText : styles.smText, { color: riskText[state] }]}>{text}</Text>
     </View>
   );
 }

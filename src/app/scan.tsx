@@ -28,7 +28,7 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskTone, shadow } from '@/lib/theme';
+import { color as C, font, riskText, riskTone, shadow } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
@@ -998,7 +998,7 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
       </View>
       {dish.priceKrw != null && <Text style={styles.rowPrice}>{formatKrw(dish.priceKrw)}</Text>}
       <View style={[styles.rowBadge, { backgroundColor: tone.bg }]}>
-        <Text style={[styles.rowBadgeText, { color: tone.fg }]}>{riskLabel}</Text>
+        <Text style={[styles.rowBadgeText, { color: riskText[dish.risk] }]}>{riskLabel}</Text>
       </View>
       {/* 조사 대기(matched=false)는 상세가 없어 이동 화살표도 없음 */}
       {dish.matched && <IconChevron size={16} color={C.ink3} />}

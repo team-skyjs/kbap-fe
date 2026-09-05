@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // marginRight = back 폭 보정(중앙 정렬 유지 — 우측 액션 없는 기본형)
-  title: { flex: 1, fontFamily: font.bodySemi, fontSize: 18, color: C.ink, textAlign: 'center', marginRight: 38 },
+  // 중앙 정렬 = 우측 38pt 플레이스홀더(trailing 부재 시)가 back 폭을 상쇄 — 마진 중복 금지(Codex #27)
+  title: { flex: 1, fontFamily: font.bodySemi, fontSize: 18, color: C.ink, textAlign: 'center' },
 });
 
 export default SubHeader;

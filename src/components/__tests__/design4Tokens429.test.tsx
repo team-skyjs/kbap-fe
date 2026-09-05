@@ -102,6 +102,33 @@ it('④ Btn — disabled(off) = bg line(#EAEBEE)·텍스트 inkDisabled / second
   expect(JSON.stringify(t.toJSON())).toContain('#B1B5BD');
 });
 
+it('⑥ 탭 계측(Codex #27 P1) — 이벤트 값 reviews 스키마 반영 + 화이트리스트 통과', () => {
+  const { EVENTS, sanitize } = require('@/lib/analytics') as typeof import('@/lib/analytics');
+  expect(sanitize(EVENTS.app_tab_view, { tab: 'reviews' })).toEqual({ tab: 'reviews' });
+  const fs = require('fs') as typeof import('fs');
+  // 배선: community 라우트 → 키 reviews → track({ tab: active }) 그대로 흐름
+  const layout = fs.readFileSync('src/app/(tabs)/_layout.tsx', 'utf8');
+  expect(layout).toContain("community: 'reviews'");
+  expect(layout).toContain('track(EVENTS.app_tab_view, { tab: active })');
+  // 스키마 union 문서 — reviews 추가·community 잔존(구버전 호환)
+  expect(fs.readFileSync('src/lib/analytics.ts', 'utf8')).toContain('home|food|reviews|community|profile');
+});
+
+it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 5곳 = riskText, fg는 아이콘·fill 전용', () => {
+  const fs = require('fs') as typeof import('fs');
+  for (const p of [
+    'src/components/RiskPill.tsx',
+    'src/features/scan/ScanRichList.tsx',
+    'src/app/scan.tsx',
+    'src/app/profile/saved.tsx',
+    'src/app/food/[id]/index.tsx',
+  ]) {
+    const src = fs.readFileSync(p, 'utf8');
+    expect(src).toContain('riskText[');
+    expect(src).not.toMatch(/color:\s*(?:riskTone\[\w+(?:\.\w+)*\]|tone)\.fg/); // 텍스트 색으로 fg 사용 소멸
+  }
+});
+
 it('i18n — tabs.reviews 10로케일 존재', () => {
   const fs = require('fs') as typeof import('fs');
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {

@@ -15,7 +15,7 @@ import { Txt as Text } from '@/components/Txt';
 import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, riskTone, shadow } from '@/lib/theme';
+import { color as C, font, radius, riskText, riskTone, shadow } from '@/lib/theme';
 import { SubHeader, RiskMark, Btn, CardPhoto, Spinner, IconChevron, IconFood, IconStar, IconTrash } from '@/components';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { QueryErrorBlock } from '@/components/StateBlock';
@@ -190,7 +190,7 @@ function SavedRow({
           </View>
           <View style={[styles.pill, { backgroundColor: riskTone[risk].bg, borderColor: riskTone[risk].line }]}>
             <RiskMark state={risk} size={15} />
-            <Text style={[styles.pillText, { color: riskTone[risk].fg }]}>{riskLabel}</Text>
+            <Text style={[styles.pillText, { color: riskText[risk] }]}>{riskLabel}</Text>
           </View>
         </View>
         <IconChevron size={17} color={C.ink3} />

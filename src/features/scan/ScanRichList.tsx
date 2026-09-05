@@ -18,7 +18,7 @@ import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, radius, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, primaryTint, radius, riskText, riskTone, type RiskState } from '@/lib/theme';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -194,7 +194,7 @@ function RichRow({
             {shownWarns.map((w) => (
               <View key={w.code} style={[styles.warnChip, { backgroundColor: riskTone[w.risk].bg, borderColor: riskTone[w.risk].line }]}>
                 <RiskMark state={w.risk} size={11} />
-                <Text style={[styles.warnChipText, { color: riskTone[w.risk].fg }]} numberOfLines={1}>{w.name}</Text>
+                <Text style={[styles.warnChipText, { color: riskText[w.risk] }]} numberOfLines={1}>{w.name}</Text>
               </View>
             ))}
             {restWarns > 0 && (
