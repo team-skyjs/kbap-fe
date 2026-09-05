@@ -116,6 +116,10 @@ jest.mock('@/lib/data/useFoodReviews', () => ({
   }),
 }));
 jest.mock('@/features/scan/ScanCoachMark', () => ({ ScanCoachMark: () => null, shouldShowCoachMark: async () => false, markCoachSeen: jest.fn() }));
+// KB-431: 재료 타일 이미지 소스 — 카탈로그 훅 표면 목(react-query 의존 차단)
+jest.mock('@/lib/data/useIngredientCatalog', () => ({
+  useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }),
+}));
 
 import FoodDetailScreen from '../food/[id]/index';
 import type { FoodDetail, RiskState } from '@/lib/api/types';
@@ -195,23 +199,25 @@ it('verdict — 성분 조립 이유(회피 매칭 재료명), 맵기-위험도 
   expect(s).not.toContain('6/10');
   expect(s).not.toContain('chili');
   // 맵기 메타는 타이틀 블록에 현행 5단계로만 존재
-  expect(s).toContain('\ud83c\udf36'); // 🌶️ 현행 5단계 표기
+  expect(s).toContain('spice.band'); // KB-431: SVG 고추 + 5단계 라벨 — 이모지 소멸
+  expect(s).not.toContain('\u{1F336}');
 });
 
-it('재료 — danger→caution→safe 정렬, 전부 오픈, caution 행에만 사유+Ask', () => {
+it('재료(KB-431 타일) — danger→caution→safe 정렬, caution 타일에만 Ask 풋터, 탭 = 시트에 사유', () => {
   const tree = render(<FoodDetailScreen />);
   const s = flat(tree);
   // 정렬: Pork(danger) < Shrimp(caution) < Onion(safe)
   expect(s.indexOf('Pork')).toBeLessThan(s.indexOf('Shrimp'));
   expect(s.indexOf('Shrimp')).toBeLessThan(s.indexOf('Onion'));
-  // 전부 오픈 — 탭 없이 caution 사유 노출(기존 중립 조립 키)
-  expect(s).toContain('detail.ingBasisCaution');
-  // caution 행에만 Ask
+  // caution 타일에만 Ask 풋터
   expect(byId(tree, 'ask-SHRIMP').length).toBeGreaterThanOrEqual(1);
   expect(byId(tree, 'ask-PORK').length).toBe(0);
   expect(byId(tree, 'ask-ONION').length).toBe(0);
   // 빈도 실데이터
   expect(s).toContain('detail.ofShops');
+  // 타일 탭 → 바텀시트에 중립 조립 사유(기존 키)
+  act(() => byId(tree, 'ing-SHRIMP')[0].props.onPress());
+  expect(flat(tree)).toContain('detail.ingBasisCaution');
 });
 
 it('게스트(P-206 개정) — verdict 잠금 유지 + 재료 공개(판정 없음) + 사유 미노출', () => {
@@ -219,41 +225,44 @@ it('게스트(P-206 개정) — verdict 잠금 유지 + 재료 공개(판정 없
   const tree = render(<FoodDetailScreen />);
   expect(byId(tree, 'verdict-lock').length).toBeGreaterThanOrEqual(1); // 개인화 verdict 잠금 무변
   expect(byId(tree, 'detail-verdict').length).toBe(0);
-  // P-206: 재료 자체 공개(이름·빈도) — 스켈레톤 잠금 소멸, 위험 판정·사유만 미노출
-  expect(byId(tree, 'ing-guest-open').length).toBeGreaterThanOrEqual(1);
+  // KB-431: 게스트도 타일 공개(이름·빈도) — 마크·칩·Ask 풋터·사유는 미노출
+  expect(byId(tree, 'ing-PORK').length).toBeGreaterThanOrEqual(1);
   const s = flat(tree);
   expect(s).toContain('Pork'); // 재료 실명 공개(정책 개정)
   expect(s).not.toContain('detail.ingBasisCaution'); // 판정 사유는 여전히 미노출
+  expect(byId(tree, 'ask-SHRIMP').length).toBe(0); // 게스트 = Ask 풋터 없음
+  expect(byId(tree, 'ing-chip-all').length).toBe(0); // 위험 칩 필터 미노출
   mockIsGuest.mockReturnValue(false);
 });
 
-it('P-169: 리뷰 브리프 — 프리뷰 5 제한·헤더 병기·전체보기·Write 고스트 강등', () => {
+it('P-169→KB-431: 리뷰 브리프 — 프리뷰 3 제한(D-2 카드)·같은 국적 병기·전체보기·Helpful', () => {
   const tree = render(<FoodDetailScreen />);
   const s = flat(tree);
-  // 프리뷰 5 제한
+  // 발주 §1-7: 카드 ×3 제한
   expect(s).toContain('Great and safe for me');
-  expect(s).toContain('Fifth');
-  expect(s).not.toContain('Sixth — must not render');
-  // 헤더: 리뷰 수 + 같은 국적 병기 보조 줄(차별점) — 구 2열 카드 소멸
-  expect(s).toContain('reviews.subtitle');
-  expect(byId(tree, 'same-nat-line').length).toBeGreaterThanOrEqual(1);
+  expect(s).toContain('Third now renders');
+  expect(s).not.toContain('Fourth');
+  // 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거 — 대신 "{국가} only" 토글(Q12)
+  expect(byId(tree, 'same-nat-line').length).toBe(0);
+  expect(byId(tree, 'detail-nat-toggle').length).toBeGreaterThanOrEqual(1);
   expect(s).not.toContain('detail.allUsers');
-  // 전체보기 풀폭(고스트 Btn — Read all 라벨 재사용) + Write a review 존재
+  // 전체보기 풀폭(고스트 Btn) + FixedBottom Write a review
   expect(s).toContain('detail.readAll');
   expect(s).toContain('reviews.writeReview');
-  // 프리뷰 아이템: 날짜·사진 스트립·Helpful. P-182: 신고 링크 소멸(⋯ = 본인 전용)
-  expect(s).toContain('https://cdn/rv5.jpg');
+  // D-2 카드: 평점 축 + Helpful(공용 경유) · 자기 자신 음식 칩 없음
+  expect(s).toContain('review.extrasTaste');
   expect(s).toContain('reviews.helpful');
+  expect(byId(tree, 'feed-food-r1').length).toBe(0); // showFood=false
   expect(s).not.toContain('community.report');
 });
 
 it('P-182→P-186: 카드 전체 탭 제거 · ⋯ = 본인+타인(신고/차단), 익명(탈퇴)만 부재', () => {
   const tree = render(<FoodDetailScreen />);
-  const rows = tree.root.findAll((n) => n.props?.testID === 'rv-preview-r1');
+  const rows = tree.root.findAll((n) => n.props?.testID === 'feed-r1');
   expect(rows.length).toBeGreaterThanOrEqual(1);
   expect(rows.every((n) => typeof n.props?.onPress !== 'function')).toBe(true);
   // P-186: 타인 리뷰에도 ⋯(신고·차단 진입 — 스토어 UGC 정책)
-  expect(tree.root.findAll((n) => n.props?.testID === 'rv-more-r1').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
 });
 
 it('P-182 ③: 리뷰 0건 = 조회 UI 전부 숨김 — 첫 리뷰 CTA만', () => {
@@ -308,36 +317,36 @@ describe('P-231: 상세 맵기 = 고추 5개 프레임(SpicePeppers)', () => {
 describe('P-228: Ask the owner 플로팅', () => {
   afterEach(() => mockIsGuest.mockReturnValue(false));
 
-  it('회원+등록 음식 = 플로팅 상시 노출(스크롤 무관) + 콘텐츠 바닥 여백', () => {
+  it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {
     const tree = render(<FoodDetailScreen />);
-    expect(byId(tree, 'ask-owner-float').length).toBeGreaterThanOrEqual(1);
+    expect(byId(tree, 'detail-bottom-bar').length).toBeGreaterThanOrEqual(1);
+    expect(byId(tree, 'bottom-ask').length).toBeGreaterThanOrEqual(1);
+    expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
     expect(flat(tree)).toContain('detail.askOwner');
-    // 인라인 섹션 잔존 0 — CTA는 플로팅 하나(소스 잠금)
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    expect(src).toContain("paddingBottom: showAskCta ? 118 : 40"); // P-068 여백 문법
-    // 라벨 3곳 = 플로팅 1 + caution 재료 행 링크 + 미등록 본문 CTA(둘 다 유지 대상).
-    // 구 인라인 하단 섹션은 소멸 — Registered 반환부에 Btn CTA 부재로 잠금
+    expect(src).toContain('paddingBottom: showBottomBar ? 107 : 40'); // P-068 여백 문법
+    // 라벨 3곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA
     expect(src.match(/detail\.askOwner/g)?.length).toBe(3);
-    expect(src).not.toContain('{!guest && (\n        <View style={styles.sec}>'); // 구 인라인 CTA 소멸
   });
 
-  it('게스트 = 플로팅 미노출(회피 프로필 없어 질문 조립 무의미 — 정책 무변)', () => {
+  it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {
     mockIsGuest.mockReturnValue(true);
     mockUseFoodDetail.mockReturnValue({
       data: FOOD('safe', { reviewSummaryMissing: false, overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 } }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
-    expect(byId(tree, 'ask-owner-float')).toHaveLength(0);
+    expect(byId(tree, 'bottom-ask')).toHaveLength(0);
+    expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('미등록 음식 = 플로팅 미노출(Unregistered 본문 CTA 현행 유지)', () => {
+  it('미등록 음식 = FixedBottom 미노출(Unregistered 본문 CTA 현행 유지)', () => {
     mockUseFoodDetail.mockReturnValue({
       data: FOOD('unable', { isRegistered: false }),
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
-    expect(byId(tree, 'ask-owner-float')).toHaveLength(0);
+    expect(byId(tree, 'detail-bottom-bar')).toHaveLength(0);
   });
 });
 
@@ -351,13 +360,14 @@ describe('P-206: 게스트 열람 개편', () => {
       isLoading: false, error: null, refetch: jest.fn(),
     });
     const tree = render(<FoodDetailScreen />);
-    const open = byId(tree, 'ing-guest-open');
-    expect(open.length).toBeGreaterThanOrEqual(1); // 재료 공개
+    // KB-431: 게스트도 타일 공개 — 타일 내부에 위험 마크 0(개인화 판정 노출 금지)
+    const tiles = byId(tree, 'ing-ONION');
+    expect(tiles.length).toBeGreaterThanOrEqual(1); // 재료 공개
     expect(flat(tree)).toContain('Onion');
-    // 공개 리스트 내부에 위험 마크·필 0 (개인화 판정 노출 금지)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { RiskMark } = require('@/components') as typeof import('@/components');
-    expect(open[0].findAllByType(RiskMark).length).toBe(0);
+    expect(tiles[0].findAllByType(RiskMark).length).toBe(0);
+    expect(byId(tree, 'ing-PORK')[0].findAllByType(RiskMark).length).toBe(0);
     expect(byId(tree, 'ing-ghost').length).toBe(0); // 스켈레톤 잠금 소멸
   });
 
@@ -433,14 +443,14 @@ it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () =>
   const s = flat(tree);
   const solidCount = (s.match(/"backgroundColor":"#FF7134"/g) ?? []).length;
   expect(s).toContain('detail.askOwner');
-  expect(solidCount).toBe(1); // Ask the owner 하나만 솔리드 주황
+  expect(solidCount).toBe(2); // Ask the owner + NEW 배지(Q4 상시) — 버튼 솔리드는 1개
   void btnLabels;
 });
 
 it('P-169: Helpful 탭 → 좋아요 API 배선(회원) — 행 오픈과 독립', () => {
   const tree = render(<FoodDetailScreen />);
-  const helpful = tree.root.findAll((n) => n.props?.testID === 'helpful-r4')[0];
+  const helpful = tree.root.findAll((n) => n.props?.testID === 'helpful-r1')[0];
   const { act } = require('react-test-renderer');
   act(() => helpful.props.onPress());
-  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r4', foodId: '7' });
+  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
 });

@@ -84,10 +84,10 @@ it('③ RiskMark — 4상태 원형 통일(9/5 예진 확정 "싹 다 시안대�
   });
   expect(new Set(trees).size).toBe(4); // 색 소거 전제로도 렌더 트리(글리프)가 전부 다름
   const src = require('fs').readFileSync('src/components/RiskMark.tsx', 'utf8') as string;
-  expect(src).toContain('r="10.2"'); // 원형 실루엣
+  // 9/5 시안 원본(22 그리드): 원 실루엣 + 상태별 글리프 경로(mark-*.svg 디코드)
+  expect(src).toContain('viewBox="0 0 22 22"');
   expect(src).not.toContain('M12 2.6 L22 20 H2 Z'); // 상태별 실루엣(삼각 등) 소멸
-  // 글리프(형태 구분 담당) 유지
-  expect(src).toContain('M7.5 12.4 l3 3 L16.6 8.8');
+  expect(src).toContain('M9.061 1.061'); // safe ✓ 글리프(시안 경로)
 });
 
 it('④ Btn — disabled(off) = bg line(#EAEBEE)·텍스트 inkDisabled / secondary 신설', () => {
@@ -116,8 +116,12 @@ it('⑥ 탭 계측(Codex #27 P1) — 이벤트 값 reviews 스키마 반영 + �
   expect(fs.readFileSync('src/lib/analytics.ts', 'utf8')).toContain('home|food|reviews|community|profile');
 });
 
-it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 5곳 = riskText, fg는 아이콘·fill 전용', () => {
+it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 = riskText, fg는 아이콘·fill 전용', () => {
   const fs = require('fs') as typeof import('fs');
+  // KB-431: 상세 위험 요약 행은 시안이 잉크 텍스트(riskTone.bg 틴트만) — riskText 소비처에서 제외
+  for (const p of ['src/components/RiskPill.tsx', 'src/features/scan/ScanRichList.tsx', 'src/app/scan.tsx', 'src/app/profile/saved.tsx']) {
+    expect(fs.readFileSync(p, 'utf8')).toContain('riskText[');
+  }
   for (const p of [
     'src/components/RiskPill.tsx',
     'src/features/scan/ScanRichList.tsx',
@@ -125,9 +129,8 @@ it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 5곳 = riskText, 
     'src/app/profile/saved.tsx',
     'src/app/food/[id]/index.tsx',
   ]) {
-    const src = fs.readFileSync(p, 'utf8');
-    expect(src).toContain('riskText[');
-    expect(src).not.toMatch(/color:\s*(?:riskTone\[\w+(?:\.\w+)*\]|tone)\.fg/); // 텍스트 색으로 fg 사용 소멸
+    // 텍스트 색으로 fg 사용 소멸(전 표면)
+    expect(fs.readFileSync(p, 'utf8')).not.toMatch(/color:\s*(?:riskTone\[\w+(?:\.\w+)*\]|tone)\.fg/);
   }
 });
 

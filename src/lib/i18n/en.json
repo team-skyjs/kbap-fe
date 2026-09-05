@@ -7,7 +7,8 @@
     "tryAgain": "Try again",
     "goBack": "Go back",
     "retry": "Retry",
-    "skip": "Skip"
+    "skip": "Skip",
+    "close": "Close"
   },
   "intro": {
     "skip": "Skip",
@@ -487,7 +488,8 @@
     "sort_helpful": "Most helpful",
     "ratingAll": "All ratings",
     "ratingMin": "{{min}}+ stars",
-    "filterByProfile": "Filter by profile"
+    "filterByProfile": "Filter by profile",
+    "countryOnly": "{{code}} only"
   },
   "ranking": {
     "headerTitle": "My Ranking",

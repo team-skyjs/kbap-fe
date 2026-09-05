@@ -36,7 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
-import { KbowlMark } from './Brand';
+import { AppBarMark } from './design4Assets';
 import { PressScale } from './PressScale';
 
 // 9/5 예진 확정(AppBar 4123:3609 h56): 4+48+4 = 56 — 구 62(8+48+6) 근사 폐기
@@ -163,9 +163,8 @@ export function StickyHeader({
             <IconArrowLeft size={20} color={C.ink} />
           </PressScale>
         ) : (
-          /* KB-430(AppBar Dropdown 4123:3609): 로고 마크 단독(primary) — 워드마크 록업 대체.
-             9/5 시안 실측(4123:3613): 18.55×20 — 마크 높이 20 */
-          <KbowlMark size={20} color={C.primary} />
+          /* 9/5 시안 원본 SVG(4123:3613, 18.55×20) — .fig 디코드 appbar-mark 그대로 */
+          <AppBarMark height={20} />
         )}
 
         {title != null && (

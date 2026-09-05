@@ -11,7 +11,8 @@
     "goBack": "返回",
     "retry": "重試",
     "skip": "略過",
-    "save": "儲存"
+    "save": "儲存",
+    "close": "關閉"
   },
   "intro": {
     "skip": "略過",
@@ -445,7 +446,8 @@
     "sort_helpful": "最有幫助",
     "ratingAll": "全部評分",
     "ratingMin": "{{min}}分以上",
-    "filterByProfile": "按個人資料篩選"
+    "filterByProfile": "按個人資料篩選",
+    "countryOnly": "僅{{code}}"
   },
   "ranking": {
     "headerTitle": "我的排名",

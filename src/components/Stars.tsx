@@ -15,8 +15,23 @@ export const STAR_FILL = '#FFED47';
 const STAR_FILL_STROKE = '#F4D27D';
 const STAR_EMPTY_FILL = '#EAEBEE';
 
+// 9/5 시안 원본 경로(스펙 bridge/design/4th/icons/star-*.svg — 16 그리드, 형태 무수정)
 const STAR_D =
-  'M12 2.6 l2.7 5.95 6.5.62 -4.9 4.32 1.45 6.36 L12 16.9 l-5.75 3.55 1.45 -6.36 -4.9 -4.32 6.5 -.62 Z';
+  'M7.287 1.396C7.584 0.814 8.416 0.814 8.713 1.396L10.213 4.337C10.329 4.564 10.548 4.723 10.8 4.763L14.06 5.282C14.705 5.384 14.962 6.175 14.501 6.637L12.168 8.973C11.987 9.154 11.904 9.41 11.944 9.663L12.458 12.924C12.56 13.569 11.887 14.058 11.305 13.761L8.363 12.265C8.135 12.149 7.865 12.149 7.637 12.265L4.695 13.761C4.113 14.058 3.44 13.569 3.542 12.924L4.056 9.663C4.096 9.41 4.013 9.154 3.832 8.973L1.499 6.637C1.038 6.175 1.295 5.384 1.94 5.282L5.2 4.763C5.452 4.723 5.671 4.564 5.787 4.337L7.287 1.396Z';
+
+/** 9/5 판정(4129:10698/10701): 북마크 버튼 별 — 미저장 = 아웃라인(stroke #6A6F7C 1.5),
+ *  저장됨 = fill #FFE812 + stroke #E5D64D 1. 별 geometry = 시안 star 경로(16 그리드). */
+export function BookmarkStar({ saved = false, size = 16 }: { saved?: boolean; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16">
+      {saved ? (
+        <Path d={STAR_D} fill="#FFE812" stroke="#E5D64D" strokeWidth={1} strokeLinejoin="round" />
+      ) : (
+        <Path d={STAR_D} fill="none" stroke="#6A6F7C" strokeWidth={1.5} strokeLinejoin="round" />
+      )}
+    </Svg>
+  );
+}
 
 export function Star({
   size = 20,
@@ -32,10 +47,10 @@ export function Star({
   const rawId = React.useId();
   const id = `st${rawId.replace(/[^a-zA-Z0-9]/g, '')}`;
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
+    <Svg width={size} height={size} viewBox="0 0 16 16">
       <Defs>
         <ClipPath id={id}>
-          <Rect x="0" y="0" width={(24 * fillPct) / 100} height="24" />
+          <Rect x="0" y="0" width={(16 * fillPct) / 100} height="16" />
         </ClipPath>
       </Defs>
       <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={1} strokeLinejoin="round" />

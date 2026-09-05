@@ -119,15 +119,18 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
 
   it('4표면 동일 경유 소스 잠금 — 개별 배선(직접 toggle/인라인 Helpful 텍스트) 0', () => {
     const fs = require('fs');
-    const surfaces = [
-      'src/features/community/ReviewFeed.tsx',
-      'src/app/food/[id]/index.tsx',
-      'src/app/food/[id]/reviews.tsx',
-      'src/app/profile/reviews.tsx',
+    // KB-430/431: 피드·상세 프리뷰는 공용 FeedCard 경유(카드 내부가 <HelpfulButton>) —
+    // 표면 직접 배선 금지는 동일하게 잠근다.
+    expect(fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8')).toContain('<HelpfulButton');
+    const surfaces: [string, 'card' | 'button'][] = [
+      ['src/features/community/ReviewFeed.tsx', 'card'],
+      ['src/app/food/[id]/index.tsx', 'card'],
+      ['src/app/food/[id]/reviews.tsx', 'button'],
+      ['src/app/profile/reviews.tsx', 'button'],
     ];
-    for (const f of surfaces) {
+    for (const [f, via] of surfaces) {
       const src = fs.readFileSync(f, 'utf8') as string;
-      expect(src).toContain('<HelpfulButton'); // 공용 버튼 경유
+      expect(src).toContain(via === 'card' ? '<FeedCard' : '<HelpfulButton'); // 공용 경유
       expect(src).not.toContain('useToggleReviewLike'); // 표면 직접 뮤테이션 금지
       expect(src).not.toContain("t('reviews.helpful'"); // 인라인 렌더 금지
     }

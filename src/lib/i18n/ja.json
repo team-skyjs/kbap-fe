@@ -11,7 +11,8 @@
     "goBack": "戻る",
     "retry": "再試行",
     "skip": "スキップ",
-    "save": "保存"
+    "save": "保存",
+    "close": "閉じる"
   },
   "intro": {
     "skip": "スキップ",
@@ -445,7 +446,8 @@
     "sort_helpful": "役に立った順",
     "ratingAll": "すべての評価",
     "ratingMin": "{{min}}点以上",
-    "filterByProfile": "プロフィールで絞り込み"
+    "filterByProfile": "プロフィールで絞り込み",
+    "countryOnly": "{{code}}のみ"
   },
   "ranking": {
     "headerTitle": "マイランキング",

@@ -8,8 +8,9 @@ import * as React from 'react';
 import { Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, shadow } from '@/lib/theme';
-import { IconMapPin } from '@/components/icons';
+import { color as C, shadow } from '@/lib/theme';
+import { IconClose } from '@/components/icons';
+import { BrandGoogle, BrandKakao, BrandNaver } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
 import type { PlaceTagRef } from '@/lib/community/types';
 
@@ -61,32 +62,42 @@ function SheetShell({ children, onClose }: { children: React.ReactNode; onClose:
   );
 }
 
+/** KB-431 §2-6(4150:16861): 브랜드 색 버튼 3종(세로 스택) — 로고 에셋 없음 = 텍스트만.
+ *  딥링크·좌표 폴백 로직은 무변(mapUrls). */
+const MAP_BTN: Record<MapApp, { bg: string; border?: string; text: string; Icon: typeof BrandGoogle }> = {
+  google: { bg: '#FFFFFF', border: '#DCDEE3', text: '#1C1E21', Icon: BrandGoogle },
+  naver: { bg: '#1EC800', text: '#FFFFFF', Icon: BrandNaver },
+  kakao: { bg: '#FFE812', text: '#1C1E21', Icon: BrandKakao },
+};
+
 export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onClose: () => void }) {
   const { t } = useTranslation();
   if (!place) return null;
   return (
     <SheetShell onClose={onClose}>
-      <View style={styles.placeTop}>
-        <View style={styles.placeIc}>
-          <IconMapPin size={20} color={C.accent} />
-        </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-          <Text style={styles.title} numberOfLines={1}>
-            {place.name}
+      <Pressable style={styles.close} onPress={onClose} hitSlop={8} testID="place-sheet-close">
+        <IconClose size={24} color={C.ink2} />
+      </Pressable>
+      <View style={{ gap: 6, paddingRight: 32 }}>
+        <Text style={styles.title} numberOfLines={1}>
+          {place.name}
+        </Text>
+        {!!place.roadAddress && (
+          <Text style={styles.sub} numberOfLines={2}>
+            {place.roadAddress}
           </Text>
-          {!!place.roadAddress && (
-            <Text style={styles.sub} numberOfLines={2}>
-              {place.roadAddress}
-            </Text>
-          )}
-        </View>
+        )}
       </View>
-      {/* 3사 지도 — 중립 글리프 + 텍스트 통일 (공식/유사 로고 금지) */}
-      <View style={styles.mapRow}>
-        {(['naver', 'kakao', 'google'] as MapApp[]).map((kind) => (
-          <Pressable key={kind} style={styles.mapBtn} onPress={() => void openMap(kind, place)}>
-            <IconMapPin size={16} color={C.ink2} />
-            <Text style={styles.mapBtnText}>{t(`community.map.${kind}`)}</Text>
+      <View style={styles.mapCol}>
+        {(['google', 'naver', 'kakao'] as MapApp[]).map((kind) => (
+          <Pressable
+            key={kind}
+            style={[styles.mapBtn, { backgroundColor: MAP_BTN[kind].bg }, MAP_BTN[kind].border ? { borderWidth: 1, borderColor: MAP_BTN[kind].border } : null]}
+            onPress={() => void openMap(kind, place)}
+            testID={`map-${kind}`}
+          >
+            {(() => { const I = MAP_BTN[kind].Icon; return <I height={20} />; })()}
+            <Text style={[styles.mapBtnText, { color: MAP_BTN[kind].text }]}>{t(`community.map.${kind}`)}</Text>
           </Pressable>
         ))}
       </View>
@@ -95,13 +106,13 @@ export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onCl
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 34, gap: 14, ...shadow.sh2 },
-  title: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  sub: { fontFamily: font.body, fontSize: 12.5, color: C.ink2 },
-  placeTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  placeIc: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(14,154,167,0.1)', alignItems: 'center', justifyContent: 'center' },
-  mapRow: { flexDirection: 'row', gap: 8 },
-  mapBtn: { flex: 1, alignItems: 'center', gap: 5, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingVertical: 12 },
-  mapBtnText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  // KB-431: 시트 흰 radius 16 상단, pad 20/39, gap 24
+  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingTop: 39, paddingBottom: 39, gap: 24, ...shadow.sh2 },
+  close: { position: 'absolute', top: 12, right: 12, zIndex: 1 },
+  title: { fontSize: 20, fontWeight: '700', color: C.ink },
+  sub: { fontSize: 14, fontWeight: '400', color: C.ink2 },
+  mapCol: { gap: 8 },
+  mapBtn: { minHeight: 48, borderRadius: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  mapBtnText: { fontSize: 16, fontWeight: '500' },
 });

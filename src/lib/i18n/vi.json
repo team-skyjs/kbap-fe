@@ -11,7 +11,8 @@
     "goBack": "Quay lại",
     "retry": "Thử lại",
     "skip": "Bỏ qua",
-    "save": "Lưu"
+    "save": "Lưu",
+    "close": "Đóng"
   },
   "intro": {
     "skip": "Bỏ qua",
@@ -445,7 +446,8 @@
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
-    "filterByProfile": "Lọc theo hồ sơ"
+    "filterByProfile": "Lọc theo hồ sơ",
+    "countryOnly": "Chỉ {{code}}"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",

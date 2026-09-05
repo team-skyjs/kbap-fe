@@ -19,6 +19,7 @@ import {
   useHeaderHeight,
   SkeletonHome,
   Btn,
+  BookmarkStar,
   Chip,
   SectionHead,
   RiskBadge,
@@ -26,7 +27,6 @@ import {
   IconSearch,
   IconLock,
   IconFood,
-  IconPlus,
   IconTabScan,
 } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
@@ -40,7 +40,7 @@ import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
 import { popularPhotoFoods } from '@/lib/search/discovery';
-import { FeedCard } from '@/features/community/ReviewFeed';
+import { FeedCard } from '@/features/review/FeedCard';
 import { useUnreadCount } from '@/lib/notifications/inbox';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -352,7 +352,8 @@ export function FoodGridCard({
           {!guest && <Text style={[styles.gstatus, { color: riskText[risk] }]}>{riskLabel}</Text>}
         </View>
         <Pressable style={styles.gbm} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
-          <IconPlus size={24} color={saved ? C.primary : C.ink2} />
+          {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
+          <BookmarkStar saved={saved} size={16} />
         </Pressable>
       </View>
     </Pressable>

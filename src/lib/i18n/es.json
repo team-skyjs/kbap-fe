@@ -11,7 +11,8 @@
     "goBack": "Volver",
     "retry": "Reintentar",
     "skip": "Omitir",
-    "save": "Guardar"
+    "save": "Guardar",
+    "close": "Cerrar"
   },
   "intro": {
     "skip": "Omitir",
@@ -445,7 +446,8 @@
     "sort_helpful": "Más útiles",
     "ratingAll": "Todas las valoraciones",
     "ratingMin": "{{min}}+ estrellas",
-    "filterByProfile": "Filtrar por perfil"
+    "filterByProfile": "Filtrar por perfil",
+    "countryOnly": "Solo {{code}}"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
