@@ -242,7 +242,8 @@ function RichRow({
         )}
       </View>
 
-      {/* 우측 담기 슬롯 — 시안 "북마크 36 버튼" 자리(주문 담기 기능 유지 — 질문 누적) */}
+      {/* 우측 담기 슬롯 — 9/5 예진 판정(정정): 현 [+]·스테퍼 UI 그대로 유지.
+          TODO(D-4 ②): 디자이너 스테퍼 반영 변형 시안 수신 시 그 시안으로 교체. */}
       <View style={styles.rightCol}>
         <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
           {added ? (

@@ -35,7 +35,12 @@
     "google": "使用 Google 账号登录",
     "terms": "继续即表示你同意我们的服务条款，并已阅读隐私政策。",
     "errorGeneric": "登录未完成，请重试。",
-    "errorNetwork": "网络错误——请检查网络连接后重试。"
+    "errorNetwork": "网络错误——请检查网络连接后重试。",
+    "termsPrefix": "继续即表示您同意我们的",
+    "termsTos": "服务条款",
+    "termsAnd": "，并确认我们的",
+    "termsPrivacy": "隐私政策",
+    "termsSuffix": "。"
   },
   "gate": {
     "riskTitle": "查看你的专属安全评级",

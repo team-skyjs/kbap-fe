@@ -29,7 +29,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
 import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
@@ -49,7 +49,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
-import { OrderPill, ScanProfileBar, ScanRichList } from '@/features/scan/ScanRichList';
+import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -588,10 +588,10 @@ export default function Scan() {
             <IconChevron size={18} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
-          {/* P-161: 즉시 리셋 → 확인 모달 선노출(결과 유실 경고) */}
-          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} style={styles.qhBack} testID="retake">
-            <IconRetry size={19} color={C.ink2} />
-          </Pressable>
+          {/* 9/5 예진 판정: 다시찍기 표면 제거(P-161 확인 모달·리셋 로직은 보존) —
+              새 .fig의 AppBar 리프레시 아이콘 수신 시 그 자리로 복원 예정.
+              프레임 불변: 제목 중앙 유지용 같은 폭 투명 슬롯. */}
+          <View style={styles.qhBack} pointerEvents="none" />
         </View>
         {/* §1-1: 언더라인 탭 2개 responsive 반반(4123:3853) — Photo | List(현 세그 매핑) */}
         <View style={styles.resultTabs}>
@@ -612,11 +612,7 @@ export default function Scan() {
 
         {view === 'list' ? (
           <>
-          {/* P-160 B안: 프로필 체크 줄 — ScrollView 밖 상단 고정(스크롤 시 스티키, 목업대로) */}
-          <ScanProfileBar
-            avoidNames={(me?.restrictions ?? []).map((r) => ingCat.name(r.code))}
-            t={t}
-          />
+          {/* 9/5 예진 판정: ScanProfileBar(회피 체크 스트립) 제거 — 시안 토글 행만 */}
           {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
               D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}
           <View style={styles.controlRow}>

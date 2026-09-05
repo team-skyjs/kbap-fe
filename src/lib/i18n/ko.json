@@ -35,7 +35,12 @@
     "google": "Google로 로그인",
     "terms": "계속하면 서비스 이용약관에 동의하고 개인정보 처리방침을 확인한 것으로 간주돼요.",
     "errorGeneric": "로그인이 완료되지 않았어요. 다시 시도해 주세요.",
-    "errorNetwork": "네트워크 오류 — 연결을 확인하고 다시 시도해 주세요."
+    "errorNetwork": "네트워크 오류 — 연결을 확인하고 다시 시도해 주세요.",
+    "termsPrefix": "계속 진행하면 ",
+    "termsTos": "이용약관",
+    "termsAnd": " 동의 및 ",
+    "termsPrivacy": "개인정보 처리방침",
+    "termsSuffix": " 확인으로 간주됩니다."
   },
   "gate": {
     "riskTitle": "나만의 안전 등급을 확인하세요",

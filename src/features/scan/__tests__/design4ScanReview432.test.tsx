@@ -86,6 +86,12 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   // §1-2/§1-3 현행 유지(예진 판정) — 인식 중 스윕·AuthGateSheet 무변
   expect(src).toContain('ScanSweepOverlay');
   expect(src).toContain('<AuthGateSheet context="scan"');
+  // 9/5 예진 판정: 다시찍기 표면·ScanProfileBar 사용처 제거(컴포넌트 정의·리셋 로직은 보존)
+  expect(src).not.toContain('testID="retake"');
+  expect(src).not.toContain('<ScanProfileBar');
+  // 담기 UI = 현행 유지 정정(9/5) — 스테퍼 잔존
+  const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
+  expect(rich).toContain('testID={`stepper-${dish.itemId}`}');
 });
 
 it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사진 슬롯 100·장소 필 소스 잠금', () => {

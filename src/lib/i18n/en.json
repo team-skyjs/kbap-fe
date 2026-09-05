@@ -31,7 +31,12 @@
     "google": "Sign in with Google",
     "terms": "By continuing, you agree to our Terms of Service and acknowledge our Privacy Policy.",
     "errorGeneric": "Sign-in didn't complete. Please try again.",
-    "errorNetwork": "Network error — check your connection and try again."
+    "errorNetwork": "Network error — check your connection and try again.",
+    "termsPrefix": "By continuing, you agree to our ",
+    "termsTos": "Terms of Service",
+    "termsAnd": " and acknowledge our ",
+    "termsPrivacy": "Privacy Policy",
+    "termsSuffix": "."
   },
   "gate": {
     "riskTitle": "See your personal safety rating",
