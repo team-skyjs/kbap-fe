@@ -241,6 +241,21 @@ export async function cancelReviewReminder(foodId: string): Promise<void> {
 export function addNotificationTapListener(onRoute: (href: string) => void): () => void {
   const N = loadNotifications();
   if (!N) return () => {};
+  // P-289: 발화 기록 — 알림함(실알림 전용)에 적재. id = request.identifier(중복 방지 키)
+  const record = (req: { identifier?: string; content: { data?: unknown } } | null | undefined) => {
+    try {
+      const d = req?.content?.data as { type?: string; foodId?: string | number } | undefined;
+      if (!req?.identifier || !d?.type) return;
+      const { recordInboxNotification } = require('@/lib/notifications/inbox') as typeof import('@/lib/notifications/inbox');
+      recordInboxNotification({
+        id: req.identifier,
+        type: d.type as 'REVIEW_REMINDER' | 'HELPFUL' | 'NUDGE' | 'NOTICE',
+        ...(d.foodId != null ? { foodId: String(d.foodId) } : {}),
+      });
+    } catch {
+      /* 기록 실패 = 비치명(알림함만 비는 것) */
+    }
+  };
   try {
     N.setNotificationHandler({
       handleNotification: async () => ({
@@ -250,13 +265,23 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
         shouldSetBadge: false,
       }),
     });
-    const emit = (resp: { notification: { request: { content: { data?: unknown } } } } | null) => {
+    const emit = (resp: { notification: { request: { identifier?: string; content: { data?: unknown } } } } | null) => {
+      record(resp?.notification.request); // 백그라운드 발화 → 탭 진입도 회수
       const href = resp ? routeForNotificationData(resp.notification.request.content.data) : null;
       if (href) onRoute(href);
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
+    // P-289 ①: 포그라운드 발화 즉시 기록
+    const recv = N.addNotificationReceivedListener?.((n: { request: { identifier?: string; content: { data?: unknown } } }) => record(n.request));
+    // P-289 ②: 백그라운드 발화분 재실행 회수(알림 센터에 떠 있는 것)
+    void N.getPresentedNotificationsAsync?.()
+      .then((list: { request: { identifier?: string; content: { data?: unknown } } }[]) => list.forEach((n) => record(n.request)))
+      .catch(() => {});
     void N.getLastNotificationResponseAsync().then(emit).catch(() => {});
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+      recv?.remove?.();
+    };
   } catch {
     return () => {};
   }
