@@ -4,6 +4,7 @@
  *   그릇 ↑(0.05s 시작·0.55s) → K ↓ 오버슈트(0.30s·0.60s) → 점 팝(0.85s·0.35s) →
  *   문구 2줄 페이드(0.95s·0.50s) → 1.6s에 0.45s 페이드아웃(뒤 화면과 크로스페이드).
  * reduce-motion = 정지 표시 → 0.6s 후 페이드아웃. 4s 캡(bootGate 캡과 동일) — 안전망.
+ * P-293: 페이드아웃은 max(최소 노출, ready) — 부트(entryChecked)가 늦으면 정지 유지.
  * 계측 없음. 문구는 브랜딩 텍스트(i18n 비대상 — 현 스플래시 규칙).
  */
 import * as React from 'react';
@@ -42,7 +43,16 @@ const MARK_W = 81.614;
 const MARK_H = 94.719;
 const MARK_VIEWBOX = '0 -6.72 81.614 94.719';
 
-export function AnimatedSplash({ active, onDone }: { active: boolean; onDone: () => void }) {
+export function AnimatedSplash({
+  active,
+  ready = true,
+  onDone,
+}: {
+  active: boolean;
+  /** P-293: 부트 준비(entryChecked) — 페이드아웃 = max(최소 노출, ready). 전엔 정지 유지. */
+  ready?: boolean;
+  onDone: () => void;
+}) {
   // null = 판정 전(콜라주 마퀴와 동일 — 알기 전엔 모션 시작 안 함)
   const [reduceMotion, setReduceMotion] = React.useState<boolean | null>(null);
   React.useEffect(() => {
@@ -61,6 +71,9 @@ export function AnimatedSplash({ active, onDone }: { active: boolean; onDone: ()
   const tagO = useSharedValue(0);
   const overlayO = useSharedValue(1);
 
+  // P-293: 최소 노출 경과(모션 1.6s / reduce 0.6s) — ready와 AND로 페이드아웃 시작
+  const [minReached, setMinReached] = React.useState(false);
+  const fading = React.useRef(false);
   const started = React.useRef(false);
   const doneRef = React.useRef(false);
   const finish = React.useCallback(() => {
@@ -83,9 +96,7 @@ export function AnimatedSplash({ active, onDone }: { active: boolean; onDone: ()
       // 정지 표시(전 요소 최종 상태) → reduceHold 후 페이드아웃
       bowlY.value = 0; bowlO.value = 1; kY.value = 0; kO.value = 1;
       dotS.value = 1; dotO.value = 1; tagY.value = 0; tagO.value = 1;
-      const t = setTimeout(() => {
-        overlayO.value = withTiming(0, { duration: T.fadeOutDur, easing: Easing.in(Easing.quad) }, () => runOnJS(finish)());
-      }, T.reduceHold);
+      const t = setTimeout(() => setMinReached(true), T.reduceHold);
       return () => clearTimeout(t);
     }
     bowlY.value = withDelay(T.bowl.delay, withTiming(0, { duration: T.bowl.dur, easing: EASE_OUT }));
@@ -96,15 +107,21 @@ export function AnimatedSplash({ active, onDone }: { active: boolean; onDone: ()
     dotO.value = withDelay(T.dot.delay, withTiming(1, { duration: T.dot.dur, easing: EASE_OUT }));
     tagY.value = withDelay(T.tagline.delay, withTiming(0, { duration: T.tagline.dur, easing: EASE_OUT }));
     tagO.value = withDelay(T.tagline.delay, withTiming(1, { duration: T.tagline.dur, easing: EASE_OUT }));
-    // 종료: 1.6s 시점 0.45s 페이드아웃 → 언마운트(뒤 화면 크로스페이드)
-    const t = setTimeout(() => {
-      overlayO.value = withTiming(0, { duration: T.fadeOutDur, easing: Easing.in(Easing.quad) }, () => runOnJS(finish)());
-    }, T.fadeOutAt);
+    // 종료: 1.6s 최소 노출 도달 표시 — 실제 페이드는 아래 effect(ready AND)
+    const t = setTimeout(() => setMinReached(true), T.fadeOutAt);
     return () => {
       clearTimeout(t);
       for (const v of [bowlY, bowlO, kY, kO, dotS, dotO, tagY, tagO, overlayO]) cancelAnimation(v);
     };
   }, [active, reduceMotion, bowlY, bowlO, kY, kO, dotS, dotO, tagY, tagO, overlayO, finish]);
+
+  // P-293: 페이드아웃 = 최소 노출(minReached) AND 부트 준비(ready) — ready가 늦으면
+  // 마지막 프레임(정지)을 유지해 빈 화면 크로스페이드를 막는다. 4s 캡은 위 effect가 보장.
+  React.useEffect(() => {
+    if (!minReached || !ready || fading.current) return;
+    fading.current = true;
+    overlayO.value = withTiming(0, { duration: SPLASH_TIMING.fadeOutDur, easing: Easing.in(Easing.quad) }, () => runOnJS(finish)());
+  }, [minReached, ready, overlayO, finish]);
 
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayO.value }));
   const bowlStyle = useAnimatedStyle(() => ({ opacity: bowlO.value, transform: [{ translateY: bowlY.value }] }));
