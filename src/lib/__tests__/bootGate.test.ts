@@ -11,7 +11,7 @@ jest.mock('@/lib/data/useMe', () => ({ fetchMe: jest.fn() }));
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn() }));
 jest.mock('@/lib/queryClient', () => ({ queryClient: { prefetchQuery: jest.fn(), prefetchInfiniteQuery: jest.fn() } }));
 
-import { gateSplash } from '../bootGate';
+import { gateSplash, SPLASH_MIN_MS } from '../bootGate';
 
 jest.useFakeTimers();
 
@@ -23,8 +23,8 @@ function track(p: Promise<void>) {
   return state;
 }
 
-it('조기 완료 → min(1200)까지 대기 후 hide', async () => {
-  const s = track(gateSplash({ ready: Promise.resolve(), prefetch: Promise.resolve() }));
+it('조기 완료 → min까지 대기 후 hide (minMs 파라미터 시맨틱 무변)', async () => {
+  const s = track(gateSplash({ ready: Promise.resolve(), prefetch: Promise.resolve(), minMs: 1200 }));
   await flush();
   jest.advanceTimersByTime(1199);
   await flush();
@@ -58,11 +58,20 @@ it('cap(4000) 초과 → 프리페치 대기 중단하고 강제 hide', async ()
 });
 
 it('프리페치 reject → hide 지연 없음 (min에 정확히 hide)', async () => {
-  const s = track(gateSplash({ ready: Promise.resolve(), prefetch: Promise.reject(new Error('offline')) }));
+  const s = track(gateSplash({ ready: Promise.resolve(), prefetch: Promise.reject(new Error('offline')), minMs: 1200 }));
   await flush();
   jest.advanceTimersByTime(1200);
   await flush();
   expect(s.done).toBe(true);
+});
+
+it('P-293: 기본 minMs = 0 — settle 즉시 hide(최소 노출은 AnimatedSplash 담당)', async () => {
+  expect(SPLASH_MIN_MS).toBe(0);
+  const s = track(gateSplash({ ready: Promise.resolve(), prefetch: Promise.resolve() }));
+  await flush();
+  jest.advanceTimersByTime(0); // min 타이머 = 0ms — 같은 틱에 소진
+  await flush();
+  expect(s.done).toBe(true); // 1200ms 대기 소멸
 });
 
 /* ---- P-041(KB-152 재수정, Q-05): 정리 → 프리페치 직렬화 잠금 ---- */

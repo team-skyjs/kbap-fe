@@ -99,6 +99,53 @@ it('reduce-motion = 모션 미시작(정지 표시) → 0.6s 후 페이드아웃
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
+/* ---- P-293: ready 게이트 — 페이드아웃 = max(최소 노출, 부트 준비) ---- */
+
+it('P-293① ready=false: 1.6s 지나도 페이드아웃 보류(정지 유지) → ready=true에 즉시 페이드·onDone', async () => {
+  jest.useFakeTimers();
+  const onDone = jest.fn();
+  const tree = await render(<AnimatedSplash active ready={false} onDone={onDone} />);
+  act(() => jest.advanceTimersByTime(SPLASH_TIMING.fadeOutAt + 500)); // 최소 노출 도달 후에도
+  expect(onDone).not.toHaveBeenCalled(); // ready 전엔 보류
+  await act(async () => {
+    tree.update(<AnimatedSplash active ready onDone={onDone} />);
+  });
+  expect(onDone).toHaveBeenCalledTimes(1); // 페이드(목 = 즉시 완료 콜백) → onDone
+});
+
+it('P-293② ready 선도착(기본 true): 기존 타임라인 그대로 1.6s에 페이드·onDone', async () => {
+  jest.useFakeTimers();
+  const onDone = jest.fn();
+  await render(<AnimatedSplash active ready onDone={onDone} />);
+  act(() => jest.advanceTimersByTime(SPLASH_TIMING.fadeOutAt - 1));
+  expect(onDone).not.toHaveBeenCalled();
+  act(() => jest.advanceTimersByTime(1));
+  expect(onDone).toHaveBeenCalledTimes(1);
+});
+
+it('P-293③ reduce-motion + ready=false: 0.6s 후에도 보류 → ready=true에 페이드·onDone', async () => {
+  jest.useFakeTimers();
+  mockReduceMotion = true;
+  const onDone = jest.fn();
+  const tree = await render(<AnimatedSplash active ready={false} onDone={onDone} />);
+  act(() => jest.advanceTimersByTime(SPLASH_TIMING.reduceHold + 500));
+  expect(onDone).not.toHaveBeenCalled();
+  await act(async () => {
+    tree.update(<AnimatedSplash active ready onDone={onDone} />);
+  });
+  expect(onDone).toHaveBeenCalledTimes(1);
+});
+
+it('P-293④ 배선 소스 잠금 — hideAsync/active는 폰트만 게이트·Stack=entryChecked 조건부·ready 전달·SPLASH_MIN_MS 0', () => {
+  const fs = require('fs');
+  const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
+  expect(layout).toContain('if (fontsLoaded || fontError) {'); // entryChecked 대기 제거
+  expect(layout).not.toContain('(fontsLoaded || fontError) && entryChecked'); // 구 게이트 잔존 0
+  expect(layout).toContain('{entryChecked && ('); // 렌더 가드(P-041/P-217)는 Stack 조건부가 승계
+  expect(layout).toContain('ready={entryChecked}');
+  expect(fs.readFileSync('src/lib/bootGate.ts', 'utf8')).toContain('export const SPLASH_MIN_MS = 0;');
+});
+
 it('4s 캡 — active가 영영 안 와도 언마운트 보장(bootGate 캡 동률)', async () => {
   jest.useFakeTimers();
   const onDone = jest.fn();
