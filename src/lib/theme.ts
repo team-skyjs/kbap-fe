@@ -70,7 +70,8 @@ export const riskTextStrong = {
   safe: color.riskSafeText,
   caution: color.riskCautionText,
   danger: color.riskDangerText,
-  unable: color.riskUnable,
+  // Codex #44 P2: unable 텍스트도 대비(원색 #B1B5BD = 2.06) — inkInfo(5.03). 마크·배지 fill은 원색 무변
+  unable: color.inkInfo,
 } as const;
 
 export const primaryTint = 'rgba(255,113,52,0.05)'; // 시안 "primary 5%"
