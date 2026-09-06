@@ -297,7 +297,9 @@
     "stayHint": "大約需要 30–40 秒 — 離開應用可能會遺失結果。",
     "sortMenu": "菜單順序",
     "sortSafety": "風險從低到高",
-    "missNote": "尚未收錄在資料庫中 — 幾天內會新增。"
+    "missNote": "尚未收錄在資料庫中 — 幾天內會新增。",
+    "searchNaver": "NAVER",
+    "searchGoogle": "Google"
   },
   "owner": {
     "caption": "將此畫面出示給餐廳員工看",

@@ -297,7 +297,9 @@
     "stayHint": "Quá trình này có thể mất 30–40 giây — rời khỏi ứng dụng có thể làm mất kết quả.",
     "sortMenu": "Theo thực đơn",
     "sortSafety": "Rủi ro thấp trước",
-    "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới."
+    "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
+    "searchNaver": "NAVER",
+    "searchGoogle": "Google"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

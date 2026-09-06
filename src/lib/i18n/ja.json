@@ -297,7 +297,9 @@
     "stayHint": "30〜40秒ほどかかることがあります — アプリを離れると結果が失われる場合があります。",
     "sortMenu": "メニュー順",
     "sortSafety": "リスクが低い順",
-    "missNote": "まだデータベースにありません — 数日以内に登録される予定です。"
+    "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
+    "searchNaver": "NAVER",
+    "searchGoogle": "Google"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",

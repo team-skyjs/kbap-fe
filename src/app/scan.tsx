@@ -590,7 +590,7 @@ export default function Scan() {
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
           {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}
-          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} style={styles.qhBack} testID="retake">
+          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} style={styles.qhBack} testID="retake" accessibilityLabel={t('scan.retake')} accessibilityRole="button">
             <D4CameraRestart size={24} color={C.ink} />
           </Pressable>
         </View>

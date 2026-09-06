@@ -297,7 +297,9 @@
     "stayHint": "Puede tardar entre 30 y 40 segundos; si sales de la app, podrías perder el resultado.",
     "sortMenu": "Orden del menú",
     "sortSafety": "Menor riesgo primero",
-    "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días."
+    "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días.",
+    "searchNaver": "NAVER",
+    "searchGoogle": "Google"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",
