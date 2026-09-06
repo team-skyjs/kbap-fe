@@ -18,7 +18,7 @@ import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, radius, riskText, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -46,7 +46,8 @@ export function fitAvoidChips<T extends { name: string }>(
   }
   return { shown: warns.slice(0, 1), rest: warns.length - 1 };
 }
-import { IconChevron, IconMinus, IconPlus, RiskBadge, RiskMark } from '@/components';
+import { IconChevron, IconPlus, RiskBadge, RiskMark } from '@/components';
+import { BrandGoogleMark, BrandNaverMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
@@ -54,8 +55,8 @@ import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
 /** 우측 열·담기 슬롯 고정 치수 — [+]↔스테퍼 교체 시 프레임 불변(P-138 ①) */
-export const RIGHT_COL_W = 72;
-export const ADD_SLOT_H = 30;
+export const RIGHT_COL_W = 83; // P-285: 스테퍼 83 폭 기준
+export const ADD_SLOT_H = 36; // P-285: add 36 기준(스테퍼 31은 슬롯 내 센터)
 
 /** P-160(예진 확정, 목업 B안): 프로필 체크 줄 — surface2 바탕+하단 보더로 리스트와
  *  톤 분리, 캡션 소형 대문자(**✓ 없음** — 전부 통과로 오독 방지), 아래 회피 재료
@@ -189,6 +190,10 @@ function RichRow({
           </Text>
           {dish.matched && <IconChevron size={16} color={C.ink3} />}
         </View>
+        {/* P-285(최종본 2200:21512): 설명 1줄 13/400 #9196A1 — 매칭 = 음식 설명(프리페치) */}
+        {dish.matched && !!food?.description && (
+          <Text style={styles.desc} numberOfLines={1} testID={`desc-${dish.itemId}`}>{food.description}</Text>
+        )}
         {/* 기피 경고 — 칩 재사용(flex-wrap, 여러 개여도 안 밀림) */}
         {warns.length > 0 && (
           <View
@@ -220,13 +225,22 @@ function RichRow({
         {!dish.matched && (
           <View style={styles.missRow} testID={`miss-${dish.itemId}`}>
             <Text style={styles.missText}>{t('scan.missNote')}</Text>
+            {/* P-285(최종본 2110:65784): 외부 검색 = 브랜드 아이콘 칩 34×30(텍스트 라벨 소멸 —
+                접근성 라벨 유지, 링크 로직 무변) */}
             <View style={styles.missLinks}>
               {([
-                ['Google', `https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
-                ['NAVER', `https://search.naver.com/search.naver?query=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
+                ['naver', `https://search.naver.com/search.naver?query=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
+                ['google', `https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
               ] as const).map(([label, url]) => (
-                <Pressable key={label} style={styles.missLink} hitSlop={6} onPress={() => void Linking.openURL(url)} testID={`miss-${label.toLowerCase()}-${dish.itemId}`}>
-                  <Text style={styles.missLinkText}>{label}</Text>
+                <Pressable
+                  key={label}
+                  style={styles.missLink}
+                  hitSlop={6}
+                  accessibilityLabel={label === 'naver' ? 'NAVER' : 'Google'}
+                  onPress={() => void Linking.openURL(url)}
+                  testID={`miss-${label}-${dish.itemId}`}
+                >
+                  {label === 'naver' ? <BrandNaverMark size={20} /> : <BrandGoogleMark size={20} />}
                 </Pressable>
               ))}
             </View>
@@ -242,25 +256,23 @@ function RichRow({
         )}
       </View>
 
-      {/* 우측 담기 슬롯 — 9/5 예진 판정(정정): 현 [+]·스테퍼 UI 그대로 유지.
-          TODO(D-4 ②): 디자이너 스테퍼 반영 변형 시안 수신 시 그 시안으로 교체. */}
+      {/* P-285(최종본): 담김 = 스테퍼 83×31(2162:9658) / 미담김 = add 36(4003:5796) —
+          9/5 TODO(스테퍼 변형 시안 수신 시 교체) 이행. 동작·cart·OrderPill 무변 */}
       <View style={styles.rightCol}>
         <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
           {added ? (
             <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>
               <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${dish.itemId}`}>
-                <IconMinus size={12} color={C.ink2} />
+                <D4Minus size={16} color={C.ink} />
               </Pressable>
               <Text style={styles.qty}>{qty}</Text>
               <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${dish.itemId}`}>
-                <IconPlus size={12} color={C.ink2} />
+                <IconPlus size={16} color={C.ink} />
               </Pressable>
             </View>
           ) : (
-            /* P-226 ⑦(재량 1안): 터치 44pt+(hitSlop 12) + primary 톤(시인성).
-               크기 30 유지 — ADD_SLOT 고정 풋프린트 프레임 불변(P-138 ①) */
             <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
-              <IconPlus size={15} color={C.primary} />
+              <IconPlus size={24} color={C.ink} />
             </Pressable>
           )}
         </View>
@@ -284,8 +296,8 @@ const styles = StyleSheet.create({
   missRow: { marginTop: 4, gap: 5 },
   missText: { fontSize: 13, fontStyle: 'italic', fontWeight: '400', color: C.ink3, lineHeight: 18 }, // §1-1(16314): 이탤릭 13
   missLinks: { flexDirection: 'row', gap: 8 },
-  missLink: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  missLinkText: { fontFamily: font.bodyBold, fontSize: 11.5, color: C.ink2 },
+  // P-285: 외부 검색 아이콘 칩 34×30(border #EAEBEE r37 pad 4/6)
+  missLink: { width: 34, height: 30, borderWidth: 1, borderColor: C.line, borderRadius: 37, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: 16, paddingBottom: 120 },
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
@@ -296,15 +308,15 @@ const styles = StyleSheet.create({
   barChipText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
   editLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   // KB-432 §1-1(4150:16254): h136 pad 16/20 gap 16, 하단 line 1px
-  row: { flexDirection: 'row', gap: 16, minHeight: 136, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: C.line },
+  row: { flexDirection: 'row', gap: 16, minHeight: 150, paddingVertical: 16, paddingHorizontal: 0, borderBottomWidth: 1, borderBottomColor: C.line }, // P-285: 최종본 행
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  thumbWrap: { width: 100 },
+  thumbWrap: { width: 118 }, // P-285: 118×118(2200:21512)
   thumbFb: { backgroundColor: C.surface2 },
   thumbUnable: { backgroundColor: '#F2F3F6', alignItems: 'center', justifyContent: 'center' },
   thumbBadge: { position: 'absolute', top: 0, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
   nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  desc: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
+  desc: { fontSize: 13, fontWeight: '400', color: C.ink3 }, // P-285: 설명 1줄(2200:21512)
   // P-171: 1줄 고정 — nowrap+hidden(근사 오차 이중 방어), 행 높이 균일 회복
   warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 5, marginTop: 2 },
   moreChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
@@ -316,12 +328,12 @@ const styles = StyleSheet.create({
   priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },
   // 우측 열 = 항상 RIGHT_COL_W — 썸네일 유무와 무관하게 텍스트 열 폭 불변
   rightCol: { width: RIGHT_COL_W, alignItems: 'flex-end', gap: 6 },
-  thumb: { width: 100, height: 100, borderRadius: 4, backgroundColor: C.surface2 },
+  thumb: { width: 118, height: 118, borderRadius: 4, backgroundColor: C.surface2 },
   // 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H)를 공유
   addSlot: { width: RIGHT_COL_W, height: ADD_SLOT_H, alignItems: 'flex-end', justifyContent: 'center' },
-  addBtn: { width: ADD_SLOT_H, height: ADD_SLOT_H, borderRadius: ADD_SLOT_H / 2, borderWidth: 1.5, borderColor: C.primary, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
-  stepper: { width: RIGHT_COL_W, height: ADD_SLOT_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5, borderColor: C.line, borderRadius: 999, paddingHorizontal: 8 },
-  qty: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, fontVariant: ['tabular-nums'], textAlign: 'center' },
+  addBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center', ...shadow.sh1 }, // P-285: add 36(4003:5796)
+  stepper: { width: 83, height: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 4, paddingHorizontal: 6, ...shadow.sh1 }, // P-285: 스테퍼 83×31(2162:9658)
+  qty: { fontSize: 15, fontWeight: '500', color: '#262C31', fontVariant: ['tabular-nums'], textAlign: 'center' },
   footNote: { fontFamily: font.body, fontSize: 11.5, lineHeight: 16, color: C.ink3, paddingVertical: 14 },
   pill: { position: 'absolute', left: 20, right: 20, backgroundColor: C.primary, borderRadius: 999, paddingVertical: 14, alignItems: 'center', shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
   pillText: { fontFamily: font.bodyBold, fontSize: 14.5, color: '#fff' },

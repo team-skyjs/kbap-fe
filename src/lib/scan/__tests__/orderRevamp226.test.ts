@@ -77,8 +77,9 @@ describe('①④⑤⑥⑦ 소스 잠금', () => {
   it('⑦ 담기 버튼 — 터치 44pt+(hitSlop 12)·primary 톤, 크기 30 유지(프레임 불변)', () => {
     const list = read('src/features/scan/ScanRichList.tsx');
     expect(list).toContain('hitSlop={12} onPress={onAdd}');
-    expect(list).toContain('<IconPlus size={15} color={C.primary} />');
-    expect(list).toMatch(/addBtn: \{ width: ADD_SLOT_H, height: ADD_SLOT_H/); // 크기 불변
+    // P-285(최종본): add 36 버튼 — 흰 bg + 잉크 아이콘 24(4003:5796)
+    expect(list).toContain('<IconPlus size={24} color={C.ink} />');
+    expect(list).toMatch(/addBtn: \{ width: 36, height: 36/); // P-285 최종본 add 36 // 크기 불변
   });
 });
 

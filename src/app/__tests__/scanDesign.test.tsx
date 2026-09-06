@@ -171,11 +171,10 @@ it('③→P-136/138 콰이엇 크롬 — 세그·다시찍기, 기본 List에 �
   expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // P-138⑤ 기본=List — 가격 행 노출
   // 구 D3 플로팅 라벨 소멸 (원본 세그 소멸 — 피크로 존치)
   for (const k of ['scan.showList', 'scan.showResult', 'scan.showOriginal']) expect(texts(tree, k)).toBe(0);
-  // 콰이엇 헤더: 세그 2 — 다시찍기 표면은 9/5 예진 판정으로 제거(새 .fig 리프레시 아이콘 때 복원)
-  for (const id of ['seg-risk', 'seg-list']) {
+  // P-285(최종본): 세그 2 + 다시찍기(camera_restart) 복원
+  for (const id of ['seg-risk', 'seg-list', 'retake']) {
     expect(tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
   }
-  expect(tree.root.findAll((n) => n.props?.testID === 'retake')).toHaveLength(0);
   // P-149(예진 확정): Photo 뷰 = 쌩 원본 + 줌만 — 범례·힌트·마커·미니시트 부재
   act(() => {
     tree.root.findAll((n) => n.props?.testID === 'seg-risk')[0].props.onPress();
@@ -232,18 +231,23 @@ it('P-149: 코치마크 표면 생존 — 리스트 행 마크 탭(재열람) �
   expect(marks.length).toBeGreaterThanOrEqual(1);
 });
 
-it('P-161 → 9/5 판정: 다시찍기 표면 제거(트리거 0) — 확인 모달·리셋 기능 코드는 보존(복원 대비)', async () => {
+it('P-285(최종본): 다시찍기 복원 — camera_restart 탭 = P-161 확인 모달 → 확인 시 카메라 복귀', async () => {
   const tree = render(<Scan />);
   await act(async () => {
     await galleryBtn(tree).props.onPress();
   });
-  expect(tree.root.findAll((n) => n.props?.testID === 'retake')).toHaveLength(0); // 표면 부재
-  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm')).toHaveLength(0);
-  // 기능 코드 보존 소스 잠금 — 새 .fig 리프레시 아이콘 수신 시 표면만 복원
+  // 탭 → 즉시 리셋 아님, 확인 모달
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'retake' && typeof n.props?.onPress === 'function')[0].props.onPress();
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'retake-confirm').length).toBeGreaterThanOrEqual(1);
+  expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // 결과 보존
+  act(() => {
+    tree.root.findAll((n) => n.props?.testID === 'retake-go')[0].props.onPress();
+  });
+  expect(JSON.stringify(tree.toJSON())).not.toContain('₩8,000'); // 카메라 복귀(결과 소멸)
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(src).toContain('setRetakeConfirm');
-  expect(src).toContain('testID="retake-confirm"');
-  expect(src).toContain('testID="retake-go"');
+  expect(src).toContain('D4CameraRestart size={24}'); // 최종본 아이콘(2200:21514)
 });
 
 it('P-187: 진행 화면 미리보기 = contain(레터박스) — cover 크롭 소멸(소스 잠금)', () => {
