@@ -41,6 +41,7 @@ export const color = {
   riskSafeText: '#007F43', // 흰 5.10
   riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.82
   riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.96
+  riskUnableText: '#6A6F7C', // Codex #44 P2: unable 텍스트 대비(흰 5.03 — inkInfo 동일값·의미 분리)
   inkInfo: '#6A6F7C', // 12~13px 정보성 회색 텍스트(흰 5.03 — gray-700 동값·의미 토큰)
 } as const;
 
@@ -70,8 +71,8 @@ export const riskTextStrong = {
   safe: color.riskSafeText,
   caution: color.riskCautionText,
   danger: color.riskDangerText,
-  // Codex #44 P2: unable 텍스트도 대비(원색 #B1B5BD = 2.06) — inkInfo(5.03). 마크·배지 fill은 원색 무변
-  unable: color.inkInfo,
+  // Codex #44 P2: unable 텍스트도 대비(원색 #B1B5BD = 2.06) — 마크·배지 fill은 원색 무변
+  unable: color.riskUnableText,
 } as const;
 
 export const primaryTint = 'rgba(255,113,52,0.05)'; // 시안 "primary 5%"
