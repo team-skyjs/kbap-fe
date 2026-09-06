@@ -52,8 +52,8 @@ describe('대비 (A1→KB-429) — 소형 텍스트 토큰 카드(white) 대비'
   it('ink3 = 시안값 잠금(#9196A1 — 대비 2.97:1, 예진 게이트 항목)', () => {
     expect(color.ink3).toBe('#9196A1');
   });
-  it('primaryText = 시안 원색 잠금(9/5 예진 확정 — 대비 변형 폐기)', () => {
-    expect(color.primaryText).toBe('#FF7134');
+  it('primaryText = 대비 토큰(P-284, 9/6 예진 — 커맨드 센터 추천안)', () => {
+    expect(color.primaryText).toBe('#BE460F');
   });
   it('ink2 ≥ 4.5:1 유지 (회귀 방지)', () => {
     expect(contrast(color.ink2, color.card)).toBeGreaterThanOrEqual(4.5);

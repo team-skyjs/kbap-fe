@@ -11,9 +11,9 @@
  *  riskText·shadowGlow·shBadge·type). */
 export const color = {
   primary: '#FF7134', // Button/Primary 4123:3985 · FAB 4095:1858
-  primaryPress: '#E8602A', // 9/5 예진 실기 수정 — 시안 보라(#9A08C2) 거부, primary 10% 어둡게
-  // 9/5 예진 확정: 대비 조정 변형 폐기 — 소형 텍스트도 시안 원색(P-031 4.5:1 계약 종료)
-  primaryText: '#FF7134',
+  primaryPress: '#BE460F', // P-284: 최종본 Main color-pressed(2209:997) — 9/6 예진 'A 시안대로'
+  // P-284(9/6 예진): 12~14px primary 텍스트 대비 — 커맨드 센터 추천안(흰 5.16, WCAG AA)
+  primaryText: '#BE460F',
   primary2: '#FF9A6E', // gradient 2nd stop(현 규칙 유지)
   accent: '#0E9AA7',
 
@@ -37,6 +37,11 @@ export const color = {
   riskCaution: '#FFA526', // 4064:796
   riskDanger: '#F76661', // 4064:793
   riskUnable: '#B1B5BD', // 4064:798
+  // P-284(9/6): 소형(12~13px) 위험 상태 '텍스트' 대비 토큰 — 마크·배지·아이콘 fill은 원색 무변
+  riskSafeText: '#007F43', // 흰 5.10
+  riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.82
+  riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.96
+  inkInfo: '#6A6F7C', // 12~13px 정보성 회색 텍스트(흰 5.03 — gray-700 동값·의미 토큰)
 } as const;
 
 /**
@@ -57,6 +62,14 @@ export const riskText = {
   safe: color.riskSafe,
   caution: color.riskCaution,
   danger: color.riskDanger,
+  unable: color.riskUnable,
+} as const;
+
+/** P-284: 소형 상태 텍스트(카드 상태 12/700 등) 대비 맵 — 마크·배지 fill은 riskText/원색 유지. */
+export const riskTextStrong = {
+  safe: color.riskSafeText,
+  caution: color.riskCautionText,
+  danger: color.riskDangerText,
   unable: color.riskUnable,
 } as const;
 

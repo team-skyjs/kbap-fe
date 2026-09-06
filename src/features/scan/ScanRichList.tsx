@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   // P-223: 통합 칩(색+형태) — 구 avoidRow 섹션 스타일 대체
   warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 26, borderWidth: 1, borderColor: C.line, borderRadius: 37, paddingVertical: 4, paddingHorizontal: 6, backgroundColor: '#FFFFFF' },
   warnChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
-  price: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 2, fontVariant: ['tabular-nums'] },
+  price: { fontSize: 13, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
   priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },
   // 우측 열 = 항상 RIGHT_COL_W — 썸네일 유무와 무관하게 텍스트 열 폭 불변
   rightCol: { width: RIGHT_COL_W, alignItems: 'flex-end', gap: 6 },
