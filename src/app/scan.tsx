@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
   permScrim: { backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
   permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 18 },
   permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
-  permAlertBody: { fontSize: 15, fontWeight: '500', color: '#ADB4BA', textAlign: 'center', lineHeight: 21 },
+  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 21 }, // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
