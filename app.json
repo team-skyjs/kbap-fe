@@ -101,14 +101,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#E2580C",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 230,
-          "_comment": "KB-194: 태그라인 제거 에셋 + 230 원복(KB-125 ④ 임시 확대 해소). P-054: Android 12+ 원형 마스크 대응 — 안드는 심볼 전용 에셋(정사각·2/3 안전영역), iOS는 기존 조합 이미지. 네이티브 — 안드 빌드3/차기 iOS 반영",
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/images/splash-mark-ios.png",
+          "imageWidth": 87,
+          "_comment": "P-288(KB-437) 최종본: 흰 배경 + 정지 마크(문구 없음) — 마크 화면상 81pt(캔버스 264, 마크 245 → 87×245/264≈81). P-054: 안드 12+ 원형 마스크 = 별도 정사각 에셋(396, 마크 중앙 2/3). 다크 변형 없음(흰 고정 — 시안 2200:20667). 네이티브 — b23 반영",
           "resizeMode": "contain",
           "android": {
-            "image": "./assets/images/splash-icon-android.png",
-            "imageWidth": 200
+            "image": "./assets/images/splash-mark-android.png",
+            "imageWidth": 131
           }
         }
       ],
