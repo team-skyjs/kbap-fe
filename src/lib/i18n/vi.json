@@ -298,8 +298,8 @@
     "sortMenu": "Theo thực đơn",
     "sortSafety": "Rủi ro thấp trước",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "Tìm trên NAVER",
+    "searchOnGoogle": "Tìm trên Google"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",

@@ -298,8 +298,8 @@
     "sortMenu": "Как в меню",
     "sortSafety": "Сначала низкий риск",
     "missNote": "Пока нет в нашей базе — появится в течение нескольких дней.",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "Искать в NAVER",
+    "searchOnGoogle": "Искать в Google"
   },
   "owner": {
     "caption": "Покажите этот экран персоналу ресторана",

@@ -298,8 +298,8 @@
     "sortMenu": "메뉴판 순",
     "sortSafety": "위험도 낮은 순",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요.",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "네이버에서 검색",
+    "searchOnGoogle": "구글에서 검색"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",

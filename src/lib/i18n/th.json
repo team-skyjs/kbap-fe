@@ -298,8 +298,8 @@
     "sortMenu": "ตามเมนู",
     "sortSafety": "เรียงจากความเสี่ยงต่ำ",
     "missNote": "ยังไม่อยู่ในฐานข้อมูล — จะเพิ่มภายในไม่กี่วัน",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "ค้นหาใน NAVER",
+    "searchOnGoogle": "ค้นหาใน Google"
   },
   "owner": {
     "caption": "แสดงหน้าจอนี้ให้พนักงานร้านอาหารดู",

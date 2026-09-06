@@ -298,8 +298,8 @@
     "sortMenu": "メニュー順",
     "sortSafety": "リスクが低い順",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "NAVERで検索",
+    "searchOnGoogle": "Googleで検索"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",

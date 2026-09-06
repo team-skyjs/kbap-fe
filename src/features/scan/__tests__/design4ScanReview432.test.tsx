@@ -146,6 +146,6 @@ it('P-285: 행 우측 = 최종본 스테퍼/add + 미등록 브랜드 아이콘 
   expect(rich).toContain('<BrandNaverMark size={20} />');
   expect(rich).toContain('<BrandGoogleMark size={20} />');
   expect(rich).not.toContain('missLinkText'); // 텍스트 칩 소멸(접근성 라벨은 accessibilityLabel)
-  expect(rich).toContain("accessibilityLabel={label === 'naver' ? t('scan.searchNaver') : t('scan.searchGoogle')}"); // Codex #45 P1
+  expect(rich).toContain("accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')}"); // Codex #45 P1
   expect(rich).toContain('testID={`desc-${dish.itemId}`}'); // 설명 1줄
 });

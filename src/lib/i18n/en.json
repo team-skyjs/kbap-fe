@@ -294,8 +294,8 @@
     "sortMenu": "Menu order",
     "sortSafety": "Lowest risk first",
     "missNote": "Not in our database yet — it should be added within a few days.",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "Search on NAVER",
+    "searchOnGoogle": "Search on Google"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",

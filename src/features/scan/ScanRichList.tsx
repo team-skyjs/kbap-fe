@@ -236,7 +236,7 @@ function RichRow({
                   key={label}
                   style={styles.missLink}
                   hitSlop={6}
-                  accessibilityLabel={label === 'naver' ? t('scan.searchNaver') : t('scan.searchGoogle')} /* Codex #45 P1: i18n 경유 */
+                  accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')} /* Codex #45 P1 */
                   onPress={() => void Linking.openURL(url)}
                   testID={`miss-${label}-${dish.itemId}`}
                 >

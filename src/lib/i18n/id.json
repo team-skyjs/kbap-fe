@@ -298,8 +298,8 @@
     "sortMenu": "Urutan menu",
     "sortSafety": "Risiko terendah dulu",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",
-    "searchNaver": "NAVER",
-    "searchGoogle": "Google"
+    "searchOnNaver": "Cari di NAVER",
+    "searchOnGoogle": "Cari di Google"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",
