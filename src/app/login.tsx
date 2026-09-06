@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: 16, fontWeight: '400', color: '#2F3137', textAlign: 'center', lineHeight: 23, maxWidth: 300 },
 
   foot: { gap: 10, paddingHorizontal: 20 },
-  terms: { fontSize: 13, fontWeight: '400', color: C.ink3, textAlign: 'center', lineHeight: 18, paddingHorizontal: 10 },
+  terms: { fontSize: 13, fontWeight: '400', color: C.inkInfo, textAlign: 'center', lineHeight: 18, paddingHorizontal: 10 }, // P-284
   termsLink: { textDecorationLine: 'underline', paddingHorizontal: 0 },
   browse: { fontSize: 13, fontWeight: '500', color: C.ink2, textAlign: 'center', padding: 10 },
   browseDim: { opacity: 0.35 }, // KB-421: 색/불투명도만(프레임 불변 P-151)

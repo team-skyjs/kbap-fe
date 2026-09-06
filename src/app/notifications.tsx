@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   rowUnread: { backgroundColor: primaryTint },
   title: { fontSize: 15, fontWeight: '600', color: C.ink },
   body: { fontSize: 14, fontWeight: '500', color: '#4B4F58', lineHeight: 20 },
-  when: { fontSize: 13, fontWeight: '500', color: C.inkMute },
+  when: { fontSize: 13, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 시각 텍스트 대비
   dotSlot: { width: 8, alignItems: 'center', paddingTop: 6 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
 });

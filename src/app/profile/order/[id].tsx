@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   // 영수증 카드 — pad 16, 행 space-between, line #DCDEE3
   receipt: { marginHorizontal: 20, borderWidth: 1, borderColor: C.line, borderRadius: 8, padding: 16, gap: 12 },
   rcptRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  rcptLbl: { fontSize: 12, fontWeight: '600', color: C.inkMute },
+  rcptLbl: { fontSize: 12, fontWeight: '600', color: C.inkInfo }, // P-284: 영수증 라벨 대비
   rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
   rcptValWrap: { flex: 1, textAlign: 'right' },
   rcptLine: { height: 1, backgroundColor: C.line2 },

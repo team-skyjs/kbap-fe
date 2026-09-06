@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
 
   foodChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', maxWidth: '100%' },
   foodChipThumb: { width: 16, height: 16, borderRadius: 4, overflow: 'hidden', backgroundColor: C.surface2 },
-  foodChipName: { flexShrink: 1, fontSize: 12, fontWeight: '500', color: C.ink2 },
+  foodChipName: { flexShrink: 1, fontSize: 12, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 링크(동값·의미 토큰)
 });
 
 export default FeedCard;

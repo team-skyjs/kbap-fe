@@ -235,10 +235,10 @@ it('KB-433(Codex #32 → P-280): 콜라주 = 전면 배경(ceil 3~8행) — 하�
   expect(src).toContain('<Collage animate={animate} heroTop={heroTop} />');
 });
 
-it('9/5 예진 수정: primary 눌림 = #E8602A(보라 폐기) · Tag 선택 = 색만(체크 0·메트릭 불변)', () => {
+it('눌림 색 = 최종본 #BE460F(P-284 — 9/5 #E8602A 경유) · Tag 선택 = 색만(체크 0·메트릭 불변)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { color } = require('@/lib/theme') as typeof import('@/lib/theme');
-  expect(color.primaryPress).toBe('#E8602A'); // primary 10% 어둡게 — 시안 보라 거부(실기)
+  expect(color.primaryPress).toBe('#BE460F'); // P-284: 최종본 Main color-pressed(2209:997)
   const src = require('fs').readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
   expect(src).not.toContain('IconCheck size={14}'); // Tag 체크 아이콘 소멸(폭 밀림 방지)
   // 선택/비선택 = 색 키만 상이(P-103/151 프레임 불변 — P-138① 방식)

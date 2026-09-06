@@ -1037,7 +1037,7 @@ const styles = StyleSheet.create({
   resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   resultTabBarOn: { backgroundColor: '#2F3137' },
   recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 },
-  recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primary },
+  recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: C.surface },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
   toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
   // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
   importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
-  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primaryText, textTransform: 'uppercase' },
+  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
   // P-062② D2 스캐닝 오버레이

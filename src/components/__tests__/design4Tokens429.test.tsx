@@ -120,9 +120,11 @@ it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 = riskText, fg는
   const fs = require('fs') as typeof import('fs');
   // KB-431: 상세 위험 요약 행·KB-432: 스캔 회피 칩(시안 #2F3137 텍스트)은 riskText 소비처에서 제외.
   // KB-434: saved = FoodGridCard 재사용(riskText 소비는 홈 카드 내부 gstatus)
-  for (const p of ['src/components/RiskPill.tsx', 'src/app/scan.tsx', 'src/features/food/FoodCards.tsx']) {
+  for (const p of ['src/components/RiskPill.tsx', 'src/app/scan.tsx']) {
     expect(fs.readFileSync(p, 'utf8')).toContain('riskText[');
   }
+  // P-284: 카드 12/700 상태 텍스트 = 대비 토큰 맵(riskTextStrong)
+  expect(fs.readFileSync('src/features/food/FoodCards.tsx', 'utf8')).toContain('riskTextStrong[');
   for (const p of [
     'src/components/RiskPill.tsx',
     'src/features/scan/ScanRichList.tsx',
@@ -133,6 +135,29 @@ it('⑦ riskText 배선(Codex #27 P2) — 소형 위험 라벨 = riskText, fg는
     // 텍스트 색으로 fg 사용 소멸(전 표면)
     expect(fs.readFileSync(p, 'utf8')).not.toMatch(/color:\s*(?:riskTone\[\w+(?:\.\w+)*\]|tone)\.fg/);
   }
+});
+
+it('P-284: 소형 텍스트 대비 토큰 — 흰 바탕 WCAG AA(≥4.5:1) 회귀 잠금', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { color } = require('@/lib/theme') as typeof import('@/lib/theme');
+  const lum = (hex: string) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const contrastOnWhite = (hex: string) => (1.0 + 0.05) / (lum(hex) + 0.05);
+  for (const [name, hex] of [
+    ['primaryPress', color.primaryPress],
+    ['primaryText', color.primaryText],
+    ['riskSafeText', color.riskSafeText],
+    ['riskCautionText', color.riskCautionText],
+    ['riskDangerText', color.riskDangerText],
+    ['inkInfo', color.inkInfo],
+    ['riskUnableText', color.riskUnableText], // Codex #44 P2
+  ] as const) {
+    expect({ name, ok: contrastOnWhite(hex) >= 4.5 }).toEqual({ name, ok: true });
+  }
+  expect(color.primaryPress).toBe('#BE460F'); // 최종본 Main color-pressed(2209:997)
 });
 
 it('i18n — tabs.reviews 10로케일 존재', () => {

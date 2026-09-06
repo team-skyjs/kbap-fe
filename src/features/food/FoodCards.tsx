@@ -7,7 +7,7 @@
 import * as React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
+import { color as C, riskTextStrong, shadow, type RiskState } from '@/lib/theme';
 import { Btn, CardPhoto, RiskBadge, IconFood } from '@/components';
 import { BookmarkStar } from '@/components/Stars';
 import { FLAGS } from '@/lib/flags';
@@ -57,7 +57,7 @@ export function FoodGridCard({
               {food.nameKo}
             </Text>
           )}
-          {!guest && <Text style={[styles.gstatus, { color: riskText[risk] }]}>{riskLabel}</Text>}
+          {!guest && <Text style={[styles.gstatus, { color: riskTextStrong[risk] } /* P-284: 12/700 상태 텍스트 = 대비 토큰 */]}>{riskLabel}</Text>}
         </View>
         <Pressable style={styles.gbm} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
           {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
