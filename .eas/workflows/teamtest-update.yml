@@ -61,13 +61,19 @@ jobs:
             echo "-- android stderr:"; head -c 800 /tmp/bl-and.err || true; echo
           fi
           bash scripts/ota-fp-gate.sh "$CUR_IOS" "$CUR_AND" "$BUILD_IOS" "$BUILD_AND"
-      - name: Publish to teamtest
+      - name: Publish to teamtest (per-platform — P-293b)
         run: |
+          # P-293b: fp 게이트가 판정한 발행 가능 플랫폼만 발행(불일치 플랫폼 SKIP).
+          # 캐시 규칙(--clear-cache)·env 인라인(P-073)은 플랫폼별 명령에 그대로.
+          PLATS=$(cat /tmp/ota-publish-platforms)
           SHA7=$(git rev-parse --short HEAD)
           SUBJECT=$(git log -1 --pretty=%s)
-          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx eas-cli update \
-            --channel teamtest --clear-cache --non-interactive \
-            --message "$SHA7 $SUBJECT"
+          for P in $PLATS; do
+            EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx eas-cli update \
+              --channel teamtest --platform "$P" --clear-cache --non-interactive \
+              --message "$SHA7 $SUBJECT"
+          done
       - name: Summary
         run: |
-          npx eas-cli update:list --branch teamtest --limit 1 --non-interactive || true
+          echo "published platforms: $(cat /tmp/ota-publish-platforms 2>/dev/null || echo '?')"
+          npx eas-cli update:list --branch teamtest --limit 2 --non-interactive || true

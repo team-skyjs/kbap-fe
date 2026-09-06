@@ -121,25 +121,47 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(yml.indexOf('ota-fp-gate.sh')).toBeLessThan(yml.indexOf('eas-cli update'));
   });
 
-  it('fp 게이트 셸 — 일치=통과·불일치=실패·명시적 빌드 0건=경고 통과·조회 실패=fail closed', () => {
+  it('fp 게이트 셸(P-293b 플랫폼별) — 불일치=해당 플랫폼만 SKIP·전 플랫폼 불일치=실패·조회 실패=fail closed', () => {
     const { spawnSync } = require('child_process') as typeof import('child_process');
-    const run = (args: string[]) => spawnSync('bash', ['scripts/ota-fp-gate.sh', ...args], { encoding: 'utf8' });
+    const os = require('os') as typeof import('os');
+    const path = require('path') as typeof import('path');
+    const out = path.join(os.tmpdir(), `ota-gate-test-${process.pid}`);
+    const run = (args: string[]) => spawnSync('bash', ['scripts/ota-fp-gate.sh', ...args, out], { encoding: 'utf8' });
+    const plats = () => (fs.readFileSync(out, 'utf8') as string).trim();
+
     expect(run(['A', 'B', 'A', 'B']).status).toBe(0); // 양 플랫폼 일치
+    expect(plats()).toBe('ios android');
+    // 한 플랫폼 불일치 = 그 플랫폼만 SKIP(값 명시), 나머지는 발행 — #52 iOS 동반 차단 사고 방지
     const iosMiss = run(['A2', 'B', 'A', 'B']);
-    expect(iosMiss.status).toBe(1);
-    expect(iosMiss.stdout).toContain('ios fp 불일치');
+    expect(iosMiss.status).toBe(0);
+    expect(iosMiss.stdout).toContain('SKIP: ios fp 불일치 — installed=A ≠ current=A2');
+    expect(plats()).toBe('android');
     const andMiss = run(['A', 'B2', 'A', 'B']);
-    expect(andMiss.status).toBe(1);
-    expect(andMiss.stdout).toContain('android fp 불일치');
+    expect(andMiss.status).toBe(0);
+    expect(andMiss.stdout).toContain('SKIP: android fp 불일치 — installed=B ≠ current=B2');
+    expect(plats()).toBe('ios');
+    // 전 플랫폼 불일치 = 발행 대상 0 → 잡 실패(재빌드 필요 신호)
+    const bothMiss = run(['A2', 'B2', 'A', 'B']);
+    expect(bothMiss.status).toBe(1);
+    expect(bothMiss.stdout).toContain('발행 가능 플랫폼 0');
     const noBuilds = run(['A', 'B', 'NONE', 'NONE']);
     expect(noBuilds.status).toBe(0); // 명시적 빌드 0건([]) = 경고만(도달 대상 없음)
     expect(noBuilds.stdout).toContain('WARN');
+    expect(plats()).toBe('ios android');
     // Codex #18 P2: 조회/파싱 실패는 게이트가 열린 채 통과하면 안 된다 — fail closed
     for (const bad of [['A', 'B', 'LOOKUP_FAIL', 'B'], ['A', 'B', 'A', '']]) {
       const r = run(bad);
       expect(r.status).toBe(1);
       expect(r.stdout).toContain('조회 실패');
     }
+    fs.unlinkSync(out);
+  });
+
+  it('P-293b 워크플로 — 플랫폼별 발행 배선(--platform + 게이트 산출 파일 소비)', () => {
+    const yml = fs.readFileSync('.eas/workflows/teamtest-update.yml', 'utf8') as string;
+    expect(yml).toContain('cat /tmp/ota-publish-platforms');
+    expect(yml).toContain('--platform "$P"');
+    expect(yml).toMatch(/for P in \$PLATS/);
   });
 
   it('i18n — ota.ready·ota.apply 10로케일 전부 존재(빈 값 금지)', () => {
