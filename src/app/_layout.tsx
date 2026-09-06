@@ -108,15 +108,17 @@ export default function RootLayout() {
   }, [entryChecked, router]);
 
   // P-288(KB-437): 네이티브 스플래시가 걷히는 같은 프레임에 JS 오버레이(AnimatedSplash)
-  // 활성 — 정지 마크(동일 위치) 위에서 모션 A 시작, 종료 페이드로 첫 화면과 크로스페이드
+  // 활성 — 정지 마크(동일 위치) 위에서 모션 A 시작, 종료 페이드로 첫 화면과 크로스페이드.
+  // P-293: entryChecked 대기 제거(b25 실기 — 정지 마크 ~1s 멈춤) — 모션은 폰트 준비
+  // 즉시 시작, 부트 완료는 ready(entryChecked)로 전달해 페이드아웃만 잡는다.
   const [splashActive, setSplashActive] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
   useEffect(() => {
-    if ((fontsLoaded || fontError) && entryChecked) {
+    if (fontsLoaded || fontError) {
       setSplashActive(true);
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError, entryChecked]);
+  }, [fontsLoaded, fontError]);
 
   // KB-67: refresh 만료 = 세션 정리. 게스트 모드에선 로그인 화면을 강제하지
   // 않는다 — 세션 없음 ≠ 로그인 강제 (guest-access-policy §1): 캐시가 clear돼
@@ -148,7 +150,9 @@ export default function RootLayout() {
     };
   }, [router]);
 
-  if ((!fontsLoaded && !fontError) || !entryChecked) return null;
+  // P-293: 폰트만 게이트 — entryChecked 전엔 스플래시 오버레이만 렌더(아래 조건부).
+  // 렌더 가드(P-041/P-217: 판별 전 홈·리다이렉트 금지)는 Stack 조건부가 승계.
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -160,6 +164,8 @@ export default function RootLayout() {
           <I18nextProvider i18n={i18n}>
             <LocaleProvider>
               <StatusBar style="dark" />
+              {entryChecked && (
+              <>
               <Stack
                 screenOptions={{
                   headerShown: false,
@@ -179,8 +185,11 @@ export default function RootLayout() {
               <PhotoSourceSheetHost />
               {/* KB-420: OTA 자동 적용 — 채널별 정책(otaPolicy) + prod 대기 배너 */}
               <OtaAutoApplyHost />
-              {/* P-288: JS 스플래시 오버레이 — 최상위(zIndex 1000), 완료 시 언마운트 */}
-              {splashVisible && <AnimatedSplash active={splashActive} onDone={() => setSplashVisible(false)} />}
+              </>
+              )}
+              {/* P-288: JS 스플래시 오버레이 — 최상위(zIndex 1000), 완료 시 언마운트.
+                  P-293: entryChecked 전에도 유지(모션 선시작) — ready로 페이드아웃 게이트 */}
+              {splashVisible && <AnimatedSplash active={splashActive} ready={entryChecked} onDone={() => setSplashVisible(false)} />}
             </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>

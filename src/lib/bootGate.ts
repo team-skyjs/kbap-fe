@@ -17,7 +17,10 @@ import { fetchFoodsPage } from '@/lib/data/useFoods';
 import { fetchMe } from '@/lib/data/useMe';
 import { hasBeSession } from '@/lib/auth/beAuth';
 
-export const SPLASH_MIN_MS = 1200;
+// P-293(KB-437): 기본 0 — 최소 노출은 AnimatedSplash 모션(1.6s+페이드)이 담당.
+// 구 1200ms가 hideAsync·모션 시작을 부트 완료 뒤로 밀어 정지 마크가 ~1s 멈춰 보였다.
+// minMs 파라미터·직렬 순서(cleanup→prefetch)·cap 시맨틱은 무변.
+export const SPLASH_MIN_MS = 0;
 export const SPLASH_CAP_MS = 4000;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
