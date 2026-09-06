@@ -153,6 +153,7 @@ it('P-284: 소형 텍스트 대비 토큰 — 흰 바탕 WCAG AA(≥4.5:1) 회�
     ['riskCautionText', color.riskCautionText],
     ['riskDangerText', color.riskDangerText],
     ['inkInfo', color.inkInfo],
+    ['riskTextStrong.unable', require('@/lib/theme').riskTextStrong.unable], // Codex #44 P2
   ] as const) {
     expect({ name, ok: contrastOnWhite(hex) >= 4.5 }).toEqual({ name, ok: true });
   }
