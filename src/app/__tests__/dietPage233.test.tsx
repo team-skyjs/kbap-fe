@@ -89,9 +89,9 @@ it('P-243: 프리셀렉트 = me.dietCategories(서버 정본) — 역추론 아�
   mockUseMe.mockReturnValue(ME([...VEGAN, ...NO_ALCOHOL], ['NO_ALCOHOL']));
   const tree = render();
   const on = tree.root.findAll((n) => n.props?.testID === 'dietpage-NO_ALCOHOL')[0];
-  expect(JSON.stringify(on.props.style)).toContain('"borderColor":"#E2580C"'); // 활성 톤
+  expect(JSON.stringify(on.props.style)).toContain('"borderColor":"#FF7134"'); // 활성 톤
   const off = tree.root.findAll((n) => n.props?.testID === 'dietpage-VEGAN')[0];
-  expect(JSON.stringify(off.props.style)).not.toContain('"borderColor":"#E2580C"');
+  expect(JSON.stringify(off.props.style)).not.toContain('"borderColor":"#FF7134"');
 });
 
 it('추가 저장 = dietCategories 풀 셋 + 신규분 합집합 회피 — 한 PATCH → 사후 모달 → Yes = 회피 편집', async () => {
@@ -137,7 +137,8 @@ it('무변경 저장 = 무모달·조용한 복귀(재량 확인 반영)', async
   expect(mockBack).toHaveBeenCalled();
 });
 
-it('배선 소스 잠금 — 프로필 Show all 진입·해제 안내 문구·P-227 승인 팝업 존치(경로 분리)', () => {
+it('배선 소스 잠금 — 해제 안내 문구·P-227 승인 팝업 존치(경로 분리)', () => {
+  // KB-434 D-6: 프로필 탭 식이 '칩 섹션' 소멸 — 진입은 메뉴 행(/profile/diet, Codex #33 P2 복원)
   const fs = require('fs');
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain("router.push('/profile/diet' as Href)");
   const page = fs.readFileSync('src/app/profile/diet.tsx', 'utf8') as string;
@@ -149,9 +150,9 @@ it('배선 소스 잠금 — 프로필 Show all 진입·해제 안내 문구·P-
 
 it('P-243 역추론 잔존 0 — 활성 판정에 codes.every(⊆회피) 패턴 소멸(서버 정본)', () => {
   const fs = require('fs');
-  for (const f of ['src/app/profile/diet.tsx', 'src/app/(tabs)/profile.tsx']) {
-    const src = fs.readFileSync(f, 'utf8') as string;
-    expect(src).not.toContain('codes.every'); // 역추론 판정식
-    expect(src).toContain('me?.dietCategories'); // 서버 정본 소스
-  }
+  const page = fs.readFileSync('src/app/profile/diet.tsx', 'utf8') as string;
+  expect(page).not.toContain('codes.every'); // 역추론 판정식
+  expect(page).toContain('me?.dietCategories'); // 서버 정본 소스
+  // KB-434 D-6: 프로필 탭은 식이 섹션 자체 소멸 — 역추론 잔존 0
+  expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).not.toContain('codes.every');
 });

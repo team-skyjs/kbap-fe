@@ -47,11 +47,6 @@ export function foodSpiceText(level: SpiceLevel, t: (key: string) => string): st
   return t(SPICE_LEVEL_LABEL[level]);
 }
 
-/** 경고 판정 = 단계(음식) > 단계(유저). SKIP(미설정)은 경고 없음. */
-export function spicierThanUser(food: SpiceLevel, user: SpiceChoice): boolean {
-  if (user === 'SKIP') return false;
-  return spiceRank(food) > spiceRank(user);
-}
 
 export function isSpiceLevel(v: unknown): v is SpiceLevel {
   return typeof v === 'string' && (SPICE_LEVELS as readonly string[]).includes(v);

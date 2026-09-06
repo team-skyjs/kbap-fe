@@ -91,7 +91,8 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 const addTile = (tree: ReactTestRenderer) =>
-  tree.root.findAll((n) => typeof n.props?.onPress === 'function' && JSON.stringify(n.props?.style ?? '').includes('dashed'))[0];
+  // KB-432: 시안 슬롯은 solid 보더 — testID로 탐색(구 dashed 스타일 매칭 폐기)
+  tree.root.findAll((n) => n.props?.testID === 'photo-add' && typeof n.props?.onPress === 'function')[0];
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -189,7 +190,7 @@ describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 �
     });
     const s2 = JSON.stringify(tree.toJSON());
     expect(s2).toContain('review.postError');
-    expect(tree.root.findAll((n) => n.props?.testID === 'posting').length).toBe(0); // 스피너 해제
+    expect(tree.root.findAll((n) => n.props?.testID === 'btn-busy').length).toBe(0); // 스피너 해제(Btn busy 공용 문법)
     await act(async () => {
       await postBtn(tree).props.onPress(); // 복구 후 재제출 가능
     });

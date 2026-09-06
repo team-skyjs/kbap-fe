@@ -7,7 +7,8 @@
     "tryAgain": "Try again",
     "goBack": "Go back",
     "retry": "Retry",
-    "skip": "Skip"
+    "skip": "Skip",
+    "close": "Close"
   },
   "intro": {
     "skip": "Skip",
@@ -30,7 +31,12 @@
     "google": "Sign in with Google",
     "terms": "By continuing, you agree to our Terms of Service and acknowledge our Privacy Policy.",
     "errorGeneric": "Sign-in didn't complete. Please try again.",
-    "errorNetwork": "Network error — check your connection and try again."
+    "errorNetwork": "Network error — check your connection and try again.",
+    "termsPrefix": "By continuing, you agree to our ",
+    "termsTos": "Terms of Service",
+    "termsAnd": " and acknowledge our ",
+    "termsPrivacy": "Privacy Policy",
+    "termsSuffix": "."
   },
   "gate": {
     "riskTitle": "See your personal safety rating",
@@ -45,7 +51,9 @@
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
     "saveTitle": "Save dishes you want to try",
     "saveSub": "Sign up to bookmark dishes and build your own safe-to-eat shortlist.",
-    "keepBrowsing": "Keep browsing"
+    "keepBrowsing": "Keep browsing",
+    "reportTitle": "Help keep reviews trustworthy",
+    "reportSub": "Sign up to report a review so we can look into it."
   },
   "lock": {
     "verdictTitle": "Your personal safety rating",
@@ -77,7 +85,8 @@
     "food": "Food",
     "scan": "Scan",
     "community": "Reviews",
-    "profile": "Profile"
+    "profile": "Profile",
+    "reviews": "Reviews"
   },
   "food": {
     "title": "Explore food",
@@ -284,7 +293,10 @@
     "stayHint": "This can take 30–40 seconds — leaving the app may lose your result.",
     "sortMenu": "Menu order",
     "sortSafety": "Lowest risk first",
-    "missNote": "Not in our database yet — it should be added within a few days."
+    "missNote": "Not in our database yet — it should be added within a few days.",
+    "searchOnNaver": "Search on NAVER",
+    "searchOnGoogle": "Search on Google",
+    "resultsEmpty": "No scan results"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",
@@ -437,7 +449,8 @@
     "placeManual": "Use \"{{name}}\" as typed",
     "extrasTitle": "How was the restaurant?",
     "extrasSpeed": "Speed",
-    "extrasService": "Service"
+    "extrasService": "Service",
+    "extrasTaste": "Taste"
   },
   "reviews": {
     "headerTitle": "Reviews",
@@ -484,7 +497,9 @@
     "sort_food_review_count": "Most reviewed dishes",
     "sort_helpful": "Most helpful",
     "ratingAll": "All ratings",
-    "ratingMin": "{{min}}+ stars"
+    "ratingMin": "{{min}}+ stars",
+    "filterByProfile": "Filter by profile",
+    "countryOnly": "{{code}} only"
   },
   "ranking": {
     "headerTitle": "My Ranking",
@@ -753,7 +768,12 @@
       "bbq": "BBQ & Meat",
       "street": "Street Food",
       "sides": "Sides"
-    }
+    },
+    "filterAll": "All",
+    "reviewsSub": "Read before you order",
+    "chipForYou": "For You",
+    "chipNearby": "Nearby",
+    "recentEmpty": "No recent scans"
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",
@@ -861,7 +881,8 @@
       "groupAllergy": "Allergy bundles",
       "apply": "Apply to my list",
       "applyRow": "Fill from a diet or religion"
-    }
+    },
+    "countryLabel": "Country"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
@@ -876,7 +897,8 @@
     "removed": "Removed from Saved",
     "undo": "Undo",
     "toast": "Saved to your list",
-    "view": "View"
+    "view": "View",
+    "filterEmpty": "No saved dishes match this filter"
   },
   "spice": {
     "band": {
@@ -958,7 +980,8 @@
     "noticeTitle": "Welcome to K-Bap",
     "noticeBody": "Scan a menu to see which dishes are safe for you.",
     "nudgeTitle": "Eating out today?",
-    "nudgeBody": "Scan the menu before you order."
+    "nudgeBody": "Scan the menu before you order.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Ordered",
@@ -971,7 +994,11 @@
     "emptyOrdersTitle": "No orders yet",
     "emptyOrdersBody": "Order from a scanned menu and your history shows up here.",
     "emptyScansTitle": "No scans yet",
-    "emptyScansBody": "Scan a menu and the dishes you've checked show up here."
+    "emptyScansBody": "Scan a menu and the dishes you've checked show up here.",
+    "dishes": "Dishes",
+    "receiptDate": "DATE",
+    "receiptLocation": "LOCATION",
+    "receiptTotal": "TOTAL"
   },
   "ota": {
     "ready": "An update is ready",

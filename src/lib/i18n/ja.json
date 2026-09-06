@@ -11,7 +11,8 @@
     "goBack": "戻る",
     "retry": "再試行",
     "skip": "スキップ",
-    "save": "保存"
+    "save": "保存",
+    "close": "閉じる"
   },
   "intro": {
     "skip": "スキップ",
@@ -34,7 +35,12 @@
     "google": "Google でログイン",
     "terms": "続行すると、利用規約に同意し、プライバシーポリシーを確認したものとみなされます。",
     "errorGeneric": "ログインを完了できませんでした。もう一度お試しください。",
-    "errorNetwork": "ネットワークエラーです。接続を確認して、もう一度お試しください。"
+    "errorNetwork": "ネットワークエラーです。接続を確認して、もう一度お試しください。",
+    "termsPrefix": "続行すると、",
+    "termsTos": "利用規約",
+    "termsAnd": "に同意し、",
+    "termsPrivacy": "プライバシーポリシー",
+    "termsSuffix": "を確認したものとみなされます。"
   },
   "gate": {
     "riskTitle": "あなた専用の安全評価を見る",
@@ -49,7 +55,9 @@
     "profileSub": "登録すると、避ける食材の保存、スキャン履歴の確認、ランキング作りができます。",
     "saveTitle": "気になる料理を保存しよう",
     "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。",
-    "keepBrowsing": "このまま見て回る"
+    "keepBrowsing": "このまま見て回る",
+    "reportTitle": "レビューの信頼性を守りましょう",
+    "reportSub": "登録するとレビューを報告でき、私たちが確認します。"
   },
   "lock": {
     "verdictTitle": "あなた専用の安全評価",
@@ -81,7 +89,8 @@
     "food": "料理",
     "scan": "スキャン",
     "community": "レビュー",
-    "profile": "プロフィール"
+    "profile": "プロフィール",
+    "reviews": "レビュー"
   },
   "food": {
     "title": "料理を探す",
@@ -288,7 +297,10 @@
     "stayHint": "30〜40秒ほどかかることがあります — アプリを離れると結果が失われる場合があります。",
     "sortMenu": "メニュー順",
     "sortSafety": "リスクが低い順",
-    "missNote": "まだデータベースにありません — 数日以内に登録される予定です。"
+    "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
+    "searchOnNaver": "NAVERで検索",
+    "searchOnGoogle": "Googleで検索",
+    "resultsEmpty": "スキャン結果がありません"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",
@@ -395,7 +407,8 @@
     "placeManual": "\"{{name}}\"のまま使う",
     "extrasTitle": "お店はいかがでしたか？",
     "extrasSpeed": "提供スピード",
-    "extrasService": "接客"
+    "extrasService": "接客",
+    "extrasTaste": "味"
   },
   "reviews": {
     "headerTitle": "レビュー",
@@ -442,7 +455,9 @@
     "sort_food_review_count": "レビューが多い料理順",
     "sort_helpful": "役に立った順",
     "ratingAll": "すべての評価",
-    "ratingMin": "{{min}}点以上"
+    "ratingMin": "{{min}}点以上",
+    "filterByProfile": "プロフィールで絞り込み",
+    "countryOnly": "{{code}}のみ"
   },
   "ranking": {
     "headerTitle": "マイランキング",
@@ -599,7 +614,12 @@
       "bbq": "焼肉・肉料理",
       "street": "屋台グルメ",
       "sides": "おかず"
-    }
+    },
+    "filterAll": "すべて",
+    "reviewsSub": "注文前にチェック",
+    "chipForYou": "おすすめ",
+    "chipNearby": "近く",
+    "recentEmpty": "最近のスキャンはありません"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
@@ -707,7 +727,8 @@
       "groupAllergy": "アレルギーセット",
       "apply": "リストに適用",
       "applyRow": "食事・宗教から選ぶ"
-    }
+    },
+    "countryLabel": "国"
   },
   "editProfile": {
     "title": "プロフィール編集",
@@ -879,7 +900,8 @@
     "removed": "保存済みから削除しました",
     "undo": "元に戻す",
     "toast": "リストに保存しました",
-    "view": "見る"
+    "view": "見る",
+    "filterEmpty": "このフィルターに合う保存済みの料理はありません"
   },
   "spice": {
     "band": {
@@ -961,7 +983,8 @@
     "noticeTitle": "K-Bapへようこそ",
     "noticeBody": "メニューをスキャンすると安全な料理がわかります。",
     "nudgeTitle": "今日は外食ですか？",
-    "nudgeBody": "注文する前にメニューをスキャンしましょう。"
+    "nudgeBody": "注文する前にメニューをスキャンしましょう。",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "注文した料理",
@@ -974,7 +997,11 @@
     "emptyOrdersTitle": "まだ注文履歴がありません",
     "emptyOrdersBody": "スキャンしたメニューから注文するとここに記録されます。",
     "emptyScansTitle": "まだスキャン履歴がありません",
-    "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。"
+    "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。",
+    "dishes": "料理",
+    "receiptDate": "日付",
+    "receiptLocation": "場所",
+    "receiptTotal": "合計"
   },
   "ota": {
     "ready": "アップデートの準備ができました",

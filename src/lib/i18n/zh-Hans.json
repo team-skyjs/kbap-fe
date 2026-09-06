@@ -11,7 +11,8 @@
     "goBack": "返回",
     "retry": "重试",
     "skip": "跳过",
-    "save": "保存"
+    "save": "保存",
+    "close": "关闭"
   },
   "intro": {
     "skip": "跳过",
@@ -34,7 +35,12 @@
     "google": "使用 Google 账号登录",
     "terms": "继续即表示你同意我们的服务条款，并已阅读隐私政策。",
     "errorGeneric": "登录未完成，请重试。",
-    "errorNetwork": "网络错误——请检查网络连接后重试。"
+    "errorNetwork": "网络错误——请检查网络连接后重试。",
+    "termsPrefix": "继续即表示您同意我们的",
+    "termsTos": "服务条款",
+    "termsAnd": "，并确认我们的",
+    "termsPrivacy": "隐私政策",
+    "termsSuffix": "。"
   },
   "gate": {
     "riskTitle": "查看你的专属安全评级",
@@ -49,7 +55,9 @@
     "profileSub": "注册即可保存忌口食材、查看扫描记录并积累你的排名。",
     "saveTitle": "收藏你想尝试的菜品",
     "saveSub": "注册后即可收藏菜品，打造属于你的安心美食清单。",
-    "keepBrowsing": "继续浏览"
+    "keepBrowsing": "继续浏览",
+    "reportTitle": "帮助保持评价的可信度",
+    "reportSub": "注册后即可举报评价，我们会进行核查。"
   },
   "lock": {
     "verdictTitle": "你的专属安全评级",
@@ -81,7 +89,8 @@
     "food": "美食",
     "scan": "扫描",
     "community": "评价",
-    "profile": "我的"
+    "profile": "我的",
+    "reviews": "评价"
   },
   "food": {
     "title": "探索美食",
@@ -288,7 +297,10 @@
     "stayHint": "大约需要 30–40 秒 — 离开应用可能会丢失结果。",
     "sortMenu": "菜单顺序",
     "sortSafety": "风险从低到高",
-    "missNote": "尚未收录在数据库中 — 几天内会添加。"
+    "missNote": "尚未收录在数据库中 — 几天内会添加。",
+    "searchOnNaver": "在NAVER搜索",
+    "searchOnGoogle": "在Google搜索",
+    "resultsEmpty": "没有扫描结果"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",
@@ -395,7 +407,8 @@
     "placeManual": "直接使用\"{{name}}\"",
     "extrasTitle": "餐厅怎么样？",
     "extrasSpeed": "上菜速度",
-    "extrasService": "服务态度"
+    "extrasService": "服务态度",
+    "extrasTaste": "味道"
   },
   "reviews": {
     "headerTitle": "点评",
@@ -442,7 +455,9 @@
     "sort_food_review_count": "评价最多的菜品",
     "sort_helpful": "最有帮助",
     "ratingAll": "全部评分",
-    "ratingMin": "{{min}}分以上"
+    "ratingMin": "{{min}}分以上",
+    "filterByProfile": "按个人资料筛选",
+    "countryOnly": "仅{{code}}"
   },
   "ranking": {
     "headerTitle": "我的排名",
@@ -599,7 +614,12 @@
       "bbq": "烧烤与肉类",
       "street": "街边小吃",
       "sides": "配菜"
-    }
+    },
+    "filterAll": "全部",
+    "reviewsSub": "点餐前先看看",
+    "chipForYou": "为你推荐",
+    "chipNearby": "附近",
+    "recentEmpty": "暂无最近扫描"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",
@@ -707,7 +727,8 @@
       "groupAllergy": "过敏组合",
       "apply": "应用到我的列表",
       "applyRow": "按饮食/宗教填充"
-    }
+    },
+    "countryLabel": "国家"
   },
   "editProfile": {
     "title": "编辑资料",
@@ -879,7 +900,8 @@
     "removed": "已从收藏中移除",
     "undo": "撤销",
     "toast": "已保存到你的清单",
-    "view": "查看"
+    "view": "查看",
+    "filterEmpty": "没有符合此筛选的已保存菜品"
   },
   "spice": {
     "band": {
@@ -961,7 +983,8 @@
     "noticeTitle": "欢迎使用 K-Bap",
     "noticeBody": "扫描菜单即可了解哪些菜对你是安全的。",
     "nudgeTitle": "今天在外面吃饭吗？",
-    "nudgeBody": "点餐前先扫一下菜单吧。"
+    "nudgeBody": "点餐前先扫一下菜单吧。",
+    "newBadge": "新"
   },
   "myFoods": {
     "ordered": "点过的菜",
@@ -974,7 +997,11 @@
     "emptyOrdersTitle": "还没有订单记录",
     "emptyOrdersBody": "从扫描的菜单下单后会记录在这里。",
     "emptyScansTitle": "还没有扫描记录",
-    "emptyScansBody": "扫描菜单后，你查看过的菜品会汇集在这里。"
+    "emptyScansBody": "扫描菜单后，你查看过的菜品会汇集在这里。",
+    "dishes": "菜品",
+    "receiptDate": "日期",
+    "receiptLocation": "地点",
+    "receiptTotal": "合计"
   },
   "ota": {
     "ready": "更新已准备好",

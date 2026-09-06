@@ -72,11 +72,12 @@ it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어
   const path = require('path') as typeof import('path');
   // P-268 개방 → KB-422(9/5): 실푸시 미구현이라 prod 재숨김 — 잠금 반전
   const flags = fs.readFileSync('src/lib/flags.ts', 'utf8') as string;
-  expect(flags).toContain('pushEnabled: !PROD_CHANNEL');
-  expect(flags).not.toContain('pushEnabled: true');
-  // KB-403: reviews·reviewExtras·reviewPlace는 전 채널 공개로 전환(불변식 목록에서 제외)
-  for (const gate of ['communityEnabled', 'dietPresetsEnabled']) {
-    expect(flags).toContain(`${gate}: !PROD_CHANNEL`); // 타 게이트 무변(P-268 불변식)
+  // P-289(예진 9/7): 전 채널 동일 — 채널 분기 잔존 0(회귀 잠금)
+  expect(flags).toContain('pushEnabled: true');
+  expect(flags).not.toContain('pushEnabled: !PROD_CHANNEL');
+  for (const gate of ['communityEnabled', 'dietPresetsEnabled', 'notificationCenter']) {
+    expect(flags).toContain(`${gate}: true`);
+    expect(flags).not.toContain(`${gate}: !PROD_CHANNEL`);
   }
   expect(flags).toContain('reviewsEnabled: true'); // KB-403 공개(8/31 예진 확정)
   const adapter = fs.readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;

@@ -35,28 +35,24 @@ export function SubHeader({
 }
 
 const styles = StyleSheet.create({
+  // KB-429(AppBar 4123:3608): h56 · pad 16 · 흰 배경 · 하단선 없음 · 타이틀 18/600 중앙
   root: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingBottom: 13,
-    backgroundColor: 'rgba(252,245,239,0.92)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.hair,
+    gap: 16,
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    backgroundColor: '#FFFFFF',
   },
   back: {
     width: 38,
     height: 38,
-    borderRadius: 11,
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.hair,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadow.sh1,
   },
-  title: { flex: 1, fontFamily: font.display, fontSize: 18, color: C.ink, letterSpacing: -0.2 },
+  // 중앙 정렬 = 우측 38pt 플레이스홀더(trailing 부재 시)가 back 폭을 상쇄 — 마진 중복 금지(Codex #27)
+  title: { flex: 1, fontFamily: font.bodySemi, fontSize: 18, color: C.ink, textAlign: 'center' },
 });
 
 export default SubHeader;

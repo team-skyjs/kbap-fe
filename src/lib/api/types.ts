@@ -54,7 +54,8 @@ export interface User {
   readerLanguage: string; // BCP-47
   spiceTolerance: SpiceChoice; // P-081: enum — 'SKIP' = 미설정(구 null/-1)
   restrictions: DietaryRestriction[];
-  rank: Ranking;
+  /** KB-434 후속: 서버 ranking 부재(계약 드리프트) = null — 랭킹 표면 미렌더 */
+  rank: Ranking | null;
   /** 프로필 사진 표시 URL (KB-149). 미설정/mock 은 생략 = 플레이스홀더. */
   profileImageUrl?: string | null;
   /** 가입 소셜 (KB-203) — 'APPLE' | 'GOOGLE' (미래 확장 대비 string). mock 생략. */

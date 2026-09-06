@@ -18,6 +18,8 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
 import type { CommunityAuthor, ReportReason, ReportTarget } from '@/lib/community/types';
 import { authorName } from './parts';
@@ -50,6 +52,8 @@ export function ModerationFlow({
   onBlocked: (target: ModTarget) => void;
 }) {
   const { t } = useTranslation();
+  const isGuest = useIsGuest(); // P-281: 게스트 = 차단 숨김·신고 게이트(호출처 5곳 무변)
+  const [gateOpen, setGateOpen] = React.useState(false);
   const [phase, setPhase] = React.useState<'menu' | 'report' | 'blockConfirm' | 'blocking'>('menu');
   const [reason, setReason] = React.useState<ReportReason | null>(null);
   const [note, setNote] = React.useState('');
@@ -77,6 +81,7 @@ export function ModerationFlow({
     setReason(null);
     setNote('');
     setReported(false);
+    setGateOpen(false);
   }, [target?.type, target?.id]);
 
   if (!target) return null;
@@ -98,16 +103,36 @@ export function ModerationFlow({
     if (phase === 'blocking' || blockUser.isPending) return; // P-173: 재진입 봉쇄
     setPhase('blocking');
     // 목이어도 ≥2초 유지 — 실 API가 2초를 넘으면 응답까지 대기 (Promise.all)
-    await Promise.all([
-      blockUser.mutateAsync(target.author),
-      new Promise((r) => setTimeout(r, BLOCK_MIN_MS)),
-    ]);
+    try {
+      await Promise.all([
+        blockUser.mutateAsync(target.author),
+        new Promise((r) => setTimeout(r, BLOCK_MIN_MS)),
+      ]);
+    } catch {
+      // P-281 근본 원인: 실패(게스트 401·네트워크) 시 'blocking'에 영원히 갇히던 것 —
+      // 메뉴 복귀(닫기 가능), 재시도는 사용자가. 5xx 관측은 captureApi5xx가 담당.
+      setPhase('menu');
+      return;
+    }
     onClose();
     onBlocked(target);
   };
 
   /* ---- ① ⋯ 메뉴 (공용 ActionSheet) ---- */
   if (phase === 'menu') {
+    // P-281: 게스트 Report 게이트 — ⋯ 시트는 닫고 게이트만(시트 위 시트 금지)
+    if (gateOpen) {
+      return (
+        <AuthGateSheet
+          context="report"
+          open
+          onClose={() => {
+            setGateOpen(false);
+            onClose();
+          }}
+        />
+      );
+    }
     const KIND_MINE = { post: 'community.yourPost', comment: 'community.yourComment', review: 'community.yourReview' } as const;
     const KIND_BY = { post: 'community.postBy', comment: 'community.commentBy', review: 'community.reviewBy' } as const;
     const title = target.mine ? t(KIND_MINE[target.type]) : t(KIND_BY[target.type], { name });
@@ -134,10 +159,15 @@ export function ModerationFlow({
                 // P-142: 커뮤니티 신고 = 플래그 off(/reports targetType이 REVIEW뿐) — 리뷰 타깃만 노출
                 // P-190: keepOpen — 조기 onClose(setMod null = 플로우 언마운트)가 페이즈
                 // 전환을 죽이던 반려 버그(Q-40①②) 수정. 전환 렌더가 시트를 대체한다.
+                // P-281: 게스트 Report = 사유 시트 대신 로그인 게이트(서버 /reports 회원 전용 —
+                // 가짜 Thanks 방지). keepOpen — 게이트 렌더가 시트를 대체한다.
                 ...(target.type === 'review' || FLAGS.communityReportEnabled
-                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => setPhase('report') }]
+                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => (isGuest ? setGateOpen(true) : setPhase('report')) }]
                   : []),
-                { key: 'block', label: t('community.blockUser', { name }), icon: <IconUserX size={17} color={DESTRUCTIVE} />, destructive: true, keepOpen: true, onPress: () => setPhase('blockConfirm') },
+                // P-281: 게스트 = 차단 항목 자체 미노출(예진 지시 — /members/me/blocks 회원 전용)
+                ...(!isGuest
+                  ? [{ key: 'block', label: t('community.blockUser', { name }), icon: <IconUserX size={17} color={DESTRUCTIVE} />, destructive: true, keepOpen: true, onPress: () => setPhase('blockConfirm') }]
+                  : []),
               ]
         }
       />
@@ -158,7 +188,7 @@ export function ModerationFlow({
                   <IconCheck size={26} color="#fff" />
                 </View>
                 <Text style={styles.title}>{t('community.reportThanks')}</Text>
-                {!target.mine && (
+                {!target.mine && !isGuest && (
                   <Pressable style={styles.blockSuggest} onPress={() => setPhase('blockConfirm')}>
                     <IconUserX size={16} color={DESTRUCTIVE} />
                     <Text style={styles.blockSuggestText}>{t('community.blockUser', { name })}</Text>

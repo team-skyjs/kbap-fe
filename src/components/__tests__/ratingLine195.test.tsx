@@ -48,12 +48,13 @@ it('1건+ = "★들 (n)" — 소괄호 카운트만, 평점 숫자·하이픈·�
   expect(texts).not.toContain('—');
 });
 
-it('표면 배선 소스 잠금 — 홈 캐러셀=fixedSlot·음식탭 목록=줄 제거, 구 형식 부재', () => {
+it('표면 배선 소스 잠금 — 음식탭 목록=줄 제거, 구 형식 부재 (KB-430: 홈 그리드는 별점 없는 시안)', () => {
   const fs = require('fs');
   const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
   const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8') as string;
-  expect(home).toContain('<RatingLine overall={food.overall} fixedSlot />'); // 가로 캐러셀 = 높이 균일
-  expect(food).toContain('<RatingLine overall={food.overall} />'); // 세로 목록 = 줄 제거
+  // KB-430 후속(9/5): 음식 탭 = FoodExplorer(FoodGridCard — 별점 없는 시안) 재사용, BrowseCard·RatingLine 소멸
+  expect(food).toContain('FoodExplorer');
+  expect(food).not.toContain('RatingLine');
   for (const src of [home, food]) {
     expect(src).not.toContain("toFixed(1) ?? '—'"); // 구 "— · n" 조립 소멸
     expect(src).not.toContain('rateNum');

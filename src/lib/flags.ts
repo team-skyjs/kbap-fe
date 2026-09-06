@@ -48,7 +48,7 @@ export const FLAGS = {
    * 커뮤니티 탭/화면 (P-087 목 선작업) — P-110: production 채널 숨김(탭바·설정
    * 차단 목록 행·화면 가드). teamtest·dev만 노출.
    */
-  communityEnabled: !PROD_CHANNEL,
+  communityEnabled: true, // P-289(예진 9/7): prod=dev 동일 — Reviews 탭 전 채널 공개(b24)
   /**
    * 리뷰 **실 API** 연결 (P-085 구현 · P-086 봉인 · P-108 해제 8/3) — off = P-077
    * 목 경로(화면 무변). 종한 계약 확정(8/3 스냅샷)으로 봉인 해제: 목록·CRUD·
@@ -108,17 +108,16 @@ export const FLAGS = {
    * dev 계열만. 음식 탐색·리뷰 피드·인기 검색·저장 목록 섹션을 홈에 얹는다
    * (전부 기존 컴포넌트 재사용). 디자인 확정 후 채널 조건 재검토.
    */
-  homeAllContent: !PROD_CHANNEL,
   /**
    * 알림함 (P-216/KB-39, 멘토링 8/15) — **러프**, dev 계열만. 목록 데이터는
    * 로컬 목(notifications/inbox.ts) — BE 알림 목록 계약 오면 그 파일 한 곳 스왑.
    */
-  notificationCenter: !PROD_CHANNEL,
+  notificationCenter: true, // P-289(예진 9/7): 알림함 전 채널(실알림 전용 — inbox 목 소멸)
   /**
    * 식이/종교 프리셋 온보딩 스텝 (P-203/KB-305) — 디자이너 시안용 러프, dev 계열만.
    * BE diet-presets API 확정 시 dietPresets.ts 상수 스왑.
    */
-  dietPresetsEnabled: !PROD_CHANNEL,
+  dietPresetsEnabled: true, // P-289(예진 9/7): 온보딩 식단·종교 프리셋 전 채널
   /**
    * 리뷰 확장 별점 3축 (P-202/KB-32) — 디자이너 시안용 러프, dev 계열만.
    * BE 계약(3필드) 회신 시 buildReviewExtras 배선 + 채널 조건 재검토.
@@ -140,7 +139,7 @@ export const FLAGS = {
    * lib/push/pushAdapter의 지연 require 경유, 화면/훅 정적 import 금지
    * (pushProdGuard221 유닛 잠금).
    */
-  pushEnabled: !PROD_CHANNEL,
+  pushEnabled: true, // P-289(예진 9/7): 권한 팝업·설정·리마인더 전 채널(KB-422 재숨김 사유 소멸)
   /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은

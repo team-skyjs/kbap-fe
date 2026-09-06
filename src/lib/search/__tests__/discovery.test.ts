@@ -39,9 +39,11 @@ describe('KB-310: 홈·검색 인기 섹션 = 라이브 카탈로그 배선(목 
   const fs = require('fs');
 
   it('소스 잠금 — useFoods()(MOCK_MODE 목·photoUrl 전부 null) 소비 잔존 0', () => {
-    const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
-    expect(home).toContain('popularPhotoFoods(browse.data)'); // 라이브(useInfiniteFoods) 캐시 재사용
-    expect(home).not.toMatch(/= useFoods\(\)/); // 실호출 잔존 0(주석 언급은 허용)
+    // KB-430 후속: 홈 그리드 = FoodExplorer 공용 이동 — 소비처 경로만 이관
+    const explorer = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8') as string;
+    expect(explorer).toContain('popularPhotoFoods(browse.data)'); // 라이브(useInfiniteFoods) 캐시 재사용
+    expect(explorer).not.toMatch(/= useFoods\(\)/);
+    expect(fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8')).not.toMatch(/= useFoods\(\)/); // 실호출 잔존 0(주석 언급은 허용)
     const search = fs.readFileSync('src/app/search.tsx', 'utf8') as string;
     expect(search).toContain('const catalog = probe.data;'); // probe(라이브) 재사용 — 왕복 0 추가
     expect(search).not.toMatch(/= useFoods\(\)/);

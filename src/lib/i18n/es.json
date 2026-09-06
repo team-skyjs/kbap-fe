@@ -11,7 +11,8 @@
     "goBack": "Volver",
     "retry": "Reintentar",
     "skip": "Omitir",
-    "save": "Guardar"
+    "save": "Guardar",
+    "close": "Cerrar"
   },
   "intro": {
     "skip": "Omitir",
@@ -34,7 +35,12 @@
     "google": "Iniciar sesión con Google",
     "terms": "Al continuar, aceptas nuestros Términos de Servicio y reconoces nuestra Política de Privacidad.",
     "errorGeneric": "No se pudo completar el inicio de sesión. Inténtalo de nuevo.",
-    "errorNetwork": "Error de red: revisa tu conexión e inténtalo de nuevo."
+    "errorNetwork": "Error de red: revisa tu conexión e inténtalo de nuevo.",
+    "termsPrefix": "Al continuar, aceptas nuestros ",
+    "termsTos": "Términos de servicio",
+    "termsAnd": " y reconoces nuestra ",
+    "termsPrivacy": "Política de privacidad",
+    "termsSuffix": "."
   },
   "gate": {
     "riskTitle": "Descubre tu calificación de seguridad personal",
@@ -49,7 +55,9 @@
     "profileSub": "Regístrate para guardar lo que evitas, seguir tus escaneos y construir tu ranking.",
     "saveTitle": "Guarda los platos que quieras probar",
     "saveSub": "Regístrate para guardar platos y crear tu propia lista de comida segura.",
-    "keepBrowsing": "Seguir explorando"
+    "keepBrowsing": "Seguir explorando",
+    "reportTitle": "Ayuda a mantener reseñas confiables",
+    "reportSub": "Regístrate para reportar una reseña y la revisaremos."
   },
   "lock": {
     "verdictTitle": "Tu calificación de seguridad personal",
@@ -81,7 +89,8 @@
     "food": "Comida",
     "scan": "Escanear",
     "community": "Reseñas",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "reviews": "Reseñas"
   },
   "food": {
     "title": "Explorar comida",
@@ -288,7 +297,10 @@
     "stayHint": "Puede tardar entre 30 y 40 segundos; si sales de la app, podrías perder el resultado.",
     "sortMenu": "Orden del menú",
     "sortSafety": "Menor riesgo primero",
-    "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días."
+    "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días.",
+    "searchOnNaver": "Buscar en NAVER",
+    "searchOnGoogle": "Buscar en Google",
+    "resultsEmpty": "Sin resultados de escaneo"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",
@@ -395,7 +407,8 @@
     "placeManual": "Usar \"{{name}}\" tal cual",
     "extrasTitle": "¿Qué tal el restaurante?",
     "extrasSpeed": "Rapidez",
-    "extrasService": "Atención"
+    "extrasService": "Atención",
+    "extrasTaste": "Sabor"
   },
   "reviews": {
     "headerTitle": "Reseñas",
@@ -442,7 +455,9 @@
     "sort_food_review_count": "Platos con más reseñas",
     "sort_helpful": "Más útiles",
     "ratingAll": "Todas las valoraciones",
-    "ratingMin": "{{min}}+ estrellas"
+    "ratingMin": "{{min}}+ estrellas",
+    "filterByProfile": "Filtrar por perfil",
+    "countryOnly": "Solo {{code}}"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
@@ -599,7 +614,12 @@
       "bbq": "Parrilla y carne",
       "street": "Comida callejera",
       "sides": "Acompañamientos"
-    }
+    },
+    "filterAll": "Todos",
+    "reviewsSub": "Lee antes de pedir",
+    "chipForYou": "Para ti",
+    "chipNearby": "Cerca",
+    "recentEmpty": "Sin escaneos recientes"
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",
@@ -707,7 +727,8 @@
       "groupAllergy": "Grupos de alergia",
       "apply": "Aplicar a mi lista",
       "applyRow": "Rellenar por dieta/religión"
-    }
+    },
+    "countryLabel": "País"
   },
   "editProfile": {
     "title": "Editar perfil",
@@ -880,7 +901,8 @@
     "removed": "Eliminado de Guardados",
     "undo": "Deshacer",
     "toast": "Guardado en tu lista",
-    "view": "Ver"
+    "view": "Ver",
+    "filterEmpty": "Ningún plato guardado coincide con este filtro"
   },
   "spice": {
     "band": {
@@ -962,7 +984,8 @@
     "noticeTitle": "Bienvenido a K-Bap",
     "noticeBody": "Escanea un menú para ver qué platos son seguros para ti.",
     "nudgeTitle": "¿Comes fuera hoy?",
-    "nudgeBody": "Escanea el menú antes de pedir."
+    "nudgeBody": "Escanea el menú antes de pedir.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Pedidos",
@@ -975,7 +998,11 @@
     "emptyOrdersTitle": "Aún no hay pedidos",
     "emptyOrdersBody": "Pide desde un menú escaneado y tu historial aparecerá aquí.",
     "emptyScansTitle": "Aún no hay escaneos",
-    "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí."
+    "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí.",
+    "dishes": "Platos",
+    "receiptDate": "FECHA",
+    "receiptLocation": "UBICACIÓN",
+    "receiptTotal": "TOTAL"
   },
   "ota": {
     "ready": "Hay una actualización lista",

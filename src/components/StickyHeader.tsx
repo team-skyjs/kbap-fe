@@ -32,15 +32,17 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
-import { BrandLockup } from './Brand';
+import { AppBarMark } from './design4Assets';
 import { PressScale } from './PressScale';
 
+// 9/5 예진 확정(AppBar 4123:3609 h56): 4+48+4 = 56 — 구 62(8+48+6) 근사 폐기
 const BAR_H = 48;
-const TOP_PAD = 8;
-const BOT_PAD = 6;
+const TOP_PAD = 4;
+const BOT_PAD = 4;
 const DELTA = 7; // §6: 6~8px jitter threshold
 const TOP_ALWAYS = 8; // within this of the top → always shown
 // P-047(KB-217): 숨김/복귀는 timing **복귀** — P-031이 스프링으로 바꾼 뒤, 빠른
@@ -127,6 +129,7 @@ export function StickyHeader({
   onBookmark,
 }: StickyHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const H = headerHeight(insets.top);
 
   // P-061④: 알림 UI 전면 제거(MVP 제외 확정) — 벨·패널·게이트 소멸
@@ -160,7 +163,8 @@ export function StickyHeader({
             <IconArrowLeft size={20} color={C.ink} />
           </PressScale>
         ) : (
-          <BrandLockup />
+          /* 9/5 시안 원본 SVG(4123:3613, 18.55×20) — .fig 디코드 appbar-mark 그대로 */
+          <AppBarMark height={20} />
         )}
 
         {title != null && (
@@ -188,13 +192,12 @@ export function StickyHeader({
             </PressScale>
           )}
           {bell && (
-            /* P-216: 벨 + 안 읽은 수 뱃지 — bare 아이콘(search와 동일 처리),
-               뱃지는 기존 dot 스타일 재사용(숫자만 얹음 — 새 문법 발명 0) */
+            /* P-216 → KB-430(4123:3609): 벨 + 미읽음 시 NEW 배지(시안 — 수치 대신 NEW) */
             <PressScale style={styles.actionBtn} onPress={onBell} hitSlop={8} testID="header-bell">
               <IconBell size={22} color={C.ink} sw={1.8} />
               {bellCount > 0 && (
                 <View style={styles.dot} testID="header-bell-badge">
-                  <Text style={styles.dotText}>{bellCount > 9 ? '9+' : String(bellCount)}</Text>
+                  <Text style={styles.dotText}>{t('inbox.newBadge')}</Text>
                 </View>
               )}
             </PressScale>
@@ -270,21 +273,20 @@ const styles = StyleSheet.create({
   },
   signInPill: { backgroundColor: C.primary, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
   signInText: { fontFamily: font.bodyBold, fontSize: 12.5, color: '#fff' },
+  // 9/5 예진 확정: NEW 배지 = primary pill h18 pad 1/5, 10/600 흰(시안값 — 근사 보더 폐기)
   dot: {
     position: 'absolute',
-    top: 4,
-    right: 3,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 3,
+    top: 0,
+    right: -6,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.riskDanger,
-    borderWidth: 2,
-    borderColor: C.surface,
+    backgroundColor: C.primary,
   },
-  dotText: { fontFamily: font.bodyBold, fontSize: 9.5, color: '#fff' },
+  dotText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   hairline: {
     position: 'absolute',
     left: 0,

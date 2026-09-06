@@ -11,7 +11,8 @@
     "tryAgain": "다시 시도",
     "goBack": "돌아가기",
     "retry": "재시도",
-    "skip": "건너뛰기"
+    "skip": "건너뛰기",
+    "close": "닫기"
   },
   "intro": {
     "skip": "건너뛰기",
@@ -34,7 +35,12 @@
     "google": "Google로 로그인",
     "terms": "계속하면 서비스 이용약관에 동의하고 개인정보 처리방침을 확인한 것으로 간주돼요.",
     "errorGeneric": "로그인이 완료되지 않았어요. 다시 시도해 주세요.",
-    "errorNetwork": "네트워크 오류 — 연결을 확인하고 다시 시도해 주세요."
+    "errorNetwork": "네트워크 오류 — 연결을 확인하고 다시 시도해 주세요.",
+    "termsPrefix": "계속 진행하면 ",
+    "termsTos": "이용약관",
+    "termsAnd": " 동의 및 ",
+    "termsPrivacy": "개인정보 처리방침",
+    "termsSuffix": " 확인으로 간주됩니다."
   },
   "gate": {
     "riskTitle": "나만의 안전 등급을 확인하세요",
@@ -49,7 +55,9 @@
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
-    "keepBrowsing": "계속 둘러보기"
+    "keepBrowsing": "계속 둘러보기",
+    "reportTitle": "리뷰를 신뢰할 수 있게 지켜주세요",
+    "reportSub": "가입하면 리뷰를 신고할 수 있고, 저희가 검토해 드려요."
   },
   "lock": {
     "verdictTitle": "나만의 안전 등급",
@@ -81,7 +89,8 @@
     "food": "음식",
     "scan": "스캔",
     "community": "리뷰",
-    "profile": "프로필"
+    "profile": "프로필",
+    "reviews": "리뷰"
   },
   "food": {
     "title": "음식 둘러보기",
@@ -288,7 +297,10 @@
     "stayHint": "30~40초 정도 걸릴 수 있어요. 앱을 벗어나면 결과를 놓칠 수 있어요.",
     "sortMenu": "메뉴판 순",
     "sortSafety": "위험도 낮은 순",
-    "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요."
+    "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요.",
+    "searchOnNaver": "네이버에서 검색",
+    "searchOnGoogle": "구글에서 검색",
+    "resultsEmpty": "스캔 결과가 없어요"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",
@@ -441,7 +453,8 @@
     "placeManual": "\"{{name}}\" 그대로 태그하기",
     "extrasTitle": "식당은 어땠나요?",
     "extrasSpeed": "음식 나오는 속도",
-    "extrasService": "친절도"
+    "extrasService": "친절도",
+    "extrasTaste": "맛"
   },
   "reviews": {
     "headerTitle": "리뷰",
@@ -488,7 +501,9 @@
     "sort_food_review_count": "리뷰 많은 음식 순",
     "sort_helpful": "도움 많이 된 순",
     "ratingAll": "전체 별점",
-    "ratingMin": "{{min}}점 이상"
+    "ratingMin": "{{min}}점 이상",
+    "filterByProfile": "프로필 필터",
+    "countryOnly": "{{code}}만"
   },
   "ranking": {
     "headerTitle": "내 랭킹",
@@ -757,7 +772,12 @@
       "bbq": "구이·고기",
       "street": "분식",
       "sides": "반찬"
-    }
+    },
+    "filterAll": "전체",
+    "reviewsSub": "주문 전에 읽어보세요",
+    "chipForYou": "추천",
+    "chipNearby": "주변",
+    "recentEmpty": "최근 스캔이 없어요"
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -865,7 +885,8 @@
       "groupAllergy": "알레르기",
       "apply": "내 목록에 적용",
       "applyRow": "식단·종교·알레르기로 채우기"
-    }
+    },
+    "countryLabel": "국가"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
@@ -879,7 +900,8 @@
     "removed": "저장됨에서 삭제했어요",
     "undo": "되돌리기",
     "toast": "내 리스트에 저장했어요",
-    "view": "보기"
+    "view": "보기",
+    "filterEmpty": "이 필터에 맞는 저장된 메뉴가 없어요"
   },
   "spice": {
     "band": {
@@ -961,7 +983,8 @@
     "noticeTitle": "K-Bap에 오신 걸 환영해요",
     "noticeBody": "메뉴판을 스캔하면 음식별 위험도를 확인할 수 있어요.",
     "nudgeTitle": "오늘 외식하시나요?",
-    "nudgeBody": "주문 전에 메뉴를 스캔해 보세요."
+    "nudgeBody": "주문 전에 메뉴를 스캔해 보세요.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "주문한 음식",
@@ -974,7 +997,11 @@
     "emptyOrdersTitle": "아직 주문 내역이 없어요",
     "emptyOrdersBody": "스캔한 메뉴판에서 주문하면 여기에 쌓여요.",
     "emptyScansTitle": "아직 스캔 기록이 없어요",
-    "emptyScansBody": "메뉴판을 스캔하면 확인한 음식이 여기에 모여요."
+    "emptyScansBody": "메뉴판을 스캔하면 확인한 음식이 여기에 모여요.",
+    "dishes": "메뉴",
+    "receiptDate": "날짜",
+    "receiptLocation": "장소",
+    "receiptTotal": "합계"
   },
   "ota": {
     "ready": "업데이트가 준비됐어요",

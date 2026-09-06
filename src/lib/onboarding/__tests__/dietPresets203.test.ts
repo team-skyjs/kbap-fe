@@ -58,7 +58,7 @@ it('배선 소스 잠금 — 온보딩 스텝 플래그 분기·스킵 무주입
   expect(ob).toContain("if (step === 'presets') return setStep(ORDER[idx + 1]);"); // 스킵 = 주입 없음(현행 동일)
   const pr = fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8') as string;
   expect(pr).toContain('unionResolvedCodes(dietPresets, Array.from(presetSel), cur)'); // 프로필 = 합집합 적용(P-208)
-  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('dietPresetsEnabled: !PROD_CHANNEL');
+  expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('dietPresetsEnabled: true'); // P-289 전 채널
 });
 
 /* ---- P-208: 서버 스왑 — 파싱·폴백 ---- */

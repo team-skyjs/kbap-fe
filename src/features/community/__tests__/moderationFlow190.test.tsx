@@ -28,6 +28,15 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
+let mockGuest = false;
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
+jest.mock('@/components/AuthGateSheet', () => {
+  const { View } = require('react-native');
+  return {
+    AuthGateSheet: ({ open, context }: { open: boolean; context: string }) =>
+      open ? <View testID={`gate-${context}`} /> : null,
+  };
+});
 const mockReport = jest.fn();
 const mockBlockAsync = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/lib/community/hooks', () => ({
@@ -61,7 +70,11 @@ const tapItem = (tree: ReactTestRenderer, label: string) => {
   act(() => item.props.onPress());
 };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockGuest = false;
+  mockBlockAsync.mockResolvedValue(undefined);
+});
 
 it('⛔️ 재현 경로: 타인 메뉴 → "신고" 아이템 탭 → 신고 시트(사유 라디오) 도달 — onClose 미발화', () => {
   const onClose = jest.fn();
@@ -106,4 +119,42 @@ it('회귀 무사고: 본인 수정/삭제 = 현행 자동 닫힘(onClose) + 콜
   tapItem(tree, 'community.edit');
   expect(onClose).toHaveBeenCalled(); // 자동 닫힘 유지
   expect(onEdit).toHaveBeenCalled();
+});
+
+/* ---- P-281: 게스트 ⋯ 메뉴 — 차단 숨김·신고 게이트 + 차단 실패 복구 ---- */
+
+it('P-281(a): 게스트 = block 항목 없음 · Report 탭 → AuthGateSheet(context report)', () => {
+  mockGuest = true;
+  const tree = render(OTHER);
+  expect(flat(tree)).not.toContain('community.blockUser'); // 차단 항목 자체 미노출
+  tapItem(tree, 'community.report');
+  expect(tree.root.findAll((n) => n.props?.testID === 'gate-report').length).toBeGreaterThanOrEqual(1); // 게이트 대체
+  expect(flat(tree)).not.toContain('community.reportTitle'); // 사유 시트 미도달(가짜 Thanks 방지)
+});
+
+it('P-281(b): 회원 = Report·Block 현행 무변(위 재현 경로 케이스가 이중 잠금) + 2차 제안 게스트 가드 소스 잠금', () => {
+  const tree = render(OTHER);
+  const s = flat(tree);
+  expect(s).toContain('community.report');
+  expect(s).toContain('community.blockUser');
+  const src = require('fs').readFileSync('src/features/community/moderation.tsx', 'utf8') as string;
+  expect(src).toContain('!target.mine && !isGuest &&'); // 신고 확인 상태 차단 2차 제안 = 게스트 미렌더
+});
+
+it('P-281(c): blockUser reject → "Blocking…"에 갇히지 않고 메뉴 복귀(닫기 가능) — 근본 원인 수정', async () => {
+  mockBlockAsync.mockRejectedValueOnce(new Error('AUTH-003'));
+  const onClose = jest.fn();
+  const onBlocked = jest.fn();
+  const tree = render(OTHER, { onClose, onBlocked });
+  tapItem(tree, 'community.blockUser');
+  expect(flat(tree)).toContain('community.blockConfirmTitle');
+  await act(async () => {
+    tapItem(tree, 'community.blockConfirmCta');
+    await Promise.resolve();
+  });
+  const s = flat(tree);
+  expect(s).not.toContain('community.blocking'); // 무한 Blocking… 소멸
+  expect(s).toContain('community.blockUser'); // 메뉴 복귀(재시도는 사용자가)
+  expect(onBlocked).not.toHaveBeenCalled(); // 실패 = 차단 완료 후처리 미발화
+  expect(onClose).not.toHaveBeenCalled();
 });

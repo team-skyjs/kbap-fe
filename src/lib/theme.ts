@@ -6,54 +6,80 @@
  * No emoji anywhere; all glyphs are SVG (react-native-svg). See components/icons.
  */
 
+/** KB-429(P-274) 디자인 4차: 값 = 커맨드 센터 Figma 실측(노드 ID는 발주문) —
+ *  키는 전부 유지, 값만 교체. 신규 키 = inkMute·inkDisabled·line2(+아래
+ *  riskText·shadowGlow·shBadge·type). */
 export const color = {
-  primary: '#E2580C',
-  primaryPress: '#c44a08',
-  // P-031(KB-206) 대비: primary(3.73:1)는 소형 텍스트 기준 미달 — fontSize ≤14
-  // 텍스트(링크·라벨)는 이 토큰. white 4.85:1 / surface 4.49:1. 15px+ 디스플레이
-  // 숫자·대형(owner/order 카드 34px)은 brand primary 유지(3:1 대형 기준 충족).
-  primaryText: '#c44a08',
-  primary2: '#E8893F', // gradient 2nd stop (≈ color-mix primary 82% + #ffd9a0)
+  primary: '#FF7134', // Button/Primary 4123:3985 · FAB 4095:1858
+  primaryPress: '#BE460F', // P-284: 최종본 Main color-pressed(2209:997) — 9/6 예진 'A 시안대로'
+  // P-284(9/6 예진): 12~14px primary 텍스트 대비 — 커맨드 센터 추천안(흰 5.16, WCAG AA)
+  primaryText: '#BE460F',
+  primary2: '#FF9A6E', // gradient 2nd stop(현 규칙 유지)
   accent: '#0E9AA7',
 
-  surface: '#FCF5EF',
-  surface2: '#F7ECE1',
-  surfaceGlow: '#F4DFCB', // app radial glow (≈ color-mix primary 16% + surface)
+  surface: '#FFFFFF', // 전 프레임 fill
+  surface2: '#F7F8FA', // Input/Search bg 4026:667
+  surfaceGlow: '#FFFFFF', // 글로우 폐지(시안 없음) — 소비처 시각 무해 값
   panel: '#FFFFFF', // RiskMark solid glyphs cut to this
   card: '#FFFFFF',
 
-  ink: '#2A211B',
-  ink2: '#7C6B5E',
-  // P-031(KB-206) 대비: #B0A395(2.28:1) → 어둡게. white(카드 — 소형 텍스트 대부분)
-  // 4.57:1 ✓ / surface 4.23:1(목표 근접). 더 어두우면 ink2와 시각 구분이 소멸해
-  // 3단 위계가 죽는다 — 여기서 절충, 위계는 크기·굵기가 담당 (apple-design §15).
-  ink3: '#837363',
-  hair: '#EFE5D9',
-  line: '#E7DACB',
+  ink: '#1C1E21', // gray-1000
+  ink2: '#6A6F7C', // gray-700
+  ink3: '#9196A1', // gray-600 — 섹션 라벨·플레이스 칩
+  inkMute: '#B1B5BD', // 탭 비활성 라벨·날짜·secondary 버튼
+  inkDisabled: '#D1D3D8', // placeholder·disabled 라벨·비활성 아이콘
+  hair: '#F2F3F6',
+  line: '#EAEBEE', // gray-200
+  line2: '#DCDEE3', // gray-300 — 아웃라인 버튼·체크박스·탭 디바이더
 
   // Risk 4-states — FIXED semantic (Constitution III). safe/caution/danger/unable.
-  riskSafe: '#2f8f5b',
-  riskCaution: '#d28a12',
-  riskDanger: '#cf3a2c',
-  riskUnable: '#5b6470',
+  riskSafe: '#00BE65', // 4064:790
+  riskCaution: '#FFA526', // 4064:796
+  riskDanger: '#F76661', // 4064:793
+  riskUnable: '#B1B5BD', // 4064:798
+  // P-284(9/6): 소형(12~13px) 위험 상태 '텍스트' 대비 토큰 — 마크·배지·아이콘 fill은 원색 무변
+  riskSafeText: '#007F43', // 흰 5.10
+  riskCautionText: '#9A5F00', // 흰 5.24 · caution 틴트 위 4.82
+  riskDangerText: '#C4352F', // 흰 5.39 · danger 틴트 위 4.96
+  riskUnableText: '#6A6F7C', // Codex #44 P2: unable 텍스트 대비(흰 5.03 — inkInfo 동일값·의미 분리)
+  inkInfo: '#6A6F7C', // 12~13px 정보성 회색 텍스트(흰 5.03 — gray-700 동값·의미 토큰)
 } as const;
 
 /**
- * Soft tonal backgrounds/borders for risk chips & banners (from hifi-g.css).
- * bg = pale fill, line = hairline border, fg = text/icon color.
+ * Soft tonal backgrounds/borders for risk chips & banners — 4차 시안
+ * (ScreenFoodDetail 재료 행 4129:11366 · 4150:16969~72). line = 공통 헤어라인.
  */
 export const riskTone = {
-  safe: { fg: color.riskSafe, bg: '#e8f4ec', line: '#c9e4d3' },
-  caution: { fg: color.riskCaution, bg: '#fdf3e0', line: '#f0ddb8' },
-  danger: { fg: color.riskDanger, bg: '#fdecea', line: '#f3cdc8' },
-  unable: { fg: color.riskUnable, bg: '#eef0f2', line: '#d8dde2' },
+  safe: { fg: color.riskSafe, bg: '#EFFFF7', line: '#D5DFE7' },
+  // 9/5 예진 확정: 시안 인스턴스(4150:16971/16972) 그대로 — caution=붉은/danger=노란 틴트
+  caution: { fg: color.riskCaution, bg: '#FFF3EF', line: '#D5DFE7' },
+  danger: { fg: color.riskDanger, bg: '#FFFDEF', line: '#D5DFE7' },
+  unable: { fg: color.riskUnable, bg: '#ECECEC', line: '#D5DFE7' },
 } as const;
 
-export const primaryTint = 'rgba(226,88,12,0.08)';
-export const primaryTint2 = 'rgba(226,88,12,0.045)';
+/** 9/5 예진 확정("싹 다 시안대로"): 소형 위험 텍스트도 상태 원색 — 대비 변형 폐기.
+ *  토큰은 유지(소비처 5곳 무수정), 값 = riskSafe 계열과 동일. */
+export const riskText = {
+  safe: color.riskSafe,
+  caution: color.riskCaution,
+  danger: color.riskDanger,
+  unable: color.riskUnable,
+} as const;
+
+/** P-284: 소형 상태 텍스트(카드 상태 12/700 등) 대비 맵 — 마크·배지 fill은 riskText/원색 유지. */
+export const riskTextStrong = {
+  safe: color.riskSafeText,
+  caution: color.riskCautionText,
+  danger: color.riskDangerText,
+  // Codex #44 P2: unable 텍스트도 대비(원색 #B1B5BD = 2.06) — 마크·배지 fill은 원색 무변
+  unable: color.riskUnableText,
+} as const;
+
+export const primaryTint = 'rgba(255,113,52,0.05)'; // 시안 "primary 5%"
+export const primaryTint2 = 'rgba(255,113,52,0.03)';
 export const accentTint = 'rgba(14,154,167,0.08)';
 
-export const radius = { lg: 20, sm: 15, xs: 11, pill: 999 } as const;
+export const radius = { lg: 10, sm: 8, xs: 4, pill: 999 } as const; // Alert 4123:4019 · tag/input · 버튼/카드
 
 /**
  * Font families. Each (family, weight) is a distinct registered fontFamily key
@@ -76,17 +102,18 @@ export const font = {
   koBold: 'NotoSansKR_700Bold',
 } as const;
 
-/** Shadow presets (hifi-g.css --sh-*). RN uses elevation on Android; iOS shadow* props. */
+/** Shadow presets — 4차 시안. RN uses elevation on Android; iOS shadow* props. */
 export const shadow = {
-  // --sh-1: subtle hairline lift
+  // 시안 카드 그림자(btn/review·add 버튼 4129:10715): 0/1 blur 7.3 op 0.07 #000
   sh1: {
-    shadowColor: '#14181f',
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
+    shadowColor: '#000000',
+    shadowOpacity: 0.07,
+    shadowRadius: 7.3,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  // --sh-2: card lift
+  // 구 카드 lift — 시안 대응물 없음(메달 글로우는 shadowGlow 헬퍼): 소비처가
+  // D-2~6에서 sh1/무그림자로 이관될 때까지 유지(여기서 바꾸면 전 카드가 흔들림).
   sh2: {
     shadowColor: '#14181f',
     shadowOpacity: 0.1,
@@ -94,7 +121,7 @@ export const shadow = {
     shadowOffset: { width: 0, height: 8 },
     elevation: 4,
   },
-  // --sh-pop: popovers / sheets
+  // --sh-pop: popovers / sheets (유지)
   shPop: {
     shadowColor: '#2a211b',
     shadowOpacity: 0.22,
@@ -102,11 +129,50 @@ export const shadow = {
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
   },
+  // risk 썸네일 배지(4095:1430): 1/1 blur 3.7 op 0.6
+  shBadge: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.6,
+    shadowRadius: 3.7,
+    shadowOffset: { width: 1, height: 1 },
+    elevation: 3,
+  },
 } as const;
+
+/** rank-medal 글로우(4150:16186) — 색상 = 요소 색(메달 전용): 0/3 blur 8 op 0.4. */
+export function shadowGlow(colorHex: string) {
+  return {
+    shadowColor: colorHex,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  } as const;
+}
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 } as const;
 
+/** KB-429 타입 스케일(시안 4차) — D-2~6 화면 적용 기준값. size/weight/lineHeight.
+ *  lineHeight 기본 1.35(캡션 1.5) — 전역 강제 아님(레이아웃은 화면 단계에서). */
+export const type = {
+  largeTitle: { fontSize: 26, fontWeight: '700' },
+  sectionTitle: { fontSize: 20, fontWeight: '400' }, // 4064:787
+  appBar: { fontSize: 18, fontWeight: '600' },
+  button: { fontSize: 15, fontWeight: '600' },
+  emphasis: { fontSize: 15, fontWeight: '500' }, // 닉네임·입력
+  body: { fontSize: 14, fontWeight: '400' },
+  chip: { fontSize: 14, fontWeight: '500' }, // 칩·ko 부제
+  subtitle: { fontSize: 14, fontWeight: '600' },
+  meta: { fontSize: 13, fontWeight: '500' },
+  rating: { fontSize: 13, fontWeight: '600' },
+  caption: { fontSize: 12, fontWeight: '400' },
+  captionMed: { fontSize: 12, fontWeight: '500' },
+  riskLabel: { fontSize: 12, fontWeight: '700' }, // "Safe"
+  tabLabel: { fontSize: 11, fontWeight: '500' },
+  newBadge: { fontSize: 10, fontWeight: '600' },
+} as const;
+
 export type RiskState = 'safe' | 'caution' | 'danger' | 'unable';
 
-export const theme = { color, riskTone, radius, font, shadow, space } as const;
+export const theme = { color, riskTone, radius, font, shadow, space, type } as const;
 export default theme;

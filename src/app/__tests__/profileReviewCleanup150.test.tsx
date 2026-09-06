@@ -161,7 +161,8 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   const svInst = sv.instance as { scrollTo?: unknown } | null;
   if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
-  const block = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.style && n !== sv)[0];
+  // KB-432: 별 행에도 onLayout이 생겨 첫 매칭이 어긋남 — 본문 블록 testID로 특정
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } })); // blockBottom 700
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
   expect(typeof input.props.onSelectionChange).toBe('function');
@@ -185,7 +186,8 @@ it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 �
   const svInst = sv.instance as { scrollTo?: unknown } | null;
   if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
-  const block = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.style && n !== sv)[0];
+  // KB-432: 별 행에도 onLayout이 생겨 첫 매칭이 어긋남 — 본문 블록 testID로 특정
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } }));
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
   act(() => input.props.onChangeText('0123456789')); // len 10
@@ -227,8 +229,8 @@ it('P-150 ⑤: 프로필 탭 — Spice tolerance 섹션·Score 공식 줄 부재
   const s = flatJson(tree);
   expect(s).not.toContain('profile.spiceTitle');
   expect(s).not.toContain('profile.scoreNote');
-  // 랭킹 섹션 자체는 유지
-  expect(s).toContain('profile.rankingTitle');
+  // 랭킹 표면 자체는 유지(KB-434 D-6: 섹션 타이틀 → 카드)
+  expect(s).toContain('profile-rank-card');
 });
 
 void Stars; // ③ posted 별 부재는 submit 상태 도달이 비용 커서 코드 삭제+타 스위트(orderCta류) 간접 — 아래 잠금으로 대체
@@ -270,12 +272,12 @@ it('P-157 ②: 저장 아이콘 별 전면 통일 — 프로필에 북마크 글
   expect(src).toContain('IconStar');
 });
 
-it('P-159: 저장 빈 상태 CTA = alignSelf center(소스 잠금 — Btn sm flex-start 함정 상쇄)', () => {
+it('P-287: 저장 빈 상태 = 공용 EmptyBlock(버튼 없음) — 필터 결과 0은 별도 문구(Codex #47)', () => {
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
-  const ctaIdx = src.indexOf('saved.emptyCta');
-  const btnIdx = src.lastIndexOf('<Btn sm', ctaIdx);
-  expect(btnIdx).toBeGreaterThan(-1);
-  expect(src.slice(btnIdx, ctaIdx)).toContain("alignSelf: 'center'");
+  expect(src).toContain("<EmptyBlock label={t('saved.emptyTitle')}");
+  expect(src).toContain("<EmptyBlock label={t('saved.filterEmpty')}"); // 칩 결과 0 ≠ 저장 0
+  expect(src).toContain('(list ?? []).length > 0 ?');
+  expect(src).not.toContain('saved.emptyCta'); // 시안 = 버튼 없음
 });
 
 it('P-193(Q-39): 내 리뷰 셀 — 사진 스트립 렌더 + 탭 = 풀스크린 뷰어(4표면 공유 공백 보수)', () => {

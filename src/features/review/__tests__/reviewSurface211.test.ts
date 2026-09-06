@@ -37,7 +37,9 @@ it('③ 무효화 — 전역 피드(["reviews","global"]) 포함, 생성/수정/
 it('④ 커뮤니티 탭 헤더 — 공용 StickyHeader + useStickyScroll, 자체 헤더 스타일 소멸', () => {
   const feed = read('src/features/community/ReviewFeed.tsx');
   expect(feed).toContain('useStickyScroll()');
-  expect(feed).toContain('<StickyHeader hidden={hidden} mode="brand" title={t(\'tabs.community\')} />'); // P-225: 헤더 = 탭 라벨 키(Reviews)
+  // KB-430: 로고 AppBar(홈 공용) — 센터 타이틀 소멸, 벨 동승
+  expect(feed).toContain('mode="brand"');
+  expect(feed).toContain('bell={FLAGS.notificationCenter}');
   expect(feed).toContain('paddingTop: headerH');
-  expect(feed).not.toContain('headerTitle');
+  expect(feed).not.toMatch(/StickyHeader[^>]*title=/s); // AppBar 타이틀 슬롯 소멸(ActionSheet title은 별개)
 });

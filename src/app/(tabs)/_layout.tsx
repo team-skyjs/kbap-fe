@@ -20,13 +20,13 @@ import { ResumeOnboardingBanner } from '@/components/ResumeOnboardingBanner';
 const ROUTE_TO_KEY: Record<string, TabKey> = {
   index: 'home',
   food: 'food',
-  community: 'community',
+  community: 'reviews', // KB-429: 탭 키 reviews — 라우트는 커뮤니티(=전역 리뷰 피드) 재사용
   profile: 'profile',
 };
 const KEY_TO_ROUTE: Record<TabKey, string> = {
   home: 'index',
   food: 'food',
-  community: 'community',
+  reviews: 'community', // KB-429: 키 reviews → 커뮤니티 라우트(전역 리뷰 피드) 재사용
   profile: 'profile',
 };
 
@@ -58,7 +58,7 @@ function AppTabBar({
         home: t('tabs.home'),
         food: t('tabs.food'),
         scan: t('tabs.scan'),
-        community: t('tabs.community'),
+        reviews: t('tabs.reviews'), // KB-429 신설 키
         profile: t('tabs.profile'),
       }}
       onPress={(key) => navigate(KEY_TO_ROUTE[key])}

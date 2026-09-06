@@ -53,7 +53,7 @@ it('② 4탭 배선 소스 잠금 — 홈·Food·커뮤니티 피드·프로필 
   const fs = require('fs');
   for (const f of [
     'src/app/(tabs)/index.tsx',
-    'src/app/(tabs)/food.tsx',
+    'src/features/food/FoodExplorer.tsx', // KB-430 후속: Food 탭 에러 블록 = FoodExplorer(screen) 소유
     'src/features/community/ReviewFeed.tsx',
     'src/app/(tabs)/profile.tsx',
   ]) {

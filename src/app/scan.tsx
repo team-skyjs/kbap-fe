@@ -28,8 +28,9 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconClose, IconList, IconRetry, IconScanLines, IconGallery, IconFlip, IconChevron } from '@/components';
+import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
@@ -48,7 +49,9 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
-import { OrderPill, ScanProfileBar, ScanRichList } from '@/features/scan/ScanRichList';
+import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
+import { D4CameraRestart } from '@/components/design4Assets';
+import { EmptyBlock } from '@/components/StateBlock';
 import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -116,8 +119,10 @@ export default function Scan() {
   // P-138⑤(예진 8/6, 오너 결정 — 구 P-071 "사진 뷰 기본" 대체): 스캔 직후
   // 기본 = List(리치 리스트가 탐색·주문의 주 뷰). Photo는 세그 전환.
   const [view, setView] = useState<ResultView>('list');
-  // P-226 ②③: 리스트 소팅 — safety 토글은 소팅 세그와 통합(컨트롤 수 최소화 재량)
+  // P-226 ②③ → KB-432 §1-1: 소팅 = 정렬 드롭다운(ActionSheet) — 옵션 2종 무변
   const [sortMode, setSortMode] = useState<ResultSortMode>('menu');
+  const [sortSheet, setSortSheet] = useState(false);
+  const [profileFilter, setProfileFilter] = useState(false); // 시안 렌더 전용(무동작 — 상태 부재)
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
   // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
@@ -579,43 +584,52 @@ export default function Scan() {
 
     return (
       <View style={styles.resultRoot}>
-        {/* P-136(S1): 콰이엇 헤더 — 백·타이틀+서브·세그(사진/리스트)·다시찍기
-            (원본 감상 = 사진 뷰 롱프레스 피크 존치 — 원본 세그 소멸) */}
+        {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
-            <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconChevron size={18} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
-            <Text style={styles.qhSub}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
-          </View>
-          <View style={styles.seg}>
-            {(['risk', 'list'] as ResultView[]).map((v) => (
-              <Pressable key={v} style={[styles.segBtn, view === v && styles.segBtnOn]} onPress={() => setView(v)} testID={`seg-${v}`}>
-                <Text style={[styles.segText, view === v && styles.segTextOn]}>{t(v === 'risk' ? 'scan.segPhoto' : 'scan.segList')}</Text>
-              </Pressable>
-            ))}
-          </View>
-          {/* P-161: 즉시 리셋 → 확인 모달 선노출(결과 유실 경고) */}
-          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} testID="retake">
-            <IconRetry size={19} color={C.ink2} />
+          <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
+          {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}
+          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} style={styles.qhBack} testID="retake" accessibilityLabel={t('scan.retake')} accessibilityRole="button">
+            <D4CameraRestart size={24} color={C.ink} />
           </Pressable>
+        </View>
+        {/* §1-1: 언더라인 탭 2개 responsive 반반(4123:3853) — Photo | List(현 세그 매핑) */}
+        <View style={styles.resultTabs}>
+          {(['risk', 'list'] as ResultView[]).map((v) => (
+            <Pressable key={v} style={styles.resultTab} onPress={() => setView(v)} testID={`seg-${v}`}>
+              <Text style={[styles.resultTabLabel, view === v && styles.resultTabLabelOn]}>
+                {t(v === 'risk' ? 'scan.segPhoto' : 'scan.segList')}
+              </Text>
+              <View style={[styles.resultTabBar, view === v && styles.resultTabBarOn]} />
+            </Pressable>
+          ))}
+        </View>
+        {/* §1-1: 인식 배너 — h48 primaryTint, 스캔 아이콘 24 + 인식 수 15/500 primary */}
+        <View style={styles.recogBanner} testID="recog-banner">
+          <IconTabScan size={24} color={C.primary} />
+          <Text style={styles.recogBannerText}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
         </View>
 
         {view === 'list' ? (
           <>
-          {/* P-160 B안: 프로필 체크 줄 — ScrollView 밖 상단 고정(스크롤 시 스티키, 목업대로) */}
-          <ScanProfileBar
-            avoidNames={(me?.restrictions ?? []).map((r) => ingCat.name(r.code))}
-            t={t}
-          />
-          {/* P-226 ②③: 소팅 세그(메뉴판 순 기본 / 안전한 순) — 뷰 세그와 동일 문법 */}
-          <View style={styles.sortSegRow}>
-            {(['menu', 'safety'] as ResultSortMode[]).map((m) => (
-              <Pressable key={m} style={[styles.segBtn, sortMode === m && styles.segBtnOn]} onPress={() => setSortMode(m)} testID={`sort-${m}`}>
-                <Text style={[styles.segText, sortMode === m && styles.segTextOn]}>{t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
-              </Pressable>
-            ))}
+          {/* P-287(4003:7160): 결과 0개 = 공용 EmptyBlock(탭 아래) */}
+          {allDishes.length === 0 && <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />}
+          {/* 9/5 예진 판정: ScanProfileBar(회피 체크 스트립) 제거 — 시안 토글 행만 */}
+          {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
+              D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}
+          <View style={styles.controlRow}>
+            <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="scan-profile-toggle">
+              <View style={[styles.sw, profileFilter && styles.swOn]}>
+                <View style={[styles.knob, profileFilter && styles.knobOn]} />
+              </View>
+              <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+            </Pressable>
+            <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="scan-sort">
+              <Text style={styles.sortLabel} numberOfLines={1}>{t(sortMode === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
+              <IconChevronDown size={16} color="#4B4F58" />
+            </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
@@ -656,6 +670,18 @@ export default function Scan() {
         {/* P-136: 하단 주문 필 — 리스트·캡슐 뷰 공유(담김 카운트 동기) */}
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
+        {/* §1-1: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
+        <ActionSheet
+          open={sortSheet}
+          title={t('reviews.sortTitle')}
+          items={(['menu', 'safety'] as ResultSortMode[]).map((m) => ({
+            key: m,
+            label: t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety'),
+            icon: m === sortMode ? <IconCheck size={15} color={C.primary} /> : undefined,
+            onPress: () => setSortMode(m),
+          }))}
+          onClose={() => setSortSheet(false)}
+        />
         {GateSheet}
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
             후 — onClose 직후 present는 잔존 race), 안드는 onClose(onDismiss 미지원
@@ -845,24 +871,31 @@ export default function Scan() {
           </View>
         </GestureDetector>
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.permission]}>
-          <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-          <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
-          <Text style={styles.permBody}>{t(permDenied ? 'scan.permissionSettingsBody' : 'scan.permissionBody')}</Text>
-          <View style={{ width: '100%', maxWidth: 280 }}>
-            {/* P-122: 거부 이력 = 설정 열기(photo.openSettings 재사용) / 그 외 = 현행 요청 */}
-            {/* P-214: 권한 퍼널 — 설정 열기 / 요청 후 결과(grant|deny) 구분 */}
-            <Btn
-              onPress={
-                permDenied
-                  ? () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }
-                  : () => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))
-              }
-            >
-              {t(permDenied ? 'photo.openSettings' : 'scan.grant')}
-            </Btn>
+        permDenied ? (
+          /* P-285(최종본 4003:12656): 권한 거부 = D-1 Alert(320×190·스크림 40%) —
+             제목 18/600 #262C31 · 본문 15/500 #ADB4BA · primary 48 Open Settings(현 키) */
+          <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
+            <View style={styles.permAlert}>
+              <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
+              <Text style={styles.permAlertBody}>{t('scan.permissionSettingsBody')}</Text>
+              <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }}>
+                {t('photo.openSettings')}
+              </Btn>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.permission]}>
+            <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
+            <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
+            <View style={{ width: '100%', maxWidth: 280 }}>
+              {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
+              <Btn onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+                {t('scan.grant')}
+              </Btn>
+            </View>
+          </View>
+        )
       )}
 
       {/* P-131: 세로 유도 오버레이 소멸 — 가로 촬영 허용 (UI는 제자리 회전) */}
@@ -998,7 +1031,7 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
       </View>
       {dish.priceKrw != null && <Text style={styles.rowPrice}>{formatKrw(dish.priceKrw)}</Text>}
       <View style={[styles.rowBadge, { backgroundColor: tone.bg }]}>
-        <Text style={[styles.rowBadgeText, { color: tone.fg }]}>{riskLabel}</Text>
+        <Text style={[styles.rowBadgeText, { color: riskText[dish.risk] }]}>{riskLabel}</Text>
       </View>
       {/* 조사 대기(matched=false)는 상세가 없어 이동 화살표도 없음 */}
       {dish.matched && <IconChevron size={16} color={C.ink3} />}
@@ -1007,8 +1040,24 @@ function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dis
 }
 
 const styles = StyleSheet.create({
-  // P-226 ②: 소팅 세그 행 — 프로필 바 아래 얇게
-  sortSegRow: { flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.surface },
+  // KB-432 §1-1: 언더라인 탭 2개(반반) + 인식 배너 + 컨트롤 행
+  resultTabs: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: C.line2, backgroundColor: '#fff' },
+  resultTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
+  resultTabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  resultTabLabelOn: { color: '#2F3137' },
+  resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
+  resultTabBarOn: { backgroundColor: '#2F3137' },
+  recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 },
+  recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
+  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: C.surface },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
+  sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
+  swOn: { backgroundColor: C.primary },
+  knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
+  knobOn: { alignSelf: 'flex-end' },
+  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8 },
+  sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   // P-161: 확인 모달 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 전사
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
@@ -1016,10 +1065,9 @@ const styles = StyleSheet.create({
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
-  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair, backgroundColor: '#fff' },
-  qhBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  qhTitle: { fontFamily: font.bodyBold, fontSize: 15.5, color: C.ink },
-  qhSub: { fontFamily: font.body, fontSize: 11.5, color: C.ink3, marginTop: 1 },
+  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, backgroundColor: '#fff' },
+  qhBack: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  qhTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
   seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
   segBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   segBtnOn: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
@@ -1027,9 +1075,14 @@ const styles = StyleSheet.create({
   segTextOn: { color: C.ink },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
-  close: { position: 'absolute', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  close: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }, // Codex #47 P1: 권한 스크림(z30) 위 — 탈출 경로 보장
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
+  // P-285: 권한 거부 Alert(4003:12690)
+  permScrim: { backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
+  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 18 },
+  permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
+  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 21 }, // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
@@ -1068,7 +1121,7 @@ const styles = StyleSheet.create({
   statusText: { fontFamily: font.bodyBold, fontSize: 14, color: '#fff', textAlign: 'center' },
   // P-191: 갤러리 원본 로드 오버레이 — scanning 캡션과 동일 톤, 화면 하단 중앙
   importingOverlay: { position: 'absolute', left: 0, right: 0, bottom: 120, alignItems: 'center', gap: 8, zIndex: 20 },
-  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primaryText, textTransform: 'uppercase' },
+  errStage: { fontFamily: font.bodyBold, fontSize: 11, letterSpacing: 1, color: C.primary, textTransform: 'uppercase' }, // Codex #44 2차: 다크 배경 = 원색이 대비 우위(primaryText는 흰 바탕용)
   errBtns: { width: '100%', maxWidth: 300, gap: 10, marginTop: 6 },
   degradedNote: { fontFamily: font.body, fontSize: 12, color: '#fbbf24', textAlign: 'center' },
   // P-062② D2 스캐닝 오버레이

@@ -13,11 +13,12 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { setUserProps } from '@/lib/analytics';
-import { color as C, font, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconGlobe, IconChevron, IconCheck, IconApple, IconGoogleG, IconSearch, Input } from '@/components';
+import { color as C } from '@/lib/theme';
+import { SubHeader, Btn, Flag, IconProfile, IconCamera, IconChevron, IconCheck, IconApple, IconGoogleG, IconSearch, Input } from '@/components';
+import { AvatarPlaceholder } from '@/components/design4Assets';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
-import { SpicePeppers } from '@/components/SpicePeppers';
-import { SPICE_LEVEL_LABEL, spiceRank, type SpiceChoice } from '@/lib/spice';
+import { type SpiceChoice } from '@/lib/spice';
 import { countryByCode } from '@/lib/onboarding/countries';
 import { IconLock } from '@/components/icons';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -34,6 +35,7 @@ export default function EditProfile() {
   const { lang } = useLocale();
   const { data: me } = useMe();
   const update = useUpdateMe();
+  const bottom = useBottomInset(); // P-055: 안드 내비바 보정
 
   const [nickname, setNickname] = useState('');
   const [spice, setSpice] = useState<SpiceChoice>('SKIP'); // KB-150→P-081 — SKIP = 미설정
@@ -160,13 +162,13 @@ export default function EditProfile() {
         }
       />
       <ScrollView keyboardDismissMode="on-drag" scrollEnabled={!sliderDragging} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        {/* avatar — KB-149 실연결 */}
+        {/* 아바타 100 원 + 카메라 배지 32(#2F3137, 흰 1.5px 링) — KB-149 업로드 실연결 유지 */}
         <View style={styles.avatarWrap}>
           <Pressable testID='avatar' style={styles.av} onPress={photoBusy ? undefined : () => void changePhoto()}>
             {shownPhotoUri ? (
               <RemoteImage uri={shownPhotoUri} style={styles.avImg} />
             ) : (
-              <IconProfile size={44} color={C.primary} />
+              <AvatarPlaceholder height={100} />
             )}
             {photoBusy && (
               <View style={[styles.avImg, styles.avBusy]}>
@@ -177,23 +179,20 @@ export default function EditProfile() {
               <IconCamera size={16} color="#fff" />
             </View>
           </Pressable>
-          {/* P-120: "사진 변경" 상시 라벨 제거(아바타 탭으로 충분) — 에러 시에만 그 자리(P-013 문구) */}
+          {/* P-120: 에러 시에만 문구(P-013) */}
           {photoError && <Text style={styles.phErr}>{t('editProfile.photoError')}</Text>}
-          {/* P-123: 안드 텍스트 삭제 버튼 소멸 — 시트(커뮤니티 ActionSheet 재사용)에
-              빨간 삭제가 생겨 양 플랫폼 시트 일원화. */}
         </View>
 
-        {/* nickname */}
+        {/* nickname — Input/Text Filled(4150:14473) */}
         <View style={styles.fieldset}>
-          <Text style={styles.fieldLbl}>{t('editProfile.nickname')} *</Text>
+          <Text style={styles.fieldLbl}>{t('editProfile.nickname')}</Text>
           <View style={styles.field}>
-            <IconProfile size={18} color={C.ink2} />
             <Input
               style={styles.input}
               value={nickname}
               onChangeText={setNickname}
               placeholder={t('editProfile.nicknamePlaceholder')}
-              placeholderTextColor={C.ink3}
+              placeholderTextColor={C.inkDisabled}
               autoCorrect={false}
               maxLength={24}
             />
@@ -201,22 +200,21 @@ export default function EditProfile() {
           <Text style={styles.hint}>{t('editProfile.nicknameHint')}</Text>
         </View>
 
-        {/* nationality — P-078: 수정 불가(7/29 정책), 읽기 전용 표시 */}
+        {/* nationality — P-078: 수정 불가(7/29 정책), Disabled 필드 */}
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.nationality')}</Text>
-          <View style={[styles.field, styles.fieldLocked]}>
+          <View style={[styles.field, styles.fieldDisabled]}>
             {!!me?.nationality && <Flag code={me.nationality} size={18} />}
-            <Text style={[styles.val, styles.valLocked]}>{nation?.name ?? me?.nationality}</Text>
+            <Text style={[styles.val, styles.valDisabled]}>{nation?.name ?? me?.nationality}</Text>
             <IconLock size={15} color={C.ink3} />
           </View>
           <Text style={styles.hint}>{t('editProfile.nationalityLocked')}</Text>
         </View>
 
-        {/* P-165(#145): 통화 — 국가 피커 문법(검색+리스트) 재사용, 미설정 = 국적 폴백 표시 */}
+        {/* P-165(#145): 통화 — 탭 시 피커 시트(문법 무변), 미설정 = 국적 폴백 표시 */}
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.currency')}</Text>
           <Pressable style={styles.field} onPress={() => setCurrencyOpen(true)} testID="currency-row">
-            <IconGlobe size={18} color={C.ink2} />
             <Text style={styles.val}>
               {currency
                 ? `${currency} (${SUPPORTED_CURRENCIES.find((c) => c.code === currency)?.symbol ?? ''})`
@@ -231,26 +229,17 @@ export default function EditProfile() {
           <View style={styles.fieldset}>
             <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')}</Text>
             <Pressable style={styles.field} onPress={() => void Linking.openSettings()}>
-              <IconGlobe size={18} color={C.ink2} />
               <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
               <IconChevron size={16} color={C.ink3} />
             </Pressable>
           </View>
         )}
 
-        {/* spice tolerance (KB-150→P-081) — 온보딩과 동일 5스톱 히트 슬라이더(공용
-            SpiceLevelSlider) + 🌶️ 카운트 표시(불꽃·10-스케일 폐기, 헌법 v2.2.0 예외). */}
+        {/* spice tolerance — D-5 ② 슬라이더 박스(bg #F7F8FA r8) + Clear 14/600 primary */}
         <View style={styles.fieldset}>
           <Text style={styles.fieldLbl}>{t('editProfile.spice')}</Text>
-          <View style={[styles.field, styles.spiceField]}>
+          <View style={styles.spiceBox}>
             <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} onDragStateChange={setSliderDragging} />
-            {/* P-227 ⑤: 고추 5개 상시 + 미달분 투명도(멘토 제안) — repeat 문자열 폐기 */}
-            <View style={styles.spiceValRow}>
-              {spice !== 'SKIP' && <SpicePeppers rank={spiceRank(spice)} />}
-              <Text style={[styles.spiceVal, spice === 'SKIP' && styles.spiceValUnset]}>
-                {spice !== 'SKIP' ? t(SPICE_LEVEL_LABEL[spice]) : t('profile.spiceUnset')}
-              </Text>
-            </View>
           </View>
           {spice !== 'SKIP' && (
             <Pressable hitSlop={8} onPress={() => setSpice('SKIP')}>
@@ -259,25 +248,21 @@ export default function EditProfile() {
           )}
         </View>
 
-        {/* linked provider (read-only) — KB-203/P-029: email은 프로필 계약에 없어
-            항상 undefined였음 → 가입 소셜(provider)로 교체. P-034(Q-16): 아이콘은
-            공식 로고 — 애플 필드 마크 + 구글 4색 G(로그인 버튼과 SSOT). 미지원·누락 중립 폴백. */}
+        {/* linked provider (read-only) — P-147 서버 정본 · P-034 공식 로고 */}
         <View style={styles.sec}>
           <Text style={styles.secTitle}>{t('editProfile.linkedTitle')}</Text>
-          <View style={styles.acctList}>
-            <View style={styles.acctRow}>
-              <View style={styles.acctIc}>
-                {me?.provider === 'APPLE' ? (
-                  <IconApple size={17} color={C.ink} />
-                ) : me?.provider === 'GOOGLE' ? (
-                  <IconGoogleG size={17} />
-                ) : (
-                  <IconProfile size={17} color={C.ink2} />
-                )}
-              </View>
-              <Text style={styles.acctLabel}>{t('editProfile.linkedVia')}</Text>
-              <Text style={styles.acctVal}>{t(providerLabelKey(me?.provider))}</Text>
+          <View style={styles.linkedCard}>
+            <View style={styles.linkedIc}>
+              {me?.provider === 'APPLE' ? (
+                <IconApple size={17} color={C.ink} />
+              ) : me?.provider === 'GOOGLE' ? (
+                <IconGoogleG size={17} />
+              ) : (
+                <IconProfile size={17} color={C.ink2} />
+              )}
             </View>
+            <Text style={styles.linkedLabel}>{t('editProfile.linkedVia')}</Text>
+            <Text style={styles.linkedVal}>{t(providerLabelKey(me?.provider))}</Text>
           </View>
         </View>
       </ScrollView>
@@ -333,7 +318,8 @@ export default function EditProfile() {
         </View>
       </Modal>
 
-      <View style={styles.savebar}>
+      {/* BottomBar Single(4150:14473) — primary "✓ Save changes"(P-173 가드 무변) */}
+      <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="edit-bottom-bar">
         <Btn variant={photoBusy ? 'off' : 'primary'} busy={saving} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
           {t('editProfile.save')}
         </Btn>
@@ -344,52 +330,46 @@ export default function EditProfile() {
 }
 
 const styles = StyleSheet.create({
-  spiceValRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 28, gap: 18 },
+  body: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 120, gap: 20 },
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
-  saveLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
+  saveLink: { fontSize: 13, fontWeight: '600', color: '#1C1E21' },
 
   avatarWrap: { alignItems: 'center', gap: 10, paddingVertical: 4 },
-  av: { width: 92, height: 92, borderRadius: 46, backgroundColor: 'rgba(226,88,12,0.08)', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
-  avImg: { position: 'absolute', top: 0, left: 0, width: 92, height: 92, borderRadius: 46 },
+  av: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#E8F6FF', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  avImg: { position: 'absolute', top: 0, left: 0, width: 100, height: 100, borderRadius: 50 },
   avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
-  cam: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: C.surface },
-  phLbl: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
-  phErr: { fontFamily: font.bodyBold, fontSize: 13, color: C.riskCaution },
-  phRemove: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.riskDanger, padding: 4 },
+  cam: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
+  phErr: { fontSize: 13, fontWeight: '500', color: C.riskCaution },
 
+  // Input/Text 필드(D-1 Filled) — bg #F7F8FA r8, Disabled = 동일 bg + 흐린 값
   fieldset: { gap: 6 },
-  fieldLbl: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  field: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 14, minHeight: 52, ...shadow.sh1 },
-  fieldLocked: { backgroundColor: '#F5EEE7', borderColor: 'transparent' },
-  valLocked: { color: C.ink2 },
-  input: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, paddingVertical: 13 },
-  val: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  hint: { fontFamily: font.body, fontSize: 12, color: C.ink2, marginLeft: 2, marginTop: 3, lineHeight: 17 },
-  hintWarn: { fontFamily: font.bodyBold, color: C.riskCaution },
+  fieldLbl: { fontSize: 14, fontWeight: '600', color: '#8E8883' },
+  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 16, minHeight: 52 },
+  fieldDisabled: { backgroundColor: C.surface2 },
+  valDisabled: { color: C.ink3 },
+  input: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21', paddingVertical: 14 },
+  val: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
+  hint: { fontSize: 13, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 1, lineHeight: 18 },
 
-  spiceField: { flexDirection: 'column', alignItems: 'stretch', gap: 10, paddingVertical: 14 },
-  // P-119: 🌶️ 유무(NONE=0개)로 줄 높이가 변해 화면이 들썩이던 것 고정
-  spiceVal: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 22, color: C.ink2, textAlign: 'center' },
-  spiceValUnset: { fontFamily: font.body, color: C.ink3 },
-  spiceClear: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText, marginLeft: 2, marginTop: 3 },
+  spiceBox: { backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
+  spiceClear: { fontSize: 14, fontWeight: '600', color: C.primaryText, marginLeft: 2, marginTop: 4 },
 
+  // Linked to account — 카드 border #EBE6E1 r12 pad 14/16
   sec: { gap: 10 },
-  secTitle: { fontFamily: font.display, fontSize: 16, color: C.ink, letterSpacing: -0.2 },
-  acctList: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sh1 },
-  acctRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 15, paddingVertical: 14 },
-  acctIc: { width: 30, height: 30, borderRadius: 9, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  acctLabel: { flex: 1, fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
-  acctVal: { fontFamily: font.body, fontSize: 13, color: C.ink3 },
+  secTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21' },
+  linkedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#EBE6E1', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
+  linkedIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' },
+  linkedLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1C1E21' },
+  linkedVal: { fontSize: 13, fontWeight: '500', color: '#8E8883' },
 
-  savebar: { padding: 18, paddingBottom: 30, backgroundColor: 'rgba(252,245,239,0.92)', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
+  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 
   // P-165 통화 피커 — 온보딩 natSearch/natRow 문법 수치 재사용
   curBody: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
-  curSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
-  curSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
-  curRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 56, paddingHorizontal: 12, borderRadius: 14 },
-  curSym: { fontFamily: font.bodyBold, fontSize: 16, color: C.ink2, minWidth: 34 },
-  curName: { flex: 1, fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink },
+  curSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 13, marginBottom: 10 },
+  curSearchInput: { flex: 1, paddingVertical: 11, fontSize: 14.5, color: C.ink },
+  curRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 56, paddingHorizontal: 12, borderRadius: 8 },
+  curSym: { fontSize: 16, fontWeight: '600', color: C.ink2, minWidth: 34 },
+  curName: { flex: 1, fontSize: 14.5, fontWeight: '500', color: C.ink },
 });

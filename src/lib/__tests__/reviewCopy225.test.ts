@@ -10,9 +10,9 @@ it('① 탭명 = Reviews 계열 ×10 — en 확정 "Reviews", 홈 섹션·피드
   expect(dict('en').tabs.community).toBe('Reviews');
   expect(dict('ko').tabs.community).toBe('리뷰');
   for (const lang of LOCALES) expect(dict(lang).tabs.community).not.toMatch(/community/i);
-  // 같은 키 재사용 표면(함께 바뀌는 것이 맞다 — 발주 확인)
-  expect(fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8')).toContain("t('tabs.community')"); // 홈 리뷰 섹션
-  expect(fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8')).toContain("title={t('tabs.community')}"); // 피드 헤더
+  // KB-430: 홈 리뷰 섹션 = SectionHead(reviews.headerTitle) · 피드 헤더 = 로고 AppBar(타이틀 소멸)
+  expect(fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8')).toContain("t('reviews.headerTitle')");
+  expect(fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8')).not.toMatch(/StickyHeader[^>]*title=/s);
 });
 
 it('② optional 제거 — 대상 3곳 잔존 0, 온보딩 3키는 존치(스킵 가능 안내 = 안전 목적)', () => {

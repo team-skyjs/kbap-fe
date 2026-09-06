@@ -11,6 +11,7 @@
  *   - restrictions.kind ← 와이어는 코드만 — UI가 kind를 안 쓰므로 'allergy' 고정
  *   - email ← 계약에 없음(소셜 전용) → undefined
  */
+import { reportProfileContractDrift } from '../sentry';
 import type { Ranking, RestrictionKind, User } from './types';
 import type { SpiceChoice } from '@/lib/spice';
 import { wireToSpiceChoice } from './spiceAdapter';
@@ -124,6 +125,15 @@ export function adaptProfileImageUrl(wire: string | null | undefined): string | 
 }
 
 export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null): User {
+  // KB-434 후속(9/5 프로필 탭 전체 에러): 필수 2필드 부재 = 어댑터 throw → useMe error →
+  // 화면 전체 QueryErrorBlock이 되던 것 방어. 부재는 조용히 삼키지 않고 드리프트 경고
+  // (reportProfileContractDrift — console.warn + Sentry 태그). 회피 부재 = 빈 배열
+  // (personalRisk가 unable로 강등하는 false-safe 방향) · ranking 부재 = null(카드 미렌더).
+  const missing: string[] = [];
+  if (!Array.isArray(wire.avoidanceSubstanceCodes)) missing.push('avoidanceSubstanceCodes');
+  if (wire.ranking == null) missing.push('ranking');
+  if (wire.memberId == null) missing.push('memberId');
+  reportProfileContractDrift(missing);
   return {
     id: String(wire.memberId),
     nickname: wire.nickname,
@@ -137,11 +147,11 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     provider: wire.provider, // KB-203 — 연동 계정 표시용
     currency: wire.currency ?? null, // P-165(#145): 서버 정본 — 결정 체인 1순위(exchange)
 
-    restrictions: wire.avoidanceSubstanceCodes.map((code) => ({
+    restrictions: (Array.isArray(wire.avoidanceSubstanceCodes) ? wire.avoidanceSubstanceCodes : []).map((code) => ({
       kind: 'allergy' as RestrictionKind, // UI 미사용 필드 — 코드가 정보의 전부
       code,
     })),
-    rank: adaptRanking(wire.ranking),
+    rank: wire.ranking != null ? adaptRanking(wire.ranking) : null,
     onboardingCompleted: wire.onboardingCompleted,
     // P-243: 식이 카테고리 서버 정본(BE #179) — 부재(구응답) = 빈 배열
     dietCategories: Array.isArray(wire.dietCategories) ? wire.dietCategories : [],

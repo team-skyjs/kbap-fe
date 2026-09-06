@@ -38,6 +38,8 @@ jest.mock('@/lib/api/places', () => ({ fetchNearbyPlaces: jest.fn(), fetchSearch
 jest.mock('@/components', () => new Proxy({}, { get: () => () => null }));
 jest.mock('@/components/Txt', () => ({ Txt: () => null }));
 jest.mock('@/components/KeyboardDismissBar', () => ({ KeyboardDismissBar: () => null, Input: () => null }));
+// KB-432(Codex #31): ReviewCellParts가 useBottomInset을 소비 — 표면 목(react-native 전체 목과 충돌 방지)
+jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => 0 }));
 jest.mock('@/components/RemoteImage', () => ({ RemoteImage: () => null }));
 jest.mock('@/lib/review/reviewExtras', () => ({ EMPTY_EXTRAS: {}, extrasFromReview: jest.fn(), hasAnyExtras: () => false }));
 jest.mock('@/lib/flags', () => ({ FLAGS: { reviewPlaceEnabled: true } }));

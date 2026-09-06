@@ -24,7 +24,7 @@
  * | review_submit            | (props 없음)                                |
  * | auth_login_success            | provider (APPLE|GOOGLE)                    |
  * | auth_guest_enter              | (props 없음)                                |
- * | app_tab_view                 | tab (home|food|community|profile)          |
+ * | app_tab_view                 | tab (home|food|reviews|community|profile)  |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
@@ -104,7 +104,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
   review_write_tap: ['source'],
   food_bookmark_toggle: ['on'],
-  app_tab_view: ['tab'], // home|food|community|profile
+  app_tab_view: ['tab'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
   auth_gate_view: ['trigger'], // bookmark|review|scan|community|risk|profile
   // P-214 — ⛔ 전송 금지(발주 고정): 장소명·주소·좌표 / 신고 note / 대상 memberId·닉네임 /
   // 본문·사진 URI / 프리셋 항목명. 아래 키 밖은 어댑터가 드롭(화이트리스트가 방어선).

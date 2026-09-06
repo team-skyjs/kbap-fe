@@ -11,7 +11,8 @@
     "goBack": "Quay lại",
     "retry": "Thử lại",
     "skip": "Bỏ qua",
-    "save": "Lưu"
+    "save": "Lưu",
+    "close": "Đóng"
   },
   "intro": {
     "skip": "Bỏ qua",
@@ -34,7 +35,12 @@
     "google": "Đăng nhập bằng Google",
     "terms": "Khi tiếp tục, bạn đồng ý với Điều khoản dịch vụ và xác nhận đã đọc Chính sách quyền riêng tư của chúng tôi.",
     "errorGeneric": "Đăng nhập chưa hoàn tất. Vui lòng thử lại.",
-    "errorNetwork": "Lỗi mạng — hãy kiểm tra kết nối và thử lại."
+    "errorNetwork": "Lỗi mạng — hãy kiểm tra kết nối và thử lại.",
+    "termsPrefix": "Khi tiếp tục, bạn đồng ý với ",
+    "termsTos": "Điều khoản dịch vụ",
+    "termsAnd": " và xác nhận ",
+    "termsPrivacy": "Chính sách quyền riêng tư",
+    "termsSuffix": " của chúng tôi."
   },
   "gate": {
     "riskTitle": "Xem mức đánh giá an toàn dành riêng cho bạn",
@@ -49,7 +55,9 @@
     "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
     "saveTitle": "Lưu những món bạn muốn thử",
     "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn.",
-    "keepBrowsing": "Tiếp tục xem"
+    "keepBrowsing": "Tiếp tục xem",
+    "reportTitle": "Giúp giữ độ tin cậy cho đánh giá",
+    "reportSub": "Đăng ký để báo cáo đánh giá và chúng tôi sẽ xem xét."
   },
   "lock": {
     "verdictTitle": "Mức đánh giá an toàn dành riêng cho bạn",
@@ -81,7 +89,8 @@
     "food": "Món ăn",
     "scan": "Quét",
     "community": "Đánh giá",
-    "profile": "Hồ sơ"
+    "profile": "Hồ sơ",
+    "reviews": "Đánh giá"
   },
   "food": {
     "title": "Khám phá món ăn",
@@ -288,7 +297,10 @@
     "stayHint": "Quá trình này có thể mất 30–40 giây — rời khỏi ứng dụng có thể làm mất kết quả.",
     "sortMenu": "Theo thực đơn",
     "sortSafety": "Rủi ro thấp trước",
-    "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới."
+    "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
+    "searchOnNaver": "Tìm trên NAVER",
+    "searchOnGoogle": "Tìm trên Google",
+    "resultsEmpty": "Không có kết quả quét"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",
@@ -395,7 +407,8 @@
     "placeManual": "Dùng nguyên \"{{name}}\"",
     "extrasTitle": "Nhà hàng thế nào?",
     "extrasSpeed": "Tốc độ phục vụ",
-    "extrasService": "Thái độ phục vụ"
+    "extrasService": "Thái độ phục vụ",
+    "extrasTaste": "Hương vị"
   },
   "reviews": {
     "headerTitle": "Đánh giá",
@@ -442,7 +455,9 @@
     "sort_food_review_count": "Món nhiều đánh giá nhất",
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
-    "ratingMin": "Từ {{min}} sao"
+    "ratingMin": "Từ {{min}} sao",
+    "filterByProfile": "Lọc theo hồ sơ",
+    "countryOnly": "Chỉ {{code}}"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
@@ -599,7 +614,12 @@
       "bbq": "Nướng & Thịt",
       "street": "Đồ ăn đường phố",
       "sides": "Món phụ"
-    }
+    },
+    "filterAll": "Tất cả",
+    "reviewsSub": "Đọc trước khi gọi món",
+    "chipForYou": "Dành cho bạn",
+    "chipNearby": "Gần đây",
+    "recentEmpty": "Chưa có lượt quét gần đây"
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -707,7 +727,8 @@
       "groupAllergy": "Nhóm dị ứng",
       "apply": "Áp dụng vào danh sách",
       "applyRow": "Điền theo chế độ ăn/tôn giáo"
-    }
+    },
+    "countryLabel": "Quốc gia"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",
@@ -879,7 +900,8 @@
     "removed": "Đã xóa khỏi Đã lưu",
     "undo": "Hoàn tác",
     "toast": "Đã lưu vào danh sách của bạn",
-    "view": "Xem"
+    "view": "Xem",
+    "filterEmpty": "Không có món đã lưu phù hợp với bộ lọc này"
   },
   "spice": {
     "band": {
@@ -961,7 +983,8 @@
     "noticeTitle": "Chào mừng đến với K-Bap",
     "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
     "nudgeTitle": "Hôm nay ăn ngoài chứ?",
-    "nudgeBody": "Hãy quét thực đơn trước khi gọi món."
+    "nudgeBody": "Hãy quét thực đơn trước khi gọi món.",
+    "newBadge": "NEW"
   },
   "myFoods": {
     "ordered": "Đã gọi món",
@@ -974,7 +997,11 @@
     "emptyOrdersTitle": "Chưa có đơn hàng nào",
     "emptyOrdersBody": "Gọi món từ thực đơn đã quét và lịch sử sẽ hiện ở đây.",
     "emptyScansTitle": "Chưa có lượt quét nào",
-    "emptyScansBody": "Quét thực đơn và các món bạn đã xem sẽ tập hợp ở đây."
+    "emptyScansBody": "Quét thực đơn và các món bạn đã xem sẽ tập hợp ở đây.",
+    "dishes": "Món ăn",
+    "receiptDate": "NGÀY",
+    "receiptLocation": "ĐỊA ĐIỂM",
+    "receiptTotal": "TỔNG"
   },
   "ota": {
     "ready": "Bản cập nhật đã sẵn sàng",
