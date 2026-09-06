@@ -24,9 +24,9 @@ it('공개 3종 = 리터럴 true(채널식 소멸 — prod 포함 전 채널 보
   }
 });
 
-it('잠금 유지 — communityEnabled = !PROD_CHANNEL·placeTagsEnabled(KB-274) = false 무변', () => {
-  expect(flagsSrc).toContain('communityEnabled: !PROD_CHANNEL');
-  expect(flagsSrc).toContain('homeAllContent: !PROD_CHANNEL');
+it('잠금 유지 — communityEnabled = true(P-289 전 채널)·placeTagsEnabled(KB-274) = false 무변', () => {
+  expect(flagsSrc).toContain('communityEnabled: true'); // P-289(예진 9/7) 전 채널
+  expect(flagsSrc).not.toContain('homeAllContent'); // P-289: 소비처 0 — 삭제
   expect(flagsSrc).toContain('placeTagsEnabled: false');
 });
 
