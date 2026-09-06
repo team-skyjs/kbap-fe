@@ -14,6 +14,7 @@ import { Stack, useRouter, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AnimatedSplash } from '@/components/AnimatedSplash';
 import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -106,8 +107,13 @@ export default function RootLayout() {
     }
   }, [entryChecked, router]);
 
+  // P-288(KB-437): 네이티브 스플래시가 걷히는 같은 프레임에 JS 오버레이(AnimatedSplash)
+  // 활성 — 정지 마크(동일 위치) 위에서 모션 A 시작, 종료 페이드로 첫 화면과 크로스페이드
+  const [splashActive, setSplashActive] = useState(false);
+  const [splashVisible, setSplashVisible] = useState(true);
   useEffect(() => {
     if ((fontsLoaded || fontError) && entryChecked) {
+      setSplashActive(true);
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError, entryChecked]);
@@ -173,6 +179,8 @@ export default function RootLayout() {
               <PhotoSourceSheetHost />
               {/* KB-420: OTA 자동 적용 — 채널별 정책(otaPolicy) + prod 대기 배너 */}
               <OtaAutoApplyHost />
+              {/* P-288: JS 스플래시 오버레이 — 최상위(zIndex 1000), 완료 시 언마운트 */}
+              {splashVisible && <AnimatedSplash active={splashActive} onDone={() => setSplashVisible(false)} />}
             </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>
