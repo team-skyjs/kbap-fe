@@ -284,11 +284,9 @@ export const D4Minus = ({ size = 24, color = '#1C1E21' }: { size?: number; color
 
 /** P-285(최종본): 미등록 외부 검색 칩 — 브랜드 색 유지(시안 그대로) */
 export const BrandNaverMark = ({ size = 20 }: { size?: number }) => (
+  /* Codex #45 2차: boolean union 자식(회색 사각 3패스)이 초록을 덮던 추출 오류 — union 패스만 */
   <Svg width={size} height={size} viewBox="0 0 20 20">
     <Path d="M8.373 5.175L8.373 0.001L13.257 0.001L13.257 12.153L8.373 12.153L8.373 12.091L4.884 6.474L4.884 12.153L0 12.153L0 0.001L4.884 0.001L4.884 0.076L4.996 0L8.373 5.175Z" fill="#1ec800" fillRule="nonzero" transform="matrix(1 0 0 1 3.287 4.333)" />
-    <Path d="M0 0L4.884 0L4.884 12.153L0 12.153L0 0Z" fill="#c4c4c4" fillRule="nonzero" transform="matrix(1 0 0 1 3.287 4.334)" />
-    <Path d="M0 0L4.884 0L4.884 12.153L0 12.153L0 0Z" fill="#c4c4c4" fillRule="nonzero" transform="matrix(1 0 0 1 11.66 4.334)" />
-    <Path d="M0.265 0L3.78 0L3.78 12.063L0 11.887L0.265 0Z" fill="#c4c4c4" fillRule="nonzero" transform="matrix(0.825 -0.565 0.546 0.837 5.164 6.469)" />
   </Svg>
 );
 
