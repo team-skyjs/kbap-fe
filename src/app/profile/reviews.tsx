@@ -20,7 +20,8 @@ import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
+import { SkeletonMyReviews } from '@/components/Skeleton';
 import { FeedCard } from '@/features/review/FeedCard';
 import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
@@ -38,7 +39,7 @@ export default function MyReviews() {
 
   const router = useRouter();
   const { t } = useTranslation();
-  const { data: reviews, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
+  const { data: reviews, isLoading: reviewsLoading, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
   const { data: foods } = useFoods();
   const { data: me } = useMe();
   const [chip, setChip] = useState<RiskChip>('all');
@@ -94,17 +95,12 @@ export default function MyReviews() {
         {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
         {reviewsError && !reviews ? (
           <QueryErrorBlock error={reviewsError} onRetry={() => void refetchReviews()} onGoBack={() => router.back()} />
-        ) : count === 0 ? (
-          <View style={styles.empty}>
-            <View style={styles.emptyIc}>
-              <IconFood size={30} color={C.ink3} />
-            </View>
-            <Text style={styles.emptyTitle}>{t('myReviews.emptyTitle')}</Text>
-            <Text style={styles.emptyBody}>{t('myReviews.emptyBody')}</Text>
-          </View>
+        ) : reviewsLoading && !reviews ? (
+          /* P-287(4003:12753): 첫 로드 = 스켈레톤(공백·팝인 금지 규칙) */
+          <SkeletonMyReviews />
         ) : (
           <>
-            {/* 위험 칩 행 — All·Safe·Avoid(D-2 칩 공용) */}
+            {/* 위험 칩 행 — All·Safe·Avoid(D-2 칩 공용) — P-287: 빈 상태에서도 유지(시안 배치) */}
             <View style={styles.chipRow}>
               {RISK_CHIPS.map((c) => (
                 <Chip
@@ -116,6 +112,9 @@ export default function MyReviews() {
                 />
               ))}
             </View>
+
+            {/* P-287(4003:6921): 빈 상태 = 공용 EmptyBlock */}
+            {count === 0 && <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />}
 
             <View>
               {list.map((rv) => (

@@ -299,7 +299,8 @@
     "sortSafety": "Rủi ro thấp trước",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
     "searchOnNaver": "Tìm trên NAVER",
-    "searchOnGoogle": "Tìm trên Google"
+    "searchOnGoogle": "Tìm trên Google",
+    "resultsEmpty": "Không có kết quả quét"
   },
   "owner": {
     "caption": "Đưa màn hình này cho nhân viên nhà hàng xem",
@@ -617,7 +618,8 @@
     "filterAll": "Tất cả",
     "reviewsSub": "Đọc trước khi gọi món",
     "chipForYou": "Dành cho bạn",
-    "chipNearby": "Gần đây"
+    "chipNearby": "Gần đây",
+    "recentEmpty": "Chưa có lượt quét gần đây"
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -898,7 +900,8 @@
     "removed": "Đã xóa khỏi Đã lưu",
     "undo": "Hoàn tác",
     "toast": "Đã lưu vào danh sách của bạn",
-    "view": "Xem"
+    "view": "Xem",
+    "filterEmpty": "Không có món đã lưu phù hợp với bộ lọc này"
   },
   "spice": {
     "band": {

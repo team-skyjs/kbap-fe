@@ -299,7 +299,8 @@
     "sortSafety": "リスクが低い順",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
     "searchOnNaver": "NAVERで検索",
-    "searchOnGoogle": "Googleで検索"
+    "searchOnGoogle": "Googleで検索",
+    "resultsEmpty": "スキャン結果がありません"
   },
   "owner": {
     "caption": "この画面を店員に見せてください",
@@ -617,7 +618,8 @@
     "filterAll": "すべて",
     "reviewsSub": "注文前にチェック",
     "chipForYou": "おすすめ",
-    "chipNearby": "近く"
+    "chipNearby": "近く",
+    "recentEmpty": "最近のスキャンはありません"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
@@ -898,7 +900,8 @@
     "removed": "保存済みから削除しました",
     "undo": "元に戻す",
     "toast": "リストに保存しました",
-    "view": "見る"
+    "view": "見る",
+    "filterEmpty": "このフィルターに合う保存済みの料理はありません"
   },
   "spice": {
     "band": {

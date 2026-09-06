@@ -12,7 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, riskTone } from '@/lib/theme';
 import { Btn } from './Btn';
-import { IconAlertTri, IconRetry, IconWifiOff } from './icons';
+import Svg from 'react-native-svg';
+import { D4CircleDashed } from './design4Assets';
+import { RiskGlyph } from './RiskMark';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
 
@@ -86,6 +88,17 @@ export function StateBlock({
   );
 }
 
+/** P-287(최종본 4003:6689): 공용 빈 상태 — circle-dashed 24 + 16/400 중앙, 버튼 없음.
+ *  Codex #47 5차: 계측 0 — 빈 섹션은 에러 표면이 아님(P-213 지표 오염 방지, error/offline만 발화). */
+export function EmptyBlock({ label, testID = 'empty-block' }: { label: string; testID?: string }) {
+  return (
+    <View style={styles.emptyWrap} testID={testID}>
+      <D4CircleDashed size={24} color="#000000" />
+      <Text style={styles.emptyText}>{label}</Text>
+    </View>
+  );
+}
+
 /**
  * ScreenCenterFill (P-196) — 탭 상태 블록(오프라인/에러/빈)의 **화면 기준 정중앙**
  * 공용 기준(스캔탭 문법). 탭마다 헤더 포함 여부·스크롤 구조가 달라 fill 기준
@@ -119,6 +132,14 @@ const styles = StyleSheet.create({
   btns: { width: '100%', gap: 9, marginTop: 6 },
   // P-196: 화면 기준 정중앙 — 4탭 공용(paddingHorizontal은 게이트 카드류 대비)
   screenCenter: { justifyContent: 'center', paddingHorizontal: 18 },
+  // P-287: 빈 상태(4003:6689) — 335 중앙, circle-dashed + 16/400
+  emptyWrap: { alignItems: 'center', gap: 8, maxWidth: 335, alignSelf: 'center', paddingVertical: 32, paddingHorizontal: 20 },
+  emptyText: { fontSize: 16, fontWeight: '400', color: '#000000', textAlign: 'center' },
+  // P-287: 에러 블록(4003:12563) — 세로 중앙 pad 40/32 gap 16
+  errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingVertical: 40, paddingHorizontal: 32, maxWidth: 360, alignSelf: 'center', width: '100%' },
+  errMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,113,52,0.10)', alignItems: 'center', justifyContent: 'center' },
+  errTitle: { fontSize: 16, fontWeight: '600', color: C.ink, textAlign: 'center' },
+  errBody: { fontSize: 14, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 20 },
 });
 
 /**
@@ -142,29 +163,43 @@ export function QueryErrorBlock({
   onGoBack?: () => void;
 }) {
   const { t } = useTranslation();
-  // P-184: 에러/오프라인은 항상 전체 표면 상태 — 세로 정중앙 자체 소유(수동 배치 금지)
-  if (classifyQueryError(error) === 'offline') {
-    return (
-      <StateBlock
-        fill
-        kind="offline"
-        icon={<IconWifiOff size={38} color={stateIconColor.default} />}
-        title={t('states.offlineTitle')}
-        body={t('states.offlineBody')}
-        primary={{ label: t('common.retry'), icon: <IconRetry size={17} color="#fff" />, onPress: onRetry }}
-      />
-    );
-  }
+  const offline = classifyQueryError(error) === 'offline';
+  const screen = useScreenKey();
+  React.useEffect(() => {
+    track(EVENTS.error_state_view, { screen, kind: offline ? 'offline' : 'error', action: 'view' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // P-287(최종본 4003:12563): 마크 36 원 primary 10% + '!' 글리프(RiskMark caution 계열 SVG —
+  // 기호 텍스트 금지 P-040) · 제목 16/600 · 본문 14/400 2줄 · outline Retry 풀폭.
+  // 아이콘 장식(IconRetry) 소멸. 오프라인도 같은 골격(카피만 현 offline 키).
   return (
-    <StateBlock
-      fill
-      tone="err"
-      icon={<IconAlertTri size={38} color={stateIconColor.err} />}
-      title={t('states.errorTitle')}
-      body={t('states.errorBody')}
-      primary={{ label: t('common.tryAgain'), icon: <IconRetry size={17} color="#fff" />, onPress: onRetry }}
-      secondary={onGoBack ? { label: t('common.goBack'), onPress: onGoBack } : undefined}
-    />
+    <View style={styles.errWrap} testID="query-error-block">
+      <View style={styles.errMark}>
+        {/* Codex #47 P2: RiskGlyph는 svg Path — Svg 루트 필수(22그리드) */}
+        <Svg width={18} height={18} viewBox="0 0 22 22">
+          <RiskGlyph state="caution" fill={C.primary} />
+        </Svg>
+      </View>
+      <Text style={styles.errTitle}>{t(offline ? 'states.offlineTitle' : 'states.errorTitle')}</Text>
+      {/* Codex #47 6차: 줄수 제한 제거 — ja/ru/th 카피 절단 방지(i18n 가변 길이 헌법), 높이 hug */}
+      <Text style={styles.errBody}>{t(offline ? 'states.offlineBody' : 'states.errorBody')}</Text>
+      <View style={{ alignSelf: 'stretch', gap: 9, marginTop: 4 }}>
+        <Btn
+          variant="ghost"
+          onPress={() => {
+            track(EVENTS.error_state_view, { screen, kind: offline ? 'offline' : 'error', action: 'retry' });
+            onRetry();
+          }}
+        >
+          {t('common.retry')}
+        </Btn>
+        {onGoBack && (
+          <Btn variant="ghost" onPress={onGoBack}>
+            {t('common.goBack')}
+          </Btn>
+        )}
+      </View>
+    </View>
   );
 }
 

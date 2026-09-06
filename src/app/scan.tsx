@@ -51,6 +51,7 @@ import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { D4CameraRestart } from '@/components/design4Assets';
+import { EmptyBlock } from '@/components/StateBlock';
 import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -613,6 +614,8 @@ export default function Scan() {
 
         {view === 'list' ? (
           <>
+          {/* P-287(4003:7160): 결과 0개 = 공용 EmptyBlock(탭 아래) */}
+          {allDishes.length === 0 && <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />}
           {/* 9/5 예진 판정: ScanProfileBar(회피 체크 스트립) 제거 — 시안 토글 행만 */}
           {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
               D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}
@@ -1072,7 +1075,7 @@ const styles = StyleSheet.create({
   segTextOn: { color: C.ink },
   root: { flex: 1, backgroundColor: '#16110d' },
   center: { alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
-  close: { position: 'absolute', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  close: { position: 'absolute', left: 16, zIndex: 40, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' }, // Codex #47 P1: 권한 스크림(z30) 위 — 탈출 경로 보장
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
   // P-285: 권한 거부 Alert(4003:12690)

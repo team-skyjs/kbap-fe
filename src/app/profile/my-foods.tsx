@@ -15,7 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
 import { IconScanLines, IconChevron, SubHeader, Spinner } from '@/components';
 import { D4MapPin } from '@/components/design4Assets';
-import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { SkeletonMyFoods } from '@/components/Skeleton';
 import { useOrders, type OrderSummary } from '@/lib/data/useOrders';
 import { useScannedFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
@@ -66,9 +67,11 @@ export default function MyFoodsScreen() {
         orders.isError ? (
           <QueryErrorBlock error={orders.error} onRetry={() => void orders.refetch()} />
         ) : orders.isLoading ? (
-          <ScreenCenterFill><Spinner /></ScreenCenterFill>
+          /* P-287(4003:12851): 첫 로드 = 카드 스켈레톤 */
+          <SkeletonMyFoods />
         ) : (orders.data ?? []).length === 0 ? (
-          empty('myFoods.emptyOrdersTitle', 'myFoods.emptyOrdersBody')
+          /* P-287(4003:7348): 빈 상태 = 공용 EmptyBlock(탭 유지) */
+          <EmptyBlock label={t('myFoods.emptyOrdersTitle')} testID="orders-empty" />
         ) : (
           <FlatList
             data={orders.data}
@@ -87,7 +90,7 @@ export default function MyFoodsScreen() {
       ) : scanned.isError ? (
         <QueryErrorBlock error={scanned.error} onRetry={() => void scanned.refetch()} />
       ) : scanned.isLoading ? (
-        <ScreenCenterFill><Spinner /></ScreenCenterFill>
+        <SkeletonMyFoods />
       ) : (scanned.data ?? []).length === 0 ? (
         empty('myFoods.emptyScansTitle', 'myFoods.emptyScansBody')
       ) : (

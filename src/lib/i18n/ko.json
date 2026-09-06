@@ -299,7 +299,8 @@
     "sortSafety": "위험도 낮은 순",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요.",
     "searchOnNaver": "네이버에서 검색",
-    "searchOnGoogle": "구글에서 검색"
+    "searchOnGoogle": "구글에서 검색",
+    "resultsEmpty": "스캔 결과가 없어요"
   },
   "owner": {
     "caption": "이 화면을 가게 직원에게 보여주세요",
@@ -775,7 +776,8 @@
     "filterAll": "전체",
     "reviewsSub": "주문 전에 읽어보세요",
     "chipForYou": "추천",
-    "chipNearby": "주변"
+    "chipNearby": "주변",
+    "recentEmpty": "최근 스캔이 없어요"
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -898,7 +900,8 @@
     "removed": "저장됨에서 삭제했어요",
     "undo": "되돌리기",
     "toast": "내 리스트에 저장했어요",
-    "view": "보기"
+    "view": "보기",
+    "filterEmpty": "이 필터에 맞는 저장된 메뉴가 없어요"
   },
   "spice": {
     "band": {

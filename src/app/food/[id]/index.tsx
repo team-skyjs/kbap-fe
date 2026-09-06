@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
 import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
+import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -116,6 +117,8 @@ export default function FoodDetailScreen() {
     <View style={styles.root}>
       <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? 107 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
         {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
+        {/* P-287(4003:13466): 첫 로드 = 상세 스켈레톤(공백 금지) */}
+        {isLoading && !food && !error && <SkeletonFoodDetail />}
 
         {!isLoading && food && (
           <>

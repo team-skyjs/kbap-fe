@@ -16,7 +16,7 @@ import { color as C } from '@/lib/theme';
 import { SubHeader, Spinner, Btn, IconStar, IconFood } from '@/components';
 import { Chip } from '@/components/Chip';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
@@ -78,19 +78,8 @@ export default function SavedScreen() {
       {/* P-164: 로드 실패 = 공용 에러(+재시도) — 빈 상태로 위장 금지 */}
       {isError && !list ? (
         <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-      ) : isLoading ? null : (list ?? []).length === 0 ? (
-        <View style={styles.empty}>
-          <View style={styles.emptyIc}>
-            <IconStar size={30} color={C.ink3} />
-          </View>
-          <Text style={styles.emptyTitle}>{t('saved.emptyTitle')}</Text>
-          <Text style={styles.emptyBody}>{t('saved.emptyBody')}</Text>
-          {/* P-159: Btn sm 기본 alignSelf flex-start가 부모 센터를 오버라이드 — 명시 센터 */}
-          <Btn sm style={{ alignSelf: 'center' }} icon={<IconFood size={17} color="#fff" />} onPress={() => router.push('/(tabs)/food' as Href)}>
-            {t('saved.emptyCta')}
-          </Btn>
-        </View>
-      ) : (
+      ) : isLoading ? null : (
+        /* P-287(4003:6696): 빈 상태 = 목록 자리(메타·칩 유지) — 공용 EmptyBlock(버튼 없음) */
         <FlatList
           data={items}
           keyExtractor={(b: FoodCard) => b.foodId}
@@ -103,6 +92,14 @@ export default function SavedScreen() {
             if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
           }}
           ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
+          ListEmptyComponent={
+            /* Codex #47 P2: 칩 필터 결과 0 ≠ 저장 0 — 저장분이 있으면 필터 문구 */
+            (list ?? []).length > 0 ? (
+              <EmptyBlock label={t('saved.filterEmpty')} testID="saved-filter-empty" />
+            ) : (
+              <EmptyBlock label={t('saved.emptyTitle')} testID="saved-empty" />
+            )
+          }
           ListHeaderComponent={
             <View style={{ gap: 4 }}>
               {/* 헤더 메타(pad 8/24 상당) — "2 dishes" 16/600 + "· Newest first" 14/400 */}

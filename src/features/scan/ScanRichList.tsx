@@ -179,7 +179,8 @@ function RichRow({
           </Pressable>
         )}
       </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+      {/* Codex #47 7차: 320pt(썸 118+스테퍼 83) — 텍스트 열 축소 허용, 이름 말줄임·가격 wrap */}
+      <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3 }}>
         {/* ko 원문 14/500 → 영문명 15/500 + chevron(→ 상세) — 시안 위계 */}
         {!!(dish.koreanName ?? dish.rawMenuName) && dish.displayName !== (dish.koreanName ?? dish.rawMenuName) && (
           <Text style={styles.nameSubKo} numberOfLines={1}>{dish.koreanName ?? dish.rawMenuName}</Text>
@@ -248,7 +249,7 @@ function RichRow({
         )}
         {/* 가격 행(시안): 환산가 14/600 #6B95FF + 원가 13/500 */}
         {dish.priceKrw != null && (
-          <Text style={styles.price}>
+          <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
             {/* 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거 */}
             {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
             {formatKrw(dish.priceKrw)}

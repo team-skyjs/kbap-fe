@@ -272,12 +272,12 @@ it('P-157 ②: 저장 아이콘 별 전면 통일 — 프로필에 북마크 글
   expect(src).toContain('IconStar');
 });
 
-it('P-159: 저장 빈 상태 CTA = alignSelf center(소스 잠금 — Btn sm flex-start 함정 상쇄)', () => {
+it('P-287: 저장 빈 상태 = 공용 EmptyBlock(버튼 없음) — 필터 결과 0은 별도 문구(Codex #47)', () => {
   const src = require('fs').readFileSync('src/app/profile/saved.tsx', 'utf8') as string;
-  const ctaIdx = src.indexOf('saved.emptyCta');
-  const btnIdx = src.lastIndexOf('<Btn sm', ctaIdx);
-  expect(btnIdx).toBeGreaterThan(-1);
-  expect(src.slice(btnIdx, ctaIdx)).toContain("alignSelf: 'center'");
+  expect(src).toContain("<EmptyBlock label={t('saved.emptyTitle')}");
+  expect(src).toContain("<EmptyBlock label={t('saved.filterEmpty')}"); // 칩 결과 0 ≠ 저장 0
+  expect(src).toContain('(list ?? []).length > 0 ?');
+  expect(src).not.toContain('saved.emptyCta'); // 시안 = 버튼 없음
 });
 
 it('P-193(Q-39): 내 리뷰 셀 — 사진 스트립 렌더 + 탭 = 풀스크린 뷰어(4표면 공유 공백 보수)', () => {

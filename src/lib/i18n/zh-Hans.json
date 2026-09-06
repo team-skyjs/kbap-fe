@@ -299,7 +299,8 @@
     "sortSafety": "风险从低到高",
     "missNote": "尚未收录在数据库中 — 几天内会添加。",
     "searchOnNaver": "在NAVER搜索",
-    "searchOnGoogle": "在Google搜索"
+    "searchOnGoogle": "在Google搜索",
+    "resultsEmpty": "没有扫描结果"
   },
   "owner": {
     "caption": "将此界面出示给餐厅工作人员",
@@ -617,7 +618,8 @@
     "filterAll": "全部",
     "reviewsSub": "点餐前先看看",
     "chipForYou": "为你推荐",
-    "chipNearby": "附近"
+    "chipNearby": "附近",
+    "recentEmpty": "暂无最近扫描"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",
@@ -898,7 +900,8 @@
     "removed": "已从收藏中移除",
     "undo": "撤销",
     "toast": "已保存到你的清单",
-    "view": "查看"
+    "view": "查看",
+    "filterEmpty": "没有符合此筛选的已保存菜品"
   },
   "spice": {
     "band": {
