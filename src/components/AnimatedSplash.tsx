@@ -36,8 +36,11 @@ const EASE_OUT = Easing.bezier(0.2, 0.8, 0.2, 1);
 const EASE_OVERSHOOT = Easing.bezier(0.2, 0.9, 0.25, 1.25);
 const EASE_POP = Easing.bezier(0.3, 1.6, 0.5, 1);
 
+// P-291(KB-437): viewBox 정정 — K 획 라운드 캡(y −6.72)이 구 viewBox(0 0 … 88) 밖에서
+// 잘려 상단이 평평하게 렌더(b24 실기). 스펙 splash-mark.svg 정정본과 동일 좌표계.
 const MARK_W = 81.614;
-const MARK_H = 87.999;
+const MARK_H = 94.719;
+const MARK_VIEWBOX = '0 -6.72 81.614 94.719';
 
 export function AnimatedSplash({ active, onDone }: { active: boolean; onDone: () => void }) {
   // null = 판정 전(콜라주 마퀴와 동일 — 알기 전엔 모션 시작 안 함)
@@ -111,16 +114,16 @@ export function AnimatedSplash({ active, onDone }: { active: boolean; onDone: ()
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.root, overlayStyle]} pointerEvents="none" testID="animated-splash">
-      {/* 마크 81×88 — 화면 정중앙(네이티브 contain 중앙과 픽셀 일치). 그릇/K 그룹 분리 애니 */}
+      {/* 마크 81.6×94.7 — 화면 정중앙(네이티브 contain 중앙과 픽셀 일치). 그릇/K 그룹 분리 애니 */}
       <View style={styles.mark}>
         <Animated.View style={[StyleSheet.absoluteFill, kStyle]}>
-          <Svg width={MARK_W} height={MARK_H} viewBox="0 0 81.614 87.999">
+          <Svg width={MARK_W} height={MARK_H} viewBox={MARK_VIEWBOX}>
             <Path d="M6.026 0C6.026 -3.328 3.328 -6.026 0 -6.026C-3.328 -6.026 -6.026 -3.328 -6.026 0L0 0L6.026 0ZM-6.026 36.981C-6.026 40.309 -3.328 43.007 0 43.007C3.328 43.007 6.026 40.309 6.026 36.981L0 36.981L-6.026 36.981ZM0 0L-6.026 0L-6.026 36.981L0 36.981L6.026 36.981L6.026 0L0 0Z" fill="#000000" transform="matrix(1 0 0 1 25.504 0)" />
             <Path d="M25.666 4.518C28.161 2.317 28.399 -1.491 26.197 -3.987C23.995 -6.482 20.187 -6.72 17.692 -4.518L21.679 0L25.666 4.518ZM0 19.128L-3.987 14.61C-5.332 15.797 -6.079 17.522 -6.023 19.315C-5.967 21.108 -5.116 22.783 -3.7 23.885L0 19.128ZM19.254 41.738C21.881 43.781 25.667 43.308 27.711 40.681C29.754 38.054 29.28 34.268 26.654 32.225L22.954 36.981L19.254 41.738ZM21.679 0L17.692 -4.518L-3.987 14.61L0 19.128L3.987 23.647L25.666 4.518L21.679 0ZM0 19.128L-3.7 23.885L19.254 41.738L22.954 36.981L26.654 32.225L3.7 14.372L0 19.128Z" fill="#000000" transform="matrix(1 0 0 1 34.432 0)" />
           </Svg>
         </Animated.View>
         <Animated.View style={[StyleSheet.absoluteFill, bowlStyle]}>
-          <Svg width={MARK_W} height={MARK_H} viewBox="0 0 81.614 87.999">
+          <Svg width={MARK_W} height={MARK_H} viewBox={MARK_VIEWBOX}>
             <Path d="M0 0L81.614 0C81.614 10.823 77.315 21.202 69.662 28.855C62.009 36.508 51.63 40.807 40.807 40.807C29.984 40.807 19.605 36.508 11.952 28.855C4.299 21.202 0 10.823 0 0Z" fill="#ff7134" fillRule="nonzero" transform="matrix(1 0 0 1 0 47.193)" />
           </Svg>
         </Animated.View>

@@ -164,7 +164,7 @@ export function StickyHeader({
           </PressScale>
         ) : (
           /* 9/5 시안 원본 SVG(4123:3613, 18.55×20) — .fig 디코드 appbar-mark 그대로 */
-          <AppBarMark height={20} />
+          <AppBarMark height={21.528} />
         )}
 
         {title != null && (
