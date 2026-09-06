@@ -144,21 +144,15 @@ it('KB-434: roadAddress null = "+ tag a place" 아웃라인 필(무동작 — �
   expect(flat(tree)).not.toContain('소공로');
 });
 
-it('빈 상태 — 주문 0건 = 스캔 유도(P-210) + CTA = navigate(P-246)', async () => {
+it('P-287: 빈 상태 — 주문 0건 = 공용 EmptyBlock(circle-dashed·버튼 없음, 탭 유지)', async () => {
   mockGet.mockResolvedValue({ items: [], hasNext: false, nextCursor: null });
   const tree = renderScreen();
   await flush();
   const s = flat(tree);
+  expect(tree.root.findAll((n) => n.props?.testID === 'orders-empty').length).toBeGreaterThanOrEqual(1);
   expect(s).toContain('myFoods.emptyOrdersTitle');
-  expect(s).toContain('community.goScanCta'); // P-245 CTA 재사용(신규 키 0)
-  const cta = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(tree).length > 0 && n.props?.testID === undefined);
-  // StateBlock primary 버튼 탭 — goScanCta 텍스트를 품은 Pressable
-  const texts = tree.root.findAll((n) => n.type === 'Text' && n.children.join('') === 'community.goScanCta');
-  let cur: renderer.ReactTestInstance | null = texts[0];
-  while (cur && typeof cur.props?.onPress !== 'function') cur = cur.parent;
-  act(() => cur!.props.onPress());
-  expect(mockNavigate).toHaveBeenCalledWith('/scan');
-  void cta;
+  expect(s).not.toContain('community.goScanCta'); // 시안 = 버튼 없음(CTA 소멸)
+  expect(s).toContain('myfoods-tab-ordered'); // 탭 유지
 });
 
 it('세그 전환 — Scanned 탭 = /foods/scanned 재사용(P-238)·행 탭 = 음식 상세', async () => {

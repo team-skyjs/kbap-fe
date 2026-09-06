@@ -299,7 +299,8 @@
     "sortSafety": "Menor riesgo primero",
     "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días.",
     "searchOnNaver": "Buscar en NAVER",
-    "searchOnGoogle": "Buscar en Google"
+    "searchOnGoogle": "Buscar en Google",
+    "resultsEmpty": "Sin resultados de escaneo"
   },
   "owner": {
     "caption": "Muestra esta pantalla al personal del restaurante",
@@ -617,7 +618,8 @@
     "filterAll": "Todos",
     "reviewsSub": "Lee antes de pedir",
     "chipForYou": "Para ti",
-    "chipNearby": "Cerca"
+    "chipNearby": "Cerca",
+    "recentEmpty": "Sin escaneos recientes"
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",
@@ -899,7 +901,8 @@
     "removed": "Eliminado de Guardados",
     "undo": "Deshacer",
     "toast": "Guardado en tu lista",
-    "view": "Ver"
+    "view": "Ver",
+    "filterEmpty": "Ningún plato guardado coincide con este filtro"
   },
   "spice": {
     "band": {

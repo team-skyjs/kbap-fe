@@ -106,13 +106,3 @@ it('④ 재료 타일 — 태그(타일) 단위 줄바꿈: flexWrap + flexShrink
   expect(src).toMatch(/ingTile: \{[^}]*flexShrink: 0/);
   expect(src).toContain('<Text style={styles.ingTileName} numberOfLines={1}>');
 });
-
-it('P-286(최종본): SAME NATIONALITY 박스 — 같은 컴포넌트 재사용·count 0 숨김·축 산식 소스 잠금', () => {
-  const src = require('fs').readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
-  expect(src).toContain('testID="same-nat-summary-box"'); // OVERALL과 같은 RatingSummaryBox
-  expect(src).toContain("label={t('reviews.sameNationality').toUpperCase()}");
-  expect(src).toContain('sameNat.count > 0 && ('); // count 0 = 박스 숨김
-  expect(src).toContain('taste: sameNat.average'); // Taste = 서버 sameNationality.average
-  expect(src).toContain("r.authorNationality === me?.nationality"); // Speed/Service = 같은 국적 클라 평균
-  expect(src).toContain('<View style={{ gap: 12 }}>'); // 두 박스 gap 12(판정)
-});

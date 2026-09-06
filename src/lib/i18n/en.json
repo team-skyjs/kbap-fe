@@ -295,7 +295,8 @@
     "sortSafety": "Lowest risk first",
     "missNote": "Not in our database yet — it should be added within a few days.",
     "searchOnNaver": "Search on NAVER",
-    "searchOnGoogle": "Search on Google"
+    "searchOnGoogle": "Search on Google",
+    "resultsEmpty": "No scan results"
   },
   "owner": {
     "caption": "Show this screen to the restaurant staff",
@@ -771,7 +772,8 @@
     "filterAll": "All",
     "reviewsSub": "Read before you order",
     "chipForYou": "For You",
-    "chipNearby": "Nearby"
+    "chipNearby": "Nearby",
+    "recentEmpty": "No recent scans"
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",
@@ -895,7 +897,8 @@
     "removed": "Removed from Saved",
     "undo": "Undo",
     "toast": "Saved to your list",
-    "view": "View"
+    "view": "View",
+    "filterEmpty": "No saved dishes match this filter"
   },
   "spice": {
     "band": {

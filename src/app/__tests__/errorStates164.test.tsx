@@ -132,7 +132,7 @@ describe('P-164 ①: 리뷰 목록 — 로드 실패 = 공용 에러 + 재시도
     const tree = render(<FoodReviews />);
     const s = flat(tree);
     expect(s).toContain('states.errorTitle');
-    expect(s).toContain('common.tryAgain');
+    expect(s).toContain('common.retry'); // P-287: 최종본 에러 블록 = outline Retry
   });
 
   it('재시도 탭 → refetch 호출', () => {
@@ -142,7 +142,7 @@ describe('P-164 ①: 리뷰 목록 — 로드 실패 = 공용 에러 + 재시도
     });
     const tree = render(<FoodReviews />);
     const retry = tree.root.findAll(
-      (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'common.tryAgain').length > 0,
+      (n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'common.retry').length > 0,
     )[0];
     act(() => retry.props.onPress());
     expect(mockRefetch).toHaveBeenCalled();
@@ -171,9 +171,9 @@ describe('P-164 ②: 대표 적용분 — 내 리뷰', () => {
 describe('P-184: 상태 화면 센터 구조 승격', () => {
   it('QueryErrorBlock = fill 자체 소유(수동 배치 불요 구조)', () => {
     const src = require('fs').readFileSync('src/components/StateBlock.tsx', 'utf8') as string;
-    expect(src).toContain("fill: { flex: 1, flexGrow: 1, justifyContent: 'center' }");
-    // QueryErrorBlock 두 변형(J3/J4) 모두 fill
-    expect((src.match(/<StateBlock\n      fill/g) ?? []).length + (src.match(/fill\n        icon=\{<IconWifiOff/g) ?? []).length).toBeGreaterThanOrEqual(1);
+    expect(src).toContain("errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center'"); // P-287: 에러 블록이 fill 소유
+    // P-287: 단일 블록(에러/오프라인 카피 분기)이 errWrap fill 소유
+    expect(src).toContain('testID="query-error-block"');
   });
 
   it('전 표면 수동 배치 잔존 0 — QueryErrorBlock 주변 paddingTop 래퍼 소스 잠금', () => {

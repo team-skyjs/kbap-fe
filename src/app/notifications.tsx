@@ -13,7 +13,7 @@ import { Redirect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, primaryTint } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
-import { StateBlock, stateIconColor } from '@/components/StateBlock';
+import { EmptyBlock } from '@/components/StateBlock';
 import { FLAGS } from '@/lib/flags';
 import { markAllInboxRead, markInboxRead, useInbox, type InboxItem } from '@/lib/notifications/inbox';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
@@ -75,12 +75,8 @@ export default function Notifications() {
           </Pressable>
         )}
         ListEmptyComponent={
-          <StateBlock
-            fill
-            icon={<IconBell size={38} color={stateIconColor.default} />}
-            title={t('inbox.empty')}
-            body={t('inbox.emptyBody')}
-          />
+          /* P-287(4003:7113): 공용 EmptyBlock — 아이콘 벨·본문 소멸(시안) */
+          <EmptyBlock label={t('inbox.empty')} testID="notif-empty" />
         }
       />
     </View>

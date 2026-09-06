@@ -299,7 +299,8 @@
     "sortSafety": "เรียงจากความเสี่ยงต่ำ",
     "missNote": "ยังไม่อยู่ในฐานข้อมูล — จะเพิ่มภายในไม่กี่วัน",
     "searchOnNaver": "ค้นหาใน NAVER",
-    "searchOnGoogle": "ค้นหาใน Google"
+    "searchOnGoogle": "ค้นหาใน Google",
+    "resultsEmpty": "ไม่มีผลการสแกน"
   },
   "owner": {
     "caption": "แสดงหน้าจอนี้ให้พนักงานร้านอาหารดู",
@@ -617,7 +618,8 @@
     "filterAll": "ทั้งหมด",
     "reviewsSub": "อ่านก่อนสั่ง",
     "chipForYou": "สำหรับคุณ",
-    "chipNearby": "ใกล้เคียง"
+    "chipNearby": "ใกล้เคียง",
+    "recentEmpty": "ยังไม่มีการสแกนล่าสุด"
   },
   "onboarding": {
     "welcomeTag": "รู้ว่าอะไรกินได้อย่างปลอดภัย — ก่อนสั่ง",
@@ -898,7 +900,8 @@
     "removed": "ลบออกจากบันทึกไว้แล้ว",
     "undo": "เลิกทำ",
     "toast": "บันทึกลงลิสต์ของคุณแล้ว",
-    "view": "ดู"
+    "view": "ดู",
+    "filterEmpty": "ไม่มีเมนูที่บันทึกไว้ตรงกับตัวกรองนี้"
   },
   "spice": {
     "band": {

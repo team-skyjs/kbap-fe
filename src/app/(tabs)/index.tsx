@@ -23,7 +23,7 @@ import {
   SectionHead,
   IconLock,
 } from '@/components';
-import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { useHome } from '@/lib/data/useHome';
@@ -114,6 +114,8 @@ export default function Home() {
               </Pressable>
             ) : (
               <>
+                {/* P-287(4003:6168): 빈 상태 = 섹션 헤더 유지 + 빈 블록(P-210 숨김 규칙을 이 섹션만 해제) */}
+                {recent.length === 0 && <EmptyBlock label={t('home.recentEmpty')} testID="home-recent-empty" />}
                 {recent.slice(0, RECENT_N).map((f) => (
                   <RecentRow
                     key={f.foodId}

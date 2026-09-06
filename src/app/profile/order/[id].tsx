@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
 import { Btn, IconClose, SubHeader, Spinner } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
+import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { useOrderDetail } from '@/lib/data/useOrders';
 import { useMe } from '@/lib/data/useMe';
@@ -55,7 +56,8 @@ export default function OrderDetailScreen() {
       {q.isError ? (
         <QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} onGoBack={() => router.back()} />
       ) : !q.data ? (
-        <ScreenCenterFill><Spinner /></ScreenCenterFill>
+        /* P-287(4003:12906): 첫 로드 = 영수증·dish 스켈레톤 */
+        <SkeletonOrderDetail />
       ) : (
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: 110 + bottom }]} showsVerticalScrollIndicator={false}>
           {/* 메뉴판 사진 — 시안 외(기능 유지) — 탭 = 풀스크린 contain 뷰어(P-248) */}

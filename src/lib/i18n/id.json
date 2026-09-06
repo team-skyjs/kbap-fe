@@ -299,7 +299,8 @@
     "sortSafety": "Risiko terendah dulu",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",
     "searchOnNaver": "Cari di NAVER",
-    "searchOnGoogle": "Cari di Google"
+    "searchOnGoogle": "Cari di Google",
+    "resultsEmpty": "Tidak ada hasil pemindaian"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",
@@ -617,7 +618,8 @@
     "filterAll": "Semua",
     "reviewsSub": "Baca sebelum memesan",
     "chipForYou": "Untukmu",
-    "chipNearby": "Terdekat"
+    "chipNearby": "Terdekat",
+    "recentEmpty": "Belum ada pemindaian terbaru"
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",
@@ -898,7 +900,8 @@
     "removed": "Dihapus dari Tersimpan",
     "undo": "Urungkan",
     "toast": "Disimpan ke daftarmu",
-    "view": "Lihat"
+    "view": "Lihat",
+    "filterEmpty": "Tidak ada hidangan tersimpan yang cocok dengan filter ini"
   },
   "spice": {
     "band": {
