@@ -297,7 +297,9 @@
     "stayHint": "Proses ini bisa memakan waktu 30–40 detik — keluar dari aplikasi dapat menghilangkan hasilnya.",
     "sortMenu": "Urutan menu",
     "sortSafety": "Risiko terendah dulu",
-    "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari."
+    "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",
+    "searchOnNaver": "Cari di NAVER",
+    "searchOnGoogle": "Cari di Google"
   },
   "owner": {
     "caption": "Tunjukkan layar ini kepada staf restoran",

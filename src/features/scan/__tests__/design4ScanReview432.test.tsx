@@ -66,7 +66,7 @@ it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등�
   const s = JSON.stringify(tree.toJSON());
   // 매칭: 썸네일 100 + 리본 배지(risk-badge testID)
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-badge-danger').length).toBeGreaterThanOrEqual(1);
-  expect(s).toContain('"width":100');
+  expect(s).toContain('"width":118'); // P-285 최종본 썸네일
   // 회피 칩: 시안 프레임(r37) + 12/700 #2F3137
   expect(s).toContain('"borderRadius":37');
   expect(s).toContain('Soybean');
@@ -86,8 +86,8 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   // §1-2/§1-3 현행 유지(예진 판정) — 인식 중 스윕·AuthGateSheet 무변
   expect(src).toContain('ScanSweepOverlay');
   expect(src).toContain('<AuthGateSheet context="scan"');
-  // 9/5 예진 판정: 다시찍기 표면·ScanProfileBar 사용처 제거(컴포넌트 정의·리셋 로직은 보존)
-  expect(src).not.toContain('testID="retake"');
+  // P-285: 다시찍기(camera_restart) 복원 · ScanProfileBar는 계속 미사용(9/5 판정)
+  expect(src).toContain('testID="retake"');
   expect(src).not.toContain('<ScanProfileBar');
   // 담기 UI = 현행 유지 정정(9/5) — 스테퍼 잔존
   const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
@@ -128,4 +128,24 @@ it('④ 태그 시트 2종 — FixedBottom(Close/Done·장소 스킵/Done) + 안
   expect(parts).toContain('testID="place-sheet-bottom"');
   expect(parts).toContain('testID="place-skip"');
   expect(parts).toContain('testID="place-done"');
+});
+
+it('P-285: 권한 거부 = 최종본 Alert(스크림 40%·Open Settings) — 미거부는 현행 요청 UI 소스 잠금', () => {
+  const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(src).toContain('testID="perm-denied-alert"');
+  expect(src).toContain("permScrim: { backgroundColor: 'rgba(0,0,0,0.4)'");
+  expect(src).toContain('width: 320, minHeight: 190'); // Alert 320×190(4003:12690)
+  expect(src).toContain("t('photo.openSettings')"); // 현 키 재사용
+  expect(src).toContain("t('scan.grant')"); // 미거부 = 현행 요청 경로 보존
+});
+
+it('P-285: 행 우측 = 최종본 스테퍼/add + 미등록 브랜드 아이콘 칩(텍스트 라벨 소멸) 소스 잠금', () => {
+  const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
+  expect(rich).toContain('<D4Minus size={16}'); // 스테퍼 minus(ic-minus)
+  expect(rich).toContain('width: 83, height: 31'); // 스테퍼 83×31(2162:9658)
+  expect(rich).toContain('<BrandNaverMark size={20} />');
+  expect(rich).toContain('<BrandGoogleMark size={20} />');
+  expect(rich).not.toContain('missLinkText'); // 텍스트 칩 소멸(접근성 라벨은 accessibilityLabel)
+  expect(rich).toContain("accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')}"); // Codex #45 P1
+  expect(rich).toContain('testID={`desc-${dish.itemId}`}'); // 설명 1줄
 });

@@ -50,6 +50,7 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
+import { D4CameraRestart } from '@/components/design4Assets';
 import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -588,10 +589,10 @@ export default function Scan() {
             <IconChevron size={18} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
-          {/* 9/5 예진 판정: 다시찍기 표면 제거(P-161 확인 모달·리셋 로직은 보존) —
-              새 .fig의 AppBar 리프레시 아이콘 수신 시 그 자리로 복원 예정.
-              프레임 불변: 제목 중앙 유지용 같은 폭 투명 슬롯. */}
-          <View style={styles.qhBack} pointerEvents="none" />
+          {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}
+          <Pressable hitSlop={8} onPress={() => setRetakeConfirm(true)} style={styles.qhBack} testID="retake" accessibilityLabel={t('scan.retake')} accessibilityRole="button">
+            <D4CameraRestart size={24} color={C.ink} />
+          </Pressable>
         </View>
         {/* §1-1: 언더라인 탭 2개 responsive 반반(4123:3853) — Photo | List(현 세그 매핑) */}
         <View style={styles.resultTabs}>
@@ -867,24 +868,31 @@ export default function Scan() {
           </View>
         </GestureDetector>
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.permission]}>
-          <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
-          <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
-          <Text style={styles.permBody}>{t(permDenied ? 'scan.permissionSettingsBody' : 'scan.permissionBody')}</Text>
-          <View style={{ width: '100%', maxWidth: 280 }}>
-            {/* P-122: 거부 이력 = 설정 열기(photo.openSettings 재사용) / 그 외 = 현행 요청 */}
-            {/* P-214: 권한 퍼널 — 설정 열기 / 요청 후 결과(grant|deny) 구분 */}
-            <Btn
-              onPress={
-                permDenied
-                  ? () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }
-                  : () => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))
-              }
-            >
-              {t(permDenied ? 'photo.openSettings' : 'scan.grant')}
-            </Btn>
+        permDenied ? (
+          /* P-285(최종본 4003:12656): 권한 거부 = D-1 Alert(320×190·스크림 40%) —
+             제목 18/600 #262C31 · 본문 15/500 #ADB4BA · primary 48 Open Settings(현 키) */
+          <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
+            <View style={styles.permAlert}>
+              <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
+              <Text style={styles.permAlertBody}>{t('scan.permissionSettingsBody')}</Text>
+              <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }}>
+                {t('photo.openSettings')}
+              </Btn>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.permission]}>
+            <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.permTitle}>{t('scan.permissionTitle')}</Text>
+            <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
+            <View style={{ width: '100%', maxWidth: 280 }}>
+              {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
+              <Btn onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+                {t('scan.grant')}
+              </Btn>
+            </View>
+          </View>
+        )
       )}
 
       {/* P-131: 세로 유도 오버레이 소멸 — 가로 촬영 허용 (UI는 제자리 회전) */}
@@ -1067,6 +1075,11 @@ const styles = StyleSheet.create({
   close: { position: 'absolute', left: 16, zIndex: 10, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
+  // P-285: 권한 거부 Alert(4003:12690)
+  permScrim: { backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
+  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 18 },
+  permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
+  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 21 }, // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },

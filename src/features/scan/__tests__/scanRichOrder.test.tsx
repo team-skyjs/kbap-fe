@@ -133,7 +133,7 @@ it('P-138 ①: [+]↔스테퍼 = 같은 고정 풋프린트 슬롯 — 담기 �
   expect(slotStyle()).toBe(before); // 슬롯 치수·스타일 동일 — 아무것도 안 밀림
   // 스테퍼도 슬롯과 같은 풋프린트(고정 폭)
   const stepper = tree.root.findAll((n) => n.props?.testID === 'stepper-0')[0];
-  expect(JSON.stringify(stepper.props.style)).toContain(`"width":72`);
+  expect(JSON.stringify(stepper.props.style)).toContain(`"width":83`); // P-285 최종본 스테퍼 83×31
   // 담김 행 초록 틴트 제거 — 행 스타일에 배경 틴트 없음
   const row = tree.root.findAll((n) => n.props?.testID === 'rich-0')[0];
   expect(JSON.stringify(row.props.style ?? '')).not.toContain('backgroundColor');
