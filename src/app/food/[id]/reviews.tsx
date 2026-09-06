@@ -116,6 +116,18 @@ export default function FoodReviews() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reviewsQ.data, blockedIds, overall.average]); // Codex #30 P2: 차단 필터 반영
+  // P-286(최종본 4004:1056): SAME NATIONALITY 박스 — Taste = 서버 sameNationality.average,
+  // Speed/Service = 같은 국적 리뷰 클라 평균(OVERALL 산식 동일·같은 국적 필터 기준)
+  const sameNat = food?.sameNationality ?? { average: null, count: 0 };
+  const sameNatAxes = React.useMemo(() => {
+    const mine2 = all.filter((r) => r.authorNationality != null && r.authorNationality === me?.nationality);
+    const avg = (pick: (r: Review) => number | undefined) => {
+      const vals = mine2.map(pick).filter((v): v is number => typeof v === 'number' && v > 0);
+      return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+    return { taste: sameNat.average, speed: avg((r) => r.servingSpeed), service: avg((r) => r.staffKindness) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewsQ.data, blockedIds, me?.nationality, sameNat.average]);
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
@@ -185,7 +197,20 @@ export default function FoodReviews() {
             {/* KB-431 §2-3: 평점 요약 박스(4150:16775) — 좌 총점 / 우 3축 세로 바.
                 축 평균: Taste = 서버 overall · Speed/Service = 로드된 리뷰 클라 평균
                 (서버 축 집계 부재 — REPORTS). 값 없는 축 = 미표시. */}
-            <RatingSummaryBox overall={overall} axes={axisAverages} t={t} />
+            {/* P-286: OVERALL + SAME NATIONALITY(2200:21844·4004:1056) — 같은 컴포넌트,
+                두 박스 gap 12(커맨드 센터 판정 — 시안엔 단독 프레임 변형뿐). count 0 = 숨김 */}
+            <View style={{ gap: 12 }}>
+              <RatingSummaryBox overall={overall} axes={axisAverages} t={t} />
+              {sameNat.count > 0 && (
+                <RatingSummaryBox
+                  overall={sameNat}
+                  axes={sameNatAxes}
+                  t={t}
+                  label={t('reviews.sameNationality').toUpperCase()}
+                  testID="same-nat-summary-box"
+                />
+              )}
+            </View>
 
             {/* P-235: 게스트 열람 개방(무토큰 200 실측) — 블러 고스트·lock CTA 소멸.
                 같은 국적 필터는 국적 미상이라 게스트 미노출(멘토 "내 국가 필터만 제외").
@@ -318,10 +343,15 @@ function RatingSummaryBox({
   overall,
   axes,
   t,
+  label,
+  testID = 'rating-summary-box',
 }: {
   overall: RatingAggregate;
   axes: { taste: number | null; speed: number | null; service: number | null };
   t: TFn;
+  /** P-286: 라벨 오버라이드 — 기본 OVERALL, 같은 국적 박스 = SAME NATIONALITY(같은 컴포넌트·데이터만 교체) */
+  label?: string;
+  testID?: string;
 }) {
   const bars: [string, string, number][] = [
     ['taste', t('review.extrasTaste'), axes.taste],
@@ -330,14 +360,14 @@ function RatingSummaryBox({
   ].flatMap(([key, label, v]) => (v != null ? [[key as string, label as string, v as number]] : []));
   const max = Math.max(...bars.map((b) => b[2]), 0);
   return (
-    <View style={styles.summaryBox} testID="rating-summary-box">
+    <View style={styles.summaryBox} testID={testID}>
       <View style={styles.summaryLeft}>
         <Stars value={overall.average ?? 0} size={16} />
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
           <Text style={styles.bigScore}>{overall.average?.toFixed(1) ?? '—'}</Text>
           <Text style={styles.bigScoreOf}>/ 5</Text>
         </View>
-        <Text style={styles.overallLbl}>{t('reviews.overall').toUpperCase()}</Text>
+        <Text style={styles.overallLbl}>{label ?? t('reviews.overall').toUpperCase()}</Text>
       </View>
       {bars.length > 0 && (
         <View style={styles.summaryRight}>
