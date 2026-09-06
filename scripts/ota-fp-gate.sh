@@ -32,7 +32,7 @@ check() { # $1=라벨 $2=현재 $3=설치
     echo "FAIL: $1 설치 fp 조회 실패 — 게이트 판정 불가, 수동 확인 필요(fail closed)"
     FAIL=1
   elif [ "$2" != "$3" ]; then
-    echo "SKIP: $1 fp 불일치 — installed=$3 ≠ current=$2 — 네이티브 변경 감지, $1 은 teamtest 새 빌드 전까지 발행 제외"
+    echo "SKIP: $1 fp 불일치(installed=$3 ≠ current=$2). 네이티브 변경 감지 — $1 은 teamtest 새 빌드 전까지 발행 제외"
   else
     PUBLISH="$PUBLISH $1"
   fi

@@ -76,11 +76,16 @@ export function AnimatedSplash({
   const fading = React.useRef(false);
   const started = React.useRef(false);
   const doneRef = React.useRef(false);
+  // P-296(Codex #52 P1): onDone은 ref 경유 — 부모 리렌더(인라인 콜백 새 정체성)가
+  // finish 정체성을 바꾸면 모션 effect cleanup이 타이머·애니메이션을 도중 취소하고
+  // started 가드로 재시작도 없어 스플래시가 멈췄다(느린 부팅에서 4s 캡까지 정지).
+  const onDoneRef = React.useRef(onDone);
+  onDoneRef.current = onDone;
   const finish = React.useCallback(() => {
     if (doneRef.current) return;
     doneRef.current = true;
-    onDone();
-  }, [onDone]);
+    onDoneRef.current();
+  }, []); // deps 0 — 정체성 고정(모션·캡·페이드 effect가 안정 의존)
 
   // 4s 캡 — 마운트 기준 안전망(모션·부팅과 무관하게 언마운트 보장)
   React.useEffect(() => {

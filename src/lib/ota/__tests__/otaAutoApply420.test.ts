@@ -134,11 +134,11 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     // 한 플랫폼 불일치 = 그 플랫폼만 SKIP(값 명시), 나머지는 발행 — #52 iOS 동반 차단 사고 방지
     const iosMiss = run(['A2', 'B', 'A', 'B']);
     expect(iosMiss.status).toBe(0);
-    expect(iosMiss.stdout).toContain('SKIP: ios fp 불일치 — installed=A ≠ current=A2');
+    expect(iosMiss.stdout).toContain('SKIP: ios fp 불일치(installed=A ≠ current=A2)');
     expect(plats()).toBe('android');
     const andMiss = run(['A', 'B2', 'A', 'B']);
     expect(andMiss.status).toBe(0);
-    expect(andMiss.stdout).toContain('SKIP: android fp 불일치 — installed=B ≠ current=B2');
+    expect(andMiss.stdout).toContain('SKIP: android fp 불일치(installed=B ≠ current=B2)');
     expect(plats()).toBe('ios');
     // 전 플랫폼 불일치 = 발행 대상 0 → 잡 실패(재빌드 필요 신호)
     const bothMiss = run(['A2', 'B2', 'A', 'B']);

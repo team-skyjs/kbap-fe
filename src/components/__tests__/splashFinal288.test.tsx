@@ -6,12 +6,14 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 const mockWithDelay = jest.fn((_d: number, v: unknown) => v);
+const mockCancelAnimation = jest.fn();
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    // P-296: 실제 reanimated처럼 렌더 안정(리렌더에도 같은 객체) — deps 비교 재현에 필수
+    useSharedValue: (v: unknown) => require('react').useRef({ value: v }).current,
     useAnimatedStyle: () => ({}),
     // withTiming 완료 콜백 즉시 실행(페이드아웃 → finish 경로 검증용)
     withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
@@ -19,7 +21,7 @@ jest.mock('react-native-reanimated', () => {
       return v;
     },
     withDelay: (...a: unknown[]) => mockWithDelay(a[0] as number, a[1]),
-    cancelAnimation: () => {},
+    cancelAnimation: (...a: unknown[]) => mockCancelAnimation(...a),
     runOnJS: (fn: (...a: unknown[]) => void) => fn,
     Easing: { bezier: () => 0, in: () => () => 0, out: () => () => 0, quad: 0, linear: () => 0 },
   };
@@ -97,6 +99,34 @@ it('reduce-motion = 모션 미시작(정지 표시) → 0.6s 후 페이드아웃
   expect(mockWithDelay).not.toHaveBeenCalled(); // 모션 0 — 정지 표시
   act(() => jest.advanceTimersByTime(SPLASH_TIMING.reduceHold));
   expect(onDone).toHaveBeenCalledTimes(1);
+});
+
+/* ---- P-296(Codex #52 P1): onDone 정체성 변경 리렌더에도 모션·타이머 생존 ---- */
+
+it('P-296 onDone 새 정체성 리렌더(entryChecked 플립 재현) — cancelAnimation 0·페이드 정상', async () => {
+  jest.useFakeTimers();
+  const done = jest.fn();
+  // 인라인 화살표 = 리렌더마다 새 onDone (버그 재현 조건)
+  const tree = await render(<AnimatedSplash active ready={false} onDone={() => done()} />);
+  await act(async () => {
+    tree.update(<AnimatedSplash active ready={false} onDone={() => done()} />); // 부팅 중 리렌더
+  });
+  expect(mockCancelAnimation).not.toHaveBeenCalled(); // 모션 effect cleanup 미발동(정체성 안정)
+  act(() => jest.advanceTimersByTime(SPLASH_TIMING.fadeOutAt + 10)); // 최소 노출 타이머 생존
+  expect(done).not.toHaveBeenCalled(); // ready 전 보류(P-293 유지)
+  await act(async () => {
+    tree.update(<AnimatedSplash active ready onDone={() => done()} />); // ready 도착(또 새 정체성)
+  });
+  expect(mockCancelAnimation).not.toHaveBeenCalled();
+  expect(done).toHaveBeenCalledTimes(1); // 페이드(목 즉시 콜백) → 최신 onDone 호출
+});
+
+it('P-296 배선 소스 잠금 — _layout onDone = 안정 콜백(인라인 화살표 잔존 0)', () => {
+  const fs = require('fs');
+  const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
+  expect(layout).toContain('const onSplashDone = useCallback(() => setSplashVisible(false), []);');
+  expect(layout).toContain('onDone={onSplashDone}');
+  expect(layout).not.toContain('onDone={() =>');
 });
 
 /* ---- P-293: ready 게이트 — 페이드아웃 = max(최소 노출, 부트 준비) ---- */

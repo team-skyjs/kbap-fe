@@ -8,7 +8,7 @@
  * The (tabs) app shell is built in a later unit; this just boots the foundation.
  */
 import 'react-native-gesture-handler';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -113,6 +113,8 @@ export default function RootLayout() {
   // 즉시 시작, 부트 완료는 ready(entryChecked)로 전달해 페이드아웃만 잡는다.
   const [splashActive, setSplashActive] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
+  // P-296(Codex #52 P1): 인라인 onDone은 리렌더마다 새 정체성 — 안정 콜백으로
+  const onSplashDone = useCallback(() => setSplashVisible(false), []);
   useEffect(() => {
     if (fontsLoaded || fontError) {
       setSplashActive(true);
@@ -189,7 +191,7 @@ export default function RootLayout() {
               )}
               {/* P-288: JS 스플래시 오버레이 — 최상위(zIndex 1000), 완료 시 언마운트.
                   P-293: entryChecked 전에도 유지(모션 선시작) — ready로 페이드아웃 게이트 */}
-              {splashVisible && <AnimatedSplash active={splashActive} ready={entryChecked} onDone={() => setSplashVisible(false)} />}
+              {splashVisible && <AnimatedSplash active={splashActive} ready={entryChecked} onDone={onSplashDone} />}
             </LocaleProvider>
           </I18nextProvider>
         </QueryClientProvider>
