@@ -70,6 +70,9 @@ const flushWrites = () => {
 beforeEach(async () => {
   jest.resetModules();
   mockStore.clear();
+  // P-322(KB-450): 저장 세션엔 발급 환경 키가 동승 — 이 스위트의 관심사(레이스)와
+  // 무관하게 "같은 환경" 전제로 시딩(불일치·부재 판정은 envKey450 스위트가 잠근다)
+  mockStore.set('kbap.auth.env.v1', 'https://prod.kbap.site');
   mockPendingReads = [];
   mockDelayReads = false;
   mockPendingWrites = [];

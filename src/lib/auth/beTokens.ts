@@ -5,9 +5,13 @@
  * 플로우 자체가 네이티브 전용이라 충분하다.
  */
 import * as SecureStore from 'expo-secure-store';
+import { BE_BASE } from '@/lib/data/config';
 
 const ACCESS_KEY = 'kbap.auth.access.v1';
 const REFRESH_KEY = 'kbap.auth.refresh.v1';
+/** P-322(KB-450): 토큰이 발급된 API 환경(BE_BASE 호스트) — dev 토큰이 prod 빌드에
+ *  실리는 재사용 차단(9/7 실측: prod DB에 dev 회원 부재 → 첫 실행 "세션 만료" UX). */
+const ENV_KEY = 'kbap.auth.env.v1';
 
 let cached: { access: string; refresh: string } | null | undefined; // undefined = not loaded yet
 
@@ -26,14 +30,33 @@ export function currentGen(): number {
 export async function loadTokens(): Promise<{ access: string; refresh: string } | null> {
   if (cached !== undefined) return cached;
   try {
-    const [access, refresh] = await Promise.all([
+    const [access, refresh, env] = await Promise.all([
       SecureStore.getItemAsync(ACCESS_KEY),
       SecureStore.getItemAsync(REFRESH_KEY),
+      SecureStore.getItemAsync(ENV_KEY),
     ]);
     // KB-421(P-205): await 사이에 clear/save 경계가 개입했으면(defined) 그쪽이 정본 —
     // 삭제 전 Keychain에서 읽은 스테일 값으로 cached를 재대입하면 지운 세션이
     // 부활한다(재설치 mina 사고). 읽기 결과는 폐기.
     if (cached !== undefined) return cached;
+    // P-322: 저장 환경 ≠ 현재 호스트(키 없음 = 기존 저장분 포함) → 조용히 폐기,
+    // 게스트 시작 — refresh 발신 자체가 없어 세션 만료 안내·MEMBER-003 경로 진입 0.
+    // 삭제는 저장소 소관 원칙대로 체인 경유(KB-421 직렬화 유지, 세대는 무변).
+    if (access && refresh && env !== BE_BASE) {
+      cached = null;
+      void serialized(async () => {
+        try {
+          await Promise.all([
+            SecureStore.deleteItemAsync(ACCESS_KEY),
+            SecureStore.deleteItemAsync(REFRESH_KEY),
+            SecureStore.deleteItemAsync(ENV_KEY),
+          ]);
+        } catch {
+          /* nothing persisted */
+        }
+      });
+      return cached;
+    }
     cached = access && refresh ? { access, refresh } : null;
   } catch {
     if (cached !== undefined) return cached;
@@ -77,6 +100,7 @@ export function saveTokens(
       await Promise.all([
         SecureStore.setItemAsync(ACCESS_KEY, access),
         SecureStore.setItemAsync(REFRESH_KEY, refresh),
+        SecureStore.setItemAsync(ENV_KEY, BE_BASE), // P-322: 발급 환경 동승(항상 3종 동일 체인)
       ]);
     } catch {
       /* web/test: memory-only */
@@ -126,6 +150,7 @@ export function clearTokens(): Promise<void> {
       await Promise.all([
         SecureStore.deleteItemAsync(ACCESS_KEY),
         SecureStore.deleteItemAsync(REFRESH_KEY),
+        SecureStore.deleteItemAsync(ENV_KEY), // P-322: 3종 동시 삭제
       ]);
     } catch {
       /* nothing persisted */
