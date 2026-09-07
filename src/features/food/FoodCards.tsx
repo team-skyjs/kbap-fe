@@ -39,7 +39,14 @@ export function FoodGridCard({
   return (
     <Pressable style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
-        {!!food.photoUrl && <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />}
+        {/* P-315 후속(Codex #77 P2): 사진 없음 = 폴백 박스(사진 있을 땐 bg 없음 유지) */}
+        {food.photoUrl ? (
+          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
+        ) : (
+          <View style={styles.gphotoFb}>
+            <IconFood size={28} color={C.ink3} />
+          </View>
+        )}
         {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
         {!guest && (
           <View style={styles.gbadge}>
@@ -123,6 +130,7 @@ const styles = StyleSheet.create({
   // P-315: 정적 bg(surface2) 제거 — 시안 photo effects 없음(회색 띠 원인). 로딩 = CardPhoto Shimmer
   gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' },
   gbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안(2072:1788): 배지가 사진 상단 4pt 위로 걸침
+  gphotoFb: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.surface2, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
   gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
   gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },

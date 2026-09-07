@@ -37,3 +37,10 @@ it('③ 탭 아바타 — 원형 이중(내부 radius)·비활성 opacity 0.6·�
   expect(tab).toContain("!active && styles.avatarDim"); // 비활성 흐림(사진·플레이스홀더 공통)
   expect(tab).toContain("testID={showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}"); // 동일 링 래퍼
 });
+
+it('①-b Codex #77 P2: 그리드 photoUrl null = 폴백 박스(surface2+IconFood) — 투명 회귀 방지', () => {
+  const cards = fs.readFileSync('src/features/food/FoodCards.tsx', 'utf8');
+  expect(cards).toContain('gphotoFb');
+  expect(cards).toContain('<IconFood size={28}');
+  expect(cards).toMatch(/food\.photoUrl \? \(\s*<CardPhoto/); // 사진 있을 땐 bg 없음 유지
+});
