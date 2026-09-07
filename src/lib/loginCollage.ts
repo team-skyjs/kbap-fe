@@ -5,20 +5,8 @@
 export const TILE = 136; // 시안: 136×136 radius 21
 export const GAP = 11;
 export const MIN_COLLAGE_H = 220; // 발주 최소(상한 없음)
-const Y_OFFSET = 24; // 시안 y -24 — 첫 행이 상단 밖으로 물리는 오프셋
 
-/** P-280: 전면 배경 — 전체 높이를 **채우는** 행 수(ceil, 마지막 행 하단 잘림 허용·빈 띠 금지).
- *  상한 8(콜라주 = 화면 전체), 하한 3. */
-export function collageRows(h: number): number {
-  return Math.max(3, Math.min(8, Math.ceil((h + Y_OFFSET + GAP) / (TILE + GAP))));
-}
-
-/** P-280: 하단 가독 구간 — 블러 시작 행. 행 중심(rowTop+68)이 hero 상단 부근에
- *  걸치는 행부터 blurRadius 적용(발주 예시 heroTop 520 → 3 기준 floor식). */
-export function blurredFromRow(heroTop: number): number {
-  if (heroTop <= 0) return Number.MAX_SAFE_INTEGER; // 미측정 = 블러 없음
-  return Math.max(0, Math.floor((heroTop - TILE / 2) / (TILE + GAP)));
-}
+// P-308(KB-476): P-280 전면 배경 전용 함수(collageRows·blurredFromRow) 삭제 — 시안 원복(3행 고정).
 
 /** 행 1주기 폭 — 타일 4개(시안 열 수) 기준. seamless wrap의 이동 스팬. */
 export function marqueeSpan(tilesPerRow = 4): number {
