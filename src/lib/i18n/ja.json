@@ -622,7 +622,9 @@
     "reviewsSub": "注文前にチェック",
     "chipForYou": "おすすめ",
     "chipNearby": "近く",
-    "recentEmpty": "最近のスキャンはありません"
+    "recentEmpty": "最近のスキャンはありません",
+    "safeForYou": "あなた基準のSafeメニュー",
+    "safeForYouSub": "回避リストに基づく判定です。お店に必ず確認してください。"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",

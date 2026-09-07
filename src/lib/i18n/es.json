@@ -622,7 +622,9 @@
     "reviewsSub": "Lee antes de pedir",
     "chipForYou": "Para ti",
     "chipNearby": "Cerca",
-    "recentEmpty": "Sin escaneos recientes"
+    "recentEmpty": "Sin escaneos recientes",
+    "safeForYou": "Opciones Safe para ti",
+    "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante."
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",

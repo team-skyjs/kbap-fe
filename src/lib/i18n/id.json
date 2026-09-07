@@ -622,7 +622,9 @@
     "reviewsSub": "Baca sebelum memesan",
     "chipForYou": "Untukmu",
     "chipNearby": "Terdekat",
-    "recentEmpty": "Belum ada pemindaian terbaru"
+    "recentEmpty": "Belum ada pemindaian terbaru",
+    "safeForYou": "Pilihan Safe untukmu",
+    "safeForYouSub": "Berdasarkan daftar hindaranmu — selalu konfirmasi ke pemilik."
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",

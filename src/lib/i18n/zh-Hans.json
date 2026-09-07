@@ -622,7 +622,9 @@
     "reviewsSub": "点餐前先看看",
     "chipForYou": "为你推荐",
     "chipNearby": "附近",
-    "recentEmpty": "暂无最近扫描"
+    "recentEmpty": "暂无最近扫描",
+    "safeForYou": "按你的清单筛出的 Safe 菜品",
+    "safeForYouSub": "基于你的回避清单判定——请务必向店家确认。"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",

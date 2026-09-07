@@ -125,9 +125,24 @@ const uniqueIds = (tree: ReactTestRenderer, prefix: string) => [
   ),
 ];
 
-it('① 홈 섹션 순서 — 검색→탭→칩→그리드→More→Recent 헤드→Reviews 없음(빈 피드)→면책', () => {
+// P-317: 홈 = Animated.FlatList — ListHeader/Footer 엘리먼트 prop이 순환 참조라
+// 엘리먼트 prop은 버리고(렌더 트리만 — prop 순서로 시각 순서가 오염되지 않게) 직렬화.
+const REACT_EL = new Set<symbol>([Symbol.for('react.element'), Symbol.for('react.transitional.element')]);
+const safeFlat = (t: ReactTestRenderer) => {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(t.toJSON(), (_k, v: unknown) => {
+    if (typeof v === 'object' && v !== null) {
+      if (REACT_EL.has((v as { $$typeof?: symbol }).$$typeof as symbol)) return undefined;
+      if (seen.has(v)) return undefined;
+      seen.add(v);
+    }
+    return v;
+  });
+};
+
+it('① 홈 섹션 순서 — 검색→탭→칩→레일→Recent 헤드→Reviews 없음(빈 피드)→면책', () => {
   const tree = render(<Home />);
-  const flat = JSON.stringify(tree.toJSON());
+  const flat = safeFlat(tree);
   // 시각 순서 = 소스 내 testID/키 등장 순서로 잠금(전부 단일 스크롤 스택)
   const order = ['home-search', 'home-scan', 'home-tab-popular', 'home-chip-all', 'home-food-', 'home-recent-head', 'home-recent-r1', 'home.disclaimer'];
   let last = -1;
@@ -142,13 +157,13 @@ it('① 홈 섹션 순서 — 검색→탭→칩→그리드→More→Recent 헤
   }
 });
 
-it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복귀 시 첫 4장', () => {
+it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복귀 시 전체(레일 상한 10 내)', () => {
   const tree = render(<Home />);
   act(() => {
     byId(tree, 'home-tab-food')[0].props.onPress();
   });
-  // Food 탭: 카탈로그 6 중 첫 4장
-  expect(uniqueIds(tree, 'home-food-').length).toBe(4);
+  // P-317: 4장 슬라이스 → 가로 레일(≤10) — 카탈로그 6장 전부
+  expect(uniqueIds(tree, 'home-food-').length).toBe(6);
   act(() => {
     byId(tree, 'home-chip-danger')[0].props.onPress();
   });
@@ -156,7 +171,7 @@ it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복�
   act(() => {
     byId(tree, 'home-chip-all')[0].props.onPress();
   });
-  expect(uniqueIds(tree, 'home-food-').length).toBe(4);
+  expect(uniqueIds(tree, 'home-food-').length).toBe(6);
 });
 
 it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 + 점 없음(프레임 불변)', () => {

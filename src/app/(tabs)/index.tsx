@@ -2,7 +2,7 @@
  * Home tab — KB-430(P-275) 디자인 4차 D-2 (Figma 4150:16377).
  * AppBar(로고+벨) · 검색 행(+스캔 버튼) · 언더라인 탭(Popular/Saved/Food) ·
  * 위험도 칩 필터 · 음식 카드 2열 그리드(+More) · RECENTLY SCANNED 리스트 ·
- * REVIEWS 카드 3장(+More) · 면책. 데이터 훅·라우트 무변(발주 전제) — 표시만 교체.
+ * REVIEWS 무한 스크롤 피드(P-317 v2) · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
 import { useState } from 'react';
@@ -49,7 +49,6 @@ const REVIEW_CHIPS: [ReviewChip, string][] = [
 ];
 
 const RECENT_N = 4;
-const REVIEW_N = 3;
 
 export default function Home() {
   const { t } = useTranslation();
@@ -68,9 +67,18 @@ export default function Home() {
   const unread = useUnreadCount();
   const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
 
-  // 리뷰 3장 — 칩 판정(spec-12): All=latest · Popular=sort helpful. 게스트 열람 개방(P-235).
+  // P-317: 리뷰 = 무한 스크롤(Reviews 탭과 같은 커서 API·FeedCard). 칩: All=latest·Popular=helpful.
   const feed = useGlobalReviews(true, { sort: reviewChip === 'popular' ? 'helpful' : 'latest' });
-  const feedReviews = (feed.data?.pages ?? []).flatMap((p) => p.items).slice(0, REVIEW_N);
+  const seen = new Set<string>();
+  const feedReviews = (feed.data?.pages ?? [])
+    .flatMap((p) => p.items)
+    .filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true))); // 페이지 경계 중복 0
+  const loadMoreReviews = () => {
+    // Codex #80 P2(=#58 P2-2 문법): 에러 푸터가 높이를 바꿔 onEndReached 재발화 →
+    // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
+    if (feed.isFetchNextPageError) return;
+    if (FLAGS.reviewsEnabled && feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
+  };
 
 
   if (isError && !isLoading) {
@@ -85,105 +93,123 @@ export default function Home() {
     );
   }
 
+  const header = isLoading ? (
+    <SkeletonHome />
+  ) : (
+    <View>
+      <UpdateNudgeBanner />
+
+      {/* KB-430 후속 → P-317: 검색·세그먼트·칩 + 가로 레일 = FoodExplorer embedded */}
+      <FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />
+
+      {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
+          (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
+      {(isGuest || recent.length > 0) && (
+      <>
+      <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
+      {isGuest ? (
+        <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
+          <View style={styles.guestCtaIc}>
+            <IconLock size={18} color={C.ink2} />
+          </View>
+          <Text style={styles.guestCtaText}>{t('home.guestScansTitle')}</Text>
+          <Text style={styles.guestCtaBtn}>{t('intro.signUp')}</Text>
+        </Pressable>
+      ) : (
+        <>
+          {recent.slice(0, RECENT_N).map((f) => (
+            <RecentRow
+              key={f.foodId}
+              food={f}
+              risk={personalRisk(f.risk, hasR)}
+              reviewLabel={t('home.review')}
+              onPress={() => openFood(f.foodId)}
+              onReview={() => {
+                track(EVENTS.review_write_tap, { source: 'home' });
+                router.push(`/food/${f.foodId}/review` as Href);
+              }}
+            />
+          ))}
+          {recent.length > RECENT_N && (
+            <View style={styles.moreWrap}>
+              <Btn variant="ghost" onPress={() => router.push('/profile/my-foods' as Href)} testID="home-recent-more">
+                {t('home.seeAll')}
+              </Btn>
+            </View>
+          )}
+        </>
+      )}
+      </>
+      )}
+
+      {/* REVIEWS — P-317: 프리뷰 3장+More → 무한 스크롤 피드 헤더(칩 유지) */}
+      {FLAGS.reviewsEnabled && feedReviews.length > 0 && (
+        <>
+          <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-reviews-head" />
+          <View style={styles.chipRow}>
+            {REVIEW_CHIPS.map(([c, key]) => (
+              <Chip
+                key={c}
+                label={t(key)}
+                selected={reviewChip === c}
+                onPress={() => setReviewChip(c)}
+                testID={`home-review-chip-${c}`}
+              />
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+
   return (
     <View style={styles.root}>
-      <Animated.ScrollView
+      <Animated.FlatList
+        data={isLoading || !FLAGS.reviewsEnabled ? [] : feedReviews}
+        keyExtractor={(rv) => rv.id}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
-      >
-        {isLoading ? (
-          <SkeletonHome />
-        ) : (
-          <View>
-            <UpdateNudgeBanner />
-
-            {/* KB-430 후속(9/5): 검색·탭·칩·그리드 = FoodExplorer 공용(음식 탭과 공유) */}
-            <FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />
-
-            {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
-                (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
-            {(isGuest || recent.length > 0) && (
-            <>
-            <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
-            {isGuest ? (
-              <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
-                <View style={styles.guestCtaIc}>
-                  <IconLock size={18} color={C.ink2} />
-                </View>
-                <Text style={styles.guestCtaText}>{t('home.guestScansTitle')}</Text>
-                <Text style={styles.guestCtaBtn}>{t('intro.signUp')}</Text>
-              </Pressable>
-            ) : (
-              <>
-                {recent.slice(0, RECENT_N).map((f) => (
-                  <RecentRow
-                    key={f.foodId}
-                    food={f}
-                    risk={personalRisk(f.risk, hasR)}
-                    reviewLabel={t('home.review')}
-                    onPress={() => openFood(f.foodId)}
-                    onReview={() => {
-                      track(EVENTS.review_write_tap, { source: 'home' });
-                      router.push(`/food/${f.foodId}/review` as Href);
-                    }}
-                  />
-                ))}
-                {recent.length > RECENT_N && (
-                  <View style={styles.moreWrap}>
-                    <Btn variant="ghost" onPress={() => router.push('/profile/my-foods' as Href)} testID="home-recent-more">
-                      {t('home.seeAll')}
-                    </Btn>
-                  </View>
-                )}
-              </>
-            )}
-            </>
-            )}
-
-            {/* REVIEWS (§1-8~9) — 칩 = All·Popular(sort=helpful), For You/Nearby 파라미터 부재로 숨김 */}
-            {FLAGS.reviewsEnabled && feedReviews.length > 0 && (
-              <>
-                <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-reviews-head" />
-                <View style={styles.chipRow}>
-                  {REVIEW_CHIPS.map(([c, key]) => (
-                    <Chip
-                      key={c}
-                      label={t(key)}
-                      selected={reviewChip === c}
-                      onPress={() => setReviewChip(c)}
-                      testID={`home-review-chip-${c}`}
-                    />
-                  ))}
-                </View>
-                <View>
-                  {feedReviews.map((rv) => (
-                    <FeedCard
-                      key={rv.id}
-                      review={rv}
-                      t={t}
-                      mine={false}
-                      showMore={false} /* 홈 프리뷰 = 모더레이션 없음(동작 없는 ⋯ 금지) */
-                      onOpenFood={() => rv.foodId && openFood(rv.foodId)}
-                      onGuestHelpful={() => router.push('/login' as Href)}
-                      onMore={() => router.push('/community')}
-                    />
-                  ))}
-                </View>
-                <View style={styles.moreWrap}>
-                  <Btn variant="ghost" onPress={() => router.push('/community')} testID="home-reviews-more">
-                    {t('home.seeAll')}
-                  </Btn>
-                </View>
-              </>
-            )}
-
-            {/* 면책 (FR-030 유지 — §1-10) */}
-            <Text style={styles.disc}>{t('home.disclaimer')}</Text>
-          </View>
+        ListHeaderComponent={header}
+        renderItem={({ item: rv }) => (
+          <FeedCard
+            review={rv}
+            t={t}
+            mine={false}
+            showMore={false} /* 홈 피드 = 모더레이션 없음(동작 없는 ⋯ 금지) */
+            onOpenFood={() => rv.foodId && openFood(rv.foodId)}
+            onGuestHelpful={() => router.push('/login' as Href)}
+            onMore={() => router.push('/community')}
+          />
         )}
-      </Animated.ScrollView>
+        onEndReachedThreshold={0.6}
+        onEndReached={loadMoreReviews}
+        ListFooterComponent={
+          <View>
+            {feed.isFetchingNextPage && (
+              /* P-317: 다음 페이지 로딩 = 하단 스켈레톤 3장(공백 금지) */
+              <View style={styles.feedSkel} testID="home-feed-skel">
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={styles.feedSkelCard} />
+                ))}
+              </View>
+            )}
+            {feed.isFetchNextPageError && (
+              /* Codex #80 P2: 다음 페이지 실패 = 푸터 소형 에러 + 수동 재시도(자동 재요청 0) */
+              <View style={styles.footerErr} testID="home-feed-next-error">
+                <Text style={styles.footerErrText}>{t('states.errorTitle')}</Text>
+                <Pressable style={styles.footerRetry} onPress={() => void feed.fetchNextPage()} testID="home-feed-next-retry">
+                  <Text style={styles.footerRetryText}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
+            )}
+            {/* 면책 (FR-030 유지 — §1-10) */}
+            {!isLoading && <Text style={styles.disc}>{t('home.disclaimer')}</Text>}
+          </View>
+        }
+        testID="home-list"
+      />
 
       <StickyHeader
         hidden={hidden}
@@ -253,6 +279,13 @@ const styles = StyleSheet.create({
   guestCtaText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18 },
   guestCtaBtn: { fontSize: 13, fontWeight: '700', color: C.primaryText },
 
+  feedSkel: { gap: 12, paddingHorizontal: 20, paddingTop: 12 },
+  feedSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
+  // Codex #80 P2: 다음 페이지 실패 푸터 (ReviewFeed footerErr 문법)
+  footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
+  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
+  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: 4, paddingHorizontal: 20, paddingVertical: 8 },
+  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
   // 면책 (§1-10)
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });

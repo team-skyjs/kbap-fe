@@ -69,6 +69,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/',
   useFocusEffect: () => {},
+  useLocalSearchParams: () => ({}), // Codex #80 P1: 음식 탭 See all 파라미터 수신
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
