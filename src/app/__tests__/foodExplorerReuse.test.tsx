@@ -59,8 +59,9 @@ jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockBrowse = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => mockBrowse() }));
 const mockToggle = jest.fn();
+const mockSaved = jest.fn();
 jest.mock('@/lib/data/bookmarks', () => ({
-  useBookmarks: () => ({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }),
+  useBookmarks: () => mockSaved(),
   useToggleBookmark: () => ({ mutate: mockToggle }),
 }));
 
@@ -90,6 +91,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockBrowse.mockReturnValue(browseOf(Array.from({ length: 10 }, (_, i) => FOOD(String(i + 1), i % 2 ? 'danger' : 'safe'))));
   mockMe.mockReturnValue({ data: { id: '9', restrictions: [{ kind: 'allergy', code: 'EGG' }] } });
+  mockSaved.mockReturnValue({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
 });
 
 const cardIds = (tree: ReactTestRenderer) =>
@@ -110,22 +112,21 @@ const activeTab = (tree: ReactTestRenderer) => {
   )?.props.testID;
 };
 
-it('①② 두 화면 = 같은 컴포넌트 + 소스 잠금 — 기본 탭: 홈 Popular / 음식 Explore food', () => {
+it('①② 두 화면 = 같은 컴포넌트 + 소스 잠금 — 홈 = 세그먼트(Popular 기본) / 음식 탭 = 세그먼트 소멸(P-318)', () => {
   const fs = require('fs');
   // 두 화면 모두 FoodExplorer 경유(자체 검색/탭/칩/그리드 마크업 잔존 0)
   const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
   const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8') as string;
   expect(home).toContain('<FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />');
   expect(food).toContain('variant="screen"');
-  // Codex #80 P1: See all 파라미터 수신 — 무파라미터 직진입은 Explore food 기본 유지
-  expect(food).toContain('parseFoodFilterParams');
-  expect(food).toContain("initialTab={hasParams ? segment : 'food'}");
+  expect(food).toContain('parseFoodFilterParams'); // See all 파라미터 수신(P-318)
+  expect(food).not.toContain('initialTab'); // 세그먼트 소멸 — 탭 개념 없음
   expect(home).not.toContain('testID="home-search"'); // 마크업은 공용 1곳
   expect(food).not.toContain('function BrowseCard'); // 구 카드 소멸(주석 언급만 허용)
-  // 렌더: 기본 탭 차이
+  // 렌더: 홈 = Popular 기본 활성 / 음식 탭 = 세그먼트 미렌더
   expect(activeTab(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe('home-tab-popular');
-  // 음식 탭 = initialTab="food"(소스 잠금 위 라인) → Explore food 활성
-  expect(activeTab(render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />))).toBe('home-tab-food');
+  const screen = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+  expect(screen.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('home-tab-'))).toHaveLength(0);
 });
 
 it('③ 음식 탭(screen) = 4장 제한 없음 + onEndReached → fetchNextPage', () => {
@@ -201,22 +202,63 @@ it('④ 게스트 칩 — 4개 렌더 · 개인화 칩 탭 = 게이트 + 선택 
 
 it('⑧ Codex #80 P1 — initialRisk 초기 적용(회원), 게스트는 all 강등', () => {
   // 회원: danger 초기 칩 → danger 카드만
-  const t1 = render(<FoodExplorer variant="screen" guest={false} initialTab="food" initialRisk="danger" srcTag="list" />);
+  const t1 = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
   expect([...cardIds(t1)].sort()).toEqual(['home-food-10', 'home-food-2', 'home-food-4', 'home-food-6', 'home-food-8']);
   // 게스트: 개인화 칩 게이트 우회 금지 — all 강등(전 카드 + 게이트 미오픈)
-  const t2 = render(<FoodExplorer variant="screen" guest initialTab="food" initialRisk="danger" srcTag="list" />);
+  const t2 = render(<FoodExplorer variant="screen" guest initialRisk="danger" srcTag="list" />);
   expect(cardIds(t2).size).toBe(10);
   expect(t2.root.findAll((n) => n.props?.testID === 'auth-gate-open')).toHaveLength(0);
 });
 
-it('⑫ Codex #80 2R — 마운트 유지 화면에 두 번째 See all 파라미터 재적용', () => {
-  const tree = render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />);
+it('⑨ P-318 Saved 토글 칩 — 회원: 저장 목록만↔전체, 게스트: 게이트 + OFF 유지', () => {
+  mockSaved.mockReturnValue({ data: [FOOD('2', 'danger')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+  press(tree, 'food-chip-saved');
+  expect([...cardIds(tree)]).toEqual(['home-food-2']); // 저장분만
+  press(tree, 'food-chip-saved');
+  expect(cardIds(tree).size).toBe(10); // 토글 해제 = 전체 카탈로그
+  // 게스트: 게이트 + 필터 미적용
+  const g = render(<FoodExplorer variant="screen" guest srcTag="list" />);
+  press(g, 'food-chip-saved');
+  expect(g.root.findAll((n) => n.props?.testID === 'auth-gate-open').length).toBeGreaterThanOrEqual(1);
+  expect(cardIds(g).size).toBe(10);
+});
+
+it('⑩ P-318 정렬 시트 — 가나다 = 표시명 클라 정렬, NEW = KB-439 전 비활성', () => {
+  const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+  expect([...cardIds(tree)][0]).toBe('home-food-1'); // 기본 = 인기(현행 순서)
+  press(tree, 'food-sort');
+  // 시트 행: rowText(label) → onPress 보유 조상(Pressable)로 승격
+  const sheetRow = (label: string) => {
+    let n = tree.root.findAll((x) => x.props?.children === label && x.props?.numberOfLines === 1)[0];
+    while (n && typeof n.props?.onPress !== 'function') n = n.parent!;
+    return n;
+  };
+  expect(sheetRow('food.sort_new').props.disabled).toBe(true); // publishedAt 부재 — 비활성
+  act(() => sheetRow('food.sort_alpha').props.onPress());
+  // 'Food 1' < 'Food 10' < 'Food 2' — 표시명 사전순으로 재배열
+  expect([...cardIds(tree)].slice(0, 3)).toEqual(['home-food-1', 'home-food-10', 'home-food-2']);
+});
+
+it('⑪ P-318 initialSaved — 회원: 저장 필터로 진입, 게스트: 강등(전체 + 게이트 미오픈)', () => {
+  mockSaved.mockReturnValue({ data: [FOOD('3')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const t1 = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  expect([...cardIds(t1)]).toEqual(['home-food-3']);
+  const t2 = render(<FoodExplorer variant="screen" guest initialSaved srcTag="list" />);
+  expect(cardIds(t2).size).toBe(10);
+  expect(t2.root.findAll((n) => n.props?.testID === 'auth-gate-open')).toHaveLength(0);
+});
+
+it('⑫ Codex #80 2R — 마운트 유지 화면에 두 번째 See all 파라미터 재적용(P-318: Saved 칩·위험 칩)', () => {
+  mockSaved.mockReturnValue({ data: [FOOD('2', 'danger')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
   expect(cardIds(tree).size).toBe(10);
   // 사용자가 화면에서 칩을 바꾼 상태여도, 새 See all 파라미터가 오면 그 값으로 재동기화
   press(tree, 'home-chip-safe');
-  act(() => tree.update(<FoodExplorer variant="screen" guest={false} initialTab="saved" initialRisk="danger" srcTag="list" />));
-  expect(activeTab(tree)).toBe('home-tab-saved');
+  act(() => tree.update(<FoodExplorer variant="screen" guest={false} initialSaved initialRisk="danger" srcTag="list" />));
+  expect(tree.root.findAll((n) => n.props?.testID === 'food-chip-saved' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
+  expect([...cardIds(tree)]).toEqual(['home-food-2']); // 저장분 중 danger만
 });
 
 it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸)', () => {

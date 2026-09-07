@@ -96,6 +96,9 @@
     "title": "Jelajahi makanan",
     "sub": "Setiap hidangan ditandai dengan risiko Anda.",
     "searchPlaceholder": "Cari makanan atau bahan…",
+    "sort_popular": "Terpopuler",
+    "sort_new": "Terbaru",
+    "sort_alpha": "A–Z",
     "categories": {
       "all": "Semua",
       "stews": "Sup",
