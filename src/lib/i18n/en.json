@@ -777,8 +777,8 @@
     "chipForYou": "For You",
     "chipNearby": "Nearby",
     "recentEmpty": "No recent scans",
-    "safeForYou": "Safe for you today",
-    "safeForYouSub": "Dishes with none of your avoid ingredients."
+    "safeForYou": "Safe picks for you",
+    "safeForYouSub": "Based on your avoid list — always confirm with the owner."
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",

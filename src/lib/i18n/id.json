@@ -623,8 +623,8 @@
     "chipForYou": "Untukmu",
     "chipNearby": "Terdekat",
     "recentEmpty": "Belum ada pemindaian terbaru",
-    "safeForYou": "Aman untukmu hari ini",
-    "safeForYouSub": "Hidangan tanpa bahan yang kamu hindari."
+    "safeForYou": "Pilihan Safe untukmu",
+    "safeForYouSub": "Berdasarkan daftar hindaranmu — selalu konfirmasi ke pemilik."
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",

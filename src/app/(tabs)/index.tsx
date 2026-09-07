@@ -74,6 +74,9 @@ export default function Home() {
     .flatMap((p) => p.items)
     .filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true))); // 페이지 경계 중복 0
   const loadMoreReviews = () => {
+    // Codex #80 P2(=#58 P2-2 문법): 에러 푸터가 높이를 바꿔 onEndReached 재발화 →
+    // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
+    if (feed.isFetchNextPageError) return;
     if (FLAGS.reviewsEnabled && feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   };
 
@@ -192,6 +195,15 @@ export default function Home() {
                 ))}
               </View>
             )}
+            {feed.isFetchNextPageError && (
+              /* Codex #80 P2: 다음 페이지 실패 = 푸터 소형 에러 + 수동 재시도(자동 재요청 0) */
+              <View style={styles.footerErr} testID="home-feed-next-error">
+                <Text style={styles.footerErrText}>{t('states.errorTitle')}</Text>
+                <Pressable style={styles.footerRetry} onPress={() => void feed.fetchNextPage()} testID="home-feed-next-retry">
+                  <Text style={styles.footerRetryText}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
+            )}
             {/* 면책 (FR-030 유지 — §1-10) */}
             {!isLoading && <Text style={styles.disc}>{t('home.disclaimer')}</Text>}
           </View>
@@ -269,6 +281,11 @@ const styles = StyleSheet.create({
 
   feedSkel: { gap: 12, paddingHorizontal: 20, paddingTop: 12 },
   feedSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
+  // Codex #80 P2: 다음 페이지 실패 푸터 (ReviewFeed footerErr 문법)
+  footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
+  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
+  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: 4, paddingHorizontal: 20, paddingVertical: 8 },
+  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
   // 면책 (§1-10)
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });

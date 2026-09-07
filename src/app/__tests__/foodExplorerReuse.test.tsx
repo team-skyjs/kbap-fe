@@ -117,7 +117,9 @@ it('①② 두 화면 = 같은 컴포넌트 + 소스 잠금 — 기본 탭: 홈 
   const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8') as string;
   expect(home).toContain('<FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />');
   expect(food).toContain('variant="screen"');
-  expect(food).toContain('initialTab="food"');
+  // Codex #80 P1: See all 파라미터 수신 — 무파라미터 직진입은 Explore food 기본 유지
+  expect(food).toContain('parseFoodFilterParams');
+  expect(food).toContain("initialTab={hasParams ? segment : 'food'}");
   expect(home).not.toContain('testID="home-search"'); // 마크업은 공용 1곳
   expect(food).not.toContain('function BrowseCard'); // 구 카드 소멸(주석 언급만 허용)
   // 렌더: 기본 탭 차이
@@ -195,6 +197,16 @@ it('④ 게스트 칩 — 4개 렌더 · 개인화 칩 탭 = 게이트 + 선택 
   act(() => safe.props.onPress());
   expect(tree.root.findAll((n) => n.props?.testID === 'auth-gate-open').length).toBeGreaterThanOrEqual(1); // 게이트
   expect(cardIds(tree).size).toBe(before); // 필터 미적용(All 유지)
+});
+
+it('⑧ Codex #80 P1 — initialRisk 초기 적용(회원), 게스트는 all 강등', () => {
+  // 회원: danger 초기 칩 → danger 카드만
+  const t1 = render(<FoodExplorer variant="screen" guest={false} initialTab="food" initialRisk="danger" srcTag="list" />);
+  expect([...cardIds(t1)].sort()).toEqual(['home-food-10', 'home-food-2', 'home-food-4', 'home-food-6', 'home-food-8']);
+  // 게스트: 개인화 칩 게이트 우회 금지 — all 강등(전 카드 + 게이트 미오픈)
+  const t2 = render(<FoodExplorer variant="screen" guest initialTab="food" initialRisk="danger" srcTag="list" />);
+  expect(cardIds(t2).size).toBe(10);
+  expect(t2.root.findAll((n) => n.props?.testID === 'auth-gate-open')).toHaveLength(0);
 });
 
 it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸)', () => {

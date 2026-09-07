@@ -623,8 +623,8 @@
     "chipForYou": "为你推荐",
     "chipNearby": "附近",
     "recentEmpty": "暂无最近扫描",
-    "safeForYou": "今日安心菜品",
-    "safeForYouSub": "不含你回避食材的菜品。"
+    "safeForYou": "按你的清单筛出的 Safe 菜品",
+    "safeForYouSub": "基于你的回避清单判定——请务必向店家确认。"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",

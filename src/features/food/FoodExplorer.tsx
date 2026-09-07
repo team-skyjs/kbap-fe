@@ -41,6 +41,7 @@ export function FoodExplorer({
   variant,
   guest,
   initialTab = 'popular',
+  initialRisk,
   srcTag,
   onScroll,
   topPad = 0,
@@ -49,6 +50,8 @@ export function FoodExplorer({
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
   guest: boolean;
   initialTab?: GridTab;
+  /** Codex #80 P1: 홈 See all 파라미터 초기 적용(음식 탭) — 게스트는 개인화 칩 강등(게이트 정합). */
+  initialRisk?: RiskChipParam;
   /** 상세 진입 src 파라미터 — 홈 'home' / 음식 탭 'list' */
   srcTag: string;
   /** screen 전용 — 화면이 StickyHeader hidden을 소유 */
@@ -65,7 +68,8 @@ export function FoodExplorer({
   const toggleBookmark = useToggleBookmark();
 
   const [gridTab, setGridTab] = React.useState<GridTab>(initialTab);
-  const [riskChip, setRiskChip] = React.useState<RiskChip>('all');
+  // Codex #80 P1: 딥링크 초기 칩 — 게스트는 'all' 강등(개인화 칩 게이트 우회 방지)
+  const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
   const [gate, setGate] = React.useState(false);
 
   // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본)

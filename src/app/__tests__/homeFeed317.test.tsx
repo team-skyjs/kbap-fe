@@ -113,6 +113,20 @@ it('② onEndReached → fetchNextPage — isFetchingNextPage·hasNextPage 가�
   }
 });
 
+it('④ Codex #80 P2 — 다음 페이지 실패 = 재시도 푸터, onEndReached 자동 재요청 0', () => {
+  mockFeed.mockReturnValue(feedOf([{ items: [rv('a')] }], { isFetchNextPageError: true }));
+  const tree = render(<Home />);
+  // 자동 재시도 루프 차단(#58 P2-2 문법): 에러 상태의 onEndReached는 무시
+  const list = tree.root.findAll((n) => n.props?.testID === 'home-list' && typeof n.props?.onEndReached === 'function')[0];
+  act(() => list.props.onEndReached({ distanceFromEnd: 0 }));
+  expect(mockFetchNext).not.toHaveBeenCalled();
+  // 재시도 = 푸터 버튼만
+  const retry = tree.root.findAll((n) => n.props?.testID === 'home-feed-next-retry' && typeof n.props?.onPress === 'function')[0];
+  expect(retry).toBeTruthy();
+  act(() => retry.props.onPress());
+  expect(mockFetchNext).toHaveBeenCalledTimes(1);
+});
+
 it('③ 다음 페이지 로딩 — 하단 스켈레톤 노출(공백 금지, P-188 계열)', () => {
   mockFeed.mockReturnValue(feedOf([{ items: [rv('a')] }], { isFetchingNextPage: true }));
   expect(render(<Home />).root.findAll((n) => n.props?.testID === 'home-feed-skel').length).toBeGreaterThanOrEqual(1);

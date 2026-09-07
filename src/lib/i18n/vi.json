@@ -623,8 +623,8 @@
     "chipForYou": "Dành cho bạn",
     "chipNearby": "Gần đây",
     "recentEmpty": "Chưa có lượt quét gần đây",
-    "safeForYou": "An toàn cho bạn hôm nay",
-    "safeForYouSub": "Món ăn không chứa nguyên liệu bạn tránh."
+    "safeForYou": "Món Safe theo hồ sơ của bạn",
+    "safeForYouSub": "Dựa trên danh sách cần tránh của bạn — luôn xác nhận với chủ quán."
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",

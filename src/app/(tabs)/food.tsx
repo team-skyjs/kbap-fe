@@ -6,13 +6,14 @@
  * 북마크 토글·위험 필터 로직은 FoodExplorer가 소유(홈 구현 이동, 무변).
  */
 import { View, StyleSheet } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { StickyHeader, useStickyScroll, useHeaderHeight } from '@/components';
 import { color as C } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useUnreadCount } from '@/lib/notifications/inbox';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
+import { parseFoodFilterParams } from '@/features/food/foodFilterParams';
 
 export default function Food() {
   const router = useRouter();
@@ -20,13 +21,20 @@ export default function Food() {
   const headerH = useHeaderHeight();
   const isGuest = useIsGuest();
   const unread = useUnreadCount();
+  // Codex #80 P1: 홈 See all 파라미터 수신 — 미지값은 파서가 기본(food 직진입 = 무파라미터
+  // → popular? 아님: 직진입 기본 탭은 Explore food 유지) 강등. 배열형(중복 쿼리)은 첫 값.
+  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[] }>();
+  const one = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
+  const hasParams = one(raw.segment) != null || one(raw.risk) != null;
+  const { segment, risk } = parseFoodFilterParams({ segment: one(raw.segment), risk: one(raw.risk) });
 
   return (
     <View style={styles.root}>
       <FoodExplorer
         variant="screen"
         guest={isGuest}
-        initialTab="food"
+        initialTab={hasParams ? segment : 'food'}
+        initialRisk={risk}
         srcTag="list"
         onScroll={onScroll}
         topPad={headerH}

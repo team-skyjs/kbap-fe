@@ -623,8 +623,8 @@
     "chipForYou": "為你推薦",
     "chipNearby": "附近",
     "recentEmpty": "尚無最近掃描",
-    "safeForYou": "今日安心菜品",
-    "safeForYouSub": "不含你迴避食材的菜品。"
+    "safeForYou": "依你的清單篩出的 Safe 菜色",
+    "safeForYouSub": "依你的迴避清單判定——請務必向店家確認。"
   },
   "onboarding": {
     "welcomeTag": "點餐前，先知道什麼能安心吃。",

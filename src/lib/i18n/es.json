@@ -623,8 +623,8 @@
     "chipForYou": "Para ti",
     "chipNearby": "Cerca",
     "recentEmpty": "Sin escaneos recientes",
-    "safeForYou": "Seguro para ti hoy",
-    "safeForYouSub": "Platos sin ninguno de tus ingredientes a evitar."
+    "safeForYou": "Opciones Safe para ti",
+    "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante."
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",
