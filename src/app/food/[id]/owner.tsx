@@ -19,12 +19,12 @@ import { PressScale } from '@/components';
 import { useOwnerConfirmation } from '@/lib/data/useOwnerConfirmation';
 
 export default function OwnerConfirm() {
-  const { id, ingredient } = useLocalSearchParams<{ id: string; ingredient?: string }>();
+  const { id, ingredient, reason } = useLocalSearchParams<{ id: string; ingredient?: string; reason?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const { t } = useTranslation();
-  const { data } = useOwnerConfirmation(id ?? '', ingredient);
+  const { data } = useOwnerConfirmation(id ?? '', ingredient, reason);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>

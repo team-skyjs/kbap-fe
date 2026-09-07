@@ -557,8 +557,8 @@
     "lockIngredients": "登录后即可查看这道菜与您档案的匹配情况",
     "readAll": "查看全部",
     "beFirstReview": "还没有评价 — 来写第一条吧！",
-    "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It can vary by restaurant — ask the owner to be sure.",
-    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It can vary by restaurant — ask the owner to be sure."
+    "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
+    "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。"
   },
   "states": {
     "catalogTitle": "状态",

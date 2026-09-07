@@ -557,8 +557,8 @@
     "lockIngredients": "Masuk untuk melihat kecocokan hidangan ini dengan profil Anda",
     "readAll": "Lihat semua",
     "beFirstReview": "Belum ada ulasan — jadilah yang pertama!",
-    "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It can vary by restaurant — ask the owner to be sure.",
-    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It can vary by restaurant — ask the owner to be sure."
+    "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
+    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan."
   },
   "states": {
     "catalogTitle": "Status",

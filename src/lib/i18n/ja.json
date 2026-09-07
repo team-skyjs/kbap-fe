@@ -557,8 +557,8 @@
     "lockIngredients": "ログインするとプロフィールとの適合が見られます",
     "readAll": "すべて見る",
     "beFirstReview": "まだレビューがありません — 最初のレビューを！",
-    "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It can vary by restaurant — ask the owner to be sure.",
-    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It can vary by restaurant — ask the owner to be sure."
+    "ingGuestBody": "{{ingredient}}はこの料理の約{{percent}}%のバージョンに使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
+    "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。"
   },
   "states": {
     "catalogTitle": "状態",

@@ -597,9 +597,11 @@ function Registered({
                   icon={<IconSpeech size={20} color="#fff" />}
                   onPress={() => {
                     const code = ingSheet.code;
+                    // Codex #67 P1: 회원+회피 판정(danger/caution)만 알레르기 설명 — 게스트·safe = 중립
+                    const avoid = !guest && ['danger', 'caution'].includes(personalRisk(ingSheet.risk, hasRestrictions));
                     setIngSheet(null);
                     track(EVENTS.owner_ask_open, { source: 'ingredient_sheet', food_id: id ?? '' });
-                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}` as Href);
+                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}&reason=${avoid ? 'avoid' : 'neutral'}` as Href);
                   }}
                   testID="ing-sheet-ask"
                 >
