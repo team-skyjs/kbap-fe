@@ -54,6 +54,7 @@ jest.mock('@/lib/api/client', () => ({
   ApiError: class extends Error {},
   setAuthTokenProvider: jest.fn(),
   setOnUnauthorized: (...a: unknown[]) => mockSetOnUnauthorized(...a),
+  setOnMemberMissing: jest.fn(),
 }));
 
 const flushReads = () => {

@@ -31,6 +31,7 @@ jest.mock('@/lib/api/client', () => ({
   ApiError: class extends Error {},
   setAuthTokenProvider: jest.fn(),
   setOnUnauthorized: jest.fn(),
+  setOnMemberMissing: jest.fn(),
 }));
 
 import { queryClient } from '@/lib/queryClient';

@@ -92,6 +92,15 @@ export function setOnUnauthorized(handler: ((code: string | null) => Promise<boo
   onUnauthorized = handler;
 }
 
+/** KB-441(P-297): 서버가 모르는 회원(MEMBER-003) 알림 — 좀비 세션 감지.
+ *  b27 실기: prod DB에 없는 회원의 refresh가 성공해 유효 토큰 + 전 회원 API 400
+ *  (프로필 dead-end·스캔 지연 표면화). 분기 정책(저장 토큰 있을 때만 세션 무효)은
+ *  핸들러(beAuth) 한 곳 — 여기선 fire-and-forget 통지만, 에러는 그대로 throw. */
+let onMemberMissing: (() => void) | null = null;
+export function setOnMemberMissing(handler: (() => void) | null) {
+  onMemberMissing = handler;
+}
+
 /** 익명으로 호출해야 하는 공개 인증 엔드포인트 (Authorization 미부착). */
 const OPEN_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
 
@@ -226,6 +235,9 @@ async function request<T>(
   if (!res.ok) {
     // 9/5 예진 승인: 5xx 관측(PLACE-001 502 계열) — 경로·상태·코드 태그만, PII 0
     if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined);
+    // KB-441: MEMBER-003(회원 없음) = 좀비 세션 신호 — 핸들러에 통지(정책은 beAuth).
+    // /auth/* 자체 응답은 제외(로그인·refresh 흐름은 자체 분기 — 401 경로와 동일 원칙).
+    if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing();
     throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status, json?.code ?? undefined);
   }
   // 200 but success:false — never trust HTTP status alone.

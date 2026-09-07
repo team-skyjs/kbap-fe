@@ -17,6 +17,7 @@ jest.mock('@/lib/api/client', () => {
     api: { post: jest.fn(), get: jest.fn(), patch: jest.fn() },
     setAuthTokenProvider: jest.fn(),
     setOnUnauthorized: jest.fn(),
+    setOnMemberMissing: jest.fn(),
   };
 });
 jest.mock('../beTokens', () => ({
@@ -151,5 +152,35 @@ describe('P-257: 401 code 분기(종한 요청) — AUTH-004만 refresh', () => 
     expect(src).toContain("!path.startsWith('/auth/')"); // /auth/* 제외(현행)
     expect(src.split('text = await res.text()').length).toBe(2); // res.text() 1회만(이중 read 금지)
     expect(src).toContain('!isRetry'); // 재시도 1회 한정(현행)
+  });
+});
+
+describe('KB-441(P-297): MEMBER-003 = 좀비 세션 무효화(b27 실기 — prod 부재 회원)', () => {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const { setOnMemberMissing } = require('@/lib/api/client');
+  const handleMemberMissing: () => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
+  /* eslint-enable @typescript-eslint/no-require-imports */
+
+  it('저장 토큰 있음 + 동시 2회 통지 → 세션 경계 1회(in-flight 래치)·캐시 clear 발동', async () => {
+    await Promise.all([handleMemberMissing(), handleMemberMissing()]);
+    expect(tokens.clearTokens).toHaveBeenCalledTimes(1); // sessionExpired 1회
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    expect(require('@/lib/queryClient').queryClient.clear).toHaveBeenCalledTimes(1);
+  });
+
+  it('게스트(토큰 부재·세션 스토어 비회원) → 경계 미발동(배경 리셋 회귀 방지 — P-260 동일 철학)', async () => {
+    (tokens.loadTokens as jest.Mock).mockResolvedValueOnce(null);
+    await handleMemberMissing();
+    expect(tokens.clearTokens).not.toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    expect(require('@/lib/queryClient').queryClient.clear).not.toHaveBeenCalled();
+  });
+
+  it('client 배선 소스 잠금 — MEMBER-003 통지(/auth/* 제외·에러 throw 무변) + 401 경로 무접촉', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
+    expect(src).toContain("json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')");
+    // 통지는 throw 앞 fire-and-forget — 화면 에러 흐름(QueryErrorBlock 등)은 그대로
+    expect(src.indexOf("json?.code === 'MEMBER-003'")).toBeLessThan(src.indexOf('throw new ApiError(json?.message'));
   });
 });
