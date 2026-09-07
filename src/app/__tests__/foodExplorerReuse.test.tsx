@@ -209,6 +209,16 @@ it('⑧ Codex #80 P1 — initialRisk 초기 적용(회원), 게스트는 all 강
   expect(t2.root.findAll((n) => n.props?.testID === 'auth-gate-open')).toHaveLength(0);
 });
 
+it('⑫ Codex #80 2R — 마운트 유지 화면에 두 번째 See all 파라미터 재적용', () => {
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />);
+  expect(cardIds(tree).size).toBe(10);
+  // 사용자가 화면에서 칩을 바꾼 상태여도, 새 See all 파라미터가 오면 그 값으로 재동기화
+  press(tree, 'home-chip-safe');
+  act(() => tree.update(<FoodExplorer variant="screen" guest={false} initialTab="saved" initialRisk="danger" srcTag="list" />));
+  expect(activeTab(tree)).toBe('home-tab-saved');
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && n.props?.selected === true).length).toBeGreaterThanOrEqual(1);
+});
+
 it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸)', () => {
   const tree = render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />);
   const safe = tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && typeof n.props?.onPress === 'function')[0];

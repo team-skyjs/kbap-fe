@@ -70,6 +70,14 @@ export function FoodExplorer({
   const [gridTab, setGridTab] = React.useState<GridTab>(initialTab);
   // Codex #80 P1: 딥링크 초기 칩 — 게스트는 'all' 강등(개인화 칩 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
+  // Codex #80 2R P1: 탭 네비게이터가 음식 탭을 마운트 유지 — 두 번째 See all(파라미터 변경)이
+  // useState 초기값에 막히지 않게 파라미터 변경 시 재동기화. 사용자가 화면에서 바꾼
+  // 탭/칩은 다음 파라미터 변경 전까지 유지(마운트 시엔 초기값과 동일해 무동작).
+  React.useEffect(() => {
+    if (variant !== 'screen') return;
+    setGridTab(initialTab);
+    setRiskChip(guest ? 'all' : (initialRisk ?? 'all'));
+  }, [variant, guest, initialTab, initialRisk]);
   const [gate, setGate] = React.useState(false);
 
   // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본)
