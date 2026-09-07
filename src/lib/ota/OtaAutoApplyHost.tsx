@@ -9,16 +9,10 @@
  * - expo-updates는 지연 require(정적 import 금지 관례 — pushAdapter와 동일 계열).
  */
 import * as React from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
-import { useIsMutating } from '@tanstack/react-query';
-import { usePathname } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
-import { Txt as Text } from '@/components/Txt';
-import { color as C, font, radius, shadow } from '@/lib/theme';
+import { AppState } from 'react-native';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
-import { OTA_BOOT_GUARD_MS, canReloadNow, isBlockedRoute, otaApplyDecision } from './otaPolicy';
+import { OTA_BOOT_GUARD_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
 
 // P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
 const BOOTED_AT = Date.now();
@@ -43,10 +37,6 @@ function applyNow(): void {
 }
 
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
-  const pathname = usePathname();
-  const mutating = useIsMutating();
-  const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
   const [ready, setReady] = React.useState(false);
   // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
   const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
@@ -82,43 +72,15 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   const prod = isProdChannel();
   React.useEffect(() => {
     if (!ready) return;
-    if (otaApplyDecision({ prod, pathname, mutating }) !== 'reload') return;
+    if (otaApplyDecision({ prod, pathname: '/', mutating: 0 }) !== 'reload') return; // P-316: prod 상수 defer — 라우트·뮤테이션 무관
     if (tryApply()) return;
     // 가드 미충족 — 시간 조건은 충족 시각에 1회 재평가(스플래시·active는 deps가 재평가)
     const remain = Math.max(0, OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT)) + 50;
     const timer = setTimeout(() => setGuardTick((n) => n + 1), remain);
     return () => clearTimeout(timer);
-  }, [ready, prod, pathname, mutating, tryApply, guardTick]);
+  }, [ready, prod, tryApply, guardTick]);
 
-  // 배너 = prod 대기 상태에서만 · 제외 화면(스캔 등)엔 미노출(비차단이어도 오버레이 금지)
-  if (!ready || !prod || isBlockedRoute(pathname)) return null;
-  return (
-    <View style={[styles.wrap, { top: insets.top + 6 }]} pointerEvents="box-none" testID="ota-banner">
-      <Pressable style={styles.pill} onPress={() => tryApply()} testID="ota-apply" hitSlop={8}>
-        <Text style={styles.text} numberOfLines={2}>
-          {t('ota.ready')}
-        </Text>
-        <Text style={styles.cta}>{t('ota.apply')}</Text>
-      </Pressable>
-    </View>
-  );
+  // P-316: prod = 배너·수동 적용 경로 없음(다음 콜드 스타트 자동 적용) — 렌더 0
+  return null;
 }
 
-const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: C.card,
-    borderWidth: 1,
-    borderColor: C.line,
-    borderRadius: radius.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxWidth: '100%',
-    ...shadow.sh2,
-  },
-  text: { fontFamily: font.body, fontSize: 13, color: C.ink, flexShrink: 1 },
-  cta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primary },
-});

@@ -1010,9 +1010,5 @@
     "receiptDate": "日期",
     "receiptLocation": "地點",
     "receiptTotal": "合計"
-  },
-  "ota": {
-    "ready": "更新已準備好",
-    "apply": "套用"
   }
 }

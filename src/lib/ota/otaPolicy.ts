@@ -10,8 +10,7 @@
  */
 export const OTA_CHECK_THROTTLE_MS = 120_000; // 포그라운드 복귀 체크 스로틀 ≥2분
 
-/** prod 안전 순간 허용 라우트 — 탭 루트 3종(홈·음식 목록·프로필). */
-export const SAFE_ROUTES = ['/', '/food', '/profile'] as const;
+// P-316: SAFE_ROUTES 소멸 — prod = 항상 defer(안전 순간 판정 자체 불요).
 
 /** 진행 중 작업 화면(명시 제외) — 스캔 전 과정(+주문 카드 /scan-order 포함)·
  *  온보딩·프로필 하위 전체·리뷰 작성/수정.
@@ -41,8 +40,8 @@ export function canReloadNow(opts: { bootedAt: number; now: number; splashDone: 
 
 export type OtaDecision = 'reload' | 'defer';
 
+/** P-316(KB-458 후속, 9/7 예진 a안): prod = **항상 defer** — reload 호출 0·배너 0,
+ *  fetch만 해두면 다음 콜드 스타트에 expo-updates가 자동 적용. 비-prod = 즉시(부팅 가드 뒤). */
 export function otaApplyDecision(opts: { prod: boolean; pathname: string; mutating: number }): OtaDecision {
-  if (!opts.prod) return 'reload'; // teamtest 등 = 즉시
-  const safe = opts.mutating === 0 && (SAFE_ROUTES as readonly string[]).includes(opts.pathname);
-  return safe ? 'reload' : 'defer';
+  return opts.prod ? 'defer' : 'reload';
 }

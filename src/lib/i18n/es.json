@@ -1011,9 +1011,5 @@
     "receiptDate": "FECHA",
     "receiptLocation": "UBICACIÓN",
     "receiptTotal": "TOTAL"
-  },
-  "ota": {
-    "ready": "Hay una actualización lista",
-    "apply": "Aplicar"
   }
 }
