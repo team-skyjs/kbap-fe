@@ -152,7 +152,7 @@ export default function FoodDetailScreen() {
                 saved={saved}
                 onBookmark={onBookmark}
                 myId={me?.id}
-                nationality={me?.nationality ?? 'US'}
+                nationality={me?.nationality ?? null} /* P-323: 'US' 폴백 폐기 — null = 토글 미렌더 */
                 hasRestrictions={(me?.restrictions.length ?? 0) > 0}
                 t={t}
                 router={router}
@@ -282,7 +282,7 @@ function Registered({
   saved: boolean;
   onBookmark: () => void;
   myId?: string;
-  nationality: string;
+  nationality: string | null;
   hasRestrictions: boolean;
   scanPrice: number | null;
   t: TFn;
@@ -315,10 +315,13 @@ function Registered({
   const hasInline = food.recentReviews !== undefined;
   const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled && !hasInline ? id : '');
   const previewSource = hasInline ? food.recentReviews! : (reviewsQ.data?.pages[0]?.items ?? []);
-  // Q12: "{국가} only" 클라 필터 — 프리뷰 소스엔 서버 파라미터가 없어 작성자 국적으로
-  // 필터. Codex #30 P2: 필터를 slice **앞에**(필터 후 3개 — 뒤에 걸면 상위 3개 중 교집합만 남음)
   const [natOnly, setNatOnly] = useState(false);
-  const shownPreviews = (natOnly ? previewSource.filter((r) => r.authorNationality === nationality) : previewSource).slice(0, REVIEW_PREVIEW_N);
+  // P-323(KB-448): 토글 on = 서버 countryCode 필터 쿼리(전체 리뷰 화면과 동일 훅·별도
+  // 쿼리 키) — 구 클라 필터는 "로드된 3장 안 교집합"이라 서버엔 있는데 0장이 떴다.
+  const natQ = useFoodReviews(FLAGS.reviewsEnabled && natOnly && nationality ? id : '', nationality ?? undefined);
+  const natLoading = natOnly && natQ.isLoading;
+  const activePreviews = natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
+  const shownPreviews = activePreviews.slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
   const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
@@ -496,9 +499,9 @@ function Registered({
             <Text style={[styles.rvHeadScore, { flex: 1 }]}>
               {food.overall.average?.toFixed(1) ?? '—'} ({food.overall.count})
             </Text>
-            {/* 9/5 예진 판정(Q12): "{국가} only" 토글 — 프리뷰는 클라 필터(작성자 국적 =
-                뷰어 국적). 게스트 = 국적 미상이라 미노출(P-235 컨벤션). */}
-            {!guest && (
+            {/* 9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터.
+                게스트·국적 null(구계정) = 미렌더(국적 미상 — 필터 무의미, 게이트 아님). */}
+            {!guest && nationality && (
               <Pressable style={styles.natToggleRow} onPress={() => setNatOnly((v) => !v)} testID="detail-nat-toggle">
                 <View style={[styles.sw, natOnly && styles.swOn]}>
                   <View style={[styles.knob, natOnly && styles.knobOn]} />
@@ -509,7 +512,18 @@ function Registered({
           </View>
           {/* 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거(시안 부재) */}
 
-          {shownPreviews.map((r) => (
+          {/* P-323: 토글 쿼리 로딩 = 스켈레톤(공백 금지) · 서버 필터 0장 = 전용 문구 */}
+          {natLoading && (
+            <View style={styles.natSkel} testID="detail-nat-skel">
+              {[0, 1].map((i) => (
+                <View key={i} style={styles.natSkelCard} />
+              ))}
+            </View>
+          )}
+          {natOnly && !natLoading && shownPreviews.length === 0 && (
+            <Text style={styles.natEmpty} testID="detail-nat-empty">{t('reviews.emptySameNat')}</Text>
+          )}
+          {!natLoading && shownPreviews.map((r) => (
             <FeedCard
               key={r.id}
               review={r}
@@ -542,7 +556,7 @@ function Registered({
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(previewSource.find((r) => r.id === m.id) ?? null)}
+        onEdit={(m) => setEditTarget(activePreviews.find((r) => r.id === m.id) ?? previewSource.find((r) => r.id === m.id) ?? null)}
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
         onBlocked={() => void reviewsQ.refetch()}
       />
@@ -727,6 +741,10 @@ const styles = StyleSheet.create({
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
   natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
+  // P-323 토글 쿼리 상태(스켈레톤·빈 문구) — 홈 피드 스켈레톤 문법
+  natSkel: { gap: 12, paddingTop: 12 },
+  natSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
+  natEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, paddingVertical: 24 },
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
