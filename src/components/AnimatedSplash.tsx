@@ -30,7 +30,7 @@ export const SPLASH_TIMING = {
   // P-298(9/7 예진): 최소 노출 3초 — 부팅이 빨라도 fadeOutAt 전엔 유지(ready와 AND).
   fadeOutAt: 3000,
   fadeOutDur: 450,
-  reduceHold: 2550, // reduce-motion: 정지 표시 후 페이드아웃까지(+fade 450 = 총 3s 동률)
+  reduceHold: 3000, // reduce-motion: 정지 3초 온전히 — ReducedMotionConfig(System)가 페이드를 즉시 끝내도 3s 보장(Codex #60 P2)
   cap: 4000, // bootGate 캡과 동일 — 어떤 경우에도 이 시점엔 언마운트
 } as const;
 

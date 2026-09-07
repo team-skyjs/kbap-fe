@@ -71,7 +71,7 @@ it('타이밍 상수 = 프로토타입 모션 A 수치 그대로(스냅샷)', ()
     "delay": 300,
     "dur": 600,
   },
-  "reduceHold": 2550,
+  "reduceHold": 3000,
   "tagline": {
     "delay": 950,
     "dur": 500,
