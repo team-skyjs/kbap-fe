@@ -37,6 +37,18 @@ it('로그인 임베드 변형 폐기 — login.tsx embedded prop·embedAvailabl
   expect(fs.readFileSync('src/lib/loginCollage.ts', 'utf8')).not.toContain('function embedAvailableH');
 });
 
+it('Codex #72 5R: 게스트 카드 3상 렌더 — pending 스켈레톤/error 배너만(스위치 부재)/ready만 토글', () => {
+  const src = fs.readFileSync('src/app/profile/notifications.tsx', 'utf8');
+  const pending = src.slice(src.indexOf("consentState === 'pending'"), src.indexOf("consentState === 'ready'"));
+  expect(pending).toContain('guest-consent-skel');
+  expect(pending).not.toContain('ToggleRow');
+  const err = src.slice(src.indexOf("consentState === 'error'"), src.indexOf('</ScrollView>'));
+  expect(err).toContain('guest-consent-read-error');
+  expect(err).not.toContain('ToggleRow'); // 스위치 미렌더(값 미표시)
+  expect(src).toContain("{consentState === 'ready' && ("); // 토글은 ready에서만 렌더
+  expect(src).toContain("consentState !== 'ready') return"); // ready에서만 토글 동작
+});
+
 it('게스트 알림 화면 — 토글 2(marketing·night)·야간은 마케팅 ON 조건·서비스 토글은 회원 전용 유지', () => {
   expect(notif).toContain('testID="guest-marketing"');
   expect(notif).toContain('testID="guest-night"');

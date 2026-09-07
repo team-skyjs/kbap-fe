@@ -17,6 +17,7 @@ import { SubHeader, IconBell } from '@/components';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { DEFAULT_GUEST_CONSENT, readGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
+import { Shimmer } from '@/components/Skeleton';
 import { EVENTS, track } from '@/lib/analytics';
 import {
   getPermissionStatus,
@@ -39,13 +40,15 @@ export default function NotificationSettings() {
   const [consent, setConsent] = React.useState<GuestConsent>(DEFAULT_GUEST_CONSENT);
   // Codex #72 4R: 읽기 3상 — error = 값 표시 금지·토글 비활성·재시도 배너
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [consentReadError, setConsentReadError] = React.useState(false);
+  // 5R: pending도 분리 — 읽는 중 기본 OFF 스위치로 위장 금지(스켈레톤)
+  const [consentState, setConsentState] = React.useState<'pending' | 'error' | 'ready'>('pending');
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const loadConsent = React.useCallback(() => {
+    setConsentState('pending');
     void readGuestConsent().then((r) => {
-      if (r.status === 'error') return setConsentReadError(true);
-      setConsentReadError(false);
+      if (r.status === 'error') return setConsentState('error');
       setConsent(r.status === 'ok' ? r.value : DEFAULT_GUEST_CONSENT);
+      setConsentState('ready');
     });
   }, []);
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -56,7 +59,7 @@ export default function NotificationSettings() {
   const consentBusy = React.useRef(false);
   const [consentError, setConsentError] = React.useState(false);
   const toggleConsent = (key: 'marketing' | 'night') => {
-    if (consentBusy.current || consentReadError) return; // 4R: 읽기 오류 중 토글 비활성
+    if (consentBusy.current || consentState !== 'ready') return; // 5R: ready에서만 토글
     if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
     consentBusy.current = true;
     setConsentError(false);
@@ -97,7 +100,15 @@ export default function NotificationSettings() {
       <View style={styles.root}>
         <SubHeader title={t('notif.title')} onBack={() => router.back()} />
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <View style={[styles.card, consentReadError && styles.rowDisabled]}>
+          {consentState === 'pending' && (
+            /* 5R: 읽는 중 = 스켈레톤(공백·기본값 위장 금지 — P-207 계열) */
+            <View style={styles.card} testID="guest-consent-skel">
+              <Shimmer style={{ height: 56, borderRadius: 8 }} />
+              <Shimmer style={{ height: 56, borderRadius: 8, marginTop: 8 }} />
+            </View>
+          )}
+          {consentState === 'ready' && (
+          <View style={styles.card}>
             <ToggleRow
               label={t('notif.marketing')}
               sub={t('notif.marketingSub')}
@@ -115,14 +126,15 @@ export default function NotificationSettings() {
               />
             </View>
           </View>
-          {consentError && (
+          )}
+          {consentState === 'ready' && consentError && (
             <Pressable style={styles.osBanner} onPress={() => setConsentError(false)} testID="guest-consent-error">
               <IconBell size={16} color={C.riskCaution} />
               <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
             </Pressable>
           )}
-          {consentReadError && (
-            /* 4R: 읽기 오류 — 값 미표시(기본 OFF 위장 금지), 탭 = 재시도 */
+          {consentState === 'error' && (
+            /* 4R→5R: 읽기 오류 = 스위치 미렌더(값 미표시), 탭 = 재시도 */
             <Pressable style={styles.osBanner} onPress={loadConsent} testID="guest-consent-read-error">
               <IconBell size={16} color={C.riskCaution} />
               <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
