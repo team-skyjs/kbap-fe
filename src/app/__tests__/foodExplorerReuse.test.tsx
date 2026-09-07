@@ -146,10 +146,12 @@ const press = (tree: ReactTestRenderer, id: string) =>
       .props.onPress(),
   );
 
-it('③-b 홈(embedded) = 가로 레일 상한 10 + See all 카드(구 More 소멸)', () => {
-  // 카탈로그 12장이어도 레일은 10장까지(전부 safe — Safe 레일도 같은 10장이라 합집합 10)
+it('③-b 홈(embedded) = 가로 레일 상한(Popular=소스 8 · Food=HOME_RAIL_N 10) + See all(구 More 소멸)', () => {
   mockBrowse.mockReturnValue(browseOf(Array.from({ length: 12 }, (_, i) => FOOD(String(i + 1)))));
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  // Food 탭 = 전체 카탈로그 소스 → HOME_RAIL_N(10) 상한이 지배(12장 → 10장).
+  // (Popular 탭은 popularPhotoFoods 소스 자체가 8 — P-321에서 실측 확인)
+  press(tree, 'home-tab-food');
   expect(cardIds(tree).size).toBe(10);
   expect(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all' && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'home-grid-more')).toHaveLength(0);
@@ -166,27 +168,37 @@ it('⑤ P-317 See all — 현재 세그먼트·칩 상태가 음식 탭 쿼리�
   expect(mockPush).toHaveBeenLastCalledWith(expect.stringMatching(/^\/food\?segment=food&risk=danger&t=\d+$/)); // 상태 승계
 });
 
-it('⑥ P-317 Safe for you 레일 — 회원+회피≥1+Popular+All에서만, safe<3 숨김', () => {
-  const hasRail = (tree: ReactTestRenderer) =>
-    tree.root.findAll((n) => n.props?.testID === 'home-safe-rail').length > 0;
-  // 충족(회원·EGG·Popular·All — safe 5장) → 노출
-  expect(hasRail(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe(true);
+it('⑥ P-321 Safe picks 2×2 그리드 — 회원+회피≥1+Popular+All에서만, 최대 4장·safe<2 숨김', () => {
+  const grid = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => n.props?.testID === 'home-safe-grid');
+  // 충족(회원·EGG·Popular·All — safe 5장) → 노출 + 4장 상한(그리드 안 카드 = 4)
+  const t1 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  expect(grid(t1).length).toBeGreaterThanOrEqual(1);
+  const gridCardIds = new Set(
+    grid(t1)[0].findAll((n) => typeof n.props?.testID === 'string' && /^home-food-\d+$/.test(n.props.testID)).map((n) => n.props.testID as string),
+  );
+  expect(gridCardIds.size).toBe(4); // safe 5 중 4장(2×2)
+  // Codex #85 2R P2: 그리드 셀 = grow 차단 고정 하프 폭(홀수 마지막 카드 행 확장 방지)
+  const gc = grid(t1)[0].findAll((n) => n.props?.testID === 'home-food-1')[0];
+  expect(JSON.stringify(gc.props.style)).toContain('"flexGrow":0');
   // 게스트 → 숨김
-  expect(hasRail(render(<FoodExplorer variant="embedded" guest srcTag="home" />))).toBe(false);
+  expect(grid(render(<FoodExplorer variant="embedded" guest srcTag="home" />))).toHaveLength(0);
   // 회피 0 → 숨김
   mockMe.mockReturnValue({ data: { id: '9', restrictions: [] } });
-  expect(hasRail(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe(false);
+  expect(grid(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toHaveLength(0);
   mockMe.mockReturnValue({ data: { id: '9', restrictions: [{ kind: 'allergy', code: 'EGG' }] } });
   // 비Popular(Food 탭) → 숨김, 복귀 후 비All(danger 칩) → 숨김
   const t2 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(t2, 'home-tab-food');
-  expect(hasRail(t2)).toBe(false);
+  expect(grid(t2)).toHaveLength(0);
   press(t2, 'home-tab-popular');
   press(t2, 'home-chip-danger');
-  expect(hasRail(t2)).toBe(false);
-  // safe 2장뿐 → 숨김(3 미만)
+  expect(grid(t2)).toHaveLength(0);
+  // safe 2장 = 노출(한 행 — 구 ≥3 규칙 대체) / 1장 = 숨김
   mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2'), FOOD('3', 'danger'), FOOD('4', 'danger')]));
-  expect(hasRail(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe(false);
+  expect(grid(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />)).length).toBeGreaterThanOrEqual(1);
+  mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2', 'danger')]));
+  expect(grid(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toHaveLength(0);
 });
 
 it('④ 게스트 칩 — 4개 렌더 · 개인화 칩 탭 = 게이트 + 선택 All 유지(필터 미적용)', () => {
@@ -286,23 +298,72 @@ it('⑭ Codex #81 P1 — 같은 파라미터의 두 번째 See all(paramsKey 변
   expect([...cardIds(tree)]).toEqual(['home-food-2']);
 });
 
-it('⑮ P-319 — 레일 flexGrow:0(세로 스트레치 차단) + 카드·See all 폭 = railCardW(화면 폭)', () => {
+it('⑮ P-319/320 — 메인 레일 = ScrollView(flexGrow:0·FlatList prop 부재) + 카드·See all 폭 = railCardW', () => {
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  for (const id of ['home-rail', 'home-safe-rail']) {
-    const rail = tree.root.findAll((n) => n.props?.testID === id && n.props?.horizontal === true)[0];
-    expect(rail).toBeTruthy();
-    // RN ScrollView 기본 baseHorizontal(flexGrow:1)이 세로 FlatList 헤더 안에서
-    // 화면 높이만큼 늘어나던 P-319 공백의 근본 — 명시 flexGrow:0 잠금
-    expect(JSON.stringify(rail.props.style)).toContain('"flexGrow":0');
-    // P-320: 레일 = 평범한 ScrollView(중첩 VirtualizedList 경로 제거) — FlatList prop 부재 잠금
-    expect(rail.props.data).toBeUndefined();
-    expect(rail.props.renderItem).toBeUndefined();
-  }
+  const rail = tree.root.findAll((n) => n.props?.testID === 'home-rail' && n.props?.horizontal === true)[0];
+  expect(rail).toBeTruthy();
+  // RN ScrollView 기본 baseHorizontal(flexGrow:1)이 세로 FlatList 헤더 안에서
+  // 화면 높이만큼 늘어나던 P-319 공백의 근본 — 명시 flexGrow:0 잠금
+  expect(JSON.stringify(rail.props.style)).toContain('"flexGrow":0');
+  // P-320: 레일 = 평범한 ScrollView(중첩 VirtualizedList 경로 제거) — FlatList prop 부재 잠금
+  expect(rail.props.data).toBeUndefined();
+  expect(rail.props.renderItem).toBeUndefined();
   const { width } = require('react-native').Dimensions.get('window');
   const { railCardW } = require('@/features/food/railLayout') as typeof import('@/features/food/railLayout');
   const w = railCardW(width);
   expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-food-1')[0].props.style)).toContain(`"width":${w}`);
   expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all')[0].props.style)).toContain(`"width":${w}`);
+});
+
+it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 칩 전부 걸러짐(전부 ScrollView 밖)', () => {
+  const byIdIn = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id);
+  // ① 로딩 = 스켈레톤 2장, ScrollView 미마운트
+  mockBrowse.mockReturnValue({ ...browseOf([]), isLoading: true });
+  const t1 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  expect(byIdIn(t1, 'home-rail-skel').length).toBeGreaterThanOrEqual(1);
+  expect(byIdIn(t1, 'home-rail')).toHaveLength(0);
+  // ② 에러 = QueryErrorBlock 인라인
+  mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500') });
+  const t2 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  expect(byIdIn(t2, 'home-rail-error').length).toBeGreaterThanOrEqual(1);
+  // ②-c Codex #85 3R P2: 캐시 데이터 + 백그라운드 에러(isError·data 동시) = 레일 유지
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1'), FOOD('2', 'danger')]), isError: true, error: new Error('HTTP 500') });
+  const t2c = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  expect(byIdIn(t2c, 'home-rail-error')).toHaveLength(0);
+  expect(cardIds(t2c).size).toBeGreaterThanOrEqual(2);
+  // ①-b Codex #85 2R P2: 카탈로그 콜드 로딩 중에도 Saved 탭 = 저장 카드 유지(스켈레톤 미노출)
+  mockBrowse.mockReturnValue({ ...browseOf([]), isLoading: true });
+  mockSaved.mockReturnValue({ data: [FOOD('3')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const t1b = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t1b, 'home-tab-saved');
+  expect(byIdIn(t1b, 'home-rail-skel')).toHaveLength(0);
+  expect([...cardIds(t1b)]).toEqual(['home-food-3']);
+  mockSaved.mockReturnValue({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  // ②-b Codex #85 P2: 카탈로그 에러 중에도 Saved 탭 = 저장 카드 유지(에러 블록 미노출)
+  mockSaved.mockReturnValue({ data: [FOOD('2', 'danger')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const t2b = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t2b, 'home-tab-saved');
+  expect(byIdIn(t2b, 'home-rail-error')).toHaveLength(0);
+  expect([...cardIds(t2b)]).toEqual(['home-food-2']);
+  mockSaved.mockReturnValue({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  // ③ Saved 탭 저장 0건 = 제목+본문+Browse CTA(→ /food) — 에러 목 원복 후
+  mockBrowse.mockReturnValue(browseOf(Array.from({ length: 10 }, (_, i) => FOOD(String(i + 1), i % 2 ? 'danger' : 'safe'))));
+  const t3 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t3, 'home-tab-saved');
+  expect(byIdIn(t3, 'home-rail-saved-empty').length).toBeGreaterThanOrEqual(1);
+  press(t3, 'home-rail-browse');
+  expect(mockPush).toHaveBeenLastCalledWith('/food');
+  // ④ 칩 전부 걸러짐(caution 0건) = railFilterEmpty — ScrollView 밖 세로 블록
+  mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2', 'danger')]));
+  const t4 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t4, 'home-chip-caution');
+  expect(byIdIn(t4, 'home-rail-filter-empty').length).toBeGreaterThanOrEqual(1);
+  expect(byIdIn(t4, 'home-rail')).toHaveLength(0);
+  // ⑤ 계측 코드 소멸(P-321 ①) — 소스 잠금
+  const fs = require('fs');
+  for (const f of ['src/features/food/FoodExplorer.tsx', 'src/lib/flags.ts', 'src/features/food/FoodCards.tsx']) {
+    expect(fs.readFileSync(f, 'utf8')).not.toContain('layoutDebug');
+  }
 });
 
 it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸)', () => {

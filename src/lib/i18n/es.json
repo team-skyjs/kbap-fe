@@ -627,7 +627,8 @@
     "chipNearby": "Cerca",
     "recentEmpty": "Sin escaneos recientes",
     "safeForYou": "Opciones Safe para ti",
-    "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante."
+    "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante.",
+    "railFilterEmpty": "Aún no hay platos \"{{risk}}\" en esta lista. Prueba otro filtro."
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",

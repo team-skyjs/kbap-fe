@@ -781,7 +781,8 @@
     "chipNearby": "Nearby",
     "recentEmpty": "No recent scans",
     "safeForYou": "Safe picks for you",
-    "safeForYouSub": "Based on your avoid list — always confirm with the owner."
+    "safeForYouSub": "Based on your avoid list — always confirm with the owner.",
+    "railFilterEmpty": "No {{risk}} dishes in this list yet. Try another filter."
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",

@@ -11,20 +11,21 @@
  * 데이터 훅·북마크 토글·위험 필터 로직 = 홈 구현 이동(무변).
  */
 import * as React from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, radius } from '@/lib/theme';
-import { Chip, IconSearch, IconTabScan, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
+import { Btn, Chip, IconSearch, IconTabScan, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
+import { EmptyBlock } from '@/components/StateBlock';
+import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FoodGridCard } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { SectionHead } from '@/components/SectionHead';
-import { FLAGS } from '@/lib/flags';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
@@ -109,15 +110,6 @@ export function FoodExplorer({
     setRiskChip('all');
   }, [guest]);
   const [gate, setGate] = React.useState(false);
-  // P-320(KB-485) 계측 — teamtest 한정 오버레이(원인 확정 후 다음 발주에서 제거)
-  const [dbg, setDbg] = React.useState<Record<string, number>>({});
-  const measure = (k: string) =>
-    FLAGS.layoutDebug
-      ? (e: LayoutChangeEvent) => {
-          const h = Math.round(e.nativeEvent.layout.height);
-          setDbg((d) => (d[k] === h ? d : { ...d, [k]: h }));
-        }
-      : undefined;
 
   // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본)
   React.useEffect(() => {
@@ -226,7 +218,7 @@ export function FoodExplorer({
     </View>
   );
 
-  const card = (item: FoodCard, cellStyle?: object, onLayout?: (e: LayoutChangeEvent) => void) => (
+  const card = (item: FoodCard, cellStyle?: object) => (
     <FoodGridCard
       key={item.foodId}
       food={item}
@@ -237,7 +229,6 @@ export function FoodExplorer({
       onPress={() => openFood(item.foodId)}
       onBookmark={() => onBookmark(item)}
       style={cellStyle}
-      onLayout={onLayout}
     />
   );
 
@@ -297,30 +288,72 @@ export function FoodExplorer({
 
   // P-317(KB-483): Safe for you today 레일 — 회원+회피≥1 && Popular·All 상태에서만,
   // 현 목록 데이터에서 personalRisk === safe 5~10개(3개 미만 숨김 — v2 정본).
-  const safeRail =
+  // P-321: Safe picks — 가로 레일 → 음식 탭 그리드와 같은 2열 정적 그리드 최대 4장(2×2),
+  // safe ≥2(한 행)일 때만(구 ≥3 규칙 대체 — v2 정본 §홈 4 갱신).
+  const safePicks =
     !guest && hasR && gridTab === 'popular' && riskChip === 'all'
-      ? (browse.data ?? []).filter((f) => personalRisk(f.risk, hasR) === 'safe').slice(0, 10)
+      ? (browse.data ?? []).filter((f) => personalRisk(f.risk, hasR) === 'safe').slice(0, 4)
       : [];
 
+  // P-321 레일 상태: 로딩/에러/빈은 전부 ScrollView 밖 세로 블록(가로 컨테이너 안 문장이
+  // 줄바꿈 없이 잘리던 실기 결함) — ScrollView는 카드 ≥1일 때만 마운트.
+  // Codex #85 2R P2: Saved 탭 데이터 = 북마크 쿼리 독립 — 로딩도 에러처럼 탭별 스코프
+  // (카탈로그 콜드 로딩이 캐시된 저장 카드를 스켈레톤으로 가리지 않게).
+  const railLoading = gridTab === 'saved' ? saved.isLoading : browse.isLoading;
+
   return (
-    <View onLayout={measure('root')}>
-      <View onLayout={measure('top')}>{top}</View>
-      {/* P-320: horizontal FlatList → 평범한 ScrollView + map — 세로 FlatList 헤더 안
-          중첩 VirtualizedList 경로(CellRenderer·spacer 측정) 자체를 제거. 항목 ≤11이라
-          가상화 불필요. flexGrow:0 유지(#83 — ScrollView 기본 flexGrow:1 차단). */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.rail}
-        contentContainerStyle={styles.railContent}
-        onLayout={measure('rail')}
-        testID="home-rail"
-      >
-        {gridFoods.map((item, i) => card(item, { width: cardW }, i === 0 ? measure('cell0') : undefined))}
-        {gridFoods.length === 0 && gridTab === 'saved' && (
-          <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text>
-        )}
-        {gridFoods.length > 0 && (
+    <View>
+      {top}
+      {railLoading ? (
+        /* 원격 콘텐츠 = 스켈레톤 기본(P-188 계열) — 카드 비율·cardW 동일 2장 */
+        <View style={styles.railSkel} testID="home-rail-skel">
+          {[0, 1].map((i) => (
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+          ))}
+        </View>
+      ) : browse.isError && gridTab !== 'saved' && (browse.data ?? []).length === 0 ? (
+        /* Codex #85 P2: Saved = 북마크 쿼리 독립이라 스코프 밖 + 3R: 캐시 데이터가 있으면
+           (백그라운드 refetch·fetchNextPage 실패로 data·isError 동시 노출) 레일 유지 —
+           전체 에러 블록은 보여줄 카드가 없을 때만 */
+        <View style={styles.railState} testID="home-rail-error">
+          <QueryErrorBlock error={browse.error} onRetry={() => void browse.refetch()} />
+        </View>
+      ) : gridFoods.length === 0 ? (
+        gridTab === 'saved' && savedFoods.length === 0 ? (
+          /* 저장 자체 0건 — 공용 EmptyBlock(제목) + 본문(줄바꿈) + Browse CTA */
+          <View style={styles.railState} testID="home-rail-saved-empty">
+            <EmptyBlock label={t('saved.emptyTitle')} />
+            <Text style={styles.railEmptyBody}>{t('saved.emptyBody')}</Text>
+            <Btn variant="ghost" onPress={() => router.push('/food' as Href)} testID="home-rail-browse">
+              {t('saved.emptyCta')}
+            </Btn>
+          </View>
+        ) : (
+          /* 칩이 전부 걸러냄 — Saved = 기존 filterEmpty / Popular·Food = railFilterEmpty({{risk}}).
+             All + 소스 0(카탈로그 빈 극단)은 "{All} 메뉴" 문장이 깨져 기존 noResultsTitle 재사용. */
+          <View style={styles.railState} testID="home-rail-filter-empty">
+            <EmptyBlock
+              label={
+                gridTab === 'saved'
+                  ? t('saved.filterEmpty')
+                  : riskChip === 'all'
+                    ? t('search.noResultsTitle')
+                    : t('home.railFilterEmpty', { risk: t(`risk.${riskChip}`) })
+              }
+            />
+          </View>
+        )
+      ) : (
+        /* P-320: 평범한 ScrollView + map — 세로 FlatList 헤더 안 중첩 VirtualizedList가
+           레일마다 화면 높이 공백을 만들던 원인(#84 실기 확정). flexGrow:0 유지(#83). */
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.rail}
+          contentContainerStyle={styles.railContent}
+          testID="home-rail"
+        >
+          {gridFoods.map((item) => card(item, { width: cardW }))}
           <Pressable
             style={[styles.seeAllCard, { width: cardW }]}
             onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
@@ -328,27 +361,16 @@ export function FoodExplorer({
           >
             <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
           </Pressable>
-        )}
-      </ScrollView>
-      {safeRail.length >= 3 && (
+        </ScrollView>
+      )}
+      {safePicks.length >= 2 && (
         <>
           <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.rail}
-            contentContainerStyle={styles.railContent}
-            onLayout={measure('safeRail')}
-            testID="home-safe-rail"
-          >
-            {safeRail.map((item) => card(item, { width: cardW }))}
-          </ScrollView>
+          {/* Codex #85 2R P2: 홀수 장(3장)일 때 마지막 카드가 grow로 행 전체 확장 — grow 차단 고정 하프 폭 */}
+          <View style={styles.safeGrid} testID="home-safe-grid">
+            {safePicks.map((item) => card(item, styles.safeGridCard))}
+          </View>
         </>
-      )}
-      {FLAGS.layoutDebug && (
-        <Text style={styles.layoutDbg} testID="layout-debug">
-          {`root:${dbg.root ?? '-'} top:${dbg.top ?? '-'} rail:${dbg.rail ?? '-'} cell0:${dbg.cell0 ?? '-'} safeRail:${dbg.safeRail ?? '-'}`}
-        </Text>
       )}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
@@ -396,8 +418,14 @@ const styles = StyleSheet.create({
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
   seeAllCard: { aspectRatio: 174 / 203, borderRadius: 4, borderWidth: 1, borderColor: C.line2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   seeAllText: { fontSize: 14, fontWeight: '600', color: C.ink2 },
-  // P-320 계측 오버레이(teamtest만 렌더 — layoutDebug)
-  layoutDbg: { fontSize: 12, color: C.ink3, paddingHorizontal: 20, paddingTop: 8, fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) },
+  // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
+  railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
+  // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일
+  railState: { paddingHorizontal: 20, alignItems: 'center', gap: 4 },
+  railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, textAlign: 'center', maxWidth: 335 },
+  // Safe picks 2×2 — 홈 구 그리드 문법(카드 기본 47% + grow)
+  safeGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
+  safeGridCard: { width: '47%', flexGrow: 0 }, // 홀수 마지막 카드도 2열 폭 유지(#85 2R)
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
