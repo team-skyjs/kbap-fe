@@ -117,7 +117,9 @@ const styles = StyleSheet.create({
   // 시안 아바타: 원 bg #E8F6FF + 실루엣(SVG) — TabBar 프로필 슬롯과 동일 문법
   avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 
-  axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
+  // KB-431 후속(9/7 .fig 실측 #2162:11360): 평점 행 = hug 273×20 @x20 — **좌측 정렬**
+  // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.
+  axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 16 },
   axis: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   axisLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
   axisValue: { fontSize: 13, fontWeight: '600', color: INK_TITLE },
