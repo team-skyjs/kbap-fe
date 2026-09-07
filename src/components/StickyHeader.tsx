@@ -33,7 +33,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, shadow } from '@/lib/theme';
+import { color as C, font } from '@/lib/theme';
 import { spring } from '@/lib/motion';
 import { IconArrowLeft, IconBell, IconSearch, IconStar } from './icons'; // P-129: 상세 저장 = 별 · P-216: 알림 벨
 import { AppBarMark } from './design4Assets';
@@ -62,8 +62,10 @@ export function useStickyScroll() {
   const lastY = useSharedValue(0);
   const shown = useSharedValue(1); // discrete target: 1 shown, 0 hidden
   const hidden = useSharedValue(0); // animated: 0 shown → 1 hidden
+  const atTop = useSharedValue(1); // P-312: 맨 위(offset 0) = 1 — 헤어라인은 스크롤 시에만
   const onScroll = useAnimatedScrollHandler((e) => {
     const y = Math.max(0, e.contentOffset.y);
+    atTop.value = y <= 0 ? 1 : 0;
     const dy = y - lastY.value;
     if (y < TOP_ALWAYS) {
       if (shown.value !== 1) {
@@ -83,11 +85,13 @@ export function useStickyScroll() {
     }
     lastY.value = y;
   });
-  return { onScroll, hidden };
+  return { onScroll, hidden, atTop };
 }
 
 export type StickyHeaderProps = {
   hidden: SharedValue<number>;
+  /** P-312: useStickyScroll의 atTop — 미전달 = 헤어라인 상시(비스크롤 화면 호환). */
+  atTop?: SharedValue<number>;
   mode?: 'brand' | 'back';
   title?: string;
   titleKo?: string; // optional bilingual KO subtitle rendered beside the title
@@ -113,6 +117,7 @@ export type StickyHeaderProps = {
 
 export function StickyHeader({
   hidden,
+  atTop,
   mode = 'brand',
   title,
   titleKo,
@@ -153,6 +158,8 @@ export function StickyHeader({
     prevSaved.current = bookmarkSaved;
   }, [bookmarkSaved, reducedMotion, bmScale]);
   const bmPop = useAnimatedStyle(() => ({ transform: [{ scale: bmScale.value }] }));
+  // P-312: 헤어라인 = 스크롤 시에만(atTop 1 → 숨김). 미전달 = 상시(비스크롤 화면 호환)
+  const hairlineStyle = useAnimatedStyle(() => ({ opacity: atTop ? 1 - atTop.value : 1 }));
 
   return (
     <>
@@ -219,7 +226,7 @@ export function StickyHeader({
         </View>
       </View>
 
-      <View style={styles.hairline} />
+      <Animated.View style={[styles.hairline, hairlineStyle]} />
     </Animated.View>
     </>
   );
@@ -234,7 +241,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     paddingHorizontal: 16,
     backgroundColor: C.surface, // always solid while visible (§6)
-    ...shadow.sh1, // always a subtle bottom shadow (--sh-1)
+    // P-312(KB-479): 상시 그림자(sh1) 제거 — 헤어라인만, 그것도 스크롤 시에만(iOS scroll-edge 관례)
   },
   bar: { height: BAR_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titleWrap: {

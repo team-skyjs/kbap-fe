@@ -54,7 +54,7 @@ const REVIEW_N = 3;
 export default function Home() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
   const { data: home, isLoading, isError, error, refetch } = useHome();
@@ -80,7 +80,7 @@ export default function Home() {
           {/* P-007 false-empty 금지 유지 — 에러는 에러로 */}
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
       </View>
     );
   }
@@ -187,6 +187,7 @@ export default function Home() {
 
       <StickyHeader
         hidden={hidden}
+        atTop={atTop}
         mode="brand"
         bell={FLAGS.notificationCenter}
         bellCount={unread}

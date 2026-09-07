@@ -16,7 +16,7 @@ import { FoodExplorer } from '@/features/food/FoodExplorer';
 
 export default function Food() {
   const router = useRouter();
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
   const isGuest = useIsGuest();
   const unread = useUnreadCount();
@@ -33,6 +33,7 @@ export default function Food() {
       />
       <StickyHeader
         hidden={hidden}
+        atTop={atTop}
         mode="brand"
         bell={FLAGS.notificationCenter}
         bellCount={unread}
