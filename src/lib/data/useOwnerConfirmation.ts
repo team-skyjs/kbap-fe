@@ -19,7 +19,7 @@ const EXPLANATION_AVOID_KO = '저는 이 재료들을 먹지 못해요. 확인 �
  *  (사장님에게 거짓 진술 = 헌법 III 계열). K-큐 검수 대상. */
 const EXPLANATION_NEUTRAL_KO = '이 재료가 들어가는지 확인하고 싶어요.';
 
-export function useOwnerConfirmation(foodId: string, ingredientCode?: string, reason?: string) {
+export function useOwnerConfirmation(foodId: string, ingredientCode?: string, reason?: string, ingredientName?: string) {
   const { data: food } = useFoodDetail(foodId);
   const { data: me } = useMe();
   const nameKo = food?.nameKo;
@@ -29,9 +29,13 @@ export function useOwnerConfirmation(foodId: string, ingredientCode?: string, re
   const listing = !ingredientCode && avoidLabelsKo(avoidCodes).length > 0;
   const data: OwnerConfirmation | undefined = nameKo
     ? {
-        questionKo: ownerQuestionKo(nameKo, ingredientCode, listing ? avoidCodes : undefined),
-        // P-306: reason 'neutral'(게스트·safe 재료 시트 발) = 무단정 설명 — 그 외 현행
-        explanationKo: reason === 'neutral' ? EXPLANATION_NEUTRAL_KO : listing ? EXPLANATION_AVOID_KO : EXPLANATION_KO,
+        questionKo: ownerQuestionKo(nameKo, ingredientCode, listing ? avoidCodes : undefined, ingredientName),
+        // P-306(3R): 시트 발 reason — neutral = 무단정 / avoid도 알레르기 단정 금지
+        // (회피 모델 = 평면 81종, 사유 미상) → 비알레르기 문구. 기존 진입(무 reason) 무변.
+        explanationKo:
+          reason === 'neutral' ? EXPLANATION_NEUTRAL_KO
+          : reason === 'avoid' ? EXPLANATION_AVOID_KO
+          : listing ? EXPLANATION_AVOID_KO : EXPLANATION_KO,
         menuNameKo: nameKo,
         placeLanguage: 'ko',
       }

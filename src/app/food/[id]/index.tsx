@@ -601,7 +601,9 @@ function Registered({
                     const avoid = !guest && ['danger', 'caution'].includes(personalRisk(ingSheet.risk, hasRestrictions));
                     setIngSheet(null);
                     track(EVENTS.owner_ask_open, { source: 'ingredient_sheet', food_id: id ?? '' });
-                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}&reason=${avoid ? 'avoid' : 'neutral'}` as Href);
+                    // 3R: 표시명 동봉 — 81종 미등재 코드도 항상 구체 질문(카탈로그 name, 폴백 시트 표시명)
+                    const label = cat.name(code) || ingSheet.name;
+                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}&reason=${avoid ? 'avoid' : 'neutral'}&name=${encodeURIComponent(label)}` as Href);
                   }}
                   testID="ing-sheet-ask"
                 >

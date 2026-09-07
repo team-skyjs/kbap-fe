@@ -59,10 +59,27 @@ describe('Codex #67 P1: 사장님 카드 설명 문맥(reason) — 게스트·sa
   /* eslint-enable */
   it('owner 라우트 = reason 파라미터 수용·훅 관통, neutral = 알레르기 단정 없는 설명', () => {
     expect(owner).toContain("reason?: string");
-    expect(owner).toContain("useOwnerConfirmation(id ?? '', ingredient, reason)");
+    expect(owner).toContain("useOwnerConfirmation(id ?? '', ingredient, reason, name)"); // 3R: name 관통
     expect(hook).toContain("reason === 'neutral' ? EXPLANATION_NEUTRAL_KO");
     expect(hook).toContain("const EXPLANATION_NEUTRAL_KO = '이 재료가 들어가는지 확인하고 싶어요.';");
     // 기존 호출(파라미터 부재) = 현행 알레르기/회피 설명 유지(reason 미전달 = 무변)
     expect(hook).toContain('listing ? EXPLANATION_AVOID_KO : EXPLANATION_KO');
+  });
+});
+
+describe('Codex #67 3R: 질문 라벨 직접 전달·미해석 중립 질문·avoid 설명 비알레르기', () => {
+  it('ownerQuestionKo — 라벨 파라미터 우선·미해석 코드 = 중립 질문(회피 폴백 금지)', () => {
+    expect(ownerQuestionKo('김치찌개', 'unknown-code', undefined, '고수')).toBe('김치찌개에 고수가 들어가나요?');
+    expect(ownerQuestionKo('김치찌개', 'unknown-code')).toBe('김치찌개에 이 재료가 들어가나요?'); // 거짓 회피 진술 잔존 0
+    expect(ownerQuestionKo('김치찌개', 'PORK')).toMatch(/들어가나요\?$/); // 81종 해석 = 현행
+  });
+
+  it('배선 — 시트 → name 동봉·owner/훅 관통·avoid 설명 = 비알레르기 문구', () => {
+    expect(detail).toContain('const label = cat.name(code) || ingSheet.name;');
+    expect(detail).toContain('&name=${encodeURIComponent(label)}');
+    const owner = fs.readFileSync('src/app/food/[id]/owner.tsx', 'utf8');
+    expect(owner).toContain("useOwnerConfirmation(id ?? '', ingredient, reason, name)");
+    const hook = fs.readFileSync('src/lib/data/useOwnerConfirmation.ts', 'utf8');
+    expect(hook).toContain("reason === 'avoid' ? EXPLANATION_AVOID_KO"); // 알레르기 단정 금지(평면 81종)
   });
 });
