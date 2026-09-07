@@ -366,7 +366,8 @@
     "dietSavedBody": "¿Quieres ajustar los ingredientes evitados en consecuencia?",
     "dietSavedYes": "Editar ingredientes",
     "dietSavedNo": "Listo",
-    "myFoods": "Mis comidas"
+    "myFoods": "Mis comidas",
+    "guestTitle": "Se requiere iniciar sesión"
   },
   "review": {
     "title": "Escribir una reseña",
@@ -972,7 +973,12 @@
     "nudge": "Sugerencias de escaneo",
     "nudgeSub": "Recordatorios ocasionales para escanear un menú al mediodía",
     "osOff": "Las notificaciones de K-Bap están desactivadas en los ajustes del sistema.",
-    "osOffCta": "Abrir ajustes del sistema"
+    "osOffCta": "Abrir ajustes del sistema",
+    "marketing": "Notificaciones de marketing",
+    "marketingSub": "Recibe eventos y recomendaciones por notificación.",
+    "night": "Notificaciones nocturnas",
+    "nightSub": "Recíbelas también entre las 21:00 y las 8:00.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   },
   "inbox": {
     "title": "Notificaciones",

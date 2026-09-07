@@ -366,7 +366,8 @@
     "dietSavedBody": "Mau menyesuaikan bahan yang dihindari juga?",
     "dietSavedYes": "Edit bahan hindaran",
     "dietSavedNo": "Selesai",
-    "myFoods": "Makananku"
+    "myFoods": "Makananku",
+    "guestTitle": "Perlu masuk"
   },
   "review": {
     "title": "Tulis ulasan",
@@ -971,7 +972,12 @@
     "nudge": "Saran pindai",
     "nudgeSub": "Sesekali mengingatkan memindai menu saat makan siang",
     "osOff": "Notifikasi K-Bap dimatikan di pengaturan sistem.",
-    "osOffCta": "Buka pengaturan sistem"
+    "osOffCta": "Buka pengaturan sistem",
+    "marketing": "Notifikasi pemasaran",
+    "marketingSub": "Terima info acara dan rekomendasi lewat notifikasi.",
+    "night": "Notifikasi malam hari",
+    "nightSub": "Terima juga antara pukul 21.00–08.00.",
+    "saveFailed": "Gagal menyimpan. Coba lagi."
   },
   "inbox": {
     "title": "Notifikasi",

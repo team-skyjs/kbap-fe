@@ -366,7 +366,8 @@
     "dietSavedBody": "Bạn có muốn tinh chỉnh nguyên liệu tránh cho phù hợp không?",
     "dietSavedYes": "Chỉnh nguyên liệu tránh",
     "dietSavedNo": "Xong",
-    "myFoods": "Món của tôi"
+    "myFoods": "Món của tôi",
+    "guestTitle": "Cần đăng nhập"
   },
   "review": {
     "title": "Viết đánh giá",
@@ -971,7 +972,12 @@
     "nudge": "Gợi ý quét menu",
     "nudgeSub": "Thỉnh thoảng nhắc quét menu vào giờ ăn trưa",
     "osOff": "Thông báo của K-Bap đang tắt trong cài đặt hệ thống.",
-    "osOffCta": "Mở cài đặt hệ thống"
+    "osOffCta": "Mở cài đặt hệ thống",
+    "marketing": "Thông báo tiếp thị",
+    "marketingSub": "Nhận tin sự kiện và gợi ý qua thông báo.",
+    "night": "Thông báo ban đêm",
+    "nightSub": "Nhận cả trong khoảng 21h–8h sáng.",
+    "saveFailed": "Không lưu được. Vui lòng thử lại."
   },
   "inbox": {
     "title": "Thông báo",
