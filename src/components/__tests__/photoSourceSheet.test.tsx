@@ -66,15 +66,16 @@ it('삭제 라벨 있음(커스텀 사진) → destructive 버건디 행 노출,
   expect(result).toBe('remove');
 });
 
-it('스크림/X 닫기 = null resolve (행 선택이 먼저면 취소 no-op — 지연 판정)', async () => {
+it('스크림 닫기 = null resolve (행 선택이 먼저면 취소 no-op — 지연 판정)', async () => {
   const tree = render();
   let result: unknown = 'unset';
   await act(async () => {
     void requestPhotoSourceSheet(LABELS).then((r) => (result = r));
   });
-  const closeBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 10)[0];
+  // P-310: X 소멸 — 취소 = 스크림(backdrop) 탭
+  const scrim = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.accessibilityRole !== 'button' && n.props?.hitSlop == null)[0];
   await act(async () => {
-    closeBtn.props.onPress();
+    scrim.props.onPress();
     await new Promise((r) => setTimeout(r, 1));
   });
   expect(result).toBe(null);

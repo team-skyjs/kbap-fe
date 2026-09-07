@@ -17,7 +17,6 @@ import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { IconClose } from '@/components/icons';
 
 /** 위험도 red(#cf3a2c)와 구분되는 destructive 버건디 — 의미색 예약 보호. */
 export const DESTRUCTIVE = '#8e2f3c';
@@ -59,9 +58,7 @@ export function ActionSheet({
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
-            <Pressable hitSlop={10} onPress={onClose} style={styles.close}>
-              <IconClose size={18} color={C.ink3} />
-            </Pressable>
+            {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭 */}
           </View>
           <View style={styles.card}>
             {items.map((it, i) => (
@@ -101,7 +98,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
   avatar: { width: 28, height: 28, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  close: { padding: 4 },
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, ...shadow.sh1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },

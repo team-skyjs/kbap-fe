@@ -12,7 +12,7 @@ import { usePathname, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
-import { IconClose, IconLock } from '@/components/icons';
+import { IconLock } from '@/components/icons';
 import { EVENTS, track } from '@/lib/analytics';
 
 // P-258: 'reviews'(읽기 차단 시절 유물 — P-235 게스트 열람 개방으로 소멸) → 'helpful'
@@ -84,9 +84,7 @@ export function AuthGateSheet({
             사례). 원복 = Modal fade 단독(P-031 이전). 퇴장·backdrop 무변. */}
         {/* 카드 탭이 backdrop으로 새지 않게 */}
         <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}}>
-          <Pressable style={styles.close} hitSlop={10} onPress={onClose}>
-            <IconClose size={18} color={C.ink3} />
-          </Pressable>
+          {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭·하단 버튼(전 시트 공통) */}
           <View style={styles.glyph}>
             <IconLock size={24} color={C.primary} />
           </View>
@@ -115,7 +113,6 @@ const styles = StyleSheet.create({
     gap: 12,
     ...shadow.sh2,
   },
-  close: { position: 'absolute', top: 16, right: 16, zIndex: 1, padding: 4 },
   glyph: { width: 56, height: 56, borderRadius: 28, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
   title: { fontFamily: font.displayBlack, fontSize: 19, color: C.ink, textAlign: 'center', lineHeight: 26 },
   sub: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, textAlign: 'center', lineHeight: 20, marginBottom: 6, maxWidth: 320 },
