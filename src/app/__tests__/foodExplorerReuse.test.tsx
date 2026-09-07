@@ -294,6 +294,9 @@ it('⑮ P-319 — 레일 flexGrow:0(세로 스트레치 차단) + 카드·See al
     // RN ScrollView 기본 baseHorizontal(flexGrow:1)이 세로 FlatList 헤더 안에서
     // 화면 높이만큼 늘어나던 P-319 공백의 근본 — 명시 flexGrow:0 잠금
     expect(JSON.stringify(rail.props.style)).toContain('"flexGrow":0');
+    // P-320: 레일 = 평범한 ScrollView(중첩 VirtualizedList 경로 제거) — FlatList prop 부재 잠금
+    expect(rail.props.data).toBeUndefined();
+    expect(rail.props.renderItem).toBeUndefined();
   }
   const { width } = require('react-native').Dimensions.get('window');
   const { railCardW } = require('@/features/food/railLayout') as typeof import('@/features/food/railLayout');

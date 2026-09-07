@@ -11,7 +11,7 @@
  * 데이터 훅·북마크 토글·위험 필터 로직 = 홈 구현 이동(무변).
  */
 import * as React from 'react';
-import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -24,6 +24,7 @@ import { FoodGridCard } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { SectionHead } from '@/components/SectionHead';
+import { FLAGS } from '@/lib/flags';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
@@ -108,6 +109,15 @@ export function FoodExplorer({
     setRiskChip('all');
   }, [guest]);
   const [gate, setGate] = React.useState(false);
+  // P-320(KB-485) 계측 — teamtest 한정 오버레이(원인 확정 후 다음 발주에서 제거)
+  const [dbg, setDbg] = React.useState<Record<string, number>>({});
+  const measure = (k: string) =>
+    FLAGS.layoutDebug
+      ? (e: LayoutChangeEvent) => {
+          const h = Math.round(e.nativeEvent.layout.height);
+          setDbg((d) => (d[k] === h ? d : { ...d, [k]: h }));
+        }
+      : undefined;
 
   // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본)
   React.useEffect(() => {
@@ -216,8 +226,9 @@ export function FoodExplorer({
     </View>
   );
 
-  const card = (item: FoodCard, cellStyle?: object) => (
+  const card = (item: FoodCard, cellStyle?: object, onLayout?: (e: LayoutChangeEvent) => void) => (
     <FoodGridCard
+      key={item.foodId}
       food={item}
       risk={personalRisk(item.risk, hasR)}
       guest={guest}
@@ -226,6 +237,7 @@ export function FoodExplorer({
       onPress={() => openFood(item.foodId)}
       onBookmark={() => onBookmark(item)}
       style={cellStyle}
+      onLayout={onLayout}
     />
   );
 
@@ -289,50 +301,54 @@ export function FoodExplorer({
     !guest && hasR && gridTab === 'popular' && riskChip === 'all'
       ? (browse.data ?? []).filter((f) => personalRisk(f.risk, hasR) === 'safe').slice(0, 10)
       : [];
-  const railCard = (item: FoodCard) => card(item, { width: cardW });
 
   return (
-    <View>
-      {top}
-      {/* P-317: 세로 그리드 → 가로 레일(카드 = 그리드 카드 동일 컴포넌트·비율, 최대 10 + See all) */}
-      <FlatList
+    <View onLayout={measure('root')}>
+      <View onLayout={measure('top')}>{top}</View>
+      {/* P-320: horizontal FlatList → 평범한 ScrollView + map — 세로 FlatList 헤더 안
+          중첩 VirtualizedList 경로(CellRenderer·spacer 측정) 자체를 제거. 항목 ≤11이라
+          가상화 불필요. flexGrow:0 유지(#83 — ScrollView 기본 flexGrow:1 차단). */}
+      <ScrollView
         horizontal
-        data={gridFoods}
-        keyExtractor={(f: FoodCard) => f.foodId}
         showsHorizontalScrollIndicator={false}
         style={styles.rail}
         contentContainerStyle={styles.railContent}
-        renderItem={({ item }) => railCard(item)}
-        ListEmptyComponent={
-          gridTab === 'saved' ? <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text> : null
-        }
-        ListFooterComponent={
-          gridFoods.length > 0 ? (
-            <Pressable
-              style={[styles.seeAllCard, { width: cardW }]}
-              onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
-              testID="home-rail-see-all"
-            >
-              <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
-            </Pressable>
-          ) : null
-        }
+        onLayout={measure('rail')}
         testID="home-rail"
-      />
+      >
+        {gridFoods.map((item, i) => card(item, { width: cardW }, i === 0 ? measure('cell0') : undefined))}
+        {gridFoods.length === 0 && gridTab === 'saved' && (
+          <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text>
+        )}
+        {gridFoods.length > 0 && (
+          <Pressable
+            style={[styles.seeAllCard, { width: cardW }]}
+            onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
+            testID="home-rail-see-all"
+          >
+            <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
+          </Pressable>
+        )}
+      </ScrollView>
       {safeRail.length >= 3 && (
         <>
           <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />
-          <FlatList
+          <ScrollView
             horizontal
-            data={safeRail}
-            keyExtractor={(f: FoodCard) => `safe-${f.foodId}`}
             showsHorizontalScrollIndicator={false}
             style={styles.rail}
             contentContainerStyle={styles.railContent}
-            renderItem={({ item }) => railCard(item)}
+            onLayout={measure('safeRail')}
             testID="home-safe-rail"
-          />
+          >
+            {safeRail.map((item) => card(item, { width: cardW }))}
+          </ScrollView>
         </>
+      )}
+      {FLAGS.layoutDebug && (
+        <Text style={styles.layoutDbg} testID="layout-debug">
+          {`root:${dbg.root ?? '-'} top:${dbg.top ?? '-'} rail:${dbg.rail ?? '-'} cell0:${dbg.cell0 ?? '-'} safeRail:${dbg.safeRail ?? '-'}`}
+        </Text>
       )}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
@@ -380,6 +396,8 @@ const styles = StyleSheet.create({
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
   seeAllCard: { aspectRatio: 174 / 203, borderRadius: 4, borderWidth: 1, borderColor: C.line2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   seeAllText: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  // P-320 계측 오버레이(teamtest만 렌더 — layoutDebug)
+  layoutDbg: { fontSize: 12, color: C.ink3, paddingHorizontal: 20, paddingTop: 8, fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) },
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
