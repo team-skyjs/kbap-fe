@@ -39,7 +39,7 @@ export function FoodGridCard({
   return (
     <Pressable style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
-        {!!food.photoUrl && <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} />}
+        {!!food.photoUrl && <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />}
         {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
         {!guest && (
           <View style={styles.gbadge}>
@@ -120,8 +120,9 @@ export function RecentRow({
 
 const styles = StyleSheet.create({
   gcard: { width: '47%', flexGrow: 1 },
-  gphoto: { aspectRatio: 174 / 203, borderRadius: 4, backgroundColor: C.surface2, overflow: 'visible' },
-  gbadge: { position: 'absolute', top: 0, left: 9 },
+  // P-315: 정적 bg(surface2) 제거 — 시안 photo effects 없음(회색 띠 원인). 로딩 = CardPhoto Shimmer
+  gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' },
+  gbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안(2072:1788): 배지가 사진 상단 4pt 위로 걸침
   gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
   gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
   gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.line,
   },
-  rthumb: { width: 100, height: 100, borderRadius: 4, backgroundColor: C.surface2 },
-  rthumbFb: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  rbadge: { position: 'absolute', top: 0, left: 3 },
+  rthumb: { width: 100, height: 100, borderRadius: 4 }, // P-315: 정적 bg 제거(시안 effects 없음)
+  rthumbFb: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderRadius: 4 }, // 폴백만 회색 유지
+  rbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안 오프셋
 });

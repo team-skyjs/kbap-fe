@@ -92,12 +92,12 @@ it('⑤ RiskBadge 글리프 정렬(Codex #30 P1) — 이중 이동 소멸, 흰 �
   expect(byId(tree, 'risk-badge-safe').length).toBeGreaterThanOrEqual(1);
 });
 
-it('⑥ RankMedal(Codex #30 P2) — 레벨 숫자 텍스트 오버레이 렌더(14/900 흰)', () => {
+it('⑥ RankMedal(Codex #30 P2 → P-315) — 레벨 숫자 텍스트 오버레이 렌더(16/800 흰)', () => {
   const { RankMedal } = require('@/components/RankMedal') as typeof import('@/components/RankMedal');
   const tree = render(<RankMedal level={3} />);
   const num = tree.root.findAll((n) => n.props?.children === 3 || n.props?.children === '3');
   expect(num.length).toBeGreaterThanOrEqual(1);
-  expect(JSON.stringify(tree.toJSON())).toContain('"fontWeight":"900"');
+  expect(JSON.stringify(tree.toJSON())).toContain('"fontWeight":"800"'); // P-315 시안: 숫자 16/800
 });
 
 it('④ 재료 타일 — 태그(타일) 단위 줄바꿈: flexWrap + flexShrink 0 + 이름 1줄(§3 규칙)', () => {

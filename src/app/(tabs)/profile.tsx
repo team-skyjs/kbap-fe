@@ -220,7 +220,7 @@ export default function Profile() {
             {/* 랭킹 카드(4150:14390) — h147 그라데이션 + RankMedal 28 + 진행 바 h10 */}
             {rank && (
               <Pressable onPress={() => router.push('/profile/ranking' as Href)} testID="profile-rank-card">
-                <LinearGradient colors={['#FFFFFF', '#FFF7F2']} style={styles.rankCard}>
+                <LinearGradient colors={['rgba(255,113,52,0)', 'rgba(255,113,52,0.05)']} style={styles.rankCard}>{/* P-315 시안 2200:20903: #FF7134 α0→0.05 */}
                   <RankMedal level={rank.level} size={28} />
                   <Text style={styles.rankTier}>{t(`ranking.tier.${rank.tier}`)}</Text>
                   <Text style={styles.rankLv}>{t('ranking.levelLabel', { level: rank.level })}</Text>
