@@ -103,8 +103,8 @@
         {
           "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-mark-ios.png",
-          "imageWidth": 94,
-          "_comment": "P-288/P-291/P-307(KB-437·475): 흰 배경 + 정지 마크. iOS 스토리보드 = 정사각 imageView(imageWidth²)·aspectFit — 세로 긴 PNG(245×285)가 높이에 맞아 폭 69.6pt로 축소되던 것을 94(=81×285/245)로 보정 → 마크 실폭 81pt(JS와 일치, 크기 점프 0). 안드 = P-054 원형 마스크 정사각 396(마크 중앙), 131×245/396=81pt 무변. 다크 변형 없음(흰 고정 — 시안 2200:20667). 네이티브 — 다음 빌드 반영",
+          "imageWidth": 95,
+          "_comment": "P-288/P-291/P-307(KB-437·475): 흰 배경 + 정지 마크. iOS 스토리보드 = 정사각 imageView(imageWidth²)·aspectFit — 세로 긴 PNG(245×285)가 높이에 맞아 폭 69.6pt로 축소되던 것을 95(≈81.614×285/245 반올림 — 94는 폭 80.8pt로 JS 81.614pt 대비 미세 축소, Codex #68 P2)로 보정 → 마크 실폭 81pt(JS와 일치, 크기 점프 0). 안드 = P-054 원형 마스크 정사각 396(마크 중앙), 131×245/396=81pt 무변. 다크 변형 없음(흰 고정 — 시안 2200:20667). 네이티브 — 다음 빌드 반영",
           "resizeMode": "contain",
           "android": {
             "image": "./assets/images/splash-mark-android.png",
