@@ -213,17 +213,21 @@ describe('KB-441 Codex P1-4: 로그인 커밋 = 세션 경계(gen 증가)', () =
   it('로그인 A 세대의 in-flight → 로그인 B 커밋(gen 증가) → 늦은 MEMBER-003 무시·B 토큰 보존', async () => {
     let gen = 0;
     (tokens.currentGen as jest.Mock).mockImplementation(() => gen);
-    (tokens.bumpSessionGen as jest.Mock).mockImplementation(() => { gen += 1; });
+    // P1-5: 세대 증가는 saveTokens(newSession)가 캐시 공개와 같은 동기 틱에 수행 — 목도 동일 재현
+    (tokens.saveTokens as jest.Mock).mockImplementation((_a: string, _r: string, opts?: { newSession?: boolean }) => {
+      if (opts?.newSession) gen += 1;
+      return Promise.resolve(true);
+    });
     try {
       const staleGen = gen; // A 세션에서 발행된 요청의 스냅샷
       api.post.mockResolvedValueOnce({ newMember: false, accessToken: 'B', refreshToken: 'RB' });
-      await beAuth.exchangeLogin('firebase-token-B'); // 커밋 시 경계(bump)
-      expect(tokens.bumpSessionGen).toHaveBeenCalled();
+      await beAuth.exchangeLogin('firebase-token-B'); // 커밋 시 경계(saveTokens newSession)
+      expect(tokens.saveTokens).toHaveBeenCalledWith('B', 'RB', { newSession: true });
       await handleMemberMissing(staleGen); // gen 상이 — 무시
       expect(tokens.clearTokens).not.toHaveBeenCalled(); // B 토큰 보존
     } finally {
       (tokens.currentGen as jest.Mock).mockImplementation(() => 0);
-      (tokens.bumpSessionGen as jest.Mock).mockImplementation(() => {});
+      (tokens.saveTokens as jest.Mock).mockImplementation(async () => true);
     }
   });
 });

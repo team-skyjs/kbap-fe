@@ -365,3 +365,21 @@ it('배선 소스 잠금 — 부트 세션 초기화는 cleanup 직렬화 이후
   expect(login).toContain('await logoutLocalFirst()');
   expect(login.indexOf('await logoutLocalFirst()')).toBeLessThan(login.indexOf("router.replace('/(tabs)'"));
 });
+
+describe('KB-441 Codex P1-5: saveTokens(newSession) — 세대 증가 = 캐시 공개와 동일 동기 틱', () => {
+  it('호출 직후(await 전) gen 이미 증가 + 캐시 = 새 토큰 (창 0)', async () => {
+    const t = tokens();
+    const before = t.currentGen();
+    const p = t.saveTokens('NEW-A', 'NEW-R', { newSession: true }); // await 전 동기부 실행
+    expect(t.currentGen()).toBe(before + 1); // bump가 같은 동기 틱
+    await expect(t.loadTokens()).resolves.toEqual({ access: 'NEW-A', refresh: 'NEW-R' }); // 캐시 공개
+    await expect(p).resolves.toBe(true);
+  });
+
+  it('플래그 없는 saveTokens(회전 경로) = 세대 불변(기존 시맨틱)', async () => {
+    const t = tokens();
+    const before = t.currentGen();
+    await t.saveTokens('ROT-A', 'ROT-R');
+    expect(t.currentGen()).toBe(before);
+  });
+});

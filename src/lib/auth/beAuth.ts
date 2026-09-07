@@ -57,20 +57,21 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
   const gen = currentGen(); // 출발 세대 캡처(조기 폐기용 — 최종 방어는 싱크)
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
   if (gen !== currentGen()) return { newMember: r.newMember, cancelled: true }; // 저장 자체 생략
-  if (!(await saveTokens(r.accessToken, r.refreshToken))) {
+  // KB-441(Codex #59 P1-4→5): 로그인 커밋 = **세션 경계** — 세대 증가는 saveTokens의
+  // newSession 플래그가 **캐시 공개와 같은 동기 틱**에 수행(bump가 await 뒤면
+  // "캐시=B·gen=A" 창에서 낡은 AUTH-004가 B의 refresh를 소모 후 폐기 — B 로그아웃).
+  const save = saveTokens(r.accessToken, r.refreshToken, { newSession: true });
+  const committedGen = currentGen(); // bump 직후 세대(동기 틱 — 아래 최종 재검증 기준)
+  if (!(await save)) {
     return { newMember: r.newMember, cancelled: true }; // 쓰기 중 경계 — 싱크가 되돌림, 커밋 생략
   }
   // Codex #19 P1-7/8: 커밋 지점 최종 재검증 — 저장 통과 후 ~ 세션 점등 전 경계가
   // 오면 **자기 저장분만** 회수(소유자 범위 undo — 교체 로그인 B 보존) 후 취소.
   // 세션을 켜는 유일한 커밋 지점이 여기라 이 검사가 최종 방어.
-  if (gen !== currentGen()) {
+  if (committedGen !== currentGen()) {
     await revertTokensIf(r.accessToken, r.refreshToken);
     return { newMember: r.newMember, cancelled: true };
   }
-  // KB-441(Codex #59 P1-4): 로그인 커밋도 **세션 경계** — 로그인 상태에서 /login 직행
-  // 후 다른 계정 로그인 시 옛 세션 출발 요청과 새 계정이 같은 gen이 되어 늦은
-  // MEMBER-003이 새 토큰을 지우던 구멍. 자기 가드(위 gen 검사) 통과 후 증가라 무해.
-  bumpSessionGen();
   resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };
