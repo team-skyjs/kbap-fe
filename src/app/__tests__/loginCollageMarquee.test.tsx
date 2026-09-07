@@ -58,7 +58,7 @@ jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => nu
 jest.mock('@/lib/useAppFonts', () => ({ useAppFonts: () => [true, null] }));
 
 import Login from '../login';
-import { embedAvailableH, marqueeDuration, marqueeSpan, MIN_COLLAGE_H } from '@/lib/loginCollage';
+import { COLLAGE_BASE_H, LOGIN_BOTTOM_MIN, collageLayoutFor, embedAvailableH, marqueeDuration, marqueeSpan, MIN_COLLAGE_H } from '@/lib/loginCollage';
 
 const trees: ReactTestRenderer[] = [];
 async function render(el: React.ReactElement): Promise<ReactTestRenderer> {
@@ -88,6 +88,13 @@ it('① 순수 함수 — 스팬 588·20px/s·임베드 가용 높이 (P-308: �
   const lib = require('fs').readFileSync('src/lib/loginCollage.ts', 'utf8') as string;
   expect(lib).not.toContain('function collageRows');
   expect(lib).not.toContain('function blurredFromRow');
+  // Codex #70 P1: 뷰포트 반응 — 기준 852 = 현행 406/3행/scale1 · SE 667 = 축소 2행 · 하단 최소 보장
+  expect(collageLayoutFor(852)).toEqual({ height: COLLAGE_BASE_H, rows: 3, scale: 1 });
+  const se = collageLayoutFor(667);
+  expect(se.height).toBe(667 - LOGIN_BOTTOM_MIN); // 221 — 하단 콘텐츠 최소 확보(액션 가시)
+  expect(se.rows).toBe(2);
+  expect(se.scale).toBeLessThan(1);
+  expect(667 - se.height).toBeGreaterThanOrEqual(LOGIN_BOTTOM_MIN);
 });
 
 it('② 기본(포커스·모션 허용) = 행마다 무한 마퀴 시작 — 3행 고정', async () => {
@@ -116,9 +123,9 @@ it('④ 언포커스 = 정지(cancelAnimation) — 재시작 없음', async () =
 it('⑤ 소스 잠금(P-308 원복) — 상단 3행 고정·시안 오프셋·seamless 유지, 전면 배경·블러·워시 잔존 0', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  expect(src).toContain('const COLLAGE_ROWS = 3;'); // 시안 3행
-  expect(src).toContain("collage: { height: TILE * COLLAGE_ROWS + GAP * (COLLAGE_ROWS - 1) - 24, overflow: 'hidden' }"); // 상단 블록(첫 행 −24 크롭)
-  expect(src).toContain('-101 + row * ((TILE + GAP) / 2) - span'); // 시안 행 오프셋 + seamless 시프트(#37 유지)
+  expect(src).toContain('collageLayoutFor(availH)'); // Codex #70: 뷰포트 반응 높이
+  expect(src).toContain("collage: { overflow: 'hidden' }"); // 상단 블록(높이 동적 — Codex #70)
+  expect(src).toContain('(-101 + row * ((TILE + GAP) / 2)) * scale - span'); // 시안 행 오프셋(비례 축소) + seamless 시프트
   expect(src).not.toContain('blurRadius'); // 블러 잔존 0
   expect(src).not.toContain('collageWash'); // 하단 워시 잔존 0
   expect(src).not.toContain("position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden'"); // 전면 배경 잔존 0

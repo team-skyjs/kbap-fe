@@ -6,7 +6,22 @@ export const TILE = 136; // 시안: 136×136 radius 21
 export const GAP = 11;
 export const MIN_COLLAGE_H = 220; // 발주 최소(상한 없음)
 
-// P-308(KB-476): P-280 전면 배경 전용 함수(collageRows·blurredFromRow) 삭제 — 시안 원복(3행 고정).
+// P-308(KB-476): P-280 전면 배경 전용 함수(collageRows·blurredFromRow) 삭제 — 시안 원복.
+
+/** P-308(Codex #70 P1): 하단 콘텐츠 최소 높이 — 기준 뷰포트 852(iPhone 14 Pro 시안)에서
+ *  콜라주 406을 뺀 실측. 워드마크·부제·버튼2·링크·약관·여백 합산치의 상수화. */
+export const LOGIN_BOTTOM_MIN = 446;
+/** 시안 기준 콜라주 높이(3행, 첫 행 −24 크롭). */
+export const COLLAGE_BASE_H = TILE * 3 + GAP * 2 - 24; // 406
+
+/** Codex #70 P1: 콜라주 = 뷰포트 잔여 높이로 축소(소형 기기 하단 버튼 잘림 방지).
+ *  기준 852 = 현행 406·3행·scale 1. 240pt 미만이면 2행. 타일·간격은 비례 축소(행 수 유지). */
+export function collageLayoutFor(availH: number): { height: number; rows: number; scale: number } {
+  const height = Math.max(0, Math.min(COLLAGE_BASE_H, availH - LOGIN_BOTTOM_MIN));
+  const rows = height < 240 ? 2 : 3;
+  const naturalH = TILE * rows + GAP * (rows - 1) - 24;
+  return { height, rows, scale: Math.min(1, height / naturalH) };
+}
 
 /** 행 1주기 폭 — 타일 4개(시안 열 수) 기준. seamless wrap의 이동 스팬. */
 export function marqueeSpan(tilesPerRow = 4): number {

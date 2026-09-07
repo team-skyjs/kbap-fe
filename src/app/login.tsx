@@ -27,7 +27,7 @@ import { color as C } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
-import { GAP, TILE, embedAvailableH, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
+import { GAP, TILE, collageLayoutFor, embedAvailableH, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { LEGAL_URLS } from '@/lib/legalText';
 
@@ -53,8 +53,8 @@ const DISHES = [
  *  각 행 = 가로 마퀴(홀수 행 좌→우·짝수 행 우→좌, ~20px/s 선형 무한 루프).
  *  seamless: 타일 4개 주기를 3배 복제 + 기본 -span 시프트 — x∈[-span,0] 어느
  *  위상에서도 화면 전폭 커버. 12장 자산 순환(추가 에셋 0). */
-function MarqueeRow({ row, animate }: { row: number; animate: boolean }) {
-  const span = marqueeSpan(4);
+function MarqueeRow({ row, animate, scale }: { row: number; animate: boolean; scale: number }) {
+  const span = marqueeSpan(4) * scale; // Codex #70: 비례 축소 — 속도(px/s)도 동율이라 체감 동일
   const ltr = row % 2 === 0; // 1·3·5번째 행 = 좌→우
   const x = useSharedValue(ltr ? -span : 0);
   useEffect(() => {
@@ -72,23 +72,30 @@ function MarqueeRow({ row, animate }: { row: number; animate: boolean }) {
   // 4열 주기 ×3 — 자산 12장 순환(행마다 시작 타일 4칸 시프트)
   const tiles = Array.from({ length: 12 }, (_, i) => DISHES[(row * 4 + (i % 4)) % DISHES.length]);
   return (
-    <Animated.View style={[styles.collageRow, { marginLeft: -101 + row * ((TILE + GAP) / 2) - span }, anim]}>
+    <Animated.View
+      style={[
+        styles.collageRow,
+        { gap: GAP * scale, marginBottom: GAP * scale, marginLeft: (-101 + row * ((TILE + GAP) / 2)) * scale - span },
+        anim,
+      ]}
+    >
       {tiles.map((src, i) => (
-        <Image key={i} source={src} style={styles.tile} />
+        <Image key={i} source={src} style={[styles.tile, { width: TILE * scale, height: TILE * scale, borderRadius: 21 * scale }]} />
       ))}
     </Animated.View>
   );
 }
 
-/** P-308(KB-476): 시안 원복 — 콜라주 = **상단 3행 고정 블록**(전면 배경·블러·워시 취소),
- *  마퀴(#37)·시안 오프셋 유지. 첫 행 y −24 크롭 = 시안 문법. */
-const COLLAGE_ROWS = 3;
-function Collage({ animate }: { animate: boolean }) {
+/** P-308(KB-476): 시안 원복 — 콜라주 = **상단 블록**(전면 배경·블러·워시 취소),
+ *  마퀴(#37)·시안 오프셋 유지. Codex #70 P1: 높이 = 뷰포트 잔여(collageLayoutFor) —
+ *  소형 기기(SE 667 등)에서 타일 비례 축소·240 미만 2행, 기준 852 = 현행 406/3행. */
+function Collage({ animate, availH }: { animate: boolean; availH: number }) {
+  const { height, rows, scale } = collageLayoutFor(availH);
   return (
-    <View style={styles.collage} pointerEvents="none" testID="login-collage">
-      <View style={{ marginTop: -24 }}>
-        {Array.from({ length: COLLAGE_ROWS }, (_, r) => (
-          <MarqueeRow key={r} row={r} animate={animate} />
+    <View style={[styles.collage, { height }]} pointerEvents="none" testID="login-collage">
+      <View style={{ marginTop: -24 * scale }}>
+        {Array.from({ length: rows }, (_, r) => (
+          <MarqueeRow key={r} row={r} animate={animate} scale={scale} />
         ))}
       </View>
       {/* 상단 흰→투명 그라데이션 186h(4150:20076 — 최종 시안 동구조) — 상태바 가독 */}
@@ -140,7 +147,7 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
         embedded && { flex: undefined, height: embedAvailableH(winH, 0, TABBAR_CONTENT_H, insets.bottom) },
       ]}
     >
-      <Collage animate={animate} />
+      <Collage animate={animate} availH={embedded ? embedAvailableH(winH, 0, TABBAR_CONTENT_H, insets.bottom) : winH} />
       {/* P-129: 뒤로가기 복원 — 빈 스택 GO_BACK 에러는 canGoBack 가드 */}
       {!embedded && router.canGoBack() && (
         <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.backBtn, { top: insets.top + 6 }]} testID="login-back">
@@ -202,9 +209,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   backBtn: { position: 'absolute', left: 16, zIndex: 5, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 
-  // P-308: 콜라주 = 상단 3행 고정 블록(첫 행 −24 크롭 반영 높이) — 하단 흰 배경
-  collage: { height: TILE * COLLAGE_ROWS + GAP * (COLLAGE_ROWS - 1) - 24, overflow: 'hidden' },
-  collageRow: { flexDirection: 'row', gap: GAP, marginBottom: GAP },
+  // P-308: 콜라주 = 상단 블록(높이는 collageLayoutFor 동적 — Codex #70) — 하단 흰 배경
+  collage: { overflow: 'hidden' },
+  collageRow: { flexDirection: 'row' }, // gap·marginBottom = scale 동적(Codex #70)
   tile: { width: TILE, height: TILE, borderRadius: 21, backgroundColor: C.surface2 },
   collageFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 186 },
 

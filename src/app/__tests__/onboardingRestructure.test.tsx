@@ -226,7 +226,7 @@ it('KB-433 §2 → 9/5 후속: 로그인 콜라주 — 12장 순환 + 마퀴(포
 
 it('KB-433 → P-308(KB-476): 콜라주 = 상단 3행 고정(전면 배경 취소) — 시안 원복 잠금', () => {
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  expect(src).toContain('const COLLAGE_ROWS = 3;');
+  expect(src).toContain('collageLayoutFor(availH)'); // Codex #70: 뷰포트 반응(기준 852=3행)
   expect(src).not.toContain('collageRows('); // P-280 행수 함수 소비 잔존 0
   expect(src).not.toContain('blurRadius'); // 하단 블러 잔존 0
 });
