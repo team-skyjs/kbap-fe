@@ -15,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
 import { FLAGS } from '@/lib/flags';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { DEFAULT_GUEST_CONSENT, getGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
 import { EVENTS, track } from '@/lib/analytics';
 import {
   getPermissionStatus,
@@ -29,6 +31,21 @@ import {
 export default function NotificationSettings() {
   // 컴파일 상수 가드 — 훅 순서 무영향 (reviews.tsx 문법)
   if (!FLAGS.pushEnabled) return <Redirect href="/" />;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const isGuest = useIsGuest();
+  // P-311(KB-478): 게스트 = 마케팅·야간 동의 토글 2개만(기본 OFF, 로컬 — guestConsent)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [consent, setConsent] = React.useState<GuestConsent>(DEFAULT_GUEST_CONSENT);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  React.useEffect(() => {
+    if (isGuest) void getGuestConsent().then(setConsent);
+  }, [isGuest]);
+  const toggleConsent = (key: 'marketing' | 'night') => {
+    if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
+    track(EVENTS.push_pref_toggle, { key, on: !consent[key] });
+    void setGuestConsent(key, !consent[key]).then(setConsent);
+  };
 
   const router = useRouter();
   const { t } = useTranslation();
@@ -52,6 +69,34 @@ export default function NotificationSettings() {
   };
 
   const osOff = permission === 'denied';
+
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('notif.title')} onBack={() => router.back()} />
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          <View style={styles.card}>
+            <ToggleRow
+              label={t('notif.marketing')}
+              sub={t('notif.marketingSub')}
+              on={consent.marketing}
+              onPress={() => toggleConsent('marketing')}
+              testID="guest-marketing"
+            />
+            <View style={[!consent.marketing && styles.rowDisabled]}>
+              <ToggleRow
+                label={t('notif.night')}
+                sub={t('notif.nightSub')}
+                on={consent.night}
+                onPress={() => toggleConsent('night')}
+                testID="guest-night"
+              />
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -121,6 +166,7 @@ function Switch({ on }: { on: boolean }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  rowDisabled: { opacity: 0.4 }, // P-311: 야간 = 마케팅 OFF 시 비활성(색·불투명도만 — P-151)
   body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 12 },
 
   osBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, ...shadow.sh1 },

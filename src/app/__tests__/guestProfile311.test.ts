@@ -1,0 +1,71 @@
+/**
+ * P-311(KB-478) — 게스트 프로필 = 회원 화면 재활용 + 게스트 알림 동의.
+ * 소스 잠금 + guestConsent 실동작(AsyncStorage 목).
+ */
+import * as fs from 'fs';
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+jest.mock('@/lib/installationId', () => ({ getInstallationId: () => Promise.resolve('inst-42') }));
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_GUEST_CONSENT, getGuestConsent, setGuestConsent } from '@/lib/push/guestConsent';
+
+const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8');
+const notif = fs.readFileSync('src/app/profile/notifications.tsx', 'utf8');
+const login = fs.readFileSync('src/app/login.tsx', 'utf8');
+
+it('게스트 프로필 — 헤더 대체(guestTitle·Sign in)·노출 4(Language·알림·Safety·버전)·임베드 로그인 잔존 0', () => {
+  expect(profile).toContain("t('profile.guestTitle')");
+  expect(profile).toContain('testID="guest-signin"');
+  expect(profile).toContain("t('intro.signUp')"); // Sign in 기존 문구 재사용
+  expect(profile).not.toContain('GuestLogin'); // 임베드 로그인 소멸
+  expect(profile).not.toContain('LoginScreen'); // import 잔존 0
+  // 게스트 분기 블록: 숨김 목록 잔존 0(개인화·계정 행), 노출 행 존재
+  const guestBlock = profile.slice(profile.indexOf('P-311(KB-478): 게스트'), profile.indexOf(') : meLoading'));
+  for (const key of ['profile.language', 'notif.title', 'profile.safetyNotice', 'app-version-row']) expect(guestBlock).toContain(key);
+  for (const hidden of ['profile.myFoods', 'profile.saved', 'myReviews.title', 'profile.dietTitle', 'community.blockedTitle', 'profile.logout', 'profile.deleteAccount', 'profile-rank-card', 'restrictionsTitle']) {
+    expect(guestBlock).not.toContain(hidden);
+  }
+});
+
+it('로그인 임베드 변형 폐기 — login.tsx embedded prop·embedAvailableH 잔존 0(독립 화면뿐)', () => {
+  expect(login).not.toContain('embedded ='); // prop 잔존 0(P-311 주석 언급 제외)
+  expect(login).not.toContain('{ embedded');
+  expect(login).not.toContain('embedAvailableH');
+  expect(fs.readFileSync('src/lib/loginCollage.ts', 'utf8')).not.toContain('function embedAvailableH');
+});
+
+it('게스트 알림 화면 — 토글 2(marketing·night)·야간은 마케팅 ON 조건·서비스 토글은 회원 전용 유지', () => {
+  expect(notif).toContain('testID="guest-marketing"');
+  expect(notif).toContain('testID="guest-night"');
+  expect(notif).toContain("if (key === 'night' && !consent.marketing) return;");
+  const guestBlock = notif.slice(notif.indexOf('if (isGuest) {'), notif.indexOf('return (', notif.indexOf('if (isGuest) {') + 20) + 200);
+  expect(guestBlock).not.toContain('notif.helpful'); // 서비스 토글 미노출
+});
+
+describe('guestConsent — 기본 OFF·변경 시각 기록·마케팅 철회 = 야간 동반 철회·installationId 키', () => {
+  beforeEach(() => void (AsyncStorage as unknown as { clear: () => void }).clear());
+
+  it('기본값 전부 OFF·시각 null', async () => {
+    expect(await getGuestConsent()).toEqual(DEFAULT_GUEST_CONSENT);
+  });
+
+  it('동의 저장 = 값 + ISO 변경 시각, 재로드 복원, 키에 installationId', async () => {
+    const c = await setGuestConsent('marketing', true);
+    expect(c.marketing).toBe(true);
+    expect(c.marketingChangedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(await getGuestConsent()).toEqual(c); // 영속 복원
+    const keys = await (AsyncStorage as unknown as { getAllKeys: () => Promise<string[]> }).getAllKeys();
+    expect(keys).toContain('kbap.guestNotif.v1.inst-42');
+  });
+
+  it('마케팅 철회 = 야간 동반 철회(시각 갱신)', async () => {
+    await setGuestConsent('marketing', true);
+    await setGuestConsent('night', true);
+    const c = await setGuestConsent('marketing', false);
+    expect(c.night).toBe(false);
+    expect(c.nightChangedAt).toMatch(/^\d{4}/);
+  });
+});

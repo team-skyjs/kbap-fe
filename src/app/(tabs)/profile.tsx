@@ -50,11 +50,6 @@ import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
 
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
-import LoginScreen from '../login';
-function GuestLogin() {
-  // P-146: 탭 소속 렌더 — 로고·백 제거(독립 /login 라우트는 무변)
-  return <LoginScreen embedded />;
-}
 
 export default function Profile() {
   const { t } = useTranslation();
@@ -133,16 +128,40 @@ export default function Profile() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        // Codex #40 P2: 스크롤 잠금은 짧은 뷰포트(멀티윈도우)에서 약관·Browse first 도달 불가 —
-        // 스크롤은 살리고 튕김만 끔(콜라주 전면 배경에서 바운스가 어색한 것이 원 목적)
-        bounces={!isGuest}
-        alwaysBounceVertical={!isGuest}
-        overScrollMode={isGuest ? 'never' : 'auto'}
-        contentContainerStyle={{ paddingTop: isGuest ? 0 : headerH, paddingBottom: isGuest ? 0 : 110 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         {isGuest ? (
-          /* P-129(멘토): 게이트 화면 대신 로그인 화면 자체(애플/구글) — 탭 안 임베드 */
-          <GuestLogin />
+          /* P-311(KB-478): 게스트 = 회원 화면 재활용 — 헤더 대체(로그인 필요 + Sign in)
+             + 개인화 섹션 숨김(Language·알림·Safety·버전만). 로그인 임베드 변형 폐기. */
+          <View style={styles.body}>
+            <View style={styles.id}>
+              <View style={styles.avatar}>
+                <AvatarPlaceholder height={48} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.name} numberOfLines={1}>{t('profile.guestTitle')}</Text>
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.editBtn, pressed && { backgroundColor: C.surface2 }]}
+                onPress={() => router.push('/login' as Href)}
+                testID="guest-signin"
+              >
+                <Text style={styles.editBtnText}>{t('intro.signUp')}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.menuList}>
+              {canOpenLangSettings && (
+                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+              )}
+              {FLAGS.pushEnabled && (
+                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
+              )}
+              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+            </View>
+            <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
+              <Text style={styles.verText}>v{Constants.expoConfig?.version ?? '0.0.0'}</Text>
+            </Pressable>
+          </View>
         ) : meLoading ? (
           /* P-007(KB-174) J1: 첫 로드 백지 제거 */
           <SkeletonProfile />
@@ -302,8 +321,8 @@ export default function Profile() {
       </Animated.ScrollView>
       {verToast && <Snackbar icon={null} text={verToast} />}
 
-      {/* P-280(9/5 예진): 게스트 = 임베드 로그인 위 브랜드 헤더 미렌더 — 콜라주가 상태바 뒤까지 */}
-      {!isGuest && <StickyHeader hidden={hidden} mode="brand" />}
+      {/* P-311: 게스트도 브랜드 헤더 렌더(회원 화면 재활용) */}
+      <StickyHeader hidden={hidden} mode="brand" />
     </View>
   );
 }

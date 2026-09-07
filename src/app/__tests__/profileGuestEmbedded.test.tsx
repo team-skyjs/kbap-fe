@@ -56,13 +56,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('embedded(프로필 탭) — 백 화살표 없음, 워드마크·카피·약관 유지(KB-433 시안)', () => {
-  const tree = render(<Login embedded />);
-  expect(tree.root.findAll((n) => n.props?.testID === 'login-back').length).toBe(0);
-  const s = JSON.stringify(tree.toJSON());
-  expect(s).toContain('login.sub'); // KB-433: 타이틀 → 워드마크 SVG + 안내 문구
-  expect(s).toContain('login.termsPrefix'); // KB-433 → 9/5 3분할
-});
+// P-311(KB-478): embedded 변형 폐기 — 해당 케이스 삭제(게스트 프로필은 guestProfile311 스위트).
 
 it('9/5 판정(D-5 ⑥): 약관 = 밑줄 3분할 — prefix/ToS/and/Privacy/suffix 렌더 + 링크 URL 정본', () => {
   const tree = render(<Login embedded />);
@@ -77,7 +71,7 @@ it('9/5 판정(D-5 ⑥): 약관 = 밑줄 3분할 — prefix/ToS/and/Privacy/suff
   expect(src).toContain('LEGAL_URLS.privacy');
 });
 
-it('독립 /login(embedded 미전달) — 워드마크 + 백 버튼(KB-433: BrandLockup → 시안 Wordmark)', () => {
+it('독립 /login — 워드마크 + 백 버튼(KB-433: BrandLockup → 시안 Wordmark)', () => {
   const tree = render(<Login />);
   expect(tree.root.findAllByType(Wordmark).length).toBe(1);
   expect(tree.root.findAll((n) => n.props?.testID === 'login-back').length).toBeGreaterThanOrEqual(1);

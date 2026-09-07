@@ -366,7 +366,8 @@
     "dietSavedBody": "これに合わせて避ける食材も調整しますか？",
     "dietSavedYes": "避ける食材を編集",
     "dietSavedNo": "完了",
-    "myFoods": "マイフード"
+    "myFoods": "マイフード",
+    "guestTitle": "ログインが必要です"
   },
   "review": {
     "title": "レビューを書く",
@@ -971,7 +972,11 @@
     "nudge": "スキャンのおすすめ",
     "nudgeSub": "ときどきランチタイムにメニュースキャンをご提案",
     "osOff": "システム設定でK-Bapの通知がオフになっています。",
-    "osOffCta": "システム設定を開く"
+    "osOffCta": "システム設定を開く",
+    "marketing": "マーケティング通知に同意",
+    "marketingSub": "イベントやおすすめのお知らせをプッシュで受け取ります。",
+    "night": "夜間通知に同意",
+    "nightSub": "夜9時〜朝8時の間も受け取ります。"
   },
   "inbox": {
     "title": "お知らせ",

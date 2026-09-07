@@ -27,8 +27,7 @@ import { color as C } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
-import { GAP, TILE, collageLayoutFor, embedAvailableH, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
-import { TABBAR_CONTENT_H } from '@/components/TabBar';
+import { GAP, TILE, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 import { LEGAL_URLS } from '@/lib/legalText';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -104,8 +103,8 @@ function Collage({ animate, availH }: { animate: boolean; availH: number }) {
   );
 }
 
-/** P-146: embedded = 프로필 탭 소속 렌더 — 백 화살표 제거. 독립 /login은 현행 무변. */
-export default function Login({ embedded = false }: { embedded?: boolean }) {
+/** P-311(KB-478): embedded(프로필 탭 임베드) 변형 폐기 — 로그인은 독립 화면뿐. */
+export default function Login() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -142,14 +141,11 @@ export default function Login({ embedded = false }: { embedded?: boolean }) {
       style={[
         styles.root,
         { paddingBottom: bottom + 26 },
-        // 임베드(프로필 탭 ScrollView 소속) = flex 무경계 — 가용 높이를 명시(헤더·탭바 차감)
-        // P-280: 게스트 프로필 탭 = 헤더 미렌더(headerH 0) — 상태바 뒤까지 콜라주
-        embedded && { flex: undefined, height: embedAvailableH(winH, 0, TABBAR_CONTENT_H, insets.bottom) },
       ]}
     >
-      <Collage animate={animate} availH={embedded ? embedAvailableH(winH, 0, TABBAR_CONTENT_H, insets.bottom) : winH} />
+      <Collage animate={animate} availH={winH} />
       {/* P-129: 뒤로가기 복원 — 빈 스택 GO_BACK 에러는 canGoBack 가드 */}
-      {!embedded && router.canGoBack() && (
+      {router.canGoBack() && (
         <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.backBtn, { top: insets.top + 6 }]} testID="login-back">
           <IconArrowLeft size={22} color={C.ink} />
         </Pressable>

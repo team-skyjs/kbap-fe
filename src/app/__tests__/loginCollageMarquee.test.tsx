@@ -58,7 +58,7 @@ jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => nu
 jest.mock('@/lib/useAppFonts', () => ({ useAppFonts: () => [true, null] }));
 
 import Login from '../login';
-import { COLLAGE_BASE_H, LOGIN_BOTTOM_MIN, collageLayoutFor, embedAvailableH, marqueeDuration, marqueeSpan, MIN_COLLAGE_H } from '@/lib/loginCollage';
+import { COLLAGE_BASE_H, LOGIN_BOTTOM_MIN, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 
 const trees: ReactTestRenderer[] = [];
 async function render(el: React.ReactElement): Promise<ReactTestRenderer> {
@@ -78,11 +78,10 @@ beforeEach(() => {
   focusCleanup = undefined;
 });
 
-it('① 순수 함수 — 스팬 588·20px/s·임베드 가용 높이 (P-308: 행수·블러 함수 소멸)', () => {
+it('① 순수 함수 — 스팬 588·20px/s·뷰포트 레이아웃 (P-308·P-311 정리)', () => {
   expect(marqueeSpan(4)).toBe(588); // 4×(136+11)
   expect(marqueeDuration(588)).toBe(29400); // 20px/s
-  expect(embedAvailableH(844, 0, 56, 34)).toBe(844 - 90); // 게스트 프로필 탭(헤더 0)
-  expect(embedAvailableH(300, 0, 56, 34)).toBe(MIN_COLLAGE_H + 200); // 하한
+  // P-311: embedAvailableH·MIN_COLLAGE_H 소멸(로그인 임베드 변형 폐기)
   // P-308: P-280 전면 배경 전용 함수 삭제 잠금
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const lib = require('fs').readFileSync('src/lib/loginCollage.ts', 'utf8') as string;

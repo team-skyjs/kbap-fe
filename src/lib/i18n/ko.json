@@ -366,7 +366,8 @@
     "dietSavedBody": "못 먹는 재료 목록도 확인하고 수정할까요?",
     "dietSavedYes": "못 먹는 재료 수정",
     "dietSavedNo": "완료",
-    "myFoods": "내 음식"
+    "myFoods": "내 음식",
+    "guestTitle": "로그인이 필요합니다"
   },
   "editProfile": {
     "title": "프로필 수정",
@@ -971,7 +972,11 @@
     "nudge": "메뉴 스캔 알림",
     "nudgeSub": "가끔 점심시간에 메뉴판 스캔 알림을 보내요",
     "osOff": "시스템 설정에서 K-Bap 알림이 꺼져 있어요.",
-    "osOffCta": "시스템 설정 열기"
+    "osOffCta": "시스템 설정 열기",
+    "marketing": "마케팅 알림 수신 동의",
+    "marketingSub": "이벤트·추천 소식을 알림으로 받아요.",
+    "night": "야간 알림 수신 동의",
+    "nightSub": "밤 9시~아침 8시에도 받아요."
   },
   "inbox": {
     "title": "알림",

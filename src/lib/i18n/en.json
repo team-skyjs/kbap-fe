@@ -362,7 +362,8 @@
     "dietSavedBody": "Want to fine-tune your avoided ingredients to match?",
     "dietSavedYes": "Edit avoided ingredients",
     "dietSavedNo": "Done",
-    "myFoods": "My Foods"
+    "myFoods": "My Foods",
+    "guestTitle": "Sign in required"
   },
   "editProfile": {
     "title": "Edit profile",
@@ -968,7 +969,11 @@
     "nudge": "Scan suggestions",
     "nudgeSub": "Occasional lunch-time reminders to scan a menu",
     "osOff": "Notifications are turned off for K-Bap in system settings.",
-    "osOffCta": "Open system settings"
+    "osOffCta": "Open system settings",
+    "marketing": "Marketing notifications",
+    "marketingSub": "Get event and recommendation updates by push.",
+    "night": "Nighttime notifications",
+    "nightSub": "Also receive them between 9 PM and 8 AM."
   },
   "inbox": {
     "title": "Notifications",
