@@ -24,6 +24,6 @@ it('소비처 5곳 — atTop 전달(홈·음식·프로필·리뷰 목록·피�
   }
 });
 
-it('프로필 헤더~아바타 간격 — 12pt(잠정 — 시안 좌표 미기재, REPORTS 질문 병기)', () => {
-  expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('body: { paddingTop: 12, gap: 20 }');
+it('프로필 헤더~아바타 간격 — 시안 실측 정합(아바타 행 = 헤더 바닥 동일선, paddingTop 0)', () => {
+  expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('body: { paddingTop: 0, gap: 20 }');
 });

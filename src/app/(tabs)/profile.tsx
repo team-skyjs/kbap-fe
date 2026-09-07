@@ -336,9 +336,10 @@ function MenuRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  // P-312: 헤더~아바타 간격 — 시안 screen-profile 좌표 미기재(frames-text 텍스트만)라
-  // 홈·음식 첫 요소(12pt)와 통일한 잠정치. 정확 수치는 REPORTS 질문 — 회신 시 교체.
-  body: { paddingTop: 12, gap: 20 },
+  // P-312: 헤더~아바타 간격 — 시안 실측(2200:20884): 아바타 행 상단 = 헤더 바 하단
+  // 동일선(y99≈100), 로고 하단→아바타 상단 17pt. 우리 헤더(4+48+4=시안 56 동일,
+  // 로고 하단→바닥 17.25pt)라 paddingTop 0 = 시안 정합(스크롤 paddingTop=headerH 유지).
+  body: { paddingTop: 0, gap: 20 },
   verRow: { alignItems: 'center', paddingVertical: 10 },
   verText: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
