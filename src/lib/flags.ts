@@ -146,18 +146,6 @@ export const FLAGS = {
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.
    */
   communityTranslateEnabled: false,
-  /**
-   * P-320(KB-485): 홈 레일 공백 실측 오버레이 — **teamtest 채널만**(계측용,
-   * 원인 확정 후 다음 발주에서 코드째 제거). prod/dev/jest = false.
-   */
-  layoutDebug: (() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return (require('expo-updates') as { channel?: string | null }).channel === 'teamtest';
-    } catch {
-      return false;
-    }
-  })(),
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

@@ -25,7 +25,6 @@ export function FoodGridCard({
   onPress,
   onBookmark,
   style,
-  onLayout,
 }: {
   food: FoodCard;
   risk: RiskState;
@@ -36,11 +35,9 @@ export function FoodGridCard({
   onBookmark: () => void;
   /** KB-434 저장 그리드(FlatList 셀) — 홈 flexWrap 폭(47%) 오버라이드용 */
   style?: StyleProp<ViewStyle>;
-  /** P-320 계측용 관통(layoutDebug) — 계측 소멸 시 함께 제거 */
-  onLayout?: React.ComponentProps<typeof Pressable>['onLayout'];
 }) {
   return (
-    <Pressable style={[styles.gcard, style]} onPress={onPress} onLayout={onLayout} testID={`home-food-${food.foodId}`}>
+    <Pressable style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
         {/* P-315 후속(Codex #77 P2): 사진 없음 = 폴백 박스(사진 있을 땐 bg 없음 유지) */}
         {food.photoUrl ? (

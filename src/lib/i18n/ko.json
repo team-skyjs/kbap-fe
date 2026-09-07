@@ -785,7 +785,8 @@
     "chipNearby": "주변",
     "recentEmpty": "최근 스캔이 없어요",
     "safeForYou": "내 기준 Safe 메뉴",
-    "safeForYouSub": "회피 목록 기준 판정이에요. 사장님께 꼭 확인하세요."
+    "safeForYouSub": "회피 목록 기준 판정이에요. 사장님께 꼭 확인하세요.",
+    "railFilterEmpty": "이 목록엔 {{risk}} 메뉴가 아직 없어요. 다른 필터를 눌러 보세요."
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
