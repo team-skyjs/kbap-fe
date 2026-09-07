@@ -329,15 +329,16 @@ export function FoodExplorer({
             </Btn>
           </View>
         ) : (
-          /* 칩이 전부 걸러냄 — Saved = 기존 filterEmpty / Popular·Food = railFilterEmpty({{risk}}) */
+          /* 칩이 전부 걸러냄 — Saved = 기존 filterEmpty / Popular·Food = railFilterEmpty({{risk}}).
+             All + 소스 0(카탈로그 빈 극단)은 "{All} 메뉴" 문장이 깨져 기존 noResultsTitle 재사용. */
           <View style={styles.railState} testID="home-rail-filter-empty">
             <EmptyBlock
               label={
                 gridTab === 'saved'
                   ? t('saved.filterEmpty')
-                  : t('home.railFilterEmpty', {
-                      risk: riskChip === 'all' ? t('home.filterAll') : t(`risk.${riskChip}`),
-                    })
+                  : riskChip === 'all'
+                    ? t('search.noResultsTitle')
+                    : t('home.railFilterEmpty', { risk: t(`risk.${riskChip}`) })
               }
             />
           </View>
@@ -419,8 +420,9 @@ const styles = StyleSheet.create({
   seeAllText: { fontSize: 14, fontWeight: '600', color: C.ink2 },
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
-  railState: { paddingHorizontal: 20, alignItems: 'flex-start', gap: 4 },
-  railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20 },
+  // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일
+  railState: { paddingHorizontal: 20, alignItems: 'center', gap: 4 },
+  railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, textAlign: 'center', maxWidth: 335 },
   // Safe picks 2×2 — 홈 구 그리드 문법(카드 기본 47% + grow)
   safeGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
   safeGridCard: { width: '47%', flexGrow: 0 }, // 홀수 마지막 카드도 2열 폭 유지(#85 2R)
