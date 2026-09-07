@@ -1007,9 +1007,5 @@
     "receiptDate": "DATE",
     "receiptLocation": "LOCATION",
     "receiptTotal": "TOTAL"
-  },
-  "ota": {
-    "ready": "An update is ready",
-    "apply": "Apply"
   }
 }

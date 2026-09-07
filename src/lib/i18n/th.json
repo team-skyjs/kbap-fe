@@ -1010,9 +1010,5 @@
     "receiptDate": "วันที่",
     "receiptLocation": "สถานที่",
     "receiptTotal": "รวม"
-  },
-  "ota": {
-    "ready": "อัปเดตพร้อมใช้งานแล้ว",
-    "apply": "นำไปใช้"
   }
 }

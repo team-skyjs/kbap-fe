@@ -1013,9 +1013,5 @@
     "receiptDate": "ДАТА",
     "receiptLocation": "МЕСТО",
     "receiptTotal": "ИТОГО"
-  },
-  "ota": {
-    "ready": "Обновление готово",
-    "apply": "Применить"
   }
 }

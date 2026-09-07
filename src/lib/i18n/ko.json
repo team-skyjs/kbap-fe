@@ -1010,9 +1010,5 @@
     "receiptDate": "날짜",
     "receiptLocation": "장소",
     "receiptTotal": "합계"
-  },
-  "ota": {
-    "ready": "업데이트가 준비됐어요",
-    "apply": "적용"
   }
 }
