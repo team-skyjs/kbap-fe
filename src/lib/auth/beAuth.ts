@@ -11,7 +11,7 @@
  * ⚠️ RNFB 임포트 금지 (웹 번들 안전) — Firebase signOut 등 네이티브 몫은
  * 화면 쪽에서 Platform 가드 lazy require(session.ts)로 처리한다.
  */
-import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthorized } from '@/lib/api/client';
+import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthorized, setSessionGenerationProvider } from '@/lib/api/client';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
@@ -184,29 +184,27 @@ export async function hasBeSession(): Promise<boolean> {
  *  저장 세션이 있을 때만 세션 무효(토큰 정리→캐시 clear→게스트 재평가→로그인 유도).
  *  in-flight 래치 = 동시 400 다발(프로필+스캔 등)에도 경계 1회. 경계 후엔
  *  토큰·세션이 없어 자연 no-op — 재로그인하면 다시 활성(별도 리셋 불필요). */
-/** Codex #59 P1-2: 래치는 **토큰별** — 단일 슬롯이면 스테일 A 처리 중 도착한
- *  현행 B의 정당한 신호가 A의 promise를 돌려받고 유실된다(좀비 세션 잔존).
- *  같은 토큰의 동시 400 다발만 합치고, 다른 토큰은 각자 평가. */
-const memberMissingInFlight = new Map<string, Promise<void>>();
-function handleMemberMissing(requestToken: string | null): Promise<void> {
-  // 무토큰 요청의 MEMBER-003은 회원 세션 문제가 아니다 — 무시(반쪽 상태는 401 몫).
-  if (requestToken == null) return Promise.resolve();
-  const inFlight = memberMissingInFlight.get(requestToken);
+/** Codex #59 P1-3: 스테일 판별 = **세션 generation**(KB-421 가드의 그 값 — 로그인/
+ *  로그아웃/sessionExpired에만 증가, doRefresh 회전엔 불변). 토큰 정확 비교(P1-1안)는
+ *  같은 세션의 회전(A→B) 중 도착한 유일한 MEMBER-003까지 오판해 버렸다(4xx 미재시도
+ *  = dead-end 잔존). 래치도 gen별 — 같은 세대 통지만 합침(P1-2 유실 방지 유지). */
+const memberMissingInFlight = new Map<number, Promise<void>>();
+function handleMemberMissing(requestGen: number | null): Promise<void> {
+  // 프로바이더 부재(테스트/웹 미설치) 또는 낡은 세대(경계 이후 도착) — 무시
+  if (requestGen == null || requestGen !== currentGen()) return Promise.resolve();
+  const inFlight = memberMissingInFlight.get(requestGen);
   if (inFlight) return inFlight;
   const p = (async () => {
     try {
-      const t = await loadTokens();
-      if (getSessionState() !== true && t == null) return; // 게스트 — 지울 세션 없음(P-260)
-      // Codex #59 P1: 낡은 세션의 늦은 응답 가드 — 요청에 부착됐던 토큰이 현 저장
-      // access와 다르면(로그아웃→B 로그인 사이 A의 in-flight 도착) B 세션 보존.
-      if (t?.access !== requestToken) return;
+      if (getSessionState() !== true && (await loadTokens()) == null) return; // 게스트 — 지울 세션 없음(P-260)
+      if (requestGen !== currentGen()) return; // 로드 중 경계 개입 — 폐기
       console.log('[auth] MEMBER-003 with stored session → session expired (KB-441)');
       await sessionExpired();
     } finally {
-      memberMissingInFlight.delete(requestToken);
+      memberMissingInFlight.delete(requestGen);
     }
   })();
-  memberMissingInFlight.set(requestToken, p);
+  memberMissingInFlight.set(requestGen, p);
   return p;
 }
 
@@ -229,6 +227,7 @@ async function handleUnauthorized(code: string | null): Promise<boolean> {
 export function installBeAuth(): void {
   setAuthTokenProvider(async () => (await loadTokens())?.access ?? null);
   setOnUnauthorized(handleUnauthorized); // true 반환 시 client가 원요청 1회 재시도
+  setSessionGenerationProvider(currentGen); // KB-441 P1-3: 요청 발행 시점 gen 스냅샷 소스
   setOnMemberMissing(handleMemberMissing); // KB-441: MEMBER-003 좀비 세션(반환 Promise는 client가 무시)
   // KB-421(P-205 사고): 구 모듈 스코프 부팅 선읽기는 제거 —
   // freshInstall 정리와 경합해 지운 세션을 회원으로 선고착시켰다. 부팅 초기화는

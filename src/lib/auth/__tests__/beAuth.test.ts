@@ -18,6 +18,7 @@ jest.mock('@/lib/api/client', () => {
     setAuthTokenProvider: jest.fn(),
     setOnUnauthorized: jest.fn(),
     setOnMemberMissing: jest.fn(),
+    setSessionGenerationProvider: jest.fn(),
   };
 });
 jest.mock('../beTokens', () => ({
@@ -155,69 +156,50 @@ describe('P-257: 401 code 분기(종한 요청) — AUTH-004만 refresh', () => 
   });
 });
 
-describe('KB-441(P-297): MEMBER-003 = 좀비 세션 무효화(b27 실기 — prod 부재 회원)', () => {
+describe('KB-441(P-297)·Codex P1-3: MEMBER-003 = 좀비 세션 무효화 — 세대(gen) 스냅샷 판별', () => {
   /* eslint-disable @typescript-eslint/no-require-imports */
-  const { setOnMemberMissing } = require('@/lib/api/client');
-  const handleMemberMissing: (requestToken: string | null) => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
+  const { setOnMemberMissing, setSessionGenerationProvider } = require('@/lib/api/client');
+  const handleMemberMissing: (requestGen: number | null) => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
+  // 캡처는 수집 시점(clearAllMocks 전) — installBeAuth의 등록 인자
+  const capturedGenProvider = (setSessionGenerationProvider as jest.Mock).mock.calls[0][0];
   /* eslint-enable @typescript-eslint/no-require-imports */
 
-  it('저장 토큰 있음 + 동시 2회 통지 → 세션 경계 1회(in-flight 래치)·캐시 clear 발동', async () => {
-    await Promise.all([handleMemberMissing('A'), handleMemberMissing('A')]); // 'A' = 현 저장 access(목)
-    expect(tokens.clearTokens).toHaveBeenCalledTimes(1); // sessionExpired 1회
+  it('배선: client 세대 프로바이더 = beTokens.currentGen(요청 발행 시 스냅샷)', () => {
+    expect(capturedGenProvider).toBe(tokens.currentGen);
+  });
+
+  it('refresh 회전 후 도착(gen 동일 — 회전은 세대 불변) → 처리(sessionExpired 1회)', async () => {
+    await handleMemberMissing(0); // 목 currentGen = 0
+    expect(tokens.clearTokens).toHaveBeenCalledTimes(1);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     expect(require('@/lib/queryClient').queryClient.clear).toHaveBeenCalledTimes(1);
   });
 
-  it('게스트(토큰 부재·세션 스토어 비회원) → 경계 미발동(배경 리셋 회귀 방지 — P-260 동일 철학)', async () => {
+  it('계정 전환 후 도착(gen 상이 — 경계가 세대 증가) → 무시(새 세션 보존)', async () => {
+    (tokens.currentGen as jest.Mock).mockReturnValue(1);
+    await handleMemberMissing(0);
+    expect(tokens.clearTokens).not.toHaveBeenCalled();
+    (tokens.currentGen as jest.Mock).mockReturnValue(0);
+  });
+
+  it('동일 gen 동시 2건 → 경계 1회(래치 합침)', async () => {
+    await Promise.all([handleMemberMissing(0), handleMemberMissing(0)]);
+    expect(tokens.clearTokens).toHaveBeenCalledTimes(1);
+  });
+
+  it('게스트(토큰 부재·비회원) → 미발동(P-260 철학) · 프로바이더 부재(null) → 무시', async () => {
     (tokens.loadTokens as jest.Mock).mockResolvedValueOnce(null);
-    await handleMemberMissing('A');
+    await handleMemberMissing(0);
     expect(tokens.clearTokens).not.toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    expect(require('@/lib/queryClient').queryClient.clear).not.toHaveBeenCalled();
-  });
-
-  it('client 배선 소스 잠금 — MEMBER-003 통지(/auth/* 제외·에러 throw 무변) + 401 경로 무접촉', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const src = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
-    expect(src).toContain("json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(accessToken)"); // 요청 토큰 스냅샷 전달(P1)
-    // 통지는 throw 앞 fire-and-forget — 화면 에러 흐름(QueryErrorBlock 등)은 그대로
-    expect(src.indexOf("json?.code === 'MEMBER-003'")).toBeLessThan(src.indexOf('throw new ApiError(json?.message'));
-  });
-});
-
-describe('KB-441 Codex P1: 세션 경계 레이스 — 낡은 세션의 늦은 MEMBER-003', () => {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const { setOnMemberMissing } = require('@/lib/api/client');
-  const handleMemberMissing: (requestToken: string | null) => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
-  /* eslint-enable @typescript-eslint/no-require-imports */
-
-  it('요청 토큰 ≠ 현 저장 access(로그아웃→B 로그인 후 A 응답 도착) → 세션 보존(경계 0)', async () => {
-    await handleMemberMissing('OLD-A-TOKEN'); // 목 저장 access = 'A'
-    expect(tokens.clearTokens).not.toHaveBeenCalled();
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    expect(require('@/lib/queryClient').queryClient.clear).not.toHaveBeenCalled();
-  });
-
-  it('무토큰 요청의 MEMBER-003(requestToken null) → 무시(회원 세션 문제 아님)', async () => {
     await handleMemberMissing(null);
     expect(tokens.clearTokens).not.toHaveBeenCalled();
   });
-});
 
-describe('KB-441 Codex P1-2: 토큰별 래치 — 스테일 처리 중 현행 신호 유실 방지', () => {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const { setOnMemberMissing } = require('@/lib/api/client');
-  const handleMemberMissing: (requestToken: string | null) => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
-  /* eslint-enable @typescript-eslint/no-require-imports */
-
-  it('스테일 A(OLD) 처리 중 현행 B(A) 통지 겹침 → B는 자기 평가로 sessionExpired 1회', async () => {
-    // 단일 슬롯 래치였다면 B가 A의 promise를 돌려받아 유실 — 토큰별 래치로 각자 평가
-    await Promise.all([handleMemberMissing('OLD-A-TOKEN'), handleMemberMissing('A')]);
-    expect(tokens.clearTokens).toHaveBeenCalledTimes(1); // 현행('A')만 경계 발동
-  });
-
-  it('같은 토큰 동시 통지는 여전히 1회 합침(중복 경계 0)', async () => {
-    await Promise.all([handleMemberMissing('A'), handleMemberMissing('A')]);
-    expect(tokens.clearTokens).toHaveBeenCalledTimes(1);
+  it('client 배선 소스 잠금 — gen 스냅샷 전달(/auth/* 제외·에러 throw 무변)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
+    expect(src).toContain("json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(requestGen)");
+    expect(src).toContain('const requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;');
+    expect(src.indexOf("json?.code === 'MEMBER-003'")).toBeLessThan(src.indexOf('throw new ApiError(json?.message'));
   });
 });

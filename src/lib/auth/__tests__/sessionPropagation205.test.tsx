@@ -32,6 +32,7 @@ jest.mock('@/lib/api/client', () => ({
   setAuthTokenProvider: jest.fn(),
   setOnUnauthorized: jest.fn(),
   setOnMemberMissing: jest.fn(),
+  setSessionGenerationProvider: jest.fn(),
 }));
 
 import { queryClient } from '@/lib/queryClient';

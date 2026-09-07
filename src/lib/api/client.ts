@@ -96,11 +96,16 @@ export function setOnUnauthorized(handler: ((code: string | null) => Promise<boo
  *  b27 실기: prod DB에 없는 회원의 유효 토큰 + 전 회원 API 400
  *  (프로필 dead-end·스캔 지연 표면화). 분기 정책(저장 토큰 있을 때만 세션 무효)은
  *  핸들러(beAuth) 한 곳 — 여기선 fire-and-forget 통지만, 에러는 그대로 throw.
- *  Codex #59 P1: **요청에 부착했던 access 토큰**을 스냅샷으로 전달 — A 세션의
- *  in-flight 응답이 로그아웃→B 로그인 뒤에 도착해도 핸들러가 현 저장 토큰과
- *  대조해 무시(세대 가드와 동일 불변식 — client는 auth 레이어 비의존 유지). */
-let onMemberMissing: ((requestToken: string | null) => void) | null = null;
-export function setOnMemberMissing(handler: ((requestToken: string | null) => void) | null) {
+ *  Codex #59 P1-3: 스냅샷 기준 = **세션 generation**(주입 프로바이더 — 로그인/
+ *  로그아웃/만료 경계에만 증가, refresh 회전엔 불변). 토큰 정확 비교는 같은 세션의
+ *  회전(A→B) 중 도착한 유일한 MEMBER-003까지 "다른 세션"으로 오판해 버렸다
+ *  (4xx는 미재시도라 dead-end 잔존). 요청 발행 시 gen을 캡처해 함께 전달. */
+let sessionGenerationProvider: (() => number) | null = null;
+export function setSessionGenerationProvider(provider: (() => number) | null) {
+  sessionGenerationProvider = provider;
+}
+let onMemberMissing: ((requestGen: number | null) => void) | null = null;
+export function setOnMemberMissing(handler: ((requestGen: number | null) => void) | null) {
   onMemberMissing = handler;
 }
 
@@ -155,6 +160,8 @@ async function request<T>(
   const accessToken =
     !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  // KB-441(Codex #59 P1-3): 요청 발행 시점의 세션 세대 스냅샷 — MEMBER-003 통지에 동봉
+  const requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;
 
   let res: Response;
   let text: string;
@@ -240,7 +247,7 @@ async function request<T>(
     if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined);
     // KB-441: MEMBER-003(회원 없음) = 좀비 세션 신호 — 핸들러에 통지(정책은 beAuth).
     // /auth/* 자체 응답은 제외(로그인·refresh 흐름은 자체 분기 — 401 경로와 동일 원칙).
-    if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(accessToken);
+    if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(requestGen);
     throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status, json?.code ?? undefined);
   }
   // 200 but success:false — never trust HTTP status alone.
