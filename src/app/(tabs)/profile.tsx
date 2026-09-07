@@ -48,6 +48,7 @@ import { tapSentrySelfcheck } from '@/lib/sentry';
 import { Snackbar } from '@/components/Snackbar';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 
@@ -55,7 +56,8 @@ export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
-  const { onScroll, hidden } = useStickyScroll();
+  const avatarUrl = useMyAvatarUrl(); // P-313: 탭바와 정본 공유
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
   const { lang } = useLocale();
   // P-060: 언어 = OS 정본 — 행 탭 시 OS 앱 설정(언어 항목). 안드12-는 앱별
@@ -113,7 +115,7 @@ export default function Profile() {
         <ScreenCenterFill>
           <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} mode="brand" />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" />
       </View>
     );
   }
@@ -171,8 +173,8 @@ export default function Profile() {
             <View style={styles.id}>
               <View style={styles.avatar}>
                 {/* KB-149: 서버 프로필 사진 — 없으면 시안 플레이스홀더(D-1) */}
-                {me.profileImageUrl ? (
-                  <RemoteImage uri={me.profileImageUrl} style={styles.avatarImg} />
+                {avatarUrl ? (
+                  <RemoteImage uri={avatarUrl} style={styles.avatarImg} />
                 ) : (
                   <AvatarPlaceholder height={48} />
                 )}
@@ -321,8 +323,8 @@ export default function Profile() {
       </Animated.ScrollView>
       {verToast && <Snackbar icon={null} text={verToast} />}
 
-      {/* P-311: 게스트도 브랜드 헤더 렌더(회원 화면 재활용) */}
-      <StickyHeader hidden={hidden} mode="brand" />
+      {/* P-311: 게스트도 브랜드 헤더 렌더(회원 화면 재활용) + P-312 atTop */}
+      <StickyHeader hidden={hidden} atTop={atTop} mode="brand" />
     </View>
   );
 }
@@ -355,7 +357,10 @@ function MenuRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingTop: 4, gap: 20 },
+  // P-312: 헤더~아바타 간격 — 시안 실측(2200:20884): 아바타 행 상단 = 헤더 바 하단
+  // 동일선(y99≈100), 로고 하단→아바타 상단 17pt. 우리 헤더(4+48+4=시안 56 동일,
+  // 로고 하단→바닥 17.25pt)라 paddingTop 0 = 시안 정합(스크롤 paddingTop=headerH 유지).
+  body: { paddingTop: 0, gap: 20 },
   verRow: { alignItems: 'center', paddingVertical: 10 },
   verText: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },

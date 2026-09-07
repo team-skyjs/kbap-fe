@@ -23,7 +23,7 @@ import {
   SectionHead,
   IconLock,
 } from '@/components';
-import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
+import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { useHome } from '@/lib/data/useHome';
@@ -54,7 +54,7 @@ const REVIEW_N = 3;
 export default function Home() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
   const { data: home, isLoading, isError, error, refetch } = useHome();
@@ -80,7 +80,7 @@ export default function Home() {
           {/* P-007 false-empty 금지 유지 — 에러는 에러로 */}
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
       </View>
     );
   }
@@ -102,7 +102,10 @@ export default function Home() {
             {/* KB-430 후속(9/5): 검색·탭·칩·그리드 = FoodExplorer 공용(음식 탭과 공유) */}
             <FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />
 
-            {/* RECENTLY SCANNED (§1-6~7) */}
+            {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
+                (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
+            {(isGuest || recent.length > 0) && (
+            <>
             <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
             {isGuest ? (
               <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
@@ -114,8 +117,6 @@ export default function Home() {
               </Pressable>
             ) : (
               <>
-                {/* P-287(4003:6168): 빈 상태 = 섹션 헤더 유지 + 빈 블록(P-210 숨김 규칙을 이 섹션만 해제) */}
-                {recent.length === 0 && <EmptyBlock label={t('home.recentEmpty')} testID="home-recent-empty" />}
                 {recent.slice(0, RECENT_N).map((f) => (
                   <RecentRow
                     key={f.foodId}
@@ -137,6 +138,8 @@ export default function Home() {
                   </View>
                 )}
               </>
+            )}
+            </>
             )}
 
             {/* REVIEWS (§1-8~9) — 칩 = All·Popular(sort=helpful), For You/Nearby 파라미터 부재로 숨김 */}
@@ -184,6 +187,7 @@ export default function Home() {
 
       <StickyHeader
         hidden={hidden}
+        atTop={atTop}
         mode="brand"
         bell={FLAGS.notificationCenter}
         bellCount={unread}

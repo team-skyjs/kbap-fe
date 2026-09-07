@@ -62,7 +62,7 @@ export function ReviewFeed() {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   const [editTarget, setEditTarget] = React.useState<Review | null>(null);
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
@@ -187,6 +187,7 @@ export function ReviewFeed() {
       {/* KB-430 §2-1: AppBar = 홈과 동일 컴포넌트(로고+벨) */}
       <StickyHeader
         hidden={hidden}
+        atTop={atTop}
         mode="brand"
         bell={FLAGS.notificationCenter}
         bellCount={unread}
