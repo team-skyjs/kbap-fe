@@ -63,7 +63,7 @@ export default function FoodReviews() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
   const { data: food } = useFoodDetail(id ?? '');
@@ -257,7 +257,7 @@ export default function FoodReviews() {
         ))}
       </Animated.ScrollView>
 
-      <StickyHeader hidden={hidden} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
+      <StickyHeader hidden={hidden} atTop={atTop} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
       {/* KB-431 §2-4: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
       <ActionSheet
         open={sortSheet}

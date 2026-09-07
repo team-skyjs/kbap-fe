@@ -60,7 +60,7 @@ export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
   const { lang } = useLocale();
   // P-060: 언어 = OS 정본 — 행 탭 시 OS 앱 설정(언어 항목). 안드12-는 앱별
@@ -118,7 +118,7 @@ export default function Profile() {
         <ScreenCenterFill>
           <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} mode="brand" />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" />
       </View>
     );
   }
@@ -303,7 +303,7 @@ export default function Profile() {
       {verToast && <Snackbar icon={null} text={verToast} />}
 
       {/* P-280(9/5 예진): 게스트 = 임베드 로그인 위 브랜드 헤더 미렌더 — 콜라주가 상태바 뒤까지 */}
-      {!isGuest && <StickyHeader hidden={hidden} mode="brand" />}
+      {!isGuest && <StickyHeader hidden={hidden} atTop={atTop} mode="brand" />}
     </View>
   );
 }
@@ -336,7 +336,9 @@ function MenuRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingTop: 4, gap: 20 },
+  // P-312: 헤더~아바타 간격 — 시안 screen-profile 좌표 미기재(frames-text 텍스트만)라
+  // 홈·음식 첫 요소(12pt)와 통일한 잠정치. 정확 수치는 REPORTS 질문 — 회신 시 교체.
+  body: { paddingTop: 12, gap: 20 },
   verRow: { alignItems: 'center', paddingVertical: 10 },
   verText: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
