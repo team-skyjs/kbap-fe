@@ -309,7 +309,8 @@ export function FoodExplorer({
             <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
           ))}
         </View>
-      ) : browse.isError ? (
+      ) : browse.isError && gridTab !== 'saved' ? (
+        /* Codex #85 P2: Saved 탭 데이터는 북마크 쿼리 독립 — 카탈로그 에러가 저장 카드를 가리지 않게 스코프 */
         <View style={styles.railState} testID="home-rail-error">
           <QueryErrorBlock error={browse.error} onRetry={() => void browse.refetch()} />
         </View>

@@ -323,6 +323,13 @@ it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 
   mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500') });
   const t2 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   expect(byIdIn(t2, 'home-rail-error').length).toBeGreaterThanOrEqual(1);
+  // ②-b Codex #85 P2: 카탈로그 에러 중에도 Saved 탭 = 저장 카드 유지(에러 블록 미노출)
+  mockSaved.mockReturnValue({ data: [FOOD('2', 'danger')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const t2b = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t2b, 'home-tab-saved');
+  expect(byIdIn(t2b, 'home-rail-error')).toHaveLength(0);
+  expect([...cardIds(t2b)]).toEqual(['home-food-2']);
+  mockSaved.mockReturnValue({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
   // ③ Saved 탭 저장 0건 = 제목+본문+Browse CTA(→ /food) — 에러 목 원복 후
   mockBrowse.mockReturnValue(browseOf(Array.from({ length: 10 }, (_, i) => FOOD(String(i + 1), i % 2 ? 'danger' : 'safe'))));
   const t3 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
