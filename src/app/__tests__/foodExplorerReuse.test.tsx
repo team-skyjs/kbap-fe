@@ -286,6 +286,22 @@ it('⑭ Codex #81 P1 — 같은 파라미터의 두 번째 See all(paramsKey 변
   expect([...cardIds(tree)]).toEqual(['home-food-2']);
 });
 
+it('⑮ P-319 — 레일 flexGrow:0(세로 스트레치 차단) + 카드·See all 폭 = railCardW(화면 폭)', () => {
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  for (const id of ['home-rail', 'home-safe-rail']) {
+    const rail = tree.root.findAll((n) => n.props?.testID === id && n.props?.horizontal === true)[0];
+    expect(rail).toBeTruthy();
+    // RN ScrollView 기본 baseHorizontal(flexGrow:1)이 세로 FlatList 헤더 안에서
+    // 화면 높이만큼 늘어나던 P-319 공백의 근본 — 명시 flexGrow:0 잠금
+    expect(JSON.stringify(rail.props.style)).toContain('"flexGrow":0');
+  }
+  const { width } = require('react-native').Dimensions.get('window');
+  const { railCardW } = require('@/features/food/railLayout') as typeof import('@/features/food/railLayout');
+  const w = railCardW(width);
+  expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-food-1')[0].props.style)).toContain(`"width":${w}`);
+  expect(JSON.stringify(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all')[0].props.style)).toContain(`"width":${w}`);
+});
+
 it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸)', () => {
   const tree = render(<FoodExplorer variant="screen" guest={false} initialTab="food" srcTag="list" />);
   const safe = tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && typeof n.props?.onPress === 'function')[0];

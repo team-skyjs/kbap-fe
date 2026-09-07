@@ -11,7 +11,7 @@
  * 데이터 훅·북마크 토글·위험 필터 로직 = 홈 구현 이동(무변).
  */
 import * as React from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -22,6 +22,7 @@ import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FoodGridCard } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
+import { railCardW } from '@/features/food/railLayout';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
@@ -43,7 +44,7 @@ type FoodSort = 'popular' | 'new' | 'alpha';
 const FOOD_SORTS: FoodSort[] = ['popular', 'new', 'alpha'];
 
 export const HOME_RAIL_N = 10; // P-317: 홈 레일 최대 10 + See all 카드
-export const RAIL_CARD_W = 174; // 그리드 카드 비율(174×203) 동일
+// P-319: 카드 폭 174 고정 → 화면 폭 기준 railCardW(2장 + 3번째 peek) — railLayout.ts
 
 export function FoodExplorer({
   variant,
@@ -73,6 +74,8 @@ export function FoodExplorer({
 }) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  // P-319: 레일 카드 폭 = 화면 폭 기준(2장 + 3번째 peek — 가로 스크롤임을 보이게)
+  const cardW = railCardW(useWindowDimensions().width);
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
@@ -286,7 +289,7 @@ export function FoodExplorer({
     !guest && hasR && gridTab === 'popular' && riskChip === 'all'
       ? (browse.data ?? []).filter((f) => personalRisk(f.risk, hasR) === 'safe').slice(0, 10)
       : [];
-  const railCard = (item: FoodCard) => card(item, styles.railCard);
+  const railCard = (item: FoodCard) => card(item, { width: cardW });
 
   return (
     <View>
@@ -297,6 +300,7 @@ export function FoodExplorer({
         data={gridFoods}
         keyExtractor={(f: FoodCard) => f.foodId}
         showsHorizontalScrollIndicator={false}
+        style={styles.rail}
         contentContainerStyle={styles.railContent}
         renderItem={({ item }) => railCard(item)}
         ListEmptyComponent={
@@ -305,7 +309,7 @@ export function FoodExplorer({
         ListFooterComponent={
           gridFoods.length > 0 ? (
             <Pressable
-              style={styles.seeAllCard}
+              style={[styles.seeAllCard, { width: cardW }]}
               onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
               testID="home-rail-see-all"
             >
@@ -323,6 +327,7 @@ export function FoodExplorer({
             data={safeRail}
             keyExtractor={(f: FoodCard) => `safe-${f.foodId}`}
             showsHorizontalScrollIndicator={false}
+            style={styles.rail}
             contentContainerStyle={styles.railContent}
             renderItem={({ item }) => railCard(item)}
             testID="home-safe-rail"
@@ -366,9 +371,14 @@ const styles = StyleSheet.create({
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
 
   // P-317 홈 레일(그리드 카드 동일 비율 — 폭 174 고정, gap 12, 좌우 20)
+  // P-319(KB-485) 공백 근본 원인: RN ScrollView 기본 스타일(baseHorizontal)이 flexGrow:1 —
+  // 세로 FlatList 헤더(column) 안에서 가로 레일이 잔여 세로 공간을 흡수해 화면 높이만큼
+  // 늘어났다(Fabric). 레일 자신은 세로로 자라면 안 되는 요소 — flexGrow:0으로 차단
+  // (고정 height 가리기 아님 — 높이는 콘텐츠(카드)가 결정).
+  rail: { flexGrow: 0 },
   railContent: { paddingHorizontal: 20, gap: 12 },
-  railCard: { width: RAIL_CARD_W },
-  seeAllCard: { width: RAIL_CARD_W, aspectRatio: 174 / 203, borderRadius: 4, borderWidth: 1, borderColor: C.line2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
+  seeAllCard: { aspectRatio: 174 / 203, borderRadius: 4, borderWidth: 1, borderColor: C.line2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   seeAllText: { fontSize: 14, fontWeight: '600', color: C.ink2 },
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
