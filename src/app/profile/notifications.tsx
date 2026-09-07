@@ -43,13 +43,16 @@ export default function NotificationSettings() {
   }, [isGuest]);
   // Codex #72 P1: 저장 처리 중 = 토글 무시(직렬화와 이중 방어 — 연타 레이스 0)
   const consentBusy = React.useRef(false);
+  const [consentError, setConsentError] = React.useState(false);
   const toggleConsent = (key: 'marketing' | 'night') => {
     if (consentBusy.current) return;
     if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
     consentBusy.current = true;
+    setConsentError(false);
     track(EVENTS.push_pref_toggle, { key, on: !consent[key] });
     void setGuestConsent(key, !consent[key])
-      .then(setConsent)
+      .then(setConsent) // 3R P1: 저장 성공 값으로만 반영 — 실패 시 상태 불변(원복 불요)
+      .catch(() => setConsentError(true)) // 저장 거부 표면화(법정 철회 유실 방지)
       .finally(() => {
         consentBusy.current = false;
       });
@@ -101,6 +104,12 @@ export default function NotificationSettings() {
               />
             </View>
           </View>
+          {consentError && (
+            <Pressable style={styles.osBanner} onPress={() => setConsentError(false)} testID="guest-consent-error">
+              <IconBell size={16} color={C.riskCaution} />
+              <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
+            </Pressable>
+          )}
         </ScrollView>
       </View>
     );

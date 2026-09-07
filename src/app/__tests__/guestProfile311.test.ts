@@ -81,3 +81,22 @@ it('Codex #72 P1: 동시 토글 직렬화 — 마케팅 off 직후 야간 탭에
   const c = await getGuestConsent();
   expect(c.marketing).toBe(false); // opt-out 보존(법정 값)
 });
+
+describe('Codex #72 3R: 저장 실패 전파·큐 시점 재검증', () => {
+  it('P1: setItem reject → throw 전파(상태 반영 없음 — 호출측 표면화)', async () => {
+    const spy = jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('disk'));
+    await expect(setGuestConsent('marketing', true)).rejects.toThrow('disk');
+    spy.mockRestore();
+    expect((await getGuestConsent()).marketing).toBe(false); // 저장값 불변
+  });
+
+  it('P2: 직렬 큐에서 marketing off 직후 night on 요청 = 최신 상태 재검증으로 무시', async () => {
+    await setGuestConsent('marketing', true);
+    const p1 = setGuestConsent('marketing', false);
+    const p2 = setGuestConsent('night', true); // 큐 처리 시점엔 marketing false
+    await Promise.all([p1, p2]);
+    const c = await getGuestConsent();
+    expect(c.marketing).toBe(false);
+    expect(c.night).toBe(false); // 야간만 ON 경로 차단
+  });
+});

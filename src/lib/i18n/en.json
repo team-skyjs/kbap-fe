@@ -973,7 +973,8 @@
     "marketing": "Marketing notifications",
     "marketingSub": "Get event and recommendation updates by push.",
     "night": "Nighttime notifications",
-    "nightSub": "Also receive them between 9 PM and 8 AM."
+    "nightSub": "Also receive them between 9 PM and 8 AM.",
+    "saveFailed": "Couldn’t save. Please try again."
   },
   "inbox": {
     "title": "Notifications",

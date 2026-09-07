@@ -48,6 +48,9 @@ export function setGuestConsent(key: 'marketing' | 'night', on: boolean): Promis
 
 async function applyConsent(key: 'marketing' | 'night', on: boolean): Promise<GuestConsent> {
   const cur = await getGuestConsent();
+  // Codex #72 3R P2: 큐 처리 시점 최신 상태 재검증 — 마케팅 OFF인데 야간 ON 요청이
+  // 직렬 큐를 통과해 "야간만 ON"이 되는 경로 차단(야간 = 마케팅 부속 동의).
+  if (key === 'night' && on && !cur.marketing) return cur;
   const now = new Date().toISOString();
   const next: GuestConsent = { ...cur, [key]: on, [`${key}ChangedAt`]: now };
   // 마케팅 철회 = 야간 동의도 동반 철회(야간은 마케팅의 부속 동의)
@@ -55,10 +58,8 @@ async function applyConsent(key: 'marketing' | 'night', on: boolean): Promise<Gu
     next.night = false;
     next.nightChangedAt = now;
   }
-  try {
-    await AsyncStorage.setItem(await storageKey(), JSON.stringify(next));
-  } catch {
-    /* 저장 실패 = 다음 진입 시 기존값 — 표시만 낙관 */
-  }
+  // Codex #72 3R P1: 저장 실패를 삼키지 않는다 — UI OFF·저장 ON(법정 철회 유실) 방지.
+  // 성공 후에만 새 값 반환(호출측이 성공 값으로만 상태 반영·실패 시 원복+표면화).
+  await AsyncStorage.setItem(await storageKey(), JSON.stringify(next));
   return next;
 }

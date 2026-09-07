@@ -976,7 +976,8 @@
     "marketing": "Notifikasi pemasaran",
     "marketingSub": "Terima info acara dan rekomendasi lewat notifikasi.",
     "night": "Notifikasi malam hari",
-    "nightSub": "Terima juga antara pukul 21.00–08.00."
+    "nightSub": "Terima juga antara pukul 21.00–08.00.",
+    "saveFailed": "Gagal menyimpan. Coba lagi."
   },
   "inbox": {
     "title": "Notifikasi",

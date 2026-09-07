@@ -977,7 +977,8 @@
     "marketing": "Notificaciones de marketing",
     "marketingSub": "Recibe eventos y recomendaciones por notificación.",
     "night": "Notificaciones nocturnas",
-    "nightSub": "Recíbelas también entre las 21:00 y las 8:00."
+    "nightSub": "Recíbelas también entre las 21:00 y las 8:00.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   },
   "inbox": {
     "title": "Notificaciones",

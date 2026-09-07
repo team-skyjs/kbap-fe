@@ -976,7 +976,8 @@
     "marketing": "Thông báo tiếp thị",
     "marketingSub": "Nhận tin sự kiện và gợi ý qua thông báo.",
     "night": "Thông báo ban đêm",
-    "nightSub": "Nhận cả trong khoảng 21h–8h sáng."
+    "nightSub": "Nhận cả trong khoảng 21h–8h sáng.",
+    "saveFailed": "Không lưu được. Vui lòng thử lại."
   },
   "inbox": {
     "title": "Thông báo",

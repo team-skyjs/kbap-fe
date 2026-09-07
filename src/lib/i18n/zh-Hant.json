@@ -976,7 +976,8 @@
     "marketing": "行銷通知",
     "marketingSub": "透過推播接收活動與推薦消息。",
     "night": "夜間通知",
-    "nightSub": "晚上9點至早上8點也接收。"
+    "nightSub": "晚上9點至早上8點也接收。",
+    "saveFailed": "儲存失敗，請重試。"
   },
   "inbox": {
     "title": "通知",
