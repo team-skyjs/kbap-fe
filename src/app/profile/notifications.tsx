@@ -41,10 +41,18 @@ export default function NotificationSettings() {
   React.useEffect(() => {
     if (isGuest) void getGuestConsent().then(setConsent);
   }, [isGuest]);
+  // Codex #72 P1: 저장 처리 중 = 토글 무시(직렬화와 이중 방어 — 연타 레이스 0)
+  const consentBusy = React.useRef(false);
   const toggleConsent = (key: 'marketing' | 'night') => {
+    if (consentBusy.current) return;
     if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
+    consentBusy.current = true;
     track(EVENTS.push_pref_toggle, { key, on: !consent[key] });
-    void setGuestConsent(key, !consent[key]).then(setConsent);
+    void setGuestConsent(key, !consent[key])
+      .then(setConsent)
+      .finally(() => {
+        consentBusy.current = false;
+      });
   };
 
   const router = useRouter();

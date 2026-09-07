@@ -69,3 +69,15 @@ describe('guestConsent — 기본 OFF·변경 시각 기록·마케팅 철회 = 
     expect(c.nightChangedAt).toMatch(/^\d{4}/);
   });
 });
+
+it('Codex #72 P1: 동시 토글 직렬화 — 마케팅 off 직후 야간 탭에도 marketing false 유지', async () => {
+  await setGuestConsent('marketing', true);
+  await setGuestConsent('night', true);
+  // 직렬화 검증: off와 night-재켜기를 **대기 없이 연속 발행** — stale read였다면
+  // night 쓰기가 marketing:true 스냅샷을 되살림
+  const p1 = setGuestConsent('marketing', false);
+  const p2 = setGuestConsent('night', true);
+  await Promise.all([p1, p2]);
+  const c = await getGuestConsent();
+  expect(c.marketing).toBe(false); // opt-out 보존(법정 값)
+});

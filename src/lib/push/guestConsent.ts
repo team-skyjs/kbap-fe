@@ -35,7 +35,18 @@ export async function getGuestConsent(): Promise<GuestConsent> {
   }
 }
 
-export async function setGuestConsent(key: 'marketing' | 'night', on: boolean): Promise<GuestConsent> {
+// Codex #72 P1: 동시 토글의 stale read(read-modify-write 레이스)가 법정 동의 값을
+// 되살릴 수 있음 → 쓰기를 **단일 체인으로 직렬화**(beTokens serialized 문법) —
+// 각 쓰기는 직전 쓰기 완료 후의 최신값을 읽어 수정한다.
+let writeChain: Promise<unknown> = Promise.resolve();
+
+export function setGuestConsent(key: 'marketing' | 'night', on: boolean): Promise<GuestConsent> {
+  const p = writeChain.then(() => applyConsent(key, on), () => applyConsent(key, on));
+  writeChain = p.catch(() => {});
+  return p;
+}
+
+async function applyConsent(key: 'marketing' | 'night', on: boolean): Promise<GuestConsent> {
   const cur = await getGuestConsent();
   const now = new Date().toISOString();
   const next: GuestConsent = { ...cur, [key]: on, [`${key}ChangedAt`]: now };

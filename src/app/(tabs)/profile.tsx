@@ -143,7 +143,7 @@ export default function Profile() {
               </View>
               <Pressable
                 style={({ pressed }) => [styles.editBtn, pressed && { backgroundColor: C.surface2 }]}
-                onPress={() => router.push('/login' as Href)}
+                onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)} // Codex #72 P2: 로그인 후 프로필 복귀
                 testID="guest-signin"
               >
                 <Text style={styles.editBtnText}>{t('intro.signUp')}</Text>
