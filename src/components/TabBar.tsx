@@ -14,6 +14,10 @@ import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C } from '@/lib/theme';
 import { IconTabFood, IconTabHome, IconTabReviews, IconTabScan, type IconProps } from './icons';
+import { RemoteImage } from './RemoteImage';
+import { useMe } from '@/lib/data/useMe';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { isDefaultProfileImage } from '@/lib/api/memberAdapter';
 
 /** P-128→P-146: 바 콘텐츠 높이(세이프에어리어 제외) = 플랫폼 **공식** 규격 —
  *  iOS HIG 바 콘텐츠 49pt(하단 세이프에어리어는 배경만 연장) · 안드 Material 3
@@ -42,11 +46,33 @@ function AvatarIcon({ size = 24 }: IconProps) {
   );
 }
 
-const TABS: { key: TabKey; Icon: (p: IconProps) => React.JSX.Element }[] = [
+/** P-305(KB-461): 프로필 탭 = 내 프로필 사진(원형 24) — 없음/게스트/로드 실패 = 현행
+ *  플레이스홀더. 활성 구분 = 링(비활성도 같은 폭 투명 보더 — P-151 프레임 불변).
+ *  소스 = ['me'] 쿼리 하나(프로필 수정 성공 invalidate로 탭도 자동 갱신 — 별도 스토어 0). */
+function ProfileTabIcon({ size = 24, color, active }: IconProps & { active?: boolean }) {
+  const isGuest = useIsGuest();
+  const { data: me } = useMe();
+  const [failed, setFailed] = React.useState(false);
+  // Codex #66: 서버 기본 아바타 URL = 사진 없음 취급(헤더 isDefaultProfileImage 판정 동일 — 불일치 해소)
+  const raw = isGuest ? null : (me?.profileImageUrl ?? null); // memberAdapter 방어(절대 URL만) 그대로
+  const url = raw && !isDefaultProfileImage(raw) ? raw : null;
+  React.useEffect(() => setFailed(false), [url]); // 사진 변경·삭제 시 상태 리셋(재시도)
+  if (!url || failed) return <AvatarIcon size={size} color={color} />;
+  return (
+    <View
+      style={[styles.avatarRing, { width: size, height: size, borderRadius: size / 2, borderColor: active ? INK_ACTIVE : 'transparent' }]}
+      testID="tab-avatar-photo"
+    >
+      <RemoteImage key={url} uri={url} onError={() => setFailed(true)} style={styles.avatarImg} transition={0} />
+    </View>
+  );
+}
+
+const TABS: { key: TabKey; Icon: (p: IconProps & { active?: boolean }) => React.JSX.Element }[] = [
   { key: 'home', Icon: IconTabHome },
   { key: 'food', Icon: IconTabFood },
   { key: 'reviews', Icon: IconTabReviews }, // KB-429: 커뮤니티 슬롯 → 리뷰(전역 피드)
-  { key: 'profile', Icon: AvatarIcon },
+  { key: 'profile', Icon: ProfileTabIcon },
 ];
 
 export function TabBar({
@@ -95,7 +121,7 @@ function Tab({
   label,
   onPress,
 }: {
-  tab: { key: TabKey; Icon: (p: IconProps) => React.JSX.Element };
+  tab: { key: TabKey; Icon: (p: IconProps & { active?: boolean }) => React.JSX.Element };
   active: boolean;
   label: string;
   onPress: () => void;
@@ -103,7 +129,7 @@ function Tab({
   const { Icon } = tab;
   return (
     <Pressable style={styles.tab} onPress={onPress} hitSlop={4}>
-      <Icon size={24} color={active ? INK_ACTIVE : C.inkDisabled} />
+      <Icon size={24} color={active ? INK_ACTIVE : C.inkDisabled} active={active} />
       <Text style={[styles.tlbl, { color: active ? C.primary : C.inkMute }]} numberOfLines={1} adjustsFontSizeToFit>
         {label}
       </Text>
@@ -123,6 +149,9 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
   slot: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
   iconSpace: { width: 24, height: 24 },
+  // P-305: 사진 아바타 링 — 비활성도 같은 폭(투명) = 프레임 불변(P-151)
+  avatarRing: { borderWidth: 1.5, overflow: 'hidden' },
+  avatarImg: { width: '100%', height: '100%' },
   // 시안: 11/500 — i18n 가변 길이(독일어/러시아어)는 축소 허용(adjustsFontSizeToFit)
   tlbl: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11 },
   fab: {
