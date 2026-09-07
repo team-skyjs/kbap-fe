@@ -25,6 +25,7 @@ import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, I
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
+import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
@@ -52,6 +53,16 @@ const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2
 const HEADER_SOLID_Y = 210;
 const INK_TITLE = '#2F3137';
 const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
+
+/** P-303(KB-457): 재료 타일·시트 이미지 = AvoidTile과 같은 3단 체인(서버 imageUrl →
+ *  CDN 조립 → 폴백) — 상세만 서버 imageUrl 단독이라 사진이 안 뜨던 결함 해소.
+ *  체인 소진 시 현 폴백(IconFood) 유지, 타일 크기 48/56 무변(시안 §3). */
+function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; imageUrl?: string | null; size: number; iconSize: number }) {
+  const { uri, nextSource } = useIngredientImageChain(code, imageUrl);
+  if (!uri) return <IconFood size={iconSize} color={C.ink3} />;
+  // key = 소스별 리마운트(RemoteImage settle 리셋 — AvoidTile 문법 동일)
+  return <RemoteImage key={uri} uri={uri} onError={nextSource} style={{ width: size, height: size, borderRadius: 8 }} />;
+}
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
@@ -429,7 +440,6 @@ function Registered({
             <View style={styles.ingGrid}>
               {shownIngredients.map((ing) => {
                 const dRisk = personalRisk(ing.risk, hasRestrictions);
-                const img = cat.imageUrl(ing.code);
                 return (
                   <Pressable key={ing.code} style={styles.ingTile} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
                     {!guest && (
@@ -438,11 +448,7 @@ function Registered({
                       </View>
                     )}
                     <View style={styles.ingTileImg}>
-                      {img ? (
-                        <RemoteImage uri={img} style={{ width: 48, height: 48, borderRadius: 8 }} />
-                      ) : (
-                        <IconFood size={28} color={C.ink3} />
-                      )}
+                      <IngChainImage code={ing.code} imageUrl={cat.imageUrl(ing.code)} size={48} iconSize={28} />
                     </View>
                     <Text style={styles.ingTileName} numberOfLines={1}>{ing.name}</Text>
                     {ing.percentage != null && (
@@ -573,11 +579,7 @@ function Registered({
                     )}
                   </View>
                   <View style={styles.ingSheetImg}>
-                    {cat.imageUrl(ingSheet.code) ? (
-                      <RemoteImage uri={cat.imageUrl(ingSheet.code)!} style={{ width: 56, height: 56, borderRadius: 8 }} />
-                    ) : (
-                      <IconFood size={32} color={C.ink3} />
-                    )}
+                    <IngChainImage code={ingSheet.code} imageUrl={cat.imageUrl(ingSheet.code)} size={56} iconSize={32} />
                   </View>
                 </View>
                 {/* 본문 = 기존 중립 조립 사유(guest = 판정 미노출이라 note/빈도만) */}
