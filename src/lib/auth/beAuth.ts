@@ -185,14 +185,18 @@ export async function hasBeSession(): Promise<boolean> {
  *  in-flight 래치 = 동시 400 다발(프로필+스캔 등)에도 경계 1회. 경계 후엔
  *  토큰·세션이 없어 자연 no-op — 재로그인하면 다시 활성(별도 리셋 불필요). */
 let memberMissingInFlight: Promise<void> | null = null;
-function handleMemberMissing(): Promise<void> {
+function handleMemberMissing(requestToken: string | null): Promise<void> {
   if (!memberMissingInFlight) {
     memberMissingInFlight = (async () => {
       try {
-        if (getSessionState() === true || (await loadTokens()) != null) {
-          console.log('[auth] MEMBER-003 with stored session → session expired (KB-441)');
-          await sessionExpired();
-        }
+        const t = await loadTokens();
+        if (getSessionState() !== true && t == null) return; // 게스트 — 지울 세션 없음(P-260)
+        // Codex #59 P1: 낡은 세션의 늦은 응답 가드 — 요청에 부착됐던 토큰이 현 저장
+        // access와 다르면(로그아웃→B 로그인 사이 A의 in-flight 도착) B 세션 보존.
+        // 무토큰 요청의 MEMBER-003은 회원 세션 문제가 아니다 — 무시(반쪽 상태는 401 몫).
+        if (requestToken == null || t?.access !== requestToken) return;
+        console.log('[auth] MEMBER-003 with stored session → session expired (KB-441)');
+        await sessionExpired();
       } finally {
         memberMissingInFlight = null;
       }

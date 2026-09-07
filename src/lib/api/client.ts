@@ -93,11 +93,14 @@ export function setOnUnauthorized(handler: ((code: string | null) => Promise<boo
 }
 
 /** KB-441(P-297): 서버가 모르는 회원(MEMBER-003) 알림 — 좀비 세션 감지.
- *  b27 실기: prod DB에 없는 회원의 refresh가 성공해 유효 토큰 + 전 회원 API 400
+ *  b27 실기: prod DB에 없는 회원의 유효 토큰 + 전 회원 API 400
  *  (프로필 dead-end·스캔 지연 표면화). 분기 정책(저장 토큰 있을 때만 세션 무효)은
- *  핸들러(beAuth) 한 곳 — 여기선 fire-and-forget 통지만, 에러는 그대로 throw. */
-let onMemberMissing: (() => void) | null = null;
-export function setOnMemberMissing(handler: (() => void) | null) {
+ *  핸들러(beAuth) 한 곳 — 여기선 fire-and-forget 통지만, 에러는 그대로 throw.
+ *  Codex #59 P1: **요청에 부착했던 access 토큰**을 스냅샷으로 전달 — A 세션의
+ *  in-flight 응답이 로그아웃→B 로그인 뒤에 도착해도 핸들러가 현 저장 토큰과
+ *  대조해 무시(세대 가드와 동일 불변식 — client는 auth 레이어 비의존 유지). */
+let onMemberMissing: ((requestToken: string | null) => void) | null = null;
+export function setOnMemberMissing(handler: ((requestToken: string | null) => void) | null) {
   onMemberMissing = handler;
 }
 
@@ -237,7 +240,7 @@ async function request<T>(
     if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined);
     // KB-441: MEMBER-003(회원 없음) = 좀비 세션 신호 — 핸들러에 통지(정책은 beAuth).
     // /auth/* 자체 응답은 제외(로그인·refresh 흐름은 자체 분기 — 401 경로와 동일 원칙).
-    if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing();
+    if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(accessToken);
     throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status, json?.code ?? undefined);
   }
   // 200 but success:false — never trust HTTP status alone.
