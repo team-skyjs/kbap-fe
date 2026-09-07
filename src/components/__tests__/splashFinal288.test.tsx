@@ -65,13 +65,13 @@ it('타이밍 상수 = 프로토타입 모션 A 수치 그대로(스냅샷)', ()
     "delay": 850,
     "dur": 350,
   },
-  "fadeOutAt": 1600,
+  "fadeOutAt": 3000,
   "fadeOutDur": 450,
   "k": {
     "delay": 300,
     "dur": 600,
   },
-  "reduceHold": 600,
+  "reduceHold": 3000,
   "tagline": {
     "delay": 950,
     "dur": 500,
