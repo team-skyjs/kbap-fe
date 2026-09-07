@@ -108,6 +108,23 @@ it('① 메뉴 행 순서 스냅샷 — My Foods→Saved→My reviews→Language
   expect(src).not.toContain('borderBottomWidth: StyleSheet.hairlineWidth'); // 구 AcctRow 구분선 소멸
 });
 
+it('①-c P-300(KB-449): 값 없는 이동 행 전부 chevron — 값 행 무변·로그아웃 유지', () => {
+  const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
+  // chevron 부여 6행(로그아웃은 기존 유지로 7행) — 소스 잠금
+  expect(src).toContain("label={t('profile.myFoods')} chevron");
+  expect(src).toContain("label={t('profile.dietTitle')} chevron");
+  expect(src).toContain("label={t('notif.title')} chevron");
+  expect(src).toContain("label={t('profile.safetyNotice')} chevron");
+  expect(src).toContain("label={t('community.blockedTitle')} chevron");
+  expect(src).toContain("label={t('profile.deleteAccount')} dim chevron");
+  // 값 행(Saved·My reviews·Language) = chevron 없음(무변)
+  expect(src).not.toMatch(/profile\.saved'\)\} value=[^\n]*chevron/);
+  expect(src).not.toMatch(/myReviews\.title'\)\} value=[^\n]*chevron/);
+  expect(src).not.toMatch(/profile\.language'\)\} value=[^\n]*chevron/);
+  // 크기·색 = 로그아웃과 동일(MenuRow 공용 렌더 한 곳)
+  expect(src).toContain('{chevron && <IconChevron size={16} color={C.ink3} />}');
+});
+
 it('①-b KB-434 후속: rank null(계약 드리프트 방어) = 랭킹 카드 미렌더 — 나머지 표면 정상', () => {
   mockUseMe.mockReturnValue({ ...ME, data: { ...ME.data, rank: null } });
   const tree = render(<Profile />);
