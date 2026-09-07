@@ -254,6 +254,23 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
     expect(texts.some((x) => x.includes('common.retry'))).toBe(false); // 에러 블록 미렌더
   });
 
+
+  it('Codex P2: 다음 페이지 실패(isFetchNextPageError) → 푸터 소형 에러+재시도(전체 블록 0)', () => {
+    const fetchNextPage = jest.fn();
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [REVIEW], hasNext: true, nextCursor: 'c2' }] },
+      isLoading: false, isError: true, isFetchNextPageError: true, error: new Error('HTTP 500'), refetch: jest.fn(),
+      hasNextPage: true, isFetchingNextPage: false, fetchNextPage,
+    });
+    const tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBeGreaterThanOrEqual(1); // 리스트 유지
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-next-error').length).toBeGreaterThanOrEqual(1); // 푸터 에러(host+composite 중복 수용)
+    const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((x) => x.includes('states.errorBody'))).toBe(false); // 전체 블록(본문 포함) 미렌더 — 푸터 소형만
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-next-retry')[0].props.onPress());
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+  });
+
   it('목록 0 + isError → 에러 블록 단독 렌더(기존 시맨틱 유지)', () => {
     mockFeed.mockReturnValue({
       data: { pages: [] },

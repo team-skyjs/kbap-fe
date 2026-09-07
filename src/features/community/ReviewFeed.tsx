@@ -168,6 +168,15 @@ export function ReviewFeed() {
             <View style={styles.center}>
               <Spinner size={18} color={C.ink3} />
             </View>
+          ) : feed.isFetchNextPageError ? (
+            /* Codex #58 P2: 다음 페이지 실패 = 푸터 소형 에러 — 기존 페이지가 남아
+               전체 블록(빈 목록 전용)이 안 뜨므로 여기서만 재시도 표면화 */
+            <View style={styles.footerErr} testID="feed-next-error">
+              <Text style={styles.footerErrText}>{t('states.errorTitle')}</Text>
+              <Pressable style={styles.footerRetry} onPress={() => void feed.fetchNextPage()} testID="feed-next-retry">
+                <Text style={styles.footerRetryText}>{t('common.retry')}</Text>
+              </Pressable>
+            </View>
           ) : null
         }
       />
@@ -281,6 +290,11 @@ const styles = StyleSheet.create({
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
+  // Codex #58 P2: 다음 페이지 실패 푸터 — 소형(리스트 흐름 유지), 색 = 정보성 회색
+  footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
+  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
+  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
+  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
   // Q1: 쿼터 넛지 카드(4150:17089) — mx 24, bg #FFFBF4 r16 pad 20/12/20/20
   nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: 16, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
   nudgeTitle: { fontSize: 15, fontWeight: '700', color: '#262C31' },
