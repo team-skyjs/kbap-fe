@@ -199,7 +199,7 @@ describe('KB-441(P-297)·Codex P1-3: MEMBER-003 = 좀비 세션 무효화 — �
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const src = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
     expect(src).toContain("json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(requestGen)");
-    expect(src).toContain('const requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;');
+    expect(src).toContain('let requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;'); // P1-6: 토큰 로드 앞 캡처 + 1회 재정렬
     expect(src.indexOf("json?.code === 'MEMBER-003'")).toBeLessThan(src.indexOf('throw new ApiError(json?.message'));
   });
 });

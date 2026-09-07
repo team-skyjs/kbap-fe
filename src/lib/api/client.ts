@@ -157,11 +157,18 @@ async function request<T>(
   // `/api` 아래 버전리스 — 전 채널 동일(구 /api/v1 분기 소멸).
   const url = path.startsWith('/api/') ? `${BE_BASE}${path}` : `${BE_BASE}/api${path}`;
   const skipAuth = OPEN_AUTH_PATHS.some((p) => path.startsWith(p));
-  const accessToken =
+  // KB-441(Codex #59 P1-3→6): 세대는 **토큰 로드 앞**에 캡처 — MEMBER-003 통지에 동봉.
+  // P1-6(찢긴 스냅샷): 토큰 로드(비동기) 중 로그인 커밋이 끼면 "A 토큰+B 세대"로 나가
+  // 늦은 MEMBER-003이 B 세션을 지운다 → 로드 후 세대가 달라졌으면 **1회 재읽기**로
+  // 일치화(재읽기 중 또 경계가 끼는 초과 전환은 낡은 세대 쪽으로 남아 핸들러가 무시 — 안전 방향).
+  let requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;
+  let accessToken =
     !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  if (sessionGenerationProvider && sessionGenerationProvider() !== requestGen) {
+    requestGen = sessionGenerationProvider();
+    accessToken = !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  // KB-441(Codex #59 P1-3): 요청 발행 시점의 세션 세대 스냅샷 — MEMBER-003 통지에 동봉
-  const requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;
 
   let res: Response;
   let text: string;
