@@ -30,6 +30,8 @@ export interface ActionSheetItem {
   /** P-190: 탭 시 자동 onClose 생략 — 페이즈 전환형(신고/차단)용. onClose가 플로우
    *  전체를 언마운트하는 소비처에서 조기 close가 전환을 죽이던 버그의 구조 수정. */
   keepOpen?: boolean;
+  /** P-318: 비활성 행(예: NEW 정렬 — KB-439 배포 전) — 탭 무시, 색만 감쇠(P-151 프레임 불변). */
+  disabled?: boolean;
 }
 
 export function ActionSheet({
@@ -65,6 +67,7 @@ export function ActionSheet({
               <Pressable
                 key={it.key}
                 style={[styles.row, i > 0 && styles.rowDivider]}
+                disabled={it.disabled}
                 onPress={() => {
                   // P-190: keepOpen = 페이즈 전환형 — onClose(플로우 언마운트) 생략,
                   // 전환된 페이즈 렌더가 시트를 대체한다. 그 외는 현행(자동 닫힘) 무변.
@@ -73,7 +76,7 @@ export function ActionSheet({
                 }}
               >
                 {it.icon}
-                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive]} numberOfLines={1}>{it.label}</Text>
+                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -103,6 +106,7 @@ const styles = StyleSheet.create({
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
   rowTextDestructive: { color: DESTRUCTIVE },
+  rowTextDisabled: { color: C.ink3 },
 });
 
 export default ActionSheet;

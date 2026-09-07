@@ -96,6 +96,9 @@
     "title": "Explorar comida",
     "sub": "Cada plato etiquetado con tu riesgo.",
     "searchPlaceholder": "Buscar comida o ingrediente…",
+    "sort_popular": "Populares",
+    "sort_new": "Nuevos",
+    "sort_alpha": "A–Z",
     "categories": {
       "all": "Todo",
       "stews": "Guisos",
