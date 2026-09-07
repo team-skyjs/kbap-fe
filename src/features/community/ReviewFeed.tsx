@@ -181,8 +181,11 @@ export function ReviewFeed() {
         onBell={() => router.push('/notifications' as Href)}
       />
 
-      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙 */}
-      {!feed.isLoading && feed.isError ? (
+      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙.
+          P-297(9/7 예진 실기): 에러 오버레이는 **목록이 비었을 때만** — 캐시 페이지가
+          있는 채 재조회만 실패(오프라인 복귀 등)하면 isError여도 리스트 유지(겹침 결함).
+          재시도 경로 = pull-to-refresh 현행. */}
+      {!feed.isLoading && feed.isError && reviews.length === 0 ? (
         <ScreenCenterFill>
           <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
         </ScreenCenterFill>

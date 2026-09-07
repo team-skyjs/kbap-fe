@@ -240,3 +240,29 @@ describe('P-186: 타 유저 신고·차단', () => {
     expect(anon.root.findAll((n) => n.props?.testID === 'feed-more-r2').length).toBe(0);
   });
 });
+
+describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹침 결함)', () => {
+  it('캐시 페이지 존재 + isError → 리스트 유지·에러 블록 0(겹침 금지)', () => {
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: true, error: new Error('NETWORK: offline'), refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBeGreaterThanOrEqual(1);
+    const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((x) => x.includes('common.retry'))).toBe(false); // 에러 블록 미렌더
+  });
+
+  it('목록 0 + isError → 에러 블록 단독 렌더(기존 시맨틱 유지)', () => {
+    mockFeed.mockReturnValue({
+      data: { pages: [] },
+      isLoading: false, isError: true, error: new Error('NETWORK: offline'), refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts.some((x) => x.includes('common.retry'))).toBe(true);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
+  });
+});
