@@ -16,7 +16,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { DEFAULT_GUEST_CONSENT, getGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
+import { DEFAULT_GUEST_CONSENT, readGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
 import { EVENTS, track } from '@/lib/analytics';
 import {
   getPermissionStatus,
@@ -37,15 +37,26 @@ export default function NotificationSettings() {
   // P-311(KB-478): 게스트 = 마케팅·야간 동의 토글 2개만(기본 OFF, 로컬 — guestConsent)
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const [consent, setConsent] = React.useState<GuestConsent>(DEFAULT_GUEST_CONSENT);
+  // Codex #72 4R: 읽기 3상 — error = 값 표시 금지·토글 비활성·재시도 배너
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [consentReadError, setConsentReadError] = React.useState(false);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const loadConsent = React.useCallback(() => {
+    void readGuestConsent().then((r) => {
+      if (r.status === 'error') return setConsentReadError(true);
+      setConsentReadError(false);
+      setConsent(r.status === 'ok' ? r.value : DEFAULT_GUEST_CONSENT);
+    });
+  }, []);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   React.useEffect(() => {
-    if (isGuest) void getGuestConsent().then(setConsent);
-  }, [isGuest]);
+    if (isGuest) loadConsent();
+  }, [isGuest, loadConsent]);
   // Codex #72 P1: 저장 처리 중 = 토글 무시(직렬화와 이중 방어 — 연타 레이스 0)
   const consentBusy = React.useRef(false);
   const [consentError, setConsentError] = React.useState(false);
   const toggleConsent = (key: 'marketing' | 'night') => {
-    if (consentBusy.current) return;
+    if (consentBusy.current || consentReadError) return; // 4R: 읽기 오류 중 토글 비활성
     if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
     consentBusy.current = true;
     setConsentError(false);
@@ -86,7 +97,7 @@ export default function NotificationSettings() {
       <View style={styles.root}>
         <SubHeader title={t('notif.title')} onBack={() => router.back()} />
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
+          <View style={[styles.card, consentReadError && styles.rowDisabled]}>
             <ToggleRow
               label={t('notif.marketing')}
               sub={t('notif.marketingSub')}
@@ -106,6 +117,13 @@ export default function NotificationSettings() {
           </View>
           {consentError && (
             <Pressable style={styles.osBanner} onPress={() => setConsentError(false)} testID="guest-consent-error">
+              <IconBell size={16} color={C.riskCaution} />
+              <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
+            </Pressable>
+          )}
+          {consentReadError && (
+            /* 4R: 읽기 오류 — 값 미표시(기본 OFF 위장 금지), 탭 = 재시도 */
+            <Pressable style={styles.osBanner} onPress={loadConsent} testID="guest-consent-read-error">
               <IconBell size={16} color={C.riskCaution} />
               <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
             </Pressable>

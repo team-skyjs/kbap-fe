@@ -100,3 +100,13 @@ describe('Codex #72 3R: 저장 실패 전파·큐 시점 재검증', () => {
     expect(c.night).toBe(false); // 야간만 ON 경로 차단
   });
 });
+
+it('Codex #72 4R: getItem reject → read status=error(기본 OFF 위장 금지)·쓰기 throw(저장 보존)', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { readGuestConsent } = require('@/lib/push/guestConsent') as typeof import('@/lib/push/guestConsent');
+  const spy = jest.spyOn(AsyncStorage, 'getItem').mockRejectedValue(new Error('disk-read'));
+  expect((await readGuestConsent()).status).toBe('error');
+  await expect(setGuestConsent('marketing', true)).rejects.toThrow(); // 기본값 덮어쓰기 금지
+  spy.mockRestore();
+  expect((await readGuestConsent()).status).not.toBe('error'); // 복구 후 정상
+});

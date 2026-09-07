@@ -26,13 +26,25 @@ async function storageKey(): Promise<string> {
   return `kbap.guestNotif.v1.${await getInstallationId()}`;
 }
 
-export async function getGuestConsent(): Promise<GuestConsent> {
+/** Codex #72 4R: 읽기 3상 구분 — 저장소 오류를 '전부 OFF'로 위장하면 저장된 opt-in이
+ *  UI에서 OFF로 보인다(저장은 ON 유지 — 표시·실제 불일치). error = 값 표시 금지. */
+export type GuestConsentRead = { status: 'ok'; value: GuestConsent } | { status: 'missing' } | { status: 'error' };
+
+export async function readGuestConsent(): Promise<GuestConsentRead> {
   try {
     const raw = await AsyncStorage.getItem(await storageKey());
-    return raw ? { ...DEFAULT_GUEST_CONSENT, ...(JSON.parse(raw) as Partial<GuestConsent>) } : DEFAULT_GUEST_CONSENT;
+    if (raw == null) return { status: 'missing' };
+    return { status: 'ok', value: { ...DEFAULT_GUEST_CONSENT, ...(JSON.parse(raw) as Partial<GuestConsent>) } };
   } catch {
-    return DEFAULT_GUEST_CONSENT; // 저장소 오류 = 미동의(보수 — false-safe 계열)
+    return { status: 'error' };
   }
+}
+
+/** 쓰기 경로용 — error는 throw(기본값으로 덮어쓰기 금지: 저장된 동의 보존). */
+export async function getGuestConsent(): Promise<GuestConsent> {
+  const r = await readGuestConsent();
+  if (r.status === 'error') throw new Error('guest-consent read failed');
+  return r.status === 'ok' ? r.value : DEFAULT_GUEST_CONSENT;
 }
 
 // Codex #72 P1: 동시 토글의 stale read(read-modify-write 레이스)가 법정 동의 값을
