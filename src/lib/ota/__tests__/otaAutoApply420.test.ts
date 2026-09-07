@@ -44,6 +44,44 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
   });
 });
 
+describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { canReloadNow, OTA_BOOT_GUARD_MS } = require('../otaPolicy') as typeof import('../otaPolicy');
+  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active' };
+
+  it('전부 충족 = true(경계 8s 포함)', () => {
+    expect(canReloadNow(OK)).toBe(true);
+    expect(canReloadNow({ ...OK, now: OTA_BOOT_GUARD_MS + 60_000 })).toBe(true);
+  });
+
+  it('부팅 8s 미경과 = false(b28 크래시 재현 창 — 3s)', () => {
+    expect(canReloadNow({ ...OK, now: 3_000 })).toBe(false);
+  });
+
+  it('스플래시 미종료 = false', () => {
+    expect(canReloadNow({ ...OK, splashDone: false })).toBe(false);
+  });
+
+  it('비포그라운드(background/inactive) = false', () => {
+    expect(canReloadNow({ ...OK, appState: 'background' })).toBe(false);
+    expect(canReloadNow({ ...OK, appState: 'inactive' })).toBe(false);
+  });
+
+  it('호스트 배선 소스 잠금 — 가드 경유 적용·타이머 1회 재평가·배너 탭 동일 경로·splashDone 배선', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs');
+    const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+    expect(host).toContain('const BOOTED_AT = Date.now();'); // 모듈 로드 시각
+    expect(host).toContain('if (!canReloadNow({ bootedAt: BOOTED_AT'); // 가드 통과 시에만 applyNow
+    expect(host).toContain('if (tryApply()) return;'); // 정책 reload여도 가드 선행(teamtest immediate 포함)
+    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remain)'); // 충족 시각 1회 재평가
+    expect(host).toContain('onPress={() => tryApply()}'); // 배너 수동 탭도 가드 경유
+    expect(host).not.toContain('onPress={applyNow}'); // 무가드 직행 잔존 0
+    const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
+    expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />');
+  });
+});
+
 describe('otaCheck 코어 — 스로틀·isEnabled·fetch 흐름 (모듈 주입 실측)', () => {
   const mod = (over: Partial<OtaUpdatesModule> = {}): OtaUpdatesModule => ({
     isEnabled: true,
@@ -91,7 +129,7 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
 
   it('루트 레이아웃이 OtaAutoApplyHost를 마운트한다', () => {
     const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-    expect(layout).toContain('<OtaAutoApplyHost />');
+    expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />'); // P-304: 가드 조건 ② 배선
   });
 
   it('호스트 — __DEV__ 게이트·expo-updates 지연 require·정책 경유·배너 제외 화면 미노출', () => {
