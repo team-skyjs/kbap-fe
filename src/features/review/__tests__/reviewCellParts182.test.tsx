@@ -154,3 +154,10 @@ it('ReviewEditSheet — 기존 값 프리필·저장 콜백에 변경값 전달(
   act(() => save.props.onPress());
   expect(onSave).toHaveBeenCalledWith({ rating: 5, body: 'old body', place: null, extras: { speed: null, service: null } }); // P-201 장소 + P-236 extras
 });
+
+it('KB-431 후속(.fig 실측 2162:11360): 평점 행 = 좌측 정렬(hug @x20) — center 잔존 0', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
+  expect(src).toContain("justifyContent: 'flex-start', gap: 16");
+  expect(src).not.toContain("justifyContent: 'center', gap: 16");
+});
