@@ -226,7 +226,7 @@ it('배선·네이티브 구성 소스 잠금 — hideAsync 프레임 활성·�
   const splash = app.expo.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
   expect(splash.backgroundColor).toBe('#FFFFFF'); // 흰 고정(다크 변형 없음)
   expect(splash.image).toBe('./assets/images/splash-mark-ios.png');
-  expect(splash.imageWidth).toBe(81); // P-291: 타이트 캔버스(245×285) — 마크 화면상 81pt
+  expect(splash.imageWidth).toBe(94); // P-307: 정사각 aspectFit 보정(81×285/245) — 실폭 81pt 유지
   expect(splash.android.image).toBe('./assets/images/splash-mark-android.png');
   expect(splash.android.imageWidth).toBe(131); // 안드 원형 마스크 캔버스(396) 보정
 });
