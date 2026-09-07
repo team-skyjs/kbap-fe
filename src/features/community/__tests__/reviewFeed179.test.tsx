@@ -271,6 +271,20 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
     expect(fetchNextPage).toHaveBeenCalledTimes(1);
   });
 
+
+  it('Codex P2-2: 에러 상태 onEndReached → fetchNextPage 0(자동 재시도 루프 차단, 버튼만)', () => {
+    const fetchNextPage = jest.fn();
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [REVIEW], hasNext: true, nextCursor: 'c2' }] },
+      isLoading: false, isError: true, isFetchNextPageError: true, error: new Error('HTTP 500'), refetch: jest.fn(),
+      hasNextPage: true, isFetchingNextPage: false, fetchNextPage,
+    });
+    const tree = render();
+    const list = tree.root.findAll((n) => n.props?.testID === undefined && typeof n.props?.onEndReached === 'function')[0];
+    act(() => list.props.onEndReached());
+    expect(fetchNextPage).not.toHaveBeenCalled();
+  });
+
   it('목록 0 + isError → 에러 블록 단독 렌더(기존 시맨틱 유지)', () => {
     mockFeed.mockReturnValue({
       data: { pages: [] },

@@ -73,6 +73,9 @@ export function ReviewFeed() {
     return author == null || !blockedIds.has(author);
   });
   const loadMore = () => {
+    // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
+    // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
+    if (feed.isFetchNextPageError) return;
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   };
 
