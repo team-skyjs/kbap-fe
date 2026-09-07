@@ -27,9 +27,10 @@ export const SPLASH_TIMING = {
   k: { delay: 300, dur: 600 }, // translateY −34→0 · 오버슈트
   dot: { delay: 850, dur: 350 }, // scale .2→1
   tagline: { delay: 950, dur: 500 }, // translateY 8→0
-  fadeOutAt: 1600,
+  // P-298(9/7 예진): 최소 노출 3초 — 부팅이 빨라도 fadeOutAt 전엔 유지(ready와 AND).
+  fadeOutAt: 3000,
   fadeOutDur: 450,
-  reduceHold: 600, // reduce-motion: 정지 표시 후 페이드아웃까지
+  reduceHold: 2550, // reduce-motion: 정지 표시 후 페이드아웃까지(+fade 450 = 총 3s 동률)
   cap: 4000, // bootGate 캡과 동일 — 어떤 경우에도 이 시점엔 언마운트
 } as const;
 
