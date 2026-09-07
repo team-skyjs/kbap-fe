@@ -184,25 +184,30 @@ export async function hasBeSession(): Promise<boolean> {
  *  저장 세션이 있을 때만 세션 무효(토큰 정리→캐시 clear→게스트 재평가→로그인 유도).
  *  in-flight 래치 = 동시 400 다발(프로필+스캔 등)에도 경계 1회. 경계 후엔
  *  토큰·세션이 없어 자연 no-op — 재로그인하면 다시 활성(별도 리셋 불필요). */
-let memberMissingInFlight: Promise<void> | null = null;
+/** Codex #59 P1-2: 래치는 **토큰별** — 단일 슬롯이면 스테일 A 처리 중 도착한
+ *  현행 B의 정당한 신호가 A의 promise를 돌려받고 유실된다(좀비 세션 잔존).
+ *  같은 토큰의 동시 400 다발만 합치고, 다른 토큰은 각자 평가. */
+const memberMissingInFlight = new Map<string, Promise<void>>();
 function handleMemberMissing(requestToken: string | null): Promise<void> {
-  if (!memberMissingInFlight) {
-    memberMissingInFlight = (async () => {
-      try {
-        const t = await loadTokens();
-        if (getSessionState() !== true && t == null) return; // 게스트 — 지울 세션 없음(P-260)
-        // Codex #59 P1: 낡은 세션의 늦은 응답 가드 — 요청에 부착됐던 토큰이 현 저장
-        // access와 다르면(로그아웃→B 로그인 사이 A의 in-flight 도착) B 세션 보존.
-        // 무토큰 요청의 MEMBER-003은 회원 세션 문제가 아니다 — 무시(반쪽 상태는 401 몫).
-        if (requestToken == null || t?.access !== requestToken) return;
-        console.log('[auth] MEMBER-003 with stored session → session expired (KB-441)');
-        await sessionExpired();
-      } finally {
-        memberMissingInFlight = null;
-      }
-    })();
-  }
-  return memberMissingInFlight;
+  // 무토큰 요청의 MEMBER-003은 회원 세션 문제가 아니다 — 무시(반쪽 상태는 401 몫).
+  if (requestToken == null) return Promise.resolve();
+  const inFlight = memberMissingInFlight.get(requestToken);
+  if (inFlight) return inFlight;
+  const p = (async () => {
+    try {
+      const t = await loadTokens();
+      if (getSessionState() !== true && t == null) return; // 게스트 — 지울 세션 없음(P-260)
+      // Codex #59 P1: 낡은 세션의 늦은 응답 가드 — 요청에 부착됐던 토큰이 현 저장
+      // access와 다르면(로그아웃→B 로그인 사이 A의 in-flight 도착) B 세션 보존.
+      if (t?.access !== requestToken) return;
+      console.log('[auth] MEMBER-003 with stored session → session expired (KB-441)');
+      await sessionExpired();
+    } finally {
+      memberMissingInFlight.delete(requestToken);
+    }
+  })();
+  memberMissingInFlight.set(requestToken, p);
+  return p;
 }
 
 async function handleUnauthorized(code: string | null): Promise<boolean> {

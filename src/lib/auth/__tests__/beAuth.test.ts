@@ -203,3 +203,21 @@ describe('KB-441 Codex P1: 세션 경계 레이스 — 낡은 세션의 늦은 M
     expect(tokens.clearTokens).not.toHaveBeenCalled();
   });
 });
+
+describe('KB-441 Codex P1-2: 토큰별 래치 — 스테일 처리 중 현행 신호 유실 방지', () => {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const { setOnMemberMissing } = require('@/lib/api/client');
+  const handleMemberMissing: (requestToken: string | null) => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
+  /* eslint-enable @typescript-eslint/no-require-imports */
+
+  it('스테일 A(OLD) 처리 중 현행 B(A) 통지 겹침 → B는 자기 평가로 sessionExpired 1회', async () => {
+    // 단일 슬롯 래치였다면 B가 A의 promise를 돌려받아 유실 — 토큰별 래치로 각자 평가
+    await Promise.all([handleMemberMissing('OLD-A-TOKEN'), handleMemberMissing('A')]);
+    expect(tokens.clearTokens).toHaveBeenCalledTimes(1); // 현행('A')만 경계 발동
+  });
+
+  it('같은 토큰 동시 통지는 여전히 1회 합침(중복 경계 0)', async () => {
+    await Promise.all([handleMemberMissing('A'), handleMemberMissing('A')]);
+    expect(tokens.clearTokens).toHaveBeenCalledTimes(1);
+  });
+});
