@@ -203,3 +203,27 @@ describe('KB-441(P-297)·Codex P1-3: MEMBER-003 = 좀비 세션 무효화 — �
     expect(src.indexOf("json?.code === 'MEMBER-003'")).toBeLessThan(src.indexOf('throw new ApiError(json?.message'));
   });
 });
+
+describe('KB-441 Codex P1-4: 로그인 커밋 = 세션 경계(gen 증가)', () => {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const { setOnMemberMissing } = require('@/lib/api/client');
+  const handleMemberMissing: (requestGen: number | null) => Promise<void> = (setOnMemberMissing as jest.Mock).mock.calls[0][0];
+  /* eslint-enable @typescript-eslint/no-require-imports */
+
+  it('로그인 A 세대의 in-flight → 로그인 B 커밋(gen 증가) → 늦은 MEMBER-003 무시·B 토큰 보존', async () => {
+    let gen = 0;
+    (tokens.currentGen as jest.Mock).mockImplementation(() => gen);
+    (tokens.bumpSessionGen as jest.Mock).mockImplementation(() => { gen += 1; });
+    try {
+      const staleGen = gen; // A 세션에서 발행된 요청의 스냅샷
+      api.post.mockResolvedValueOnce({ newMember: false, accessToken: 'B', refreshToken: 'RB' });
+      await beAuth.exchangeLogin('firebase-token-B'); // 커밋 시 경계(bump)
+      expect(tokens.bumpSessionGen).toHaveBeenCalled();
+      await handleMemberMissing(staleGen); // gen 상이 — 무시
+      expect(tokens.clearTokens).not.toHaveBeenCalled(); // B 토큰 보존
+    } finally {
+      (tokens.currentGen as jest.Mock).mockImplementation(() => 0);
+      (tokens.bumpSessionGen as jest.Mock).mockImplementation(() => {});
+    }
+  });
+});

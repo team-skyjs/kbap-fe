@@ -67,6 +67,10 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
     await revertTokensIf(r.accessToken, r.refreshToken);
     return { newMember: r.newMember, cancelled: true };
   }
+  // KB-441(Codex #59 P1-4): 로그인 커밋도 **세션 경계** — 로그인 상태에서 /login 직행
+  // 후 다른 계정 로그인 시 옛 세션 출발 요청과 새 계정이 같은 gen이 되어 늦은
+  // MEMBER-003이 새 토큰을 지우던 구멍. 자기 가드(위 gen 검사) 통과 후 증가라 무해.
+  bumpSessionGen();
   resetServerCache(true);
   console.log('[auth] BE token exchange ok | newMember =', r.newMember);
   return { newMember: r.newMember };
