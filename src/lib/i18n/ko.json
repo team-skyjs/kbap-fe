@@ -96,6 +96,9 @@
     "title": "음식 둘러보기",
     "sub": "모든 요리에 내 위험도가 표시돼요.",
     "searchPlaceholder": "음식 또는 재료 검색…",
+    "sort_popular": "인기순",
+    "sort_new": "최신순",
+    "sort_alpha": "가나다순",
     "categories": {
       "all": "전체",
       "stews": "찌개·탕",

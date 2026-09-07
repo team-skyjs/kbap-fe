@@ -179,7 +179,8 @@ it('음식 탭: 에러 → 헤더(제목·검색바) 미렌더, 정상 → 렌�
 
   mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...FOODS_EXTRA, data: [] });
   const okTree = render(<Food />);
-  expect(texts(okTree, 'food.title')).toBeGreaterThanOrEqual(1); // 정상은 헤더 유지
+  // P-318: 세그먼트(food.title 탭) 소멸 — 정상 헤더 표면 = 검색바로 잠금
+  expect(texts(okTree, 'food.searchPlaceholder')).toBeGreaterThanOrEqual(1);
 });
 
 it('프로필 탭: 에러 → J3 렌더, 백지 아님', () => {

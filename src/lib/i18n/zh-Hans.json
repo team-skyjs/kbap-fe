@@ -96,6 +96,9 @@
     "title": "探索美食",
     "sub": "每道菜都标注了适合你的风险等级。",
     "searchPlaceholder": "搜索菜品或食材…",
+    "sort_popular": "热门",
+    "sort_new": "最新",
+    "sort_alpha": "按名称",
     "categories": {
       "all": "全部",
       "stews": "汤锅",

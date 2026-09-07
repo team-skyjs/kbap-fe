@@ -96,6 +96,9 @@
     "title": "Khám phá món ăn",
     "sub": "Mỗi món đều được gắn mức rủi ro của bạn.",
     "searchPlaceholder": "Tìm món ăn hoặc nguyên liệu…",
+    "sort_popular": "Phổ biến",
+    "sort_new": "Mới nhất",
+    "sort_alpha": "Theo tên A–Z",
     "categories": {
       "all": "Tất cả",
       "stews": "Món hầm",
