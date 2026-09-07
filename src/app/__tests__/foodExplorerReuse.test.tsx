@@ -326,6 +326,11 @@ it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 
   mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500') });
   const t2 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   expect(byIdIn(t2, 'home-rail-error').length).toBeGreaterThanOrEqual(1);
+  // ②-c Codex #85 3R P2: 캐시 데이터 + 백그라운드 에러(isError·data 동시) = 레일 유지
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1'), FOOD('2', 'danger')]), isError: true, error: new Error('HTTP 500') });
+  const t2c = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  expect(byIdIn(t2c, 'home-rail-error')).toHaveLength(0);
+  expect(cardIds(t2c).size).toBeGreaterThanOrEqual(2);
   // ①-b Codex #85 2R P2: 카탈로그 콜드 로딩 중에도 Saved 탭 = 저장 카드 유지(스켈레톤 미노출)
   mockBrowse.mockReturnValue({ ...browseOf([]), isLoading: true });
   mockSaved.mockReturnValue({ data: [FOOD('3')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });

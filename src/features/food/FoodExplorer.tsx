@@ -311,8 +311,10 @@ export function FoodExplorer({
             <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
           ))}
         </View>
-      ) : browse.isError && gridTab !== 'saved' ? (
-        /* Codex #85 P2: Saved 탭 데이터는 북마크 쿼리 독립 — 카탈로그 에러가 저장 카드를 가리지 않게 스코프 */
+      ) : browse.isError && gridTab !== 'saved' && (browse.data ?? []).length === 0 ? (
+        /* Codex #85 P2: Saved = 북마크 쿼리 독립이라 스코프 밖 + 3R: 캐시 데이터가 있으면
+           (백그라운드 refetch·fetchNextPage 실패로 data·isError 동시 노출) 레일 유지 —
+           전체 에러 블록은 보여줄 카드가 없을 때만 */
         <View style={styles.railState} testID="home-rail-error">
           <QueryErrorBlock error={browse.error} onRetry={() => void browse.refetch()} />
         </View>
