@@ -17,6 +17,7 @@ import { IconTabFood, IconTabHome, IconTabReviews, IconTabScan, type IconProps }
 import { RemoteImage } from './RemoteImage';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { isDefaultProfileImage } from '@/lib/api/memberAdapter';
 
 /** P-128→P-146: 바 콘텐츠 높이(세이프에어리어 제외) = 플랫폼 **공식** 규격 —
  *  iOS HIG 바 콘텐츠 49pt(하단 세이프에어리어는 배경만 연장) · 안드 Material 3
@@ -52,7 +53,9 @@ function ProfileTabIcon({ size = 24, color, active }: IconProps & { active?: boo
   const isGuest = useIsGuest();
   const { data: me } = useMe();
   const [failed, setFailed] = React.useState(false);
-  const url = isGuest ? null : (me?.profileImageUrl ?? null); // memberAdapter 방어(절대 URL만) 그대로
+  // Codex #66: 서버 기본 아바타 URL = 사진 없음 취급(헤더 isDefaultProfileImage 판정 동일 — 불일치 해소)
+  const raw = isGuest ? null : (me?.profileImageUrl ?? null); // memberAdapter 방어(절대 URL만) 그대로
+  const url = raw && !isDefaultProfileImage(raw) ? raw : null;
   React.useEffect(() => setFailed(false), [url]); // 사진 변경·삭제 시 상태 리셋(재시도)
   if (!url || failed) return <AvatarIcon size={size} color={color} />;
   return (

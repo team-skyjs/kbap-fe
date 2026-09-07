@@ -65,6 +65,12 @@ it('null(사진 없음) = 플레이스홀더(RemoteImage 0) · 게스트도 동�
   expect(photo(render()).length).toBe(0); // 게스트 = 사진 있어도 플레이스홀더
 });
 
+it('Codex #66: 서버 기본 아바타 URL = 플레이스홀더(헤더 isDefaultProfileImage 판정 동일)', () => {
+  mockMe.mockReturnValue({ data: { profileImageUrl: 'https://cdn.kbap.site/images/webp/default_profile/3.webp' } });
+  expect(photo(render()).length).toBe(0);
+  expect(mockRemote).not.toHaveBeenCalled();
+});
+
 it('로드 실패(onError) = 플레이스홀더 폴백 · URL 변경 = 재시도(갱신)', () => {
   const t = render();
   act(() => mockRemote.mock.calls[0][0].onError());
