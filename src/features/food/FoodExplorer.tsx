@@ -9,7 +9,7 @@
  * 데이터 훅·북마크 토글·위험 필터 로직 = 홈 구현 이동(무변).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -18,6 +18,8 @@ import { color as C } from '@/lib/theme';
 import { Btn, Chip, IconSearch, IconTabScan, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FoodGridCard } from '@/features/food/FoodCards';
+import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
+import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
@@ -32,7 +34,8 @@ export type GridTab = 'popular' | 'saved' | 'food';
 type RiskChip = 'all' | 'safe' | 'danger' | 'caution';
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 
-export const HOME_GRID_N = 4; // 홈: 첫 화면 2행(4장) 후 More
+export const HOME_RAIL_N = 10; // P-317: 홈 레일 최대 10 + See all 카드
+export const RAIL_CARD_W = 174; // 그리드 카드 비율(174×203) 동일
 
 export function FoodExplorer({
   variant,
@@ -76,8 +79,7 @@ export function FoodExplorer({
   // 칩 = 클라이언트 위험도 필터(personalRisk 결과 기준 — 발주 §1-4)
   const filtered =
     riskChip === 'all' ? gridSource : gridSource.filter((f) => personalRisk(f.risk, hasR) === riskChip);
-  const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_GRID_N) : filtered;
-  const gridMoreHref: Href = gridTab === 'saved' ? ('/profile/saved' as Href) : ('/food' as Href);
+  const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : filtered;
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
   const onBookmark = (f: FoodCard) => {
@@ -192,24 +194,54 @@ export function FoodExplorer({
     );
   }
 
+  // P-317(KB-483): Safe for you today 레일 — 회원+회피≥1 && Popular·All 상태에서만,
+  // 현 목록 데이터에서 personalRisk === safe 5~10개(3개 미만 숨김 — v2 정본).
+  const safeRail =
+    !guest && hasR && gridTab === 'popular' && riskChip === 'all'
+      ? (browse.data ?? []).filter((f) => personalRisk(f.risk, hasR) === 'safe').slice(0, 10)
+      : [];
+  const railCard = (item: FoodCard) => card(item, styles.railCard);
+
   return (
     <View>
       {top}
-      {/* 음식 카드 2열 그리드 (4150:13806) — 홈 = 4장 + More */}
-      <View style={styles.grid}>
-        {gridFoods.map((f) => (
-          <React.Fragment key={f.foodId}>{card(f)}</React.Fragment>
-        ))}
-        {gridFoods.length === 0 && gridTab === 'saved' && (
-          <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text>
-        )}
-      </View>
-      {filtered.length > HOME_GRID_N && (
-        <View style={styles.moreWrap}>
-          <Btn variant="ghost" onPress={() => router.push(gridMoreHref)} testID="home-grid-more">
-            {t('home.seeAll')}
-          </Btn>
-        </View>
+      {/* P-317: 세로 그리드 → 가로 레일(카드 = 그리드 카드 동일 컴포넌트·비율, 최대 10 + See all) */}
+      <FlatList
+        horizontal
+        data={gridFoods}
+        keyExtractor={(f: FoodCard) => f.foodId}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.railContent}
+        renderItem={({ item }) => railCard(item)}
+        ListEmptyComponent={
+          gridTab === 'saved' ? <Text style={styles.gridEmpty}>{t('saved.emptyBody')}</Text> : null
+        }
+        ListFooterComponent={
+          gridFoods.length > 0 ? (
+            <Pressable
+              style={styles.seeAllCard}
+              onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam) as Href)}
+              testID="home-rail-see-all"
+            >
+              <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
+            </Pressable>
+          ) : null
+        }
+        testID="home-rail"
+      />
+      {safeRail.length >= 3 && (
+        <>
+          <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />
+          <FlatList
+            horizontal
+            data={safeRail}
+            keyExtractor={(f: FoodCard) => `safe-${f.foodId}`}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.railContent}
+            renderItem={({ item }) => railCard(item)}
+            testID="home-safe-rail"
+          />
+        </>
       )}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
@@ -243,10 +275,12 @@ const styles = StyleSheet.create({
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingVertical: 16 },
 
-  // 홈 임베드 그리드
-  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
-  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
-  moreWrap: { paddingHorizontal: 20, paddingTop: 20 },
+  // P-317 홈 레일(그리드 카드 동일 비율 — 폭 174 고정, gap 12, 좌우 20)
+  railContent: { paddingHorizontal: 20, gap: 12 },
+  railCard: { width: RAIL_CARD_W },
+  seeAllCard: { width: RAIL_CARD_W, aspectRatio: 174 / 203, borderRadius: 4, borderWidth: 1, borderColor: C.line2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  seeAllText: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
   gridRowWrap: { columnGap: 16, paddingHorizontal: 20 },

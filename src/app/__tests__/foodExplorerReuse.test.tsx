@@ -54,7 +54,8 @@ jest.mock('@/components/AuthGateSheet', () => {
     AuthGateSheet: ({ open }: { open: boolean }) => (open ? <View testID="auth-gate-open" /> : null),
   };
 });
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '9', restrictions: [{ kind: 'allergy', code: 'EGG' }] } }) }));
+const mockMe = jest.fn();
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockBrowse = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => mockBrowse() }));
 const mockToggle = jest.fn();
@@ -80,13 +81,15 @@ function render(el: React.ReactElement): ReactTestRenderer {
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
 
 const mockFetchNext = jest.fn();
+const browseOf = (data: ReturnType<typeof FOOD>[]) => ({
+  data,
+  isLoading: false, isError: false, error: null, refetch: jest.fn(),
+  hasNextPage: true, isFetchingNextPage: false, fetchNextPage: mockFetchNext,
+});
 beforeEach(() => {
   jest.clearAllMocks();
-  mockBrowse.mockReturnValue({
-    data: Array.from({ length: 10 }, (_, i) => FOOD(String(i + 1), i % 2 ? 'danger' : 'safe')),
-    isLoading: false, isError: false, error: null, refetch: jest.fn(),
-    hasNextPage: true, isFetchingNextPage: false, fetchNextPage: mockFetchNext,
-  });
+  mockBrowse.mockReturnValue(browseOf(Array.from({ length: 10 }, (_, i) => FOOD(String(i + 1), i % 2 ? 'danger' : 'safe'))));
+  mockMe.mockReturnValue({ data: { id: '9', restrictions: [{ kind: 'allergy', code: 'EGG' }] } });
 });
 
 const cardIds = (tree: ReactTestRenderer) =>
@@ -132,11 +135,54 @@ it('③ 음식 탭(screen) = 4장 제한 없음 + onEndReached → fetchNextPage
   expect(mockFetchNext).toHaveBeenCalledTimes(1);
 });
 
-it('③-b 홈(embedded) = 4장 제한 + More 버튼(무한 스크롤 없음)', () => {
+// ③-b~⑦: P-317(KB-483) 홈 v2 — 4장 그리드+More → 가로 레일(상한 10)+See all 카드.
+const press = (tree: ReactTestRenderer, id: string) =>
+  act(() =>
+    tree.root
+      .findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0]
+      .props.onPress(),
+  );
+
+it('③-b 홈(embedded) = 가로 레일 상한 10 + See all 카드(구 More 소멸)', () => {
+  // 카탈로그 12장이어도 레일은 10장까지(전부 safe — Safe 레일도 같은 10장이라 합집합 10)
+  mockBrowse.mockReturnValue(browseOf(Array.from({ length: 12 }, (_, i) => FOOD(String(i + 1)))));
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  expect(cardIds(tree).size).toBe(4);
-  expect(tree.root.findAll((n) => n.props?.testID === 'home-grid-more').length).toBeGreaterThanOrEqual(1);
-  expect(tree.root.findAll((n) => typeof n.props?.onEndReached === 'function')).toHaveLength(0);
+  expect(cardIds(tree).size).toBe(10);
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-rail-see-all' && typeof n.props?.onPress === 'function').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-grid-more')).toHaveLength(0);
+});
+
+it('⑤ P-317 See all — 현재 세그먼트·칩 상태가 음식 탭 쿼리로 승계', () => {
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(tree, 'home-rail-see-all');
+  expect(mockPush).toHaveBeenLastCalledWith('/food?segment=popular&risk=all'); // 기본 상태
+  press(tree, 'home-tab-food');
+  press(tree, 'home-chip-danger');
+  press(tree, 'home-rail-see-all');
+  expect(mockPush).toHaveBeenLastCalledWith('/food?segment=food&risk=danger'); // 상태 승계
+});
+
+it('⑥ P-317 Safe for you 레일 — 회원+회피≥1+Popular+All에서만, safe<3 숨김', () => {
+  const hasRail = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => n.props?.testID === 'home-safe-rail').length > 0;
+  // 충족(회원·EGG·Popular·All — safe 5장) → 노출
+  expect(hasRail(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe(true);
+  // 게스트 → 숨김
+  expect(hasRail(render(<FoodExplorer variant="embedded" guest srcTag="home" />))).toBe(false);
+  // 회피 0 → 숨김
+  mockMe.mockReturnValue({ data: { id: '9', restrictions: [] } });
+  expect(hasRail(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe(false);
+  mockMe.mockReturnValue({ data: { id: '9', restrictions: [{ kind: 'allergy', code: 'EGG' }] } });
+  // 비Popular(Food 탭) → 숨김, 복귀 후 비All(danger 칩) → 숨김
+  const t2 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t2, 'home-tab-food');
+  expect(hasRail(t2)).toBe(false);
+  press(t2, 'home-tab-popular');
+  press(t2, 'home-chip-danger');
+  expect(hasRail(t2)).toBe(false);
+  // safe 2장뿐 → 숨김(3 미만)
+  mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2'), FOOD('3', 'danger'), FOOD('4', 'danger')]));
+  expect(hasRail(render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />))).toBe(false);
 });
 
 it('④ 게스트 칩 — 4개 렌더 · 개인화 칩 탭 = 게이트 + 선택 All 유지(필터 미적용)', () => {

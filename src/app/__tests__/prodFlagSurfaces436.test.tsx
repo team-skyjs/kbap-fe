@@ -122,7 +122,20 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
-const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
+// P-317: 홈 = Animated.FlatList — ListHeader/Footer 엘리먼트 prop이 순환 참조라
+// 엘리먼트 prop은 버리고(렌더 트리만) 순환도 차단하는 안전 직렬화로 교체.
+const REACT_EL = new Set<symbol>([Symbol.for('react.element'), Symbol.for('react.transitional.element')]);
+const flat = (t: ReactTestRenderer) => {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(t.toJSON(), (_k, v: unknown) => {
+    if (typeof v === 'object' && v !== null) {
+      if (REACT_EL.has((v as { $$typeof?: symbol }).$$typeof as symbol)) return undefined;
+      if (seen.has(v)) return undefined;
+      seen.add(v);
+    }
+    return v;
+  });
+};
 
 it('① P-289 감사표 — production 실계산: 구 채널 5종 = dev 동일(true)·채널 분기 잔존 0', () => {
   expect(isProdChannel()).toBe(true); // 채널 목이 실제로 관통했는지 방어

@@ -776,7 +776,9 @@
     "reviewsSub": "Read before you order",
     "chipForYou": "For You",
     "chipNearby": "Nearby",
-    "recentEmpty": "No recent scans"
+    "recentEmpty": "No recent scans",
+    "safeForYou": "Safe for you today",
+    "safeForYouSub": "Dishes with none of your avoid ingredients."
   },
   "onboarding": {
     "welcomeTag": "Know what's safe to eat — before you order.",
