@@ -59,7 +59,7 @@ describe('Codex #67 P1: 사장님 카드 설명 문맥(reason) — 게스트·sa
   /* eslint-enable */
   it('owner 라우트 = reason 파라미터 수용·훅 관통, neutral = 알레르기 단정 없는 설명', () => {
     expect(owner).toContain("reason?: string");
-    expect(owner).toContain("useOwnerConfirmation(id ?? '', ingredient, reason, name)"); // 3R: name 관통
+    expect(owner).toContain("useOwnerConfirmation(id ?? '', ingredient, reason)");
     expect(hook).toContain("reason === 'neutral' ? EXPLANATION_NEUTRAL_KO");
     expect(hook).toContain("const EXPLANATION_NEUTRAL_KO = '이 재료가 들어가는지 확인하고 싶어요.';");
     // 기존 호출(파라미터 부재) = 현행 알레르기/회피 설명 유지(reason 미전달 = 무변)
@@ -67,19 +67,23 @@ describe('Codex #67 P1: 사장님 카드 설명 문맥(reason) — 게스트·sa
   });
 });
 
-describe('Codex #67 3R: 질문 라벨 직접 전달·미해석 중립 질문·avoid 설명 비알레르기', () => {
-  it('ownerQuestionKo — 라벨 파라미터 우선·미해석 코드 = 중립 질문(회피 폴백 금지)', () => {
-    expect(ownerQuestionKo('김치찌개', 'unknown-code', undefined, '고수')).toBe('김치찌개에 고수가 들어가나요?');
-    expect(ownerQuestionKo('김치찌개', 'unknown-code')).toBe('김치찌개에 이 재료가 들어가나요?'); // 거짓 회피 진술 잔존 0
-    expect(ownerQuestionKo('김치찌개', 'PORK')).toMatch(/들어가나요\?$/); // 81종 해석 = 현행
+
+describe('Codex #67 4R: 사장님 카드 = 한국어만(헌법 I) — reader 라벨 전달 폐기', () => {
+  it('en 로케일이어도 81종 코드 = 한국어 질문(EGG → 계란) · 합성 코드 = 중립+식별자 미노출', () => {
+    expect(ownerQuestionKo('김치찌개', 'EGG')).toBe('김치찌개에 달걀이 들어가나요?'); // FE ko 라벨 정본(달걀)
+    expect(ownerQuestionKo('김치찌개', 'ing:0:Egg')).toBe('김치찌개에 달걀이 들어가나요?'); // 합성 코드도 역매핑 성공 시 ko
+    const q = ownerQuestionKo('김치찌개', 'ing:1:Mystery Sauce'); // 역매핑 불가
+    expect(q).toBe('김치찌개에 이 재료가 들어가나요?'); // 3R 중립 폴백 유지
+    expect(q).not.toContain('Mystery'); // P-052 식별자 조각 미노출
   });
 
-  it('배선 — 시트 → name 동봉·owner/훅 관통·avoid 설명 = 비알레르기 문구', () => {
-    expect(detail).toContain('const label = cat.name(code) || ingSheet.name;');
-    expect(detail).toContain('&name=${encodeURIComponent(label)}');
-    const owner = fs.readFileSync('src/app/food/[id]/owner.tsx', 'utf8');
-    expect(owner).toContain("useOwnerConfirmation(id ?? '', ingredient, reason, name)");
+  it('배선 — name 파라미터·reader 라벨 경로 잔존 0, 해석 = resolveIngredientKo 단일', () => {
+    expect(detail).not.toContain('&name=');
+    expect(detail).not.toContain('cat.name(code) || ingSheet.name');
     const hook = fs.readFileSync('src/lib/data/useOwnerConfirmation.ts', 'utf8');
-    expect(hook).toContain("reason === 'avoid' ? EXPLANATION_AVOID_KO"); // 알레르기 단정 금지(평면 81종)
+    expect(hook).not.toContain('ingredientName');
+    expect(hook).toContain("reason === 'avoid' ? EXPLANATION_AVOID_KO"); // 3R 유지
+    const card = fs.readFileSync('src/lib/order/orderCard.ts', 'utf8');
+    expect(card).not.toContain('ingredientLabel?:'); // 4R: 라벨 파라미터 소멸(ingredientLabelKo 함수는 별개)
   });
 });

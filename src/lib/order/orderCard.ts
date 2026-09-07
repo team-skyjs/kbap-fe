@@ -111,17 +111,11 @@ export function avoidLabelsKo(codes: string[]): string[] {
   return codes.filter((c) => BY_CODE.has(c)).map(ingredientLabelKo);
 }
 
-export function ownerQuestionKo(
-  menuNameKo: string,
-  ingredientCode?: string,
-  avoidCodes?: string[],
-  /** P-306(Codex #67 3R): 호출부가 아는 표시명(카탈로그/시트) — 81종 미등재 코드의
-   *  회피 폴백 오류(게스트·safe에 "못 먹는 재료" 거짓 진술) 차단. */
-  ingredientLabel?: string,
-): string {
-  const label = ingredientLabel || (ingredientCode ? resolveIngredientKo(ingredientCode) : null);
+export function ownerQuestionKo(menuNameKo: string, ingredientCode?: string, avoidCodes?: string[]): string {
+  // P-306(Codex #67 4R): 사장님 카드 = **한국어만** — reader 언어 라벨 전달 금지(헌법 I),
+  // 해석은 resolveIngredientKo 단일 경로. 미해석 = 중립 질문(회피 진술 폴백 금지, 3R).
+  const label = ingredientCode ? resolveIngredientKo(ingredientCode) : null;
   if (label) return `${menuNameKo}에 ${label}${iGa(label)} 들어가나요?`;
-  // P-306 3R: 재료 특정 진입인데 라벨 미해석 = 중립 질문(회피 나열 폴백 금지)
   if (ingredientCode) return `${menuNameKo}에 이 재료가 들어가나요?`;
   // P-163: 폴백도 뭉뚱그리지 않는다 — 프로필 회피 재료 전부 나열(사장님이 봐야 할
   // 정보라 생략·상한 없음), 조사는 마지막 항목 받침 기준(iGa 기존 로직).

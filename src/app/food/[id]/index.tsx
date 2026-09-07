@@ -601,9 +601,9 @@ function Registered({
                     const avoid = !guest && ['danger', 'caution'].includes(personalRisk(ingSheet.risk, hasRestrictions));
                     setIngSheet(null);
                     track(EVENTS.owner_ask_open, { source: 'ingredient_sheet', food_id: id ?? '' });
-                    // 3R: 표시명 동봉 — 81종 미등재 코드도 항상 구체 질문(카탈로그 name, 폴백 시트 표시명)
-                    const label = cat.name(code) || ingSheet.name;
-                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}&reason=${avoid ? 'avoid' : 'neutral'}&name=${encodeURIComponent(label)}` as Href);
+                    // 4R: 라벨 미전달 — 사장님 카드 한국어명은 owner 쪽 resolveIngredientKo 단일 경로
+                    // (reader 언어 문자열 전달 금지 — 헌법 I·P-052). 미해석 = 중립 질문.
+                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}&reason=${avoid ? 'avoid' : 'neutral'}` as Href);
                   }}
                   testID="ing-sheet-ask"
                 >
