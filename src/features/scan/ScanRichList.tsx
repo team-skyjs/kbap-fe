@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   thumbWrap: { width: 118 }, // P-285: 118×118(2200:21512)
   thumbFb: { backgroundColor: C.surface2 },
   thumbUnable: { backgroundColor: '#F2F3F6', alignItems: 'center', justifyContent: 'center' },
-  thumbBadge: { position: 'absolute', top: 0, left: 3 },
+  thumbBadge: { position: 'absolute', top: -4, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
   nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },
   desc: { fontSize: 13, fontWeight: '400', color: C.ink3 }, // P-285: 설명 1줄(2200:21512)

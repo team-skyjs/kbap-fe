@@ -47,19 +47,33 @@ function AvatarIcon({ size = 24 }: IconProps) {
 /** P-305(KB-461): 프로필 탭 = 내 프로필 사진(원형 24) — 없음/게스트/로드 실패 = 현행
  *  플레이스홀더. 활성 구분 = 링(비활성도 같은 폭 투명 보더 — P-151 프레임 불변).
  *  소스 = ['me'] 쿼리 하나(프로필 수정 성공 invalidate로 탭도 자동 갱신 — 별도 스토어 0). */
-function ProfileTabIcon({ size = 24, color, active }: IconProps & { active?: boolean }) {
+function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean }) {
   // P-313(KB-480): 소스 = useMyAvatarUrl 정본 한 함수(헤더 동일 — 기본 프사 URL 포함).
-  // #66의 기본프사 분기 제거: 진짜 문제는 "헤더와 불일치"였음(정본 = 헤더 규칙).
   const url = useMyAvatarUrl();
   const [failed, setFailed] = React.useState(false);
   React.useEffect(() => setFailed(false), [url]); // 사진 변경·삭제 시 상태 리셋(재시도)
-  if (!url || failed) return <AvatarIcon size={size} color={color} />;
+  const showPhoto = !!url && !failed;
+  // P-315(KB-482): 사진·플레이스홀더 동일 상태 규칙 — 활성 = 오렌지 2px 링 + 원본,
+  // 비활성 = 투명 링(동일 폭 — P-151) + opacity 0.6(예진 결정). 원형은 링(overflow
+  // hidden) + RemoteImage 자체 borderRadius **이중 적용**(iOS expo-image 사각 잔존 방지).
   return (
     <View
       style={[styles.avatarRing, { width: size, height: size, borderRadius: size / 2, borderColor: active ? C.primary : 'transparent' }]}
-      testID="tab-avatar-photo"
+      testID={showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}
     >
-      <RemoteImage key={url} uri={url} onError={() => setFailed(true)} style={styles.avatarImg} transition={0} />
+      <View style={[styles.avatarInner, !active && styles.avatarDim]}>
+        {showPhoto ? (
+          <RemoteImage
+            key={url}
+            uri={url!}
+            onError={() => setFailed(true)}
+            style={[styles.avatarImg, { borderRadius: (size - 4) / 2 }]}
+            transition={0}
+          />
+        ) : (
+          <AvatarIcon size={size - 4} />
+        )}
+      </View>
     </View>
   );
 }
@@ -146,8 +160,10 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
   slot: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
   iconSpace: { width: 24, height: 24 },
-  // P-305→313: 사진 아바타 링 2px 오렌지(활성) — 비활성도 같은 폭 투명(P-151)
+  // P-305→313→315: 링 2px(활성 오렌지·비활성 투명 동일 폭 — P-151), 원형 이중 적용
   avatarRing: { borderWidth: 2, overflow: 'hidden' },
+  avatarInner: { flex: 1 },
+  avatarDim: { opacity: 0.6 }, // P-315: 비활성 = 흐림(색·불투명도만 — 프레임 불변)
   avatarImg: { width: '100%', height: '100%' },
   // 시안: 11/500 — i18n 가변 길이(독일어/러시아어)는 축소 허용(adjustsFontSizeToFit)
   tlbl: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11 },
