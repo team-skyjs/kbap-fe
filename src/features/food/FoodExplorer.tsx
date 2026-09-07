@@ -51,6 +51,7 @@ export function FoodExplorer({
   initialTab = 'popular',
   initialRisk,
   initialSaved,
+  paramsKey,
   srcTag,
   onScroll,
   topPad = 0,
@@ -62,13 +63,15 @@ export function FoodExplorer({
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
   initialSaved?: boolean;
+  /** Codex #81 P1: See all 내비게이션 식별자(t 파라미터) — 같은 값의 재진입도 재동기화. */
+  paramsKey?: string;
   /** 상세 진입 src 파라미터 — 홈 'home' / 음식 탭 'list' */
   srcTag: string;
   /** screen 전용 — 화면이 StickyHeader hidden을 소유 */
   onScroll?: React.ComponentProps<typeof Animated.FlatList<FoodCard>>['onScroll'];
   topPad?: number;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
@@ -90,11 +93,12 @@ export function FoodExplorer({
   // 사용자 선택을 리셋하지 않게. 게스트 강등은 아래 별도 effect가 개인화 상태만 내린다.
   const guestRef = React.useRef(guest);
   guestRef.current = guest;
+  // Codex #81 P1: paramsKey(See all마다 갱신되는 t) 포함 — 같은 segment/risk의 재진입도 발화.
   React.useEffect(() => {
     if (variant !== 'screen') return;
     setSavedOnly(initialSaved === true && !guestRef.current);
     setRiskChip(guestRef.current ? 'all' : (initialRisk ?? 'all'));
-  }, [variant, initialSaved, initialRisk]);
+  }, [variant, initialSaved, initialRisk, paramsKey]);
   React.useEffect(() => {
     if (!guest) return; // 게스트 전환(만료) = 개인화 필터만 강등 — 그 외 선택 보존
     setSavedOnly(false);
@@ -118,7 +122,8 @@ export function FoodExplorer({
   // P-318 정렬(클라): 인기 = 현행(목록 응답) 순서 그대로 · 가나다 = 표시명(요청 언어).
   // ponytail: 'new'는 KB-439(publishedAt) 배포 전 시트 비활성 — 정렬 분기는 그때 추가.
   const sorted =
-    variant === 'screen' && sort === 'alpha' ? [...filtered].sort((a, b) => a.name.localeCompare(b.name)) : filtered;
+    // Codex #81 P2: 표시명은 reader 언어 산출물 — 콜레이션도 그 로케일로(런타임 기본 금지)
+    variant === 'screen' && sort === 'alpha' ? [...filtered].sort((a, b) => a.name.localeCompare(b.name, i18n.language)) : filtered;
   const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : sorted;
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
@@ -301,7 +306,7 @@ export function FoodExplorer({
           gridFoods.length > 0 ? (
             <Pressable
               style={styles.seeAllCard}
-              onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam) as Href)}
+              onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
               testID="home-rail-see-all"
             >
               <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>

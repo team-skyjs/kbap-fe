@@ -23,7 +23,7 @@ export default function Food() {
   const isGuest = useIsGuest();
   const unread = useUnreadCount();
   // P-318: 홈 See all 파라미터 수신 — 배열형(중복 쿼리)은 첫 값, 미지값은 파서가 강등
-  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[] }>();
+  const raw = useLocalSearchParams<{ segment?: string | string[]; risk?: string | string[]; t?: string | string[] }>();
   const one = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
   const { segment, risk } = parseFoodFilterParams({ segment: one(raw.segment), risk: one(raw.risk) });
 
@@ -33,6 +33,7 @@ export default function Food() {
         variant="screen"
         guest={isGuest}
         initialSaved={segment === 'saved'}
+        paramsKey={one(raw.t) ?? ''}
         initialRisk={risk}
         srcTag="list"
         onScroll={onScroll}

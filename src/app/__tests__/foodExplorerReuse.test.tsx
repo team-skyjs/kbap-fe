@@ -158,11 +158,12 @@ it('③-b 홈(embedded) = 가로 레일 상한 10 + See all 카드(구 More 소�
 it('⑤ P-317 See all — 현재 세그먼트·칩 상태가 음식 탭 쿼리로 승계', () => {
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(tree, 'home-rail-see-all');
-  expect(mockPush).toHaveBeenLastCalledWith('/food?segment=popular&risk=all'); // 기본 상태
+  // Codex #81 P1: t = 내비게이션 nonce — 같은 필터의 재진입도 수신측 재동기화
+  expect(mockPush).toHaveBeenLastCalledWith(expect.stringMatching(/^\/food\?segment=popular&risk=all&t=\d+$/)); // 기본 상태
   press(tree, 'home-tab-food');
   press(tree, 'home-chip-danger');
   press(tree, 'home-rail-see-all');
-  expect(mockPush).toHaveBeenLastCalledWith('/food?segment=food&risk=danger'); // 상태 승계
+  expect(mockPush).toHaveBeenLastCalledWith(expect.stringMatching(/^\/food\?segment=food&risk=danger&t=\d+$/)); // 상태 승계
 });
 
 it('⑥ P-317 Safe for you 레일 — 회원+회피≥1+Popular+All에서만, safe<3 숨김', () => {
@@ -272,6 +273,17 @@ it('⑬ Codex #80 3R P2 — 세션 상태 전환은 파라미터 재적용이 �
   expect([...cardIds(t2)].length).toBe(5); // danger 5
   act(() => t2.update(<FoodExplorer variant="screen" guest initialRisk="danger" srcTag="list" />));
   expect(cardIds(t2).size).toBe(10); // all 강등
+});
+
+it('⑭ Codex #81 P1 — 같은 파라미터의 두 번째 See all(paramsKey 변경) = Saved 재적용', () => {
+  mockSaved.mockReturnValue({ data: [FOOD('2', 'danger')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved paramsKey="1" srcTag="list" />);
+  expect([...cardIds(tree)]).toEqual(['home-food-2']);
+  press(tree, 'food-chip-saved'); // 사용자가 Saved OFF
+  expect(cardIds(tree).size).toBe(10);
+  // 같은 Saved 레일 See all 재탭 = segment/risk 동일, t만 갱신 → 재적용
+  act(() => tree.update(<FoodExplorer variant="screen" guest={false} initialSaved paramsKey="2" srcTag="list" />));
+  expect([...cardIds(tree)]).toEqual(['home-food-2']);
 });
 
 it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸)', () => {
