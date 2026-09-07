@@ -18,7 +18,10 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
-import { isBlockedRoute, otaApplyDecision } from './otaPolicy';
+import { OTA_BOOT_GUARD_MS, canReloadNow, isBlockedRoute, otaApplyDecision } from './otaPolicy';
+
+// P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
+const BOOTED_AT = Date.now();
 
 function updatesModule(): OtaUpdatesModule | null {
   try {
@@ -39,12 +42,15 @@ function applyNow(): void {
   }
 }
 
-export function OtaAutoApplyHost() {
+export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
   const pathname = usePathname();
   const mutating = useIsMutating();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const [ready, setReady] = React.useState(false);
+  // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
+  const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
+  const [guardTick, setGuardTick] = React.useState(0);
   const stateRef = React.useRef({ lastCheckAt: 0 });
 
   React.useEffect(() => {
@@ -58,23 +64,37 @@ export function OtaAutoApplyHost() {
     };
     check(); // 콜드 스타트 1회
     const sub = AppState.addEventListener('change', (st) => {
+      setAppActive(st === 'active'); // P-304: 가드 재평가 소스
       if (st === 'active') check(); // 포그라운드 복귀 — 스로틀은 코어가 판정
     });
     return () => sub.remove();
   }, []);
 
-  // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료마다
+  // P-304: reloadAsync 부팅 가드 — 정책이 reload여도 가드(8s+스플래시 종료+active)
+  // 통과 시에만 실행. 배너 수동 탭도 동일 경로(부팅 창 크래시 봉쇄).
+  const tryApply = React.useCallback((): boolean => {
+    if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background' })) return false;
+    applyNow();
+    return true;
+  }, [splashDone, appActive]);
+
+  // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료·스플래시/포그라운드/가드 타이머마다
   const prod = isProdChannel();
   React.useEffect(() => {
     if (!ready) return;
-    if (otaApplyDecision({ prod, pathname, mutating }) === 'reload') applyNow();
-  }, [ready, prod, pathname, mutating]);
+    if (otaApplyDecision({ prod, pathname, mutating }) !== 'reload') return;
+    if (tryApply()) return;
+    // 가드 미충족 — 시간 조건은 충족 시각에 1회 재평가(스플래시·active는 deps가 재평가)
+    const remain = Math.max(0, OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT)) + 50;
+    const timer = setTimeout(() => setGuardTick((n) => n + 1), remain);
+    return () => clearTimeout(timer);
+  }, [ready, prod, pathname, mutating, tryApply, guardTick]);
 
   // 배너 = prod 대기 상태에서만 · 제외 화면(스캔 등)엔 미노출(비차단이어도 오버레이 금지)
   if (!ready || !prod || isBlockedRoute(pathname)) return null;
   return (
     <View style={[styles.wrap, { top: insets.top + 6 }]} pointerEvents="box-none" testID="ota-banner">
-      <Pressable style={styles.pill} onPress={applyNow} testID="ota-apply" hitSlop={8}>
+      <Pressable style={styles.pill} onPress={() => tryApply()} testID="ota-apply" hitSlop={8}>
         <Text style={styles.text} numberOfLines={2}>
           {t('ota.ready')}
         </Text>

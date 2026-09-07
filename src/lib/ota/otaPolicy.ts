@@ -29,6 +29,16 @@ export function isBlockedRoute(pathname: string): boolean {
   return BLOCKED_ROUTE_RE.some((re) => re.test(pathname));
 }
 
+/** P-304(KB-458, Sentry REACT-NATIVE-6): **부팅 가드** — 콜드 스타트 직후(b28 실측
+ *  3초 시점) reloadAsync가 expo-modules-core 56의 AppContext 해제 레이스로 네이티브
+ *  크래시(57.0.0에서 수정 — 미백포트). reload는 ① 부팅 8s 경과 ② 스플래시 종료
+ *  ③ 포그라운드(active) 전부 충족 시에만. prod 정책(항상 defer 여부)은 예진 결정 대기. */
+export const OTA_BOOT_GUARD_MS = 8_000;
+
+export function canReloadNow(opts: { bootedAt: number; now: number; splashDone: boolean; appState: string }): boolean {
+  return opts.now - opts.bootedAt >= OTA_BOOT_GUARD_MS && opts.splashDone && opts.appState === 'active';
+}
+
 export type OtaDecision = 'reload' | 'defer';
 
 export function otaApplyDecision(opts: { prod: boolean; pathname: string; mutating: number }): OtaDecision {

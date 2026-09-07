@@ -186,7 +186,8 @@ export default function RootLayout() {
               {/* P-123: 안드 사진 소스 시트 호스트 (iOS는 네이티브 시트 — 호스트 미사용) */}
               <PhotoSourceSheetHost />
               {/* KB-420: OTA 자동 적용 — 채널별 정책(otaPolicy) + prod 대기 배너 */}
-              <OtaAutoApplyHost />
+              {/* P-304(KB-458): 스플래시 종료 = reloadAsync 부팅 가드 조건 ② */}
+              <OtaAutoApplyHost splashDone={!splashVisible} />
               </>
               )}
               {/* P-288: JS 스플래시 오버레이 — 최상위(zIndex 1000), 완료 시 언마운트.
