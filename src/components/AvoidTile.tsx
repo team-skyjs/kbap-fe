@@ -14,6 +14,22 @@ import { font, color as C } from '@/lib/theme';
 import { Shimmer } from './Skeleton';
 import { ingredientImageUrl } from '@/lib/onboarding/ingredientImages';
 
+/** P-303(KB-457): 재료 이미지 3단 체인(P-174) 공유 훅 — 서버 imageUrl → 클라 조립
+ *  (P-145 CDN) → 소진(null = 호출부 폴백). 실패 시 `nextSource()`로 다음 소스.
+ *  AvoidTile·음식 상세 타일/시트가 같은 체인을 쓴다(상세만 사진 안 뜨던 결함 해소). */
+export function useIngredientImageChain(code: string, imageUrl?: string | null): { uri: string | null; nextSource: () => void } {
+  const sources = React.useMemo(() => {
+    const chain = [imageUrl, ingredientImageUrl(code)].filter((u): u is string => !!u);
+    return chain.filter((u, i) => chain.indexOf(u) === i); // 중복 제거
+  }, [imageUrl, code]);
+  const [srcIdx, setSrcIdx] = React.useState(0);
+  React.useEffect(() => {
+    setSrcIdx(0);
+  }, [sources]); // 카탈로그 도착/언어 전환 시 체인 리셋
+  const nextSource = React.useCallback(() => setSrcIdx((i) => i + 1), []);
+  return { uri: sources[srcIdx] ?? null, nextSource };
+}
+
 export function AvoidTile({
   code,
   imageUrl,
@@ -35,18 +51,11 @@ export function AvoidTile({
   /** 선택 체크 배지 등 오버레이 */
   children?: React.ReactNode;
 }) {
-  // P-174: 소스 체인 — 서버 imageUrl → 클라 조립 URL(중복 제거), 소진 시 색 폴백
-  const sources = React.useMemo(() => {
-    const chain = [imageUrl, ingredientImageUrl(code)].filter((u): u is string => !!u);
-    return chain.filter((u, i) => chain.indexOf(u) === i);
-  }, [imageUrl, code]);
-  const [srcIdx, setSrcIdx] = React.useState(0);
+  const { uri, nextSource } = useIngredientImageChain(code, imageUrl);
   const [loaded, setLoaded] = React.useState(false);
   React.useEffect(() => {
-    setSrcIdx(0);
     setLoaded(false);
-  }, [sources]); // 카탈로그 도착/언어 전환 시 체인 리셋
-  const uri = sources[srcIdx];
+  }, [uri]); // 체인 리셋·다음 소스 전환 시 로딩 상태 복귀
   const failed = !uri; // 체인 소진 = 실패 확정
   return (
     <View style={[styles.tile, { backgroundColor: tint }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>
@@ -67,7 +76,7 @@ export function AvoidTile({
           onLoad={() => setLoaded(true)}
           onError={() => {
             setLoaded(false);
-            setSrcIdx((i) => i + 1);
+            nextSource();
           }}
           testID={`avtile-img-${code}`}
         />
