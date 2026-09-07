@@ -48,6 +48,7 @@ import { tapSentrySelfcheck } from '@/lib/sentry';
 import { Snackbar } from '@/components/Snackbar';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 import LoginScreen from '../login';
@@ -60,6 +61,7 @@ export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
+  const avatarUrl = useMyAvatarUrl(); // P-313: 탭바와 정본 공유
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
   const { lang } = useLocale();
@@ -152,8 +154,8 @@ export default function Profile() {
             <View style={styles.id}>
               <View style={styles.avatar}>
                 {/* KB-149: 서버 프로필 사진 — 없으면 시안 플레이스홀더(D-1) */}
-                {me.profileImageUrl ? (
-                  <RemoteImage uri={me.profileImageUrl} style={styles.avatarImg} />
+                {avatarUrl ? (
+                  <RemoteImage uri={avatarUrl} style={styles.avatarImg} />
                 ) : (
                   <AvatarPlaceholder height={48} />
                 )}
