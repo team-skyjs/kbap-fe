@@ -257,7 +257,8 @@ export default function Profile() {
             {/* 메뉴 행 리스트(tab_box h58 pad 17/22) — 구분선 없음, 탭 하이라이트 surface2 */}
             <View style={styles.menuList}>
               {/* My Foods — 시안 §1-4 목록 부재·§5 화면 진입점(질문 누적, 기능 유지) */}
-              <MenuRow label={t('profile.myFoods')} onPress={() => router.push('/profile/my-foods' as Href)} />
+              {/* P-300(KB-449, 9/7 예진): 값 없는 이동 행 전부 chevron — 값 행(Saved·My reviews·Language)은 무변 */}
+              <MenuRow label={t('profile.myFoods')} chevron onPress={() => router.push('/profile/my-foods' as Href)} />
               <MenuRow label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
               {FLAGS.reviewsEnabled && (
                 <MenuRow label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
@@ -265,20 +266,20 @@ export default function Profile() {
               {/* Codex #33 P2: 식이 카테고리 편집 = /profile/diet 유일 편집 경로(1.1 dietCategories) —
                   섹션 소멸로 진입 0이 되던 것 복원. 시안 §1-4 목록 부재 = 질문 누적(My Foods 행 계열) */}
               {FLAGS.dietPresetsEnabled && (
-                <MenuRow label={t('profile.dietTitle')} onPress={() => router.push('/profile/diet' as Href)} />
+                <MenuRow label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
                 <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
               )}
               {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
               {FLAGS.pushEnabled && (
-                <MenuRow label={t('notif.title')} onPress={() => router.push('/profile/notifications' as Href)} />
+                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
-              <MenuRow label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}
               {FLAGS.communityEnabled && (
-                <MenuRow label={t('community.blockedTitle')} onPress={() => router.push('/community/blocked' as Href)} />
+                <MenuRow label={t('community.blockedTitle')} chevron onPress={() => router.push('/community/blocked' as Href)} />
               )}
               {/* 로그아웃 chevron 유지 확정(2026-07-15 예진 — 시안 무chevron이지만 예진 확정 우선). 재제거 금지.
                   ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지). */}
@@ -289,7 +290,7 @@ export default function Profile() {
                 trailing={loggingOut ? <Spinner size={16} /> : undefined}
                 onPress={confirmLogout}
               />
-              <MenuRow label={t('profile.deleteAccount')} dim onPress={() => router.push('/delete-account' as Href)} />
+              <MenuRow label={t('profile.deleteAccount')} dim chevron onPress={() => router.push('/delete-account' as Href)} />
             </View>
 
             {/* P-212: 앱 버전 줄 — 라벨은 전 채널, 7연타 트리거는 dev 계열만(내부 게이트) */}
