@@ -224,17 +224,12 @@ it('KB-433 §2 → 9/5 후속: 로그인 콜라주 — 12장 순환 + 마퀴(포
   expect(src).toContain('<Wordmark height={46} />'); // 워드마크 144×46
 });
 
-it('KB-433(Codex #32 → P-280): 콜라주 = 전면 배경(ceil 3~8행) — 하단 블록 위 레이어 고정', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { collageRows, MIN_COLLAGE_H } = require('@/lib/loginCollage') as typeof import('@/lib/loginCollage');
-  expect(MIN_COLLAGE_H).toBe(220);
-  expect(collageRows(353)).toBe(3);
-  expect(collageRows(2000)).toBe(8); // 상한 8(전면 채움)
+it('KB-433 → P-308(KB-476): 콜라주 = 상단 3행 고정(전면 배경 취소) — 시안 원복 잠금', () => {
   const src = require('fs').readFileSync('src/app/login.tsx', 'utf8') as string;
-  expect(src).toContain("collage: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }");
-  expect(src).toContain('<Collage animate={animate} heroTop={heroTop} />');
+  expect(src).toContain('collageLayoutFor(availH)'); // Codex #70: 뷰포트 반응(기준 852=3행)
+  expect(src).not.toContain('collageRows('); // P-280 행수 함수 소비 잔존 0
+  expect(src).not.toContain('blurRadius'); // 하단 블러 잔존 0
 });
-
 it('눌림 색 = 최종본 #BE460F(P-284 — 9/5 #E8602A 경유) · Tag 선택 = 색만(체크 0·메트릭 불변)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { color } = require('@/lib/theme') as typeof import('@/lib/theme');
