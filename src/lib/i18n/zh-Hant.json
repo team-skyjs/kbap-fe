@@ -556,7 +556,9 @@
     "lockVerdict": "您的安全判定已鎖定",
     "lockIngredients": "登入後即可查看這道菜與您檔案的匹配情況",
     "readAll": "查看全部",
-    "beFirstReview": "還沒有評價 — 來寫第一條吧！"
+    "beFirstReview": "還沒有評價 — 來寫第一條吧！",
+    "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It can vary by restaurant — ask the owner to be sure.",
+    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It can vary by restaurant — ask the owner to be sure."
   },
   "states": {
     "catalogTitle": "狀態",

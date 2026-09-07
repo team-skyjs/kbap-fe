@@ -556,7 +556,9 @@
     "lockVerdict": "Đánh giá an toàn của bạn đang khóa",
     "lockIngredients": "Đăng nhập để xem món này hợp với hồ sơ của bạn không",
     "readAll": "Xem tất cả",
-    "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!"
+    "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!",
+    "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It can vary by restaurant — ask the owner to be sure.",
+    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It can vary by restaurant — ask the owner to be sure."
   },
   "states": {
     "catalogTitle": "Trạng thái",

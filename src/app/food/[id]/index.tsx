@@ -575,20 +575,35 @@ function Registered({
                       <Text style={styles.ingSheetName} numberOfLines={1}>{ingSheet.name}</Text>
                     </View>
                     {ingSheet.percentage != null && (
-                      <Text style={styles.ingTileSub}>{t('detail.ofShops', { pct: Math.round(ingSheet.percentage) })}</Text>
+                      /* P-306: 시트 빈도 = 좌측 정렬(타일용 center 스타일 재사용 폐기) */
+                      <Text style={styles.ingSheetSub}>{t('detail.ofShops', { pct: Math.round(ingSheet.percentage) })}</Text>
                     )}
                   </View>
                   <View style={styles.ingSheetImg}>
                     <IngChainImage code={ingSheet.code} imageUrl={cat.imageUrl(ingSheet.code)} size={56} iconSize={32} />
                   </View>
                 </View>
-                {/* 본문 = 기존 중립 조립 사유(guest = 판정 미노출이라 note/빈도만) */}
+                {/* P-306: 게스트 본문 = 빈도 문장 + 식당별 편차 안내(회피 언급 0) · 회원 = 현행 조립 */}
                 <Text style={styles.ingSheetBody}>
-                  {guest ? (ingSheet.note ?? '') : ingBasis(ingSheet, personalRisk(ingSheet.risk, hasRestrictions))}
-                  {!guest && ingSheet.note ? ` (${ingSheet.note})` : ''}
+                  {guest
+                    ? t(ingSheet.percentage != null ? 'detail.ingGuestBody' : 'detail.ingGuestBodyNoPct', {
+                        ingredient: ingSheet.name,
+                        percent: Math.round(ingSheet.percentage ?? 0),
+                      })
+                    : ingBasis(ingSheet, personalRisk(ingSheet.risk, hasRestrictions)) + (ingSheet.note ? ` (${ingSheet.note})` : '')}
                 </Text>
-                <Btn variant="ghost" onPress={() => setIngSheet(null)} testID="ing-sheet-close">
-                  {t('common.close')}
+                {/* P-306: Close 제거(스크림 탭·뒤로가기 닫힘 유지) → Ask the owner(상세 하단 버튼 문법) */}
+                <Btn
+                  icon={<IconSpeech size={20} color="#fff" />}
+                  onPress={() => {
+                    const code = ingSheet.code;
+                    setIngSheet(null);
+                    track(EVENTS.owner_ask_open, { source: 'ingredient_sheet', food_id: id ?? '' });
+                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}` as Href);
+                  }}
+                  testID="ing-sheet-ask"
+                >
+                  {t('detail.askOwner')}
                 </Btn>
               </>
             )}
@@ -696,6 +711,8 @@ const styles = StyleSheet.create({
   ingSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingVertical: 28, gap: 16 },
   ingSheetTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ingSheetName: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
+  // P-306: 시트 전용 빈도 줄 — 좌측 정렬(마크·이름 아래), 타일용 ingTileSub(center)와 분리
+  ingSheetSub: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
   ingSheetImg: { width: 56, height: 56, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   ingSheetBody: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
 

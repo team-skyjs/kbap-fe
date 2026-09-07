@@ -326,8 +326,8 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(flat(tree)).toContain('detail.askOwner');
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
     expect(src).toContain('paddingBottom: showBottomBar ? 107 : 40'); // P-068 여백 문법
-    // 라벨 3곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA
-    expect(src.match(/detail\.askOwner/g)?.length).toBe(3);
+    // 라벨 4곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA + 재료 시트(P-306)
+    expect(src.match(/detail\.askOwner/g)?.length).toBe(4);
   });
 
   it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {

@@ -714,7 +714,9 @@
     "lockVerdict": "로그인하면 내 기준의 위험도를 확인할 수 있어요",
     "lockIngredients": "로그인하면 이 음식과 내 프로필을 비교할 수 있어요",
     "readAll": "전체 보기",
-    "beFirstReview": "아직 리뷰가 없어요. 첫 리뷰를 남겨 보세요."
+    "beFirstReview": "아직 리뷰가 없어요. 첫 리뷰를 남겨 보세요.",
+    "ingGuestBody": "{{ingredient}}은(는) 이 음식의 약 {{percent}}% 버전에 들어가요. 식당마다 다를 수 있으니 확실히 하려면 사장님께 물어보세요.",
+    "ingGuestBodyNoPct": "{{ingredient}}은(는) 이 음식에 흔히 들어가요. 식당마다 다를 수 있으니 확실히 하려면 사장님께 물어보세요."
   },
   "states": {
     "catalogTitle": "상태",
