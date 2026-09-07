@@ -556,7 +556,9 @@
     "lockVerdict": "Penilaian keamanan Anda terkunci",
     "lockIngredients": "Masuk untuk melihat kecocokan hidangan ini dengan profil Anda",
     "readAll": "Lihat semua",
-    "beFirstReview": "Belum ada ulasan — jadilah yang pertama!"
+    "beFirstReview": "Belum ada ulasan — jadilah yang pertama!",
+    "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
+    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan."
   },
   "states": {
     "catalogTitle": "Status",

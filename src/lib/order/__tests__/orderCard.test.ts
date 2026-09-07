@@ -50,10 +50,12 @@ describe('ownerQuestionKo — 사장님 확인 질문 실데이터 조립 (P-045
     expect(ownerQuestionKo('쫄면', 'ing:2:달걀')).toBe('쫄면에 달걀이 들어가나요?'); // ko 라벨 역매핑
   });
 
-  it('P-052 ②: 역매핑 실패(비한글 미지 name)·미지 형식 → 일반 질문 — 원문/식별자 노출 0', () => {
-    expect(ownerQuestionKo('쫄면', 'ing:1:Mystery Sauce')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?');
-    expect(ownerQuestionKo('쫄면', 'GARBAGE_CODE')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?');
-    expect(ownerQuestionKo('쫄면', 'ing:1:계란 sauce')).toBe('쫄면에 제가 못 먹는 재료가 들어가나요?'); // 혼합 스크립트도 강등
+  it('P-052 ② → P-306 3R: 역매핑 실패·미지 형식 → **중립 질문**(회피 진술 폴백 금지) — 원문/식별자 노출 0', () => {
+    // P-306(Codex #67 3R): 재료 특정 진입의 미해석은 "못 먹는 재료" 회피 진술 대신 중립 —
+    // 게스트·safe 재료(시트 발)에 거짓 진술 방지. 식별자 비노출(P-052)은 그대로 유지.
+    expect(ownerQuestionKo('쫄면', 'ing:1:Mystery Sauce')).toBe('쫄면에 이 재료가 들어가나요?');
+    expect(ownerQuestionKo('쫄면', 'GARBAGE_CODE')).toBe('쫄면에 이 재료가 들어가나요?');
+    expect(ownerQuestionKo('쫄면', 'ing:1:계란 sauce')).toBe('쫄면에 이 재료가 들어가나요?'); // 혼합 스크립트도 강등
   });
 
   it('P-052 ③: 직접 81종 코드는 기존 동작 유지', () => {

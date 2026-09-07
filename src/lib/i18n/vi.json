@@ -556,7 +556,9 @@
     "lockVerdict": "Đánh giá an toàn của bạn đang khóa",
     "lockIngredients": "Đăng nhập để xem món này hợp với hồ sơ của bạn không",
     "readAll": "Xem tất cả",
-    "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!"
+    "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!",
+    "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
+    "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn."
   },
   "states": {
     "catalogTitle": "Trạng thái",

@@ -556,7 +556,9 @@
     "lockVerdict": "Tu lectura de seguridad está bloqueada",
     "lockIngredients": "Inicia sesión para ver cómo encaja este plato con tu perfil",
     "readAll": "Ver todas",
-    "beFirstReview": "Aún no hay reseñas — ¡sé el primero!"
+    "beFirstReview": "Aún no hay reseñas — ¡sé el primero!",
+    "ingGuestBody": "{{ingredient}} se usa en aproximadamente el {{percent}}% de las versiones de este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
+    "ingGuestBodyNoPct": "{{ingredient}} se usa comúnmente en este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte."
   },
   "states": {
     "catalogTitle": "Estados",

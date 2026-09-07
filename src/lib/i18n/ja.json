@@ -556,7 +556,9 @@
     "lockVerdict": "あなたの安全判定はロック中",
     "lockIngredients": "ログインするとプロフィールとの適合が見られます",
     "readAll": "すべて見る",
-    "beFirstReview": "まだレビューがありません — 最初のレビューを！"
+    "beFirstReview": "まだレビューがありません — 最初のレビューを！",
+    "ingGuestBody": "{{ingredient}}はこの料理の約{{percent}}%のバージョンに使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
+    "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。"
   },
   "states": {
     "catalogTitle": "状態",

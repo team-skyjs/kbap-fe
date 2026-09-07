@@ -556,7 +556,9 @@
     "lockVerdict": "您的安全判定已锁定",
     "lockIngredients": "登录后即可查看这道菜与您档案的匹配情况",
     "readAll": "查看全部",
-    "beFirstReview": "还没有评价 — 来写第一条吧！"
+    "beFirstReview": "还没有评价 — 来写第一条吧！",
+    "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
+    "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。"
   },
   "states": {
     "catalogTitle": "状态",
