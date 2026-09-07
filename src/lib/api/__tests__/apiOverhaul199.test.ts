@@ -105,3 +105,59 @@ describe('app-version 어댑터 — 실계약(aos 키)', () => {
     expect(src).not.toContain("'/app-config'");
   });
 });
+
+describe('KB-441(Codex #59 P1-6): 토큰·세대 한 스냅샷 — 찢긴 읽기 방지', () => {
+  const memberMissing400 = () =>
+    Promise.resolve({
+      ok: false,
+      status: 400,
+      text: () => Promise.resolve(JSON.stringify({ success: false, payload: null, message: 'no member', code: 'MEMBER-003' })),
+    } as unknown as Response);
+
+  it('토큰 로드 중 로그인 커밋(gen 변화) → 1회 재읽기 재정렬: 통지 gen = 새 세대·헤더 = 새 토큰', async () => {
+    jest.resetModules();
+    jest.doMock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => false }));
+    const fetchMock = jest.fn(memberMissing400);
+    global.fetch = fetchMock as unknown as typeof fetch;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const client = require('../client') as typeof import('../client');
+    let gen = 0;
+    let tokenReads = 0;
+    client.setSessionGenerationProvider(() => gen);
+    client.setAuthTokenProvider(async () => {
+      tokenReads += 1;
+      if (tokenReads === 1) {
+        gen = 1; // 로드 도중 로그인 커밋(경계) — 찢긴 "A 토큰+B 세대" 유발 조건
+        return 'A-token';
+      }
+      return 'B-token';
+    });
+    const onMissing = jest.fn();
+    client.setOnMemberMissing(onMissing);
+    await expect(client.api.get('/members/me/profile')).rejects.toBeTruthy();
+    expect(tokenReads).toBe(2); // 재읽기 1회
+    expect(onMissing).toHaveBeenCalledWith(1); // 통지 세대 = 재정렬된 새 세대(찢김 0)
+    const [, init] = fetchMock.mock.calls[0] as [string, { headers: Record<string, string> }];
+    expect(init.headers.Authorization).toBe('Bearer B-token'); // 요청도 새 토큰으로
+  });
+
+  it('경계 없음 = 재읽기 0(현행 단일 로드 유지)', async () => {
+    jest.resetModules();
+    jest.doMock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => false }));
+    const fetchMock = jest.fn(memberMissing400);
+    global.fetch = fetchMock as unknown as typeof fetch;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const client = require('../client') as typeof import('../client');
+    let tokenReads = 0;
+    client.setSessionGenerationProvider(() => 7);
+    client.setAuthTokenProvider(async () => {
+      tokenReads += 1;
+      return 'T';
+    });
+    const onMissing = jest.fn();
+    client.setOnMemberMissing(onMissing);
+    await expect(client.api.get('/members/me/profile')).rejects.toBeTruthy();
+    expect(tokenReads).toBe(1);
+    expect(onMissing).toHaveBeenCalledWith(7);
+  });
+});

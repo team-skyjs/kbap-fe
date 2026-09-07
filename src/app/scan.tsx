@@ -178,11 +178,19 @@ export default function Scan() {
         setPhase('camera');
       }
     } catch (e) {
-      if ((e as { code?: string })?.code === 'SCAN-004') {
+      const code = (e as { code?: string })?.code;
+      if (code === 'SCAN-004') {
         preTicket.current = null;
         quotaLockRef.current = true;
         setError({ stage: 'quota', detail: 'preflight SCAN-004' });
         setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
+      } else if (code === 'MEMBER-003') {
+        // KB-441(b27 실기): 좀비 세션 — 세션 무효화는 client 훅(beAuth) 몫.
+        // 여기선 촬영·업로드 전에 즉시 표면화(구조: 촬영 후에야 본 스캔 400이 뜨던 지연 제거).
+        // fail 헬퍼 미경유 = 스캔 시도 아님(scan_complete 계측 오염 0 — P-255 원칙 동일).
+        preTicket.current = null;
+        setError({ stage: 'be', detail: 'preflight MEMBER-003' });
+        setPhase('error');
       }
     }
   }, []);

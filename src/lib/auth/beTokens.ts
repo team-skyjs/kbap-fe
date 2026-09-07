@@ -57,7 +57,18 @@ function serialized<T>(op: () => Promise<T>): Promise<T> {
  *  커밋 단계(세션 점등·로그·내비게이션)를 생략할 것.
  *  ABA 안전(2차 방어): 되돌림은 **자기 쓰기일 때만** — cached·저장소 값이 자기
  *  것과 일치할 때만 지운다(교체 세션 B의 토큰 보존). */
-export function saveTokens(access: string, refresh: string): Promise<boolean> {
+export function saveTokens(
+  access: string,
+  refresh: string,
+  opts?: {
+    /** KB-441(Codex #59 P1-5): 로그인 커밋 = 새 세션 경계 — **캐시 공개와 같은 동기
+     *  틱에** 세대 증가. bump가 SecureStore await 뒤(beAuth)면 "캐시=B·gen=A" 창이
+     *  열려 낡은 AUTH-004의 doRefresh가 B의 refresh를 소모 후 폐기한다(B 로그아웃).
+     *  회전(doRefresh)은 이 플래그 없이 호출 — 세대 불변 유지. */
+    newSession?: boolean;
+  },
+): Promise<boolean> {
+  if (opts?.newSession) sessionGen++; // 경계 — 아래 캐시 공개와 동일 동기 틱
   const g = sessionGen; // 호출 시점 세대(동기)
   const mine = { access, refresh };
   cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)
