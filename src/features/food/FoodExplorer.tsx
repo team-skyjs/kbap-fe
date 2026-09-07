@@ -297,7 +297,9 @@ export function FoodExplorer({
 
   // P-321 레일 상태: 로딩/에러/빈은 전부 ScrollView 밖 세로 블록(가로 컨테이너 안 문장이
   // 줄바꿈 없이 잘리던 실기 결함) — ScrollView는 카드 ≥1일 때만 마운트.
-  const railLoading = browse.isLoading || (gridTab === 'saved' && saved.isLoading);
+  // Codex #85 2R P2: Saved 탭 데이터 = 북마크 쿼리 독립 — 로딩도 에러처럼 탭별 스코프
+  // (카탈로그 콜드 로딩이 캐시된 저장 카드를 스켈레톤으로 가리지 않게).
+  const railLoading = gridTab === 'saved' ? saved.isLoading : browse.isLoading;
 
   return (
     <View>
@@ -361,9 +363,9 @@ export function FoodExplorer({
       {safePicks.length >= 2 && (
         <>
           <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />
-          {/* 셀 = FoodGridCard 기본 폭 규칙(47% + grow) — 음식 탭 그리드와 동일 시각 */}
+          {/* Codex #85 2R P2: 홀수 장(3장)일 때 마지막 카드가 grow로 행 전체 확장 — grow 차단 고정 하프 폭 */}
           <View style={styles.safeGrid} testID="home-safe-grid">
-            {safePicks.map((item) => card(item))}
+            {safePicks.map((item) => card(item, styles.safeGridCard))}
           </View>
         </>
       )}
@@ -419,6 +421,7 @@ const styles = StyleSheet.create({
   railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20 },
   // Safe picks 2×2 — 홈 구 그리드 문법(카드 기본 47% + grow)
   safeGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
+  safeGridCard: { width: '47%', flexGrow: 0 }, // 홀수 마지막 카드도 2열 폭 유지(#85 2R)
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
