@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   placeTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21', paddingHorizontal: 20 },
 
   // 영수증 카드 — pad 16, 행 space-between, line #DCDEE3
-  receipt: { marginHorizontal: 20, borderWidth: 1, borderColor: C.line, borderRadius: 8, padding: 16, gap: 12 },
+  receipt: { marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 0, gap: 16 }, // A-OD-01(KB-486: 보더 제거·좌우 0)
   rcptRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   rcptLbl: { fontSize: 12, fontWeight: '600', color: C.inkInfo }, // P-284: 영수증 라벨 대비
   rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
@@ -181,18 +181,18 @@ const styles = StyleSheet.create({
   rcptLine: { height: 1, backgroundColor: C.line2 },
   rcptTotal: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
-  divider8: { height: 8, backgroundColor: C.hair },
+  divider8: { height: 8, backgroundColor: '#F5F5F5' }, // A-OD-02
 
-  dishesHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingHorizontal: 20 },
+  dishesHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 20, marginTop: -4 }, // A-OD-03(디바이더 후 12)
   dishesTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
   dishesCount: { fontSize: 14, fontWeight: '500', color: C.ink3 },
 
-  items: { paddingHorizontal: 20, gap: 12 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, paddingVertical: 14 },
+  items: { paddingHorizontal: 20, gap: 12, marginTop: -8 }, // A-OD-03(헤더→리스트 8)·A-OD-04(카드 간 12)
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 8 }, // A-OD-04
   itemThumb: { width: 58, height: 58, borderRadius: 4, backgroundColor: C.surface2 },
   itemName: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
   itemPending: { fontSize: 11.5, fontWeight: '500', color: C.ink3 },
-  itemRight: { alignItems: 'flex-end', gap: 2 },
+  itemRight: { flexDirection: 'row', alignItems: 'baseline', gap: 3 }, // A-OD-05(가로 1행)
   itemQty: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   itemPrice: { fontSize: 14, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
