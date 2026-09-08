@@ -34,12 +34,10 @@ it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)�
   expect(mod2).toContain('!target.mine && !isGuest && !target.anonymized && !target.reportOnly');
 });
 
-it('③ Helpful 폭 고정 — 고스트(99+) 예약 + tabular-nums + 실라벨 absolute 중앙 + ≥100 컴팩트', () => {
+it('③ Helpful 폭 고정 — P-342 ①로 대체: 61×30 고정 버튼 + 99+ 컴팩트(feedback0908b가 정본 잠금)', () => {
   const rc = read('src/features/review/ReviewCellParts.tsx');
-  expect(rc).toContain("count: '99+' as unknown as number"); // 고스트 = 최대 표기 예약
+  expect(rc).toMatch(/helpfulBtn: \{ width: 61, height: 30/); // 고정 폭 계약 유지(방식만 교체)
   expect(rc).toContain("(review.likes ?? 0) > 99 ? '99+'"); // Codex #100 P2: 컴팩트 표기
-  expect(rc).toContain("helpfulGhost: { opacity: 0, fontVariant: ['tabular-nums'] }");
-  expect(rc).toContain("helpfulReal: { position: 'absolute', left: 0, right: 0, textAlign: 'center', fontVariant: ['tabular-nums'] }");
 });
 
 it('④ 지도 로고 공식 CI — 네이버 N(#03C75A 바탕 흰 N)·카카오 #FEE500 위 검정', () => {
@@ -48,7 +46,7 @@ it('④ 지도 로고 공식 CI — 네이버 N(#03C75A 바탕 흰 N)·카카오
   expect(pm).toContain("bg: '#FEE500', text: '#000000'");
   const da = read('src/components/design4Assets.tsx');
   expect(da).toMatch(/BrandNaver = \(\{ height = 24, color = '#FFFFFF' \}/);
-  expect(da).toContain('fill="#000000" transform="matrix(1,0,0,1,7,8)"');
+  expect(da).toContain('fill="#000000" transform="matrix(1.6,0,0,1.6,4,4.8)"'); // P-342 ③: 광학 확대
 });
 
 it('⑤ 북마크 상단 토스트 — 공용 호스트(루트 1개) + 토글 뮤테이션 한 곳 발화(기존 키 재사용)', () => {

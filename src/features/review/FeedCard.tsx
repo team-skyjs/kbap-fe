@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   avatarWrap: { width: 24, height: 24 }, // P-340: 배지 오버행 수용(overflow 기본 visible)
   avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
   // P-340(1-B): 국기 배지 14 — 흰 링 1.5 원형, 아바타 밖 우하단 -2 걸침
-  flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }, // P-342 ④: 이모지만(흰 원·링 제거)
 
   // KB-431 후속(9/7 .fig 실측 #2162:11360): 평점 행 = hug 273×20 @x20 — **좌측 정렬**
   // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.

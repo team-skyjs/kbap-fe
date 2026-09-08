@@ -377,19 +377,22 @@ export function HelpfulButton({
   return (
     /* KB-430(4150:13934): 버튼형 — h30 pad 7/13 line 1px r4, thumbs-up 16 + 12/500.
        로직·경유는 무변(전 표면 공용) — 스타일만 시안. */
-    <Pressable hitSlop={8} onPress={onPress} disabled={mine} style={styles.helpfulBtn} testID={`helpful-${review.id}`}>
+    /* P-342 ①(KB-503, DS 2083:5620): 시안 helpful-row — thumbs-up 16 + 숫자만,
+       61×30 고정(pad 7/13, gap 4, r4) — "Helpful (n)" 텍스트 폐기. 눌림 = #FF7134
+       stroke·아이콘·숫자(색만 — P-151). 99+ 컴팩트(#100 P2) 유지, a11y = "Helpful, n". */
+    <Pressable
+      hitSlop={8}
+      onPress={onPress}
+      disabled={mine}
+      style={[styles.helpfulBtn, review.myLike && styles.helpfulBtnOn]}
+      accessibilityRole="button"
+      accessibilityLabel={t('reviews.helpful', { count: review.likes ?? 0 })} /* 기존 키 재사용 — 신규 0 */
+      testID={`helpful-${review.id}`}
+    >
       <IconThumbsUp size={16} color={mine ? C.ink3 : review.myLike ? C.primary : C.ink2} />
-      {/* P-339 ③(KB-494): 폭 고정 — 고스트(99 = 2자리 예약)가 폭을 소유, 실라벨은 그 위 중앙.
-          tabular-nums로 같은 자릿수 흔들림도 제거. 눌림 상태는 색만(P-151). */}
-      <View>
-        {/* Codex #100 P2: ≥100은 "99+" 컴팩트 — 고스트도 같은 표기로 예약(폭 상한 불변) */}
-        <Text style={[styles.helpful, styles.helpfulGhost]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {t('reviews.helpful', { count: '99+' as unknown as number })}
-        </Text>
-        <Text style={[styles.helpful, styles.helpfulReal, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]} numberOfLines={1}>
-          {t('reviews.helpful', { count: ((review.likes ?? 0) > 99 ? '99+' : (review.likes ?? 0)) as unknown as number })}
-        </Text>
-      </View>
+      <Text style={[styles.helpfulCount, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]} numberOfLines={1}>
+        {(review.likes ?? 0) > 99 ? '99+' : String(review.likes ?? 0)}
+      </Text>
     </Pressable>
   );
 }
@@ -514,10 +517,9 @@ const styles = StyleSheet.create({
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
-  helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 30, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 4, backgroundColor: '#FFFFFF' },
-  // P-339 ③: 고스트 = 투명 자리(2자리 예약) / 실라벨 = absolute 중앙 — 카운트 변동에도 폭 불변
-  helpfulGhost: { opacity: 0, fontVariant: ['tabular-nums'] },
-  helpfulReal: { position: 'absolute', left: 0, right: 0, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  helpfulBtn: { width: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 4, backgroundColor: '#FFFFFF' }, // P-342 ①: 61×30 고정
+  helpfulBtnOn: { borderColor: C.primary }, // 눌림 = 스트로크 색만(프레임 불변)
+  helpfulCount: { fontSize: 12, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
   helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },

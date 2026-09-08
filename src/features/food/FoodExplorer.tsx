@@ -319,6 +319,12 @@ export function FoodExplorer({
             label: t(`food.sort_${v}`),
             icon: v === sort ? <IconCheck size={15} color={C.primary} /> : undefined,
             disabled: v === 'new', // KB-439(publishedAt) 배포 전 비활성 — 배포 시 disabled 해제 + 정렬 분기
+            // P-342 ②: NEW = "준비 중" 칩(KB-439 배포 시 칩 제거)
+            trailing: v === 'new' ? (
+              <View style={styles.soonChip}>
+                <Text style={styles.soonChipText}>{t('food.sortNewSoon')}</Text>
+              </View>
+            ) : undefined,
             onPress: () => setSort(v),
           }))}
           onClose={() => setSortSheet(false)}
@@ -460,6 +466,9 @@ const styles = StyleSheet.create({
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' },
   chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: 8, height: 34 },
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 24 },
+  // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
+  soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },
+  soonChipText: { fontSize: 12, fontWeight: '500', color: '#6A6F7C' },
   chipGroup: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },

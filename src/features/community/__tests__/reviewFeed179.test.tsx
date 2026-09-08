@@ -105,7 +105,7 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
   const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
   expect(texts).toContain('Amy');
   expect(texts).toContain('Server Kimbap');
-  expect(texts.some((x) => x.includes('reviews.helpful'))).toBe(true);
+  expect(texts).toContain('3'); // P-342 ①: Helpful = 아이콘+숫자(텍스트 라벨 소멸 — likes 3)
   // CardPhoto(expo-image)는 source가 문자열 — 양쪽 형태 수집
   const imgs = tree.root
     .findAll((n) => n.props?.source != null)
