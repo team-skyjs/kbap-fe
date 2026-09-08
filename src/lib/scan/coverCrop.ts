@@ -31,3 +31,35 @@ export function coverCropRect(viewW: number, viewH: number, picW: number, picH: 
   const height = Math.min(picH, Math.round(picW / viewAspect));
   return { originX: 0, originY: Math.round((picH - height) / 2), width: picW, height };
 }
+
+/**
+ * P-338(KB-493) → Codex #99 P1 재설계: WYSIWYG 크롭의 방향 판정.
+ *
+ * ① 방향 소스 = **캡처 사진 자체**(중력 camOrientation 아님) — 폰을 평평히 놓으면
+ *   gravity가 z축이라 orientationFromGravity가 portrait를 돌려주는 케이스(테이블
+ *   메뉴)에서 중력 판정이 틀린다. EXIF 적용 후 유효 치수가 W>H면 물리 가로 뷰포트
+ *   (뷰 H,W 스왑), 아니면 세로. `exif.Orientation` 6/8(90° 회전)이 오면 보고 치수를
+ *   raw로 보고 스왑해 "적용 후 치수"로 정규화한 뒤 판단한다.
+ * ② 크롭 rect는 **입력(보고된) 치수 좌표계 안**에서 생성 — 스왑은 뷰 비율 계산에만
+ *   쓰고, raw 보고 치수면 뷰 비율을 전치해 보고 공간에서 역산한다(경계 초과 없음 —
+ *   coverCropRect의 min/centered 불변식 상속).
+ */
+export function wysiwygCropRect(
+  viewW: number,
+  viewH: number,
+  picW: number,
+  picH: number,
+  exifOrientation?: number,
+): CropRect | null {
+  if (!(viewW > 0 && viewH > 0 && picW > 0 && picH > 0)) return null;
+  const rotated = exifOrientation === 6 || exifOrientation === 8; // 보고 치수 = raw(90° 회전 전)
+  const effW = rotated ? picH : picW; // EXIF 적용 후(월드) 유효 치수
+  const effH = rotated ? picW : picH;
+  const landscape = effW > effH;
+  // Codex #99 2R: 전치는 뷰포트가 실제 세로(viewW<viewH)일 때만 — 웹/가로 브라우저처럼
+  // onLayout이 이미 가로 치수를 주면 사진이 가로여도 전치 금지(이중 회전 방지).
+  const [vw, vh] = landscape && viewW < viewH ? [viewH, viewW] : [viewW, viewH];
+  // 보고 좌표계로 환산: raw 치수면 뷰 비율도 전치 — rect는 항상 picW×picH 안
+  const [rvw, rvh] = rotated ? [vh, vw] : [vw, vh];
+  return coverCropRect(rvw, rvh, picW, picH);
+}
