@@ -279,7 +279,8 @@ it('P-134 회피: 81종 타일+폴백 약어·카운트/Clear', async () => {
   // P-188: 약어는 로드 **실패시에만** — 체인 소진(onError) 후 노출, 로딩 중엔 스켈레톤
   expect(egg.findAll((c) => c.props?.testID?.startsWith?.('avtile-skel-')).length).toBeGreaterThanOrEqual(1);
   const eggImg = egg.findAll((c) => c.props?.testID === 'avtile-img-EGG')[0];
-  await act(async () => { eggImg.props.onError(); });
+  await act(async () => { eggImg.props.onError(); }); // 누끼 실패(P-341)
+  await act(async () => { egg.findAll((c) => c.props?.testID === 'avtile-img-EGG')[0].props.onError(); }); // 조립 실패 — 소진
   expect(egg.findAll((c) => c.props?.children === 'EG').length).toBeGreaterThanOrEqual(1); // 실패 폴백 약어
   expect(textNodes(tree, 'onboarding.selectedCount').length).toBeGreaterThanOrEqual(1); // 1개 선택 카운트
   const clear = tree.root.findAll((n) => n.props?.testID === 'avoid-clear')[0];

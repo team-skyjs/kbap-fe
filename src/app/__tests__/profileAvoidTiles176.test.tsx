@@ -102,7 +102,8 @@ it('회피 = 사진 미니 타일(선택분만) — 서버 이미지·번역명,
   expect(tree.root.findAll((n) => n.props?.testID === 'avtile-SHRIMP').length).toBeGreaterThanOrEqual(1);
   const s = flat(tree);
   expect(s).toContain('srv:EGG'); // P-174 서버 번역명 승계
-  expect(s).toContain('https://cdn/egg.webp'); // 서버 이미지 승계
+  expect(s).toContain('images/webp/ingredients-cut/egg.webp'); // P-341: 누끼 선두
+  // 서버 이미지 승계는 체인 2순위 — 누끼 실패 시 전환(ingredientImageChain303에서 검증)
   const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
   expect(src).not.toContain('AvoidChip'); // 구 solid 칩 문법 소멸(P-227 식이 presetChip과 무관)
   expect(src).not.toContain('profile.add'); // P-227 ④: "+ Add" 소멸 — 수정은 Show all 페이지

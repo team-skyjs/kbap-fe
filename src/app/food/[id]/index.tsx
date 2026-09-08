@@ -57,10 +57,19 @@ const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
  *  CDN 조립 → 폴백) — 상세만 서버 imageUrl 단독이라 사진이 안 뜨던 결함 해소.
  *  체인 소진 시 현 폴백(IconFood) 유지, 타일 크기 48/56 무변(시안 §3). */
 function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; imageUrl?: string | null; size: number; iconSize: number }) {
-  const { uri, nextSource } = useIngredientImageChain(code, imageUrl);
+  const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
   if (!uri) return <IconFood size={iconSize} color={C.ink3} />;
   // key = 소스별 리마운트(RemoteImage settle 리셋 — AvoidTile 문법 동일)
-  return <RemoteImage key={uri} uri={uri} onError={nextSource} style={{ width: size, height: size, borderRadius: 8 }} />;
+  // P-341(KB-502): 누끼본 = contain(여백은 크기 축소로 근사 — 타일 pad 유지)
+  return (
+    <RemoteImage
+      key={uri}
+      uri={uri}
+      onError={nextSource}
+      contentFit={isCutout ? 'contain' : undefined}
+      style={isCutout ? { width: size * 0.82, height: size * 0.82 } : { width: size, height: size, borderRadius: 8 }}
+    />
+  );
 }
 
 export default function FoodDetailScreen() {
