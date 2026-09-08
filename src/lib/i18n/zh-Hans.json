@@ -106,7 +106,8 @@
       "bbq": "烧烤",
       "street": "街边小吃",
       "sides": "配菜"
-    }
+    },
+    "sortNewSoon": "即将上线"
   },
   "search": {
     "placeholder": "搜索菜品、食材…",

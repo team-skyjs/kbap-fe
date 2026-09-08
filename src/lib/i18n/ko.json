@@ -106,7 +106,8 @@
       "bbq": "구이",
       "street": "분식",
       "sides": "반찬"
-    }
+    },
+    "sortNewSoon": "준비 중"
   },
   "search": {
     "placeholder": "음식, 재료 검색…",

@@ -25,6 +25,8 @@ export interface ActionSheetItem {
   key: string;
   label: string;
   icon?: ReactNode;
+  /** P-342 ②(KB-503): 라벨 우측 트레일링 노드 — NEW "Coming soon" 칩 등 */
+  trailing?: ReactNode;
   destructive?: boolean;
   onPress: () => void;
   /** P-190: 탭 시 자동 onClose 생략 — 페이즈 전환형(신고/차단)용. onClose가 플로우
@@ -77,6 +79,7 @@ export function ActionSheet({
               >
                 {it.icon}
                 <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
+                {it.trailing}
               </Pressable>
             ))}
           </View>

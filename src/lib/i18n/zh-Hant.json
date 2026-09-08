@@ -106,7 +106,8 @@
       "bbq": "燒烤",
       "street": "街頭小吃",
       "sides": "小菜"
-    }
+    },
+    "sortNewSoon": "即將上線"
   },
   "search": {
     "placeholder": "搜尋食物、食材…",

@@ -106,7 +106,8 @@
       "bbq": "Parrilla",
       "street": "Callejera",
       "sides": "Acompañamientos"
-    }
+    },
+    "sortNewSoon": "Próximamente"
   },
   "search": {
     "placeholder": "Buscar comida, ingrediente…",

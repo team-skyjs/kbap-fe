@@ -106,7 +106,8 @@
       "bbq": "焼肉",
       "street": "屋台",
       "sides": "おかず"
-    }
+    },
+    "sortNewSoon": "準備中"
   },
   "search": {
     "placeholder": "料理や食材を検索…",
