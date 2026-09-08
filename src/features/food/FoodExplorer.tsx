@@ -387,7 +387,7 @@ export function FoodExplorer({
 
 const styles = StyleSheet.create({
   // 검색 행 (§1-2)
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 0 }, // A-HM-02
   searchBox: {
     flex: 1,
     height: 48,
@@ -396,22 +396,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16, // A-HM-02
   },
-  searchPh: { flex: 1, fontSize: 15, fontWeight: '400', color: C.ink3, marginRight: 8 },
+  searchPh: { flex: 1, fontSize: 15, fontWeight: '500', color: '#D1D3D8', marginRight: 8 }, // A-HM-02(scanBtn bg는 C 이관)
   scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
-  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 20, gap: 4 },
-  tab: { paddingHorizontal: 8, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 14, gap: 4 }, // A-HM-03
+  // A-DS-03(KB-486): 라벨 14/700 · 비활성 #9196A1 · 패딩 10
+  tab: { paddingHorizontal: 10, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' },
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
   // P-318: 칩 그룹(래핑) + 우측 정렬 버튼 — embedded는 우측 요소 없음(시각 무변)
-  chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingVertical: 16 },
+  chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04
   chipGroup: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },

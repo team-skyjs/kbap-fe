@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   // 언더라인 탭(responsive 2분할)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 8 },
   tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },

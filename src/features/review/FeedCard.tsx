@@ -26,8 +26,9 @@ function RatingAxis({ label, value }: { label: string; value: number }) {
   return (
     <View style={styles.axis}>
       <Text style={styles.axisLabel}>{label}</Text>
+      {/* A-FC-05(KB-486): 별→수치 2(라벨→별 4 유지 — axis gap) */}
       <Star size={16} fillPct={100} />
-      <Text style={styles.axisValue}>{value}</Text>
+      <Text style={[styles.axisValue, { marginLeft: -2 }]}>{value}</Text>
     </View>
   );
 }
@@ -71,7 +72,7 @@ export function FeedCard({
         <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
         {!anon && showMore && (
           <Pressable hitSlop={10} onPress={onMore} testID={`feed-more-${review.id}`}>
-            <IconMore size={15} color={C.ink3} />
+            <IconMore size={20} color={'#262C31'} />
           </Pressable>
         )}
       </View>
@@ -110,12 +111,12 @@ export function FeedCard({
 
 const styles = StyleSheet.create({
   // 카드(4150:13934) — 구분선형(보더·그림자 소멸)
-  card: { paddingVertical: 22, paddingHorizontal: 20, gap: 10, borderBottomWidth: 1, borderBottomColor: C.line },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: C.ink },
+  card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486)
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 }, // A-FC-01
+  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
+  whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02
   // 시안 아바타: 원 bg #E8F6FF + 실루엣(SVG) — TabBar 프로필 슬롯과 동일 문법
-  avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
 
   // KB-431 후속(9/7 .fig 실측 #2162:11360): 평점 행 = hug 273×20 @x20 — **좌측 정렬**
   // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
 
   body: { fontSize: 14, fontWeight: '400', color: INK_TITLE, lineHeight: 20 },
 
-  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', maxWidth: '100%' },
+  foodChip: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', maxWidth: '100%' }, // A-FC-06
   foodChipThumb: { width: 16, height: 16, borderRadius: 4, overflow: 'hidden', backgroundColor: C.surface2 },
   foodChipName: { flexShrink: 1, fontSize: 12, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 링크(동값·의미 토큰)
 });

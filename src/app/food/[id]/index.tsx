@@ -20,7 +20,7 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
 import { QueryErrorBlock } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
@@ -411,7 +411,7 @@ function Registered({
             </Pressable>
           )}
         </View>
-        <Pressable style={styles.bmBtn} onPress={onBookmark} hitSlop={6} testID="detail-save">
+        <Pressable style={[styles.bmBtn, saved && styles.bmBtnSaved]} onPress={onBookmark} hitSlop={6} testID="detail-save">
           {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
           <BookmarkStar saved={saved} size={16} />
         </Pressable>
@@ -714,7 +714,9 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
   ratingRowText: { fontSize: 13, fontWeight: '600', color: C.ink },
   // 북마크 36(4129:10698 — 홈 그리드와 동일 문법)
-  bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  // A-DS-02(KB-486): 기본 흰+sh1(보더 투명 자리 유지 — P-151), 저장만 #EAEBEE 1
+  bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  bmBtnSaved: { borderColor: '#EAEBEE' },
 
   profileHint: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18, paddingHorizontal: 20, paddingBottom: 12 },
 

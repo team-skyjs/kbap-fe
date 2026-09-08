@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   emptyWrap: { alignItems: 'center', gap: 8, maxWidth: 335, alignSelf: 'center', paddingVertical: 32, paddingHorizontal: 20 },
   emptyText: { fontSize: 16, fontWeight: '400', color: '#000000', textAlign: 'center' },
   // P-287: 에러 블록(4003:12563) — 세로 중앙 pad 40/32 gap 16
-  errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingVertical: 40, paddingHorizontal: 32, maxWidth: 360, alignSelf: 'center', width: '100%' },
+  errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 40, paddingHorizontal: 32, maxWidth: 360, alignSelf: 'center', width: '100%' }, // A-ER-01(제목→본문 6)
   errMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,113,52,0.10)', alignItems: 'center', justifyContent: 'center' },
   errTitle: { fontSize: 16, fontWeight: '600', color: C.ink, textAlign: 'center' },
   errBody: { fontSize: 14, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 20 },
@@ -189,7 +189,7 @@ export function QueryErrorBlock({
       <Text style={styles.errTitle}>{t(offline ? 'states.offlineTitle' : 'states.errorTitle')}</Text>
       {/* Codex #47 6차: 줄수 제한 제거 — ja/ru/th 카피 절단 방지(i18n 가변 길이 헌법), 높이 hug */}
       <Text style={styles.errBody}>{t(offline ? 'states.offlineBody' : 'states.errorBody')}</Text>
-      <View style={{ alignSelf: 'stretch', gap: 9, marginTop: 4 }}>
+      <View style={{ alignSelf: 'stretch', gap: 9, marginTop: 10 }}>{/* A-ER-02: 본문→버튼 16(gap 6 + 10) */}
         <Btn
           variant="ghost"
           onPress={() => {

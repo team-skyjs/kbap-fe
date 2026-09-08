@@ -1369,7 +1369,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
       style={
         {
           "flex": 1,
-          "gap": 6,
+          "gap": 12,
         }
       }
     >
@@ -1516,7 +1516,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
       style={
         {
           "flex": 1,
-          "gap": 6,
+          "gap": 12,
         }
       }
     >
@@ -2571,8 +2571,8 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
   <View
     style={
       {
-        "gap": 10,
-        "paddingVertical": 12,
+        "gap": 12,
+        "paddingVertical": 14,
       }
     }
   >
@@ -2593,7 +2593,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 16,
               "height": 32,
               "width": 32,
@@ -2661,7 +2661,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 16,
               "height": 32,
               "width": 32,
@@ -2696,6 +2696,76 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
         }
       }
     >
+      <View
+        style={
+          [
+            {
+              "backgroundColor": "#F7F8FA",
+              "overflow": "hidden",
+            },
+            {
+              "backgroundColor": "#EAEBEE",
+              "borderRadius": 4,
+              "flexShrink": 1,
+              "height": 12,
+              "maxWidth": "100%",
+              "width": 40,
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "rgba(255,255,255,0.45)",
+                "bottom": 0,
+                "left": 0,
+                "opacity": 0.7,
+                "position": "absolute",
+                "top": 0,
+                "width": 120,
+              },
+              {},
+            ]
+          }
+        />
+      </View>
+      <View
+        style={
+          [
+            {
+              "backgroundColor": "#F7F8FA",
+              "overflow": "hidden",
+            },
+            {
+              "backgroundColor": "#EAEBEE",
+              "borderRadius": 4,
+              "flexShrink": 1,
+              "height": 12,
+              "maxWidth": "100%",
+              "width": 60,
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "rgba(255,255,255,0.45)",
+                "bottom": 0,
+                "left": 0,
+                "opacity": 0.7,
+                "position": "absolute",
+                "top": 0,
+                "width": 120,
+              },
+              {},
+            ]
+          }
+        />
+      </View>
       <View
         style={
           [
@@ -3068,7 +3138,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -3101,7 +3171,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -3134,7 +3204,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -3164,8 +3234,8 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
   <View
     style={
       {
-        "gap": 10,
-        "paddingVertical": 12,
+        "gap": 12,
+        "paddingVertical": 14,
       }
     }
   >
@@ -3186,7 +3256,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 16,
               "height": 32,
               "width": 32,
@@ -3254,7 +3324,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 16,
               "height": 32,
               "width": 32,
@@ -3289,6 +3359,76 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
         }
       }
     >
+      <View
+        style={
+          [
+            {
+              "backgroundColor": "#F7F8FA",
+              "overflow": "hidden",
+            },
+            {
+              "backgroundColor": "#EAEBEE",
+              "borderRadius": 4,
+              "flexShrink": 1,
+              "height": 12,
+              "maxWidth": "100%",
+              "width": 40,
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "rgba(255,255,255,0.45)",
+                "bottom": 0,
+                "left": 0,
+                "opacity": 0.7,
+                "position": "absolute",
+                "top": 0,
+                "width": 120,
+              },
+              {},
+            ]
+          }
+        />
+      </View>
+      <View
+        style={
+          [
+            {
+              "backgroundColor": "#F7F8FA",
+              "overflow": "hidden",
+            },
+            {
+              "backgroundColor": "#EAEBEE",
+              "borderRadius": 4,
+              "flexShrink": 1,
+              "height": 12,
+              "maxWidth": "100%",
+              "width": 60,
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "rgba(255,255,255,0.45)",
+                "bottom": 0,
+                "left": 0,
+                "opacity": 0.7,
+                "position": "absolute",
+                "top": 0,
+                "width": 120,
+              },
+              {},
+            ]
+          }
+        />
+      </View>
       <View
         style={
           [
@@ -3661,7 +3801,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -3694,7 +3834,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -3727,7 +3867,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -3757,8 +3897,8 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
   <View
     style={
       {
-        "gap": 10,
-        "paddingVertical": 12,
+        "gap": 12,
+        "paddingVertical": 14,
       }
     }
   >
@@ -3779,7 +3919,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 16,
               "height": 32,
               "width": 32,
@@ -3847,7 +3987,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 16,
               "height": 32,
               "width": 32,
@@ -3882,6 +4022,76 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
         }
       }
     >
+      <View
+        style={
+          [
+            {
+              "backgroundColor": "#F7F8FA",
+              "overflow": "hidden",
+            },
+            {
+              "backgroundColor": "#EAEBEE",
+              "borderRadius": 4,
+              "flexShrink": 1,
+              "height": 12,
+              "maxWidth": "100%",
+              "width": 40,
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "rgba(255,255,255,0.45)",
+                "bottom": 0,
+                "left": 0,
+                "opacity": 0.7,
+                "position": "absolute",
+                "top": 0,
+                "width": 120,
+              },
+              {},
+            ]
+          }
+        />
+      </View>
+      <View
+        style={
+          [
+            {
+              "backgroundColor": "#F7F8FA",
+              "overflow": "hidden",
+            },
+            {
+              "backgroundColor": "#EAEBEE",
+              "borderRadius": 4,
+              "flexShrink": 1,
+              "height": 12,
+              "maxWidth": "100%",
+              "width": 60,
+            },
+          ]
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "rgba(255,255,255,0.45)",
+                "bottom": 0,
+                "left": 0,
+                "opacity": 0.7,
+                "position": "absolute",
+                "top": 0,
+                "width": 120,
+              },
+              {},
+            ]
+          }
+        />
+      </View>
       <View
         style={
           [
@@ -4254,7 +4464,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -4287,7 +4497,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,
@@ -4320,7 +4530,7 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "overflow": "hidden",
             },
             {
-              "backgroundColor": "#F2F3F6",
+              "backgroundColor": "#EAEBEE",
               "borderRadius": 12,
               "height": 24,
               "width": 72,

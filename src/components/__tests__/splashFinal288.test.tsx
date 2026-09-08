@@ -244,5 +244,6 @@ it('P-291 viewBox 정정 소스 잠금 — K 라운드 캡(y<0)이 잘리지 않
   expect(assetsSrc).toContain('viewBox="0 -1.528 18.551 21.528"');
   expect(assetsSrc).toContain('height = 21.528');
   expect(assetsSrc).not.toContain('viewBox="0 0 18.551 20"');
-  expect(fs.readFileSync('src/components/StickyHeader.tsx', 'utf8')).toContain('<AppBarMark height={21.528} />');
+  // A-HM-01(KB-486): 앱바 글리프 높이 20(시안) — viewBox 좌표계(캡 -1.528)는 유지
+  expect(fs.readFileSync('src/components/StickyHeader.tsx', 'utf8')).toContain('<AppBarMark height={20} />');
 });

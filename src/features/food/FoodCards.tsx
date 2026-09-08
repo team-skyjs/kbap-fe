@@ -66,7 +66,7 @@ export function FoodGridCard({
           )}
           {!guest && <Text style={[styles.gstatus, { color: riskTextStrong[risk] } /* P-284: 12/700 상태 텍스트 = 대비 토큰 */]}>{riskLabel}</Text>}
         </View>
-        <Pressable style={styles.gbm} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
+        <Pressable style={[styles.gbm, saved && styles.gbmSaved]} onPress={onBookmark} hitSlop={6} testID={`home-bm-${food.foodId}`}>
           {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
           <BookmarkStar saved={saved} size={16} />
         </Pressable>
@@ -104,21 +104,22 @@ export function RecentRow({
           <RiskBadge state={risk} />
         </View>
       </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-        <Text style={styles.gname} numberOfLines={2}>
-          {food.name}
-        </Text>
-        {food.nameKo !== food.name && (
-          <Text style={styles.gko} numberOfLines={1}>
-            {food.nameKo}
+      {/* A-HM-07(KB-486): Review 버튼 = 이름 블록 우측(gap 5), 이름 15/700 · 이름/ko gap 3 */}
+      <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+          <Text style={styles.rname} numberOfLines={2}>
+            {food.name}
           </Text>
-        )}
+          {food.nameKo !== food.name && (
+            <Text style={styles.gko} numberOfLines={1}>
+              {food.nameKo}
+            </Text>
+          )}
+        </View>
         {FLAGS.reviewsEnabled && (
-          <View style={{ marginTop: 2 }}>
-            <Btn sm variant="ghost" onPress={onReview} testID={`home-recent-review-${food.foodId}`}>
-              {reviewLabel}
-            </Btn>
-          </View>
+          <Btn sm variant="ghost" onPress={onReview} testID={`home-recent-review-${food.foodId}`}>
+            {reviewLabel}
+          </Btn>
         )}
       </View>
     </Pressable>
@@ -131,31 +132,36 @@ const styles = StyleSheet.create({
   gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' },
   gbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안(2072:1788): 배지가 사진 상단 4pt 위로 걸침
   gphotoFb: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.surface2, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 8 },
+  gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 10 }, // A-HM-05
   gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
   gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  gstatus: { fontSize: 12, fontWeight: '700', marginTop: 2 },
+  gstatus: { fontSize: 12, fontWeight: '700', marginTop: 0 }, // A-HM-05
+  // A-DS-02(KB-486): 기본 = 흰 + sh1(보더 제거), 저장 상태만 #EAEBEE 1(2072:2510).
+  // 프레임 불변(P-151): 비저장도 같은 폭의 투명 보더로 자리 유지.
   gbm: {
     width: 36,
     height: 36,
     borderRadius: 4,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     ...shadow.sh1,
   },
+  gbmSaved: { borderColor: '#EAEBEE' },
 
+  // A-HM-07: cross center(구 flex-start)
   rrow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 16,
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: C.line,
   },
+  rname: { fontSize: 15, fontWeight: '700', color: INK_TITLE }, // A-HM-07(recent-row 전용 — 그리드 gname 무변)
   rthumb: { width: 100, height: 100, borderRadius: 4 }, // P-315: 정적 bg 제거(시안 effects 없음)
   rthumbFb: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderRadius: 4 }, // 폴백만 회색 유지
   rbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안 오프셋

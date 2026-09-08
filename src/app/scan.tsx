@@ -1056,7 +1056,7 @@ const styles = StyleSheet.create({
   // KB-432 §1-1: 언더라인 탭 2개(반반) + 인식 배너 + 컨트롤 행
   resultTabs: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: C.line2, backgroundColor: '#fff' },
   resultTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
-  resultTabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  resultTabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   resultTabLabelOn: { color: '#2F3137' },
   resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   resultTabBarOn: { backgroundColor: '#2F3137' },

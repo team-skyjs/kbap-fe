@@ -19,8 +19,9 @@ export function SectionHead({ label, title, testID }: { label?: string; title: s
 
 const styles = StyleSheet.create({
   wrap: { paddingTop: 32, paddingHorizontal: 20, paddingBottom: 8, gap: 2 },
-  label: { fontSize: 12, fontWeight: '500', color: C.ink3 },
-  title: { fontSize: 20, fontWeight: '400', color: '#2F3137' },
+  // A-DS-01(KB-486): 라벨 11/700 ls1.6 lh16 · 타이틀 22/700 lh30 ls-0.6 — 색은 C-08 전까지 현행
+  label: { fontSize: 11, fontWeight: '700', letterSpacing: 1.6, lineHeight: 16, color: C.ink3 },
+  title: { fontSize: 22, fontWeight: '700', lineHeight: 30, letterSpacing: -0.6, color: '#2F3137' },
 });
 
 export default SectionHead;

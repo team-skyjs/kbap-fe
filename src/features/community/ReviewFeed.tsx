@@ -283,8 +283,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   list: { gap: 0 },
   // KB-430 §2-2: 컨트롤 행(4150:17070 — 좌 토글 + 우 드롭다운)
-  controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 8 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }, // A-RT-01(KB-486)
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RT-02
   toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
   // Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on primary, 노브 20 흰 + 그림자 2/2 b4 15%
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
@@ -305,13 +305,14 @@ const styles = StyleSheet.create({
   nudgeBody: { fontSize: 14, fontWeight: '400', color: '#4B4F58' },
 
   // KB-430 §2-5: 플로팅 필(4150:17079)
+  // A-RT-03(KB-486): gap 4 · right 14 · bottom 18
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 16,
+    right: 14,
+    bottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#1C1E21',
     borderRadius: 24,
     paddingVertical: 8,

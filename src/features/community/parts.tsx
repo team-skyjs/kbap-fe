@@ -11,7 +11,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { FLAGS } from '@/lib/flags';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Flag, IconBubbleEmpty, IconMore, IconThumbsDown, IconThumbsUp, IconProfile, IconFood, IconMapPin } from '@/components';
+import { Flag, IconBubbleEmpty, IconChevron, IconMore, IconThumbsDown, IconThumbsUp, IconProfile, IconFood, IconMapPin } from '@/components';
 import { displayNickname } from '@/lib/nickname';
 import type { CommunityAuthor, CommunityPost, Reaction } from '@/lib/community/types';
 
@@ -146,9 +146,22 @@ export function ReactionBar({
 
 /** 태그 칩 (음식/장소) — 탭 시 바텀시트 미리보기는 호출측. */
 export function TagChip({ kind, label, onPress, testID }: { kind: 'food' | 'place'; label: string; onPress?: () => void; testID?: string }) {
+  // A-DS-04(KB-486): 장소 변형 = pill 배경/패딩 제거 — 핀 12 + 12/700 + chevron 12, gap 2.
+  // 텍스트 색 = P-284 inkInfo 유지.
+  if (kind === 'place') {
+    return (
+      <Pressable style={styles.tagChipPlace} onPress={onPress} hitSlop={4} testID={testID}>
+        <IconMapPin size={12} color={C.inkInfo} />
+        <Text style={styles.tagChipPlaceText} numberOfLines={1}>
+          {label}
+        </Text>
+        <IconChevron size={12} color={C.inkInfo} />
+      </Pressable>
+    );
+  }
   return (
     <Pressable style={styles.tagChip} onPress={onPress} hitSlop={4} testID={testID}>
-      {kind === 'food' ? <IconFood size={13} color={C.primary} /> : <IconMapPin size={13} color={C.accent} />}
+      <IconFood size={13} color={C.primary} />
       <Text style={styles.tagChipText} numberOfLines={1}>
         {label}
       </Text>
@@ -231,6 +244,9 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   tagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 220 },
   tagChipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink },
+  // A-DS-04: chip_place — 배경·패딩 없음
+  tagChipPlace: { flexDirection: 'row', alignItems: 'center', gap: 2, maxWidth: 220 },
+  tagChipPlaceText: { fontSize: 12, fontWeight: '700', color: C.inkInfo, flexShrink: 1 },
 
   reactRow: { flexDirection: 'row', alignItems: 'center', gap: 22, paddingTop: 2 },
   reactBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
