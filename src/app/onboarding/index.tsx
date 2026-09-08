@@ -650,6 +650,8 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         {/* 시안(4150:13850): 국가 2열 그리드(163w gap 12) — 긴 이름 2줄 허용(hug) */}
         <View style={styles.natGrid}>
           {list.map((c) => Row(c, false))}
+          {/* P-333 동류(9/8 판정): 홀수면 마지막 타일이 47%+grow로 풀폭 확장 — 자리표시자로 2열 유지 */}
+          {list.length % 2 === 1 && <View style={styles.natTilePad} testID="nat-grid-pad" />}
         </View>
       </ScrollView>
     </View>
@@ -830,6 +832,7 @@ const styles = StyleSheet.create({
   natPinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, marginBottom: 12 }, // A-NT-08
   natGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   natTile: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm }, // A-NT-12
+  natTilePad: { width: '47%', flexGrow: 1 }, // P-333 동류: 홀수 자리표시자
   natOn: { borderColor: C.primary, backgroundColor: primaryTint },
   natFlagSlot: { width: 30, alignItems: 'center' },
   natFlag: { fontSize: 24, lineHeight: 30 },

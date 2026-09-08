@@ -22,7 +22,7 @@ import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { FoodGridCard } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { SectionHead } from '@/components/SectionHead';
@@ -41,9 +41,11 @@ export type GridTab = 'popular' | 'saved' | 'food';
 type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 
-/** P-318 정렬 3종 — new(publishedAt)는 KB-439 배포 전 시트에서 비활성(선택 불가). */
-type FoodSort = 'popular' | 'new' | 'alpha';
-const FOOD_SORTS: FoodSort[] = ['popular', 'new', 'alpha'];
+/** P-318 정렬 — new(publishedAt)는 KB-439 배포 전 시트에서 비활성(선택 불가).
+ *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
+ *  전체가 재정렬돼 항목이 튐(구조 결함). 서버 sort=name 생기면 재도입(TODO). */
+type FoodSort = 'popular' | 'new';
+const FOOD_SORTS: FoodSort[] = ['popular', 'new'];
 
 export const HOME_RAIL_N = 10; // P-317: 홈 레일 최대 10 + See all 카드
 // P-319: 카드 폭 174 고정 → 화면 폭 기준 railCardW(2장 + 3번째 peek) — railLayout.ts
@@ -74,7 +76,7 @@ export function FoodExplorer({
   onScroll?: React.ComponentProps<typeof Animated.FlatList<FoodCard>>['onScroll'];
   topPad?: number;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
   // P-319: 레일 카드 폭 = 화면 폭 기준(2장 + 3번째 peek — 가로 스크롤임을 보이게)
   const cardW = railCardW(useWindowDimensions().width);
@@ -129,12 +131,8 @@ export function FoodExplorer({
   // 칩 = 클라이언트 위험도 필터(personalRisk 결과 기준 — 발주 §1-4)
   const filtered =
     riskChip === 'all' ? gridSource : gridSource.filter((f) => personalRisk(f.risk, hasR) === riskChip);
-  // P-318 정렬(클라): 인기 = 현행(목록 응답) 순서 그대로 · 가나다 = 표시명(요청 언어).
-  // ponytail: 'new'는 KB-439(publishedAt) 배포 전 시트 비활성 — 정렬 분기는 그때 추가.
-  const sorted =
-    // Codex #81 P2: 표시명은 reader 언어 산출물 — 콜레이션도 그 로케일로(런타임 기본 금지)
-    variant === 'screen' && sort === 'alpha' ? [...filtered].sort((a, b) => a.name.localeCompare(b.name, i18n.language)) : filtered;
-  const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : sorted;
+  // P-318 정렬: 인기 = 목록 응답 순서 그대로(서버 정렬 정본 — P-335로 클라 정렬 소멸).
+  const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : filtered;
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
   const onBookmark = (f: FoodCard) => {
@@ -248,8 +246,8 @@ export function FoodExplorer({
     return (
       <>
         <Animated.FlatList
-          data={gridFoods}
-          keyExtractor={(f: FoodCard) => f.foodId}
+          data={padOddGrid(gridFoods)}
+          keyExtractor={(f) => f.foodId}
           numColumns={2}
           onScroll={onScroll}
           scrollEventThrottle={16}
@@ -270,7 +268,7 @@ export function FoodExplorer({
             // 무한 스크롤(발주 ② — Popular/Saved도 전량: popular 파생·saved 드레인은 browse 확장으로 커버)
             if (browse.hasNextPage && !browse.isFetchingNextPage) void browse.fetchNextPage();
           }}
-          renderItem={({ item }) => <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>}
+          renderItem={({ item }) => (isGridPad(item) ? <View style={styles.gridCell} testID="food-grid-pad" /> : <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>)}
           testID="food-explorer-list"
         />
         {/* P-318: 정렬 시트 — 공용 ActionSheet(리뷰 P-237 문법), 현재값 = SVG 체크 */}

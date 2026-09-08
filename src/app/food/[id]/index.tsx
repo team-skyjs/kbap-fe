@@ -12,7 +12,7 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크·EligibilityGate 로직 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -123,10 +123,13 @@ export default function FoodDetailScreen() {
 
   // KB-431 §1-8 FixedBottom — 등록 음식만(미등록은 본문 CTA 현행 유지)
   const showBottomBar = !!food && food.isRegistered;
+  // Codex #97 3R P2: fitLabel 2줄(es 등)이면 바 실높이가 고정 예약(107)을 초과해
+  // 콘텐츠 끝을 가림 — onLayout 실측으로 스크롤 하단 여백 파생(측정 전 폴백 107).
+  const [barH, setBarH] = useState(0);
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? 107 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
         {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
         {/* P-287(4003:13466): 첫 로드 = 상세 스켈레톤(공백 금지) */}
         {isLoading && !food && !error && <SkeletonFoodDetail />}
@@ -172,6 +175,7 @@ export default function FoodDetailScreen() {
       {showBottomBar && (
         <RegisteredBottomBar
           guest={isGuest}
+          onHeight={setBarH}
           insetsBottom={insets.bottom}
           t={t}
           onWrite={() => {
@@ -233,25 +237,34 @@ function RegisteredBottomBar({
   t,
   onWrite,
   onAsk,
+  onHeight,
 }: {
   guest: boolean;
   insetsBottom: number;
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
+  /** Codex #97 3R P2: 실높이 보고 — 스크롤 하단 여백 파생용(fitLabel 2줄 대응) */
+  onHeight?: (h: number) => void;
 }) {
+  // P-334 2R: 시안 비율 3:5는 ≥360 전제 — 좁은 폭(<360)에선 1:1로 라벨 공간 확보(i18n 절단 방지)
+  const narrow = useWindowDimensions().width < 360;
   return (
-    <View style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]} testID="detail-bottom-bar">
+    <View
+      style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]}
+      onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
+      testID="detail-bottom-bar"
+    >
       {FLAGS.reviewsEnabled && (
-        <View style={onAsk ? styles.bottomWrite : { flex: 1 }}>
-          <Btn variant={onAsk ? 'ghost' : 'primary'} onPress={onWrite} testID="bottom-write">
+        <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
+          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write">
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
       {onAsk && (
-        <View style={{ flex: 1 }}>
-          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk} testID="bottom-ask">
+        <View style={{ flex: narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) */}
+          <Btn fitLabel onPress={onAsk} testID="bottom-ask">
             {t('detail.askOwner')}
           </Btn>
         </View>
@@ -551,7 +564,7 @@ function Registered({
           ))}
 
           <View style={styles.rvMore}>
-            <Btn variant="ghost" onPress={() => router.push(`/food/${id}/reviews` as Href)}>
+            <Btn variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
               {t('detail.readAll')}
             </Btn>
           </View>
@@ -771,7 +784,6 @@ const styles = StyleSheet.create({
 
   // §1-8: FixedBottom
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
-  bottomWrite: { width: 119 },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

@@ -330,9 +330,19 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
     expect(flat(tree)).toContain('detail.askOwner');
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    expect(src).toContain('paddingBottom: showBottomBar ? 107 : 40'); // P-068 여백 문법
+    // Codex #97 3R P2: 고정 107 예약 → onLayout 실측 파생(fitLabel 2줄 시 바닥 가림 방지)
+    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 107) + 12 : 40');
     // 라벨 4곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA + 재료 시트(P-306)
     expect(src.match(/detail\.askOwner/g)?.length).toBe(4);
+  });
+
+  it('Codex #97 3R P2: 바 onLayout 실측 → 스크롤 하단 여백 파생(2줄 라벨 = inset 증가)', () => {
+    const tree = render(<FoodDetailScreen />);
+    const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.props?.onLayout === 'function')!;
+    act(() => bar.props.onLayout({ nativeEvent: { layout: { height: 131 } } }));
+    const sv = tree.root.findAll((n) => Array.isArray(n.props?.contentContainerStyle))[0];
+    const pad = Object.assign({}, ...sv.props.contentContainerStyle.filter(Boolean)) as { paddingBottom?: number };
+    expect(pad.paddingBottom).toBe(143); // 131 + 12
   });
 
   it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {

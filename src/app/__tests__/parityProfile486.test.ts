@@ -29,8 +29,8 @@ it('A-ED — 아바타 pv12+스트로크·캠 배지 @0·필드 흰 48 #DCDEE3·
   expect(ed).toMatch(/savebar: \{[^}]*paddingHorizontal: 16/);
 });
 
-it('A-MR·A-MF — 칩 행 pb0 · 탭 전폭 mt0 · 카드 gap10 #EAEBEE · 메타 gap6 · 필 텍스트 #1C1E21', () => {
-  expect(read('src/app/profile/reviews.tsx')).toMatch(/chipRow: \{[^}]*paddingTop: 12, paddingBottom: 0/);
+it('A-MR·A-MF — 위험 칩 소멸(P-336 — A-MR-01 대체) · 탭 전폭 mt0 · 카드 gap10 #EAEBEE · 메타 gap6 · 필 텍스트 #1C1E21', () => {
+  expect(read('src/app/profile/reviews.tsx')).not.toContain('myrev-chip');
   const mf = read('src/app/profile/my-foods.tsx');
   expect(mf).toContain("tabsRow: { flexDirection: 'row', paddingHorizontal: 0, marginTop: 0 }");
   expect(mf).toMatch(/card: \{[^}]*gap: 10[^}]*borderBottomColor: '#EAEBEE'/);
