@@ -61,14 +61,18 @@ function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; image
   if (!uri) return <IconFood size={iconSize} color={C.ink3} />;
   // key = 소스별 리마운트(RemoteImage settle 리셋 — AvoidTile 문법 동일)
   // P-341(KB-502): 누끼본 = contain(여백은 크기 축소로 근사 — 타일 pad 유지)
+  // Codex #102 P2: 누끼 상태 = 흰 바닥(AvoidTile 동일 규칙) — 부모 surface2는 실패 폴백만
   return (
-    <RemoteImage
-      key={uri}
-      uri={uri}
-      onError={nextSource}
-      contentFit={isCutout ? 'contain' : undefined}
-      style={isCutout ? { width: size * 0.82, height: size * 0.82 } : { width: size, height: size, borderRadius: 8 }}
-    />
+    <>
+      {isCutout && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} testID={`ing-cut-bg-${code}`} />}
+      <RemoteImage
+        key={uri}
+        uri={uri}
+        onError={nextSource}
+        contentFit={isCutout ? 'contain' : undefined}
+        style={isCutout ? { width: size * 0.82, height: size * 0.82 } : { width: size, height: size, borderRadius: 8 }}
+      />
+    </>
   );
 }
 

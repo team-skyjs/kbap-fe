@@ -73,6 +73,8 @@ it('P-341 소스 잠금 — 누끼 = contain+18% 인셋·흰 배경(실패만 ti
   expect(av).toContain("contentFit={isCutout ? 'contain' : 'cover'}");
   const fd = fsx.readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
   expect(fd).toContain("contentFit={isCutout ? 'contain' : undefined}");
+  // Codex #102 P2: 상세 재료 이미지도 누끼 = 흰 바닥(부모 surface2는 실패 폴백만)
+  expect(fd).toMatch(/isCutout && <View style=\{\[StyleSheet\.absoluteFill, \{ backgroundColor: '#FFFFFF' \}\]\}/);
 });
 
 it('서버 URL = CDN 조립과 동일하면 중복 제거(누끼 실패 후 1회로 소진)', () => {
