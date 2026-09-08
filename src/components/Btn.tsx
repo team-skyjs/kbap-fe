@@ -19,6 +19,8 @@ export function Btn({
   busy = false,
   testID,
   icon,
+  iconEnd,
+  oneLine,
   sm,
   disabled,
   onPress,
@@ -30,6 +32,10 @@ export function Btn({
   busy?: boolean;
   testID?: string;
   icon?: React.ReactNode;
+  /** P-334(KB-486): 라벨 뒤 트레일링 아이콘(시안 Read all chevron — gap 2) */
+  iconEnd?: React.ReactNode;
+  /** P-334: 한 줄 강제 + 축소 안전망(minimumFontScale 0.85) — 좁은 분할 바 버튼용 */
+  oneLine?: boolean;
   sm?: boolean;
   disabled?: boolean;
   onPress?: () => void;
@@ -69,10 +75,16 @@ export function Btn({
         <View style={[styles.inner, busy && styles.innerHidden]} pointerEvents={busy ? 'none' : undefined}>
           {icon}
           {children != null && (
-            <Text style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}>
+            <Text
+              style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}
+              numberOfLines={oneLine ? 1 : undefined}
+              adjustsFontSizeToFit={oneLine}
+              minimumFontScale={oneLine ? 0.85 : undefined}
+            >
               {children}
             </Text>
           )}
+          {iconEnd != null && <View style={styles.iconEndGap}>{iconEnd}</View>}
         </View>
         {busy && (
           <View style={[StyleSheet.absoluteFill, styles.busyFill]} testID="btn-busy">
@@ -99,7 +111,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 4,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10, // P-334(시안 2200:22055 pad 10 — 구 14): md 전 소비처 공통, 풀폭 버튼은 시각 무영향
   },
   // inner row: shrink-wraps icon+label; spacing via labelGap (marginLeft).
   content: {
@@ -126,6 +138,7 @@ const styles = StyleSheet.create({
   label: { fontFamily: font.bodySemi, fontSize: 15, color: '#fff' }, // 15/600
   labelSm: { fontSize: 12, fontWeight: '500' }, // 12/500
   labelGap: { marginLeft: 9 },
+  iconEndGap: { marginLeft: 2 }, // P-334: Read all chevron gap 2
 });
 
 const VARIANTS: Record<

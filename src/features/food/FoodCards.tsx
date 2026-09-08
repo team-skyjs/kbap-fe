@@ -15,6 +15,15 @@ import type { FoodCard } from '@/lib/api/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 계열 명시값)
 
+/** P-333(KB-486): numColumns=2 + flex:1 셀 그리드 — 홀수면 마지막 셀이 행 전체로
+ *  확장되는 결함의 공용 해법: 데이터 끝에 자리표시자 1개를 붙여 마지막 행도 2셀 유지
+ *  (P-326 Safe picks filler와 같은 문법). 렌더측은 __pad면 빈 셀 View를 그린다. */
+export type GridPad = { foodId: '__gridPad486'; __pad: true };
+export const isGridPad = (x: unknown): x is GridPad => (x as GridPad)?.__pad === true;
+export function padOddGrid<T>(items: T[]): (T | GridPad)[] {
+  return items.length % 2 === 1 ? [...items, { foodId: '__gridPad486', __pad: true } as GridPad] : items;
+}
+
 /** 2열 그리드 카드 (4150:13806) — 히어로 이미지 + RiskBadge + 북마크 버튼. */
 export function FoodGridCard({
   food,
@@ -127,7 +136,7 @@ export function RecentRow({
 }
 
 const styles = StyleSheet.create({
-  gcard: { width: '47%', flexGrow: 1 },
+  gcard: { minWidth: 0 }, // P-333: 구 flexWrap 47%+grow 기본 폐기 — 전 소비처가 폭 명시(레일 cardW·그리드 셀 100%/flex)
   // P-315: 정적 bg(surface2) 제거 — 시안 photo effects 없음(회색 띠 원인). 로딩 = CardPhoto Shimmer
   gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' },
   gbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안(2072:1788): 배지가 사진 상단 4pt 위로 걸침

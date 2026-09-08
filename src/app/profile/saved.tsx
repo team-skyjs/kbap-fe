@@ -25,7 +25,7 @@ import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnaps
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
 import type { RiskState } from '@/lib/theme';
-import { FoodGridCard } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 
 const UNDO_MS = 5000;
 type RiskChip = 'all' | RiskState;
@@ -81,8 +81,8 @@ export default function SavedScreen() {
       ) : isLoading ? null : (
         /* P-287(4003:6696): 빈 상태 = 목록 자리(메타·칩 유지) — 공용 EmptyBlock(버튼 없음) */
         <FlatList
-          data={items}
-          keyExtractor={(b: FoodCard) => b.foodId}
+          data={padOddGrid(items)}
+          keyExtractor={(b) => b.foodId}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={[styles.body, items.length === 0 && { flexGrow: 1 }]}
@@ -124,6 +124,7 @@ export default function SavedScreen() {
             </View>
           }
           renderItem={({ item }) => (
+            isGridPad(item) ? <View style={styles.gridCell} testID="saved-grid-pad" /> : (
             <View style={styles.gridCell}>
               <FoodGridCard
                 style={styles.gridCard}
@@ -136,6 +137,7 @@ export default function SavedScreen() {
                 onBookmark={() => onRemove(item)}
               />
             </View>
+            )
           )}
         />
       )}

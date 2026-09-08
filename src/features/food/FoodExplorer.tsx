@@ -22,7 +22,7 @@ import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { FoodGridCard } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
 import { SectionHead } from '@/components/SectionHead';
@@ -248,8 +248,8 @@ export function FoodExplorer({
     return (
       <>
         <Animated.FlatList
-          data={gridFoods}
-          keyExtractor={(f: FoodCard) => f.foodId}
+          data={padOddGrid(gridFoods)}
+          keyExtractor={(f) => f.foodId}
           numColumns={2}
           onScroll={onScroll}
           scrollEventThrottle={16}
@@ -270,7 +270,7 @@ export function FoodExplorer({
             // 무한 스크롤(발주 ② — Popular/Saved도 전량: popular 파생·saved 드레인은 browse 확장으로 커버)
             if (browse.hasNextPage && !browse.isFetchingNextPage) void browse.fetchNextPage();
           }}
-          renderItem={({ item }) => <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>}
+          renderItem={({ item }) => (isGridPad(item) ? <View style={styles.gridCell} testID="food-grid-pad" /> : <View style={styles.gridCell}>{card(item, styles.gridCellCard)}</View>)}
           testID="food-explorer-list"
         />
         {/* P-318: 정렬 시트 — 공용 ActionSheet(리뷰 P-237 문법), 현재값 = SVG 체크 */}

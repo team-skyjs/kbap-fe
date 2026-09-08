@@ -243,15 +243,15 @@ function RegisteredBottomBar({
   return (
     <View style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]} testID="detail-bottom-bar">
       {FLAGS.reviewsEnabled && (
-        <View style={onAsk ? styles.bottomWrite : { flex: 1 }}>
-          <Btn variant={onAsk ? 'ghost' : 'primary'} onPress={onWrite} testID="bottom-write">
+        <View style={onAsk ? styles.bottomWrite : { flex: 1 }}>{/* P-334: flex 3/5(P-329 판정 문법) */}
+          <Btn variant={onAsk ? 'ghost' : 'primary'} oneLine onPress={onWrite} testID="bottom-write">
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
       {onAsk && (
-        <View style={{ flex: 1 }}>
-          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk} testID="bottom-ask">
+        <View style={{ flex: 5 }}>{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) */}
+          <Btn oneLine onPress={onAsk} testID="bottom-ask">
             {t('detail.askOwner')}
           </Btn>
         </View>
@@ -551,7 +551,7 @@ function Registered({
           ))}
 
           <View style={styles.rvMore}>
-            <Btn variant="ghost" onPress={() => router.push(`/food/${id}/reviews` as Href)}>
+            <Btn variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
               {t('detail.readAll')}
             </Btn>
           </View>
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
 
   // §1-8: FixedBottom
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
-  bottomWrite: { width: 119 },
+  bottomWrite: { flex: 3 }, // P-334: 고정 119 → 비율(375에서 120/200 — P-329 Delete와 동일 판정)
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },
