@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
 
   // KB-431 §2-3: 평점 요약 박스
   summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
-  summaryLeft: { width: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(좌 149 center)
+  summaryLeft: { flex: 1, minWidth: 0, maxWidth: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(375에선 시안 149 — Codex #93 P2: 320폭 넘침 방지)
   bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
   bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
   overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
   axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3 },
-  summaryRight: { flexDirection: 'row', gap: 13, alignItems: 'flex-end' },
+  summaryRight: { flexDirection: 'row', gap: 13, alignItems: 'flex-end', flexShrink: 1 }, // Codex #93 P2: 320폭에서 축소 허용
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
