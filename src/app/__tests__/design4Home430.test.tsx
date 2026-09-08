@@ -213,12 +213,12 @@ it('⑥ 벨 NEW 배지 — i18n 키 경유(리터럴 금지) 소스 잠금', () 
   }
 });
 
-it('④ 리뷰 탭 컨트롤 — 프로필 토글(시안 렌더·무동작) + 정렬 드롭다운, 구 필터 칩·원형 FAB 부재', () => {
+it('④ 리뷰 탭 컨트롤 — 프로필 토글(P-331: 같은 국적 필터 배선) + 정렬 드롭다운, 구 필터 칩·원형 FAB 부재', () => {
   const feed = require('fs').readFileSync('src/features/community/ReviewFeed.tsx', 'utf8') as string;
   expect(feed).toContain('testID="feed-sort"');
-  // 9/5 예진 확정: 토글 = 시안대로 렌더, 서버 파라미터 부재라 무동작(훅 미배선 잠금)
+  // P-331(KB-487): 토글 = 같은 국적 필터 — countryCode 배선 잠금(게스트·국적 없음 미렌더는 유닛)
   expect(feed).toContain('testID="feed-profile-toggle"');
-  expect(feed).toContain('useGlobalReviews(true, { sort })'); // 토글 = 훅 미배선(무동작)
+  expect(feed).toContain("countryCode: filterActive ? myNat : undefined");
   expect(feed).toContain("t('reviews.writeReview')"); // 플로팅 필 라벨
   for (const gone of ['feed-filter-country', 'feed-filter-food', 'feed-rating', 'IconPlus']) {
     expect(feed).not.toContain(gone);

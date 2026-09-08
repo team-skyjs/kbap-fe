@@ -2,9 +2,10 @@
  * ReviewFeed (P-179/KB-307 → KB-430 D-2) — 리뷰 탭 = 전역 최신 리뷰 피드.
  * 디자인 4차(4150:17070): AppBar(로고+벨, 홈 공용 StickyHeader) · 컨트롤 행 =
  * 정렬 드롭다운(FeedSort 5종 — 커맨드 센터 판정) · 리뷰 카드(4150:13934) ·
- * 플로팅 "Write a review" 필. 9/5 예진 확정("싹 다 시안대로"): "Filter by profile"
- * 토글은 시안대로 렌더(서버 파라미터 부재 = 무동작). 구 국가·음식·별점 칩은
- * 시안 컨트롤 행 부재로 숨김 유지(훅 계약은 무변).
+ * 플로팅 "Write a review" 필. P-331(KB-487, 9/8 예진 확정): "Filter by profile"
+ * 토글 = **같은 국적 리뷰 필터**(서버 countryCode — KB-448과 동일 의미, 라벨
+ * 카피는 유지). 게스트·국적 없음 = 토글 미렌더(KB-448 규칙). 구 국가·음식·별점
+ * 칩은 시안 컨트롤 행 부재로 숨김 유지(훅 계약은 무변).
  *
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
@@ -48,15 +49,23 @@ export function ReviewFeed() {
   const router = useRouter();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
-  // KB-430 → 9/5 예진 확정: "Filter by profile" 토글도 시안대로 렌더 — 서버 파라미터
-  // 부재라 무동작(토글 상태만, 결과 = 현재 유지). 구 국가·음식·별점 칩은 시안 부재 = 숨김 유지.
   const [sort, setSort] = React.useState<FeedSort>('latest');
   const [sortSheet, setSortSheet] = React.useState(false);
-  const [profileFilter, setProfileFilter] = React.useState(false); // 무동작(시안 렌더 전용)
-  const feed = useGlobalReviews(true, { sort });
+  // P-331(KB-487): on = 뷰어와 같은 국적 리뷰만 — 쿼리 키에 countryCode 포함이라
+  // 토글 전환 = 키 분리 재조회(커서 오염 없음, P-323 natQ 문법). 세션 내 state만(저장 없음).
+  const [profileFilter, setProfileFilter] = React.useState(false);
+  const me = useMe().data;
+  const myNat = me?.nationality ?? null;
+  // Codex #94 P2: 게스트 전환·국적 소실 시 on 잔존 → emptySameNat 오노출 — 리셋 +
+  // 쿼리·빈 상태가 같은 effective 판정을 쓴다.
+  const filterActive = profileFilter && !isGuest && !!myNat;
+  React.useEffect(() => {
+    if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
+  }, [isGuest, myNat, profileFilter]);
+  const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
-  const myId = useMe().data?.id;
+  const myId = me?.id;
   const unread = useUnreadCount();
   const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -106,14 +115,19 @@ export function ReviewFeed() {
         ListHeaderComponent={
           (
             <View>
-              {/* KB-430 §2-2: 컨트롤 행 — 좌 프로필 토글(4150:17070 — 무동작) / 우 정렬 드롭다운 */}
+              {/* KB-430 §2-2 → P-331: 컨트롤 행 — 좌 프로필 토글(같은 국적 필터,
+                  게스트·국적 없음 = 미렌더) / 우 정렬 드롭다운 */}
               <View style={styles.controlRow}>
-                <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
-                  <View style={[styles.sw, profileFilter && styles.swOn]}>
-                    <View style={[styles.knob, profileFilter && styles.knobOn]} />
-                  </View>
-                  <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
-                </Pressable>
+                {!isGuest && myNat ? (
+                  <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
+                    <View style={[styles.sw, profileFilter && styles.swOn]}>
+                      <View style={[styles.knob, profileFilter && styles.knobOn]} />
+                    </View>
+                    <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+                  </Pressable>
+                ) : (
+                  <View />
+                )}
                 <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
                   <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
                   <IconChevronDown size={16} color="#4B4F58" />
@@ -208,7 +222,7 @@ export function ReviewFeed() {
             fill
             icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
             title={t('reviews.emptyTitle')}
-            body={t('reviews.emptyBody')}
+            body={t(filterActive ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
           />
         </ScreenCenterFill>
       ) : null}
