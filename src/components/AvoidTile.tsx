@@ -12,14 +12,15 @@ import { Image } from 'expo-image';
 import { Txt as Text } from '@/components/Txt';
 import { font, color as C } from '@/lib/theme';
 import { Shimmer } from './Skeleton';
-import { ingredientImageUrl } from '@/lib/onboarding/ingredientImages';
+import { ingredientCutoutUrl, ingredientImageUrl } from '@/lib/onboarding/ingredientImages';
 
 /** P-303(KB-457): 재료 이미지 3단 체인(P-174) 공유 훅 — 서버 imageUrl → 클라 조립
  *  (P-145 CDN) → 소진(null = 호출부 폴백). 실패 시 `nextSource()`로 다음 소스.
  *  AvoidTile·음식 상세 타일/시트가 같은 체인을 쓴다(상세만 사진 안 뜨던 결함 해소). */
-export function useIngredientImageChain(code: string, imageUrl?: string | null): { uri: string | null; nextSource: () => void } {
+export function useIngredientImageChain(code: string, imageUrl?: string | null): { uri: string | null; isCutout: boolean; nextSource: () => void } {
+  // P-341(KB-502): 누끼본 선두 — [cutout → 서버 imageUrl → 클라 조립 → 색 폴백]
   const sources = React.useMemo(() => {
-    const chain = [imageUrl, ingredientImageUrl(code)].filter((u): u is string => !!u);
+    const chain = [ingredientCutoutUrl(code), imageUrl, ingredientImageUrl(code)].filter((u): u is string => !!u);
     return chain.filter((u, i) => chain.indexOf(u) === i); // 중복 제거
   }, [imageUrl, code]);
   const [srcIdx, setSrcIdx] = React.useState(0);
@@ -27,7 +28,7 @@ export function useIngredientImageChain(code: string, imageUrl?: string | null):
     setSrcIdx(0);
   }, [sources]); // 카탈로그 도착/언어 전환 시 체인 리셋
   const nextSource = React.useCallback(() => setSrcIdx((i) => i + 1), []);
-  return { uri: sources[srcIdx] ?? null, nextSource };
+  return { uri: sources[srcIdx] ?? null, isCutout: srcIdx === 0, nextSource };
 }
 
 export function AvoidTile({
@@ -54,14 +55,14 @@ export function AvoidTile({
   /** 선택 체크 배지 등 오버레이 */
   children?: React.ReactNode;
 }) {
-  const { uri, nextSource } = useIngredientImageChain(code, imageUrl);
+  const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
   const [loaded, setLoaded] = React.useState(false);
   React.useEffect(() => {
     setLoaded(false);
   }, [uri]); // 체인 리셋·다음 소스 전환 시 로딩 상태 복귀
   const failed = !uri; // 체인 소진 = 실패 확정
   return (
-    <View style={[styles.tile, { backgroundColor: tint, borderRadius: radius }, radius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>
+    <View style={[styles.tile, { backgroundColor: failed ? tint : '#FFFFFF', borderRadius: radius }, radius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>{/* P-341: 사진 상태 = 흰 배경(tint는 실패 폴백만) */}
       {/* P-188: 실패시에만 약어(로딩 중 "GM" 노출 소멸) */}
       {failed && <Text style={styles.abbr}>{abbr}</Text>}
       {!failed && !loaded && (
@@ -73,8 +74,9 @@ export function AvoidTile({
         <Image
           key={uri}
           source={uri}
-          style={styles.photo}
-          contentFit="cover"
+          /* P-341: 누끼본 = contain + 18% 인셋(이미지 영역 ~64%) / 폴백 원본 = cover 현행 */
+          style={isCutout ? styles.photoCut : styles.photo}
+          contentFit={isCutout ? 'contain' : 'cover'}
           transition={120}
           onLoad={() => setLoaded(true)}
           onError={() => {
@@ -94,5 +96,6 @@ const styles = StyleSheet.create({
   tileOn: { borderColor: C.primary },
   // 사진/스켈레톤 = 폴백 위 absolute fill — 상태 전환에도 프레임 불변
   photo: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }, // 라운딩 = 타일 overflow hidden이 클립(radius prop 연동)
+  photoCut: { position: 'absolute', top: '18%', right: '18%', bottom: '18%', left: '18%' }, // P-341: 누끼 여백
   abbr: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink2, letterSpacing: 1 },
 });

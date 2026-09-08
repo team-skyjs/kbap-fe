@@ -57,7 +57,7 @@ it('code 머지 — 서버 name 우선, 누락 code·무데이터는 기존 ingr
   expect(catalogImageUrl(undefined, 'EGG')).toBeNull();
 });
 
-describe('AvoidTile 이미지 3단 폴백 — 서버 → 클라 조립(P-145) → 색(P-134)', () => {
+describe('AvoidTile 이미지 폴백 — 누끼(P-341) → 서버 → 클라 조립(P-145) → 색(P-134)', () => {
   const render = (el: React.ReactElement) => {
     let tree!: ReactTestRenderer;
     act(() => {
@@ -67,8 +67,10 @@ describe('AvoidTile 이미지 3단 폴백 — 서버 → 클라 조립(P-145) �
   };
   const img = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID?.startsWith?.('avtile-img-'))[0];
 
-  it('서버 imageUrl 우선 → 실패 시 클라 조립 URL → 재실패 시 색 폴백(이미지 언마운트)', () => {
+  it('누끼 선두(P-341) → 서버 imageUrl → 클라 조립 → 색 폴백(이미지 언마운트)', () => {
     const tree = render(<AvoidTile code="EGG" imageUrl="https://cdn/server-egg.webp" abbr="EG" tint="#eee" />);
+    expect(img(tree).props.source).toContain('images/webp/ingredients-cut/egg.webp');
+    act(() => img(tree).props.onError());
     expect(img(tree).props.source).toBe('https://cdn/server-egg.webp');
     act(() => img(tree).props.onError());
     expect(img(tree).props.source).toContain('images/webp/ingredients/egg.webp'); // 클라 조립
@@ -77,8 +79,10 @@ describe('AvoidTile 이미지 3단 폴백 — 서버 → 클라 조립(P-145) �
     expect(JSON.stringify(tree.toJSON())).toContain('EG');
   });
 
-  it('서버 null → 종전 클라 조립부터 시작(P-145 무변)', () => {
+  it('서버 null → 누끼부터(실패 시 클라 조립 — P-145 경로 잔존)', () => {
     const tree = render(<AvoidTile code="EGG" imageUrl={null} abbr="EG" tint="#eee" />);
+    expect(img(tree).props.source).toContain('images/webp/ingredients-cut/egg.webp');
+    act(() => img(tree).props.onError());
     expect(img(tree).props.source).toContain('images/webp/ingredients/egg.webp');
   });
 });
