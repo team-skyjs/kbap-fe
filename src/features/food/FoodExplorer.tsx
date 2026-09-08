@@ -25,6 +25,7 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/food/foodFilterParams';
 import { railCardW } from '@/features/food/railLayout';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
@@ -112,6 +113,14 @@ export function FoodExplorer({
     setRiskChip('all');
   }, [guest]);
   const [gate, setGate] = React.useState(false);
+  // P-340 2-A: 파라미터 진입으로 선택된 칩이 화면 밖이면 보이게 — 마운트 시 1회 근사 스크롤
+  const chipScrollRef = React.useRef<ScrollView | null>(null);
+  React.useEffect(() => {
+    if (variant !== 'screen') return;
+    const idx = savedOnly ? RISK_CHIPS.length : RISK_CHIPS.indexOf(riskChip);
+    if (idx > 1) chipScrollRef.current?.scrollTo({ x: idx * 72, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본).
   // P-332(KB-488) 프리징 수정: ① deps에 `saved`(매 렌더 새 객체) → 매 렌더 실행이던 것을
@@ -195,29 +204,58 @@ export function FoodExplorer({
       )}
 
       {/* 위험도 칩 필터 (§1-4) — 9/5: 게스트에게도 렌더(시안 4150:16403), 탭 = 게이트.
-          P-318(screen): + Saved 토글 칩 · 우측 정렬 드롭다운 */}
-      <View style={styles.chipRow}>
-        <View style={styles.chipGroup}>
-          {RISK_CHIPS.map((c) => (
-            <Chip
-              key={c}
-              label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-              selected={riskChip === c}
-              onPress={() => onChip(c)}
-              testID={`home-chip-${c}`}
+          P-340 2-A(KB-495): screen = 한 줄 고정 가로 스크롤(우측 페이드 24) + 정렬 버튼
+          스크롤 밖 우측 고정. 홈(embedded)은 현행 무변. */}
+      {variant === 'screen' ? (
+        <View style={styles.chipRowScreen}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <ScrollView
+              ref={chipScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipScrollContent}
+              testID="food-chip-scroll"
+            >
+              {RISK_CHIPS.map((c) => (
+                <Chip
+                  key={c}
+                  label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+                  selected={riskChip === c}
+                  onPress={() => onChip(c)}
+                  testID={`home-chip-${c}`}
+                />
+              ))}
+              <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
+            </ScrollView>
+            {/* 우측 흰→투명 페이드 24 — 스크롤 가능함을 암시(터치 투과) */}
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.chipFade}
+              pointerEvents="none"
             />
-          ))}
-          {variant === 'screen' && (
-            <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
-          )}
-        </View>
-        {variant === 'screen' && (
+          </View>
           <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="food-sort">
             <Text style={styles.sortLabel} numberOfLines={1}>{t(`food.sort_${sort}`)}</Text>
             <IconChevronDown size={16} color="#4B4F58" />
           </Pressable>
-        )}
-      </View>
+        </View>
+      ) : (
+        <View style={styles.chipRow}>
+          <View style={styles.chipGroup}>
+            {RISK_CHIPS.map((c) => (
+              <Chip
+                key={c}
+                label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
+                selected={riskChip === c}
+                onPress={() => onChip(c)}
+                testID={`home-chip-${c}`}
+              />
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 
@@ -416,7 +454,11 @@ const styles = StyleSheet.create({
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
   // P-318: 칩 그룹(래핑) + 우측 정렬 버튼 — embedded는 우측 요소 없음(시각 무변)
-  chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04
+  chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04(홈 무변)
+  // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
+  chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' },
+  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: 8, height: 34 },
+  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 24 },
   chipGroup: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },

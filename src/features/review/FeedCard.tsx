@@ -14,6 +14,8 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C } from '@/lib/theme';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
+import { FlagEmoji } from '@/components/FlagEmoji';
+import { countryByCode } from '@/lib/onboarding/countries';
 import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
@@ -60,10 +62,25 @@ export function FeedCard({
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
         <View style={styles.who}>
-          {/* 9/5 예진 판정(Q3): 아바타 24 통일(국기 대체) — 시안 avatar-placeholder SVG.
-              프로필 사진 URL은 리뷰 작성자 계약에 없음 — 실사진은 BE 필드 추가 시. */}
-          <View style={styles.avatar}>
-            <AvatarPlaceholder height={24} />
+          {/* 9/5 예진 판정(Q3): 아바타 24 통일 — 시안 avatar-placeholder SVG.
+              P-340(KB-495, 1-B): 우하단 국기 배지 14 — FlagEmoji(유니코드 국기 이모지)는
+              **국기 한정 헌법 이모지 예외(예진 결정 9/8)**. 탈퇴·국적 null = 배지 없음. */}
+          <View
+            style={styles.avatarWrap}
+            accessibilityLabel={
+              !anon && review.authorNationality
+                ? `${name} · ${countryByCode(review.authorNationality)?.name ?? review.authorNationality}`
+                : undefined
+            }
+          >
+            <View style={styles.avatar}>
+              <AvatarPlaceholder height={24} />
+            </View>
+            {!anon && !!review.authorNationality && (
+              <View style={styles.flagBadge} testID={`feed-flag-${review.id}`}>
+                <FlagEmoji code={review.authorNationality} size={10} />
+              </View>
+            )}
           </View>
           <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
           {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
@@ -118,7 +135,10 @@ const styles = StyleSheet.create({
   who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
   whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02
   // 시안 아바타: 원 bg #E8F6FF + 실루엣(SVG) — TabBar 프로필 슬롯과 동일 문법
+  avatarWrap: { width: 24, height: 24 }, // P-340: 배지 오버행 수용(overflow 기본 visible)
   avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
+  // P-340(1-B): 국기 배지 14 — 흰 링 1.5 원형, 아바타 밖 우하단 -2 걸침
+  flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, borderRadius: 7, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 
   // KB-431 후속(9/7 .fig 실측 #2162:11360): 평점 행 = hug 273×20 @x20 — **좌측 정렬**
   // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.
