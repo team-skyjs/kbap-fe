@@ -137,7 +137,7 @@ it('게스트 진입(logoutLocalFirst) — 로컬 경계 먼저, 서버 logout�
   await be.logoutLocalFirst(); // mockPost는 영원히 pending — 이 await가 통과 = 네트워크 비대기 실증
   await expect(tokens().loadTokens()).resolves.toBeNull();
   expect(sess().getSessionState()).toBe(false);
-  expect(mockPost).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'mina-refresh' }); // 서버 폐기는 발사됨
+  expect(mockPost).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'mina-refresh' }, { headers: { 'X-API-Version': '1.1' } }); // 서버 폐기는 발사됨
 });
 
 it('진행 중 refresh가 로그아웃 경계 이후 resolve해도 재부활 금지 (세션 세대 가드)', async () => {

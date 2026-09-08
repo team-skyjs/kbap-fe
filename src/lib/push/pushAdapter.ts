@@ -130,17 +130,11 @@ export async function requestPermission(): Promise<boolean> {
 interface PushTokenRegistration {
   token: string;
   platform: string;
-  /** BE 허용 로케일로 클램프된 리더 언어(apiLang) — 발송 렌더 언어. */
   lang: string;
 }
 
-/**
- * X-Installation-Id 기준 upsert(멱등) — 게스트는 Authorization 없이, 회원은 client 가
- * accessToken 을 붙여 같은 요청. 회원이면 서버가 기기를 회원에 연결한다. settings 는
- * 보내지 않는다(알림 회원 전용 결정 2026-09-08 — 게스트 동의 미수집). 응답 payload 없음.
- */
 async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
-  await api.put('/api/notifications/tokens', reg);
+  await api.put('/api/notifications/tokens', reg, { headers: { 'X-API-Version': '1.1' } });
 }
 
 /** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함). */

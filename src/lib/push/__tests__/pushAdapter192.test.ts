@@ -21,9 +21,7 @@ const mockNotifications = {
   SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
 };
 jest.mock('expo-notifications', () => mockNotifications);
-// KB-496: 토큰 upsert = 공용 클라이언트 경유 — 네트워크 없이 호출 계약만 잠근다
 const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
-// 팩토리는 호이스팅돼 선평가 — getter 로 호출 시점 참조(TDZ 회피)
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -96,16 +94,17 @@ it('토큰 upsert — 권한 granted면 발급, 아니면 조용히 스킵(게�
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
   await registerPushToken();
   expect(mockNotifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
-  expect(mockApi.put).not.toHaveBeenCalled(); // KB-496: 권한 없음 = 서버 호출 0
+  expect(mockApi.put).not.toHaveBeenCalled();
 });
 
 it('KB-496: upsert = PUT /api/notifications/tokens { token, platform, lang } — settings 미전송', async () => {
   await registerPushToken();
   expect(mockApi.put).toHaveBeenCalledTimes(1);
-  const [path, body] = mockApi.put.mock.calls[0] as [string, Record<string, unknown>];
+  const [path, body, opts] = mockApi.put.mock.calls[0] as [string, Record<string, unknown>, { headers: Record<string, string> }];
   expect(path).toBe('/api/notifications/tokens');
+  expect(opts.headers['X-API-Version']).toBe('1.1');
   expect(body).toEqual({ token: 'ExponentPushToken[test]', platform: 'ios', lang: 'en' });
-  expect(body).not.toHaveProperty('settings'); // 회원 전용 결정 — 게스트 동의 필드 없음
+  expect(body).not.toHaveProperty('settings');
 });
 
 it('KB-496: 서버 upsert 실패(4xx/네트워크) = 비치명 — reject 미전파', async () => {

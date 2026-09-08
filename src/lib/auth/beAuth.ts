@@ -16,6 +16,8 @@ import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
 
+const API_V11 = { headers: { 'X-API-Version': '1.1' } };
+
 /** 인증 경계(로그인/로그아웃/탈퇴/만료)에서 서버 데이터 캐시를 통째로 비운다 —
  *  게스트 mock과 회원 실데이터가 섞이는 것을 원천 차단.
  *  P-112: 경계 직후 세션 판별(['auth','session'])은 재조회(비동기 스토리지
@@ -55,7 +57,7 @@ async function sessionExpired(): Promise<void> {
  *  호출자(doRefresh·exchangeLogin)가 "경계 이후 도착 결과 무효" 원칙 아래. */
 export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
   const gen = currentGen(); // 출발 세대 캡처(조기 폐기용 — 최종 방어는 싱크)
-  const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
+  const r = await api.post<LoginResponseWire>('/auth/login', { idToken }, API_V11);
   if (gen !== currentGen()) return { newMember: r.newMember, cancelled: true }; // 저장 자체 생략
   // KB-441(Codex #59 P1-4→5): 로그인 커밋 = **세션 경계** — 세대 증가는 saveTokens의
   // newSession 플래그가 **캐시 공개와 같은 동기 틱**에 수행(bump가 await 뒤면
@@ -145,7 +147,7 @@ async function doRefresh(): Promise<boolean> {
 export async function logoutLocalFirst(): Promise<void> {
   const t = await loadTokens(); // 서버 폐기용 — 정리 전에 확보(로컬 읽기)
   await endSessionBoundary();
-  if (t) void api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
+  if (t) void api.post('/auth/logout', { refreshToken: t.refresh }, API_V11).catch(() => {});
 }
 
 /** 로그아웃(프로필 등) — 구현은 logoutLocalFirst 하나로 통일(Codex #19 P1-3).
@@ -160,7 +162,7 @@ export async function logoutBe(): Promise<void> {
  *  이중 가드로 폐기된다(재부활 불가). */
 export async function withdrawBe(): Promise<void> {
   try {
-    await api.patch('/auth/withdraw');
+    await api.patch('/auth/withdraw', undefined, API_V11);
   } finally {
     await endSessionBoundary();
   }

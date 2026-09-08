@@ -11,8 +11,6 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
-// KB-496: 플래그 off 면 토큰 발급 전에 반환 — 서버 호출 자체가 없어야 한다
-// (실 client 는 expo-constants·SecureStore 를 끌어와 이 스위트의 최소 RN 목과 충돌 → 목 대체)
 const mockApi = { put: jest.fn() };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
