@@ -64,6 +64,12 @@ it('P-333 ① padOddGrid — 홀수 = 자리표시자 1개로 마지막 행 2셀
   expect(padOddGrid([])).toHaveLength(0);
 });
 
+it('P-333 배선(온보딩 동류) — natGrid 홀수 자리표시자(9/8 판정: photoGrid2는 콜라주 의도 유지)', () => {
+  const ob = read('src/app/onboarding/index.tsx');
+  expect(ob).toContain('testID="nat-grid-pad"');
+  expect(ob).toContain("natTilePad: { width: '47%', flexGrow: 1 }");
+});
+
 it('P-333 ① 배선 — saved·음식 탭 그리드 = padOddGrid + __pad 빈 셀 렌더, gcard 구 47% 기본 폐기', () => {
   const sv = read('src/app/profile/saved.tsx');
   expect(sv).toContain('data={padOddGrid(items)}');
