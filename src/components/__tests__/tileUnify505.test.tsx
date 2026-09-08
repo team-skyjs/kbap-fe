@@ -18,7 +18,7 @@ it('누끼 인셋 13%(≈74%) 전 표면 공통 — AvoidTile·상세 IngChainIm
 it('선택 라벨 #FF7134 700 / 비선택 #4B4F58 500 · 체크 배지 20 · 프로필 Dietary(radius 0) 형태 유지', () => {
   const it_ = read('src/components/IngredientTileSections.tsx');
   expect(it_).toContain("label: { fontSize: 10.5, fontWeight: '500', color: '#4B4F58', maxWidth: '100%' }");
-  expect(it_).toContain("labelOn: { color: '#FF7134', fontWeight: '700' }");
+  expect(it_).toContain("labelOn: { color: C.primaryText, fontWeight: '700' }"); // #106 P2: 접근성 대비 토큰
   expect(it_).toMatch(/check: \{[^}]*width: 20, height: 20, borderRadius: 10/);
   // 프로필 타일 = radius 0 프롭 경로(보더 0) 유지 — 이미지 확대만 공통 photoCut으로
   expect(read('src/components/AvoidTile.tsx')).toContain("radius === 0 && { borderWidth: 0 }");
