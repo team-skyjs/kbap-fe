@@ -56,7 +56,9 @@ export function wysiwygCropRect(
   const effW = rotated ? picH : picW; // EXIF 적용 후(월드) 유효 치수
   const effH = rotated ? picW : picH;
   const landscape = effW > effH;
-  const [vw, vh] = landscape ? [viewH, viewW] : [viewW, viewH]; // 물리 방향 뷰포트
+  // Codex #99 2R: 전치는 뷰포트가 실제 세로(viewW<viewH)일 때만 — 웹/가로 브라우저처럼
+  // onLayout이 이미 가로 치수를 주면 사진이 가로여도 전치 금지(이중 회전 방지).
+  const [vw, vh] = landscape && viewW < viewH ? [viewH, viewW] : [viewW, viewH];
   // 보고 좌표계로 환산: raw 치수면 뷰 비율도 전치 — rect는 항상 picW×picH 안
   const [rvw, rvh] = rotated ? [vh, vw] : [vw, vh];
   return coverCropRect(rvw, rvh, picW, picH);

@@ -94,6 +94,13 @@ describe('P-338: wysiwygCropRect — 사진 기준 방향 판정', () => {
     expect(src).toContain('gravity: camOrientation, exifOrientation');
   });
 
+  it('Codex #99 2R: 뷰포트가 이미 가로(852×393)면 전치 없음 — 가로 사진이어도 그대로 계산', () => {
+    // 웹/가로 브라우저 onLayout — 세로 잠금 전제가 깨진 표면: 이중 회전 금지
+    expect(wysiwygCropRect(852, 393, 4032, 3024)).toEqual(coverCropRect(852, 393, 4032, 3024));
+    const src = require('fs').readFileSync('src/lib/scan/coverCrop.ts', 'utf8') as string;
+    expect(src).toContain('landscape && viewW < viewH');
+  });
+
   it('가로 rect 비율 = 물리 가로 뷰포트 비율 + 경계 불변식', () => {
     const r = wysiwygCropRect(VW, VH, 4032, 3024)!;
     expect(r.originX + r.width).toBeLessThanOrEqual(4032);
