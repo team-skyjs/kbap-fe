@@ -1,7 +1,8 @@
 /**
- * P-322(KB-450) — 저장 세션 API 환경 키(kbap.auth.env.v1).
+ * P-322(KB-450) v2 — 저장 세션 단일 레코드(kbap.auth.session.v2, env 동승).
  * dev 토큰이 prod 빌드에 실리는 재사용 차단: 부팅 최초 로드에서 발급 환경 ≠ 현재
- * BE_BASE(키 없음 = 기존 저장분 포함)면 3종 조용히 폐기 → 게스트 시작(refresh 미발신).
+ * BE_BASE(레코드 부재·파손 포함)면 조용히 폐기 → 게스트 시작(refresh 미발신).
+ * 단일 키 JSON 쓰기 = 원자(Codex #86 2R — 부분 저장/혼합 마커 구조적 불가).
  */
 const mockStore = new Map<string, string>();
 jest.mock('expo-secure-store', () => ({
@@ -17,9 +18,11 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 const HOST = 'https://prod.kbap.site'; // 테스트 env: EXPO_PUBLIC_BE_BASE 부재 → config 기본값
-const A = 'kbap.auth.access.v1';
-const R = 'kbap.auth.refresh.v1';
-const E = 'kbap.auth.env.v1';
+const S = 'kbap.auth.session.v2';
+const V1A = 'kbap.auth.access.v1';
+const V1R = 'kbap.auth.refresh.v1';
+const seed = (access: string, refresh: string, env: string = HOST) =>
+  mockStore.set(S, JSON.stringify({ access, refresh, env }));
 
 beforeEach(() => {
   jest.resetModules();
@@ -31,73 +34,61 @@ const tokens = () => require('../beTokens') as typeof import('../beTokens');
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 it('환경 일치 = 세션 유지(현행)', async () => {
-  mockStore.set(A, 'a');
-  mockStore.set(R, 'r');
-  mockStore.set(E, HOST);
+  seed('a', 'r');
   expect(await tokens().loadTokens()).toEqual({ access: 'a', refresh: 'r' });
 });
 
-it('환경 불일치 = 조용히 폐기 — 게스트 시작 + 저장소 3종 삭제(체인 경유)', async () => {
-  mockStore.set(A, 'dev-a');
-  mockStore.set(R, 'dev-r');
-  mockStore.set(E, 'https://dev.kbap.site');
+it('환경 불일치 = 조용히 폐기 — 게스트 시작 + 레코드 삭제(체인 경유)', async () => {
+  seed('dev-a', 'dev-r', 'https://dev.kbap.site');
   const t = tokens();
   expect(await t.loadTokens()).toBeNull();
   await flush(); // serialized 체인 소진
-  expect(mockStore.has(A)).toBe(false);
-  expect(mockStore.has(R)).toBe(false);
-  expect(mockStore.has(E)).toBe(false);
+  expect(mockStore.has(S)).toBe(false);
   // 재로드도 게스트 유지(캐시 null 고정 — refresh 발신 경로 자체 없음)
   expect(await t.loadTokens()).toBeNull();
 });
 
-it('키 없음(기존 저장분) = 동일 폐기', async () => {
-  mockStore.set(A, 'old-a');
-  mockStore.set(R, 'old-r');
-  const t = tokens();
-  expect(await t.loadTokens()).toBeNull();
-  await flush();
-  expect(mockStore.has(A)).toBe(false);
+it('레코드 파손(JSON 아님) = 게스트(부활 금지)', async () => {
+  mockStore.set(S, 'not-json');
+  expect(await tokens().loadTokens()).toBeNull();
 });
 
-it('saveTokens = 3종 동시 저장(환경 동승) · clearTokens = 3종 삭제', async () => {
+it('구 v1 키 잔존(기존 저장분) = 읽지 않고 삭제, 게스트 시작', async () => {
+  mockStore.set(V1A, 'old-a');
+  mockStore.set(V1R, 'old-r');
+  const t = tokens();
+  expect(await t.loadTokens()).toBeNull(); // v2 부재 = 게스트(1회 로그아웃)
+  await flush();
+  expect(mockStore.has(V1A)).toBe(false);
+  expect(mockStore.has(V1R)).toBe(false);
+});
+
+it('saveTokens = 단일 레코드 1회 쓰기(env 동승) · clearTokens = v2+v1 전부 삭제', async () => {
   const t = tokens();
   expect(await t.saveTokens('a', 'r')).toBe(true);
-  expect(mockStore.get(A)).toBe('a');
-  expect(mockStore.get(E)).toBe(HOST);
+  expect(JSON.parse(mockStore.get(S)!)).toEqual({ access: 'a', refresh: 'r', env: HOST });
+  expect(mockStore.has(V1A)).toBe(false); // v1 신규 기록 0
+  mockStore.set(V1A, 'stray');
   await t.clearTokens();
-  expect(mockStore.has(A)).toBe(false);
-  expect(mockStore.has(E)).toBe(false);
+  expect(mockStore.has(S)).toBe(false);
+  expect(mockStore.has(V1A)).toBe(false);
 });
 
-it('세대 경계 개입 시 자가 되돌림(KB-421 유지) — 토큰 폐기, 커밋 false', async () => {
+it('세대 경계 개입 시 자가 되돌림(KB-421 유지) — 레코드 폐기, 커밋 false', async () => {
   const t = tokens();
-  // 쓰기 도중 경계: setItem은 동기 mock이라 체인 진입 전 bump로 재현
   const p = t.saveTokens('a1', 'r1');
   t.bumpSessionGen();
   expect(await p).toBe(false);
   expect(await t.loadTokens()).toBeNull();
+  expect(mockStore.has(S)).toBe(false);
 });
 
-it('Codex #86 P2: 부분 쓰기 실패(env만 실패) = 3종 전무 + 커밋 false — 혼합 마커 차단', async () => {
-  const SS = require('expo-secure-store') as { setItemAsync: unknown };
-  const realSet = SS.setItemAsync as (k: string, v: string) => Promise<void>;
-  (SS as { setItemAsync: (k: string, v: string) => Promise<void> }).setItemAsync = (k, v) =>
-    k === E ? Promise.reject(new Error('keychain full')) : realSet(k, v);
-  const t = tokens();
-  expect(await t.saveTokens('a', 'r')).toBe(false); // 실패 커밋 — 호출자는 세션 점등 생략
-  expect(mockStore.has(A)).toBe(false); // 부분 저장 잔재 0
-  expect(mockStore.has(R)).toBe(false);
-  expect(mockStore.has(E)).toBe(false);
-  (SS as { setItemAsync: typeof realSet }).setItemAsync = realSet;
-});
-
-it('Codex #86 P2 대칭: 전부 실패(저장소 부재) = 메모리 온리 현행 유지(true)', async () => {
+it('저장소 부재(전체 쓰기 실패) = 메모리 온리 현행 유지(true) — web/jest', async () => {
   const SS = require('expo-secure-store') as { setItemAsync: unknown };
   const realSet = SS.setItemAsync as (k: string, v: string) => Promise<void>;
   (SS as { setItemAsync: () => Promise<void> }).setItemAsync = () => Promise.reject(new Error('no store'));
   const t = tokens();
-  expect(await t.saveTokens('a', 'r')).toBe(true); // web/jest — 부분 상태가 아님
-  expect(await t.loadTokens()).toEqual({ access: 'a', refresh: 'r' }); // 메모리 캐시
+  expect(await t.saveTokens('a', 'r')).toBe(true);
+  expect(await t.loadTokens()).toEqual({ access: 'a', refresh: 'r' });
   (SS as { setItemAsync: typeof realSet }).setItemAsync = realSet;
 });
