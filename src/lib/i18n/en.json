@@ -113,8 +113,6 @@
     "popular": "Popular right now",
     "resultCount": "{{count}} results",
     "noResultsTitle": "No matches found",
-    "noResultsBody": "This dish might not be in our catalog yet. Try a different name, or browse what's popular.",
-    "backToPopular": "See popular dishes",
     "samples": [
       "Kimchi Stew",
       "Shrimp paste",
