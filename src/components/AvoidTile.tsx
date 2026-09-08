@@ -37,6 +37,7 @@ export function AvoidTile({
   tint,
   selected,
   style,
+  radius = 14, // A-PF-07(KB-486): 프로필 타일 = 0 — 기본 14는 온보딩·재료 그리드 무변
   children,
 }: {
   code: string;
@@ -48,6 +49,8 @@ export function AvoidTile({
   tint: string;
   selected?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** 타일 라운딩(기본 14) — 0이면 보더도 제거(프로필 정합 변형) */
+  radius?: number;
   /** 선택 체크 배지 등 오버레이 */
   children?: React.ReactNode;
 }) {
@@ -58,7 +61,7 @@ export function AvoidTile({
   }, [uri]); // 체인 리셋·다음 소스 전환 시 로딩 상태 복귀
   const failed = !uri; // 체인 소진 = 실패 확정
   return (
-    <View style={[styles.tile, { backgroundColor: tint }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>
+    <View style={[styles.tile, { backgroundColor: tint, borderRadius: radius }, radius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>
       {/* P-188: 실패시에만 약어(로딩 중 "GM" 노출 소멸) */}
       {failed && <Text style={styles.abbr}>{abbr}</Text>}
       {!failed && !loaded && (
@@ -90,6 +93,6 @@ const styles = StyleSheet.create({
   tile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden' },
   tileOn: { borderColor: C.primary },
   // 사진/스켈레톤 = 폴백 위 absolute fill — 상태 전환에도 프레임 불변
-  photo: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: 12 },
+  photo: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }, // 라운딩 = 타일 overflow hidden이 클립(radius prop 연동)
   abbr: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink2, letterSpacing: 1 },
 });

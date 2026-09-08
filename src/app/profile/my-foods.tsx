@@ -150,7 +150,9 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
           </View>
         </View>
       </View>
-      <IconChevron size={16} color={C.ink3} />
+      <View style={{ marginLeft: 4 }}>{/* A-MF-02: 내용↔chevron 14 유지(행 gap 10+4) */}
+        <IconChevron size={16} color={C.ink3} />
+      </View>
     </Pressable>
   );
 }
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
 
   // 언더라인 탭(responsive 2분할)
-  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 8 },
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 0, marginTop: 0 }, // A-MF-01(KB-486: AppBar 직하 전폭)
   tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
   tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   tabLabelOn: { color: INK_TITLE },
@@ -171,13 +173,13 @@ const styles = StyleSheet.create({
   recentList: { paddingBottom: 40 },
 
   // 주문 카드 — pad 16/20 gap 14 하단 line
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.hair },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-MF-02(핀↔정보 10)
   pinBox: { width: 70, height: 70, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   placeName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', lineHeight: 20 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 }, // A-MF-03
   metaDate: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   qtyPill: { backgroundColor: C.hair, borderRadius: 100, paddingVertical: 2, paddingHorizontal: 8 },
-  qtyPillText: { fontSize: 12, fontWeight: '500', color: C.ink2 },
+  qtyPillText: { fontSize: 12, fontWeight: '500', color: '#1C1E21' }, // A-MF-04
   // 장소 미태그 변형 — 아웃라인 필(primary 1px r8 pad 4/8, 12/600) · 태그 기능 부재 = 무동작
   tagPill: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8 },
   tagPillText: { fontSize: 12, fontWeight: '600', color: C.primary },

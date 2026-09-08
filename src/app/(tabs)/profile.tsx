@@ -257,6 +257,7 @@ export default function Profile() {
                     <Pressable key={r.code} style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
                       <View style={styles.dietImg}>
                         <AvoidTile
+                          radius={0} /* A-PF-07 */
                           code={r.code}
                           imageUrl={ingCat.imageUrl(r.code)}
                           abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
@@ -270,13 +271,15 @@ export default function Profile() {
                   );
                 })}
               </View>
-              <Btn variant="ghost" onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
-                {t('profile.showAll', { count: me.restrictions.length })}
-              </Btn>
+              <View style={{ marginTop: -8 }}>{/* A-PF-09: 타일→Show all 8 */}
+                <Btn variant="ghost" onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
+                  {t('profile.showAll', { count: me.restrictions.length })}
+                </Btn>
+              </View>
             </View>
 
             {/* 메뉴 행 리스트(tab_box h58 pad 17/22) — 구분선 없음, 탭 하이라이트 surface2 */}
-            <View style={styles.menuList}>
+            <View style={[styles.menuList, { marginTop: -20 }]}>{/* A-PF-09: Show all→메뉴 0 */}
               {/* My Foods — 시안 §1-4 목록 부재·§5 화면 진입점(질문 누적, 기능 유지) */}
               {/* P-300(KB-449, 9/7 예진): 값 없는 이동 행 전부 chevron — 값 행(Saved·My reviews·Language)은 무변 */}
               <MenuRow label={t('profile.myFoods')} chevron onPress={() => router.push('/profile/my-foods' as Href)} />
@@ -368,21 +371,21 @@ const styles = StyleSheet.create({
   finishCta: { fontSize: 13, fontWeight: '600', color: C.primaryText },
 
   // 헤더 행 — pad 20
-  id: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F6FF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  id: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }, // A-PF-02(KB-486)
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // A-PF-01
   avatarImg: { width: 48, height: 48, borderRadius: 24 },
   name: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
   nameUnset: { fontSize: 16, fontWeight: '400', color: C.ink3 },
   natRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
   natText: { fontSize: 14, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
   editBtn: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
-  editBtnText: { fontSize: 13, fontWeight: '500', color: '#1C1E21' },
+  editBtnText: { fontSize: 13, fontWeight: '500', color: '#2F3137' }, // A-PF-03
 
   // 랭킹 카드(4150:14390) — mx 20 h147 r8 border #F2F3F6 + 그라데이션
-  rankCard: { marginHorizontal: 20, height: 147, borderRadius: 8, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 16 },
-  rankTier: { fontSize: 15, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 2 },
+  rankCard: { marginHorizontal: 20, marginTop: 4, height: 147, borderRadius: 8, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingLeft: 20, paddingRight: 16 }, // A-PF-04(아바타행→카드 24)·A-PF-05
+  rankTier: { fontSize: 15, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 4 }, // A-PF-05(메달→타이틀 8)
   rankLv: { fontSize: 12, fontWeight: '500', color: C.ink3 },
-  rankBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch', marginTop: 6 },
+  rankBarRow: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch', marginTop: 8 }, // A-PF-05(Lv→바 12)
   rankTrack: { flex: 1, height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
   rankFill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
   rankPts: { fontSize: 12 },
@@ -391,12 +394,12 @@ const styles = StyleSheet.create({
   rankPtsGoal: { fontSize: 12, fontWeight: '400', color: '#4B4F58' },
 
   // Dietary restrictions — 4열 2행 80×86 타일
-  sec: { paddingHorizontal: 20, gap: 12 },
+  sec: { paddingHorizontal: 20, gap: 16, marginTop: -4 }, // A-PF-06(카드→라벨 16·라벨→타일 16)
   secLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
-  dietTile: { width: 80, height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  dietImg: { width: 48, height: 48, borderRadius: 4, overflow: 'hidden' },
-  dietLabel: { fontSize: 12, fontWeight: '500', color: '#1C1E21', maxWidth: 72, textAlign: 'center' },
+  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 16, justifyContent: 'space-between' }, // A-PF-08
+  dietTile: { width: 80, height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 8, gap: 0 }, // A-PF-07(이미지 상단 8·라벨 gap 0)
+  dietImg: { width: 48, height: 48, borderRadius: 0, overflow: 'hidden' }, // A-PF-07
+  dietLabel: { fontSize: 12, fontWeight: '500', color: '#2F3137', maxWidth: 72, textAlign: 'center' }, // A-PF-07
 
   // 메뉴 행 리스트(tab_box)
   menuList: { gap: 0 },
