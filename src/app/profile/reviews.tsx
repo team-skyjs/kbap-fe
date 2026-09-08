@@ -20,7 +20,7 @@ import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyReviews } from '@/components/Skeleton';
 import { FeedCard } from '@/features/review/FeedCard';
 import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
@@ -113,9 +113,6 @@ export default function MyReviews() {
               ))}
             </View>
 
-            {/* P-287(4003:6921): 빈 상태 = 공용 EmptyBlock */}
-            {count === 0 && <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />}
-
             <View>
               {list.map((rv) => (
                 <FeedCard
@@ -132,6 +129,13 @@ export default function MyReviews() {
           </>
         )}
       </ScrollView>
+      {/* P-330(Codex #90 2R): 빈 상태 = 화면 루트 형제(ScreenCenterFill 계약 — 스크롤
+          영역 기준이 아닌 화면 기준 센터, 칩 행은 위에 그대로) */}
+      {!reviewsError && !reviewsLoading && count === 0 && (
+        <ScreenCenterFill>
+          <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />
+        </ScreenCenterFill>
+      )}
       <ReviewEditSheet
         review={editTarget}
         onClose={() => setEditTarget(null)}

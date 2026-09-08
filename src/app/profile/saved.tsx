@@ -85,7 +85,7 @@ export default function SavedScreen() {
           keyExtractor={(b: FoodCard) => b.foodId}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={styles.body}
+          contentContainerStyle={[styles.body, items.length === 0 && { flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
           onEndReachedThreshold={0.6}
           onEndReached={() => {
@@ -93,12 +93,14 @@ export default function SavedScreen() {
           }}
           ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
           ListEmptyComponent={
-            /* Codex #47 P2: 칩 필터 결과 0 ≠ 저장 0 — 저장분이 있으면 필터 문구 */
-            (list ?? []).length > 0 ? (
-              <EmptyBlock label={t('saved.filterEmpty')} testID="saved-filter-empty" />
-            ) : (
-              <EmptyBlock label={t('saved.emptyTitle')} testID="saved-empty" />
-            )
+            /* Codex #47 P2 + P-330: 필터 0 ≠ 저장 0, 둘 다 리스트 영역 세로 중앙 */
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              {(list ?? []).length > 0 ? (
+                <EmptyBlock label={t('saved.filterEmpty')} testID="saved-filter-empty" />
+              ) : (
+                <EmptyBlock label={t('saved.emptyTitle')} testID="saved-empty" />
+              )}
+            </View>
           }
           ListHeaderComponent={
             <View style={{ gap: 4 }}>
