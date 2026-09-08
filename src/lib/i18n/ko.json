@@ -117,8 +117,6 @@
     "popular": "지금 인기",
     "resultCount": "{{count}}개 결과",
     "noResultsTitle": "검색 결과가 없어요",
-    "noResultsBody": "아직 카탈로그에 없는 요리일 수 있어요. 다른 이름으로 검색하거나 인기 요리를 둘러보세요.",
-    "backToPopular": "인기 요리 보기",
     "samples": [
       "김치찌개",
       "새우젓",
