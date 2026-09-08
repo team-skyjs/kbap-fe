@@ -23,6 +23,7 @@ jest.mock('react-native-reanimated', () => {
     cancelAnimation: jest.fn(),
     useReducedMotion: () => mockReduced(),
     Easing: { out: (f: unknown) => f, cubic: 0 },
+    ReduceMotion: { Never: 'never', System: 'system' },
   };
 });
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 40, bottom: 0, left: 0, right: 0 }) }));
@@ -54,6 +55,8 @@ it('형태 스냅 — r24 #2F3137 minHeight 56 pad 20 · 텍스트 16/500 좌정
   expect(tt).toContain("checkDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF'");
   expect(tt).toContain('IconAlertTri size={22} color="#FFFFFF"');
   expect(tt).toContain('const SHOW_MS = 2500');
+  // #108 3R: 페이드는 reduce-motion에도 항상 재생(즉시 팝인/아웃 방지)
+  expect((tt.match(/reduceMotion: ReduceMotion\.Never/g) ?? []).length).toBe(2);
   expect(tt).not.toContain('rgba(0,0,0,0.5)'); // 구 DS 9:4239 폐기
 });
 

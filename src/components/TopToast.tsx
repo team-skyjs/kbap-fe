@@ -12,7 +12,7 @@
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { Easing, cancelAnimation, runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, cancelAnimation, runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
@@ -51,7 +51,8 @@ export function TopToastHost() {
     const gen = genRef.current;
     // 퇴장: 위로 40 + 페이드(out-cubic) 후 언마운트 — reduce-motion은 페이드만
     if (!reducedMotion) ty.value = withTiming(-40, { duration: EXIT_MS, easing: Easing.out(Easing.cubic) });
-    opacity.value = withTiming(0, { duration: reducedMotion ? 150 : EXIT_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
+    // #108 3R: ReducedMotionConfig(System)가 페이드까지 스킵(즉시 팝) — 페이드는 항상 재생
+    opacity.value = withTiming(0, { duration: reducedMotion ? 150 : EXIT_MS, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.Never }, (finished) => {
       'worklet'; // 완료 콜백 = UI 스레드(P-065) — JS 복귀는 runOnJS
       if (finished) runOnJS(unmountIfCurrent)(gen);
     });
@@ -84,7 +85,7 @@ export function TopToastHost() {
           ty.value = withSpring(0, ENTER_SPRING);
         }
         opacity.value = 0;
-        opacity.value = withTiming(1, { duration: 150 });
+        opacity.value = withTiming(1, { duration: 150, reduceMotion: ReduceMotion.Never }); // #108 3R
       } // 표시 중 재발화 = 텍스트 교체 + 타이머 리셋만(재진입 애니메이션 없음)
     });
     return () => {
