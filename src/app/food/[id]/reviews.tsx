@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
   axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3, textAlign: 'center' }, // #105 3R: 축소 시 2줄 랩 중앙
-  summaryRight: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-end', justifyContent: 'center' }, // P-343 2-B(#105 P2: basis auto — 320폭 반반 분할로 축 라벨 넘치던 것 수정)
+  summaryRight: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-start', justifyContent: 'center' }, // P-343 2-B(#105 4R: 상단 정렬 — 트랙 46 고정이라 바닥 공유, 2줄 라벨만 아래로 확장)
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },

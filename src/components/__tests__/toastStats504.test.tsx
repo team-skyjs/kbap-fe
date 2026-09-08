@@ -15,5 +15,5 @@ it('① 토스트 = DS 9:4239(335×36·#000 50%·r9·pad 8/50·14/600 lh20) + �
 
 it('② summaryRight = 우측 영역 중앙(justifyContent center, gap 13 유지) — 있는 축만 렌더', () => {
   const rl = read('src/app/food/[id]/reviews.tsx');
-  expect(rl).toMatch(/summaryRight: \{ flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13[^}]*justifyContent: 'center'/);
+  expect(rl).toMatch(/summaryRight: \{ flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-start', justifyContent: 'center'/); // 4R: 기준선 상단 공유
 });
