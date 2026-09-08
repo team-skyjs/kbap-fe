@@ -12,7 +12,7 @@
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { Easing, runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, cancelAnimation, runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
@@ -36,19 +36,26 @@ export function TopToastHost() {
   const opacity = useSharedValue(0);
   const enterFrom = -(56 + insets.top + 8);
 
-  const unmount = React.useCallback(() => {
+  // Codex #108 P2 ①: 퇴장 진행 중 재발화 레이스 — 세대(gen) 비교로 stale 언마운트 무시
+  const genRef = React.useRef(0);
+  const exitingRef = React.useRef(false);
+  const unmountIfCurrent = React.useCallback((gen: number) => {
+    if (gen !== genRef.current) return; // 퇴장 중 새 토스트가 왔음 — 이 언마운트는 무효
     visibleRef.current = false;
+    exitingRef.current = false;
     setMsg(null);
   }, []);
   const dismiss = React.useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
+    exitingRef.current = true;
+    const gen = genRef.current;
     // 퇴장: 위로 40 + 페이드(out-cubic) 후 언마운트 — reduce-motion은 페이드만
     if (!reducedMotion) ty.value = withTiming(-40, { duration: EXIT_MS, easing: Easing.out(Easing.cubic) });
     opacity.value = withTiming(0, { duration: reducedMotion ? 150 : EXIT_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
       'worklet'; // 완료 콜백 = UI 스레드(P-065) — JS 복귀는 runOnJS
-      if (finished) runOnJS(unmount)();
+      if (finished) runOnJS(unmountIfCurrent)(gen);
     });
-  }, [reducedMotion, ty, opacity, unmount]);
+  }, [reducedMotion, ty, opacity, unmountIfCurrent]);
 
   // 리스너 등록은 마운트 1회 — 렌더마다 재등록하면 클린업이 진행 중 타이머를 지운다.
   // 최신 값은 ref로 참조(reanimated sharedValue는 안정 — 클로저 캡처 무해).
@@ -61,10 +68,14 @@ export function TopToastHost() {
   React.useEffect(() => {
     const unsubscribe = subscribeTopToast((m) => {
       setMsg(m);
+      genRef.current += 1; // 진행 중 퇴장의 완료 콜백 무효화(#108 P2 ①)
+      cancelAnimation(ty);
+      cancelAnimation(opacity);
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => dismissRef.current(), SHOW_MS);
-      if (!visibleRef.current) {
+      if (!visibleRef.current || exitingRef.current) {
         visibleRef.current = true;
+        exitingRef.current = false;
         // 진입: 위에서 스프링 슬라이드 + 150ms 페이드 — reduce-motion은 페이드만
         if (reducedRef.current) {
           ty.value = 0;
@@ -87,7 +98,8 @@ export function TopToastHost() {
   if (!msg) return null;
   return (
     <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="box-none" testID="top-toast">
-      <Animated.View style={[styles.toast, anim]}>
+      {/* #108 P2 ②: 필 아래 UI 탭 투과 — Close만 히트 */}
+      <Animated.View style={[styles.toast, anim]} pointerEvents="box-none">
         {msg.error ? (
           <IconAlertTri size={22} color="#FFFFFF" />
         ) : (

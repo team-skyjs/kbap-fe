@@ -20,6 +20,7 @@ jest.mock('react-native-reanimated', () => {
     }),
     withSpring: jest.fn((v: unknown) => v),
     runOnJS: (fn: (...a: unknown[]) => void) => fn,
+    cancelAnimation: jest.fn(),
     useReducedMotion: () => mockReduced(),
     Easing: { out: (f: unknown) => f, cubic: 0 },
   };
@@ -87,4 +88,30 @@ it('reduce-motion = 슬라이드 없이 페이드만(withSpring 미호출)', () 
   act(() => { showTopToast('저장됨'); });
   expect(withSpring).not.toHaveBeenCalled();
   expect(tree.root.findAll((n) => n.props?.testID === 'top-toast').length).toBeGreaterThanOrEqual(1);
+});
+
+
+it('#108 P2 ①: 퇴장 진행 중 재발화 → stale 언마운트 무시(표시 유지) + 재진입 애니메이션', () => {
+  jest.useFakeTimers();
+  const rn = require('react-native-reanimated') as { withTiming: jest.Mock; withSpring: jest.Mock };
+  const tree = render();
+  act(() => { showTopToast('첫'); });
+  // 퇴장 콜백을 즉발 대신 수동 발화로 캡처
+  let exitCb: ((f: boolean) => void) | null = null;
+  rn.withTiming.mockImplementationOnce((v: unknown) => v) // ty(-40)
+    .mockImplementationOnce((v: unknown, _c: unknown, cb: (f: boolean) => void) => { exitCb = cb; return v; }); // opacity(0) — 보류
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'top-toast-close' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  // 퇴장 완료 전 재발화 — gen 증가로 이전 언마운트 무효
+  const springs = rn.withSpring.mock.calls.length;
+  act(() => { showTopToast('둘'); });
+  expect(rn.withSpring.mock.calls.length).toBeGreaterThan(springs); // 재진입 애니메이션 실행
+  act(() => { exitCb?.(true); }); // stale 완료 콜백 발화
+  act(() => {});
+  expect(tree.root.findAll((n) => n.props?.testID === 'top-toast').length).toBeGreaterThanOrEqual(1); // 표시 유지
+  expect(JSON.stringify(tree.toJSON())).toContain('둘');
+});
+
+it('#108 P2 ②: 토스트 본체 box-none — 필 아래 UI 탭 투과(Close만 히트)', () => {
+  const tt = read('src/components/TopToast.tsx');
+  expect(tt).toMatch(/<Animated\.View style=\{\[styles\.toast, anim\]\} pointerEvents="box-none">/);
 });
