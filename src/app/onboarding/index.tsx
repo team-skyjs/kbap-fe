@@ -27,6 +27,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
+import { GestureDetector } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
@@ -504,6 +506,9 @@ function Consent({
 
 /** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
 function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
+  // P-337(KB-490): 핸들+제목 스와이프 닫기 — 본문 ScrollView와 충돌 방지(영역 한정).
+  // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
+  const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
   const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
   const [error, setError] = useState(false);
@@ -528,10 +533,18 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 
   return (
     <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} />
-      <View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }]}>
-        <View style={styles.grab} />
-        <Text style={styles.sheetTitle}>{title}</Text>
+      <Animated.View style={[styles.sheetScrim, swipe.dimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+      <Animated.View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }, swipe.sheetStyle]}>
+        <GestureDetector gesture={swipe.gesture}>
+          <View>{/* P-337 제스처 영역 = 핸들 + 제목(본문 스크롤 우선) */}
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={10} testID="sheet-grab">
+              <View style={styles.grab} />
+            </Pressable>
+            <Text style={styles.sheetTitle}>{title}</Text>
+          </View>
+        </GestureDetector>
         <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
           {isRemote ? (
             error ? (
@@ -553,7 +566,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
           )}
         </ScrollView>
         <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

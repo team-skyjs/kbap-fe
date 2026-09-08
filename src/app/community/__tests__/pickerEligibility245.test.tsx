@@ -25,6 +25,10 @@ jest.mock('react-native-reanimated', () => {
     interpolate: () => 0,
     Extrapolation: { CLAMP: 'clamp' },
     Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
+    // P-337: GestureDetector(RNGH)가 요구하는 이벤트 훅 스텁
+    runOnJS: (fn: (...a: unknown[]) => void) => fn,
+    useEvent: () => () => {},
+    useHandler: () => ({ context: {}, doDependenciesDiffer: false, useWeb: false }),
   };
 });
 jest.mock('expo-image', () => {

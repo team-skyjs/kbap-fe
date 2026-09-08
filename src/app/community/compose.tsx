@@ -18,6 +18,9 @@ import * as React from 'react';
 import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { RemoteImage } from '@/components/RemoteImage';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { GestureDetector } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -431,6 +434,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   React.useEffect(() => {
     setSearchAll(false); // 검색어가 바뀌면 scanned 우선으로 복귀
   }, [q]);
+  // P-337(KB-490): 핸들+헤더 스와이프 닫기 — 리스트 스크롤과 충돌 방지(제스처 영역 한정)
+  const swipe = useSheetSwipeDismiss(onClose, kind != null);
   if (!kind) return null;
 
   const hasSelection = kind === 'food' ? foodTags.length > 0 : placeTag != null;
@@ -463,12 +468,26 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.pickerBackdrop}>
-        <View style={styles.pickerSheet}>
-          <View style={styles.grabBar} />
-          {/* KB-432 §2-9(4150:16622): 제목 18/600 중앙 — 닫기/완료는 하단 FixedBottom */}
-          <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>{t(kind === 'food' ? 'community.tagFoodTitle' : 'community.tagPlaceTitle')}</Text>
-          </View>
+        {/* P-337: 딤 전용 레이어 — 시트 드래그에 비례 페이드(시트 컨테이너에 걸면 시트도 바랜다) */}
+        <Animated.View style={[StyleSheet.absoluteFill, styles.pickerDim, swipe.dimStyle]} pointerEvents="none" />
+        <Animated.View style={[styles.pickerSheet, swipe.sheetStyle]}>
+          <GestureDetector gesture={swipe.gesture}>
+            <View>{/* P-337 제스처 영역 = 핸들 + 제목 헤더(내부 리스트 스크롤 우선) */}
+              <Pressable
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                hitSlop={10}
+                testID="sheet-grab"
+              >
+                <View style={styles.grabBar} />
+              </Pressable>
+              {/* KB-432 §2-9(4150:16622): 제목 18/600 중앙 — 닫기/완료는 하단 FixedBottom */}
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>{t(kind === 'food' ? 'community.tagFoodTitle' : 'community.tagPlaceTitle')}</Text>
+              </View>
+            </View>
+          </GestureDetector>
 
           {/* 상한 안내 — 상한 도달 시에도 시트는 열린다(제거 동선) */}
           {atCap && (
@@ -619,7 +638,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
               {t(kind === 'food' ? 'community.foodSheetCaption' : 'community.placeSheetCaption')}
             </Text>
           )}
-        </View>
+        </Animated.View>
       </View>
       <KeyboardDismissBar modal />
     </Modal>
@@ -741,7 +760,8 @@ const styles = StyleSheet.create({
   illoSlot: { width: 88, height: 88, borderRadius: 44, backgroundColor: primaryTint2, alignItems: 'center', justifyContent: 'center' },
 
   /* tag picker sheet — 시안 4 */
-  pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  pickerBackdrop: { flex: 1, justifyContent: 'flex-end' }, // P-337: 딤은 전용 레이어로 분리
+  pickerDim: { backgroundColor: 'rgba(0,0,0,0.45)' },
   pickerSheet: { height: '92%', backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 16, paddingTop: 8, gap: 12, ...shadow.sh2 },
   grabBar: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line },
   pickerBottom: { flexDirection: 'row', gap: 16, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.line }, // 하단 = 4 + bottomInset(인라인)
