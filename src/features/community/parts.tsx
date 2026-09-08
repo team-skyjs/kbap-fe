@@ -150,7 +150,7 @@ export function TagChip({ kind, label, onPress, testID }: { kind: 'food' | 'plac
   // 텍스트 색 = P-284 inkInfo 유지.
   if (kind === 'place') {
     return (
-      <Pressable style={styles.tagChipPlace} onPress={onPress} hitSlop={16} testID={testID}>{/* Codex #91 2R P2: 칩 세로 12+32=44 — 16이어야 44pt 충족 */}
+      <Pressable style={styles.tagChipPlace} onPress={onPress} hitSlop={{ left: 16, right: 16 }} testID={testID}>{/* Codex #91 3R P2: hitSlop은 부모 경계 밖 확장 불가 — 세로는 minHeight 44 실높이로 */}
         <IconMapPin size={12} color={C.inkInfo} />
         <Text style={styles.tagChipPlaceText} numberOfLines={1}>
           {label}
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   tagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, maxWidth: 220 },
   tagChipText: { fontFamily: font.bodyBold, fontSize: 12, color: C.ink },
   // A-DS-04: chip_place — 배경·패딩 없음
-  tagChipPlace: { flexDirection: 'row', alignItems: 'center', gap: 2, maxWidth: 220 },
+  tagChipPlace: { flexDirection: 'row', alignItems: 'center', gap: 2, maxWidth: 220, minHeight: 44, marginVertical: -14 }, // Codex #91 3R P2: 탭 영역 44pt(실높이) + 음수 마진으로 시각 간격 유지(콘텐츠 ~16)
   tagChipPlaceText: { fontSize: 12, fontWeight: '700', color: C.inkInfo, flexShrink: 1 },
 
   reactRow: { flexDirection: 'row', alignItems: 'center', gap: 22, paddingTop: 2 },
