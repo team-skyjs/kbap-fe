@@ -11,6 +11,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+// KB-496: 플래그 off 면 토큰 발급 전에 반환 — 서버 호출 자체가 없어야 한다
+// (실 client 는 expo-constants·SecureStore 를 끌어와 이 스위트의 최소 RN 목과 충돌 → 목 대체)
+const mockApi = { put: jest.fn() };
+jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
 
 // 네이티브 모듈이 "존재하더라도" 게이트가 닫혔으면 손대지 않아야 한다 —
@@ -39,7 +43,6 @@ import {
   registerPushToken,
   requestPermission,
   scheduleReviewReminder,
-  unregisterPushToken,
 } from '../pushAdapter';
 
 it('플래그 off(킬스위치) = pushAvailable false', () => {
@@ -56,9 +59,9 @@ it('리마인더 예약·취소 = no-op(모듈 미접근 — 크래시 0)', asyn
   await expect(cancelReviewReminder('7')).resolves.toBeUndefined();
 });
 
-it('토큰 등록·해제 = no-op', async () => {
+it('토큰 등록 = no-op + 서버 호출 0 (KB-496: unregister 는 서버 로그아웃/탈퇴 처리로 소멸)', async () => {
   await expect(registerPushToken()).resolves.toBeUndefined();
-  await expect(unregisterPushToken()).resolves.toBeUndefined();
+  expect(mockApi.put).not.toHaveBeenCalled();
 });
 
 it('알림 탭 리스너 = 구독 0(해제 함수만 반환 — 호출해도 안전)', () => {

@@ -158,12 +158,6 @@ export async function registerPushToken(): Promise<void> {
   }
 }
 
-/** 로그아웃·탈퇴 시 서버 토큰 삭제 골격 — 계약 후 배선(현재 no-op+로그). */
-export async function unregisterPushToken(): Promise<void> {
-  if (!FLAGS.pushEnabled) return;
-  console.log('[push] token delete (BE 계약 대기, no-op)');
-}
-
 function getProjectId(): string | undefined {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
