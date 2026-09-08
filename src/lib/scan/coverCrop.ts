@@ -31,3 +31,26 @@ export function coverCropRect(viewW: number, viewH: number, picW: number, picH: 
   const height = Math.min(picH, Math.round(picW / viewAspect));
   return { originX: 0, originY: Math.round((picH - height) / 2), width: picW, height };
 }
+
+/**
+ * P-338(KB-493): 방향 반영 크롭 — 가로 스캔이 세로 띠로 잘리던 결함의 수정 지점.
+ *
+ * 화면은 세로 잠금이라 뷰포트 치수는 항상 (W<H)로 들어오지만, 기기를 눕히면
+ * 센서·뷰가 함께 회전해 "보이는 영역"의 물리 방향은 가로(H×W)가 된다. 사진은
+ * EXIF 적용된 월드 방향(가로 = W>H)으로 오므로, 뷰포트를 (H,W)로 스왑해 같은
+ * 좌표계에서 cover 역산하면 센서 공간 계산과 등가다(전치 검산 완료).
+ * 사진 치수가 논리 방향과 어긋나면(가로 모드인데 W<H = EXIF 미적용 보고 치수)
+ * 치수를 스왑해 계산 — expo-image-manipulator는 EXIF 적용 후(월드 방향) 픽셀에
+ * 크롭을 적용하므로 rect는 월드 방향 좌표가 맞다.
+ */
+export function orientedCoverCropRect(
+  viewW: number,
+  viewH: number,
+  picW: number,
+  picH: number,
+  landscape: boolean,
+): CropRect | null {
+  if (!landscape) return coverCropRect(viewW, viewH, picW, picH); // 세로 = 현행(P-025 검증 경로)
+  const [pw, ph] = picH > picW ? [picH, picW] : [picW, picH]; // EXIF 미적용 치수 방어
+  return coverCropRect(viewH, viewW, pw, ph);
+}

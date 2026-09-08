@@ -3,7 +3,7 @@
  * 영역만 crop rect로 나와야 한다. 새는 방향이 곧 버그: rect가 뷰포트보다 넓으면
  * 미리보기 밖(가격 줄·상호명)이 다시 업로드에 혼입된다(Q-12 재발).
  */
-import { coverCropRect } from '../coverCrop';
+import { coverCropRect, orientedCoverCropRect } from '../coverCrop';
 
 describe('coverCropRect — 센서가 뷰보다 옆으로 넓은 케이스 (세로 폰 + 4:3 센서, 실기기 기본)', () => {
   it('좌우 크롭: 세로 전체 유지, 가로는 뷰 비율만큼 중앙', () => {
@@ -51,5 +51,46 @@ describe('coverCropRect — 크롭 불필요/무효 입력', () => {
       expect(r.originX + r.width).toBeLessThanOrEqual(pw);
       expect(r.originY + r.height).toBeLessThanOrEqual(ph);
     }
+  });
+});
+
+// P-338(KB-493): 방향 반영 — 가로 스캔 세로 띠 결함 잠금 (방향 3 × 사진 2)
+describe('P-338: orientedCoverCropRect — 뷰포트 방향 스왑', () => {
+  const VW = 393, VH = 852; // 세로 잠금 뷰포트
+
+  it('가로 모드 + 가로 사진(4032×3024) = 가로 전체 + 세로 중앙(세로 띠 소멸)', () => {
+    for (const landscape of [true]) {
+      const r = orientedCoverCropRect(VW, VH, 4032, 3024, landscape)!;
+      expect(r.width).toBe(4032); // 가로 전체 — 구 결함은 width가 세로 띠(≈1390)
+      expect(r.height).toBe(Math.round(4032 / (VH / VW)));
+      expect(r.originX).toBe(0);
+      expect(r.originY).toBe(Math.round((3024 - r.height) / 2));
+    }
+  });
+
+  it('가로 모드 + 세로 보고 치수(3024×4032 — EXIF 미적용) = 치수 스왑 후 동일 결과', () => {
+    const a = orientedCoverCropRect(VW, VH, 4032, 3024, true)!;
+    const b = orientedCoverCropRect(VW, VH, 3024, 4032, true)!;
+    expect(b).toEqual(a);
+  });
+
+  it('세로 모드 = 현행 coverCropRect와 완전 동일(P-025 검증 경로 무변) — 사진 2종', () => {
+    for (const [pw, ph] of [[3024, 4032], [4032, 3024]] as const) {
+      expect(orientedCoverCropRect(VW, VH, pw, ph, false)).toEqual(coverCropRect(VW, VH, pw, ph));
+    }
+  });
+
+  it('배선 잠금 — scan.tsx 캡처 경로가 camOrientation을 크롭에 반영', () => {
+    const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+    expect(src).toContain("camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight'");
+    expect(src).toContain('orientedCoverCropRect(view.width, view.height, pic.width, pic.height, landscape)');
+    expect(src).toContain('orientation: camOrientation'); // 실측 로그(P-338 ②)
+  });
+
+  it('가로 rect도 사진 경계 안 + 크롭 결과 비율 = 가로 뷰포트 비율', () => {
+    const r = orientedCoverCropRect(VW, VH, 4032, 3024, true)!;
+    expect(r.originX + r.width).toBeLessThanOrEqual(4032);
+    expect(r.originY + r.height).toBeLessThanOrEqual(3024);
+    expect(Math.abs(r.width / r.height - VH / VW)).toBeLessThan(0.01);
   });
 });

@@ -40,7 +40,7 @@ import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish 
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
-import { coverCropRect } from '@/lib/scan/coverCrop';
+import { orientedCoverCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
@@ -379,14 +379,18 @@ export default function Scan() {
    */
   async function cropToPreview(pic: NonNullable<Photo>): Promise<NonNullable<Photo>> {
     const view = previewSize.current;
-    const rect = view ? coverCropRect(view.width, view.height, pic.width, pic.height) : null;
+    // P-338(KB-493): 가로 모드 = 뷰포트 (H,W) 스왑 — 세로 비율로 계산하면
+    // "세로 전체+가로 중앙" 분기로 세로 띠만 남는다(9/8 실기). 사진 치수 어긋남
+    // 방어는 orientedCoverCropRect 안(EXIF 미적용 보고 치수 스왑).
+    const landscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
+    const rect = view ? orientedCoverCropRect(view.width, view.height, pic.width, pic.height, landscape) : null;
     if (!rect) return pic;
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { ImageManipulator, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
       const rendered = await ImageManipulator.manipulate(pic.uri).crop(rect).renderAsync();
       const saved = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-      console.log('[scan] WYSIWYG crop', JSON.stringify({ from: { w: pic.width, h: pic.height }, rect }));
+      console.log('[scan] WYSIWYG crop', JSON.stringify({ orientation: camOrientation, from: { w: pic.width, h: pic.height }, rect })); // P-338: 방향·치수 실측 로그
       deletePhotoFile(pic.uri); // 원본(과다 캡처)은 즉시 삭제 — 이후 수명은 크롭본 몫 (⑦ KB-137)
       return { uri: saved.uri, width: saved.width ?? rect.width, height: saved.height ?? rect.height };
     } catch (e) {
