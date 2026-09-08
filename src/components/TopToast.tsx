@@ -3,8 +3,9 @@
  *
  * 전 표면(홈·음식 탭·저장·상세)의 북마크 토글이 같은 위치에 떠야 하므로 호스트는
  * 루트 레이아웃에 1개만 마운트하고, 발화는 모듈 함수 `showTopToast`(리스너 1개) —
- * 화면별 배선 금지. 표시 1.5s, 헤더 아래(safe-area + 헤더 높이) 고정, 터치 투과.
- * 에러도 같은 위치(붉은 틴트 대신 다크 유지 + 문구만 — 시각 소음 최소).
+ * 화면별 배선 금지. P-343(KB-504): DS toast(9:4239) — 335×36·#000 50%·r9·14/600 흰,
+ * 위치 = **화면 최상단 insets.top+8, 헤더·탭바 위 오버레이**(zIndex 최상위, 터치 투과).
+ * 표시 1.5s. 에러도 같은 위치(다크 유지 + 문구만).
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -39,19 +40,20 @@ export function TopToastHost() {
   }, []);
   if (!msg) return null;
   return (
-    <View style={[styles.wrap, { top: insets.top + 56 + 8 }]} pointerEvents="none" testID="top-toast">
+    <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="none" testID="top-toast">
       <View style={styles.toast}>
-        <Text style={styles.text} numberOfLines={2}>{msg.text}</Text>
+        <Text style={styles.text} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{msg.text}</Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // 헤더(56) 바로 아래 중앙 — 어느 화면이든 같은 위치(P-339 ⑤)
-  wrap: { position: 'absolute', left: 20, right: 20, zIndex: 100, alignItems: 'center' },
-  toast: { backgroundColor: 'rgba(28,30,33,0.92)', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 16, maxWidth: 335 },
-  text: { fontSize: 14, fontWeight: '500', color: '#FFFFFF', textAlign: 'center' },
+  // P-343: 최상단 오버레이 — 헤더·탭바 위(전 화면 동일 위치), zIndex 최상위
+  wrap: { position: 'absolute', left: 20, right: 20, zIndex: 1000, alignItems: 'center' },
+  // DS toast 9:4239 — 335×36 · #000 50% · r9 · pad 8/50
+  toast: { width: 335, maxWidth: '100%', height: 36, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 9, paddingVertical: 8, paddingHorizontal: 50, alignItems: 'center', justifyContent: 'center' },
+  text: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', lineHeight: 20 },
 });
 
 export default TopToastHost;

@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
   axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3 },
-  summaryRight: { flexDirection: 'row', gap: 13, alignItems: 'flex-end', flexShrink: 1 }, // Codex #93 P2: 320폭에서 축소 허용
+  summaryRight: { flex: 1, flexDirection: 'row', gap: 13, alignItems: 'flex-end', justifyContent: 'center', flexShrink: 1 }, // P-343 2-B: 있는 축만 렌더 + 우측 영역 중앙(축소 허용 유지)
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
