@@ -497,3 +497,27 @@ it('P-323 ④ 토글 쿼리 로딩 = 스켈레톤(공백 금지)', () => {
   expect(byId(tree, 'detail-nat-skel').length).toBeGreaterThanOrEqual(1);
   expect(byId(tree, 'detail-nat-empty')).toHaveLength(0);
 });
+
+it('P-323 ⑤ 국가 필터 쿼리 실패 = 에러 표면 + 재시도(빈 문구로 위장 금지 — P-007)', () => {
+  const natRefetch = jest.fn();
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode
+      ? { ...REVIEWS_PAGE(), isError: true, error: new Error('HTTP 500'), data: undefined, refetch: natRefetch }
+      : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(byId(tree, 'detail-nat-error').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'detail-nat-empty')).toHaveLength(0); // false-empty 금지
+  expect(flat(tree)).not.toContain('Great and safe for me'); // 무필터 목록으로 위장도 금지
+  const retry = tree.root.findAll((n) => n.props?.testID === 'detail-nat-error')[0]
+    .findAll((n) => typeof n.props?.onPress === 'function')[0];
+  act(() => retry.props.onPress());
+  expect(natRefetch).toHaveBeenCalled();
+});
+
+it('P-323 ⑥ 차단 갱신 — 활성 natQ도 refetch(소스 잠금: 뮤테이션 무효화는 food prefix 자동 커버)', () => {
+  const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+  expect(src).toContain('if (natOnly) void natQ.refetch()');
+});

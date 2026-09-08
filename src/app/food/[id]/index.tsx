@@ -512,7 +512,8 @@ function Registered({
           </View>
           {/* 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거(시안 부재) */}
 
-          {/* P-323: 토글 쿼리 로딩 = 스켈레톤(공백 금지) · 서버 필터 0장 = 전용 문구 */}
+          {/* P-323: 토글 쿼리 로딩 = 스켈레톤(공백 금지) · 실패 = 에러 표면(P-007 false-empty
+              금지 — emptySameNat는 성공+0장일 때만) · 서버 필터 0장 = 전용 문구 */}
           {natLoading && (
             <View style={styles.natSkel} testID="detail-nat-skel">
               {[0, 1].map((i) => (
@@ -520,10 +521,15 @@ function Registered({
               ))}
             </View>
           )}
-          {natOnly && !natLoading && shownPreviews.length === 0 && (
+          {natOnly && !natLoading && natQ.isError && (
+            <View testID="detail-nat-error">
+              <QueryErrorBlock error={natQ.error} onRetry={() => void natQ.refetch()} />
+            </View>
+          )}
+          {natOnly && !natLoading && !natQ.isError && shownPreviews.length === 0 && (
             <Text style={styles.natEmpty} testID="detail-nat-empty">{t('reviews.emptySameNat')}</Text>
           )}
-          {!natLoading && shownPreviews.map((r) => (
+          {!natLoading && !(natOnly && natQ.isError) && shownPreviews.map((r) => (
             <FeedCard
               key={r.id}
               review={r}
@@ -558,7 +564,12 @@ function Registered({
         onClose={() => setMod(null)}
         onEdit={(m) => setEditTarget(activePreviews.find((r) => r.id === m.id) ?? previewSource.find((r) => r.id === m.id) ?? null)}
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
-        onBlocked={() => void reviewsQ.refetch()}
+        onBlocked={() => {
+          // P-323(Codex #87 P2): 차단 갱신 — 활성 국가 필터 쿼리도 함께(뮤테이션 무효화는
+          // ['food', id] prefix라 natQ 자동 커버 — 이 즉시 refetch 경로만 갭이었음)
+          void reviewsQ.refetch();
+          if (natOnly) void natQ.refetch();
+        }}
       />
       <ReviewEditSheet
         review={editTarget}
