@@ -21,6 +21,10 @@ const mockNotifications = {
   SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
 };
 jest.mock('expo-notifications', () => mockNotifications);
+// KB-496: 토큰 upsert = 공용 클라이언트 경유 — 네트워크 없이 호출 계약만 잠근다
+const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
+// 팩토리는 호이스팅돼 선평가 — getter 로 호출 시점 참조(TDZ 회피)
+jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -38,6 +42,7 @@ import {
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  mockApi.put.mockResolvedValue(undefined);
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
   await AsyncStorage.clear();
 });
@@ -87,9 +92,25 @@ it('토큰 upsert — 권한 granted면 발급, 아니면 조용히 스킵(게�
   await registerPushToken();
   expect(mockNotifications.getExpoPushTokenAsync).toHaveBeenCalled();
   mockNotifications.getExpoPushTokenAsync.mockClear();
+  mockApi.put.mockClear();
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
   await registerPushToken();
   expect(mockNotifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
+  expect(mockApi.put).not.toHaveBeenCalled(); // KB-496: 권한 없음 = 서버 호출 0
+});
+
+it('KB-496: upsert = PUT /api/notifications/tokens { token, platform, lang } — settings 미전송', async () => {
+  await registerPushToken();
+  expect(mockApi.put).toHaveBeenCalledTimes(1);
+  const [path, body] = mockApi.put.mock.calls[0] as [string, Record<string, unknown>];
+  expect(path).toBe('/api/notifications/tokens');
+  expect(body).toEqual({ token: 'ExponentPushToken[test]', platform: 'ios', lang: 'en' });
+  expect(body).not.toHaveProperty('settings'); // 회원 전용 결정 — 게스트 동의 필드 없음
+});
+
+it('KB-496: 서버 upsert 실패(4xx/네트워크) = 비치명 — reject 미전파', async () => {
+  mockApi.put.mockRejectedValueOnce(new Error('NETWORK: offline'));
+  await expect(registerPushToken()).resolves.toBeUndefined();
 });
 
 it('P-268: 원격 토큰 발급 실패 = 비치명(reject 미전파 — 리마인더는 로컬이라 무관)', async () => {

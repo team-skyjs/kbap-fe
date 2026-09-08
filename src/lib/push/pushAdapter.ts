@@ -9,12 +9,13 @@
  * 기획 정본: dropbox/yj/2026-08-13-푸시알림-BE-요청.md — 3종:
  *   ① Helpful 서버푸시(기본 on) ② 리뷰 유도 로컬(주문 완료 1h 후, 기본 on)
  *   ③ 리텐션 넛지 서버푸시(기본 off — 광고성, 옵트인 시각 기록: 정보통신망법).
- * BE 토큰 API = **계약 미정**(요청 문서 회신 대기) — sendTokenToServer만 배선점.
+ * BE 토큰 API = PUT /api/notifications/tokens (KB-465, X-API-Version 1.1+) — sendTokenToServer 가 배선.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import i18n from '@/lib/i18n';
+import { api, apiLang } from '@/lib/api/client';
 
 const SETTINGS_KEY = 'kbap.push.settings.v1';
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
@@ -124,18 +125,22 @@ export async function requestPermission(): Promise<boolean> {
   }
 }
 
-/* ---- 토큰 등록 (BE 계약 미정 — 이 함수만 배선점) ---- */
+/* ---- 토큰 등록 (KB-496 — BE PUT /api/notifications/tokens, X-API-Version 1.1+) ---- */
 
 interface PushTokenRegistration {
   token: string;
   platform: string;
+  /** BE 허용 로케일로 클램프된 리더 언어(apiLang) — 발송 렌더 언어. */
   lang: string;
-  settings: PushSettings;
 }
 
+/**
+ * X-Installation-Id 기준 upsert(멱등) — 게스트는 Authorization 없이, 회원은 client 가
+ * accessToken 을 붙여 같은 요청. 회원이면 서버가 기기를 회원에 연결한다. settings 는
+ * 보내지 않는다(알림 회원 전용 결정 2026-09-08 — 게스트 동의 미수집). 응답 payload 없음.
+ */
 async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
-  // BE 토큰 저장 API 계약 대기(2026-08-13 요청 문서) — 회신 오면 여기만 배선.
-  console.log('[push] token upsert (BE 계약 대기, no-op)', reg.token.slice(0, 24), reg.platform, reg.lang);
+  await api.put('/api/notifications/tokens', reg);
 }
 
 /** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함). */
@@ -147,7 +152,7 @@ export async function registerPushToken(): Promise<void> {
     if (status !== 'granted') return;
     const projectId = getProjectId();
     const { data: token } = await N.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-    await sendTokenToServer({ token, platform: Platform.OS, lang: i18n.language, settings: await getPushSettings() });
+    await sendTokenToServer({ token, platform: Platform.OS, lang: apiLang() });
   } catch (e) {
     console.log('[push] token register 실패(비치명)', (e as Error)?.message ?? e);
   }
