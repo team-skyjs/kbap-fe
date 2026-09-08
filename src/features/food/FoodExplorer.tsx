@@ -366,9 +366,17 @@ export function FoodExplorer({
       {safePicks.length >= 2 && (
         <>
           <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />
-          {/* Codex #85 2R P2: 홀수 장(3장)일 때 마지막 카드가 grow로 행 전체 확장 — grow 차단 고정 하프 폭 */}
+          {/* P-326: 행 단위 2열(flex:1 셀) — 구 47% 근사가 우측 ≈5pt 잔여로 좌우 비대칭.
+              홀수(3장) 마지막 행은 빈 셀로 채워 카드가 행 전체로 늘어나지 않게(#85 2R 유지). */}
           <View style={styles.safeGrid} testID="home-safe-grid">
-            {safePicks.map((item) => card(item, styles.safeGridCard))}
+            {[safePicks.slice(0, 2), safePicks.slice(2, 4)]
+              .filter((row) => row.length > 0)
+              .map((row, i) => (
+                <View key={i} style={styles.safeGridRow}>
+                  {row.map((item) => card(item, styles.safeGridCell))}
+                  {row.length === 1 && <View style={styles.safeGridCell} testID="home-safe-grid-filler" />}
+                </View>
+              ))}
           </View>
         </>
       )}
@@ -424,8 +432,10 @@ const styles = StyleSheet.create({
   railState: { paddingHorizontal: 20, alignItems: 'center', gap: 4 },
   railEmptyBody: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, textAlign: 'center', maxWidth: 335 },
   // Safe picks 2×2 — 홈 구 그리드 문법(카드 기본 47% + grow)
-  safeGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
-  safeGridCard: { width: '47%', flexGrow: 0 }, // 홀수 마지막 카드도 2열 폭 유지(#85 2R)
+  // P-326: 음식 탭 그리드 문법(행 row + 셀 flex:1) — 47% 근사 폐기(좌우 패딩 대칭)
+  safeGrid: { gap: 16, paddingHorizontal: 20 },
+  safeGridRow: { flexDirection: 'row', columnGap: 16 },
+  safeGridCell: { flex: 1, minWidth: 0 },
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24, paddingHorizontal: 20 },
 
   // 음식 탭(FlatList) 그리드 — 셀이 폭 소유(저장 목록과 같은 문법)
