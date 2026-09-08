@@ -25,6 +25,13 @@ it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)�
   const fd = read('src/app/food/[id]/index.tsx');
   expect(fd).not.toContain('showMore={');
   expect(fd).toContain('anonymized: r.anonymized === true');
+  // Codex #100 2R ①: 전체 리스트도 — 탈퇴 ⋯ 게이트 소멸 + anonymized 전달
+  const rl = read('src/app/food/[id]/reviews.tsx');
+  expect(rl).not.toContain('!r.anonymized ?');
+  expect(rl).toContain('anonymized: r.anonymized === true');
+  // Codex #100 2R ②: 신고 성공 후 차단 제안도 같은 가드
+  const mod2 = read('src/features/community/moderation.tsx');
+  expect(mod2).toContain('!target.mine && !isGuest && !target.anonymized && !target.reportOnly');
 });
 
 it('③ Helpful 폭 고정 — 고스트(99+) 예약 + tabular-nums + 실라벨 absolute 중앙 + ≥100 컴팩트', () => {

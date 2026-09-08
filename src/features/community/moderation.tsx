@@ -193,7 +193,8 @@ export function ModerationFlow({
                   <IconCheck size={26} color="#fff" />
                 </View>
                 <Text style={styles.title}>{t('community.reportThanks')}</Text>
-                {!target.mine && !isGuest && (
+                {/* Codex #100 2R: 초기 메뉴와 같은 가드 — 익명·신고 전용 표면은 차단 제안 없음 */}
+                {!target.mine && !isGuest && !target.anonymized && !target.reportOnly && (
                   <Pressable style={styles.blockSuggest} onPress={() => setPhase('blockConfirm')}>
                     <IconUserX size={16} color={DESTRUCTIVE} />
                     <Text style={styles.blockSuggestText}>{t('community.blockUser', { name })}</Text>
