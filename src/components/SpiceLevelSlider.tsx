@@ -111,7 +111,7 @@ export function SpiceLevelSlider({
         pointerEvents="none"
       >
         <View style={styles.trackBox}>
-          <LinearGradient colors={['#f2c14e', '#e2580c', '#c22d20']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.track} />
+          <LinearGradient colors={['#FFCD43', '#FF7134']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={styles.track} />
           {/* 시안: 5개 스텝 점 6px 흰 60% — absolute 고정(선택 전환 이동 0) */}
           {trackW > 0 && [0, 1, 2, 3, 4].map((i) => <View key={i} style={[styles.tick, { left: toX(i) - 3 }]} />)}
           {knobX != null && <View style={[styles.knob, { left: knobX - KNOB / 2 }]} />}
