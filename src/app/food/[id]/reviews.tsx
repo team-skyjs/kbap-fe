@@ -311,7 +311,7 @@ export function AxisBar({ label, value, top, testID }: { label: string; value: n
       <View style={styles.axisTrack}>
         <View style={[styles.axisFill, { height: fillH }, top ? styles.axisFillTop : styles.axisFillRest]} testID={testID ? `${testID}-fill` : undefined} />
       </View>
-      <Text style={styles.axisLbl} numberOfLines={1}>{label}</Text>
+      <Text style={styles.axisLbl} numberOfLines={2}>{label}</Text>
     </View>
   );
 }
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
   bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
   overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  axisCol: { alignItems: 'center', gap: 6 }, // A-RL-05
+  axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }, // A-RL-05(#105 3R: 넘칠 때만 축소)
   axisBadge: { width: 34, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   axisBadgeTop: { backgroundColor: '#2F3137' },
   axisBadgeRest: { backgroundColor: C.inkDisabled },
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   axisFill: { width: 8, borderRadius: 4 },
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
-  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3 },
+  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3, textAlign: 'center' }, // #105 3R: 축소 시 2줄 랩 중앙
   summaryRight: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-end', justifyContent: 'center' }, // P-343 2-B(#105 P2: basis auto — 320폭 반반 분할로 축 라벨 넘치던 것 수정)
 
   // KB-431 §2-4: 컨트롤 행
