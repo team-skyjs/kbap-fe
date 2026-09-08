@@ -42,7 +42,7 @@ export function TopToastHost() {
   return (
     <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="none" testID="top-toast">
       <View style={styles.toast}>
-        <Text style={styles.text} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{msg.text}</Text>
+        <Text style={styles.text} numberOfLines={2}>{msg.text}</Text>
       </View>
     </View>
   );
@@ -52,7 +52,8 @@ const styles = StyleSheet.create({
   // P-343: 최상단 오버레이 — 헤더·탭바 위(전 화면 동일 위치), zIndex 최상위
   wrap: { position: 'absolute', left: 20, right: 20, zIndex: 1000, alignItems: 'center' },
   // DS toast 9:4239 — 335×36 · #000 50% · r9 · pad 8/50
-  toast: { width: 335, maxWidth: '100%', height: 36, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 9, paddingVertical: 8, paddingHorizontal: 50, alignItems: 'center', justifyContent: 'center' },
+  // Codex #105 P2(i18n): 성공 1줄 = 8+20+8 = 36(DS 치수 그대로), 긴 에러 문구만 2줄 자연 확장
+  toast: { width: 335, maxWidth: '100%', minHeight: 36, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 9, paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   text: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', textAlign: 'center', lineHeight: 20 },
 });
 
