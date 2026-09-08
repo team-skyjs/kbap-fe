@@ -51,7 +51,7 @@ import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { D4CameraRestart } from '@/components/design4Assets';
-import { EmptyBlock } from '@/components/StateBlock';
+import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -614,16 +614,21 @@ export default function Scan() {
             </Pressable>
           ))}
         </View>
-        {/* §1-1: 인식 배너 — h48 primaryTint, 스캔 아이콘 24 + 인식 수 15/500 primary */}
-        <View style={styles.recogBanner} testID="recog-banner">
-          <IconTabScan size={24} color={C.primary} />
-          <Text style={styles.recogBannerText}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
-        </View>
+        {/* §1-1: 인식 배너 — h48 primaryTint. A-SC-12(P-330 동승): 0건 = 배너·컨트롤 숨김 */}
+        {allDishes.length > 0 && (
+          <View style={styles.recogBanner} testID="recog-banner">
+            <IconTabScan size={24} color={C.primary} />
+            <Text style={styles.recogBannerText}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
+          </View>
+        )}
 
-        {view === 'list' ? (
+        {view === 'list' && allDishes.length === 0 ? (
+          /* P-330(4003:7160): 결과 0개 = 화면 세로 중앙(배너·컨트롤 숨김 — A-SC-12) */
+          <ScreenCenterFill>
+            <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />
+          </ScreenCenterFill>
+        ) : view === 'list' ? (
           <>
-          {/* P-287(4003:7160): 결과 0개 = 공용 EmptyBlock(탭 아래) */}
-          {allDishes.length === 0 && <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />}
           {/* 9/5 예진 판정: ScanProfileBar(회피 체크 스트립) 제거 — 시안 토글 행만 */}
           {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
               D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}

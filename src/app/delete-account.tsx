@@ -119,16 +119,16 @@ export default function DeleteAccount() {
         {/* 제목 20/700 중앙 2줄(4150:14547 @y198) */}
         <Text style={styles.title}>{t('profile.delete.title')}</Text>
 
-        {/* 불릿 카드 2개 — pad 16 gap 12, 첫 카드 하단 line 1px */}
-        <View>
+        {/* P-329(2200:21060): 카드1만 octagon-alert 20 #FF7134 + 하단 보더, 카드2 아이콘 없음.
+            텍스트 14/500 #4B4F58 **좌측**(구 center) lineHeight 21. 카드 gap 10. */}
+        <View style={styles.bullets}>
           <View style={[styles.bullet, FLAGS.reviewsEnabled && styles.bulletDivider]}>
-            <D4OctagonAlert size={20} color={C.ink2} />
+            <D4OctagonAlert size={20} color={C.primary} />
             <Text style={styles.bulletText}>{t('profile.delete.dataLine')}</Text>
           </View>
           {/* 리뷰 익명화 안내 — reviewsEnabled 게이트 유지 */}
           {FLAGS.reviewsEnabled && (
-            <View style={styles.bullet}>
-              <D4OctagonAlert size={20} color={C.ink2} />
+            <View style={styles.bullet} testID="delete-bullet-2">
               <Text style={styles.bulletText}>{t('profile.delete.reviewsLine')}</Text>
             </View>
           )}
@@ -141,14 +141,15 @@ export default function DeleteAccount() {
         </Pressable>
       </View>
 
-      {/* FixedBottom — outline Cancel + primary Delete(시안 primary 오렌지 — danger 빨강 금지, 예진 확정 9/5) */}
+      {/* P-329: FixedBottom — 헤어라인 없음 · Cancel grow / Delete 폭 200 고정
+          (primary 오렌지 — danger 빨강 금지, 예진 확정 9/5) */}
       <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="delete-bottom-bar">
         <View style={{ flex: 1 }}>
           <Btn variant="ghost" onPress={() => router.back()}>
             {t('profile.delete.cancel')}
           </Btn>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={styles.deleteSlot}>
           <Btn
             variant={agreed ? 'primary' : 'off'}
             onPress={agreed && !withdrawing ? onConfirm : undefined}
@@ -185,19 +186,25 @@ export default function DeleteAccount() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { flex: 1, paddingHorizontal: 20, paddingTop: 96, gap: 24 },
-  title: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', lineHeight: 28, paddingHorizontal: 24 },
+  // P-329(2200:21060): 히어로 @y198 = 앱바 아래 98, pad 상 20/하 16 — 블록 간격은 각 블록 pad
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 98 },
+  title: { fontSize: 20, fontWeight: '700', color: '#1C1E21', textAlign: 'center', lineHeight: 28, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 },
 
-  bullet: { alignItems: 'center', gap: 12, padding: 16 },
-  bulletDivider: { borderBottomWidth: 1, borderBottomColor: C.line },
-  bulletText: { fontSize: 14, fontWeight: '500', color: '#4B4F58', textAlign: 'center', lineHeight: 20 },
+  bullets: { gap: 10 },
+  // 행 아이콘+텍스트 가로(cross center), 텍스트 좌측 — 시안 카드 내부 303
+  bullet: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  bulletDivider: { borderBottomWidth: 1, borderBottomColor: '#EAEBEE' },
+  bulletText: { flex: 1, fontSize: 14, fontWeight: '500', color: '#4B4F58', textAlign: 'left', lineHeight: 21 },
 
-  consent: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center' },
-  check: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: C.line2, backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
+  // 체크 행 — pad 상하 8 · gap 12 · 가로 중앙 · 체크 20 stroke #DCDEE3 1.5
+  consent: { flexDirection: 'row', alignItems: 'center', gap: 12, justifyContent: 'center', paddingVertical: 8, marginTop: 10 },
+  check: { width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: '#DCDEE3', backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: C.primary, borderColor: C.primary },
-  consentText: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
+  consentText: { fontSize: 14, fontWeight: '500', color: '#2F3137' },
 
-  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  // 헤어라인 없음(구 borderTop 제거) · Delete = 폭 200 고정, Cancel grow
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF' },
+  deleteSlot: { width: 200 },
 
   // KB-162 Apple 재인증 게이트 (D-1 Alert 카드 문법)
   gateBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },

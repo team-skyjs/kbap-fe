@@ -20,7 +20,7 @@ import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyReviews } from '@/components/Skeleton';
 import { FeedCard } from '@/features/review/FeedCard';
 import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
@@ -113,8 +113,12 @@ export default function MyReviews() {
               ))}
             </View>
 
-            {/* P-287(4003:6921): 빈 상태 = 공용 EmptyBlock */}
-            {count === 0 && <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />}
+            {/* P-330(4003:6921): 빈 상태 = 화면 세로 중앙(칩 행은 위에 유지 — P-196 문법) */}
+            {count === 0 && (
+              <ScreenCenterFill>
+                <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />
+              </ScreenCenterFill>
+            )}
 
             <View>
               {list.map((rv) => (

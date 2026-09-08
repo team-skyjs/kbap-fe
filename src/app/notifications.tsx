@@ -75,8 +75,11 @@ export default function Notifications() {
           </Pressable>
         )}
         ListEmptyComponent={
-          /* P-287(4003:7113): 공용 EmptyBlock — 아이콘 벨·본문 소멸(시안) */
-          <EmptyBlock label={t('inbox.empty')} testID="notif-empty" />
+          /* P-330(4003:7113): 빈 상태 = 리스트 영역 세로 중앙(flexGrow 1 + 중앙 래퍼 —
+             pull-to-refresh 유지라 ScreenCenterFill(absolute) 대신 인라인 센터) */
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <EmptyBlock label={t('inbox.empty')} testID="notif-empty" />
+          </View>
         }
       />
     </View>
