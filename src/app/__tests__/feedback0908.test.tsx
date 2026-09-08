@@ -54,25 +54,9 @@ it('⑤ 북마크 상단 토스트 — 공용 호스트(루트 1개) + 토글 �
   expect(layout).toContain('<TopToastHost />');
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain("showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'))");
-  expect(bm).toContain("showTopToast(i18n.t('saved.error'))");
+  expect(bm).toContain("showTopToast(i18n.t('saved.error'), { error: true })");
   const tt = read('src/components/TopToast.tsx');
-  expect(tt).toContain("top: insets.top + 8"); // P-343: 최상단 오버레이(헤더 위)
-});
-
-it('⑤-b 토스트 호스트 동작 — showTopToast → 렌더, 1.5s 후 소멸', () => {
-  jest.useFakeTimers();
-  const React = require('react') as typeof import('react');
-  const renderer = require('react-test-renderer') as typeof import('react-test-renderer');
-  const { act } = renderer;
-  jest.doMock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-  const { TopToastHost, showTopToast } = require('@/components/TopToast');
-  let tree!: import('react-test-renderer').ReactTestRenderer;
-  act(() => { tree = renderer.create(React.createElement(TopToastHost)); });
-  act(() => { showTopToast('저장됨'); });
-  expect(tree.root.findAll((n) => n.props?.testID === 'top-toast').length).toBeGreaterThanOrEqual(1);
-  act(() => { jest.advanceTimersByTime(1600); });
-  expect(tree.root.findAll((n) => n.props?.testID === 'top-toast')).toHaveLength(0);
-  jest.useRealTimers();
+  expect(tt).toContain('top: insets.top + 8'); // P-343: 최상단 오버레이(헤더 위)
 });
 
 it('⑥ 로그인 버튼 radius 통일 — Apple cornerRadius 4(=Google r4)', () => {

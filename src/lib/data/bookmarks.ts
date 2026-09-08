@@ -19,7 +19,7 @@ import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
-import { showTopToast } from '@/components/TopToast';
+import { showTopToast } from '@/components/topToastStore';
 import { adaptMenuSummary } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
 
@@ -139,7 +139,7 @@ export function useToggleBookmark() {
     onError: (_e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
-      showTopToast(i18n.t('saved.error'));
+      showTopToast(i18n.t('saved.error'), { error: true }); // P-346: AlertTri 변형
     },
     onSettled: (_d, _e, { snap }) => {
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });
