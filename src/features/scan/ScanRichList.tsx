@@ -295,11 +295,11 @@ export function OrderPill({ count, onPress, t, bottom }: { count: number; onPres
 const styles = StyleSheet.create({
   // P-226 ⑤: 미등록 안내 + 외부 검색 링크
   missRow: { marginTop: 4, gap: 5 },
-  missText: { fontSize: 13, fontStyle: 'italic', fontWeight: '400', color: C.ink3, lineHeight: 18 }, // §1-1(16314): 이탤릭 13
-  missLinks: { flexDirection: 'row', gap: 8 },
+  missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }, // A-SC-10(이탤릭 제거)
+  missLinks: { flexDirection: 'row', gap: 4 }, // A-SC-09
   // P-285: 외부 검색 아이콘 칩 34×30(border #EAEBEE r37 pad 4/6)
   missLink: { width: 34, height: 30, borderWidth: 1, borderColor: C.line, borderRadius: 37, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: 16, paddingBottom: 120 },
+  body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
   barCap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -309,21 +309,21 @@ const styles = StyleSheet.create({
   barChipText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
   editLink: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
   // KB-432 §1-1(4150:16254): h136 pad 16/20 gap 16, 하단 line 1px
-  row: { flexDirection: 'row', gap: 16, minHeight: 150, paddingVertical: 16, paddingHorizontal: 0, borderBottomWidth: 1, borderBottomColor: C.line }, // P-285: 최종본 행
+  row: { flexDirection: 'row', gap: 16, minHeight: 150, paddingVertical: 16, paddingHorizontal: 0 }, // A-SC-05: 하단 보더 제거
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   thumbWrap: { width: 118 }, // P-285: 118×118(2200:21512)
   thumbFb: { backgroundColor: C.surface2 },
-  thumbUnable: { backgroundColor: '#F2F3F6', alignItems: 'center', justifyContent: 'center' },
+  thumbUnable: { backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, // A-SC-11(흰 위 흰 — 실기 확인 권장)
   thumbBadge: { position: 'absolute', top: -4, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
   nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },
   desc: { fontSize: 13, fontWeight: '400', color: C.ink3 }, // P-285: 설명 1줄(2200:21512)
   // P-171: 1줄 고정 — nowrap+hidden(근사 오차 이중 방어), 행 높이 균일 회복
-  warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 5, marginTop: 2 },
-  moreChip: { backgroundColor: C.surface2, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 4 },
-  moreChipText: { fontFamily: font.displayBlack, fontSize: 12.5, color: C.ink2 },
+  warnWrap: { flexDirection: 'row', flexWrap: 'nowrap', overflow: 'hidden', alignItems: 'center', gap: 4, marginTop: 5 }, // A-SC-06/07(이름→칩 8 = col gap 3+5)
+  moreChip: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 37, paddingHorizontal: 6, paddingVertical: 4 }, // A-SC-08(warnChip 동일)
+  moreChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' }, // A-SC-08
   // P-223: 통합 칩(색+형태) — 구 avoidRow 섹션 스타일 대체
-  warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 26, borderWidth: 1, borderColor: C.line, borderRadius: 37, paddingVertical: 4, paddingHorizontal: 6, backgroundColor: '#FFFFFF' },
+  warnChip: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 26, borderWidth: 1, borderColor: C.line, borderRadius: 37, paddingVertical: 4, paddingLeft: 3, paddingRight: 6, backgroundColor: '#FFFFFF' }, // A-SC-07
   warnChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
   price: { fontSize: 13, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
   priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },

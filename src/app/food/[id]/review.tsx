@@ -200,7 +200,7 @@ export default function ReviewCompose() {
           ) : (
             <View style={styles.foodPh} testID="food-ph" />
           )}
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RW-02 */}
             <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? ''}</Text>
             {/* " · " 구분은 P-196 잠금과 충돌 — 공백(D-3 Q9 판정과 동일) */}
             <Text style={styles.foodKo} numberOfLines={1}>
@@ -237,6 +237,35 @@ export default function ReviewCompose() {
         <ExtrasRater extras={extras} onChange={setExtras} t={t} />
 
         {/* body — onLayout: 블록 하단 = 커서 하단 프록시(성장 시 재발화) */}
+        {/* A-RW-03(KB-486): 사진 블록 = 텍스트 영역 위 */}
+        {/* photos — P-077: 최대 3장, 미리보기 + 개별 삭제. 선택 사항 */}
+        <View style={styles.block}>
+          {/* §2-5(4150:16463 @y428): 슬롯 100 r8, 빈 = #F4F6F6 50% + #DCDEE3, 카메라 24 */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+            {photos.map((uri) => (
+              <View key={uri} style={styles.photoThumbWrap}>
+                <Image source={{ uri }} style={styles.photoThumb} />
+                <Pressable
+                  accessibilityLabel={t('review.removePhoto')}
+                  style={styles.photoDel}
+                  hitSlop={8}
+                  onPress={() => setPhotos((cur) => removeReviewPhoto(cur, uri))}
+                >
+                  <IconClose size={10} color="#fff" />
+                </Pressable>
+              </View>
+            ))}
+            {photos.length < REVIEW_MAX_PHOTOS && (
+              <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={photoImporting ? undefined : pickPhoto} testID="photo-add">
+                {/* P-191: 픽커 복귀~원본 준비(iCloud) — 타일 자리 스피너(프레임 불변) */}
+                {photoImporting ? <ActivityIndicator size="small" color={C.ink3} /> : <IconCamera size={24} color={C.ink3} />}
+                {/* A-RW-05: 캡션 = 슬롯 안 */}
+                <Text style={styles.photoCap} numberOfLines={1}>{t('review.photosLabel', { max: REVIEW_MAX_PHOTOS })}</Text>
+              </Pressable>
+            )}
+          </ScrollView>
+        </View>
+
         <View
           style={styles.block}
           testID="body-block"
@@ -285,32 +314,6 @@ export default function ReviewCompose() {
           )}
         </View>
 
-        {/* photos — P-077: 최대 3장, 미리보기 + 개별 삭제. 선택 사항 */}
-        <View style={styles.block}>
-          {/* §2-5(4150:16463 @y428): 슬롯 100 r8, 빈 = #F4F6F6 50% + #DCDEE3, 카메라 24 */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-            {photos.map((uri) => (
-              <View key={uri} style={styles.photoThumbWrap}>
-                <Image source={{ uri }} style={styles.photoThumb} />
-                <Pressable
-                  accessibilityLabel={t('review.removePhoto')}
-                  style={styles.photoDel}
-                  hitSlop={8}
-                  onPress={() => setPhotos((cur) => removeReviewPhoto(cur, uri))}
-                >
-                  <IconClose size={10} color="#fff" />
-                </Pressable>
-              </View>
-            ))}
-            {photos.length < REVIEW_MAX_PHOTOS && (
-              <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={photoImporting ? undefined : pickPhoto} testID="photo-add">
-                {/* P-191: 픽커 복귀~원본 준비(iCloud) — 타일 자리 스피너(프레임 불변) */}
-                {photoImporting ? <ActivityIndicator size="small" color={C.ink3} /> : <IconCamera size={24} color={C.ink3} />}
-              </Pressable>
-            )}
-          </ScrollView>
-          <Text style={styles.photoCap}>{t('review.photosLabel', { max: REVIEW_MAX_PHOTOS })}</Text>
-        </View>
 
 
         <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
@@ -364,7 +367,7 @@ export default function ReviewCompose() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { padding: 18, gap: 20 },
+  body: { padding: 20, gap: 20 }, // A-RW-01(KB-486)
 
   postLink: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, marginRight: 8 },
   postLinkOff: { color: C.ink3 },
@@ -375,29 +378,29 @@ const styles = StyleSheet.create({
   foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
   foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
   // §2-2: 장소 카드 변형(4150:16530 — 이미지 없음 pad 8/12)
-  placeCard: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingVertical: 8, paddingHorizontal: 12, gap: 2 },
+  placeCard: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingVertical: 8, paddingHorizontal: 12, gap: 4 }, // A-RW-10
 
   block: { gap: 12 },
-  label: { fontSize: 13, fontWeight: '500', color: C.ink2 },
+  label: { fontSize: 13, fontWeight: '600', color: '#778088' }, // A-RW-07
   // §2-3: 별 48 gap 11 + 수치 18/600 #4B4F58
   starPick: { flexDirection: 'row', gap: 11, justifyContent: 'center', marginTop: 4 },
   starCap: { fontSize: 18, fontWeight: '600', color: '#4B4F58', textAlign: 'center' },
   starCapEmpty: { color: C.ink3 },
 
   // §2-6(4150:16505): h156 흰 bg line 1px r8 pad 14/16, focus = primary
-  textarea: { minHeight: 156, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, paddingVertical: 14, paddingHorizontal: 16, fontSize: 15, fontWeight: '500', color: C.ink, lineHeight: 21 },
+  textarea: { minHeight: 132, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: radius.sm, paddingVertical: 14, paddingHorizontal: 16, fontSize: 15, fontWeight: '500', color: C.ink, lineHeight: 21, marginTop: -8 }, // A-RW-07(라벨→필드 4 = block gap 12 - 8)
   textareaFocus: { borderColor: C.primary },
   // §2-5: 사진 슬롯 100 r8
   photoRow: { flexDirection: 'row', gap: 8 },
   photoThumbWrap: { width: 100, height: 100 },
   photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
-  photoDel: { position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
-  photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center' },
-  photoCap: { fontSize: 14, fontWeight: '500', color: C.ink3 },
+  photoDel: { position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
+  photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
+  photoCap: { fontSize: 14, fontWeight: '600', color: '#778088' }, // A-RW-05
   metaRow: { flexDirection: 'row', justifyContent: 'flex-end' },
   tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12
-  placePill: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: 24, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' },
+  placePill: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 38, borderWidth: 1, borderColor: C.line2, borderRadius: 24, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }, // A-RW-09
   placePillText: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: C.ink },
   pillClear: { width: 16, height: 16, borderRadius: 8, backgroundColor: C.inkMute, alignItems: 'center', justifyContent: 'center' },
   // §2-8: FixedBottom

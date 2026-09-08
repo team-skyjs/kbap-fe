@@ -174,7 +174,7 @@ export default function FoodReviews() {
               <View style={styles.dishThumb}>
                 {food?.photoUrl ? <CardPhoto uri={food.photoUrl} borderRadius={4} /> : <IconBubbleEmpty size={20} color={C.ink3} />}
               </View>
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RL-02 */}
                 <Text style={styles.dishName} numberOfLines={1}>{food?.name ?? ''}</Text>
                 {/* 시안의 " · " 구분은 P-196 ④(가운뎃점 전수 제거) 잠금과 충돌 — 공백 유지(REPORTS) */}
                 <Text style={styles.dishSub} numberOfLines={1}>
@@ -469,7 +469,7 @@ function Switch({ on }: { on: boolean }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
+  body: { paddingHorizontal: 20, paddingTop: 8, gap: 9 }, // A-RL-01/03(KB-486: 카드→통계 9)
 
   emptyFill: { flex: 1, justifyContent: 'center' },
   // KB-84 게스트 lock-pop
@@ -487,17 +487,17 @@ const styles = StyleSheet.create({
   dishSub: { fontSize: 13, fontWeight: '400', color: C.ink3 },
 
   // KB-431 §2-3: 평점 요약 박스
-  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, padding: 16, gap: 29 },
-  summaryLeft: { flex: 1, gap: 6, justifyContent: 'center' },
+  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
+  summaryLeft: { width: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(좌 149 center)
   bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
   bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
   overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  axisCol: { alignItems: 'center', gap: 5 },
+  axisCol: { alignItems: 'center', gap: 6 }, // A-RL-05
   axisBadge: { width: 34, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   axisBadgeTop: { backgroundColor: '#2F3137' },
   axisBadgeRest: { backgroundColor: C.inkDisabled },
   axisBadgeText: { fontSize: 12, fontWeight: '600', color: '#2F3137' },
-  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: C.hair, justifyContent: 'flex-end', overflow: 'hidden' },
+  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3', justifyContent: 'flex-end', overflow: 'hidden' }, // A-RL-06(fill 3위 색은 C-57)
   axisFill: { width: 8, borderRadius: 4 },
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RL-07
   filterLbl: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: C.ink2 },

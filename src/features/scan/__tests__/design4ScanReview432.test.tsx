@@ -1,6 +1,6 @@
 /**
  * KB-432(P-277) D-4 — 스캔 결과 목록(§1-1) + 리뷰 작성(§2) 디자인 4차 잠금.
- * ① 메뉴 행 변형: 매칭+회피 칩(시안 칩·RiskBadge) / 미등록(#F2F3F6+unable+이탤릭)
+ * ① 메뉴 행 변형: 매칭+회피 칩(시안 칩·RiskBadge) / 미등록(흰 박스+unable — A-SC-10/11로 이탤릭·회색 소멸)
  * ② 인식 배너·컨트롤 행(무동작 토글·정렬 드롭다운) 소스 잠금
  * ③ 리뷰 작성 별점 크기(전체 48/세부 32)·사진 슬롯·장소 필 소스 잠금.
  * (§1-2 인식 중·§1-3 게스트 게이트 = 예진 판정으로 현행 유지 — 잠금 없음)
@@ -59,7 +59,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등록 = #F2F3F6 unable 박스 + 이탤릭', () => {
+it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등록 = 흰 unable 박스 + 비이탤릭 안내', () => {
   const tree = render(
     <ScanRichList dishes={[MATCHED, UNMATCHED]} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
@@ -70,9 +70,9 @@ it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등�
   // 회피 칩: 시안 프레임(r37) + 12/700 #2F3137
   expect(s).toContain('"borderRadius":37');
   expect(s).toContain('Soybean');
-  // 미등록: #F2F3F6 박스 + 이탤릭 안내
-  expect(s).toContain('#F2F3F6');
-  expect(s).toContain('"fontStyle":"italic"');
+  // 미등록(A-SC-10/11): 흰 박스 + 비이탤릭 13/lh13 안내
+  expect(s).toContain('"backgroundColor":"#FFFFFF","alignItems":"center","justifyContent":"center"');
+  expect(s).not.toContain('"fontStyle":"italic"');
   expect(s).toContain('scan.missNote');
 });
 
@@ -130,10 +130,10 @@ it('④ 태그 시트 2종 — FixedBottom(Close/Done·장소 스킵/Done) + 안
   expect(parts).toContain('testID="place-done"');
 });
 
-it('P-285: 권한 거부 = 최종본 Alert(스크림 40%·Open Settings) — 미거부는 현행 요청 UI 소스 잠금', () => {
+it('P-285 → A-SN-04(KB-486): 권한 거부 = 최종본 Alert(스크림 80%·Open Settings) — 미거부는 현행 요청 UI 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(src).toContain('testID="perm-denied-alert"');
-  expect(src).toContain("permScrim: { backgroundColor: 'rgba(0,0,0,0.4)'");
+  expect(src).toContain("permScrim: { backgroundColor: 'rgba(0,0,0,0.8)'");
   expect(src).toContain('width: 320, minHeight: 190'); // Alert 320×190(4003:12690)
   expect(src).toContain("t('photo.openSettings')"); // 현 키 재사용
   expect(src).toContain("t('scan.grant')"); // 미거부 = 현행 요청 경로 보존

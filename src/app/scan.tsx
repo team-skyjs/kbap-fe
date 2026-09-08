@@ -595,7 +595,7 @@ export default function Scan() {
         {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
-            <IconChevron size={18} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconChevron size={24} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
           {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}
@@ -890,7 +890,7 @@ export default function Scan() {
           <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
             <View style={styles.permAlert}>
               <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
-              <Text style={styles.permAlertBody}>{t('scan.permissionSettingsBody')}</Text>
+              <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
               <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }}>
                 {t('photo.openSettings')}
               </Btn>
@@ -1060,10 +1060,10 @@ const styles = StyleSheet.create({
   resultTabLabelOn: { color: '#2F3137' },
   resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   resultTabBarOn: { backgroundColor: '#2F3137' },
-  recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 },
+  recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 }, // A-SC-02
   recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
-  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: C.surface },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 10, backgroundColor: C.surface }, // A-SC-03
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-SC-04(off 색은 C-04)
   toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
@@ -1078,7 +1078,7 @@ const styles = StyleSheet.create({
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
-  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, backgroundColor: '#fff' },
+  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, minHeight: 56, paddingBottom: 10, backgroundColor: '#fff' }, // A-SC-01(SubHeader 규격)
   qhBack: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   qhTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
   seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
@@ -1092,10 +1092,10 @@ const styles = StyleSheet.create({
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
   // P-285: 권한 거부 Alert(4003:12690)
-  permScrim: { backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
-  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 18 },
+  permScrim: { backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 30 }, // A-SN-04
+  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 5 }, // A-SN-04
   permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
-  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 21 }, // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
+  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 22.3 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
