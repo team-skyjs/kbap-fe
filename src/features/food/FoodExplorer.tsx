@@ -111,10 +111,15 @@ export function FoodExplorer({
   }, [guest]);
   const [gate, setGate] = React.useState(false);
 
-  // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본)
+  // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본).
+  // P-332(KB-488) 프리징 수정: ① deps에 `saved`(매 렌더 새 객체) → 매 렌더 실행이던 것을
+  // 플래그·안정 함수로 축소 ② isFetching 가드 — 토글 invalidate의 전 페이지 재조회 중
+  // fetchNextPage가 재조회를 취소·재시작시키는 핑퐁 차단 ③ cancelRefetch:false —
+  // 홈 embedded·저장 화면 동시 마운트(탭 유지)에서 상호 취소 루프 봉쇄.
   React.useEffect(() => {
-    if (saved.hasNextPage && !saved.isFetchingNextPage) void saved.fetchNextPage();
-  }, [saved, saved.hasNextPage, saved.isFetchingNextPage]);
+    if (saved.hasNextPage && !saved.isFetchingNextPage && !saved.isFetching)
+      void saved.fetchNextPage({ cancelRefetch: false });
+  }, [saved.hasNextPage, saved.isFetchingNextPage, saved.isFetching, saved.fetchNextPage]);
   const savedFoods = saved.data ?? [];
   const savedIds = new Set(savedFoods.map((f) => f.foodId));
   const gridSource: FoodCard[] =

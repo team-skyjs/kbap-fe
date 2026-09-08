@@ -64,7 +64,15 @@ export function useBookmarks() {
       const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
       return api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}`);
     },
-    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    // P-332(KB-488): 종료 가드 — hasNext만 믿으면 커서가 전진하지 않는 경계 응답
+    // (빈 페이지·커서 에코)에서 드레인/스크롤이 무한 fetch = 홈 프리징. 이미 요청한
+    // 커서 재등장·빈 페이지 = 다음 페이지 없음으로 강제 종료(서버 응답 불변식에
+    // 앱 생사를 걸지 않는다).
+    getNextPageParam: (last, _pages, lastParam, allParams) =>
+      last.hasNext && last.nextCursor != null && last.items.length > 0 &&
+      last.nextCursor !== lastParam && !allParams.includes(last.nextCursor)
+        ? last.nextCursor
+        : undefined,
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
 }
