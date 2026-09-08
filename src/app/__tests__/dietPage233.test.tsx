@@ -145,7 +145,7 @@ it('배선 소스 잠금 — 해제 안내 문구·P-227 승인 팝업 존치(�
   expect(page).toContain("t('profile.dietUncheckHint')"); // 해제 = 회피 불변 안내
   expect(page).toContain('unionResolvedCodes(dietPresets, added, cur)'); // 신규분만 합집합
   // P-227 승인형 팝업은 회피 편집 화면 경로에 존치(두 경로 의도적 상이)
-  expect(fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8')).toContain('setPresetConfirm(true)');
+  expect(fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8')).not.toContain('setPresetConfirm'); // P-339 ⑧: 프리셋 경로 소멸
 });
 
 it('P-243 역추론 잔존 0 — 활성 판정에 codes.every(⊆회피) 패턴 소멸(서버 정본)', () => {

@@ -733,8 +733,7 @@
       "groupDiet": "การกิน",
       "groupReligion": "ศาสนา",
       "groupAllergy": "ชุดภูมิแพ้",
-      "apply": "ใช้กับรายการของฉัน",
-      "applyRow": "เติมตามการกิน/ศาสนา"
+      "apply": "ใช้กับรายการของฉัน"
     },
     "countryLabel": "ประเทศ"
   },

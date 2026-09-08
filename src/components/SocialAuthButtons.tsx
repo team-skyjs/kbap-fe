@@ -60,7 +60,7 @@ export function SocialAuthButtons({
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={14}
+              cornerRadius={4} /* P-339 ⑥: 구글(r4)과 통일 — 시안 Button r4 */
               style={styles.apple}
               onPress={() => { if (!busy) void signInWithApple(); }}
             />

@@ -8,7 +8,7 @@ import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
+jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } })); // P-339 ⑤: 토스트 발화가 t 사용
 jest.mock('@/lib/api/client', () => ({
   api: {
     get: jest.fn(),

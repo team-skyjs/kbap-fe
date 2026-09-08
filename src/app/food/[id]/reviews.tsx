@@ -135,6 +135,7 @@ export default function FoodReviews() {
         nationality: r.authorNationality,
       },
       mine: isMine(r),
+      anonymized: r.anonymized === true, // Codex #100 2R: 탈퇴 = 신고만(차단 = NaN id 실버그 봉인)
     });
 
   return (
@@ -235,7 +236,7 @@ export default function FoodReviews() {
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} foodId={id ?? ''} onMore={!r.anonymized ? () => openMenu(r) : undefined} /* P-186: 타인 = 신고/차단(익명 제외) */ />
+                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} foodId={id ?? ''} onMore={() => openMenu(r)} /* P-339 ②: 탈퇴 포함 전 카드 ⋯(신고만 — 차단은 플로우가 가드) */ />
                 ))}
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (

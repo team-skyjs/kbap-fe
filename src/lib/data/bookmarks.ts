@@ -19,6 +19,7 @@ import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
+import { showTopToast } from '@/components/TopToast';
 import { adaptMenuSummary } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
 
@@ -130,9 +131,15 @@ export function useToggleBookmark() {
       if (prevDetail) qc.setQueryData<FoodDetail>(detailKey, { ...prevDetail, bookmarked: add });
       return { prev, prevDetail, detailKey };
     },
+    // P-339 ⑤(KB-494): 상단 토스트 = 이 뮤테이션 한 곳(전 표면 공용 — 화면별 배선 금지).
+    // 저장 화면의 스와이프 해제(useRemoveBookmark)는 Undo 스낵바 현행 유지(중복 방지).
+    onSuccess: (_d, { add }) => {
+      showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'));
+    },
     onError: (_e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
+      showTopToast(i18n.t('saved.error'));
     },
     onSettled: (_d, _e, { snap }) => {
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });

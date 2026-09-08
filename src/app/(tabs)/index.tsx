@@ -30,6 +30,7 @@ import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
+import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { EVENTS, track } from '@/lib/analytics';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { FeedCard } from '@/features/review/FeedCard';
@@ -66,6 +67,8 @@ export default function Home() {
 
   const unread = useUnreadCount();
   const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
+  // P-339 ②(KB-494): 홈 피드도 ⋯ 전 카드 — 신고만(차단 없음), 위치 통일
+  const [mod, setMod] = useState<ModTarget | null>(null);
 
   // P-317: 리뷰 = 무한 스크롤(Reviews 탭과 같은 커서 API·FeedCard). 칩: All=latest·Popular=helpful.
   const feed = useGlobalReviews(true, { sort: reviewChip === 'popular' ? 'helpful' : 'latest' });
@@ -177,10 +180,19 @@ export default function Home() {
             review={rv}
             t={t}
             mine={false}
-            showMore={false} /* 홈 피드 = 모더레이션 없음(동작 없는 ⋯ 금지) */
+            /* P-339 ②: ⋯ 전 카드(구 showMore=false 폐기) — 홈은 신고만·차단 없음 */
             onOpenFood={() => rv.foodId && openFood(rv.foodId)}
             onGuestHelpful={() => router.push('/login' as Href)}
-            onMore={() => router.push('/community')}
+            onMore={() =>
+              setMod({
+                type: 'review',
+                id: rv.id,
+                author: { id: rv.author?.memberId ?? rv.memberId ?? `rv-${rv.id}`, nickname: rv.author?.nickname ?? null, nationality: rv.authorNationality },
+                mine: false,
+                anonymized: rv.anonymized === true,
+                reportOnly: true,
+              })
+            }
           />
         )}
         onEndReachedThreshold={0.6}
@@ -219,6 +231,9 @@ export default function Home() {
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
       />
+
+      {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
+      <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
     </View>
   );
 }

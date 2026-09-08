@@ -169,6 +169,7 @@ export function ReviewFeed() {
                 id: item.id,
                 author: { id: item.author?.memberId ?? item.memberId ?? `rv-${item.id}`, nickname: item.author?.nickname ?? null, nationality: item.authorNationality },
                 mine: item.memberId != null && item.memberId === myId, // P-186: 실값 — 타인 = 신고/차단
+                anonymized: item.anonymized === true, // P-339 ②: 탈퇴 = 신고만
               })
             }
           />

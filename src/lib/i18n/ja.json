@@ -733,8 +733,7 @@
       "groupDiet": "食事",
       "groupReligion": "宗教",
       "groupAllergy": "アレルギーセット",
-      "apply": "リストに適用",
-      "applyRow": "食事・宗教から選ぶ"
+      "apply": "リストに適用"
     },
     "countryLabel": "国"
   },

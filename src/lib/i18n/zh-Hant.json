@@ -733,8 +733,7 @@
       "groupDiet": "飲食",
       "groupReligion": "宗教",
       "groupAllergy": "過敏組合",
-      "apply": "套用到我的清單",
-      "applyRow": "依飲食/宗教填入"
+      "apply": "套用到我的清單"
     },
     "countryLabel": "國家"
   },

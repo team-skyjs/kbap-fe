@@ -379,9 +379,17 @@ export function HelpfulButton({
        로직·경유는 무변(전 표면 공용) — 스타일만 시안. */
     <Pressable hitSlop={8} onPress={onPress} disabled={mine} style={styles.helpfulBtn} testID={`helpful-${review.id}`}>
       <IconThumbsUp size={16} color={mine ? C.ink3 : review.myLike ? C.primary : C.ink2} />
-      <Text style={[styles.helpful, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]}>
-        {t('reviews.helpful', { count: review.likes ?? 0 })}
-      </Text>
+      {/* P-339 ③(KB-494): 폭 고정 — 고스트(99 = 2자리 예약)가 폭을 소유, 실라벨은 그 위 중앙.
+          tabular-nums로 같은 자릿수 흔들림도 제거. 눌림 상태는 색만(P-151). */}
+      <View>
+        {/* Codex #100 P2: ≥100은 "99+" 컴팩트 — 고스트도 같은 표기로 예약(폭 상한 불변) */}
+        <Text style={[styles.helpful, styles.helpfulGhost]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {t('reviews.helpful', { count: '99+' as unknown as number })}
+        </Text>
+        <Text style={[styles.helpful, styles.helpfulReal, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]} numberOfLines={1}>
+          {t('reviews.helpful', { count: ((review.likes ?? 0) > 99 ? '99+' : (review.likes ?? 0)) as unknown as number })}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -507,6 +515,9 @@ const styles = StyleSheet.create({
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
   helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 30, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 4, backgroundColor: '#FFFFFF' },
+  // P-339 ③: 고스트 = 투명 자리(2자리 예약) / 실라벨 = absolute 중앙 — 카운트 변동에도 폭 불변
+  helpfulGhost: { opacity: 0, fontVariant: ['tabular-nums'] },
+  helpfulReal: { position: 'absolute', left: 0, right: 0, textAlign: 'center', fontVariant: ['tabular-nums'] },
   helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },

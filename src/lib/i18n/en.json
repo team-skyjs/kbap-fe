@@ -887,8 +887,7 @@
       "groupDiet": "Diet",
       "groupReligion": "Religion",
       "groupAllergy": "Allergy bundles",
-      "apply": "Apply to my list",
-      "applyRow": "Fill from a diet or religion"
+      "apply": "Apply to my list"
     },
     "countryLabel": "Country"
   },
