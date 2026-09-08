@@ -96,14 +96,27 @@ export function saveTokens(
   const mine = { access, refresh };
   cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)
   return serialized(async () => {
-    try {
-      await Promise.all([
-        SecureStore.setItemAsync(ACCESS_KEY, access),
-        SecureStore.setItemAsync(REFRESH_KEY, refresh),
-        SecureStore.setItemAsync(ENV_KEY, BE_BASE), // P-322: 발급 환경 동승(항상 3종 동일 체인)
-      ]);
-    } catch {
-      /* web/test: memory-only */
+    // P-322(Codex #86 P2): 3종 쓰기는 전부-또는-전무 — 일부만 성공하면(낡은 마커+새 토큰,
+    // 새 마커+낡은 토큰) env 판정이 어긋난다. 부분 성공 = 3종 삭제 + 실패 커밋(false).
+    // 전부 실패 = 저장소 부재(web/jest) — 현행 메모리 온리 시맨틱 유지(부분 상태 아님).
+    const wrote = await Promise.allSettled([
+      SecureStore.setItemAsync(ACCESS_KEY, access),
+      SecureStore.setItemAsync(REFRESH_KEY, refresh),
+      SecureStore.setItemAsync(ENV_KEY, BE_BASE), // 발급 환경 동승(항상 3종 동일 체인)
+    ]);
+    const failedN = wrote.filter((w) => w.status === 'rejected').length;
+    if (failedN > 0 && failedN < 3) {
+      if (cached === mine) cached = null; // 자기 것일 때만(교체 세션 보존)
+      try {
+        await Promise.all([
+          SecureStore.deleteItemAsync(ACCESS_KEY),
+          SecureStore.deleteItemAsync(REFRESH_KEY),
+          SecureStore.deleteItemAsync(ENV_KEY),
+        ]);
+      } catch {
+        /* best-effort — 다음 부팅의 env 판정이 최후 방어 */
+      }
+      return false;
     }
     if (g !== sessionGen) {
       if (cached === mine) cached = null; // 자기 것일 때만 — B가 덮었으면 보존
@@ -113,7 +126,12 @@ export function saveTokens(
           SecureStore.getItemAsync(REFRESH_KEY),
         ]);
         if (a === access && r === refresh) {
-          await Promise.all([SecureStore.deleteItemAsync(ACCESS_KEY), SecureStore.deleteItemAsync(REFRESH_KEY)]);
+          // P-322: 자기 쓰기 되돌림 = env 포함 3종(같은 조건 — B가 덮었으면 무손대)
+          await Promise.all([
+            SecureStore.deleteItemAsync(ACCESS_KEY),
+            SecureStore.deleteItemAsync(REFRESH_KEY),
+            SecureStore.deleteItemAsync(ENV_KEY),
+          ]);
         }
       } catch {
         /* nothing persisted */

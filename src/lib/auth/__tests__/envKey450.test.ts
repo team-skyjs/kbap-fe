@@ -78,3 +78,26 @@ it('세대 경계 개입 시 자가 되돌림(KB-421 유지) — 토큰 폐기, 
   expect(await p).toBe(false);
   expect(await t.loadTokens()).toBeNull();
 });
+
+it('Codex #86 P2: 부분 쓰기 실패(env만 실패) = 3종 전무 + 커밋 false — 혼합 마커 차단', async () => {
+  const SS = require('expo-secure-store') as { setItemAsync: unknown };
+  const realSet = SS.setItemAsync as (k: string, v: string) => Promise<void>;
+  (SS as { setItemAsync: (k: string, v: string) => Promise<void> }).setItemAsync = (k, v) =>
+    k === E ? Promise.reject(new Error('keychain full')) : realSet(k, v);
+  const t = tokens();
+  expect(await t.saveTokens('a', 'r')).toBe(false); // 실패 커밋 — 호출자는 세션 점등 생략
+  expect(mockStore.has(A)).toBe(false); // 부분 저장 잔재 0
+  expect(mockStore.has(R)).toBe(false);
+  expect(mockStore.has(E)).toBe(false);
+  (SS as { setItemAsync: typeof realSet }).setItemAsync = realSet;
+});
+
+it('Codex #86 P2 대칭: 전부 실패(저장소 부재) = 메모리 온리 현행 유지(true)', async () => {
+  const SS = require('expo-secure-store') as { setItemAsync: unknown };
+  const realSet = SS.setItemAsync as (k: string, v: string) => Promise<void>;
+  (SS as { setItemAsync: () => Promise<void> }).setItemAsync = () => Promise.reject(new Error('no store'));
+  const t = tokens();
+  expect(await t.saveTokens('a', 'r')).toBe(true); // web/jest — 부분 상태가 아님
+  expect(await t.loadTokens()).toEqual({ access: 'a', refresh: 'r' }); // 메모리 캐시
+  (SS as { setItemAsync: typeof realSet }).setItemAsync = realSet;
+});
