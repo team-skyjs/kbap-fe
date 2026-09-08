@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   val: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
   hint: { fontSize: 13, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 1, lineHeight: 18 },
 
-  spiceBox: { backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
+  spiceBox: { backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14 }, // A-SP-07(KB-486 공용)
   spiceClear: { fontSize: 14, fontWeight: '600', color: C.primaryText, marginLeft: 2, marginTop: 4 },
 
   // Linked to account — 카드 border #EBE6E1 r12 pad 14/16

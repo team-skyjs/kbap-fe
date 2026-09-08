@@ -212,12 +212,12 @@ const styles = StyleSheet.create({
   collageFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 186 },
 
   // welcome — 콜라주가 flex를 소유, 하단 블록은 safe-area 위 고정
-  hero: { alignItems: 'center', gap: 10, paddingHorizontal: 26, paddingTop: 20, paddingBottom: 24 },
-  sub: { fontSize: 16, fontWeight: '400', color: '#2F3137', textAlign: 'center', lineHeight: 23, maxWidth: 300 },
+  hero: { alignItems: 'center', gap: 6, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 }, // A-LG-01(KB-486)
+  sub: { fontSize: 16, fontWeight: '400', color: '#2F3137', textAlign: 'center', lineHeight: 22, maxWidth: 326 }, // A-LG-01/02
 
-  foot: { gap: 10, paddingHorizontal: 20 },
+  foot: { gap: 10, paddingHorizontal: 20 }, // A-LG-05: 버튼→둘러보기 16(browse padding 6+10)
   terms: { fontSize: 13, fontWeight: '400', color: C.inkInfo, textAlign: 'center', lineHeight: 18, paddingHorizontal: 10 }, // P-284
   termsLink: { textDecorationLine: 'underline', paddingHorizontal: 0 },
-  browse: { fontSize: 13, fontWeight: '500', color: C.ink2, textAlign: 'center', padding: 10 },
+  browse: { fontSize: 14, fontWeight: '500', color: C.ink2, textAlign: 'center', padding: 10, marginTop: -4 }, // A-LG-05/06(버튼→둘러보기 16 = gap10+pad10-4)
   browseDim: { opacity: 0.35 }, // KB-421: 색/불투명도만(프레임 불변 P-151)
 });
