@@ -56,7 +56,13 @@ export function ReviewFeed() {
   const [profileFilter, setProfileFilter] = React.useState(false);
   const me = useMe().data;
   const myNat = me?.nationality ?? null;
-  const feed = useGlobalReviews(true, { sort, countryCode: profileFilter && !isGuest && myNat ? myNat : undefined });
+  // Codex #94 P2: 게스트 전환·국적 소실 시 on 잔존 → emptySameNat 오노출 — 리셋 +
+  // 쿼리·빈 상태가 같은 effective 판정을 쓴다.
+  const filterActive = profileFilter && !isGuest && !!myNat;
+  React.useEffect(() => {
+    if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
+  }, [isGuest, myNat, profileFilter]);
+  const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
   const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
   const myId = me?.id;
@@ -216,7 +222,7 @@ export function ReviewFeed() {
             fill
             icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
             title={t('reviews.emptyTitle')}
-            body={t(profileFilter ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
+            body={t(filterActive ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
           />
         </ScreenCenterFill>
       ) : null}

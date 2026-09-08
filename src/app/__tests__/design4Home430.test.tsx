@@ -218,7 +218,7 @@ it('④ 리뷰 탭 컨트롤 — 프로필 토글(P-331: 같은 국적 필터 �
   expect(feed).toContain('testID="feed-sort"');
   // P-331(KB-487): 토글 = 같은 국적 필터 — countryCode 배선 잠금(게스트·국적 없음 미렌더는 유닛)
   expect(feed).toContain('testID="feed-profile-toggle"');
-  expect(feed).toContain("countryCode: profileFilter && !isGuest && myNat ? myNat : undefined");
+  expect(feed).toContain("countryCode: filterActive ? myNat : undefined");
   expect(feed).toContain("t('reviews.writeReview')"); // 플로팅 필 라벨
   for (const gone of ['feed-filter-country', 'feed-filter-food', 'feed-rating', 'IconPlus']) {
     expect(feed).not.toContain(gone);

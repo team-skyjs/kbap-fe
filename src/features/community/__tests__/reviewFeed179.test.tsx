@@ -320,6 +320,24 @@ describe('P-331: 프로필 토글 = 같은 국적 리뷰 필터', () => {
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBe(0);
   });
 
+  it('Codex #94 P2: on 상태에서 게스트 전환 → 필터 리셋(잔존 emptySameNat 오노출 금지)', () => {
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: 'US' }));
+    // 세션 만료 → 게스트 전환 시뮬레이션(리렌더)
+    mockIsGuest.mockReturnValue(true);
+    act(() => { tree.update(<ReviewFeed />); });
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: undefined }));
+    const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('reviews.emptyBody');
+    expect(texts).not.toContain('reviews.emptySameNat');
+  });
+
   it('토글 on + 0건 → emptySameNat 카피(off 빈 상태는 emptyBody 유지)', () => {
     mockFeed.mockReturnValue({
       data: { pages: [{ items: [], hasNext: false, nextCursor: null }] },
