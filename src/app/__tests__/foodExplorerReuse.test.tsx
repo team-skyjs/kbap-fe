@@ -178,9 +178,18 @@ it('⑥ P-321 Safe picks 2×2 그리드 — 회원+회피≥1+Popular+All에서�
     grid(t1)[0].findAll((n) => typeof n.props?.testID === 'string' && /^home-food-\d+$/.test(n.props.testID)).map((n) => n.props.testID as string),
   );
   expect(gridCardIds.size).toBe(4); // safe 5 중 4장(2×2)
-  // Codex #85 2R P2: 그리드 셀 = grow 차단 고정 하프 폭(홀수 마지막 카드 행 확장 방지)
+  // P-326: 셀 오버라이드 = flex:1 + width 지정 없음(47% 근사의 좌우 비대칭 폐기 —
+  // flex:1의 basis 0이 base width를 무력화해 행 내 균등 분할)
   const gc = grid(t1)[0].findAll((n) => n.props?.testID === 'home-food-1')[0];
-  expect(JSON.stringify(gc.props.style)).toContain('"flexGrow":0');
+  const over = (gc.props.style as Array<Record<string, unknown>>)[1];
+  expect(over.flex).toBe(1);
+  expect(over.width).toBeUndefined();
+  // 4장(짝수) = 빈 셀 없음
+  expect(grid(t1)[0].findAll((n) => n.props?.testID === 'home-safe-grid-filler' && typeof n.type === 'string')).toHaveLength(0);
+  // 3장(홀수) = 마지막 행 빈 셀 1개(카드 행 확장 방지 — #85 2R 유지)
+  mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2'), FOOD('3'), FOOD('4', 'danger')]));
+  const t3g = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  expect(grid(t3g)[0].findAll((n) => n.props?.testID === 'home-safe-grid-filler' && typeof n.type === 'string')).toHaveLength(1);
   // 게스트 → 숨김
   expect(grid(render(<FoodExplorer variant="embedded" guest srcTag="home" />))).toHaveLength(0);
   // 회피 0 → 숨김
