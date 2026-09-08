@@ -64,9 +64,10 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '9' } }) }));
+const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null } | undefined }));
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockFeed = jest.fn();
-jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean) => mockFeed(enabled) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
 
 import { ReviewFeed } from '../ReviewFeed';
 
@@ -90,6 +91,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockBlocked.mockReturnValue({ data: [] });
   mockIsGuest.mockReturnValue(false);
+  mockMe.mockReturnValue({ data: { id: '9', nationality: 'US' } });
   mockFeed.mockReturnValue({
     data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
     isLoading: false, isError: false, error: null, refetch: jest.fn(),
@@ -144,7 +146,7 @@ it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리�
 it('P-235: 게스트 = 열람 개방(무토큰 200) — 실데이터 렌더 + 게이트 카드 소멸', () => {
   mockIsGuest.mockReturnValue(true);
   const tree = render();
-  expect(mockFeed).toHaveBeenCalledWith(true); // 게스트도 호출(목이 enabled만 전달)
+  expect(mockFeed).toHaveBeenCalledWith(true, expect.objectContaining({ countryCode: undefined })); // 게스트도 호출(필터 없음)
   const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
   expect(texts).toContain('Amy'); // 실데이터
   expect(tree.root.findAll((n) => n.props?.testID === 'feed-guest-gate')).toHaveLength(0);
@@ -295,5 +297,40 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
     const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((x) => x.includes('common.retry'))).toBe(true);
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
+  });
+});
+
+// P-331(KB-487): "Filter by profile" = 같은 국적 필터
+describe('P-331: 프로필 토글 = 같은 국적 리뷰 필터', () => {
+  it('토글 on → useGlobalReviews에 countryCode=내 국적 전달(off = undefined)', () => {
+    const tree = render();
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: undefined }));
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: 'US' }));
+  });
+
+  it('게스트·국적 없음 = 토글 미렌더(KB-448 규칙) — 정렬 드롭다운은 유지', () => {
+    mockIsGuest.mockReturnValue(true);
+    let tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBe(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-sort').length).toBeGreaterThanOrEqual(1);
+    mockIsGuest.mockReturnValue(false);
+    mockMe.mockReturnValue({ data: { id: '9', nationality: null } });
+    tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBe(0);
+  });
+
+  it('토글 on + 0건 → emptySameNat 카피(off 빈 상태는 emptyBody 유지)', () => {
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    let texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('reviews.emptyBody');
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('reviews.emptySameNat');
   });
 });
