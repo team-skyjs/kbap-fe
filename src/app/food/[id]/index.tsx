@@ -70,7 +70,7 @@ function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; image
         uri={uri}
         onError={nextSource}
         contentFit={isCutout ? 'contain' : undefined}
-        style={isCutout ? { width: size * 0.82, height: size * 0.82 } : { width: size, height: size, borderRadius: 8 }}
+        style={isCutout ? { width: size * 0.74, height: size * 0.74 } : { width: size, height: size, borderRadius: 8 }} // P-344: 74% 공통
       />
     </>
   );
