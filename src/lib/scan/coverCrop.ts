@@ -33,24 +33,31 @@ export function coverCropRect(viewW: number, viewH: number, picW: number, picH: 
 }
 
 /**
- * P-338(KB-493): 방향 반영 크롭 — 가로 스캔이 세로 띠로 잘리던 결함의 수정 지점.
+ * P-338(KB-493) → Codex #99 P1 재설계: WYSIWYG 크롭의 방향 판정.
  *
- * 화면은 세로 잠금이라 뷰포트 치수는 항상 (W<H)로 들어오지만, 기기를 눕히면
- * 센서·뷰가 함께 회전해 "보이는 영역"의 물리 방향은 가로(H×W)가 된다. 사진은
- * EXIF 적용된 월드 방향(가로 = W>H)으로 오므로, 뷰포트를 (H,W)로 스왑해 같은
- * 좌표계에서 cover 역산하면 센서 공간 계산과 등가다(전치 검산 완료).
- * 사진 치수가 논리 방향과 어긋나면(가로 모드인데 W<H = EXIF 미적용 보고 치수)
- * 치수를 스왑해 계산 — expo-image-manipulator는 EXIF 적용 후(월드 방향) 픽셀에
- * 크롭을 적용하므로 rect는 월드 방향 좌표가 맞다.
+ * ① 방향 소스 = **캡처 사진 자체**(중력 camOrientation 아님) — 폰을 평평히 놓으면
+ *   gravity가 z축이라 orientationFromGravity가 portrait를 돌려주는 케이스(테이블
+ *   메뉴)에서 중력 판정이 틀린다. EXIF 적용 후 유효 치수가 W>H면 물리 가로 뷰포트
+ *   (뷰 H,W 스왑), 아니면 세로. `exif.Orientation` 6/8(90° 회전)이 오면 보고 치수를
+ *   raw로 보고 스왑해 "적용 후 치수"로 정규화한 뒤 판단한다.
+ * ② 크롭 rect는 **입력(보고된) 치수 좌표계 안**에서 생성 — 스왑은 뷰 비율 계산에만
+ *   쓰고, raw 보고 치수면 뷰 비율을 전치해 보고 공간에서 역산한다(경계 초과 없음 —
+ *   coverCropRect의 min/centered 불변식 상속).
  */
-export function orientedCoverCropRect(
+export function wysiwygCropRect(
   viewW: number,
   viewH: number,
   picW: number,
   picH: number,
-  landscape: boolean,
+  exifOrientation?: number,
 ): CropRect | null {
-  if (!landscape) return coverCropRect(viewW, viewH, picW, picH); // 세로 = 현행(P-025 검증 경로)
-  const [pw, ph] = picH > picW ? [picH, picW] : [picW, picH]; // EXIF 미적용 치수 방어
-  return coverCropRect(viewH, viewW, pw, ph);
+  if (!(viewW > 0 && viewH > 0 && picW > 0 && picH > 0)) return null;
+  const rotated = exifOrientation === 6 || exifOrientation === 8; // 보고 치수 = raw(90° 회전 전)
+  const effW = rotated ? picH : picW; // EXIF 적용 후(월드) 유효 치수
+  const effH = rotated ? picW : picH;
+  const landscape = effW > effH;
+  const [vw, vh] = landscape ? [viewH, viewW] : [viewW, viewH]; // 물리 방향 뷰포트
+  // 보고 좌표계로 환산: raw 치수면 뷰 비율도 전치 — rect는 항상 picW×picH 안
+  const [rvw, rvh] = rotated ? [vh, vw] : [vw, vh];
+  return coverCropRect(rvw, rvh, picW, picH);
 }

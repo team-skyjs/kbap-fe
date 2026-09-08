@@ -40,7 +40,7 @@ import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish 
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
-import { orientedCoverCropRect } from '@/lib/scan/coverCrop';
+import { wysiwygCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
@@ -377,20 +377,19 @@ export default function Scan() {
    * 미탑재 빌드에서 최상단 import는 앱 전체 크래시). 미탑재/실패 시 원본 그대로
    * 반환 — 크롭만 생략되고 스캔은 정상(재빌드 전 동작).
    */
-  async function cropToPreview(pic: NonNullable<Photo>): Promise<NonNullable<Photo>> {
+  async function cropToPreview(pic: NonNullable<Photo>, exifOrientation?: number): Promise<NonNullable<Photo>> {
     const view = previewSize.current;
-    // P-338(KB-493): 가로 모드 = 뷰포트 (H,W) 스왑 — 세로 비율로 계산하면
-    // "세로 전체+가로 중앙" 분기로 세로 띠만 남는다(9/8 실기). 사진 치수 어긋남
-    // 방어는 orientedCoverCropRect 안(EXIF 미적용 보고 치수 스왑).
-    const landscape = camOrientation === 'landscapeLeft' || camOrientation === 'landscapeRight';
-    const rect = view ? orientedCoverCropRect(view.width, view.height, pic.width, pic.height, landscape) : null;
+    // P-338 → Codex #99 P1: 방향 = **사진 자체**(EXIF 적용 유효 치수 W>H = 가로) —
+    // 중력(camOrientation) 판정은 평평히 놓은 촬영(z축)에서 틀린다. camOrientation은
+    // UI 회전 전용. rect는 보고 치수 좌표계 안(wysiwygCropRect ② 계약).
+    const rect = view ? wysiwygCropRect(view.width, view.height, pic.width, pic.height, exifOrientation) : null;
     if (!rect) return pic;
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { ImageManipulator, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
       const rendered = await ImageManipulator.manipulate(pic.uri).crop(rect).renderAsync();
       const saved = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-      console.log('[scan] WYSIWYG crop', JSON.stringify({ orientation: camOrientation, from: { w: pic.width, h: pic.height }, rect })); // P-338: 방향·치수 실측 로그
+      console.log('[scan] WYSIWYG crop', JSON.stringify({ gravity: camOrientation, exifOrientation, from: { w: pic.width, h: pic.height }, rect })); // P-338: 방향·치수 실측 로그(gravity = 진단용)
       deletePhotoFile(pic.uri); // 원본(과다 캡처)은 즉시 삭제 — 이후 수명은 크롭본 몫 (⑦ KB-137)
       return { uri: saved.uri, width: saved.width ?? rect.width, height: saved.height ?? rect.height };
     } catch (e) {
@@ -410,11 +409,11 @@ export default function Scan() {
     setError(null);
     track(EVENTS.scan_start, { source: 'camera' }); // P-144
     try {
-      const pic = await cam.takePictureAsync({ quality: 0.7 });
+      const pic = await cam.takePictureAsync({ quality: 0.7, exif: true }); // P-338: Orientation 태그 — raw 치수 정규화용
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
       if (!pic?.uri) return fail('capture', 'takePictureAsync returned no uri');
       // KB-202: 업로드·표시·OCR 전부 크롭본 기준 — 미리보기 밖은 어디에도 안 간다
-      const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 });
+      const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 }, (pic.exif as { Orientation?: number } | undefined)?.Orientation);
       await scanImage(cropped);
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
