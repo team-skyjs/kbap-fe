@@ -94,9 +94,14 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
+// P-323: 호출 인자(countryCode) 관찰용 스파이 — 기본 구현은 아래 beforeEach에서 주입
+const mockFoodReviews = jest.fn();
 jest.mock('@/lib/data/useFoodReviews', () => ({
-  useFoodReviews: () => ({
+  useFoodReviews: (...a: unknown[]) => mockFoodReviews(...a),
+}));
+const REVIEWS_PAGE = () => ({
     refetch: jest.fn(),
+    isLoading: false,
     data: {
       pages: [
         {
@@ -113,8 +118,7 @@ jest.mock('@/lib/data/useFoodReviews', () => ({
         },
       ],
     },
-  }),
-}));
+  });
 jest.mock('@/features/scan/ScanCoachMark', () => ({ ScanCoachMark: () => null, shouldShowCoachMark: async () => false, markCoachSeen: jest.fn() }));
 // KB-431: 재료 타일 이미지 소스 — 카탈로그 훅 표면 목(react-query 의존 차단)
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
@@ -168,6 +172,7 @@ beforeEach(() => {
   mockIsGuest.mockReturnValue(false);
   mockUseMe.mockReturnValue(ME);
   mockUseFoodDetail.mockReturnValue({ data: FOOD('caution'), isLoading: false, error: null, refetch: jest.fn() });
+  mockFoodReviews.mockImplementation(() => REVIEWS_PAGE());
 });
 
 it('히어로 — 사진 4:3 풀블리드, 무사진 = 낮은 폴백 블록', () => {
@@ -454,4 +459,65 @@ it('P-169: Helpful 탭 → 좋아요 API 배선(회원) — 행 오픈과 독립
   const { act } = require('react-test-renderer');
   act(() => helpful.props.onPress());
   expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+});
+
+/* ---------- P-323(KB-448): "{국가} only" 토글 — 게스트·null 국적·서버 필터 ---------- */
+
+it('P-323 ① 게스트 = 토글 미렌더(게이트 아님)', () => {
+  mockIsGuest.mockReturnValue(true);
+  expect(byId(render(<FoodDetailScreen />), 'detail-nat-toggle')).toHaveLength(0);
+});
+
+it('P-323 ② 회원 + 국적 null(구계정) = 토글 미렌더("US only" 폴백 소멸)', () => {
+  mockUseMe.mockReturnValue({ data: { ...ME.data, nationality: null } });
+  const tree = render(<FoodDetailScreen />);
+  expect(byId(tree, 'detail-nat-toggle')).toHaveLength(0);
+});
+
+it('P-323 ③ 토글 on = 서버 countryCode 쿼리(클라 3장 교집합 폐기) + 0장 = emptySameNat', () => {
+  // 국가 필터 쿼리는 빈 결과 — 서버 필터 경로가 실제로 쓰였는지 인자로 관찰
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode ? { ...REVIEWS_PAGE(), data: { pages: [{ items: [], hasNext: false, nextCursor: null }] } } : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(mockFoodReviews).toHaveBeenCalledWith('7', 'US'); // 서버 필터 파라미터
+  expect(byId(tree, 'detail-nat-empty').length).toBeGreaterThanOrEqual(1);
+  expect(flat(tree)).not.toContain('Great and safe for me'); // 클라 교집합 렌더 아님
+});
+
+it('P-323 ④ 토글 쿼리 로딩 = 스켈레톤(공백 금지)', () => {
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode ? { ...REVIEWS_PAGE(), isLoading: true, data: undefined } : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(byId(tree, 'detail-nat-skel').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'detail-nat-empty')).toHaveLength(0);
+});
+
+it('P-323 ⑤ 국가 필터 쿼리 실패 = 에러 표면 + 재시도(빈 문구로 위장 금지 — P-007)', () => {
+  const natRefetch = jest.fn();
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode
+      ? { ...REVIEWS_PAGE(), isError: true, error: new Error('HTTP 500'), data: undefined, refetch: natRefetch }
+      : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(byId(tree, 'detail-nat-error').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'detail-nat-empty')).toHaveLength(0); // false-empty 금지
+  expect(flat(tree)).not.toContain('Great and safe for me'); // 무필터 목록으로 위장도 금지
+  const retry = tree.root.findAll((n) => n.props?.testID === 'detail-nat-error')[0]
+    .findAll((n) => typeof n.props?.onPress === 'function')[0];
+  act(() => retry.props.onPress());
+  expect(natRefetch).toHaveBeenCalled();
+});
+
+it('P-323 ⑥ 차단 갱신 — 활성 natQ도 refetch(소스 잠금: 뮤테이션 무효화는 food prefix 자동 커버)', () => {
+  const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+  expect(src).toContain('if (natOnly) void natQ.refetch()');
 });

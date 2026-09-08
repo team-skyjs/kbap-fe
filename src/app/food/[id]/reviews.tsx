@@ -84,10 +84,12 @@ export default function FoodReviews() {
   const [sort, setSort] = useState<'recent' | 'rating'>('recent');
   const [sortSheet, setSortSheet] = useState(false); // KB-431 §2-4: 드롭다운 → ActionSheet
 
-  const nationality = me?.nationality ?? 'US';
+  // P-323(KB-448): 'US' 폴백 폐기 — 국적 미상(게스트·구계정 null)이면 토글 자체가
+  // 무의미해 미렌더(게이트 아님). null이면 sameNatOnly는 false로 남는다.
+  const nationality = me?.nationality ?? null;
   // P-085(KB-73): 같은 국적 필터 = 서버 countryCode 파라미터 (목 경로는 훅이 흉내).
   // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
-  const reviewsQ = useFoodReviews(id ?? '', sameNatOnly ? nationality : undefined);
+  const reviewsQ = useFoodReviews(id ?? '', sameNatOnly && nationality ? nationality : undefined);
   const loaded = reviewsQ.data != null;
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증 보조(확인되면 제거)
   const { data: blockedUsers } = useBlockedUsers();
@@ -198,7 +200,7 @@ export default function FoodReviews() {
                 우 정렬 드롭다운(현 2옵션 → ActionSheet). "KR only" 시안 = 현
                 같은 국적 필터에 매핑(전용 KR 파라미터 아님 — 카피는 현 키). */}
             <View style={styles.controlRow}>
-              {!isGuest ? (
+              {!isGuest && nationality ? (
                 /* 9/5 예진 판정(Q12): 라벨 = "{국가코드} only"(reviews.countryOnly) — 필터 의미는
                    현 같은 국적 리뷰(서버 countryCode 파라미터) 그대로 */
                 <Pressable style={styles.filterToggle} onPress={() => setSameNatOnly((v) => !v)} testID="same-nat-toggle">
