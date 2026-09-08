@@ -54,9 +54,11 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true) {
         .onUpdate((e) => {
           if (!closingRef.current) ty.value = Math.max(0, e.translationY);
         })
-        .onEnd((e) => {
+        // Codex #98 2R P2: 판정·복귀 = onFinalize(성공/취소 공통) — OS 인터럽트·경쟁
+        // 제스처로 pan이 취소되면 onEnd 미발화 → 시트가 중간에 멈추던 결함. 취소는 무조건 복귀.
+        .onFinalize((e, success) => {
           if (closingRef.current) return;
-          if (e.translationY >= DISMISS_DY || e.velocityY >= DISMISS_VY) dismiss();
+          if (success && (e.translationY >= DISMISS_DY || e.velocityY >= DISMISS_VY)) dismiss();
           else ty.value = withSpring(0, spring.sheet);
         }),
     [dismiss, ty],

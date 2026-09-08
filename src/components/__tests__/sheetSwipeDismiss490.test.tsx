@@ -28,7 +28,7 @@ jest.mock('react-native-reanimated', () => {
 import { useSheetSwipeDismiss } from '../useSheetSwipeDismiss';
 
 type PanEvent = { translationY: number; velocityY: number };
-type PanHandlers = { onUpdate?: (e: PanEvent) => void; onEnd?: (e: PanEvent) => void };
+type PanHandlers = { onUpdate?: (e: PanEvent) => void; onFinalize?: (e: PanEvent, success: boolean) => void };
 
 function mount(onClose: () => void, open = true) {
   const out: { swipe?: ReturnType<typeof useSheetSwipeDismiss> } = {};
@@ -47,27 +47,38 @@ it('임계 이상(이동 80 / 속도 500) → onClose 1회 · 임계 미만 → 
   const { handlers } = mount(onClose);
   // 미만 — 복귀
   handlers.onUpdate?.({ translationY: 40, velocityY: 0 });
-  handlers.onEnd?.({ translationY: 40, velocityY: 100 });
+  handlers.onFinalize?.({ translationY: 40, velocityY: 100 }, true);
   expect(onClose).not.toHaveBeenCalled();
   // 이동 임계
-  handlers.onEnd?.({ translationY: 90, velocityY: 0 });
+  handlers.onFinalize?.({ translationY: 90, velocityY: 0 }, true);
   expect(onClose).toHaveBeenCalledTimes(1);
 
   const onClose2 = jest.fn();
   const h2 = mount(onClose2).handlers;
   // 속도 임계(이동은 미만)
-  h2.onEnd?.({ translationY: 30, velocityY: 620 });
+  h2.onFinalize?.({ translationY: 30, velocityY: 620 }, true);
   expect(onClose2).toHaveBeenCalledTimes(1);
   // 단일 발사 — 임계 후 재발화 무시
-  h2.onEnd?.({ translationY: 200, velocityY: 900 });
+  h2.onFinalize?.({ translationY: 200, velocityY: 900 }, true);
   expect(onClose2).toHaveBeenCalledTimes(1);
+});
+
+it('Codex #98 2R P2: 제스처 취소(success=false) = 임계 초과여도 닫힘 0 — 무조건 스프링 복귀', () => {
+  const onClose = jest.fn();
+  const { handlers } = mount(onClose);
+  handlers.onUpdate?.({ translationY: 150, velocityY: 0 });
+  handlers.onFinalize?.({ translationY: 150, velocityY: 900 }, false); // OS 인터럽트·경쟁 제스처
+  expect(onClose).not.toHaveBeenCalled();
+  const src = require('fs').readFileSync('src/components/useSheetSwipeDismiss.ts', 'utf8') as string;
+  expect(src).toContain('.onFinalize((e, success)');
+  expect(src).not.toContain('.onEnd(');
 });
 
 it('Codex #98 P2: 퇴장 목표 = 시트 onLayout 실높이(측정 전 = 화면 높이 폴백)', () => {
   const { withTiming } = require('react-native-reanimated') as { withTiming: jest.Mock };
   const { handlers, swipe } = mount(jest.fn());
   (swipe as unknown as { onSheetLayout: (e: unknown) => void }).onSheetLayout({ nativeEvent: { layout: { height: 900 } } });
-  handlers.onEnd?.({ translationY: 120, velocityY: 0 });
+  handlers.onFinalize?.({ translationY: 120, velocityY: 0 }, true);
   expect(withTiming.mock.calls.at(-1)![0]).toBe(900); // 실높이만큼 이동
   // 측정 전 = 화면 높이 폴백(고정 640 소멸)
   const src = require('fs').readFileSync('src/components/useSheetSwipeDismiss.ts', 'utf8') as string;
