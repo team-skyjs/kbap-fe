@@ -13,11 +13,11 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    // 완료 콜백 즉시 발화(성공) — 퇴장 애니메이션 종단 = onClose 경로 검증
-    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
+    // 완료 콜백 즉시 발화(성공) — 퇴장 애니메이션 종단 = onClose 경로 검증(호출 기록 = 스파이)
+    withTiming: jest.fn((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
       if (cb) cb(true);
       return v;
-    },
+    }),
     runOnJS: (fn: (...a: unknown[]) => void) => fn,
     interpolate: () => 1,
     Extrapolation: { CLAMP: 'clamp' },
@@ -63,6 +63,18 @@ it('임계 이상(이동 80 / 속도 500) → onClose 1회 · 임계 미만 → 
   expect(onClose2).toHaveBeenCalledTimes(1);
 });
 
+it('Codex #98 P2: 퇴장 목표 = 시트 onLayout 실높이(측정 전 = 화면 높이 폴백)', () => {
+  const { withTiming } = require('react-native-reanimated') as { withTiming: jest.Mock };
+  const { handlers, swipe } = mount(jest.fn());
+  (swipe as unknown as { onSheetLayout: (e: unknown) => void }).onSheetLayout({ nativeEvent: { layout: { height: 900 } } });
+  handlers.onEnd?.({ translationY: 120, velocityY: 0 });
+  expect(withTiming.mock.calls.at(-1)![0]).toBe(900); // 실높이만큼 이동
+  // 측정 전 = 화면 높이 폴백(고정 640 소멸)
+  const src = require('fs').readFileSync('src/components/useSheetSwipeDismiss.ts', 'utf8') as string;
+  expect(src).toContain('sheetH.current || winH');
+  expect(src).not.toContain('EXIT_Y');
+});
+
 it('위로 드래그는 0 고정(음수 translateY 미추종)', () => {
   const { handlers, swipe } = mount(jest.fn());
   handlers.onUpdate?.({ translationY: -60, velocityY: 0 });
@@ -78,9 +90,11 @@ it('배선 — TagPickerSheet·온보딩 약관 시트: 제스처 영역 = 핸�
   expect(co).toContain('useSheetSwipeDismiss(onClose, kind != null)');
   expect(co).toMatch(/<GestureDetector gesture=\{swipe\.gesture\}>[^]*?pickerHeader[^]*?<\/GestureDetector>/);
   expect(co).toContain('testID="sheet-grab"');
+  expect(co).toContain('onLayout={swipe.onSheetLayout}');
   expect(co).toMatch(/sheet-grab[^]*?accessibilityLabel=\{t\('common\.close'\)\}|accessibilityLabel=\{t\('common\.close'\)\}[^]*?sheet-grab/);
   const ob = read('src/app/onboarding/index.tsx');
   expect(ob).toContain('useSheetSwipeDismiss(onClose, doc != null)');
+  expect(ob).toContain('onLayout={swipe.onSheetLayout}');
   expect(ob).toMatch(/<GestureDetector gesture=\{swipe\.gesture\}>[^]*?sheetTitle[^]*?<\/GestureDetector>/);
   // 리스트/본문(ScrollView·FlatList)은 GestureDetector 블록 밖 — 스크롤 우선
   const coBlock = /<GestureDetector gesture=\{swipe\.gesture\}>([^]*?)<\/GestureDetector>/.exec(co)![1];

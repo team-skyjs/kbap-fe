@@ -536,7 +536,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
       <Animated.View style={[styles.sheetScrim, swipe.dimStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
-      <Animated.View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }, swipe.sheetStyle]}>
+      <Animated.View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
         <GestureDetector gesture={swipe.gesture}>
           <View>{/* P-337 제스처 영역 = 핸들 + 제목(본문 스크롤 우선) */}
             <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={10} testID="sheet-grab">

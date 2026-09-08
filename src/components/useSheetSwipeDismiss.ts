@@ -12,18 +12,25 @@
  * 재사용 시트(마운트 유지형)는 open 전환 시 훅이 translateY를 0으로 리셋한다.
  */
 import * as React from 'react';
+import { useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { spring } from '@/lib/motion';
 
 const DISMISS_DY = 80;
 const DISMISS_VY = 500; // pt/s
-const EXIT_Y = 640; // 시트 높이 상회 — 퇴장 목표
 const DIM_RANGE = 280; // 이만큼 끌면 딤 최저
 
 export function useSheetSwipeDismiss(onClose: () => void, open = true) {
   const ty = useSharedValue(0);
   const closingRef = React.useRef(false);
+  // Codex #98 P2: 퇴장 목표 = 시트 실높이(onLayout) — 고정 640은 844폰·태블릿에서
+  // 시트가 남은 채 Modal이 사라짐. 측정 전 폴백 = 화면 높이(항상 화면 밖 보장).
+  const winH = useWindowDimensions().height;
+  const sheetH = React.useRef(0);
+  const onSheetLayout = React.useCallback((e: LayoutChangeEvent) => {
+    sheetH.current = e.nativeEvent.layout.height;
+  }, []);
   React.useEffect(() => {
     if (open) {
       ty.value = 0; // 마운트 유지형 시트 재오픈 — 이전 드래그 잔존 제거
@@ -34,11 +41,11 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true) {
   const dismiss = React.useCallback(() => {
     if (closingRef.current) return; // 임계 통과 후 재발화 방지(단일 발사)
     closingRef.current = true;
-    ty.value = withTiming(EXIT_Y, { duration: 180 }, (finished) => {
+    ty.value = withTiming(sheetH.current || winH, { duration: 180 }, (finished) => {
       'worklet'; // 완료 콜백은 UI 스레드(P-065 지시자 필수) — JS 복귀는 runOnJS
       if (finished) runOnJS(onClose)();
     });
-  }, [onClose, ty]);
+  }, [onClose, ty, winH]);
 
   const gesture = React.useMemo(
     () =>
@@ -59,7 +66,7 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true) {
   const dimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(ty.value, [0, DIM_RANGE], [1, 0.25], Extrapolation.CLAMP),
   }));
-  return { gesture, sheetStyle, dimStyle };
+  return { gesture, sheetStyle, dimStyle, onSheetLayout };
 }
 
 export default useSheetSwipeDismiss;

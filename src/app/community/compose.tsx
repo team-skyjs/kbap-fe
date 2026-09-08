@@ -470,7 +470,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
       <View style={styles.pickerBackdrop}>
         {/* P-337: 딤 전용 레이어 — 시트 드래그에 비례 페이드(시트 컨테이너에 걸면 시트도 바랜다) */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.pickerDim, swipe.dimStyle]} pointerEvents="none" />
-        <Animated.View style={[styles.pickerSheet, swipe.sheetStyle]}>
+        <Animated.View style={[styles.pickerSheet, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
           <GestureDetector gesture={swipe.gesture}>
             <View>{/* P-337 제스처 영역 = 핸들 + 제목 헤더(내부 리스트 스크롤 우선) */}
               <Pressable
