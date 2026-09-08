@@ -146,7 +146,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
           labelKo={t('ranking.reviewsLabelKo')}
           detail={bd ? t('ranking.reviewsDetail', { count: bd.reviews.count }) : ''}
           detailColor={C.ink3}
-          pts={bd ? t('ranking.gain', { points: bd.reviews.points }) : undefined}
+          points={bd?.reviews.points}
         />
         <View style={styles.breakDiv} />
         <BreakCol
@@ -155,7 +155,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
           labelKo={t('ranking.diversityLabelKo')}
           detail={bd ? t('ranking.diversityDetail', { count: bd.diversity.count }) : ''}
           detailColor={C.ink3}
-          pts={bd ? t('ranking.gain', { points: bd.diversity.points }) : undefined}
+          points={bd?.diversity.points}
         />
         <View style={styles.breakDiv} />
         <BreakCol
@@ -164,7 +164,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
           labelKo={t('ranking.scansLabelKo')}
           detail={bd ? t('ranking.scansDetail', { count: bd.scans.count }) : ''}
           detailColor={C.ink3}
-          pts={bd ? t('ranking.gain', { points: bd.scans.points }) : undefined}
+          points={bd?.scans.points}
         />
       </View>
 
@@ -207,31 +207,34 @@ function RankingBody({ rk }: { rk: Ranking }) {
   );
 }
 
-/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(P-283: 3칸 전부 활성 — locked 소멸). */
+/** 내역 카드 열 — 아이콘 원 40 + 제목/ko + 설명 + 점수 필(P-283: 3칸 전부 활성 — locked 소멸).
+ *  Codex #89 P2: 비활성 판정 = **숫자 points**(없음·0) — 포맷("+n")은 필 안에서. */
 function BreakCol({
   icon,
   label,
   labelKo,
   detail,
   detailColor,
-  pts,
+  points,
 }: {
   icon: React.ReactNode;
   label: string;
   labelKo: string;
   detail: string;
   detailColor: string;
-  pts?: string;
+  points?: number;
 }) {
+  const { t } = useTranslation();
+  const active = points != null && points > 0;
   return (
     <View style={styles.breakCol}>
       <View style={styles.breakIc}>{icon}</View>
       <Text style={styles.breakLabel} numberOfLines={1}>{label}</Text>
       <Text style={styles.breakKo} numberOfLines={1}>{labelKo}</Text>
       <Text style={[styles.breakDetail, { color: detailColor }]} numberOfLines={2}>{detail}</Text>
-      {/* P-327: 비활성 = opacity 0.2 + "-" */}
-      <View style={[styles.gainPill, !pts && { opacity: 0.2 }]}>
-        <Text style={styles.gainText}>{pts ?? '-'}</Text>
+      {/* P-327: 비활성(0점 포함) = opacity 0.2 + "-" */}
+      <View style={[styles.gainPill, !active && { opacity: 0.2 }]} testID={active ? 'gain-active' : 'gain-inactive'}>
+        <Text style={styles.gainText}>{active ? t('ranking.gain', { points }) : '-'}</Text>
       </View>
     </View>
   );

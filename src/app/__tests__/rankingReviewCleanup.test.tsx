@@ -81,7 +81,9 @@ it('P-283(9/5 예진): 점수 내역 3칸 전부 활성 — 리뷰·다양성·�
   expect(texts(tree, 'ranking.diversityDetail')).toBeGreaterThanOrEqual(1); // n unique dishes × 5 pts
   expect(texts(tree, 'ranking.scansDetail')).toBeGreaterThanOrEqual(1); // n menu scans × 2 pts
   expect(texts(tree, 'ranking.reviewsComing')).toBe(0); // 잠금 하드코딩 소멸
-  expect(texts(tree, 'ranking.gain')).toBeGreaterThanOrEqual(3); // 점수 필 3개(+points)
+  // Codex #89 P2: 0점 칸(리뷰 0) = 비활성 필('-') — 활성 gain 2 + 비활성 1(숫자 판정)
+  expect(tree.root.findAll((n) => n.props?.testID === 'gain-active' && typeof n.type === 'string')).toHaveLength(2);
+  expect(tree.root.findAll((n) => n.props?.testID === 'gain-inactive' && typeof n.type === 'string')).toHaveLength(1);
   const src = require('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
   expect(src).not.toContain('D4Lock'); // 자물쇠 소멸
   expect(src).not.toContain('#30C120'); // 하드코드 색 소멸
@@ -156,4 +158,13 @@ it('P-328: My Foods 두 탭 빈 상태 = EmptyBlock + ScreenCenterFill(소스 �
   expect((src.match(/<ScreenCenterFill>/g) ?? []).length).toBe(2);
   expect(src).not.toContain('goScanCta');
   expect(src).not.toContain('emptyScansBody');
+});
+
+it('Codex #89 P2: ScreenCenterFill = box-none — 오버레이가 헤더·탭 터치를 안 삼킨다', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ScreenCenterFill } = require('@/components/StateBlock') as typeof import('@/components/StateBlock');
+  const { View } = require('react-native');
+  const tree = render(React.createElement(ScreenCenterFill, null, React.createElement(View)));
+  const fill = tree.root.findAll((n) => n.props?.pointerEvents === 'box-none');
+  expect(fill.length).toBeGreaterThanOrEqual(1);
 });
