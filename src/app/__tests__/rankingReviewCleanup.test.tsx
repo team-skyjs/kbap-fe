@@ -43,18 +43,17 @@ jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', script: 'latin' }) }));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => 0 }));
-jest.mock('@/lib/data/useRanking', () => ({
-  useRanking: () => ({
-    data: {
-      tier: 'taster', level: 2, score: 45, nextTier: 'explorer', pointsToNext: 35,
-      breakdown: {
-        reviews: { count: 0, points: 0 },
-        diversity: { count: 5, points: 25 },
-        scans: { count: 4, points: 20 },
-      },
-    },
-  }),
-}));
+const RK_DEFAULT = () => ({
+  tier: 'taster', level: 2, score: 45, nextTier: 'explorer', pointsToNext: 35,
+  breakdown: {
+    reviews: { count: 0, points: 0 },
+    diversity: { count: 5, points: 25 },
+    scans: { count: 4, points: 20 },
+  },
+});
+const mockRk: { data: ReturnType<typeof RK_DEFAULT> } = { data: RK_DEFAULT() };
+jest.mock('@/lib/data/useRanking', () => ({ useRanking: () => mockRk }));
+beforeEach(() => { mockRk.data = RK_DEFAULT(); });
 
 import RankingScreen from '../profile/ranking';
 
@@ -110,5 +109,51 @@ it('KB-434: 진행 별 그리드 — 간격 30 이하 = 별 30개(스캔 CTA·�
   expect(STAR_GRID_MAX).toBe(30); // 6열 × 5행(시안 4150:14720)
   const src = require('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
   expect(src).toContain('span > 0 && span <= STAR_GRID_MAX'); // 그리드/바 분기 소스 잠금
-  expect(src).toContain('<PointStar key={i} filled={i < gained} />');
+  // P-327: 5각 PointStar → 12각 RankPointBadge(수저 글리프), 6칸 행 단위 chunk
+  expect(src).toContain('<RankPointBadge on={i < gained} />');
+  expect(src).toContain('chunk6(');
+});
+
+it('P-327: 배지 on/off 색·개수 + 6칸 chunk + NOW 카드만 보더', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { tierByKey } = require('@/lib/ranking') as typeof import('@/lib/ranking');
+  const cur = tierByKey('newcomer')!;
+  const next = tierByKey('taster')!;
+  const span = next.at - cur.at; // 30 = 그리드 케이스
+  const score = cur.at + 8;
+  mockRk.data = { ...RK_DEFAULT(), tier: 'newcomer', level: 1, score, nextTier: 'taster' };
+  const gained = Math.max(0, Math.min(span, score - cur.at));
+  const tree = render(<RankingScreen />);
+  const on = tree.root.findAll((n) => n.props?.testID === 'rank-badge-on' && typeof n.type === 'string');
+  const off = tree.root.findAll((n) => n.props?.testID === 'rank-badge-off' && typeof n.type === 'string');
+  expect(on.length).toBe(gained);
+  expect(on.length + off.length).toBe(span);
+  // on = 12각 스타 primary fill + 흰 글리프 / off = #F2F3F6 + #D1D3D8 글리프(예진 확인 대기)
+  const onNode = tree.root.findAll((n) => n.props?.testID === 'rank-badge-on')[0];
+  expect(onNode.findAll((c) => c.props?.fill === '#FF7134').length).toBeGreaterThanOrEqual(1);
+  const offNode = tree.root.findAll((n) => n.props?.testID === 'rank-badge-off')[0];
+  expect(offNode.findAll((c) => c.props?.fill === '#F2F3F6').length).toBeGreaterThanOrEqual(1);
+  expect(offNode.findAll((c) => c.props?.stroke === '#D1D3D8').length).toBeGreaterThanOrEqual(1);
+  // 6칸 행 단위
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { chunk6 } = require('../profile/ranking') as typeof import('../profile/ranking');
+  expect(chunk6(Array.from({ length: span }, (_, i) => i)).length).toBe(Math.ceil(span / 6));
+  // NOW 카드만 보더(비현재 = 보더 없음)
+  const now = tree.root.findAll((n) => n.props?.testID === 'rank-now')[0];
+  expect(JSON.stringify(now.props.style)).toContain('"borderColor":"#FF7134"');
+  const others = tree.root.findAll(
+    (n) => typeof n.props?.testID === 'string' && /^rank-[a-z]+$/.test(n.props.testID) && n.props.testID !== 'rank-now',
+  );
+  expect(others.length).toBeGreaterThanOrEqual(1);
+  for (const o of others) expect(JSON.stringify(o.props.style)).not.toContain('borderColor');
+});
+
+it('P-328: My Foods 두 탭 빈 상태 = EmptyBlock + ScreenCenterFill(소스 잠금) · Go scan CTA 소멸', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/app/profile/my-foods.tsx', 'utf8') as string;
+  expect(src).toContain('testID="orders-empty"');
+  expect(src).toContain('testID="scans-empty"');
+  expect((src.match(/<ScreenCenterFill>/g) ?? []).length).toBe(2);
+  expect(src).not.toContain('goScanCta');
+  expect(src).not.toContain('emptyScansBody');
 });

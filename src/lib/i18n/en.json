@@ -1008,7 +1008,6 @@
     "emptyOrdersTitle": "No orders yet",
     "emptyOrdersBody": "Order from a scanned menu and your history shows up here.",
     "emptyScansTitle": "No scans yet",
-    "emptyScansBody": "Scan a menu and the dishes you've checked show up here.",
     "dishes": "Dishes",
     "receiptDate": "DATE",
     "receiptLocation": "LOCATION",
