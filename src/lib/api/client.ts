@@ -40,7 +40,11 @@ import { getInstallationId } from '../installationId';
 /** 유일 헤더 예외 엔드포인트 — 무인증·X-API-Version 자체가 없는 버전 게이트. */
 export const APP_VERSION_PATH = '/api/app-version';
 
-const API_VERSION_HEADER = '1.0';
+/** KB-496: 1.0 → 1.1 — 푸시 토큰 API(1.1 전용)·인증 API 기기-회원 연결(1.1 매핑)을 위해
+ *  전역 승격. dev Swagger 실측(2026-09-08): 1.1 그룹 = 1.0 그룹 78개 전부 + 토큰 API 1개,
+ *  1.0 전용 엔드포인트 0 — 엔드포인트 매핑은 "이상" 시맨틱이라 기존 호출 무영향.
+ *  개별 override(프로필 PATCH·온보딩 1.1, 스캔 2.0)는 그대로(동치·무해). */
+const API_VERSION_HEADER = '1.1';
 
 /** 기기/앱 헤더 — 형식 고정: `iOS 18.1` / `AOS 14`(안드는 API 레벨 아닌 릴리스). */
 function deviceHeaders(): Record<string, string> {
