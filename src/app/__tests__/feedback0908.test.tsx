@@ -21,11 +21,16 @@ it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)�
   expect(mod).toContain('!isGuest && !target.anonymized && !target.reportOnly');
   const rf = read('src/features/community/ReviewFeed.tsx');
   expect(rf).toContain('anonymized: item.anonymized === true');
+  // Codex #100 P2 ①: 상세 프리뷰 showMore 게이트 잔존 제거 — showMore prop 소비처 0(기본 true)
+  const fd = read('src/app/food/[id]/index.tsx');
+  expect(fd).not.toContain('showMore={');
+  expect(fd).toContain('anonymized: r.anonymized === true');
 });
 
-it('③ Helpful 폭 고정 — 고스트(99) 예약 + tabular-nums + 실라벨 absolute 중앙(색만 전환)', () => {
+it('③ Helpful 폭 고정 — 고스트(99+) 예약 + tabular-nums + 실라벨 absolute 중앙 + ≥100 컴팩트', () => {
   const rc = read('src/features/review/ReviewCellParts.tsx');
-  expect(rc).toContain("t('reviews.helpful', { count: 99 })");
+  expect(rc).toContain("count: '99+' as unknown as number"); // 고스트 = 최대 표기 예약
+  expect(rc).toContain("(review.likes ?? 0) > 99 ? '99+'"); // Codex #100 P2: 컴팩트 표기
   expect(rc).toContain("helpfulGhost: { opacity: 0, fontVariant: ['tabular-nums'] }");
   expect(rc).toContain("helpfulReal: { position: 'absolute', left: 0, right: 0, textAlign: 'center', fontVariant: ['tabular-nums'] }");
 });

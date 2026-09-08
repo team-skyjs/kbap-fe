@@ -382,11 +382,12 @@ export function HelpfulButton({
       {/* P-339 ③(KB-494): 폭 고정 — 고스트(99 = 2자리 예약)가 폭을 소유, 실라벨은 그 위 중앙.
           tabular-nums로 같은 자릿수 흔들림도 제거. 눌림 상태는 색만(P-151). */}
       <View>
+        {/* Codex #100 P2: ≥100은 "99+" 컴팩트 — 고스트도 같은 표기로 예약(폭 상한 불변) */}
         <Text style={[styles.helpful, styles.helpfulGhost]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {t('reviews.helpful', { count: 99 })}
+          {t('reviews.helpful', { count: '99+' as unknown as number })}
         </Text>
         <Text style={[styles.helpful, styles.helpfulReal, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]} numberOfLines={1}>
-          {t('reviews.helpful', { count: review.likes ?? 0 })}
+          {t('reviews.helpful', { count: ((review.likes ?? 0) > 99 ? '99+' : (review.likes ?? 0)) as unknown as number })}
         </Text>
       </View>
     </Pressable>

@@ -536,7 +536,7 @@ function Registered({
               t={t}
               mine={r.memberId != null && r.memberId === myId}
               showFood={false} /* 자기 자신 음식 칩 무의미 */
-              showMore={!r.anonymized}
+              /* P-339 ② 2R: 탈퇴 리뷰도 ⋯(신고만) — showMore 게이트 잔존 제거 */
               onOpenFood={() => {}}
               onGuestHelpful={() => setGateOpen(true)}
               onMore={() =>
@@ -545,6 +545,7 @@ function Registered({
                   id: r.id,
                   author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
                   mine: r.memberId != null && r.memberId === myId,
+                  anonymized: r.anonymized === true,
                 })
               }
             />
