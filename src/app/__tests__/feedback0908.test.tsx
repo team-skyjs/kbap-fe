@@ -36,7 +36,7 @@ it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)�
 
 it('③ Helpful 폭 고정 — P-342 ①로 대체: 61×30 고정 버튼 + 99+ 컴팩트(feedback0908b가 정본 잠금)', () => {
   const rc = read('src/features/review/ReviewCellParts.tsx');
-  expect(rc).toMatch(/helpfulBtn: \{ width: 61, height: 30/); // 고정 폭 계약 유지(방식만 교체)
+  expect(rc).toMatch(/helpfulBtn: \{ minWidth: 61, height: 30/); // 고정 폭 계약(2R: 99+ 자연 확장)
   expect(rc).toContain("(review.likes ?? 0) > 99 ? '99+'"); // Codex #100 P2: 컴팩트 표기
 });
 

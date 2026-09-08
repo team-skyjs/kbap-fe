@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
-  helpfulBtn: { width: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 4, backgroundColor: '#FFFFFF' }, // P-342 ①: 61×30 고정
+  helpfulBtn: { minWidth: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 4, backgroundColor: '#FFFFFF' }, // P-342 ① 2R: 시안 61 = 보더 포함 — pad 12/6+border 1, 2자리 = 61·99+만 자연 확장
   helpfulBtnOn: { borderColor: C.primary }, // 눌림 = 스트로크 색만(프레임 불변)
   helpfulCount: { fontSize: 12, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
   helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },

@@ -3,7 +3,7 @@ const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
 it('① Helpful = 아이콘+숫자 61×30 고정 — "Helpful (n)" 텍스트 폐기·눌림 = #FF7134 스트로크(색만)·99+ 유지·a11y 기존 키', () => {
   const rc = read('src/features/review/ReviewCellParts.tsx');
-  expect(rc).toMatch(/helpfulBtn: \{ width: 61, height: 30/);
+  expect(rc).toMatch(/helpfulBtn: \{ minWidth: 61, height: 30, [^}]*paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1/); // 2R: 61 = 보더 포함, 99+ 자연 확장
   expect(rc).toContain('helpfulBtnOn: { borderColor: C.primary }');
   expect(rc).toContain("helpfulCount: { fontSize: 12, fontWeight: '700', color: '#2F3137'");
   expect(rc).toContain("(review.likes ?? 0) > 99 ? '99+' : String(review.likes ?? 0)");
