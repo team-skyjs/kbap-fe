@@ -56,7 +56,7 @@ it('⑤ 북마크 상단 토스트 — 공용 호스트(루트 1개) + 토글 �
   expect(bm).toContain("showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'))");
   expect(bm).toContain("showTopToast(i18n.t('saved.error'))");
   const tt = read('src/components/TopToast.tsx');
-  expect(tt).toContain("top: insets.top + 56 + 8"); // 헤더 아래 고정
+  expect(tt).toContain("top: insets.top + 8"); // P-343: 최상단 오버레이(헤더 위)
 });
 
 it('⑤-b 토스트 호스트 동작 — showTopToast → 렌더, 1.5s 후 소멸', () => {
