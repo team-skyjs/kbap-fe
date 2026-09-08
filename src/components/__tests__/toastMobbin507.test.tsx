@@ -114,4 +114,7 @@ it('#108 P2 ①: 퇴장 진행 중 재발화 → stale 언마운트 무시(표�
 it('#108 P2 ②: 토스트 본체 box-none — 필 아래 UI 탭 투과(Close만 히트)', () => {
   const tt = read('src/components/TopToast.tsx');
   expect(tt).toMatch(/<Animated\.View style=\{\[styles\.toast, anim\]\} pointerEvents="box-none">/);
+  // 2R: 자식(아이콘·텍스트)도 none — Close만 히트
+  expect(tt).toContain('<View style={styles.checkDot} pointerEvents="none">');
+  expect(tt).toContain('numberOfLines={2} pointerEvents="none"');
 });

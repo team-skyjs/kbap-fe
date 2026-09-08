@@ -100,14 +100,17 @@ export function TopToastHost() {
     <View style={[styles.wrap, { top: insets.top + 8 }]} pointerEvents="box-none" testID="top-toast">
       {/* #108 P2 ②: 필 아래 UI 탭 투과 — Close만 히트 */}
       <Animated.View style={[styles.toast, anim]} pointerEvents="box-none">
+        {/* #108 2R: 자식도 히트 제외(none) — Close Pressable만 auto */}
         {msg.error ? (
-          <IconAlertTri size={22} color="#FFFFFF" />
+          <View pointerEvents="none">
+            <IconAlertTri size={22} color="#FFFFFF" />
+          </View>
         ) : (
-          <View style={styles.checkDot}>
+          <View style={styles.checkDot} pointerEvents="none">
             <IconCheck size={12} color="#2F3137" />
           </View>
         )}
-        <Text style={styles.text} numberOfLines={2}>{msg.text}</Text>
+        <Text style={styles.text} numberOfLines={2} pointerEvents="none">{msg.text}</Text>
         <Pressable onPress={dismiss} hitSlop={12} testID="top-toast-close">
           <Text style={styles.close}>{t('common.close')}</Text>
         </Pressable>
