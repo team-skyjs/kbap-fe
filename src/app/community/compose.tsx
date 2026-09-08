@@ -19,7 +19,7 @@ import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { RemoteImage } from '@/components/RemoteImage';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
@@ -467,6 +467,9 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      {/* Codex #98 3R P2: RN Modal은 안드에서 별도 네이티브 루트 — 앱 레벨
+          GestureHandlerRootView가 안 닿아 스와이프가 무동작. Modal 안 자체 루트 필수. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.pickerBackdrop}>
         {/* P-337: 딤 전용 레이어 — 시트 드래그에 비례 페이드(시트 컨테이너에 걸면 시트도 바랜다) */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.pickerDim, swipe.dimStyle]} pointerEvents="none" />
@@ -640,6 +643,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
           )}
         </Animated.View>
       </View>
+      </GestureHandlerRootView>
       <KeyboardDismissBar modal />
     </Modal>
   );

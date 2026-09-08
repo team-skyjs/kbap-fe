@@ -31,6 +31,20 @@ jest.mock('react-native-reanimated', () => {
     useHandler: () => ({ context: {}, doDependenciesDiffer: false, useWeb: false }),
   };
 });
+// P-337 3R: Modal 내 GestureHandlerRootView — jest엔 네이티브 install 부재라 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'onStart', 'onUpdate', 'onEnd', 'onFinalize']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain },
+  };
+});
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };

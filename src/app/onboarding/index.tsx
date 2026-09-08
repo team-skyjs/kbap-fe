@@ -27,7 +27,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
-import { GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -533,6 +533,8 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 
   return (
     <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
+      {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[styles.sheetScrim, swipe.dimStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
@@ -567,6 +569,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
         </ScrollView>
         <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
       </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }

@@ -102,10 +102,13 @@ it('배선 — TagPickerSheet·온보딩 약관 시트: 제스처 영역 = 핸�
   expect(co).toMatch(/<GestureDetector gesture=\{swipe\.gesture\}>[^]*?pickerHeader[^]*?<\/GestureDetector>/);
   expect(co).toContain('testID="sheet-grab"');
   expect(co).toContain('onLayout={swipe.onSheetLayout}');
+  // Codex #98 3R P2: 안드 Modal 별도 루트 — Modal 내부 GestureHandlerRootView 필수
+  expect(co).toMatch(/<Modal[^]*?GestureHandlerRootView style=\{\{ flex: 1 \}\}/);
   expect(co).toMatch(/sheet-grab[^]*?accessibilityLabel=\{t\('common\.close'\)\}|accessibilityLabel=\{t\('common\.close'\)\}[^]*?sheet-grab/);
   const ob = read('src/app/onboarding/index.tsx');
   expect(ob).toContain('useSheetSwipeDismiss(onClose, doc != null)');
   expect(ob).toContain('onLayout={swipe.onSheetLayout}');
+  expect(ob).toMatch(/visible=\{doc != null\}[^]*?GestureHandlerRootView style=\{\{ flex: 1 \}\}/);
   expect(ob).toMatch(/<GestureDetector gesture=\{swipe\.gesture\}>[^]*?sheetTitle[^]*?<\/GestureDetector>/);
   // 리스트/본문(ScrollView·FlatList)은 GestureDetector 블록 밖 — 스크롤 우선
   const coBlock = /<GestureDetector gesture=\{swipe\.gesture\}>([^]*?)<\/GestureDetector>/.exec(co)![1];
