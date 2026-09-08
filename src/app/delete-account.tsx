@@ -144,12 +144,13 @@ export default function DeleteAccount() {
       {/* P-329: FixedBottom — 헤어라인 없음 · Cancel grow / Delete 폭 200 고정
           (primary 오렌지 — danger 빨강 금지, 예진 확정 9/5) */}
       <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="delete-bottom-bar">
-        <View style={{ flex: 1 }}>
+        {/* Codex #90 P2: 고정 200은 320폭에서 Cancel 압사 — 시안 비율 3:5(375 = 120/200) */}
+        <View style={{ flex: 3 }}>
           <Btn variant="ghost" onPress={() => router.back()}>
             {t('profile.delete.cancel')}
           </Btn>
         </View>
-        <View style={styles.deleteSlot}>
+        <View style={{ flex: 5 }}>
           <Btn
             variant={agreed ? 'primary' : 'off'}
             onPress={agreed && !withdrawing ? onConfirm : undefined}
@@ -204,7 +205,6 @@ const styles = StyleSheet.create({
 
   // 헤어라인 없음(구 borderTop 제거) · Delete = 폭 200 고정, Cancel grow
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF' },
-  deleteSlot: { width: 200 },
 
   // KB-162 Apple 재인증 게이트 (D-1 Alert 카드 문법)
   gateBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 20, padding: 28 },

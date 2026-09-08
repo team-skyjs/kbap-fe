@@ -7,7 +7,8 @@ it('P-329 탈퇴 — 카드2 아이콘 없음·텍스트 left·Delete 폭 200·�
   const src = read('src/app/delete-account.tsx');
   expect((src.match(/<D4OctagonAlert/g) ?? []).length).toBe(1); // 카드1만
   expect(src).toContain("textAlign: 'left'");
-  expect(src).toContain('deleteSlot: { width: 200 }');
+  expect(src).toContain('{ flex: 3 }'); // Codex #90 P2: Cancel 3 / Delete 5(시안 비율 120:200)
+  expect(src).toContain('{ flex: 5 }');
   expect(src).toContain("borderWidth: 1.5, borderColor: '#DCDEE3'");
   expect(src).not.toMatch(/bottomBar: \{[^}]*borderTop/); // FixedBottom 헤어라인 없음
 });
