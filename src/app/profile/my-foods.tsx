@@ -13,9 +13,9 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
-import { IconScanLines, IconChevron, SubHeader, Spinner } from '@/components';
+import { IconChevron, SubHeader, Spinner } from '@/components';
 import { D4MapPin } from '@/components/design4Assets';
-import { EmptyBlock, QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyFoods } from '@/components/Skeleton';
 import { useOrders, type OrderSummary } from '@/lib/data/useOrders';
 import { useScannedFoods } from '@/lib/data/useFoods';
@@ -37,17 +37,8 @@ export default function MyFoodsScreen() {
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
-  const goScan = () => router.navigate('/scan'); // P-246: 연타 가드 승계
-  const empty = (titleKey: string, bodyKey: string) => (
-    <ScreenCenterFill>
-      <StateBlock
-        icon={<IconScanLines size={38} color={stateIconColor.default} />}
-        title={t(titleKey)}
-        body={t(bodyKey)}
-        primary={{ label: t('community.goScanCta'), onPress: goScan }}
-      />
-    </ScreenCenterFill>
-  );
+  // P-328(KB-486): 두 탭 빈 상태 = 디자이너 EmptyBlock(4003:7348 — circle-dashed + 1줄)
+  // + ScreenCenterFill 화면 세로 중앙(P-196). Scanned의 본문·Go scan CTA 제거(시안 CTA 없음).
 
   return (
     <View style={styles.root}>
@@ -70,8 +61,9 @@ export default function MyFoodsScreen() {
           /* P-287(4003:12851): 첫 로드 = 카드 스켈레톤 */
           <SkeletonMyFoods />
         ) : (orders.data ?? []).length === 0 ? (
-          /* P-287(4003:7348): 빈 상태 = 공용 EmptyBlock(탭 유지) */
-          <EmptyBlock label={t('myFoods.emptyOrdersTitle')} testID="orders-empty" />
+          <ScreenCenterFill>
+            <EmptyBlock label={t('myFoods.emptyOrdersTitle')} testID="orders-empty" />
+          </ScreenCenterFill>
         ) : (
           <FlatList
             data={orders.data}
@@ -92,7 +84,9 @@ export default function MyFoodsScreen() {
       ) : scanned.isLoading ? (
         <SkeletonMyFoods />
       ) : (scanned.data ?? []).length === 0 ? (
-        empty('myFoods.emptyScansTitle', 'myFoods.emptyScansBody')
+        <ScreenCenterFill>
+          <EmptyBlock label={t('myFoods.emptyScansTitle')} testID="scans-empty" />
+        </ScreenCenterFill>
       ) : (
         <FlatList
           data={scanned.data}

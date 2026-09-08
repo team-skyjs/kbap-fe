@@ -106,7 +106,13 @@ export function EmptyBlock({ label, testID = 'empty-block' }: { label: string; t
  * 화면 전체 기준 센터. 탭 루트(View flex:1) 직속에서만 사용.
  */
 export function ScreenCenterFill({ children }: { children: React.ReactNode }) {
-  return <View style={[StyleSheet.absoluteFill, styles.screenCenter]}>{children}</View>;
+  // Codex #89 P2: absoluteFill이 헤더 뒤로가기·탭의 터치를 삼키던 결함 — 래퍼는
+  // box-none(자신은 히트 불가, 내부 블록만 auto). P-330 스윕 전 화면 공통 수리.
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.screenCenter]} pointerEvents="box-none">
+      {children}
+    </View>
+  );
 }
 
 /** Icon tint color for each tone (pass to the icon's color prop). */
