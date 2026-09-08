@@ -155,12 +155,12 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 20, paddingBottom: 40 },
-  meta: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingVertical: 8 },
+  meta: { flexDirection: 'row', alignItems: 'baseline', gap: 4, paddingTop: 8, paddingBottom: 8, paddingHorizontal: 4 }, // A-SV-01(KB-486: 좌 24 = body 20+4, gap 4)
   metaCount: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
   metaSub: { fontSize: 14, fontWeight: '400', color: C.ink3 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 12 },
-  gridRow: { gap: 10 },
-  gridCell: { flex: 1, marginBottom: 10 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 0, paddingBottom: 12 }, // A-SV-02(메타→칩 8 = 메타 pb8)
+  gridRow: { gap: 17 }, // A-SV-03
+  gridCell: { flex: 1, marginBottom: 17 }, // A-SV-03
   gridCard: { width: '100%' }, // 셀(FlatList numColumns)이 폭 소유 — 홈 47% 오버라이드
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },

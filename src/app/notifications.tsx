@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   markAll: { fontSize: 13, fontWeight: '600', color: C.ink },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.hair },
   rowUnread: { backgroundColor: primaryTint },
-  title: { fontSize: 15, fontWeight: '600', color: C.ink },
+  title: { fontSize: 15, fontWeight: '700', color: C.ink }, // A-NF-01(KB-486)
   body: { fontSize: 14, fontWeight: '500', color: '#4B4F58', lineHeight: 20 },
   when: { fontSize: 13, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 시각 텍스트 대비
   dotSlot: { width: 8, alignItems: 'center', paddingTop: 6 },

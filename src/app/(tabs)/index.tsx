@@ -254,12 +254,12 @@ const styles = StyleSheet.create({
   tabBarOn: { backgroundColor: INK_TITLE },
   tabsDivider: { height: 0.5, backgroundColor: C.line2 },
 
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingVertical: 16 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingVertical: 0 }, // A-HM-08(KB-486)
 
   // 2열 그리드 (§1-5)
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 16, paddingHorizontal: 20 },
   gridEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, paddingVertical: 24 },
-  moreWrap: { paddingHorizontal: 20, paddingTop: 20 },
+  moreWrap: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 }, // A-HM-06(KB-486)
 
   // recent-list (§1-7)
 
