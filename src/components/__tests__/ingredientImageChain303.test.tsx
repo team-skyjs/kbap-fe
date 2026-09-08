@@ -68,7 +68,7 @@ it('P-341: isCutout = 선두(누끼)에서만 참 — contain/흰 배경 스타�
 it('P-341 소스 잠금 — 누끼 = contain+18% 인셋·흰 배경(실패만 tint), 상세 = contain 분기', () => {
   const fsx = require('fs');
   const av = fsx.readFileSync('src/components/AvoidTile.tsx', 'utf8') as string;
-  expect(av).toContain("photoCut: { position: 'absolute', top: '18%', right: '18%', bottom: '18%', left: '18%' }");
+  expect(av).toContain("photoCut: { position: 'absolute', top: '13%', right: '13%', bottom: '13%', left: '13%' }"); // P-344: 74%
   expect(av).toContain("backgroundColor: failed ? tint : '#FFFFFF'");
   expect(av).toContain("contentFit={isCutout ? 'contain' : 'cover'}");
   const fd = fsx.readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;

@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
   secHead: { fontFamily: font.bodyBold, fontSize: 10.5, letterSpacing: 1.1, textTransform: 'uppercase', color: C.ink3, marginBottom: 7 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   tileWrap: { width: '22.5%', alignItems: 'center', gap: 4 },
-  check: { position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  label: { fontFamily: font.bodyBold, fontSize: 10.5, color: C.ink2, maxWidth: '100%' },
-  labelOn: { color: C.primaryText },
+  check: { position: 'absolute', top: 5, right: 5, width: 20, height: 20, borderRadius: 10, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }, // P-344: 배지 20
+  label: { fontSize: 10.5, fontWeight: '500', color: '#4B4F58', maxWidth: '100%' }, // P-344: 비선택 500 #4B4F58
+  labelOn: { color: '#FF7134', fontWeight: '700' }, // P-344: 선택 700 primary
   empty: { fontFamily: font.body, fontSize: 13.5, color: C.ink3, paddingVertical: 8 },
 });

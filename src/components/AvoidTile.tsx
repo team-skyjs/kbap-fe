@@ -92,10 +92,12 @@ export function AvoidTile({
 }
 
 const styles = StyleSheet.create({
-  tile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'transparent', overflow: 'hidden' },
-  tileOn: { borderColor: C.primary },
+  // P-344(KB-505, A안): 기본 = 흰 + 보더 1 #EAEBEE r14 / 선택 = 1.5 #FF7134 + primary 6%
+  // (외곽 치수 고정 — 보더는 안쪽으로 그려져 프레임 불변, P-151 취지 유지)
+  tile: { width: '100%', aspectRatio: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EAEBEE', overflow: 'hidden' },
+  tileOn: { borderWidth: 1.5, borderColor: C.primary, backgroundColor: 'rgba(255,113,52,0.06)' },
   // 사진/스켈레톤 = 폴백 위 absolute fill — 상태 전환에도 프레임 불변
   photo: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }, // 라운딩 = 타일 overflow hidden이 클립(radius prop 연동)
-  photoCut: { position: 'absolute', top: '18%', right: '18%', bottom: '18%', left: '18%' }, // P-341: 누끼 여백
+  photoCut: { position: 'absolute', top: '13%', right: '13%', bottom: '13%', left: '13%' }, // P-341 → P-344: 이미지 ≈74%
   abbr: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink2, letterSpacing: 1 },
 });
