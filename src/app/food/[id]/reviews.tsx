@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
 
   // KB-431 §2-3: 평점 요약 박스
   summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
-  summaryLeft: { flex: 1, minWidth: 0, maxWidth: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(375에선 시안 149 — Codex #93 P2: 320폭 넘침 방지)
+  summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(#105 P2: minWidth 96 = Stars 16×5+gap — 320폭에서 별 넘침 방지)
   bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
   bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
   overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },

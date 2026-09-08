@@ -15,7 +15,7 @@ it('A-RL — body 20/8 gap9·summaryBox pv16 ph0 gap29·좌 149·축 gap6·트�
   const rl = read('src/app/food/[id]/reviews.tsx');
   expect(rl).toContain("body: { paddingHorizontal: 20, paddingTop: 8, gap: 9 }");
   expect(rl).toMatch(/summaryBox: \{[^}]*paddingVertical: 16, paddingHorizontal: 0, gap: 29/);
-  expect(rl).toContain('summaryLeft: { flex: 1, minWidth: 0, maxWidth: 149, gap: 4');
+  expect(rl).toContain('summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4'); // #105 P2
   expect(rl).toContain("axisCol: { alignItems: 'center', gap: 6 }");
   expect(rl).toMatch(/axisTrack: \{ width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3'/);
   expect(rl).toMatch(/filterToggle: \{[^}]*gap: 7/);
