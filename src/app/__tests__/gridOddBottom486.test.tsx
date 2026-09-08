@@ -99,14 +99,34 @@ it('P-333 ② 저장 카드 배지 — 회원(guest=false) 카드 3장 전부 Ri
   expect(tree.root.findAll((n) => n.props?.testID === 'risk-badge-safe' && typeof n.type === 'string').length).toBe(3);
 });
 
-it('P-334 — 하단 바 Write flex3/Ask flex5·아이콘 없음·oneLine, Read all chevron 16, Btn pad 10 소스 잠금', () => {
+it('P-334 — 하단 바 비율(≥360 = 3:5, <360 = 1:1)·아이콘 없음·fitLabel(2줄+0.85), Read all chevron, Btn pad 10', () => {
   const fd = read('src/app/food/[id]/index.tsx');
-  expect(fd).toContain('bottomWrite: { flex: 3 }');
-  expect(fd).toMatch(/<View style=\{\{ flex: 5 \}\}>\{\/\* P-334[^]*?<Btn oneLine onPress=\{onAsk\} testID="bottom-ask">/);
-  expect(fd).toMatch(/<Btn variant=\{onAsk \? 'ghost' : 'primary'\} oneLine onPress=\{onWrite\} testID="bottom-write">/);
+  expect(fd).toContain("useWindowDimensions().width < 360");
+  expect(fd).toContain('flex: narrow ? 1 : 3');
+  expect(fd).toContain('flex: narrow ? 1 : 5');
+  expect(fd).toMatch(/<Btn fitLabel onPress=\{onAsk\} testID="bottom-ask">/); // 말풍선 아이콘 없음
+  expect(fd).toMatch(/<Btn variant=\{onAsk \? 'ghost' : 'primary'\} fitLabel onPress=\{onWrite\} testID="bottom-write">/);
   expect(fd).toMatch(/iconEnd=\{<IconChevron size=\{16\}[^}]*\}/);
   const btn = read('src/components/Btn.tsx');
   expect(btn).toContain('paddingHorizontal: 10, // P-334');
   expect(btn).toContain('iconEndGap: { marginLeft: 2 }');
-  expect(btn).toContain('minimumFontScale={oneLine ? 0.85 : undefined}');
+  // 2R P2(i18n 헌법): 강제 1줄 절단 금지 — 축소 후 2줄 허용
+  expect(btn).toContain('numberOfLines={fitLabel ? 2 : undefined}');
+  expect(btn).toContain('minimumFontScale={fitLabel ? 0.85 : undefined}');
+});
+
+it('P-335 — A–Z 정렬 소멸: 시트 옵션 2(popular·new)·localeCompare 0·sort_alpha 키 0', () => {
+  const fx = read('src/features/food/FoodExplorer.tsx');
+  expect(fx).toContain("FOOD_SORTS: FoodSort[] = ['popular', 'new']");
+  expect(fx).not.toContain('localeCompare');
+  for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+    expect(read(`src/lib/i18n/${loc}.json`)).not.toContain('sort_alpha');
+  }
+});
+
+it('P-336 — 내 리뷰 위험 칩 소멸(칩 testID·RISK_CHIPS·personalRisk 필터 0)', () => {
+  const mr = read('src/app/profile/reviews.tsx');
+  expect(mr).not.toContain('myrev-chip');
+  expect(mr).not.toContain('RISK_CHIPS');
+  expect(mr).not.toContain('personalRisk(');
 });

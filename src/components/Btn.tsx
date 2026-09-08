@@ -20,7 +20,7 @@ export function Btn({
   testID,
   icon,
   iconEnd,
-  oneLine,
+  fitLabel,
   sm,
   disabled,
   onPress,
@@ -34,8 +34,9 @@ export function Btn({
   icon?: React.ReactNode;
   /** P-334(KB-486): 라벨 뒤 트레일링 아이콘(시안 Read all chevron — gap 2) */
   iconEnd?: React.ReactNode;
-  /** P-334: 한 줄 강제 + 축소 안전망(minimumFontScale 0.85) — 좁은 분할 바 버튼용 */
-  oneLine?: boolean;
+  /** P-334 2R(i18n 헌법): 좁은 분할 바 라벨 — 축소(0.85) 후에도 길면 2줄 허용(절단 금지).
+   *  영어 375에선 1줄 유지, es/ru 긴 번역은 축소→2줄. */
+  fitLabel?: boolean;
   sm?: boolean;
   disabled?: boolean;
   onPress?: () => void;
@@ -77,9 +78,9 @@ export function Btn({
           {children != null && (
             <Text
               style={[styles.label, sm && styles.labelSm, palette.label, icon != null && styles.labelGap]}
-              numberOfLines={oneLine ? 1 : undefined}
-              adjustsFontSizeToFit={oneLine}
-              minimumFontScale={oneLine ? 0.85 : undefined}
+              numberOfLines={fitLabel ? 2 : undefined}
+              adjustsFontSizeToFit={fitLabel}
+              minimumFontScale={fitLabel ? 0.85 : undefined}
             >
               {children}
             </Text>

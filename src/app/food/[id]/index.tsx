@@ -12,7 +12,7 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크·EligibilityGate 로직 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -240,18 +240,20 @@ function RegisteredBottomBar({
   onWrite: () => void;
   onAsk?: () => void;
 }) {
+  // P-334 2R: 시안 비율 3:5는 ≥360 전제 — 좁은 폭(<360)에선 1:1로 라벨 공간 확보(i18n 절단 방지)
+  const narrow = useWindowDimensions().width < 360;
   return (
     <View style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]} testID="detail-bottom-bar">
       {FLAGS.reviewsEnabled && (
-        <View style={onAsk ? styles.bottomWrite : { flex: 1 }}>{/* P-334: flex 3/5(P-329 판정 문법) */}
-          <Btn variant={onAsk ? 'ghost' : 'primary'} oneLine onPress={onWrite} testID="bottom-write">
+        <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
+          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write">
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
       {onAsk && (
-        <View style={{ flex: 5 }}>{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) */}
-          <Btn oneLine onPress={onAsk} testID="bottom-ask">
+        <View style={{ flex: narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) */}
+          <Btn fitLabel onPress={onAsk} testID="bottom-ask">
             {t('detail.askOwner')}
           </Btn>
         </View>
@@ -771,7 +773,6 @@ const styles = StyleSheet.create({
 
   // §1-8: FixedBottom
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
-  bottomWrite: { flex: 3 }, // P-334: 고정 119 → 비율(375에서 120/200 — P-329 Delete와 동일 판정)
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

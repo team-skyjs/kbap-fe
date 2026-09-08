@@ -246,7 +246,7 @@ it('⑨ P-318 Saved 토글 칩 — 회원: 저장 목록만↔전체, 게스트:
   expect(cardIds(g).size).toBe(10);
 });
 
-it('⑩ P-318 정렬 시트 — 가나다 = 표시명 클라 정렬, NEW = KB-439 전 비활성', () => {
+it('⑩ P-318 → P-335 정렬 시트 — 옵션 2(인기·NEW 비활성), A–Z 소멸(커서 페이지네이션과 양립 불가)', () => {
   const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
   expect([...cardIds(tree)][0]).toBe('home-food-1'); // 기본 = 인기(현행 순서)
   press(tree, 'food-sort');
@@ -257,9 +257,8 @@ it('⑩ P-318 정렬 시트 — 가나다 = 표시명 클라 정렬, NEW = KB-43
     return n;
   };
   expect(sheetRow('food.sort_new').props.disabled).toBe(true); // publishedAt 부재 — 비활성
-  act(() => sheetRow('food.sort_alpha').props.onPress());
-  // 'Food 1' < 'Food 10' < 'Food 2' — 표시명 사전순으로 재배열
-  expect([...cardIds(tree)].slice(0, 3)).toEqual(['home-food-1', 'home-food-10', 'home-food-2']);
+  expect(tree.root.findAll((x) => x.props?.children === 'food.sort_alpha')).toHaveLength(0); // P-335 소멸
+  expect(sheetRow('food.sort_popular')).toBeTruthy();
 });
 
 it('⑪ P-318 initialSaved — 회원: 저장 필터로 진입, 게스트: 강등(전체 + 게이트 미오픈)', () => {
