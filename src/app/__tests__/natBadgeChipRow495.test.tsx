@@ -74,10 +74,13 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('1-B 국기 배지 — 국적 있으면 아바타 우하단 렌더 · 탈퇴/국적 null = 없음 · a11y 국가명 병기', () => {
+it('1-B 국기 배지 — 국적 있으면 아바타 우하단 렌더(장식 — 무음) · 탈퇴/국적 null = 없음', () => {
   const on = render(<FeedCard review={REVIEW} t={t} mine={false} onOpenFood={() => {}} onMore={() => {}} />);
-  expect(on.root.findAll((n) => n.props?.testID === 'feed-flag-r1').length).toBeGreaterThanOrEqual(1);
-  expect(JSON.stringify(on.toJSON())).toContain('Amy · United States');
+  const badge = on.root.findAll((n) => n.props?.testID === 'feed-flag-r1')[0];
+  expect(badge).toBeTruthy();
+  // Codex #101 P2: 배지 = 장식(스크린리더 무음) — 국가명 라벨 없음(10로케일 미도입)
+  expect(badge.props.accessibilityElementsHidden).toBe(true);
+  expect(JSON.stringify(on.toJSON())).not.toContain('United States');
 
   const anon = render(<FeedCard review={{ ...REVIEW, anonymized: true } as Review} t={t} mine={false} onOpenFood={() => {}} onMore={() => {}} />);
   expect(anon.root.findAll((n) => n.props?.testID === 'feed-flag-r1')).toHaveLength(0);
@@ -115,8 +118,12 @@ it('2-A 파라미터 진입 — 선택 칩이 뒤쪽이면 마운트 시 scrollT
   const orig = ScrollView.prototype.scrollTo;
   ScrollView.prototype.scrollTo = scrollToSpy;
   try {
-    render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+    const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
     expect(scrollToSpy).toHaveBeenCalledWith({ x: expect.any(Number), animated: false });
+    // Codex #101 P2 ③: 마운트 유지 중 파라미터 재동기화에도 재실행
+    scrollToSpy.mockClear();
+    act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="caution" paramsKey="t2" srcTag="list" />); });
+    expect(scrollToSpy).toHaveBeenCalled();
   } finally {
     ScrollView.prototype.scrollTo = orig;
   }

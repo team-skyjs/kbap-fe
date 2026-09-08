@@ -15,7 +15,6 @@ import { color as C } from '@/lib/theme';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
 import { FlagEmoji } from '@/components/FlagEmoji';
-import { countryByCode } from '@/lib/onboarding/countries';
 import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
@@ -65,19 +64,18 @@ export function FeedCard({
           {/* 9/5 예진 판정(Q3): 아바타 24 통일 — 시안 avatar-placeholder SVG.
               P-340(KB-495, 1-B): 우하단 국기 배지 14 — FlagEmoji(유니코드 국기 이모지)는
               **국기 한정 헌법 이모지 예외(예진 결정 9/8)**. 탈퇴·국적 null = 배지 없음. */}
-          <View
-            style={styles.avatarWrap}
-            accessibilityLabel={
-              !anon && review.authorNationality
-                ? `${name} · ${countryByCode(review.authorNationality)?.name ?? review.authorNationality}`
-                : undefined
-            }
-          >
+          <View style={styles.avatarWrap}>
             <View style={styles.avatar}>
               <AvatarPlaceholder height={24} />
             </View>
+            {/* Codex #101 P2: 배지 = 순수 장식(스크린리더 무음) — 국가명 10로케일 도입 안 함, 닉네임만 읽힘 */}
             {!anon && !!review.authorNationality && (
-              <View style={styles.flagBadge} testID={`feed-flag-${review.id}`}>
+              <View
+                style={styles.flagBadge}
+                testID={`feed-flag-${review.id}`}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
                 <FlagEmoji code={review.authorNationality} size={10} />
               </View>
             )}

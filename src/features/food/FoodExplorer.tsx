@@ -113,14 +113,15 @@ export function FoodExplorer({
     setRiskChip('all');
   }, [guest]);
   const [gate, setGate] = React.useState(false);
-  // P-340 2-A: 파라미터 진입으로 선택된 칩이 화면 밖이면 보이게 — 마운트 시 1회 근사 스크롤
+  // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
+  // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).
   const chipScrollRef = React.useRef<ScrollView | null>(null);
   React.useEffect(() => {
     if (variant !== 'screen') return;
     const idx = savedOnly ? RISK_CHIPS.length : RISK_CHIPS.indexOf(riskChip);
     if (idx > 1) chipScrollRef.current?.scrollTo({ x: idx * 72, animated: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [variant, riskChip, savedOnly, paramsKey]);
 
   // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본).
   // P-332(KB-488) 프리징 수정: ① deps에 `saved`(매 렌더 새 객체) → 매 렌더 실행이던 것을
