@@ -217,8 +217,9 @@ export function SkeletonMyReviews() {
             <SkBar key={j} w={303} h={10} />
           ))}
           <View style={sk287.rowGap8}>
+            {/* Codex #91 P2: 고정 64×4가 320폭 카드 초과 — flex 비율(정방 유지) */}
             {[0, 1, 2, 3].map((j) => (
-              <SkImg key={j} w={64} h={64} />
+              <Shimmer key={j} style={{ flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: '#F2F3F6' }} />
             ))}
           </View>
           <View style={sk287.rowGap6}>

@@ -150,7 +150,7 @@ export function TagChip({ kind, label, onPress, testID }: { kind: 'food' | 'plac
   // 텍스트 색 = P-284 inkInfo 유지.
   if (kind === 'place') {
     return (
-      <Pressable style={styles.tagChipPlace} onPress={onPress} hitSlop={4} testID={testID}>
+      <Pressable style={styles.tagChipPlace} onPress={onPress} hitSlop={12} testID={testID}>{/* Codex #91 P2: 무배경 칩 터치 영역(세로 ≥44) */}
         <IconMapPin size={12} color={C.inkInfo} />
         <Text style={styles.tagChipPlaceText} numberOfLines={1}>
           {label}
