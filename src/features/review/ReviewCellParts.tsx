@@ -169,15 +169,11 @@ export function PlacePickerSheet({
     <Modal visible transparent animationType="slide" onRequestClose={close}>
       <View style={styles.pickerBackdrop}>
         <View style={styles.pickerSheet}>
+          {/* A-RW-11(KB-486): 제목 중앙·X 없음(닫기 = 스크림 탭 현행 유지) */}
           <View style={styles.pickerHeader}>
-            <Pressable hitSlop={10} onPress={close}>
-              <IconClose size={20} color={C.ink2} />
-            </Pressable>
             <Text style={styles.pickerTitle}>{t('review.placeSheetTitle')}</Text>
-            <View style={{ width: 20 }} />
           </View>
           <View style={styles.searchBox}>
-            <IconSearch size={17} color={C.ink2} />
             <Input
               value={q}
               onChangeText={setQ}
@@ -186,6 +182,7 @@ export function PlacePickerSheet({
               style={styles.searchInput}
               autoCorrect={false}
             />
+            <IconSearch size={20} color={'#D1D3D8'} />
           </View>
           {!term && <Text style={styles.recentLbl}>{t('review.placeNearby').toUpperCase()}</Text>}
           <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
@@ -207,7 +204,7 @@ export function PlacePickerSheet({
             ) : (
               results.map((p) => (
                 <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>
-                  <IconMapPin size={16} color={C.ink3} />
+                  <IconMapPin size={12} color={C.ink3} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>
                     {!!p.address && <Text style={styles.resultSub} numberOfLines={1}>{p.address}</Text>}
@@ -500,7 +497,7 @@ const styles = StyleSheet.create({
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 39 },
   extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }, // A-RW-04(KB-486)
   extrasLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
   extrasValue: { fontSize: 13, fontWeight: '600', color: '#2F3137' },
   extrasLine: { flexDirection: 'row', gap: 8, alignSelf: 'flex-start' },
@@ -531,14 +528,14 @@ const styles = StyleSheet.create({
   editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   // P-201: 장소 픽커 시트 (review.tsx P-095 스타일 이식 — 작성·수정 공용화로 이동)
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, gap: 12, ...shadow.sh2 },
-  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pickerTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13 },
-  searchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
+  pickerHeader: { alignItems: 'center' }, // A-RW-11(중앙)
+  pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink }, // A-RW-11
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 4, paddingLeft: 16, paddingRight: 14 }, // A-RW-11(Input/Search DS)
+  searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, fontWeight: '500', color: C.ink }, // A-RW-11(h48)
   // KB-432 §2-10: 라벨 12/500 · 행 h66(장소명 15/600 / 주소 13/500 #6A6F7C)
   recentLbl: { fontSize: 12, fontWeight: '500', color: C.ink3 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 66, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 66, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line }, // A-RW-11(핀 인라인 gap 2)
   resultText: { fontSize: 15, fontWeight: '600', color: C.ink },
   resultSub: { fontSize: 13, fontWeight: '500', color: C.ink2, marginTop: 1 },
   noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },

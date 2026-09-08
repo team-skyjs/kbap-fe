@@ -229,8 +229,8 @@ it('P-241: 행 썸네일 = imageRef 인라인 — 비매칭 행도 표시(디폴
     <ScanRichList dishes={dishes} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
   const s = flat(tree);
-  // KB-432(16314): 비매칭 = #F2F3F6 박스 + unable 마크(서버 디폴트 이미지 소멸 — 시안)
-  expect(s).toContain('#F2F3F6');
+  // KB-432 → A-SC-11(KB-486): 비매칭 = 흰 박스 + unable 마크(서버 디폴트 이미지 소멸 — 시안)
+  expect(s).toContain('"backgroundColor":"#FFFFFF","alignItems":"center","justifyContent":"center"');
   expect(s).not.toContain('default-food.webp');
   // 주문 카드 = rawMenuName 그대로(P-045) — 표시명 조립 금지(기존 잠금 승계)
   const card = render(

@@ -375,7 +375,7 @@ function Registered({
 
       {/* §1-2: 헤더 블록 — 좌 컬럼 + 우 북마크 36(4129:10698) */}
       <View style={styles.headBlock}>
-        <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-FD-05 */}
           {food.spiceLevel != null && (
             <View style={styles.spiceRow}>
               {/* ⚠️ 맵기 = 현행 5단계 foodSpiceText — 시안 "6/10" 이식 금지 유지 */}
@@ -444,7 +444,7 @@ function Registered({
               {shownIngredients.map((ing) => {
                 const dRisk = personalRisk(ing.risk, hasRestrictions);
                 return (
-                  <Pressable key={ing.code} style={styles.ingTile} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
+                  <Pressable key={ing.code} style={[styles.ingTile, !guest && dRisk === 'caution' && styles.ingTileWithFoot]} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
                     {!guest && (
                       <View style={styles.ingTileMark}>
                         <RiskMark state={dRisk} size={18} />
@@ -698,11 +698,11 @@ const styles = StyleSheet.create({
   lockSlotCta: { fontSize: 13, fontWeight: '700', color: C.primaryText },
 
   // §1-2: 헤더 블록
-  headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 20, paddingVertical: 20 },
-  spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }, // A-FD-01/02(KB-486)
+  spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 }, // A-FD-03
   spiceChip: { backgroundColor: '#F2F3F6', borderRadius: 4, paddingVertical: 1, paddingHorizontal: 5 },
   spiceChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FD-04
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
   newBadge: { height: 18, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
@@ -711,8 +711,8 @@ const styles = StyleSheet.create({
   desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
   scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },
   scanPriceNote: { fontSize: 12.5, fontWeight: '400', color: C.ink2 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
-  ratingRowText: { fontSize: 13, fontWeight: '600', color: C.ink },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start' }, // A-FD-06
+  ratingRowText: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-06
   // 북마크 36(4129:10698 — 홈 그리드와 동일 문법)
   // A-DS-02(KB-486): 기본 흰+sh1(보더 투명 자리 유지 — P-151), 저장만 #EAEBEE 1
   bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
@@ -724,18 +724,19 @@ const styles = StyleSheet.create({
   thickDivider: { height: 8, backgroundColor: '#F5F5F5' },
 
   // §1-5: What's inside
-  insideSec: { paddingVertical: 20, gap: 14 },
+  insideSec: { paddingVertical: 20, gap: 10 }, // A-FD-07
   insideTitle: { fontSize: 16, fontWeight: '500', color: C.ink, paddingHorizontal: 20 },
   ingChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
   // §3: 타일 단위 줄바꿈 — flexWrap + 타일 flexShrink 0
   ingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20 },
-  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, paddingTop: 14, alignItems: 'center', gap: 4, overflow: 'hidden' },
+  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, paddingTop: 26, alignItems: 'center', gap: 2, overflow: 'hidden' }, // A-FD-08
   ingTileMark: { position: 'absolute', top: 6, left: 6 },
   ingTileImg: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   ingTileName: { fontSize: 12, fontWeight: '500', color: INK_TITLE, textAlign: 'center', paddingHorizontal: 6 },
   ingTileSub: { fontSize: 11, fontWeight: '400', color: '#5A636A', textAlign: 'center', paddingHorizontal: 4, marginBottom: 10 },
+  ingTileWithFoot: { paddingTop: 8 }, // A-FD-08 푸터 변형
   ingTileFoot: { alignSelf: 'stretch', minHeight: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,113,52,0.05)', borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  ingTileFootText: { fontSize: 11, fontWeight: '500', color: C.primary },
+  ingTileFootText: { fontSize: 12, fontWeight: '500', color: C.primary }, // A-FD-09(색·굵기는 C-62)
 
   // §1-6: 재료 바텀시트
   sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
@@ -749,10 +750,10 @@ const styles = StyleSheet.create({
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
-  rvHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 20 },
-  rvHeadScore: { fontSize: 13, fontWeight: '600', color: C.ink },
+  rvHead: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 20, paddingTop: 20 }, // A-FD-10(별↔점수 2)
+  rvHeadScore: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-10
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
-  natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }, // A-FD-10
   natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
   // P-323 토글 쿼리 상태(스켈레톤·빈 문구) — 홈 피드 스켈레톤 문법
   natSkel: { gap: 12, paddingTop: 12 },

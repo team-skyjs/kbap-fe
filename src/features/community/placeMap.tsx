@@ -75,7 +75,7 @@ export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onCl
   return (
     <SheetShell onClose={onClose}>
       {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭(SheetShell backdrop) */}
-      <View style={{ gap: 6 }}>
+      <View style={{ gap: 4 }}>{/* A-RL-10(KB-486) */}
         <Text style={styles.title} numberOfLines={1}>
           {place.name}
         </Text>

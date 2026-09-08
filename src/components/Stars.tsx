@@ -72,7 +72,7 @@ export function Stars({
   color?: string;
 }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 2 }}>
+    <View style={{ flexDirection: 'row', gap: 4 }}>
       {[0, 1, 2, 3, 4].map((i) => {
         const pct = Math.max(0, Math.min(1, value - i)) * 100;
         return <Star key={i} size={size} fillPct={pct} fillColor={color} emptyColor={STAR_EMPTY} />;
