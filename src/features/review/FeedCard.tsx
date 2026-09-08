@@ -70,7 +70,9 @@ export function FeedCard({
         </View>
         {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
         <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
-        {!anon && showMore && (
+        {/* P-339 ②(KB-494): ⋯ 전 카드 표시(탈퇴 리뷰 포함 — 시트는 신고만) —
+            표면·상태별로 있다 없다 하면 Helpful x 위치가 흔들린다(예진 실기) */}
+        {showMore && (
           <Pressable hitSlop={10} onPress={onMore} testID={`feed-more-${review.id}`}>
             <IconMore size={20} color={'#262C31'} />
           </Pressable>

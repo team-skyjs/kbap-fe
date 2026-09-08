@@ -65,8 +65,8 @@ function SheetShell({ children, onClose }: { children: React.ReactNode; onClose:
  *  딥링크·좌표 폴백 로직은 무변(mapUrls). */
 const MAP_BTN: Record<MapApp, { bg: string; border?: string; text: string; Icon: typeof BrandGoogle }> = {
   google: { bg: '#FFFFFF', border: '#DCDEE3', text: '#1C1E21', Icon: BrandGoogle },
-  naver: { bg: '#1EC800', text: '#FFFFFF', Icon: BrandNaver },
-  kakao: { bg: '#FFE812', text: '#1C1E21', Icon: BrandKakao },
+  naver: { bg: '#03C75A', text: '#FFFFFF', Icon: BrandNaver }, // P-339 ④: 공식 NAVER Green
+  kakao: { bg: '#FEE500', text: '#000000', Icon: BrandKakao }, // P-339 ④: Kakao Yellow + 검정
 };
 
 export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onClose: () => void }) {

@@ -230,16 +230,17 @@ describe('P-186: 타 유저 신고·차단', () => {
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
   });
 
-  it('익명(탈퇴) 리뷰 = ⋯ 부재(신고 대상 회원 없음) · 타인 = ⋯ 존재', () => {
+  it('P-339 ②: 익명(탈퇴) 리뷰도 ⋯ 존재(신고만 — 위치 통일) + anonymized 플래그 전달', () => {
     const tree = render();
-    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1); // 타인(me=9? REVIEW memberId 9 = mine)
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
     mockFeed.mockReturnValue({
       data: { pages: [{ items: [{ ...REVIEW, id: 'r2', memberId: undefined, author: null, anonymized: true }], hasNext: false, nextCursor: null }] },
       isLoading: false, isError: false, error: null, refetch: jest.fn(),
       hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
     });
     const anon = render();
-    expect(anon.root.findAll((n) => n.props?.testID === 'feed-more-r2').length).toBe(0);
+    const more = anon.root.findAll((n) => n.props?.testID === 'feed-more-r2' && typeof n.props?.onPress === 'function');
+    expect(more.length).toBeGreaterThanOrEqual(1); // 구 "부재" 계약 대체(P-339 ②)
   });
 });
 

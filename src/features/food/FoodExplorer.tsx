@@ -17,7 +17,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, radius } from '@/lib/theme';
-import { Btn, Chip, IconSearch, IconTabScan, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
+import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
 import { ActionSheet } from '@/components/ActionSheet';
@@ -363,6 +363,7 @@ export function FoodExplorer({
             testID="home-rail-see-all"
           >
             <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
+            <IconChevron size={16} color={INK_TITLE} />
           </Pressable>
         </ScrollView>
       )}
@@ -428,8 +429,9 @@ const styles = StyleSheet.create({
   rail: { flexGrow: 0 },
   railContent: { paddingHorizontal: 20, gap: 12 },
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
-  seeAllCard: { aspectRatio: 174 / 203, borderRadius: 4, borderWidth: 1, borderColor: C.line2, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
-  seeAllText: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  // P-339 ①(KB-494): 점선 카드 폐기 — 카드 높이 세로 중앙 텍스트+chevron, 배경·보더 없음
+  seeAllCard: { aspectRatio: 174 / 203, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 12 },
+  seeAllText: { fontSize: 14, fontWeight: '600', color: INK_TITLE }, // P-339 ①
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
   // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일

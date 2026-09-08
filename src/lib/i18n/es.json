@@ -733,8 +733,7 @@
       "groupDiet": "Dieta",
       "groupReligion": "Religión",
       "groupAllergy": "Grupos de alergia",
-      "apply": "Aplicar a mi lista",
-      "applyRow": "Rellenar por dieta/religión"
+      "apply": "Aplicar a mi lista"
     },
     "countryLabel": "País"
   },

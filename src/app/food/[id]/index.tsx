@@ -11,7 +11,7 @@
  * Unregistered = "Unable to assess" 유지 — never assumed safe (FR-033).
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크·EligibilityGate 로직 무변.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -35,7 +35,6 @@ import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { FeedCard } from '@/features/review/FeedCard';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { Snackbar } from '@/components/Snackbar';
 import { IconFood, IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -95,8 +94,6 @@ export default function FoodDetailScreen() {
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false); // P-134: 마크 탭 재열람
-  const [saveError, setSaveError] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onBookmark = () => {
     if (isGuest) {
       setSaveGateOpen(true);
@@ -105,20 +102,11 @@ export default function FoodDetailScreen() {
     if (!food) return;
     const adding = !saved;
     track(EVENTS.food_bookmark_toggle, { on: adding }); // P-144
-    setSaveError(false);
-    toggleBm.mutate(
-      {
-        snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
-        add: adding,
-      },
-      {
-        onError: () => {
-          setSaveError(true);
-          if (toastTimer.current) clearTimeout(toastTimer.current);
-          toastTimer.current = setTimeout(() => setSaveError(false), 4000);
-        },
-      },
-    );
+    // P-339 ⑤: 성공/실패 토스트 = 공용 상단 토스트(useToggleBookmark 한 곳) — 로컬 스낵바 소멸
+    toggleBm.mutate({
+      snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
+      add: adding,
+    });
   };
 
   // KB-431 §1-8 FixedBottom — 등록 음식만(미등록은 본문 CTA 현행 유지)
@@ -212,7 +200,6 @@ export default function FoodDetailScreen() {
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
       <EligibilityGate open={eligGateRoot} onClose={() => setEligGateRoot(false)} />
-      {saveError && <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />}
     </View>
   );
 }

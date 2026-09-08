@@ -40,6 +40,7 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: () => 0, linear: () => 0 },
   };
 });
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null })); // P-339 ②: 홈 신고 플로우 표면 목
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
@@ -132,9 +133,10 @@ it('② KB-434: 랭킹 카드 = 기피 섹션 위(시안 순서 헤더→랭킹�
 it('③④ 소스 잠금 — 팝업 승인 시에만 합집합(unionResolvedCodes 유지)·자동 오픈·고추 투명도', () => {
   const fs = require('fs');
   const rest = fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8') as string;
-  expect(rest).toContain("setPresetConfirm(true)"); // Apply = 즉시 적용 아님 — 팝업 경유
-  expect(rest).toContain('unionResolvedCodes(dietPresets, Array.from(presetSel), cur)'); // 합집합 유지(덮어쓰기 금지)
-  expect(rest).toContain("presetsParam === '1'"); // 프로필 식이 Edit = 시트 자동 오픈
+  // P-339 ⑧: 프로필 프리셋 채우기 경로 소멸 — 구 잠금(팝업·합집합·자동 오픈) = 소멸 잠금으로 대체
+  expect(rest).not.toContain('setPresetConfirm');
+  expect(rest).not.toContain('unionResolvedCodes');
+  expect(rest).not.toContain('presetsParam');
   const peppers = fs.readFileSync('src/components/SpicePeppers.tsx', 'utf8') as string;
   // KB-431: 이모지 → SVG 2색 고추 — 5개 상시 프레임 + 미달분 회색 변형(자리 유지 불변)
   expect(peppers).toContain('i <= rank ? <PepperOn'); // 시안 SVG on/off 스왑

@@ -29,6 +29,10 @@ export interface ModTarget {
   id: string;
   author: CommunityAuthor;
   mine: boolean;
+  /** P-339 ②: 탈퇴(익명) 리뷰 — 작성자 부재라 차단 미노출(신고만) */
+  anonymized?: boolean;
+  /** P-339 ②: 홈 피드 등 신고 전용 표면 — 차단 항목 미노출 */
+  reportOnly?: boolean;
 }
 
 const REASONS: ReportReason[] = ['spam', 'harassment', 'inappropriate', 'misinfo', 'other'];
@@ -165,7 +169,8 @@ export function ModerationFlow({
                   ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => (isGuest ? setGateOpen(true) : setPhase('report')) }]
                   : []),
                 // P-281: 게스트 = 차단 항목 자체 미노출(예진 지시 — /members/me/blocks 회원 전용)
-                ...(!isGuest
+                // P-339 ②: 탈퇴 리뷰(작성자 부재)·신고 전용 표면(홈)도 차단 미노출
+                ...(!isGuest && !target.anonymized && !target.reportOnly
                   ? [{ key: 'block', label: t('community.blockUser', { name }), icon: <IconUserX size={17} color={DESTRUCTIVE} />, destructive: true, keepOpen: true, onPress: () => setPhase('blockConfirm') }]
                   : []),
               ]

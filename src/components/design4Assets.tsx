@@ -142,15 +142,18 @@ export const BrandGoogle = ({ height = 24 }: { height?: number }) => (
   </Svg>
 );
 
-export const BrandNaver = ({ height = 24 }: { height?: number }) => (
-  <Svg width={(height * 24) / 24} height={height} viewBox="0 0 24 24">
-      <Path d="M0.132 0L1.887 0L1.887 5.965L0 5.877L0.132 0Z" fill="#c4c4c4" transform="matrix(0.831,-0.556,0.556,0.831,9.611,10.066)" />
+/** P-339 ④(KB-494): 네이버 공식 심볼 "N"(navercorp.com/company/brandGuide) — 초록 바탕 위 흰 N.
+ *  구 자산은 추출 파손(회색 조각 1패스)이었음 — BrandNaverMark의 공식 N union 지오메트리 재사용. */
+export const BrandNaver = ({ height = 24, color = '#FFFFFF' }: { height?: number; color?: string }) => (
+  <Svg width={height} height={height} viewBox="0 0 20 20">
+    <Path d="M8.373 5.175L8.373 0.001L13.257 0.001L13.257 12.153L8.373 12.153L8.373 12.091L4.884 6.474L4.884 12.153L0 12.153L0 0.001L4.884 0.001L4.884 0.076L4.996 0L8.373 5.175Z" fill={color} fillRule="nonzero" transform="matrix(1 0 0 1 3.287 4.333)" />
   </Svg>
 );
 
+/** P-339 ④: 카카오 심볼 = 가이드 색(#FEE500 바탕 위 검정) — 기존 추출 지오메트리에 색만 정정 */
 export const BrandKakao = ({ height = 24 }: { height?: number }) => (
   <Svg width={(height * 24) / 24} height={height} viewBox="0 0 24 24">
-      <Path d="M5 0C2.239 0 0 1.721 0 3.845C0 5.218 0.936 6.422 2.344 7.103C2.267 7.36 1.851 8.76 1.835 8.87C1.835 8.87 1.825 8.952 1.88 8.984C1.935 9.015 1.999 8.991 1.999 8.991C2.157 8.97 3.823 7.828 4.112 7.629C4.4 7.669 4.697 7.69 5 7.69C7.761 7.69 10 5.968 10 3.845C10 1.721 7.761 0 5 0Z" fill="#381f1f" transform="matrix(1,0,0,1,7,8)" />
+      <Path d="M5 0C2.239 0 0 1.721 0 3.845C0 5.218 0.936 6.422 2.344 7.103C2.267 7.36 1.851 8.76 1.835 8.87C1.835 8.87 1.825 8.952 1.88 8.984C1.935 9.015 1.999 8.991 1.999 8.991C2.157 8.97 3.823 7.828 4.112 7.629C4.4 7.669 4.697 7.69 5 7.69C7.761 7.69 10 5.968 10 3.845C10 1.721 7.761 0 5 0Z" fill="#000000" transform="matrix(1,0,0,1,7,8)" />
   </Svg>
 );
 

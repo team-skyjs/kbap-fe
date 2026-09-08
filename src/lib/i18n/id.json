@@ -733,8 +733,7 @@
       "groupDiet": "Pola makan",
       "groupReligion": "Agama",
       "groupAllergy": "Paket alergi",
-      "apply": "Terapkan ke daftar saya",
-      "applyRow": "Isi dari pola makan/agama"
+      "apply": "Terapkan ke daftar saya"
     },
     "countryLabel": "Negara"
   },

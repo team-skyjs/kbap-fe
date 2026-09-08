@@ -733,8 +733,7 @@
       "groupDiet": "Chế độ ăn",
       "groupReligion": "Tôn giáo",
       "groupAllergy": "Nhóm dị ứng",
-      "apply": "Áp dụng vào danh sách",
-      "applyRow": "Điền theo chế độ ăn/tôn giáo"
+      "apply": "Áp dụng vào danh sách"
     },
     "countryLabel": "Quốc gia"
   },

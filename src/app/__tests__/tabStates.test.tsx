@@ -56,6 +56,7 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: () => 0, linear: () => 0 },
   };
 });
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null })); // P-339 ②: 홈 신고 플로우 표면 목
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
