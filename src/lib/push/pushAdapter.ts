@@ -14,6 +14,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
+import { track } from '@/lib/net/inflight';
 import i18n from '@/lib/i18n';
 
 const SETTINGS_KEY = 'kbap.push.settings.v1';
@@ -138,8 +139,12 @@ async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
   console.log('[push] token upsert (BE 계약 대기, no-op)', reg.token.slice(0, 24), reg.platform, reg.lang);
 }
 
-/** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함). */
-export async function registerPushToken(): Promise<void> {
+/** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함).
+ *  Codex #109 10R: track 경유 — 콜드 스타트 +8s OTA 창과 겹치는 연산(관문 5곳째). */
+export function registerPushToken(): Promise<void> {
+  return track(registerPushTokenInner());
+}
+async function registerPushTokenInner(): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {

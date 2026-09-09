@@ -6,6 +6,10 @@
  * 포함시키기 위한 모듈. api/client.ts의 fetch와 legalText raw fetch가 inc/dec를
  * 지나므로 **향후 어떤 호출 경로가 생겨도 client.ts를 쓰는 한 자동 포함** —
  * 화면별 배선 금지. dec는 호출측 try/finally로 보장.
+ *
+ * 관문 5곳(#109 7R~10R 확정): client.ts request 전체 · scanImage uploadAsync ·
+ * OTA check · auth 세션 모듈(로그인·로그아웃·탈퇴·경계 + 소셜 로그인 함수 전체) ·
+ * pushAdapter registerPushToken. 그 밖 화면 종속 네이티브 프라미스 = 차단 라우트가 몫.
  */
 let count = 0;
 const listeners = new Set<() => void>();
