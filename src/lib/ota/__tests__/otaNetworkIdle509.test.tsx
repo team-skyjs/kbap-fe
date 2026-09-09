@@ -167,3 +167,25 @@ it('#109 2R P1 ②: 훅 배선 잠금 — 반환 = idle && !busy · tryApply 동
   expect(host).toContain('return idle && !busy;');
   expect(host).toContain('if (inflightCount() > 0 || queryClient.isFetching() > 0 || queryClient.isMutating() > 0) return false;');
 });
+
+
+it('#109 3R P1: inflight.track — 네이티브 업로드 프라미스 진행 중 카운트 1, 완료/실패 모두 0 복귀 + 배선 잠금', async () => {
+  jest.useRealTimers();
+  const { track, inflightCount } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  let resolveP!: (v: string) => void;
+  const p = track(new Promise<string>((r) => { resolveP = r; }));
+  expect(inflightCount()).toBe(1);
+  resolveP('ok');
+  await p;
+  expect(inflightCount()).toBe(0);
+  // 실패 경로도 dec 보장
+  let rejectP!: (e: Error) => void;
+  const p2 = track(new Promise<string>((_r, rej) => { rejectP = rej; }));
+  expect(inflightCount()).toBe(1);
+  rejectP(new Error('fail'));
+  await expect(p2).rejects.toThrow('fail');
+  expect(inflightCount()).toBe(0);
+  // 배선: uploadAsync = track 경유(발급·complete는 client.ts 경유라 자동)
+  const si = require('fs').readFileSync('src/lib/api/scanImage.ts', 'utf8') as string;
+  expect(si).toContain('track(FileSystem.uploadAsync(');
+});

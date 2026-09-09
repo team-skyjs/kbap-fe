@@ -35,3 +35,14 @@ export function subscribeInflight(fn: () => void): () => void {
     listeners.delete(fn);
   };
 }
+
+/** client.ts 밖에서 JS 프라미스를 돌려주는 네이티브 네트워크(uploadAsync·downloadAsync 등)는
+ *  반드시 이 track 경유 — OTA 정적 창이 못 보는 in-flight를 만들지 않는다(#109 3R). */
+export async function track<T>(p: Promise<T>): Promise<T> {
+  incInflight();
+  try {
+    return await p;
+  } finally {
+    decInflight();
+  }
+}
