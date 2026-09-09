@@ -189,3 +189,19 @@ it('#109 3R P1: inflight.track — 네이티브 업로드 프라미스 진행 �
   const si = require('fs').readFileSync('src/lib/api/scanImage.ts', 'utf8') as string;
   expect(si).toContain('track(FileSystem.uploadAsync(');
 });
+
+
+it('#109 4R: ready 후 재체크 생략 + 체크 자체 inflight 경유 — 배선 잠금 + 체크 진행 중 카운트', async () => {
+  const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+  expect(host).toContain('if (readyRef.current) return;'); // ready = 재체크 0(네이티브 프라미스 창 제거)
+  expect(host).toContain('void track(checkAndFetchOta(u, stateRef.current, Date.now()))'); // 체크 = 정적 창 포함
+  // track 경유 체크 진행 중 = inflightCount 1 (track 계약 재확인 — 4R ②)
+  jest.useRealTimers();
+  const { track, inflightCount } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  let resolveCheck!: (v: string) => void;
+  const p = track(new Promise<string>((r) => { resolveCheck = r; }));
+  expect(inflightCount()).toBe(1);
+  resolveCheck('skip');
+  await p;
+  expect(inflightCount()).toBe(0);
+});

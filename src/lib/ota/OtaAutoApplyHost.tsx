@@ -13,7 +13,7 @@ import { AppState } from 'react-native';
 import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
-import { inflightCount, subscribeInflight } from '@/lib/net/inflight';
+import { inflightCount, subscribeInflight, track } from '@/lib/net/inflight';
 import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
 
 // P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
@@ -64,6 +64,9 @@ export function useNetworkIdle(): boolean {
 
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
   const [ready, setReady] = React.useState(false);
+  // #109 4R: AppState 콜백에서 동기 참조용 — ready 후 재체크(네이티브 프라미스) 생략
+  const readyRef = React.useRef(false);
+  readyRef.current = ready;
   // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
   const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
   const [guardTick, setGuardTick] = React.useState(0);
@@ -74,9 +77,13 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   React.useEffect(() => {
     const check = () => {
       if (__DEV__) return; // Metro 개발 중 = no-op(코어의 isEnabled 게이트와 이중)
+      // #109 4R ①: 이미 받아둔 업데이트 적용 대기 중 = 재체크 불요 — 게이트 밖
+      // 네이티브 프라미스(checkForUpdateAsync/fetchUpdateAsync) 위 reload 창 제거.
+      if (readyRef.current) return;
       const u = updatesModule();
       if (!u) return;
-      void checkAndFetchOta(u, stateRef.current, Date.now()).then((r) => {
+      // #109 4R ②: 그래도 도는 체크는 inflight 경유 — 정적 창이 체크 자체도 본다
+      void track(checkAndFetchOta(u, stateRef.current, Date.now())).then((r) => {
         if (r === 'ready') setReady(true);
       });
     };
