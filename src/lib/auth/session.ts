@@ -10,6 +10,7 @@
  * export never executes this module.
  */
 import { getAuth, onAuthStateChanged, signOut } from '@react-native-firebase/auth';
+import { track } from '@/lib/net/inflight';
 import { setSentryUser } from '@/lib/sentry';
 
 /** Firebase user, derived from the modular API (namespaced types mismatch it). */
@@ -29,8 +30,9 @@ export function currentUser(): AuthUser | null {
   return getAuth().currentUser;
 }
 
-/** 로그아웃 — Firebase 세션 종료. (탈퇴 revoke는 추후 BE와 — KB-109) */
+/** 로그아웃 — Firebase 세션 종료. (탈퇴 revoke는 추후 BE와 — KB-109)
+ *  Codex #109 7R: track 경유 — OTA 정적 창(KB-509)이 로그아웃 왕복을 본다. */
 export async function logOut(): Promise<void> {
   setSentryUser(null); // P-197: 식별 해제 — 로그아웃 후 이벤트에 memberId 잔존 방지
-  await signOut(getAuth());
+  await track(signOut(getAuth()));
 }
