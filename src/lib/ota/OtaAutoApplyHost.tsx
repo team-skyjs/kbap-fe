@@ -10,9 +10,10 @@
  */
 import * as React from 'react';
 import { AppState } from 'react-native';
+import { useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
-import { OTA_BOOT_GUARD_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
+import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
 
 // P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
 const BOOTED_AT = Date.now();
@@ -36,11 +37,32 @@ function applyNow(): void {
   }
 }
 
+/** P-347(KB-509): 네트워크 정적 창 — react-query 진행 카운트(useIsFetching·useIsMutating)가
+ *  둘 다 0으로 OTA_NETWORK_IDLE_MS 연속 정착해야 true(정착 중 재증가 = 리셋).
+ *  reload 중 진행 fetch의 reject가 죽은 런타임에 스케줄되는 크래시(REACT-NATIVE-8) 봉쇄.
+ *  상한 없음 — 계속 바쁘면 계속 보류(다음 포그라운드/콜드 스타트에 적용). */
+export function useNetworkIdle(): boolean {
+  const fetching = useIsFetching();
+  const mutating = useIsMutating();
+  const busy = fetching > 0 || mutating > 0;
+  const [idle, setIdle] = React.useState(false);
+  React.useEffect(() => {
+    if (busy) {
+      setIdle(false); // 정착 중 재증가 = 리셋
+      return;
+    }
+    const timer = setTimeout(() => setIdle(true), OTA_NETWORK_IDLE_MS);
+    return () => clearTimeout(timer);
+  }, [busy]);
+  return idle;
+}
+
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
   const [ready, setReady] = React.useState(false);
   // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
   const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
   const [guardTick, setGuardTick] = React.useState(0);
+  const networkIdle = useNetworkIdle(); // P-347 — QueryClientProvider 안(레이아웃 확인됨)
   const stateRef = React.useRef({ lastCheckAt: 0 });
 
   React.useEffect(() => {
@@ -63,10 +85,10 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   // P-304: reloadAsync 부팅 가드 — 정책이 reload여도 가드(8s+스플래시 종료+active)
   // 통과 시에만 실행. 배너 수동 탭도 동일 경로(부팅 창 크래시 봉쇄).
   const tryApply = React.useCallback((): boolean => {
-    if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background' })) return false;
+    if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background', networkIdle })) return false;
     applyNow();
     return true;
-  }, [splashDone, appActive]);
+  }, [splashDone, appActive, networkIdle]);
 
   // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료·스플래시/포그라운드/가드 타이머마다
   const prod = isProdChannel();

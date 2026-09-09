@@ -47,7 +47,7 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
 describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { canReloadNow, OTA_BOOT_GUARD_MS } = require('../otaPolicy') as typeof import('../otaPolicy');
-  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active' };
+  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active', networkIdle: true }; // P-347: 4조건 AND
 
   it('전부 충족 = true(경계 8s 포함)', () => {
     expect(canReloadNow(OK)).toBe(true);
@@ -65,6 +65,10 @@ describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)
   it('비포그라운드(background/inactive) = false', () => {
     expect(canReloadNow({ ...OK, appState: 'background' })).toBe(false);
     expect(canReloadNow({ ...OK, appState: 'inactive' })).toBe(false);
+  });
+
+  it('P-347(KB-509): networkIdle false = false — 진행 중 fetch reject가 죽은 런타임에 스케줄되는 크래시 봉쇄', () => {
+    expect(canReloadNow({ ...OK, networkIdle: false })).toBe(false);
   });
 
   it('호스트 배선 소스 잠금 — 가드 경유 적용·타이머 1회 재평가·배너 탭 동일 경로·splashDone 배선', () => {
