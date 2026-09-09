@@ -11,7 +11,7 @@
 import * as React from 'react';
 import { AppState } from 'react-native';
 import { usePathname } from 'expo-router';
-import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
 import { inflightCount, subscribeInflight, track } from '@/lib/net/inflight';
@@ -39,28 +39,47 @@ function applyNow(): void {
   }
 }
 
-/** P-347(KB-509): 네트워크 정적 창 — react-query 진행 카운트(useIsFetching·useIsMutating)가
- *  둘 다 0으로 OTA_NETWORK_IDLE_MS 연속 정착해야 true(정착 중 재증가 = 리셋).
+/** P-347(KB-509): 네트워크 정적 창 — RQ 진행 카운트 + raw inflight가 전부 0으로
+ *  OTA_NETWORK_IDLE_MS 연속 정착해야 true(정착 중 재증가 = 리셋).
  *  reload 중 진행 fetch의 reject가 죽은 런타임에 스케줄되는 크래시(REACT-NATIVE-8) 봉쇄.
- *  상한 없음 — 계속 바쁘면 계속 보류(다음 포그라운드/콜드 스타트에 적용). */
+ *  상한 없음 — 계속 바쁘면 계속 보류(다음 포그라운드/콜드 스타트에 적용).
+ *
+ *  Codex #109 9R P1: 정착 판정을 React 상태(effect 커밋)에 얹으면 짧은 busy가
+ *  커밋 전에 끝났을 때 idle=true가 살아남는다(500ms 재대기 소실) — 판정은
+ *  **구독 기반 타임스탬프**: 콜백(커밋과 무관하게 호출)에서 동기 재계산. */
+// Host 루트 1회 마운트 전제 — 훅과 tryApply 최종 게이트가 같은 값을 본다.
+const quietRef: { since: number | null } = { since: Date.now() };
+
+function netBusy(qc: QueryClient): boolean {
+  return inflightCount() > 0 || qc.isFetching() > 0 || qc.isMutating() > 0;
+}
+
+/** 호출 시점 계산(렌더 스냅샷 아님) — tryApply 최종 게이트와 훅 반환이 공유. */
+export function networkQuietNow(qc: QueryClient, now = Date.now()): boolean {
+  return quietRef.since != null && now - quietRef.since >= OTA_NETWORK_IDLE_MS && !netBusy(qc);
+}
+
 export function useNetworkIdle(): boolean {
-  const fetching = useIsFetching();
-  const mutating = useIsMutating();
-  // P-347 2R(#109 P1): react-query 밖 raw 요청(VersionGate·legalText 등)은 카운터에
-  // 안 잡힘 — 단일 관문(api/client.ts fetch) in-flight 카운터를 함께 본다.
-  const rawInflight = React.useSyncExternalStore(subscribeInflight, inflightCount, inflightCount);
-  const busy = fetching > 0 || mutating > 0 || rawInflight > 0;
-  const [idle, setIdle] = React.useState(false);
+  const qc = useQueryClient();
+  const [, force] = React.useReducer((n: number) => n + 1, 0);
   React.useEffect(() => {
-    if (busy) {
-      setIdle(false); // 정착 중 재증가 = 리셋
-      return;
-    }
-    const timer = setTimeout(() => setIdle(true), OTA_NETWORK_IDLE_MS);
-    return () => clearTimeout(timer);
-  }, [busy]);
-  // #109 2R P1 ①: busy 전환 커밋에서 setIdle(false)는 다음 렌더 — 이 렌더는 동기 false
-  return idle && !busy;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onEvent = () => {
+      // >0 = 창 닫힘 · 0 = 이벤트 자체가 활동 증거라 지금부터 재계량 —
+      // RQ notify 배치로 시작·종료가 한 콜백에 합쳐져도 리셋이 산다(9R P1)
+      quietRef.since = netBusy(qc) ? null : Date.now();
+      if (timer) clearTimeout(timer);
+      if (quietRef.since != null) timer = setTimeout(force, OTA_NETWORK_IDLE_MS + 10); // 정착 시 리렌더 1회
+      force();
+    };
+    const subs = [subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)];
+    onEvent(); // 마운트 시점 동기화
+    return () => {
+      for (const u of subs) u();
+      if (timer) clearTimeout(timer);
+    };
+  }, [qc]);
+  return networkQuietNow(qc);
 }
 
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
@@ -104,9 +123,9 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   const tryApply = React.useCallback((): boolean => {
     if (isBlockedRoute(pathname)) return false; // #109 5R ①: 진행 중 작업 화면 = 보류(라우트 변경 시 deps 재평가)
     if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background', networkIdle })) return false;
-    // #109 2R P1 ②: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트** —
-    // idle 정착 커밋과 같은 배치에서 새 요청이 시작된 TOCTOU 창 봉쇄.
-    if (inflightCount() > 0 || queryClient.isFetching() > 0 || queryClient.isMutating() > 0) return false;
+    // #109 2R P1 ② → 9R: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트** —
+    // 같은 quietRef 타임스탬프 조건(짧은 busy의 커밋 전 소멸까지 봉쇄).
+    if (!networkQuietNow(queryClient)) return false;
     applyNow();
     return true;
   }, [splashDone, appActive, networkIdle, queryClient, pathname]);

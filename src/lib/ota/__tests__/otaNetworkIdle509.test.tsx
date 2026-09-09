@@ -96,8 +96,8 @@ it('배선 잠금 — 호스트 = useNetworkIdle 경유 canReloadNow AND · 레�
   const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
   expect(host).toContain('const networkIdle = useNetworkIdle()');
   expect(host).toMatch(/canReloadNow\(\{ bootedAt: BOOTED_AT[^}]*networkIdle \}\)/);
-  expect(host).toContain('useIsFetching');
-  expect(host).toContain('useIsMutating');
+  // 9R: 카운트 소스 = netBusy(inflight + RQ 캐시 동기 카운트)
+  expect(host).toContain('return inflightCount() > 0 || qc.isFetching() > 0 || qc.isMutating() > 0;');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
   const qcpIdx = layout.indexOf('<QueryClientProvider');
   const hostIdx = layout.indexOf('<OtaAutoApplyHost');
@@ -131,7 +131,8 @@ it('#109 P1: react-query 밖 raw 요청(inflight 카운터)도 정적 창에 포
 it('#109 P2: networkIdle 미충족 대기 = 타이머 스케줄 0(폴링 루프 금지) — 시간 조건 미충족만 remain 타이머', () => {
   const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
   expect(host).toContain('if (remainMs <= 0) return;'); // 8s 경과 후엔 타이머 없음 — deps 반응만
-  expect(host).toContain('React.useSyncExternalStore(subscribeInflight, inflightCount, inflightCount)');
+  // 9R: 구독 3종(커밋 무관 동기 콜백) — inflight·queryCache·mutationCache
+  expect(host).toContain('subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)');
   // 단일 관문 잠금 — 8R: client는 request() 전체 track(installationId·토큰 provider 대기 포함),
   // legalText raw fetch는 카운터 경유
   const client = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
@@ -163,10 +164,10 @@ it('#109 2R P1 ①: idle 정착 후 새 요청 시작 = 같은 렌더에서 동�
   act(() => { decInflight(); });
 });
 
-it('#109 2R P1 ②: 훅 배선 잠금 — 반환 = idle && !busy · tryApply 동기 최종 게이트(inflight·RQ 카운트)', () => {
+it('#109 2R P1 ② → 9R: 훅 배선 잠금 — 반환·tryApply 최종 게이트 = 같은 quietRef 호출 시점 계산', () => {
   const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-  expect(host).toContain('return idle && !busy;');
-  expect(host).toContain('if (inflightCount() > 0 || queryClient.isFetching() > 0 || queryClient.isMutating() > 0) return false;');
+  expect(host).toContain('return networkQuietNow(qc);');
+  expect(host).toContain('if (!networkQuietNow(queryClient)) return false;');
 });
 
 
@@ -222,4 +223,30 @@ it('#109 5R: 라우트 차단 복원 + 라우트 무관 네이티브 track 배�
   expect(fs.readFileSync('src/lib/auth/appleRevoke.ts', 'utf8')).toContain('track(AppleAuthentication.signInAsync())');
   expect(fs.readFileSync('src/lib/api/places.ts', 'utf8')).toContain('track(Location.getCurrentPositionAsync(');
   expect(fs.readFileSync('src/lib/data/orders.ts', 'utf8')).toContain('track(Location.getCurrentPositionAsync(');
+});
+
+
+it('#109 9R P1: 정착 후 짧은 busy(시작·종료가 커밋 전) = 타임스탬프 리셋 — 즉시 false, 500ms 재정착 후 true', async () => {
+  jest.useFakeTimers();
+  const { incInflight, decInflight } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  const { networkQuietNow } = require('../OtaAutoApplyHost') as typeof import('../OtaAutoApplyHost');
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  let tree!: ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <Probe />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => { jest.advanceTimersByTime(OTA_NETWORK_IDLE_MS + 100); });
+  expect(idleOf(tree)).toContain('true'); // 정착
+  // 커밋 없이 같은 틱에 시작·종료 — React 상태 기반이면 idle=true가 살아남던 패턴(9R P1)
+  act(() => { incInflight(); decInflight(); });
+  expect(networkQuietNow(qc)).toBe(false); // tryApply 최종 게이트 = 즉시 보류
+  await act(async () => { jest.advanceTimersByTime(OTA_NETWORK_IDLE_MS - 100); });
+  expect(networkQuietNow(qc)).toBe(false); // 재정착 전
+  await act(async () => { jest.advanceTimersByTime(200); });
+  expect(networkQuietNow(qc)).toBe(true);
+  expect(idleOf(tree)).toContain('true'); // 정착 타이머가 리렌더까지 트리거
 });
