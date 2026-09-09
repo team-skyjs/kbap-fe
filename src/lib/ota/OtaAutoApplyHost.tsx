@@ -10,7 +10,7 @@
  */
 import * as React from 'react';
 import { AppState } from 'react-native';
-import { useIsFetching, useIsMutating } from '@tanstack/react-query';
+import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
 import { inflightCount, subscribeInflight } from '@/lib/net/inflight';
@@ -58,7 +58,8 @@ export function useNetworkIdle(): boolean {
     const timer = setTimeout(() => setIdle(true), OTA_NETWORK_IDLE_MS);
     return () => clearTimeout(timer);
   }, [busy]);
-  return idle;
+  // #109 2R P1 ①: busy 전환 커밋에서 setIdle(false)는 다음 렌더 — 이 렌더는 동기 false
+  return idle && !busy;
 }
 
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
@@ -67,6 +68,7 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
   const [guardTick, setGuardTick] = React.useState(0);
   const networkIdle = useNetworkIdle(); // P-347 — QueryClientProvider 안(레이아웃 확인됨)
+  const queryClient = useQueryClient(); // #109 2R P1 ②: 호출 시점 동기 재확인용
   const stateRef = React.useRef({ lastCheckAt: 0 });
 
   React.useEffect(() => {
@@ -90,9 +92,12 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   // 통과 시에만 실행. 배너 수동 탭도 동일 경로(부팅 창 크래시 봉쇄).
   const tryApply = React.useCallback((): boolean => {
     if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background', networkIdle })) return false;
+    // #109 2R P1 ②: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트** —
+    // idle 정착 커밋과 같은 배치에서 새 요청이 시작된 TOCTOU 창 봉쇄.
+    if (inflightCount() > 0 || queryClient.isFetching() > 0 || queryClient.isMutating() > 0) return false;
     applyNow();
     return true;
-  }, [splashDone, appActive, networkIdle]);
+  }, [splashDone, appActive, networkIdle, queryClient]);
 
   // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료·스플래시/포그라운드/가드 타이머마다
   const prod = isProdChannel();

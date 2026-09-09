@@ -140,3 +140,30 @@ it('#109 P2: networkIdle 미충족 대기 = 타이머 스케줄 0(폴링 루프 
   expect(legal).toContain('incInflight();');
   expect(legal).toContain('decInflight();');
 });
+
+
+it('#109 2R P1 ①: idle 정착 후 새 요청 시작 = 같은 렌더에서 동기 false(다음 커밋 대기 없음)', async () => {
+  jest.useFakeTimers();
+  const { incInflight, decInflight } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  let tree!: ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <Probe />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => { jest.advanceTimersByTime(OTA_NETWORK_IDLE_MS + 100); });
+  expect(idleOf(tree)).toContain('true'); // 정착
+  // 새 raw 요청 시작 — busy 전환 커밋의 렌더에서 이미 false(idle && !busy)
+  act(() => { incInflight(); });
+  expect(idleOf(tree)).toContain('false');
+  act(() => { decInflight(); });
+});
+
+it('#109 2R P1 ②: 훅 배선 잠금 — 반환 = idle && !busy · tryApply 동기 최종 게이트(inflight·RQ 카운트)', () => {
+  const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+  expect(host).toContain('return idle && !busy;');
+  expect(host).toContain('if (inflightCount() > 0 || queryClient.isFetching() > 0 || queryClient.isMutating() > 0) return false;');
+});
