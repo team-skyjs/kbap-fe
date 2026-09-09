@@ -106,3 +106,37 @@ it('배선 잠금 — 호스트 = useNetworkIdle 경유 canReloadNow AND · 레�
   expect(hostIdx).toBeGreaterThan(qcpIdx);
   expect(hostIdx).toBeLessThan(qcpClose);
 });
+
+
+it('#109 P1: react-query 밖 raw 요청(inflight 카운터)도 정적 창에 포함 — 진행 중 보류·완료 후 정착', async () => {
+  jest.useFakeTimers();
+  const { incInflight, decInflight } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  let tree!: ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <Probe />
+      </QueryClientProvider>,
+    );
+  });
+  act(() => { incInflight(); }); // raw api.get 진행 시뮬레이션(VersionGate 등)
+  await act(async () => { jest.advanceTimersByTime(OTA_NETWORK_IDLE_MS + 300); });
+  expect(idleOf(tree)).toContain('false'); // RQ 카운트 0이어도 raw 진행 = 보류
+  act(() => { decInflight(); });
+  await act(async () => { jest.advanceTimersByTime(OTA_NETWORK_IDLE_MS + 100); });
+  expect(idleOf(tree)).toContain('true');
+});
+
+it('#109 P2: networkIdle 미충족 대기 = 타이머 스케줄 0(폴링 루프 금지) — 시간 조건 미충족만 remain 타이머', () => {
+  const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+  expect(host).toContain('if (remainMs <= 0) return;'); // 8s 경과 후엔 타이머 없음 — deps 반응만
+  expect(host).toContain('React.useSyncExternalStore(subscribeInflight, inflightCount, inflightCount)');
+  // 단일 관문 잠금 — client.ts fetch·legalText raw fetch가 카운터 경유
+  const client = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
+  expect(client).toContain('incInflight();');
+  expect(client).toMatch(/finally \{\s*clearTimeout\(timer\);\s*decInflight\(\);/);
+  const legal = require('fs').readFileSync('src/lib/legalText.ts', 'utf8') as string;
+  expect(legal).toContain('incInflight();');
+  expect(legal).toContain('decInflight();');
+});

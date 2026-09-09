@@ -13,6 +13,7 @@ import { AppState } from 'react-native';
 import { useIsFetching, useIsMutating } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
+import { inflightCount, subscribeInflight } from '@/lib/net/inflight';
 import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
 
 // P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
@@ -44,7 +45,10 @@ function applyNow(): void {
 export function useNetworkIdle(): boolean {
   const fetching = useIsFetching();
   const mutating = useIsMutating();
-  const busy = fetching > 0 || mutating > 0;
+  // P-347 2R(#109 P1): react-query 밖 raw 요청(VersionGate·legalText 등)은 카운터에
+  // 안 잡힘 — 단일 관문(api/client.ts fetch) in-flight 카운터를 함께 본다.
+  const rawInflight = React.useSyncExternalStore(subscribeInflight, inflightCount, inflightCount);
+  const busy = fetching > 0 || mutating > 0 || rawInflight > 0;
   const [idle, setIdle] = React.useState(false);
   React.useEffect(() => {
     if (busy) {
@@ -96,9 +100,12 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
     if (!ready) return;
     if (otaApplyDecision({ prod, pathname: '/', mutating: 0 }) !== 'reload') return; // P-316: prod 상수 defer — 라우트·뮤테이션 무관
     if (tryApply()) return;
-    // 가드 미충족 — 시간 조건은 충족 시각에 1회 재평가(스플래시·active는 deps가 재평가)
-    const remain = Math.max(0, OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT)) + 50;
-    const timer = setTimeout(() => setGuardTick((n) => n + 1), remain);
+    // 가드 미충족 — **시간 조건(8s) 미충족일 때만** 충족 시각에 1회 재평가 타이머.
+    // 나머지 조건(스플래시·active·networkIdle)은 deps 반응에 맡긴다 — networkIdle
+    // 대기 중 remain=50ms 타이머가 폴링 루프가 되던 것 방지(#109 P2).
+    const remainMs = OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT);
+    if (remainMs <= 0) return;
+    const timer = setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50);
     return () => clearTimeout(timer);
   }, [ready, prod, tryApply, guardTick]);
 

@@ -28,6 +28,7 @@ import i18n from '../i18n';
 import { BE_BASE } from '../data/config';
 import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
+import { decInflight, incInflight } from '../net/inflight';
 
 /**
  * P-199(BE #160·161) → P-270(KB-389): **전 채널 신계약 통일** — 버전리스 경로 +
@@ -186,6 +187,7 @@ async function request<T>(
   // 헤더만 오고 본문이 침묵하는 유실도 봉쇄.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  incInflight(); // P-347: OTA reload 정적 창 카운터 — 단일 관문(모든 API 경로)
   try {
     try {
       res = await fetch(url, {
@@ -229,6 +231,7 @@ async function request<T>(
     }
   } finally {
     clearTimeout(timer);
+    decInflight(); // P-347: try/finally로 dec 보장(타임아웃·throw·재시도 재귀 포함)
   }
 
   // DevTools Network 탭이 dev-launcher 멀티 호스트 이슈(discussions/954)로 비활성 —

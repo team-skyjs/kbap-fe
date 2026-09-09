@@ -78,7 +78,7 @@ describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)
     expect(host).toContain('const BOOTED_AT = Date.now();'); // 모듈 로드 시각
     expect(host).toContain('if (!canReloadNow({ bootedAt: BOOTED_AT'); // 가드 통과 시에만 applyNow
     expect(host).toContain('if (tryApply()) return;'); // 정책 reload여도 가드 선행(teamtest immediate 포함)
-    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remain)'); // 충족 시각 1회 재평가
+    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50)'); // 시간 조건 미충족만 1회 재평가(#109 P2)
     expect(host).toContain('return null;'); // P-316: 배너 렌더 0(수동 적용 경로 소멸)
     const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
     expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />');

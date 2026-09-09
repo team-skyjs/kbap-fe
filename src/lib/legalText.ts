@@ -5,6 +5,7 @@
  * 없이(JS-only, OTA 가능) 바텀시트에 띄우기 위해 HTML→플레인 텍스트로 변환한다.
  * 안전 고지는 i18n 텍스트 재사용이라 여기 없음.
  */
+import { decInflight, incInflight } from '@/lib/net/inflight';
 export const LEGAL_URLS = {
   terms: 'https://team-skyjs.github.io/kbap-legal/terms-of-service.html',
   privacy: 'https://team-skyjs.github.io/kbap-legal/privacy-policy.html',
@@ -36,7 +37,12 @@ export function htmlToPlainText(html: string): string {
 }
 
 export async function fetchLegalText(doc: LegalDoc): Promise<string> {
-  const res = await fetch(LEGAL_URLS[doc]);
-  if (!res.ok) throw new Error(`legal fetch ${res.status}`);
-  return htmlToPlainText(await res.text());
+  incInflight(); // P-347: raw fetch도 OTA 정적 창 카운터에 포함
+  try {
+    const res = await fetch(LEGAL_URLS[doc]);
+    if (!res.ok) throw new Error(`legal fetch ${res.status}`);
+    return htmlToPlainText(await res.text());
+  } finally {
+    decInflight();
+  }
 }
