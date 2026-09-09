@@ -59,3 +59,22 @@ it('구글 로그인 credential에 idToken + accessToken 둘 다 (getTokens 병�
   expect(mockGetTokens).toHaveBeenCalled();
   expect(mockCredential).toHaveBeenCalledWith('gIdToken', 'gAccessToken');
 });
+
+it('Codex #109 8R: signInWithGoogle 진행 중 inflight = 1 — 함수 전체 단일 관문(KB-509)', async () => {
+  const { inflightCount } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  let resolveSignIn!: (v: unknown) => void;
+  mockSignIn.mockImplementation(() => new Promise((r) => { resolveSignIn = r; }));
+  mockGetTokens.mockResolvedValue({ idToken: 'gIdToken', accessToken: 'gAccessToken' });
+
+  let done!: () => void;
+  const signedIn = new Promise<void>((r) => (done = r));
+  await act(async () => {
+    renderer.create(<Harness onDone={done} />);
+  });
+  expect(inflightCount()).toBe(1); // signIn 대기 중 — OTA 정적 창이 로그인 왕복 전체를 본다
+  resolveSignIn({ type: 'success', data: { idToken: 'gIdToken' } });
+  await act(async () => {
+    await signedIn;
+  });
+  expect(inflightCount()).toBe(0);
+});

@@ -132,10 +132,11 @@ it('#109 P2: networkIdle 미충족 대기 = 타이머 스케줄 0(폴링 루프 
   const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
   expect(host).toContain('if (remainMs <= 0) return;'); // 8s 경과 후엔 타이머 없음 — deps 반응만
   expect(host).toContain('React.useSyncExternalStore(subscribeInflight, inflightCount, inflightCount)');
-  // 단일 관문 잠금 — client.ts fetch·legalText raw fetch가 카운터 경유
+  // 단일 관문 잠금 — 8R: client는 request() 전체 track(installationId·토큰 provider 대기 포함),
+  // legalText raw fetch는 카운터 경유
   const client = require('fs').readFileSync('src/lib/api/client.ts', 'utf8') as string;
-  expect(client).toContain('incInflight();');
-  expect(client).toMatch(/finally \{\s*clearTimeout\(timer\);\s*decInflight\(\);/);
+  expect(client).toContain('return track(requestInner<T>(method, path, body, isRetry, timeoutMs, extraHeaders));');
+  expect(client).not.toContain('incInflight');
   const legal = require('fs').readFileSync('src/lib/legalText.ts', 'utf8') as string;
   expect(legal).toContain('incInflight();');
   expect(legal).toContain('decInflight();');
@@ -213,10 +214,11 @@ it('#109 5R: 라우트 차단 복원 + 라우트 무관 네이티브 track 배�
   expect(host).toContain('if (isBlockedRoute(pathname)) return false;'); // 화면 단위 봉쇄(비-prod)
   expect(host).toContain('const pathname = usePathname();');
   // AuthGateSheet 소셜 로그인(어느 화면에서든)·애플 재인증·위치 = track 경유
+  // 8R: 함수 본문 전체 단일 관문(내부 await 개별 track은 사이 창이 샌다)
   const social = fs.readFileSync('src/lib/auth/useSocialAuth.ts', 'utf8') as string;
-  expect(social).toContain('trackInflight(GoogleSignin.signIn())');
-  expect(social).toContain('trackInflight(AppleAuthentication.signInAsync({');
-  expect((social.match(/trackInflight\(signInWithCredential\(/g) ?? []).length).toBe(2);
+  expect(social).toContain('const signInWithGoogle = (): Promise<void> => trackInflight((async () => {');
+  expect(social).toContain('const signInWithApple = (): Promise<void> => trackInflight((async () => {');
+  expect((social.match(/trackInflight\(/g) ?? []).length).toBe(2); // 함수 2곳뿐 — 내부 개별 track 0
   expect(fs.readFileSync('src/lib/auth/appleRevoke.ts', 'utf8')).toContain('track(AppleAuthentication.signInAsync())');
   expect(fs.readFileSync('src/lib/api/places.ts', 'utf8')).toContain('track(Location.getCurrentPositionAsync(');
   expect(fs.readFileSync('src/lib/data/orders.ts', 'utf8')).toContain('track(Location.getCurrentPositionAsync(');

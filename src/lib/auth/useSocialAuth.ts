@@ -56,13 +56,15 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
     return exchangeLogin(idToken);
   };
 
-  const signInWithGoogle = async () => {
+  // Codex #109 8R: 관문 = 함수 전체(hasPlayServices·nonce 해시·exchange의 getIdToken 포함) —
+  // 내부 await 개별 track은 사이 창이 샌다
+  const signInWithGoogle = (): Promise<void> => trackInflight((async () => {
     setError(null);
     setPhase('google');
     try {
       ensureGoogleConfigured();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true }); // iOS no-op
-      const res = await trackInflight(GoogleSignin.signIn()); // #109 5R: OTA 정적 창 포함(AuthGateSheet = 어느 화면에서든)
+      const res = await GoogleSignin.signIn();
       if (res.type === 'cancelled') {
         setPhase('idle'); // sheet closed — not an error
         return;
@@ -72,8 +74,8 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       // KB-196: Android 네이티브는 google credential에 accessToken도 요구
       // ("accessToken cannot be empty"). signIn() 반환엔 없어 getTokens()로 받는다.
       // iOS는 idToken만으로 통과하지만 accessToken 병행이 무해(회귀 없음).
-      const { accessToken } = await trackInflight(GoogleSignin.getTokens());
-      await trackInflight(signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken)));
+      const { accessToken } = await GoogleSignin.getTokens();
+      await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken));
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
       const exch = await exchange();
       if (exch.cancelled) {
@@ -90,9 +92,9 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       console.log('[auth] google error', e);
       setError(/network|NETWORK|fetch|connect/i.test(String((e as Error)?.message ?? e)) ? 'network' : 'generic');
     }
-  };
+  })());
 
-  const signInWithApple = async () => {
+  const signInWithApple = (): Promise<void> => trackInflight((async () => { // 8R: 함수 전체 관문
     setError(null);
     setPhase('apple');
     try {
@@ -101,12 +103,12 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       const rawNonce = Crypto.randomUUID();
       const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
       // EMAIL only — 실명은 수집하지 않는다 (2026-07-09 정책; 표시명은 온보딩 닉네임)
-      const c = await trackInflight(AppleAuthentication.signInAsync({
+      const c = await AppleAuthentication.signInAsync({
         requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
         nonce: hashedNonce,
-      })); // #109 5R
+      }); // #109 5R
       if (!c.identityToken) throw new Error('apple sign-in returned no identityToken');
-      await trackInflight(signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce)));
+      await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
       const res = await exchange();
       if (res.cancelled) {
@@ -124,7 +126,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       console.log('[auth] apple error', e);
       setError(/network|NETWORK/i.test(String((e as Error)?.message ?? e)) ? 'network' : 'generic');
     }
-  };
+  })());
 
   return {
     phase, // which provider is mid-flight (drives per-button spinners)
