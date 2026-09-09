@@ -26,6 +26,11 @@ const BLOCKED_ROUTE_RE: readonly RegExp[] = [
   /^\/login/,
   /^\/auth/,
   /^\/community\/compose/,
+  // #109 6R: 루트 레벨 작업 화면 전수(src/app/*.tsx 1회 스윕) — 정책: 작업(입력·
+  // 진행 유실) 화면 = 차단 / 목록·상세 = 허용. scan-order는 /^\/scan/ 접두로 기포함.
+  // notifications(멱등 토글·입력 상태 없음)·states(데모)는 허용 유지.
+  /^\/delete-account/, // 탈퇴 확정·Apple 재인증(루트 라우트 — /profile/ 접두 불일치)
+  /^\/search/, // 검색 입력 중 유실 방지
 ];
 
 export function isBlockedRoute(pathname: string): boolean {

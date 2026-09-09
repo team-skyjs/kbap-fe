@@ -38,8 +38,11 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
       expect(isBlockedRoute(p)).toBe(true);
       expect(otaApplyDecision({ prod: true, pathname: p, mutating: 0 })).toBe('defer');
     }
-    for (const p of ['/login', '/auth/callback', '/community/compose']) {
-      expect(isBlockedRoute(p)).toBe(true); // #109 5R: 소셜 로그인·글 작성(네이티브 프라미스 화면)
+    for (const p of ['/login', '/auth/callback', '/community/compose', '/delete-account', '/search', '/scan-order']) {
+      expect(isBlockedRoute(p)).toBe(true); // #109 5R/6R: 작업 화면 전수(작업 = 차단 / 목록·상세 = 허용)
+    }
+    for (const p of ['/notifications', '/states']) {
+      expect(isBlockedRoute(p)).toBe(false); // 멱등 토글·데모 = 허용 유지
     }
     for (const p of ['/', '/food', '/profile', '/food/7', '/food/7/reviews']) {
       expect(isBlockedRoute(p)).toBe(false); // 탭 루트·리뷰 "목록"은 제외 아님
