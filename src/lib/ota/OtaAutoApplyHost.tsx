@@ -10,9 +10,12 @@
  */
 import * as React from 'react';
 import { AppState } from 'react-native';
+import { usePathname } from 'expo-router';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
-import { OTA_BOOT_GUARD_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
+import { inflightCount, subscribeInflight, track } from '@/lib/net/inflight';
+import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, isBlockedRoute, otaApplyDecision } from './otaPolicy';
 
 // P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
 const BOOTED_AT = Date.now();
@@ -36,19 +39,74 @@ function applyNow(): void {
   }
 }
 
+/** P-347(KB-509): 네트워크 정적 창 — RQ 진행 카운트 + raw inflight가 전부 0으로
+ *  OTA_NETWORK_IDLE_MS 연속 정착해야 true(정착 중 재증가 = 리셋).
+ *  reload 중 진행 fetch의 reject가 죽은 런타임에 스케줄되는 크래시(REACT-NATIVE-8) 봉쇄.
+ *  상한 없음 — 계속 바쁘면 계속 보류(다음 포그라운드/콜드 스타트에 적용).
+ *
+ *  Codex #109 9R P1: 정착 판정을 React 상태(effect 커밋)에 얹으면 짧은 busy가
+ *  커밋 전에 끝났을 때 idle=true가 살아남는다(500ms 재대기 소실) — 판정은
+ *  **구독 기반 타임스탬프**: 콜백(커밋과 무관하게 호출)에서 동기 재계산. */
+// Host 루트 1회 마운트 전제 — 훅과 tryApply 최종 게이트가 같은 값을 본다.
+const quietRef: { since: number | null } = { since: Date.now() };
+
+function netBusy(qc: QueryClient): boolean {
+  return inflightCount() > 0 || qc.isFetching() > 0 || qc.isMutating() > 0;
+}
+
+/** 호출 시점 계산(렌더 스냅샷 아님) — tryApply 최종 게이트와 훅 반환이 공유. */
+export function networkQuietNow(qc: QueryClient, now = Date.now()): boolean {
+  return quietRef.since != null && now - quietRef.since >= OTA_NETWORK_IDLE_MS && !netBusy(qc);
+}
+
+export function useNetworkIdle(): boolean {
+  const qc = useQueryClient();
+  const [, force] = React.useReducer((n: number) => n + 1, 0);
+  React.useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onEvent = () => {
+      // >0 = 창 닫힘 · 0 = 이벤트 자체가 활동 증거라 지금부터 재계량 —
+      // RQ notify 배치로 시작·종료가 한 콜백에 합쳐져도 리셋이 산다(9R P1)
+      quietRef.since = netBusy(qc) ? null : Date.now();
+      if (timer) clearTimeout(timer);
+      if (quietRef.since != null) timer = setTimeout(force, OTA_NETWORK_IDLE_MS + 10); // 정착 시 리렌더 1회
+      force();
+    };
+    const subs = [subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)];
+    onEvent(); // 마운트 시점 동기화
+    return () => {
+      for (const u of subs) u();
+      if (timer) clearTimeout(timer);
+    };
+  }, [qc]);
+  return networkQuietNow(qc);
+}
+
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {
   const [ready, setReady] = React.useState(false);
+  // #109 4R: AppState 콜백에서 동기 참조용 — ready 후 재체크(네이티브 프라미스) 생략
+  const readyRef = React.useRef(false);
+  readyRef.current = ready;
   // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
   const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
   const [guardTick, setGuardTick] = React.useState(0);
+  const networkIdle = useNetworkIdle(); // P-347 — QueryClientProvider 안(레이아웃 확인됨)
+  const queryClient = useQueryClient(); // #109 2R P1 ②: 호출 시점 동기 재확인용
+  // #109 5R ①: 라우트 차단 복원(비-prod) — 카메라·온보딩·편집·작성·로그인 화면의
+  // 네이티브 프라미스(takePicture·ImagePicker·소셜 로그인 등)는 화면 단위로 봉쇄.
+  const pathname = usePathname();
   const stateRef = React.useRef({ lastCheckAt: 0 });
 
   React.useEffect(() => {
     const check = () => {
       if (__DEV__) return; // Metro 개발 중 = no-op(코어의 isEnabled 게이트와 이중)
+      // #109 4R ①: 이미 받아둔 업데이트 적용 대기 중 = 재체크 불요 — 게이트 밖
+      // 네이티브 프라미스(checkForUpdateAsync/fetchUpdateAsync) 위 reload 창 제거.
+      if (readyRef.current) return;
       const u = updatesModule();
       if (!u) return;
-      void checkAndFetchOta(u, stateRef.current, Date.now()).then((r) => {
+      // #109 4R ②: 그래도 도는 체크는 inflight 경유 — 정적 창이 체크 자체도 본다
+      void track(checkAndFetchOta(u, stateRef.current, Date.now())).then((r) => {
         if (r === 'ready') setReady(true);
       });
     };
@@ -63,10 +121,14 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   // P-304: reloadAsync 부팅 가드 — 정책이 reload여도 가드(8s+스플래시 종료+active)
   // 통과 시에만 실행. 배너 수동 탭도 동일 경로(부팅 창 크래시 봉쇄).
   const tryApply = React.useCallback((): boolean => {
-    if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background' })) return false;
+    if (isBlockedRoute(pathname)) return false; // #109 5R ①: 진행 중 작업 화면 = 보류(라우트 변경 시 deps 재평가)
+    if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background', networkIdle })) return false;
+    // #109 2R P1 ② → 9R: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트** —
+    // 같은 quietRef 타임스탬프 조건(짧은 busy의 커밋 전 소멸까지 봉쇄).
+    if (!networkQuietNow(queryClient)) return false;
     applyNow();
     return true;
-  }, [splashDone, appActive]);
+  }, [splashDone, appActive, networkIdle, queryClient, pathname]);
 
   // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료·스플래시/포그라운드/가드 타이머마다
   const prod = isProdChannel();
@@ -74,9 +136,12 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
     if (!ready) return;
     if (otaApplyDecision({ prod, pathname: '/', mutating: 0 }) !== 'reload') return; // P-316: prod 상수 defer — 라우트·뮤테이션 무관
     if (tryApply()) return;
-    // 가드 미충족 — 시간 조건은 충족 시각에 1회 재평가(스플래시·active는 deps가 재평가)
-    const remain = Math.max(0, OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT)) + 50;
-    const timer = setTimeout(() => setGuardTick((n) => n + 1), remain);
+    // 가드 미충족 — **시간 조건(8s) 미충족일 때만** 충족 시각에 1회 재평가 타이머.
+    // 나머지 조건(스플래시·active·networkIdle)은 deps 반응에 맡긴다 — networkIdle
+    // 대기 중 remain=50ms 타이머가 폴링 루프가 되던 것 방지(#109 P2).
+    const remainMs = OTA_BOOT_GUARD_MS - (Date.now() - BOOTED_AT);
+    if (remainMs <= 0) return;
+    const timer = setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50);
     return () => clearTimeout(timer);
   }, [ready, prod, tryApply, guardTick]);
 

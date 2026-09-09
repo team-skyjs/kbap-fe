@@ -38,6 +38,12 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
       expect(isBlockedRoute(p)).toBe(true);
       expect(otaApplyDecision({ prod: true, pathname: p, mutating: 0 })).toBe('defer');
     }
+    for (const p of ['/login', '/auth/callback', '/community/compose', '/delete-account', '/search', '/scan-order']) {
+      expect(isBlockedRoute(p)).toBe(true); // #109 5R/6R: 작업 화면 전수(작업 = 차단 / 목록·상세 = 허용)
+    }
+    for (const p of ['/notifications', '/states']) {
+      expect(isBlockedRoute(p)).toBe(false); // 멱등 토글·데모 = 허용 유지
+    }
     for (const p of ['/', '/food', '/profile', '/food/7', '/food/7/reviews']) {
       expect(isBlockedRoute(p)).toBe(false); // 탭 루트·리뷰 "목록"은 제외 아님
     }
@@ -47,7 +53,7 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
 describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { canReloadNow, OTA_BOOT_GUARD_MS } = require('../otaPolicy') as typeof import('../otaPolicy');
-  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active' };
+  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active', networkIdle: true }; // P-347: 4조건 AND
 
   it('전부 충족 = true(경계 8s 포함)', () => {
     expect(canReloadNow(OK)).toBe(true);
@@ -67,6 +73,10 @@ describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)
     expect(canReloadNow({ ...OK, appState: 'inactive' })).toBe(false);
   });
 
+  it('P-347(KB-509): networkIdle false = false — 진행 중 fetch reject가 죽은 런타임에 스케줄되는 크래시 봉쇄', () => {
+    expect(canReloadNow({ ...OK, networkIdle: false })).toBe(false);
+  });
+
   it('호스트 배선 소스 잠금 — 가드 경유 적용·타이머 1회 재평가·배너 탭 동일 경로·splashDone 배선', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('fs');
@@ -74,7 +84,7 @@ describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)
     expect(host).toContain('const BOOTED_AT = Date.now();'); // 모듈 로드 시각
     expect(host).toContain('if (!canReloadNow({ bootedAt: BOOTED_AT'); // 가드 통과 시에만 applyNow
     expect(host).toContain('if (tryApply()) return;'); // 정책 reload여도 가드 선행(teamtest immediate 포함)
-    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remain)'); // 충족 시각 1회 재평가
+    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50)'); // 시간 조건 미충족만 1회 재평가(#109 P2)
     expect(host).toContain('return null;'); // P-316: 배너 렌더 0(수동 적용 경로 소멸)
     const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
     expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />');

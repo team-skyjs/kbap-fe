@@ -28,6 +28,7 @@ import i18n from '../i18n';
 import { BE_BASE } from '../data/config';
 import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
+import { track } from '../net/inflight';
 
 /**
  * P-199(BE #160·161) → P-270(KB-389): **전 채널 신계약 통일** — 버전리스 경로 +
@@ -131,7 +132,20 @@ export interface RequestOpts {
   headers?: Record<string, string>;
 }
 
-async function request<T>(
+function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  isRetry = false,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  extraHeaders?: Record<string, string>,
+): Promise<T> {
+  // Codex #109 8R: track = request 전체(installationId·토큰 provider 대기 포함) —
+  // fetch 직전만 감싸면 그 앞 비동기 창이 OTA 정적 창 밖(재시도 재귀는 중첩 track, 무해)
+  return track(requestInner<T>(method, path, body, isRetry, timeoutMs, extraHeaders));
+}
+
+async function requestInner<T>(
   method: string,
   path: string,
   body?: unknown,

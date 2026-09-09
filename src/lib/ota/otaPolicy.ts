@@ -22,6 +22,15 @@ const BLOCKED_ROUTE_RE: readonly RegExp[] = [
   /^\/onboarding/,
   /^\/profile\//, // 하위 전체 — 탭 루트 '/profile'은 슬래시 없음 = 비차단
   /\/review$/, // food/[id]/review 작성/수정 — /reviews(목록)는 제외 아님
+  // #109 5R: 네이티브 프라미스(소셜 로그인·촬영·위치)가 뜨는 화면 — 화면 단위 봉쇄
+  /^\/login/,
+  /^\/auth/,
+  /^\/community\/compose/,
+  // #109 6R: 루트 레벨 작업 화면 전수(src/app/*.tsx 1회 스윕) — 정책: 작업(입력·
+  // 진행 유실) 화면 = 차단 / 목록·상세 = 허용. scan-order는 /^\/scan/ 접두로 기포함.
+  // notifications(멱등 토글·입력 상태 없음)·states(데모)는 허용 유지.
+  /^\/delete-account/, // 탈퇴 확정·Apple 재인증(루트 라우트 — /profile/ 접두 불일치)
+  /^\/search/, // 검색 입력 중 유실 방지
 ];
 
 export function isBlockedRoute(pathname: string): boolean {
@@ -34,8 +43,14 @@ export function isBlockedRoute(pathname: string): boolean {
  *  ③ 포그라운드(active) 전부 충족 시에만. prod 정책(항상 defer 여부)은 예진 결정 대기. */
 export const OTA_BOOT_GUARD_MS = 8_000;
 
-export function canReloadNow(opts: { bootedAt: number; now: number; splashDone: boolean; appState: string }): boolean {
-  return opts.now - opts.bootedAt >= OTA_BOOT_GUARD_MS && opts.splashDone && opts.appState === 'active';
+/** P-347(KB-509, Sentry REACT-NATIVE-8): **네트워크 정적 창** — reloadAsync로 런타임이
+ *  해제되는 중 진행 중 fetch의 reject가 죽은 런타임에 스케줄되며 EXC_BAD_ACCESS
+ *  (9/9 iOS b29 부팅 +8.0s — 부팅 가드는 나이만 보고 네트워크 진행을 안 봄).
+ *  useIsFetching·useIsMutating 둘 다 0이 이 시간 연속 유지될 때만 networkIdle. */
+export const OTA_NETWORK_IDLE_MS = 500;
+
+export function canReloadNow(opts: { bootedAt: number; now: number; splashDone: boolean; appState: string; networkIdle: boolean }): boolean {
+  return opts.now - opts.bootedAt >= OTA_BOOT_GUARD_MS && opts.splashDone && opts.appState === 'active' && opts.networkIdle;
 }
 
 export type OtaDecision = 'reload' | 'defer';
