@@ -17,6 +17,7 @@ import { Btn, IconClose, SubHeader, Spinner } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
+import { PhotoViewer } from '@/components/PhotoViewer';
 import { useOrderDetail } from '@/lib/data/useOrders';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -152,15 +153,9 @@ export default function OrderDetailScreen() {
       )}
 
       {/* 풀스크린 메뉴판 뷰어 — contain(전체 표시) + 명시 닫기 */}
+      {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}
       {viewer && q.data?.scanImageUrl && (
-        <Modal visible transparent={false} animationType="fade" onRequestClose={() => setViewer(false)}>
-          <View style={styles.viewerRoot}>
-            <RemoteImage uri={q.data.scanImageUrl} style={StyleSheet.absoluteFill} contentFit="contain" />
-            <Pressable style={styles.viewerClose} onPress={() => setViewer(false)} hitSlop={10} testID="order-viewer-close">
-              <IconClose size={22} color="#fff" />
-            </Pressable>
-          </View>
-        </Modal>
+        <PhotoViewer uris={[q.data.scanImageUrl]} onClose={() => setViewer(false)} />
       )}
     </View>
   );

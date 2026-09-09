@@ -24,7 +24,7 @@ it('A-RL — body 20/8 gap9·summaryBox pv16 ph0 gap29·좌 149·축 gap6·트�
 it('A-RW — body pad20 gap20·캡션 슬롯 안 14/600 #778088·라벨 13/600·textarea 132 #DCDEE3 mt-8·photoDel #D9D9D9·시트 r16 pad16 gap20 제목 중앙', () => {
   const rw = read('src/app/food/[id]/review.tsx');
   expect(rw).toContain("body: { padding: 20, gap: 20 }");
-  expect(rw).toContain("photoCap: { fontSize: 14, fontWeight: '600', color: '#778088' }");
+  expect(rw).not.toContain('photoCap:'); // A-RW-05 → P-348 ③ 대체(캡션 소멸 — 아이콘만)
   expect(rw).toContain("label: { fontSize: 13, fontWeight: '600', color: '#778088' }");
   expect(rw).toMatch(/textarea: \{ minHeight: 132[^}]*borderColor: '#DCDEE3'[^}]*marginTop: -8/);
   expect(rw).toMatch(/photoDel: \{[^}]*top: 6, right: 6[^}]*backgroundColor: '#D9D9D9'/);

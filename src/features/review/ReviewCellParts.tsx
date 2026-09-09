@@ -8,6 +8,7 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
+import { PhotoViewer } from '@/components/PhotoViewer';
 import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -69,34 +70,8 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10 }: { photos: s
           </Pressable>
         ))}
       </View>
-      <Modal visible={openAt != null} transparent animationType="fade" onRequestClose={() => setOpenAt(null)}>
-        <View style={styles.viewer} testID="photo-viewer">
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            contentOffset={{ x: (openAt ?? 0) * width, y: 0 }}
-            onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-          >
-            {photos.map((uri) => (
-              <View key={uri} style={{ width, justifyContent: 'center' }}>
-                <RemoteImage uri={uri} style={{ width, height: width * 1.2 }} contentFit="contain" />
-              </View>
-            ))}
-          </ScrollView>
-          {/* P-193: X = 아이콘만(배경·보더 소멸 — P-181 연필 문법), 터치는 hitSlop */}
-          <Pressable style={styles.viewerClose} hitSlop={14} onPress={() => setOpenAt(null)} testID="viewer-close">
-            <IconClose size={22} color="#fff" />
-          </Pressable>
-          {photos.length > 1 && (
-            <View style={styles.dots}>
-              {photos.map((_, i) => (
-                <View key={i} style={[styles.dot, i === page && styles.dotOn]} />
-              ))}
-            </View>
-          )}
-        </View>
-      </Modal>
+      {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}
+      {openAt != null && <PhotoViewer uris={photos} index={openAt} onClose={() => setOpenAt(null)} />}
     </>
   );
 }
@@ -305,7 +280,7 @@ export function ExtrasRater({
       {EXTRA_AXES.map(({ key, labelKey }) => (
         <View key={key} style={styles.extrasRow} testID={`extras-row-${key}`}>
           <View style={styles.extrasLabelWrap}>
-            <Text style={styles.extrasLabel}>{t(labelKey)}</Text>
+            <Text style={styles.extrasLabel} numberOfLines={1}>{t(labelKey)}</Text>
             {extras[key] != null && <Text style={styles.extrasValue}>{extras[key]}</Text>}
           </View>
           <View
@@ -320,7 +295,7 @@ export function ExtrasRater({
                 testID={`extras-${key}-${n}`}
                 onPress={() => onChange({ ...extras, [key]: extras[key] === n ? null : n })} // 재탭 = 해제
               >
-                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />
+                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />
               </Pressable>
             ))}
           </View>
@@ -506,9 +481,9 @@ const styles = StyleSheet.create({
   toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
-  extrasBox: { gap: 18, marginHorizontal: 39 },
+  extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)
   extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }, // A-RW-04(KB-486)
+  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }, // A-RW-04 → P-348 ⑦: 라벨 고정(별 행이 축소)
   extrasLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
   extrasValue: { fontSize: 13, fontWeight: '600', color: '#2F3137' },
   extrasLine: { flexDirection: 'row', gap: 8, alignSelf: 'flex-start' },
