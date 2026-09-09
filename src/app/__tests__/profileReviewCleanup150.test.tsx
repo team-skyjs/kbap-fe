@@ -8,6 +8,20 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain },
+  };
+});
 jest.mock('@/lib/data/useDietPresets', () => ({
   useDietPresets: () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -149,13 +163,13 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
     return { remove: jest.fn() } as never;
   }) as never);
   const tree = render(<ReviewCompose />);
-  // 구 방식 잔재 0
-  expect(tree.root.findAll((n) => n.props?.automaticallyAdjustKeyboardInsets === true).length).toBe(0);
-  // 키보드 표시 → 컨테이너 하단 패딩 = 키보드 높이 + 여유(28)
+  // P-348 ⑤ 신계약: 키보드 패딩 = iOS 시스템 인셋(automaticallyAdjustKeyboardInsets),
+  // 수동 kbH 패딩 폐지(키보드 위 공백 회귀) — 컨테이너 패딩은 고정 28.
+  expect(tree.root.findAll((n) => n.props?.automaticallyAdjustKeyboardInsets === true).length).toBeGreaterThanOrEqual(1);
   act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
   const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
   const pad = (require('react-native').StyleSheet.flatten(sv.props.contentContainerStyle) as { paddingBottom?: number }).paddingBottom;
-  expect(pad).toBe(28 + 336);
+  expect(pad).toBe(28);
   // 셀렉션·성장·포커스 배선 — scrollTo 호출(블록/뷰포트 실측 주입 후)
   const scrollTo = jest.fn();
   const svInst = sv.instance as { scrollTo?: unknown } | null;

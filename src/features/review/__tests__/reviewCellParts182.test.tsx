@@ -6,6 +6,20 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-305: TabBar가 배럴 경유로 useMe(i18n→AsyncStorage)·RemoteImage(expo-image) 체인을
 // 물게 됨 — 이 스위트는 해당 표면 무관이라 목으로 차단
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain },
+  };
+});
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );

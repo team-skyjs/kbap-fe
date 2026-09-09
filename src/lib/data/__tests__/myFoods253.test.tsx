@@ -6,6 +6,20 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain },
+  };
+});
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
@@ -196,7 +210,7 @@ it('KB-360: 상세 메뉴판 사진 — scanImageUrl 렌더 게이트(있음 = �
   const photo = tree.root.findAll((n) => n.props?.testID === 'order-scan-image' && typeof n.props?.onPress === 'function');
   expect(photo.length).toBeGreaterThanOrEqual(1); // CardPhoto 관례 계열(RemoteImage — 스켈레톤 공용 경유)
   act(() => photo[0].props.onPress());
-  expect(tree.root.findAll((n) => n.props?.testID === 'order-viewer-close').length).toBeGreaterThanOrEqual(1); // 풀스크린 뷰어(contain)
+  expect(tree.root.findAll((n) => n.props?.testID === 'viewer-close').length).toBeGreaterThanOrEqual(1); // 풀스크린 뷰어(P-348 공용 PhotoViewer)
 
   // 부재(구 주문·prod 구계약) = 사진 영역 통째 미렌더 — 빈 슬롯 금지
   mockGet.mockImplementation(async (path: string) =>

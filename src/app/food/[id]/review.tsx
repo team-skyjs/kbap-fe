@@ -7,11 +7,12 @@
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Linking, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { choosePhotoSource } from '@/lib/data/profileImage';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
@@ -59,7 +60,6 @@ export default function ReviewCompose() {
   const createReview = useCreateReview();
   const bottomInset = useBottomInset(); // Codex #31 P1: 안드 내비바 플로어 포함
 
-  const labels = (t('review.labels', { returnObjects: true }) as string[]) ?? [];
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
@@ -70,25 +70,52 @@ export default function ReviewCompose() {
   const [capNote, setCapNote] = useState(false);
   const capTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [photoImporting, setPhotoImporting] = useState(false); // P-191: 픽커 복귀~원본 준비 표시
+  // P-348 ④(KB-511): 슬롯 탭 = 촬영/갤러리 시트(choosePhotoSource — 프로필 사진과 동일
+  // 문법·라벨 키 재사용, remove 없음). "파일 선택"은 expo-document-picker 네이티브
+  // 의존 = 비범위(TODO — 다음 네이티브 빌드).
   const pickPhoto = async () => {
     const remaining = REVIEW_MAX_PHOTOS - photos.length;
     if (remaining <= 0) return;
-    setPhotoImporting(true);
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-      allowsMultipleSelection: true,
-      selectionLimit: remaining,
+    const src = await choosePhotoSource({
+      title: t('photo.sheetTitle'),
+      camera: t('photo.take'),
+      gallery: t('photo.gallery'),
+      cancel: t('common.cancel'),
     });
-    if (!res.canceled && res.assets?.length) {
-      if (res.assets.length > remaining) {
-        setCapNote(true);
-        if (capTimer.current) clearTimeout(capTimer.current);
-        capTimer.current = setTimeout(() => setCapNote(false), 4000);
+    if (!src) return; // 취소
+    setPhotoImporting(true);
+    try {
+      if (src === 'camera') {
+        // 권한 거부 = 스캔 문법(설정 유도 알럿 — scan.tsx 동일)
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('photo.openSettings'), onPress: () => void Linking.openSettings() },
+          ]);
+          return;
+        }
+        const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+        if (!res.canceled && res.assets?.length) setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
+        return;
       }
-      setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsMultipleSelection: true,
+        selectionLimit: remaining,
+      });
+      if (!res.canceled && res.assets?.length) {
+        if (res.assets.length > remaining) {
+          setCapNote(true);
+          if (capTimer.current) clearTimeout(capTimer.current);
+          capTimer.current = setTimeout(() => setCapNote(false), 4000);
+        }
+        setPhotos((cur) => addReviewPhotos(cur, res.assets.map((a) => a.uri)));
+      }
+    } finally {
+      setPhotoImporting(false);
     }
-    setPhotoImporting(false);
   };
 
   // P-085(KB-73): 사진 presigned 업로드(purpose REVIEW, 전송=path) → POST /reviews.
@@ -186,7 +213,8 @@ export default function ReviewCompose() {
       <ScrollView
         ref={scrollRef}
         keyboardDismissMode="on-drag"
-        contentContainerStyle={[styles.body, { paddingBottom: 28 + kbH }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} // P-348 ⑤: 수동 kbH 패딩 = 키보드 위 공백(안드 = adjustResize라 불필요)
         keyboardShouldPersistTaps="handled"
         onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
       >
@@ -224,12 +252,13 @@ export default function ReviewCompose() {
           <View style={styles.starPick}>
             {[1, 2, 3, 4, 5].map((i) => (
               <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
-                <Star size={48} fillPct={i <= rating ? 100 : 0} sw={3} />
+                <Star size={48} fillPct={i <= rating ? 100 : 0} />
               </Pressable>
             ))}
           </View>
+          {/* P-348 ②: 시안(2200:21567) = 숫자만 — labels/ratingValue 소멸, 빈 상태 힌트 유지 */}
           <Text style={[styles.starCap, !rating && styles.starCapEmpty]}>
-            {rating ? t('review.ratingValue', { value: rating, label: labels[rating] ?? '' }) : t('review.tapToRate')}
+            {rating ? String(rating) : t('review.tapToRate')}
           </Text>
         </View>
 
@@ -258,9 +287,8 @@ export default function ReviewCompose() {
             {photos.length < REVIEW_MAX_PHOTOS && (
               <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={photoImporting ? undefined : pickPhoto} testID="photo-add">
                 {/* P-191: 픽커 복귀~원본 준비(iCloud) — 타일 자리 스피너(프레임 불변) */}
+                {/* P-348 ③(예진 결정 — A-RW-05 대체): 캡션 없이 카메라 아이콘 24만 */}
                 {photoImporting ? <ActivityIndicator size="small" color={C.ink3} /> : <IconCamera size={24} color={C.ink3} />}
-                {/* A-RW-05: 캡션 = 슬롯 안 */}
-                <Text style={styles.photoCap} numberOfLines={1}>{t('review.photosLabel', { max: REVIEW_MAX_PHOTOS })}</Text>
               </Pressable>
             )}
           </ScrollView>
@@ -396,7 +424,6 @@ const styles = StyleSheet.create({
   photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
   photoDel: { position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
   photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
-  photoCap: { fontSize: 14, fontWeight: '600', color: '#778088' }, // A-RW-05
   metaRow: { flexDirection: 'row', justifyContent: 'flex-end' },
   tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   // §2-7: 장소 필 h38 border #DCDEE3 r24 pad 8/12

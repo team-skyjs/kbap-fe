@@ -96,13 +96,13 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
 
 it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사진 슬롯 100·장소 필 소스 잠금', () => {
   const review = require('fs').readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
-  expect(review).toContain('<Star size={48} fillPct={i <= rating ? 100 : 0} sw={3} />');
+  expect(review).toContain('<Star size={48} fillPct={i <= rating ? 100 : 0} />'); // P-348 ①: sw 폐지(1px 절대)
   expect(review).toContain('testID="place-pill"');
   expect(review).toContain('testID="place-clear"');
   expect(review).toContain('testID="review-bottom-bar"'); // FixedBottom primary Post
   expect(review).toContain('busy={posting}'); // P-173 공용 가드 문법(Btn busy)
   const parts = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
-  expect(parts).toContain('<Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />');
+  expect(parts).toContain('<Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />'); // P-348 ①: sw 폐지(non-scaling-stroke)
 });
 
 it('③-b 세부 별 폭 적응(Codex #31 P2) — 협폭에서 gap 축소→별 스케일, overflow 0', () => {

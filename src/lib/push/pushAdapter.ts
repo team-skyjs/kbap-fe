@@ -279,10 +279,11 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
     // P-289 ①: 포그라운드 발화 즉시 기록
     const recv = N.addNotificationReceivedListener?.((n: { request: { identifier?: string; content: { data?: unknown } } }) => record(n.request));
     // P-289 ②: 백그라운드 발화분 재실행 회수(알림 센터에 떠 있는 것)
-    void N.getPresentedNotificationsAsync?.()
+    // #109 11R 잔여(P-348 동승): 부팅 알림 조회 2건도 track — OTA 정적 창 포함
+    void track(N.getPresentedNotificationsAsync?.()
       .then((list: { request: { identifier?: string; content: { data?: unknown } } }[]) => list.forEach((n) => record(n.request)))
-      .catch(() => {});
-    void N.getLastNotificationResponseAsync().then(emit).catch(() => {});
+      .catch(() => {}) ?? Promise.resolve());
+    void track(N.getLastNotificationResponseAsync().then(emit).catch(() => {}));
     return () => {
       sub.remove();
       recv?.remove?.();
