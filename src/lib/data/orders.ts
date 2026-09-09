@@ -12,6 +12,7 @@
  * - imagePath = 스캔 식별자(스캔 1회당 주문 1회) — KB-419: 호출 경로 = 스캔 주문
  *   카드뿐(상세 발 주문 라우트 삭제)이라 항상 존재. 업로드 실패('')만 필드 생략.
  */
+import { track } from '@/lib/net/inflight';
 import { api } from '@/lib/api/client';
 import type { OrderItem } from '@/features/order/FlippedOrderCard';
 
@@ -26,7 +27,7 @@ async function grantedCoord(): Promise<{ latitude: number; longitude: number } |
     if (perm.status !== 'granted') return null; // 거부(기존·방금) = 좌표 생략(재요청 금지)
     // 타임아웃 3s(발주) — GPS 침묵에도 저장은 무위치로 진행
     const pos = await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      track(Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })), // #109 5R
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
     ]);
     if (!pos) return null;

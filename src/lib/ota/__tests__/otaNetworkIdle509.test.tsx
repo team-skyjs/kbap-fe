@@ -205,3 +205,19 @@ it('#109 4R: ready 후 재체크 생략 + 체크 자체 inflight 경유 — 배�
   await p;
   expect(inflightCount()).toBe(0);
 });
+
+
+it('#109 5R: 라우트 차단 복원 + 라우트 무관 네이티브 track 배선 잠금', () => {
+  const fs = require('fs');
+  const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+  expect(host).toContain('if (isBlockedRoute(pathname)) return false;'); // 화면 단위 봉쇄(비-prod)
+  expect(host).toContain('const pathname = usePathname();');
+  // AuthGateSheet 소셜 로그인(어느 화면에서든)·애플 재인증·위치 = track 경유
+  const social = fs.readFileSync('src/lib/auth/useSocialAuth.ts', 'utf8') as string;
+  expect(social).toContain('trackInflight(GoogleSignin.signIn())');
+  expect(social).toContain('trackInflight(AppleAuthentication.signInAsync({');
+  expect((social.match(/trackInflight\(signInWithCredential\(/g) ?? []).length).toBe(2);
+  expect(fs.readFileSync('src/lib/auth/appleRevoke.ts', 'utf8')).toContain('track(AppleAuthentication.signInAsync())');
+  expect(fs.readFileSync('src/lib/api/places.ts', 'utf8')).toContain('track(Location.getCurrentPositionAsync(');
+  expect(fs.readFileSync('src/lib/data/orders.ts', 'utf8')).toContain('track(Location.getCurrentPositionAsync(');
+});

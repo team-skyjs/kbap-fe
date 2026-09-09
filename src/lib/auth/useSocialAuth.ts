@@ -15,6 +15,7 @@
  * failures set `error` ('network' vs 'generic' — the login screen's copy).
  * ⚠️ NATIVE ONLY (Firebase/google-signin native modules) — 재빌드 필요.
  */
+import { track as trackInflight } from '@/lib/net/inflight'; // analytics track과 이름 충돌 회피
 import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -61,7 +62,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
     try {
       ensureGoogleConfigured();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true }); // iOS no-op
-      const res = await GoogleSignin.signIn();
+      const res = await trackInflight(GoogleSignin.signIn()); // #109 5R: OTA 정적 창 포함(AuthGateSheet = 어느 화면에서든)
       if (res.type === 'cancelled') {
         setPhase('idle'); // sheet closed — not an error
         return;
@@ -71,8 +72,8 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       // KB-196: Android 네이티브는 google credential에 accessToken도 요구
       // ("accessToken cannot be empty"). signIn() 반환엔 없어 getTokens()로 받는다.
       // iOS는 idToken만으로 통과하지만 accessToken 병행이 무해(회귀 없음).
-      const { accessToken } = await GoogleSignin.getTokens();
-      await signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken));
+      const { accessToken } = await trackInflight(GoogleSignin.getTokens());
+      await trackInflight(signInWithCredential(getAuth(), GoogleAuthProvider.credential(idToken, accessToken)));
       console.log('[auth] firebase session (google) uid =', getAuth().currentUser?.uid);
       const exch = await exchange();
       if (exch.cancelled) {
@@ -100,12 +101,12 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       const rawNonce = Crypto.randomUUID();
       const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
       // EMAIL only — 실명은 수집하지 않는다 (2026-07-09 정책; 표시명은 온보딩 닉네임)
-      const c = await AppleAuthentication.signInAsync({
+      const c = await trackInflight(AppleAuthentication.signInAsync({
         requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
         nonce: hashedNonce,
-      });
+      })); // #109 5R
       if (!c.identityToken) throw new Error('apple sign-in returned no identityToken');
-      await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
+      await trackInflight(signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce)));
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
       const res = await exchange();
       if (res.cancelled) {

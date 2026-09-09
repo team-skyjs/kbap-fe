@@ -22,6 +22,10 @@ const BLOCKED_ROUTE_RE: readonly RegExp[] = [
   /^\/onboarding/,
   /^\/profile\//, // 하위 전체 — 탭 루트 '/profile'은 슬래시 없음 = 비차단
   /\/review$/, // food/[id]/review 작성/수정 — /reviews(목록)는 제외 아님
+  // #109 5R: 네이티브 프라미스(소셜 로그인·촬영·위치)가 뜨는 화면 — 화면 단위 봉쇄
+  /^\/login/,
+  /^\/auth/,
+  /^\/community\/compose/,
 ];
 
 export function isBlockedRoute(pathname: string): boolean {

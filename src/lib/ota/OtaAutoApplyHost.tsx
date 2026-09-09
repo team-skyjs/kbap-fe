@@ -10,11 +10,12 @@
  */
 import * as React from 'react';
 import { AppState } from 'react-native';
+import { usePathname } from 'expo-router';
 import { useIsFetching, useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { isProdChannel } from '@/lib/flags';
 import { checkAndFetchOta, type OtaUpdatesModule } from './otaCheck';
 import { inflightCount, subscribeInflight, track } from '@/lib/net/inflight';
-import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, otaApplyDecision } from './otaPolicy';
+import { OTA_BOOT_GUARD_MS, OTA_NETWORK_IDLE_MS, canReloadNow, isBlockedRoute, otaApplyDecision } from './otaPolicy';
 
 // P-304(KB-458): 부팅 시각 = 모듈 로드 시각 — reloadAsync 부팅 가드 기준점
 const BOOTED_AT = Date.now();
@@ -72,6 +73,9 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   const [guardTick, setGuardTick] = React.useState(0);
   const networkIdle = useNetworkIdle(); // P-347 — QueryClientProvider 안(레이아웃 확인됨)
   const queryClient = useQueryClient(); // #109 2R P1 ②: 호출 시점 동기 재확인용
+  // #109 5R ①: 라우트 차단 복원(비-prod) — 카메라·온보딩·편집·작성·로그인 화면의
+  // 네이티브 프라미스(takePicture·ImagePicker·소셜 로그인 등)는 화면 단위로 봉쇄.
+  const pathname = usePathname();
   const stateRef = React.useRef({ lastCheckAt: 0 });
 
   React.useEffect(() => {
@@ -98,13 +102,14 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   // P-304: reloadAsync 부팅 가드 — 정책이 reload여도 가드(8s+스플래시 종료+active)
   // 통과 시에만 실행. 배너 수동 탭도 동일 경로(부팅 창 크래시 봉쇄).
   const tryApply = React.useCallback((): boolean => {
+    if (isBlockedRoute(pathname)) return false; // #109 5R ①: 진행 중 작업 화면 = 보류(라우트 변경 시 deps 재평가)
     if (!canReloadNow({ bootedAt: BOOTED_AT, now: Date.now(), splashDone, appState: appActive ? 'active' : 'background', networkIdle })) return false;
     // #109 2R P1 ②: 렌더 상태(networkIdle)와 무관한 **호출 시점 동기 최종 게이트** —
     // idle 정착 커밋과 같은 배치에서 새 요청이 시작된 TOCTOU 창 봉쇄.
     if (inflightCount() > 0 || queryClient.isFetching() > 0 || queryClient.isMutating() > 0) return false;
     applyNow();
     return true;
-  }, [splashDone, appActive, networkIdle, queryClient]);
+  }, [splashDone, appActive, networkIdle, queryClient, pathname]);
 
   // 적용 재평가 — fetch 완료·라우트 변경·뮤테이션 종료·스플래시/포그라운드/가드 타이머마다
   const prod = isProdChannel();
