@@ -134,7 +134,7 @@ interface PushTokenRegistration {
 }
 
 async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
-  await api.put('/api/notifications/tokens', reg, { headers: { 'X-API-Version': '1.1' } });
+  await api.put('/api/notifications/tokens', reg); // X-API-Version 1.1 = 전역 기본(client.ts)
 }
 
 /** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함). */

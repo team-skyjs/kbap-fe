@@ -100,9 +100,9 @@ it('토큰 upsert — 권한 granted면 발급, 아니면 조용히 스킵(게�
 it('KB-496: upsert = PUT /api/notifications/tokens { token, platform, lang } — settings 미전송', async () => {
   await registerPushToken();
   expect(mockApi.put).toHaveBeenCalledTimes(1);
-  const [path, body, opts] = mockApi.put.mock.calls[0] as [string, Record<string, unknown>, { headers: Record<string, string> }];
+  const [path, body, opts] = mockApi.put.mock.calls[0] as [string, Record<string, unknown>, unknown];
   expect(path).toBe('/api/notifications/tokens');
-  expect(opts.headers['X-API-Version']).toBe('1.1');
+  expect(opts).toBeUndefined(); // X-API-Version 1.1 = 전역 기본(client.ts) — 개별 지정 없음
   expect(body).toEqual({ token: 'ExponentPushToken[test]', platform: 'ios', lang: 'en' });
   expect(body).not.toHaveProperty('settings');
 });

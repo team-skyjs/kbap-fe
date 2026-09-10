@@ -33,7 +33,7 @@ describe('dev 계열(기본 채널)', () => {
     await api.get('/foods');
     const [url, init] = fetchMock.mock.calls[0] as [string, { headers: Record<string, string> }];
     expect(url).toBe('https://dev.kbap.site/api/foods'); // /api/v1 소멸
-    expect(init.headers['X-API-Version']).toBe('1.0');
+    expect(init.headers['X-API-Version']).toBe('1.1');
     expect(init.headers['X-OS-Version']).toMatch(/^(iOS|AOS) /); // `iOS 18.1` / `AOS 14` 형식
     expect(init.headers['X-App-Version']).toBe('1.0.1');
   });
@@ -42,7 +42,7 @@ describe('dev 계열(기본 채널)', () => {
     await api.get('/api/reviews?lang=en');
     const [url, init] = fetchMock.mock.calls[0] as [string, { headers: Record<string, string> }];
     expect(url).toBe('https://dev.kbap.site/api/reviews?lang=en');
-    expect(init.headers['X-API-Version']).toBe('1.0');
+    expect(init.headers['X-API-Version']).toBe('1.1');
   });
 
   it('app-version = 유일 헤더 예외(3종 미부착) — 무인증 게이트 엔드포인트', async () => {
@@ -72,7 +72,7 @@ describe('P-270: production 채널 = 신계약 동일(구계약 분기 소멸 �
     await api.get('/foods');
     const [url, init] = fetchMock.mock.calls[0] as [string, { headers: Record<string, string> }];
     expect(url).toBe('https://dev.kbap.site/api/foods'); // /api/v1 잔존 0
-    expect(init.headers['X-API-Version']).toBe('1.0');
+    expect(init.headers['X-API-Version']).toBe('1.1');
     expect(init.headers['X-OS-Version']).toBeDefined();
     expect(init.headers['X-App-Version']).toBe('1.0.1');
   });

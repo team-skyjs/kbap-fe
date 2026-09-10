@@ -1403,6 +1403,6 @@
 - [x] teamtest OTA(ios 912128ff·and 74ca706d) · production OTA(ios 79cd453a·and 226fe568, 태그 ota-prod-20260826-2) — Metro 캐시 함정 발견으로 --clear 게이트 승격.
 
 ## 푸시 토큰 서버 등록 배선 (2026-09-08, KB-496)
-- [x] sendTokenToServer 실배선 — PUT /api/notifications/tokens { token, platform, lang }(settings 미전송 — 알림 회원 전용 결정), 토큰 PUT·로그인·로그아웃·탈퇴 4곳만 X-API-Version 1.1 개별 지정(전역 승격은 엔드포인트별 지정 관례에 맞춰 되돌림), unregisterPushToken 삭제(서버 로그아웃/탈퇴 처리). 게스트 프라이머 제거는 스캔 isGuest 게이트로 이미 충족 — 코드 무변경 — b96028c·cae22ad·e7229de.
+- [x] sendTokenToServer 실배선 — PUT /api/notifications/tokens { token, platform, lang }(settings 미전송 — 알림 회원 전용 결정), X-API-Version 전역 1.1(client.ts 기본값 1.0→1.1, 개별 지정 제거 — 1.1 = 1.0 전부 포함·develop은 TestFlight에서 실행되므로 전역 승격 확정 2026-09-10), unregisterPushToken 삭제(서버 로그아웃/탈퇴 처리). 게스트 프라이머 제거는 스캔 isGuest 게이트로 이미 충족 — 코드 무변경 — b96028c·cae22ad·e7229de → 전역 1.1 확정.
 - [x] tsc 0 · jest 161스위트 1098/1098.
 - [ ] dev client 실기기 upsert 200 + BE notification_device 행/member 연결 교차 확인 → 확인 후 PR ready. 발행은 KB-501(예진 승인·teamtest OTA).
