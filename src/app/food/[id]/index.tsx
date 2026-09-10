@@ -22,7 +22,7 @@ import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
-import { QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { useIngredientImageChain } from '@/components/AvoidTile';
@@ -541,7 +541,10 @@ function Registered({
             </View>
           )}
           {natOnly && !natLoading && !natQ.isError && shownPreviews.length === 0 && (
-            <Text style={styles.natEmpty} testID="detail-nat-empty">{t('reviews.emptySameNat')}</Text>
+            /* P-359(KB-522): 폭 초과 Text → 공용 EmptyBlock(섹션 본문 폭 안) */
+            <View style={{ paddingVertical: 24 }} testID="detail-nat-empty">
+              <EmptyBlock label={t('reviews.emptySameNat')} />
+            </View>
           )}
           {!natLoading && !(natOnly && natQ.isError) && shownPreviews.map((r) => (
             <FeedCard
@@ -760,7 +763,6 @@ const styles = StyleSheet.create({
   // P-323 토글 쿼리 상태(스켈레톤·빈 문구) — 홈 피드 스켈레톤 문법
   natSkel: { gap: 12, paddingTop: 12 },
   natSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
-  natEmpty: { fontSize: 14, fontWeight: '400', color: C.ink2, lineHeight: 20, paddingVertical: 24 },
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },

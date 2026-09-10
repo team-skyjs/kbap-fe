@@ -126,7 +126,6 @@
     "hoursAgo": "{{count}}h ago",
     "seeMore": "See more",
     "emptyTitle": "No posts yet",
-    "emptyBody": "Be the first to share a tip or a find.",
     "guestGateTitle": "Sign up to keep reading",
     "guestGateSub": "Guests can browse the first pages only.",
     "blockedToast": "User blocked. You won’t see their content.",
@@ -716,22 +715,12 @@
     "catalogTitle": "States",
     "labelLoading": "Loading (skeleton)",
     "labelEmpty": "Empty",
-    "labelError": "Error",
-    "labelOffline": "Offline",
-    "labelUnable": "Unable to judge",
     "loading": "Loading…",
     "emptyReviewsTitle": "No reviews yet",
-    "emptyReviewsBody": "Be the first to review this dish.",
-    "writeReview": "Write a review",
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't load this. The problem is on our end.",
     "offlineTitle": "You're offline",
-    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here.",
-    "viewSavedScans": "View saved scans",
-    "unableTitle": "Can't judge this one",
-    "unableBody": "We don't have enough ingredient data to rate this dish for your profile. Ask the owner before eating.",
-    "askOwner": "Ask the owner",
-    "seeIngredients": "See ingredients"
+    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here."
   },
   "shell": {
     "placeholderNote": "Tab content lives in the screen modules"

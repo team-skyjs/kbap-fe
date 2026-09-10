@@ -12,19 +12,8 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
-import {
-  SubHeader,
-  StateBlock,
-  stateIconColor,
-  SkeletonList,
-  RiskMark,
-  IconBubbleEmpty,
-  IconAlertTri,
-  IconWifiOff,
-  IconPlus,
-  IconRetry,
-  IconSpeech,
-} from '@/components';
+import { SubHeader, SkeletonList } from '@/components';
+import { EmptyBlock } from '@/components/StateBlock';
 
 export default function States() {
   const router = useRouter();
@@ -40,44 +29,8 @@ export default function States() {
         </Item>
 
         <Item label={t('states.labelEmpty')}>
-          <StateBlock
-            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-            title={t('states.emptyReviewsTitle')}
-            body={t('states.emptyReviewsBody')}
-            primary={{ label: t('states.writeReview'), icon: <IconPlus size={17} color="#fff" /> }}
-          />
-        </Item>
-
-        <Item label={t('states.labelError')}>
-          <StateBlock
-            tone="err"
-            icon={<IconAlertTri size={38} color={stateIconColor.err} />}
-            title={t('states.errorTitle')}
-            body={t('states.errorBody')}
-            primary={{ label: t('common.tryAgain'), icon: <IconRetry size={17} color="#fff" /> }}
-            secondary={{ label: t('common.goBack') }}
-          />
-        </Item>
-
-        <Item label={t('states.labelOffline')}>
-          <StateBlock
-            icon={<IconWifiOff size={38} color={stateIconColor.default} />}
-            title={t('states.offlineTitle')}
-            body={t('states.offlineBody')}
-            primary={{ label: t('common.retry'), icon: <IconRetry size={17} color="#fff" /> }}
-            secondary={{ label: t('states.viewSavedScans') }}
-          />
-        </Item>
-
-        <Item label={t('states.labelUnable')}>
-          <StateBlock
-            tone="unable"
-            icon={<RiskMark state="unable" size={46} />}
-            title={t('states.unableTitle')}
-            body={t('states.unableBody')}
-            primary={{ label: t('states.askOwner'), icon: <IconSpeech size={17} color="#fff" /> }}
-            secondary={{ label: t('states.seeIngredients') }}
-          />
+          {/* P-359(KB-522): 구 StateBlock 폐기 — 디자이너 공용 EmptyBlock(4003:6689)이 유일 빈 상태 */}
+          <EmptyBlock label={t('states.emptyReviewsTitle')} />
         </Item>
       </ScrollView>
     </View>
