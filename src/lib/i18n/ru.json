@@ -452,7 +452,6 @@
     "sort_helpful": "Самые полезные",
     "ratingAll": "Все оценки",
     "ratingMin": "От {{min}} звёзд",
-    "filterByProfile": "Фильтр по профилю",
     "countryOnly": "Только {{code}}"
   },
   "ranking": {
