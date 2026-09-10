@@ -565,7 +565,8 @@
     "errorTitle": "發生錯誤",
     "errorBody": "我們目前無法載入此內容。這是我們的問題，不是你的。",
     "offlineTitle": "你目前處於離線狀態",
-    "offlineBody": "連接網路以掃描菜單並載入評論。你已儲存的掃描仍在這裡。"
+    "offlineBody": "連接網路以掃描菜單並載入評論。你已儲存的掃描仍在這裡。",
+    "linkFailed": "無法開啟連結"
   },
   "shell": {
     "placeholderNote": "分頁內容位於畫面模組中"
