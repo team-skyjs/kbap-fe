@@ -177,7 +177,8 @@ function RichRow({
         </Pressable>
       </View>
       {/* Codex #47 7차: 320pt(썸 118+스테퍼 83) — 텍스트 열 축소 허용, 이름 말줄임·가격 wrap */}
-      <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3 }}>
+      {/* P-366 ⑥: 칩 없는 행도 가격+담기 줄 = 썸네일 밑변 정렬(minHeight 118 + mt auto) */}
+      <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3, minHeight: 118 }}>
         {/* ko 원문 14/500 → 영문명 15/500 + chevron(→ 상세) — 시안 위계 */}
         {!!(dish.koreanName ?? dish.rawMenuName) && dish.displayName !== (dish.koreanName ?? dish.rawMenuName) && (
           <Text style={styles.nameSubKo} numberOfLines={1}>{dish.koreanName ?? dish.rawMenuName}</Text>
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
   price: { fontSize: 13, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
   priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },
   // P-366 ②: 하단 행 — 좌 가격 / 우 담기 슬롯(텍스트 열 전폭)
-  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }, // P-366 ⑥: 썸 밑변 정렬
   thumb: { width: 118, height: 118, borderRadius: 4, backgroundColor: C.surface2 },
   // 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H)를 공유
   addSlot: { width: RIGHT_COL_W, height: ADD_SLOT_H, alignItems: 'flex-end', justifyContent: 'center' },
