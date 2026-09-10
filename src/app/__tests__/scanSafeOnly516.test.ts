@@ -23,13 +23,14 @@ it('③ 배너 — ON = resultsSubSafe(safe·total), OFF = 현행 resultsSub', (
   expect(s).toContain("t('scan.resultsSub', { count: allDishes.length })");
 });
 
-it('④ 안전 0건 — 목록 자리 EmptyBlock + 토글 OFF ghost(컨트롤·배너 유지), 스캔 0건 분기와 구분', () => {
+it('④ 안전 0건 — 목록 자리 EmptyBlock만(컨트롤·배너 유지), 스캔 0건 분기와 구분', () => {
   const s = scan();
   expect(s).toContain('{safeOnly && visibleDishes.length === 0 ? (');
   expect(s).toContain('testID="scan-safe-empty"');
   expect(s).toContain("<EmptyBlock label={t('scan.safeEmpty')} />");
-  expect(s).toContain('testID="scan-show-all"');
-  expect(s).toContain('onPress={() => setSafeOnly(false)}');
+  // P-372(KB-536): 토글 OFF ghost 삭제 — 바로 위 컨트롤 행 토글과 중복
+  expect(s).not.toContain('scan-show-all');
+  expect(s).not.toContain('scan.showAllDishes');
   expect(s).toContain('testID="scan-results-empty"'); // 스캔 자체 0건은 현행 유지
 });
 
@@ -39,12 +40,13 @@ it('⑤ 수량 보존 — 주문 합계는 필터 무관(listDishes 전체 기�
   expect(s).toMatch(/const cartCount = /); // 합계 상태는 cart 맵(뷰 필터와 무관)
 });
 
-it('신규 키 10로케일 + sortSafety 부재', () => {
+it('신규 키 10로케일 + sortSafety·showAllDishes 부재', () => {
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
     const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { scan: Record<string, string> };
-    for (const k of ['safeOnly', 'sortPriceDesc', 'sortPriceAsc', 'resultsSubSafe', 'safeEmpty', 'showAllDishes']) {
+    for (const k of ['safeOnly', 'sortPriceDesc', 'sortPriceAsc', 'resultsSubSafe', 'safeEmpty']) {
       expect(j.scan[k]).toBeTruthy();
     }
     expect(j.scan.sortSafety).toBeUndefined();
+    expect(j.scan.showAllDishes).toBeUndefined(); // P-372: 사용처 0 → 키 삭제
   }
 });

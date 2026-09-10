@@ -681,12 +681,10 @@ export default function Scan() {
               </Animated.View>
             )}
             {safeOnly && visibleDishes.length === 0 ? (
-              /* P-354 ④: 안전 0건 — 컨트롤 행·배너 유지, 목록 자리만 빈 상태 + 토글 OFF CTA */
-              <View style={{ paddingTop: 48, alignItems: 'center', gap: 4 }} testID="scan-safe-empty">
+              /* P-354 ④ → P-372(KB-536): 안전 0건 — 컨트롤 행·배너 유지, 목록 자리만 빈 상태.
+                 토글 OFF CTA는 바로 위 컨트롤 행 토글과 중복이라 삭제(9/10 예진). */
+              <View style={{ paddingTop: 48, alignItems: 'center' }} testID="scan-safe-empty">
                 <EmptyBlock label={t('scan.safeEmpty')} />
-                <Btn variant="ghost" onPress={() => setSafeOnly(false)} testID="scan-show-all">
-                  {t('scan.showAllDishes')}
-                </Btn>
               </View>
             ) : (
             <ScanRichList

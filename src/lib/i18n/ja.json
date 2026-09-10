@@ -299,7 +299,6 @@
     "sortPriceAsc": "価格が安い順",
     "resultsSubSafe": "全{{total}}品のうち「安全」判定{{safe}}品",
     "safeEmpty": "このメニューに「安全」判定の料理はありません",
-    "showAllDishes": "すべてのメニューを表示",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません"
