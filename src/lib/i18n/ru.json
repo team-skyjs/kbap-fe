@@ -452,7 +452,8 @@
     "sort_helpful": "Самые полезные",
     "ratingAll": "Все оценки",
     "ratingMin": "От {{min}} звёзд",
-    "countryOnly": "Только {{code}}"
+    "countryOnly": "Только {{code}}",
+    "allReviews": "Все отзывы"
   },
   "ranking": {
     "headerTitle": "Мой рейтинг",

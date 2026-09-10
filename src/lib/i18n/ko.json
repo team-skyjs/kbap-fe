@@ -498,7 +498,8 @@
     "sort_helpful": "도움 많이 된 순",
     "ratingAll": "전체 별점",
     "ratingMin": "{{min}}점 이상",
-    "countryOnly": "{{code}}만"
+    "countryOnly": "{{code}}만",
+    "allReviews": "전체 리뷰"
   },
   "ranking": {
     "headerTitle": "내 랭킹",

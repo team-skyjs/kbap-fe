@@ -452,7 +452,8 @@
     "sort_helpful": "最有幫助",
     "ratingAll": "全部評分",
     "ratingMin": "{{min}}分以上",
-    "countryOnly": "僅{{code}}"
+    "countryOnly": "僅{{code}}",
+    "allReviews": "全部評論"
   },
   "ranking": {
     "headerTitle": "我的排名",

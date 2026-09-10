@@ -61,6 +61,9 @@ it('P-146: 콘텐츠 존 시각 센터 보정 — 존 높이 불변(하향 시�
   expect((st.height as number) - (st.paddingTop as number) - (st.paddingBottom as number)).toBe(TABBAR_CONTENT_H);
   expect(st.paddingTop).toBe(TABBAR_V_SHIFT); // iOS 6pt 하향(예진 "위로 몰림" 보정)
   const fab = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && flat(n.props.style)?.borderRadius === 26)[0] // KB-429: FAB 52(반지름 26);
-  expect(flat(fab.props.style).top).toBe(-FAB_OVERHANG);
-  expect(FAB_OVERHANG).toBe(22); // KB-429: 24 → 22(시안)
+  // P-371(KB-534): 기준 = 바 상단선 — iOS는 paddingTop(V_SHIFT 6)만큼 더 올려 현행(-22) 유지,
+  // Android(V_SHIFT 0)는 -16으로 6pt 내려와 iOS와 같은 시각 위치
+  expect(flat(fab.props.style).top).toBe(-(FAB_OVERHANG + TABBAR_V_SHIFT));
+  expect(FAB_OVERHANG).toBe(16); // KB-429 22(슬롯 기준) → P-371 16(바 상단 기준)
+  expect(FAB_OVERHANG + TABBAR_V_SHIFT).toBe(22); // jest = iOS — 실제 top 값 무변
 });

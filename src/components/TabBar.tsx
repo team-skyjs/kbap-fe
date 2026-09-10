@@ -23,8 +23,11 @@ import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 export const TABBAR_CONTENT_H = Platform.OS === 'ios' ? 49 : 80;
 /** P-146: iOS 시각 센터 보정(예진 실기). */
 export const TABBAR_V_SHIFT = Platform.OS === 'ios' ? 6 : 0;
-/** KB-429: 중앙 스캔 FAB 돌출 — 24 → 22(시안). */
-export const FAB_OVERHANG = 22;
+/** KB-429: 중앙 스캔 FAB 돌출(24 → 22 → P-371 16).
+ *  P-371(KB-534): 기준을 **바 상단선**으로 통일 — 예진 정정(iOS 위치가 정답,
+ *  Android는 바 상단선 정중앙이라 이상). fab.top이 V_SHIFT를 더해 상쇄하므로
+ *  iOS = -22(현행 무변) · Android = -16(6pt 내려감). */
+export const FAB_OVERHANG = 16;
 
 /** 시안 gray-900(활성 아이콘·칩 selected 공용) — 정식 토큰 아님(발주 표 외 값). */
 const INK_ACTIVE = '#2F3137';
@@ -169,7 +172,9 @@ const styles = StyleSheet.create({
   tlbl: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11 },
   fab: {
     position: 'absolute',
-    top: -FAB_OVERHANG,
+    // P-371(KB-534): iOS는 바 paddingTop(TABBAR_V_SHIFT 6)만큼 FAB이 낮아지므로
+    // 상쇄 — 시안(2110:67071) = 바 상단 기준 -22, 양 플랫폼 동일해야 함.
+    top: -(FAB_OVERHANG + TABBAR_V_SHIFT),
     alignSelf: 'center',
     width: 52,
     height: 52,

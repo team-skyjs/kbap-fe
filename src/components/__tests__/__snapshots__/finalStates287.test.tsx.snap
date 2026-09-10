@@ -119,6 +119,9 @@ exports[`① EmptyBlock — circle-dashed 24 + 16/400 #000, 버튼 0 (스냅샷)
     style={
       [
         {
+          "includeFontPadding": false,
+        },
+        {
           "color": "#000000",
           "fontSize": 16,
           "fontWeight": "400",

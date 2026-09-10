@@ -452,7 +452,8 @@
     "sort_helpful": "มีประโยชน์ที่สุด",
     "ratingAll": "ทุกคะแนน",
     "ratingMin": "{{min}} ดาวขึ้นไป",
-    "countryOnly": "เฉพาะ {{code}}"
+    "countryOnly": "เฉพาะ {{code}}",
+    "allReviews": "รีวิวทั้งหมด"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",
