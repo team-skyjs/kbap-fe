@@ -335,7 +335,7 @@ describe('P-331: 프로필 토글 = 같은 국적 리뷰 필터', () => {
     act(() => { tree.update(<ReviewFeed />); });
     expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: undefined }));
     const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
-    expect(texts).toContain('reviews.emptyBody');
+    expect(texts).toContain('reviews.emptyTitle'); // P-359: EmptyBlock 단일 라벨
     expect(texts).not.toContain('reviews.emptySameNat');
   });
 
@@ -347,7 +347,7 @@ describe('P-331: 프로필 토글 = 같은 국적 리뷰 필터', () => {
     });
     const tree = render();
     let texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
-    expect(texts).toContain('reviews.emptyBody');
+    expect(texts).toContain('reviews.emptyTitle'); // P-359: EmptyBlock 단일 라벨
     act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
     texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts).toContain('reviews.emptySameNat');

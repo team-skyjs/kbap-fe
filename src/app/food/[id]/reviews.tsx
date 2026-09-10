@@ -18,15 +18,14 @@ import { EVENTS, track } from '@/lib/analytics';
 import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
+  Btn,
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
   Stars,
   RankMedal,
   Flag,
-  StateBlock,
   QueryErrorBlock,
-  stateIconColor,
   Spinner,
   IconGlobe,
   IconProfile,
@@ -39,6 +38,7 @@ import {
   IconMore,
   CardPhoto,
 } from '@/components';
+import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -155,17 +155,14 @@ export default function FoodReviews() {
         {!(reviewsQ.isError && all.length === 0) && loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
-          <StateBlock
-            fill
-            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-            title={t('reviews.emptyTitle')}
-            body={t('reviews.emptyBody')}
-            primary={{
-              label: t('reviews.writeReview'),
-              icon: <IconPlus size={17} color="#fff" />,
-              onPress: writeReview, // P-144 계측 + P-251 자격 게이트
-            }}
-          />
+          // P-359(KB-522): 구 StateBlock → 디자이너 EmptyBlock. 헤더에 쓰기 진입점이
+          // 없어 CTA는 ghost 1개 유지(스캔 safeEmpty 문법 — REPORTS 기록).
+          <ScreenCenterFill>
+            <EmptyBlock label={t('reviews.emptyTitle')} testID="reviews-empty" />
+            <Btn variant="ghost" onPress={writeReview} testID="reviews-empty-write">
+              {t('reviews.writeReview')}
+            </Btn>
+          </ScreenCenterFill>
         ) : (
           <View style={styles.body}>
             {/* KB-431 §2-2: 음식 요약 카드 — 이미지 48 + 이름 + "ko · n reviews" */}
@@ -221,16 +218,11 @@ export default function FoodReviews() {
 
             {/* filtered to empty — KC-0329 B: 국적 필터 빈 상태는 전용 문구 */}
             {items.length === 0 ? (
-              <StateBlock
-                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-                title={t('reviews.emptyTitle')}
-                body={t(sameNatOnly ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
-                primary={{
-                  label: t('reviews.writeReview'),
-                  icon: <IconPlus size={17} color="#fff" />,
-                  onPress: writeReview, // P-144 계측 + P-251 자격 게이트
-                }}
-              />
+              /* P-359: 필터 0건 = 통계·컨트롤 유지, 목록 자리만 EmptyBlock(CTA 없음 —
+                 토글 OFF면 리뷰가 있다) */
+              <View style={{ paddingVertical: 24 }}>
+                <EmptyBlock label={t(sameNatOnly ? 'reviews.emptySameNat' : 'reviews.emptyBody')} testID="reviews-filter-empty" />
+              </View>
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (

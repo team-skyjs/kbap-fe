@@ -17,7 +17,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, radius } from '@/lib/theme';
 import { Spinner, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconChevronDown, IconCheck, IconEdit } from '@/components';
-import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -216,12 +216,8 @@ export function ReviewFeed() {
         </ScreenCenterFill>
       ) : !feed.isLoading && reviews.length === 0 ? (
         <ScreenCenterFill>
-          <StateBlock
-            fill
-            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-            title={t('reviews.emptyTitle')}
-            body={t(filterActive ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
-          />
+          {/* P-359(KB-522): 구 StateBlock → EmptyBlock */}
+          <EmptyBlock label={t(filterActive ? 'reviews.emptySameNat' : 'reviews.emptyTitle')} testID="feed-empty" />
         </ScreenCenterFill>
       ) : null}
 
