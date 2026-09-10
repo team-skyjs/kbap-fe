@@ -565,7 +565,8 @@
     "errorTitle": "出错了",
     "errorBody": "我们暂时无法加载。这是我们的问题，不是你的。",
     "offlineTitle": "你已离线",
-    "offlineBody": "连接网络以扫描菜单和加载点评。你已保存的扫描仍在这里。"
+    "offlineBody": "连接网络以扫描菜单和加载点评。你已保存的扫描仍在这里。",
+    "linkFailed": "无法打开链接"
   },
   "shell": {
     "placeholderNote": "标签内容位于各屏幕模块中"

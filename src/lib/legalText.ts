@@ -11,6 +11,9 @@ export const LEGAL_URLS = {
   privacy: 'https://team-skyjs.github.io/kbap-legal/privacy-policy.html',
 } as const;
 
+/** 안전 고지(프로필 메뉴) — 같은 kbap-legal 정본. P-377: 리터럴 중복 2곳을 여기로. */
+export const SAFETY_NOTICE_URL = 'https://team-skyjs.github.io/kbap-legal/safety.html';
+
 export type LegalDoc = keyof typeof LEGAL_URLS;
 
 /** Jekyll 정적 페이지 → 읽을 수 있는 플레인 텍스트 (순수 함수 — 유닛 잠금). */

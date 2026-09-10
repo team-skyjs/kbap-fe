@@ -720,7 +720,8 @@
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't load this. The problem is on our end.",
     "offlineTitle": "You're offline",
-    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here."
+    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here.",
+    "linkFailed": "Couldn't open the link"
   },
   "shell": {
     "placeholderNote": "Tab content lives in the screen modules"
