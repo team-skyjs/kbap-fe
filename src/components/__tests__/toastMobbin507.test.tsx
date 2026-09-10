@@ -121,3 +121,38 @@ it('#108 P2 ②: 토스트 본체 box-none — 필 아래 UI 탭 투과(Close만
   expect(tt).toContain('<View style={styles.checkDot} pointerEvents="none">');
   expect(tt).toContain('numberOfLines={2} pointerEvents="none"');
 });
+
+describe('P-370(KB-533): 토스트 호스트 스택 — 모달 위 화면 수신·언마운트 복원', () => {
+  const { showTopToast, subscribeTopToast } = require('@/components/topToastStore') as typeof import('@/components/topToastStore');
+
+  it('2개 구독 = 마지막(모달 위) 수신 · 해제 = 이전(루트) 복원 · 빈 스택 = 무시', () => {
+    const root = jest.fn();
+    const modal = jest.fn();
+    const offRoot = subscribeTopToast(root);
+    const offModal = subscribeTopToast(modal);
+    showTopToast('a');
+    expect(modal).toHaveBeenCalledTimes(1);
+    expect(root).not.toHaveBeenCalled();
+    offModal(); // 모달 화면 언마운트 → 루트 복원
+    showTopToast('b');
+    expect(root).toHaveBeenCalledTimes(1);
+    offRoot();
+    expect(() => showTopToast('c')).not.toThrow(); // 빈 스택 = 조용히 무시
+    // 중간 해제(루트 먼저 언마운트) — 위 호스트 유지
+    const a = jest.fn();
+    const b = jest.fn();
+    const offA = subscribeTopToast(a);
+    const offB = subscribeTopToast(b);
+    offA();
+    showTopToast('d');
+    expect(b).toHaveBeenCalledTimes(1);
+    offB();
+  });
+
+  it('모달 컨텍스트 4화면 = 자체 TopToastHost 마운트(소스 잠금)', () => {
+    const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
+    for (const f of ['src/app/scan.tsx', 'src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/food/[id]/review.tsx']) {
+      expect(read(f)).toContain('<TopToastHost />');
+    }
+  });
+});

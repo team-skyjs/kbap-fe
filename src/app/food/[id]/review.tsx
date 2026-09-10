@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
+import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -455,6 +456,8 @@ export default function ReviewCompose() {
           t={t}
         />
       )}
+      {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
+      <TopToastHost />
     </View>
   );
 }
