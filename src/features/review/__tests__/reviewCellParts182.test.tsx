@@ -131,7 +131,7 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
     tapHelpful(tree);
     expect(mockLikeToggle).not.toHaveBeenCalled();
     expect(mockToast).toHaveBeenCalledTimes(1);
-    expect(mockToast).toHaveBeenCalledWith('reviews.helpfulOwnToast'); // 에러 변형 아님(두 번째 인자 없음)
+    expect(mockToast).toHaveBeenCalledWith('reviews.helpfulOwnToast', { icon: 'alert' }); // P-366 ③: 느낌표 변형(에러 아님)
   });
 
   it('게스트 = onGuest 게이트(미전달이면 무반응 — 401 송신 0)', () => {

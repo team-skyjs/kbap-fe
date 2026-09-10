@@ -408,7 +408,7 @@ export function HelpfulButton({
   const onPress = () => {
     if (mine) {
       // P-357(KB-520): 무동작 대신 안내 토스트(에러 변형 아님) — 뮤테이션·계측 0
-      showTopToast(t('reviews.helpfulOwnToast'));
+      showTopToast(t('reviews.helpfulOwnToast'), { icon: 'alert' }); // P-366 ③: 안내 = 느낌표(에러 변형 아님)
       return;
     }
     if (isGuest) return onGuest?.();
