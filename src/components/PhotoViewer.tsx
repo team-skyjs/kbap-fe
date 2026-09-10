@@ -105,6 +105,7 @@ export function PhotoViewer({ uris, index = 0, onClose }: { uris: string[]; inde
 
     const zoomPan = Gesture.Pan()
       .enabled(zoomed)
+      .maxPointers(1) // #111 2R P2: 재핀치 시 pinch와 포인터 경합 → 점프 방지
       .runOnJS(true)
       .onUpdate((e) => {
         const sc = saved.current.scale;

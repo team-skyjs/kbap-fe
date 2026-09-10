@@ -20,8 +20,9 @@ import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
 import { showTopToast } from '@/components/topToastStore';
-import { adaptMenuSummary } from '../api/foodAdapter';
+import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
+
 
 const QK = () => ['bookmarks', i18n.language] as const;
 
@@ -54,23 +55,30 @@ function toWire(snap: BookmarkSnapshot): MenuSummaryWire {
 
 type Pages = InfiniteData<PageMenuSummaryWire, number | undefined>;
 
-/** 서버 북마크 목록 — 커서 무한스크롤, 카드는 목록과 동일 어댑터. */
-export function useBookmarks() {
+/** 서버 북마크 목록 — 커서 무한스크롤, 카드는 목록과 동일 어댑터.
+ *  P-350(KB-492): risk = 서버 필터(&risk=SAFE 등) — 지정 시 쿼리키 분리.
+ *  낙관 쓰기(optimisticWrite)는 무필터 캐시(QK)만 — risk 캐시는 onSettled
+ *  invalidate(['bookmarks'] 접두)로 동기화. */
+export function useBookmarks(risk?: RiskFilterChip) {
   const isGuest = useIsGuest();
+  const wire = riskWireOf(risk);
   return useInfiniteQuery({
-    queryKey: QK(),
+    queryKey: wire ? ([...QK(), wire] as const) : QK(),
     enabled: !isGuest, // 인증 필수 API — 게스트는 게이트로 진입 자체가 차단됨
     initialPageParam: undefined as number | undefined,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
       const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
-      return api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}`);
+      const riskQ = wire ? `&risk=${wire}` : '';
+      return api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}${riskQ}`);
     },
     // P-332(KB-488): 종료 가드 — hasNext만 믿으면 커서가 전진하지 않는 경계 응답
-    // (빈 페이지·커서 에코)에서 드레인/스크롤이 무한 fetch = 홈 프리징. 이미 요청한
-    // 커서 재등장·빈 페이지 = 다음 페이지 없음으로 강제 종료(서버 응답 불변식에
-    // 앱 생사를 걸지 않는다).
+    // (커서 에코)에서 드레인/스크롤이 무한 fetch = 홈 프리징. 이미 요청한 커서
+    // 재등장 = 강제 종료(서버 응답 불변식에 앱 생사를 걸지 않는다).
+    // P-350(KB-492): 구 "빈 페이지 = 종료" 가드는 제거 — risk 필터의 얇은 페이지
+    // (items 0·hasNext true)가 정상 계약이 됨. 무한 방지는 커서 에코 가드 + 서버
+    // 5배치 상한이 담당.
     getNextPageParam: (last, _pages, lastParam, allParams) =>
-      last.hasNext && last.nextCursor != null && last.items.length > 0 &&
+      last.hasNext && last.nextCursor != null &&
       last.nextCursor !== lastParam && !allParams.includes(last.nextCursor)
         ? last.nextCursor
         : undefined,

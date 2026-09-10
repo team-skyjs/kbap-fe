@@ -57,7 +57,16 @@ jest.mock('@/components/AuthGateSheet', () => {
 const mockMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockBrowse = jest.fn();
-jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => mockBrowse() }));
+// P-350(KB-492): 칩 = 서버 필터 — 목이 risk 인자로 서버 판정 재현
+jest.mock('@/lib/data/useFoods', () => ({
+  FOODS_PAGE_SIZE: 20,
+  useInfiniteFoods: (risk?: string, opts?: { enabled?: boolean }) => {
+    const r = mockBrowse(risk, opts);
+    if (opts?.enabled === false) return { ...r, data: undefined, isError: false, isLoading: false };
+    if (!r?.data || !risk || risk === 'all') return r;
+    return { ...r, data: (r.data as { risk: string }[]).filter((f) => f.risk === risk) };
+  },
+}));
 const mockToggle = jest.fn();
 const mockSaved = jest.fn();
 jest.mock('@/lib/data/bookmarks', () => ({
@@ -333,11 +342,11 @@ it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 
   // ② 에러 = QueryErrorBlock 인라인
   mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500') });
   const t2 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  expect(byIdIn(t2, 'home-rail-error').length).toBeGreaterThanOrEqual(1);
+  expect(byIdIn(t2, 'food-grid-error').length).toBeGreaterThanOrEqual(1);
   // ②-c Codex #85 3R P2: 캐시 데이터 + 백그라운드 에러(isError·data 동시) = 레일 유지
   mockBrowse.mockReturnValue({ ...browseOf([FOOD('1'), FOOD('2', 'danger')]), isError: true, error: new Error('HTTP 500') });
   const t2c = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  expect(byIdIn(t2c, 'home-rail-error')).toHaveLength(0);
+  expect(byIdIn(t2c, 'food-grid-error')).toHaveLength(0);
   expect(cardIds(t2c).size).toBeGreaterThanOrEqual(2);
   // ①-b Codex #85 2R P2: 카탈로그 콜드 로딩 중에도 Saved 탭 = 저장 카드 유지(스켈레톤 미노출)
   mockBrowse.mockReturnValue({ ...browseOf([]), isLoading: true });
@@ -351,7 +360,7 @@ it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 
   mockSaved.mockReturnValue({ data: [FOOD('2', 'danger')], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
   const t2b = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(t2b, 'home-tab-saved');
-  expect(byIdIn(t2b, 'home-rail-error')).toHaveLength(0);
+  expect(byIdIn(t2b, 'food-grid-error')).toHaveLength(0);
   expect([...cardIds(t2b)]).toEqual(['home-food-2']);
   mockSaved.mockReturnValue({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
   // ③ Saved 탭 저장 0건 = 제목+본문+Browse CTA(→ /food) — 에러 목 원복 후
@@ -361,8 +370,14 @@ it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 
   expect(byIdIn(t3, 'home-rail-saved-empty').length).toBeGreaterThanOrEqual(1);
   press(t3, 'home-rail-browse');
   expect(mockPush).toHaveBeenLastCalledWith('/food');
-  // ④ 칩 전부 걸러짐(caution 0건) = railFilterEmpty — ScrollView 밖 세로 블록
+  // ④ 칩 전부 걸러짐(caution 0건) — P-350: hasNext 남았으면 채움 중 = 스켈레톤,
+  // 빈 판정은 !hasNextPage && 0건일 때만 railFilterEmpty
   mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2', 'danger')]));
+  const t4a = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t4a, 'home-chip-caution');
+  expect(byIdIn(t4a, 'home-rail-skel').length).toBeGreaterThanOrEqual(1); // hasNext=true = 채움 중
+  expect(byIdIn(t4a, 'home-rail-filter-empty')).toHaveLength(0);
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1'), FOOD('2', 'danger')]), hasNextPage: false });
   const t4 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(t4, 'home-chip-caution');
   expect(byIdIn(t4, 'home-rail-filter-empty').length).toBeGreaterThanOrEqual(1);
@@ -380,4 +395,109 @@ it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸
   act(() => safe.props.onPress());
   expect(tree.root.findAll((n) => n.props?.testID === 'auth-gate-open')).toHaveLength(0);
   expect([...cardIds(tree)].sort()).toEqual(['home-food-1', 'home-food-3', 'home-food-5', 'home-food-7', 'home-food-9']); // safe만
+});
+
+it('#112 1R ③→2R ② — Saved(+위험 칩) 쿼리 에러 = 전체 화면 에러 게이트(활성 쿼리 기준), 가짜 no-matches 금지', () => {
+  mockSaved.mockReturnValue({ data: [], isLoading: false, isError: true, error: new Error('HTTP 500'), refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  expect(tree.root.findAll((n) => n.props?.testID === 'query-error-block').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'food-grid-filter-empty')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'empty-block')).toHaveLength(0);
+});
+
+it('#112 2R ① — 홈 embedded Saved 레일: 북마크 쿼리 에러 = filterEmpty·saved-empty보다 먼저 인라인 에러', () => {
+  mockSaved.mockReturnValue({ data: [], isLoading: false, isError: true, error: new Error('HTTP 500'), refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-tab-saved' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(tree.root.findAll((n) => n.props?.testID === 'food-grid-error').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-rail-saved-empty')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'home-rail-filter-empty')).toHaveLength(0);
+});
+
+it('#112 2R ② — Saved 활성 = browse 휴면(enabled:false) + 전체 화면 에러 게이트는 활성 쿼리(gridQ)', () => {
+  // browse가 에러여도 Saved 활성(savedList 정상)이면 전체 화면 에러로 덮지 않는다
+  mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500') });
+  mockSaved.mockReturnValue({ data: [FOOD('3')], isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  expect([...cardIds(tree)]).toEqual(['home-food-3']); // savedList 카드 렌더 — browse 에러가 화면을 덮지 않음
+  // browse 훅은 enabled:false로 호출됨
+  const lastOpts = mockBrowse.mock.calls[mockBrowse.mock.calls.length - 1][1] as { enabled?: boolean } | undefined;
+  expect(lastOpts?.enabled).toBe(false);
+});
+
+it('#112 3R ① — 채움 fetchNextPage 실패 후 자동 재호출 0회(수동 재시도만), 에러 상태도 자동 페치 0', async () => {
+  const failFetch = jest.fn().mockResolvedValue({ isError: true });
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1')]), fetchNextPage: failFetch });
+  const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1); // 첫 채움 시도
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-danger')[0].props.onPress(); }); // 리렌더 유발
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1); // 같은 커서 자동 재시도 0
+  // 에러 상태 = 자동 페치 중단
+  mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500'), fetchNextPage: failFetch });
+  const t2 = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(t2).toBeTruthy();
+  expect(failFetch).toHaveBeenCalledTimes(1);
+});
+
+it('#112 3R ② — Saved 활성 새로고침 = savedList(+판정 saved)만, browse.refetch 0회', () => {
+  const browseRefetch = jest.fn().mockResolvedValue(undefined);
+  const savedRefetch = jest.fn().mockResolvedValue(undefined);
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1')]), refetch: browseRefetch });
+  mockSaved.mockReturnValue({ data: [FOOD('3')], isLoading: false, isError: false, error: null, refetch: savedRefetch, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  const rc = tree.root.findAll((n) => typeof n.props?.onRefresh === 'function' && 'refreshing' in (n.props ?? {}))[0];
+  act(() => { rc.props.onRefresh(); });
+  expect(browseRefetch).not.toHaveBeenCalled();
+  expect(savedRefetch).toHaveBeenCalled();
+});
+
+it('#112 4R — screen 전체 화면 에러 재시도도 실패 기억 클리어(공유 retryGrid) → 채움 effect 재개', async () => {
+  // 1) danger 칩에서 채움 실패 → 기억
+  const failFetch = jest.fn().mockResolvedValue({ isError: true });
+  const refetch = jest.fn().mockResolvedValue(undefined);
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: failFetch, refetch });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1);
+  // 2) 에러 상태 → 전체 화면 게이트의 onRetry(공유 retryGrid) 실행 = refetch + 기억 클리어
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), isError: true, error: new Error('HTTP 500'), fetchNextPage: failFetch, refetch });
+  act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />); });
+  const retry = tree.root.findAll((n) => n.props?.testID === 'query-error-block')[0];
+  const btn = retry.findAll((n) => typeof n.props?.onPress === 'function')[0];
+  act(() => { btn.props.onPress(); });
+  expect(refetch).toHaveBeenCalledTimes(1);
+  // 3) 재시도 성공(에러 해소·같은 짧은 목록) → 채움 effect가 다시 산다
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: failFetch, refetch });
+  act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />); });
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(2); // 영구 정지 아님 — 클리어로 재개
+});
+
+it('#112 5R ① — 칩 전환 중 도착한 옛 실패 콜백이 새 쿼리 채움을 잠그지 않는다(키 스코프 마커)', async () => {
+  let resolveFail!: (v: { isError: boolean }) => void;
+  const slowFail = jest.fn(() => new Promise<{ isError: boolean }>((r) => { resolveFail = r; }));
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: slowFail, isFetching: false });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(slowFail).toHaveBeenCalledTimes(1); // danger 채움 시도(pending)
+  // 전환: caution — 새 쿼리(같은 길이 1)
+  const fresh = jest.fn().mockResolvedValue({ isError: false });
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('2', 'caution')]), fetchNextPage: fresh, isFetching: false });
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-caution' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  await act(async () => { resolveFail({ isError: true }); await Promise.resolve(); }); // 옛(danger) 실패 도착
+  // 새 쿼리(caution)의 채움은 계속 — 옛 키 마커가 잠그지 않음
+  expect(fresh.mock.calls.length).toBeGreaterThanOrEqual(1);
+});
+
+it('#112 5R ② — Saved+All 새로고침 = 같은 키 두 관찰자라 refetch 1회', () => {
+  const savedRefetch = jest.fn().mockResolvedValue(undefined);
+  mockSaved.mockReturnValue({ data: [FOOD('3')], isLoading: false, isError: false, error: null, refetch: savedRefetch, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  const rc = tree.root.findAll((n) => typeof n.props?.onRefresh === 'function' && 'refreshing' in (n.props ?? {}))[0];
+  act(() => { rc.props.onRefresh(); });
+  expect(savedRefetch).toHaveBeenCalledTimes(1);
 });

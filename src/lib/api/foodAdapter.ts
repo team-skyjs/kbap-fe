@@ -144,6 +144,18 @@ export function unregisteredFoodDetail(label: string): FoodDetail {
 }
 
 /** List summary → the FoodCard the browse grid renders (KB-71). */
+/** P-350(KB-492)/#112 P2: 위험도 칩 → 서버 enum(CSV 값) 매핑 — 어댑터 격리(UI 값이
+ *  URL로 새지 않게 이 한 곳). 'unable' 칩은 없음, 'all'/미지정 = 필터 없음. */
+export type RiskFilterChip = 'all' | 'safe' | 'caution' | 'danger';
+export const RISK_FILTER_WIRE: Record<Exclude<RiskFilterChip, 'all'>, string> = {
+  safe: 'SAFE',
+  caution: 'CAUTION',
+  danger: 'DANGER',
+};
+export function riskWireOf(risk?: RiskFilterChip): string | undefined {
+  return risk && risk !== 'all' ? RISK_FILTER_WIRE[risk] : undefined;
+}
+
 export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
   // P-165(#146): 리뷰 요약 실값 — count 0이면 average null(화면 '— · 0'), 구응답(필드 부재)도 동일 강등
   const rvCount = wire.review?.count ?? 0;

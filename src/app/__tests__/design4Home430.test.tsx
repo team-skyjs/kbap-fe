@@ -75,7 +75,13 @@ jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { nickname: 'A', restrictions: [{ code: 'PEANUT' }], nationality: 'US', id: '1' } }),
 }));
 const mockCatalog = [mockFood('1', 'safe'), mockFood('2', 'danger'), mockFood('3', 'caution'), mockFood('4', 'safe'), mockFood('5', 'unable'), mockFood('6', 'safe')];
-jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ data: mockCatalog }) }));
+// P-350(KB-492): 칩 = 서버 필터 — 목이 risk 인자로 서버 판정을 재현(클라 필터 소멸)
+jest.mock('@/lib/data/useFoods', () => ({
+  FOODS_PAGE_SIZE: 20,
+  useInfiniteFoods: (risk?: string) => ({
+    data: !risk || risk === 'all' ? mockCatalog : mockCatalog.filter((f: { risk: string }) => f.risk === risk),
+  }),
+}));
 const mockBookmarks = {
   data: [] as ReturnType<typeof mockFood>[],
   hasNextPage: false,
