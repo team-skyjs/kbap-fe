@@ -11,6 +11,8 @@
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
+import { SAFETY_NOTICE_URL } from '@/lib/legalText';
+import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -158,7 +160,7 @@ export default function Profile() {
               {FLAGS.pushEnabled && (
                 <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
-              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
               <Text style={styles.verText}>v{Constants.expoConfig?.version ?? '0.0.0'}</Text>
@@ -324,7 +326,7 @@ export default function Profile() {
                 <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
-              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}
               {FLAGS.communityEnabled && (
                 <MenuRow label={t('community.blockedTitle')} chevron onPress={() => router.push('/community/blocked' as Href)} />

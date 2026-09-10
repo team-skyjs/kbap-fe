@@ -565,7 +565,8 @@
     "errorTitle": "Đã xảy ra sự cố",
     "errorBody": "Chúng tôi không thể tải mục này lúc này. Lỗi ở phía chúng tôi, không phải bạn.",
     "offlineTitle": "Bạn đang ngoại tuyến",
-    "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá. Các bản quét đã lưu vẫn còn ở đây."
+    "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá. Các bản quét đã lưu vẫn còn ở đây.",
+    "linkFailed": "Không mở được liên kết"
   },
   "shell": {
     "placeholderNote": "Nội dung tab nằm trong các mô-đun màn hình"

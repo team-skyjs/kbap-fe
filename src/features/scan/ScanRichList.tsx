@@ -17,7 +17,8 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { CardPhoto } from '@/components/CardPhoto';
-import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
 
@@ -230,7 +231,7 @@ function RichRow({
                 style={styles.googleChip}
                 hitSlop={6}
                 accessibilityLabel={t('scan.searchOnGoogle')} /* Codex #45 P1 */
-                onPress={() => void Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`)}
+                onPress={() => void openWebPage(`https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`)}
                 testID={`miss-google-${dish.itemId}`}
               >
                 <BrandGoogleMark size={16} />
