@@ -51,7 +51,7 @@ function readRequestId(res: Response): string | undefined {
 /** 유일 헤더 예외 엔드포인트 — 무인증·X-API-Version 자체가 없는 버전 게이트. */
 export const APP_VERSION_PATH = '/api/app-version';
 
-const API_VERSION_HEADER = '1.0';
+const API_VERSION_HEADER = '1.1';
 
 /** 기기/앱 헤더 — 형식 고정: `iOS 18.1` / `AOS 14`(안드는 API 레벨 아닌 릴리스). */
 function deviceHeaders(): Record<string, string> {

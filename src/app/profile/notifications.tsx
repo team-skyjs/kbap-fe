@@ -8,7 +8,7 @@
  * FLAGS.pushEnabled off = 라우트 가드(진입점도 없지만 딥링크 이중 방어).
  */
 import * as React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -80,6 +80,15 @@ export default function NotificationSettings() {
   React.useEffect(() => {
     void getPushSettings().then(setSettings);
     void getPermissionStatus().then(setPermission);
+  }, []);
+
+  React.useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      void getPermissionStatus().then(setPermission);
+      void registerPushToken();
+    });
+    return () => sub.remove();
   }, []);
 
   const toggle = (key: 'helpful' | 'reviewReminder' | 'nudge') => {

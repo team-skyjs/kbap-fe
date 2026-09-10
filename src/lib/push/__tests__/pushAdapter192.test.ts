@@ -21,6 +21,8 @@ const mockNotifications = {
   SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
 };
 jest.mock('expo-notifications', () => mockNotifications);
+const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
+jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -38,6 +40,7 @@ import {
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  mockApi.put.mockResolvedValue(undefined);
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
   await AsyncStorage.clear();
 });
@@ -87,9 +90,26 @@ it('토큰 upsert — 권한 granted면 발급, 아니면 조용히 스킵(게�
   await registerPushToken();
   expect(mockNotifications.getExpoPushTokenAsync).toHaveBeenCalled();
   mockNotifications.getExpoPushTokenAsync.mockClear();
+  mockApi.put.mockClear();
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' });
   await registerPushToken();
   expect(mockNotifications.getExpoPushTokenAsync).not.toHaveBeenCalled();
+  expect(mockApi.put).not.toHaveBeenCalled();
+});
+
+it('KB-496: upsert = PUT /api/notifications/tokens { token, platform, lang } — settings 미전송', async () => {
+  await registerPushToken();
+  expect(mockApi.put).toHaveBeenCalledTimes(1);
+  const [path, body, opts] = mockApi.put.mock.calls[0] as [string, Record<string, unknown>, unknown];
+  expect(path).toBe('/api/notifications/tokens');
+  expect(opts).toBeUndefined(); // X-API-Version 1.1 = 전역 기본(client.ts) — 개별 지정 없음
+  expect(body).toEqual({ token: 'ExponentPushToken[test]', platform: 'ios', lang: 'en' });
+  expect(body).not.toHaveProperty('settings');
+});
+
+it('KB-496: 서버 upsert 실패(4xx/네트워크) = 비치명 — reject 미전파', async () => {
+  mockApi.put.mockRejectedValueOnce(new Error('NETWORK: offline'));
+  await expect(registerPushToken()).resolves.toBeUndefined();
 });
 
 it('P-268: 원격 토큰 발급 실패 = 비치명(reject 미전파 — 리마인더는 로컬이라 무관)', async () => {
@@ -114,6 +134,16 @@ it('알림 탭 구독 — 응답 data로 라우팅 콜백 + 포그라운드 핸�
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
   expect(onRoute).toHaveBeenCalledWith('/profile/reviews');
+});
+
+it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 잠금) — 재설치 잔존 토큰으로 이전 회원에 기기 연결 금지', () => {
+  const fs = require('fs') as typeof import('fs');
+  const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
+  // 첫 upsert는 cleanupDone 체인 안에서만
+  expect(layout).toContain('cleanupDone.then(() => push.registerPushToken())');
+  // 부트 effect 밖(푸시 effect 마운트 직후)의 즉시 호출 0 — 언어 변경 핸들러(onLang)만 허용
+  expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
+  expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
 });
 
 it('Codex #109 10R: registerPushToken 진행 중 inflight = 1 — 콜드 스타트 OTA 정적 창 포함(KB-509)', async () => {

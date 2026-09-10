@@ -9,13 +9,13 @@
  * 기획 정본: dropbox/yj/2026-08-13-푸시알림-BE-요청.md — 3종:
  *   ① Helpful 서버푸시(기본 on) ② 리뷰 유도 로컬(주문 완료 1h 후, 기본 on)
  *   ③ 리텐션 넛지 서버푸시(기본 off — 광고성, 옵트인 시각 기록: 정보통신망법).
- * BE 토큰 API = **계약 미정**(요청 문서 회신 대기) — sendTokenToServer만 배선점.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import { track } from '@/lib/net/inflight';
 import i18n from '@/lib/i18n';
+import { api, apiLang } from '@/lib/api/client';
 
 const SETTINGS_KEY = 'kbap.push.settings.v1';
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
@@ -125,18 +125,16 @@ export async function requestPermission(): Promise<boolean> {
   }
 }
 
-/* ---- 토큰 등록 (BE 계약 미정 — 이 함수만 배선점) ---- */
+/* ---- 토큰 등록 ---- */
 
 interface PushTokenRegistration {
   token: string;
   platform: string;
   lang: string;
-  settings: PushSettings;
 }
 
 async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
-  // BE 토큰 저장 API 계약 대기(2026-08-13 요청 문서) — 회신 오면 여기만 배선.
-  console.log('[push] token upsert (BE 계약 대기, no-op)', reg.token.slice(0, 24), reg.platform, reg.lang);
+  await api.put('/api/notifications/tokens', reg);
 }
 
 /** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함).
@@ -152,16 +150,10 @@ async function registerPushTokenInner(): Promise<void> {
     if (status !== 'granted') return;
     const projectId = getProjectId();
     const { data: token } = await N.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-    await sendTokenToServer({ token, platform: Platform.OS, lang: i18n.language, settings: await getPushSettings() });
+    await sendTokenToServer({ token, platform: Platform.OS, lang: apiLang() });
   } catch (e) {
     console.log('[push] token register 실패(비치명)', (e as Error)?.message ?? e);
   }
-}
-
-/** 로그아웃·탈퇴 시 서버 토큰 삭제 골격 — 계약 후 배선(현재 no-op+로그). */
-export async function unregisterPushToken(): Promise<void> {
-  if (!FLAGS.pushEnabled) return;
-  console.log('[push] token delete (BE 계약 대기, no-op)');
 }
 
 function getProjectId(): string | undefined {

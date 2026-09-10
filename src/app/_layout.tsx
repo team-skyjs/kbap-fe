@@ -77,6 +77,10 @@ export default function RootLayout() {
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
     void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
+    if (FLAGS.pushEnabled) {
+      const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
+      void cleanupDone.then(() => push.registerPushToken()).catch(() => {});
+    }
   }, []);
 
   // P-144(KB-316): app_opened(P-215 개명) = 실행 + 포그라운드 복귀마다 (DAU 분모,
@@ -143,7 +147,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (!FLAGS.pushEnabled) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    void push.registerPushToken();
     const unsub = push.addNotificationTapListener((href) => router.push(href as Href));
     const onLang = () => void push.registerPushToken();
     i18n.on('languageChanged', onLang);

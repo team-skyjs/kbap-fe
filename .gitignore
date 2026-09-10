@@ -43,3 +43,7 @@ example
 /ios
 /android
 assets/_photostyle/
+
+# 로컬 전용 — Claude 계획 문서·워크트리
+docs/superpowers/
+.claude/worktrees/
