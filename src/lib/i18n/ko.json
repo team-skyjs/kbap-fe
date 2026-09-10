@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "리뷰 수정",
-    "viewTitle": "내 리뷰",
     "save": "변경사항 저장",
+    "savedToast": "리뷰를 수정했어요",
     "delete": "이 리뷰 삭제",
-    "posted": "{{when}} 작성",
-    "noBody": "별점만 남기고 내용은 작성하지 않았어요.",
     "notFound": "이 리뷰는 더 이상 볼 수 없어요.",
     "deleteConfirmTitle": "이 리뷰를 삭제할까요?",
     "deleteConfirmBody": "리뷰가 영구적으로 삭제돼요. 되돌릴 수 없어요."

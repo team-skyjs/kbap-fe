@@ -29,9 +29,8 @@ import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
-import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { FeedCard } from '@/features/review/FeedCard';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
@@ -340,9 +339,7 @@ function Registered({
   const activePreviews = natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
   const shownPreviews = activePreviews.slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
-  const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
-  const [editTarget, setEditTarget] = useState<Review | null>(null);
 
   // P-139 ④ 유지: verdict 이유 = **성분 기준 조립만**(맵기 문자열 0)
   const flagged = ingredients.filter((i) => i.risk === 'danger' || i.risk === 'caution');
@@ -580,7 +577,7 @@ function Registered({
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(activePreviews.find((r) => r.id === m.id) ?? previewSource.find((r) => r.id === m.id) ?? null)}
+        onEdit={(m) => router.push(`/food/${id}/review?reviewId=${m.id}` as Href)} /* P-358: 편집 = 작성 화면 편집 모드 */
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
         onBlocked={() => {
           // P-323(Codex #87 P2): 차단 갱신 — 활성 국가 필터 쿼리도 함께(뮤테이션 무효화는
@@ -588,19 +585,6 @@ function Registered({
           void reviewsQ.refetch();
           if (natOnly) void natQ.refetch();
         }}
-      />
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: id, current: editTarget, changes: { rating, body } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
       />
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />

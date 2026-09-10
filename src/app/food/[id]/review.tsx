@@ -19,18 +19,23 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCamera, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { useCreateReview } from '@/lib/data/useReviewMutations';
+import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useFoodReviews } from '@/lib/data/useFoodReviews';
+import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
+import { imageUrlToPath } from '@/lib/api/reviewAdapter';
+import { showTopToast } from '@/components/topToastStore';
+import { Shimmer } from '@/components/Skeleton';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
 import { EligibilityGate } from '@/features/review/EligibilityGate';
-import { addReviewPhotos, canPostReview, removeReviewPhoto, REVIEW_MAX_PHOTOS, uploadReviewImages } from '@/lib/review/reviewPhotos';
+import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
-import { EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
+import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { Modal } from 'react-native';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
@@ -40,14 +45,21 @@ export default function ReviewCompose() {
   // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
 
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, reviewId } = useLocalSearchParams<{ id: string; reviewId?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
   const { data: food } = useFoodDetail(id ?? '');
 
+  // P-358(KB-521): 편집 모드 — ?reviewId= 진입. 리뷰는 params가 아니라 캐시에서 조회
+  // (내리뷰 → 음식 리뷰 → 전역 피드), 캐시 미스면 목록 재조회 후 프리필(스켈레톤).
+  const editing = !!reviewId;
+  const cached = editing ? findCachedReview(queryClient, { reviewId: reviewId ?? '', foodId: id ?? '' }) : null;
+  const refill = useFoodReviews(editing && !cached ? (id ?? '') : ''); // 미스에만 재조회(enabled = foodId 유무)
+  const editReviewData = cached ?? (editing ? (refill.data?.pages.flatMap((p) => p.items) ?? []).find((r) => r.id === reviewId) ?? null : null);
+
   const [rating, setRating] = useState(0);
   const [body, setBody] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<ReviewPhoto[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [postError, setPostError] = useState(false);
   const [eligGate, setEligGate] = useState(false); // P-251: REVIEW-004 자격 안내
@@ -59,7 +71,20 @@ export default function ReviewCompose() {
   const [extras, setExtras] = useState<ReviewExtras>(EMPTY_EXTRAS);
   const isGuest = useIsGuest();
   const createReview = useCreateReview();
+  const updateReview = useUpdateReview();
   const bottomInset = useBottomInset(); // Codex #31 P1: 안드 내비바 플로어 포함
+
+  // P-358: 프리필 — 리뷰 도착 시 1회(별·본문·extras·place·사진 = 원격 슬롯)
+  const prefilledRef = useRef(false);
+  useEffect(() => {
+    if (!editing || !editReviewData || prefilledRef.current) return;
+    prefilledRef.current = true;
+    setRating(editReviewData.rating);
+    setBody(editReviewData.body ?? '');
+    setExtras(extrasFromReview(editReviewData));
+    setPlace(editReviewData.place ?? null);
+    setPhotos((editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })));
+  }, [editing, editReviewData]);
 
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
@@ -126,7 +151,23 @@ export default function ReviewCompose() {
       if (!canPostReview(rating)) return;
       setPostError(false);
       try {
-        const imagePaths = await uploadReviewImages(photos);
+        // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
+        const localUris = photos.filter((p) => p.kind === 'local').map((p) => p.uri);
+        const uploaded = await uploadReviewImages(localUris);
+        let li = 0;
+        const imagePaths = photos.map((p) => (p.kind === 'remote' ? imageUrlToPath(p.url) : uploaded[li++]));
+        if (editing && editReviewData) {
+          await updateReview.mutateAsync({
+            reviewId: reviewId ?? '',
+            foodId: id ?? '',
+            current: editReviewData,
+            changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths }, // place 해제 = null 명시
+          });
+          // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358)
+          showTopToast(t('editReview.savedToast'));
+          router.back();
+          return;
+        }
         await createReview.mutateAsync({
           foodId: id ?? '',
           rating,
@@ -152,17 +193,6 @@ export default function ReviewCompose() {
         setPostError(true); // 실패 = 버튼 복구(가드 finally) + 기존 에러 표면
       }
     });
-
-  // 라우트 자체 가드 — 작성은 회원 전용. 진입 버튼 게이트와 별개의 이중 방어
-  // (딥링크/직접 라우트 포함, 실기기 반려분 #2와 동일 원칙).
-  if (isGuest) {
-    return (
-      <View style={styles.root}>
-        <SubHeader title={t('review.title')} onBack={() => router.back()} />
-        <AuthGateSheet context="writeReview" open onClose={() => router.back()} />
-      </View>
-    );
-  }
 
   // P-150② → P-158① 재작업(실기 재반려): 접근 교체 —
   // ⓐ 키보드 높이 실측(Keyboard 이벤트) → 컨테이너 하단 패딩 = 키보드+여유
@@ -204,10 +234,44 @@ export default function ReviewCompose() {
   };
 
 
+  // ⚠️ 가드는 전 훅 선언 뒤(P-358: 편집 로딩→로드 전환 시 훅 수 불변)
+  // 라우트 자체 가드 — 작성은 회원 전용. 진입 버튼 게이트와 별개의 이중 방어
+  // (딥링크/직접 라우트 포함, 실기기 반려분 #2와 동일 원칙).
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('review.title')} onBack={() => router.back()} />
+        <AuthGateSheet context="writeReview" open onClose={() => router.back()} />
+      </View>
+    );
+  }
+
+  // P-358: 편집 진입인데 리뷰 미도착(캐시 미스 + 재조회 중) = 스켈레톤.
+  // 재조회 종료 후에도 부재 = 안내 후 복귀 경로(editReview.notFound).
+  if (editing && !editReviewData) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('editReview.title')} onBack={() => router.back()} />
+        {refill.isLoading || refill.isFetching ? (
+          <View style={{ padding: 20, gap: 16 }} testID="edit-loading">
+            <Shimmer style={{ height: 64, borderRadius: 8 }} />
+            <Shimmer style={{ height: 120, borderRadius: 8 }} />
+            <Shimmer style={{ height: 156, borderRadius: 8 }} />
+          </View>
+        ) : (
+          <View style={{ padding: 20 }} testID="edit-not-found">
+            <Text style={styles.foodKo}>{t('editReview.notFound')}</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+
   return (
     <View style={styles.root}>
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
-      <SubHeader title={t('review.title')} onBack={() => router.back()} />
+      <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
       {/* P-158 ①: 키보드 실측 패딩(contentContainer) + 블록 하단 프록시 스크롤 —
           커서 추종은 위 ensureCursorVisible 참조 (P-150② 인셋 방식은 폐기됨) */}
@@ -277,19 +341,22 @@ export default function ReviewCompose() {
         <View style={styles.block}>
           {/* §2-5(4150:16463 @y428): 슬롯 100 r8, 빈 = #F4F6F6 50% + #DCDEE3, 카메라 24 */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-            {photos.map((uri) => (
-              <View key={uri} style={styles.photoThumbWrap}>
-                <Image source={{ uri }} style={styles.photoThumb} />
-                <Pressable
-                  accessibilityLabel={t('review.removePhoto')}
-                  style={styles.photoDel}
-                  hitSlop={8}
-                  onPress={() => setPhotos((cur) => removeReviewPhoto(cur, uri))}
-                >
-                  <IconClose size={10} color="#fff" />
-                </Pressable>
-              </View>
-            ))}
+            {photos.map((p) => {
+              const key = reviewPhotoKey(p); // P-358: remote(기존 URL) | local(신규 URI) 혼합
+              return (
+                <View key={key} style={styles.photoThumbWrap}>
+                  <Image source={{ uri: key }} style={styles.photoThumb} />
+                  <Pressable
+                    accessibilityLabel={t('review.removePhoto')}
+                    style={styles.photoDel}
+                    hitSlop={8}
+                    onPress={() => setPhotos((cur) => removeReviewPhoto(cur, key))}
+                  >
+                    <IconClose size={10} color="#fff" />
+                  </Pressable>
+                </View>
+              );
+            })}
             {photos.length < REVIEW_MAX_PHOTOS && (
               <Pressable accessibilityLabel={t('review.addPhoto')} style={styles.photoAdd} onPress={photoImporting ? undefined : pickPhoto} testID="photo-add">
                 {/* P-191: 픽커 복귀~원본 준비(iCloud) — 타일 자리 스피너(프레임 불변) */}
@@ -363,7 +430,7 @@ export default function ReviewCompose() {
           Btn busy(공용 문법 — 메트릭 불변 스피너). */}
       <View style={[styles.bottomBar, { paddingBottom: 10 + bottomInset }]} testID="review-bottom-bar">
         <Btn variant={canPost || posting ? 'primary' : 'off'} busy={posting} onPress={post} testID="post-review">
-          {t('review.postReview')}
+          {t(editing ? 'editReview.save' : 'review.postReview')}
         </Btn>
       </View>
 

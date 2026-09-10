@@ -49,7 +49,7 @@ jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => (
 const mockGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest() }));
 
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '../ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewPhotoStrip } from '../ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 const t = (k: string) => k;
@@ -158,16 +158,6 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
   });
 });
 
-it('ReviewEditSheet — 기존 값 프리필·저장 콜백에 변경값 전달(구 디테일 editing 대체)', () => {
-  const onSave = jest.fn();
-  const review = { id: 'r1', foodId: '7', rating: 4, body: 'old body', authorNationality: null, authorRankTier: null, anonymized: false, createdAt: '2026-08-12' } as Review;
-  const tree = render(<ReviewEditSheet review={review} onClose={jest.fn()} onSave={onSave} t={t} />);
-  expect(tree.root.findAll((n) => n.props?.testID === 'review-edit-sheet').length).toBeGreaterThanOrEqual(1);
-  act(() => tree.root.findAll((n) => n.props?.testID === 'edit-star-5')[0].props.onPress());
-  const save = tree.root.findAll((n) => n.props?.testID === 'edit-save' && typeof n.props?.onPress === 'function')[0];
-  act(() => save.props.onPress());
-  expect(onSave).toHaveBeenCalledWith({ rating: 5, body: 'old body', place: null, extras: { speed: null, service: null } }); // P-201 장소 + P-236 extras
-});
 
 it('KB-431 후속(.fig 실측 2162:11360): 평점 행 = 좌측 정렬(hug @x20) — center 잔존 0', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

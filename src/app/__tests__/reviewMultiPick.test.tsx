@@ -86,7 +86,9 @@ const mockFoodDetail = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockFoodDetail() }));
 
 const mockMutateAsync = jest.fn();
-jest.mock('@/lib/data/useReviewMutations', () => ({ useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+jest.mock('@/lib/data/useReviewMutations', () => ({ findCachedReview: () => null,
+  useUpdateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined), mutate: jest.fn(), isPending: false }), useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));
 // 업로드 목 — HEIC 경유(per-file uploadImage) 검증용

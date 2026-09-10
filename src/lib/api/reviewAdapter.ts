@@ -173,7 +173,7 @@ function placeWire(p: ReviewPlaceLike): NonNullable<ReviewUpdateWire['place']> {
  */
 export function buildReviewUpdate(
   current: { rating: number; body: string | null; photos?: string[]; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number },
-  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number },
+  changes: { rating?: number; body?: string | null; place?: ReviewPlaceLike | null; servingSpeed?: number; staffKindness?: number; photos?: string[] },
 ): ReviewUpdateWire {
   const body = (changes.body !== undefined ? changes.body : current.body)?.trim() ?? '';
   const place = changes.place !== undefined ? changes.place : (current.place ?? null);
@@ -183,7 +183,8 @@ export function buildReviewUpdate(
     servingSpeed: changes.servingSpeed ?? current.servingSpeed ?? 0,
     staffKindness: changes.staffKindness ?? current.staffKindness ?? 0,
     ...(body ? { content: body } : {}), // 빈 본문 = 제거 의도 → 생략
-    imagePaths: (current.photos ?? []).map(imageUrlToPath), // 항상 전송 — 사진 소실 방지
+    // P-358: 편집 화면이 슬롯 순서대로 확정한 paths(changes.photos) 우선 — 미전달 = 현행 보존
+    imagePaths: (changes.photos ?? current.photos ?? []).map(imageUrlToPath), // 항상 전송 — 사진 소실 방지
     ...(place ? { place: placeWire(place) } : {}), // null = 해제 → 생략
   };
 }
