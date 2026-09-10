@@ -28,7 +28,7 @@ import { railCardW } from '@/features/food/railLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SectionHead } from '@/components/SectionHead';
 import { useInfiniteFoods, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
-import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
+import { useBookmarks, useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { popularPhotoFoods } from '@/lib/search/discovery';
@@ -183,18 +183,11 @@ export function FoodExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant, riskChip, savedOnly, paramsKey]);
 
-  // Codex #28: 북마크 커서 전 페이지 드레인 — 저장 판정 소스(집합 방식 정본).
-  // P-332(KB-488) 프리징 수정: ① deps에 `saved`(매 렌더 새 객체) → 매 렌더 실행이던 것을
-  // 플래그·안정 함수로 축소 ② isFetching 가드 — 토글 invalidate의 전 페이지 재조회 중
-  // fetchNextPage가 재조회를 취소·재시작시키는 핑퐁 차단 ③ cancelRefetch:false —
-  // 홈 embedded·저장 화면 동시 마운트(탭 유지)에서 상호 취소 루프 봉쇄.
-  React.useEffect(() => {
-    if (saved.hasNextPage && !saved.isFetchingNextPage && !saved.isFetching)
-      void saved.fetchNextPage({ cancelRefetch: false });
-  }, [saved.hasNextPage, saved.isFetchingNextPage, saved.isFetching, saved.fetchNextPage]);
+  // Codex #28 → #116 P2 ①: 북마크 커서 전 페이지 드레인(판정 소스) = 공용 useSavedIds
+  // (P-332 가드 문법 포함 — 중복 배선 금지, 검색 등 다른 표면과 공유).
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
-  const savedIds = new Set(savedFoods.map((f) => f.foodId));
+  const savedIds = useSavedIds();
   const gridSource: FoodCard[] =
     variant === 'screen'
       ? savedOnly ? savedListFoods : (browse.data ?? []) // P-318: 세그먼트 소멸 — Saved는 토글 칩

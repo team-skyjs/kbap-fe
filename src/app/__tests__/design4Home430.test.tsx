@@ -89,6 +89,14 @@ const mockBookmarks = {
   fetchNextPage: jest.fn(),
 };
 jest.mock('@/lib/data/bookmarks', () => ({
+  // #116 P2 ①: 공용 훅 계약 재현 — 드레인 effect + Set(⑤ 테스트가 실행동 검증)
+  useSavedIds: () => {
+    const React = require('react') as typeof import('react');
+    React.useEffect(() => {
+      if (mockBookmarks.hasNextPage && !mockBookmarks.isFetchingNextPage) mockBookmarks.fetchNextPage({ cancelRefetch: false });
+    });
+    return new Set<string>(((mockBookmarks.data ?? []) as { foodId: string }[]).map((f) => f.foodId));
+  },
   useBookmarks: () => ({ ...mockBookmarks }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));

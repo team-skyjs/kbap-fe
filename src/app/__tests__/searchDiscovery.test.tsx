@@ -70,7 +70,7 @@ jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
 const mockUseFoods = jest.fn();
 const mockUseInfiniteFoods = jest.fn();
 const mockUseSearchFoods = jest.fn();
-jest.mock('@/lib/data/bookmarks', () => ({
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(),
   useBookmarks: () => ({ data: [] }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));

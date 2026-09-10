@@ -24,7 +24,8 @@ import { Spinner, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, Ic
 import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
-import { useBookmarks, useToggleBookmark } from '@/lib/data/bookmarks';
+import { useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { placeholderKeyword, popularPhotoFoods } from '@/lib/search/discovery';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -57,12 +58,12 @@ export default function Search() {
   const probe = useInfiniteFoods();
   const offline = probe.isError && classifyQueryError(probe.error) === 'offline';
 
-  // P-353 ⑤(KB-515): 결과 = 음식 탭과 동일 2열 FoodGridCard — saved·북마크 배선(게스트 미렌더)
-  const savedBm = useBookmarks();
+  // P-353 ⑤(KB-515) → #116 P2 ①②: 판정 = 공용 useSavedIds(드레인 포함), 게스트 = AuthGateSheet
   const toggleBookmark = useToggleBookmark();
-  const savedIds = new Set((savedBm.data ?? []).map((f) => f.foodId));
+  const savedIds = useSavedIds();
+  const [gate, setGate] = useState(false);
   const onBookmark = (f: FoodCard) => {
-    if (isGuest) return;
+    if (isGuest) return setGate(true); // 홈/음식 탭 문법 그대로 — 무동작 금지
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
       add: !savedIds.has(f.foodId),
@@ -244,6 +245,8 @@ export default function Search() {
           <EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" />
         </ScreenCenterFill>
       )}
+      {/* #116 P2 ②: 게스트 북마크 = 저장 게이트(홈/음식 탭 동일) */}
+      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }

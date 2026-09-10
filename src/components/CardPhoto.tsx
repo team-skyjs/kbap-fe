@@ -29,6 +29,11 @@ export function CardPhoto({
 }) {
   const [settled, setSettled] = React.useState(false);
   const [failed, setFailed] = React.useState(false);
+  // #116 P2 ③: 리사이클/소스 교체 시 상태 리셋 — 이전 항목의 실패가 새 이미지를 가리지 않게
+  React.useEffect(() => {
+    setSettled(false);
+    setFailed(false);
+  }, [uri, recyclingKey]);
   const round = borderRadius != null ? { borderRadius, overflow: 'hidden' as const } : null;
   const shimmerStyle: ViewStyle[] = round ? [FILL, round] : [FILL];
   const imageStyle: ImageStyle[] = round ? [FILL, round] : [FILL];

@@ -22,3 +22,16 @@ it('③ 기본 이미지 상수 = 어댑터 경계 한 곳(서버 DEFAULT_FOOD_I
   const fa = read('src/lib/api/foodAdapter.ts');
   expect(fa).toContain("export const DEFAULT_FOOD_IMAGE_URL = 'https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png';");
 });
+
+it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), 검색 게스트 = AuthGateSheet', () => {
+  const bm = read('src/lib/data/bookmarks.ts');
+  expect(bm).toContain('export function useSavedIds(): Set<string> {');
+  expect(bm).toContain('void saved.fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계
+  const fe = read('src/features/food/FoodExplorer.tsx');
+  expect(fe).toContain('const savedIds = useSavedIds();');
+  expect(fe).not.toContain('saved.fetchNextPage({ cancelRefetch: false })'); // 자체 드레인 소멸
+  const sr = read('src/app/search.tsx');
+  expect(sr).toContain('const savedIds = useSavedIds();');
+  expect(sr).toContain('if (isGuest) return setGate(true);');
+  expect(sr).toContain('<AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />');
+});

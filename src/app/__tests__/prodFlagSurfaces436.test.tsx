@@ -105,7 +105,7 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: { pages: [] } }) }));
-jest.mock('@/lib/data/bookmarks', () => ({
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(),
   useBookmarks: () => ({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));

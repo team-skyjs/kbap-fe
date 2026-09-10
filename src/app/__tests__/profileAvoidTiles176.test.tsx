@@ -47,7 +47,7 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
 jest.mock('@/lib/auth/session', () => ({ logOut: jest.fn() }));
 jest.mock('@/lib/data/useFoods', () => ({ useFoods: () => ({ data: [] }) }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(), useBookmarks: () => ({ data: [] }) }));
 const mockHome = jest.fn(() => ({ data: { recent: [] } }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome() })); // P-181 ②
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
