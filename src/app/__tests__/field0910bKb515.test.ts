@@ -18,9 +18,12 @@ it('④ My Foods Ordered 행 — thumbnails[0] = CardPhoto r8, 없으면 핀 현
   expect(mf).toMatch(/pinBox: \{ width: 70, height: 70, borderRadius: 8/);
 });
 
-it('③ 기본 이미지 상수 = 어댑터 경계 한 곳(서버 DEFAULT_FOOD_IMAGE_PATH 동일 URL)', () => {
+it('③ 기본 이미지 = 앱 번들 로컬 에셋(어댑터 경계 한 곳) — 원격 927KB PNG 동시 로딩 공백 재발 방지', () => {
   const fa = read('src/lib/api/foodAdapter.ts');
-  expect(fa).toContain("export const DEFAULT_FOOD_IMAGE_URL = 'https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png';");
+  expect(fa).toContain("export const DEFAULT_FOOD_IMAGE = require('../../../assets/images/food-not-found.webp') as number;");
+  expect(fa).not.toContain('DEFAULT_FOOD_IMAGE_URL'); // 원격 URL 상수 소멸
+  expect(require('fs').existsSync('assets/images/food-not-found.webp')).toBe(true);
+  expect(require('fs').statSync('assets/images/food-not-found.webp').size).toBeLessThan(20 * 1024); // ~20KB 목표
 });
 
 it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), 검색 게스트 = AuthGateSheet', () => {

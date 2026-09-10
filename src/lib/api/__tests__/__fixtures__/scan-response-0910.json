@@ -1,0 +1,1614 @@
+{
+  "success": true,
+  "payload": {
+    "degraded": false,
+    "results": [
+      {
+        "matched": false,
+        "foodId": 862,
+        "riskLevel": "UNKNOWN",
+        "name": "원조김밥",
+        "koreanName": "원조김밥",
+        "price": 2500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 865,
+        "riskLevel": "UNKNOWN",
+        "name": "김치김밥",
+        "koreanName": "김치김밥",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 73,
+        "riskLevel": "UNKNOWN",
+        "name": "참치김밥",
+        "koreanName": "참치김밥",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 872,
+        "riskLevel": "UNKNOWN",
+        "name": "치즈김밥",
+        "koreanName": "치즈김밥",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 947,
+        "riskLevel": "UNKNOWN",
+        "name": "땡초김밥",
+        "koreanName": "땡초김밥",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 874,
+        "riskLevel": "UNKNOWN",
+        "name": "샐러드김밥",
+        "koreanName": "샐러드김밥",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 875,
+        "riskLevel": "UNKNOWN",
+        "name": "소고기김밥",
+        "koreanName": "소고기김밥",
+        "price": 3500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 876,
+        "riskLevel": "UNKNOWN",
+        "name": "돈까스김밥",
+        "koreanName": "돈까스김밥",
+        "price": 3500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 877,
+        "riskLevel": "UNKNOWN",
+        "name": "계란말이김밥",
+        "koreanName": "계란말이김밥",
+        "price": 4000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 863,
+        "riskLevel": "UNKNOWN",
+        "name": "소시지김밥",
+        "koreanName": "소시지김밥",
+        "price": 3500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 878,
+        "riskLevel": "UNKNOWN",
+        "name": "새우김밥",
+        "koreanName": "새우김밥",
+        "price": 3500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 864,
+        "riskLevel": "UNKNOWN",
+        "name": "모듬김밥",
+        "koreanName": "모듬김밥",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 508,
+        "riskLevel": "UNKNOWN",
+        "name": "돈까스",
+        "koreanName": "돈까스",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 879,
+        "riskLevel": "UNKNOWN",
+        "name": "더블돈까스",
+        "koreanName": "더블돈까스",
+        "price": 9000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 880,
+        "riskLevel": "UNKNOWN",
+        "name": "치킨까스",
+        "koreanName": "치킨까스",
+        "price": 7500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 509,
+        "riskLevel": "UNKNOWN",
+        "name": "생선까스",
+        "koreanName": "생선까스",
+        "price": 7500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 510,
+        "riskLevel": "UNKNOWN",
+        "name": "새우까스",
+        "koreanName": "새우까스",
+        "price": 7500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 881,
+        "riskLevel": "UNKNOWN",
+        "name": "치즈돈까스",
+        "koreanName": "치즈돈까스",
+        "price": 7500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 882,
+        "riskLevel": "UNKNOWN",
+        "name": "카레돈까스",
+        "koreanName": "카레돈까스",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 883,
+        "riskLevel": "UNKNOWN",
+        "name": "고구마돈까스",
+        "koreanName": "고구마돈까스",
+        "price": 7500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 870,
+        "riskLevel": "UNKNOWN",
+        "name": "갈릭스테이크",
+        "koreanName": "갈릭스테이크",
+        "price": 7500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 936,
+        "riskLevel": "UNKNOWN",
+        "name": "스페셜정식",
+        "koreanName": "스페셜정식",
+        "price": 8500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 39,
+        "riskLevel": "UNKNOWN",
+        "name": "유부우동",
+        "koreanName": "유부우동",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 885,
+        "riskLevel": "UNKNOWN",
+        "name": "오뎅",
+        "koreanName": "오뎅",
+        "price": 4500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 25,
+        "riskLevel": "UNKNOWN",
+        "name": "바지락칼국수",
+        "koreanName": "바지락칼국수",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 886,
+        "riskLevel": "UNKNOWN",
+        "name": "김치칼국수",
+        "koreanName": "김치칼국수",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 402,
+        "riskLevel": "SAFE",
+        "name": "Perilla Seed Noodle Soup",
+        "koreanName": "들깨칼국수",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/3e2eb65cc21e_46d0163979684bbf.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 887,
+        "riskLevel": "UNKNOWN",
+        "name": "바지락손수제비",
+        "koreanName": "바지락손수제비",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 888,
+        "riskLevel": "UNKNOWN",
+        "name": "김치손수제비",
+        "koreanName": "김치손수제비",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 889,
+        "riskLevel": "UNKNOWN",
+        "name": "들깨손수제비",
+        "koreanName": "들깨손수제비",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 34,
+        "riskLevel": "CAUTION",
+        "name": "Korean Banquet Noodles",
+        "koreanName": "잔치국수",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/ce86307eadcd_9fce3c1ae58b4f86.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "CAUTION"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": true,
+        "foodId": 37,
+        "riskLevel": "DANGER",
+        "name": "Spicy Chewy Noodles",
+        "koreanName": "쫄면",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/3083cb767b81_e005a513cfc847cf.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 15,
+        "riskLevel": "UNKNOWN",
+        "name": "떡만두국",
+        "koreanName": "떡만두국",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 388,
+        "riskLevel": "DANGER",
+        "name": "Spicy Cold Noodles",
+        "koreanName": "비빔냉면",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/450d5926a8e3_904be10e43b4407a.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 77,
+        "riskLevel": "UNKNOWN",
+        "name": "고기만두",
+        "koreanName": "고기만두",
+        "price": 4000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 78,
+        "riskLevel": "UNKNOWN",
+        "name": "김치만두",
+        "koreanName": "김치만두",
+        "price": 4000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 891,
+        "riskLevel": "UNKNOWN",
+        "name": "갈비만두",
+        "koreanName": "갈비만두",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 79,
+        "riskLevel": "UNKNOWN",
+        "name": "군만두",
+        "koreanName": "군만두",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 6,
+        "riskLevel": "CAUTION",
+        "name": "Spicy Rice Cakes",
+        "koreanName": "떡볶이",
+        "price": 4000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/694b11f55ee8_1d1c440625ba45b5.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "CAUTION"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 892,
+        "riskLevel": "UNKNOWN",
+        "name": "깻잎떡볶이",
+        "koreanName": "깻잎떡볶이",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 87,
+        "riskLevel": "UNKNOWN",
+        "name": "치즈떡볶이",
+        "koreanName": "치즈떡볶이",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 86,
+        "riskLevel": "UNKNOWN",
+        "name": "라볶이",
+        "koreanName": "라볶이",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 893,
+        "riskLevel": "UNKNOWN",
+        "name": "치즈라볶이",
+        "koreanName": "치즈라볶이",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 894,
+        "riskLevel": "UNKNOWN",
+        "name": "쫄볶이",
+        "koreanName": "쫄볶이",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 895,
+        "riskLevel": "UNKNOWN",
+        "name": "치즈쫄볶이",
+        "koreanName": "치즈쫄볶이",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 896,
+        "riskLevel": "UNKNOWN",
+        "name": "치즈스파게티",
+        "koreanName": "치즈스파게티",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 414,
+        "riskLevel": "CAUTION",
+        "name": "Young Radish Cold Noodles",
+        "koreanName": "열무냉면",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/9d4979407091_d83ff0cb5c2d49db.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "CAUTION"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 176,
+        "riskLevel": "UNKNOWN",
+        "name": "열무국수",
+        "koreanName": "열무국수",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 35,
+        "riskLevel": "UNKNOWN",
+        "name": "비빔국수",
+        "koreanName": "비빔국수",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 406,
+        "riskLevel": "CAUTION",
+        "name": "Buckwheat Noodles",
+        "koreanName": "메밀국수",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/bf5732b65017_1293f9e7638a4746.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "CAUTION"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 900,
+        "riskLevel": "UNKNOWN",
+        "name": "냉모밀",
+        "koreanName": "냉모밀",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 871,
+        "riskLevel": "UNKNOWN",
+        "name": "칠리탕수육",
+        "koreanName": "칠리탕수육",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 901,
+        "riskLevel": "UNKNOWN",
+        "name": "카레덮밥",
+        "koreanName": "카레덮밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 867,
+        "riskLevel": "UNKNOWN",
+        "name": "참치덮밥",
+        "koreanName": "참치덮밥",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 902,
+        "riskLevel": "UNKNOWN",
+        "name": "소불고기덮밥",
+        "koreanName": "소불고기덮밥",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 327,
+        "riskLevel": "SAFE",
+        "name": "Spicy Pork Rice Bowl",
+        "koreanName": "제육덮밥",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/bce42c7713b1_8fd53f867f124d8d.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 903,
+        "riskLevel": "UNKNOWN",
+        "name": "김치제육덮밥",
+        "koreanName": "김치제육덮밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 328,
+        "riskLevel": "SAFE",
+        "name": "Squid Rice Bowl",
+        "koreanName": "오징어덮밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/1bbb9503fd80_1636dd498a21463e.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": true,
+        "foodId": 330,
+        "riskLevel": "SAFE",
+        "name": "Spicy Octopus Rice Bowl",
+        "koreanName": "낙지덮밥",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/d8d0d3675c92_88b335db2c4e481a.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 904,
+        "riskLevel": "UNKNOWN",
+        "name": "오삼불고기덮밥",
+        "koreanName": "오삼불고기덮밥",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 905,
+        "riskLevel": "UNKNOWN",
+        "name": "낙삼덮밥",
+        "koreanName": "낙삼덮밥",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 906,
+        "riskLevel": "UNKNOWN",
+        "name": "쭈꾸미덮밥",
+        "koreanName": "쭈꾸미덮밥",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 907,
+        "riskLevel": "UNKNOWN",
+        "name": "소고기볶음밥",
+        "koreanName": "소고기볶음밥",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 332,
+        "riskLevel": "DANGER",
+        "name": "Shrimp Fried Rice",
+        "koreanName": "새우볶음밥",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/9002573761df_64ddeada57e64dd7.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": true,
+        "foodId": 331,
+        "riskLevel": "CAUTION",
+        "name": "Kimchi Fried Rice",
+        "koreanName": "김치볶음밥",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/272947e895b3_7b3658b5d9d04ce9.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "CAUTION"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 869,
+        "riskLevel": "UNKNOWN",
+        "name": "참치김치볶음밥",
+        "koreanName": "참치김치볶음밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 908,
+        "riskLevel": "UNKNOWN",
+        "name": "야채비빔밥",
+        "koreanName": "야채비빔밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 909,
+        "riskLevel": "UNKNOWN",
+        "name": "날치알비빔밥",
+        "koreanName": "날치알비빔밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 370,
+        "riskLevel": "CAUTION",
+        "name": "Tuna Bibimbap",
+        "koreanName": "참치비빔밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/4c77d1bb47ab_a4a58c13f0fa4dd6.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "CAUTION"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 911,
+        "riskLevel": "UNKNOWN",
+        "name": "소불고기비빔밥",
+        "koreanName": "소불고기비빔밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 1,
+        "riskLevel": "UNKNOWN",
+        "name": "된장찌개",
+        "koreanName": "된장찌개",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 912,
+        "riskLevel": "UNKNOWN",
+        "name": "우렁된장찌개",
+        "koreanName": "우렁된장찌개",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 913,
+        "riskLevel": "UNKNOWN",
+        "name": "청국장",
+        "koreanName": "청국장",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 914,
+        "riskLevel": "UNKNOWN",
+        "name": "콩비지찌개",
+        "koreanName": "콩비지찌개",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 915,
+        "riskLevel": "UNKNOWN",
+        "name": "해물순두부찌개",
+        "koreanName": "해물순두부찌개",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 714,
+        "riskLevel": "UNKNOWN",
+        "name": "참치김치찌개",
+        "koreanName": "참치김치찌개",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 916,
+        "riskLevel": "UNKNOWN",
+        "name": "돼지김치찌개",
+        "koreanName": "돼지김치찌개",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 917,
+        "riskLevel": "UNKNOWN",
+        "name": "묵은지고등어조림",
+        "koreanName": "묵은지고등어조림",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 918,
+        "riskLevel": "UNKNOWN",
+        "name": "꽁치조림",
+        "koreanName": "꽁치조림",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 348,
+        "riskLevel": "DANGER",
+        "name": "Spam Mayo Rice Bowl",
+        "koreanName": "스팸마요덮밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/4119fe36f96d_ca7ab4a5f3a146ab.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": true,
+        "foodId": 347,
+        "riskLevel": "DANGER",
+        "name": "Tuna Mayo Rice Bowl",
+        "koreanName": "참치마요덮밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/2a690a8b3f7c_9baa0ad00b1c4666.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 919,
+        "riskLevel": "UNKNOWN",
+        "name": "치킨마요덮밥",
+        "koreanName": "치킨마요덮밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 920,
+        "riskLevel": "UNKNOWN",
+        "name": "돈까스마요덮밥",
+        "koreanName": "돈까스마요덮밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 335,
+        "riskLevel": "DANGER",
+        "name": "Omurice",
+        "koreanName": "오므라이스",
+        "price": 6500,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/a34a126e3fca_a9fbfccd112a449f.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 921,
+        "riskLevel": "UNKNOWN",
+        "name": "호불정식",
+        "koreanName": "호불정식",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 922,
+        "riskLevel": "UNKNOWN",
+        "name": "낙지소면",
+        "koreanName": "낙지소면",
+        "price": 12000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 49,
+        "riskLevel": "UNKNOWN",
+        "name": "콩나물국밥",
+        "koreanName": "콩나물국밥",
+        "price": 6000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 50,
+        "riskLevel": "UNKNOWN",
+        "name": "육개장",
+        "koreanName": "육개장",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 923,
+        "riskLevel": "UNKNOWN",
+        "name": "갈비탕",
+        "koreanName": "갈비탕",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 246,
+        "riskLevel": "SAFE",
+        "name": "Ox Bone Soup",
+        "koreanName": "설렁탕",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/b33a2dd389f9_7e891c51fdc246f9.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 924,
+        "riskLevel": "UNKNOWN",
+        "name": "순대국",
+        "koreanName": "순대국",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 113,
+        "riskLevel": "UNKNOWN",
+        "name": "부대찌개",
+        "koreanName": "부대찌개",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 925,
+        "riskLevel": "UNKNOWN",
+        "name": "동태탕",
+        "koreanName": "동태탕",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 926,
+        "riskLevel": "UNKNOWN",
+        "name": "황태탕",
+        "koreanName": "황태탕",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 868,
+        "riskLevel": "UNKNOWN",
+        "name": "양평해장국",
+        "koreanName": "양평해장국",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 258,
+        "riskLevel": "SAFE",
+        "name": "Ox Head Soup with Rice",
+        "koreanName": "소머리국밥",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/3873e2ea15bf_ac9e55bcc24f4d82.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 928,
+        "riskLevel": "UNKNOWN",
+        "name": "소고기무국",
+        "koreanName": "소고기무국",
+        "price": 7000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 58,
+        "riskLevel": "UNKNOWN",
+        "name": "내장탕",
+        "koreanName": "내장탕",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 929,
+        "riskLevel": "UNKNOWN",
+        "name": "해물알탕",
+        "koreanName": "해물알탕",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 144,
+        "riskLevel": "UNKNOWN",
+        "name": "뼈해장국",
+        "koreanName": "뼈해장국",
+        "price": 8000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 248,
+        "riskLevel": "SAFE",
+        "name": "Ginseng Chicken Soup",
+        "koreanName": "삼계탕",
+        "price": 11000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/b7d82f76f0f8_1911beffc37d4638.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      },
+      {
+        "matched": false,
+        "foodId": 999,
+        "riskLevel": "UNKNOWN",
+        "name": "돈까스 떡볶이 원조김밥",
+        "koreanName": "돈까스 떡볶이 원조김밥",
+        "price": 16000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 934,
+        "riskLevel": "UNKNOWN",
+        "name": "돈까스 떡볶이 쫄면",
+        "koreanName": "돈까스 떡볶이 쫄면",
+        "price": 16000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 930,
+        "riskLevel": "UNKNOWN",
+        "name": "콜라",
+        "koreanName": "콜라",
+        "price": 1000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 931,
+        "riskLevel": "UNKNOWN",
+        "name": "사이다",
+        "koreanName": "사이다",
+        "price": 1000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 930,
+        "riskLevel": "UNKNOWN",
+        "name": "콜라",
+        "koreanName": "콜라",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 931,
+        "riskLevel": "UNKNOWN",
+        "name": "사이다",
+        "koreanName": "사이다",
+        "price": 3000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 111,
+        "riskLevel": "UNKNOWN",
+        "name": "공기밥",
+        "koreanName": "공기밥",
+        "price": 1000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": false,
+        "foodId": 932,
+        "riskLevel": "UNKNOWN",
+        "name": "계란후라이",
+        "koreanName": "계란후라이",
+        "price": 1000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png",
+        "avoidances": []
+      },
+      {
+        "matched": true,
+        "foodId": 296,
+        "riskLevel": "DANGER",
+        "name": "Steamed Egg Custard",
+        "koreanName": "계란찜",
+        "price": 5000,
+        "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/4db8a258c453_2283a90514774194.webp",
+        "avoidances": [
+          {
+            "code": "EGG",
+            "name": "Egg",
+            "overlapped": true,
+            "riskLevel": "DANGER"
+          },
+          {
+            "code": "MILK",
+            "name": "Milk",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "CHEESE",
+            "name": "Cheese",
+            "overlapped": false,
+            "riskLevel": null
+          },
+          {
+            "code": "WALNUT",
+            "name": "Walnut",
+            "overlapped": false,
+            "riskLevel": null
+          }
+        ]
+      }
+    ],
+    "currency": {
+      "code": "USD",
+      "krwPerUnit": 1336.1998
+    }
+  },
+  "message": null,
+  "code": null
+}

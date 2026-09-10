@@ -144,9 +144,12 @@ export function unregisteredFoodDetail(label: string): FoodDetail {
 }
 
 /** List summary → the FoodCard the browse grid renders (KB-71). */
-/** P-353 ③(KB-515): 서버 기본 음식 이미지(FoodService.DEFAULT_FOOD_IMAGE_PATH 동일) —
- *  회색 클로슈 일러스트. 사진 없음/로드 실패 폴백은 전부 이 한 곳. */
-export const DEFAULT_FOOD_IMAGE_URL = 'https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png';
+/** P-353 ③(KB-515) → 후속: 기본 음식 이미지 = **앱 번들 로컬 에셋**(회색 클로슈,
+ *  400² webp ~1KB — CDN 원본 927KB PNG의 리사이즈본). 원격 URL 시절엔 미매칭
+ *  100행이 동시에 927KB PNG를 당겨 흰 스켈레톤 공백(9/10 실기) — 로컬 = 네트워크
+ *  0·즉시 표시, OTA 에셋 동승. 사진 없음/로드 실패 폴백은 전부 이 한 곳. */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+export const DEFAULT_FOOD_IMAGE = require('../../../assets/images/food-not-found.webp') as number;
 
 /** P-350(KB-492)/#112 P2: 위험도 칩 → 서버 enum(CSV 값) 매핑 — 어댑터 격리(UI 값이
  *  URL로 새지 않게 이 한 곳). 'unable' 칩은 없음, 'all'/미지정 = 필터 없음. */

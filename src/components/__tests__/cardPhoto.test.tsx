@@ -69,29 +69,29 @@ it('onLoad 후 shimmer가 언마운트된다', () => {
 });
 
 it('P-353 ③: 원본 실패 = 기본 음식 이미지 1회 강등(shimmer 유지), 기본까지 실패 = shimmer 종료', () => {
-  const { DEFAULT_FOOD_IMAGE_URL } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
+  const { DEFAULT_FOOD_IMAGE } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
   const tree = render(<CardPhoto uri="https://cdn.example/broken.jpg" />);
   const img = () => tree.root.findByType('ExpoImage' as never) as unknown as { props: { source: string; onError: () => void } };
   act(() => img().props.onError());
-  expect(img().props.source).toBe(DEFAULT_FOOD_IMAGE_URL); // 강등
+  expect(img().props.source).toBe(DEFAULT_FOOD_IMAGE); // 강등
   expect(shimmerCount(tree)).toBe(1); // 기본 이미지 로딩 중
   act(() => img().props.onError()); // 기본 이미지도 실패
   expect(shimmerCount(tree)).toBe(0); // 무한 로딩 방지
 });
 
 it('P-353 ③: uri null = 처음부터 기본 음식 이미지', () => {
-  const { DEFAULT_FOOD_IMAGE_URL } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
+  const { DEFAULT_FOOD_IMAGE } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
   const tree = render(<CardPhoto uri={null} />);
   const img = tree.root.findByType('ExpoImage' as never) as unknown as { props: { source: string } };
-  expect(img.props.source).toBe(DEFAULT_FOOD_IMAGE_URL);
+  expect(img.props.source).toBe(DEFAULT_FOOD_IMAGE);
 });
 
 it('#116 P2 ③: uri 교체 = failed·settled 리셋 — 이전 실패가 새 이미지를 가리지 않는다', () => {
-  const { DEFAULT_FOOD_IMAGE_URL } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
+  const { DEFAULT_FOOD_IMAGE } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
   const tree = render(<CardPhoto uri="https://cdn.example/a.jpg" />);
   const img = () => tree.root.findByType('ExpoImage' as never) as unknown as { props: { source: string; onError: () => void; onLoad: () => void } };
   act(() => img().props.onError()); // a.jpg 실패 → 기본 이미지
-  expect(img().props.source).toBe(DEFAULT_FOOD_IMAGE_URL);
+  expect(img().props.source).toBe(DEFAULT_FOOD_IMAGE);
   act(() => { tree.update(<CardPhoto uri="https://cdn.example/b.jpg" />); });
   expect(img().props.source).toBe('https://cdn.example/b.jpg'); // failed 리셋 — 새 소스 시도
   expect(shimmerCount(tree)).toBe(1); // settled 리셋 — 로딩 shimmer 복귀
