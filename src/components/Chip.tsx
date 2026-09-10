@@ -38,7 +38,8 @@ const styles = StyleSheet.create({
   chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1 },
   on: { backgroundColor: INK_ACTIVE, borderColor: INK_ACTIVE },
   off: { backgroundColor: '#FFFFFF', borderColor: C.line },
-  label: { fontSize: 14, fontWeight: '500' },
+  // P-371: lineHeight 20 고정 — 8+20+8=36 칩 높이 유지, Android 한글 세로 중앙
+  label: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
 });
 
 export default Chip;

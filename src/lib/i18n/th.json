@@ -299,7 +299,6 @@
     "sortPriceAsc": "ราคา: ต่ำไปสูง",
     "resultsSubSafe": "ประเมินว่าปลอดภัย {{safe}} จาก {{total}} เมนู",
     "safeEmpty": "เมนูนี้ไม่มีอาหารที่ประเมินว่าปลอดภัย",
-    "showAllDishes": "แสดงเมนูทั้งหมด",
     "missNote": "ยังไม่อยู่ในฐานข้อมูล — จะเพิ่มภายในไม่กี่วัน",
     "searchOnGoogle": "ค้นหาใน Google",
     "resultsEmpty": "ไม่มีผลการสแกน"
@@ -452,7 +451,8 @@
     "sort_helpful": "มีประโยชน์ที่สุด",
     "ratingAll": "ทุกคะแนน",
     "ratingMin": "{{min}} ดาวขึ้นไป",
-    "countryOnly": "เฉพาะ {{code}}"
+    "countryOnly": "เฉพาะ {{code}}",
+    "allReviews": "รีวิวทั้งหมด"
   },
   "ranking": {
     "headerTitle": "อันดับของฉัน",

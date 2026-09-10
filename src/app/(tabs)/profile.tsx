@@ -250,24 +250,39 @@ export default function Profile() {
             {/* Dietary restrictions(@y334) — 타일 4열 2행(80×86) + Show all n */}
             <View style={styles.sec}>
               <Text style={styles.secLabel}>{t('profile.restrictionsTitle')}</Text>
+              {/* P-368 ②(KB-531, #134 Codex P2): 375pt에선 80×4+8×3=344 > 콘텐츠 폭이라
+                  wrap이 3열로 접혀 스페이서 계산이 틀어짐 — 행 단위 chunk + flex 셀
+                  (P-326 저장 그리드 문법)로 교체: 열 수가 폭과 무관하게 항상 4. */}
               <View style={styles.dietGrid}>
-                {me.restrictions.slice(0, 8).map((r) => {
-                  const item = INGREDIENTS.find((i) => i.code === r.code);
+                {Array.from({ length: Math.ceil(Math.min(me.restrictions.length, 8) / 4) }).map((_, ri) => {
+                  const row = me.restrictions.slice(ri * 4, ri * 4 + 4);
                   return (
-                    <Pressable key={r.code} style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
-                      <View style={styles.dietImg}>
-                        <AvoidTile
-                          radius={0} /* A-PF-07 */
-                          code={r.code}
-                          imageUrl={ingCat.imageUrl(r.code)}
-                          abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
-                          tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
-                        />
-                      </View>
-                      <Text style={styles.dietLabel} numberOfLines={1}>
-                        {ingCat.name(r.code)}
-                      </Text>
-                    </Pressable>
+                    <View key={`diet-row-${ri}`} style={styles.dietRow}>
+                      {row.map((r) => {
+                        const item = INGREDIENTS.find((i) => i.code === r.code);
+                        return (
+                          <View key={r.code} style={{ flex: 1 }}>
+                            <Pressable style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
+                              <View style={styles.dietImg}>
+                                <AvoidTile
+                                  radius={0} /* A-PF-07 */
+                                  code={r.code}
+                                  imageUrl={ingCat.imageUrl(r.code)}
+                                  abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
+                                  tint={FB_TINT[(item ? INGREDIENTS.indexOf(item) : 0) % FB_TINT.length]}
+                                />
+                              </View>
+                              <Text style={styles.dietLabel} numberOfLines={1}>
+                                {ingCat.name(r.code)}
+                              </Text>
+                            </Pressable>
+                          </View>
+                        );
+                      })}
+                      {Array.from({ length: 4 - row.length }).map((_, i) => (
+                        <View key={`diet-pad-${i}`} style={{ flex: 1 }} testID="diet-grid-pad" />
+                      ))}
+                    </View>
                   );
                 })}
               </View>
@@ -405,8 +420,9 @@ const styles = StyleSheet.create({
   // Dietary restrictions — 4열 2행 80×86 타일
   sec: { paddingHorizontal: 20, gap: 16, marginTop: -4 }, // A-PF-06(카드→라벨 16·라벨→타일 16)
   secLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 16, justifyContent: 'space-between' }, // A-PF-08
-  dietTile: { width: 80, height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 8, gap: 0 }, // A-PF-07(이미지 상단 8·라벨 gap 0)
+  dietGrid: { rowGap: 16 }, // A-PF-08 → P-368 ②: 행 chunk 컨테이너(세로)
+  dietRow: { flexDirection: 'row', columnGap: 8 }, // 항상 4셀(빈 자리 = 빈 flex 셀)
+  dietTile: { width: '100%', height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 8, gap: 0 }, // A-PF-07(이미지 상단 8·라벨 gap 0)
   dietImg: { width: 48, height: 48, borderRadius: 0, overflow: 'hidden' }, // A-PF-07
   dietLabel: { fontSize: 12, fontWeight: '500', color: '#2F3137', maxWidth: 72, textAlign: 'center' }, // A-PF-07
 

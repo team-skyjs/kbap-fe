@@ -8,7 +8,9 @@ it('A-PF — 아바타 48 스트로크·행 gap8·정보수정 #2F3137·랭킹 �
   expect(pf).toContain("editBtnText: { fontSize: 13, fontWeight: '500', color: '#2F3137' }");
   expect(pf).toMatch(/rankCard: \{[^}]*paddingLeft: 20, paddingRight: 16/);
   expect(pf).toMatch(/rankBarRow: \{[^}]*gap: 12[^}]*marginTop: 8/);
-  expect(pf).toMatch(/dietGrid: \{[^}]*columnGap: 8, rowGap: 16/);
+  // P-368 ②: 그리드 = 행 chunk(컨테이너 rowGap·행 columnGap 분리)
+  expect(pf).toMatch(/dietGrid: \{ rowGap: 16 \}/);
+  expect(pf).toMatch(/dietRow: \{ flexDirection: 'row', columnGap: 8 \}/);
   expect(pf).toMatch(/dietTile: \{[^}]*paddingTop: 8, gap: 0/);
   expect(pf).toContain('dietImg: { width: 48, height: 48, borderRadius: 0');
   expect(pf).toContain('radius={0}'); // AvoidTile r0(프로필 변형 — 온보딩 기본 14 무변)

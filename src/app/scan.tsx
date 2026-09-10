@@ -30,6 +30,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
@@ -680,12 +681,10 @@ export default function Scan() {
               </Animated.View>
             )}
             {safeOnly && visibleDishes.length === 0 ? (
-              /* P-354 ④: 안전 0건 — 컨트롤 행·배너 유지, 목록 자리만 빈 상태 + 토글 OFF CTA */
-              <View style={{ paddingTop: 48, alignItems: 'center', gap: 4 }} testID="scan-safe-empty">
+              /* P-354 ④ → P-372(KB-536): 안전 0건 — 컨트롤 행·배너 유지, 목록 자리만 빈 상태.
+                 토글 OFF CTA는 바로 위 컨트롤 행 토글과 중복이라 삭제(9/10 예진). */
+              <View style={{ paddingTop: 48, alignItems: 'center' }} testID="scan-safe-empty">
                 <EmptyBlock label={t('scan.safeEmpty')} />
-                <Btn variant="ghost" onPress={() => setSafeOnly(false)} testID="scan-show-all">
-                  {t('scan.showAllDishes')}
-                </Btn>
               </View>
             ) : (
             <ScanRichList
@@ -724,6 +723,8 @@ export default function Scan() {
           onClose={() => setSortSheet(false)}
         />
         {GateSheet}
+        {/* P-370(KB-533): 모달 컨텍스트 자체 토스트 호스트(스택 top) */}
+        <TopToastHost />
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
             후 — onClose 직후 present는 잔존 race), 안드는 onClose(onDismiss 미지원
             플랫폼 — 교착 자체가 iOS UIKit 이슈라 무해) */}

@@ -148,3 +148,19 @@ describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
     expect(JSON.parse(read('src/lib/i18n/en.json')).review.placeSkip).toBe('Skip this');
   });
 });
+
+it('P-368 ②(KB-531): dietGrid = 행 chunk + flex 셀 — 열 수가 폭과 무관하게 4(375pt 접힘 픽스)', () => {
+  const pf = read('src/app/(tabs)/profile.tsx');
+  expect(pf).toContain('testID="diet-grid-pad"');
+  expect(pf).toContain('Math.ceil(Math.min(me.restrictions.length, 8) / 4)');
+  expect(pf).toContain('Array.from({ length: 4 - row.length })'); // 빈 자리 = 빈 flex 셀
+  expect(pf).toMatch(/dietRow: \{ flexDirection: 'row', columnGap: 8 \}/);
+  expect(pf).toContain("dietTile: { width: '100%', height: 86,");
+  expect(pf).not.toContain("flexWrap: 'wrap'"); // 구 wrap 그리드 소멸(스페이서 로직 포함)
+  // 7개 = 행2(4+3) → 마지막 행 빈 셀 1
+  const rows = (n: number) => Math.ceil(Math.min(n, 8) / 4);
+  const padsLast = (n: number) => (rows(n) * 4 - Math.min(n, 8)) % 4;
+  expect([rows(7), padsLast(7)]).toEqual([2, 1]);
+  expect([rows(5), padsLast(5)]).toEqual([2, 3]);
+  expect([rows(8), padsLast(8)]).toEqual([2, 0]);
+});

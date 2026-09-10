@@ -299,7 +299,6 @@
     "sortPriceAsc": "价格从低到高",
     "resultsSubSafe": "共{{total}}道中{{safe}}道评定为安全",
     "safeEmpty": "此菜单没有评定为安全的菜品",
-    "showAllDishes": "显示全部菜品",
     "missNote": "尚未收录在数据库中 — 几天内会添加。",
     "searchOnGoogle": "在Google搜索",
     "resultsEmpty": "没有扫描结果"
@@ -452,7 +451,8 @@
     "sort_helpful": "最有帮助",
     "ratingAll": "全部评分",
     "ratingMin": "{{min}}分以上",
-    "countryOnly": "仅{{code}}"
+    "countryOnly": "仅{{code}}",
+    "allReviews": "全部评价"
   },
   "ranking": {
     "headerTitle": "我的排名",

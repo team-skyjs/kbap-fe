@@ -12,7 +12,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { accentTint, color as C, font, radius, shadow } from '@/lib/theme';
-import { IconBell, IconBubbleEmpty, IconLock, IconPlus, QueryErrorBlock, ShellPlaceholder, Spinner } from '@/components';
+import { IconBell, IconLock, IconPlus, QueryErrorBlock, ShellPlaceholder, Spinner } from '@/components';
 import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';

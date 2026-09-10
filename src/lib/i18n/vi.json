@@ -299,7 +299,6 @@
     "sortPriceAsc": "Giá: thấp đến cao",
     "resultsSubSafe": "{{safe}} được đánh giá an toàn trong {{total}} món",
     "safeEmpty": "Thực đơn này không có món được đánh giá an toàn",
-    "showAllDishes": "Xem tất cả món",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
     "searchOnGoogle": "Tìm trên Google",
     "resultsEmpty": "Không có kết quả quét"
@@ -452,7 +451,8 @@
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
-    "countryOnly": "Chỉ {{code}}"
+    "countryOnly": "Chỉ {{code}}",
+    "allReviews": "Tất cả đánh giá"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
