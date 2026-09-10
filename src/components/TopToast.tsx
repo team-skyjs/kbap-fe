@@ -24,7 +24,7 @@ const SHOW_MS = 2500;
 const EXIT_MS = 220;
 const ENTER_SPRING = { damping: 18, stiffness: 180, mass: 0.8 };
 
-import { subscribeTopToast, type ToastMsg } from './topToastStore';
+import { dismissTopToast, subscribeTopToast, type ToastMsg } from './topToastStore';
 export { showTopToast } from './topToastStore'; // 기존 소비처 호환 재수출
 
 export function TopToastHost() {
@@ -33,6 +33,7 @@ export function TopToastHost() {
   const reducedMotion = useReducedMotion();
   const [msg, setMsg] = React.useState<ToastMsg | null>(null);
   const visibleRef = React.useRef(false);
+  const msgRef = React.useRef<ToastMsg | null>(null);
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const ty = useSharedValue(0);
   const opacity = useSharedValue(0);
@@ -45,9 +46,13 @@ export function TopToastHost() {
     if (gen !== genRef.current) return; // 퇴장 중 새 토스트가 왔음 — 이 언마운트는 무효
     visibleRef.current = false;
     exitingRef.current = false;
+    msgRef.current = null;
     setMsg(null);
   }, []);
+  // P-373(KB-537) ①: 닫힌 토스트는 스토어에서 지워 핸드오프 대상에서 제외한다
+  // (Close 탭·자동 만료 공통 — 이 화면이 pop돼도 이전 호스트에 재등장하지 않는다).
   const dismiss = React.useCallback(() => {
+    if (msgRef.current) dismissTopToast(msgRef.current.key);
     if (timer.current) clearTimeout(timer.current);
     exitingRef.current = true;
     const gen = genRef.current;
@@ -69,13 +74,15 @@ export function TopToastHost() {
   const reducedRef = React.useRef(reducedMotion);
   reducedRef.current = reducedMotion;
   React.useEffect(() => {
-    const unsubscribe = subscribeTopToast((m) => {
+    const unsubscribe = subscribeTopToast((m, remainingMs) => {
       setMsg(m);
+      msgRef.current = m;
       genRef.current += 1; // 진행 중 퇴장의 완료 콜백 무효화(#108 P2 ①)
       cancelAnimation(ty);
       cancelAnimation(opacity);
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => dismissRef.current(), SHOW_MS);
+      // P-373 ②: 핸드오프 수신은 남은 시간만 — 총 노출이 SHOW_MS를 넘지 않는다
+      timer.current = setTimeout(() => dismissRef.current(), remainingMs ?? SHOW_MS);
       if (!visibleRef.current || exitingRef.current) {
         visibleRef.current = true;
         exitingRef.current = false;

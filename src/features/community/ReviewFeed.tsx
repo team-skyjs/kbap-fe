@@ -16,7 +16,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, radius } from '@/lib/theme';
-import { Spinner, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconChevronDown, IconCheck, IconEdit } from '@/components';
+import { Spinner, StickyHeader, useHeaderHeight, useStickyScroll, IconChevronDown, IconCheck, IconEdit } from '@/components';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';

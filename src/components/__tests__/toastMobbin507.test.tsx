@@ -217,3 +217,109 @@ describe('P-370 ②(#137 P2): top 해제 핸드오프 — 표시 창 내 이전 
     jest.useRealTimers();
   });
 });
+
+describe('P-373(KB-537): Close 억제 + 핸드오프 잔여 시간', () => {
+  it('① Close(dismissTopToast) 후 top 해제 = 재전달 0', () => {
+    const { showTopToast, subscribeTopToast, dismissTopToast } = freshStore();
+    const root = jest.fn();
+    const modal = jest.fn();
+    subscribeTopToast(root);
+    const offModal = subscribeTopToast(modal);
+    showTopToast('closed');
+    const { key } = modal.mock.calls[0][0] as { key: number };
+    dismissTopToast(key); // Close 탭·자동 만료
+    offModal();
+    expect(root).not.toHaveBeenCalled();
+  });
+
+  it('① 이미 새 토스트로 교체됐으면 옛 key dismiss는 무시(살아 있는 토스트 보존)', () => {
+    const { showTopToast, subscribeTopToast, dismissTopToast } = freshStore();
+    const root = jest.fn();
+    const modal = jest.fn();
+    subscribeTopToast(root);
+    const offModal = subscribeTopToast(modal);
+    showTopToast('first');
+    const first = (modal.mock.calls[0][0] as { key: number }).key;
+    showTopToast('second');
+    dismissTopToast(first); // 늦게 도착한 옛 토스트의 만료
+    offModal();
+    expect(root).toHaveBeenCalledTimes(1); // 'second'는 살아서 핸드오프
+    expect((root.mock.calls[0][0] as { text: string }).text).toBe('second');
+  });
+
+  it('② 핸드오프 = 잔여 시간(SHOW_MS - 경과)만 전달', () => {
+    jest.useFakeTimers();
+    const { showTopToast, subscribeTopToast } = freshStore();
+    const root = jest.fn();
+    const modal = jest.fn();
+    subscribeTopToast(root);
+    const offModal = subscribeTopToast(modal);
+    showTopToast('half');
+    expect(modal.mock.calls[0][1]).toBeUndefined(); // 최초 발화 = 기본 SHOW_MS
+    jest.advanceTimersByTime(1000);
+    offModal();
+    expect(root).toHaveBeenCalledTimes(1);
+    expect(root.mock.calls[0][1]).toBe(1500); // 2500 - 1000
+    jest.useRealTimers();
+  });
+
+  it('② 잔여 200ms 미만 = 전달 생략(깜빡임 방지)', () => {
+    jest.useFakeTimers();
+    const { showTopToast, subscribeTopToast } = freshStore();
+    const root = jest.fn();
+    const modal = jest.fn();
+    subscribeTopToast(root);
+    const offModal = subscribeTopToast(modal);
+    showTopToast('almost');
+    jest.advanceTimersByTime(2350); // 잔여 150ms
+    offModal();
+    expect(root).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('② 빈 스택 보류분도 잔여 시간으로 전달', () => {
+    jest.useFakeTimers();
+    const { showTopToast, subscribeTopToast } = freshStore();
+    const solo = jest.fn();
+    const off = subscribeTopToast(solo);
+    showTopToast('held');
+    jest.advanceTimersByTime(500);
+    off(); // 빈 스택 — 보류
+    jest.advanceTimersByTime(500);
+    const next = jest.fn();
+    subscribeTopToast(next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls[0][1]).toBe(1500); // 2500 - 1000(보류 중 경과 포함)
+    jest.useRealTimers();
+  });
+
+  it('① 호스트 통합 — Close 탭 후 호스트 언마운트 = 이전 호스트 미수신', () => {
+    jest.useFakeTimers();
+    const { subscribeTopToast } = require('../topToastStore') as typeof import('@/components/topToastStore');
+    const prev = jest.fn(); // 루트(이전) 호스트 대역
+    const offPrev = subscribeTopToast(prev);
+    const tree = render(); // 위 화면 호스트 = top
+    act(() => { showTopToast('닫힐 토스트'); });
+    expect(prev).not.toHaveBeenCalled();
+    act(() => { tree.root.findAll((n) => n.props?.testID === 'top-toast-close' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    act(() => {});
+    act(() => { tree.unmount(); }); // 화면 pop
+    expect(prev).not.toHaveBeenCalled(); // 닫은 토스트는 재등장하지 않는다
+    offPrev();
+    jest.useRealTimers();
+  });
+
+  it('소스 잠금 — 호스트가 잔여 시간으로 타이머 시작·dismiss 시 스토어 통지 · IconBubbleEmpty 미사용 import 0', () => {
+    const tt = read('src/components/TopToast.tsx');
+    expect(tt).toContain('timer.current = setTimeout(() => dismissRef.current(), remainingMs ?? SHOW_MS)');
+    expect(tt).toContain('if (msgRef.current) dismissTopToast(msgRef.current.key)');
+    const store = read('src/components/topToastStore.ts');
+    expect(store).toContain('const MIN_HANDOFF_MS = 200');
+    for (const f of ['src/app/(tabs)/community.tsx', 'src/features/community/ReviewFeed.tsx']) {
+      expect(read(f)).not.toContain('IconBubbleEmpty');
+    }
+    // 실사용처는 유지
+    expect(read('src/app/food/[id]/reviews.tsx')).toContain('IconBubbleEmpty');
+    expect(read('src/features/community/parts.tsx')).toContain('IconBubbleEmpty');
+  });
+});
