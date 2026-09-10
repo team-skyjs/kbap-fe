@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
 
   gridCellCard: { width: '100%' },
 
-  count: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, marginBottom: 12 },
+  count: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, marginBottom: 12, paddingHorizontal: 20 }, // P-369 ①: 그리드 여백 정렬
   // P-345: dish-item(2200:21188) - pad12 gap12 r8 #EAEBEE 흰, 그림자 없음
 
   noResults: { flex: 1, justifyContent: 'center', paddingBottom: 60 }, // P-154 ②: 상하 센터(앱 통일 — 키보드 감안 소폭 상향)

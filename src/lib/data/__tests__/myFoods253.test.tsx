@@ -150,11 +150,12 @@ it('KB-434 D-6 주문 카드 — map-pin 박스·주소·수량 필 + 탭 = 상�
   expect(mockPush).toHaveBeenCalledWith('/profile/order/123');
 });
 
-it('KB-434: roadAddress null = "+ tag a place" 아웃라인 필(무동작 — 태그 기능 부재, 시안 렌더)', async () => {
+it('KB-434 → P-369 ③: roadAddress null = 날짜 제목 + items 필만(무동작 장소 필 소멸)', async () => {
   mockGet.mockResolvedValue({ items: [ORDER({ roadAddress: null })], hasNext: false, nextCursor: null });
   const tree = renderScreen();
   await flush();
-  expect(tree.root.findAll((n) => n.props?.testID === 'order-tag-place-123').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-tag-place-123')).toHaveLength(0); // 필 소멸
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-date-title-123').length).toBeGreaterThanOrEqual(1); // 제목 = 날짜
   expect(flat(tree)).not.toContain('소공로');
 });
 
