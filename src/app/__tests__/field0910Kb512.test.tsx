@@ -64,7 +64,7 @@ describe('③ 당겨서 새로고침 3탭', () => {
   it('홈 — RefreshControl + progressViewOffset=headerH + 키 접두 3종 무효화', () => {
     const home = read('src/app/(tabs)/index.tsx');
     expect(home).toContain('refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}');
-    for (const key of ["['home']", "['foods']", "['bookmarks']"]) {
+    for (const key of ["['home']", "['foods']", "['bookmarks']", "['reviews', 'global']"]) {
       expect(home).toContain(`queryClient.invalidateQueries({ queryKey: ${key} })`);
     }
   });

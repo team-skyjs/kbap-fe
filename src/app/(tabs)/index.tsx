@@ -77,6 +77,7 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ['home'] }),
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
+      queryClient.invalidateQueries({ queryKey: ['reviews', 'global'] }), // #111 P2 ①: 홈 리뷰 피드
     ]).finally(() => setRefreshing(false));
   }, []);
   // P-339 ②(KB-494): 홈 피드도 ⋯ 전 카드 — 신고만(차단 없음), 위치 통일
