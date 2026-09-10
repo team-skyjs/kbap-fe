@@ -301,7 +301,6 @@
     "safeEmpty": "此菜单没有评定为安全的菜品",
     "showAllDishes": "显示全部菜品",
     "missNote": "尚未收录在数据库中 — 几天内会添加。",
-    "searchOnNaver": "在NAVER搜索",
     "searchOnGoogle": "在Google搜索",
     "resultsEmpty": "没有扫描结果"
   },

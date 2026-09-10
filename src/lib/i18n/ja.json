@@ -301,7 +301,6 @@
     "safeEmpty": "このメニューに「安全」判定の料理はありません",
     "showAllDishes": "すべてのメニューを表示",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
-    "searchOnNaver": "NAVERで検索",
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません"
   },

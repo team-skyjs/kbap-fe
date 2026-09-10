@@ -143,9 +143,12 @@ it('P-285: 행 우측 = 최종본 스테퍼/add + 미등록 브랜드 아이콘 
   const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
   expect(rich).toContain('<D4Minus size={16}'); // 스테퍼 minus(ic-minus)
   expect(rich).toContain('width: 83, height: 31'); // 스테퍼 83×31(2162:9658)
-  expect(rich).toContain('<BrandNaverMark size={20} />');
-  expect(rich).toContain('<BrandGoogleMark size={20} />');
+  // P-366 ⑦: 네이버 삭제 — Google 텍스트 칩(마크 16 + 'Google' 12/700 + chevron 12)
+  expect(rich).not.toContain('BrandNaverMark');
+  expect(rich).toContain('<BrandGoogleMark size={16} />');
+  expect(rich).toContain('googleChip:');
+  expect(rich).toContain('<BrandGoogleMark size={16} />'); // P-366 ⑦: 칩 내 16
   expect(rich).not.toContain('missLinkText'); // 텍스트 칩 소멸(접근성 라벨은 accessibilityLabel)
-  expect(rich).toContain("accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')}"); // Codex #45 P1
+  expect(rich).toContain("accessibilityLabel={t('scan.searchOnGoogle')}"); // Codex #45 P1 → P-366 ⑦: 네이버 삭제, Google 단독
   expect(rich).toContain('testID={`desc-${dish.itemId}`}'); // 설명 1줄
 });

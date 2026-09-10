@@ -58,7 +58,8 @@ describe('①④⑤⑥⑦ 소스 잠금', () => {
     const list = read('src/features/scan/ScanRichList.tsx');
     expect(list).toContain("t('scan.missNote')");
     expect(list).toContain('https://www.google.com/search?q=');
-    expect(list).toContain('https://search.naver.com/search.naver?query=');
+    expect(list).not.toContain('search.naver.com'); // P-366 ⑦: 네이버 링크 소멸
+    expect(list).toContain('https://www.google.com/search?q=');
     expect(list).toContain('encodeURIComponent(dish.koreanName ?? dish.rawMenuName)');
   });
 

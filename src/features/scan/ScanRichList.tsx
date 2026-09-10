@@ -47,8 +47,8 @@ export function fitAvoidChips<T extends { name: string }>(
   }
   return { shown: warns.slice(0, 1), rest: warns.length - 1 };
 }
-import { IconPlus, RiskBadge, RiskMark } from '@/components';
-import { BrandGoogleMark, BrandNaverMark, D4Minus } from '@/components/design4Assets';
+import { IconChevron, IconPlus, RiskBadge, RiskMark } from '@/components';
+import { BrandGoogleMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
@@ -224,24 +224,19 @@ function RichRow({
         {!dish.matched && (
           <View style={styles.missRow} testID={`miss-${dish.itemId}`}>
             <Text style={styles.missText}>{t('scan.missNote')}</Text>
-            {/* P-285(최종본 2110:65784): 외부 검색 = 브랜드 아이콘 칩 34×30(텍스트 라벨 소멸 —
-                접근성 라벨 유지, 링크 로직 무변) */}
+            {/* P-366 ⑦(KB-529): 네이버 삭제 — Google 단독 텍스트 칩(회피 칩 프레임 문법) */}
             <View style={styles.missLinks}>
-              {([
-                ['naver', `https://search.naver.com/search.naver?query=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
-                ['google', `https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
-              ] as const).map(([label, url]) => (
-                <Pressable
-                  key={label}
-                  style={styles.missLink}
-                  hitSlop={6}
-                  accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')} /* Codex #45 P1 */
-                  onPress={() => void Linking.openURL(url)}
-                  testID={`miss-${label}-${dish.itemId}`}
-                >
-                  {label === 'naver' ? <BrandNaverMark size={20} /> : <BrandGoogleMark size={20} />}
-                </Pressable>
-              ))}
+              <Pressable
+                style={styles.googleChip}
+                hitSlop={6}
+                accessibilityLabel={t('scan.searchOnGoogle')} /* Codex #45 P1 */
+                onPress={() => void Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`)}
+                testID={`miss-google-${dish.itemId}`}
+              >
+                <BrandGoogleMark size={16} />
+                <Text style={styles.googleChipText}>Google</Text>
+                <IconChevron size={12} color={C.ink3} />
+              </Pressable>
             </View>
           </View>
         )}
@@ -296,7 +291,8 @@ const styles = StyleSheet.create({
   missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }, // A-SC-10(이탤릭 제거)
   missLinks: { flexDirection: 'row', gap: 4 }, // A-SC-09
   // P-285: 외부 검색 아이콘 칩 34×30(border #EAEBEE r37 pad 4/6)
-  missLink: { width: 34, height: 30, borderWidth: 1, borderColor: C.line, borderRadius: 37, alignItems: 'center', justifyContent: 'center' },
+  googleChip: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 26, paddingVertical: 4, paddingHorizontal: 8, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 37, backgroundColor: '#FFFFFF' }, // P-366 ⑦: 회피 칩 프레임 문법
+  googleChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
   body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
