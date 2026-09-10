@@ -395,3 +395,12 @@ it('④-b 회원 칩 = 현행 필터 동작(safe 선택 시 danger 카드 소멸
   expect(tree.root.findAll((n) => n.props?.testID === 'auth-gate-open')).toHaveLength(0);
   expect([...cardIds(tree)].sort()).toEqual(['home-food-1', 'home-food-3', 'home-food-5', 'home-food-7', 'home-food-9']); // safe만
 });
+
+it('#112 P2 ③ — Saved+위험 칩의 쿼리 에러 = 빈 상태보다 먼저(QueryErrorBlock, 가짜 no-matches 금지)', () => {
+  mockSaved.mockReturnValue({ data: [], isLoading: false, isError: true, error: new Error('HTTP 500'), refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'food-chip-saved' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(tree.root.findAll((n) => n.props?.testID === 'food-grid-error').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'food-grid-filter-empty')).toHaveLength(0);
+});

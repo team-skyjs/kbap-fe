@@ -323,7 +323,12 @@ export function FoodExplorer({
           columnWrapperStyle={styles.gridRowWrap}
           ListHeaderComponent={top}
           ListEmptyComponent={
-            gridQ.isLoading || gridQ.hasNextPage ? (
+            gridQ.isError ? (
+              /* #112 P2 ③: Saved+위험 칩의 쿼리 에러 = 빈 상태보다 먼저 — 가짜 "no matches" 금지 */
+              <View style={styles.railState} testID="food-grid-error">
+                <QueryErrorBlock error={gridQ.error} onRetry={() => void gridQ.refetch()} />
+              </View>
+            ) : gridQ.isLoading || gridQ.hasNextPage ? (
               /* P-350: 빈 판정은 !hasNextPage && 0건일 때만 — 얇은 페이지 채움 중 = 스켈레톤 */
               <SkeletonFoodGrid />
             ) : savedOnly ? (

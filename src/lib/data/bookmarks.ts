@@ -20,9 +20,9 @@ import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
 import { showTopToast } from '@/components/topToastStore';
-import { adaptMenuSummary } from '../api/foodAdapter';
+import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
-import { riskWireOf, type RiskFilterChip } from './useFoods';
+
 
 const QK = () => ['bookmarks', i18n.language] as const;
 

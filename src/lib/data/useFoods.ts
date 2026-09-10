@@ -21,7 +21,7 @@ import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang, ApiError } from '../api/client';
-import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail } from '../api/foodAdapter';
+import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
 
@@ -78,20 +78,11 @@ export async function fetchFoodsPage(pageParam: number | undefined, riskWire?: s
   return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}${riskQ}`);
 }
 
-/** P-350(KB-492): 위험도 칩 = 서버 필터. CSV 값(SAFE·CAUTION·DANGER·UNKNOWN, OR,
- *  조회자 기준 판정) — 'unable' 칩은 없어 매핑 불필요, 미지정('all') = 전체.
+/** P-350(KB-492): 위험도 칩 = 서버 필터 — UI 칩→서버 enum 매핑은 foodAdapter
+ *  (#112 P2: 어댑터 격리 규칙).
  *  ⚠️ risk 지정 시 items는 hasNext=true여도 PAGE_SIZE 미만(0 포함) 가능 —
  *  종료 판정은 hasNext/nextCursor로만(빈 페이지 = 종료 아님). */
 export const FOODS_PAGE_SIZE = 20; // 서버 FoodService/BookmarkService PAGE_SIZE 동치
-export type RiskFilterChip = 'all' | 'safe' | 'caution' | 'danger';
-export const RISK_FILTER_WIRE: Record<Exclude<RiskFilterChip, 'all'>, string> = {
-  safe: 'SAFE',
-  caution: 'CAUTION',
-  danger: 'DANGER',
-};
-export function riskWireOf(risk?: RiskFilterChip): string | undefined {
-  return risk && risk !== 'all' ? RISK_FILTER_WIRE[risk] : undefined;
-}
 
 export function useInfiniteFoods(risk?: RiskFilterChip) {
   const wire = riskWireOf(risk);
@@ -100,7 +91,14 @@ export function useInfiniteFoods(risk?: RiskFilterChip) {
     queryKey: wire ? ['foods', 'list', i18n.language, wire] : ['foods', 'list', i18n.language],
     initialPageParam: undefined as number | undefined,
     queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire),
-    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    // #112 P1 ①(P-332 문법 이식): 커서 에코 가드 — 얇은 페이지 자동 연속 페치가
+    // 커서 미전진 경계 응답에서 무한 루프(이 PR이 잡으려던 증상)가 되지 않게,
+    // 이미 요청한 커서 재등장 = hasNext 무시·종료.
+    getNextPageParam: (last, _pages, lastParam, allParams) =>
+      last.hasNext && last.nextCursor != null &&
+      last.nextCursor !== lastParam && !allParams.includes(last.nextCursor)
+        ? last.nextCursor
+        : undefined,
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
 }

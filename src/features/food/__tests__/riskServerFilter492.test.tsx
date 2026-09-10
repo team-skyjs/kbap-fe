@@ -17,7 +17,8 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/components/topToastStore', () => ({ showTopToast: jest.fn(), subscribeTopToast: jest.fn(() => () => {}) }));
 
 import { api } from '@/lib/api/client';
-import { FOODS_PAGE_SIZE, riskWireOf, useInfiniteFoods } from '@/lib/data/useFoods';
+import { FOODS_PAGE_SIZE, useInfiniteFoods } from '@/lib/data/useFoods';
+import { riskWireOf } from '@/lib/api/foodAdapter';
 import { useBookmarks } from '@/lib/data/bookmarks';
 
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -84,6 +85,37 @@ it('② bookmarks — &risk= 전송 + 빈 페이지(items 0·hasNext true) = 종
   // 에코 페이지(next 7 재등장) 후엔 종료 — P-332 가드 잔존
   const probe2 = tree.root.findAll((n) => n.type === 'probe')[0];
   expect(probe2.props.hasNext).toBe(false);
+});
+
+it('①-b foods 커서 에코 가드(#112 P1) — 같은 커서 반복 응답이면 종료(연속 페치 무한 루프 봉쇄)', async () => {
+  (api.get as jest.Mock).mockImplementation((url: string) => {
+    const cursor = /cursor=(\d+)/.exec(url)?.[1];
+    if (cursor == null) return Promise.resolve({ items: [], hasNext: true, nextCursor: 3 });
+    return Promise.resolve({ items: [], hasNext: true, nextCursor: 3 }); // 에코 — 전진 없음
+  });
+  const qc = client();
+  let tree!: ReactTestRenderer;
+  function FProbe() {
+    const q = useInfiniteFoods('danger');
+    return React.createElement('fprobe', { hasNext: q.hasNextPage, fetchNext: q.fetchNextPage });
+  }
+  await act(async () => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <FProbe />
+      </QueryClientProvider>,
+    );
+  });
+  await flush();
+  const probe = tree.root.findAll((n) => n.type === 'fprobe')[0];
+  expect(probe.props.hasNext).toBe(true);
+  await act(async () => { await probe.props.fetchNext(); });
+  await flush();
+  // 2페이지째가 커서 3을 에코 → 종료(hasNext 무시), 추가 fetch 없음
+  expect(tree.root.findAll((n) => n.type === 'fprobe')[0].props.hasNext).toBe(false);
+  await act(async () => { await tree.root.findAll((n) => n.type === 'fprobe')[0].props.fetchNext(); });
+  await flush();
+  expect((api.get as jest.Mock).mock.calls.filter((c) => (c[0] as string).startsWith('/foods')).length).toBe(2);
 });
 
 it('③ FoodExplorer 소스 잠금 — 클라 위험 필터 부재·riskChip 훅 전달·얇은 페이지 연속 페치·빈 판정 !hasNextPage', () => {
