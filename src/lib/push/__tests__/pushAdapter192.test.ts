@@ -145,3 +145,15 @@ it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 �
   expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
   expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
 });
+
+it('Codex #109 10R: registerPushToken 진행 중 inflight = 1 — 콜드 스타트 OTA 정적 창 포함(KB-509)', async () => {
+  const { inflightCount } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  let resolvePerm!: (v: { status: string }) => void;
+  mockNotifications.getPermissionsAsync.mockImplementation(() => new Promise((r) => { resolvePerm = r; }));
+  expect(inflightCount()).toBe(0);
+  const p = registerPushToken();
+  expect(inflightCount()).toBe(1); // 권한 조회~토큰 upsert 왕복 = 정적 창에 보인다
+  resolvePerm({ status: 'denied' }); // 조기 반환 경로도 dec 보장
+  await p;
+  expect(inflightCount()).toBe(0);
+});

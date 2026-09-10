@@ -1,6 +1,6 @@
 /**
  * KB-432(P-277) D-4 — 스캔 결과 목록(§1-1) + 리뷰 작성(§2) 디자인 4차 잠금.
- * ① 메뉴 행 변형: 매칭+회피 칩(시안 칩·RiskBadge) / 미등록(#F2F3F6+unable+이탤릭)
+ * ① 메뉴 행 변형: 매칭+회피 칩(시안 칩·RiskBadge) / 미등록(흰 박스+unable — A-SC-10/11로 이탤릭·회색 소멸)
  * ② 인식 배너·컨트롤 행(무동작 토글·정렬 드롭다운) 소스 잠금
  * ③ 리뷰 작성 별점 크기(전체 48/세부 32)·사진 슬롯·장소 필 소스 잠금.
  * (§1-2 인식 중·§1-3 게스트 게이트 = 예진 판정으로 현행 유지 — 잠금 없음)
@@ -59,7 +59,7 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 
-it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등록 = #F2F3F6 unable 박스 + 이탤릭', () => {
+it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등록 = 흰 unable 박스 + 비이탤릭 안내', () => {
   const tree = render(
     <ScanRichList dishes={[MATCHED, UNMATCHED]} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
@@ -70,9 +70,9 @@ it('① 메뉴 행 — 매칭 = RiskBadge + 시안 칩(#2F3137 12/700) / 미등�
   // 회피 칩: 시안 프레임(r37) + 12/700 #2F3137
   expect(s).toContain('"borderRadius":37');
   expect(s).toContain('Soybean');
-  // 미등록: #F2F3F6 박스 + 이탤릭 안내
-  expect(s).toContain('#F2F3F6');
-  expect(s).toContain('"fontStyle":"italic"');
+  // 미등록(A-SC-10/11): 흰 박스 + 비이탤릭 13/lh13 안내
+  expect(s).toContain('"backgroundColor":"#FFFFFF","alignItems":"center","justifyContent":"center"');
+  expect(s).not.toContain('"fontStyle":"italic"');
   expect(s).toContain('scan.missNote');
 });
 
@@ -81,7 +81,7 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   expect(src).toContain('testID="recog-banner"');
   expect(src).toContain("t('scan.resultsSub', { count: allDishes.length })");
   expect(src).toContain('testID={`seg-${v}`}'); // Photo|List 언더라인 탭(세그 매핑 유지)
-  expect(src).toContain('testID="scan-profile-toggle"'); // 시안 렌더·무동작(상태 부재)
+  expect(src).toContain('testID="scan-safe-toggle"'); // P-354: 무동작 프로필 토글 → Safe only(실동작)
   expect(src).toContain('testID="scan-sort"');
   // §1-2/§1-3 현행 유지(예진 판정) — 인식 중 스윕·AuthGateSheet 무변
   expect(src).toContain('ScanSweepOverlay');
@@ -96,13 +96,13 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
 
 it('③ 리뷰 작성 — 전체 별 48(stroke 3)·세부 별 32(stroke 2)·사진 슬롯 100·장소 필 소스 잠금', () => {
   const review = require('fs').readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
-  expect(review).toContain('<Star size={48} fillPct={i <= rating ? 100 : 0} sw={3} />');
+  expect(review).toContain('<Star size={48} fillPct={i <= rating ? 100 : 0} />'); // P-348 ①: sw 폐지(1px 절대)
   expect(review).toContain('testID="place-pill"');
   expect(review).toContain('testID="place-clear"');
   expect(review).toContain('testID="review-bottom-bar"'); // FixedBottom primary Post
   expect(review).toContain('busy={posting}'); // P-173 공용 가드 문법(Btn busy)
   const parts = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
-  expect(parts).toContain('<Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />');
+  expect(parts).toContain('<Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />'); // P-348 ①: sw 폐지(non-scaling-stroke)
 });
 
 it('③-b 세부 별 폭 적응(Codex #31 P2) — 협폭에서 gap 축소→별 스케일, overflow 0', () => {
@@ -130,10 +130,10 @@ it('④ 태그 시트 2종 — FixedBottom(Close/Done·장소 스킵/Done) + 안
   expect(parts).toContain('testID="place-done"');
 });
 
-it('P-285: 권한 거부 = 최종본 Alert(스크림 40%·Open Settings) — 미거부는 현행 요청 UI 소스 잠금', () => {
+it('P-285 → A-SN-04(KB-486): 권한 거부 = 최종본 Alert(스크림 80%·Open Settings) — 미거부는 현행 요청 UI 소스 잠금', () => {
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(src).toContain('testID="perm-denied-alert"');
-  expect(src).toContain("permScrim: { backgroundColor: 'rgba(0,0,0,0.4)'");
+  expect(src).toContain("permScrim: { backgroundColor: 'rgba(0,0,0,0.8)'");
   expect(src).toContain('width: 320, minHeight: 190'); // Alert 320×190(4003:12690)
   expect(src).toContain("t('photo.openSettings')"); // 현 키 재사용
   expect(src).toContain("t('scan.grant')"); // 미거부 = 현행 요청 경로 보존
@@ -143,9 +143,12 @@ it('P-285: 행 우측 = 최종본 스테퍼/add + 미등록 브랜드 아이콘 
   const rich = require('fs').readFileSync('src/features/scan/ScanRichList.tsx', 'utf8') as string;
   expect(rich).toContain('<D4Minus size={16}'); // 스테퍼 minus(ic-minus)
   expect(rich).toContain('width: 83, height: 31'); // 스테퍼 83×31(2162:9658)
-  expect(rich).toContain('<BrandNaverMark size={20} />');
-  expect(rich).toContain('<BrandGoogleMark size={20} />');
+  // P-366 ⑦: 네이버 삭제 — Google 텍스트 칩(마크 16 + 'Google' 12/700 + chevron 12)
+  expect(rich).not.toContain('BrandNaverMark');
+  expect(rich).toContain('<BrandGoogleMark size={16} />');
+  expect(rich).toContain('googleChip:');
+  expect(rich).toContain('<BrandGoogleMark size={16} />'); // P-366 ⑦: 칩 내 16
   expect(rich).not.toContain('missLinkText'); // 텍스트 칩 소멸(접근성 라벨은 accessibilityLabel)
-  expect(rich).toContain("accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')}"); // Codex #45 P1
+  expect(rich).toContain("accessibilityLabel={t('scan.searchOnGoogle')}"); // Codex #45 P1 → P-366 ⑦: 네이버 삭제, Google 단독
   expect(rich).toContain('testID={`desc-${dish.itemId}`}'); // 설명 1줄
 });

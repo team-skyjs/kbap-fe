@@ -15,13 +15,17 @@ export const REVIEW_IMAGE_PURPOSE = 'REVIEW';
 
 export const REVIEW_MAX_PHOTOS = 3;
 
-/** 첨부 추가 — 상한 3장 초과분은 자름(뒤에 고른 것 버림). */
-export function addReviewPhotos(current: string[], picked: string[]): string[] {
-  return [...current, ...picked].slice(0, REVIEW_MAX_PHOTOS);
+/** P-358(KB-521): 편집 모드 — 슬롯 = 기존 원격(remote) + 신규 로컬(local) 혼합 유니온. */
+export type ReviewPhoto = { kind: 'remote'; url: string } | { kind: 'local'; uri: string };
+export const reviewPhotoKey = (p: ReviewPhoto): string => (p.kind === 'remote' ? p.url : p.uri);
+
+/** 첨부 추가(로컬) — 상한 3장 초과분은 자름(뒤에 고른 것 버림). */
+export function addReviewPhotos(current: ReviewPhoto[], picked: string[]): ReviewPhoto[] {
+  return [...current, ...picked.map((uri) => ({ kind: 'local' as const, uri }))].slice(0, REVIEW_MAX_PHOTOS);
 }
 
-export function removeReviewPhoto(current: string[], uri: string): string[] {
-  return current.filter((u) => u !== uri);
+export function removeReviewPhoto(current: ReviewPhoto[], key: string): ReviewPhoto[] {
+  return current.filter((p) => reviewPhotoKey(p) !== key);
 }
 
 /** 별점 필수 — 1~5 정수(계약). 텍스트·사진은 선택. */

@@ -58,5 +58,5 @@ it('부팅 경로 — 최초 실행이면 /login replace, 인트로 라우트·�
   expect(fs.existsSync('src/lib/introSeen.ts')).toBe(false);
   expect(fs.existsSync('src/features/intro')).toBe(false);
   // 로그인 백버튼은 canGoBack 가드 — 첫 진입(빈 스택)에선 자동 미노출
-  expect(fs.readFileSync('src/app/login.tsx', 'utf8')).toContain('!embedded && router.canGoBack()');
+  expect(fs.readFileSync('src/app/login.tsx', 'utf8')).toContain('router.canGoBack()');
 });

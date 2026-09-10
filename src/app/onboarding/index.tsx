@@ -27,6 +27,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
@@ -337,7 +339,7 @@ export default function Onboarding() {
         <View style={[styles.body, { flex: 1 }]}>
           <View style={styles.miniHeader}>
             <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
-              <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+              <IconChevron size={24} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
             </Pressable>
           </View>
           <Nationality selected={nationality} onSelect={setNationality} t={t} />
@@ -353,7 +355,7 @@ export default function Onboarding() {
         {/* P-130: 단계 프로그레스 바 소멸(v3) — 백 버튼만 남긴 미니 헤더 */}
         <View style={styles.miniHeader}>
           <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
-            <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconChevron size={24} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
         </View>
 
@@ -504,6 +506,9 @@ function Consent({
 
 /** 전문 바텀시트 — terms/privacy는 kbap-legal fetch, safety는 i18n 재사용. */
 function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAgree: () => void; onClose: () => void; t: TFn }) {
+  // P-337(KB-490): 핸들+제목 스와이프 닫기 — 본문 ScrollView와 충돌 방지(영역 한정).
+  // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
+  const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
   const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
   const [error, setError] = useState(false);
@@ -528,10 +533,20 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 
   return (
     <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetScrim} onPress={onClose} />
-      <View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }]}>
-        <View style={styles.grab} />
-        <Text style={styles.sheetTitle}>{title}</Text>
+      {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+      <Animated.View style={[styles.sheetScrim, swipe.dimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+      <Animated.View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
+        <GestureDetector gesture={swipe.gesture}>
+          <View>{/* P-337 제스처 영역 = 핸들 + 제목(본문 스크롤 우선) */}
+            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={10} testID="sheet-grab">
+              <View style={styles.grab} />
+            </Pressable>
+            <Text style={styles.sheetTitle}>{title}</Text>
+          </View>
+        </GestureDetector>
         <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
           {isRemote ? (
             error ? (
@@ -553,7 +568,8 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
           )}
         </ScrollView>
         <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
-      </View>
+      </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -650,6 +666,8 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         {/* 시안(4150:13850): 국가 2열 그리드(163w gap 12) — 긴 이름 2줄 허용(hug) */}
         <View style={styles.natGrid}>
           {list.map((c) => Row(c, false))}
+          {/* P-333 동류(9/8 판정): 홀수면 마지막 타일이 47%+grow로 풀폭 확장 — 자리표시자로 2열 유지 */}
+          {list.length % 2 === 1 && <View style={styles.natTilePad} testID="nat-grid-pad" />}
         </View>
       </ScrollView>
     </View>
@@ -669,8 +687,10 @@ function PresetsStep({ presets, selected, onToggle, t }: { presets: ResolvedPres
   return (
     <View style={{ flex: 1 }}>
       <ObTitle title={t('onboarding.presets.title')} sub={t('onboarding.presets.sub')} dotCount={DOT_STEPS.length} dotActive={DOT_STEPS.indexOf('presets')} />
+      {/* A-DT-01(KB-486): 타이틀→그룹 34 = 공용 ObTitle mb18 + 16(타 스텝 회귀 방지 — 등가 구현) */}
+      <View style={{ height: 16 }} />
       {groups.map((g) => (
-        <View key={g.key} style={{ marginBottom: 14 }}>
+        <View key={g.key} style={{ marginBottom: 24 }}>{/* A-DT-03 */}
           <Text style={styles.presetGroup}>{t(g.labelKey)}</Text>
           <View style={styles.presetGrid}>
             {presets.filter((p) => p.group === g.key).map((p) => {
@@ -737,7 +757,7 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
       <ObTitle title={t('onboarding.spiceTitle')} sub={t('onboarding.spiceSub')} dotCount={DOT_STEPS.length} dotActive={DOT_STEPS.indexOf('spice')} />
       {/* KB-433 §4-②(4150:14286): 고추 SVG 20 × 점등 rank(0~4) + 레벨명 20/700 + 설명 12/400
           (이모지·kids 배지·캐러셀 = 시안 부재로 소멸 — 이모지 예외 종료) */}
-      <View style={{ alignItems: 'center', gap: 8, marginTop: 8 }}>
+      <View style={{ alignItems: 'center', gap: 4, marginTop: 42 }}>{/* A-SP-01/03(KB-486): ObTitle→고추 60(mb18+42) */}
         <View style={styles.chiliRow}>
           {Array.from({ length: 4 }).map((_, i) => (
             <View key={i} testID={`spice-pepper-${i}-${i < rank ? 'on' : 'off'}`}>
@@ -796,54 +816,55 @@ const styles = StyleSheet.create({
   avAbbr: { fontFamily: font.displayBlack, fontSize: 18, color: C.ink2, opacity: 0.55 },
   // P-134 맵기 — 배지 줄(고정 높이)·레일·설명
   // KB-433 §4-②: 예시 타일 107×133(border #ECEDF0 r4, 원형 62) — 3개 고정 행
-  railRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 16 },
-  railTile: { width: 107, height: 133, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 12, gap: 4 },
+  railRow: { flexDirection: 'row', justifyContent: 'center', gap: 7, marginTop: 18 }, // A-SP-04/05
+  railTile: { width: 107, height: 133, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', justifyContent: 'center', gap: 2 }, // A-SP-06(썸 세로 중앙·gap 2)
   railImgWrap: { width: 62, height: 62, borderRadius: 31, overflow: 'hidden', backgroundColor: C.surface2 },
   railImg: { width: '100%', height: '100%' },
-  railName: { fontSize: 12, fontWeight: '500', color: C.ink, marginTop: 2, paddingHorizontal: 6 },
+  railName: { fontSize: 12, fontWeight: '500', color: '#2F3137', marginTop: 2, paddingHorizontal: 6 }, // A-SP-06
   railKo: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
-  sliderBox: { backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 14, paddingVertical: 16, marginTop: 22 },
+  sliderBox: { backgroundColor: C.surface2, borderRadius: radius.sm, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14, marginTop: 22 }, // A-SP-07(KB-486): 박스 81(트랙 중심 27·라벨 y49)
   spiceDesc: { fontSize: 12, fontWeight: '400', lineHeight: 18, height: 36, color: C.ink2, textAlign: 'center', paddingHorizontal: 8 }, // 2줄 고정 슬롯 — 프레임 불변 유지
   // P-130 v3
-  miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 40 },
+  miniHeader: { flexDirection: 'row', alignItems: 'center', minHeight: 56 }, // A-NT-01(KB-486)
   miniBack: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', marginLeft: -8 },
   // P-133 국적 화면(시안 kbap-ob4): 헤더 56/14 패딩 골격은 body 공용 — 여기선 스텝 내부 규격
   natHead: { paddingTop: 8 },
   // P-203: 프리셋 칩 — 선택 = 색만(보더 폭 동일 — 프레임 불변)
   // KB-433 §4-③ → 9/5 예진 수정: Tag 선택 = 색만(체크 아이콘 소멸 — 폭 밀림 방지, P-103/151 프레임 불변)
-  presetGroup: { fontSize: 14, fontWeight: '500', color: C.ink2, marginBottom: 8 },
+  presetGroup: { fontSize: 14, fontWeight: '500', color: C.ink2, marginBottom: 12 }, // A-DT-02
   presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  presetChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
+  presetChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: C.line, backgroundColor: '#FFFFFF', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-04(h43)
   presetChipOn: { borderColor: C.primary, backgroundColor: primaryTint },
-  presetChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
+  presetChipText: { fontSize: 14, fontWeight: '400', color: '#1E2124' }, // A-DT-04
   presetChipTextOn: { color: C.primaryText }, // 굵기 400→400 유지(폭 고정) — 색만 변화
-  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, paddingHorizontal: 13, marginBottom: 10 },
+  natSearch: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 4, paddingHorizontal: 16, marginBottom: 12 }, // A-NT-10/11(보더·아이콘은 C-06)
   natSearchFocus: { borderColor: C.primary },
-  natSearchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  natSearchInput: { flex: 1, paddingVertical: 14, fontFamily: font.body, fontSize: 15, fontWeight: '500', color: C.ink }, // A-NT-10(h48)
   natClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
-  natSecText: { fontSize: 14, fontWeight: '500', color: C.ink2, marginTop: 4, marginBottom: 8 },
+  natSecText: { fontSize: 14, fontWeight: '500', color: C.ink2, marginTop: 4, marginBottom: 12 }, // A-NT-05/11
   // P-154 ①: 전 행 상시 투명 보더 동폭+라운딩 — 선택 시 색만 전환(natPinOn 공유),
   // 행 높이 62·간격 픽셀 무변(P-151 방식). 강조는 항상 화면 1곳.
   // KB-433 §4-①: 추천 행(4150:13845) = pad 16 gap 12 r8 / 2열 그리드 타일(4150:13850)
-  natPinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, marginBottom: 8 },
+  natPinRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, marginBottom: 12 }, // A-NT-08
   natGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  natTile: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm },
+  natTile: { width: '47%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm }, // A-NT-12
+  natTilePad: { width: '47%', flexGrow: 1 }, // P-333 동류: 홀수 자리표시자
   natOn: { borderColor: C.primary, backgroundColor: primaryTint },
   natFlagSlot: { width: 30, alignItems: 'center' },
   natFlag: { fontSize: 24, lineHeight: 30 },
   natName: { fontSize: 15, fontWeight: '600', color: C.ink },
-  natSub: { fontSize: 12, fontWeight: '400', color: C.ink2, marginTop: 1 },
+  natSub: { fontSize: 12, fontWeight: '400', color: C.ink2, marginTop: 2 }, // A-NT-06
   // Radio 16(D-1 Choice) — 선택 = primary 5px 링
-  natRadio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1, borderColor: C.line2, backgroundColor: '#FFFFFF' },
+  natRadio: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: C.line2, backgroundColor: '#FFFFFF' }, // A-NT-07
   natRadioOn: { borderWidth: 5, borderColor: C.primary },
-  natNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, paddingHorizontal: 4, marginBottom: 10 },
+  natNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, paddingHorizontal: 0, marginBottom: 32 }, // A-NT-08/09(안내→Country 36 = 32+4)
   natNoticeText: { flex: 1, fontSize: 12, fontWeight: '400', lineHeight: 17, color: C.ink3 },
   app: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, flexGrow: 1 },
+  body: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 28, flexGrow: 1 }, // A-NT-02
 
   // P-101: 공용 푸터 (P-011 스티키의 전 스텝 확장) — CTA 프레임 전 스텝 동일,
   // skipSlot은 고정 높이(Skip/노트 유무와 무관 — CTA y 불변의 핵심)
-  footer: { paddingTop: 12, paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: '#FFFFFF' },
+  footer: { paddingTop: 10, paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: '#FFFFFF' }, // A-NT-13
   footerRow: { flexDirection: 'row', gap: 16 },
   footerSkip: { width: 119 },
   skipSlot: { height: 22, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
@@ -853,7 +874,7 @@ const styles = StyleSheet.create({
 
   // titles (KB-433 §3: 20/700 + 14/500 #9196A1 + 진행 점)
   obTitle: { fontSize: 20, fontWeight: '700', color: C.ink },
-  obSub: { fontSize: 14, fontWeight: '500', color: C.ink3, lineHeight: 20, marginTop: 2 },
+  obSub: { fontSize: 14, fontWeight: '500', color: C.ink3, lineHeight: 21, marginTop: 0 }, // A-NT-03/04
   dotRow: { flexDirection: 'row', gap: 4 },
   dot: { width: 17, height: 4, borderRadius: 8, backgroundColor: C.line2 },
   dotOn: { backgroundColor: C.primary },
@@ -908,7 +929,7 @@ const styles = StyleSheet.create({
 
   // ⑤ spice (P-080 → P-081: 슬라이더는 공용 SpiceLevelSlider로 승격 — 히어로만 잔존)
   // P-119: minHeight→height 고정 — 어느 단계에서도 히어로 줄 프레임 불변(P-101/103 원칙)
-  chiliRow: { flexDirection: 'row', gap: 6, height: 28, alignItems: 'center' }, // 고정 프레임 유지(P-119)
+  chiliRow: { flexDirection: 'row', gap: 4, height: 28, alignItems: 'center' }, // A-SP-02 · 고정 프레임 유지(P-119)
   bandName: { fontSize: 20, fontWeight: '700', lineHeight: 28, height: 28, color: C.ink }, // 고정
   analogy: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 999, paddingHorizontal: 15, height: 36, backgroundColor: 'rgba(226,88,12,0.08)' }, // P-119: paddingV→고정 높이
   analogyText: { fontFamily: font.bodyBold, fontSize: 14, color: C.primary },

@@ -110,15 +110,17 @@ it('홈 — 헤더 sign in 부재 + explore 요소 부재 (게스트여도)', ()
   expect(texts.filter((x) => x === 'intro.signUp').length).toBeLessThanOrEqual(1); // 게스트 스캔 카드 CTA만 허용
 });
 
-it('프로필 탭 게스트 — 게이트 카드 대신 로그인 화면(소셜 버튼) 임베드', () => {
-  const tree = render(<Profile />);
-  expect(tree.root.findAll((n) => n.props?.testID === 'social-auth').length).toBeGreaterThanOrEqual(1);
-  expect(allTexts(tree)).not.toContain('gate.profileTitle'); // 구 게이트 카피 잔재 0
+it('프로필 탭 게스트 — P-311: 회원 화면 재활용(로그인 필요 헤더 + Sign in, 임베드 로그인 소멸)', () => {
+  const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
+  expect(src).toContain("t('profile.guestTitle')");
+  expect(src).toContain('testID="guest-signin"');
+  expect(src).not.toContain('LoginScreen'); // 구 임베드 소멸
 });
 
 it('P-171 ② → KB-430: 홈 회피 배너 소멸 — 시안 부재로 보존형 숨김 종료(코드째 제거)', () => {
   const tree = render(<Home />);
-  expect(JSON.stringify(tree.toJSON())).not.toContain('home.avoidCount');
+  // P-317: FlatList 엘리먼트 prop 순환으로 stringify 불가 — 텍스트 노드 수집으로 검사
+  expect(allTexts(tree)).not.toContain('home.avoidCount');
   const fs = require('fs');
   const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
   expect(home).not.toContain('home.avoidCount');

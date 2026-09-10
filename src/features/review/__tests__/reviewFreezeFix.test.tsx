@@ -6,6 +6,11 @@
  * (d) api 5xx 관측(captureApi5xx — 태그만·중복창 억제)
  */
 const mockKb = { visible: true, listeners: [] as Array<(e?: unknown) => void>, dismiss: jest.fn() };
+// P-348 ⑥/P-355: PhotoViewer·시트 크롬(RNGH·reanimated 실모듈 체인) — 이 스위트는 헬퍼·소스 잠금만이라 표면 목
+jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
+jest.mock('react-native-reanimated', () => ({ __esModule: true, default: { View: () => null }, useSharedValue: (v: unknown) => ({ value: v }), withTiming: (v: unknown) => v, runOnJS: (f: unknown) => f }));
+jest.mock('react-native-gesture-handler', () => ({ GestureDetector: ({ children }: { children: unknown }) => children, GestureHandlerRootView: () => null, Gesture: { Pan: () => ({ runOnJS: function r() { return this; }, onUpdate: function u() { return this; }, onFinalize: function f() { return this; } }) } }));
+jest.mock('@/components/useSheetSwipeDismiss', () => ({ useSheetSwipeDismiss: () => ({ gesture: {}, dimStyle: {}, sheetStyle: {}, onSheetLayout: jest.fn(), dismiss: jest.fn() }) }));
 jest.mock('react-native', () => ({
   Keyboard: {
     isVisible: () => mockKb.visible,
@@ -105,7 +110,7 @@ describe('(d) captureApi5xx — 태그만·중복창 억제', () => {
     expect(mockCapture).toHaveBeenCalledTimes(1);
     expect(mockCapture).toHaveBeenCalledWith('api_5xx', {
       level: 'warning',
-      tags: { path: '/api/places/search', status: '502', code: 'PLACE-001' },
+      tags: { path: '/api/places/search', status: '502', request_id: 'none', code: 'PLACE-001' },
     });
     captureApi5xx('/api/reviews', 500); // 다른 경로 = 별도 캡처(코드 태그 생략)
     expect(mockCapture).toHaveBeenCalledTimes(2);
@@ -115,10 +120,36 @@ describe('(d) captureApi5xx — 태그만·중복창 억제', () => {
     captureApi5xx('/members/me/blocks/123', 500);
     expect(mockCapture).toHaveBeenLastCalledWith('api_5xx', {
       level: 'warning',
-      tags: { path: '/members/me/blocks/:id', status: '500' },
+      tags: { path: '/members/me/blocks/:id', status: '500', request_id: 'none' },
     });
     captureApi5xx('/members/me/blocks/456', 500); // id 변주 = 같은 키 → 중복 억제
     expect(mockCapture).toHaveBeenCalledTimes(1);
+  });
+
+  // P-378(KB-542): request_id 유무로 "서버 도달 여부"가 갈린다 —
+  // 값 있음 = 서버 RequestLoggingFilter가 심음(그 id로 로그 직행) / 'none' = 게이트웨이·프록시 5xx
+  it('헤더 있음 = request_id 값 태그 / 없음 = none — 중복창·정규화 회귀 없음', () => {
+    captureApi5xx('/members/me/profile', 504, undefined, 'abc123-req');
+    expect(mockCapture).toHaveBeenLastCalledWith('api_5xx', {
+      level: 'warning',
+      tags: { path: '/members/me/profile', status: '504', request_id: 'abc123-req' },
+    });
+    captureApi5xx('/foods/77/reviews', 503); // 헤더 없음 + 숫자 세그먼트
+    expect(mockCapture).toHaveBeenLastCalledWith('api_5xx', {
+      level: 'warning',
+      tags: { path: '/foods/:id/reviews', status: '503', request_id: 'none' },
+    });
+    // 중복 억제 키는 status+path — request_id가 달라도 창 안이면 억제(캡처 폭증 방지)
+    captureApi5xx('/members/me/profile', 504, undefined, 'zzz999-req');
+    expect(mockCapture).toHaveBeenCalledTimes(2);
+  });
+
+  it('빈 문자열 헤더도 none으로(빈 태그 방지)', () => {
+    captureApi5xx('/scan', 500, undefined, '');
+    expect(mockCapture).toHaveBeenLastCalledWith('api_5xx', {
+      level: 'warning',
+      tags: { path: '/scan', status: '500', request_id: 'none' },
+    });
   });
 });
 
@@ -139,6 +170,15 @@ describe('배선 소스 잠금', () => {
     const src = fs.readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
     expect(src).toContain('await runAfterKeyboardHidden(() => setSubmitted(true))'); // P1: 가드 유지 await
     expect(src.match(/setSubmitted\(true\)/g)).toHaveLength(1); // 직결 경로 잔존 0
+  });
+
+  it('(d) client.ts가 x-request-id를 동봉 — 헤더 접근은 예외 금지(try/catch)', () => {
+    const src = fs.readFileSync('src/lib/api/client.ts', 'utf8') as string;
+    expect(src).toContain('captureApi5xx(path, res.status, json?.code ?? undefined, readRequestId(res))');
+    expect(src).toContain("res.headers.get('x-request-id') ?? undefined");
+    const helper = src.split('function readRequestId')[1].split('\n}')[0];
+    expect(helper).toContain('try {');
+    expect(helper).toContain('catch {');
   });
 
   it('(c) Sentry init에 enableAppHangTrackingV2 관통 키', () => {

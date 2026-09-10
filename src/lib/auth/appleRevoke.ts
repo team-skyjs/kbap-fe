@@ -12,6 +12,7 @@
  * signInWithCredential 호출 금지 (타계정이면 앱 세션이 갈아타진다).
  * ⚠️ NATIVE ONLY (iOS) — 웹 번들에서 import 금지 (RNFB·apple-auth 네이티브).
  */
+import { track } from '@/lib/net/inflight';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { getAuth, revokeToken } from '@react-native-firebase/auth';
 
@@ -51,7 +52,7 @@ export type AppleRevokeResult = 'revoked' | 'cancelled' | 'mismatch' | 'failed';
 export async function reauthAndRevokeApple(): Promise<AppleRevokeResult> {
   let c: AppleAuthentication.AppleAuthenticationCredential;
   try {
-    c = await AppleAuthentication.signInAsync();
+    c = await track(AppleAuthentication.signInAsync()); // #109 5R: OTA 정적 창 포함
   } catch (e) {
     if ((e as { code?: string })?.code === 'ERR_REQUEST_CANCELED') return 'cancelled'; // 시트 닫음
     console.log('[auth] apple reauth error', e);

@@ -3,7 +3,7 @@
  * → 리뷰 카드 = D-2 FeedCard(Variant3 — 우측 ⋮ 더보기: 수정/삭제 ActionSheet 현 로직,
  * helpful은 본인 = 카운트 표시 전용 P-196 공용 분기).
  *
- * 구 통계 헤더·정렬 필 소멸(시안 부재). 칩 위험도 = 캐시 조인(personalRisk false-safe
+ * 구 통계 헤더·정렬 필·위험 칩 소멸(P-336 — 칩 위험도 캐시 조인(personalRisk false-safe
  * 가드 — 서버 리뷰 요약에 위험도 없음, 캐시 미스는 All에서만 표시).
  * Data via useMyReviews() — 수정/삭제 뮤테이션·시트 무변.
  */
@@ -13,24 +13,18 @@ import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, type RiskState } from '@/lib/theme';
+import { color as C } from '@/lib/theme';
 import { SubHeader, IconFood } from '@/components';
-import { Chip } from '@/components/Chip';
-import { useMe, useMyReviews } from '@/lib/data/useMe';
+import { useMyReviews } from '@/lib/data/useMe';
 import { useFoods } from '@/lib/data/useFoods';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
-import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyReviews } from '@/components/Skeleton';
 import { FeedCard } from '@/features/review/FeedCard';
-import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { Alert } from 'react-native';
-import { personalRisk } from '@/lib/risk';
 import type { Review } from '@/lib/api/types';
-
-type RiskChip = 'all' | RiskState;
-const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger']; // 시안: All·Safe·Avoid
 
 export default function MyReviews() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -41,12 +35,8 @@ export default function MyReviews() {
   const { t } = useTranslation();
   const { data: reviews, isLoading: reviewsLoading, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
   const { data: foods } = useFoods();
-  const { data: me } = useMe();
-  const [chip, setChip] = useState<RiskChip>('all');
   // P-182: 수정/삭제는 셀 ⋮(항상 본인 화면) — ActionSheet 현 로직
-  const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
-  const [editTarget, setEditTarget] = useState<Review | null>(null);
   const confirmDelete = (rv: Review) => {
     Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -55,25 +45,20 @@ export default function MyReviews() {
   };
   const onMore = (rv: Review) => {
     Alert.alert(rv.foodName ?? foodMap.get(rv.foodId)?.name ?? t('myReviews.viewDish'), undefined, [
-      { text: t('editReview.title'), onPress: () => setEditTarget(rv) },
+      { text: t('editReview.title'), onPress: () => router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href) }, // P-358
       { text: t('editReview.delete'), style: 'destructive', onPress: () => confirmDelete(rv) },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
   const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]);
-  const hasR = (me?.restrictions.length ?? 0) > 0;
 
+  // P-336(9/8 예진): 위험 칩 필터 소멸 — 목록 = 전체(최신순). 시안 2200:21038 칩은 B(유지 이탈).
   const list = useMemo(() => {
     const arr = [...(reviews ?? [])];
     arr.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    if (chip === 'all') return arr;
-    // 위험 칩 = 캐시 조인(personalRisk) — 캐시 미스(위험 미상)는 필터에서 제외
-    return arr.filter((rv) => {
-      const food = foodMap.get(rv.foodId);
-      return food != null && personalRisk(food.risk, hasR) === chip;
-    });
-  }, [reviews, chip, foodMap, hasR]);
+    return arr;
+  }, [reviews]);
 
   const count = reviews?.length ?? 0;
   const isGuest = useIsGuest();
@@ -100,21 +85,6 @@ export default function MyReviews() {
           <SkeletonMyReviews />
         ) : (
           <>
-            {/* 위험 칩 행 — All·Safe·Avoid(D-2 칩 공용) — P-287: 빈 상태에서도 유지(시안 배치) */}
-            <View style={styles.chipRow}>
-              {RISK_CHIPS.map((c) => (
-                <Chip
-                  key={c}
-                  label={c === 'all' ? t('home.filterAll') : t(`risk.${c}`)}
-                  selected={chip === c}
-                  onPress={() => setChip(c)}
-                  testID={`myrev-chip-${c}`}
-                />
-              ))}
-            </View>
-
-            {/* P-287(4003:6921): 빈 상태 = 공용 EmptyBlock */}
-            {count === 0 && <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />}
 
             <View>
               {list.map((rv) => (
@@ -132,19 +102,13 @@ export default function MyReviews() {
           </>
         )}
       </ScrollView>
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body, place, extras }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place, extras } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
-      />
+      {/* P-330(Codex #90 2R): 빈 상태 = 화면 루트 형제(ScreenCenterFill 계약 — 스크롤
+          영역 기준이 아닌 화면 기준 센터, 칩 행은 위에 그대로) */}
+      {!reviewsError && !reviewsLoading && count === 0 && (
+        <ScreenCenterFill>
+          <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />
+        </ScreenCenterFill>
+      )}
     </View>
   );
 }
@@ -152,7 +116,6 @@ export default function MyReviews() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingBottom: 32 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingVertical: 12 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 28 }, // P-154 ②: 상하 센터(앱 통일)
   emptyIc: { width: 64, height: 64, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },

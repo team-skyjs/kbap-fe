@@ -22,7 +22,7 @@ import { useSocialAuth } from '@/lib/auth/useSocialAuth';
 import { useShake } from '@/lib/useShake';
 import { IconGoogleG } from './icons';
 
-const BTN_H = 52;
+const BTN_H = 48; // A-LG-03(KB-486) — Apple 슬롯 공유(네이티브 스타일 자체는 C-22)
 
 export function SocialAuthButtons({
   onSignedIn,
@@ -60,7 +60,7 @@ export function SocialAuthButtons({
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={14}
+              cornerRadius={4} /* P-339 ⑥: 구글(r4)과 통일 — 시안 Button r4 */
               style={styles.apple}
               onPress={() => { if (!busy) void signInWithApple(); }}
             />
@@ -97,12 +97,13 @@ export function SocialAuthButtons({
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignSelf: 'stretch', gap: 12 },
+  wrap: { alignSelf: 'stretch', gap: 8 }, // A-LG-04(KB-486)
   appleSlot: { height: BTN_H },
   apple: { width: '100%', height: BTN_H },
-  busyBox: { flex: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  busyBox: { flex: 1, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
 
   // Google Identity light button: white bg, #747775 border, #1F1F1F medium label
+  // A-LG-03(KB-486): h48 r4 라벨 15 (Apple 네이티브는 C-22 — BTN_H 공유라 함께 48)
   google: {
     height: BTN_H,
     flexDirection: 'row',
@@ -112,9 +113,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#747775',
-    borderRadius: 14,
+    borderRadius: 4,
   },
-  googleLabel: { fontFamily: font.bodyBold, fontSize: 15.5, color: '#1F1F1F' },
+  googleLabel: { fontFamily: font.bodyBold, fontSize: 15, color: '#1F1F1F' },
   dim: { opacity: 0.5 },
 
   error: { fontFamily: font.body, fontSize: 13, color: C.riskDanger, textAlign: 'center', marginTop: 2 },

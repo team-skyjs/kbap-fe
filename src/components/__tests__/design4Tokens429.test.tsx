@@ -6,6 +6,15 @@
 import * as React from 'react';
 import renderer from 'react-test-renderer';
 
+// P-305: TabBar가 배럴 경유로 useMe(i18n→AsyncStorage)·RemoteImage(expo-image) 체인을
+// 물게 됨 — 이 스위트는 해당 표면 무관이라 목으로 차단
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+jest.mock('expo-image', () => ({ Image: () => null }));
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: undefined }) })); // 렌더 케이스용(QueryClient 불요)
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => true }));
+
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {

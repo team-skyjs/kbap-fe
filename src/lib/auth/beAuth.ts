@@ -12,6 +12,7 @@
  * 화면 쪽에서 Platform 가드 lazy require(session.ts)로 처리한다.
  */
 import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthorized, setSessionGenerationProvider } from '@/lib/api/client';
+import { track } from '@/lib/net/inflight';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
@@ -53,7 +54,11 @@ async function sessionExpired(): Promise<void> {
  *  KB-421(Codex #19 P1-4): 교환도 세대 가드 — pending 중 게스트 진입(경계)이
  *  끼면 응답을 폐기(cancelled)해 회원 복귀를 막는다. 이로써 saveTokens의 전
  *  호출자(doRefresh·exchangeLogin)가 "경계 이후 도착 결과 무효" 원칙 아래. */
-export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
+export function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
+  // Codex #109 7R: 세션 관문 track — SecureStore 저장·재검증 왕복까지 OTA 정적 창에 포함
+  return track(exchangeLoginInner(idToken));
+}
+async function exchangeLoginInner(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
   const gen = currentGen(); // 출발 세대 캡처(조기 폐기용 — 최종 방어는 싱크)
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
   if (gen !== currentGen()) return { newMember: r.newMember, cancelled: true }; // 저장 자체 생략
@@ -85,7 +90,7 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
 export async function endSessionBoundary(): Promise<void> {
   bumpSessionGen(); // ① 이전 출발분 무효 — 싱크가 최종 방어
   refreshing = null;
-  const done = clearTokens(); // cached=null 동기 선행
+  const done = track(clearTokens()); // cached=null 동기 선행 · 7R: SecureStore 삭제도 track
   resetServerCache(false);
   await done;
 }
@@ -142,7 +147,11 @@ async function doRefresh(): Promise<boolean> {
  *  ① 서버 폐기용 refresh 캡처 ② 경계(endSessionBoundary — 토큰·세션·캐시·세대
  *  동기 무효) await ③ 서버 /auth/logout은 best-effort 백그라운드(실패 무시).
  *  서버를 먼저 기다리면 그 창에서 시작한 refresh가 세션을 재부활시킨다(P1-3). */
-export async function logoutLocalFirst(): Promise<void> {
+export function logoutLocalFirst(): Promise<void> {
+  // Codex #109 7R: 세션 관문 track — 프로필 로그아웃의 SecureStore 왕복 포함(호출처 무변)
+  return track(logoutLocalFirstInner());
+}
+async function logoutLocalFirstInner(): Promise<void> {
   const t = await loadTokens(); // 서버 폐기용 — 정리 전에 확보(로컬 읽기)
   await endSessionBoundary();
   if (t) void api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
@@ -158,7 +167,10 @@ export async function logoutBe(): Promise<void> {
  *  여기만 서버-선행 유지(토큰을 먼저 지우면 탈퇴 자체가 401로 실패) — 그 창에서
  *  출발/도착하는 refresh는 finally 경계의 세대 증가 + doRefresh의 무토큰 재확인
  *  이중 가드로 폐기된다(재부활 불가). */
-export async function withdrawBe(): Promise<void> {
+export function withdrawBe(): Promise<void> {
+  return track(withdrawBeInner()); // Codex #109 7R: 세션 관문 track
+}
+async function withdrawBeInner(): Promise<void> {
   try {
     await api.patch('/auth/withdraw');
   } finally {

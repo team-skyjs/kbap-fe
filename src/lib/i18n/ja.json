@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "レビューを編集",
-    "viewTitle": "マイレビュー",
     "save": "変更を保存",
+    "savedToast": "レビューを更新しました",
     "delete": "このレビューを削除",
-    "posted": "{{when}}に投稿",
-    "noBody": "この評価には、まだ何も書かれていません。",
     "notFound": "このレビューは現在ご利用いただけません。",
     "deleteConfirmTitle": "このレビューを削除しますか？",
     "deleteConfirmBody": "このレビューは完全に削除されます。元に戻すことはできません。"
@@ -96,6 +94,8 @@
     "title": "料理を探す",
     "sub": "すべての料理にあなたのリスクを表示。",
     "searchPlaceholder": "料理や食材を検索…",
+    "sort_popular": "人気順",
+    "sort_new": "新着順",
     "categories": {
       "all": "すべて",
       "stews": "鍋・スープ",
@@ -104,7 +104,8 @@
       "bbq": "焼肉",
       "street": "屋台",
       "sides": "おかず"
-    }
+    },
+    "sortNewSoon": "準備中"
   },
   "search": {
     "placeholder": "料理や食材を検索…",
@@ -114,8 +115,6 @@
     "popular": "話題の検索",
     "resultCount": "{{count}} 件の結果",
     "noResultsTitle": "見つかりませんでした",
-    "noResultsBody": "この料理はまだカタログにないかもしれません。別の名前で検索するか、話題の料理をご覧ください。",
-    "backToPopular": "話題の料理を見る",
     "samples": [
       "キムチチゲ",
       "アミの塩辛",
@@ -131,7 +130,6 @@
     "hoursAgo": "{{count}}時間前",
     "seeMore": "もっと見る",
     "emptyTitle": "まだ投稿がありません",
-    "emptyBody": "最初のヒントや発見をシェアしてみましょう。",
     "guestGateTitle": "続きを見るには登録",
     "guestGateSub": "ゲストは最初のページまで閲覧できます。",
     "blockedToast": "ブロックしました。相手のコンテンツは表示されません。",
@@ -296,9 +294,12 @@
     "errUpload": "写真をアップロードできませんでした。もう一度お試しください。",
     "stayHint": "30〜40秒ほどかかることがあります — アプリを離れると結果が失われる場合があります。",
     "sortMenu": "メニュー順",
-    "sortSafety": "リスクが低い順",
+    "safeOnly": "「安全」判定のみ",
+    "sortPriceDesc": "価格が高い順",
+    "sortPriceAsc": "価格が安い順",
+    "resultsSubSafe": "全{{total}}品のうち「安全」判定{{safe}}品",
+    "safeEmpty": "このメニューに「安全」判定の料理はありません",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
-    "searchOnNaver": "NAVERで検索",
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません"
   },
@@ -355,6 +356,7 @@
     "spiceTitle": "辛さの許容度",
     "spiceUnset": "未設定",
     "showAll": "すべて表示（{{count}}）",
+    "showAllEmpty": "すべて表示",
     "showLess": "折りたたむ",
     "dietTitle": "食事・宗教・アレルギー",
     "showAllLink": "すべて見る",
@@ -366,22 +368,15 @@
     "dietSavedBody": "これに合わせて避ける食材も調整しますか？",
     "dietSavedYes": "避ける食材を編集",
     "dietSavedNo": "完了",
-    "myFoods": "マイフード"
+    "myFoods": "マイフード",
+    "guestTitle": "ログインが必要です"
   },
   "review": {
     "title": "レビューを書く",
+    "photoSheetTitle": "レビュー写真",
     "post": "投稿",
     "ratingLabel": "評価 *",
     "tapToRate": "タップして評価",
-    "ratingValue": "{{value}}/5、{{label}}",
-    "labels": [
-      "",
-      "悪い",
-      "いまいち",
-      "普通",
-      "良い",
-      "最高"
-    ],
     "reviewLabel": "レビュー",
     "placeholder": "味の感想や、同じ食事制限のある旅行者へのヒントを共有しましょう…",
     "charCount": "{{count}}/500",
@@ -390,17 +385,16 @@
     "postedBody": "ありがとうございます！{{name}}への{{rating}}つ星レビューが料理のレビューに反映され、ランキングに加算されました。",
     "done": "完了",
     "seeMyReviews": "自分のレビューを見る",
-    "photosLabel": "写真（最大{{max}}枚）",
     "addPhoto": "写真を追加",
     "removePhoto": "写真を削除",
     "postError": "レビューを保存できませんでした。接続を確認して再試行してください。",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "いいねは並び順に影響しません",
     "placeRow": "どこで食べましたか？",
     "placeSheetTitle": "場所をタグ付け",
     "placeRecent": "最近",
     "placeNoResults": "一致する場所がありません。",
-    "placeSkip": "スキップ — 場所なしで投稿",
+    "placeSkip": "スキップ",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "レビューを削除できませんでした。接続を確認してもう一度お試しください。",
     "photoCapNote": "写真は最大{{max}}枚 — 超過分は除外しました",
     "placeNearby": "近くの場所",
@@ -431,6 +425,8 @@
     "emptyTitle": "まだレビューがありません",
     "emptyBody": "まだレビューがありません。最初のレビューを残してみましょう。",
     "writeReview": "レビューを書く",
+    "helpfulOwnToast": "自分のレビューには「役に立った」を押せません",
+    "helpfulMarkedToast": "「役に立った」を送りました",
     "lang": {
       "en": "英語",
       "th": "タイ語",
@@ -456,8 +452,8 @@
     "sort_helpful": "役に立った順",
     "ratingAll": "すべての評価",
     "ratingMin": "{{min}}点以上",
-    "filterByProfile": "プロフィールで絞り込み",
-    "countryOnly": "{{code}}のみ"
+    "countryOnly": "{{code}}のみ",
+    "allReviews": "すべてのレビュー"
   },
   "ranking": {
     "headerTitle": "マイランキング",
@@ -556,28 +552,21 @@
     "lockVerdict": "あなたの安全判定はロック中",
     "lockIngredients": "ログインするとプロフィールとの適合が見られます",
     "readAll": "すべて見る",
-    "beFirstReview": "まだレビューがありません — 最初のレビューを！"
+    "beFirstReview": "まだレビューがありません — 最初のレビューを！",
+    "ingGuestBody": "{{ingredient}}はこの料理の約{{percent}}%のバージョンに使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
+    "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。"
   },
   "states": {
     "catalogTitle": "状態",
     "labelLoading": "読み込み中（スケルトン）",
     "labelEmpty": "空",
-    "labelError": "エラー",
-    "labelOffline": "オフライン",
-    "labelUnable": "判定不可",
     "loading": "読み込み中…",
     "emptyReviewsTitle": "まだレビューがありません",
-    "emptyReviewsBody": "この料理の最初のレビューを書きましょう — あなたのメモが次の旅行者の安心につながります。",
-    "writeReview": "レビューを書く",
     "errorTitle": "問題が発生しました",
     "errorBody": "現在読み込めませんでした。原因は当方側にあります。",
     "offlineTitle": "オフラインです",
     "offlineBody": "メニューのスキャンやレビューの読み込みにはインターネット接続が必要です。保存済みのスキャンはそのまま残っています。",
-    "viewSavedScans": "保存済みスキャンを見る",
-    "unableTitle": "これは判定できません",
-    "unableBody": "この料理をあなたのプロフィールで評価するのに十分な食材データがありません。食べる前に店員にお尋ねください。",
-    "askOwner": "店員に聞く",
-    "seeIngredients": "食材を見る"
+    "linkFailed": "リンクを開けませんでした"
   },
   "shell": {
     "placeholderNote": "タブのコンテンツは各画面モジュールにあります"
@@ -619,7 +608,10 @@
     "reviewsSub": "注文前にチェック",
     "chipForYou": "おすすめ",
     "chipNearby": "近く",
-    "recentEmpty": "最近のスキャンはありません"
+    "recentEmpty": "最近のスキャンはありません",
+    "safeForYou": "あなた基準のSafeメニュー",
+    "safeForYouSub": "回避リストに基づく判定です。お店に必ず確認してください。",
+    "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
@@ -725,8 +717,7 @@
       "groupDiet": "食事",
       "groupReligion": "宗教",
       "groupAllergy": "アレルギーセット",
-      "apply": "リストに適用",
-      "applyRow": "食事・宗教から選ぶ"
+      "apply": "リストに適用"
     },
     "countryLabel": "国"
   },
@@ -969,7 +960,12 @@
     "nudge": "スキャンのおすすめ",
     "nudgeSub": "ときどきランチタイムにメニュースキャンをご提案",
     "osOff": "システム設定でK-Bapの通知がオフになっています。",
-    "osOffCta": "システム設定を開く"
+    "osOffCta": "システム設定を開く",
+    "marketing": "マーケティング通知に同意",
+    "marketingSub": "イベントやおすすめのお知らせをプッシュで受け取ります。",
+    "night": "夜間通知に同意",
+    "nightSub": "夜9時〜朝8時の間も受け取ります。",
+    "saveFailed": "保存できませんでした。もう一度お試しください。"
   },
   "inbox": {
     "title": "お知らせ",
@@ -997,14 +993,9 @@
     "emptyOrdersTitle": "まだ注文履歴がありません",
     "emptyOrdersBody": "スキャンしたメニューから注文するとここに記録されます。",
     "emptyScansTitle": "まだスキャン履歴がありません",
-    "emptyScansBody": "メニューをスキャンすると確認した料理がここに集まります。",
     "dishes": "料理",
     "receiptDate": "日付",
     "receiptLocation": "場所",
     "receiptTotal": "合計"
-  },
-  "ota": {
-    "ready": "アップデートの準備ができました",
-    "apply": "適用"
   }
 }

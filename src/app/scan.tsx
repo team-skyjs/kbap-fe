@@ -30,6 +30,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
@@ -39,8 +40,15 @@ import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish 
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
+
+// P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
+const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
+  menu: 'scan.sortMenu',
+  priceDesc: 'scan.sortPriceDesc',
+  priceAsc: 'scan.sortPriceAsc',
+};
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
-import { coverCropRect } from '@/lib/scan/coverCrop';
+import { wysiwygCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
@@ -51,7 +59,7 @@ import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
 import { markCoachSeen, ScanCoachMark, shouldShowCoachMark } from '@/features/scan/ScanCoachMark';
 import { OrderPill, ScanRichList } from '@/features/scan/ScanRichList';
 import { D4CameraRestart } from '@/components/design4Assets';
-import { EmptyBlock } from '@/components/StateBlock';
+import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { TagPickerSheet } from '@/app/community/compose';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -122,7 +130,7 @@ export default function Scan() {
   // P-226 ②③ → KB-432 §1-1: 소팅 = 정렬 드롭다운(ActionSheet) — 옵션 2종 무변
   const [sortMode, setSortMode] = useState<ResultSortMode>('menu');
   const [sortSheet, setSortSheet] = useState(false);
-  const [profileFilter, setProfileFilter] = useState(false); // 시안 렌더 전용(무동작 — 상태 부재)
+  const [safeOnly, setSafeOnly] = useState(false); // P-354(KB-516): ON = risk==='safe'만(불확실 포함 전부 숨김)
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
   // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
@@ -377,16 +385,19 @@ export default function Scan() {
    * 미탑재 빌드에서 최상단 import는 앱 전체 크래시). 미탑재/실패 시 원본 그대로
    * 반환 — 크롭만 생략되고 스캔은 정상(재빌드 전 동작).
    */
-  async function cropToPreview(pic: NonNullable<Photo>): Promise<NonNullable<Photo>> {
+  async function cropToPreview(pic: NonNullable<Photo>, exifOrientation?: number): Promise<NonNullable<Photo>> {
     const view = previewSize.current;
-    const rect = view ? coverCropRect(view.width, view.height, pic.width, pic.height) : null;
+    // P-338 → Codex #99 P1: 방향 = **사진 자체**(EXIF 적용 유효 치수 W>H = 가로) —
+    // 중력(camOrientation) 판정은 평평히 놓은 촬영(z축)에서 틀린다. camOrientation은
+    // UI 회전 전용. rect는 보고 치수 좌표계 안(wysiwygCropRect ② 계약).
+    const rect = view ? wysiwygCropRect(view.width, view.height, pic.width, pic.height, exifOrientation) : null;
     if (!rect) return pic;
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { ImageManipulator, SaveFormat } = require('expo-image-manipulator') as typeof import('expo-image-manipulator');
       const rendered = await ImageManipulator.manipulate(pic.uri).crop(rect).renderAsync();
       const saved = await rendered.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-      console.log('[scan] WYSIWYG crop', JSON.stringify({ from: { w: pic.width, h: pic.height }, rect }));
+      console.log('[scan] WYSIWYG crop', JSON.stringify({ gravity: camOrientation, exifOrientation, from: { w: pic.width, h: pic.height }, rect })); // P-338: 방향·치수 실측 로그(gravity = 진단용)
       deletePhotoFile(pic.uri); // 원본(과다 캡처)은 즉시 삭제 — 이후 수명은 크롭본 몫 (⑦ KB-137)
       return { uri: saved.uri, width: saved.width ?? rect.width, height: saved.height ?? rect.height };
     } catch (e) {
@@ -406,11 +417,11 @@ export default function Scan() {
     setError(null);
     track(EVENTS.scan_start, { source: 'camera' }); // P-144
     try {
-      const pic = await cam.takePictureAsync({ quality: 0.7 });
+      const pic = await cam.takePictureAsync({ quality: 0.7, exif: true }); // P-338: Orientation 태그 — raw 치수 정규화용
       console.log('[scan] photo =', JSON.stringify({ uri: pic?.uri, w: pic?.width, h: pic?.height }));
       if (!pic?.uri) return fail('capture', 'takePictureAsync returned no uri');
       // KB-202: 업로드·표시·OCR 전부 크롭본 기준 — 미리보기 밖은 어디에도 안 간다
-      const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 });
+      const cropped = await cropToPreview({ uri: pic.uri, width: pic.width ?? 0, height: pic.height ?? 0 }, (pic.exif as { Orientation?: number } | undefined)?.Orientation);
       await scanImage(cropped);
     } catch (e) {
       fail('capture', (e as Error)?.message ?? String(e));
@@ -571,6 +582,10 @@ export default function Scan() {
     // 안전한 순 = safe→caution→danger→unable. ⚠️ unable은 어느 모드에서도 **최하단**
     // — 불확실을 안전해 보이는 위치에 두지 않는다(false-safe, 유닛 잠금).
     const listDishes = sortResultDishes(allDishes, sortMode);
+    // P-354(KB-516): Safe only — 표시만 필터(장바구니 수량은 itemId 키로 보존,
+    // goOrder는 listDishes(전체) 기준이라 숨긴 담김분도 합계 불변)
+    const safeDishes = listDishes.filter((d) => d.risk === 'safe');
+    const visibleDishes = safeOnly ? safeDishes : listDishes;
 
     // P-038→P-057(KB-212 후속, A안): 빈 프로필 넛지 — 회원 && 기피 0 && 세션 내
     // 미닫음. 어두운 absolute 오버레이(배경에 묻힘·카드 밀착)를 폐기하고 결과
@@ -595,7 +610,7 @@ export default function Scan() {
         {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
-            <IconChevron size={18} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconChevron size={24} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
           {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}
@@ -614,28 +629,37 @@ export default function Scan() {
             </Pressable>
           ))}
         </View>
-        {/* §1-1: 인식 배너 — h48 primaryTint, 스캔 아이콘 24 + 인식 수 15/500 primary */}
-        <View style={styles.recogBanner} testID="recog-banner">
-          <IconTabScan size={24} color={C.primary} />
-          <Text style={styles.recogBannerText}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
-        </View>
+        {/* §1-1: 인식 배너 — h48 primaryTint. A-SC-12(P-330 동승): 0건 = 배너·컨트롤 숨김 */}
+        {allDishes.length > 0 && (
+          <View style={styles.recogBanner} testID="recog-banner">
+            <IconTabScan size={24} color={C.primary} />
+            <Text style={styles.recogBannerText}>
+              {safeOnly
+                ? t('scan.resultsSubSafe', { safe: safeDishes.length, total: allDishes.length })
+                : t('scan.resultsSub', { count: allDishes.length })}
+            </Text>
+          </View>
+        )}
 
-        {view === 'list' ? (
+        {view === 'list' && allDishes.length === 0 ? (
+          /* P-330(4003:7160): 결과 0개 = 화면 세로 중앙(배너·컨트롤 숨김 — A-SC-12) */
+          <ScreenCenterFill>
+            <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />
+          </ScreenCenterFill>
+        ) : view === 'list' ? (
           <>
-          {/* P-287(4003:7160): 결과 0개 = 공용 EmptyBlock(탭 아래) */}
-          {allDishes.length === 0 && <EmptyBlock label={t('scan.resultsEmpty')} testID="scan-results-empty" />}
           {/* 9/5 예진 판정: ScanProfileBar(회피 체크 스트립) 제거 — 시안 토글 행만 */}
           {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
               D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}
           <View style={styles.controlRow}>
-            <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="scan-profile-toggle">
-              <View style={[styles.sw, profileFilter && styles.swOn]}>
-                <View style={[styles.knob, profileFilter && styles.knobOn]} />
+            <Pressable style={styles.toggleRow} onPress={() => setSafeOnly((v) => !v)} testID="scan-safe-toggle">
+              <View style={[styles.sw, safeOnly && styles.swOn]}>
+                <View style={[styles.knob, safeOnly && styles.knobOn]} />
               </View>
-              <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+              <Text style={styles.toggleLabel} numberOfLines={1}>{t('scan.safeOnly')}</Text>
             </Pressable>
             <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="scan-sort">
-              <Text style={styles.sortLabel} numberOfLines={1}>{t(sortMode === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
+              <Text style={styles.sortLabel} numberOfLines={1}>{t(SORT_LABEL_KEY[sortMode])}</Text>
               <IconChevronDown size={16} color="#4B4F58" />
             </Pressable>
           </View>
@@ -656,8 +680,15 @@ export default function Scan() {
                 </Pressable>
               </Animated.View>
             )}
+            {safeOnly && visibleDishes.length === 0 ? (
+              /* P-354 ④ → P-372(KB-536): 안전 0건 — 컨트롤 행·배너 유지, 목록 자리만 빈 상태.
+                 토글 OFF CTA는 바로 위 컨트롤 행 토글과 중복이라 삭제(9/10 예진). */
+              <View style={{ paddingTop: 48, alignItems: 'center' }} testID="scan-safe-empty">
+                <EmptyBlock label={t('scan.safeEmpty')} />
+              </View>
+            ) : (
             <ScanRichList
-              dishes={listDishes}
+              dishes={visibleDishes}
               currency={currency}
               fx={fx}
               cart={cart}
@@ -667,6 +698,7 @@ export default function Scan() {
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               t={t}
             />
+            )}
           </ScrollView>
           </>
         ) : (
@@ -682,15 +714,17 @@ export default function Scan() {
         <ActionSheet
           open={sortSheet}
           title={t('reviews.sortTitle')}
-          items={(['menu', 'safety'] as ResultSortMode[]).map((m) => ({
+          items={(['menu', 'priceDesc', 'priceAsc'] as ResultSortMode[]).map((m) => ({
             key: m,
-            label: t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety'),
+            label: t(SORT_LABEL_KEY[m]),
             icon: m === sortMode ? <IconCheck size={15} color={C.primary} /> : undefined,
             onPress: () => setSortMode(m),
           }))}
           onClose={() => setSortSheet(false)}
         />
         {GateSheet}
+        {/* P-370(KB-533): 모달 컨텍스트 자체 토스트 호스트(스택 top) */}
+        <TopToastHost />
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
             후 — onClose 직후 present는 잔존 race), 안드는 onClose(onDismiss 미지원
             플랫폼 — 교착 자체가 iOS UIKit 이슈라 무해) */}
@@ -718,7 +752,7 @@ export default function Scan() {
                   variant="dangerGhost"
                   onPress={() => {
                     setRetakeConfirm(false);
-                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setPhase('camera');
+                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
                   }}
                   testID="retake-go"
                 >
@@ -885,7 +919,7 @@ export default function Scan() {
           <View style={[StyleSheet.absoluteFill, styles.permScrim]} testID="perm-denied-alert">
             <View style={styles.permAlert}>
               <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
-              <Text style={styles.permAlertBody}>{t('scan.permissionSettingsBody')}</Text>
+              <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
               <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }}>
                 {t('photo.openSettings')}
               </Btn>
@@ -1051,14 +1085,14 @@ const styles = StyleSheet.create({
   // KB-432 §1-1: 언더라인 탭 2개(반반) + 인식 배너 + 컨트롤 행
   resultTabs: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: C.line2, backgroundColor: '#fff' },
   resultTab: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
-  resultTabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  resultTabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   resultTabLabelOn: { color: '#2F3137' },
   resultTabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   resultTabBarOn: { backgroundColor: '#2F3137' },
-  recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 },
+  recogBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, backgroundColor: primaryTint, paddingVertical: 12, paddingHorizontal: 20 }, // A-SC-02
   recogBannerText: { flex: 1, fontSize: 15, fontWeight: '500', color: C.primaryText }, // P-284: 틴트 위 대비
-  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: C.surface },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 10, backgroundColor: C.surface }, // A-SC-03
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-SC-04(off 색은 C-04)
   toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
@@ -1073,7 +1107,7 @@ const styles = StyleSheet.create({
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   // P-136 콰이엇 결과 크롬 (scanflow 토큰 — 흰 배경·헤어라인·색은 마크/CTA만)
   resultRoot: { flex: 1, backgroundColor: '#fff' },
-  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 10, backgroundColor: '#fff' },
+  quietHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, minHeight: 56, paddingBottom: 10, backgroundColor: '#fff' }, // A-SC-01(SubHeader 규격)
   qhBack: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   qhTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: C.ink, textAlign: 'center' },
   seg: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: 999, padding: 3 },
@@ -1087,10 +1121,10 @@ const styles = StyleSheet.create({
   permission: { alignItems: 'center', justifyContent: 'center', gap: 12, padding: 36 },
   permTitle: { fontFamily: font.display, fontSize: 20, color: '#fff', textAlign: 'center' },
   // P-285: 권한 거부 Alert(4003:12690)
-  permScrim: { backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
-  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 18 },
+  permScrim: { backgroundColor: 'rgba(0,0,0,0.8)', alignItems: 'center', justifyContent: 'center', zIndex: 30 }, // A-SN-04
+  permAlert: { width: 320, minHeight: 190, backgroundColor: '#FFFFFF', borderRadius: 10, paddingTop: 30, paddingHorizontal: 20, paddingBottom: 20, gap: 5 }, // A-SN-04
   permAlertTitle: { fontSize: 18, fontWeight: '600', color: '#262C31', textAlign: 'center' },
-  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 21 }, // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
+  permAlertBody: { fontSize: 15, fontWeight: '500', color: C.inkInfo, textAlign: 'center', lineHeight: 22.3 }, // A-SN-04(lineHeight만 — 색 대비는 Codex #45 위임 유지) // Codex #45 3차: 설정 유도 안내 대비(시안 #ADB4BA 이탈 — 대비 위임 범위, REPORTS)
   permBody: { fontFamily: font.body, fontSize: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 20 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },

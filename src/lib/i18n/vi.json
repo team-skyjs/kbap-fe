@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "Chỉnh sửa đánh giá",
-    "viewTitle": "Đánh giá của tôi",
     "save": "Lưu thay đổi",
+    "savedToast": "Đã cập nhật đánh giá",
     "delete": "Xoá đánh giá này",
-    "posted": "Đã đăng {{when}}",
-    "noBody": "Bạn đã không viết gì với đánh giá này.",
     "notFound": "Đánh giá này không còn khả dụng.",
     "deleteConfirmTitle": "Xoá đánh giá này?",
     "deleteConfirmBody": "Đánh giá này sẽ bị xoá vĩnh viễn. Bạn không thể hoàn tác."
@@ -96,6 +94,8 @@
     "title": "Khám phá món ăn",
     "sub": "Mỗi món đều được gắn mức rủi ro của bạn.",
     "searchPlaceholder": "Tìm món ăn hoặc nguyên liệu…",
+    "sort_popular": "Phổ biến",
+    "sort_new": "Mới nhất",
     "categories": {
       "all": "Tất cả",
       "stews": "Món hầm",
@@ -104,7 +104,8 @@
       "bbq": "Nướng",
       "street": "Đồ ăn đường phố",
       "sides": "Món phụ"
-    }
+    },
+    "sortNewSoon": "Sắp ra mắt"
   },
   "search": {
     "placeholder": "Tìm món ăn, nguyên liệu…",
@@ -114,8 +115,6 @@
     "popular": "Đang thịnh hành",
     "resultCount": "{{count}} kết quả",
     "noResultsTitle": "Không tìm thấy kết quả nào",
-    "noResultsBody": "Món ăn này có thể chưa có trong danh mục của chúng tôi. Hãy thử một tên khác, hoặc xem các món đang thịnh hành.",
-    "backToPopular": "Xem các món thịnh hành",
     "samples": [
       "Canh kimchi",
       "Mắm tôm",
@@ -131,7 +130,6 @@
     "hoursAgo": "{{count}} giờ trước",
     "seeMore": "Xem thêm",
     "emptyTitle": "Chưa có bài viết",
-    "emptyBody": "Hãy là người đầu tiên chia sẻ mẹo hay khám phá.",
     "guestGateTitle": "Đăng ký để đọc tiếp",
     "guestGateSub": "Khách chỉ xem được những trang đầu.",
     "blockedToast": "Đã chặn. Bạn sẽ không thấy nội dung của họ nữa.",
@@ -296,9 +294,12 @@
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
     "stayHint": "Quá trình này có thể mất 30–40 giây — rời khỏi ứng dụng có thể làm mất kết quả.",
     "sortMenu": "Theo thực đơn",
-    "sortSafety": "Rủi ro thấp trước",
+    "safeOnly": "Chỉ món được đánh giá an toàn",
+    "sortPriceDesc": "Giá: cao đến thấp",
+    "sortPriceAsc": "Giá: thấp đến cao",
+    "resultsSubSafe": "{{safe}} được đánh giá an toàn trong {{total}} món",
+    "safeEmpty": "Thực đơn này không có món được đánh giá an toàn",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
-    "searchOnNaver": "Tìm trên NAVER",
     "searchOnGoogle": "Tìm trên Google",
     "resultsEmpty": "Không có kết quả quét"
   },
@@ -355,6 +356,7 @@
     "spiceTitle": "Mức ăn cay",
     "spiceUnset": "Chưa đặt",
     "showAll": "Xem tất cả ({{count}})",
+    "showAllEmpty": "Xem tất cả",
     "showLess": "Thu gọn",
     "dietTitle": "Chế độ ăn, tôn giáo & dị ứng",
     "showAllLink": "Xem tất cả",
@@ -366,22 +368,15 @@
     "dietSavedBody": "Bạn có muốn tinh chỉnh nguyên liệu tránh cho phù hợp không?",
     "dietSavedYes": "Chỉnh nguyên liệu tránh",
     "dietSavedNo": "Xong",
-    "myFoods": "Món của tôi"
+    "myFoods": "Món của tôi",
+    "guestTitle": "Cần đăng nhập"
   },
   "review": {
     "title": "Viết đánh giá",
+    "photoSheetTitle": "Ảnh đánh giá",
     "post": "Đăng",
     "ratingLabel": "Đánh giá của bạn *",
     "tapToRate": "Chạm để chấm điểm",
-    "ratingValue": "{{value}}/5, {{label}}",
-    "labels": [
-      "",
-      "Tệ",
-      "Tạm",
-      "Ổn",
-      "Ngon",
-      "Tuyệt"
-    ],
     "reviewLabel": "Đánh giá của bạn",
     "placeholder": "Chia sẻ mùi vị và bất kỳ mẹo nào cho du khách có cùng hạn chế như bạn…",
     "charCount": "{{count}}/500",
@@ -390,17 +385,16 @@
     "postedBody": "Cảm ơn! Đánh giá {{rating}} sao của bạn cho {{name}} nay đã có trong phần đánh giá món ăn và được tính vào xếp hạng của bạn.",
     "done": "Xong",
     "seeMyReviews": "Xem đánh giá của tôi",
-    "photosLabel": "Ảnh (tối đa {{max}})",
     "addPhoto": "Thêm ảnh",
     "removePhoto": "Xóa ảnh",
     "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại.",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "Lượt thích không ảnh hưởng thứ tự",
     "placeRow": "Bạn đã ăn ở đâu?",
     "placeSheetTitle": "Gắn thẻ địa điểm",
     "placeRecent": "Gần đây",
     "placeNoResults": "Không có địa điểm phù hợp.",
-    "placeSkip": "Bỏ qua — đăng không kèm địa điểm",
+    "placeSkip": "Bỏ qua",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Không xóa được đánh giá. Kiểm tra kết nối và thử lại.",
     "photoCapNote": "Tối đa {{max}} ảnh — phần chọn thừa đã bị bỏ qua",
     "placeNearby": "Gần đây",
@@ -431,6 +425,8 @@
     "emptyTitle": "Chưa có đánh giá",
     "emptyBody": "Chưa có đánh giá. Hãy là người đầu tiên.",
     "writeReview": "Viết đánh giá",
+    "helpfulOwnToast": "Bạn không thể đánh dấu hữu ích cho đánh giá của chính mình",
+    "helpfulMarkedToast": "Đã đánh dấu hữu ích",
     "lang": {
       "en": "Tiếng Anh",
       "th": "Tiếng Thái",
@@ -456,8 +452,8 @@
     "sort_helpful": "Hữu ích nhất",
     "ratingAll": "Mọi mức sao",
     "ratingMin": "Từ {{min}} sao",
-    "filterByProfile": "Lọc theo hồ sơ",
-    "countryOnly": "Chỉ {{code}}"
+    "countryOnly": "Chỉ {{code}}",
+    "allReviews": "Tất cả đánh giá"
   },
   "ranking": {
     "headerTitle": "Xếp hạng của tôi",
@@ -556,28 +552,21 @@
     "lockVerdict": "Đánh giá an toàn của bạn đang khóa",
     "lockIngredients": "Đăng nhập để xem món này hợp với hồ sơ của bạn không",
     "readAll": "Xem tất cả",
-    "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!"
+    "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!",
+    "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
+    "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn."
   },
   "states": {
     "catalogTitle": "Trạng thái",
     "labelLoading": "Đang tải (khung xương)",
     "labelEmpty": "Trống",
-    "labelError": "Lỗi",
-    "labelOffline": "Ngoại tuyến",
-    "labelUnable": "Không thể đánh giá",
     "loading": "Đang tải…",
     "emptyReviewsTitle": "Chưa có đánh giá",
-    "emptyReviewsBody": "Hãy là người đầu tiên đánh giá món này — ghi chú của bạn giúp du khách sau ăn uống tự tin hơn.",
-    "writeReview": "Viết đánh giá",
     "errorTitle": "Đã xảy ra sự cố",
     "errorBody": "Chúng tôi không thể tải mục này lúc này. Lỗi ở phía chúng tôi, không phải bạn.",
     "offlineTitle": "Bạn đang ngoại tuyến",
     "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá. Các bản quét đã lưu vẫn còn ở đây.",
-    "viewSavedScans": "Xem bản quét đã lưu",
-    "unableTitle": "Không thể đánh giá món này",
-    "unableBody": "Chúng tôi không có đủ dữ liệu nguyên liệu để đánh giá món này cho hồ sơ của bạn. Hãy hỏi chủ quán trước khi ăn.",
-    "askOwner": "Hỏi chủ quán",
-    "seeIngredients": "Xem nguyên liệu"
+    "linkFailed": "Không mở được liên kết"
   },
   "shell": {
     "placeholderNote": "Nội dung tab nằm trong các mô-đun màn hình"
@@ -619,7 +608,10 @@
     "reviewsSub": "Đọc trước khi gọi món",
     "chipForYou": "Dành cho bạn",
     "chipNearby": "Gần đây",
-    "recentEmpty": "Chưa có lượt quét gần đây"
+    "recentEmpty": "Chưa có lượt quét gần đây",
+    "safeForYou": "Món Safe theo hồ sơ của bạn",
+    "safeForYouSub": "Dựa trên danh sách cần tránh của bạn — luôn xác nhận với chủ quán.",
+    "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác."
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -725,8 +717,7 @@
       "groupDiet": "Chế độ ăn",
       "groupReligion": "Tôn giáo",
       "groupAllergy": "Nhóm dị ứng",
-      "apply": "Áp dụng vào danh sách",
-      "applyRow": "Điền theo chế độ ăn/tôn giáo"
+      "apply": "Áp dụng vào danh sách"
     },
     "countryLabel": "Quốc gia"
   },
@@ -969,7 +960,12 @@
     "nudge": "Gợi ý quét menu",
     "nudgeSub": "Thỉnh thoảng nhắc quét menu vào giờ ăn trưa",
     "osOff": "Thông báo của K-Bap đang tắt trong cài đặt hệ thống.",
-    "osOffCta": "Mở cài đặt hệ thống"
+    "osOffCta": "Mở cài đặt hệ thống",
+    "marketing": "Thông báo tiếp thị",
+    "marketingSub": "Nhận tin sự kiện và gợi ý qua thông báo.",
+    "night": "Thông báo ban đêm",
+    "nightSub": "Nhận cả trong khoảng 21h–8h sáng.",
+    "saveFailed": "Không lưu được. Vui lòng thử lại."
   },
   "inbox": {
     "title": "Thông báo",
@@ -997,14 +993,9 @@
     "emptyOrdersTitle": "Chưa có đơn hàng nào",
     "emptyOrdersBody": "Gọi món từ thực đơn đã quét và lịch sử sẽ hiện ở đây.",
     "emptyScansTitle": "Chưa có lượt quét nào",
-    "emptyScansBody": "Quét thực đơn và các món bạn đã xem sẽ tập hợp ở đây.",
     "dishes": "Món ăn",
     "receiptDate": "NGÀY",
     "receiptLocation": "ĐỊA ĐIỂM",
     "receiptTotal": "TỔNG"
-  },
-  "ota": {
-    "ready": "Bản cập nhật đã sẵn sàng",
-    "apply": "Áp dụng"
   }
 }

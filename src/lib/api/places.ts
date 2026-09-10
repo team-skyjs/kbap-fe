@@ -8,6 +8,7 @@
  * expo-location 접근 = 지연 require(P-192 관례 — 구 런타임 번들 동승 시 크래시 0).
  * 응답 어댑터는 방어적(주소 키 이형 수용).
  */
+import { track } from '@/lib/net/inflight';
 import { api, apiLang } from './client';
 
 /** 실위치 불가 시 폴백 — 강남역(스웨거 예시). 검색 좌표 옵셔널 확정 시 폴백 제거 지점. */
@@ -39,7 +40,7 @@ async function currentCoord(): Promise<Coord> {
       status = (await Location.requestForegroundPermissionsAsync()).status;
     }
     if (status !== 'granted') return REVIEW_PLACE_FALLBACK_COORD;
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const pos = await track(Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })); // #109 5R
     const coord = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
     coordCache = { at: Date.now(), coord };
     return coord;

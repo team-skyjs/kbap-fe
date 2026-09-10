@@ -15,6 +15,7 @@
  * failures set `error` ('network' vs 'generic' — the login screen's copy).
  * ⚠️ NATIVE ONLY (Firebase/google-signin native modules) — 재빌드 필요.
  */
+import { track as trackInflight } from '@/lib/net/inflight'; // analytics track과 이름 충돌 회피
 import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -55,7 +56,9 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
     return exchangeLogin(idToken);
   };
 
-  const signInWithGoogle = async () => {
+  // Codex #109 8R: 관문 = 함수 전체(hasPlayServices·nonce 해시·exchange의 getIdToken 포함) —
+  // 내부 await 개별 track은 사이 창이 샌다
+  const signInWithGoogle = (): Promise<void> => trackInflight((async () => {
     setError(null);
     setPhase('google');
     try {
@@ -89,9 +92,9 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       console.log('[auth] google error', e);
       setError(/network|NETWORK|fetch|connect/i.test(String((e as Error)?.message ?? e)) ? 'network' : 'generic');
     }
-  };
+  })());
 
-  const signInWithApple = async () => {
+  const signInWithApple = (): Promise<void> => trackInflight((async () => { // 8R: 함수 전체 관문
     setError(null);
     setPhase('apple');
     try {
@@ -103,7 +106,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       const c = await AppleAuthentication.signInAsync({
         requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
         nonce: hashedNonce,
-      });
+      }); // #109 5R
       if (!c.identityToken) throw new Error('apple sign-in returned no identityToken');
       await signInWithCredential(getAuth(), AppleAuthProvider.credential(c.identityToken, rawNonce));
       console.log('[auth] firebase session (apple) uid =', getAuth().currentUser?.uid);
@@ -123,7 +126,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
       console.log('[auth] apple error', e);
       setError(/network|NETWORK/i.test(String((e as Error)?.message ?? e)) ? 'network' : 'generic');
     }
-  };
+  })());
 
   return {
     phase, // which provider is mid-flight (drives per-button spinners)

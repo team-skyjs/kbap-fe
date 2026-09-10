@@ -56,6 +56,7 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: () => 0, linear: () => 0 },
   };
 });
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null })); // P-339 ②: 홈 신고 플로우 표면 목
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
@@ -69,6 +70,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/',
   useFocusEffect: () => {},
+  useLocalSearchParams: () => ({}), // Codex #80 P1: 음식 탭 See all 파라미터 수신
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
@@ -100,7 +102,7 @@ jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => mockUseInfiniteFoods(),
   useFoods: () => ({ data: [] }),
 }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
 // P-216: 홈 전 콘텐츠 훅 표면 목 — 빈 데이터 = 섹션 숨김(이 스위트의 관심사 밖)
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: undefined }) }));
 
@@ -178,7 +180,8 @@ it('음식 탭: 에러 → 헤더(제목·검색바) 미렌더, 정상 → 렌�
 
   mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, ...FOODS_EXTRA, data: [] });
   const okTree = render(<Food />);
-  expect(texts(okTree, 'food.title')).toBeGreaterThanOrEqual(1); // 정상은 헤더 유지
+  // P-318: 세그먼트(food.title 탭) 소멸 — 정상 헤더 표면 = 검색바로 잠금
+  expect(texts(okTree, 'food.searchPlaceholder')).toBeGreaterThanOrEqual(1);
 });
 
 it('프로필 탭: 에러 → J3 렌더, 백지 아님', () => {

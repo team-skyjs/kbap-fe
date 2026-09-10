@@ -58,6 +58,16 @@ jest.mock('@/lib/api/client', () => ({
   setSessionGenerationProvider: jest.fn(),
 }));
 
+
+// P-322 v2: 저장 세션 = 단일 JSON 레코드(env 동승) — 이 스위트는 "같은 환경" 전제
+// (불일치·v1 정리 판정은 envKey450 스위트가 잠근다)
+const seedSession = (access: string, refresh: string) =>
+  mockStore.set('kbap.auth.session.v2', JSON.stringify({ access, refresh, env: 'https://prod.kbap.site' }));
+const storedAccess = (): string | undefined => {
+  const raw = mockStore.get('kbap.auth.session.v2');
+  return raw ? (JSON.parse(raw) as { access: string }).access : undefined;
+};
+
 const flushReads = () => {
   mockPendingReads.forEach((f) => f());
   mockPendingReads = [];
@@ -89,8 +99,7 @@ const sess = () => require('../useSession') as typeof import('../useSession');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 it('🔴 레이스 재현: 읽기 시작 → clearTokens → 늦은 resolve — 지운 토큰이 부활하면 안 된다', async () => {
-  mockStore.set('kbap.auth.access.v1', 'mina-access');
-  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  seedSession('mina-access', 'mina-refresh');
   const t = tokens();
   mockDelayReads = true;
   const inflight = t.loadTokens(); // 부트(installBeAuth) 읽기 시작 — pending
@@ -102,15 +111,13 @@ it('🔴 레이스 재현: 읽기 시작 → clearTokens → 늦은 resolve — 
 });
 
 it('정상 부트(정리 없음): 읽기 결과가 캐시로 유지된다', async () => {
-  mockStore.set('kbap.auth.access.v1', 'a');
-  mockStore.set('kbap.auth.refresh.v1', 'r');
+  seedSession('a', 'r');
   const t = tokens();
   await expect(t.loadTokens()).resolves.toEqual({ access: 'a', refresh: 'r' });
 });
 
 it('freshInstall: 마커 없음+토큰 잔존 → 전부 wipe + 세션 스토어 게스트 확정 + Firebase 무조건 signOut', async () => {
-  mockStore.set('kbap.auth.access.v1', 'mina-access');
-  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  seedSession('mina-access', 'mina-refresh');
   sess().initSessionState(true); // 부트 레이스가 회원으로 선고착한 상황
   await expect(fresh().cleanupIfFreshInstall()).resolves.toBe(true);
   await expect(tokens().loadTokens()).resolves.toBeNull();
@@ -121,16 +128,14 @@ it('freshInstall: 마커 없음+토큰 잔존 → 전부 wipe + 세션 스토어
 it('freshInstall: 마커 있음 → 토큰·세션 유지(정리 미실행)', async () => {
   const AS = require('@react-native-async-storage/async-storage') as { setItem: (k: string, v: string) => Promise<void> };
   await AS.setItem('kbap.installed.v1', '1');
-  mockStore.set('kbap.auth.access.v1', 'a');
-  mockStore.set('kbap.auth.refresh.v1', 'r');
+  seedSession('a', 'r');
   await expect(fresh().cleanupIfFreshInstall()).resolves.toBe(false);
   await expect(tokens().loadTokens()).resolves.toEqual({ access: 'a', refresh: 'r' });
   expect(mockLogOut).not.toHaveBeenCalled();
 });
 
 it('게스트 진입(logoutLocalFirst) — 로컬 경계 먼저, 서버 logout은 백그라운드(pending이어도 resolve)', async () => {
-  mockStore.set('kbap.auth.access.v1', 'mina-access');
-  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  seedSession('mina-access', 'mina-refresh');
   sess().initSessionState(true); // 반쪽 세션(회원 고착) 상황
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const be = require('../beAuth') as typeof import('../beAuth');
@@ -141,8 +146,7 @@ it('게스트 진입(logoutLocalFirst) — 로컬 경계 먼저, 서버 logout�
 });
 
 it('진행 중 refresh가 로그아웃 경계 이후 resolve해도 재부활 금지 (세션 세대 가드)', async () => {
-  mockStore.set('kbap.auth.access.v1', 'mina-access');
-  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  seedSession('mina-access', 'mina-refresh');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const be = require('../beAuth') as typeof import('../beAuth');
   be.installBeAuth();
@@ -159,8 +163,7 @@ it('진행 중 refresh가 로그아웃 경계 이후 resolve해도 재부활 금
 });
 
 it('logoutBe 서버 대기 창에서 시작한 refresh도 부활 금지 — 경계 = 로컬 정리 선행 통일', async () => {
-  mockStore.set('kbap.auth.access.v1', 'mina-access');
-  mockStore.set('kbap.auth.refresh.v1', 'mina-refresh');
+  seedSession('mina-access', 'mina-refresh');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const be = require('../beAuth') as typeof import('../beAuth');
   be.installBeAuth();
@@ -179,8 +182,7 @@ it('logoutBe 서버 대기 창에서 시작한 refresh도 부활 금지 — 경�
 });
 
 it('낡은 refresh의 finally가 새 뮤텍스를 지우지 않는다 — 자기 프라미스일 때만 해제', async () => {
-  mockStore.set('kbap.auth.access.v1', 'a1');
-  mockStore.set('kbap.auth.refresh.v1', 'r1');
+  seedSession('a1', 'r1');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const be = require('../beAuth') as typeof import('../beAuth');
   be.installBeAuth();
@@ -237,7 +239,7 @@ it('ABA: save A 유예 → 경계 → 새 로그인 save B → A 재개 — B �
   await expect(saveA).resolves.toBe(false); // A는 폐기
   await expect(saveB).resolves.toBe(true); // B는 정상 커밋
   await expect(t.loadTokens()).resolves.toEqual({ access: 'new-a', refresh: 'new-r' }); // B 보존
-  expect(mockStore.get('kbap.auth.access.v1')).toBe('new-a'); // A의 되돌림이 B를 지우면 안 된다
+  expect(storedAccess()).toBe('new-a'); // A의 되돌림이 B를 지우면 안 된다
 });
 
 it('pending 로그인 교환 중 게스트 진입 → 교환 응답 폐기(cancelled) — 회원 복귀 금지', async () => {
@@ -290,12 +292,11 @@ it('커밋-직전 캔슬의 undo도 소유자 범위 — 교체 로그인 B 토�
   const res = await be.exchangeLogin('idtoken');
   expect(res.cancelled).toBe(true);
   await expect(t.loadTokens()).resolves.toEqual({ access: 'b-a', refresh: 'b-r' }); // A 캔슬 undo가 B를 지우면 안 됨
-  expect(mockStore.get('kbap.auth.access.v1')).toBe('b-a');
+  expect(storedAccess()).toBe('b-a');
 });
 
 it('doRefresh — 저장 resolve 직후 경계 = 성공 보고 금지(재시도 취소)', async () => {
-  mockStore.set('kbap.auth.access.v1', 'old-a');
-  mockStore.set('kbap.auth.refresh.v1', 'old-r');
+  seedSession('old-a', 'old-r');
   const t = tokens();
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const be = require('../beAuth') as typeof import('../beAuth');
@@ -312,8 +313,7 @@ it('doRefresh — 저장 resolve 직후 경계 = 성공 보고 금지(재시도 
 });
 
 it('정상 refresh(경계 무개입) = 저장·true 회귀', async () => {
-  mockStore.set('kbap.auth.access.v1', 'old-a');
-  mockStore.set('kbap.auth.refresh.v1', 'old-r');
+  seedSession('old-a', 'old-r');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const be = require('../beAuth') as typeof import('../beAuth');
   be.installBeAuth();

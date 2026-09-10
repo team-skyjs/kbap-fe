@@ -1,10 +1,12 @@
 /**
- * Stars — rating display. Single Star supports partial fill via a clip rect
- * (ported from mockup icons.jsx, Math.random id → stable React.useId).
+ * Stars — rating display. 부분 채움은 **View 오버레이 + overflow hidden**으로 자른다
+ * (SVG clipPath 폐기 — P-375/KB-539: Android react-native-svg가 `url(#id)` 참조를
+ * 못 풀어 채움 Path가 통째로 클립됐다. P-349 vectorEffect 충돌에 이은 두 번째
+ * 플랫폼 사고라 클립 의존 자체를 없애 양 플랫폼 동일 경로로 만든다).
  */
 import * as React from 'react';
 import { View } from 'react-native';
-import Svg, { ClipPath, Defs, Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { color as C, font } from '@/lib/theme';
 import { Txt } from './Txt';
 
@@ -33,31 +35,42 @@ export function BookmarkStar({ saved = false, size = 16 }: { saved?: boolean; si
   );
 }
 
+/** P-348 ①(KB-511) → P-349 ①(KB-512): viewBox 16 기준 strokeWidth가 크기에 비례
+ *  확대(48px 별 = 9px 보더) — 1px 절대값은 vectorEffect가 아니라 **strokeWidth={16/size}**
+ *  (vectorEffect non-scaling-stroke는 clipPath와 충돌 — 부분 채움이 조각만 렌더, 실기 회귀). */
 export function Star({
   size = 20,
   fillPct = 100,
   fillColor = STAR_FILL, // KB-429
   emptyColor = STAR_EMPTY,
-  sw = 1, // KB-432(4150:16468): 작성 화면 대형 별 = stroke 3 / 세부 별 = 2
 }: {
   size?: number;
   fillPct?: number;
   fillColor?: string;
   emptyColor?: string;
-  sw?: number;
 }) {
-  const rawId = React.useId();
-  const id = `st${rawId.replace(/[^a-zA-Z0-9]/g, '')}`;
-  return (
+  const pct = Math.max(0, Math.min(100, fillPct));
+  const sw = 16 / size; // 화면상 1px 고정(P-349)
+  const empty = (
     <Svg width={size} height={size} viewBox="0 0 16 16">
-      <Defs>
-        <ClipPath id={id}>
-          <Rect x="0" y="0" width={(16 * fillPct) / 100} height="16" />
-        </ClipPath>
-      </Defs>
       <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={sw} strokeLinejoin="round" />
-      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={sw} strokeLinejoin="round" clipPath={`url(#${id})`} />
     </Svg>
+  );
+  const filled = (
+    <Svg width={size} height={size} viewBox="0 0 16 16">
+      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={sw} strokeLinejoin="round" />
+    </Svg>
+  );
+  if (pct <= 0) return empty;
+  if (pct >= 100) return filled;
+  // 부분 채움 = 채운 별을 폭 pct%의 overflow hidden 상자로 가린다(SVG 클립 미사용).
+  return (
+    <View style={{ width: size, height: size }}>
+      {empty}
+      <View style={{ position: 'absolute', left: 0, top: 0, width: (size * pct) / 100, height: size, overflow: 'hidden' }}>
+        {filled}
+      </View>
+    </View>
   );
 }
 
@@ -72,7 +85,7 @@ export function Stars({
   color?: string;
 }) {
   return (
-    <View style={{ flexDirection: 'row', gap: 2 }}>
+    <View style={{ flexDirection: 'row', gap: 4 }}>
       {[0, 1, 2, 3, 4].map((i) => {
         const pct = Math.max(0, Math.min(1, value - i)) * 100;
         return <Star key={i} size={size} fillPct={pct} fillColor={color} emptyColor={STAR_EMPTY} />;

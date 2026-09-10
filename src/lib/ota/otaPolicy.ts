@@ -10,8 +10,7 @@
  */
 export const OTA_CHECK_THROTTLE_MS = 120_000; // 포그라운드 복귀 체크 스로틀 ≥2분
 
-/** prod 안전 순간 허용 라우트 — 탭 루트 3종(홈·음식 목록·프로필). */
-export const SAFE_ROUTES = ['/', '/food', '/profile'] as const;
+// P-316: SAFE_ROUTES 소멸 — prod = 항상 defer(안전 순간 판정 자체 불요).
 
 /** 진행 중 작업 화면(명시 제외) — 스캔 전 과정(+주문 카드 /scan-order 포함)·
  *  온보딩·프로필 하위 전체·리뷰 작성/수정.
@@ -23,16 +22,41 @@ const BLOCKED_ROUTE_RE: readonly RegExp[] = [
   /^\/onboarding/,
   /^\/profile\//, // 하위 전체 — 탭 루트 '/profile'은 슬래시 없음 = 비차단
   /\/review$/, // food/[id]/review 작성/수정 — /reviews(목록)는 제외 아님
+  // #109 5R: 네이티브 프라미스(소셜 로그인·촬영·위치)가 뜨는 화면 — 화면 단위 봉쇄
+  /^\/login/,
+  /^\/auth/,
+  /^\/community\/compose/,
+  // #109 6R: 루트 레벨 작업 화면 전수(src/app/*.tsx 1회 스윕) — 정책: 작업(입력·
+  // 진행 유실) 화면 = 차단 / 목록·상세 = 허용. scan-order는 /^\/scan/ 접두로 기포함.
+  // notifications(멱등 토글·입력 상태 없음)·states(데모)는 허용 유지.
+  /^\/delete-account/, // 탈퇴 확정·Apple 재인증(루트 라우트 — /profile/ 접두 불일치)
+  /^\/search/, // 검색 입력 중 유실 방지
 ];
 
 export function isBlockedRoute(pathname: string): boolean {
   return BLOCKED_ROUTE_RE.some((re) => re.test(pathname));
 }
 
+/** P-304(KB-458, Sentry REACT-NATIVE-6): **부팅 가드** — 콜드 스타트 직후(b28 실측
+ *  3초 시점) reloadAsync가 expo-modules-core 56의 AppContext 해제 레이스로 네이티브
+ *  크래시(57.0.0에서 수정 — 미백포트). reload는 ① 부팅 8s 경과 ② 스플래시 종료
+ *  ③ 포그라운드(active) 전부 충족 시에만. prod 정책(항상 defer 여부)은 예진 결정 대기. */
+export const OTA_BOOT_GUARD_MS = 8_000;
+
+/** P-347(KB-509, Sentry REACT-NATIVE-8): **네트워크 정적 창** — reloadAsync로 런타임이
+ *  해제되는 중 진행 중 fetch의 reject가 죽은 런타임에 스케줄되며 EXC_BAD_ACCESS
+ *  (9/9 iOS b29 부팅 +8.0s — 부팅 가드는 나이만 보고 네트워크 진행을 안 봄).
+ *  useIsFetching·useIsMutating 둘 다 0이 이 시간 연속 유지될 때만 networkIdle. */
+export const OTA_NETWORK_IDLE_MS = 500;
+
+export function canReloadNow(opts: { bootedAt: number; now: number; splashDone: boolean; appState: string; networkIdle: boolean }): boolean {
+  return opts.now - opts.bootedAt >= OTA_BOOT_GUARD_MS && opts.splashDone && opts.appState === 'active' && opts.networkIdle;
+}
+
 export type OtaDecision = 'reload' | 'defer';
 
+/** P-316(KB-458 후속, 9/7 예진 a안): prod = **항상 defer** — reload 호출 0·배너 0,
+ *  fetch만 해두면 다음 콜드 스타트에 expo-updates가 자동 적용. 비-prod = 즉시(부팅 가드 뒤). */
 export function otaApplyDecision(opts: { prod: boolean; pathname: string; mutating: number }): OtaDecision {
-  if (!opts.prod) return 'reload'; // teamtest 등 = 즉시
-  const safe = opts.mutating === 0 && (SAFE_ROUTES as readonly string[]).includes(opts.pathname);
-  return safe ? 'reload' : 'defer';
+  return opts.prod ? 'defer' : 'reload';
 }

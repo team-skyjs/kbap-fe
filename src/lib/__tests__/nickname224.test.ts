@@ -52,7 +52,7 @@ describe('배선 — 두 계층 일원화(표면별 땜질 금지)', () => {
 
   it('ActionSheet 공용 수리 — rowText 1줄 + flexShrink(임의 긴 라벨 이중 방어)', () => {
     const sheet = read('src/components/ActionSheet.tsx');
-    expect(sheet).toMatch(/rowTextDestructive\]\} numberOfLines=\{1\}/);
+    expect(sheet).toMatch(/rowTextDisabled\]\} numberOfLines=\{1\}/); // P-318: disabled 스타일 추가 후 행 잠금 갱신
     expect(sheet).toMatch(/rowText: \{[^}]*flexShrink: 1/);
   });
 });

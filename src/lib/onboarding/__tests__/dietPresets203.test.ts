@@ -57,7 +57,7 @@ it('배선 소스 잠금 — 온보딩 스텝 플래그 분기·스킵 무주입
   expect(ob).toContain("if (step === 'presets') setRestrictions((cur) => unionResolvedCodes(dietPresets, Array.from(presets), cur));"); // 기본 체크 주입(기존 보존 — P-208 서버 매핑 기준)
   expect(ob).toContain("if (step === 'presets') return setStep(ORDER[idx + 1]);"); // 스킵 = 주입 없음(현행 동일)
   const pr = fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8') as string;
-  expect(pr).toContain('unionResolvedCodes(dietPresets, Array.from(presetSel), cur)'); // 프로필 = 합집합 적용(P-208)
+  expect(pr).not.toContain('unionResolvedCodes'); // P-339 ⑧: 프로필 프리셋 채우기 소멸(온보딩만 잔존)
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('dietPresetsEnabled: true'); // P-289 전 채널
 });
 
@@ -80,7 +80,7 @@ describe('P-208: useDietPresets 서버 스왑', () => {
     const fs = require('fs');
     const ob = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
     expect(ob).toContain('unionResolvedCodes(dietPresets, Array.from(presets), cur)');
-    expect(fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8')).toContain('unionResolvedCodes(dietPresets, Array.from(presetSel), cur)');
+    expect(fs.readFileSync('src/app/profile/restrictions.tsx', 'utf8')).not.toContain('unionResolvedCodes'); // P-339 ⑧: 프로필 프리셋 채우기 소멸(온보딩만)
     // 폴백 = 상수 파생(오프라인 온보딩 생존)
     expect(fs.readFileSync('src/lib/data/useDietPresets.ts', 'utf8')).toContain('hit?.codes ?? presetSubstanceCodes(p)');
   });

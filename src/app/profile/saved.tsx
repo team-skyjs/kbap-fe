@@ -25,7 +25,7 @@ import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnaps
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
 import type { RiskState } from '@/lib/theme';
-import { FoodGridCard } from '@/features/food/FoodCards';
+import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 
 const UNDO_MS = 5000;
 type RiskChip = 'all' | RiskState;
@@ -81,11 +81,11 @@ export default function SavedScreen() {
       ) : isLoading ? null : (
         /* P-287(4003:6696): 빈 상태 = 목록 자리(메타·칩 유지) — 공용 EmptyBlock(버튼 없음) */
         <FlatList
-          data={items}
-          keyExtractor={(b: FoodCard) => b.foodId}
+          data={padOddGrid(items)}
+          keyExtractor={(b) => b.foodId}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={styles.body}
+          contentContainerStyle={[styles.body, items.length === 0 && { flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
           onEndReachedThreshold={0.6}
           onEndReached={() => {
@@ -93,12 +93,14 @@ export default function SavedScreen() {
           }}
           ListFooterComponent={isFetchingNextPage ? <Spinner /> : null}
           ListEmptyComponent={
-            /* Codex #47 P2: 칩 필터 결과 0 ≠ 저장 0 — 저장분이 있으면 필터 문구 */
-            (list ?? []).length > 0 ? (
-              <EmptyBlock label={t('saved.filterEmpty')} testID="saved-filter-empty" />
-            ) : (
-              <EmptyBlock label={t('saved.emptyTitle')} testID="saved-empty" />
-            )
+            /* Codex #47 P2 + P-330: 필터 0 ≠ 저장 0, 둘 다 리스트 영역 세로 중앙 */
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              {(list ?? []).length > 0 ? (
+                <EmptyBlock label={t('saved.filterEmpty')} testID="saved-filter-empty" />
+              ) : (
+                <EmptyBlock label={t('saved.emptyTitle')} testID="saved-empty" />
+              )}
+            </View>
           }
           ListHeaderComponent={
             <View style={{ gap: 4 }}>
@@ -122,6 +124,7 @@ export default function SavedScreen() {
             </View>
           }
           renderItem={({ item }) => (
+            isGridPad(item) ? <View style={styles.gridCell} testID="saved-grid-pad" /> : (
             <View style={styles.gridCell}>
               <FoodGridCard
                 style={styles.gridCard}
@@ -134,6 +137,7 @@ export default function SavedScreen() {
                 onBookmark={() => onRemove(item)}
               />
             </View>
+            )
           )}
         />
       )}
@@ -153,12 +157,12 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingHorizontal: 20, paddingBottom: 40 },
-  meta: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingVertical: 8 },
+  meta: { flexDirection: 'row', alignItems: 'baseline', gap: 4, paddingTop: 8, paddingBottom: 8, paddingHorizontal: 4 }, // A-SV-01(KB-486: 좌 24 = body 20+4, gap 4)
   metaCount: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
   metaSub: { fontSize: 14, fontWeight: '400', color: C.ink3 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 12 },
-  gridRow: { gap: 10 },
-  gridCell: { flex: 1, marginBottom: 10 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingTop: 0, paddingBottom: 12 }, // A-SV-02(메타→칩 8 = 메타 pb8)
+  gridRow: { gap: 17 }, // A-SV-03
+  gridCell: { flex: 1, marginBottom: 17 }, // A-SV-03
   gridCard: { width: '100%' }, // 셀(FlatList numColumns)이 폭 소유 — 홈 47% 오버라이드
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32 },

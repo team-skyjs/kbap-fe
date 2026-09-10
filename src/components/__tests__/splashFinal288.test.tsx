@@ -226,7 +226,7 @@ it('배선·네이티브 구성 소스 잠금 — hideAsync 프레임 활성·�
   const splash = app.expo.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
   expect(splash.backgroundColor).toBe('#FFFFFF'); // 흰 고정(다크 변형 없음)
   expect(splash.image).toBe('./assets/images/splash-mark-ios.png');
-  expect(splash.imageWidth).toBe(81); // P-291: 타이트 캔버스(245×285) — 마크 화면상 81pt
+  expect(splash.imageWidth).toBe(95); // P-309(Codex #68 P2): 95 ≈ 81.614×285/245 — 실폭 81.67pt(JS 81.614 정합)
   expect(splash.android.image).toBe('./assets/images/splash-mark-android.png');
   expect(splash.android.imageWidth).toBe(131); // 안드 원형 마스크 캔버스(396) 보정
 });
@@ -244,5 +244,6 @@ it('P-291 viewBox 정정 소스 잠금 — K 라운드 캡(y<0)이 잘리지 않
   expect(assetsSrc).toContain('viewBox="0 -1.528 18.551 21.528"');
   expect(assetsSrc).toContain('height = 21.528');
   expect(assetsSrc).not.toContain('viewBox="0 0 18.551 20"');
-  expect(fs.readFileSync('src/components/StickyHeader.tsx', 'utf8')).toContain('<AppBarMark height={21.528} />');
+  // A-HM-01(KB-486): 앱바 글리프 높이 20(시안) — viewBox 좌표계(캡 -1.528)는 유지
+  expect(fs.readFileSync('src/components/StickyHeader.tsx', 'utf8')).toContain('<AppBarMark height={20} />');
 });

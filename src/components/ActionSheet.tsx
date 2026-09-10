@@ -17,7 +17,6 @@ import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { IconClose } from '@/components/icons';
 
 /** 위험도 red(#cf3a2c)와 구분되는 destructive 버건디 — 의미색 예약 보호. */
 export const DESTRUCTIVE = '#8e2f3c';
@@ -26,11 +25,15 @@ export interface ActionSheetItem {
   key: string;
   label: string;
   icon?: ReactNode;
+  /** P-342 ②(KB-503): 라벨 우측 트레일링 노드 — NEW "Coming soon" 칩 등 */
+  trailing?: ReactNode;
   destructive?: boolean;
   onPress: () => void;
   /** P-190: 탭 시 자동 onClose 생략 — 페이즈 전환형(신고/차단)용. onClose가 플로우
    *  전체를 언마운트하는 소비처에서 조기 close가 전환을 죽이던 버그의 구조 수정. */
   keepOpen?: boolean;
+  /** P-318: 비활성 행(예: NEW 정렬 — KB-439 배포 전) — 탭 무시, 색만 감쇠(P-151 프레임 불변). */
+  disabled?: boolean;
 }
 
 export function ActionSheet({
@@ -59,15 +62,14 @@ export function ActionSheet({
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
-            <Pressable hitSlop={10} onPress={onClose} style={styles.close}>
-              <IconClose size={18} color={C.ink3} />
-            </Pressable>
+            {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭 */}
           </View>
           <View style={styles.card}>
             {items.map((it, i) => (
               <Pressable
                 key={it.key}
                 style={[styles.row, i > 0 && styles.rowDivider]}
+                disabled={it.disabled}
                 onPress={() => {
                   // P-190: keepOpen = 페이즈 전환형 — onClose(플로우 언마운트) 생략,
                   // 전환된 페이즈 렌더가 시트를 대체한다. 그 외는 현행(자동 닫힘) 무변.
@@ -76,7 +78,8 @@ export function ActionSheet({
                 }}
               >
                 {it.icon}
-                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive]} numberOfLines={1}>{it.label}</Text>
+                <Text style={[styles.rowText, it.destructive && styles.rowTextDestructive, it.disabled && styles.rowTextDisabled]} numberOfLines={1}>{it.label}</Text>
+                {it.trailing}
               </Pressable>
             ))}
           </View>
@@ -101,12 +104,12 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 },
   avatar: { width: 28, height: 28, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink },
-  close: { padding: 4 },
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, ...shadow.sh1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 15 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair },
   rowText: { fontFamily: font.bodyBold, fontSize: 14.5, color: C.ink, flexShrink: 1 }, // P-224: 아이콘 옆 1줄 방어
   rowTextDestructive: { color: DESTRUCTIVE },
+  rowTextDisabled: { color: C.ink3 },
 });
 
 export default ActionSheet;

@@ -64,9 +64,10 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '9' } }) }));
+const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null } | undefined }));
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockFeed = jest.fn();
-jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean) => mockFeed(enabled) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
 
 import { ReviewFeed } from '../ReviewFeed';
 
@@ -90,6 +91,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockBlocked.mockReturnValue({ data: [] });
   mockIsGuest.mockReturnValue(false);
+  mockMe.mockReturnValue({ data: { id: '9', nationality: 'US' } });
   mockFeed.mockReturnValue({
     data: { pages: [{ items: [REVIEW], hasNext: false, nextCursor: null }] },
     isLoading: false, isError: false, error: null, refetch: jest.fn(),
@@ -103,7 +105,7 @@ it('카드 = P-169 문법 — 작성자·별점·서버 음식 카드·Helpful, 
   const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
   expect(texts).toContain('Amy');
   expect(texts).toContain('Server Kimbap');
-  expect(texts.some((x) => x.includes('reviews.helpful'))).toBe(true);
+  expect(texts).toContain('3'); // P-342 ①: Helpful = 아이콘+숫자(텍스트 라벨 소멸 — likes 3)
   // CardPhoto(expo-image)는 source가 문자열 — 양쪽 형태 수집
   const imgs = tree.root
     .findAll((n) => n.props?.source != null)
@@ -129,7 +131,7 @@ it('P-196: 타인 리뷰 Helpful = 공용 버튼 경유 토글 · 본인 = 비�
   });
   const tree = render();
   act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r3' && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r3', foodId: '7' });
+  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r3', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2
 });
 
 it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리뷰 작성 라우팅', () => {
@@ -144,7 +146,7 @@ it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리�
 it('P-235: 게스트 = 열람 개방(무토큰 200) — 실데이터 렌더 + 게이트 카드 소멸', () => {
   mockIsGuest.mockReturnValue(true);
   const tree = render();
-  expect(mockFeed).toHaveBeenCalledWith(true); // 게스트도 호출(목이 enabled만 전달)
+  expect(mockFeed).toHaveBeenCalledWith(true, expect.objectContaining({ countryCode: undefined })); // 게스트도 호출(필터 없음)
   const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
   expect(texts).toContain('Amy'); // 실데이터
   expect(tree.root.findAll((n) => n.props?.testID === 'feed-guest-gate')).toHaveLength(0);
@@ -228,16 +230,17 @@ describe('P-186: 타 유저 신고·차단', () => {
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
   });
 
-  it('익명(탈퇴) 리뷰 = ⋯ 부재(신고 대상 회원 없음) · 타인 = ⋯ 존재', () => {
+  it('P-339 ②: 익명(탈퇴) 리뷰도 ⋯ 존재(신고만 — 위치 통일) + anonymized 플래그 전달', () => {
     const tree = render();
-    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1); // 타인(me=9? REVIEW memberId 9 = mine)
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1').length).toBeGreaterThanOrEqual(1);
     mockFeed.mockReturnValue({
       data: { pages: [{ items: [{ ...REVIEW, id: 'r2', memberId: undefined, author: null, anonymized: true }], hasNext: false, nextCursor: null }] },
       isLoading: false, isError: false, error: null, refetch: jest.fn(),
       hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
     });
     const anon = render();
-    expect(anon.root.findAll((n) => n.props?.testID === 'feed-more-r2').length).toBe(0);
+    const more = anon.root.findAll((n) => n.props?.testID === 'feed-more-r2' && typeof n.props?.onPress === 'function');
+    expect(more.length).toBeGreaterThanOrEqual(1); // 구 "부재" 계약 대체(P-339 ②)
   });
 });
 
@@ -295,5 +298,85 @@ describe('P-297: 에러 오버레이 = 빈 목록일 때만(캐시 리스트 겹
     const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts.some((x) => x.includes('common.retry'))).toBe(true);
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-r1').length).toBe(0);
+  });
+});
+
+// P-331(KB-487): "Filter by profile" = 같은 국적 필터
+describe('P-331: 프로필 토글 = 같은 국적 리뷰 필터', () => {
+  it('토글 on → useGlobalReviews에 countryCode=내 국적 전달(off = undefined)', () => {
+    const tree = render();
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: undefined }));
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: 'US' }));
+  });
+
+  it('게스트·국적 없음 = 토글 미렌더(KB-448 규칙) — 정렬 드롭다운은 유지', () => {
+    mockIsGuest.mockReturnValue(true);
+    let tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBe(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-sort').length).toBeGreaterThanOrEqual(1);
+    mockIsGuest.mockReturnValue(false);
+    mockMe.mockReturnValue({ data: { id: '9', nationality: null } });
+    tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBe(0);
+  });
+
+  it('Codex #94 P2: on 상태에서 게스트 전환 → 필터 리셋(잔존 emptySameNat 오노출 금지)', () => {
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: 'US' }));
+    // 세션 만료 → 게스트 전환 시뮬레이션(리렌더)
+    mockIsGuest.mockReturnValue(true);
+    act(() => { tree.update(<ReviewFeed />); });
+    expect(mockFeed).toHaveBeenLastCalledWith(true, expect.objectContaining({ countryCode: undefined }));
+    const texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('reviews.emptyTitle'); // P-359: EmptyBlock 단일 라벨
+    expect(texts).not.toContain('reviews.emptySameNat');
+  });
+
+  it('토글 on + 0건 → emptySameNat 카피(off 빈 상태는 emptyBody 유지)', () => {
+    mockFeed.mockReturnValue({
+      data: { pages: [{ items: [], hasNext: false, nextCursor: null }] },
+      isLoading: false, isError: false, error: null, refetch: jest.fn(),
+      hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+    });
+    const tree = render();
+    let texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('reviews.emptyTitle'); // P-359: EmptyBlock 단일 라벨
+    act(() => tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    texts = tree.root.findAll((n) => typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('reviews.emptySameNat');
+  });
+});
+
+describe('P-371(KB-534): 컨트롤 행 좌측 — 게스트/국적 없음 = 라벨, 회원 = 토글', () => {
+  // Txt 래퍼 경유라 합성/호스트 노드가 함께 잡힘 — 호스트 노드만 센다
+  const labels = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => n.props?.testID === 'feed-all-reviews-label' && typeof n.type === 'string');
+
+  it('게스트 = "All reviews" 라벨 렌더 + 토글 스위치 없음', () => {
+    mockIsGuest.mockReturnValue(true);
+    const tree = render();
+    expect(labels(tree)).toHaveLength(1);
+    expect(labels(tree)[0].props.children).toBe('reviews.allReviews');
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle')).toHaveLength(0);
+  });
+
+  it('회원 국적 null = 라벨(토글 조건 동일)', () => {
+    mockMe.mockReturnValue({ data: { id: '9', nationality: null } });
+    const tree = render();
+    expect(labels(tree)).toHaveLength(1);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle')).toHaveLength(0);
+  });
+
+  it('회원 국적 있음 = 현행 토글, 라벨 없음', () => {
+    const tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBeGreaterThanOrEqual(1);
+    expect(labels(tree)).toHaveLength(0);
   });
 });

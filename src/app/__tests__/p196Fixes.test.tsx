@@ -62,7 +62,7 @@ it('② 4탭 배선 소스 잠금 — 홈·Food·커뮤니티 피드·프로필 
   // 홈·프로필: 에러 블록이 스크롤(paddingTop headerH) 안에 있던 구 배치 소멸 —
   // 루트 조기 return 분기(스크롤 밖)로만 존재
   const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
-  expect(home.indexOf('ScreenCenterFill')).toBeLessThan(home.indexOf('Animated.ScrollView'));
+  expect(home.indexOf('ScreenCenterFill')).toBeLessThan(home.indexOf('Animated.FlatList'));
 });
 
 it('③ 스캔 X-브래킷 겹침 0 — 상단 브래킷 = X 세이프존 아래(전 insets 범위)', () => {

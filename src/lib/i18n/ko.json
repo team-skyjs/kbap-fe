@@ -36,17 +36,17 @@
     "terms": "계속하면 서비스 이용약관에 동의하고 개인정보 처리방침을 확인한 것으로 간주돼요.",
     "errorGeneric": "로그인이 완료되지 않았어요. 다시 시도해 주세요.",
     "errorNetwork": "네트워크 오류 — 연결을 확인하고 다시 시도해 주세요.",
-    "termsPrefix": "계속 진행하면 ",
+    "termsPrefix": "계속하면 ",
     "termsTos": "이용약관",
-    "termsAnd": " 동의 및 ",
+    "termsAnd": "에 동의하고 ",
     "termsPrivacy": "개인정보 처리방침",
-    "termsSuffix": " 확인으로 간주됩니다."
+    "termsSuffix": "을 확인한 것으로 간주해요."
   },
   "gate": {
     "riskTitle": "나만의 안전 등급을 확인하세요",
     "riskSub": "가입하고 못 먹는 것을 등록하면 모든 요리를 나에게 맞춰 평가해 드려요.",
     "helpfulTitle": "좋은 리뷰를 빛나게 해 주세요",
-    "helpfulSub": "가입하면 리뷰에 '도움됐어요'를 남겨 다른 여행자를 도울 수 있어요.",
+    "helpfulSub": "가입하면 리뷰에 '도움돼요'를 남겨 다른 여행자를 도울 수 있어요.",
     "writeTitle": "이 요리에 대한 내 생각 남기기",
     "writeSub": "가입하고 리뷰를 남겨 다음 여행자가 안심하고 먹을 수 있게 도와주세요.",
     "scanTitle": "메뉴판을 스캔해 안전한 음식 찾기",
@@ -56,8 +56,8 @@
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
     "keepBrowsing": "계속 둘러보기",
-    "reportTitle": "리뷰를 신뢰할 수 있게 지켜주세요",
-    "reportSub": "가입하면 리뷰를 신고할 수 있고, 저희가 검토해 드려요."
+    "reportTitle": "리뷰의 신뢰를 지켜 주세요",
+    "reportSub": "가입하면 리뷰를 신고할 수 있어요. 신고 내용은 K-Bap에서 확인해요."
   },
   "lock": {
     "verdictTitle": "나만의 안전 등급",
@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "리뷰 수정",
-    "viewTitle": "내 리뷰",
     "save": "변경사항 저장",
+    "savedToast": "리뷰를 수정했어요",
     "delete": "이 리뷰 삭제",
-    "posted": "{{when}} 작성",
-    "noBody": "별점만 남기고 내용은 작성하지 않았어요.",
     "notFound": "이 리뷰는 더 이상 볼 수 없어요.",
     "deleteConfirmTitle": "이 리뷰를 삭제할까요?",
     "deleteConfirmBody": "리뷰가 영구적으로 삭제돼요. 되돌릴 수 없어요."
@@ -96,6 +94,8 @@
     "title": "음식 둘러보기",
     "sub": "모든 요리에 내 위험도가 표시돼요.",
     "searchPlaceholder": "음식 또는 재료 검색…",
+    "sort_popular": "인기순",
+    "sort_new": "최신순",
     "categories": {
       "all": "전체",
       "stews": "찌개·탕",
@@ -104,7 +104,8 @@
       "bbq": "구이",
       "street": "분식",
       "sides": "반찬"
-    }
+    },
+    "sortNewSoon": "준비 중"
   },
   "search": {
     "placeholder": "음식, 재료 검색…",
@@ -114,8 +115,6 @@
     "popular": "지금 인기",
     "resultCount": "{{count}}개 결과",
     "noResultsTitle": "검색 결과가 없어요",
-    "noResultsBody": "아직 카탈로그에 없는 요리일 수 있어요. 다른 이름으로 검색하거나 인기 요리를 둘러보세요.",
-    "backToPopular": "인기 요리 보기",
     "samples": [
       "김치찌개",
       "새우젓",
@@ -131,7 +130,6 @@
     "hoursAgo": "{{count}}시간 전",
     "seeMore": "더보기",
     "emptyTitle": "아직 글이 없어요",
-    "emptyBody": "첫 번째로 팁이나 발견을 공유해 보세요.",
     "guestGateTitle": "계속 보려면 가입하세요",
     "guestGateSub": "게스트는 첫 페이지까지만 볼 수 있어요.",
     "blockedToast": "차단했어요. 이제 그 사용자의 콘텐츠가 보이지 않아요.",
@@ -288,17 +286,20 @@
     "errNotMenu": "메뉴판으로 보이지 않아요. 다시 찍어 주세요.",
     "errBusy": "메뉴를 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
     "errOutage": "스캔을 완료하지 못했어요. 횟수 차감 없이 다시 시도할 수 있어요.",
-    "errProcessing": "이미 처리 중인 스캔 요청이에요. 잠시만 기다려 주세요.",
+    "errProcessing": "이미 스캔을 처리하고 있어요. 잠시만 기다려 주세요.",
     "quotaTitle": "무료 스캔을 모두 사용했어요",
-    "quotaBody": "리뷰를 작성하면 스캔을 무제한으로 이용할 수 있어요.",
+    "quotaBody": "리뷰를 1건 작성하면 스캔을 무제한으로 이용할 수 있어요.",
     "quotaCta": "리뷰 작성하기",
     "later": "나중에",
     "errUpload": "사진을 올리지 못했어요. 다시 시도해 주세요.",
     "stayHint": "30~40초 정도 걸릴 수 있어요. 앱을 벗어나면 결과를 놓칠 수 있어요.",
     "sortMenu": "메뉴판 순",
-    "sortSafety": "위험도 낮은 순",
+    "safeOnly": "'안전' 판정만",
+    "sortPriceDesc": "가격 높은순",
+    "sortPriceAsc": "가격 낮은순",
+    "resultsSubSafe": "전체 {{total}} 중 '안전' 판정 {{safe}}",
+    "safeEmpty": "이 메뉴에는 '안전' 판정 음식이 없어요",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요.",
-    "searchOnNaver": "네이버에서 검색",
     "searchOnGoogle": "구글에서 검색",
     "resultsEmpty": "스캔 결과가 없어요"
   },
@@ -355,6 +356,7 @@
     "spiceTitle": "맵기 허용치",
     "spiceUnset": "미설정",
     "showAll": "전체 보기 ({{count}})",
+    "showAllEmpty": "전체 보기",
     "showLess": "접기",
     "dietTitle": "식단·종교·알레르기",
     "showAllLink": "전체 보기",
@@ -366,7 +368,8 @@
     "dietSavedBody": "못 먹는 재료 목록도 확인하고 수정할까요?",
     "dietSavedYes": "못 먹는 재료 수정",
     "dietSavedNo": "완료",
-    "myFoods": "내 음식"
+    "myFoods": "내 음식",
+    "guestTitle": "로그인이 필요해요"
   },
   "editProfile": {
     "title": "프로필 수정",
@@ -416,18 +419,10 @@
   },
   "review": {
     "title": "리뷰 쓰기",
+    "photoSheetTitle": "리뷰 사진",
     "post": "게시",
     "ratingLabel": "별점 *",
     "tapToRate": "탭해서 별점 주기",
-    "ratingValue": "{{value}}/5, {{label}}",
-    "labels": [
-      "",
-      "별로",
-      "그저 그럼",
-      "괜찮음",
-      "좋음",
-      "최고"
-    ],
     "reviewLabel": "리뷰 내용",
     "placeholder": "맛은 어땠나요? 비슷한 식이 제한이 있는 여행자에게 팁을 남겨주세요.",
     "charCount": "{{count}}/500",
@@ -436,17 +431,16 @@
     "postedBody": "{{name}}에 {{rating}}점 리뷰를 등록했어요. 랭킹에도 반영돼요.",
     "done": "완료",
     "seeMyReviews": "내 리뷰 보기",
-    "photosLabel": "사진 (최대 {{max}}장)",
     "addPhoto": "사진 추가",
     "removePhoto": "사진 삭제",
     "postError": "리뷰를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "좋아요는 정렬에 영향을 주지 않아요",
     "placeRow": "어디서 드셨어요?",
     "placeSheetTitle": "장소 태그",
     "placeRecent": "최근",
     "placeNoResults": "일치하는 장소가 없어요.",
-    "placeSkip": "건너뛰기 — 장소 없이 게시",
+    "placeSkip": "건너뛰기",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
     "photoCapNote": "사진은 {{max}}장까지 추가할 수 있어요. 나머지는 제외했어요.",
     "placeNearby": "주변 장소",
@@ -477,6 +471,8 @@
     "emptyTitle": "아직 리뷰가 없어요",
     "emptyBody": "아직 리뷰가 없어요. 첫 리뷰를 남겨보세요.",
     "writeReview": "리뷰 쓰기",
+    "helpfulOwnToast": "내 리뷰에는 '도움돼요'를 누를 수 없어요",
+    "helpfulMarkedToast": "'도움돼요'를 눌렀어요",
     "lang": {
       "en": "영어",
       "th": "태국어",
@@ -502,8 +498,8 @@
     "sort_helpful": "도움 많이 된 순",
     "ratingAll": "전체 별점",
     "ratingMin": "{{min}}점 이상",
-    "filterByProfile": "프로필 필터",
-    "countryOnly": "{{code}}만"
+    "countryOnly": "{{code}}만",
+    "allReviews": "전체 리뷰"
   },
   "ranking": {
     "headerTitle": "내 랭킹",
@@ -714,28 +710,21 @@
     "lockVerdict": "로그인하면 내 기준의 위험도를 확인할 수 있어요",
     "lockIngredients": "로그인하면 이 음식과 내 프로필을 비교할 수 있어요",
     "readAll": "전체 보기",
-    "beFirstReview": "아직 리뷰가 없어요. 첫 리뷰를 남겨 보세요."
+    "beFirstReview": "아직 리뷰가 없어요. 첫 리뷰를 남겨 보세요.",
+    "ingGuestBody": "이 음식의 {{ingredient}} 사용 비율은 약 {{percent}}%예요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
+    "ingGuestBodyNoPct": "이 음식은 {{ingredient}} 사용이 흔해요. 식당마다 다를 수 있으니 사장님께 확인해 보세요."
   },
   "states": {
     "catalogTitle": "상태",
     "labelLoading": "로딩 (스켈레톤)",
     "labelEmpty": "비어 있음",
-    "labelError": "오류",
-    "labelOffline": "오프라인",
-    "labelUnable": "판단 불가",
     "loading": "불러오는 중…",
     "emptyReviewsTitle": "아직 리뷰가 없어요",
-    "emptyReviewsBody": "이 요리의 첫 리뷰를 남겨보세요 — 다음 여행자가 안심하고 먹을 수 있어요.",
-    "writeReview": "리뷰 쓰기",
     "errorTitle": "문제가 생겼어요",
     "errorBody": "지금은 불러올 수 없어요. 회원님 잘못이 아니라 저희 쪽 문제예요.",
     "offlineTitle": "오프라인 상태예요",
     "offlineBody": "메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요. 저장된 스캔은 그대로 있어요.",
-    "viewSavedScans": "저장된 스캔 보기",
-    "unableTitle": "이건 판단할 수 없어요",
-    "unableBody": "이 요리를 내 프로필 기준으로 평가할 재료 데이터가 부족해요. 드시기 전에 사장님께 물어보세요.",
-    "askOwner": "사장님께 물어보기",
-    "seeIngredients": "재료 보기"
+    "linkFailed": "링크를 열 수 없어요"
   },
   "shell": {
     "placeholderNote": "탭 콘텐츠는 화면 모듈에 있어요"
@@ -777,7 +766,10 @@
     "reviewsSub": "주문 전에 읽어보세요",
     "chipForYou": "추천",
     "chipNearby": "주변",
-    "recentEmpty": "최근 스캔이 없어요"
+    "recentEmpty": "최근 스캔이 없어요",
+    "safeForYou": "내 기준 '안전' 판정 메뉴",
+    "safeForYouSub": "못 먹는 재료 목록을 기준으로 판정했어요. 사장님께 꼭 확인하세요.",
+    "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요."
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -883,8 +875,7 @@
       "groupDiet": "식단",
       "groupReligion": "종교",
       "groupAllergy": "알레르기",
-      "apply": "내 목록에 적용",
-      "applyRow": "식단·종교·알레르기로 채우기"
+      "apply": "내 목록에 적용"
     },
     "countryLabel": "국가"
   },
@@ -963,13 +954,18 @@
   "notif": {
     "title": "알림 설정",
     "helpful": "리뷰 반응",
-    "helpfulSub": "내 리뷰에 ‘도움돼요’ 반응이 달렸을 때",
+    "helpfulSub": "내 리뷰에 '도움돼요' 반응이 달렸을 때",
     "reminder": "리뷰 작성 알림",
     "reminderSub": "주문 1시간 후 식사가 어땠는지 물어봐요",
     "nudge": "메뉴 스캔 알림",
     "nudgeSub": "가끔 점심시간에 메뉴판 스캔 알림을 보내요",
     "osOff": "시스템 설정에서 K-Bap 알림이 꺼져 있어요.",
-    "osOffCta": "시스템 설정 열기"
+    "osOffCta": "시스템 설정 열기",
+    "marketing": "광고성 정보 수신 동의",
+    "marketingSub": "이벤트와 추천 등 광고성 정보를 알림으로 받아요.",
+    "night": "야간 광고성 정보 수신 동의",
+    "nightSub": "밤 9시부터 다음 날 아침 8시 사이에도 광고성 정보를 받아요.",
+    "saveFailed": "저장하지 못했어요. 다시 시도해 주세요."
   },
   "inbox": {
     "title": "알림",
@@ -977,7 +973,7 @@
     "emptyBody": "리뷰와 스캔 관련 소식이 여기에 표시돼요.",
     "markAllRead": "모두 읽음으로 표시",
     "helpfulTitle": "내 리뷰가 도움이 됐어요",
-    "helpfulBody": "김치찌개 리뷰에 ‘도움돼요’ 반응이 달렸어요.",
+    "helpfulBody": "김치찌개 리뷰에 '도움돼요' 반응이 달렸어요.",
     "reminderTitle": "식사는 어떠셨나요?",
     "reminderBody": "주문한 메뉴에 리뷰를 남겨 보세요.",
     "noticeTitle": "K-Bap에 오신 걸 환영해요",
@@ -995,16 +991,11 @@
     "itemCount_one": "{{count}}개",
     "itemCount_other": "{{count}}개",
     "emptyOrdersTitle": "아직 주문 내역이 없어요",
-    "emptyOrdersBody": "스캔한 메뉴판에서 주문하면 여기에 쌓여요.",
+    "emptyOrdersBody": "스캔한 메뉴판에서 주문한 음식이 여기에 모여요.",
     "emptyScansTitle": "아직 스캔 기록이 없어요",
-    "emptyScansBody": "메뉴판을 스캔하면 확인한 음식이 여기에 모여요.",
     "dishes": "메뉴",
     "receiptDate": "날짜",
     "receiptLocation": "장소",
     "receiptTotal": "합계"
-  },
-  "ota": {
-    "ready": "업데이트가 준비됐어요",
-    "apply": "적용"
   }
 }

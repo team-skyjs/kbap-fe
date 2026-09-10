@@ -75,15 +75,18 @@ it('P-150: 카탈로그 = 온보딩 공용 사진 타일(카테고리 섹션) �
   expect(s).toContain('restrictionsEdit.searchPlaceholder');
 });
 
-it('타일 프레임 불변(P-103 승계) — 선택 토글 = 체크 오버레이+색만, 보더 폭·비율 동일', () => {
+it('타일 프레임 불변(P-103 승계 → P-344 갱신) — 외곽 치수 불변, 보더 1→1.5는 예진 확정(안쪽 렌더)', () => {
   const tree = render(<Host />);
   const tileStyle = () => flat(tree.root.findAll((n) => n.props?.testID === 'avtile-EGG')[0].props.style);
   const before = tileStyle();
   const egg = tree.root.findAll((n) => n.props?.testID === 'avoid-EGG' && typeof n.props?.onPress === 'function')[0];
   act(() => egg.props.onPress());
   const after = tileStyle();
-  // 메트릭 불변 — 상태 차이는 borderColor뿐
-  expect(after.borderWidth).toBe(before.borderWidth);
+  // P-344(예진 아티팩트 확정): 보더 1→1.5 — RN 보더는 안쪽 렌더라 외곽 프레임 불변.
+  // 외곽 메트릭(폭·비율·라운딩)은 여전히 동일해야 한다(P-103/P-151 취지 유지).
+  expect(before.borderWidth).toBe(1);
+  expect(after.borderWidth).toBe(1.5);
+  expect(after.width).toBe(before.width);
   expect(after.aspectRatio).toBe(before.aspectRatio);
   expect(after.borderRadius).toBe(before.borderRadius);
   expect(after.borderColor).not.toBe(before.borderColor); // 선택 = 색 전환

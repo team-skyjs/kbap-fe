@@ -47,7 +47,7 @@ it('가격 미인식(null/0) = price 생략 · 이미지 경로 없음("", 상�
   expect(body.items).toEqual([{ foodId: 9, menuName: '비빔밥', quantity: 1 }]);
 });
 
-it('위치 비동의 = 좌표 생략 + 권한 재요청 0(기존 보유 권한만 — 발주 명시)', async () => {
+it('위치 기거부(denied) = 좌표 생략 + 권한 재요청 0(P-302 이후에도 미결정만 요청)', async () => {
   mockGetPerm.mockResolvedValue({ status: 'denied' });
   await saveOrderHistory({ imagePath: 'p', items: ITEMS });
   const body = mockPost.mock.calls[0][1] as Record<string, unknown>;
@@ -98,4 +98,40 @@ it('배선 소스 잠금 — 완료 지점(P-192 리마인더와 동일) 저장 
   expect(afterModal).not.toContain('EVENTS.order_done');
   expect(fs.readFileSync('src/app/scan-order.tsx', 'utf8')).toContain('orderImagePath={imgParam || null}');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain('&img=');
+});
+
+describe('P-302(KB-455): 미결정 = 1회 요청 — 허용/거부/타임아웃 3분기', () => {
+  it('미결정 → 요청 1회 → 허용 = 좌표 첨부', async () => {
+    mockGetPerm.mockResolvedValue({ status: 'undetermined' });
+    mockRequestPerm.mockResolvedValue({ status: 'granted' });
+    await saveOrderHistory({ imagePath: 'p', items: ITEMS });
+    expect(mockRequestPerm).toHaveBeenCalledTimes(1);
+    const body = mockPost.mock.calls[0][1] as Record<string, unknown>;
+    expect(body.latitude).toBe(37.5636);
+    expect(body.longitude).toBe(126.9834);
+  });
+
+  it('미결정 → 요청 → 거부 = 무위치 저장(좌표·GPS 호출 0, 저장은 성공)', async () => {
+    mockGetPerm.mockResolvedValue({ status: 'undetermined' });
+    mockRequestPerm.mockResolvedValue({ status: 'denied' });
+    await saveOrderHistory({ imagePath: 'p', items: ITEMS });
+    const body = mockPost.mock.calls[0][1] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('latitude');
+    expect(body).not.toHaveProperty('longitude');
+    expect(mockGetPos).not.toHaveBeenCalled();
+    expect(body.items).toBeTruthy(); // 저장 자체는 진행
+  });
+
+  it('허용 + GPS 3s 침묵 = 타임아웃 → 무위치 저장', async () => {
+    jest.useFakeTimers();
+    mockGetPos.mockImplementation(() => new Promise(() => {})); // 영영 침묵
+    const p = saveOrderHistory({ imagePath: 'p', items: ITEMS });
+    await Promise.resolve(); // 권한 체크 마이크로태스크 소진
+    await Promise.resolve();
+    jest.advanceTimersByTime(3000);
+    await p;
+    jest.useRealTimers();
+    const body = mockPost.mock.calls[0][1] as Record<string, unknown>;
+    expect(body).not.toHaveProperty('latitude');
+  });
 });

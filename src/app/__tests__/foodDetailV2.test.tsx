@@ -85,7 +85,7 @@ const mockUseFoodDetail = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail() }));
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
-jest.mock('@/lib/data/bookmarks', () => ({ useToggleBookmark: () => ({ mutate: jest.fn() }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
 // P-169: 상세가 Helpful/신고 뮤테이션·모더레이션 직접 배선 — 표면 목
 const mockToggleLike = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({
@@ -94,9 +94,14 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
+// P-323: 호출 인자(countryCode) 관찰용 스파이 — 기본 구현은 아래 beforeEach에서 주입
+const mockFoodReviews = jest.fn();
 jest.mock('@/lib/data/useFoodReviews', () => ({
-  useFoodReviews: () => ({
+  useFoodReviews: (...a: unknown[]) => mockFoodReviews(...a),
+}));
+const REVIEWS_PAGE = () => ({
     refetch: jest.fn(),
+    isLoading: false,
     data: {
       pages: [
         {
@@ -113,8 +118,7 @@ jest.mock('@/lib/data/useFoodReviews', () => ({
         },
       ],
     },
-  }),
-}));
+  });
 jest.mock('@/features/scan/ScanCoachMark', () => ({ ScanCoachMark: () => null, shouldShowCoachMark: async () => false, markCoachSeen: jest.fn() }));
 // KB-431: 재료 타일 이미지 소스 — 카탈로그 훅 표면 목(react-query 의존 차단)
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
@@ -168,6 +172,7 @@ beforeEach(() => {
   mockIsGuest.mockReturnValue(false);
   mockUseMe.mockReturnValue(ME);
   mockUseFoodDetail.mockReturnValue({ data: FOOD('caution'), isLoading: false, error: null, refetch: jest.fn() });
+  mockFoodReviews.mockImplementation(() => REVIEWS_PAGE());
 });
 
 it('히어로 — 사진 4:3 풀블리드, 무사진 = 낮은 폴백 블록', () => {
@@ -325,9 +330,19 @@ describe('P-228: Ask the owner 플로팅', () => {
     expect(byId(tree, 'bottom-write').length).toBeGreaterThanOrEqual(1);
     expect(flat(tree)).toContain('detail.askOwner');
     const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
-    expect(src).toContain('paddingBottom: showBottomBar ? 107 : 40'); // P-068 여백 문법
-    // 라벨 3곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA
-    expect(src.match(/detail\.askOwner/g)?.length).toBe(3);
+    // Codex #97 3R P2: 고정 107 예약 → onLayout 실측 파생(fitLabel 2줄 시 바닥 가림 방지)
+    expect(src).toContain('paddingBottom: showBottomBar ? (barH || 107) + 12 : 40');
+    // 라벨 4곳 = FixedBottom 1 + caution 타일 풋터 + 미등록 본문 CTA + 재료 시트(P-306)
+    expect(src.match(/detail\.askOwner/g)?.length).toBe(4);
+  });
+
+  it('Codex #97 3R P2: 바 onLayout 실측 → 스크롤 하단 여백 파생(2줄 라벨 = inset 증가)', () => {
+    const tree = render(<FoodDetailScreen />);
+    const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.props?.onLayout === 'function')!;
+    act(() => bar.props.onLayout({ nativeEvent: { layout: { height: 131 } } }));
+    const sv = tree.root.findAll((n) => Array.isArray(n.props?.contentContainerStyle))[0];
+    const pad = Object.assign({}, ...sv.props.contentContainerStyle.filter(Boolean)) as { paddingBottom?: number };
+    expect(pad.paddingBottom).toBe(143); // 131 + 12
   });
 
   it('게스트 = Ask 미노출(회피 프로필 없어 질문 조립 무의미) — Write primary 단독', () => {
@@ -453,5 +468,66 @@ it('P-169: Helpful 탭 → 좋아요 API 배선(회원) — 행 오픈과 독립
   const helpful = tree.root.findAll((n) => n.props?.testID === 'helpful-r1')[0];
   const { act } = require('react-test-renderer');
   act(() => helpful.props.onPress());
-  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2
+});
+
+/* ---------- P-323(KB-448): "{국가} only" 토글 — 게스트·null 국적·서버 필터 ---------- */
+
+it('P-323 ① 게스트 = 토글 미렌더(게이트 아님)', () => {
+  mockIsGuest.mockReturnValue(true);
+  expect(byId(render(<FoodDetailScreen />), 'detail-nat-toggle')).toHaveLength(0);
+});
+
+it('P-323 ② 회원 + 국적 null(구계정) = 토글 미렌더("US only" 폴백 소멸)', () => {
+  mockUseMe.mockReturnValue({ data: { ...ME.data, nationality: null } });
+  const tree = render(<FoodDetailScreen />);
+  expect(byId(tree, 'detail-nat-toggle')).toHaveLength(0);
+});
+
+it('P-323 ③ 토글 on = 서버 countryCode 쿼리(클라 3장 교집합 폐기) + 0장 = emptySameNat', () => {
+  // 국가 필터 쿼리는 빈 결과 — 서버 필터 경로가 실제로 쓰였는지 인자로 관찰
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode ? { ...REVIEWS_PAGE(), data: { pages: [{ items: [], hasNext: false, nextCursor: null }] } } : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(mockFoodReviews).toHaveBeenCalledWith('7', 'US'); // 서버 필터 파라미터
+  expect(byId(tree, 'detail-nat-empty').length).toBeGreaterThanOrEqual(1);
+  expect(flat(tree)).not.toContain('Great and safe for me'); // 클라 교집합 렌더 아님
+});
+
+it('P-323 ④ 토글 쿼리 로딩 = 스켈레톤(공백 금지)', () => {
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode ? { ...REVIEWS_PAGE(), isLoading: true, data: undefined } : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(byId(tree, 'detail-nat-skel').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'detail-nat-empty')).toHaveLength(0);
+});
+
+it('P-323 ⑤ 국가 필터 쿼리 실패 = 에러 표면 + 재시도(빈 문구로 위장 금지 — P-007)', () => {
+  const natRefetch = jest.fn();
+  mockFoodReviews.mockImplementation((foodId: string, countryCode?: string) =>
+    countryCode
+      ? { ...REVIEWS_PAGE(), isError: true, error: new Error('HTTP 500'), data: undefined, refetch: natRefetch }
+      : REVIEWS_PAGE(),
+  );
+  const tree = render(<FoodDetailScreen />);
+  const { act } = require('react-test-renderer');
+  act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
+  expect(byId(tree, 'detail-nat-error').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'detail-nat-empty')).toHaveLength(0); // false-empty 금지
+  expect(flat(tree)).not.toContain('Great and safe for me'); // 무필터 목록으로 위장도 금지
+  const retry = tree.root.findAll((n) => n.props?.testID === 'detail-nat-error')[0]
+    .findAll((n) => typeof n.props?.onPress === 'function')[0];
+  act(() => retry.props.onPress());
+  expect(natRefetch).toHaveBeenCalled();
+});
+
+it('P-323 ⑥ 차단 갱신 — 활성 natQ도 refetch(소스 잠금: 뮤테이션 무효화는 food prefix 자동 커버)', () => {
+  const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
+  expect(src).toContain('if (natOnly) void natQ.refetch()');
 });
