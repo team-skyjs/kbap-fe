@@ -84,9 +84,10 @@ export async function fetchFoodsPage(pageParam: number | undefined, riskWire?: s
  *  종료 판정은 hasNext/nextCursor로만(빈 페이지 = 종료 아님). */
 export const FOODS_PAGE_SIZE = 20; // 서버 FoodService/BookmarkService PAGE_SIZE 동치
 
-export function useInfiniteFoods(risk?: RiskFilterChip) {
+export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boolean }) {
   const wire = riskWireOf(risk);
   return useInfiniteQuery({
+    enabled: opts?.enabled ?? true, // #112 2R ②: Saved 활성 중 비활성 browse risk 쿼리 억제
     // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지)
     queryKey: wire ? ['foods', 'list', i18n.language, wire] : ['foods', 'list', i18n.language],
     initialPageParam: undefined as number | undefined,

@@ -95,7 +95,7 @@ export function FoodExplorer({
   // saved(무필터) = 북마크 판정 소스(드레인 유지) / savedList(risk) = Saved 목록 소스
   // (riskChip 'all'이면 같은 쿼리키 = 캐시 공유, 추가 요청 없음).
   const savedTabActive = variant === 'screen' ? savedOnly : gridTab === 'saved';
-  const browse = useInfiniteFoods(riskChip);
+  const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive }); // #112 2R ②: Saved 활성 = browse 휴면
   const saved = useBookmarks();
   const savedList = useBookmarks(savedTabActive ? riskChip : 'all');
   const toggleBookmark = useToggleBookmark();
@@ -115,6 +115,13 @@ export function FoodExplorer({
   // 연속 페치(상한 없음 — 서버 5배치 상한이 유한 보장, P-332 cancelRefetch:false 문법).
   const gridQ = savedTabActive ? savedList : browse;
   const gridLen = gridQ.data?.length ?? 0;
+  // #112 2R ①: 에러 = 빈 상태보다 먼저(가짜 no-matches 금지) — 레일·그리드 공통 판정.
+  // 캐시 카드가 있으면(백그라운드 에러) 목록 유지(Codex #85 3R 원칙 승계).
+  const gridErrorBlock = (
+    <View style={styles.railState} testID="food-grid-error">
+      <QueryErrorBlock error={gridQ.error} onRetry={() => void gridQ.refetch()} />
+    </View>
+  );
   React.useEffect(() => {
     if (riskChip === 'all') return; // 무필터 = 기존 스크롤 페이징만(드레인은 saved 판정 소스 몫)
     if (gridLen < FOODS_PAGE_SIZE && gridQ.hasNextPage && !gridQ.isFetching)
@@ -302,10 +309,11 @@ export function FoodExplorer({
   );
 
   if (variant === 'screen') {
-    if (browse.isError) {
+    // #112 2R ②: 전체 화면 에러 게이트 = 활성 쿼리(gridQ — Saved 활성이면 savedList)
+    if (gridQ.isError) {
       return (
         <ScreenCenterFill>
-          <QueryErrorBlock error={browse.error} onRetry={() => void browse.refetch()} />
+          <QueryErrorBlock error={gridQ.error} onRetry={() => void gridQ.refetch()} />
         </ScreenCenterFill>
       );
     }
@@ -324,10 +332,8 @@ export function FoodExplorer({
           ListHeaderComponent={top}
           ListEmptyComponent={
             gridQ.isError ? (
-              /* #112 P2 ③: Saved+위험 칩의 쿼리 에러 = 빈 상태보다 먼저 — 가짜 "no matches" 금지 */
-              <View style={styles.railState} testID="food-grid-error">
-                <QueryErrorBlock error={gridQ.error} onRetry={() => void gridQ.refetch()} />
-              </View>
+              /* #112 1R ③→2R ①: 쿼리 에러 = 빈 상태보다 먼저 — 공통 판정 블록 */
+              gridErrorBlock
             ) : gridQ.isLoading || gridQ.hasNextPage ? (
               /* P-350: 빈 판정은 !hasNextPage && 0건일 때만 — 얇은 페이지 채움 중 = 스켈레톤 */
               <SkeletonFoodGrid />
@@ -406,13 +412,10 @@ export function FoodExplorer({
             <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
           ))}
         </View>
-      ) : browse.isError && gridTab !== 'saved' && (browse.data ?? []).length === 0 ? (
-        /* Codex #85 P2: Saved = 북마크 쿼리 독립이라 스코프 밖 + 3R: 캐시 데이터가 있으면
-           (백그라운드 refetch·fetchNextPage 실패로 data·isError 동시 노출) 레일 유지 —
-           전체 에러 블록은 보여줄 카드가 없을 때만 */
-        <View style={styles.railState} testID="home-rail-error">
-          <QueryErrorBlock error={browse.error} onRetry={() => void browse.refetch()} />
-        </View>
+      ) : gridQ.isError && gridFoods.length === 0 ? (
+        /* #112 2R ①: 활성 쿼리(gridQ — Saved 탭 = savedList) 에러도 빈 상태보다 먼저.
+           캐시 카드가 있으면(백그라운드 refetch 실패) 레일 유지(Codex #85 3R 원칙). */
+        gridErrorBlock
       ) : gridFoods.length === 0 ? (
         gridTab === 'saved' && savedFoods.length === 0 ? (
           /* 저장 자체 0건 — 공용 EmptyBlock(제목) + 본문(줄바꿈) + Browse CTA */
