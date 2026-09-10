@@ -356,6 +356,7 @@
     "spiceTitle": "辛さの許容度",
     "spiceUnset": "未設定",
     "showAll": "すべて表示（{{count}}）",
+    "showAllEmpty": "すべて表示",
     "showLess": "折りたたむ",
     "dietTitle": "食事・宗教・アレルギー",
     "showAllLink": "すべて見る",

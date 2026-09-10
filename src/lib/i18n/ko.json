@@ -356,6 +356,7 @@
     "spiceTitle": "맵기 허용치",
     "spiceUnset": "미설정",
     "showAll": "전체 보기 ({{count}})",
+    "showAllEmpty": "전체 보기",
     "showLess": "접기",
     "dietTitle": "식단·종교·알레르기",
     "showAllLink": "전체 보기",

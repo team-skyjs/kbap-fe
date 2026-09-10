@@ -352,6 +352,7 @@
     "spiceTitle": "Spice tolerance",
     "spiceUnset": "Not set",
     "showAll": "Show all {{count}}",
+    "showAllEmpty": "Show all",
     "showLess": "Show less",
     "dietTitle": "Diet, religion & allergies",
     "showAllLink": "Show all",

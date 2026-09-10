@@ -356,6 +356,7 @@
     "spiceTitle": "ระดับเผ็ดที่รับได้",
     "spiceUnset": "ยังไม่ได้ตั้งค่า",
     "showAll": "ดูทั้งหมด ({{count}})",
+    "showAllEmpty": "ดูทั้งหมด",
     "showLess": "ย่อ",
     "dietTitle": "อาหาร ศาสนา และภูมิแพ้",
     "showAllLink": "ดูทั้งหมด",
