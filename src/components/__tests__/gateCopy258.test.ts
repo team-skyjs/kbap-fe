@@ -38,11 +38,19 @@ it("'reviews' 컨텍스트·gate.reviews 키 잔존 0 — 전 소스·전 로케
     expect(typeof dict.gate.helpfulTitle).toBe('string');
     expect(typeof dict.gate.helpfulSub).toBe('string');
   }
-  expect(JSON.parse(readFileSync('src/lib/i18n/en.json', 'utf8')).gate.helpfulTitle).toBe('Help great reviews stand out');
+  expect(JSON.parse(readFileSync('src/lib/i18n/en.json', 'utf8')).gate.helpfulTitle).toBe("Mark reviews as helpful"); // P-356(KB-519) humanizer
 });
 
 it('food/[id]/reviews.tsx — 사어 게이트 제거(실개방 setter 부재 실측 — P-235 흔적)', () => {
   const list = readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
   expect(list).not.toContain('AuthGateSheet');
   expect(list).not.toContain('gateOpen');
+});
+
+it('P-356(KB-519): avoidCount 단수 변형 — en _one 2곳, 복수 기존 키 유지', () => {
+  const en = JSON.parse(readFileSync('src/lib/i18n/en.json', 'utf8')) as Record<string, Record<string, string>>;
+  expect(en.home.avoidCount_one).toBe('You avoid {{count}} ingredient');
+  expect(en.restrictionsEdit.avoidCount_one).toBe('You avoid {{count}} ingredient');
+  expect(en.home.avoidCount).toBe('You avoid {{count}} ingredients');
+  expect(en.restrictionsEdit.avoidCount).toBe('You avoid {{count}} ingredients');
 });
