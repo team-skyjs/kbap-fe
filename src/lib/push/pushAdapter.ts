@@ -9,7 +9,6 @@
  * 기획 정본: dropbox/yj/2026-08-13-푸시알림-BE-요청.md — 3종:
  *   ① Helpful 서버푸시(기본 on) ② 리뷰 유도 로컬(주문 완료 1h 후, 기본 on)
  *   ③ 리텐션 넛지 서버푸시(기본 off — 광고성, 옵트인 시각 기록: 정보통신망법).
- * BE 토큰 API = PUT /api/notifications/tokens (KB-465, X-API-Version 1.1+) — sendTokenToServer 가 배선.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -126,7 +125,7 @@ export async function requestPermission(): Promise<boolean> {
   }
 }
 
-/* ---- 토큰 등록 (KB-496 — BE PUT /api/notifications/tokens, X-API-Version 1.1+) ---- */
+/* ---- 토큰 등록 ---- */
 
 interface PushTokenRegistration {
   token: string;
@@ -135,7 +134,7 @@ interface PushTokenRegistration {
 }
 
 async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
-  await api.put('/api/notifications/tokens', reg); // X-API-Version 1.1 = 전역 기본(client.ts)
+  await api.put('/api/notifications/tokens', reg);
 }
 
 /** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함).

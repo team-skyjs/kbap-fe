@@ -77,9 +77,6 @@ export default function RootLayout() {
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
     void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
-    // KB-496(Codex #104 P1-1): 첫 토큰 upsert도 **cleanup 이후 직렬** — 재설치(Keychain 잔존
-    // 토큰 + 권한 유지)에서 upsert가 먼저 나가면 이전 회원 accessToken이 붙어 기기가 이전
-    // 회원에 연결되고, 뒤이은 로컬 정리는 서버 연결을 되돌리지 못한다.
     if (FLAGS.pushEnabled) {
       const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
       void cleanupDone.then(() => push.registerPushToken()).catch(() => {});
@@ -144,8 +141,8 @@ export default function RootLayout() {
     return () => onSessionExpired(null);
   }, [router]);
 
-  // P-192: 푸시 배선 — 언어 변경 재등록(토큰=기기 속성이라 lang 저장 필요, 정본 문서)
-  // + 알림 탭 딥링크. 앱 시작 upsert는 위 부트 effect(cleanup 직렬) 소관. 전부 플래그+lazy(어댑터) 게이트 —
+  // P-192: 푸시 배선 — 앱 시작 토큰 upsert + 언어 변경 재등록(토큰=기기 속성이라
+  // lang 저장 필요, 정본 문서) + 알림 탭 딥링크. 전부 플래그+lazy(어댑터) 게이트 —
   // pushEnabled off·구 런타임 = 전 구간 no-op.
   useEffect(() => {
     if (!FLAGS.pushEnabled) return;

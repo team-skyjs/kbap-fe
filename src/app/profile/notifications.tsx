@@ -82,8 +82,6 @@ export default function NotificationSettings() {
     void getPermissionStatus().then(setPermission);
   }, []);
 
-  // KB-496(Codex #104 P2-4): OS 설정 딥링크 복귀(AppState active) — 권한 재조회(배너 해제)
-  // + 토큰 등록. 거부→설정에서 허용 후 복귀 시 재시작 전까지 토큰 미등록이던 구멍.
   React.useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st !== 'active') return;
