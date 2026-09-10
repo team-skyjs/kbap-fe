@@ -13,6 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { choosePhotoSource } from '@/lib/data/profileImage';
+import { foodSubtitle } from '@/lib/review/foodSubtitle';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
@@ -230,11 +231,16 @@ export default function ReviewCompose() {
           )}
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RW-02 */}
             <Text style={styles.foodName} numberOfLines={1}>{food?.name ?? ''}</Text>
-            {/* " · " 구분은 P-196 잠금과 충돌 — 공백(D-3 Q9 판정과 동일) */}
-            <Text style={styles.foodKo} numberOfLines={1}>
-              {food?.nameKo && food.nameKo !== food.name ? `${food.nameKo} ` : ''}
-              {t('reviews.subtitle', { count: food?.overall?.count ?? 0 })}
-            </Text>
+            {/* P-352(KB-514): count 0 = 리뷰 수 숨김(한글명 없으면 줄 생략),
+                n≥1 = "한글명 | n reviews"(" | " 구분 — 예진 결정, 구 P-196 공백 구분 대체) */}
+            {(() => {
+              const sub = foodSubtitle(food, t);
+              return sub == null ? null : (
+                <Text style={styles.foodKo} numberOfLines={1}>
+                  {sub}
+                </Text>
+              );
+            })()}
           </View>
         </View>
         {/* §2-2: 장소 선택됨 = 장소 카드 변형(4150:16530 — 이미지 없음 pad 8/12) */}

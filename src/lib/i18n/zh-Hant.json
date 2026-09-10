@@ -392,7 +392,7 @@
     "placeSheetTitle": "標記地點",
     "placeRecent": "最近",
     "placeNoResults": "沒有符合的地點。",
-    "placeSkip": "略過 — 不帶地點發布",
+    "placeSkip": "略過",
     "deleteError": "無法刪除評價。請檢查網路後重試。",
     "photoCapNote": "最多{{max}}張照片 — 超出部分已跳過",
     "placeNearby": "附近地點",
