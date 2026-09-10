@@ -23,15 +23,15 @@ it('② 결과 0건 = ScreenCenterFill + EmptyBlock(noResultsTitle) · 고아 �
   }
 });
 
-it('③ 결과 행 = dish-item(pad12 r8 #EAEBEE·썸 58 r4 + RiskBadge 오프셋·상태 12/700) — RiskPill·blurb 소멸 · ④ popThumb r4', () => {
+it('③ P-345 → P-353 ⑤: 결과 = 음식 탭 2열 FoodGridCard(dish-item 폐기) · ④ popThumb r4', () => {
   const s = read('src/app/search.tsx');
-  expect(s).toContain("card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 8, padding: 12 }");
-  expect(s).toContain('thumb: { width: 58, height: 58, borderRadius: 4 }');
-  expect(s).toContain("thumbBadge: { position: 'absolute', top: -4, left: 3 }");
-  expect(s).toContain("cardStatus: { fontSize: 12, fontWeight: '700' }");
-  expect(s).toContain('riskTextStrong[risk]');
-  expect(s).not.toContain('<RiskPill'); // 렌더 소멸(파일 헤더 주석의 언급만 잔존)
+  expect(s).toContain('data={padOddGrid(results)}');
+  expect(s).toContain('numColumns={2}');
+  expect(s).toContain("gridRowWrap: { columnGap: 16, paddingHorizontal: 20 }"); // FoodExplorer 값 그대로
+  expect(s).toContain('<FoodGridCard');
+  expect(s).toContain('onBookmark={() => onBookmark(item)}');
+  expect(s).not.toContain('ResultCard'); // dish-item 소멸
+  expect(s).not.toContain('<RiskPill');
   expect(s).not.toContain('food.blurb');
   expect(s).toMatch(/popThumb: \{ width: 108, height: 84, borderRadius: 4/);
-  expect(s).toContain('<View style={{ height: 12 }} />'); // 행 간 12
 });

@@ -69,7 +69,7 @@ jest.mock('@/lib/data/useFoods', () => ({
 }));
 const mockToggle = jest.fn();
 const mockSaved = jest.fn();
-jest.mock('@/lib/data/bookmarks', () => ({
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }),
   useBookmarks: () => mockSaved(),
   useToggleBookmark: () => ({ mutate: mockToggle }),
 }));

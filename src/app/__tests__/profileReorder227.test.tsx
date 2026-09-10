@@ -68,7 +68,7 @@ jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => nu
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }),
 }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: undefined }) }));
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ data: [] }), useFoods: () => ({ data: [] }) }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => ({ data: { recent: [], recommended: [], authenticated: true, avoided: [] } }) }));

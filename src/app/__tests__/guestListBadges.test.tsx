@@ -39,6 +39,7 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     withTiming: (v: unknown) => v,
+    withRepeat: (v: unknown) => v,
     interpolate: () => 0,
     Extrapolation: { CLAMP: 'clamp' },
     Easing: { out: () => () => 0, quad: () => 0 },
@@ -66,7 +67,6 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 import { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
-import { ResultCard } from '../search';
 import { RiskMark } from '@/components/RiskMark';
 import { RiskBadge } from '@/components/RiskBadge';
 import type { FoodCard } from '@/lib/api/types';
@@ -97,7 +97,8 @@ const CARDS: [string, (guest: boolean) => React.ReactElement][] = [
   ['홈 FoodGridCard', (guest) => <FoodGridCard food={FOOD} risk="safe" guest={guest} saved={false} riskLabel="Safe" onPress={() => {}} onBookmark={() => {}} />],
   // KB-430 후속: 음식 탭 = FoodGridCard 재사용(BrowseCard 소멸) — 게스트 배지 미렌더 잠금 승계
   ['음식탭 FoodGridCard', (guest) => <FoodGridCard food={FOOD} risk="safe" guest={guest} saved={false} riskLabel="risk.safe" onPress={() => {}} onBookmark={() => {}} />],
-  ['검색 ResultCard', (guest) => <ResultCard food={FOOD} risk="safe" guest={guest} onPress={() => {}} />],
+  // P-353 ⑤(KB-515): 검색 = 음식 탭 FoodGridCard 재사용(ResultCard 소멸) — 잠금 승계
+  ['검색 FoodGridCard', (guest) => <FoodGridCard food={FOOD} risk="safe" guest={guest} saved={false} riskLabel="risk.safe" onPress={() => {}} onBookmark={() => {}} />],
 ];
 
 describe.each(CARDS)('%s', (_label, make) => {

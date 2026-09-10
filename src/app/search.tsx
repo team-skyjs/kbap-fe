@@ -19,10 +19,13 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, riskTextStrong, shadow, type RiskState } from '@/lib/theme';
-import { RiskBadge, Spinner, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
+import { color as C, font, radius, type RiskState } from '@/lib/theme';
+import { Spinner, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
 import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
+import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
+import { useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { placeholderKeyword, popularPhotoFoods } from '@/lib/search/discovery';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -54,6 +57,19 @@ export default function Search() {
   // 오프라인(J4)만 empty를 대체 — 서버 5xx(J3)는 로컬 콘텐츠를 가릴 이유가 없다.
   const probe = useInfiniteFoods();
   const offline = probe.isError && classifyQueryError(probe.error) === 'offline';
+
+  // P-353 ⑤(KB-515) → #116 P2 ①②: 판정 = 공용 useSavedIds(드레인 포함), 게스트 = AuthGateSheet
+  const toggleBookmark = useToggleBookmark();
+  const { ids: savedIds, ready: savedReady } = useSavedIds();
+  const [gate, setGate] = useState(false);
+  const onBookmark = (f: FoodCard) => {
+    if (isGuest) return setGate(true); // 홈/음식 탭 문법 그대로 — 무동작 금지
+    if (!savedReady) return; // #116 2R ①: 드레인 완료 전 무시
+    toggleBookmark.mutate({
+      snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
+      add: !savedIds.has(f.foodId),
+    });
+  };
 
   // P-143: 검색 유도 — placeholder 시드(진입 시마다 로테이션·재량 보고)+인기 사진
   // 섹션. 큐레이션·스왑 지점은 discovery.ts 격리(BE ⑥ 배포 시 그쪽만 교체).
@@ -190,10 +206,13 @@ export default function Search() {
         </View>
       ) : results.length > 0 ? (
         /* 2. results: live pages, cursor infinite scroll */
+        /* P-353 ⑤(KB-515): dish-item 폐기 — 음식 탭과 동일 2열 FoodGridCard(값 그대로) */
         <FlatList keyboardDismissMode="on-drag"
-          data={results}
-          keyExtractor={(f: FoodCard) => f.foodId}
-          contentContainerStyle={styles.body}
+          data={padOddGrid(results)}
+          keyExtractor={(f) => f.foodId}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRowWrap}
+          contentContainerStyle={{ paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={<Text style={styles.count}>{t('search.resultCount', { count: results.length })}</Text>}
@@ -202,10 +221,24 @@ export default function Search() {
           onEndReached={() => {
             if (search.hasNextPage && !search.isFetchingNextPage) void search.fetchNextPage();
           }}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-          renderItem={({ item }) => (
-            <ResultCard food={item} risk={riskOf(item)} guest={isGuest} onPress={() => openFood(item.foodId)} />
-          )}
+          renderItem={({ item }) =>
+            isGridPad(item) ? (
+              <View style={styles.gridCell} testID="food-grid-pad" />
+            ) : (
+              <View style={styles.gridCell}>
+                <FoodGridCard
+                  food={item}
+                  risk={riskOf(item)}
+                  guest={isGuest}
+                  saved={savedIds.has(item.foodId)}
+                  riskLabel={t(`risk.${riskOf(item)}`)}
+                  onPress={() => openFood(item.foodId)}
+                  onBookmark={() => onBookmark(item)}
+                  style={styles.gridCellCard}
+                />
+              </View>
+            )
+          }
         />
       ) : (
         /* 3. no results(P-345 → P-330 문법) — 성공+0건 = 공용 EmptyBlock 화면 중앙 */
@@ -213,39 +246,12 @@ export default function Search() {
           <EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" />
         </ScreenCenterFill>
       )}
+      {/* #116 P2 ②: 게스트 북마크 = 저장 게이트(홈/음식 탭 동일) */}
+      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>
   );
 }
 
-/** P-345(KB-506): 결과 행 = dish-item(2200:21188) — 썸 58 r4 + RiskBadge 오프셋(P-315),
- *  세로 2단 메타 + 상태 텍스트(홈 gstatus 동형). RiskPill·blurb 소멸. */
-export function ResultCard({ food, risk, guest, onPress }: { food: FoodCard; risk: RiskState; guest: boolean; onPress: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.thumb}>
-        {food.photoUrl ? (
-          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
-        ) : (
-          <View style={styles.thumbFb}>
-            <IconFood size={22} color={C.ink3} />
-          </View>
-        )}
-        {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
-        {!guest && (
-          <View style={styles.thumbBadge}>
-            <RiskBadge state={risk} />
-          </View>
-        )}
-      </View>
-      <View style={styles.cardMeta}>
-        <Text style={styles.cardName} numberOfLines={1}>{food.name}</Text>
-        {food.nameKo !== food.name && <Text style={styles.cardKo} numberOfLines={1}>{food.nameKo}</Text>}
-        {!guest && <Text style={[styles.cardStatus, { color: riskTextStrong[risk] }]}>{t(`risk.${risk}`)}</Text>}
-      </View>
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
@@ -285,16 +291,16 @@ const styles = StyleSheet.create({
   popCardName: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink, marginTop: 6 },
   popCardKo: { fontFamily: font.ko, fontSize: 11, color: C.ink2, marginTop: 1 },
 
+  // P-353 ⑤: 음식 탭 그리드 값 그대로(FoodExplorer :576-578)
+
+  gridRowWrap: { columnGap: 16, paddingHorizontal: 20 },
+
+  gridCell: { flex: 1, marginBottom: 16 },
+
+  gridCellCard: { width: '100%' },
+
   count: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, marginBottom: 12 },
   // P-345: dish-item(2200:21188) - pad12 gap12 r8 #EAEBEE 흰, 그림자 없음
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 8, padding: 12 },
-  thumb: { width: 58, height: 58, borderRadius: 4 },
-  thumbFb: { flex: 1, backgroundColor: C.surface2, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  thumbBadge: { position: 'absolute', top: -4, left: 3 }, // P-315 배지 오프셋
-  cardMeta: { flex: 1, minWidth: 0, gap: 2 },
-  cardName: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
-  cardKo: { fontSize: 12, fontWeight: '400', color: '#9196A1' },
-  cardStatus: { fontSize: 12, fontWeight: '700' }, // 색 = riskTextStrong(홈 gstatus 동형)
 
   noResults: { flex: 1, justifyContent: 'center', paddingBottom: 60 }, // P-154 ②: 상하 센터(앱 통일 — 키보드 감안 소폭 상향)
 });

@@ -13,7 +13,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
-import { IconChevron, SubHeader, Spinner } from '@/components';
+import { CardPhoto, IconChevron, SubHeader, Spinner } from '@/components';
 import { D4MapPin } from '@/components/design4Assets';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyFoods } from '@/components/Skeleton';
@@ -131,8 +131,13 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
   const { t } = useTranslation();
   return (
     <Pressable style={styles.card} onPress={onPress} testID={`order-${order.orderId}`}>
+      {/* P-353 ④(KB-515): 첫 썸네일(서버가 기본 이미지 포함 최대 4개 구성) — 없으면 핀 현행 */}
       <View style={styles.pinBox}>
-        <D4MapPin size={24} color={C.ink3} />
+        {order.thumbnails[0] ? (
+          <CardPhoto uri={order.thumbnails[0]} borderRadius={8} />
+        ) : (
+          <D4MapPin size={24} color={C.ink3} />
+        )}
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
         {/* 장소명 데이터 부재 — roadAddress가 장소 줄(있을 때), 없으면 미태그 변형 필 */}
