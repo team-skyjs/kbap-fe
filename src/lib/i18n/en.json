@@ -472,6 +472,7 @@
     "emptyTitle": "No reviews yet",
     "emptyBody": "Be the first to leave one.",
     "writeReview": "Write a review",
+    "helpfulOwnToast": "You can't mark your own review as helpful",
     "lang": {
       "en": "English",
       "th": "Thai",

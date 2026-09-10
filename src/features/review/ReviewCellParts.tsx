@@ -21,6 +21,7 @@ import { PlaceTagSheet } from '@/features/community/placeMap';
 import { TagChip } from '@/features/community/parts';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
+import { showTopToast } from '@/components/topToastStore';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
 import { IconPlus, IconSearch } from '@/components';
@@ -406,7 +407,11 @@ export function HelpfulButton({
   const isGuest = useIsGuest();
   const surface = (useSegments() as string[]).join('/') || 'root'; // P-214: 표면 = 라우트 패턴(PII 0)
   const onPress = () => {
-    if (mine) return; // 카운트 표시 전용
+    if (mine) {
+      // P-357(KB-520): 무동작 대신 안내 토스트(에러 변형 아님) — 뮤테이션·계측 0
+      showTopToast(t('reviews.helpfulOwnToast'));
+      return;
+    }
     if (isGuest) return onGuest?.();
     track(EVENTS.review_helpful_toggle, { on: !review.myLike, surface }); // P-214: 4표면 공용 한 곳
     toggle.mutate({ reviewId: review.id, foodId: foodId ?? review.foodId }); // 낙관 토글(멱등 — 가드 예외)

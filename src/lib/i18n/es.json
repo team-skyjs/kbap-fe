@@ -429,6 +429,7 @@
     "emptyTitle": "Aún no hay reseñas",
     "emptyBody": "Aún no hay reseñas. Sé el primero en dejar una.",
     "writeReview": "Escribir una reseña",
+    "helpfulOwnToast": "No puedes marcar tu propia reseña como útil",
     "lang": {
       "en": "Inglés",
       "th": "Tailandés",

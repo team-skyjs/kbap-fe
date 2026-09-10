@@ -429,6 +429,7 @@
     "emptyTitle": "还没有点评",
     "emptyBody": "还没有评价。来写下第一条吧。",
     "writeReview": "撰写点评",
+    "helpfulOwnToast": "不能给自己的评价点有帮助",
     "lang": {
       "en": "英文",
       "th": "泰文",

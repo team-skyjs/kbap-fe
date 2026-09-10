@@ -46,6 +46,8 @@ jest.mock('react-i18next', () => ({
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 const mockLikeToggle = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => ({ mutate: mockLikeToggle }) }));
+const mockToast = jest.fn();
+jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 const mockGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest() }));
 
@@ -119,11 +121,13 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
     expect(mockLikeToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
   });
 
-  it('본인(mine) = 카운트 표시 유지 + 탭 무반응(자기 투표·알림 자가 트리거 차단)', () => {
+  it('본인(mine) = 카운트 표시 유지 + 탭 = 안내 토스트 1·토글 0 (P-357/KB-520 — 자기 투표 차단 유지)', () => {
     const tree = render(<HelpfulButton review={RV} mine t={t} />);
     expect(flat(tree)).toContain('reviews.helpful'); // 숨김 아님 — 카운트 표시
     tapHelpful(tree);
     expect(mockLikeToggle).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledTimes(1);
+    expect(mockToast).toHaveBeenCalledWith('reviews.helpfulOwnToast'); // 에러 변형 아님(두 번째 인자 없음)
   });
 
   it('게스트 = onGuest 게이트(미전달이면 무반응 — 401 송신 0)', () => {
