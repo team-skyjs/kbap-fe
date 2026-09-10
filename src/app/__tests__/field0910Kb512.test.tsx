@@ -101,11 +101,11 @@ describe('④ Tag a food 시트 첫 렌더', () => {
 });
 
 describe('P-351(KB-513) 소형 2건', () => {
-  it('① 프로필 Show all — 0건 = showAllEmpty 라벨 + IconChevron iconEnd, 1건 이상 = 카운트 라벨', () => {
+  it('① 프로필 Show all — 0건 = showAllEmpty 라벨 + 꺾쇠, 1건 이상 = 카운트 라벨·꺾쇠 없음(시안 A-PF-09)', () => {
     const pf = read('src/app/(tabs)/profile.tsx');
     expect(pf).toContain("? t('profile.showAll', { count: me.restrictions.length })");
     expect(pf).toContain(": t('profile.showAllEmpty')}");
-    expect(pf).toContain('iconEnd={<IconChevron size={16} color={C.ink3} />}');
+    expect(pf).toContain('iconEnd={me.restrictions.length === 0 ? <IconChevron size={16} color={C.ink3} /> : undefined}');
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
       expect(read(`src/lib/i18n/${loc}.json`)).toContain('"showAllEmpty"');
     }

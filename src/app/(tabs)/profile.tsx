@@ -272,11 +272,12 @@ export default function Profile() {
                 })}
               </View>
               <View style={{ marginTop: -8 }}>{/* A-PF-09: 타일→Show all 8 */}
-                {/* P-351 ①(KB-513): 회피 0건 = 카운트 없는 라벨 + 꺾쇠(빈 괄호 방지) */}
+                {/* P-351 ①(KB-513): 회피 0건 = 카운트 없는 라벨 + 꺾쇠. 1건 이상은
+                    시안(A-PF-09) 그대로 — 꺾쇠 없음(시안 이탈 금지). */}
                 <Btn
                   variant="ghost"
                   onPress={() => router.push('/profile/restrictions' as Href)}
-                  iconEnd={<IconChevron size={16} color={C.ink3} />}
+                  iconEnd={me.restrictions.length === 0 ? <IconChevron size={16} color={C.ink3} /> : undefined}
                   testID="avoid-show-all"
                 >
                   {me.restrictions.length > 0
