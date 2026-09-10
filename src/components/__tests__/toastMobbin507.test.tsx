@@ -122,10 +122,18 @@ it('#108 P2 ②: 토스트 본체 box-none — 필 아래 UI 탭 투과(Close만
   expect(tt).toContain('numberOfLines={2} pointerEvents="none"');
 });
 
-describe('P-370(KB-533): 토스트 호스트 스택 — 모달 위 화면 수신·언마운트 복원', () => {
-  const { showTopToast, subscribeTopToast } = require('@/components/topToastStore') as typeof import('@/components/topToastStore');
+/** P-370 스토어 테스트 — 모듈 상태(lastMsg·pending) 격리를 위해 테스트마다 새 인스턴스. */
+function freshStore() {
+  let store!: typeof import('@/components/topToastStore');
+  jest.isolateModules(() => {
+    store = require('@/components/topToastStore') as typeof import('@/components/topToastStore');
+  });
+  return store;
+}
 
-  it('2개 구독 = 마지막(모달 위) 수신 · 해제 = 이전(루트) 복원 · 빈 스택 = 무시', () => {
+describe('P-370(KB-533): 토스트 호스트 스택 — 모달 위 화면 수신·언마운트 복원', () => {
+  it('2개 구독 = 마지막(모달 위) 수신 · 해제 = 핸드오프 후 이전(루트)이 이어받음 · 빈 스택 = 무시', () => {
+    const { showTopToast, subscribeTopToast } = freshStore();
     const root = jest.fn();
     const modal = jest.fn();
     const offRoot = subscribeTopToast(root);
@@ -133,19 +141,27 @@ describe('P-370(KB-533): 토스트 호스트 스택 — 모달 위 화면 수신
     showTopToast('a');
     expect(modal).toHaveBeenCalledTimes(1);
     expect(root).not.toHaveBeenCalled();
-    offModal(); // 모달 화면 언마운트 → 루트 복원
-    showTopToast('b');
+    offModal(); // 표시 창 내 해제 = 'a' 핸드오프(P-370 ②)
     expect(root).toHaveBeenCalledTimes(1);
+    showTopToast('b');
+    expect(root).toHaveBeenCalledTimes(2);
     offRoot();
     expect(() => showTopToast('c')).not.toThrow(); // 빈 스택 = 조용히 무시
-    // 중간 해제(루트 먼저 언마운트) — 위 호스트 유지
+  });
+
+  it('중간 해제(루트 먼저 언마운트) = top 유지·핸드오프 없음', () => {
+    const { showTopToast, subscribeTopToast } = freshStore();
     const a = jest.fn();
     const b = jest.fn();
     const offA = subscribeTopToast(a);
     const offB = subscribeTopToast(b);
-    offA();
-    showTopToast('d');
+    showTopToast('x');
     expect(b).toHaveBeenCalledTimes(1);
+    offA(); // top 아님 — 핸드오프 경로 아님
+    expect(b).toHaveBeenCalledTimes(1);
+    showTopToast('d');
+    expect(b).toHaveBeenCalledTimes(2);
+    expect(a).not.toHaveBeenCalled();
     offB();
   });
 
@@ -154,5 +170,50 @@ describe('P-370(KB-533): 토스트 호스트 스택 — 모달 위 화면 수신
     for (const f of ['src/app/scan.tsx', 'src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/food/[id]/review.tsx']) {
       expect(read(f)).toContain('<TopToastHost />');
     }
+  });
+});
+
+describe('P-370 ②(#137 P2): top 해제 핸드오프 — 표시 창 내 이전 호스트 재전달', () => {
+  it('2호스트 발화 → top 해제 = 이전 호스트 같은 key 1회 수신 / 2.5s 경과 = 미전달', () => {
+    jest.useFakeTimers();
+    const { showTopToast, subscribeTopToast } = freshStore();
+    const root = jest.fn();
+    const modal = jest.fn();
+    subscribeTopToast(root);
+    const offModal = subscribeTopToast(modal);
+    showTopToast('hello');
+    const key = (modal.mock.calls[0][0] as { key: number }).key;
+    offModal();
+    expect(root).toHaveBeenCalledTimes(1);
+    expect((root.mock.calls[0][0] as { key: number }).key).toBe(key); // 같은 key
+    // 경과 케이스 — 새 인스턴스
+    const s2 = freshStore();
+    const r2 = jest.fn();
+    const m2 = jest.fn();
+    s2.subscribeTopToast(r2);
+    const offM2 = s2.subscribeTopToast(m2);
+    s2.showTopToast('late');
+    jest.advanceTimersByTime(2600);
+    offM2();
+    expect(r2).not.toHaveBeenCalled(); // 창 밖 — 재전달 없음
+    jest.useRealTimers();
+  });
+
+  it('빈 스택 해제 = 보류 → 다음 subscribe 1회 전달(창 내), 창 밖 보류분 = 소멸', () => {
+    jest.useFakeTimers();
+    const { showTopToast, subscribeTopToast } = freshStore();
+    const solo = jest.fn();
+    const off = subscribeTopToast(solo);
+    showTopToast('held');
+    off(); // 빈 스택 — 보류
+    const next = jest.fn();
+    const offNext = subscribeTopToast(next);
+    expect(next).toHaveBeenCalledTimes(1); // 보류분 1회
+    jest.advanceTimersByTime(2600);
+    offNext(); // 창 밖 — 보류 재설정 없음
+    const later = jest.fn();
+    subscribeTopToast(later);
+    expect(later).not.toHaveBeenCalled();
+    jest.useRealTimers();
   });
 });
