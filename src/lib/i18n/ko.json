@@ -299,7 +299,6 @@
     "sortPriceAsc": "가격 낮은순",
     "resultsSubSafe": "전체 {{total}} 중 '안전' 판정 {{safe}}",
     "safeEmpty": "이 메뉴에는 '안전' 판정 음식이 없어요",
-    "showAllDishes": "전체 메뉴 보기",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요.",
     "searchOnGoogle": "구글에서 검색",
     "resultsEmpty": "스캔 결과가 없어요"

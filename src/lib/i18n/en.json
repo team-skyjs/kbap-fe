@@ -295,7 +295,6 @@
     "sortPriceAsc": "Price: low to high",
     "resultsSubSafe": "{{safe}} of {{total}} rated safe",
     "safeEmpty": "No dishes rated safe on this menu",
-    "showAllDishes": "Show all dishes",
     "missNote": "Not in our catalog yet. It should be added within a few days.",
     "searchOnGoogle": "Search on Google",
     "resultsEmpty": "No scan results"
