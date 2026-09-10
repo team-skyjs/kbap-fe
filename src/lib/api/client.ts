@@ -30,6 +30,16 @@ import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
 import { track } from '../net/inflight';
 
+/** P-378(KB-542): 서버 상관관계 id — 헤더 부재·비표준 Headers 구현 모두 undefined로.
+ *  관측 보조 값이라 여기서 예외가 새면 안 된다(원래 오류 흐름을 가려버린다). */
+function readRequestId(res: Response): string | undefined {
+  try {
+    return res.headers.get('x-request-id') ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * P-199(BE #160·161) → P-270(KB-389): **전 채널 신계약 통일** — 버전리스 경로 +
  * 헤더 3종(X-API-Version·X-OS-Version·X-App-Version) 전 요청(app-version만 예외).
@@ -265,7 +275,9 @@ async function requestInner<T>(
   // 4xx/5xx: BE wraps errors in the same envelope, so prefer its message (§0).
   if (!res.ok) {
     // 9/5 예진 승인: 5xx 관측(PLACE-001 502 계열) — 경로·상태·코드 태그만, PII 0
-    if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined);
+    // P-378(KB-542): x-request-id 동봉 — 있으면 서버 도달(그 id로 로그 직행),
+    // 없으면 게이트웨이·프록시가 낸 5xx. 헤더 접근 실패는 undefined로 흘린다.
+    if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined, readRequestId(res));
     // KB-441: MEMBER-003(회원 없음) = 좀비 세션 신호 — 핸들러에 통지(정책은 beAuth).
     // /auth/* 자체 응답은 제외(로그인·refresh 흐름은 자체 분기 — 401 경로와 동일 원칙).
     if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(requestGen);
