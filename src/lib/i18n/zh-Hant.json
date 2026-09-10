@@ -300,7 +300,7 @@
     "safeOnly": "僅顯示安全菜品",
     "sortPriceDesc": "價格由高至低",
     "sortPriceAsc": "價格由低至高",
-    "resultsSubSafe": "{{safe}} 安全 · 共 {{total}} 道",
+    "resultsSubSafe": "共{{total}}道中{{safe}}道安全",
     "safeEmpty": "此菜單沒有安全菜品",
     "showAllDishes": "顯示全部菜品",
     "missNote": "尚未收錄在資料庫中 — 幾天內會新增。",

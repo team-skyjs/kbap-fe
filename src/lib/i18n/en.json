@@ -296,7 +296,7 @@
     "safeOnly": "Safe only",
     "sortPriceDesc": "Price: high to low",
     "sortPriceAsc": "Price: low to high",
-    "resultsSubSafe": "{{safe}} safe · {{total}} dishes",
+    "resultsSubSafe": "{{safe}} safe of {{total}}",
     "safeEmpty": "No safe dishes on this menu",
     "showAllDishes": "Show all dishes",
     "missNote": "Not in our database yet — it should be added within a few days.",

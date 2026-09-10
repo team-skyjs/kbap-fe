@@ -300,7 +300,7 @@
     "safeOnly": "Chỉ món an toàn",
     "sortPriceDesc": "Giá: cao đến thấp",
     "sortPriceAsc": "Giá: thấp đến cao",
-    "resultsSubSafe": "{{safe}} an toàn · {{total}} món",
+    "resultsSubSafe": "{{safe}} an toàn trong {{total}} món",
     "safeEmpty": "Thực đơn này không có món an toàn",
     "showAllDishes": "Xem tất cả món",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",

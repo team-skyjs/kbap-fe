@@ -300,7 +300,7 @@
     "safeOnly": "Solo seguros",
     "sortPriceDesc": "Precio: de mayor a menor",
     "sortPriceAsc": "Precio: de menor a mayor",
-    "resultsSubSafe": "{{safe}} seguros · {{total}} platos",
+    "resultsSubSafe": "{{safe}} seguros de {{total}}",
     "safeEmpty": "No hay platos seguros en este menú",
     "showAllDishes": "Ver todos los platos",
     "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días.",

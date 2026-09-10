@@ -300,7 +300,7 @@
     "safeOnly": "Hanya yang aman",
     "sortPriceDesc": "Harga: tinggi ke rendah",
     "sortPriceAsc": "Harga: rendah ke tinggi",
-    "resultsSubSafe": "{{safe}} aman · {{total}} hidangan",
+    "resultsSubSafe": "{{safe}} aman dari {{total}}",
     "safeEmpty": "Tidak ada hidangan aman di menu ini",
     "showAllDishes": "Tampilkan semua hidangan",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",

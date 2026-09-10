@@ -300,7 +300,7 @@
     "safeOnly": "安全なメニューのみ",
     "sortPriceDesc": "価格が高い順",
     "sortPriceAsc": "価格が安い順",
-    "resultsSubSafe": "安全 {{safe}} · 全 {{total}}品",
+    "resultsSubSafe": "全{{total}}品のうち安全{{safe}}品",
     "safeEmpty": "このメニューに安全な料理はありません",
     "showAllDishes": "すべてのメニューを表示",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",

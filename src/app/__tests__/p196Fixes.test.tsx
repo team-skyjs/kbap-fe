@@ -79,10 +79,7 @@ it('③ 스캔 X-브래킷 겹침 0 — 상단 브래킷 = X 세이프존 아래
 it('④ 가운뎃점 구분자 전수 제거 — i18n 전 로케일 " · " 0 + 코드 조립부 0', () => {
   const fs = require('fs');
   for (const lang of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']) {
-    // P-354(KB-516) 예외: scan.resultsSubSafe는 예진 발주 카피가 " · " 포함 — 그 키만 제외
-    const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${lang}.json`, 'utf8')) as { scan: { resultsSubSafe?: string } };
-    delete j.scan.resultsSubSafe;
-    expect(JSON.stringify(j, null, 1)).not.toContain(' · ');
+    expect(fs.readFileSync(`src/lib/i18n/${lang}.json`, 'utf8')).not.toContain(' · ');
   }
   // 코드 조립 구분자 — 수정 표면 잔존 0 (legalText의 "· "는 목록 불릿(구분자 아님) — 제외)
   for (const f of [

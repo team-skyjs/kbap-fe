@@ -300,7 +300,7 @@
     "safeOnly": "เฉพาะเมนูที่ปลอดภัย",
     "sortPriceDesc": "ราคา: สูงไปต่ำ",
     "sortPriceAsc": "ราคา: ต่ำไปสูง",
-    "resultsSubSafe": "ปลอดภัย {{safe}} · ทั้งหมด {{total}} เมนู",
+    "resultsSubSafe": "ปลอดภัย {{safe}} จาก {{total}} เมนู",
     "safeEmpty": "เมนูนี้ไม่มีอาหารที่ปลอดภัย",
     "showAllDishes": "แสดงเมนูทั้งหมด",
     "missNote": "ยังไม่อยู่ในฐานข้อมูล — จะเพิ่มภายในไม่กี่วัน",

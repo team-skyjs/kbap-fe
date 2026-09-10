@@ -300,7 +300,7 @@
     "safeOnly": "Только безопасные",
     "sortPriceDesc": "Цена: по убыванию",
     "sortPriceAsc": "Цена: по возрастанию",
-    "resultsSubSafe": "{{safe}} безопасных · {{total}} блюд",
+    "resultsSubSafe": "{{safe}} безопасных из {{total}}",
     "safeEmpty": "В этом меню нет безопасных блюд",
     "showAllDishes": "Показать все блюда",
     "missNote": "Пока нет в нашей базе — появится в течение нескольких дней.",
