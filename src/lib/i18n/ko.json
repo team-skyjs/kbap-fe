@@ -40,13 +40,13 @@
     "termsTos": "이용약관",
     "termsAnd": "에 동의하고 ",
     "termsPrivacy": "개인정보 처리방침",
-    "termsSuffix": "을 확인한 것으로 간주합니다."
+    "termsSuffix": "을 확인한 것으로 간주해요."
   },
   "gate": {
     "riskTitle": "나만의 안전 등급을 확인하세요",
     "riskSub": "가입하고 못 먹는 것을 등록하면 모든 요리를 나에게 맞춰 평가해 드려요.",
     "helpfulTitle": "좋은 리뷰를 빛나게 해 주세요",
-    "helpfulSub": "가입하면 리뷰에 ‘도움돼요’를 남겨 다른 여행자를 도울 수 있어요.",
+    "helpfulSub": "가입하면 리뷰에 '도움돼요'를 남겨 다른 여행자를 도울 수 있어요.",
     "writeTitle": "이 요리에 대한 내 생각 남기기",
     "writeSub": "가입하고 리뷰를 남겨 다음 여행자가 안심하고 먹을 수 있게 도와주세요.",
     "scanTitle": "메뉴판을 스캔해 안전한 음식 찾기",
@@ -778,9 +778,9 @@
     "chipForYou": "추천",
     "chipNearby": "주변",
     "recentEmpty": "최근 스캔이 없어요",
-    "safeForYou": "내 기준 ‘안전’ 판정 메뉴",
+    "safeForYou": "내 기준 '안전' 판정 메뉴",
     "safeForYouSub": "못 먹는 재료 목록을 기준으로 판정했어요. 사장님께 꼭 확인하세요.",
-    "railFilterEmpty": "이 목록에서 ‘{{risk}}’ 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요."
+    "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요."
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -965,7 +965,7 @@
   "notif": {
     "title": "알림 설정",
     "helpful": "리뷰 반응",
-    "helpfulSub": "내 리뷰에 ‘도움돼요’ 반응이 달렸을 때",
+    "helpfulSub": "내 리뷰에 '도움돼요' 반응이 달렸을 때",
     "reminder": "리뷰 작성 알림",
     "reminderSub": "주문 1시간 후 식사가 어땠는지 물어봐요",
     "nudge": "메뉴 스캔 알림",
@@ -984,7 +984,7 @@
     "emptyBody": "리뷰와 스캔 관련 소식이 여기에 표시돼요.",
     "markAllRead": "모두 읽음으로 표시",
     "helpfulTitle": "내 리뷰가 도움이 됐어요",
-    "helpfulBody": "김치찌개 리뷰에 ‘도움돼요’ 반응이 달렸어요.",
+    "helpfulBody": "김치찌개 리뷰에 '도움돼요' 반응이 달렸어요.",
     "reminderTitle": "식사는 어떠셨나요?",
     "reminderBody": "주문한 메뉴에 리뷰를 남겨 보세요.",
     "noticeTitle": "K-Bap에 오신 걸 환영해요",
@@ -998,7 +998,7 @@
     "scanned": "스캔한 음식",
     "orderTitle": "주문 내역",
     "total": "합계",
-    "itemPending": "곧 등록돼요",
+    "itemPending": "등록 준비 중이에요",
     "itemCount_one": "{{count}}개",
     "itemCount_other": "{{count}}개",
     "emptyOrdersTitle": "아직 주문 내역이 없어요",
