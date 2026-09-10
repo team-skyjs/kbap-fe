@@ -476,3 +476,28 @@ it('#112 4R — screen 전체 화면 에러 재시도도 실패 기억 클리어
   await act(async () => { await Promise.resolve(); });
   expect(failFetch).toHaveBeenCalledTimes(2); // 영구 정지 아님 — 클리어로 재개
 });
+
+it('#112 5R ① — 칩 전환 중 도착한 옛 실패 콜백이 새 쿼리 채움을 잠그지 않는다(키 스코프 마커)', async () => {
+  let resolveFail!: (v: { isError: boolean }) => void;
+  const slowFail = jest.fn(() => new Promise<{ isError: boolean }>((r) => { resolveFail = r; }));
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: slowFail, isFetching: false });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(slowFail).toHaveBeenCalledTimes(1); // danger 채움 시도(pending)
+  // 전환: caution — 새 쿼리(같은 길이 1)
+  const fresh = jest.fn().mockResolvedValue({ isError: false });
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('2', 'caution')]), fetchNextPage: fresh, isFetching: false });
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-caution' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  await act(async () => { resolveFail({ isError: true }); await Promise.resolve(); }); // 옛(danger) 실패 도착
+  // 새 쿼리(caution)의 채움은 계속 — 옛 키 마커가 잠그지 않음
+  expect(fresh.mock.calls.length).toBeGreaterThanOrEqual(1);
+});
+
+it('#112 5R ② — Saved+All 새로고침 = 같은 키 두 관찰자라 refetch 1회', () => {
+  const savedRefetch = jest.fn().mockResolvedValue(undefined);
+  mockSaved.mockReturnValue({ data: [FOOD('3')], isLoading: false, isError: false, error: null, refetch: savedRefetch, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  const rc = tree.root.findAll((n) => typeof n.props?.onRefresh === 'function' && 'refreshing' in (n.props ?? {}))[0];
+  act(() => { rc.props.onRefresh(); });
+  expect(savedRefetch).toHaveBeenCalledTimes(1);
+});

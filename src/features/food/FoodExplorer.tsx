@@ -106,11 +106,13 @@ export function FoodExplorer({
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     const jobs: Promise<unknown>[] = savedOnly
-      ? [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스
+      ? riskChip === 'all'
+        ? [saved.refetch()] // 5R ②: 같은 키 두 관찰자 — refetch 1회
+        : [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스
       : [browse.refetch()];
     void Promise.all(jobs).finally(() => setRefreshing(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedOnly, browse.refetch, saved.refetch, savedList.refetch]);
+  }, [savedOnly, riskChip, browse.refetch, saved.refetch, savedList.refetch]);
 
   // P-350 ③: 얇은 페이지 — risk 지정 목록은 hasNext=true·items 미만(0 포함)이 정상.
   // onEndReached만으론 빈 화면에서 다음 페이지가 안 당겨짐 → 화면을 채울 때까지
@@ -119,12 +121,11 @@ export function FoodExplorer({
   const gridLen = gridQ.data?.length ?? 0;
   // #112 2R ①: 에러 = 빈 상태보다 먼저(가짜 no-matches 금지) — 레일·그리드 공통 판정.
   // 캐시 카드가 있으면(백그라운드 에러) 목록 유지(Codex #85 3R 원칙 승계).
-  // #112 3R ①: 실패한 채움 시도 기억(길이 = 커서 위치 프록시) — 같은 커서 자동 재시도
-  // 금지, 재개는 에러 블록의 수동 재시도(onRetry가 클리어)만.
-  const fillFailedAtRef = React.useRef<number | null>(null);
-  React.useEffect(() => {
-    fillFailedAtRef.current = null; // 칩 전환 = 다른 목록 — 실패 기억 리셋
-  }, [riskChip, savedTabActive]);
+  // #112 3R ① → 5R ①: 실패한 채움 시도 기억 — **쿼리 스코프 키 + 길이(커서 프록시)**.
+  // 키 없이 길이만 기억하면 칩 전환 중 도착한 옛 실패 콜백이 새 쿼리를 잠근다.
+  // 재개는 에러 블록의 수동 재시도(onRetry가 클리어)만.
+  const fillKey = `${savedTabActive}:${riskChip}`;
+  const fillFailedAtRef = React.useRef<{ key: string; len: number } | null>(null);
   // #112 4R: 재시도 핸들러 공유(레일 블록·screen 전체 화면 게이트) — 실패 기억
   // 클리어 없이 refetch만 하면 재시도 성공 후 얇은 페이지에서 채움 effect가
   // 영구 정지(fillFailedAtRef === gridLen 그대로 → 스켈레톤 고정).
@@ -140,13 +141,13 @@ export function FoodExplorer({
   React.useEffect(() => {
     if (riskChip === 'all') return; // 무필터 = 기존 스크롤 페이징만(드레인은 saved 판정 소스 몫)
     if (gridQ.isError) return; // 3R ①: 에러 = 자동 페치 중단(무한 재시도 금지)
-    if (fillFailedAtRef.current === gridLen) return; // 같은 커서 재시도 금지
+    if (fillFailedAtRef.current?.key === fillKey && fillFailedAtRef.current.len === gridLen) return; // 같은 쿼리·커서 재시도 금지
     if (gridLen < FOODS_PAGE_SIZE && gridQ.hasNextPage && !gridQ.isFetching)
       void Promise.resolve(gridQ.fetchNextPage({ cancelRefetch: false })).then((r) => {
-        if (r?.isError) fillFailedAtRef.current = gridLen;
+        if (r?.isError) fillFailedAtRef.current = { key: fillKey, len: gridLen }; // 발화 시점 키 — 옛 실패는 새 쿼리 안 잠금(5R ①)
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [riskChip, savedTabActive, gridLen, gridQ.isError, gridQ.hasNextPage, gridQ.isFetching, gridQ.fetchNextPage]);
+  }, [fillKey, gridLen, gridQ.isError, gridQ.hasNextPage, gridQ.isFetching, gridQ.fetchNextPage]);
   // Codex #80 2R P1: 탭 네비게이터가 음식 탭을 마운트 유지 — 두 번째 See all(파라미터 변경)이
   // useState 초기값에 막히지 않게 파라미터 변경 시 재동기화(P-318: saved 세그먼트 = Saved 칩).
   // 사용자가 화면에서 바꾼 칩은 다음 파라미터 변경 전까지 유지(마운트 시엔 초기값과 동일해 무동작).
