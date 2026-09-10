@@ -452,7 +452,8 @@
     "sort_helpful": "役に立った順",
     "ratingAll": "すべての評価",
     "ratingMin": "{{min}}点以上",
-    "countryOnly": "{{code}}のみ"
+    "countryOnly": "{{code}}のみ",
+    "allReviews": "すべてのレビュー"
   },
   "ranking": {
     "headerTitle": "マイランキング",

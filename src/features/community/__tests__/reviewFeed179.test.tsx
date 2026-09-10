@@ -353,3 +353,30 @@ describe('P-331: 프로필 토글 = 같은 국적 리뷰 필터', () => {
     expect(texts).toContain('reviews.emptySameNat');
   });
 });
+
+describe('P-371(KB-534): 컨트롤 행 좌측 — 게스트/국적 없음 = 라벨, 회원 = 토글', () => {
+  // Txt 래퍼 경유라 합성/호스트 노드가 함께 잡힘 — 호스트 노드만 센다
+  const labels = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => n.props?.testID === 'feed-all-reviews-label' && typeof n.type === 'string');
+
+  it('게스트 = "All reviews" 라벨 렌더 + 토글 스위치 없음', () => {
+    mockIsGuest.mockReturnValue(true);
+    const tree = render();
+    expect(labels(tree)).toHaveLength(1);
+    expect(labels(tree)[0].props.children).toBe('reviews.allReviews');
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle')).toHaveLength(0);
+  });
+
+  it('회원 국적 null = 라벨(토글 조건 동일)', () => {
+    mockMe.mockReturnValue({ data: { id: '9', nationality: null } });
+    const tree = render();
+    expect(labels(tree)).toHaveLength(1);
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle')).toHaveLength(0);
+  });
+
+  it('회원 국적 있음 = 현행 토글, 라벨 없음', () => {
+    const tree = render();
+    expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBeGreaterThanOrEqual(1);
+    expect(labels(tree)).toHaveLength(0);
+  });
+});

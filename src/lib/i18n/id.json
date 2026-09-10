@@ -452,7 +452,8 @@
     "sort_helpful": "Paling membantu",
     "ratingAll": "Semua rating",
     "ratingMin": "{{min}}+ bintang",
-    "countryOnly": "Hanya {{code}}"
+    "countryOnly": "Hanya {{code}}",
+    "allReviews": "Semua ulasan"
   },
   "ranking": {
     "headerTitle": "Peringkat Saya",

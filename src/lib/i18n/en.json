@@ -495,7 +495,8 @@
     "sort_helpful": "Most helpful",
     "ratingAll": "All ratings",
     "ratingMin": "{{min}}+ stars",
-    "countryOnly": "{{code}} only"
+    "countryOnly": "{{code}} only",
+    "allReviews": "All reviews"
   },
   "ranking": {
     "headerTitle": "My Ranking",

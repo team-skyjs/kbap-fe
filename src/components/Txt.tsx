@@ -19,6 +19,11 @@ import { resolveFont } from '@/lib/i18n/fonts';
 // 대응(레이아웃 스케일링)은 출시 후 범위.
 const MAX_FONT_SCALE = 1.3;
 
+// P-371(KB-534): Android 폰트 상하 패딩 제거 — 고정 높이 컨테이너(칩·필·버튼)
+// 안 한글 글리프가 아래로 처지는 근본 원인. iOS는 이 prop을 무시하므로 무영향.
+// 명시 스타일이 뒤에 오므로 필요 시 개별 override 가능.
+const base = { includeFontPadding: false } as const;
+
 export function Txt({ style, maxFontSizeMultiplier = MAX_FONT_SCALE, ...rest }: TextProps) {
   const { script } = useLocale();
   const flat = StyleSheet.flatten(style) as TextStyle | undefined;
@@ -27,12 +32,13 @@ export function Txt({ style, maxFontSizeMultiplier = MAX_FONT_SCALE, ...rest }: 
   const ls =
     flat?.letterSpacing !== undefined ? undefined : flat?.fontSize ? { letterSpacing: flat.fontSize * -0.01 } : undefined;
   const override = resolveFont(flat?.fontFamily, script);
-  if (!override && !ls) return <RNText style={style} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
+  if (!override && !ls)
+    return <RNText style={[base, style]} maxFontSizeMultiplier={maxFontSizeMultiplier} {...rest} />;
   // fontFamily를 undefined로 덮어쓸 수 없으므로(flatten이 뒤 값을 채택) 키를 제거한다
   const { fontFamily: _drop, ...restStyle } = flat ?? {};
   return (
     <RNText
-      style={[override ? restStyle : flat, ls, override ?? undefined]}
+      style={[base, override ? restStyle : flat, ls, override ?? undefined]}
       maxFontSizeMultiplier={maxFontSizeMultiplier}
       {...rest}
     />

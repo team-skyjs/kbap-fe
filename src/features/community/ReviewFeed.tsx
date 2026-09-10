@@ -124,7 +124,10 @@ export function ReviewFeed() {
                     <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.countryOnly', { code: myNat })}</Text>
                   </Pressable>
                 ) : (
-                  <View />
+                  // P-371(KB-534): 게스트·국적 없음 = 토글 대신 라벨만(좌상단 빈자리 방지)
+                  <Text style={styles.toggleLabel} numberOfLines={1} testID="feed-all-reviews-label">
+                    {t('reviews.allReviews')}
+                  </Text>
                 )}
                 <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
                   <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
