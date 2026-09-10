@@ -24,6 +24,7 @@ import * as Crypto from 'expo-crypto';
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
 import { exchangeLogin } from './beAuth';
+import { registerPushToken } from '@/lib/push/pushAdapter';
 
 // Firebase 프로젝트(k-bap-eb032)의 웹 클라이언트 ID (google-services.json
 // oauth_client client_type:3) — 시크릿 아님, 커밋 OK.
@@ -53,7 +54,10 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
   const exchange = async (): Promise<{ newMember: boolean; cancelled?: boolean }> => {
     const idToken = await getAuth().currentUser?.getIdToken();
     if (!idToken) throw new Error('no firebase id token after sign-in');
-    return exchangeLogin(idToken);
+    const exch = await exchangeLogin(idToken);
+    // KB-543: 토큰 API 회원 전용 — 세션 교환 성공 직후 1회 등록(비차단·비치명). 게스트 등록 경로 폐기.
+    if (!exch.cancelled) void registerPushToken();
+    return exch;
   };
 
   // Codex #109 8R: 관문 = 함수 전체(hasPlayServices·nonce 해시·exchange의 getIdToken 포함) —

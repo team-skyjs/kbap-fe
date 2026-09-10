@@ -29,6 +29,7 @@ jest.mock('@react-native-firebase/auth', () => ({
 }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'n', digestStringAsync: jest.fn(), CryptoDigestAlgorithm: {}, }));
 jest.mock('../beAuth', () => ({ exchangeLogin: jest.fn().mockResolvedValue({ newMember: false }) }));
+jest.mock('@/lib/push/pushAdapter', () => ({ registerPushToken: jest.fn().mockResolvedValue(undefined) })); // KB-543: 로그인 직후 토큰 등록 배선
 
 import { useSocialAuth } from '../useSocialAuth';
 

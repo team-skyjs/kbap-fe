@@ -157,9 +157,7 @@ export default function Profile() {
               {canOpenLangSettings && (
                 <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
               )}
-              {FLAGS.pushEnabled && (
-                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
-              )}
+              {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">

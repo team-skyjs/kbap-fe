@@ -107,7 +107,8 @@ describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
 
   it('⑤ ⑥ 푸시 표면 구분·알림 토글 단일 경유·공급측 3종', () => {
     expect(read('src/features/push/PushPrimerModal.tsx')).toContain('EVENTS.push_primer_response');
-    expect(read('src/app/onboarding/index.tsx')).toContain('surface="onboarding"');
+    // KB-497: 온보딩 프라이머 제거 — 표면은 스캔 1곳(surface 유니온도 'scan'만)
+    expect(read('src/app/onboarding/index.tsx')).not.toContain('PushPrimerModal');
     expect(read('src/app/scan.tsx')).toContain('surface="scan"');
     expect(read('src/app/profile/notifications.tsx')).toContain('EVENTS.push_pref_toggle');
     expect(read('src/app/profile/restrictions.tsx')).toContain('EVENTS.profile_avoid_update');

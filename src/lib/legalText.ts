@@ -9,6 +9,9 @@ import { decInflight, incInflight } from '@/lib/net/inflight';
 export const LEGAL_URLS = {
   terms: 'https://team-skyjs.github.io/kbap-legal/terms-of-service.html',
   privacy: 'https://team-skyjs.github.io/kbap-legal/privacy-policy.html',
+  /** KB-497: 광고성 알림 동의 전문 2종 — 페이지 생성은 kbap-legal 레포(요청 중). */
+  marketingPrivacy: 'https://team-skyjs.github.io/kbap-legal/marketing-privacy.html',
+  marketingReceive: 'https://team-skyjs.github.io/kbap-legal/marketing-receive.html',
 } as const;
 
 /** 안전 고지(프로필 메뉴) — 같은 kbap-legal 정본. P-377: 리터럴 중복 2곳을 여기로. */

@@ -6,9 +6,9 @@
  * 파일의 **지연 require**(플래그+try 게이트) 경유. 화면/훅에서 직접 import 금지.
  * FLAGS.pushEnabled off = 전 기능 no-op (다음 네이티브 빌드 전 기본).
  *
- * 기획 정본: dropbox/yj/2026-08-13-푸시알림-BE-요청.md — 3종:
- *   ① Helpful 서버푸시(기본 on) ② 리뷰 유도 로컬(주문 완료 1h 후, 기본 on)
- *   ③ 리텐션 넛지 서버푸시(기본 off — 광고성, 옵트인 시각 기록: 정보통신망법).
+ * 설정(KB-497) = **서버 정본** 2그룹 — 활동 알림(activity: Helpful + 리뷰 리마인더) ·
+ * K-Bap 소식(news: 광고성, 동의 2종 + 하위 mealTime). 로컬 설정 저장소는 없다
+ * (useNotificationSettings 캐시가 유일 미러). 토큰 등록은 회원 세션이 있을 때만(KB-543).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -16,21 +16,14 @@ import { FLAGS } from '@/lib/flags';
 import { track } from '@/lib/net/inflight';
 import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
+import { hasBeSession } from '@/lib/auth/beAuth';
+import { queryClient } from '@/lib/queryClient';
+import { NOTIF_SETTINGS_KEY, type NotificationSettings } from '@/lib/data/useNotificationSettings';
 
-const SETTINGS_KEY = 'kbap.push.settings.v1';
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
 const REMINDERS_KEY = 'kbap.push.reminders.v1'; // { [foodId]: notificationId }
 
 export const REVIEW_REMINDER_SECONDS = 3600; // 주문 완료 → 1시간 후
-
-export interface PushSettings {
-  helpful: boolean;
-  reviewReminder: boolean;
-  nudge: boolean;
-  /** 넛지(광고성) 수신 동의 일시 — 서버 저장은 계약 후, 우선 로컬 기록. */
-  nudgeOptInAt: string | null;
-}
-export const DEFAULT_PUSH_SETTINGS: PushSettings = { helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null };
 
 /* ---- 네이티브 모듈 지연 로드 (유일한 require 지점) ---- */
 
@@ -48,33 +41,6 @@ function loadNotifications(): NotificationsModule | null {
   } catch {
     return null; // 구 런타임(네이티브 미포함) — 조용히 무기능
   }
-}
-
-/* ---- 설정 (AsyncStorage — 기기 단위) ---- */
-
-export async function getPushSettings(): Promise<PushSettings> {
-  try {
-    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...DEFAULT_PUSH_SETTINGS, ...(JSON.parse(raw) as Partial<PushSettings>) };
-  } catch {
-    /* 저장소 오류 — 기본값 */
-  }
-  return { ...DEFAULT_PUSH_SETTINGS };
-}
-
-/** 저장 + 넛지 off→on 전환 시 동의 일시 스탬프(광고성 수신 동의 기록). */
-export async function savePushSettings(next: Omit<PushSettings, 'nudgeOptInAt'>): Promise<PushSettings> {
-  const prev = await getPushSettings();
-  const merged: PushSettings = {
-    ...next,
-    nudgeOptInAt: next.nudge && !prev.nudge ? new Date().toISOString() : prev.nudgeOptInAt,
-  };
-  try {
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
-  } catch {
-    /* 저장 실패 — 다음 진입 시 기본값 */
-  }
-  return merged;
 }
 
 /* ---- 권한 프라이머 노출 기록 (거절 시 재노출 0 — 설정 화면 안내만) ---- */
@@ -137,7 +103,8 @@ async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
   await api.put('/api/notifications/tokens', reg);
 }
 
-/** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함).
+/** 앱 시작·로그인 성공·언어 변경 시 upsert — **회원 세션 없음·권한 없음이면 조용히 스킵**
+ *  (KB-543: 토큰 API 회원 전용, 게스트 요청 0). 실패(401 포함)는 비치명.
  *  Codex #109 10R: track 경유 — 콜드 스타트 +8s OTA 창과 겹치는 연산(관문 5곳째). */
 export function registerPushToken(): Promise<void> {
   return track(registerPushTokenInner());
@@ -146,6 +113,7 @@ async function registerPushTokenInner(): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {
+    if (!(await hasBeSession())) return; // KB-543: 게스트 토큰 등록 폐기
     const { status } = await N.getPermissionsAsync();
     if (status !== 'granted') return;
     const projectId = getProjectId();
@@ -188,14 +156,14 @@ async function setReminderMap(map: Record<string, string>): Promise<void> {
 
 /**
  * 주문 완료 모달 닫힘 시점 호출 — 1시간 후 "아까 그 메뉴 어땠어요?" 예약.
- * 수신 설정 off·권한 없음·플래그 off = 예약 안 함. 같은 음식 기존 예약은 교체.
+ * 서버 설정 `activity`(리뷰 리마인더 통합) 캐시가 true일 때만 — 캐시 없음 = 예약 안 함(보수적).
+ * 권한 없음·플래그 off = 예약 안 함. 같은 음식 기존 예약은 교체. (KB-500에서 서버 배치로 이관 예정)
  */
 export async function scheduleReviewReminder(food: { foodId: string; name: string }): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {
-    const settings = await getPushSettings();
-    if (!settings.reviewReminder) return;
+    if (queryClient.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)?.activity !== true) return;
     const { status } = await N.getPermissionsAsync();
     if (status !== 'granted') return;
     await cancelReviewReminder(food.foodId); // 재주문 = 타이머 리셋

@@ -1,158 +1,99 @@
 /**
- * Notification settings (P-192/KB-39) — 프로필 > 알림 설정.
+ * Notification settings (KB-497) — 프로필 > 알림 설정. **서버 정본**(P-147) 2그룹.
  *
- * 종류별 토글 3: Helpful(기본 on) · 리뷰 리마인더(로컬, 기본 on) · 추천 넛지
- * (광고성 — 기본 off, 켠 시각 = 동의 일시 로컬 기록, 서버 저장은 계약 후).
- * OS 권한 꺼짐이면 상단 안내 + 설정 앱 딥링크. 토글 = 낙관 즉시 저장(멱등 —
- * useSubmitGuard 예외 계열) 후 토큰 upsert(설정 동기, 계약 전 no-op).
- * FLAGS.pushEnabled off = 라우트 가드(진입점도 없지만 딥링크 이중 방어).
+ * ① 내 활동 알림 — 「활동 알림」 토글(`activity`: 리뷰 도움됨 + 리뷰 리마인더 통합).
+ * ② K-Bap 소식(광고성) — 「소식 알림」 토글(`news.enabled`) + 하위 「식사 시간 알림」(`news.mealTime`).
+ *    소식 OFF→ON = 동의 시트(NotificationSheet consent: 마케팅 개인정보·광고성 수신 동의 2종,
+ *    둘 다 체크 시에만 확인) → `news.enabled:true` + 문구 버전 2종. 소식 ON→OFF = 이 기기만 OFF.
+ *    식사 시간은 소식 ON일 때만 조작(끄기 = 동의 철회 아님). 동의 캡션(일시·버전·전문)은 소식 ON일 때만.
+ * 토글 = 낙관 반영(멱등 — useSubmitGuard 예외 계열), 실패 = 롤백 + 배너. 읽기 = 스켈레톤/재시도.
+ * 게스트 = AuthGateSheet(saved.tsx 선례, 딥링크 이중 방어). FLAGS.pushEnabled off = 라우트 가드.
+ * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
 import * as React from 'react';
 import { AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius, shadow } from '@/lib/theme';
+import { color as C, font, radius } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
+import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { Shimmer } from '@/components/Skeleton';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { DEFAULT_GUEST_CONSENT, readGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
-import { Shimmer } from '@/components/Skeleton';
 import { EVENTS, track } from '@/lib/analytics';
-import {
-  getPermissionStatus,
-  getPushSettings,
-  registerPushToken,
-  savePushSettings,
-  DEFAULT_PUSH_SETTINGS,
-  type PushPermission,
-  type PushSettings,
-} from '@/lib/push/pushAdapter';
+import { openWebPage } from '@/lib/openExternal';
+import { consentUrl, PRIVACY_CONSENT_VERSION, RECEIVE_CONSENT_VERSION } from '@/lib/push/consent';
+import { useNotificationSettings, useUpdateNotificationSettings, type NotificationSettings as Settings } from '@/lib/data/useNotificationSettings';
+import { NotificationSheet } from '@/features/push/NotificationSheet';
+import { getPermissionStatus, registerPushToken, type PushPermission } from '@/lib/push/pushAdapter';
 
 export default function NotificationSettings() {
   // 컴파일 상수 가드 — 훅 순서 무영향 (reviews.tsx 문법)
   if (!FLAGS.pushEnabled) return <Redirect href="/" />;
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
+  return <NotificationSettingsScreen />;
+}
+
+function NotificationSettingsScreen() {
   const isGuest = useIsGuest();
-  // P-311(KB-478): 게스트 = 마케팅·야간 동의 토글 2개만(기본 OFF, 로컬 — guestConsent)
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [consent, setConsent] = React.useState<GuestConsent>(DEFAULT_GUEST_CONSENT);
-  // Codex #72 4R: 읽기 3상 — error = 값 표시 금지·토글 비활성·재시도 배너
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  // 5R: pending도 분리 — 읽는 중 기본 OFF 스위치로 위장 금지(스켈레톤)
-  const [consentState, setConsentState] = React.useState<'pending' | 'error' | 'ready'>('pending');
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const loadConsent = React.useCallback(() => {
-    setConsentState('pending');
-    void readGuestConsent().then((r) => {
-      if (r.status === 'error') return setConsentState('error');
-      setConsent(r.status === 'ok' ? r.value : DEFAULT_GUEST_CONSENT);
-      setConsentState('ready');
-    });
-  }, []);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  React.useEffect(() => {
-    if (isGuest) loadConsent();
-  }, [isGuest, loadConsent]);
-  // Codex #72 P1: 저장 처리 중 = 토글 무시(직렬화와 이중 방어 — 연타 레이스 0)
-  const consentBusy = React.useRef(false);
-  const [consentError, setConsentError] = React.useState(false);
-  const toggleConsent = (key: 'marketing' | 'night') => {
-    if (consentBusy.current || consentState !== 'ready') return; // 5R: ready에서만 토글
-    if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
-    consentBusy.current = true;
-    setConsentError(false);
-    track(EVENTS.push_pref_toggle, { key, on: !consent[key] });
-    void setGuestConsent(key, !consent[key])
-      .then(setConsent) // 3R P1: 저장 성공 값으로만 반영 — 실패 시 상태 불변(원복 불요)
-      .catch(() => setConsentError(true)) // 저장 거부 표면화(법정 철회 유실 방지)
-      .finally(() => {
-        consentBusy.current = false;
-      });
-  };
-
   const router = useRouter();
-  const { t } = useTranslation();
-  const [settings, setSettings] = React.useState<PushSettings>(DEFAULT_PUSH_SETTINGS);
+  const { t, i18n } = useTranslation();
+  const query = useNotificationSettings(!isGuest); // 게스트 = 요청 0(401 회피)
+  const update = useUpdateNotificationSettings();
   const [permission, setPermission] = React.useState<PushPermission>('unavailable');
+  const [consentOpen, setConsentOpen] = React.useState(false);
 
   React.useEffect(() => {
-    void getPushSettings().then(setSettings);
     void getPermissionStatus().then(setPermission);
   }, []);
-
   React.useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st !== 'active') return;
-      void getPermissionStatus().then(setPermission);
-      void registerPushToken();
+      void getPermissionStatus().then(setPermission); // OS 설정 복귀 = 배너 재판정
+      void registerPushToken(); // 권한 새로 허용됐으면 등록(세션 가드는 어댑터)
     });
     return () => sub.remove();
   }, []);
-
-  const toggle = (key: 'helpful' | 'reviewReminder' | 'nudge') => {
-    // 낙관 즉시 반영(로컬 저장 멱등) — 저장 결과(nudgeOptInAt 스탬프 포함)로 재동기
-    track(EVENTS.push_pref_toggle, { key, on: !settings[key] }); // P-214: 옵트아웃률
-    const next = { ...settings, [key]: !settings[key] };
-    setSettings(next);
-    void savePushSettings(next).then((saved) => {
-      setSettings(saved);
-      void registerPushToken(); // 설정 변경 upsert — BE 계약 전 no-op+로그
-    });
-  };
-
-  const osOff = permission === 'denied';
 
   if (isGuest) {
     return (
       <View style={styles.root}>
         <SubHeader title={t('notif.title')} onBack={() => router.back()} />
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          {consentState === 'pending' && (
-            /* 5R: 읽는 중 = 스켈레톤(공백·기본값 위장 금지 — P-207 계열) */
-            <View style={styles.card} testID="guest-consent-skel">
-              <Shimmer style={{ height: 56, borderRadius: 8 }} />
-              <Shimmer style={{ height: 56, borderRadius: 8, marginTop: 8 }} />
-            </View>
-          )}
-          {consentState === 'ready' && (
-          <View style={styles.card}>
-            <ToggleRow
-              label={t('notif.marketing')}
-              sub={t('notif.marketingSub')}
-              on={consent.marketing}
-              onPress={() => toggleConsent('marketing')}
-              testID="guest-marketing"
-            />
-            <View style={[!consent.marketing && styles.rowDisabled]}>
-              <ToggleRow
-                label={t('notif.night')}
-                sub={t('notif.nightSub')}
-                on={consent.night}
-                onPress={() => toggleConsent('night')}
-                testID="guest-night"
-              />
-            </View>
-          </View>
-          )}
-          {consentState === 'ready' && consentError && (
-            <Pressable style={styles.osBanner} onPress={() => setConsentError(false)} testID="guest-consent-error">
-              <IconBell size={16} color={C.riskCaution} />
-              <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
-            </Pressable>
-          )}
-          {consentState === 'error' && (
-            /* 4R→5R: 읽기 오류 = 스위치 미렌더(값 미표시), 탭 = 재시도 */
-            <Pressable style={styles.osBanner} onPress={loadConsent} testID="guest-consent-read-error">
-              <IconBell size={16} color={C.riskCaution} />
-              <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
-            </Pressable>
-          )}
-        </ScrollView>
+        <AuthGateSheet context="profile" open onClose={() => router.back()} />
       </View>
     );
   }
+
+  const s = query.data;
+  const patch = (p: Parameters<typeof update.mutate>[0]) => update.mutate(p);
+  const toggleActivity = () => {
+    if (!s) return;
+    track(EVENTS.push_pref_toggle, { key: 'activity', on: !s.activity }); // P-214
+    patch({ activity: !s.activity });
+  };
+  const toggleNews = () => {
+    if (!s) return;
+    if (!s.news.enabled) {
+      setConsentOpen(true); // 동의 시트 — 서버 요청 없음, 토글 OFF 유지
+      return;
+    }
+    track(EVENTS.push_pref_toggle, { key: 'news', on: false });
+    patch({ news: { enabled: false } });
+  };
+  const toggleMealTime = () => {
+    if (!s || !s.news.enabled) return; // 소식 OFF = 비활성(탭 무동작)
+    track(EVENTS.push_pref_toggle, { key: 'mealTime', on: !s.news.mealTime });
+    patch({ news: { mealTime: !s.news.mealTime } });
+  };
+  const confirmConsent = () => {
+    track(EVENTS.push_pref_toggle, { key: 'news', on: true });
+    patch({ news: { enabled: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION } });
+    setConsentOpen(false);
+  };
+
+  const osOff = permission === 'denied';
+  const consent = s?.news.enabled ? consentCaption(s, i18n.language) : null;
 
   return (
     <View style={styles.root}>
@@ -160,48 +101,100 @@ export default function NotificationSettings() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
           /* OS 권한 꺼짐 — 토글은 보이되 실수신 불가 안내 + 설정 딥링크 */
-          <Pressable style={styles.osBanner} onPress={() => void Linking.openSettings()} testID="notif-os-off">
+          <Pressable style={styles.banner} onPress={() => void Linking.openSettings()} testID="notif-os-off">
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.osBannerText}>{t('notif.osOff')}</Text>
-              <Text style={styles.osBannerCta}>{t('notif.osOffCta')}</Text>
+              <Text style={styles.bannerText}>{t('notif.osOff')}</Text>
+              <Text style={styles.bannerCta}>{t('notif.osOffCta')}</Text>
             </View>
           </Pressable>
         )}
 
-        <View style={styles.card}>
-          <ToggleRow
-            label={t('notif.helpful')}
-            sub={t('notif.helpfulSub')}
-            on={settings.helpful}
-            onPress={() => toggle('helpful')}
-            testID="notif-helpful"
-          />
-          <View style={styles.hair} />
-          <ToggleRow
-            label={t('notif.reminder')}
-            sub={t('notif.reminderSub')}
-            on={settings.reviewReminder}
-            onPress={() => toggle('reviewReminder')}
-            testID="notif-reminder"
-          />
-          <View style={styles.hair} />
-          <ToggleRow
-            label={t('notif.nudge')}
-            sub={t('notif.nudgeSub')}
-            on={settings.nudge}
-            onPress={() => toggle('nudge')}
-            testID="notif-nudge"
-          />
-        </View>
+        {query.isLoading && (
+          /* 읽는 중 = 스켈레톤(기본값 스위치로 위장 금지 — P-207 계열) */
+          <View style={{ gap: 12 }} testID="notif-skeleton">
+            <Shimmer style={{ height: 52, borderRadius: 8 }} />
+            <Shimmer style={{ height: 52, borderRadius: 8 }} />
+            <Shimmer style={{ height: 52, borderRadius: 8 }} />
+          </View>
+        )}
+        {query.isError && !s && (
+          /* 읽기 실패 = 스위치 미렌더(값 미표시), 탭 = 재시도 */
+          <Pressable style={styles.banner} onPress={() => void query.refetch()} testID="notif-read-error">
+            <IconBell size={16} color={C.riskCaution} />
+            <Text style={styles.bannerText}>{t('notif.readFailed')}</Text>
+          </Pressable>
+        )}
+
+        {s && (
+          <>
+            <View style={styles.group}>
+              <Text style={styles.groupTitle}>{t('notif.activityGroup')}</Text>
+              <ToggleRow label={t('notif.activity')} sub={t('notif.activitySub')} on={s.activity} onPress={toggleActivity} testID="notif-activity" />
+            </View>
+
+            <View style={styles.group}>
+              <Text style={styles.groupTitle}>{t('notif.newsGroup')}</Text>
+              <ToggleRow label={t('notif.news')} sub={t('notif.newsSub')} on={s.news.enabled} onPress={toggleNews} testID="notif-news" />
+              <View style={styles.hair} />
+              {/* 소식 OFF = 비활성 — 색·불투명도만(P-151), 탭 무동작 */}
+              <View style={[!s.news.enabled && styles.rowDisabled]} testID="notif-mealtime-row">
+                <ToggleRow
+                  label={t('notif.mealTime')}
+                  sub={t('notif.mealTimeSub')}
+                  on={s.news.mealTime}
+                  onPress={toggleMealTime}
+                  disabled={!s.news.enabled}
+                  testID="notif-mealtime"
+                />
+              </View>
+              {consent && (
+                <View style={styles.caption} testID="notif-consent-status">
+                  <Text style={styles.captionText}>{t('notif.consentStatus', consent)}</Text>
+                  <Pressable onPress={() => void openWebPage(consentUrl('receive'))} hitSlop={8} testID="notif-consent-full">
+                    <Text style={styles.captionLink}>{t('notif.viewFull')}</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
+        {update.isError && (
+          /* 저장 거부 표면화(롤백은 훅) — 탭 = 배너 닫기 */
+          <Pressable style={styles.banner} onPress={() => update.reset()} testID="notif-save-failed">
+            <IconBell size={16} color={C.riskCaution} />
+            <Text style={styles.bannerText}>{t('notif.saveFailed')}</Text>
+          </Pressable>
+        )}
       </ScrollView>
+
+      <NotificationSheet
+        open={consentOpen}
+        variant="consent"
+        title={t('push.consentSheetTitle')}
+        body={t('push.consentSheetBody')}
+        confirmLabel={t('push.consentConfirm')}
+        onConfirm={confirmConsent}
+        onClose={() => setConsentOpen(false)}
+      />
     </View>
   );
 }
 
-function ToggleRow({ label, sub, on, onPress, testID }: { label: string; sub: string; on: boolean; onPress: () => void; testID: string }) {
+/** 동의 캡션 값 — 일시 = 두 동의 중 최근 grantedAt, 버전 = 광고성 수신 동의 버전(spec FR-001). */
+function consentCaption(s: Settings, lang: string): { date: string; version: number } | null {
+  const p = s.news.privacyConsent, r = s.news.receiveConsent;
+  if (!p || !r) return null;
+  const latest = new Date(p.grantedAt) > new Date(r.grantedAt) ? p.grantedAt : r.grantedAt;
+  const d = new Date(latest);
+  const date = Number.isNaN(d.getTime()) ? latest : d.toLocaleDateString(lang);
+  return { date, version: r.version };
+}
+
+function ToggleRow({ label, sub, on, onPress, testID, disabled }: { label: string; sub: string; on: boolean; onPress: () => void; testID: string; disabled?: boolean }) {
   return (
-    <Pressable style={styles.row} onPress={onPress} hitSlop={4} testID={testID}>
+    <Pressable style={styles.row} onPress={onPress} hitSlop={4} testID={testID} disabled={disabled} accessibilityRole="switch" accessibilityState={{ checked: on, disabled }}>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowSub}>{sub}</Text>
@@ -214,26 +207,31 @@ function ToggleRow({ label, sub, on, onPress, testID }: { label: string; sub: st
 /** 토글 스위치 — reviews.tsx 필터 스위치와 동일 문법(색만 전환 — 프레임 불변). */
 function Switch({ on }: { on: boolean }) {
   return (
-    <View style={[styles.sw, on && styles.swOn]}>
+    <View style={[styles.sw, on && styles.swOn]} testID="notif-switch">
       <View style={[styles.knob, on && styles.knobOn]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.surface },
-  rowDisabled: { opacity: 0.4 }, // P-311: 야간 = 마케팅 OFF 시 비활성(색·불투명도만 — P-151)
-  body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 12 },
+  root: { flex: 1, backgroundColor: C.card },
+  body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 20 },
 
-  osBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, ...shadow.sh1 },
-  osBannerText: { fontFamily: font.body, fontSize: 12.5, color: C.ink2, lineHeight: 17 },
-  osBannerCta: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
+  // 배너(OS 권한·읽기 실패·저장 실패) — 테두리·그림자 없는 연회색 블록(시안 1)
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: radius.sm, padding: 13 },
+  bannerText: { flex: 1, fontFamily: font.body, fontSize: 13, color: C.ink2, lineHeight: 18 },
+  bannerCta: { fontFamily: font.bodyBold, fontSize: 13, color: C.primaryText },
 
-  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, paddingHorizontal: 15, ...shadow.sh1 },
+  group: { gap: 0 },
+  groupTitle: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2, lineHeight: 18, marginBottom: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  rowDisabled: { opacity: 0.4 }, // 상태 = 불투명도만(P-151)
   rowLabel: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink },
   rowSub: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
   hair: { height: 1, backgroundColor: C.hair },
+  caption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 },
+  captionText: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
+  captionLink: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
 
   sw: { width: 34, height: 20, borderRadius: 10, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
