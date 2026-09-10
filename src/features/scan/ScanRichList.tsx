@@ -47,7 +47,7 @@ export function fitAvoidChips<T extends { name: string }>(
   }
   return { shown: warns.slice(0, 1), rest: warns.length - 1 };
 }
-import { IconChevron, IconPlus, RiskBadge, RiskMark } from '@/components';
+import { IconPlus, RiskBadge, RiskMark } from '@/components';
 import { BrandGoogleMark, BrandNaverMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
@@ -182,11 +182,11 @@ function RichRow({
         {!!(dish.koreanName ?? dish.rawMenuName) && dish.displayName !== (dish.koreanName ?? dish.rawMenuName) && (
           <Text style={styles.nameSubKo} numberOfLines={1}>{dish.koreanName ?? dish.rawMenuName}</Text>
         )}
+        {/* P-366 ②: chevron 소멸 — 행 전체 탭이 상세 진입(현행 Pressable) */}
         <View style={styles.nameLine}>
           <Text style={styles.nameTitle} numberOfLines={1}>
             {dish.displayName || (dish.koreanName ?? dish.rawMenuName)}
           </Text>
-          {dish.matched && <IconChevron size={16} color={C.ink3} />}
         </View>
         {/* P-285(최종본 2200:21512): 설명 1줄 13/400 #9196A1 — 매칭 = 음식 설명(프리페치) */}
         {dish.matched && !!food?.description && (
@@ -244,35 +244,35 @@ function RichRow({
             </View>
           </View>
         )}
-        {/* 가격 행(시안): 환산가 14/600 #6B95FF + 원가 13/500 */}
-        {dish.priceKrw != null && (
-          <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
-            {/* 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거 */}
-            {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
-            {formatKrw(dish.priceKrw)}
-          </Text>
-        )}
-      </View>
-
-      {/* P-285(최종본): 담김 = 스테퍼 83×31(2162:9658) / 미담김 = add 36(4003:5796) —
-          9/5 TODO(스테퍼 변형 시안 수신 시 교체) 이행. 동작·cart·OrderPill 무변 */}
-      <View style={styles.rightCol}>
-        <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
-          {added ? (
-            <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>
-              <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${dish.itemId}`}>
-                <D4Minus size={16} color={C.ink} />
-              </Pressable>
-              <Text style={styles.qty}>{qty}</Text>
-              <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${dish.itemId}`}>
-                <IconPlus size={16} color={C.ink} />
-              </Pressable>
-            </View>
+        {/* P-366 ②(KB-529): rightCol 폐기 — 텍스트 열 전폭 + 하단 행(좌 가격/우 담기,
+            **항상 렌더** — 가격 없어도 담기 가능). 스테퍼/add 스타일·동작·cart 무변. */}
+        <View style={styles.bottomRow}>
+          {dish.priceKrw != null ? (
+            <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
+              {/* 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거 */}
+              {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
+              {formatKrw(dish.priceKrw)}
+            </Text>
           ) : (
-            <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
-              <IconPlus size={24} color={C.ink} />
-            </Pressable>
+            <View />
           )}
+          <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
+            {added ? (
+              <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>
+                <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${dish.itemId}`}>
+                  <D4Minus size={16} color={C.ink} />
+                </Pressable>
+                <Text style={styles.qty}>{qty}</Text>
+                <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${dish.itemId}`}>
+                  <IconPlus size={16} color={C.ink} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
+                <IconPlus size={24} color={C.ink} />
+              </Pressable>
+            )}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
   warnChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
   price: { fontSize: 13, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
   priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },
-  // 우측 열 = 항상 RIGHT_COL_W — 썸네일 유무와 무관하게 텍스트 열 폭 불변
-  rightCol: { width: RIGHT_COL_W, alignItems: 'flex-end', gap: 6 },
+  // P-366 ②: 하단 행 — 좌 가격 / 우 담기 슬롯(텍스트 열 전폭)
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   thumb: { width: 118, height: 118, borderRadius: 4, backgroundColor: C.surface2 },
   // 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H)를 공유
   addSlot: { width: RIGHT_COL_W, height: ADD_SLOT_H, alignItems: 'flex-end', justifyContent: 'center' },
