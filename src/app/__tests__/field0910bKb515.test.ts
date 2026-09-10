@@ -51,6 +51,5 @@ it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 
 it('P-362(KB-525): 스캔 썸네일 래퍼 = 고정 118(퍼센트 높이 금지 — 행 160만px 폭주 회귀 잠금)', () => {
   const rich = read('src/features/scan/ScanRichList.tsx');
   expect(rich).toContain("thumbWrap: { width: 118, height: 118 }");
-  expect(rich).toContain("thumbWrapInner: { width: 118, height: 118 }");
-  expect(rich).not.toContain("height: '100%'");
+  expect(rich).not.toContain("height: '100%'"); // P-366 ①: thumbWrapInner 자체 소멸(분기 통합)
 });

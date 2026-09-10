@@ -230,9 +230,9 @@ it('P-241: 행 썸네일 = imageRef 인라인 — 비매칭 행도 표시(디폴
     <ScanRichList dishes={dishes} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
   const s = flat(tree);
-  // KB-432 → A-SC-11(KB-486): 비매칭 = 흰 박스 + unable 마크(서버 디폴트 이미지 소멸 — 시안)
-  expect(s).toContain('"backgroundColor":"#FFFFFF","alignItems":"center","justifyContent":"center"');
-  expect(s).not.toContain('default-food.webp');
+  // P-366 ①(KB-529): 비매칭 = 매칭과 동일 CardPhoto(imageUrl 그대로 — 실패 시 내부 폴백)
+  // + RiskBadge(unable). 구 흰 박스/오버레이 계약 폐기.
+  expect(s).toContain('default-food.webp');
   // 주문 카드 = rawMenuName 그대로(P-045) — 표시명 조립 금지(기존 잠금 승계)
   const card = render(
     <FlippedOrderCard items={[{ nameKo: '수제비', name: '수제비', qty: 1, priceKrw: null }]} avoidCodes={[]} avoidNames={[]} currency="USD" onDone={() => {}} t={t} />,

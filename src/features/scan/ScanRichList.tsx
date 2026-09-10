@@ -16,9 +16,7 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
-import { Image as ExpoImage } from 'expo-image'; // 로컬 에셋 전용(P-207 허용 범위)
 import { CardPhoto } from '@/components/CardPhoto';
-import { DEFAULT_FOOD_IMAGE } from '@/lib/api/foodAdapter';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
@@ -167,26 +165,16 @@ function RichRow({
   return (
     <Pressable style={styles.row} onPress={onOpen} testID={`rich-${dish.itemId}`}>
       {/* KB-432 §1-1(4150:16254): 좌측 썸네일 100 r4 + RiskBadge(@3,0) — 배지 탭 = 코치 재열람.
-          P-353 ③(KB-515): 무이미지 = 회색 박스 대신 서버 기본 음식 이미지(기본 이미지 = 번들 로컬 에셋(KB-515 후속)), 미등록도 동일 이미지 + 기존 unable 마크 오버레이 유지 */}
+          P-366 ①(KB-529): 매칭·미매칭 분기 통합 — 미매칭 = 같은 CardPhoto(기본 이미지 폴백)
+          + RiskBadge(unable — 어댑터가 강제). 구 오버레이는 thumb 배경색이 이미지를 덮어
+          회색 박스가 되던 결함(9/10 실기). */}
       <View style={styles.thumbWrap}>
-        {dish.matched ? (
-          <>
-            {/* #116 2R ②: CardPhoto 경유 — 깨진 URL도 기본 이미지 폴백 내장 */}
-            <View style={styles.thumb}>
-              <CardPhoto uri={thumb} borderRadius={4} />
-            </View>
-            <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
-              <RiskBadge state={dish.risk} />
-            </Pressable>
-          </>
-        ) : (
-          <Pressable style={styles.thumbWrapInner} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
-            <ExpoImage source={DEFAULT_FOOD_IMAGE} style={styles.thumb} contentFit="cover" />
-            <View style={[styles.thumb, styles.thumbUnableOverlay]}>
-              <RiskMark state="unable" size={26} />
-            </View>
-          </Pressable>
-        )}
+        <View style={styles.thumb}>
+          <CardPhoto uri={thumb} borderRadius={4} />
+        </View>
+        <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
+          <RiskBadge state={dish.risk} />
+        </Pressable>
       </View>
       {/* Codex #47 7차: 320pt(썸 118+스테퍼 83) — 텍스트 열 축소 허용, 이름 말줄임·가격 wrap */}
       <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3 }}>
@@ -322,8 +310,6 @@ const styles = StyleSheet.create({
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   thumbWrap: { width: 118, height: 118 }, // P-285: 118×118(2200:21512) — P-362: height 명시(퍼센트 순환 봉쇄)
   thumbFb: { backgroundColor: C.surface2 },
-  thumbWrapInner: { width: 118, height: 118 }, // P-362(KB-525): 퍼센트 금지 — 부모 높이 미정의 시 160만px 폭주(9/10 실측)
-  thumbUnableOverlay: { position: 'absolute', top: 0, left: 0, alignItems: 'center', justifyContent: 'center' }, // A-SC-11(흰 위 흰 — 실기 확인 권장)
   thumbBadge: { position: 'absolute', top: -4, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
   nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },

@@ -48,8 +48,10 @@ it('A-SC — 결과 헤더 56/16·배너 gap6·행 보더 0·warnChip pad 3/6·m
   expect(rich).toContain("moreChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' }");
   expect(rich).toContain("missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }");
   // P-353 ③(KB-515): 미등록 = 기본 음식 이미지 + unable 마크 오버레이(구 흰 박스 소멸)
-  expect(rich).toContain('<ExpoImage source={DEFAULT_FOOD_IMAGE}'); // KB-515 후속: 로컬 에셋
-  expect(rich).toContain('thumbUnableOverlay');
+  // P-366 ①: 미매칭 = 매칭과 동일 CardPhoto + RiskBadge(unable) — 오버레이·직접 이미지 소멸
+  expect(rich).not.toContain('thumbUnableOverlay');
+  expect(rich).not.toContain('ExpoImage');
+  expect(rich).toContain('<RiskBadge state={dish.risk} />');
 });
 
 it('A-SN-04 — 권한 알럿 gap5·본문 lh22.3·스크림 0.8 / Stars 행 gap4(공용)', () => {
