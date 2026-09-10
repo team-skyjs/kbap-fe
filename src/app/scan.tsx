@@ -39,6 +39,13 @@ import { segmentMenu, formatKrw, scanPriceParam, type MenuDish, type ResultDish 
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
+
+// P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
+const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
+  menu: 'scan.sortMenu',
+  priceDesc: 'scan.sortPriceDesc',
+  priceAsc: 'scan.sortPriceAsc',
+};
 import { orientationFromGravity } from '@/lib/scan/deviceOrientation';
 import { wysiwygCropRect } from '@/lib/scan/coverCrop';
 import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
@@ -122,7 +129,7 @@ export default function Scan() {
   // P-226 ②③ → KB-432 §1-1: 소팅 = 정렬 드롭다운(ActionSheet) — 옵션 2종 무변
   const [sortMode, setSortMode] = useState<ResultSortMode>('menu');
   const [sortSheet, setSortSheet] = useState(false);
-  const [profileFilter, setProfileFilter] = useState(false); // 시안 렌더 전용(무동작 — 상태 부재)
+  const [safeOnly, setSafeOnly] = useState(false); // P-354(KB-516): ON = risk==='safe'만(불확실 포함 전부 숨김)
   // P-134: 첫 스캔 결과 1회 코치마크 — 재열람은 리스트 RiskMark 탭
   const [coachOpen, setCoachOpen] = useState(false);
   // P-136(B-4 2단 확정): 담기 카트 — itemId→수량, 리스트·캡슐 뷰 공유
@@ -574,6 +581,10 @@ export default function Scan() {
     // 안전한 순 = safe→caution→danger→unable. ⚠️ unable은 어느 모드에서도 **최하단**
     // — 불확실을 안전해 보이는 위치에 두지 않는다(false-safe, 유닛 잠금).
     const listDishes = sortResultDishes(allDishes, sortMode);
+    // P-354(KB-516): Safe only — 표시만 필터(장바구니 수량은 itemId 키로 보존,
+    // goOrder는 listDishes(전체) 기준이라 숨긴 담김분도 합계 불변)
+    const safeDishes = listDishes.filter((d) => d.risk === 'safe');
+    const visibleDishes = safeOnly ? safeDishes : listDishes;
 
     // P-038→P-057(KB-212 후속, A안): 빈 프로필 넛지 — 회원 && 기피 0 && 세션 내
     // 미닫음. 어두운 absolute 오버레이(배경에 묻힘·카드 밀착)를 폐기하고 결과
@@ -621,7 +632,11 @@ export default function Scan() {
         {allDishes.length > 0 && (
           <View style={styles.recogBanner} testID="recog-banner">
             <IconTabScan size={24} color={C.primary} />
-            <Text style={styles.recogBannerText}>{t('scan.resultsSub', { count: allDishes.length })}</Text>
+            <Text style={styles.recogBannerText}>
+              {safeOnly
+                ? t('scan.resultsSubSafe', { safe: safeDishes.length, total: allDishes.length })
+                : t('scan.resultsSub', { count: allDishes.length })}
+            </Text>
           </View>
         )}
 
@@ -636,14 +651,14 @@ export default function Scan() {
           {/* §1-1 컨트롤 행: 좌 프로필 필터 토글(시안 렌더 — 현 상태 부재로 무동작,
               D-2 규칙 동일) / 우 정렬 드롭다운(현 menu/safety 옵션 매핑 → ActionSheet) */}
           <View style={styles.controlRow}>
-            <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="scan-profile-toggle">
-              <View style={[styles.sw, profileFilter && styles.swOn]}>
-                <View style={[styles.knob, profileFilter && styles.knobOn]} />
+            <Pressable style={styles.toggleRow} onPress={() => setSafeOnly((v) => !v)} testID="scan-safe-toggle">
+              <View style={[styles.sw, safeOnly && styles.swOn]}>
+                <View style={[styles.knob, safeOnly && styles.knobOn]} />
               </View>
-              <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+              <Text style={styles.toggleLabel} numberOfLines={1}>{t('scan.safeOnly')}</Text>
             </Pressable>
             <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="scan-sort">
-              <Text style={styles.sortLabel} numberOfLines={1}>{t(sortMode === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety')}</Text>
+              <Text style={styles.sortLabel} numberOfLines={1}>{t(SORT_LABEL_KEY[sortMode])}</Text>
               <IconChevronDown size={16} color="#4B4F58" />
             </Pressable>
           </View>
@@ -664,8 +679,17 @@ export default function Scan() {
                 </Pressable>
               </Animated.View>
             )}
+            {safeOnly && visibleDishes.length === 0 ? (
+              /* P-354 ④: 안전 0건 — 컨트롤 행·배너 유지, 목록 자리만 빈 상태 + 토글 OFF CTA */
+              <View style={{ paddingTop: 48, alignItems: 'center', gap: 4 }} testID="scan-safe-empty">
+                <EmptyBlock label={t('scan.safeEmpty')} />
+                <Btn variant="ghost" onPress={() => setSafeOnly(false)} testID="scan-show-all">
+                  {t('scan.showAllDishes')}
+                </Btn>
+              </View>
+            ) : (
             <ScanRichList
-              dishes={listDishes}
+              dishes={visibleDishes}
               currency={currency}
               fx={fx}
               cart={cart}
@@ -675,6 +699,7 @@ export default function Scan() {
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
               t={t}
             />
+            )}
           </ScrollView>
           </>
         ) : (
@@ -690,9 +715,9 @@ export default function Scan() {
         <ActionSheet
           open={sortSheet}
           title={t('reviews.sortTitle')}
-          items={(['menu', 'safety'] as ResultSortMode[]).map((m) => ({
+          items={(['menu', 'priceDesc', 'priceAsc'] as ResultSortMode[]).map((m) => ({
             key: m,
-            label: t(m === 'menu' ? 'scan.sortMenu' : 'scan.sortSafety'),
+            label: t(SORT_LABEL_KEY[m]),
             icon: m === sortMode ? <IconCheck size={15} color={C.primary} /> : undefined,
             onPress: () => setSortMode(m),
           }))}
@@ -726,7 +751,7 @@ export default function Scan() {
                   variant="dangerGhost"
                   onPress={() => {
                     setRetakeConfirm(false);
-                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setPhase('camera');
+                    setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
                   }}
                   testID="retake-go"
                 >
