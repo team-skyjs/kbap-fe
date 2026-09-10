@@ -427,6 +427,7 @@
     "emptyBody": "還沒有評價。來寫下第一條吧。",
     "writeReview": "撰寫評論",
     "helpfulOwnToast": "不能給自己的評價點有幫助",
+    "helpfulMarkedToast": "已標記有幫助",
     "lang": {
       "en": "英文",
       "th": "泰文",

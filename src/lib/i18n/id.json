@@ -427,6 +427,7 @@
     "emptyBody": "Belum ada ulasan. Jadilah yang pertama.",
     "writeReview": "Tulis ulasan",
     "helpfulOwnToast": "Kamu tidak bisa menandai ulasanmu sendiri sebagai membantu",
+    "helpfulMarkedToast": "Ditandai membantu",
     "lang": {
       "en": "Inggris",
       "th": "Thailand",

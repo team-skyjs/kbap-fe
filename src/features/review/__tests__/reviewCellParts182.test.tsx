@@ -173,3 +173,21 @@ it('KB-431 후속(.fig 실측 2162:11360): 평점 행 = 좌측 정렬(hug @x20) 
   expect(src).toContain("justifyContent: 'flex-start', gap: 16");
   expect(src).not.toContain("justifyContent: 'center', gap: 16");
 });
+
+it('P-366 ④(KB-529): 비mine ON 탭 = 체크 토스트 1회 · OFF 탭 = 토스트 0', () => {
+  jest.clearAllMocks();
+  const RV2 = { id: 'r9', foodId: '7', rating: 4, likes: 3, myLike: false, anonymized: false, authorNationality: 'US', authorRankTier: null, createdAt: '2026-09-10' } as never;
+  const tap = (tree: ReactTestRenderer, id: string) =>
+    act(() => tree.root.findAll((n) => n.props?.testID === `helpful-${id}` && typeof n.props?.onPress === 'function')[0].props.onPress());
+  const t2 = (k: string) => k;
+  const tree = render(<HelpfulButton review={RV2} mine={false} t={t2} />); // myLike:false → 켜는 방향
+  tap(tree, 'r9');
+  expect(mockLikeToggle).toHaveBeenCalledTimes(1);
+  expect(mockToast).toHaveBeenCalledTimes(1);
+  expect(mockToast).toHaveBeenCalledWith('reviews.helpfulMarkedToast'); // 체크(기본 아이콘)
+  mockToast.mockClear();
+  const on = { ...(RV2 as unknown as Record<string, unknown>), myLike: true } as never;
+  const tree2 = render(<HelpfulButton review={on} mine={false} t={t2} />); // 끄는 방향
+  tap(tree2, 'r9');
+  expect(mockToast).not.toHaveBeenCalled();
+});

@@ -473,6 +473,7 @@
     "emptyBody": "아직 리뷰가 없어요. 첫 리뷰를 남겨보세요.",
     "writeReview": "리뷰 쓰기",
     "helpfulOwnToast": "내 리뷰에는 '도움돼요'를 누를 수 없어요",
+    "helpfulMarkedToast": "'도움돼요'를 눌렀어요",
     "lang": {
       "en": "영어",
       "th": "태국어",
