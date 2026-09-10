@@ -56,7 +56,7 @@ export function useFoods(query?: string) {
  * BE's nextCursor (last item's foodId — treated as opaque).
  */
 /** 목록 페이지 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
-export async function fetchFoodsPage(pageParam: number | undefined): Promise<PageMenuSummaryWire> {
+export async function fetchFoodsPage(pageParam: number | undefined, riskWire?: string): Promise<PageMenuSummaryWire> {
   if (MOCK_MODE_FOODS) {
     return {
       items: MOCK_FOODS.map((f) => ({
@@ -74,14 +74,32 @@ export async function fetchFoodsPage(pageParam: number | undefined): Promise<Pag
   // P-008(KB-174 후속): 401 특례(게스트 정숙 임시책) 제거 — foods 인증-선택
   // 전환 완료(무토큰 200, 7/20 실측)로 게스트는 401이 없고, 남는 401 =
   // 죽은 토큰뿐. 빈 목록 위장은 isError를 막아 에러 블록을 무력화한다.
-  return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}`);
+  const riskQ = riskWire ? `&risk=${riskWire}` : '';
+  return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}${riskQ}`);
 }
 
-export function useInfiniteFoods() {
+/** P-350(KB-492): 위험도 칩 = 서버 필터. CSV 값(SAFE·CAUTION·DANGER·UNKNOWN, OR,
+ *  조회자 기준 판정) — 'unable' 칩은 없어 매핑 불필요, 미지정('all') = 전체.
+ *  ⚠️ risk 지정 시 items는 hasNext=true여도 PAGE_SIZE 미만(0 포함) 가능 —
+ *  종료 판정은 hasNext/nextCursor로만(빈 페이지 = 종료 아님). */
+export const FOODS_PAGE_SIZE = 20; // 서버 FoodService/BookmarkService PAGE_SIZE 동치
+export type RiskFilterChip = 'all' | 'safe' | 'caution' | 'danger';
+export const RISK_FILTER_WIRE: Record<Exclude<RiskFilterChip, 'all'>, string> = {
+  safe: 'SAFE',
+  caution: 'CAUTION',
+  danger: 'DANGER',
+};
+export function riskWireOf(risk?: RiskFilterChip): string | undefined {
+  return risk && risk !== 'all' ? RISK_FILTER_WIRE[risk] : undefined;
+}
+
+export function useInfiniteFoods(risk?: RiskFilterChip) {
+  const wire = riskWireOf(risk);
   return useInfiniteQuery({
-    queryKey: ['foods', 'list', i18n.language],
+    // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지)
+    queryKey: wire ? ['foods', 'list', i18n.language, wire] : ['foods', 'list', i18n.language],
     initialPageParam: undefined as number | undefined,
-    queryFn: ({ pageParam }) => fetchFoodsPage(pageParam),
+    queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire),
     getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });

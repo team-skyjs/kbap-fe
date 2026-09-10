@@ -57,7 +57,15 @@ jest.mock('@/components/AuthGateSheet', () => {
 const mockMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockBrowse = jest.fn();
-jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => mockBrowse() }));
+// P-350(KB-492): 칩 = 서버 필터 — 목이 risk 인자로 서버 판정 재현
+jest.mock('@/lib/data/useFoods', () => ({
+  FOODS_PAGE_SIZE: 20,
+  useInfiniteFoods: (risk?: string) => {
+    const r = mockBrowse(risk);
+    if (!r?.data || !risk || risk === 'all') return r;
+    return { ...r, data: (r.data as { risk: string }[]).filter((f) => f.risk === risk) };
+  },
+}));
 const mockToggle = jest.fn();
 const mockSaved = jest.fn();
 jest.mock('@/lib/data/bookmarks', () => ({
@@ -361,8 +369,14 @@ it('⑯ P-321 레일 상태 — 로딩 스켈레톤 / 에러 / Saved 0건 CTA / 
   expect(byIdIn(t3, 'home-rail-saved-empty').length).toBeGreaterThanOrEqual(1);
   press(t3, 'home-rail-browse');
   expect(mockPush).toHaveBeenLastCalledWith('/food');
-  // ④ 칩 전부 걸러짐(caution 0건) = railFilterEmpty — ScrollView 밖 세로 블록
+  // ④ 칩 전부 걸러짐(caution 0건) — P-350: hasNext 남았으면 채움 중 = 스켈레톤,
+  // 빈 판정은 !hasNextPage && 0건일 때만 railFilterEmpty
   mockBrowse.mockReturnValue(browseOf([FOOD('1'), FOOD('2', 'danger')]));
+  const t4a = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+  press(t4a, 'home-chip-caution');
+  expect(byIdIn(t4a, 'home-rail-skel').length).toBeGreaterThanOrEqual(1); // hasNext=true = 채움 중
+  expect(byIdIn(t4a, 'home-rail-filter-empty')).toHaveLength(0);
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1'), FOOD('2', 'danger')]), hasNextPage: false });
   const t4 = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
   press(t4, 'home-chip-caution');
   expect(byIdIn(t4, 'home-rail-filter-empty').length).toBeGreaterThanOrEqual(1);
