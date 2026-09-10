@@ -158,10 +158,40 @@ it('#109 2R P1 ①: idle 정착 후 새 요청 시작 = 같은 렌더에서 동�
   });
   await act(async () => { jest.advanceTimersByTime(OTA_NETWORK_IDLE_MS + 100); });
   expect(idleOf(tree)).toContain('true'); // 정착
-  // 새 raw 요청 시작 — busy 전환 커밋의 렌더에서 이미 false(idle && !busy)
+  // 새 raw 요청 시작 — P-363: 판정(networkQuietNow)은 호출 시점 즉시 false,
+  // 표시 리렌더는 마이크로태스크 뒤(렌더 중 dispatch 금지)
+  const { networkQuietNow } = require('../OtaAutoApplyHost') as typeof import('../OtaAutoApplyHost');
   act(() => { incInflight(); });
+  expect(networkQuietNow(qc)).toBe(false); // 게이트 = 즉시
+  await act(async () => { jest.advanceTimersByTime(0); }); // 마이크로태스크 플러시
   expect(idleOf(tree)).toContain('false');
   act(() => { decInflight(); });
+});
+
+it('#109 P-363(KB-526): 구독 콜백 = 동기 dispatch 0(마이크로태스크 후 1) · busy 무전이 연속 이벤트 = 리렌더 무증가', async () => {
+  jest.useFakeTimers();
+  const { incInflight, decInflight } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  let renders = 0;
+  function CountProbe() {
+    renders += 1;
+    useNetworkIdle();
+    return null;
+  }
+  await act(async () => {
+    renderer.create(
+      <QueryClientProvider client={qc}>
+        <CountProbe />
+      </QueryClientProvider>,
+    );
+  });
+  const base = renders;
+  incInflight(); // 구독 콜백 동기 실행(렌더 중 시나리오 대역)
+  expect(renders).toBe(base); // 동기 dispatch 0 — React 경고 봉쇄
+  incInflight(); // busy true→true 무전이 — 추가 스케줄 없음
+  await act(async () => { jest.advanceTimersByTime(0); }); // 마이크로태스크 플러시
+  expect(renders).toBe(base + 1); // 전이 1회분만
+  act(() => { decInflight(); decInflight(); });
 });
 
 it('#109 2R P1 ② → 9R: 훅 배선 잠금 — 반환·tryApply 최종 게이트 = 같은 quietRef 호출 시점 계산', () => {
