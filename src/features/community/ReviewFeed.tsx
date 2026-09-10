@@ -120,7 +120,8 @@ export function ReviewFeed() {
                     <View style={[styles.sw, profileFilter && styles.swOn]}>
                       <View style={[styles.knob, profileFilter && styles.knobOn]} />
                     </View>
-                    <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
+                    {/* P-365(KB-528): 라벨 = 상세/리뷰 목록과 동일 "{국가} only"(9/5 Q12 판정 통일) */}
+                    <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.countryOnly', { code: myNat })}</Text>
                   </Pressable>
                 ) : (
                   <View />

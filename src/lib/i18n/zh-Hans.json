@@ -452,7 +452,6 @@
     "sort_helpful": "最有帮助",
     "ratingAll": "全部评分",
     "ratingMin": "{{min}}分以上",
-    "filterByProfile": "按个人资料筛选",
     "countryOnly": "仅{{code}}"
   },
   "ranking": {

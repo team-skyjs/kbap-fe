@@ -452,7 +452,6 @@
     "sort_helpful": "มีประโยชน์ที่สุด",
     "ratingAll": "ทุกคะแนน",
     "ratingMin": "{{min}} ดาวขึ้นไป",
-    "filterByProfile": "กรองตามโปรไฟล์",
     "countryOnly": "เฉพาะ {{code}}"
   },
   "ranking": {
