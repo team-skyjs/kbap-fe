@@ -468,7 +468,7 @@ it('P-169: Helpful 탭 → 좋아요 API 배선(회원) — 행 오픈과 독립
   const helpful = tree.root.findAll((n) => n.props?.testID === 'helpful-r1')[0];
   const { act } = require('react-test-renderer');
   act(() => helpful.props.onPress());
-  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+  expect(mockToggleLike).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2
 });
 
 /* ---------- P-323(KB-448): "{국가} only" 토글 — 게스트·null 국적·서버 필터 ---------- */

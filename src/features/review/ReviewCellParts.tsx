@@ -413,9 +413,13 @@ export function HelpfulButton({
     }
     if (isGuest) return onGuest?.();
     track(EVENTS.review_helpful_toggle, { on: !review.myLike, surface }); // P-214: 4표면 공용 한 곳
-    toggle.mutate({ reviewId: review.id, foodId: foodId ?? review.foodId }); // 낙관 토글(멱등 — 가드 예외)
-    // P-366 ④(KB-529): 켜는 방향만 체크 토스트(끄는 방향 = 무토스트 — 예진 판정 대기)
-    if (!review.myLike) showTopToast(t('reviews.helpfulMarkedToast'));
+    // P-366 ④ → #131 P2: 토스트 = 성공 후 발화(실패 롤백 시 무토스트) — 켜는 방향은
+    // 호출 시점 스냅샷(onSuccess 시점 myLike는 낙관 반영으로 이미 반전됨)
+    const turningOn = !review.myLike;
+    toggle.mutate(
+      { reviewId: review.id, foodId: foodId ?? review.foodId }, // 낙관 토글(멱등 — 가드 예외)
+      { onSuccess: () => { if (turningOn) showTopToast(t('reviews.helpfulMarkedToast')); } },
+    );
   };
   return (
     /* KB-430(4150:13934): 버튼형 — h30 pad 7/13 line 1px r4, thumbs-up 16 + 12/500.
