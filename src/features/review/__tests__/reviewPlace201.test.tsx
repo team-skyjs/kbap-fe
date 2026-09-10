@@ -34,7 +34,7 @@ jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn() }, apiLang: () => '
 import { _mapUrlsForTest } from '@/features/community/placeMap';
 import { fetchNearbyPlaces, fetchSearchPlaces, REVIEW_PLACE_FALLBACK_COORD } from '@/lib/api/places';
 import { buildReviewUpdate } from '@/lib/api/reviewAdapter';
-import { PlacePickerSheet, ReviewEditSheet, ReviewPlaceLine } from '../ReviewCellParts';
+import { PlacePickerSheet, ReviewPlaceLine } from '../ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -122,19 +122,6 @@ it('셀 장소 줄 — 무태그 = 미렌더 · 태그 = 핀 줄 렌더 + 탭 = 
   expect(flat(tree)).toContain('community.map.naver'); // 3사 시트 도달
 });
 
-it('수정 왕복 — 프리필 칩 · 해제(X) 후 저장 = place null(제거 의도)', () => {
-  const onSave = jest.fn();
-  const review = {
-    id: 'r1', foodId: '7', rating: 4, body: 'b', anonymized: false, createdAt: '2026-08-13',
-    authorNationality: null, authorRankTier: null,
-    place: { name: '강남 김밥', roadAddress: '강남대로 1', latitude: 37.49, longitude: 127.02 },
-  } as Review;
-  const tree = render(<ReviewEditSheet review={review} onClose={jest.fn()} onSave={onSave} t={t} />);
-  expect(flat(tree)).toContain('강남 김밥'); // 프리필 칩
-  act(() => tree.root.findAll((n) => n.props?.testID === 'edit-place-clear')[0].props.onPress()); // 해제
-  act(() => tree.root.findAll((n) => n.props?.testID === 'edit-save' && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(onSave).toHaveBeenCalledWith({ rating: 4, body: 'b', place: null, extras: { speed: null, service: null } }); // P-236: extras 동반
-});
 
 it('플래그 게이트 — reviewPlaceEnabled = 채널 분기(prod 무노출) 소스 잠금', () => {
   const fs = require('fs');

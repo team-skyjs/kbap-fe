@@ -103,7 +103,7 @@ export function useUpdateReview() {
       reviewId: string;
       foodId: string;
       current: { rating: number; body: string | null; photos?: string[]; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; servingSpeed?: number; staffKindness?: number };
-      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras };
+      changes: { rating?: number; body?: string | null; place?: { name: string; roadAddress: string | null; latitude?: number | null; longitude?: number | null } | null; extras?: ReviewExtras; photos?: string[] };
     }) => {
       if (!FLAGS.reviewsLiveEnabled) {
         const body = (input.changes.body !== undefined ? input.changes.body : input.current.body)?.trim() || null;
@@ -166,6 +166,21 @@ function flipLikeCaches(qc: QueryClient, input: { reviewId: string; foodId: stri
       prev ? { ...prev, pages: prev.pages.map((p) => ({ ...p, items: p.items.map(flip) })) } : prev,
     );
   });
+}
+
+/** P-358(KB-521): 편집 진입 프리필 — 캐시(내리뷰 → 음식 리뷰 전 필터 → 전역 피드)에서
+ *  reviewId로 조회. 못 찾으면 null(호출측이 목록 재조회 후 재시도). */
+export function findCachedReview(qc: QueryClient, input: { reviewId: string; foodId: string }): Review | null {
+  const mine = qc.getQueryData<Review[]>(['me', 'reviews'])?.find((r) => r.id === input.reviewId);
+  if (mine) return mine;
+  for (const query of likeInfiniteQueries(qc, input.foodId)) {
+    const data = query.state.data as InfiniteData<ReviewPage> | undefined;
+    for (const p of data?.pages ?? []) {
+      const r = p.items.find((x) => x.id === input.reviewId);
+      if (r) return r;
+    }
+  }
+  return null;
 }
 
 /** 현재 myLike — 캐시가 진실(화면도 이걸 그린다). 내리뷰 → infinite 캐시 순.

@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "Editar reseña",
-    "viewTitle": "Mi reseña",
     "save": "Guardar cambios",
+    "savedToast": "Reseña actualizada",
     "delete": "Eliminar esta reseña",
-    "posted": "Publicado {{when}}",
-    "noBody": "No escribiste nada con esta valoración.",
     "notFound": "Esta reseña ya no está disponible.",
     "deleteConfirmTitle": "¿Eliminar esta reseña?",
     "deleteConfirmBody": "Esta reseña se eliminará de forma permanente. Esta acción no se puede deshacer."

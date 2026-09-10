@@ -4,7 +4,6 @@
  * 셀 안에서 전부 소비(쿠팡식). 전 표면(상세 프리뷰·전체 목록·커뮤니티 피드·내 리뷰) 공용:
  *   - ExpandableBody: 3줄 클램프 + See more/less 셀 내 펼침
  *   - ReviewPhotoStrip: 가로 스트립 + 탭 = 풀스크린 뷰어(페이징·닫기 — 기존 뷰어 부재로 표준 신설)
- *   - ReviewEditSheet: 본인 리뷰 수정(별점+본문 — 구 디테일 editing 이식, buildReviewUpdate 경유)
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
@@ -439,109 +438,6 @@ export function HelpfulButton({
   );
 }
 
-/** 본인 리뷰 수정 시트 — 구 디테일 editing(별점+본문, 사진은 buildReviewUpdate가 보존) 이식.
- *  P-201: 장소 행 추가 — 프리필·교체·해제(항상 명시 전송: 값 = 유지/교체, null = 해제). */
-export function ReviewEditSheet({
-  review,
-  onClose,
-  onSave,
-  saving,
-  t,
-}: {
-  review: Review | null;
-  onClose: () => void;
-  /** 호출측이 updateReview.mutate(buildReviewUpdate 경유) 배선 */
-  onSave: (changes: { rating: number; body: string; place: Review['place']; extras: ReviewExtras }) => void;
-  saving?: boolean;
-  t: TFn;
-}) {
-  const [rating, setRating] = React.useState(0);
-  const [body, setBody] = React.useState('');
-  const [place, setPlace] = React.useState<Review['place']>(null);
-  const [placeSheet, setPlaceSheet] = React.useState(false);
-  // P-202: 3축 — 프리필 = 로컬 보관분(BE 미저장), 저장 시 로컬 갱신(전송은 계약 후)
-  const [extras, setExtras] = React.useState<ReviewExtras>(EMPTY_EXTRAS);
-  React.useEffect(() => {
-    if (review) {
-      setRating(review.rating);
-      setBody(review.body ?? '');
-      setPlace(review.place ?? null);
-      setExtras(extrasFromReview(review)); // P-236: 프리필 = 서버 값(0 = 미평가)
-    }
-  }, [review]);
-  // P-202: 장소 태그 해제 = 찾아가기 값 소거(발주 1)
-  const clearPlace = () => {
-    setPlace(null);
-  };
-  return (
-    <Modal visible={review != null} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.editBackdrop}>
-        <View style={styles.editCard} testID="review-edit-sheet">
-          <Text style={styles.editTitle}>{t('editReview.title')}</Text>
-          <View style={styles.editStars}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Pressable key={i} onPress={() => setRating(i)} hitSlop={6} testID={`edit-star-${i}`}>
-                <Star size={32} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} />
-              </Pressable>
-            ))}
-          </View>
-          <Input
-            value={body}
-            onChangeText={setBody}
-            multiline
-            style={styles.editInput}
-            textAlignVertical="top"
-            placeholder={t('review.placeholder')}
-            placeholderTextColor={C.ink3}
-          />
-          {/* P-201: 장소 행 — 작성 화면과 같은 문법(칩+해제 / 태그 행) */}
-          {FLAGS.reviewPlaceEnabled &&
-            (place?.name ? (
-              <Pressable style={styles.editPlaceChip} onPress={() => setPlaceSheet(true)} testID="edit-place-chip">
-                <IconMapPin size={13} color={C.ink2} />
-                <Text style={styles.editPlaceText} numberOfLines={1}>{place.name}</Text>
-                <Pressable hitSlop={8} onPress={clearPlace} testID="edit-place-clear">
-                  <IconClose size={13} color={C.ink3} />
-                </Pressable>
-              </Pressable>
-            ) : (
-              <Pressable style={styles.editPlaceRow} onPress={() => setPlaceSheet(true)} hitSlop={4} testID="edit-place-add">
-                <IconMapPin size={15} color={C.ink2} />
-                <Text style={styles.editPlaceAdd}>{t('review.placeRow')}</Text>
-              </Pressable>
-            ))}
-          {/* P-202: 3축 섹션(수정) — 찾아가기 = 장소 태그 연동 */}
-          <ExtrasRater extras={extras} onChange={setExtras} t={t} />
-          <View style={{ gap: 9, marginTop: 4 }}>
-            <Btn
-              busy={saving}
-              onPress={() => {
-                // P-236: 로컬 프리뷰 폐기 — extras는 onSave 페이로드로 서버 전송
-                onSave({ rating, body, place, extras }); // P-236: 2축 서버 전송
-              }}
-              testID="edit-save"
-            >
-              {t('common.save')}
-            </Btn>
-            <Btn variant="ghost" onPress={onClose}>{t('common.cancel')}</Btn>
-          </View>
-        </View>
-      </View>
-      {/* 열렸을 때만 마운트 — 픽커의 useQuery가 닫힌 시트에서 QueryClient를 요구하지 않게 */}
-      {placeSheet && (
-        <PlacePickerSheet
-          open
-          onClose={() => setPlaceSheet(false)}
-          onPick={(p) => {
-            setPlace(p);
-            setPlaceSheet(false);
-          }}
-          t={t}
-        />
-      )}
-    </Modal>
-  );
-}
 
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },

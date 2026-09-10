@@ -48,8 +48,8 @@ import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
 const READER_LANG = 'en'; // MVP reader language
@@ -123,8 +123,6 @@ export default function FoodReviews() {
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   // P-182: 개별 디테일 소멸 — 셀 확장이 전문·사진·수정을 담당
-  const updateReview = useUpdateReview();
-  const [editTarget, setEditTarget] = useState<Review | null>(null);
   const openMenu = (r: Review) =>
     setMod({
       type: 'review',
@@ -277,22 +275,9 @@ export default function FoodReviews() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(all.find((r) => r.id === m.id) ?? null)} /* P-182: 공용 수정 시트 */
+        onEdit={(m) => router.push(`/food/${id}/review?reviewId=${m.id}` as Href)} /* P-358: 편집 = 작성 화면 편집 모드 */
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id ?? '' })}
         onBlocked={() => void reviewsQ.refetch()}
-      />
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body, place, extras }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: id ?? '', current: editTarget, changes: { rating, body } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
       />
     </View>
   );

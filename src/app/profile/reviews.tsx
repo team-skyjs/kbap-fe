@@ -22,8 +22,7 @@ import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyReviews } from '@/components/Skeleton';
 import { FeedCard } from '@/features/review/FeedCard';
-import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { Alert } from 'react-native';
 import type { Review } from '@/lib/api/types';
 
@@ -37,9 +36,7 @@ export default function MyReviews() {
   const { data: reviews, isLoading: reviewsLoading, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
   const { data: foods } = useFoods();
   // P-182: 수정/삭제는 셀 ⋮(항상 본인 화면) — ActionSheet 현 로직
-  const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
-  const [editTarget, setEditTarget] = useState<Review | null>(null);
   const confirmDelete = (rv: Review) => {
     Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -48,7 +45,7 @@ export default function MyReviews() {
   };
   const onMore = (rv: Review) => {
     Alert.alert(rv.foodName ?? foodMap.get(rv.foodId)?.name ?? t('myReviews.viewDish'), undefined, [
-      { text: t('editReview.title'), onPress: () => setEditTarget(rv) },
+      { text: t('editReview.title'), onPress: () => router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href) }, // P-358
       { text: t('editReview.delete'), style: 'destructive', onPress: () => confirmDelete(rv) },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
@@ -112,19 +109,6 @@ export default function MyReviews() {
           <EmptyBlock label={t('myReviews.emptyTitle')} testID="myrev-empty" />
         </ScreenCenterFill>
       )}
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body, place, extras }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place, extras } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
-      />
     </View>
   );
 }

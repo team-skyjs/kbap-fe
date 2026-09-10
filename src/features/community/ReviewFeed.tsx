@@ -23,9 +23,8 @@ import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
-import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { FeedCard } from '@/features/review/FeedCard';
 import { IlloSpeechBubble } from '@/components/design4Assets';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -63,14 +62,12 @@ export function ReviewFeed() {
     if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
   }, [isGuest, myNat, profileFilter]);
   const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
-  const updateReview = useUpdateReview();
   const deleteReview = useDeleteReview();
   const myId = me?.id;
   const unread = useUnreadCount();
   const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
-  const [editTarget, setEditTarget] = React.useState<Review | null>(null);
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
@@ -252,25 +249,12 @@ export function ReviewFeed() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(reviews.find((r) => r.id === m.id) ?? null)}
+        onEdit={(m) => { const rv = reviews.find((r) => r.id === m.id); if (rv) router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href); }} /* P-358 */
         onDelete={(m) => {
           const r = reviews.find((x) => x.id === m.id);
           if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
         }}
         onBlocked={() => void feed.refetch()}
-      />
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body, place, extras }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place, extras } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
       />
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet
