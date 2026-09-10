@@ -111,9 +111,10 @@ describe('P-351(KB-513) 소형 2건', () => {
     }
   });
 
-  it('② 음식 탭 그리드 — paddingTop = topPad + 12(progressViewOffset은 topPad 유지)', () => {
+  it('② 음식 탭 그리드 — 칩 헤어라인 아래 12 = chipRowScreen marginBottom(#114 P2: contentContainer paddingTop은 헤더째 밀림)', () => {
     const fe = read('src/features/food/FoodExplorer.tsx');
-    expect(fe).toContain('contentContainerStyle={{ paddingTop: topPad + 12, paddingBottom: 110 }}');
+    expect(fe).toContain('contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}');
+    expect(fe).toMatch(/chipRowScreen: \{[^}]*marginBottom: 12/);
     expect(fe).toContain('progressViewOffset={topPad}');
   });
 });

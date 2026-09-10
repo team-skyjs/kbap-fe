@@ -352,7 +352,7 @@ export function FoodExplorer({
           onScroll={onScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: topPad + 12, paddingBottom: 110 }} // P-351 ②: 칩 행→첫 카드 12
+          contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={topPad} />}
           columnWrapperStyle={styles.gridRowWrap}
           ListHeaderComponent={top}
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   // P-318: 칩 그룹(래핑) + 우측 정렬 버튼 — embedded는 우측 요소 없음(시각 무변)
   chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04(홈 무변)
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
-  chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' },
+  chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
   chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: 8, height: 34 },
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 24 },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
