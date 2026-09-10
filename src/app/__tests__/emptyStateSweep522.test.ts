@@ -48,3 +48,22 @@ it('키 정리 — community.emptyBody·states 카탈로그 전용 10키 삭제,
     expect(j.reviews.emptyBody).toBeTruthy(); // 필터 0건 카피로 잔존 사용
   }
 });
+
+describe('P-360(KB-523) — KR only 평점 요약 같은 국적 전환(소스 잠금)', () => {
+  it('리뷰 목록 — 토글 ON = sameNationality 값·SAME NATIONALITY 라벨, 0건 = 박스 미렌더', () => {
+    const rv = read('src/app/food/[id]/reviews.tsx');
+    expect(rv).toContain('const summaryAgg = sameNatOnly ? sameNat : overall;');
+    expect(rv).toContain('{!(sameNatOnly && sameNat.count === 0) && (');
+    expect(rv).toContain('<RatingSummaryBox overall={summaryAgg} sameNat={sameNatOnly} axes={axisAverages} t={t} />');
+    expect(rv).toContain("t(sameNat ? 'reviews.sameNationality' : 'reviews.overall').toUpperCase()");
+    expect(rv).toContain('taste: summaryAgg.average,'); // Taste 축 = 토글 연동
+    expect(rv).toContain('summaryAgg.average]); // Codex #30 P2 + P-360'); // memo deps
+  });
+
+  it('상세 rvHead — 토글 ON = sameNationality 별·점수, 0건 = 미렌더 + spacer(토글 위치 유지)', () => {
+    const fd = read('src/app/food/[id]/index.tsx');
+    expect(fd).toContain('const agg = natOnly ? food.sameNationality : food.overall;');
+    expect(fd).toContain('testID="rv-head-empty-spacer"');
+    expect(fd).toContain('{agg.average?.toFixed(1)');
+  });
+});

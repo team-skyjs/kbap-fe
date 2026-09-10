@@ -104,6 +104,9 @@ export default function FoodReviews() {
   });
   // 평점 집계 = 음식 상세 서버값 (P-085 — 목 재계산·리스트 응답 집계 폐기)
   const overall = food?.overall ?? { average: null, count: 0 };
+  // P-360(KB-523): KR only ON = 같은 국적 서버 집계(reviewSummary.sameCountry — 이미 매핑)
+  const sameNat = food?.sameNationality ?? { average: null, count: 0 };
+  const summaryAgg = sameNatOnly ? sameNat : overall;
   // KB-431 §2-3: 축 평균 — Taste = 서버 overall / Speed·Service = 서버 축 집계 부재라
   // 로드된 리뷰(값 있는 것만) 클라 평균. 무데이터 축 = null(바 미표시).
   const axisAverages = React.useMemo(() => {
@@ -112,12 +115,12 @@ export default function FoodReviews() {
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     };
     return {
-      taste: overall.average,
+      taste: summaryAgg.average, // P-360: 토글 ON = 같은 국적 평균(OFF = 현행 overall)
       speed: avg((r) => r.servingSpeed),
       service: avg((r) => r.staffKindness),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewsQ.data, blockedIds, overall.average]); // Codex #30 P2: 차단 필터 반영
+  }, [reviewsQ.data, blockedIds, summaryAgg.average]); // Codex #30 P2 + P-360: 토글 전환 반영
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
@@ -183,7 +186,10 @@ export default function FoodReviews() {
             {/* KB-431 §2-3: 평점 요약 박스(4150:16775) — 좌 총점 / 우 3축 세로 바.
                 축 평균: Taste = 서버 overall · Speed/Service = 로드된 리뷰 클라 평균
                 (서버 축 집계 부재 — REPORTS). 값 없는 축 = 미표시. */}
-            <RatingSummaryBox overall={overall} axes={axisAverages} t={t} />
+            {/* P-360: 토글 ON = 같은 국적 값·라벨 전환, 같은 국적 0건 = 박스 미렌더 */}
+            {!(sameNatOnly && sameNat.count === 0) && (
+              <RatingSummaryBox overall={summaryAgg} sameNat={sameNatOnly} axes={axisAverages} t={t} />
+            )}
 
             {/* P-235: 게스트 열람 개방(무토큰 200 실측) — 블러 고스트·lock CTA 소멸.
                 같은 국적 필터는 국적 미상이라 게스트 미노출(멘토 "내 국가 필터만 제외").
@@ -296,10 +302,13 @@ export function AxisBar({ label, value, top, testID }: { label: string; value: n
 /** KB-431 §2-3: 평점 요약 박스(4150:16775). */
 function RatingSummaryBox({
   overall,
+  sameNat = false,
   axes,
   t,
 }: {
   overall: RatingAggregate;
+  /** P-360: KR only ON — 라벨 = SAME NATIONALITY(값은 호출측이 sameNationality 전달) */
+  sameNat?: boolean;
   axes: { taste: number | null; speed: number | null; service: number | null };
   t: TFn;
 }) {
@@ -317,7 +326,7 @@ function RatingSummaryBox({
           <Text style={styles.bigScore}>{overall.average?.toFixed(1) ?? '—'}</Text>
           <Text style={styles.bigScoreOf}>/ 5</Text>
         </View>
-        <Text style={styles.overallLbl}>{t('reviews.overall').toUpperCase()}</Text>
+        <Text style={styles.overallLbl}>{t(sameNat ? 'reviews.sameNationality' : 'reviews.overall').toUpperCase()}</Text>
       </View>
       {bars.length > 0 && (
         <View style={styles.summaryRight}>

@@ -509,10 +509,20 @@ function Registered({
         <View testID="review-brief">
           <View style={styles.thickDivider} />
           <View style={styles.rvHead}>
-            <Stars value={food.overall.average ?? 0} size={16} />
-            <Text style={[styles.rvHeadScore, { flex: 1 }]}>
-              {food.overall.average?.toFixed(1) ?? '—'} ({food.overall.count})
-            </Text>
+            {/* P-360(KB-523): KR only ON = 같은 국적 집계 즉시 전환(서버 요약은 이미 손에),
+                같은 국적 0건 = 별·점수 미렌더(토글 우측 유지 — 빈 spacer) */}
+            {(() => {
+              const agg = natOnly ? food.sameNationality : food.overall;
+              if (natOnly && agg.count === 0) return <View style={{ flex: 1 }} testID="rv-head-empty-spacer" />;
+              return (
+                <>
+                  <Stars value={agg.average ?? 0} size={16} />
+                  <Text style={[styles.rvHeadScore, { flex: 1 }]}>
+                    {agg.average?.toFixed(1) ?? '—'} ({agg.count})
+                  </Text>
+                </>
+              );
+            })()}
             {/* 9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터.
                 게스트·국적 null(구계정) = 미렌더(국적 미상 — 필터 무의미, 게이트 아님). */}
             {!guest && nationality && (
