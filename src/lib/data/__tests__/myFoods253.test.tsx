@@ -6,6 +6,20 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'enabled', 'numberOfTaps', 'maxPointers', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain, Tap: chain, Simultaneous: (...g: unknown[]) => g, Exclusive: (...g: unknown[]) => g },
+  };
+});
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
@@ -196,7 +210,7 @@ it('KB-360: 상세 메뉴판 사진 — scanImageUrl 렌더 게이트(있음 = �
   const photo = tree.root.findAll((n) => n.props?.testID === 'order-scan-image' && typeof n.props?.onPress === 'function');
   expect(photo.length).toBeGreaterThanOrEqual(1); // CardPhoto 관례 계열(RemoteImage — 스켈레톤 공용 경유)
   act(() => photo[0].props.onPress());
-  expect(tree.root.findAll((n) => n.props?.testID === 'order-viewer-close').length).toBeGreaterThanOrEqual(1); // 풀스크린 뷰어(contain)
+  expect(tree.root.findAll((n) => n.props?.testID === 'viewer-close').length).toBeGreaterThanOrEqual(1); // 풀스크린 뷰어(P-348 공용 PhotoViewer)
 
   // 부재(구 주문·prod 구계약) = 사진 영역 통째 미렌더 — 빈 슬롯 금지
   mockGet.mockImplementation(async (path: string) =>
@@ -256,4 +270,63 @@ it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·�
   expect(profile).toContain("label={t('profile.myFoods')}"); // 메뉴 행 문법(KB-434 MenuRow)
   expect(profile).not.toContain('testID="profile-my-foods"'); // 구 헤더 링크 잔존 0
   expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).toContain('/review` as Href');
+});
+
+it('P-355(KB-517): 2+개 = 앱 바텀시트(행 수·탭 라우팅), Alert.alert 0', async () => {
+  const { Alert } = require('react-native') as typeof import('react-native');
+  const alertSpy = jest.spyOn(Alert, 'alert');
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 2, totalPrice: 12000,
+          items: [
+            { menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: null },
+            { menuName: '공기밥', quantity: 1, price: 1000, foodId: 8, imageRef: null },
+          ] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree);
+  await flush();
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-write-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(alertSpy).not.toHaveBeenCalled(); // 네이티브 목록 소멸
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet').length).toBeGreaterThanOrEqual(1);
+  const rows = new Set(
+    tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('order-dish-') && n.props.testID !== 'order-dish-sheet' && n.props.testID !== 'order-dish-grab' && n.props.testID !== 'order-dish-backdrop').map((n) => n.props.testID as string),
+  );
+  expect(rows).toEqual(new Set(['order-dish-7', 'order-dish-8'])); // 행 수 = reviewables
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-dish-8' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(mockPush).toHaveBeenLastCalledWith('/food/8/review');
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0); // 탭 = 닫힘
+  alertSpy.mockRestore();
+});
+
+it('P-355(KB-517): 1개 = 시트 생략 직진(현행 유지)', async () => {
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 1, totalPrice: 9000,
+          items: [{ menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: null }] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree);
+  await flush();
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-write-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(mockPush).toHaveBeenLastCalledWith('/food/7/review');
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0);
 });

@@ -8,6 +8,20 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'enabled', 'numberOfTaps', 'maxPointers', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain, Tap: chain, Simultaneous: (...g: unknown[]) => g, Exclusive: (...g: unknown[]) => g },
+  };
+});
 jest.mock('@/lib/data/useDietPresets', () => ({
   useDietPresets: () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -111,8 +125,9 @@ jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }),
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'safe' }, isLoading: false, error: null, refetch: jest.fn() }),
 }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
-jest.mock('@/lib/data/useReviewMutations', () => ({
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+jest.mock('@/lib/data/useReviewMutations', () => ({ findCachedReview: () => null,
   useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }),
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useDeleteReview: () => ({ mutate: jest.fn() }),
@@ -149,13 +164,13 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
     return { remove: jest.fn() } as never;
   }) as never);
   const tree = render(<ReviewCompose />);
-  // 구 방식 잔재 0
-  expect(tree.root.findAll((n) => n.props?.automaticallyAdjustKeyboardInsets === true).length).toBe(0);
-  // 키보드 표시 → 컨테이너 하단 패딩 = 키보드 높이 + 여유(28)
+  // P-348 ⑤ 신계약: 키보드 패딩 = iOS 시스템 인셋(automaticallyAdjustKeyboardInsets),
+  // 수동 kbH 패딩 폐지(키보드 위 공백 회귀) — 컨테이너 패딩은 고정 28.
+  expect(tree.root.findAll((n) => n.props?.automaticallyAdjustKeyboardInsets === true).length).toBeGreaterThanOrEqual(1);
   act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
   const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
   const pad = (require('react-native').StyleSheet.flatten(sv.props.contentContainerStyle) as { paddingBottom?: number }).paddingBottom;
-  expect(pad).toBe(28 + 336);
+  expect(pad).toBe(28);
   // 셀렉션·성장·포커스 배선 — scrollTo 호출(블록/뷰포트 실측 주입 후)
   const scrollTo = jest.fn();
   const svInst = sv.instance as { scrollTo?: unknown } | null;
@@ -208,13 +223,15 @@ it('P-158 ③: 리뷰 디테일 좋아요 캡션 부재 — 소스 잠금(하트
   expect(src).not.toContain('likesCaption');
 });
 
-it('P-158 ②: 뱃지 자산 통일 — 리뷰 계열 Rosette 사용 0(MedalEmblem), 소스 잠금', () => {
+it('P-158 ② → P-353 ①: 뱃지 자산 — Rosette 0, 리뷰 목록 = RankMedal 16(피드 동형)·compose = MedalEmblem', () => {
   const fs = require('fs');
   for (const f of ['src/app/food/[id]/reviews.tsx', 'src/app/community/compose.tsx']) { // P-182: review/[id] 소멸
-    const src = fs.readFileSync(f, 'utf8') as string;
-    expect(src).not.toContain('Rosette');
-    expect(src).toContain('MedalEmblem');
+    expect(fs.readFileSync(f, 'utf8') as string).not.toContain('Rosette');
   }
+  const rv = fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
+  expect(rv).toContain('<RankMedal level={review.author?.level ?? 1} size={16} />');
+  expect(rv).not.toContain('rankPill'); // 구 필 소멸
+  expect(fs.readFileSync('src/app/community/compose.tsx', 'utf8') as string).toContain('MedalEmblem');
 });
 
 it('P-150 ④: 내 리뷰 — foodId 해석 실패 시 숫자("499") 미노출, 중립 라벨', () => {

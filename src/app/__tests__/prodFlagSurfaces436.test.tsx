@@ -30,6 +30,7 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: 0, linear: () => 0, bezier: () => 0, in: () => () => 0 },
   };
 });
+jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null })); // P-339 ②: 홈 신고 플로우 표면 목
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
@@ -104,7 +105,7 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: { pages: [] } }) }));
-jest.mock('@/lib/data/bookmarks', () => ({
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }),
   useBookmarks: () => ({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));
@@ -122,7 +123,20 @@ function render(el: React.ReactElement): ReactTestRenderer {
   return tree;
 }
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
-const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
+// P-317: 홈 = Animated.FlatList — ListHeader/Footer 엘리먼트 prop이 순환 참조라
+// 엘리먼트 prop은 버리고(렌더 트리만) 순환도 차단하는 안전 직렬화로 교체.
+const REACT_EL = new Set<symbol>([Symbol.for('react.element'), Symbol.for('react.transitional.element')]);
+const flat = (t: ReactTestRenderer) => {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(t.toJSON(), (_k, v: unknown) => {
+    if (typeof v === 'object' && v !== null) {
+      if (REACT_EL.has((v as { $$typeof?: symbol }).$$typeof as symbol)) return undefined;
+      if (seen.has(v)) return undefined;
+      seen.add(v);
+    }
+    return v;
+  });
+};
 
 it('① P-289 감사표 — production 실계산: 구 채널 5종 = dev 동일(true)·채널 분기 잔존 0', () => {
   expect(isProdChannel()).toBe(true); // 채널 목이 실제로 관통했는지 방어

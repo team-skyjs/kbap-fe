@@ -14,3 +14,10 @@ const CDN_BASE = 'https://d29c1cr2ng7w0.cloudfront.net/';
 export function ingredientImageUrl(code: string): string {
   return `${CDN_BASE}images/webp/ingredients/${code.toLowerCase()}.webp`;
 }
+
+/** P-341(KB-502): 배경 제거본(알파 webp 512², 81/81 CDN 200) — 체인 선두.
+ *  404/실패 시 기존 체인(원본 → 조립 → 색)으로 자연 폴백. BE image_path가
+ *  ingredients-cut로 마이그레이션되면(종한 릴리스) 이 선두는 제거 가능(TODO). */
+export function ingredientCutoutUrl(code: string): string {
+  return `${CDN_BASE}images/webp/ingredients-cut/${code.toLowerCase()}.webp`;
+}

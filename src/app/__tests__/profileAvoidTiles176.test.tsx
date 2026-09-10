@@ -47,7 +47,7 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
 jest.mock('@/lib/auth/session', () => ({ logOut: jest.fn() }));
 jest.mock('@/lib/data/useFoods', () => ({ useFoods: () => ({ data: [] }) }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
 const mockHome = jest.fn(() => ({ data: { recent: [] } }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome() })); // P-181 ②
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
@@ -102,7 +102,8 @@ it('회피 = 사진 미니 타일(선택분만) — 서버 이미지·번역명,
   expect(tree.root.findAll((n) => n.props?.testID === 'avtile-SHRIMP').length).toBeGreaterThanOrEqual(1);
   const s = flat(tree);
   expect(s).toContain('srv:EGG'); // P-174 서버 번역명 승계
-  expect(s).toContain('https://cdn/egg.webp'); // 서버 이미지 승계
+  expect(s).toContain('images/webp/ingredients-cut/egg.webp'); // P-341: 누끼 선두
+  // 서버 이미지 승계는 체인 2순위 — 누끼 실패 시 전환(ingredientImageChain303에서 검증)
   const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
   expect(src).not.toContain('AvoidChip'); // 구 solid 칩 문법 소멸(P-227 식이 presetChip과 무관)
   expect(src).not.toContain('profile.add'); // P-227 ④: "+ Add" 소멸 — 수정은 Show all 페이지

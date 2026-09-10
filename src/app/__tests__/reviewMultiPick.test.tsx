@@ -5,6 +5,21 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'enabled', 'numberOfTaps', 'maxPointers', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain, Tap: chain, Simultaneous: (...g: unknown[]) => g, Exclusive: (...g: unknown[]) => g },
+  };
+});
+jest.mock('@/lib/data/profileImage', () => ({ choosePhotoSource: jest.fn(async () => 'gallery') })); // P-348 ④: 시트 = 갤러리 선택 고정
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   return {
@@ -71,7 +86,9 @@ const mockFoodDetail = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockFoodDetail() }));
 
 const mockMutateAsync = jest.fn();
-jest.mock('@/lib/data/useReviewMutations', () => ({ useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+jest.mock('@/lib/data/useReviewMutations', () => ({ findCachedReview: () => null,
+  useUpdateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined), mutate: jest.fn(), isPending: false }), useCreateReview: () => ({ mutateAsync: mockMutateAsync, isPending: false }) }));
 const mockLaunchLibrary = jest.fn();
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: (o: unknown) => mockLaunchLibrary(o) }));
 // 업로드 목 — HEIC 경유(per-file uploadImage) 검증용

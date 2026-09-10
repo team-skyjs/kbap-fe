@@ -16,14 +16,14 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
     }
   });
 
-  it('prod + 허용 라우트(탭 루트 3종) + 뮤테이션 0 = reload', () => {
-    expect([...SAFE_ROUTES]).toEqual(['/', '/food', '/profile']);
-    for (const pathname of SAFE_ROUTES) {
-      expect(otaApplyDecision({ prod: true, pathname, mutating: 0 })).toBe('reload');
+  it('P-316: prod = 항상 defer(라우트·뮤테이션 무관 — 다음 콜드 스타트 자동 적용)', () => {
+    for (const pathname of ['/', '/food', '/profile', '/scan', '/food/7']) {
+      expect(otaApplyDecision({ prod: true, pathname, mutating: 0 })).toBe('defer');
+      expect(otaApplyDecision({ prod: true, pathname, mutating: 2 })).toBe('defer');
     }
   });
 
-  it('prod + 허용 라우트라도 뮤테이션 진행 중이면 defer', () => {
+    it('prod + 허용 라우트라도 뮤테이션 진행 중이면 defer', () => {
     expect(otaApplyDecision({ prod: true, pathname: '/', mutating: 1 })).toBe('defer');
   });
 
@@ -38,9 +38,56 @@ describe('otaPolicy — 채널×라우트×뮤테이션 판정', () => {
       expect(isBlockedRoute(p)).toBe(true);
       expect(otaApplyDecision({ prod: true, pathname: p, mutating: 0 })).toBe('defer');
     }
+    for (const p of ['/login', '/auth/callback', '/community/compose', '/delete-account', '/search', '/scan-order']) {
+      expect(isBlockedRoute(p)).toBe(true); // #109 5R/6R: 작업 화면 전수(작업 = 차단 / 목록·상세 = 허용)
+    }
+    for (const p of ['/notifications', '/states']) {
+      expect(isBlockedRoute(p)).toBe(false); // 멱등 토글·데모 = 허용 유지
+    }
     for (const p of ['/', '/food', '/profile', '/food/7', '/food/7/reviews']) {
       expect(isBlockedRoute(p)).toBe(false); // 탭 루트·리뷰 "목록"은 제외 아님
     }
+  });
+});
+
+describe('P-304(KB-458): canReloadNow — reloadAsync 부팅 가드(3조건 AND)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { canReloadNow, OTA_BOOT_GUARD_MS } = require('../otaPolicy') as typeof import('../otaPolicy');
+  const OK = { bootedAt: 0, now: OTA_BOOT_GUARD_MS, splashDone: true, appState: 'active', networkIdle: true }; // P-347: 4조건 AND
+
+  it('전부 충족 = true(경계 8s 포함)', () => {
+    expect(canReloadNow(OK)).toBe(true);
+    expect(canReloadNow({ ...OK, now: OTA_BOOT_GUARD_MS + 60_000 })).toBe(true);
+  });
+
+  it('부팅 8s 미경과 = false(b28 크래시 재현 창 — 3s)', () => {
+    expect(canReloadNow({ ...OK, now: 3_000 })).toBe(false);
+  });
+
+  it('스플래시 미종료 = false', () => {
+    expect(canReloadNow({ ...OK, splashDone: false })).toBe(false);
+  });
+
+  it('비포그라운드(background/inactive) = false', () => {
+    expect(canReloadNow({ ...OK, appState: 'background' })).toBe(false);
+    expect(canReloadNow({ ...OK, appState: 'inactive' })).toBe(false);
+  });
+
+  it('P-347(KB-509): networkIdle false = false — 진행 중 fetch reject가 죽은 런타임에 스케줄되는 크래시 봉쇄', () => {
+    expect(canReloadNow({ ...OK, networkIdle: false })).toBe(false);
+  });
+
+  it('호스트 배선 소스 잠금 — 가드 경유 적용·타이머 1회 재평가·배너 탭 동일 경로·splashDone 배선', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs');
+    const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+    expect(host).toContain('const BOOTED_AT = Date.now();'); // 모듈 로드 시각
+    expect(host).toContain('if (!canReloadNow({ bootedAt: BOOTED_AT'); // 가드 통과 시에만 applyNow
+    expect(host).toContain('if (tryApply()) return;'); // 정책 reload여도 가드 선행(teamtest immediate 포함)
+    expect(host).toContain('setTimeout(() => setGuardTick((n) => n + 1), remainMs + 50)'); // 시간 조건 미충족만 1회 재평가(#109 P2)
+    expect(host).toContain('return null;'); // P-316: 배너 렌더 0(수동 적용 경로 소멸)
+    const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
+    expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />');
   });
 });
 
@@ -91,17 +138,17 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
 
   it('루트 레이아웃이 OtaAutoApplyHost를 마운트한다', () => {
     const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-    expect(layout).toContain('<OtaAutoApplyHost />');
+    expect(layout).toContain('<OtaAutoApplyHost splashDone={!splashVisible} />'); // P-304: 가드 조건 ② 배선
   });
 
-  it('호스트 — __DEV__ 게이트·expo-updates 지연 require·정책 경유·배너 제외 화면 미노출', () => {
-    const host = fs.readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-    expect(host).toContain('if (__DEV__) return');
-    expect(host).toContain("require('expo-updates')"); // 정적 import 금지(구 런타임 방어 관례)
-    expect(host).not.toMatch(/^import .*'expo-updates'/m);
+  it('호스트 — __DEV__ 게이트·expo-updates 지연 require·정책 경유·배너 소멸(P-316)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
+    expect(host).toContain('if (__DEV__) return;');
+    expect(host).toContain("require('expo-updates')");
     expect(host).toContain('otaApplyDecision(');
-    expect(host).toContain('isBlockedRoute(');
-    expect(host).toContain('useIsMutating');
+    expect(host).not.toContain('ota.ready'); // P-316: prod 배너·수동 적용 소멸
+    expect(host).not.toContain('ota-banner');
   });
 
   it('EAS Workflow — develop 푸시 트리거 + prod 호스트 유출 가드 + clear 캐시 + fp 게이트', () => {
@@ -164,15 +211,11 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(yml).toMatch(/for P in \$PLATS/);
   });
 
-  it('i18n — ota.ready·ota.apply 10로케일 전부 존재(빈 값 금지)', () => {
+  it('P-316: i18n — ota.ready/apply 키 제거(10로케일 잔존 0, K-41 소멸)', () => {
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
-      const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${loc}.json`, 'utf8') as string) as {
-        ota?: { ready?: string; apply?: string };
-      };
-      expect(typeof j.ota?.ready).toBe('string');
-      expect((j.ota?.ready ?? '').length).toBeGreaterThan(0);
-      expect(typeof j.ota?.apply).toBe('string');
-      expect((j.ota?.apply ?? '').length).toBeGreaterThan(0);
+      const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${loc}.json`, 'utf8') as string) as { ota?: Record<string, string> };
+      expect(j.ota?.ready).toBeUndefined();
+      expect(j.ota?.apply).toBeUndefined();
     }
   });
 });

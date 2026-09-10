@@ -30,7 +30,7 @@ jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => (
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/api/client', () => ({ api: { get: jest.fn().mockResolvedValue([]) }, apiLang: () => 'en' }));
 
-import { ExtrasRater, ReviewExtrasLine, ReviewEditSheet } from '../ReviewCellParts';
+import { ExtrasRater, ReviewExtrasLine } from '../ReviewCellParts';
 import { buildReviewExtras, extrasFromReview, EMPTY_EXTRAS } from '@/lib/review/reviewExtras';
 import type { Review } from '@/lib/api/types';
 
@@ -85,16 +85,6 @@ it('셀 축약 = 서버 값(전 리뷰) — 0 축 비표시·둘 다 0(구 리�
   expect(s).not.toContain('"0"'); // 0(미평가) 축은 그리지 않는다(오독 방지)
 });
 
-it('수정 시트 — 서버 값 프리필 + 저장 페이로드에 extras 포함', () => {
-  const onSave = jest.fn();
-  const review = RV({ body: 'b', servingSpeed: 3, staffKindness: 5 });
-  const tree = render(<ReviewEditSheet review={review} onClose={jest.fn()} onSave={onSave} t={t} />);
-  // 프리필 확인 — speed 3·service 5 (extrasFromReview 경유)
-  expect(extrasFromReview(review)).toEqual({ speed: 3, service: 5 });
-  tap(tree, 'extras-service-2'); // 친절 5 → 2 수정
-  tap(tree, 'edit-save');
-  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ extras: { speed: 3, service: 2 } }));
-});
 
 it('extrasFromReview — 0 = 미평가 = null(프리필·표시 공용 변환)', () => {
   expect(extrasFromReview({ servingSpeed: 0, staffKindness: 0 })).toEqual({ speed: null, service: null });

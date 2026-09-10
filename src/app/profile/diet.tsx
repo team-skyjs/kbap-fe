@@ -140,14 +140,14 @@ export default function DietPresetsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { padding: 18, gap: 18, paddingBottom: 120 },
-  group: { gap: 10 },
-  groupTitle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  body: { padding: 18, gap: 24, paddingBottom: 120 }, // A-DT-07(KB-486)
+  group: { gap: 12 }, // A-DT-07
+  groupTitle: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' }, // A-DT-06(uppercase 소멸)
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   // 온보딩 프리셋 칩 문법 — 선택 전후 프레임 불변(같은 폭 보더, 색만 전환 — P-103)
-  chip: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
+  chip: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 12 }, // A-DT-05
   chipOn: { backgroundColor: primaryTint, borderColor: C.primary },
-  chipText: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
+  chipText: { fontSize: 14, fontWeight: '400', color: '#1E2124' }, // A-DT-05
   chipTextOn: { color: C.primaryText },
   hint: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 17 },
   savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 18, paddingBottom: 30, backgroundColor: C.surface },

@@ -4,19 +4,23 @@
  * 셀 안에서 전부 소비(쿠팡식). 전 표면(상세 프리뷰·전체 목록·커뮤니티 피드·내 리뷰) 공용:
  *   - ExpandableBody: 3줄 클램프 + See more/less 셀 내 펼침
  *   - ReviewPhotoStrip: 가로 스트립 + 탭 = 풀스크린 뷰어(페이징·닫기 — 기존 뷰어 부재로 표준 신설)
- *   - ReviewEditSheet: 본인 리뷰 수정(별점+본문 — 구 디테일 editing 이식, buildReviewUpdate 경유)
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
+import { PhotoViewer } from '@/components/PhotoViewer';
 import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Btn, IconClose, IconMapPin, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
+import { Btn, CardPhoto, IconClose, IconMapPin, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
+import Animated from 'react-native-reanimated';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { EMPTY_EXTRAS, extrasFromReview, hasAnyExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
 import { TagChip } from '@/features/community/parts';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
+import { showTopToast } from '@/components/topToastStore';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
 import { IconPlus, IconSearch } from '@/components';
@@ -69,34 +73,8 @@ export function ReviewPhotoStrip({ photos, size = 72, radius = 10 }: { photos: s
           </Pressable>
         ))}
       </View>
-      <Modal visible={openAt != null} transparent animationType="fade" onRequestClose={() => setOpenAt(null)}>
-        <View style={styles.viewer} testID="photo-viewer">
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            contentOffset={{ x: (openAt ?? 0) * width, y: 0 }}
-            onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
-          >
-            {photos.map((uri) => (
-              <View key={uri} style={{ width, justifyContent: 'center' }}>
-                <RemoteImage uri={uri} style={{ width, height: width * 1.2 }} contentFit="contain" />
-              </View>
-            ))}
-          </ScrollView>
-          {/* P-193: X = 아이콘만(배경·보더 소멸 — P-181 연필 문법), 터치는 hitSlop */}
-          <Pressable style={styles.viewerClose} hitSlop={14} onPress={() => setOpenAt(null)} testID="viewer-close">
-            <IconClose size={22} color="#fff" />
-          </Pressable>
-          {photos.length > 1 && (
-            <View style={styles.dots}>
-              {photos.map((_, i) => (
-                <View key={i} style={[styles.dot, i === page && styles.dotOn]} />
-              ))}
-            </View>
-          )}
-        </View>
-      </Modal>
+      {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}
+      {openAt != null && <PhotoViewer uris={photos} index={openAt} onClose={() => setOpenAt(null)} />}
     </>
   );
 }
@@ -143,6 +121,65 @@ export function runAfterKeyboardHidden(fn: () => void): Promise<void> {
  * 열림 = nearby(고정 좌표 — 강남역) 탑10 프리로드 · 입력 = search 실호출 ·
  * 직접 입력(MANUAL) = 결과 미선택 채로 이름만 태그. Recent·typeahead·Skip 푸터.
  */
+/** P-355(KB-517): 주문 상세 "Write a review" 음식 선택 — 네이티브 Alert 목록 대체.
+ *  시트 크롬 = PlacePickerSheet 계열(A-RW-11: 제목 18/600 중앙) + 드래그 핸들 +
+ *  useSheetSwipeDismiss(아래 스와이프)·배경 탭 닫힘·안드 자체 RootView(P-337 문법). */
+export interface OrderDishPick {
+  foodId: string;
+  menuName: string;
+  imageUrl: string | null;
+}
+
+export function OrderDishPickerSheet({
+  open,
+  onClose,
+  onPick,
+  items,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (item: OrderDishPick) => void;
+  items: OrderDishPick[];
+  t: TFn;
+}) {
+  const swipe = useSheetSwipeDismiss(onClose, open);
+  const bottomInset = useBottomInset();
+  if (!open) return null;
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      {/* P-337: 안드에서 Modal = 별도 네이티브 루트 — 자체 RootView 필수 */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.pickerBackdrop} testID="order-dish-sheet">
+          <Animated.View style={[StyleSheet.absoluteFill, styles.dishDim, swipe.dimStyle]} pointerEvents="none" />
+          {/* 배경 탭 = 닫힘(시트 위 영역) */}
+          <Pressable style={{ flex: 1 }} onPress={onClose} testID="order-dish-backdrop" />
+          <Animated.View style={[styles.dishSheet, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
+            <GestureDetector gesture={swipe.gesture}>
+              <View>{/* 제스처 영역 = 핸들 + 제목(리스트 스크롤 우선) */}
+                <View style={styles.dishGrab} testID="order-dish-grab" />
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>{t('reviews.writeReview')}</Text>
+                </View>
+              </View>
+            </GestureDetector>
+            <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingBottom: 12 + bottomInset }} showsVerticalScrollIndicator={false}>
+              {items.map((it) => (
+                <Pressable key={it.foodId} style={styles.dishRow} onPress={() => onPick(it)} testID={`order-dish-${it.foodId}`}>
+                  <View style={styles.dishThumb}>
+                    <CardPhoto uri={it.imageUrl} borderRadius={4} />
+                  </View>
+                  <Text style={styles.dishName} numberOfLines={1}>{it.menuName}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </GestureHandlerRootView>
+    </Modal>
+  );
+}
+
 export function PlacePickerSheet({
   open,
   onClose,
@@ -169,15 +206,11 @@ export function PlacePickerSheet({
     <Modal visible transparent animationType="slide" onRequestClose={close}>
       <View style={styles.pickerBackdrop}>
         <View style={styles.pickerSheet}>
+          {/* A-RW-11(KB-486): 제목 중앙·X 없음(닫기 = 스크림 탭 현행 유지) */}
           <View style={styles.pickerHeader}>
-            <Pressable hitSlop={10} onPress={close}>
-              <IconClose size={20} color={C.ink2} />
-            </Pressable>
             <Text style={styles.pickerTitle}>{t('review.placeSheetTitle')}</Text>
-            <View style={{ width: 20 }} />
           </View>
           <View style={styles.searchBox}>
-            <IconSearch size={17} color={C.ink2} />
             <Input
               value={q}
               onChangeText={setQ}
@@ -186,6 +219,7 @@ export function PlacePickerSheet({
               style={styles.searchInput}
               autoCorrect={false}
             />
+            <IconSearch size={20} color={'#D1D3D8'} />
           </View>
           {!term && <Text style={styles.recentLbl}>{t('review.placeNearby').toUpperCase()}</Text>}
           <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
@@ -207,7 +241,7 @@ export function PlacePickerSheet({
             ) : (
               results.map((p) => (
                 <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>
-                  <IconMapPin size={16} color={C.ink3} />
+                  <IconMapPin size={12} color={C.ink3} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>
                     {!!p.address && <Text style={styles.resultSub} numberOfLines={1}>{p.address}</Text>}
@@ -308,7 +342,7 @@ export function ExtrasRater({
       {EXTRA_AXES.map(({ key, labelKey }) => (
         <View key={key} style={styles.extrasRow} testID={`extras-row-${key}`}>
           <View style={styles.extrasLabelWrap}>
-            <Text style={styles.extrasLabel}>{t(labelKey)}</Text>
+            <Text style={styles.extrasLabel} numberOfLines={1}>{t(labelKey)}</Text>
             {extras[key] != null && <Text style={styles.extrasValue}>{extras[key]}</Text>}
           </View>
           <View
@@ -323,7 +357,7 @@ export function ExtrasRater({
                 testID={`extras-${key}-${n}`}
                 onPress={() => onChange({ ...extras, [key]: extras[key] === n ? null : n })} // 재탭 = 해제
               >
-                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} sw={2} />
+                <Star size={size} fillPct={(extras[key] ?? 0) >= n ? 100 : 0} />
               </Pressable>
             ))}
           </View>
@@ -372,135 +406,52 @@ export function HelpfulButton({
   const isGuest = useIsGuest();
   const surface = (useSegments() as string[]).join('/') || 'root'; // P-214: 표면 = 라우트 패턴(PII 0)
   const onPress = () => {
-    if (mine) return; // 카운트 표시 전용
+    if (mine) {
+      // P-357(KB-520): 무동작 대신 안내 토스트(에러 변형 아님) — 뮤테이션·계측 0
+      showTopToast(t('reviews.helpfulOwnToast'), { icon: 'alert' }); // P-366 ③: 안내 = 느낌표(에러 변형 아님)
+      return;
+    }
     if (isGuest) return onGuest?.();
     track(EVENTS.review_helpful_toggle, { on: !review.myLike, surface }); // P-214: 4표면 공용 한 곳
-    toggle.mutate({ reviewId: review.id, foodId: foodId ?? review.foodId }); // 낙관 토글(멱등 — 가드 예외)
+    // P-366 ④ → #131 P2: 토스트 = 성공 후 발화(실패 롤백 시 무토스트) — 켜는 방향은
+    // 호출 시점 스냅샷(onSuccess 시점 myLike는 낙관 반영으로 이미 반전됨)
+    const turningOn = !review.myLike;
+    toggle.mutate(
+      { reviewId: review.id, foodId: foodId ?? review.foodId }, // 낙관 토글(멱등 — 가드 예외)
+      { onSuccess: () => { if (turningOn) showTopToast(t('reviews.helpfulMarkedToast')); } },
+    );
   };
   return (
     /* KB-430(4150:13934): 버튼형 — h30 pad 7/13 line 1px r4, thumbs-up 16 + 12/500.
        로직·경유는 무변(전 표면 공용) — 스타일만 시안. */
-    <Pressable hitSlop={8} onPress={onPress} disabled={mine} style={styles.helpfulBtn} testID={`helpful-${review.id}`}>
+    /* P-342 ①(KB-503, DS 2083:5620): 시안 helpful-row — thumbs-up 16 + 숫자만,
+       61×30 고정(pad 7/13, gap 4, r4) — "Helpful (n)" 텍스트 폐기. 눌림 = #FF7134
+       stroke·아이콘·숫자(색만 — P-151). 99+ 컴팩트(#100 P2) 유지, a11y = "Helpful, n". */
+    <Pressable
+      hitSlop={8}
+      onPress={onPress}
+      style={[styles.helpfulBtn, review.myLike && styles.helpfulBtnOn]}
+      accessibilityRole="button"
+      accessibilityLabel={t('reviews.helpful', { count: review.likes ?? 0 })} /* 기존 키 재사용 — 신규 0 */
+      testID={`helpful-${review.id}`}
+    >
       <IconThumbsUp size={16} color={mine ? C.ink3 : review.myLike ? C.primary : C.ink2} />
-      <Text style={[styles.helpful, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]}>
-        {t('reviews.helpful', { count: review.likes ?? 0 })}
+      <Text style={[styles.helpfulCount, review.myLike && styles.helpfulOn, mine && styles.helpfulMine]} numberOfLines={1}>
+        {(review.likes ?? 0) > 99 ? '99+' : String(review.likes ?? 0)}
       </Text>
     </Pressable>
   );
 }
 
-/** 본인 리뷰 수정 시트 — 구 디테일 editing(별점+본문, 사진은 buildReviewUpdate가 보존) 이식.
- *  P-201: 장소 행 추가 — 프리필·교체·해제(항상 명시 전송: 값 = 유지/교체, null = 해제). */
-export function ReviewEditSheet({
-  review,
-  onClose,
-  onSave,
-  saving,
-  t,
-}: {
-  review: Review | null;
-  onClose: () => void;
-  /** 호출측이 updateReview.mutate(buildReviewUpdate 경유) 배선 */
-  onSave: (changes: { rating: number; body: string; place: Review['place']; extras: ReviewExtras }) => void;
-  saving?: boolean;
-  t: TFn;
-}) {
-  const [rating, setRating] = React.useState(0);
-  const [body, setBody] = React.useState('');
-  const [place, setPlace] = React.useState<Review['place']>(null);
-  const [placeSheet, setPlaceSheet] = React.useState(false);
-  // P-202: 3축 — 프리필 = 로컬 보관분(BE 미저장), 저장 시 로컬 갱신(전송은 계약 후)
-  const [extras, setExtras] = React.useState<ReviewExtras>(EMPTY_EXTRAS);
-  React.useEffect(() => {
-    if (review) {
-      setRating(review.rating);
-      setBody(review.body ?? '');
-      setPlace(review.place ?? null);
-      setExtras(extrasFromReview(review)); // P-236: 프리필 = 서버 값(0 = 미평가)
-    }
-  }, [review]);
-  // P-202: 장소 태그 해제 = 찾아가기 값 소거(발주 1)
-  const clearPlace = () => {
-    setPlace(null);
-  };
-  return (
-    <Modal visible={review != null} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.editBackdrop}>
-        <View style={styles.editCard} testID="review-edit-sheet">
-          <Text style={styles.editTitle}>{t('editReview.title')}</Text>
-          <View style={styles.editStars}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Pressable key={i} onPress={() => setRating(i)} hitSlop={6} testID={`edit-star-${i}`}>
-                <Star size={32} fillPct={i <= rating ? 100 : 0} fillColor={C.primary} />
-              </Pressable>
-            ))}
-          </View>
-          <Input
-            value={body}
-            onChangeText={setBody}
-            multiline
-            style={styles.editInput}
-            textAlignVertical="top"
-            placeholder={t('review.placeholder')}
-            placeholderTextColor={C.ink3}
-          />
-          {/* P-201: 장소 행 — 작성 화면과 같은 문법(칩+해제 / 태그 행) */}
-          {FLAGS.reviewPlaceEnabled &&
-            (place?.name ? (
-              <Pressable style={styles.editPlaceChip} onPress={() => setPlaceSheet(true)} testID="edit-place-chip">
-                <IconMapPin size={13} color={C.ink2} />
-                <Text style={styles.editPlaceText} numberOfLines={1}>{place.name}</Text>
-                <Pressable hitSlop={8} onPress={clearPlace} testID="edit-place-clear">
-                  <IconClose size={13} color={C.ink3} />
-                </Pressable>
-              </Pressable>
-            ) : (
-              <Pressable style={styles.editPlaceRow} onPress={() => setPlaceSheet(true)} hitSlop={4} testID="edit-place-add">
-                <IconMapPin size={15} color={C.ink2} />
-                <Text style={styles.editPlaceAdd}>{t('review.placeRow')}</Text>
-              </Pressable>
-            ))}
-          {/* P-202: 3축 섹션(수정) — 찾아가기 = 장소 태그 연동 */}
-          <ExtrasRater extras={extras} onChange={setExtras} t={t} />
-          <View style={{ gap: 9, marginTop: 4 }}>
-            <Btn
-              busy={saving}
-              onPress={() => {
-                // P-236: 로컬 프리뷰 폐기 — extras는 onSave 페이로드로 서버 전송
-                onSave({ rating, body, place, extras }); // P-236: 2축 서버 전송
-              }}
-              testID="edit-save"
-            >
-              {t('common.save')}
-            </Btn>
-            <Btn variant="ghost" onPress={onClose}>{t('common.cancel')}</Btn>
-          </View>
-        </View>
-      </View>
-      {/* 열렸을 때만 마운트 — 픽커의 useQuery가 닫힌 시트에서 QueryClient를 요구하지 않게 */}
-      {placeSheet && (
-        <PlacePickerSheet
-          open
-          onClose={() => setPlaceSheet(false)}
-          onPick={(p) => {
-            setPlace(p);
-            setPlaceSheet(false);
-          }}
-          t={t}
-        />
-      )}
-    </Modal>
-  );
-}
 
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
   toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
-  extrasBox: { gap: 18, marginHorizontal: 39 },
+  extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)
   extrasRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  extrasLabelWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }, // A-RW-04 → P-348 ⑦: 라벨 고정(별 행이 축소)
   extrasLabel: { fontSize: 13, fontWeight: '500', color: C.ink2 },
   extrasValue: { fontSize: 13, fontWeight: '600', color: '#2F3137' },
   extrasLine: { flexDirection: 'row', gap: 8, alignSelf: 'flex-start' },
@@ -509,7 +460,9 @@ const styles = StyleSheet.create({
   // P-201: 장소 줄 — 핀+이름 한 줄(조용한 톤), 탭 = 지도 시트
   // P-196: Helpful — 상태별 색만 전환(프레임 불변): 기본 ink2 · 내 토글 primary · 본인 ink3
   // 9/5 시안 실측(4123:3696): 흰 bg + border #EAEBEE 1px r4, h30 pad 7/13, gap 4, 12/500 #2F3137
-  helpfulBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 30, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.line, borderRadius: 4, backgroundColor: '#FFFFFF' },
+  helpfulBtn: { minWidth: 61, height: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 4, backgroundColor: '#FFFFFF' }, // P-342 ① 2R: 시안 61 = 보더 포함 — pad 12/6+border 1, 2자리 = 61·99+만 자연 확장
+  helpfulBtnOn: { borderColor: C.primary }, // 눌림 = 스트로크 색만(프레임 불변)
+  helpfulCount: { fontSize: 12, fontWeight: '700', color: '#2F3137', fontVariant: ['tabular-nums'] }, // P-342 ①
   helpful: { fontSize: 12, fontWeight: '500', color: '#2F3137' },
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },
@@ -531,14 +484,21 @@ const styles = StyleSheet.create({
   editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   // P-201: 장소 픽커 시트 (review.tsx P-095 스타일 이식 — 작성·수정 공용화로 이동)
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 18, gap: 12, ...shadow.sh2 },
-  pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pickerTitle: { fontFamily: font.display, fontSize: 17, color: C.ink },
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 13, paddingHorizontal: 13 },
-  searchInput: { flex: 1, paddingVertical: 11, fontFamily: font.body, fontSize: 14.5, color: C.ink },
+  // P-355(KB-517): 음식 선택 시트 — 드래그 페이드는 dim 레이어(compose P-337 문법)
+  dishDim: { backgroundColor: 'transparent' },
+  dishSheet: { maxHeight: '70%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 12, ...shadow.sh2 },
+  dishGrab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 12 },
+  dishRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 66, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-RW-11 값
+  dishThumb: { width: 48, height: 48, borderRadius: 4, overflow: 'hidden', backgroundColor: C.surface2 },
+  dishName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: C.ink },
+  pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
+  pickerHeader: { alignItems: 'center' }, // A-RW-11(중앙)
+  pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink }, // A-RW-11
+  searchBox: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, borderRadius: 4, paddingLeft: 16, paddingRight: 14 }, // A-RW-11(Input/Search DS)
+  searchInput: { flex: 1, paddingVertical: 14, fontSize: 15, fontWeight: '500', color: C.ink }, // A-RW-11(h48)
   // KB-432 §2-10: 라벨 12/500 · 행 h66(장소명 15/600 / 주소 13/500 #6A6F7C)
   recentLbl: { fontSize: 12, fontWeight: '500', color: C.ink3 },
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 66, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 66, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.line }, // A-RW-11(핀 인라인 gap 2)
   resultText: { fontSize: 15, fontWeight: '600', color: C.ink },
   resultSub: { fontSize: 13, fontWeight: '500', color: C.ink2, marginTop: 1 },
   noResults: { fontFamily: font.body, fontSize: 13, color: C.ink3, textAlign: 'center', paddingVertical: 26 },

@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "Editar reseña",
-    "viewTitle": "Mi reseña",
     "save": "Guardar cambios",
+    "savedToast": "Reseña actualizada",
     "delete": "Eliminar esta reseña",
-    "posted": "Publicado {{when}}",
-    "noBody": "No escribiste nada con esta valoración.",
     "notFound": "Esta reseña ya no está disponible.",
     "deleteConfirmTitle": "¿Eliminar esta reseña?",
     "deleteConfirmBody": "Esta reseña se eliminará de forma permanente. Esta acción no se puede deshacer."
@@ -96,6 +94,8 @@
     "title": "Explorar comida",
     "sub": "Cada plato etiquetado con tu riesgo.",
     "searchPlaceholder": "Buscar comida o ingrediente…",
+    "sort_popular": "Populares",
+    "sort_new": "Nuevos",
     "categories": {
       "all": "Todo",
       "stews": "Guisos",
@@ -104,7 +104,8 @@
       "bbq": "Parrilla",
       "street": "Callejera",
       "sides": "Acompañamientos"
-    }
+    },
+    "sortNewSoon": "Próximamente"
   },
   "search": {
     "placeholder": "Buscar comida, ingrediente…",
@@ -114,8 +115,6 @@
     "popular": "Populares ahora",
     "resultCount": "{{count}} resultados",
     "noResultsTitle": "No se encontraron coincidencias",
-    "noResultsBody": "Puede que este plato aún no esté en nuestro catálogo. Prueba con otro nombre o explora lo más popular.",
-    "backToPopular": "Ver platos populares",
     "samples": [
       "Guiso de kimchi",
       "Pasta de camarón",
@@ -131,7 +130,6 @@
     "hoursAgo": "hace {{count}} h",
     "seeMore": "Ver más",
     "emptyTitle": "Aún no hay publicaciones",
-    "emptyBody": "Sé el primero en compartir un consejo o hallazgo.",
     "guestGateTitle": "Regístrate para seguir leyendo",
     "guestGateSub": "Los invitados solo ven las primeras páginas.",
     "blockedToast": "Usuario bloqueado. Ya no verás su contenido.",
@@ -296,9 +294,13 @@
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
     "stayHint": "Puede tardar entre 30 y 40 segundos; si sales de la app, podrías perder el resultado.",
     "sortMenu": "Orden del menú",
-    "sortSafety": "Menor riesgo primero",
+    "safeOnly": "Solo valorados seguros",
+    "sortPriceDesc": "Precio: de mayor a menor",
+    "sortPriceAsc": "Precio: de menor a mayor",
+    "resultsSubSafe": "{{safe}} valorados seguros de {{total}}",
+    "safeEmpty": "Ningún plato valorado seguro en este menú",
+    "showAllDishes": "Ver todos los platos",
     "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días.",
-    "searchOnNaver": "Buscar en NAVER",
     "searchOnGoogle": "Buscar en Google",
     "resultsEmpty": "Sin resultados de escaneo"
   },
@@ -355,6 +357,7 @@
     "spiceTitle": "Tolerancia al picante",
     "spiceUnset": "Sin definir",
     "showAll": "Ver todos ({{count}})",
+    "showAllEmpty": "Ver todo",
     "showLess": "Ver menos",
     "dietTitle": "Dieta, religión y alergias",
     "showAllLink": "Ver todo",
@@ -366,22 +369,14 @@
     "dietSavedBody": "¿Quieres ajustar los ingredientes evitados en consecuencia?",
     "dietSavedYes": "Editar ingredientes",
     "dietSavedNo": "Listo",
-    "myFoods": "Mis comidas"
+    "myFoods": "Mis comidas",
+    "guestTitle": "Se requiere iniciar sesión"
   },
   "review": {
     "title": "Escribir una reseña",
     "post": "Publicar",
     "ratingLabel": "Tu valoración *",
     "tapToRate": "Toca para valorar",
-    "ratingValue": "{{value}}/5, {{label}}",
-    "labels": [
-      "",
-      "Mala",
-      "Regular",
-      "Aceptable",
-      "Buena",
-      "Excelente"
-    ],
     "reviewLabel": "Tu reseña",
     "placeholder": "Comparte a qué sabía y cualquier consejo para viajeros con tus restricciones…",
     "charCount": "{{count}}/500",
@@ -390,17 +385,16 @@
     "postedBody": "¡Gracias! Tu reseña de {{rating}} estrellas de {{name}} ya está en las reseñas del plato y cuenta para tu clasificación.",
     "done": "Listo",
     "seeMyReviews": "Ver mis reseñas",
-    "photosLabel": "Fotos (máx. {{max}})",
     "addPhoto": "Añadir foto",
     "removePhoto": "Quitar foto",
     "postError": "No se pudo guardar la reseña. Revisa tu conexión e inténtalo de nuevo.",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "Los me gusta no cambian el orden",
     "placeRow": "¿Dónde comiste?",
     "placeSheetTitle": "Etiquetar lugar",
     "placeRecent": "Recientes",
     "placeNoResults": "No hay lugares que coincidan.",
-    "placeSkip": "Omitir — publicar sin lugar",
+    "placeSkip": "Omitir",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "No se pudo eliminar la reseña. Revisa tu conexión e inténtalo de nuevo.",
     "photoCapNote": "Máximo {{max}} fotos — se omitieron las adicionales",
     "placeNearby": "Cerca",
@@ -431,6 +425,8 @@
     "emptyTitle": "Aún no hay reseñas",
     "emptyBody": "Aún no hay reseñas. Sé el primero en dejar una.",
     "writeReview": "Escribir una reseña",
+    "helpfulOwnToast": "No puedes marcar tu propia reseña como útil",
+    "helpfulMarkedToast": "Marcada como útil",
     "lang": {
       "en": "Inglés",
       "th": "Tailandés",
@@ -456,7 +452,6 @@
     "sort_helpful": "Más útiles",
     "ratingAll": "Todas las valoraciones",
     "ratingMin": "{{min}}+ estrellas",
-    "filterByProfile": "Filtrar por perfil",
     "countryOnly": "Solo {{code}}"
   },
   "ranking": {
@@ -556,28 +551,20 @@
     "lockVerdict": "Tu lectura de seguridad está bloqueada",
     "lockIngredients": "Inicia sesión para ver cómo encaja este plato con tu perfil",
     "readAll": "Ver todas",
-    "beFirstReview": "Aún no hay reseñas — ¡sé el primero!"
+    "beFirstReview": "Aún no hay reseñas — ¡sé el primero!",
+    "ingGuestBody": "{{ingredient}} se usa en aproximadamente el {{percent}}% de las versiones de este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
+    "ingGuestBodyNoPct": "{{ingredient}} se usa comúnmente en este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte."
   },
   "states": {
     "catalogTitle": "Estados",
     "labelLoading": "Cargando (esqueleto)",
     "labelEmpty": "Vacío",
-    "labelError": "Error",
-    "labelOffline": "Sin conexión",
-    "labelUnable": "No se puede evaluar",
     "loading": "Cargando…",
     "emptyReviewsTitle": "Aún no hay reseñas",
-    "emptyReviewsBody": "Sé el primero en reseñar este plato: tu nota ayuda al próximo viajero a comer con confianza.",
-    "writeReview": "Escribir una reseña",
     "errorTitle": "Algo salió mal",
     "errorBody": "No pudimos cargar esto ahora. Es de nuestro lado, no del tuyo.",
     "offlineTitle": "Estás sin conexión",
-    "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas. Tus escaneos guardados siguen aquí.",
-    "viewSavedScans": "Ver escaneos guardados",
-    "unableTitle": "No podemos evaluar este",
-    "unableBody": "No tenemos suficientes datos de ingredientes para valorar este plato según tu perfil. Pregunta al dueño antes de comer.",
-    "askOwner": "Pregunta al dueño",
-    "seeIngredients": "Ver ingredientes"
+    "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas. Tus escaneos guardados siguen aquí."
   },
   "shell": {
     "placeholderNote": "El contenido de las pestañas está en los módulos de pantalla"
@@ -619,7 +606,10 @@
     "reviewsSub": "Lee antes de pedir",
     "chipForYou": "Para ti",
     "chipNearby": "Cerca",
-    "recentEmpty": "Sin escaneos recientes"
+    "recentEmpty": "Sin escaneos recientes",
+    "safeForYou": "Opciones Safe para ti",
+    "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante.",
+    "railFilterEmpty": "Aún no hay platos \"{{risk}}\" en esta lista. Prueba otro filtro."
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",
@@ -725,8 +715,7 @@
       "groupDiet": "Dieta",
       "groupReligion": "Religión",
       "groupAllergy": "Grupos de alergia",
-      "apply": "Aplicar a mi lista",
-      "applyRow": "Rellenar por dieta/religión"
+      "apply": "Aplicar a mi lista"
     },
     "countryLabel": "País"
   },
@@ -970,7 +959,12 @@
     "nudge": "Sugerencias de escaneo",
     "nudgeSub": "Recordatorios ocasionales para escanear un menú al mediodía",
     "osOff": "Las notificaciones de K-Bap están desactivadas en los ajustes del sistema.",
-    "osOffCta": "Abrir ajustes del sistema"
+    "osOffCta": "Abrir ajustes del sistema",
+    "marketing": "Notificaciones de marketing",
+    "marketingSub": "Recibe eventos y recomendaciones por notificación.",
+    "night": "Notificaciones nocturnas",
+    "nightSub": "Recíbelas también entre las 21:00 y las 8:00.",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   },
   "inbox": {
     "title": "Notificaciones",
@@ -998,14 +992,9 @@
     "emptyOrdersTitle": "Aún no hay pedidos",
     "emptyOrdersBody": "Pide desde un menú escaneado y tu historial aparecerá aquí.",
     "emptyScansTitle": "Aún no hay escaneos",
-    "emptyScansBody": "Escanea un menú y los platos que consultaste aparecerán aquí.",
     "dishes": "Platos",
     "receiptDate": "FECHA",
     "receiptLocation": "UBICACIÓN",
     "receiptTotal": "TOTAL"
-  },
-  "ota": {
-    "ready": "Hay una actualización lista",
-    "apply": "Aplicar"
   }
 }

@@ -4,6 +4,27 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// P-305: TabBar가 배럴 경유로 useMe(i18n→AsyncStorage)·RemoteImage(expo-image) 체인을
+// 물게 됨 — 이 스위트는 해당 표면 무관이라 목으로 차단
+// P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const g: Record<string, unknown> = {};
+    for (const k of ['runOnJS', 'enabled', 'numberOfTaps', 'maxPointers', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    return g;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    GestureHandlerRootView: View,
+    Gesture: { Pan: chain, Pinch: chain, Tap: chain, Simultaneous: (...g: unknown[]) => g, Exclusive: (...g: unknown[]) => g },
+  };
+});
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+jest.mock('expo-image', () => ({ Image: () => null }));
+
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
@@ -25,10 +46,12 @@ jest.mock('react-i18next', () => ({
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 const mockLikeToggle = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => ({ mutate: mockLikeToggle }) }));
+const mockToast = jest.fn();
+jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 const mockGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest() }));
 
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip } from '../ReviewCellParts';
+import { ExpandableBody, HelpfulButton, ReviewPhotoStrip } from '../ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 const t = (k: string) => k;
@@ -95,14 +118,20 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
   it('타인 = 탭 → 공용 뮤테이션 토글(reviewId·foodId)', () => {
     const tree = render(<HelpfulButton review={RV} mine={false} t={t} />);
     tapHelpful(tree);
-    expect(mockLikeToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+    expect(mockLikeToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2: 성공 콜백 동반
   });
 
-  it('본인(mine) = 카운트 표시 유지 + 탭 무반응(자기 투표·알림 자가 트리거 차단)', () => {
+  it('본인(mine) = 카운트 표시 유지 + 탭 = 안내 토스트 1·토글 0 (P-357/KB-520 — 자기 투표 차단 유지)', () => {
     const tree = render(<HelpfulButton review={RV} mine t={t} />);
     expect(flat(tree)).toContain('reviews.helpful'); // 숨김 아님 — 카운트 표시
+    // P-364(KB-527): disabled={mine}이 실기 탭을 막던 회귀 — Pressable disabled 부재 잠금
+    // (직접 onPress 호출은 disabled를 우회해 유닛이 못 잡았던 함정)
+    const btn = tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0];
+    expect(btn.props.disabled).toBeFalsy();
     tapHelpful(tree);
     expect(mockLikeToggle).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledTimes(1);
+    expect(mockToast).toHaveBeenCalledWith('reviews.helpfulOwnToast', { icon: 'alert' }); // P-366 ③: 느낌표 변형(에러 아님)
   });
 
   it('게스트 = onGuest 게이트(미전달이면 무반응 — 401 송신 0)', () => {
@@ -137,13 +166,42 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
   });
 });
 
-it('ReviewEditSheet — 기존 값 프리필·저장 콜백에 변경값 전달(구 디테일 editing 대체)', () => {
-  const onSave = jest.fn();
-  const review = { id: 'r1', foodId: '7', rating: 4, body: 'old body', authorNationality: null, authorRankTier: null, anonymized: false, createdAt: '2026-08-12' } as Review;
-  const tree = render(<ReviewEditSheet review={review} onClose={jest.fn()} onSave={onSave} t={t} />);
-  expect(tree.root.findAll((n) => n.props?.testID === 'review-edit-sheet').length).toBeGreaterThanOrEqual(1);
-  act(() => tree.root.findAll((n) => n.props?.testID === 'edit-star-5')[0].props.onPress());
-  const save = tree.root.findAll((n) => n.props?.testID === 'edit-save' && typeof n.props?.onPress === 'function')[0];
-  act(() => save.props.onPress());
-  expect(onSave).toHaveBeenCalledWith({ rating: 5, body: 'old body', place: null, extras: { speed: null, service: null } }); // P-201 장소 + P-236 extras
+
+it('KB-431 후속(.fig 실측 2162:11360): 평점 행 = 좌측 정렬(hug @x20) — center 잔존 0', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
+  expect(src).toContain("justifyContent: 'flex-start', gap: 16");
+  expect(src).not.toContain("justifyContent: 'center', gap: 16");
+});
+
+it('#131 P2(KB-529): 토글 실패(롤백) = 토스트 0 — 성공 콜백만 발화', () => {
+  jest.clearAllMocks();
+  mockLikeToggle.mockImplementation((_v: unknown, opts?: { onSuccess?: () => void }) => {
+    void opts; // 실패 — onSuccess 미호출
+  });
+  const RVF = { id: 'rf', foodId: '7', rating: 4, likes: 0, myLike: false, anonymized: false, authorNationality: 'US', authorRankTier: null, createdAt: '2026-09-10' } as never;
+  const tree = render(<HelpfulButton review={RVF} mine={false} t={(k: string) => k} />);
+  act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-rf' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockLikeToggle).toHaveBeenCalledTimes(1);
+  expect(mockToast).not.toHaveBeenCalled();
+  mockLikeToggle.mockReset();
+});
+
+it('P-366 ④(KB-529): 비mine ON 탭 = 체크 토스트 1회(성공 시) · OFF 탭 = 토스트 0', () => {
+  jest.clearAllMocks();
+  mockLikeToggle.mockImplementation((_v: unknown, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.()); // 성공 경로
+  const RV2 = { id: 'r9', foodId: '7', rating: 4, likes: 3, myLike: false, anonymized: false, authorNationality: 'US', authorRankTier: null, createdAt: '2026-09-10' } as never;
+  const tap = (tree: ReactTestRenderer, id: string) =>
+    act(() => tree.root.findAll((n) => n.props?.testID === `helpful-${id}` && typeof n.props?.onPress === 'function')[0].props.onPress());
+  const t2 = (k: string) => k;
+  const tree = render(<HelpfulButton review={RV2} mine={false} t={t2} />); // myLike:false → 켜는 방향
+  tap(tree, 'r9');
+  expect(mockLikeToggle).toHaveBeenCalledTimes(1);
+  expect(mockToast).toHaveBeenCalledTimes(1);
+  expect(mockToast).toHaveBeenCalledWith('reviews.helpfulMarkedToast'); // 체크(기본 아이콘)
+  mockToast.mockClear();
+  const on = { ...(RV2 as unknown as Record<string, unknown>), myLike: true } as never;
+  const tree2 = render(<HelpfulButton review={on} mine={false} t={t2} />); // 끄는 방향
+  tap(tree2, 'r9');
+  expect(mockToast).not.toHaveBeenCalled();
 });

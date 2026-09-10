@@ -53,7 +53,7 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => 0 }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
 jest.mock('@/lib/data/useFoods', () => ({ useFoods: () => ({ data: [] }) }));
-jest.mock('@/lib/data/bookmarks', () => ({ useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => ({ data: { recent: [] } }) }));
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }),
@@ -106,6 +106,23 @@ it('① 메뉴 행 순서 스냅샷 — My Foods→Saved→My reviews→Language
   const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
   expect(src).toContain("menuRow: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 17, paddingHorizontal: 22 }");
   expect(src).not.toContain('borderBottomWidth: StyleSheet.hairlineWidth'); // 구 AcctRow 구분선 소멸
+});
+
+it('①-c P-300(KB-449): 값 없는 이동 행 전부 chevron — 값 행 무변·로그아웃 유지', () => {
+  const src = require('fs').readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
+  // chevron 부여 6행(로그아웃은 기존 유지로 7행) — 소스 잠금
+  expect(src).toContain("label={t('profile.myFoods')} chevron");
+  expect(src).toContain("label={t('profile.dietTitle')} chevron");
+  expect(src).toContain("label={t('notif.title')} chevron");
+  expect(src).toContain("label={t('profile.safetyNotice')} chevron");
+  expect(src).toContain("label={t('community.blockedTitle')} chevron");
+  expect(src).toContain("label={t('profile.deleteAccount')} dim chevron");
+  // 값 행(Saved·My reviews·Language) = chevron 없음(무변)
+  expect(src).not.toMatch(/profile\.saved'\)\} value=[^\n]*chevron/);
+  expect(src).not.toMatch(/myReviews\.title'\)\} value=[^\n]*chevron/);
+  expect(src).not.toMatch(/profile\.language'\)\} value=[^\n]*chevron/);
+  // 크기·색 = 로그아웃과 동일(MenuRow 공용 렌더 한 곳)
+  expect(src).toContain('{chevron && <IconChevron size={16} color={C.ink3} />}');
 });
 
 it('①-b KB-434 후속: rank null(계약 드리프트 방어) = 랭킹 카드 미렌더 — 나머지 표면 정상', () => {
@@ -167,9 +184,10 @@ it('Codex #33 P2 4건 — 진행 바 티어 상대·식이 진입 복원·영수
     const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
     for (const k of ['receiptDate', 'receiptLocation', 'receiptTotal', 'dishes']) expect(typeof j.myFoods[k]).toBe('string');
   }
-  // ① 다품목 = 선택 시트(전 dish 리뷰 가능), 1개 = 직행
+  // ① 다품목 = 선택 시트(전 dish 리뷰 가능), 1개 = 직행 — P-355: 앱 바텀시트(Alert 폐기)
   expect(detail).toContain('reviewables.length === 1');
-  expect(detail).toContain('...reviewables.map((it) => ({');
+  expect(detail).toContain('<OrderDishPickerSheet');
+  expect(detail).not.toContain('Alert.alert'); // 네이티브 목록 소멸 잠금
 });
 
 it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(All·Safe·Avoid·Warning) 소스 잠금', () => {

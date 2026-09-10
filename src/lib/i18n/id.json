@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "Edit ulasan",
-    "viewTitle": "Ulasan saya",
     "save": "Simpan perubahan",
+    "savedToast": "Ulasan diperbarui",
     "delete": "Hapus ulasan ini",
-    "posted": "Diposting {{when}}",
-    "noBody": "Anda tidak menulis apa pun dengan rating ini.",
     "notFound": "Ulasan ini sudah tidak tersedia.",
     "deleteConfirmTitle": "Hapus ulasan ini?",
     "deleteConfirmBody": "Ulasan ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."
@@ -96,6 +94,8 @@
     "title": "Jelajahi makanan",
     "sub": "Setiap hidangan ditandai dengan risiko Anda.",
     "searchPlaceholder": "Cari makanan atau bahan…",
+    "sort_popular": "Terpopuler",
+    "sort_new": "Terbaru",
     "categories": {
       "all": "Semua",
       "stews": "Sup",
@@ -104,7 +104,8 @@
       "bbq": "BBQ",
       "street": "Jajanan",
       "sides": "Lauk"
-    }
+    },
+    "sortNewSoon": "Segera hadir"
   },
   "search": {
     "placeholder": "Cari makanan, bahan…",
@@ -114,8 +115,6 @@
     "popular": "Populer saat ini",
     "resultCount": "{{count}} hasil",
     "noResultsTitle": "Tidak ada hasil yang cocok",
-    "noResultsBody": "Hidangan ini mungkin belum ada di katalog kami. Coba nama lain, atau jelajahi yang sedang populer.",
-    "backToPopular": "Lihat hidangan populer",
     "samples": [
       "Sup Kimchi",
       "Pasta udang",
@@ -131,7 +130,6 @@
     "hoursAgo": "{{count}} jam lalu",
     "seeMore": "Lihat selengkapnya",
     "emptyTitle": "Belum ada postingan",
-    "emptyBody": "Jadilah yang pertama berbagi tips atau temuan.",
     "guestGateTitle": "Daftar untuk lanjut membaca",
     "guestGateSub": "Tamu hanya bisa melihat halaman awal.",
     "blockedToast": "Pengguna diblokir. Kontennya tidak akan terlihat lagi.",
@@ -296,9 +294,13 @@
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
     "stayHint": "Proses ini bisa memakan waktu 30–40 detik — keluar dari aplikasi dapat menghilangkan hasilnya.",
     "sortMenu": "Urutan menu",
-    "sortSafety": "Risiko terendah dulu",
+    "safeOnly": "Hanya yang dinilai aman",
+    "sortPriceDesc": "Harga: tinggi ke rendah",
+    "sortPriceAsc": "Harga: rendah ke tinggi",
+    "resultsSubSafe": "{{safe}} dinilai aman dari {{total}}",
+    "safeEmpty": "Tidak ada hidangan yang dinilai aman di menu ini",
+    "showAllDishes": "Tampilkan semua hidangan",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",
-    "searchOnNaver": "Cari di NAVER",
     "searchOnGoogle": "Cari di Google",
     "resultsEmpty": "Tidak ada hasil pemindaian"
   },
@@ -355,6 +357,7 @@
     "spiceTitle": "Toleransi pedas",
     "spiceUnset": "Belum diatur",
     "showAll": "Lihat semua ({{count}})",
+    "showAllEmpty": "Lihat semua",
     "showLess": "Lihat lebih sedikit",
     "dietTitle": "Diet, agama & alergi",
     "showAllLink": "Lihat semua",
@@ -366,22 +369,14 @@
     "dietSavedBody": "Mau menyesuaikan bahan yang dihindari juga?",
     "dietSavedYes": "Edit bahan hindaran",
     "dietSavedNo": "Selesai",
-    "myFoods": "Makananku"
+    "myFoods": "Makananku",
+    "guestTitle": "Perlu masuk"
   },
   "review": {
     "title": "Tulis ulasan",
     "post": "Kirim",
     "ratingLabel": "Penilaian Anda *",
     "tapToRate": "Ketuk untuk menilai",
-    "ratingValue": "{{value}}/5, {{label}}",
-    "labels": [
-      "",
-      "Buruk",
-      "Biasa",
-      "Lumayan",
-      "Bagus",
-      "Hebat"
-    ],
     "reviewLabel": "Ulasan Anda",
     "placeholder": "Ceritakan rasanya, dan tips untuk pelancong dengan pantangan seperti Anda…",
     "charCount": "{{count}}/500",
@@ -390,17 +385,16 @@
     "postedBody": "Terima kasih! Ulasan {{rating}} bintang Anda untuk {{name}} kini ada di ulasan makanan ini dan menambah peringkat Anda.",
     "done": "Selesai",
     "seeMyReviews": "Lihat ulasan saya",
-    "photosLabel": "Foto (maks. {{max}})",
     "addPhoto": "Tambah foto",
     "removePhoto": "Hapus foto",
     "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi.",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "Suka tidak memengaruhi urutan",
     "placeRow": "Kamu makan di mana?",
     "placeSheetTitle": "Tandai tempat",
     "placeRecent": "Terbaru",
     "placeNoResults": "Tidak ada tempat yang cocok.",
-    "placeSkip": "Lewati — posting tanpa tempat",
+    "placeSkip": "Lewati",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Tidak bisa menghapus ulasan. Periksa koneksi dan coba lagi.",
     "photoCapNote": "Maksimal {{max}} foto — kelebihan dilewati",
     "placeNearby": "Terdekat",
@@ -431,6 +425,8 @@
     "emptyTitle": "Belum ada ulasan",
     "emptyBody": "Belum ada ulasan. Jadilah yang pertama.",
     "writeReview": "Tulis ulasan",
+    "helpfulOwnToast": "Kamu tidak bisa menandai ulasanmu sendiri sebagai membantu",
+    "helpfulMarkedToast": "Ditandai membantu",
     "lang": {
       "en": "Inggris",
       "th": "Thailand",
@@ -456,7 +452,6 @@
     "sort_helpful": "Paling membantu",
     "ratingAll": "Semua rating",
     "ratingMin": "{{min}}+ bintang",
-    "filterByProfile": "Filter sesuai profil",
     "countryOnly": "Hanya {{code}}"
   },
   "ranking": {
@@ -556,28 +551,20 @@
     "lockVerdict": "Penilaian keamanan Anda terkunci",
     "lockIngredients": "Masuk untuk melihat kecocokan hidangan ini dengan profil Anda",
     "readAll": "Lihat semua",
-    "beFirstReview": "Belum ada ulasan — jadilah yang pertama!"
+    "beFirstReview": "Belum ada ulasan — jadilah yang pertama!",
+    "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
+    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan."
   },
   "states": {
     "catalogTitle": "Status",
     "labelLoading": "Memuat (kerangka)",
     "labelEmpty": "Kosong",
-    "labelError": "Error",
-    "labelOffline": "Luring",
-    "labelUnable": "Tidak dapat dinilai",
     "loading": "Memuat…",
     "emptyReviewsTitle": "Belum ada ulasan",
-    "emptyReviewsBody": "Jadilah yang pertama mengulas hidangan ini — catatan Anda membantu pelancong berikutnya makan dengan percaya diri.",
-    "writeReview": "Tulis ulasan",
     "errorTitle": "Terjadi kesalahan",
     "errorBody": "Kami tidak bisa memuat ini sekarang. Ini dari sisi kami, bukan Anda.",
     "offlineTitle": "Anda sedang luring",
-    "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan. Pindaian tersimpan Anda masih ada di sini.",
-    "viewSavedScans": "Lihat pindaian tersimpan",
-    "unableTitle": "Tidak bisa menilai yang ini",
-    "unableBody": "Kami tidak punya cukup data bahan untuk menilai hidangan ini bagi profil Anda. Tanya pemilik sebelum makan.",
-    "askOwner": "Tanya pemilik",
-    "seeIngredients": "Lihat bahan"
+    "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan. Pindaian tersimpan Anda masih ada di sini."
   },
   "shell": {
     "placeholderNote": "Konten tab berada di modul layar"
@@ -619,7 +606,10 @@
     "reviewsSub": "Baca sebelum memesan",
     "chipForYou": "Untukmu",
     "chipNearby": "Terdekat",
-    "recentEmpty": "Belum ada pemindaian terbaru"
+    "recentEmpty": "Belum ada pemindaian terbaru",
+    "safeForYou": "Pilihan Safe untukmu",
+    "safeForYouSub": "Berdasarkan daftar hindaranmu — selalu konfirmasi ke pemilik.",
+    "railFilterEmpty": "Belum ada hidangan {{risk}} di daftar ini. Coba filter lain."
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",
@@ -725,8 +715,7 @@
       "groupDiet": "Pola makan",
       "groupReligion": "Agama",
       "groupAllergy": "Paket alergi",
-      "apply": "Terapkan ke daftar saya",
-      "applyRow": "Isi dari pola makan/agama"
+      "apply": "Terapkan ke daftar saya"
     },
     "countryLabel": "Negara"
   },
@@ -969,7 +958,12 @@
     "nudge": "Saran pindai",
     "nudgeSub": "Sesekali mengingatkan memindai menu saat makan siang",
     "osOff": "Notifikasi K-Bap dimatikan di pengaturan sistem.",
-    "osOffCta": "Buka pengaturan sistem"
+    "osOffCta": "Buka pengaturan sistem",
+    "marketing": "Notifikasi pemasaran",
+    "marketingSub": "Terima info acara dan rekomendasi lewat notifikasi.",
+    "night": "Notifikasi malam hari",
+    "nightSub": "Terima juga antara pukul 21.00–08.00.",
+    "saveFailed": "Gagal menyimpan. Coba lagi."
   },
   "inbox": {
     "title": "Notifikasi",
@@ -997,14 +991,9 @@
     "emptyOrdersTitle": "Belum ada pesanan",
     "emptyOrdersBody": "Pesan dari menu yang dipindai dan riwayatmu muncul di sini.",
     "emptyScansTitle": "Belum ada pemindaian",
-    "emptyScansBody": "Pindai menu dan makanan yang kamu periksa terkumpul di sini.",
     "dishes": "Hidangan",
     "receiptDate": "TANGGAL",
     "receiptLocation": "LOKASI",
     "receiptTotal": "TOTAL"
-  },
-  "ota": {
-    "ready": "Pembaruan siap dipasang",
-    "apply": "Terapkan"
   }
 }

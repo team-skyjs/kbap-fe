@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "编辑点评",
-    "viewTitle": "我的点评",
     "save": "保存修改",
+    "savedToast": "评价已更新",
     "delete": "删除此点评",
-    "posted": "发布于 {{when}}",
-    "noBody": "你没有为这个评分撰写任何内容。",
     "notFound": "该点评已不存在。",
     "deleteConfirmTitle": "删除此点评？",
     "deleteConfirmBody": "该点评将被永久删除，此操作无法撤销。"
@@ -96,6 +94,8 @@
     "title": "探索美食",
     "sub": "每道菜都标注了适合你的风险等级。",
     "searchPlaceholder": "搜索菜品或食材…",
+    "sort_popular": "热门",
+    "sort_new": "最新",
     "categories": {
       "all": "全部",
       "stews": "汤锅",
@@ -104,7 +104,8 @@
       "bbq": "烧烤",
       "street": "街边小吃",
       "sides": "配菜"
-    }
+    },
+    "sortNewSoon": "即将上线"
   },
   "search": {
     "placeholder": "搜索菜品、食材…",
@@ -114,8 +115,6 @@
     "popular": "当前热门",
     "resultCount": "{{count}} 个结果",
     "noResultsTitle": "未找到匹配结果",
-    "noResultsBody": "我们的目录中可能还没有这道菜。换个名称试试，或看看有哪些热门菜品。",
-    "backToPopular": "查看热门菜品",
     "samples": [
       "泡菜汤",
       "虾酱",
@@ -131,7 +130,6 @@
     "hoursAgo": "{{count}}小时前",
     "seeMore": "查看更多",
     "emptyTitle": "还没有帖子",
-    "emptyBody": "来分享第一个心得或发现吧。",
     "guestGateTitle": "注册后继续浏览",
     "guestGateSub": "游客只能浏览前几页。",
     "blockedToast": "已屏蔽。将不再显示该用户的内容。",
@@ -296,9 +294,13 @@
     "errUpload": "照片上传失败，请重试。",
     "stayHint": "大约需要 30–40 秒 — 离开应用可能会丢失结果。",
     "sortMenu": "菜单顺序",
-    "sortSafety": "风险从低到高",
+    "safeOnly": "仅评定为安全",
+    "sortPriceDesc": "价格从高到低",
+    "sortPriceAsc": "价格从低到高",
+    "resultsSubSafe": "共{{total}}道中{{safe}}道评定为安全",
+    "safeEmpty": "此菜单没有评定为安全的菜品",
+    "showAllDishes": "显示全部菜品",
     "missNote": "尚未收录在数据库中 — 几天内会添加。",
-    "searchOnNaver": "在NAVER搜索",
     "searchOnGoogle": "在Google搜索",
     "resultsEmpty": "没有扫描结果"
   },
@@ -355,6 +357,7 @@
     "spiceTitle": "辣度承受度",
     "spiceUnset": "未设置",
     "showAll": "查看全部（{{count}}）",
+    "showAllEmpty": "查看全部",
     "showLess": "收起",
     "dietTitle": "饮食、宗教与过敏",
     "showAllLink": "查看全部",
@@ -366,22 +369,14 @@
     "dietSavedBody": "要相应调整回避的食材吗？",
     "dietSavedYes": "编辑回避食材",
     "dietSavedNo": "完成",
-    "myFoods": "我的美食"
+    "myFoods": "我的美食",
+    "guestTitle": "需要登录"
   },
   "review": {
     "title": "撰写点评",
     "post": "发布",
     "ratingLabel": "你的评分 *",
     "tapToRate": "点击评分",
-    "ratingValue": "{{value}}/5，{{label}}",
-    "labels": [
-      "",
-      "差",
-      "一般",
-      "还行",
-      "不错",
-      "很棒"
-    ],
     "reviewLabel": "你的点评",
     "placeholder": "分享一下味道如何，以及给有相同禁忌的旅行者的建议…",
     "charCount": "{{count}}/500",
@@ -390,17 +385,16 @@
     "postedBody": "谢谢！你对 {{name}} 的 {{rating}} 星点评已加入该菜品的点评，并计入你的排名。",
     "done": "完成",
     "seeMyReviews": "查看我的点评",
-    "photosLabel": "照片（最多{{max}}张）",
     "addPhoto": "添加照片",
     "removePhoto": "删除照片",
     "postError": "评价保存失败。请检查网络后重试。",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "点赞不影响排序",
     "placeRow": "你在哪里吃的？",
     "placeSheetTitle": "标记地点",
     "placeRecent": "最近",
     "placeNoResults": "没有匹配的地点。",
-    "placeSkip": "跳过 — 不带地点发布",
+    "placeSkip": "跳过",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "无法删除评价。请检查网络后重试。",
     "photoCapNote": "最多{{max}}张照片 — 超出部分已跳过",
     "placeNearby": "附近地点",
@@ -431,6 +425,8 @@
     "emptyTitle": "还没有点评",
     "emptyBody": "还没有评价。来写下第一条吧。",
     "writeReview": "撰写点评",
+    "helpfulOwnToast": "不能给自己的评价点有帮助",
+    "helpfulMarkedToast": "已标记有帮助",
     "lang": {
       "en": "英文",
       "th": "泰文",
@@ -456,7 +452,6 @@
     "sort_helpful": "最有帮助",
     "ratingAll": "全部评分",
     "ratingMin": "{{min}}分以上",
-    "filterByProfile": "按个人资料筛选",
     "countryOnly": "仅{{code}}"
   },
   "ranking": {
@@ -556,28 +551,20 @@
     "lockVerdict": "您的安全判定已锁定",
     "lockIngredients": "登录后即可查看这道菜与您档案的匹配情况",
     "readAll": "查看全部",
-    "beFirstReview": "还没有评价 — 来写第一条吧！"
+    "beFirstReview": "还没有评价 — 来写第一条吧！",
+    "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
+    "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。"
   },
   "states": {
     "catalogTitle": "状态",
     "labelLoading": "加载中（骨架屏）",
     "labelEmpty": "空",
-    "labelError": "错误",
-    "labelOffline": "离线",
-    "labelUnable": "无法判断",
     "loading": "加载中…",
     "emptyReviewsTitle": "还没有点评",
-    "emptyReviewsBody": "成为第一个点评这道菜的人——你的留言能帮下一位旅行者吃得安心。",
-    "writeReview": "撰写点评",
     "errorTitle": "出错了",
     "errorBody": "我们暂时无法加载。这是我们的问题，不是你的。",
     "offlineTitle": "你已离线",
-    "offlineBody": "连接网络以扫描菜单和加载点评。你已保存的扫描仍在这里。",
-    "viewSavedScans": "查看已保存的扫描",
-    "unableTitle": "无法判断这道菜",
-    "unableBody": "我们没有足够的食材数据来为你的资料评估这道菜。食用前请向店家确认。",
-    "askOwner": "询问店家",
-    "seeIngredients": "查看食材"
+    "offlineBody": "连接网络以扫描菜单和加载点评。你已保存的扫描仍在这里。"
   },
   "shell": {
     "placeholderNote": "标签内容位于各屏幕模块中"
@@ -619,7 +606,10 @@
     "reviewsSub": "点餐前先看看",
     "chipForYou": "为你推荐",
     "chipNearby": "附近",
-    "recentEmpty": "暂无最近扫描"
+    "recentEmpty": "暂无最近扫描",
+    "safeForYou": "按你的清单筛出的 Safe 菜品",
+    "safeForYouSub": "基于你的回避清单判定——请务必向店家确认。",
+    "railFilterEmpty": "此列表暂无“{{risk}}”菜品，试试其他筛选。"
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",
@@ -725,8 +715,7 @@
       "groupDiet": "饮食",
       "groupReligion": "宗教",
       "groupAllergy": "过敏组合",
-      "apply": "应用到我的列表",
-      "applyRow": "按饮食/宗教填充"
+      "apply": "应用到我的列表"
     },
     "countryLabel": "国家"
   },
@@ -969,7 +958,12 @@
     "nudge": "扫描推荐",
     "nudgeSub": "偶尔在午餐时间提醒你扫描菜单",
     "osOff": "系统设置中已关闭 K-Bap 的通知。",
-    "osOffCta": "打开系统设置"
+    "osOffCta": "打开系统设置",
+    "marketing": "营销通知",
+    "marketingSub": "通过推送接收活动与推荐消息。",
+    "night": "夜间通知",
+    "nightSub": "晚9点至早8点也接收。",
+    "saveFailed": "保存失败，请重试。"
   },
   "inbox": {
     "title": "通知",
@@ -997,14 +991,9 @@
     "emptyOrdersTitle": "还没有订单记录",
     "emptyOrdersBody": "从扫描的菜单下单后会记录在这里。",
     "emptyScansTitle": "还没有扫描记录",
-    "emptyScansBody": "扫描菜单后，你查看过的菜品会汇集在这里。",
     "dishes": "菜品",
     "receiptDate": "日期",
     "receiptLocation": "地点",
     "receiptTotal": "合计"
-  },
-  "ota": {
-    "ready": "更新已准备好",
-    "apply": "应用"
   }
 }

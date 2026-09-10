@@ -14,6 +14,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
+import { track } from '@/lib/net/inflight';
 import i18n from '@/lib/i18n';
 
 const SETTINGS_KEY = 'kbap.push.settings.v1';
@@ -138,8 +139,12 @@ async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
   console.log('[push] token upsert (BE 계약 대기, no-op)', reg.token.slice(0, 24), reg.platform, reg.lang);
 }
 
-/** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함). */
-export async function registerPushToken(): Promise<void> {
+/** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함).
+ *  Codex #109 10R: track 경유 — 콜드 스타트 +8s OTA 창과 겹치는 연산(관문 5곳째). */
+export function registerPushToken(): Promise<void> {
+  return track(registerPushTokenInner());
+}
+async function registerPushTokenInner(): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {
@@ -274,10 +279,11 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
     // P-289 ①: 포그라운드 발화 즉시 기록
     const recv = N.addNotificationReceivedListener?.((n: { request: { identifier?: string; content: { data?: unknown } } }) => record(n.request));
     // P-289 ②: 백그라운드 발화분 재실행 회수(알림 센터에 떠 있는 것)
-    void N.getPresentedNotificationsAsync?.()
+    // #109 11R 잔여(P-348 동승): 부팅 알림 조회 2건도 track — OTA 정적 창 포함
+    void track(N.getPresentedNotificationsAsync?.()
       .then((list: { request: { identifier?: string; content: { data?: unknown } } }[]) => list.forEach((n) => record(n.request)))
-      .catch(() => {});
-    void N.getLastNotificationResponseAsync().then(emit).catch(() => {});
+      .catch(() => {}) ?? Promise.resolve());
+    void track(N.getLastNotificationResponseAsync().then(emit).catch(() => {}));
     return () => {
       sub.remove();
       recv?.remove?.();

@@ -28,6 +28,7 @@ import i18n from '../i18n';
 import { BE_BASE } from '../data/config';
 import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
+import { track } from '../net/inflight';
 
 /**
  * P-199(BE #160·161) → P-270(KB-389): **전 채널 신계약 통일** — 버전리스 경로 +
@@ -92,6 +93,23 @@ export function setOnUnauthorized(handler: ((code: string | null) => Promise<boo
   onUnauthorized = handler;
 }
 
+/** KB-441(P-297): 서버가 모르는 회원(MEMBER-003) 알림 — 좀비 세션 감지.
+ *  b27 실기: prod DB에 없는 회원의 유효 토큰 + 전 회원 API 400
+ *  (프로필 dead-end·스캔 지연 표면화). 분기 정책(저장 토큰 있을 때만 세션 무효)은
+ *  핸들러(beAuth) 한 곳 — 여기선 fire-and-forget 통지만, 에러는 그대로 throw.
+ *  Codex #59 P1-3: 스냅샷 기준 = **세션 generation**(주입 프로바이더 — 로그인/
+ *  로그아웃/만료 경계에만 증가, refresh 회전엔 불변). 토큰 정확 비교는 같은 세션의
+ *  회전(A→B) 중 도착한 유일한 MEMBER-003까지 "다른 세션"으로 오판해 버렸다
+ *  (4xx는 미재시도라 dead-end 잔존). 요청 발행 시 gen을 캡처해 함께 전달. */
+let sessionGenerationProvider: (() => number) | null = null;
+export function setSessionGenerationProvider(provider: (() => number) | null) {
+  sessionGenerationProvider = provider;
+}
+let onMemberMissing: ((requestGen: number | null) => void) | null = null;
+export function setOnMemberMissing(handler: ((requestGen: number | null) => void) | null) {
+  onMemberMissing = handler;
+}
+
 /** 익명으로 호출해야 하는 공개 인증 엔드포인트 (Authorization 미부착). */
 const OPEN_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
 
@@ -114,7 +132,20 @@ export interface RequestOpts {
   headers?: Record<string, string>;
 }
 
-async function request<T>(
+function request<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  isRetry = false,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  extraHeaders?: Record<string, string>,
+): Promise<T> {
+  // Codex #109 8R: track = request 전체(installationId·토큰 provider 대기 포함) —
+  // fetch 직전만 감싸면 그 앞 비동기 창이 OTA 정적 창 밖(재시도 재귀는 중첩 track, 무해)
+  return track(requestInner<T>(method, path, body, isRetry, timeoutMs, extraHeaders));
+}
+
+async function requestInner<T>(
   method: string,
   path: string,
   body?: unknown,
@@ -140,8 +171,17 @@ async function request<T>(
   // `/api` 아래 버전리스 — 전 채널 동일(구 /api/v1 분기 소멸).
   const url = path.startsWith('/api/') ? `${BE_BASE}${path}` : `${BE_BASE}/api${path}`;
   const skipAuth = OPEN_AUTH_PATHS.some((p) => path.startsWith(p));
-  const accessToken =
+  // KB-441(Codex #59 P1-3→6): 세대는 **토큰 로드 앞**에 캡처 — MEMBER-003 통지에 동봉.
+  // P1-6(찢긴 스냅샷): 토큰 로드(비동기) 중 로그인 커밋이 끼면 "A 토큰+B 세대"로 나가
+  // 늦은 MEMBER-003이 B 세션을 지운다 → 로드 후 세대가 달라졌으면 **1회 재읽기**로
+  // 일치화(재읽기 중 또 경계가 끼는 초과 전환은 낡은 세대 쪽으로 남아 핸들러가 무시 — 안전 방향).
+  let requestGen = sessionGenerationProvider ? sessionGenerationProvider() : null;
+  let accessToken =
     !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  if (sessionGenerationProvider && sessionGenerationProvider() !== requestGen) {
+    requestGen = sessionGenerationProvider();
+    accessToken = !skipAuth && authTokenProvider ? await authTokenProvider().catch(() => null) : null;
+  }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   let res: Response;
@@ -226,6 +266,9 @@ async function request<T>(
   if (!res.ok) {
     // 9/5 예진 승인: 5xx 관측(PLACE-001 502 계열) — 경로·상태·코드 태그만, PII 0
     if (res.status >= 500) captureApi5xx(path, res.status, json?.code ?? undefined);
+    // KB-441: MEMBER-003(회원 없음) = 좀비 세션 신호 — 핸들러에 통지(정책은 beAuth).
+    // /auth/* 자체 응답은 제외(로그인·refresh 흐름은 자체 분기 — 401 경로와 동일 원칙).
+    if (json?.code === 'MEMBER-003' && onMemberMissing && !path.startsWith('/auth/')) onMemberMissing(requestGen);
     throw new ApiError(json?.message ?? `HTTP ${res.status}`, res.status, json?.code ?? undefined);
   }
   // 200 but success:false — never trust HTTP status alone.

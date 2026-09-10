@@ -11,8 +11,8 @@
  * Unregistered = "Unable to assess" 유지 — never assumed safe (FR-033).
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크·EligibilityGate 로직 무변.
  */
-import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,21 +20,20 @@ import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
-import { QueryErrorBlock } from '@/components/StateBlock';
+import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
+import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
-import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { FeedCard } from '@/features/review/FeedCard';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
-import { Snackbar } from '@/components/Snackbar';
 import { IconFood, IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -52,6 +51,29 @@ const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2
 const HEADER_SOLID_Y = 210;
 const INK_TITLE = '#2F3137';
 const REVIEW_PREVIEW_N = 3; // 발주 §1-7: 카드 ×3
+
+/** P-303(KB-457): 재료 타일·시트 이미지 = AvoidTile과 같은 3단 체인(서버 imageUrl →
+ *  CDN 조립 → 폴백) — 상세만 서버 imageUrl 단독이라 사진이 안 뜨던 결함 해소.
+ *  체인 소진 시 현 폴백(IconFood) 유지, 타일 크기 48/56 무변(시안 §3). */
+function IngChainImage({ code, imageUrl, size, iconSize }: { code: string; imageUrl?: string | null; size: number; iconSize: number }) {
+  const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
+  if (!uri) return <IconFood size={iconSize} color={C.ink3} />;
+  // key = 소스별 리마운트(RemoteImage settle 리셋 — AvoidTile 문법 동일)
+  // P-341(KB-502): 누끼본 = contain(여백은 크기 축소로 근사 — 타일 pad 유지)
+  // Codex #102 P2: 누끼 상태 = 흰 바닥(AvoidTile 동일 규칙) — 부모 surface2는 실패 폴백만
+  return (
+    <>
+      {isCutout && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF' }]} testID={`ing-cut-bg-${code}`} />}
+      <RemoteImage
+        key={uri}
+        uri={uri}
+        onError={nextSource}
+        contentFit={isCutout ? 'contain' : undefined}
+        style={isCutout ? { width: size * 0.74, height: size * 0.74 } : { width: size, height: size, borderRadius: 8 }} // P-344: 74% 공통
+      />
+    </>
+  );
+}
 
 export default function FoodDetailScreen() {
   // P-012(KB-179): price는 스캔 결과 진입에만 실리는 표시 전용 param — 조작 방어 파싱
@@ -84,8 +106,6 @@ export default function FoodDetailScreen() {
   const toggleBm = useToggleBookmark();
   const [saveGateOpen, setSaveGateOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false); // P-134: 마크 탭 재열람
-  const [saveError, setSaveError] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onBookmark = () => {
     if (isGuest) {
       setSaveGateOpen(true);
@@ -94,28 +114,22 @@ export default function FoodDetailScreen() {
     if (!food) return;
     const adding = !saved;
     track(EVENTS.food_bookmark_toggle, { on: adding }); // P-144
-    setSaveError(false);
-    toggleBm.mutate(
-      {
-        snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
-        add: adding,
-      },
-      {
-        onError: () => {
-          setSaveError(true);
-          if (toastTimer.current) clearTimeout(toastTimer.current);
-          toastTimer.current = setTimeout(() => setSaveError(false), 4000);
-        },
-      },
-    );
+    // P-339 ⑤: 성공/실패 토스트 = 공용 상단 토스트(useToggleBookmark 한 곳) — 로컬 스낵바 소멸
+    toggleBm.mutate({
+      snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
+      add: adding,
+    });
   };
 
   // KB-431 §1-8 FixedBottom — 등록 음식만(미등록은 본문 CTA 현행 유지)
   const showBottomBar = !!food && food.isRegistered;
+  // Codex #97 3R P2: fitLabel 2줄(es 등)이면 바 실높이가 고정 예약(107)을 초과해
+  // 콘텐츠 끝을 가림 — onLayout 실측으로 스크롤 하단 여백 파생(측정 전 폴백 107).
+  const [barH, setBarH] = useState(0);
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? 107 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
         {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
         {/* P-287(4003:13466): 첫 로드 = 상세 스켈레톤(공백 금지) */}
         {isLoading && !food && !error && <SkeletonFoodDetail />}
@@ -141,7 +155,7 @@ export default function FoodDetailScreen() {
                 saved={saved}
                 onBookmark={onBookmark}
                 myId={me?.id}
-                nationality={me?.nationality ?? 'US'}
+                nationality={me?.nationality ?? null} /* P-323: 'US' 폴백 폐기 — null = 토글 미렌더 */
                 hasRestrictions={(me?.restrictions.length ?? 0) > 0}
                 t={t}
                 router={router}
@@ -161,6 +175,8 @@ export default function FoodDetailScreen() {
       {showBottomBar && (
         <RegisteredBottomBar
           guest={isGuest}
+          scanEntry={src === 'scan'}
+          onHeight={setBarH}
           insetsBottom={insets.bottom}
           t={t}
           onWrite={() => {
@@ -197,7 +213,6 @@ export default function FoodDetailScreen() {
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
       <EligibilityGate open={eligGateRoot} onClose={() => setEligGateRoot(false)} />
-      {saveError && <Snackbar icon={<IconStar size={15} color="#fff" />} text={t('saved.error')} />}
     </View>
   );
 }
@@ -222,25 +237,37 @@ function RegisteredBottomBar({
   t,
   onWrite,
   onAsk,
+  scanEntry = false,
+  onHeight,
 }: {
   guest: boolean;
   insetsBottom: number;
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
+  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 전폭(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  scanEntry?: boolean;
+  /** Codex #97 3R P2: 실높이 보고 — 스크롤 하단 여백 파생용(fitLabel 2줄 대응) */
+  onHeight?: (h: number) => void;
 }) {
+  // P-334 2R: 시안 비율 3:5는 ≥360 전제 — 좁은 폭(<360)에선 1:1로 라벨 공간 확보(i18n 절단 방지)
+  const narrow = useWindowDimensions().width < 360;
   return (
-    <View style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]} testID="detail-bottom-bar">
-      {FLAGS.reviewsEnabled && (
-        <View style={onAsk ? styles.bottomWrite : { flex: 1 }}>
-          <Btn variant={onAsk ? 'ghost' : 'primary'} onPress={onWrite} testID="bottom-write">
+    <View
+      style={[styles.bottomBar, { paddingBottom: insetsBottom + 10 }]}
+      onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
+      testID="detail-bottom-bar"
+    >
+      {FLAGS.reviewsEnabled && !(scanEntry && onAsk) && (
+        <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
+          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write">
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
       {onAsk && (
-        <View style={{ flex: 1 }}>
-          <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk} testID="bottom-ask">
+        <View style={{ flex: scanEntry ? 1 : narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) · P-353 ②: 스캔 진입 = 전폭 */}
+          <Btn fitLabel onPress={onAsk} testID="bottom-ask">
             {t('detail.askOwner')}
           </Btn>
         </View>
@@ -271,7 +298,7 @@ function Registered({
   saved: boolean;
   onBookmark: () => void;
   myId?: string;
-  nationality: string;
+  nationality: string | null;
   hasRestrictions: boolean;
   scanPrice: number | null;
   t: TFn;
@@ -304,14 +331,15 @@ function Registered({
   const hasInline = food.recentReviews !== undefined;
   const reviewsQ = useFoodReviews(FLAGS.reviewsEnabled && !hasInline ? id : '');
   const previewSource = hasInline ? food.recentReviews! : (reviewsQ.data?.pages[0]?.items ?? []);
-  // Q12: "{국가} only" 클라 필터 — 프리뷰 소스엔 서버 파라미터가 없어 작성자 국적으로
-  // 필터. Codex #30 P2: 필터를 slice **앞에**(필터 후 3개 — 뒤에 걸면 상위 3개 중 교집합만 남음)
   const [natOnly, setNatOnly] = useState(false);
-  const shownPreviews = (natOnly ? previewSource.filter((r) => r.authorNationality === nationality) : previewSource).slice(0, REVIEW_PREVIEW_N);
+  // P-323(KB-448): 토글 on = 서버 countryCode 필터 쿼리(전체 리뷰 화면과 동일 훅·별도
+  // 쿼리 키) — 구 클라 필터는 "로드된 3장 안 교집합"이라 서버엔 있는데 0장이 떴다.
+  const natQ = useFoodReviews(FLAGS.reviewsEnabled && natOnly && nationality ? id : '', nationality ?? undefined);
+  const natLoading = natOnly && natQ.isLoading;
+  const activePreviews = natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
+  const shownPreviews = activePreviews.slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
-  const updateReview = useUpdateReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
-  const [editTarget, setEditTarget] = useState<Review | null>(null);
 
   // P-139 ④ 유지: verdict 이유 = **성분 기준 조립만**(맵기 문자열 0)
   const flagged = ingredients.filter((i) => i.risk === 'danger' || i.risk === 'caution');
@@ -361,7 +389,7 @@ function Registered({
 
       {/* §1-2: 헤더 블록 — 좌 컬럼 + 우 북마크 36(4129:10698) */}
       <View style={styles.headBlock}>
-        <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-FD-05 */}
           {food.spiceLevel != null && (
             <View style={styles.spiceRow}>
               {/* ⚠️ 맵기 = 현행 5단계 foodSpiceText — 시안 "6/10" 이식 금지 유지 */}
@@ -397,7 +425,7 @@ function Registered({
             </Pressable>
           )}
         </View>
-        <Pressable style={styles.bmBtn} onPress={onBookmark} hitSlop={6} testID="detail-save">
+        <Pressable style={[styles.bmBtn, saved && styles.bmBtnSaved]} onPress={onBookmark} hitSlop={6} testID="detail-save">
           {/* 9/5 판정: 북마크 별(4129:10698/10701) — 저장됨 = #FFE812/#E5D64D */}
           <BookmarkStar saved={saved} size={16} />
         </Pressable>
@@ -429,20 +457,15 @@ function Registered({
             <View style={styles.ingGrid}>
               {shownIngredients.map((ing) => {
                 const dRisk = personalRisk(ing.risk, hasRestrictions);
-                const img = cat.imageUrl(ing.code);
                 return (
-                  <Pressable key={ing.code} style={styles.ingTile} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
+                  <Pressable key={ing.code} style={[styles.ingTile, !guest && dRisk === 'caution' && styles.ingTileWithFoot]} onPress={() => setIngSheet(ing)} testID={`ing-${ing.code}`}>
                     {!guest && (
                       <View style={styles.ingTileMark}>
                         <RiskMark state={dRisk} size={18} />
                       </View>
                     )}
                     <View style={styles.ingTileImg}>
-                      {img ? (
-                        <RemoteImage uri={img} style={{ width: 48, height: 48, borderRadius: 8 }} />
-                      ) : (
-                        <IconFood size={28} color={C.ink3} />
-                      )}
+                      <IngChainImage code={ing.code} imageUrl={cat.imageUrl(ing.code)} size={48} iconSize={28} />
                     </View>
                     <Text style={styles.ingTileName} numberOfLines={1}>{ing.name}</Text>
                     {ing.percentage != null && (
@@ -486,13 +509,23 @@ function Registered({
         <View testID="review-brief">
           <View style={styles.thickDivider} />
           <View style={styles.rvHead}>
-            <Stars value={food.overall.average ?? 0} size={16} />
-            <Text style={[styles.rvHeadScore, { flex: 1 }]}>
-              {food.overall.average?.toFixed(1) ?? '—'} ({food.overall.count})
-            </Text>
-            {/* 9/5 예진 판정(Q12): "{국가} only" 토글 — 프리뷰는 클라 필터(작성자 국적 =
-                뷰어 국적). 게스트 = 국적 미상이라 미노출(P-235 컨벤션). */}
-            {!guest && (
+            {/* P-360(KB-523): KR only ON = 같은 국적 집계 즉시 전환(서버 요약은 이미 손에),
+                같은 국적 0건 = 별·점수 미렌더(토글 우측 유지 — 빈 spacer) */}
+            {(() => {
+              const agg = natOnly ? food.sameNationality : food.overall;
+              if (natOnly && agg.count === 0) return <View style={{ flex: 1 }} testID="rv-head-empty-spacer" />;
+              return (
+                <>
+                  <Stars value={agg.average ?? 0} size={16} />
+                  <Text style={[styles.rvHeadScore, { flex: 1 }]}>
+                    {agg.average?.toFixed(1) ?? '—'} ({agg.count})
+                  </Text>
+                </>
+              );
+            })()}
+            {/* 9/5 예진 판정(Q12) → P-323: "{국가} only" 토글 = 서버 countryCode 필터.
+                게스트·국적 null(구계정) = 미렌더(국적 미상 — 필터 무의미, 게이트 아님). */}
+            {!guest && nationality && (
               <Pressable style={styles.natToggleRow} onPress={() => setNatOnly((v) => !v)} testID="detail-nat-toggle">
                 <View style={[styles.sw, natOnly && styles.swOn]}>
                   <View style={[styles.knob, natOnly && styles.knobOn]} />
@@ -503,14 +536,34 @@ function Registered({
           </View>
           {/* 9/5 예진 판정(Q10): 같은 국적 병기 줄 제거(시안 부재) */}
 
-          {shownPreviews.map((r) => (
+          {/* P-323: 토글 쿼리 로딩 = 스켈레톤(공백 금지) · 실패 = 에러 표면(P-007 false-empty
+              금지 — emptySameNat는 성공+0장일 때만) · 서버 필터 0장 = 전용 문구 */}
+          {natLoading && (
+            <View style={styles.natSkel} testID="detail-nat-skel">
+              {[0, 1].map((i) => (
+                <View key={i} style={styles.natSkelCard} />
+              ))}
+            </View>
+          )}
+          {natOnly && !natLoading && natQ.isError && (
+            <View testID="detail-nat-error">
+              <QueryErrorBlock error={natQ.error} onRetry={() => void natQ.refetch()} />
+            </View>
+          )}
+          {natOnly && !natLoading && !natQ.isError && shownPreviews.length === 0 && (
+            /* P-359(KB-522): 폭 초과 Text → 공용 EmptyBlock(섹션 본문 폭 안) */
+            <View style={{ paddingVertical: 24 }} testID="detail-nat-empty">
+              <EmptyBlock label={t('reviews.emptySameNat')} />
+            </View>
+          )}
+          {!natLoading && !(natOnly && natQ.isError) && shownPreviews.map((r) => (
             <FeedCard
               key={r.id}
               review={r}
               t={t}
               mine={r.memberId != null && r.memberId === myId}
               showFood={false} /* 자기 자신 음식 칩 무의미 */
-              showMore={!r.anonymized}
+              /* P-339 ② 2R: 탈퇴 리뷰도 ⋯(신고만) — showMore 게이트 잔존 제거 */
               onOpenFood={() => {}}
               onGuestHelpful={() => setGateOpen(true)}
               onMore={() =>
@@ -519,13 +572,14 @@ function Registered({
                   id: r.id,
                   author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
                   mine: r.memberId != null && r.memberId === myId,
+                  anonymized: r.anonymized === true,
                 })
               }
             />
           ))}
 
           <View style={styles.rvMore}>
-            <Btn variant="ghost" onPress={() => router.push(`/food/${id}/reviews` as Href)}>
+            <Btn variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
               {t('detail.readAll')}
             </Btn>
           </View>
@@ -536,22 +590,14 @@ function Registered({
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(previewSource.find((r) => r.id === m.id) ?? null)}
+        onEdit={(m) => router.push(`/food/${id}/review?reviewId=${m.id}` as Href)} /* P-358: 편집 = 작성 화면 편집 모드 */
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id })}
-        onBlocked={() => void reviewsQ.refetch()}
-      />
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: id, current: editTarget, changes: { rating, body } },
-            { onSettled: () => setEditTarget(null) },
-          );
+        onBlocked={() => {
+          // P-323(Codex #87 P2): 차단 갱신 — 활성 국가 필터 쿼리도 함께(뮤테이션 무효화는
+          // ['food', id] prefix라 natQ 자동 커버 — 이 즉시 refetch 경로만 갭이었음)
+          void reviewsQ.refetch();
+          if (natOnly) void natQ.refetch();
         }}
-        t={t}
       />
 
       <AuthGateSheet context="risk" open={gateOpen} onClose={() => setGateOpen(false)} />
@@ -569,24 +615,39 @@ function Registered({
                       <Text style={styles.ingSheetName} numberOfLines={1}>{ingSheet.name}</Text>
                     </View>
                     {ingSheet.percentage != null && (
-                      <Text style={styles.ingTileSub}>{t('detail.ofShops', { pct: Math.round(ingSheet.percentage) })}</Text>
+                      /* P-306: 시트 빈도 = 좌측 정렬(타일용 center 스타일 재사용 폐기) */
+                      <Text style={styles.ingSheetSub}>{t('detail.ofShops', { pct: Math.round(ingSheet.percentage) })}</Text>
                     )}
                   </View>
                   <View style={styles.ingSheetImg}>
-                    {cat.imageUrl(ingSheet.code) ? (
-                      <RemoteImage uri={cat.imageUrl(ingSheet.code)!} style={{ width: 56, height: 56, borderRadius: 8 }} />
-                    ) : (
-                      <IconFood size={32} color={C.ink3} />
-                    )}
+                    <IngChainImage code={ingSheet.code} imageUrl={cat.imageUrl(ingSheet.code)} size={56} iconSize={32} />
                   </View>
                 </View>
-                {/* 본문 = 기존 중립 조립 사유(guest = 판정 미노출이라 note/빈도만) */}
+                {/* P-306: 게스트 본문 = 빈도 문장 + 식당별 편차 안내(회피 언급 0) · 회원 = 현행 조립 */}
                 <Text style={styles.ingSheetBody}>
-                  {guest ? (ingSheet.note ?? '') : ingBasis(ingSheet, personalRisk(ingSheet.risk, hasRestrictions))}
-                  {!guest && ingSheet.note ? ` (${ingSheet.note})` : ''}
+                  {guest
+                    ? t(ingSheet.percentage != null ? 'detail.ingGuestBody' : 'detail.ingGuestBodyNoPct', {
+                        ingredient: ingSheet.name,
+                        percent: Math.round(ingSheet.percentage ?? 0),
+                      })
+                    : ingBasis(ingSheet, personalRisk(ingSheet.risk, hasRestrictions)) + (ingSheet.note ? ` (${ingSheet.note})` : '')}
                 </Text>
-                <Btn variant="ghost" onPress={() => setIngSheet(null)} testID="ing-sheet-close">
-                  {t('common.close')}
+                {/* P-306: Close 제거(스크림 탭·뒤로가기 닫힘 유지) → Ask the owner(상세 하단 버튼 문법) */}
+                <Btn
+                  icon={<IconSpeech size={20} color="#fff" />}
+                  onPress={() => {
+                    const code = ingSheet.code;
+                    // Codex #67 P1: 회원+회피 판정(danger/caution)만 알레르기 설명 — 게스트·safe = 중립
+                    const avoid = !guest && ['danger', 'caution'].includes(personalRisk(ingSheet.risk, hasRestrictions));
+                    setIngSheet(null);
+                    track(EVENTS.owner_ask_open, { source: 'ingredient_sheet', food_id: id ?? '' });
+                    // 4R: 라벨 미전달 — 사장님 카드 한국어명은 owner 쪽 resolveIngredientKo 단일 경로
+                    // (reader 언어 문자열 전달 금지 — 헌법 I·P-052). 미해석 = 중립 질문.
+                    router.push(`/food/${id}/owner?ingredient=${encodeURIComponent(code)}&reason=${avoid ? 'avoid' : 'neutral'}` as Href);
+                  }}
+                  testID="ing-sheet-ask"
+                >
+                  {t('detail.askOwner')}
                 </Btn>
               </>
             )}
@@ -652,11 +713,11 @@ const styles = StyleSheet.create({
   lockSlotCta: { fontSize: 13, fontWeight: '700', color: C.primaryText },
 
   // §1-2: 헤더 블록
-  headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 20, paddingVertical: 20 },
-  spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headBlock: { flexDirection: 'row', alignItems: 'flex-start', gap: 24, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 27 }, // A-FD-01/02(KB-486)
+  spiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 }, // A-FD-03
   spiceChip: { backgroundColor: '#F2F3F6', borderRadius: 4, paddingVertical: 1, paddingHorizontal: 5 },
   spiceChipText: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FD-04
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
   newBadge: { height: 18, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
@@ -665,10 +726,12 @@ const styles = StyleSheet.create({
   desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
   scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },
   scanPriceNote: { fontSize: 12.5, fontWeight: '400', color: C.ink2 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' },
-  ratingRowText: { fontSize: 13, fontWeight: '600', color: C.ink },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start' }, // A-FD-06
+  ratingRowText: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-06
   // 북마크 36(4129:10698 — 홈 그리드와 동일 문법)
-  bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  // A-DS-02(KB-486): 기본 흰+sh1(보더 투명 자리 유지 — P-151), 저장만 #EAEBEE 1
+  bmBtn: { width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', ...shadow.sh1 },
+  bmBtnSaved: { borderColor: '#EAEBEE' },
 
   profileHint: { fontSize: 13, fontWeight: '400', color: C.ink2, lineHeight: 18, paddingHorizontal: 20, paddingBottom: 12 },
 
@@ -676,34 +739,40 @@ const styles = StyleSheet.create({
   thickDivider: { height: 8, backgroundColor: '#F5F5F5' },
 
   // §1-5: What's inside
-  insideSec: { paddingVertical: 20, gap: 14 },
+  insideSec: { paddingVertical: 20, gap: 10 }, // A-FD-07
   insideTitle: { fontSize: 16, fontWeight: '500', color: C.ink, paddingHorizontal: 20 },
   ingChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20 },
   // §3: 타일 단위 줄바꿈 — flexWrap + 타일 flexShrink 0
   ingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20 },
-  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, paddingTop: 14, alignItems: 'center', gap: 4, overflow: 'hidden' },
+  ingTile: { width: '31%', flexGrow: 1, maxWidth: '32%', flexShrink: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, paddingTop: 26, alignItems: 'center', gap: 2, overflow: 'hidden' }, // A-FD-08
   ingTileMark: { position: 'absolute', top: 6, left: 6 },
   ingTileImg: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   ingTileName: { fontSize: 12, fontWeight: '500', color: INK_TITLE, textAlign: 'center', paddingHorizontal: 6 },
   ingTileSub: { fontSize: 11, fontWeight: '400', color: '#5A636A', textAlign: 'center', paddingHorizontal: 4, marginBottom: 10 },
+  ingTileWithFoot: { paddingTop: 8 }, // A-FD-08 푸터 변형
   ingTileFoot: { alignSelf: 'stretch', minHeight: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,113,52,0.05)', borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  ingTileFootText: { fontSize: 11, fontWeight: '500', color: C.primary },
+  ingTileFootText: { fontSize: 12, fontWeight: '500', color: C.primary }, // A-FD-09(색·굵기는 C-62)
 
   // §1-6: 재료 바텀시트
   sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   ingSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingVertical: 28, gap: 16 },
   ingSheetTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ingSheetName: { flexShrink: 1, fontSize: 16, fontWeight: '500', color: C.ink },
+  // P-306: 시트 전용 빈도 줄 — 좌측 정렬(마크·이름 아래), 타일용 ingTileSub(center)와 분리
+  ingSheetSub: { fontSize: 11, fontWeight: '400', color: '#5A636A' },
   ingSheetImg: { width: 56, height: 56, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   ingSheetBody: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
 
   // §1-7: 리뷰 섹션
   reviewSec: { gap: 14, paddingBottom: 8 },
-  rvHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 20 },
-  rvHeadScore: { fontSize: 13, fontWeight: '600', color: C.ink },
+  rvHead: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 20, paddingTop: 20 }, // A-FD-10(별↔점수 2)
+  rvHeadScore: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // A-FD-10
   // Q12: "{국가} only" 토글(시안 Button/Toggle md 44×24)
-  natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  natToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 0 }, // A-FD-10
   natToggleLabel: { fontSize: 14, fontWeight: '500', color: C.ink },
+  // P-323 토글 쿼리 상태(스켈레톤·빈 문구) — 홈 피드 스켈레톤 문법
+  natSkel: { gap: 12, paddingTop: 12 },
+  natSkelCard: { height: 150, borderRadius: 8, backgroundColor: '#F2F3F6' },
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 2, height: 2 }, elevation: 2 },
@@ -716,7 +785,6 @@ const styles = StyleSheet.create({
 
   // §1-8: FixedBottom
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
-  bottomWrite: { width: 119 },
 
   // Unregistered(현행 유지 — 토큰만)
   titleBlock: { gap: 5 },

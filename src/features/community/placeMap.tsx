@@ -9,7 +9,6 @@ import { Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-nat
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, shadow } from '@/lib/theme';
-import { IconClose } from '@/components/icons';
 import { BrandGoogle, BrandKakao, BrandNaver } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
 import type { PlaceTagRef } from '@/lib/community/types';
@@ -66,8 +65,8 @@ function SheetShell({ children, onClose }: { children: React.ReactNode; onClose:
  *  딥링크·좌표 폴백 로직은 무변(mapUrls). */
 const MAP_BTN: Record<MapApp, { bg: string; border?: string; text: string; Icon: typeof BrandGoogle }> = {
   google: { bg: '#FFFFFF', border: '#DCDEE3', text: '#1C1E21', Icon: BrandGoogle },
-  naver: { bg: '#1EC800', text: '#FFFFFF', Icon: BrandNaver },
-  kakao: { bg: '#FFE812', text: '#1C1E21', Icon: BrandKakao },
+  naver: { bg: '#03C75A', text: '#FFFFFF', Icon: BrandNaver }, // P-339 ④: 공식 NAVER Green
+  kakao: { bg: '#FEE500', text: '#000000', Icon: BrandKakao }, // P-339 ④: Kakao Yellow + 검정
 };
 
 export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onClose: () => void }) {
@@ -75,10 +74,8 @@ export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onCl
   if (!place) return null;
   return (
     <SheetShell onClose={onClose}>
-      <Pressable style={styles.close} onPress={onClose} hitSlop={8} testID="place-sheet-close">
-        <IconClose size={24} color={C.ink2} />
-      </Pressable>
-      <View style={{ gap: 6, paddingRight: 32 }}>
+      {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭(SheetShell backdrop) */}
+      <View style={{ gap: 4 }}>{/* A-RL-10(KB-486) */}
         <Text style={styles.title} numberOfLines={1}>
           {place.name}
         </Text>
@@ -109,7 +106,6 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   // KB-431: 시트 흰 radius 16 상단, pad 20/39, gap 24
   sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingTop: 39, paddingBottom: 39, gap: 24, ...shadow.sh2 },
-  close: { position: 'absolute', top: 12, right: 12, zIndex: 1 },
   title: { fontSize: 20, fontWeight: '700', color: C.ink },
   sub: { fontSize: 14, fontWeight: '400', color: C.ink2 },
   mapCol: { gap: 8 },

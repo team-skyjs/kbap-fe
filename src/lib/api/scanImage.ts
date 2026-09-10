@@ -12,6 +12,7 @@
  * null 반환 → 스캔은 imagePath '' 로 진행(텍스트-only, BE 허용 확정 7/16).
  * 업로드 실패가 스캔 자체를 죽이지 않는다 — 가짜 safe 없음.
  */
+import { track } from '@/lib/net/inflight';
 import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './client';
 import type { ImageCompletePayload, ImageCompleteRequest, UploadUrlPayload, UploadUrlRequest } from './scanTypes';
@@ -73,11 +74,12 @@ export async function uploadImage(rawFile: PhotoFile, purpose: string): Promise<
   const issued = await api.post<UploadUrlPayload>('/images/upload-url', issueReq);
   console.log(`[scan] upload-url issued | key = ${issued.objectKey}`);
 
-  const put = await FileSystem.uploadAsync(issued.uploadUrl, file.uri, {
+  // #109 3R: 네이티브 업로드는 client.ts 밖 — inflight.track으로 OTA 정적 창에 포함
+  const put = await track(FileSystem.uploadAsync(issued.uploadUrl, file.uri, {
     httpMethod: (issued.method || 'PUT') as FileSystem.FileSystemAcceptedUploadHttpMethod,
     headers: issued.requiredHeaders, // 발급값 그대로 — 임의 추가/변경 금지
     uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-  });
+  }));
   if (put.status < 200 || put.status >= 300) throw new Error(`storage PUT ${put.status}`);
 
   const path = await completeImageUpload({ path: issued.objectKey, contentType, size: info.size });

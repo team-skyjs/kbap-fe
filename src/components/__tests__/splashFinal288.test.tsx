@@ -1,11 +1,12 @@
 /**
- * P-288(KB-437) — AnimatedSplash 잠금: 타이밍 상수 스냅샷 · reduce-motion 분기 ·
- * 종료(1.6s+0.45s) 언마운트 · 4s 캡 · 네이티브 구성(app.json) 소스 잠금.
+ * P-288 → P-299(KB-444) — AnimatedSplash 잠금: 시퀀스 B(재등장 0·덧붙임 모션) 타이밍
+ * 스냅샷 · reduce-motion 분기 · 종료(3s+0.45s) 언마운트 · 4s 캡 · 네이티브 구성 소스 잠금.
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 const mockWithDelay = jest.fn((_d: number, v: unknown) => v);
+const mockWithSequence = jest.fn((...vals: unknown[]) => vals[vals.length - 1]);
 const mockCancelAnimation = jest.fn();
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
@@ -21,6 +22,7 @@ jest.mock('react-native-reanimated', () => {
       return v;
     },
     withDelay: (...a: unknown[]) => mockWithDelay(a[0] as number, a[1]),
+    withSequence: (...a: unknown[]) => mockWithSequence(...a),
     cancelAnimation: (...a: unknown[]) => mockCancelAnimation(...a),
     runOnJS: (fn: (...a: unknown[]) => void) => fn,
     Easing: { bezier: () => 0, in: () => () => 0, out: () => () => 0, quad: 0, linear: () => 0 },
@@ -53,50 +55,78 @@ beforeEach(() => {
   mockReduceMotion = false;
 });
 
-it('타이밍 상수 = 프로토타입 모션 A 수치 그대로(스냅샷)', () => {
+it('타이밍 상수 = 시퀀스 B(카드 B 정본) 수치 그대로(스냅샷)', () => {
   expect(SPLASH_TIMING).toMatchInlineSnapshot(`
 {
-  "bowl": {
-    "delay": 50,
-    "dur": 550,
+  "bowlTilt": {
+    "delay": 700,
+    "dur": 1100,
   },
   "cap": 4000,
   "dot": {
-    "delay": 850,
+    "delay": 1650,
     "dur": 350,
   },
-  "fadeOutAt": 1600,
+  "fadeOutAt": 3000,
   "fadeOutDur": 450,
-  "k": {
-    "delay": 300,
+  "hold": 700,
+  "kHop": {
+    "delay": 950,
     "dur": 600,
   },
-  "reduceHold": 600,
-  "tagline": {
-    "delay": 950,
-    "dur": 500,
+  "reduceHold": 3000,
+  "tagline1": {
+    "delay": 1750,
+    "dur": 450,
+  },
+  "tagline2": {
+    "delay": 1900,
+    "dur": 450,
   },
 }
 `);
 });
 
-it('active + 모션 허용 = 4그룹 딜레이 시작(50/300/850/950) → 1.6s 페이드아웃 → onDone', async () => {
+it('P-299 타임라인 순서 — hold ≤ tilt < hop < dot < tag1 < tag2 ≤ fadeOutAt', () => {
+  const T = SPLASH_TIMING;
+  expect(T.bowlTilt.delay).toBe(T.hold); // 흔들림 = 홀드 직후
+  expect(T.kHop.delay).toBeGreaterThan(T.bowlTilt.delay);
+  expect(T.dot.delay).toBeGreaterThan(T.kHop.delay);
+  expect(T.tagline1.delay).toBeGreaterThan(T.dot.delay);
+  expect(T.tagline2.delay).toBeGreaterThan(T.tagline1.delay);
+  expect(T.fadeOutAt).toBeGreaterThanOrEqual(T.tagline2.delay);
+});
+
+it('P-299 재등장 0 소스 잠금 — 그릇·K 초기값 = 최종 상태(등장 셰어드값·구 모션 A 잔존 0)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/components/AnimatedSplash.tsx', 'utf8') as string;
+  expect(src).not.toContain('useSharedValue(26)'); // 구 그릇 등장 오프셋
+  expect(src).not.toContain('useSharedValue(-34)'); // 구 K 등장 오프셋
+  expect(src).toContain('const tilt = useSharedValue(0);'); // 덧붙임 동작만
+  expect(src).toContain('const hop = useSharedValue(0);');
+  // 그릇·K에 opacity 등장 없음 — bowlStyle/kStyle은 transform 전용
+  expect(src).not.toMatch(/bowlO|kO =/);
+});
+
+it('active + 모션 허용 = 덧붙임 5그룹 딜레이(700/950/1650/1750/1900) → 3s 페이드아웃 → onDone', async () => {
   jest.useFakeTimers();
   const onDone = jest.fn();
   await render(<AnimatedSplash active onDone={onDone} />);
   const delays = mockWithDelay.mock.calls.map((c) => c[0]);
-  for (const d of [50, 300, 850, 950]) expect(delays).toContain(d);
+  for (const d of [700, 950, 1650, 1750, 1900]) expect(delays).toContain(d);
+  expect(mockWithSequence).toHaveBeenCalledTimes(2); // 흔들림·튐 = 시퀀스 2건
   expect(onDone).not.toHaveBeenCalled();
-  act(() => jest.advanceTimersByTime(SPLASH_TIMING.fadeOutAt)); // 1.6s — 페이드(목 = 즉시 완료 콜백)
+  act(() => jest.advanceTimersByTime(SPLASH_TIMING.fadeOutAt)); // 3s — 페이드(목 = 즉시 완료 콜백)
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
-it('reduce-motion = 모션 미시작(정지 표시) → 0.6s 후 페이드아웃 → onDone', async () => {
+it('reduce-motion = 흔들림·튐 스킵(시퀀스 0) → 홀드 후 점·문구 페이드만 → 3s 후 onDone', async () => {
   jest.useFakeTimers();
   mockReduceMotion = true;
   const onDone = jest.fn();
   await render(<AnimatedSplash active onDone={onDone} />);
-  expect(mockWithDelay).not.toHaveBeenCalled(); // 모션 0 — 정지 표시
+  expect(mockWithDelay).not.toHaveBeenCalled(); // 이동 모션 0
+  expect(mockWithSequence).not.toHaveBeenCalled(); // 흔들림·튐 스킵
   act(() => jest.advanceTimersByTime(SPLASH_TIMING.reduceHold));
   expect(onDone).toHaveBeenCalledTimes(1);
 });
@@ -196,7 +226,7 @@ it('배선·네이티브 구성 소스 잠금 — hideAsync 프레임 활성·�
   const splash = app.expo.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
   expect(splash.backgroundColor).toBe('#FFFFFF'); // 흰 고정(다크 변형 없음)
   expect(splash.image).toBe('./assets/images/splash-mark-ios.png');
-  expect(splash.imageWidth).toBe(81); // P-291: 타이트 캔버스(245×285) — 마크 화면상 81pt
+  expect(splash.imageWidth).toBe(95); // P-309(Codex #68 P2): 95 ≈ 81.614×285/245 — 실폭 81.67pt(JS 81.614 정합)
   expect(splash.android.image).toBe('./assets/images/splash-mark-android.png');
   expect(splash.android.imageWidth).toBe(131); // 안드 원형 마스크 캔버스(396) 보정
 });
@@ -214,5 +244,6 @@ it('P-291 viewBox 정정 소스 잠금 — K 라운드 캡(y<0)이 잘리지 않
   expect(assetsSrc).toContain('viewBox="0 -1.528 18.551 21.528"');
   expect(assetsSrc).toContain('height = 21.528');
   expect(assetsSrc).not.toContain('viewBox="0 0 18.551 20"');
-  expect(fs.readFileSync('src/components/StickyHeader.tsx', 'utf8')).toContain('<AppBarMark height={21.528} />');
+  // A-HM-01(KB-486): 앱바 글리프 높이 20(시안) — viewBox 좌표계(캡 -1.528)는 유지
+  expect(fs.readFileSync('src/components/StickyHeader.tsx', 'utf8')).toContain('<AppBarMark height={20} />');
 });

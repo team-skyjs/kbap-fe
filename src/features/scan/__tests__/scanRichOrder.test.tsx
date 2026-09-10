@@ -118,7 +118,8 @@ it('행 구성 — 경고 칩 = 기피 성분만(safe 제외) 1줄 nowrap, 미�
   expect(s).toContain('₩9,000');
   // P-138 ③: 미매칭 행 = 무썸네일 + 행 내 안내문 0 + [+] 담기 가능(P-045 실명 주문)
   expect(s).not.toContain('scan.notInDb');
-  const imgs = tree.root.findAll((n) => n.props?.source?.uri === 'https://cdn/x.jpg');
+  // #116 2R ②: 썸네일 = CardPhoto 경유(source가 문자열) — 구 RemoteImage({uri}) 형태 병행 허용
+  const imgs = tree.root.findAll((n) => n.props?.source === 'https://cdn/x.jpg' || n.props?.source?.uri === 'https://cdn/x.jpg');
   expect(imgs.length).toBeGreaterThanOrEqual(1); // 매칭 행만
   expect(byId(tree, 'add-1').length).toBeGreaterThanOrEqual(1);
   // P-138 ④: 카테고리 헤더 미렌더(플랫 리스트)
@@ -229,9 +230,9 @@ it('P-241: 행 썸네일 = imageRef 인라인 — 비매칭 행도 표시(디폴
     <ScanRichList dishes={dishes} currency="USD" cart={new Map()} onAdd={() => {}} onRemove={() => {}} onOpen={() => {}} t={t} />,
   );
   const s = flat(tree);
-  // KB-432(16314): 비매칭 = #F2F3F6 박스 + unable 마크(서버 디폴트 이미지 소멸 — 시안)
-  expect(s).toContain('#F2F3F6');
-  expect(s).not.toContain('default-food.webp');
+  // P-366 ①(KB-529): 비매칭 = 매칭과 동일 CardPhoto(imageUrl 그대로 — 실패 시 내부 폴백)
+  // + RiskBadge(unable). 구 흰 박스/오버레이 계약 폐기.
+  expect(s).toContain('default-food.webp');
   // 주문 카드 = rawMenuName 그대로(P-045) — 표시명 조립 금지(기존 잠금 승계)
   const card = render(
     <FlippedOrderCard items={[{ nameKo: '수제비', name: '수제비', qty: 1, priceKrw: null }]} avoidCodes={[]} avoidNames={[]} currency="USD" onDone={() => {}} t={t} />,

@@ -19,6 +19,7 @@ export function RemoteImage({
   contentFit = 'cover',
   recyclingKey,
   transition = 150,
+  onError,
 }: {
   uri: string;
   /** 크기·라운딩을 가진 컨테이너 스타일(기존 Image 스타일 그대로 이관) */
@@ -26,6 +27,9 @@ export function RemoteImage({
   contentFit?: ImageContentFit;
   recyclingKey?: string;
   transition?: number;
+  /** P-303: 로드 실패 통지 — 소스 체인(useIngredientImageChain 등) 다음 소스 전환용.
+   *  settle(스켈레톤 종료)은 현행 유지 — 호출부가 key={uri}로 소스별 리마운트한다. */
+  onError?: () => void;
 }) {
   const [settled, setSettled] = React.useState(false);
   return (
@@ -38,7 +42,10 @@ export function RemoteImage({
         transition={transition}
         style={FILL}
         onLoad={() => setSettled(true)}
-        onError={() => setSettled(true)}
+        onError={() => {
+          setSettled(true);
+          onError?.(); // P-303: 소스 체인 다음 소스 전환 통지
+        }}
       />
     </View>
   );

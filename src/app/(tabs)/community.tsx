@@ -12,7 +12,8 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { accentTint, color as C, font, radius, shadow } from '@/lib/theme';
-import { IconBell, IconBubbleEmpty, IconLock, IconPlus, QueryErrorBlock, ShellPlaceholder, Spinner, stateIconColor, StateBlock } from '@/components';
+import { IconBell, IconBubbleEmpty, IconLock, IconPlus, QueryErrorBlock, ShellPlaceholder, Spinner } from '@/components';
+import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
@@ -118,12 +119,10 @@ export default function Community() {
             <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
           ) : (
             /* P-154 ②: 빈 상태 = 상하 센터(앱 통일 — 화면 소유 빈 상태 규칙) */
-            <StateBlock
-              fill
-              icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-              title={t('community.emptyTitle')}
-              body={t('community.emptyBody')}
-            />
+            /* P-359(KB-522): 구 StateBlock → EmptyBlock(본문 키 폐기) */
+            <ScreenCenterFill>
+              <EmptyBlock label={t('community.emptyTitle')} testID="community-empty" />
+            </ScreenCenterFill>
           )
         }
         ListFooterComponent={

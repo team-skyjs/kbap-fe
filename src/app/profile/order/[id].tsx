@@ -17,6 +17,8 @@ import { Btn, IconClose, SubHeader, Spinner } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
+import { PhotoViewer } from '@/components/PhotoViewer';
+import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { useOrderDetail } from '@/lib/data/useOrders';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -37,17 +39,12 @@ export default function OrderDetailScreen() {
   const cur = me?.currency ?? currencyForCountry(me?.nationality);
   const conv = (krw: number) => convertKrw(krw, cur)?.replace(/^= /, '') ?? null;
 
-  // Codex #33 P2: 시안 단일 버튼 + 전 dish 리뷰 가능 유지 — 1개 = 직행, 2+ = 선택 시트
+  // Codex #33 P2 → P-355(KB-517): 1개 = 직행, 2+ = 앱 바텀시트(네이티브 Alert 목록 폐기)
   const reviewables = (q.data?.items ?? []).filter((it) => it.foodId != null && it.ready !== false);
+  const [dishSheet, setDishSheet] = React.useState(false);
   const onWriteReview = () => {
     if (reviewables.length === 1) return router.push(`/food/${reviewables[0].foodId}/review` as Href);
-    Alert.alert(t('reviews.writeReview'), undefined, [
-      ...reviewables.map((it) => ({
-        text: it.menuName,
-        onPress: () => router.push(`/food/${it.foodId}/review` as Href),
-      })),
-      { text: t('common.cancel'), style: 'cancel' as const },
-    ]);
+    setDishSheet(true);
   };
 
   return (
@@ -152,16 +149,21 @@ export default function OrderDetailScreen() {
       )}
 
       {/* 풀스크린 메뉴판 뷰어 — contain(전체 표시) + 명시 닫기 */}
+      {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}
       {viewer && q.data?.scanImageUrl && (
-        <Modal visible transparent={false} animationType="fade" onRequestClose={() => setViewer(false)}>
-          <View style={styles.viewerRoot}>
-            <RemoteImage uri={q.data.scanImageUrl} style={StyleSheet.absoluteFill} contentFit="contain" />
-            <Pressable style={styles.viewerClose} onPress={() => setViewer(false)} hitSlop={10} testID="order-viewer-close">
-              <IconClose size={22} color="#fff" />
-            </Pressable>
-          </View>
-        </Modal>
+        <PhotoViewer uris={[q.data.scanImageUrl]} onClose={() => setViewer(false)} />
       )}
+      {/* P-355: 리뷰 음식 선택 시트 */}
+      <OrderDishPickerSheet
+        open={dishSheet}
+        onClose={() => setDishSheet(false)}
+        items={reviewables.map((it) => ({ foodId: it.foodId as string, menuName: it.menuName, imageUrl: it.imageUrl }))}
+        onPick={(it) => {
+          setDishSheet(false);
+          router.push(`/food/${it.foodId}/review` as Href);
+        }}
+        t={t}
+      />
     </View>
   );
 }
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
   placeTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21', paddingHorizontal: 20 },
 
   // 영수증 카드 — pad 16, 행 space-between, line #DCDEE3
-  receipt: { marginHorizontal: 20, borderWidth: 1, borderColor: C.line, borderRadius: 8, padding: 16, gap: 12 },
+  receipt: { marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 0, gap: 16 }, // A-OD-01(KB-486: 보더 제거·좌우 0)
   rcptRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   rcptLbl: { fontSize: 12, fontWeight: '600', color: C.inkInfo }, // P-284: 영수증 라벨 대비
   rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
@@ -181,18 +183,18 @@ const styles = StyleSheet.create({
   rcptLine: { height: 1, backgroundColor: C.line2 },
   rcptTotal: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
-  divider8: { height: 8, backgroundColor: C.hair },
+  divider8: { height: 8, backgroundColor: '#F5F5F5' }, // A-OD-02
 
-  dishesHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingHorizontal: 20 },
+  dishesHead: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 20, marginTop: -4 }, // A-OD-03(디바이더 후 12)
   dishesTitle: { fontSize: 16, fontWeight: '500', color: '#1C1E21' },
   dishesCount: { fontSize: 14, fontWeight: '500', color: C.ink3 },
 
-  items: { paddingHorizontal: 20, gap: 12 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, paddingVertical: 14 },
+  items: { paddingHorizontal: 20, gap: 12, marginTop: -8 }, // A-OD-03(헤더→리스트 8)·A-OD-04(카드 간 12)
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 8 }, // A-OD-04
   itemThumb: { width: 58, height: 58, borderRadius: 4, backgroundColor: C.surface2 },
   itemName: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
   itemPending: { fontSize: 11.5, fontWeight: '500', color: C.ink3 },
-  itemRight: { alignItems: 'flex-end', gap: 2 },
+  itemRight: { flexDirection: 'row', alignItems: 'baseline', gap: 3 }, // A-OD-05(가로 1행)
   itemQty: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   itemPrice: { fontSize: 14, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 

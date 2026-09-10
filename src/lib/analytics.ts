@@ -111,7 +111,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_item_add: ['risk'],
   scan_item_remove: ['risk'],
   order_done: ['item_count'],
-  owner_ask_open: ['source', 'food_id'], // cta|ingredient|unregistered
+  owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
   review_helpful_toggle: ['on', 'surface'],

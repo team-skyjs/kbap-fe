@@ -254,11 +254,11 @@ export default function EditProfile() {
           <View style={styles.linkedCard}>
             <View style={styles.linkedIc}>
               {me?.provider === 'APPLE' ? (
-                <IconApple size={17} color={C.ink} />
+                <IconApple size={20} color={C.ink} />
               ) : me?.provider === 'GOOGLE' ? (
-                <IconGoogleG size={17} />
+                <IconGoogleG size={20} />
               ) : (
-                <IconProfile size={17} color={C.ink2} />
+                <IconProfile size={20} color={C.ink2} />
               )}
             </View>
             <Text style={styles.linkedLabel}>{t('editProfile.linkedVia')}</Text>
@@ -335,35 +335,35 @@ const styles = StyleSheet.create({
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
   saveLink: { fontSize: 13, fontWeight: '600', color: '#1C1E21' },
 
-  avatarWrap: { alignItems: 'center', gap: 10, paddingVertical: 4 },
-  av: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#E8F6FF', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  avatarWrap: { alignItems: 'center', gap: 10, paddingVertical: 12 }, // A-ED-01(KB-486)
+  av: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }, // A-ED-01
   avImg: { position: 'absolute', top: 0, left: 0, width: 100, height: 100, borderRadius: 50 },
   avBusy: { backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
-  cam: { position: 'absolute', right: -2, bottom: -2, width: 32, height: 32, borderRadius: 16, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
+  cam: { position: 'absolute', right: 0, bottom: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: '#2F3137', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
   phErr: { fontSize: 13, fontWeight: '500', color: C.riskCaution },
 
   // Input/Text 필드(D-1 Filled) — bg #F7F8FA r8, Disabled = 동일 bg + 흐린 값
-  fieldset: { gap: 6 },
-  fieldLbl: { fontSize: 14, fontWeight: '600', color: '#8E8883' },
-  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 16, minHeight: 52 },
+  fieldset: { gap: 4, marginTop: -4 }, // A-ED-03/05(필드 간 16·라벨→필드 4 — 섹션 gap 20 유지)
+  fieldLbl: { fontSize: 14, fontWeight: '500', color: '#6A6F7C' }, // A-ED-04
+  field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DCDEE3', borderRadius: 8, paddingHorizontal: 16, minHeight: 48 }, // A-ED-06
   fieldDisabled: { backgroundColor: C.surface2 },
   valDisabled: { color: C.ink3 },
   input: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21', paddingVertical: 14 },
   val: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1C1E21' },
-  hint: { fontSize: 13, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 1, lineHeight: 18 },
+  hint: { fontSize: 13, fontWeight: '500', color: C.ink2, marginLeft: 2, marginTop: 0, lineHeight: 18 }, // A-ED-07(필드→힌트 4 = fieldset gap)
 
-  spiceBox: { backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
-  spiceClear: { fontSize: 14, fontWeight: '600', color: C.primaryText, marginLeft: 2, marginTop: 4 },
+  spiceBox: { backgroundColor: C.surface2, borderRadius: 8, paddingHorizontal: 14, paddingTop: 5, paddingBottom: 14 }, // A-SP-07(KB-486 공용)
+  spiceClear: { fontSize: 14, fontWeight: '600', color: C.primaryText, marginLeft: 2, marginTop: 12 }, // A-ED-08(박스→16 = gap 4+12)
 
   // Linked to account — 카드 border #EBE6E1 r12 pad 14/16
-  sec: { gap: 10 },
+  sec: { gap: 8 }, // A-ED-09
   secTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21' },
   linkedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#EBE6E1', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16 },
-  linkedIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' },
+  linkedIc: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.hair, alignItems: 'center', justifyContent: 'center' }, // A-ED-10
   linkedLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1C1E21' },
   linkedVal: { fontSize: 13, fontWeight: '500', color: '#8E8883' },
 
-  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line }, // A-ED-11(padH 16 — 헤어라인은 C-07 무접촉)
 
   // P-165 통화 피커 — 온보딩 natSearch/natRow 문법 수치 재사용
   curBody: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },

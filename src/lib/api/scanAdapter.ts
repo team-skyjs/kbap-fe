@@ -87,8 +87,13 @@ function verdict(r: ScanResultWire) {
     koreanName: r.koreanName ?? null,
     // 가격은 제공값 그대로(환율·추정 금지) — 숫자가 아니면 미표기와 동일하게 null
     price: typeof r.price === 'number' && Number.isFinite(r.price) ? r.price : null,
-    // P-241 v2: 행 썸네일 — 절대 URL만 통과(refToUrl 규칙과 동일·비-URL = null)
-    imageUrl: r.imageRef && /^https?:\/\//.test(r.imageRef) ? r.imageRef : null,
+    // P-241 v2: 행 썸네일 — 절대 URL만 통과(refToUrl 규칙과 동일·비-URL = null).
+    // P-366 ⑤(KB-529): 서버 기본 이미지 URL은 null 강등 — CardPhoto가 번들 로컬
+    // 에셋(1.1KB)으로 대체(KB-515 결정 승계: 927KB CDN PNG ×90 재로딩 방지).
+    imageUrl:
+      r.imageRef && /^https?:\/\//.test(r.imageRef) && !r.imageRef.includes('default_miss_food/food_not_found.png')
+        ? r.imageRef
+        : null,
     // P-219 v2: 내 회피 재료 중 겹치는 것만(빈 배열 = 표시 안 함 — 빈 컨테이너 금지)
     avoidances: mapAvoidances(r.avoidances),
   } as const;

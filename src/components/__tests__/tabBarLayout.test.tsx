@@ -10,6 +10,10 @@ import { StyleSheet } from 'react-native';
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+// P-305: 프로필 탭 아바타 의존 — 레이아웃 스위트는 플레이스홀더 경로로 고정
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: undefined }) }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => true }));
+jest.mock('../RemoteImage', () => ({ RemoteImage: () => null }));
 
 import { TabBar, TABBAR_CONTENT_H, TABBAR_V_SHIFT, FAB_OVERHANG } from '../TabBar';
 

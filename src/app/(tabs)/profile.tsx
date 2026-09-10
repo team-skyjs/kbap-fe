@@ -48,19 +48,16 @@ import { tapSentrySelfcheck } from '@/lib/sentry';
 import { Snackbar } from '@/components/Snackbar';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
 
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
-import LoginScreen from '../login';
-function GuestLogin() {
-  // P-146: 탭 소속 렌더 — 로고·백 제거(독립 /login 라우트는 무변)
-  return <LoginScreen embedded />;
-}
 
 export default function Profile() {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
-  const { onScroll, hidden } = useStickyScroll();
+  const avatarUrl = useMyAvatarUrl(); // P-313: 탭바와 정본 공유
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
   const { lang } = useLocale();
   // P-060: 언어 = OS 정본 — 행 탭 시 OS 앱 설정(언어 항목). 안드12-는 앱별
@@ -118,7 +115,7 @@ export default function Profile() {
         <ScreenCenterFill>
           <QueryErrorBlock error={meErrorObj} onRetry={() => void refetchMe()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} mode="brand" />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" />
       </View>
     );
   }
@@ -133,16 +130,40 @@ export default function Profile() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        // Codex #40 P2: 스크롤 잠금은 짧은 뷰포트(멀티윈도우)에서 약관·Browse first 도달 불가 —
-        // 스크롤은 살리고 튕김만 끔(콜라주 전면 배경에서 바운스가 어색한 것이 원 목적)
-        bounces={!isGuest}
-        alwaysBounceVertical={!isGuest}
-        overScrollMode={isGuest ? 'never' : 'auto'}
-        contentContainerStyle={{ paddingTop: isGuest ? 0 : headerH, paddingBottom: isGuest ? 0 : 110 }}
+        contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
       >
         {isGuest ? (
-          /* P-129(멘토): 게이트 화면 대신 로그인 화면 자체(애플/구글) — 탭 안 임베드 */
-          <GuestLogin />
+          /* P-311(KB-478): 게스트 = 회원 화면 재활용 — 헤더 대체(로그인 필요 + Sign in)
+             + 개인화 섹션 숨김(Language·알림·Safety·버전만). 로그인 임베드 변형 폐기. */
+          <View style={styles.body}>
+            <View style={styles.id}>
+              <View style={styles.avatar}>
+                <AvatarPlaceholder height={48} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.name} numberOfLines={1}>{t('profile.guestTitle')}</Text>
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.editBtn, pressed && { backgroundColor: C.surface2 }]}
+                onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)} // Codex #72 P2: 로그인 후 프로필 복귀
+                testID="guest-signin"
+              >
+                <Text style={styles.editBtnText}>{t('intro.signUp')}</Text>
+              </Pressable>
+            </View>
+            <View style={styles.menuList}>
+              {canOpenLangSettings && (
+                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+              )}
+              {FLAGS.pushEnabled && (
+                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
+              )}
+              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+            </View>
+            <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
+              <Text style={styles.verText}>v{Constants.expoConfig?.version ?? '0.0.0'}</Text>
+            </Pressable>
+          </View>
         ) : meLoading ? (
           /* P-007(KB-174) J1: 첫 로드 백지 제거 */
           <SkeletonProfile />
@@ -152,8 +173,8 @@ export default function Profile() {
             <View style={styles.id}>
               <View style={styles.avatar}>
                 {/* KB-149: 서버 프로필 사진 — 없으면 시안 플레이스홀더(D-1) */}
-                {me.profileImageUrl ? (
-                  <RemoteImage uri={me.profileImageUrl} style={styles.avatarImg} />
+                {avatarUrl ? (
+                  <RemoteImage uri={avatarUrl} style={styles.avatarImg} />
                 ) : (
                   <AvatarPlaceholder height={48} />
                 )}
@@ -199,7 +220,7 @@ export default function Profile() {
             {/* 랭킹 카드(4150:14390) — h147 그라데이션 + RankMedal 28 + 진행 바 h10 */}
             {rank && (
               <Pressable onPress={() => router.push('/profile/ranking' as Href)} testID="profile-rank-card">
-                <LinearGradient colors={['#FFFFFF', '#FFF7F2']} style={styles.rankCard}>
+                <LinearGradient colors={['rgba(255,113,52,0)', 'rgba(255,113,52,0.05)']} style={styles.rankCard}>{/* P-315 시안 2200:20903: #FF7134 α0→0.05 */}
                   <RankMedal level={rank.level} size={28} />
                   <Text style={styles.rankTier}>{t(`ranking.tier.${rank.tier}`)}</Text>
                   <Text style={styles.rankLv}>{t('ranking.levelLabel', { level: rank.level })}</Text>
@@ -236,6 +257,7 @@ export default function Profile() {
                     <Pressable key={r.code} style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
                       <View style={styles.dietImg}>
                         <AvoidTile
+                          radius={0} /* A-PF-07 */
                           code={r.code}
                           imageUrl={ingCat.imageUrl(r.code)}
                           abbr={(item?.name ?? r.code).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()}
@@ -249,15 +271,27 @@ export default function Profile() {
                   );
                 })}
               </View>
-              <Btn variant="ghost" onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
-                {t('profile.showAll', { count: me.restrictions.length })}
-              </Btn>
+              <View style={{ marginTop: -8 }}>{/* A-PF-09: 타일→Show all 8 */}
+                {/* P-351 ①(KB-513): 회피 0건 = 카운트 없는 라벨 + 꺾쇠. 1건 이상은
+                    시안(A-PF-09) 그대로 — 꺾쇠 없음(시안 이탈 금지). */}
+                <Btn
+                  variant="ghost"
+                  onPress={() => router.push('/profile/restrictions' as Href)}
+                  iconEnd={me.restrictions.length === 0 ? <IconChevron size={16} color={C.ink3} /> : undefined}
+                  testID="avoid-show-all"
+                >
+                  {me.restrictions.length > 0
+                    ? t('profile.showAll', { count: me.restrictions.length })
+                    : t('profile.showAllEmpty')}
+                </Btn>
+              </View>
             </View>
 
             {/* 메뉴 행 리스트(tab_box h58 pad 17/22) — 구분선 없음, 탭 하이라이트 surface2 */}
-            <View style={styles.menuList}>
+            <View style={[styles.menuList, { marginTop: -20 }]}>{/* A-PF-09: Show all→메뉴 0 */}
               {/* My Foods — 시안 §1-4 목록 부재·§5 화면 진입점(질문 누적, 기능 유지) */}
-              <MenuRow label={t('profile.myFoods')} onPress={() => router.push('/profile/my-foods' as Href)} />
+              {/* P-300(KB-449, 9/7 예진): 값 없는 이동 행 전부 chevron — 값 행(Saved·My reviews·Language)은 무변 */}
+              <MenuRow label={t('profile.myFoods')} chevron onPress={() => router.push('/profile/my-foods' as Href)} />
               <MenuRow label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
               {FLAGS.reviewsEnabled && (
                 <MenuRow label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
@@ -265,20 +299,20 @@ export default function Profile() {
               {/* Codex #33 P2: 식이 카테고리 편집 = /profile/diet 유일 편집 경로(1.1 dietCategories) —
                   섹션 소멸로 진입 0이 되던 것 복원. 시안 §1-4 목록 부재 = 질문 누적(My Foods 행 계열) */}
               {FLAGS.dietPresetsEnabled && (
-                <MenuRow label={t('profile.dietTitle')} onPress={() => router.push('/profile/diet' as Href)} />
+                <MenuRow label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
                 <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
               )}
               {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
               {FLAGS.pushEnabled && (
-                <MenuRow label={t('notif.title')} onPress={() => router.push('/profile/notifications' as Href)} />
+                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
-              <MenuRow label={t('profile.safetyNotice')} onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
+              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void Linking.openURL('https://team-skyjs.github.io/kbap-legal/safety.html')} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}
               {FLAGS.communityEnabled && (
-                <MenuRow label={t('community.blockedTitle')} onPress={() => router.push('/community/blocked' as Href)} />
+                <MenuRow label={t('community.blockedTitle')} chevron onPress={() => router.push('/community/blocked' as Href)} />
               )}
               {/* 로그아웃 chevron 유지 확정(2026-07-15 예진 — 시안 무chevron이지만 예진 확정 우선). 재제거 금지.
                   ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지). */}
@@ -289,7 +323,7 @@ export default function Profile() {
                 trailing={loggingOut ? <Spinner size={16} /> : undefined}
                 onPress={confirmLogout}
               />
-              <MenuRow label={t('profile.deleteAccount')} dim onPress={() => router.push('/delete-account' as Href)} />
+              <MenuRow label={t('profile.deleteAccount')} dim chevron onPress={() => router.push('/delete-account' as Href)} />
             </View>
 
             {/* P-212: 앱 버전 줄 — 라벨은 전 채널, 7연타 트리거는 dev 계열만(내부 게이트) */}
@@ -301,8 +335,8 @@ export default function Profile() {
       </Animated.ScrollView>
       {verToast && <Snackbar icon={null} text={verToast} />}
 
-      {/* P-280(9/5 예진): 게스트 = 임베드 로그인 위 브랜드 헤더 미렌더 — 콜라주가 상태바 뒤까지 */}
-      {!isGuest && <StickyHeader hidden={hidden} mode="brand" />}
+      {/* P-311: 게스트도 브랜드 헤더 렌더(회원 화면 재활용) + P-312 atTop */}
+      <StickyHeader hidden={hidden} atTop={atTop} mode="brand" />
     </View>
   );
 }
@@ -335,7 +369,10 @@ function MenuRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingTop: 4, gap: 20 },
+  // P-312: 헤더~아바타 간격 — 시안 실측(2200:20884): 아바타 행 상단 = 헤더 바 하단
+  // 동일선(y99≈100), 로고 하단→아바타 상단 17pt. 우리 헤더(4+48+4=시안 56 동일,
+  // 로고 하단→바닥 17.25pt)라 paddingTop 0 = 시안 정합(스크롤 paddingTop=headerH 유지).
+  body: { paddingTop: 0, gap: 20 },
   verRow: { alignItems: 'center', paddingVertical: 10 },
   verText: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   finishRow: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 },
@@ -343,21 +380,21 @@ const styles = StyleSheet.create({
   finishCta: { fontSize: 13, fontWeight: '600', color: C.primaryText },
 
   // 헤더 행 — pad 20
-  id: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F6FF', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  id: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20 }, // A-PF-02(KB-486)
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F6FF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.10)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, // A-PF-01
   avatarImg: { width: 48, height: 48, borderRadius: 24 },
   name: { fontSize: 16, fontWeight: '600', color: '#1C1E21' },
   nameUnset: { fontSize: 16, fontWeight: '400', color: C.ink3 },
   natRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
   natText: { fontSize: 14, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
   editBtn: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
-  editBtnText: { fontSize: 13, fontWeight: '500', color: '#1C1E21' },
+  editBtnText: { fontSize: 13, fontWeight: '500', color: '#2F3137' }, // A-PF-03
 
   // 랭킹 카드(4150:14390) — mx 20 h147 r8 border #F2F3F6 + 그라데이션
-  rankCard: { marginHorizontal: 20, height: 147, borderRadius: 8, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 16 },
-  rankTier: { fontSize: 15, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 2 },
+  rankCard: { marginHorizontal: 20, marginTop: 4, height: 147, borderRadius: 8, borderWidth: 1, borderColor: C.hair, alignItems: 'center', justifyContent: 'center', gap: 4, paddingLeft: 20, paddingRight: 16 }, // A-PF-04(아바타행→카드 24)·A-PF-05
+  rankTier: { fontSize: 15, fontWeight: '600', color: '#2F3137', textAlign: 'center', marginTop: 4 }, // A-PF-05(메달→타이틀 8)
   rankLv: { fontSize: 12, fontWeight: '500', color: C.ink3 },
-  rankBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch', marginTop: 6 },
+  rankBarRow: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch', marginTop: 8 }, // A-PF-05(Lv→바 12)
   rankTrack: { flex: 1, height: 10, borderRadius: 16, backgroundColor: '#EDEFF4', overflow: 'hidden' },
   rankFill: { height: 10, borderRadius: 16, backgroundColor: C.primary },
   rankPts: { fontSize: 12 },
@@ -366,12 +403,12 @@ const styles = StyleSheet.create({
   rankPtsGoal: { fontSize: 12, fontWeight: '400', color: '#4B4F58' },
 
   // Dietary restrictions — 4열 2행 80×86 타일
-  sec: { paddingHorizontal: 20, gap: 12 },
+  sec: { paddingHorizontal: 20, gap: 16, marginTop: -4 }, // A-PF-06(카드→라벨 16·라벨→타일 16)
   secLabel: { fontSize: 14, fontWeight: '500', color: C.ink2 },
-  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
-  dietTile: { width: 80, height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  dietImg: { width: 48, height: 48, borderRadius: 4, overflow: 'hidden' },
-  dietLabel: { fontSize: 12, fontWeight: '500', color: '#1C1E21', maxWidth: 72, textAlign: 'center' },
+  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 16, justifyContent: 'space-between' }, // A-PF-08
+  dietTile: { width: 80, height: 86, borderWidth: 1, borderColor: '#ECEDF0', borderRadius: 4, alignItems: 'center', paddingTop: 8, gap: 0 }, // A-PF-07(이미지 상단 8·라벨 gap 0)
+  dietImg: { width: 48, height: 48, borderRadius: 0, overflow: 'hidden' }, // A-PF-07
+  dietLabel: { fontSize: 12, fontWeight: '500', color: '#2F3137', maxWidth: 72, textAlign: 'center' }, // A-PF-07
 
   // 메뉴 행 리스트(tab_box)
   menuList: { gap: 0 },

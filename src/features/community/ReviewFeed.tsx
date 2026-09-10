@@ -2,9 +2,10 @@
  * ReviewFeed (P-179/KB-307 → KB-430 D-2) — 리뷰 탭 = 전역 최신 리뷰 피드.
  * 디자인 4차(4150:17070): AppBar(로고+벨, 홈 공용 StickyHeader) · 컨트롤 행 =
  * 정렬 드롭다운(FeedSort 5종 — 커맨드 센터 판정) · 리뷰 카드(4150:13934) ·
- * 플로팅 "Write a review" 필. 9/5 예진 확정("싹 다 시안대로"): "Filter by profile"
- * 토글은 시안대로 렌더(서버 파라미터 부재 = 무동작). 구 국가·음식·별점 칩은
- * 시안 컨트롤 행 부재로 숨김 유지(훅 계약은 무변).
+ * 플로팅 "Write a review" 필. P-331(KB-487, 9/8 예진 확정): "Filter by profile"
+ * 토글 = **같은 국적 리뷰 필터**(서버 countryCode — KB-448과 동일 의미, 라벨
+ * 카피는 유지). 게스트·국적 없음 = 토글 미렌더(KB-448 규칙). 구 국가·음식·별점
+ * 칩은 시안 컨트롤 행 부재로 숨김 유지(훅 계약은 무변).
  *
  * 게스트: 열람 개방(P-235) — 쓰기·Helpful 게이트 유지(AuthGateSheet).
  */
@@ -16,15 +17,14 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, radius } from '@/lib/theme';
 import { Spinner, StickyHeader, useHeaderHeight, useStickyScroll, IconBubbleEmpty, IconChevronDown, IconCheck, IconEdit } from '@/components';
-import { QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { AuthGateSheet, type GateContext } from '@/components/AuthGateSheet';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useGlobalReviews, type FeedSort } from '@/lib/data/useFoodReviews';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { TagPickerSheet } from '@/app/community/compose';
-import { ReviewEditSheet } from '@/features/review/ReviewCellParts';
 import { FeedCard } from '@/features/review/FeedCard';
 import { IlloSpeechBubble } from '@/components/design4Assets';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -48,21 +48,27 @@ export function ReviewFeed() {
   const router = useRouter();
   const { t } = useTranslation();
   const isGuest = useIsGuest();
-  // KB-430 → 9/5 예진 확정: "Filter by profile" 토글도 시안대로 렌더 — 서버 파라미터
-  // 부재라 무동작(토글 상태만, 결과 = 현재 유지). 구 국가·음식·별점 칩은 시안 부재 = 숨김 유지.
   const [sort, setSort] = React.useState<FeedSort>('latest');
   const [sortSheet, setSortSheet] = React.useState(false);
-  const [profileFilter, setProfileFilter] = React.useState(false); // 무동작(시안 렌더 전용)
-  const feed = useGlobalReviews(true, { sort });
-  const updateReview = useUpdateReview();
+  // P-331(KB-487): on = 뷰어와 같은 국적 리뷰만 — 쿼리 키에 countryCode 포함이라
+  // 토글 전환 = 키 분리 재조회(커서 오염 없음, P-323 natQ 문법). 세션 내 state만(저장 없음).
+  const [profileFilter, setProfileFilter] = React.useState(false);
+  const me = useMe().data;
+  const myNat = me?.nationality ?? null;
+  // Codex #94 P2: 게스트 전환·국적 소실 시 on 잔존 → emptySameNat 오노출 — 리셋 +
+  // 쿼리·빈 상태가 같은 effective 판정을 쓴다.
+  const filterActive = profileFilter && !isGuest && !!myNat;
+  React.useEffect(() => {
+    if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
+  }, [isGuest, myNat, profileFilter]);
+  const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
   const deleteReview = useDeleteReview();
-  const myId = useMe().data?.id;
+  const myId = me?.id;
   const unread = useUnreadCount();
   const [gateOpen, setGateOpen] = React.useState<GateContext | null>(null);
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [mod, setMod] = React.useState<ModTarget | null>(null);
-  const [editTarget, setEditTarget] = React.useState<Review | null>(null);
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증이라 보조(확인되면 제거)
@@ -73,6 +79,9 @@ export function ReviewFeed() {
     return author == null || !blockedIds.has(author);
   });
   const loadMore = () => {
+    // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
+    // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
+    if (feed.isFetchNextPageError) return;
     if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
   };
 
@@ -103,14 +112,20 @@ export function ReviewFeed() {
         ListHeaderComponent={
           (
             <View>
-              {/* KB-430 §2-2: 컨트롤 행 — 좌 프로필 토글(4150:17070 — 무동작) / 우 정렬 드롭다운 */}
+              {/* KB-430 §2-2 → P-331: 컨트롤 행 — 좌 프로필 토글(같은 국적 필터,
+                  게스트·국적 없음 = 미렌더) / 우 정렬 드롭다운 */}
               <View style={styles.controlRow}>
-                <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
-                  <View style={[styles.sw, profileFilter && styles.swOn]}>
-                    <View style={[styles.knob, profileFilter && styles.knobOn]} />
-                  </View>
-                  <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.filterByProfile')}</Text>
-                </Pressable>
+                {!isGuest && myNat ? (
+                  <Pressable style={styles.toggleRow} onPress={() => setProfileFilter((v) => !v)} testID="feed-profile-toggle">
+                    <View style={[styles.sw, profileFilter && styles.swOn]}>
+                      <View style={[styles.knob, profileFilter && styles.knobOn]} />
+                    </View>
+                    {/* P-365(KB-528): 라벨 = 상세/리뷰 목록과 동일 "{국가} only"(9/5 Q12 판정 통일) */}
+                    <Text style={styles.toggleLabel} numberOfLines={1}>{t('reviews.countryOnly', { code: myNat })}</Text>
+                  </Pressable>
+                ) : (
+                  <View />
+                )}
                 <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="feed-sort">
                   <Text style={styles.sortLabel} numberOfLines={1}>{t(`reviews.sort_${sort}`)}</Text>
                   <IconChevronDown size={16} color="#4B4F58" />
@@ -138,7 +153,7 @@ export function ReviewFeed() {
         scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         renderItem={({ item }) => (
           <FeedCard
             review={item}
@@ -152,6 +167,7 @@ export function ReviewFeed() {
                 id: item.id,
                 author: { id: item.author?.memberId ?? item.memberId ?? `rv-${item.id}`, nickname: item.author?.nickname ?? null, nationality: item.authorNationality },
                 mine: item.memberId != null && item.memberId === myId, // P-186: 실값 — 타인 = 신고/차단
+                anonymized: item.anonymized === true, // P-339 ②: 탈퇴 = 신고만
               })
             }
           />
@@ -168,6 +184,15 @@ export function ReviewFeed() {
             <View style={styles.center}>
               <Spinner size={18} color={C.ink3} />
             </View>
+          ) : feed.isFetchNextPageError ? (
+            /* Codex #58 P2: 다음 페이지 실패 = 푸터 소형 에러 — 기존 페이지가 남아
+               전체 블록(빈 목록 전용)이 안 뜨므로 여기서만 재시도 표면화 */
+            <View style={styles.footerErr} testID="feed-next-error">
+              <Text style={styles.footerErrText}>{t('states.errorTitle')}</Text>
+              <Pressable style={styles.footerRetry} onPress={() => void feed.fetchNextPage()} testID="feed-next-retry">
+                <Text style={styles.footerRetryText}>{t('common.retry')}</Text>
+              </Pressable>
+            </View>
           ) : null
         }
       />
@@ -175,25 +200,25 @@ export function ReviewFeed() {
       {/* KB-430 §2-1: AppBar = 홈과 동일 컴포넌트(로고+벨) */}
       <StickyHeader
         hidden={hidden}
+        atTop={atTop}
         mode="brand"
         bell={FLAGS.notificationCenter}
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
       />
 
-      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙 */}
-      {!feed.isLoading && feed.isError ? (
+      {/* P-196 ②: 상태 블록 = 화면 기준 정중앙.
+          P-297(9/7 예진 실기): 에러 오버레이는 **목록이 비었을 때만** — 캐시 페이지가
+          있는 채 재조회만 실패(오프라인 복귀 등)하면 isError여도 리스트 유지(겹침 결함).
+          재시도 경로 = pull-to-refresh 현행. */}
+      {!feed.isLoading && feed.isError && reviews.length === 0 ? (
         <ScreenCenterFill>
           <QueryErrorBlock error={feed.error} onRetry={() => void feed.refetch()} />
         </ScreenCenterFill>
       ) : !feed.isLoading && reviews.length === 0 ? (
         <ScreenCenterFill>
-          <StateBlock
-            fill
-            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-            title={t('reviews.emptyTitle')}
-            body={t('reviews.emptyBody')}
-          />
+          {/* P-359(KB-522): 구 StateBlock → EmptyBlock */}
+          <EmptyBlock label={t(filterActive ? 'reviews.emptySameNat' : 'reviews.emptyTitle')} testID="feed-empty" />
         </ScreenCenterFill>
       ) : null}
 
@@ -221,25 +246,12 @@ export function ReviewFeed() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(reviews.find((r) => r.id === m.id) ?? null)}
+        onEdit={(m) => { const rv = reviews.find((r) => r.id === m.id); if (rv) router.push(`/food/${rv.foodId}/review?reviewId=${rv.id}` as Href); }} /* P-358 */
         onDelete={(m) => {
           const r = reviews.find((x) => x.id === m.id);
           if (r) deleteReview.mutate({ reviewId: r.id, foodId: r.foodId });
         }}
         onBlocked={() => void feed.refetch()}
-      />
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body, place, extras }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: editTarget.foodId, current: editTarget, changes: { rating, body, place, extras } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
       />
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet
@@ -267,8 +279,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   list: { gap: 0 },
   // KB-430 §2-2: 컨트롤 행(4150:17070 — 좌 토글 + 우 드롭다운)
-  controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 8 },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8 }, // A-RT-01(KB-486)
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RT-02
   toggleLabel: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
   // Button/Toggle md 44×24 — off 트랙 #D1D3D8 / on primary, 노브 20 흰 + 그림자 2/2 b4 15%
   sw: { width: 44, height: 24, borderRadius: 12, backgroundColor: C.inkDisabled, padding: 2, justifyContent: 'center' },
@@ -278,19 +290,25 @@ const styles = StyleSheet.create({
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: '#4B4F58' },
   center: { paddingVertical: 30, alignItems: 'center' },
+  // Codex #58 P2: 다음 페이지 실패 푸터 — 소형(리스트 흐름 유지), 색 = 정보성 회색
+  footerErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
+  footerErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
+  footerRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
+  footerRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
   // Q1: 쿼터 넛지 카드(4150:17089) — mx 24, bg #FFFBF4 r16 pad 20/12/20/20
   nudge: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 24, backgroundColor: '#FFFBF4', borderRadius: 16, paddingTop: 12, paddingBottom: 20, paddingHorizontal: 20 },
   nudgeTitle: { fontSize: 15, fontWeight: '700', color: '#262C31' },
   nudgeBody: { fontSize: 14, fontWeight: '400', color: '#4B4F58' },
 
   // KB-430 §2-5: 플로팅 필(4150:17079)
+  // A-RT-03(KB-486): gap 4 · right 14 · bottom 18
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 16,
+    right: 14,
+    bottom: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#1C1E21',
     borderRadius: 24,
     paddingVertical: 8,

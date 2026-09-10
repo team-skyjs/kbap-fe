@@ -13,14 +13,17 @@
  * 게스트: 진입 자체가 게이트로 차단(KB-78/⑧-b)이지만 쿼리도 세션 없으면
  * 비활성(enabled) — 401 노이즈 방지.
  */
+import * as React from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import i18n from '../i18n';
 import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
-import { adaptMenuSummary } from '../api/foodAdapter';
+import { showTopToast } from '@/components/topToastStore';
+import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
+
 
 const QK = () => ['bookmarks', i18n.language] as const;
 
@@ -53,20 +56,50 @@ function toWire(snap: BookmarkSnapshot): MenuSummaryWire {
 
 type Pages = InfiniteData<PageMenuSummaryWire, number | undefined>;
 
-/** 서버 북마크 목록 — 커서 무한스크롤, 카드는 목록과 동일 어댑터. */
-export function useBookmarks() {
+/** 서버 북마크 목록 — 커서 무한스크롤, 카드는 목록과 동일 어댑터.
+ *  P-350(KB-492): risk = 서버 필터(&risk=SAFE 등) — 지정 시 쿼리키 분리.
+ *  낙관 쓰기(optimisticWrite)는 무필터 캐시(QK)만 — risk 캐시는 onSettled
+ *  invalidate(['bookmarks'] 접두)로 동기화. */
+export function useBookmarks(risk?: RiskFilterChip) {
   const isGuest = useIsGuest();
+  const wire = riskWireOf(risk);
   return useInfiniteQuery({
-    queryKey: QK(),
+    queryKey: wire ? ([...QK(), wire] as const) : QK(),
     enabled: !isGuest, // 인증 필수 API — 게스트는 게이트로 진입 자체가 차단됨
     initialPageParam: undefined as number | undefined,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
       const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
-      return api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}`);
+      const riskQ = wire ? `&risk=${wire}` : '';
+      return api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}${riskQ}`);
     },
-    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    // P-332(KB-488): 종료 가드 — hasNext만 믿으면 커서가 전진하지 않는 경계 응답
+    // (커서 에코)에서 드레인/스크롤이 무한 fetch = 홈 프리징. 이미 요청한 커서
+    // 재등장 = 강제 종료(서버 응답 불변식에 앱 생사를 걸지 않는다).
+    // P-350(KB-492): 구 "빈 페이지 = 종료" 가드는 제거 — risk 필터의 얇은 페이지
+    // (items 0·hasNext true)가 정상 계약이 됨. 무한 방지는 커서 에코 가드 + 서버
+    // 5배치 상한이 담당.
+    getNextPageParam: (last, _pages, lastParam, allParams) =>
+      last.hasNext && last.nextCursor != null &&
+      last.nextCursor !== lastParam && !allParams.includes(last.nextCursor)
+        ? last.nextCursor
+        : undefined,
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
+}
+
+/** P-353 ⑤/#116 P2 ①: 북마크 판정 소스 공용 훅 — 전 페이지 드레인(P-332 가드
+ *  문법: isFetching 가드 + cancelRefetch:false) + foodId Set. FoodExplorer·검색 등
+ *  저장 배지/토글 판정은 전부 이 훅 경유(중복 드레인 배선 금지). */
+export function useSavedIds(): { ids: Set<string>; ready: boolean } {
+  const saved = useBookmarks();
+  React.useEffect(() => {
+    if (saved.hasNextPage && !saved.isFetchingNextPage && !saved.isFetching)
+      void saved.fetchNextPage({ cancelRefetch: false });
+  }, [saved.hasNextPage, saved.isFetchingNextPage, saved.isFetching, saved.fetchNextPage]);
+  const data = saved.data;
+  const ids = React.useMemo(() => new Set((data ?? []).map((f) => f.foodId)), [data]);
+  // #116 2R ①: ready = 드레인 완료 — 부분 집합으로 add/remove 방향 오판(POST 오발) 방지
+  return { ids, ready: !saved.hasNextPage && !saved.isFetching };
 }
 
 /** 캐시(와이어 페이지)에 낙관적 add/remove. 이전 상태를 반환해 롤백에 쓴다. */
@@ -122,9 +155,15 @@ export function useToggleBookmark() {
       if (prevDetail) qc.setQueryData<FoodDetail>(detailKey, { ...prevDetail, bookmarked: add });
       return { prev, prevDetail, detailKey };
     },
+    // P-339 ⑤(KB-494): 상단 토스트 = 이 뮤테이션 한 곳(전 표면 공용 — 화면별 배선 금지).
+    // 저장 화면의 스와이프 해제(useRemoveBookmark)는 Undo 스낵바 현행 유지(중복 방지).
+    onSuccess: (_d, { add }) => {
+      showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'));
+    },
     onError: (_e, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
+      showTopToast(i18n.t('saved.error'), { error: true }); // P-346: AlertTri 변형
     },
     onSettled: (_d, _e, { snap }) => {
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });

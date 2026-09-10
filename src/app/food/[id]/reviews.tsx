@@ -18,15 +18,14 @@ import { EVENTS, track } from '@/lib/analytics';
 import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import {
+  Btn,
   StickyHeader,
   useStickyScroll,
   useHeaderHeight,
   Stars,
+  RankMedal,
   Flag,
-  MedalEmblem,
-  StateBlock,
   QueryErrorBlock,
-  stateIconColor,
   Spinner,
   IconGlobe,
   IconProfile,
@@ -39,6 +38,7 @@ import {
   IconMore,
   CardPhoto,
 } from '@/components';
+import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -48,8 +48,8 @@ import { IconLock } from '@/components/icons';
 import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, HelpfulButton, ReviewEditSheet, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
-import { useDeleteReview, useUpdateReview } from '@/lib/data/useReviewMutations';
+import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
 const READER_LANG = 'en'; // MVP reader language
@@ -63,7 +63,7 @@ export default function FoodReviews() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t } = useTranslation();
-  const { onScroll, hidden } = useStickyScroll();
+  const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
   const { data: food } = useFoodDetail(id ?? '');
@@ -84,10 +84,12 @@ export default function FoodReviews() {
   const [sort, setSort] = useState<'recent' | 'rating'>('recent');
   const [sortSheet, setSortSheet] = useState(false); // KB-431 §2-4: 드롭다운 → ActionSheet
 
-  const nationality = me?.nationality ?? 'US';
+  // P-323(KB-448): 'US' 폴백 폐기 — 국적 미상(게스트·구계정 null)이면 토글 자체가
+  // 무의미해 미렌더(게이트 아님). null이면 sameNatOnly는 false로 남는다.
+  const nationality = me?.nationality ?? null;
   // P-085(KB-73): 같은 국적 필터 = 서버 countryCode 파라미터 (목 경로는 훅이 흉내).
   // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
-  const reviewsQ = useFoodReviews(id ?? '', sameNatOnly ? nationality : undefined);
+  const reviewsQ = useFoodReviews(id ?? '', sameNatOnly && nationality ? nationality : undefined);
   const loaded = reviewsQ.data != null;
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증 보조(확인되면 제거)
   const { data: blockedUsers } = useBlockedUsers();
@@ -102,6 +104,9 @@ export default function FoodReviews() {
   });
   // 평점 집계 = 음식 상세 서버값 (P-085 — 목 재계산·리스트 응답 집계 폐기)
   const overall = food?.overall ?? { average: null, count: 0 };
+  // P-360(KB-523): KR only ON = 같은 국적 서버 집계(reviewSummary.sameCountry — 이미 매핑)
+  const sameNat = food?.sameNationality ?? { average: null, count: 0 };
+  const summaryAgg = sameNatOnly ? sameNat : overall;
   // KB-431 §2-3: 축 평균 — Taste = 서버 overall / Speed·Service = 서버 축 집계 부재라
   // 로드된 리뷰(값 있는 것만) 클라 평균. 무데이터 축 = null(바 미표시).
   const axisAverages = React.useMemo(() => {
@@ -110,19 +115,17 @@ export default function FoodReviews() {
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
     };
     return {
-      taste: overall.average,
+      taste: summaryAgg.average, // P-360: 토글 ON = 같은 국적 평균(OFF = 현행 overall)
       speed: avg((r) => r.servingSpeed),
       service: avg((r) => r.staffKindness),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewsQ.data, blockedIds, overall.average]); // Codex #30 P2: 차단 필터 반영
+  }, [reviewsQ.data, blockedIds, summaryAgg.average]); // Codex #30 P2 + P-360: 토글 전환 반영
   // P-085: 내 리뷰 판별 = 서버 memberId (목 시절 내 리뷰 캐시 id 집합 폐기)
   const isMine = (r: Review) => r.memberId != null && r.memberId === me?.id;
   // P-095: 행 ⋯ → 공용 ModerationFlow (내 것 Edit/Delete·남 Report/Block)
   const [mod, setMod] = React.useState<ModTarget | null>(null);
   // P-182: 개별 디테일 소멸 — 셀 확장이 전문·사진·수정을 담당
-  const updateReview = useUpdateReview();
-  const [editTarget, setEditTarget] = useState<Review | null>(null);
   const openMenu = (r: Review) =>
     setMod({
       type: 'review',
@@ -133,6 +136,7 @@ export default function FoodReviews() {
         nationality: r.authorNationality,
       },
       mine: isMine(r),
+      anonymized: r.anonymized === true, // Codex #100 2R: 탈퇴 = 신고만(차단 = NaN id 실버그 봉인)
     });
 
   return (
@@ -154,17 +158,14 @@ export default function FoodReviews() {
         {!(reviewsQ.isError && all.length === 0) && loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
-          <StateBlock
-            fill
-            icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-            title={t('reviews.emptyTitle')}
-            body={t('reviews.emptyBody')}
-            primary={{
-              label: t('reviews.writeReview'),
-              icon: <IconPlus size={17} color="#fff" />,
-              onPress: writeReview, // P-144 계측 + P-251 자격 게이트
-            }}
-          />
+          // P-359(KB-522): 구 StateBlock → 디자이너 EmptyBlock. 헤더에 쓰기 진입점이
+          // 없어 CTA는 ghost 1개 유지(스캔 safeEmpty 문법 — REPORTS 기록).
+          <ScreenCenterFill>
+            <EmptyBlock label={t('reviews.emptyTitle')} testID="reviews-empty" />
+            <Btn variant="ghost" onPress={writeReview} testID="reviews-empty-write">
+              {t('reviews.writeReview')}
+            </Btn>
+          </ScreenCenterFill>
         ) : (
           <View style={styles.body}>
             {/* KB-431 §2-2: 음식 요약 카드 — 이미지 48 + 이름 + "ko · n reviews" */}
@@ -172,7 +173,7 @@ export default function FoodReviews() {
               <View style={styles.dishThumb}>
                 {food?.photoUrl ? <CardPhoto uri={food.photoUrl} borderRadius={4} /> : <IconBubbleEmpty size={20} color={C.ink3} />}
               </View>
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: 4 }}>{/* A-RL-02 */}
                 <Text style={styles.dishName} numberOfLines={1}>{food?.name ?? ''}</Text>
                 {/* 시안의 " · " 구분은 P-196 ④(가운뎃점 전수 제거) 잠금과 충돌 — 공백 유지(REPORTS) */}
                 <Text style={styles.dishSub} numberOfLines={1}>
@@ -185,7 +186,10 @@ export default function FoodReviews() {
             {/* KB-431 §2-3: 평점 요약 박스(4150:16775) — 좌 총점 / 우 3축 세로 바.
                 축 평균: Taste = 서버 overall · Speed/Service = 로드된 리뷰 클라 평균
                 (서버 축 집계 부재 — REPORTS). 값 없는 축 = 미표시. */}
-            <RatingSummaryBox overall={overall} axes={axisAverages} t={t} />
+            {/* P-360: 토글 ON = 같은 국적 값·라벨 전환, 같은 국적 0건 = 박스 미렌더 */}
+            {!(sameNatOnly && sameNat.count === 0) && (
+              <RatingSummaryBox overall={summaryAgg} sameNat={sameNatOnly} axes={axisAverages} t={t} />
+            )}
 
             {/* P-235: 게스트 열람 개방(무토큰 200 실측) — 블러 고스트·lock CTA 소멸.
                 같은 국적 필터는 국적 미상이라 게스트 미노출(멘토 "내 국가 필터만 제외").
@@ -198,7 +202,7 @@ export default function FoodReviews() {
                 우 정렬 드롭다운(현 2옵션 → ActionSheet). "KR only" 시안 = 현
                 같은 국적 필터에 매핑(전용 KR 파라미터 아님 — 카피는 현 키). */}
             <View style={styles.controlRow}>
-              {!isGuest ? (
+              {!isGuest && nationality ? (
                 /* 9/5 예진 판정(Q12): 라벨 = "{국가코드} only"(reviews.countryOnly) — 필터 의미는
                    현 같은 국적 리뷰(서버 countryCode 파라미터) 그대로 */
                 <Pressable style={styles.filterToggle} onPress={() => setSameNatOnly((v) => !v)} testID="same-nat-toggle">
@@ -220,20 +224,15 @@ export default function FoodReviews() {
 
             {/* filtered to empty — KC-0329 B: 국적 필터 빈 상태는 전용 문구 */}
             {items.length === 0 ? (
-              <StateBlock
-                icon={<IconBubbleEmpty size={38} color={stateIconColor.default} />}
-                title={t('reviews.emptyTitle')}
-                body={t(sameNatOnly ? 'reviews.emptySameNat' : 'reviews.emptyBody')}
-                primary={{
-                  label: t('reviews.writeReview'),
-                  icon: <IconPlus size={17} color="#fff" />,
-                  onPress: writeReview, // P-144 계측 + P-251 자격 게이트
-                }}
-              />
+              /* P-359: 필터 0건 = 통계·컨트롤 유지, 목록 자리만 EmptyBlock(CTA 없음 —
+                 토글 OFF면 리뷰가 있다) */
+              <View style={{ paddingVertical: 24 }}>
+                <EmptyBlock label={t(sameNatOnly ? 'reviews.emptySameNat' : 'reviews.emptyBody')} testID="reviews-filter-empty" />
+              </View>
             ) : (
               <View style={{ gap: 12 }}>
                 {items.map((r) => (
-                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} foodId={id ?? ''} onMore={!r.anonymized ? () => openMenu(r) : undefined} /* P-186: 타인 = 신고/차단(익명 제외) */ />
+                  <ReviewItem key={r.id} review={r} t={t} mine={isMine(r)} foodId={id ?? ''} onMore={() => openMenu(r)} /* P-339 ②: 탈퇴 포함 전 카드 ⋯(신고만 — 차단은 플로우가 가드) */ />
                 ))}
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
@@ -257,7 +256,7 @@ export default function FoodReviews() {
         ))}
       </Animated.ScrollView>
 
-      <StickyHeader hidden={hidden} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
+      <StickyHeader hidden={hidden} atTop={atTop} mode="back" title={t('reviews.headerTitle')} onBack={() => router.back()} />
       {/* KB-431 §2-4: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
       <ActionSheet
         open={sortSheet}
@@ -274,22 +273,9 @@ export default function FoodReviews() {
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
-        onEdit={(m) => setEditTarget(all.find((r) => r.id === m.id) ?? null)} /* P-182: 공용 수정 시트 */
+        onEdit={(m) => router.push(`/food/${id}/review?reviewId=${m.id}` as Href)} /* P-358: 편집 = 작성 화면 편집 모드 */
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id ?? '' })}
         onBlocked={() => void reviewsQ.refetch()}
-      />
-      <ReviewEditSheet
-        review={editTarget}
-        onClose={() => setEditTarget(null)}
-        saving={updateReview.isPending}
-        onSave={({ rating, body, place, extras }) => {
-          if (!editTarget) return;
-          updateReview.mutate(
-            { reviewId: editTarget.id, foodId: id ?? '', current: editTarget, changes: { rating, body } },
-            { onSettled: () => setEditTarget(null) },
-          );
-        }}
-        t={t}
       />
     </View>
   );
@@ -308,7 +294,7 @@ export function AxisBar({ label, value, top, testID }: { label: string; value: n
       <View style={styles.axisTrack}>
         <View style={[styles.axisFill, { height: fillH }, top ? styles.axisFillTop : styles.axisFillRest]} testID={testID ? `${testID}-fill` : undefined} />
       </View>
-      <Text style={styles.axisLbl} numberOfLines={1}>{label}</Text>
+      <Text style={styles.axisLbl} numberOfLines={2}>{label}</Text>
     </View>
   );
 }
@@ -316,10 +302,13 @@ export function AxisBar({ label, value, top, testID }: { label: string; value: n
 /** KB-431 §2-3: 평점 요약 박스(4150:16775). */
 function RatingSummaryBox({
   overall,
+  sameNat = false,
   axes,
   t,
 }: {
   overall: RatingAggregate;
+  /** P-360: KR only ON — 라벨 = SAME NATIONALITY(값은 호출측이 sameNationality 전달) */
+  sameNat?: boolean;
   axes: { taste: number | null; speed: number | null; service: number | null };
   t: TFn;
 }) {
@@ -337,7 +326,7 @@ function RatingSummaryBox({
           <Text style={styles.bigScore}>{overall.average?.toFixed(1) ?? '—'}</Text>
           <Text style={styles.bigScoreOf}>/ 5</Text>
         </View>
-        <Text style={styles.overallLbl}>{t('reviews.overall').toUpperCase()}</Text>
+        <Text style={styles.overallLbl}>{t(sameNat ? 'reviews.sameNationality' : 'reviews.overall').toUpperCase()}</Text>
       </View>
       {bars.length > 0 && (
         <View style={styles.summaryRight}>
@@ -371,12 +360,8 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
             <Flag code={review.authorNationality} size={20} />
           )}
           <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
-          {!anon && !!review.authorRankTier && (
-            <View style={styles.rankPill}>
-              <MedalEmblem level={review.author?.level ?? 1} size={15} />
-              <Text style={styles.rankText}>{review.authorRankTier}</Text>
-            </View>
-          )}
+          {/* P-353 ①(KB-515): 구 랭킹 필 폐기 — 피드와 동일 RankMedal 16 */}
+          {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
         </View>
         <View style={styles.itemTopRight}>
           <Stars value={review.rating} size={14} />
@@ -467,7 +452,7 @@ function Switch({ on }: { on: boolean }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingHorizontal: 18, paddingTop: 4, gap: 16 },
+  body: { paddingHorizontal: 20, paddingTop: 8, gap: 9 }, // A-RL-01/03(KB-486: 카드→통계 9)
 
   emptyFill: { flex: 1, justifyContent: 'center' },
   // KB-84 게스트 lock-pop
@@ -485,26 +470,26 @@ const styles = StyleSheet.create({
   dishSub: { fontSize: 13, fontWeight: '400', color: C.ink3 },
 
   // KB-431 §2-3: 평점 요약 박스
-  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, padding: 16, gap: 29 },
-  summaryLeft: { flex: 1, gap: 6, justifyContent: 'center' },
+  summaryBox: { flexDirection: 'row', backgroundColor: C.surface2, borderRadius: radius.sm, paddingVertical: 16, paddingHorizontal: 0, gap: 29 }, // A-RL-04
+  summaryLeft: { flex: 1, minWidth: 96, maxWidth: 149, gap: 4, justifyContent: 'center', alignItems: 'center' }, // A-RL-04(#105 P2: minWidth 96 = Stars 16×5+gap — 320폭에서 별 넘침 방지)
   bigScore: { fontSize: 34, fontWeight: '700', color: C.ink, lineHeight: 42 },
   bigScoreOf: { fontSize: 20, fontWeight: '400', color: C.inkMute },
   overallLbl: { fontSize: 13, fontWeight: '500', color: C.ink3 },
-  axisCol: { alignItems: 'center', gap: 5 },
+  axisCol: { alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 0 }, // A-RL-05(#105 3R: 넘칠 때만 축소)
   axisBadge: { width: 34, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   axisBadgeTop: { backgroundColor: '#2F3137' },
   axisBadgeRest: { backgroundColor: C.inkDisabled },
   axisBadgeText: { fontSize: 12, fontWeight: '600', color: '#2F3137' },
-  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: C.hair, justifyContent: 'flex-end', overflow: 'hidden' },
+  axisTrack: { width: 8, height: 46, borderRadius: 4, backgroundColor: '#DCDEE3', justifyContent: 'flex-end', overflow: 'hidden' }, // A-RL-06(fill 3위 색은 C-57)
   axisFill: { width: 8, borderRadius: 4 },
   axisFillTop: { backgroundColor: '#2F3137' },
   axisFillRest: { backgroundColor: C.inkDisabled },
-  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3 },
-  summaryRight: { flexDirection: 'row', gap: 13, alignItems: 'flex-end' },
+  axisLbl: { fontSize: 10, fontWeight: '500', color: C.ink3, textAlign: 'center' }, // #105 3R: 축소 시 2줄 랩 중앙
+  summaryRight: { flexGrow: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', gap: 13, alignItems: 'flex-start', justifyContent: 'center' }, // P-343 2-B(#105 4R: 상단 정렬 — 트랙 46 고정이라 바닥 공유, 2줄 라벨만 아래로 확장)
 
   // KB-431 §2-4: 컨트롤 행
   controlRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  filterToggle: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 }, // A-RL-07
   filterLbl: { flexShrink: 1, fontSize: 14, fontWeight: '500', color: C.ink },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F2F3F6', borderRadius: radius.sm, paddingVertical: 6, paddingHorizontal: 8 },
   sortLabel: { fontSize: 14, fontWeight: '700', color: C.ink2 },
@@ -530,8 +515,6 @@ const styles = StyleSheet.create({
   who: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1, minWidth: 0, marginRight: 8 },
   anonAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, flexShrink: 1 },
-  rankPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
-  rankText: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2 },
   reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
   reviewBodyKo: { fontFamily: font.ko },
   txRow: { flexDirection: 'row', alignItems: 'center' },

@@ -13,9 +13,9 @@ import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
-import { IconScanLines, IconChevron, SubHeader, Spinner } from '@/components';
+import { CardPhoto, IconChevron, SubHeader, Spinner } from '@/components';
 import { D4MapPin } from '@/components/design4Assets';
-import { EmptyBlock, QueryErrorBlock, ScreenCenterFill, StateBlock, stateIconColor } from '@/components/StateBlock';
+import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyFoods } from '@/components/Skeleton';
 import { useOrders, type OrderSummary } from '@/lib/data/useOrders';
 import { useScannedFoods } from '@/lib/data/useFoods';
@@ -37,17 +37,8 @@ export default function MyFoodsScreen() {
   const { data: me } = useMe();
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
-  const goScan = () => router.navigate('/scan'); // P-246: 연타 가드 승계
-  const empty = (titleKey: string, bodyKey: string) => (
-    <ScreenCenterFill>
-      <StateBlock
-        icon={<IconScanLines size={38} color={stateIconColor.default} />}
-        title={t(titleKey)}
-        body={t(bodyKey)}
-        primary={{ label: t('community.goScanCta'), onPress: goScan }}
-      />
-    </ScreenCenterFill>
-  );
+  // P-328(KB-486): 두 탭 빈 상태 = 디자이너 EmptyBlock(4003:7348 — circle-dashed + 1줄)
+  // + ScreenCenterFill 화면 세로 중앙(P-196). Scanned의 본문·Go scan CTA 제거(시안 CTA 없음).
 
   return (
     <View style={styles.root}>
@@ -70,8 +61,9 @@ export default function MyFoodsScreen() {
           /* P-287(4003:12851): 첫 로드 = 카드 스켈레톤 */
           <SkeletonMyFoods />
         ) : (orders.data ?? []).length === 0 ? (
-          /* P-287(4003:7348): 빈 상태 = 공용 EmptyBlock(탭 유지) */
-          <EmptyBlock label={t('myFoods.emptyOrdersTitle')} testID="orders-empty" />
+          <ScreenCenterFill>
+            <EmptyBlock label={t('myFoods.emptyOrdersTitle')} testID="orders-empty" />
+          </ScreenCenterFill>
         ) : (
           <FlatList
             data={orders.data}
@@ -92,7 +84,9 @@ export default function MyFoodsScreen() {
       ) : scanned.isLoading ? (
         <SkeletonMyFoods />
       ) : (scanned.data ?? []).length === 0 ? (
-        empty('myFoods.emptyScansTitle', 'myFoods.emptyScansBody')
+        <ScreenCenterFill>
+          <EmptyBlock label={t('myFoods.emptyScansTitle')} testID="scans-empty" />
+        </ScreenCenterFill>
       ) : (
         <FlatList
           data={scanned.data}
@@ -137,8 +131,13 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
   const { t } = useTranslation();
   return (
     <Pressable style={styles.card} onPress={onPress} testID={`order-${order.orderId}`}>
+      {/* P-353 ④(KB-515): 첫 썸네일(서버가 기본 이미지 포함 최대 4개 구성) — 없으면 핀 현행 */}
       <View style={styles.pinBox}>
-        <D4MapPin size={24} color={C.ink3} />
+        {order.thumbnails[0] ? (
+          <CardPhoto uri={order.thumbnails[0]} borderRadius={8} />
+        ) : (
+          <D4MapPin size={24} color={C.ink3} />
+        )}
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
         {/* 장소명 데이터 부재 — roadAddress가 장소 줄(있을 때), 없으면 미태그 변형 필 */}
@@ -156,7 +155,9 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
           </View>
         </View>
       </View>
-      <IconChevron size={16} color={C.ink3} />
+      <View style={{ marginLeft: 4 }}>{/* A-MF-02: 내용↔chevron 14 유지(행 gap 10+4) */}
+        <IconChevron size={16} color={C.ink3} />
+      </View>
     </Pressable>
   );
 }
@@ -165,9 +166,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
 
   // 언더라인 탭(responsive 2분할)
-  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 8 },
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 0, marginTop: 0 }, // A-MF-01(KB-486: AppBar 직하 전폭)
   tab: { flex: 1, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
-  tabLabel: { fontSize: 14, fontWeight: '600', color: C.ink2 },
+  tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' }, // A-DS-03(KB-486)
   tabLabelOn: { color: INK_TITLE },
   tabBar: { alignSelf: 'stretch', height: 2, backgroundColor: 'transparent' },
   tabBarOn: { backgroundColor: INK_TITLE },
@@ -177,13 +178,13 @@ const styles = StyleSheet.create({
   recentList: { paddingBottom: 40 },
 
   // 주문 카드 — pad 16/20 gap 14 하단 line
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.hair },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-MF-02(핀↔정보 10)
   pinBox: { width: 70, height: 70, borderRadius: 8, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   placeName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', lineHeight: 20 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 }, // A-MF-03
   metaDate: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   qtyPill: { backgroundColor: C.hair, borderRadius: 100, paddingVertical: 2, paddingHorizontal: 8 },
-  qtyPillText: { fontSize: 12, fontWeight: '500', color: C.ink2 },
+  qtyPillText: { fontSize: 12, fontWeight: '500', color: '#1C1E21' }, // A-MF-04
   // 장소 미태그 변형 — 아웃라인 필(primary 1px r8 pad 4/8, 12/600) · 태그 기능 부재 = 무동작
   tagPill: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8 },
   tagPillText: { fontSize: 12, fontWeight: '600', color: C.primary },

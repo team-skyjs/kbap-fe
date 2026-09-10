@@ -1,5 +1,6 @@
 /**
- * StateBlock — shared empty / error / offline / unable state (mockup Screen J).
+ * StateBlock.tsx — 상태 공용: EmptyBlock(디자이너 빈 상태)·QueryErrorBlock(에러)·ScreenCenterFill.
+ * P-359(KB-522): 구 목업 StateBlock(주황 원·제목·본문·CTA)은 폐기 — 빈 상태는 EmptyBlock 단일.
  * Tone tints the icon bubble. Buttons are optional; labels are i18n text.
  *
  * QueryErrorBlock (P-007/KB-174): React Query 에러 → J3(에러)/J4(오프라인)
@@ -18,74 +19,14 @@ import { RiskGlyph } from './RiskMark';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
 
-export type StateTone = 'default' | 'err' | 'unable';
-
 /**
  * P-214: 실패·빈 상태 계측 — **이 컴포넌트 한 곳**(전 화면 실패율). 화면 식별은
  * 라우트 **세그먼트 패턴**(`food/[id]` 형태 — 실제 id 미포함, PII 0)이라 호출처
  * 배선이 필요 없다. kind 미지정 시 tone에서 파생(err=error, 그 외 empty).
  */
-export type StateKind = 'error' | 'offline' | 'empty';
 function useScreenKey(): string {
   const segments = useSegments() as string[];
   return segments.join('/') || 'root';
-}
-
-export function StateBlock({
-  icon,
-  title,
-  body,
-  tone = 'default',
-  primary,
-  secondary,
-  fill = false,
-  kind,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  tone?: StateTone;
-  primary?: { label: string; icon?: React.ReactNode; onPress?: () => void };
-  secondary?: { label: string; onPress?: () => void };
-  /** P-184: 화면 잔여 높이 세로 정중앙을 블록이 소유 — 화면별 수동 배치 금지(재발 방지 구조). */
-  fill?: boolean;
-  /** P-214: 계측 종류 — 미지정이면 tone 파생(QueryErrorBlock만 offline/error 명시). */
-  kind?: StateKind;
-}) {
-  const screen = useScreenKey();
-  const resolvedKind: StateKind = kind ?? (tone === 'err' ? 'error' : 'empty');
-  React.useEffect(() => {
-    track(EVENTS.error_state_view, { screen, kind: resolvedKind, action: 'view' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const onPrimary = primary?.onPress
-    ? () => {
-        // 재시도 = 실패 상태에서만 의미(빈 상태의 primary는 유도 CTA라 제외)
-        if (resolvedKind !== 'empty') track(EVENTS.error_state_view, { screen, kind: resolvedKind, action: 'retry' });
-        primary.onPress?.();
-      }
-    : undefined;
-  return (
-    <View style={[styles.root, fill && styles.fill]}>
-      <View style={[styles.ic, TONE_BG[tone]]}>{icon}</View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.body}>{body}</Text>
-      {(primary || secondary) && (
-        <View style={styles.btns}>
-          {primary && (
-            <Btn icon={primary.icon} onPress={onPrimary}>
-              {primary.label}
-            </Btn>
-          )}
-          {secondary && (
-            <Btn variant="ghost" onPress={secondary.onPress}>
-              {secondary.label}
-            </Btn>
-          )}
-        </View>
-      )}
-    </View>
-  );
 }
 
 /** P-287(최종본 4003:6689): 공용 빈 상태 — circle-dashed 24 + 16/400 중앙, 버튼 없음.
@@ -106,22 +47,16 @@ export function EmptyBlock({ label, testID = 'empty-block' }: { label: string; t
  * 화면 전체 기준 센터. 탭 루트(View flex:1) 직속에서만 사용.
  */
 export function ScreenCenterFill({ children }: { children: React.ReactNode }) {
-  return <View style={[StyleSheet.absoluteFill, styles.screenCenter]}>{children}</View>;
+  // Codex #89 P2: absoluteFill이 헤더 뒤로가기·탭의 터치를 삼키던 결함 — 래퍼는
+  // box-none(자신은 히트 불가, 내부 블록만 auto). P-330 스윕 전 화면 공통 수리.
+  return (
+    <View style={[StyleSheet.absoluteFill, styles.screenCenter]} pointerEvents="box-none">
+      {children}
+    </View>
+  );
 }
 
 /** Icon tint color for each tone (pass to the icon's color prop). */
-export const stateIconColor: Record<StateTone, string> = {
-  default: C.primary,
-  err: riskTone.danger.fg,
-  unable: C.riskUnable,
-};
-
-const TONE_BG: Record<StateTone, { backgroundColor: string }> = {
-  default: { backgroundColor: 'rgba(226,88,12,0.08)' },
-  err: { backgroundColor: riskTone.danger.bg },
-  unable: { backgroundColor: '#eef0f2' },
-};
-
 const styles = StyleSheet.create({
   root: { alignItems: 'center', gap: 11, paddingHorizontal: 24, paddingVertical: 24, maxWidth: 320, alignSelf: 'center' },
   // P-184: 잔여 높이 정중앙 — flex(플렉스 부모)+flexGrow(스크롤 콘텐츠) 겸용
@@ -136,7 +71,7 @@ const styles = StyleSheet.create({
   emptyWrap: { alignItems: 'center', gap: 8, maxWidth: 335, alignSelf: 'center', paddingVertical: 32, paddingHorizontal: 20 },
   emptyText: { fontSize: 16, fontWeight: '400', color: '#000000', textAlign: 'center' },
   // P-287: 에러 블록(4003:12563) — 세로 중앙 pad 40/32 gap 16
-  errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 16, paddingVertical: 40, paddingHorizontal: 32, maxWidth: 360, alignSelf: 'center', width: '100%' },
+  errWrap: { flex: 1, flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 40, paddingHorizontal: 32, maxWidth: 360, alignSelf: 'center', width: '100%' }, // A-ER-01(제목→본문 6)
   errMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,113,52,0.10)', alignItems: 'center', justifyContent: 'center' },
   errTitle: { fontSize: 16, fontWeight: '600', color: C.ink, textAlign: 'center' },
   errBody: { fontSize: 14, fontWeight: '400', color: C.ink2, textAlign: 'center', lineHeight: 20 },
@@ -183,7 +118,7 @@ export function QueryErrorBlock({
       <Text style={styles.errTitle}>{t(offline ? 'states.offlineTitle' : 'states.errorTitle')}</Text>
       {/* Codex #47 6차: 줄수 제한 제거 — ja/ru/th 카피 절단 방지(i18n 가변 길이 헌법), 높이 hug */}
       <Text style={styles.errBody}>{t(offline ? 'states.offlineBody' : 'states.errorBody')}</Text>
-      <View style={{ alignSelf: 'stretch', gap: 9, marginTop: 4 }}>
+      <View style={{ alignSelf: 'stretch', gap: 9, marginTop: 10 }}>{/* A-ER-02: 본문→버튼 16(gap 6 + 10) */}
         <Btn
           variant="ghost"
           onPress={() => {
@@ -203,4 +138,4 @@ export function QueryErrorBlock({
   );
 }
 
-export default StateBlock;
+export default EmptyBlock;

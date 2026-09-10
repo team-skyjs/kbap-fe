@@ -15,6 +15,9 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
 import { FLAGS } from '@/lib/flags';
+import { useIsGuest } from '@/lib/auth/useSession';
+import { DEFAULT_GUEST_CONSENT, readGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
+import { Shimmer } from '@/components/Skeleton';
 import { EVENTS, track } from '@/lib/analytics';
 import {
   getPermissionStatus,
@@ -29,6 +32,45 @@ import {
 export default function NotificationSettings() {
   // 컴파일 상수 가드 — 훅 순서 무영향 (reviews.tsx 문법)
   if (!FLAGS.pushEnabled) return <Redirect href="/" />;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const isGuest = useIsGuest();
+  // P-311(KB-478): 게스트 = 마케팅·야간 동의 토글 2개만(기본 OFF, 로컬 — guestConsent)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [consent, setConsent] = React.useState<GuestConsent>(DEFAULT_GUEST_CONSENT);
+  // Codex #72 4R: 읽기 3상 — error = 값 표시 금지·토글 비활성·재시도 배너
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // 5R: pending도 분리 — 읽는 중 기본 OFF 스위치로 위장 금지(스켈레톤)
+  const [consentState, setConsentState] = React.useState<'pending' | 'error' | 'ready'>('pending');
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const loadConsent = React.useCallback(() => {
+    setConsentState('pending');
+    void readGuestConsent().then((r) => {
+      if (r.status === 'error') return setConsentState('error');
+      setConsent(r.status === 'ok' ? r.value : DEFAULT_GUEST_CONSENT);
+      setConsentState('ready');
+    });
+  }, []);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  React.useEffect(() => {
+    if (isGuest) loadConsent();
+  }, [isGuest, loadConsent]);
+  // Codex #72 P1: 저장 처리 중 = 토글 무시(직렬화와 이중 방어 — 연타 레이스 0)
+  const consentBusy = React.useRef(false);
+  const [consentError, setConsentError] = React.useState(false);
+  const toggleConsent = (key: 'marketing' | 'night') => {
+    if (consentBusy.current || consentState !== 'ready') return; // 5R: ready에서만 토글
+    if (key === 'night' && !consent.marketing) return; // 야간 = 마케팅 ON일 때만 활성
+    consentBusy.current = true;
+    setConsentError(false);
+    track(EVENTS.push_pref_toggle, { key, on: !consent[key] });
+    void setGuestConsent(key, !consent[key])
+      .then(setConsent) // 3R P1: 저장 성공 값으로만 반영 — 실패 시 상태 불변(원복 불요)
+      .catch(() => setConsentError(true)) // 저장 거부 표면화(법정 철회 유실 방지)
+      .finally(() => {
+        consentBusy.current = false;
+      });
+  };
 
   const router = useRouter();
   const { t } = useTranslation();
@@ -52,6 +94,56 @@ export default function NotificationSettings() {
   };
 
   const osOff = permission === 'denied';
+
+  if (isGuest) {
+    return (
+      <View style={styles.root}>
+        <SubHeader title={t('notif.title')} onBack={() => router.back()} />
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          {consentState === 'pending' && (
+            /* 5R: 읽는 중 = 스켈레톤(공백·기본값 위장 금지 — P-207 계열) */
+            <View style={styles.card} testID="guest-consent-skel">
+              <Shimmer style={{ height: 56, borderRadius: 8 }} />
+              <Shimmer style={{ height: 56, borderRadius: 8, marginTop: 8 }} />
+            </View>
+          )}
+          {consentState === 'ready' && (
+          <View style={styles.card}>
+            <ToggleRow
+              label={t('notif.marketing')}
+              sub={t('notif.marketingSub')}
+              on={consent.marketing}
+              onPress={() => toggleConsent('marketing')}
+              testID="guest-marketing"
+            />
+            <View style={[!consent.marketing && styles.rowDisabled]}>
+              <ToggleRow
+                label={t('notif.night')}
+                sub={t('notif.nightSub')}
+                on={consent.night}
+                onPress={() => toggleConsent('night')}
+                testID="guest-night"
+              />
+            </View>
+          </View>
+          )}
+          {consentState === 'ready' && consentError && (
+            <Pressable style={styles.osBanner} onPress={() => setConsentError(false)} testID="guest-consent-error">
+              <IconBell size={16} color={C.riskCaution} />
+              <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
+            </Pressable>
+          )}
+          {consentState === 'error' && (
+            /* 4R→5R: 읽기 오류 = 스위치 미렌더(값 미표시), 탭 = 재시도 */
+            <Pressable style={styles.osBanner} onPress={loadConsent} testID="guest-consent-read-error">
+              <IconBell size={16} color={C.riskCaution} />
+              <Text style={styles.osBannerText}>{t('notif.saveFailed')}</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -121,6 +213,7 @@ function Switch({ on }: { on: boolean }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  rowDisabled: { opacity: 0.4 }, // P-311: 야간 = 마케팅 OFF 시 비활성(색·불투명도만 — P-151)
   body: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32, gap: 12 },
 
   osBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 13, ...shadow.sh1 },

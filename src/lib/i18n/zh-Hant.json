@@ -75,11 +75,9 @@
   },
   "editReview": {
     "title": "編輯評論",
-    "viewTitle": "我的評論",
     "save": "儲存變更",
+    "savedToast": "評價已更新",
     "delete": "刪除此評論",
-    "posted": "發佈於 {{when}}",
-    "noBody": "你在此評分中未撰寫任何內容。",
     "notFound": "此評論已不存在。",
     "deleteConfirmTitle": "要刪除此評論嗎？",
     "deleteConfirmBody": "此評論將被永久移除，且無法復原。"
@@ -96,6 +94,8 @@
     "title": "探索美食",
     "sub": "每道菜都標註了你的風險。",
     "searchPlaceholder": "搜尋食物或食材…",
+    "sort_popular": "熱門",
+    "sort_new": "最新",
     "categories": {
       "all": "全部",
       "stews": "湯鍋",
@@ -104,7 +104,8 @@
       "bbq": "燒烤",
       "street": "街頭小吃",
       "sides": "小菜"
-    }
+    },
+    "sortNewSoon": "即將上線"
   },
   "search": {
     "placeholder": "搜尋食物、食材…",
@@ -114,8 +115,6 @@
     "popular": "熱門搜尋",
     "resultCount": "{{count}} 個結果",
     "noResultsTitle": "找不到符合的結果",
-    "noResultsBody": "這道菜可能還沒收錄在我們的目錄中。試試其他名稱，或瀏覽熱門項目。",
-    "backToPopular": "查看熱門菜色",
     "samples": [
       "泡菜鍋",
       "蝦醬",
@@ -131,7 +130,6 @@
     "hoursAgo": "{{count}}小時前",
     "seeMore": "查看更多",
     "emptyTitle": "還沒有貼文",
-    "emptyBody": "來分享第一個心得或發現吧。",
     "guestGateTitle": "註冊後繼續瀏覽",
     "guestGateSub": "訪客只能瀏覽前幾頁。",
     "blockedToast": "已封鎖。將不再顯示該用戶的內容。",
@@ -296,9 +294,13 @@
     "errUpload": "照片上傳失敗，請重試。",
     "stayHint": "大約需要 30–40 秒 — 離開應用可能會遺失結果。",
     "sortMenu": "菜單順序",
-    "sortSafety": "風險從低到高",
+    "safeOnly": "僅評定為安全",
+    "sortPriceDesc": "價格由高至低",
+    "sortPriceAsc": "價格由低至高",
+    "resultsSubSafe": "共{{total}}道中{{safe}}道評定為安全",
+    "safeEmpty": "此菜單沒有評定為安全的菜品",
+    "showAllDishes": "顯示全部菜品",
     "missNote": "尚未收錄在資料庫中 — 幾天內會新增。",
-    "searchOnNaver": "在NAVER搜尋",
     "searchOnGoogle": "在Google搜尋",
     "resultsEmpty": "沒有掃描結果"
   },
@@ -355,6 +357,7 @@
     "spiceTitle": "辣度承受度",
     "spiceUnset": "未設定",
     "showAll": "查看全部（{{count}}）",
+    "showAllEmpty": "查看全部",
     "showLess": "收起",
     "dietTitle": "飲食、宗教與過敏",
     "showAllLink": "查看全部",
@@ -366,22 +369,14 @@
     "dietSavedBody": "要相應調整迴避的食材嗎？",
     "dietSavedYes": "編輯迴避食材",
     "dietSavedNo": "完成",
-    "myFoods": "我的美食"
+    "myFoods": "我的美食",
+    "guestTitle": "需要登入"
   },
   "review": {
     "title": "撰寫評論",
     "post": "發布",
     "ratingLabel": "你的評分 *",
     "tapToRate": "點擊評分",
-    "ratingValue": "{{value}}/5，{{label}}",
-    "labels": [
-      "",
-      "很差",
-      "普通",
-      "尚可",
-      "不錯",
-      "很棒"
-    ],
     "reviewLabel": "你的評論",
     "placeholder": "分享它嚐起來如何，以及給有相同飲食限制旅客的任何建議…",
     "charCount": "{{count}}/500",
@@ -390,17 +385,16 @@
     "postedBody": "謝謝你！你對 {{name}} 的 {{rating}} 星評論已列入該美食的評論中，並計入你的排名。",
     "done": "完成",
     "seeMyReviews": "查看我的評論",
-    "photosLabel": "照片（最多{{max}}張）",
     "addPhoto": "新增照片",
     "removePhoto": "刪除照片",
     "postError": "評價儲存失敗。請檢查網路後再試一次。",
-    "ratingOutOf": "{{value}}/5",
     "likesCaption": "按讚不影響排序",
     "placeRow": "你在哪裡吃的？",
     "placeSheetTitle": "標記地點",
     "placeRecent": "最近",
     "placeNoResults": "沒有符合的地點。",
-    "placeSkip": "略過 — 不帶地點發布",
+    "placeSkip": "略過",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "無法刪除評價。請檢查網路後重試。",
     "photoCapNote": "最多{{max}}張照片 — 超出部分已跳過",
     "placeNearby": "附近地點",
@@ -431,6 +425,8 @@
     "emptyTitle": "尚無評論",
     "emptyBody": "還沒有評價。來寫下第一條吧。",
     "writeReview": "撰寫評論",
+    "helpfulOwnToast": "不能給自己的評價點有幫助",
+    "helpfulMarkedToast": "已標記有幫助",
     "lang": {
       "en": "英文",
       "th": "泰文",
@@ -456,7 +452,6 @@
     "sort_helpful": "最有幫助",
     "ratingAll": "全部評分",
     "ratingMin": "{{min}}分以上",
-    "filterByProfile": "按個人資料篩選",
     "countryOnly": "僅{{code}}"
   },
   "ranking": {
@@ -556,28 +551,20 @@
     "lockVerdict": "您的安全判定已鎖定",
     "lockIngredients": "登入後即可查看這道菜與您檔案的匹配情況",
     "readAll": "查看全部",
-    "beFirstReview": "還沒有評價 — 來寫第一條吧！"
+    "beFirstReview": "還沒有評價 — 來寫第一條吧！",
+    "ingGuestBody": "{{ingredient}}約在此菜{{percent}}%的版本中使用。各家餐廳可能不同——想確認請詢問店主。",
+    "ingGuestBodyNoPct": "{{ingredient}}常用於此菜。各家餐廳可能不同——想確認請詢問店主。"
   },
   "states": {
     "catalogTitle": "狀態",
     "labelLoading": "載入中（骨架）",
     "labelEmpty": "空白",
-    "labelError": "錯誤",
-    "labelOffline": "離線",
-    "labelUnable": "無法判斷",
     "loading": "載入中…",
     "emptyReviewsTitle": "尚無評論",
-    "emptyReviewsBody": "成為第一個評論這道菜的人——你的筆記能幫助下一位旅客安心用餐。",
-    "writeReview": "撰寫評論",
     "errorTitle": "發生錯誤",
     "errorBody": "我們目前無法載入此內容。這是我們的問題，不是你的。",
     "offlineTitle": "你目前處於離線狀態",
-    "offlineBody": "連接網路以掃描菜單並載入評論。你已儲存的掃描仍在這裡。",
-    "viewSavedScans": "查看已儲存的掃描",
-    "unableTitle": "無法判斷這一項",
-    "unableBody": "我們沒有足夠的食材資料來為你的檔案評估這道菜。用餐前請詢問店家。",
-    "askOwner": "詢問店家",
-    "seeIngredients": "查看食材"
+    "offlineBody": "連接網路以掃描菜單並載入評論。你已儲存的掃描仍在這裡。"
   },
   "shell": {
     "placeholderNote": "分頁內容位於畫面模組中"
@@ -619,7 +606,10 @@
     "reviewsSub": "點餐前先看看",
     "chipForYou": "為你推薦",
     "chipNearby": "附近",
-    "recentEmpty": "尚無最近掃描"
+    "recentEmpty": "尚無最近掃描",
+    "safeForYou": "依你的清單篩出的 Safe 菜色",
+    "safeForYouSub": "依你的迴避清單判定——請務必向店家確認。",
+    "railFilterEmpty": "此清單暫無「{{risk}}」菜色，試試其他篩選。"
   },
   "onboarding": {
     "welcomeTag": "點餐前，先知道什麼能安心吃。",
@@ -725,8 +715,7 @@
       "groupDiet": "飲食",
       "groupReligion": "宗教",
       "groupAllergy": "過敏組合",
-      "apply": "套用到我的清單",
-      "applyRow": "依飲食/宗教填入"
+      "apply": "套用到我的清單"
     },
     "countryLabel": "國家"
   },
@@ -969,7 +958,12 @@
     "nudge": "掃描推薦",
     "nudgeSub": "偶爾在午餐時間提醒你掃描菜單",
     "osOff": "系統設定中已關閉 K-Bap 的通知。",
-    "osOffCta": "開啟系統設定"
+    "osOffCta": "開啟系統設定",
+    "marketing": "行銷通知",
+    "marketingSub": "透過推播接收活動與推薦消息。",
+    "night": "夜間通知",
+    "nightSub": "晚上9點至早上8點也接收。",
+    "saveFailed": "儲存失敗，請重試。"
   },
   "inbox": {
     "title": "通知",
@@ -997,14 +991,9 @@
     "emptyOrdersTitle": "還沒有訂單記錄",
     "emptyOrdersBody": "從掃描的菜單下單後會記錄在這裡。",
     "emptyScansTitle": "還沒有掃描記錄",
-    "emptyScansBody": "掃描菜單後，你查看過的菜品會匯集在這裡。",
     "dishes": "菜品",
     "receiptDate": "日期",
     "receiptLocation": "地點",
     "receiptTotal": "合計"
-  },
-  "ota": {
-    "ready": "更新已準備好",
-    "apply": "套用"
   }
 }

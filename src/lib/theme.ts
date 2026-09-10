@@ -156,7 +156,7 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 } as const;
  *  lineHeight 기본 1.35(캡션 1.5) — 전역 강제 아님(레이아웃은 화면 단계에서). */
 export const type = {
   largeTitle: { fontSize: 26, fontWeight: '700' },
-  sectionTitle: { fontSize: 20, fontWeight: '400' }, // 4064:787
+  sectionTitle: { fontSize: 22, fontWeight: '700' }, // A-DS-01(KB-486) — 구 20/400(4064:787)
   appBar: { fontSize: 18, fontWeight: '600' },
   button: { fontSize: 15, fontWeight: '600' },
   emphasis: { fontSize: 15, fontWeight: '500' }, // 닉네임·입력

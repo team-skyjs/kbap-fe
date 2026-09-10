@@ -75,8 +75,11 @@ export default function Notifications() {
           </Pressable>
         )}
         ListEmptyComponent={
-          /* P-287(4003:7113): 공용 EmptyBlock — 아이콘 벨·본문 소멸(시안) */
-          <EmptyBlock label={t('inbox.empty')} testID="notif-empty" />
+          /* P-330(4003:7113): 빈 상태 = 리스트 영역 세로 중앙(flexGrow 1 + 중앙 래퍼 —
+             pull-to-refresh 유지라 ScreenCenterFill(absolute) 대신 인라인 센터) */
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <EmptyBlock label={t('inbox.empty')} testID="notif-empty" />
+          </View>
         }
       />
     </View>
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
   markAll: { fontSize: 13, fontWeight: '600', color: C.ink },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.hair },
   rowUnread: { backgroundColor: primaryTint },
-  title: { fontSize: 15, fontWeight: '600', color: C.ink },
+  title: { fontSize: 15, fontWeight: '700', color: C.ink }, // A-NF-01(KB-486)
   body: { fontSize: 14, fontWeight: '500', color: '#4B4F58', lineHeight: 20 },
   when: { fontSize: 13, fontWeight: '500', color: C.inkInfo }, // P-284: 정보성 시각 텍스트 대비
   dotSlot: { width: 8, alignItems: 'center', paddingTop: 6 },

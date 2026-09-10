@@ -69,7 +69,7 @@ export function SkeletonHome() {
     <View style={sk287.wrap} testID="skeleton-home">
       <View style={sk287.grid2}>
         {[0, 1].map((i) => (
-          <View key={i} style={{ gap: 6, flex: 1 }}>
+          <View key={i} style={{ gap: 12, flex: 1 }}>{/* A-SK-01(KB-486) */}
             <SkImg w={'100%' as const} h={118} />
             <SkBar w={96} />
             <SkBar w={72} h={10} />
@@ -92,11 +92,13 @@ export function SkeletonHome() {
       {[0, 1, 2].map((i) => (
         <View key={i} style={sk287.reviewBlock}>
           <View style={sk287.rowGap8}>
-            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F2F3F6' }} />
+            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#EAEBEE' }} />{/* A-SK-02 */}
             <SkBar w={120} />
-            <SkImg w={32} h={32} r={16} />
+            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#EAEBEE' }} />
           </View>
-          <View style={sk287.rowGap12}>
+          <View style={sk287.rowGap12}>{/* A-SK-02: 평점 바 6개 */}
+            <SkBar w={40} />
+            <SkBar w={60} />
             <SkBar w={40} />
             <SkBar w={60} />
             <SkBar w={40} />
@@ -113,7 +115,7 @@ export function SkeletonHome() {
           </View>
           <View style={sk287.rowGap8}>
             {[0, 1, 2].map((j) => (
-              <SkImg key={j} w={72} h={24} r={12} />
+              <Shimmer key={j} style={{ width: 72, height: 24, borderRadius: 12, backgroundColor: '#EAEBEE' }} />
             ))}
           </View>
         </View>
@@ -197,28 +199,35 @@ export function SkeletonMyReviews() {
   return (
     <View style={sk287.wrap} testID="skeleton-my-reviews">
       {[0, 1, 2].map((i) => (
-        <View key={i} style={sk287.reviewBlock}>
+        <View key={i} style={sk287.myRevCard}>{/* A-SK-04(KB-486): 카드 r8 stroke #EAEBEE pad 16 gap 12 */}
           <View style={sk287.rowGap8}>
-            <SkImg w={32} h={32} r={16} />
+            <Shimmer style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#EAEBEE' }} />
             <View style={{ flex: 1, gap: 6 }}>
               <SkBar w={120} h={10} />
               <SkBar w={80} h={10} />
             </View>
-            <SkImg w={32} h={16} />
           </View>
           <View style={sk287.rowGap8}>
+            <SkBar w={32} h={10} />
             {[0, 1, 2, 3].map((j) => (
-              <SkImg key={j} w={12} h={12} r={6} />
+              <SkImg key={j} w={12} h={12} r={4} />
             ))}
           </View>
           {[0, 1, 2].map((j) => (
             <SkBar key={j} w={303} h={10} />
           ))}
           <View style={sk287.rowGap8}>
+            {/* Codex #91 P2: 고정 64×4가 320폭 카드 초과 — flex 비율(정방 유지) */}
             {[0, 1, 2, 3].map((j) => (
-              <SkImg key={j} w={64} h={64} />
+              <Shimmer key={j} style={{ flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: '#F2F3F6' }} />
             ))}
           </View>
+          <View style={sk287.rowGap6}>
+            {[0, 1, 2, 3].map((j) => (
+              <SkImg key={j} w={44} h={24} r={12} />
+            ))}
+          </View>
+          <SkBar w={140} h={10} />
         </View>
       ))}
     </View>
@@ -232,10 +241,10 @@ export function SkeletonMyFoods() {
       {[0, 1, 2, 3].map((i) => (
         <View key={i} style={sk287.myFoodsRow}>
           <SkImg w={70} h={70} />
-          <View style={{ flex: 1, gap: 8 }}>
+          <View style={{ flex: 1, gap: 5 }}>{/* A-SK-05 */}
             <SkBar w={140} h={14} />
             <SkBar w={120} h={10} />
-            <View style={sk287.rowGap8}>
+            <View style={sk287.rowGap6}>
               <SkBar w={70} h={10} />
               <SkBar w={60} h={10} />
             </View>
@@ -260,14 +269,18 @@ export function SkeletonOrderDetail() {
           </View>
         ))}
       </View>
+      {/* A-SK-06(KB-486): dish 카드 골격 미러 — 보더 r8 pad 12·썸 58 r8·바 110x14/90x10 gap 2·우 가로 gap 3 */}
       {[0, 1, 2].map((i) => (
-        <View key={i} style={sk287.rowGap12}>
-          <SkImg w={58} h={58} r={4} />
-          <View style={{ flex: 1, gap: 6 }}>
-            <SkBar w={140} h={12} />
+        <View key={i} style={sk287.orderDish}>
+          <SkImg w={58} h={58} r={8} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <SkBar w={110} h={14} />
             <SkBar w={90} h={10} />
           </View>
-          <SkBar w={40} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+            <SkBar w={24} h={10} />
+            <SkBar w={44} h={14} />
+          </View>
         </View>
       ))}
     </View>
@@ -278,7 +291,10 @@ const sk287 = StyleSheet.create({
   wrap: { paddingHorizontal: 20, paddingTop: 12, gap: 16 },
   grid2: { flexDirection: 'row', gap: 16 },
   recentRow: { flexDirection: 'row', gap: 16, paddingVertical: 8 },
-  reviewBlock: { gap: 10, paddingVertical: 12 },
+  reviewBlock: { gap: 12, paddingVertical: 14 }, // A-SK-02: 블록 간 44(14+16+14)
+  rowGap6: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  myRevCard: { borderRadius: 8, borderWidth: 1, borderColor: '#EAEBEE', padding: 16, gap: 12 }, // A-SK-04
+  orderDish: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 8, borderWidth: 1, borderColor: '#EAEBEE', padding: 12 }, // A-SK-06
   rowGap8: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rowGap12: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
@@ -289,19 +305,21 @@ const sk287 = StyleSheet.create({
   tileFill: { width: '100%', aspectRatio: 106 / 130, borderRadius: 8, backgroundColor: '#F2F3F6' },
   photoTile: { flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: '#F2F3F6' },
   hero: { width: '100%', aspectRatio: 1, backgroundColor: '#F2F3F6' },
-  myFoodsRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 102, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#F2F3F6' },
+  myFoodsRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 102, paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-SK-05
 });
 
 /** 음식 탭: 2열 그리드 카드 ×6 (사진 102 + 이름/뱃지 줄) — FlatList 패딩 안에서 렌더. */
 export function SkeletonFoodGrid() {
   return (
     <View style={sk.grid}>
+      {/* A-SK-03(KB-486): 카드 프레임(흰·보더·r10) 제거 — 이미지 118 r8 + 바 3개 */}
       {Array.from({ length: 6 }).map((_, i) => (
-        <View key={i} style={sk.gridCard}>
-          <Shimmer style={{ height: 102 }} />
-          <View style={{ padding: 10, gap: 7 }}>
-            <Shimmer style={[sk.line, { width: '70%' }]} />
-            <Shimmer style={[sk.line, { width: '45%' }]} />
+        <View key={i} style={[sk.gridCard, { gap: 12 }]}>
+          <SkImg w={'100%' as const} h={118} />
+          <View style={{ gap: 6 }}>
+            <SkBar w={96} h={12} />
+            <SkBar w={72} h={10} />
+            <SkBar w={40} h={10} />
           </View>
         </View>
       ))}
@@ -334,7 +352,7 @@ const sk = StyleSheet.create({
   line: { height: 12, borderRadius: 6 },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: 13 }, // profile id 행
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  gridCard: { width: '48.5%', backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.lg, overflow: 'hidden' },
+  gridCard: { width: '48.5%' }, // A-SK-03: 프레임 소멸
 });
 
 const styles = StyleSheet.create({

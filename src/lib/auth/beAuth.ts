@@ -11,7 +11,8 @@
  * ⚠️ RNFB 임포트 금지 (웹 번들 안전) — Firebase signOut 등 네이티브 몫은
  * 화면 쪽에서 Platform 가드 lazy require(session.ts)로 처리한다.
  */
-import { api, ApiError, setAuthTokenProvider, setOnUnauthorized } from '@/lib/api/client';
+import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthorized, setSessionGenerationProvider } from '@/lib/api/client';
+import { track } from '@/lib/net/inflight';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
@@ -53,17 +54,26 @@ async function sessionExpired(): Promise<void> {
  *  KB-421(Codex #19 P1-4): 교환도 세대 가드 — pending 중 게스트 진입(경계)이
  *  끼면 응답을 폐기(cancelled)해 회원 복귀를 막는다. 이로써 saveTokens의 전
  *  호출자(doRefresh·exchangeLogin)가 "경계 이후 도착 결과 무효" 원칙 아래. */
-export async function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
+export function exchangeLogin(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
+  // Codex #109 7R: 세션 관문 track — SecureStore 저장·재검증 왕복까지 OTA 정적 창에 포함
+  return track(exchangeLoginInner(idToken));
+}
+async function exchangeLoginInner(idToken: string): Promise<{ newMember: boolean; cancelled?: boolean }> {
   const gen = currentGen(); // 출발 세대 캡처(조기 폐기용 — 최종 방어는 싱크)
   const r = await api.post<LoginResponseWire>('/auth/login', { idToken });
   if (gen !== currentGen()) return { newMember: r.newMember, cancelled: true }; // 저장 자체 생략
-  if (!(await saveTokens(r.accessToken, r.refreshToken))) {
+  // KB-441(Codex #59 P1-4→5): 로그인 커밋 = **세션 경계** — 세대 증가는 saveTokens의
+  // newSession 플래그가 **캐시 공개와 같은 동기 틱**에 수행(bump가 await 뒤면
+  // "캐시=B·gen=A" 창에서 낡은 AUTH-004가 B의 refresh를 소모 후 폐기 — B 로그아웃).
+  const save = saveTokens(r.accessToken, r.refreshToken, { newSession: true });
+  const committedGen = currentGen(); // bump 직후 세대(동기 틱 — 아래 최종 재검증 기준)
+  if (!(await save)) {
     return { newMember: r.newMember, cancelled: true }; // 쓰기 중 경계 — 싱크가 되돌림, 커밋 생략
   }
   // Codex #19 P1-7/8: 커밋 지점 최종 재검증 — 저장 통과 후 ~ 세션 점등 전 경계가
   // 오면 **자기 저장분만** 회수(소유자 범위 undo — 교체 로그인 B 보존) 후 취소.
   // 세션을 켜는 유일한 커밋 지점이 여기라 이 검사가 최종 방어.
-  if (gen !== currentGen()) {
+  if (committedGen !== currentGen()) {
     await revertTokensIf(r.accessToken, r.refreshToken);
     return { newMember: r.newMember, cancelled: true };
   }
@@ -80,7 +90,7 @@ export async function exchangeLogin(idToken: string): Promise<{ newMember: boole
 export async function endSessionBoundary(): Promise<void> {
   bumpSessionGen(); // ① 이전 출발분 무효 — 싱크가 최종 방어
   refreshing = null;
-  const done = clearTokens(); // cached=null 동기 선행
+  const done = track(clearTokens()); // cached=null 동기 선행 · 7R: SecureStore 삭제도 track
   resetServerCache(false);
   await done;
 }
@@ -137,7 +147,11 @@ async function doRefresh(): Promise<boolean> {
  *  ① 서버 폐기용 refresh 캡처 ② 경계(endSessionBoundary — 토큰·세션·캐시·세대
  *  동기 무효) await ③ 서버 /auth/logout은 best-effort 백그라운드(실패 무시).
  *  서버를 먼저 기다리면 그 창에서 시작한 refresh가 세션을 재부활시킨다(P1-3). */
-export async function logoutLocalFirst(): Promise<void> {
+export function logoutLocalFirst(): Promise<void> {
+  // Codex #109 7R: 세션 관문 track — 프로필 로그아웃의 SecureStore 왕복 포함(호출처 무변)
+  return track(logoutLocalFirstInner());
+}
+async function logoutLocalFirstInner(): Promise<void> {
   const t = await loadTokens(); // 서버 폐기용 — 정리 전에 확보(로컬 읽기)
   await endSessionBoundary();
   if (t) void api.post('/auth/logout', { refreshToken: t.refresh }).catch(() => {});
@@ -153,7 +167,10 @@ export async function logoutBe(): Promise<void> {
  *  여기만 서버-선행 유지(토큰을 먼저 지우면 탈퇴 자체가 401로 실패) — 그 창에서
  *  출발/도착하는 refresh는 finally 경계의 세대 증가 + doRefresh의 무토큰 재확인
  *  이중 가드로 폐기된다(재부활 불가). */
-export async function withdrawBe(): Promise<void> {
+export function withdrawBe(): Promise<void> {
+  return track(withdrawBeInner()); // Codex #109 7R: 세션 관문 track
+}
+async function withdrawBeInner(): Promise<void> {
   try {
     await api.patch('/auth/withdraw');
   } finally {
@@ -178,6 +195,36 @@ export async function hasBeSession(): Promise<boolean> {
  *  - 기타 401(COMMUNITY-005 로그인 필요 등) = 무반응(기존 에러 흐름 — 게이트는 화면 몫).
  *  - code null(비JSON 401 — 프록시 등) = 현행 refresh 1회 폴백(fail-safe:
  *    진짜 만료였는데 body가 깨진 경우 세션 유실 방지). */
+/** KB-441(P-297, b27 실기): MEMBER-003 = 서버가 모르는 회원의 좀비 세션 —
+ *  prod DB 부재 회원인데 refresh가 유효 토큰을 재발급해 전 회원 API가 400
+ *  (프로필 = 에러 dead-end, 로그아웃 버튼도 그 안이라 탈출 불가). P-147(서버 정본):
+ *  저장 세션이 있을 때만 세션 무효(토큰 정리→캐시 clear→게스트 재평가→로그인 유도).
+ *  in-flight 래치 = 동시 400 다발(프로필+스캔 등)에도 경계 1회. 경계 후엔
+ *  토큰·세션이 없어 자연 no-op — 재로그인하면 다시 활성(별도 리셋 불필요). */
+/** Codex #59 P1-3: 스테일 판별 = **세션 generation**(KB-421 가드의 그 값 — 로그인/
+ *  로그아웃/sessionExpired에만 증가, doRefresh 회전엔 불변). 토큰 정확 비교(P1-1안)는
+ *  같은 세션의 회전(A→B) 중 도착한 유일한 MEMBER-003까지 오판해 버렸다(4xx 미재시도
+ *  = dead-end 잔존). 래치도 gen별 — 같은 세대 통지만 합침(P1-2 유실 방지 유지). */
+const memberMissingInFlight = new Map<number, Promise<void>>();
+function handleMemberMissing(requestGen: number | null): Promise<void> {
+  // 프로바이더 부재(테스트/웹 미설치) 또는 낡은 세대(경계 이후 도착) — 무시
+  if (requestGen == null || requestGen !== currentGen()) return Promise.resolve();
+  const inFlight = memberMissingInFlight.get(requestGen);
+  if (inFlight) return inFlight;
+  const p = (async () => {
+    try {
+      if (getSessionState() !== true && (await loadTokens()) == null) return; // 게스트 — 지울 세션 없음(P-260)
+      if (requestGen !== currentGen()) return; // 로드 중 경계 개입 — 폐기
+      console.log('[auth] MEMBER-003 with stored session → session expired (KB-441)');
+      await sessionExpired();
+    } finally {
+      memberMissingInFlight.delete(requestGen);
+    }
+  })();
+  memberMissingInFlight.set(requestGen, p);
+  return p;
+}
+
 async function handleUnauthorized(code: string | null): Promise<boolean> {
   if (code === 'AUTH-004' || code == null) return tryRefresh();
   if (code === 'AUTH-003' || code === 'AUTH-005' || code === 'AUTH-006') {
@@ -197,6 +244,8 @@ async function handleUnauthorized(code: string | null): Promise<boolean> {
 export function installBeAuth(): void {
   setAuthTokenProvider(async () => (await loadTokens())?.access ?? null);
   setOnUnauthorized(handleUnauthorized); // true 반환 시 client가 원요청 1회 재시도
+  setSessionGenerationProvider(currentGen); // KB-441 P1-3: 요청 발행 시점 gen 스냅샷 소스
+  setOnMemberMissing(handleMemberMissing); // KB-441: MEMBER-003 좀비 세션(반환 Promise는 client가 무시)
   // KB-421(P-205 사고): 구 모듈 스코프 부팅 선읽기는 제거 —
   // freshInstall 정리와 경합해 지운 세션을 회원으로 선고착시켰다. 부팅 초기화는
   // 루트 레이아웃이 cleanup 완료 **이후** initSessionFromStorage()로 직렬 호출.
