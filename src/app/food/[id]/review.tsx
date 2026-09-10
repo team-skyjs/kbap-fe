@@ -307,13 +307,6 @@ export default function ReviewCompose() {
             })()}
           </View>
         </View>
-        {/* §2-2: 장소 선택됨 = 장소 카드 변형(4150:16530 — 이미지 없음 pad 8/12) */}
-        {FLAGS.reviewPlaceEnabled && place && (
-          <View style={styles.placeCard} testID="place-card">
-            <Text style={styles.foodName} numberOfLines={1}>{place.name}</Text>
-            {!!place.roadAddress && <Text style={styles.foodKo} numberOfLines={1}>{place.roadAddress}</Text>}
-          </View>
-        )}
 
         {/* rating */}
         <View style={styles.block}>
@@ -478,8 +471,6 @@ const styles = StyleSheet.create({
   foodPh: { width: 48, height: 48, borderRadius: 4, backgroundColor: C.surface2, overflow: 'hidden' },
   foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
   foodKo: { fontSize: 13, fontWeight: '400', color: C.ink3 },
-  // §2-2: 장소 카드 변형(4150:16530 — 이미지 없음 pad 8/12)
-  placeCard: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingVertical: 8, paddingHorizontal: 12, gap: 4 }, // A-RW-10
 
   block: { gap: 12 },
   label: { fontSize: 13, fontWeight: '600', color: '#778088' }, // A-RW-07
