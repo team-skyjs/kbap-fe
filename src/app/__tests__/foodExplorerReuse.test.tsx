@@ -501,3 +501,19 @@ it('#112 5R ② — Saved+All 새로고침 = 같은 키 두 관찰자라 refetch
   act(() => { rc.props.onRefresh(); });
   expect(savedRefetch).toHaveBeenCalledTimes(1);
 });
+
+it('#112 6R P2 — 리마운트 자동 재조회 성공(dataUpdatedAt 변화) = 실패 마커 무효 → 채움 재개', async () => {
+  const failFetch = jest.fn().mockResolvedValue({ isError: true });
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: failFetch, dataUpdatedAt: 100 });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1); // 실패 마커 기록(at=100)
+  act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />); });
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1); // 같은 갱신 시각 = 잠금 유지
+  // RQ 자동 재조회 성공(retryGrid 우회) — dataUpdatedAt만 전진
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: failFetch, dataUpdatedAt: 200 });
+  act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />); });
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(2); // 마커 무효 → 채움 재개(스켈레톤 고정 봉쇄)
+});

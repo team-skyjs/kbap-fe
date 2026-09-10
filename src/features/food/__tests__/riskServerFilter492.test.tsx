@@ -126,7 +126,7 @@ it('③ FoodExplorer 소스 잠금 — 클라 위험 필터 부재·riskChip 훅
   expect(fe).toContain('const saved = useBookmarks();'); // 판정 소스(드레인) = 무필터 유지
   expect(fe).toContain('if (gridLen < FOODS_PAGE_SIZE && gridQ.hasNextPage && !gridQ.isFetching)');
   expect(fe).toContain("if (gridQ.isError) return; // 3R ①"); // 에러 = 자동 페치 중단
-  expect(fe).toContain('if (fillFailedAtRef.current?.key === fillKey && fillFailedAtRef.current.len === gridLen) return;'); // 5R ①: 쿼리 스코프 실패 마커
+  expect(fe).toContain('fillFailedAtRef.current.at === gridQ.dataUpdatedAt // 성공 재조회(갱신 시각 변화) = 마커 무효(6R P2)'); // 5R ①→6R: 쿼리 스코프+갱신 시각 실패 마커
   expect(fe).toContain('void Promise.resolve(gridQ.fetchNextPage({ cancelRefetch: false })).then((r) => {');
   expect(fe).toContain('gridQ.isLoading || gridQ.hasNextPage ? ('); // 빈 상태 = !hasNextPage && 0건일 때만
   expect(FOODS_PAGE_SIZE).toBe(20); // 서버 FoodService/BookmarkService PAGE_SIZE 동치
