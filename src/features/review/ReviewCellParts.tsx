@@ -424,7 +424,6 @@ export function HelpfulButton({
     <Pressable
       hitSlop={8}
       onPress={onPress}
-      disabled={mine}
       style={[styles.helpfulBtn, review.myLike && styles.helpfulBtnOn]}
       accessibilityRole="button"
       accessibilityLabel={t('reviews.helpful', { count: review.likes ?? 0 })} /* 기존 키 재사용 — 신규 0 */
