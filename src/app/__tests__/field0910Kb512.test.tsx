@@ -148,3 +148,15 @@ describe('P-352(KB-514) 리뷰 작성 부제·건너뛰기', () => {
     expect(JSON.parse(read('src/lib/i18n/en.json')).review.placeSkip).toBe('Skip this');
   });
 });
+
+it('P-368(KB-531): dietGrid 부분 행 스페이서 — 7개=1 · 5개=3 · 8개=0', () => {
+  const pf = read('src/app/(tabs)/profile.tsx');
+  expect(pf).toContain('testID="diet-grid-pad"');
+  expect(pf).toContain('(4 - (Math.min(me.restrictions.length, 8) % 4)) % 4');
+  const pads = (n: number) => (4 - (Math.min(n, 8) % 4)) % 4;
+  expect(pads(7)).toBe(1);
+  expect(pads(5)).toBe(3);
+  expect(pads(8)).toBe(0);
+  expect(pads(4)).toBe(0);
+  expect(pads(9)).toBe(0); // slice(0,8) 캡
+});

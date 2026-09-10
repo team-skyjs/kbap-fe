@@ -270,6 +270,11 @@ export default function Profile() {
                     </Pressable>
                   );
                 })}
+                {/* P-368(KB-531): 4열 space-between — 부분 행(예: 7=4+3)이 양끝으로
+                    벌어지지 않게 빈 스페이서(width 80·height 0)로 채움(꽉 찬 행 무변) */}
+                {Array.from({ length: (4 - (Math.min(me.restrictions.length, 8) % 4)) % 4 }).map((_, i) => (
+                  <View key={`diet-pad-${i}`} style={{ width: 80, height: 0 }} testID="diet-grid-pad" />
+                ))}
               </View>
               <View style={{ marginTop: -8 }}>{/* A-PF-09: 타일→Show all 8 */}
                 {/* P-351 ①(KB-513): 회피 0건 = 카운트 없는 라벨 + 꺾쇠. 1건 이상은
