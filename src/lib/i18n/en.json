@@ -416,6 +416,7 @@
   },
   "review": {
     "title": "Write a review",
+    "photoSheetTitle": "Review photo",
     "post": "Post",
     "ratingLabel": "Your rating *",
     "tapToRate": "Tap to rate",

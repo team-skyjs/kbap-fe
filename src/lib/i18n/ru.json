@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "Написать отзыв",
+    "photoSheetTitle": "Фото к отзыву",
     "post": "Опубл.",
     "ratingLabel": "Ваша оценка *",
     "tapToRate": "Нажмите для оценки",

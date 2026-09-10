@@ -100,11 +100,12 @@ export default function ReviewCompose() {
   // P-348 ④(KB-511): 슬롯 탭 = 촬영/갤러리 시트(choosePhotoSource — 프로필 사진과 동일
   // 문법·라벨 키 재사용, remove 없음). "파일 선택"은 expo-document-picker 네이티브
   // 의존 = 비범위(TODO — 다음 네이티브 빌드).
+  // P-375(KB-539): 제목만 리뷰 전용 키 — photo.sheetTitle은 "프로필 사진"이라 오문구였다.
   const pickPhoto = async () => {
     const remaining = REVIEW_MAX_PHOTOS - photos.length;
     if (remaining <= 0) return;
     const src = await choosePhotoSource({
-      title: t('photo.sheetTitle'),
+      title: t('review.photoSheetTitle'),
       camera: t('photo.take'),
       gallery: t('photo.gallery'),
       cancel: t('common.cancel'),

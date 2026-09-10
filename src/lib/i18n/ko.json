@@ -419,6 +419,7 @@
   },
   "review": {
     "title": "리뷰 쓰기",
+    "photoSheetTitle": "리뷰 사진",
     "post": "게시",
     "ratingLabel": "별점 *",
     "tapToRate": "탭해서 별점 주기",

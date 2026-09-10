@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "Escribir una reseña",
+    "photoSheetTitle": "Foto de la reseña",
     "post": "Publicar",
     "ratingLabel": "Tu valoración *",
     "tapToRate": "Toca para valorar",

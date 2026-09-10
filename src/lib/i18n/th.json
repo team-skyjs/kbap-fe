@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "เขียนรีวิว",
+    "photoSheetTitle": "รูปรีวิว",
     "post": "โพสต์",
     "ratingLabel": "คะแนนของคุณ *",
     "tapToRate": "แตะเพื่อให้คะแนน",

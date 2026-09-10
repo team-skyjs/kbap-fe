@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "撰写点评",
+    "photoSheetTitle": "评价照片",
     "post": "发布",
     "ratingLabel": "你的评分 *",
     "tapToRate": "点击评分",
