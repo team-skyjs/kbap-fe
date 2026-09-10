@@ -147,3 +147,18 @@ describe('P-241 imageRef', () => {
     }
   });
 });
+
+it('P-366 ⑤(KB-529): 서버 기본 이미지 imageRef = null 강등 — CardPhoto 로컬 에셋이 대체', () => {
+  const wire = (imageRef: string | null) => ({
+    idx: null, matched: false, foodId: 1, name: '김밥', koreanName: '김밥',
+    riskLevel: null, price: null, imageRef, avoidances: null,
+  }) as never;
+  const [def, real, none] = photoOnlyResults([
+    wire('https://d29c1cr2ng7w0.cloudfront.net/images/webp/default_miss_food/food_not_found.png'),
+    wire('https://cdn/real.jpg'),
+    wire(null),
+  ]);
+  expect(def.imageUrl).toBeNull(); // 기본 이미지 = 로컬 폴백에 위임
+  expect(real.imageUrl).toBe('https://cdn/real.jpg');
+  expect(none.imageUrl).toBeNull();
+});
