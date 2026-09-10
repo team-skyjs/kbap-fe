@@ -68,9 +68,20 @@ it('onLoad 후 shimmer가 언마운트된다', () => {
   expect(shimmerCount(tree)).toBe(0);
 });
 
-it('onError 후에도 shimmer가 언마운트된다 (실패 시 무한 로딩 방지)', () => {
+it('P-353 ③: 원본 실패 = 기본 음식 이미지 1회 강등(shimmer 유지), 기본까지 실패 = shimmer 종료', () => {
+  const { DEFAULT_FOOD_IMAGE_URL } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
   const tree = render(<CardPhoto uri="https://cdn.example/broken.jpg" />);
-  const img = tree.root.findByType('ExpoImage' as never) as unknown as { props: { onError: () => void } };
-  act(() => img.props.onError());
-  expect(shimmerCount(tree)).toBe(0);
+  const img = () => tree.root.findByType('ExpoImage' as never) as unknown as { props: { source: string; onError: () => void } };
+  act(() => img().props.onError());
+  expect(img().props.source).toBe(DEFAULT_FOOD_IMAGE_URL); // 강등
+  expect(shimmerCount(tree)).toBe(1); // 기본 이미지 로딩 중
+  act(() => img().props.onError()); // 기본 이미지도 실패
+  expect(shimmerCount(tree)).toBe(0); // 무한 로딩 방지
+});
+
+it('P-353 ③: uri null = 처음부터 기본 음식 이미지', () => {
+  const { DEFAULT_FOOD_IMAGE_URL } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
+  const tree = render(<CardPhoto uri={null} />);
+  const img = tree.root.findByType('ExpoImage' as never) as unknown as { props: { source: string } };
+  expect(img.props.source).toBe(DEFAULT_FOOD_IMAGE_URL);
 });

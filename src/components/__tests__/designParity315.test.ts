@@ -15,7 +15,7 @@ it('① 회색 띠 — 사진 컨테이너 정적 bg 제거(폴백만 유지)·�
   const cards = fs.readFileSync('src/features/food/FoodCards.tsx', 'utf8');
   expect(cards).toContain("gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' }");
   expect(cards).toContain('rthumb: { width: 100, height: 100, borderRadius: 4 }');
-  expect(cards).toContain('rthumbFb: '); // 폴백 회색 유지
+  // P-353 ③: 아이콘 폴백 박스 소멸 — CardPhoto가 null/실패 시 기본 음식 이미지
   expect(cards).toContain('recyclingKey={food.foodId} borderRadius={4} />'); // 그리드 라운딩
   // 배지 그림자(shBadge)는 유지 — 시안 DROP 1,1 3.7 0.6 동일
   expect(fs.readFileSync('src/components/RiskBadge.tsx', 'utf8')).toContain('shadow.shBadge');
@@ -38,9 +38,10 @@ it('③ 탭 아바타 — 원형 이중(내부 radius)·비활성 opacity 0.6·�
   expect(tab).toContain("testID={showPhoto ? 'tab-avatar-photo' : 'tab-avatar-fb'}"); // 동일 링 래퍼
 });
 
-it('①-b Codex #77 P2: 그리드 photoUrl null = 폴백 박스(surface2+IconFood) — 투명 회귀 방지', () => {
+it('①-b Codex #77 P2 → P-353 ③: photoUrl null/실패 = CardPhoto 내부 기본 음식 이미지(아이콘 박스 소멸)', () => {
   const cards = fs.readFileSync('src/features/food/FoodCards.tsx', 'utf8');
-  expect(cards).toContain('gphotoFb');
-  expect(cards).toContain('<IconFood size={28}');
-  expect(cards).toMatch(/food\.photoUrl \? \(\s*<CardPhoto/); // 사진 있을 땐 bg 없음 유지
+  expect(cards).not.toContain('gphotoFb:');
+  expect(cards).not.toContain('<IconFood size={28}');
+  const cp = fs.readFileSync('src/components/CardPhoto.tsx', 'utf8');
+  expect(cp).toContain('const source = !uri || failed ? DEFAULT_FOOD_IMAGE_URL : uri;');
 });

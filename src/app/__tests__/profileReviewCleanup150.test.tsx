@@ -222,13 +222,15 @@ it('P-158 ③: 리뷰 디테일 좋아요 캡션 부재 — 소스 잠금(하트
   expect(src).not.toContain('likesCaption');
 });
 
-it('P-158 ②: 뱃지 자산 통일 — 리뷰 계열 Rosette 사용 0(MedalEmblem), 소스 잠금', () => {
+it('P-158 ② → P-353 ①: 뱃지 자산 — Rosette 0, 리뷰 목록 = RankMedal 16(피드 동형)·compose = MedalEmblem', () => {
   const fs = require('fs');
   for (const f of ['src/app/food/[id]/reviews.tsx', 'src/app/community/compose.tsx']) { // P-182: review/[id] 소멸
-    const src = fs.readFileSync(f, 'utf8') as string;
-    expect(src).not.toContain('Rosette');
-    expect(src).toContain('MedalEmblem');
+    expect(fs.readFileSync(f, 'utf8') as string).not.toContain('Rosette');
   }
+  const rv = fs.readFileSync('src/app/food/[id]/reviews.tsx', 'utf8') as string;
+  expect(rv).toContain('<RankMedal level={review.author?.level ?? 1} size={16} />');
+  expect(rv).not.toContain('rankPill'); // 구 필 소멸
+  expect(fs.readFileSync('src/app/community/compose.tsx', 'utf8') as string).toContain('MedalEmblem');
 });
 
 it('P-150 ④: 내 리뷰 — foodId 해석 실패 시 숫자("499") 미노출, 중립 라벨', () => {

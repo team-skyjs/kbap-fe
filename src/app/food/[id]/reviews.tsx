@@ -22,8 +22,8 @@ import {
   useStickyScroll,
   useHeaderHeight,
   Stars,
+  RankMedal,
   Flag,
-  MedalEmblem,
   StateBlock,
   QueryErrorBlock,
   stateIconColor,
@@ -374,12 +374,8 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
             <Flag code={review.authorNationality} size={20} />
           )}
           <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
-          {!anon && !!review.authorRankTier && (
-            <View style={styles.rankPill}>
-              <MedalEmblem level={review.author?.level ?? 1} size={15} />
-              <Text style={styles.rankText}>{review.authorRankTier}</Text>
-            </View>
-          )}
+          {/* P-353 ①(KB-515): 구 랭킹 필 폐기 — 피드와 동일 RankMedal 16 */}
+          {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
         </View>
         <View style={styles.itemTopRight}>
           <Stars value={review.rating} size={14} />
@@ -533,8 +529,6 @@ const styles = StyleSheet.create({
   who: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1, minWidth: 0, marginRight: 8 },
   anonAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, flexShrink: 1 },
-  rankPill: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
-  rankText: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2 },
   reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
   reviewBodyKo: { fontFamily: font.ko },
   txRow: { flexDirection: 'row', alignItems: 'center' },

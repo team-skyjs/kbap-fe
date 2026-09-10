@@ -48,14 +48,8 @@ export function FoodGridCard({
   return (
     <Pressable style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
-        {/* P-315 후속(Codex #77 P2): 사진 없음 = 폴백 박스(사진 있을 땐 bg 없음 유지) */}
-        {food.photoUrl ? (
-          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
-        ) : (
-          <View style={styles.gphotoFb}>
-            <IconFood size={28} color={C.ink3} />
-          </View>
-        )}
+        {/* P-353 ③(KB-515): 사진 없음/실패 = CardPhoto 내부 기본 이미지(구 IconFood 박스 폐기) */}
+        <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
         {/* 게스트에겐 개인화 뱃지 미렌더 (guest-access-policy §1) */}
         {!guest && (
           <View style={styles.gbadge}>
@@ -102,13 +96,7 @@ export function RecentRow({
   return (
     <Pressable style={styles.rrow} onPress={onPress} testID={`home-recent-${food.foodId}`}>
       <View style={styles.rthumb}>
-        {food.photoUrl ? (
-          <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
-        ) : (
-          <View style={styles.rthumbFb}>
-            <IconFood size={24} color={C.ink3} />
-          </View>
-        )}
+        <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
         <View style={styles.rbadge}>
           <RiskBadge state={risk} />
         </View>
@@ -140,7 +128,6 @@ const styles = StyleSheet.create({
   // P-315: 정적 bg(surface2) 제거 — 시안 photo effects 없음(회색 띠 원인). 로딩 = CardPhoto Shimmer
   gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' },
   gbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안(2072:1788): 배지가 사진 상단 4pt 위로 걸침
-  gphotoFb: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: C.surface2, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 10 }, // A-HM-05
   gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
   gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },
@@ -171,7 +158,6 @@ const styles = StyleSheet.create({
     borderBottomColor: C.line,
   },
   rname: { fontSize: 15, fontWeight: '700', color: INK_TITLE }, // A-HM-07(recent-row 전용 — 그리드 gname 무변)
-  rthumb: { width: 100, height: 100, borderRadius: 4 }, // P-315: 정적 bg 제거(시안 effects 없음)
-  rthumbFb: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surface2, borderRadius: 4 }, // 폴백만 회색 유지
+  rthumb: { width: 100, height: 100, borderRadius: 4 }, // P-315: 정적 bg 제거(시안 effects 없음) // 폴백만 회색 유지
   rbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안 오프셋
 });

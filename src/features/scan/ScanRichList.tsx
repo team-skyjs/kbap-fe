@@ -16,6 +16,7 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
+import { DEFAULT_FOOD_IMAGE_URL } from '@/lib/api/foodAdapter';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
@@ -164,18 +165,22 @@ function RichRow({
   return (
     <Pressable style={styles.row} onPress={onOpen} testID={`rich-${dish.itemId}`}>
       {/* KB-432 §1-1(4150:16254): 좌측 썸네일 100 r4 + RiskBadge(@3,0) — 배지 탭 = 코치 재열람.
-          미등록(16314) = #F2F3F6 박스 + unable 마크 26 중앙 */}
+          P-353 ③(KB-515): 무이미지 = 회색 박스 대신 서버 기본 음식 이미지(RemoteImage 폴백은
+          기본 이미지 URL 직접 전달), 미등록도 동일 이미지 + 기존 unable 마크 오버레이 유지 */}
       <View style={styles.thumbWrap}>
         {dish.matched ? (
           <>
-            {thumb ? <RemoteImage uri={thumb} style={styles.thumb} /> : <View style={[styles.thumb, styles.thumbFb]} />}
+            <RemoteImage uri={thumb ?? DEFAULT_FOOD_IMAGE_URL} style={styles.thumb} />
             <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
               <RiskBadge state={dish.risk} />
             </Pressable>
           </>
         ) : (
-          <Pressable style={[styles.thumb, styles.thumbUnable]} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
-            <RiskMark state="unable" size={26} />
+          <Pressable style={styles.thumbWrapInner} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
+            <RemoteImage uri={DEFAULT_FOOD_IMAGE_URL} style={styles.thumb} />
+            <View style={[styles.thumb, styles.thumbUnableOverlay]}>
+              <RiskMark state="unable" size={26} />
+            </View>
           </Pressable>
         )}
       </View>
@@ -313,7 +318,8 @@ const styles = StyleSheet.create({
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   thumbWrap: { width: 118 }, // P-285: 118×118(2200:21512)
   thumbFb: { backgroundColor: C.surface2 },
-  thumbUnable: { backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }, // A-SC-11(흰 위 흰 — 실기 확인 권장)
+  thumbWrapInner: { width: '100%', height: '100%' },
+  thumbUnableOverlay: { position: 'absolute', top: 0, left: 0, alignItems: 'center', justifyContent: 'center' }, // A-SC-11(흰 위 흰 — 실기 확인 권장)
   thumbBadge: { position: 'absolute', top: -4, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
   nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },

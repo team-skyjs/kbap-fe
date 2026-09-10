@@ -176,6 +176,7 @@ export default function FoodDetailScreen() {
       {showBottomBar && (
         <RegisteredBottomBar
           guest={isGuest}
+          scanEntry={src === 'scan'}
           onHeight={setBarH}
           insetsBottom={insets.bottom}
           t={t}
@@ -237,6 +238,7 @@ function RegisteredBottomBar({
   t,
   onWrite,
   onAsk,
+  scanEntry = false,
   onHeight,
 }: {
   guest: boolean;
@@ -244,6 +246,8 @@ function RegisteredBottomBar({
   t: TFn;
   onWrite: () => void;
   onAsk?: () => void;
+  /** P-353 ②(KB-515): 스캔 진입 = Write 미렌더·Ask 전폭(스캔한 음식이라 리뷰 유도 대신 문의 단독) */
+  scanEntry?: boolean;
   /** Codex #97 3R P2: 실높이 보고 — 스크롤 하단 여백 파생용(fitLabel 2줄 대응) */
   onHeight?: (h: number) => void;
 }) {
@@ -255,7 +259,7 @@ function RegisteredBottomBar({
       onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
       testID="detail-bottom-bar"
     >
-      {FLAGS.reviewsEnabled && (
+      {FLAGS.reviewsEnabled && !(scanEntry && onAsk) && (
         <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
           <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write">
             {t('reviews.writeReview')}
@@ -263,7 +267,7 @@ function RegisteredBottomBar({
         </View>
       )}
       {onAsk && (
-        <View style={{ flex: narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) */}
+        <View style={{ flex: scanEntry ? 1 : narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) · P-353 ②: 스캔 진입 = 전폭 */}
           <Btn fitLabel onPress={onAsk} testID="bottom-ask">
             {t('detail.askOwner')}
           </Btn>

@@ -109,7 +109,7 @@ it('P-334 — 하단 바 비율(≥360 = 3:5, <360 = 1:1)·아이콘 없음·fit
   const fd = read('src/app/food/[id]/index.tsx');
   expect(fd).toContain("useWindowDimensions().width < 360");
   expect(fd).toContain('flex: narrow ? 1 : 3');
-  expect(fd).toContain('flex: narrow ? 1 : 5');
+  expect(fd).toContain('flex: scanEntry ? 1 : narrow ? 1 : 5'); // P-353 ②: 스캔 진입 = Ask 전폭
   expect(fd).toMatch(/<Btn fitLabel onPress=\{onAsk\} testID="bottom-ask">/); // 말풍선 아이콘 없음
   expect(fd).toMatch(/<Btn variant=\{onAsk \? 'ghost' : 'primary'\} fitLabel onPress=\{onWrite\} testID="bottom-write">/);
   expect(fd).toMatch(/iconEnd=\{<IconChevron size=\{16\}[^}]*\}/);

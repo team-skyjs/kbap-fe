@@ -47,7 +47,9 @@ it('A-SC — 결과 헤더 56/16·배너 gap6·행 보더 0·warnChip pad 3/6·m
   expect(rich).toMatch(/moreChip: \{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C\.line, borderRadius: 37/);
   expect(rich).toContain("moreChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' }");
   expect(rich).toContain("missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }");
-  expect(rich).toContain("thumbUnable: { backgroundColor: '#FFFFFF'");
+  // P-353 ③(KB-515): 미등록 = 기본 음식 이미지 + unable 마크 오버레이(구 흰 박스 소멸)
+  expect(rich).toContain('RemoteImage uri={DEFAULT_FOOD_IMAGE_URL}');
+  expect(rich).toContain('thumbUnableOverlay');
 });
 
 it('A-SN-04 — 권한 알럿 gap5·본문 lh22.3·스크림 0.8 / Stars 행 gap4(공용)', () => {
