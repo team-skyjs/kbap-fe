@@ -64,17 +64,27 @@ export function useNetworkIdle(): boolean {
   const [, force] = React.useReducer((n: number) => n + 1, 0);
   React.useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let alive = true; // P-363: 언마운트 후 지연 dispatch 방지
+    let lastBusy: boolean | null = null;
     const onEvent = () => {
       // >0 = 창 닫힘 · 0 = 이벤트 자체가 활동 증거라 지금부터 재계량 —
       // RQ notify 배치로 시작·종료가 한 콜백에 합쳐져도 리셋이 산다(9R P1)
-      quietRef.since = netBusy(qc) ? null : Date.now();
+      const busy = netBusy(qc);
+      quietRef.since = busy ? null : Date.now();
       if (timer) clearTimeout(timer);
-      if (quietRef.since != null) timer = setTimeout(force, OTA_NETWORK_IDLE_MS + 10); // 정착 시 리렌더 1회
-      force();
+      if (!busy) timer = setTimeout(() => { if (alive) force(); }, OTA_NETWORK_IDLE_MS + 10); // 정착 시 리렌더 1회
+      // P-363(KB-526): QueryCache는 렌더 중(useQuery 관찰자 추가)에도 동기로 이벤트를
+      // 쏜다 — 즉시 dispatch = "다른 컴포넌트 렌더 중 setState" 경고. 마이크로태스크로
+      // 지연 + busy 전이 없으면 생략(전역 캐시 이벤트마다 Host 리렌더 방지 — 판정은
+      // 호출 시점 networkQuietNow가 담당이라 표시 지연 무해).
+      if (lastBusy === busy) return;
+      lastBusy = busy;
+      queueMicrotask(() => { if (alive) force(); });
     };
     const subs = [subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)];
     onEvent(); // 마운트 시점 동기화
     return () => {
+      alive = false;
       for (const u of subs) u();
       if (timer) clearTimeout(timer);
     };
