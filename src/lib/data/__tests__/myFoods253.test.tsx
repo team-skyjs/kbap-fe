@@ -11,13 +11,13 @@ jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   const chain = () => {
     const g: Record<string, unknown> = {};
-    for (const k of ['runOnJS', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
+    for (const k of ['runOnJS', 'enabled', 'numberOfTaps', 'onStart', 'onUpdate', 'onEnd', 'onFinalize', 'activeOffsetY', 'failOffsetX']) g[k] = () => g;
     return g;
   };
   return {
     GestureDetector: ({ children }: { children: unknown }) => children,
     GestureHandlerRootView: View,
-    Gesture: { Pan: chain, Pinch: chain },
+    Gesture: { Pan: chain, Pinch: chain, Tap: chain, Simultaneous: (...g: unknown[]) => g, Exclusive: (...g: unknown[]) => g },
   };
 });
 jest.mock('react-native-reanimated', () => {

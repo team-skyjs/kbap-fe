@@ -155,7 +155,7 @@ export function ReviewFeed() {
         scrollEventThrottle={16}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         renderItem={({ item }) => (
           <FeedCard
             review={item}

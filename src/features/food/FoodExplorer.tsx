@@ -11,7 +11,7 @@
  * 데이터 훅·북마크 토글·위험 필터 로직 = 홈 구현 이동(무변).
  */
 import * as React from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -88,12 +88,22 @@ export function FoodExplorer({
   const saved = useBookmarks();
   const toggleBookmark = useToggleBookmark();
 
+  // P-349 ③(KB-512): 당겨서 새로고침 — browse(+Saved 칩이면 bookmarks), 완료까지 스피너
+  const [refreshing, setRefreshing] = React.useState(false);
+
   const [gridTab, setGridTab] = React.useState<GridTab>(initialTab);
   // P-318: 딥링크 초기값 — 게스트는 개인화 상태 강등(칩 게이트·저장 게이트 우회 방지)
   const [riskChip, setRiskChip] = React.useState<RiskChip>(guest ? 'all' : (initialRisk ?? 'all'));
   const [savedOnly, setSavedOnly] = React.useState(initialSaved === true && !guest);
   const [sort, setSort] = React.useState<FoodSort>('popular');
   const [sortSheet, setSortSheet] = React.useState(false);
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    const jobs: Promise<unknown>[] = [browse.refetch()];
+    if (savedOnly) jobs.push(saved.refetch());
+    void Promise.all(jobs).finally(() => setRefreshing(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedOnly, browse.refetch, saved.refetch]);
   // Codex #80 2R P1: 탭 네비게이터가 음식 탭을 마운트 유지 — 두 번째 See all(파라미터 변경)이
   // useState 초기값에 막히지 않게 파라미터 변경 시 재동기화(P-318: saved 세그먼트 = Saved 칩).
   // 사용자가 화면에서 바꾼 칩은 다음 파라미터 변경 전까지 유지(마운트 시엔 초기값과 동일해 무동작).
@@ -292,6 +302,7 @@ export function FoodExplorer({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={topPad} />}
           columnWrapperStyle={styles.gridRowWrap}
           ListHeaderComponent={top}
           ListEmptyComponent={

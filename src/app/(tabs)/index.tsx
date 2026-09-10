@@ -5,8 +5,8 @@
  * REVIEWS 무한 스크롤 피드(P-317 v2) · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useState } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { useRouter, type Href } from 'expo-router';
@@ -26,6 +26,7 @@ import {
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
+import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -67,6 +68,17 @@ export default function Home() {
 
   const unread = useUnreadCount();
   const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
+
+  // P-349 ③(KB-512): 당겨서 새로고침 — 홈 표면 키 접두 3종 무효화(완료까지 스피너)
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['home'] }),
+      queryClient.invalidateQueries({ queryKey: ['foods'] }),
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
+    ]).finally(() => setRefreshing(false));
+  }, []);
   // P-339 ②(KB-494): 홈 피드도 ⋯ 전 카드 — 신고만(차단 없음), 위치 통일
   const [mod, setMod] = useState<ModTarget | null>(null);
 
@@ -174,6 +186,7 @@ export default function Home() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         ListHeaderComponent={header}
         renderItem={({ item: rv }) => (
           <FeedCard

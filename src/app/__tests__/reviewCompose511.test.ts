@@ -1,9 +1,10 @@
 /** P-348(KB-511) — 리뷰 작성 7건 + 공용 PhotoViewer 잠금. */
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
-it('① Star = vectorEffect non-scaling-stroke + 1px 절대(sw prop 소멸 — 전 호출부)', () => {
+it('① Star = 1px 절대 보더(strokeWidth 16/size — P-349 ①: vectorEffect는 clipPath 충돌로 금지)', () => {
   const st = read('src/components/Stars.tsx');
-  expect((st.match(/vectorEffect="non-scaling-stroke"/g) ?? []).length).toBe(2);
+  expect((st.match(/strokeWidth=\{16 \/ size\}/g) ?? []).length).toBe(2);
+  expect(st).not.toContain('vectorEffect='); // KB-512 실기: clipPath 부분 채움이 조각 렌더
   expect(st).not.toContain('sw?:');
   expect(read('src/app/food/[id]/review.tsx')).not.toContain('sw={3}');
   expect(read('src/features/review/ReviewCellParts.tsx')).not.toContain('sw={2}');
@@ -44,8 +45,9 @@ it('⑥ 공용 PhotoViewer — 두 호출처 교체 + 임계 상수·충돌 방�
   const pv = read('src/components/PhotoViewer.tsx');
   expect(pv).toContain('export const VIEWER_DISMISS_DY = 100');
   expect(pv).toContain('export const VIEWER_DISMISS_VY = 800');
-  expect(pv).toContain('.activeOffsetY([-12, 12])');
-  expect(pv).toContain('.failOffsetX([-12, 12])');
+  // P-349 ②: 임계 상수화(±16/±40) — 구체값은 field0910Kb512가 잠금
+  expect(pv).toContain('.activeOffsetY([-VIEWER_PAN_ACTIVE_Y, VIEWER_PAN_ACTIVE_Y])');
+  expect(pv).toContain('.failOffsetX([-VIEWER_PAN_FAIL_X, VIEWER_PAN_FAIL_X])');
   expect(pv).toContain('.runOnJS(true)');
   expect(pv).toContain('<GestureHandlerRootView style={{ flex: 1 }} testID="photo-viewer">'); // P-337 문법(안드 Modal)
   expect(read('src/features/review/ReviewCellParts.tsx')).toContain('<PhotoViewer uris={photos} index={openAt}');
