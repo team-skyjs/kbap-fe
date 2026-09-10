@@ -301,7 +301,6 @@
     "safeEmpty": "Thực đơn này không có món được đánh giá an toàn",
     "showAllDishes": "Xem tất cả món",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
-    "searchOnNaver": "Tìm trên NAVER",
     "searchOnGoogle": "Tìm trên Google",
     "resultsEmpty": "Không có kết quả quét"
   },
@@ -427,6 +426,7 @@
     "emptyBody": "Chưa có đánh giá. Hãy là người đầu tiên.",
     "writeReview": "Viết đánh giá",
     "helpfulOwnToast": "Bạn không thể đánh dấu hữu ích cho đánh giá của chính mình",
+    "helpfulMarkedToast": "Đã đánh dấu hữu ích",
     "lang": {
       "en": "Tiếng Anh",
       "th": "Tiếng Thái",

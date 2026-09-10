@@ -301,7 +301,6 @@
     "safeEmpty": "Ningún plato valorado seguro en este menú",
     "showAllDishes": "Ver todos los platos",
     "missNote": "Aún no está en nuestra base de datos; se añadirá en unos días.",
-    "searchOnNaver": "Buscar en NAVER",
     "searchOnGoogle": "Buscar en Google",
     "resultsEmpty": "Sin resultados de escaneo"
   },
@@ -427,6 +426,7 @@
     "emptyBody": "Aún no hay reseñas. Sé el primero en dejar una.",
     "writeReview": "Escribir una reseña",
     "helpfulOwnToast": "No puedes marcar tu propia reseña como útil",
+    "helpfulMarkedToast": "Marcada como útil",
     "lang": {
       "en": "Inglés",
       "th": "Tailandés",

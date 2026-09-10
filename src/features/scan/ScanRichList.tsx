@@ -16,9 +16,7 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
-import { Image as ExpoImage } from 'expo-image'; // 로컬 에셋 전용(P-207 허용 범위)
 import { CardPhoto } from '@/components/CardPhoto';
-import { DEFAULT_FOOD_IMAGE } from '@/lib/api/foodAdapter';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
@@ -50,7 +48,7 @@ export function fitAvoidChips<T extends { name: string }>(
   return { shown: warns.slice(0, 1), rest: warns.length - 1 };
 }
 import { IconChevron, IconPlus, RiskBadge, RiskMark } from '@/components';
-import { BrandGoogleMark, BrandNaverMark, D4Minus } from '@/components/design4Assets';
+import { BrandGoogleMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw, type ResultDish } from '@/lib/scan/segmentMenu';
@@ -167,38 +165,29 @@ function RichRow({
   return (
     <Pressable style={styles.row} onPress={onOpen} testID={`rich-${dish.itemId}`}>
       {/* KB-432 §1-1(4150:16254): 좌측 썸네일 100 r4 + RiskBadge(@3,0) — 배지 탭 = 코치 재열람.
-          P-353 ③(KB-515): 무이미지 = 회색 박스 대신 서버 기본 음식 이미지(기본 이미지 = 번들 로컬 에셋(KB-515 후속)), 미등록도 동일 이미지 + 기존 unable 마크 오버레이 유지 */}
+          P-366 ①(KB-529): 매칭·미매칭 분기 통합 — 미매칭 = 같은 CardPhoto(기본 이미지 폴백)
+          + RiskBadge(unable — 어댑터가 강제). 구 오버레이는 thumb 배경색이 이미지를 덮어
+          회색 박스가 되던 결함(9/10 실기). */}
       <View style={styles.thumbWrap}>
-        {dish.matched ? (
-          <>
-            {/* #116 2R ②: CardPhoto 경유 — 깨진 URL도 기본 이미지 폴백 내장 */}
-            <View style={styles.thumb}>
-              <CardPhoto uri={thumb} borderRadius={4} />
-            </View>
-            <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
-              <RiskBadge state={dish.risk} />
-            </Pressable>
-          </>
-        ) : (
-          <Pressable style={styles.thumbWrapInner} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
-            <ExpoImage source={DEFAULT_FOOD_IMAGE} style={styles.thumb} contentFit="cover" />
-            <View style={[styles.thumb, styles.thumbUnableOverlay]}>
-              <RiskMark state="unable" size={26} />
-            </View>
-          </Pressable>
-        )}
+        <View style={styles.thumb}>
+          <CardPhoto uri={thumb} borderRadius={4} />
+        </View>
+        <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
+          <RiskBadge state={dish.risk} />
+        </Pressable>
       </View>
       {/* Codex #47 7차: 320pt(썸 118+스테퍼 83) — 텍스트 열 축소 허용, 이름 말줄임·가격 wrap */}
-      <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3 }}>
+      {/* P-366 ⑥: 칩 없는 행도 가격+담기 줄 = 썸네일 밑변 정렬(minHeight 118 + mt auto) */}
+      <View style={{ flex: 1, minWidth: 0, flexShrink: 1, gap: 3, minHeight: 118 }}>
         {/* ko 원문 14/500 → 영문명 15/500 + chevron(→ 상세) — 시안 위계 */}
         {!!(dish.koreanName ?? dish.rawMenuName) && dish.displayName !== (dish.koreanName ?? dish.rawMenuName) && (
           <Text style={styles.nameSubKo} numberOfLines={1}>{dish.koreanName ?? dish.rawMenuName}</Text>
         )}
+        {/* P-366 ②: chevron 소멸 — 행 전체 탭이 상세 진입(현행 Pressable) */}
         <View style={styles.nameLine}>
           <Text style={styles.nameTitle} numberOfLines={1}>
             {dish.displayName || (dish.koreanName ?? dish.rawMenuName)}
           </Text>
-          {dish.matched && <IconChevron size={16} color={C.ink3} />}
         </View>
         {/* P-285(최종본 2200:21512): 설명 1줄 13/400 #9196A1 — 매칭 = 음식 설명(프리페치) */}
         {dish.matched && !!food?.description && (
@@ -235,56 +224,51 @@ function RichRow({
         {!dish.matched && (
           <View style={styles.missRow} testID={`miss-${dish.itemId}`}>
             <Text style={styles.missText}>{t('scan.missNote')}</Text>
-            {/* P-285(최종본 2110:65784): 외부 검색 = 브랜드 아이콘 칩 34×30(텍스트 라벨 소멸 —
-                접근성 라벨 유지, 링크 로직 무변) */}
+            {/* P-366 ⑦(KB-529): 네이버 삭제 — Google 단독 텍스트 칩(회피 칩 프레임 문법) */}
             <View style={styles.missLinks}>
-              {([
-                ['naver', `https://search.naver.com/search.naver?query=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
-                ['google', `https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`],
-              ] as const).map(([label, url]) => (
-                <Pressable
-                  key={label}
-                  style={styles.missLink}
-                  hitSlop={6}
-                  accessibilityLabel={label === 'naver' ? t('scan.searchOnNaver') : t('scan.searchOnGoogle')} /* Codex #45 P1 */
-                  onPress={() => void Linking.openURL(url)}
-                  testID={`miss-${label}-${dish.itemId}`}
-                >
-                  {label === 'naver' ? <BrandNaverMark size={20} /> : <BrandGoogleMark size={20} />}
-                </Pressable>
-              ))}
+              <Pressable
+                style={styles.googleChip}
+                hitSlop={6}
+                accessibilityLabel={t('scan.searchOnGoogle')} /* Codex #45 P1 */
+                onPress={() => void Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(dish.koreanName ?? dish.rawMenuName)}`)}
+                testID={`miss-google-${dish.itemId}`}
+              >
+                <BrandGoogleMark size={16} />
+                <Text style={styles.googleChipText}>Google</Text>
+                <IconChevron size={12} color={C.ink3} />
+              </Pressable>
             </View>
           </View>
         )}
-        {/* 가격 행(시안): 환산가 14/600 #6B95FF + 원가 13/500 */}
-        {dish.priceKrw != null && (
-          <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
-            {/* 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거 */}
-            {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
-            {formatKrw(dish.priceKrw)}
-          </Text>
-        )}
-      </View>
-
-      {/* P-285(최종본): 담김 = 스테퍼 83×31(2162:9658) / 미담김 = add 36(4003:5796) —
-          9/5 TODO(스테퍼 변형 시안 수신 시 교체) 이행. 동작·cart·OrderPill 무변 */}
-      <View style={styles.rightCol}>
-        <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
-          {added ? (
-            <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>
-              <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${dish.itemId}`}>
-                <D4Minus size={16} color={C.ink} />
-              </Pressable>
-              <Text style={styles.qty}>{qty}</Text>
-              <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${dish.itemId}`}>
-                <IconPlus size={16} color={C.ink} />
-              </Pressable>
-            </View>
+        {/* P-366 ②(KB-529): rightCol 폐기 — 텍스트 열 전폭 + 하단 행(좌 가격/우 담기,
+            **항상 렌더** — 가격 없어도 담기 가능). 스테퍼/add 스타일·동작·cart 무변. */}
+        <View style={styles.bottomRow}>
+          {dish.priceKrw != null ? (
+            <Text style={[styles.price, { flexShrink: 1, flexWrap: 'wrap' }]}>
+              {/* 시안(16254): 환산가 선행 — convertKrw의 '= ' 접두(P-249, 후행 표기용)는 표시에서 제거 */}
+              {converted ? <Text style={styles.priceConv}>{converted.replace(/^= /, '')} </Text> : null}
+              {formatKrw(dish.priceKrw)}
+            </Text>
           ) : (
-            <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
-              <IconPlus size={24} color={C.ink} />
-            </Pressable>
+            <View />
           )}
+          <View style={styles.addSlot} testID={`slot-${dish.itemId}`}>
+            {added ? (
+              <View style={styles.stepper} testID={`stepper-${dish.itemId}`}>
+                <Pressable hitSlop={10} onPress={onRemove} testID={`dec-${dish.itemId}`}>
+                  <D4Minus size={16} color={C.ink} />
+                </Pressable>
+                <Text style={styles.qty}>{qty}</Text>
+                <Pressable hitSlop={10} onPress={onAdd} testID={`inc-${dish.itemId}`}>
+                  <IconPlus size={16} color={C.ink} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.addBtn} hitSlop={12} onPress={onAdd} testID={`add-${dish.itemId}`}>
+                <IconPlus size={24} color={C.ink} />
+              </Pressable>
+            )}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -307,7 +291,8 @@ const styles = StyleSheet.create({
   missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }, // A-SC-10(이탤릭 제거)
   missLinks: { flexDirection: 'row', gap: 4 }, // A-SC-09
   // P-285: 외부 검색 아이콘 칩 34×30(border #EAEBEE r37 pad 4/6)
-  missLink: { width: 34, height: 30, borderWidth: 1, borderColor: C.line, borderRadius: 37, alignItems: 'center', justifyContent: 'center' },
+  googleChip: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 26, paddingVertical: 4, paddingHorizontal: 8, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 37, backgroundColor: '#FFFFFF' }, // P-366 ⑦: 회피 칩 프레임 문법
+  googleChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
   body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },
@@ -322,8 +307,6 @@ const styles = StyleSheet.create({
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   thumbWrap: { width: 118, height: 118 }, // P-285: 118×118(2200:21512) — P-362: height 명시(퍼센트 순환 봉쇄)
   thumbFb: { backgroundColor: C.surface2 },
-  thumbWrapInner: { width: 118, height: 118 }, // P-362(KB-525): 퍼센트 금지 — 부모 높이 미정의 시 160만px 폭주(9/10 실측)
-  thumbUnableOverlay: { position: 'absolute', top: 0, left: 0, alignItems: 'center', justifyContent: 'center' }, // A-SC-11(흰 위 흰 — 실기 확인 권장)
   thumbBadge: { position: 'absolute', top: -4, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
   nameSubKo: { fontSize: 14, fontWeight: '500', color: C.ink2 },
@@ -337,8 +320,8 @@ const styles = StyleSheet.create({
   warnChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
   price: { fontSize: 13, fontWeight: '500', color: C.inkInfo, marginTop: 2, fontVariant: ['tabular-nums'] }, // P-284
   priceConv: { fontSize: 14, fontWeight: '600', color: '#6B95FF' },
-  // 우측 열 = 항상 RIGHT_COL_W — 썸네일 유무와 무관하게 텍스트 열 폭 불변
-  rightCol: { width: RIGHT_COL_W, alignItems: 'flex-end', gap: 6 },
+  // P-366 ②: 하단 행 — 좌 가격 / 우 담기 슬롯(텍스트 열 전폭)
+  bottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }, // P-366 ⑥: 썸 밑변 정렬
   thumb: { width: 118, height: 118, borderRadius: 4, backgroundColor: C.surface2 },
   // 담기 슬롯 — [+]와 스테퍼가 같은 풋프린트(RIGHT_COL_W × ADD_SLOT_H)를 공유
   addSlot: { width: RIGHT_COL_W, height: ADD_SLOT_H, alignItems: 'flex-end', justifyContent: 'center' },

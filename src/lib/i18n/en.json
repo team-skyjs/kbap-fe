@@ -297,7 +297,6 @@
     "safeEmpty": "No dishes rated safe on this menu",
     "showAllDishes": "Show all dishes",
     "missNote": "Not in our catalog yet. It should be added within a few days.",
-    "searchOnNaver": "Search on NAVER",
     "searchOnGoogle": "Search on Google",
     "resultsEmpty": "No scan results"
   },
@@ -470,6 +469,7 @@
     "emptyBody": "Be the first to leave one.",
     "writeReview": "Write a review",
     "helpfulOwnToast": "You can't mark your own review as helpful",
+    "helpfulMarkedToast": "Marked as helpful",
     "lang": {
       "en": "English",
       "th": "Thai",

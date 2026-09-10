@@ -301,7 +301,6 @@
     "safeEmpty": "このメニューに「安全」判定の料理はありません",
     "showAllDishes": "すべてのメニューを表示",
     "missNote": "まだデータベースにありません — 数日以内に登録される予定です。",
-    "searchOnNaver": "NAVERで検索",
     "searchOnGoogle": "Googleで検索",
     "resultsEmpty": "スキャン結果がありません"
   },
@@ -427,6 +426,7 @@
     "emptyBody": "まだレビューがありません。最初のレビューを残してみましょう。",
     "writeReview": "レビューを書く",
     "helpfulOwnToast": "自分のレビューには「役に立った」を押せません",
+    "helpfulMarkedToast": "「役に立った」を送りました",
     "lang": {
       "en": "英語",
       "th": "タイ語",

@@ -301,7 +301,6 @@
     "safeEmpty": "Tidak ada hidangan yang dinilai aman di menu ini",
     "showAllDishes": "Tampilkan semua hidangan",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",
-    "searchOnNaver": "Cari di NAVER",
     "searchOnGoogle": "Cari di Google",
     "resultsEmpty": "Tidak ada hasil pemindaian"
   },
@@ -427,6 +426,7 @@
     "emptyBody": "Belum ada ulasan. Jadilah yang pertama.",
     "writeReview": "Tulis ulasan",
     "helpfulOwnToast": "Kamu tidak bisa menandai ulasanmu sendiri sebagai membantu",
+    "helpfulMarkedToast": "Ditandai membantu",
     "lang": {
       "en": "Inggris",
       "th": "Thailand",

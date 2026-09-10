@@ -408,12 +408,14 @@ export function HelpfulButton({
   const onPress = () => {
     if (mine) {
       // P-357(KB-520): 무동작 대신 안내 토스트(에러 변형 아님) — 뮤테이션·계측 0
-      showTopToast(t('reviews.helpfulOwnToast'));
+      showTopToast(t('reviews.helpfulOwnToast'), { icon: 'alert' }); // P-366 ③: 안내 = 느낌표(에러 변형 아님)
       return;
     }
     if (isGuest) return onGuest?.();
     track(EVENTS.review_helpful_toggle, { on: !review.myLike, surface }); // P-214: 4표면 공용 한 곳
     toggle.mutate({ reviewId: review.id, foodId: foodId ?? review.foodId }); // 낙관 토글(멱등 — 가드 예외)
+    // P-366 ④(KB-529): 켜는 방향만 체크 토스트(끄는 방향 = 무토스트 — 예진 판정 대기)
+    if (!review.myLike) showTopToast(t('reviews.helpfulMarkedToast'));
   };
   return (
     /* KB-430(4150:13934): 버튼형 — h30 pad 7/13 line 1px r4, thumbs-up 16 + 12/500.

@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { IconAlertTri, IconCheck } from '@/components/icons';
+import { RiskGlyph } from '@/components/RiskMark';
+import Svg from 'react-native-svg';
 
 const SHOW_MS = 2500;
 const EXIT_MS = 220;
@@ -108,7 +110,14 @@ export function TopToastHost() {
           </View>
         ) : (
           <View style={styles.checkDot} pointerEvents="none">
-            <IconCheck size={12} color="#2F3137" />
+            {/* P-366 ③: icon='alert' = 같은 흰 원 안 느낌표(에러 변형 아님 — 배경·크기 동일) */}
+            {msg.icon === 'alert' ? (
+              <Svg width={12} height={12} viewBox="0 0 22 22">
+                <RiskGlyph state="caution" fill="#2F3137" />
+              </Svg>
+            ) : (
+              <IconCheck size={12} color="#2F3137" />
+            )}
           </View>
         )}
         <Text style={styles.text} numberOfLines={2} pointerEvents="none">{msg.text}</Text>
