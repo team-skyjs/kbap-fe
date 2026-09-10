@@ -16,8 +16,9 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
+import { Image as ExpoImage } from 'expo-image'; // 로컬 에셋 전용(P-207 허용 범위)
 import { CardPhoto } from '@/components/CardPhoto';
-import { DEFAULT_FOOD_IMAGE_URL } from '@/lib/api/foodAdapter';
+import { DEFAULT_FOOD_IMAGE } from '@/lib/api/foodAdapter';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
@@ -166,8 +167,7 @@ function RichRow({
   return (
     <Pressable style={styles.row} onPress={onOpen} testID={`rich-${dish.itemId}`}>
       {/* KB-432 §1-1(4150:16254): 좌측 썸네일 100 r4 + RiskBadge(@3,0) — 배지 탭 = 코치 재열람.
-          P-353 ③(KB-515): 무이미지 = 회색 박스 대신 서버 기본 음식 이미지(RemoteImage 폴백은
-          기본 이미지 URL 직접 전달), 미등록도 동일 이미지 + 기존 unable 마크 오버레이 유지 */}
+          P-353 ③(KB-515): 무이미지 = 회색 박스 대신 서버 기본 음식 이미지(기본 이미지 = 번들 로컬 에셋(KB-515 후속)), 미등록도 동일 이미지 + 기존 unable 마크 오버레이 유지 */}
       <View style={styles.thumbWrap}>
         {dish.matched ? (
           <>
@@ -181,7 +181,7 @@ function RichRow({
           </>
         ) : (
           <Pressable style={styles.thumbWrapInner} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
-            <RemoteImage uri={DEFAULT_FOOD_IMAGE_URL} style={styles.thumb} />
+            <ExpoImage source={DEFAULT_FOOD_IMAGE} style={styles.thumb} contentFit="cover" />
             <View style={[styles.thumb, styles.thumbUnableOverlay]}>
               <RiskMark state="unable" size={26} />
             </View>

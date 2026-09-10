@@ -48,7 +48,7 @@ it('A-SC — 결과 헤더 56/16·배너 gap6·행 보더 0·warnChip pad 3/6·m
   expect(rich).toContain("moreChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' }");
   expect(rich).toContain("missText: { fontSize: 13, fontWeight: '400', color: C.ink3, lineHeight: 13 }");
   // P-353 ③(KB-515): 미등록 = 기본 음식 이미지 + unable 마크 오버레이(구 흰 박스 소멸)
-  expect(rich).toContain('RemoteImage uri={DEFAULT_FOOD_IMAGE_URL}');
+  expect(rich).toContain('<ExpoImage source={DEFAULT_FOOD_IMAGE}'); // KB-515 후속: 로컬 에셋
   expect(rich).toContain('thumbUnableOverlay');
 });
 

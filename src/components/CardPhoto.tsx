@@ -4,13 +4,13 @@
  * fade-in(transition)이 이어받는다. 로드 완료/실패 시 shimmer는 언마운트
  * (리스트에서 무한 애니메이션이 남지 않게).
  *
- * P-353 ③(KB-515): uri null/로드 실패 = 서버 기본 음식 이미지(DEFAULT_FOOD_IMAGE_URL,
+ * P-353 ③(KB-515): uri null/로드 실패 = 서버 기본 음식 이미지(DEFAULT_FOOD_IMAGE,
  * 여백 포함 일러스트라 cover 유지) — 호출부 아이콘 폴백 불필요(전 카드 표면 자동).
  */
 import * as React from 'react';
 import type { ViewStyle } from 'react-native';
 import { Image, type ImageStyle } from 'expo-image';
-import { DEFAULT_FOOD_IMAGE_URL } from '@/lib/api/foodAdapter';
+import { DEFAULT_FOOD_IMAGE } from '@/lib/api/foodAdapter';
 import { Shimmer } from './Skeleton';
 
 // RN 0.85 타입에 absoluteFillObject가 없어 직접 정의 (런타임 동일)
@@ -37,7 +37,7 @@ export function CardPhoto({
   const round = borderRadius != null ? { borderRadius, overflow: 'hidden' as const } : null;
   const shimmerStyle: ViewStyle[] = round ? [FILL, round] : [FILL];
   const imageStyle: ImageStyle[] = round ? [FILL, round] : [FILL];
-  const source = !uri || failed ? DEFAULT_FOOD_IMAGE_URL : uri;
+  const source: string | number = !uri || failed ? DEFAULT_FOOD_IMAGE : uri;
   return (
     <>
       {!settled && <Shimmer style={shimmerStyle} />}
@@ -50,7 +50,7 @@ export function CardPhoto({
         onLoad={() => setSettled(true)}
         onError={() => {
           // 원본 실패 → 기본 이미지로 1회 강등(기본 이미지 자체 실패면 종료)
-          if (source !== DEFAULT_FOOD_IMAGE_URL) setFailed(true);
+          if (source !== DEFAULT_FOOD_IMAGE) setFailed(true);
           else setSettled(true);
         }}
       />

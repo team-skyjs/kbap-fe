@@ -43,5 +43,5 @@ it('①-b Codex #77 P2 → P-353 ③: photoUrl null/실패 = CardPhoto 내부 �
   expect(cards).not.toContain('gphotoFb:');
   expect(cards).not.toContain('<IconFood size={28}');
   const cp = fs.readFileSync('src/components/CardPhoto.tsx', 'utf8');
-  expect(cp).toContain('const source = !uri || failed ? DEFAULT_FOOD_IMAGE_URL : uri;');
+  expect(cp).toContain('const source: string | number = !uri || failed ? DEFAULT_FOOD_IMAGE : uri;'); // KB-515 후속: 로컬 에셋
 });
