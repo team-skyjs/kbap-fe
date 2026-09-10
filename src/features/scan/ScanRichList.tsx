@@ -320,9 +320,9 @@ const styles = StyleSheet.create({
   // KB-432 §1-1(4150:16254): h136 pad 16/20 gap 16, 하단 line 1px
   row: { flexDirection: 'row', gap: 16, minHeight: 150, paddingVertical: 16, paddingHorizontal: 0 }, // A-SC-05: 하단 보더 제거
   nameLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  thumbWrap: { width: 118 }, // P-285: 118×118(2200:21512)
+  thumbWrap: { width: 118, height: 118 }, // P-285: 118×118(2200:21512) — P-362: height 명시(퍼센트 순환 봉쇄)
   thumbFb: { backgroundColor: C.surface2 },
-  thumbWrapInner: { width: '100%', height: '100%' },
+  thumbWrapInner: { width: 118, height: 118 }, // P-362(KB-525): 퍼센트 금지 — 부모 높이 미정의 시 160만px 폭주(9/10 실측)
   thumbUnableOverlay: { position: 'absolute', top: 0, left: 0, alignItems: 'center', justifyContent: 'center' }, // A-SC-11(흰 위 흰 — 실기 확인 권장)
   thumbBadge: { position: 'absolute', top: -4, left: 3 },
   nameTitle: { fontSize: 15, fontWeight: '500', color: '#2F3137', flexShrink: 1 },
