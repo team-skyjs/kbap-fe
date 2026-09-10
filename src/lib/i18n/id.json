@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "Tulis ulasan",
+    "photoSheetTitle": "Foto ulasan",
     "post": "Kirim",
     "ratingLabel": "Penilaian Anda *",
     "tapToRate": "Ketuk untuk menilai",

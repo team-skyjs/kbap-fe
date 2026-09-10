@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "撰寫評論",
+    "photoSheetTitle": "評論照片",
     "post": "發布",
     "ratingLabel": "你的評分 *",
     "tapToRate": "點擊評分",
