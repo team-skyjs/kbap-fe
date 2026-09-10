@@ -393,6 +393,7 @@
     "placeRecent": "ล่าสุด",
     "placeNoResults": "ไม่มีสถานที่ที่ตรงกัน",
     "placeSkip": "ข้าม",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "ลบรีวิวไม่สำเร็จ ตรวจสอบการเชื่อมต่อแล้วลองใหม่",
     "photoCapNote": "รูปได้สูงสุด {{max}} รูป — ส่วนเกินถูกข้าม",
     "placeNearby": "ใกล้เคียง",

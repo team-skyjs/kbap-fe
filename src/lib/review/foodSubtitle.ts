@@ -7,6 +7,8 @@ export function foodSubtitle(
 ): string | null {
   const ko = food?.nameKo && food.nameKo !== food.name ? food.nameKo : null;
   const count = food?.overall?.count ?? 0;
-  const parts = [ko, count >= 1 ? t('reviews.subtitle', { count }) : null].filter(Boolean);
-  return parts.length === 0 ? null : parts.join(' | ');
+  const reviews = count >= 1 ? t('reviews.subtitle', { count }) : null;
+  // #115 P1: 결합형은 로케일 키(review.foodSubtitle) — 구분자·어순을 로케일이 소유
+  if (ko && reviews) return t('review.foodSubtitle', { nameKo: ko, reviews });
+  return ko ?? reviews ?? null;
 }

@@ -439,6 +439,7 @@
     "placeRecent": "최근",
     "placeNoResults": "일치하는 장소가 없어요.",
     "placeSkip": "건너뛰기",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "리뷰를 삭제하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
     "photoCapNote": "사진은 {{max}}장까지 추가할 수 있어요. 나머지는 제외했어요.",
     "placeNearby": "주변 장소",

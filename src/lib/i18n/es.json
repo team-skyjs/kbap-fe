@@ -393,6 +393,7 @@
     "placeRecent": "Recientes",
     "placeNoResults": "No hay lugares que coincidan.",
     "placeSkip": "Omitir",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "No se pudo eliminar la reseña. Revisa tu conexión e inténtalo de nuevo.",
     "photoCapNote": "Máximo {{max}} fotos — se omitieron las adicionales",
     "placeNearby": "Cerca",

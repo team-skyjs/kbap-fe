@@ -393,6 +393,7 @@
     "placeRecent": "Terbaru",
     "placeNoResults": "Tidak ada tempat yang cocok.",
     "placeSkip": "Lewati",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Tidak bisa menghapus ulasan. Periksa koneksi dan coba lagi.",
     "photoCapNote": "Maksimal {{max}} foto — kelebihan dilewati",
     "placeNearby": "Terdekat",

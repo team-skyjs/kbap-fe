@@ -393,6 +393,7 @@
     "placeRecent": "Недавние",
     "placeNoResults": "Подходящих мест нет.",
     "placeSkip": "Пропустить",
+    "foodSubtitle": "{{nameKo}} | {{reviews}}",
     "deleteError": "Не удалось удалить отзыв. Проверьте соединение и попробуйте снова.",
     "photoCapNote": "До {{max}} фото — лишние пропущены",
     "placeNearby": "Рядом",
