@@ -454,3 +454,25 @@ it('#112 3R ② — Saved 활성 새로고침 = savedList(+판정 saved)만, bro
   expect(browseRefetch).not.toHaveBeenCalled();
   expect(savedRefetch).toHaveBeenCalled();
 });
+
+it('#112 4R — screen 전체 화면 에러 재시도도 실패 기억 클리어(공유 retryGrid) → 채움 effect 재개', async () => {
+  // 1) danger 칩에서 채움 실패 → 기억
+  const failFetch = jest.fn().mockResolvedValue({ isError: true });
+  const refetch = jest.fn().mockResolvedValue(undefined);
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: failFetch, refetch });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1);
+  // 2) 에러 상태 → 전체 화면 게이트의 onRetry(공유 retryGrid) 실행 = refetch + 기억 클리어
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), isError: true, error: new Error('HTTP 500'), fetchNextPage: failFetch, refetch });
+  act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />); });
+  const retry = tree.root.findAll((n) => n.props?.testID === 'query-error-block')[0];
+  const btn = retry.findAll((n) => typeof n.props?.onPress === 'function')[0];
+  act(() => { btn.props.onPress(); });
+  expect(refetch).toHaveBeenCalledTimes(1);
+  // 3) 재시도 성공(에러 해소·같은 짧은 목록) → 채움 effect가 다시 산다
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1', 'danger')]), fetchNextPage: failFetch, refetch });
+  act(() => { tree.update(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />); });
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(2); // 영구 정지 아님 — 클리어로 재개
+});

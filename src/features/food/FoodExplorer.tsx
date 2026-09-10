@@ -125,15 +125,16 @@ export function FoodExplorer({
   React.useEffect(() => {
     fillFailedAtRef.current = null; // 칩 전환 = 다른 목록 — 실패 기억 리셋
   }, [riskChip, savedTabActive]);
+  // #112 4R: 재시도 핸들러 공유(레일 블록·screen 전체 화면 게이트) — 실패 기억
+  // 클리어 없이 refetch만 하면 재시도 성공 후 얇은 페이지에서 채움 effect가
+  // 영구 정지(fillFailedAtRef === gridLen 그대로 → 스켈레톤 고정).
+  const retryGrid = () => {
+    fillFailedAtRef.current = null; // 수동 재시도 = 자동 채움 재개 허용(3R ①)
+    void gridQ.refetch();
+  };
   const gridErrorBlock = (
     <View style={styles.railState} testID="food-grid-error">
-      <QueryErrorBlock
-        error={gridQ.error}
-        onRetry={() => {
-          fillFailedAtRef.current = null; // 수동 재시도 = 자동 채움 재개 허용(3R ①)
-          void gridQ.refetch();
-        }}
-      />
+      <QueryErrorBlock error={gridQ.error} onRetry={retryGrid} />
     </View>
   );
   React.useEffect(() => {
@@ -331,7 +332,7 @@ export function FoodExplorer({
     if (gridQ.isError) {
       return (
         <ScreenCenterFill>
-          <QueryErrorBlock error={gridQ.error} onRetry={() => void gridQ.refetch()} />
+          <QueryErrorBlock error={gridQ.error} onRetry={retryGrid} />
         </ScreenCenterFill>
       );
     }
