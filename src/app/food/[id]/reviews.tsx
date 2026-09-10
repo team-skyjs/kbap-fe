@@ -10,6 +10,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
+import { TopToastHost } from '@/components/TopToast';
 import Animated from 'react-native-reanimated';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
@@ -277,6 +278,8 @@ export default function FoodReviews() {
         onDelete={(m) => deleteReview.mutate({ reviewId: m.id, foodId: id ?? '' })}
         onBlocked={() => void reviewsQ.refetch()}
       />
+      {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
+      <TopToastHost />
     </View>
   );
 }

@@ -73,7 +73,7 @@ jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: u
 jest.mock('@/lib/push/pushAdapter', () => ({ cancelReviewReminder: jest.fn() }));
 jest.mock('@/lib/analytics', () => ({ EVENTS: {}, track: jest.fn() }));
 const mockToast = jest.fn();
-jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
+jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {} }));
 const mockUpdate = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/lib/data/useReviewMutations', () => {
   const actual = jest.requireActual('@/lib/data/useReviewMutations') as Record<string, unknown>;

@@ -22,6 +22,7 @@ import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
 import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
+import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
@@ -211,6 +212,8 @@ export default function FoodDetailScreen() {
       </View>
 
       <AuthGateSheet context="save" open={saveGateOpen} onClose={() => setSaveGateOpen(false)} />
+      {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
+      <TopToastHost />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
       <EligibilityGate open={eligGateRoot} onClose={() => setEligGateRoot(false)} />
     </View>
