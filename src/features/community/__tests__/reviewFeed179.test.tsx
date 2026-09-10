@@ -131,7 +131,7 @@ it('P-196: 타인 리뷰 Helpful = 공용 버튼 경유 토글 · 본인 = 비�
   });
   const tree = render();
   act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-r3' && typeof n.props?.onPress === 'function')[0].props.onPress());
-  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r3', foodId: '7' });
+  expect(mockToggle).toHaveBeenCalledWith({ reviewId: 'r3', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2
 });
 
 it('FAB → 음식 픽커(작성 시트 재사용, kind=food) → 선택 = 리뷰 작성 라우팅', () => {

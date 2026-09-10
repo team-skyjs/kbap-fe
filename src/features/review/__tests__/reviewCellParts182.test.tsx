@@ -118,7 +118,7 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
   it('타인 = 탭 → 공용 뮤테이션 토글(reviewId·foodId)', () => {
     const tree = render(<HelpfulButton review={RV} mine={false} t={t} />);
     tapHelpful(tree);
-    expect(mockLikeToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' });
+    expect(mockLikeToggle).toHaveBeenCalledWith({ reviewId: 'r1', foodId: '7' }, expect.objectContaining({ onSuccess: expect.any(Function) })); // #131 P2: 성공 콜백 동반
   });
 
   it('본인(mine) = 카운트 표시 유지 + 탭 = 안내 토스트 1·토글 0 (P-357/KB-520 — 자기 투표 차단 유지)', () => {
@@ -174,8 +174,22 @@ it('KB-431 후속(.fig 실측 2162:11360): 평점 행 = 좌측 정렬(hug @x20) 
   expect(src).not.toContain("justifyContent: 'center', gap: 16");
 });
 
-it('P-366 ④(KB-529): 비mine ON 탭 = 체크 토스트 1회 · OFF 탭 = 토스트 0', () => {
+it('#131 P2(KB-529): 토글 실패(롤백) = 토스트 0 — 성공 콜백만 발화', () => {
   jest.clearAllMocks();
+  mockLikeToggle.mockImplementation((_v: unknown, opts?: { onSuccess?: () => void }) => {
+    void opts; // 실패 — onSuccess 미호출
+  });
+  const RVF = { id: 'rf', foodId: '7', rating: 4, likes: 0, myLike: false, anonymized: false, authorNationality: 'US', authorRankTier: null, createdAt: '2026-09-10' } as never;
+  const tree = render(<HelpfulButton review={RVF} mine={false} t={(k: string) => k} />);
+  act(() => tree.root.findAll((n) => n.props?.testID === 'helpful-rf' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockLikeToggle).toHaveBeenCalledTimes(1);
+  expect(mockToast).not.toHaveBeenCalled();
+  mockLikeToggle.mockReset();
+});
+
+it('P-366 ④(KB-529): 비mine ON 탭 = 체크 토스트 1회(성공 시) · OFF 탭 = 토스트 0', () => {
+  jest.clearAllMocks();
+  mockLikeToggle.mockImplementation((_v: unknown, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.()); // 성공 경로
   const RV2 = { id: 'r9', foodId: '7', rating: 4, likes: 3, myLike: false, anonymized: false, authorNationality: 'US', authorRankTier: null, createdAt: '2026-09-10' } as never;
   const tap = (tree: ReactTestRenderer, id: string) =>
     act(() => tree.root.findAll((n) => n.props?.testID === `helpful-${id}` && typeof n.props?.onPress === 'function')[0].props.onPress());
