@@ -15,6 +15,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
 import { Btn, RankMedal, SubHeader, IconScanLines, IconTabReviews } from '@/components';
+import { MEDAL_COLORS } from '@/components/RankMedal';
 import { IconCutlery, RankPointBadge, RankWreath } from '@/components/rankBadge';
 import { ScrollView } from 'react-native';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -192,8 +193,8 @@ function RankingBody({ rk }: { rk: Ranking }) {
                   <Text style={styles.nowBadgeText}>{t('ranking.now')}</Text>
                 </View>
               )}
-              {/* P-327: 메달 글로우 0/3 blur8 #FFC700@0.40 */}
-              <View style={styles.medalGlow}>
+              {/* P-327 → P-369 ②: 메달 글로우 0/3 blur8 @0.40 — 색 = 각 등급 메달 원색(C-38) */}
+              <View style={[styles.medalGlow, { shadowColor: MEDAL_COLORS[tier.level - 1] }]}>
                 <RankMedal level={tier.level} size={28} />
               </View>
               <Text style={styles.rankName} numberOfLines={1}>{t(`ranking.tier.${tier.key}`)}</Text>
@@ -291,7 +292,7 @@ const styles = StyleSheet.create({
   rankCardNow: { borderWidth: 1, borderColor: C.primary, paddingTop: 24, paddingBottom: 16 },
   nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
   nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
-  medalGlow: { shadowColor: '#FFC700', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
+  medalGlow: { shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 }, // P-369 ②: shadowColor = 등급색(인라인)
   rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6 },
   rankKo: { fontSize: 12, fontWeight: '400', color: C.ink3, marginTop: 2 },
   rankPts: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 6 },

@@ -140,20 +140,30 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
         )}
       </View>
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-        {/* 장소명 데이터 부재 — roadAddress가 장소 줄(있을 때), 없으면 미태그 변형 필 */}
+        {/* P-369 ③(KB-532): 미태그 "+ Where did you eat?" 필 = 무동작(PATCH API 부재) → 삭제.
+            미태그 변형 = 제목 자리 날짜 + items 필만 / 태그 변형 = 현행(주소 + 날짜·items) */}
         {order.roadAddress ? (
-          <Text style={styles.placeName} numberOfLines={2}>{order.roadAddress}</Text>
+          <>
+            <Text style={styles.placeName} numberOfLines={2}>{order.roadAddress}</Text>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaDate}>{formatOrderDate(order.orderedAt)}</Text>
+              <View style={styles.qtyPill}>
+                <Text style={styles.qtyPillText}>{t('myFoods.itemCount', { count: order.totalQuantity })}</Text>
+              </View>
+            </View>
+          </>
         ) : (
-          <View style={styles.tagPill} testID={`order-tag-place-${order.orderId}`}>
-            <Text style={styles.tagPillText}>+ {t('community.tagPlace')}</Text>
-          </View>
+          <>
+            <Text style={styles.placeName} numberOfLines={1} testID={`order-date-title-${order.orderId}`}>
+              {formatOrderDate(order.orderedAt)}
+            </Text>
+            <View style={styles.metaRow}>
+              <View style={styles.qtyPill}>
+                <Text style={styles.qtyPillText}>{t('myFoods.itemCount', { count: order.totalQuantity })}</Text>
+              </View>
+            </View>
+          </>
         )}
-        <View style={styles.metaRow}>
-          <Text style={styles.metaDate}>{formatOrderDate(order.orderedAt)}</Text>
-          <View style={styles.qtyPill}>
-            <Text style={styles.qtyPillText}>{t('myFoods.itemCount', { count: order.totalQuantity })}</Text>
-          </View>
-        </View>
       </View>
       <View style={{ marginLeft: 4 }}>{/* A-MF-02: 내용↔chevron 14 유지(행 gap 10+4) */}
         <IconChevron size={16} color={C.ink3} />
@@ -186,6 +196,4 @@ const styles = StyleSheet.create({
   qtyPill: { backgroundColor: C.hair, borderRadius: 100, paddingVertical: 2, paddingHorizontal: 8 },
   qtyPillText: { fontSize: 12, fontWeight: '500', color: '#1C1E21' }, // A-MF-04
   // 장소 미태그 변형 — 아웃라인 필(primary 1px r8 pad 4/8, 12/600) · 태그 기능 부재 = 무동작
-  tagPill: { alignSelf: 'flex-start', borderWidth: 1, borderColor: C.primary, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8 },
-  tagPillText: { fontSize: 12, fontWeight: '600', color: C.primary },
 });

@@ -11,6 +11,9 @@ import { Medal1, Medal2, Medal3, Medal4, Medal5, Medal6, Medal7 } from './design
 
 const MEDALS = [Medal1, Medal2, Medal3, Medal4, Medal5, Medal6, Medal7] as const;
 
+/** P-369 ②(KB-532): 등급별 메달 원색(design4Assets 원 fill — 시안 2179:10075 글로우 요소색). */
+export const MEDAL_COLORS = ['#ffc700', '#ff6a3c', '#26de81', '#45aaf2', '#a55eea', '#fc5c65', '#fd79a8'] as const;
+
 export function RankMedal({ level, size = 28, testID }: { level: number; size?: number; testID?: string }) {
   const lv = Math.min(Math.max(level, 1), 7);
   const Medal = MEDALS[lv - 1];

@@ -53,3 +53,26 @@ it('P-362(KB-525): 스캔 썸네일 래퍼 = 고정 118(퍼센트 높이 금지 
   expect(rich).toContain("thumbWrap: { width: 118, height: 118 }");
   expect(rich).not.toContain("height: '100%'"); // P-366 ①: thumbWrapInner 자체 소멸(분기 통합)
 });
+
+describe('P-369(KB-532) b30 QA 3건', () => {
+  it('① 검색 결과 수 라벨 = paddingHorizontal 20(그리드 여백 정렬)', () => {
+    expect(read('src/app/search.tsx')).toMatch(/count: \{[^}]*paddingHorizontal: 20/);
+  });
+
+  it('② 랭킹 메달 글로우 = 각 등급 원색(단일 #FFC700 소멸) — 팔레트 7색 상이', () => {
+    const { MEDAL_COLORS } = require('@/components/RankMedal') as typeof import('@/components/RankMedal');
+    expect(MEDAL_COLORS).toHaveLength(7);
+    expect(new Set(MEDAL_COLORS).size).toBe(7); // 전부 상이
+    expect(MEDAL_COLORS[0]).toBe('#ffc700'); // 1등급 = 기존 노랑(원색 유지)
+    const rk = read('src/app/profile/ranking.tsx');
+    expect(rk).toContain('{ shadowColor: MEDAL_COLORS[tier.level - 1] }');
+    expect(rk).not.toContain("shadowColor: '#FFC700'"); // 고정색 소멸
+  });
+
+  it('③ My Foods 미태그 행 = 날짜 제목 + items 필만(무동작 장소 필 소멸)', () => {
+    const mf = read('src/app/profile/my-foods.tsx');
+    expect(mf).not.toContain('order-tag-place-');
+    expect(mf).not.toContain('+ {t(');
+    expect(mf).toContain('testID={`order-date-title-${order.orderId}`}');
+  });
+});
