@@ -81,7 +81,7 @@ it('② 스캔 결과 크롬 — 인식 배너·언더라인 탭·컨트롤 행(
   expect(src).toContain('testID="recog-banner"');
   expect(src).toContain("t('scan.resultsSub', { count: allDishes.length })");
   expect(src).toContain('testID={`seg-${v}`}'); // Photo|List 언더라인 탭(세그 매핑 유지)
-  expect(src).toContain('testID="scan-profile-toggle"'); // 시안 렌더·무동작(상태 부재)
+  expect(src).toContain('testID="scan-safe-toggle"'); // P-354: 무동작 프로필 토글 → Safe only(실동작)
   expect(src).toContain('testID="scan-sort"');
   // §1-2/§1-3 현행 유지(예진 판정) — 인식 중 스윕·AuthGateSheet 무변
   expect(src).toContain('ScanSweepOverlay');
