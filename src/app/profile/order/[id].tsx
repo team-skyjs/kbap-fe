@@ -18,6 +18,7 @@ import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
+import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { useOrderDetail } from '@/lib/data/useOrders';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -38,17 +39,12 @@ export default function OrderDetailScreen() {
   const cur = me?.currency ?? currencyForCountry(me?.nationality);
   const conv = (krw: number) => convertKrw(krw, cur)?.replace(/^= /, '') ?? null;
 
-  // Codex #33 P2: 시안 단일 버튼 + 전 dish 리뷰 가능 유지 — 1개 = 직행, 2+ = 선택 시트
+  // Codex #33 P2 → P-355(KB-517): 1개 = 직행, 2+ = 앱 바텀시트(네이티브 Alert 목록 폐기)
   const reviewables = (q.data?.items ?? []).filter((it) => it.foodId != null && it.ready !== false);
+  const [dishSheet, setDishSheet] = React.useState(false);
   const onWriteReview = () => {
     if (reviewables.length === 1) return router.push(`/food/${reviewables[0].foodId}/review` as Href);
-    Alert.alert(t('reviews.writeReview'), undefined, [
-      ...reviewables.map((it) => ({
-        text: it.menuName,
-        onPress: () => router.push(`/food/${it.foodId}/review` as Href),
-      })),
-      { text: t('common.cancel'), style: 'cancel' as const },
-    ]);
+    setDishSheet(true);
   };
 
   return (
@@ -157,6 +153,17 @@ export default function OrderDetailScreen() {
       {viewer && q.data?.scanImageUrl && (
         <PhotoViewer uris={[q.data.scanImageUrl]} onClose={() => setViewer(false)} />
       )}
+      {/* P-355: 리뷰 음식 선택 시트 */}
+      <OrderDishPickerSheet
+        open={dishSheet}
+        onClose={() => setDishSheet(false)}
+        items={reviewables.map((it) => ({ foodId: it.foodId as string, menuName: it.menuName, imageUrl: it.imageUrl }))}
+        onPick={(it) => {
+          setDishSheet(false);
+          router.push(`/food/${it.foodId}/review` as Href);
+        }}
+        t={t}
+      />
     </View>
   );
 }

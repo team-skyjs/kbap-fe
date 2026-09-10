@@ -6,8 +6,11 @@
  * (d) api 5xx 관측(captureApi5xx — 태그만·중복창 억제)
  */
 const mockKb = { visible: true, listeners: [] as Array<(e?: unknown) => void>, dismiss: jest.fn() };
-// P-348 ⑥: PhotoViewer(RNGH·reanimated 실모듈 체인) — 이 스위트는 헬퍼·소스 잠금만이라 표면 목
+// P-348 ⑥/P-355: PhotoViewer·시트 크롬(RNGH·reanimated 실모듈 체인) — 이 스위트는 헬퍼·소스 잠금만이라 표면 목
 jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
+jest.mock('react-native-reanimated', () => ({ __esModule: true, default: { View: () => null }, useSharedValue: (v: unknown) => ({ value: v }), withTiming: (v: unknown) => v, runOnJS: (f: unknown) => f }));
+jest.mock('react-native-gesture-handler', () => ({ GestureDetector: ({ children }: { children: unknown }) => children, GestureHandlerRootView: () => null, Gesture: { Pan: () => ({ runOnJS: function r() { return this; }, onUpdate: function u() { return this; }, onFinalize: function f() { return this; } }) } }));
+jest.mock('@/components/useSheetSwipeDismiss', () => ({ useSheetSwipeDismiss: () => ({ gesture: {}, dimStyle: {}, sheetStyle: {}, onSheetLayout: jest.fn(), dismiss: jest.fn() }) }));
 jest.mock('react-native', () => ({
   Keyboard: {
     isVisible: () => mockKb.visible,

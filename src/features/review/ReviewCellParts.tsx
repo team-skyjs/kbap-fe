@@ -12,7 +12,10 @@ import { PhotoViewer } from '@/components/PhotoViewer';
 import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Btn, IconClose, IconMapPin, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
+import { Btn, CardPhoto, IconClose, IconMapPin, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
+import Animated from 'react-native-reanimated';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { EMPTY_EXTRAS, extrasFromReview, hasAnyExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
 import { TagChip } from '@/features/community/parts';
@@ -118,6 +121,65 @@ export function runAfterKeyboardHidden(fn: () => void): Promise<void> {
  * 열림 = nearby(고정 좌표 — 강남역) 탑10 프리로드 · 입력 = search 실호출 ·
  * 직접 입력(MANUAL) = 결과 미선택 채로 이름만 태그. Recent·typeahead·Skip 푸터.
  */
+/** P-355(KB-517): 주문 상세 "Write a review" 음식 선택 — 네이티브 Alert 목록 대체.
+ *  시트 크롬 = PlacePickerSheet 계열(A-RW-11: 제목 18/600 중앙) + 드래그 핸들 +
+ *  useSheetSwipeDismiss(아래 스와이프)·배경 탭 닫힘·안드 자체 RootView(P-337 문법). */
+export interface OrderDishPick {
+  foodId: string;
+  menuName: string;
+  imageUrl: string | null;
+}
+
+export function OrderDishPickerSheet({
+  open,
+  onClose,
+  onPick,
+  items,
+  t,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (item: OrderDishPick) => void;
+  items: OrderDishPick[];
+  t: TFn;
+}) {
+  const swipe = useSheetSwipeDismiss(onClose, open);
+  const bottomInset = useBottomInset();
+  if (!open) return null;
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      {/* P-337: 안드에서 Modal = 별도 네이티브 루트 — 자체 RootView 필수 */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={styles.pickerBackdrop} testID="order-dish-sheet">
+          <Animated.View style={[StyleSheet.absoluteFill, styles.dishDim, swipe.dimStyle]} pointerEvents="none" />
+          {/* 배경 탭 = 닫힘(시트 위 영역) */}
+          <Pressable style={{ flex: 1 }} onPress={onClose} testID="order-dish-backdrop" />
+          <Animated.View style={[styles.dishSheet, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
+            <GestureDetector gesture={swipe.gesture}>
+              <View>{/* 제스처 영역 = 핸들 + 제목(리스트 스크롤 우선) */}
+                <View style={styles.dishGrab} testID="order-dish-grab" />
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerTitle}>{t('reviews.writeReview')}</Text>
+                </View>
+              </View>
+            </GestureDetector>
+            <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ paddingBottom: 12 + bottomInset }} showsVerticalScrollIndicator={false}>
+              {items.map((it) => (
+                <Pressable key={it.foodId} style={styles.dishRow} onPress={() => onPick(it)} testID={`order-dish-${it.foodId}`}>
+                  <View style={styles.dishThumb}>
+                    <CardPhoto uri={it.imageUrl} borderRadius={4} />
+                  </View>
+                  <Text style={styles.dishName} numberOfLines={1}>{it.menuName}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </GestureHandlerRootView>
+    </Modal>
+  );
+}
+
 export function PlacePickerSheet({
   open,
   onClose,
@@ -516,6 +578,13 @@ const styles = StyleSheet.create({
   editPlaceAdd: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
   // P-201: 장소 픽커 시트 (review.tsx P-095 스타일 이식 — 작성·수정 공용화로 이동)
   pickerBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  // P-355(KB-517): 음식 선택 시트 — 드래그 페이드는 dim 레이어(compose P-337 문법)
+  dishDim: { backgroundColor: 'transparent' },
+  dishSheet: { maxHeight: '70%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 12, ...shadow.sh2 },
+  dishGrab: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 12 },
+  dishRow: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 66, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // A-RW-11 값
+  dishThumb: { width: 48, height: 48, borderRadius: 4, overflow: 'hidden', backgroundColor: C.surface2 },
+  dishName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: C.ink },
   pickerSheet: { height: '92%', backgroundColor: C.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, gap: 20, ...shadow.sh2 }, // A-RW-11
   pickerHeader: { alignItems: 'center' }, // A-RW-11(중앙)
   pickerTitle: { fontSize: 18, fontWeight: '600', color: C.ink }, // A-RW-11

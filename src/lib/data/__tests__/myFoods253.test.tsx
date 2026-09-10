@@ -271,3 +271,62 @@ it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·�
   expect(profile).not.toContain('testID="profile-my-foods"'); // 구 헤더 링크 잔존 0
   expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).toContain('/review` as Href');
 });
+
+it('P-355(KB-517): 2+개 = 앱 바텀시트(행 수·탭 라우팅), Alert.alert 0', async () => {
+  const { Alert } = require('react-native') as typeof import('react-native');
+  const alertSpy = jest.spyOn(Alert, 'alert');
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 2, totalPrice: 12000,
+          items: [
+            { menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: null },
+            { menuName: '공기밥', quantity: 1, price: 1000, foodId: 8, imageRef: null },
+          ] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree);
+  await flush();
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-write-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(alertSpy).not.toHaveBeenCalled(); // 네이티브 목록 소멸
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet').length).toBeGreaterThanOrEqual(1);
+  const rows = new Set(
+    tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('order-dish-') && n.props.testID !== 'order-dish-sheet' && n.props.testID !== 'order-dish-grab' && n.props.testID !== 'order-dish-backdrop').map((n) => n.props.testID as string),
+  );
+  expect(rows).toEqual(new Set(['order-dish-7', 'order-dish-8'])); // 행 수 = reviewables
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-dish-8' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(mockPush).toHaveBeenLastCalledWith('/food/8/review');
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0); // 탭 = 닫힘
+  alertSpy.mockRestore();
+});
+
+it('P-355(KB-517): 1개 = 시트 생략 직진(현행 유지)', async () => {
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 1, totalPrice: 9000,
+          items: [{ menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: null }] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree);
+  await flush();
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-write-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  expect(mockPush).toHaveBeenLastCalledWith('/food/7/review');
+  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0);
+});
