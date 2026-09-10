@@ -10,16 +10,36 @@ export type ToastMsg = { text: string; error?: boolean; icon?: 'check' | 'alert'
 const listeners: Array<(m: ToastMsg) => void> = [];
 let seq = 0;
 
+// P-370 ②(#137 Codex P2): 표시 창(2.5s — TopToast SHOW_MS 동일) 안에 top 호스트가
+// 언마운트되면(모달 닫힘 등) 진행 중이던 토스트를 새 top에 같은 key로 핸드오프.
+// 빈 스택이면 보류했다가 다음 subscribe에 1회 전달. 화면 코드 무변.
+const HANDOFF_MS = 2500;
+let lastMsg: { msg: ToastMsg; at: number } | null = null;
+let pendingHandoff = false;
+
 /** 어디서든 호출 — 호스트 미마운트(빈 스택)면 조용히 무시(웹·테스트 안전). */
 export function showTopToast(text: string, opts?: { error?: boolean; icon?: 'check' | 'alert' }) {
-  listeners[listeners.length - 1]?.({ text, error: opts?.error, icon: opts?.icon, key: ++seq });
+  const msg: ToastMsg = { text, error: opts?.error, icon: opts?.icon, key: ++seq };
+  lastMsg = { msg, at: Date.now() };
+  listeners[listeners.length - 1]?.(msg);
 }
 
 /** 호스트 전용 — 마운트 시 스택 push, 해제는 자기 것만 제거(이전 호스트 복원). */
 export function subscribeTopToast(fn: (m: ToastMsg) => void): () => void {
   listeners.push(fn);
+  if (pendingHandoff) {
+    pendingHandoff = false;
+    if (lastMsg && Date.now() - lastMsg.at < HANDOFF_MS) fn(lastMsg.msg); // 보류분 1회
+  }
   return () => {
     const i = listeners.indexOf(fn);
-    if (i >= 0) listeners.splice(i, 1);
+    if (i < 0) return;
+    const wasTop = i === listeners.length - 1;
+    listeners.splice(i, 1);
+    if (wasTop && lastMsg && Date.now() - lastMsg.at < HANDOFF_MS) {
+      const top = listeners[listeners.length - 1];
+      if (top) top(lastMsg.msg); // 이전 호스트로 핸드오프(같은 key)
+      else pendingHandoff = true; // 빈 스택 — 다음 subscribe 시 1회
+    }
   };
 }
