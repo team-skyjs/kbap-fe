@@ -124,6 +124,10 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
   it('본인(mine) = 카운트 표시 유지 + 탭 = 안내 토스트 1·토글 0 (P-357/KB-520 — 자기 투표 차단 유지)', () => {
     const tree = render(<HelpfulButton review={RV} mine t={t} />);
     expect(flat(tree)).toContain('reviews.helpful'); // 숨김 아님 — 카운트 표시
+    // P-364(KB-527): disabled={mine}이 실기 탭을 막던 회귀 — Pressable disabled 부재 잠금
+    // (직접 onPress 호출은 disabled를 우회해 유닛이 못 잡았던 함정)
+    const btn = tree.root.findAll((n) => n.props?.testID === 'helpful-r1' && typeof n.props?.onPress === 'function')[0];
+    expect(btn.props.disabled).toBeFalsy();
     tapHelpful(tree);
     expect(mockLikeToggle).not.toHaveBeenCalled();
     expect(mockToast).toHaveBeenCalledTimes(1);
