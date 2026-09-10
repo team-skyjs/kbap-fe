@@ -72,7 +72,7 @@ describe('③ 당겨서 새로고침 3탭', () => {
   it('음식 탭 — RefreshControl + progressViewOffset=topPad + savedOnly면 bookmarks 동반', () => {
     const fe = read('src/features/food/FoodExplorer.tsx');
     expect(fe).toContain('refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={topPad} />}');
-    expect(fe).toContain('if (savedOnly) jobs.push(savedList.refetch());'); // P-350: Saved 목록 = risk 적용 쿼리
+    expect(fe).toContain('? [savedList.refetch(), saved.refetch()] // 목록 + 북마크 판정 소스'); // #112 3R ②: 활성 쿼리만
   });
 
   it('리뷰 탭 — 기존 RefreshControl에 progressViewOffset=headerH(스피너가 헤더 뒤에 숨던 실기)', () => {

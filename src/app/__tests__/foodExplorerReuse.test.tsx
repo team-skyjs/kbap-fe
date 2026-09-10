@@ -424,3 +424,33 @@ it('#112 2R ② — Saved 활성 = browse 휴면(enabled:false) + 전체 화면 
   const lastOpts = mockBrowse.mock.calls[mockBrowse.mock.calls.length - 1][1] as { enabled?: boolean } | undefined;
   expect(lastOpts?.enabled).toBe(false);
 });
+
+it('#112 3R ① — 채움 fetchNextPage 실패 후 자동 재호출 0회(수동 재시도만), 에러 상태도 자동 페치 0', async () => {
+  const failFetch = jest.fn().mockResolvedValue({ isError: true });
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1')]), fetchNextPage: failFetch });
+  const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-danger' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1); // 첫 채움 시도
+  act(() => { tree.root.findAll((n) => n.props?.testID === 'home-chip-danger')[0].props.onPress(); }); // 리렌더 유발
+  await act(async () => { await Promise.resolve(); });
+  expect(failFetch).toHaveBeenCalledTimes(1); // 같은 커서 자동 재시도 0
+  // 에러 상태 = 자동 페치 중단
+  mockBrowse.mockReturnValue({ ...browseOf([]), isError: true, error: new Error('HTTP 500'), fetchNextPage: failFetch });
+  const t2 = render(<FoodExplorer variant="screen" guest={false} initialRisk="danger" srcTag="list" />);
+  await act(async () => { await Promise.resolve(); });
+  expect(t2).toBeTruthy();
+  expect(failFetch).toHaveBeenCalledTimes(1);
+});
+
+it('#112 3R ② — Saved 활성 새로고침 = savedList(+판정 saved)만, browse.refetch 0회', () => {
+  const browseRefetch = jest.fn().mockResolvedValue(undefined);
+  const savedRefetch = jest.fn().mockResolvedValue(undefined);
+  mockBrowse.mockReturnValue({ ...browseOf([FOOD('1')]), refetch: browseRefetch });
+  mockSaved.mockReturnValue({ data: [FOOD('3')], isLoading: false, isError: false, error: null, refetch: savedRefetch, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() });
+  const tree = render(<FoodExplorer variant="screen" guest={false} initialSaved srcTag="list" />);
+  const rc = tree.root.findAll((n) => typeof n.props?.onRefresh === 'function' && 'refreshing' in (n.props ?? {}))[0];
+  act(() => { rc.props.onRefresh(); });
+  expect(browseRefetch).not.toHaveBeenCalled();
+  expect(savedRefetch).toHaveBeenCalled();
+});
