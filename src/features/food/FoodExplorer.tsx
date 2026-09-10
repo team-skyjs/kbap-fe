@@ -352,7 +352,7 @@ export function FoodExplorer({
           onScroll={onScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: topPad, paddingBottom: 110 }}
+          contentContainerStyle={{ paddingTop: topPad + 12, paddingBottom: 110 }} // P-351 ②: 칩 행→첫 카드 12
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={topPad} />}
           columnWrapperStyle={styles.gridRowWrap}
           ListHeaderComponent={top}

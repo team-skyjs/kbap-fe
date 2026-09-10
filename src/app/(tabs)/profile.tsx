@@ -272,8 +272,16 @@ export default function Profile() {
                 })}
               </View>
               <View style={{ marginTop: -8 }}>{/* A-PF-09: 타일→Show all 8 */}
-                <Btn variant="ghost" onPress={() => router.push('/profile/restrictions' as Href)} testID="avoid-show-all">
-                  {t('profile.showAll', { count: me.restrictions.length })}
+                {/* P-351 ①(KB-513): 회피 0건 = 카운트 없는 라벨 + 꺾쇠(빈 괄호 방지) */}
+                <Btn
+                  variant="ghost"
+                  onPress={() => router.push('/profile/restrictions' as Href)}
+                  iconEnd={<IconChevron size={16} color={C.ink3} />}
+                  testID="avoid-show-all"
+                >
+                  {me.restrictions.length > 0
+                    ? t('profile.showAll', { count: me.restrictions.length })
+                    : t('profile.showAllEmpty')}
                 </Btn>
               </View>
             </View>

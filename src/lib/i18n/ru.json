@@ -356,6 +356,7 @@
     "spiceTitle": "Переносимость остроты",
     "spiceUnset": "Не задано",
     "showAll": "Показать все ({{count}})",
+    "showAllEmpty": "Показать все",
     "showLess": "Свернуть",
     "dietTitle": "Диета, религия и аллергии",
     "showAllLink": "Показать все",

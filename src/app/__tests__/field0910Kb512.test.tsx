@@ -99,3 +99,21 @@ describe('④ Tag a food 시트 첫 렌더', () => {
     expect(cp).toContain("<Text style={styles.eligNoteText}>{t('community.reviewEligibleNote')}</Text>");
   });
 });
+
+describe('P-351(KB-513) 소형 2건', () => {
+  it('① 프로필 Show all — 0건 = showAllEmpty 라벨 + IconChevron iconEnd, 1건 이상 = 카운트 라벨', () => {
+    const pf = read('src/app/(tabs)/profile.tsx');
+    expect(pf).toContain("? t('profile.showAll', { count: me.restrictions.length })");
+    expect(pf).toContain(": t('profile.showAllEmpty')}");
+    expect(pf).toContain('iconEnd={<IconChevron size={16} color={C.ink3} />}');
+    for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+      expect(read(`src/lib/i18n/${loc}.json`)).toContain('"showAllEmpty"');
+    }
+  });
+
+  it('② 음식 탭 그리드 — paddingTop = topPad + 12(progressViewOffset은 topPad 유지)', () => {
+    const fe = read('src/features/food/FoodExplorer.tsx');
+    expect(fe).toContain('contentContainerStyle={{ paddingTop: topPad + 12, paddingBottom: 110 }}');
+    expect(fe).toContain('progressViewOffset={topPad}');
+  });
+});
