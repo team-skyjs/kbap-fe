@@ -8,7 +8,7 @@
  * FLAGS.pushEnabled off = 라우트 가드(진입점도 없지만 딥링크 이중 방어).
  */
 import * as React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +38,17 @@ export default function NotificationSettings() {
   React.useEffect(() => {
     void getPushSettings().then(setSettings);
     void getPermissionStatus().then(setPermission);
+  }, []);
+
+  // KB-496(Codex #104 P2-4): OS 설정 딥링크 복귀(AppState active) — 권한 재조회(배너 해제)
+  // + 토큰 등록. 거부→설정에서 허용 후 복귀 시 재시작 전까지 토큰 미등록이던 구멍.
+  React.useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      void getPermissionStatus().then(setPermission);
+      void registerPushToken();
+    });
+    return () => sub.remove();
   }, []);
 
   const toggle = (key: 'helpful' | 'reviewReminder' | 'nudge') => {

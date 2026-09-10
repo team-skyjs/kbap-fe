@@ -135,3 +135,13 @@ it('알림 탭 구독 — 응답 data로 라우팅 콜백 + 포그라운드 핸�
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
   expect(onRoute).toHaveBeenCalledWith('/profile/reviews');
 });
+
+it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 잠금) — 재설치 잔존 토큰으로 이전 회원에 기기 연결 금지', () => {
+  const fs = require('fs') as typeof import('fs');
+  const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
+  // 첫 upsert는 cleanupDone 체인 안에서만
+  expect(layout).toContain('cleanupDone.then(() => push.registerPushToken())');
+  // 부트 effect 밖(푸시 effect 마운트 직후)의 즉시 호출 0 — 언어 변경 핸들러(onLang)만 허용
+  expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
+  expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
+});

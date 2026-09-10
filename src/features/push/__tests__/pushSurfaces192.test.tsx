@@ -63,6 +63,7 @@ import { PushPrimerModal } from '../PushPrimerModal';
 import NotificationSettings from '@/app/profile/notifications';
 import { FlippedOrderCard } from '@/features/order/FlippedOrderCard';
 import { FLAGS } from '@/lib/flags';
+import { AppState } from 'react-native';
 
 const t = (k: string) => k;
 
@@ -172,4 +173,23 @@ it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = 첫 foo
 it('리뷰 작성 성공 시 예약 취소 배선 — 소스 잠금(작성 화면 cancelReviewReminder)', () => {
   const src = require('fs').readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
   expect(src).toContain('cancelReviewReminder(id)');
+});
+
+it('KB-496(Codex #104 P2-4): OS 설정 복귀(AppState active) = 권한 재조회 + 토큰 등록 — 재시작 없이 배너 해제·등록', () => {
+  const handlers: ((s: string) => void)[] = [];
+  const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => {
+    handlers.push(cb);
+    return { remove: jest.fn() };
+  }) as never);
+  const perm = jest.requireMock('@/lib/push/pushAdapter').getPermissionStatus as jest.Mock;
+  render(<NotificationSettings />);
+  perm.mockClear();
+  mockAdapter.registerPushToken.mockClear();
+  expect(handlers.length).toBeGreaterThanOrEqual(1);
+  act(() => handlers.forEach((h) => h('background'))); // 비활성 전환은 무반응
+  expect(mockAdapter.registerPushToken).not.toHaveBeenCalled();
+  act(() => handlers.forEach((h) => h('active')));
+  expect(perm).toHaveBeenCalledTimes(1);
+  expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1);
+  spy.mockRestore();
 });
