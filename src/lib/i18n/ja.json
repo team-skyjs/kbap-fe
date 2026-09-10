@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "レビューを書く",
+    "photoSheetTitle": "レビュー写真",
     "post": "投稿",
     "ratingLabel": "評価 *",
     "tapToRate": "タップして評価",

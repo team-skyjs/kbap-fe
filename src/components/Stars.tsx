@@ -1,10 +1,12 @@
 /**
- * Stars — rating display. Single Star supports partial fill via a clip rect
- * (ported from mockup icons.jsx, Math.random id → stable React.useId).
+ * Stars — rating display. 부분 채움은 **View 오버레이 + overflow hidden**으로 자른다
+ * (SVG clipPath 폐기 — P-375/KB-539: Android react-native-svg가 `url(#id)` 참조를
+ * 못 풀어 채움 Path가 통째로 클립됐다. P-349 vectorEffect 충돌에 이은 두 번째
+ * 플랫폼 사고라 클립 의존 자체를 없애 양 플랫폼 동일 경로로 만든다).
  */
 import * as React from 'react';
 import { View } from 'react-native';
-import Svg, { ClipPath, Defs, Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { color as C, font } from '@/lib/theme';
 import { Txt } from './Txt';
 
@@ -47,18 +49,28 @@ export function Star({
   fillColor?: string;
   emptyColor?: string;
 }) {
-  const rawId = React.useId();
-  const id = `st${rawId.replace(/[^a-zA-Z0-9]/g, '')}`;
-  return (
+  const pct = Math.max(0, Math.min(100, fillPct));
+  const sw = 16 / size; // 화면상 1px 고정(P-349)
+  const empty = (
     <Svg width={size} height={size} viewBox="0 0 16 16">
-      <Defs>
-        <ClipPath id={id}>
-          <Rect x="0" y="0" width={(16 * fillPct) / 100} height="16" />
-        </ClipPath>
-      </Defs>
-      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={16 / size} strokeLinejoin="round" />
-      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={16 / size} strokeLinejoin="round" clipPath={`url(#${id})`} />
+      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={sw} strokeLinejoin="round" />
     </Svg>
+  );
+  const filled = (
+    <Svg width={size} height={size} viewBox="0 0 16 16">
+      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={sw} strokeLinejoin="round" />
+    </Svg>
+  );
+  if (pct <= 0) return empty;
+  if (pct >= 100) return filled;
+  // 부분 채움 = 채운 별을 폭 pct%의 overflow hidden 상자로 가린다(SVG 클립 미사용).
+  return (
+    <View style={{ width: size, height: size }}>
+      {empty}
+      <View style={{ position: 'absolute', left: 0, top: 0, width: (size * pct) / 100, height: size, overflow: 'hidden' }}>
+        {filled}
+      </View>
+    </View>
   );
 }
 

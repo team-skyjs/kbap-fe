@@ -373,6 +373,7 @@
   },
   "review": {
     "title": "Viết đánh giá",
+    "photoSheetTitle": "Ảnh đánh giá",
     "post": "Đăng",
     "ratingLabel": "Đánh giá của bạn *",
     "tapToRate": "Chạm để chấm điểm",

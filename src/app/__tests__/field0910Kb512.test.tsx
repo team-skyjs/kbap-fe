@@ -17,24 +17,52 @@ jest.mock('react-native-svg', () => {
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
 describe('① 별 채움 회귀', () => {
-  it('Star = strokeWidth 16/size 2곳 · vectorEffect 부재 · fillPct 클립 Rect 유지', () => {
+  it('Star = strokeWidth sw(=16/size) · vectorEffect 부재 · P-375 클립 의존 소멸', () => {
     const st = read('src/components/Stars.tsx');
-    expect((st.match(/strokeWidth=\{16 \/ size\}/g) ?? []).length).toBe(2);
+    expect(st).toContain('const sw = 16 / size;');
+    expect((st.match(/strokeWidth=\{sw\}/g) ?? []).length).toBe(2);
     expect(st).not.toContain('vectorEffect=');
-    expect(st).toContain('width={(16 * fillPct) / 100}'); // 부분 채움 클립 폭
+    // P-375(KB-539): Android에서 url(#id)가 안 풀려 채움이 통째로 클립됨 → SVG 클립 폐기
+    expect(st).not.toContain('ClipPath');
+    expect(st).not.toContain('useId');
+    expect(st).not.toContain('clipPath=');
+    expect(st).toContain("overflow: 'hidden'"); // 부분 채움 = View 오버레이
   });
 
-  it('Star 렌더 — fillPct 100 = 클립 Rect 폭 16, size 48 = strokeWidth 1/3', () => {
+  it('Star 렌더 — 100%/0% = 단일 Path, size 48 = strokeWidth 1/3', () => {
+    const { Star } = require('@/components/Stars') as typeof import('@/components/Stars');
+    const render = (props: { size?: number; fillPct?: number }) => {
+      let tree!: ReactTestRenderer;
+      act(() => { tree = renderer.create(<Star {...props} />); });
+      return tree;
+    };
+    const full = render({ size: 48, fillPct: 100 });
+    const fullPaths = full.root.findAll((n) => n.type === 'Path');
+    expect(fullPaths).toHaveLength(1); // 채운 별 하나(빈 별 아래 깔지 않음)
+    expect(fullPaths[0].props.fill).toBe('#FFED47');
+    expect(fullPaths[0].props.strokeWidth).toBeCloseTo(16 / 48);
+    const none = render({ size: 48, fillPct: 0 });
+    const nonePaths = none.root.findAll((n) => n.type === 'Path');
+    expect(nonePaths).toHaveLength(1);
+    expect(nonePaths[0].props.fill).toBe('#EAEBEE'); // 빈 별
+  });
+
+  it('P-375: 부분 채움 = 오버레이 폭 size×pct% · Path 2개(빈+채움) · Rect/클립 0', () => {
     const { Star } = require('@/components/Stars') as typeof import('@/components/Stars');
     let tree!: ReactTestRenderer;
-    act(() => {
-      tree = renderer.create(<Star size={48} fillPct={100} />);
-    });
-    const rect = tree.root.findAll((n) => n.type === 'Rect')[0];
-    expect(rect.props.width).toBe(16);
-    const paths = tree.root.findAll((n) => n.type === 'Path');
-    expect(paths.length).toBe(2);
-    for (const path of paths) expect(path.props.strokeWidth).toBeCloseTo(16 / 48);
+    act(() => { tree = renderer.create(<Star size={20} fillPct={50} />); });
+    expect(tree.root.findAll((n) => n.type === 'Path')).toHaveLength(2);
+    expect(tree.root.findAll((n) => n.type === 'Rect')).toHaveLength(0); // 클립 Rect 소멸
+    const overlay = tree.root
+      .findAll((n) => n.type === 'View' && (n.props?.style as { overflow?: string })?.overflow === 'hidden')[0];
+    const st = overlay.props.style as { width: number; height: number; position: string };
+    expect(st.width).toBe(10); // 20 × 50%
+    expect(st.height).toBe(20);
+    expect(st.position).toBe('absolute');
+    // 범위 밖 값도 안전하게 클램프(음수·100 초과)
+    let over!: ReactTestRenderer;
+    act(() => { over = renderer.create(<Star size={20} fillPct={140} />); });
+    expect(over.root.findAll((n) => n.type === 'Path')).toHaveLength(1);
   });
 });
 
