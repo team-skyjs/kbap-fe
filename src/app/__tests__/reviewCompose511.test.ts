@@ -60,3 +60,10 @@ it('⑦ Service 줄바꿈 — 라벨 1줄 고정(flexShrink 0)·별 행 축소·
   expect(rc).toMatch(/extrasLabelWrap: \{[^}]*flexShrink: 0/);
   expect(rc).toContain('<Text style={styles.extrasLabel} numberOfLines={1}>');
 });
+
+it('P-361(KB-524): 장소 카드 블록 소멸 — place 선택 표시는 하단 필 단일(place-card 부재)', () => {
+  const rv = read('src/app/food/[id]/review.tsx');
+  expect(rv).not.toContain('place-card');
+  expect(rv).not.toContain('placeCard');
+  expect(rv).toContain('testID="place-pill-selected"'); // 하단 필은 현행 유지
+});
