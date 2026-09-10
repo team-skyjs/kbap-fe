@@ -41,6 +41,7 @@ import { useCommunityPost, useCreatePost, useUpdatePost } from '@/lib/community/
 import { searchPlaces } from '@/lib/community/places';
 import type { FoodTagRef, PlaceTagRef } from '@/lib/community/types';
 import { EVENTS, track } from '@/lib/analytics';
+import { Shimmer } from '@/components/Skeleton';
 
 const BODY_MAX = 2000;
 const COUNTER_SHOW = 1800;
@@ -442,6 +443,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   const atCap = kind === 'food' ? foodTags.length >= FOOD_TAG_MAX : placeTag != null;
   const isBrowse = q.trim().length === 0;
   const scannedList = scanned.data ?? [];
+  // P-349 ④(KB-512): scanned 판정 전 = 구역 분기·배너 미렌더(깜빡임) — 스켈레톤 행 6개
+  const scanPending = kind === 'food' && useScanScope && scanned.isPending;
   const reviewInitial = useScanScope && scannedList.length > 0; // filter: 0건 = 인기 폴백(현행)
   // P-245: 리뷰 컨텍스트 브라우즈 = 스캔분(활성) / 전체(비활성) 2구역 — 인기 폴백 폐기
   const foodList = isBrowse
@@ -534,17 +537,31 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
           </View>
 
           <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            {/* P-349 ④: scanned isPending 동안 = 스켈레톤만(구역·배너는 판정 후 한 번에) */}
+            {scanPending && isBrowse && (
+              <View testID="picker-skeleton">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <View key={i} style={styles.skelRow}>
+                    <Shimmer style={styles.skelThumb} />
+                    <View style={{ flex: 1, gap: 6 }}>
+                      <Shimmer style={styles.skelBarA} />
+                      <Shimmer style={styles.skelBarB} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
             {/* 섹션 헤더 — mono 대문자. 빈 검색: 음식=POPULAR(브라우즈)·장소=RECENT(목).
                 P-245 자격 컨텍스트: 활성 구역(RECENTLY SCANNED)은 0건이면 헤더도 생략 —
                 안내+CTA가 메인(빈 컨테이너 금지, P-210). */}
-            {isBrowse && (kind !== 'food' || !eligible || scannedList.length > 0) && (
+            {!(scanPending && isBrowse) && isBrowse && (kind !== 'food' || !eligible || scannedList.length > 0) && (
               <Text style={styles.sectionHead}>
                 {t(kind === 'food' ? (eligible || reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')}
               </Text>
             )}
             {/* P-245: 검색에서 전체 결과로 전환된 상태 = 비활성 + 같은 안내(학습 역할) */}
             {searchDisabled && eligNote}
-            {kind === 'food'
+            {!(scanPending && isBrowse) && (kind === 'food'
               ? foodList.map((f) => {
                   const selected = foodTags.some((x) => x.foodId === f.foodId);
                   const disabled = searchDisabled; // 검색 전체 결과 = 선택 불가(P-245 ③)
@@ -581,9 +598,9 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                     selected={placeTag?.name === p.name}
                     onPress={() => onTogglePlace(p)}
                   />
-                ))}
+                )))}
             {/* P-245: 자격 브라우즈 — 안내+CTA(스캔 0건이면 이게 메인) + 전체 음식(비활성·참고) */}
-            {kind === 'food' && isBrowse && eligible && (
+            {!scanPending && kind === 'food' && isBrowse && eligible && (
               <>
                 {eligNote}
                 <Text style={styles.sectionHead}>{t('community.sectionAllFoods')}</Text>
@@ -785,6 +802,11 @@ const styles = StyleSheet.create({
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 66, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   rowThumb: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2 }, // §2-9: 원형 40
   rowThumbFallback: { backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center' },
+  // P-349 ④: dish 행 스켈레톤 — 원 48 + 바 2줄
+  skelRow: { flexDirection: 'row', alignItems: 'center', gap: 11, minHeight: 66, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
+  skelThumb: { width: 48, height: 48, borderRadius: 24 },
+  skelBarA: { width: '55%', height: 14, borderRadius: 4 },
+  skelBarB: { width: '35%', height: 11, borderRadius: 4 },
   rowThumbPlace: { backgroundColor: accentTint, alignItems: 'center', justifyContent: 'center' },
   resultText: { fontSize: 15, fontWeight: '600', color: C.ink },
   resultTextOn: { color: C.primaryText },

@@ -33,9 +33,9 @@ export function BookmarkStar({ saved = false, size = 16 }: { saved?: boolean; si
   );
 }
 
-/** P-348 ①(KB-511): viewBox 16 기준 strokeWidth가 크기에 비례 확대(48px 별 = 9px 보더)
- *  — vectorEffect non-scaling-stroke로 **모든 크기에서 1px 절대값**(시안 KB-429 1px).
- *  sw prop 폐지. */
+/** P-348 ①(KB-511) → P-349 ①(KB-512): viewBox 16 기준 strokeWidth가 크기에 비례
+ *  확대(48px 별 = 9px 보더) — 1px 절대값은 vectorEffect가 아니라 **strokeWidth={16/size}**
+ *  (vectorEffect non-scaling-stroke는 clipPath와 충돌 — 부분 채움이 조각만 렌더, 실기 회귀). */
 export function Star({
   size = 20,
   fillPct = 100,
@@ -56,8 +56,8 @@ export function Star({
           <Rect x="0" y="0" width={(16 * fillPct) / 100} height="16" />
         </ClipPath>
       </Defs>
-      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={1} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={1} vectorEffect="non-scaling-stroke" strokeLinejoin="round" clipPath={`url(#${id})`} />
+      <Path d={STAR_D} fill={STAR_EMPTY_FILL} stroke={emptyColor} strokeWidth={16 / size} strokeLinejoin="round" />
+      <Path d={STAR_D} fill={fillColor} stroke={STAR_FILL_STROKE} strokeWidth={16 / size} strokeLinejoin="round" clipPath={`url(#${id})`} />
     </Svg>
   );
 }
