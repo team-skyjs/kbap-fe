@@ -90,14 +90,16 @@ export function useBookmarks(risk?: RiskFilterChip) {
 /** P-353 ⑤/#116 P2 ①: 북마크 판정 소스 공용 훅 — 전 페이지 드레인(P-332 가드
  *  문법: isFetching 가드 + cancelRefetch:false) + foodId Set. FoodExplorer·검색 등
  *  저장 배지/토글 판정은 전부 이 훅 경유(중복 드레인 배선 금지). */
-export function useSavedIds(): Set<string> {
+export function useSavedIds(): { ids: Set<string>; ready: boolean } {
   const saved = useBookmarks();
   React.useEffect(() => {
     if (saved.hasNextPage && !saved.isFetchingNextPage && !saved.isFetching)
       void saved.fetchNextPage({ cancelRefetch: false });
   }, [saved.hasNextPage, saved.isFetchingNextPage, saved.isFetching, saved.fetchNextPage]);
   const data = saved.data;
-  return React.useMemo(() => new Set((data ?? []).map((f) => f.foodId)), [data]);
+  const ids = React.useMemo(() => new Set((data ?? []).map((f) => f.foodId)), [data]);
+  // #116 2R ①: ready = 드레인 완료 — 부분 집합으로 add/remove 방향 오판(POST 오발) 방지
+  return { ids, ready: !saved.hasNextPage && !saved.isFetching };
 }
 
 /** 캐시(와이어 페이지)에 낙관적 add/remove. 이전 상태를 반환해 롤백에 쓴다. */

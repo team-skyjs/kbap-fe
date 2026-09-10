@@ -125,7 +125,7 @@ jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }),
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimchi Jjigae', nameKo: '김치찌개', risk: 'safe' }, isLoading: false, error: null, refetch: jest.fn() }),
 }));
-jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(), useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }),
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),

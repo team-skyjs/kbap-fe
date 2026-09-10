@@ -16,6 +16,7 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
+import { CardPhoto } from '@/components/CardPhoto';
 import { DEFAULT_FOOD_IMAGE_URL } from '@/lib/api/foodAdapter';
 import { Pressable, ScrollView, StyleSheet, View, Linking } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
@@ -170,7 +171,10 @@ function RichRow({
       <View style={styles.thumbWrap}>
         {dish.matched ? (
           <>
-            <RemoteImage uri={thumb ?? DEFAULT_FOOD_IMAGE_URL} style={styles.thumb} />
+            {/* #116 2R ②: CardPhoto 경유 — 깨진 URL도 기본 이미지 폴백 내장 */}
+            <View style={styles.thumb}>
+              <CardPhoto uri={thumb} borderRadius={4} />
+            </View>
             <Pressable style={styles.thumbBadge} hitSlop={8} onPress={onMarkPress} disabled={!onMarkPress} testID={`mark-${dish.itemId}`}>
               <RiskBadge state={dish.risk} />
             </Pressable>

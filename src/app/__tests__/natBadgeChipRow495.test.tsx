@@ -47,7 +47,7 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '9', restrictions: [] } }) }));
 jest.mock('@/lib/data/useFoods', () => ({ useInfiniteFoods: () => ({ data: [], isLoading: false, isError: false, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }) }));
-jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(),
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }),
   useBookmarks: () => ({ data: [], hasNextPage: false, isFetchingNextPage: false, isFetching: false, fetchNextPage: jest.fn() }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
 }));

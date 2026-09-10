@@ -95,7 +95,7 @@ jest.mock('@/lib/data/bookmarks', () => ({
     React.useEffect(() => {
       if (mockBookmarks.hasNextPage && !mockBookmarks.isFetchingNextPage) mockBookmarks.fetchNextPage({ cancelRefetch: false });
     });
-    return new Set<string>(((mockBookmarks.data ?? []) as { foodId: string }[]).map((f) => f.foodId));
+    return { ids: new Set<string>(((mockBookmarks.data ?? []) as { foodId: string }[]).map((f) => f.foodId)), ready: !mockBookmarks.hasNextPage };
   },
   useBookmarks: () => ({ ...mockBookmarks }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),

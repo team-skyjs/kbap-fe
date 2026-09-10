@@ -53,7 +53,7 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/useBottomInset', () => ({ useBottomInset: () => 0 }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
 jest.mock('@/lib/data/useFoods', () => ({ useFoods: () => ({ data: [] }) }));
-jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(), useBookmarks: () => ({ data: [] }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => ({ data: { recent: [] } }) }));
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }),

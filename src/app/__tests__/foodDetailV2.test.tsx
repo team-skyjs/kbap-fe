@@ -85,7 +85,7 @@ const mockUseFoodDetail = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail() }));
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));
-jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => new Set<string>(), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
+jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
 // P-169: 상세가 Helpful/신고 뮤테이션·모더레이션 직접 배선 — 표면 목
 const mockToggleLike = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({

@@ -118,7 +118,8 @@ it('행 구성 — 경고 칩 = 기피 성분만(safe 제외) 1줄 nowrap, 미�
   expect(s).toContain('₩9,000');
   // P-138 ③: 미매칭 행 = 무썸네일 + 행 내 안내문 0 + [+] 담기 가능(P-045 실명 주문)
   expect(s).not.toContain('scan.notInDb');
-  const imgs = tree.root.findAll((n) => n.props?.source?.uri === 'https://cdn/x.jpg');
+  // #116 2R ②: 썸네일 = CardPhoto 경유(source가 문자열) — 구 RemoteImage({uri}) 형태 병행 허용
+  const imgs = tree.root.findAll((n) => n.props?.source === 'https://cdn/x.jpg' || n.props?.source?.uri === 'https://cdn/x.jpg');
   expect(imgs.length).toBeGreaterThanOrEqual(1); // 매칭 행만
   expect(byId(tree, 'add-1').length).toBeGreaterThanOrEqual(1);
   // P-138 ④: 카테고리 헤더 미렌더(플랫 리스트)

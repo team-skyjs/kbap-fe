@@ -187,7 +187,7 @@ export function FoodExplorer({
   // (P-332 가드 문법 포함 — 중복 배선 금지, 검색 등 다른 표면과 공유).
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
-  const savedIds = useSavedIds();
+  const { ids: savedIds, ready: savedReady } = useSavedIds();
   const gridSource: FoodCard[] =
     variant === 'screen'
       ? savedOnly ? savedListFoods : (browse.data ?? []) // P-318: 세그먼트 소멸 — Saved는 토글 칩
@@ -200,6 +200,7 @@ export function FoodExplorer({
 
   const onBookmark = (f: FoodCard) => {
     if (guest) return setGate(true);
+    if (!savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
       add: !savedIds.has(f.foodId),

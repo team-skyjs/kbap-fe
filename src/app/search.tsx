@@ -60,10 +60,11 @@ export default function Search() {
 
   // P-353 ⑤(KB-515) → #116 P2 ①②: 판정 = 공용 useSavedIds(드레인 포함), 게스트 = AuthGateSheet
   const toggleBookmark = useToggleBookmark();
-  const savedIds = useSavedIds();
+  const { ids: savedIds, ready: savedReady } = useSavedIds();
   const [gate, setGate] = useState(false);
   const onBookmark = (f: FoodCard) => {
     if (isGuest) return setGate(true); // 홈/음식 탭 문법 그대로 — 무동작 금지
+    if (!savedReady) return; // #116 2R ①: 드레인 완료 전 무시
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
       add: !savedIds.has(f.foodId),

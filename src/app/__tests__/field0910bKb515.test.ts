@@ -25,13 +25,22 @@ it('③ 기본 이미지 상수 = 어댑터 경계 한 곳(서버 DEFAULT_FOOD_I
 
 it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), 검색 게스트 = AuthGateSheet', () => {
   const bm = read('src/lib/data/bookmarks.ts');
-  expect(bm).toContain('export function useSavedIds(): Set<string> {');
+  expect(bm).toContain('export function useSavedIds(): { ids: Set<string>; ready: boolean } {');
   expect(bm).toContain('void saved.fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계
   const fe = read('src/features/food/FoodExplorer.tsx');
-  expect(fe).toContain('const savedIds = useSavedIds();');
+  expect(fe).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds();');
   expect(fe).not.toContain('saved.fetchNextPage({ cancelRefetch: false })'); // 자체 드레인 소멸
   const sr = read('src/app/search.tsx');
-  expect(sr).toContain('const savedIds = useSavedIds();');
+  expect(sr).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds();');
   expect(sr).toContain('if (isGuest) return setGate(true);');
   expect(sr).toContain('<AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />');
+});
+
+it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 스캔 썸네일 CardPhoto 경유', () => {
+  const bm = read('src/lib/data/bookmarks.ts');
+  expect(bm).toContain('return { ids, ready: !saved.hasNextPage && !saved.isFetching };');
+  expect(read('src/features/food/FoodExplorer.tsx')).toContain('if (!savedReady) return;');
+  expect(read('src/app/search.tsx')).toContain('if (!savedReady) return;');
+  const rich = read('src/features/scan/ScanRichList.tsx');
+  expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={4} />'); // 깨진 URL = 기본 이미지 폴백
 });
