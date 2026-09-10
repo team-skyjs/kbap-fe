@@ -184,9 +184,10 @@ it('Codex #33 P2 4건 — 진행 바 티어 상대·식이 진입 복원·영수
     const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
     for (const k of ['receiptDate', 'receiptLocation', 'receiptTotal', 'dishes']) expect(typeof j.myFoods[k]).toBe('string');
   }
-  // ① 다품목 = 선택 시트(전 dish 리뷰 가능), 1개 = 직행
+  // ① 다품목 = 선택 시트(전 dish 리뷰 가능), 1개 = 직행 — P-355: 앱 바텀시트(Alert 폐기)
   expect(detail).toContain('reviewables.length === 1');
-  expect(detail).toContain('...reviewables.map((it) => ({');
+  expect(detail).toContain('<OrderDishPickerSheet');
+  expect(detail).not.toContain('Alert.alert'); // 네이티브 목록 소멸 잠금
 });
 
 it('④ 저장 목록 — FoodGridCard 2열 그리드 + 위험 칩(All·Safe·Avoid·Warning) 소스 잠금', () => {
