@@ -970,7 +970,10 @@
     "readFailed": "Couldn't load. Tap to retry",
     "osOff": "Notifications are off in your device settings.",
     "osOffCta": "Open device settings",
-    "saveFailed": "Couldn’t save. Please try again."
+    "saveFailed": "Couldn’t save. Please try again.",
+    "offConfirmTitle": "Turn off notifications?",
+    "offConfirmBody": "You may miss useful updates and event alerts.",
+    "offConfirmCta": "Turn off"
   },
   "inbox": {
     "title": "Notifications",

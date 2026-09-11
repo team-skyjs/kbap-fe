@@ -971,7 +971,10 @@
     "readFailed": "載入失敗，點擊重試",
     "osOff": "裝置設定中已關閉通知。",
     "osOffCta": "開啟裝置設定",
-    "saveFailed": "儲存失敗，請重試。"
+    "saveFailed": "儲存失敗，請重試。",
+    "offConfirmTitle": "要關閉通知嗎？",
+    "offConfirmBody": "你可能會錯過有用的資訊和活動提醒。",
+    "offConfirmCta": "關閉通知"
   },
   "inbox": {
     "title": "通知",

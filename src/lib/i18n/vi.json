@@ -971,7 +971,10 @@
     "readFailed": "Không tải được. Chạm để thử lại",
     "osOff": "Thông báo đang tắt trong cài đặt thiết bị.",
     "osOffCta": "Mở cài đặt thiết bị",
-    "saveFailed": "Không lưu được. Vui lòng thử lại."
+    "saveFailed": "Không lưu được. Vui lòng thử lại.",
+    "offConfirmTitle": "Tắt thông báo?",
+    "offConfirmBody": "Bạn có thể bỏ lỡ thông tin hữu ích và sự kiện.",
+    "offConfirmCta": "Tắt"
   },
   "inbox": {
     "title": "Thông báo",

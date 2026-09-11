@@ -971,7 +971,10 @@
     "readFailed": "加载失败，点击重试",
     "osOff": "设备设置中已关闭通知。",
     "osOffCta": "打开设备设置",
-    "saveFailed": "保存失败，请重试。"
+    "saveFailed": "保存失败，请重试。",
+    "offConfirmTitle": "要关闭通知吗？",
+    "offConfirmBody": "你可能会错过有用的信息和活动提醒。",
+    "offConfirmCta": "关闭通知"
   },
   "inbox": {
     "title": "通知",

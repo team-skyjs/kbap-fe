@@ -971,7 +971,10 @@
     "readFailed": "Gagal memuat. Ketuk untuk coba lagi",
     "osOff": "Notifikasi dimatikan di pengaturan perangkat.",
     "osOffCta": "Buka pengaturan perangkat",
-    "saveFailed": "Gagal menyimpan. Coba lagi."
+    "saveFailed": "Gagal menyimpan. Coba lagi.",
+    "offConfirmTitle": "Matikan notifikasi?",
+    "offConfirmBody": "Kamu mungkin melewatkan info berguna dan acara.",
+    "offConfirmCta": "Matikan"
   },
   "inbox": {
     "title": "Notifikasi",

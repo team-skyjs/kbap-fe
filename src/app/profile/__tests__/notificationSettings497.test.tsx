@@ -191,12 +191,25 @@ it('US2(c) 시트 「나중에」 → mutate 0회, 시트 닫힘', async () => {
   expect(has(tree, 'notif-sheet-consent')).toBe(false);
 });
 
-it('US2(d) 소식 ON에서 소식 토글 탭 → mutate({news:{enabled:false}}) — 시트 없음', async () => {
+it('US2(d) 소식 ON에서 소식 토글 탭 → 확인 모달(서버 요청 0) → 「알림 끄기」 = mutate({news:{enabled:false}}) — 시트 없음', async () => {
   mockData.query.data = ON;
   const tree = await render();
   await tap(tree, 'notif-news');
+  expect(mockData.update.mutate).not.toHaveBeenCalled(); // 이탈 방어: 확인 전 변화 없음
+  expect(has(tree, 'notif-off-confirm')).toBe(true);
+  await tap(tree, 'notif-off-confirm-cta');
   expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { enabled: false } });
   expect(has(tree, 'notif-sheet-consent')).toBe(false);
+  expect(has(tree, 'notif-off-confirm')).toBe(false);
+});
+
+it('US2(d2) 확인 모달 「취소」 = mutate 0회, 토글 ON 유지', async () => {
+  mockData.query.data = ON;
+  const tree = await render();
+  await tap(tree, 'notif-news');
+  await tap(tree, 'notif-off-cancel');
+  expect(mockData.update.mutate).not.toHaveBeenCalled();
+  expect(has(tree, 'notif-off-confirm')).toBe(false);
 });
 
 it('US2(e) 소식 ON에서 식사 시간 탭 → mutate({news:{mealTime: !cur}}) — enabled 미포함(동의 유지)', async () => {

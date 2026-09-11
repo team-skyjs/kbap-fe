@@ -11,12 +11,13 @@
  * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
 import * as React from 'react';
-import { AppState, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, radius } from '@/lib/theme';
+import { color as C, font, radius, shadow } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
+import { Btn } from '@/components/Btn';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { Shimmer } from '@/components/Skeleton';
 import { FLAGS } from '@/lib/flags';
@@ -43,6 +44,7 @@ function NotificationSettingsScreen() {
   const update = useUpdateNotificationSettings();
   const [permission, setPermission] = React.useState<PushPermission>('unavailable');
   const [consentOpen, setConsentOpen] = React.useState(false);
+  const [offConfirm, setOffConfirm] = React.useState(false); // 소식 OFF 이탈 방어(당근 선례)
 
   React.useEffect(() => {
     void getPermissionStatus().then(setPermission);
@@ -78,6 +80,10 @@ function NotificationSettingsScreen() {
       setConsentOpen(true); // 동의 시트 — 서버 요청 없음, 토글 OFF 유지
       return;
     }
+    setOffConfirm(true); // 끄기는 확인 모달 뒤에만(이탈 방어) — 서버 요청 없음, 토글 ON 유지
+  };
+  const confirmNewsOff = () => {
+    setOffConfirm(false);
     track(EVENTS.push_pref_toggle, { key: 'news', on: false });
     patch({ news: { enabled: false } });
   };
@@ -169,6 +175,24 @@ function NotificationSettingsScreen() {
         )}
       </ScrollView>
 
+      {/* 소식 OFF 확인 — P-162 확인 모달 문법(가운데 카드·취소/확정 2버튼). 취소 = 변화 없음 */}
+      <Modal visible={offConfirm} transparent animationType="fade" onRequestClose={() => setOffConfirm(false)}>
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard} testID="notif-off-confirm">
+            <Text style={styles.confirmTitle}>{t('notif.offConfirmTitle')}</Text>
+            <Text style={styles.confirmBody}>{t('notif.offConfirmBody')}</Text>
+            <View style={styles.confirmActions}>
+              <View style={{ flex: 1 }}>
+                <Btn variant="ghost" onPress={() => setOffConfirm(false)} testID="notif-off-cancel">{t('common.cancel')}</Btn>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Btn onPress={confirmNewsOff} testID="notif-off-confirm-cta">{t('notif.offConfirmCta')}</Btn>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <NotificationSheet
         open={consentOpen}
         variant="consent"
@@ -232,6 +256,13 @@ const styles = StyleSheet.create({
   caption: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 12 },
   captionText: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
   captionLink: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText },
+
+  // P-162 확인 모달(scan.tsx·주문 완료 모달과 동일 수치)
+  confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
+  confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
+  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
+  confirmActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
 
   sw: { width: 34, height: 20, borderRadius: 10, backgroundColor: C.line, padding: 2, justifyContent: 'center' },
   swOn: { backgroundColor: C.primary },

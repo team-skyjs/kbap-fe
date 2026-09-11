@@ -972,7 +972,10 @@
     "readFailed": "No se pudo cargar. Toca para reintentar",
     "osOff": "Las notificaciones están desactivadas en los ajustes del dispositivo.",
     "osOffCta": "Abrir ajustes del dispositivo",
-    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+    "offConfirmTitle": "¿Desactivar las notificaciones?",
+    "offConfirmBody": "Podrías perderte información útil y eventos.",
+    "offConfirmCta": "Desactivar"
   },
   "inbox": {
     "title": "Notificaciones",
