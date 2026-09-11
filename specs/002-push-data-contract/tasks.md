@@ -127,7 +127,7 @@
 - [X] T024 [P] `PROGRESS.md` 에 KB-498 항목 추가(관례): 변경 파일·테스트·OTA 가능(JS 전용)·발행은 승인 대기
 - [X] T025 전체 검증: `npx tsc --noEmit` 0 · `npx jest` 전체 통과 · `git diff --stat`으로 변경 파일이 plan.md Source Code 목록(소스 2 + 로케일 10 + 테스트 4 + PROGRESS)과 일치하는지 확인 — 화면 파일(`src/app/**`) 변경 0
 - [X] T026 quickstart.md §수동 검증 — Android 실기기 헤드업·소리·탭 경로·NUDGE 무동작·iOS 무변화 확인. 실기기가 없으면 결과란에 "미실시 — 발행 전 필수" 로 명기하고 PR 본문에 그대로 적는다(자기 완료 선언 금지) — **결과: 미실시 — 발행 전 필수(2026-09-11, 실기기 없음; PROGRESS·PR 본문 명기)**
-- [ ] T027 커밋·PR: `open-draft-pr` 스킬 규약(제목 `feat(push): …`, Jira 키는 브랜치·본문 `Jira:` 줄만). OTA 발행 명령은 실행하지 않는다(예진 승인 게이트)
+- [X] T027 커밋·PR: `open-draft-pr` 스킬 규약(제목 `feat(push): …`, Jira 키는 브랜치·본문 `Jira:` 줄만). OTA 발행 명령은 실행하지 않는다(예진 승인 게이트)
 
 ---
 
