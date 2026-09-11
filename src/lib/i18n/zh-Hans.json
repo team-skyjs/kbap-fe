@@ -985,10 +985,12 @@
     "helpfulBody": "你对泡菜汤的评价获得了一个有帮助。",
     "reminderTitle": "这餐怎么样？",
     "reminderBody": "给你点的菜写个简短评价吧。",
-    "noticeTitle": "欢迎使用 K-Bap",
-    "noticeBody": "扫描菜单即可了解哪些菜对你是安全的。",
-    "nudgeTitle": "今天在外面吃饭吗？",
-    "nudgeBody": "点餐前先扫一下菜单吧。",
+    "scanSuggestionTitle": "今天在外面吃饭吗？",
+    "scanSuggestionBody": "点餐前先扫一下菜单吧。",
+    "newsTitle": "K-Bap 资讯",
+    "newsBody": "查看新功能和活动信息。",
+    "mealTimeTitle": "该吃饭啦",
+    "mealTimeBody": "扫描菜单，马上查看你要避开的食材。",
     "newBadge": "新"
   },
   "myFoods": {

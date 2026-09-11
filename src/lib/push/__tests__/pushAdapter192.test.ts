@@ -18,6 +18,8 @@ const mockNotifications = {
   setNotificationHandler: jest.fn(),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(undefined),
+  AndroidImportance: { MAX: 7 },
   SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
 };
 jest.mock('expo-notifications', () => mockNotifications);
@@ -27,6 +29,7 @@ const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } })); // 지연 접근(호이스팅)
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { queryClient } from '@/lib/queryClient';
 import { NOTIF_SETTINGS_KEY } from '@/lib/data/useNotificationSettings';
 import {
@@ -117,10 +120,18 @@ it('P-268: 원격 토큰 발급 실패 = 비치명(reject 미전파 — 리마�
   mockNotifications.getExpoPushTokenAsync.mockResolvedValue({ data: 'ExponentPushToken[test]' });
 });
 
-it('딥링크 매핑 — HELPFUL=내 리뷰 · NUDGE=스캔 · REVIEW_REMINDER=작성 · 미지=무동작', () => {
+it('KB-498 딥링크 매핑 — 5종 정확 일치 · NEWS=무동작 · 구 NUDGE/NOTICE·변형·미지=무동작', () => {
   expect(routeForNotificationData({ type: 'HELPFUL' })).toBe('/profile/reviews');
-  expect(routeForNotificationData({ type: 'NUDGE' })).toBe('/scan');
+  expect(routeForNotificationData({ type: 'SCAN_SUGGESTION' })).toBe('/scan');
+  expect(routeForNotificationData({ type: 'MEAL_TIME' })).toBe('/scan');
   expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: '7' })).toBe('/food/7/review');
+  expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: 7 })).toBe('/food/7/review'); // 숫자도 같은 경로
+  expect(routeForNotificationData({ type: 'REVIEW_REMINDER' })).toBeNull(); // foodId 없음 = 이동 없음
+  expect(routeForNotificationData({ type: 'NEWS' })).toBeNull(); // 알림함 열람용
+  expect(routeForNotificationData({ type: 'NUDGE' })).toBeNull(); // 구 이름 — 호환 없음
+  expect(routeForNotificationData({ type: 'NOTICE' })).toBeNull();
+  expect(routeForNotificationData({ type: 'helpful' })).toBeNull(); // 대소문자
+  expect(routeForNotificationData({ type: 'HELPFUL ' })).toBeNull(); // 공백
   expect(routeForNotificationData({ type: 'UNKNOWN_FUTURE' })).toBeNull();
   expect(routeForNotificationData(undefined)).toBeNull();
 });
@@ -131,7 +142,60 @@ it('알림 탭 구독 — 응답 data로 라우팅 콜백 + 포그라운드 핸�
   expect(mockNotifications.setNotificationHandler).toHaveBeenCalled();
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
-  expect(onRoute).toHaveBeenCalledWith('/profile/reviews');
+  expect(onRoute).toHaveBeenCalledWith('/profile/reviews', undefined); // KB-498: notificationId 없음 = undefined
+});
+
+it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변환 0) · 없으면 undefined · NEWS는 미호출', () => {
+  const onRoute = jest.fn();
+  addNotificationTapListener(onRoute);
+  const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+  handler({ notification: { request: { identifier: 'r1', content: { data: { type: 'HELPFUL', notificationId: 456 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/profile/reviews', 456);
+  handler({ notification: { request: { identifier: 'r2', content: { data: { type: 'HELPFUL', notificationId: '9' } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/profile/reviews', '9'); // 문자열도 그대로 — 후속 작업이 판단
+  handler({ notification: { request: { identifier: 'r3', content: { data: { type: 'HELPFUL' } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/profile/reviews', undefined); // 구 서버·로컬 알림
+  handler({ notification: { request: { identifier: 'r4', content: { data: { type: 'NEWS', notificationId: 3 } } } } });
+  expect(onRoute).toHaveBeenCalledTimes(3); // NEWS = 이동 없음
+});
+
+it('KB-498: 콜드 스타트 = 마지막 응답 1회 전달 — 리스너로 같은 identifier가 또 와도 이중 전달 0 · identifier 없는 응답은 차단 없음', async () => {
+  const cold = { notification: { request: { identifier: 'cold', content: { data: { type: 'MEAL_TIME', notificationId: 7 } } } } };
+  mockNotifications.getLastNotificationResponseAsync.mockResolvedValueOnce(cold);
+  const onRoute = jest.fn();
+  addNotificationTapListener(onRoute);
+  await new Promise((r) => setTimeout(r, 0)); // track(getLast…).then(emit)
+  expect(onRoute).toHaveBeenCalledTimes(1);
+  expect(onRoute).toHaveBeenCalledWith('/scan', 7);
+  const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+  handler(cold); // 일부 플랫폼: 부팅 탭이 리스너로도 전달
+  expect(onRoute).toHaveBeenCalledTimes(1);
+  handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
+  handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
+  expect(onRoute).toHaveBeenCalledTimes(3); // identifier 없음 = 매번 전달
+});
+
+it('KB-498: Android = default 채널 MAX 1회(name·sound) · 설정 실패해도 구독 진행 · iOS = 0회', () => {
+  const os = jest.replaceProperty(Platform, 'OS', 'android');
+  try {
+    addNotificationTapListener(() => {});
+    expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(1);
+    expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+      'default',
+      expect.objectContaining({ name: 'Default', importance: 7, sound: 'default' }),
+    );
+    mockNotifications.setNotificationChannelAsync.mockClear();
+    mockNotifications.addNotificationResponseReceivedListener.mockClear();
+    mockNotifications.setNotificationChannelAsync.mockRejectedValueOnce(new Error('channel boom'));
+    const off = addNotificationTapListener(() => {});
+    expect(typeof off).toBe('function');
+    expect(mockNotifications.addNotificationResponseReceivedListener).toHaveBeenCalledTimes(1); // 부팅 무영향
+  } finally {
+    os.restore();
+  }
+  mockNotifications.setNotificationChannelAsync.mockClear();
+  addNotificationTapListener(() => {});
+  expect(mockNotifications.setNotificationChannelAsync).not.toHaveBeenCalled(); // iOS
 });
 
 it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 잠금) — 재설치 잔존 토큰으로 이전 회원에 기기 연결 금지', () => {

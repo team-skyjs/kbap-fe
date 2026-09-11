@@ -985,10 +985,12 @@
     "helpfulBody": "Đánh giá món canh kimchi của bạn nhận được một lượt hữu ích.",
     "reminderTitle": "Bữa ăn thế nào?",
     "reminderBody": "Hãy viết nhanh một đánh giá cho món bạn đã gọi.",
-    "noticeTitle": "Chào mừng đến với K-Bap",
-    "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
-    "nudgeTitle": "Hôm nay ăn ngoài chứ?",
-    "nudgeBody": "Hãy quét thực đơn trước khi gọi món.",
+    "scanSuggestionTitle": "Hôm nay ăn ngoài chứ?",
+    "scanSuggestionBody": "Hãy quét thực đơn trước khi gọi món.",
+    "newsTitle": "Tin từ K-Bap",
+    "newsBody": "Xem các tính năng mới và sự kiện.",
+    "mealTimeTitle": "Đến giờ ăn rồi",
+    "mealTimeBody": "Quét thực đơn để kiểm tra ngay các nguyên liệu bạn cần tránh.",
     "newBadge": "NEW"
   },
   "myFoods": {

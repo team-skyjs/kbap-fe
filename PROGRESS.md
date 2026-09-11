@@ -1414,3 +1414,11 @@
 - [x] i18n notif/push 10로케일 키 교체(구 3토글·야간 키 0, 패리티 유닛) · 게스트 = 프로필 진입점 제거 + 라우트 AuthGateSheet · P-151 메트릭 유닛(Switch·비활성 행·체크박스).
 - [x] tsc 0 · jest 208스위트 1407/1407(신규 7스위트).
 - [ ] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy/receive.html) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
+
+## 푸시 data 계약 반영 — 유형 5종·알림 id·Android 채널 (2026-09-11, KB-498 — Spec Kit 2호 `specs/002-push-data-contract`)
+- [x] 유형 enum 5종(HELPFUL·SCAN_SUGGESTION(구 NUDGE)·REVIEW_REMINDER·NEWS(구 NOTICE 폐기)·MEAL_TIME 신설) — 정의는 pushAdapter PUSH_TYPES 한 곳, 정확 일치만(구 이름·대소문자·공백 = 미지 = 무동작·미기록). 딥링크: SCAN_SUGGESTION·MEAL_TIME→/scan, NEWS→이동 없음(알림함 열람용).
+- [x] 탭 콜백 2번째 인자 = 서버 notificationId(형 변환 0, 없으면 undefined — 루트 레이아웃 무수정 호환) + 콜드 스타트 이중 전달 차단(마지막 응답 조회·리스너가 같은 identifier면 1회). 읽음 호출은 후속(서버 알림함 전환).
+- [x] 알림함: KEYS 5종 모듈 상수 = 런타임 가드(어댑터 런타임 import 금지 — api·auth가 딸려 옴), 미지 유형 기록 0, 하이드레이트 시 구 NUDGE/NOTICE 잔존 드롭(호환 변환 없음). i18n inbox 10로케일 nudge*/notice* → scanSuggestion*(구 nudge 문구 승계)·news*·mealTime* — 광고성 3종 문구에 (광고)·수신거부 없음(서버 부착).
+- [x] Android: 탭 구독 시 'default' 채널 MAX·sound default 1회(멱등, await 없음, 실패 무시) — 서버 channelId 'default'·priority high 대응. iOS·플래그 off = 호출 0(폭탄 목 잠금).
+- [x] 법적 근거 조사(재설치 시 광고성 동의): OS 권한≠수신동의, 동의 단위 = 로그인 회원, 앱 삭제는 소멸 사유 아님, 탈퇴만 파기 — KISA 안내서 7차(2025.12) 원문 확인. 메모리 push-consent-reinstall-legal.
+- [ ] Android 실기기 헤드업·소리 확인(quickstart §수동, 백그라운드 상태 수신) — 미실시, 발행 전 필수. 발행은 KB-501(예진 승인).

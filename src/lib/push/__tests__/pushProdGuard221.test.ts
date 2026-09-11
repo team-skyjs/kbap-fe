@@ -10,7 +10,7 @@ jest.mock('@/lib/flags', () => ({ FLAGS: { pushEnabled: false }, isProdChannel: 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+jest.mock('react-native', () => ({ Platform: { OS: 'android' } })); // KB-498: 채널 설정 분기까지 폭탄 목으로 잠근다
 const mockApi = { put: jest.fn() };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
@@ -33,6 +33,8 @@ jest.mock(
     get cancelScheduledNotificationAsync() { return boom(); },
     get getExpoPushTokenAsync() { return boom(); },
     get addNotificationResponseReceivedListener() { return boom(); },
+    get setNotificationChannelAsync() { return boom(); }, // KB-498
+    get AndroidImportance() { return boom(); },
   }),
   { virtual: true },
 );

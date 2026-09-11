@@ -984,10 +984,12 @@
     "helpfulBody": "Your review on Kimchi Stew got a helpful vote.",
     "reminderTitle": "How was your meal?",
     "reminderBody": "Leave a quick review of the dish you ordered.",
-    "noticeTitle": "Welcome to K-Bap",
-    "noticeBody": "Scan a menu to see your dish ratings.",
-    "nudgeTitle": "Eating out today?",
-    "nudgeBody": "Scan the menu before you order.",
+    "scanSuggestionTitle": "Eating out today?",
+    "scanSuggestionBody": "Scan the menu before you order.",
+    "newsTitle": "K-Bap news",
+    "newsBody": "See what's new: features and events.",
+    "mealTimeTitle": "Time to eat",
+    "mealTimeBody": "Scan the menu to check for ingredients you avoid.",
     "newBadge": "NEW"
   },
   "myFoods": {
