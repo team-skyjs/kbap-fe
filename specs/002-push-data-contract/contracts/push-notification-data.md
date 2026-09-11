@@ -12,7 +12,7 @@
   "data": { "type": "SCAN_SUGGESTION", "notificationId": 456 },
   "sound": "default",
   "priority": "high",
-  "channelId": "default"
+  "channelId": "news"
 }
 ```
 
@@ -20,7 +20,7 @@
 - `data.type`: `HELPFUL | SCAN_SUGGESTION | REVIEW_REMINDER | NEWS | MEAL_TIME`.
 - `data.foodId`: `REVIEW_REMINDER`만. 숫자 또는 문자열.
 - `data.notificationId`: 기기 단위 알림 히스토리 id. 항상 포함(서버 발송분). 숫자(직렬화 차이로 문자열 가능).
-- `channelId: "default"`: 앱이 Android에서 같은 id로 채널을 MAX 중요도로 설정한다.
+- `channelId`: 유형별 — HELPFUL·REVIEW_REMINDER → `activity`, SCAN_SUGGESTION·NEWS·MEAL_TIME → `news`. 앱이 Android에서 이 두 채널을 만든다(activity MAX·news HIGH). `default`는 앱에 없어 폴백 채널(조용함)로 떨어진다. BE 반영: KB-469·470·471 DoD, KB-474 문서화, KB-468 코멘트(2026-09-12).
 
 ## 2. 앱 동작 계약
 
@@ -45,7 +45,7 @@ export function addNotificationTapListener(
 ```
 
 - 기존 호출부 `(href) => router.push(href)` 그대로 유효.
-- Android(`Platform.OS === 'android'`)에서 리스너 등록 시 `setNotificationChannelAsync('default', { name: 'Default', importance: AndroidImportance.MAX, sound: 'default' })` 1회. 실패 무시.
+- Android(`Platform.OS === 'android'`)에서 리스너 등록 시 `setNotificationChannelAsync('activity', { name: t('notif.activityGroup'), importance: MAX, sound: 'default' })` · `('news', { name: t('notif.newsGroup'), importance: HIGH, sound: 'default' })` 각 1회. 실패 무시.
 - `FLAGS.pushEnabled === false` 또는 모듈 로드 실패: 채널 설정 포함 expo-notifications 호출 0, no-op 해제 함수 반환.
 
 ## 4. i18n 키 (10로케일 `inbox` 네임스페이스)

@@ -53,11 +53,11 @@ onRoute(href: string, notificationId?: number | string) => void
 
 ## Android 알림 채널
 
-| 필드 | 값 |
-|------|----|
-| id | `default` (서버 `channelId`와 일치) |
-| name | `Default` |
-| importance | `AndroidImportance.MAX` |
-| sound | `default` |
+| id | 유형 | name (i18n) | importance | sound |
+|----|------|-------------|------------|-------|
+| `activity` | HELPFUL · REVIEW_REMINDER | `notif.activityGroup` | `MAX` | `default` |
+| `news` | SCAN_SUGGESTION · NEWS · MEAL_TIME | `notif.newsGroup` | `HIGH` | `default` |
+
+`default` 채널은 만들지 않는다(중요도 생성 후 불변). 서버가 `default`로 보내면 expo 폴백 채널로 표시된다(기존 동작).
 
 iOS: 호출 없음. 플래그 off: 호출 없음.

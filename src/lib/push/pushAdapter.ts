@@ -205,7 +205,7 @@ export async function cancelReviewReminder(foodId: string): Promise<void> {
  * 알림 탭 → 라우팅 콜백. 포그라운드 표시 핸들러(배너)도 여기서 1회 설정.
  * 콜드 스타트(종료 상태 알림 탭)는 마지막 응답 1회 처리. 반환 = 해제 함수.
  * KB-498: 콜백 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음).
- * 읽음 처리 호출은 후속 작업(서버 알림함 전환) 몫. Android는 여기서 'default' 채널을 MAX로 1회 설정.
+ * 읽음 처리 호출은 후속 작업(서버 알림함 전환) 몫. Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
  */
 export function addNotificationTapListener(onRoute: (href: string, notificationId?: number | string) => void): () => void {
   const N = loadNotifications();
@@ -226,9 +226,12 @@ export function addNotificationTapListener(onRoute: (href: string, notificationI
     }
   };
   try {
-    // KB-498: 서버 channelId 'default' 대응 — MAX = 헤드업+소리. 멱등(재호출 = 갱신). iOS 무동작. 결과 대기 없음(부팅 지연 0).
+    // KB-498: Android 채널 2종 — activity(MAX: HELPFUL·REVIEW_REMINDER) · news(HIGH: 광고성 3종, 기기 설정에서 따로 끌 수 있게 분리).
+    // 채널 중요도는 생성 후 변경 불가라 'default'는 만들지 않는다(서버가 default로 보내면 expo 폴백 채널 = 지금과 동일).
+    // 이름은 설정 화면 그룹명 i18n 재사용. 멱등(재호출 = 이름만 갱신) · iOS 무동작 · 결과 대기 없음(부팅 지연 0).
     if (Platform.OS === 'android') {
-      void N.setNotificationChannelAsync('default', { name: 'Default', importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {});
+      void N.setNotificationChannelAsync('activity', { name: i18n.t('notif.activityGroup'), importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {});
+      void N.setNotificationChannelAsync('news', { name: i18n.t('notif.newsGroup'), importance: N.AndroidImportance.HIGH, sound: 'default' }).catch(() => {});
     }
     N.setNotificationHandler({
       handleNotification: async () => ({

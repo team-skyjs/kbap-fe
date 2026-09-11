@@ -115,7 +115,7 @@
 
 ### Implementation for User Story 4
 
-- [X] T022 [US4] `src/lib/push/pushAdapter.ts` `addNotificationTapListener` try 블록 첫 줄에 추가: `if (Platform.OS === 'android') { void N.setNotificationChannelAsync('default', { name: 'Default', importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {}); }` — await 없음(부팅 지연 0), 주석 `// KB-498: 서버 channelId 'default' 대응 — MAX = 헤드업+소리. 멱등(재호출 = 갱신). iOS 무동작`. `npx jest src/lib/push` 통과 + `npx tsc --noEmit` 0
+- [X] T022 [US4] (2026-09-12 개정: default 1채널 → activity MAX·news HIGH 2채널, 이름 i18n) `src/lib/push/pushAdapter.ts` `addNotificationTapListener` try 블록 첫 줄에 추가: `if (Platform.OS === 'android') { void N.setNotificationChannelAsync('activity', { name: i18n.t('notif.activityGroup'), importance: MAX, sound: 'default' }); void N.setNotificationChannelAsync('news', { name: i18n.t('notif.newsGroup'), importance: HIGH, sound: 'default' }); }` — await 없음(부팅 지연 0), 주석 `// KB-498: 서버 channelId 'default' 대응 — MAX = 헤드업+소리. 멱등(재호출 = 갱신). iOS 무동작`. `npx jest src/lib/push` 통과 + `npx tsc --noEmit` 0
 
 **Checkpoint**: 자동 검증 전부 통과. 실기기 검증은 Polish에서.
 

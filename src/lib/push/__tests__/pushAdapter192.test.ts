@@ -19,7 +19,7 @@ const mockNotifications = {
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
   setNotificationChannelAsync: jest.fn().mockResolvedValue(undefined),
-  AndroidImportance: { MAX: 7 },
+  AndroidImportance: { MAX: 7, HIGH: 6 },
   SchedulableTriggerInputTypes: { TIME_INTERVAL: 'timeInterval' },
 };
 jest.mock('expo-notifications', () => mockNotifications);
@@ -175,15 +175,23 @@ it('KB-498: 콜드 스타트 = 마지막 응답 1회 전달 — 리스너로 같
   expect(onRoute).toHaveBeenCalledTimes(3); // identifier 없음 = 매번 전달
 });
 
-it('KB-498: Android = default 채널 MAX 1회(name·sound) · 설정 실패해도 구독 진행 · iOS = 0회', () => {
+it('KB-498: Android = activity(MAX)·news(HIGH) 채널 각 1회, 이름은 i18n 키 · default 채널 0 · 설정 실패해도 구독 진행 · iOS = 0회', () => {
   const os = jest.replaceProperty(Platform, 'OS', 'android');
   try {
     addNotificationTapListener(() => {});
-    expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(1);
+    expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(2);
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
-      'default',
-      expect.objectContaining({ name: 'Default', importance: 7, sound: 'default' }),
+      'activity',
+      expect.objectContaining({ name: 'notif.activityGroup', importance: 7, sound: 'default' }),
     );
+    expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+      'news',
+      expect.objectContaining({ name: 'notif.newsGroup', importance: 6, sound: 'default' }),
+    );
+    const ids = mockNotifications.setNotificationChannelAsync.mock.calls.map((c: unknown[]) => c[0]);
+    expect(ids).not.toContain('default'); // 중요도는 생성 후 불변 — default는 만들지 않는다
+    const src = require('fs').readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;
+    expect(src).not.toMatch(/name:\s*'[A-Za-z ]+'/); // 채널 이름 하드코딩 0(10로케일 규약)
     mockNotifications.setNotificationChannelAsync.mockClear();
     mockNotifications.addNotificationResponseReceivedListener.mockClear();
     mockNotifications.setNotificationChannelAsync.mockRejectedValueOnce(new Error('channel boom'));

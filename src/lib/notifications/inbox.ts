@@ -38,7 +38,7 @@ const KEYS: Record<PushType, { titleKey: string; bodyKey: string }> = {
   NEWS: { titleKey: 'inbox.newsTitle', bodyKey: 'inbox.newsBody' },
   MEAL_TIME: { titleKey: 'inbox.mealTimeTitle', bodyKey: 'inbox.mealTimeBody' },
 };
-const isKnownType = (t: unknown): t is PushType => typeof t === 'string' && t in KEYS;
+const isKnownType = (t: unknown): t is PushType => typeof t === 'string' && Object.prototype.hasOwnProperty.call(KEYS, t); // own key만 — 'constructor'·'__proto__' 차단
 
 /* ---- 스토어 (P-205 문법: 모듈 동기 상태 + useSyncExternalStore, AsyncStorage 영속) ---- */
 

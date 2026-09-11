@@ -78,6 +78,10 @@ it('KB-498: 미지·구 이름·변형 유형은 기록 0 (US2-5 — 빈 제목 
   recordInboxNotification({ id: 'b', type: 'NOTICE' as never });
   recordInboxNotification({ id: 'c', type: 'helpful' as never });
   recordInboxNotification({ id: 'd', type: undefined as never });
+  // Codex #149: Object.prototype 키는 `in` 검사를 통과하므로 own key만 인정
+  recordInboxNotification({ id: 'e', type: 'constructor' as never });
+  recordInboxNotification({ id: 'f', type: 'toString' as never });
+  recordInboxNotification({ id: 'g', type: '__proto__' as never });
   expect(fetchInbox()).toHaveLength(0);
 });
 
@@ -87,6 +91,7 @@ it('KB-498: 저장분의 구 NUDGE/NOTICE 항목은 하이드레이트 시 드�
     JSON.stringify([
       { id: 'old', titleKey: 'inbox.nudgeTitle', bodyKey: 'inbox.nudgeBody', at: '2026-09-01T00:00:00Z', read: false, data: { type: 'NUDGE' } },
       { id: 'ok', titleKey: 'inbox.helpfulTitle', bodyKey: 'inbox.helpfulBody', at: '2026-09-02T00:00:00Z', read: false, data: { type: 'HELPFUL' } },
+      { id: 'proto', at: '2026-09-03T00:00:00Z', read: false, data: { type: 'constructor' } },
     ]),
   );
   _resetInboxForTest({ rehydrate: true });

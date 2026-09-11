@@ -22,7 +22,7 @@ Technical Context에 NEEDS CLARIFICATION은 없다. 아래는 구현 방식 결�
 
 ## R4. Android 채널 설정
 
-- **Decision**: `addNotificationTapListener` try 블록 안에서 `Platform.OS === 'android'`일 때만 `void N.setNotificationChannelAsync('default', { name: 'Default', importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {})`. 결과를 기다리지 않는다.
+- **Decision (2026-09-12 개정)**: `addNotificationTapListener` try 블록 안에서 `Platform.OS === 'android'`일 때만 채널 2개 설정 — `activity`(MAX, 이름 `notif.activityGroup`)·`news`(HIGH, 이름 `notif.newsGroup`). `default`는 만들지 않는다. 결과를 기다리지 않는다. 초안은 `default` 하나(MAX)였으나 Codex 리뷰(채널 이름 하드코딩·중요도 불변)와 종한 결정(사용자가 광고성만 끌 수 있게 분리)으로 개정. BE는 유형→channelId 매핑을 파이프라인 한 곳에서 한다(KB-468 코멘트).
 - **Rationale**: 리스너 등록이 앱 생애 1회(루트 레이아웃 effect)라 "1회 설정" 요건과 자연히 일치. `loadNotifications()` 이후 호출이므로 플래그 off = 호출 0(FR-008). `setNotificationChannelAsync`는 멱등(같은 id 재호출 = 갱신). 실패는 catch로 삼켜 부팅 무영향(엣지). 서버 발송이 `channelId: "default"`·`priority: high`·`sound: default`라 채널만 맞추면 헤드업이 뜬다. API: `setNotificationChannelAsync(channelId, channel: NotificationChannelInput)` · `AndroidImportance.MAX` — SDK 38부터 안정 API(BE 가이드 §Android 채널도 동일 호출 권장). 로컬 d.ts 대조 완료(expo-notifications 56.0.23): `setNotificationChannelAsync(channelId, NotificationChannelInput)` — `name`·`importance` 필수, `sound?: string | null`, `AndroidImportance.MAX = 7`.
 - **주의**: 포그라운드 핸들러의 `shouldPlaySound: false`는 앱이 앞에 있을 때 동작이며 이 작업 범위 밖(스펙은 도착 배너·소리를 채널로 다룸). 변경하지 않는다.
 - **Alternatives**: `app.json` 플러그인 설정 — 네이티브 변경이라 OTA 불가. 별도 `initPushChannels()` export — 호출부 추가 필요. 둘 다 기각.
