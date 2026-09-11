@@ -147,7 +147,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (!FLAGS.pushEnabled) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    const unsub = push.addNotificationTapListener((href) => router.push(href as Href));
+    const unsub = push.addNotificationTapListener((href) => { if (href) router.push(href as Href); }); // href null = 이동 없는 유형(KB-498)
     const onLang = () => void push.registerPushToken();
     i18n.on('languageChanged', onLang);
     return () => {

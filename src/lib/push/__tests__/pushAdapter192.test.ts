@@ -121,12 +121,12 @@ it('P-268: 원격 토큰 발급 실패 = 비치명(reject 미전파 — 리마�
   mockNotifications.getExpoPushTokenAsync.mockResolvedValue({ data: 'ExponentPushToken[test]' });
 });
 
-it('KB-498 딥링크 매핑 — 5종 정확 일치 · NEWS=무동작 · 구 NUDGE/NOTICE·변형·미지=무동작', () => {
-  expect(routeForNotificationData({ type: 'HELPFUL' })).toBe('/profile/reviews');
-  expect(routeForNotificationData({ type: 'SCAN_SUGGESTION' })).toBe('/scan');
-  expect(routeForNotificationData({ type: 'MEAL_TIME' })).toBe('/scan');
-  expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: '7' })).toBe('/food/7/review');
-  expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: 7 })).toBe('/food/7/review'); // 숫자도 같은 경로
+it('KB-498 딥링크 매핑(9/12 결정) — 리마인더=음식 상세 · NEWS·MEAL_TIME=무동작 · HELPFUL·SCAN_SUGGESTION=임시 착지 · 구 이름·변형·미지=무동작', () => {
+  expect(routeForNotificationData({ type: 'HELPFUL' })).toBe('/push-landing?type=HELPFUL'); // 착지 미정 — 임시 화면
+  expect(routeForNotificationData({ type: 'SCAN_SUGGESTION' })).toBe('/push-landing?type=SCAN_SUGGESTION');
+  expect(routeForNotificationData({ type: 'MEAL_TIME' })).toBeNull(); // 앱만 켜짐
+  expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: '7' })).toBe('/food/7'); // 음식 상세
+  expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: 7 })).toBe('/food/7'); // 숫자도 같은 경로
   expect(routeForNotificationData({ type: 'REVIEW_REMINDER' })).toBeNull(); // foodId 없음 = 이동 없음
   expect(routeForNotificationData({ type: 'NEWS' })).toBeNull(); // 알림함 열람용
   expect(routeForNotificationData({ type: 'NUDGE' })).toBeNull(); // 구 이름 — 호환 없음
@@ -143,31 +143,36 @@ it('알림 탭 구독 — 응답 data로 라우팅 콜백 + 포그라운드 핸�
   expect(mockNotifications.setNotificationHandler).toHaveBeenCalled();
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
-  expect(onRoute).toHaveBeenCalledWith('/profile/reviews', undefined); // KB-498: notificationId 없음 = undefined
+  expect(onRoute).toHaveBeenCalledWith('/push-landing?type=HELPFUL', undefined); // KB-498: notificationId 없음 = undefined
 });
 
-it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변환 0) · 없으면 undefined · NEWS는 미호출', () => {
+it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변환 0) · 없으면 undefined · 경로 없는 유형도 (null, id)로 호출', () => {
   const onRoute = jest.fn();
   addNotificationTapListener(onRoute);
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
-  handler({ notification: { request: { identifier: 'r1', content: { data: { type: 'HELPFUL', notificationId: 456 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/profile/reviews', 456);
-  handler({ notification: { request: { identifier: 'r2', content: { data: { type: 'HELPFUL', notificationId: '9' } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/profile/reviews', '9'); // 문자열도 그대로 — 후속 작업이 판단
-  handler({ notification: { request: { identifier: 'r3', content: { data: { type: 'HELPFUL' } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith('/profile/reviews', undefined); // 구 서버·로컬 알림
+  handler({ notification: { request: { identifier: 'r1', content: { data: { type: 'REVIEW_REMINDER', foodId: 7, notificationId: 456 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/food/7', 456);
+  handler({ notification: { request: { identifier: 'r2', content: { data: { type: 'REVIEW_REMINDER', foodId: 7, notificationId: '9' } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/food/7', '9'); // 문자열도 그대로 — 후속 작업이 판단
+  handler({ notification: { request: { identifier: 'r3', content: { data: { type: 'REVIEW_REMINDER', foodId: 7 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith('/food/7', undefined); // 구 서버·로컬 알림
   handler({ notification: { request: { identifier: 'r4', content: { data: { type: 'NEWS', notificationId: 3 } } } } });
-  expect(onRoute).toHaveBeenCalledTimes(3); // NEWS = 이동 없음
+  expect(onRoute).toHaveBeenLastCalledWith(null, 3); // Codex #149: 이동 없어도 id 전달(읽음 처리)
+  handler({ notification: { request: { identifier: 'r5', content: { data: { type: 'MEAL_TIME', notificationId: 4 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith(null, 4);
+  handler({ notification: { request: { identifier: 'r6', content: { data: { type: 'UNKNOWN_FUTURE', notificationId: 5 } } } } });
+  expect(onRoute).toHaveBeenLastCalledWith(null, 5); // 미지 유형도 탭 사실은 전달
+  expect(onRoute).toHaveBeenCalledTimes(6);
 });
 
 it('KB-498: 콜드 스타트 = 마지막 응답 1회 전달 — 리스너로 같은 identifier가 또 와도 이중 전달 0 · identifier 없는 응답은 차단 없음', async () => {
-  const cold = { notification: { request: { identifier: 'cold', content: { data: { type: 'MEAL_TIME', notificationId: 7 } } } } };
+  const cold = { notification: { request: { identifier: 'cold', content: { data: { type: 'REVIEW_REMINDER', foodId: 3, notificationId: 7 } } } } };
   mockNotifications.getLastNotificationResponseAsync.mockResolvedValueOnce(cold);
   const onRoute = jest.fn();
   addNotificationTapListener(onRoute);
   await new Promise((r) => setTimeout(r, 0)); // track(getLast…).then(emit)
   expect(onRoute).toHaveBeenCalledTimes(1);
-  expect(onRoute).toHaveBeenCalledWith('/scan', 7);
+  expect(onRoute).toHaveBeenCalledWith('/food/3', 7);
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler(cold); // 일부 플랫폼: 부팅 탭이 리스너로도 전달
   expect(onRoute).toHaveBeenCalledTimes(1);
@@ -215,6 +220,8 @@ it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 �
   // 부트 effect 밖(푸시 effect 마운트 직후)의 즉시 호출 0 — 언어 변경 핸들러(onLang)만 허용
   expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
   expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
+  // KB-498: 콜백 href null(이동 없는 유형) 가드 — router.push(null) 금지
+  expect(layout).toContain('if (href) router.push(href as Href)');
 });
 
 it('Codex #109 10R: registerPushToken 진행 중 inflight = 1 — 콜드 스타트 OTA 정적 창 포함(KB-509)', async () => {

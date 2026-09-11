@@ -954,7 +954,9 @@
     "receiveConsent": "광고성 정보 수신 동의 (선택)",
     "consentConfirm": "동의하고 알림 켜기",
     "reviewReminderTitle": "식사 어떠셨어요?",
-    "reviewReminderBody": "{{name}} 메뉴에 별점을 남겨주세요. 다른 여행자에게 큰 도움이 돼요."
+    "reviewReminderBody": "{{name}} 메뉴에 별점을 남겨주세요. 다른 여행자에게 큰 도움이 돼요.",
+    "landingTbdTitle": "착지 미정 (기획 필요)",
+    "landingTbdBody": "{{type}} 알림을 탭했을 때 이동할 화면이 아직 정해지지 않았어요. 팀에 공유해 주세요."
   },
   "notif": {
     "title": "알림 설정",

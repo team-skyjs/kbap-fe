@@ -954,7 +954,9 @@
     "receiveConsent": "同意接收廣告資訊（選填）",
     "consentConfirm": "同意並開啟通知",
     "reviewReminderTitle": "這頓飯怎麼樣？",
-    "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。"
+    "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。",
+    "landingTbdTitle": "跳轉頁面待定（需要規劃）",
+    "landingTbdBody": "點擊 {{type}} 通知後要開啟的頁面尚未確定，請與團隊共享。"
   },
   "notif": {
     "title": "通知設定",

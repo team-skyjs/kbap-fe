@@ -954,7 +954,9 @@
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
     "consentConfirm": "Setuju dan nyalakan",
     "reviewReminderTitle": "Bagaimana makanannya?",
-    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain."
+    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain.",
+    "landingTbdTitle": "Tujuan belum ditentukan (perlu perencanaan)",
+    "landingTbdBody": "Layar yang dibuka saat notifikasi {{type}} diketuk belum diputuskan. Bagikan ke tim."
   },
   "notif": {
     "title": "Pengaturan notifikasi",

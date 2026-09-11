@@ -4,11 +4,11 @@
 
 | 값 | 탭 경로 | 광고성 | 알림함 키 |
 |----|---------|--------|-----------|
-| `HELPFUL` | `/profile/reviews` | 아니오 | `inbox.helpfulTitle/Body` (기존) |
-| `SCAN_SUGGESTION` | `/scan` | 예 | `inbox.scanSuggestionTitle/Body` (신규, 구 nudge 문구 승계) |
-| `REVIEW_REMINDER` | `/food/{foodId}/review` (foodId 없으면 없음) | 아니오 | `inbox.reminderTitle/Body` (기존) |
+| `HELPFUL` | `/push-landing?type=HELPFUL` (임시 — 기획 미정) | 아니오 | `inbox.helpfulTitle/Body` (기존) |
+| `SCAN_SUGGESTION` | `/push-landing?type=SCAN_SUGGESTION` (임시 — 기획 미정) | 예 | `inbox.scanSuggestionTitle/Body` (신규, 구 nudge 문구 승계) |
+| `REVIEW_REMINDER` | `/food/{foodId}` 음식 상세 (foodId 없으면 없음) | 아니오 | `inbox.reminderTitle/Body` (기존) |
 | `NEWS` | 없음 | 예 | `inbox.newsTitle/Body` (신규) |
-| `MEAL_TIME` | `/scan` | 예 | `inbox.mealTimeTitle/Body` (신규) |
+| `MEAL_TIME` | 없음 | 예 | `inbox.mealTimeTitle/Body` (신규) |
 
 정확 일치만. `NUDGE`·`NOTICE`·소문자·공백 변형 = 미지 유형(경로 없음·기록 없음).
 
@@ -44,10 +44,10 @@ data: { type: PushType; foodId?: string }
 ## 탭 콜백 (앱 내부, `addNotificationTapListener`)
 
 ```
-onRoute(href: string, notificationId?: number | string) => void
+onRoute(href: string | null, notificationId?: number | string) => void
 ```
 
-- `href` = `routeForNotificationData(data)`가 non-null일 때만 호출(기존).
+- 탭마다 항상 호출. `href` = `routeForNotificationData(data)`(이동 없는 유형은 null).
 - `notificationId` = `data.notificationId` 그대로. 없으면 `undefined`.
 - 콜드 스타트(`getLastNotificationResponseAsync`)도 같은 `emit` 경로. 같은 `request.identifier`는 1회만 전달(리스너와 이중 전달 차단).
 

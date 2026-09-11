@@ -954,7 +954,9 @@
     "receiveConsent": "広告性情報の受信への同意（任意）",
     "consentConfirm": "同意して通知をオンにする",
     "reviewReminderTitle": "お食事はいかがでしたか？",
-    "reviewReminderBody": "{{name}}はいかがでしたか？評価が他の旅行者の助けになります。"
+    "reviewReminderBody": "{{name}}はいかがでしたか？評価が他の旅行者の助けになります。",
+    "landingTbdTitle": "遷移先未定（企画が必要）",
+    "landingTbdBody": "{{type}} 通知をタップした時の遷移先がまだ決まっていません。チームに共有してください。"
   },
   "notif": {
     "title": "通知設定",

@@ -955,7 +955,9 @@
     "receiveConsent": "Consentimiento para recibir información publicitaria (opcional)",
     "consentConfirm": "Aceptar y activar",
     "reviewReminderTitle": "¿Qué tal la comida?",
-    "reviewReminderBody": "Cuéntanos qué tal estuvo {{name}} — una valoración rápida ayuda a otros viajeros."
+    "reviewReminderBody": "Cuéntanos qué tal estuvo {{name}} — una valoración rápida ayuda a otros viajeros.",
+    "landingTbdTitle": "Destino por definir (requiere planificación)",
+    "landingTbdBody": "Aún no se ha decidido qué pantalla abrir al tocar la notificación {{type}}. Compártelo con el equipo."
   },
   "notif": {
     "title": "Ajustes de notificaciones",

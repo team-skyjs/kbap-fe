@@ -1416,8 +1416,8 @@
 - [ ] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy/receive.html) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
 
 ## 푸시 data 계약 반영 — 유형 5종·알림 id·Android 채널 (2026-09-11, KB-498 — Spec Kit 2호 `specs/002-push-data-contract`)
-- [x] 유형 enum 5종(HELPFUL·SCAN_SUGGESTION(구 NUDGE)·REVIEW_REMINDER·NEWS(구 NOTICE 폐기)·MEAL_TIME 신설) — 정의는 pushAdapter PUSH_TYPES 한 곳, 정확 일치만(구 이름·대소문자·공백 = 미지 = 무동작·미기록). 딥링크: SCAN_SUGGESTION·MEAL_TIME→/scan, NEWS→이동 없음(알림함 열람용).
-- [x] 탭 콜백 2번째 인자 = 서버 notificationId(형 변환 0, 없으면 undefined — 루트 레이아웃 무수정 호환) + 콜드 스타트 이중 전달 차단(마지막 응답 조회·리스너가 같은 identifier면 1회). 읽음 호출은 후속(서버 알림함 전환).
+- [x] 유형 enum 5종(HELPFUL·SCAN_SUGGESTION(구 NUDGE)·REVIEW_REMINDER·NEWS(구 NOTICE 폐기)·MEAL_TIME 신설) — 정의는 pushAdapter PUSH_TYPES 한 곳, 정확 일치만(구 이름·대소문자·공백 = 미지 = 무동작·미기록). 딥링크(9/12 종한 결정): REVIEW_REMINDER→음식 상세 /food/{id} · NEWS·MEAL_TIME→이동 없음 · HELPFUL·SCAN_SUGGESTION→임시 디버깅 화면 push-landing("착지 미정, 기획 필요" — 평일 팀 공유 후 확정 시 교체·파일 삭제).
+- [x] 탭 콜백 = 탭마다 항상 호출 (href | null, notificationId) — 이동 없는 유형도 id 전달(Codex 3R, 읽음 처리용), 루트 레이아웃 if(href) 가드 1줄. notificationId 형 변환 0, 없으면 undefined + 콜드 스타트 이중 전달 차단(마지막 응답 조회·리스너가 같은 identifier면 1회). 읽음 호출은 후속(서버 알림함 전환).
 - [x] 알림함: KEYS 5종 모듈 상수 = 런타임 가드(어댑터 런타임 import 금지 — api·auth가 딸려 옴), 미지 유형 기록 0, 하이드레이트 시 구 NUDGE/NOTICE 잔존 드롭(호환 변환 없음). i18n inbox 10로케일 nudge*/notice* → scanSuggestion*(구 nudge 문구 승계)·news*·mealTime* — 광고성 3종 문구에 (광고)·수신거부 없음(서버 부착).
 - [x] Android: 탭 구독 시 채널 2종 1회 — activity(MAX: HELPFUL·REVIEW_REMINDER)·news(HIGH: 광고성 3종), 이름 = notif.activityGroup/newsGroup i18n 재사용, default 채널 미생성(중요도 생성 후 불변 — Codex #149 P1·P2 → 9/12 종한 결정으로 분리). 서버 channelId 매핑은 KB-469·470·471·474 본문 + KB-468 코멘트에 반영. iOS·플래그 off = 호출 0(폭탄 목 잠금).
 - [x] Codex #149 반영: 채널 이름 i18n(P2) · inbox 가드 own-key(hasOwnProperty, P2 — 'constructor' 등 프로토타입 키 차단) · P1(기존 default 채널 중요도 고정)은 전제 불성립으로 기각(expo가 미존재 channelId를 폴백 채널로 보냄 — 소스 확인).

@@ -26,25 +26,25 @@
 
 | 입력 `data` | `routeForNotificationData` | 알림함 기록 | 탭 콜백 2번째 인자 |
 |-------------|----------------------------|-------------|--------------------|
-| `{type:'HELPFUL', notificationId:1}` | `/profile/reviews` | `inbox.helpful*` | `1` |
-| `{type:'SCAN_SUGGESTION'}` | `/scan` | `inbox.scanSuggestion*` | `undefined` |
-| `{type:'MEAL_TIME'}` | `/scan` | `inbox.mealTime*` | — |
-| `{type:'REVIEW_REMINDER', foodId:7}` | `/food/7/review` | `inbox.reminder*` (foodId `'7'`) | — |
-| `{type:'REVIEW_REMINDER'}` | `null` (콜백 미호출) | 기록됨 | — |
-| `{type:'NEWS'}` | `null` | `inbox.news*` | — |
-| `{type:'NUDGE'}` / `{type:'NOTICE'}` / `{type:'helpful'}` | `null` | 기록 안 됨 | — |
+| `{type:'HELPFUL', notificationId:1}` | `/push-landing?type=HELPFUL` (임시) | `inbox.helpful*` | `1` |
+| `{type:'SCAN_SUGGESTION'}` | `/push-landing?type=SCAN_SUGGESTION` (임시) | `inbox.scanSuggestion*` | `undefined` |
+| `{type:'MEAL_TIME', notificationId:4}` | `null` (콜백은 `(null, 4)`로 호출) | `inbox.mealTime*` | `4` |
+| `{type:'REVIEW_REMINDER', foodId:7}` | `/food/7` (음식 상세) | `inbox.reminder*` (foodId `'7'`) | — |
+| `{type:'REVIEW_REMINDER'}` | `null` (콜백 `(null, id)`) | 기록됨 | — |
+| `{type:'NEWS', notificationId:3}` | `null` (콜백 `(null, 3)`) | `inbox.news*` | `3` |
+| `{type:'NUDGE'}` / `{type:'NOTICE'}` / `{type:'helpful'}` | `null` (콜백 `(null, id)`) | 기록 안 됨 | — |
 | `undefined` / `{}` | `null` | 기록 안 됨 | — |
-| `{type:'HELPFUL', notificationId:'9'}` | `/profile/reviews` | 기록됨 | `'9'` (문자열 그대로) |
+| `{type:'REVIEW_REMINDER', foodId:7, notificationId:'9'}` | `/food/7` | 기록됨 | `'9'` (문자열 그대로) |
 
 ## 3. `addNotificationTapListener` (앱 내부 API)
 
 ```ts
 export function addNotificationTapListener(
-  onRoute: (href: string, notificationId?: number | string) => void,
+  onRoute: (href: string | null, notificationId?: number | string) => void,
 ): () => void
 ```
 
-- 기존 호출부 `(href) => router.push(href)` 그대로 유효.
+- 탭마다 항상 호출. 이동 없는 유형은 `href = null` — 루트 레이아웃은 `if (href) router.push(href)`로 가드(2026-09-12, Codex 지적 반영).
 - Android(`Platform.OS === 'android'`)에서 리스너 등록 시 `setNotificationChannelAsync('activity', { name: t('notif.activityGroup'), importance: MAX, sound: 'default' })` · `('news', { name: t('notif.newsGroup'), importance: HIGH, sound: 'default' })` 각 1회. 실패 무시.
 - `FLAGS.pushEnabled === false` 또는 모듈 로드 실패: 채널 설정 포함 expo-notifications 호출 0, no-op 해제 함수 반환.
 

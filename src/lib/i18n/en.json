@@ -953,7 +953,9 @@
     "receiveConsent": "Consent to receive promotional messages (optional)",
     "consentConfirm": "Agree and turn on",
     "reviewReminderTitle": "How was your meal?",
-    "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers."
+    "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers.",
+    "landingTbdTitle": "Destination TBD (needs planning)",
+    "landingTbdBody": "Where a {{type}} notification should open hasn't been decided yet. Please share with the team."
   },
   "notif": {
     "title": "Notifications",

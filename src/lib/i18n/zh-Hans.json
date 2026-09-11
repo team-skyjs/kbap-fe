@@ -954,7 +954,9 @@
     "receiveConsent": "同意接收广告信息（可选）",
     "consentConfirm": "同意并开启通知",
     "reviewReminderTitle": "这顿饭怎么样？",
-    "reviewReminderBody": "告诉我们{{name}}怎么样——你的评分能帮助其他旅行者。"
+    "reviewReminderBody": "告诉我们{{name}}怎么样——你的评分能帮助其他旅行者。",
+    "landingTbdTitle": "跳转页面待定（需要规划）",
+    "landingTbdBody": "点击 {{type}} 通知后要打开的页面尚未确定，请与团队共享。"
   },
   "notif": {
     "title": "通知设置",

@@ -205,10 +205,11 @@ export async function cancelReviewReminder(foodId: string): Promise<void> {
 /**
  * 알림 탭 → 라우팅 콜백. 포그라운드 표시 핸들러(배너)도 여기서 1회 설정.
  * 콜드 스타트(종료 상태 알림 탭)는 마지막 응답 1회 처리. 반환 = 해제 함수.
- * KB-498: 콜백 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음).
+ * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·MEAL_TIME·foodId 없는 리마인더)이면 null.
+ * 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음). 경로가 없어도 id는 전달(읽음 처리용).
  * 읽음 처리 호출은 후속 작업(서버 알림함 전환) 몫. Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
  */
-export function addNotificationTapListener(onRoute: (href: string, notificationId?: number | string) => void): () => void {
+export function addNotificationTapListener(onRoute: (href: string | null, notificationId?: number | string) => void): () => void {
   const N = loadNotifications();
   if (!N) return () => {};
   // P-289: 발화 기록 — 알림함(실알림 전용)에 적재. id = request.identifier(중복 방지 키)
@@ -251,8 +252,8 @@ export function addNotificationTapListener(onRoute: (href: string, notificationI
         routed.add(id);
       }
       const data = resp?.notification.request.content.data as { notificationId?: number | string } | undefined;
-      const href = resp ? routeForNotificationData(data) : null;
-      if (href) onRoute(href, data?.notificationId);
+      if (!resp) return;
+      onRoute(routeForNotificationData(data), data?.notificationId); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
     // P-289 ①: 포그라운드 발화 즉시 기록
@@ -286,15 +287,16 @@ export function isPushType(v: unknown): v is PushType {
 export function routeForNotificationData(data: unknown): string | null {
   const d = data as { type?: string; foodId?: string | number } | null | undefined;
   switch (d?.type) {
+    // 2026-09-12 종한: HELPFUL·SCAN_SUGGESTION 착지 미정 → 임시 디버깅 화면(push-landing). 기획 확정 시 교체.
     case 'HELPFUL':
-      return '/profile/reviews'; // HELPFUL → 내 리뷰
+      return '/push-landing?type=HELPFUL';
     case 'SCAN_SUGGESTION': // 구 NUDGE(2026-09-07 개명) — 구 이름은 default로 무동작
-    case 'MEAL_TIME':
-      return '/scan';
+      return '/push-landing?type=SCAN_SUGGESTION';
     case 'REVIEW_REMINDER':
-      return d.foodId != null ? `/food/${d.foodId}/review` : null;
+      return d.foodId != null ? `/food/${d.foodId}` : null; // 음식 상세(리뷰 작성 화면 아님 — 9/12 결정)
     case 'NEWS':
-      return null; // 알림함 열람용 — 이동 없음
+    case 'MEAL_TIME':
+      return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:
       return null; // 미지·구 이름·변형 — 무동작(정확 일치만)
   }
