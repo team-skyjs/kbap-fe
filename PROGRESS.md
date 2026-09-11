@@ -1406,3 +1406,11 @@
 - [x] sendTokenToServer 실배선 — PUT /api/notifications/tokens { token, platform, lang }(settings 미전송 — 알림 회원 전용 결정), X-API-Version 전역 1.1(client.ts 기본값 1.0→1.1, 개별 지정 제거 — 1.1 = 1.0 전부 포함·develop은 TestFlight에서 실행되므로 전역 승격 확정 2026-09-10), unregisterPushToken 삭제(서버 로그아웃/탈퇴 처리). 게스트 프라이머 제거는 스캔 isGuest 게이트로 이미 충족 — 코드 무변경 — b96028c·cae22ad·e7229de → 전역 1.1 확정.
 - [x] tsc 0 · jest 161스위트 1098/1098.
 - [ ] dev client 실기기 upsert 200 + BE notification_device 행/member 연결 교차 확인 → 확인 후 PR ready. 발행은 KB-501(예진 승인·teamtest OTA).
+
+## 알림 설정 2그룹 재편 + 서버 정본화 (2026-09-11, KB-497 — Spec Kit 1호)
+- [x] 결정(종한·UX 리서치·BE 세션): 표면은 하단 시트 1종(NotificationSheet primer/consent) · 홈 통합 표면(A안) 제외 · 온보딩 프라이머 제거(OS 권한 = 스캔 결과 시트 1곳) · 설정 화면 = 「내 활동 알림」 activity / 「K-Bap 소식」 news(소식 토글 OFF→ON = 동의 시트, 동의 2종 체크 + 전문 링크) + 하위 mealTime(소식 OFF면 비활성, 끄기 = 동의 철회 아님) · 카드 사각형·섹션 설명·발송 시간대/철회 안내 문구 삭제(Codex UX 리라이트) · 피그마 「KB-497 알림 설정 시안」(Y6LTZdrUxqu69jnvYWsvoA).
+- [x] 데이터: useNotificationSettings(GET/PATCH 낙관·롤백·모듈 seq로 최신 응답만 반영, 훅 밖 patchNotificationSettings 공유) · 로컬 3토글 저장소·guestConsent 삭제 · 리마인더 게이트 = 서버 activity 캐시 · consent.ts(버전 상수 2·NOTIF_SETTINGS_API_VERSION 자리) · LEGAL_URLS marketingPrivacy/Receive.
+- [x] KB-543(BE #260): 토큰 등록 회원 전용 — pushAdapter hasBeSession 가드 1줄 + useSocialAuth exchange 성공 직후 1회, 401 비치명. KB-544: 설정 토글 (회원, 기기)·동의 원장 회원 단위·스키마 동일·기본값 전부 false — 새 X-API-Version 값은 상수 1곳(착수 시 채움, null = 현행 레거시).
+- [x] i18n notif/push 10로케일 키 교체(구 3토글·야간 키 0, 패리티 유닛) · 게스트 = 프로필 진입점 제거 + 라우트 AuthGateSheet · P-151 메트릭 유닛(Switch·비활성 행·체크박스).
+- [x] tsc 0 · jest 208스위트 1407/1407(신규 7스위트).
+- [ ] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy/receive.html) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.

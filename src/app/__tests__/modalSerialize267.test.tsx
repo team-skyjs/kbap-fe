@@ -143,7 +143,6 @@ const mockGetPrimer = jest.fn();
 jest.mock('@/lib/push/pushAdapter', () => ({
   ...jest.requireActual('@/lib/push/pushAdapter'),
   getPrimerResult: () => mockGetPrimer(),
-  getPushSettings: jest.fn(async () => ({ helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null })),
   scheduleReviewReminder: jest.fn(async () => {}),
 }));
 

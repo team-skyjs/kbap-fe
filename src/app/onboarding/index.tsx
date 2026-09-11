@@ -68,8 +68,6 @@ import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { queryClient } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
-import { PushPrimerModal } from '@/features/push/PushPrimerModal';
-import { getPrimerResult } from '@/lib/push/pushAdapter';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
@@ -123,7 +121,6 @@ export default function Onboarding() {
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
   const [presets, setPresets] = useState<Set<string>>(new Set()); // P-203: 프리셋 선택(복수 = 합집합)
   const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
-  const [pushPrimer, setPushPrimer] = useState(false); // P-192: 회원 진입점 — 제출 성공 직후 1회
   // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
   const hydrated = useRef(false);
@@ -229,11 +226,7 @@ export default function Onboarding() {
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
       queryClient.clear();
-      // P-192: 회원 푸시 프라이머 — 온보딩 마지막(제출 성공 직후) 1회. 이미 응답했으면 직행.
-      if (FLAGS.pushEnabled && (await getPrimerResult()) == null) {
-        setPushPrimer(true);
-        return; // 홈 직행은 모달 onDone에서
-      }
+      // KB-497: 온보딩 직후 푸시 프라이머 제거(UX 리서치 B안) — OS 권한 요청은 첫 스캔 결과 시트 1곳.
       // P-080: SuccessCheck는 요약 카드 진입 연출로 결합(스펙) — 완료 오버레이 없이 직행
       router.replace('/(tabs)');
     } catch (e) {
@@ -447,7 +440,6 @@ export default function Onboarding() {
       />
 
       {/* P-192: 회원 푸시 프라이머 — 제출 성공 직후 1회, 응답 후 홈 직행 */}
-      <PushPrimerModal surface="onboarding" open={pushPrimer} onDone={() => router.replace('/(tabs)')} />
     </View>
   );
 }

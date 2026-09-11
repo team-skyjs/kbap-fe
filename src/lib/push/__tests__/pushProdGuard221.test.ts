@@ -14,6 +14,10 @@ jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 const mockApi = { put: jest.fn() };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
+// KB-497/543: 어댑터가 세션 가드·설정 캐시를 import — 네이티브(SecureStore)·react-query 의존 차단
+jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
+jest.mock('@/lib/data/useNotificationSettings', () => ({ NOTIF_SETTINGS_KEY: ['notifSettings'] }));
+jest.mock('@/lib/queryClient', () => ({ queryClient: { getQueryData: () => undefined } }));
 
 // 네이티브 모듈이 "존재하더라도" 게이트가 닫혔으면 손대지 않아야 한다 —
 // 호출되면 즉시 실패하도록 폭탄을 깔아둔다(구 런타임에선 이 require가 크래시).

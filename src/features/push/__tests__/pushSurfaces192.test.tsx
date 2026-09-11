@@ -1,6 +1,7 @@
 /**
- * P-192: 푸시 표면 — 실 플래그(off) 무노출 잠금 + 프라이머 모달 분기(수락=OS 팝업,
- * 거절=기록만) + 주문 완료 Done 경유 예약 호출(재현 경로) + 배선 소스 잠금.
+ * P-192: 푸시 표면 — 실 플래그(off) 무노출 잠금 + 프라이머 시트 분기(수락=OS 팝업→토큰→
+ * 회원이면 activity:true, 거절=기록만) + 주문 완료 Done 경유 예약 호출(재현 경로) + 배선 소스 잠금.
+ * KB-497: 프라이머 = NotificationSheet(하단 시트), 온보딩 진입점 제거, 설정 화면 = 서버 정본 훅(목).
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -38,7 +39,6 @@ jest.mock('@/components/ConfettiBurst', () => ({ ConfettiBurst: () => null, CONF
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 })); // P-221: 설정 화면이 실제 렌더되며 SubHeader 인셋 필요
-const MOCK_SETTINGS = { helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null };
 jest.mock('@/lib/push/pushAdapter', () => ({
   markPrimerResult: jest.fn().mockResolvedValue(undefined),
   requestPermission: jest.fn().mockResolvedValue(true),
@@ -46,14 +46,23 @@ jest.mock('@/lib/push/pushAdapter', () => ({
   scheduleReviewReminder: jest.fn().mockResolvedValue(undefined),
   cancelReviewReminder: jest.fn().mockResolvedValue(undefined),
   getPrimerResult: jest.fn().mockResolvedValue(null),
-  // P-221: 플래그가 켜지며 설정 화면이 실제로 렌더된다 — 화면이 쓰는 API 전부 목
-  DEFAULT_PUSH_SETTINGS: { helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null },
   REVIEW_REMINDER_SECONDS: 3600,
-  getPushSettings: jest.fn().mockResolvedValue({ helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null }),
-  savePushSettings: jest.fn((n: unknown) => Promise.resolve(n)),
   getPermissionStatus: jest.fn().mockResolvedValue('granted'),
   pushAvailable: jest.fn(() => true),
 }));
+// KB-497: 설정은 서버 정본 훅 — 화면 렌더용 목(스위치 3개가 보이는 ON 상태)
+const MOCK_SETTINGS = { activity: true, news: { enabled: true, mealTime: true, privacyConsent: { version: 1, grantedAt: '2026-09-11T00:00:00' }, receiveConsent: { version: 1, grantedAt: '2026-09-11T00:00:00' } } };
+const mockPatch = jest.fn().mockResolvedValue(MOCK_SETTINGS);
+jest.mock('@/lib/data/useNotificationSettings', () => ({
+  useNotificationSettings: () => ({ data: MOCK_SETTINGS, isLoading: false, isError: false, refetch: jest.fn() }),
+  useUpdateNotificationSettings: () => ({ mutate: jest.fn(), isError: false, reset: jest.fn() }),
+  patchNotificationSettings: (...a: unknown[]) => mockPatch(...a),
+  NOTIF_SETTINGS_KEY: ['notifSettings'],
+}));
+const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
+jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } }));
+jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
+jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn() }));
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
   'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'scheduleReviewReminder' | 'cancelReviewReminder' | 'getPrimerResult',
   jest.Mock
@@ -73,6 +82,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAdapter.requestPermission.mockResolvedValue(true);
   mockAdapter.getPrimerResult.mockResolvedValue(null);
+  mockSession.hasBeSession.mockResolvedValue(true);
 });
 
 const trees: ReactTestRenderer[] = [];
@@ -103,17 +113,22 @@ it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 �
   const tree = render(<NotificationSettings />);
   // 게이트가 열렸으므로 리다이렉트 없이 실제 설정 화면이 뜬다
   expect(tree.root.findAll((n) => n.props?.testID === 'redirect')).toHaveLength(0);
-  expect(tree.root.findAll((n) => n.props?.testID === 'notif-reminder').length).toBeGreaterThanOrEqual(1);
+  expect(tree.root.findAll((n) => n.props?.testID === 'notif-activity').length).toBeGreaterThanOrEqual(1);
 });
 
 it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + P-268 전 채널 개방', () => {
   const fs = require('fs');
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: true'); // P-289(예진 9/7): 전 채널 — KB-422 재숨김 종료
-  // 프로필 행·스캔 프라이머·루트 배선·온보딩 프라이머 — 전부 플래그 게이트 뒤
+  // 프로필 행(회원 분기)·스캔 프라이머·루트 배선 — 전부 플래그 게이트 뒤. 온보딩 프라이머는 제거(KB-497)
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled) return");
   expect(fs.readFileSync('src/app/_layout.tsx', 'utf8')).toContain('if (!FLAGS.pushEnabled) return;');
-  expect(fs.readFileSync('src/app/onboarding/index.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (await getPrimerResult()) == null');
+  const onboarding = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
+  expect(onboarding).not.toContain('PushPrimerModal');
+  expect(onboarding).not.toContain('getPrimerResult');
+  expect(onboarding).not.toContain('NotificationSheet');
+  expect(onboarding).not.toContain('setPushPrimer'); // US4/FR-013: 제출 성공 = 홈 직행, 프라이머 분기 0
+  expect(onboarding).toContain("router.replace('/(tabs)')");
   // OTA 안전: 화면/훅에서 expo-notifications 직접 import 0 — 어댑터 lazy require만
   const adapterSrc = fs.readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;
   expect(adapterSrc).toContain("require('expo-notifications')");
@@ -132,23 +147,53 @@ it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + P-268 전 
   expect(offenders).toEqual([]); // 정적 import 금지(구 런타임 크래시 방지)
 });
 
-it('프라이머 수락 = 기록→OS 팝업→토큰 등록→onDone (이 순서만 iOS 1회성 보호)', async () => {
+it('프라이머(시트) 수락 = 기록→OS 팝업→토큰 등록→(회원) PATCH activity:true→onDone (이 순서만 iOS 1회성 보호)', async () => {
   const onDone = jest.fn();
-  const tree = render(<PushPrimerModal open onDone={onDone} />);
-  await tap(tree, 'push-primer-yes');
+  const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" />);
+  expect(tree.root.findAll((n) => n.props?.testID === 'notif-sheet-primer').length).toBeGreaterThan(0); // 하단 시트
+  await tap(tree, 'notif-sheet-confirm');
+  const order = [mockAdapter.markPrimerResult, mockAdapter.requestPermission, mockAdapter.registerPushToken, mockPatch].map((m) => m.mock.invocationCallOrder[0]);
   expect(mockAdapter.markPrimerResult).toHaveBeenCalledWith('accepted');
-  expect(mockAdapter.requestPermission).toHaveBeenCalled();
-  expect(mockAdapter.registerPushToken).toHaveBeenCalled();
+  expect(order).toEqual([...order].sort((a, b) => a - b)); // 기록 → OS 팝업 → 토큰 → PATCH
+  expect(mockPatch).toHaveBeenCalledWith({ activity: true });
   expect(onDone).toHaveBeenCalled();
 });
 
-it('프라이머 거절 = 기록만(OS 팝업 0 — 재노출 없음은 기록이 소스) + onDone', async () => {
+it('프라이머 거절(나중에) = 기록만(OS 팝업 0·PATCH 0 — 재노출 없음은 기록이 소스) + onDone', async () => {
   const onDone = jest.fn();
-  const tree = render(<PushPrimerModal open onDone={onDone} />);
-  await tap(tree, 'push-primer-later');
+  const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" />);
+  await tap(tree, 'notif-sheet-later');
   expect(mockAdapter.markPrimerResult).toHaveBeenCalledWith('declined');
   expect(mockAdapter.requestPermission).not.toHaveBeenCalled();
+  expect(mockPatch).not.toHaveBeenCalled();
   expect(onDone).toHaveBeenCalled();
+});
+
+it('KB-543: 게스트(세션 없음) 수락 = OS 팝업은 뜨되 PATCH 0회(토큰 등록 세션 가드는 어댑터 몫)', async () => {
+  mockSession.hasBeSession.mockResolvedValue(false);
+  const tree = render(<PushPrimerModal open onDone={jest.fn()} surface="scan" />);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(mockAdapter.requestPermission).toHaveBeenCalled();
+  expect(mockPatch).not.toHaveBeenCalled();
+});
+
+it('OS 권한 거부 = 토큰 등록·PATCH 0회, onDone은 호출', async () => {
+  mockAdapter.requestPermission.mockResolvedValue(false);
+  const onDone = jest.fn();
+  const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" />);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(mockAdapter.registerPushToken).not.toHaveBeenCalled();
+  expect(mockPatch).not.toHaveBeenCalled();
+  expect(onDone).toHaveBeenCalled();
+});
+
+it('KB-497 소스 잠금: scan.tsx 프라이머 = PushPrimerModal(시트 래퍼) + 코치마크 직렬화(maybeShowPrimer) 유지', () => {
+  const scan = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(scan).toContain('<PushPrimerModal surface="scan"');
+  expect(scan).toContain('maybeShowPrimer'); // KB-377: 코치마크 닫힌 뒤에만
+  const primer = require('fs').readFileSync('src/features/push/PushPrimerModal.tsx', 'utf8') as string;
+  expect(primer).toContain('<NotificationSheet');
+  expect(primer).toContain("variant=\"primer\"");
 });
 
 it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = 첫 foodId 항목 예약 + onDone', async () => {

@@ -1,7 +1,7 @@
 /**
- * P-192: pushAdapter 로직 — 플래그 on 가정(모듈 목)에서 설정 저장·동의 스탬프·
- * 프라이머 기록·로컬 예약/취소·딥링크 매핑·탭 구독. 플래그 off 무동작은
- * pushSurfaces192 스위트(실 플래그)가 잠근다.
+ * P-192: pushAdapter 로직 — 플래그 on 가정(모듈 목)에서 프라이머 기록·로컬 예약/취소·
+ * 딥링크 매핑·탭 구독·토큰 upsert. 플래그 off 무동작은 pushSurfaces192 스위트(실 플래그)가
+ * 잠근다. KB-497: 로컬 설정 저장소 제거 — 리마인더 게이트는 서버 설정 캐시(activity).
  */
 jest.mock('@/lib/flags', () => ({ FLAGS: { pushEnabled: true }, isProdChannel: () => false, SYSTEM_CAMERA_AUTOLAUNCH: false }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string, o?: Record<string, unknown>) => (o?.name ? `${k}:${o.name}` : k) } }));
@@ -23,38 +23,33 @@ const mockNotifications = {
 jest.mock('expo-notifications', () => mockNotifications);
 const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
+const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
+jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } })); // 지연 접근(호이스팅)
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { queryClient } from '@/lib/queryClient';
+import { NOTIF_SETTINGS_KEY } from '@/lib/data/useNotificationSettings';
 import {
   addNotificationTapListener,
   cancelReviewReminder,
   getPrimerResult,
-  getPushSettings,
   markPrimerResult,
   registerPushToken,
   REVIEW_REMINDER_SECONDS,
   routeForNotificationData,
-  savePushSettings,
   scheduleReviewReminder,
 } from '../pushAdapter';
+
+const SETTINGS_ON = { activity: true, news: { enabled: false, mealTime: false, privacyConsent: null, receiveConsent: null } };
 
 beforeEach(async () => {
   jest.clearAllMocks();
   mockApi.put.mockResolvedValue(undefined);
+  mockSession.hasBeSession.mockResolvedValue(true);
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
+  queryClient.clear();
+  queryClient.setQueryData(NOTIF_SETTINGS_KEY, SETTINGS_ON);
   await AsyncStorage.clear();
-});
-
-it('설정 기본값 — helpful·리마인더 on, 넛지 off(광고성 옵트인)', async () => {
-  const s = await getPushSettings();
-  expect(s).toMatchObject({ helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null });
-});
-
-it('넛지 off→on 전환 시 동의 일시 스탬프(정보통신망법 기록) — off 복귀에도 보존', async () => {
-  const on = await savePushSettings({ helpful: true, reviewReminder: true, nudge: true });
-  expect(typeof on.nudgeOptInAt).toBe('string'); // ISO 스탬프
-  const off = await savePushSettings({ helpful: true, reviewReminder: true, nudge: false });
-  expect(off.nudgeOptInAt).toBe(on.nudgeOptInAt); // 기록 보존
 });
 
 it('프라이머 기록 — 거절 저장 = 재노출 판정 소스(getPrimerResult)', async () => {
@@ -76,11 +71,14 @@ it('리뷰 유도 예약 — 1시간 트리거 + REVIEW_REMINDER data, 취소 �
   expect(mockNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('nid-1');
 });
 
-it('수신 설정 off = 예약 안 함 · OS 권한 없음 = 예약 안 함', async () => {
-  await savePushSettings({ helpful: true, reviewReminder: false, nudge: false });
+it('KB-497: 서버 activity 캐시 false·없음 = 예약 안 함 · OS 권한 없음 = 예약 안 함', async () => {
+  queryClient.setQueryData(NOTIF_SETTINGS_KEY, { ...SETTINGS_ON, activity: false });
   await scheduleReviewReminder({ foodId: '7', name: 'Kimbap' });
   expect(mockNotifications.scheduleNotificationAsync).not.toHaveBeenCalled();
-  await savePushSettings({ helpful: true, reviewReminder: true, nudge: false });
+  queryClient.clear(); // 캐시 없음(미조회) = 보수적으로 예약 안 함
+  await scheduleReviewReminder({ foodId: '7', name: 'Kimbap' });
+  expect(mockNotifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  queryClient.setQueryData(NOTIF_SETTINGS_KEY, SETTINGS_ON);
   mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'denied' });
   await scheduleReviewReminder({ foodId: '7', name: 'Kimbap' });
   expect(mockNotifications.scheduleNotificationAsync).not.toHaveBeenCalled();
@@ -152,7 +150,8 @@ it('Codex #109 10R: registerPushToken 진행 중 inflight = 1 — 콜드 스타�
   mockNotifications.getPermissionsAsync.mockImplementation(() => new Promise((r) => { resolvePerm = r; }));
   expect(inflightCount()).toBe(0);
   const p = registerPushToken();
-  expect(inflightCount()).toBe(1); // 권한 조회~토큰 upsert 왕복 = 정적 창에 보인다
+  expect(inflightCount()).toBe(1); // 세션 확인~권한 조회~토큰 upsert 왕복 = 정적 창에 보인다
+  while (!resolvePerm) await Promise.resolve(); // KB-543: hasBeSession await 뒤에 권한 조회
   resolvePerm({ status: 'denied' }); // 조기 반환 경로도 dec 보장
   await p;
   expect(inflightCount()).toBe(0);
