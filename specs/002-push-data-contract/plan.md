@@ -6,7 +6,7 @@
 
 ## Summary
 
-서버 푸시 data 계약(2026-09-11 확정)을 앱에 반영한다. 유형 5종(HELPFUL·SCAN_SUGGESTION·REVIEW_REMINDER·NEWS·MEAL_TIME)으로 딥링크 매핑·알림함 문구 키·10로케일을 교체하고, 탭 콜백에 서버 `notificationId`를 두 번째 인자로 흘리며, Android에서 `default` 채널을 최고 중요도로 1회 설정한다. 전부 JS 변경 — 기존 파일 3개(`pushAdapter.ts`·`inbox.ts`·로케일 10개) + 테스트. 신규 모듈 없음.
+서버 푸시 data 계약(2026-09-11 확정)을 앱에 반영한다. 유형 5종(HELPFUL·SCAN_SUGGESTION·REVIEW_REMINDER·NEWS·MEAL_TIME)으로 딥링크 매핑·알림함 문구 키·10로케일을 교체하고, 탭 콜백에 서버 `notificationId`를 두 번째 인자로 흘리며, Android에서 알림 채널 두 개(`activity` 최고 중요도·`news` 높은 중요도)를 1회 만든다(`default`는 만들지 않는다 — 중요도가 생성 후 불변). 로컬 리뷰 리마인더 예약도 `activity` 채널을 지정한다. 전부 JS 변경 — 기존 파일 3개(`pushAdapter.ts`·`inbox.ts`·로케일 10개) + 테스트. 신규 모듈 없음.
 
 ## Technical Context
 
@@ -22,7 +22,7 @@
 
 **Project Type**: mobile-app (단일 레포, `src/` 하위)
 
-**Performance Goals**: N/A — 부팅 경로에 비동기 호출 1건(채널 설정, 결과 대기 없음) 추가뿐
+**Performance Goals**: N/A — 부팅 경로에 비동기 호출 2건(채널 2개 설정, 결과 대기 없음) 추가뿐
 
 **Constraints**: OTA 배포 가능해야 함(네이티브 변경 0 · expo-notifications 정적 import 0 · 플래그 off 시 호출 0). 기존 루트 레이아웃 호출부 `(href) => router.push(href)` 무수정 호환
 
@@ -64,7 +64,7 @@ specs/002-push-data-contract/
 ### Source Code (repository root)
 
 ```text
-src/lib/push/pushAdapter.ts                 # PUSH_TYPES·PushType·isPushType 정의 / routeForNotificationData 5종 / 탭 콜백 2번째 인자 notificationId + identifier 중복 차단 / Android 채널 1회
+src/lib/push/pushAdapter.ts                 # PUSH_TYPES·PushType·isPushType 정의 / routeForNotificationData 5종 / 탭 콜백 2번째 인자 notificationId + identifier 중복 차단 / Android 채널 activity·news 각 1회 / 로컬 리마인더 트리거 channelId activity
 src/lib/notifications/inbox.ts              # InboxItem.data.type = PushType(type-only import) / KEYS 5종 모듈 상수 / record·하이드레이트 시 KEYS 키 존재 가드(미지 유형 드롭) / _resetInboxForTest rehydrate 옵션
 src/lib/i18n/{ko,en,ja,zh-Hans,zh-Hant,vi,id,th,ru,es}.json
                                             # inbox.nudge*·notice* 제거 → scanSuggestion*·news*·mealTime* 추가

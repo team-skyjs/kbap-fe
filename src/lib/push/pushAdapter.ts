@@ -175,7 +175,8 @@ export async function scheduleReviewReminder(food: { foodId: string; name: strin
         body: i18n.t('push.reviewReminderBody', { name: food.name }),
         data: { type: 'REVIEW_REMINDER', foodId: food.foodId },
       },
-      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS },
+      // KB-498: Android는 activity 채널(MAX)로 — 없으면 expo 폴백 채널(기본 중요도). iOS는 channelId 무시.
+      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS, channelId: 'activity' },
     });
     await setReminderMap({ ...(await getReminderMap()), [food.foodId]: id });
   } catch (e) {

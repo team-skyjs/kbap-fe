@@ -66,10 +66,11 @@ it('리뷰 유도 예약 — 1시간 트리거 + REVIEW_REMINDER data, 취소 �
   expect(mockNotifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
   const arg = mockNotifications.scheduleNotificationAsync.mock.calls[0][0] as {
     content: { data: unknown };
-    trigger: { seconds: number };
+    trigger: { seconds: number; channelId?: string };
   };
   expect(arg.content.data).toEqual({ type: 'REVIEW_REMINDER', foodId: '7' });
   expect(arg.trigger.seconds).toBe(REVIEW_REMINDER_SECONDS);
+  expect(arg.trigger.channelId).toBe('activity'); // KB-498: 로컬 리마인더도 활동 채널(Android MAX)
   await cancelReviewReminder('7');
   expect(mockNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('nid-1');
 });
