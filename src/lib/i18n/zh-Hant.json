@@ -954,7 +954,9 @@
     "receiveConsent": "同意接收廣告資訊（選填）",
     "consentConfirm": "同意並開啟通知",
     "reviewReminderTitle": "這頓飯怎麼樣？",
-    "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。"
+    "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。",
+    "landingTbdTitle": "跳轉頁面待定（需要規劃）",
+    "landingTbdBody": "點擊 {{type}} 通知後要開啟的頁面尚未確定，請與團隊共享。"
   },
   "notif": {
     "title": "通知設定",
@@ -985,10 +987,12 @@
     "helpfulBody": "你對泡菜鍋的評價獲得了一個有幫助。",
     "reminderTitle": "這餐如何？",
     "reminderBody": "為你點的菜寫個簡短評價吧。",
-    "noticeTitle": "歡迎使用 K-Bap",
-    "noticeBody": "掃描菜單即可了解哪些菜對你是安全的。",
-    "nudgeTitle": "今天在外面用餐嗎？",
-    "nudgeBody": "點餐前先掃描菜單吧。",
+    "scanSuggestionTitle": "今天在外面用餐嗎？",
+    "scanSuggestionBody": "點餐前先掃描菜單吧。",
+    "newsTitle": "K-Bap 資訊",
+    "newsBody": "查看新功能和活動資訊。",
+    "mealTimeTitle": "該吃飯囉",
+    "mealTimeBody": "掃描菜單，馬上查看你要避開的食材。",
     "newBadge": "新"
   },
   "myFoods": {

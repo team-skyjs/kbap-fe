@@ -9,6 +9,8 @@
  * 설정(KB-497) = **서버 정본** 2그룹 — 활동 알림(activity: Helpful + 리뷰 리마인더) ·
  * K-Bap 소식(news: 광고성, 동의 2종 + 하위 mealTime). 로컬 설정 저장소는 없다
  * (useNotificationSettings 캐시가 유일 미러). 토큰 등록은 회원 세션이 있을 때만(KB-543).
+ *
+ * 푸시 data 계약(KB-498) — 유형 enum 정본 = 서버(BE Swagger), 앱 쪽 정의는 아래 PUSH_TYPES 한 곳.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -173,7 +175,8 @@ export async function scheduleReviewReminder(food: { foodId: string; name: strin
         body: i18n.t('push.reviewReminderBody', { name: food.name }),
         data: { type: 'REVIEW_REMINDER', foodId: food.foodId },
       },
-      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS },
+      // KB-498: Android는 activity 채널(MAX)로 — 없으면 expo 폴백 채널(기본 중요도). iOS는 channelId 무시.
+      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS, channelId: 'activity' },
     });
     await setReminderMap({ ...(await getReminderMap()), [food.foodId]: id });
   } catch (e) {
@@ -202,19 +205,22 @@ export async function cancelReviewReminder(foodId: string): Promise<void> {
 /**
  * 알림 탭 → 라우팅 콜백. 포그라운드 표시 핸들러(배너)도 여기서 1회 설정.
  * 콜드 스타트(종료 상태 알림 탭)는 마지막 응답 1회 처리. 반환 = 해제 함수.
+ * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·MEAL_TIME·foodId 없는 리마인더)이면 null.
+ * 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음). 경로가 없어도 id는 전달(읽음 처리용).
+ * 읽음 처리 호출은 후속 작업(서버 알림함 전환) 몫. Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
  */
-export function addNotificationTapListener(onRoute: (href: string) => void): () => void {
+export function addNotificationTapListener(onRoute: (href: string | null, notificationId?: number | string) => void): () => void {
   const N = loadNotifications();
   if (!N) return () => {};
   // P-289: 발화 기록 — 알림함(실알림 전용)에 적재. id = request.identifier(중복 방지 키)
   const record = (req: { identifier?: string; content: { data?: unknown } } | null | undefined) => {
     try {
-      const d = req?.content?.data as { type?: string; foodId?: string | number } | undefined;
-      if (!req?.identifier || !d?.type) return;
+      const d = req?.content?.data as { type?: unknown; foodId?: string | number } | undefined;
+      if (!req?.identifier || !isPushType(d?.type)) return; // KB-498: 미지 유형 = 기록 안 함
       const { recordInboxNotification } = require('@/lib/notifications/inbox') as typeof import('@/lib/notifications/inbox');
       recordInboxNotification({
         id: req.identifier,
-        type: d.type as 'REVIEW_REMINDER' | 'HELPFUL' | 'NUDGE' | 'NOTICE',
+        type: d.type,
         ...(d.foodId != null ? { foodId: String(d.foodId) } : {}),
       });
     } catch {
@@ -222,6 +228,13 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
     }
   };
   try {
+    // KB-498: Android 채널 2종 — activity(MAX: HELPFUL·REVIEW_REMINDER) · news(HIGH: 광고성 3종, 기기 설정에서 따로 끌 수 있게 분리).
+    // 채널 중요도는 생성 후 변경 불가라 'default'는 만들지 않는다(서버가 default로 보내면 expo 폴백 채널 = 지금과 동일).
+    // 이름은 설정 화면 그룹명 i18n 재사용. 멱등(재호출 = 이름만 갱신) · iOS 무동작 · 결과 대기 없음(부팅 지연 0).
+    if (Platform.OS === 'android') {
+      void N.setNotificationChannelAsync('activity', { name: i18n.t('notif.activityGroup'), importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {});
+      void N.setNotificationChannelAsync('news', { name: i18n.t('notif.newsGroup'), importance: N.AndroidImportance.HIGH, sound: 'default' }).catch(() => {});
+    }
     N.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowBanner: true,
@@ -230,10 +243,17 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
         shouldSetBadge: false,
       }),
     });
+    const routed = new Set<string>(); // KB-498: 콜드 스타트 — 마지막 응답 조회와 리스너가 같은 탭을 이중 전달하는 것 차단
     const emit = (resp: { notification: { request: { identifier?: string; content: { data?: unknown } } } } | null) => {
       record(resp?.notification.request); // 백그라운드 발화 → 탭 진입도 회수
-      const href = resp ? routeForNotificationData(resp.notification.request.content.data) : null;
-      if (href) onRoute(href);
+      const id = resp?.notification.request.identifier;
+      if (id) {
+        if (routed.has(id)) return;
+        routed.add(id);
+      }
+      const data = resp?.notification.request.content.data as { notificationId?: number | string } | undefined;
+      if (!resp) return;
+      onRoute(routeForNotificationData(data), data?.notificationId); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
     // P-289 ①: 포그라운드 발화 즉시 기록
@@ -253,18 +273,31 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
   }
 }
 
-/* ---- 딥링크 라우팅 (순수 함수 — 서버 data 스키마는 BE 확정 대기, 여기만 배선) ---- */
+/* ---- 푸시 유형 (KB-498 — 서버 enum과 동일, 정확 일치만) ---- */
+
+export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME'] as const;
+export type PushType = (typeof PUSH_TYPES)[number];
+
+export function isPushType(v: unknown): v is PushType {
+  return typeof v === 'string' && (PUSH_TYPES as readonly string[]).includes(v); // trim·대소문자 정규화 없음
+}
+
+/* ---- 딥링크 라우팅 (순수 함수 — 서버 data 계약 KB-498, 여기만 배선) ---- */
 
 export function routeForNotificationData(data: unknown): string | null {
   const d = data as { type?: string; foodId?: string | number } | null | undefined;
   switch (d?.type) {
+    // 2026-09-12 종한: HELPFUL·SCAN_SUGGESTION 착지 미정 → 임시 디버깅 화면(push-landing). 기획 확정 시 교체.
     case 'HELPFUL':
-      return '/profile/reviews'; // 발주 6: HELPFUL → 내 리뷰
-    case 'NUDGE':
-      return '/scan'; // 넛지 → 스캔
+      return '/push-landing?type=HELPFUL';
+    case 'SCAN_SUGGESTION': // 구 NUDGE(2026-09-07 개명) — 구 이름은 default로 무동작
+      return '/push-landing?type=SCAN_SUGGESTION';
     case 'REVIEW_REMINDER':
-      return d.foodId != null ? `/food/${d.foodId}/review` : null;
+      return d.foodId != null ? `/food/${d.foodId}` : null; // 음식 상세(리뷰 작성 화면 아님 — 9/12 결정)
+    case 'NEWS':
+    case 'MEAL_TIME':
+      return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:
-      return null; // 미지 타입 — 무동작(스키마 확장 안전)
+      return null; // 미지·구 이름·변형 — 무동작(정확 일치만)
   }
 }

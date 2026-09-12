@@ -954,7 +954,9 @@
     "receiveConsent": "同意接收广告信息（可选）",
     "consentConfirm": "同意并开启通知",
     "reviewReminderTitle": "这顿饭怎么样？",
-    "reviewReminderBody": "告诉我们{{name}}怎么样——你的评分能帮助其他旅行者。"
+    "reviewReminderBody": "告诉我们{{name}}怎么样——你的评分能帮助其他旅行者。",
+    "landingTbdTitle": "跳转页面待定（需要规划）",
+    "landingTbdBody": "点击 {{type}} 通知后要打开的页面尚未确定，请与团队共享。"
   },
   "notif": {
     "title": "通知设置",
@@ -985,10 +987,12 @@
     "helpfulBody": "你对泡菜汤的评价获得了一个有帮助。",
     "reminderTitle": "这餐怎么样？",
     "reminderBody": "给你点的菜写个简短评价吧。",
-    "noticeTitle": "欢迎使用 K-Bap",
-    "noticeBody": "扫描菜单即可了解哪些菜对你是安全的。",
-    "nudgeTitle": "今天在外面吃饭吗？",
-    "nudgeBody": "点餐前先扫一下菜单吧。",
+    "scanSuggestionTitle": "今天在外面吃饭吗？",
+    "scanSuggestionBody": "点餐前先扫一下菜单吧。",
+    "newsTitle": "K-Bap 资讯",
+    "newsBody": "查看新功能和活动信息。",
+    "mealTimeTitle": "该吃饭啦",
+    "mealTimeBody": "扫描菜单，马上查看你要避开的食材。",
     "newBadge": "新"
   },
   "myFoods": {

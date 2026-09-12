@@ -954,7 +954,9 @@
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
     "consentConfirm": "Setuju dan nyalakan",
     "reviewReminderTitle": "Bagaimana makanannya?",
-    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain."
+    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain.",
+    "landingTbdTitle": "Tujuan belum ditentukan (perlu perencanaan)",
+    "landingTbdBody": "Layar yang dibuka saat notifikasi {{type}} diketuk belum diputuskan. Bagikan ke tim."
   },
   "notif": {
     "title": "Pengaturan notifikasi",
@@ -985,10 +987,12 @@
     "helpfulBody": "Ulasanmu tentang sup kimchi mendapat satu suara membantu.",
     "reminderTitle": "Bagaimana makanannya?",
     "reminderBody": "Tulis ulasan singkat untuk hidangan yang kamu pesan.",
-    "noticeTitle": "Selamat datang di K-Bap",
-    "noticeBody": "Pindai menu untuk tahu hidangan mana yang aman untukmu.",
-    "nudgeTitle": "Makan di luar hari ini?",
-    "nudgeBody": "Pindai menu sebelum memesan.",
+    "scanSuggestionTitle": "Makan di luar hari ini?",
+    "scanSuggestionBody": "Pindai menu sebelum memesan.",
+    "newsTitle": "Kabar K-Bap",
+    "newsBody": "Lihat fitur baru dan info acara.",
+    "mealTimeTitle": "Waktunya makan",
+    "mealTimeBody": "Pindai menu untuk langsung mengecek bahan yang kamu hindari.",
     "newBadge": "NEW"
   },
   "myFoods": {

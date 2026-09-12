@@ -1,10 +1,10 @@
 /**
  * 알림함 데이터 소스 (P-216/KB-39 → P-289/KB-436 실알림 전용).
  *
- * P-289(예진 9/7): 목 4건 소멸 — **실제 발화된 로컬 알림만** 기록한다.
- * 저장 = AsyncStorage(`kbap.inbox.v1`) 영속(읽음 포함). 기록 시점 = 리마인더가
+ * P-289(예진 9/7): 목 4건 소멸 — **실제 발화된 알림만** 기록한다(서버 푸시 5종 + 로컬 리뷰 리마인더, KB-498).
+ * 저장 = AsyncStorage(`kbap.inbox.v1`) 영속(읽음 포함). 기록 시점 = 알림이
  * **발화될 때**(pushAdapter의 포그라운드 수신 리스너 + 재실행 회수 + 탭 응답) —
- * 예약 시점 아님. 중복 방지 = notification id 키.
+ * 예약 시점 아님. 중복 방지 = notification id 키. 유형은 KEYS 맵 5종만(미지·구 NUDGE/NOTICE = 기록 0·하이드레이트 드롭).
  *
  * 서버 알림 계약이 오면 **fetchInbox() 한 곳만** 서버 페처로 스왑한다(화면·스토어
  * 코드 무변). 개념 구분(멘토 8/15): push(앱 밖) / notification(놓친 히스토리 =
@@ -12,6 +12,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
+import type { PushType } from '@/lib/push/pushAdapter'; // type-only — 런타임 import 금지(어댑터가 inbox를 지연 require)
 
 /** 딥링크 payload는 푸시와 같은 스키마 — routeForNotificationData가 그대로 소비. */
 export type InboxItem = {
@@ -22,11 +23,22 @@ export type InboxItem = {
   /** ISO — 목록 정렬·상대 시각 표시 */
   at: string;
   read: boolean;
-  data: { type: 'HELPFUL' | 'REVIEW_REMINDER' | 'NUDGE' | 'NOTICE'; foodId?: string };
+  data: { type: PushType; foodId?: string };
 };
 
 const STORE_KEY = 'kbap.inbox.v1';
 const MAX_ITEMS = 100; // 로컬 상한 — 초과분은 오래된 것부터 드롭
+
+/** KB-498: 유형별 문구 키 — 이 맵의 키 집합이 곧 알림함이 아는 5종(어댑터 PUSH_TYPES와 동일).
+ *  런타임 가드도 이 맵으로 한다(어댑터 런타임 import = api·auth·react-query가 딸려 옴). */
+const KEYS: Record<PushType, { titleKey: string; bodyKey: string }> = {
+  HELPFUL: { titleKey: 'inbox.helpfulTitle', bodyKey: 'inbox.helpfulBody' },
+  SCAN_SUGGESTION: { titleKey: 'inbox.scanSuggestionTitle', bodyKey: 'inbox.scanSuggestionBody' },
+  REVIEW_REMINDER: { titleKey: 'inbox.reminderTitle', bodyKey: 'inbox.reminderBody' },
+  NEWS: { titleKey: 'inbox.newsTitle', bodyKey: 'inbox.newsBody' },
+  MEAL_TIME: { titleKey: 'inbox.mealTimeTitle', bodyKey: 'inbox.mealTimeBody' },
+};
+const isKnownType = (t: unknown): t is PushType => typeof t === 'string' && Object.prototype.hasOwnProperty.call(KEYS, t); // own key만 — 'constructor'·'__proto__' 차단
 
 /* ---- 스토어 (P-205 문법: 모듈 동기 상태 + useSyncExternalStore, AsyncStorage 영속) ---- */
 
@@ -48,7 +60,8 @@ export function hydrateInbox(): Promise<void> {
       .then((raw) => {
         if (raw) {
           const parsed = JSON.parse(raw) as InboxItem[];
-          if (Array.isArray(parsed)) items = parsed;
+          // KB-498: 구 NUDGE/NOTICE 잔존 드롭(호환 변환 없음 — 스펙). 키가 사라진 항목은 제목이 키 문자열로 노출된다
+          if (Array.isArray(parsed)) items = parsed.filter((n) => isKnownType(n?.data?.type));
         }
       })
       .catch(() => {})
@@ -73,13 +86,7 @@ export function recordInboxNotification(entry: {
   foodId?: string;
   at?: string;
 }): void {
-  if (!entry.id || items.some((n) => n.id === entry.id)) return;
-  const KEYS: Record<InboxItem['data']['type'], { titleKey: string; bodyKey: string }> = {
-    REVIEW_REMINDER: { titleKey: 'inbox.reminderTitle', bodyKey: 'inbox.reminderBody' },
-    HELPFUL: { titleKey: 'inbox.helpfulTitle', bodyKey: 'inbox.helpfulBody' },
-    NUDGE: { titleKey: 'inbox.nudgeTitle', bodyKey: 'inbox.nudgeBody' },
-    NOTICE: { titleKey: 'inbox.noticeTitle', bodyKey: 'inbox.noticeBody' },
-  };
+  if (!entry.id || !isKnownType(entry.type) || items.some((n) => n.id === entry.id)) return; // 미지 유형 = 기록 안 함(KB-498)
   items = [
     {
       id: entry.id,
@@ -132,9 +139,9 @@ export function useUnreadCount(): number {
   return unreadCount(useInbox());
 }
 
-export function _resetInboxForTest(): void {
+export function _resetInboxForTest(opts?: { rehydrate?: boolean }): void {
   items = [];
-  hydrated = true;
+  hydrated = !opts?.rehydrate; // rehydrate = 저장분 재로드 검증용(하이드레이트 필터)
   hydrating = null;
   emit();
 }

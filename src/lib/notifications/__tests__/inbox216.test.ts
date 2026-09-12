@@ -63,8 +63,50 @@ it('뱃지 카운트 — 미읽음 수·markAll 멱등', () => {
   expect(unreadCount(fetchInbox())).toBe(0);
 });
 
+it('KB-498: 신규 3유형 기록 — SCAN_SUGGESTION·NEWS·MEAL_TIME 각각 제 문구 키', () => {
+  recordInboxNotification({ id: 's', type: 'SCAN_SUGGESTION' });
+  recordInboxNotification({ id: 'n', type: 'NEWS' });
+  recordInboxNotification({ id: 'm', type: 'MEAL_TIME' });
+  const by = Object.fromEntries(fetchInbox().map((n) => [n.id, n]));
+  expect(by.s).toMatchObject({ titleKey: 'inbox.scanSuggestionTitle', bodyKey: 'inbox.scanSuggestionBody', data: { type: 'SCAN_SUGGESTION' } });
+  expect(by.n).toMatchObject({ titleKey: 'inbox.newsTitle', bodyKey: 'inbox.newsBody', data: { type: 'NEWS' } });
+  expect(by.m).toMatchObject({ titleKey: 'inbox.mealTimeTitle', bodyKey: 'inbox.mealTimeBody', data: { type: 'MEAL_TIME' } });
+});
+
+it('KB-498: 미지·구 이름·변형 유형은 기록 0 (US2-5 — 빈 제목 항목 금지)', () => {
+  recordInboxNotification({ id: 'a', type: 'NUDGE' as never });
+  recordInboxNotification({ id: 'b', type: 'NOTICE' as never });
+  recordInboxNotification({ id: 'c', type: 'helpful' as never });
+  recordInboxNotification({ id: 'd', type: undefined as never });
+  // Codex #149: Object.prototype 키는 `in` 검사를 통과하므로 own key만 인정
+  recordInboxNotification({ id: 'e', type: 'constructor' as never });
+  recordInboxNotification({ id: 'f', type: 'toString' as never });
+  recordInboxNotification({ id: 'g', type: '__proto__' as never });
+  expect(fetchInbox()).toHaveLength(0);
+});
+
+it('KB-498: 저장분의 구 NUDGE/NOTICE 항목은 하이드레이트 시 드롭(호환 변환 없음)', async () => {
+  await AsyncStorage.setItem(
+    'kbap.inbox.v1',
+    JSON.stringify([
+      { id: 'old', titleKey: 'inbox.nudgeTitle', bodyKey: 'inbox.nudgeBody', at: '2026-09-01T00:00:00Z', read: false, data: { type: 'NUDGE' } },
+      { id: 'ok', titleKey: 'inbox.helpfulTitle', bodyKey: 'inbox.helpfulBody', at: '2026-09-02T00:00:00Z', read: false, data: { type: 'HELPFUL' } },
+      { id: 'proto', at: '2026-09-03T00:00:00Z', read: false, data: { type: 'constructor' } },
+    ]),
+  );
+  _resetInboxForTest({ rehydrate: true });
+  await hydrateInbox();
+  expect(fetchInbox().map((n) => n.id)).toEqual(['ok']);
+});
+
 it('P-289 배선 소스 잠금 — pushAdapter가 발화 시 기록(포그라운드+재실행 회수+응답)', () => {
   const src = require('fs').readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;
+  // KB-498: 구 이름 잔존 0 (어댑터·알림함 소스)
+  expect(src).not.toContain("'NUDGE'");
+  expect(src).not.toContain("'NOTICE'");
+  const inboxSrc = require('fs').readFileSync('src/lib/notifications/inbox.ts', 'utf8') as string;
+  expect(inboxSrc).not.toContain("'NUDGE'");
+  expect(inboxSrc).not.toContain("'NOTICE'");
   expect(src).toContain('recordInboxNotification');
   expect(src).toContain('addNotificationReceivedListener'); // 포그라운드 발화
   expect(src).toContain('getPresentedNotificationsAsync'); // 백그라운드 발화 재실행 회수
