@@ -136,7 +136,7 @@ it('US1(c) 데이터 = 활동·소식·식사 시간 스위치 3개 + 소식 ON�
   expect(cap.props.children).toContain('"version":1');
   expect(cap.props.children).toContain(new Date('2026-09-11T00:00:00').toLocaleDateString('en')); // 두 동의 중 최근
   await tap(tree, 'notif-consent-full');
-  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-receive.html');
+  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/advertising-receipt-consent.html');
 });
 
 it('US1(c2) 소식 OFF = 캡션 없음 + 식사 시간 행 비활성(opacity)', async () => {

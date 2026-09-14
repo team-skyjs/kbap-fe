@@ -1413,7 +1413,7 @@
 - [x] KB-543(BE #260): 토큰 등록 회원 전용 — pushAdapter hasBeSession 가드 1줄 + useSocialAuth exchange 성공 직후 1회, 401 비치명. KB-544: 설정 토글 (회원, 기기)·동의 원장 회원 단위·스키마 동일·기본값 전부 false — 새 X-API-Version 값은 상수 1곳(착수 시 채움, null = 현행 레거시).
 - [x] i18n notif/push 10로케일 키 교체(구 3토글·야간 키 0, 패리티 유닛) · 게스트 = 프로필 진입점 제거 + 라우트 AuthGateSheet · P-151 메트릭 유닛(Switch·비활성 행·체크박스).
 - [x] tsc 0 · jest 208스위트 1407/1407(신규 7스위트).
-- [ ] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy/receive.html) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
+- [x] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy-consent / advertising-receipt-consent.html — 9/14 종한 전달, 200 확인, KB-553에서 URL 교체) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
 
 ## 푸시 data 계약 반영 — 유형 5종·알림 id·Android 채널 (2026-09-11, KB-498 — Spec Kit 2호 `specs/002-push-data-contract`)
 - [x] 유형 enum 5종(HELPFUL·SCAN_SUGGESTION(구 NUDGE)·REVIEW_REMINDER·NEWS(구 NOTICE 폐기)·MEAL_TIME 신설) — 정의는 pushAdapter PUSH_TYPES 한 곳, 정확 일치만(구 이름·대소문자·공백 = 미지 = 무동작·미기록). 딥링크(9/12 종한 결정): REVIEW_REMINDER→음식 상세 /food/{id} · NEWS·MEAL_TIME→이동 없음 · HELPFUL·SCAN_SUGGESTION→임시 디버깅 화면 push-landing("착지 미정, 기획 필요" — 평일 팀 공유 후 확정 시 교체·파일 삭제).

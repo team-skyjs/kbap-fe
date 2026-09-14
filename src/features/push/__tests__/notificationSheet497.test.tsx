@@ -101,9 +101,9 @@ it('(b) consent(9/14 종한): 둘 다 체크된 채 열림 → 즉시 확인 가
   expect(host(tree, 'notif-sheet-notice')).toHaveLength(1); // 고정 슬롯 — 항상 렌더
   expect(noticeShown(tree)).toBe(false);
   await tap(tree, 'consent-privacy-full');
-  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-privacy.html');
+  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-privacy-consent.html');
   await tap(tree, 'consent-receive-full');
-  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-receive.html');
+  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/advertising-receipt-consent.html');
   // 하나 해제 → 확인 탭 = 진행 0 + 안내
   await tap(tree, 'consent-privacy');
   expect(boxOn(tree, 'privacy')).toBe(false);
