@@ -1426,6 +1426,7 @@
 
 ## 알림 시트 슬라이드·드래그 닫힘 모션 + 문구 중간점→슬래시 (2026-09-14, KB-553 — Spec Kit 3호 `specs/003-notification-sheet-motion`)
 - [x] NotificationSheet(primer·consent) 모션: Modal은 fade(딤만) + 공용 훅 useSheetSwipeDismiss 가산 확장 — animateIn(시트만 화면 아래에서 240ms ease-out 직선 등장) · dismiss(onDone) 노출(나중에·확인·스크림·백버튼·드래그 5경로 전부 180ms 슬라이드 다운 후 Modal 숨김, visible 지연) · 핸들·제목 드래그(임계 통과 = 퇴장 후 onClose 1회 · 미만/취소 = 스프링 복귀 · 딤 비례 페이드) + Modal 내부 GestureHandlerRootView(Codex #98 3R P2). 훅 기본 동작·선례 시트 3곳·호출부 2곳·props·testID·시트 메트릭 무변(P-151 유닛). 제스처 영역 = 핸들+제목만(유닛으로 트리 단언).
+- [x] GitHub Codex 인라인 라운드(PR #150) 5건 반영·1건 기각: P1 onMutate await 간극 세대 불일치 → 동기화 · 닫힘 경로(나중에·스크림·백버튼) 훅 dismiss 경유로 onClose 1회 보장 · announce iOS 한정 · winH ref · spec FR-002/005 시트 전체로 개정.
 - [x] Codex 독립 리뷰(PR #150, Important 4·Minor 1) 반영: PATCH 큐 세션 세대 가드(계정 전환 시 대기 요청 폐기·캐시 재시딩 0) · 시트 퇴장 중 pointerEvents none + 체크 리셋을 열림 시로 · 훅 closing/closed 3상(퇴장 중 외부 dismiss는 완료 시 코얼레싱) · 미충족 안내 VoiceOver announce + a11y 트리 제외 · 지연 완료 목 유닛. 기각: activeOffsetY(실기 미관찰).
 - [x] OS 알림 권한 꺼짐(종한, 9/14, 지시 2회): 1차 "동의 내역 미노출·배너만" → 통째 숨김 → 2차 "아래 UI 숨기지 마" → 배너 + 설정 UI 흐림(opacity 0.4)·조작 불가·행 disabled로 정착. 판정 전 스켈레톤 게이트 철회. 서버 값 무변.
 - [x] 실기 4차(종한, 9/14): 식사 시간만 OFF → 소식 토글 잠깐 OFF — 동의 확정 PATCH 반영 전 다음 PATCH가 병렬 도착해 서버가 반영 전 행으로 응답(enabled:false), seq상 최신이라 캐시 덮음. 설정 PATCH 클라 직렬화(앞 요청 settle 후 전송, 낙관 즉시) + 경합 재현 유닛. Swagger 재확인: 응답 news.enabled = 기기 토글 저장값(동의 미결합) → 3차의 "소식 OFF 응답 의미" 미확인 해소.

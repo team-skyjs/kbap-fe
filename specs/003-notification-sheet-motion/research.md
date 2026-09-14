@@ -95,6 +95,8 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 | 4 | 미충족 확인 탭 안내가 iOS VoiceOver에 전달되지 않음(liveRegion은 Android 전용) | `AccessibilityInfo.announceForAccessibility` 호출 + 비표시 시 `accessibilityElementsHidden`/`importantForAccessibility`로 트리 제외(슬롯 유지). 유닛 |
 | 5(Minor) | withTiming 동기 완료 목이 퇴장 중 상태·중복·재오픈 타이밍을 못 봄 | 훅·시트 유닛에 `mockImplementationOnce` 지연 완료 도입(위 2·3 케이스) |
 
+**GitHub Codex 인라인 라운드(PR #150, ad80241·f2e0fce 리뷰 — 2026-09-14 종한 승인 후 반영)**: P1 onMutate `await cancelQueries` 사이 계정 전환 → mutationFn이 새 세대 읽음 → onMutate 동기화(void cancel) · P2 Android announce 중복 → iOS 한정 · P2 spec FR-002/FR-005/US2 "손잡이·제목만" 모순 → 시트 전체로 개정 · P2 퇴장 중 백버튼/스와이프 중 탭 onClose 2회 → 나중에·스크림·백버튼 전부 훅 `dismiss()` 경유(진행 중 무시) · P2 `winH` deps로 회전 시 등장 재생 → ref. 기각 1: 체크 리셋 타이밍(이미 열림 시로 이동). 유닛 (c)(n)·훅·데이터 소스 잠금.
+
 기각/보류: "Modal fade는 시트도 페이드" — 사실이며 주석 정정(실기 승인된 모션). "Pan에 `activeOffsetY` 명시" — 실기에서 탭 씹힘 미관찰, 재현 시 추가. `enabled`를 동의 결합값으로 적은 훅 헤더 주석 — Swagger대로 정정.
 
 ## R-9. 접근성 "동작 줄이기" (spec Edge Case)
