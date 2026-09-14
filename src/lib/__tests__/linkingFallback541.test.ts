@@ -154,6 +154,15 @@ describe('P-381 2R(Codex P2) — 하드 게이트는 인라인, 소프트 넛지
     expect(vg).toMatch(/setStoreFailed\(false\);\s*\}, \[gate\.mode, storeUrl\]\)/);
   });
 
+  it('진행 중이던 시도는 게이트가 바뀌면 결과를 버린다(P3 두 번째 — stale completion)', () => {
+    const vg = codeOf('src/components/VersionGate.tsx');
+    // 시도 시점의 게이트 정체를 캡처하고, 결과 적용 전에 현재 값과 대조한다
+    expect(vg).toContain('const attempt = gateIdRef.current;');
+    expect(vg).toMatch(/if \(gateIdRef\.current !== attempt\) return;/);
+    // 무조건 적용하던 형태가 남아 있으면 안 된다
+    expect(vg).not.toMatch(/\.then\(\(ok\) => setStoreFailed\(!ok\)\)/);
+  });
+
   it('storeFailed 10로케일 — 링크·설정 문구와 각각 다르다', () => {
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
       const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as {
