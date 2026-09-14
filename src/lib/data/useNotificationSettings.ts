@@ -30,7 +30,11 @@ export interface NotificationSettings {
 export interface NotificationSettingsPatch {
   activity?: boolean;
   news?: {
+    /** 이 기기의 소식 수신 on/off — 동의 원장은 건드리지 않는다(KB-544 Swagger) */
     enabled?: boolean;
+    /** 회원 마케팅 동의: true = 두 버전으로 동의 기록(버전 2종 필수), false = 철회. 기기 토글은 무변 */
+    consent?: boolean;
+    /** 식사 시간 알림 — 이 요청 반영 후 이 기기 소식이 켜져 있어야 한다(아니면 NOTIFICATION-001) */
     mealTime?: boolean;
     privacyConsentVersion?: number;
     receiveConsentVersion?: number;
@@ -57,12 +61,13 @@ const isLatest = (n: number) => n === seq;
 export function predictSettings(cur: NotificationSettings, patch: NotificationSettingsPatch): NotificationSettings {
   const next: NotificationSettings = { ...cur, news: { ...cur.news } };
   if (patch.activity != null) next.activity = patch.activity;
-  if (patch.news?.enabled === true) {
+  if (patch.news?.consent === true) {
     const now = new Date().toISOString();
-    next.news.enabled = true;
-    next.news.mealTime = true;
     next.news.privacyConsent = { version: patch.news.privacyConsentVersion ?? 0, grantedAt: now };
     next.news.receiveConsent = { version: patch.news.receiveConsentVersion ?? 0, grantedAt: now };
+  }
+  if (patch.news?.enabled === true) {
+    next.news.enabled = true; // mealTime은 아래 명시값만 따른다 — 예측이 요청보다 앞서가면 응답에서 되돌아가 깜빡인다(9/14 실기)
   } else if (patch.news?.enabled === false) {
     next.news.enabled = false;
     next.news.mealTime = false; // 동의(회원 단위)는 유지 — 서버 응답이 정본

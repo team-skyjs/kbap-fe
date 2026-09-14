@@ -194,7 +194,7 @@ it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동�
   await tap(tree, 'consent-privacy'); // 다시 체크
   await tap(tree, 'notif-sheet-confirm');
   expect(mockData.update.mutate).toHaveBeenCalledTimes(1);
-  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { enabled: true, privacyConsentVersion: 1, receiveConsentVersion: 1 } });
+  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } });
   expect(has(tree, 'notif-sheet-consent')).toBe(false);
 });
 

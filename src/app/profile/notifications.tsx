@@ -94,7 +94,9 @@ function NotificationSettingsScreen() {
   };
   const confirmConsent = () => {
     track(EVENTS.push_pref_toggle, { key: 'news', on: true });
-    patch({ news: { enabled: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION } });
+    // KB-544 계약(dev Swagger 9/14): 동의 기록은 consent:true + 버전 2종, 기기 수신은 enabled, 하위 식사 시간도 함께 ON(종한).
+    // 서버 처리 순서 consent → enabled → mealTime 이라 한 요청에 담아도 NOTIFICATION-001 없음.
+    patch({ news: { consent: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION, enabled: true, mealTime: true } });
     setConsentOpen(false);
   };
 

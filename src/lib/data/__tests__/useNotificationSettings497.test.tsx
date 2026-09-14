@@ -150,3 +150,18 @@ it('(f) 계정 전환(queryClient.clear) 후 캐시가 없다', async () => {
   qc.clear();
   expect(qc.getQueryData(NOTIF_SETTINGS_KEY)).toBeUndefined();
 });
+
+// KB-553(9/14 실기 깜빡임): 낙관 예측은 요청에 담긴 값만 앞서간다 — 요청에 없는 mealTime을 true로 예측하면
+// 서버 응답(저장값 false)에서 되돌아가 토글이 깜빡인다. 동의 기록은 consent:true(KB-544 계약).
+it('predictSettings: enabled:true만 → mealTime 무변 · consent:true → 동의 2종 예측 · 동의 확정 풀 페이로드 → 전부 ON', () => {
+  const { predictSettings } = require('../useNotificationSettings') as typeof import('../useNotificationSettings');
+  const off = { activity: false, news: { enabled: false, mealTime: false, privacyConsent: null, receiveConsent: null } };
+  const a = predictSettings(off, { news: { enabled: true } });
+  expect(a.news.enabled).toBe(true);
+  expect(a.news.mealTime).toBe(false); // 요청에 없음 → 예측도 하지 않는다
+  expect(a.news.privacyConsent).toBeNull();
+  const b = predictSettings(off, { news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } });
+  expect(b.news).toMatchObject({ enabled: true, mealTime: true, privacyConsent: { version: 1 }, receiveConsent: { version: 1 } });
+  const c = predictSettings(b, { news: { enabled: false } });
+  expect(c.news).toMatchObject({ enabled: false, mealTime: false, privacyConsent: { version: 1 } }); // 동의는 유지
+});
