@@ -5,14 +5,15 @@
  * 낙관 반영 → 실패 롤백 → 응답(전체 설정)으로 캐시 교체. 연타·프라이머 지연 응답이
  * 최신 값을 덮어쓰지 않도록 **모듈 seq**로 최신 요청 응답만 반영한다(훅 안팎 공유).
  *
- * 단위(KB-544): activity·news.mealTime = 이 기기(X-Installation-Id) 저장값,
- * news.enabled = 계산값(이 기기 news AND 회원 동의 2종), 동의 = 회원 단위.
+ * 단위(KB-544, dev Swagger 9/14): activity·news.enabled·news.mealTime = 이 기기(X-Installation-Id) 토글 저장값
+ * (enabled는 동의와 결합하지 않는다 — 발송 시점에 서버가 AND 검사), 동의 = 회원 단위(privacy/receiveConsent로 읽음).
  * 새 X-API-Version 매핑은 consent.ts 상수 1곳(null = 현행 레거시).
  */
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api, type RequestOpts } from '@/lib/api/client';
 import { queryClient as sharedQueryClient } from '@/lib/queryClient';
 import { NOTIF_SETTINGS_API_VERSION } from '@/lib/push/consent';
+import { currentGen } from '@/lib/auth/beTokens';
 
 export interface ConsentState {
   version: number;
@@ -61,11 +62,20 @@ const isLatest = (n: number) => n === seq;
  * 도착하면 서버는 반영 전 행(전부 false)을 기준으로 응답한다 — 그 응답이 "최신"이라 캐시를 덮어 소식 토글이
  * 꺼진 것처럼 보였다. 요청은 앞 요청이 끝난 뒤 보낸다(낙관 표시는 즉시 · 응답 반영은 seq 그대로). ---- */
 let chain: Promise<unknown> = Promise.resolve();
-function sendPatch(patch: NotificationSettingsPatch): Promise<NotificationSettings> {
-  const p = chain.then(() => api.patch<NotificationSettings>(PATH, patch, opts()));
+/** 큐에 든 채 계정 경계(로그아웃·계정 전환 = 세션 세대 증가)를 넘은 요청 — 다른 계정 자격으로 나가면 안 된다. */
+export class StaleSessionError extends Error {
+  constructor() { super('notifSettings: session changed while queued'); this.name = 'StaleSessionError'; }
+}
+function sendPatch(patch: NotificationSettingsPatch, gen: number): Promise<NotificationSettings> {
+  const p = chain.then(() => {
+    if (gen !== currentGen()) throw new StaleSessionError(); // Codex 리뷰(#150): 큐 대기 중 계정 전환 → 폐기
+    return api.patch<NotificationSettings>(PATH, patch, opts());
+  });
   chain = p.catch(() => undefined); // 실패해도 다음 요청은 이어간다
   return p;
 }
+/** 응답·롤백 반영 조건: 최신 요청 AND 같은 세션 세대(전환 뒤 이전 계정 값을 캐시에 되살리지 않는다). */
+const stillMine = (my: number, gen: number) => isLatest(my) && gen === currentGen();
 
 /** 낙관 예측 — 서버 응답이 오면 통째로 교체되므로 표시용 근사면 충분. */
 export function predictSettings(cur: NotificationSettings, patch: NotificationSettingsPatch): NotificationSettings {
@@ -95,8 +105,9 @@ export async function patchNotificationSettings(
   qc: QueryClient = sharedQueryClient,
 ): Promise<NotificationSettings> {
   const my = nextSeq();
-  const res = await sendPatch(patch);
-  if (isLatest(my)) qc.setQueryData(NOTIF_SETTINGS_KEY, res);
+  const gen = currentGen();
+  const res = await sendPatch(patch, gen);
+  if (stillMine(my, gen)) qc.setQueryData(NOTIF_SETTINGS_KEY, res);
   return res;
 }
 
@@ -112,19 +123,20 @@ export function useNotificationSettings(enabled = true) {
 export function useUpdateNotificationSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (patch: NotificationSettingsPatch) => sendPatch(patch),
+    mutationFn: (patch: NotificationSettingsPatch) => sendPatch(patch, currentGen()),
     onMutate: async (patch) => {
       const my = nextSeq();
+      const gen = currentGen();
       await qc.cancelQueries({ queryKey: NOTIF_SETTINGS_KEY });
       const prev = qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY);
       if (prev) qc.setQueryData(NOTIF_SETTINGS_KEY, predictSettings(prev, patch));
-      return { my, prev };
+      return { my, gen, prev };
     },
     onSuccess: (res, _patch, ctx) => {
-      if (ctx && isLatest(ctx.my)) qc.setQueryData(NOTIF_SETTINGS_KEY, res);
+      if (ctx && stillMine(ctx.my, ctx.gen)) qc.setQueryData(NOTIF_SETTINGS_KEY, res);
     },
     onError: (_e, _patch, ctx) => {
-      if (ctx?.prev && isLatest(ctx.my)) qc.setQueryData(NOTIF_SETTINGS_KEY, ctx.prev);
+      if (ctx?.prev && stillMine(ctx.my, ctx.gen)) qc.setQueryData(NOTIF_SETTINGS_KEY, ctx.prev);
     },
   });
 }

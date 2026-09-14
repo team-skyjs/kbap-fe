@@ -208,3 +208,25 @@ it('PATCH 직렬화: 앞 요청이 실패해도 다음 요청은 전송된다', 
   expect(api.patch).toHaveBeenCalledTimes(2);
   expect(qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)!.news.mealTime).toBe(false);
 });
+
+// Codex 리뷰(#150) Important 1: 큐 대기 중 계정 전환 → 대기 요청은 전송하지 않고, 이전 계정 값을 캐시에 되살리지 않는다.
+it('PATCH 큐: 대기 중 세션 세대가 바뀌면(로그아웃·계정 전환) 전송 0 · 캐시 재시딩 0', async () => {
+  const { bumpSessionGen } = require('@/lib/auth/beTokens') as typeof import('@/lib/auth/beTokens');
+  const qc = qcFactory();
+  (api.get as jest.Mock).mockResolvedValue(ON);
+  const d1 = deferred<NotificationSettings>();
+  (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockResolvedValue(OFF);
+  await mount(qc);
+  act(() => latestMutate!({ activity: false }));
+  await tick();
+  act(() => latestMutate!({ news: { mealTime: false } })); // 큐 대기
+  await tick();
+  expect(api.patch).toHaveBeenCalledTimes(1);
+  bumpSessionGen(); // 계정 경계 — 인증 경계는 queryClient.clear()도 함께 한다
+  qc.clear();
+  await act(async () => { d1.resolve({ ...ON, activity: false }); await new Promise((r) => setTimeout(r, 0)); });
+  await tick();
+  expect(api.patch).toHaveBeenCalledTimes(1); // 대기 요청은 폐기
+  // clear 뒤 마운트된 관찰자가 GET을 다시 받는다(ON, activity:true) — 1번 응답(activity:false)·롤백 어느 쪽도 그 위에 쓰지 않음
+  expect(qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)?.activity).toBe(true);
+});

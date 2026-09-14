@@ -16,7 +16,7 @@
  * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
@@ -70,8 +70,8 @@ export function NotificationSheet({
   const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
   const [notice, setNotice] = React.useState(false); // 하나만 체크된 채 확인 탭 → 안내
   React.useEffect(() => {
-    if (!open) {
-      setChecks(PRECHECKED); // 닫히면 pending 변경 폐기 → 재오픈은 다시 둘 다 체크
+    if (open) {
+      setChecks(PRECHECKED); // 열릴 때 초기화(Codex 리뷰 #150: 닫힘 직후 리셋하면 퇴장 중 리셋값으로 확인될 수 있다)
       setNotice(false);
     }
   }, [open]);
@@ -85,6 +85,7 @@ export function NotificationSheet({
   const confirm = () => {
     if (!ready) {
       setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
+      AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // iOS VoiceOver는 liveRegion 미지원
       return;
     }
     void run(async () => {
@@ -96,7 +97,8 @@ export function NotificationSheet({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.root}>
+      {/* 퇴장 중(open=false·Modal 아직 보임)엔 스크림·시트 전부 무반응 — 닫히는 시트에서 확인이 눌리지 않게(Codex #150) */}
+      <View style={styles.root} pointerEvents={open ? 'auto' : 'none'} testID="notif-sheet-root">
         {/* P-337: 딤 전용 레이어 — 시트 컨테이너에 걸면 시트도 바랜다 */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
         <Pressable style={{ flex: 1 }} onPress={onClose} testID="notif-sheet-backdrop" />
@@ -124,7 +126,13 @@ export function NotificationSheet({
           )}
           {needsConsent && (
             // 고정 슬롯(항상 렌더, 불투명도만) — 안내가 뜨어도 시트 높이 불변(P-151)
-            <Text style={[styles.notice, !notice && styles.noticeHidden]} testID="notif-sheet-notice" accessibilityLiveRegion="polite">
+            <Text
+              style={[styles.notice, !notice && styles.noticeHidden]}
+              testID="notif-sheet-notice"
+              accessibilityLiveRegion="polite"
+              accessibilityElementsHidden={!notice}
+              importantForAccessibility={notice ? 'yes' : 'no-hide-descendants'}
+            >
               {t('push.consentBothRequired')}
             </Text>
           )}

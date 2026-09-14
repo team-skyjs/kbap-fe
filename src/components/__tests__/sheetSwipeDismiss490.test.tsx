@@ -154,3 +154,36 @@ it('KB-553 dismiss(onDone): 외부 닫힘 = 슬라이드 다운(180ms) 후 onDon
   m2.swipe.dismiss(); // 내부 기본(onClose) 재호출은 무동작 — 단일 발사 유지
   expect(onClose2).toHaveBeenCalledTimes(1);
 });
+
+it('Codex #150: 퇴장 진행 중 외부 dismiss = 완료 시 함께 1회(즉시 X) · 완료 뒤 = 즉시 · 취소(finished=false) = 미호출', () => {
+  const { withTiming } = require('react-native-reanimated') as { withTiming: jest.Mock };
+  let cb: ((f: boolean) => void) | undefined;
+  withTiming.mockImplementationOnce((v: unknown, _c?: unknown, c?: (f: boolean) => void) => { cb = c; return v; }); // 지연 완료
+  const onClose = jest.fn();
+  const { handlers, swipe } = mount(onClose);
+  handlers.onFinalize?.({ translationY: 120, velocityY: 0 }, true); // 드래그 퇴장 시작(진행 중)
+  expect(onClose).not.toHaveBeenCalled();
+  const a = jest.fn(); const b = jest.fn();
+  swipe.dismiss(a); // 진행 중 백버튼/스크림 → 즉시 X
+  swipe.dismiss(b);
+  expect(a).not.toHaveBeenCalled();
+  expect(b).not.toHaveBeenCalled();
+  handlers.onUpdate?.({ translationY: 10, velocityY: 0 }); // closing 중 드래그 무시(추종 X) — 예외 없음
+  cb!(true); // 애니메이션 완료
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(a).toHaveBeenCalledTimes(1);
+  expect(b).toHaveBeenCalledTimes(1);
+  const c = jest.fn();
+  swipe.dismiss(c); // 완료 뒤 = 즉시
+  expect(c).toHaveBeenCalledTimes(1);
+  expect(a).toHaveBeenCalledTimes(1); // 중복 0
+
+  // 취소: 재오픈 등으로 애니메이션이 끊기면(finished=false) 완료 콜백 미호출 — 재오픈 effect가 상태를 리셋한다
+  withTiming.mockImplementationOnce((v: unknown, _c?: unknown, c2?: (f: boolean) => void) => { cb = c2; return v; });
+  const onClose2 = jest.fn();
+  const m2 = mount(onClose2);
+  const d = jest.fn();
+  m2.swipe.dismiss(d);
+  cb!(false);
+  expect(d).not.toHaveBeenCalled();
+});

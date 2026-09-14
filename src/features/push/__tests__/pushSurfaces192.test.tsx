@@ -29,7 +29,11 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
     withTiming: (v: unknown) => v,
-    Easing: { out: () => () => 0, quad: 0, linear: () => 0 },
+    withRepeat: (v: unknown) => v, // KB-553: 권한 판정 전 스켈레톤(Shimmer) 렌더
+    interpolate: () => 0,
+    Extrapolation: { CLAMP: 'clamp' },
+    runOnJS: (fn: (...a: unknown[]) => void) => fn,
+    Easing: { out: () => () => 0, quad: 0, cubic: 0, linear: () => 0 },
   };
 });
 jest.mock('react-i18next', () => ({
@@ -122,9 +126,10 @@ const tap = async (tree: ReactTestRenderer, testID: string) => {
 
 // P-192 "off 고정" → P-221: dev 계열 활성화(빌드18이 네이티브 모듈 보유).
 // 🔴 prod는 여전히 차단 — 스토어 배포판에 모듈이 없어 켜면 크래시.
-it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 화면은 게이트 뒤', () => {
+it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 화면은 게이트 뒤', async () => {
   expect(FLAGS.pushEnabled).toBe(true); // 유닛 = dev 계열(PROD_CHANNEL false)
   const tree = render(<NotificationSettings />);
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); // KB-553: OS 권한 판정(granted) 뒤에 토글 노출
   // 게이트가 열렸으므로 리다이렉트 없이 실제 설정 화면이 뜬다
   expect(tree.root.findAll((n) => n.props?.testID === 'redirect')).toHaveLength(0);
   expect(tree.root.findAll((n) => n.props?.testID === 'notif-activity').length).toBeGreaterThanOrEqual(1);

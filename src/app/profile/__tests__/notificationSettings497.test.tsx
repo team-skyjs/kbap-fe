@@ -287,6 +287,7 @@ it('설정 화면은 AsyncStorage를 쓰지 않는다(서버 정본) + 동의 �
 });
 
 it('US5b OS 권한 판정 전 = 스켈레톤만(저장값 선노출 0) → granted 판정 후 토글 노출', async () => {
+  const spy = jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
   let resolve!: (v: string) => void;
   mockAdapter.getPermissionStatus.mockReturnValueOnce(new Promise<string>((r) => { resolve = r; }));
   mockData.query.data = ON;
@@ -298,4 +299,5 @@ it('US5b OS 권한 판정 전 = 스켈레톤만(저장값 선노출 0) → grant
   expect(has(tree, 'notif-skeleton')).toBe(false);
   expect(has(tree, 'notif-news')).toBe(true);
   expect(has(tree, 'notif-consent-status')).toBe(true);
+  spy.mockRestore();
 });

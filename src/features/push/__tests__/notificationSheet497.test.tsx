@@ -4,7 +4,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { Modal, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Modal, StyleSheet } from 'react-native';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
@@ -293,4 +293,27 @@ it('(l) 닫힘 = 시트 슬라이드 다운(180ms) 후 Modal 숨김 — 버튼/�
   act(() => { t2.update(<NotificationSheet {...p2} open={false} />); });
   expect(exitCalls()).toHaveLength(1); // 추가 퇴장 애니메이션 0 — 즉시 숨김
   expect(modalVisible(t2)).toBe(false);
+});
+
+it('(m) Codex #150: 퇴장 중(open=false·Modal 유지)엔 루트 pointerEvents none — 확인·스크림 무반응 · VoiceOver 안내 · 안내 비표시 시 a11y 트리 제외', async () => {
+  const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+  const p = props({ variant: 'consent' });
+  const tree = render(<NotificationSheet {...p} />);
+  const root = () => host(tree, 'notif-sheet-root')[0];
+  expect(root().props.pointerEvents).toBe('auto');
+  const notice = () => host(tree, 'notif-sheet-notice')[0];
+  expect(notice().props.accessibilityElementsHidden).toBe(true);
+  await tap(tree, 'consent-privacy');
+  await tap(tree, 'notif-sheet-confirm');
+  expect(announce).toHaveBeenCalledWith('push.consentBothRequired');
+  expect(notice().props.accessibilityElementsHidden).toBe(false);
+  // 닫힘 시작(호출부 open=false) — 퇴장 완료를 지연시켜 "Modal은 아직 보이고 조작만 막힌" 중간 상태를 본다
+  let exitCb: ((f: boolean) => void) | undefined;
+  timing().mockImplementationOnce((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { exitCb = cb; return v; });
+  act(() => { tree.update(<NotificationSheet {...p} open={false} />); });
+  expect(modalVisible(tree)).toBe(true); // 퇴장 중 = 아직 보임
+  expect(root().props.pointerEvents).toBe('none'); // 그러나 무반응
+  act(() => { exitCb!(true); });
+  expect(modalVisible(tree)).toBe(false); // 완료 후 내려감
+  announce.mockRestore();
 });
