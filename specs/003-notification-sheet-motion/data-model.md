@@ -8,7 +8,8 @@
 |------|------|------|------|
 | `open` | 호출부(prop) | boolean | `Modal visible`. false→true 전환 시 훅이 translateY 0 리셋, 시트가 pending 체크 폐기 |
 | `variant` | prop | `'primer' \| 'consent'` | 무변 |
-| `checks` | 시트 로컬 | `{ privacy: boolean; receive: boolean }` | consent만. 닫힘 시 폐기(기존 §2) |
+| `checks` | 시트 로컬 | `{ privacy: boolean; receive: boolean }` | consent만. **초기값 둘 다 true**(R-13). 닫힘 시 초기값으로 리셋 |
+| `notice` | 시트 로컬 | boolean | 하나만 체크된 채 확인 탭 → true. 둘 다 체크되면 false. 닫힘 시 false. 표시는 불투명도만 |
 | `busy` | `useSubmitGuard` | boolean | 확인 진행 중. 무변 |
 | `ty` | 훅 내부 shared value | number(pt) | 드래그 translateY(≥0). 시트 transform·딤 opacity의 유일한 소스 |
 | `closingRef` | 훅 내부 | boolean | 임계 통과 후 단일 발사 가드 |

@@ -29,7 +29,8 @@ Modal(visible=visible ← open 지연: open=false 시 swipe.dismiss 퇴장 후 f
         ├ View(styles.handle)      testID="notif-sheet-grab"
         ├ Text(title)
         ├ Text(body)
-      ├ [consent] View(consents) — ConsentRow×2 (testID consent-privacy / consent-receive / *-box / *-full)
+      ├ [consent] View(consents) — ConsentRow×2 (testID consent-privacy / consent-receive / *-box / *-full) — 초기값 둘 다 체크(R-13)
+      ├ [consent] Text(notice · testID="notif-sheet-notice" · 고정 슬롯, 불투명도만) — 하나만 체크된 채 확인 탭 시 push.consentBothRequired
       └ View(actions) — Btn(testID="notif-sheet-confirm") · Pressable(testID="notif-sheet-later")
 ```
 
@@ -41,7 +42,8 @@ Modal(visible=visible ← open 지연: open=false 시 swipe.dismiss 퇴장 후 f
 | `notif-sheet-primer` / `notif-sheet-consent` | 유지 | 시트 컨테이너(메트릭 비교 대상) |
 | `notif-sheet-grab` | 신규 | 그랩 핸들 |
 | `consent-{privacy\|receive}` · `-box` · `-full` | 유지 | 체크 행·박스·전문 링크 — 시트 전체가 제스처 영역이라 안에 있음, 탭은 Pan 미활성 시 통과 |
-| `notif-sheet-confirm` · `notif-sheet-later` | 유지 | 동일 |
+| `notif-sheet-confirm` · `notif-sheet-later` | 유지 | 확인은 항상 활성 — 미충족 탭 = onConfirm 0 + 안내(R-13) |
+| `notif-sheet-notice` | 신규 | "둘 다 동의 필요" 안내 슬롯(consent만, 항상 렌더) |
 
 ## 제스처·모션 계약 (공용 훅 상속 — `src/components/useSheetSwipeDismiss.ts`, KB-553 확장 포함)
 
@@ -60,4 +62,4 @@ Modal(visible=visible ← open 지연: open=false 시 swipe.dismiss 퇴장 후 f
 
 ## i18n 계약
 
-`notif.activitySub`·`notif.newsSub`·`notif.mealTimeSub`·`push.consentSheetBody`·`push.privacyConsent` — 10로케일 값에 U+00B7·U+30FB 0개. 키 집합은 ko 기준 패리티(기존 `notifKeys497`).
+`notif.activitySub`·`notif.newsSub`·`notif.mealTimeSub`·`push.consentSheetBody`·`push.privacyConsent` — 10로케일 값에 U+00B7·U+30FB 0개. 키 집합은 ko 기준 패리티(기존 `notifKeys497`). 신규 키 `push.consentBothRequired`(10로케일, REQUIRED_PUSH에 추가).
