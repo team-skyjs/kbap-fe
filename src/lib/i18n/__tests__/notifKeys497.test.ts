@@ -11,7 +11,7 @@ const load = (l: string) => JSON.parse(fs.readFileSync(path.join(dir, `${l}.json
 
 const OLD_KEYS = ['helpful', 'helpfulSub', 'reminder', 'reminderSub', 'nudge', 'nudgeSub', 'marketing', 'marketingSub', 'night', 'nightSub'];
 const REQUIRED_NOTIF = ['title', 'activityGroup', 'activity', 'activitySub', 'newsGroup', 'news', 'newsSub', 'mealTime', 'mealTimeSub', 'consentStatus', 'viewFull', 'readFailed', 'osOff', 'osOffCta', 'saveFailed'];
-const REQUIRED_PUSH = ['primerTitle', 'primerBody', 'primerYes', 'primerLater', 'consentSheetTitle', 'consentSheetBody', 'privacyConsent', 'receiveConsent', 'consentConfirm'];
+const REQUIRED_PUSH = ['primerTitle', 'primerBody', 'primerYes', 'primerLater', 'consentSheetTitle', 'consentSheetBody', 'privacyConsent', 'receiveConsent', 'consentConfirm', 'consentBothRequired'];
 
 it('notif·push 키 집합이 10로케일 전부 ko와 일치한다 (SC-007)', () => {
   const ko = load('ko');

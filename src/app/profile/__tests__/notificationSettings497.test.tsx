@@ -184,14 +184,14 @@ it('US2(a) 소식 OFF에서 소식 토글 탭 → mutate 0회 + 동의 시트 op
   expect(has(tree, 'notif-sheet-consent')).toBe(true);
 });
 
-it('US2(b) 시트에서 두 동의 체크 + 확인 → mutate({news:{enabled:true, 버전 2종}}) 1회 + 시트 닫힘', async () => {
+it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동작·안내 → 다시 체크 + 확인 → mutate({news:{enabled:true, 버전 2종}}) 1회 + 시트 닫힘', async () => {
   mockData.query.data = OFF;
   const tree = await render();
   await tap(tree, 'notif-news');
-  await tap(tree, 'consent-privacy');
-  await tap(tree, 'notif-sheet-confirm'); // 하나만 체크 = 비활성 → 무동작
+  await tap(tree, 'consent-privacy'); // 사전 체크 → 해제
+  await tap(tree, 'notif-sheet-confirm'); // 하나만 체크 = 진행 0 + 안내(KB-553)
   expect(mockData.update.mutate).not.toHaveBeenCalled();
-  await tap(tree, 'consent-receive');
+  await tap(tree, 'consent-privacy'); // 다시 체크
   await tap(tree, 'notif-sheet-confirm');
   expect(mockData.update.mutate).toHaveBeenCalledTimes(1);
   expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { enabled: true, privacyConsentVersion: 1, receiveConsentVersion: 1 } });

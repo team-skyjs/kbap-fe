@@ -3,7 +3,9 @@
  *
  * - variant="primer": OS 알림 권한 사전 안내(스캔 결과 직후). 제목·본문·「알림 켜기」·「나중에」.
  * - variant="consent": 광고성 동의 2종(마케팅 목적 개인정보 수집·이용 / 광고성 정보 수신)
- *   체크 + 전문 링크. 확인은 둘 다 체크된 경우에만 활성(FR-005) — 색·불투명도만 바뀐다.
+ *   체크 + 전문 링크. 9/14 종한: 열릴 때 둘 다 **체크된 상태**로 시작, 하나만 체크된 채 확인을 누르면
+ *   "둘 다 동의 필요" 안내를 고정 슬롯에 표시(색·불투명도만 — P-151)하고 onConfirm은 호출하지 않는다.
+ *   ⚠ 사전 체크 상태의 광고성 수신 동의는 유효성 논쟁 소지(KISA 안내서 계열) — PR 리뷰 포인트로 기재.
  *
  * KB-553: Modal은 fade(딤만) — Modal slide는 딤 레이어까지 시트와 함께 밀어 올려 부자연(실기 지적).
  * 시트 슬라이드는 공용 훅 useSheetSwipeDismiss가 담당: animateIn(아래에서 스프링 등장) · 핸들·제목 드래그
@@ -64,16 +66,27 @@ export function NotificationSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
   }, [open]);
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
-  const [checks, setChecks] = React.useState<ConsentChecks>({ privacy: false, receive: false });
+  const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
+  const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
+  const [notice, setNotice] = React.useState(false); // 하나만 체크된 채 확인 탭 → 안내
   React.useEffect(() => {
-    if (!open) setChecks({ privacy: false, receive: false }); // 닫히면 pending 체크 폐기(data-model §2)
+    if (!open) {
+      setChecks(PRECHECKED); // 닫히면 pending 변경 폐기 → 재오픈은 다시 둘 다 체크
+      setNotice(false);
+    }
   }, [open]);
 
   const needsConsent = variant === 'consent';
   const ready = !needsConsent || (checks.privacy && checks.receive);
+  React.useEffect(() => {
+    if (ready) setNotice(false); // 둘 다 체크되면 안내 소거
+  }, [ready]);
 
   const confirm = () => {
-    if (!ready) return; // 비활성 — 색만 다르고 탭은 무동작(FR-005)
+    if (!ready) {
+      setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
+      return;
+    }
     void run(async () => {
       await onConfirm(needsConsent ? checks : undefined);
     });
@@ -109,8 +122,14 @@ export function NotificationSheet({
               />
             </View>
           )}
+          {needsConsent && (
+            // 고정 슬롯(항상 렌더, 불투명도만) — 안내가 뜨어도 시트 높이 불변(P-151)
+            <Text style={[styles.notice, !notice && styles.noticeHidden]} testID="notif-sheet-notice" accessibilityLiveRegion="polite">
+              {t('push.consentBothRequired')}
+            </Text>
+          )}
           <View style={styles.actions}>
-            <Btn busy={busy} disabled={!ready} onPress={confirm} testID="notif-sheet-confirm">
+            <Btn busy={busy} onPress={confirm} testID="notif-sheet-confirm">
               {confirmLabel}
             </Btn>
             <Pressable onPress={onClose} hitSlop={10} testID="notif-sheet-later">
@@ -172,6 +191,8 @@ const styles = StyleSheet.create({
   boxIcon: { opacity: 1 },
   boxIconHidden: { opacity: 0 },
   viewFull: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText, padding: 4 },
+  notice: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.riskDangerText, textAlign: 'center', marginTop: -4 },
+  noticeHidden: { opacity: 0 },
   actions: { gap: 6, marginTop: 4 },
   later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 8, textAlign: 'center' },
 });

@@ -88,24 +88,46 @@ it('(a) primer: 제목·본문·확인·나중에, 체크 행 없음, 확인 →
   expect(p.onConfirm).toHaveBeenCalledWith(undefined);
 });
 
-it('(b) consent: 체크 2행 + 전문 링크, 둘 다 체크 전 확인 비활성(탭 무동작), 둘 다 후 onConfirm({privacy,receive}) 1회', async () => {
+const boxOn = (tree: ReactTestRenderer, kind: string) => (StyleSheet.flatten(host(tree, `consent-${kind}-box`)[0].props.style) as { backgroundColor?: string }).backgroundColor !== 'transparent';
+const noticeShown = (tree: ReactTestRenderer) => (StyleSheet.flatten(host(tree, 'notif-sheet-notice')[0].props.style) as { opacity?: number }).opacity !== 0;
+
+it('(b) consent(9/14 종한): 둘 다 체크된 채 열림 → 즉시 확인 가능 · 하나 해제 후 확인 = onConfirm 0 + "둘 다 동의" 안내 · 다시 체크 = 안내 소거 + onConfirm 1회', async () => {
   const p = props({ variant: 'consent' });
   const tree = render(<NotificationSheet {...p} />);
   expect(host(tree, 'consent-privacy-box')).toHaveLength(1);
   expect(host(tree, 'consent-receive-box')).toHaveLength(1);
+  expect(boxOn(tree, 'privacy')).toBe(true);
+  expect(boxOn(tree, 'receive')).toBe(true);
+  expect(host(tree, 'notif-sheet-notice')).toHaveLength(1); // 고정 슬롯 — 항상 렌더
+  expect(noticeShown(tree)).toBe(false);
   await tap(tree, 'consent-privacy-full');
   expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-privacy.html');
   await tap(tree, 'consent-receive-full');
   expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-receive.html');
-  expect(pressable(tree, 'notif-sheet-confirm').props.disabled).toBe(true);
-  await tap(tree, 'notif-sheet-confirm');
-  expect(p.onConfirm).not.toHaveBeenCalled();
+  // 하나 해제 → 확인 탭 = 진행 0 + 안내
   await tap(tree, 'consent-privacy');
-  expect(pressable(tree, 'notif-sheet-confirm').props.disabled).toBe(true);
+  expect(boxOn(tree, 'privacy')).toBe(false);
+  expect(pressable(tree, 'notif-sheet-confirm').props.disabled).not.toBe(true); // 탭은 받는다
   await tap(tree, 'notif-sheet-confirm');
   expect(p.onConfirm).not.toHaveBeenCalled();
+  expect(noticeShown(tree)).toBe(true);
+  // 둘 다 해제여도 동일
   await tap(tree, 'consent-receive');
-  expect(pressable(tree, 'notif-sheet-confirm').props.disabled).toBe(false);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(p.onConfirm).not.toHaveBeenCalled();
+  // 다시 둘 다 체크 → 안내 소거 → 확인 = onConfirm({true,true}) 1회
+  await tap(tree, 'consent-privacy');
+  expect(noticeShown(tree)).toBe(true); // 아직 하나 남음
+  await tap(tree, 'consent-receive');
+  expect(noticeShown(tree)).toBe(false);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(p.onConfirm).toHaveBeenCalledTimes(1);
+  expect(p.onConfirm).toHaveBeenCalledWith({ privacy: true, receive: true });
+});
+
+it('(b2) consent: 열린 직후 바로 확인 = onConfirm({privacy:true, receive:true}) 1회 (사전 체크)', async () => {
+  const p = props({ variant: 'consent' });
+  const tree = render(<NotificationSheet {...p} />);
   await tap(tree, 'notif-sheet-confirm');
   expect(p.onConfirm).toHaveBeenCalledTimes(1);
   expect(p.onConfirm).toHaveBeenCalledWith({ privacy: true, receive: true });
@@ -138,17 +160,26 @@ it('(e) 체크 전후 체크박스 컨테이너 메트릭 동일 — 색만 바�
   const after = metrics(host(tree, 'consent-privacy-box')[0].props.style);
   expect(after).toEqual(before);
   expect(before.bw).toBeGreaterThan(0); // 미선택도 보더 자리 유지(투명 아님·같은 폭)
+  // 안내 슬롯도 표시 전후 메트릭 동일(불투명도만) — 시트 높이 불변
+  const nm = (st: unknown) => { const f = StyleSheet.flatten(st as never) as Record<string, unknown>; return { lh: f.lineHeight, fs: f.fontSize, mt: f.marginTop }; };
+  const nBefore = nm(host(tree, 'notif-sheet-notice')[0].props.style);
+  await tap(tree, 'notif-sheet-confirm'); // privacy 해제 상태 → 안내 표시
+  expect(noticeShown(tree)).toBe(true);
+  expect(nm(host(tree, 'notif-sheet-notice')[0].props.style)).toEqual(nBefore);
 });
 
-it('(f) 닫히면 pending 체크가 폐기된다(재오픈 시 미체크)', async () => {
+it('(f) 닫히면 pending 변경·안내가 폐기된다(재오픈 = 둘 다 체크·안내 없음)', async () => {
   const p = props({ variant: 'consent' });
   const tree = render(<NotificationSheet {...p} />);
-  await tap(tree, 'consent-privacy');
+  await tap(tree, 'consent-privacy'); // 해제
+  await tap(tree, 'notif-sheet-confirm'); // 안내 표시
+  expect(boxOn(tree, 'privacy')).toBe(false);
+  expect(noticeShown(tree)).toBe(true);
   act(() => { tree.update(<NotificationSheet {...p} open={false} />); });
   act(() => { tree.update(<NotificationSheet {...p} open />); });
-  const box = host(tree, 'consent-privacy-box')[0];
-  const f = StyleSheet.flatten(box.props.style) as { backgroundColor?: string };
-  expect(f.backgroundColor).toBe('transparent');
+  expect(boxOn(tree, 'privacy')).toBe(true);
+  expect(boxOn(tree, 'receive')).toBe(true);
+  expect(noticeShown(tree)).toBe(false);
 });
 
 // ───────────── KB-553: 시트 모션(슬라이드·드래그 닫힘) ─────────────

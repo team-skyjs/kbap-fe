@@ -952,6 +952,7 @@
     "consentSheetBody": "イベントや新機能のお知らせを広告通知として送ります。",
     "privacyConsent": "マーケティング目的の個人情報収集/利用への同意（任意）",
     "receiveConsent": "広告性情報の受信への同意（任意）",
+    "consentBothRequired": "通知をオンにするには両方に同意してください。",
     "consentConfirm": "同意して通知をオンにする",
     "reviewReminderTitle": "お食事はいかがでしたか？",
     "reviewReminderBody": "{{name}}はいかがでしたか？評価が他の旅行者の助けになります。",

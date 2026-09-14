@@ -952,6 +952,7 @@
     "consentSheetBody": "以廣告通知的形式發送活動和新功能資訊。",
     "privacyConsent": "同意為行銷目的蒐集和使用個人資料（選填）",
     "receiveConsent": "同意接收廣告資訊（選填）",
+    "consentBothRequired": "需同意兩項才能開啟通知。",
     "consentConfirm": "同意並開啟通知",
     "reviewReminderTitle": "這頓飯怎麼樣？",
     "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。",

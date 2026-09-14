@@ -952,6 +952,7 @@
     "consentSheetBody": "이벤트/새 기능 소식을 광고성 알림으로 보내요.",
     "privacyConsent": "마케팅 목적 개인정보 수집/이용 동의 (선택)",
     "receiveConsent": "광고성 정보 수신 동의 (선택)",
+    "consentBothRequired": "두 항목에 모두 동의해야 알림을 켤 수 있어요.",
     "consentConfirm": "동의하고 알림 켜기",
     "reviewReminderTitle": "식사 어떠셨어요?",
     "reviewReminderBody": "{{name}} 메뉴에 별점을 남겨주세요. 다른 여행자에게 큰 도움이 돼요.",

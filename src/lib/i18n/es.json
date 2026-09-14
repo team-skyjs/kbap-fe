@@ -953,6 +953,7 @@
     "consentSheetBody": "Avisos publicitarios sobre eventos y nuevas funciones.",
     "privacyConsent": "Consentimiento para recopilar y usar datos con fines de marketing (opcional)",
     "receiveConsent": "Consentimiento para recibir información publicitaria (opcional)",
+    "consentBothRequired": "Acepta ambos puntos para activar las notificaciones.",
     "consentConfirm": "Aceptar y activar",
     "reviewReminderTitle": "¿Qué tal la comida?",
     "reviewReminderBody": "Cuéntanos qué tal estuvo {{name}} — una valoración rápida ayuda a otros viajeros.",
