@@ -5,8 +5,22 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { AppState, Linking } from 'react-native';
+import { AppState, Linking, StyleSheet } from 'react-native';
 
+// KB-553: NotificationSheet가 useSheetSwipeDismiss(RNGH Pan)를 쓰므로 표면 목 필요(제스처 동작은 notificationSheet497이 검증)
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'onFinalize', 'onChange', 'enabled', 'runOnJS']) b[k] = () => b;
+    return b;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    Gesture: { Pan: chain, Tap: chain, Pinch: chain, Race: () => ({}), Simultaneous: () => ({}) },
+    GestureHandlerRootView: View,
+  };
+});
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
@@ -15,7 +29,9 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    withTiming: (v: unknown) => v,
+    // KB-553: 시트 퇴장(withTiming 완료 콜백) 뒤 Modal이 내려가므로 콜백 즉시 발화
+    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { if (cb) cb(true); return v; },
+    runOnJS: (fn: (...a: unknown[]) => void) => fn,
     withRepeat: (v: unknown) => v,
     withSequence: (v: unknown) => v,
     withDelay: (_d: number, v: unknown) => v,
@@ -120,7 +136,7 @@ it('US1(c) 데이터 = 활동·소식·식사 시간 스위치 3개 + 소식 ON�
   expect(cap.props.children).toContain('"version":1');
   expect(cap.props.children).toContain(new Date('2026-09-11T00:00:00').toLocaleDateString('en')); // 두 동의 중 최근
   await tap(tree, 'notif-consent-full');
-  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/marketing-receive.html');
+  expect(mockOpen).toHaveBeenCalledWith('https://team-skyjs.github.io/kbap-legal/advertising-receipt-consent.html');
 });
 
 it('US1(c2) 소식 OFF = 캡션 없음 + 식사 시간 행 비활성(opacity)', async () => {
@@ -168,17 +184,17 @@ it('US2(a) 소식 OFF에서 소식 토글 탭 → mutate 0회 + 동의 시트 op
   expect(has(tree, 'notif-sheet-consent')).toBe(true);
 });
 
-it('US2(b) 시트에서 두 동의 체크 + 확인 → mutate({news:{enabled:true, 버전 2종}}) 1회 + 시트 닫힘', async () => {
+it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동작·안내 → 다시 체크 + 확인 → mutate({news:{enabled:true, 버전 2종}}) 1회 + 시트 닫힘', async () => {
   mockData.query.data = OFF;
   const tree = await render();
   await tap(tree, 'notif-news');
-  await tap(tree, 'consent-privacy');
-  await tap(tree, 'notif-sheet-confirm'); // 하나만 체크 = 비활성 → 무동작
+  await tap(tree, 'consent-privacy'); // 사전 체크 → 해제
+  await tap(tree, 'notif-sheet-confirm'); // 하나만 체크 = 진행 0 + 안내(KB-553)
   expect(mockData.update.mutate).not.toHaveBeenCalled();
-  await tap(tree, 'consent-receive');
+  await tap(tree, 'consent-privacy'); // 다시 체크
   await tap(tree, 'notif-sheet-confirm');
   expect(mockData.update.mutate).toHaveBeenCalledTimes(1);
-  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { enabled: true, privacyConsentVersion: 1, receiveConsentVersion: 1 } });
+  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } });
   expect(has(tree, 'notif-sheet-consent')).toBe(false);
 });
 
@@ -239,13 +255,24 @@ it('US3 게스트 = AuthGateSheet(profile)만, 스위치 0개, 설정 조회 비
 });
 
 /* ---------- US5 ---------- */
-it('US5 OS 권한 denied = 배너, 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
+it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반응(9/14 종한 2차), 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
   mockAdapter.getPermissionStatus.mockResolvedValue('denied');
   const handlers: ((s: string) => void)[] = [];
   const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => { handlers.push(cb); return { remove: jest.fn() }; }) as never);
   const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined as never);
-  mockData.query.data = OFF;
+  mockData.query.data = ON; // 서버에는 동의·토글 ON이 저장돼 있어도
   const tree = await render();
+  expect(has(tree, 'notif-os-off')).toBe(true);
+  for (const id of ['notif-activity', 'notif-news', 'notif-mealtime', 'notif-consent-status']) {
+    expect({ id, shown: has(tree, id) }).toEqual({ id, shown: true }); // 숨기지 않는다
+  }
+  const body = tree.root.findAll((n) => n.props?.testID === 'notif-settings-body' && typeof n.type === 'string')[0];
+  expect(body.props.pointerEvents).toBe('none'); // 조작 불가
+  expect((StyleSheet.flatten(body.props.style) as { opacity?: number }).opacity).toBe(0.4); // 흐림(불투명도만)
+  for (const id of ['notif-activity', 'notif-news', 'notif-mealtime']) {
+    const row = tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+    expect({ id, disabled: row.props.disabled }).toEqual({ id, disabled: true });
+  }
   await tap(tree, 'notif-os-off');
   expect(open).toHaveBeenCalledTimes(1);
   mockAdapter.getPermissionStatus.mockClear();
@@ -265,3 +292,4 @@ it('설정 화면은 AsyncStorage를 쓰지 않는다(서버 정본) + 동의 �
   expect(src).not.toContain('news.enabled:false');
   expect(src).toContain("variant=\"consent\"");
 });
+

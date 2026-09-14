@@ -7,6 +7,8 @@
  *    둘 다 체크 시에만 확인) → `news.enabled:true` + 문구 버전 2종. 소식 ON→OFF = 이 기기만 OFF.
  *    식사 시간은 소식 ON일 때만 조작(끄기 = 동의 철회 아님). 동의 캡션(일시·버전·전문)은 소식 ON일 때만.
  * 토글 = 낙관 반영(멱등 — useSubmitGuard 예외 계열), 실패 = 롤백 + 배너. 읽기 = 스켈레톤/재시도.
+ * OS 알림 권한 꺼짐(9/14 종한 2차) = "기기 설정에서 알림을 켜라" 배너 + 아래 설정 UI는 **보이되 흐리게·조작 불가**
+ * (숨기지 않는다 — 1차 "통째로 숨김"은 되돌림). 상태 = 불투명도만(P-151), 서버 값 무변.
  * 게스트 = AuthGateSheet(saved.tsx 선례, 딥링크 이중 방어). FLAGS.pushEnabled off = 라우트 가드.
  * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
@@ -94,7 +96,9 @@ function NotificationSettingsScreen() {
   };
   const confirmConsent = () => {
     track(EVENTS.push_pref_toggle, { key: 'news', on: true });
-    patch({ news: { enabled: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION } });
+    // KB-544 계약(dev Swagger 9/14): 동의 기록은 consent:true + 버전 2종, 기기 수신은 enabled, 하위 식사 시간도 함께 ON(종한).
+    // 서버 처리 순서 consent → enabled → mealTime 이라 한 요청에 담아도 NOTIFICATION-001 없음.
+    patch({ news: { consent: true, privacyConsentVersion: PRIVACY_CONSENT_VERSION, receiveConsentVersion: RECEIVE_CONSENT_VERSION, enabled: true, mealTime: true } });
     setConsentOpen(false);
   };
 
@@ -106,7 +110,7 @@ function NotificationSettingsScreen() {
       <SubHeader title={t('notif.title')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
-          /* OS 권한 꺼짐 — 토글은 보이되 실수신 불가 안내 + 설정 딥링크 */
+          /* OS 권한 꺼짐 — 안내 + 설정 딥링크. 아래 설정 UI는 보이되 흐리게·조작 불가(9/14 종한 2차) */
           <Pressable style={styles.banner} onPress={() => void Linking.openSettings()} testID="notif-os-off">
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
@@ -133,15 +137,16 @@ function NotificationSettingsScreen() {
         )}
 
         {s && (
-          <>
+          /* OS 권한 꺼짐 = 흐림 + 탭 무반응(숨기지 않음). 상태로 바뀌는 건 불투명도만 */
+          <View style={osOff && styles.rowDisabled} pointerEvents={osOff ? 'none' : 'auto'} testID="notif-settings-body">
             <View style={styles.group}>
               <Text style={styles.groupTitle}>{t('notif.activityGroup')}</Text>
-              <ToggleRow label={t('notif.activity')} sub={t('notif.activitySub')} on={s.activity} onPress={toggleActivity} testID="notif-activity" />
+              <ToggleRow label={t('notif.activity')} sub={t('notif.activitySub')} on={s.activity} onPress={toggleActivity} testID="notif-activity" disabled={osOff} />
             </View>
 
             <View style={styles.group}>
               <Text style={styles.groupTitle}>{t('notif.newsGroup')}</Text>
-              <ToggleRow label={t('notif.news')} sub={t('notif.newsSub')} on={s.news.enabled} onPress={toggleNews} testID="notif-news" />
+              <ToggleRow label={t('notif.news')} sub={t('notif.newsSub')} on={s.news.enabled} onPress={toggleNews} testID="notif-news" disabled={osOff} />
               <View style={styles.hair} />
               {/* 소식 OFF = 비활성 — 색·불투명도만(P-151), 탭 무동작 */}
               <View style={[!s.news.enabled && styles.rowDisabled]} testID="notif-mealtime-row">
@@ -150,7 +155,7 @@ function NotificationSettingsScreen() {
                   sub={t('notif.mealTimeSub')}
                   on={s.news.mealTime}
                   onPress={toggleMealTime}
-                  disabled={!s.news.enabled}
+                  disabled={osOff || !s.news.enabled}
                   testID="notif-mealtime"
                 />
               </View>
@@ -163,7 +168,7 @@ function NotificationSettingsScreen() {
                 </View>
               )}
             </View>
-          </>
+          </View>
         )}
 
         {update.isError && (

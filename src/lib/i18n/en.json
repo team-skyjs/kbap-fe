@@ -951,6 +951,7 @@
     "consentSheetBody": "Promotional alerts about events and new features.",
     "privacyConsent": "Consent to marketing data collection and use (optional)",
     "receiveConsent": "Consent to receive promotional messages (optional)",
+    "consentBothRequired": "Please agree to both items to turn on notifications.",
     "consentConfirm": "Agree and turn on",
     "reviewReminderTitle": "How was your meal?",
     "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers.",

@@ -1413,7 +1413,7 @@
 - [x] KB-543(BE #260): 토큰 등록 회원 전용 — pushAdapter hasBeSession 가드 1줄 + useSocialAuth exchange 성공 직후 1회, 401 비치명. KB-544: 설정 토글 (회원, 기기)·동의 원장 회원 단위·스키마 동일·기본값 전부 false — 새 X-API-Version 값은 상수 1곳(착수 시 채움, null = 현행 레거시).
 - [x] i18n notif/push 10로케일 키 교체(구 3토글·야간 키 0, 패리티 유닛) · 게스트 = 프로필 진입점 제거 + 라우트 AuthGateSheet · P-151 메트릭 유닛(Switch·비활성 행·체크박스).
 - [x] tsc 0 · jest 208스위트 1407/1407(신규 7스위트).
-- [ ] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy/receive.html) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
+- [x] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy-consent / advertising-receipt-consent.html — 9/14 종한 전달, 200 확인, KB-553에서 URL 교체) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
 
 ## 푸시 data 계약 반영 — 유형 5종·알림 id·Android 채널 (2026-09-11, KB-498 — Spec Kit 2호 `specs/002-push-data-contract`)
 - [x] 유형 enum 5종(HELPFUL·SCAN_SUGGESTION(구 NUDGE)·REVIEW_REMINDER·NEWS(구 NOTICE 폐기)·MEAL_TIME 신설) — 정의는 pushAdapter PUSH_TYPES 한 곳, 정확 일치만(구 이름·대소문자·공백 = 미지 = 무동작·미기록). 딥링크(9/12 종한 결정): REVIEW_REMINDER→음식 상세 /food/{id} · NEWS·MEAL_TIME→이동 없음 · HELPFUL·SCAN_SUGGESTION→임시 디버깅 화면 push-landing("착지 미정, 기획 필요" — 평일 팀 공유 후 확정 시 교체·파일 삭제).
@@ -1423,3 +1423,18 @@
 - [x] Codex #149 반영: 채널 이름 i18n(P2) · inbox 가드 own-key(hasOwnProperty, P2 — 'constructor' 등 프로토타입 키 차단) · P1(기존 default 채널 중요도 고정)은 전제 불성립으로 기각(expo가 미존재 channelId를 폴백 채널로 보냄 — 소스 확인).
 - [x] 법적 근거 조사(재설치 시 광고성 동의): OS 권한≠수신동의, 동의 단위 = 로그인 회원, 앱 삭제는 소멸 사유 아님, 탈퇴만 파기 — KISA 안내서 7차(2025.12) 원문 확인. 메모리 push-consent-reinstall-legal.
 - [ ] Android 실기기 헤드업·소리 확인(quickstart §수동, 백그라운드 상태 수신) — 미실시, 발행 전 필수. 발행은 KB-501(예진 승인).
+
+## 알림 시트 슬라이드·드래그 닫힘 모션 + 문구 중간점→슬래시 (2026-09-14, KB-553 — Spec Kit 3호 `specs/003-notification-sheet-motion`)
+- [x] NotificationSheet(primer·consent) 모션: Modal은 fade(딤만) + 공용 훅 useSheetSwipeDismiss 가산 확장 — animateIn(시트만 화면 아래에서 240ms ease-out 직선 등장) · dismiss(onDone) 노출(나중에·확인·스크림·백버튼·드래그 5경로 전부 180ms 슬라이드 다운 후 Modal 숨김, visible 지연) · 핸들·제목 드래그(임계 통과 = 퇴장 후 onClose 1회 · 미만/취소 = 스프링 복귀 · 딤 비례 페이드) + Modal 내부 GestureHandlerRootView(Codex #98 3R P2). 훅 기본 동작·선례 시트 3곳·호출부 2곳·props·testID·시트 메트릭 무변(P-151 유닛). 제스처 영역 = 핸들+제목만(유닛으로 트리 단언).
+- [x] Codex 3차(PR #150) P1 회귀 수정: 닫힘 경로를 훅 경유로 바꾼 뒤 open이 true인 채 퇴장하는 180ms에 확인 탭이 통과(나중에 → 동의 ON 가능) → closing 상태로 즉시 무반응 + 훅 isClosing() 가드(드래그 퇴장 포함). quickstart 표 최종 계약으로.
+- [x] GitHub Codex 인라인 라운드(PR #150) 5건 반영·1건 기각: P1 onMutate await 간극 세대 불일치 → 동기화 · 닫힘 경로(나중에·스크림·백버튼) 훅 dismiss 경유로 onClose 1회 보장 · announce iOS 한정 · winH ref · spec FR-002/005 시트 전체로 개정.
+- [x] Codex 독립 리뷰(PR #150, Important 4·Minor 1) 반영: PATCH 큐 세션 세대 가드(계정 전환 시 대기 요청 폐기·캐시 재시딩 0) · 시트 퇴장 중 pointerEvents none + 체크 리셋을 열림 시로 · 훅 closing/closed 3상(퇴장 중 외부 dismiss는 완료 시 코얼레싱) · 미충족 안내 VoiceOver announce + a11y 트리 제외 · 지연 완료 목 유닛. 기각: activeOffsetY(실기 미관찰).
+- [x] OS 알림 권한 꺼짐(종한, 9/14, 지시 2회): 1차 "동의 내역 미노출·배너만" → 통째 숨김 → 2차 "아래 UI 숨기지 마" → 배너 + 설정 UI 흐림(opacity 0.4)·조작 불가·행 disabled로 정착. 판정 전 스켈레톤 게이트 철회. 서버 값 무변.
+- [x] 실기 4차(종한, 9/14): 식사 시간만 OFF → 소식 토글 잠깐 OFF — 동의 확정 PATCH 반영 전 다음 PATCH가 병렬 도착해 서버가 반영 전 행으로 응답(enabled:false), seq상 최신이라 캐시 덮음. 설정 PATCH 클라 직렬화(앞 요청 settle 후 전송, 낙관 즉시) + 경합 재현 유닛. Swagger 재확인: 응답 news.enabled = 기기 토글 저장값(동의 미결합) → 3차의 "소식 OFF 응답 의미" 미확인 해소.
+- [x] 실기 3차(종한, 9/14): 동의 확정 후 소식·식사 시간 토글 깜빡임 — dev Swagger가 KB-544 계약(동의 기록 = news.consent:true + 버전 2종)으로 바뀌어 있었고 앱은 enabled+버전만 보내 동의 미기록 → 응답에서 OFF 복귀. 페이로드 교체(consent·enabled·mealTime:true 동봉 — 소식 ON = 식사 시간 ON, 종한) + predictSettings가 요청에 없는 mealTime을 앞서 예측하던 것 제거. 소식 OFF 응답 의미(enabled = 동의 유효?)는 실기 확인 항목.
+- [x] 스코프 추가(종한, 9/14): 동의 시트 체크 2종 사전 체크 상태로 열림 + 하나만 체크된 채 확인 탭 = 진행 0·"두 항목에 모두 동의해야" 인라인 안내(고정 슬롯, P-151) · push.consentBothRequired 10로케일. ⚠ 사전 체크 광고성 동의의 법적 유효성은 PR 리뷰 포인트(KISA 안내서 계열).
+- [x] 실기 2차(종한, 9/14): 제스처 영역 핸들+제목 → 시트 전체(스크롤 없는 시트라 P-337 한정 사유 없음, Pan 이동 후 활성화라 탭 통과). 실기 재확인 = 체크박스 흔들 탭 씹힘 여부.
+- [x] 실기 1차 피드백(종한, 9/14) 2건 반영: ① 1차 `Modal slide` 안은 딤 레이어가 시트와 같이 올라옴 → fade + 훅 등장으로 교체(선례 시트 3곳도 같은 구조 = 같은 증상, 별도 티켓 후보) ② 스프링 등장 "둥 뜸" → 직선 ease-out.
+- [x] 문구: notif.activitySub·newsSub·mealTimeSub·push.consentSheetBody·privacyConsent 중간점→슬래시 — ko 5·ja 4(나카구로 `・` 포함, 리뷰 확인 포인트)·zh-Hans/Hant 1. 나머지 6로케일 중간점 없음 = 무변. 10로케일 중간점 0 유닛.
+- [x] 테스트: notificationSheet497 +5(소스 잠금·프레임 불변·드래그 배선·영역 한정·훅 배선) · notifKeys497 +1 · 시트를 렌더하는 화면 스위트 7에 RNGH 표면 목 보강(onFinalize 누락 5·목 부재 2 — 훅 도입의 예측된 파급, research R-8). tsc 0 · jest 209스위트 1423/1423.
+- [x] draft PR #150(develop). iOS 실기는 종한 3차 피드백 반영 후 최종 재확인 대기 · Android 미확인(모달 내 제스처 루트 동작). 발행은 예진 승인(JS-only OTA 가능). 리뷰 포인트 3: 사전 체크 동의 법적 유효성 · ja 나카구로 치환 · 소식 OFF 응답 의미.

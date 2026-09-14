@@ -6,6 +6,20 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// KB-553: NotificationSheet가 useSheetSwipeDismiss(RNGH Pan)를 쓰므로 표면 목 필요(제스처 동작은 notificationSheet497이 검증)
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'onFinalize', 'onChange', 'enabled', 'runOnJS']) b[k] = () => b;
+    return b;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    Gesture: { Pan: chain, Tap: chain, Pinch: chain, Race: () => ({}), Simultaneous: () => ({}) },
+    GestureHandlerRootView: View,
+  };
+});
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
@@ -14,8 +28,13 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    withTiming: (v: unknown) => v,
-    Easing: { out: () => () => 0, quad: 0, linear: () => 0 },
+    // KB-553: 「나중에」·스크림·백버튼이 훅 dismiss(슬라이드 다운 완료 콜백 → onClose) 경유 — 콜백 즉시 발화
+    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { if (cb) cb(true); return v; },
+    withRepeat: (v: unknown) => v,
+    interpolate: () => 0,
+    Extrapolation: { CLAMP: 'clamp' },
+    runOnJS: (fn: (...a: unknown[]) => void) => fn,
+    Easing: { out: () => () => 0, quad: 0, cubic: 0, linear: () => 0 },
   };
 });
 jest.mock('react-i18next', () => ({
@@ -108,9 +127,10 @@ const tap = async (tree: ReactTestRenderer, testID: string) => {
 
 // P-192 "off 고정" → P-221: dev 계열 활성화(빌드18이 네이티브 모듈 보유).
 // 🔴 prod는 여전히 차단 — 스토어 배포판에 모듈이 없어 켜면 크래시.
-it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 화면은 게이트 뒤', () => {
+it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 화면은 게이트 뒤', async () => {
   expect(FLAGS.pushEnabled).toBe(true); // 유닛 = dev 계열(PROD_CHANNEL false)
   const tree = render(<NotificationSettings />);
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); // KB-553: OS 권한 판정(granted) 뒤에 토글 노출
   // 게이트가 열렸으므로 리다이렉트 없이 실제 설정 화면이 뜬다
   expect(tree.root.findAll((n) => n.props?.testID === 'redirect')).toHaveLength(0);
   expect(tree.root.findAll((n) => n.props?.testID === 'notif-activity').length).toBeGreaterThanOrEqual(1);

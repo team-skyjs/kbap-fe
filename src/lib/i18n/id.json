@@ -952,6 +952,7 @@
     "consentSheetBody": "Berita acara dan fitur baru dikirim sebagai notifikasi promosi.",
     "privacyConsent": "Setuju pengumpulan dan penggunaan data pribadi untuk pemasaran (opsional)",
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
+    "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
     "consentConfirm": "Setuju dan nyalakan",
     "reviewReminderTitle": "Bagaimana makanannya?",
     "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain.",

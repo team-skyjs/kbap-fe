@@ -3,14 +3,23 @@
  *
  * - variant="primer": OS 알림 권한 사전 안내(스캔 결과 직후). 제목·본문·「알림 켜기」·「나중에」.
  * - variant="consent": 광고성 동의 2종(마케팅 목적 개인정보 수집·이용 / 광고성 정보 수신)
- *   체크 + 전문 링크. 확인은 둘 다 체크된 경우에만 활성(FR-005) — 색·불투명도만 바뀐다.
+ *   체크 + 전문 링크. 9/14 종한: 열릴 때 둘 다 **체크된 상태**로 시작, 하나만 체크된 채 확인을 누르면
+ *   "둘 다 동의 필요" 안내를 고정 슬롯에 표시(색·불투명도만 — P-151)하고 onConfirm은 호출하지 않는다.
+ *   ⚠ 사전 체크 상태의 광고성 수신 동의는 유효성 논쟁 소지(KISA 안내서 계열) — PR 리뷰 포인트로 기재.
  *
- * AuthGateSheet 골격(Modal fade + 스크림 + 하단 시트, JS-only) 재사용 — 스와이프 제스처 없음
- * (워클릿 실기 게이트 회피). 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드).
- * 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
+ * KB-553: Modal은 fade(딤만) — Modal slide는 딤 레이어까지 시트와 함께 밀어 올려 부자연(실기 지적).
+ * 시트 슬라이드는 공용 훅 useSheetSwipeDismiss가 담당: animateIn(아래에서 스프링 등장) · 핸들·제목 드래그
+ * (임계 통과 = 퇴장 후 onClose, 미만 = 복귀) · dismiss(스크림·나중에·확인·백버튼 닫힘도 슬라이드 다운).
+ * open=false가 되면 퇴장 애니메이션이 끝난 뒤 Modal을 내린다(visible 지연).
+ * 제스처 영역 = 시트 전체(9/14 종한): 이 시트는 본문 스크롤이 없어 P-337의 "핸들+제목 한정" 사유(리스트 스크롤
+ * 충돌)가 없다. Pan은 이동 후에만 활성화되므로 체크박스·전문 링크·버튼 탭은 그대로 먹는다.
+ * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
@@ -47,27 +56,67 @@ export function NotificationSheet({
   const { t } = useTranslation();
   const { busy, run } = useSubmitGuard();
   const bottom = useBottomInset();
-  const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
-  const [checks, setChecks] = React.useState<ConsentChecks>({ privacy: false, receive: false });
+  // 마운트 유지형 — open 전환 시 훅이 아래에서 등장(animateIn)·잔존 드래그 리셋(FR-007)
+  const swipe = useSheetSwipeDismiss(onClose, open, { animateIn: true });
+  // 닫힘 경로 전부(나중에·확인·스크림·백버튼·드래그) = 시트 슬라이드 다운 → Modal fade-out. 드래그로 이미 내려갔으면 즉시.
+  const [visible, setVisible] = React.useState(open);
   React.useEffect(() => {
-    if (!open) setChecks({ privacy: false, receive: false }); // 닫히면 pending 체크 폐기(data-model §2)
+    if (open) setVisible(true);
+    else if (visible) swipe.dismiss(() => setVisible(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
+  }, [open]);
+  // 닫힘 요청(나중에·스크림·안드 백버튼) = 훅 dismiss 경유: 슬라이드 다운 후 onClose 1회. 이미 닫히는 중이면 무시 —
+  // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
+  // 내부 시작 퇴장은 open이 그대로 true라 pointerEvents 게이트가 못 본다 → closing 상태로 즉시 무반응(Codex #150 P1).
+  const [closing, setClosing] = React.useState(false);
+  const requestClose = () => {
+    setClosing(true);
+    swipe.dismiss();
+  };
+  React.useEffect(() => {
+    if (open) setClosing(false);
+  }, [open]);
+  const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
+  const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
+  const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
+  const [notice, setNotice] = React.useState(false); // 하나만 체크된 채 확인 탭 → 안내
+  React.useEffect(() => {
+    if (open) {
+      setChecks(PRECHECKED); // 열릴 때 초기화(Codex 리뷰 #150: 닫힘 직후 리셋하면 퇴장 중 리셋값으로 확인될 수 있다)
+      setNotice(false);
+    }
   }, [open]);
 
   const needsConsent = variant === 'consent';
   const ready = !needsConsent || (checks.privacy && checks.receive);
+  React.useEffect(() => {
+    if (ready) setNotice(false); // 둘 다 체크되면 안내 소거
+  }, [ready]);
 
   const confirm = () => {
-    if (!ready) return; // 비활성 — 색만 다르고 탭은 무동작(FR-005)
+    if (swipe.isClosing()) return; // 스와이프 퇴장 중 확인 탭 — "나중에/끌어 닫기"를 택한 뒤 동의가 켜지면 안 된다(Codex #150 P1)
+    if (!ready) {
+      setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
+      if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // Android는 liveRegion이 읽어줌(중복 방지)
+      return;
+    }
     void run(async () => {
       await onConfirm(needsConsent ? checks : undefined);
     });
   };
 
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} testID="notif-sheet-backdrop">
-        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}} testID={`notif-sheet-${variant}`}>
-          <View style={styles.handle} />
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={requestClose}>
+      {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* 퇴장 중(open=false·Modal 아직 보임)엔 스크림·시트 전부 무반응 — 닫히는 시트에서 확인이 눌리지 않게(Codex #150) */}
+      <View style={styles.root} pointerEvents={open && !closing ? 'auto' : 'none'} testID="notif-sheet-root">
+        {/* P-337: 딤 전용 레이어 — 시트 컨테이너에 걸면 시트도 바랜다 */}
+        <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
+        <Pressable style={{ flex: 1 }} onPress={requestClose} testID="notif-sheet-backdrop" />
+        <GestureDetector gesture={swipe.gesture}>
+        <Animated.View style={[styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
+          <View style={styles.handle} testID="notif-sheet-grab" />
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           {needsConsent && (
@@ -87,16 +136,30 @@ export function NotificationSheet({
               />
             </View>
           )}
+          {needsConsent && (
+            // 고정 슬롯(항상 렌더, 불투명도만) — 안내가 뜨어도 시트 높이 불변(P-151)
+            <Text
+              style={[styles.notice, !notice && styles.noticeHidden]}
+              testID="notif-sheet-notice"
+              accessibilityLiveRegion="polite"
+              accessibilityElementsHidden={!notice}
+              importantForAccessibility={notice ? 'yes' : 'no-hide-descendants'}
+            >
+              {t('push.consentBothRequired')}
+            </Text>
+          )}
           <View style={styles.actions}>
-            <Btn busy={busy} disabled={!ready} onPress={confirm} testID="notif-sheet-confirm">
+            <Btn busy={busy} onPress={confirm} testID="notif-sheet-confirm">
               {confirmLabel}
             </Btn>
-            <Pressable onPress={onClose} hitSlop={10} testID="notif-sheet-later">
+            <Pressable onPress={requestClose} hitSlop={10} testID="notif-sheet-later">
               <Text style={styles.later}>{t('push.primerLater')}</Text>
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+        </GestureDetector>
+      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -122,7 +185,8 @@ function ConsentRow({ kind, label, checked, onToggle }: { kind: ConsentKind; lab
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  root: { flex: 1, justifyContent: 'flex-end' },
+  dim: { backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: {
     backgroundColor: C.card,
     borderTopLeftRadius: 24,
@@ -147,6 +211,8 @@ const styles = StyleSheet.create({
   boxIcon: { opacity: 1 },
   boxIconHidden: { opacity: 0 },
   viewFull: { fontFamily: font.bodyBold, fontSize: 12, color: C.primaryText, padding: 4 },
+  notice: { fontFamily: font.body, fontSize: 12, lineHeight: 16, color: C.riskDangerText, textAlign: 'center', marginTop: -4 },
+  noticeHidden: { opacity: 0 },
   actions: { gap: 6, marginTop: 4 },
   later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, padding: 8, textAlign: 'center' },
 });
