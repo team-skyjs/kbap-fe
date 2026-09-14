@@ -39,6 +39,8 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true, opts: { a
   // Codex #98 P2: 퇴장 목표 = 시트 실높이(onLayout) — 고정 640은 844폰·태블릿에서
   // 시트가 남은 채 Modal이 사라짐. 측정 전 폴백 = 화면 높이(항상 화면 밖 보장).
   const winH = useWindowDimensions().height;
+  const winHRef = React.useRef(winH); // 등장 effect는 open 전환에만 반응 — 회전(winH 변화)으로 재생되면 열린 시트가 튄다(Codex #150 P2)
+  winHRef.current = winH;
   const sheetH = React.useRef(0);
   const onSheetLayout = React.useCallback((e: LayoutChangeEvent) => {
     sheetH.current = e.nativeEvent.layout.height;
@@ -48,13 +50,13 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true, opts: { a
       phase.current = 'idle';
       pendingDone.current = []; // 이전 열림의 완료 콜백은 무효(재오픈이 애니메이션을 취소하므로 finished=false → 미호출)
       if (animateIn) {
-        ty.value = winH; // KB-553: 화면 아래에서 등장(측정 전이라 화면 높이) — 딤은 dimStyle 비례로 함께 짙어진다
+        ty.value = winHRef.current; // KB-553: 화면 아래에서 등장(측정 전이라 화면 높이) — 딤은 dimStyle 비례로 함께 짙어진다
         ty.value = withTiming(0, ENTER_TIMING);
       } else {
         ty.value = 0; // 마운트 유지형 시트 재오픈 — 이전 드래그 잔존 제거
       }
     }
-  }, [open, ty, winH, animateIn]);
+  }, [open, ty, animateIn]);
 
   /** 슬라이드 다운 후 onDone(기본 onClose). closing 중 외부 호출 = 완료 시 함께 · closed 뒤 외부 호출 = 즉시. */
   const dismiss = React.useCallback((onDone: () => void = onClose) => {

@@ -187,3 +187,9 @@ it('Codex #150: 퇴장 진행 중 외부 dismiss = 완료 시 함께 1회(즉시
   cb!(false);
   expect(d).not.toHaveBeenCalled();
 });
+
+it('Codex #150 P2: 등장 effect는 open 전환에만 반응 — winH(회전)는 deps 밖(소스 잠금)', () => {
+  const src = require('fs').readFileSync('src/components/useSheetSwipeDismiss.ts', 'utf8') as string;
+  expect(src).toMatch(/\}, \[open, ty, animateIn\]\);/);
+  expect(src).toContain('winHRef.current');
+});

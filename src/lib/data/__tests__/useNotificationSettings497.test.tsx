@@ -238,3 +238,10 @@ it('PATCH 큐: 대기 중 세션 세대가 바뀌면(로그아웃·계정 전환
   // clear 뒤 마운트된 관찰자가 GET을 다시 받는다(ON, activity:true) — 1번 응답(activity:false)·롤백 어느 쪽도 그 위에 쓰지 않음
   expect(qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)?.activity).toBe(true);
 });
+
+it('Codex #150 P1: onMutate는 동기(cancelQueries await 없음) — 세대 캡처와 mutationFn 전송이 같은 틱(소스 잠금)', () => {
+  const src = require('fs').readFileSync('src/lib/data/useNotificationSettings.ts', 'utf8') as string;
+  expect(src).toContain('void qc.cancelQueries(');
+  expect(src).not.toContain('await qc.cancelQueries(');
+  expect(src).toMatch(/onMutate: \(patch\) => \{/);
+});

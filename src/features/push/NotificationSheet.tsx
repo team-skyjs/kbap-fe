@@ -65,6 +65,9 @@ export function NotificationSheet({
     else if (visible) swipe.dismiss(() => setVisible(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
   }, [open]);
+  // 닫힘 요청(나중에·스크림·안드 백버튼) = 훅 dismiss 경유: 슬라이드 다운 후 onClose 1회. 이미 닫히는 중이면 무시 —
+  // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
+  const requestClose = () => swipe.dismiss();
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
   const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
@@ -85,7 +88,7 @@ export function NotificationSheet({
   const confirm = () => {
     if (!ready) {
       setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
-      AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // iOS VoiceOver는 liveRegion 미지원
+      if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // Android는 liveRegion이 읽어줌(중복 방지)
       return;
     }
     void run(async () => {
@@ -94,14 +97,14 @@ export function NotificationSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={requestClose}>
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
       {/* 퇴장 중(open=false·Modal 아직 보임)엔 스크림·시트 전부 무반응 — 닫히는 시트에서 확인이 눌리지 않게(Codex #150) */}
       <View style={styles.root} pointerEvents={open ? 'auto' : 'none'} testID="notif-sheet-root">
         {/* P-337: 딤 전용 레이어 — 시트 컨테이너에 걸면 시트도 바랜다 */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
-        <Pressable style={{ flex: 1 }} onPress={onClose} testID="notif-sheet-backdrop" />
+        <Pressable style={{ flex: 1 }} onPress={requestClose} testID="notif-sheet-backdrop" />
         <GestureDetector gesture={swipe.gesture}>
         <Animated.View style={[styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
           <View style={styles.handle} testID="notif-sheet-grab" />
@@ -140,7 +143,7 @@ export function NotificationSheet({
             <Btn busy={busy} onPress={confirm} testID="notif-sheet-confirm">
               {confirmLabel}
             </Btn>
-            <Pressable onPress={onClose} hitSlop={10} testID="notif-sheet-later">
+            <Pressable onPress={requestClose} hitSlop={10} testID="notif-sheet-later">
               <Text style={styles.later}>{t('push.primerLater')}</Text>
             </Pressable>
           </View>

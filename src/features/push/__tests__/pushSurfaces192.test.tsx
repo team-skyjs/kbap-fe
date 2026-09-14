@@ -28,8 +28,9 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    withTiming: (v: unknown) => v,
-    withRepeat: (v: unknown) => v, // KB-553: 권한 판정 전 스켈레톤(Shimmer) 렌더
+    // KB-553: 「나중에」·스크림·백버튼이 훅 dismiss(슬라이드 다운 완료 콜백 → onClose) 경유 — 콜백 즉시 발화
+    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { if (cb) cb(true); return v; },
+    withRepeat: (v: unknown) => v,
     interpolate: () => 0,
     Extrapolation: { CLAMP: 'clamp' },
     runOnJS: (fn: (...a: unknown[]) => void) => fn,

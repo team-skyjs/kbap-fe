@@ -133,10 +133,15 @@ it('(b2) consent: 열린 직후 바로 확인 = onConfirm({privacy:true, receive
   expect(p.onConfirm).toHaveBeenCalledWith({ privacy: true, receive: true });
 });
 
-it('(c) 나중에 / 스크림 탭 = onClose, onConfirm 0회', async () => {
+it('(c) 나중에 / 스크림 탭 = onClose(열림 1회당 1번 — 닫힌 뒤 재탭은 무시, 재오픈 후 다시 1회), onConfirm 0회', async () => {
   const p = props({ variant: 'consent' });
   const tree = render(<NotificationSheet {...p} />);
   await tap(tree, 'notif-sheet-later');
+  expect(p.onClose).toHaveBeenCalledTimes(1);
+  await tap(tree, 'notif-sheet-backdrop'); // 이미 닫힘 처리됨 → 무시(Codex #150 P2: 중복 onClose 차단)
+  expect(p.onClose).toHaveBeenCalledTimes(1);
+  act(() => { tree.update(<NotificationSheet {...p} open={false} />); });
+  act(() => { tree.update(<NotificationSheet {...p} open />); });
   await tap(tree, 'notif-sheet-backdrop');
   expect(p.onClose).toHaveBeenCalledTimes(2);
   expect(p.onConfirm).not.toHaveBeenCalled();
@@ -316,4 +321,29 @@ it('(m) Codex #150: 퇴장 중(open=false·Modal 유지)엔 루트 pointerEvents
   act(() => { exitCb!(true); });
   expect(modalVisible(tree)).toBe(false); // 완료 후 내려감
   announce.mockRestore();
+});
+
+it('(n) Codex #150 P2: 나중에·스크림·안드 백버튼은 훅 dismiss 경유 — 닫힘 진행 중 재입력에도 onClose 1회', async () => {
+  const p = props();
+  const tree = render(<NotificationSheet {...p} />);
+  // 등장(animateIn) withTiming이 먼저 소비되므로 렌더 뒤에 퇴장 애니메이션을 붙잡아 "진행 중" 상태를 만든다
+  let exitCb: ((f: boolean) => void) | undefined;
+  timing().mockImplementationOnce((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { exitCb = cb; return v; });
+  const modal = tree.root.findAllByType(Modal)[0];
+  act(() => { modal.props.onRequestClose(); }); // 안드 백버튼 → 퇴장 시작(진행 중)
+  expect(p.onClose).not.toHaveBeenCalled();
+  act(() => { modal.props.onRequestClose(); }); // 진행 중 재입력 → 무시
+  await tap(tree, 'notif-sheet-later'); // 진행 중 탭 → 무시
+  await tap(tree, 'notif-sheet-backdrop');
+  act(() => { exitCb!(true); }); // 완료
+  expect(p.onClose).toHaveBeenCalledTimes(1);
+  // 스와이프 퇴장 진행 중 백버튼도 동일하게 1회
+  timing().mockClear();
+  const p2 = props();
+  const t2 = render(<NotificationSheet {...p2} />);
+  timing().mockImplementationOnce((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { exitCb = cb; return v; });
+  lastPan().onFinalize?.({ translationY: 120, velocityY: 0 }, true);
+  act(() => { t2.root.findAllByType(Modal)[0].props.onRequestClose(); });
+  act(() => { exitCb!(true); });
+  expect(p2.onClose).toHaveBeenCalledTimes(1);
 });

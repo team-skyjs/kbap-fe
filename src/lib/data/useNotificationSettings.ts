@@ -124,10 +124,13 @@ export function useUpdateNotificationSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (patch: NotificationSettingsPatch) => sendPatch(patch, currentGen()),
-    onMutate: async (patch) => {
+    onMutate: (patch) => {
       const my = nextSeq();
       const gen = currentGen();
-      await qc.cancelQueries({ queryKey: NOTIF_SETTINGS_KEY });
+      // Codex 리뷰(#150) P1: 여기서 await 하면 그 사이 계정이 바뀔 때 mutationFn이 새 세대를 읽어 A의 요청이 B 자격으로
+      // 나간다. cancel은 내부적으로 동기 마킹(진행 중 GET 결과 폐기)이므로 기다리지 않고 onMutate를 동기로 끝낸다 —
+      // mutationFn의 currentGen()이 같은 틱에 읽힌다.
+      void qc.cancelQueries({ queryKey: NOTIF_SETTINGS_KEY });
       const prev = qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY);
       if (prev) qc.setQueryData(NOTIF_SETTINGS_KEY, predictSettings(prev, patch));
       return { my, gen, prev };
