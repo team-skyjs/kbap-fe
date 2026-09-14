@@ -24,12 +24,11 @@ Modal(visible=visible ← open 지연: open=false 시 swipe.dismiss 퇴장 후 f
   └ View(flex:1, justifyContent:'flex-end')
     ├ Animated.View(absoluteFill · 딤 배경색 · swipe.dimStyle · pointerEvents="none")
     ├ Pressable(flex:1 · onPress=onClose · testID="notif-sheet-backdrop")
-    └ Animated.View(styles.sheet + sheetPad + swipe.sheetStyle · onLayout=swipe.onSheetLayout · testID=`notif-sheet-${variant}`)
-      ├ GestureDetector(gesture=swipe.gesture)
-      │ └ View                       ← 제스처 영역(P-337)
-      │   ├ View(styles.handle)      testID="notif-sheet-grab"
-      │   └ Text(title)
-      ├ Text(body)
+    └ GestureDetector(gesture=swipe.gesture)          ← 제스처 영역 = 시트 전체(스크롤 없음 — R-2 개정)
+      └ Animated.View(styles.sheet + sheetPad + swipe.sheetStyle · onLayout=swipe.onSheetLayout · testID=`notif-sheet-${variant}`)
+        ├ View(styles.handle)      testID="notif-sheet-grab"
+        ├ Text(title)
+        ├ Text(body)
       ├ [consent] View(consents) — ConsentRow×2 (testID consent-privacy / consent-receive / *-box / *-full)
       └ View(actions) — Btn(testID="notif-sheet-confirm") · Pressable(testID="notif-sheet-later")
 ```
@@ -40,9 +39,9 @@ Modal(visible=visible ← open 지연: open=false 시 swipe.dismiss 퇴장 후 f
 |--------|-----------|------|
 | `notif-sheet-backdrop` | 유지 | 스크림 탭 = onClose |
 | `notif-sheet-primer` / `notif-sheet-consent` | 유지 | 시트 컨테이너(메트릭 비교 대상) |
-| `notif-sheet-grab` | 신규 | 그랩 핸들(제스처 영역 내) |
-| `consent-{privacy\|receive}` · `-box` · `-full` | 유지 | 체크 행·박스·전문 링크 — 제스처 영역 밖 |
-| `notif-sheet-confirm` · `notif-sheet-later` | 유지 | 제스처 영역 밖 |
+| `notif-sheet-grab` | 신규 | 그랩 핸들 |
+| `consent-{privacy\|receive}` · `-box` · `-full` | 유지 | 체크 행·박스·전문 링크 — 시트 전체가 제스처 영역이라 안에 있음, 탭은 Pan 미활성 시 통과 |
+| `notif-sheet-confirm` · `notif-sheet-later` | 유지 | 동일 |
 
 ## 제스처·모션 계약 (공용 훅 상속 — `src/components/useSheetSwipeDismiss.ts`, KB-553 확장 포함)
 

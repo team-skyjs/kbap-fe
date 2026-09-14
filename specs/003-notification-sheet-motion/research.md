@@ -12,11 +12,12 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
   - `@gorhom/bottom-sheet` 도입 — 신규 의존성 + 네이티브 fingerprint 회전 가능성(OTA 도달 0 사고 계열). 기각.
   - 커스텀 shared value로 등장까지 직접 애니메이션 — 훅이 등장을 다루지 않고(`open` 전환 시 `ty=0` 리셋만), 선례도 등장은 Modal에 맡긴다. 불필요.
 
-## R-2. 제스처 영역
+## R-2. 제스처 영역 (2026-09-14 실기 후 개정)
 
-- **Decision**: `GestureDetector`는 그랩 핸들 + 제목 `<View>`만 감싼다. 본문·체크 행·전문 링크·확인·「나중에」는 밖.
-- **Rationale**: P-337 계약(훅 헤더 주석: "제스처 영역 = 핸들 + 제목 헤더만"). 체크박스 Pressable이 Pan 안에 있으면 짧은 드래그성 탭이 씹힌다 — 광고성 동의 체크는 씹혀선 안 된다(spec FR-005 · US2 시나리오 6).
-- **Alternatives considered**: 시트 전체를 Pan으로 — 선례 없음, 체크 탭 충돌. 기각.
+- **1차 결정**: P-337 계약대로 핸들 + 제목만. 실기에서 종한이 본문을 끌어 "드래그가 안 된다"고 판단 → 시트 전체로 확장 지시.
+- **Decision**: `GestureDetector`가 시트 `Animated.View` 전체를 감싼다. 스크림 Pressable은 밖(탭 닫힘만).
+- **Rationale**: P-337이 영역을 한정한 사유는 **내부 스크롤 리스트와의 충돌**인데, 이 시트는 스크롤이 없다. RNGH Pan은 이동(기본 minDist)이 있어야 활성화되므로 체크박스·전문 링크·버튼의 탭은 RN 반응 체계로 그대로 전달된다 — 유닛 (b)(c)(d)가 탭 동작을, (i)가 영역 포함을 잠근다. 실기 재확인 항목: 체크박스를 살짝 흔들며 탭해도 씹히지 않는지(quickstart §3-5).
+- **Alternatives considered**: 핸들+제목 유지 — 사용자 기대(시트 어디를 잡아도 내려감)와 어긋남. 기각.
 
 ## R-3. 안드로이드 Modal 루트
 
