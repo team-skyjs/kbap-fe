@@ -8,7 +8,7 @@
  * FLAGS.pushEnabled off = 라우트 가드(진입점도 없지만 딥링크 이중 방어).
  */
 import * as React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +19,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { DEFAULT_GUEST_CONSENT, readGuestConsent, setGuestConsent, type GuestConsent } from '@/lib/push/guestConsent';
 import { Shimmer } from '@/components/Skeleton';
 import { EVENTS, track } from '@/lib/analytics';
+import { openAppSettings } from '@/lib/openExternal';
 import {
   getPermissionStatus,
   getPushSettings,
@@ -151,7 +152,7 @@ export default function NotificationSettings() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
           /* OS 권한 꺼짐 — 토글은 보이되 실수신 불가 안내 + 설정 딥링크 */
-          <Pressable style={styles.osBanner} onPress={() => void Linking.openSettings()} testID="notif-os-off">
+          <Pressable style={styles.osBanner} onPress={() => void openAppSettings()} testID="notif-os-off">
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.osBannerText}>{t('notif.osOff')}</Text>

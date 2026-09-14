@@ -10,7 +10,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View, Linking } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SAFETY_NOTICE_URL } from '@/lib/legalText';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
@@ -51,6 +51,7 @@ import { Snackbar } from '@/components/Snackbar';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMyAvatarUrl } from '@/lib/data/useMyAvatarUrl';
+import { openAppSettings } from '@/lib/openExternal';
 
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 
@@ -155,7 +156,7 @@ export default function Profile() {
             </View>
             <View style={styles.menuList}>
               {canOpenLangSettings && (
-                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
               {FLAGS.pushEnabled && (
                 <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
@@ -319,7 +320,7 @@ export default function Profile() {
                 <MenuRow label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
-                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void Linking.openSettings()} />
+                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
               {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
               {FLAGS.pushEnabled && (

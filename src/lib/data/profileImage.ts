@@ -10,10 +10,11 @@
  * 실패 정책(할 일 5): throw 로 정직하게 표면화 — 호출 화면이 에러 표시 후
  * 사진 없이 진행 가능해야 한다 (가입/수정 자체를 막지 않음).
  */
-import { ActionSheetIOS, Alert, Linking, Platform } from 'react-native';
+import { ActionSheetIOS, Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/lib/api/scanImage';
 import { PROFILE_IMAGE_DEFAULT_PATH } from '@/lib/api/memberAdapter';
+import { openAppSettings } from '@/lib/openExternal';
 
 /** BE 확정(7/16 저녁) — 백엔드가 이 값으로 개발. */
 export const PROFILE_IMAGE_PURPOSE = 'PROFILE_IMAGE';
@@ -128,7 +129,7 @@ export async function pickBySource(source: 'camera' | 'gallery', labels: PermLab
     if ((e as Error)?.message === 'CAMERA_PERMISSION') {
       Alert.alert(labels.permTitle, labels.permBody, [
         { text: labels.cancel, style: 'cancel' },
-        { text: labels.openSettings, onPress: () => void Linking.openSettings() },
+        { text: labels.openSettings, onPress: () => void openAppSettings() },
       ]);
       return null;
     }
