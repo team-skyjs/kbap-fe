@@ -64,6 +64,13 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 - **⚠ 리뷰 포인트(법적)**: 광고성 정보 수신 동의를 사전 체크로 받는 것은 정보통신망법·KISA 안내서 계열에서 유효 동의로 보지 않을 소지가 있다(메모리 push-consent-reinstall-legal 조사 맥락). 구현은 지시대로, PR 본문에 명시해 예진·팀 판단으로 넘긴다.
 - **Alternatives considered**: 미체크 + 확인 비활성 유지(기존) — 종한이 사용성 사유로 교체 지시. 안내를 Snackbar/TopToast로 — 둘 다 루트 레이어라 Modal 위에 뜨지 않음 → 시트 내부 인라인 슬롯.
 
+## R-14. 동의 확정 후 토글 깜빡임 (2026-09-14 실기 — 스코프 추가)
+
+- **증상**: 동의 시트 확인 → 소식·식사 시간 토글이 켜졌다가 서버 응답으로 다시 꺼짐.
+- **원인 2겹**: ① dev Swagger(SSOT)가 KB-544 계약으로 바뀌어 동의 기록은 `news.consent:true` + 버전 2종인데 앱은 `enabled:true` + 버전만 보냈다 → 서버가 동의를 기록하지 않아 응답 `enabled:false`. ② `predictSettings`가 요청에 없는 `mealTime`을 true로 앞서 예측 → 응답 저장값(false)으로 되돌아감.
+- **Decision**: 확정 페이로드 = `{ news: { consent: true, privacyConsentVersion, receiveConsentVersion, enabled: true, mealTime: true } }`(종한: 소식 ON 시 식사 시간도 ON. 서버 처리 순서 consent→enabled→mealTime 이라 한 요청 OK). 예측은 요청에 담긴 값만 반영(consent → 동의 2종, enabled, mealTime 각각). 타입 `NotificationSettingsPatch.news.consent` 추가. 유닛: predictSettings 3분기.
+- **미확인**: 응답 `news.enabled` 설명이 "동의 2종 유효 여부"라 기기 OFF(`enabled:false`) 후 응답이 어떻게 오는지는 실기로 확인(소식 OFF → 토글이 OFF로 남는지). 어긋나면 BE 세션과 계약 확인.
+
 ## R-9. 접근성 "동작 줄이기" (spec Edge Case)
 
 - **Decision**: 이번 범위에서 별도 처리 없음. 열림/닫힘 **기능**은 모션 유무와 무관하게 동일(Modal `visible` 전환 + `onClose` 콜백이 모션과 분리돼 있음)하므로 spec 요구("모션이 짧아지거나 생략돼도 열림·닫힘 기능은 동일")는 구조적으로 충족된다.

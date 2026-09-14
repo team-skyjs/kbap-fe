@@ -1426,6 +1426,7 @@
 
 ## 알림 시트 슬라이드·드래그 닫힘 모션 + 문구 중간점→슬래시 (2026-09-14, KB-553 — Spec Kit 3호 `specs/003-notification-sheet-motion`)
 - [x] NotificationSheet(primer·consent) 모션: Modal은 fade(딤만) + 공용 훅 useSheetSwipeDismiss 가산 확장 — animateIn(시트만 화면 아래에서 240ms ease-out 직선 등장) · dismiss(onDone) 노출(나중에·확인·스크림·백버튼·드래그 5경로 전부 180ms 슬라이드 다운 후 Modal 숨김, visible 지연) · 핸들·제목 드래그(임계 통과 = 퇴장 후 onClose 1회 · 미만/취소 = 스프링 복귀 · 딤 비례 페이드) + Modal 내부 GestureHandlerRootView(Codex #98 3R P2). 훅 기본 동작·선례 시트 3곳·호출부 2곳·props·testID·시트 메트릭 무변(P-151 유닛). 제스처 영역 = 핸들+제목만(유닛으로 트리 단언).
+- [x] 실기 3차(종한, 9/14): 동의 확정 후 소식·식사 시간 토글 깜빡임 — dev Swagger가 KB-544 계약(동의 기록 = news.consent:true + 버전 2종)으로 바뀌어 있었고 앱은 enabled+버전만 보내 동의 미기록 → 응답에서 OFF 복귀. 페이로드 교체(consent·enabled·mealTime:true 동봉 — 소식 ON = 식사 시간 ON, 종한) + predictSettings가 요청에 없는 mealTime을 앞서 예측하던 것 제거. 소식 OFF 응답 의미(enabled = 동의 유효?)는 실기 확인 항목.
 - [x] 스코프 추가(종한, 9/14): 동의 시트 체크 2종 사전 체크 상태로 열림 + 하나만 체크된 채 확인 탭 = 진행 0·"두 항목에 모두 동의해야" 인라인 안내(고정 슬롯, P-151) · push.consentBothRequired 10로케일. ⚠ 사전 체크 광고성 동의의 법적 유효성은 PR 리뷰 포인트(KISA 안내서 계열).
 - [x] 실기 2차(종한, 9/14): 제스처 영역 핸들+제목 → 시트 전체(스크롤 없는 시트라 P-337 한정 사유 없음, Pan 이동 후 활성화라 탭 통과). 실기 재확인 = 체크박스 흔들 탭 씹힘 여부.
 - [x] 실기 1차 피드백(종한, 9/14) 2건 반영: ① 1차 `Modal slide` 안은 딤 레이어가 시트와 같이 올라옴 → fade + 훅 등장으로 교체(선례 시트 3곳도 같은 구조 = 같은 증상, 별도 티켓 후보) ② 스프링 등장 "둥 뜸" → 직선 ease-out.
