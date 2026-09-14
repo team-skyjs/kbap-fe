@@ -119,3 +119,52 @@ describe('전수 잠금(글롭 순회 — 파일 목록 하드코딩 금지)', (
     }
   });
 });
+
+describe('P-381 2R(Codex P2) — 하드 게이트는 인라인, 소프트 넛지는 토스트', () => {
+  const codeOf = (p: string) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+  it('커버 elevation > 토스트 elevation — 안드에서 토스트가 커버 뒤에 깔린다(값 대소 잠금)', () => {
+    const num = (src: string, key: string) => {
+      const m = src.match(new RegExp(`${key}:\\s*(\\d+)`));
+      return m ? Number(m[1]) : NaN;
+    };
+    const coverElevation = num(read('src/components/VersionGate.tsx').split('cover:')[1], 'elevation');
+    const toastElevation = num(read('src/components/TopToast.tsx').split('toast:')[1], 'elevation');
+    expect(Number.isFinite(coverElevation)).toBe(true);
+    expect(Number.isFinite(toastElevation)).toBe(true);
+    // 이 관계가 성립하는 한 하드 게이트에서 토스트는 보이지 않는다 → 인라인 경로가 필수다.
+    // 누가 값을 뒤집으면 이 단언이 깨지고, 그때 인라인 경로를 재검토하면 된다.
+    expect(coverElevation).toBeGreaterThan(toastElevation);
+  });
+
+  it('하드 게이트 = silent 호출 + 인라인 문구 / 소프트 넛지 = 토스트(경로가 갈려 있다)', () => {
+    const vg = codeOf('src/components/VersionGate.tsx');
+    // 커버 안: 반환값으로 실패를 받아 화면에 띄운다 + 보이지도 않을 토스트는 띄우지 않는다
+    expect(vg).toContain('{ silent: true }');
+    expect(vg).toContain('setStoreFailed(!ok)');
+    expect(vg).toContain('testID="version-gate-store-error"');
+    expect(vg).toContain("t('versionGate.storeFailed')");
+    // 넛지 배너: 옵션 없는 호출 = 공용 토스트 경로
+    expect(vg).toContain('void openStoreLink(gate.storeUrl!)}>');
+  });
+
+  it('storeFailed 10로케일 — 링크·설정 문구와 각각 다르다', () => {
+    for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+      const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as {
+        versionGate: Record<string, string>;
+        states: Record<string, string>;
+      };
+      expect(j.versionGate.storeFailed).toBeTruthy();
+      expect(j.versionGate.storeFailed).not.toBe(j.states.linkFailed);
+      expect(j.versionGate.storeFailed).not.toBe(j.states.settingsFailed);
+    }
+  });
+});
+
+it('openStoreLink silent = 토스트 0(호출부가 직접 알린다) · 기본 = 토스트 1', async () => {
+  mockOpenURL.mockRejectedValue(new Error('Unable to open URL'));
+  await expect(openStoreLink('https://apps.apple.com/app/id1', { silent: true })).resolves.toBe(false);
+  expect(mockToast).not.toHaveBeenCalled();
+  await expect(openStoreLink('https://apps.apple.com/app/id1')).resolves.toBe(false);
+  expect(mockToast).toHaveBeenCalledTimes(1);
+});

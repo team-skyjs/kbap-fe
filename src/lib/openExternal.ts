@@ -56,13 +56,18 @@ export async function openAppSettings(): Promise<boolean> {
 /**
  * 스토어 딥링크 열기 — **인앱 브라우저로 대체하지 않는다**(스토어 앱으로 열려야
  * 업데이트가 된다). 실패하면 토스트: 여기서 조용히 넘기면 사용자가 업데이트를 못 한다.
+ *
+ * `silent`는 **토스트가 보이지 않는 자리** 전용이다(P-381 2R). 하드 게이트 커버는
+ * elevation 1000이라 안드로이드에서 토스트(8)가 뒤에 깔린다 — 그런 호출부는 실패를
+ * 자기 화면 안에 인라인으로 띄우고, 보이지도 않을 토스트는 띄우지 않는다(핸드오프로
+ * 엉뚱한 화면에 뒤늦게 뜨는 것도 막는다). 반환값으로 실패를 받는다.
  */
-export async function openStoreLink(url: string): Promise<boolean> {
+export async function openStoreLink(url: string, opts?: { silent?: boolean }): Promise<boolean> {
   try {
     await Linking.openURL(url);
     return true;
   } catch {
-    showTopToast(i18n.t('states.linkFailed'), { error: true });
+    if (!opts?.silent) showTopToast(i18n.t('states.linkFailed'), { error: true });
     return false;
   }
 }

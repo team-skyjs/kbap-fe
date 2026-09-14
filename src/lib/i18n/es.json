@@ -925,6 +925,7 @@
     "gateTitle": "Actualización necesaria",
     "gateBody": "Esta versión ya no es compatible. Actualiza para mantener tu información de seguridad alimentaria al día.",
     "gateCta": "Actualizar ahora",
+    "storeFailed": "No se pudo abrir la tienda. Actualiza desde la app de App Store o Google Play.",
     "nudgeText": "Hay una nueva versión disponible",
     "nudgeCta": "Actualizar"
   },

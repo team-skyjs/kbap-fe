@@ -924,6 +924,7 @@
     "gateTitle": "Cần cập nhật",
     "gateBody": "Phiên bản này không còn được hỗ trợ. Hãy cập nhật để thông tin an toàn thực phẩm luôn chính xác.",
     "gateCta": "Cập nhật ngay",
+    "storeFailed": "Không mở được cửa hàng. Hãy cập nhật trong ứng dụng App Store hoặc Google Play.",
     "nudgeText": "Đã có phiên bản mới",
     "nudgeCta": "Cập nhật"
   },

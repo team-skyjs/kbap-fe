@@ -22,6 +22,11 @@ const NUDGE_DISMISS_KEY = 'kbap.versionNudge.dismissed.v1';
 export function VersionGateOverlay() {
   const gate = useVersionGate();
   const { t } = useTranslation();
+  // P-381 2R(Codex P2): 하드 게이트는 **인라인**으로 알린다 — 커버가 elevation 1000이라
+  // 안드로이드에서 토스트(elevation 8)가 그 뒤에 깔려 사용자가 아무것도 못 본다.
+  // 전역 토스트 elevation을 올려 해결하면 다른 화면의 모달·시트 위에도 뜨게 되므로,
+  // 전체 화면을 막는 이 화면 안에서 보여주는 쪽을 택한다(사용자가 볼 곳도 여기뿐이다).
+  const [storeFailed, setStoreFailed] = React.useState(false);
 
   React.useEffect(() => startVersionGate(), []);
 
@@ -42,7 +47,19 @@ export function VersionGateOverlay() {
       <Text style={styles.body}>{t('versionGate.gateBody')}</Text>
       {gate.storeUrl != null && (
         <View style={{ alignSelf: 'stretch', marginTop: 10 }}>
-          <Btn onPress={() => void openStoreLink(gate.storeUrl!)}>{t('versionGate.gateCta')}</Btn>
+          <Btn
+            onPress={() => {
+              setStoreFailed(false);
+              void openStoreLink(gate.storeUrl!, { silent: true }).then((ok) => setStoreFailed(!ok));
+            }}
+          >
+            {t('versionGate.gateCta')}
+          </Btn>
+          {storeFailed && (
+            <Text style={styles.gateError} testID="version-gate-store-error">
+              {t('versionGate.storeFailed')}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -76,6 +93,7 @@ export function UpdateNudgeBanner() {
         {t('versionGate.nudgeText')}
       </Text>
       {gate.storeUrl != null && (
+        /* 소프트 넛지 = 커버가 없는 자리라 실패는 공용 토스트로 충분하다(하드 게이트와 경로가 다르다) */
         <Pressable hitSlop={8} onPress={() => void openStoreLink(gate.storeUrl!)}>
           <Text style={styles.bannerCta}>{t('versionGate.nudgeCta')}</Text>
         </Pressable>
@@ -105,6 +123,8 @@ const styles = StyleSheet.create({
   icWrap: { width: 74, height: 74, borderRadius: 37, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   title: { fontFamily: font.display, fontSize: 21, color: C.ink, letterSpacing: -0.3, textAlign: 'center' },
   body: { fontFamily: font.body, fontSize: 14, lineHeight: 21, color: C.ink2, textAlign: 'center' },
+  // P-381 2R: 커버 안 인라인 실패 문구(토스트는 커버 뒤에 깔려 안 보인다)
+  gateError: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.riskDangerText, textAlign: 'center', marginTop: 10 },
 
   banner: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, paddingHorizontal: 13, paddingVertical: 11, ...shadow.sh1 },
   bannerText: { flex: 1, fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink },
