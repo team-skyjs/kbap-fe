@@ -60,19 +60,26 @@ describe('① 사진 장수별 레이아웃 — 빈 칸·기본 이미지 금지
 });
 
 describe('② 메뉴줄 — 최대 3개 + "외 N"', () => {
-  it('3개 이하 = 전부 나열(접미 없음)', () => {
-    expect(shareMenuLine(['A', 'B'], more)).toBe('A · B');
-    expect(shareMenuLine(['A', 'B', 'C'], more)).toBe('A · B · C');
+  it('3개 이하 = 전부 나열(접미 없음) — 구분자는 쉼표(P-196 우선, 시안 가운뎃점 아님)', () => {
+    expect(shareMenuLine(['A', 'B'], more)).toBe('A, B');
+    expect(shareMenuLine(['A', 'B', 'C'], more)).toBe('A, B, C');
   });
 
   it('4개 이상 = 앞 3개 + 외 N', () => {
-    expect(shareMenuLine(['A', 'B', 'C', 'D'], more)).toBe('A · B · C 외 1');
-    expect(shareMenuLine(['A', 'B', 'C', 'D', 'E', 'F'], more)).toBe('A · B · C 외 3');
+    expect(shareMenuLine(['A', 'B', 'C', 'D'], more)).toBe('A, B, C 외 1');
+    expect(shareMenuLine(['A', 'B', 'C', 'D', 'E', 'F'], more)).toBe('A, B, C 외 3');
   });
 
   it('빈 이름은 세지 않는다 — 어댑터 폴백 \'\'·null·공백', () => {
-    expect(shareMenuLine(['A', '', null, '  ', 'B'], more)).toBe('A · B');
+    expect(shareMenuLine(['A', '', null, '  ', 'B'], more)).toBe('A, B');
     expect(shareMenuLine([null, undefined], more)).toBe('');
+  });
+
+  it('가운뎃점 구분자 0 — 어떤 개수에서도 나오지 않는다', () => {
+    for (const n of [1, 2, 3, 4, 9]) {
+      const names = Array.from({ length: n }, (_, i) => `M${i}`);
+      expect(shareMenuLine(names, more)).not.toContain('·');
+    }
   });
 });
 
@@ -96,8 +103,9 @@ describe('렌더 — 시안 메트릭·브랜드 배지', () => {
   const props = {
     photos: ['https://cdn/1.jpg', 'https://cdn/2.jpg'],
     placeName: '할머니 순두부',
-    menuLine: 'A · B',
-    metaLeft: 'Aug 14, 2026',
+    menuLine: 'A, B',
+    metaCity: null as string | null,
+    metaDate: 'Aug 14, 2026',
   };
   const render = (p = props): ReactTestRenderer => {
     let tree!: ReactTestRenderer;
@@ -120,6 +128,19 @@ describe('렌더 — 시안 메트릭·브랜드 배지', () => {
     expect(t.root.findAll((n) => n.props?.testID === 'share-menu-line')).toHaveLength(0);
     // 메타줄은 남는다(날짜는 항상 있다)
     expect(t.root.findAll((n) => n.props?.testID === 'share-meta-left').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('메타줄 = 도시·날짜를 별도 텍스트로 gap 분리(문자 구분자 금지 — P-196)', () => {
+    const withCity = render({ ...props, metaCity: 'Seoul' });
+    const box = withCity.root.findAll((n) => n.props?.testID === 'share-meta-left' && typeof n.type === 'string')[0];
+    const st = flat(box.props.style);
+    expect(st.flexDirection).toBe('row');
+    expect(st.gap).toBe(4);
+    expect(withCity.root.findAll((n) => n.props?.testID === 'share-meta-city' && typeof n.type === 'string')).toHaveLength(1);
+    // 도시 없음(place 미배포 현행) = 날짜만, 빈 텍스트 노드도 없다
+    const dateOnly = render(props);
+    expect(dateOnly.root.findAll((n) => n.props?.testID === 'share-meta-city')).toHaveLength(0);
+    expect(dateOnly.root.findAll((n) => n.props?.testID === 'share-meta-date' && typeof n.type === 'string')).toHaveLength(1);
   });
 
   it('사진 0장 = 그리드 미렌더(빈 칸·기본 이미지 금지)', () => {
@@ -150,7 +171,7 @@ describe('섹션 — 미리보기 영역·버튼 2개 규격', () => {
     act(() => {
       tree = renderer.create(
         <OrderShareSection
-          card={{ photos: [], placeName: null, menuLine: '', metaLeft: 'x' }}
+          card={{ photos: [], placeName: null, menuLine: '', metaDate: 'x' }}
           caption="cap"
           downloadLabel={'Download\nimage'}
           instagramLabel={'Instagram\nStory'}
@@ -200,5 +221,13 @@ it('배선 — 주문 상세가 사진 있을 때만 섹션을 렌더 · i18n �
     }
     expect(j.myFoods.shareDownload).toContain('\n'); // 두 줄 고정
     expect(j.myFoods.shareInstagram).toContain('\n');
+  }
+});
+
+it('P-196 — 공유 카드 3파일에 사용자 노출 가운뎃점 0(시안 보고 되돌리기 방지)', () => {
+  for (const f of ['src/features/order/shareCard.ts', 'src/features/order/OrderShareCard.tsx', 'src/app/profile/order/[id].tsx']) {
+    const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(code).not.toContain(' · ');
+    expect(code).not.toContain('·'); // 공백 없는 변형도 금지
   }
 });
