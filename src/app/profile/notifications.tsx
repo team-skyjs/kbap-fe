@@ -7,6 +7,8 @@
  *    둘 다 체크 시에만 확인) → `news.enabled:true` + 문구 버전 2종. 소식 ON→OFF = 이 기기만 OFF.
  *    식사 시간은 소식 ON일 때만 조작(끄기 = 동의 철회 아님). 동의 캡션(일시·버전·전문)은 소식 ON일 때만.
  * 토글 = 낙관 반영(멱등 — useSubmitGuard 예외 계열), 실패 = 롤백 + 배너. 읽기 = 스켈레톤/재시도.
+ * OS 알림 권한 꺼짐(9/14 종한) = 서버 저장 토글·동의 내역을 **노출하지 않고** "기기 설정에서 알림을
+ * 켜라" 배너만. 권한 판정 전(null)엔 스켈레톤만 — 값이 잠깐 보였다 숨겨지는 깜빡임 방지.
  * 게스트 = AuthGateSheet(saved.tsx 선례, 딥링크 이중 방어). FLAGS.pushEnabled off = 라우트 가드.
  * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
@@ -42,7 +44,7 @@ function NotificationSettingsScreen() {
   const { t, i18n } = useTranslation();
   const query = useNotificationSettings(!isGuest); // 게스트 = 요청 0(401 회피)
   const update = useUpdateNotificationSettings();
-  const [permission, setPermission] = React.useState<PushPermission>('unavailable');
+  const [permission, setPermission] = React.useState<PushPermission | null>(null); // null = 판정 전
   const [consentOpen, setConsentOpen] = React.useState(false);
   const [offConfirm, setOffConfirm] = React.useState(false); // 소식 OFF 이탈 방어(당근 선례)
 
@@ -101,6 +103,8 @@ function NotificationSettingsScreen() {
   };
 
   const osOff = permission === 'denied';
+  const permissionPending = permission === null;
+  const showSettings = !osOff && !permissionPending; // 저장값 노출은 OS 권한 ON(또는 판정 불가)일 때만
   const consent = s?.news.enabled ? consentCaption(s, i18n.language) : null;
 
   return (
@@ -108,7 +112,7 @@ function NotificationSettingsScreen() {
       <SubHeader title={t('notif.title')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
-          /* OS 권한 꺼짐 — 토글은 보이되 실수신 불가 안내 + 설정 딥링크 */
+          /* OS 권한 꺼짐 — 토글·동의 내역 미노출, 안내 + 설정 딥링크만(9/14 종한) */
           <Pressable style={styles.banner} onPress={() => void Linking.openSettings()} testID="notif-os-off">
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
@@ -118,15 +122,15 @@ function NotificationSettingsScreen() {
           </Pressable>
         )}
 
-        {query.isLoading && (
-          /* 읽는 중 = 스켈레톤(기본값 스위치로 위장 금지 — P-207 계열) */
+        {!osOff && (query.isLoading || permissionPending) && (
+          /* 읽는 중·권한 판정 전 = 스켈레톤(기본값 스위치로 위장 금지 — P-207 계열) */
           <View style={{ gap: 12 }} testID="notif-skeleton">
             <Shimmer style={{ height: 52, borderRadius: 8 }} />
             <Shimmer style={{ height: 52, borderRadius: 8 }} />
             <Shimmer style={{ height: 52, borderRadius: 8 }} />
           </View>
         )}
-        {query.isError && !s && (
+        {showSettings && query.isError && !s && (
           /* 읽기 실패 = 스위치 미렌더(값 미표시), 탭 = 재시도 */
           <Pressable style={styles.banner} onPress={() => void query.refetch()} testID="notif-read-error">
             <IconBell size={16} color={C.riskCaution} />
@@ -134,7 +138,7 @@ function NotificationSettingsScreen() {
           </Pressable>
         )}
 
-        {s && (
+        {showSettings && s && (
           <>
             <View style={styles.group}>
               <Text style={styles.groupTitle}>{t('notif.activityGroup')}</Text>
@@ -168,7 +172,7 @@ function NotificationSettingsScreen() {
           </>
         )}
 
-        {update.isError && (
+        {showSettings && update.isError && (
           /* 저장 거부 표면화(롤백은 훅) — 탭 = 배너 닫기 */
           <Pressable style={styles.banner} onPress={() => update.reset()} testID="notif-save-failed">
             <IconBell size={16} color={C.riskCaution} />

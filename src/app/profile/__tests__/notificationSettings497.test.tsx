@@ -255,13 +255,17 @@ it('US3 게스트 = AuthGateSheet(profile)만, 스위치 0개, 설정 조회 비
 });
 
 /* ---------- US5 ---------- */
-it('US5 OS 권한 denied = 배너, 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
+it('US5 OS 권한 denied = 배너만(서버 저장 토글·동의 내역 미노출, 9/14 종한), 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
   mockAdapter.getPermissionStatus.mockResolvedValue('denied');
   const handlers: ((s: string) => void)[] = [];
   const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => { handlers.push(cb); return { remove: jest.fn() }; }) as never);
   const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined as never);
-  mockData.query.data = OFF;
+  mockData.query.data = ON; // 서버에는 동의·토글 ON이 저장돼 있어도
   const tree = await render();
+  expect(has(tree, 'notif-os-off')).toBe(true);
+  for (const id of ['notif-activity', 'notif-news', 'notif-mealtime', 'notif-consent-status', 'notif-skeleton']) {
+    expect({ id, shown: has(tree, id) }).toEqual({ id, shown: false });
+  }
   await tap(tree, 'notif-os-off');
   expect(open).toHaveBeenCalledTimes(1);
   mockAdapter.getPermissionStatus.mockClear();
@@ -280,4 +284,18 @@ it('설정 화면은 AsyncStorage를 쓰지 않는다(서버 정본) + 동의 �
   expect(src).not.toContain('AsyncStorage');
   expect(src).not.toContain('news.enabled:false');
   expect(src).toContain("variant=\"consent\"");
+});
+
+it('US5b OS 권한 판정 전 = 스켈레톤만(저장값 선노출 0) → granted 판정 후 토글 노출', async () => {
+  let resolve!: (v: string) => void;
+  mockAdapter.getPermissionStatus.mockReturnValueOnce(new Promise<string>((r) => { resolve = r; }));
+  mockData.query.data = ON;
+  const tree = await render();
+  expect(has(tree, 'notif-skeleton')).toBe(true);
+  expect(has(tree, 'notif-news')).toBe(false);
+  expect(has(tree, 'notif-os-off')).toBe(false);
+  await act(async () => { resolve('granted'); await new Promise((r) => setTimeout(r, 0)); });
+  expect(has(tree, 'notif-skeleton')).toBe(false);
+  expect(has(tree, 'notif-news')).toBe(true);
+  expect(has(tree, 'notif-consent-status')).toBe(true);
 });
