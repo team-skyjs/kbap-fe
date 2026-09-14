@@ -71,6 +71,13 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 - **Decision**: 확정 페이로드 = `{ news: { consent: true, privacyConsentVersion, receiveConsentVersion, enabled: true, mealTime: true } }`(종한: 소식 ON 시 식사 시간도 ON. 서버 처리 순서 consent→enabled→mealTime 이라 한 요청 OK). 예측은 요청에 담긴 값만 반영(consent → 동의 2종, enabled, mealTime 각각). 타입 `NotificationSettingsPatch.news.consent` 추가. 유닛: predictSettings 3분기.
 - **미확인**: 응답 `news.enabled` 설명이 "동의 2종 유효 여부"라 기기 OFF(`enabled:false`) 후 응답이 어떻게 오는지는 실기로 확인(소식 OFF → 토글이 OFF로 남는지). 어긋나면 BE 세션과 계약 확인.
 
+## R-15. 식사 시간만 OFF → 소식 토글도 잠깐 OFF (2026-09-14 실기 4차)
+
+- **Swagger 확정 의미**: 응답 `news.enabled` = **이 기기 소식 토글 저장값**(동의와 결합 안 함). 동의 상태는 `privacyConsent`·`receiveConsent`로 읽는다. 따라서 R-14의 "소식 OFF 응답 의미" 미확인은 해소 — OFF는 OFF로 온다.
+- **원인(추정 → 유닛 재현)**: 동의 확정 PATCH가 서버에 반영되기 전에 식사 시간 OFF PATCH가 병렬 도착 → 서버가 반영 전 행(전부 false) 기준으로 `enabled:false` 응답 → 그 응답이 seq상 최신이라 캐시를 덮음 → 소식 토글 OFF. 늦게 온 동의 응답은 무시. 화면 재진입(GET)에서 복구되어 "잠깐"으로 보임.
+- **Decision**: PATCH를 클라이언트에서 직렬화 — 앞 요청이 settle된 뒤에만 다음 요청 전송(모듈 체인 `sendPatch`, 훅 안팎 공유). 낙관 표시는 즉시, 응답 반영은 seq 규칙 그대로. 실패한 앞 요청은 체인을 막지 않는다.
+- **Alternatives considered**: 요청 중 토글 비활성 — 낙관 토글의 즉답성을 잃음. 서버에서 요청 순서 보장 — 클라 병렬 전송이면 서버가 순서를 알 수 없음. 기각.
+
 ## R-9. 접근성 "동작 줄이기" (spec Edge Case)
 
 - **Decision**: 이번 범위에서 별도 처리 없음. 열림/닫힘 **기능**은 모션 유무와 무관하게 동일(Modal `visible` 전환 + `onClose` 콜백이 모션과 분리돼 있음)하므로 spec 요구("모션이 짧아지거나 생략돼도 열림·닫힘 기능은 동일")는 구조적으로 충족된다.
