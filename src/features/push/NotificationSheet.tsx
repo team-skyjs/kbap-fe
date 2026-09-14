@@ -8,7 +8,9 @@
  * KB-553: Modal은 fade(딤만) — Modal slide는 딤 레이어까지 시트와 함께 밀어 올려 부자연(실기 지적).
  * 시트 슬라이드는 공용 훅 useSheetSwipeDismiss가 담당: animateIn(아래에서 스프링 등장) · 핸들·제목 드래그
  * (임계 통과 = 퇴장 후 onClose, 미만 = 복귀) · dismiss(스크림·나중에·확인·백버튼 닫힘도 슬라이드 다운).
- * open=false가 되면 퇴장 애니메이션이 끝난 뒤 Modal을 내린다(visible 지연). 제스처 영역 = 핸들+제목(P-337).
+ * open=false가 되면 퇴장 애니메이션이 끝난 뒤 Modal을 내린다(visible 지연).
+ * 제스처 영역 = 시트 전체(9/14 종한): 이 시트는 본문 스크롤이 없어 P-337의 "핸들+제목 한정" 사유(리스트 스크롤
+ * 충돌)가 없다. Pan은 이동 후에만 활성화되므로 체크박스·전문 링크·버튼 탭은 그대로 먹는다.
  * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
  */
 import * as React from 'react';
@@ -85,13 +87,10 @@ export function NotificationSheet({
         {/* P-337: 딤 전용 레이어 — 시트 컨테이너에 걸면 시트도 바랜다 */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
         <Pressable style={{ flex: 1 }} onPress={onClose} testID="notif-sheet-backdrop" />
+        <GestureDetector gesture={swipe.gesture}>
         <Animated.View style={[styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
-          <GestureDetector gesture={swipe.gesture}>
-            <View>{/* P-337 제스처 영역 = 핸들 + 제목(본문·체크 행·버튼은 밖 — 탭 충돌 0) */}
-              <View style={styles.handle} testID="notif-sheet-grab" />
-              <Text style={styles.title}>{title}</Text>
-            </View>
-          </GestureDetector>
+          <View style={styles.handle} testID="notif-sheet-grab" />
+          <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           {needsConsent && (
             <View style={styles.consents}>
@@ -119,6 +118,7 @@ export function NotificationSheet({
             </Pressable>
           </View>
         </Animated.View>
+        </GestureDetector>
       </View>
       </GestureHandlerRootView>
     </Modal>

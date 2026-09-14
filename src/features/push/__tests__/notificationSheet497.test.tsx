@@ -209,17 +209,16 @@ it('(h) 드래그 배선(FR-003/FR-006): 임계 미만 → onClose 0 · 이동 9
   expect(p3.onClose).not.toHaveBeenCalled();
 });
 
-it('(i) 제스처 영역 = 핸들 + 제목만(P-337, FR-005): 체크 행·전문 링크·확인·나중에는 GestureDetector 밖', () => {
+it('(i) 제스처 영역 = 시트 전체(9/14 종한 — 본문 스크롤 없어 P-337 한정 사유 없음): 스크림은 밖, 시트 내부 탭은 (b)(c)(d)로 동작 보증', () => {
   const tree = render(<NotificationSheet {...props({ variant: 'consent' })} />);
   const area = host(tree, 'notif-sheet-gesture');
   expect(area).toHaveLength(1);
-  const inside = (id: string) => area[0].findAll((n) => n.props?.testID === id);
-  expect(inside('notif-sheet-grab')).not.toHaveLength(0);
-  expect(area[0].findAll((n) => n.props?.children === 'T')).not.toHaveLength(0); // 제목
-  for (const id of ['consent-privacy', 'consent-privacy-full', 'consent-receive', 'notif-sheet-confirm', 'notif-sheet-later']) {
-    expect({ id, inside: inside(id).length }).toEqual({ id, inside: 0 });
-    expect(pressable(tree, id)).toBeDefined(); // 트리 전체에는 존재
+  const inside = (id: string) => area[0].findAll((n) => n.props?.testID === id && typeof n.type === 'string');
+  expect(inside('notif-sheet-consent')).toHaveLength(1); // 시트 컨테이너가 제스처 영역 직계
+  for (const id of ['notif-sheet-grab', 'consent-privacy', 'consent-privacy-full', 'notif-sheet-confirm', 'notif-sheet-later']) {
+    expect({ id, inside: inside(id).length }).toEqual({ id, inside: 1 });
   }
+  expect(inside('notif-sheet-backdrop')).toHaveLength(0); // 스크림은 드래그 대상 아님(탭 닫힘만)
 });
 
 it('(k) 소스 잠금: 훅에 open 전달(재오픈 리셋, FR-007) · dimStyle/sheetStyle/onSheetLayout 배선(FR-004/FR-008)', () => {
