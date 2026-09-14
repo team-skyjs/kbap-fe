@@ -1432,4 +1432,4 @@
 - [x] 실기 1차 피드백(종한, 9/14) 2건 반영: ① 1차 `Modal slide` 안은 딤 레이어가 시트와 같이 올라옴 → fade + 훅 등장으로 교체(선례 시트 3곳도 같은 구조 = 같은 증상, 별도 티켓 후보) ② 스프링 등장 "둥 뜸" → 직선 ease-out.
 - [x] 문구: notif.activitySub·newsSub·mealTimeSub·push.consentSheetBody·privacyConsent 중간점→슬래시 — ko 5·ja 4(나카구로 `・` 포함, 리뷰 확인 포인트)·zh-Hans/Hant 1. 나머지 6로케일 중간점 없음 = 무변. 10로케일 중간점 0 유닛.
 - [x] 테스트: notificationSheet497 +5(소스 잠금·프레임 불변·드래그 배선·영역 한정·훅 배선) · notifKeys497 +1 · 시트를 렌더하는 화면 스위트 7에 RNGH 표면 목 보강(onFinalize 누락 5·목 부재 2 — 훅 도입의 예측된 파급, research R-8). tsc 0 · jest 209스위트 1423/1423.
-- [ ] iOS·Android dev client 실기 확인(quickstart §3 체크리스트 9항목 — 등장 슬라이드·끌기 닫힘/복귀·본문 끌기 무반응·스크림/백버튼·딤 페이드·안드 스와이프) → 확인 후 PR. 발행은 예진 승인(JS-only OTA 가능).
+- [x] draft PR #150(develop). iOS 실기는 종한 3차 피드백 반영 후 최종 재확인 대기 · Android 미확인(모달 내 제스처 루트 동작). 발행은 예진 승인(JS-only OTA 가능). 리뷰 포인트 3: 사전 체크 동의 법적 유효성 · ja 나카구로 치환 · 소식 OFF 응답 의미.
