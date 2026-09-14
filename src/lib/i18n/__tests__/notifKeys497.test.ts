@@ -39,3 +39,18 @@ it('consentStatus는 date·version 보간 자리표시자를 가진다', () => {
     expect(s).toContain('{{version}}');
   }
 });
+
+// KB-553(FR-010/SC-006): 알림 문구 5키의 중간점(U+00B7 · / U+30FB ・) → 슬래시. 10로케일 동일 처리.
+const SLASH_KEYS: Array<['notif' | 'push', string]> = [
+  ['notif', 'activitySub'], ['notif', 'newsSub'], ['notif', 'mealTimeSub'], ['push', 'consentSheetBody'], ['push', 'privacyConsent'],
+];
+it('KB-553: 알림 문구 5키에 중간점(U+00B7·U+30FB) 0 — 10로케일', () => {
+  for (const l of LOCALES) {
+    const d = load(l);
+    for (const [ns, k] of SLASH_KEYS) {
+      const v = d[ns][k];
+      expect(typeof v).toBe('string');
+      expect({ locale: l, key: `${ns}.${k}`, value: v }).not.toMatchObject({ value: expect.stringMatching(/[\u00B7\u30FB]/) });
+    }
+  }
+});
