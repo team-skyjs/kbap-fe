@@ -53,15 +53,18 @@ export function shareCells(count: number): ShareCell[] {
 }
 
 /**
- * ② 메뉴줄 — 앞 3개를 가운뎃점으로 잇고 나머지는 "외 N"으로 접는다.
+ * ② 메뉴줄 — 앞 3개를 쉼표로 잇고 나머지는 "외 N"으로 접는다.
  * 빈 이름은 버린다(서버 menuName 부재 = '' 어댑터 폴백).
+ *
+ * 구분자는 **쉼표**다. 시안은 가운뎃점이지만 P-196(사용자 노출 가운뎃점 전수 제거)이
+ * 시안보다 우선한다는 9/14 예진 판정 — 시안 대조 시 이 줄만 예외다.
  */
 export function shareMenuLine(
   menuNames: (string | null | undefined)[],
   moreLabel: (count: number) => string,
 ): string {
   const names = menuNames.map((n) => (n ?? '').trim()).filter(Boolean);
-  const head = names.slice(0, SHARE_MENU_MAX).join(' · ');
+  const head = names.slice(0, SHARE_MENU_MAX).join(', ');
   const rest = names.length - SHARE_MENU_MAX;
   return rest > 0 ? `${head} ${moreLabel(rest)}` : head;
 }

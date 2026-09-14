@@ -24,15 +24,17 @@ export type OrderShareCardProps = {
   photos: string[];
   /** place.name → roadAddress 폴백 결과. null이면 줄 자체를 숨긴다(빈 줄 금지). */
   placeName: string | null;
-  /** "A · B · C 외 N" 완성 문자열. 빈 문자열이면 줄을 숨긴다. */
+  /** "A, B, C 외 N" 완성 문자열. 빈 문자열이면 줄을 숨긴다. */
   menuLine: string;
-  /** 메타줄 좌측(도시 · 날짜). 도시는 place.address가 있을 때만 — 없으면 날짜만. */
-  metaLeft: string;
+  /** 메타줄 도시 — place.address가 있을 때만. null이면 날짜만 남는다. */
+  metaCity?: string | null;
+  /** 메타줄 날짜(항상 있다). */
+  metaDate: string;
 };
 
 /** 캡처 대상 = 이 뷰. 4단계에서 ref를 받아 그대로 찍는다. */
 export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(function OrderShareCard(
-  { photos, placeName, menuLine, metaLeft },
+  { photos, placeName, menuLine, metaCity, metaDate },
   ref,
 ) {
   const cells = shareCells(photos.length);
@@ -62,9 +64,17 @@ export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(functi
           </Text>
         )}
         <View style={styles.metaRow}>
-          <Text style={styles.meta} numberOfLines={1} testID="share-meta-left">
-            {metaLeft}
-          </Text>
+          {/* P-196(9/14 예진): 도시·날짜는 문자 구분자 없이 **레이아웃(gap)으로 가른다** */}
+          <View style={styles.metaLeft} testID="share-meta-left">
+            {!!metaCity && (
+              <Text style={styles.meta} numberOfLines={1} testID="share-meta-city">
+                {metaCity}
+              </Text>
+            )}
+            <Text style={styles.meta} numberOfLines={1} testID="share-meta-date">
+              {metaDate}
+            </Text>
+          </View>
           {/* 브랜드 = 마크 + 텍스트(배경·보더·라운드 없음 — 9/14 예진 결정) */}
           <View style={styles.brand} testID="share-brand">
             <Image source={BRAND_MARK} style={styles.brandMark} resizeMode="contain" />
@@ -139,6 +149,7 @@ const styles = StyleSheet.create({
   place: { fontSize: 15, fontWeight: '700', letterSpacing: -0.15, color: '#1C1E21' },
   menu: { fontSize: 11, lineHeight: 15.4, color: '#6B7280' }, // 1.4em
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }, // 구분자 문자 대신 gap
   meta: { flexShrink: 1, fontSize: 10, color: '#9196A1' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandMark: { width: 16, height: 16 },

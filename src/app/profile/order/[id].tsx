@@ -89,10 +89,14 @@ export default function OrderDetailScreen() {
                 <View style={styles.rcptLine} />
                 <View style={styles.rcptRow} testID="order-total">
                   <Text style={styles.rcptLbl}>{t('myFoods.receiptTotal')}</Text>
-                  <Text style={styles.rcptTotal}>
-                    {formatKrw(q.data.totalPrice)}
-                    {conv(q.data.totalPrice) ? ` · ${conv(q.data.totalPrice)}` : ''}
-                  </Text>
+                  {/* P-196(9/14 예진 재확인): 원화·환산가 사이 가운뎃점 폐기 — 문자 구분자
+                      대신 gap으로 가른다(공유 카드 메타줄과 같은 처리) */}
+                  <View style={styles.rcptTotalRow}>
+                    <Text style={styles.rcptTotal}>{formatKrw(q.data.totalPrice)}</Text>
+                    {!!conv(q.data.totalPrice) && (
+                      <Text style={styles.rcptTotalConv}>{conv(q.data.totalPrice)}</Text>
+                    )}
+                  </View>
                 </View>
               </>
             )}
@@ -152,8 +156,9 @@ export default function OrderDetailScreen() {
                   q.data.items.map((it) => it.menuName),
                   (count) => t('myFoods.shareMenuMore', { count }),
                 ),
-                // place.address(도시)가 없는 동안은 날짜만 — 주소에서 도시를 추측하지 않는다
-                metaLeft: formatOrderDate(q.data.orderedAt),
+                // 도시는 place.address(사용자 언어)가 올 때만 — roadAddress는 한국어라
+                // 파싱해도 시안의 "Seoul"이 안 나오고, 카드를 보는 사람은 외국인이다
+                metaDate: formatOrderDate(q.data.orderedAt),
               }}
               caption={t('myFoods.sharePreviewCaption')}
               downloadLabel={t('myFoods.shareDownload')}
@@ -205,7 +210,9 @@ const styles = StyleSheet.create({
   rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
   rcptValWrap: { flex: 1, textAlign: 'right' },
   rcptLine: { height: 1, backgroundColor: C.line2 },
+  rcptTotalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 }, // 구분자 문자 대신 gap(P-196)
   rcptTotal: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
+  rcptTotalConv: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
   divider8: { height: 8, backgroundColor: '#F5F5F5' }, // A-OD-02
 
