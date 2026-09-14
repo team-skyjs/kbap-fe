@@ -1008,6 +1008,10 @@
     "dishes": "Dishes",
     "receiptDate": "DATE",
     "receiptLocation": "LOCATION",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} more",
+    "sharePreviewCaption": "9:16 Story Card preview",
+    "shareDownload": "Download\nimage",
+    "shareInstagram": "Instagram\nStory"
   }
 }

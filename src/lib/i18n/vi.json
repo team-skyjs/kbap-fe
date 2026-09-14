@@ -1009,6 +1009,10 @@
     "dishes": "Món ăn",
     "receiptDate": "NGÀY",
     "receiptLocation": "ĐỊA ĐIỂM",
-    "receiptTotal": "TỔNG"
+    "receiptTotal": "TỔNG",
+    "shareMenuMore": "+{{count}} món nữa",
+    "sharePreviewCaption": "Xem trước thẻ story 9:16",
+    "shareDownload": "Lưu\nảnh",
+    "shareInstagram": "Story\nInstagram"
   }
 }

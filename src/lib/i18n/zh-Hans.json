@@ -1009,6 +1009,10 @@
     "dishes": "菜品",
     "receiptDate": "日期",
     "receiptLocation": "地点",
-    "receiptTotal": "合计"
+    "receiptTotal": "合计",
+    "shareMenuMore": "等{{count}}项",
+    "sharePreviewCaption": "9:16 故事卡预览",
+    "shareDownload": "保存\n图片",
+    "shareInstagram": "Instagram\n快拍"
   }
 }

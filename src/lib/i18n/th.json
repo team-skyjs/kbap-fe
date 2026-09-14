@@ -1009,6 +1009,10 @@
     "dishes": "เมนู",
     "receiptDate": "วันที่",
     "receiptLocation": "สถานที่",
-    "receiptTotal": "รวม"
+    "receiptTotal": "รวม",
+    "shareMenuMore": "และอีก {{count}}",
+    "sharePreviewCaption": "ตัวอย่างการ์ดสตอรี่ 9:16",
+    "shareDownload": "บันทึก\nรูป",
+    "shareInstagram": "สตอรี่\nInstagram"
   }
 }

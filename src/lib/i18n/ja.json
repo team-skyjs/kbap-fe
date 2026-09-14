@@ -1009,6 +1009,10 @@
     "dishes": "料理",
     "receiptDate": "日付",
     "receiptLocation": "場所",
-    "receiptTotal": "合計"
+    "receiptTotal": "合計",
+    "shareMenuMore": "ほか{{count}}件",
+    "sharePreviewCaption": "9:16 ストーリーカードのプレビュー",
+    "shareDownload": "画像を\n保存",
+    "shareInstagram": "Instagram\nストーリー"
   }
 }
