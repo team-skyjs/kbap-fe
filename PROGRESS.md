@@ -1425,7 +1425,8 @@
 - [ ] Android 실기기 헤드업·소리 확인(quickstart §수동, 백그라운드 상태 수신) — 미실시, 발행 전 필수. 발행은 KB-501(예진 승인).
 
 ## 알림 시트 슬라이드·드래그 닫힘 모션 + 문구 중간점→슬래시 (2026-09-14, KB-553 — Spec Kit 3호 `specs/003-notification-sheet-motion`)
-- [x] NotificationSheet(primer·consent) = Modal fade → slide + 공용 훅 useSheetSwipeDismiss 배선(핸들·제목 드래그 → 임계 통과 시 퇴장 후 onClose 1회 · 미만/취소 = 스프링 복귀 · 딤 전용 레이어 비례 페이드 · 재오픈 리셋) + Modal 내부 GestureHandlerRootView(안드 별도 루트, Codex #98 3R P2). 선례 LegalSheet/TagPickerSheet/OrderDishPickerSheet와 같은 골격 — 훅·호출부 2곳·props·testID 무변, 시트 메트릭 무변(P-151 유닛). 제스처 영역 = 핸들+제목만(체크·전문 링크·확인·나중에는 밖, 유닛으로 트리 단언).
+- [x] NotificationSheet(primer·consent) 모션: Modal은 fade(딤만) + 공용 훅 useSheetSwipeDismiss 가산 확장 — animateIn(시트만 화면 아래에서 240ms ease-out 직선 등장) · dismiss(onDone) 노출(나중에·확인·스크림·백버튼·드래그 5경로 전부 180ms 슬라이드 다운 후 Modal 숨김, visible 지연) · 핸들·제목 드래그(임계 통과 = 퇴장 후 onClose 1회 · 미만/취소 = 스프링 복귀 · 딤 비례 페이드) + Modal 내부 GestureHandlerRootView(Codex #98 3R P2). 훅 기본 동작·선례 시트 3곳·호출부 2곳·props·testID·시트 메트릭 무변(P-151 유닛). 제스처 영역 = 핸들+제목만(유닛으로 트리 단언).
+- [x] 실기 1차 피드백(종한, 9/14) 2건 반영: ① 1차 `Modal slide` 안은 딤 레이어가 시트와 같이 올라옴 → fade + 훅 등장으로 교체(선례 시트 3곳도 같은 구조 = 같은 증상, 별도 티켓 후보) ② 스프링 등장 "둥 뜸" → 직선 ease-out.
 - [x] 문구: notif.activitySub·newsSub·mealTimeSub·push.consentSheetBody·privacyConsent 중간점→슬래시 — ko 5·ja 4(나카구로 `・` 포함, 리뷰 확인 포인트)·zh-Hans/Hant 1. 나머지 6로케일 중간점 없음 = 무변. 10로케일 중간점 0 유닛.
 - [x] 테스트: notificationSheet497 +5(소스 잠금·프레임 불변·드래그 배선·영역 한정·훅 배선) · notifKeys497 +1 · 시트를 렌더하는 화면 스위트 7에 RNGH 표면 목 보강(onFinalize 누락 5·목 부재 2 — 훅 도입의 예측된 파급, research R-8). tsc 0 · jest 209스위트 1423/1423.
 - [ ] iOS·Android dev client 실기 확인(quickstart §3 체크리스트 9항목 — 등장 슬라이드·끌기 닫힘/복귀·본문 끌기 무반응·스크림/백버튼·딤 페이드·안드 스와이프) → 확인 후 PR. 발행은 예진 승인(JS-only OTA 가능).

@@ -19,7 +19,7 @@
 ## 렌더 구조
 
 ```
-Modal(visible=open, transparent, animationType="slide", onRequestClose=onClose)
+Modal(visible=visible ← open 지연: open=false 시 swipe.dismiss 퇴장 후 false, transparent, animationType="fade", onRequestClose=onClose)
 └ GestureHandlerRootView(flex:1)
   └ View(flex:1, justifyContent:'flex-end')
     ├ Animated.View(absoluteFill · 딤 배경색 · swipe.dimStyle · pointerEvents="none")
@@ -44,7 +44,11 @@ Modal(visible=open, transparent, animationType="slide", onRequestClose=onClose)
 | `consent-{privacy\|receive}` · `-box` · `-full` | 유지 | 체크 행·박스·전문 링크 — 제스처 영역 밖 |
 | `notif-sheet-confirm` · `notif-sheet-later` | 유지 | 제스처 영역 밖 |
 
-## 제스처 계약 (공용 훅 상속 — `src/components/useSheetSwipeDismiss.ts`)
+## 제스처·모션 계약 (공용 훅 상속 — `src/components/useSheetSwipeDismiss.ts`, KB-553 확장 포함)
+
+- 훅 호출: `useSheetSwipeDismiss(onClose, open, { animateIn: true })`.
+- 등장(animateIn): open 전환 시 `ty = 화면 높이 → withTiming(0, 240ms, Easing.out(cubic))`. 스프링·오버슈트 없음. 딤은 Modal fade + dimStyle 비례로 함께 짙어짐.
+- 퇴장 공통: `swipe.dismiss(onDone)` = `withTiming(시트 실높이, 180ms)` 후 onDone. 드래그로 이미 내려간 뒤 호출이면 즉시 onDone. 시트는 이걸로 `visible=false`.
 
 - 임계: 이동 ≥ 80pt 또는 속도 ≥ 500pt/s → 퇴장(180ms) → `onClose` 1회.
 - 미만 또는 제스처 취소(success=false) → `withSpring(0, spring.sheet)` 복귀, `onClose` 0회.

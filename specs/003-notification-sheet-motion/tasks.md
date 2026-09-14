@@ -101,6 +101,7 @@
 - [X] T012 전체 검증: `npx tsc --noEmit` 0 · `npx jest` 전체 그린 · `git diff --quiet -- src/components/useSheetSwipeDismiss.ts src/features/push/PushPrimerModal.tsx src/app/profile/notifications.tsx`(무변 3파일) · `git status --short`에 `NotificationSheet.tsx`·테스트 2·로케일 4·specs만
 - [ ] T013 실기 확인(PR 게이트 — CLAUDE.md "제스처·워클릿 코드는 실기기 확인 후 발행"): iOS·Android dev client(`npx expo start --dev-client`)에서 quickstart §3 체크리스트 1~9(등장 슬라이드 · 끌어 닫힘 · 임계 미만 복귀 · 본문 끌기 무반응 + 체크/링크/확인 탭 1회 반응 · 스크림 탭·백버튼 슬라이드 다운 · 딤 비례 페이드 · 등장 중 스크림 탭 중간정지 없음 · 안드 스와이프 동작) 결과를 플랫폼별 ✅/❌로 기록해 PR 본문에 넣을 텍스트를 `specs/003-notification-sheet-motion/quickstart.md` 하단 "실기 결과" 절로 추가. **`eas update` 실행 금지**(발행은 예진 승인 후 별도)
 - [X] T014 `PROGRESS.md` 관례대로 KB-553 항목 추가(변경 요약 1~2줄 + 유닛 추가 수 + "실기 확인 결과 · JS-only OTA 가능" 표기)
+- [X] T016 실기 1차 피드백 반영(2026-09-14): ① Modal slide가 딤 레이어까지 밀어 올림 → `Modal animationType="fade"` + 훅 `animateIn`(시트만 아래에서 등장) + 훅 `dismiss(onDone)` 노출로 5개 닫힘 경로 전부 슬라이드 다운 후 Modal 숨김(`visible` 지연) — `src/components/useSheetSwipeDismiss.ts` 가산 확장, `src/features/push/NotificationSheet.tsx` ② 스프링 등장 "둥 뜸" 반려 → `withTiming(0, 240ms, Easing.out(cubic))` 직선. 유닛: `sheetSwipeDismiss490` +2(animateIn 기본 무변·dismiss 즉시/애니메이션 경로) · `notificationSheet497` (g)(k) 갱신 + (l) 퇴장 후 Modal 숨김 · 화면 스위트 목(Easing·runOnJS·withTiming 콜백) 보강. tsc 0 · jest 전체 그린
 - [ ] T015 커밋 후 `open-draft-pr` 스킬로 PR — 제목은 Jira 키 없이 `feat(push): 알림 시트 슬라이드·드래그 닫힘 모션 및 문구 중간점 슬래시` 형식, 본문에 `Jira: KB-553` 줄 · T013 실기 체크리스트 · 리뷰 포인트 "ja 나카구로 `・` 4키 → `/` 치환이 카피 의도에 맞는지(research R-7)" 기재. 커밋 메시지 끝 어트리뷰션 규칙 준수
 
 ---
@@ -162,5 +163,5 @@ Task: "T011 jest notifKeys497 + grep 0줄 + diff 4파일 확인"
 ### Notes
 
 - `NotificationSheet.tsx`는 US1·US2가 순차로 만지는 유일한 소스 파일 — 두 스토리를 한 커밋으로 묶어도 무방(리뷰 단위는 PR)
-- 훅 `useSheetSwipeDismiss.ts`는 절대 수정하지 않는다 — 수정이 필요해 보이면 멈추고 보고(시트 4곳 동시 영향, research R-9)
+- 훅 `useSheetSwipeDismiss.ts`는 가산 확장(옵션·반환값)만 — 기본 동작 변경 금지(시트 4곳 동시 영향, research R-12). T016에서 animateIn·dismiss 추가
 - 발행(`eas update`)은 이 태스크 범위 밖 — 예진 승인·실기 확인 후 별도 지시

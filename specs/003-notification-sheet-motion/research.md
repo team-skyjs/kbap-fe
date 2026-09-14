@@ -2,10 +2,11 @@
 
 Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스트 전부 기존). 아래는 설계 결정 7건.
 
-## R-1. 등장/퇴장 모션 구현 방식
+## R-1. 등장/퇴장 모션 구현 방식 (2026-09-14 실기 후 개정)
 
-- **Decision**: `Modal animationType="slide"` + `useSheetSwipeDismiss`. 등장 슬라이드 업과 스크림 탭·「나중에」·안드 백버튼의 슬라이드 다운은 RN Modal 네이티브 슬라이드가 담당한다(`visible=false` 전환). 드래그 퇴장만 훅이 `withTiming(translateY→시트 높이, 180ms)` 후 `runOnJS(onClose)`로 처리 — 그 시점 시트는 이미 화면 밖이라 Modal 슬라이드와 이중 모션이 보이지 않는다.
-- **Rationale**: 레포의 바텀시트 3곳(`LegalSheet`·`TagPickerSheet`·`OrderDishPickerSheet`)이 정확히 이 조합이다. 검증된 골격을 그대로 이식하면 신규 코드가 최소이고, Codex #98 리뷰(2R·3R)에서 잡힌 결함(onEnd→onFinalize·퇴장 목표 실높이·안드 RootView)이 훅에 이미 반영돼 있다.
+- **1차 결정(반려)**: `Modal animationType="slide"` + 훅 드래그. 선례 시트 3곳과 같은 조합이었으나 실기에서 **딤 레이어가 시트와 함께 아래에서 올라오는** 문제가 보였다 — Modal slide는 Modal 내용 전체(딤 포함)를 밀어 올린다. 선례 3곳도 같은 구조라 같은 증상을 갖는다(별도 티켓 후보).
+- **Decision**: `Modal animationType="fade"`(딤만 페이드) + 시트 슬라이드는 공용 훅이 전담. 훅에 가산적 확장 2건 — ① `animateIn` 옵션: open 전환 시 `ty = winH → withTiming(0, 240ms, Easing.out(cubic))`(1차로 `spring.sheet`를 썼으나 실기 "둥 뜬다" 반려 → 직선 ease-out). ② `dismiss(onDone)` 노출: 외부 닫힘 경로도 슬라이드 다운(180ms) 후 콜백, 드래그로 이미 내려갔으면 즉시. 시트는 `open=false`가 되면 `swipe.dismiss(() => setVisible(false))`로 퇴장 후 Modal을 내린다(visible 지연). 확인 완료·나중에·스크림·백버튼·드래그 5경로 모두 같은 퇴장을 탄다(spec FR-001).
+- **Rationale**: 딤은 위치가 아니라 불투명도만 바뀌어야 한다(spec Edge Case "상태로 바뀌는 건 위치와 딤 불투명도뿐"). 훅 확장은 옵션·반환값 추가만이라 선례 시트 3곳 동작 무변(훅 유닛으로 잠금). Codex #98 결함 수정(onFinalize·실높이·RootView)은 그대로 상속.
 - **Alternatives considered**:
   - reanimated `entering={SlideInDown}`/`exiting` 레이아웃 애니메이션 — AuthGateSheet에서 `SlideInDown.springify()`를 P-031 B5로 넣었다가 예진 실기 반려로 제거한 전례(PROGRESS.md). Modal 밖 레이아웃 애니메이션은 안드 언마운트 타이밍 이슈도 있어 기각.
   - `@gorhom/bottom-sheet` 도입 — 신규 의존성 + 네이티브 fingerprint 회전 가능성(OTA 도달 0 사고 계열). 기각.
@@ -49,6 +50,11 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 
 - **Decision**: `notificationSheet497`의 reanimated 목에 `runOnJS`·`interpolate`·`Extrapolation`·`default.View`를 보강하고, RNGH 목을 추가한다. RNGH 목의 `Gesture.Pan()`은 체이닝 빌더로 `runOnJS/onUpdate/onFinalize` 등록 콜백을 `handlers`에 보관(`sheetSwipeDismiss490`이 실모듈에서 읽는 형태와 동일 shape) — 테스트가 `handlers.onFinalize({translationY:90,velocityY:0}, true)`로 임계 통과를 구동해 `onClose` 1회를 확인한다. `GestureDetector`는 자식을 `testID="notif-sheet-gesture"` 호스트 View로 감싸 렌더 → 체크 행·확인이 그 하위가 아님을 트리로 단언.
 - **Rationale**: 기존 RNGH 목(예: `scanDesign.test.tsx`)의 체인 키 목록에 `onFinalize`가 없어 훅이 `.onFinalize`를 호출하면 throw — 그대로 복사하면 실패한다. 훅 스위트는 실 RNGH로 돌지만 컴포넌트 스위트는 `GestureHandlerRootView`·`GestureDetector` 네이티브 표면 때문에 목이 필요.
+
+## R-12. 훅 확장 범위(2026-09-14)
+
+- **Decision**: `useSheetSwipeDismiss`에 `opts.animateIn`(기본 false)·반환 `dismiss` 추가만. 기존 시그니처·기본 동작·선례 호출 3곳 무변(훅 유닛 "기본(false)은 0 리셋만" 잠금).
+- **Rationale**: 애초 "훅 무수정" 전제는 R-1 1차 결정에 묶인 것이었고, Modal slide가 딤을 밀어 올리는 결함이 확인된 이상 등장을 시트 레이어에서 처리할 곳은 훅뿐이다. 시트 4곳 동시 영향은 opt-in으로 차단.
 
 ## R-9. 접근성 "동작 줄이기" (spec Edge Case)
 

@@ -6,7 +6,7 @@
 
 ## Summary
 
-`NotificationSheet`(primer·consent)를 앱의 다른 바텀시트 3곳과 같은 골격으로 바꾼다: `Modal animationType="slide"`(등장 슬라이드 업 + 스크림/나중에/백버튼 닫힘의 슬라이드 다운) + 공용 훅 `useSheetSwipeDismiss`(핸들·제목 드래그 → 임계 통과 시 아래로 퇴장 후 `onClose`, 미만 = 스프링 복귀) + Modal 내부 `GestureHandlerRootView` + 딤 전용 레이어. props·testID·호출부 2곳은 무변. 별도로 ko·ja·zh-Hans·zh-Hant 로케일 5키의 중간점을 슬래시로 교체한다. 전부 JS 변경 — 소스 1파일 + 로케일 4파일 + 테스트 2파일. 신규 모듈·의존성 0. 제스처 변경이므로 PR 전 iOS·Android 실기 확인이 게이트.
+`NotificationSheet`(primer·consent)의 모션을 시트 슬라이드 + 딤 페이드로 바꾼다: `Modal animationType="fade"`(딤만) + 공용 훅 `useSheetSwipeDismiss`에 가산 확장(`animateIn` 직선 등장 240ms · `dismiss` 노출로 5개 닫힘 경로 전부 슬라이드 다운 180ms · 핸들·제목 드래그 → 임계 통과 시 퇴장, 미만 = 스프링 복귀) + Modal 내부 `GestureHandlerRootView` + 딤 전용 레이어. 시트는 퇴장 완료 후 Modal을 내린다(visible 지연). 1차 `Modal slide` 안은 실기에서 딤이 시트와 함께 올라와 반려(research R-1). props·testID·호출부 2곳은 무변, 훅 기존 동작·선례 시트 3곳 무변. 별도로 ko·ja·zh-Hans·zh-Hant 로케일 5키의 중간점을 슬래시로 교체한다. 전부 JS 변경 — 소스 1파일 + 로케일 4파일 + 테스트 2파일. 신규 모듈·의존성 0. 제스처 변경이므로 PR 전 iOS·Android 실기 확인이 게이트.
 
 ## Technical Context
 
@@ -36,7 +36,7 @@
 |------|------|------|
 | tsc 0 · jest 전체 통과 · 신규 로직에 그 버그를 잡는 테스트 동반 | 제스처 배선(임계 통과→onClose 1회·미만→0회)·제스처 영역 한정(체크 행·확인이 GestureDetector 밖)·`animationType="slide"`+RootView 소스 잠금·프레임 메트릭 전후 동일·5키×10로케일 중간점 0 — 각각 유닛 | PASS (quickstart에 명시) |
 | 선택/상태 변화는 색만 — 프레임 불변(P-151) | 시트 스타일 메트릭 무변, 추가되는 건 `transform: translateY`·딤 `opacity`만. 체크박스 메트릭 유닛(e) 유지 + 시트 컨테이너 메트릭 유닛 추가 | PASS |
-| 제스처·워클릿 코드는 실기기 확인 후 발행 | 공용 훅은 `runOnJS(true)`·완료 콜백 `'worklet'` 지시자 기존 충족. 이 기능은 훅을 수정하지 않음. 그래도 제스처 배선 변경 → iOS·Android dev client 확인이 PR 게이트(DoD) | 준수 — quickstart §3 |
+| 제스처·워클릿 코드는 실기기 확인 후 발행 | 공용 훅은 `runOnJS(true)`·완료 콜백 `'worklet'` 지시자 기존 충족. 훅 확장(animateIn·dismiss)은 JS 스레드 값 대입·기존 완료 콜백 재사용만(새 워클릿 0). iOS·Android dev client 확인이 PR 게이트(DoD) — 1차 실기에서 딤 동반 상승·스프링 "둥 뜸" 2건 반려·수정 | 준수 — quickstart §3 |
 | API 뮤테이션 버튼은 공용 제출 가드 | 확인 버튼 `useSubmitGuard`+`Btn busy` 기존 유지, 유닛(d) 유지 | PASS |
 | 기호를 텍스트로 렌더해 아이콘 대용 금지 | 체크 아이콘은 기존 `IconCheck` SVG. 슬래시는 문장 부호(카피)이며 아이콘 대용 아님 | N/A |
 | 서버가 아는 사실은 서버가 정본 | 서버 상태 무관(모션·카피) | N/A |
@@ -44,7 +44,7 @@
 | 배포 게이트(OTA 발행은 예진 승인 후) | 이 작업은 코드·테스트·PR까지. 발행 별도 지시 | 준수 |
 | Jira 전환 금지 | 하지 않음 | 준수 |
 
-**Post-design 재검토**: Phase 1 설계 후 신규 위반 없음. 신규 파일 0(테스트도 기존 스위트에 케이스·목 추가). 새 의존성 0. 공용 훅 수정 0.
+**Post-design 재검토**: Phase 1 설계 후 신규 위반 없음. 신규 파일 0(테스트도 기존 스위트에 케이스·목 추가). 새 의존성 0. 공용 훅은 가산 확장만(옵션·반환값, 기본 동작 무변 — research R-12).
 
 ## Project Structure
 
@@ -71,8 +71,8 @@ src/
 │   ├── PushPrimerModal.tsx                   # 무변(호출부)
 │   └── __tests__/notificationSheet497.test.tsx   # 갱신 — RNGH/reanimated 목 보강 + (g)~(j) 추가
 ├── components/
-│   ├── useSheetSwipeDismiss.ts               # 무변(공용 훅, 재사용)
-│   └── __tests__/sheetSwipeDismiss490.test.tsx   # 무변(훅 계약 참조)
+│   ├── useSheetSwipeDismiss.ts               # 가산 확장 — opts.animateIn(직선 등장) · dismiss 노출(R-12)
+│   └── __tests__/sheetSwipeDismiss490.test.tsx   # +2(animateIn·dismiss 계약)
 ├── app/profile/notifications.tsx             # 무변(호출부)
 └── lib/i18n/
     ├── ko.json · ja.json · zh-Hans.json · zh-Hant.json   # 수정 — 5키 중간점→슬래시

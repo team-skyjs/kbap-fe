@@ -17,13 +17,17 @@
 ## 2. 상태 전이(모션)
 
 ```
-closed ──open=true──▶ entering(Modal slide-up, 네이티브) ──▶ open
+closed ──open=true──▶ visible=true · Modal fade-in(딤) · entering(ty: winH → 0, withTiming 240ms ease-out) ──▶ open
 open ──pan onUpdate──▶ dragging(ty 추종, 딤 비례 페이드)
-dragging ──onFinalize(success, dy≥80 ∨ vy≥500)──▶ exiting(withTiming ty→sheetH 180ms) ──finished──▶ onClose() ──호출부 open=false──▶ closed
+dragging ──onFinalize(success, dy≥80 ∨ vy≥500)──▶ exiting(withTiming ty→sheetH 180ms) ──finished──▶ onClose() ──호출부 open=false──▶ dismiss(cb): 이미 내려감 → 즉시 visible=false ──▶ Modal fade-out ──▶ closed
 dragging ──onFinalize(미만 ∨ success=false)──▶ open(withSpring ty→0, spring.sheet)
-open ──scrim 탭 / 「나중에」 / 안드 백버튼──▶ onClose() ──open=false──▶ leaving(Modal slide-down, 네이티브) ──▶ closed
+open ──scrim 탭 / 「나중에」 / 확인 완료 / 안드 백버튼──▶ onClose()/onConfirm ──호출부 open=false──▶ dismiss(cb): exiting 180ms ──finished──▶ visible=false ──▶ Modal fade-out ──▶ closed
 exiting ──재드래그·재판정──▶ (무시, closingRef)
 ```
+
+| 필드(추가) | 소유 | 타입 | 비고 |
+|------|------|------|------|
+| `visible` | 시트 로컬 | boolean | `Modal visible`. open=true 즉시 true, open=false는 퇴장 애니메이션 완료 후 false |
 
 불변식:
 - `ty ≥ 0` (위로 끌기 무시).
