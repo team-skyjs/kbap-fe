@@ -1010,6 +1010,10 @@
     "dishes": "菜品",
     "receiptDate": "日期",
     "receiptLocation": "地點",
-    "receiptTotal": "合計"
+    "receiptTotal": "合計",
+    "shareMenuMore": "等{{count}}項",
+    "sharePreviewCaption": "9:16 限時動態卡片預覽",
+    "shareDownload": "儲存\n圖片",
+    "shareInstagram": "Instagram\n限時動態"
   }
 }

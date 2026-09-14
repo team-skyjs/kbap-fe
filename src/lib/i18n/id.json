@@ -1010,6 +1010,10 @@
     "dishes": "Hidangan",
     "receiptDate": "TANGGAL",
     "receiptLocation": "LOKASI",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} lagi",
+    "sharePreviewCaption": "Pratinjau kartu story 9:16",
+    "shareDownload": "Simpan\ngambar",
+    "shareInstagram": "Story\nInstagram"
   }
 }

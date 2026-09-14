@@ -254,17 +254,22 @@ it('P-259: ready 게이트 — false = 행 비활성+배지+리뷰 숏컷 0 · t
   }
 });
 
-it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·공유·dish 위험도) 잔존 0', () => {
+it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·dish 위험도) 잔존 0', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   for (const f of ['src/app/profile/my-foods.tsx', 'src/app/profile/order/[id].tsx']) {
     const src = fs.readFileSync(f, 'utf8') as string;
     // KB-434: "+ tag a place" 필 = 시안 렌더·무동작(태그 기능 부재 — 발주 규정), 금지 목록에서 해제
-    for (const banned of ['Replace', 'Share', 'Download', 'RiskMark']) {
+    // P-380(KB-518): 공유는 **도입됐다** — Share/Download 금지 해제(상세 하단 공유 섹션).
+    // 나머지 read-only 계약(사진 교체·주문 수정 API)은 그대로다.
+    for (const banned of ['Replace', 'RiskMark']) {
       expect(src).not.toContain(banned);
     }
     expect(src).not.toMatch(/api\.(post|patch|del)/); // read-only(조회 전용)
   }
+  // 공유 섹션은 상세에만(목록 화면은 여전히 공유 어포던스 0)
+  expect(fs.readFileSync('src/app/profile/my-foods.tsx', 'utf8')).not.toContain('Share');
+  expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).toContain('<OrderShareSection');
   // 진입점(P-254: 계정 메뉴 행 — P-253 헤더 링크 소멸) + 상세 리뷰 연결 배선
   const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8') as string;
   expect(profile).toContain("'/profile/my-foods' as Href");
