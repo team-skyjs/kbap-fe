@@ -84,6 +84,18 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 - **Rationale**: 기기가 알림을 받지 못하는 상태에서 "소식 ON·동의 완료"가 보이면 실제 수신과 어긋난 표시. 서버 값은 그대로(정본 무변), 표시만 게이트. 문구는 기존 키 재사용 — 신규 i18n 0.
 - **Alternatives considered**: 토글은 보이되 비활성 — 여전히 저장 동의 내역이 노출됨. 기각(지시).
 
+## R-17. Codex 독립 리뷰 반영 (2026-09-14, PR #150 — Important 4·Minor 1)
+
+| # | 지적 | 조치 |
+|---|------|------|
+| 1 | PATCH 큐 대기 중 로그아웃·계정 전환 → 다른 계정 자격으로 전송·이전 계정 값 캐시 재시딩 | 큐 진입 시 세션 세대(`currentGen`) 캡처, 전송 직전·응답/롤백 반영 시 세대 불일치면 폐기(`StaleSessionError`). 유닛 |
+| 2 | open=false 뒤 퇴장 180ms 동안 Modal이 남아 확인 탭 가능 + 닫힘 직후 체크 리셋값(둘 다 true)으로 제출될 수 있음 | 체크·안내 리셋을 **열릴 때**로 이동, 루트 `pointerEvents={open ? 'auto' : 'none'}`로 퇴장 중 전 조작 차단. 유닛(지연 퇴장 목으로 중간 상태 검증) |
+| 3 | `closingRef`가 "진행 중"과 "완료"를 구분 못 해 퇴장 중 백버튼/스크림 → Modal이 애니메이션 중간에 사라짐, 외부 dismiss 중복 호출 가능 | 훅 상태를 idle/closing/closed 3상으로, closing 중 외부 onDone은 큐에 모아 완료 시 1회씩, closed 뒤는 즉시. 재오픈은 큐 폐기. 유닛(지연 완료·취소) |
+| 4 | 미충족 확인 탭 안내가 iOS VoiceOver에 전달되지 않음(liveRegion은 Android 전용) | `AccessibilityInfo.announceForAccessibility` 호출 + 비표시 시 `accessibilityElementsHidden`/`importantForAccessibility`로 트리 제외(슬롯 유지). 유닛 |
+| 5(Minor) | withTiming 동기 완료 목이 퇴장 중 상태·중복·재오픈 타이밍을 못 봄 | 훅·시트 유닛에 `mockImplementationOnce` 지연 완료 도입(위 2·3 케이스) |
+
+기각/보류: "Modal fade는 시트도 페이드" — 사실이며 주석 정정(실기 승인된 모션). "Pan에 `activeOffsetY` 명시" — 실기에서 탭 씹힘 미관찰, 재현 시 추가. `enabled`를 동의 결합값으로 적은 훅 헤더 주석 — Swagger대로 정정.
+
 ## R-9. 접근성 "동작 줄이기" (spec Edge Case)
 
 - **Decision**: 이번 범위에서 별도 처리 없음. 열림/닫힘 **기능**은 모션 유무와 무관하게 동일(Modal `visible` 전환 + `onClose` 콜백이 모션과 분리돼 있음)하므로 spec 요구("모션이 짧아지거나 생략돼도 열림·닫힘 기능은 동일")는 구조적으로 충족된다.
