@@ -30,6 +30,14 @@ export function VersionGateOverlay() {
 
   React.useEffect(() => startVersionGate(), []);
 
+  // P-381 3R(Codex P3): 이 컴포넌트는 앱 생애 내내 마운트돼 있고 통과 시 null만 반환한다
+  // — 상태가 살아남아 **다시 막혔을 때 누르기도 전에 옛 실패 문구가 보인다.**
+  // 게이트 모드·스토어 URL이 바뀌면 실패 표시를 버린다(다른 게이트 = 다른 시도).
+  const storeUrl = 'storeUrl' in gate ? gate.storeUrl : null; // pass 변형엔 필드가 없다
+  React.useEffect(() => {
+    setStoreFailed(false);
+  }, [gate.mode, storeUrl]);
+
   // 안드 하드웨어 백 차단 — 게이트는 dismiss 불가
   React.useEffect(() => {
     if (gate.mode !== 'blocked') return;

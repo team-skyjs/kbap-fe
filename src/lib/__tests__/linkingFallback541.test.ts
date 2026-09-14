@@ -148,6 +148,12 @@ describe('P-381 2R(Codex P2) — 하드 게이트는 인라인, 소프트 넛지
     expect(vg).toContain('void openStoreLink(gate.storeUrl!)}>');
   });
 
+  it('게이트 모드·스토어 URL이 바뀌면 실패 표시를 버린다(P3 — 상시 마운트 컴포넌트)', () => {
+    const vg = codeOf('src/components/VersionGate.tsx');
+    // 통과 시 null만 반환하므로 언마운트가 없다 → 의존성에 모드·URL을 둔 리셋 이펙트가 필요하다
+    expect(vg).toMatch(/setStoreFailed\(false\);\s*\}, \[gate\.mode, storeUrl\]\)/);
+  });
+
   it('storeFailed 10로케일 — 링크·설정 문구와 각각 다르다', () => {
     for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
       const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as {
