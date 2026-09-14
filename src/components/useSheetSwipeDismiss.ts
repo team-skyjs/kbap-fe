@@ -102,7 +102,9 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true, opts: { a
   const dimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(ty.value, [0, DIM_RANGE], [1, 0.25], Extrapolation.CLAMP),
   }));
-  return { gesture, sheetStyle, dimStyle, onSheetLayout, dismiss };
+  /** 퇴장 시작 이후(closing·closed) = true — 드래그 퇴장은 시트가 알 수 없으므로 확정 버튼 등이 탭 시점에 확인(Codex #150 P1). */
+  const isClosing = React.useCallback(() => phase.current !== 'idle', []);
+  return { gesture, sheetStyle, dimStyle, onSheetLayout, dismiss, isClosing };
 }
 
 export default useSheetSwipeDismiss;

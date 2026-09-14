@@ -67,7 +67,15 @@ export function NotificationSheet({
   }, [open]);
   // 닫힘 요청(나중에·스크림·안드 백버튼) = 훅 dismiss 경유: 슬라이드 다운 후 onClose 1회. 이미 닫히는 중이면 무시 —
   // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
-  const requestClose = () => swipe.dismiss();
+  // 내부 시작 퇴장은 open이 그대로 true라 pointerEvents 게이트가 못 본다 → closing 상태로 즉시 무반응(Codex #150 P1).
+  const [closing, setClosing] = React.useState(false);
+  const requestClose = () => {
+    setClosing(true);
+    swipe.dismiss();
+  };
+  React.useEffect(() => {
+    if (open) setClosing(false);
+  }, [open]);
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
   const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
@@ -86,6 +94,7 @@ export function NotificationSheet({
   }, [ready]);
 
   const confirm = () => {
+    if (swipe.isClosing()) return; // 스와이프 퇴장 중 확인 탭 — "나중에/끌어 닫기"를 택한 뒤 동의가 켜지면 안 된다(Codex #150 P1)
     if (!ready) {
       setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
       if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // Android는 liveRegion이 읽어줌(중복 방지)
@@ -101,7 +110,7 @@ export function NotificationSheet({
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
       {/* 퇴장 중(open=false·Modal 아직 보임)엔 스크림·시트 전부 무반응 — 닫히는 시트에서 확인이 눌리지 않게(Codex #150) */}
-      <View style={styles.root} pointerEvents={open ? 'auto' : 'none'} testID="notif-sheet-root">
+      <View style={styles.root} pointerEvents={open && !closing ? 'auto' : 'none'} testID="notif-sheet-root">
         {/* P-337: 딤 전용 레이어 — 시트 컨테이너에 걸면 시트도 바랜다 */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
         <Pressable style={{ flex: 1 }} onPress={requestClose} testID="notif-sheet-backdrop" />

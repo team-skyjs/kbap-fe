@@ -347,3 +347,33 @@ it('(n) Codex #150 P2: 나중에·스크림·안드 백버튼은 훅 dismiss 경
   act(() => { exitCb!(true); });
   expect(p2.onClose).toHaveBeenCalledTimes(1);
 });
+
+it('(o) Codex #150 P1: 나중에/스크림/드래그로 퇴장 시작 후 180ms 안에 확인 탭 → onConfirm 0 · 루트 즉시 무반응', async () => {
+  const p = props({ variant: 'consent' });
+  const tree = render(<NotificationSheet {...p} />);
+  let exitCb: ((f: boolean) => void) | undefined;
+  timing().mockImplementationOnce((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { exitCb = cb; return v; });
+  await tap(tree, 'notif-sheet-later'); // 내부 시작 퇴장 — open은 아직 true
+  expect(host(tree, 'notif-sheet-root')[0].props.pointerEvents).toBe('none'); // 즉시 게이트
+  await tap(tree, 'notif-sheet-confirm'); // 그래도 핸들러가 불리면(테스트는 직접 호출) 훅 phase 가드가 막는다
+  expect(p.onConfirm).not.toHaveBeenCalled();
+  act(() => { exitCb!(true); });
+  expect(p.onClose).toHaveBeenCalledTimes(1);
+  expect(p.onConfirm).not.toHaveBeenCalled();
+  // 재오픈 = 게이트 해제 + 확인 가능
+  act(() => { tree.update(<NotificationSheet {...p} open={false} />); });
+  act(() => { tree.update(<NotificationSheet {...p} open />); });
+  expect(host(tree, 'notif-sheet-root')[0].props.pointerEvents).toBe('auto');
+  await tap(tree, 'notif-sheet-confirm');
+  expect(p.onConfirm).toHaveBeenCalledTimes(1);
+
+  // 드래그 퇴장 진행 중 확인 탭도 0
+  const p2 = props();
+  const t2 = render(<NotificationSheet {...p2} />);
+  timing().mockImplementationOnce((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { exitCb = cb; return v; });
+  lastPan().onFinalize?.({ translationY: 120, velocityY: 0 }, true);
+  await tap(t2, 'notif-sheet-confirm');
+  expect(p2.onConfirm).not.toHaveBeenCalled();
+  act(() => { exitCb!(true); });
+  expect(p2.onClose).toHaveBeenCalledTimes(1);
+});
