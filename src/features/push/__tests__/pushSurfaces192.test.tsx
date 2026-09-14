@@ -6,6 +6,20 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// KB-553: NotificationSheet가 useSheetSwipeDismiss(RNGH Pan)를 쓰므로 표면 목 필요(제스처 동작은 notificationSheet497이 검증)
+jest.mock('react-native-gesture-handler', () => {
+  const { View } = require('react-native');
+  const chain = () => {
+    const b: Record<string, (..._a: unknown[]) => unknown> = {};
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'onFinalize', 'onChange', 'enabled', 'runOnJS']) b[k] = () => b;
+    return b;
+  };
+  return {
+    GestureDetector: ({ children }: { children: unknown }) => children,
+    Gesture: { Pan: chain, Tap: chain, Pinch: chain, Race: () => ({}), Simultaneous: () => ({}) },
+    GestureHandlerRootView: View,
+  };
+});
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {

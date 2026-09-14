@@ -14,8 +14,38 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    withTiming: (v: unknown) => v,
+    // KB-553: 완료 콜백 즉시 발화(성공) — 드래그 퇴장 종단 = onClose 경로 검증(sheetSwipeDismiss490 방식)
+    withTiming: jest.fn((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
+      if (cb) cb(true);
+      return v;
+    }),
+    runOnJS: (fn: (...a: unknown[]) => void) => fn,
+    interpolate: () => 1,
+    Extrapolation: { CLAMP: 'clamp' },
     Easing: { out: () => () => 0, quad: 0, linear: () => 0 },
+  };
+});
+// KB-553: RNGH 표면 목 — Pan 빌더는 등록 콜백을 handlers에 보관(테스트가 직접 구동), 마지막 빌더를 __lastPan에 노출.
+// GestureDetector는 testID 호스트로 감싸 "제스처 영역이 핸들+제목에 한정"을 트리로 단언한다. 마지막 Pan은 __getLastPan()로.
+type PanHandlers = Record<string, (...a: never[]) => unknown>;
+jest.mock('react-native-gesture-handler', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const mod: { __lastPan: { handlers: PanHandlers } | null } = { __lastPan: null };
+  const pan = () => {
+    const handlers: PanHandlers = {};
+    const b: Record<string, (...a: unknown[]) => unknown> & { handlers: PanHandlers } = { handlers } as never;
+    for (const k of ['runOnJS', 'onUpdate', 'onFinalize', 'onStart', 'onEnd', 'onChange', 'enabled', 'minDistance', 'activeOffsetY']) {
+      b[k] = (cb: unknown) => { if (typeof cb === 'function') handlers[k] = cb as never; return b; };
+    }
+    mod.__lastPan = b;
+    return b;
+  };
+  return {
+    __getLastPan: () => mod.__lastPan, // getter는 목 모듈 복사 시 값으로 굳으므로 함수로 노출
+    GestureDetector: ({ children }: { children: unknown }) => React.createElement(View, { testID: 'notif-sheet-gesture' }, children),
+    GestureHandlerRootView: View,
+    Gesture: { Pan: pan, Tap: pan, Pinch: pan, Race: () => ({}), Simultaneous: () => ({}) },
   };
 });
 jest.mock('react-i18next', () => ({
@@ -118,4 +148,82 @@ it('(f) 닫히면 pending 체크가 폐기된다(재오픈 시 미체크)', asyn
   const box = host(tree, 'consent-privacy-box')[0];
   const f = StyleSheet.flatten(box.props.style) as { backgroundColor?: string };
   expect(f.backgroundColor).toBe('transparent');
+});
+
+// ───────────── KB-553: 시트 모션(슬라이드·드래그 닫힘) ─────────────
+const SHEET_SRC = () => require('fs').readFileSync('src/features/push/NotificationSheet.tsx', 'utf8') as string;
+const frame = (st: unknown) => {
+  const f = StyleSheet.flatten(st as never) as Record<string, unknown>;
+  return { pt: f.paddingTop, pb: f.paddingBottom, ph: f.paddingHorizontal, rl: f.borderTopLeftRadius, rr: f.borderTopRightRadius, gap: f.gap };
+};
+
+it('(g) KB-553 소스 잠금: Modal slide(fade 0) · Modal 직계 GestureHandlerRootView(안드 별도 루트, Codex #98 3R P2)', () => {
+  const src = SHEET_SRC();
+  expect(src).toContain('animationType="slide"');
+  expect(src).not.toContain('animationType="fade"');
+  expect(src).toMatch(/<Modal[^>]*>\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<GestureHandlerRootView/);
+});
+
+it('(j) 프레임 불변(P-151, FR-009): 시트 컨테이너 메트릭이 open 전환·체크 전후 동일, 핸들 36×4 1개', async () => {
+  const p = props({ variant: 'consent' });
+  const tree = render(<NotificationSheet {...p} open={false} />);
+  act(() => { tree.update(<NotificationSheet {...p} open />); });
+  const before = frame(host(tree, 'notif-sheet-consent')[0].props.style);
+  expect(before).toEqual({ pt: 10, pb: 34, ph: 20, rl: 24, rr: 24, gap: 12 });
+  await tap(tree, 'consent-privacy');
+  expect(frame(host(tree, 'notif-sheet-consent')[0].props.style)).toEqual(before);
+  const handles = tree.root.findAll((n) => {
+    if (typeof n.type !== 'string') return false;
+    const f = StyleSheet.flatten(n.props?.style as never) as { width?: number; height?: number } | undefined;
+    return f?.width === 36 && f?.height === 4;
+  });
+  expect(handles).toHaveLength(1);
+});
+
+type PanEvent = { translationY: number; velocityY: number };
+type PanH = { onUpdate?: (e: PanEvent) => void; onFinalize?: (e: PanEvent, success: boolean) => void };
+const lastPan = () => (require('react-native-gesture-handler') as { __getLastPan: () => { handlers: PanH } | null }).__getLastPan()!.handlers;
+
+it('(h) 드래그 배선(FR-003/FR-006): 임계 미만 → onClose 0 · 이동 90 → 1회 · 재발화 무시 · 취소(success=false) → 0', () => {
+  const p1 = props({ variant: 'consent' });
+  render(<NotificationSheet {...p1} />);
+  const h1 = lastPan();
+  expect(typeof h1.onFinalize).toBe('function');
+  h1.onUpdate?.({ translationY: 40, velocityY: 0 });
+  h1.onFinalize?.({ translationY: 40, velocityY: 100 }, true);
+  expect(p1.onClose).not.toHaveBeenCalled();
+
+  const p2 = props();
+  render(<NotificationSheet {...p2} />);
+  const h2 = lastPan();
+  h2.onFinalize?.({ translationY: 90, velocityY: 0 }, true);
+  expect(p2.onClose).toHaveBeenCalledTimes(1);
+  h2.onFinalize?.({ translationY: 200, velocityY: 900 }, true); // 단일 발사
+  expect(p2.onClose).toHaveBeenCalledTimes(1);
+
+  const p3 = props();
+  render(<NotificationSheet {...p3} />);
+  lastPan().onFinalize?.({ translationY: 150, velocityY: 900 }, false); // OS 인터럽트 = 복귀
+  expect(p3.onClose).not.toHaveBeenCalled();
+});
+
+it('(i) 제스처 영역 = 핸들 + 제목만(P-337, FR-005): 체크 행·전문 링크·확인·나중에는 GestureDetector 밖', () => {
+  const tree = render(<NotificationSheet {...props({ variant: 'consent' })} />);
+  const area = host(tree, 'notif-sheet-gesture');
+  expect(area).toHaveLength(1);
+  const inside = (id: string) => area[0].findAll((n) => n.props?.testID === id);
+  expect(inside('notif-sheet-grab')).not.toHaveLength(0);
+  expect(area[0].findAll((n) => n.props?.children === 'T')).not.toHaveLength(0); // 제목
+  for (const id of ['consent-privacy', 'consent-privacy-full', 'consent-receive', 'notif-sheet-confirm', 'notif-sheet-later']) {
+    expect({ id, inside: inside(id).length }).toEqual({ id, inside: 0 });
+    expect(pressable(tree, id)).toBeDefined(); // 트리 전체에는 존재
+  }
+});
+
+it('(k) 소스 잠금: 훅에 open 전달(재오픈 리셋, FR-007) · dimStyle/sheetStyle/onSheetLayout 배선(FR-004/FR-008)', () => {
+  const src = SHEET_SRC();
+  expect(src).toContain('useSheetSwipeDismiss(onClose, open)');
+  expect(src).toContain('swipe.dimStyle');
+  expect(src).toContain('swipe.sheetStyle');
+  expect(src).toContain('onLayout={swipe.onSheetLayout}');
 });

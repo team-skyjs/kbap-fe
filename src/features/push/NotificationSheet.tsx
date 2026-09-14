@@ -5,12 +5,16 @@
  * - variant="consent": 광고성 동의 2종(마케팅 목적 개인정보 수집·이용 / 광고성 정보 수신)
  *   체크 + 전문 링크. 확인은 둘 다 체크된 경우에만 활성(FR-005) — 색·불투명도만 바뀐다.
  *
- * AuthGateSheet 골격(Modal fade + 스크림 + 하단 시트, JS-only) 재사용 — 스와이프 제스처 없음
- * (워클릿 실기 게이트 회피). 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드).
- * 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
+ * KB-553: Modal slide(등장 슬라이드 업·스크림/나중에/백버튼 닫힘 = 슬라이드 다운) + 공용 훅
+ * useSheetSwipeDismiss(핸들·제목 드래그 → 임계 통과 시 퇴장 후 onClose, 미만 = 스프링 복귀, 딤 비례 페이드)
+ * — 선례 LegalSheet/TagPickerSheet/OrderDishPickerSheet와 같은 골격. 제스처 영역 = 핸들+제목(P-337).
+ * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
  */
 import * as React from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, shadow } from '@/lib/theme';
@@ -47,6 +51,8 @@ export function NotificationSheet({
   const { t } = useTranslation();
   const { busy, run } = useSubmitGuard();
   const bottom = useBottomInset();
+  // 마운트 유지형(visible=open) — open 전환 시 훅이 translateY 리셋(FR-007)
+  const swipe = useSheetSwipeDismiss(onClose, open);
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   const [checks, setChecks] = React.useState<ConsentChecks>({ privacy: false, receive: false });
   React.useEffect(() => {
@@ -64,11 +70,20 @@ export function NotificationSheet({
   };
 
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} testID="notif-sheet-backdrop">
-        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}} testID={`notif-sheet-${variant}`}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>{title}</Text>
+    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+      {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.root}>
+        {/* P-337: 딤 전용 레이어 — 시트 컨테이너에 걸면 시트도 바랜다 */}
+        <Animated.View style={[StyleSheet.absoluteFill, styles.dim, swipe.dimStyle]} pointerEvents="none" />
+        <Pressable style={{ flex: 1 }} onPress={onClose} testID="notif-sheet-backdrop" />
+        <Animated.View style={[styles.sheet, sheetPad, swipe.sheetStyle]} onLayout={swipe.onSheetLayout} testID={`notif-sheet-${variant}`}>
+          <GestureDetector gesture={swipe.gesture}>
+            <View>{/* P-337 제스처 영역 = 핸들 + 제목(본문·체크 행·버튼은 밖 — 탭 충돌 0) */}
+              <View style={styles.handle} testID="notif-sheet-grab" />
+              <Text style={styles.title}>{title}</Text>
+            </View>
+          </GestureDetector>
           <Text style={styles.body}>{body}</Text>
           {needsConsent && (
             <View style={styles.consents}>
@@ -95,8 +110,9 @@ export function NotificationSheet({
               <Text style={styles.later}>{t('push.primerLater')}</Text>
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -122,7 +138,8 @@ function ConsentRow({ kind, label, checked, onToggle }: { kind: ConsentKind; lab
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  root: { flex: 1, justifyContent: 'flex-end' },
+  dim: { backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: {
     backgroundColor: C.card,
     borderTopLeftRadius: 24,
