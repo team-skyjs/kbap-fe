@@ -5,7 +5,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { AppState, Linking } from 'react-native';
+import { AppState, Linking, StyleSheet } from 'react-native';
 
 // KB-553: NotificationSheet가 useSheetSwipeDismiss(RNGH Pan)를 쓰므로 표면 목 필요(제스처 동작은 notificationSheet497이 검증)
 jest.mock('react-native-gesture-handler', () => {
@@ -255,7 +255,7 @@ it('US3 게스트 = AuthGateSheet(profile)만, 스위치 0개, 설정 조회 비
 });
 
 /* ---------- US5 ---------- */
-it('US5 OS 권한 denied = 배너만(서버 저장 토글·동의 내역 미노출, 9/14 종한), 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
+it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반응(9/14 종한 2차), 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
   mockAdapter.getPermissionStatus.mockResolvedValue('denied');
   const handlers: ((s: string) => void)[] = [];
   const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => { handlers.push(cb); return { remove: jest.fn() }; }) as never);
@@ -263,8 +263,15 @@ it('US5 OS 권한 denied = 배너만(서버 저장 토글·동의 내역 미노�
   mockData.query.data = ON; // 서버에는 동의·토글 ON이 저장돼 있어도
   const tree = await render();
   expect(has(tree, 'notif-os-off')).toBe(true);
-  for (const id of ['notif-activity', 'notif-news', 'notif-mealtime', 'notif-consent-status', 'notif-skeleton']) {
-    expect({ id, shown: has(tree, id) }).toEqual({ id, shown: false });
+  for (const id of ['notif-activity', 'notif-news', 'notif-mealtime', 'notif-consent-status']) {
+    expect({ id, shown: has(tree, id) }).toEqual({ id, shown: true }); // 숨기지 않는다
+  }
+  const body = tree.root.findAll((n) => n.props?.testID === 'notif-settings-body' && typeof n.type === 'string')[0];
+  expect(body.props.pointerEvents).toBe('none'); // 조작 불가
+  expect((StyleSheet.flatten(body.props.style) as { opacity?: number }).opacity).toBe(0.4); // 흐림(불투명도만)
+  for (const id of ['notif-activity', 'notif-news', 'notif-mealtime']) {
+    const row = tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+    expect({ id, disabled: row.props.disabled }).toEqual({ id, disabled: true });
   }
   await tap(tree, 'notif-os-off');
   expect(open).toHaveBeenCalledTimes(1);
@@ -286,18 +293,3 @@ it('설정 화면은 AsyncStorage를 쓰지 않는다(서버 정본) + 동의 �
   expect(src).toContain("variant=\"consent\"");
 });
 
-it('US5b OS 권한 판정 전 = 스켈레톤만(저장값 선노출 0) → granted 판정 후 토글 노출', async () => {
-  const spy = jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
-  let resolve!: (v: string) => void;
-  mockAdapter.getPermissionStatus.mockReturnValueOnce(new Promise<string>((r) => { resolve = r; }));
-  mockData.query.data = ON;
-  const tree = await render();
-  expect(has(tree, 'notif-skeleton')).toBe(true);
-  expect(has(tree, 'notif-news')).toBe(false);
-  expect(has(tree, 'notif-os-off')).toBe(false);
-  await act(async () => { resolve('granted'); await new Promise((r) => setTimeout(r, 0)); });
-  expect(has(tree, 'notif-skeleton')).toBe(false);
-  expect(has(tree, 'notif-news')).toBe(true);
-  expect(has(tree, 'notif-consent-status')).toBe(true);
-  spy.mockRestore();
-});
