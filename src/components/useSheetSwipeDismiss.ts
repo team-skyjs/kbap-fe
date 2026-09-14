@@ -10,18 +10,26 @@
  * P-131/P-065 준수: 콜백은 전부 `runOnJS(true)` — 워클릿 경계 없음(jest가 못 잡는
  * 'worklet' 지시자 계열 위험 회피). 그래도 제스처 변경이라 발행 전 실기 확인 대상.
  * 재사용 시트(마운트 유지형)는 open 전환 시 훅이 translateY를 0으로 리셋한다.
+ *
+ * KB-553: `animateIn` 옵션 = open 전환 시 화면 아래(winH)에서 ease-out 240ms로 올라온다(스프링은 실기에서
+ * "둥 뜨는" 느낌으로 반려 — 퇴장 180ms와 같은 직선 계열) — Modal을
+ * fade로 두고 시트만 슬라이드하는 시트용(Modal slide는 딤 레이어까지 같이 밀어 올린다). 반환 `dismiss(onDone)`
+ * = 외부 닫힘 경로(스크림·버튼·백버튼)도 같은 슬라이드 다운을 타게 한다 — 드래그로 이미 내려간 뒤면 즉시 onDone.
  */
 import * as React from 'react';
 import { useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
-import { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { Easing, Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { spring } from '@/lib/motion';
 
 const DISMISS_DY = 80;
 const DISMISS_VY = 500; // pt/s
 const DIM_RANGE = 280; // 이만큼 끌면 딤 최저
+/** animateIn 등장 — "쓱" 올라오는 직선 ease-out(오버슈트 0). 퇴장 180ms 직선과 한 쌍. */
+const ENTER_TIMING = { duration: 240, easing: Easing.out(Easing.cubic) };
 
-export function useSheetSwipeDismiss(onClose: () => void, open = true) {
+export function useSheetSwipeDismiss(onClose: () => void, open = true, opts: { animateIn?: boolean } = {}) {
+  const animateIn = opts.animateIn === true;
   const ty = useSharedValue(0);
   const closingRef = React.useRef(false);
   // Codex #98 P2: 퇴장 목표 = 시트 실높이(onLayout) — 고정 640은 844폰·태블릿에서
@@ -33,17 +41,26 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true) {
   }, []);
   React.useEffect(() => {
     if (open) {
-      ty.value = 0; // 마운트 유지형 시트 재오픈 — 이전 드래그 잔존 제거
       closingRef.current = false;
+      if (animateIn) {
+        ty.value = winH; // KB-553: 화면 아래에서 등장(측정 전이라 화면 높이) — 딤은 dimStyle 비례로 함께 짙어진다
+        ty.value = withTiming(0, ENTER_TIMING);
+      } else {
+        ty.value = 0; // 마운트 유지형 시트 재오픈 — 이전 드래그 잔존 제거
+      }
     }
-  }, [open, ty]);
+  }, [open, ty, winH, animateIn]);
 
-  const dismiss = React.useCallback(() => {
-    if (closingRef.current) return; // 임계 통과 후 재발화 방지(단일 발사)
+  /** 슬라이드 다운 후 onDone(기본 onClose). 이미 내려간(드래그 닫힘) 뒤 외부 호출이면 즉시 onDone. */
+  const dismiss = React.useCallback((onDone: () => void = onClose) => {
+    if (closingRef.current) {
+      if (onDone !== onClose) onDone(); // 외부 닫힘 경로만 — 내부(onFinalize)는 진입 전 가드로 재발화 0
+      return;
+    }
     closingRef.current = true;
     ty.value = withTiming(sheetH.current || winH, { duration: 180 }, (finished) => {
       'worklet'; // 완료 콜백은 UI 스레드(P-065 지시자 필수) — JS 복귀는 runOnJS
-      if (finished) runOnJS(onClose)();
+      if (finished) runOnJS(onDone)();
     });
   }, [onClose, ty, winH]);
 
@@ -68,7 +85,7 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true) {
   const dimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(ty.value, [0, DIM_RANGE], [1, 0.25], Extrapolation.CLAMP),
   }));
-  return { gesture, sheetStyle, dimStyle, onSheetLayout };
+  return { gesture, sheetStyle, dimStyle, onSheetLayout, dismiss };
 }
 
 export default useSheetSwipeDismiss;

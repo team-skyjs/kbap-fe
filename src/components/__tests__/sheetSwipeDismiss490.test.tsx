@@ -12,7 +12,8 @@ jest.mock('react-native-reanimated', () => {
     __esModule: true,
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
-    withSpring: (v: unknown) => v,
+    Easing: { out: (e: unknown) => e, inOut: (e: unknown) => e, cubic: 'cubic', quad: 'quad', linear: 'linear' }, // KB-553 ENTER_TIMING
+    withSpring: jest.fn((v: unknown) => v),
     // 완료 콜백 즉시 발화(성공) — 퇴장 애니메이션 종단 = onClose 경로 검증(호출 기록 = 스파이)
     withTiming: jest.fn((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
       if (cb) cb(true);
@@ -30,10 +31,10 @@ import { useSheetSwipeDismiss } from '../useSheetSwipeDismiss';
 type PanEvent = { translationY: number; velocityY: number };
 type PanHandlers = { onUpdate?: (e: PanEvent) => void; onFinalize?: (e: PanEvent, success: boolean) => void };
 
-function mount(onClose: () => void, open = true) {
+function mount(onClose: () => void, open = true, opts?: { animateIn?: boolean }) {
   const out: { swipe?: ReturnType<typeof useSheetSwipeDismiss> } = {};
   function Probe() {
-    out.swipe = useSheetSwipeDismiss(onClose, open);
+    out.swipe = useSheetSwipeDismiss(onClose, open, opts);
     return null;
   }
   act(() => { renderer.create(<Probe />); });
@@ -115,4 +116,41 @@ it('배선 — TagPickerSheet·온보딩 약관 시트: 제스처 영역 = 핸�
   expect(coBlock).not.toMatch(/FlatList|ScrollView/);
   const obBlock = /<GestureDetector gesture=\{swipe\.gesture\}>([^]*?)<\/GestureDetector>/.exec(ob)![1];
   expect(obBlock).not.toMatch(/FlatList|ScrollView/);
+});
+
+it('KB-553 animateIn: open 시 화면 아래에서 ease-out 240ms 직선 등장(스프링 0) — 기본(false)은 0 리셋만(선례 시트 무변)', () => {
+  const { withTiming, withSpring } = require('react-native-reanimated') as { withTiming: jest.Mock; withSpring: jest.Mock };
+  withTiming.mockClear(); withSpring.mockClear();
+  mount(jest.fn());
+  expect(withTiming).not.toHaveBeenCalled();
+  mount(jest.fn(), true, { animateIn: true });
+  expect(withSpring).not.toHaveBeenCalled(); // "둥" 뜨는 스프링 등장 금지
+  expect(withTiming).toHaveBeenCalledTimes(1);
+  expect(withTiming.mock.calls[0][0]).toBe(0);
+  expect(withTiming.mock.calls[0][1]).toMatchObject({ duration: 240 });
+});
+
+it('KB-553 dismiss(onDone): 외부 닫힘 = 슬라이드 다운(180ms) 후 onDone · 드래그로 이미 내려간 뒤 호출 = 애니메이션 없이 즉시 onDone', () => {
+  const { withTiming } = require('react-native-reanimated') as { withTiming: jest.Mock };
+  withTiming.mockClear();
+  const onClose = jest.fn();
+  const { swipe } = mount(onClose);
+  const onDone = jest.fn();
+  swipe.dismiss(onDone);
+  expect(withTiming).toHaveBeenCalledTimes(1);
+  expect(withTiming.mock.calls[0][1]).toEqual({ duration: 180 });
+  expect(onDone).toHaveBeenCalledTimes(1);
+  expect(onClose).not.toHaveBeenCalled(); // 외부 경로는 onClose 대신 onDone만
+
+  withTiming.mockClear();
+  const onClose2 = jest.fn();
+  const m2 = mount(onClose2);
+  m2.handlers.onFinalize?.({ translationY: 120, velocityY: 0 }, true); // 드래그 닫힘 → onClose 1회
+  expect(onClose2).toHaveBeenCalledTimes(1);
+  const onDone2 = jest.fn();
+  m2.swipe.dismiss(onDone2);
+  expect(withTiming).toHaveBeenCalledTimes(1); // 추가 애니메이션 0
+  expect(onDone2).toHaveBeenCalledTimes(1);
+  m2.swipe.dismiss(); // 내부 기본(onClose) 재호출은 무동작 — 단일 발사 유지
+  expect(onClose2).toHaveBeenCalledTimes(1);
 });

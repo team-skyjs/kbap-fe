@@ -29,7 +29,9 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
-    withTiming: (v: unknown) => v,
+    // KB-553: 시트 퇴장(withTiming 완료 콜백) 뒤 Modal이 내려가므로 콜백 즉시 발화
+    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => { if (cb) cb(true); return v; },
+    runOnJS: (fn: (...a: unknown[]) => void) => fn,
     withRepeat: (v: unknown) => v,
     withSequence: (v: unknown) => v,
     withDelay: (_d: number, v: unknown) => v,

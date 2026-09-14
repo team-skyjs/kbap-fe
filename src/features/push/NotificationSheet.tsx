@@ -5,9 +5,10 @@
  * - variant="consent": 광고성 동의 2종(마케팅 목적 개인정보 수집·이용 / 광고성 정보 수신)
  *   체크 + 전문 링크. 확인은 둘 다 체크된 경우에만 활성(FR-005) — 색·불투명도만 바뀐다.
  *
- * KB-553: Modal slide(등장 슬라이드 업·스크림/나중에/백버튼 닫힘 = 슬라이드 다운) + 공용 훅
- * useSheetSwipeDismiss(핸들·제목 드래그 → 임계 통과 시 퇴장 후 onClose, 미만 = 스프링 복귀, 딤 비례 페이드)
- * — 선례 LegalSheet/TagPickerSheet/OrderDishPickerSheet와 같은 골격. 제스처 영역 = 핸들+제목(P-337).
+ * KB-553: Modal은 fade(딤만) — Modal slide는 딤 레이어까지 시트와 함께 밀어 올려 부자연(실기 지적).
+ * 시트 슬라이드는 공용 훅 useSheetSwipeDismiss가 담당: animateIn(아래에서 스프링 등장) · 핸들·제목 드래그
+ * (임계 통과 = 퇴장 후 onClose, 미만 = 복귀) · dismiss(스크림·나중에·확인·백버튼 닫힘도 슬라이드 다운).
+ * open=false가 되면 퇴장 애니메이션이 끝난 뒤 Modal을 내린다(visible 지연). 제스처 영역 = 핸들+제목(P-337).
  * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
  */
 import * as React from 'react';
@@ -51,8 +52,15 @@ export function NotificationSheet({
   const { t } = useTranslation();
   const { busy, run } = useSubmitGuard();
   const bottom = useBottomInset();
-  // 마운트 유지형(visible=open) — open 전환 시 훅이 translateY 리셋(FR-007)
-  const swipe = useSheetSwipeDismiss(onClose, open);
+  // 마운트 유지형 — open 전환 시 훅이 아래에서 등장(animateIn)·잔존 드래그 리셋(FR-007)
+  const swipe = useSheetSwipeDismiss(onClose, open, { animateIn: true });
+  // 닫힘 경로 전부(나중에·확인·스크림·백버튼·드래그) = 시트 슬라이드 다운 → Modal fade-out. 드래그로 이미 내려갔으면 즉시.
+  const [visible, setVisible] = React.useState(open);
+  React.useEffect(() => {
+    if (open) setVisible(true);
+    else if (visible) swipe.dismiss(() => setVisible(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
+  }, [open]);
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   const [checks, setChecks] = React.useState<ConsentChecks>({ privacy: false, receive: false });
   React.useEffect(() => {
@@ -70,7 +78,7 @@ export function NotificationSheet({
   };
 
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.root}>

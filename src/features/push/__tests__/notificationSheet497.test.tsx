@@ -4,14 +4,15 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { StyleSheet } from 'react-native';
+import { Modal, StyleSheet } from 'react-native';
 
 jest.mock('react-native-reanimated', () => {
   const { View } = require('react-native');
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    // 실모듈처럼 렌더 간 동일 객체(매 렌더 새 객체면 훅 effect가 재실행돼 등장 호출 수가 어긋난다)
+    useSharedValue: (v: unknown) => require('react').useRef({ value: v }).current,
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
     // KB-553: 완료 콜백 즉시 발화(성공) — 드래그 퇴장 종단 = onClose 경로 검증(sheetSwipeDismiss490 방식)
@@ -157,10 +158,11 @@ const frame = (st: unknown) => {
   return { pt: f.paddingTop, pb: f.paddingBottom, ph: f.paddingHorizontal, rl: f.borderTopLeftRadius, rr: f.borderTopRightRadius, gap: f.gap };
 };
 
-it('(g) KB-553 소스 잠금: Modal slide(fade 0) · Modal 직계 GestureHandlerRootView(안드 별도 루트, Codex #98 3R P2)', () => {
+it('(g) KB-553 소스 잠금: Modal fade(딤만 — slide는 딤까지 밀어 올림) + 시트 슬라이드는 훅 animateIn · Modal 직계 GestureHandlerRootView', () => {
   const src = SHEET_SRC();
-  expect(src).toContain('animationType="slide"');
-  expect(src).not.toContain('animationType="fade"');
+  expect(src).toContain('animationType="fade"');
+  expect(src).not.toContain('animationType="slide"');
+  expect(src).toContain('animateIn: true');
   expect(src).toMatch(/<Modal[^>]*>\s*(\{\/\*[\s\S]*?\*\/\}\s*)?<GestureHandlerRootView/);
 });
 
@@ -222,8 +224,43 @@ it('(i) 제스처 영역 = 핸들 + 제목만(P-337, FR-005): 체크 행·전문
 
 it('(k) 소스 잠금: 훅에 open 전달(재오픈 리셋, FR-007) · dimStyle/sheetStyle/onSheetLayout 배선(FR-004/FR-008)', () => {
   const src = SHEET_SRC();
-  expect(src).toContain('useSheetSwipeDismiss(onClose, open)');
+  expect(src).toContain('useSheetSwipeDismiss(onClose, open, { animateIn: true })');
+  expect(src).toContain('swipe.dismiss(');
   expect(src).toContain('swipe.dimStyle');
   expect(src).toContain('swipe.sheetStyle');
   expect(src).toContain('onLayout={swipe.onSheetLayout}');
+});
+
+const modalVisible = (tree: ReactTestRenderer) => tree.root.findAllByType(Modal)[0].props.visible as boolean;
+const timing = () => (require('react-native-reanimated') as { withTiming: jest.Mock }).withTiming;
+const exitCalls = () => timing().mock.calls.filter((c: unknown[]) => (c[1] as { duration?: number } | undefined)?.duration === 180);
+const enterCalls = () => timing().mock.calls.filter((c: unknown[]) => (c[1] as { duration?: number } | undefined)?.duration === 240);
+
+it('(l) 닫힘 = 시트 슬라이드 다운(180ms) 후 Modal 숨김 — 버튼/스크림 경로는 퇴장 1회, 드래그로 이미 내려간 뒤엔 즉시', async () => {
+  // 버튼·스크림 경로: onClose → 호출부 open=false → 퇴장 애니메이션 → visible=false
+  const p = props({ variant: 'consent' });
+  const tree = render(<NotificationSheet {...p} />);
+  expect(modalVisible(tree)).toBe(true);
+  await tap(tree, 'notif-sheet-later');
+  expect(p.onClose).toHaveBeenCalledTimes(1);
+  expect(modalVisible(tree)).toBe(true); // 호출부가 open을 내리기 전까지 유지
+  expect(enterCalls()).toHaveLength(1); // 등장 = 훅 animateIn(240ms 직선)
+  act(() => { tree.update(<NotificationSheet {...p} open={false} />); });
+  expect(exitCalls()).toHaveLength(1); // 퇴장 180ms 1회
+  expect(modalVisible(tree)).toBe(false);
+  // 재오픈 = 다시 보임 + 등장 애니메이션 재실행
+  act(() => { tree.update(<NotificationSheet {...p} open />); });
+  expect(modalVisible(tree)).toBe(true);
+  expect(enterCalls()).toHaveLength(2);
+
+  // 드래그 경로: 훅이 이미 내렸으므로(withTiming 1회) open=false에 추가 애니메이션 없이 즉시 숨김
+  timing().mockClear();
+  const p2 = props();
+  const t2 = render(<NotificationSheet {...p2} />);
+  lastPan().onFinalize?.({ translationY: 90, velocityY: 0 }, true);
+  expect(p2.onClose).toHaveBeenCalledTimes(1);
+  expect(exitCalls()).toHaveLength(1);
+  act(() => { t2.update(<NotificationSheet {...p2} open={false} />); });
+  expect(exitCalls()).toHaveLength(1); // 추가 퇴장 애니메이션 0 — 즉시 숨김
+  expect(modalVisible(t2)).toBe(false);
 });
