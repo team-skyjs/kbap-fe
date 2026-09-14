@@ -57,6 +57,16 @@ let seq = 0;
 const nextSeq = () => ++seq;
 const isLatest = (n: number) => n === seq;
 
+/* ---- PATCH 직렬화 (KB-553, 9/14 실기): 동의 확정 PATCH가 아직 서버에 반영되기 전에 다음 토글 PATCH가
+ * 도착하면 서버는 반영 전 행(전부 false)을 기준으로 응답한다 — 그 응답이 "최신"이라 캐시를 덮어 소식 토글이
+ * 꺼진 것처럼 보였다. 요청은 앞 요청이 끝난 뒤 보낸다(낙관 표시는 즉시 · 응답 반영은 seq 그대로). ---- */
+let chain: Promise<unknown> = Promise.resolve();
+function sendPatch(patch: NotificationSettingsPatch): Promise<NotificationSettings> {
+  const p = chain.then(() => api.patch<NotificationSettings>(PATH, patch, opts()));
+  chain = p.catch(() => undefined); // 실패해도 다음 요청은 이어간다
+  return p;
+}
+
 /** 낙관 예측 — 서버 응답이 오면 통째로 교체되므로 표시용 근사면 충분. */
 export function predictSettings(cur: NotificationSettings, patch: NotificationSettingsPatch): NotificationSettings {
   const next: NotificationSettings = { ...cur, news: { ...cur.news } };
@@ -85,7 +95,7 @@ export async function patchNotificationSettings(
   qc: QueryClient = sharedQueryClient,
 ): Promise<NotificationSettings> {
   const my = nextSeq();
-  const res = await api.patch<NotificationSettings>(PATH, patch, opts());
+  const res = await sendPatch(patch);
   if (isLatest(my)) qc.setQueryData(NOTIF_SETTINGS_KEY, res);
   return res;
 }
@@ -102,7 +112,7 @@ export function useNotificationSettings(enabled = true) {
 export function useUpdateNotificationSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (patch: NotificationSettingsPatch) => api.patch<NotificationSettings>(PATH, patch, opts()),
+    mutationFn: (patch: NotificationSettingsPatch) => sendPatch(patch),
     onMutate: async (patch) => {
       const my = nextSeq();
       await qc.cancelQueries({ queryKey: NOTIF_SETTINGS_KEY });

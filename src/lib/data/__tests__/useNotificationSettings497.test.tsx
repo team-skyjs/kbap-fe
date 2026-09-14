@@ -165,3 +165,46 @@ it('predictSettings: enabled:true만 → mealTime 무변 · consent:true → 동
   const c = predictSettings(b, { news: { enabled: false } });
   expect(c.news).toMatchObject({ enabled: false, mealTime: false, privacyConsent: { version: 1 } }); // 동의는 유지
 });
+
+// KB-553(9/14 실기): 동의 확정 응답 전 식사 시간 OFF 탭 → 두 PATCH가 서버에 병렬 도착하면 뒤 요청이 반영 전 행으로
+// 응답(enabled:false)해 소식 토글이 꺼져 보였다. 요청은 앞 요청이 끝난 뒤에만 보낸다 — 낙관 표시는 즉시.
+it('PATCH 직렬화: 앞 요청이 끝나기 전엔 다음 PATCH를 보내지 않는다 · 낙관 표시는 즉시 · 최종 캐시 = 마지막 응답', async () => {
+  const qc = qcFactory();
+  (api.get as jest.Mock).mockResolvedValue(OFF);
+  const d1 = deferred<NotificationSettings>();
+  const d2 = deferred<NotificationSettings>();
+  (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockReturnValueOnce(d2.promise);
+  await mount(qc);
+  act(() => latestMutate!({ news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } }));
+  await tick();
+  act(() => latestMutate!({ news: { mealTime: false } }));
+  await tick();
+  expect(api.patch).toHaveBeenCalledTimes(1); // 두 번째는 대기
+  const optimistic = qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)!;
+  expect(optimistic.news).toMatchObject({ enabled: true, mealTime: false }); // 낙관: 소식 ON 유지·식사 시간 OFF
+  const afterFirst: NotificationSettings = { ...ON, news: { ...ON.news, mealTime: true } };
+  await act(async () => { d1.resolve(afterFirst); await new Promise((r) => setTimeout(r, 0)); });
+  expect(api.patch).toHaveBeenCalledTimes(2); // 앞 요청 완료 후에 전송
+  expect((api.patch as jest.Mock).mock.calls[1][1]).toEqual({ news: { mealTime: false } });
+  expect(qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)!.news.enabled).toBe(true); // 1번 응답은 최신이 아니라 무시(낙관 유지)
+  const afterSecond: NotificationSettings = { ...ON, news: { ...ON.news, mealTime: false } };
+  await act(async () => { d2.resolve(afterSecond); await new Promise((r) => setTimeout(r, 0)); });
+  expect(qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)!.news).toMatchObject({ enabled: true, mealTime: false });
+});
+
+it('PATCH 직렬화: 앞 요청이 실패해도 다음 요청은 전송된다', async () => {
+  const qc = qcFactory();
+  (api.get as jest.Mock).mockResolvedValue(ON);
+  const d1 = deferred<NotificationSettings>();
+  (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockResolvedValueOnce({ ...ON, news: { ...ON.news, mealTime: false } });
+  await mount(qc);
+  act(() => latestMutate!({ activity: false }));
+  await tick();
+  act(() => latestMutate!({ news: { mealTime: false } }));
+  await tick();
+  expect(api.patch).toHaveBeenCalledTimes(1);
+  await act(async () => { d1.reject(new Error('500')); await new Promise((r) => setTimeout(r, 0)); });
+  await tick();
+  expect(api.patch).toHaveBeenCalledTimes(2);
+  expect(qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)!.news.mealTime).toBe(false);
+});
