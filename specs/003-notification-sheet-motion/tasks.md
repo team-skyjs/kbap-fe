@@ -108,6 +108,7 @@
 - [X] T020 실기 4차(2026-09-14, 종한 "식사 시간만 껐는데 소식도 잠깐 OFF"): 설정 PATCH 클라이언트 직렬화(`sendPatch` 체인 — 앞 요청 settle 후 전송, 낙관 즉시·seq 반영 유지) — `src/lib/data/useNotificationSettings.ts` · 유닛 `useNotificationSettings497` +2(경합 재현·실패 후 이어감). research R-15(Swagger: 응답 enabled = 기기 토글 저장값 확정)
 - [X] T021 스코프 추가(2026-09-14, 종한): OS 알림 권한 꺼짐 시 알림 설정 화면은 배너만(저장 토글·동의 내역 미노출), 권한 판정 전엔 스켈레톤 — `src/app/profile/notifications.tsx` · 유닛 `notificationSettings497` US5 갱신 + US5b. research R-16
 - [X] T022 Codex 독립 리뷰(PR #150) Important 4·Minor 1 반영 — 세션 세대 가드(`useNotificationSettings.ts`) · 퇴장 중 조작 차단+열림 시 리셋(`NotificationSheet.tsx`) · 훅 idle/closing/closed 3상(`useSheetSwipeDismiss.ts`) · VoiceOver 안내 · 지연 완료 목 유닛. research R-17
+- [X] T023 종한 2차 지시(2026-09-14): OS 권한 꺼짐 시 아래 설정 UI 숨김 철회 → 배너 + 흐림(opacity 0.4)·pointerEvents none·행 disabled. 판정 전 스켈레톤 게이트 철회. `notifications.tsx` · US5 갱신·US5b 삭제. research R-16 개정
 - [X] T015 (draft PR #150, 2026-09-14) 커밋 후 `open-draft-pr` 스킬로 PR — 제목은 Jira 키 없이 `feat(push): 알림 시트 슬라이드·드래그 닫힘 모션 및 문구 중간점 슬래시` 형식, 본문에 `Jira: KB-553` 줄 · T013 실기 체크리스트 · 리뷰 포인트 "ja 나카구로 `・` 4키 → `/` 치환이 카피 의도에 맞는지(research R-7)" 기재. 커밋 메시지 끝 어트리뷰션 규칙 준수
 
 ---
