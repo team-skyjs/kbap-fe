@@ -38,6 +38,13 @@ export function VersionGateOverlay() {
     setStoreFailed(false);
   }, [gate.mode, storeUrl]);
 
+  // P-381 4R(Codex P3 두 번째): 위 리셋만으로는 **진행 중이던 시도**를 못 막는다 —
+  // openStoreLink가 pending인 사이 게이트가 바뀌면 리셋이 먼저 돌고, 뒤늦게 도착한
+  // 옛 거부가 새 게이트에 실패 표시를 찍는다. 시도 시점의 게이트 정체를 캡처해
+  // 결과 적용 전에 현재 값과 대조한다.
+  const gateIdRef = React.useRef('');
+  gateIdRef.current = `${gate.mode}|${storeUrl ?? ''}`;
+
   // 안드 하드웨어 백 차단 — 게이트는 dismiss 불가
   React.useEffect(() => {
     if (gate.mode !== 'blocked') return;
@@ -58,7 +65,11 @@ export function VersionGateOverlay() {
           <Btn
             onPress={() => {
               setStoreFailed(false);
-              void openStoreLink(gate.storeUrl!, { silent: true }).then((ok) => setStoreFailed(!ok));
+              const attempt = gateIdRef.current; // 이 시도가 속한 게이트
+              void openStoreLink(gate.storeUrl!, { silent: true }).then((ok) => {
+                if (gateIdRef.current !== attempt) return; // 그새 다른 게이트가 됐다 — 옛 결과 폐기
+                setStoreFailed(!ok);
+              });
             }}
           >
             {t('versionGate.gateCta')}
