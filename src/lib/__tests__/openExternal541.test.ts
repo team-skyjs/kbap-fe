@@ -65,16 +65,18 @@ it('적용 4표면 = openWebPage 경유 · Linking.openURL 잔재 0', () => {
   expect(login).toContain('openWebPage(LEGAL_URLS.privacy)');
   const profile = read('src/app/(tabs)/profile.tsx');
   expect((profile.match(/openWebPage\(SAFETY_NOTICE_URL\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
-  expect(profile).toContain('Linking.openSettings()'); // OS 설정은 Linking 유지
+  // P-381: OS 설정도 공용 헬퍼 경유(웹뷰로 여는 것은 여전히 금지 — 설정은 링크가 아니다)
+  expect((profile.match(/openAppSettings\(\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
   expect(read('src/lib/legalText.ts')).toContain("export const SAFETY_NOTICE_URL = 'https://team-skyjs.github.io/kbap-legal/safety.html'");
 });
 
-it('네이티브 앱 딥링크는 Linking 유지(전환 금지) — 스토어·지도', () => {
+it('네이티브 앱 딥링크는 인앱 브라우저 금지 — 스토어·지도', () => {
+  // P-381: 스토어는 openStoreLink(Linking.openURL + 실패 토스트) 경유 — 웹뷰 대체 금지
   const vg = read('src/components/VersionGate.tsx');
-  expect(vg).toContain('Linking.openURL(gate.storeUrl!)'); // 스토어 앱으로 열려야 함
+  expect(vg).toContain('openStoreLink(gate.storeUrl!)');
   expect(vg).not.toContain('openWebPage');
   const map = read('src/features/community/placeMap.tsx');
-  expect(map).toContain('Linking.openURL(app)'); // 지도 앱 스킴
+  expect(map).toContain('Linking.openURL(app)'); // 지도 앱 스킴(openMap 자체 try/catch)
   expect(map).not.toContain('openWebPage');
 });
 

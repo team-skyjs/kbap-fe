@@ -10,6 +10,12 @@
  * 대상 = 우리가 보여주려는 웹페이지(약관·개인정보·안전 고지·외부 검색).
  * 스토어·지도 같은 **네이티브 앱 딥링크는 여기 쓰지 말 것** — 그건 앱으로 열려야
  * 하므로 Linking 직접 호출을 유지한다(VersionGate·placeMap).
+ *
+ * P-381(KB-541 후속): `openAppSettings`도 같은 이유로 여기 있다. 9/15 Sentry
+ * REACT-NATIVE-A — iOS 심사 기기에서 안전 고지 링크와 **2초 간격**으로 설정 열기가
+ * 터졌다. `void Linking.openSettings()`의 `void`는 거부를 **잡지 않아서**
+ * unhandled rejection으로 흘렀고, 사용자는 눌러도 아무 일이 없었다.
+ * → **`void Linking.*` 직접 호출 금지**(글롭 순회 잠금). 실패는 반드시 보이게 한다.
  */
 import { Linking } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -29,5 +35,34 @@ export async function openWebPage(url: string): Promise<boolean> {
       showTopToast(i18n.t('states.linkFailed'), { error: true });
       return false;
     }
+  }
+}
+
+/**
+ * OS 설정 앱 열기. 실패하면 **설정 전용 문구**로 토스트(열렸으면 true).
+ * `states.linkFailed`("링크를 열 수 없어요")를 재사용하지 않는다 — "설정 열기"를
+ * 눌렀는데 링크 이야기가 뜨면 어긋난다.
+ */
+export async function openAppSettings(): Promise<boolean> {
+  try {
+    await Linking.openSettings();
+    return true;
+  } catch {
+    showTopToast(i18n.t('states.settingsFailed'), { error: true });
+    return false;
+  }
+}
+
+/**
+ * 스토어 딥링크 열기 — **인앱 브라우저로 대체하지 않는다**(스토어 앱으로 열려야
+ * 업데이트가 된다). 실패하면 토스트: 여기서 조용히 넘기면 사용자가 업데이트를 못 한다.
+ */
+export async function openStoreLink(url: string): Promise<boolean> {
+  try {
+    await Linking.openURL(url);
+    return true;
+  } catch {
+    showTopToast(i18n.t('states.linkFailed'), { error: true });
+    return false;
   }
 }

@@ -566,7 +566,8 @@
     "errorBody": "No pudimos cargar esto ahora. Es de nuestro lado, no del tuyo.",
     "offlineTitle": "Estás sin conexión",
     "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas. Tus escaneos guardados siguen aquí.",
-    "linkFailed": "No se pudo abrir el enlace"
+    "linkFailed": "No se pudo abrir el enlace",
+    "settingsFailed": "No se pudo abrir Ajustes"
   },
   "shell": {
     "placeholderNote": "El contenido de las pestañas está en los módulos de pantalla"

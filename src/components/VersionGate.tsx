@@ -7,7 +7,7 @@
  *  저장해 같은 버전으론 재노출 안 함.
  */
 import * as React from 'react';
-import { BackHandler, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn } from '@/components/Btn';
 import { IconClose, IconDownload } from '@/components/icons';
 import { startVersionGate, useVersionGate } from '@/lib/versionGate';
+import { openStoreLink } from '@/lib/openExternal';
 
 const NUDGE_DISMISS_KEY = 'kbap.versionNudge.dismissed.v1';
 
@@ -41,7 +42,7 @@ export function VersionGateOverlay() {
       <Text style={styles.body}>{t('versionGate.gateBody')}</Text>
       {gate.storeUrl != null && (
         <View style={{ alignSelf: 'stretch', marginTop: 10 }}>
-          <Btn onPress={() => void Linking.openURL(gate.storeUrl!)}>{t('versionGate.gateCta')}</Btn>
+          <Btn onPress={() => void openStoreLink(gate.storeUrl!)}>{t('versionGate.gateCta')}</Btn>
         </View>
       )}
     </View>
@@ -75,7 +76,7 @@ export function UpdateNudgeBanner() {
         {t('versionGate.nudgeText')}
       </Text>
       {gate.storeUrl != null && (
-        <Pressable hitSlop={8} onPress={() => void Linking.openURL(gate.storeUrl!)}>
+        <Pressable hitSlop={8} onPress={() => void openStoreLink(gate.storeUrl!)}>
           <Text style={styles.bannerCta}>{t('versionGate.nudgeCta')}</Text>
         </Pressable>
       )}

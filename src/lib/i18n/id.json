@@ -566,7 +566,8 @@
     "errorBody": "Kami tidak bisa memuat ini sekarang. Ini dari sisi kami, bukan Anda.",
     "offlineTitle": "Anda sedang luring",
     "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan. Pindaian tersimpan Anda masih ada di sini.",
-    "linkFailed": "Tidak bisa membuka tautan"
+    "linkFailed": "Tidak bisa membuka tautan",
+    "settingsFailed": "Tidak bisa membuka Pengaturan"
   },
   "shell": {
     "placeholderNote": "Konten tab berada di modul layar"

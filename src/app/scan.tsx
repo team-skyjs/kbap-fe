@@ -14,7 +14,7 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
@@ -67,6 +67,7 @@ import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
 import { getPrimerResult } from '@/lib/push/pushAdapter';
+import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
 type Phase = 'camera' | 'scanning' | 'result' | 'error';
@@ -476,7 +477,7 @@ export default function Scan() {
         track(EVENTS.scan_permission, { state: 'deny' }); // P-214
         Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
           { text: t('common.cancel'), style: 'cancel' },
-          { text: t('photo.openSettings'), onPress: () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); } },
+          { text: t('photo.openSettings'), onPress: () => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); } },
         ]);
         return;
       }
@@ -920,7 +921,7 @@ export default function Scan() {
             <View style={styles.permAlert}>
               <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
               <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-              <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void Linking.openSettings(); }}>
+              <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
                 {t('photo.openSettings')}
               </Btn>
             </View>
