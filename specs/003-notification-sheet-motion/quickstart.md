@@ -18,11 +18,15 @@ npx jest   # 전체 그린
 | 케이스 | 단언 |
 |--------|------|
 | (a)~(f) 기존 | 전부 통과(props·testID 계약 무변) |
-| (g) 소스 잠금 | `NotificationSheet.tsx`에 `animationType="slide"` 포함·`"fade"` 0 · `GestureHandlerRootView` 포함 · `useSheetSwipeDismiss(` 호출 |
-| (h) 제스처 배선 | RNGH 목 `handlers.onFinalize({translationY: 90, velocityY: 0}, true)` → `onClose` 1회 · `({translationY: 40, velocityY: 100}, true)` → 0회 |
-| (i) 제스처 영역 한정 | `notif-sheet-grab`·제목은 `notif-sheet-gesture`(GestureDetector 목 호스트) 하위, `consent-privacy`·`notif-sheet-confirm`·`notif-sheet-later`는 하위 아님 |
-| (j) 프레임 불변 | `notif-sheet-consent` flatten 스타일의 paddingTop/paddingBottom/paddingHorizontal/borderTopLeftRadius/gap이 `open` false→true·체크 전후 동일 |
-| (c') 스크림 | `notif-sheet-backdrop` 탭 = onClose (기존 c 유지 — 구조 개편 후에도 testID가 Pressable에 있어야 함) |
+| (g) 소스 잠금 | `NotificationSheet.tsx`에 `animationType="fade"`(딤 페이드) 포함·`"slide"` 0 · Modal 직계 `GestureHandlerRootView` · `animateIn: true`(시트 등장은 훅 직선 240ms) |
+| (h) 제스처 배선 | RNGH 목 `handlers.onFinalize({translationY: 90, velocityY: 0}, true)` → `onClose` 1회 · `({translationY: 40, velocityY: 100}, true)` → 0회 · 취소(success=false) → 0회 |
+| (i) 제스처 영역 = 시트 전체 | `notif-sheet-consent`·`notif-sheet-grab`·`consent-privacy`·`notif-sheet-confirm`·`notif-sheet-later`가 `notif-sheet-gesture` 하위, 스크림 `notif-sheet-backdrop`은 밖 |
+| (j) 프레임 불변 | `notif-sheet-consent` flatten 스타일의 paddingTop/paddingBottom/paddingHorizontal/borderTopLeftRadius/gap이 `open` false→true·체크 전후 동일, 핸들 36×4 1개 |
+| (k) 훅 배선 잠금 | `useSheetSwipeDismiss(onClose, open, { animateIn: true })`·`swipe.dismiss(`·`swipe.dimStyle`·`swipe.sheetStyle`·`onLayout={swipe.onSheetLayout}` |
+| (l) 퇴장 후 숨김 | open=false → 퇴장 180ms 1회 후 Modal visible=false · 드래그로 이미 내려간 뒤엔 추가 애니메이션 0 |
+| (m)(n)(o) 퇴장 중 조작 | 퇴장 중 루트 pointerEvents none · 나중에/스크림/백버튼은 훅 dismiss 경유로 onClose 1회 · 내부·드래그 퇴장 중 확인 탭 = onConfirm 0 · iOS VoiceOver announce |
+| (c) 스크림/나중에 | 열림 1회당 onClose 1회(닫힌 뒤 재탭 무시), 재오픈 후 다시 1회 |
+| (b)(b2)(e)(f) 동의 | 사전 체크로 열림 · 하나 해제+확인 = 안내(고정 슬롯 메트릭 동일)·onConfirm 0 · 재오픈 = 리셋 |
 
 `notifKeys497` 추가 케이스: 5키 × 10로케일 값에 `/[·・]/` 매치 0 · 기존 패리티·구키 0·consentStatus 보간 유지.
 
