@@ -309,7 +309,8 @@ export default function Onboarding() {
             : t('onboarding.continue'),
           onPress: advance,
           onSkip: skipStep,
-          skipLabel: t('onboarding.presets.skip'),
+          // P-379(KB-545): 긴 라벨이 버튼 폭을 넘겨 3줄로 잘렸다 — 기존 짧은 키로 통일
+          skipLabel: t('onboarding.skip'),
         };
       case 'restrictions':
         return {
@@ -318,7 +319,7 @@ export default function Onboarding() {
             : t('onboarding.continue'),
           onPress: answerStep,
           onSkip: skipStep,
-          skipLabel: t('onboarding.nothingToAvoid'), // P-134 시안 — 0개 Continue와 동일 동작
+          skipLabel: t('onboarding.skip'), // P-134 시안 → P-379(KB-545): 라벨만 짧게(동작·폭 무변)
         };
       case 'spice':
         // P-130: 맵기 = 마지막 스텝 — 완료/스킵 즉시 제출. P-134: 시안 라벨

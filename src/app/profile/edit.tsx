@@ -8,7 +8,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View, Linking, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,7 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
 import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 import { currencyForCountry, currencyUpdateFor, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
+import { openAppSettings } from '@/lib/openExternal';
 
 export default function EditProfile() {
   const router = useRouter();
@@ -228,7 +229,7 @@ export default function EditProfile() {
         {canOpenLangSettings && (
           <View style={styles.fieldset}>
             <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')}</Text>
-            <Pressable style={styles.field} onPress={() => void Linking.openSettings()}>
+            <Pressable style={styles.field} onPress={() => void openAppSettings()}>
               <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
               <IconChevron size={16} color={C.ink3} />
             </Pressable>

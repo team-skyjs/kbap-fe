@@ -720,7 +720,9 @@
     "errorTitle": "Something went wrong",
     "errorBody": "We couldn't load this. The problem is on our end.",
     "offlineTitle": "You're offline",
-    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here."
+    "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here.",
+    "linkFailed": "Couldn't open the link",
+    "settingsFailed": "Couldn't open Settings"
   },
   "shell": {
     "placeholderNote": "Tab content lives in the screen modules"
@@ -841,7 +843,6 @@
     "selectedCount": "{{count}} selected",
     "noneSelectedYet": "None selected yet",
     "clearSelection": "Clear",
-    "nothingToAvoid": "Nothing to avoid",
     "kidsBadge": "👶 Kid-friendly",
     "spiceDesc0": "Marks you as no-spice. Heat levels still show on every dish.",
     "spiceDesc1": "Dishes hotter than mild show their heat level.",
@@ -868,7 +869,6 @@
       "shellfish_allergy": "Shellfish allergy",
       "title": "Any diet or religious rules?",
       "sub": "Pick any that apply. We'll pre-check the matching ingredients, and you can adjust them next.",
-      "skip": "Pick ingredients myself",
       "groupDiet": "Diet",
       "groupReligion": "Religion",
       "groupAllergy": "Allergy bundles",
@@ -921,6 +921,7 @@
     "gateTitle": "Update required",
     "gateBody": "This version of K-Bap is no longer supported. Update to keep your food safety info accurate.",
     "gateCta": "Update now",
+    "storeFailed": "Couldn't open the store. Update from the App Store or Google Play app.",
     "nudgeText": "A new version is available",
     "nudgeCta": "Update"
   },

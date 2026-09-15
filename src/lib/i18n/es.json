@@ -565,7 +565,9 @@
     "errorTitle": "Algo salió mal",
     "errorBody": "No pudimos cargar esto ahora. Es de nuestro lado, no del tuyo.",
     "offlineTitle": "Estás sin conexión",
-    "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas. Tus escaneos guardados siguen aquí."
+    "offlineBody": "Conéctate a internet para escanear menús y cargar reseñas. Tus escaneos guardados siguen aquí.",
+    "linkFailed": "No se pudo abrir el enlace",
+    "settingsFailed": "No se pudo abrir Ajustes"
   },
   "shell": {
     "placeholderNote": "El contenido de las pestañas está en los módulos de pantalla"
@@ -685,7 +687,6 @@
     "selectedCount": "{{count}} seleccionados",
     "noneSelectedYet": "Nada seleccionado aún",
     "clearSelection": "Borrar",
-    "nothingToAvoid": "Nada que evitar",
     "kidsBadge": "👶 Apto para niños",
     "spiceDesc0": "Verás el picante de cada plato — esto te marca como sin picante.",
     "spiceDesc1": "Los platos más picantes que suave mostrarán su nivel claramente.",
@@ -712,7 +713,6 @@
       "shellfish_allergy": "Alergia a mariscos",
       "title": "¿Alguna dieta o creencia que debamos saber?",
       "sub": "Elige lo que aplique — marcaremos los ingredientes relacionados. Podrás ajustarlos después.",
-      "skip": "Omitir — elegiré yo",
       "groupDiet": "Dieta",
       "groupReligion": "Religión",
       "groupAllergy": "Grupos de alergia",
@@ -923,6 +923,7 @@
     "gateTitle": "Actualización necesaria",
     "gateBody": "Esta versión ya no es compatible. Actualiza para mantener tu información de seguridad alimentaria al día.",
     "gateCta": "Actualizar ahora",
+    "storeFailed": "No se pudo abrir la tienda. Actualiza desde la app de App Store o Google Play.",
     "nudgeText": "Hay una nueva versión disponible",
     "nudgeCta": "Actualizar"
   },

@@ -11,7 +11,7 @@
  * 발주 규정대로 12장 축소, 1.0MB). JS 번들 자산 — OTA 가능.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, AppState, Image, Linking, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { IconArrowLeft } from '@/components/icons';
@@ -29,6 +29,7 @@ import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
 import { GAP, TILE, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 import { LEGAL_URLS } from '@/lib/legalText';
+import { openWebPage } from '@/lib/openExternal';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const DISHES = [
@@ -187,11 +188,11 @@ export default function Login() {
         {/* 9/5 예진 판정(D-5 ⑥): 약관 = 시안대로 밑줄 3분할 — 링크는 기존 kbap-legal 정본(LEGAL_URLS) */}
         <Text style={styles.terms}>
           {t('login.termsPrefix')}
-          <Text style={[styles.terms, styles.termsLink]} onPress={() => void Linking.openURL(LEGAL_URLS.terms)} testID="terms-tos">
+          <Text style={[styles.terms, styles.termsLink]} onPress={() => void openWebPage(LEGAL_URLS.terms)} testID="terms-tos">
             {t('login.termsTos')}
           </Text>
           {t('login.termsAnd')}
-          <Text style={[styles.terms, styles.termsLink]} onPress={() => void Linking.openURL(LEGAL_URLS.privacy)} testID="terms-privacy">
+          <Text style={[styles.terms, styles.termsLink]} onPress={() => void openWebPage(LEGAL_URLS.privacy)} testID="terms-privacy">
             {t('login.termsPrivacy')}
           </Text>
           {t('login.termsSuffix')}

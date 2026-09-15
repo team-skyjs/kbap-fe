@@ -565,7 +565,9 @@
     "errorTitle": "Terjadi kesalahan",
     "errorBody": "Kami tidak bisa memuat ini sekarang. Ini dari sisi kami, bukan Anda.",
     "offlineTitle": "Anda sedang luring",
-    "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan. Pindaian tersimpan Anda masih ada di sini."
+    "offlineBody": "Sambungkan ke internet untuk memindai menu dan memuat ulasan. Pindaian tersimpan Anda masih ada di sini.",
+    "linkFailed": "Tidak bisa membuka tautan",
+    "settingsFailed": "Tidak bisa membuka Pengaturan"
   },
   "shell": {
     "placeholderNote": "Konten tab berada di modul layar"
@@ -685,7 +687,6 @@
     "selectedCount": "{{count}} dipilih",
     "noneSelectedYet": "Belum ada yang dipilih",
     "clearSelection": "Hapus",
-    "nothingToAvoid": "Tidak ada pantangan",
     "kidsBadge": "👶 Ramah anak",
     "spiceDesc0": "Anda akan melihat tingkat pedas semua hidangan — ini berarti tanpa pedas.",
     "spiceDesc1": "Hidangan yang lebih pedas dari ringan akan menampilkan tingkatnya dengan jelas.",
@@ -712,7 +713,6 @@
       "shellfish_allergy": "Alergi kerang·udang",
       "title": "Ada pola makan atau keyakinan tertentu?",
       "sub": "Pilih yang sesuai — bahan terkait akan dicentang lebih dulu. Bisa disesuaikan di langkah berikutnya.",
-      "skip": "Lewati — pilih sendiri",
       "groupDiet": "Pola makan",
       "groupReligion": "Agama",
       "groupAllergy": "Paket alergi",
@@ -922,6 +922,7 @@
     "gateTitle": "Perlu pembaruan",
     "gateBody": "Versi ini tidak lagi didukung. Perbarui agar info keamanan makanan tetap akurat.",
     "gateCta": "Perbarui sekarang",
+    "storeFailed": "Tidak bisa membuka toko. Perbarui lewat aplikasi App Store atau Google Play.",
     "nudgeText": "Versi baru tersedia",
     "nudgeCta": "Perbarui"
   },

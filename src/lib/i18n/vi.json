@@ -565,7 +565,9 @@
     "errorTitle": "Đã xảy ra sự cố",
     "errorBody": "Chúng tôi không thể tải mục này lúc này. Lỗi ở phía chúng tôi, không phải bạn.",
     "offlineTitle": "Bạn đang ngoại tuyến",
-    "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá. Các bản quét đã lưu vẫn còn ở đây."
+    "offlineBody": "Kết nối internet để quét thực đơn và tải đánh giá. Các bản quét đã lưu vẫn còn ở đây.",
+    "linkFailed": "Không mở được liên kết",
+    "settingsFailed": "Không mở được Cài đặt"
   },
   "shell": {
     "placeholderNote": "Nội dung tab nằm trong các mô-đun màn hình"
@@ -685,7 +687,6 @@
     "selectedCount": "Đã chọn {{count}}",
     "noneSelectedYet": "Chưa chọn gì",
     "clearSelection": "Xóa hết",
-    "nothingToAvoid": "Không kiêng gì",
     "kidsBadge": "👶 Phù hợp trẻ em",
     "spiceDesc0": "Bạn sẽ thấy độ cay của mọi món — thiết lập này nghĩa là không ăn cay.",
     "spiceDesc1": "Món cay hơn mức nhẹ sẽ hiển thị độ cay rõ ràng.",
@@ -712,7 +713,6 @@
       "shellfish_allergy": "Dị ứng tôm cua·sò",
       "title": "Bạn có chế độ ăn hay tín ngưỡng nào không?",
       "sub": "Chọn mục phù hợp — chúng tôi sẽ đánh dấu sẵn các thành phần liên quan. Bạn có thể chỉnh ở bước sau.",
-      "skip": "Bỏ qua — tôi tự chọn",
       "groupDiet": "Chế độ ăn",
       "groupReligion": "Tôn giáo",
       "groupAllergy": "Nhóm dị ứng",
@@ -922,6 +922,7 @@
     "gateTitle": "Cần cập nhật",
     "gateBody": "Phiên bản này không còn được hỗ trợ. Hãy cập nhật để thông tin an toàn thực phẩm luôn chính xác.",
     "gateCta": "Cập nhật ngay",
+    "storeFailed": "Không mở được cửa hàng. Hãy cập nhật trong ứng dụng App Store hoặc Google Play.",
     "nudgeText": "Đã có phiên bản mới",
     "nudgeCta": "Cập nhật"
   },

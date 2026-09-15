@@ -723,7 +723,9 @@
     "errorTitle": "문제가 생겼어요",
     "errorBody": "지금은 불러올 수 없어요. 회원님 잘못이 아니라 저희 쪽 문제예요.",
     "offlineTitle": "오프라인 상태예요",
-    "offlineBody": "메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요. 저장된 스캔은 그대로 있어요."
+    "offlineBody": "메뉴 스캔과 리뷰 로드는 인터넷 연결이 필요해요. 저장된 스캔은 그대로 있어요.",
+    "linkFailed": "링크를 열 수 없어요",
+    "settingsFailed": "설정을 열 수 없어요"
   },
   "shell": {
     "placeholderNote": "탭 콘텐츠는 화면 모듈에 있어요"
@@ -843,7 +845,6 @@
     "selectedCount": "선택한 재료 {{count}}개",
     "noneSelectedYet": "아직 선택한 재료가 없어요",
     "clearSelection": "모두 해제",
-    "nothingToAvoid": "못 먹는 재료 없어요",
     "kidsBadge": "👶 아이에게도 순해요",
     "spiceDesc0": "안 매움으로 설정돼요. 음식마다 맵기 단계가 표시돼요.",
     "spiceDesc1": "순한맛보다 매운 음식에는 맵기 단계가 분명히 표시돼요.",
@@ -870,7 +871,6 @@
       "shellfish_allergy": "갑각류·조개 알레르기",
       "title": "식단·종교·알레르기를 알려주세요",
       "sub": "해당하는 항목을 고르면 관련 성분을 미리 선택해 드려요. 다음 화면에서 자유롭게 바꿀 수 있어요.",
-      "skip": "건너뛰고 직접 고를게요",
       "groupDiet": "식단",
       "groupReligion": "종교",
       "groupAllergy": "알레르기",
@@ -922,6 +922,7 @@
     "gateTitle": "업데이트가 필요해요",
     "gateBody": "이 버전은 더 이상 지원되지 않아요. 정확한 음식 안전 정보를 위해 업데이트해 주세요.",
     "gateCta": "지금 업데이트",
+    "storeFailed": "스토어를 열 수 없어요. 앱스토어나 Google Play 앱에서 업데이트해 주세요.",
     "nudgeText": "새 버전이 나왔어요",
     "nudgeCta": "업데이트"
   },

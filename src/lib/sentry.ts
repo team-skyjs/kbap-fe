@@ -33,9 +33,14 @@ export function initSentry(): void {
 
 /** 9/5 예진 승인: 5xx 관측 — 경로(쿼리 제거)·status·code 태그만(본문·헤더·PII 0),
  *  /auth/* 포함. react-query 5xx 재시도(1회)로 같은 실패가 이중 캡처되는 것 억제 —
- *  같은 status+path는 20초 중복창 1회만. */
+ *  같은 status+path는 20초 중복창 1회만.
+ *
+ *  P-378(KB-542): `request_id` 태그 추가 — 서버 RequestLoggingFilter가 모든 응답에
+ *  `x-request-id`를 심으므로 **값이 있으면 우리 서버까지 도달**(그 id로 서버 로그 직행),
+ *  **`'none'`이면 게이트웨이·중간 프록시가 낸 5xx**로 즉시 갈린다. 이 헤더는 서버가
+ *  발급한 상관관계 id일 뿐 PII가 아니다(기존 태그 규칙 그대로). */
 const recent5xx = new Map<string, number>();
-export function captureApi5xx(path: string, status: number, code?: string): void {
+export function captureApi5xx(path: string, status: number, code?: string, requestId?: string): void {
   // Codex #24 P2: 숫자 세그먼트 정규화 — 회원/리소스 id가 태그로 유입되는 것 방지
   // + 중복 억제 키 안정(같은 라우트의 id 변주가 별개 캡처로 새는 것 차단)
   const cleanPath = path.split('?')[0].replace(/\/\d+(?=\/|$)/g, '/:id');
@@ -45,7 +50,7 @@ export function captureApi5xx(path: string, status: number, code?: string): void
   recent5xx.set(key, now);
   Sentry.captureMessage('api_5xx', {
     level: 'warning',
-    tags: { path: cleanPath, status: String(status), ...(code ? { code } : {}) },
+    tags: { path: cleanPath, status: String(status), request_id: requestId || 'none', ...(code ? { code } : {}) },
   });
 }
 
