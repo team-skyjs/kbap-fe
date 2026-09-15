@@ -57,9 +57,15 @@ function usePaused(): boolean {
 export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode }) {
   const { width } = useWindowDimensions();
   const paused = usePaused();
-  const { index, onUserSwipe } = useAutoSlide(urls.length, paused);
+  const { index, onUserSwipe, pause } = useAutoSlide(urls.length, paused);
   const listRef = React.useRef<FlatList<string>>(null);
   const draggingRef = React.useRef(false);
+  const momentumRef = React.useRef(false);
+  const settleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => () => {
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+  }, []);
 
   // 2장째부터 미리 받아 둔다(첫 장은 CardPhoto 스켈레톤 규칙 그대로)
   React.useEffect(() => {
@@ -72,12 +78,38 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
     listRef.current?.scrollToOffset({ offset: index * width, animated: true });
   }, [index, width, urls.length]);
 
+  /** 사용자 제스처가 안착한 장으로 맞추고 타이머 재개. */
+  const settle = (offsetX: number) => {
+    draggingRef.current = false;
+    momentumRef.current = false;
+    const page = Math.round(offsetX / width);
+    onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
+  };
+
+  // Codex P2: 드래그 **시작 순간** 멈춘다 — 틱이 제스처·관성 도중 scrollToOffset을 쏘면
+  // 사용자가 고르던 장에서 화면이 끌려간다.
+  const onDragBegin = () => {
+    draggingRef.current = true;
+    momentumRef.current = false;
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    pause();
+  };
+
+  // 관성 없이 손을 떼는 경우엔 onMomentumScrollEnd가 안 온다 → 잠깐 기다려 관성이 시작되지
+  // 않으면 여기서 안착 처리(안 그러면 타이머가 멈춘 채 영영 재개되지 않는다)
+  const onDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = setTimeout(() => {
+      if (draggingRef.current && !momentumRef.current) settle(x);
+    }, 150);
+  };
+
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     // 프로그램 스크롤(타이머)은 드래그 없이 끝나므로 사용자 스와이프로 세지 않는다
     if (!draggingRef.current) return;
-    draggingRef.current = false;
-    const page = Math.round(e.nativeEvent.contentOffset.x / width);
-    onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    settle(e.nativeEvent.contentOffset.x);
   };
 
   return (
@@ -90,8 +122,10 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-        onScrollBeginDrag={() => {
-          draggingRef.current = true;
+        onScrollBeginDrag={onDragBegin}
+        onScrollEndDrag={onDragEnd}
+        onMomentumScrollBegin={() => {
+          momentumRef.current = true;
         }}
         onMomentumScrollEnd={onMomentumEnd}
         renderItem={({ item }) => (

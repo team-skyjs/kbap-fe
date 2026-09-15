@@ -217,3 +217,63 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
     expect(dots(tree).filter((d) => d.props.testID === 'hero-dot-active')).toHaveLength(1);
   });
 });
+
+describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 재개', () => {
+  const URLS = ['https://cdn/1.jpg', 'https://cdn/2.jpg', 'https://cdn/3.jpg', 'https://cdn/4.jpg'];
+  const WIDTH = 375;
+  const dotIdx = (t: ReactTestRenderer) =>
+    t.root
+      .findAll((n) => typeof n.type === 'string' && /^hero-dot/.test(String(n.props?.testID)))
+      .findIndex((n) => n.props.testID === 'hero-dot-active');
+  const list = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.props?.onScrollBeginDrag === 'function')[0];
+  const ev = (x: number) => ({ nativeEvent: { contentOffset: { x, y: 0 } } });
+
+  const renderIt = async () => {
+    const RN = require('react-native') as typeof import('react-native');
+    jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: WIDTH, height: 800, scale: 2, fontScale: 1 });
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<HeroGallery urls={URLS} />); });
+    await act(async () => { await Promise.resolve(); });
+    return tree;
+  };
+
+  it('틱 직전에 드래그를 시작하면 드래그 중엔 넘어가지 않는다', async () => {
+    const tree = await renderIt();
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 100); }); // 틱 100ms 전
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS * 3); }); // 드래그·관성이 길어도
+    expect(dotIdx(tree)).toBe(0); // 타이머가 화면을 끌어가지 않았다
+  });
+
+  it('관성 안착(onMomentumScrollEnd) = 그 장으로 맞추고 2초 뒤 다음 장', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { list(tree).props.onMomentumScrollBegin?.(ev(0)); });
+    act(() => { list(tree).props.onMomentumScrollEnd(ev(WIDTH * 2)); }); // 3번째 장에 안착
+    expect(dotIdx(tree)).toBe(2);
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 1); });
+    expect(dotIdx(tree)).toBe(2); // 안착 직후 2초는 정지
+    act(() => { jest.advanceTimersByTime(1); });
+    expect(dotIdx(tree)).toBe(3);
+  });
+
+  it('관성 없이 손을 떼도 영영 멈추지 않는다(안착 폴백)', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // momentum 이벤트 없음
+    act(() => { jest.advanceTimersByTime(200); }); // 폴백 대기(150ms) 경과
+    expect(dotIdx(tree)).toBe(1);
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    expect(dotIdx(tree)).toBe(2); // 재개됨
+  });
+
+  it('프로그램 스크롤(타이머)의 관성 종료는 사용자 스와이프로 세지 않는다', async () => {
+    const tree = await renderIt();
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 타이머로 1번 장
+    expect(dotIdx(tree)).toBe(1);
+    act(() => { list(tree).props.onMomentumScrollEnd(ev(0)); }); // 드래그 없이 온 종료 이벤트
+    expect(dotIdx(tree)).toBe(1); // 무시
+  });
+});
