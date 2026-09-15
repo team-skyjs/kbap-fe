@@ -33,26 +33,21 @@ function refToUrl(ref: string | null | undefined): string | null {
 
 /**
  * P-383(KB-566): 상세 갤러리 이미지 — **BE 필드명을 아는 곳은 이 함수 하나뿐이다.**
- * 계약(KB-565, dev Swagger 반영 전): `images: [{ id, imageUrl, isPrimary, sortOrder }]`,
- * 대표 먼저·소프트삭제 제외·0장이면 `[]`. Swagger에서 이름이 달라지면 여기만 고친다.
+ * 실계약(KB-565 BE PR #264): `images: [{ url, isPrimary }]` — `id`·`sortOrder`·`imageUrl` 없음.
+ * **서버가 이미 대표 먼저 → sort_order → id로 정렬해 보낸다 → 응답 순서를 그대로 쓴다
+ * (재정렬 금지 — 클라 정렬은 서버 정본 순서를 흐트러뜨릴 수 있다).**
  *
  * - 필드 부재(구 서버) = undefined → 화면이 photoUrl 정적 렌더(현행)
- * - 서버 정렬을 믿되 방어적으로 한 번 더 정렬(대표 → sortOrder 오름차순)
- * - 절대 URL만 통과(refToUrl), 중복 URL 제거
+ * - 갤러리 행 없음 = `[]` (서버가 imageRef로 지어내지 않음) → 역시 정적 렌더
+ * - 절대 URL만 통과(refToUrl), 중복 URL 제거(앞선 것 = 서버 우선순위 유지)
  */
 export function adaptFoodImages(wire: unknown): string[] | undefined {
   const raw = (wire as { images?: unknown }).images;
   if (!Array.isArray(raw)) return undefined;
-  type Img = { imageUrl?: unknown; isPrimary?: unknown; sortOrder?: unknown };
-  const rank = (i: Img) => (i.isPrimary === true ? 0 : 1);
-  const order = (i: Img) => (typeof i.sortOrder === 'number' ? i.sortOrder : Number.MAX_SAFE_INTEGER);
-  const urls = (raw as Img[])
-    .filter((i): i is Img => !!i && typeof i === 'object')
-    .slice()
-    .sort((a, b) => rank(a) - rank(b) || order(a) - order(b))
-    .map((i) => refToUrl(typeof i.imageUrl === 'string' ? i.imageUrl : null))
+  const urls = raw
+    .map((i) => refToUrl(i && typeof i === 'object' && typeof (i as { url?: unknown }).url === 'string' ? (i as { url: string }).url : null))
     .filter((u): u is string => !!u);
-  return [...new Set(urls)];
+  return [...new Set(urls)]; // Set은 삽입 순서를 보존한다 — 첫 등장 위치 유지
 }
 
 /** 중첩 평점 단위 → 내부 집계. 계약 "리뷰 없으면 0.0·0(null 없음)" → count 0이면

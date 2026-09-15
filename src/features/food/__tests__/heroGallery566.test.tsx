@@ -131,28 +131,42 @@ describe('useAutoSlide — 타이머 규칙', () => {
   });
 });
 
-describe('adaptFoodImages — BE 필드명을 아는 유일한 곳', () => {
+describe('adaptFoodImages — BE 필드명을 아는 유일한 곳(실계약 KB-565 PR #264)', () => {
   it('필드 부재(구 서버) = undefined → 화면이 현행 정적 히어로', () => {
     expect(adaptFoodImages({ imageRef: 'https://cdn/a.jpg' })).toBeUndefined();
   });
 
-  it('0장 = [] (정적 히어로 유지)', () => {
+  it('갤러리 행 없음 = [] (서버가 imageRef로 지어내지 않음 → 정적 히어로 유지)', () => {
     expect(adaptFoodImages({ images: [] })).toEqual([]);
   });
 
-  it('대표 먼저 → sortOrder 오름차순, 절대 URL만, 중복 제거', () => {
+  it('키는 url — 절대 URL만, 중복 제거', () => {
     expect(
       adaptFoodImages({
         images: [
-          { id: 3, imageUrl: 'https://cdn/c.jpg', isPrimary: false, sortOrder: 2 },
-          { id: 2, imageUrl: 'https://cdn/b.jpg', isPrimary: false, sortOrder: 1 },
-          { id: 1, imageUrl: 'https://cdn/p.jpg', isPrimary: true, sortOrder: 9 },
-          { id: 4, imageUrl: 'bare-filename.png', isPrimary: false, sortOrder: 0 }, // 호스트 없음 = 제외
-          { id: 5, imageUrl: 'https://cdn/b.jpg', isPrimary: false, sortOrder: 5 }, // 중복 = 제외
+          { url: 'https://cdn/p.jpg', isPrimary: true },
+          { url: 'bare-filename.png', isPrimary: false }, // 호스트 없음 = 제외
+          { url: 'https://cdn/b.jpg', isPrimary: false },
+          { url: 'https://cdn/p.jpg', isPrimary: false }, // 중복 = 제외(첫 등장 유지)
+          { imageUrl: 'https://cdn/old-key.jpg' }, // 옛 가정 키(imageUrl)는 계약에 없다 = 무시
           null,
         ],
       }),
-    ).toEqual(['https://cdn/p.jpg', 'https://cdn/b.jpg', 'https://cdn/c.jpg']);
+    ).toEqual(['https://cdn/p.jpg', 'https://cdn/b.jpg']);
+  });
+
+  it('서버가 보낸 순서를 그대로 쓴다 — 재정렬 금지(isPrimary가 뒤에 와도 옮기지 않는다)', () => {
+    // 서버가 대표 먼저 → sort_order → id로 이미 정렬해 보낸다. 클라가 isPrimary로 다시
+    // 정렬하면 서버 정본 순서를 흐트러뜨린다 — 입력 순서가 곧 출력 순서여야 한다.
+    expect(
+      adaptFoodImages({
+        images: [
+          { url: 'https://cdn/1.jpg', isPrimary: false },
+          { url: 'https://cdn/2.jpg', isPrimary: true },
+          { url: 'https://cdn/3.jpg', isPrimary: false },
+        ],
+      }),
+    ).toEqual(['https://cdn/1.jpg', 'https://cdn/2.jpg', 'https://cdn/3.jpg']);
   });
 });
 
@@ -174,10 +188,10 @@ describe('소스 잠금 — 배선·금지 규칙', () => {
     expect(g).toContain('dot: { width: 6, height: 6, borderRadius: 3 }'); // 상태 전환은 색만(프레임 불변)
   });
 
-  it('BE 필드명(imageUrl·isPrimary·sortOrder)은 어댑터 밖에 새지 않는다', () => {
+  it('BE 필드명은 어댑터 밖에 새지 않는다', () => {
     for (const f of ['src/app/food/[id]/index.tsx', 'src/features/food/HeroGallery.tsx', 'src/features/food/useAutoSlide.ts']) {
       const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-      expect(code).not.toMatch(/isPrimary|sortOrder/);
+      expect(code).not.toMatch(/isPrimary|sortOrder/); // 계약 키는 어댑터 안에만
     }
   });
 });
