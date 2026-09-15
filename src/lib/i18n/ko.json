@@ -1010,6 +1010,10 @@
     "dishes": "메뉴",
     "receiptDate": "날짜",
     "receiptLocation": "장소",
-    "receiptTotal": "합계"
+    "receiptTotal": "합계",
+    "shareMenuMore": "외 {{count}}",
+    "sharePreviewCaption": "9:16 스토리 카드 미리보기",
+    "shareDownload": "이미지\n저장",
+    "shareInstagram": "인스타그램\n스토리"
   }
 }

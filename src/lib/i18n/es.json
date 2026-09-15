@@ -1011,6 +1011,10 @@
     "dishes": "Platos",
     "receiptDate": "FECHA",
     "receiptLocation": "UBICACIÓN",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} más",
+    "sharePreviewCaption": "Vista previa de la tarjeta 9:16",
+    "shareDownload": "Guardar\nimagen",
+    "shareInstagram": "Historia de\nInstagram"
   }
 }

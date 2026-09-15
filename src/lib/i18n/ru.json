@@ -1013,6 +1013,10 @@
     "dishes": "Блюда",
     "receiptDate": "ДАТА",
     "receiptLocation": "МЕСТО",
-    "receiptTotal": "ИТОГО"
+    "receiptTotal": "ИТОГО",
+    "shareMenuMore": "+{{count}} ещё",
+    "sharePreviewCaption": "Предпросмотр карточки 9:16",
+    "shareDownload": "Сохранить\nфото",
+    "shareInstagram": "История\nInstagram"
   }
 }

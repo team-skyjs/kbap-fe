@@ -4,8 +4,9 @@
  * 8px 디바이더 · "Dishes" + dish-item 리스트(4150:14675 — 썸네일 58 r4, xN + 환산가.
  * RiskBadge는 items 위험도 계약 부재로 생략) · FixedBottom outline "Write a review".
  *
- * 생략(발주 규정·REPORTS): 사진 슬롯 4개(주문 사진 기능 부재) · 공유 섹션(스토리
- * 카드/다운로드 — 공유 기능 부재, 기획 필요). 데이터 훅·뷰어 무변.
+ * 생략(발주 규정·REPORTS): 사진 슬롯 4개(주문 사진 기능 부재). 데이터 훅·뷰어 무변.
+ *
+ * P-380(KB-518): 하단 공유 섹션 부활 — 스토리 카드 미리보기 + 저장/인스타 버튼.
  */
 import * as React from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -20,6 +21,8 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { useOrderDetail } from '@/lib/data/useOrders';
+import { OrderShareSection } from '@/features/order/OrderShareCard';
+import { shareMenuLine, sharePlaceName } from '@/features/order/shareCard';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { convertKrw, currencyForCountry } from '@/lib/exchange';
@@ -86,10 +89,14 @@ export default function OrderDetailScreen() {
                 <View style={styles.rcptLine} />
                 <View style={styles.rcptRow} testID="order-total">
                   <Text style={styles.rcptLbl}>{t('myFoods.receiptTotal')}</Text>
-                  <Text style={styles.rcptTotal}>
-                    {formatKrw(q.data.totalPrice)}
-                    {conv(q.data.totalPrice) ? ` · ${conv(q.data.totalPrice)}` : ''}
-                  </Text>
+                  {/* P-196(9/14 예진 재확인): 원화·환산가 사이 가운뎃점 폐기 — 문자 구분자
+                      대신 gap으로 가른다(공유 카드 메타줄과 같은 처리) */}
+                  <View style={styles.rcptTotalRow}>
+                    <Text style={styles.rcptTotal}>{formatKrw(q.data.totalPrice)}</Text>
+                    {!!conv(q.data.totalPrice) && (
+                      <Text style={styles.rcptTotalConv}>{conv(q.data.totalPrice)}</Text>
+                    )}
+                  </View>
                 </View>
               </>
             )}
@@ -136,6 +143,28 @@ export default function OrderDetailScreen() {
               </Pressable>
             ))}
           </View>
+
+          {/* P-380(KB-518) 공유 카드 — 사진 0장이면 섹션 자체를 숨긴다(빈 카드 금지).
+              가게명은 place.name → roadAddress 3단 폴백(place는 dev 미배포 — 4단계에서 배선).
+              버튼 동작은 4단계(캡처·저장·공유)에서 붙는다. */}
+          {q.data.thumbnails.length > 0 && (
+            <OrderShareSection
+              card={{
+                photos: q.data.thumbnails,
+                placeName: sharePlaceName({ roadAddress: q.data.roadAddress }),
+                menuLine: shareMenuLine(
+                  q.data.items.map((it) => it.menuName),
+                  (count) => t('myFoods.shareMenuMore', { count }),
+                ),
+                // 도시는 place.address(사용자 언어)가 올 때만 — roadAddress는 한국어라
+                // 파싱해도 시안의 "Seoul"이 안 나오고, 카드를 보는 사람은 외국인이다
+                metaDate: formatOrderDate(q.data.orderedAt),
+              }}
+              caption={t('myFoods.sharePreviewCaption')}
+              downloadLabel={t('myFoods.shareDownload')}
+              instagramLabel={t('myFoods.shareInstagram')}
+            />
+          )}
         </ScrollView>
       )}
 
@@ -181,7 +210,9 @@ const styles = StyleSheet.create({
   rcptVal: { fontSize: 14, fontWeight: '500', color: '#1C1E21' },
   rcptValWrap: { flex: 1, textAlign: 'right' },
   rcptLine: { height: 1, backgroundColor: C.line2 },
+  rcptTotalRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 }, // 구분자 문자 대신 gap(P-196)
   rcptTotal: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
+  rcptTotalConv: { fontSize: 15, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
   divider8: { height: 8, backgroundColor: '#F5F5F5' }, // A-OD-02
 
