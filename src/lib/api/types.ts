@@ -66,6 +66,15 @@ export interface User {
   dietCategories?: string[];
   /** P-165(#145): 유저 통화(ISO-4217) — 서버 정본, null/생략 = 미설정(국적 폴백). */
   currency?: string | null;
+  /** P-384(KB-442): 스캔 쿼터 — 서버 정본. null = 구서버(필드 부재)·판별 불가 → 게이트·넛지 없음. */
+  scanQuota?: ScanQuota | null;
+}
+
+export interface ScanQuota {
+  count: number;
+  limit: number;
+  unlocked: boolean;
+  remaining: number | 'unlimited';
 }
 
 export interface UserUpdate {

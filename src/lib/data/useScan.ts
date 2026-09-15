@@ -9,7 +9,8 @@
  * items, photo-only items (idx=null — 리스트
  * 전용), plus the `degraded` flag (정제 실패/부재 → 안내 배너).
  */
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import i18n from '../i18n';
 import { api, apiLang } from '@/lib/api/client';
 import type { ScanPayload, ScanRequest } from '@/lib/api/scanTypes';
 import {
@@ -143,9 +144,13 @@ export async function postScan({ items, photo, currency, ticket: preTicket }: Sc
 }
 
 export function useScan() {
+  const qc = useQueryClient();
   return useMutation({
     mutationKey: ['scans'],
     mutationFn: postScan,
+    // P-384(KB-442): 성공 스캔이 쿼터를 소비 — 잔여는 서버 재조회가 정본(클라 -1 금지).
+    // exact = ['me','reviews'] 등 형제 키 불필요 재조회 방지.
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['me', i18n.language], exact: true }),
   });
 }
 
