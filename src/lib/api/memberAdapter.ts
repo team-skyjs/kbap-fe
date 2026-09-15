@@ -12,7 +12,7 @@
  *   - email ← 계약에 없음(소셜 전용) → undefined
  */
 import { reportProfileContractDrift } from '../sentry';
-import type { Ranking, RestrictionKind, User } from './types';
+import type { Ranking, RestrictionKind, ScanQuota, User } from './types';
 import type { SpiceChoice } from '@/lib/spice';
 import { wireToSpiceChoice } from './spiceAdapter';
 
@@ -50,6 +50,30 @@ export interface MyProfileWire {
   currency?: string | null;
   onboardingCompleted: boolean;
   ranking: RankingSummaryWire;
+  /** P-384(KB-442, BE #234): 스캔 쿼터 — prod 미배포 동안 부재. */
+  scanCount?: number;
+  freeScanLimit?: number;
+  scanUnlocked?: boolean;
+  /** 잔여 무료 횟수 — 무제한(unlocked)이면 null(Swagger). -1은 문서에 없지만 무제한 센티널로 방어. */
+  scanRemaining?: number | null;
+}
+
+/** P-384(KB-442): 쿼터 정규화. scanUnlocked 부재 = 구서버 → null(판별 불가 — 클라가 막지 않는다,
+ *  최종 판정은 서버 SCAN-004). null/-1 잔여 = 'unlimited'. */
+export function adaptScanQuota(wire: Pick<MyProfileWire, 'scanCount' | 'freeScanLimit' | 'scanUnlocked' | 'scanRemaining'>): ScanQuota | null {
+  if (typeof wire.scanUnlocked !== 'boolean') return null;
+  const r = wire.scanRemaining;
+  return {
+    count: wire.scanCount ?? 0,
+    limit: wire.freeScanLimit ?? 0,
+    unlocked: wire.scanUnlocked,
+    remaining: wire.scanUnlocked || r == null || r < 0 ? 'unlimited' : r,
+  };
+}
+
+/** 소진 = 스캔 탭 사전 안내·리뷰 탭 넛지의 단일 규칙. */
+export function isScanQuotaExhausted(q: ScanQuota | null | undefined): boolean {
+  return !!q && !q.unlocked && q.remaining === 0;
 }
 
 export interface ProfileUpdateWire {
@@ -155,5 +179,6 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     onboardingCompleted: wire.onboardingCompleted,
     // P-243: 식이 카테고리 서버 정본(BE #179) — 부재(구응답) = 빈 배열
     dietCategories: Array.isArray(wire.dietCategories) ? wire.dietCategories : [],
+    scanQuota: adaptScanQuota(wire),
   };
 }

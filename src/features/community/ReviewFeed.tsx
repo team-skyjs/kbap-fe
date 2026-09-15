@@ -29,6 +29,7 @@ import { FeedCard } from '@/features/review/FeedCard';
 import { IlloSpeechBubble } from '@/components/design4Assets';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
+import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useUnreadCount } from '@/lib/notifications/inbox';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
@@ -39,10 +40,6 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
 const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'];
-// Q1(9/5)·KB-435: GET /api/members/me/profile(MyProfileResponse)에 scanCount·
-// freeScanLimit·scanUnlocked·scanRemaining 추가 예정(BE PR #234) — prod 배포 후
-// `me.scanUnlocked === false && me.scanRemaining === 0`으로 교체(그 전까지 숨김).
-const SHOW_QUOTA_NUDGE = false;
 
 export function ReviewFeed() {
   const router = useRouter();
@@ -134,9 +131,8 @@ export function ReviewFeed() {
                   <IconChevronDown size={16} color="#4B4F58" />
                 </Pressable>
               </View>
-              {/* 9/5 예진 판정(Q1)·KB-435: 쿼터 넛지 카드(4150:17089) — 구현해두고 숨김.
-                  배선 지점: 위 SHOW_QUOTA_NUDGE (profile 응답 scanUnlocked/scanRemaining). */}
-              {SHOW_QUOTA_NUDGE && (
+              {/* 9/5 예진 판정(Q1)·KB-435 쿼터 넛지 카드(4150:17089) — P-384(KB-442): 회원·무료 소진·미해금만 */}
+              {!isGuest && isScanQuotaExhausted(me?.scanQuota) && (
                 <View style={styles.nudge} testID="quota-nudge">
                   <IlloSpeechBubble height={40} />
                   <View style={{ flex: 1, minWidth: 0, gap: 2 }}>

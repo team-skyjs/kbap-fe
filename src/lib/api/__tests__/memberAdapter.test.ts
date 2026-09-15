@@ -4,7 +4,7 @@
  * 새면 칩에 "-1/10"이 노출되는 오작동 — 0(맵지 않음, 유효값)과의 경계가 핵심.
  * P-004(KB-149): profileImageUrl 왕복 매핑도 잠근다.
  */
-import { adaptProfile, adaptSpice, isDefaultProfileImage, providerLabelKey, type MyProfileWire } from '../memberAdapter';
+import { adaptProfile, adaptScanQuota, adaptSpice, isDefaultProfileImage, isScanQuotaExhausted, providerLabelKey, type MyProfileWire } from '../memberAdapter';
 
 describe('providerLabelKey (P-029/KB-203 — 연동 계정 라벨)', () => {
   it('APPLE→애플 / GOOGLE→구글 / 미지원·누락→중립 폴백(빈 값 금지)', () => {
@@ -101,5 +101,46 @@ describe('adaptProfile.profileImageUrl (P-004 KB-149)', () => {
   it('provider 매핑 (P-029) — wire 그대로, 누락은 undefined', () => {
     expect(adaptProfile({ ...wire, provider: 'APPLE' }, null).provider).toBe('APPLE');
     expect(adaptProfile(wire, null).provider).toBeUndefined();
+  });
+});
+
+describe('P-384(KB-442): 스캔 쿼터 정규화 (MyProfileResponse scan*)', () => {
+  const q = (scanUnlocked: boolean | undefined, scanRemaining: number | null | undefined) =>
+    adaptScanQuota({ scanCount: 3, freeScanLimit: 3, scanUnlocked, scanRemaining });
+
+  it('정수 잔여 = 그대로 (0 포함)', () => {
+    expect(q(false, 2)).toEqual({ count: 3, limit: 3, unlocked: false, remaining: 2 });
+    expect(q(false, 0)?.remaining).toBe(0);
+  });
+
+  it('null(Swagger: 해금 시) · -1(센티널 방어) = unlimited', () => {
+    expect(q(true, null)?.remaining).toBe('unlimited');
+    expect(q(false, null)?.remaining).toBe('unlimited');
+    expect(q(false, -1)?.remaining).toBe('unlimited');
+    expect(q(true, 0)?.remaining).toBe('unlimited'); // 해금이 정본 — 잔여 숫자 무시
+  });
+
+  it('scanUnlocked 부재(prod 구서버) = null — 판별 불가, 클라가 막지 않는다', () => {
+    expect(q(undefined, 0)).toBeNull();
+    expect(adaptScanQuota({})).toBeNull();
+  });
+
+  it('소진 판정 = 미해금 && 잔여 0 만', () => {
+    expect(isScanQuotaExhausted(q(false, 0))).toBe(true);
+    expect(isScanQuotaExhausted(q(false, 1))).toBe(false);
+    expect(isScanQuotaExhausted(q(true, 0))).toBe(false);
+    expect(isScanQuotaExhausted(q(false, -1))).toBe(false);
+    expect(isScanQuotaExhausted(null)).toBe(false);
+    expect(isScanQuotaExhausted(undefined)).toBe(false);
+  });
+
+  it('adaptProfile 배선 — 와이어 필드가 User.scanQuota로', () => {
+    const wire: MyProfileWire = {
+      memberId: 1, nickname: 'Y', avoidanceSubstanceCodes: [], countryCode: 'KR', appLanguage: 'en',
+      onboardingCompleted: true, ranking: { tier: 'bronze', level: 1, score: 0 },
+    };
+    expect(adaptProfile({ ...wire, scanCount: 3, freeScanLimit: 3, scanUnlocked: false, scanRemaining: 0 }, null).scanQuota)
+      .toEqual({ count: 3, limit: 3, unlocked: false, remaining: 0 });
+    expect(adaptProfile(wire, null).scanQuota).toBeNull();
   });
 });

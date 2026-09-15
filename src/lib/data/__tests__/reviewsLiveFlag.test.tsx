@@ -147,7 +147,10 @@ it('P-211: 작성 성공 → 전역 피드·음식·내 리뷰 캐시 전부 무
   qc.setQueryData<InfiniteData<ReviewPage>>(['reviews', 'global'], seed);
   qc.setQueryData<InfiniteData<ReviewPage>>(['food', '7', 'reviews', 'all'], seed);
   qc.setQueryData<Review[]>(['me', 'reviews'], []);
+  qc.setQueryData(['me', 'en'], { id: '9' });
   await runCreate(qc, { foodId: '7', rating: 5 });
+  // P-384(KB-442): 리뷰 = 스캔 해금 조건 — 프로필 쿼터 재조회
+  expect(qc.getQueryState(['me', 'en'])?.isInvalidated).toBe(true);
   expect(qc.getQueryState(['reviews', 'global'])?.isInvalidated).toBe(true);
   expect(qc.getQueryState(['food', '7', 'reviews', 'all'])?.isInvalidated).toBe(true);
   expect(qc.getQueryState(['me', 'reviews'])?.isInvalidated).toBe(true);
