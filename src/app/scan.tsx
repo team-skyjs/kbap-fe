@@ -184,14 +184,22 @@ export default function Scan() {
   const quotaRef = useRef(me?.scanQuota);
   quotaRef.current = me?.scanQuota;
   const disprovenQuota = useRef<unknown>(undefined);
+  const lockFromProfile = useCallback(() => {
+    const quota = quotaRef.current;
+    if (!isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
+    quotaLockRef.current = true;
+    setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
+    setPhase('error');
+  }, []);
+  // Codex #159 P2: 포커스 유지 중 재조회로 소진이 도착해도(3번째 스캔 성공 → 다시 찍기) 촬영 전에 안내.
+  // 카메라 단계에서만 — 스캔 중·결과 화면은 끊지 않는다.
+  useEffect(() => {
+    if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
+  }, [phase, me?.scanQuota, isGuest, lockFromProfile]);
   const preflight = useCallback(async () => {
     if (!scanV2Enabled()) return;
     const quota = quotaRef.current;
-    if (isScanQuotaExhausted(quota) && quota !== disprovenQuota.current && !quotaLockRef.current) {
-      quotaLockRef.current = true;
-      setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
-      setPhase('error');
-    }
+    lockFromProfile();
     try {
       preTicket.current = await issueScanTicket();
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
@@ -217,7 +225,7 @@ export default function Scan() {
         setPhase('error');
       }
     }
-  }, []);
+  }, [lockFromProfile]);
   useFocusEffect(
     useCallback(() => {
       if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입

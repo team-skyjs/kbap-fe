@@ -193,3 +193,17 @@ it('반증된 프로필은 재포커스에도 다시 잠그지 않음 · 재조�
   await refocus();
   expect(quotaShown(tree)).toBe(true);
 });
+
+it('Codex #159 P2: 포커스 유지 중 재조회로 소진 도착 = 카메라 단계에서 촬영 전 안내(재포커스 불필요)', async () => {
+  const ok = Promise.resolve('t');
+  mockIssue.mockReturnValue(ok);
+  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = renderer.create(<Scan />); await ok; });
+  expect(quotaShown(tree)).toBe(false);
+  const callsBefore = mockIssue.mock.calls.length;
+  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } }); // 스캔 성공 후 재조회
+  act(() => { tree.update(<Scan />); });
+  expect(quotaShown(tree)).toBe(true);
+  expect(mockIssue.mock.calls.length).toBe(callsBefore); // 포커스 재실행 아님 — 프로필 변화만으로
+});
