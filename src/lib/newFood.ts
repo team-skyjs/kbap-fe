@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 /**
  * isNewFood (P-385/KB-363) — 음식 NEW 배지 규칙은 이 한 곳에만 둔다.
  *
@@ -16,4 +18,17 @@ export function isNewFood(publishedAt: string | null | undefined, now: number = 
   if (!Number.isFinite(published)) return false;
   const age = now - published;
   return age >= 0 && age < NEW_FOOD_WINDOW_MS;
+}
+
+/** 화면이 열려 있는 동안 24시간 경계를 넘으면 배지를 내린다(렌더 시각 고정 판정의 만료 누락 방지). */
+export function useIsNewFood(publishedAt: string | null | undefined): boolean {
+  const [, expire] = useState(0);
+  const isNew = isNewFood(publishedAt);
+  useEffect(() => {
+    if (!isNew) return;
+    const left = Date.parse(publishedAt!) + NEW_FOOD_WINDOW_MS - Date.now();
+    const id = setTimeout(() => expire((n) => n + 1), Math.max(0, left));
+    return () => clearTimeout(id);
+  }, [isNew, publishedAt]);
+  return isNew;
 }

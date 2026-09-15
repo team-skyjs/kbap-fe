@@ -554,3 +554,20 @@ describe('P-385(KB-363) — 상세 NEW 배지 = 공개 24시간 이내만', () =
     expect(hasBadge(render(<FoodDetailScreen />))).toBe(false);
   });
 });
+
+it('P-385 Codex P2: 화면을 열어둔 채 24시간 경계를 넘으면 배지가 내려간다', () => {
+  jest.useFakeTimers();
+  try {
+    const HOUR = 60 * 60 * 1000;
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { publishedAt: new Date(Date.now() - 23 * HOUR).toISOString() }), isLoading: false, error: null, refetch: jest.fn() });
+    const tree = render(<FoodDetailScreen />);
+    const has = () => tree.root.findAll((n) => n.props?.testID === 'detail-new-badge').length > 0;
+    expect(has()).toBe(true);
+    act(() => { jest.advanceTimersByTime(HOUR - 1000); });
+    expect(has()).toBe(true);
+    act(() => { jest.advanceTimersByTime(2000); });
+    expect(has()).toBe(false);
+  } finally {
+    jest.useRealTimers();
+  }
+});
