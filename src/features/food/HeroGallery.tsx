@@ -27,7 +27,10 @@ const isForeground = (s: string | null | undefined) => s !== 'background' && s !
 function usePaused(): boolean {
   const [focused, setFocused] = React.useState(true);
   const [active, setActive] = React.useState(isForeground(AppState.currentState));
-  const [reduceMotion, setReduceMotion] = React.useState(false);
+  // Codex P2(8R): 동작 줄이기 설정은 **확인되기 전까지 켜진 것으로 본다**(null = 미확인 → 정지).
+  // 조회가 늦거나 실패해도 그 설정을 켠 사용자에게 애니메이션이 먼저 나가면 안 된다.
+  // (AppState와 반대로 두는 이유: 이건 접근성 선호라 불확실하면 움직이지 않는 쪽이 안전하다.)
+  const [reduceMotion, setReduceMotion] = React.useState<boolean | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -45,7 +48,7 @@ function usePaused(): boolean {
     let alive = true;
     void AccessibilityInfo.isReduceMotionEnabled()
       .then((v) => alive && setReduceMotion(!!v))
-      .catch(() => {});
+      .catch(() => {}); // 실패 = 미확인 유지(null) → 정지. 설정 변경 이벤트가 오면 그때 반영
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => setReduceMotion(!!v));
     return () => {
       alive = false;
@@ -53,7 +56,7 @@ function usePaused(): boolean {
     };
   }, []);
 
-  return !focused || !active || reduceMotion;
+  return !focused || !active || reduceMotion !== false;
 }
 
 export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode }) {
@@ -142,7 +145,10 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         onScroll={onScroll}
         scrollEventThrottle={16}
         onTouchStart={press}
-        onTouchEnd={() => release()}
+        // Codex P2(8R): 손가락마다 onTouchEnd가 온다 — 남은 손가락이 있으면 아직 누르고 있는 것
+        onTouchEnd={(e) => {
+          if ((e.nativeEvent.touches?.length ?? 0) === 0) release();
+        }}
         onTouchCancel={() => release()}
         onScrollBeginDrag={press}
         onScrollEndDrag={onDragEnd}

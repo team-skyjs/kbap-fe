@@ -155,6 +155,13 @@ describe('adaptFoodImages — BE 필드명을 아는 유일한 곳(실계약 KB-
     ).toEqual(['https://cdn/p.jpg', 'https://cdn/b.jpg']);
   });
 
+  it('최종 계약 {url}만 와도 동일 — isPrimary 등 추가 키가 있든 없든 결과가 같다', () => {
+    const onlyUrl = { images: [{ url: 'https://cdn/r.jpg' }, { url: 'https://cdn/s.jpg' }] };
+    const withExtra = { images: [{ url: 'https://cdn/r.jpg', isPrimary: false }, { url: 'https://cdn/s.jpg', isPrimary: true, id: 9, sortOrder: 0 }] };
+    expect(adaptFoodImages(onlyUrl)).toEqual(['https://cdn/r.jpg', 'https://cdn/s.jpg']);
+    expect(adaptFoodImages(withExtra)).toEqual(adaptFoodImages(onlyUrl)); // 추가 키는 순서·결과에 영향 0
+  });
+
   it('서버가 보낸 순서를 그대로 쓴다 — 재정렬 금지(isPrimary가 뒤에 와도 옮기지 않는다)', () => {
     // 서버가 대표 먼저 → sort_order → id로 이미 정렬해 보낸다. 클라가 isPrimary로 다시
     // 정렬하면 서버 정본 순서를 흐트러뜨린다 — 입력 순서가 곧 출력 순서여야 한다.
@@ -236,6 +243,34 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
     expect(g).not.toContain("AppState.currentState === 'active'");
   });
 
+  it('Codex P2(8R) — 동작 줄이기 조회가 끝나기 전엔 자동 넘김이 시작되지 않는다', async () => {
+    let resolveRM!: (v: boolean) => void;
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockReturnValue(new Promise<boolean>((r) => { resolveRM = r; }));
+    jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<HeroGallery urls={URLS} />); });
+    // 틱은 하나씩 따로 진행한다 — 3장에 3틱을 몰면 순환해 0으로 돌아와 '안 움직임'과 구분이 안 된다
+    for (let k = 0; k < 2; k++) {
+      act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 조회 미해결 상태로 시간 경과
+      expect(activeDot(tree)).toBe(0); // 설정을 모르는 동안 움직이지 않는다
+    }
+    await act(async () => { resolveRM(false); await Promise.resolve(); }); // 꺼져 있음이 확인됨
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    expect(activeDot(tree)).toBe(1); // 그제서야 시작
+  });
+
+  it('Codex P2(8R) — 동작 줄이기 조회가 실패하면 계속 정지(애니메이션을 먼저 내보내지 않는다)', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockRejectedValue(new Error('unavailable'));
+    jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<HeroGallery urls={URLS} />); });
+    await act(async () => { await Promise.resolve(); });
+    for (let k = 0; k < 2; k++) {
+      act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 순환 착시 방지 — 틱마다 확인
+      expect(activeDot(tree)).toBe(0);
+    }
+  });
+
   it('도트 = 장수만큼·현재 장만 활성(1개)', async () => {
     const tree = await renderGallery(false);
     expect(dots(tree)).toHaveLength(3);
@@ -252,6 +287,7 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
       .findIndex((n) => n.props.testID === 'hero-dot-active');
   const list = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.props?.onScrollBeginDrag === 'function')[0];
   const ev = (x: number) => ({ nativeEvent: { contentOffset: { x, y: 0 } } });
+  const touchEv = (remaining: number) => ({ nativeEvent: { touches: Array.from({ length: remaining }, () => ({})) } });
   const tick = (ms: number) => act(() => { jest.advanceTimersByTime(ms); });
 
   const renderIt = async () => {
@@ -374,11 +410,23 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
   it('드래그 없이 닿았다 떼면 스크롤이 멈춘 지금 장에서 2초 뒤 재개', async () => {
     const tree = await renderIt();
     act(() => { list(tree).props.onTouchStart(); });
-    act(() => { list(tree).props.onTouchEnd(); });
+    act(() => { list(tree).props.onTouchEnd(touchEv(0)); }); // 남은 손가락 0
     tick(QUIET_MS);
     expect(dotIdx(tree)).toBe(0); // 제자리
     tick(AUTO_SLIDE_MS);
     expect(dotIdx(tree)).toBe(1); // 재개됨
+  });
+
+  it('Codex P2(8R) — 두 손가락 중 하나만 떼면 아직 누르고 있는 것(재개 안 함)', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onTouchStart(); }); // 첫 손가락
+    act(() => { list(tree).props.onTouchStart(); }); // 둘째 손가락
+    act(() => { list(tree).props.onTouchEnd(touchEv(1)); }); // 한 손가락 뗌 — 1개 남음
+    tick(QUIET_MS + AUTO_SLIDE_MS * 3);
+    expect(dotIdx(tree)).toBe(0); // 남은 손가락 아래에서 넘어가지 않음
+    act(() => { list(tree).props.onTouchEnd(touchEv(0)); }); // 마지막 손가락 뗌
+    tick(QUIET_MS + AUTO_SLIDE_MS);
+    expect(dotIdx(tree)).toBe(1); // 이제 재개
   });
 
   it('터치가 네이티브 스크롤에 뺏겨 취소돼도(onTouchCancel) 재개된다', async () => {

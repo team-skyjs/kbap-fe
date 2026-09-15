@@ -33,8 +33,8 @@ function refToUrl(ref: string | null | undefined): string | null {
 
 /**
  * P-383(KB-566): 상세 갤러리 이미지 — **BE 필드명을 아는 곳은 이 함수 하나뿐이다.**
- * 실계약(KB-565 BE PR #264): `images: [{ url, isPrimary }]` — `id`·`sortOrder`·`imageUrl` 없음.
- * **서버가 이미 대표 먼저 → sort_order → id로 정렬해 보낸다 → 응답 순서를 그대로 쓴다
+ * 최종 계약(KB-565 BE PR #264, 예진 결정): `images: [{ url }]` — 대표 = `imageRef`와 같은 URL이
+ * **항상 첫 번째**. `isPrimary`·`id`·`sortOrder`는 없다(와도 무시). **응답 순서를 그대로 쓴다
  * (재정렬 금지 — 클라 정렬은 서버 정본 순서를 흐트러뜨릴 수 있다).**
  *
  * - 필드 부재(구 서버) = undefined → 화면이 photoUrl 정적 렌더(현행)
