@@ -24,6 +24,10 @@ export function useAutoSlide(count: number, paused: boolean) {
   pausedRef.current = paused;
   const countRef = React.useRef(count);
   countRef.current = count;
+  // Codex P2(9R): 제스처 정지는 **지속 상태**여야 한다. 타이머만 끄면(stop) 누르고 있는 동안
+  // 외부 정지(동작 줄이기 조회 해소·포커스 복귀 등)가 풀릴 때 효과가 start()를 불러 되살아난다.
+  // hold는 pause()로 켜지고 onUserSwipe(손 뗀 뒤 안착)로만 꺼진다.
+  const holdRef = React.useRef(false);
 
   const stop = React.useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -32,7 +36,7 @@ export function useAutoSlide(count: number, paused: boolean) {
 
   const start = React.useCallback(() => {
     stop();
-    if (countRef.current < 2 || pausedRef.current) return;
+    if (countRef.current < 2 || pausedRef.current || holdRef.current) return;
     timerRef.current = setInterval(() => setIndex((i) => (i + 1) % countRef.current), AUTO_SLIDE_MS);
   }, [stop]);
 
@@ -50,15 +54,19 @@ export function useAutoSlide(count: number, paused: boolean) {
   /** 사용자가 직접 넘겼을 때 — 그 장으로 맞추고 2초를 새로 센다. */
   const onUserSwipe = React.useCallback(
     (next: number) => {
+      holdRef.current = false; // 손을 뗐다 — 제스처 정지 해제
       setIndex(next);
       start();
     },
     [start],
   );
 
-  /** 드래그가 시작되는 순간 멈춘다(Codex P2) — 제스처·관성 중에 틱이 index를 바꾸면
-   *  프로그램 스크롤이 사용자가 고르던 장에서 화면을 끌어간다. 재개는 onUserSwipe(안착 장). */
-  const pause = stop;
+  /** 손가락이 닿는 순간 멈추고 **손을 뗄 때까지 유지**한다 — 그 사이 외부 정지가 풀려도
+   *  되살아나지 않는다(9R). 재개는 onUserSwipe(안착 장)로만. */
+  const pause = React.useCallback(() => {
+    holdRef.current = true;
+    stop();
+  }, [stop]);
 
   return { index, onUserSwipe, pause };
 }

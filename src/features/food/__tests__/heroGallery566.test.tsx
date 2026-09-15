@@ -123,6 +123,28 @@ describe('useAutoSlide — 타이머 규칙', () => {
     expect(out.current!.index).toBe(2); // 안착은 반영, 자동 넘김은 없음
   });
 
+  it('Codex P2(9R) — 누르고 있는 동안 외부 정지가 풀려도(동작 줄이기 조회 해소) 재개하지 않는다', () => {
+    const { out, rerender } = mountSlide(3, true); // 조회 미해결 = 정지
+    act(() => { out.current!.pause(); }); // 그 사이 손가락이 닿음
+    rerender(3, false); // 조회가 '꺼짐'으로 해소 → 외부 정지 풀림
+    for (let k = 0; k < 2; k++) {
+      act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+      expect(out.current!.index).toBe(0); // 손이 닿아 있으니 넘어가지 않는다(틱마다 확인 — 순환 착시 방지)
+    }
+    act(() => { out.current!.onUserSwipe(0); }); // 손을 뗌
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    expect(out.current!.index).toBe(1); // 이제 재개
+  });
+
+  it('Codex P2(9R) — 누르는 중 포커스 이탈·복귀가 있어도 손 뗄 때까지 유지', () => {
+    const { out, rerender } = mountSlide(3, false);
+    act(() => { out.current!.pause(); });
+    rerender(3, true); // blur
+    rerender(3, false); // 복귀 — 효과가 start()를 부른다
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    expect(out.current!.index).toBe(0);
+  });
+
   it('장수가 줄어 범위를 벗어나면 처음으로', () => {
     const { out, rerender } = mountSlide(4);
     act(() => { out.current!.onUserSwipe(3); });
