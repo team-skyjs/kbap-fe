@@ -721,7 +721,8 @@
     "errorBody": "We couldn't load this. The problem is on our end.",
     "offlineTitle": "You're offline",
     "offlineBody": "Connect to the internet to scan menus and load reviews. Your saved scans are still here.",
-    "linkFailed": "Couldn't open the link"
+    "linkFailed": "Couldn't open the link",
+    "settingsFailed": "Couldn't open Settings"
   },
   "shell": {
     "placeholderNote": "Tab content lives in the screen modules"
@@ -920,6 +921,7 @@
     "gateTitle": "Update required",
     "gateBody": "This version of K-Bap is no longer supported. Update to keep your food safety info accurate.",
     "gateCta": "Update now",
+    "storeFailed": "Couldn't open the store. Update from the App Store or Google Play app.",
     "nudgeText": "A new version is available",
     "nudgeCta": "Update"
   },

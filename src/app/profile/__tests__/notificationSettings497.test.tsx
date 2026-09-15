@@ -5,7 +5,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
-import { AppState, Linking, StyleSheet } from 'react-native';
+import { AppState, StyleSheet } from 'react-native';
 
 // KB-553: NotificationSheet가 useSheetSwipeDismiss(RNGH Pan)를 쓰므로 표면 목 필요(제스처 동작은 notificationSheet497이 검증)
 jest.mock('react-native-gesture-handler', () => {
@@ -63,7 +63,12 @@ const mockSession = { guest: false };
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockSession.guest }));
 jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: { push_pref_toggle: 'push_pref_toggle' } }));
 const mockOpen = jest.fn().mockResolvedValue(true);
-jest.mock('@/lib/openExternal', () => ({ openWebPage: (...a: unknown[]) => mockOpen(...a) }));
+const mockOpenSettings = jest.fn().mockResolvedValue(true);
+jest.mock('@/lib/openExternal', () => ({
+  openWebPage: (...a: unknown[]) => mockOpen(...a),
+  // P-381(KB-541 후속): 설정 열기도 공용 헬퍼 경유 — 실패 시 토스트는 헬퍼 자체 스위트가 잠근다
+  openAppSettings: (...a: unknown[]) => mockOpenSettings(...a),
+}));
 const mockAdapter = { getPermissionStatus: jest.fn().mockResolvedValue('granted'), registerPushToken: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/lib/push/pushAdapter', () => ({
   get getPermissionStatus() { return mockAdapter.getPermissionStatus; },
@@ -255,11 +260,11 @@ it('US3 게스트 = AuthGateSheet(profile)만, 스위치 0개, 설정 조회 비
 });
 
 /* ---------- US5 ---------- */
-it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반응(9/14 종한 2차), 탭 = Linking.openSettings; AppState active = 권한 재조회 + 토큰 등록', async () => {
+it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반응(9/14 종한 2차), 탭 = openAppSettings(P-381); AppState active = 권한 재조회 + 토큰 등록', async () => {
   mockAdapter.getPermissionStatus.mockResolvedValue('denied');
   const handlers: ((s: string) => void)[] = [];
   const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => { handlers.push(cb); return { remove: jest.fn() }; }) as never);
-  const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined as never);
+  mockOpenSettings.mockClear();
   mockData.query.data = ON; // 서버에는 동의·토글 ON이 저장돼 있어도
   const tree = await render();
   expect(has(tree, 'notif-os-off')).toBe(true);
@@ -274,7 +279,7 @@ it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반
     expect({ id, disabled: row.props.disabled }).toEqual({ id, disabled: true });
   }
   await tap(tree, 'notif-os-off');
-  expect(open).toHaveBeenCalledTimes(1);
+  expect(mockOpenSettings).toHaveBeenCalledTimes(1);
   mockAdapter.getPermissionStatus.mockClear();
   act(() => handlers.forEach((h) => h('background')));
   expect(mockAdapter.registerPushToken).not.toHaveBeenCalled();
@@ -282,7 +287,6 @@ it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반
   expect(mockAdapter.getPermissionStatus).toHaveBeenCalledTimes(1);
   expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1);
   spy.mockRestore();
-  open.mockRestore();
 });
 
 /* ---------- 소스 잠금 ---------- */

@@ -7,7 +7,7 @@
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
@@ -38,6 +38,7 @@ import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { Modal } from 'react-native';
+import { openAppSettings } from '@/lib/openExternal';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 
@@ -119,7 +120,7 @@ export default function ReviewCompose() {
         if (!perm.granted) {
           Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
             { text: t('common.cancel'), style: 'cancel' },
-            { text: t('photo.openSettings'), onPress: () => void Linking.openSettings() },
+            { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
           ]);
           return;
         }

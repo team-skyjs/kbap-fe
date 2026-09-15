@@ -13,7 +13,7 @@
  * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
 import * as React from 'react';
-import { AppState, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +30,7 @@ import { consentUrl, PRIVACY_CONSENT_VERSION, RECEIVE_CONSENT_VERSION } from '@/
 import { useNotificationSettings, useUpdateNotificationSettings, type NotificationSettings as Settings } from '@/lib/data/useNotificationSettings';
 import { NotificationSheet } from '@/features/push/NotificationSheet';
 import { getPermissionStatus, registerPushToken, type PushPermission } from '@/lib/push/pushAdapter';
+import { openAppSettings } from '@/lib/openExternal';
 
 export default function NotificationSettings() {
   // 컴파일 상수 가드 — 훅 순서 무영향 (reviews.tsx 문법)
@@ -111,7 +112,7 @@ function NotificationSettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
           /* OS 권한 꺼짐 — 안내 + 설정 딥링크. 아래 설정 UI는 보이되 흐리게·조작 불가(9/14 종한 2차) */
-          <Pressable style={styles.banner} onPress={() => void Linking.openSettings()} testID="notif-os-off">
+          <Pressable style={styles.banner} onPress={() => void openAppSettings()} testID="notif-os-off">
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.bannerText}>{t('notif.osOff')}</Text>
