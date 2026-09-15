@@ -107,7 +107,11 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   // 멈추지 않는다. Codex P2(3R): 손 뗀 시점 오프셋은 **스냅 전**이라 쓰면 안 된다 —
   // 스냅이 끝난 오프셋(경계)에서 안착한다. 스크롤 이벤트가 경계에 닿으면 onScroll이
   // 처리하고, 이미 경계에서 놓아 이벤트가 더 안 오면 이 폴백이 최신 오프셋으로 처리한다.
-  const onDragEnd = () => {
+  const onDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // Codex P2(4R): onScroll은 스로틀이라 마지막 값이 손 뗀 순간보다 오래됐을 수 있다 →
+    // 드래그 종료 오프셋을 기준값으로 깔고, 이후 스냅 중 onScroll이 오면 그걸로 덮는다.
+    // (3R에서 이 값을 버린 건 '안착 판정에 바로 쓰면' 스냅 전이라서였다 — 기준값으로는 가장 최신이다)
+    offsetRef.current = e.nativeEvent.contentOffset.x;
     releasedRef.current = true;
     if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     let tries = 0;

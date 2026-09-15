@@ -308,6 +308,15 @@ describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 �
     expect(dotIdx(tree)).toBe(1); // 손 뗀 시점(0.4→0)이 아니라 실제 표시된 장
   });
 
+  it('Codex P2(4R) — 스로틀된 onScroll보다 최신인 드래그 종료 오프셋을 기준값으로 쓴다', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.45)); }); // 마지막 스로틀 값(오래됨 — 반올림하면 0번 장)
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // 실제로는 경계(1번 장)에서 놓음, 이후 이벤트 없음
+    act(() => { jest.advanceTimersByTime(200); }); // 첫 폴백 확인에서 곧바로 안착해야 한다
+    expect(dotIdx(tree)).toBe(1); // 오래된 0.45(→0)가 아니라 손 뗀 실제 위치
+  });
+
   it('Codex P2(3R) — 폴백 대기 중 정지(background)되면 타이머를 되살리지 않는다', async () => {
     // AppState 리스너를 확실히 붙잡는다(조건부 단언 금지 — 못 잡으면 테스트가 실패해야 한다)
     let appListener: ((s: string) => void) | undefined;
