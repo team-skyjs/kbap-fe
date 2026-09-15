@@ -102,19 +102,25 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
     }, QUIET_MS);
   };
 
-  // 드래그 **시작 순간** 멈춘다 — 틱이 제스처 도중 scrollToOffset을 쏘면 화면이 끌려간다
-  const onDragBegin = () => {
+  // **손가락이 닿는 순간** 멈춘다(Codex P2 7R) — 드래그 인식(onScrollBeginDrag)은 임계 거리를
+  // 넘어야 오므로, 손을 올려만 두거나 조금만 움직이면 그 전에 틱이 화면을 끌어간다.
+  // 드래그 인식도 같은 처리로 받는다(터치 이벤트가 네이티브 스크롤에 뺏기는 경우 대비).
+  const press = () => {
     touchingRef.current = true;
     releasedRef.current = false;
     if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
     pause();
   };
 
-  const onDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    offsetRef.current = e.nativeEvent.contentOffset.x; // 스로틀된 onScroll보다 최신(이후 스냅 이벤트가 덮는다)
+  /** 손을 뗐다 — 드래그로 끝났든(오프셋 동반) 그냥 뗐든 같은 재개 경로. */
+  const release = (offsetX?: number) => {
+    if (typeof offsetX === 'number') offsetRef.current = offsetX; // 스로틀된 onScroll보다 최신(이후 스냅 이벤트가 덮는다)
+    if (!touchingRef.current) return;
     releasedRef.current = true;
-    armQuiet(); // 이후 스크롤이 전혀 없어도(경계에서 놓음) 반드시 재개된다
+    armQuiet(); // 이후 스크롤이 전혀 없어도(경계에서 놓음·드래그 없이 뗌) 반드시 재개된다
   };
+
+  const onDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => release(e.nativeEvent.contentOffset.x);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     offsetRef.current = e.nativeEvent.contentOffset.x;
@@ -135,7 +141,10 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        onScrollBeginDrag={onDragBegin}
+        onTouchStart={press}
+        onTouchEnd={() => release()}
+        onTouchCancel={() => release()}
+        onScrollBeginDrag={press}
         onScrollEndDrag={onDragEnd}
         renderItem={({ item }) => (
           <View style={{ width, height: '100%' }}>

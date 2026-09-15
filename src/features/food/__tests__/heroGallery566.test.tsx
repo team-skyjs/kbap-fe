@@ -353,6 +353,42 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
     expect(dotIdx(tree)).toBe(0); // 재개 안 됨(아직 누르고 있다)
   });
 
+  it('Codex P2(7R) — 손가락만 올려 둬도(드래그 임계 전) 자동 넘김이 멈춘다', async () => {
+    const tree = await renderIt();
+    tick(AUTO_SLIDE_MS - 100);
+    act(() => { list(tree).props.onTouchStart(); }); // 드래그 인식 없이 닿기만 함
+    tick(AUTO_SLIDE_MS * 3);
+    expect(dotIdx(tree)).toBe(0); // 손 아래에서 넘어가지 않았다
+  });
+
+  it('Codex P2(7R) — 재개 대기 중 다시 닿으면(드래그 없이) 대기가 취소된다', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // 재개 대기 시작
+    tick(QUIET_MS - 100);
+    act(() => { list(tree).props.onTouchStart(); }); // 임계 전 터치 — onScrollBeginDrag는 안 온다
+    tick(QUIET_MS * 4 + AUTO_SLIDE_MS * 2);
+    expect(dotIdx(tree)).toBe(0); // 재개·넘김 없음(누르고 있다)
+  });
+
+  it('드래그 없이 닿았다 떼면 스크롤이 멈춘 지금 장에서 2초 뒤 재개', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onTouchStart(); });
+    act(() => { list(tree).props.onTouchEnd(); });
+    tick(QUIET_MS);
+    expect(dotIdx(tree)).toBe(0); // 제자리
+    tick(AUTO_SLIDE_MS);
+    expect(dotIdx(tree)).toBe(1); // 재개됨
+  });
+
+  it('터치가 네이티브 스크롤에 뺏겨 취소돼도(onTouchCancel) 재개된다', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onTouchStart(); });
+    act(() => { list(tree).props.onTouchCancel(); });
+    tick(QUIET_MS + AUTO_SLIDE_MS);
+    expect(dotIdx(tree)).toBe(1);
+  });
+
   it('Codex P2(5R) — 마지막→처음 순환은 즉시 이동(중간 장을 거꾸로 훑지 않는다)', async () => {
     const RN = require('react-native') as typeof import('react-native');
     const tree = await renderIt();
@@ -372,7 +408,8 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
     const g = read('src/features/food/HeroGallery.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     expect(g).not.toContain('onMomentumScrollEnd');
     expect(g).not.toContain('momentumRef');
-    expect(g).toContain('onScrollBeginDrag={onDragBegin}');
+    expect(g).toContain('onTouchStart={press}'); // 7R: 닿는 순간 정지
+    expect(g).toContain('onScrollBeginDrag={press}');
     expect(g).toContain('onScrollEndDrag={onDragEnd}');
   });
 });
