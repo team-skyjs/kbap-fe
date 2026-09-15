@@ -345,6 +345,23 @@ describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 �
     expect(dotIdx(tree)).toBe(2);
   });
 
+  it('Codex P2(5R) — 마지막→처음 순환은 즉시 이동(중간 장을 거꾸로 훑지 않는다)', async () => {
+    const RN = require('react-native') as typeof import('react-native');
+    const tree = await renderIt(); // 4장
+    // 컴포넌트가 ref로 붙잡은 바로 그 FlatList 인스턴스를 스파이한다
+    const inst = tree.root.findByType(RN.FlatList).instance as { scrollToOffset: (p: unknown) => void };
+    const scrollSpy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
+    // 틱은 실제로 2초 간격으로 따로 온다 — 한 act에 몰아 진행하면 React가 상태 변경을 한 렌더로
+    // 묶어 중간 장 스크롤이 사라진다(테스트 착시). 틱마다 따로 진행한다.
+    for (let k = 0; k < 4; k++) act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 1 → 2 → 3 → 0
+    expect(scrollSpy.mock.calls.map((c) => c[0])).toEqual([
+      { offset: WIDTH * 1, animated: true },
+      { offset: WIDTH * 2, animated: true },
+      { offset: WIDTH * 3, animated: true },
+      { offset: 0, animated: false }, // 순환 순간만 애니메이션 없이
+    ]);
+  });
+
   it('프로그램 스크롤(타이머)의 관성 종료는 사용자 스와이프로 세지 않는다', async () => {
     const tree = await renderIt();
     act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 타이머로 1번 장

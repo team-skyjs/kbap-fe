@@ -75,9 +75,14 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   }, [urls]);
 
   // 타이머가 넘긴 장으로 스크롤(사용자가 넘긴 경우엔 이미 그 위치라 사실상 무동작)
+  // Codex P2(5R): 마지막 → 처음 순환을 애니메이션으로 스크롤하면 중간 장을 전부 **거꾸로**
+  // 훑고 지나간다(도트는 이미 1번인데 화면은 뒤로 감기는 중). 순환 순간만 즉시 이동한다.
+  const prevIndexRef = React.useRef(index);
   React.useEffect(() => {
     if (urls.length < 2) return;
-    listRef.current?.scrollToOffset({ offset: index * width, animated: true });
+    const wrapped = index === 0 && prevIndexRef.current === urls.length - 1;
+    prevIndexRef.current = index;
+    listRef.current?.scrollToOffset({ offset: index * width, animated: !wrapped });
   }, [index, width, urls.length]);
 
   /** 사용자 제스처가 안착한 장으로 맞추고 타이머 재개. */
