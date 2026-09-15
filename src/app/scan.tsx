@@ -184,9 +184,14 @@ export default function Scan() {
   const quotaRef = useRef(me?.scanQuota);
   quotaRef.current = me?.scanQuota;
   const disprovenQuota = useRef<unknown>(undefined);
+  // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
+  // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   const lockFromProfile = useCallback(() => {
     const quota = quotaRef.current;
-    if (!isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
+    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
     quotaLockRef.current = true;
     setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
     setPhase('error');
@@ -213,6 +218,7 @@ export default function Scan() {
       const code = (e as { code?: string })?.code;
       if (code === 'SCAN-004') {
         preTicket.current = null;
+        if (!canLockQuota()) return;
         quotaLockRef.current = true;
         setError({ stage: 'quota', detail: 'preflight SCAN-004' });
         setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)

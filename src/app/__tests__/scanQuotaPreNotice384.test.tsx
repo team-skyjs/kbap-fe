@@ -112,7 +112,15 @@ const mockIssue = jest.fn();
 jest.mock('@/lib/data/useScan', () => ({
   scanV2Enabled: () => true,
   issueScanTicket: () => mockIssue(),
-  useScan: () => ({ mutate: jest.fn(), isPending: false }),
+  useScan: () => ({
+    isPending: false,
+    mutate: (_v: unknown, { onSuccess }: { onSuccess: (r: unknown) => void }) =>
+      onSuccess({
+        degraded: false,
+        items: [{ itemId: 0, rawMenuName: '된장찌개', box: { x: 0, y: 0, width: 0.1, height: 0.1 }, risk: 'safe', matched: true, foodId: '1', displayName: 'Doenjang Jjigae', koreanName: '된장찌개', price: 8000 }],
+        photoOnly: [],
+      }),
+  }),
 }));
 
 import Scan from '../scan';
@@ -206,4 +214,34 @@ it('Codex #159 P2: 포커스 유지 중 재조회로 소진 도착 = 카메라 �
   act(() => { tree.update(<Scan />); });
   expect(quotaShown(tree)).toBe(true);
   expect(mockIssue.mock.calls.length).toBe(callsBefore); // 포커스 재실행 아님 — 프로필 변화만으로
+});
+
+describe('Codex #159 P1: 완료된 스캔 결과는 복귀 포커스로 쿼터 화면에 덮이지 않는다', () => {
+  async function toResult() {
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); });
+    const gallery = tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function');
+    await act(async () => { await gallery[0].props.onPress(); });
+    return tree;
+  }
+  const inResult = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'seg-list').length > 0;
+  const refocus = async (tree: ReactTestRenderer) => {
+    mockIsGuest.mockReturnValue(true);
+    await act(async () => { tree.update(<Scan />); });
+    mockIsGuest.mockReturnValue(false);
+    await act(async () => { tree.update(<Scan />); });
+  };
+
+  it('마지막 무료 스캔 후 재조회(잔여 0) + 상세 갔다 복귀 = 결과 유지(프로필 게이트·티켓 403 둘 다)', async () => {
+    mockIssue.mockResolvedValue('t');
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
+    const tree = await toResult();
+    expect(inResult(tree)).toBe(true);
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0) } });
+    mockIssue.mockRejectedValue(Object.assign(new Error('quota'), { code: 'SCAN-004' }));
+    await refocus(tree);
+    expect(mockIssue).toHaveBeenCalledTimes(2); // 서버 티켓 확인은 유지
+    expect(quotaShown(tree)).toBe(false);
+    expect(inResult(tree)).toBe(true);
+  });
 });
