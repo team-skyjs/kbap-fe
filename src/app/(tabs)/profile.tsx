@@ -194,7 +194,6 @@ export default function Profile() {
                       <Text style={styles.natText} numberOfLines={1} testID="nation-pill">
                         {countryByCode(me.nationality)?.name ?? me.nationality}
                       </Text>
-                      <Text style={styles.natText}>·</Text>
                     </>
                   )}
                   <Text style={styles.natText}>{lang.split('-')[0].toUpperCase()}</Text>
