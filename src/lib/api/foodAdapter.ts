@@ -31,6 +31,30 @@ function refToUrl(ref: string | null | undefined): string | null {
   return ref && /^https?:\/\//.test(ref) ? ref : null;
 }
 
+/**
+ * P-383(KB-566): 상세 갤러리 이미지 — **BE 필드명을 아는 곳은 이 함수 하나뿐이다.**
+ * 계약(KB-565, dev Swagger 반영 전): `images: [{ id, imageUrl, isPrimary, sortOrder }]`,
+ * 대표 먼저·소프트삭제 제외·0장이면 `[]`. Swagger에서 이름이 달라지면 여기만 고친다.
+ *
+ * - 필드 부재(구 서버) = undefined → 화면이 photoUrl 정적 렌더(현행)
+ * - 서버 정렬을 믿되 방어적으로 한 번 더 정렬(대표 → sortOrder 오름차순)
+ * - 절대 URL만 통과(refToUrl), 중복 URL 제거
+ */
+export function adaptFoodImages(wire: unknown): string[] | undefined {
+  const raw = (wire as { images?: unknown }).images;
+  if (!Array.isArray(raw)) return undefined;
+  type Img = { imageUrl?: unknown; isPrimary?: unknown; sortOrder?: unknown };
+  const rank = (i: Img) => (i.isPrimary === true ? 0 : 1);
+  const order = (i: Img) => (typeof i.sortOrder === 'number' ? i.sortOrder : Number.MAX_SAFE_INTEGER);
+  const urls = (raw as Img[])
+    .filter((i): i is Img => !!i && typeof i === 'object')
+    .slice()
+    .sort((a, b) => rank(a) - rank(b) || order(a) - order(b))
+    .map((i) => refToUrl(typeof i.imageUrl === 'string' ? i.imageUrl : null))
+    .filter((u): u is string => !!u);
+  return [...new Set(urls)];
+}
+
 /** 중첩 평점 단위 → 내부 집계. 계약 "리뷰 없으면 0.0·0(null 없음)" → count 0이면
  *  average null(화면 '—'). */
 function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
@@ -107,6 +131,7 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     // P-081: 와이어 정수 → 단계 enum (변환은 spiceAdapter 격리 — 스웨거 enum 재배포 시 스왑)
     spiceLevel: wireToFoodSpice(wire.spiciness),
     photoUrl: refToUrl(wire.imageRef),
+    images: adaptFoodImages(wire),
     ingredients,
     isRegistered,
     bookmarked: wire.bookmarked === true, // 계약: 비회원 항상 false (KB-142)

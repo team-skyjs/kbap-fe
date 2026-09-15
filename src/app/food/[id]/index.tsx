@@ -26,6 +26,7 @@ import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
+import { HeroGallery } from '@/features/food/HeroGallery';
 import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -137,8 +138,17 @@ export default function FoodDetailScreen() {
 
         {!isLoading && food && (
           <>
-            {/* §1-1: 히어로 정방(375×375) + 하단 어두운 선형 그라데이션(4150:16892) */}
-            {food.photoUrl ? (
+            {/* §1-1: 히어로 정방(375×375) + 하단 어두운 선형 그라데이션(4150:16892)
+                P-383(KB-566): 이미지 2장 이상 = 캐러셀(2초 자동·도트), 0·1장·부재 = 현행 정적 */}
+            {(food.images?.length ?? 0) >= 2 ? (
+              <View style={styles.hero} testID="detail-hero">
+                {/* 그라데이션은 사진 위·도트 아래에 깔려야 해서 overlay로 넘긴다 */}
+                <HeroGallery
+                  urls={food.images!}
+                  overlay={<LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)']} style={styles.heroGrad} pointerEvents="none" />}
+                />
+              </View>
+            ) : food.photoUrl ? (
               <View style={styles.hero} testID="detail-hero">
                 <CardPhoto uri={food.photoUrl} transition={200} borderRadius={0} />
                 <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)']} style={styles.heroGrad} pointerEvents="none" />
