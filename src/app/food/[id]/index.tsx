@@ -27,6 +27,7 @@ import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
+import { useIsNewFood } from '@/lib/newFood';
 import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -320,6 +321,7 @@ function Registered({
 }) {
   // P-251(BE #185): 리뷰 자격 게이트 — 회원 && reviewEligible === false(서버 정본)만.
   const [eligGate, setEligGate] = useState(false);
+  const isNew = useIsNewFood(food.publishedAt);
   const writeReview = (source: 'detail') => {
     if (!guest && food.reviewEligible === false) {
       setEligGate(true);
@@ -414,10 +416,12 @@ function Registered({
           )}
           <View style={styles.nameRow}>
             <Text style={styles.name}>{food.name}</Text>
-            {/* 9/5 예진 판정(Q4): NEW 배지 항상 표시 — 신규 등록 판별 데이터는 BE TODO */}
-            <View style={styles.newBadge} testID="detail-new-badge">
-              <Text style={styles.newBadgeText}>{t('inbox.newBadge')}</Text>
-            </View>
+            {/* P-385(KB-363): NEW = 서버 공개 시각 24시간 이내만(9/15 예진 — 9/5 '항상 표시' 폐기) */}
+            {isNew && (
+              <View style={styles.newBadge} testID="detail-new-badge">
+                <Text style={styles.newBadgeText}>{t('inbox.newBadge')}</Text>
+              </View>
+            )}
           </View>
           {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
           {!!food.description && <Text style={styles.desc}>{food.description}</Text>}

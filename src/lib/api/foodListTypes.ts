@@ -21,6 +21,8 @@ export interface MenuSummaryWire {
   name: string; // request-language display name (falls back to Korean)
   koreanName?: string | null; // null when the localized name IS Korean
   imageRef?: string | null; // bare image filename (no host defined yet)
+  /** P-385(KB-363): READY 공개 시각(ISO-8601). 미공개 이력이면 null, 구응답 부재. */
+  publishedAt?: string | null;
   spiciness: number; // 0..10
   overallRiskStatus: BeRiskStatus; // SAFE|CAUTION|DANGER|UNKNOWN
   bookmarked?: boolean;

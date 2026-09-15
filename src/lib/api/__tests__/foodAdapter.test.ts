@@ -119,3 +119,19 @@ describe('P-235: reviewSummaryMissing', () => {
     expect(fs.readFileSync('src/lib/api/types.ts', 'utf8')).not.toContain('reviewsMasked');
   });
 });
+
+describe('P-385(KB-363): publishedAt 매핑 — 부재는 null', () => {
+  const base = { foodId: 1, name: 'Kimbap', koreanName: '김밥', spiciness: 0, overallRiskStatus: 'SAFE' as const };
+  const AT = '2026-09-15T03:00:00Z';
+
+  it('목록 요약: 값 전달 · 부재/null → null', () => {
+    expect(adaptMenuSummary({ ...base, publishedAt: AT }).publishedAt).toBe(AT);
+    expect(adaptMenuSummary(base).publishedAt).toBeNull();
+    expect(adaptMenuSummary({ ...base, publishedAt: null }).publishedAt).toBeNull();
+  });
+
+  it('상세: 값 전달 · 부재 → null', () => {
+    expect(adaptFoodDetail({ ...WIRE, publishedAt: AT }, '7').publishedAt).toBe(AT);
+    expect(adaptFoodDetail(WIRE, '7').publishedAt).toBeNull();
+  });
+});
