@@ -17,6 +17,8 @@ import { useAutoSlide } from './useAutoSlide';
 /** 현재 장 도트 색 — 발주 "primary". 비활성은 ink 계열(사진 위 가독성 위해 ink3). */
 export const DOT_ACTIVE = C.primary;
 export const DOT_INACTIVE = C.ink3;
+/** 손을 뗀 뒤 스크롤 이벤트가 이만큼 끊기면 스냅 완료로 본다(스로틀 16ms의 충분한 배수). */
+export const QUIET_MS = 250;
 
 /** 명시적으로 뒤로 간 경우만 멈춘다. 초기값이 null·'unknown'일 수 있어서(RN AppState는 네이티브
  *  상수가 오기 전 null로 시작) === 'active'로 판정하면 자동 넘김이 영영 시작 안 할 수 있다. */
@@ -59,14 +61,17 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   const paused = usePaused();
   const { index, onUserSwipe, pause } = useAutoSlide(urls.length, paused);
   const listRef = React.useRef<FlatList<string>>(null);
-  const draggingRef = React.useRef(false);
-  const momentumRef = React.useRef(false);
-  const releasedRef = React.useRef(false); // 손을 뗐고 아직 안착 전
-  const offsetRef = React.useRef(0); // 최신 스크롤 오프셋(스냅 진행 중에도 갱신)
-  const settleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 제스처 상태는 **손가락 기준 두 가지뿐**이다: 누르고 있나(touching), 뗐나(released).
+  // Codex 2R~6R은 전부 "이 스크롤 이벤트가 사용자 것인가 타이머 것인가"를 분류하려다 난 경합이었다
+  // (관성 콜백 유무·스로틀 순서·타이머 애니메이션의 늦은 종료 이벤트가 플랫폼마다 다르다).
+  // 그래서 분류를 없앴다 — 재개는 **손을 뗀 뒤 스크롤이 멈춘 순간** 하나로만 일어난다.
+  const touchingRef = React.useRef(false);
+  const releasedRef = React.useRef(false);
+  const offsetRef = React.useRef(0); // 최신 스크롤 오프셋
+  const quietTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => () => {
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
   }, []);
 
   // 2장째부터 미리 받아 둔다(첫 장은 CardPhoto 스켈레톤 규칙 그대로)
@@ -85,63 +90,37 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
     listRef.current?.scrollToOffset({ offset: index * width, animated: !wrapped });
   }, [index, width, urls.length]);
 
-  /** 사용자 제스처가 안착한 장으로 맞추고 타이머 재개. */
-  const settle = (offsetX: number) => {
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    draggingRef.current = false;
-    momentumRef.current = false;
-    releasedRef.current = false;
-    const page = Math.round(offsetX / width);
-    onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
+  /** 손을 뗀 뒤 스크롤 이벤트가 QUIET_MS 동안 없으면 = 스냅이 끝났다 → 그 자리에서 재개. */
+  const armQuiet = () => {
+    if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
+    quietTimerRef.current = setTimeout(() => {
+      if (!touchingRef.current || !releasedRef.current) return; // 새 드래그가 시작됐다
+      touchingRef.current = false;
+      releasedRef.current = false;
+      const page = Math.round(offsetRef.current / width); // 스크롤이 멈춘 뒤라 최종 오프셋이다
+      onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
+    }, QUIET_MS);
   };
 
-  // Codex P2: 드래그 **시작 순간** 멈춘다 — 틱이 제스처·관성 도중 scrollToOffset을 쏘면
-  // 사용자가 고르던 장에서 화면이 끌려간다.
+  // 드래그 **시작 순간** 멈춘다 — 틱이 제스처 도중 scrollToOffset을 쏘면 화면이 끌려간다
   const onDragBegin = () => {
-    draggingRef.current = true;
-    momentumRef.current = false;
+    touchingRef.current = true;
     releasedRef.current = false;
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
     pause();
   };
 
-  /** 페이지 경계에 정확히 닿았는가(스냅 완료) */
-  const onBoundary = (x: number) => Math.abs(x - Math.round(x / width) * width) < 1;
-
-  // 관성 없이 손을 떼면 onMomentumScrollEnd가 안 온다 → 안착을 따로 잡아야 타이머가 영영
-  // 멈추지 않는다. Codex P2(3R): 손 뗀 시점 오프셋은 **스냅 전**이라 쓰면 안 된다 —
-  // 스냅이 끝난 오프셋(경계)에서 안착한다. 스크롤 이벤트가 경계에 닿으면 onScroll이
-  // 처리하고, 이미 경계에서 놓아 이벤트가 더 안 오면 이 폴백이 최신 오프셋으로 처리한다.
   const onDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    // Codex P2(4R): onScroll은 스로틀이라 마지막 값이 손 뗀 순간보다 오래됐을 수 있다 →
-    // 드래그 종료 오프셋을 기준값으로 깔고, 이후 스냅 중 onScroll이 오면 그걸로 덮는다.
-    // (3R에서 이 값을 버린 건 '안착 판정에 바로 쓰면' 스냅 전이라서였다 — 기준값으로는 가장 최신이다)
-    offsetRef.current = e.nativeEvent.contentOffset.x;
+    offsetRef.current = e.nativeEvent.contentOffset.x; // 스로틀된 onScroll보다 최신(이후 스냅 이벤트가 덮는다)
     releasedRef.current = true;
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    let tries = 0;
-    const check = () => {
-      if (!draggingRef.current || momentumRef.current) return; // 관성 경로가 맡는다
-      const x = offsetRef.current;
-      if (onBoundary(x) || tries >= 5) return settle(x); // 경계 도달(또는 이벤트 끊김 대비 상한)
-      tries += 1;
-      settleTimerRef.current = setTimeout(check, 150);
-    };
-    settleTimerRef.current = setTimeout(check, 150);
+    armQuiet(); // 이후 스크롤이 전혀 없어도(경계에서 놓음) 반드시 재개된다
   };
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    offsetRef.current = x;
-    // 손을 뗀 뒤 관성 콜백 없이 스냅이 진행되는 경우 — 경계에 닿는 순간이 안착이다
-    if (releasedRef.current && draggingRef.current && !momentumRef.current && onBoundary(x)) settle(x);
-  };
-
-  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     offsetRef.current = e.nativeEvent.contentOffset.x;
-    // 프로그램 스크롤(타이머)은 드래그 없이 끝나므로 사용자 스와이프로 세지 않는다
-    if (!draggingRef.current) return;
-    settle(e.nativeEvent.contentOffset.x);
+    // 손을 뗀 뒤 스냅이 진행되는 동안에만 대기를 연장한다. 누르고 있는 중(released=false)의
+    // 이벤트 — 타이머 애니메이션의 늦은 이벤트 포함 — 는 재개를 일으키지 않는다.
+    if (touchingRef.current && releasedRef.current) armQuiet();
   };
 
   return (
@@ -158,10 +137,6 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         scrollEventThrottle={16}
         onScrollBeginDrag={onDragBegin}
         onScrollEndDrag={onDragEnd}
-        onMomentumScrollBegin={() => {
-          momentumRef.current = true;
-        }}
-        onMomentumScrollEnd={onMomentumEnd}
         renderItem={({ item }) => (
           <View style={{ width, height: '100%' }}>
             <CardPhoto uri={item} transition={200} borderRadius={0} />

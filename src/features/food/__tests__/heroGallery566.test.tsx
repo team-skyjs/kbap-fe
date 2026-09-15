@@ -18,7 +18,7 @@ jest.mock('@/components', () => ({ CardPhoto: () => null }));
 
 import { AccessibilityInfo } from 'react-native';
 import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
-import { HeroGallery } from '../HeroGallery';
+import { HeroGallery, QUIET_MS } from '../HeroGallery';
 import { adaptFoodImages } from '@/lib/api/foodAdapter';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
@@ -243,7 +243,7 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
   });
 });
 
-describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 재개', () => {
+describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자리에서 재개(이벤트 분류 없음)', () => {
   const URLS = ['https://cdn/1.jpg', 'https://cdn/2.jpg', 'https://cdn/3.jpg', 'https://cdn/4.jpg'];
   const WIDTH = 375;
   const dotIdx = (t: ReactTestRenderer) =>
@@ -252,6 +252,7 @@ describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 �
       .findIndex((n) => n.props.testID === 'hero-dot-active');
   const list = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.props?.onScrollBeginDrag === 'function')[0];
   const ev = (x: number) => ({ nativeEvent: { contentOffset: { x, y: 0 } } });
+  const tick = (ms: number) => act(() => { jest.advanceTimersByTime(ms); });
 
   const renderIt = async () => {
     const RN = require('react-native') as typeof import('react-native');
@@ -264,109 +265,114 @@ describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 �
     return tree;
   };
 
-  it('틱 직전에 드래그를 시작하면 드래그 중엔 넘어가지 않는다', async () => {
+  it('Codex P2(2R) — 틱 직전에 드래그를 시작하면 누르고 있는 동안 넘어가지 않는다', async () => {
     const tree = await renderIt();
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 100); }); // 틱 100ms 전
+    tick(AUTO_SLIDE_MS - 100);
     act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS * 3); }); // 드래그·관성이 길어도
-    expect(dotIdx(tree)).toBe(0); // 타이머가 화면을 끌어가지 않았다
+    tick(AUTO_SLIDE_MS * 3);
+    expect(dotIdx(tree)).toBe(0);
   });
 
-  it('관성 안착(onMomentumScrollEnd) = 그 장으로 맞추고 2초 뒤 다음 장', async () => {
+  it('손 뗀 뒤 스냅이 진행되는 동안은 재개하지 않고, 스크롤이 멈춘 장에서 재개 → 2초 뒤 다음 장', async () => {
     const tree = await renderIt();
     act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    act(() => { list(tree).props.onMomentumScrollBegin?.(ev(0)); });
-    act(() => { list(tree).props.onMomentumScrollEnd(ev(WIDTH * 2)); }); // 3번째 장에 안착
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH * 0.4)); }); // 0.4장에서 놓음(반올림하면 0 — 틀린 값)
+    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.7)); }); // 스냅 진행
+    tick(QUIET_MS - 50);
+    act(() => { list(tree).props.onScroll(ev(WIDTH)); }); // 스냅 도착 — 대기 연장
+    tick(QUIET_MS - 50);
+    expect(dotIdx(tree)).toBe(0); // 아직 스크롤이 멈춘 지 QUIET_MS가 안 됨
+    tick(50);
+    expect(dotIdx(tree)).toBe(1); // Codex P2(3R): 손 뗀 위치(0.4→0)가 아니라 멈춘 장
+    tick(AUTO_SLIDE_MS - 1);
+    expect(dotIdx(tree)).toBe(1); // 재개 직후 2초는 정지
+    tick(1);
     expect(dotIdx(tree)).toBe(2);
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS - 1); });
-    expect(dotIdx(tree)).toBe(2); // 안착 직후 2초는 정지
-    act(() => { jest.advanceTimersByTime(1); });
-    expect(dotIdx(tree)).toBe(3);
   });
 
-  it('관성 없이 경계에서 손을 떼도 영영 멈추지 않는다(폴백이 최신 오프셋으로 안착)', async () => {
+  it('관성·스크롤 이벤트가 전혀 없어도(경계에서 놓음) 영영 멈추지 않는다', async () => {
     const tree = await renderIt();
     act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    act(() => { list(tree).props.onScroll(ev(WIDTH)); }); // 이미 경계까지 끌어 놓음
-    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // momentum 이벤트 없음·이후 스크롤 이벤트도 없음
-    act(() => { jest.advanceTimersByTime(200); }); // 폴백(150ms) 경과
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // 이후 이벤트 0
+    tick(QUIET_MS);
     expect(dotIdx(tree)).toBe(1);
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
-    expect(dotIdx(tree)).toBe(2); // 재개됨
+    tick(AUTO_SLIDE_MS);
+    expect(dotIdx(tree)).toBe(2);
   });
 
-  it('Codex P2(3R) — 손 뗀 뒤 관성 콜백 없이 스냅이 진행되면 **스냅 끝난 장**에서 안착', async () => {
+  it('Codex P2(4R) — 스로틀된 onScroll보다 최신인 드래그 종료 오프셋을 쓴다', async () => {
     const tree = await renderIt();
     act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    // 0.4장 지점에서 손을 뗌 — 손 뗀 오프셋으로 반올림하면 0번 장(틀림)
-    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.4)); });
-    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH * 0.4)); });
-    // 스냅이 1번 장으로 진행(관성 콜백 없이 onScroll만 옴)
-    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.8)); });
-    expect(dotIdx(tree)).toBe(0); // 아직 경계 전 — 안착 안 함
-    act(() => { list(tree).props.onScroll(ev(WIDTH)); }); // 경계 도달 = 안착
-    expect(dotIdx(tree)).toBe(1); // 손 뗀 시점(0.4→0)이 아니라 실제 표시된 장
+    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.45)); }); // 오래된 스로틀 값(→0)
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // 실제로 놓은 곳 = 1번 장, 이후 이벤트 없음
+    tick(QUIET_MS);
+    expect(dotIdx(tree)).toBe(1);
   });
 
-  it('Codex P2(4R) — 스로틀된 onScroll보다 최신인 드래그 종료 오프셋을 기준값으로 쓴다', async () => {
+  it('Codex P2(6R) — 누르고 있는 중 도착한 타이머 애니메이션의 늦은 이벤트는 재개를 일으키지 않는다', async () => {
     const tree = await renderIt();
-    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.45)); }); // 마지막 스로틀 값(오래됨 — 반올림하면 0번 장)
-    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // 실제로는 경계(1번 장)에서 놓음, 이후 이벤트 없음
-    act(() => { jest.advanceTimersByTime(200); }); // 첫 폴백 확인에서 곧바로 안착해야 한다
-    expect(dotIdx(tree)).toBe(1); // 오래된 0.45(→0)가 아니라 손 뗀 실제 위치
+    tick(AUTO_SLIDE_MS); // 타이머로 1번 장 애니메이션 시작
+    expect(dotIdx(tree)).toBe(1);
+    act(() => { list(tree).props.onScrollBeginDrag(ev(WIDTH * 0.6)); }); // 애니메이션 도중 잡음
+    act(() => { list(tree).props.onScroll(ev(WIDTH)); }); // 타이머 스크롤의 늦은 이벤트
+    act(() => { list(tree).props.onMomentumScrollEnd?.(ev(WIDTH)); }); // (핸들러 자체가 없다 — 분류 불필요)
+    tick(AUTO_SLIDE_MS * 3); // 손가락은 계속 누르고 있음
+    expect(dotIdx(tree)).toBe(1); // 재개되어 끌려가지 않았다
   });
 
-  it('Codex P2(3R) — 폴백 대기 중 정지(background)되면 타이머를 되살리지 않는다', async () => {
-    // AppState 리스너를 확실히 붙잡는다(조건부 단언 금지 — 못 잡으면 테스트가 실패해야 한다)
-    let appListener: ((s: string) => void) | undefined;
+  it('Codex P2(3R) — 재개 대기 중 정지(background)되면 타이머를 되살리지 않는다', async () => {
+    let appListener: ((st: string) => void) | undefined;
     const RN = require('react-native') as typeof import('react-native');
-    jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => {
+    jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(((_: string, cb: (st: string) => void) => {
       appListener = cb;
       return { remove: jest.fn() };
     }) as never);
     const tree = await renderIt();
     expect(appListener).toBeDefined();
-
     act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    act(() => { list(tree).props.onScroll(ev(WIDTH)); });
     act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); });
-    act(() => { appListener!('background'); }); // 폴백 150ms 창 안에서 백그라운드
-
+    act(() => { appListener!('background'); }); // 대기 창 안에서 백그라운드
     const setSpy = jest.spyOn(global, 'setInterval');
-    act(() => { jest.advanceTimersByTime(200); }); // 폴백 발화 — 옛 렌더 클로저가 start를 부른다
-    expect(setSpy.mock.calls.filter((c) => c[1] === AUTO_SLIDE_MS)).toHaveLength(0); // 정지 중 interval 생성 0
-    expect(dotIdx(tree)).toBe(1); // 안착 자체는 반영(재개 시 표시된 장과 index가 맞아야 한다)
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS * 3); });
-    expect(dotIdx(tree)).toBe(1); // 정지 중 넘어가지 않음
-
-    act(() => { appListener!('active'); }); // 복귀하면 안착한 장에서 재개
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    tick(QUIET_MS); // 재개 시점 도래 — 옛 렌더 클로저가 start를 부른다
+    expect(setSpy.mock.calls.filter((c) => c[1] === AUTO_SLIDE_MS)).toHaveLength(0);
+    expect(dotIdx(tree)).toBe(1); // 멈춘 장은 반영
+    tick(AUTO_SLIDE_MS * 3);
+    expect(dotIdx(tree)).toBe(1);
+    act(() => { appListener!('active'); });
+    tick(AUTO_SLIDE_MS);
     expect(dotIdx(tree)).toBe(2);
+  });
+
+  it('새 드래그가 재개 대기를 취소한다(놓았다가 곧바로 다시 잡음)', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); });
+    tick(QUIET_MS - 100);
+    act(() => { list(tree).props.onScrollBeginDrag(ev(WIDTH)); }); // 다시 잡음
+    tick(QUIET_MS * 4);
+    expect(dotIdx(tree)).toBe(0); // 재개 안 됨(아직 누르고 있다)
   });
 
   it('Codex P2(5R) — 마지막→처음 순환은 즉시 이동(중간 장을 거꾸로 훑지 않는다)', async () => {
     const RN = require('react-native') as typeof import('react-native');
-    const tree = await renderIt(); // 4장
-    // 컴포넌트가 ref로 붙잡은 바로 그 FlatList 인스턴스를 스파이한다
+    const tree = await renderIt();
     const inst = tree.root.findByType(RN.FlatList).instance as { scrollToOffset: (p: unknown) => void };
     const scrollSpy = jest.spyOn(inst, 'scrollToOffset').mockImplementation(() => {});
-    // 틱은 실제로 2초 간격으로 따로 온다 — 한 act에 몰아 진행하면 React가 상태 변경을 한 렌더로
-    // 묶어 중간 장 스크롤이 사라진다(테스트 착시). 틱마다 따로 진행한다.
-    for (let k = 0; k < 4; k++) act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 1 → 2 → 3 → 0
+    // 틱은 실제로 2초 간격으로 따로 온다 — 한 act에 몰면 React가 한 렌더로 묶어 중간 스크롤이 사라진다
+    for (let k = 0; k < 4; k++) tick(AUTO_SLIDE_MS);
     expect(scrollSpy.mock.calls.map((c) => c[0])).toEqual([
       { offset: WIDTH * 1, animated: true },
       { offset: WIDTH * 2, animated: true },
       { offset: WIDTH * 3, animated: true },
-      { offset: 0, animated: false }, // 순환 순간만 애니메이션 없이
+      { offset: 0, animated: false },
     ]);
   });
 
-  it('프로그램 스크롤(타이머)의 관성 종료는 사용자 스와이프로 세지 않는다', async () => {
-    const tree = await renderIt();
-    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 타이머로 1번 장
-    expect(dotIdx(tree)).toBe(1);
-    act(() => { list(tree).props.onMomentumScrollEnd(ev(0)); }); // 드래그 없이 온 종료 이벤트
-    expect(dotIdx(tree)).toBe(1); // 무시
+  it('구조 잠금 — 사용자/타이머 이벤트 분류 코드가 되살아나지 않는다', () => {
+    const g = read('src/features/food/HeroGallery.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(g).not.toContain('onMomentumScrollEnd');
+    expect(g).not.toContain('momentumRef');
+    expect(g).toContain('onScrollBeginDrag={onDragBegin}');
+    expect(g).toContain('onScrollEndDrag={onDragEnd}');
   });
 });
