@@ -42,7 +42,7 @@ export type GridTab = 'popular' | 'saved' | 'food';
 type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 
-/** P-318 정렬 — new(publishedAt)는 KB-439 배포 전 시트에서 비활성(선택 불가).
+/** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
  *  전체가 재정렬돼 항목이 튐(구조 결함). 서버 sort=name 생기면 재도입(TODO). */
 type FoodSort = 'popular' | 'new';
@@ -388,7 +388,10 @@ export function FoodExplorer({
             key: v,
             label: t(`food.sort_${v}`),
             icon: v === sort ? <IconCheck size={15} color={C.primary} /> : undefined,
-            disabled: v === 'new', // KB-439(publishedAt) 배포 전 비활성 — 배포 시 disabled 해제 + 정렬 분기
+            // P-385(KB-363): KB-439로 publishedAt은 왔지만 **서버 정렬 파라미터가 없다**(dev Swagger
+            // /api/foods = cursor·lang·risk뿐, 9/15 실측). 커서 페이지 위 클라 정렬은 P-335 A–Z와 같은
+            // 재정렬 튐 결함이라 쓰지 않는다 → 서버 sort 생길 때까지 비활성 유지.
+            disabled: v === 'new',
             // P-342 ②: NEW = "준비 중" 칩(KB-439 배포 시 칩 제거)
             trailing: v === 'new' ? (
               <View style={styles.soonChip}>

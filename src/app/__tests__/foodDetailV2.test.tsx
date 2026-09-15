@@ -459,7 +459,8 @@ it('P-169: 솔리드 CTA 위계 — Btn primary는 Ask the owner 1개뿐', () =>
   const s = flat(tree);
   const solidCount = (s.match(/"backgroundColor":"#FF7134"/g) ?? []).length;
   expect(s).toContain('detail.askOwner');
-  expect(solidCount).toBe(2); // Ask the owner + NEW 배지(Q4 상시) — 버튼 솔리드는 1개
+  // P-385(KB-363): NEW 배지는 이제 24시간 이내 공개분만 — 픽스처는 publishedAt 없음 → 배지 없음
+  expect(solidCount).toBe(1); // Ask the owner 1개뿐
   void btnLabels;
 });
 
@@ -530,4 +531,26 @@ it('P-323 ⑤ 국가 필터 쿼리 실패 = 에러 표면 + 재시도(빈 문구
 it('P-323 ⑥ 차단 갱신 — 활성 natQ도 refetch(소스 잠금: 뮤테이션 무효화는 food prefix 자동 커버)', () => {
   const src = require('fs').readFileSync('src/app/food/[id]/index.tsx', 'utf8') as string;
   expect(src).toContain('if (natOnly) void natQ.refetch()');
+});
+
+describe('P-385(KB-363) — 상세 NEW 배지 = 공개 24시간 이내만', () => {
+  const HOUR = 60 * 60 * 1000;
+  const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString();
+  const hasBadge = (tree: ReturnType<typeof render>) =>
+    tree.root.findAll((n) => n.props?.testID === 'detail-new-badge').length > 0;
+
+  it('1시간 전 공개 = NEW 표시', () => {
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { publishedAt: iso(HOUR) }), isLoading: false, error: null, refetch: jest.fn() });
+    expect(hasBadge(render(<FoodDetailScreen />))).toBe(true);
+  });
+
+  it('25시간 전 공개 = 미표시', () => {
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { publishedAt: iso(25 * HOUR) }), isLoading: false, error: null, refetch: jest.fn() });
+    expect(hasBadge(render(<FoodDetailScreen />))).toBe(false);
+  });
+
+  it('publishedAt 없음(미공개 이력·구응답) = 미표시 — 9/5 \'항상 표시\' 폐기', () => {
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe', { publishedAt: null }), isLoading: false, error: null, refetch: jest.fn() });
+    expect(hasBadge(render(<FoodDetailScreen />))).toBe(false);
+  });
 });

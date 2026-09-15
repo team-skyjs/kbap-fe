@@ -127,6 +127,7 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     spiceLevel: wireToFoodSpice(wire.spiciness),
     photoUrl: refToUrl(wire.imageRef),
     images: adaptFoodImages(wire),
+    publishedAt: wire.publishedAt ?? null,
     ingredients,
     isRegistered,
     bookmarked: wire.bookmarked === true, // 계약: 비회원 항상 false (KB-142)
@@ -191,6 +192,7 @@ export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
     name: wire.name,
     nameKo: wire.koreanName ?? wire.name,
     photoUrl: refToUrl(wire.imageRef),
+    publishedAt: wire.publishedAt ?? null,
     risk: mapRisk(wire.overallRiskStatus),
     overall:
       rvCount > 0 && typeof wire.review?.averageRating === 'number'
