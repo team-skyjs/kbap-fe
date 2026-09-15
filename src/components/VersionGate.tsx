@@ -30,20 +30,21 @@ export function VersionGateOverlay() {
 
   React.useEffect(() => startVersionGate(), []);
 
-  // P-381 3R(Codex P3): 이 컴포넌트는 앱 생애 내내 마운트돼 있고 통과 시 null만 반환한다
-  // — 상태가 살아남아 **다시 막혔을 때 누르기도 전에 옛 실패 문구가 보인다.**
-  // 게이트 모드·스토어 URL이 바뀌면 실패 표시를 버린다(다른 게이트 = 다른 시도).
+  // P-381 3~5R(Codex P3·P2): 이 컴포넌트는 앱 생애 내내 마운트돼 있고 통과 시 null만
+  // 반환한다 — 상태가 살아남아 **다시 막혔을 때 누르기도 전에 옛 실패 문구가 보인다.**
+  // 게다가 뒤늦게 도착한 옛 시도의 결과가 지금 화면에 실패를 잘못 찍을 수 있다.
+  //
+  // **세대 카운터 하나로 두 경우를 다 덮는다**(검사를 나눠 두면 다음 사람이 어느 게
+  // 정본인지 헷갈린다):
+  //  - 게이트가 바뀌면 리셋 이펙트가 세대를 올려 진행 중 시도를 전부 무효화하고
+  //  - 같은 게이트에서 두 번 눌러도 앞 시도는 세대가 밀려 결과가 폐기된다.
+  // 버튼 비활성 대신 세대를 쓰는 이유 = 실패 후 재시도를 막지 않기 위해서다.
   const storeUrl = 'storeUrl' in gate ? gate.storeUrl : null; // pass 변형엔 필드가 없다
+  const attemptRef = React.useRef(0);
   React.useEffect(() => {
+    attemptRef.current += 1;
     setStoreFailed(false);
   }, [gate.mode, storeUrl]);
-
-  // P-381 4R(Codex P3 두 번째): 위 리셋만으로는 **진행 중이던 시도**를 못 막는다 —
-  // openStoreLink가 pending인 사이 게이트가 바뀌면 리셋이 먼저 돌고, 뒤늦게 도착한
-  // 옛 거부가 새 게이트에 실패 표시를 찍는다. 시도 시점의 게이트 정체를 캡처해
-  // 결과 적용 전에 현재 값과 대조한다.
-  const gateIdRef = React.useRef('');
-  gateIdRef.current = `${gate.mode}|${storeUrl ?? ''}`;
 
   // 안드 하드웨어 백 차단 — 게이트는 dismiss 불가
   React.useEffect(() => {
@@ -65,9 +66,9 @@ export function VersionGateOverlay() {
           <Btn
             onPress={() => {
               setStoreFailed(false);
-              const attempt = gateIdRef.current; // 이 시도가 속한 게이트
+              const my = ++attemptRef.current; // 이 시도의 세대
               void openStoreLink(gate.storeUrl!, { silent: true }).then((ok) => {
-                if (gateIdRef.current !== attempt) return; // 그새 다른 게이트가 됐다 — 옛 결과 폐기
+                if (attemptRef.current !== my) return; // 더 새 시도가 있었거나 게이트가 바뀜 — 폐기
                 setStoreFailed(!ok);
               });
             }}
