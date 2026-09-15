@@ -54,7 +54,10 @@ it.each(LANGS)('%s — P-134 신규 키 패리티(코치·회피·맵기 카피)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const d = require(`@/lib/i18n/${lang}.json`) as Record<string, Record<string, string>>;
   for (const k of ['title', 'safe', 'caution', 'danger', 'unable', 'caption']) expect(d.coach[k]).toBeTruthy();
-  for (const k of ['avoidSub', 'selectedCount', 'noneSelectedYet', 'clearSelection', 'nothingToAvoid', 'kidsBadge', 'finishSetup', 'skipDecideLater']) expect(d.onboarding[k]).toBeTruthy();
+  // P-379(KB-545): nothingToAvoid 소멸 — 라벨이 짧은 공용 onboarding.skip으로 통일됐다
+  for (const k of ['avoidSub', 'selectedCount', 'noneSelectedYet', 'clearSelection', 'skip', 'kidsBadge', 'finishSetup', 'skipDecideLater']) expect(d.onboarding[k]).toBeTruthy();
+  expect(d.onboarding.nothingToAvoid).toBeUndefined();
+  expect((d.onboarding.presets as unknown as Record<string, string>)?.skip).toBeUndefined();
   for (let i = 0; i <= 4; i++) expect(d.onboarding[`spiceDesc${i}`]).toBeTruthy();
   for (const k of ['dairy', 'nuts', 'grains', 'seafood', 'meat', 'produce', 'etc']) expect(d.ingCat[k]).toBeTruthy();
 });
