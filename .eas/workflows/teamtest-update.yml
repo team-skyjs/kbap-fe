@@ -26,17 +26,7 @@ jobs:
     steps:
       - uses: eas/checkout
       - uses: eas/install_node_modules
-      - name: Export + host guard (dev 1+ / prod 0)
-        run: |
-          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx expo export --clear
-          if grep -R "prod.kbap.site" dist -l; then
-            echo "FAIL: prod host leaked into teamtest bundle"; exit 1
-          fi
-          HITS=$(grep -R "dev.kbap.site" dist -l | wc -l)
-          if [ "$HITS" -lt 1 ]; then
-            echo "FAIL: target host (dev.kbap.site) not found in bundle"; exit 1
-          fi
-          echo "host guard OK (dev hits: $HITS files)"
+      # P-382(KB-561): 게이트를 export 앞에 — 불일치 푸시는 export 없이 종료
       - name: Fingerprint gate (P-199 — 네이티브 변경 시 발행 중단)
         run: |
           # 진단(런 01a06ac4 LOOKUP_FAIL 원인 추적): 러너 인증 컨텍스트 확인 —
@@ -61,6 +51,17 @@ jobs:
             echo "-- android stderr:"; head -c 800 /tmp/bl-and.err || true; echo
           fi
           bash scripts/ota-fp-gate.sh "$CUR_IOS" "$CUR_AND" "$BUILD_IOS" "$BUILD_AND"
+      - name: Export + host guard (dev 1+ / prod 0)
+        run: |
+          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx expo export --clear
+          if grep -R "prod.kbap.site" dist -l; then
+            echo "FAIL: prod host leaked into teamtest bundle"; exit 1
+          fi
+          HITS=$(grep -R "dev.kbap.site" dist -l | wc -l)
+          if [ "$HITS" -lt 1 ]; then
+            echo "FAIL: target host (dev.kbap.site) not found in bundle"; exit 1
+          fi
+          echo "host guard OK (dev hits: $HITS files)"
       - name: Publish to teamtest (per-platform — P-293b)
         run: |
           # P-293b: fp 게이트가 판정한 발행 가능 플랫폼만 발행(불일치 플랫폼 SKIP).
