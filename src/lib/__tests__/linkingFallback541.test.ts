@@ -148,19 +148,17 @@ describe('P-381 2R(Codex P2) — 하드 게이트는 인라인, 소프트 넛지
     expect(vg).toContain('void openStoreLink(gate.storeUrl!)}>');
   });
 
-  it('게이트 모드·스토어 URL이 바뀌면 실패 표시를 버린다(P3 — 상시 마운트 컴포넌트)', () => {
+  it('세대 카운터 하나가 두 경우를 덮는다 — 게이트 변경·같은 게이트 재시도(P3·P2)', () => {
     const vg = codeOf('src/components/VersionGate.tsx');
-    // 통과 시 null만 반환하므로 언마운트가 없다 → 의존성에 모드·URL을 둔 리셋 이펙트가 필요하다
-    expect(vg).toMatch(/setStoreFailed\(false\);\s*\}, \[gate\.mode, storeUrl\]\)/);
-  });
-
-  it('진행 중이던 시도는 게이트가 바뀌면 결과를 버린다(P3 두 번째 — stale completion)', () => {
-    const vg = codeOf('src/components/VersionGate.tsx');
-    // 시도 시점의 게이트 정체를 캡처하고, 결과 적용 전에 현재 값과 대조한다
-    expect(vg).toContain('const attempt = gateIdRef.current;');
-    expect(vg).toMatch(/if \(gateIdRef\.current !== attempt\) return;/);
+    // ① 게이트가 바뀌면 리셋 이펙트가 세대를 올려 진행 중 시도를 전부 무효화한다
+    expect(vg).toMatch(/attemptRef\.current \+= 1;\s*setStoreFailed\(false\);\s*\}, \[gate\.mode, storeUrl\]\)/);
+    // ② 시도마다 세대를 매기고, 결과 적용 전에 최신 세대인지 본다
+    expect(vg).toContain('const my = ++attemptRef.current;');
+    expect(vg).toMatch(/if \(attemptRef\.current !== my\) return;/);
     // 무조건 적용하던 형태가 남아 있으면 안 된다
     expect(vg).not.toMatch(/\.then\(\(ok\) => setStoreFailed\(!ok\)\)/);
+    // 검사 이원화 금지 — 게이트 정체 대조(구 방식)가 함께 남아 있으면 정본이 흐려진다
+    expect(vg).not.toContain('gateIdRef');
   });
 
   it('storeFailed 10로케일 — 링크·설정 문구와 각각 다르다', () => {
