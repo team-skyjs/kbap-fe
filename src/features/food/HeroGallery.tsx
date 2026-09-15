@@ -61,6 +61,8 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   const listRef = React.useRef<FlatList<string>>(null);
   const draggingRef = React.useRef(false);
   const momentumRef = React.useRef(false);
+  const releasedRef = React.useRef(false); // 손을 뗐고 아직 안착 전
+  const offsetRef = React.useRef(0); // 최신 스크롤 오프셋(스냅 진행 중에도 갱신)
   const settleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => () => {
@@ -80,8 +82,10 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
 
   /** 사용자 제스처가 안착한 장으로 맞추고 타이머 재개. */
   const settle = (offsetX: number) => {
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     draggingRef.current = false;
     momentumRef.current = false;
+    releasedRef.current = false;
     const page = Math.round(offsetX / width);
     onUserSwipe(Math.max(0, Math.min(urls.length - 1, page)));
   };
@@ -91,24 +95,43 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
   const onDragBegin = () => {
     draggingRef.current = true;
     momentumRef.current = false;
+    releasedRef.current = false;
     if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     pause();
   };
 
-  // 관성 없이 손을 떼는 경우엔 onMomentumScrollEnd가 안 온다 → 잠깐 기다려 관성이 시작되지
-  // 않으면 여기서 안착 처리(안 그러면 타이머가 멈춘 채 영영 재개되지 않는다)
-  const onDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
+  /** 페이지 경계에 정확히 닿았는가(스냅 완료) */
+  const onBoundary = (x: number) => Math.abs(x - Math.round(x / width) * width) < 1;
+
+  // 관성 없이 손을 떼면 onMomentumScrollEnd가 안 온다 → 안착을 따로 잡아야 타이머가 영영
+  // 멈추지 않는다. Codex P2(3R): 손 뗀 시점 오프셋은 **스냅 전**이라 쓰면 안 된다 —
+  // 스냅이 끝난 오프셋(경계)에서 안착한다. 스크롤 이벤트가 경계에 닿으면 onScroll이
+  // 처리하고, 이미 경계에서 놓아 이벤트가 더 안 오면 이 폴백이 최신 오프셋으로 처리한다.
+  const onDragEnd = () => {
+    releasedRef.current = true;
     if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    settleTimerRef.current = setTimeout(() => {
-      if (draggingRef.current && !momentumRef.current) settle(x);
-    }, 150);
+    let tries = 0;
+    const check = () => {
+      if (!draggingRef.current || momentumRef.current) return; // 관성 경로가 맡는다
+      const x = offsetRef.current;
+      if (onBoundary(x) || tries >= 5) return settle(x); // 경계 도달(또는 이벤트 끊김 대비 상한)
+      tries += 1;
+      settleTimerRef.current = setTimeout(check, 150);
+    };
+    settleTimerRef.current = setTimeout(check, 150);
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    offsetRef.current = x;
+    // 손을 뗀 뒤 관성 콜백 없이 스냅이 진행되는 경우 — 경계에 닿는 순간이 안착이다
+    if (releasedRef.current && draggingRef.current && !momentumRef.current && onBoundary(x)) settle(x);
   };
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    offsetRef.current = e.nativeEvent.contentOffset.x;
     // 프로그램 스크롤(타이머)은 드래그 없이 끝나므로 사용자 스와이프로 세지 않는다
     if (!draggingRef.current) return;
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     settle(e.nativeEvent.contentOffset.x);
   };
 
@@ -122,6 +145,8 @@ export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위�
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onScrollBeginDrag={onDragBegin}
         onScrollEndDrag={onDragEnd}
         onMomentumScrollBegin={() => {

@@ -17,6 +17,13 @@ export const AUTO_SLIDE_MS = 2000;
 export function useAutoSlide(count: number, paused: boolean) {
   const [index, setIndex] = React.useState(0);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  // Codex P2(3R): start를 늦게 부르는 호출자(스와이프 안착 폴백 등)가 옛 렌더의 클로저를
+  // 들고 있어도 **지금의** paused·count를 보도록 ref로 읽는다. 클로저에 박으면 정지 중에
+  // 뒤늦게 도착한 호출이 타이머를 되살리고, 그걸 치울 의존성 변화도 더 오지 않는다.
+  const pausedRef = React.useRef(paused);
+  pausedRef.current = paused;
+  const countRef = React.useRef(count);
+  countRef.current = count;
 
   const stop = React.useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -25,14 +32,15 @@ export function useAutoSlide(count: number, paused: boolean) {
 
   const start = React.useCallback(() => {
     stop();
-    if (count < 2 || paused) return;
-    timerRef.current = setInterval(() => setIndex((i) => (i + 1) % count), AUTO_SLIDE_MS);
-  }, [count, paused, stop]);
+    if (countRef.current < 2 || pausedRef.current) return;
+    timerRef.current = setInterval(() => setIndex((i) => (i + 1) % countRef.current), AUTO_SLIDE_MS);
+  }, [stop]);
 
+  // start는 ref를 읽으므로 정지·장수 변화에 반응하려면 여기서 의존성으로 받는다
   React.useEffect(() => {
     start();
     return stop;
-  }, [start, stop]);
+  }, [start, stop, paused, count]);
 
   // 장수가 줄어 index가 범위를 벗어나면 처음으로(리페치로 이미지 목록이 바뀌는 경우)
   React.useEffect(() => {

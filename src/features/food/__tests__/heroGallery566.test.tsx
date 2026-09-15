@@ -112,6 +112,17 @@ describe('useAutoSlide — 타이머 규칙', () => {
     expect(out.current!.index).toBe(1);
   });
 
+  it('Codex P2(3R) — 옛 렌더에서 잡아 둔 onUserSwipe를 정지 후에 불러도 타이머가 안 생긴다', () => {
+    const { out, rerender } = mountSlide(3, false);
+    const staleSwipe = out.current!.onUserSwipe; // paused=false 시점의 클로저
+    rerender(3, true); // 정지
+    const setSpy = jest.spyOn(global, 'setInterval');
+    act(() => { staleSwipe(2); }); // 뒤늦게 도착한 호출
+    expect(setSpy).not.toHaveBeenCalled();
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS * 3); });
+    expect(out.current!.index).toBe(2); // 안착은 반영, 자동 넘김은 없음
+  });
+
   it('장수가 줄어 범위를 벗어나면 처음으로', () => {
     const { out, rerender } = mountSlide(4);
     act(() => { out.current!.onUserSwipe(3); });
@@ -259,14 +270,56 @@ describe('Codex P2 — 드래그 시작 순간 멈추고, 안착한 장에서 �
     expect(dotIdx(tree)).toBe(3);
   });
 
-  it('관성 없이 손을 떼도 영영 멈추지 않는다(안착 폴백)', async () => {
+  it('관성 없이 경계에서 손을 떼도 영영 멈추지 않는다(폴백이 최신 오프셋으로 안착)', async () => {
     const tree = await renderIt();
     act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
-    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // momentum 이벤트 없음
-    act(() => { jest.advanceTimersByTime(200); }); // 폴백 대기(150ms) 경과
+    act(() => { list(tree).props.onScroll(ev(WIDTH)); }); // 이미 경계까지 끌어 놓음
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); }); // momentum 이벤트 없음·이후 스크롤 이벤트도 없음
+    act(() => { jest.advanceTimersByTime(200); }); // 폴백(150ms) 경과
     expect(dotIdx(tree)).toBe(1);
     act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
     expect(dotIdx(tree)).toBe(2); // 재개됨
+  });
+
+  it('Codex P2(3R) — 손 뗀 뒤 관성 콜백 없이 스냅이 진행되면 **스냅 끝난 장**에서 안착', async () => {
+    const tree = await renderIt();
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    // 0.4장 지점에서 손을 뗌 — 손 뗀 오프셋으로 반올림하면 0번 장(틀림)
+    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.4)); });
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH * 0.4)); });
+    // 스냅이 1번 장으로 진행(관성 콜백 없이 onScroll만 옴)
+    act(() => { list(tree).props.onScroll(ev(WIDTH * 0.8)); });
+    expect(dotIdx(tree)).toBe(0); // 아직 경계 전 — 안착 안 함
+    act(() => { list(tree).props.onScroll(ev(WIDTH)); }); // 경계 도달 = 안착
+    expect(dotIdx(tree)).toBe(1); // 손 뗀 시점(0.4→0)이 아니라 실제 표시된 장
+  });
+
+  it('Codex P2(3R) — 폴백 대기 중 정지(background)되면 타이머를 되살리지 않는다', async () => {
+    // AppState 리스너를 확실히 붙잡는다(조건부 단언 금지 — 못 잡으면 테스트가 실패해야 한다)
+    let appListener: ((s: string) => void) | undefined;
+    const RN = require('react-native') as typeof import('react-native');
+    jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => {
+      appListener = cb;
+      return { remove: jest.fn() };
+    }) as never);
+    const tree = await renderIt();
+    expect(appListener).toBeDefined();
+
+    act(() => { list(tree).props.onScrollBeginDrag(ev(0)); });
+    act(() => { list(tree).props.onScroll(ev(WIDTH)); });
+    act(() => { list(tree).props.onScrollEndDrag(ev(WIDTH)); });
+    act(() => { appListener!('background'); }); // 폴백 150ms 창 안에서 백그라운드
+
+    const setSpy = jest.spyOn(global, 'setInterval');
+    act(() => { jest.advanceTimersByTime(200); }); // 폴백 발화 — 옛 렌더 클로저가 start를 부른다
+    expect(setSpy.mock.calls.filter((c) => c[1] === AUTO_SLIDE_MS)).toHaveLength(0); // 정지 중 interval 생성 0
+    expect(dotIdx(tree)).toBe(1); // 안착 자체는 반영(재개 시 표시된 장과 index가 맞아야 한다)
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS * 3); });
+    expect(dotIdx(tree)).toBe(1); // 정지 중 넘어가지 않음
+
+    act(() => { appListener!('active'); }); // 복귀하면 안착한 장에서 재개
+    act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); });
+    expect(dotIdx(tree)).toBe(2);
   });
 
   it('프로그램 스크롤(타이머)의 관성 종료는 사용자 스와이프로 세지 않는다', async () => {
