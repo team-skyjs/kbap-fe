@@ -234,6 +234,21 @@ export function SkeletonMyReviews() {
   );
 }
 
+/** KB-499 알림함: 구분선 행 ×3 — 실제 행(padding 16 · 제목/본문/시각 3줄 · 하단 헤어라인) 골격 미러. */
+export function SkeletonInbox() {
+  return (
+    <View testID="skeleton-inbox">
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={{ padding: 16, gap: 6, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }}>
+          <SkBar w="60%" h={12} />
+          <SkBar w="90%" h={10} />
+          <SkBar w="30%" h={10} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 /** P-287 마이 푸드 목록(4003:12851): 카드 ×4 h102(하단 line). */
 export function SkeletonMyFoods() {
   return (

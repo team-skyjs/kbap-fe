@@ -87,7 +87,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', setLang: jest.fn() }) }));
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false, useSession: () => null })); // KB-499: 배지 훅 — null = 요청 0
 
 const mockUseHome = jest.fn();
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockUseHome() }));
@@ -105,6 +105,7 @@ jest.mock('@/lib/data/useFoods', () => ({
 jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }), useToggleBookmark: () => ({ mutate: jest.fn() }) }));
 // P-216: 홈 전 콘텐츠 훅 표면 목 — 빈 데이터 = 섹션 숨김(이 스위트의 관심사 밖)
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: undefined }) }));
+jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — Provider 없는 스위트
 
 import Home from '../(tabs)/index';
 import Food from '../(tabs)/food';

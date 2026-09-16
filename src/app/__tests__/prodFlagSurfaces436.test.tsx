@@ -58,7 +58,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', setLang: jest.fn() }) }));
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false, useSession: () => null })); // KB-499: 배지 훅 — null = 요청 0
 jest.mock('@/lib/auth/session', () => ({ logOut: jest.fn() }));
 jest.mock('@/lib/sentry', () => ({ tapSentrySelfcheck: () => null }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
@@ -105,6 +105,7 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: { pages: [] } }) }));
+jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — Provider 없는 스위트
 jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }),
   useBookmarks: () => ({ data: [], hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }),
   useToggleBookmark: () => ({ mutate: jest.fn() }),
@@ -203,6 +204,6 @@ it('⑤⑥ 소스 감사 — 온보딩 ORDER 5스텝(프리셋 포함)·탭 4 �
   expect(fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8')).toContain('<FoodExplorer variant="embedded"');
   expect(fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8')).toContain('variant="screen"');
   expect(fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8')).toContain('return <ReviewFeed />');
-  // 버전 1.0.2(프로필 하단 버전 줄 소스)
-  expect(JSON.parse(fs.readFileSync('app.json', 'utf8')).expo.version).toBe('1.0.2');
+  // 버전 1.0.3(프로필 하단 버전 줄 소스) — #162 범프(ITMS-90186) 반영, 범프 시 함께 갱신
+  expect(JSON.parse(fs.readFileSync('app.json', 'utf8')).expo.version).toBe('1.0.3');
 });

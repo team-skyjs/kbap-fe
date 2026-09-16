@@ -123,7 +123,7 @@
   "community": {
     "title": "커뮤니티",
     "deletedUser": "탈퇴한 사용자",
-    "justNow": "방금",
+    "justNow": "방금 전",
     "minsAgo": "{{count}}분 전",
     "hoursAgo": "{{count}}시간 전",
     "seeMore": "더보기",
@@ -982,17 +982,6 @@
     "title": "알림",
     "empty": "아직 알림이 없어요",
     "emptyBody": "리뷰와 스캔 관련 소식이 여기에 표시돼요.",
-    "markAllRead": "모두 읽음으로 표시",
-    "helpfulTitle": "내 리뷰가 도움이 됐어요",
-    "helpfulBody": "김치찌개 리뷰에 '도움돼요' 반응이 달렸어요.",
-    "reminderTitle": "식사는 어떠셨나요?",
-    "reminderBody": "주문한 메뉴에 리뷰를 남겨 보세요.",
-    "scanSuggestionTitle": "오늘 외식하시나요?",
-    "scanSuggestionBody": "주문 전에 메뉴를 스캔해 보세요.",
-    "newsTitle": "K-Bap 소식",
-    "newsBody": "새 기능과 이벤트 안내를 확인하세요.",
-    "mealTimeTitle": "식사 시간이에요",
-    "mealTimeBody": "메뉴판을 스캔하면 내 기피 재료를 바로 확인할 수 있어요.",
     "newBadge": "NEW"
   },
   "myFoods": {

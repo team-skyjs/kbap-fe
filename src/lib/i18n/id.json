@@ -982,17 +982,6 @@
     "title": "Notifikasi",
     "empty": "Belum ada notifikasi",
     "emptyBody": "Kabar tentang ulasan dan pemindaian akan muncul di sini.",
-    "markAllRead": "Tandai semua sudah dibaca",
-    "helpfulTitle": "Ulasanmu dinilai membantu",
-    "helpfulBody": "Ulasanmu tentang sup kimchi mendapat satu suara membantu.",
-    "reminderTitle": "Bagaimana makanannya?",
-    "reminderBody": "Tulis ulasan singkat untuk hidangan yang kamu pesan.",
-    "scanSuggestionTitle": "Makan di luar hari ini?",
-    "scanSuggestionBody": "Pindai menu sebelum memesan.",
-    "newsTitle": "Kabar K-Bap",
-    "newsBody": "Lihat fitur baru dan info acara.",
-    "mealTimeTitle": "Waktunya makan",
-    "mealTimeBody": "Pindai menu untuk langsung mengecek bahan yang kamu hindari.",
     "newBadge": "NEW"
   },
   "myFoods": {

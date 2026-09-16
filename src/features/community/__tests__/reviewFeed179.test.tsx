@@ -56,7 +56,7 @@ jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 const mockSheet = jest.fn(() => null);
 jest.mock('@/app/community/compose', () => ({ TagPickerSheet: (p: unknown) => mockSheet(p) }));
 const mockIsGuest = jest.fn(() => false);
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest(), useSession: () => (mockIsGuest() ? false : null) })); // KB-499: 헤더 배지 훅이 useSession도 읽음(null = 쿼리 비활성)
 const mockToggle = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useToggleReviewLike: () => ({ mutate: mockToggle }),
@@ -66,6 +66,7 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
 const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null; scanQuota?: unknown } | undefined }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
+jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
 const mockFeed = jest.fn();
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
 
