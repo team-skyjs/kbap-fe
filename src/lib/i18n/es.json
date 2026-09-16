@@ -1010,6 +1010,16 @@
     "dishes": "Platos",
     "receiptDate": "FECHA",
     "receiptLocation": "UBICACIÓN",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} más",
+    "sharePreviewCaption": "Vista previa de la tarjeta 9:16",
+    "shareDownload": "Guardar\nimagen",
+    "shareInstagram": "Historia de\nInstagram",
+    "sharePhotoDenied": "Permite el acceso a fotos para guardar la tarjeta de historia.",
+    "shareSaved": "Guardado en tus fotos.",
+    "shareNoInstagram": "Instagram no está instalado en este teléfono.",
+    "shareFailed": "No se pudo crear la tarjeta de historia. Inténtalo de nuevo.",
+    "shareStoryHint": "Guarda la imagen y compártela en Instagram.",
+    "sharePhotosFailed": "No se pudieron cargar las fotos. Toca para reintentar."
   }
 }

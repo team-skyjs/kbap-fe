@@ -78,6 +78,10 @@ export const EVENTS = {
   community_post_submit: 'community_post_submit',
   community_comment_submit: 'community_comment_submit',
   auth_account_delete: 'auth_account_delete',
+  // P-380(KB-518, 5단계): 주문 공유 카드. CSV 등재 예정
+  order_share_view: 'order_share_view',
+  order_share_save: 'order_share_save',
+  order_share_story: 'order_share_story',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -122,6 +126,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],
   auth_account_delete: [],
+  // P-380 🔒: 속성은 **음식 개수·장소 유무**까지만(발주 고정) — 가게명·주소·좌표·사진 URI 금지.
+  order_share_view: ['item_count', 'has_place'],
+  order_share_save: ['result', 'item_count', 'has_place'], // result: tap|success|denied|error
+  order_share_story: ['result', 'item_count', 'has_place'], // result: tap|success|not_installed|error
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정

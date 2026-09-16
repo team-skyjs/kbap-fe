@@ -1009,6 +1009,16 @@
     "dishes": "เมนู",
     "receiptDate": "วันที่",
     "receiptLocation": "สถานที่",
-    "receiptTotal": "รวม"
+    "receiptTotal": "รวม",
+    "shareMenuMore": "และอีก {{count}}",
+    "sharePreviewCaption": "ตัวอย่างการ์ดสตอรี่ 9:16",
+    "shareDownload": "บันทึก\nรูป",
+    "shareInstagram": "สตอรี่\nInstagram",
+    "sharePhotoDenied": "อนุญาตให้เข้าถึงรูปภาพเพื่อบันทึกการ์ดสตอรี่",
+    "shareSaved": "บันทึกลงรูปภาพแล้ว",
+    "shareNoInstagram": "เครื่องนี้ยังไม่ได้ติดตั้ง Instagram",
+    "shareFailed": "สร้างการ์ดสตอรี่ไม่สำเร็จ ลองอีกครั้ง",
+    "shareStoryHint": "บันทึกรูปแล้วแชร์บน Instagram",
+    "sharePhotosFailed": "โหลดรูปไม่สำเร็จ แตะเพื่อลองใหม่"
   }
 }

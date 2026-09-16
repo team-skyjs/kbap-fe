@@ -1009,6 +1009,16 @@
     "dishes": "菜品",
     "receiptDate": "日期",
     "receiptLocation": "地點",
-    "receiptTotal": "合計"
+    "receiptTotal": "合計",
+    "shareMenuMore": "等{{count}}項",
+    "sharePreviewCaption": "9:16 限時動態卡片預覽",
+    "shareDownload": "儲存\n圖片",
+    "shareInstagram": "Instagram\n限時動態",
+    "sharePhotoDenied": "允許存取照片後即可儲存限時動態卡片。",
+    "shareSaved": "已儲存到相簿。",
+    "shareNoInstagram": "此裝置未安裝 Instagram。",
+    "shareFailed": "無法產生限時動態卡片，請再試一次。",
+    "shareStoryHint": "先儲存圖片，再到 Instagram 分享。",
+    "sharePhotosFailed": "圖片載入失敗，點擊重試。"
   }
 }

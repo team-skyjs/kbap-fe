@@ -1009,6 +1009,16 @@
     "dishes": "Món ăn",
     "receiptDate": "NGÀY",
     "receiptLocation": "ĐỊA ĐIỂM",
-    "receiptTotal": "TỔNG"
+    "receiptTotal": "TỔNG",
+    "shareMenuMore": "+{{count}} món nữa",
+    "sharePreviewCaption": "Xem trước thẻ story 9:16",
+    "shareDownload": "Lưu\nảnh",
+    "shareInstagram": "Story\nInstagram",
+    "sharePhotoDenied": "Cho phép truy cập ảnh để lưu thẻ story.",
+    "shareSaved": "Đã lưu vào ảnh của bạn.",
+    "shareNoInstagram": "Điện thoại này chưa cài Instagram.",
+    "shareFailed": "Không tạo được thẻ story. Hãy thử lại.",
+    "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram.",
+    "sharePhotosFailed": "Không tải được ảnh. Chạm để thử lại."
   }
 }

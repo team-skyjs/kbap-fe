@@ -1008,6 +1008,16 @@
     "dishes": "Dishes",
     "receiptDate": "DATE",
     "receiptLocation": "LOCATION",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} more",
+    "sharePreviewCaption": "9:16 Story Card preview",
+    "shareDownload": "Download\nimage",
+    "shareInstagram": "Instagram\nStory",
+    "sharePhotoDenied": "Allow photo access to save your story card.",
+    "shareSaved": "Saved to your photos.",
+    "shareNoInstagram": "Instagram isn't installed on this phone.",
+    "shareFailed": "Couldn't create the story card. Try again.",
+    "shareStoryHint": "Save the image, then share it on Instagram.",
+    "sharePhotosFailed": "Couldn't load the photos. Tap to retry."
   }
 }
