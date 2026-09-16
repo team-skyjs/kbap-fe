@@ -1445,6 +1445,6 @@
 - [x] 삭제: `lib/notifications/inbox.ts`(kbap.inbox.v1 로컬 스토어)·`inbox216` 스위트. 화면 `notifications.tsx` = 스켈레톤(`SkeletonInbox`)·`QueryErrorBlock` 재시도·`EmptyBlock`·서버 title/body·`timeAgo`, 소스 잠금 리터럴(deleteEmpty329·parityDsHome486) 유지. flags 주석 갱신.
 - [x] i18n: 10로케일 `inbox` 11키 제거(유형별 문구·markAllRead), 신설 0. `inboxKeys498` 개정(4키 패리티·제거 키 부재·상대 시각 4키·zh 공백 0·gate 신설 없음 잠금).
 - [x] 테스트: 신규 `useNotifications499`(어댑터·목록/파생·세션 게이트·낙관/롤백·세대 가드·onPushTapped·실클라 X-Installation-Id 헤더 2요청) · `inbox499`(3상태·행·탭 이동 4종·프레임 불변·게스트 Redirect·소스 잠금) · `timeAgo499`(경계 9종+en/zh) · `pushAdapter192` +1(invalidate 3경로). 헤더를 렌더하는 스위트 7곳 목 보강(`useSession` 추가 5·`useNotifications` 목 3 — 부분 목/Provider 부재의 예측된 파급). tsc 0(shareExport 3건은 워크트리 node_modules 부재 — 부모 체크아웃에 KB-518 신규 dep 미설치, 무관) · jest 220스위트 1604/1605 — **실패 1 = 기존**(`prodFlagSurfaces436` app.json 1.0.3 vs 테스트 1.0.2, #162 범프 미반영, 이 브랜치 무관).
-- [ ] BE 응답 `type`·`foodId` dev 배포 확인(9/16 Swagger 재조회: 아직 5필드) → 배포 후 알림함 항목 탭 이동 실기.
+- [x] BE 응답 `type`(필수)·`foodId`(nullable) dev Swagger 반영 확인(9/16 저녁) — 어댑터 무변(옵션 필드), 항목 탭 이동 실기 가능.
 - [ ] dev 실기(quickstart §3 1~9) 미실시 — 검증 회원 소식 동의 ON 선행, 관리자 test-push. 발행은 예진 승인(JS-only OTA 가능).
 - [x] draft PR #163(develop). 리뷰 포인트 3: ① 커뮤니티 "방금"→"방금 전" 공유 문구 ② `enabled = useSession()===true` ③ 항목 탭 이동은 BE 배포 전 비활성.

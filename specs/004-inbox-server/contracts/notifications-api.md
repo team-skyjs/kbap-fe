@@ -31,14 +31,14 @@
 
 `readAt` 없음. 오류: 400(헤더 불량) · 401(비회원).
 
-**확장 요청분(2026-09-16, clarify Q2 → BE kbap-16 전달, dev 배포 대기)** — 목록·읽음 응답 항목 공통:
+**확장분(2026-09-16 clarify Q2 → BE 반영, 같은 날 dev Swagger 확인)** — 목록·읽음 응답 항목 공통(Swagger: "목록 조회와 읽음 처리가 같은 스키마를 쓴다"):
 
 | 필드 | 타입 | 필수 | 의미 |
 |------|------|------|------|
-| `type` | string | ✓(배포 후) | 푸시 `data.type`과 같은 enum: `HELPFUL` `SCAN_SUGGESTION` `REVIEW_REMINDER` `NEWS` `MEAL_TIME`. 구 행은 저장 문자열 그대로 가능(앱은 미지 유형 = 이동 없음) |
-| `foodId` | int64, nullable | — | `REVIEW_REMINDER`만 값, 그 외 null |
+| `type` | string | ✓ | 푸시 `data.type`과 같은 enum: `HELPFUL` `SCAN_SUGGESTION` `REVIEW_REMINDER` `NEWS` `MEAL_TIME`. 구 행은 저장 문자열 그대로 가능(앱은 미지 유형 = 이동 없음) |
+| `foodId` | int64, nullable | — | `REVIEW_REMINDER`만 값, 그 외 항상 null. REVIEW_REMINDER라도 값이 없거나 정수가 아니면 null |
 
-X-API-Version 불변(가산 필드). 앱 어댑터는 두 필드를 **옵션**으로 읽어 배포 전 응답에서도 동작한다(이동만 비활성).
+X-API-Version 불변(가산 필드). 앱 어댑터는 두 필드를 **옵션**으로 읽어 구 응답·구 행에서도 깨지지 않는다(모르는 유형 = 이동 없음).
 
 ## PATCH /api/notifications/{notificationId}/read — 읽음 처리
 

@@ -33,7 +33,7 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 - **Decision**: clarify Q2에서 종한이 BE 확장을 택했다 — BE가 `GET /api/notifications`·`PATCH …/read` 응답 항목에 `type`(푸시 `data.type`과 같은 enum)·`foodId`(REVIEW_REMINDER만, 그 외 null)를 추가한다(요청 프롬프트 전달 2026-09-16, dev 배포 후 Swagger 재확인). 항목 탭 = `if (!item.read) markRead.mutate(item.id)` → `const href = routeForNotificationData({ type: item.type, foodId: item.foodId }); if (href) router.push(href)`. 유형이 없거나 미지 유형이면 `routeForNotificationData`가 `null`을 돌려 알림함에 머문다(FR-008 개정). 전체 읽음 엔드포인트가 없으므로 헤더 trailing "모두 읽음"(`inbox-mark-all`·`inbox.markAllRead`)은 제거(Q3 확정). 이미 읽은 항목 탭은 뮤테이션 없이 이동만(FR-007 ④).
 - **Rationale**: 푸시 탭과 알림함 탭이 같은 함수(`routeForNotificationData`)를 쓰므로 이동 규칙 SSOT 1곳(착지 결정 변경 시 한 곳만 수정). BE 배포 전에도 FE는 머지 가능 — 필드가 없으면 자동으로 이동 없음.
 - **Alternatives considered**: 제목 문자열 매칭으로 유형 추정 — 언어별 문자열이라 불가. 클라 반복 PATCH로 "모두 읽음" 흉내 — N요청·부분 실패 상태 혼선. 기각.
-- **의존**: BE 응답 확장 dev 배포. 미배포 상태로 실기하면 항목 탭 이동은 검증 불가(읽음만 검증).
+- **의존 해소**: BE 응답 확장이 2026-09-16 dev Swagger에 반영됨(`type` 필수·`foodId` nullable, 목록·읽음 공통 스키마). 실기에서 항목 탭 이동 검증 가능.
 
 ## R-6. 읽음 뮤테이션 — 낙관·롤백·세션 세대 가드
 
