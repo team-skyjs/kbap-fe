@@ -1019,6 +1019,7 @@
     "sharePhotoDenied": "Permite el acceso a fotos para guardar la tarjeta de historia.",
     "shareSaved": "Guardado en tus fotos.",
     "shareNoInstagram": "Instagram no está instalado en este teléfono.",
-    "shareFailed": "No se pudo crear la tarjeta de historia. Inténtalo de nuevo."
+    "shareFailed": "No se pudo crear la tarjeta de historia. Inténtalo de nuevo.",
+    "shareStoryHint": "Guarda la imagen y compártela en Instagram."
   }
 }

@@ -1017,6 +1017,7 @@
     "sharePhotoDenied": "Allow photo access to save your story card.",
     "shareSaved": "Saved to your photos.",
     "shareNoInstagram": "Instagram isn't installed on this phone.",
-    "shareFailed": "Couldn't create the story card. Try again."
+    "shareFailed": "Couldn't create the story card. Try again.",
+    "shareStoryHint": "Save the image, then share it on Instagram."
   }
 }

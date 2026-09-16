@@ -11,6 +11,7 @@ import {
   EXPORT_W,
   saveCardToPhotos,
   shareCardToStory,
+  storyShareAvailable,
   type ShareDeps,
 } from '../shareExport';
 import { SHARE_CARD_W } from '../shareCard';
@@ -25,6 +26,7 @@ function deps(over: Partial<ShareDeps> = {}): ShareDeps {
     saveToLibrary: jest.fn().mockResolvedValue(undefined),
     isInstagramInstalled: jest.fn().mockResolvedValue(true),
     shareToStory: jest.fn().mockResolvedValue(undefined),
+    storyAvailable: jest.fn().mockReturnValue(true),
     ...over,
   };
 }
@@ -93,6 +95,24 @@ describe('인스타 스토리', () => {
     expect(await shareCardToStory(ref, deps({ shareToStory: jest.fn().mockRejectedValue(new Error('x')) }))).toBe('error');
   });
 
+  it('Codex P1 — iOS는 Meta appId 있을 때만 성립 · Android는 appId 무관(4분기)', () => {
+    expect(storyShareAvailable('ios', '')).toBe(false);
+    expect(storyShareAvailable('ios', '  ')).toBe(false); // 공백뿐 = 없음
+    expect(storyShareAvailable('ios', '1234567890')).toBe(true);
+    expect(storyShareAvailable('android', '')).toBe(true);
+    expect(storyShareAvailable('android', '1234567890')).toBe(true);
+  });
+
+  it('Codex P1 — appId 없는 iOS는 unavailable(캡처·공유 미실행) · 빈 appId 전달 금지', async () => {
+    const d = deps({ storyAvailable: jest.fn().mockReturnValue(false) });
+    expect(await shareCardToStory(ref, d)).toBe('unavailable');
+    expect(d.capture).not.toHaveBeenCalled();
+    expect(d.shareToStory).not.toHaveBeenCalled();
+    const src = read('src/features/order/shareExport.ts');
+    expect(src).toContain('...(META_APP_ID ? { appId: META_APP_ID } : {})'); // 빈 문자열을 넘기지 않는다
+    expect(src).toContain('process.env.EXPO_PUBLIC_META_APP_ID'); // 하드코딩 금지 — env가 들어오면 그대로 산다
+  });
+
   it('Android 설치 판별은 패키지 가시성 대상 패키지를 그대로 쓴다(app.json <queries>와 한 쌍)', () => {
     const src = read('src/features/order/shareExport.ts');
     expect(src).toContain("isPackageInstalled('com.instagram.android')");
@@ -128,5 +148,35 @@ describe('5단계 계측 — 이벤트·속성 스키마', () => {
     // 권한 거부 안내 = 공용 시트(이 화면은 P-355로 네이티브 Alert를 걷어냈다)
     expect(src).toContain('setPhotoDenied(true)');
     expect(src).not.toContain('Alert.alert');
+  });
+});
+
+describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
+  it('화면이 프리페치 완료까지 busy로 잠그고, 실패해도 영구 잠금되지 않는다', () => {
+    const src = read('src/app/profile/order/[id].tsx');
+    expect(src).toContain('const [photosReady, setPhotosReady] = React.useState(false)');
+    expect(src).toContain('Image.prefetch(');
+    expect(src).toContain('busy={!photosReady}');
+    expect(src).toContain('.finally(() => { if (alive) setPhotosReady(true); })'); // 실패도 해제
+  });
+
+  it('버튼 비활성은 불투명도만 — 프레임 메트릭 불변(P-151)', () => {
+    const src = read('src/features/order/OrderShareCard.tsx');
+    expect(src).toContain('actionBusy: { opacity: 0.45 }');
+    expect(src).toContain('disabled={busy}');
+    const busyStyle = src.slice(src.indexOf('actionBusy:'), src.indexOf('actionBusy:') + 60);
+    for (const metric of ['padding', 'height', 'borderWidth', 'borderRadius', 'gap']) {
+      expect(busyStyle).not.toContain(metric);
+    }
+  });
+
+  it('스토리 버튼이 없으면 대체 경로 안내를 대신 보여 준다(빈 자리 금지)', () => {
+    const src = read('src/features/order/OrderShareCard.tsx');
+    expect(src).toContain('{storyAvailable && (');
+    expect(src).toContain('testID="share-story-hint"');
+    for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+      const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { myFoods: Record<string, string> };
+      expect(j.myFoods.shareStoryHint).toBeTruthy();
+    }
   });
 });

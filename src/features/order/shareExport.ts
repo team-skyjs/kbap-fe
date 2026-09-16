@@ -27,7 +27,32 @@ export const CANVAS_H = EXPORT_H / 4;
 export const CARD_SCALE = (CANVAS_W * EXPORT_CARD_RATIO) / SHARE_CARD_W;
 
 export type SaveResult = 'success' | 'denied' | 'error';
-export type StoryResult = 'success' | 'not_installed' | 'error';
+export type StoryResult = 'success' | 'not_installed' | 'unavailable' | 'error';
+
+/**
+ * Meta App ID — **iOS 스토리 공유의 전제**(react-native-share 계약). 공개 값이라 시크릿이
+ * 아니지만 하드코딩하지 않는다: 앱 등록이 끝나면 env만 채우면 버튼이 살아난다.
+ * 빈 값을 넘기면 iOS는 매번 실패하므로 **호출 자체를 막는다**(9/16 커맨드 센터 결정).
+ */
+export const META_APP_ID = process.env.EXPO_PUBLIC_META_APP_ID ?? '';
+
+/**
+ * 스토리 공유를 노출할지 — Android는 항상(패키지 가시성으로 설치 판별),
+ * iOS는 **appId가 있을 때만**. 값이 들어오면 코드 변경 없이 버튼이 나타난다.
+ */
+export function storyShareAvailable(os: string = PLATFORM_OS, appId: string = META_APP_ID): boolean {
+  return os === 'android' || !!appId.trim();
+}
+
+/** Platform.OS 지연 참조 — 순수 함수 테스트에서 인자로 갈아끼운다. */
+const PLATFORM_OS: string = (() => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return (require('react-native') as typeof import('react-native')).Platform.OS as string;
+  } catch {
+    return 'ios';
+  }
+})();
 
 export interface ShareDeps {
   capture: (ref: React.RefObject<View | null>) => Promise<string>;
@@ -35,6 +60,8 @@ export interface ShareDeps {
   saveToLibrary: (uri: string) => Promise<void>;
   isInstagramInstalled: () => Promise<boolean>;
   shareToStory: (uri: string) => Promise<void>;
+  /** iOS는 Meta appId가 있어야 스토리 공유가 성립 — 화면 게이트와 같은 판정(2중 방어). */
+  storyAvailable: () => boolean;
 }
 
 /* ---- 기본 구현(지연 require — 모듈 부재·구 번들에서도 import 시점에 죽지 않는다) ---- */
@@ -76,25 +103,20 @@ export const defaultDeps: ShareDeps = {
     // iOS — LSApplicationQueriesSchemes에 instagram-stories 등재됨(1단계)
     return Linking.canOpenURL('instagram-stories://share');
   },
+  storyAvailable: () => storyShareAvailable(),
   shareToStory: async (uri) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ShareMod = require('react-native-share') as { default: { shareSingle: (o: Record<string, unknown>) => Promise<unknown>; Social: Record<string, string> } };
     const Share = ShareMod.default;
     await Share.shareSingle({
       social: Share.Social.INSTAGRAM_STORIES,
-      appId: INSTAGRAM_APP_ID,
+      // 빈 값 전달 금지 — 없으면 애초에 이 경로로 오지 않는다(storyShareAvailable 게이트)
+      ...(META_APP_ID ? { appId: META_APP_ID } : {}),
       backgroundImage: uri,
       // 스토리 편집기가 열리면 사용자가 스티커·텍스트를 얹는다 — 우리가 링크를 붙이지 않는다
     });
   },
 };
-
-/**
- * iOS 스토리 공유는 Meta appId를 요구한다(react-native-share 계약). 아직 앱 등록 전이라
- * 빈 값이면 iOS에서 실패 분기로 떨어진다 — **안드로이드 경로는 영향 없다**.
- * 실기 확인 후 값이 필요하면 커맨드 센터에 Meta 앱 등록을 요청한다(REPORTS 기재).
- */
-export const INSTAGRAM_APP_ID = '';
 
 /** 저장 흐름 — 권한 거부·실패를 결과값으로만 돌려준다(화면이 안내·계측을 판단). */
 export async function saveCardToPhotos(
@@ -117,6 +139,8 @@ export async function shareCardToStory(
   deps: ShareDeps = defaultDeps,
 ): Promise<StoryResult> {
   try {
+    // appId 없는 iOS = 버튼이 숨겨져 있어 도달하지 않는 경로(2중 방어)
+    if (!deps.storyAvailable()) return 'unavailable';
     if (!(await deps.isInstagramInstalled())) return 'not_installed';
     const uri = await deps.capture(ref);
     await deps.shareToStory(uri);

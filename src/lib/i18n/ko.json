@@ -1018,6 +1018,7 @@
     "sharePhotoDenied": "사진 접근을 허용하면 스토리 카드를 저장할 수 있어요.",
     "shareSaved": "사진첩에 저장했어요.",
     "shareNoInstagram": "이 기기에 인스타그램이 없어요.",
-    "shareFailed": "스토리 카드를 만들지 못했어요. 다시 시도해 주세요."
+    "shareFailed": "스토리 카드를 만들지 못했어요. 다시 시도해 주세요.",
+    "shareStoryHint": "이미지를 저장한 뒤 인스타그램에서 공유해 주세요."
   }
 }

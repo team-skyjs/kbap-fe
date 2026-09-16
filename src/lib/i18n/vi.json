@@ -1018,6 +1018,7 @@
     "sharePhotoDenied": "Cho phép truy cập ảnh để lưu thẻ story.",
     "shareSaved": "Đã lưu vào ảnh của bạn.",
     "shareNoInstagram": "Điện thoại này chưa cài Instagram.",
-    "shareFailed": "Không tạo được thẻ story. Hãy thử lại."
+    "shareFailed": "Không tạo được thẻ story. Hãy thử lại.",
+    "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram."
   }
 }

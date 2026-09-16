@@ -1018,6 +1018,7 @@
     "sharePhotoDenied": "写真へのアクセスを許可すると、ストーリーカードを保存できます。",
     "shareSaved": "写真に保存しました。",
     "shareNoInstagram": "この端末にInstagramがありません。",
-    "shareFailed": "ストーリーカードを作成できませんでした。もう一度お試しください。"
+    "shareFailed": "ストーリーカードを作成できませんでした。もう一度お試しください。",
+    "shareStoryHint": "画像を保存してから、Instagramでシェアしてください。"
   }
 }

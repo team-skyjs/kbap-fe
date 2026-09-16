@@ -23,7 +23,7 @@ import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { orderPlaceLabel, useOrderDetail } from '@/lib/data/useOrders';
 import { OrderShareExportCanvas, OrderShareSection } from '@/features/order/OrderShareCard';
 import { shareMenuLine, shareMetaCity } from '@/features/order/shareCard';
-import { saveCardToPhotos, shareCardToStory } from '@/features/order/shareExport';
+import { saveCardToPhotos, shareCardToStory, storyShareAvailable } from '@/features/order/shareExport';
 import { showTopToast } from '@/components/topToastStore';
 import { openAppSettings } from '@/lib/openExternal';
 import { EVENTS, track } from '@/lib/analytics';
@@ -45,6 +45,9 @@ export default function OrderDetailScreen() {
   const exportRef = React.useRef<View>(null);
   const shareBusy = React.useRef(false); // 연타 차단(캡처는 수백 ms 걸린다)
   const [photoDenied, setPhotoDenied] = React.useState(false); // 사진첩 권한 거부 안내 시트
+  // Codex #151 P2: 내보내기 캔버스의 원격 이미지가 로드되기 전에 찍으면 빈 칸·셔머가 박힌다.
+  // 프리페치가 끝나기 전까지 캡처 액션을 잠근다(캐시가 차면 양쪽 인스턴스가 같이 산다).
+  const [photosReady, setPhotosReady] = React.useState(false);
 
   // P-380: 카드 데이터 — 미리보기와 내보내기 캔버스가 **같은 값**을 쓴다(둘이 어긋나면
   // 사용자가 본 것과 저장된 것이 달라진다)
@@ -72,6 +75,20 @@ export default function OrderDetailScreen() {
     track(EVENTS.order_share_view, shareProps);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareVisible]);
+
+  const sharePhotos = q.data?.thumbnails ?? [];
+  const photosKey = sharePhotos.join('|');
+  React.useEffect(() => {
+    if (!photosKey) return setPhotosReady(true); // 사진 0장 = 섹션 자체가 안 뜬다
+    let alive = true;
+    setPhotosReady(false);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Image } = require('expo-image') as typeof import('expo-image');
+    void Image.prefetch(photosKey.split('|'))
+      .catch(() => {}) // 실패해도 잠가 두지 않는다 — 폴백 렌더가 찍힌다(무한 비활성 금지)
+      .finally(() => { if (alive) setPhotosReady(true); });
+    return () => { alive = false; };
+  }, [photosKey]);
 
   const onDownload = React.useCallback(async () => {
     if (shareBusy.current) return;
@@ -220,6 +237,9 @@ export default function OrderDetailScreen() {
               instagramLabel={t('myFoods.shareInstagram')}
               onDownload={onDownload}
               onInstagram={onInstagram}
+              storyAvailable={storyShareAvailable()}
+              storyHint={t('myFoods.shareStoryHint')}
+              busy={!photosReady}
             />
             </>
           )}

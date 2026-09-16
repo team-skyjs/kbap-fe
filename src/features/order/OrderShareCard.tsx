@@ -117,6 +117,12 @@ export function OrderShareSection({
   onDownload,
   onInstagram,
   cardRef,
+  /** 스토리 버튼 노출 — iOS는 Meta appId가 있어야 true(없으면 눌러서 실패하는 경로를 없앤다). */
+  storyAvailable = true,
+  /** 스토리 버튼이 없을 때 대신 보여 줄 한 줄 안내("저장해서 인스타에서 공유"). */
+  storyHint,
+  /** 내보내기 이미지가 아직 로드 중 — 캡처 액션 비활성(빈 칸·셔머가 찍히는 것 방지). */
+  busy = false,
 }: {
   card: OrderShareCardProps;
   caption: string;
@@ -125,6 +131,9 @@ export function OrderShareSection({
   onDownload?: () => void;
   onInstagram?: () => void;
   cardRef?: React.Ref<View>;
+  storyAvailable?: boolean;
+  storyHint?: string;
+  busy?: boolean;
 }) {
   return (
     <View style={styles.section} testID="order-share-section">
@@ -134,15 +143,24 @@ export function OrderShareSection({
       </View>
       <View style={styles.bottom}>
         <View style={styles.actions}>
-          <Pressable style={styles.action} onPress={onDownload} testID="share-download">
+          {/* P-151 프레임 불변: 비활성은 **불투명도만** — 메트릭(높이·패딩·보더)은 그대로 */}
+          <Pressable style={[styles.action, busy && styles.actionBusy]} onPress={onDownload} disabled={busy} testID="share-download">
             <IconDownload size={24} color="#6A6F7C" />
             <Text style={styles.actionLabel}>{downloadLabel}</Text>
           </Pressable>
-          <Pressable style={styles.action} onPress={onInstagram} testID="share-instagram">
-            <IconInstagram size={24} />
-            <Text style={styles.actionLabel}>{instagramLabel}</Text>
-          </Pressable>
+          {storyAvailable && (
+            <Pressable style={[styles.action, busy && styles.actionBusy]} onPress={onInstagram} disabled={busy} testID="share-instagram">
+              <IconInstagram size={24} />
+              <Text style={styles.actionLabel}>{instagramLabel}</Text>
+            </Pressable>
+          )}
         </View>
+        {/* 스토리 버튼이 없는 동안의 대체 경로 안내 — 버튼 자리를 비워 두지 않는다 */}
+        {!storyAvailable && !!storyHint && (
+          <Text style={styles.storyHint} testID="share-story-hint">
+            {storyHint}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -196,6 +214,8 @@ const styles = StyleSheet.create({
     borderColor: '#EAEBEE',
     borderRadius: 14,
   },
+  actionBusy: { opacity: 0.45 },
+  storyHint: { fontSize: 11, lineHeight: 15, color: '#9196A1', textAlign: 'center' },
   actionLabel: { fontSize: 12, lineHeight: 16.2, fontWeight: '600', letterSpacing: -0.12, color: '#2F3137', textAlign: 'center' },
 });
 

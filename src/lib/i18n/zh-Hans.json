@@ -1018,6 +1018,7 @@
     "sharePhotoDenied": "允许访问照片后即可保存故事卡片。",
     "shareSaved": "已保存到相册。",
     "shareNoInstagram": "此设备未安装 Instagram。",
-    "shareFailed": "无法生成故事卡片，请重试。"
+    "shareFailed": "无法生成故事卡片，请重试。",
+    "shareStoryHint": "先保存图片，再到 Instagram 分享。"
   }
 }
