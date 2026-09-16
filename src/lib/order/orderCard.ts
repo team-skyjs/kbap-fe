@@ -60,7 +60,7 @@ export function avoidNoticeKo(codes: string[]): { sentence: string; list: string
   if (!labels.length) return null;
   return {
     sentence: '저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.',
-    list: labels.join(' · '),
+    list: labels.join(', '), // P-385(KB-363): 가운뎃점 전수 제거 — 사장님 카드 나열도 콤마(9/16 예진)
   };
 }
 

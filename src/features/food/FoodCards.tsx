@@ -8,7 +8,8 @@ import * as React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, riskTextStrong, shadow, type RiskState } from '@/lib/theme';
-import { Btn, CardPhoto, RiskBadge, IconFood } from '@/components';
+import { Btn, CardPhoto, NewBadge, RiskBadge, IconFood } from '@/components';
+import { useIsNewFood } from '@/lib/newFood';
 import { BookmarkStar } from '@/components/Stars';
 import { FLAGS } from '@/lib/flags';
 import type { FoodCard } from '@/lib/api/types';
@@ -45,6 +46,7 @@ export function FoodGridCard({
   /** KB-434 저장 그리드(FlatList 셀) — 홈 flexWrap 폭(47%) 오버라이드용 */
   style?: StyleProp<ViewStyle>;
 }) {
+  const isNew = useIsNewFood(food.publishedAt);
   return (
     <Pressable style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
@@ -54,6 +56,13 @@ export function FoodGridCard({
         {!guest && (
           <View style={styles.gbadge}>
             <RiskBadge state={risk} />
+          </View>
+        )}
+        {/* P-385(KB-363): NEW = 공개 24h 이내. 시안 노드 없음 — 커맨드 센터 결정으로 RiskBadge(좌상단)
+            반대 모서리인 우상단, 인셋은 동일값(겹침 0). */}
+        {isNew && (
+          <View style={styles.gnew}>
+            <NewBadge testID={`food-new-${food.foodId}`} />
           </View>
         )}
       </View>
@@ -128,6 +137,7 @@ const styles = StyleSheet.create({
   // P-315: 정적 bg(surface2) 제거 — 시안 photo effects 없음(회색 띠 원인). 로딩 = CardPhoto Shimmer
   gphoto: { aspectRatio: 174 / 203, borderRadius: 4, overflow: 'visible' },
   gbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안(2072:1788): 배지가 사진 상단 4pt 위로 걸침
+  gnew: { position: 'absolute', top: -4, right: 3 }, // P-385: gbadge 대칭(겹침 0 — 좁은 홈 레일 폭도 유닛 잠금)
   gmeta: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginTop: 10 }, // A-HM-05
   gname: { fontSize: 15, fontWeight: '600', color: INK_TITLE },
   gko: { fontSize: 14, fontWeight: '500', color: C.ink2 },

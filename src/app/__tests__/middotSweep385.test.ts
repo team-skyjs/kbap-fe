@@ -13,7 +13,6 @@ const SEPARATOR = /(^|\s)·|·(\s|$)/;
 /** 구분자가 아닌 의도된 `·` — 파일 단위 예외(사유 필수). */
 const ALLOW: Record<string, string> = {
   'src/lib/legalText.ts': '약관 HTML 목록 불릿(<li> → "· ")·&middot; 엔티티 복원 — 원문 내용(P-196 ④ 동일 예외)',
-  'src/lib/order/orderCard.ts': '사장님 카드 기피 재료 나열 조인(P-265 · orderCard.test 잠금) — 라벨·값 구분자 아님, 커맨드 센터 판단 대기',
 };
 const LOCALES = 'src/lib/i18n';
 

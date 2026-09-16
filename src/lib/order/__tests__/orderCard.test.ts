@@ -119,10 +119,11 @@ describe('avoidNoticeKo — ② 기피 고지 (P-265: 문장+전체 나열, 접�
     expect(avoidNoticeKo(['religion:halal', 'diet:vegan'])).toBe(null);
   });
 
-  it('문장 고정 + 라벨 " · " 조인 (ko 라벨만 — 코드 노출 0)', () => {
+  it('문장 고정 + 라벨 ", " 조인 — 가운뎃점 0 (P-385, 9/16 예진: 사장님 카드도 콤마)', () => {
     const n = avoidNoticeKo(['EGG', 'SHRIMP'])!;
     expect(n.sentence).toBe('저는 아래 재료를 못 먹어요. 들어간 메뉴가 있으면 알려주세요.');
-    expect(n.list).toBe('달걀 · 새우');
+    expect(n.list).toBe('달걀, 새우');
+    expect(n.list).not.toContain('·');
   });
 
   it('51개 → 전부 나열, "외 n개" 접기 잔재 0 (사장님이 전 항목 확인 가능)', () => {
@@ -130,7 +131,8 @@ describe('avoidNoticeKo — ② 기피 고지 (P-265: 문장+전체 나열, 접�
     const { INGREDIENTS } = require('@/lib/mocks/ingredients') as typeof import('@/lib/mocks/ingredients');
     const codes = INGREDIENTS.slice(0, 51).map((i) => i.code);
     const n = avoidNoticeKo(codes)!;
-    expect(n.list.split(' · ').length).toBe(51);
+    expect(n.list.split(', ').length).toBe(51);
+    expect(n.list).not.toContain('·');
     for (const c of codes) expect(n.list).toContain(ingredientLabelKo(c));
     expect(n.sentence + n.list).not.toContain('외 ');
     expect(n.list).not.toMatch(/[A-Z_]{2,}/); // 원코드(UPPER_SNAKE) 누출 0

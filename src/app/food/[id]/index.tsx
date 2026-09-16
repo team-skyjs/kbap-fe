@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
-import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
+import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
@@ -417,11 +417,7 @@ function Registered({
           <View style={styles.nameRow}>
             <Text style={styles.name}>{food.name}</Text>
             {/* P-385(KB-363): NEW = 서버 공개 시각 24시간 이내만(9/15 예진 — 9/5 '항상 표시' 폐기) */}
-            {isNew && (
-              <View style={styles.newBadge} testID="detail-new-badge">
-                <Text style={styles.newBadgeText}>{t('inbox.newBadge')}</Text>
-              </View>
-            )}
+            {isNew && <NewBadge testID="detail-new-badge" />}
           </View>
           {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
           {!!food.description && <Text style={styles.desc}>{food.description}</Text>}
@@ -737,8 +733,6 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FD-04
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
-  newBadge: { height: 18, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  newBadgeText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   ko: { fontSize: 14, fontWeight: '400', color: INK_TITLE },
   desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
   scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },
