@@ -19,7 +19,7 @@ npx jest src/lib/data/__tests__/useNotifications499 src/app/__tests__/inbox499 s
 1. **어댑터** — `{id:1,title,body,receivedAt:1789540000000,read:false}` → `at === '2026-09-16T…Z'`(ISO), 나머지 동일, `type`·`foodId` undefined. `receivedAt: NaN` → `at`이 유효 ISO(현재 시각). `{…, type:'REVIEW_REMINDER', foodId: 7}` → `foodId === '7'`; `foodId: null` → undefined.
 2. **목록·파생** — `api.get` 목 3건(read f/f/t) → `useInbox().data.length 3`, `useUnreadCount() === 2`, 순서 서버 그대로.
 3. **세션 게이트** — 세션 `null`·`false`: `api.get` 호출 0, `useUnreadCount() === 0`. `true`로 전환 시 fetch 1회.
-4. **낙관·롤백** — 미읽음 탭 → 즉시 `read true`·배지 −1 → PATCH reject → `read false`·배지 원복 → invalidate 호출. PATCH resolve → 응답 항목으로 교체·invalidate.
+4. **낙관·롤백** — 미읽음 탭 → 즉시 `read true`·배지 −1 → PATCH reject → **그 항목만** `read false`·배지 원복 → 보정 invalidate. PATCH resolve → 응답 항목으로 교체, 추가 GET 0. 연달아 탭(A 실패·B 성공 / 둘 다 실패)에서 서로 간섭 0(Codex #163).
 5. **세대 가드(계정 생애주기)** — 뮤테이션 진행 중 `bumpSessionGen()` + `qc.clear()` → PATCH reject 시 캐시에 `prev`가 되살아나지 않는다(`getQueryData === undefined`).
 6. **읽은 항목 탭** — `mutate` 0회.
 7. **onPushTapped** — `hasBeSession` true + id 7 → `api.patch('/api/notifications/7/read')` 1회 + invalidate. `'9'`(문자열) → 9. 게스트(false) → patch 0·invalidate 0. id 없음 → 0.

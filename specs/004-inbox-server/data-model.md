@@ -48,8 +48,8 @@
 ### 항목 탭 (낙관 읽음 + 이동)
 
 ```
-[unread] --tap--> [read (낙관, PATCH 진행)] --200--> [read (서버 확정)] --onSettled--> invalidate
-                                          --error--> [unread (스냅샷 복원, 세대 일치 시만)] --onSettled--> invalidate
+[unread] --tap--> [read (낙관, PATCH 진행)] --200--> [read (응답 항목으로 교체, 재조회 없음)]
+                                          --error--> [그 항목만 이전 read로 복원 (세대 일치 시만)] --> 보정 invalidate
 [read]   --tap--> (읽음 변화 없음, 요청 0)
 어느 경우든 탭 직후: href = routeForNotificationData({type, foodId}); href면 router.push(href), null이면 알림함 유지
 ```
@@ -81,7 +81,7 @@ useIsGuest() true ────────────────────�
 
 ### 무효화 트리거
 
-앱 시작(마운트) · AppState `active` · 푸시 수신(포그라운드) · 알림센터 잔존분 조회(부팅) · 푸시 탭 · 읽음 onSettled · 화면 재진입(staleTime 0).
+앱 시작(마운트) · AppState `active` · 푸시 수신(포그라운드) · 알림센터 잔존분 조회(부팅) · 푸시 탭 · 읽음 **실패 시** 보정 · 화면 재진입(staleTime 0). 읽음 성공은 재조회하지 않는다(응답 항목 교체).
 
 ## 3. 상대 시각 규칙 (`timeAgo(at, t)` — 기존 함수)
 

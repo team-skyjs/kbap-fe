@@ -28,12 +28,12 @@ export function fetchNotifications(): Promise<InboxItem[]>;              // GET 
 export function markNotificationRead(id: number): Promise<InboxItem>;   // PATCH /api/notifications/{id}/read
 export function useInbox(): UseQueryResult<InboxItem[]>;                // enabled = useSession() === true, staleTime 0
 export function useUnreadCount(): number;                               // select: read===false 개수, 비활성 = 0
-export function useMarkRead(): UseMutationResult<InboxItem, unknown, number, Ctx>; // 낙관·롤백(세대 가드)·onSettled invalidate
+export function useMarkRead(): UseMutationResult<InboxItem, unknown, number, Ctx>; // 항목 단위 낙관·롤백(세대 가드), 실패 시만 invalidate
 export function invalidateNotifications(qc?: QueryClient): void;        // 공유 queryClient 기본
 export function onPushTapped(notificationId?: number | string): Promise<void>; // hasBeSession() → PATCH(실패 무시) → invalidate
 ```
 
-- `useMarkRead` 컨텍스트 `{ prev: InboxItem[] | undefined; gen: number }`. `onError`는 `gen === currentGen()`일 때만 `prev` 복원.
+- `useMarkRead` 컨텍스트 `{ prevRead: boolean | undefined; gen: number }`. `onSuccess` = 응답 항목으로 그 id만 교체(재조회 없음). `onError` = `gen === currentGen()`일 때만 **그 항목만** `prevRead`로 복원 + 보정 재조회(Codex #163 반영).
 - `onPushTapped`는 `notificationId == null`이면 즉시 종료. 문자열 id는 `Number()`로 변환, NaN이면 종료.
 - `useSubmitGuard` 미사용(멱등 낙관 토글 예외).
 

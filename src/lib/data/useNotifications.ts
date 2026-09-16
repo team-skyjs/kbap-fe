@@ -62,27 +62,35 @@ export function useUnreadCount(): number {
   return q.data ?? 0;
 }
 
-type Ctx = { prev: InboxItem[] | undefined; gen: number };
+type Ctx = { prevRead: boolean | undefined; gen: number };
 
+/**
+ * 읽음 = 항목 단위 낙관. Codex 리뷰(#163): 스냅샷을 목록 전체로 잡으면 A·B를 연달아 탭했을 때 뒤 요청의 롤백이 앞 요청의
+ * 낙관 상태를 되살리거나 앞 요청 실패가 뒤 요청의 성공을 지운다 → 되돌리는 것도 **그 항목의 이전 read 값 하나**.
+ * 성공 = 서버가 돌려준 항목으로 교체(정본, 재조회 없음). 실패 = 항목 원복 + 보정 재조회.
+ */
 export function useMarkRead() {
   const qc = useQueryClient();
+  const patchItem = (id: number, f: (i: InboxItem) => InboxItem) =>
+    qc.setQueryData<InboxItem[]>(NOTIFICATIONS_KEY, (cur) => cur?.map((i) => (i.id === id ? f(i) : i)));
   return useMutation<InboxItem, unknown, number, Ctx>({
     mutationFn: markNotificationRead,
     onMutate: (id) => {
       void qc.cancelQueries({ queryKey: NOTIFICATIONS_KEY });
-      const prev = qc.getQueryData<InboxItem[]>(NOTIFICATIONS_KEY);
-      if (prev) qc.setQueryData<InboxItem[]>(NOTIFICATIONS_KEY, prev.map((i) => (i.id === id ? { ...i, read: true } : i)));
-      return { prev, gen: currentGen() };
+      const prevRead = qc.getQueryData<InboxItem[]>(NOTIFICATIONS_KEY)?.find((i) => i.id === id)?.read;
+      if (prevRead !== undefined) patchItem(id, (i) => ({ ...i, read: true }));
+      return { prevRead, gen: currentGen() };
     },
     onSuccess: (res, _id, ctx) => {
-      if (ctx && ctx.gen === currentGen()) {
-        qc.setQueryData<InboxItem[]>(NOTIFICATIONS_KEY, (cur) => cur?.map((i) => (i.id === res.id ? res : i)));
+      if (ctx && ctx.gen === currentGen()) patchItem(res.id, () => res);
+    },
+    onError: (_e, id, ctx) => {
+      if (ctx?.prevRead !== undefined && ctx.gen === currentGen()) {
+        const prevRead = ctx.prevRead;
+        patchItem(id, (i) => ({ ...i, read: prevRead }));
       }
+      invalidateNotifications(qc); // 보정 — 서버 값이 정본
     },
-    onError: (_e, _id, ctx) => {
-      if (ctx?.prev && ctx.gen === currentGen()) qc.setQueryData(NOTIFICATIONS_KEY, ctx.prev);
-    },
-    onSettled: () => invalidateNotifications(qc),
   });
 }
 

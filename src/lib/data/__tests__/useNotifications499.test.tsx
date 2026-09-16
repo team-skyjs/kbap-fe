@@ -117,7 +117,7 @@ it('③ 세션 게이트 — null·false = 요청 0·배지 0, true 확정 시 f
   expect(api.get).toHaveBeenCalledTimes(1);
 });
 
-it('⑤⑥ 읽음 낙관 → 실패 롤백 / 성공 시 응답 교체, 둘 다 onSettled 재조회', async () => {
+it('⑤⑥ 읽음 낙관 → 실패 = 그 항목 원복 + 보정 재조회 / 성공 = 응답 항목 교체·재조회 없음', async () => {
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
@@ -134,17 +134,55 @@ it('⑤⑥ 읽음 낙관 → 실패 롤백 / 성공 시 응답 교체, 둘 다 o
   d1.reject(new Error('NETWORK: down'));
   await until(() => latestUnread === 2, 'rollback');
   await until(() => (api.get as jest.Mock).mock.calls.length > getsBefore, 'refetch after error');
-  // 성공
+  // 성공 — 응답으로 그 항목만 교체, 추가 GET 0
   const d2 = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(d2.promise);
   act(() => latestMutate!(2));
   await tick();
   expect(latestUnread).toBe(1);
   const getsBefore2 = (api.get as jest.Mock).mock.calls.length;
-  (api.get as jest.Mock).mockResolvedValue([wire(1, false), wire(2, true), wire(3, true)]); // 서버도 읽음 반영
-  d2.resolve(wire(2, true));
-  await until(() => (api.get as jest.Mock).mock.calls.length > getsBefore2, 'refetch after success');
-  await until(() => latestUnread === 1, 'stays read');
+  d2.resolve(wire(2, true, { title: 'from-server' }));
+  await until(() => qc.getQueryData<{ id: number; title: string }[]>(NOTIFICATIONS_KEY)!.find((i) => i.id === 2)!.title === 'from-server', 'replaced');
+  await tick();
+  expect((api.get as jest.Mock).mock.calls.length).toBe(getsBefore2);
+  expect(latestUnread).toBe(1);
+});
+
+it('⑨ 연달아 탭(Codex #163) — A 실패·B 성공 = A만 미읽음 복귀·B 읽음 유지 / 둘 다 실패 = 둘 다 미읽음', async () => {
+  initSessionState(true);
+  const qc = qcFactory();
+  await mount(qc);
+  await until(() => latestUnread === 2);
+  const read = (id: number) => qc.getQueryData<{ id: number; read: boolean }[]>(NOTIFICATIONS_KEY)!.find((i) => i.id === id)!.read;
+  const dA = deferred<NotificationWire>();
+  const dB = deferred<NotificationWire>();
+  (api.patch as jest.Mock).mockReturnValueOnce(dA.promise).mockReturnValueOnce(dB.promise);
+  act(() => latestMutate!(1));
+  act(() => latestMutate!(2));
+  await tick();
+  expect(latestUnread).toBe(0);
+  (api.get as jest.Mock).mockResolvedValue([wire(1, false), wire(2, true), wire(3, true)]); // 서버 정본: B만 읽음
+  dB.resolve(wire(2, true));
+  await tick();
+  dA.reject(new Error('NETWORK: down'));
+  await until(() => read(1) === false, 'A rolled back');
+  expect(read(2)).toBe(true); // A 롤백이 B를 지우지 않는다
+  await until(() => latestUnread === 1);
+  // 둘 다 실패
+  (api.get as jest.Mock).mockResolvedValue([wire(1, false), wire(2, true), wire(3, true)]);
+  await tick();
+  const dA2 = deferred<NotificationWire>();
+  const dC = deferred<NotificationWire>();
+  (api.patch as jest.Mock).mockReturnValueOnce(dA2.promise).mockReturnValueOnce(dC.promise);
+  (api.get as jest.Mock).mockImplementation(() => new Promise(() => {})); // 오프라인처럼 보정 재조회가 안 돌아온다
+  act(() => latestMutate!(1));
+  act(() => latestMutate!(3)); // 3은 이미 읽음 → 낙관 변화 없음
+  await tick();
+  dA2.reject(new Error('NETWORK: down'));
+  dC.reject(new Error('NETWORK: down'));
+  await until(() => read(1) === false, 'A rolled back again');
+  expect(read(2)).toBe(true); // 뒤 요청 롤백이 앞 상태를 되살리지 않는다
+  expect(read(3)).toBe(true); // 이전 값(읽음)으로 복귀
 });
 
 it('⑦ 세션 세대 가드 — 뮤테이션 중 계정 경계(gen bump + clear) 후 실패해도 이전 목록을 캐시에 되살리지 않는다', async () => {
