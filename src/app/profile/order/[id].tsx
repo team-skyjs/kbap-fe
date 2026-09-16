@@ -47,10 +47,11 @@ export default function OrderDetailScreen() {
   const [photoDenied, setPhotoDenied] = React.useState(false); // 사진첩 권한 거부 안내 시트
   // Codex #151 P2: 내보내기 캔버스의 원격 이미지가 로드되기 전에 찍으면 빈 칸·셔머가 박힌다.
   // 프리페치가 끝나기 전까지 캡처 액션을 잠근다(캐시가 차면 양쪽 인스턴스가 같이 산다).
-  // 5R 추가: **실패(reject·false)도 잠금 유지** — RemoteImage는 실패 시 빈 칸이라
-  // 그대로 찍으면 사진 없는 카드가 저장된다. 대신 눌러서 다시 시도할 수 있게 둔다.
+  // 5R: **실패도 잠금 유지** — RemoteImage 실패 칸은 빈 칸이라 그대로 찍으면 사진 없는 카드가 저장된다.
+  // 7R: 게이트 기준 = 프리페치(= URL 캐시됨)가 아니라 **내보내기 캔버스의 실제 렌더 완료**.
+  // 캐시돼 있어도 디코드·마운트·페이드가 남아서, 프리페치만 보면 반쯤 그려진 카드가 찍힌다.
   const [photosState, setPhotosState] = React.useState<'loading' | 'ready' | 'failed'>('loading');
-  const [prefetchTry, setPrefetchTry] = React.useState(0);
+  const [retry, setRetry] = React.useState(0); // 재시도 = 캔버스 리마운트(칸 로드 재시작)
 
   // P-380: 카드 데이터 — 미리보기와 내보내기 캔버스가 **같은 값**을 쓴다(둘이 어긋나면
   // 사용자가 본 것과 저장된 것이 달라진다)
@@ -88,20 +89,11 @@ export default function OrderDetailScreen() {
     [shareProps.item_count, shareProps.has_place],
   );
 
-  const sharePhotos = q.data?.thumbnails ?? [];
-  const photosKey = sharePhotos.join('|');
+  const photosKey = (q.data?.thumbnails ?? []).join('|');
   React.useEffect(() => {
-    if (!photosKey) return setPhotosState('ready'); // 사진 0장 = 섹션 자체가 안 뜬다
-    let alive = true;
-    setPhotosState('loading');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Image } = require('expo-image') as typeof import('expo-image');
-    // prefetch는 **한 장이라도 실패하면 false**를 돌려준다(expo-image 계약) — reject와 같게 취급
-    void Image.prefetch(photosKey.split('|'))
-      .then((ok) => { if (alive) setPhotosState(ok ? 'ready' : 'failed'); })
-      .catch(() => { if (alive) setPhotosState('failed'); });
-    return () => { alive = false; };
-  }, [photosKey, prefetchTry]);
+    // 사진이 바뀌면(주문 전환·재시도) 다시 잠근다 — 캔버스가 로드 완료를 다시 알려 준다
+    setPhotosState(photosKey ? 'loading' : 'ready');
+  }, [photosKey, retry]);
 
   const onDownload = React.useCallback(async () => {
     if (shareBusy.current) return;
@@ -256,7 +248,13 @@ export default function OrderDetailScreen() {
                 maybeTrackShareView(0); // 레이아웃이 늦게 잡히는 경우(이미지 로드 후) 보정
               }}
             >
-            <OrderShareExportCanvas ref={exportRef} card={shareCard!} />
+            <OrderShareExportCanvas
+              key={`export-${retry}`}
+              ref={exportRef}
+              card={shareCard!}
+              onReady={() => setPhotosState('ready')}
+              onFailed={() => setPhotosState('failed')}
+            />
             <OrderShareSection
               card={shareCard!}
               caption={t('myFoods.sharePreviewCaption')}
@@ -269,7 +267,7 @@ export default function OrderDetailScreen() {
               busy={photosState !== 'ready'}
               failed={photosState === 'failed'}
               failedLabel={t('myFoods.sharePhotosFailed')}
-              onRetryPhotos={() => setPrefetchTry((n) => n + 1)}
+              onRetryPhotos={() => setRetry((n) => n + 1)}
             />
             </View>
           )}

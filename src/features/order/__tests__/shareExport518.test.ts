@@ -165,15 +165,14 @@ describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
   it('화면이 프리페치 완료까지 busy로 잠그고, 실패해도 영구 잠금되지 않는다', () => {
     const src = read('src/app/profile/order/[id].tsx');
     expect(src).toContain("const [photosState, setPhotosState] = React.useState<'loading' | 'ready' | 'failed'>('loading')");
-    expect(src).toContain('Image.prefetch(');
     expect(src).toContain("busy={photosState !== 'ready'}");
-    // 5R: 실패(reject·false)는 **잠금 유지** — RemoteImage 실패 칸은 빈 칸이라 그대로 찍히면 사진 없는 카드가 저장된다
-    expect(src).toContain("setPhotosState(ok ? 'ready' : 'failed')");
-    expect(src).toContain(".catch(() => { if (alive) setPhotosState('failed'); })");
-    expect(src).not.toContain('setPhotosReady(true)');
-    // 영구 비활성 방치 금지 — 재시도 경로
-    expect(src).toContain('onRetryPhotos={() => setPrefetchTry((n) => n + 1)}');
-    expect(src).toContain('[photosKey, prefetchTry]');
+    // 7R: 게이트 = 캔버스 실제 렌더 완료(프리페치 = URL 캐시일 뿐)
+    expect(src).toContain("onReady={() => setPhotosState('ready')}");
+    expect(src).toContain("onFailed={() => setPhotosState('failed')}");
+    expect(src).not.toContain('Image.prefetch('); // 프리페치 기반 게이트 회귀 금지
+    // 영구 비활성 방치 금지 — 재시도 = 캔버스 리마운트
+    expect(src).toContain('onRetryPhotos={() => setRetry((n) => n + 1)}');
+    expect(src).toContain('key={`export-${retry}`}');
   });
 
   it('버튼 비활성은 불투명도만 — 프레임 메트릭 불변(P-151)', () => {
@@ -204,5 +203,27 @@ describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
       const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { myFoods: Record<string, string> };
       expect(j.myFoods.shareStoryHint).toBeTruthy();
     }
+  });
+});
+
+describe('Codex 7R — 캡처 게이트는 캔버스의 실제 로드 이벤트', () => {
+  it('칸 전부 로드 = ready · 한 칸이라도 실패 = failed(잠금 유지)', () => {
+    const src = read('src/features/order/OrderShareCard.tsx');
+    expect(src).toContain('if (done.current >= need)');
+    expect(src).toContain('return onFailed?.()');
+    expect(src).toContain('onLoad={() => onCellSettle?.(true)}');
+    expect(src).toContain('onError={() => onCellSettle?.(false)}');
+  });
+
+  it('캡처 인스턴스는 페이드 0 — 전환 중 반투명이 찍히지 않는다', () => {
+    const src = read('src/features/order/OrderShareCard.tsx');
+    expect(src).toContain('transition={instant ? 0 : undefined}');
+    expect(src).toContain('<OrderShareCard {...card} instant onCellSettle={onCellSettle} />');
+  });
+
+  it('RemoteImage가 실제 렌더 완료를 통지한다(게이트의 신호원)', () => {
+    const src = read('src/components/RemoteImage.tsx');
+    expect(src).toContain('onLoad?: () => void;');
+    expect(src).toContain('onLoad?.();');
   });
 });

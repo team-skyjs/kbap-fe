@@ -20,6 +20,7 @@ export function RemoteImage({
   recyclingKey,
   transition = 150,
   onError,
+  onLoad,
 }: {
   uri: string;
   /** 크기·라운딩을 가진 컨테이너 스타일(기존 Image 스타일 그대로 이관) */
@@ -30,6 +31,8 @@ export function RemoteImage({
   /** P-303: 로드 실패 통지 — 소스 체인(useIngredientImageChain 등) 다음 소스 전환용.
    *  settle(스켈레톤 종료)은 현행 유지 — 호출부가 key={uri}로 소스별 리마운트한다. */
   onError?: () => void;
+  /** P-380(KB-518): 실제 렌더 완료 통지 — 캡처 게이트가 프리페치가 아니라 이걸 본다. */
+  onLoad?: () => void;
 }) {
   const [settled, setSettled] = React.useState(false);
   return (
@@ -41,7 +44,10 @@ export function RemoteImage({
         contentFit={contentFit}
         transition={transition}
         style={FILL}
-        onLoad={() => setSettled(true)}
+        onLoad={() => {
+          setSettled(true);
+          onLoad?.();
+        }}
         onError={() => {
           setSettled(true);
           onError?.(); // P-303: 소스 체인 다음 소스 전환 통지

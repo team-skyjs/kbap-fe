@@ -32,11 +32,15 @@ export type OrderShareCardProps = {
   metaCity?: string | null;
   /** 메타줄 날짜(항상 있다). */
   metaDate: string;
+  /** 캡처용 인스턴스 — 페이드 없이 즉시 표시(찍는 순간 반투명이면 반투명이 찍힌다). */
+  instant?: boolean;
+  /** 칸별 렌더 결과 통지 — 캡처 게이트가 이걸 센다(성공/실패). */
+  onCellSettle?: (ok: boolean) => void;
 };
 
 /** 캡처 대상 = 이 뷰. 4단계에서 ref를 받아 그대로 찍는다. */
 export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(function OrderShareCard(
-  { photos, placeName, menuLine, metaCity, metaDate },
+  { photos, placeName, menuLine, metaCity, metaDate, instant, onCellSettle },
   ref,
 ) {
   // 브랜드 라벨도 사용자 노출 문자열 — 전 로케일 공통값이지만 i18n 경유가 정본(하드코딩 금지)
@@ -52,6 +56,9 @@ export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(functi
               uri={photos[i]}
               style={{ position: 'absolute', left: c.left, top: c.top, width: c.width, height: c.height }}
               contentFit="cover"
+              transition={instant ? 0 : undefined}
+              onLoad={() => onCellSettle?.(true)}
+              onError={() => onCellSettle?.(false)}
             />
           ))}
         </View>
@@ -97,19 +104,44 @@ export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(functi
  * 화면 밖 배치는 `opacity: 0`가 아니라 **좌표 밖**이다 — 투명 뷰는 플랫폼에 따라 빈 이미지로
  * 찍힌다. `pointerEvents='none'`로 터치도 먹지 않게 한다.
  */
-export const OrderShareExportCanvas = React.forwardRef<View, { card: OrderShareCardProps }>(
-  function OrderShareExportCanvas({ card }, ref) {
-    return (
-      <View style={styles.exportHost} pointerEvents="none">
-        <View ref={ref} style={styles.exportCanvas} testID="order-share-export-canvas" collapsable={false}>
-          <View style={{ transform: [{ scale: CARD_SCALE }] }}>
-            <OrderShareCard {...card} />
-          </View>
+export const OrderShareExportCanvas = React.forwardRef<
+  View,
+  { card: OrderShareCardProps; onReady?: () => void; onFailed?: () => void }
+>(function OrderShareExportCanvas({ card, onReady, onFailed }, ref) {
+  // 캡처 가능 = **이 인스턴스의 모든 칸이 실제로 렌더됐을 때**. 프리페치 성공은 "URL이 캐시됐다"는
+  // 뜻일 뿐이라(디코드·마운트·페이드가 남는다) 게이트로 쓰면 반쯤 그려진 카드가 찍힌다(Codex 7R).
+  const need = Math.min(card.photos.length, 4);
+  const done = React.useRef(0);
+  const settled = React.useRef(false);
+  React.useEffect(() => {
+    done.current = 0;
+    settled.current = false;
+  }, [card.photos.join('|')]);
+  const onCellSettle = React.useCallback(
+    (ok: boolean) => {
+      if (settled.current) return;
+      if (!ok) {
+        settled.current = true;
+        return onFailed?.(); // 한 칸이라도 실패 = 빈 칸 카드 — 잠금 유지
+      }
+      done.current += 1;
+      if (done.current >= need) {
+        settled.current = true;
+        onReady?.();
+      }
+    },
+    [need, onReady, onFailed],
+  );
+  return (
+    <View style={styles.exportHost} pointerEvents="none">
+      <View ref={ref} style={styles.exportCanvas} testID="order-share-export-canvas" collapsable={false}>
+        <View style={{ transform: [{ scale: CARD_SCALE }] }}>
+          <OrderShareCard {...card} instant onCellSettle={onCellSettle} />
         </View>
       </View>
-    );
-  },
-);
+    </View>
+  );
+});
 
 /** 카드 + 캡션 + 버튼 2개. 버튼 동작은 4단계에서 붙는다(여기선 핸들러 주입만). */
 export function OrderShareSection({
