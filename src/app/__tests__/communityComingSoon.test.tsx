@@ -49,7 +49,7 @@ jest.mock('expo-router', () => ({
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false, useSession: () => null })); // KB-499: 배지 훅 — null = 요청 0
 
 import Community from '../(tabs)/community';
 import { TabBar } from '@/components/TabBar';

@@ -27,6 +27,8 @@ const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } })); // 지연 접근(호이스팅)
+const mockInbox = { invalidateNotifications: jest.fn() };
+jest.mock('@/lib/data/useNotifications', () => ({ get invalidateNotifications() { return mockInbox.invalidateNotifications; } })); // KB-499: 재조회 트리거 목
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -235,4 +237,28 @@ it('Codex #109 10R: registerPushToken 진행 중 inflight = 1 — 콜드 스타�
   resolvePerm({ status: 'denied' }); // 조기 반환 경로도 dec 보장
   await p;
   expect(inflightCount()).toBe(0);
+});
+
+it('KB-499: 수신·알림센터 잔존분·탭 = 서버 알림함 재조회(invalidateNotifications) · 로컬 기록 코드 부재(소스 잠금)', async () => {
+  const N = mockNotifications as unknown as Record<string, jest.Mock>;
+  N.addNotificationReceivedListener = jest.fn(() => ({ remove: jest.fn() }));
+  N.getPresentedNotificationsAsync = jest.fn().mockResolvedValue([{ request: { identifier: 'p1', content: { data: { type: 'NEWS' } } } }]);
+  try {
+    addNotificationTapListener(() => {});
+    await new Promise((r) => setTimeout(r, 0));
+    const presented = mockInbox.invalidateNotifications.mock.calls.length;
+    expect(presented).toBeGreaterThanOrEqual(1); // 부팅: 알림센터에 떠 있는 것 → 재조회
+    const recv = N.addNotificationReceivedListener.mock.calls[0][0] as (n: unknown) => void;
+    recv({ request: { identifier: 'f1', content: { data: { type: 'HELPFUL' } } } });
+    expect(mockInbox.invalidateNotifications).toHaveBeenCalledTimes(presented + 1);
+    const tap = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+    tap({ notification: { request: { identifier: 't1', content: { data: { type: 'NEWS', notificationId: 3 } } } } });
+    expect(mockInbox.invalidateNotifications).toHaveBeenCalledTimes(presented + 2);
+    const src = require('fs').readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;
+    expect(src).not.toContain('recordInboxNotification');
+    expect(src).not.toContain('notifications/inbox');
+  } finally {
+    delete N.addNotificationReceivedListener;
+    delete N.getPresentedNotificationsAsync;
+  }
 });

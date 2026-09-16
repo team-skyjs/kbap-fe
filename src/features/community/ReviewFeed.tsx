@@ -30,7 +30,7 @@ import { IlloSpeechBubble } from '@/components/design4Assets';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useMe } from '@/lib/data/useMe';
 import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
-import { useUnreadCount } from '@/lib/notifications/inbox';
+import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import type { Review } from '@/lib/api/types';

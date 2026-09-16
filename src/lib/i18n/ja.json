@@ -982,17 +982,6 @@
     "title": "お知らせ",
     "empty": "まだお知らせはありません",
     "emptyBody": "レビューやスキャンに関するお知らせがここに表示されます。",
-    "markAllRead": "すべて既読にする",
-    "helpfulTitle": "レビューが役に立ちました",
-    "helpfulBody": "キムチチゲのレビューが「役に立った」を獲得しました。",
-    "reminderTitle": "お食事はいかがでしたか？",
-    "reminderBody": "注文した料理のレビューを書いてみましょう。",
-    "scanSuggestionTitle": "今日は外食ですか？",
-    "scanSuggestionBody": "注文する前にメニューをスキャンしましょう。",
-    "newsTitle": "K-Bapからのお知らせ",
-    "newsBody": "新機能やイベントの情報をチェックしましょう。",
-    "mealTimeTitle": "食事の時間です",
-    "mealTimeBody": "メニューをスキャンして、避けたい食材をすぐに確認しましょう。",
     "newBadge": "NEW"
   },
   "myFoods": {
