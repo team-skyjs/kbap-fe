@@ -49,7 +49,7 @@ jest.mock('@/components/AuthGateSheet', () => {
 const mockReport = jest.fn();
 const mockBlockAsync = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/lib/community/hooks', () => ({
-  useSubmitReport: () => ({ mutate: mockReport, isPending: false }),
+  useSubmitReport: () => ({ mutate: mockReport, mutateAsync: mockReport, isPending: false }),
   useBlockUser: () => ({ mutateAsync: mockBlockAsync, isPending: false }),
 }));
 
@@ -177,10 +177,10 @@ it('P-281(c): blockUser reject → "Blocking…"에 갇히지 않고 메뉴 복�
 
 /* ---- P-387(KB-460): 응답 성공 후에만 완료 화면 ---- */
 
-it('성공해야 Thanks — 응답 전에는 완료로 넘어가지 않는다', () => {
+it('성공해야 Thanks — 응답 전에는 완료로 넘어가지 않는다', async () => {
   mockGuest = true;
   let succeed!: () => void;
-  mockReport.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) => { succeed = opts.onSuccess; });
+  mockReport.mockImplementation(() => new Promise<void>((res) => { succeed = res; }));
   const tree = render(OTHER);
   tapItem(tree, 'community.report');
   const reason = tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0];
@@ -188,29 +188,29 @@ it('성공해야 Thanks — 응답 전에는 완료로 넘어가지 않는다', 
   const submit = tree.root.findAll((n) => n.props?.testID === 'report-submit')[0];
   act(() => submit.props.onPress());
   expect(flat(tree)).not.toContain('community.reportThanks'); // 아직 응답 전
-  act(() => succeed());
+  await act(async () => { succeed(); await Promise.resolve(); });
   expect(flat(tree)).toContain('community.reportThanks');
 });
 
-it('실패 = 완료 화면 없음 + 토스트 + 사유 유지(재시도 가능)', () => {
+it('실패 = 완료 화면 없음 + 토스트 + 사유 유지(재시도 가능)', async () => {
   mockGuest = true;
-  let fail!: () => void;
-  mockReport.mockImplementation((_v: unknown, opts: { onError: () => void }) => { fail = opts.onError; });
+  let fail!: (e: Error) => void;
+  mockReport.mockImplementation(() => new Promise<void>((_res, rej) => { fail = rej; }));
   const tree = render(OTHER);
   tapItem(tree, 'community.report');
   act(() => tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0].props.onPress());
   act(() => tree.root.findAll((n) => n.props?.testID === 'report-submit')[0].props.onPress());
-  act(() => fail());
+  await act(async () => { fail(new Error('boom')); await Promise.resolve(); });
   const s = flat(tree);
   expect(s).not.toContain('community.reportThanks');
   expect(s).toContain('community.reportTitle'); // 사유 시트 유지 = 재시도 가능
   expect(mockToast).toHaveBeenCalled();
 });
 
-it('Codex #161 P2: 응답 대기 중 다른 대상으로 넘어가면 그 대상이 완료로 바뀌지 않는다', () => {
+it('Codex #161 P2: 응답 대기 중 다른 대상으로 넘어가면 그 대상이 완료로 바뀌지 않는다', async () => {
   mockGuest = true;
   let succeed!: () => void;
-  mockReport.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) => { succeed = opts.onSuccess; });
+  mockReport.mockImplementation(() => new Promise<void>((res) => { succeed = res; }));
   const tree = render(OTHER);
   tapItem(tree, 'community.report');
   act(() => tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0].props.onPress());
@@ -219,7 +219,7 @@ it('Codex #161 P2: 응답 대기 중 다른 대상으로 넘어가면 그 대상
   act(() => { tree.update(<ModerationFlow target={{ ...OTHER, id: 'other-999' }} onClose={() => {}} onBlocked={() => {}} onEdit={() => {}} onDelete={() => {}} />); });
   tapItem(tree, 'community.report');
   expect(flat(tree)).toContain('community.reportTitle'); // 2번째 대상의 사유 시트에 서 있다
-  act(() => succeed()); // 늦게 도착한 **첫 대상**의 성공 콜백
+  await act(async () => { succeed(); await Promise.resolve(); }); // 늦게 도착한 **첫 대상**의 성공 콜백
   const s = flat(tree);
   expect(s).not.toContain('community.reportThanks'); // 신고한 적 없는 대상이 완료로 바뀌면 안 된다
   expect(s).toContain('community.reportTitle'); // 사유 시트 유지
@@ -229,4 +229,19 @@ it('Codex #161 P2: 실패 안내가 모달 안에서 보이도록 토스트 호�
   const src = require('fs').readFileSync('src/features/community/moderation.tsx', 'utf8') as string;
   const modalPart = src.slice(src.indexOf('<Modal visible transparent'));
   expect(modalPart).toContain('<TopToastHost />'); // 루트 호스트는 네이티브 Modal 아래라 가려진다
+});
+
+it('Codex #161 2R: 같은 틱 더블탭 = 요청 1건(공용 제출 가드) · 진행 중 busy', async () => {
+  mockGuest = true;
+  let succeed!: () => void;
+  mockReport.mockImplementation(() => new Promise<void>((res) => { succeed = res; }));
+  const tree = render(OTHER);
+  tapItem(tree, 'community.report');
+  act(() => tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0].props.onPress());
+  const submit = () => tree.root.findAll((n) => n.props?.testID === 'report-submit')[0];
+  const before = mockReport.mock.calls.length;
+  act(() => { submit().props.onPress(); submit().props.onPress(); }); // 리렌더 전 2연타
+  expect(mockReport.mock.calls.length - before).toBe(1); // 중복 신고 적재 금지
+  expect(submit().props.busy).toBe(true); // 진행 중 표시
+  await act(async () => { succeed(); await Promise.resolve(); });
 });

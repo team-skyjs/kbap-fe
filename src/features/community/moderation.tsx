@@ -18,6 +18,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
 import { showTopToast } from '@/components/topToastStore';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { TopToastHost } from '@/components/TopToast';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -65,6 +66,9 @@ export function ModerationFlow({
   const targetRef = React.useRef(target); // 늦은 뮤테이션 콜백이 현재 대상과 같은지 대조용
   targetRef.current = target;
   const submitReport = useSubmitReport();
+  // P-173 공용 가드 — 완료 표시가 응답 뒤로 미뤄지면서(P-387) 버튼이 응답 전까지 활성이라
+  // 같은 틱 더블탭 창이 다시 열렸다(Codex #161). 동기 ref 가드 + busy 스피너가 정본.
+  const reportGuard = useSubmitGuard();
   const blockUser = useBlockUser();
 
   // P-194: "Something else" 자유입력이 키보드에 가림 — P-158 실측 문법(keyboardDidShow
@@ -98,21 +102,26 @@ export function ModerationFlow({
   };
 
   const doReport = () => {
-    // P-173: reported 전환 전 같은-틱 더블탭 = 이중 신고 — 동기 가드
-    if (!reason || reported || submitReport.isPending) return;
+    if (!reason || reported) return;
     // Codex #161 P2: 응답이 늦는 사이 다른 대상으로 넘어가면 콜백이 **그 대상**의 시트를
     // 완료로 바꿔 버린다(신고한 적 없는데 Thanks) — 제출 시점 대상을 묶어 두고 대조한다.
     const submittedFor = `${target.type}:${target.id}`;
     const isSameTarget = () => submittedFor === `${targetRef.current?.type}:${targetRef.current?.id}`;
-    submitReport.mutate(
-      { target: target.type, id: target.id, reason, note: reason === 'other' && note.trim() ? note.trim() : null },
-      {
+    void reportGuard.run(async () => {
+      try {
+        await submitReport.mutateAsync({
+          target: target.type,
+          id: target.id,
+          reason,
+          note: reason === 'other' && note.trim() ? note.trim() : null,
+        });
         // P-387(KB-460): **응답 성공 후에만** 완료 화면 — 실패했는데 "접수됐다"고 말하지 않는다.
-        // 실패 시 사유·메모를 그대로 두고 재시도할 수 있게 둔다(reported 유지 false).
-        onSuccess: () => { if (isSameTarget()) setReported(true); },
-        onError: () => { if (isSameTarget()) showTopToast(t('community.reportFailed'), { error: true }); },
-      },
-    );
+        if (isSameTarget()) setReported(true);
+      } catch {
+        // 실패 = 사유·메모를 그대로 두고 재시도(reported 유지 false) + 모달 안 토스트
+        if (isSameTarget()) showTopToast(t('community.reportFailed'), { error: true });
+      }
+    });
   };
 
   const doBlock = async () => {
@@ -223,7 +232,7 @@ export function ModerationFlow({
                     textAlignVertical="top"
                   />
                 )}
-                <Btn variant={reason ? 'primary' : 'off'} onPress={reason ? doReport : undefined} testID="report-submit">
+                <Btn variant={reason ? 'primary' : 'off'} onPress={reason ? doReport : undefined} busy={reportGuard.busy} testID="report-submit">
                   {t('community.reportSubmit')}
                 </Btn>
               </View>
