@@ -144,6 +144,9 @@ describe('5단계 계측 — 이벤트·속성 스키마', () => {
     expect(src).toContain('viewTracked.current = true');
     // 속성 조립부에 사용자 생성 데이터가 섞이지 않는지(발주 고정)
     expect(src).toContain('const shareProps = { item_count:');
+    // Codex 2R P2: 장소 유무 = 카드에 줄이 떴는지(주소 폴백 포함) — placeName만 보면 안 된다
+    expect(src).toContain('has_place: !!(q.data && orderPlaceLabel(q.data))');
+    expect(src).not.toContain('has_place: !!q.data?.placeName');
     expect(src).not.toContain('place_name:');
     // 권한 거부 안내 = 공용 시트(이 화면은 P-355로 네이티브 Alert를 걷어냈다)
     expect(src).toContain('setPhotoDenied(true)');

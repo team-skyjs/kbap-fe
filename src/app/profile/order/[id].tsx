@@ -65,8 +65,10 @@ export default function OrderDetailScreen() {
         metaDate: formatOrderDate(q.data.orderedAt),
       }
     : null;
-  // 계측 속성 = 음식 개수·장소 유무까지만(발주 고정 — 가게명·주소·좌표 금지)
-  const shareProps = { item_count: q.data?.items.length ?? 0, has_place: !!q.data?.placeName };
+  // 계측 속성 = 음식 개수·장소 유무까지만(발주 고정 — 가게명·주소·좌표 금지).
+  // Codex #151 P2: has_place = **카드에 장소 줄이 떴는가**(orderPlaceLabel과 같은 판정) —
+  // placeName만 보면 주소 폴백으로 장소가 보이는 기존 주문이 전부 false로 잡힌다.
+  const shareProps = { item_count: q.data?.items.length ?? 0, has_place: !!(q.data && orderPlaceLabel(q.data)) };
   const shareVisible = !!q.data && q.data.thumbnails.length > 0;
   const viewTracked = React.useRef(false);
   React.useEffect(() => {
