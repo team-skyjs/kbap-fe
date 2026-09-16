@@ -244,15 +244,17 @@ export default function OrderDetailScreen() {
           {/* P-380(KB-518) 공유 카드 — 사진 0장이면 섹션 자체를 숨긴다(빈 카드 금지).
               가게명은 orderPlaceLabel(place.name → roadAddress, P-386 공용 규칙).
               캡처 대상은 화면 밖 9:16 캔버스 — 미리보기 카드와 **같은 props**를 쓴다. */}
+          {/* 재시도 = **미리보기·캡처 캔버스 둘 다** 리마운트(Codex 10R). 캔버스만 다시 올리면
+              보이는 카드는 빈 칸인데 저장은 성공해서, 본 것과 저장된 것이 달라진다. */}
           {cardPhotos.length > 0 && (
             <View
+              key={`share-${retry}`}
               onLayout={(e) => {
                 sectionY.current = e.nativeEvent.layout.y;
                 maybeTrackShareView(0); // 레이아웃이 늦게 잡히는 경우(이미지 로드 후) 보정
               }}
             >
             <OrderShareExportCanvas
-              key={`export-${retry}`}
               ref={exportRef}
               card={shareCard!}
               onReady={() => setPhotosState('ready')}

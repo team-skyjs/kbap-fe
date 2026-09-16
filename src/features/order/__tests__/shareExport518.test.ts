@@ -172,7 +172,9 @@ describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
     expect(src).not.toContain('Image.prefetch('); // 프리페치 기반 게이트 회귀 금지
     // 영구 비활성 방치 금지 — 재시도 = 캔버스 리마운트
     expect(src).toContain('onRetryPhotos={() => setRetry((n) => n + 1)}');
-    expect(src).toContain('key={`export-${retry}`}');
+    // 10R: 재시도는 미리보기까지 함께 리마운트 — 둘을 감싼 View에 key(캔버스 전용 key 금지)
+    expect(src).toContain('key={`share-${retry}`}');
+    expect(src).not.toContain('key={`export-${retry}`}');
   });
 
   it('버튼 비활성은 불투명도만 — 프레임 메트릭 불변(P-151)', () => {
