@@ -1014,6 +1014,10 @@
     "shareMenuMore": "외 {{count}}",
     "sharePreviewCaption": "9:16 스토리 카드 미리보기",
     "shareDownload": "이미지\n저장",
-    "shareInstagram": "인스타그램\n스토리"
+    "shareInstagram": "인스타그램\n스토리",
+    "sharePhotoDenied": "사진 접근을 허용하면 스토리 카드를 저장할 수 있어요.",
+    "shareSaved": "사진첩에 저장했어요.",
+    "shareNoInstagram": "이 기기에 인스타그램이 없어요.",
+    "shareFailed": "스토리 카드를 만들지 못했어요. 다시 시도해 주세요."
   }
 }

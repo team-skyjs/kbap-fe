@@ -15,6 +15,7 @@ import { Txt as Text } from '@/components/Txt';
 import { RemoteImage } from '@/components/RemoteImage';
 import { IconDownload, IconInstagram } from '@/components/icons';
 import { SHARE_CARD_W, SHARE_GRID_H, shareCells } from './shareCard';
+import { CANVAS_H, CANVAS_W, CARD_SCALE, EXPORT_BG } from './shareExport';
 
 /** 앱 아이콘과 같은 마크(검은 K + 주황 그릇, 투명 배경) — 배지 교체분. */
 const BRAND_MARK = require('../../../assets/images/splash-mark-ios.png') as number;
@@ -86,6 +87,27 @@ export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(functi
   );
 });
 
+/**
+ * 내보내기 캔버스(P-380 4단계) — 화면 **밖**에 9:16 캔버스를 두고 카드를 75% 폭으로 확대해
+ * 중앙에 둔다. 캡처는 이 뷰를 찍는다(미리보기 카드를 찍으면 9:16이 아니다).
+ *
+ * 화면 밖 배치는 `opacity: 0`가 아니라 **좌표 밖**이다 — 투명 뷰는 플랫폼에 따라 빈 이미지로
+ * 찍힌다. `pointerEvents='none'`로 터치도 먹지 않게 한다.
+ */
+export const OrderShareExportCanvas = React.forwardRef<View, { card: OrderShareCardProps }>(
+  function OrderShareExportCanvas({ card }, ref) {
+    return (
+      <View style={styles.exportHost} pointerEvents="none">
+        <View ref={ref} style={styles.exportCanvas} testID="order-share-export-canvas" collapsable={false}>
+          <View style={{ transform: [{ scale: CARD_SCALE }] }}>
+            <OrderShareCard {...card} />
+          </View>
+        </View>
+      </View>
+    );
+  },
+);
+
 /** 카드 + 캡션 + 버튼 2개. 버튼 동작은 4단계에서 붙는다(여기선 핸들러 주입만). */
 export function OrderShareSection({
   card,
@@ -128,6 +150,9 @@ export function OrderShareSection({
 
 const styles = StyleSheet.create({
   section: { gap: 16, backgroundColor: '#FFFFFF' },
+  // 화면 밖(좌표) — 레이아웃에 영향 0, 캡처 대상으로는 살아 있다
+  exportHost: { position: 'absolute', left: -10000, top: 0 },
+  exportCanvas: { width: CANVAS_W, height: CANVAS_H, backgroundColor: EXPORT_BG, alignItems: 'center', justifyContent: 'center' },
   preview: { paddingVertical: 20, paddingHorizontal: 24, alignItems: 'center', gap: 12, backgroundColor: '#F7F8FA' },
 
   // story-card — 폭 210 고정·hug height·r20 + 부유 그림자

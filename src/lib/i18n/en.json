@@ -1013,6 +1013,10 @@
     "shareMenuMore": "+{{count}} more",
     "sharePreviewCaption": "9:16 Story Card preview",
     "shareDownload": "Download\nimage",
-    "shareInstagram": "Instagram\nStory"
+    "shareInstagram": "Instagram\nStory",
+    "sharePhotoDenied": "Allow photo access to save your story card.",
+    "shareSaved": "Saved to your photos.",
+    "shareNoInstagram": "Instagram isn't installed on this phone.",
+    "shareFailed": "Couldn't create the story card. Try again."
   }
 }

@@ -16,7 +16,8 @@ jest.mock('react-i18next', () => ({
 }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 
-import { shareCells, shareMenuLine, sharePlaceName, SHARE_CARD_W, SHARE_GRID_H } from '../shareCard';
+import { shareCells, shareMenuLine, shareMetaCity, SHARE_CARD_W, SHARE_GRID_H } from '../shareCard';
+import { orderPlaceLabel } from '@/lib/data/useOrders';
 import { OrderShareCard, OrderShareSection } from '../OrderShareCard';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
@@ -83,19 +84,33 @@ describe('② 메뉴줄 — 최대 3개 + "외 N"', () => {
   });
 });
 
-describe('③ 가게명 3단 폴백 — place.name → roadAddress → 숨김', () => {
-  it('place.name 우선', () => {
-    expect(sharePlaceName({ placeName: '할머니 순두부', roadAddress: '서울 강남구 …' })).toBe('할머니 순두부');
+describe('③ 가게명 3단 폴백 — 규칙은 orderPlaceLabel 하나(P-386과 중복 제거)', () => {
+  it('place.name 우선 · 없으면 roadAddress · 둘 다 없으면 null(줄 숨김)', () => {
+    expect(orderPlaceLabel({ placeName: '할머니 순두부', roadAddress: '서울 강남구 …' })).toBe('할머니 순두부');
+    expect(orderPlaceLabel({ placeName: null, roadAddress: '서울 강남구 …' })).toBe('서울 강남구 …');
+    expect(orderPlaceLabel({ placeName: null, roadAddress: null })).toBeNull();
+    expect(orderPlaceLabel({ placeName: '  ', roadAddress: '' })).toBeNull();
   });
 
-  it('place 없으면 roadAddress — 기존 주문은 place가 영구 null이라 이 경로가 최종 사양', () => {
-    expect(sharePlaceName({ placeName: null, roadAddress: '서울 강남구 …' })).toBe('서울 강남구 …');
-    expect(sharePlaceName({ roadAddress: '서울 강남구 …' })).toBe('서울 강남구 …');
+  it('공유 카드 전용 폴백 함수는 남기지 않는다 — 두 벌이면 한쪽만 고쳐지는 사고', () => {
+    const src = read('src/features/order/shareCard.ts');
+    expect(src).not.toContain('export function sharePlaceName');
+  });
+});
+
+describe('메타줄 도시 — place.address에서 도시 조각만', () => {
+  it('쉼표 표기(영어·유럽식) = 마지막 조각', () => {
+    expect(shareMetaCity('12 Wausan-ro, Mapo-gu, Seoul')).toBe('Seoul');
   });
 
-  it('둘 다 없으면 null = 줄 숨김(빈 줄 금지)', () => {
-    expect(sharePlaceName({ placeName: null, roadAddress: null })).toBeNull();
-    expect(sharePlaceName({ placeName: '  ', roadAddress: '' })).toBeNull();
+  it('공백 표기(한국어·일본어식) = 첫 토큰', () => {
+    expect(shareMetaCity('서울 마포구 와우산로 12')).toBe('서울');
+  });
+
+  it('부재·공백 = null(도시 없이 날짜만 — 빈 줄 금지)', () => {
+    expect(shareMetaCity(null)).toBeNull();
+    expect(shareMetaCity(undefined)).toBeNull();
+    expect(shareMetaCity('   ')).toBeNull();
   });
 });
 
@@ -213,10 +228,10 @@ it('배선 — 주문 상세가 사진 있을 때만 섹션을 렌더 · i18n �
   const src = read('src/app/profile/order/[id].tsx');
   expect(src).toContain('q.data.thumbnails.length > 0 && (');
   expect(src).toContain('<OrderShareSection');
-  expect(src).toContain('sharePlaceName({ roadAddress: q.data.roadAddress })');
+  expect(src).toContain('placeName: orderPlaceLabel(q.data)');
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
     const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { myFoods: Record<string, string> };
-    for (const k of ['shareMenuMore', 'sharePreviewCaption', 'shareDownload', 'shareInstagram']) {
+    for (const k of ['shareMenuMore', 'sharePreviewCaption', 'shareDownload', 'shareInstagram', 'sharePhotoDenied', 'shareSaved', 'shareNoInstagram', 'shareFailed']) {
       expect(j.myFoods[k]).toBeTruthy();
     }
     expect(j.myFoods.shareDownload).toContain('\n'); // 두 줄 고정

@@ -70,12 +70,20 @@ export function shareMenuLine(
 }
 
 /**
- * ③ 가게명 3단 폴백. **place가 와도 이 경로는 그대로 산다** — 기존 주문은
- * place가 영구 null이기 때문(백필 없음, 설계 §1). null = 그 줄을 숨긴다.
+ * ③ 메타줄 도시 — `place.address`(회원 언어 해석)에서 도시 부분만 뽑는다.
+ * 주소 표기는 언어마다 순서가 반대다: 영어·유럽식은 "번지, 구, **도시**"(도시가 끝),
+ * 한국어·일본어식은 "**서울** 강남구 …"(도시가 앞). 쉼표가 있으면 마지막 조각, 없으면
+ * 첫 토큰을 쓴다. 판별 불가·부재 = null(도시 없이 날짜만 — 빈 줄 금지).
+ *
+ * 가게명 자체는 `lib/data/useOrders.orderPlaceLabel`(P-386)이 정본이다 — 같은 규칙을
+ * 두 번 두지 않는다(P-386 머지로 중복이 생겨 이쪽을 지웠다).
  */
-export function sharePlaceName(src: { placeName?: string | null; roadAddress?: string | null }): string | null {
-  const name = (src.placeName ?? '').trim();
-  if (name) return name;
-  const road = (src.roadAddress ?? '').trim();
-  return road || null;
+export function shareMetaCity(address: string | null | undefined): string | null {
+  const a = (address ?? '').trim();
+  if (!a) return null;
+  if (a.includes(',')) {
+    const parts = a.split(',').map((x) => x.trim()).filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : null;
+  }
+  return a.split(/\s+/)[0] || null;
 }

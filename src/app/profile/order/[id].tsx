@@ -9,20 +9,24 @@
  * P-380(KB-518): 하단 공유 섹션 부활 — 스토리 카드 미리보기 + 저장/인스타 버튼.
  */
 import * as React from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
-import { Btn, IconClose, SubHeader, Spinner } from '@/components';
+import { ActionSheet, Btn, IconClose, SubHeader, Spinner } from '@/components';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { orderPlaceLabel, useOrderDetail } from '@/lib/data/useOrders';
-import { OrderShareSection } from '@/features/order/OrderShareCard';
-import { shareMenuLine, sharePlaceName } from '@/features/order/shareCard';
+import { OrderShareExportCanvas, OrderShareSection } from '@/features/order/OrderShareCard';
+import { shareMenuLine, shareMetaCity } from '@/features/order/shareCard';
+import { saveCardToPhotos, shareCardToStory } from '@/features/order/shareExport';
+import { showTopToast } from '@/components/topToastStore';
+import { openAppSettings } from '@/lib/openExternal';
+import { EVENTS, track } from '@/lib/analytics';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { convertKrw, currencyForCountry } from '@/lib/exchange';
@@ -37,6 +41,65 @@ export default function OrderDetailScreen() {
   const { data: me } = useMe();
   const bottom = useBottomInset(); // P-055: 안드 내비바 보정
   const [viewer, setViewer] = React.useState(false);
+  // P-380 4단계: 캡처 대상 = 화면 밖 9:16 캔버스(미리보기 카드가 아니다)
+  const exportRef = React.useRef<View>(null);
+  const shareBusy = React.useRef(false); // 연타 차단(캡처는 수백 ms 걸린다)
+  const [photoDenied, setPhotoDenied] = React.useState(false); // 사진첩 권한 거부 안내 시트
+
+  // P-380: 카드 데이터 — 미리보기와 내보내기 캔버스가 **같은 값**을 쓴다(둘이 어긋나면
+  // 사용자가 본 것과 저장된 것이 달라진다)
+  const shareCard = q.data
+    ? {
+        photos: q.data.thumbnails,
+        placeName: orderPlaceLabel(q.data),
+        menuLine: shareMenuLine(
+          q.data.items.map((it) => it.menuName),
+          (count) => t('myFoods.shareMenuMore', { count }),
+        ),
+        // 도시는 place.address(회원 언어 해석)가 올 때만 — roadAddress는 한국어라
+        // 파싱해도 시안의 "Seoul"이 안 나오고, 카드를 보는 사람은 외국인이다
+        metaCity: shareMetaCity(q.data.placeAddress),
+        metaDate: formatOrderDate(q.data.orderedAt),
+      }
+    : null;
+  // 계측 속성 = 음식 개수·장소 유무까지만(발주 고정 — 가게명·주소·좌표 금지)
+  const shareProps = { item_count: q.data?.items.length ?? 0, has_place: !!q.data?.placeName };
+  const shareVisible = !!q.data && q.data.thumbnails.length > 0;
+  const viewTracked = React.useRef(false);
+  React.useEffect(() => {
+    if (!shareVisible || viewTracked.current) return;
+    viewTracked.current = true; // 주문 1건당 1회(재렌더·스크롤로 중복 발화 금지)
+    track(EVENTS.order_share_view, shareProps);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareVisible]);
+
+  const onDownload = React.useCallback(async () => {
+    if (shareBusy.current) return;
+    shareBusy.current = true;
+    track(EVENTS.order_share_save, { ...shareProps, result: 'tap' });
+    const r = await saveCardToPhotos(exportRef);
+    shareBusy.current = false;
+    track(EVENTS.order_share_save, { ...shareProps, result: r });
+    if (r === 'success') return showTopToast(t('myFoods.shareSaved'));
+    // 권한 거부 = 안내 + 설정 열기(P-381 openAppSettings 재사용 — 앱이 직접 못 연다).
+    // 네이티브 Alert가 아니라 공용 시트 — 이 화면은 P-355로 Alert를 걷어낸 자리다.
+    if (r === 'denied') return setPhotoDenied(true);
+    showTopToast(t('myFoods.shareFailed'), { error: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, shareProps.item_count, shareProps.has_place]);
+
+  const onInstagram = React.useCallback(async () => {
+    if (shareBusy.current) return;
+    shareBusy.current = true;
+    track(EVENTS.order_share_story, { ...shareProps, result: 'tap' });
+    const r = await shareCardToStory(exportRef);
+    shareBusy.current = false;
+    track(EVENTS.order_share_story, { ...shareProps, result: r });
+    if (r === 'success') return;
+    // 미설치는 앱스토어로 보내지 않는다(발주 고정) — 문구만
+    showTopToast(r === 'not_installed' ? t('myFoods.shareNoInstagram') : t('myFoods.shareFailed'), { error: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, shareProps.item_count, shareProps.has_place]);
 
   // 환산 통화 = 서버 정본(me.currency) → 국적 파생 폴백(P-165 체인 간단판)
   const cur = me?.currency ?? currencyForCountry(me?.nationality);
@@ -145,25 +208,20 @@ export default function OrderDetailScreen() {
           </View>
 
           {/* P-380(KB-518) 공유 카드 — 사진 0장이면 섹션 자체를 숨긴다(빈 카드 금지).
-              가게명은 place.name → roadAddress 3단 폴백(place는 dev 미배포 — 4단계에서 배선).
-              버튼 동작은 4단계(캡처·저장·공유)에서 붙는다. */}
+              가게명은 orderPlaceLabel(place.name → roadAddress, P-386 공용 규칙).
+              캡처 대상은 화면 밖 9:16 캔버스 — 미리보기 카드와 **같은 props**를 쓴다. */}
           {q.data.thumbnails.length > 0 && (
+            <>
+            <OrderShareExportCanvas ref={exportRef} card={shareCard!} />
             <OrderShareSection
-              card={{
-                photos: q.data.thumbnails,
-                placeName: sharePlaceName({ roadAddress: q.data.roadAddress }),
-                menuLine: shareMenuLine(
-                  q.data.items.map((it) => it.menuName),
-                  (count) => t('myFoods.shareMenuMore', { count }),
-                ),
-                // 도시는 place.address(사용자 언어)가 올 때만 — roadAddress는 한국어라
-                // 파싱해도 시안의 "Seoul"이 안 나오고, 카드를 보는 사람은 외국인이다
-                metaDate: formatOrderDate(q.data.orderedAt),
-              }}
+              card={shareCard!}
               caption={t('myFoods.sharePreviewCaption')}
               downloadLabel={t('myFoods.shareDownload')}
               instagramLabel={t('myFoods.shareInstagram')}
+              onDownload={onDownload}
+              onInstagram={onInstagram}
             />
+            </>
           )}
         </ScrollView>
       )}
@@ -176,6 +234,14 @@ export default function OrderDetailScreen() {
           </Btn>
         </View>
       )}
+
+      {/* P-380: 사진첩 권한 거부 안내 — 설정 열기 1행(Alert 금지 화면이라 공용 시트) */}
+      <ActionSheet
+        open={photoDenied}
+        title={t('myFoods.sharePhotoDenied')}
+        items={[{ key: 'settings', label: t('photo.openSettings'), onPress: () => void openAppSettings() }]}
+        onClose={() => setPhotoDenied(false)}
+      />
 
       {/* 풀스크린 메뉴판 뷰어 — contain(전체 표시) + 명시 닫기 */}
       {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}

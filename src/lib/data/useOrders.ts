@@ -50,6 +50,8 @@ export interface OrderSummary {
   roadAddress: string | null;
   /** P-386: 서버 장소명 — 부재(구응답·미태그) = null. 표시 판단은 orderPlaceLabel 한 곳. */
   placeName: string | null;
+  /** P-380(KB-518): 장소 주소(회원 언어 해석) — 공유 카드 메타줄 도시 추출용. */
+  placeAddress: string | null;
   totalQuantity: number;
   thumbnails: string[]; // 서버 구성(최대 4·기본 이미지 포함) — URL만 통과
   scanImageUrl: string | null;
@@ -66,6 +68,7 @@ function adaptSummary(w: OrderSummaryWire): OrderSummary {
     orderedAt: w.orderedAt,
     roadAddress: w.roadAddress ?? null, // null = 위치 미동의·변환 실패 — 표기 생략
     placeName: w.place?.name?.trim() || null, // 빈 문자열도 null — 빈 줄 렌더 금지
+    placeAddress: w.place?.address?.trim() || null,
     totalQuantity: w.totalQuantity ?? 0,
     thumbnails: (w.thumbnails ?? []).map(urlOrNull).filter((u): u is string => !!u).slice(0, 4),
     scanImageUrl: urlOrNull(w.scanImageUrl),

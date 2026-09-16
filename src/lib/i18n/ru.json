@@ -1017,6 +1017,10 @@
     "shareMenuMore": "+{{count}} ещё",
     "sharePreviewCaption": "Предпросмотр карточки 9:16",
     "shareDownload": "Сохранить\nфото",
-    "shareInstagram": "История\nInstagram"
+    "shareInstagram": "История\nInstagram",
+    "sharePhotoDenied": "Разрешите доступ к фото, чтобы сохранить карточку истории.",
+    "shareSaved": "Сохранено в фото.",
+    "shareNoInstagram": "Instagram не установлен на этом телефоне.",
+    "shareFailed": "Не удалось создать карточку истории. Попробуйте ещё раз."
   }
 }
