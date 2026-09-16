@@ -15,6 +15,9 @@ jest.mock('react-native-reanimated', () => {
     useAnimatedStyle: () => ({}),
     withSpring: (v: unknown) => v,
     withTiming: (v: unknown) => v,
+    // P-387: 모달 안 TopToastHost가 쓴다(실패 안내가 모달 위에 떠야 해서 붙였다)
+    useReducedMotion: () => false,
+    runOnJS: (fn: unknown) => fn,
     Easing: { out: () => () => 0, quad: 0, linear: () => 0 },
   };
 });
@@ -31,7 +34,11 @@ jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t:
 let mockGuest = false;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
 const mockToast = jest.fn();
-jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
+jest.mock('@/components/topToastStore', () => ({
+  showTopToast: (...a: unknown[]) => mockToast(...a),
+  // 모달 안 TopToastHost가 구독한다 — 목에서도 구독 계약을 채워야 호스트가 마운트된다
+  subscribeTopToast: () => () => {},
+}));
 jest.mock('@/components/AuthGateSheet', () => {
   const { View } = require('react-native');
   return {
@@ -198,4 +205,28 @@ it('실패 = 완료 화면 없음 + 토스트 + 사유 유지(재시도 가능)'
   expect(s).not.toContain('community.reportThanks');
   expect(s).toContain('community.reportTitle'); // 사유 시트 유지 = 재시도 가능
   expect(mockToast).toHaveBeenCalled();
+});
+
+it('Codex #161 P2: 응답 대기 중 다른 대상으로 넘어가면 그 대상이 완료로 바뀌지 않는다', () => {
+  mockGuest = true;
+  let succeed!: () => void;
+  mockReport.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) => { succeed = opts.onSuccess; });
+  const tree = render(OTHER);
+  tapItem(tree, 'community.report');
+  act(() => tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0].props.onPress());
+  act(() => tree.root.findAll((n) => n.props?.testID === 'report-submit')[0].props.onPress());
+  // 다른 대상으로 교체(시트 닫고 다른 리뷰 ⋯ 진입과 같은 상태) → 그 대상의 신고 시트까지 진입
+  act(() => { tree.update(<ModerationFlow target={{ ...OTHER, id: 'other-999' }} onClose={() => {}} onBlocked={() => {}} onEdit={() => {}} onDelete={() => {}} />); });
+  tapItem(tree, 'community.report');
+  expect(flat(tree)).toContain('community.reportTitle'); // 2번째 대상의 사유 시트에 서 있다
+  act(() => succeed()); // 늦게 도착한 **첫 대상**의 성공 콜백
+  const s = flat(tree);
+  expect(s).not.toContain('community.reportThanks'); // 신고한 적 없는 대상이 완료로 바뀌면 안 된다
+  expect(s).toContain('community.reportTitle'); // 사유 시트 유지
+});
+
+it('Codex #161 P2: 실패 안내가 모달 안에서 보이도록 토스트 호스트를 모달에 둔다', () => {
+  const src = require('fs').readFileSync('src/features/community/moderation.tsx', 'utf8') as string;
+  const modalPart = src.slice(src.indexOf('<Modal visible transparent'));
+  expect(modalPart).toContain('<TopToastHost />'); // 루트 호스트는 네이티브 Modal 아래라 가려진다
 });

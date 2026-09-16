@@ -18,6 +18,7 @@ import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
 import { showTopToast } from '@/components/topToastStore';
+import { TopToastHost } from '@/components/TopToast';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
@@ -61,6 +62,8 @@ export function ModerationFlow({
   const [reason, setReason] = React.useState<ReportReason | null>(null);
   const [note, setNote] = React.useState('');
   const [reported, setReported] = React.useState(false);
+  const targetRef = React.useRef(target); // 늦은 뮤테이션 콜백이 현재 대상과 같은지 대조용
+  targetRef.current = target;
   const submitReport = useSubmitReport();
   const blockUser = useBlockUser();
 
@@ -97,13 +100,17 @@ export function ModerationFlow({
   const doReport = () => {
     // P-173: reported 전환 전 같은-틱 더블탭 = 이중 신고 — 동기 가드
     if (!reason || reported || submitReport.isPending) return;
+    // Codex #161 P2: 응답이 늦는 사이 다른 대상으로 넘어가면 콜백이 **그 대상**의 시트를
+    // 완료로 바꿔 버린다(신고한 적 없는데 Thanks) — 제출 시점 대상을 묶어 두고 대조한다.
+    const submittedFor = `${target.type}:${target.id}`;
+    const isSameTarget = () => submittedFor === `${targetRef.current?.type}:${targetRef.current?.id}`;
     submitReport.mutate(
       { target: target.type, id: target.id, reason, note: reason === 'other' && note.trim() ? note.trim() : null },
       {
         // P-387(KB-460): **응답 성공 후에만** 완료 화면 — 실패했는데 "접수됐다"고 말하지 않는다.
         // 실패 시 사유·메모를 그대로 두고 재시도할 수 있게 둔다(reported 유지 false).
-        onSuccess: () => setReported(true),
-        onError: () => showTopToast(t('community.reportFailed'), { error: true }),
+        onSuccess: () => { if (isSameTarget()) setReported(true); },
+        onError: () => { if (isSameTarget()) showTopToast(t('community.reportFailed'), { error: true }); },
       },
     );
   };
@@ -233,6 +240,10 @@ export function ModerationFlow({
               </Btn>
             </View>
           )}
+
+          {/* P-370(KB-533) 문법: 네이티브 Modal은 루트 토스트 호스트 위에 뜬다 —
+              실패 안내가 가려지지 않도록 이 모달 안에도 호스트를 둔다(Codex #161 P2) */}
+          <TopToastHost />
 
           {phase === 'blocking' && (
             /* 텍스트만 ≥2초 — 버튼·스피너 없음 (확정 정책, 시안 스피너 불채택) */
