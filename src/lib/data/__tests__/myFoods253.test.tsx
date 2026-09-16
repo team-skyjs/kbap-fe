@@ -331,3 +331,58 @@ it('P-355(KB-517): 1개 = 시트 생략 직진(현행 유지)', async () => {
   expect(mockPush).toHaveBeenLastCalledWith('/food/7/review');
   expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0);
 });
+
+describe('P-386(KB-456): 장소 라벨 = 식당명 → 주소 → 미렌더', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { orderPlaceLabel } = require('../useOrders') as typeof import('../useOrders');
+
+  it('규칙 3분기 — 식당명 우선 · 없으면 주소 · 둘 다 없으면 null(빈 줄 금지)', () => {
+    expect(orderPlaceLabel({ placeName: '홍대 김치집', roadAddress: '서울 중구 소공로 51' })).toBe('홍대 김치집');
+    expect(orderPlaceLabel({ placeName: null, roadAddress: '서울 중구 소공로 51' })).toBe('서울 중구 소공로 51');
+    expect(orderPlaceLabel({ placeName: null, roadAddress: null })).toBeNull();
+    expect(orderPlaceLabel({})).toBeNull();
+    expect(orderPlaceLabel({ placeName: '   ', roadAddress: '  ' })).toBeNull(); // 공백뿐 = 없음
+  });
+
+  async function ordersData() {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    let data: ReturnType<typeof useOrders>['data'];
+    function H() {
+      data = useOrders().data;
+      return null;
+    }
+    await act(async () => {
+      renderer.create(
+        <QueryClientProvider client={qc}>
+          <H />
+        </QueryClientProvider>,
+      );
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    for (let i = 0; i < 5 && data === undefined; i++) {
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    }
+    return data!;
+  }
+
+  it('어댑터 — place.name 매핑 · place null/부재(prod 구응답) = placeName null', async () => {
+    mockGet.mockResolvedValue({ items: [ORDER({ place: { placeId: 'p1', name: '홍대 김치집', address: '서울 마포구', language: 'ko' } })], hasNext: false, nextCursor: null });
+    expect((await ordersData())[0].placeName).toBe('홍대 김치집');
+
+    mockGet.mockResolvedValue({ items: [ORDER({ place: null }), ORDER({ orderId: 124 })], hasNext: false, nextCursor: null });
+    expect((await ordersData()).every((o) => o.placeName === null)).toBe(true);
+  });
+
+  it('주문 행 — 식당명이 있으면 주소 대신 식당명이 보인다', async () => {
+    mockGet.mockResolvedValue({
+      items: [ORDER({ place: { placeId: 'p1', name: '홍대 김치집', address: '서울 마포구', language: 'ko' } })],
+      hasNext: false, nextCursor: null,
+    });
+    const tree = renderScreen();
+    await flush();
+    // 렌더된 텍스트 노드만 검사 — FlatList data prop 직렬화에는 원본 roadAddress가 남는다
+    const texts = tree.root.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.children as string);
+    expect(texts).toContain('홍대 김치집');
+    expect(texts).not.toContain('서울 중구 소공로 51'); // roadAddress 폴백은 이때 쓰이지 않는다
+  });
+});
