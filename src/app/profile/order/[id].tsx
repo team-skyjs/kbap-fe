@@ -88,7 +88,7 @@ export default function OrderDetailScreen() {
                   <Text style={styles.rcptLbl}>{t('myFoods.receiptTotal')}</Text>
                   <Text style={styles.rcptTotal}>
                     {formatKrw(q.data.totalPrice)}
-                    {conv(q.data.totalPrice) ? ` · ${conv(q.data.totalPrice)}` : ''}
+                    {conv(q.data.totalPrice) ? ` ${conv(q.data.totalPrice)}` : ''}
                   </Text>
                 </View>
               </>

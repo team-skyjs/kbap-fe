@@ -53,6 +53,8 @@ export interface FoodDetailWire {
   /** Korean name regardless of lang. null when the localized name IS Korean (lang=ko / fallback). */
   koreanName: string | null;
   imageRef: string | null; // nullable, bare image filename
+  /** P-385(KB-363, BE KB-439 #236): READY 공개 시각(ISO-8601). 미공개 이력이면 null, 구응답 부재. */
+  publishedAt?: string | null;
   description: string; // request language
   spiciness: number; // 0..10
   /** 조회 회원의 북마크 여부 — 비회원 조회는 항상 false (KB-142 계약 갭 해소, 2026-07-15 배포). */

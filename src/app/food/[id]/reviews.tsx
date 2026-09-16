@@ -395,7 +395,6 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
           ) : tx.error ? (
             <View style={styles.txInline}>
               <Text style={styles.txError}>{t('reviews.translateFailed')}</Text>
-              <Text style={styles.dot}>·</Text>
               <Pressable onPress={tx.retry} hitSlop={6}>
                 <Text style={styles.txLink}>{t('reviews.retry')}</Text>
               </Pressable>
@@ -403,7 +402,6 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
           ) : tx.showingTranslated ? (
             <View style={styles.txInline}>
               <Text style={styles.txMuted}>{t('reviews.translatedFrom', { lang: langName })}</Text>
-              <Text style={styles.dot}>·</Text>
               <Pressable onPress={tx.showOriginal} hitSlop={6}>
                 <Text style={styles.txLink}>{t('reviews.showOriginal')}</Text>
               </Pressable>
@@ -525,7 +523,6 @@ const styles = StyleSheet.create({
   txLink: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.accent },
   txMuted: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   txError: { fontFamily: font.body, fontSize: 12, color: C.riskDanger },
-  dot: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
   when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
   // P-085 keyset 더보기
   loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12 },
