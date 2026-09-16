@@ -164,10 +164,16 @@ describe('5단계 계측 — 이벤트·속성 스키마', () => {
 describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
   it('화면이 프리페치 완료까지 busy로 잠그고, 실패해도 영구 잠금되지 않는다', () => {
     const src = read('src/app/profile/order/[id].tsx');
-    expect(src).toContain('const [photosReady, setPhotosReady] = React.useState(false)');
+    expect(src).toContain("const [photosState, setPhotosState] = React.useState<'loading' | 'ready' | 'failed'>('loading')");
     expect(src).toContain('Image.prefetch(');
-    expect(src).toContain('busy={!photosReady}');
-    expect(src).toContain('.finally(() => { if (alive) setPhotosReady(true); })'); // 실패도 해제
+    expect(src).toContain("busy={photosState !== 'ready'}");
+    // 5R: 실패(reject·false)는 **잠금 유지** — RemoteImage 실패 칸은 빈 칸이라 그대로 찍히면 사진 없는 카드가 저장된다
+    expect(src).toContain("setPhotosState(ok ? 'ready' : 'failed')");
+    expect(src).toContain(".catch(() => { if (alive) setPhotosState('failed'); })");
+    expect(src).not.toContain('setPhotosReady(true)');
+    // 영구 비활성 방치 금지 — 재시도 경로
+    expect(src).toContain('onRetryPhotos={() => setPrefetchTry((n) => n + 1)}');
+    expect(src).toContain('[photosKey, prefetchTry]');
   });
 
   it('버튼 비활성은 불투명도만 — 프레임 메트릭 불변(P-151)', () => {
@@ -177,6 +183,16 @@ describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
     const busyStyle = src.slice(src.indexOf('actionBusy:'), src.indexOf('actionBusy:') + 60);
     for (const metric of ['padding', 'height', 'borderWidth', 'borderRadius', 'gap']) {
       expect(busyStyle).not.toContain(metric);
+    }
+  });
+
+  it('프리페치 실패 = 재시도 줄 + 캡처 잠금 유지 · 문구 10로케일', () => {
+    const src = read('src/features/order/OrderShareCard.tsx');
+    expect(src).toContain('testID="share-photos-retry"');
+    expect(src).toContain('{failed && !!failedLabel && (');
+    for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+      const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { myFoods: Record<string, string> };
+      expect(j.myFoods.sharePhotosFailed).toBeTruthy();
     }
   });
 

@@ -1019,6 +1019,7 @@
     "shareSaved": "已保存到相册。",
     "shareNoInstagram": "此设备未安装 Instagram。",
     "shareFailed": "无法生成故事卡片，请重试。",
-    "shareStoryHint": "先保存图片，再到 Instagram 分享。"
+    "shareStoryHint": "先保存图片，再到 Instagram 分享。",
+    "sharePhotosFailed": "图片加载失败，点击重试。"
   }
 }

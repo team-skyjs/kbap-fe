@@ -123,6 +123,10 @@ export function OrderShareSection({
   storyHint,
   /** 내보내기 이미지가 아직 로드 중 — 캡처 액션 비활성(빈 칸·셔머가 찍히는 것 방지). */
   busy = false,
+  /** 이미지 프리페치 실패 — 잠금 유지 + 재시도 줄 노출(영구 비활성 방치 금지). */
+  failed = false,
+  failedLabel,
+  onRetryPhotos,
 }: {
   card: OrderShareCardProps;
   caption: string;
@@ -134,6 +138,9 @@ export function OrderShareSection({
   storyAvailable?: boolean;
   storyHint?: string;
   busy?: boolean;
+  failed?: boolean;
+  failedLabel?: string;
+  onRetryPhotos?: () => void;
 }) {
   return (
     <View style={styles.section} testID="order-share-section">
@@ -155,6 +162,12 @@ export function OrderShareSection({
             </Pressable>
           )}
         </View>
+        {/* 사진 로드 실패 = 캡처 잠금 유지 + 눌러서 재시도(빈 칸 카드 저장 방지) */}
+        {failed && !!failedLabel && (
+          <Pressable onPress={onRetryPhotos} testID="share-photos-retry">
+            <Text style={[styles.storyHint, styles.retryText]}>{failedLabel}</Text>
+          </Pressable>
+        )}
         {/* 스토리 버튼이 없는 동안의 대체 경로 안내 — 버튼 자리를 비워 두지 않는다 */}
         {!storyAvailable && !!storyHint && (
           <Text style={styles.storyHint} testID="share-story-hint">
@@ -216,6 +229,7 @@ const styles = StyleSheet.create({
   },
   actionBusy: { opacity: 0.45 },
   storyHint: { fontSize: 11, lineHeight: 15, color: '#9196A1', textAlign: 'center' },
+  retryText: { color: '#6A6F7C', textDecorationLine: 'underline' },
   actionLabel: { fontSize: 12, lineHeight: 16.2, fontWeight: '600', letterSpacing: -0.12, color: '#2F3137', textAlign: 'center' },
 });
 

@@ -1019,6 +1019,7 @@
     "shareSaved": "Tersimpan ke galeri foto.",
     "shareNoInstagram": "Instagram belum terpasang di ponsel ini.",
     "shareFailed": "Gagal membuat kartu story. Coba lagi.",
-    "shareStoryHint": "Simpan gambarnya, lalu bagikan di Instagram."
+    "shareStoryHint": "Simpan gambarnya, lalu bagikan di Instagram.",
+    "sharePhotosFailed": "Gagal memuat foto. Ketuk untuk coba lagi."
   }
 }

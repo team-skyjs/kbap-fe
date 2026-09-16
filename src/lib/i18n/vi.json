@@ -1019,6 +1019,7 @@
     "shareSaved": "Đã lưu vào ảnh của bạn.",
     "shareNoInstagram": "Điện thoại này chưa cài Instagram.",
     "shareFailed": "Không tạo được thẻ story. Hãy thử lại.",
-    "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram."
+    "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram.",
+    "sharePhotosFailed": "Không tải được ảnh. Chạm để thử lại."
   }
 }

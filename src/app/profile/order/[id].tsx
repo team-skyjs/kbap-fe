@@ -47,7 +47,10 @@ export default function OrderDetailScreen() {
   const [photoDenied, setPhotoDenied] = React.useState(false); // 사진첩 권한 거부 안내 시트
   // Codex #151 P2: 내보내기 캔버스의 원격 이미지가 로드되기 전에 찍으면 빈 칸·셔머가 박힌다.
   // 프리페치가 끝나기 전까지 캡처 액션을 잠근다(캐시가 차면 양쪽 인스턴스가 같이 산다).
-  const [photosReady, setPhotosReady] = React.useState(false);
+  // 5R 추가: **실패(reject·false)도 잠금 유지** — RemoteImage는 실패 시 빈 칸이라
+  // 그대로 찍으면 사진 없는 카드가 저장된다. 대신 눌러서 다시 시도할 수 있게 둔다.
+  const [photosState, setPhotosState] = React.useState<'loading' | 'ready' | 'failed'>('loading');
+  const [prefetchTry, setPrefetchTry] = React.useState(0);
 
   // P-380: 카드 데이터 — 미리보기와 내보내기 캔버스가 **같은 값**을 쓴다(둘이 어긋나면
   // 사용자가 본 것과 저장된 것이 달라진다)
@@ -88,16 +91,17 @@ export default function OrderDetailScreen() {
   const sharePhotos = q.data?.thumbnails ?? [];
   const photosKey = sharePhotos.join('|');
   React.useEffect(() => {
-    if (!photosKey) return setPhotosReady(true); // 사진 0장 = 섹션 자체가 안 뜬다
+    if (!photosKey) return setPhotosState('ready'); // 사진 0장 = 섹션 자체가 안 뜬다
     let alive = true;
-    setPhotosReady(false);
+    setPhotosState('loading');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Image } = require('expo-image') as typeof import('expo-image');
+    // prefetch는 **한 장이라도 실패하면 false**를 돌려준다(expo-image 계약) — reject와 같게 취급
     void Image.prefetch(photosKey.split('|'))
-      .catch(() => {}) // 실패해도 잠가 두지 않는다 — 폴백 렌더가 찍힌다(무한 비활성 금지)
-      .finally(() => { if (alive) setPhotosReady(true); });
+      .then((ok) => { if (alive) setPhotosState(ok ? 'ready' : 'failed'); })
+      .catch(() => { if (alive) setPhotosState('failed'); });
     return () => { alive = false; };
-  }, [photosKey]);
+  }, [photosKey, prefetchTry]);
 
   const onDownload = React.useCallback(async () => {
     if (shareBusy.current) return;
@@ -262,7 +266,10 @@ export default function OrderDetailScreen() {
               onInstagram={onInstagram}
               storyAvailable={storyShareAvailable()}
               storyHint={t('myFoods.shareStoryHint')}
-              busy={!photosReady}
+              busy={photosState !== 'ready'}
+              failed={photosState === 'failed'}
+              failedLabel={t('myFoods.sharePhotosFailed')}
+              onRetryPhotos={() => setPrefetchTry((n) => n + 1)}
             />
             </View>
           )}
