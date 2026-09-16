@@ -63,6 +63,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 import { FoodGridCard } from '@/features/food/FoodCards';
 import { NewBadge } from '@/components/NewBadge';
+import { Txt } from '@/components/Txt';
 import { RiskBadge } from '@/components/RiskBadge';
 import { railCardW, RAIL_MIN_CARD_W } from '@/features/food/railLayout';
 import type { FoodCard } from '@/lib/api/types';
@@ -119,4 +120,11 @@ it('배치 = RiskBadge(좌상단) 반대 모서리·동일 인셋, 같은 카드
   const narrowest = Math.min(railCardW(320), RAIL_MIN_CARD_W);
   const BADGE_MAX_W = 44; // NEW 필(10px 3글자 + 패딩 10) · RiskBadge 리본 폭 상한
   expect(BADGE_MAX_W * 2 + risk.left + neu.right).toBeLessThan(narrowest);
+});
+
+it('배지 문구 = Txt 경유(고정 높이 필: 큰글씨 상한·Android 폰트 패딩) — 원시 Text 회귀 금지', () => {
+  const tree = render(<NewBadge />);
+  const txt = tree.root.findAllByType(Txt);
+  expect(txt.length).toBe(1);
+  expect(txt[0].props.children).toBe('inbox.newBadge');
 });
