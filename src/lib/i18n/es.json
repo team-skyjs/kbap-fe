@@ -955,9 +955,7 @@
     "consentBothRequired": "Acepta ambos puntos para activar las notificaciones.",
     "consentConfirm": "Aceptar y activar",
     "reviewReminderTitle": "¿Qué tal la comida?",
-    "reviewReminderBody": "Cuéntanos qué tal estuvo {{name}} — una valoración rápida ayuda a otros viajeros.",
-    "landingTbdTitle": "Destino por definir (requiere planificación)",
-    "landingTbdBody": "Aún no se ha decidido qué pantalla abrir al tocar la notificación {{type}}. Compártelo con el equipo."
+    "reviewReminderBody": "Cuéntanos qué tal estuvo {{name}} — una valoración rápida ayuda a otros viajeros."
   },
   "notif": {
     "title": "Ajustes de notificaciones",

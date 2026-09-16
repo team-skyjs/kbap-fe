@@ -286,16 +286,17 @@ export function isPushType(v: unknown): v is PushType {
 
 export function routeForNotificationData(data: unknown): string | null {
   const d = data as { type?: string; foodId?: string | number } | null | undefined;
+  // KB-573(2026-09-16 종한 확정): 매핑은 FE 소유 — 서버는 type + 대상 id만. "어떻게 가는가"(홈 = 스택 리셋 +
+  // 탭 점프 · 그 외 navigate 재사용)는 lib/nav openNotificationRoute 한 곳. 여기는 경로 문자열만.
   switch (d?.type) {
-    // 2026-09-12 종한: HELPFUL·SCAN_SUGGESTION 착지 미정 → 임시 디버깅 화면(push-landing). 기획 확정 시 교체.
     case 'HELPFUL':
-      return '/push-landing?type=HELPFUL';
+      return '/profile/reviews'; // 내 리뷰 목록 — 리뷰 id 미제공이라 상세 불가. 게스트 게이트는 화면 몫
     case 'SCAN_SUGGESTION': // 구 NUDGE(2026-09-07 개명) — 구 이름은 default로 무동작
-      return '/push-landing?type=SCAN_SUGGESTION';
+    case 'MEAL_TIME':
+      return '/(tabs)'; // 홈 탭(광고성 유도 2종 동일 착지)
     case 'REVIEW_REMINDER':
       return d.foodId != null ? `/food/${d.foodId}` : null; // 음식 상세(리뷰 작성 화면 아님 — 9/12 결정)
     case 'NEWS':
-    case 'MEAL_TIME':
       return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:
       return null; // 미지·구 이름·변형 — 무동작(정확 일치만)

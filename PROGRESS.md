@@ -1438,3 +1438,14 @@
 - [x] 문구: notif.activitySub·newsSub·mealTimeSub·push.consentSheetBody·privacyConsent 중간점→슬래시 — ko 5·ja 4(나카구로 `・` 포함, 리뷰 확인 포인트)·zh-Hans/Hant 1. 나머지 6로케일 중간점 없음 = 무변. 10로케일 중간점 0 유닛.
 - [x] 테스트: notificationSheet497 +5(소스 잠금·프레임 불변·드래그 배선·영역 한정·훅 배선) · notifKeys497 +1 · 시트를 렌더하는 화면 스위트 7에 RNGH 표면 목 보강(onFinalize 누락 5·목 부재 2 — 훅 도입의 예측된 파급, research R-8). tsc 0 · jest 209스위트 1423/1423.
 - [x] draft PR #150(develop). iOS 실기는 종한 3차 피드백 반영 후 최종 재확인 대기 · Android 미확인(모달 내 제스처 루트 동작). 발행은 예진 승인(JS-only OTA 가능). 리뷰 포인트 3: 사전 체크 동의 법적 유효성 · ja 나카구로 치환 · 소식 OFF 응답 의미.
+
+## KB-573 푸시 탭 착지 확정 — MEAL_TIME·SCAN_SUGGESTION→홈, HELPFUL→내 리뷰, 임시 push-landing 제거 (2026-09-16, 워크트리 feat/kb573-push-landing · spec 005)
+
+- [x] 착지 확정(종한 9/16, clarify 3문항): MEAL_TIME·SCAN_SUGGESTION → 홈 탭 `/(tabs)`(열려 있던 화면 전부 닫힘, 뒤로 가기 없음) · HELPFUL → `/profile/reviews`(리뷰 id 미제공이라 상세 불가, 게스트 게이트는 화면 몫) · 리마인더=음식 상세 · NEWS=이동 없음 유지. 서로 다른 알림 연속 탭 = 맨 위 같은 화면이면 재사용(권고안 채택).
+- [x] "어떻게 가는가"는 `lib/nav.ts` `openNotificationRoute` 한 곳 — expo-router 56 StackRouter는 getId 없으면 name이 최상단과 다를 때 push·navigate 모두 새로 쌓아, 홈은 `dismissAll` 선행 후 `navigate('/(tabs)')`(탭 점프). 호출부 2곳(루트 레이아웃 탭 콜백·알림함 항목 탭) `router.push` → 헬퍼.
+- [x] 콜드 스타트 게이트: 푸시 리스너 등록을 `entryChecked` 뒤로. 근거(소스) — expo-router `store.assertIsReady()`가 Stack 마운트 전 navigate에 throw("Attempted to navigate before mounting the Root Layout"), `getLastNotificationResponseAsync`는 스플래시 게이트(≥1200ms)보다 먼저 해소. 실기 미관측 추정 — 아래 실기 D-3·D-4가 유일한 검증.
+- [x] 임시 화면 `src/app/push-landing.tsx` 삭제 · `push.landingTbd*` 10로케일 제거 · 어댑터 case 교체(주석 정리). 잠금 유닛 landingRemoved573(로케일 키 부재·어댑터 소스 push-landing 0·파일 부재).
+- [x] 테스트: nav573 +5(홈 dismissAll→navigate 순서·canDismiss false·throw 방어·내 리뷰·음식 상세) · pushAdapter192 매핑 3케이스 교체 + 레이아웃 소스 잠금(entryChecked 게이트·헬퍼 경유·router.push 0) · landingRemoved573 +3. tsc 0 · jest 220스위트 1601/1601. 동승 정리 2건: pushSurfaces192 레이아웃 소스 잠금을 새 게이트 문자열로 · prodFlagSurfaces436의 앱 버전 기대 1.0.2→1.0.3(e53b63d 범프 이후 develop에서 이미 깨져 있던 기존 실패).
+- [x] 문서: specs/002 spec.md(개요·AS 1·2·5·FR-002)·contracts §2 표 갱신. push-landing 언급 0.
+- [ ] 실기(종한, iOS·Android): quickstart D-1~D-10 — **D-3·D-4(콜드 스타트) 필수**. 완료 전 OTA 발행 금지(OTA 게이트 커밋).
+

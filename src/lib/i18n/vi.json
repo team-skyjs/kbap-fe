@@ -954,9 +954,7 @@
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
     "consentConfirm": "Đồng ý và bật thông báo",
     "reviewReminderTitle": "Bữa ăn thế nào?",
-    "reviewReminderBody": "Cho chúng tôi biết {{name}} thế nào — một đánh giá nhanh sẽ giúp các du khách khác.",
-    "landingTbdTitle": "Chưa xác định màn hình đích (cần lên kế hoạch)",
-    "landingTbdBody": "Màn hình mở ra khi chạm thông báo {{type}} chưa được quyết định. Hãy chia sẻ với nhóm."
+    "reviewReminderBody": "Cho chúng tôi biết {{name}} thế nào — một đánh giá nhanh sẽ giúp các du khách khác."
   },
   "notif": {
     "title": "Cài đặt thông báo",

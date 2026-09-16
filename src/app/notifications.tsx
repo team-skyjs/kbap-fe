@@ -9,12 +9,13 @@
  */
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { Redirect, useRouter, type Href } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, primaryTint } from '@/lib/theme';
 import { SubHeader, IconBell } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { FLAGS } from '@/lib/flags';
+import { openNotificationRoute } from '@/lib/nav';
 import { markAllInboxRead, markInboxRead, useInbox, type InboxItem } from '@/lib/notifications/inbox';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 
@@ -38,7 +39,7 @@ export default function Notifications() {
   const open = (n: InboxItem) => {
     markInboxRead(n.id);
     const href = routeForNotificationData(n.data);
-    if (href) router.push(href as Href);
+    if (href) openNotificationRoute(router, href); // KB-573: 홈은 스택 리셋(알림함 화면도 닫힘)
   };
 
   return (

@@ -26,6 +26,7 @@ import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
 import { initSessionFromStorage, installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
 import { FLAGS } from '@/lib/flags';
+import { openNotificationRoute } from '@/lib/nav';
 import i18n from '@/lib/i18n';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { TopToastHost } from '@/components/TopToast';
@@ -144,17 +145,21 @@ export default function RootLayout() {
   // P-192: 푸시 배선 — 앱 시작 토큰 upsert + 언어 변경 재등록(토큰=기기 속성이라
   // lang 저장 필요, 정본 문서) + 알림 탭 딥링크. 전부 플래그+lazy(어댑터) 게이트 —
   // pushEnabled off·구 런타임 = 전 구간 no-op.
+  // KB-573: entryChecked 뒤 등록 — Stack 마운트 전 navigate는 expo-router가 throw
+  // (store.assertIsReady "Attempted to navigate before mounting the Root Layout"). 콜드 스타트
+  // 탭(getLastNotificationResponseAsync)은 스플래시 게이트(≥1200ms)보다 먼저 해소되므로 등록 자체를 늦춘다.
+  // 이동 방식(홈 = 스택 리셋 + 탭 점프 · 그 외 navigate)은 lib/nav openNotificationRoute 한 곳.
   useEffect(() => {
-    if (!FLAGS.pushEnabled) return;
+    if (!FLAGS.pushEnabled || !entryChecked) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    const unsub = push.addNotificationTapListener((href) => { if (href) router.push(href as Href); }); // href null = 이동 없는 유형(KB-498)
+    const unsub = push.addNotificationTapListener((href) => { if (href) openNotificationRoute(router, href); }); // href null = 이동 없는 유형(KB-498)
     const onLang = () => void push.registerPushToken();
     i18n.on('languageChanged', onLang);
     return () => {
       unsub();
       i18n.off('languageChanged', onLang);
     };
-  }, [router]);
+  }, [router, entryChecked]);
 
   // P-293: 폰트만 게이트 — entryChecked 전엔 스플래시 오버레이만 렌더(아래 조건부).
   // 렌더 가드(P-041/P-217: 판별 전 홈·리다이렉트 금지)는 Stack 조건부가 승계.
