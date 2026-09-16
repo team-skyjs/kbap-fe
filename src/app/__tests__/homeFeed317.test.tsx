@@ -60,7 +60,7 @@ jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({ isLoading: false, isError: false, error: null, refetch: jest.fn(), data: { authenticated: true, recent: [] } }),
 }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '1', restrictions: [] } }) }));
-jest.mock('@/lib/notifications/inbox', () => ({ useUnreadCount: () => 0 }));
+jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
 const mockFeed = jest.fn();
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => mockFeed() }));
 

@@ -22,6 +22,7 @@ import { I18nextProvider } from 'react-i18next';
 
 import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
+import { invalidateNotifications, onPushTapped } from '@/lib/data/useNotifications';
 import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
 import { initSessionFromStorage, installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
@@ -99,7 +100,10 @@ export default function RootLayout() {
       ...(region ? { user_info_country: region } : {}),
     });
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') track(EVENTS.app_opened);
+      if (st === 'active') {
+        track(EVENTS.app_opened);
+        invalidateNotifications(); // KB-499: 포그라운드 복귀 = 알림함·배지 재조회(게스트면 no-op)
+      }
     });
     return () => sub.remove();
   }, []);
@@ -152,7 +156,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (!FLAGS.pushEnabled || !entryChecked) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    const unsub = push.addNotificationTapListener((href) => { if (href) openNotificationRoute(router, href); }); // href null = 이동 없는 유형(KB-498)
+    const unsub = push.addNotificationTapListener((href, notificationId) => {
+      void onPushTapped(notificationId); // KB-499: 이 기기 알림 행 읽음 처리 + 재조회(게스트 = 이동만)
+      if (href) openNotificationRoute(router, href); // href null = 이동 없는 유형(KB-498) · KB-573: 홈 = 스택 리셋
+    });
     const onLang = () => void push.registerPushToken();
     i18n.on('languageChanged', onLang);
     return () => {

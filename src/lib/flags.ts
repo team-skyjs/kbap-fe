@@ -109,8 +109,8 @@ export const FLAGS = {
    * (전부 기존 컴포넌트 재사용). 디자인 확정 후 채널 조건 재검토.
    */
   /**
-   * 알림함 (P-216/KB-39, 멘토링 8/15) — **러프**, dev 계열만. 목록 데이터는
-   * 로컬 목(notifications/inbox.ts) — BE 알림 목록 계약 오면 그 파일 한 곳 스왑.
+   * 알림함 (P-216/KB-39, 멘토링 8/15). 목록·배지 = 서버 `GET /api/notifications`
+   * (KB-499, lib/data/useNotifications — 기기 단위·7일·미읽음 파생). 로컬 기록 없음.
    */
   notificationCenter: true, // P-289(예진 9/7): 알림함 전 채널(실알림 전용 — inbox 목 소멸)
   /**

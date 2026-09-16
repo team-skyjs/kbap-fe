@@ -103,14 +103,19 @@ jest.mock('@/lib/data/bookmarks', () => ({
 jest.mock('@/lib/data/useFoodReviews', () => ({
   useGlobalReviews: () => ({ data: { pages: [{ items: [] }] } }),
 }));
-jest.mock('@/lib/notifications/inbox', () => ({
+jest.mock('@/lib/data/useNotifications', () => ({
   useUnreadCount: () => 2,
-  useInbox: () => [
-    { id: 'n1', read: false, titleKey: 'inbox.helpfulTitle', bodyKey: 'inbox.helpfulBody', at: new Date().toISOString(), data: {} },
-    { id: 'n2', read: true, titleKey: 'inbox.noticeTitle', bodyKey: 'inbox.noticeBody', at: new Date().toISOString(), data: {} },
-  ],
-  markInboxRead: jest.fn(),
-  markAllInboxRead: jest.fn(),
+  useInbox: () => ({
+    data: [
+      { id: 1, read: false, title: 'A', body: 'a', at: new Date().toISOString() },
+      { id: 2, read: true, title: 'B', body: 'b', at: new Date().toISOString() },
+    ],
+    isPending: false,
+    isError: false,
+    error: null,
+    refetch: jest.fn(),
+  }),
+  useMarkRead: () => ({ mutate: jest.fn() }),
 }));
 
 import Home from '../(tabs)/index';
@@ -192,10 +197,10 @@ it('② 위험 칩 — danger 선택 시 personalRisk=danger 카드만, All 복�
 it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 + 점 없음(프레임 불변)', () => {
   const tree = render(<Notifications />);
   const rowStyle = (id: string) => JSON.stringify(byId(tree, `inbox-${id}`)[0]?.props.style);
-  expect(rowStyle('n1')).toContain('rgba(255,113,52,0.05)'); // primaryTint
-  expect(rowStyle('n2')).not.toContain('rgba(255,113,52,0.05)');
-  expect(byId(tree, 'unread-n1').length).toBeGreaterThanOrEqual(1);
-  expect(byId(tree, 'unread-n2').length).toBe(0);
+  expect(rowStyle('1')).toContain('rgba(255,113,52,0.05)'); // primaryTint
+  expect(rowStyle('2')).not.toContain('rgba(255,113,52,0.05)');
+  expect(byId(tree, 'unread-1').length).toBeGreaterThanOrEqual(1);
+  expect(byId(tree, 'unread-2').length).toBe(0);
   // 구 좌측 벨 아이콘 소멸(시안) — 소스 잠금
   const src = require('fs').readFileSync('src/app/notifications.tsx', 'utf8') as string;
   expect(src).not.toContain('icUnread');

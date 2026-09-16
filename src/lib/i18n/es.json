@@ -981,17 +981,6 @@
     "title": "Notificaciones",
     "empty": "Aún no hay notificaciones",
     "emptyBody": "Aquí verás novedades sobre tus reseñas y escaneos.",
-    "markAllRead": "Marcar todo como leído",
-    "helpfulTitle": "Tu reseña le resultó útil a alguien",
-    "helpfulBody": "Tu reseña del estofado de kimchi recibió un voto útil.",
-    "reminderTitle": "¿Qué tal la comida?",
-    "reminderBody": "Deja una reseña rápida del plato que pediste.",
-    "scanSuggestionTitle": "¿Comes fuera hoy?",
-    "scanSuggestionBody": "Escanea el menú antes de pedir.",
-    "newsTitle": "Novedades de K-Bap",
-    "newsBody": "Descubre nuevas funciones y eventos.",
-    "mealTimeTitle": "Hora de comer",
-    "mealTimeBody": "Escanea el menú para revisar al instante los ingredientes que evitas.",
     "newBadge": "NEW"
   },
   "myFoods": {

@@ -35,7 +35,7 @@ import { ModerationFlow, type ModTarget } from '@/features/community/moderation'
 import { EVENTS, track } from '@/lib/analytics';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { FeedCard } from '@/features/review/FeedCard';
-import { useUnreadCount } from '@/lib/notifications/inbox';
+import { useUnreadCount } from '@/lib/data/useNotifications';
 import type { FoodCard } from '@/lib/api/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)

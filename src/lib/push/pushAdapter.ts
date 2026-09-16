@@ -207,24 +207,18 @@ export async function cancelReviewReminder(foodId: string): Promise<void> {
  * 콜드 스타트(종료 상태 알림 탭)는 마지막 응답 1회 처리. 반환 = 해제 함수.
  * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·MEAL_TIME·foodId 없는 리마인더)이면 null.
  * 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음). 경로가 없어도 id는 전달(읽음 처리용).
- * 읽음 처리 호출은 후속 작업(서버 알림함 전환) 몫. Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
+ * 읽음 처리는 루트 레이아웃이 onPushTapped(id)로 수행(KB-499). Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
  */
 export function addNotificationTapListener(onRoute: (href: string | null, notificationId?: number | string) => void): () => void {
   const N = loadNotifications();
   if (!N) return () => {};
-  // P-289: 발화 기록 — 알림함(실알림 전용)에 적재. id = request.identifier(중복 방지 키)
-  const record = (req: { identifier?: string; content: { data?: unknown } } | null | undefined) => {
+  // KB-499: 서버 알림함 재조회 트리거 — 수신(포그라운드)·알림센터 잔존분(부팅)·탭 진입 모두 목록 invalidate.
+  // 구 로컬 알림함 적재(P-289)는 소멸 — 서버 notification 행이 정본. 게스트(쿼리 비활성)면 no-op.
+  const bump = () => {
     try {
-      const d = req?.content?.data as { type?: unknown; foodId?: string | number } | undefined;
-      if (!req?.identifier || !isPushType(d?.type)) return; // KB-498: 미지 유형 = 기록 안 함
-      const { recordInboxNotification } = require('@/lib/notifications/inbox') as typeof import('@/lib/notifications/inbox');
-      recordInboxNotification({
-        id: req.identifier,
-        type: d.type,
-        ...(d.foodId != null ? { foodId: String(d.foodId) } : {}),
-      });
+      (require('@/lib/data/useNotifications') as typeof import('@/lib/data/useNotifications')).invalidateNotifications();
     } catch {
-      /* 기록 실패 = 비치명(알림함만 비는 것) */
+      /* 비치명 */
     }
   };
   try {
@@ -245,7 +239,7 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
     });
     const routed = new Set<string>(); // KB-498: 콜드 스타트 — 마지막 응답 조회와 리스너가 같은 탭을 이중 전달하는 것 차단
     const emit = (resp: { notification: { request: { identifier?: string; content: { data?: unknown } } } } | null) => {
-      record(resp?.notification.request); // 백그라운드 발화 → 탭 진입도 회수
+      bump(); // 백그라운드 발화 → 탭 진입도 재조회
       const id = resp?.notification.request.identifier;
       if (id) {
         if (routed.has(id)) return;
@@ -256,12 +250,12 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
       onRoute(routeForNotificationData(data), data?.notificationId); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
-    // P-289 ①: 포그라운드 발화 즉시 기록
-    const recv = N.addNotificationReceivedListener?.((n: { request: { identifier?: string; content: { data?: unknown } } }) => record(n.request));
-    // P-289 ②: 백그라운드 발화분 재실행 회수(알림 센터에 떠 있는 것)
+    // 포그라운드 발화 즉시 재조회
+    const recv = N.addNotificationReceivedListener?.(() => bump());
+    // 백그라운드 발화분(알림 센터에 떠 있는 것) 부팅 시 재조회
     // #109 11R 잔여(P-348 동승): 부팅 알림 조회 2건도 track — OTA 정적 창 포함
     void track(N.getPresentedNotificationsAsync?.()
-      .then((list: { request: { identifier?: string; content: { data?: unknown } } }[]) => list.forEach((n) => record(n.request)))
+      .then((list: unknown[]) => { if (list.length) bump(); })
       .catch(() => {}) ?? Promise.resolve());
     void track(N.getLastNotificationResponseAsync().then(emit).catch(() => {}));
     return () => {
