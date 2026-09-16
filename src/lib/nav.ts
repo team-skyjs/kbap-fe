@@ -18,3 +18,21 @@ export function resetToOnboarding(router: Router): void {
   }
   router.replace('/onboarding' as Href);
 }
+
+/**
+ * openNotificationRoute (KB-573, 2026-09-16 종한 확정) — 푸시 탭·알림함 항목 탭 **공용** 이동.
+ * 홈('/(tabs)') = 스택 리셋(dismissAll, 뒤로 가기 대상 없음) + 탭 점프(navigate) ·
+ * 그 외 = navigate(맨 위가 같은 화면이면 재사용 — 서로 다른 알림 연속 탭에도 1장).
+ * expo-router 56 StackRouter는 getId 없으면 name이 현재 최상단과 다를 때 push·navigate 모두
+ * 새로 쌓는다 — 홈은 dismissAll 선행이 필수(research R-2). 매핑 자체는 pushAdapter routeForNotificationData.
+ */
+export function openNotificationRoute(router: Router, href: string): void {
+  if (href === '/(tabs)') {
+    try {
+      if (router.canDismiss()) router.dismissAll();
+    } catch {
+      /* 스택 밖(모달 없음 등) — 무시 */
+    }
+  }
+  router.navigate(href as Href);
+}

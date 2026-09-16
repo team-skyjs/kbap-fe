@@ -1450,3 +1450,14 @@
 - [x] Codex 1R(#163) P2 1건 반영: 읽음 롤백을 목록 스냅샷 → **그 항목의 이전 read 값**으로(연달아 탭한 두 요청이 서로 덮는 결함). 겸해서 읽음 성공 시 전체 재조회 제거(응답 항목 교체가 정본, 종한 지시 9/16) — 유닛 ⑨ 연달아 탭 2시나리오 추가.
 - [x] Codex 2R P2 1건 반영(종한 결정 9/17): 실패 보정 GET도 삭제 — 진행 중인 다른 읽음 요청과 응답 순서 경합. **읽음은 프론트가 항목 단위로 관리, 읽음 뒤 목록 API 재호출 0**, 서버와 잠시 어긋나면 다음 재조회 시점에 맞춰지는 것으로 수용.
 - [x] PR #163(develop, ready). 리뷰 포인트 3: ① 커뮤니티 "방금"→"방금 전" 공유 문구 ② `enabled = useSession()===true` ③ 항목 탭 이동은 BE 배포 전 비활성.
+
+## KB-573 푸시 탭 착지 확정 — MEAL_TIME·SCAN_SUGGESTION→홈, HELPFUL→내 리뷰, 임시 push-landing 제거 (2026-09-16, 워크트리 feat/kb573-push-landing · spec 005)
+
+- [x] 착지 확정(종한 9/16, clarify 3문항): MEAL_TIME·SCAN_SUGGESTION → 홈 탭 `/(tabs)`(열려 있던 화면 전부 닫힘, 뒤로 가기 없음) · HELPFUL → `/profile/reviews`(리뷰 id 미제공이라 상세 불가, 게스트 게이트는 화면 몫) · 리마인더=음식 상세 · NEWS=이동 없음 유지. 서로 다른 알림 연속 탭 = 맨 위 같은 화면이면 재사용(권고안 채택).
+- [x] "어떻게 가는가"는 `lib/nav.ts` `openNotificationRoute` 한 곳 — expo-router 56 StackRouter는 getId 없으면 name이 최상단과 다를 때 push·navigate 모두 새로 쌓아, 홈은 `dismissAll` 선행 후 `navigate('/(tabs)')`(탭 점프). 호출부 2곳(루트 레이아웃 탭 콜백·알림함 항목 탭) `router.push` → 헬퍼.
+- [x] 콜드 스타트 게이트: 푸시 리스너 등록을 `entryChecked` 뒤로. 근거(소스) — expo-router `store.assertIsReady()`가 Stack 마운트 전 navigate에 throw("Attempted to navigate before mounting the Root Layout"), `getLastNotificationResponseAsync`는 스플래시 게이트(≥1200ms)보다 먼저 해소. 실기 미관측 추정 — 아래 실기 D-3·D-4가 유일한 검증.
+- [x] 임시 화면 `src/app/push-landing.tsx` 삭제 · `push.landingTbd*` 10로케일 제거 · 어댑터 case 교체(주석 정리). 잠금 유닛 landingRemoved573(로케일 키 부재·어댑터 소스 push-landing 0·파일 부재).
+- [x] 테스트: nav573 +5(홈 dismissAll→navigate 순서·canDismiss false·throw 방어·내 리뷰·음식 상세) · pushAdapter192 매핑 3케이스 교체 + 레이아웃 소스 잠금(entryChecked 게이트·헬퍼 경유·router.push 0) · landingRemoved573 +3. tsc 0 · jest 220스위트 1601/1601. 동승 정리 2건: pushSurfaces192 레이아웃 소스 잠금을 새 게이트 문자열로 · prodFlagSurfaces436의 앱 버전 기대 1.0.2→1.0.3(e53b63d 범프 이후 develop에서 이미 깨져 있던 기존 실패).
+- [x] 문서: specs/002 spec.md(개요·AS 1·2·5·FR-002)·contracts §2 표 갱신. push-landing 언급 0.
+- [ ] 실기(종한, iOS·Android): quickstart D-1~D-10 — **D-3·D-4(콜드 스타트) 필수**. 완료 전 OTA 발행 금지(OTA 게이트 커밋).
+

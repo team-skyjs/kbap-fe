@@ -142,7 +142,7 @@ it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + P-268 전 
   // 프로필 행(회원 분기)·스캔 프라이머·루트 배선 — 전부 플래그 게이트 뒤. 온보딩 프라이머는 제거(KB-497)
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled) return");
-  expect(fs.readFileSync('src/app/_layout.tsx', 'utf8')).toContain('if (!FLAGS.pushEnabled) return;');
+  expect(fs.readFileSync('src/app/_layout.tsx', 'utf8')).toContain('if (!FLAGS.pushEnabled || !entryChecked) return;'); // KB-573: 플래그 게이트 유지 + entryChecked(콜드 스타트) 게이트
   const onboarding = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
   expect(onboarding).not.toContain('PushPrimerModal');
   expect(onboarding).not.toContain('getPrimerResult');

@@ -26,15 +26,17 @@
 
 | 입력 `data` | `routeForNotificationData` | 알림함 기록 | 탭 콜백 2번째 인자 |
 |-------------|----------------------------|-------------|--------------------|
-| `{type:'HELPFUL', notificationId:1}` | `/push-landing?type=HELPFUL` (임시) | `inbox.helpful*` | `1` |
-| `{type:'SCAN_SUGGESTION'}` | `/push-landing?type=SCAN_SUGGESTION` (임시) | `inbox.scanSuggestion*` | `undefined` |
-| `{type:'MEAL_TIME', notificationId:4}` | `null` (콜백은 `(null, 4)`로 호출) | `inbox.mealTime*` | `4` |
+| `{type:'HELPFUL', notificationId:1}` | `/profile/reviews` (내 리뷰 목록) | `inbox.helpful*` | `1` |
+| `{type:'SCAN_SUGGESTION'}` | `/(tabs)` (홈 탭) | `inbox.scanSuggestion*` | `undefined` |
+| `{type:'MEAL_TIME', notificationId:4}` | `/(tabs)` (홈 탭, 콜백 `('/(tabs)', 4)`) | `inbox.mealTime*` | `4` |
 | `{type:'REVIEW_REMINDER', foodId:7}` | `/food/7` (음식 상세) | `inbox.reminder*` (foodId `'7'`) | — |
 | `{type:'REVIEW_REMINDER'}` | `null` (콜백 `(null, id)`) | 기록됨 | — |
 | `{type:'NEWS', notificationId:3}` | `null` (콜백 `(null, 3)`) | `inbox.news*` | `3` |
 | `{type:'NUDGE'}` / `{type:'NOTICE'}` / `{type:'helpful'}` | `null` (콜백 `(null, id)`) | 기록 안 됨 | — |
 | `undefined` / `{}` | `null` | 기록 안 됨 | — |
 | `{type:'REVIEW_REMINDER', foodId:7, notificationId:'9'}` | `/food/7` | 기록됨 | `'9'` (문자열 그대로) |
+
+착지 개정 KB-573(2026-09-16). 이동 방식(홈 = 스택 리셋 + 탭 점프 · 그 외 navigate 재사용)은 specs/005-push-tap-landing/contracts/push-tap-landing.md §2.
 
 ## 3. `addNotificationTapListener` (앱 내부 API)
 

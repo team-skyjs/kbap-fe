@@ -954,9 +954,7 @@
     "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
     "consentConfirm": "Setuju dan nyalakan",
     "reviewReminderTitle": "Bagaimana makanannya?",
-    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain.",
-    "landingTbdTitle": "Tujuan belum ditentukan (perlu perencanaan)",
-    "landingTbdBody": "Layar yang dibuka saat notifikasi {{type}} diketuk belum diputuskan. Bagikan ke tim."
+    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain."
   },
   "notif": {
     "title": "Pengaturan notifikasi",

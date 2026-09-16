@@ -954,9 +954,7 @@
     "consentBothRequired": "通知をオンにするには両方に同意してください。",
     "consentConfirm": "同意して通知をオンにする",
     "reviewReminderTitle": "お食事はいかがでしたか？",
-    "reviewReminderBody": "{{name}}はいかがでしたか？評価が他の旅行者の助けになります。",
-    "landingTbdTitle": "遷移先未定（企画が必要）",
-    "landingTbdBody": "{{type}} 通知をタップした時の遷移先がまだ決まっていません。チームに共有してください。"
+    "reviewReminderBody": "{{name}}はいかがでしたか？評価が他の旅行者の助けになります。"
   },
   "notif": {
     "title": "通知設定",

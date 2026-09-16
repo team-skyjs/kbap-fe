@@ -953,9 +953,7 @@
     "consentBothRequired": "Please agree to both items to turn on notifications.",
     "consentConfirm": "Agree and turn on",
     "reviewReminderTitle": "How was your meal?",
-    "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers.",
-    "landingTbdTitle": "Destination TBD (needs planning)",
-    "landingTbdBody": "Where a {{type}} notification should open hasn't been decided yet. Please share with the team."
+    "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers."
   },
   "notif": {
     "title": "Notifications",

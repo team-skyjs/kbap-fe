@@ -123,10 +123,10 @@ it('P-268: 원격 토큰 발급 실패 = 비치명(reject 미전파 — 리마�
   mockNotifications.getExpoPushTokenAsync.mockResolvedValue({ data: 'ExponentPushToken[test]' });
 });
 
-it('KB-498 딥링크 매핑(9/12 결정) — 리마인더=음식 상세 · NEWS·MEAL_TIME=무동작 · HELPFUL·SCAN_SUGGESTION=임시 착지 · 구 이름·변형·미지=무동작', () => {
-  expect(routeForNotificationData({ type: 'HELPFUL' })).toBe('/push-landing?type=HELPFUL'); // 착지 미정 — 임시 화면
-  expect(routeForNotificationData({ type: 'SCAN_SUGGESTION' })).toBe('/push-landing?type=SCAN_SUGGESTION');
-  expect(routeForNotificationData({ type: 'MEAL_TIME' })).toBeNull(); // 앱만 켜짐
+it('KB-573 딥링크 매핑(9/16 확정) — MEAL_TIME·SCAN_SUGGESTION=홈 · HELPFUL=내 리뷰 · 리마인더=음식 상세 · NEWS=무동작 · 미지=무동작 (구 KB-498: HELPFUL·SCAN_SUGGESTION=임시 착지 · 구 이름·변형·미지=무동작', () => {
+  expect(routeForNotificationData({ type: 'HELPFUL' })).toBe('/profile/reviews'); // KB-573: 내 리뷰 목록 — 리뷰 id 미제공이라 상세 불가 // 착지 미정 — 임시 화면
+  expect(routeForNotificationData({ type: 'SCAN_SUGGESTION' })).toBe('/(tabs)'); // KB-573: 홈 — MEAL_TIME과 동일
+  expect(routeForNotificationData({ type: 'MEAL_TIME' })).toBe('/(tabs)'); // KB-573: 홈 탭 — 스택 리셋은 nav 헬퍼 몫
   expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: '7' })).toBe('/food/7'); // 음식 상세
   expect(routeForNotificationData({ type: 'REVIEW_REMINDER', foodId: 7 })).toBe('/food/7'); // 숫자도 같은 경로
   expect(routeForNotificationData({ type: 'REVIEW_REMINDER' })).toBeNull(); // foodId 없음 = 이동 없음
@@ -145,7 +145,7 @@ it('알림 탭 구독 — 응답 data로 라우팅 콜백 + 포그라운드 핸�
   expect(mockNotifications.setNotificationHandler).toHaveBeenCalled();
   const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
-  expect(onRoute).toHaveBeenCalledWith('/push-landing?type=HELPFUL', undefined); // KB-498: notificationId 없음 = undefined
+  expect(onRoute).toHaveBeenCalledWith('/profile/reviews', undefined); // KB-498: notificationId 없음 = undefined
 });
 
 it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변환 0) · 없으면 undefined · 경로 없는 유형도 (null, id)로 호출', () => {
@@ -161,7 +161,7 @@ it('KB-498: 탭 콜백 2번째 인자 = 서버 notificationId 그대로(형 변�
   handler({ notification: { request: { identifier: 'r4', content: { data: { type: 'NEWS', notificationId: 3 } } } } });
   expect(onRoute).toHaveBeenLastCalledWith(null, 3); // Codex #149: 이동 없어도 id 전달(읽음 처리)
   handler({ notification: { request: { identifier: 'r5', content: { data: { type: 'MEAL_TIME', notificationId: 4 } } } } });
-  expect(onRoute).toHaveBeenLastCalledWith(null, 4);
+  expect(onRoute).toHaveBeenLastCalledWith('/(tabs)', 4); // KB-573: 홈 — id도 그대로
   handler({ notification: { request: { identifier: 'r6', content: { data: { type: 'UNKNOWN_FUTURE', notificationId: 5 } } } } });
   expect(onRoute).toHaveBeenLastCalledWith(null, 5); // 미지 유형도 탭 사실은 전달
   expect(onRoute).toHaveBeenCalledTimes(6);
@@ -222,8 +222,11 @@ it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 �
   // 부트 effect 밖(푸시 effect 마운트 직후)의 즉시 호출 0 — 언어 변경 핸들러(onLang)만 허용
   expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
   expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
-  // KB-498: 콜백 href null(이동 없는 유형) 가드 — router.push(null) 금지
-  expect(layout).toContain('if (href) router.push(href as Href)');
+  // KB-498: 콜백 href null(이동 없는 유형) 가드 — null 이동 금지. KB-573: 이동은 lib/nav 헬퍼 경유(홈 = 스택 리셋), 직접 router.push 0
+  expect(layout).toContain('if (href) openNotificationRoute(router, href)');
+  expect(layout).not.toContain('router.push(href');
+  // KB-573: 탭 리스너 등록은 entryChecked 뒤 — Stack 마운트 전 navigate는 expo-router throw(콜드 스타트 탭 유실/크래시)
+  expect(layout).toContain('if (!FLAGS.pushEnabled || !entryChecked) return;');
 });
 
 it('Codex #109 10R: registerPushToken 진행 중 inflight = 1 — 콜드 스타트 OTA 정적 창 포함(KB-509)', async () => {

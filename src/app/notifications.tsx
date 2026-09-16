@@ -19,6 +19,7 @@ import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useInbox, useMarkRead } from '@/lib/data/useNotifications';
 import type { InboxItem } from '@/lib/api/notificationAdapter';
+import { openNotificationRoute } from '@/lib/nav';
 import { routeForNotificationData } from '@/lib/push/pushAdapter';
 import { timeAgo } from '@/features/community/parts';
 
@@ -40,7 +41,7 @@ export default function Notifications() {
   const open = (n: InboxItem) => {
     if (!n.read) markRead.mutate(n.id);
     const href = routeForNotificationData({ type: n.type, foodId: n.foodId });
-    if (href) router.push(href as Href);
+    if (href) openNotificationRoute(router, href); // KB-573: 홈은 스택 리셋(알림함 화면도 닫힘)
   };
 
   return (

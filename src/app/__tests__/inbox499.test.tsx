@@ -31,13 +31,13 @@ jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
 });
-const mockPush = jest.fn();
+const mockNavigate = jest.fn();
 const mockBack = jest.fn();
 jest.mock('expo-router', () => {
   const R = require('react');
   return {
     useSegments: () => ['notifications'],
-    useRouter: () => ({ push: mockPush, back: mockBack, replace: jest.fn(), navigate: jest.fn() }),
+    useRouter: () => ({ push: jest.fn(), back: mockBack, replace: jest.fn(), navigate: mockNavigate, canDismiss: () => false, dismissAll: jest.fn() }), // KB-573: 항목 탭은 lib/nav 헬퍼 경유(navigate) — push 0
     usePathname: () => '/notifications',
     useFocusEffect: () => {},
     Redirect: (p: { href: string }) => R.createElement('Redirect', p),
@@ -154,18 +154,18 @@ it('⑨⑩⑪ 탭 — 미읽음만 mutate · type 없음 = 이동 0 · REVIEW_RE
   const tree = render();
   press(tree, 'inbox-1');
   expect(mockMutate).toHaveBeenCalledWith(1);
-  expect(mockPush).not.toHaveBeenCalled(); // type 없음 → 알림함 유지
+  expect(mockNavigate).not.toHaveBeenCalled(); // type 없음 → 알림함 유지
   press(tree, 'inbox-2'); // 읽음 항목
   expect(mockMutate).toHaveBeenCalledTimes(1);
   press(tree, 'inbox-3');
   expect(mockMutate).toHaveBeenLastCalledWith(3);
-  expect(mockPush).toHaveBeenLastCalledWith('/food/7');
+  expect(mockNavigate).toHaveBeenLastCalledWith('/food/7');
   press(tree, 'inbox-4');
   expect(mockMutate).toHaveBeenLastCalledWith(4);
-  expect(mockPush).toHaveBeenCalledTimes(1); // NEWS 이동 없음
+  expect(mockNavigate).toHaveBeenCalledTimes(1); // NEWS 이동 없음
   press(tree, 'inbox-5'); // 읽음 + HELPFUL: mutate 0, 이동은 규칙대로
   expect(mockMutate).toHaveBeenCalledTimes(3);
-  expect(mockPush).toHaveBeenLastCalledWith(routeForNotificationData({ type: 'HELPFUL' }));
+  expect(mockNavigate).toHaveBeenLastCalledWith(routeForNotificationData({ type: 'HELPFUL' }));
 });
 
 it('⑫ 프레임 불변 — 읽음/미읽음 행은 backgroundColor만 다르고 점은 미읽음에만', () => {
