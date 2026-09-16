@@ -19,6 +19,8 @@ interface OrderSummaryWire {
   totalQuantity?: number;
   thumbnails?: (string | null)[] | null;
   scanImageUrl?: string | null;
+  /** P-386(KB-456, BE #245): 장소 — prod 미반영(다음 릴리스)이라 부재/null이면 roadAddress 경로 그대로. */
+  place?: { placeId?: string | null; name?: string | null; address?: string | null; language?: string | null } | null;
 }
 
 interface OrderItemWire {
@@ -46,6 +48,8 @@ export interface OrderSummary {
   orderId: string;
   orderedAt: number;
   roadAddress: string | null;
+  /** P-386: 서버 장소명 — 부재(구응답·미태그) = null. 표시 판단은 orderPlaceLabel 한 곳. */
+  placeName: string | null;
   totalQuantity: number;
   thumbnails: string[]; // 서버 구성(최대 4·기본 이미지 포함) — URL만 통과
   scanImageUrl: string | null;
@@ -61,10 +65,19 @@ function adaptSummary(w: OrderSummaryWire): OrderSummary {
     orderId: String(w.orderId),
     orderedAt: w.orderedAt,
     roadAddress: w.roadAddress ?? null, // null = 위치 미동의·변환 실패 — 표기 생략
+    placeName: w.place?.name?.trim() || null, // 빈 문자열도 null — 빈 줄 렌더 금지
     totalQuantity: w.totalQuantity ?? 0,
     thumbnails: (w.thumbnails ?? []).map(urlOrNull).filter((u): u is string => !!u).slice(0, 4),
     scanImageUrl: urlOrNull(w.scanImageUrl),
   };
+}
+
+/**
+ * P-386(KB-456): 주문 행·상세 제목의 장소 라벨 = 식당명 우선, 없으면 주소, 둘 다 없으면 null.
+ * null이면 줄 자체를 렌더하지 않는다(빈 공백 금지) — 호출부 3곳이 이 한 규칙을 공유.
+ */
+export function orderPlaceLabel(order: { placeName?: string | null; roadAddress?: string | null }): string | null {
+  return order.placeName?.trim() || order.roadAddress?.trim() || null;
 }
 
 export function useOrders(enabled = true) {

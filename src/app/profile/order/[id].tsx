@@ -19,7 +19,7 @@ import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
-import { useOrderDetail } from '@/lib/data/useOrders';
+import { orderPlaceLabel, useOrderDetail } from '@/lib/data/useOrders';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { convertKrw, currencyForCountry } from '@/lib/exchange';
@@ -64,9 +64,9 @@ export default function OrderDetailScreen() {
             </Pressable>
           )}
 
-          {/* 장소명 18/600 — 데이터 부재라 주소가 대체(있을 때만, 조립 금지) */}
-          {!!q.data.roadAddress && (
-            <Text style={styles.placeTitle} numberOfLines={2}>{q.data.roadAddress}</Text>
+          {/* 장소명 18/600 — P-386(KB-456): 서버 식당명 우선, 없으면 주소 대체(조립 금지) */}
+          {!!orderPlaceLabel(q.data) && (
+            <Text style={styles.placeTitle} numberOfLines={2}>{orderPlaceLabel(q.data)}</Text>
           )}
 
           {/* 영수증 카드(4150:14634) — 라벨 12/600 #B1B5BD + 값 14/500 #1C1E21 */}

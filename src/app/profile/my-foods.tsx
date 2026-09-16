@@ -17,7 +17,7 @@ import { CardPhoto, IconChevron, SubHeader, Spinner } from '@/components';
 import { D4MapPin } from '@/components/design4Assets';
 import { EmptyBlock, QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonMyFoods } from '@/components/Skeleton';
-import { useOrders, type OrderSummary } from '@/lib/data/useOrders';
+import { orderPlaceLabel, useOrders, type OrderSummary } from '@/lib/data/useOrders';
 import { useScannedFoods } from '@/lib/data/useFoods';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
@@ -142,9 +142,10 @@ function OrderCard({ order, onPress }: { order: OrderSummary; onPress: () => voi
       <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
         {/* P-369 ③(KB-532): 미태그 "+ Where did you eat?" 필 = 무동작(PATCH API 부재) → 삭제.
             미태그 변형 = 제목 자리 날짜 + items 필만 / 태그 변형 = 현행(주소 + 날짜·items) */}
-        {order.roadAddress ? (
+        {orderPlaceLabel(order) ? (
           <>
-            <Text style={styles.placeName} numberOfLines={2}>{order.roadAddress}</Text>
+            {/* P-386(KB-456): 식당명 우선 — 없으면 주소 폴백(스타일·numberOfLines 무변) */}
+            <Text style={styles.placeName} numberOfLines={2}>{orderPlaceLabel(order)}</Text>
             <View style={styles.metaRow}>
               <Text style={styles.metaDate}>{formatOrderDate(order.orderedAt)}</Text>
               <View style={styles.qtyPill}>

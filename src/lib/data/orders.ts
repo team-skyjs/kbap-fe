@@ -13,7 +13,7 @@
  *   카드뿐(상세 발 주문 라우트 삭제)이라 항상 존재. 업로드 실패('')만 필드 생략.
  */
 import { track } from '@/lib/net/inflight';
-import { api } from '@/lib/api/client';
+import { api, apiLang } from '@/lib/api/client';
 import type { OrderItem } from '@/features/order/FlippedOrderCard';
 
 async function grantedCoord(): Promise<{ latitude: number; longitude: number } | null> {
@@ -53,6 +53,7 @@ export async function saveOrderHistory(input: { imagePath?: string | null; items
       ...(input.imagePath ? { imagePath: input.imagePath } : {}),
       items,
       ...(coord ?? {}),
+      lang: apiLang(), // P-386(KB-456): 타 API와 같은 규약 — 서버는 없으면 ko 폴백
     });
   } catch (e) {
     // 비치명 — 주문 완료 UX 무영향(이력만 유실).
