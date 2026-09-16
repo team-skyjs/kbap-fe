@@ -49,13 +49,13 @@
 
 ```
 [unread] --tap--> [read (낙관, PATCH 진행)] --200--> [read (응답 항목으로 교체, 재조회 없음)]
-                                          --error--> [그 항목만 이전 read로 복원 (세대 일치 시만)] --> 보정 invalidate
+                                          --error--> [그 항목만 이전 read로 복원 (세대 일치 시만)] (재조회 없음)
 [read]   --tap--> (읽음 변화 없음, 요청 0)
 어느 경우든 탭 직후: href = routeForNotificationData({type, foodId}); href면 router.push(href), null이면 알림함 유지
 ```
 
 - 롤백 조건: `ctx.gen === currentGen()`. 뮤테이션 중 로그아웃·계정 전환이 있었으면 복원하지 않는다.
-- 404(`NOTIFICATION-002`)도 error 경로. 이후 invalidate가 서버 값을 가져온다.
+- 404(`NOTIFICATION-002`)도 error 경로. 서버와 어긋난 상태는 다음 재조회 시점(포그라운드 복귀·푸시·화면 재진입)에 맞춰진다(수용).
 - 이동은 읽음 결과를 기다리지 않는다(spec US3 ③ "화면 이동은 그대로 진행").
 
 ### 푸시 탭 (`onPushTapped(notificationId)`)
@@ -81,7 +81,7 @@ useIsGuest() true ────────────────────�
 
 ### 무효화 트리거
 
-앱 시작(마운트) · AppState `active` · 푸시 수신(포그라운드) · 알림센터 잔존분 조회(부팅) · 푸시 탭 · 읽음 **실패 시** 보정 · 화면 재진입(staleTime 0). 읽음 성공은 재조회하지 않는다(응답 항목 교체).
+앱 시작(마운트) · AppState `active` · 푸시 수신(포그라운드) · 알림센터 잔존분 조회(부팅) · 푸시 탭 · 화면 재진입(staleTime 0). **알림함 항목 읽음 처리는 성공·실패 모두 재조회하지 않는다.**
 
 ## 3. 상대 시각 규칙 (`timeAgo(at, t)` — 기존 함수)
 

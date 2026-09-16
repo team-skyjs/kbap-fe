@@ -37,7 +37,7 @@ Technical Context에 NEEDS CLARIFICATION은 없었다(스택·의존성·테스�
 
 ## R-6. 읽음 뮤테이션 — 낙관·롤백·세션 세대 가드
 
-- **Decision** (Codex #163 P2 반영 2026-09-16): `useMutation(markNotificationRead)`. `onMutate`: `cancelQueries` + **그 항목의 이전 read 값만** 저장 + 해당 id `read:true`, `{prevRead, gen: currentGen()}` 반환. `onSuccess`: 응답 항목으로 그 id만 교체(재조회 없음 — 서버 응답이 그 항목의 정본). `onError`: `gen === currentGen()`일 때만 **그 항목만** `prevRead`로 복원 + 보정 `invalidateNotifications()`. 1차안(목록 전체 스냅샷 + onSettled 재조회)은 연달아 탭한 두 요청이 서로의 상태를 덮는 결함(Codex 지적)과 탭마다 GET 1회 낭비가 있어 폐기. `useSubmitGuard` 미사용(멱등 낙관 토글 — CLAUDE.md 예외·훅 주석 명시).
+- **Decision** (Codex #163 P2 반영 2026-09-16): `useMutation(markNotificationRead)`. `onMutate`: `cancelQueries` + **그 항목의 이전 read 값만** 저장 + 해당 id `read:true`, `{prevRead, gen: currentGen()}` 반환. `onSuccess`: 응답 항목으로 그 id만 교체(재조회 없음 — 서버 응답이 그 항목의 정본). `onError`: `gen === currentGen()`일 때만 **그 항목만** `prevRead`로 복원. 보정 재조회 없음(2R Codex: 실패 보정 GET이 진행 중인 다른 읽음 요청과 응답 순서 경합 — 종한 결정 9/17 "읽음은 프론트가 항목 단위로 관리, 읽음 뒤 목록 API 재호출 금지, 서버와 잠시 어긋나면 수용"). 1차안(목록 전체 스냅샷 + onSettled 재조회)은 연달아 탭한 두 요청이 서로의 상태를 덮는 결함(Codex 지적)과 탭마다 GET 1회 낭비가 있어 폐기. `useSubmitGuard` 미사용(멱등 낙관 토글 — CLAUDE.md 예외·훅 주석 명시).
 - **Rationale**: 설정 훅과 같은 형식. 세대 가드는 계정 전환 중 롤백이 이전 계정 목록을 캐시에 되살리는 것을 막는다(P-147 계열 — Codex #150 P1과 같은 결함 유형). 404(`NOTIFICATION-002`: 타 기기·부재)도 롤백 후 재조회로 서버 값이 정본이 된다.
 - **Alternatives considered**: 응답 무시하고 invalidate만 — 낙관 깜빡임 가능. 세대 가드 생략 — 위 결함 재발. 기각.
 

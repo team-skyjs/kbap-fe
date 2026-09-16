@@ -32,7 +32,7 @@ export async function markNotificationRead(id: number): Promise<InboxItem> {
   return toInboxItem(await api.patch<NotificationWire>(`${PATH}/${id}/read`));
 }
 
-/** 목록 재조회 — 앱 포그라운드 복귀·푸시 수신/탭·읽음 후(FR-010). 쿼리가 비활성(게스트)이면 no-op. */
+/** 목록 재조회 — 앱 포그라운드 복귀·푸시 수신/탭(FR-010). 읽음 처리는 호출하지 않는다. 쿼리가 비활성(게스트)이면 no-op. */
 export function invalidateNotifications(qc: QueryClient = sharedQueryClient): void {
   void qc.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
 }
@@ -67,7 +67,9 @@ type Ctx = { prevRead: boolean | undefined; gen: number };
 /**
  * 읽음 = 항목 단위 낙관. Codex 리뷰(#163): 스냅샷을 목록 전체로 잡으면 A·B를 연달아 탭했을 때 뒤 요청의 롤백이 앞 요청의
  * 낙관 상태를 되살리거나 앞 요청 실패가 뒤 요청의 성공을 지운다 → 되돌리는 것도 **그 항목의 이전 read 값 하나**.
- * 성공 = 서버가 돌려준 항목으로 교체(정본, 재조회 없음). 실패 = 항목 원복 + 보정 재조회.
+ * 성공 = 서버가 돌려준 항목으로 교체. 실패 = 그 항목만 원복. **읽음 처리는 어떤 경우에도 목록을 다시 GET 하지 않는다**
+ * (Codex #163 2R: 실패 보정 GET이 진행 중인 다른 읽음 요청과 응답 순서 경합 → 삭제. 종한 결정 9/17: 읽음은 프론트가
+ * 항목 단위로 관리, 서버와 어긋나면 다음 재조회 시점(포그라운드 복귀·푸시·화면 재진입)에 맞춰지는 것으로 수용).
  */
 export function useMarkRead() {
   const qc = useQueryClient();
@@ -89,7 +91,6 @@ export function useMarkRead() {
         const prevRead = ctx.prevRead;
         patchItem(id, (i) => ({ ...i, read: prevRead }));
       }
-      invalidateNotifications(qc); // 보정 — 서버 값이 정본
     },
   });
 }

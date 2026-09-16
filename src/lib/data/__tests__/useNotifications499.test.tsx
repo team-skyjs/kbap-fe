@@ -117,7 +117,7 @@ it('③ 세션 게이트 — null·false = 요청 0·배지 0, true 확정 시 f
   expect(api.get).toHaveBeenCalledTimes(1);
 });
 
-it('⑤⑥ 읽음 낙관 → 실패 = 그 항목 원복 + 보정 재조회 / 성공 = 응답 항목 교체·재조회 없음', async () => {
+it('⑤⑥ 읽음 낙관 → 실패 = 그 항목 원복 / 성공 = 응답 항목 교체 — 어느 쪽도 목록 GET 없음', async () => {
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
@@ -133,7 +133,9 @@ it('⑤⑥ 읽음 낙관 → 실패 = 그 항목 원복 + 보정 재조회 / 성
   const getsBefore = (api.get as jest.Mock).mock.calls.length;
   d1.reject(new Error('NETWORK: down'));
   await until(() => latestUnread === 2, 'rollback');
-  await until(() => (api.get as jest.Mock).mock.calls.length > getsBefore, 'refetch after error');
+  await tick();
+  await tick();
+  expect((api.get as jest.Mock).mock.calls.length).toBe(getsBefore); // 실패에도 보정 GET 없음(2R)
   // 성공 — 응답으로 그 항목만 교체, 추가 GET 0
   const d2 = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(d2.promise);
@@ -161,20 +163,18 @@ it('⑨ 연달아 탭(Codex #163) — A 실패·B 성공 = A만 미읽음 복귀
   act(() => latestMutate!(2));
   await tick();
   expect(latestUnread).toBe(0);
-  (api.get as jest.Mock).mockResolvedValue([wire(1, false), wire(2, true), wire(3, true)]); // 서버 정본: B만 읽음
+  const getsAtStart = (api.get as jest.Mock).mock.calls.length;
   dB.resolve(wire(2, true));
   await tick();
   dA.reject(new Error('NETWORK: down'));
   await until(() => read(1) === false, 'A rolled back');
   expect(read(2)).toBe(true); // A 롤백이 B를 지우지 않는다
   await until(() => latestUnread === 1);
+  expect((api.get as jest.Mock).mock.calls.length).toBe(getsAtStart); // 읽음 처리 중 목록 GET 0 — 지연 GET이 B를 덮는 경합 자체가 없다
   // 둘 다 실패
-  (api.get as jest.Mock).mockResolvedValue([wire(1, false), wire(2, true), wire(3, true)]);
-  await tick();
   const dA2 = deferred<NotificationWire>();
   const dC = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(dA2.promise).mockReturnValueOnce(dC.promise);
-  (api.get as jest.Mock).mockImplementation(() => new Promise(() => {})); // 오프라인처럼 보정 재조회가 안 돌아온다
   act(() => latestMutate!(1));
   act(() => latestMutate!(3)); // 3은 이미 읽음 → 낙관 변화 없음
   await tick();
