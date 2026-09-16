@@ -245,3 +245,23 @@ it('Codex #161 2R: 같은 틱 더블탭 = 요청 1건(공용 제출 가드) · �
   expect(submit().props.busy).toBe(true); // 진행 중 표시
   await act(async () => { succeed(); await Promise.resolve(); });
 });
+
+it('Codex #161 3R: 다른 대상의 신고가 진행 중이어도 이 대상은 바로 제출할 수 있다', async () => {
+  mockGuest = true;
+  const settles: Array<() => void> = [];
+  mockReport.mockImplementation(() => new Promise<void>((res) => settles.push(res)));
+  const tree = render(OTHER);
+  const pickAndSubmit = () => {
+    tapItem(tree, 'community.report');
+    act(() => tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0].props.onPress());
+    act(() => tree.root.findAll((n) => n.props?.testID === 'report-submit')[0].props.onPress());
+  };
+  pickAndSubmit(); // 대상 A 제출(응답 보류)
+  expect(mockReport).toHaveBeenCalledTimes(1);
+  // 대상 B로 교체 — 같은 ModerationFlow 인스턴스 재사용(호출처 문법)
+  act(() => { tree.update(<ModerationFlow target={{ ...OTHER, id: 'other-999' }} onClose={() => {}} onBlocked={() => {}} onEdit={() => {}} onDelete={() => {}} />); });
+  pickAndSubmit(); // B는 A의 응답을 기다리지 않아야 한다
+  expect(mockReport).toHaveBeenCalledTimes(2);
+  expect(tree.root.findAll((n) => n.props?.testID === 'report-submit')[0].props.busy).toBe(true); // B 자신은 진행 중
+  await act(async () => { settles.forEach((r) => r()); await Promise.resolve(); });
+});
