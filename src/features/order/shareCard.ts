@@ -75,6 +75,11 @@ export function shareMenuLine(
  * 쉼표 표기는 마지막 조각이 도시일 수도 국가일 수도 있어 생략한다(날짜만).
  * 서버가 구조화 city 필드를 주면 그때 직결한다 — 추측으로 채우지 않는다.
  *
+ * TODO(BE 후속, 9/16 커맨드 센터): `OrderPlaceResponse.city` 추가 예정(주문 저장 시 Places
+ * address_components의 locality 스냅샷). 오면 **이 함수 위에서** `place.city`를 먼저 보고,
+ * 없을 때만 아래 폴백을 타게 한 줄 끼우면 된다 — `city ?? shareMetaCity(address) ?? 날짜만`.
+ * 호출부(order/[id].tsx metaCity)는 그대로 둔다.
+ *
  * 가게명 자체는 `lib/data/useOrders.orderPlaceLabel`(P-386)이 정본이다 — 같은 규칙을
  * 두 번 두지 않는다(P-386 머지로 중복이 생겨 이쪽을 지웠다).
  */
