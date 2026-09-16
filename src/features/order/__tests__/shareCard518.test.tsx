@@ -104,8 +104,14 @@ describe('메타줄 도시 — place.address에서 도시 조각만', () => {
     expect(shareMetaCity('12 Wausan-ro, Mapo-gu, Seoul, South Korea')).toBeNull(); // "South Korea" 표기 사고 방지
   });
 
-  it('공백 표기(한국어·일본어식) = 첫 토큰', () => {
+  it('공백으로 갈린 표기(한국어식) = 첫 토큰', () => {
     expect(shareMetaCity('서울 마포구 와우산로 12')).toBe('서울');
+    expect(shareMetaCity('Seoul Mapo-gu Wausan-ro 12')).toBe('Seoul');
+  });
+
+  it('공백 없는 표기(일본어·중국어) = 생략 — 첫 토큰이 주소 전체가 된다(Codex 6R)', () => {
+    expect(shareMetaCity('東京都渋谷区神宮前1-2-3')).toBeNull();
+    expect(shareMetaCity('北京市朝阳区建国路88号')).toBeNull();
   });
 
   it('부재·공백 = null(도시 없이 날짜만 — 빈 줄 금지)', () => {
@@ -245,5 +251,15 @@ it('P-196 — 공유 카드 3파일에 사용자 노출 가운뎃점 0(시안 �
     const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
     expect(code).not.toContain(' · ');
     expect(code).not.toContain('·'); // 공백 없는 변형도 금지
+  }
+});
+
+it('Codex 6R: 브랜드 라벨도 i18n 경유 — 하드코딩 금지', () => {
+  const src = read('src/features/order/OrderShareCard.tsx');
+  expect(src).toContain("{t('brand')}");
+  expect(src).not.toContain('>K-Bap<');
+  for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+    const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { brand: string };
+    expect(j.brand).toBeTruthy();
   }
 });

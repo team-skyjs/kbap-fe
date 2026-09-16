@@ -71,8 +71,9 @@ export function shareMenuLine(
 
 /**
  * ③ 메타줄 도시 — `place.address`(회원 언어 해석)에서 도시 부분만 뽑는다.
- * **확실할 때만 표시한다**: 공백 표기(한국어·일본어식)는 도시가 맨 앞이라 안전하지만,
- * 쉼표 표기는 마지막 조각이 도시일 수도 국가일 수도 있어 생략한다(날짜만).
+ * **확실할 때만 표시한다**: 공백으로 갈린 표기(한국어식 "서울 마포구 …")만 첫 토큰을 쓴다.
+ * 쉼표 표기는 마지막 조각이 도시인지 국가인지 알 수 없고("…, Seoul, South Korea"),
+ * 공백이 없는 표기(일본어·중국어)는 주소 전체가 한 토큰이라 — 둘 다 생략한다(날짜만).
  * 서버가 구조화 city 필드를 주면 그때 직결한다 — 추측으로 채우지 않는다.
  *
  * TODO(BE 후속, 9/16 커맨드 센터): `OrderPlaceResponse.city` 추가 예정(주문 저장 시 Places
@@ -90,6 +91,10 @@ export function shareMetaCity(address: string | null | undefined): string | null
   // ("12 Wausan-ro, Mapo-gu, Seoul" vs "…, Seoul, South Korea"). 구조화 필드 없이
   // 도시를 고를 방법이 없으므로 **생략한다** — 날짜만 남는다(틀린 도시보다 낫다, Codex 4R).
   if (a.includes(',')) return null;
-  // 공백 표기(한국어·일본어식)는 도시가 맨 앞이다 — dev 응답이 이 형태다
-  return a.split(/\s+/)[0] || null;
+  // 공백이 아예 없는 표기(일본어·중국어 "東京都渋谷区神宮前…")는 주소 통째가 한 토큰이라
+  // 첫 토큰 = 전체 주소가 된다 — 도시 자리에 주소가 박히느니 생략한다(Codex 6R).
+  const tokens = a.split(/\s+/).filter(Boolean);
+  if (tokens.length < 2) return null;
+  // 공백 표기(한국어식)는 도시가 맨 앞이다 — dev 응답이 이 형태다
+  return tokens[0] || null;
 }

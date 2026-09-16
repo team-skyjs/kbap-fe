@@ -11,6 +11,7 @@
  */
 import * as React from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { RemoteImage } from '@/components/RemoteImage';
 import { IconDownload, IconInstagram } from '@/components/icons';
@@ -38,6 +39,8 @@ export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(functi
   { photos, placeName, menuLine, metaCity, metaDate },
   ref,
 ) {
+  // 브랜드 라벨도 사용자 노출 문자열 — 전 로케일 공통값이지만 i18n 경유가 정본(하드코딩 금지)
+  const { t } = useTranslation();
   const cells = shareCells(photos.length);
   return (
     <View ref={ref} style={styles.card} testID="order-share-card" collapsable={false}>
@@ -79,7 +82,7 @@ export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(functi
           {/* 브랜드 = 마크 + 텍스트(배경·보더·라운드 없음 — 9/14 예진 결정) */}
           <View style={styles.brand} testID="share-brand">
             <Image source={BRAND_MARK} style={styles.brandMark} resizeMode="contain" />
-            <Text style={styles.brandText}>K-Bap</Text>
+            <Text style={styles.brandText}>{t('brand')}</Text>
           </View>
         </View>
       </View>
