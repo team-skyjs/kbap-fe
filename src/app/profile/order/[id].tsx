@@ -22,7 +22,7 @@ import { PhotoViewer } from '@/components/PhotoViewer';
 import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { orderPlaceLabel, useOrderDetail } from '@/lib/data/useOrders';
 import { OrderShareExportCanvas, OrderShareSection } from '@/features/order/OrderShareCard';
-import { shareMenuLine, shareMetaCity } from '@/features/order/shareCard';
+import { shareMenuLine, shareMetaCity, sharePhotos } from '@/features/order/shareCard';
 import { saveCardToPhotos, shareCardToStory, storyShareAvailable } from '@/features/order/shareExport';
 import { showTopToast } from '@/components/topToastStore';
 import { openAppSettings } from '@/lib/openExternal';
@@ -55,9 +55,12 @@ export default function OrderDetailScreen() {
 
   // P-380: 카드 데이터 — 미리보기와 내보내기 캔버스가 **같은 값**을 쓴다(둘이 어긋나면
   // 사용자가 본 것과 저장된 것이 달라진다)
+  // Codex 8R: thumbnails는 준비중·무사진 항목에 **서버 대체 이미지**가 섞인다(계약 명시) —
+  // 카드엔 실사진만(9/14 예진 ①: 빈 칸·기본 이미지로 채우지 않는다). 판별은 items.ready(계약)로.
+  const cardPhotos = q.data ? sharePhotos(q.data.items) : [];
   const shareCard = q.data
     ? {
-        photos: q.data.thumbnails,
+        photos: cardPhotos,
         placeName: orderPlaceLabel(q.data),
         menuLine: shareMenuLine(
           q.data.items.map((it) => it.menuName),
@@ -89,7 +92,7 @@ export default function OrderDetailScreen() {
     [shareProps.item_count, shareProps.has_place],
   );
 
-  const photosKey = (q.data?.thumbnails ?? []).join('|');
+  const photosKey = cardPhotos.join('|');
   React.useEffect(() => {
     // 사진이 바뀌면(주문 전환·재시도) 다시 잠근다 — 캔버스가 로드 완료를 다시 알려 준다
     setPhotosState(photosKey ? 'loading' : 'ready');
@@ -241,7 +244,7 @@ export default function OrderDetailScreen() {
           {/* P-380(KB-518) 공유 카드 — 사진 0장이면 섹션 자체를 숨긴다(빈 카드 금지).
               가게명은 orderPlaceLabel(place.name → roadAddress, P-386 공용 규칙).
               캡처 대상은 화면 밖 9:16 캔버스 — 미리보기 카드와 **같은 props**를 쓴다. */}
-          {q.data.thumbnails.length > 0 && (
+          {cardPhotos.length > 0 && (
             <View
               onLayout={(e) => {
                 sectionY.current = e.nativeEvent.layout.y;

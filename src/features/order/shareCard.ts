@@ -98,3 +98,21 @@ export function shareMetaCity(address: string | null | undefined): string | null
   // 공백 표기(한국어식)는 도시가 맨 앞이다 — dev 응답이 이 형태다
   return tokens[0] || null;
 }
+
+/**
+ * ④ 공유 카드에 쓸 사진 선별 (Codex 8R) — **서버 대체 이미지를 카드에 넣지 않는다**(9/14 예진 ①).
+ *
+ * 계약(dev Swagger): `thumbnails`·`imageRef` 모두 "READY 음식만 실사진, 준비중이거나 사진이
+ * 없으면 **기본 대체 이미지**"다. 즉 `thumbnails`를 그대로 쓰면 플레이스홀더 타일이 카드에 박힌다.
+ * 항목(`items`)에는 `ready` 불리언이 있으므로 **준비중은 계약으로 걸러낸다** —
+ * URL 문자열로 준비중을 판정하는 건 금지(종한 명시, useOrders 주석).
+ *
+ * ⚠️ 남는 구멍: `ready=true`인데 사진만 없는 경우도 서버가 같은 대체 이미지를 준다. 이건
+ * 계약상 구분 불가라 BE에 `hasPhoto`(또는 대체 이미지 판별 수단) 요청이 필요하다(커맨드 센터 보고).
+ */
+export function sharePhotos(items: { imageUrl: string | null; ready?: boolean }[]): string[] {
+  return items
+    .filter((it) => it.ready !== false && !!it.imageUrl)
+    .map((it) => it.imageUrl as string)
+    .slice(0, 4);
+}

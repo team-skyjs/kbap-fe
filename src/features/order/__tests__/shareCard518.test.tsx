@@ -16,7 +16,7 @@ jest.mock('react-i18next', () => ({
 }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 
-import { shareCells, shareMenuLine, shareMetaCity, SHARE_CARD_W, SHARE_GRID_H } from '../shareCard';
+import { shareCells, shareMenuLine, shareMetaCity, sharePhotos, SHARE_CARD_W, SHARE_GRID_H } from '../shareCard';
 import { orderPlaceLabel } from '@/lib/data/useOrders';
 import { OrderShareCard, OrderShareSection } from '../OrderShareCard';
 
@@ -233,7 +233,7 @@ describe('섹션 — 미리보기 영역·버튼 2개 규격', () => {
 
 it('배선 — 주문 상세가 사진 있을 때만 섹션을 렌더 · i18n 키 10로케일', () => {
   const src = read('src/app/profile/order/[id].tsx');
-  expect(src).toContain('q.data.thumbnails.length > 0 && (');
+  expect(src).toContain('{cardPhotos.length > 0 && ('); // 8R: 선별된 실사진 기준(thumbnails 직결 금지)
   expect(src).toContain('<OrderShareSection');
   expect(src).toContain('placeName: orderPlaceLabel(q.data)');
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
@@ -262,4 +262,31 @@ it('Codex 6R: 브랜드 라벨도 i18n 경유 — 하드코딩 금지', () => {
     const j = JSON.parse(read(`src/lib/i18n/${loc}.json`)) as { brand: string };
     expect(j.brand).toBeTruthy();
   }
+});
+
+describe('④ 공유 사진 선별 — 서버 대체 이미지 배제 (Codex 8R)', () => {
+  const IT = (imageUrl: string | null, ready?: boolean) => ({ imageUrl, ready });
+
+  it('준비중(ready=false) 항목은 제외 — 그 자리는 서버 대체 이미지다', () => {
+    expect(sharePhotos([IT('https://cdn/a.jpg', true), IT('https://cdn/placeholder.jpg', false)])).toEqual(['https://cdn/a.jpg']);
+  });
+
+  it('사진 없음(null)도 제외 · ready 부재(구응답)는 통과(공개 폴백)', () => {
+    expect(sharePhotos([IT(null, true), IT('https://cdn/b.jpg')])).toEqual(['https://cdn/b.jpg']);
+  });
+
+  it('최대 4장 · 실사진이 0장이면 빈 배열(섹션 자체가 안 뜬다)', () => {
+    const many = Array.from({ length: 6 }, (_, i) => IT(`https://cdn/${i}.jpg`, true));
+    expect(sharePhotos(many)).toHaveLength(4);
+    expect(sharePhotos([IT(null, true), IT('https://cdn/x.jpg', false)])).toEqual([]);
+  });
+
+  it('배선 — 카드·섹션 노출 모두 선별 결과를 쓴다(thumbnails 직결 금지)', () => {
+    const src = read('src/app/profile/order/[id].tsx');
+    expect(src).toContain('const cardPhotos = q.data ? sharePhotos(q.data.items) : []');
+    expect(src).toContain('photos: cardPhotos');
+    expect(src).toContain('{cardPhotos.length > 0 && (');
+    expect(src).not.toContain('photos: q.data.thumbnails');
+    expect(src).not.toContain('q.data.thumbnails.length > 0');
+  });
 });
