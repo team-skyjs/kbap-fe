@@ -55,9 +55,7 @@
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
     "saveTitle": "Simpan hidangan yang ingin kamu coba",
     "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu.",
-    "keepBrowsing": "Lanjut menjelajah",
-    "reportTitle": "Bantu jaga ulasan tetap tepercaya",
-    "reportSub": "Daftar untuk melaporkan ulasan agar kami dapat meninjaunya."
+    "keepBrowsing": "Lanjut menjelajah"
   },
   "lock": {
     "verdictTitle": "Peringkat keamanan pribadi Anda",
@@ -215,7 +213,8 @@
     "searchAllFoods": "Cari di semua hidangan",
     "reviewEligibleNote": "Kamu hanya bisa mengulas makanan yang sudah kamu pindai.",
     "goScanCta": "Pindai sekarang",
-    "sectionAllFoods": "Semua makanan"
+    "sectionAllFoods": "Semua makanan",
+    "reportFailed": "Laporan gagal dikirim. Coba lagi."
   },
   "risk": {
     "safe": "Aman",

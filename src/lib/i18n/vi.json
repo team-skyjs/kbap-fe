@@ -55,9 +55,7 @@
     "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
     "saveTitle": "Lưu những món bạn muốn thử",
     "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn.",
-    "keepBrowsing": "Tiếp tục xem",
-    "reportTitle": "Giúp giữ độ tin cậy cho đánh giá",
-    "reportSub": "Đăng ký để báo cáo đánh giá và chúng tôi sẽ xem xét."
+    "keepBrowsing": "Tiếp tục xem"
   },
   "lock": {
     "verdictTitle": "Mức đánh giá an toàn dành riêng cho bạn",
@@ -215,7 +213,8 @@
     "searchAllFoods": "Tìm trong tất cả món",
     "reviewEligibleNote": "Bạn chỉ có thể đánh giá món ăn mà bạn đã quét.",
     "goScanCta": "Quét ngay",
-    "sectionAllFoods": "Tất cả món ăn"
+    "sectionAllFoods": "Tất cả món ăn",
+    "reportFailed": "Không gửi được báo cáo. Hãy thử lại."
   },
   "risk": {
     "safe": "An toàn",
