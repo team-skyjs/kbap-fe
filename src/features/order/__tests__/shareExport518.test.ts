@@ -110,7 +110,11 @@ describe('인스타 스토리', () => {
     expect(d.shareToStory).not.toHaveBeenCalled();
     const src = read('src/features/order/shareExport.ts');
     expect(src).toContain('...(META_APP_ID ? { appId: META_APP_ID } : {})'); // 빈 문자열을 넘기지 않는다
-    expect(src).toContain('process.env.EXPO_PUBLIC_META_APP_ID'); // 하드코딩 금지 — env가 들어오면 그대로 산다
+    // 값은 app.json extra 한 곳 — 코드 하드코딩·EAS 환경 3중 등록을 피한다
+    expect(src).toContain("Constants.expoConfig?.extra as { metaAppId?: string }");
+    expect(src).not.toMatch(/META_APP_ID = ['\"]\d/); // 리터럴 박기 금지
+    const app = JSON.parse(read('app.json')) as { expo: { extra: { metaAppId?: string } } };
+    expect(app.expo.extra.metaAppId).toMatch(/^\d{10,}$/);
   });
 
   it('Android 설치 판별은 패키지 가시성 대상 패키지를 그대로 쓴다(app.json <queries>와 한 쌍)', () => {

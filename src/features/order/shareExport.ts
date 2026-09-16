@@ -10,6 +10,7 @@
  */
 import type * as React from 'react';
 import type { View } from 'react-native';
+import Constants from 'expo-constants';
 import { SHARE_CARD_W } from './shareCard';
 
 /** 내보내기 픽셀 규격 — 인스타 스토리 기준. */
@@ -30,11 +31,14 @@ export type SaveResult = 'success' | 'denied' | 'error';
 export type StoryResult = 'success' | 'not_installed' | 'unavailable' | 'error';
 
 /**
- * Meta App ID — **iOS 스토리 공유의 전제**(react-native-share 계약). 공개 값이라 시크릿이
- * 아니지만 하드코딩하지 않는다: 앱 등록이 끝나면 env만 채우면 버튼이 살아난다.
- * 빈 값을 넘기면 iOS는 매번 실패하므로 **호출 자체를 막는다**(9/16 커맨드 센터 결정).
+ * Meta App ID — **iOS 스토리 공유의 전제**(react-native-share 계약). 공개 값이라 커밋하되
+ * 코드에 박지 않고 `app.json extra.metaAppId` 한 곳에서 읽는다(9/16 커맨드 센터 결정):
+ * 로컬 네이티브·teamtest·production이 **같은 값**을 쓰고, EAS 환경 3개에 따로 등록할 필요가 없다.
+ * 발급 = developers.facebook.com 팀 계정 앱 "K-Bap". 비면 iOS Story 버튼은 숨는다.
  */
-export const META_APP_ID = process.env.EXPO_PUBLIC_META_APP_ID ?? '';
+export const META_APP_ID = String(
+  (Constants.expoConfig?.extra as { metaAppId?: string } | undefined)?.metaAppId ?? '',
+);
 
 /**
  * 스토리 공유를 노출할지 — Android는 항상(패키지 가시성으로 설치 판별),

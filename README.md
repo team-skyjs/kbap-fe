@@ -29,6 +29,9 @@ Metro를 켠 맥과 **같은 네트워크**에서 dev client를 실행하면 자
 - dev client는 **dev API(.env의 EXPO_PUBLIC_BE_BASE)** 를 따른다. 앱 확인만 필요하면 TestFlight
   teamtest 빌드(dev API 연결)로도 충분 — 코드 수정을 실시간으로 볼 때만 Metro가 필요하다.
 - BE를 로컬로 띄웠다면 `.env`의 호스트를 로컬 주소로 바꾸면 된다(커밋 금지).
+- **Meta App ID**(`app.json` → `extra.metaAppId`)는 iOS 인스타 스토리 공유의 전제다(KB-518).
+  공개 값이라 커밋한다 — 발급처는 developers.facebook.com **팀 계정 앱 "K-Bap"**. 비면 iOS에서
+  Story 버튼이 숨고 Download만 남는다(Android는 무관).
 
 ## 브랜치 체계 (2026-08-26~)
 
