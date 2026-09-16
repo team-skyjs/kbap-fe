@@ -69,14 +69,21 @@ export default function OrderDetailScreen() {
   // Codex #151 P2: has_place = **카드에 장소 줄이 떴는가**(orderPlaceLabel과 같은 판정) —
   // placeName만 보면 주소 폴백으로 장소가 보이는 기존 주문이 전부 false로 잡힌다.
   const shareProps = { item_count: q.data?.items.length ?? 0, has_place: !!(q.data && orderPlaceLabel(q.data)) };
-  const shareVisible = !!q.data && q.data.thumbnails.length > 0;
+  // Codex #151 4R P2: 공유 섹션은 영수증·메뉴 리스트 **아래**라 데이터 도착 = 노출이 아니다.
+  // 뷰포트에 실제로 들어왔을 때 1회만 — 그래야 공유 퍼널 분모가 부풀지 않는다.
   const viewTracked = React.useRef(false);
-  React.useEffect(() => {
-    if (!shareVisible || viewTracked.current) return;
-    viewTracked.current = true; // 주문 1건당 1회(재렌더·스크롤로 중복 발화 금지)
-    track(EVENTS.order_share_view, shareProps);
+  const sectionY = React.useRef<number | null>(null);
+  const viewportH = React.useRef(0);
+  const maybeTrackShareView = React.useCallback(
+    (offsetY: number) => {
+      if (viewTracked.current || sectionY.current == null || viewportH.current === 0) return;
+      if (sectionY.current > offsetY + viewportH.current) return; // 아직 화면 아래
+      viewTracked.current = true; // 주문 1건당 1회
+      track(EVENTS.order_share_view, shareProps);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shareVisible]);
+    [shareProps.item_count, shareProps.has_place],
+  );
 
   const sharePhotos = q.data?.thumbnails ?? [];
   const photosKey = sharePhotos.join('|');
@@ -141,7 +148,16 @@ export default function OrderDetailScreen() {
         /* P-287(4003:12906): 첫 로드 = 영수증·dish 스켈레톤 */
         <SkeletonOrderDetail />
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: 110 + bottom }]} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: 110 + bottom }]}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(e) => maybeTrackShareView(e.nativeEvent.contentOffset.y)}
+          onLayout={(e) => {
+            viewportH.current = e.nativeEvent.layout.height;
+            maybeTrackShareView(0); // 짧은 주문 = 스크롤 없이 이미 보인다
+          }}
+        >
           {/* 메뉴판 사진 — 시안 외(기능 유지) — 탭 = 풀스크린 contain 뷰어(P-248) */}
           {!!q.data.scanImageUrl && (
             <Pressable onPress={() => setViewer(true)} testID="order-scan-image" style={{ paddingHorizontal: 20 }}>
@@ -230,7 +246,12 @@ export default function OrderDetailScreen() {
               가게명은 orderPlaceLabel(place.name → roadAddress, P-386 공용 규칙).
               캡처 대상은 화면 밖 9:16 캔버스 — 미리보기 카드와 **같은 props**를 쓴다. */}
           {q.data.thumbnails.length > 0 && (
-            <>
+            <View
+              onLayout={(e) => {
+                sectionY.current = e.nativeEvent.layout.y;
+                maybeTrackShareView(0); // 레이아웃이 늦게 잡히는 경우(이미지 로드 후) 보정
+              }}
+            >
             <OrderShareExportCanvas ref={exportRef} card={shareCard!} />
             <OrderShareSection
               card={shareCard!}
@@ -243,7 +264,7 @@ export default function OrderDetailScreen() {
               storyHint={t('myFoods.shareStoryHint')}
               busy={!photosReady}
             />
-            </>
+            </View>
           )}
         </ScrollView>
       )}

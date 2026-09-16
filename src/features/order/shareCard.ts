@@ -71,9 +71,9 @@ export function shareMenuLine(
 
 /**
  * ③ 메타줄 도시 — `place.address`(회원 언어 해석)에서 도시 부분만 뽑는다.
- * 주소 표기는 언어마다 순서가 반대다: 영어·유럽식은 "번지, 구, **도시**"(도시가 끝),
- * 한국어·일본어식은 "**서울** 강남구 …"(도시가 앞). 쉼표가 있으면 마지막 조각, 없으면
- * 첫 토큰을 쓴다. 판별 불가·부재 = null(도시 없이 날짜만 — 빈 줄 금지).
+ * **확실할 때만 표시한다**: 공백 표기(한국어·일본어식)는 도시가 맨 앞이라 안전하지만,
+ * 쉼표 표기는 마지막 조각이 도시일 수도 국가일 수도 있어 생략한다(날짜만).
+ * 서버가 구조화 city 필드를 주면 그때 직결한다 — 추측으로 채우지 않는다.
  *
  * 가게명 자체는 `lib/data/useOrders.orderPlaceLabel`(P-386)이 정본이다 — 같은 규칙을
  * 두 번 두지 않는다(P-386 머지로 중복이 생겨 이쪽을 지웠다).
@@ -81,9 +81,10 @@ export function shareMenuLine(
 export function shareMetaCity(address: string | null | undefined): string | null {
   const a = (address ?? '').trim();
   if (!a) return null;
-  if (a.includes(',')) {
-    const parts = a.split(',').map((x) => x.trim()).filter(Boolean);
-    return parts.length ? parts[parts.length - 1] : null;
-  }
+  // 쉼표 표기(영어·유럽식)는 마지막 조각이 도시일 수도, **국가·우편번호**일 수도 있다
+  // ("12 Wausan-ro, Mapo-gu, Seoul" vs "…, Seoul, South Korea"). 구조화 필드 없이
+  // 도시를 고를 방법이 없으므로 **생략한다** — 날짜만 남는다(틀린 도시보다 낫다, Codex 4R).
+  if (a.includes(',')) return null;
+  // 공백 표기(한국어·일본어식)는 도시가 맨 앞이다 — dev 응답이 이 형태다
   return a.split(/\s+/)[0] || null;
 }

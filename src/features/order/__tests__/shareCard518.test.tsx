@@ -99,8 +99,9 @@ describe('③ 가게명 3단 폴백 — 규칙은 orderPlaceLabel 하나(P-386�
 });
 
 describe('메타줄 도시 — place.address에서 도시 조각만', () => {
-  it('쉼표 표기(영어·유럽식) = 마지막 조각', () => {
-    expect(shareMetaCity('12 Wausan-ro, Mapo-gu, Seoul')).toBe('Seoul');
+  it('쉼표 표기 = 생략 — 마지막 조각이 도시인지 국가인지 알 수 없다(Codex 4R)', () => {
+    expect(shareMetaCity('12 Wausan-ro, Mapo-gu, Seoul')).toBeNull();
+    expect(shareMetaCity('12 Wausan-ro, Mapo-gu, Seoul, South Korea')).toBeNull(); // "South Korea" 표기 사고 방지
   });
 
   it('공백 표기(한국어·일본어식) = 첫 토큰', () => {

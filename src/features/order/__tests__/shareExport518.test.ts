@@ -146,6 +146,9 @@ describe('5단계 계측 — 이벤트·속성 스키마', () => {
     expect(src).toContain("track(EVENTS.order_share_story, { ...shareProps, result: 'tap' })");
     expect(src).toContain('track(EVENTS.order_share_story, { ...shareProps, result: r })');
     expect(src).toContain('viewTracked.current = true');
+    // Codex 4R P2: 데이터 도착이 아니라 **뷰포트 진입** 기준(공유 섹션은 리스트 아래에 있다)
+    expect(src).toContain('onScroll={(e) => maybeTrackShareView(e.nativeEvent.contentOffset.y)}');
+    expect(src).toContain('if (sectionY.current > offsetY + viewportH.current) return;');
     // 속성 조립부에 사용자 생성 데이터가 섞이지 않는지(발주 고정)
     expect(src).toContain('const shareProps = { item_count:');
     // Codex 2R P2: 장소 유무 = 카드에 줄이 떴는지(주소 폴백 포함) — placeName만 보면 안 된다
