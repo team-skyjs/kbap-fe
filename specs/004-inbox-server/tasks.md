@@ -133,7 +133,7 @@
 - [X] T027 [P] 범위 밖 확인만 — `src/app/(tabs)/community.tsx` 미사용 `IconBell` import·`bell` 스타일, `inbox.emptyBody` 미사용 키, `AuthGateSheet.tsx`: **건드리지 않음**(research R-12).
 - [X] T028 BE 계약 재확인 — dev Swagger `NotificationResponse`에 `type`·`foodId`가 올라왔는지 확인(`curl -s https://dev.kbap.site/v3/api-docs | python3 -c …`). 올라왔으면 `contracts/notifications-api.md` "배포 대기" 문구를 배포일로 갱신하고 실기 §3-4 이동 항목 수행; 아니면 PR 본문에 "이동은 BE 배포 후 활성" 명기.
 - [ ] T029 dev 실기 검증 — quickstart §3 1~9 수행(검증 회원 소식 동의 ON 선행, 관리자 `POST /api/admin/notifications/test-push { memberId }`), 결과를 PROGRESS 항목·PR 본문에 기재. 기기 2대 확인 불가 시 "미확인"으로 명시.
-- [ ] T030 PR — `open-draft-pr` 스킬 절차로 draft PR(base `develop`). 제목은 Jira 키 없이 `feat(push): 알림함 서버 전환·상대 시각·게스트 로그인 직행` 형식, 본문에 `Jira: KB-499` 줄·spec 경로·clarify 5결정·실기 결과·BE 의존(`type`·`foodId`)·리뷰 포인트 3·발행 미실시 명기. Jira 상태 전환·완료 선언 금지.
+- [X] T030 PR — `open-draft-pr` 스킬 절차로 draft PR(base `develop`). 제목은 Jira 키 없이 `feat(push): 알림함 서버 전환·상대 시각·게스트 로그인 직행` 형식, 본문에 `Jira: KB-499` 줄·spec 경로·clarify 5결정·실기 결과·BE 의존(`type`·`foodId`)·리뷰 포인트 3·발행 미실시 명기. Jira 상태 전환·완료 선언 금지.
 
 ---
 
