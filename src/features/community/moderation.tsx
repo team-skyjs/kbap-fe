@@ -17,9 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
+import { showTopToast } from '@/components/topToastStore';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
 import type { CommunityAuthor, ReportReason, ReportTarget } from '@/lib/community/types';
 import { authorName } from './parts';
@@ -57,7 +57,6 @@ export function ModerationFlow({
 }) {
   const { t } = useTranslation();
   const isGuest = useIsGuest(); // P-281: 게스트 = 차단 숨김·신고 게이트(호출처 5곳 무변)
-  const [gateOpen, setGateOpen] = React.useState(false);
   const [phase, setPhase] = React.useState<'menu' | 'report' | 'blockConfirm' | 'blocking'>('menu');
   const [reason, setReason] = React.useState<ReportReason | null>(null);
   const [note, setNote] = React.useState('');
@@ -85,7 +84,6 @@ export function ModerationFlow({
     setReason(null);
     setNote('');
     setReported(false);
-    setGateOpen(false);
   }, [target?.type, target?.id]);
 
   if (!target) return null;
@@ -99,8 +97,15 @@ export function ModerationFlow({
   const doReport = () => {
     // P-173: reported 전환 전 같은-틱 더블탭 = 이중 신고 — 동기 가드
     if (!reason || reported || submitReport.isPending) return;
-    submitReport.mutate({ target: target.type, id: target.id, reason, note: reason === 'other' && note.trim() ? note.trim() : null });
-    setReported(true); // 적재만 — 확인 상태로 전환 (즉시 숨김 없음)
+    submitReport.mutate(
+      { target: target.type, id: target.id, reason, note: reason === 'other' && note.trim() ? note.trim() : null },
+      {
+        // P-387(KB-460): **응답 성공 후에만** 완료 화면 — 실패했는데 "접수됐다"고 말하지 않는다.
+        // 실패 시 사유·메모를 그대로 두고 재시도할 수 있게 둔다(reported 유지 false).
+        onSuccess: () => setReported(true),
+        onError: () => showTopToast(t('community.reportFailed'), { error: true }),
+      },
+    );
   };
 
   const doBlock = async () => {
@@ -124,19 +129,6 @@ export function ModerationFlow({
 
   /* ---- ① ⋯ 메뉴 (공용 ActionSheet) ---- */
   if (phase === 'menu') {
-    // P-281: 게스트 Report 게이트 — ⋯ 시트는 닫고 게이트만(시트 위 시트 금지)
-    if (gateOpen) {
-      return (
-        <AuthGateSheet
-          context="report"
-          open
-          onClose={() => {
-            setGateOpen(false);
-            onClose();
-          }}
-        />
-      );
-    }
     const KIND_MINE = { post: 'community.yourPost', comment: 'community.yourComment', review: 'community.yourReview' } as const;
     const KIND_BY = { post: 'community.postBy', comment: 'community.commentBy', review: 'community.reviewBy' } as const;
     const title = target.mine ? t(KIND_MINE[target.type]) : t(KIND_BY[target.type], { name });
@@ -163,10 +155,10 @@ export function ModerationFlow({
                 // P-142: 커뮤니티 신고 = 플래그 off(/reports targetType이 REVIEW뿐) — 리뷰 타깃만 노출
                 // P-190: keepOpen — 조기 onClose(setMod null = 플로우 언마운트)가 페이즈
                 // 전환을 죽이던 반려 버그(Q-40①②) 수정. 전환 렌더가 시트를 대체한다.
-                // P-281: 게스트 Report = 사유 시트 대신 로그인 게이트(서버 /reports 회원 전용 —
-                // 가짜 Thanks 방지). keepOpen — 게이트 렌더가 시트를 대체한다.
+                // P-387(KB-460): 게스트도 회원과 같은 신고 시트 — 서버 /reports가 인증 선택으로
+                // 바뀌었다(BE #249·#250, X-Installation-Id 헤더로 식별). P-281 로그인 게이트는 폐기.
                 ...(target.type === 'review' || FLAGS.communityReportEnabled
-                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => (isGuest ? setGateOpen(true) : setPhase('report')) }]
+                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => setPhase('report') }]
                   : []),
                 // P-281: 게스트 = 차단 항목 자체 미노출(예진 지시 — /members/me/blocks 회원 전용)
                 // P-339 ②: 탈퇴 리뷰(작성자 부재)·신고 전용 표면(홈)도 차단 미노출
@@ -208,7 +200,7 @@ export function ModerationFlow({
               <View style={{ gap: 12 }}>
                 <Text style={styles.title}>{t('community.reportTitle')}</Text>
                 {REASONS.map((r) => (
-                  <Pressable key={r} style={styles.reasonRow} onPress={() => setReason(r)}>
+                  <Pressable key={r} style={styles.reasonRow} onPress={() => setReason(r)} testID={`report-reason-${r}`}>
                     <View style={[styles.radio, reason === r && styles.radioOn]}>{reason === r && <View style={styles.radioDot} />}</View>
                     <Text style={styles.reasonText}>{t(`community.reason.${r}`)}</Text>
                   </Pressable>
@@ -224,7 +216,7 @@ export function ModerationFlow({
                     textAlignVertical="top"
                   />
                 )}
-                <Btn variant={reason ? 'primary' : 'off'} onPress={reason ? doReport : undefined}>
+                <Btn variant={reason ? 'primary' : 'off'} onPress={reason ? doReport : undefined} testID="report-submit">
                   {t('community.reportSubmit')}
                 </Btn>
               </View>

@@ -51,9 +51,7 @@
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
     "saveTitle": "Save dishes you want to try",
     "saveSub": "Sign up to bookmark dishes for later.",
-    "keepBrowsing": "Keep browsing",
-    "reportTitle": "Help keep reviews trustworthy",
-    "reportSub": "Sign up to report a review so we can look into it."
+    "keepBrowsing": "Keep browsing"
   },
   "lock": {
     "verdictTitle": "Your personal safety rating",
@@ -211,7 +209,8 @@
     "searchAllFoods": "Search all dishes",
     "reviewEligibleNote": "You can only review foods you've scanned.",
     "goScanCta": "Go scan",
-    "sectionAllFoods": "All foods"
+    "sectionAllFoods": "All foods",
+    "reportFailed": "Couldn't send your report. Try again."
   },
   "risk": {
     "safe": "Safe",

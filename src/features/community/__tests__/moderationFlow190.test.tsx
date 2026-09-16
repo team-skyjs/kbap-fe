@@ -30,6 +30,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 let mockGuest = false;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest }));
+const mockToast = jest.fn();
+jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 jest.mock('@/components/AuthGateSheet', () => {
   const { View } = require('react-native');
   return {
@@ -121,18 +123,25 @@ it('회귀 무사고: 본인 수정/삭제 = 현행 자동 닫힘(onClose) + 콜
   expect(onEdit).toHaveBeenCalled();
 });
 
-/* ---- P-281: 게스트 ⋯ 메뉴 — 차단 숨김·신고 게이트 + 차단 실패 복구 ---- */
+/* ---- P-387(KB-460): 게스트 신고 개방 — 게이트 폐기(P-281), 차단은 여전히 회원 전용 ---- */
 
-it('P-281(a): 게스트 = block 항목 없음 · Report 탭 → AuthGateSheet(context report)', () => {
+it('P-387(a): 게스트 = Report 탭 → 회원과 같은 사유 시트(로그인 게이트 없음)', () => {
   mockGuest = true;
   const tree = render(OTHER);
-  expect(flat(tree)).not.toContain('community.blockUser'); // 차단 항목 자체 미노출
+  expect(flat(tree)).not.toContain('community.blockUser'); // 차단은 회원 전용 유지(/members/me/blocks)
   tapItem(tree, 'community.report');
-  expect(tree.root.findAll((n) => n.props?.testID === 'gate-report').length).toBeGreaterThanOrEqual(1); // 게이트 대체
-  expect(flat(tree)).not.toContain('community.reportTitle'); // 사유 시트 미도달(가짜 Thanks 방지)
+  expect(flat(tree)).toContain('community.reportTitle'); // 사유 시트 진입
+  expect(tree.root.findAll((n) => n.props?.testID === 'gate-report')).toHaveLength(0); // 게이트 소멸
 });
 
-it('P-281(b): 회원 = Report·Block 현행 무변(위 재현 경로 케이스가 이중 잠금) + 2차 제안 게스트 가드 소스 잠금', () => {
+it('P-387(a2): 게스트 게이트 잔재 0 — 소스 잠금(회귀 시 다시 막힌다)', () => {
+  const src = require('fs').readFileSync('src/features/community/moderation.tsx', 'utf8') as string;
+  expect(src).not.toContain('AuthGateSheet');
+  expect(src).not.toContain('gateOpen');
+  expect(src).toContain("onPress: () => setPhase('report')"); // isGuest 삼항 소멸
+});
+
+it('P-281(b) → P-387: 회원 = Report·Block 현행 무변(위 재현 경로 케이스가 이중 잠금) + 2차 제안 게스트 가드 소스 잠금', () => {
   const tree = render(OTHER);
   const s = flat(tree);
   expect(s).toContain('community.report');
@@ -157,4 +166,36 @@ it('P-281(c): blockUser reject → "Blocking…"에 갇히지 않고 메뉴 복�
   expect(s).toContain('community.blockUser'); // 메뉴 복귀(재시도는 사용자가)
   expect(onBlocked).not.toHaveBeenCalled(); // 실패 = 차단 완료 후처리 미발화
   expect(onClose).not.toHaveBeenCalled();
+});
+
+/* ---- P-387(KB-460): 응답 성공 후에만 완료 화면 ---- */
+
+it('성공해야 Thanks — 응답 전에는 완료로 넘어가지 않는다', () => {
+  mockGuest = true;
+  let succeed!: () => void;
+  mockReport.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) => { succeed = opts.onSuccess; });
+  const tree = render(OTHER);
+  tapItem(tree, 'community.report');
+  const reason = tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0];
+  act(() => reason.props.onPress());
+  const submit = tree.root.findAll((n) => n.props?.testID === 'report-submit')[0];
+  act(() => submit.props.onPress());
+  expect(flat(tree)).not.toContain('community.reportThanks'); // 아직 응답 전
+  act(() => succeed());
+  expect(flat(tree)).toContain('community.reportThanks');
+});
+
+it('실패 = 완료 화면 없음 + 토스트 + 사유 유지(재시도 가능)', () => {
+  mockGuest = true;
+  let fail!: () => void;
+  mockReport.mockImplementation((_v: unknown, opts: { onError: () => void }) => { fail = opts.onError; });
+  const tree = render(OTHER);
+  tapItem(tree, 'community.report');
+  act(() => tree.root.findAll((n) => n.props?.testID === 'report-reason-spam')[0].props.onPress());
+  act(() => tree.root.findAll((n) => n.props?.testID === 'report-submit')[0].props.onPress());
+  act(() => fail());
+  const s = flat(tree);
+  expect(s).not.toContain('community.reportThanks');
+  expect(s).toContain('community.reportTitle'); // 사유 시트 유지 = 재시도 가능
+  expect(mockToast).toHaveBeenCalled();
 });
