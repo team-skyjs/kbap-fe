@@ -255,12 +255,13 @@ it('KB-433: 추천 행(pad16 r8) + 2열 그리드 타일·검색 시 핀 숨김�
   const pin = tree.root.findAll((n) => n.props?.testID === 'nat-US')[0];
   expect(flat(pin.props.style).padding).toBe(16);
   // 일반 = 2열 그리드 타일(47%)
-  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
-  expect(flat(jp.props.style).width).toBe('47%');
-  // 모국어=영어 생략: SG(=Singapore) 행엔 보조 텍스트 없음, JP(日本≠Japan)엔 있음
-  const sg = tree.root.findAll((n) => n.props?.testID === 'nat-SG')[0];
-  expect(sg.findAll((c) => c.type === 'Text' && c.props?.children === 'Singapore').length).toBe(1); // 메인 1개뿐(보조 생략)
-  expect(jp.findAll((c) => c.type === 'Text' && c.props?.children === 'Japan').length).toBe(1); // 보조 존재
+  // P-395(KB-589): JP·SG는 Popular 그룹으로 옮겨가 A–Z에 없다 — 같은 성질의 비-Popular 국가로 검사.
+  const kr = tree.root.findAll((n) => n.props?.testID === 'nat-KR')[0];
+  expect(flat(kr.props.style).width).toBe('47%');
+  // 모국어=영어 생략: AU(=Australia) 행엔 보조 텍스트 없음, KR(한국≠South Korea)엔 있음
+  const sg = tree.root.findAll((n) => n.props?.testID === 'nat-AU')[0];
+  expect(sg.findAll((c) => c.type === 'Text' && c.props?.children === 'Australia').length).toBe(1); // 메인 1개뿐(보조 생략)
+  expect(kr.findAll((c) => c.type === 'Text' && c.props?.children === 'South Korea').length).toBe(1); // 보조 존재
   // 섹션 헤더 존재 → 검색 입력 시 핀 블록 숨김
   const texts = () => tree.root.findAll((n) => n.props?.children === 'onboarding.fromYourPhone');
   expect(texts().length).toBeGreaterThanOrEqual(1);
@@ -320,17 +321,17 @@ it('P-148/151: 타국 선택 시 핀 카드 색 강조만 해제 — 프레임 �
   const selectedStyle = flat2(pin().props.style);
   // 선택 상태 — 주황 보더·틴트 존재
   expect(selectedStyle.borderColor).toBe('#FF7134');
-  // 타국(JP) 선택 → 색 강조만 소멸(#EAEBEE 동폭 보더 — KB-433 시안), 메트릭 픽셀 동일 (P-103)
-  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
-  await act(async () => { jp.props.onPress(); });
+  // 타국(KR) 선택 → 색 강조만 소멸(#EAEBEE 동폭 보더 — KB-433 시안), 메트릭 픽셀 동일 (P-103)
+  const kr = tree.root.findAll((n) => n.props?.testID === 'nat-KR')[0];
+  await act(async () => { kr.props.onPress(); });
   const unselectedStyle = flat2(pin().props.style);
   expect(unselectedStyle.borderColor).toBe('#EAEBEE'); // 색만 전환 — 폭 1 유지
   expect(String(unselectedStyle.backgroundColor ?? '')).not.toContain('rgba(255,113,52');
   expect(metrics(unselectedStyle)).toEqual(metrics(selectedStyle)); // 밀림 봉쇄
   expect(unselectedStyle.borderWidth).toBe(1);
-  // 그리드 타일(JP — 선택됨)도 메트릭 무변: 선택 강조는 색뿐
-  const jpStyle = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
-  expect(jpStyle.borderWidth).toBe(1);
+  // 그리드 타일(KR — 선택됨)도 메트릭 무변: 선택 강조는 색뿐
+  const krStyle = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-KR')[0].props.style);
+  expect(krStyle.borderWidth).toBe(1);
 });
 
 it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴트) — 메트릭 불변·강조 1곳', async () => {
@@ -338,14 +339,14 @@ it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴
   const tree = await render();
   const { StyleSheet: RNSheet } = require('react-native') as typeof import('react-native');
   const flat2 = (s2: unknown) => RNSheet.flatten(s2) as Record<string, unknown>;
-  const jpStyle = () => flat2(tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0].props.style);
-  const before = jpStyle();
+  const krStyle = () => flat2(tree.root.findAll((n) => n.props?.testID === 'nat-KR')[0].props.style);
+  const before = krStyle();
   // 미선택 그리드 타일 — 상시 동폭 보더(#EAEBEE — KB-433 시안, 프레임 상비)
   expect(before.borderWidth).toBe(1);
   expect(before.borderColor).toBe('#EAEBEE');
-  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-JP')[0];
-  await act(async () => { jp.props.onPress(); });
-  const after = jpStyle();
+  const kr = tree.root.findAll((n) => n.props?.testID === 'nat-KR')[0];
+  await act(async () => { kr.props.onPress(); });
+  const after = krStyle();
   // 선택 = 핀 카드와 동일 색 강조, 메트릭(높이·보더 폭·라운딩) 픽셀 동일
   expect(after.borderColor).toBe('#FF7134');
   expect(String(after.backgroundColor)).toContain('rgba(255,113,52');

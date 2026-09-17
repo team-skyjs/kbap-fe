@@ -137,13 +137,35 @@ it('③ 검색어를 넣으면 Popular 그룹·라벨이 핀과 함께 사라진
   expect(hosts(tree, (n) => n.props?.children === 'onboarding.fromYourPhone')).toHaveLength(0);
 });
 
-it('④ A–Z 전체 리스트 무변 — 상위 10개국도 그대로 남고, 감지국만 빠진다', async () => {
+it('④ A–Z 구성 — Popular·감지국은 빠진다(featured에 있으면 A–Z에서 제외, 한 규칙)', async () => {
   const tree = await render();
-  // Popular(nat-pop-*)·핀을 뺀 본 리스트 = A–Z
   const az = ids(tree, 'nat-').filter((s) => !s.startsWith('nat-pop') && s !== 'nat-US' && s !== 'nat-clear');
-  for (const c of POPULAR_COUNTRIES.filter((c) => c !== 'US')) expect(az).toContain(`nat-${c}`);
+  for (const c of POPULAR_COUNTRIES) expect(az).not.toContain(`nat-${c}`);
   expect(az).not.toContain('nat-US'); // 감지국은 핀이 담당(기존 규칙)
-  expect(az.length).toBeGreaterThan(100);
+  expect(az.length).toBeGreaterThan(100); // 나머지 전 국가는 그대로
+  expect(az).toContain('nat-KR'); // Popular 밖 국가는 A–Z에 남는다
+});
+
+it('④ 검색하면 Popular·감지국 국가도 전부 찾힌다(제외는 기본 목록에만 적용)', async () => {
+  const tree = await render();
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.placeholder === 'onboarding.nationalitySearch')!;
+  await act(async () => { input.props.onChangeText('japan'); });
+  expect(ids(tree, 'nat-')).toContain('nat-JP'); // Popular 소속이어도 검색 결과엔 나온다
+  await act(async () => { input.props.onChangeText('united states'); });
+  expect(ids(tree, 'nat-')).toContain('nat-US'); // 감지국도 마찬가지
+});
+
+// P-154 "강조 1곳": 같은 나라가 두 곳에 보이면 라디오가 둘 켜진 것처럼 읽힌다(Codex #171)
+it('④ 강조는 1곳 — Popular에서 고른 나라가 A–Z에 중복 강조되지 않는다', async () => {
+  const tree = await render();
+  const { StyleSheet } = require('react-native') as typeof import('react-native');
+  const flat = (st: unknown) => StyleSheet.flatten(st) as Record<string, unknown>;
+  const jp = tree.root.findAll((n) => n.props?.testID === 'nat-pop-JP')[0];
+  await act(async () => { jp.props.onPress(); });
+  const highlighted = hosts(tree, (n) => typeof n.props?.testID === 'string' && (n.props.testID as string).startsWith('nat-'))
+    .filter((n) => flat(n.props.style)?.borderColor === '#FF7134');
+  expect(highlighted).toHaveLength(1);
+  expect(highlighted[0].props.testID).toBe('nat-pop-JP');
 });
 
 it('④ 홀수 자리표시자 — Popular 9개면 2열 유지용 패드가 붙고, 10개면 안 붙는다', async () => {

@@ -581,7 +581,11 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, i18n.language));
     const filtered = query
       ? all.filter((c) => c.name.toLowerCase().includes(query) || (c.native ?? '').toLowerCase().includes(query))
-      : all.filter((c) => c.code !== detected); // 핀 카드가 감지국 담당 — 본 리스트 중복 제거
+      : // 핀 카드가 감지국 담당 — 본 리스트 중복 제거. P-395(KB-589): Popular 그룹도 같은 규칙으로
+        // 뺀다. 남겨두면 선택 시 Popular와 A–Z **양쪽이 강조**돼 라디오가 둘 켜져 보인다
+        // (P-154 "강조 1곳"). featured 섹션에 있으면 A–Z에서 빠진다 — 규칙 하나로 통일.
+        // 검색 중에는 이 필터가 아예 안 걸리므로 전 국가가 그대로 찾힌다.
+        all.filter((c) => c.code !== detected && !POPULAR_COUNTRIES.includes(c.code as (typeof POPULAR_COUNTRIES)[number]))
     return filtered;
   }, [query, detected]);
 
