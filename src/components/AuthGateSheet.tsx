@@ -71,7 +71,10 @@ export function AuthGateSheet({
 
   const goLogin = () => {
     onClose();
-    router.push(`/login?returnTo=${encodeURIComponent(pathname)}` as Href);
+    // P-389(KB-576): 가입 유입 경로 — auth_gate_view.trigger와 **같은 값**을 gate_* 로 넘긴다
+    // (두 이벤트를 같은 축으로 이어 붙이기 위함). 로그인 성공 시 auth_login_success.entry로 실린다.
+    const entry = `gate_${trigger ?? CONTEXT_TRIGGER[context]}`;
+    router.push(`/login?returnTo=${encodeURIComponent(pathname)}&entry=${entry}` as Href);
   };
 
   return (

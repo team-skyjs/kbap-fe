@@ -109,6 +109,33 @@ it('P-144: CSV 이벤트·속성 스키마 1:1 — 신규 7종 + 확장 2종', (
   expect(a.sanitize(a.EVENTS.food_detail_view, { source: 'scan', food_id: '7' })).toEqual({ source: 'scan', food_id: '7' });
 });
 
+/* ---- P-389(KB-576): 가입 경로·user_type — CSV 두 행과 1:1 ---- */
+
+it('P-389: auth_login_success = provider·is_new·entry · app_tab_view = tab·user_type (그 외 드롭)', () => {
+  const a = loadAnalytics('test-key');
+  expect(a.sanitize(a.EVENTS.auth_login_success, { provider: 'GOOGLE', is_new: true, entry: 'gate_review' }))
+    .toEqual({ provider: 'GOOGLE', is_new: true, entry: 'gate_review' });
+  expect(a.sanitize(a.EVENTS.app_tab_view, { tab: 'home', user_type: 'guest' })).toEqual({ tab: 'home', user_type: 'guest' });
+  // 화이트리스트 밖(식별자·경로 등)은 계속 드롭돼야 한다
+  expect(a.sanitize(a.EVENTS.auth_login_success, { provider: 'APPLE', email: 'a@b.c', return_to: '/food/7' }))
+    .toEqual({ provider: 'APPLE' });
+});
+
+it('P-389: CSV 값 목록과 코드 entry 열거가 어긋나지 않는다', () => {
+  const fs = require('fs') as typeof import('fs');
+  const csv = fs.readFileSync('../spec/specs/001-personalized-menu-mvp/amplitude-taxonomy.csv', 'utf8') as string;
+  const row = csv.split('\n').find((l) => l.startsWith('event,auth_login_success,'));
+  expect(row).toBeTruthy();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { parseLoginEntry } = require('@/lib/auth/loginEntry') as typeof import('@/lib/auth/loginEntry');
+  for (const v of ['intro', 'gate_bookmark', 'gate_review', 'gate_scan', 'gate_community', 'gate_risk', 'gate_profile', 'profile', 'other']) {
+    expect(row).toContain(v); // CSV 값 목록에 존재
+    expect(parseLoginEntry(v)).toBe(v); // 코드가 그대로 통과
+  }
+  expect(parseLoginEntry(undefined)).toBe('intro'); // 직접 진입
+  expect(parseLoginEntry('gate_unknown')).toBe('other'); // 스키마 밖 값이 대시보드로 새지 않는다
+});
+
 it('P-144: user property — 허용 키만 통과(PII 키 드롭) + Identify 경유(익명 유지)', () => {
   const a = loadAnalytics('test-key');
   // sanitize: 재료명·닉네임·이메일 등 허용 밖 키 드롭

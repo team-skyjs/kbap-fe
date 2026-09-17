@@ -33,6 +33,7 @@ import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { TopToastHost } from '@/components/TopToast';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import { loadTokens } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
@@ -99,6 +100,11 @@ export default function RootLayout() {
       user_info_os_version: String(Platform.Version),
       ...(region ? { user_info_country: region } : {}),
     });
+    // P-389(KB-576): 콜드 스타트에 회원 여부를 세팅한다 — 재설치·기기 교체 직후 첫 세션은
+    // 이 값이 비어 있어 세그먼트가 통째로 빠졌다. 값 전환(게스트 진입·로그인 성공) 지점은 그대로.
+    void loadTokens()
+      .then((tk) => setUserProps({ user_info_is_registered: !!tk }))
+      .catch(() => {}); // 저장소 오류 = 기존 값 유지(잘못된 false로 덮지 않는다)
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') {
         track(EVENTS.app_opened);

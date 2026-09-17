@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import type { LoginEntry } from './loginEntry';
 import * as Crypto from 'expo-crypto';
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
@@ -43,7 +44,7 @@ function ensureGoogleConfigured() {
 export type AuthErrorKind = 'network' | 'generic';
 export type AuthPhase = 'idle' | 'google' | 'apple';
 
-export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
+export function useSocialAuth(onSignedIn: (newMember: boolean) => void, entry: LoginEntry = 'intro') {
   const [phase, setPhase] = useState<AuthPhase>('idle');
   const [error, setError] = useState<AuthErrorKind | null>(null);
 
@@ -86,7 +87,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
         setPhase('idle'); // KB-421: 게스트 진입이 선행 — 세션 미설치, 내비·계측 생략
         return;
       }
-      track(EVENTS.auth_login_success, { provider: 'GOOGLE' }); // P-083
+      track(EVENTS.auth_login_success, { provider: 'GOOGLE', is_new: exch.newMember, entry }); // P-083 · P-389
       setUserProps({ user_info_is_registered: true }); // P-144: NRU 기준(false→true 전환)
       setPhase('idle');
       onSignedIn(exch.newMember);
@@ -119,7 +120,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
         setPhase('idle'); // KB-421: 게스트 진입 선행 — 내비·계측 생략
         return;
       }
-      track(EVENTS.auth_login_success, { provider: 'APPLE' }); // P-083
+      track(EVENTS.auth_login_success, { provider: 'APPLE', is_new: res.newMember, entry }); // P-083 · P-389
       setUserProps({ user_info_is_registered: true }); // P-144
       setPhase('idle');
       onSignedIn(res.newMember);

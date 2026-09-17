@@ -14,6 +14,7 @@ import { Tabs, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
 import { EVENTS, track } from '@/lib/analytics';
+import { loadTokens } from '@/lib/auth/beTokens';
 import { ResumeOnboardingBanner } from '@/components/ResumeOnboardingBanner';
 
 // route name (file) ↔ TabBar key
@@ -48,7 +49,11 @@ function AppTabBar({
   React.useEffect(() => {
     if (lastTab.current === active) return;
     lastTab.current = active;
-    track(EVENTS.app_tab_view, { tab: active });
+    // P-389(KB-576): user_type = BE 토큰 유무(서버가 아는 사실이 정본 — 로컬 플래그 금지 P-147).
+    // 비동기라 이벤트가 한 틱 늦지만, 탭 전환 계측은 순서가 아니라 발화가 기준이다.
+    void loadTokens()
+      .then((tk) => track(EVENTS.app_tab_view, { tab: active, user_type: tk ? 'registered' : 'guest' }))
+      .catch(() => track(EVENTS.app_tab_view, { tab: active })); // 저장소 오류 = 판정 생략(이벤트는 보낸다)
   }, [active]);
 
   return (

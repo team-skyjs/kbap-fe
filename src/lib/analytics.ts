@@ -22,9 +22,11 @@
  * |                          | upload·network·server)                     |
  * | food_detail_view         | source (scan|list|search|home|other)       |
  * | review_submit            | (props 없음)                                |
- * | auth_login_success            | provider (APPLE|GOOGLE)                    |
+ * | auth_login_success            | provider (APPLE|GOOGLE), is_new (bool),    |
+ * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
- * | app_tab_view                 | tab (home|food|reviews|community|profile)  |
+ * | app_tab_view                 | tab (home|food|reviews|community|profile), |
+ * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
@@ -97,7 +99,9 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_complete: ['degraded', 'item_count', 'success', 'fail_reason'], // P-144 확장
   food_detail_view: ['source', 'food_id'], // P-144: food_id 추가(카탈로그 id — PII 아님)
   review_submit: ['has_photos', 'photo_count', 'rating'], // P-144 확장
-  auth_login_success: ['provider'],
+  // P-389(KB-576): is_new = 서버 newMember(가입/재로그인 구분) · entry = 가입 유입 경로.
+  // 실패·취소는 종전대로 미전송이라 전환율 분모는 auth_gate_view가 유지한다.
+  auth_login_success: ['provider', 'is_new', 'entry'],
   auth_guest_enter: [],
   app_opened: [],
   scan_start: ['source'],
@@ -108,7 +112,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
   review_write_tap: ['source'],
   food_bookmark_toggle: ['on'],
-  app_tab_view: ['tab'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
+  // P-389(KB-576): user_type = BE 토큰 유무(guest|registered) — 탭별 회원/게스트 분해용.
+  app_tab_view: ['tab', 'user_type'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
   auth_gate_view: ['trigger'], // bookmark|review|scan|community|risk|profile
   // P-214 — ⛔ 전송 금지(발주 고정): 장소명·주소·좌표 / 신고 note / 대상 memberId·닉네임 /
   // 본문·사진 URI / 프리셋 항목명. 아래 키 밖은 어댑터가 드롭(화이트리스트가 방어선).
