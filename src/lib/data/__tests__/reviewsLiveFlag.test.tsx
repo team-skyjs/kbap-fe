@@ -140,7 +140,7 @@ it('작성 on → 실 POST /reviews (foodId 수치화)', async () => {
 
 // P-211 ③ 재현 경로: 피드 발 작성 → 전역 피드(['reviews','global'])가 stale 마킹돼야
 // 복귀 시 재조회로 새 리뷰가 보인다 — 누락 시 이 단언이 실패(P-196 like 족보의 무효화판).
-it('P-211: 작성 성공 → 전역 피드·음식·내 리뷰 캐시 전부 무효화', async () => {
+it('P-211: 작성 성공 → 전역 피드·음식·내 리뷰·홈 캐시 전부 무효화', async () => {
   mockFlagState.live = true;
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const seed = { pages: [{ items: [], hasNext: false, nextCursor: null }], pageParams: [null] };
@@ -148,12 +148,16 @@ it('P-211: 작성 성공 → 전역 피드·음식·내 리뷰 캐시 전부 무
   qc.setQueryData<InfiniteData<ReviewPage>>(['food', '7', 'reviews', 'all'], seed);
   qc.setQueryData<Review[]>(['me', 'reviews'], []);
   qc.setQueryData(['me', 'en'], { id: '9' });
+  // P-393(KB-580): 홈 "리뷰 많은 음식"은 리뷰 수 파생 — 캐시 키는 ['home', 언어]
+  qc.setQueryData(['home', 'en'], { mostReviewed: [] });
   await runCreate(qc, { foodId: '7', rating: 5 });
   // P-384(KB-442): 리뷰 = 스캔 해금 조건 — 프로필 쿼터 재조회
   expect(qc.getQueryState(['me', 'en'])?.isInvalidated).toBe(true);
   expect(qc.getQueryState(['reviews', 'global'])?.isInvalidated).toBe(true);
   expect(qc.getQueryState(['food', '7', 'reviews', 'all'])?.isInvalidated).toBe(true);
   expect(qc.getQueryState(['me', 'reviews'])?.isInvalidated).toBe(true);
+  // 빼면 staleTime(60s) 안에 복귀했을 때 이전 순위가 그대로 보인다(Codex #169 P2)
+  expect(qc.getQueryState(['home', 'en'])?.isInvalidated).toBe(true);
 });
 
 /* ---- P-095: 리뷰 좋아요 토글 (목 — 캐시 반영·API 호출 0) ---- */
