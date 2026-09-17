@@ -76,19 +76,23 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "K-Bap uses the camera to scan menus and assess dish risk for you."
+          "cameraPermission": "K-Bap uses the camera to scan menus, take photos for your reviews, and set your profile picture.",
+          "microphonePermission": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "K-Bap accesses your photos so you can scan a saved menu picture."
+          "photosPermission": "K-Bap accesses your photos so you can scan a saved menu, add photos to reviews and posts, set a profile picture, or attach them to an inquiry."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "K-Bap uses your location to find nearby restaurants you can tag in a review.",
+          "locationWhenInUsePermission": "K-Bap uses your location to find nearby restaurants, so you can tag a place in a review and record where you ate.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false,
           "_comment": "P-200: 리뷰 장소 태그 nearby용 — 사용 중 권한만(백그라운드 없음). 네이티브 — 빌드18 반영"
         }
       ],
@@ -114,7 +118,13 @@
           }
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false,
+          "_comment": "KB-592: 생체 인증을 쓰지 않는다(requireAuthentication 호출 0) — 기본 플레이스홀더 문구가 그대로 출고되던 것을 제거. 나중에 requireAuthentication을 쓰면 이 문구를 **반드시** 되살릴 것(없으면 호출 시 크래시)."
+        }
+      ],
       [
         "expo-sensors",
         {

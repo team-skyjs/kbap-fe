@@ -69,7 +69,10 @@ it('소스 잠금 — 플러그인 문구(iOS 사용 중 권한)·폴백 상수 
   const appJson = fs.readFileSync('app.json', 'utf8') as string;
   expect(appJson).toContain('"expo-location"');
   expect(appJson).toContain('locationWhenInUsePermission');
-  expect(appJson).toContain('nearby restaurants you can tag in a review');
+  // KB-592: 문구가 주문 기록(orders.ts) 용도까지 포괄하도록 넓어졌다 — 리뷰 장소 태그 용도가
+  // 문구에 남아 있는지만 잠근다(전문 고정은 KB-592 유닛이 담당).
+  expect(appJson).toContain('nearby restaurants');
+  expect(appJson).toContain('tag a place in a review');
   expect(fs.readFileSync('src/lib/api/places.ts', 'utf8')).toContain('REVIEW_PLACE_FALLBACK_COORD = { latitude: 37.4979502, longitude: 127.0276368 }');
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('reviewPlaceEnabled: true' /* KB-403 전 채널 공개 */); // 플래그 현행(발주 4)
 });
