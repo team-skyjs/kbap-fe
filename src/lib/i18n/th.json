@@ -717,7 +717,8 @@
       "groupAllergy": "ชุดภูมิแพ้",
       "apply": "ใช้กับรายการของฉัน"
     },
-    "countryLabel": "ประเทศ"
+    "countryLabel": "ประเทศ",
+    "popularCountries": "ยอดนิยม"
   },
   "editProfile": {
     "title": "แก้ไขโปรไฟล์",

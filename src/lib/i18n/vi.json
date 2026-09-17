@@ -717,7 +717,8 @@
       "groupAllergy": "Nhóm dị ứng",
       "apply": "Áp dụng vào danh sách"
     },
-    "countryLabel": "Quốc gia"
+    "countryLabel": "Quốc gia",
+    "popularCountries": "Phổ biến"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

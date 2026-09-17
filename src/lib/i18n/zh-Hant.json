@@ -717,7 +717,8 @@
       "groupAllergy": "過敏組合",
       "apply": "套用到我的清單"
     },
-    "countryLabel": "國家"
+    "countryLabel": "國家",
+    "popularCountries": "熱門國家"
   },
   "editProfile": {
     "title": "編輯個人資料",

@@ -875,7 +875,8 @@
       "groupAllergy": "알레르기",
       "apply": "내 목록에 적용"
     },
-    "countryLabel": "국가"
+    "countryLabel": "국가",
+    "popularCountries": "인기 국가"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",

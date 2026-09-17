@@ -48,7 +48,7 @@ import { Spinner } from '@/components/Spinner';
 import { useShake } from '@/lib/useShake';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
-import { COUNTRIES, countryByCode, deviceCountry, type Country } from '@/lib/onboarding/countries';
+import { COUNTRIES, POPULAR_COUNTRIES, countryByCode, deviceCountry, type Country } from '@/lib/onboarding/countries';
 import { POPULAR_DISHES, restrictionLabel } from '@/lib/onboarding/data';
 import { isSpiceLevel, SPICE_LEVEL_EXAMPLE, SPICE_LEVEL_LABEL, spiceRank, type SpiceLevel } from '@/lib/spice';
 import { wireToSpiceLevel } from '@/lib/api/spiceAdapter';
@@ -585,7 +585,15 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     return filtered;
   }, [query, detected]);
 
-  const Row = (c: Country, pinned: boolean) => {
+  // P-395(KB-589): 상위 10개국 — **상수 배열 순서 그대로**(정렬하지 않는다).
+  // 감지국은 핀 카드가 이미 보여주므로 여기선 뺀다 — 그래서 9개가 될 수 있다.
+  const popular = useMemo(
+    () => POPULAR_COUNTRIES.filter((c) => c !== detected).map(countryByCode).filter((c): c is Country => !!c),
+    [detected],
+  );
+
+  // idPrefix: 같은 나라가 Popular와 A–Z 양쪽에 나오므로 testID가 겹치지 않게 구분한다.
+  const Row = (c: Country, pinned: boolean, idPrefix = '') => {
     const on = c.code === selected;
     return (
       <Pressable
@@ -594,7 +602,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         // 시안: 선택 = primaryTint bg + primary 1px r8 / 비선택 = #EAEBEE 1px
         style={[pinned ? styles.natPinRow : styles.natTile, on && styles.natOn]}
         onPress={() => onSelect(c.code)}
-        testID={`nat-${c.code}`}
+        testID={`nat-${idPrefix}${c.code}`}
       >
         <View style={styles.natFlagSlot}>
           <Text style={styles.natFlag}>{flagEmoji(c.code)}</Text>
@@ -651,6 +659,16 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
             <View style={styles.natNotice}>
               <RiskMark state="caution" size={16} />
               <Text style={styles.natNoticeText}>{t('onboarding.nationalityNotice')}</Text>
+            </View>
+          </>
+        )}
+        {/* P-395(KB-589): 방한 상위 10개국 — 검색 중이면 핀과 함께 숨긴다(기존 규칙) */}
+        {!query && popular.length > 0 && (
+          <>
+            <Text style={styles.natSecText}>{t('onboarding.popularCountries')}</Text>
+            <View style={styles.natGrid} testID="nat-popular-grid">
+              {popular.map((c) => Row(c, false, 'pop-'))}
+              {popular.length % 2 === 1 && <View style={styles.natTilePad} testID="nat-popular-pad" />}
             </View>
           </>
         )}
