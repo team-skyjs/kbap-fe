@@ -278,6 +278,7 @@ export function FoodExplorer({
                   selected={riskChip === c}
                   onPress={() => onChip(c)}
                   testID={`home-chip-${c}`}
+                  risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
                 />
               ))}
               <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
@@ -306,6 +307,7 @@ export function FoodExplorer({
                 selected={riskChip === c}
                 onPress={() => onChip(c)}
                 testID={`home-chip-${c}`}
+                risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
               />
             ))}
           </View>
