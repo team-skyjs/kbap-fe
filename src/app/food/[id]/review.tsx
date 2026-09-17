@@ -30,7 +30,6 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
-import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -64,7 +63,6 @@ export default function ReviewCompose() {
   const [photos, setPhotos] = useState<ReviewPhoto[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [postError, setPostError] = useState(false);
-  const [eligGate, setEligGate] = useState(false); // P-251: REVIEW-004 자격 안내
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
@@ -187,12 +185,6 @@ export default function ReviewCompose() {
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
-        // P-251(BE #185): 403 REVIEW-004 = 자격 없음(진입 게이트를 뚫은 엣지 —
-        // 픽커 "전체에서 찾기" 경유 등) → 같은 자격 안내(BE message 미노출)
-        if ((e as { code?: string })?.code === 'REVIEW-004') {
-          setEligGate(true);
-          return;
-        }
         setPostError(true); // 실패 = 버튼 복구(가드 finally) + 기존 에러 표면
       }
     });
@@ -413,7 +405,6 @@ export default function ReviewCompose() {
 
 
 
-        <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
         {postError && (
           <View style={styles.postErr}>
             <RiskMark state="caution" size={16} />

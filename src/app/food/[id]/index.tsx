@@ -9,7 +9,7 @@
  * verdict 이유 = 성분 기준 조립만, caution 사유 = 중립 조립(ingBasis).
  * 게스트: 판정 미노출(잠금 슬롯) — 재료는 공개하되 마크·칩 미렌더(P-206/P-235).
  * Unregistered = "Unable to assess" 유지 — never assumed safe (FR-033).
- * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크·EligibilityGate 로직 무변.
+ * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
@@ -41,7 +41,6 @@ import { IconFood, IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
-import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { foodSpiceText, spiceRank } from '@/lib/spice';
 import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
@@ -96,7 +95,6 @@ export default function FoodDetailScreen() {
   const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
-  const [eligGateRoot, setEligGateRoot] = useState(false);
 
   // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 솔리드+타이틀 페이드인
   const [solid, setSolid] = useState(false);
@@ -183,7 +181,7 @@ export default function FoodDetailScreen() {
       </ScrollView>
 
       {/* §1-8: FixedBottom(4150:16963) — 아웃라인 Write + primary Ask(회원) /
-          게스트·Ask 부재 시 Write primary 단독. EligibilityGate 로직 무변. */}
+          게스트·Ask 부재 시 Write primary 단독. */}
       {showBottomBar && (
         <RegisteredBottomBar
           guest={isGuest}
@@ -192,11 +190,7 @@ export default function FoodDetailScreen() {
           insetsBottom={insets.bottom}
           t={t}
           onWrite={() => {
-            // Registered 내부 writeReview와 동일 게이트 — 이 바는 화면 루트 소유라 재조립
-            if (!isGuest && food?.reviewEligible === false) {
-              setEligGateRoot(true);
-              return;
-            }
+            // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
             track(EVENTS.review_write_tap, { source: 'detail' });
             router.push(`/food/${id}/review` as Href);
           }}
@@ -226,7 +220,6 @@ export default function FoodDetailScreen() {
       {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
       <TopToastHost />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
-      <EligibilityGate open={eligGateRoot} onClose={() => setEligGateRoot(false)} />
     </View>
   );
 }
@@ -319,14 +312,9 @@ function Registered({
   router: Router;
   id: string;
 }) {
-  // P-251(BE #185): 리뷰 자격 게이트 — 회원 && reviewEligible === false(서버 정본)만.
-  const [eligGate, setEligGate] = useState(false);
   const isNew = useIsNewFood(food.publishedAt);
   const writeReview = (source: 'detail') => {
-    if (!guest && food.reviewEligible === false) {
-      setEligGate(true);
-      return;
-    }
+    // P-392(KB-584): 자격 게이트 폐기 — 게스트 게이트(AuthGateSheet)는 그대로
     track(EVENTS.review_write_tap, { source });
     router.push(`/food/${id}/review` as Href);
   };
@@ -517,7 +505,6 @@ function Registered({
           </View>
         </View>
       )}
-      <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
       {FLAGS.reviewsEnabled && !food.reviewSummaryMissing && food.overall.count > 0 && (
         <View testID="review-brief">
           <View style={styles.thickDivider} />
