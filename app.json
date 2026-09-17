@@ -28,12 +28,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ],
+      "_permissionsComment": "KB-592: RECORD_AUDIO 제거 — 오디오 녹음 코드가 0인데 선언만 남아 Play 스토어에 '오디오 녹음'으로 노출됐다(미사용 권한 선언 = 정책 리스크). expo-camera의 recordAudioAndroid: false로 플러그인 경로를 막고, 그래도 라이브러리 AndroidManifest가 직접 선언하므로(prebuild 실측) blockedPermissions로 병합 단계에서 제거한다.",
+      "permissions": ["android.permission.CAMERA"],
       "blockedPermissions": [
-        "android.permission.ACTIVITY_RECOGNITION"
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -76,19 +75,24 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "K-Bap uses the camera to scan menus and assess dish risk for you."
+          "cameraPermission": "K-Bap uses the camera to scan menus, take photos for your reviews, and set your profile picture.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "K-Bap accesses your photos so you can scan a saved menu picture."
+          "photosPermission": "K-Bap accesses your photos so you can scan a saved menu, add photos to reviews and posts, set a profile picture, or attach them to an inquiry."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "K-Bap uses your location to find nearby restaurants you can tag in a review.",
+          "locationWhenInUsePermission": "K-Bap uses your location to find nearby restaurants, so you can tag a place in a review and record where you ate.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false,
           "_comment": "P-200: 리뷰 장소 태그 nearby용 — 사용 중 권한만(백그라운드 없음). 네이티브 — 빌드18 반영"
         }
       ],
@@ -114,7 +118,13 @@
           }
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false,
+          "_comment": "KB-592: 생체 인증을 쓰지 않는다(requireAuthentication 호출 0) — 기본 플레이스홀더 문구가 그대로 출고되던 것을 제거. 나중에 requireAuthentication을 쓰면 이 문구를 **반드시** 되살릴 것(없으면 호출 시 크래시)."
+        }
+      ],
       [
         "expo-sensors",
         {
