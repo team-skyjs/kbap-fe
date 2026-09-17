@@ -74,6 +74,7 @@ jest.mock('expo-image-picker', () => ({
 }));
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {} }));
+jest.mock('expo-application', () => ({ nativeApplicationVersion: '1.0.3', nativeBuildVersion: '34' }));
 const mockTrack = jest.fn();
 jest.mock('@/lib/analytics', () => ({ EVENTS: { profile_feedback_submit: 'profile_feedback_submit' }, track: (...a: unknown[]) => mockTrack(...a) }));
 
@@ -110,6 +111,7 @@ const idleList = (flat: unknown[]) => ({
   isError: false,
   error: null,
   hasNextPage: false,
+  isFetching: false,
   isFetchingNextPage: false,
   fetchNextPage: jest.fn(),
   refetch: jest.fn(),
@@ -269,6 +271,17 @@ it('⑥ 목록 — 다음 페이지 실패면 푸터에 재시도를 낸다(전�
   expect(fetchNextPage).toHaveBeenCalledTimes(1);
 });
 
+// app.json에 ios.buildNumber도 android.versionCode도 없고 eas.json이 remote+autoIncrement라,
+// expoConfig 경유로는 buildNumber가 **항상 비어** 나갔다(Codex #170 4R).
+it('⑤ deviceInfo — 버전·빌드 번호는 설치된 바이너리에서 읽는다(expoConfig 아님)', () => {
+  const { collectDeviceInfo } = jest.requireActual('@/lib/deviceInfo') as typeof import('@/lib/deviceInfo');
+  const info = collectDeviceInfo();
+  expect(info.buildNumber).toBe('34');
+  expect(info.appVersion).toBe('1.0.3');
+  // expo-application은 expo-notifications가 이미 끌고 와 있다 — 직접 의존이면 지문이 돈다
+  expect(JSON.parse(read('package.json')).dependencies['expo-application']).toBeUndefined();
+});
+
 it('⑤ deviceInfo — 안드로이드 osVersion은 API 레벨이 아니라 릴리스', () => {
   // react-native 모듈 전체를 목하면 lazy getter가 전부 평가돼 터진다 — Platform 속성만 갈아끼운다
   const { Platform } = require('react-native') as typeof import('react-native');
@@ -312,6 +325,15 @@ it('⑥ 상세 — 캐시에 없고 뒤 페이지가 남았으면 당겨온다(�
 
 // 페이지 요청이 실패해도 마지막 성공 페이지가 hasNextPage=true를 유지한다 —
 // 멈추지 않으면 실패한 요청을 무한 재발행하면서 스켈레톤만 남는다(Codex #170 P2).
+// stale 캐시로 진입하면 기존 페이지 재조회가 이미 떠 있을 수 있다 — 그걸 앞질러 당기면
+// 갱신을 취소하고 낡은 체인을 훑다가 "없음"으로 끝난다(Codex #170 4R).
+it('⑥ 상세 — 백그라운드 재조회 중이면 페이지를 당기지 않고 기다린다', async () => {
+  const fetchNextPage = jest.fn();
+  mockListState = { ...idleList([]), hasNextPage: true, isFetching: true, fetchNextPage };
+  await act(async () => { renderer.create(<FeedbackDetailScreen />); });
+  expect(fetchNextPage).not.toHaveBeenCalled();
+});
+
 it('⑥ 상세 — 페이지 요청 실패면 재요청을 멈추고 오류 폴백(재시도)을 낸다', async () => {
   const fetchNextPage = jest.fn();
   mockListState = {

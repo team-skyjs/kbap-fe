@@ -33,14 +33,23 @@ export function collectDeviceInfo(): DeviceInfo {
   // client.ts의 deviceHeaders가 이미 같은 구분을 한다(Codex #170). iOS는 Version이 곧 릴리스.
   const androidRelease = (Platform.constants as { Release?: string } | undefined)?.Release;
   put(out, 'osVersion', Platform.OS === 'android' ? (androidRelease ?? Platform.Version) : Platform.Version);
+  // 버전·빌드 번호는 **설치된 바이너리**에서 읽는다. app.json에는 ios.buildNumber도
+  // android.versionCode도 없고(eas.json appVersionSource=remote + autoIncrement),
+  // 그래서 expoConfig 경유로는 buildNumber가 항상 비어 나갔다(Codex #170).
+  // expo-application은 expo-notifications가 이미 끌고 와 네이티브 빌드에 들어 있다 —
+  // 직접 의존으로 추가하는 게 아니라서 **지문이 회전하지 않는다**(expo-device와 다른 점).
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const App = require('expo-application') as typeof import('expo-application');
+    put(out, 'appVersion', App.nativeApplicationVersion);
+    put(out, 'buildNumber', App.nativeBuildVersion);
+  } catch {
+    /* 미설치·구 런타임 — 아래 expoConfig 폴백 */
+  }
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Constants = (require('expo-constants') as { default: typeof import('expo-constants').default }).default;
-    put(out, 'appVersion', Constants.expoConfig?.version);
-    // 빌드 번호는 플랫폼별 위치가 다르다(iOS buildNumber / Android versionCode)
-    const ios = Constants.expoConfig?.ios?.buildNumber;
-    const and = Constants.expoConfig?.android?.versionCode;
-    put(out, 'buildNumber', Platform.OS === 'ios' ? ios : and);
+    if (!out.appVersion) put(out, 'appVersion', Constants.expoConfig?.version);
   } catch {
     /* 값 없이 진행 — 문의 전송 자체를 막지 않는다 */
   }

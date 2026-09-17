@@ -34,12 +34,16 @@ export default function FeedbackDetailScreen() {
   // ⚠️ 페이지 요청이 실패해도 마지막 성공 페이지가 hasNextPage=true를 유지한다 —
   // 그대로 두면 이 이펙트가 실패한 요청을 무한 재발행하고 스켈레톤이 영원히 남는다(Codex #170).
   // `isFetchNextPageError`가 서면 멈추고 아래 오류 폴백(재시도 버튼)으로 넘긴다.
+  // 또 하나: 캐시가 stale인 채로 들어오면 기존 페이지 **재조회가 이미 떠 있을 수** 있다.
+  // 그때 fetchNextPage를 부르면 그 갱신을 앞질러(기본 취소 동작) 낡은 체인을 계속 훑다가
+  // 새로 도착했을 문의를 "없음"으로 끝낸다 — 진행 중인 요청이 끝난 뒤에 당긴다(Codex #170).
   const pageFailed = q.isFetchNextPageError;
+  const busy = q.isFetching; // 초기 로드·백그라운드 재조회·다음 페이지 전부 포함
   React.useEffect(() => {
-    if (!item && q.hasNextPage && !q.isFetchingNextPage && !pageFailed) void q.fetchNextPage();
-  }, [item, q.hasNextPage, q.isFetchingNextPage, pageFailed, q]);
+    if (!item && q.hasNextPage && !busy && !pageFailed) void q.fetchNextPage();
+  }, [item, q.hasNextPage, busy, pageFailed, q]);
 
-  const searching = !pageFailed && (q.isLoading || (!item && (q.hasNextPage || q.isFetchingNextPage)));
+  const searching = !pageFailed && (q.isLoading || (!item && (q.hasNextPage || busy)));
 
   return (
     <View style={styles.root}>
