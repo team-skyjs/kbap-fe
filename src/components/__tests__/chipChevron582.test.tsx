@@ -20,7 +20,7 @@ jest.mock('react-i18next', () => ({
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 
 import { Chip } from '../Chip';
-import { RISK } from '../RiskMark';
+import { RISK, RiskMark } from '../RiskMark';
 import { IconChevron, IconArrowLeft } from '../icons';
 import { riskTone, type RiskState } from '@/lib/theme';
 
@@ -47,6 +47,18 @@ describe('위험도 칩 색 = 마크 색', () => {
     expect(off.backgroundColor).toBe('#FFFFFF');
     const all = hostStyle(render(<Chip label="All" selected testID="c" />), 'c');
     expect(all.backgroundColor).toBe('#2F3137'); // 중립 유지
+  });
+
+  it('Codex #167: 색만이 아니라 **형태**도 함께 — 위험도 칩에 RiskMark 글리프(헌법 게이트)', () => {
+    for (const risk of ['safe', 'caution', 'danger'] as RiskState[]) {
+      for (const selected of [true, false]) {
+        const t = render(<Chip label="x" selected={selected} risk={risk} testID="c" />);
+        expect(t.root.findAllByType(RiskMark)).toHaveLength(1); // 선택·비선택 모두 형태 유지
+        expect(t.root.findAllByType(RiskMark)[0].props.state).toBe(risk);
+      }
+    }
+    // all(중립)·일반 칩은 마크 없음 — 위험도 의미가 없는 칩에 상태 형태를 붙이지 않는다
+    expect(render(<Chip label="All" selected testID="c" />).root.findAllByType(RiskMark)).toHaveLength(0);
   });
 
   it('칩 색은 토큰에서만 온다 — 하드코딩 위험도 hex 0', () => {

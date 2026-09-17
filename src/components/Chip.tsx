@@ -5,8 +5,9 @@
  * 동일 폭, selected는 bg와 동색 보더로 자리 유지).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from './Txt';
+import { RiskMark } from './RiskMark';
 import { color as C, radius, riskTone, type RiskState } from '@/lib/theme';
 
 const INK_ACTIVE = '#2F3137'; // 시안 gray-900(발주 표 외 명시값)
@@ -30,11 +31,20 @@ export function Chip({
   const onBg = risk ? riskTone[risk].fg : INK_ACTIVE;
   return (
     <Pressable
-      style={[styles.chip, selected ? { backgroundColor: onBg, borderColor: onBg } : styles.off]}
+      style={[styles.chip, risk ? styles.chipRisk : null, selected ? { backgroundColor: onBg, borderColor: onBg } : styles.off]}
       onPress={onPress}
       testID={testID}
       hitSlop={4}
     >
+      {/* 헌법 게이트: 위험도 4상태는 **색+형태 병행**(색맹 접근성) — 색만 바꾸면 안 된다(Codex #167).
+          형태는 공용 RiskMark 글리프 그대로(✓ ! ✕ ?) — 새 형태 발명 금지.
+          solid 고정: 원 fill = 상태색·글리프 = 흰색이라, 선택(원색 배경)에서도 **흰 글리프**가 형태를
+          드러낸다. outline은 선택 시 스트로크가 배경과 같은 색이 돼 보이지 않는다. */}
+      {!!risk && (
+        <View testID={testID ? `${testID}-mark` : undefined}>
+          <RiskMark state={risk} size={14} />
+        </View>
+      )}
       <Text style={[styles.label, { color: selected ? '#FFFFFF' : INK_ACTIVE }]}>{label}</Text>
     </Pressable>
   );
@@ -42,6 +52,8 @@ export function Chip({
 
 const styles = StyleSheet.create({
   chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1 },
+  // 마크 + 라벨 — 프레임 불변(P-151): 선택/비선택 모두 같은 슬롯·같은 패딩
+  chipRisk: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   on: { backgroundColor: INK_ACTIVE, borderColor: INK_ACTIVE },
   off: { backgroundColor: '#FFFFFF', borderColor: C.line },
   // P-371: lineHeight 20 고정 — 8+20+8=36 칩 높이 유지, Android 한글 세로 중앙
