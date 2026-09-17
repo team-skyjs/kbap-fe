@@ -139,55 +139,52 @@ beforeEach(() => {
   mockSearch.mockImplementation(() => ({ data: [] }));
 });
 
-it('리뷰 컨텍스트 브라우즈 = 2구역 — 스캔분 활성 / ALL FOODS 비활성 + 안내·CTA', () => {
+/* ---- P-392(KB-584): 자격 제한 폐기 — 회원이면 어떤 음식이든 리뷰 ---- */
+
+it('리뷰 브라우즈 = 스캔분(빠른 선택) + 전체 음식 — **둘 다 선택 가능**', () => {
   const onToggleFood = jest.fn();
   const tree = render(sheet({ onToggleFood }));
   const s = flat(tree);
   expect(s).toContain('community.sectionRecentlyScanned');
   expect(s).toContain('community.sectionAllFoods');
-  expect(s).toContain('community.reviewEligibleNote');
-  // 스캔분 = 탭하면 선택
-  tapRow(tree, 'Kimchi Stew');
+  expect(s).not.toContain('community.reviewEligibleNote'); // 자격 안내 소멸
+  tapRow(tree, 'Kimchi Stew'); // 스캔분
   expect(onToggleFood).toHaveBeenCalledWith({ foodId: '1', name: 'Kimchi Stew' });
-  // 전체 구역 = 탭해도 선택 안 됨(안내 강조만)
-  tapRow(tree, 'Tteokbokki');
-  expect(onToggleFood).toHaveBeenCalledTimes(1);
+  tapRow(tree, 'Tteokbokki'); // 전체 구역 — 이제 선택된다
+  expect(onToggleFood).toHaveBeenCalledTimes(2);
 });
 
-it('스캔 CTA = 시트 닫기 + 스캔 화면 이동', () => {
-  const onClose = jest.fn();
-  const tree = render(sheet({ onClose }));
-  const cta = tree.root.findAll((n) => n.props?.testID === 'picker-go-scan' && typeof n.props?.onPress === 'function')[0];
-  act(() => cta.props.onPress());
-  expect(onClose).toHaveBeenCalled();
-  expect(mockPush).toHaveBeenCalledWith('/scan');
+it('스캔 CTA·안내 배너 잔재 0(스캔 유도 UI 폐기)', () => {
+  const tree = render(sheet({}));
+  expect(tree.root.findAll((n) => n.props?.testID === 'picker-go-scan')).toHaveLength(0);
+  expect(tree.root.findAll((n) => n.props?.testID === 'picker-elig-note')).toHaveLength(0);
 });
 
-it('스캔 0건 = 안내가 메인(인기 폴백 폐기 — 활성 행 0) + 비활성 전체 목록은 참고 유지', () => {
+it('스캔 0건 = 인기 목록 폴백(빈 화면 금지) + 전부 선택 가능', () => {
   mockScanned.mockReturnValue({ data: [] });
   const onToggleFood = jest.fn();
   const tree = render(sheet({ onToggleFood }));
   const s = flat(tree);
   expect(s).not.toContain('community.sectionRecentlyScanned'); // 빈 활성 구역 헤더 금지(P-210)
-  expect(s).toContain('community.reviewEligibleNote');
-  expect(s).toContain('community.sectionAllFoods');
-  tapRow(tree, 'Tteokbokki'); // 전체 목록은 여전히 선택 불가
-  expect(onToggleFood).not.toHaveBeenCalled();
+  expect(s).toContain('community.sectionPopular');
+  tapRow(tree, 'Tteokbokki');
+  expect(onToggleFood).toHaveBeenCalledWith({ foodId: '10', name: 'Tteokbokki' });
 });
 
-it('검색 "전체에서 찾기" 결과 = 비활성 + 같은 안내(학습 역할)', () => {
-  // scanned scope 검색 = 0건 → searchAll 행 → all 결과는 비활성
-  mockSearch.mockImplementation((q: string, scope?: string) =>
-    q === 'tteok' ? { data: scope === 'scanned' ? [] : [POPULAR[0]] } : { data: [] });
+it('리뷰 검색 = **전체 음식 범위**(scanned 한정·전체에서 찾기 단계 폐기)', () => {
+  const scopes: (string | undefined)[] = [];
+  mockSearch.mockImplementation((q: string, scope?: string) => {
+    if (q) scopes.push(scope);
+    return { data: q === 'tteok' ? [POPULAR[0]] : [] };
+  });
   const onToggleFood = jest.fn();
   const tree = render(sheet({ onToggleFood }));
   const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
   act(() => input.props.onChangeText('tteok'));
-  const allRow = tree.root.findAll((n) => n.props?.testID === 'picker-search-all' && typeof n.props?.onPress === 'function')[0];
-  act(() => allRow.props.onPress());
-  expect(flat(tree)).toContain('community.reviewEligibleNote'); // 비활성 결과 위 안내
+  expect(scopes).not.toContain('scanned'); // 리뷰 픽커는 처음부터 전체 검색
+  expect(tree.root.findAll((n) => n.props?.testID === 'picker-search-all')).toHaveLength(0); // 중간 단계 불필요
   tapRow(tree, 'Tteokbokki');
-  expect(onToggleFood).not.toHaveBeenCalled(); // 전체 결과 = 선택 불가
+  expect(onToggleFood).toHaveBeenCalledWith({ foodId: '10', name: 'Tteokbokki' });
 });
 
 it('필터 컨텍스트(P-229) 무변 — 전체 선택 가능·자격 UI 잔존 0 (반려 잠금)', () => {
