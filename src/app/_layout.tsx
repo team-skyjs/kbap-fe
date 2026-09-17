@@ -33,6 +33,7 @@ import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { TopToastHost } from '@/components/TopToast';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
@@ -75,6 +76,14 @@ export default function RootLayout() {
     // KB-421: 세션 스토어 부팅 초기화도 **cleanup 이후 직렬** — 모듈 스코프 선읽기가
     // 삭제 전 Keychain을 읽어 회원으로 선고착하던 레이스(P-205 mina 부활) 봉쇄.
     void cleanupDone.then(() => initSessionFromStorage()).catch(() => {});
+    // P-389(KB-576) + P-205: 콜드 스타트 회원 판정도 **cleanup 뒤 직렬**. 재설치 시 iOS
+    // Keychain에 이전 세션이 남아 있어, 병렬로 읽으면 곧 지워질 그 세션을 보고 '회원'으로
+    // 찍는다 — 고치려던 콜드 스타트 세그먼트가 옛 계정으로 오염된다(Codex #165 2R).
+    // 모름(저장소 오류)이면 세팅하지 않는다: 잘못된 false로 덮으면 회원이 게스트로 뒤집힌다.
+    void cleanupDone
+      .then(() => isRegisteredForAnalytics())
+      .then((reg) => { if (reg !== null) setUserProps({ user_info_is_registered: reg }); })
+      .catch(() => {});
     const ready = cleanupDone
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
@@ -113,7 +122,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (entryChecked && needsLogin.current) {
       needsLogin.current = false;
-      router.replace('/login' as Href);
+      router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로
     }
   }, [entryChecked, router]);
 
@@ -141,7 +150,7 @@ export default function RootLayout() {
         const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
         void session.logOut().catch(() => {});
       }
-      if (!FLAGS.guestMode) router.replace('/login' as Href);
+      if (!FLAGS.guestMode) router.replace('/login?entry=other' as Href); // P-389: 세션 만료 복귀 — 인트로 아님
     });
     return () => onSessionExpired(null);
   }, [router]);

@@ -187,7 +187,7 @@ it('⑬ 게스트 — 로그인 Redirect(returnTo=/notifications), 알림함 어
   const tree = render();
   const redirects = tree.root.findAll((n) => n.type === 'Redirect');
   expect(redirects.length).toBe(1);
-  expect(redirects[0].props.href).toBe('/login?returnTo=%2Fnotifications');
+  expect(redirects[0].props.href).toBe('/login?returnTo=%2Fnotifications&entry=other');
   expect(byIdPrefix(tree, 'inbox-').length).toBe(0);
   expect(byId(tree, 'skeleton-inbox').length).toBe(0);
   expect(byId(tree, 'query-error-block').length).toBe(0);

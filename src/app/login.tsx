@@ -25,6 +25,7 @@ import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
+import { parseLoginEntry } from '@/lib/auth/loginEntry';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
 import { GAP, TILE, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
@@ -110,7 +111,9 @@ export default function Login() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottom = useBottomInset(); // P-055: 안드 내비바 보정
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const { returnTo, entry: entryParam } = useLocalSearchParams<{ returnTo?: string; entry?: string }>();
+  // P-389(KB-576): 게이트·프로필에서 넘어온 유입 경로. 직접 진입(쿼리 없음) = 'intro'
+  const entry = parseLoginEntry(entryParam);
   // KB-421(Codex #19 P1-4): 소셜 로그인 진행 중 = 게스트 진입 잠금(UX 이중 방어)
   const [authBusy, setAuthBusy] = useState(false);
   const { height: winH } = useWindowDimensions();
@@ -164,6 +167,7 @@ export default function Login() {
       <View style={styles.foot}>
         {/* KB-67: newMember → 온보딩 · onboardingCompleted=false도 온보딩(분기 무변) */}
         <SocialAuthButtons
+          entry={entry}
           onBusyChange={setAuthBusy}
           onSignedIn={(newMember) => {
             void (async () => {

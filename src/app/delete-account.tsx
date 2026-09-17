@@ -73,7 +73,7 @@ export default function DeleteAccount() {
     try {
       if (router.canDismiss()) router.dismissAll();
     } catch { /* 스택 밖 — 무시 */ }
-    router.replace('/login' as Href);
+    router.replace('/login?entry=other' as Href); // P-389: 탈퇴 후 복귀 — 인트로 아님
   }
 
   // P-147 ③: provider drift 진단 — 서버 정본 ≠ Firebase providerData 구성이면 로그
