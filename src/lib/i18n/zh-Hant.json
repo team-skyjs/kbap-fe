@@ -1007,5 +1007,21 @@
     "shareFailed": "無法產生限時動態卡片，請再試一次。",
     "shareStoryHint": "先儲存圖片，再到 Instagram 分享。",
     "sharePhotosFailed": "圖片載入失敗，點擊重試。"
+  },
+  "feedback": {
+    "title": "聯絡我們",
+    "myTitle": "我的意見",
+    "placeholder": "告訴我們發生了什麼，或你希望看到什麼。可以附上照片。",
+    "send": "傳送",
+    "sent": "已收到你的意見，謝謝！",
+    "sendFailed": "傳送失敗，請再試一次。",
+    "rateLimited": "今天傳送的次數較多 — 請明天再試。",
+    "statusOpen": "待處理",
+    "statusAnswered": "已回覆",
+    "statusClosed": "已結案",
+    "emptyTitle": "還沒有意見",
+    "replyCount_other": "{{count}} 則回覆",
+    "notFound": "找不到這則意見。",
+    "teamName": "K-Bap 團隊"
   }
 }

@@ -25,6 +25,7 @@
  * | auth_login_success            | provider (APPLE|GOOGLE), is_new (bool),    |
  * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
+ * | profile_feedback_submit      | has_photos, photo_count                    |
  * | app_tab_view                 | tab (home|food|reviews|community|profile), |
  * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
@@ -84,6 +85,8 @@ export const EVENTS = {
   order_share_view: 'order_share_view',
   order_share_save: 'order_share_save',
   order_share_story: 'order_share_story',
+  // P-394(KB-586): 문의 전송. CSV 등재 예정
+  profile_feedback_submit: 'profile_feedback_submit',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -135,6 +138,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   order_share_view: ['item_count', 'has_place'],
   order_share_save: ['result', 'item_count', 'has_place'], // result: tap|success|denied|error
   order_share_story: ['result', 'item_count', 'has_place'], // result: tap|success|not_installed|error
+  // P-394 🔒: 본문·기기정보·사진 URI 금지 — 사진 유무·개수만(발주 고정).
+  profile_feedback_submit: ['has_photos', 'photo_count'],
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정

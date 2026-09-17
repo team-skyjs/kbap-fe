@@ -1007,5 +1007,21 @@
     "shareFailed": "无法生成故事卡片，请重试。",
     "shareStoryHint": "先保存图片，再到 Instagram 分享。",
     "sharePhotosFailed": "图片加载失败，点击重试。"
+  },
+  "feedback": {
+    "title": "联系我们",
+    "myTitle": "我的反馈",
+    "placeholder": "告诉我们发生了什么，或你希望看到什么。可以附上照片。",
+    "send": "发送",
+    "sent": "已收到你的反馈，谢谢！",
+    "sendFailed": "发送失败，请重试。",
+    "rateLimited": "今天发送的次数较多 — 请明天再试。",
+    "statusOpen": "待处理",
+    "statusAnswered": "已回复",
+    "statusClosed": "已关闭",
+    "emptyTitle": "还没有反馈",
+    "replyCount_other": "{{count}} 条回复",
+    "notFound": "找不到这条反馈。",
+    "teamName": "K-Bap 团队"
   }
 }

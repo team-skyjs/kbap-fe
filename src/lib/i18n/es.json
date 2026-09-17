@@ -1008,5 +1008,22 @@
     "shareFailed": "No se pudo crear la tarjeta de historia. Inténtalo de nuevo.",
     "shareStoryHint": "Guarda la imagen y compártela en Instagram.",
     "sharePhotosFailed": "No se pudieron cargar las fotos. Toca para reintentar."
+  },
+  "feedback": {
+    "title": "Contáctanos",
+    "myTitle": "Mis consultas",
+    "placeholder": "Cuéntanos qué pasó o qué te gustaría ver. Puedes adjuntar fotos.",
+    "send": "Enviar",
+    "sent": "Gracias, recibimos tu mensaje.",
+    "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
+    "rateLimited": "Hoy has enviado bastantes — inténtalo mañana.",
+    "statusOpen": "Abierta",
+    "statusAnswered": "Respondida",
+    "statusClosed": "Cerrada",
+    "emptyTitle": "Aún no tienes consultas",
+    "replyCount_one": "{{count}} respuesta",
+    "replyCount_other": "{{count}} respuestas",
+    "notFound": "Esta consulta no está disponible.",
+    "teamName": "Equipo K-Bap"
   }
 }

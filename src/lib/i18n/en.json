@@ -1006,5 +1006,22 @@
     "shareFailed": "Couldn't create the story card. Try again.",
     "shareStoryHint": "Save the image, then share it on Instagram.",
     "sharePhotosFailed": "Couldn't load the photos. Tap to retry."
+  },
+  "feedback": {
+    "title": "Contact us",
+    "myTitle": "My inquiries",
+    "placeholder": "Tell us what happened, or what you'd like to see. Photos help.",
+    "send": "Send",
+    "sent": "Thanks — we got your message.",
+    "sendFailed": "Couldn't send. Try again.",
+    "rateLimited": "You've sent a lot today — try again tomorrow.",
+    "statusOpen": "Open",
+    "statusAnswered": "Answered",
+    "statusClosed": "Closed",
+    "emptyTitle": "No inquiries yet",
+    "replyCount_one": "{{count}} reply",
+    "replyCount_other": "{{count}} replies",
+    "notFound": "This inquiry isn't available.",
+    "teamName": "K-Bap team"
   }
 }

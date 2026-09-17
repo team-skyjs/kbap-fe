@@ -1007,5 +1007,21 @@
     "shareFailed": "Không tạo được thẻ story. Hãy thử lại.",
     "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram.",
     "sharePhotosFailed": "Không tải được ảnh. Chạm để thử lại."
+  },
+  "feedback": {
+    "title": "Liên hệ",
+    "myTitle": "Liên hệ của tôi",
+    "placeholder": "Hãy cho chúng tôi biết chuyện gì đã xảy ra, hoặc điều bạn mong muốn. Có thể kèm ảnh.",
+    "send": "Gửi",
+    "sent": "Cảm ơn bạn — chúng tôi đã nhận được.",
+    "sendFailed": "Không gửi được. Vui lòng thử lại.",
+    "rateLimited": "Hôm nay bạn đã gửi khá nhiều — hãy thử lại vào ngày mai.",
+    "statusOpen": "Đang chờ",
+    "statusAnswered": "Đã trả lời",
+    "statusClosed": "Đã đóng",
+    "emptyTitle": "Chưa có liên hệ nào",
+    "replyCount_other": "{{count}} trả lời",
+    "notFound": "Không tìm thấy liên hệ này.",
+    "teamName": "Đội ngũ K-Bap"
   }
 }
