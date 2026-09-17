@@ -42,7 +42,10 @@ it('② 프레임·탭 동작 무변 — 비율·gap·패딩 그대로, foodTabH
   expect(FX).toContain('gap: 2,');
   expect(FX).toContain('paddingHorizontal: 12,');
   expect(FX).toContain('testID="home-rail-see-all"');
-  expect(FX).toMatch(/testID="home-rail-see-all"|foodTabHref\(gridTab as GridSegment, riskChip as RiskChipParam/);
+  // 탭 동작은 따로 단언한다 — 위 testID와 OR로 묶으면 앞 가지가 늘 참이라 무의미해진다(Codex #172)
+  expect(FX).toMatch(
+    /onPress=\{\(\) => router\.push\(foodTabHref\(gridTab as GridSegment, riskChip as RiskChipParam, Date\.now\(\)\) as Href\)\}/,
+  );
   // 폭은 렌더 시 cardW 주입 — 고정 width가 새로 박히면 레일 폭 계산이 깨진다
   expect(FX).toMatch(/style=\{\[styles\.seeAllCard, \{ width: cardW \}\]\}/);
 });
