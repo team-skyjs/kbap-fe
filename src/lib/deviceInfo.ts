@@ -29,7 +29,10 @@ const put = (o: DeviceInfo, k: keyof DeviceInfo, v: unknown) => {
 export function collectDeviceInfo(): DeviceInfo {
   const out: DeviceInfo = {};
   put(out, 'os', Platform.OS);
-  put(out, 'osVersion', Platform.Version);
+  // 안드로이드 `Platform.Version`은 **API 레벨**(35)이라 유저가 아는 릴리스(15)와 다르다 —
+  // client.ts의 deviceHeaders가 이미 같은 구분을 한다(Codex #170). iOS는 Version이 곧 릴리스.
+  const androidRelease = (Platform.constants as { Release?: string } | undefined)?.Release;
+  put(out, 'osVersion', Platform.OS === 'android' ? (androidRelease ?? Platform.Version) : Platform.Version);
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Constants = (require('expo-constants') as { default: typeof import('expo-constants').default }).default;
@@ -52,8 +55,7 @@ export function collectDeviceInfo(): DeviceInfo {
   // `expo-device`는 미설치이고, 추가하면 네이티브 모듈이라 지문이 회전해 재빌드가 필요하다
   // (계약상 이 키는 선택이라 생략이 허용된다 — 커맨드 센터 보고).
   // Android는 RN이 Platform.constants.Model을 준다. iOS는 대응 값이 없어 생략.
-  const c = Platform.constants as { Model?: string } | undefined;
-  put(out, 'deviceModel', c?.Model);
+  put(out, 'deviceModel', (Platform.constants as { Model?: string } | undefined)?.Model);
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Localization = require('expo-localization') as typeof import('expo-localization');

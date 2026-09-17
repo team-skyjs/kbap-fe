@@ -47,7 +47,21 @@ export default function MyFeedbackScreen() {
           contentContainerStyle={styles.list}
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) void q.fetchNextPage(); }}
-          ListFooterComponent={q.isFetchingNextPage ? <View style={styles.foot}><Spinner size={18} color={C.ink3} /></View> : null}
+          ListFooterComponent={
+            q.isFetchingNextPage ? (
+              <View style={styles.foot}><Spinner size={18} color={C.ink3} /></View>
+            ) : q.isFetchNextPageError ? (
+              /* 다음 페이지 실패 = 푸터 소형 에러. 기존 페이지가 남아 전체 오류 블록이 안 뜨고
+                 onEndReached는 콘텐츠 길이가 그대로라 다시 안 불린다 — 여기서만 재시도가 가능하다
+                 (Codex #170 P2 · 커뮤니티 피드 feed-next-error와 같은 문법). */
+              <View style={styles.footErr} testID="feedback-next-error">
+                <Text style={styles.footErrText}>{t('states.errorTitle')}</Text>
+                <Pressable style={styles.footRetry} onPress={() => void q.fetchNextPage()} testID="feedback-next-retry">
+                  <Text style={styles.footRetryText}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
             <Pressable
               style={styles.row}
@@ -74,6 +88,11 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
   list: { padding: 20, gap: 12 },
   foot: { paddingVertical: 16, alignItems: 'center' },
+  // 커뮤니티 피드 푸터 에러와 같은 치수(새 값 발명 없음)
+  footErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
+  footErrText: { fontSize: 13, fontWeight: '500', color: C.inkInfo },
+  footRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
+  footRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
   row: { gap: 6, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm },
   rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   date: { fontSize: 12, fontWeight: '400', color: C.ink3 },

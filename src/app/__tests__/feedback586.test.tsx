@@ -219,6 +219,35 @@ it('⑥ 목록 — 상태 칩·답변 수, 빈 상태는 CTA 동반', async () =
   expect(byId(r, 'feedback-empty-cta')).toBeTruthy();
 });
 
+it('⑥ 목록 — 다음 페이지 실패면 푸터에 재시도를 낸다(전체 오류 블록은 안 뜨는 자리)', async () => {
+  const fetchNextPage = jest.fn();
+  mockListState = { ...idleList([ITEM]), isError: true, isFetchNextPageError: true, error: new Error('boom'), fetchNextPage };
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+  expect(byId(r, 'feedback-row-12')).toBeTruthy(); // 받아둔 목록은 그대로 보인다
+  expect(byId(r, 'feedback-next-error')).toBeTruthy();
+  await act(async () => { byId(r, 'feedback-next-retry').props.onPress(); });
+  expect(fetchNextPage).toHaveBeenCalledTimes(1);
+});
+
+it('⑤ deviceInfo — 안드로이드 osVersion은 API 레벨이 아니라 릴리스', () => {
+  // react-native 모듈 전체를 목하면 lazy getter가 전부 평가돼 터진다 — Platform 속성만 갈아끼운다
+  const { Platform } = require('react-native') as typeof import('react-native');
+  const saved = Object.getOwnPropertyDescriptors(Platform);
+  const set = (k: string, v: unknown) => Object.defineProperty(Platform, k, { value: v, configurable: true });
+  try {
+    set('OS', 'android');
+    set('Version', 35);
+    set('constants', { Release: '15', Model: 'Pixel 9' });
+    const { collectDeviceInfo } = jest.requireActual('@/lib/deviceInfo') as typeof import('@/lib/deviceInfo');
+    const info = collectDeviceInfo();
+    expect(info.osVersion).toBe('15'); // API 레벨 35가 아니라 유저가 아는 버전
+    expect(info.deviceModel).toBe('Pixel 9');
+  } finally {
+    for (const k of ['OS', 'Version', 'constants']) Object.defineProperty(Platform, k, saved[k]);
+  }
+});
+
 it('⑥ 상세 — 본문·답변 스레드, 답변자는 "K-Bap team" 고정(어드민 정보 미노출)', async () => {
   let r!: ReactTestRenderer;
   await act(async () => { r = renderer.create(<FeedbackDetailScreen />); });
