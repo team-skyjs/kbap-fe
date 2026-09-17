@@ -16,7 +16,7 @@ import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, radius } from '@/lib/theme';
+import { color as C, primaryTint, radius } from '@/lib/theme';
 import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
@@ -483,7 +483,7 @@ export function FoodExplorer({
             testID="home-rail-see-all"
           >
             <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
-            <IconChevron size={16} color={INK_TITLE} />
+            <IconChevron size={16} color={C.primaryText} />
           </Pressable>
         </ScrollView>
       )}
@@ -556,9 +556,26 @@ const styles = StyleSheet.create({
   rail: { flexGrow: 0 },
   railContent: { paddingHorizontal: 20, gap: 12 },
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
-  // P-339 ①(KB-494): 점선 카드 폐기 — 카드 높이 세로 중앙 텍스트+chevron, 배경·보더 없음
-  seeAllCard: { aspectRatio: 174 / 203, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 12 },
-  seeAllText: { fontSize: 14, fontWeight: '600', color: INK_TITLE }, // P-339 ①
+  // P-339 ①(KB-494) → P-396(KB-590): 레일 끝 더보기가 눈에 안 띈다는 실기 피드백 —
+  // 주황 포인트로 승격. 배경·보더는 DS에 이미 있는 primary 쌍(온보딩 선택 타일과 같은
+  // `primaryTint` + `C.primary` 보더) 그대로, 새 hex 0. 비율·폭·탭 동작은 무변이고
+  // RN 보더는 박스 안쪽이라 카드 크기도 그대로다.
+  seeAllCard: {
+    aspectRatio: 174 / 203,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: 12,
+    backgroundColor: primaryTint,
+    borderWidth: 1,
+    borderColor: C.primary,
+    borderRadius: radius.sm,
+  },
+  // 텍스트·chevron은 `C.primaryText`. 발주는 `C.primary`였지만 그 값은 이 틴트 위에서
+  // 대비 2.61로 AA(4.5)는커녕 비텍스트 3:1도 못 넘는다 — P-284가 "12~14px primary 텍스트는
+  // primaryText"로 이미 정해둔 이유가 이것이고, primaryText는 같은 배경에서 4.91이다.
+  seeAllText: { fontSize: 14, fontWeight: '600', color: C.primaryText },
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
   // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일
