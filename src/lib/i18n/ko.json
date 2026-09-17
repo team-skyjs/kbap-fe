@@ -769,7 +769,9 @@
     "recentEmpty": "최근 스캔이 없어요",
     "safeForYou": "내 기준 '안전' 판정 메뉴",
     "safeForYouSub": "못 먹는 재료 목록을 기준으로 판정했어요. 사장님께 꼭 확인하세요.",
-    "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요."
+    "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요.",
+    "mostReviewed": "리뷰가 많은 음식",
+    "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요."
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",

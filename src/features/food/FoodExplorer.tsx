@@ -61,10 +61,17 @@ export function FoodExplorer({
   srcTag,
   onScroll,
   topPad = 0,
+  mostReviewed = [],
+  mostReviewedLoading = false,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
   guest: boolean;
+  /** P-393(KB-580): 홈 "리뷰 많은 음식" 레일 소스 — 홈 화면이 useHome에서 받아 내린다.
+   *  여기서 직접 조회하지 않는 이유: 음식 탭·검색 등 다른 소비처가 홈 쿼리에 묶이면
+   *  QueryClient 없는 표면까지 끌려간다(실측: 기존 스위트 3개가 깨졌다). 0건 = 섹션 미렌더. */
+  mostReviewed?: FoodCard[];
+  mostReviewedLoading?: boolean;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -502,6 +509,29 @@ export function FoodExplorer({
                 </View>
               ))}
           </View>
+        </>
+      )}
+      {/* P-393(KB-580): 리뷰 많은 음식 — 게스트·회원 공통. safe 구역 다음(게스트는 safe가
+          없으니 자연히 인기 레일 다음). 카드·레일·스켈레톤 전부 기존 것 재사용(새 스타일 0). */}
+      {variant === 'embedded' && mostReviewedLoading && (
+        <View style={styles.railSkel} testID="home-most-reviewed-skel">
+          {[0, 1].map((i) => (
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+          ))}
+        </View>
+      )}
+      {variant === 'embedded' && mostReviewed.length > 0 && (
+        <>
+          <SectionHead label={t('home.mostReviewed')} title={t('home.mostReviewedSub')} testID="home-most-reviewed-head" />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.rail}
+            contentContainerStyle={styles.railContent}
+            testID="home-most-reviewed-rail"
+          >
+            {mostReviewed.map((item) => card(item, { width: cardW }))}
+          </ScrollView>
         </>
       )}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />

@@ -611,7 +611,9 @@
     "recentEmpty": "Chưa có lượt quét gần đây",
     "safeForYou": "Món Safe theo hồ sơ của bạn",
     "safeForYouSub": "Dựa trên danh sách cần tránh của bạn — luôn xác nhận với chủ quán.",
-    "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác."
+    "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác.",
+    "mostReviewed": "Được đánh giá nhiều nhất",
+    "mostReviewedSub": "Món mọi người đang nói tới."
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",

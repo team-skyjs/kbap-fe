@@ -201,7 +201,9 @@ it('⑤⑥ 소스 감사 — 온보딩 ORDER 5스텝(프리셋 포함)·탭 4 �
   for (const name of ['index', 'food', 'community', 'profile']) expect(layout).toContain(`<Tabs.Screen name="${name}" />`);
   expect(fs.readFileSync('src/components/TabBar.tsx', 'utf8')).toContain('scan'); // 탭바 스캔 FAB 진입
   // 탭별 최상위 렌더 컴포넌트(감사표): 홈/음식 = FoodExplorer · Reviews = ReviewFeed · 프로필 = 자체(메뉴 행)
-  expect(fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8')).toContain('<FoodExplorer variant="embedded"');
+  const homeSrc = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
+  expect(homeSrc).toContain('<FoodExplorer'); // P-393: 여러 줄 호출로 바뀜
+  expect(homeSrc).toContain('variant="embedded"');
   expect(fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8')).toContain('variant="screen"');
   expect(fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8')).toContain('return <ReviewFeed />');
   // 버전 1.0.3(프로필 하단 버전 줄 소스) — #162 범프(ITMS-90186) 반영, 범프 시 함께 갱신

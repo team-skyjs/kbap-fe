@@ -611,7 +611,9 @@
     "recentEmpty": "最近のスキャンはありません",
     "safeForYou": "あなた基準のSafeメニュー",
     "safeForYouSub": "回避リストに基づく判定です。お店に必ず確認してください。",
-    "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。"
+    "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。",
+    "mostReviewed": "レビューが多い料理",
+    "mostReviewedSub": "みんながよく話している一品。"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",

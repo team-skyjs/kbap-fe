@@ -116,7 +116,13 @@ export default function Home() {
       <UpdateNudgeBanner />
 
       {/* KB-430 후속 → P-317: 검색·세그먼트·칩 + 가로 레일 = FoodExplorer embedded */}
-      <FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />
+      <FoodExplorer
+        variant="embedded"
+        guest={isGuest}
+        srcTag="home"
+        mostReviewed={home?.mostReviewed ?? []}
+        mostReviewedLoading={isLoading}
+      />
 
       {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
           (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}

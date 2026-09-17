@@ -222,6 +222,8 @@ export interface AvoidedSubstance {
 export interface HomeResponse {
   recent: FoodCard[];
   recommended: FoodCard[];
+  /** P-393(KB-580): 리뷰 많은 음식 — 구 서버·0건 = 빈 배열(섹션 숨김). */
+  mostReviewed: FoodCard[];
   /** LIVE(KB-69) 전용 — false면 개인화 섹션은 가입 유도 UI. mock에선 생략. */
   authenticated?: boolean;
   /** LIVE(KB-69) 전용 — 지역화된 기피 성분명. mock에선 생략(restrictionLabel 폴백). */
