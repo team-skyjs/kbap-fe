@@ -101,11 +101,15 @@ describe('app_tab_view — user_type', () => {
 });
 
 describe('콜드 스타트 Identify', () => {
-  it('app_opened와 같은 effect에서 3값 판정으로 세팅', () => {
+  it('Codex #165 2R: 회원 판정은 재설치 정리(cleanup) **뒤 직렬** — 잔존 Keychain 선읽기 금지', () => {
     const src = read('src/app/_layout.tsx');
     expect(src).toContain('setUserProps({ user_info_is_registered: reg })');
-    const boot = src.slice(src.indexOf('track(EVENTS.app_opened)'), src.indexOf('AppState.addEventListener'));
-    expect(boot).toContain('isRegisteredForAnalytics()'); // 부트 블록 안
+    // cleanupDone 체인 안에 있어야 한다(initSessionFromStorage·푸시 등록과 같은 게이트)
+    const chain = src.slice(src.indexOf('const cleanupDone ='), src.indexOf('}, []);'));
+    expect(chain).toContain('.then(() => isRegisteredForAnalytics())');
+    // app_opened effect에서 병렬로 도는 잔재가 없어야 한다
+    const opened = src.slice(src.indexOf('track(EVENTS.app_opened)'), src.indexOf('AppState.addEventListener'));
+    expect(opened).not.toContain('isRegisteredForAnalytics');
   });
 
   it('Codex #165 P2: 모름이면 세팅 자체를 건너뛴다(잘못된 false로 회원을 뒤집지 않는다)', () => {

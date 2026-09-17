@@ -76,6 +76,14 @@ export default function RootLayout() {
     // KB-421: 세션 스토어 부팅 초기화도 **cleanup 이후 직렬** — 모듈 스코프 선읽기가
     // 삭제 전 Keychain을 읽어 회원으로 선고착하던 레이스(P-205 mina 부활) 봉쇄.
     void cleanupDone.then(() => initSessionFromStorage()).catch(() => {});
+    // P-389(KB-576) + P-205: 콜드 스타트 회원 판정도 **cleanup 뒤 직렬**. 재설치 시 iOS
+    // Keychain에 이전 세션이 남아 있어, 병렬로 읽으면 곧 지워질 그 세션을 보고 '회원'으로
+    // 찍는다 — 고치려던 콜드 스타트 세그먼트가 옛 계정으로 오염된다(Codex #165 2R).
+    // 모름(저장소 오류)이면 세팅하지 않는다: 잘못된 false로 덮으면 회원이 게스트로 뒤집힌다.
+    void cleanupDone
+      .then(() => isRegisteredForAnalytics())
+      .then((reg) => { if (reg !== null) setUserProps({ user_info_is_registered: reg }); })
+      .catch(() => {});
     const ready = cleanupDone
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
@@ -100,12 +108,6 @@ export default function RootLayout() {
       user_info_os_version: String(Platform.Version),
       ...(region ? { user_info_country: region } : {}),
     });
-    // P-389(KB-576): 콜드 스타트에 회원 여부를 세팅한다 — 재설치·기기 교체 직후 첫 세션은
-    // 이 값이 비어 있어 세그먼트가 통째로 빠졌다. 값 전환(게스트 진입·로그인 성공) 지점은 그대로.
-    // **모름(저장소 오류)이면 세팅하지 않는다** — 잘못된 false로 덮으면 회원이 게스트로 뒤집힌다(Codex #165).
-    void isRegisteredForAnalytics()
-      .then((reg) => { if (reg !== null) setUserProps({ user_info_is_registered: reg }); })
-      .catch(() => {});
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') {
         track(EVENTS.app_opened);
