@@ -53,7 +53,17 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: mockRouteId }),
   useSegments: () => [],
   usePathname: () => '/',
+  // 포커스 이펙트: 기본은 마운트 시 포커스(정리 함수 = 이탈). 이탈 시나리오는 테스트에서 직접 호출한다.
+  useFocusEffect: (cb: () => (() => void) | void) => {
+    const R = require('react') as typeof import('react');
+    R.useEffect(() => {
+      const off = cb();
+      mockBlur.fn = typeof off === 'function' ? off : () => {};
+      return typeof off === 'function' ? off : undefined;
+    }, [cb]);
+  },
 }));
+const mockBlur: { fn: () => void } = { fn: () => {} };
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
@@ -182,6 +192,35 @@ it('③ 실패 → back 안 함 · 본문 유지 · 실패 안내(계측도 안 
   expect(mockToast).toHaveBeenCalledWith('feedback.sendFailed', { error: true });
   const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
   expect(input.props.value).toBe('keep me'); // 재시도할 수 있게 본문 보존
+});
+
+// 업로드가 끝나기 전에 유저가 "내 문의"로 넘어가면, 늦게 도착한 성공 콜백의 back()이
+// **그 화면**을 닫아 작성 화면으로 역주행한다(Codex #170 3R).
+it('③ 전송 중 화면을 떠났으면 성공해도 back 하지 않는다(늦은 콜백 역주행 방지)', async () => {
+  let resolve!: (v: unknown) => void;
+  mockSubmit.mockImplementationOnce(() => new Promise((r) => (resolve = r)));
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
+  await act(async () => { input.props.onChangeText('slow'); });
+  let sent!: Promise<unknown>;
+  await act(async () => { sent = byId(r, 'feedback-send').props.onPress(); });
+  await act(async () => { mockBlur.fn(); }); // 유저가 화면을 떠남
+  await act(async () => { resolve({ id: '1' }); await sent; });
+  expect(mockToast).toHaveBeenCalledWith('feedback.sent'); // 안내는 뜬다(루트 호스트)
+  expect(mockBack).not.toHaveBeenCalled(); // 지금 보고 있는 화면을 닫지 않는다
+});
+
+it('④ 갤러리 권한 거부 안내는 카메라 문구(scan.*)를 쓰지 않는다', () => {
+  const compose = read('src/app/profile/feedback/new.tsx');
+  expect(compose).not.toContain("scan.permission");
+  expect(compose).toContain("t('photo.libraryPermTitle')");
+  expect(compose).toContain("t('photo.libraryPermBody')");
+  for (const lang of LANGS) {
+    const photo = JSON.parse(read(`src/lib/i18n/${lang}.json`)).photo;
+    expect(typeof photo.libraryPermTitle).toBe('string');
+    expect(typeof photo.libraryPermBody).toBe('string');
+  }
 });
 
 it('④ 429(FEEDBACK-003) → 일반 실패와 다른 전용 안내', async () => {

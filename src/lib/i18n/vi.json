@@ -915,6 +915,8 @@
     "gallery": "Chọn từ thư viện",
     "permTitle": "Cần quyền truy cập máy ảnh",
     "permBody": "Hãy cho phép truy cập máy ảnh trong Cài đặt để chụp ảnh.",
+    "libraryPermTitle": "Cần quyền truy cập ảnh",
+    "libraryPermBody": "Quyền truy cập ảnh đang tắt. Hãy cho phép trong Cài đặt.",
     "openSettings": "Mở Cài đặt"
   },
   "versionGate": {

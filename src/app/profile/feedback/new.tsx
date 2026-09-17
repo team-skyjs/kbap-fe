@@ -9,13 +9,12 @@
 import * as React from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { Btn, IconCamera, IconClose, SubHeader } from '@/components';
 import { Input } from '@/components/KeyboardDismissBar';
 import { showTopToast } from '@/components/topToastStore';
-import { TopToastHost } from '@/components/TopToast';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { openAppSettings } from '@/lib/openExternal';
 import { EVENTS, track } from '@/lib/analytics';
@@ -30,6 +29,18 @@ export default function FeedbackComposeScreen() {
   const [importing, setImporting] = React.useState(false);
   const submit = useSubmitFeedback();
   const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
+  // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
+  // 도착한 성공 콜백이 router.back()을 부르면 **지금 화면**이 닫힌다(내 문의 → 작성으로
+  // 되돌아가는 역주행). 이 화면이 아직 떠 있을 때만 닫는다(Codex #170).
+  const focused = React.useRef(true);
+  useFocusEffect(
+    React.useCallback(() => {
+      focused.current = true;
+      return () => {
+        focused.current = false;
+      };
+    }, []),
+  );
 
   const pickPhoto = async () => {
     const remaining = FEEDBACK_MAX_PHOTOS - photos.length;
@@ -38,8 +49,9 @@ export default function FeedbackComposeScreen() {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        // 리뷰 작성과 같은 안내 — 앱이 설정을 직접 못 연다
-        Alert.alert(t('scan.permissionTitle'), t('scan.permissionSettingsBody'), [
+        // 사진 라이브러리 권한이다 — 카메라 문구(scan.*)를 쓰면 유저가 엉뚱한 설정을
+        // 바꾸고도 첨부를 못 한다(Codex #170). 권한이 다르면 문구도 달라야 한다.
+        Alert.alert(t('photo.libraryPermTitle'), t('photo.libraryPermBody'), [
           { text: t('common.cancel'), style: 'cancel' },
           { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
         ]);
@@ -66,8 +78,8 @@ export default function FeedbackComposeScreen() {
         await submit.mutateAsync({ content: body.trim(), photoUris: photos });
         // P-387: 성공 응답 뒤에만 완료 — 계측 속성은 개수·유무만(본문·기기정보 금지)
         track(EVENTS.profile_feedback_submit, { has_photos: photos.length > 0, photo_count: photos.length });
-        showTopToast(t('feedback.sent'));
-        router.back();
+        showTopToast(t('feedback.sent')); // 토스트 호스트는 루트에 있어 어느 화면이든 뜬다
+        if (focused.current) router.back();
       } catch (e) {
         // 429(일일 한도)는 전용 안내 — 일반 실패와 구분된다
         const code = (e as { code?: string })?.code;
@@ -127,8 +139,6 @@ export default function FeedbackComposeScreen() {
           {t('feedback.send')}
         </Btn>
       </ScrollView>
-      {/* 실패 안내가 이 화면 위에 뜨도록(P-370 문법) */}
-      <TopToastHost />
     </View>
   );
 }

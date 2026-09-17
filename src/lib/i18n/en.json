@@ -914,6 +914,8 @@
     "gallery": "Choose from gallery",
     "permTitle": "Camera access needed",
     "permBody": "Allow camera access in Settings to take a photo.",
+    "libraryPermTitle": "Photo access needed",
+    "libraryPermBody": "Photo access is turned off. Allow it in Settings to attach a photo.",
     "openSettings": "Open Settings"
   },
   "versionGate": {

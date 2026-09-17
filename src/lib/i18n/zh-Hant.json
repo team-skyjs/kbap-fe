@@ -915,6 +915,8 @@
     "gallery": "從相簿選擇",
     "permTitle": "需要相機權限",
     "permBody": "要拍照，請在設定中允許存取相機。",
+    "libraryPermTitle": "需要相片權限",
+    "libraryPermBody": "相片權限已關閉。請在設定中允許。",
     "openSettings": "開啟設定"
   },
   "versionGate": {

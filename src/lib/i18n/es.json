@@ -916,6 +916,8 @@
     "gallery": "Elegir de la galería",
     "permTitle": "Se necesita acceso a la cámara",
     "permBody": "Permite el acceso a la cámara en Ajustes para tomar una foto.",
+    "libraryPermTitle": "Se necesita acceso a las fotos",
+    "libraryPermBody": "El acceso a las fotos está desactivado. Permítelo en Ajustes.",
     "openSettings": "Abrir Ajustes"
   },
   "versionGate": {
