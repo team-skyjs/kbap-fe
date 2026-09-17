@@ -511,8 +511,9 @@ export function FoodExplorer({
           </View>
         </>
       )}
-      {/* P-393(KB-580): 리뷰 많은 음식 — 게스트·회원 공통. safe 구역 다음(게스트는 safe가
-          없으니 자연히 인기 레일 다음). 카드·레일·스켈레톤 전부 기존 것 재사용(새 스타일 0). */}
+      {/* P-393(KB-580): 리뷰 많은 음식 — 게스트·회원 공통. **Rated safe for you와 같은 UI**
+          (9/18 예진 원문 — 2×2 그리드). safe 구역 다음이고, 게스트는 safe가 없어 자연히
+          인기 레일 다음이 된다. 그리드·셀·카드·스켈레톤 전부 기존 것 재사용(새 스타일 0). */}
       {variant === 'embedded' && mostReviewedLoading && (
         <View style={styles.railSkel} testID="home-most-reviewed-skel">
           {[0, 1].map((i) => (
@@ -523,15 +524,17 @@ export function FoodExplorer({
       {variant === 'embedded' && mostReviewed.length > 0 && (
         <>
           <SectionHead label={t('home.mostReviewed')} title={t('home.mostReviewedSub')} testID="home-most-reviewed-head" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.rail}
-            contentContainerStyle={styles.railContent}
-            testID="home-most-reviewed-rail"
-          >
-            {mostReviewed.map((item) => card(item, { width: cardW }))}
-          </ScrollView>
+          {/* safe 구역과 동일 규칙: 상위 4개·2열, 홀수 마지막 행은 빈 셀로 채워 카드가 늘어나지 않게 */}
+          <View style={styles.safeGrid} testID="home-most-reviewed-grid">
+            {[mostReviewed.slice(0, 2), mostReviewed.slice(2, 4)]
+              .filter((row) => row.length > 0)
+              .map((row, i) => (
+                <View key={i} style={styles.safeGridRow}>
+                  {row.map((item) => card(item, styles.safeGridCell))}
+                  {row.length === 1 && <View style={styles.safeGridCell} testID="home-most-reviewed-filler" />}
+                </View>
+              ))}
+          </View>
         </>
       )}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />

@@ -1,7 +1,8 @@
 /**
  * P-393(KB-580) — 홈 "리뷰 많은 음식" 가로 레일.
  *
- * 게스트·회원 공통. 카드·레일·스켈레톤은 기존 것 재사용(새 스타일 상수 0 — 9/18 예진 규칙).
+ * 게스트·회원 공통. **Rated safe for you와 같은 2×2 그리드**(9/18 예진 원문 — 발주문의 "가로 레일"은
+ * 오기였고 커맨드 센터가 정정). 그리드·셀·카드·스켈레톤 전부 기존 것 재사용(새 스타일 상수 0).
  * 0건·구 서버(필드 부재)면 섹션 자체가 안 뜬다(빈 헤더 금지, P-210).
  */
 import * as React from 'react';
@@ -86,29 +87,42 @@ beforeEach(() => {
   mockInfinite.mockReturnValue({ data: [FOOD('1', 'Kimchi Stew')], isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, fetchNextPage: jest.fn(), isFetchingNextPage: false });
 });
 
-it('홈(embedded) = 레일 렌더 + 헤더 · 카드는 기존 그리드 카드 재사용', () => {
+it('홈(embedded) = 2×2 그리드 + 헤더 · 카드·셀은 safe 구역과 같은 것', () => {
   const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" mostReviewed={[FOOD('9', 'Tteokbokki'), FOOD('10', 'Gimbap')]} />);
   expect(ids(tree, 'home-most-reviewed-head').length).toBeGreaterThanOrEqual(1);
-  expect(ids(tree, 'home-most-reviewed-rail').length).toBe(1);
+  expect(ids(tree, 'home-most-reviewed-grid').length).toBe(1);
   const s = JSON.stringify(tree.toJSON());
   expect(s).toContain('home.mostReviewed');
   expect(s).toContain('Tteokbokki');
   expect(ids(tree, 'home-food-9').length).toBe(1); // FoodGridCard testID 문법 그대로
 });
 
-it('게스트도 같은 레일(회원 전용 아님)', () => {
+it('상위 4개까지만(2×2) — safe 구역과 같은 규칙, 더 보기 없음', () => {
+  const six = ['9', '10', '11', '12', '13', '14'].map((id) => FOOD(id, `F${id}`));
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" mostReviewed={six} />);
+  for (const id of ['9', '10', '11', '12']) expect(ids(tree, `home-food-${id}`).length).toBe(1);
+  for (const id of ['13', '14']) expect(ids(tree, `home-food-${id}`)).toHaveLength(0);
+});
+
+it('홀수(3개) = 마지막 행 빈 셀로 채움(카드가 행 전체로 늘어나지 않게)', () => {
+  const three = ['9', '10', '11'].map((id) => FOOD(id, `F${id}`));
+  const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" mostReviewed={three} />);
+  expect(ids(tree, 'home-most-reviewed-filler').length).toBe(1);
+});
+
+it('게스트도 같은 그리드(회원 전용 아님)', () => {
   const tree = render(<FoodExplorer variant="embedded" guest srcTag="home" mostReviewed={[FOOD('9', 'Tteokbokki')]} />);
-  expect(ids(tree, 'home-most-reviewed-rail').length).toBe(1);
+  expect(ids(tree, 'home-most-reviewed-grid').length).toBe(1);
 });
 
 it('0건·구 서버(필드 부재) = 섹션 통째 숨김(빈 헤더 금지)', () => {
   let tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" mostReviewed={[]} />);
   expect(ids(tree, 'home-most-reviewed-head')).toHaveLength(0);
-  expect(ids(tree, 'home-most-reviewed-rail')).toHaveLength(0);
+  expect(ids(tree, 'home-most-reviewed-grid')).toHaveLength(0);
 
   // 구 서버: 어댑터가 []로 만들지만, prop이 아예 안 와도 죽지 않아야 한다
   tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
-  expect(ids(tree, 'home-most-reviewed-rail')).toHaveLength(0);
+  expect(ids(tree, 'home-most-reviewed-grid')).toHaveLength(0);
 });
 
 it('로딩 = 기존 레일 스켈레톤(새 스타일 0)', () => {
@@ -118,18 +132,20 @@ it('로딩 = 기존 레일 스켈레톤(새 스타일 0)', () => {
 
 it('음식 탭(screen)에는 뜨지 않는다 — 홈 전용 섹션(데이터가 와도)', () => {
   const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="food" mostReviewed={[FOOD('9', 'Tteokbokki')]} />);
-  expect(ids(tree, 'home-most-reviewed-rail')).toHaveLength(0);
+  expect(ids(tree, 'home-most-reviewed-grid')).toHaveLength(0);
 });
 
 describe('소스 잠금', () => {
   const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
-  it('레일·스켈레톤 스타일은 기존 것 재사용(새 상수 0)', () => {
+  it('safe 구역과 **같은 스타일**을 쓴다(전용 상수 신설 0)', () => {
     const src = read('src/features/food/FoodExplorer.tsx');
-    expect(src).toContain('style={styles.rail}');
-    expect(src).toContain('contentContainerStyle={styles.railContent}');
-    expect(src).toContain('style={styles.railSkel}');
-    expect(src).not.toContain('mostReviewedRail:'); // 전용 스타일 신설 금지
+    // 그리드·행·셀 = safeGrid 계열 그대로
+    expect(src.match(/style=\{styles\.safeGrid\}/g)?.length).toBe(2); // safe + mostReviewed
+    expect(src.match(/style=\{styles\.safeGridRow\}/g)?.length).toBe(2);
+    expect(src).toContain('style={styles.railSkel}'); // 로딩은 기존 스켈레톤
+    expect(src).not.toContain('mostReviewedGrid:'); // 전용 스타일 신설 금지
+    expect(src).not.toContain('mostReviewedRail:');
   });
 
   it('어댑터: 필드 부재 = 빈 배열(구 서버 호환)', () => {
