@@ -10,8 +10,12 @@
  */
 import * as fs from 'fs';
 
-const APP = JSON.parse(fs.readFileSync('app.json', 'utf8')) as {
-  expo: { plugins: (string | [string, Record<string, unknown>])[] };
+const RAW = fs.readFileSync('app.json', 'utf8');
+const APP = JSON.parse(RAW) as {
+  expo: {
+    plugins: (string | [string, Record<string, unknown>])[];
+    android: { permissions: string[]; blockedPermissions: string[] };
+  };
 };
 const opts = (name: string): Record<string, unknown> => {
   const p = APP.expo.plugins.find((x) => (Array.isArray(x) ? x[0] : x) === name);
@@ -68,4 +72,19 @@ it('생체 인증을 쓰기 시작하면 FaceID 문구를 되살려야 한다(�
     fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.ts')).map((f) => fs.readFileSync(`${d}/${f}`, 'utf8')) : [],
   );
   expect(src.some((s) => s.includes('requireAuthentication'))).toBe(false);
+});
+
+// 오디오 녹음 코드가 0인데 RECORD_AUDIO가 선언돼 Play 스토어에 '오디오 녹음'으로 노출됐다.
+// ⚠️ app.json의 permissions 배열에서 빼는 것만으로는 **안 사라진다** — 라이브러리
+// AndroidManifest가 직접 선언하므로(prebuild 실측) blockedPermissions로 병합 단계에서
+// tools:node="remove"를 걸어야 한다. 두 경로를 다 잠근다.
+it('Android RECORD_AUDIO — 선언·플러그인·병합 3경로 모두 차단', () => {
+  const and = APP.expo.android;
+  expect(and.permissions).not.toContain('android.permission.RECORD_AUDIO');
+  expect(and.blockedPermissions).toContain('android.permission.RECORD_AUDIO');
+  expect(opts('expo-camera').recordAudioAndroid).toBe(false);
+  expect(and.permissions).toContain('android.permission.CAMERA'); // 카메라는 유지
+  // 기존 차단분(ACTIVITY_RECOGNITION)을 덮어쓰지 않았는지 — 중복 키로 날린 적 있다
+  expect(and.blockedPermissions).toContain('android.permission.ACTIVITY_RECOGNITION');
+  expect(RAW.match(/"blockedPermissions"/g)).toHaveLength(1); // JSON 중복 키 방지
 });
