@@ -242,6 +242,23 @@ it('⑥ 상세 — 캐시에 없고 뒤 페이지가 남았으면 당겨온다(�
   expect(fetchNextPage).toHaveBeenCalled();
 });
 
+// 페이지 요청이 실패해도 마지막 성공 페이지가 hasNextPage=true를 유지한다 —
+// 멈추지 않으면 실패한 요청을 무한 재발행하면서 스켈레톤만 남는다(Codex #170 P2).
+it('⑥ 상세 — 페이지 요청 실패면 재요청을 멈추고 오류 폴백(재시도)을 낸다', async () => {
+  const fetchNextPage = jest.fn();
+  mockListState = {
+    ...idleList([]),
+    hasNextPage: true,
+    isFetchNextPageError: true,
+    error: new Error('boom'),
+    fetchNextPage,
+  };
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackDetailScreen />); });
+  expect(fetchNextPage).not.toHaveBeenCalled();
+  expect(r.root.findAllByProps({ testID: 'query-error-block' }).length + r.root.findAllByProps({ testID: 'error-block' }).length).toBeGreaterThan(0);
+});
+
 /* ---- ⑦ 계측·i18n 화이트리스트 ---- */
 
 it('⑦ 계측 화이트리스트 — has_photos·photo_count만(본문·기기정보 키 0)', () => {
@@ -250,6 +267,19 @@ it('⑦ 계측 화이트리스트 — has_photos·photo_count만(본문·기기�
   const compose = read('src/app/profile/feedback/new.tsx');
   const call = compose.match(/track\(EVENTS\.profile_feedback_submit,\s*\{[^}]*\}/)![0];
   expect(call).not.toMatch(/body|content|deviceInfo|uri/);
+});
+
+it('⑦ 어댑터 격리 — 와이어 파싱은 feedbackAdapter에만(훅에 재유입 금지)', () => {
+  const hook = read('src/lib/data/useFeedback.ts');
+  expect(hook).not.toMatch(/interface \w*Wire\b/); // 와이어 타입 선언 0
+  expect(hook).toContain("from '@/lib/api/feedbackAdapter'");
+  const adapter = read('src/lib/api/feedbackAdapter.ts');
+  expect(adapter).toContain('export function adaptFeedback');
+});
+
+it('⑦ 한국어 카피 — 대시(—) 부연 없이 문장 분리(AGENTS.md 신규 한국어 카피 기준)', () => {
+  const ko = JSON.parse(read('src/lib/i18n/ko.json')).feedback as Record<string, string>;
+  for (const [k, v] of Object.entries(ko)) expect(`${k}:${v}`).not.toContain('—');
 });
 
 it('⑦ i18n — feedback 키 10개 로케일 전수(ko 등 단수형 없는 언어는 _other만)', () => {

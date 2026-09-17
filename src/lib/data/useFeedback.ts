@@ -11,67 +11,15 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { api } from '@/lib/api/client';
 import { uploadImage } from '@/lib/api/scanImage';
 import { collectDeviceInfo } from '@/lib/deviceInfo';
+// 와이어 변환은 어댑터 층에만 둔다(AGENTS.md 어댑터 격리 — Codex #170)
+import { adaptFeedbackPage, type FeedbackPageWire } from '@/lib/api/feedbackAdapter';
+
+export type { FeedbackItem, FeedbackReply, FeedbackStatus } from '@/lib/api/feedbackAdapter';
+export { adaptFeedback } from '@/lib/api/feedbackAdapter';
 
 export const FEEDBACK_IMAGE_PURPOSE = 'FEEDBACK';
 export const FEEDBACK_MAX_PHOTOS = 3;
 export const FEEDBACK_MAX_LEN = 2000;
-
-export type FeedbackStatus = 'OPEN' | 'ANSWERED' | 'CLOSED';
-
-export interface FeedbackReply {
-  id: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface FeedbackItem {
-  id: string;
-  content: string;
-  imageUrls: string[];
-  status: FeedbackStatus;
-  createdAt: string;
-  replies: FeedbackReply[];
-}
-
-interface ReplyWire {
-  id?: number | string;
-  content?: string | null;
-  createdAt?: string | null;
-}
-
-interface FeedbackWire {
-  id?: number | string;
-  content?: string | null;
-  imageUrls?: (string | null)[] | null;
-  status?: string | null;
-  createdAt?: string | null;
-  replies?: ReplyWire[] | null;
-}
-
-interface FeedbackPageWire {
-  items?: FeedbackWire[] | null;
-  nextCursor?: string | null;
-}
-
-const STATUSES: FeedbackStatus[] = ['OPEN', 'ANSWERED', 'CLOSED'];
-
-/** 서버 상태 문자열 → enum. 모르는 값은 OPEN 취급(칩이 비지 않게 — 목록은 계속 읽힌다). */
-function adaptStatus(raw: string | null | undefined): FeedbackStatus {
-  return STATUSES.includes(raw as FeedbackStatus) ? (raw as FeedbackStatus) : 'OPEN';
-}
-
-export function adaptFeedback(w: FeedbackWire): FeedbackItem {
-  return {
-    id: String(w.id ?? ''),
-    content: w.content ?? '',
-    imageUrls: (w.imageUrls ?? []).filter((u): u is string => !!u && /^https?:\/\//.test(u)),
-    status: adaptStatus(w.status),
-    createdAt: w.createdAt ?? '',
-    replies: (w.replies ?? [])
-      .filter((r): r is ReplyWire => !!r)
-      .map((r) => ({ id: String(r.id ?? ''), content: r.content ?? '', createdAt: r.createdAt ?? '' })),
-  };
-}
 
 /** 문의 전송 — 사진은 먼저 업로드해 path로 바꾼 뒤 한 번에 보낸다. */
 export async function submitFeedback(input: { content: string; photoUris: string[] }): Promise<{ id: string }> {
@@ -106,7 +54,7 @@ export function useMyFeedbacks(enabled = true) {
     queryFn: async ({ pageParam }) => {
       const q = pageParam ? `?cursor=${encodeURIComponent(pageParam)}&size=20` : '?size=20';
       const wire = await api.get<FeedbackPageWire>(`/api/feedbacks/me${q}`);
-      return { items: (wire.items ?? []).map(adaptFeedback), nextCursor: wire.nextCursor ?? null };
+      return adaptFeedbackPage(wire);
     },
     getNextPageParam: (last) => last.nextCursor,
     select: (data) => ({ ...data, flat: data.pages.flatMap((p) => p.items) }),

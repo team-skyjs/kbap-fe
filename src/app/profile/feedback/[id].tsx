@@ -31,19 +31,24 @@ export default function FeedbackDetailScreen() {
   const item = q.data?.flat.find((f) => f.id === id);
 
   // 캐시에 없고 뒤 페이지가 남았으면 당겨본다 — 다 훑어도 없으면 아래 "없음" 분기.
+  // ⚠️ 페이지 요청이 실패해도 마지막 성공 페이지가 hasNextPage=true를 유지한다 —
+  // 그대로 두면 이 이펙트가 실패한 요청을 무한 재발행하고 스켈레톤이 영원히 남는다(Codex #170).
+  // `isFetchNextPageError`가 서면 멈추고 아래 오류 폴백(재시도 버튼)으로 넘긴다.
+  const pageFailed = q.isFetchNextPageError;
   React.useEffect(() => {
-    if (!item && q.hasNextPage && !q.isFetchingNextPage) void q.fetchNextPage();
-  }, [item, q.hasNextPage, q.isFetchingNextPage, q]);
+    if (!item && q.hasNextPage && !q.isFetchingNextPage && !pageFailed) void q.fetchNextPage();
+  }, [item, q.hasNextPage, q.isFetchingNextPage, pageFailed, q]);
 
-  const searching = q.isLoading || (!item && (q.hasNextPage || q.isFetchingNextPage));
+  const searching = !pageFailed && (q.isLoading || (!item && (q.hasNextPage || q.isFetchingNextPage)));
 
   return (
     <View style={styles.root}>
       <SubHeader title={t('feedback.myTitle')} onBack={() => router.back()} />
       {searching ? (
         <SkeletonList />
-      ) : q.isError && !item ? (
+      ) : (q.isError || pageFailed) && !item ? (
         <ScreenCenterFill>
+          {/* refetch는 기존 페이지를 다시 받아 실패 상태를 풀어준다 — 그러면 위 이펙트가 이어서 탐색 */}
           <QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} />
         </ScreenCenterFill>
       ) : !item ? (

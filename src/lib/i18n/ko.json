@@ -1015,7 +1015,7 @@
     "send": "보내기",
     "sent": "문의를 보냈어요. 고마워요!",
     "sendFailed": "보내지 못했어요. 다시 시도해 주세요.",
-    "rateLimited": "오늘 문의를 많이 보내셨어요 — 내일 다시 시도해 주세요.",
+    "rateLimited": "오늘 문의를 많이 보내셨어요. 내일 다시 시도해 주세요.",
     "statusOpen": "접수됨",
     "statusAnswered": "답변 완료",
     "statusClosed": "종료",
