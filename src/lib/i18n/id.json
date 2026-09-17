@@ -1015,7 +1015,7 @@
     "send": "Kirim",
     "sent": "Terima kasih — pesanmu sudah kami terima.",
     "sendFailed": "Gagal mengirim. Coba lagi.",
-    "rateLimited": "Hari ini kamu sudah mengirim banyak — coba lagi besok.",
+    "rateLimited": "Kamu sudah mengirim banyak dalam 24 jam terakhir. Coba lagi nanti.",
     "statusOpen": "Terbuka",
     "statusAnswered": "Dijawab",
     "statusClosed": "Ditutup",

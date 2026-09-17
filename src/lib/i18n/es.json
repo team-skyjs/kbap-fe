@@ -1016,7 +1016,7 @@
     "send": "Enviar",
     "sent": "Gracias, recibimos tu mensaje.",
     "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
-    "rateLimited": "Hoy has enviado bastantes — inténtalo mañana.",
+    "rateLimited": "Has enviado bastantes en las últimas 24 horas. Inténtalo más tarde.",
     "statusOpen": "Abierta",
     "statusAnswered": "Respondida",
     "statusClosed": "Cerrada",

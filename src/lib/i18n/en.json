@@ -1014,7 +1014,7 @@
     "send": "Send",
     "sent": "Thanks — we got your message.",
     "sendFailed": "Couldn't send. Try again.",
-    "rateLimited": "You've sent a lot today — try again tomorrow.",
+    "rateLimited": "You've sent a lot in the last 24 hours. Try again later.",
     "statusOpen": "Open",
     "statusAnswered": "Answered",
     "statusClosed": "Closed",

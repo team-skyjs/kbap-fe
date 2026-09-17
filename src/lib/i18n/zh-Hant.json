@@ -1015,7 +1015,7 @@
     "send": "傳送",
     "sent": "已收到你的意見，謝謝！",
     "sendFailed": "傳送失敗，請再試一次。",
-    "rateLimited": "今天傳送的次數較多 — 請明天再試。",
+    "rateLimited": "過去 24 小時內傳送次數較多，請稍後再試。",
     "statusOpen": "待處理",
     "statusAnswered": "已回覆",
     "statusClosed": "已結案",

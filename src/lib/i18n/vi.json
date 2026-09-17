@@ -1015,7 +1015,7 @@
     "send": "Gửi",
     "sent": "Cảm ơn bạn — chúng tôi đã nhận được.",
     "sendFailed": "Không gửi được. Vui lòng thử lại.",
-    "rateLimited": "Hôm nay bạn đã gửi khá nhiều — hãy thử lại vào ngày mai.",
+    "rateLimited": "Bạn đã gửi khá nhiều trong 24 giờ qua. Vui lòng thử lại sau.",
     "statusOpen": "Đang chờ",
     "statusAnswered": "Đã trả lời",
     "statusClosed": "Đã đóng",

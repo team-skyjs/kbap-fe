@@ -1015,7 +1015,7 @@
     "send": "发送",
     "sent": "已收到你的反馈，谢谢！",
     "sendFailed": "发送失败，请重试。",
-    "rateLimited": "今天发送的次数较多 — 请明天再试。",
+    "rateLimited": "过去 24 小时内发送次数较多，请稍后再试。",
     "statusOpen": "待处理",
     "statusAnswered": "已回复",
     "statusClosed": "已关闭",
