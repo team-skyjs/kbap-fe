@@ -10,6 +10,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
+import { ExpandToggle } from '@/components/ExpandToggle';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { Btn, CardPhoto, IconClose, IconMapPin, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
 import Animated from 'react-native-reanimated';
@@ -49,10 +50,9 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
       >
         {body}
       </Text>
+      {/* P-390(KB-578): 좌측 작은 텍스트 → 공용 ExpandToggle(우측·44px·chevron) */}
       {(clamped || expanded) && (
-        <Pressable hitSlop={8} onPress={() => setExpanded((v) => !v)} testID="body-toggle">
-          <Text style={styles.toggle}>{expanded ? t('reviews.seeLess') : t('reviews.seeMore')}</Text>
-        </Pressable>
+        <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} testID="body-toggle" />
       )}
     </View>
   );
@@ -446,7 +446,6 @@ export function HelpfulButton({
 
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
-  toggle: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.primaryText },
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)

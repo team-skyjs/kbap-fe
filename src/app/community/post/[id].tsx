@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
+import { ExpandToggle } from '@/components/ExpandToggle';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -323,12 +324,16 @@ function CommentBlock({
     <View style={styles.commentBlock}>
       <CommentRow c={top} t={t} onReact={onReact} onReply={() => onReply(top, top)} onMore={onMore} />
       {replies.length > 0 && (
-        /* 접기 컨트롤 — 블록 최상단 고정 (확장자 아래가 아니라) */
-        <Pressable hitSlop={6} style={styles.repliesToggle} onPress={() => setExpanded((v) => !v)}>
-          <Text style={styles.repliesToggleText}>
-            {expanded ? t('community.hideReplies') : t('community.viewReplies', { count: replies.length })}
-          </Text>
-        </Pressable>
+        /* 접기 컨트롤 — 블록 최상단 고정(확장자 아래가 아니라).
+           P-390(KB-578): 앱 공용 ExpandToggle로 교체 — 라벨은 이 표면 문구 유지.
+           ⚠️ 우측 정렬·chevron·44px는 공용 문법이라 **이 줄의 외형이 바뀐다**(구 좌측 들여쓰기 35). */
+        <ExpandToggle
+          expanded={expanded}
+          onPress={() => setExpanded((v) => !v)}
+          labelExpanded={t('community.hideReplies')}
+          labelCollapsed={t('community.viewReplies', { count: replies.length })}
+          testID="replies-toggle"
+        />
       )}
       {expanded &&
         replies.map((r) => (
@@ -392,8 +397,6 @@ const styles = StyleSheet.create({
   mention: { fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText },
   commentActions: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingLeft: 35 },
   replyLink: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.ink2 },
-  repliesToggle: { paddingLeft: 35 },
-  repliesToggleText: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.accent },
   replyIndent: { paddingLeft: 35 },
 
   // P-100: 고스트 스켈레톤 — 정적(애니 없음), 판독 불가
