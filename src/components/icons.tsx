@@ -21,7 +21,16 @@ import * as React from 'react';
 import Svg, { Circle, G, Line, Path, Rect, type SvgProps } from 'react-native-svg';
 // 9/5 시안 원본 SVG(.fig 디코드 — 형태·치수 무수정): 시안 실존 아이콘은 D4 경로로 위임
 import { D4Camera, D4Check, D4ChevronDown, D4ChevronLeft, D4ChevronRight, D4Close, D4Download, D4FilePen, D4ForkKnife, D4Lock, D4MapPin, D4MoreVertical, D4OctagonAlert, D4Plus, D4Search, D4ThumbsUp } from './design4Assets';
+import { View } from 'react-native';
 import { color as C } from '@/lib/theme';
+
+/**
+ * P-391(KB-582): D4 에셋 컴포넌트는 `style`을 받지 않는다 — 래퍼가 그대로 넘기면
+ * **조용히 버려진다**. 실제로 백버튼 5곳이 `transform: rotate(180deg)`를 주고도
+ * 오른쪽 chevron 그대로 렌더되고 있었다(예진 실기). style이 오면 래퍼 View가 적용한다.
+ */
+const styled = (node: React.ReactElement, style?: IconProps['style']) =>
+  style ? <View style={style as never}>{node}</View> : node;
 
 export type IconProps = {
   size?: number;
@@ -59,8 +68,8 @@ export const IconHome = (p: IconProps) => (
     <Path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
   </Glyph>
 );
-export const IconFood = (p: IconProps) => <D4ForkKnife size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
-export const IconCamera = (p: IconProps) => <D4Camera size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconFood = (p: IconProps) => styled(<D4ForkKnife size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+export const IconCamera = (p: IconProps) => styled(<D4Camera size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconCommunity = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -75,7 +84,7 @@ export const IconProfile = (p: IconProps) => (
     <Circle cx="12" cy="7" r="4" />
   </Glyph>
 );
-export const IconSearch = (p: IconProps) => <D4Search size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconSearch = (p: IconProps) => styled(<D4Search size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 /** P-138: 주문 카드 풀스크린 확대 — 네 모서리 확장(돋보기 아님, 시안 S2) */
 export const IconExpand = (p: IconProps) => (
   <Glyph {...p}>
@@ -85,10 +94,10 @@ export const IconExpand = (p: IconProps) => (
     <Path d="M3 21l7-7" />
   </Glyph>
 );
-export const IconChevron = (p: IconProps) => <D4ChevronRight size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
-export const IconDownload = (p: IconProps) => <D4Download size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
-export const IconChevronDown = (p: IconProps) => <D4ChevronDown size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
-export const IconArrowLeft = (p: IconProps) => <D4ChevronLeft size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconChevron = (p: IconProps) => styled(<D4ChevronRight size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+export const IconDownload = (p: IconProps) => styled(<D4Download size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+export const IconChevronDown = (p: IconProps) => styled(<D4ChevronDown size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+export const IconArrowLeft = (p: IconProps) => styled(<D4ChevronLeft size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconLogout = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="m16 17 5-5-5-5" />
@@ -96,14 +105,14 @@ export const IconLogout = (p: IconProps) => (
     <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
   </Glyph>
 );
-export const IconClose = (p: IconProps) => <D4Close size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
-export const IconPlus = (p: IconProps) => <D4Plus size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconClose = (p: IconProps) => styled(<D4Close size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+export const IconPlus = (p: IconProps) => styled(<D4Plus size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconMinus = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M5 12h14" />
   </Glyph>
 );
-export const IconLock = (p: IconProps) => <D4Lock size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconLock = (p: IconProps) => styled(<D4Lock size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconRetry = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
@@ -121,7 +130,7 @@ export const IconWifiOff = (p: IconProps) => (
     <Path d="m2 2 20 20" />
   </Glyph>
 );
-export const IconAlertTri = (p: IconProps) => <D4OctagonAlert size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconAlertTri = (p: IconProps) => styled(<D4OctagonAlert size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconBubbleEmpty = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
@@ -155,7 +164,7 @@ export const IconScanLines = (p: IconProps) => (
     <Path d="M7 16h6" />
   </Glyph>
 );
-export const IconCheck = (p: IconProps) => <D4Check size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconCheck = (p: IconProps) => styled(<D4Check size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconSpeech = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
@@ -185,7 +194,7 @@ export const IconTrash = (p: IconProps) => (
     <Path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </Glyph>
 );
-export const IconEdit = (p: IconProps) => <D4FilePen size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconEdit = (p: IconProps) => styled(<D4FilePen size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 export const IconList = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M3 5h.01" />
@@ -212,7 +221,7 @@ export const IconGlobe = (p: IconProps) => (
 );
 
 // lucide: thumbs-up
-export const IconThumbsUp = (p: IconProps) => <D4ThumbsUp size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconThumbsUp = (p: IconProps) => styled(<D4ThumbsUp size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 // lucide: thumbs-down
 export const IconThumbsDown = (p: IconProps) => (
   <Glyph {...p}>
@@ -221,9 +230,9 @@ export const IconThumbsDown = (p: IconProps) => (
   </Glyph>
 );
 // lucide: ellipsis
-export const IconMore = (p: IconProps) => <D4MoreVertical size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconMore = (p: IconProps) => styled(<D4MoreVertical size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 // lucide: map-pin
-export const IconMapPin = (p: IconProps) => <D4MapPin size={p.size ?? 24} color={p.color ?? '#1C1E21'} />;
+export const IconMapPin = (p: IconProps) => styled(<D4MapPin size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
 // lucide: zap — P-202 리뷰 3축(속도)
 export const IconZap = (p: IconProps) => (
   <Glyph {...p}>

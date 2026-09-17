@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
-import { IconChevron } from '@/components';
+import { IconChevron, IconArrowLeft } from '@/components';
 import { useMe } from '@/lib/data/useMe';
 import { resolveCurrency } from '@/lib/exchange';
 import { ingredientLabel } from '@/lib/mocks/ingredients';
@@ -66,7 +66,7 @@ export default function ScanOrder() {
     <View style={[styles.root, { paddingTop: insets.top + 6, paddingBottom: bottom + 18 }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={10} style={styles.back} testID="order-back">
-          <IconChevron size={18} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconArrowLeft size={18} color={C.ink2} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{t('order.title')}</Text>

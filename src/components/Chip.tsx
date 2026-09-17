@@ -7,7 +7,7 @@
 import * as React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { Txt as Text } from './Txt';
-import { color as C, radius } from '@/lib/theme';
+import { color as C, radius, riskTone, type RiskState } from '@/lib/theme';
 
 const INK_ACTIVE = '#2F3137'; // 시안 gray-900(발주 표 외 명시값)
 
@@ -16,15 +16,21 @@ export function Chip({
   selected = false,
   onPress,
   testID,
+  risk,
 }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
   testID?: string;
+  /** P-391(KB-582): 위험도 필터 칩 — 선택 시 **RiskMark와 같은 토큰**으로 칠한다(예진 실기: 색이 달랐다). */
+  risk?: RiskState;
 }) {
+  // 선택 = 해당 상태 원색 bg + 흰 글자(마크·배지와 같은 fg 토큰) · 비선택 = 기존 중립.
+  // 하드코딩 hex 금지 — riskTone[risk].fg는 RiskMark의 RISK[state].color와 같은 값이다.
+  const onBg = risk ? riskTone[risk].fg : INK_ACTIVE;
   return (
     <Pressable
-      style={[styles.chip, selected ? styles.on : styles.off]}
+      style={[styles.chip, selected ? { backgroundColor: onBg, borderColor: onBg } : styles.off]}
       onPress={onPress}
       testID={testID}
       hitSlop={4}

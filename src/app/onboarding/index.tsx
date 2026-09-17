@@ -41,8 +41,7 @@ import {
   IconLock,
   IconSearch,
   Input,
-  RiskMark,
-} from '@/components';
+  RiskMark, IconArrowLeft } from '@/components';
 import { PepperOn, PepperOff } from '@/components/design4Assets';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
@@ -333,7 +332,7 @@ export default function Onboarding() {
         <View style={[styles.body, { flex: 1 }]}>
           <View style={styles.miniHeader}>
             <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
-              <IconChevron size={24} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+              <IconArrowLeft size={24} color={C.ink2} />
             </Pressable>
           </View>
           <Nationality selected={nationality} onSelect={setNationality} t={t} />
@@ -349,7 +348,7 @@ export default function Onboarding() {
         {/* P-130: 단계 프로그레스 바 소멸(v3) — 백 버튼만 남긴 미니 헤더 */}
         <View style={styles.miniHeader}>
           <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
-            <IconChevron size={24} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconArrowLeft size={24} color={C.ink2} />
           </Pressable>
         </View>
 

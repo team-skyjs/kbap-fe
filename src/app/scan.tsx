@@ -29,7 +29,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
@@ -640,7 +640,7 @@ export default function Scan() {
         {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
-            <IconChevron size={24} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconArrowLeft size={24} color={C.ink} />
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
           {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}
