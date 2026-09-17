@@ -22,7 +22,18 @@ jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', 
 import { Chip } from '../Chip';
 import { RISK, RiskMark } from '../RiskMark';
 import { IconChevron, IconArrowLeft } from '../icons';
-import { riskTone, type RiskState } from '@/lib/theme';
+import { riskTone, riskTextStrong, type RiskState } from '@/lib/theme';
+
+/** WCAG 상대 휘도 대비 — 눈대중 대신 계산해서 잠근다(Codex #167 2R: 흰 글자 대비 1.97~2.99였다). */
+const lum = (hex: string) => {
+  const v = hex.replace('#', '');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(v.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a: string, b: string) => {
+  const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+  return (x + 0.05) / (y + 0.05);
+};
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 const flat = (s: unknown) => Object.assign({}, ...[s].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
@@ -35,11 +46,17 @@ const hostStyle = (t: ReactTestRenderer, id: string) =>
   flat(t.root.findAll((n) => typeof n.type === 'string' && n.props?.testID === id)[0].props.style);
 
 describe('위험도 칩 색 = 마크 색', () => {
-  it.each(['safe', 'caution', 'danger'] as RiskState[])('선택된 %s 칩 배경 = RiskMark와 같은 토큰', (risk) => {
+  it.each(['safe', 'caution', 'danger'] as RiskState[])('선택된 %s 칩 = 틴트 배경 + 상태 원색 보더(마크와 같은 토큰)', (risk) => {
     const st = hostStyle(render(<Chip label="x" selected risk={risk} testID="c" />), 'c');
-    expect(st.backgroundColor).toBe(RISK[risk].color); // 마크·배지와 같은 값
-    expect(st.backgroundColor).toBe(riskTone[risk].fg); // 토큰 경유(하드코딩 아님)
-    expect(st.borderColor).toBe(st.backgroundColor); // 프레임 불변(P-151) — 보더 폭 유지
+    expect(st.backgroundColor).toBe(riskTone[risk].bg); // 틴트(대비 확보용)
+    expect(st.borderColor).toBe(RISK[risk].color); // 보더 = 마크·배지와 같은 원색
+    expect(st.borderColor).toBe(riskTone[risk].fg); // 토큰 경유(하드코딩 아님)
+  });
+
+  it.each(['safe', 'caution', 'danger'] as RiskState[])('선택된 %s 칩 라벨 대비 ≥ 4.5 (WCAG AA)', (risk) => {
+    // 원색 배경 + 흰 글자였을 때 1.97~2.99였다 — 그 조합으로 되돌아가면 이 테스트가 잡는다
+    expect(contrast(riskTextStrong[risk], riskTone[risk].bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast('#FFFFFF', riskTone[risk].fg)).toBeLessThan(4.5); // 구 조합이 왜 안 되는지 고정
   });
 
   it('비선택은 기존 중립 · all(risk 미지정)은 종전 그대로', () => {

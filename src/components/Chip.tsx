@@ -8,7 +8,7 @@ import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from './Txt';
 import { RiskMark } from './RiskMark';
-import { color as C, radius, riskTone, type RiskState } from '@/lib/theme';
+import { color as C, radius, riskTone, riskTextStrong, type RiskState } from '@/lib/theme';
 
 const INK_ACTIVE = '#2F3137'; // 시안 gray-900(발주 표 외 명시값)
 
@@ -26,12 +26,16 @@ export function Chip({
   /** P-391(KB-582): 위험도 필터 칩 — 선택 시 **RiskMark와 같은 토큰**으로 칠한다(예진 실기: 색이 달랐다). */
   risk?: RiskState;
 }) {
-  // 선택 = 해당 상태 원색 bg + 흰 글자(마크·배지와 같은 fg 토큰) · 비선택 = 기존 중립.
-  // 하드코딩 hex 금지 — riskTone[risk].fg는 RiskMark의 RISK[state].color와 같은 값이다.
-  const onBg = risk ? riskTone[risk].fg : INK_ACTIVE;
+  // 선택 = **틴트 배경 + 대비 보정 텍스트**(P-284 토큰). 원색 배경 + 흰 글자는 대비가
+  // 2.0~3.0에 그친다(caution 노랑 1.97) — 형태 단서를 넣어도 읽히지 않으면 소용없다(Codex #167 2R).
+  // riskTone[].bg / riskTextStrong[]이 바로 이 조합(틴트 위 4.5+)을 위해 있는 토큰이다.
+  // 보더는 상태 원색(RiskMark와 같은 값) — 칩 경계에서 상태색이 그대로 읽힌다.
+  const onBg = risk ? riskTone[risk].bg : INK_ACTIVE;
+  const onFg = risk ? riskTextStrong[risk] : '#FFFFFF';
+  const onBorder = risk ? riskTone[risk].fg : INK_ACTIVE;
   return (
     <Pressable
-      style={[styles.chip, risk ? styles.chipRisk : null, selected ? { backgroundColor: onBg, borderColor: onBg } : styles.off]}
+      style={[styles.chip, risk ? styles.chipRisk : null, selected ? { backgroundColor: onBg, borderColor: onBorder } : styles.off]}
       onPress={onPress}
       testID={testID}
       hitSlop={4}
@@ -45,7 +49,7 @@ export function Chip({
           <RiskMark state={risk} size={14} />
         </View>
       )}
-      <Text style={[styles.label, { color: selected ? '#FFFFFF' : INK_ACTIVE }]}>{label}</Text>
+      <Text style={[styles.label, { color: selected ? onFg : INK_ACTIVE }]}>{label}</Text>
     </Pressable>
   );
 }
