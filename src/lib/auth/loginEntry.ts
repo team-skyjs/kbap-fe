@@ -29,9 +29,15 @@ export const LOGIN_ENTRIES: readonly LoginEntry[] = [
   'other',
 ];
 
-/** 쿼리 문자열 → entry. 모르는 값 = 'other'(스키마 밖 값이 대시보드에 새는 것 방지), 부재 = 'intro'(직접 진입). */
+/**
+ * 쿼리 문자열 → entry. 스키마 밖 값·**부재 모두 'other'**.
+ *
+ * ⚠️ 부재를 'intro'로 접지 않는다(Codex #165): `/login`은 첫 진입 말고도 세션 만료·홈
+ * 게스트 CTA·알림함 리다이렉트·탈퇴 후 복귀에서 열린다. 부재를 intro로 세면 그 전부가
+ * 인트로 가입으로 잡혀 유입 경로가 통째로 오염된다. **intro는 호출측이 명시할 때만.**
+ */
 export function parseLoginEntry(raw: string | string[] | undefined): LoginEntry {
   const v = Array.isArray(raw) ? raw[0] : raw;
-  if (!v) return 'intro';
+  if (!v) return 'other';
   return (LOGIN_ENTRIES as readonly string[]).includes(v) ? (v as LoginEntry) : 'other';
 }

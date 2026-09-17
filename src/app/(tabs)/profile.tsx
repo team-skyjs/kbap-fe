@@ -105,7 +105,7 @@ export default function Profile() {
       }
       // ⑪-2: 로그아웃 후 로그인 화면 강제 대신 홈 — 게스트로 계속 둘러보기
       // (세션만료 처리와 동일 정책, guestMode OFF일 때만 /login).
-      router.replace((FLAGS.guestMode ? '/(tabs)' : '/login') as Href);
+      router.replace((FLAGS.guestMode ? '/(tabs)' : '/login?entry=other') as Href); // P-389: 로그아웃 후 복귀 — 인트로 아님
     } finally {
       setLoggingOut(false);
     }

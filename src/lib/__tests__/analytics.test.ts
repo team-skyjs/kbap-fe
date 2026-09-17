@@ -121,18 +121,16 @@ it('P-389: auth_login_success = provider·is_new·entry · app_tab_view = tab·u
     .toEqual({ provider: 'APPLE' });
 });
 
-it('P-389: CSV 값 목록과 코드 entry 열거가 어긋나지 않는다', () => {
-  const fs = require('fs') as typeof import('fs');
-  const csv = fs.readFileSync('../spec/specs/001-personalized-menu-mvp/amplitude-taxonomy.csv', 'utf8') as string;
-  const row = csv.split('\n').find((l) => l.startsWith('event,auth_login_success,'));
-  expect(row).toBeTruthy();
+it('P-389: entry 값 열거 = CSV 전사본과 1:1 (스키마 밖 값·부재는 other)', () => {
+  // ⚠️ CSV는 **spec 레포**에 있다 — 파일을 직접 읽으면 FE만 체크아웃하는 CI에서 ENOENT로
+  // 전 PR이 깨진다(Codex #165 P1). P-144 전사 잠금과 같은 방식으로 값을 여기 옮겨 적는다:
+  // amplitude-taxonomy.csv `auth_login_success.entry` 열과 이 배열이 **함께 움직여야** 한다.
+  const CSV_ENTRY_VALUES = ['intro', 'gate_bookmark', 'gate_review', 'gate_scan', 'gate_community', 'gate_risk', 'gate_profile', 'profile', 'other'];
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { parseLoginEntry } = require('@/lib/auth/loginEntry') as typeof import('@/lib/auth/loginEntry');
-  for (const v of ['intro', 'gate_bookmark', 'gate_review', 'gate_scan', 'gate_community', 'gate_risk', 'gate_profile', 'profile', 'other']) {
-    expect(row).toContain(v); // CSV 값 목록에 존재
-    expect(parseLoginEntry(v)).toBe(v); // 코드가 그대로 통과
-  }
-  expect(parseLoginEntry(undefined)).toBe('intro'); // 직접 진입
+  const { parseLoginEntry, LOGIN_ENTRIES } = require('@/lib/auth/loginEntry') as typeof import('@/lib/auth/loginEntry');
+  expect([...LOGIN_ENTRIES]).toEqual(CSV_ENTRY_VALUES);
+  for (const v of CSV_ENTRY_VALUES) expect(parseLoginEntry(v)).toBe(v);
+  expect(parseLoginEntry(undefined)).toBe('other'); // 부재 = 알 수 없음(인트로로 접지 않는다)
   expect(parseLoginEntry('gate_unknown')).toBe('other'); // 스키마 밖 값이 대시보드로 새지 않는다
 });
 

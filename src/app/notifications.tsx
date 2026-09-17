@@ -33,7 +33,7 @@ export default function Notifications() {
   if (!FLAGS.notificationCenter) return <Redirect href="/" />;
   // KB-499 clarify Q5 — 게스트 = 로그인 직행(시트 없음). Redirect = replace라 로그인 화면의 뒤로 = 종 아이콘 탭.
   // 라우트 가드 1곳(헤더 3곳 onBell 무변·딥링크 방어). 로그인 완료 시 returnTo로 여기 복귀.
-  if (isGuest) return <Redirect href={`/login?returnTo=${encodeURIComponent('/notifications')}` as Href} />;
+  if (isGuest) return <Redirect href={`/login?returnTo=${encodeURIComponent('/notifications')}&entry=other` as Href} />;
 
   const items = data ?? [];
 

@@ -33,7 +33,7 @@ import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { TopToastHost } from '@/components/TopToast';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
-import { loadTokens } from '@/lib/auth/beTokens';
+import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
@@ -102,9 +102,10 @@ export default function RootLayout() {
     });
     // P-389(KB-576): 콜드 스타트에 회원 여부를 세팅한다 — 재설치·기기 교체 직후 첫 세션은
     // 이 값이 비어 있어 세그먼트가 통째로 빠졌다. 값 전환(게스트 진입·로그인 성공) 지점은 그대로.
-    void loadTokens()
-      .then((tk) => setUserProps({ user_info_is_registered: !!tk }))
-      .catch(() => {}); // 저장소 오류 = 기존 값 유지(잘못된 false로 덮지 않는다)
+    // **모름(저장소 오류)이면 세팅하지 않는다** — 잘못된 false로 덮으면 회원이 게스트로 뒤집힌다(Codex #165).
+    void isRegisteredForAnalytics()
+      .then((reg) => { if (reg !== null) setUserProps({ user_info_is_registered: reg }); })
+      .catch(() => {});
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') {
         track(EVENTS.app_opened);
@@ -119,7 +120,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (entryChecked && needsLogin.current) {
       needsLogin.current = false;
-      router.replace('/login' as Href);
+      router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로
     }
   }, [entryChecked, router]);
 
@@ -147,7 +148,7 @@ export default function RootLayout() {
         const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
         void session.logOut().catch(() => {});
       }
-      if (!FLAGS.guestMode) router.replace('/login' as Href);
+      if (!FLAGS.guestMode) router.replace('/login?entry=other' as Href); // P-389: 세션 만료 복귀 — 인트로 아님
     });
     return () => onSessionExpired(null);
   }, [router]);

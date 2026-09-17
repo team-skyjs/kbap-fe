@@ -124,7 +124,7 @@ export default function Home() {
       <>
       <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
       {isGuest ? (
-        <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
+        <Pressable style={styles.guestCta} onPress={() => router.push('/login?entry=other' as Href)}>
           <View style={styles.guestCtaIc}>
             <IconLock size={18} color={C.ink2} />
           </View>
@@ -196,7 +196,7 @@ export default function Home() {
             mine={false}
             /* P-339 ②: ⋯ 전 카드(구 showMore=false 폐기) — 홈은 신고만·차단 없음 */
             onOpenFood={() => rv.foodId && openFood(rv.foodId)}
-            onGuestHelpful={() => router.push('/login' as Href)}
+            onGuestHelpful={() => router.push('/login?entry=gate_review' as Href)} // P-389: 게이트 시트와 같은 축(helpful → review)
             onMore={() =>
               setMod({
                 type: 'review',
