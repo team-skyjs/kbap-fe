@@ -187,6 +187,14 @@ it('리뷰 검색 = **전체 음식 범위**(scanned 한정·전체에서 찾기
   expect(onToggleFood).toHaveBeenCalledWith({ foodId: '10', name: 'Tteokbokki' });
 });
 
+it('Codex #168: 리뷰 검색 0건 = 안내 문구가 뜬다(빈 화면 금지)', () => {
+  mockSearch.mockImplementation(() => ({ data: [] }));
+  const tree = render(sheet({}));
+  const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
+  act(() => input.props.onChangeText('zzz'));
+  expect(flat(tree)).toContain('community.searchFoodsHint');
+});
+
 it('필터 컨텍스트(P-229) 무변 — 전체 선택 가능·자격 UI 잔존 0 (반려 잠금)', () => {
   const onToggleFood = jest.fn();
   mockScanned.mockReturnValue({ data: [] }); // 스캔 0건이어도 인기 폴백(활성) 유지

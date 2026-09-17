@@ -610,7 +610,9 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                 <Text style={styles.searchAllText}>{t('community.searchAllFoods')}</Text>
               </Pressable>
             )}
-            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || searchAll) && (
+            {/* P-392(KB-584): 리뷰는 처음부터 전체 검색이라 "전체에서 찾기" 단계가 없다 —
+                그 단계를 기다리는 조건이면 결과 0건에서 **아무 안내도 안 뜬다**(Codex #168). */}
+            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || isReview || searchAll) && (
               <Text style={styles.searchHint}>{t('community.searchFoodsHint')}</Text>
             )}
           </ScrollView>
