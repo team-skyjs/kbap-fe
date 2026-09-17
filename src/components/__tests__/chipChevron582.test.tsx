@@ -78,6 +78,28 @@ describe('위험도 칩 색 = 마크 색', () => {
     expect(render(<Chip label="All" selected testID="c" />).root.findAllByType(RiskMark)).toHaveLength(0);
   });
 
+  it('Codex #167 3R: **글리프 대비**도 4.5 이상 — 형태 단서가 안 보이면 의미 없다', () => {
+    for (const risk of ['safe', 'caution', 'danger'] as RiskState[]) {
+      for (const selected of [true, false]) {
+        const t = render(<Chip label="x" selected={selected} risk={risk} testID="c" />);
+        const mark = t.root.findAllByType(RiskMark)[0];
+        expect(mark.props.color).toBe(riskTextStrong[risk]); // 원색 아님(원색이면 흰 글리프 대비 2.0~3.0)
+        const bg = selected ? riskTone[risk].bg : '#FFFFFF';
+        expect(contrast(mark.props.color as string, bg)).toBeGreaterThanOrEqual(4.5); // 마크 원 ↔ 칩 배경
+        expect(contrast('#FFFFFF', mark.props.color as string)).toBeGreaterThanOrEqual(4.5); // 흰 글리프 ↔ 원
+      }
+    }
+    // 원색으로 되돌리면 글리프 대비가 무너진다 — 그 사실을 함께 고정
+    for (const risk of ['safe', 'caution', 'danger'] as RiskState[]) {
+      expect(contrast('#FFFFFF', RISK[risk].color)).toBeLessThan(4.5);
+    }
+  });
+
+  it('큰 마크(카드·배지)는 원색 무변 — 색 주입은 선택 prop', () => {
+    const src = read('src/components/RiskMark.tsx');
+    expect(src).toContain('const c = color ?? RISK[state].color;'); // 미지정 = 기존 동작
+  });
+
   it('칩 색은 토큰에서만 온다 — 하드코딩 위험도 hex 0', () => {
     const src = read('src/components/Chip.tsx');
     expect(src).toContain('riskTone[risk].fg');

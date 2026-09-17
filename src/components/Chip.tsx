@@ -42,11 +42,13 @@ export function Chip({
     >
       {/* 헌법 게이트: 위험도 4상태는 **색+형태 병행**(색맹 접근성) — 색만 바꾸면 안 된다(Codex #167).
           형태는 공용 RiskMark 글리프 그대로(✓ ! ✕ ?) — 새 형태 발명 금지.
-          solid 고정: 원 fill = 상태색·글리프 = 흰색이라, 선택(원색 배경)에서도 **흰 글리프**가 형태를
-          드러낸다. outline은 선택 시 스트로크가 배경과 같은 색이 돼 보이지 않는다. */}
+          ⚠️ 14px에선 **원색 마크의 글리프 대비가 1.97~2.99**(흰 글리프 on 원색)라, 형태 단서가
+          정작 안 보인다(Codex #167 3R 실측). 마크도 대비 보정 색으로 그린다 — 원 fill을
+          riskTextStrong으로 두면 흰 글리프 대비 5.1~5.4, 원 자체도 칩 배경 대비 4.8+.
+          형태(✓ ! ✕ ?)는 그대로이고 **색만** 보정한다. 큰 마크(카드·배지)는 원색 무변. */}
       {!!risk && (
         <View testID={testID ? `${testID}-mark` : undefined}>
-          <RiskMark state={risk} size={14} />
+          <RiskMark state={risk} size={14} color={riskTextStrong[risk]} />
         </View>
       )}
       <Text style={[styles.label, { color: selected ? onFg : INK_ACTIVE }]}>{label}</Text>
