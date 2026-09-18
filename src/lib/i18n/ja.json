@@ -717,7 +717,8 @@
       "groupAllergy": "アレルギーセット",
       "apply": "リストに適用"
     },
-    "countryLabel": "国"
+    "countryLabel": "国",
+    "popularCountries": "人気の国"
   },
   "editProfile": {
     "title": "プロフィール編集",

@@ -717,7 +717,8 @@
       "groupAllergy": "Grupos de alergia",
       "apply": "Aplicar a mi lista"
     },
-    "countryLabel": "País"
+    "countryLabel": "País",
+    "popularCountries": "Populares"
   },
   "editProfile": {
     "title": "Editar perfil",

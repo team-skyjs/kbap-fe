@@ -717,7 +717,8 @@
       "groupAllergy": "Наборы аллергий",
       "apply": "Применить к списку"
     },
-    "countryLabel": "Страна"
+    "countryLabel": "Страна",
+    "popularCountries": "Популярные"
   },
   "editProfile": {
     "title": "Профиль",

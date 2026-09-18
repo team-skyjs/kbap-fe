@@ -873,7 +873,8 @@
       "groupAllergy": "Allergy bundles",
       "apply": "Apply to my list"
     },
-    "countryLabel": "Country"
+    "countryLabel": "Country",
+    "popularCountries": "Popular"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

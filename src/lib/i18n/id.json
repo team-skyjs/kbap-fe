@@ -717,7 +717,8 @@
       "groupAllergy": "Paket alergi",
       "apply": "Terapkan ke daftar saya"
     },
-    "countryLabel": "Negara"
+    "countryLabel": "Negara",
+    "popularCountries": "Populer"
   },
   "editProfile": {
     "title": "Edit profil",
