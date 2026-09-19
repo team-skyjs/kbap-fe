@@ -27,6 +27,9 @@ function useInvalidateReviews() {
     void qc.invalidateQueries({ queryKey: ['reviews', 'global'] });
     // P-384(KB-442): 리뷰 = 스캔 해금 조건 — 프로필 쿼터(scanUnlocked·scanRemaining) 재조회
     void qc.invalidateQueries({ queryKey: ['me', i18n.language], exact: true });
+    // P-393(KB-580): 홈 "리뷰 많은 음식" 랭킹도 리뷰 수 파생 — 빼면 staleTime(60s) 동안
+    // 복귀해도 이전 순위가 그대로 보인다(Codex #169). 프리픽스 매칭이라 언어 키 전부 걸린다.
+    void qc.invalidateQueries({ queryKey: ['home'] });
   };
 }
 

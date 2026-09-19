@@ -765,7 +765,9 @@
     "recentEmpty": "No recent scans",
     "safeForYou": "Rated safe for you",
     "safeForYouSub": "Based on your avoid list. Always confirm with the owner.",
-    "railFilterEmpty": "No {{risk}} dishes in this list yet. Try another filter."
+    "railFilterEmpty": "No {{risk}} dishes in this list yet. Try another filter.",
+    "mostReviewed": "Most reviewed",
+    "mostReviewedSub": "What people are talking about."
   },
   "onboarding": {
     "welcomeTag": "Know what to avoid before you order.",

@@ -609,7 +609,9 @@
     "recentEmpty": "Belum ada pemindaian terbaru",
     "safeForYou": "Pilihan Safe untukmu",
     "safeForYouSub": "Berdasarkan daftar hindaranmu — selalu konfirmasi ke pemilik.",
-    "railFilterEmpty": "Belum ada hidangan {{risk}} di daftar ini. Coba filter lain."
+    "railFilterEmpty": "Belum ada hidangan {{risk}} di daftar ini. Coba filter lain.",
+    "mostReviewed": "Paling banyak diulas",
+    "mostReviewedSub": "Yang sedang ramai dibicarakan."
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",

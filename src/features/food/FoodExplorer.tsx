@@ -61,10 +61,17 @@ export function FoodExplorer({
   srcTag,
   onScroll,
   topPad = 0,
+  mostReviewed = [],
+  mostReviewedLoading = false,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
   guest: boolean;
+  /** P-393(KB-580): 홈 "리뷰 많은 음식" 레일 소스 — 홈 화면이 useHome에서 받아 내린다.
+   *  여기서 직접 조회하지 않는 이유: 음식 탭·검색 등 다른 소비처가 홈 쿼리에 묶이면
+   *  QueryClient 없는 표면까지 끌려간다(실측: 기존 스위트 3개가 깨졌다). 0건 = 섹션 미렌더. */
+  mostReviewed?: FoodCard[];
+  mostReviewedLoading?: boolean;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -499,6 +506,32 @@ export function FoodExplorer({
                 <View key={i} style={styles.safeGridRow}>
                   {row.map((item) => card(item, styles.safeGridCell))}
                   {row.length === 1 && <View style={styles.safeGridCell} testID="home-safe-grid-filler" />}
+                </View>
+              ))}
+          </View>
+        </>
+      )}
+      {/* P-393(KB-580): 리뷰 많은 음식 — 게스트·회원 공통. **Rated safe for you와 같은 UI**
+          (9/18 예진 원문 — 2×2 그리드). safe 구역 다음이고, 게스트는 safe가 없어 자연히
+          인기 레일 다음이 된다. 그리드·셀·카드·스켈레톤 전부 기존 것 재사용(새 스타일 0). */}
+      {variant === 'embedded' && mostReviewedLoading && (
+        <View style={styles.railSkel} testID="home-most-reviewed-skel">
+          {[0, 1].map((i) => (
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+          ))}
+        </View>
+      )}
+      {variant === 'embedded' && mostReviewed.length > 0 && (
+        <>
+          <SectionHead label={t('home.mostReviewed')} title={t('home.mostReviewedSub')} testID="home-most-reviewed-head" />
+          {/* safe 구역과 동일 규칙: 상위 4개·2열, 홀수 마지막 행은 빈 셀로 채워 카드가 늘어나지 않게 */}
+          <View style={styles.safeGrid} testID="home-most-reviewed-grid">
+            {[mostReviewed.slice(0, 2), mostReviewed.slice(2, 4)]
+              .filter((row) => row.length > 0)
+              .map((row, i) => (
+                <View key={i} style={styles.safeGridRow}>
+                  {row.map((item) => card(item, styles.safeGridCell))}
+                  {row.length === 1 && <View style={styles.safeGridCell} testID="home-most-reviewed-filler" />}
                 </View>
               ))}
           </View>
