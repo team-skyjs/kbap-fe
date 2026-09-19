@@ -123,7 +123,8 @@ it('③-b 세부 별 폭 적응(Codex #31 P2) — 협폭에서 gap 축소→별 
 it('④ 태그 시트 2종 — FixedBottom(Close/Done·장소 스킵/Done) + 안내 카드 시안값 소스 잠금', () => {
   const compose = require('fs').readFileSync('src/app/community/compose.tsx', 'utf8') as string;
   expect(compose).toContain('testID="picker-bottom"');
-  expect(compose).toContain("backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5'");
+  // P-392(KB-584): 자격 안내 카드(시안값 #FFF4ED)는 게이트 폐기와 함께 소멸 — 잔재 0을 잠근다
+  expect(compose).not.toContain("backgroundColor: '#FFF4ED'");
   const parts = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string;
   expect(parts).toContain('testID="place-sheet-bottom"');
   expect(parts).toContain('testID="place-skip"');

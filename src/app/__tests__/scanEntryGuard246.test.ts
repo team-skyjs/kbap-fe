@@ -62,7 +62,7 @@ it('배선 소스 잠금 — 진입 5표면 전부 navigate·push("/scan") 잔�
     'src/features/food/FoodExplorer.tsx', // KB-430 후속: 홈 스캔 버튼 = FoodExplorer 이동 // 홈 CTA 2곳
     'src/app/(tabs)/_layout.tsx', // 탭바 스캔 버튼
     'src/app/profile/ranking.tsx', // 랭킹 빈 상태
-    'src/app/community/compose.tsx', // 픽커 스캔 CTA(P-245)
+    // P-392(KB-584): 픽커 스캔 CTA는 자격 게이트와 함께 폐기 — 스캔 유도 표면에서 제외
   ];
   for (const f of SURFACES) {
     expect(readFileSync(f, 'utf8')).toContain("navigate('/scan'");
