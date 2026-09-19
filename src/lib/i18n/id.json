@@ -916,6 +916,8 @@
     "gallery": "Pilih dari galeri",
     "permTitle": "Perlu akses kamera",
     "permBody": "Izinkan akses kamera di Pengaturan untuk mengambil foto.",
+    "libraryPermTitle": "Perlu akses foto",
+    "libraryPermBody": "Akses foto dimatikan. Izinkan di Pengaturan.",
     "openSettings": "Buka Pengaturan"
   },
   "versionGate": {
@@ -1008,5 +1010,21 @@
     "shareFailed": "Gagal membuat kartu story. Coba lagi.",
     "shareStoryHint": "Simpan gambarnya, lalu bagikan di Instagram.",
     "sharePhotosFailed": "Gagal memuat foto. Ketuk untuk coba lagi."
+  },
+  "feedback": {
+    "title": "Hubungi kami",
+    "myTitle": "Pertanyaan saya",
+    "placeholder": "Ceritakan apa yang terjadi, atau apa yang kamu harapkan. Boleh sertakan foto.",
+    "send": "Kirim",
+    "sent": "Terima kasih — pesanmu sudah kami terima.",
+    "sendFailed": "Gagal mengirim. Coba lagi.",
+    "rateLimited": "Kamu sudah mengirim banyak dalam 24 jam terakhir. Coba lagi nanti.",
+    "statusOpen": "Terbuka",
+    "statusAnswered": "Dijawab",
+    "statusClosed": "Ditutup",
+    "emptyTitle": "Belum ada pertanyaan",
+    "replyCount_other": "{{count}} balasan",
+    "notFound": "Pertanyaan ini tidak tersedia.",
+    "teamName": "Tim K-Bap"
   }
 }

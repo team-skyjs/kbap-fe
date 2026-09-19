@@ -916,6 +916,8 @@
     "gallery": "ギャラリーから選択",
     "permTitle": "カメラへのアクセスが必要です",
     "permBody": "写真を撮るには設定でカメラへのアクセスを許可してください。",
+    "libraryPermTitle": "写真へのアクセスが必要です",
+    "libraryPermBody": "写真へのアクセスがオフです。設定で許可してください。",
     "openSettings": "設定を開く"
   },
   "versionGate": {
@@ -1008,5 +1010,21 @@
     "shareFailed": "ストーリーカードを作成できませんでした。もう一度お試しください。",
     "shareStoryHint": "画像を保存してから、Instagramでシェアしてください。",
     "sharePhotosFailed": "写真を読み込めませんでした。タップして再試行してください。"
+  },
+  "feedback": {
+    "title": "お問い合わせ",
+    "myTitle": "マイお問い合わせ",
+    "placeholder": "何が起きたか、またはご要望をお聞かせください。写真も添えられます。",
+    "send": "送信",
+    "sent": "お問い合わせを受け付けました。ありがとうございます。",
+    "sendFailed": "送信できませんでした。もう一度お試しください。",
+    "rateLimited": "過去24時間に送信が多くなっています。しばらくしてからもう一度お試しください。",
+    "statusOpen": "受付中",
+    "statusAnswered": "回答済み",
+    "statusClosed": "クローズ",
+    "emptyTitle": "まだお問い合わせはありません",
+    "replyCount_other": "回答 {{count}}件",
+    "notFound": "このお問い合わせは見つかりません。",
+    "teamName": "K-Bapチーム"
   }
 }

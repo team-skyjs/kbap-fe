@@ -917,6 +917,8 @@
     "gallery": "Elegir de la galería",
     "permTitle": "Se necesita acceso a la cámara",
     "permBody": "Permite el acceso a la cámara en Ajustes para tomar una foto.",
+    "libraryPermTitle": "Se necesita acceso a las fotos",
+    "libraryPermBody": "El acceso a las fotos está desactivado. Permítelo en Ajustes.",
     "openSettings": "Abrir Ajustes"
   },
   "versionGate": {
@@ -1009,5 +1011,22 @@
     "shareFailed": "No se pudo crear la tarjeta de historia. Inténtalo de nuevo.",
     "shareStoryHint": "Guarda la imagen y compártela en Instagram.",
     "sharePhotosFailed": "No se pudieron cargar las fotos. Toca para reintentar."
+  },
+  "feedback": {
+    "title": "Contáctanos",
+    "myTitle": "Mis consultas",
+    "placeholder": "Cuéntanos qué pasó o qué te gustaría ver. Puedes adjuntar fotos.",
+    "send": "Enviar",
+    "sent": "Gracias, recibimos tu mensaje.",
+    "sendFailed": "No se pudo enviar. Inténtalo de nuevo.",
+    "rateLimited": "Has enviado bastantes en las últimas 24 horas. Inténtalo más tarde.",
+    "statusOpen": "Abierta",
+    "statusAnswered": "Respondida",
+    "statusClosed": "Cerrada",
+    "emptyTitle": "Aún no tienes consultas",
+    "replyCount_one": "{{count}} respuesta",
+    "replyCount_other": "{{count}} respuestas",
+    "notFound": "Esta consulta no está disponible.",
+    "teamName": "Equipo K-Bap"
   }
 }
