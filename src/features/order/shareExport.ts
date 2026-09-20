@@ -159,7 +159,13 @@ export const defaultDeps: ShareDeps = {
   saveToLibrary: async (uri) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const MediaLibrary = require('expo-media-library') as typeof import('expo-media-library');
-    await MediaLibrary.saveToLibraryAsync(uri);
+    // ⚠️ `saveToLibraryAsync`를 쓰면 **무조건 throw**한다(KB-605). expo-media-library 56의
+    // 기본 진입점은 클래스 기반 새 API이고, 구 함수 19종은 `legacyWarnings.ts`의 스텁
+    // — 호출 즉시 "deprecated. Import the legacy API..."로 던진다. b34에서 공유 저장이
+    // 100% 실패한 원인이 이것이었다(Sentry step=save_library).
+    // `Asset.create`가 정식 대체이고, 네이티브가 `checkIfWritePermissionGranted`만
+    // 요구하므로 우리가 받는 **write-only 권한으로 충분**하다(`delete`만 read-write 요구).
+    await MediaLibrary.Asset.create(uri);
   },
   isInstagramInstalled: async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
