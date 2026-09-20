@@ -13,6 +13,8 @@
 // FE 발주 DoD의 "lint 통과" = 이 스크립트의 종료 코드 0.
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import ratchet from './ratchet.cjs';
 
 /** ⚠️ `node_modules/.bin/eslint`를 node에 넘기면 **Windows에서 깨진다**(Codex #175):
  *  거기 확장자 없는 파일은 npm이 만든 **POSIX sh shim**(`#!/bin/sh`)이고 실행 래퍼는
@@ -45,16 +47,23 @@ const git = (args) => execFileSync('git', ['-c', 'core.quotepath=false', ...args
 /** ⚠️ diff는 `BASE...HEAD`(= merge-base 기준)인데 `git show BASE:file`은 **BASE 최신 tip**을
  *  읽는다. 분기 후 develop이 같은 파일을 건드리면 **서로 다른 버전**을 대조하게 돼,
  *  물려받은 부채를 새 것으로 몰거나 반대로 새 위반을 면제해 버린다(Codex #175).
- *  merge-base를 한 번 구해 **기준을 하나로** 묶는다. */
-const MERGE_BASE = (() => {
-  try {
-    return git(['merge-base', BASE, 'HEAD']).trim();
-  } catch {
-    return null; // 아래에서 BASE 부재로 실패 처리된다
+ *  merge-base를 한 번 구해 **기준을 하나로** 묶는다.
+ *
+ *  ⚠️ **지연 계산**이다(KB-612). 최상위에서 바로 실행하면 이 파일을 **import만 해도 git이
+ *  돈다** — 순수 헬퍼를 유닛에서 부수효과 없이 쓰려면 안 된다. 값은 한 번만 구해 캐시한다. */
+let _mergeBase;
+function mergeBase() {
+  if (_mergeBase === undefined) {
+    try {
+      _mergeBase = git(['merge-base', BASE, 'HEAD']).trim();
+    } catch {
+      _mergeBase = null; // 호출부에서 BASE 부재로 실패 처리된다
+    }
   }
-})();
+  return _mergeBase;
+}
 /** diff 범위 — merge-base부터 HEAD까지(두 점). `...`과 같은 범위를 명시적으로 고정. */
-const RANGE = () => `${MERGE_BASE}..HEAD`;
+const RANGE = () => `${mergeBase()}..HEAD`;
 
 /** BASE...HEAD에서 추가·복사·수정·이름변경된 소스 (삭제 제외 — 파일이 없으니 린트 불가) */
 function changedFiles() {
@@ -111,23 +120,6 @@ function addedLines(files, renames) {
   return out;
 }
 
-let files;
-try {
-  if (!MERGE_BASE) throw new Error('no merge base');
-  files = changedFiles();
-} catch {
-  // BASE를 못 찾는 환경(얕은 클론 등)에서 조용히 통과하면 래칫이 풀린다 — 실패로 끝낸다.
-  console.error(`lint:changed — '${BASE}'를 찾을 수 없습니다. 먼저 'git fetch origin develop' 하세요.`);
-  process.exit(1);
-}
-
-if (files.length === 0) {
-  console.log('lint:changed — 변경된 소스 없음, 통과');
-  process.exit(0);
-}
-
-const renames = renameMap();
-const added = addedLines(files, renames);
 
 /** eslint 실행 — 문제가 있으면 비0으로 끝내지만 stdout에 리포트를 낸다. */
 /** ⚠️ 기본 maxBuffer는 1MiB다. 이 레포는 기존 warning이 1,200건이 넘고 react-hooks 진단은
@@ -155,22 +147,10 @@ function eslintJson(args, input) {
   }
 }
 
-/** 진단의 종류 — **메시지 첫 줄 + 룰**.
- *  ⚠️ react-hooks 계열은 `message`에 **줄 번호가 박힌 코드 프레임**을 통째로 넣는다.
- *  메시지를 통으로 쓰면 위에 주석 한 줄만 추가해도 프레임이 달라져 같은 진단이
- *  "새 진단"으로 오인된다(실측). 그래서 첫 줄만 쓴다. */
-const kindOf = (m) => `${m.ruleId ?? '?'}\u0000${String(m.message).split('\n')[0].trim()}`;
-
-/** 진단의 정체성 = **종류 + 줄 + 열**.
- *  열까지 넣는 이유: 한 줄에 같은 종류의 진단이 여러 개 놓일 수 있다(예: `const [a] = useState(0);
- *  const [b] = useState(1);` — 위에 early return이 생기면 **둘 다** 조건부 훅이 된다).
- *  열이 없으면 두 건이 한 정체성으로 뭉쳐, 기준선 1건이 새 1건을 덮어쓴다. 안 바뀐 줄의
- *  열은 이동하지 않으므로 매핑이 필요 없다.
- *  ⚠️ 종류별 **개수만** 비교하면 상쇄된다(Codex #175 P1): 한 위반을 고치면서 같은 종류를
- *  파일 안 다른 곳에 새로 넣으면 개수가 그대로라 통과해 버린다. BASE 줄을 HEAD 줄로
- *  매핑해 위치까지 대조한다. */
-const idOf = (m, line) => `${kindOf(m)}\u0000${line ?? 0}\u0000${m.column ?? 0}`;
-
+/** 판정의 순수 부분은 `ratchet.cjs`에 있다 — 이 파일은 `import.meta`를 쓰는 `.mjs`라
+ *  이 레포 jest가 파싱하지 못해서, 유닛이 손댈 수 있게 형제 모듈로 내렸다(KB-612).
+ *  **사본이 아니라 단일 출처**다: 게이트가 실제로 쓰는 코드와 유닛이 보는 코드가 같다. */
+const { idOf, newDebt } = ratchet;
 /**
  * BASE 줄 → HEAD 줄 매퍼. 헝크 밖(안 바뀐 영역)은 누적 delta만큼 밀리고,
  * 헝크 안(지워지거나 바뀐 줄)은 대응이 없다(null) — 사라진 진단이므로 무시하면 된다.
@@ -218,11 +198,11 @@ function baseToHeadMapper(file, renames) {
 /** BASE에 있던 진단의 **정체성별 개수**(HEAD 줄로 매핑). 파일이 새로 생겼으면 빈 맵.
  *  ⚠️ 집합이 아니라 **개수**다 — `Set.has`는 소비하지 않아서 기준선 1건이 HEAD 여러 건을
  *  면제해 버린다(Codex #175). 매칭할 때마다 하나씩 깎는다. */
-function baseCounts(file) {
+function baseCounts(file, renames) {
   let content;
   try {
     // 이름이 바뀌었으면 BASE엔 옛 경로로 있다
-    content = git(['show', `${MERGE_BASE}:${renames.get(file) ?? file}`]);
+    content = git(['show', `${mergeBase()}:${renames.get(file) ?? file}`]);
   } catch {
     return new Map(); // 신규 파일 — 기준선 없음
   }
@@ -241,53 +221,75 @@ function baseCounts(file) {
   return counts;
 }
 
-const report = eslintJson(files);
+/** 이 파일이 **직접 실행**됐는지(= 게이트로 도는지). 유닛이 순수 헬퍼만 import할 때는 거짓이라
+ *  아래 실행부가 돌지 않는다 — git·eslint 부수효과 없이 로직만 검증하려고 뺐다(KB-612). */
+const IS_MAIN = process.argv[1] != null && pathToFileURL(process.argv[1]).href === import.meta.url;
 
-const cwd = process.cwd();
-/** eslint의 절대 경로 → 저장소 상대 경로(POSIX 구분자). Windows 역슬래시 대응(Codex #175). */
-const relOf = (abs) => path.relative(cwd, abs).split(path.sep).join('/');
+function main() {
+  let files;
+  try {
+    if (!mergeBase()) throw new Error('no merge base');
+    files = changedFiles();
+  } catch {
+    // BASE를 못 찾는 환경(얕은 클론 등)에서 조용히 통과하면 래칫이 풀린다 — 실패로 끝낸다.
+    console.error(`lint:changed — '${BASE}'를 찾을 수 없습니다. 먼저 'git fetch origin develop' 하세요.`);
+    process.exit(1);
+  }
 
-const hits = [];
-/** 줄로 못 거르는 진단 — 파일별로 모아 BASE와 대조한다. */
-const pending = new Map();
+  if (files.length === 0) {
+    console.log('lint:changed — 변경된 소스 없음, 통과');
+    process.exit(0);
+  }
 
-for (const f of report) {
-  const rel = relOf(f.filePath);
-  const lines = added.get(rel);
-  if (!lines) continue;
-  for (const m of f.messages) {
-    if (m.line != null && lines.has(m.line)) {
-      hits.push({ rel, m, why: '추가·수정된 줄' });
-      continue;
+  const renames = renameMap();
+  const added = addedLines(files, renames);
+
+  const report = eslintJson(files);
+
+  const cwd = process.cwd();
+  /** eslint의 절대 경로 → 저장소 상대 경로(POSIX 구분자). Windows 역슬래시 대응(Codex #175). */
+  const relOf = (abs) => path.relative(cwd, abs).split(path.sep).join('/');
+
+  const hits = [];
+  /** 줄로 못 거르는 진단 — 파일별로 모아 BASE와 대조한다. */
+  const pending = new Map();
+
+  for (const f of report) {
+    const rel = relOf(f.filePath);
+    const lines = added.get(rel);
+    if (!lines) continue;
+    for (const m of f.messages) {
+      if (m.line != null && lines.has(m.line)) {
+        hits.push({ rel, m, why: '추가·수정된 줄' });
+        continue;
+      }
+      // ⚠️ 진단이 **안 바뀐 줄**에 찍히는 경우가 있다(Codex #175 P1): 훅 위에 early return을
+      // 새로 넣으면 `rules-of-hooks`는 새 return이 아니라 **기존 훅 호출 줄**을 가리킨다.
+      // 줄만 보면 이 위반이 통과해 버린다 — 이 레포에서 가장 위험한 유형이 바로 그것이다.
+      // 그래서 남는 진단은 BASE와 **개수로** 대조해 "늘어난 것"만 새 부채로 센다.
+      if (!pending.has(rel)) pending.set(rel, []);
+      pending.get(rel).push(m);
     }
-    // ⚠️ 진단이 **안 바뀐 줄**에 찍히는 경우가 있다(Codex #175 P1): 훅 위에 early return을
-    // 새로 넣으면 `rules-of-hooks`는 새 return이 아니라 **기존 훅 호출 줄**을 가리킨다.
-    // 줄만 보면 이 위반이 통과해 버린다 — 이 레포에서 가장 위험한 유형이 바로 그것이다.
-    // 그래서 남는 진단은 BASE와 **개수로** 대조해 "늘어난 것"만 새 부채로 센다.
-    if (!pending.has(rel)) pending.set(rel, []);
-    pending.get(rel).push(m);
   }
-}
 
-for (const [rel, msgs] of pending) {
-  const base = baseCounts(rel);
-  for (const m of msgs) {
-    const id = idOf(m, m.line);
-    const left = base.get(id) ?? 0;
-    if (left > 0) base.set(id, left - 1); // **소비** — 기준선 1건은 HEAD 1건만 면제한다
-    else hits.push({ rel, m, why: 'BASE에 없던 진단' });
+  for (const [rel, msgs] of pending) {
+    for (const m of newDebt(msgs, baseCounts(rel, renames))) {
+      hits.push({ rel, m, why: 'BASE에 없던 진단' });
+    }
   }
+
+  if (hits.length === 0) {
+    console.log(`lint:changed — ${files.length}개 파일: 새 문제 0, 통과`);
+    process.exit(0);
+  }
+
+  // "네가 방금 만든 것"이 보여야 고친다 — 위치와 사유를 그대로 찍는다.
+  console.error(`lint:changed — 새로 생긴 문제 ${hits.length}건:\n`);
+  for (const { rel, m, why } of hits) {
+    console.error(`  ${rel}:${m.line ?? 0}:${m.column ?? 0}  ${m.severity === 2 ? 'error' : 'warning'}  ${m.message}  ${m.ruleId ?? ''}  [${why}]`);
+  }
+  console.error('\n기존 부채는 통과시킵니다(래칫). 위 항목만 고치면 됩니다.');
+  process.exit(1);
 }
 
-if (hits.length === 0) {
-  console.log(`lint:changed — ${files.length}개 파일: 새 문제 0, 통과`);
-  process.exit(0);
-}
-
-// "네가 방금 만든 것"이 보여야 고친다 — 위치와 사유를 그대로 찍는다.
-console.error(`lint:changed — 새로 생긴 문제 ${hits.length}건:\n`);
-for (const { rel, m, why } of hits) {
-  console.error(`  ${rel}:${m.line ?? 0}:${m.column ?? 0}  ${m.severity === 2 ? 'error' : 'warning'}  ${m.message}  ${m.ruleId ?? ''}  [${why}]`);
-}
-console.error('\n기존 부채는 통과시킵니다(래칫). 위 항목만 고치면 됩니다.');
-process.exit(1);
+if (IS_MAIN) main();
