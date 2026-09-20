@@ -14,6 +14,11 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
+/** ⚠️ `node_modules/.bin/eslint`를 node에 넘기면 **Windows에서 깨진다**(Codex #175):
+ *  거기 확장자 없는 파일은 npm이 만든 **POSIX sh shim**(`#!/bin/sh`)이고 실행 래퍼는
+ *  `.cmd` 쪽이다. 실제 JS 진입점을 직접 가리켜 플랫폼 차이를 없앤다. */
+const ESLINT_BIN = 'node_modules/eslint/bin/eslint.js';
+
 const BASE = process.env.LINT_BASE ?? 'origin/develop';
 
 /** eslint가 실제로 검사하는 소스 확장자 전부 — `.ts/.tsx`만 보면 `.js`·`.mjs` 소스가
@@ -97,7 +102,7 @@ const added = addedLines(files, renames);
 /** eslint 실행 — 문제가 있으면 비0으로 끝내지만 stdout에 리포트를 낸다. */
 function eslintJson(args, input) {
   try {
-    return JSON.parse(execFileSync('node', ['./node_modules/.bin/eslint', '-f', 'json', ...args], { encoding: 'utf8', input }));
+    return JSON.parse(execFileSync('node', [ESLINT_BIN, '-f', 'json', ...args], { encoding: 'utf8', input }));
   } catch (e) {
     const stdout = e?.stdout?.toString?.() ?? '';
     if (stdout.trim().startsWith('[')) return JSON.parse(stdout);
@@ -107,26 +112,77 @@ function eslintJson(args, input) {
   }
 }
 
-/** 진단의 정체성 — **줄 번호에 의존하지 않게** 만든다.
+/** 진단의 종류 — **메시지 첫 줄 + 룰**.
  *  ⚠️ react-hooks 계열은 `message`에 **줄 번호가 박힌 코드 프레임**을 통째로 넣는다.
- *  메시지를 통으로 키로 쓰면, 위에 주석 한 줄만 추가해도 프레임이 달라져 같은 진단이
- *  "새 진단"으로 오인된다(실측). 그래서 **첫 줄 + 룰**만 쓴다. */
-const keyOf = (m) => `${m.ruleId ?? '?'}\u0000${String(m.message).split('\n')[0].trim()}`;
+ *  메시지를 통으로 쓰면 위에 주석 한 줄만 추가해도 프레임이 달라져 같은 진단이
+ *  "새 진단"으로 오인된다(실측). 그래서 첫 줄만 쓴다. */
+const kindOf = (m) => `${m.ruleId ?? '?'}\u0000${String(m.message).split('\n')[0].trim()}`;
 
-/** BASE 시점의 같은 파일에 있던 진단 개수. 파일이 새로 생겼으면 빈 맵. */
+/** 진단의 정체성 = **종류 + 위치**.
+ *  ⚠️ 종류별 **개수만** 비교하면 상쇄된다(Codex #175 P1): 한 위반을 고치면서 같은 종류를
+ *  파일 안 다른 곳에 새로 넣으면 개수가 그대로라 통과해 버린다. BASE 줄을 HEAD 줄로
+ *  매핑해 위치까지 대조한다. */
+const idOf = (m, line) => `${kindOf(m)}\u0000${line ?? 0}`;
+
+/**
+ * BASE 줄 → HEAD 줄 매퍼. 헝크 밖(안 바뀐 영역)은 누적 delta만큼 밀리고,
+ * 헝크 안(지워지거나 바뀐 줄)은 대응이 없다(null) — 사라진 진단이므로 무시하면 된다.
+ */
+function baseToHeadMapper(file, renames) {
+  const oldPath = renames.get(file) ?? file;
+  const paths = [...new Set([file, oldPath])];
+  let diff;
+  try {
+    diff = git(['diff', '--unified=0', '-M', `${BASE}...HEAD`, '--', ...paths]);
+  } catch {
+    return () => null;
+  }
+  const hunks = [];
+  for (const line of diff.split('\n')) {
+    const m = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))?/.exec(line);
+    if (!m) continue;
+    hunks.push({
+      oldStart: Number(m[1]),
+      oldCount: m[2] === undefined ? 1 : Number(m[2]),
+      newStart: Number(m[3]),
+      newCount: m[4] === undefined ? 1 : Number(m[4]),
+    });
+  }
+  hunks.sort((a, b) => a.oldStart - b.oldStart);
+  return (baseLine) => {
+    if (baseLine == null) return null;
+    let delta = 0;
+    for (const h of hunks) {
+      const oldEnd = h.oldStart + h.oldCount - 1;
+      if (h.oldCount > 0 && baseLine >= h.oldStart && baseLine <= oldEnd) return null; // 바뀌거나 지워진 줄
+      if (oldEnd < baseLine || h.oldCount === 0) {
+        if (h.oldStart <= baseLine) delta += h.newCount - h.oldCount;
+      }
+    }
+    return baseLine + delta;
+  };
+}
+
+/** BASE에 있던 진단의 **정체성 집합**(HEAD 줄로 매핑). 파일이 새로 생겼으면 빈 집합. */
 function baseCounts(file) {
   let content;
   try {
     // 이름이 바뀌었으면 BASE엔 옛 경로로 있다
     content = git(['show', `${BASE}:${renames.get(file) ?? file}`]);
   } catch {
-    return new Map(); // 신규 파일 — 기준선 없음
+    return new Set(); // 신규 파일 — 기준선 없음
   }
   // --stdin-filename으로 **원래 경로인 척** 린트한다(설정·룰 해석이 실제와 같아진다)
   const rep = eslintJson(['--stdin', '--stdin-filename', file], content);
-  const counts = new Map();
-  for (const f of rep) for (const m of f.messages) counts.set(keyOf(m), (counts.get(keyOf(m)) ?? 0) + 1);
-  return counts;
+  const toHead = baseToHeadMapper(file, renames);
+  const ids = new Set();
+  for (const f of rep) {
+    for (const m of f.messages) {
+      const mapped = toHead(m.line);
+      if (mapped != null) ids.add(idOf(m, mapped)); // 살아남은 줄의 기존 진단만 면제
+    }
+  }
+  return ids;
 }
 
 const report = eslintJson(files);
@@ -159,12 +215,8 @@ for (const f of report) {
 
 for (const [rel, msgs] of pending) {
   const base = baseCounts(rel);
-  const seen = new Map();
   for (const m of msgs) {
-    const k = keyOf(m);
-    const n = (seen.get(k) ?? 0) + 1;
-    seen.set(k, n);
-    if (n > (base.get(k) ?? 0)) hits.push({ rel, m, why: 'BASE에 없던 진단' });
+    if (!base.has(idOf(m, m.line))) hits.push({ rel, m, why: 'BASE에 없던 진단' });
   }
 }
 

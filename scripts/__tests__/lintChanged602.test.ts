@@ -179,6 +179,39 @@ it('리네임 + 새 위반 — 새로 쓴 줄은 여전히 차단', () => {
   expect(r.out).toContain('set-state-in-effect');
 });
 
+/* ⚠️ Codex #175 P1: 종류별 **개수만** 비교하면 상쇄된다 — 한 위반을 고치면서 같은 종류를
+   파일 안 다른 곳에 새로 넣으면 총계가 그대로라 통과해 버린다. 위치까지 봐야 한다. */
+it('①-P1b 상쇄 방지 — 하나 고치고 같은 종류를 다른 곳에 새로 넣으면 차단', () => {
+  // BASE: A에 조건부 훅 1건
+  const base = `import { useState } from 'react';
+export function A({ on }: { on: boolean }) {
+  if (on) return 0;
+  const [a] = useState(0);
+  return a;
+}
+export function B({ on }: { on: boolean }) {
+  const [b] = useState(0);
+  return on ? b : 0;
+}
+`;
+  // HEAD: A의 위반을 없애고 **B에 새로** 넣는다 → 종류별 총계는 1로 동일
+  const head = `import { useState } from 'react';
+export function A({ on }: { on: boolean }) {
+  const [a] = useState(0);
+  return on ? 0 : a;
+}
+export function B({ on }: { on: boolean }) {
+  if (on) return 0;
+  const [b] = useState(0);
+  return b;
+}
+`;
+  scenario({ 'ab.tsx': base }, { 'ab.tsx': head });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.out).toContain('rules-of-hooks');
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {
