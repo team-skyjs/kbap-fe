@@ -163,6 +163,22 @@ it('①-P1 역: 위에 주석만 추가해 줄이 밀린 기존 부채는 새 �
   expect(r.code).toBe(0);
 });
 
+/* ⚠️ Codex #175: 순수 리네임이면 diff 대상을 새 경로로만 좁혔을 때 git이 짝을 못 찾아
+   `/dev/null → new`로 렌더한다 → 모든 줄이 "추가"로 잡혀 **기존 부채가 전건 차단**된다. */
+it('순수 리네임 — 내용이 그대로면 기존 부채를 물려받아 통과', () => {
+  scenario({ 'old.tsx': BAD }, { 'old.tsx': '', 'new.tsx': BAD });
+  const r = run();
+  expect(r.code).toBe(0);
+});
+
+it('리네임 + 새 위반 — 새로 쓴 줄은 여전히 차단', () => {
+  const worse = BAD.replace('  return v;', '  useEffect(() => { setV(3); }, [on]);\n  return v;');
+  scenario({ 'old.tsx': BAD }, { 'old.tsx': '', 'new.tsx': worse });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.out).toContain('set-state-in-effect');
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {

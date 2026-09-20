@@ -31,14 +31,32 @@ function changedFiles() {
 }
 
 /**
+ * 새 경로 → BASE에서의 옛 경로 (이름이 바뀐 파일만).
+ * ⚠️ 없으면 **순수 리네임이 전건 차단**된다(Codex #175): diff 대상을 새 경로로만 좁히면
+ * git이 짝을 못 찾아 `/dev/null → new`로 렌더하고, 모든 줄이 "추가"로 잡힌다.
+ * `git show BASE:<새 경로>`도 실패해 기준선이 비므로 기존 부채가 전부 신규가 된다.
+ */
+function renameMap() {
+  const out = new Map();
+  const raw = git(['diff', '--name-status', '-M', `${BASE}...HEAD`, '--', ...SOURCE_GLOBS]);
+  for (const line of raw.split('\n')) {
+    const parts = line.split('\t');
+    if (parts.length === 3 && parts[0].startsWith('R')) out.set(parts[2].trim(), parts[1].trim());
+  }
+  return out;
+}
+
+/**
  * 파일별 "추가된 줄 번호" 집합.
  * `--unified=0`이면 헝크 헤더(`@@ -a,b +c,d @@`)의 **+쪽 범위가 곧 추가된 줄**이다.
  * (문맥 줄이 섞이지 않으므로 범위를 그대로 쓸 수 있다.)
  */
-function addedLines(files) {
+function addedLines(files, renames) {
   const out = new Map();
   if (files.length === 0) return out;
-  const diff = git(['diff', '--unified=0', `${BASE}...HEAD`, '--', ...files]);
+  // 옛 경로도 pathspec에 넣어야 git이 리네임 짝을 찾는다 — 그래야 실제 변경만 헝크로 나온다
+  const paths = [...new Set([...files, ...files.map((f) => renames.get(f)).filter(Boolean)])];
+  const diff = git(['diff', '--unified=0', '-M', `${BASE}...HEAD`, '--', ...paths]);
   let file = null;
   for (const line of diff.split('\n')) {
     if (line.startsWith('+++ ')) {
@@ -73,7 +91,8 @@ if (files.length === 0) {
   process.exit(0);
 }
 
-const added = addedLines(files);
+const renames = renameMap();
+const added = addedLines(files, renames);
 
 /** eslint 실행 — 문제가 있으면 비0으로 끝내지만 stdout에 리포트를 낸다. */
 function eslintJson(args, input) {
@@ -98,7 +117,8 @@ const keyOf = (m) => `${m.ruleId ?? '?'}\u0000${String(m.message).split('\n')[0]
 function baseCounts(file) {
   let content;
   try {
-    content = git(['show', `${BASE}:${file}`]);
+    // 이름이 바뀌었으면 BASE엔 옛 경로로 있다
+    content = git(['show', `${BASE}:${renames.get(file) ?? file}`]);
   } catch {
     return new Map(); // 신규 파일 — 기준선 없음
   }
