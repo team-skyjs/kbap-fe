@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "K-Bap 使用相機掃描菜單、拍攝評價照片並設定大頭貼。",
+  "NSPhotoLibraryUsageDescription": "K-Bap 存取相片，用於掃描已儲存的菜單、為評價和貼文加入相片、設定大頭貼或在意見中附上相片。",
+  "NSPhotoLibraryAddUsageDescription": "將你的 K-Bap 故事卡儲存到相片圖庫。",
+  "NSLocationWhenInUseUsageDescription": "K-Bap 使用位置資訊尋找附近餐廳，方便你在評價中標記地點並記錄用餐地點。"
+}

@@ -15,6 +15,7 @@ const APP = JSON.parse(RAW) as {
   expo: {
     plugins: (string | [string, Record<string, unknown>])[];
     android: { permissions: string[]; blockedPermissions: string[] };
+    locales: Record<string, string>;
   };
 };
 const opts = (name: string): Record<string, unknown> => {
@@ -87,4 +88,41 @@ it('Android RECORD_AUDIO — 선언·플러그인·병합 3경로 모두 차단'
   // 기존 차단분(ACTIVITY_RECOGNITION)을 덮어쓰지 않았는지 — 중복 키로 날린 적 있다
   expect(and.blockedPermissions).toContain('android.permission.ACTIVITY_RECOGNITION');
   expect(RAW.match(/"blockedPermissions"/g)).toHaveLength(1); // JSON 중복 키 방지
+});
+
+/* ---- 로케일화 (Codex #173 P1 · KB-592 DoD ③) ----
+ * Expo 내장 `locales` 맵이 <lang>.lproj/InfoPlist.strings를 생성한다.
+ * 플러그인 옵션의 영어 문구는 **폴백이라 지우면 안 된다** — 여기 없는 로케일이 그걸 쓴다. */
+
+const LANGS = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'ru', 'th', 'es', 'id'];
+const PLIST_KEYS = [
+  'NSCameraUsageDescription',
+  'NSPhotoLibraryUsageDescription',
+  'NSPhotoLibraryAddUsageDescription',
+  'NSLocationWhenInUseUsageDescription',
+];
+
+it('권한 문구 10로케일 — locales 맵·파일·키 전수', () => {
+  const locales = APP.expo.locales;
+  expect(Object.keys(locales).sort()).toEqual([...LANGS].sort());
+  for (const lang of LANGS) {
+    const path = locales[lang].replace(/^\.\//, '');
+    expect(fs.existsSync(path)).toBe(true);
+    const d = JSON.parse(fs.readFileSync(path, 'utf8')) as Record<string, string>;
+    // 실제로 쓰는 4종만 — 안 쓰는 키를 넣으면 그 권한 다이얼로그가 되살아난다
+    expect(Object.keys(d).sort()).toEqual([...PLIST_KEYS].sort());
+    for (const k of PLIST_KEYS) expect(d[k].length).toBeGreaterThan(10);
+  }
+});
+
+it('영어 폴백은 플러그인 옵션에 그대로 남는다(locales에 없는 로케일용)', () => {
+  expect(String(opts('expo-camera').cameraPermission).length).toBeGreaterThan(10);
+  expect(String(opts('expo-image-picker').photosPermission).length).toBeGreaterThan(10);
+  expect(String(opts('expo-location').locationWhenInUsePermission).length).toBeGreaterThan(10);
+  expect(String(opts('expo-media-library').savePhotosPermission).length).toBeGreaterThan(10);
+});
+
+it('ko 권한 문구 — 대시(—) 부연 없이(AGENTS.md 신규 한국어 카피 기준)', () => {
+  const ko = JSON.parse(fs.readFileSync('locales/ko.json', 'utf8')) as Record<string, string>;
+  for (const [k, v] of Object.entries(ko)) expect(`${k}:${v}`).not.toContain('—');
 });

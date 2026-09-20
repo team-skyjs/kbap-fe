@@ -1,5 +1,18 @@
 {
   "expo": {
+    "_localesComment": "KB-592: iOS 권한 문구 로케일화. Expo 내장 기능 — 이 맵이 <lang>.lproj/InfoPlist.strings를 생성한다(@expo/config-plugins ios/Locales). 플러그인 옵션의 영어 문구는 **폴백이라 지우지 않는다**(여기 없는 로케일이 그걸 쓴다). 키는 실제로 쓰는 4종만.",
+    "locales": {
+      "en": "./locales/en.json",
+      "ko": "./locales/ko.json",
+      "ja": "./locales/ja.json",
+      "zh-Hans": "./locales/zh-Hans.json",
+      "zh-Hant": "./locales/zh-Hant.json",
+      "vi": "./locales/vi.json",
+      "id": "./locales/id.json",
+      "th": "./locales/th.json",
+      "ru": "./locales/ru.json",
+      "es": "./locales/es.json"
+    },
     "name": "K-Bap",
     "slug": "kbap",
     "version": "1.0.3",
@@ -165,7 +178,7 @@
         {
           "savePhotosPermission": "Save your K-Bap story card to your photo library.",
           "granularPermissions": ["photo"],
-          "_comment": "P-380(KB-518): 저장 전용 — 기본값은 READ_MEDIA_IMAGES/VIDEO/AUDIO 3종을 다 선언한다(실측). 우리는 이미지 저장만 하므로 photo로 좁힌다. photosPermission은 넘기지 않는다 — expo-image-picker가 이미 세운 NSPhotoLibraryUsageDescription을 보존(undefined면 기존 값 유지). 시스템 문구라 i18n 아님(영어 한 벌)"
+          "_comment": "P-380(KB-518): 저장 전용 — 기본값은 READ_MEDIA_IMAGES/VIDEO/AUDIO 3종을 다 선언한다(실측). 우리는 이미지 저장만 하므로 photo로 좁힌다. photosPermission은 넘기지 않는다 — expo-image-picker가 이미 세운 NSPhotoLibraryUsageDescription을 보존(undefined면 기존 값 유지). KB-592: 시스템 문구도 로케일화했다(app.json locales → InfoPlist.strings 10로케일) — 여기 영어 값은 폴백"
         }
       ],
       [

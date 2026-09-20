@@ -1,0 +1,6 @@
+{
+  "NSCameraUsageDescription": "K-Bap memakai kamera untuk memindai menu, memotret untuk ulasan, dan mengatur foto profil.",
+  "NSPhotoLibraryUsageDescription": "K-Bap mengakses foto agar kamu bisa memindai menu tersimpan, menambahkan foto ke ulasan dan postingan, mengatur foto profil, atau melampirkannya ke pertanyaan.",
+  "NSPhotoLibraryAddUsageDescription": "Simpan kartu cerita K-Bap kamu ke galeri foto.",
+  "NSLocationWhenInUseUsageDescription": "K-Bap memakai lokasi untuk menemukan restoran terdekat, menandai tempat di ulasan, dan mencatat tempat kamu makan."
+}
