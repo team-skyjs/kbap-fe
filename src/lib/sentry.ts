@@ -12,7 +12,7 @@
  */
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
-import { isProdChannel } from '@/lib/flags';
+import { isDiagnosticChannel, isProdChannel } from '@/lib/flags';
 
 const DSN = 'https://c6471e5cf050aaa65dd9067d4a119de6@o4511895920574464.ingest.us.sentry.io/4511895936761856';
 
@@ -64,6 +64,30 @@ export function reportProfileContractDrift(missing: string[]): void {
     level: 'warning',
     tags: { missing: missing.join(',') },
   });
+}
+
+/** KB-518 공유 실패 진단(P-399) — `catch { return 'error' }`가 에러를 통째로 버려서
+ *  b34 100% 실패의 원인을 어디서도 볼 수 없었다(Console·Metro·Sentry 전부 깜깜).
+ *  **어느 단계에서 깨졌는지**가 핵심이라 step을 태그로 올린다. PII 0 — 파일 경로·URI·
+ *  본문은 올리지 않고 enum·boolean만(계측 규칙 그대로). */
+export function reportShareFailure(
+  e: unknown,
+  step: string,
+  extra: Record<string, string | number | boolean>,
+): void {
+  Sentry.captureException(e, { tags: { feature: 'order_share', step }, extra });
+}
+
+/** 위 보고에서 사람이 읽을 한 줄 — teamtest/development 토스트에만 덧붙인다.
+ *  **production이면 null** — 사용자에게 내부 문구·스택을 보이지 않는다.
+ *  채널 판정을 호출부가 아니라 여기서 하는 이유: `isProdChannel` 소비자는 KB-418 허용 목록으로
+ *  잠겨 있고(송신 계약 분기 재발 방지), 이 파일이 이미 그 목록의 "환경 라벨" 담당이다. */
+export function shareFailureSummary(e: unknown, step: string): string | null {
+  // ⚠️ `!isProdChannel()`이 아니다 — 그러면 `preview`(production 백엔드를 쓰는 내부 배포)까지
+  // 포함돼 원시 네이티브 문구가 샌다(Codex #176). teamtest·development·로컬만 명시 허용.
+  if (!isDiagnosticChannel()) return null;
+  const msg = e instanceof Error ? e.message : String(e ?? 'unknown');
+  return `${step}: ${msg}`.slice(0, 120);
 }
 
 export function setSentryUser(memberId: string | null): void {
