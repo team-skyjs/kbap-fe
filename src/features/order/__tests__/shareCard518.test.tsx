@@ -281,6 +281,46 @@ describe('④ 공유 사진 선별 — 서버 대체 이미지 배제 (Codex 8R)
     expect(sharePhotos([IT(null, true), IT('https://cdn/x.jpg', false)])).toEqual([]);
   });
 
+  /* KB-572(9/21, 서버 #270): `imageRef`만으론 실사진과 대체 이미지를 구분할 수 없던 구멍 —
+     `hasPhoto`가 도착해 필터에 합류했다. */
+
+  it('hasPhoto=false는 제외 — ready=true여도 실사진이 아니다', () => {
+    expect(sharePhotos([
+      { imageUrl: 'https://cdn/real.jpg', ready: true, hasPhoto: true },
+      { imageUrl: 'https://cdn/fallback.jpg', ready: true, hasPhoto: false },
+    ])).toEqual(['https://cdn/real.jpg']);
+  });
+
+  // ⚠️ `=== true`로 쓰면 여기서 사진이 전부 사라진다 — 필드 부재는 "없음"이 아니라 "모름"이다.
+  it('hasPhoto 부재(구 서버·구 캐시)는 기존대로 통과', () => {
+    expect(sharePhotos([
+      { imageUrl: 'https://cdn/a.jpg', ready: true },
+      { imageUrl: 'https://cdn/b.jpg' },
+    ])).toEqual(['https://cdn/a.jpg', 'https://cdn/b.jpg']);
+  });
+
+  it('ready=false는 hasPhoto=true여도 여전히 제외(두 조건 독립)', () => {
+    expect(sharePhotos([
+      { imageUrl: 'https://cdn/x.jpg', ready: false, hasPhoto: true },
+      { imageUrl: 'https://cdn/y.jpg', ready: true, hasPhoto: true },
+    ])).toEqual(['https://cdn/y.jpg']);
+  });
+
+  it('hasPhoto 섞여도 상한 4장 유지', () => {
+    const items = Array.from({ length: 6 }, (_, i) => ({ imageUrl: `https://cdn/${i}.jpg`, ready: true, hasPhoto: true }));
+    items.splice(1, 0, { imageUrl: 'https://cdn/no.jpg', ready: true, hasPhoto: false });
+    expect(sharePhotos(items)).toEqual(['https://cdn/0.jpg', 'https://cdn/1.jpg', 'https://cdn/2.jpg', 'https://cdn/3.jpg']);
+  });
+
+  // 필터만 고치고 어댑터를 안 이으면 hasPhoto가 영원히 undefined라 조건이 항상 참이 된다 —
+  // 즉 "고쳤는데 동작 안 함"이 조용히 성립한다. 관통을 잠근다.
+  it('어댑터 관통 — useOrders가 서버 hasPhoto를 items에 실어 보낸다', () => {
+    const src = require('fs').readFileSync('src/lib/data/useOrders.ts', 'utf8') as string;
+    expect(src).toContain('hasPhoto?: boolean;'); // 와이어 타입
+    expect(src).toContain("...(typeof i.hasPhoto === 'boolean' ? { hasPhoto: i.hasPhoto } : {})"); // ready와 같은 문법
+    expect(src).toMatch(/imageUrl: string \| null; ready\?: boolean; hasPhoto\?: boolean/); // 소비 타입
+  });
+
   it('배선 — 카드·섹션 노출 모두 선별 결과를 쓴다(thumbnails 직결 금지)', () => {
     const src = read('src/app/profile/order/[id].tsx');
     expect(src).toContain('const cardPhotos = q.data ? sharePhotos(q.data.items) : []');

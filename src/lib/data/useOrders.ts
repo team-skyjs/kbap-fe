@@ -31,6 +31,9 @@ interface OrderItemWire {
   imageRef?: string | null;
   /** P-259(계약 8/21): false = 준비중 음식(상세 호출 시 FOOD-001). 부재 = 공개 취급. */
   ready?: boolean;
+  /** KB-572(서버 #270, 9/21): false = 실사진 없음(서버가 대체 이미지를 준 경우).
+   *  `imageRef`만으론 실사진과 대체 이미지를 구분할 수 없어서 추가된 필드. 부재 = 모름. */
+  hasPhoto?: boolean;
 }
 
 interface OrderDetailWire extends OrderSummaryWire {
@@ -59,7 +62,7 @@ export interface OrderSummary {
 
 export interface OrderDetail extends OrderSummary {
   totalPrice: number | null;
-  items: { menuName: string; quantity: number; price: number | null; foodId: string | null; imageUrl: string | null; ready?: boolean }[];
+  items: { menuName: string; quantity: number; price: number | null; foodId: string | null; imageUrl: string | null; ready?: boolean; hasPhoto?: boolean }[];
 }
 
 function adaptSummary(w: OrderSummaryWire): OrderSummary {
@@ -113,6 +116,9 @@ export function useOrderDetail(orderId: string) {
           // P-259: ready = 서버 boolean만 통과(부재 = 공개 폴백 — 게이트는 === false).
           // 기본 이미지 URL 문자열로 준비중 판단 금지(종한 명시) — 이 필드가 유일 기준.
           ...(typeof i.ready === 'boolean' ? { ready: i.ready } : {}),
+          // KB-572: hasPhoto도 같은 문법 — 서버 boolean만 통과, 부재는 키를 안 만든다.
+          // 소비처(sharePhotos)가 `!== false`로 보므로 부재 = 기존 동작 유지.
+          ...(typeof i.hasPhoto === 'boolean' ? { hasPhoto: i.hasPhoto } : {}),
         })),
       };
     },
