@@ -21,6 +21,26 @@ export function isProdChannel(): boolean {
   return PROD_CHANNEL;
 }
 
+/** P-399: **진단 문구를 보여도 되는 채널**만 참. `!isProdChannel()`로 negate하면
+ *  `preview`(production 백엔드를 쓰는 내부 배포)까지 포함돼 원시 네이티브 에러 문자열이
+ *  샌다(Codex #176) — 그래서 부정이 아니라 **명시 허용**이다.
+ *  채널 부재(웹·jest·dev 런처)는 로컬 개발이라 포함한다. */
+function isDiagnosticChannelInner(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ch = (require('expo-updates') as { channel?: string | null }).channel;
+    return ch == null || ch === 'teamtest' || ch === 'development';
+  } catch {
+    return true; // 채널을 못 읽는 환경 = 로컬
+  }
+}
+const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
+
+/** 채널 판별 단일 소스(P-114) — 함수형 export로 jest 목 주입 가능. */
+export function isDiagnosticChannel(): boolean {
+  return DIAGNOSTIC_CHANNEL;
+}
+
 export const FLAGS = {
   /**
    * Category browsing UI: home "Browse by category" section + food-tab

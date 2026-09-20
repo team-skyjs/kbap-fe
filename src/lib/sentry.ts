@@ -12,7 +12,7 @@
  */
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
-import { isProdChannel } from '@/lib/flags';
+import { isDiagnosticChannel, isProdChannel } from '@/lib/flags';
 
 const DSN = 'https://c6471e5cf050aaa65dd9067d4a119de6@o4511895920574464.ingest.us.sentry.io/4511895936761856';
 
@@ -83,7 +83,9 @@ export function reportShareFailure(
  *  채널 판정을 호출부가 아니라 여기서 하는 이유: `isProdChannel` 소비자는 KB-418 허용 목록으로
  *  잠겨 있고(송신 계약 분기 재발 방지), 이 파일이 이미 그 목록의 "환경 라벨" 담당이다. */
 export function shareFailureSummary(e: unknown, step: string): string | null {
-  if (isProdChannel()) return null;
+  // ⚠️ `!isProdChannel()`이 아니다 — 그러면 `preview`(production 백엔드를 쓰는 내부 배포)까지
+  // 포함돼 원시 네이티브 문구가 샌다(Codex #176). teamtest·development·로컬만 명시 허용.
+  if (!isDiagnosticChannel()) return null;
   const msg = e instanceof Error ? e.message : String(e ?? 'unknown');
   return `${step}: ${msg}`.slice(0, 120);
 }

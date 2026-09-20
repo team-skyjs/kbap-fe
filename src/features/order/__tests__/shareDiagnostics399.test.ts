@@ -116,7 +116,25 @@ it('실패 이력이 없으면 힌트도 없다', () => {
   expect(lastShareErrorHint()).toBeNull();
 });
 
-/* ---- ④ 소스 잠금 — 에러를 다시 삼키지 못하게 ---- */
+/* ---- ④ 채널 허용 목록 — preview 누출 방지(Codex #176) ---- */
+
+// `!isProdChannel()`로 negate하면 preview(production 백엔드를 쓰는 내부 배포)까지 포함돼
+// 원시 네이티브 문구가 샌다. **부정이 아니라 명시 허용**이어야 한다.
+it('진단 채널은 명시 허용 — preview·production은 제외, teamtest·development·로컬만', () => {
+  const flags = require('fs').readFileSync('src/lib/flags.ts', 'utf8') as string;
+  expect(flags).toContain("ch === 'teamtest' || ch === 'development'");
+  expect(flags).toContain('export function isDiagnosticChannel()');
+  const sentry = require('fs').readFileSync('src/lib/sentry.ts', 'utf8') as string;
+  // shareFailureSummary 본문만 본다 — tapSentrySelfcheck(P-114)의 isProdChannel은 별건이다
+  const body = sentry.slice(sentry.indexOf('export function shareFailureSummary'));
+  const fn = body.slice(0, body.indexOf('\n}'));
+  expect(fn).toContain('if (!isDiagnosticChannel()) return null;');
+  // 주석엔 "왜 negate가 아닌지" 설명이 있으므로 **코드 줄만** 본다
+  const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  expect(code).not.toContain('isProdChannel'); // 구 negate 잔존 0
+});
+
+/* ---- ⑤ 소스 잠금 — 에러를 다시 삼키지 못하게 ---- */
 
 it('두 흐름의 catch가 에러를 버리지 않는다(빈 catch 재발 방지)', () => {
   const src = require('fs').readFileSync('src/features/order/shareExport.ts', 'utf8') as string;
