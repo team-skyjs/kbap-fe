@@ -6,6 +6,10 @@
  * (MOCK_MODE merges the cache). The picker UI is the shared IngredientFilter
  * (also used by onboarding KB-8).
  */
+// 🔴 KB-602 래칫 기록(2026-09-21): 아래 `if (isGuest)` early return이 **훅 호출보다 위**에 있다.
+// 앞의 FLAGS 계열과 달리 `useIsGuest()`는 **런타임 값**이라, 로그인/로그아웃으로 값이 뒤집히면
+// 훅 순서가 실제로 바뀐다(`useSubmitGuard`가 조건부 호출됨) — 잠재 버그다.
+// 소진 발주(KB-603~) 1순위 후보. 코드 변경은 이번 PR 범위 밖이라 표시만 남긴다.
 import { useEffect, useState, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';

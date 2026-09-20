@@ -130,15 +130,17 @@ export default function RootLayout() {
   // 활성 — 정지 마크(동일 위치) 위에서 모션 A 시작, 종료 페이드로 첫 화면과 크로스페이드.
   // P-293: entryChecked 대기 제거(b25 실기 — 정지 마크 ~1s 멈춤) — 모션은 폰트 준비
   // 즉시 시작, 부트 완료는 ready(entryChecked)로 전달해 페이드아웃만 잡는다.
-  const [splashActive, setSplashActive] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
   // P-296(Codex #52 P1): 인라인 onDone은 리렌더마다 새 정체성 — 안정 콜백으로
   const onSplashDone = useCallback(() => setSplashVisible(false), []);
+  // KB-602: **파생값** — 전에는 effect에서 setState했는데 렌더가 한 번 더 돌았고
+  // (react-hooks/set-state-in-effect), 그 한 프레임 동안 스플래시가 active=false로
+  // 그려져 애니메이션 시작이 밀렸다. 아래 early return(`!fontsLoaded && !fontError`)
+  // 때문에 이 값이 쓰이는 시점엔 조건이 이미 참이라, 상태로 들고 있을 이유가 없다.
+  const splashActive = fontsLoaded || !!fontError;
+  // 남는 건 side effect 하나 — 네이티브 스플래시 감추기.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      setSplashActive(true);
-      SplashScreen.hideAsync().catch(() => {});
-    }
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded, fontError]);
 
   // KB-67: refresh 만료 = 세션 정리. 게스트 모드에선 로그인 화면을 강제하지
