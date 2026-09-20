@@ -2,6 +2,15 @@
 
 이 레포는 React Native(Expo) 앱. PR 리뷰 시 아래 기준으로 코멘트해 주세요.
 
+## lint 게이트 (2026-09-21, KB-602)
+
+FE 발주 DoD의 "lint 통과" = **`npm run lint:changed` 종료 코드 0** — `origin/develop...HEAD`로
+바뀐 `.ts/.tsx`만 보고 **warning 1건도 허용하지 않는다**(신규·변경 파일은 `react-hooks/*`까지 전부 통과).
+
+전체 `npm run lint`의 warning은 **기존 부채**다. eslint가 그동안 미설치라 한 번도 돌지 않았고,
+켜자마자 `react-hooks/*` 위반 155건이 드러났다 — 끄지 않고 warn으로 내려 계속 보이게 두고
+(`eslint.config.js` 래칫 블록) KB-603~으로 분할 소진한다. 소진된 룰은 그 블록에서 지워 error로 되돌린다.
+
 ## 리뷰 관점
 
 1. **정확성**: 실제 버그·엣지 케이스·회귀 위험 우선. 스타일 지적은 동작에 영향 있을 때만.

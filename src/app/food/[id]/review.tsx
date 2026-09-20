@@ -6,6 +6,11 @@
  * 성공 시 서버 재조회(무효화)가 진실 (목 캐시 삽입 폐기). Rating required
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
+// ⚠️ KB-602 래칫 기록(2026-09-21): 아래 `FLAGS.*` early return이 **훅 호출보다 위**에 있다 —
+// `react-hooks/rules-of-hooks`가 이 파일에서 위반으로 잡는다(현재 warn으로 내려둔 상태).
+// 지금 안전한 이유는 **FLAGS가 빌드 상수**라 한 빌드 안에서 분기가 고정된다는 것 하나뿐이다.
+// 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
+// early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
