@@ -254,6 +254,33 @@ it('①-P1c 기준선은 merge-base — 분기 후 base가 같은 파일을 바�
   expect(r.code).toBe(0); // 물려받은 부채는 여전히 면제
 });
 
+/* 한 줄에 훅이 둘 있고 그 위에 early return이 새로 생기면 **둘 다** 조건부가 된다.
+   ⚠️ 정직한 기록: 이 테스트는 **다중도(기준선 1건이 HEAD 2건을 덮는 문제)를 검증하지 않는다.**
+   실측 결과 BASE 메시지엔 "Did you accidentally call a React Hook after an early return?"
+   꼬리가 없고 HEAD엔 있어서, 애초에 종류(kind)가 달라 매칭이 안 된다 — 즉 다중도 로직을
+   지우고 돌려도 이 테스트는 통과한다(결합 뮤테이션으로 확인). 그래서 커버리지를 주장하지
+   않고, 이 테스트가 실제로 잠그는 것(= 그 상황에서 두 건이 모두 새 부채로 잡힌다)만 이름에 쓴다. */
+it('①-P2b early return이 한 줄의 훅 둘을 모두 조건부로 만들면 2건 다 잡는다', () => {
+  const base = `import { useState } from 'react';
+export function C({ on }: { on: boolean }) {
+  const [a] = on ? useState(0) : [0]; const [b] = useState(1);
+  return a + b;
+}
+`;
+  // early return만 추가 → 같은 줄의 훅 **둘 다** 조건부가 된다(진단 2건, 줄 동일·열만 다름)
+  const head = `import { useState } from 'react';
+export function C({ on }: { on: boolean }) {
+  if (on) return 0;
+  const [a] = on ? useState(0) : [0]; const [b] = useState(1);
+  return a + b;
+}
+`;
+  scenario({ 'multi.tsx': base }, { 'multi.tsx': head });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.out).toContain('rules-of-hooks');
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {

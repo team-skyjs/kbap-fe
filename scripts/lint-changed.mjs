@@ -146,11 +146,15 @@ function eslintJson(args, input) {
  *  "새 진단"으로 오인된다(실측). 그래서 첫 줄만 쓴다. */
 const kindOf = (m) => `${m.ruleId ?? '?'}\u0000${String(m.message).split('\n')[0].trim()}`;
 
-/** 진단의 정체성 = **종류 + 위치**.
+/** 진단의 정체성 = **종류 + 줄 + 열**.
+ *  열까지 넣는 이유: 한 줄에 같은 종류의 진단이 여러 개 놓일 수 있다(예: `const [a] = useState(0);
+ *  const [b] = useState(1);` — 위에 early return이 생기면 **둘 다** 조건부 훅이 된다).
+ *  열이 없으면 두 건이 한 정체성으로 뭉쳐, 기준선 1건이 새 1건을 덮어쓴다. 안 바뀐 줄의
+ *  열은 이동하지 않으므로 매핑이 필요 없다.
  *  ⚠️ 종류별 **개수만** 비교하면 상쇄된다(Codex #175 P1): 한 위반을 고치면서 같은 종류를
  *  파일 안 다른 곳에 새로 넣으면 개수가 그대로라 통과해 버린다. BASE 줄을 HEAD 줄로
  *  매핑해 위치까지 대조한다. */
-const idOf = (m, line) => `${kindOf(m)}\u0000${line ?? 0}`;
+const idOf = (m, line) => `${kindOf(m)}\u0000${line ?? 0}\u0000${m.column ?? 0}`;
 
 /**
  * BASE 줄 → HEAD 줄 매퍼. 헝크 밖(안 바뀐 영역)은 누적 delta만큼 밀리고,
@@ -196,26 +200,30 @@ function baseToHeadMapper(file, renames) {
   };
 }
 
-/** BASE에 있던 진단의 **정체성 집합**(HEAD 줄로 매핑). 파일이 새로 생겼으면 빈 집합. */
+/** BASE에 있던 진단의 **정체성별 개수**(HEAD 줄로 매핑). 파일이 새로 생겼으면 빈 맵.
+ *  ⚠️ 집합이 아니라 **개수**다 — `Set.has`는 소비하지 않아서 기준선 1건이 HEAD 여러 건을
+ *  면제해 버린다(Codex #175). 매칭할 때마다 하나씩 깎는다. */
 function baseCounts(file) {
   let content;
   try {
     // 이름이 바뀌었으면 BASE엔 옛 경로로 있다
     content = git(['show', `${MERGE_BASE}:${renames.get(file) ?? file}`]);
   } catch {
-    return new Set(); // 신규 파일 — 기준선 없음
+    return new Map(); // 신규 파일 — 기준선 없음
   }
   // --stdin-filename으로 **원래 경로인 척** 린트한다(설정·룰 해석이 실제와 같아진다)
   const rep = eslintJson(['--stdin', '--stdin-filename', file], content);
   const toHead = baseToHeadMapper(file, renames);
-  const ids = new Set();
+  const counts = new Map();
   for (const f of rep) {
     for (const m of f.messages) {
       const mapped = toHead(m.line);
-      if (mapped != null) ids.add(idOf(m, mapped)); // 살아남은 줄의 기존 진단만 면제
+      if (mapped == null) continue; // 사라진 줄의 진단은 면제 대상이 아니다
+      const id = idOf(m, mapped);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
     }
   }
-  return ids;
+  return counts;
 }
 
 const report = eslintJson(files);
@@ -249,7 +257,10 @@ for (const f of report) {
 for (const [rel, msgs] of pending) {
   const base = baseCounts(rel);
   for (const m of msgs) {
-    if (!base.has(idOf(m, m.line))) hits.push({ rel, m, why: 'BASE에 없던 진단' });
+    const id = idOf(m, m.line);
+    const left = base.get(id) ?? 0;
+    if (left > 0) base.set(id, left - 1); // **소비** — 기준선 1건은 HEAD 1건만 면제한다
+    else hits.push({ rel, m, why: 'BASE에 없던 진단' });
   }
 }
 
