@@ -23,7 +23,7 @@ import { OrderDishPickerSheet } from '@/features/review/ReviewCellParts';
 import { orderPlaceLabel, useOrderDetail } from '@/lib/data/useOrders';
 import { OrderShareExportCanvas, OrderShareSection } from '@/features/order/OrderShareCard';
 import { shareMenuLine, shareMetaCity, sharePhotos } from '@/features/order/shareCard';
-import { saveCardToPhotos, shareCardToStory, storyShareAvailable } from '@/features/order/shareExport';
+import { lastShareErrorHint, saveCardToPhotos, shareCardToStory, storyShareAvailable } from '@/features/order/shareExport';
 import { showTopToast } from '@/components/topToastStore';
 import { openAppSettings } from '@/lib/openExternal';
 import { EVENTS, track } from '@/lib/analytics';
@@ -98,6 +98,12 @@ export default function OrderDetailScreen() {
     setPhotosState(photosKey ? 'loading' : 'ready');
   }, [photosKey, retry]);
 
+  // 실패 문구 + (비production 한정) 단계·원인 1줄
+  const shareFailText = (base: string) => {
+    const hint = lastShareErrorHint();
+    return hint ? `${base} (${hint})` : base;
+  };
+
   const onDownload = React.useCallback(async () => {
     if (shareBusy.current) return;
     shareBusy.current = true;
@@ -109,7 +115,9 @@ export default function OrderDetailScreen() {
     // 권한 거부 = 안내 + 설정 열기(P-381 openAppSettings 재사용 — 앱이 직접 못 연다).
     // 네이티브 Alert가 아니라 공용 시트 — 이 화면은 P-355로 Alert를 걷어낸 자리다.
     if (r === 'denied') return setPhotoDenied(true);
-    showTopToast(t('myFoods.shareFailed'), { error: true });
+    // P-399: teamtest·development에서만 실패 요지 1줄을 덧붙인다(production은 문구 무변 —
+    // 사용자에게 내부 메시지를 보이지 않는다). 예진이 기기에서 바로 단계를 읽을 수 있게.
+    showTopToast(shareFailText(t('myFoods.shareFailed')), { error: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t, shareProps.item_count, shareProps.has_place]);
 
@@ -122,7 +130,10 @@ export default function OrderDetailScreen() {
     track(EVENTS.order_share_story, { ...shareProps, result: r });
     if (r === 'success') return;
     // 미설치는 앱스토어로 보내지 않는다(발주 고정) — 문구만
-    showTopToast(r === 'not_installed' ? t('myFoods.shareNoInstagram') : t('myFoods.shareFailed'), { error: true });
+    showTopToast(
+      r === 'not_installed' ? t('myFoods.shareNoInstagram') : shareFailText(t('myFoods.shareFailed')),
+      { error: true },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t, shareProps.item_count, shareProps.has_place]);
 

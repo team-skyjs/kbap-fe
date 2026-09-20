@@ -12,6 +12,7 @@ import type * as React from 'react';
 import type { View } from 'react-native';
 import Constants from 'expo-constants';
 import { SHARE_CARD_W } from './shareCard';
+import { reportShareFailure, shareFailureSummary } from '@/lib/sentry';
 
 /** 내보내기 픽셀 규격 — 인스타 스토리 기준. */
 export const EXPORT_W = 1080;
@@ -26,6 +27,64 @@ export const CANVAS_W = EXPORT_W / 4;
 export const CANVAS_H = EXPORT_H / 4;
 /** 카드 확대 배율 = (캔버스 폭 × 75%) / 카드 폭. */
 export const CARD_SCALE = (CANVAS_W * EXPORT_CARD_RATIO) / SHARE_CARD_W;
+
+/* ---- P-399 진단 계측 ----------------------------------------------------------
+ * b34에서 공유가 100% 실패하는데 원인을 아무 데서도 볼 수 없었다 — 두 흐름의
+ * `catch { return 'error' }`가 에러를 통째로 버렸기 때문이다(Console·Metro·Sentry 전부 깜깜).
+ * 반환값(`SaveResult`·`StoryResult`)과 분기는 **그대로 두고**, 어느 단계에서 깨졌는지만 남긴다.
+ */
+
+/** 실패 지점. `capture_module`(네이티브 미링크)과 `capture`(캡처 자체 실패)를 갈라 둔다 —
+ *  view-shot은 모듈 부재 시 "RNViewShot is undefined"로, 캡처 실패 시
+ *  "findNodeHandle failed"·"ref.current is null"로 던져서 조치가 완전히 다르다. */
+export type ShareStep =
+  | 'permission'
+  | 'capture_module'
+  | 'capture'
+  | 'save_library'
+  | 'instagram_check'
+  | 'share_story';
+
+/** 기본 구현이 단계를 붙여 던지는 래퍼 — 주입 구현(테스트)은 안 써도 된다. */
+export class ShareStepError extends Error {
+  constructor(
+    readonly step: ShareStep,
+    readonly cause: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : String(cause ?? 'unknown'));
+    this.name = 'ShareStepError';
+  }
+}
+
+/** 던져진 에러가 단계를 알고 있으면 그걸 쓰고, 아니면 흐름이 추적한 단계를 쓴다. */
+function stepOf(e: unknown, fallback: ShareStep): ShareStep {
+  return e instanceof ShareStepError ? e.step : fallback;
+}
+
+/** 마지막 실패 — teamtest/development 토스트가 한 줄 덧붙일 때만 읽는다(production 미사용). */
+let lastShareError: { step: ShareStep; error: unknown } | null = null;
+
+/** production이면 null(판정은 sentry.ts — KB-418 허용 목록 유지). 실패 이력 없어도 null. */
+export function lastShareErrorHint(): string | null {
+  if (!lastShareError) return null;
+  return shareFailureSummary(lastShareError.error, lastShareError.step);
+}
+
+/** 테스트 전용 — 모듈 전역 상태 초기화. */
+export function _resetShareErrorForTest(): void {
+  lastShareError = null;
+}
+
+/** Sentry extra — PII 0(enum·boolean만). */
+function shareContext(flow: 'save' | 'story'): Record<string, string | number | boolean> {
+  return {
+    flow,
+    os: PLATFORM_OS,
+    meta_app_id_present: !!META_APP_ID.trim(),
+    export_w: EXPORT_W,
+    export_h: EXPORT_H,
+  };
+}
 
 export type SaveResult = 'success' | 'denied' | 'error';
 export type StoryResult = 'success' | 'not_installed' | 'unavailable' | 'error';
@@ -72,10 +131,21 @@ export interface ShareDeps {
 
 export const defaultDeps: ShareDeps = {
   capture: async (ref) => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { captureRef } = require('react-native-view-shot') as typeof import('react-native-view-shot');
-    // width/height = 결과 픽셀 — dp 캔버스를 그대로 찍고 늘리면 뭉개진다(발주 명시)
-    return captureRef(ref, { format: 'png', quality: 1, width: EXPORT_W, height: EXPORT_H, result: 'tmpfile' });
+    // P-399: 모듈 로드와 실제 캡처를 **따로** 던진다 — 네이티브 미링크(`RNViewShot is undefined`)와
+    // 캡처 실패(`findNodeHandle failed`·`ref.current is null`)는 원인도 조치도 다르다.
+    let captureRef: typeof import('react-native-view-shot').captureRef;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      ({ captureRef } = require('react-native-view-shot') as typeof import('react-native-view-shot'));
+    } catch (e) {
+      throw new ShareStepError('capture_module', e);
+    }
+    try {
+      // width/height = 결과 픽셀 — dp 캔버스를 그대로 찍고 늘리면 뭉개진다(발주 명시)
+      return await captureRef(ref, { format: 'png', quality: 1, width: EXPORT_W, height: EXPORT_H, result: 'tmpfile' });
+    } catch (e) {
+      throw new ShareStepError('capture', e);
+    }
   },
   requestSavePermission: async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -127,12 +197,18 @@ export async function saveCardToPhotos(
   ref: React.RefObject<View | null>,
   deps: ShareDeps = defaultDeps,
 ): Promise<SaveResult> {
+  // P-399: 어느 단계에서 깨졌는지 들고 다닌다 — catch에서 태그로 올린다
+  let step: ShareStep = 'permission';
   try {
     if (!(await deps.requestSavePermission())) return 'denied';
+    step = 'capture';
     const uri = await deps.capture(ref);
+    step = 'save_library';
     await deps.saveToLibrary(uri);
     return 'success';
-  } catch {
+  } catch (e) {
+    lastShareError = { step: stepOf(e, step), error: e };
+    reportShareFailure(e, lastShareError.step, shareContext('save'));
     return 'error';
   }
 }
@@ -142,14 +218,19 @@ export async function shareCardToStory(
   ref: React.RefObject<View | null>,
   deps: ShareDeps = defaultDeps,
 ): Promise<StoryResult> {
+  let step: ShareStep = 'instagram_check';
   try {
     // appId 없는 iOS = 버튼이 숨겨져 있어 도달하지 않는 경로(2중 방어)
     if (!deps.storyAvailable()) return 'unavailable';
     if (!(await deps.isInstagramInstalled())) return 'not_installed';
+    step = 'capture';
     const uri = await deps.capture(ref);
+    step = 'share_story';
     await deps.shareToStory(uri);
     return 'success';
-  } catch {
+  } catch (e) {
+    lastShareError = { step: stepOf(e, step), error: e };
+    reportShareFailure(e, lastShareError.step, shareContext('story'));
     return 'error';
   }
 }
