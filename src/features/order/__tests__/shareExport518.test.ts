@@ -17,6 +17,30 @@ import {
 import { SHARE_CARD_W } from '../shareCard';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
+
+/* KB-605: expo-media-library 56의 기본 진입점은 **클래스 기반 새 API**다. 구 함수 19종은
+   `legacyWarnings.ts`의 스텁이라 호출 즉시 throw한다 — b34 공유 저장 100% 실패의 원인이었다
+   (Sentry step=save_library). 목록을 하드코딩하면 다음 SDK에서 늘어난 항목을 놓치므로
+   **패키지 실물에서 읽어** 대조한다. */
+it('KB-605: 기본 진입점의 구 media-library API를 쓰지 않는다(호출 즉시 throw)', () => {
+  const warnings = read('node_modules/expo-media-library/src/legacyWarnings.ts');
+  const deprecated = [...warnings.matchAll(/^export (?:async )?function (\w+)/gm)].map((m) => m[1]);
+  expect(deprecated.length).toBeGreaterThan(10); // 실물을 제대로 읽었는지
+  expect(deprecated).toContain('saveToLibraryAsync');
+
+  const src = read('src/features/order/shareExport.ts');
+  for (const name of deprecated) expect(src).not.toContain(`MediaLibrary.${name}(`);
+  expect(src).toContain('MediaLibrary.Asset.create(uri)'); // 정식 대체
+});
+
+// 권한은 **기본 진입점의 정식 API**다(deprecated 아님) — legacy로 옮기면 안 된다.
+// 네이티브가 Asset.create에 `checkIfWritePermissionGranted`만 요구하므로 write-only로 충분.
+it('KB-605: 권한 2종은 기본 진입점 유지 · writeOnly(true) 그대로', () => {
+  const src = read('src/features/order/shareExport.ts');
+  expect(src).toContain('MediaLibrary.getPermissionsAsync(true)');
+  expect(src).toContain('MediaLibrary.requestPermissionsAsync(true)');
+  expect(src).not.toContain('expo-media-library/legacy'); // legacy 진입점 미사용
+});
 const ref = { current: null } as never;
 
 function deps(over: Partial<ShareDeps> = {}): ShareDeps {
