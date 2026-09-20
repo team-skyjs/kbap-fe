@@ -212,6 +212,48 @@ export function B({ on }: { on: boolean }) {
   expect(r.out).toContain('rules-of-hooks');
 });
 
+/* ⚠️ Codex #175 P2: 순수 삽입 헝크는 `@@ -N,0 +M @@` 꼴로 **앵커 N**에 달린다.
+   `oldStart <= baseLine`으로 밀면 앵커 줄(N) 자신까지 한 칸 밀려 매핑돼서,
+   부채가 있는 줄 **바로 아래에 무해한 줄 하나 추가**한 것만으로 게이트가 실패한다. */
+it('①-P2 삽입 앵커 — 부채 줄 바로 아래에 무해한 줄을 넣어도 통과', () => {
+  // 기존 줄은 **하나도 안 건드리고** 주석만 끼워 넣는다 → `@@ -4,0 +5 @@` 순수 삽입.
+  // (경고를 새로 만들지 않도록 주석을 쓴다 — 다른 이유로 실패하면 이 케이스를 검증 못 한다.)
+  const head = BAD.replace('  return v;', '  // 무해한 주석\n  return v;');
+  scenario({ 'debt.tsx': BAD }, { 'debt.tsx': head });
+  const r = run();
+  expect(r.code).toBe(0);
+});
+
+/* ⚠️ Codex #175 P1: diff는 merge-base 기준인데 기준 파일을 BASE **최신 tip**에서 읽으면
+   분기 후 develop이 같은 파일을 건드렸을 때 서로 다른 버전을 대조하게 된다. */
+it('①-P1c 기준선은 merge-base — 분기 후 base가 같은 파일을 바꿔도 부채를 물려받는다', () => {
+  // base 커밋 → 브랜치(HEAD) 분기 → base만 같은 파일을 추가 수정
+  git(['checkout', '-q', '--orphan', `p1c${Date.now()}`]);
+  for (const f of fs.readdirSync(dir)) {
+    if (f !== '.git' && f !== 'node_modules' && f !== 'eslint.config.js') fs.rmSync(path.join(dir, f), { recursive: true, force: true });
+  }
+  fs.writeFileSync(path.join(dir, 'debt.tsx'), BAD);
+  git(['add', '-A']);
+  git(['commit', '-q', '-m', 'base']);
+  git(['branch', '-f', 'base']);
+
+  // HEAD: 부채는 그대로 두고 무관한 줄만 수정
+  fs.writeFileSync(path.join(dir, 'debt.tsx'), BAD.replace('return v;', 'return v + 0;'));
+  git(['add', '-A']);
+  git(['commit', '-q', '-m', 'head']);
+  const headRef = git(['rev-parse', 'HEAD']).trim();
+
+  // base만 전진 — 같은 파일에 줄을 더 넣는다(분기 이후 변경)
+  git(['checkout', '-q', 'base']);
+  fs.writeFileSync(path.join(dir, 'debt.tsx'), '// base가 나중에 넣은 줄\n' + BAD);
+  git(['add', '-A']);
+  git(['commit', '-q', '-m', 'base advances']);
+  git(['checkout', '-q', headRef]);
+
+  const r = run();
+  expect(r.code).toBe(0); // 물려받은 부채는 여전히 면제
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {

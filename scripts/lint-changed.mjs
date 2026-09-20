@@ -27,9 +27,23 @@ const SOURCE_GLOBS = ['*.ts', '*.tsx', '*.js', '*.jsx', '*.mjs', '*.cjs'];
 
 const git = (args) => execFileSync('git', args, { encoding: 'utf8' });
 
+/** ⚠️ diff는 `BASE...HEAD`(= merge-base 기준)인데 `git show BASE:file`은 **BASE 최신 tip**을
+ *  읽는다. 분기 후 develop이 같은 파일을 건드리면 **서로 다른 버전**을 대조하게 돼,
+ *  물려받은 부채를 새 것으로 몰거나 반대로 새 위반을 면제해 버린다(Codex #175).
+ *  merge-base를 한 번 구해 **기준을 하나로** 묶는다. */
+const MERGE_BASE = (() => {
+  try {
+    return git(['merge-base', BASE, 'HEAD']).trim();
+  } catch {
+    return null; // 아래에서 BASE 부재로 실패 처리된다
+  }
+})();
+/** diff 범위 — merge-base부터 HEAD까지(두 점). `...`과 같은 범위를 명시적으로 고정. */
+const RANGE = () => `${MERGE_BASE}..HEAD`;
+
 /** BASE...HEAD에서 추가·복사·수정·이름변경된 소스 (삭제 제외 — 파일이 없으니 린트 불가) */
 function changedFiles() {
-  return git(['diff', '--name-only', '--diff-filter=ACMR', `${BASE}...HEAD`, '--', ...SOURCE_GLOBS])
+  return git(['diff', '--name-only', '--diff-filter=ACMR', RANGE(), '--', ...SOURCE_GLOBS])
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -43,7 +57,7 @@ function changedFiles() {
  */
 function renameMap() {
   const out = new Map();
-  const raw = git(['diff', '--name-status', '-M', `${BASE}...HEAD`, '--', ...SOURCE_GLOBS]);
+  const raw = git(['diff', '--name-status', '-M', RANGE(), '--', ...SOURCE_GLOBS]);
   for (const line of raw.split('\n')) {
     const parts = line.split('\t');
     if (parts.length === 3 && parts[0].startsWith('R')) out.set(parts[2].trim(), parts[1].trim());
@@ -61,7 +75,7 @@ function addedLines(files, renames) {
   if (files.length === 0) return out;
   // 옛 경로도 pathspec에 넣어야 git이 리네임 짝을 찾는다 — 그래야 실제 변경만 헝크로 나온다
   const paths = [...new Set([...files, ...files.map((f) => renames.get(f)).filter(Boolean)])];
-  const diff = git(['diff', '--unified=0', '-M', `${BASE}...HEAD`, '--', ...paths]);
+  const diff = git(['diff', '--unified=0', '-M', RANGE(), '--', ...paths]);
   let file = null;
   for (const line of diff.split('\n')) {
     if (line.startsWith('+++ ')) {
@@ -84,6 +98,7 @@ function addedLines(files, renames) {
 
 let files;
 try {
+  if (!MERGE_BASE) throw new Error('no merge base');
   files = changedFiles();
 } catch {
   // BASE를 못 찾는 환경(얕은 클론 등)에서 조용히 통과하면 래칫이 풀린다 — 실패로 끝낸다.
@@ -133,7 +148,7 @@ function baseToHeadMapper(file, renames) {
   const paths = [...new Set([file, oldPath])];
   let diff;
   try {
-    diff = git(['diff', '--unified=0', '-M', `${BASE}...HEAD`, '--', ...paths]);
+    diff = git(['diff', '--unified=0', '-M', RANGE(), '--', ...paths]);
   } catch {
     return () => null;
   }
@@ -153,11 +168,16 @@ function baseToHeadMapper(file, renames) {
     if (baseLine == null) return null;
     let delta = 0;
     for (const h of hunks) {
-      const oldEnd = h.oldStart + h.oldCount - 1;
-      if (h.oldCount > 0 && baseLine >= h.oldStart && baseLine <= oldEnd) return null; // 바뀌거나 지워진 줄
-      if (oldEnd < baseLine || h.oldCount === 0) {
-        if (h.oldStart <= baseLine) delta += h.newCount - h.oldCount;
+      if (h.oldCount === 0) {
+        // 순수 삽입(`@@ -4,0 +5 @@`) — 앵커(4) **다음**부터 밀린다. 앵커 줄 자신은 제자리다.
+        // `<=`로 두면 앵커에 있던 기존 부채가 한 줄 밀려 매핑돼, 바로 아래에 무해한 줄을
+        // 추가한 것만으로 게이트가 실패한다(Codex #175).
+        if (h.oldStart < baseLine) delta += h.newCount;
+        continue;
       }
+      const oldEnd = h.oldStart + h.oldCount - 1;
+      if (baseLine >= h.oldStart && baseLine <= oldEnd) return null; // 바뀌거나 지워진 줄
+      if (oldEnd < baseLine) delta += h.newCount - h.oldCount;
     }
     return baseLine + delta;
   };
@@ -168,7 +188,7 @@ function baseCounts(file) {
   let content;
   try {
     // 이름이 바뀌었으면 BASE엔 옛 경로로 있다
-    content = git(['show', `${BASE}:${renames.get(file) ?? file}`]);
+    content = git(['show', `${MERGE_BASE}:${renames.get(file) ?? file}`]);
   } catch {
     return new Set(); // 신규 파일 — 기준선 없음
   }
