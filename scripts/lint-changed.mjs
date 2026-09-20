@@ -34,7 +34,12 @@ const RENAME_SIMILARITY = '25%';
 
 /** ⚠️ `core.quotepath` 기본값이 true라, git은 **비ASCII 경로를 따옴표+8진 이스케이프**로 낸다
  *  (예: `"src/\355\225\234.tsx"`). 그대로 쓰면 파일시스템 경로와 안 맞아 **그 파일이 검사에서
- *  조용히 빠진다** — 게이트가 통과처럼 보이는 실패다(Codex #175). 모든 git 호출에서 끈다. */
+ *  조용히 빠진다** — 게이트가 통과처럼 보이는 실패다(Codex #175). 모든 git 호출에서 끈다.
+ *
+ *  ℹ️ **개행이 든 파일명은 미지원**(의도된 선택). `-z`를 쓰면 막히지만 `--name-status -z`는
+ *  리네임을 `status\0old\0new\0`로 내보내 파싱 구조가 통째로 바뀐다 — 리네임 인식은 이 PR에서
+ *  이미 고친 자리라 거기를 다시 뜯으면 검증된 경로에 새 위험이 들어간다. 이 레포엔 0건이고
+ *  다른 도구도 대부분 깨지는 파일명이라, "완전해 보여서"만으로는 바꾸지 않는다. */
 const git = (args) => execFileSync('git', ['-c', 'core.quotepath=false', ...args], { encoding: 'utf8' });
 
 /** ⚠️ diff는 `BASE...HEAD`(= merge-base 기준)인데 `git show BASE:file`은 **BASE 최신 tip**을
