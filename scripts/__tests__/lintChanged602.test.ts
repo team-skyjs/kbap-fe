@@ -295,6 +295,16 @@ it('①-P2c 대폭 수정된 리네임 — 남겨둔 줄의 부채는 여전히 
   expect(r.code).toBe(0); // 남겨둔 BAD 부분의 부채는 물려받는다
 });
 
+/* ⚠️ Codex #175: `core.quotepath` 기본값 때문에 git이 비ASCII 경로를 따옴표+8진 이스케이프로
+   낸다. 그대로 쓰면 파일시스템 경로와 안 맞아 **그 파일이 검사에서 조용히 빠진다** —
+   위반이 있어도 게이트가 통과한다. */
+it('①-P2d 한글 파일명 — 경로 이스케이프로 검사에서 빠지지 않는다', () => {
+  scenario({ 'keep.ts': CLEAN }, { '한글파일.tsx': BAD });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.out).toContain('set-state-in-effect');
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {

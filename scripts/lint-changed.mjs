@@ -32,7 +32,10 @@ const SOURCE_GLOBS = ['*.ts', '*.tsx', '*.js', '*.jsx', '*.mjs', '*.cjs'];
  *  25%로 둔다: 유사도가 그보다 낮으면 어차피 대부분이 "추가"로 잡혀 면제될 여지가 거의 없다. */
 const RENAME_SIMILARITY = '25%';
 
-const git = (args) => execFileSync('git', args, { encoding: 'utf8' });
+/** ⚠️ `core.quotepath` 기본값이 true라, git은 **비ASCII 경로를 따옴표+8진 이스케이프**로 낸다
+ *  (예: `"src/\355\225\234.tsx"`). 그대로 쓰면 파일시스템 경로와 안 맞아 **그 파일이 검사에서
+ *  조용히 빠진다** — 게이트가 통과처럼 보이는 실패다(Codex #175). 모든 git 호출에서 끈다. */
+const git = (args) => execFileSync('git', ['-c', 'core.quotepath=false', ...args], { encoding: 'utf8' });
 
 /** ⚠️ diff는 `BASE...HEAD`(= merge-base 기준)인데 `git show BASE:file`은 **BASE 최신 tip**을
  *  읽는다. 분기 후 develop이 같은 파일을 건드리면 **서로 다른 버전**을 대조하게 돼,
