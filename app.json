@@ -182,6 +182,19 @@
         }
       ],
       [
+        "react-native-fbsdk-next",
+        {
+          "appID": "2530115400831168",
+          "displayName": "K-Bap",
+          "scheme": "fb2530115400831168",
+          "clientToken": "871dfc2051ca5e11ebf616e5567208cc",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "_comment": "KB-600(P-397): 설치 어트리뷰션(SKAdNetwork)만 목적. iosUserTrackingPermission은 **의도적으로 생략** — ATT 프롬프트 없이 간다(9/21 예진 D2). advertiserIDCollectionEnabled=false와 한 쌍이라 둘 중 하나만 바꾸면 개인정보 라벨이 어긋난다. clientToken은 공개값(App Secret 아님). 네이티브 — 다음 빌드 반영"
+        }
+      ],
+      [
         "react-native-share",
         {
           "android": ["com.instagram.android"],
