@@ -12,6 +12,8 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+// KB-612 — 게이트 판정의 순수 부분(합성 입력 유닛은 파일 하단)
+import { newDebt, idOf } from '../ratchet.cjs';
 
 const REPO = process.cwd();
 let dir: string;
@@ -331,7 +333,6 @@ it('base를 못 찾으면 통과가 아니라 실패', () => {
  * 게이트를 통째로 돌려서는 "기준선 1건 : HEAD 2건"을 만들기 어렵다 — 실측상 이 레포엔
  * 같은 정체성이 2건 이상인 경우가 0건이다(진단 1,225건/244파일). 그래서 `Map`을 직접 넣는다.
  * ──────────────────────────────────────────────────────────────────────────── */
-import { newDebt, idOf } from '../ratchet.cjs';
 
 /** eslint 진단 한 건 — 판정에 쓰이는 필드만. */
 const msg = (line: number, column: number, ruleId = 'react-hooks/rules-of-hooks', message = 'Bad hook call') =>
