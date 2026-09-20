@@ -322,3 +322,67 @@ it('base를 못 찾으면 통과가 아니라 실패', () => {
   expect(r.code).toBe(1);
   expect(r.out).toContain('no-such-ref');
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * KB-612 — 기준선 **다중도** 소비. 합성 입력으로 직접 잠근다.
+ *
+ * 왜 합성인가: #175에서 이 경로를 노린 시나리오 테스트(①-P2b)가 있었지만, BASE와 HEAD의
+ * `rules-of-hooks` 메시지 꼬리가 달라 **종류부터 안 맞아** 다중도 분기를 타지 않고 통과했다.
+ * 게이트를 통째로 돌려서는 "기준선 1건 : HEAD 2건"을 만들기 어렵다 — 실측상 이 레포엔
+ * 같은 정체성이 2건 이상인 경우가 0건이다(진단 1,225건/244파일). 그래서 `Map`을 직접 넣는다.
+ * ──────────────────────────────────────────────────────────────────────────── */
+import { newDebt, idOf } from '../ratchet.cjs';
+
+/** eslint 진단 한 건 — 판정에 쓰이는 필드만. */
+const msg = (line: number, column: number, ruleId = 'react-hooks/rules-of-hooks', message = 'Bad hook call') =>
+  ({ ruleId, message, line, column });
+
+/** 주어진 진단들을 기준선으로 갖는 개수 맵. */
+const baseOf = (msgs: ReturnType<typeof msg>[]) => {
+  const m = new Map<string, number>();
+  for (const x of msgs) m.set(idOf(x, x.line), (m.get(idOf(x, x.line)) ?? 0) + 1);
+  return m;
+};
+
+describe('KB-612 기준선 소비(다중도)', () => {
+  it('기준선 1건은 HEAD 1건만 면제한다 — 나머지는 새 부채', () => {
+    const head = [msg(10, 5), msg(10, 5)]; // 정체성이 완전히 같은 2건
+    const out = newDebt(head, baseOf([msg(10, 5)]));
+    expect(out).toHaveLength(1); // 소비가 없으면 0이 된다 ← 이 경로가 핵심
+  });
+
+  it('기준선 2건이면 HEAD 2건 모두 면제된다', () => {
+    const head = [msg(10, 5), msg(10, 5)];
+    expect(newDebt(head, baseOf([msg(10, 5), msg(10, 5)]))).toHaveLength(0);
+  });
+
+  /* ⚠️ 아래 두 건은 **1:1로** 짜야 한다. 기준선 1 : HEAD 2로 짜면 열·줄을 정체성에서 빼도
+     소비 로직이 한 건을 먹어치워 결과가 같아진다 — 통과하지만 **위치를 검증하지 않는다.**
+     #175 ①-P2b가 정확히 그렇게 통과했고, KB-612 작업 중 같은 함정에 한 번 더 빠졌다가
+     뮤테이션(`col`/`line`)에 안 빨개지는 걸 보고 되돌렸다. 개수가 같고 **위치만 다를 때**
+     새 부채로 잡히는지가 이 게이트의 P1(상쇄) 방어선이다. */
+  it('개수가 같아도 열이 다르면 새 부채다 — 고치면서 같은 줄 다른 곳에 넣는 상쇄를 막는다', () => {
+    const out = newDebt([msg(10, 20)], baseOf([msg(10, 5)]));
+    expect(out).toHaveLength(1); // 열이 정체성에서 빠지면 0건이 된다
+    expect(out[0].column).toBe(20);
+  });
+
+  it('개수가 같아도 줄이 다르면 새 부채다', () => {
+    const out = newDebt([msg(99, 5)], baseOf([msg(10, 5)]));
+    expect(out).toHaveLength(1); // 줄이 정체성에서 빠지면 0건이 된다
+    expect(out[0].line).toBe(99);
+  });
+
+  it('위치가 같으면 면제된다 — 위 두 건이 "항상 1건"으로 통과하는 게 아님을 잠근다', () => {
+    expect(newDebt([msg(10, 5)], baseOf([msg(10, 5)]))).toHaveLength(0);
+  });
+
+  it('기준선이 비어 있으면(신규 파일) 전부 새 부채다', () => {
+    expect(newDebt([msg(1, 1), msg(2, 1)], new Map())).toHaveLength(2);
+  });
+
+  it('룰이 다르면 별개다 — 개수만 맞는다고 상쇄되지 않는다', () => {
+    const out = newDebt([msg(10, 5, 'react-hooks/exhaustive-deps')], baseOf([msg(10, 5)]));
+    expect(out).toHaveLength(1);
+  });
+});
