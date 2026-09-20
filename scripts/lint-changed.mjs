@@ -115,10 +115,23 @@ const renames = renameMap();
 const added = addedLines(files, renames);
 
 /** eslint 실행 — 문제가 있으면 비0으로 끝내지만 stdout에 리포트를 낸다. */
+/** ⚠️ 기본 maxBuffer는 1MiB다. 이 레포는 기존 warning이 1,200건이 넘고 react-hooks 진단은
+ *  코드 프레임을 통째로 싣는다 — 넓은 변경이면 JSON이 쉽게 1MiB를 넘는다. 넘으면 자식이
+ *  죽고 **잘린 stdout**이 JSON.parse로 가서, 기존 부채만으로 게이트가 실패한다(Codex #175). */
+const ESLINT_MAX_BUFFER = 256 * 1024 * 1024;
+
 function eslintJson(args, input) {
   try {
-    return JSON.parse(execFileSync('node', [ESLINT_BIN, '-f', 'json', ...args], { encoding: 'utf8', input }));
+    return JSON.parse(
+      execFileSync('node', [ESLINT_BIN, '-f', 'json', ...args], { encoding: 'utf8', input, maxBuffer: ESLINT_MAX_BUFFER }),
+    );
   } catch (e) {
+    // 버퍼 초과(ENOBUFS)면 stdout이 **잘려 있다** — 파싱하면 부채 일부가 사라져 오판한다.
+    // 조용히 통과시키지도, 잘린 결과로 실패시키지도 않고 **원인을 말하고** 끝낸다.
+    if (e?.code === 'ENOBUFS') {
+      console.error('lint:changed — eslint 출력이 버퍼를 넘었습니다(ENOBUFS). 잘린 결과로 판정하지 않습니다.');
+      process.exit(1);
+    }
     const stdout = e?.stdout?.toString?.() ?? '';
     if (stdout.trim().startsWith('[')) return JSON.parse(stdout);
     console.error('lint:changed — eslint 실행 실패');
