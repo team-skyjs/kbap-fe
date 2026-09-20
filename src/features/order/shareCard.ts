@@ -107,13 +107,15 @@ export function shareMetaCity(address: string | null | undefined): string | null
  * 항목(`items`)에는 `ready` 불리언이 있으므로 **준비중은 계약으로 걸러낸다** —
  * URL 문자열로 준비중을 판정하는 건 금지(종한 명시, useOrders 주석).
  *
- * ⚠️ 남는 구멍: `ready=true`인데 사진만 없는 경우도 서버가 같은 대체 이미지를 준다 — 계약상 구분 불가.
- * TODO(BE 후속, 9/16 커맨드 센터): `OrderItemResponse.hasPhoto: boolean` 추가 요청됨(서버 큐 #269 다음).
- * 오면 아래 필터에 `&& it.hasPhoto !== false` 한 줄만 더하면 된다 — 호출부는 그대로.
+ * `ready=true`인데 **사진만 없는** 경우도 서버가 같은 대체 이미지를 줘서 계약상 구분이 안 됐다 —
+ * `OrderItemResponse.hasPhoto`가 서버 #270에서 도착해 9/21 반영했다.
+ *
+ * ⚠️ `=== true`가 아니라 **`!== false`**: 구 서버·구 캐시 응답엔 이 필드가 없다. `=== true`로 쓰면
+ * 필드가 없는 응답에서 사진이 **전부** 사라진다 — 필드 부재는 "모름"이지 "없음"이 아니다.
  */
-export function sharePhotos(items: { imageUrl: string | null; ready?: boolean }[]): string[] {
+export function sharePhotos(items: { imageUrl: string | null; ready?: boolean; hasPhoto?: boolean }[]): string[] {
   return items
-    .filter((it) => it.ready !== false && !!it.imageUrl)
+    .filter((it) => it.ready !== false && it.hasPhoto !== false && !!it.imageUrl)
     .map((it) => it.imageUrl as string)
     .slice(0, 4);
 }
