@@ -12,6 +12,7 @@
 //
 // FE 발주 DoD의 "lint 통과" = 이 스크립트의 종료 코드 0.
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 
 const BASE = process.env.LINT_BASE ?? 'origin/develop';
 
@@ -74,39 +75,88 @@ if (files.length === 0) {
 
 const added = addedLines(files);
 
-let report;
-try {
-  report = JSON.parse(execFileSync('node', ['./node_modules/.bin/eslint', '-f', 'json', ...files], { encoding: 'utf8' }));
-} catch (e) {
-  // eslint는 문제가 있으면 비0으로 끝내지만 stdout에 리포트를 낸다 — 그걸 읽는다.
-  const stdout = e?.stdout?.toString?.() ?? '';
-  if (!stdout.trim().startsWith('[')) {
+/** eslint 실행 — 문제가 있으면 비0으로 끝내지만 stdout에 리포트를 낸다. */
+function eslintJson(args, input) {
+  try {
+    return JSON.parse(execFileSync('node', ['./node_modules/.bin/eslint', '-f', 'json', ...args], { encoding: 'utf8', input }));
+  } catch (e) {
+    const stdout = e?.stdout?.toString?.() ?? '';
+    if (stdout.trim().startsWith('[')) return JSON.parse(stdout);
     console.error('lint:changed — eslint 실행 실패');
     console.error(e?.stderr?.toString?.() ?? e?.message ?? e);
     process.exit(1);
   }
-  report = JSON.parse(stdout);
 }
 
-const cwd = process.cwd() + '/';
+/** 진단의 정체성 — **줄 번호에 의존하지 않게** 만든다.
+ *  ⚠️ react-hooks 계열은 `message`에 **줄 번호가 박힌 코드 프레임**을 통째로 넣는다.
+ *  메시지를 통으로 키로 쓰면, 위에 주석 한 줄만 추가해도 프레임이 달라져 같은 진단이
+ *  "새 진단"으로 오인된다(실측). 그래서 **첫 줄 + 룰**만 쓴다. */
+const keyOf = (m) => `${m.ruleId ?? '?'}\u0000${String(m.message).split('\n')[0].trim()}`;
+
+/** BASE 시점의 같은 파일에 있던 진단 개수. 파일이 새로 생겼으면 빈 맵. */
+function baseCounts(file) {
+  let content;
+  try {
+    content = git(['show', `${BASE}:${file}`]);
+  } catch {
+    return new Map(); // 신규 파일 — 기준선 없음
+  }
+  // --stdin-filename으로 **원래 경로인 척** 린트한다(설정·룰 해석이 실제와 같아진다)
+  const rep = eslintJson(['--stdin', '--stdin-filename', file], content);
+  const counts = new Map();
+  for (const f of rep) for (const m of f.messages) counts.set(keyOf(m), (counts.get(keyOf(m)) ?? 0) + 1);
+  return counts;
+}
+
+const report = eslintJson(files);
+
+const cwd = process.cwd();
+/** eslint의 절대 경로 → 저장소 상대 경로(POSIX 구분자). Windows 역슬래시 대응(Codex #175). */
+const relOf = (abs) => path.relative(cwd, abs).split(path.sep).join('/');
+
 const hits = [];
+/** 줄로 못 거르는 진단 — 파일별로 모아 BASE와 대조한다. */
+const pending = new Map();
+
 for (const f of report) {
-  const rel = f.filePath.startsWith(cwd) ? f.filePath.slice(cwd.length) : f.filePath;
+  const rel = relOf(f.filePath);
   const lines = added.get(rel);
   if (!lines) continue;
   for (const m of f.messages) {
-    if (m.line == null || !lines.has(m.line)) continue; // 기존 줄의 부채는 통과
-    hits.push(`${rel}:${m.line}:${m.column ?? 0}  ${m.severity === 2 ? 'error' : 'warning'}  ${m.message}  ${m.ruleId ?? ''}`);
+    if (m.line != null && lines.has(m.line)) {
+      hits.push({ rel, m, why: '추가·수정된 줄' });
+      continue;
+    }
+    // ⚠️ 진단이 **안 바뀐 줄**에 찍히는 경우가 있다(Codex #175 P1): 훅 위에 early return을
+    // 새로 넣으면 `rules-of-hooks`는 새 return이 아니라 **기존 훅 호출 줄**을 가리킨다.
+    // 줄만 보면 이 위반이 통과해 버린다 — 이 레포에서 가장 위험한 유형이 바로 그것이다.
+    // 그래서 남는 진단은 BASE와 **개수로** 대조해 "늘어난 것"만 새 부채로 센다.
+    if (!pending.has(rel)) pending.set(rel, []);
+    pending.get(rel).push(m);
+  }
+}
+
+for (const [rel, msgs] of pending) {
+  const base = baseCounts(rel);
+  const seen = new Map();
+  for (const m of msgs) {
+    const k = keyOf(m);
+    const n = (seen.get(k) ?? 0) + 1;
+    seen.set(k, n);
+    if (n > (base.get(k) ?? 0)) hits.push({ rel, m, why: 'BASE에 없던 진단' });
   }
 }
 
 if (hits.length === 0) {
-  console.log(`lint:changed — ${files.length}개 파일의 추가·수정된 줄: 문제 0, 통과`);
+  console.log(`lint:changed — ${files.length}개 파일: 새 문제 0, 통과`);
   process.exit(0);
 }
 
-// "네가 방금 쓴 줄"이 보여야 고친다 — 걸린 줄을 그대로 찍는다.
-console.error(`lint:changed — 추가·수정된 줄에서 ${hits.length}건:\n`);
-for (const h of hits) console.error('  ' + h);
-console.error('\n기존 줄의 부채는 통과시킵니다(래칫). 위 줄만 고치면 됩니다.');
+// "네가 방금 만든 것"이 보여야 고친다 — 위치와 사유를 그대로 찍는다.
+console.error(`lint:changed — 새로 생긴 문제 ${hits.length}건:\n`);
+for (const { rel, m, why } of hits) {
+  console.error(`  ${rel}:${m.line ?? 0}:${m.column ?? 0}  ${m.severity === 2 ? 'error' : 'warning'}  ${m.message}  ${m.ruleId ?? ''}  [${why}]`);
+}
+console.error('\n기존 부채는 통과시킵니다(래칫). 위 항목만 고치면 됩니다.');
 process.exit(1);

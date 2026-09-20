@@ -130,6 +130,39 @@ it('JS 계열(.js/.mjs)도 검사 대상 — 확장자로 래칫을 우회할 �
 });
 
 // base를 못 찾을 때 조용히 통과하면 래칫이 풀린다 — 실패해야 한다.
+/* ⚠️ Codex #175 P1: 훅 위에 early return을 **새로** 넣으면 `rules-of-hooks`는 새 return이
+   아니라 **기존 훅 호출 줄**을 가리킨다. 줄 필터만으로는 이 위반이 통과해 버리는데,
+   이 레포에서 가장 위험한 유형이 정확히 그것이다(FLAGS early return 패턴). */
+it('①-P1 훅 위 early return 추가 — 진단이 안 바뀐 줄에 찍혀도 잡는다', () => {
+  const before = `import { useState } from 'react';
+export function C({ on }: { on: boolean }) {
+  const [v] = useState(0);
+  return v;
+}
+`;
+  // early return만 추가 — useState 줄(기존 줄)은 그대로다
+  const after = `import { useState } from 'react';
+export function C({ on }: { on: boolean }) {
+  if (on) return 0;
+  const [v] = useState(0);
+  return v;
+}
+`;
+  scenario({ 'c.tsx': before }, { 'c.tsx': after });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.out).toContain('rules-of-hooks');
+  expect(r.out).toContain('BASE에 없던 진단'); // 줄 필터가 아니라 BASE 대조로 잡혔다
+});
+
+// 위 대조가 과하면 안 된다 — 줄이 밀렸다고 기존 부채를 "새 진단"으로 세면 게이트가 상시 red다.
+// (react-hooks 메시지엔 줄 번호가 박힌 코드 프레임이 들어 있어서 실제로 겪은 함정이다.)
+it('①-P1 역: 위에 주석만 추가해 줄이 밀린 기존 부채는 새 진단이 아니다', () => {
+  scenario({ 'debt.tsx': BAD }, { 'debt.tsx': '// 기록용 주석\n' + BAD });
+  const r = run();
+  expect(r.code).toBe(0);
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {
