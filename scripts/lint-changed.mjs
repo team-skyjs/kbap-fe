@@ -25,6 +25,13 @@ const BASE = process.env.LINT_BASE ?? 'origin/develop';
  *  래칫을 조용히 우회한다(이 스크립트 자신이 `.mjs`다). Codex #175. */
 const SOURCE_GLOBS = ['*.ts', '*.tsx', '*.js', '*.jsx', '*.mjs', '*.cjs'];
 
+/** 리네임 짝짓기 유사도 임계값.
+ *  ⚠️ git 기본은 **50%**라 절반 이상 고쳐 쓴 리네임은 짝이 안 맞고, 그러면 `/dev/null → new`로
+ *  렌더돼 **남겨둔 줄까지 전부 "추가"**가 된다 → 물려받은 부채가 CI를 빨갛게 만든다(Codex #175).
+ *  반대로 너무 낮추면 무관한 파일끼리 짝지어 **남의 부채를 면제**할 수 있다(조용한 통과 = 더 나쁨).
+ *  25%로 둔다: 유사도가 그보다 낮으면 어차피 대부분이 "추가"로 잡혀 면제될 여지가 거의 없다. */
+const RENAME_SIMILARITY = '25%';
+
 const git = (args) => execFileSync('git', args, { encoding: 'utf8' });
 
 /** ⚠️ diff는 `BASE...HEAD`(= merge-base 기준)인데 `git show BASE:file`은 **BASE 최신 tip**을
@@ -57,7 +64,7 @@ function changedFiles() {
  */
 function renameMap() {
   const out = new Map();
-  const raw = git(['diff', '--name-status', '-M', RANGE(), '--', ...SOURCE_GLOBS]);
+  const raw = git(['diff', '--name-status', `--find-renames=${RENAME_SIMILARITY}`, RANGE(), '--', ...SOURCE_GLOBS]);
   for (const line of raw.split('\n')) {
     const parts = line.split('\t');
     if (parts.length === 3 && parts[0].startsWith('R')) out.set(parts[2].trim(), parts[1].trim());
@@ -75,7 +82,7 @@ function addedLines(files, renames) {
   if (files.length === 0) return out;
   // 옛 경로도 pathspec에 넣어야 git이 리네임 짝을 찾는다 — 그래야 실제 변경만 헝크로 나온다
   const paths = [...new Set([...files, ...files.map((f) => renames.get(f)).filter(Boolean)])];
-  const diff = git(['diff', '--unified=0', '-M', RANGE(), '--', ...paths]);
+  const diff = git(['diff', '--unified=0', `--find-renames=${RENAME_SIMILARITY}`, RANGE(), '--', ...paths]);
   let file = null;
   for (const line of diff.split('\n')) {
     if (line.startsWith('+++ ')) {
@@ -165,7 +172,7 @@ function baseToHeadMapper(file, renames) {
   const paths = [...new Set([file, oldPath])];
   let diff;
   try {
-    diff = git(['diff', '--unified=0', '-M', RANGE(), '--', ...paths]);
+    diff = git(['diff', '--unified=0', `--find-renames=${RENAME_SIMILARITY}`, RANGE(), '--', ...paths]);
   } catch {
     return () => null;
   }

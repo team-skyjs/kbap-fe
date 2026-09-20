@@ -281,6 +281,20 @@ export function C({ on }: { on: boolean }) {
   expect(r.out).toContain('rules-of-hooks');
 });
 
+/* ⚠️ Codex #175: git 기본 `-M`은 유사도 **50%**다. 절반 이상 고쳐 쓴 리네임은 짝이 안 맞아
+   `/dev/null → new`로 렌더되고, **남겨둔 줄까지 전부 "추가"**가 되어 물려받은 부채가 CI를
+   빨갛게 만든다. 아래는 유사도를 50% 밑으로 떨어뜨린 리네임이다. */
+it('①-P2c 대폭 수정된 리네임 — 남겨둔 줄의 부채는 여전히 면제', () => {
+  const filler = (n: number, tag: string) =>
+    Array.from({ length: n }, (_, i) => `export const ${tag}${i} = ${i};`).join('\n');
+  // BAD(부채) + 채움 20줄 → 채움을 전부 다른 내용으로 갈아 유사도를 떨어뜨린다
+  const base = BAD + filler(20, 'a') + '\n';
+  const head = BAD + filler(20, 'z') + '\n';
+  scenario({ 'old.tsx': base }, { 'old.tsx': '', 'renamed.tsx': head });
+  const r = run();
+  expect(r.code).toBe(0); // 남겨둔 BAD 부분의 부채는 물려받는다
+});
+
 it('base를 못 찾으면 통과가 아니라 실패', () => {
   const r = (() => {
     try {
