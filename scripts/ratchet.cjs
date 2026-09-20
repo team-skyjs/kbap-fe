@@ -35,10 +35,16 @@ const idOf = (m, line) => `${kindOf(m)}\u0000${line ?? 0}\u0000${m.column ?? 0}`
  * 애초에 종류가 안 맞아 **다중도 분기를 타지 않고** 통과했다. 그래서 합성 `Map`을 직접
  * 넣는 유닛으로 잠근다.
  *
- * 참고 실측: 이 레포 전체 진단 1,225건/244파일 중 개수가 2 이상인 정체성은 **0건**이고,
+ * 참고 실측(2026-09-21): 전체 진단 1,225건/244파일 중 개수가 2 이상인 정체성은 **0건**이고,
  * BASE→HEAD 줄 매퍼도 단조 증가라 단사다 — 즉 다중도는 **현재 도달하지 않는 방어선**이다.
  * 그래도 지우지 않는 건 정체성에서 열이 빠지는 순간(열을 주지 않는 진단 등) 바로 살아나기
  * 때문이다. 도달하지 않는 방어선일수록 유닛으로 잠가 둔다.
+ *
+ * 숫자는 낡는다 — 지우고 싶어지면 **다시 재라**(0이 아니면 이 경로는 살아 있는 것):
+ *   npx eslint . -f json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+ *     let n=0;for(const f of JSON.parse(s)){const c=new Map();
+ *     for(const m of f.messages){const k=[m.ruleId,String(m.message).split('\n')[0].trim(),m.line,m.column].join('|');
+ *     c.set(k,(c.get(k)||0)+1);} for(const v of c.values()) if(v>1) n++;} console.log('중복 정체성:',n)})"
  *
  * @param {Array<object>} msgs HEAD 쪽 진단(줄로 못 거른 것들)
  * @param {Map<string, number>} base 기준선 정체성 → 개수. **이 함수가 소비하며 변형한다.**
