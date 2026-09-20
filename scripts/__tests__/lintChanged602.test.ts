@@ -106,11 +106,27 @@ it('③ 삭제된 줄은 세지 않는다 — 위반 코드를 지우면 통과'
   expect(r.code).toBe(0);
 });
 
-it('변경된 .ts/.tsx가 없으면 통과', () => {
+it('변경된 소스가 없으면 통과', () => {
   scenario({ 'keep.ts': CLEAN }, { 'notes.md': '# hi' });
   const r = run();
   expect(r.code).toBe(0);
-  expect(r.out).toContain('변경된 .ts/.tsx 없음');
+  expect(r.out).toContain('변경된 소스 없음');
+});
+
+/* `.ts/.tsx`만 보면 `.js`·`.mjs` 소스가 래칫을 조용히 우회한다 — 이 스크립트 자신이 `.mjs`다.
+   (Codex #175 P2) */
+it('JS 계열(.js/.mjs)도 검사 대상 — 확장자로 래칫을 우회할 수 없다', () => {
+  const BAD_JS = `export function bad() {
+  var x = 1;
+  return x;
+}
+`;
+  for (const name of ['new.js', 'new.mjs', 'new.jsx']) {
+    scenario({ 'keep.ts': CLEAN }, { [name]: BAD_JS });
+    const r = run();
+    // 위반 유무와 무관하게 **검사 대상에 포함**됐는지가 핵심 — "변경된 소스 없음"이면 우회다
+    expect(r.out).not.toContain('변경된 소스 없음');
+  }
 });
 
 // base를 못 찾을 때 조용히 통과하면 래칫이 풀린다 — 실패해야 한다.

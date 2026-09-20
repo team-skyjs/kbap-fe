@@ -15,11 +15,15 @@ import { execFileSync } from 'node:child_process';
 
 const BASE = process.env.LINT_BASE ?? 'origin/develop';
 
+/** eslint가 실제로 검사하는 소스 확장자 전부 — `.ts/.tsx`만 보면 `.js`·`.mjs` 소스가
+ *  래칫을 조용히 우회한다(이 스크립트 자신이 `.mjs`다). Codex #175. */
+const SOURCE_GLOBS = ['*.ts', '*.tsx', '*.js', '*.jsx', '*.mjs', '*.cjs'];
+
 const git = (args) => execFileSync('git', args, { encoding: 'utf8' });
 
-/** BASE...HEAD에서 추가·복사·수정·이름변경된 .ts/.tsx (삭제 제외 — 파일이 없으니 린트 불가) */
+/** BASE...HEAD에서 추가·복사·수정·이름변경된 소스 (삭제 제외 — 파일이 없으니 린트 불가) */
 function changedFiles() {
-  return git(['diff', '--name-only', '--diff-filter=ACMR', `${BASE}...HEAD`, '--', '*.ts', '*.tsx'])
+  return git(['diff', '--name-only', '--diff-filter=ACMR', `${BASE}...HEAD`, '--', ...SOURCE_GLOBS])
     .split('\n')
     .map((s) => s.trim())
     .filter(Boolean);
@@ -64,7 +68,7 @@ try {
 }
 
 if (files.length === 0) {
-  console.log('lint:changed — 변경된 .ts/.tsx 없음, 통과');
+  console.log('lint:changed — 변경된 소스 없음, 통과');
   process.exit(0);
 }
 

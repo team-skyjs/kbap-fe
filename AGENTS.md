@@ -5,7 +5,7 @@
 ## lint 게이트 (2026-09-21, KB-602)
 
 FE 발주 DoD의 "lint 통과" = **`npm run lint:changed` 종료 코드 0** — `origin/develop...HEAD`에서
-**추가·수정된 줄**에 warning이 1건도 없어야 한다(`react-hooks/*` 포함).
+**추가·수정된 줄**에 warning이 1건도 없어야 한다(대상 = eslint가 보는 소스 전부 — .ts/.tsx/.js/.jsx/.mjs/.cjs)(`react-hooks/*` 포함).
 - **신규 파일은 전체가 추가된 줄** = 전건 검사가 된다.
 - 기존 줄의 부채는 통과시킨다 — 파일 단위로 걸면 부채 파일을 한 줄만 건드려도 red라 게이트가
   상시 red가 된다(실제로 게이트 도입 커밋 자체가 걸렸다). **새 부채만 막는 게 래칫이다.**
