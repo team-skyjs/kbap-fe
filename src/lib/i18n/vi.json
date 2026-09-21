@@ -977,6 +977,8 @@
     "readFailed": "Không tải được. Chạm để thử lại",
     "osOff": "Thông báo đang tắt trong cài đặt thiết bị.",
     "osOffCta": "Mở cài đặt thiết bị",
+    "osAsk": "Bật thông báo để nhận phản hồi đánh giá và tin tức.",
+    "osAskCta": "Bật thông báo",
     "saveFailed": "Không lưu được. Vui lòng thử lại.",
     "offConfirmTitle": "Tắt thông báo?",
     "offConfirmBody": "Bạn có thể bỏ lỡ thông tin hữu ích và sự kiện.",
