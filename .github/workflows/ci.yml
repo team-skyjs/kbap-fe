@@ -27,4 +27,4 @@ jobs:
       - name: lint ratchet (새 lint 위반 0)
         run: |
           git fetch --no-tags origin develop
-          npm run lint:changed
+          node ./scripts/lint-changed.mjs
