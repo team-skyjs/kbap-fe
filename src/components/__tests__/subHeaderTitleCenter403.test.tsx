@@ -9,6 +9,10 @@
  * ⚠️ `trailing`을 쓰는 화면은 3곳뿐이고 **나머지 28곳은 1px도 바뀌면 안 된다.** 멀쩡한 쪽을
  * 깨는 게 이 수정의 진짜 위험이라, 아래 ②가 그 불변을 숫자로 잠근다.
  */
+/* eslint-disable @typescript-eslint/no-require-imports, import/first --
+   jest 구조상 불가피하다: `jest.mock` 팩토리는 파일 최상단으로 **호이스팅**되어 import보다
+   먼저 실행되므로 팩토리 안에서는 `require`만 쓸 수 있고, 대상(`SubHeader`)의 import는
+   목 선언 **뒤**에 와야 목이 걸린다. 레포 관례와 동일(login.tsx:35 · mentorFeedback.test.tsx:97). */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { Pressable, Text as RNText } from 'react-native';
