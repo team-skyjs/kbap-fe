@@ -109,3 +109,50 @@ describe('P-403 ① SubHeader 타이틀 중앙 정렬', () => {
     expect(spacers(render(<SubHeader title={TITLE} trailing={wideTrailing} />)).length).toBe(0);
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Codex #181 P2 — 고정 인셋(54)은 **중앙 이탈을 겹침과 맞바꾼다.**
+ *
+ * 타이틀 박스가 넓은 trailing 밑까지 뻗어 두 글자가 겹친다(스페인어 `Editar perfil` ×
+ * `Guardar cambios`). 이전 `flex:1`은 실제 trailing 폭만큼 줄어들어 겹치진 않았다.
+ *
+ * ⚠️ 위 ①~④는 이 동작을 **검증하지 못한다** — react-test-renderer는 `onLayout`을 발화하지
+ * 않아 실측폭이 초기값(38)에 머물고 인셋이 항상 54로 나온다. 즉 고정값으로 되돌려도 통과한다.
+ * 실측 경로를 타려면 레이아웃 이벤트를 **직접 쏴야** 한다.
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('Codex #181 P2 — 넓은 trailing 아래로 타이틀이 들어가지 않는다', () => {
+  const SIDE_GAP = 16;
+
+  /** 우측 슬롯 래퍼(onLayout을 가진 노드)에 실제 폭을 통보한다. */
+  const layoutTrailing = (tree: ReactTestRenderer, width: number) => {
+    const host = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    expect(host.length).toBe(1); // 래퍼가 하나여야 폭 통보가 한 곳으로 모인다
+    act(() => {
+      (host[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width, height: 38, x: 0, y: 0 } } });
+    });
+  };
+
+  it('trailing이 넓으면 인셋이 그만큼 커진다 — 좌우 동시에(중앙 유지)', () => {
+    const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+    expect(titleInsets(tree, TITLE).left).toBe(54); // 실측 전 초기값
+    layoutTrailing(tree, 120);
+    const { left, right } = titleInsets(tree, TITLE);
+    expect(left).toBe(right); // 대칭이 깨지면 중앙 정렬이 무너진다
+    expect(left).toBe(120 + SIDE_GAP); // 큰 쪽(120)을 양옆에 예약
+  });
+
+  it('예약 폭이 trailing 실측폭 이상이라 글자가 겹치지 않는다', () => {
+    for (const w of [60, 120, 180]) {
+      const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+      layoutTrailing(tree, w);
+      const { left } = titleInsets(tree, TITLE);
+      expect(left).toBeGreaterThanOrEqual(w + SIDE_GAP);
+    }
+  });
+
+  it('trailing이 back보다 좁아도 인셋은 back 아래로 내려가지 않는다', () => {
+    const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+    layoutTrailing(tree, 10); // back(38)보다 좁은 trailing
+    expect(titleInsets(tree, TITLE).left).toBe(38 + SIDE_GAP); // back 쪽이 기준이 된다
+  });
+});
