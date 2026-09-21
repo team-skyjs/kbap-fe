@@ -172,5 +172,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  link: { fontSize: 14, fontWeight: '600', color: C.primaryText },
+  // P-403 ②(예진 실기): 액센트(C.primaryText)가 아니라 본문색 — 헤더 우측 링크가 튀어 보였다
+  link: { fontSize: 14, fontWeight: '600', color: C.ink },
 });

@@ -383,3 +383,39 @@ it('⑦ i18n — feedback 키 10개 로케일 전수(ko 등 단수형 없는 언
     expect(typeof fb.replyCount_other).toBe('string');
   }
 });
+
+/* ---- P-403 예진 실기 ② 색 · ③ 행 상단 배치 ---- */
+
+it('P-403 ② 헤더 링크·답변 수는 액센트가 아니라 본문색(C.ink)', () => {
+  // 색 토큰은 StyleSheet에 박혀 있어 렌더 트리로는 못 본다 — 소스에서 확인(tileUnify505와 같은 방식)
+  const newSrc = read('src/app/profile/feedback/new.tsx');
+  const listSrc = read('src/app/profile/feedback/index.tsx');
+  expect(newSrc).toMatch(/link: \{[^}]*color: C\.ink \}/);
+  expect(listSrc).toMatch(/replyCount: \{[^}]*color: C\.ink \}/);
+  // 리터럴 hex 금지 — 토큰만 쓴다
+  expect(newSrc).not.toMatch(/link: \{[^}]*#[0-9A-Fa-f]{3,6}/);
+  expect(listSrc).not.toMatch(/replyCount: \{[^}]*#[0-9A-Fa-f]{3,6}/);
+});
+
+it('P-403 ③ 행 상단 — 날짜가 먼저(위), 칩이 그 다음(아래) · 우측 축 정렬', async () => {
+  mockListState = idleList([ITEM]);
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+
+  // 날짜와 칩을 담은 컨테이너를 찾아 **자식 순서**를 본다. 한 줄(row) 배치였을 때는
+  // 칩이 먼저였고, 그 알약 배경의 좌측 끝이 아래 본문 글자와 어긋나 보였다(예진 지적).
+  const rowTop = r.root.findAll((n) => {
+    // ⚠️ 호스트 요소만 센다 — 합성 View와 호스트 View가 **같은 style을 들고 둘 다** 잡혀
+    // 개수가 2가 된다(작업 중 실제로 걸렸다). `typeof n.type === 'string'`이 호스트다.
+    if (typeof n.type !== 'string') return false;
+    const st = Object.assign({}, ...[(n.props as { style?: unknown }).style].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
+    return st.alignItems === 'flex-end' && st.flexDirection === undefined; // 세로 스택 + 우측 정렬
+  });
+  expect(rowTop.length).toBe(1);
+
+  const texts = rowTop[0].findAllByType('Text' as never).flatMap((n) => (typeof n.props.children === 'string' ? [n.props.children] : []));
+  // 날짜는 포맷된 문자열, 칩 라벨은 i18n 키 — 날짜가 앞서야 위에 놓인다
+  expect(texts[texts.length - 1]).toBe('feedback.statusAnswered');
+  expect(texts.length).toBeGreaterThan(1);
+  expect(texts[0]).not.toBe('feedback.statusAnswered');
+});
