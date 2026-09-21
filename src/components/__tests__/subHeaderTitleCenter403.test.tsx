@@ -288,3 +288,47 @@ describe('Codex #181 2R — 좁은 화면에서 타이틀이 소멸하지 않는
     }
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Codex #181 3R — 비대칭 모드가 `MIN_TITLE_W`를 보장하지 않는다는 지적.
+ *
+ * 사실이다. 다만 그 구간에선 **어떤 배치도 96pt를 못 준다**: 320pt 화면(행 288)에서
+ * 일본어 trailing이 1.3배율로 146pt면 `back(38) + trailing(146) + gap(32) + 96 = 312 > 288`
+ * — trailing 자체를 자르지 않는 한 공간이 없다. `MIN_TITLE_W`는 애초에 하드 클램프가 아니라
+ * **배치 모드 선택값**이다.
+ *
+ * 그리고 비대칭 모드의 타이틀 폭은 **수정 전 `flex:1`과 정확히 같다** — 아래가 그 등식이다.
+ * 즉 이 극단은 이 PR이 만든 게 아니라 **원래 그랬던 상태**이고, 회귀가 아니다.
+ * (trailing을 잘라 타이틀에 자리를 내주는 건 "액션 라벨을 자를 것인가"라는 제품 판단이라
+ *  별건으로 넘긴다 — 임의 노드에 maxWidth를 걸면 줄바꿈으로 헤더 높이가 늘 위험도 있다.)
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('Codex #181 3R — 비대칭 모드 = 수정 전 flex:1과 같은 타이틀 폭', () => {
+  const BACK = 38;
+  const GAP = 16;
+
+  const hosts = (tree: ReactTestRenderer) => {
+    const all = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const st = (n: (typeof all)[number]) => flat((n.props as { style?: unknown }).style);
+    return { row: all.filter((n) => st(n).flexDirection === 'row')[0], trail: all.filter((n) => st(n).flexDirection === undefined)[0] };
+  };
+  const emit = (node: { props: unknown }, width: number) =>
+    act(() => {
+      (node.props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width, height: 38, x: 0, y: 0 } } });
+    });
+
+  /** 수정 전 배치: row(gap 16) = back(38) | title(flex:1) | trailing(W) */
+  const beforeFix = (rowW: number, trailW: number) => rowW - BACK - GAP - GAP - trailW;
+
+  it('비대칭으로 떨어진 경우 타이틀 폭이 수정 전과 1pt도 다르지 않다', () => {
+    // 전부 비대칭 구간(행 − 2·reserve < 96)인 조합들
+    for (const [rowW, trailW] of [[288, 120], [288, 146], [288, 180], [260, 140], [358, 160]] as const) {
+      const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+      const h = hosts(tree);
+      emit(h.trail, trailW);
+      emit(h.row, rowW);
+      const { left, right } = titleInsets(tree, TITLE);
+      expect(left).not.toBe(right); // 비대칭 구간임을 먼저 확인(대칭이면 이 등식은 성립 안 한다)
+      expect(rowW - (left as number) - (right as number)).toBe(beforeFix(rowW, trailW));
+    }
+  });
+});
