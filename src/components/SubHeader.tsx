@@ -4,7 +4,7 @@
  * <StickyHeader mode="back" /> instead so the header is scroll-aware (§6).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, shadow } from '@/lib/theme';
@@ -28,8 +28,11 @@ export function SubHeader({
   const insets = useSafeAreaInsets();
   const [trailingW, setTrailingW] = React.useState(BACK_W);
   const onTrailingLayout = React.useCallback((e: LayoutChangeEvent) => {
+    // ⚠️ 값을 안정시키는 건 **반올림**이다 — 서브픽셀 폭(120.4 → 120.2)이 그대로 들어오면
+    // 인셋이 레이아웃마다 달라진다. 아래 동등성 비교는 그 위의 보수적 장치일 뿐이다
+    // (숫자 state는 React가 같은 값이면 알아서 bail out 하므로 이것만으로는 부족하다).
     const w = Math.round(e.nativeEvent.layout.width);
-    setTrailingW((prev) => (prev === w ? prev : w)); // 같은 값이면 상태를 안 건드린다(리렌더 루프 방지)
+    setTrailingW((prev) => (prev === w ? prev : w));
   }, []);
   /** 양옆에 **같은 폭**을 예약한다 = 중앙 정렬이면서 타이틀이 trailing 밑으로 못 들어간다.
    *  `trailing`이 없으면 자리표시자가 BACK_W라 `38 + 16 = 54` — 기존과 완전히 같은 값이다. */

@@ -156,3 +156,44 @@ describe('Codex #181 P2 — 넓은 trailing 아래로 타이틀이 들어가지 
     expect(titleInsets(tree, TITLE).left).toBe(38 + SIDE_GAP); // back 쪽이 기준이 된다
   });
 });
+
+/* 첫 프레임 문제 — `onLayout` 실측이라 1프레임은 초기값(54)으로 그려지고 측정 후 보정된다.
+   그런데 인셋은 **좌우가 항상 함께** 바뀐다(54/54 → 136/136). 박스는 좁아지지만 대칭이
+   유지되므로 **타이틀의 중심점은 움직이지 않는다** — 위치가 튀지 않는다는 뜻이다.
+   바뀔 수 있는 건 폭뿐이라, 좁아진 박스에 안 들어가는 **아주 긴 타이틀만** 말줄임 상태가
+   한 프레임 달라진다. 그 경우는 어차피 trailing과 겹치던 경우다. */
+describe('첫 프레임 — 측정 전후로 중심점이 움직이지 않는다', () => {
+  const symmetric = (t: ReactTestRenderer) => {
+    const { left, right } = titleInsets(t, TITLE);
+    expect(typeof left).toBe('number');
+    return left === right;
+  };
+
+  it('측정 전에도, 측정 후에도 인셋이 대칭이다(= 중심 = 행 중앙)', () => {
+    const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+    expect(symmetric(tree)).toBe(true); // 첫 프레임
+    const host = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    act(() => {
+      (host[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width: 120, height: 38, x: 0, y: 0 } } });
+    });
+    expect(symmetric(tree)).toBe(true); // 보정 후 — 폭만 줄고 중심은 그대로
+  });
+
+  /* ⚠️ 원래 여기에 "같은 폭이 다시 통보되면 상태를 안 바꾼다"는 테스트를 뒀는데 **빈 통이었다**:
+     동등성 가드를 지워도 React가 동일 state에서 bail out 해서 렌더 결과가 같다. 실제로 값이
+     흔들리는 걸 막는 건 가드가 아니라 **`Math.round`**다 — 서브픽셀 폭(120.4 → 120.2)이
+     그대로 들어오면 인셋이 매 레이아웃마다 달라진다. 그쪽을 잠근다. */
+  it('서브픽셀 폭 변동은 인셋을 흔들지 않는다(반올림)', () => {
+    const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+    const host = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const fire = (w: number) =>
+      act(() => {
+        (host[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width: w, height: 38, x: 0, y: 0 } } });
+      });
+    fire(120.4);
+    const first = titleInsets(tree, TITLE);
+    fire(120.2);
+    fire(119.6); // 반올림하면 셋 다 120
+    expect(titleInsets(tree, TITLE)).toEqual(first);
+  });
+});
