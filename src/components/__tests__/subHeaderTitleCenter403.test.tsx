@@ -123,14 +123,25 @@ describe('P-403 ① SubHeader 타이틀 중앙 정렬', () => {
 describe('Codex #181 P2 — 넓은 trailing 아래로 타이틀이 들어가지 않는다', () => {
   const SIDE_GAP = 16;
 
-  /** 우측 슬롯 래퍼(onLayout을 가진 노드)에 실제 폭을 통보한다. */
-  const layoutTrailing = (tree: ReactTestRenderer, width: number) => {
-    const host = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
-    expect(host.length).toBe(1); // 래퍼가 하나여야 폭 통보가 한 곳으로 모인다
-    act(() => {
-      (host[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width, height: 38, x: 0, y: 0 } } });
-    });
+  /** ⚠️ `onLayout`을 가진 호스트가 **둘**이다 — 내부 행(폭 기준)과 우측 슬롯 래퍼(trailing 폭).
+   *  스타일 유무로 가른다: 행은 `flexDirection: 'row'`를 갖고, 래퍼는 스타일이 없다. */
+  const layoutHosts = (tree: ReactTestRenderer) => {
+    const hosts = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const styleOf = (n: (typeof hosts)[number]) => flat((n.props as { style?: unknown }).style);
+    const row = hosts.filter((n) => styleOf(n).flexDirection === 'row');
+    const trail = hosts.filter((n) => styleOf(n).flexDirection === undefined);
+    expect(row.length).toBe(1);
+    expect(trail.length).toBe(1);
+    return { row: row[0], trail: trail[0] };
   };
+
+  const fire = (node: { props: unknown }, width: number) =>
+    act(() => {
+      (node.props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width, height: 38, x: 0, y: 0 } } });
+    });
+
+  /** 우측 슬롯 폭만 통보(행 폭은 미측정 = 대칭 모드 유지). */
+  const layoutTrailing = (tree: ReactTestRenderer, width: number) => fire(layoutHosts(tree).trail, width);
 
   it('trailing이 넓으면 인셋이 그만큼 커진다 — 좌우 동시에(중앙 유지)', () => {
     const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
@@ -172,9 +183,12 @@ describe('첫 프레임 — 측정 전후로 중심점이 움직이지 않는다
   it('측정 전에도, 측정 후에도 인셋이 대칭이다(= 중심 = 행 중앙)', () => {
     const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
     expect(symmetric(tree)).toBe(true); // 첫 프레임
-    const host = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const trail = tree.root.findAll((n) => {
+      const st = Object.assign({}, ...[(n.props as { style?: unknown }).style].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
+      return typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function' && st.flexDirection === undefined;
+    });
     act(() => {
-      (host[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width: 120, height: 38, x: 0, y: 0 } } });
+      (trail[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width: 120, height: 38, x: 0, y: 0 } } });
     });
     expect(symmetric(tree)).toBe(true); // 보정 후 — 폭만 줄고 중심은 그대로
   });
@@ -185,15 +199,92 @@ describe('첫 프레임 — 측정 전후로 중심점이 움직이지 않는다
      그대로 들어오면 인셋이 매 레이아웃마다 달라진다. 그쪽을 잠근다. */
   it('서브픽셀 폭 변동은 인셋을 흔들지 않는다(반올림)', () => {
     const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
-    const host = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const trail = tree.root.findAll((n) => {
+      const st = Object.assign({}, ...[(n.props as { style?: unknown }).style].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
+      return typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function' && st.flexDirection === undefined;
+    });
     const fire = (w: number) =>
       act(() => {
-        (host[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width: w, height: 38, x: 0, y: 0 } } });
+        (trail[0].props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width: w, height: 38, x: 0, y: 0 } } });
       });
     fire(120.4);
     const first = titleInsets(tree, TITLE);
     fire(120.2);
     fire(119.6); // 반올림하면 셋 다 120
     expect(titleInsets(tree, TITLE)).toEqual(first);
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Codex #181 2R P2 — 대칭 예약은 **넓은 trailing의 비용을 두 배**로 문다.
+ *
+ * 320pt 화면(내부 행 288)에서 일본어 `マイお問い合わせ`가 120pt면 대칭 예약 시 타이틀에
+ * 16pt만 남아 사실상 사라진다. 1.3× 글자 크기에선 더 심하다.
+ *
+ * 그래서 남는 폭을 보고 모드를 고른다 — 쓸 만하면 대칭(중앙), 아니면 비대칭(겹침 없이
+ * 타이틀 폭 최대). **겹침은 어느 모드에서도 허용하지 않고, 포기하는 건 중앙 정렬뿐이다.**
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('Codex #181 2R — 좁은 화면에서 타이틀이 소멸하지 않는다', () => {
+  const BACK = 38;
+  const GAP = 16;
+  const MIN_TITLE = 96;
+
+  const hosts = (tree: ReactTestRenderer) => {
+    const all = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const st = (n: (typeof all)[number]) => flat((n.props as { style?: unknown }).style);
+    return { row: all.filter((n) => st(n).flexDirection === 'row')[0], trail: all.filter((n) => st(n).flexDirection === undefined)[0] };
+  };
+  const emit = (node: { props: unknown }, width: number) =>
+    act(() => {
+      (node.props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width, height: 38, x: 0, y: 0 } } });
+    });
+  /** 행 폭과 trailing 폭을 모두 통보한 뒤의 인셋 + 남는 타이틀 폭. */
+  const measure = (rowW: number, trailW: number, trailingNode: React.ReactNode = wideTrailing) => {
+    const tree = render(<SubHeader title={TITLE} trailing={trailingNode} />);
+    const h = hosts(tree);
+    emit(h.trail, trailW);
+    emit(h.row, rowW);
+    const { left, right } = titleInsets(tree, TITLE);
+    return { left: left as number, right: right as number, titleW: rowW - (left as number) - (right as number) };
+  };
+
+  it('여유가 있으면 대칭(중앙 정렬)을 유지한다 — 흔한 경우는 여기 머문다', () => {
+    // 영어 `My feedback`(14pt/600) ≈ 85pt, 아이폰 기본 폭(390 − 패딩 32 = 358)
+    const { left, right, titleW } = measure(358, 85);
+    expect(left).toBe(right);
+    expect(left).toBe(85 + GAP);
+    expect(titleW).toBeGreaterThanOrEqual(MIN_TITLE);
+  });
+
+  /* 경계를 숫자로 박아 둔다 — 임계값을 건드리면 여기가 먼저 깨진다.
+     358 − 2(t+16) ≥ 96  ⟺  t ≤ 115 */
+  it('임계값 경계 — 115는 대칭, 116부터 비대칭', () => {
+    expect(measure(358, 115).left).toBe(measure(358, 115).right);
+    const over = measure(358, 116);
+    expect(over.left).toBe(BACK + GAP);
+    expect(over.right).toBe(116 + GAP);
+  });
+
+  it('좁은 화면 + 넓은 trailing이면 비대칭으로 떨어져 타이틀 폭을 지킨다', () => {
+    const { left, right, titleW } = measure(320 - 32, 120); // 288 - 272 = 16pt만 남던 조합
+    expect(left).toBe(BACK + GAP); // 좌측은 back 기준
+    expect(right).toBe(120 + GAP); // 우측은 trailing 기준
+    expect(left).not.toBe(right); // 중앙 정렬을 포기한 상태
+    expect(titleW).toBeGreaterThanOrEqual(MIN_TITLE); // 하지만 타이틀은 살아 있다
+  });
+
+  it('비대칭으로 떨어져도 겹치지는 않는다 — 우측 예약이 trailing 폭 이상', () => {
+    for (const [rowW, trailW] of [[288, 120], [288, 160], [260, 140]] as const) {
+      const { right } = measure(rowW, trailW);
+      expect(right).toBeGreaterThanOrEqual(trailW + GAP);
+    }
+  });
+
+  it('trailing이 없으면 두 모드가 같은 값(54/54)으로 수렴한다 — 28개 화면 불변', () => {
+    for (const rowW of [288, 358, 120 /* 비현실적으로 좁아도 */]) {
+      const tree = render(<SubHeader title={TITLE} />);
+      emit(hosts(tree).row, rowW);
+      expect(titleInsets(tree, TITLE)).toEqual({ left: BACK + GAP, right: BACK + GAP });
+    }
   });
 });

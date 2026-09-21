@@ -15,6 +15,9 @@ import { PressScale } from './PressScale';
 const BACK_W = 38;
 /** 슬롯과 타이틀 사이 최소 간격(수정 전 row의 `gap`과 같은 값). */
 const SIDE_GAP = 16;
+/** 대칭 예약을 포기하는 기준 — 타이틀에 이만큼도 안 남으면 중앙 정렬보다 **가독성**을 택한다.
+ *  18pt 세미볼드로 짧은 제목 하나가 들어가는 폭. 하드 클램프가 아니라 **배치 모드 선택값**이다. */
+const MIN_TITLE_W = 96;
 
 export function SubHeader({
   title,
@@ -34,18 +37,40 @@ export function SubHeader({
     const w = Math.round(e.nativeEvent.layout.width);
     setTrailingW((prev) => (prev === w ? prev : w));
   }, []);
-  /** 양옆에 **같은 폭**을 예약한다 = 중앙 정렬이면서 타이틀이 trailing 밑으로 못 들어간다.
-   *  `trailing`이 없으면 자리표시자가 BACK_W라 `38 + 16 = 54` — 기존과 완전히 같은 값이다. */
-  const sideInset = Math.max(BACK_W, trailingW) + SIDE_GAP;
+  const [rowW, setRowW] = React.useState(0);
+  // 행 폭은 **임계값 비교에만** 쓰여서 서브픽셀이 결과를 안 바꾼다 — trailing 쪽과 달리
+  // 반올림하지 않는다(뮤테이션으로 확인: 반올림을 빼도 어떤 유닛도 안 깨진다 = 하는 일이 없다).
+  const onRowLayout = React.useCallback((e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    setRowW((prev) => (prev === w ? prev : w));
+  }, []);
+
+  /** 양옆에 **같은 폭**을 예약하면 중앙 정렬 + 타이틀이 trailing 밑으로 못 들어간다.
+   *  `trailing` 부재 시 자리표시자가 BACK_W라 `38 + 16 = 54` — 기존과 완전히 같은 값이다. */
+  const reserve = Math.max(BACK_W, trailingW) + SIDE_GAP;
+  /** ⚠️ 대칭 예약은 **넓은 trailing의 비용을 두 배**로 문다(Codex #181 2R): 320pt 화면(내부 행
+   *  288)에서 일본어 `マイお問い合わせ`가 120pt면 타이틀에 16pt만 남아 사실상 사라진다.
+   *  1.3× 글자 크기에선 더 심하다.
+   *
+   *  그래서 **남는 폭을 보고 모드를 고른다**: 대칭으로 두고도 타이틀이 쓸 만하면 대칭(중앙 정렬),
+   *  아니면 **비대칭**으로 떨어진다 — 좌 `back+gap` / 우 `trailing+gap`. 비대칭은 중앙에서
+   *  벗어나지만 **겹치지 않고 타이틀 폭을 최대로** 준다(= 수정 전 `flex:1`이 하던 그 동작).
+   *  겹침은 어느 모드에서도 허용하지 않고, 포기하는 건 **중앙 정렬**뿐이다.
+   *
+   *  `trailing`이 없으면 trailingW = BACK_W라 두 모드가 **같은 값(54/54)**으로 수렴한다 —
+   *  28개 화면은 어느 쪽으로 가도 안 바뀐다. */
+  const centered = rowW === 0 || rowW - reserve * 2 >= MIN_TITLE_W;
+  const leftInset = centered ? reserve : BACK_W + SIDE_GAP;
+  const rightInset = centered ? reserve : trailingW + SIDE_GAP;
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
-      <View style={styles.row}>
+      <View style={styles.row} onLayout={onRowLayout}>
         <PressScale style={styles.back} onPress={onBack} hitSlop={8}>
           <IconArrowLeft size={20} color={C.ink} />
         </PressScale>
         {/* 흐름에서 빼서 행 중앙에 고정 — 좌우 슬롯 폭과 무관해진다. pointerEvents 없이 두면
             타이틀이 back/trailing 위를 덮어 탭을 먹는다(StickyHeader와 같은 처리). */}
-        <View style={[styles.titleWrap, { left: sideInset, right: sideInset }]} pointerEvents="none">
+        <View style={[styles.titleWrap, { left: leftInset, right: rightInset }]} pointerEvents="none">
           <Text numberOfLines={1} style={styles.title}>
             {title}
           </Text>
