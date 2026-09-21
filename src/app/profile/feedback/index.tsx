@@ -69,8 +69,8 @@ export default function MyFeedbackScreen() {
               testID={`feedback-row-${item.id}`}
             >
               <View style={styles.rowTop}>
-                <Chip label={t(STATUS_KEY[item.status])} selected={item.status === 'ANSWERED'} />
                 <Text style={styles.date}>{formatOrderDate(Date.parse(item.createdAt))}</Text>
+                <Chip label={t(STATUS_KEY[item.status])} selected={item.status === 'ANSWERED'} />
               </View>
               <Text style={styles.preview} numberOfLines={2}>{item.content}</Text>
               {item.replies.length > 0 && (
@@ -94,8 +94,13 @@ const styles = StyleSheet.create({
   footRetry: { borderWidth: 1, borderColor: C.line2, borderRadius: radius.sm, paddingHorizontal: 20, paddingVertical: 8 },
   footRetryText: { fontSize: 14, fontWeight: '600', color: C.ink },
   row: { gap: 6, paddingVertical: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: C.line, borderRadius: radius.sm },
-  rowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  /** P-403 ③(예진 실기): 칩(좌)·날짜(우) 한 줄 배치를 버린다. 칩은 알약 배경이라 **배경 좌측 끝**과
+   *  **글자 좌측 끝**이 패딩만큼 어긋나는데, 아래 본문은 배경이 없어 글자 기준으로 시작한다 —
+   *  둘을 같은 좌측 축에 두면 항상 어긋나 보인다. 날짜를 상단 우측에 두고 칩을 그 아래 **같은
+   *  우측 축**에 붙여, 좌측 어긋남이 원인부터 사라지게 한다. */
+  rowTop: { alignItems: 'flex-end', gap: 6 },
   date: { fontSize: 12, fontWeight: '400', color: C.ink3 },
   preview: { fontSize: 14, fontWeight: '400', color: C.ink },
-  replyCount: { fontSize: 12, fontWeight: '600', color: C.primaryText },
+  // P-403 ②(예진 실기): 액센트가 아니라 본문색
+  replyCount: { fontSize: 12, fontWeight: '600', color: C.ink },
 });
