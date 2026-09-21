@@ -403,10 +403,20 @@ describe('KB-612 기준선 소비(다중도)', () => {
  * ──────────────────────────────────────────────────────────────────────────── */
 it('package.json scripts 고정 — 바꾸면 OTA 지문이 회전한다(네이티브 무관 변경이어도)', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
-  expect(Object.keys(pkg.scripts).sort()).toEqual(
-    // ⚠️ 여기에 줄을 더하기 전에: 이 변경은 **teamtest/production OTA 도달을 0으로 만든다.**
-    // 설치된 빌드의 runtimeVersion과 달라지기 때문이다. 네이티브 재빌드와 함께 가거나,
-    // 지문 sourceSkips(`PackageJsonScriptsAll`)를 **재빌드 시점에** 채택한 뒤에 넣어야 한다.
-    ['android', 'ios', 'lint', 'postinstall', 'reset-project', 'start', 'web'],
-  );
+  // ⚠️ **키가 아니라 객체 전체**를 고정한다(Codex #182): 지문이 해시하는 건 scripts의 *내용*이라
+  // `"lint"`의 값만 바꿔도 회전한다. 키만 비교하면 그 변경이 조용히 통과해, 이 가드가
+  // 지키지도 않는 약속을 하게 된다.
+  //
+  // ⚠️ 여기를 고치기 전에: 이 변경은 **teamtest/production OTA 도달을 0으로 만든다.**
+  // 설치된 빌드의 runtimeVersion과 달라지기 때문이다. 네이티브 재빌드와 함께 가거나,
+  // 지문 sourceSkips(`PackageJsonScriptsAll`)를 **재빌드 시점에** 채택한 뒤에 바꿔야 한다.
+  expect(pkg.scripts).toEqual({
+    start: 'expo start',
+    'reset-project': 'node ./scripts/reset-project.js',
+    android: 'expo run:android',
+    ios: 'expo run:ios',
+    web: 'expo start --web',
+    lint: 'expo lint',
+    postinstall: 'patch-package',
+  });
 });
