@@ -387,3 +387,36 @@ describe('KB-612 기준선 소비(다중도)', () => {
     expect(out).toHaveLength(1);
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * package.json `scripts`는 **Expo 런타임 지문의 소스**다(`packageJson:scripts`).
+ *
+ * KB-602가 `"lint:changed"` 한 줄을 넣은 것만으로 runtime fingerprint가 회전해
+ * **teamtest OTA가 양 플랫폼 도달 0**이 됐다 — 네이티브는 한 줄도 안 건드렸는데도.
+ * 지문 게이트(P-199)가 막아 줘서 "발행은 됐는데 앱이 안 바뀐다"는 안 겪었지만,
+ * 로봇이 3연속 FAILURE로 15시간 묻혀 있었다(2026-09-21).
+ *
+ * 그래서 scripts를 **고정**한다. 추가·수정하려면 이 목록을 같이 고쳐야 하고, 그때
+ * 아래 경고를 읽게 된다 — 지문이 돈다는 사실을 **커밋 시점에** 알아야 한다.
+ * 확인: `npx expo-updates fingerprint:generate --platform ios --debug`의 소스 목록에
+ * `contents packageJson:scripts`가 그대로 있다.
+ * ──────────────────────────────────────────────────────────────────────────── */
+it('package.json scripts 고정 — 바꾸면 OTA 지문이 회전한다(네이티브 무관 변경이어도)', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
+  // ⚠️ **키가 아니라 객체 전체**를 고정한다(Codex #182): 지문이 해시하는 건 scripts의 *내용*이라
+  // `"lint"`의 값만 바꿔도 회전한다. 키만 비교하면 그 변경이 조용히 통과해, 이 가드가
+  // 지키지도 않는 약속을 하게 된다.
+  //
+  // ⚠️ 여기를 고치기 전에: 이 변경은 **teamtest/production OTA 도달을 0으로 만든다.**
+  // 설치된 빌드의 runtimeVersion과 달라지기 때문이다. 네이티브 재빌드와 함께 가거나,
+  // 지문 sourceSkips(`PackageJsonScriptsAll`)를 **재빌드 시점에** 채택한 뒤에 바꿔야 한다.
+  expect(pkg.scripts).toEqual({
+    start: 'expo start',
+    'reset-project': 'node ./scripts/reset-project.js',
+    android: 'expo run:android',
+    ios: 'expo run:ios',
+    web: 'expo start --web',
+    lint: 'expo lint',
+    postinstall: 'patch-package',
+  });
+});
