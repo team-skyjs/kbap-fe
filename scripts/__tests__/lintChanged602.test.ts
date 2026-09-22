@@ -407,6 +407,22 @@ it('지문 설정이 package.json scripts를 소스에서 뺀다(scripts 편집 
   expect(cfg.sourceSkips).toEqual(['PackageJsonScriptsAll']);
 });
 
+/* Codex #174 P2: scripts 전체가 지문 밖이라, 네이티브 결과를 바꾸는 **생명주기 스크립트**(설치 훅·EAS 빌드 훅)가
+   바뀌어도 지문이 모른다. 그 공백을 불변식으로 막는다 — 바꾸려면 이 테스트를 고치며 네이티브 재빌드를 같이 한다. */
+it('네이티브 생명주기 스크립트 불변식 — postinstall = "patch-package" 정확 일치, 그 외 설치·EAS 훅 0', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
+  const LIFECYCLE = /^(pre|post)?(install|prepare|prebuild|build)$|^eas-build-/;
+  const found = Object.fromEntries(Object.entries(pkg.scripts).filter(([k]) => LIFECYCLE.test(k)));
+  expect(found).toEqual({ postinstall: 'patch-package' });
+});
+
+it('패치 내용은 지문 소스에 남는다 — .fingerprintignore가 patches/를 빼지 않는다', () => {
+  expect(fs.existsSync(path.join(REPO, 'patches'))).toBe(true); // 대조: 검사 대상이 실재
+  const ignore = fs.readFileSync(path.join(REPO, '.fingerprintignore'), 'utf8')
+    .split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+  expect(ignore.filter((l) => /patch/i.test(l))).toEqual([]);
+});
+
 it('lint:changed 스크립트 복원(P-397 8) — 게이트 진입점', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
   expect(pkg.scripts['lint:changed']).toBe('node ./scripts/lint-changed.mjs');
