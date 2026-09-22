@@ -72,9 +72,11 @@ jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { nationality: 'US', restrictions: [] } }),
   useMyReviews: () => mockMyReviews(),
 }));
+const DETAIL_OK = { data: undefined, isLoading: false, error: null as unknown, refetch: jest.fn() };
+const mockDetail = jest.fn(() => DETAIL_OK);
 jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
-  useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
+  useFoodDetail: () => mockDetail(),
 }));
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
@@ -101,8 +103,15 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
+/** KB-626: 숨김 신호(hiddenFoods)는 실물 — 화면은 이 신호 하나로 판정한다. 실제 앱에선 FOOD-001을 받은 원천
+ *  (상세·리뷰 fetch)이 세우는데 여기선 그 훅들이 목이라 테스트가 대신 세운다(`hide()`). */
+const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
+const hide = () => act(() => { HIDDEN.markFoodHidden('7'); });
+
 beforeEach(() => {
   jest.clearAllMocks();
+  HIDDEN.__resetHiddenFoodsForTest();
+  mockDetail.mockReturnValue(DETAIL_OK); // KB-626: 상세는 기본 정상
   mockMyReviews.mockReturnValue({ data: [], error: null, refetch: jest.fn() });
   mockFoodReviews.mockReturnValue({
     data: undefined, isError: false, error: null, refetch: mockRefetch,
@@ -202,5 +211,80 @@ describe('P-183: 홈 부제 false-safe', () => {
     expect(require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8')).toContain('home.popularTitle');
     const en = JSON.parse(require('fs').readFileSync('src/lib/i18n/en.json', 'utf8'));
     expect(en.home.popularTitle).toBe('Popular dishes'); // P-181 확정값 일원화
+  });
+});
+
+/* KB-626(P-405 ③) — 전체 리뷰 화면: FOOD-001 = 음식이 READY 아님(서버 `listReviews` → `getReadyFood`).
+   일반 에러는 P-164대로 "받아 둔 목록 유지 + 재시도"지만, FOOD-001은 재시도가 영원히 실패하고
+   숨겨진 음식의 옛 리뷰를 남기면 안 된다. **처음부터 캐시된 목록 + 에러 조합**으로 짠다. */
+describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 목록도 버림', () => {
+  const PAGE = { pages: [{ items: [{ id: 'r1', foodId: '7', rating: 5, body: 'cached old review', createdAt: '2026-08-01', authorNationality: 'US', authorRankTier: null, author: { nickname: 'Amy', memberId: 9 } }], hasNext: false, nextCursor: null }] };
+  const state = (error: unknown, data: unknown = PAGE) => ({
+    data, isError: error != null, error, refetch: mockRefetch,
+    hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  const byTestId = (t2: ReactTestRenderer, id: string) => t2.root.findAll((n) => n.props?.testID === id);
+
+  it('캐시된 목록 + FOOD-001 → 옛 리뷰 0 · 중립 안내 · 재시도·쓰기 CTA 0 (양성 대조군 동반)', () => {
+    // 양성 대조군: 일반 에러면 P-164대로 받아 둔 목록이 **남아 있어야** 한다.
+    // ⚠️ 표식은 카드의 testID(`helpful-<id>`)다 — 처음엔 본문 문자열을 썼는데 이 화면 본문은
+    // 번역 경로를 거쳐 테스트 출력에 안 나온다. 대조군이 그걸 잡았다: 본문 문자열이었다면
+    // 아래 "없음" 단언은 **처음부터 무조건 통과**했을 것이다.
+    mockFoodReviews.mockReturnValue(state(new ApiError('boom', 500, 'COMMON-001')));
+    expect(byTestId(render(<FoodReviews />), 'helpful-r1').length).toBeGreaterThan(0);
+
+    mockFoodReviews.mockReturnValue(state(new ApiError('x', 400, 'FOOD-001')));
+    hide(); // 리뷰 fetch가 받은 자리에서
+    const tree = render(<FoodReviews />);
+    const s = flat(tree);
+    expect(byTestId(tree, 'helpful-r1')).toHaveLength(0); // 옛 목록 버림
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+    expect(s).toContain('detail.foodHidden');
+    expect(s).not.toContain('common.retry'); // 재시도 함정 없음
+    expect(byTestId(tree, 'reviews-empty-write')).toHaveLength(0); // 숨겨진 음식에 "첫 리뷰 쓰기" 권유 금지
+  });
+
+  /* Codex #185 P1 — **상세가** FOOD-001인데 리뷰 쿼리는 정상(캐시가 독립적으로 신선)이거나 pending.
+     리뷰 에러만 보는 게이트는 여기서 서지 않아 캐시된 리뷰·요약·컨트롤이 남았다. */
+  const detailHidden = () => ({ ...DETAIL_OK, error: new ApiError('x', 400, 'FOOD-001') });
+
+  it('상세 FOOD-001 + 리뷰 캐시 신선(에러 없음) → 카드 0 · 쓰기 CTA 0 · 중립 안내 (양성 대조군 동반)', () => {
+    // 양성 대조군: 둘 다 정상이면 카드가 **보여야** 한다
+    mockFoodReviews.mockReturnValue(state(null));
+    expect(byTestId(render(<FoodReviews />), 'helpful-r1').length).toBeGreaterThan(0);
+
+    mockDetail.mockReturnValue(detailHidden());
+    mockFoodReviews.mockReturnValue(state(null)); // 리뷰 쪽은 캐시가 멀쩡하다
+    hide(); // 상세 fetch가 받은 자리에서 — 리뷰 캐시와 무관하게 선다
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'helpful-r1')).toHaveLength(0); // 캐시된 리뷰 카드 없음
+    expect(byTestId(tree, 'rating-summary-box')).toHaveLength(0); // 음식 요약·컨트롤 없음
+    expect(byTestId(tree, 'reviews-empty-write')).toHaveLength(0); // 숨겨진 음식에 "첫 리뷰 쓰기" 권유 없음
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+  });
+
+  it('상세 FOOD-001 + 리뷰 pending(data 없음·에러 없음) → 중립 안내', () => {
+    mockDetail.mockReturnValue(detailHidden());
+    mockFoodReviews.mockReturnValue({ ...state(null, undefined), isLoading: true });
+    hide();
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+    expect(byTestId(tree, 'helpful-r1')).toHaveLength(0);
+  });
+
+  it('상세의 FOOD-001이 **아닌** 에러는 리뷰 화면을 막지 않는다(과잉 차단 금지)', () => {
+    mockDetail.mockReturnValue({ ...DETAIL_OK, error: new ApiError('boom', 500, 'COMMON-001') });
+    mockFoodReviews.mockReturnValue(state(null));
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'helpful-r1').length).toBeGreaterThan(0);
+    expect(byTestId(tree, 'reviews-food-hidden')).toHaveLength(0);
+  });
+
+  it('데이터 없음 + FOOD-001 → 에러 블록이 아니라 중립 안내', () => {
+    mockFoodReviews.mockReturnValue(state(new ApiError('x', 400, 'FOOD-001'), undefined));
+    hide();
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+    expect(flat(tree)).not.toContain('states.errorTitle');
   });
 });

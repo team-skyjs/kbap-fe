@@ -36,7 +36,8 @@ const LOCALES = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru',
 const read = (l: string) => JSON.parse(fs.readFileSync(path.join(I18N, `${l}.json`), 'utf8')) as Record<string, Record<string, string>>;
 const COPY = (l: string) => {
   const j = read(l);
-  return { review: j.review?.foodHidden, detail: j.detail?.foodHidden };
+  // KB-626: 북마크 추가 안내(saved.foodHidden)도 같은 FOOD-001 문구 — 같은 가드를 받는다
+  return { review: j.review?.foodHidden, detail: j.detail?.foodHidden, saved: j.saved?.foodHidden };
 };
 
 describe('안내 문구 — 10개 로케일', () => {
@@ -46,10 +47,11 @@ describe('안내 문구 — 10개 로케일', () => {
     expect(onDisk).toEqual([...LOCALES].sort());
   });
 
-  it.each(LOCALES)('%s — review.foodHidden · detail.foodHidden 둘 다 비어 있지 않다', (l) => {
+  it.each(LOCALES)('%s — review·detail·saved .foodHidden 셋 다 비어 있지 않다', (l) => {
     const c = COPY(l);
     expect(c.review?.trim()).toBeTruthy();
     expect(c.detail?.trim()).toBeTruthy();
+    expect(c.saved?.trim()).toBeTruthy();
   });
 
   it.each(LOCALES)('%s — 두 문구가 서로 다르다(리뷰 쪽은 "쓴 글이 남아 있다"를 담는다)', (l) => {
@@ -75,7 +77,7 @@ const VERDICT_WORDS: Record<(typeof LOCALES)[number], string[]> = {
 describe('안내 문구에 안전 판정 어휘가 없다(헌법 III)', () => {
   it.each(LOCALES)('%s', (l) => {
     const c = COPY(l);
-    const text = `${c.review} ${c.detail}`.toLowerCase();
+    const text = `${c.review} ${c.detail} ${c.saved}`.toLowerCase();
     const hits = VERDICT_WORDS[l].filter((w) => text.includes(w.toLowerCase()));
     expect(hits).toEqual([]);
   });
@@ -93,7 +95,7 @@ describe('FOOD-001 문구는 원인 단정·회복 약속을 하지 않는다(�
   };
   it.each(Object.keys(PROMISE) as (typeof LOCALES)[number][])('%s', (l) => {
     const c = COPY(l);
-    const text = `${c.review} ${c.detail}`.toLowerCase();
+    const text = `${c.review} ${c.detail} ${c.saved}`.toLowerCase();
     expect(PROMISE[l]!.filter((w) => text.includes(w.toLowerCase()))).toEqual([]);
   });
 });

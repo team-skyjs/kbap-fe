@@ -882,6 +882,7 @@
   },
   "saved": {
     "error": "No se pudo actualizar tu lista guardada. Inténtalo de nuevo.",
+    "foodHidden": "Ahora mismo no se puede guardar este plato.",
     "title": "Guardados",
     "count_one": "{{count}} plato",
     "count_other": "{{count}} platos",

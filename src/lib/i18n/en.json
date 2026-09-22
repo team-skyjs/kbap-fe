@@ -880,6 +880,7 @@
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
+    "foodHidden": "You can't save this dish right now.",
     "title": "Saved",
     "count_one": "{{count}} dish",
     "count_other": "{{count}} dishes",

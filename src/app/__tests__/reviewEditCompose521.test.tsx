@@ -200,7 +200,10 @@ describe('KB-620 리뷰 제출 — 음식 숨김(FOOD-001)은 조용한 안내 +
     act(() => { input.props.onChangeText(text); });
   };
 
-  it('편집 저장 중 FOOD-001 → 숨김 안내 · 에러 안내 없음 · 화면 유지 · 본문 보존', async () => {
+  // ⚠️ 서버 `updateReview`는 지금 FOOD-001을 **내지 않는다**(`getReadyFood` 미호출 — KB-626에서 확인).
+  // 이 테스트는 서버가 준비 상태 검사를 추가할 때를 대비한 **방어 잠금**이다 — 수정도 같은 catch를
+  // 지나므로 그때 화면을 닫거나 글을 버리지 않는지 미리 본다. 실제 경로는 아래 신규 작성 테스트다.
+  it('편집 저장 중 FOOD-001(서버 현재 미발생 — 방어) → 숨김 안내 · 에러 안내 없음 · 화면 유지 · 본문 보존', async () => {
     mockUpdate.mockRejectedValueOnce(hidden());
     const tree = render(<ReviewCompose />);
     await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });

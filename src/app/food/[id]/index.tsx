@@ -47,7 +47,7 @@ import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
-import { isFoodHidden } from '@/lib/api/client';
+import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
 /** 시안 노트 03 — 히어로를 이만큼 지나면 헤더 솔리드+타이틀 페이드인 */
@@ -94,12 +94,14 @@ export default function FoodDetailScreen() {
   const { t } = useTranslation();
 
   const { data: fetched, isLoading, error, refetch } = useFoodDetail(id ?? '');
-  // KB-620(Codex #184 P1 2R): FOOD-001은 **캐시보다 우선**한다. TanStack Query는 재조회가 실패해도
-  // 이전에 받은 `data`를 그대로 유지하므로, 숨겨지기 전에 한 번 열어 본 음식이면 서버가 거둬들인
-  // 뒤에도 **옛 판정(SAFE일 수 있음)과 액션 바**가 계속 보인다 — false-safe(헌법 III). 수정 전엔
-  // 400 폴백이 캐시를 보수적 `unable`로 덮어써 그 조건을 지키고 있었다. 여기서 `food`를 비우면
-  // 판정 본문·액션 바·헤더 제목이 전부 따라 사라지고, 숨김 안내 분기(`error && !food`)가 선다.
-  const food = isFoodHidden(error) ? undefined : fetched;
+  // KB-620→626: 서버가 이 음식을 **지금** 거부했으면(FOOD-001 — 상세·리뷰 목록·북마크 어느 원천이든) 캐시보다
+  // 우선한다. TanStack은 재조회가 실패해도 이전 `data`를 유지하므로 그대로 쓰면 옛 판정(SAFE일 수 있음)과
+  // 액션 바가 남는다 — false-safe(헌법 III). 판정은 **이 한 줄**에서만 한다(hiddenFoods 신호). `food`를
+  // 비우면 판정 본문·액션 바·헤더 제목·리뷰 영역·CTA가 전부 따라 사라진다(`Registered` 언마운트).
+  // ⚠️ 상세 쿼리는 숨김 중에도 계속 돈다(`enabled`를 이 신호에 묶지 않는다) — 성공 응답이 신호를 푸는
+  // 유일한 경로라, 쿼리를 끄면 음식이 돌아와도 영영 숨김이 된다.
+  const hidden = useIsFoodHidden(id ?? '');
+  const food = hidden ? undefined : fetched;
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
 
@@ -126,6 +128,7 @@ export default function FoodDetailScreen() {
     toggleBm.mutate({
       snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
       add: adding,
+      fromDetail: true, // KB-626: 숨김이면 상세 안내가 설명한다 — 토스트 중복 금지
     });
   };
 
@@ -137,21 +140,21 @@ export default function FoodDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}>
         {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
             QueryErrorBlock을 쓰면 안 되는 이유 셋 — ① 재시도가 **영원히 실패**해 버튼이 함정이 된다
             ② 안전 판정 글리프(RiskGlyph caution)가 붙어 음식 자체에 대한 판정처럼 읽힌다(헌법 III)
             ③ error_state_view 계측이 나가 에러 지표(P-213)가 오염된다. EmptyBlock은 셋 다 없다.
             뒤로는 상단 플로팅 버튼(항상 렌더)이 맡는다. 다른 에러는 기존 블록 그대로. */}
-        {error && !food && (isFoodHidden(error) ? (
+        {hidden ? (
           <View style={styles.hiddenFill}>
             <EmptyBlock label={t('detail.foodHidden')} testID="detail-food-hidden" />
           </View>
-        ) : (
+        ) : error && !food ? (
           <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
-        ))}
+        ) : null}
         {/* P-287(4003:13466): 첫 로드 = 상세 스켈레톤(공백 금지) */}
-        {isLoading && !food && !error && <SkeletonFoodDetail />}
+        {isLoading && !food && !error && !hidden && <SkeletonFoodDetail />}
 
         {!isLoading && food && (
           <>
@@ -357,6 +360,8 @@ function Registered({
   // 쿼리 키) — 구 클라 필터는 "로드된 3장 안 교집합"이라 서버엔 있는데 0장이 떴다.
   const natQ = useFoodReviews(FLAGS.reviewsEnabled && natOnly && nationality ? id : '', nationality ?? undefined);
   const natLoading = natOnly && natQ.isLoading;
+  // KB-626: 리뷰 목록이 FOOD-001을 받으면 리뷰 fetch가 숨김 신호를 세우고(hiddenFoods), 부모가 그 신호
+  // 하나로 이 컴포넌트 전체를 내린다 — 여기서 따로 비우거나 막지 않는다(두면 대역이다).
   const activePreviews = natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
   const shownPreviews = activePreviews.slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
