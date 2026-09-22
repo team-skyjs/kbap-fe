@@ -21,7 +21,7 @@ import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang, isFoodHidden } from '../api/client';
-import { markFoodHidden, markFoodVisible } from './hiddenFoods';
+import { beginFoodRequest, markFoodHidden, markFoodVisible } from './hiddenFoods';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
@@ -174,9 +174,10 @@ export function useFoodDetail(id: string) {
       // KB-626(#185 2R): FOOD-001은 거부를 받은 **이 자리**에서 숨김 신호를 세운다 — 화면은 신호 하나로
       // 가린다(hiddenFoods). 성공하면 푼다(음식이 다시 READY). catch는 표시만 하고 **그대로 다시 던진다** —
       // 폴백 반환 금지(위 주석).
+      const startedAt = beginFoodRequest(); // 거부보다 먼저 나간 옛 성공이 신호를 풀지 못하게(#185 3R)
       try {
         const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
-        markFoodVisible(id);
+        markFoodVisible(id, startedAt);
         return adaptFoodDetail(wire, id);
       } catch (e) {
         if (isFoodHidden(e)) markFoodHidden(id);

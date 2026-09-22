@@ -9,7 +9,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ReviewPage } from '@/lib/api/types';
 import { api, apiLang, isFoodHidden } from '@/lib/api/client';
-import { markFoodHidden, markFoodVisible } from './hiddenFoods';
+import { beginFoodRequest, markFoodHidden, markFoodVisible } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
 import { FLAGS } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
@@ -36,9 +36,10 @@ export async function fetchFoodReviewsPage(
   if (countryCode) q.set('countryCode', countryCode);
   // KB-626(#185 2R): 서버 `listReviews`는 foodId가 있으면 `getReadyFood`를 탄다 — FOOD-001 = 음식이 숨겨졌다.
   // 받은 자리에서 숨김 신호를 세운다: 상세 본문의 캐시된 판정이 **상세 재조회를 기다리지 않고** 가려진다.
+  const startedAt = beginFoodRequest(); // 거부보다 먼저 나간 옛 성공이 신호를 풀지 못하게(#185 3R)
   try {
     const page = adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
-    markFoodVisible(foodId);
+    markFoodVisible(foodId, startedAt);
     return page;
   } catch (e) {
     if (isFoodHidden(e)) markFoodHidden(foodId);

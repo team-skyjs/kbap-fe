@@ -11,10 +11,20 @@
  * - 쓰는 곳: FOOD-001을 받는 원천 — `useFoodDetail`·`fetchFoodReviewsPage` queryFn, 북마크 `onError`
  * - 푸는 곳: 같은 원천의 **성공** 응답(음식이 다시 READY) — 재조회 실패로는 풀리지 않는다
  * - 읽는 곳: `useIsFoodHidden(foodId)`
+ *
+ * ⚠️ **순서**(Codex #185 3R): 요청이 겹치면 **거부보다 먼저 출발한 옛 성공**이 거부 뒤에 도착할 수 있다
+ * (음식이 READY일 때 나간 리뷰 요청이 늦게 오는 사이 북마크가 FOOD-001을 받는 경우). 그 성공이 신호를
+ * 풀면 캐시 SAFE 판정이 다시 드러난다. 그래서 **거부를 받은 뒤에 출발한 요청의 성공만** 신호를 푼다 —
+ * 원천은 요청 직전에 `beginFoodRequest()`로 출발 시각을 찍고, 성공 시 그 값을 넘긴다.
+ * 반대 방향(옛 요청의 거부가 늦게 도착)은 **더 보수적인 쪽**(숨김)으로 떨어지므로 그대로 둔다 — 다음
+ * 성공이 푼다. 숨김 쪽 오판은 판정을 가릴 뿐 SAFE를 만들지 않는다.
  */
 import { useSyncExternalStore } from 'react';
 
-const hidden = new Set<string>();
+/** 단조 증가 시계 — 요청 출발과 거부 수신의 선후만 비교한다(벽시계 아님). */
+let clock = 0;
+/** foodId → 가장 최근 거부를 받은 시각. 있으면 숨김. */
+const hiddenSince = new Map<string, number>();
 const listeners = new Set<() => void>();
 const emit = () => {
   for (const l of listeners) l();
@@ -26,25 +36,42 @@ const subscribe = (l: () => void) => {
   };
 };
 
-/** FOOD-001을 받은 자리에서 호출 — 이 음식의 캐시된 판정을 즉시 가린다. */
+/** 원천이 요청을 **보내기 직전** 호출 — 반환값을 성공 시 `markFoodVisible`에 넘긴다. */
+export function beginFoodRequest(): number {
+  return ++clock;
+}
+
+/** FOOD-001을 받은 자리에서 호출 — 이 음식의 캐시된 판정을 즉시 가린다. 이미 숨김이면 시각만 갱신
+ *  (더 최근 거부 이후에 출발한 성공만 풀 수 있게). */
 export function markFoodHidden(foodId: string) {
-  if (!foodId || hidden.has(foodId)) return;
-  hidden.add(foodId);
+  if (!foodId) return;
+  const wasHidden = hiddenSince.has(foodId);
+  hiddenSince.set(foodId, ++clock);
+  if (!wasHidden) emit();
+}
+
+/** 같은 원천이 **성공**하면 호출 — 단, 그 요청이 **마지막 거부 이후에 출발**했을 때만 푼다. */
+export function markFoodVisible(foodId: string, requestStartedAt: number) {
+  const since = hiddenSince.get(foodId);
+  if (since === undefined || requestStartedAt <= since) return; // 거부 전에 나간 옛 성공은 무시
+  hiddenSince.delete(foodId);
   emit();
 }
 
-/** 같은 원천이 **성공**하면 호출 — 음식이 돌아왔다. */
-export function markFoodVisible(foodId: string) {
-  if (hidden.delete(foodId)) emit();
+export function useIsFoodHidden(foodId: string): boolean {
+  const snap = () => hiddenSince.has(foodId);
+  return useSyncExternalStore(subscribe, snap, snap);
 }
 
-export function useIsFoodHidden(foodId: string): boolean {
-  const snap = () => hidden.has(foodId);
-  return useSyncExternalStore(subscribe, snap, snap);
+/** 테스트 전용 — 원천이 **저장소에 썼는지**를 React 렌더를 거치지 않고 직접 본다. 원천 테스트에서 프로브
+ *  컴포넌트로 읽으면 앞선 비동기 act와 얽혀 렌더가 늦게 반영돼, 저장소는 숨김인데 false를 읽는 일이
+ *  있었다(KB-626 3R 실측: 파일 전체 실행에서만 재현). React 경로(화면이 읽는지)는 화면 테스트가 본다. */
+export function __isFoodHiddenForTest(foodId: string): boolean {
+  return hiddenSince.has(foodId);
 }
 
 /** 테스트 격리 전용 — 모듈 상태가 테스트 사이에 새지 않게. */
 export function __resetHiddenFoodsForTest() {
-  hidden.clear();
+  hiddenSince.clear();
   emit();
 }

@@ -58,17 +58,8 @@ const client = () => new QueryClient({ defaultOptions: { queries: { retry: false
 const hidden = () => new ApiError('해당 음식 정보를 찾을 수 없습니다', 400, 'FOOD-001');
 
 const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
-function readHidden(id: string): boolean {
-  let v = false;
-  function P() {
-    v = HIDDEN.useIsFoodHidden(id);
-    return null;
-  }
-  act(() => {
-    renderer.create(<P />);
-  });
-  return v;
-}
+/** 원천이 저장소에 **썼는지**를 직접 본다(React 경로는 화면 테스트 몫 — `__isFoodHiddenForTest` 주석 참고). */
+const readHidden = (id: string): boolean => HIDDEN.__isFoodHiddenForTest(id);
 
 beforeEach(() => {
   mockPost.mockReset();

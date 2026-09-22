@@ -27,18 +27,29 @@ import { useFoodDetail } from '../useFoods';
 type Snap = ReturnType<typeof useFoodDetail>;
 
 /** 훅을 한 번 마운트하고 쿼리가 끝난 상태를 돌려준다. */
+/** ⚠️ 테스트 격리: 마운트한 트리·클라이언트는 **테스트가 끝나면 전부 내린다**. 남겨 두면 앞 테스트의
+ *  쿼리 관찰자가 뒤 테스트 중에 재조회해 `mockGet`의 1회용 응답을 가로채거나, 성공 응답으로 숨김 신호를
+ *  풀어 버린다 — 순서 테스트가 실행마다 통과/실패가 갈렸던 원인(KB-626 3R에서 실측). */
+const mounted: { unmount: () => void }[] = [];
+const clients: QueryClient[] = [];
+
 async function runDetail(id: string): Promise<Snap> {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false } },
+  });
+  clients.push(qc);
   let snap!: Snap;
   function Probe() {
     snap = useFoodDetail(id);
     return null;
   }
   await act(async () => {
-    renderer.create(
-      <QueryClientProvider client={qc}>
-        <Probe />
-      </QueryClientProvider>,
+    mounted.push(
+      renderer.create(
+        <QueryClientProvider client={qc}>
+          <Probe />
+        </QueryClientProvider>,
+      ),
     );
   });
   // queryFn의 reject/resolve가 상태에 반영될 때까지 한 틱 더
@@ -47,6 +58,12 @@ async function runDetail(id: string): Promise<Snap> {
 }
 
 beforeEach(() => mockGet.mockReset());
+afterEach(() => {
+  act(() => {
+    while (mounted.length) mounted.pop()!.unmount();
+  });
+  while (clients.length) clients.pop()!.clear();
+});
 
 describe('useFoodDetail — 400은 코드로만 분기(status 폴백 없음)', () => {
   it('FOOD-001(400) → **에러로 올라온다**(미등록 폴백으로 둔갑하지 않는다)', async () => {
@@ -91,18 +108,8 @@ describe('useFoodDetail — 400은 코드로만 분기(status 폴백 없음)', (
  * ──────────────────────────────────────────────────────────────────────────── */
 const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
 
-/** 저장소의 현재 값을 구독자 관점에서 읽는다(화면이 보는 것과 같은 경로). */
-function readHidden(id: string): boolean {
-  let v = false;
-  function P() {
-    v = HIDDEN.useIsFoodHidden(id);
-    return null;
-  }
-  act(() => {
-    renderer.create(<P />);
-  });
-  return v;
-}
+/** 원천이 저장소에 **썼는지**를 직접 본다(React 경로는 화면 테스트 몫 — `__isFoodHiddenForTest` 주석 참고). */
+const readHidden = (id: string): boolean => HIDDEN.__isFoodHiddenForTest(id);
 
 describe('원천 ① 상세 queryFn — FOOD-001이면 세우고, 성공하면 푼다', () => {
   beforeEach(() => HIDDEN.__resetHiddenFoodsForTest());
@@ -162,5 +169,68 @@ describe('원천 ② 리뷰 목록 fetch — FOOD-001이면 세우고, 성공하
     mockGet.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
     await expect(fetchFoodReviewsPage('55', null)).rejects.toBeInstanceOf(ApiError);
     expect(readHidden('55')).toBe(false);
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Codex #185 3R — **순서**. 거부보다 먼저 출발한 옛 성공이 거부 뒤에 도착해 신호를 풀면 캐시 SAFE
+ * 판정이 다시 드러난다. 거부를 받은 **뒤에 출발한** 요청의 성공만 풀 수 있어야 한다.
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('순서 — 거부 전에 출발한 옛 성공은 신호를 풀지 못한다', () => {
+  beforeEach(() => HIDDEN.__resetHiddenFoodsForTest());
+  const { fetchFoodReviewsPage } = jest.requireActual('../useFoodReviews') as typeof import('../useFoodReviews');
+  /** 응답을 손으로 늦추는 요청 */
+  const deferred = <T,>() => {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => (resolve = r));
+    return { promise, resolve };
+  };
+
+  it('(iv) 리뷰 요청 출발(READY) → 북마크가 FOOD-001로 숨김 → 옛 리뷰 성공 도착 → **여전히 숨김**', async () => {
+    const late = deferred<unknown>();
+    mockGet.mockReturnValueOnce(late.promise);
+    const inflight = fetchFoodReviewsPage('55', null); // 출발 — 이 시점엔 음식이 READY
+    act(() => HIDDEN.markFoodHidden('55')); // 그 사이 북마크 onError가 거부를 받았다
+    await act(async () => {
+      late.resolve({ items: [], hasNext: false, nextCursor: null }); // 옛 성공이 이제 도착
+      await inflight;
+    });
+    expect(readHidden('55')).toBe(true); // 풀리면 캐시 SAFE 판정이 다시 드러난다
+  });
+
+  it('(iv) 상세도 같다 — 거부 전에 나간 상세 요청의 늦은 성공은 풀지 못한다', async () => {
+    const late = deferred<unknown>();
+    mockGet.mockReturnValueOnce(late.promise);
+    let done!: Promise<Snap>;
+    await act(async () => {
+      done = runDetail('123');
+      await Promise.resolve();
+    });
+    act(() => HIDDEN.markFoodHidden('123'));
+    await act(async () => {
+      late.resolve({});
+      await done;
+    });
+    expect(readHidden('123')).toBe(true);
+  });
+
+  it('(v) 거부 → **그 뒤에 출발한** 성공 → 풀림(음식이 돌아왔다)', async () => {
+    act(() => HIDDEN.markFoodHidden('55')); // 먼저 거부
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    await fetchFoodReviewsPage('55', null); // 거부 뒤에 출발
+    expect(readHidden('55')).toBe(false);
+  });
+
+  it('거부가 두 번이면 **마지막 거부 뒤에** 출발한 성공만 푼다', async () => {
+    act(() => HIDDEN.markFoodHidden('55'));
+    const late = deferred<unknown>();
+    mockGet.mockReturnValueOnce(late.promise);
+    const between = fetchFoodReviewsPage('55', null); // 첫 거부와 둘째 거부 사이에 출발
+    act(() => HIDDEN.markFoodHidden('55')); // 둘째 거부
+    await act(async () => {
+      late.resolve({ items: [], hasNext: false, nextCursor: null });
+      await between;
+    });
+    expect(readHidden('55')).toBe(true);
   });
 });
