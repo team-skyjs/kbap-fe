@@ -72,9 +72,11 @@ jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: { nationality: 'US', restrictions: [] } }),
   useMyReviews: () => mockMyReviews(),
 }));
+const DETAIL_OK = { data: undefined, isLoading: false, error: null as unknown, refetch: jest.fn() };
+const mockDetail = jest.fn(() => DETAIL_OK);
 jest.mock('@/lib/data/useFoods', () => ({
   useFoods: () => ({ data: [] }),
-  useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
+  useFoodDetail: () => mockDetail(),
 }));
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
@@ -103,6 +105,7 @@ const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockDetail.mockReturnValue(DETAIL_OK); // KB-626: 상세는 기본 정상
   mockMyReviews.mockReturnValue({ data: [], error: null, refetch: jest.fn() });
   mockFoodReviews.mockReturnValue({
     data: undefined, isError: false, error: null, refetch: mockRefetch,
@@ -232,6 +235,40 @@ describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 �
     expect(s).toContain('detail.foodHidden');
     expect(s).not.toContain('common.retry'); // 재시도 함정 없음
     expect(byTestId(tree, 'reviews-empty-write')).toHaveLength(0); // 숨겨진 음식에 "첫 리뷰 쓰기" 권유 금지
+  });
+
+  /* Codex #185 P1 — **상세가** FOOD-001인데 리뷰 쿼리는 정상(캐시가 독립적으로 신선)이거나 pending.
+     리뷰 에러만 보는 게이트는 여기서 서지 않아 캐시된 리뷰·요약·컨트롤이 남았다. */
+  const detailHidden = () => ({ ...DETAIL_OK, error: new ApiError('x', 400, 'FOOD-001') });
+
+  it('상세 FOOD-001 + 리뷰 캐시 신선(에러 없음) → 카드 0 · 쓰기 CTA 0 · 중립 안내 (양성 대조군 동반)', () => {
+    // 양성 대조군: 둘 다 정상이면 카드가 **보여야** 한다
+    mockFoodReviews.mockReturnValue(state(null));
+    expect(byTestId(render(<FoodReviews />), 'helpful-r1').length).toBeGreaterThan(0);
+
+    mockDetail.mockReturnValue(detailHidden());
+    mockFoodReviews.mockReturnValue(state(null)); // 리뷰 쪽은 캐시가 멀쩡하다
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'helpful-r1')).toHaveLength(0); // 캐시된 리뷰 카드 없음
+    expect(byTestId(tree, 'rating-summary-box')).toHaveLength(0); // 음식 요약·컨트롤 없음
+    expect(byTestId(tree, 'reviews-empty-write')).toHaveLength(0); // 숨겨진 음식에 "첫 리뷰 쓰기" 권유 없음
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+  });
+
+  it('상세 FOOD-001 + 리뷰 pending(data 없음·에러 없음) → 중립 안내', () => {
+    mockDetail.mockReturnValue(detailHidden());
+    mockFoodReviews.mockReturnValue({ ...state(null, undefined), isLoading: true });
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+    expect(byTestId(tree, 'helpful-r1')).toHaveLength(0);
+  });
+
+  it('상세의 FOOD-001이 **아닌** 에러는 리뷰 화면을 막지 않는다(과잉 차단 금지)', () => {
+    mockDetail.mockReturnValue({ ...DETAIL_OK, error: new ApiError('boom', 500, 'COMMON-001') });
+    mockFoodReviews.mockReturnValue(state(null));
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'helpful-r1').length).toBeGreaterThan(0);
+    expect(byTestId(tree, 'reviews-food-hidden')).toHaveLength(0);
   });
 
   it('데이터 없음 + FOOD-001 → 에러 블록이 아니라 중립 안내', () => {

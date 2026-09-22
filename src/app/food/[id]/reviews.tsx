@@ -72,7 +72,7 @@ export default function FoodReviews() {
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
-  const { data: food } = useFoodDetail(id ?? '');
+  const { data: food, error: detailError } = useFoodDetail(id ?? '');
   const writeReview = () => {
     // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관
     track(EVENTS.review_write_tap, { source: 'list' });
@@ -92,13 +92,19 @@ export default function FoodReviews() {
   // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
   const reviewsQ = useFoodReviews(id ?? '', sameNatOnly && nationality ? nationality : undefined);
   const loaded = reviewsQ.data != null;
-  // KB-626(P-405 ③): FOOD-001 = 음식이 READY가 아님(서버 `listReviews`가 `getReadyFood`에서 거부).
-  // 일반 에러와 달리 **받아 둔 목록도 버린다** — 재시도해도 같고, 숨겨진 음식의 옛 리뷰를 남기지 않는다.
-  const foodHidden = isFoodHidden(reviewsQ.error);
+  // KB-626(P-405 ③): FOOD-001 = 음식이 READY가 아님(서버 `getDetail`·`listReviews` 둘 다 `getReadyFood`에서 거부).
+  // 일반 에러와 달리 **받아 둔 목록도 보이지 않게** 한다 — 재시도해도 같고, 숨겨진 음식의 옛 리뷰를 남기지 않는다.
+  // 막는 장치는 **하나**다: 아래 내용 분기 전체(요약·리뷰·더보기)를 `!foodHidden`으로 막는다. 목록 자체를
+  // 비우는 코드를 따로 두지 않는다 — 두면 이 게이트가 대신 일해서 그 코드는 아무 일도 안 하는데 일하는
+  // 것처럼 보인다(뮤테이션으로 확인: 목록 비우기를 빼도 어떤 유닛도 안 깨졌다).
+  // ⚠️ **두 쿼리 중 어느 쪽이 거부해도** 숨긴다(Codex #185 P1). 리뷰 쿼리만 보면, 상세가 FOOD-001인데
+  // 리뷰 캐시가 독립적으로 신선하거나 아직 pending일 때 게이트가 서지 않아 캐시된 리뷰·요약·컨트롤이
+  // 그대로 남는다 — 리뷰 엔드포인트가 이 마운트에서 실패하지 않으면 끝까지.
+  const foodHidden = isFoodHidden(detailError) || isFoodHidden(reviewsQ.error);
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증 보조(확인되면 제거)
   const { data: blockedUsers } = useBlockedUsers();
   const blockedIds = React.useMemo(() => new Set((blockedUsers ?? []).map((u) => u.id)), [blockedUsers]);
-  const all = (foodHidden ? [] : (reviewsQ.data?.pages.flatMap((p) => p.items) ?? [])).filter((r) => {
+  const all = (reviewsQ.data?.pages.flatMap((p) => p.items) ?? []).filter((r) => {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
@@ -164,7 +170,9 @@ export default function FoodReviews() {
         ) : null}
         {/* 게스트는 리뷰 개수와 무관하게 항상 잠금 (실기기 반려분 #3) —
             빈 상태(쓰기 CTA 포함)는 회원에게만 */}
-        {!(reviewsQ.isError && all.length === 0) && loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
+        {/* KB-626: 숨김이면 이 분기 전체를 막는다 — 상세만 거부(리뷰 쿼리는 정상)일 때 all=[]이 되어 아래
+            "첫 리뷰를 써 보세요" CTA가 뜨면 숨겨진 음식에 작성을 권하게 된다. */}
+        {!foodHidden && !(reviewsQ.isError && all.length === 0) && loaded && (!isGuest && all.length === 0 && !sameNatOnly ? (
           // No reviews at all → drop the dish header/summary/filter/sort; the
           // empty state owns the whole screen, vertically centered.
           // P-359(KB-522): 구 StateBlock → 디자이너 EmptyBlock. 헤더에 쓰기 진입점이
