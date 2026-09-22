@@ -882,6 +882,7 @@
   },
   "saved": {
     "error": "Tidak dapat memperbarui daftar simpanan. Silakan coba lagi.",
+    "foodHidden": "Hidangan ini tidak bisa disimpan saat ini.",
     "title": "Tersimpan",
     "count_other": "{{count}} hidangan",
     "newestFirst": "Terbaru dulu",

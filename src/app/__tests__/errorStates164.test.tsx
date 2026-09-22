@@ -204,3 +204,40 @@ describe('P-183: 홈 부제 false-safe', () => {
     expect(en.home.popularTitle).toBe('Popular dishes'); // P-181 확정값 일원화
   });
 });
+
+/* KB-626(P-405 ③) — 전체 리뷰 화면: FOOD-001 = 음식이 READY 아님(서버 `listReviews` → `getReadyFood`).
+   일반 에러는 P-164대로 "받아 둔 목록 유지 + 재시도"지만, FOOD-001은 재시도가 영원히 실패하고
+   숨겨진 음식의 옛 리뷰를 남기면 안 된다. **처음부터 캐시된 목록 + 에러 조합**으로 짠다. */
+describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 목록도 버림', () => {
+  const PAGE = { pages: [{ items: [{ id: 'r1', foodId: '7', rating: 5, body: 'cached old review', createdAt: '2026-08-01', authorNationality: 'US', authorRankTier: null, author: { nickname: 'Amy', memberId: 9 } }], hasNext: false, nextCursor: null }] };
+  const state = (error: unknown, data: unknown = PAGE) => ({
+    data, isError: error != null, error, refetch: mockRefetch,
+    hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  const byTestId = (t2: ReactTestRenderer, id: string) => t2.root.findAll((n) => n.props?.testID === id);
+
+  it('캐시된 목록 + FOOD-001 → 옛 리뷰 0 · 중립 안내 · 재시도·쓰기 CTA 0 (양성 대조군 동반)', () => {
+    // 양성 대조군: 일반 에러면 P-164대로 받아 둔 목록이 **남아 있어야** 한다.
+    // ⚠️ 표식은 카드의 testID(`helpful-<id>`)다 — 처음엔 본문 문자열을 썼는데 이 화면 본문은
+    // 번역 경로를 거쳐 테스트 출력에 안 나온다. 대조군이 그걸 잡았다: 본문 문자열이었다면
+    // 아래 "없음" 단언은 **처음부터 무조건 통과**했을 것이다.
+    mockFoodReviews.mockReturnValue(state(new ApiError('boom', 500, 'COMMON-001')));
+    expect(byTestId(render(<FoodReviews />), 'helpful-r1').length).toBeGreaterThan(0);
+
+    mockFoodReviews.mockReturnValue(state(new ApiError('x', 400, 'FOOD-001')));
+    const tree = render(<FoodReviews />);
+    const s = flat(tree);
+    expect(byTestId(tree, 'helpful-r1')).toHaveLength(0); // 옛 목록 버림
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+    expect(s).toContain('detail.foodHidden');
+    expect(s).not.toContain('common.retry'); // 재시도 함정 없음
+    expect(byTestId(tree, 'reviews-empty-write')).toHaveLength(0); // 숨겨진 음식에 "첫 리뷰 쓰기" 권유 금지
+  });
+
+  it('데이터 없음 + FOOD-001 → 에러 블록이 아니라 중립 안내', () => {
+    mockFoodReviews.mockReturnValue(state(new ApiError('x', 400, 'FOOD-001'), undefined));
+    const tree = render(<FoodReviews />);
+    expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
+    expect(flat(tree)).not.toContain('states.errorTitle');
+  });
+});

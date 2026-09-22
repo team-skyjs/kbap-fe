@@ -882,6 +882,7 @@
   },
   "saved": {
     "error": "保存リストを更新できませんでした。もう一度お試しください。",
+    "foodHidden": "現在、この料理は保存できません。",
     "title": "保存済み",
     "count_other": "{{count}}件の料理",
     "newestFirst": "新しい順",

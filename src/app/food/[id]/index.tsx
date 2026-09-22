@@ -12,6 +12,7 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useState } from 'react';
+import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout) — review.tsx와 같은 방식
 import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -126,6 +127,7 @@ export default function FoodDetailScreen() {
     toggleBm.mutate({
       snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
       add: adding,
+      fromDetail: true, // KB-626: 숨김이면 상세 안내가 설명한다 — 토스트 중복 금지
     });
   };
 
@@ -357,7 +359,17 @@ function Registered({
   // 쿼리 키) — 구 클라 필터는 "로드된 3장 안 교집합"이라 서버엔 있는데 0장이 떴다.
   const natQ = useFoodReviews(FLAGS.reviewsEnabled && natOnly && nationality ? id : '', nationality ?? undefined);
   const natLoading = natOnly && natQ.isLoading;
-  const activePreviews = natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
+  // KB-626(P-405 ③): 리뷰 목록이 FOOD-001이면(음식이 READY 아님 — 서버 `listReviews`가 `getReadyFood`에서
+  // 거부) 리뷰 영역을 **조용히 비운다** — 토스트·재시도·에러 블록 없음. ⚠️ **캐시된 옛 목록도 버린다**:
+  // TanStack은 재조회가 실패해도 이전 data를 유지하므로 그대로 쓰면 숨겨진 음식의 옛 리뷰가 남는다
+  // (#184 2R과 같은 성질 — 판정 표면에서 캐시는 서버의 현재 거부를 못 이긴다).
+  const reviewsHidden = isFoodHidden(reviewsQ.error) || isFoodHidden(natQ.error);
+  // 리뷰가 거부됐다 = 음식이 숨겨졌다. 상세 본문은 아직 캐시된 판정(SAFE일 수 있음)을 보여 줄 수 있으니
+  // 상세를 다시 조회시켜 숨김 안내로 넘긴다(북마크 onSettled와 같은 무효화). 불리언 의존이라 반복 없음.
+  useEffect(() => {
+    if (reviewsHidden) void queryClient.invalidateQueries({ queryKey: ['food', id] });
+  }, [reviewsHidden, id]);
+  const activePreviews = reviewsHidden ? [] : natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
   const shownPreviews = activePreviews.slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
   const [mod, setMod] = useState<ModTarget | null>(null);
@@ -563,12 +575,12 @@ function Registered({
               ))}
             </View>
           )}
-          {natOnly && !natLoading && natQ.isError && (
+          {natOnly && !natLoading && natQ.isError && !reviewsHidden && (
             <View testID="detail-nat-error">
               <QueryErrorBlock error={natQ.error} onRetry={() => void natQ.refetch()} />
             </View>
           )}
-          {natOnly && !natLoading && !natQ.isError && shownPreviews.length === 0 && (
+          {natOnly && !natLoading && !natQ.isError && !reviewsHidden && shownPreviews.length === 0 && (
             /* P-359(KB-522): 폭 초과 Text → 공용 EmptyBlock(섹션 본문 폭 안) */
             <View style={{ paddingVertical: 24 }} testID="detail-nat-empty">
               <EmptyBlock label={t('reviews.emptySameNat')} />

@@ -113,6 +113,15 @@ export const IconMinus = (p: IconProps) => (
   </Glyph>
 );
 export const IconLock = (p: IconProps) => styled(<D4Lock size={p.size ?? 24} color={p.color ?? '#1C1E21'} />, p.style);
+/** KB-626: 중립 안내(원 안 i) — Lucide `info`. 판정(RiskGlyph)·성공(✓)·에러(삼각형) 어느 뜻도 없는
+ *  "알림"용. ⚠️ 새 디자인 자산 — 시안 노드 없음, **예진 확인 대상**(P-405). */
+export const IconInfo = (p: IconProps) => (
+  <Glyph {...p}>
+    <Circle cx="12" cy="12" r="10" />
+    <Path d="M12 16v-4" />
+    <Path d="M12 8h.01" />
+  </Glyph>
+);
 export const IconRetry = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />

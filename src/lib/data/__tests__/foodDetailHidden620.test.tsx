@@ -48,7 +48,7 @@ async function runDetail(id: string): Promise<Snap> {
 
 beforeEach(() => mockGet.mockReset());
 
-describe('useFoodDetail — FOOD-001은 400 폴백보다 먼저', () => {
+describe('useFoodDetail — 400은 코드로만 분기(status 폴백 없음)', () => {
   it('FOOD-001(400) → **에러로 올라온다**(미등록 폴백으로 둔갑하지 않는다)', async () => {
     mockGet.mockRejectedValueOnce(new ApiError('해당 음식 정보를 찾을 수 없습니다', 400, 'FOOD-001'));
     const s = await runDetail('123');
@@ -56,12 +56,19 @@ describe('useFoodDetail — FOOD-001은 400 폴백보다 먼저', () => {
     expect(isFoodHidden(s.error)).toBe(true); // 화면이 이걸 보고 숨김 안내를 그린다
   });
 
-  it('FOOD-001이 아닌 400 → 기존 미등록 폴백 그대로(판정 불가 — FR-033 무변)', async () => {
-    mockGet.mockRejectedValueOnce(new ApiError('잘못된 요청', 400, 'COMMON-002'));
-    const s = await runDetail('123');
-    expect(s.error).toBeNull();
-    expect(s.data?.risk).toBe('unable'); // 보수적 판정 유지(헌법 III)
-  });
+  /* KB-626(P-405): 이 자리는 KB-620 때 "FOOD-001이 아닌 400 → 미등록 폴백 유지"로 **현재 동작을
+     잠가 둔** 테스트였다. 폴백을 없애자 이 테스트가 먼저 빨개졌다 — 잠가 둔 목적 그대로다.
+     폴백은 `unregisteredFoodDetail(id)`로 **숫자 id를 이름에** 넣어 사용자가 "123"을 봤다. */
+  it.each(['COMMON-002', 'COMMON-001', undefined])(
+    'FOOD-001이 아닌 400(%s) → **에러**로 올라온다 · 데이터 없음 = 이름에 id가 나올 자리 0',
+    async (code) => {
+      mockGet.mockRejectedValueOnce(new ApiError('잘못된 요청', 400, code));
+      const s = await runDetail('123');
+      expect(s.data).toBeUndefined(); // "123 — 판정 불가" 폴백 없음
+      expect(s.error).toBeInstanceOf(ApiError);
+      expect(isFoodHidden(s.error)).toBe(false); // 숨김 안내가 아니라 일반 오류 UI로
+    },
+  );
 
   it('5xx → 에러(기존 동작 무변)', async () => {
     mockGet.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));

@@ -882,6 +882,7 @@
   },
   "saved": {
     "error": "Không thể cập nhật danh sách đã lưu. Vui lòng thử lại.",
+    "foodHidden": "Hiện không thể lưu món này.",
     "title": "Đã lưu",
     "count_other": "{{count}} món",
     "newestFirst": "Mới nhất trước",

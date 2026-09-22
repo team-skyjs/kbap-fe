@@ -47,6 +47,7 @@ import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
+import { isFoodHidden } from '@/lib/api/client';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { IconLock } from '@/components/icons';
@@ -91,10 +92,13 @@ export default function FoodReviews() {
   // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
   const reviewsQ = useFoodReviews(id ?? '', sameNatOnly && nationality ? nationality : undefined);
   const loaded = reviewsQ.data != null;
+  // KB-626(P-405 ③): FOOD-001 = 음식이 READY가 아님(서버 `listReviews`가 `getReadyFood`에서 거부).
+  // 일반 에러와 달리 **받아 둔 목록도 버린다** — 재시도해도 같고, 숨겨진 음식의 옛 리뷰를 남기지 않는다.
+  const foodHidden = isFoodHidden(reviewsQ.error);
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증 보조(확인되면 제거)
   const { data: blockedUsers } = useBlockedUsers();
   const blockedIds = React.useMemo(() => new Set((blockedUsers ?? []).map((u) => u.id)), [blockedUsers]);
-  const all = (reviewsQ.data?.pages.flatMap((p) => p.items) ?? []).filter((r) => {
+  const all = (foodHidden ? [] : (reviewsQ.data?.pages.flatMap((p) => p.items) ?? [])).filter((r) => {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
@@ -149,7 +153,13 @@ export default function FoodReviews() {
       >
         {/* P-164: 로드 실패 = 공용 에러(+재시도) — loaded 게이트 밖(에러 시 헤더만
             남던 빈 화면이 바로 이 구멍). 로드된 항목이 있으면 그 목록 유지. */}
-        {reviewsQ.isError && all.length === 0 ? (
+        {foodHidden ? (
+          // KB-626: 재시도 버튼·에러 계측·판정 글리프 없는 중립 안내(상세와 같은 문구). 쓰기 CTA도 없다 —
+          // 아래 빈 상태 분기는 isError·all 0이라 저절로 막힌다. 뒤로는 StickyHeader(mode="back")가 맡는다.
+          <ScreenCenterFill>
+            <EmptyBlock label={t('detail.foodHidden')} testID="reviews-food-hidden" />
+          </ScreenCenterFill>
+        ) : reviewsQ.isError && all.length === 0 ? (
           <QueryErrorBlock error={reviewsQ.error} onRetry={() => void reviewsQ.refetch()} onGoBack={() => router.back()} />
         ) : null}
         {/* 게스트는 리뷰 개수와 무관하게 항상 잠금 (실기기 반려분 #3) —

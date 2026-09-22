@@ -21,6 +21,7 @@ import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
 import { showTopToast } from '@/components/topToastStore';
+import { isFoodHidden } from '@/lib/api/client';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
 
@@ -139,7 +140,9 @@ function optimisticWrite(
 export function useToggleBookmark() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ snap, add }: { snap: BookmarkSnapshot; add: boolean }) => {
+    /** `fromDetail`: 음식 상세 안에서 눌렀는가 — 숨김(FOOD-001)이면 상세가 자기 안내를 그리므로
+     *  토스트를 겹치지 않는다(KB-626). 목록 카드(검색·탐색)에서는 생략 = false. */
+    mutationFn: async ({ snap, add }: { snap: BookmarkSnapshot; add: boolean; fromDetail?: boolean }) => {
       if (add) {
         await api.post('/bookmarks', { foodId: Number(snap.foodId) });
       } else {
@@ -160,9 +163,17 @@ export function useToggleBookmark() {
     onSuccess: (_d, { add }) => {
       showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'));
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (e, { fromDetail }, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
+      // KB-626(P-405): 음식이 READY가 아니면(FOOD-001 — 숨김·삭제) 서버 `bookmark`가 `getReadyFood`에서
+      // 거부한다. 에러가 아니므로 빨간 토스트("다시 시도해 주세요")를 띄우지 않는다 — 다시 해도 같다.
+      // 상세 안에서 눌렀으면 아래 onSettled의 상세 무효화 → 재조회가 FOOD-001을 받아 상세가 숨김
+      // 안내로 바뀐다(#184) — 토스트까지 띄우면 같은 말을 두 번 한다.
+      if (isFoodHidden(e)) {
+        if (!fromDetail) showTopToast(i18n.t('saved.foodHidden'), { icon: 'info' }); // 중립 — 예진 확인 대상(P-405 (a))
+        return;
+      }
       showTopToast(i18n.t('saved.error'), { error: true }); // P-346: AlertTri 변형
     },
     onSettled: (_d, _e, { snap }) => {

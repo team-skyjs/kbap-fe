@@ -20,7 +20,7 @@ import i18n from '../i18n';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
-import { api, apiLang, ApiError, isFoodHidden } from '../api/client';
+import { api, apiLang } from '../api/client';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
@@ -163,22 +163,15 @@ export function useFoodDetail(id: string) {
       if (!/^\d+$/.test(id)) {
         return MOCK_FOOD_DETAILS[id] ?? unregisteredFoodDetail(decodeURIComponent(id));
       }
-      try {
-        const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
-        return adaptFoodDetail(wire, id);
-      } catch (e) {
-        // BE signals "dish not in catalog" as HTTP 400 (we clamp lang, so 400 here
-        // means not-found, not a bad language) → show the "Unable to assess"
-        // screen (FR-033), never a hard error. Network/5xx still throw → error UI.
-        // KB-620(Codex #184 P1): FOOD-001은 이 400 폴백보다 **먼저** 가른다. 서버는 "음식이 READY가
-        // 아님"(이미지 재생성 중 일시 숨김 · 삭제)을 FOOD-001(HTTP 400)로 주는데, 폴백이 400을 전부
-        // 삼키면 상세 화면의 숨김 안내가 **프로덕션에서 한 번도 안 뜬다**. 게다가 폴백은 숫자 id를
-        // 그대로 이름으로 써서 사용자가 "123"이라는 음식을 "판정 불가"로 본다.
-        // ⚠️ 서버는 "숨김"과 "삭제"를 같은 코드로 준다 — 구분이 필요해지면 서버 코드 분리가 먼저다.
-        if (isFoodHidden(e)) throw e;
-        if (e instanceof ApiError && e.status === 400) return unregisteredFoodDetail(id);
-        throw e;
-      }
+      // KB-626(P-405): 숫자 id의 **400 → "미등록 음식" 폴백을 없앴다.** 에러는 그대로 올린다.
+      //  · 상세 API가 선언한 400은 FOOD-001 하나다(서버 `FoodApi.detail` `@ApiErrors(FOOD_NOT_FOUND)`).
+      //    FOOD-001 = 음식이 READY가 아님(숨김·삭제) → 화면이 `isFoodHidden`으로 조용한 안내를 그린다.
+      //  · 그 외 400은 계약 밖 오류다 → 일반 오류 UI(QueryErrorBlock). "판정 불가"로 덮지 않는다.
+      //  · 폴백은 `unregisteredFoodDetail(id)`로 **숫자 id를 이름에** 넣어 사용자가 "123"이라는 음식을
+      //    봤다(실사례). ⚠️ status로 분기하는 폴백을 되살리지 말 것 — 분기는 `ApiError.code`로만.
+      //  (비숫자 id = 스캔한 미등록 음식은 위에서 네트워크 없이 처리 — 이름이 스캔 텍스트라 정당)
+      const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
+      return adaptFoodDetail(wire, id);
     },
     enabled: !!id,
     retry: false, // surface BE/network errors straight to the error UI (spec DoD)
