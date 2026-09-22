@@ -21,7 +21,7 @@ import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
-import { trackReadyFood } from './hiddenFoods';
+import { trackReadyFood, useIsFoodHidden } from './hiddenFoods';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
@@ -151,7 +151,11 @@ export function useScannedFoods(enabled = true) {
   });
 }
 
+/** 숨김 중 재확인 주기 — 아래 `refetchInterval` 주석. */
+export const HIDDEN_RECHECK_MS = 30_000;
+
 export function useFoodDetail(id: string) {
+  const hidden = useIsFoodHidden(id);
   return useQuery({
     // reader language in the key: switching language refetches the localized detail.
     queryKey: ['food', id, i18n.language],
@@ -180,6 +184,11 @@ export function useFoodDetail(id: string) {
       );
     },
     enabled: !!id,
+    // #185 6R(P2): 숨김은 "거부 **이후 출발한** 성공"만 풀 수 있는데, 숨김 화면엔 그런 요청을 낼 트리거가
+    // 없다(상세 쿼리는 이미 성공·fresh, 포커스 재조회 off, 재시도 UI 없음) → 음식이 READY로 돌아와도 화면에
+    // 머무는 동안 영영 숨김. 숨김 중에만 주기 재조회한다(RQ 기본 = 앱 백그라운드에선 멈춤).
+    // ponytail: 고정 30초 폴링 — 숨김 화면에 머무는 드문 경우만 도는 부하. 늘면 백오프로.
+    refetchInterval: hidden ? HIDDEN_RECHECK_MS : false,
     retry: false, // surface BE/network errors straight to the error UI (spec DoD)
   });
 }

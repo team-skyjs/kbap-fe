@@ -22,7 +22,7 @@ jest.mock('@/lib/api/client', () => {
 });
 
 import { ApiError, isFoodHidden } from '@/lib/api/client';
-import { useFoodDetail } from '../useFoods';
+import { HIDDEN_RECHECK_MS, useFoodDetail } from '../useFoods';
 
 type Snap = ReturnType<typeof useFoodDetail>;
 
@@ -158,6 +158,59 @@ describe('원천 ① 상세 queryFn — FOOD-001이면 세우고, 성공하면 �
     const s = await runDetail('123');
     expect(s.error).toBeTruthy(); // 대조: 적응이 실제로 실패했다(아니면 이 테스트는 빈 통)
     expect(readHidden('123')).toBe(true);
+  });
+});
+
+/* #185 6R(P2): 상세가 이미 성공한 뒤 **다른 원천**(리뷰·북마크)이 거부를 받으면 숨김 화면만 남는다 —
+   상세 쿼리는 fresh라 스스로 다시 안 돈다. 숨김 중엔 주기 재조회로 "거부 이후 출발한 요청"을 만들어야
+   음식이 돌아왔을 때 풀린다. 가짜 타이머로 시간만 흘려 본다. */
+describe('숨김 중 상세 재확인 — 화면에 머물러도 음식이 돌아오면 풀린다', () => {
+  beforeEach(() => {
+    HIDDEN.__resetHiddenFoodsForTest();
+    jest.useFakeTimers();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  async function mountDetail(id: string) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    clients.push(qc);
+    function Probe() {
+      useFoodDetail(id);
+      return null;
+    }
+    await act(async () => {
+      mounted.push(renderer.create(<QueryClientProvider client={qc}><Probe /></QueryClientProvider>));
+    });
+  }
+  const tick = (ms: number) => act(async () => { await jest.advanceTimersByTimeAsync(ms); });
+
+  it('상세 성공 → 다른 원천이 숨김 → 주기 재조회 성공 → **풀림**', async () => {
+    mockGet.mockResolvedValue({});
+    await mountDetail('123');
+    expect(mockGet).toHaveBeenCalledTimes(1);
+    act(() => HIDDEN.markFoodHidden('123')); // 리뷰·북마크가 FOOD-001을 받은 셈
+    expect(readHidden('123')).toBe(true);
+    await tick(HIDDEN_RECHECK_MS);
+    expect(mockGet).toHaveBeenCalledTimes(2); // 숨김 뒤에 출발한 요청이 실제로 나갔다
+    expect(readHidden('123')).toBe(false);
+  });
+
+  it('재확인이 계속 FOOD-001이면 숨김 유지 · 계속 재확인', async () => {
+    mockGet.mockResolvedValueOnce({});
+    await mountDetail('123');
+    act(() => HIDDEN.markFoodHidden('123'));
+    mockGet.mockRejectedValue(new ApiError('x', 400, 'FOOD-001'));
+    await tick(HIDDEN_RECHECK_MS);
+    await tick(HIDDEN_RECHECK_MS);
+    expect(mockGet).toHaveBeenCalledTimes(3);
+    expect(readHidden('123')).toBe(true);
+  });
+
+  it('대조: 숨김이 아니면 폴링하지 않는다(평소 부하 0)', async () => {
+    mockGet.mockResolvedValue({});
+    await mountDetail('123');
+    await tick(HIDDEN_RECHECK_MS * 3);
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 });
 
