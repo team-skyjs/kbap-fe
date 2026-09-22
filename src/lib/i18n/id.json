@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "Instagram belum terpasang di ponsel ini.",
     "shareFailed": "Gagal membuat kartu story. Coba lagi.",
     "shareStoryHint": "Simpan gambarnya, lalu bagikan di Instagram.",
-    "sharePhotosFailed": "Gagal memuat foto. Ketuk untuk coba lagi."
+    "sharePhotosFailed": "Gagal memuat foto. Ketuk untuk coba lagi.",
+    "itemPhotoTitle": "Foto hidangan",
+    "itemPhotoDefault": "Pakai foto bawaan",
+    "editFailed": "Perubahan tidak tersimpan. Coba lagi.",
+    "editPhotoNotReady": "Unggahan foto belum selesai. Coba lagi.",
+    "editNotFound": "Pesanan ini tidak ditemukan. Muat ulang lalu coba lagi."
   },
   "feedback": {
     "title": "Hubungi kami",

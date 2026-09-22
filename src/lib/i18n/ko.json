@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "이 기기에 인스타그램이 없어요.",
     "shareFailed": "스토리 카드를 만들지 못했어요. 다시 시도해 주세요.",
     "shareStoryHint": "이미지를 저장한 뒤 인스타그램에서 공유해 주세요.",
-    "sharePhotosFailed": "사진을 불러오지 못했어요. 눌러서 다시 시도해 주세요."
+    "sharePhotosFailed": "사진을 불러오지 못했어요. 눌러서 다시 시도해 주세요.",
+    "itemPhotoTitle": "음식 사진",
+    "itemPhotoDefault": "기본 사진으로",
+    "editFailed": "변경하지 못했어요. 다시 시도해 주세요.",
+    "editPhotoNotReady": "사진 업로드가 끝나지 않았어요. 다시 시도해 주세요.",
+    "editNotFound": "주문 정보를 찾을 수 없어요. 새로고침해 주세요."
   },
   "feedback": {
     "title": "문의하기",

@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "Điện thoại này chưa cài Instagram.",
     "shareFailed": "Không tạo được thẻ story. Hãy thử lại.",
     "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram.",
-    "sharePhotosFailed": "Không tải được ảnh. Chạm để thử lại."
+    "sharePhotosFailed": "Không tải được ảnh. Chạm để thử lại.",
+    "itemPhotoTitle": "Ảnh món ăn",
+    "itemPhotoDefault": "Dùng ảnh mặc định",
+    "editFailed": "Không lưu được thay đổi. Hãy thử lại.",
+    "editPhotoNotReady": "Ảnh chưa tải lên xong. Hãy thử lại.",
+    "editNotFound": "Không tìm thấy đơn này. Hãy làm mới rồi thử lại."
   },
   "feedback": {
     "title": "Liên hệ",

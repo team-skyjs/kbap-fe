@@ -122,11 +122,14 @@ export function PlacePickerSheet({
   onClose,
   onPick,
   t,
+  resultsOnly = false,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (p: ReviewPlaceTag) => void;
   t: TFn;
+  /** KB-638(P-413 D3): 검색 결과만 — MANUAL(직접 입력) 행 숨김. 주문 장소 PATCH는 placeId 필수라 이름만으론 보낼 수 없다. */
+  resultsOnly?: boolean;
 }) {
   const [q, setQ] = React.useState('');
   const term = q.trim();
@@ -161,7 +164,7 @@ export function PlacePickerSheet({
           {!term && <Text style={styles.recentLbl}>{t('review.placeNearby').toUpperCase()}</Text>}
           <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
             {/* P-201: 직접 입력(MANUAL) — 결과 미선택 채로 이름만 태그(좌표·주소 없음) */}
-            {!!term && (
+            {!!term && !resultsOnly && (
               <Pressable style={styles.resultRow} onPress={() => pick({ name: term, roadAddress: null })} testID="place-manual">
                 <IconPlus size={16} color={C.ink3} />
                 <View style={{ flex: 1, minWidth: 0 }}>

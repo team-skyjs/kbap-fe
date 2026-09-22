@@ -318,7 +318,7 @@ describe('④ 공유 사진 선별 — 서버 대체 이미지 배제 (Codex 8R)
     const src = require('fs').readFileSync('src/lib/data/useOrders.ts', 'utf8') as string;
     expect(src).toContain('hasPhoto?: boolean;'); // 와이어 타입
     expect(src).toContain("...(typeof i.hasPhoto === 'boolean' ? { hasPhoto: i.hasPhoto } : {})"); // ready와 같은 문법
-    expect(src).toMatch(/imageUrl: string \| null; ready\?: boolean; hasPhoto\?: boolean/); // 소비 타입
+    expect(src).toMatch(/export interface OrderItem \{[\s\S]*?hasPhoto\?: boolean;[\s\S]*?\n\}/); // 소비 타입(KB-638: OrderItem 인터페이스로 분리)
   });
 
   it('배선 — 카드·섹션 노출 모두 선별 결과를 쓴다(thumbnails 직결 금지)', () => {

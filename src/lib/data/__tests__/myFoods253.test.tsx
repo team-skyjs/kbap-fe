@@ -61,7 +61,37 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockGet = jest.fn();
-jest.mock('@/lib/api/client', () => ({ api: { get: (p: string) => mockGet(p) }, apiLang: () => 'en' }));
+const mockPatch = jest.fn();
+const mockPut = jest.fn();
+const mockDel = jest.fn();
+jest.mock('@/lib/api/client', () => {
+  // KB-638: 편집 뮤테이션이 코드로 분기하므로 목 안에 같은 ApiError를 둔다(useOrderEdit의 instanceof와 동일 클래스)
+  class ApiError extends Error {
+    status?: number;
+    code?: string;
+    constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } // 매개변수 프로퍼티 금지(목 팩토리 스코프 규칙)
+  }
+  return {
+    ApiError,
+    apiLang: () => 'en',
+    api: { get: (p: string) => mockGet(p), patch: (...a: unknown[]) => mockPatch(...a), put: (...a: unknown[]) => mockPut(...a), del: (...a: unknown[]) => mockDel(...a) },
+  };
+});
+// KB-638: 사진 소스 시트(iOS 네이티브/안드 ActionSheet)·픽커·업로드 — 화면은 호출만 하므로 목
+const mockChoose = jest.fn();
+jest.mock('@/lib/data/profileImage', () => ({ choosePhotoSource: (...a: unknown[]) => mockChoose(...a) }));
+const mockCamPerm = jest.fn();
+const mockLaunchCamera = jest.fn();
+const mockLaunchLibrary = jest.fn();
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: () => mockCamPerm(),
+  launchCameraAsync: (...a: unknown[]) => mockLaunchCamera(...a),
+  launchImageLibraryAsync: (...a: unknown[]) => mockLaunchLibrary(...a),
+}));
+const mockUpload = jest.fn();
+jest.mock('@/lib/api/scanImage', () => ({ uploadImage: (...a: unknown[]) => mockUpload(...a) }));
+// 장소 검색 시트의 nearby/search — 실물은 expo-location 좌표를 기다린다(미목 시 행 멈춤). 결과는 비움(선택은 onPick 직접 호출).
+jest.mock('@/lib/api/places', () => ({ fetchNearbyPlaces: async () => [], fetchSearchPlaces: async () => [] }));
 // 토스트는 상태만 — 호스트 애니메이션(reanimated)은 이 파일의 목 범위 밖
 jest.mock('@/components/topToastStore', () => ({ showTopToast: jest.fn(), dismissTopToast: jest.fn(), subscribeTopToast: () => () => {} }));
 // KB-636(#193 P2): 저장 진행 중 닫힘 방지 검증용 — 저장 결과를 테스트가 쥐고 있다가 풀어 준다
@@ -75,6 +105,8 @@ jest.mock('@/features/order/shareExport', () => ({
 
 import MyFoodsScreen from '@/app/profile/my-foods';
 import OrderDetailScreen from '@/app/profile/order/[id]';
+// eslint-disable-next-line import/first -- jest.mock 선언 뒤여야 places·client 목이 걸린다(팩토리 호이스팅, 레포 관례)
+import { PlacePickerSheet } from '@/features/review/ReviewCellParts';
 import { useOrders } from '../useOrders';
 
 const ORDER = (over: Record<string, unknown> = {}) => ({
@@ -461,5 +493,122 @@ describe('P-386(KB-456): 장소 라벨 = 식당명 → 주소 → 미렌더', ()
     const texts = tree.root.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts).toContain('홍대 김치집');
     expect(texts).not.toContain('서울 중구 소공로 51'); // roadAddress 폴백은 이때 쓰이지 않는다
+  });
+});
+
+/* ---- KB-638(P-413): 주문 편집 — 항목 썸네일 탭 → 사진 시트 → PUT/DELETE · 장소 줄 탭 → 검색 시트 → PATCH ---- */
+const EDIT_ORDER = {
+  orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 1, totalPrice: 9000, scanImageUrl: null,
+  items: [{ id: 7001, menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: 'https://cdn/catalog.jpg', ready: true, hasPhoto: true, userImageUrl: null }],
+};
+const EDIT_WITH_USER = { ...EDIT_ORDER, items: [{ ...EDIT_ORDER.items[0], userImageUrl: 'https://cdn/me.jpg' }] };
+const shownUri = (tree: ReactTestRenderer, k = 0) => {
+  const btn = byTid(tree, `order-item-photo-${k}`)[0];
+  return btn.findAll((n) => typeof n.props?.uri === 'string' || typeof n.props?.source?.uri === 'string').map((n) => n.props.uri ?? n.props.source.uri)[0];
+};
+
+describe('KB-638 주문 편집', () => {
+  beforeEach(() => { mockChoose.mockReset(); mockCamPerm.mockReset(); mockLaunchCamera.mockReset(); mockLaunchLibrary.mockReset(); mockUpload.mockReset(); mockPatch.mockReset(); mockPut.mockReset(); mockDel.mockReset(); });
+
+  it('썸네일 = 회원 사진 우선(있으면 me.jpg, 없으면 카탈로그) — 화면이 헬퍼를 탄다', async () => {
+    expect(shownUri(await renderOrder(EDIT_ORDER))).toBe('https://cdn/catalog.jpg');
+    expect(shownUri(await renderOrder(EDIT_WITH_USER))).toBe('https://cdn/me.jpg');
+  });
+
+  it('썸네일 탭 → 사진 시트(회원 사진 없으면 "기본 사진으로" 행 없음) → 앨범 → 업로드(ORDER_ITEM) → PUT → **응답으로** 썸네일 교체', async () => {
+    mockChoose.mockResolvedValueOnce('gallery');
+    mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///p.jpg' }] });
+    mockUpload.mockResolvedValueOnce({ path: 'orders/abc.jpg', publicUrl: 'x' });
+    let resolvePut!: (v: unknown) => void;
+    mockPut.mockReturnValueOnce(new Promise((r) => (resolvePut = r)));
+    const tree = await renderOrder(EDIT_ORDER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockChoose.mock.calls[0][0]).toMatchObject({ title: 'myFoods.itemPhotoTitle', camera: 'photo.take', gallery: 'photo.gallery', cancel: 'common.cancel' });
+    expect(mockChoose.mock.calls[0][0].remove).toBeUndefined();
+    expect(mockUpload).toHaveBeenCalledWith({ uri: 'file:///p.jpg', width: 0, height: 0 }, 'ORDER_ITEM');
+    expect(mockPut).toHaveBeenCalledWith('/api/orders/123/items/7001/image', { imagePath: 'orders/abc.jpg' });
+    expect(shownUri(tree)).toBe('https://cdn/catalog.jpg'); // 응답 전 = 그대로(낙관 갱신 0)
+    act(() => { void (resolvePut(EDIT_WITH_USER)); });
+    await flush();
+    expect(shownUri(tree)).toBe('https://cdn/me.jpg');
+  });
+
+  it('회원 사진이 있으면 "기본 사진으로" 행 → DELETE → 응답으로 카탈로그 복귀', async () => {
+    mockChoose.mockResolvedValueOnce('remove');
+    mockDel.mockResolvedValueOnce(EDIT_ORDER);
+    const tree = await renderOrder(EDIT_WITH_USER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockChoose.mock.calls[0][0].remove).toBe('myFoods.itemPhotoDefault');
+    expect(mockDel).toHaveBeenCalledWith('/api/orders/123/items/7001/image');
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(shownUri(tree)).toBe('https://cdn/catalog.jpg');
+  });
+
+  it('카메라 권한 거부 = 공용 시트(설정 열기) · 촬영 0 · Alert 0(P-355)', async () => {
+    mockChoose.mockResolvedValueOnce('camera');
+    mockCamPerm.mockResolvedValueOnce({ granted: false });
+    const tree = await renderOrder(EDIT_ORDER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockLaunchCamera).not.toHaveBeenCalled();
+    expect(tree.root.findAll((n) => n.props?.children === 'photo.permBody').length).toBeGreaterThan(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'ash-settings' || n.props?.children === 'photo.openSettings').length).toBeGreaterThan(0);
+  });
+
+  it('진행 중 재탭 = 시트 재호출 0(공용 제출 가드) · id 없는 구응답 항목 = 편집 비활성', async () => {
+    mockChoose.mockResolvedValueOnce('gallery');
+    mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///p.jpg' }] });
+    let finishUpload!: (v: unknown) => void;
+    mockUpload.mockReturnValueOnce(new Promise((r) => (finishUpload = r))); // 재탭 시점까지 대기
+    mockPut.mockResolvedValueOnce(EDIT_ORDER);
+    const tree = await renderOrder(EDIT_ORDER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockChoose).toHaveBeenCalledTimes(1);
+    act(() => { void (finishUpload({ path: 'orders/a.jpg', publicUrl: 'x' })); });
+    await flush(); // 정리: 대기 중 뮤테이션을 남기지 않는다
+    const old = await renderOrder({ ...EDIT_ORDER, items: [{ ...EDIT_ORDER.items[0], id: undefined }] });
+    expect(byTid(old, 'order-item-photo-0')[0].props.disabled).toBe(true);
+  });
+
+  it('장소 줄 — 라벨 없으면 같은 자리에 review.placeRow(탭 가능) · 탭 → 검색 시트(결과만) → 선택 → PATCH → 응답으로 라벨 교체', async () => {
+    mockPatch.mockResolvedValueOnce({ ...EDIT_ORDER, place: { placeId: 'g2', name: 'New Place', address: 'Busan', language: 'en' } });
+    const tree = await renderOrder(EDIT_ORDER);
+    expect(byTid(tree, 'order-place-empty')[0].props.children).toBe('review.placeRow');
+    act(() => { void (byTid(tree, 'order-place-edit')[0].props.onPress()); });
+    await flush();
+    const sheetBottom = byTid(tree, 'place-sheet-bottom');
+    expect(sheetBottom.length).toBeGreaterThan(0);
+    const sheet = tree.root.findAll((n) => n.props?.resultsOnly === true)[0];
+    expect(sheet).toBeTruthy();
+    act(() => { void (sheet.props.onPick({ name: 'New Place', roadAddress: 'Busan', placeId: 'g2' })); });
+    await flush();
+    expect(mockPatch).toHaveBeenCalledWith('/api/orders/123/place', { placeId: 'g2', name: 'New Place', address: 'Busan', language: 'en' });
+    expect(byTid(tree, 'order-place-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.children === 'New Place' && n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
+  });
+
+  it('PlacePickerSheet resultsOnly — 검색어가 있어도 MANUAL 행 없음(리뷰 쪽 기본값은 있음)', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const render = (resultsOnly: boolean) => {
+      let tree!: ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(
+          <QueryClientProvider client={qc}>
+            <PlacePickerSheet open resultsOnly={resultsOnly} onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+          </QueryClientProvider>,
+        );
+      });
+      trees.push(tree);
+      const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
+      act(() => { input.props.onChangeText('Gwangjang'); });
+      return tree;
+    };
+    expect(byTid(render(false), 'place-manual').length).toBeGreaterThan(0); // 대조: 리뷰 기본
+    expect(byTid(render(true), 'place-manual')).toHaveLength(0);
   });
 });

@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "เครื่องนี้ยังไม่ได้ติดตั้ง Instagram",
     "shareFailed": "สร้างการ์ดสตอรี่ไม่สำเร็จ ลองอีกครั้ง",
     "shareStoryHint": "บันทึกรูปแล้วแชร์บน Instagram",
-    "sharePhotosFailed": "โหลดรูปไม่สำเร็จ แตะเพื่อลองใหม่"
+    "sharePhotosFailed": "โหลดรูปไม่สำเร็จ แตะเพื่อลองใหม่",
+    "itemPhotoTitle": "รูปอาหาร",
+    "itemPhotoDefault": "ใช้รูปเริ่มต้น",
+    "editFailed": "บันทึกการเปลี่ยนแปลงไม่สำเร็จ ลองอีกครั้ง",
+    "editPhotoNotReady": "อัปโหลดรูปยังไม่เสร็จ ลองอีกครั้ง",
+    "editNotFound": "ไม่พบคำสั่งซื้อนี้ รีเฟรชแล้วลองอีกครั้ง"
   },
   "feedback": {
     "title": "ติดต่อเรา",
