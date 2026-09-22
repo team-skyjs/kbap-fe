@@ -18,7 +18,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
-import { ActionSheet, Btn, SubHeader } from '@/components';
+import { ActionSheet, SubHeader } from '@/components';
 import { SheetShell } from '@/components/SheetShell';
 import { TopToastHost } from '@/components/TopToast';
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
@@ -152,7 +152,8 @@ export default function OrderDetailScreen() {
         <SkeletonOrderDetail />
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: 110 + bottom }]}
+          // KB-636 후속(P-411): 알약이 있으면 하 96 + 하단 인셋(알약 상단 = 인셋+76 → 마지막 항목과 20 여유), 없으면 기본 여백
+          contentContainerStyle={[styles.body, { paddingBottom: (cardPhotos.length > 0 ? 96 : 16) + bottom }]}
           showsVerticalScrollIndicator={false}
         >
           {/* 메뉴판 사진 — 시안 외(기능 유지) — 탭 = 풀스크린 contain 뷰어(P-248) */}
@@ -242,14 +243,13 @@ export default function OrderDetailScreen() {
         </ScrollView>
       )}
 
-      {/* FixedBottom — outline "Download image"(KB-636, 예진 지정 · 기존 키) → 공유 카드 시트.
+      {/* P-411(KB-636 후속, 예진 b36 실기): 하단 고정 바 → **가로 꽉 찬 주황 플로팅 알약**(문의 "+ New"와 같은 형태 —
+          h52 · r26 · 하 인셋+24 · 그림자 없음). 라벨 1줄 = shareDownloadInline(기존 2줄 키는 시트 버튼용 그대로).
           사진 0장이면 카드 자체가 없으니(빈 카드 금지 — P-380) 버튼도 없다. */}
       {!!q.data && cardPhotos.length > 0 && (
-        <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="order-bottom-bar">
-          <Btn variant="ghost" onPress={openShare} testID="order-share-open">
-            {t('myFoods.shareDownload')}
-          </Btn>
-        </View>
+        <Pressable style={[styles.downloadPill, { bottom: bottom + 24 }]} onPress={openShare} testID="order-share-open">
+          <Text style={styles.downloadPillLabel} numberOfLines={1}>{t('myFoods.shareDownloadInline')}</Text>
+        </Pressable>
       )}
 
       {/* KB-636 공유 카드 시트 — 열렸을 때만 마운트(닫힘 = 카드·캡처 캔버스·이미지 요청 0).
@@ -338,7 +338,9 @@ const styles = StyleSheet.create({
   itemQty: { fontSize: 13, fontWeight: '500', color: C.ink3 },
   itemPrice: { fontSize: 14, fontWeight: '600', color: '#1C1E21', fontVariant: ['tabular-nums'] },
 
-  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
+  // P-411: 좌우 20 · 높이 52 · 라운드 26 · C.primary · 라벨 17/600 흰색 1줄 · 아이콘·그림자 없음(하단 = 인셋+24, 인라인)
+  downloadPill: { position: 'absolute', left: 20, right: 20, height: 52, borderRadius: 26, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
+  downloadPillLabel: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
 
   viewerRoot: { flex: 1, backgroundColor: '#16110d' },
   viewerClose: { position: 'absolute', top: 54, right: 18, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center' },
