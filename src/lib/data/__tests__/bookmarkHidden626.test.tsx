@@ -19,9 +19,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
 const mockPost = jest.fn();
+const mockPatch = jest.fn();
 jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client') as Record<string, unknown>;
-  return { ...actual, api: { get: jest.fn(), post: (...a: unknown[]) => mockPost(...a), patch: jest.fn() }, apiLang: () => 'en' };
+  return { ...actual, api: { get: jest.fn(), post: (...a: unknown[]) => mockPost(...a), patch: (...a: unknown[]) => mockPatch(...a) }, apiLang: () => 'en' };
 });
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
@@ -31,13 +32,13 @@ import { useToggleBookmark, type BookmarkSnapshot } from '../bookmarks';
 
 const SNAP: BookmarkSnapshot = { foodId: '7', name: 'Bibimbap', nameKo: '비빔밥', risk: 'safe', photoUrl: null };
 
-async function runAdd(qc: QueryClient, fromDetail?: boolean) {
+async function runAdd(qc: QueryClient, fromDetail?: boolean, add = true) {
   let settled!: () => void;
   const done = new Promise<void>((r) => (settled = r));
   function Harness() {
     const toggle = useToggleBookmark();
     React.useEffect(() => {
-      toggle.mutate({ snap: SNAP, add: true, fromDetail }, { onSettled: () => settled() });
+      toggle.mutate({ snap: SNAP, add, fromDetail }, { onSettled: () => settled() });
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return null;
@@ -63,6 +64,7 @@ const readHidden = (id: string): boolean => HIDDEN.__isFoodHiddenForTest(id);
 
 beforeEach(() => {
   mockPost.mockReset();
+  mockPatch.mockReset();
   mockToast.mockReset();
   HIDDEN.__resetHiddenFoodsForTest();
 });
@@ -110,5 +112,50 @@ describe('KB-626 북마크 추가 — FOOD-001은 에러가 아니다', () => {
     mockPost.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
     await runAdd(client(), true);
     expect(mockToast).toHaveBeenCalledWith('saved.error', { error: true });
+  });
+
+  /* #185 4R P2: 추가 성공 = 서버 `getReadyFood` 통과 → 신호를 푼다(상세·리뷰와 같은 순서 규칙).
+     취소(PATCH)는 서버에서 READY 검사를 안 타므로 풀지 않는다. */
+  it('숨김 중 추가 **성공** → 풀림(음식이 돌아왔다)', async () => {
+    act(() => HIDDEN.markFoodHidden('7'));
+    mockPost.mockResolvedValueOnce(undefined);
+    await runAdd(client());
+    expect(readHidden('7')).toBe(false);
+  });
+
+  it('숨김 중 **취소** 성공 → 풀지 않는다(취소는 READY 검사를 안 탄다)', async () => {
+    act(() => HIDDEN.markFoodHidden('7'));
+    await runAdd(client(), false, false);
+    expect(mockPatch).toHaveBeenCalledTimes(1); // 대조: 취소 경로가 실제로 돌았다
+    expect(readHidden('7')).toBe(true);
+  });
+
+  it('거부 **전에** 출발한 추가의 늦은 성공은 풀지 못한다', async () => {
+    let resolve!: () => void;
+    mockPost.mockReturnValueOnce(new Promise<void>((r) => (resolve = r)));
+    let settled!: () => void;
+    const done = new Promise<void>((r) => (settled = r));
+    function Harness() {
+      const toggle = useToggleBookmark();
+      React.useEffect(() => {
+        toggle.mutate({ snap: SNAP, add: true }, { onSettled: () => settled() });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return null;
+    }
+    await act(async () => {
+      renderer.create(
+        <QueryClientProvider client={client()}>
+          <Harness />
+        </QueryClientProvider>,
+      );
+    });
+    act(() => HIDDEN.markFoodHidden('7')); // 요청이 떠 있는 사이 다른 원천이 거부를 받음
+    await act(async () => {
+      resolve();
+      await done;
+    });
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(readHidden('7')).toBe(true);
   });
 });

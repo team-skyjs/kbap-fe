@@ -20,7 +20,7 @@ import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang, isFoodHidden } from '../api/client';
-import { markFoodHidden } from './hiddenFoods';
+import { beginFoodRequest, markFoodHidden, markFoodVisible } from './hiddenFoods';
 import { showTopToast } from '@/components/topToastStore';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
@@ -144,7 +144,11 @@ export function useToggleBookmark() {
      *  토스트를 겹치지 않는다(KB-626). 목록 카드(검색·탐색)에서는 생략 = false. */
     mutationFn: async ({ snap, add }: { snap: BookmarkSnapshot; add: boolean; fromDetail?: boolean }) => {
       if (add) {
+        // 추가 성공 = 서버 `getReadyFood` 통과(음식이 READY) → 숨김 신호를 푼다. 상세·리뷰와 같은 순서
+        // 규칙(거부 이후 출발한 요청만). 취소(PATCH)는 READY 검사를 안 타므로 풀지 않는다(#185 4R P2).
+        const startedAt = beginFoodRequest();
         await api.post('/bookmarks', { foodId: Number(snap.foodId) });
+        markFoodVisible(snap.foodId, startedAt);
       } else {
         await api.patch(`/bookmarks/${snap.foodId}`); // ⚠️ 취소 = PATCH (DELETE 아님)
       }
