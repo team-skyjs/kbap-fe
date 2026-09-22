@@ -411,7 +411,10 @@ it('지문 설정이 package.json scripts를 소스에서 뺀다(scripts 편집 
    바뀌어도 지문이 모른다. 그 공백을 불변식으로 막는다 — 바꾸려면 이 테스트를 고치며 네이티브 재빌드를 같이 한다. */
 it('네이티브 생명주기 스크립트 불변식 — postinstall = "patch-package" 정확 일치, 그 외 설치·EAS 훅 0', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
-  const LIFECYCLE = /^(pre|post)?(install|prepare|prebuild|build)$|^eas-build-/;
+  // npm이 `npm install`/`npm ci`에서 스스로 돌리는 것 전부 + EAS 빌드 훅(Codex #174 2R: prepublish 누락 지적).
+  //  install 계열 · prepare 계열 · prepublish(레거시 — 인자 없는 로컬 install에서 돈다) ·
+  //  dependencies(npm 8+ — node_modules가 바뀌면 돈다) · build 계열 · eas-build-*
+  const LIFECYCLE = /^(pre|post)?(install|prepare|prepublish|dependencies|build)$|^eas-build-/;
   const found = Object.fromEntries(Object.entries(pkg.scripts).filter(([k]) => LIFECYCLE.test(k)));
   expect(found).toEqual({ postinstall: 'patch-package' });
 });
