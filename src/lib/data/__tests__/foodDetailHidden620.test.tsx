@@ -6,6 +6,9 @@
  * `unregisteredFoodDetail`로 바꿨기 때문이다(서버 FOOD-001 = 400). 목이 가린 층에서 동작이
  * 바뀌고 있었다. 여기선 네트워크(`api.get`)만 목 처리하고 훅의 분기는 **진짜로** 돈다.
  */
+/* eslint-disable import/first --
+   jest 구조상 불가피: 대상(`useFoods`)의 import는 `jest.mock('@/lib/api/client')` 선언 **뒤**에 와야
+   목이 걸린다(목 팩토리는 호이스팅된다). 레포 관례와 동일(subHeaderTitleCenter403.test.tsx). */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
