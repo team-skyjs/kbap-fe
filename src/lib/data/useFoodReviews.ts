@@ -8,8 +8,8 @@
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ReviewPage } from '@/lib/api/types';
-import { api, apiLang, isFoodHidden } from '@/lib/api/client';
-import { beginFoodRequest, markFoodHidden, markFoodVisible } from './hiddenFoods';
+import { api, apiLang } from '@/lib/api/client';
+import { trackReadyFood } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
 import { FLAGS } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
@@ -36,15 +36,9 @@ export async function fetchFoodReviewsPage(
   if (countryCode) q.set('countryCode', countryCode);
   // KB-626(#185 2R): 서버 `listReviews`는 foodId가 있으면 `getReadyFood`를 탄다 — FOOD-001 = 음식이 숨겨졌다.
   // 받은 자리에서 숨김 신호를 세운다: 상세 본문의 캐시된 판정이 **상세 재조회를 기다리지 않고** 가려진다.
-  const startedAt = beginFoodRequest(); // 거부보다 먼저 나간 옛 성공이 신호를 풀지 못하게(#185 3R)
-  try {
-    const page = adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
-    markFoodVisible(foodId, startedAt);
-    return page;
-  } catch (e) {
-    if (isFoodHidden(e)) markFoodHidden(foodId);
-    throw e;
-  }
+  return trackReadyFood(foodId, async () =>
+    adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`)),
+  );
 }
 
 /** P-229: 피드 필터 — 스웨거 실측(8/18) 지원 파라미터 2종뿐(countryCode ISO-2 정확
@@ -78,7 +72,10 @@ export async function fetchGlobalReviewsPage(cursor: string | null, filters: Glo
   const max = filters.maxRating ?? null;
   if (min != null && (max == null || min <= max)) q.set('minRating', String(min));
   if (max != null && (min == null || min <= max)) q.set('maxRating', String(max));
-  return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
+  const fetchPage = async () => adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
+  // foodId 필터가 있으면 서버 `listReviews`가 `getReadyFood`를 탄다 = FOOD-001 원천(#185 5R). 현재 화면 호출자는
+  // 안 넘기지만 계약상 열려 있으므로 같은 부기 경로로.
+  return filters.foodId ? trackReadyFood(filters.foodId, fetchPage) : fetchPage();
 }
 
 export function useGlobalReviews(enabled = true, filters: GlobalFeedFilters = {}) {

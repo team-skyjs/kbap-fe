@@ -15,6 +15,7 @@ import { api } from '@/lib/api/client';
 import { buildReviewUpdate, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
 import type { Review, ReviewPage, User } from '@/lib/api/types';
 import { FLAGS } from '@/lib/flags';
+import { trackReadyFood } from './hiddenFoods';
 import { buildReviewExtras, EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
 
 function useInvalidateReviews() {
@@ -69,7 +70,9 @@ export function useCreateReview() {
         });
         return;
       }
-      await api.post('/api/reviews', { // P-165(#144) 버전리스
+      // KB-626(#185 5R): 서버 `createReview`는 `getReadyFood`를 탄다 — FOOD-001이면 숨김 신호(상세 판정 즉시 가림),
+      // 성공이면 해제. 화면(review.tsx)은 기존대로 자기 에러 문구를 그린다.
+      await trackReadyFood(input.foodId, () => api.post('/api/reviews', { // P-165(#144) 버전리스
         foodId: Number(input.foodId),
         rating: input.rating,
         // P-236(KB-347): 2축 — 미평가 = 0(서버 규약)
@@ -92,7 +95,7 @@ export function useCreateReview() {
                     },
             }
           : {}),
-      });
+      }));
     },
     onSuccess: (_d, v) => {
       if (FLAGS.reviewsLiveEnabled) invalidate(v.foodId);

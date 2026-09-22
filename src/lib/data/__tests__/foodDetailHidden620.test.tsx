@@ -193,6 +193,17 @@ describe('원천 ② 리뷰 목록 fetch — FOOD-001이면 세우고, 성공하
     await expect(fetchFoodReviewsPage('55', null)).rejects.toThrow();
     expect(readHidden('55')).toBe(true);
   });
+  /* #185 5R: 전역 피드도 foodId 필터를 주면 서버 `listReviews` → `getReadyFood` = 같은 원천. */
+  it('전역 피드 + foodId 필터 FOOD-001 → 신호 섬 · 필터 없으면 부기 무관', async () => {
+    const { fetchGlobalReviewsPage } = jest.requireActual('../useFoodReviews') as typeof import('../useFoodReviews');
+    mockGet.mockRejectedValueOnce(new ApiError('x', 400, 'FOOD-001'));
+    await expect(fetchGlobalReviewsPage(null, { foodId: '55' })).rejects.toBeInstanceOf(ApiError);
+    expect(readHidden('55')).toBe(true);
+    act(() => HIDDEN.__resetHiddenFoodsForTest());
+    mockGet.mockRejectedValueOnce(new ApiError('x', 400, 'FOOD-001'));
+    await expect(fetchGlobalReviewsPage(null)).rejects.toBeInstanceOf(ApiError);
+    expect(readHidden('55')).toBe(false); // 어느 음식인지 모르는 요청은 신호를 못 세운다(세울 id 없음)
+  });
 });
 
 /* ────────────────────────────────────────────────────────────────────────────

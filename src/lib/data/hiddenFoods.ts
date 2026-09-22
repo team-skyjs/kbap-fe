@@ -8,18 +8,19 @@
  * 때까지** 보이고, 그 재조회가 네트워크로 실패하면 영영 남는다 — false-safe(헌법 III, Codex #185).
  * 재조회는 게이트가 아니다. 거부를 받은 **그 자리**에서 표시하고, 화면은 이 신호 **하나**로 가린다.
  *
- * - 쓰는 곳: FOOD-001을 받는 원천 — `useFoodDetail`·`fetchFoodReviewsPage` queryFn, 북마크 `onError`
- * - 푸는 곳: 같은 원천의 **성공** 응답(음식이 다시 READY) — 재조회 실패로는 풀리지 않는다
+ * - 쓰고 푸는 곳: `trackReadyFood` **한 곳** — FOOD-001 원천(상세·리뷰 목록·북마크 추가/복원·리뷰 작성)은
+ *   전부 이걸로 요청한다. 푸는 건 **성공**(음식이 다시 READY)뿐 — 재조회 실패로는 풀리지 않는다
  * - 읽는 곳: `useIsFoodHidden(foodId)`
  *
  * ⚠️ **순서**(Codex #185 3R): 요청이 겹치면 **거부보다 먼저 출발한 옛 성공**이 거부 뒤에 도착할 수 있다
  * (음식이 READY일 때 나간 리뷰 요청이 늦게 오는 사이 북마크가 FOOD-001을 받는 경우). 그 성공이 신호를
  * 풀면 캐시 SAFE 판정이 다시 드러난다. 그래서 **거부를 받은 뒤에 출발한 요청의 성공만** 신호를 푼다 —
- * 원천은 요청 직전에 `beginFoodRequest()`로 출발 시각을 찍고, 성공 시 그 값을 넘긴다.
+ * `trackReadyFood`가 요청 직전에 출발 시각을 찍고, 성공 시 그 값으로 비교한다.
  * 반대 방향(옛 요청의 거부가 늦게 도착)은 **더 보수적인 쪽**(숨김)으로 떨어지므로 그대로 둔다 — 다음
  * 성공이 푼다. 숨김 쪽 오판은 판정을 가릴 뿐 SAFE를 만들지 않는다.
  */
 import { useSyncExternalStore } from 'react';
+import { isFoodHidden } from '@/lib/api/client';
 
 /** 단조 증가 시계 — 요청 출발과 거부 수신의 선후만 비교한다(벽시계 아님). */
 let clock = 0;
@@ -36,9 +37,23 @@ const subscribe = (l: () => void) => {
   };
 };
 
-/** 원천이 요청을 **보내기 직전** 호출 — 반환값을 성공 시 `markFoodVisible`에 넘긴다. */
-export function beginFoodRequest(): number {
-  return ++clock;
+/**
+ * FOOD-001을 줄 수 있는 요청(서버 `getReadyFood` — 상세·리뷰 목록(foodId)·북마크 추가·리뷰 작성)은
+ * **전부 이 함수로** 보낸다. 부기는 엔드포인트 단위라 호출자마다 복사하면 하나씩 빠진다(#185 2R~5R).
+ * - `run`이 끝나면(적응·검증까지 `run` 안에서) 해제 — 출발이 마지막 거부보다 뒤일 때만
+ * - FOOD-001이면 설정 · 그 외 에러는 신호 무관 · 에러는 그대로 다시 던진다
+ * 토스트·롤백 같은 화면 정책은 호출자 몫.
+ */
+export async function trackReadyFood<T>(foodId: string, run: () => Promise<T>): Promise<T> {
+  const startedAt = ++clock; // 거부보다 먼저 나간 옛 성공이 신호를 풀지 못하게(#185 3R)
+  try {
+    const result = await run();
+    markFoodVisible(foodId, startedAt); // run 뒤 = 적응 끝난 페이로드(#185 4R)
+    return result;
+  } catch (e) {
+    if (isFoodHidden(e)) markFoodHidden(foodId);
+    throw e;
+  }
 }
 
 /** FOOD-001을 받은 자리에서 호출 — 이 음식의 캐시된 판정을 즉시 가린다. 이미 숨김이면 시각만 갱신
@@ -50,8 +65,8 @@ export function markFoodHidden(foodId: string) {
   if (!wasHidden) emit();
 }
 
-/** 같은 원천이 **성공**하면 호출 — 단, 그 요청이 **마지막 거부 이후에 출발**했을 때만 푼다. */
-export function markFoodVisible(foodId: string, requestStartedAt: number) {
+/** 성공 해제 — `trackReadyFood` 전용(원천이 직접 부르지 않는다). 마지막 거부 이후 출발한 요청만 푼다. */
+function markFoodVisible(foodId: string, requestStartedAt: number) {
   const since = hiddenSince.get(foodId);
   if (since === undefined || requestStartedAt <= since) return; // 거부 전에 나간 옛 성공은 무시
   hiddenSince.delete(foodId);

@@ -28,7 +28,8 @@ const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 
 import { ApiError } from '@/lib/api/client';
-import { useToggleBookmark, type BookmarkSnapshot } from '../bookmarks';
+import { useRestoreBookmark, useToggleBookmark, type BookmarkSnapshot } from '../bookmarks';
+import { useCreateReview } from '../useReviewMutations';
 
 const SNAP: BookmarkSnapshot = { foodId: '7', name: 'Bibimbap', nameKo: '비빔밥', risk: 'safe', photoUrl: null };
 
@@ -157,5 +158,74 @@ describe('KB-626 북마크 추가 — FOOD-001은 에러가 아니다', () => {
     });
     expect(mockPost).toHaveBeenCalledTimes(1);
     expect(readHidden('7')).toBe(true);
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * #185 5R — `POST` 원천의 나머지: Undo 복원(같은 `POST /bookmarks`)·리뷰 작성(서버 `createReview` →
+ * `getReadyFood`). 부기는 엔드포인트 단위라 **모든** 호출자가 `trackReadyFood`를 타야 한다 — 복원이
+ * 빠져 있던 게 이 라운드의 지적. 화면 정책(복원 = 조용한 롤백, 토스트 0)은 호출자에 그대로.
+ * ──────────────────────────────────────────────────────────────────────────── */
+async function runMutation(useHook: () => { mutate: (v: never, o: { onSettled: () => void }) => void }, vars: unknown) {
+  let settled!: () => void;
+  const done = new Promise<void>((r) => (settled = r));
+  function Harness() {
+    const m = useHook();
+    React.useEffect(() => {
+      m.mutate(vars as never, { onSettled: () => settled() });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return null;
+  }
+  await act(async () => {
+    renderer.create(
+      <QueryClientProvider client={client()}>
+        <Harness />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => {
+    await done;
+  });
+}
+
+describe('#185 5R — Undo 복원도 같은 부기(POST /bookmarks 공용 경로)', () => {
+  it('복원 FOOD-001 → 숨김 신호 섬 · 토스트 0(조용한 롤백 유지)', async () => {
+    mockPost.mockRejectedValueOnce(hidden());
+    await runMutation(useRestoreBookmark, SNAP);
+    expect(mockPost).toHaveBeenCalledWith('/bookmarks', { foodId: 7 }); // 대조: 복원 경로가 실제로 돌았다
+    expect(readHidden('7')).toBe(true);
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('거부 **뒤에** 출발한 복원 성공 → 풀림', async () => {
+    act(() => HIDDEN.markFoodHidden('7'));
+    mockPost.mockResolvedValueOnce(undefined);
+    await runMutation(useRestoreBookmark, SNAP);
+    expect(readHidden('7')).toBe(false);
+  });
+});
+
+describe('#185 5R — 리뷰 작성도 FOOD-001 원천(서버 createReview → getReadyFood)', () => {
+  const INPUT = { foodId: '7', rating: 5 };
+
+  it('작성 FOOD-001 → 숨김 신호 섬(상세 판정이 즉시 가려진다)', async () => {
+    mockPost.mockRejectedValueOnce(hidden());
+    await runMutation(useCreateReview, INPUT);
+    expect(mockPost).toHaveBeenCalledWith('/api/reviews', expect.objectContaining({ foodId: 7 })); // 대조
+    expect(readHidden('7')).toBe(true);
+  });
+
+  it('숨김 중 작성 성공 → 풀림', async () => {
+    act(() => HIDDEN.markFoodHidden('7'));
+    mockPost.mockResolvedValueOnce(undefined);
+    await runMutation(useCreateReview, INPUT);
+    expect(readHidden('7')).toBe(false);
+  });
+
+  it('작성의 다른 에러는 신호 무관', async () => {
+    mockPost.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
+    await runMutation(useCreateReview, INPUT);
+    expect(readHidden('7')).toBe(false);
   });
 });
