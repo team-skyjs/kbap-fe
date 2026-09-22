@@ -62,9 +62,14 @@ const READER_LANG = 'en'; // MVP reader language
 
 export default function FoodReviews() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
-  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  // ⚠️ 가드는 **훅 없는 바깥 컴포넌트**에 둔다(KB-626 — review.tsx KB-620과 같은 처리). 전엔 모든 훅
+  // 앞에 early return이 있었다: FLAGS가 컴파일 상수라 런타임 순서는 안 바뀌지만 린터는 rules-of-hooks로
+  // 잡고 React Compiler도 최적화하지 못한다. 분리하면 규칙이 구조적으로 선다.
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+  return <FoodReviewsScreen />;
+}
 
+function FoodReviewsScreen() {
   const isGuest = useIsGuest();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
