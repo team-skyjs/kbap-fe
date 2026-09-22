@@ -146,6 +146,19 @@ describe('원천 ① 상세 queryFn — FOOD-001이면 세우고, 성공하면 �
     await runDetail('123');
     expect(readHidden('123')).toBe(true);
   });
+
+  /* #185 4R: 200이어도 **적응에 실패하면** 쿼리는 실패하고 캐시 상세가 남는다 — 그때 신호가 풀리면
+     옛 SAFE가 드러난다. 해제는 검증(적응) 끝난 페이로드 뒤에만. */
+  it.each([
+    ['null 본문', null],
+    ['깨진 재료 항목', { ingredients: [null] }],
+  ])('숨김 중 200 + %s → 쿼리 실패 · **여전히 숨김**', async (_label, body) => {
+    act(() => HIDDEN.markFoodHidden('123'));
+    mockGet.mockResolvedValueOnce(body);
+    const s = await runDetail('123');
+    expect(s.error).toBeTruthy(); // 대조: 적응이 실제로 실패했다(아니면 이 테스트는 빈 통)
+    expect(readHidden('123')).toBe(true);
+  });
 });
 
 describe('원천 ② 리뷰 목록 fetch — FOOD-001이면 세우고, 성공하면 푼다', () => {
@@ -169,6 +182,16 @@ describe('원천 ② 리뷰 목록 fetch — FOOD-001이면 세우고, 성공하
     mockGet.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
     await expect(fetchFoodReviewsPage('55', null)).rejects.toBeInstanceOf(ApiError);
     expect(readHidden('55')).toBe(false);
+  });
+
+  it.each([
+    ['null 본문', null],
+    ['깨진 리뷰 항목', { items: [null], hasNext: false, nextCursor: null }],
+  ])('숨김 중 200 + %s → 실패 · **여전히 숨김**(#185 4R)', async (_label, body) => {
+    act(() => HIDDEN.markFoodHidden('55'));
+    mockGet.mockResolvedValueOnce(body);
+    await expect(fetchFoodReviewsPage('55', null)).rejects.toThrow();
+    expect(readHidden('55')).toBe(true);
   });
 });
 

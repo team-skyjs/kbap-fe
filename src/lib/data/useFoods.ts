@@ -176,9 +176,9 @@ export function useFoodDetail(id: string) {
       // 폴백 반환 금지(위 주석).
       const startedAt = beginFoodRequest(); // 거부보다 먼저 나간 옛 성공이 신호를 풀지 못하게(#185 3R)
       try {
-        const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
-        markFoodVisible(id, startedAt);
-        return adaptFoodDetail(wire, id);
+        const detail = adaptFoodDetail(await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`), id);
+        markFoodVisible(id, startedAt); // 적응 **뒤** — 깨진 200이 신호만 풀고 쿼리는 실패하면 캐시 판정이 드러난다(#185 4R)
+        return detail;
       } catch (e) {
         if (isFoodHidden(e)) markFoodHidden(id);
         throw e;
