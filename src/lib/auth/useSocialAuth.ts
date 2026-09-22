@@ -25,7 +25,7 @@ import * as Crypto from 'expo-crypto';
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
 import { exchangeLogin } from './beAuth';
-import { registerPushToken } from '@/lib/push/pushAdapter';
+import { applyPendingActivityDefault, registerPushToken } from '@/lib/push/pushAdapter';
 
 // Firebase 프로젝트(k-bap-eb032)의 웹 클라이언트 ID (google-services.json
 // oauth_client client_type:3) — 시크릿 아님, 커밋 OK.
@@ -57,7 +57,10 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void, entry: L
     if (!idToken) throw new Error('no firebase id token after sign-in');
     const exch = await exchangeLogin(idToken);
     // KB-543: 토큰 API 회원 전용 — 세션 교환 성공 직후 1회 등록(비차단·비치명). 게스트 등록 경로 폐기.
-    if (!exch.cancelled) void registerPushToken();
+    if (!exch.cancelled) {
+      void registerPushToken();
+      void applyPendingActivityDefault(); // KB-631: 로그인 화면 팝업 허용분 activity 기본값 1회(서버 기본 false)
+    }
     return exch;
   };
 

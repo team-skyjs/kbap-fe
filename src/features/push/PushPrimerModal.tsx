@@ -5,7 +5,8 @@
  * iOS OS 팝업은 1회성이라 바로 띄우지 않는다 — 「알림 켜기」 수락 시에만 requestPermission()
  * (OS 팝업) → 토큰 등록(세션 있을 때만, KB-543) → 회원이면 PATCH activity:true(서버 기본 false —
  * 이 저장이 없으면 정보성 알림이 0건). 거절(나중에)은 기록만, 재노출 0(설정 화면에서 켤 수 있음).
- * 진입점 = 스캔 결과 직후 1회(코치마크와 직렬화, KB-377). 온보딩 진입점은 제거(KB-497, UX 리서치 B안).
+ * 진입점 = 스캔 결과 직후 1회(코치마크와 직렬화, KB-377) — KB-631부터 **후순위**: 첫 설치는 로그인 화면에서 OS 팝업을
+ * 바로 띄우고 같은 기록을 남기므로(pushAdapter promptPermissionOnFirstLogin) 이 시트는 그 경로를 못 본 기기(구버전 업데이트)만 본다.
  */
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';

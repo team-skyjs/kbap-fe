@@ -27,7 +27,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'n', digestStringAsync: jest
 const mockExchange = jest.fn();
 jest.mock('../beAuth', () => ({ exchangeLogin: (...a: unknown[]) => mockExchange(...a) }));
 const mockRegister = jest.fn().mockResolvedValue(undefined);
-jest.mock('@/lib/push/pushAdapter', () => ({ registerPushToken: (...a: unknown[]) => mockRegister(...a) }));
+jest.mock('@/lib/push/pushAdapter', () => ({ registerPushToken: (...a: unknown[]) => mockRegister(...a), applyPendingActivityDefault: jest.fn().mockResolvedValue(undefined) })); // KB-631: activity 기본값 헬퍼 동승
 
 import { useSocialAuth } from '../useSocialAuth';
 
@@ -74,5 +74,5 @@ it('소스 잠금: 등록은 exchange 헬퍼 한 곳(구글·애플 공통), onS
   const fs = require('fs') as typeof import('fs');
   const src = fs.readFileSync('src/lib/auth/useSocialAuth.ts', 'utf8');
   expect(src.match(/registerPushToken\(\)/g)).toHaveLength(1);
-  expect(src).toContain("import { registerPushToken } from '@/lib/push/pushAdapter'");
+  expect(src).toContain("import { applyPendingActivityDefault, registerPushToken } from '@/lib/push/pushAdapter'"); // KB-631
 });

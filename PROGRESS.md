@@ -1461,3 +1461,13 @@
 - [x] 문서: specs/002 spec.md(개요·AS 1·2·5·FR-002)·contracts §2 표 갱신. push-landing 언급 0.
 - [ ] 실기(종한, iOS·Android): quickstart D-1~D-10 — **D-3·D-4(콜드 스타트) 필수**. 완료 전 OTA 발행 금지(OTA 게이트 커밋).
 
+
+## KB-631 첫 설치 로그인 화면 OS 알림 권한 즉시 요청 — 카메라 권한과 같은 방식 (2026-09-22, 워크트리 feat/kb631-login-push-prompt · spec 006)
+
+- [x] 결정(종한 9/22): 첫 설치 → 스플래시 뒤 로그인 화면 첫 표시에 앱 프라이머 없이 OS 팝업 즉시. KB-497 "첫 스캔 결과 1곳"(B안) 폐기 — 스캔 시트·설정 배너는 후순위. 근거 = 9/22 실측(스캔 안 거친 회원 undetermined → 토큰 미등록 → 푸시 0·설정 탭 토글 무효).
+- [x] 트리거 = 기존 첫 설치 경로 `router.replace('/login?entry=intro')` 하나에 얹음 — `login.tsx` 마운트 effect `entry==='intro' && returnTo==null` → 어댑터 `promptPermissionOnFirstLogin()`. 새 센티널 없음. 결과는 프라이머 기록 `kbap.push.prompted.v1`에 accepted/declined → `scan.tsx` 시트 코드 무변으로 생략.
+- [x] 시퀀스: 기록 있음→0 · OS unavailable→기록 0(이월) · granted/denied 기억→요청 0·기록만 · undetermined→`requestPermission()`(push_permission 계측 그 자리)→**재조회 상태로만** 기록(예외≠결과). in-flight 합치기.
+- [x] 플랜 발견 누락(R-4): dev Swagger `activity` 기기 기본 **false** — 프라이머 수락 경로만 PATCH true였음. 허용 시 `kbap.push.activityDefaultPending.v1` 표식 → 로그인 성공 직후(`useSocialAuth.exchange`, registerPushToken 옆) `applyPendingActivityDefault()` PATCH 1회 후 삭제(실패도 삭제). 계정 전환·재로그인에서 끈 값 안 되돌림. spec FR-010 추가.
+- [x] 테스트: loginPrompt631 +17(시퀀스 8·표식 4·생애주기 2·소스 잠금 3) · loginPushPrompt631 +4(intro 1회·returnTo 0·무파라미터 0·gate 0) · pushProdGuard221 +1(플래그 off no-op). tsc 0.
+- [x] 문서: specs/001 US4 폐기·US6 후순위 표기 · PushPrimerModal 헤더 주석.
+- [ ] 실기(종한, iOS 필수): quickstart D-1~D-12 — **D-1·D-2·D-3(허용→로그인→토큰+activity)·D-4(거부→배너)·D-5(스캔 시트 0)·D-11/12(설정 탭 토글 실효)** 완료 전 OTA 발행 금지(OTA 게이트 커밋).

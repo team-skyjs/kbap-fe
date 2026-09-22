@@ -21,9 +21,10 @@ import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { queryClient } from '@/lib/queryClient';
-import { NOTIF_SETTINGS_KEY, type NotificationSettings } from '@/lib/data/useNotificationSettings';
+import { NOTIF_SETTINGS_KEY, patchNotificationSettings, type NotificationSettings } from '@/lib/data/useNotificationSettings';
 
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
+const ACTIVITY_PENDING_KEY = 'kbap.push.activityDefaultPending.v1'; // KB-631: 로그인 팝업 허용 → 로그인 후 activity 기본값 1회 적용 대기
 const REMINDERS_KEY = 'kbap.push.reminders.v1'; // { [foodId]: notificationId }
 
 export const REVIEW_REMINDER_SECONDS = 3600; // 주문 완료 → 1시간 후
@@ -82,7 +83,7 @@ export async function getPermissionStatus(): Promise<PushPermission> {
   }
 }
 
-/** OS 권한 팝업 — 프라이머 수락 후에만 호출(iOS 1회성 보호는 프라이머 몫). */
+/** OS 권한 팝업 — 호출처 2곳: 첫 설치 로그인 화면(promptPermissionOnFirstLogin, KB-631) · 프라이머 수락(후순위). iOS 1회성 보호는 호출측 몫. */
 export async function requestPermission(): Promise<boolean> {
   const N = loadNotifications();
   if (!N) return false;
@@ -92,6 +93,52 @@ export async function requestPermission(): Promise<boolean> {
     return status === 'granted';
   } catch {
     return false;
+  }
+}
+
+/* ---- 첫 설치 로그인 화면 즉시 요청 (KB-631 / spec 006) ---- */
+
+let loginPromptInflight: Promise<void> | null = null;
+
+/**
+ * 첫 설치 로그인 화면(`/login?entry=intro`) 마운트 시 1회 — 앱 프라이머 없이 OS 팝업만(카메라 권한과 같은 방식).
+ * 서버 요청 0(게스트). 결과는 프라이머 기록에 남겨 스캔 결과 시트가 생략된다. OS가 이미 결정을 기억하면(재설치)
+ * 요청 없이 기록만. 예외·모듈 없음은 기록하지 않는다(다음 기회 = 스캔 시트·설정 배너).
+ * 허용이면 대기 표식을 남겨 로그인 성공 직후 applyPendingActivityDefault가 activity 기본값을 1회 켠다(서버 기본 false).
+ */
+export function promptPermissionOnFirstLogin(): Promise<void> {
+  loginPromptInflight ??= promptPermissionOnFirstLoginInner().finally(() => { loginPromptInflight = null; });
+  return loginPromptInflight;
+}
+async function promptPermissionOnFirstLoginInner(): Promise<void> {
+  if (!loadNotifications()) return;
+  if (await getPrimerResult()) return; // 이미 응답(로그인 팝업·프라이머 어느 쪽이든)
+  let status = await getPermissionStatus();
+  if (status === 'undetermined') {
+    await requestPermission(); // OS 팝업 + push_permission 계측(이 함수 안 1곳)
+    status = await getPermissionStatus(); // 예외는 결과가 아니다 — 재조회한 상태로만 기록
+  }
+  if (status === 'granted') {
+    await AsyncStorage.setItem(ACTIVITY_PENDING_KEY, '1').catch(() => {});
+    await markPrimerResult('accepted');
+  } else if (status === 'denied') {
+    await markPrimerResult('declined');
+  }
+}
+
+/**
+ * 로그인 성공(세션 교환) 직후 호출 — 로그인 화면에서 허용한 기기에 한해 PATCH {activity:true} 1회 후 표식 삭제
+ * (프라이머 수락 경로와 같은 기본값 적용). 실패도 삭제(설정 화면에서 직접 켤 수 있음). 세션 없음 = 표식 유지·이월.
+ */
+export async function applyPendingActivityDefault(): Promise<void> {
+  if (!loadNotifications()) return;
+  try {
+    if ((await AsyncStorage.getItem(ACTIVITY_PENDING_KEY)) == null) return;
+    if (!(await hasBeSession())) return;
+    await AsyncStorage.removeItem(ACTIVITY_PENDING_KEY).catch(() => {});
+    await patchNotificationSettings({ activity: true });
+  } catch (e) {
+    console.log('[push] activity 기본값 적용 실패(비치명)', (e as Error)?.message ?? e);
   }
 }
 

@@ -154,7 +154,7 @@ it('P-296 onDone 새 정체성 리렌더(entryChecked 플립 재현) — cancelA
 it('P-296 배선 소스 잠금 — _layout onDone = 안정 콜백(인라인 화살표 잔존 0)', () => {
   const fs = require('fs');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-  expect(layout).toContain('const onSplashDone = useCallback(() => setSplashVisible(false), []);');
+  expect(layout).toContain('const onSplashDone = useCallback(() => { setSplashVisible(false); markSplashDone(); }, []);'); // KB-631: 로그인 팝업 게이트 resolve 동승
   expect(layout).toContain('onDone={onSplashDone}');
   expect(layout).not.toContain('onDone={() =>');
 });
