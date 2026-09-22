@@ -1016,7 +1016,8 @@
   },
   "feedback": {
     "title": "Hubungi kami",
-    "myTitle": "Pertanyaan saya",
+    "newInquiry": "Baru",
+    "newTitle": "Pertanyaan baru",
     "placeholder": "Ceritakan apa yang terjadi, atau apa yang kamu harapkan. Boleh sertakan foto.",
     "send": "Kirim",
     "sent": "Terima kasih — pesanmu sudah kami terima.",

@@ -1015,7 +1015,8 @@
   },
   "feedback": {
     "title": "Contact us",
-    "myTitle": "My inquiries",
+    "newInquiry": "New",
+    "newTitle": "New inquiry",
     "placeholder": "Tell us what happened, or what you'd like to see. Photos help.",
     "send": "Send",
     "sent": "Thanks — we got your message.",

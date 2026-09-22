@@ -1016,7 +1016,8 @@
   },
   "feedback": {
     "title": "联系我们",
-    "myTitle": "我的反馈",
+    "newInquiry": "新建",
+    "newTitle": "新建反馈",
     "placeholder": "告诉我们发生了什么，或你希望看到什么。可以附上照片。",
     "send": "发送",
     "sent": "已收到你的反馈，谢谢！",

@@ -5,7 +5,7 @@
  * ③ 완료는 **응답 성공 후에만**(P-387) — 실패면 본문·사진 유지 + back 안 함
  * ④ 429(FEEDBACK-003)는 전용 안내
  * ⑤ deviceInfo: 계약 9키 화이트리스트, 못 얻는 키는 **생략**(빈 문자열 금지)
- * ⑥ 목록·상세 렌더(상태 칩·답변 스레드·답변자 "K-Bap team" 고정)
+ * ⑥ 목록·상세 렌더(P-406 목록 우선 — 행 = 제목 1줄·상대시간·상태 텍스트 / 상세 답변 스레드·답변자 "K-Bap team" 고정)
  * ⑦ 계측 화이트리스트 — has_photos·photo_count만(본문·기기정보 전송 금지)
  */
 import * as React from 'react';
@@ -124,7 +124,8 @@ beforeEach(() => {
   mockSubmit.mockResolvedValue({ id: '12' });
 });
 
-const byId = (r: ReactTestRenderer, id: string) => r.root.findAllByProps({ testID: id })[0];
+const byId = (r: ReactTestRenderer | ReactTestRenderer['root'], id: string) =>
+  ('root' in r ? r.root : r).findAllByProps({ testID: id })[0];
 
 async function typeAndSend(r: ReactTestRenderer, text = 'hello') {
   const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
@@ -138,6 +139,9 @@ it('① 게스트도 진입 — 프로필 게스트 분기에 행이 있고, 문
   const profile = read('src/app/(tabs)/profile.tsx');
   // 게스트 분기 / 회원 분기 양쪽에 같은 행 — 한쪽만 있으면 게스트가 못 들어간다
   expect(profile.match(/t\('feedback\.title'\)/g)?.length).toBe(2);
+  // P-406: 두 진입점 모두 **목록**으로 간다(작성 직행 금지)
+  expect(profile.match(/router\.push\('\/profile\/feedback' as Href\)/g)?.length).toBe(2);
+  expect(profile).not.toContain("'/profile/feedback/new'");
   const compose = read('src/app/profile/feedback/new.tsx');
   expect(compose).not.toMatch(/AuthGate|useIsGuest|requireLogin/);
 });
@@ -247,17 +251,71 @@ it('⑤ deviceInfo — 계약 9키 밖 키 0 · 값 없는 키는 생략(빈 문
 
 /* ---- ⑥ 목록·상세 렌더 ---- */
 
-it('⑥ 목록 — 상태 칩·답변 수, 빈 상태는 CTA 동반', async () => {
+const hostTexts = (node: ReactTestRenderer['root']) =>
+  node.findAllByType('Text' as never).flatMap((n) => (typeof n.props.children === 'string' ? [n.props.children as string] : []));
+
+/* P-406(KB-627): 목록이 첫 화면 — 행은 제목 1줄 + 상대시간(+상태) + chevron. 칩·답변 수·우상단 날짜 없음. */
+it('⑥ 목록 행 — 제목 = 첫 비지 않은 줄(1줄) · 서브 = 상대시간 · 상태 텍스트 · 칩·답변 수 없음', async () => {
+  mockListState = idleList([{ ...ITEM, content: '\n  스캔 버튼이 두 번 눌려요  \n둘째 줄' }]);
   let r!: ReactTestRenderer;
   await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
-  expect(byId(r, 'feedback-row-12')).toBeTruthy();
-  const texts = r.root.findAllByType('Text' as never).flatMap((n) => (typeof n.props.children === 'string' ? [n.props.children] : []));
-  expect(texts).toContain('feedback.statusAnswered');
-  expect(texts).toContain('feedback.replyCount:1');
+  const row = byId(r, 'feedback-row-12');
+  const texts = hostTexts(row);
+  expect(texts[0]).toBe('스캔 버튼이 두 번 눌려요'); // 앞 빈 줄·공백 건너뜀, 둘째 줄 안 붙음
+  const title = row.findAll((n) => n.props.children === '스캔 버튼이 두 번 눌려요' && n.props.numberOfLines !== undefined)[0];
+  expect(title.props.numberOfLines).toBe(1);
+  expect(texts[1]).toMatch(/^reviews\.daysAgo:\d+$/); // 상대시간
+  expect(byId(row, 'feedback-row-status').props.children).toBe('feedback.statusAnswered'); // 상태 = 별도 Text
+  expect(texts.some((x) => x.includes('·'))).toBe(false); // 구분 문자 없음(Q-62 · P-385)
+  expect(texts.some((x) => x.startsWith('feedback.replyCount'))).toBe(false); // 답변 수 없음
+  expect(row.findAll((n) => (n.type as { name?: string }).name === 'Chip')).toHaveLength(0); // 칩 없음
+});
+
+it('⑥ 목록 행 — OPEN은 시간만 · CLOSED는 상태 붙음', async () => {
+  mockListState = idleList([
+    { ...ITEM, id: '1', status: 'OPEN' as const, replies: [] },
+    { ...ITEM, id: '2', status: 'CLOSED' as const },
+  ]);
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+  expect(hostTexts(byId(r, 'feedback-row-1'))).toHaveLength(2); // 제목 + 시간뿐
+  expect(byId(byId(r, 'feedback-row-1'), 'feedback-row-status')).toBeUndefined();
+  expect(byId(byId(r, 'feedback-row-2'), 'feedback-row-status').props.children).toBe('feedback.statusClosed');
+});
+
+it('⑥ 목록 행 — 본문이 전부 공백이어도 **행은 남는다**(제목만 생략, 시간은 보임)', async () => {
+  mockListState = idleList([{ ...ITEM, content: '  \n \t ' }]);
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+  const row = byId(r, 'feedback-row-12');
+  expect(row).toBeTruthy();
+  const texts = hostTexts(row);
+  expect(texts).toEqual([expect.stringMatching(/^reviews\.daysAgo:\d+$/), 'feedback.statusAnswered']); // 제목 없이 시간·상태
+});
+
+it('⑥ 알약 "+ New" → 작성 라우트 · 빈 상태에도 알약(예전 빈 상태 CTA는 없음)', async () => {
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+  await act(async () => { byId(r, 'feedback-new-fab').props.onPress(); });
+  expect(mockPush).toHaveBeenCalledWith('/profile/feedback/new');
+  expect(hostTexts(byId(r, 'feedback-new-fab'))).toEqual(['feedback.newInquiry']);
 
   mockListState = idleList([]);
   await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
-  expect(byId(r, 'feedback-empty-cta')).toBeTruthy();
+  expect(byId(r, 'feedback-new-fab')).toBeTruthy();
+  expect(byId(r, 'feedback-empty-cta')).toBeUndefined();
+});
+
+it('⑥ 목록·상세 헤더 = "Contact us"(feedback.title) · 작성 헤더 = feedback.newTitle · 작성에 my-link 없음', async () => {
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+  expect(hostTexts(r.root)).toContain('feedback.title');
+  await act(async () => { r = renderer.create(<FeedbackDetailScreen />); });
+  expect(hostTexts(r.root)).toContain('feedback.title');
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  expect(hostTexts(r.root)).toContain('feedback.newTitle');
+  expect(byId(r, 'feedback-my-link')).toBeUndefined();
+  for (const f of ['index.tsx', 'new.tsx', '[id].tsx']) expect(read(`src/app/profile/feedback/${f}`)).not.toContain('myTitle');
 });
 
 it('⑥ 목록 — 다음 페이지 실패면 푸터에 재시도를 낸다(전체 오류 블록은 안 뜨는 자리)', async () => {
@@ -384,38 +442,23 @@ it('⑦ i18n — feedback 키 10개 로케일 전수(ko 등 단수형 없는 언
   }
 });
 
-/* ---- P-403 예진 실기 ② 색 · ③ 행 상단 배치 ---- */
+/* ---- P-406 치수 전사(발주 표) — 색은 토큰, 리터럴은 알약 흰색만 ---- */
 
-it('P-403 ② 헤더 링크·답변 수는 액센트가 아니라 본문색(C.ink)', () => {
-  // 색 토큰은 StyleSheet에 박혀 있어 렌더 트리로는 못 본다 — 소스에서 확인(tileUnify505와 같은 방식)
-  const newSrc = read('src/app/profile/feedback/new.tsx');
-  const listSrc = read('src/app/profile/feedback/index.tsx');
-  expect(newSrc).toMatch(/link: \{[^}]*color: C\.ink \}/);
-  expect(listSrc).toMatch(/replyCount: \{[^}]*color: C\.ink \}/);
-  // 리터럴 hex 금지 — 토큰만 쓴다
-  expect(newSrc).not.toMatch(/link: \{[^}]*#[0-9A-Fa-f]{3,6}/);
-  expect(listSrc).not.toMatch(/replyCount: \{[^}]*#[0-9A-Fa-f]{3,6}/);
-});
-
-it('P-403 ③ 행 상단 — 날짜가 먼저(위), 칩이 그 다음(아래) · 우측 축 정렬', async () => {
-  mockListState = idleList([ITEM]);
-  let r!: ReactTestRenderer;
-  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
-
-  // 날짜와 칩을 담은 컨테이너를 찾아 **자식 순서**를 본다. 한 줄(row) 배치였을 때는
-  // 칩이 먼저였고, 그 알약 배경의 좌측 끝이 아래 본문 글자와 어긋나 보였다(예진 지적).
-  const rowTop = r.root.findAll((n) => {
-    // ⚠️ 호스트 요소만 센다 — 합성 View와 호스트 View가 **같은 style을 들고 둘 다** 잡혀
-    // 개수가 2가 된다(작업 중 실제로 걸렸다). `typeof n.type === 'string'`이 호스트다.
-    if (typeof n.type !== 'string') return false;
-    const st = Object.assign({}, ...[(n.props as { style?: unknown }).style].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
-    return st.alignItems === 'flex-end' && st.flexDirection === undefined; // 세로 스택 + 우측 정렬
-  });
-  expect(rowTop.length).toBe(1);
-
-  const texts = rowTop[0].findAllByType('Text' as never).flatMap((n) => (typeof n.props.children === 'string' ? [n.props.children] : []));
-  // 날짜는 포맷된 문자열, 칩 라벨은 i18n 키 — 날짜가 앞서야 위에 놓인다
-  expect(texts[texts.length - 1]).toBe('feedback.statusAnswered');
-  expect(texts.length).toBeGreaterThan(1);
-  expect(texts[0]).not.toBe('feedback.statusAnswered');
+it('P-406 치수 — 행·알약·목록 여백이 발주 전사값 그대로', () => {
+  // 스타일 상수는 StyleSheet에 박혀 있어 렌더 트리로 보기보다 소스가 정확하다(tileUnify505와 같은 방식)
+  const src = read('src/app/profile/feedback/index.tsx');
+  expect(src).toMatch(/list: \{ paddingTop: 8, paddingHorizontal: 0, paddingBottom: 96 \}/);
+  expect(src).toMatch(/row: \{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 \}/);
+  expect(src).toMatch(/rowText: \{ flex: 1, gap: 4 \}/);
+  expect(src).toMatch(/title: \{ fontSize: 17, fontWeight: '400', color: C\.ink \}/);
+  expect(src).toMatch(/sub: \{ fontSize: 15, fontWeight: '400', color: C\.ink3 \}/);
+  expect(src).toMatch(/subRow: \{ flexDirection: 'row', alignItems: 'baseline', gap: 8 \}/);
+  expect(src).toMatch(/position: 'absolute', right: 24, height: 52, paddingHorizontal: 24, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  expect(src).toMatch(/fabLabel: \{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' \}/);
+  expect(src).toMatch(/bottom: insets\.bottom \+ 24/);
+  expect(src).toMatch(/<IconPlus size=\{20\} color="#FFFFFF" \/>/);
+  expect(src).toMatch(/<IconChevron size=\{20\} color=\{C\.ink3\} \/>/);
+  // 보더·그림자 없음(행·알약) — 스타일 블록만 본다(푸터 재시도 버튼의 보더는 기존 그대로)
+  const block = (name: string) => src.match(new RegExp(`\\n  ${name}: \\{[\\s\\S]*?\\n?\\s*\\},?\\n`))![0];
+  for (const n of ['row', 'rowText', 'fab']) expect(block(n)).not.toMatch(/border(Width|Color)|shadow|elevation/);
 });

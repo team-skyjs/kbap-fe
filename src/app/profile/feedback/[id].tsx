@@ -47,7 +47,7 @@ export default function FeedbackDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <SubHeader title={t('feedback.myTitle')} onBack={() => router.back()} />
+      <SubHeader title={t('feedback.title')} onBack={() => router.back()} /* P-406: 목록→상세 제목 연속성 */ />
       {searching ? (
         <SkeletonList />
       ) : (q.isError || pageFailed) && !item ? (
