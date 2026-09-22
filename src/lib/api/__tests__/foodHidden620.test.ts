@@ -80,3 +80,20 @@ describe('안내 문구에 안전 판정 어휘가 없다(헌법 III)', () => {
     expect(hits).toEqual([]);
   });
 });
+
+/* Codex #184 3R — 서버가 **숨김과 삭제를 같은 FOOD-001로** 준다(`getReadyFood`). 삭제된 음식은
+   푸시 딥링크·내 리뷰(수정 포함)로 **반복해서** 도달한다. 이 코드 위에서 "잠시 후 다시"는 영원히
+   못 지키는 약속이 되고, 리뷰 수정은 절대 성공하지 않는 재시도 반복에 갇힌다.
+   → 둘 다 참인 중립 문구. **FOOD-018(KB-625)로 숨김이 따로 오면** 그 분기에서만 회복 문구를
+   되살리고, 이 가드는 FOOD-001 문구에 대해서만 유지한다. */
+describe('FOOD-001 문구는 원인 단정·회복 약속을 하지 않는다(숨김·삭제 미구분 동안)', () => {
+  const PROMISE: Partial<Record<(typeof LOCALES)[number], string[]>> = {
+    en: ['again', 'later', 'moment', 'check back', 'updat', 'refresh'],
+    ko: ['잠시 후', '다시', '새로 고치', '업데이트', '곧'],
+  };
+  it.each(Object.keys(PROMISE) as (typeof LOCALES)[number][])('%s', (l) => {
+    const c = COPY(l);
+    const text = `${c.review} ${c.detail}`.toLowerCase();
+    expect(PROMISE[l]!.filter((w) => text.includes(w.toLowerCase()))).toEqual([]);
+  });
+});
