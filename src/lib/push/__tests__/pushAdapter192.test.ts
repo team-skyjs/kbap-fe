@@ -27,6 +27,8 @@ const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } })); // 지연 접근(호이스팅)
+const mockAnalytics = { track: jest.fn() };
+jest.mock('@/lib/analytics', () => ({ EVENTS: { push_open: 'push_open' }, get track() { return mockAnalytics.track; } })); // KB-629: 탭 이벤트 목
 const mockInbox = { invalidateNotifications: jest.fn() };
 jest.mock('@/lib/data/useNotifications', () => ({ get invalidateNotifications() { return mockInbox.invalidateNotifications; } })); // KB-499: 재조회 트리거 목
 
@@ -181,6 +183,22 @@ it('KB-498: 콜드 스타트 = 마지막 응답 1회 전달 — 리스너로 같
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
   handler({ notification: { request: { content: { data: { type: 'HELPFUL' } } } } });
   expect(onRoute).toHaveBeenCalledTimes(3); // identifier 없음 = 매번 전달
+});
+
+it('KB-629: 탭 = push_open 1회 + { type } (PUSH_TYPES 값 그대로) · 미지 type = prop 없음 · 콜드 스타트 이중 전달분은 이벤트도 0', async () => {
+  mockNotifications.getLastNotificationResponseAsync.mockResolvedValueOnce({ notification: { request: { identifier: 'same', content: { data: { type: 'SCAN_SUGGESTION', notificationId: 1 } } } } });
+  addNotificationTapListener(() => {});
+  await Promise.resolve(); await Promise.resolve();
+  expect(mockAnalytics.track).toHaveBeenCalledTimes(1);
+  expect(mockAnalytics.track).toHaveBeenCalledWith('push_open', { type: 'SCAN_SUGGESTION' });
+  const handler = mockNotifications.addNotificationResponseReceivedListener.mock.calls[0][0] as (r: unknown) => void;
+  handler({ notification: { request: { identifier: 'same', content: { data: { type: 'SCAN_SUGGESTION', notificationId: 1 } } } } }); // 같은 탭 재전달
+  expect(mockAnalytics.track).toHaveBeenCalledTimes(1);
+  handler({ notification: { request: { identifier: 'b', content: { data: { type: 'HELPFUL', notificationId: 2 } } } } });
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_open', { type: 'HELPFUL' });
+  handler({ notification: { request: { identifier: 'c', content: { data: { type: 'nudge' } } } } }); // 구 이름·변형 = 미지
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_open', {}); // 탭 사실은 남기되 type은 화이트리스트 값만
+  expect(mockAnalytics.track).toHaveBeenCalledTimes(3);
 });
 
 it('KB-498: Android = activity(MAX)·news(HIGH) 채널 각 1회, 이름은 i18n 키 · default 채널 0 · 설정 실패해도 구독 진행 · iOS = 0회', () => {

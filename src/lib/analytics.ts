@@ -77,6 +77,7 @@ export const EVENTS = {
   review_translate_toggle: 'review_translate_toggle',
   push_primer_response: 'push_primer_response',
   push_pref_toggle: 'push_pref_toggle',
+  push_open: 'push_open', // KB-629: 푸시 탭(콜드·백그라운드 공통) — 유형별 클릭·앱 유입. CSV 등재 예정
   profile_avoid_update: 'profile_avoid_update',
   community_post_submit: 'community_post_submit',
   community_comment_submit: 'community_comment_submit',
@@ -130,6 +131,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   review_translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
+  push_open: ['type'], // KB-629: PUSH_TYPES 값만(미지 유형은 prop 생략) — id·본문 금지
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],

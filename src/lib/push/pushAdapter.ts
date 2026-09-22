@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import { track } from '@/lib/net/inflight';
+import { EVENTS, track as trackEvent } from '@/lib/analytics';
 import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
@@ -245,8 +246,9 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
         if (routed.has(id)) return;
         routed.add(id);
       }
-      const data = resp?.notification.request.content.data as { notificationId?: number | string } | undefined;
+      const data = resp?.notification.request.content.data as { type?: unknown; notificationId?: number | string } | undefined;
       if (!resp) return;
+      trackEvent(EVENTS.push_open, isPushType(data?.type) ? { type: data.type } : {}); // KB-629: dedupe 뒤 = 탭당 1회
       onRoute(routeForNotificationData(data), data?.notificationId); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
