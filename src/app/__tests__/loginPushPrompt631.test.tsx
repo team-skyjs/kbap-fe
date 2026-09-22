@@ -5,9 +5,10 @@
  */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
+import Login from '../login';
 
 jest.mock('react-native-reanimated', () => {
-  const { View, ScrollView, FlatList } = require('react-native');
+  const { View, ScrollView, FlatList } = jest.requireActual('react-native');
   return {
     __esModule: true,
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
@@ -28,23 +29,19 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => false }),
   useLocalSearchParams: () => mockParams.value,
   usePathname: () => '/login',
-  useFocusEffect: (cb: () => (() => void) | undefined) => { require('react').useEffect(cb, [cb]); },
+  useFocusEffect: (cb: () => (() => void) | undefined) => { (jest.requireActual('react') as typeof React).useEffect(cb, [cb]); },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }), { virtual: true });
 jest.mock('@/lib/useAppFonts', () => ({ useAppFonts: () => [true, null] }));
 const mockPush = { prompt: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/lib/push/pushAdapter', () => ({ get promptPermissionOnFirstLogin() { return mockPush.prompt; } }));
-
-import Login from '../login';
 
 async function mount(params: Record<string, string>) {
   mockParams.value = params;

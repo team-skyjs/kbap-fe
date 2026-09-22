@@ -39,11 +39,8 @@ jest.mock(
   { virtual: true },
 );
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  addNotificationTapListener,
-  applyPendingActivityDefault,
-  promptPermissionOnFirstLogin,
+  addNotificationTapListener, applyPendingActivityDefault, promptPermissionOnFirstLogin, // KB-631
   cancelReviewReminder,
   getPermissionStatus,
   pushAvailable,
@@ -112,6 +109,7 @@ it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어
 });
 
 it('KB-631: 로그인 팝업·activity 기본값 헬퍼 = no-op (모듈 미접근·기록 0·서버 호출 0)', async () => {
+  const AsyncStorage = jest.requireMock('@react-native-async-storage/async-storage') as typeof import('@react-native-async-storage/async-storage').default;
   await AsyncStorage.setItem('kbap.push.activityDefaultPending.v1', '1');
   await expect(promptPermissionOnFirstLogin()).resolves.toBeUndefined();
   await expect(applyPendingActivityDefault()).resolves.toBeUndefined();

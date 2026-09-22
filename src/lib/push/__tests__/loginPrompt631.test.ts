@@ -3,11 +3,13 @@
  * ① promptPermissionOnFirstLogin 시퀀스(contracts §1 표) ② in-flight 합치기
  * ③ applyPendingActivityDefault(서버 activity 기본 false 보정, R-4) ④ 생애주기(재설치·계정 전환) ⑤ 소스 잠금.
  */
+import * as fs from 'fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { applyPendingActivityDefault, getPrimerResult, promptPermissionOnFirstLogin } from '../pushAdapter';
+
 jest.mock('@/lib/flags', () => ({ FLAGS: { pushEnabled: true }, isProdChannel: () => false, SYSTEM_CAMERA_AUTOLAUNCH: false }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 const mockNotifications = {
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
@@ -26,9 +28,6 @@ jest.mock('@/lib/data/useNotificationSettings', () => ({
   get patchNotificationSettings() { return mockSettings.patch; },
 }));
 
-import * as fs from 'fs';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { applyPendingActivityDefault, getPrimerResult, promptPermissionOnFirstLogin } from '../pushAdapter';
 
 const PENDING_KEY = 'kbap.push.activityDefaultPending.v1';
 const pending = () => AsyncStorage.getItem(PENDING_KEY);
