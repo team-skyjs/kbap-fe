@@ -2,5 +2,6 @@
   "NSCameraUsageDescription": "K-Bap dùng camera để quét thực đơn, chụp ảnh cho đánh giá và đặt ảnh đại diện.",
   "NSPhotoLibraryUsageDescription": "K-Bap truy cập ảnh để bạn quét thực đơn đã lưu, thêm ảnh vào đánh giá và bài viết, đặt ảnh đại diện hoặc đính kèm vào liên hệ.",
   "NSPhotoLibraryAddUsageDescription": "Lưu thẻ câu chuyện K-Bap của bạn vào thư viện ảnh.",
-  "NSLocationWhenInUseUsageDescription": "K-Bap dùng vị trí để tìm nhà hàng gần bạn, giúp gắn thẻ địa điểm trong đánh giá và ghi lại nơi bạn đã ăn."
+  "NSLocationWhenInUseUsageDescription": "K-Bap dùng vị trí để tìm nhà hàng gần bạn, giúp gắn thẻ địa điểm trong đánh giá và ghi lại nơi bạn đã ăn.",
+  "NSMotionUsageDescription": "K-Bap dùng cảm biến chuyển động để nhận biết khi điện thoại bị xoay ngang lúc bạn quét thực đơn."
 }

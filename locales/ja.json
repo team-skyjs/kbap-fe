@@ -2,5 +2,6 @@
   "NSCameraUsageDescription": "メニューのスキャン、レビュー用の写真撮影、プロフィール写真の設定にカメラを使用します。",
   "NSPhotoLibraryUsageDescription": "保存したメニューのスキャン、レビューや投稿への写真追加、プロフィール写真の設定、お問い合わせへの写真添付に写真へアクセスします。",
   "NSPhotoLibraryAddUsageDescription": "ストーリーカードを写真ライブラリに保存します。",
-  "NSLocationWhenInUseUsageDescription": "近くのお店を探してレビューに場所を追加したり、食べた場所を記録したりするために位置情報を使用します。"
+  "NSLocationWhenInUseUsageDescription": "近くのお店を探してレビューに場所を追加したり、食べた場所を記録したりするために位置情報を使用します。",
+  "NSMotionUsageDescription": "メニューをスキャンするとき、スマートフォンが横向きになったことを検知するためにモーションセンサーを使用します。"
 }
