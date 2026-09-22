@@ -1017,7 +1017,8 @@
   },
   "feedback": {
     "title": "Contáctanos",
-    "myTitle": "Mis consultas",
+    "newInquiry": "Nueva",
+    "newTitle": "Nueva consulta",
     "placeholder": "Cuéntanos qué pasó o qué te gustaría ver. Puedes adjuntar fotos.",
     "send": "Enviar",
     "sent": "Gracias, recibimos tu mensaje.",

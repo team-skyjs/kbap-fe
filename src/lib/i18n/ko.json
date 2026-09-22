@@ -1016,7 +1016,8 @@
   },
   "feedback": {
     "title": "문의하기",
-    "myTitle": "내 문의",
+    "newInquiry": "새 문의",
+    "newTitle": "문의 작성",
     "placeholder": "무슨 일이 있었는지, 또는 바라는 점을 알려주세요. 사진을 넣어도 좋아요.",
     "send": "보내기",
     "sent": "문의를 보냈어요. 고마워요!",

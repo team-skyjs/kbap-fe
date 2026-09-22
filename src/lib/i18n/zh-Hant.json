@@ -1016,7 +1016,8 @@
   },
   "feedback": {
     "title": "聯絡我們",
-    "myTitle": "我的意見",
+    "newInquiry": "新增",
+    "newTitle": "新增意見",
     "placeholder": "告訴我們發生了什麼，或你希望看到什麼。可以附上照片。",
     "send": "傳送",
     "sent": "已收到你的意見，謝謝！",

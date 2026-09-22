@@ -160,7 +160,7 @@ export default function Profile() {
               )}
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
-              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback/new' as Href)} />
+              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
               <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
@@ -326,7 +326,7 @@ export default function Profile() {
                 <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
               {/* P-394(KB-586): 문의 — 게스트 분기에도 같은 행이 있다 */}
-              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback/new' as Href)} />
+              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
               <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}

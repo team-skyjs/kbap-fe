@@ -8,8 +8,7 @@
  */
 import * as React from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Txt as Text } from '@/components/Txt';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { Btn, IconCamera, IconClose, SubHeader } from '@/components';
@@ -89,15 +88,8 @@ export default function FeedbackComposeScreen() {
 
   return (
     <View style={styles.root}>
-      <SubHeader
-        title={t('feedback.title')}
-        onBack={() => router.back()}
-        trailing={
-          <Pressable onPress={() => router.push('/profile/feedback' as Href)} hitSlop={8} testID="feedback-my-link">
-            <Text style={styles.link}>{t('feedback.myTitle')}</Text>
-          </Pressable>
-        }
-      />
+      {/* P-406: 목록이 첫 화면이 됐다 — "My inquiries" 링크 제거(뒤로 = 목록) */}
+      <SubHeader title={t('feedback.newTitle')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Input
           value={body}
@@ -172,6 +164,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // P-403 ②(예진 실기): 액센트(C.primaryText)가 아니라 본문색 — 헤더 우측 링크가 튀어 보였다
-  link: { fontSize: 14, fontWeight: '600', color: C.ink },
 });
