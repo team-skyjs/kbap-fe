@@ -199,7 +199,8 @@ it('US2(b) 시트(사전 체크, 9/14 종한): 하나 해제 + 확인 = 무동�
   await tap(tree, 'consent-privacy'); // 다시 체크
   await tap(tree, 'notif-sheet-confirm');
   expect(mockData.update.mutate).toHaveBeenCalledTimes(1);
-  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } });
+  // 버전 2 = kbap-legal 전문 페이지 "동의 문구 버전: 2"(시행일 2026-09-14)와 일치해야 한다 — 페이지 개정 시 함께 올린다.
+  expect(mockData.update.mutate).toHaveBeenCalledWith({ news: { consent: true, privacyConsentVersion: 2, receiveConsentVersion: 2, enabled: true, mealTime: true } });
   expect(has(tree, 'notif-sheet-consent')).toBe(false);
 });
 

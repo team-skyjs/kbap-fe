@@ -7,9 +7,9 @@
 import { LEGAL_URLS } from '@/lib/legalText';
 
 /** 마케팅 목적 개인정보 수집·이용 동의 문구 버전. */
-export const PRIVACY_CONSENT_VERSION = 1;
+export const PRIVACY_CONSENT_VERSION = 2;
 /** 광고성 정보 수신 동의 문구 버전. */
-export const RECEIVE_CONSENT_VERSION = 1;
+export const RECEIVE_CONSENT_VERSION = 2;
 
 /**
  * KB-544(설정 (회원, 기기) 단위) 새 X-API-Version 매핑 값. BE 규약상 "KB-544가 실리는
