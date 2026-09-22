@@ -112,7 +112,7 @@ function NotificationSettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
           /* OS 권한 꺼짐 — 안내 + 설정 딥링크. 아래 설정 UI는 보이되 흐리게·조작 불가(9/14 종한 2차) */
-          <Pressable style={styles.banner} onPress={() => void openAppSettings()} testID="notif-os-off">
+          <Pressable style={styles.banner} onPress={() => { track(EVENTS.push_permission, { state: 'settings_open' }); void openAppSettings(); }} testID="notif-os-off">
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.bannerText}>{t('notif.osOff')}</Text>
@@ -131,7 +131,7 @@ function NotificationSettingsScreen() {
         )}
         {query.isError && !s && (
           /* 읽기 실패 = 스위치 미렌더(값 미표시), 탭 = 재시도 */
-          <Pressable style={styles.banner} onPress={() => void query.refetch()} testID="notif-read-error">
+          <Pressable style={styles.banner} onPress={() => { track(EVENTS.push_settings_tap, { target: 'retry_load' }); void query.refetch(); }} testID="notif-read-error">
             <IconBell size={16} color={C.riskCaution} />
             <Text style={styles.bannerText}>{t('notif.readFailed')}</Text>
           </Pressable>
@@ -163,7 +163,7 @@ function NotificationSettingsScreen() {
               {consent && (
                 <View style={styles.caption} testID="notif-consent-status">
                   <Text style={styles.captionText}>{t('notif.consentStatus', consent)}</Text>
-                  <Pressable onPress={() => void openWebPage(consentUrl('receive'))} hitSlop={8} testID="notif-consent-full">
+                  <Pressable onPress={() => { track(EVENTS.push_settings_tap, { target: 'consent_full' }); void openWebPage(consentUrl('receive')); }} hitSlop={8} testID="notif-consent-full">
                     <Text style={styles.captionLink}>{t('notif.viewFull')}</Text>
                   </Pressable>
                 </View>
@@ -174,7 +174,7 @@ function NotificationSettingsScreen() {
 
         {update.isError && (
           /* 저장 거부 표면화(롤백은 훅) — 탭 = 배너 닫기 */
-          <Pressable style={styles.banner} onPress={() => update.reset()} testID="notif-save-failed">
+          <Pressable style={styles.banner} onPress={() => { track(EVENTS.push_settings_tap, { target: 'retry_save' }); update.reset(); }} testID="notif-save-failed">
             <IconBell size={16} color={C.riskCaution} />
             <Text style={styles.bannerText}>{t('notif.saveFailed')}</Text>
           </Pressable>
@@ -189,7 +189,7 @@ function NotificationSettingsScreen() {
             <Text style={styles.confirmBody}>{t('notif.offConfirmBody')}</Text>
             <View style={styles.confirmActions}>
               <View style={{ flex: 1 }}>
-                <Btn variant="ghost" onPress={() => setOffConfirm(false)} testID="notif-off-cancel">{t('common.cancel')}</Btn>
+                <Btn variant="ghost" onPress={() => { track(EVENTS.push_settings_tap, { target: 'news_off_cancel' }); setOffConfirm(false); }} testID="notif-off-cancel">{t('common.cancel')}</Btn>
               </View>
               <View style={{ flex: 1 }}>
                 <Btn onPress={confirmNewsOff} testID="notif-off-confirm-cta">{t('notif.offConfirmCta')}</Btn>

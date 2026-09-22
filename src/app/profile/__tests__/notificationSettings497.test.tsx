@@ -61,7 +61,7 @@ jest.mock('@/components/AuthGateSheet', () => ({
 }));
 const mockSession = { guest: false };
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockSession.guest }));
-jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: { push_pref_toggle: 'push_pref_toggle' } }));
+jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: { push_pref_toggle: 'push_pref_toggle', push_settings_tap: 'push_settings_tap', push_permission: 'push_permission' } })); // KB-630
 const mockOpen = jest.fn().mockResolvedValue(true);
 const mockOpenSettings = jest.fn().mockResolvedValue(true);
 jest.mock('@/lib/openExternal', () => ({
@@ -264,7 +264,9 @@ it('US3 게스트 = AuthGateSheet(profile)만, 스위치 0개, 설정 조회 비
 it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반응(9/14 종한 2차), 탭 = openAppSettings(P-381); AppState active = 권한 재조회 + 토큰 등록', async () => {
   mockAdapter.getPermissionStatus.mockResolvedValue('denied');
   const handlers: ((s: string) => void)[] = [];
-  const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_: string, cb: (s: string) => void) => { handlers.push(cb); return { remove: jest.fn() }; }) as never);
+  // KB-630: spyOn+mockRestore는 RN 프리셋의 jest.fn 구현을 지워 이후 테스트의 unmount(sub.remove)를 깨뜨린다 — 원본을 직접 보관·복원
+  const orig = AppState.addEventListener;
+  AppState.addEventListener = ((_: string, cb: (s: string) => void) => { handlers.push(cb); return { remove: jest.fn() }; }) as never;
   mockOpenSettings.mockClear();
   mockData.query.data = ON; // 서버에는 동의·토글 ON이 저장돼 있어도
   const tree = await render();
@@ -287,7 +289,7 @@ it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반
   act(() => handlers.forEach((h) => h('active')));
   expect(mockAdapter.getPermissionStatus).toHaveBeenCalledTimes(1);
   expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1);
-  spy.mockRestore();
+  AppState.addEventListener = orig;
 });
 
 /* ---------- 소스 잠금 ---------- */
@@ -298,3 +300,36 @@ it('설정 화면은 AsyncStorage를 쓰지 않는다(서버 정본) + 동의 �
   expect(src).toContain("variant=\"consent\"");
 });
 
+
+/* ---- KB-630: 설정 화면 보조 클릭 이벤트(토글은 push_pref_toggle이 담당) ---- */
+const trackMock = () => (jest.requireMock('@/lib/analytics') as { track: jest.Mock }).track;
+
+it('KB-630(a) 로드 실패 재시도 배너 = push_settings_tap retry_load', async () => {
+  mockData.query.isError = true;
+  await tap(await render(), 'notif-read-error');
+  expect(trackMock()).toHaveBeenLastCalledWith('push_settings_tap', { target: 'retry_load' });
+});
+
+it('KB-630(b) 저장 실패 배너 = push_settings_tap retry_save', async () => {
+  mockData.query.data = OFF;
+  mockData.update.isError = true;
+  await tap(await render(), 'notif-save-failed');
+  expect(trackMock()).toHaveBeenLastCalledWith('push_settings_tap', { target: 'retry_save' });
+});
+
+it('KB-630(c) 끄기 확인 취소 = news_off_cancel · 동의 전문 보기 = consent_full', async () => {
+  mockData.query.data = ON;
+  const tree = await render();
+  await tap(tree, 'notif-news');
+  await tap(tree, 'notif-off-cancel');
+  expect(trackMock()).toHaveBeenLastCalledWith('push_settings_tap', { target: 'news_off_cancel' });
+  await tap(tree, 'notif-consent-full');
+  expect(trackMock()).toHaveBeenLastCalledWith('push_settings_tap', { target: 'consent_full' });
+});
+
+it('KB-630(d) OS 권한 denied 배너 탭 = push_permission settings_open', async () => {
+  mockAdapter.getPermissionStatus.mockResolvedValue('denied');
+  mockData.query.data = ON;
+  await tap(await render(), 'notif-os-off');
+  expect(trackMock()).toHaveBeenLastCalledWith('push_permission', { state: 'settings_open' });
+});
