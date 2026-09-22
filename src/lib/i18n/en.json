@@ -428,6 +428,7 @@
     "addPhoto": "Add photo",
     "removePhoto": "Remove photo",
     "postError": "Couldn't save your review. Check your connection and try again.",
+    "foodHidden": "You can't post a review for this dish right now. What you wrote is still here on this screen.",
     "likesCaption": "Likes don't change the sort",
     "placeRow": "Where did you eat?",
     "placeSheetTitle": "Tag a place",
@@ -706,7 +707,8 @@
     "readAll": "Read all",
     "beFirstReview": "No reviews yet. Be the first.",
     "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It varies by restaurant. Ask the owner to be sure.",
-    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It varies by restaurant. Ask the owner to be sure."
+    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It varies by restaurant. Ask the owner to be sure.",
+    "foodHidden": "This dish isn't available to view right now."
   },
   "states": {
     "catalogTitle": "States",

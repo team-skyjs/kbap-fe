@@ -20,7 +20,7 @@ import i18n from '../i18n';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
-import { api, apiLang, ApiError } from '../api/client';
+import { api, apiLang, ApiError, isFoodHidden } from '../api/client';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
@@ -170,6 +170,12 @@ export function useFoodDetail(id: string) {
         // BE signals "dish not in catalog" as HTTP 400 (we clamp lang, so 400 here
         // means not-found, not a bad language) → show the "Unable to assess"
         // screen (FR-033), never a hard error. Network/5xx still throw → error UI.
+        // KB-620(Codex #184 P1): FOOD-001은 이 400 폴백보다 **먼저** 가른다. 서버는 "음식이 READY가
+        // 아님"(이미지 재생성 중 일시 숨김 · 삭제)을 FOOD-001(HTTP 400)로 주는데, 폴백이 400을 전부
+        // 삼키면 상세 화면의 숨김 안내가 **프로덕션에서 한 번도 안 뜬다**. 게다가 폴백은 숫자 id를
+        // 그대로 이름으로 써서 사용자가 "123"이라는 음식을 "판정 불가"로 본다.
+        // ⚠️ 서버는 "숨김"과 "삭제"를 같은 코드로 준다 — 구분이 필요해지면 서버 코드 분리가 먼저다.
+        if (isFoodHidden(e)) throw e;
         if (e instanceof ApiError && e.status === 400) return unregisteredFoodDetail(id);
         throw e;
       }

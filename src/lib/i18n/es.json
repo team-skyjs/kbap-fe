@@ -385,6 +385,7 @@
     "addPhoto": "Añadir foto",
     "removePhoto": "Quitar foto",
     "postError": "No se pudo guardar la reseña. Revisa tu conexión e inténtalo de nuevo.",
+    "foodHidden": "Ahora mismo no se puede publicar una reseña de este plato. Lo que escribiste sigue en esta pantalla.",
     "likesCaption": "Los me gusta no cambian el orden",
     "placeRow": "¿Dónde comiste?",
     "placeSheetTitle": "Etiquetar lugar",
@@ -551,7 +552,8 @@
     "readAll": "Ver todas",
     "beFirstReview": "Aún no hay reseñas — ¡sé el primero!",
     "ingGuestBody": "{{ingredient}} se usa en aproximadamente el {{percent}}% de las versiones de este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
-    "ingGuestBodyNoPct": "{{ingredient}} se usa comúnmente en este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte."
+    "ingGuestBodyNoPct": "{{ingredient}} se usa comúnmente en este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
+    "foodHidden": "Ahora mismo no se puede ver la información de este plato."
   },
   "states": {
     "catalogTitle": "Estados",

@@ -47,6 +47,7 @@ import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
+import { isFoodHidden } from '@/lib/api/client';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
 /** 시안 노트 03 — 히어로를 이만큼 지나면 헤더 솔리드+타이틀 페이드인 */
@@ -92,7 +93,13 @@ export default function FoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
-  const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
+  const { data: fetched, isLoading, error, refetch } = useFoodDetail(id ?? '');
+  // KB-620(Codex #184 P1 2R): FOOD-001은 **캐시보다 우선**한다. TanStack Query는 재조회가 실패해도
+  // 이전에 받은 `data`를 그대로 유지하므로, 숨겨지기 전에 한 번 열어 본 음식이면 서버가 거둬들인
+  // 뒤에도 **옛 판정(SAFE일 수 있음)과 액션 바**가 계속 보인다 — false-safe(헌법 III). 수정 전엔
+  // 400 폴백이 캐시를 보수적 `unable`로 덮어써 그 조건을 지키고 있었다. 여기서 `food`를 비우면
+  // 판정 본문·액션 바·헤더 제목이 전부 따라 사라지고, 숨김 안내 분기(`error && !food`)가 선다.
+  const food = isFoodHidden(error) ? undefined : fetched;
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
 
@@ -131,7 +138,18 @@ export default function FoodDetailScreen() {
   return (
     <View style={styles.root}>
       <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
-        {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
+        {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
+            QueryErrorBlock을 쓰면 안 되는 이유 셋 — ① 재시도가 **영원히 실패**해 버튼이 함정이 된다
+            ② 안전 판정 글리프(RiskGlyph caution)가 붙어 음식 자체에 대한 판정처럼 읽힌다(헌법 III)
+            ③ error_state_view 계측이 나가 에러 지표(P-213)가 오염된다. EmptyBlock은 셋 다 없다.
+            뒤로는 상단 플로팅 버튼(항상 렌더)이 맡는다. 다른 에러는 기존 블록 그대로. */}
+        {error && !food && (isFoodHidden(error) ? (
+          <View style={styles.hiddenFill}>
+            <EmptyBlock label={t('detail.foodHidden')} testID="detail-food-hidden" />
+          </View>
+        ) : (
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
+        ))}
         {/* P-287(4003:13466): 첫 로드 = 상세 스켈레톤(공백 금지) */}
         {isLoading && !food && !error && <SkeletonFoodDetail />}
 
@@ -690,6 +708,8 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  // KB-620: 숨김 안내를 잔여 높이 중앙에(상단 플로팅 헤더와 겹치지 않게)
+  hiddenFill: { flex: 1, justifyContent: 'center' },
   body: { paddingHorizontal: 20, paddingTop: 16, gap: 18 },
 
   // §1-1: 히어로 정방 + 그라데이션

@@ -385,6 +385,7 @@
     "addPhoto": "Tambah foto",
     "removePhoto": "Hapus foto",
     "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi.",
+    "foodHidden": "Ulasan untuk hidangan ini tidak bisa dikirim saat ini. Tulisanmu masih ada di layar ini.",
     "likesCaption": "Suka tidak memengaruhi urutan",
     "placeRow": "Kamu makan di mana?",
     "placeSheetTitle": "Tandai tempat",
@@ -551,7 +552,8 @@
     "readAll": "Lihat semua",
     "beFirstReview": "Belum ada ulasan — jadilah yang pertama!",
     "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
-    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan."
+    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
+    "foodHidden": "Informasi hidangan ini tidak bisa dilihat saat ini."
   },
   "states": {
     "catalogTitle": "Status",

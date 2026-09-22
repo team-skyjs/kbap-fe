@@ -80,6 +80,11 @@ export class ApiError extends Error {
   }
 }
 
+/** KB-620: 음식이 **일시적으로 숨겨짐**(서버 `PENDING_IMAGE` — 이미지 재생성 중) → `FOOD-001`.
+ *  에러가 아니라 **곧 돌아올 상태**라, 에러 표면(빨간 안내·재시도·에러 계측)이 아니라 조용한
+ *  안내로 다룬다(9/22 예진). 판별은 이 한 곳 — 리뷰 작성·음식 상세가 공유한다. */
+export const isFoodHidden = (e: unknown): boolean => e instanceof ApiError && e.code === 'FOOD-001';
+
 /** BE generic envelope. Branch on `success` (NOT HTTP status alone) — §0. */
 export interface BaseResponse<T> {
   success: boolean;
