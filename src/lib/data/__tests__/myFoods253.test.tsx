@@ -639,6 +639,71 @@ describe('KB-638 주문 편집', () => {
     mockSearchPlaces.mockImplementation(async () => []);
   });
 
+  it('검색 실패(오프라인·5xx) = 오류 문구 + 재시도 — "결과 없음"으로 보이지 않는다(Codex #195 4R) · 재시도 후 진짜 빈 결과', async () => {
+    mockSearchPlaces.mockImplementationOnce(async () => { throw new Error('NETWORK: offline'); });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <QueryClientProvider client={qc}>
+          <PlacePickerSheet open resultsOnly onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+        </QueryClientProvider>,
+      );
+    });
+    trees.push(tree);
+    act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText('x'); });
+    await flush(); await flush();
+    expect(byTid(tree, 'place-search-error').length).toBeGreaterThan(0);
+    expect(byTid(tree, 'place-no-results')).toHaveLength(0);
+    expect(mockSearchPlaces).toHaveBeenCalledTimes(1);
+    act(() => { void (byTid(tree, 'place-search-retry')[0].props.onPress()); });
+    await flush(); await flush();
+    expect(mockSearchPlaces).toHaveBeenCalledTimes(2); // 재시도 = 재요청
+    expect(byTid(tree, 'place-search-error')).toHaveLength(0);
+    expect(byTid(tree, 'place-no-results').length).toBeGreaterThan(0); // 이번엔 진짜 빈 결과
+  });
+
+  /* Codex #195 4R 마감: 시트 상태 4개 × 모드 2개 — 무엇이 보이고 무엇이 없는지를 표로 잠근다(검색어 'x' 기준). */
+  const ROWS = [
+    // state      resultsOnly  spinner error  empty  manual pick=[WithId, NoId]
+    ['loading',   false,       true,   false, false, true,  []],
+    ['loading',   true,        true,   false, false, false, []],
+    ['error',     false,       false,  true,  false, true,  []],
+    ['error',     true,        false,  true,  false, false, []],
+    ['empty',     false,       false,  false, false, true,  []], // 기본: MANUAL 행이 빈 결과 자리
+    ['empty',     true,        false,  false, true,  false, []],
+    ['ok',        false,       false,  false, false, true,  ['WithId', 'NoId']],
+    ['ok',        true,        false,  false, false, false, ['WithId']], // id 없는 결과 제외
+  ] as const;
+  it.each(ROWS)('시트 상태표 — %s / resultsOnly=%s → spinner=%s error=%s empty=%s manual=%s picks=%j', async (state, resultsOnly, spinner, error, empty, manual, picks) => {
+    const RESULTS = [
+      { name: 'WithId', address: 'Seoul', latitude: 1, longitude: 2, placeId: 'g9' },
+      { name: 'NoId', address: null, latitude: 1, longitude: 2, placeId: null },
+    ];
+    mockSearchPlaces.mockImplementationOnce(() =>
+      state === 'loading' ? new Promise(() => {}) : state === 'error' ? Promise.reject(new Error('5xx')) : Promise.resolve(state === 'ok' ? RESULTS : []),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <QueryClientProvider client={qc}>
+          <PlacePickerSheet open resultsOnly={resultsOnly} onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+        </QueryClientProvider>,
+      );
+    });
+    trees.push(tree);
+    act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText('x'); });
+    await flush(); await flush();
+    const { ActivityIndicator } = require('react-native') as typeof import('react-native'); // eslint-disable-line @typescript-eslint/no-require-imports
+    expect(tree.root.findAllByType(ActivityIndicator).length > 0).toBe(spinner);
+    expect(byTid(tree, 'place-search-error').length > 0).toBe(error);
+    expect(byTid(tree, 'place-no-results').length > 0).toBe(empty);
+    expect(byTid(tree, 'place-manual').length > 0).toBe(manual);
+    expect(['WithId', 'NoId'].filter((n) => byTid(tree, `place-pick-${n}`).length > 0)).toEqual([...picks]);
+    if (state === 'loading') qc.clear(); // 영원히 대기하는 쿼리 정리
+  });
+
   it('장소 쿼리 키에 언어 포함 — UI 언어를 바꾸면 옛 언어 결과(캐시)를 재사용하지 않는다(Codex #195)', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
     const render = () => {

@@ -182,6 +182,14 @@ export function PlacePickerSheet({
               <View style={{ paddingVertical: 18, alignItems: 'center' }}>
                 <ActivityIndicator color={C.ink3} />
               </View>
+            ) : active.isError ? (
+              /* Codex #195 4R: 오프라인·5xx로 검색이 끝나지 않은 것을 "결과 없음"으로 보이지 않는다 — 오류 문구 + 재시도(기존 키) */
+              <View style={{ paddingVertical: 26, alignItems: 'center', gap: 8 }} testID="place-search-error">
+                <Text style={styles.noResults}>{t('states.errorTitle')}</Text>
+                <Pressable onPress={() => void active.refetch()} hitSlop={8} testID="place-search-retry">
+                  <Text style={[styles.noResults, { textDecorationLine: 'underline', paddingVertical: 0 }]}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
             ) : results.length === 0 && (!term || resultsOnly) ? (
               /* Codex #195: resultsOnly는 MANUAL 행이 없으니 검색어가 있어도 빈 결과 문구를 보인다(빈 화면 금지) */
               <Text style={styles.noResults} testID="place-no-results">{t('review.placeNoResults')}</Text>
