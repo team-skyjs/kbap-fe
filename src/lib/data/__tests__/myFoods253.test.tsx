@@ -329,7 +329,7 @@ describe('KB-636 공유 카드 시트', () => {
     expect(mockTrack).not.toHaveBeenCalledWith('order_share_view', expect.anything());
     const btn = byTid(tree, 'order-share-open')[0];
     expect(btn).toBeTruthy();
-    expect(btn.findAll((n) => n.props?.children === 'myFoods.shareDownload').length).toBeGreaterThan(0); // "Download image" 기존 키
+    expect(btn.findAll((n) => n.props?.children === 'myFoods.shareDownloadInline').length).toBeGreaterThan(0); // P-411: 1줄 전용 키
   });
 
   it('열림 = 시트 안에 카드 + 캡처 캔버스 + 저장·스토리 버튼 · 노출 1회(다시 열어도 주문당 1회)', async () => {
@@ -366,6 +366,34 @@ describe('KB-636 공유 카드 시트', () => {
     await act(async () => { finish('success'); await Promise.resolve(); });
     close();
     expect(byTid(tree, 'order-share-sheet')).toHaveLength(0); // 끝난 뒤엔 정상 닫힘
+  });
+
+  /* P-411(KB-636 후속, 예진 b36 실기): 하단 고정 바 → 가로 꽉 찬 주황 플로팅 알약(문의 "+ New"와 같은 형태). */
+  it('P-411 알약 — 좌우 20 · h52 · r26 · C.primary · 하 인셋+24 · 라벨 17/600 흰색 1줄 · 고정 바·보더 없음 · 목록 하 96+인셋', async () => {
+    const tree = await renderOrder(SHARE_ORDER);
+    const host = tree.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'order-share-open')[0];
+    const flat = (st: unknown) => Object.assign({}, ...[st].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
+    expect(flat(host.props.style)).toMatchObject({
+      position: 'absolute', left: 20, right: 20, height: 52, borderRadius: 26, backgroundColor: '#FF7134', bottom: 24, // 인셋 0(목) + 24
+    });
+    expect(flat(host.props.style).borderWidth).toBeUndefined(); // outline(ghost) 아님
+    const label = host.findAll((n) => typeof n.type === 'string' && n.props.children === 'myFoods.shareDownloadInline')[0];
+    expect(label.props.numberOfLines).toBe(1);
+    expect(flat(label.props.style)).toMatchObject({ fontSize: 17, fontWeight: '600', color: '#FFFFFF' });
+    expect(byTid(tree, 'order-bottom-bar')).toHaveLength(0); // 하단 고정 바·구분선 소멸
+    const scroll = tree.root.findAll((n) => typeof n.type === 'string' && n.props.contentContainerStyle)[0];
+    expect(flat(scroll.props.contentContainerStyle).paddingBottom).toBe(96); // 96 + 인셋(0)
+  });
+
+  it('P-411 1줄 라벨 키 10로케일 — 줄바꿈 없음 · 기존 2줄 키는 시트 버튼용 그대로', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs');
+    for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']) {
+      const mf = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).myFoods;
+      expect(typeof mf.shareDownloadInline).toBe('string');
+      expect(mf.shareDownloadInline).not.toContain('\n');
+      expect(mf.shareDownload).toContain('\n'); // 시트 버튼 2줄 고정(shareCard518과 같은 잠금)
+    }
   });
 
   it('사진 0장 주문 = 하단 버튼 없음(빈 카드 금지 — P-380) · Write a review·음식 선택 시트 부재', async () => {
