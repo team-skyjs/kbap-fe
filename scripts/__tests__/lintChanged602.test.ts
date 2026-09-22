@@ -389,34 +389,25 @@ describe('KB-612 기준선 소비(다중도)', () => {
 });
 
 /* ────────────────────────────────────────────────────────────────────────────
- * package.json `scripts`는 **Expo 런타임 지문의 소스**다(`packageJson:scripts`).
+ * package.json `scripts`는 Expo 런타임 지문의 **기본** 소스다(`packageJson:scripts`).
  *
  * KB-602가 `"lint:changed"` 한 줄을 넣은 것만으로 runtime fingerprint가 회전해
  * **teamtest OTA가 양 플랫폼 도달 0**이 됐다 — 네이티브는 한 줄도 안 건드렸는데도.
- * 지문 게이트(P-199)가 막아 줘서 "발행은 됐는데 앱이 안 바뀐다"는 안 겪었지만,
- * 로봇이 3연속 FAILURE로 15시간 묻혀 있었다(2026-09-21).
+ * 로봇이 3연속 FAILURE로 15시간 묻혀 있었다(2026-09-21). 그땐 scripts를 **고정**하는 걸로 막았다.
  *
- * 그래서 scripts를 **고정**한다. 추가·수정하려면 이 목록을 같이 고쳐야 하고, 그때
- * 아래 경고를 읽게 된다 — 지문이 돈다는 사실을 **커밋 시점에** 알아야 한다.
- * 확인: `npx expo-updates fingerprint:generate --platform ios --debug`의 소스 목록에
- * `contents packageJson:scripts`가 그대로 있다.
+ * P-397 8(KB-600): 네이티브 빌드에 합승해 `fingerprint.config.js`에서 scripts를 지문 소스에서 뺐다
+ * (`sourceSkips: PackageJsonScriptsAll`). 이제 scripts는 자유롭고, 대신 **그 설정**을 잠근다 —
+ * 설정이 빠지면 scripts 편집이 다시 지문을 돌린다. 실측(PR #174): 설정 있음 → scripts 추가해도 불변 /
+ * 설정 없음 → 같은 편집에 회전.
+ * ⚠️ 설정 파일 자체를 바꾸면 소스 집합이 바뀌어 지문이 회전한다 — 네이티브 빌드와 함께만.
  * ──────────────────────────────────────────────────────────────────────────── */
-it('package.json scripts 고정 — 바꾸면 OTA 지문이 회전한다(네이티브 무관 변경이어도)', () => {
+it('지문 설정이 package.json scripts를 소스에서 뺀다(scripts 편집 ≠ 지문 회전)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- CJS 설정 파일(@expo/fingerprint가 require로 읽는다)
+  const cfg = require(path.join(REPO, 'fingerprint.config.js')) as { sourceSkips?: unknown };
+  expect(cfg.sourceSkips).toEqual(['PackageJsonScriptsAll']);
+});
+
+it('lint:changed 스크립트 복원(P-397 8) — 게이트 진입점', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
-  // ⚠️ **키가 아니라 객체 전체**를 고정한다(Codex #182): 지문이 해시하는 건 scripts의 *내용*이라
-  // `"lint"`의 값만 바꿔도 회전한다. 키만 비교하면 그 변경이 조용히 통과해, 이 가드가
-  // 지키지도 않는 약속을 하게 된다.
-  //
-  // ⚠️ 여기를 고치기 전에: 이 변경은 **teamtest/production OTA 도달을 0으로 만든다.**
-  // 설치된 빌드의 runtimeVersion과 달라지기 때문이다. 네이티브 재빌드와 함께 가거나,
-  // 지문 sourceSkips(`PackageJsonScriptsAll`)를 **재빌드 시점에** 채택한 뒤에 바꿔야 한다.
-  expect(pkg.scripts).toEqual({
-    start: 'expo start',
-    'reset-project': 'node ./scripts/reset-project.js',
-    android: 'expo run:android',
-    ios: 'expo run:ios',
-    web: 'expo start --web',
-    lint: 'expo lint',
-    postinstall: 'patch-package',
-  });
+  expect(pkg.scripts['lint:changed']).toBe('node ./scripts/lint-changed.mjs');
 });

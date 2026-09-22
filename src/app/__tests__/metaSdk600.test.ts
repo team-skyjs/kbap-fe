@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports --
+   jest 구조상 불가피: `jest.doMock` 뒤에 대상 모듈을 **새로 require**해야 목이 걸린다(resetModules 격리). */
 /**
  * P-397(KB-600) — Meta SDK 도입(ATT 없음).
  * ① 부트스트랩: 네이티브 모듈이 없어도 죽지 않고, 있으면 광고 추적 비활성 1회만
