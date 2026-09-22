@@ -127,7 +127,7 @@ export default function FeedbackComposeScreen() {
             </Pressable>
           )}
         </ScrollView>
-        <Btn variant={canSend ? 'primary' : 'off'} onPress={canSend ? onSend : undefined} busy={guard.busy} testID="feedback-send">
+        <Btn variant={canSend ? 'ink' : 'off'} /* KB-635: 검정(알약과 같은 C.ink) · 비활성은 기존 off 그대로 */ onPress={canSend ? onSend : undefined} busy={guard.busy} testID="feedback-send">
           {t('feedback.send')}
         </Btn>
       </ScrollView>

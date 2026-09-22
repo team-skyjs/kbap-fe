@@ -9,7 +9,7 @@ import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
 import { PRESS_SCALE, spring } from '@/lib/motion';
 
-export type BtnVariant = 'primary' | 'ghost' | 'off' | 'secondary' | 'danger' | 'dangerGhost';
+export type BtnVariant = 'primary' | 'ghost' | 'off' | 'secondary' | 'danger' | 'dangerGhost' | 'ink';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -174,6 +174,13 @@ const VARIANTS: Record<
     container: { backgroundColor: C.riskDanger },
     pressed: { backgroundColor: '#d94f4a' },
     label: { color: '#fff' },
+  },
+  // KB-635(P-409, 예진 b36 실기): 검정 제출 — 문의 "+ New" 알약과 같은 C.ink/흰 글자.
+  // pressed 색 변화 없음 — 누름 피드백은 스케일 스프링(공통)이 맡는다(새 색 상수 발명 금지).
+  ink: {
+    container: { backgroundColor: C.ink },
+    pressed: {},
+    label: { color: '#FFFFFF' },
   },
   // P-175: destructive 확인 행 — ghost와 같은 버튼 프레임(보더+라운딩+패딩), 색만 destructive
   dangerGhost: {

@@ -453,12 +453,50 @@ it('P-406 치수 — 행·알약·목록 여백이 발주 전사값 그대로', 
   expect(src).toMatch(/title: \{ fontSize: 17, fontWeight: '400', color: C\.ink \}/);
   expect(src).toMatch(/sub: \{ fontSize: 15, fontWeight: '400', color: C\.ink3 \}/);
   expect(src).toMatch(/subRow: \{ flexDirection: 'row', alignItems: 'baseline', gap: 8 \}/);
-  expect(src).toMatch(/position: 'absolute', right: 24, height: 52, paddingHorizontal: 24, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  expect(src).toMatch(/position: 'absolute', right: 24, height: 52, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
   expect(src).toMatch(/fabLabel: \{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' \}/);
   expect(src).toMatch(/bottom: insets\.bottom \+ 24/);
-  expect(src).toMatch(/<IconPlus size=\{20\} color="#FFFFFF" \/>/);
+  expect(src).toMatch(/<IconPlus size=\{PLUS_SIZE\} color="#FFFFFF" \/>/);
   expect(src).toMatch(/<IconChevron size=\{20\} color=\{C\.ink3\} \/>/);
   // 보더·그림자 없음(행·알약) — 스타일 블록만 본다(푸터 재시도 버튼의 보더는 기존 그대로)
   const block = (name: string) => src.match(new RegExp(`\\n  ${name}: \\{[\\s\\S]*?\\n?\\s*\\},?\\n`))![0];
   for (const n of ['row', 'rowText', 'fab']) expect(block(n)).not.toMatch(/border(Width|Color)|shadow|elevation/);
+});
+
+/* ---- KB-635(P-409, 예진 b36 실기) ---- */
+
+/** D4Plus의 가로 획 = viewBox 24 기준 x 5…19, strokeWidth 2 · round cap → 보이는 가장자리 x 4…20. */
+function plusGlyphInset(size: number): number {
+  const src = read('src/components/design4Assets.tsx');
+  const def = src.slice(src.indexOf('export const D4Plus'), src.indexOf('export const D4FilePen'));
+  const tx = Number(def.match(/matrix\(1,0,0,1,([\d.]+),/)![1]); // 5
+  const sw = Number(def.match(/strokeWidth=\{(\d+)\}/)![1]); // 2
+  expect(def).toContain('d="M0 7L14 7'); // 가로 획이 경로 x=0에서 시작(이동량 tx가 곧 시작점)
+  return ((tx - sw / 2) * size) / 24; // 보이는 좌측 가장자리까지의 빈칸
+}
+
+it('KB-635 알약 계측 — 글리프 좌측 빈칸만큼 좌 패딩을 줄여 **보이는** 좌·우 여백이 같다', async () => {
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<MyFeedbackScreen />); });
+  const fab = r.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'feedback-new-fab')[0];
+  const st = Object.assign({}, ...[fab.props.style].flat(Infinity).filter(Boolean)) as Record<string, number>;
+  const inset = plusGlyphInset(20);
+  expect(inset).toBeCloseTo(3.333, 2); // 계측값: 20pt 슬롯 좌측 빈칸
+  expect(st.paddingRight).toBe(24); // 텍스트 가장자리 ↔ 알약 우측
+  expect(st.paddingLeft + inset).toBeCloseTo(24, 5); // 글리프 가장자리 ↔ 알약 좌측 = 우측과 같다
+});
+
+it('KB-635 Send = 검정(C.ink) + 흰 글자 · 본문 공백이면 기존 off 그대로', async () => {
+  const bg = (n: ReactTestRenderer['root']) =>
+    (Object.assign({}, ...[n.props.style].flat(Infinity).filter(Boolean)) as { backgroundColor?: string }).backgroundColor;
+  const sendHost = (r: ReactTestRenderer) => r.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'feedback-send')[0];
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  expect(bg(sendHost(r))).toBe('#EAEBEE'); // 빈 본문 = off(C.line) — 기존 규약
+  const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
+  await act(async () => { input.props.onChangeText('hello'); });
+  expect(bg(sendHost(r))).toBe('#1C1E21'); // C.ink — 주황(primary) 아님
+  const label = sendHost(r).findAll((n) => typeof n.type === 'string' && n.props.children === 'feedback.send')[0];
+  const lc = (Object.assign({}, ...[label.props.style].flat(Infinity).filter(Boolean)) as { color?: string }).color;
+  expect(lc).toBe('#FFFFFF');
 });

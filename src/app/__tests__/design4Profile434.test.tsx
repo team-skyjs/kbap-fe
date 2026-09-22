@@ -184,9 +184,9 @@ it('Codex #33 P2 4건 — 진행 바 티어 상대·식이 진입 복원·영수
     const j = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8'));
     for (const k of ['receiptDate', 'receiptLocation', 'receiptTotal', 'dishes']) expect(typeof j.myFoods[k]).toBe('string');
   }
-  // ① 다품목 = 선택 시트(전 dish 리뷰 가능), 1개 = 직행 — P-355: 앱 바텀시트(Alert 폐기)
-  expect(detail).toContain('reviewables.length === 1');
-  expect(detail).toContain('<OrderDishPickerSheet');
+  // ① KB-636(P-409, 예진 b36 실기): 주문 상세의 "Write a review"·음식 선택 시트 **제거** — 리뷰 진입 = 항목 행 → 음식 상세
+  expect(detail).not.toContain('reviewables');
+  expect(detail).not.toContain('OrderDishPickerSheet');
   expect(detail).not.toContain('Alert.alert'); // 네이티브 목록 소멸 잠금
 });
 
