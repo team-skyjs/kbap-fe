@@ -22,7 +22,7 @@ import { foodSubtitle } from '@/lib/review/foodSubtitle';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, CardPhoto, Star, RiskMark, IconCamera, IconCheck, IconClose, IconMapPin, IconRetry, Input, KeyboardDismissBar } from '@/components';
+import { SubHeader, Btn, CardPhoto, Star, RiskMark, IconCamera, IconCheck, IconClose, IconMapPin, IconRetry, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
