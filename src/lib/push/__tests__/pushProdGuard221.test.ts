@@ -39,8 +39,11 @@ jest.mock(
   { virtual: true },
 );
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   addNotificationTapListener,
+  applyPendingActivityDefault,
+  promptPermissionOnFirstLogin,
   cancelReviewReminder,
   getPermissionStatus,
   pushAvailable,
@@ -106,4 +109,13 @@ it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어
   expect(offenders).toEqual([]);
   // ⚠️ 대기 시간 상수는 QA 편의로 줄이지 않는다(발주 고정)
   expect(adapter).toContain('export const REVIEW_REMINDER_SECONDS = 3600;');
+});
+
+it('KB-631: 로그인 팝업·activity 기본값 헬퍼 = no-op (모듈 미접근·기록 0·서버 호출 0)', async () => {
+  await AsyncStorage.setItem('kbap.push.activityDefaultPending.v1', '1');
+  await expect(promptPermissionOnFirstLogin()).resolves.toBeUndefined();
+  await expect(applyPendingActivityDefault()).resolves.toBeUndefined();
+  expect(await AsyncStorage.getItem('kbap.push.prompted.v1')).toBeNull();
+  expect(await AsyncStorage.getItem('kbap.push.activityDefaultPending.v1')).toBe('1'); // 플래그 off = 손대지 않음
+  expect(mockApi.put).not.toHaveBeenCalled();
 });

@@ -31,6 +31,7 @@ import { api } from '@/lib/api/client';
 import { GAP, TILE, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 import { LEGAL_URLS } from '@/lib/legalText';
 import { openWebPage } from '@/lib/openExternal';
+import { promptPermissionOnFirstLogin } from '@/lib/push/pushAdapter';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const DISHES = [
@@ -139,6 +140,14 @@ export default function Login() {
     };
   }, []);
   const animate = focused && appActive && reduceMotion === false;
+
+  // KB-631(spec 006): 첫 설치 첫 표시(루트 레이아웃의 `/login?entry=intro` — 설치 센티널·스플래시 게이트 뒤)에서만
+  // OS 알림 권한 팝업 즉시 요청(카메라 권한과 같은 방식, 프라이머 없음). 게이트 복귀(returnTo)·재방문·기존 사용자는 0회.
+  // 게스트라 서버 요청 없음 — 토큰 등록·activity 기본값은 로그인 성공 직후(useSocialAuth). 결과 기록 = 어댑터.
+  useEffect(() => {
+    if (entry === 'intro' && returnTo == null) void promptPermissionOnFirstLogin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View
