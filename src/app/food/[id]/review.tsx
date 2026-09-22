@@ -13,7 +13,6 @@
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { KeyboardDismissBar } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -23,7 +22,7 @@ import { foodSubtitle } from '@/lib/review/foodSubtitle';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCamera, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconRetry, IconSearch, Input } from '@/components';
+import { SubHeader, Btn, CardPhoto, Star, RiskMark, IconCamera, IconCheck, IconClose, IconMapPin, IconRetry, Input, KeyboardDismissBar } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
@@ -49,9 +48,14 @@ const MAX = 1000; // P-085: 계약 확정값 (구 500)
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
-  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  // ⚠️ 가드는 **훅이 하나도 없는 바깥 컴포넌트**에 둔다(KB-620). 전엔 모든 훅 앞에 early return이
+  // 있었다 — FLAGS가 컴파일 상수라 런타임 순서는 안 바뀌지만, 린터는 그걸 몰라 rules-of-hooks로
+  // 잡고 React Compiler도 이 컴포넌트를 최적화하지 못한다. 분리하면 규칙이 구조적으로 선다.
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+  return <ReviewComposeScreen />;
+}
 
+function ReviewComposeScreen() {
   const { id, reviewId } = useLocalSearchParams<{ id: string; reviewId?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
