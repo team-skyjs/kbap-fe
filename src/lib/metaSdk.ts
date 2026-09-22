@@ -5,10 +5,11 @@
  * 네이티브가 자동으로 보낸다(`autoLogAppEventsEnabled`·`isAutoInitEnabled` — app.json).
  * 그래서 JS에서 할 일은 **광고 추적 비활성 선언 한 줄**뿐이다.
  *
- * ⚠️ ATT 프롬프트를 띄우지 않는다(9/21 예진 D2). `advertiserIDCollectionEnabled:false`(app.json)와
- * 여기 `setAdvertiserTrackingEnabled(false)`가 한 쌍이다 — 한쪽만 바꾸면 App Store
- * 개인정보 라벨("추적에 사용되는 데이터")과 실제 동작이 어긋난다. IDFA 없이도 SKAdNetwork
- * 설치 어트리뷰션은 동작한다.
+ * ⚠️ ATT 프롬프트를 띄우지 않는다(9/21 예진 D2). iOS는 여기 `setAdvertiserTrackingEnabled(false)` +
+ * `iosUserTrackingPermission` 부재(app.json)가 한 쌍 — 한쪽만 바꾸면 App Store 개인정보 라벨("추적에
+ * 사용되는 데이터")과 실제 동작이 어긋난다. IDFA 없이도 SKAdNetwork 설치 어트리뷰션은 동작한다.
+ * Android 광고 ID는 **허용**(9/22 예진 — `advertiserIDCollectionEnabled:true`, 권한 차단 없음). JS에서
+ * `setAdvertiserIDCollectionEnabled`를 부르지 않는다 — 부르면 app.json 선언을 런타임에 뒤집는다.
  *
  * 네이티브 모듈 부재(웹·유닛·구 런타임)에서 죽지 않게 지연 require + try/catch(P-192 관례).
  */
