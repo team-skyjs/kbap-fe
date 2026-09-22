@@ -23,12 +23,13 @@ import { foodSubtitle } from '@/lib/review/foodSubtitle';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCamera, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
+import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCamera, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconRetry, IconSearch, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
+import { isFoodHidden } from '@/lib/api/client';
 import { showTopToast } from '@/components/topToastStore';
 import { Shimmer } from '@/components/Skeleton';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -67,7 +68,9 @@ export default function ReviewCompose() {
   const [body, setBody] = useState('');
   const [photos, setPhotos] = useState<ReviewPhoto[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const [postError, setPostError] = useState(false);
+  /** 제출 실패 종류. ⚠️ 불리언 둘(에러·숨김)로 두면 "둘 다 참"이라는 **있을 수 없는 상태**가
+   *  생긴다 — 셋 중 하나로 고정한다. `hidden` = 음식이 일시 숨김(KB-620): 에러가 아니다. */
+  const [postError, setPostError] = useState<'failed' | 'hidden' | null>(null);
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
@@ -155,7 +158,7 @@ export default function ReviewCompose() {
   const post = () =>
     runPost(async () => {
       if (!canPostReview(rating)) return;
-      setPostError(false);
+      setPostError(null);
       try {
         // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
         const localUris = photos.filter((p) => p.kind === 'local').map((p) => p.uri);
@@ -190,7 +193,11 @@ export default function ReviewCompose() {
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
-        setPostError(true); // 실패 = 버튼 복구(가드 finally) + 기존 에러 표면
+        // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
+        // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.
+        // 화면에 두면 사용자가 쓴 글이 남고, 음식이 돌아오면 그대로 다시 올릴 수 있다.
+        // 신규·수정 모두 이 catch를 지난다(같은 FOOD-001을 받는다).
+        setPostError(isFoodHidden(e) ? 'hidden' : 'failed'); // 실패 = 버튼 복구(가드 finally)
       }
     });
 
@@ -410,10 +417,19 @@ export default function ReviewCompose() {
 
 
 
-        {postError && (
+        {postError === 'failed' && (
           <View style={styles.postErr}>
             <RiskMark state="caution" size={16} />
             <Text style={styles.postErrText}>{t('review.postError')}</Text>
+          </View>
+        )}
+        {/* KB-620: 숨김 안내는 **중립**이다 — RiskMark(안전 판정 아이콘)·주황 경고 틴트를 쓰지 않는다.
+            "이 음식을 잠시 못 쓴다" 옆에 판정 아이콘이 붙으면 음식 자체에 대한 판정으로 읽힌다(헌법 III).
+            틀(패딩·보더·라운딩)은 postErr와 같고 색만 다르다. */}
+        {postError === 'hidden' && (
+          <View style={styles.hiddenNote} testID="review-food-hidden">
+            <IconRetry size={16} color={C.inkInfo} />
+            <Text style={styles.hiddenNoteText}>{t('review.foodHidden')}</Text>
           </View>
         )}
       </ScrollView>
@@ -501,6 +517,9 @@ const styles = StyleSheet.create({
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
   postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
+  // KB-620: postErr와 **같은 틀**, 중립 색(risk*·주황 계열 금지)
+  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  hiddenNoteText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.inkInfo, lineHeight: 17 },
 
   // submitted
   // P-168 ②: 완료 모달 (P-162 confirm 문법과 동일 수치)

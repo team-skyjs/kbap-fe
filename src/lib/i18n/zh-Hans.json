@@ -385,6 +385,7 @@
     "addPhoto": "添加照片",
     "removePhoto": "删除照片",
     "postError": "评价保存失败。请检查网络后重试。",
+    "foodHidden": "这道菜的信息正在更新。你写的内容都还在，请稍后再发布一次。",
     "likesCaption": "点赞不影响排序",
     "placeRow": "你在哪里吃的？",
     "placeSheetTitle": "标记地点",
@@ -551,7 +552,8 @@
     "readAll": "查看全部",
     "beFirstReview": "还没有评价 — 来写第一条吧！",
     "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
-    "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。"
+    "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。",
+    "foodHidden": "这道菜的信息正在更新，请稍后再来看看。"
   },
   "states": {
     "catalogTitle": "状态",

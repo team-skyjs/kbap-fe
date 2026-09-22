@@ -571,3 +571,62 @@ it('P-385 Codex P2: 화면을 열어둔 채 24시간 경계를 넘으면 배지�
     jest.useRealTimers();
   }
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * KB-620(9/22 예진) — 음식이 이미지 재생성으로 **일시 숨김**(`FOOD-001`, HTTP 400)이면
+ * 에러 블록 대신 조용한 안내. QueryErrorBlock을 쓰면 안 되는 이유 셋:
+ *   ① 재시도가 영원히 실패 → 버튼이 함정  ② 안전 판정 글리프(caution)가 붙음(헌법 III)
+ *   ③ error_state_view 계측 → 에러 지표(P-213) 오염
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('KB-620 음식 상세 — 숨김(FOOD-001)은 조용한 안내', () => {
+  const { ApiError } = jest.requireActual('@/lib/api/client') as typeof import('@/lib/api/client');
+  const withError = (error: unknown) =>
+    mockUseFoodDetail.mockReturnValue({ data: undefined, isLoading: false, error, refetch: jest.fn() });
+
+  it('FOOD-001 → 숨김 안내만, 에러 블록·재시도 없음', () => {
+    withError(new ApiError('해당 음식 정보를 찾을 수 없습니다', 400, 'FOOD-001'));
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'detail-food-hidden').length).toBeGreaterThan(0);
+    expect(byId(tree, 'query-error-block')).toHaveLength(0); // 재시도 함정 없음
+    expect(flat(tree)).toContain('detail.foodHidden');
+    expect(flat(tree)).not.toContain('common.retry');
+  });
+
+  it('FOOD-001이어도 뒤로가기는 남아 있다(플로팅 헤더는 항상 렌더)', () => {
+    withError(new ApiError('x', 400, 'FOOD-001'));
+    expect(byId(render(<FoodDetailScreen />), 'detail-back').length).toBeGreaterThan(0);
+  });
+
+  it('FOOD-001은 에러 계측을 내지 않는다(P-213 지표 오염 방지) — 양성 대조군 동반', () => {
+    const analytics = jest.requireActual('@/lib/analytics') as typeof import('@/lib/analytics');
+    const spy = jest.spyOn(analytics, 'track');
+    const errorEvents = () => spy.mock.calls.filter(([name]) => name === analytics.EVENTS.error_state_view).length;
+
+    // ⚠️ 양성 대조군 먼저: 일반 에러는 계측이 **나와야** 한다. 이게 0이면 spy가 호출을 못
+    // 가로채는 것이고, 아래 "0건"은 아무것도 증명하지 않는다(측정 장치 고장 = 항상 0).
+    withError(new ApiError('boom', 500, 'COMMON-001'));
+    render(<FoodDetailScreen />);
+    expect(errorEvents()).toBeGreaterThan(0);
+
+    spy.mockClear();
+    withError(new ApiError('x', 400, 'FOOD-001'));
+    render(<FoodDetailScreen />);
+    expect(errorEvents()).toBe(0);
+    spy.mockRestore();
+  });
+
+  it('다른 에러는 기존 에러 블록 그대로(재시도 유지)', () => {
+    withError(new ApiError('boom', 500, 'COMMON-001'));
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'query-error-block').length).toBeGreaterThan(0);
+    expect(byId(tree, 'detail-food-hidden')).toHaveLength(0);
+  });
+
+  it('코드가 아니라 **문구에 FOOD-001이 든 일반 Error**는 숨김으로 취급하지 않는다', () => {
+    // 판별은 ApiError.code 한 곳 — 메시지 문자열 매칭으로 새지 않게(BE 문구는 바뀐다)
+    withError(new Error('FOOD-001'));
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'detail-food-hidden')).toHaveLength(0);
+    expect(byId(tree, 'query-error-block').length).toBeGreaterThan(0);
+  });
+});

@@ -385,6 +385,7 @@
     "addPhoto": "Thêm ảnh",
     "removePhoto": "Xóa ảnh",
     "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại.",
+    "foodHidden": "Món này đang được cập nhật. Nội dung bạn viết vẫn còn nguyên — vui lòng đăng lại sau ít phút.",
     "likesCaption": "Lượt thích không ảnh hưởng thứ tự",
     "placeRow": "Bạn đã ăn ở đâu?",
     "placeSheetTitle": "Gắn thẻ địa điểm",
@@ -551,7 +552,8 @@
     "readAll": "Xem tất cả",
     "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!",
     "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
-    "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn."
+    "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
+    "foodHidden": "Món này đang được cập nhật. Vui lòng quay lại sau ít phút."
   },
   "states": {
     "catalogTitle": "Trạng thái",
