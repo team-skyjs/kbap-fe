@@ -43,6 +43,7 @@
       "predictiveBackGestureEnabled": false,
       "_permissionsComment": "KB-592: RECORD_AUDIO 제거 — 오디오 녹음 코드가 0인데 선언만 남아 Play 스토어에 '오디오 녹음'으로 노출됐다(미사용 권한 선언 = 정책 리스크). expo-camera의 recordAudioAndroid: false로 플러그인 경로를 막고, 그래도 라이브러리 AndroidManifest가 직접 선언하므로(prebuild 실측) blockedPermissions로 병합 단계에서 제거한다.",
       "permissions": ["android.permission.CAMERA"],
+      "_adIdComment": "KB-600(P-397 6): 광고 ID 허용 — 9/22 예진 결정. facebook-core AAR이 스스로 선언하는 광고 권한(AD_ID·ACCESS_ADSERVICES_AD_ID/ATTRIBUTION/CUSTOM_AUDIENCE/TOPICS)을 **차단하지 않는다**(9/21 초안의 차단은 되돌림). advertiserIDCollectionEnabled:true와 한 쌍 — 선언만 두고 수집을 끄면 의미가 없다. ⚠️ Play Console 데이터 보안에 '광고 ID 수집' 신고가 필요하다(이미 출시된 목록의 신고 변경). 병합은 Gradle 단계라 expo prebuild 출력엔 안 보인다 — 빌드 로그/APK 매니페스트로 확인.",
       "blockedPermissions": [
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.RECORD_AUDIO"
@@ -179,6 +180,19 @@
           "savePhotosPermission": "Save your K-Bap story card to your photo library.",
           "granularPermissions": ["photo"],
           "_comment": "P-380(KB-518): 저장 전용 — 기본값은 READ_MEDIA_IMAGES/VIDEO/AUDIO 3종을 다 선언한다(실측). 우리는 이미지 저장만 하므로 photo로 좁힌다. photosPermission은 넘기지 않는다 — expo-image-picker가 이미 세운 NSPhotoLibraryUsageDescription을 보존(undefined면 기존 값 유지). KB-592: 시스템 문구도 로케일화했다(app.json locales → InfoPlist.strings 10로케일) — 여기 영어 값은 폴백"
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "2530115400831168",
+          "displayName": "K-Bap",
+          "scheme": "fb2530115400831168",
+          "clientToken": "871dfc2051ca5e11ebf616e5567208cc",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "_comment": "KB-600(P-397): 설치 어트리뷰션 목적. iosUserTrackingPermission은 **의도적으로 생략** — ATT 프롬프트 없이 간다(9/21 예진 D2). iOS는 ATT가 없으니 IDFA가 0이라 advertiserIDCollectionEnabled:true여도 iOS 라벨 영향 없음(JS setAdvertiserTrackingEnabled(false) 유지). Android는 광고 ID 수집 허용(9/22 예진 — android._adIdComment). clientToken은 공개값(App Secret 아님). 네이티브 — 다음 빌드 반영"
         }
       ],
       [
