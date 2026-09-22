@@ -81,3 +81,33 @@ export async function prefetchBootData(): Promise<void> {
     /* 프리페치는 best-effort — 실패해도 부트 진행 */
   }
 }
+
+/* ---- 스플래시 종료 신호 (KB-631, Codex P1) ---- */
+
+let splashDone: Promise<void> | null = null;
+let resolveSplashDone: (() => void) | null = null;
+function splashDeferred(): Promise<void> {
+  if (!splashDone) splashDone = new Promise<void>((r) => { resolveSplashDone = r; });
+  return splashDone;
+}
+
+/** 루트 레이아웃 AnimatedSplash onDone에서 1회 호출 — 오버레이가 실제로 걷힌 시점. */
+export function markSplashDone(): void {
+  splashDeferred();
+  resolveSplashDone?.();
+}
+
+/**
+ * 스플래시 오버레이가 걷힌 뒤 resolve. 로그인 화면의 OS 알림 팝업처럼 "화면이 실제로 보인 뒤"가 조건인
+ * 동작이 기다린다 — entryChecked 시점엔 로그인 라우트가 마운트돼도 AnimatedSplash(최소 3초)가 아직 위에 있다.
+ * 오버레이가 아예 안 뜨는 환경(웹 등) 대비 캡+1초 폴백.
+ */
+export function whenSplashDone(delay: (ms: number) => Promise<void> = sleep): Promise<void> {
+  return Promise.race([splashDeferred(), delay(SPLASH_CAP_MS + 1000)]);
+}
+
+/** 유닛용 — 프로미스 리셋. */
+export function _resetSplashDoneForTest(): void {
+  splashDone = null;
+  resolveSplashDone = null;
+}

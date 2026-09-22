@@ -28,10 +28,11 @@
 - **Spec 반영**: FR-010으로 spec.md에 추가(이 플랜에서 발견). US2 AS1의 "푸시를 받을 수 있는 상태"에 활동 알림 켜짐이 포함된다.
 - **Alternatives**: ① BE가 토큰 등록 시 activity 기본 true — BE 변경, 범위 밖. ② 신규 회원(newMember)만 PATCH — 재설치한 기존 회원(9/22 실측의 실제 케이스)이 빠진다. 기각.
 
-## R-5. 팝업과 스플래시 페이드 겹침 — 수용
+## R-5. 팝업과 스플래시 오버레이 — 오버레이가 걷힌 뒤 요청 (Codex P1 반영, 2026-09-22 수정)
 
-- **Decision**: 추가 지연 없음. `entry=intro` replace는 `entryChecked` 뒤이고 AnimatedSplash는 그 시점부터 페이드아웃만 남는다. OS 팝업은 네이티브 알럿이라 RN 오버레이 위에 뜬다.
-- **Rationale**: 스펙 Edge의 금지 조건은 "게이트(세션 복구·잔존 정리) 전"이며 이는 만족. 실기 D-1에서 시각 확인, 거슬리면 `InteractionManager.runAfterInteractions` 1줄로 후속.
+- **처음 판단(틀림)**: "entryChecked 뒤면 페이드아웃만 남아 겹쳐도 무해". 실제로는 AnimatedSplash가 `fadeOutAt: 3000` 최소 노출과 `ready`의 AND로 페이드하므로, 빠른 첫 부팅에서는 로그인 라우트 마운트 후 최대 ~3초간 오버레이가 위에 있고 OS 팝업이 스플래시 애니메이션 위에 뜬다 — FR-001 "로그인 화면이 실제로 렌더된 뒤" 위반.
+- **Decision**: `bootGate.ts`에 스플래시 종료 프로미스(`markSplashDone`/`whenSplashDone`)를 두고, 루트 레이아웃의 `onSplashDone`에서 resolve, 로그인 화면은 `whenSplashDone().then(promptPermissionOnFirstLogin)`. 오버레이가 없는 환경 대비 `SPLASH_CAP_MS + 1000` 폴백 race.
+- **Alternatives**: `InteractionManager.runAfterInteractions` — 오버레이 종료와 무관한 신호라 기각. 로그인 화면이 `splashVisible`을 prop/컨텍스트로 받기 — 라우트 파라미터·컨텍스트 추가로 diff가 커진다. 기각.
 
 ## R-6. 테스트 전략
 

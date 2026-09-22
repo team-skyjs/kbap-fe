@@ -23,7 +23,7 @@ import { I18nextProvider } from 'react-i18next';
 import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
 import { invalidateNotifications, onPushTapped } from '@/lib/data/useNotifications';
-import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
+import { gateSplash, markSplashDone, prefetchAfterCleanup } from '@/lib/bootGate';
 import { initSessionFromStorage, installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
 import { FLAGS } from '@/lib/flags';
@@ -136,7 +136,7 @@ export default function RootLayout() {
   // 즉시 시작, 부트 완료는 ready(entryChecked)로 전달해 페이드아웃만 잡는다.
   const [splashVisible, setSplashVisible] = useState(true);
   // P-296(Codex #52 P1): 인라인 onDone은 리렌더마다 새 정체성 — 안정 콜백으로
-  const onSplashDone = useCallback(() => setSplashVisible(false), []);
+  const onSplashDone = useCallback(() => { setSplashVisible(false); markSplashDone(); }, []); // KB-631: 로그인 화면 OS 팝업 게이트
   // KB-602: **파생값** — 전에는 effect에서 setState했는데 렌더가 한 번 더 돌았고
   // (react-hooks/set-state-in-effect), 그 한 프레임 동안 스플래시가 active=false로
   // 그려져 애니메이션 시작이 밀렸다. 아래 early return(`!fontsLoaded && !fontError`)

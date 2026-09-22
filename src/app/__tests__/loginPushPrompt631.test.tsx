@@ -41,39 +41,45 @@ jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }), { virtual: true });
 jest.mock('@/lib/useAppFonts', () => ({ useAppFonts: () => [true, null] }));
 const mockPush = { prompt: jest.fn().mockResolvedValue(undefined) };
+const mockSplash = { resolve: () => {}, promise: Promise.resolve() };
+const armSplash = () => { mockSplash.promise = new Promise<void>((r) => { mockSplash.resolve = r; }); };
+jest.mock('@/lib/bootGate', () => ({ whenSplashDone: () => mockSplash.promise }));
 jest.mock('@/lib/push/pushAdapter', () => ({ get promptPermissionOnFirstLogin() { return mockPush.prompt; } }));
 
-async function mount(params: Record<string, string>) {
+async function mount(params: Record<string, string>, splashDone = false) {
   mockParams.value = params;
   let tree: renderer.ReactTestRenderer | undefined;
   await act(async () => { tree = renderer.create(<Login />); });
+  if (splashDone) await act(async () => { mockSplash.resolve(); await mockSplash.promise; });
   await act(async () => {});
   return tree!;
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => { jest.clearAllMocks(); armSplash(); });
 
-it('첫 설치 첫 표시(entry=intro, returnTo 없음) = 헬퍼 1회 — 마운트(렌더 커밋) 뒤', async () => {
+it('첫 설치 첫 표시(entry=intro, returnTo 없음) = 스플래시 종료 전 0회 → 종료 후 1회 (Codex P1: 오버레이 위 팝업 금지)', async () => {
   const tree = await mount({ entry: 'intro' });
+  expect(mockPush.prompt).not.toHaveBeenCalled(); // 스플래시 오버레이(최소 3초) 아직 떠 있음
+  await act(async () => { mockSplash.resolve(); await mockSplash.promise; });
   expect(mockPush.prompt).toHaveBeenCalledTimes(1);
   expect(tree.root.findByProps({ testID: 'browse-first' })).toBeTruthy(); // 로그인 화면 기존 요소 유지
   tree.unmount();
 });
 
 it('게이트 복귀(returnTo) = 0회 (FR-006)', async () => {
-  const tree = await mount({ entry: 'intro', returnTo: '/(tabs)/profile' });
+  const tree = await mount({ entry: 'intro', returnTo: '/(tabs)/profile' }, true);
   expect(mockPush.prompt).not.toHaveBeenCalled();
   tree.unmount();
 });
 
 it('파라미터 없음(세션 만료·게스트 CTA 등) = 0회', async () => {
-  const tree = await mount({});
+  const tree = await mount({}, true);
   expect(mockPush.prompt).not.toHaveBeenCalled();
   tree.unmount();
 });
 
 it('entry=gate_* 등 intro 외 = 0회', async () => {
-  const tree = await mount({ entry: 'gate_review' });
+  const tree = await mount({ entry: 'gate_review' }, true);
   expect(mockPush.prompt).not.toHaveBeenCalled();
   tree.unmount();
 });

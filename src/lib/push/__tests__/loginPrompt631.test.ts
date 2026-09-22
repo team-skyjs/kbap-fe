@@ -167,7 +167,10 @@ describe('소스 잠금 (contracts §2)', () => {
   it('login.tsx: entry=intro && returnTo 없음 → promptPermissionOnFirstLogin', () => {
     const src = read('src/app/login.tsx');
     expect(src).toContain("entry === 'intro' && returnTo == null");
-    expect(src).toContain('promptPermissionOnFirstLogin()');
+    expect(src).toContain('whenSplashDone().then(() => promptPermissionOnFirstLogin())'); // Codex P1: 스플래시 오버레이 뒤
+  });
+  it('_layout.tsx: AnimatedSplash onDone → markSplashDone (로그인 팝업 게이트의 유일한 resolve 지점)', () => {
+    expect(read('src/app/_layout.tsx')).toContain('setSplashVisible(false); markSplashDone();');
   });
   it('useSocialAuth.ts: 세션 교환 성공 직후 registerPushToken 옆 applyPendingActivityDefault', () => {
     const src = read('src/lib/auth/useSocialAuth.ts');
