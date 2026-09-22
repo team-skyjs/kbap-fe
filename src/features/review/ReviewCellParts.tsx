@@ -21,6 +21,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { showTopToast } from '@/components/topToastStore';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
+import { useTranslation } from 'react-i18next';
 import { KeyboardDismissBar } from '@/components/KeyboardDismissBar';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { Input } from '@/components/KeyboardDismissBar';
@@ -134,8 +135,12 @@ export function PlacePickerSheet({
   const [q, setQ] = React.useState('');
   const term = q.trim();
   const bottomInset = useBottomInset(); // Codex #31: 푸터 하단 인셋
-  const nearby = useQuery({ queryKey: ['places', 'nearby'], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
-  const search = useQuery({ queryKey: ['places', 'search', term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
+  // Codex #195: 결과의 name/address는 요청 언어로 온다 — 키에 lang을 넣어 UI 언어를 바꾼 뒤 옛 언어 결과를 재사용하지 않는다
+  // (주문 장소 PATCH의 language=apiLang()이 결과를 받은 언어와 항상 같아진다). 키는 UI 언어면 충분 —
+  // api client를 여기서 import하면 secure-store 네이티브 체인이 딸려와 가벼운 테스트가 깨진다.
+  const lang = useTranslation().i18n?.language ?? 'en';
+  const nearby = useQuery({ queryKey: ['places', 'nearby', lang], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
+  const search = useQuery({ queryKey: ['places', 'search', lang, term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
   const active = term ? search : nearby;
   // Codex #195: resultsOnly(주문 장소 PATCH — placeId 필수)는 placeId 없는 결과를 **렌더하지 않는다**(골라도 보낼 수 없는 행 금지)
   const results = (active.data ?? []).filter((p) => !resultsOnly || !!p.placeId);

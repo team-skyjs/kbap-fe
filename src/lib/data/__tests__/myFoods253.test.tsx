@@ -52,7 +52,7 @@ jest.mock('expo-router', () => ({
   usePathname: () => '/profile/my-foods',
 }));
 jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k), i18n: { language: 'en' } }),
+  useTranslation: () => ({ t: (k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k), i18n: { language: mockLang.v } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
@@ -61,6 +61,7 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockGet = jest.fn();
+const mockLang = { v: 'en' };
 const mockPatch = jest.fn();
 const mockPut = jest.fn();
 const mockDel = jest.fn();
@@ -73,7 +74,7 @@ jest.mock('@/lib/api/client', () => {
   }
   return {
     ApiError,
-    apiLang: () => 'en',
+    apiLang: () => mockLang.v,
     api: { get: (p: string) => mockGet(p), patch: (...a: unknown[]) => mockPatch(...a), put: (...a: unknown[]) => mockPut(...a), del: (...a: unknown[]) => mockDel(...a) },
   };
 });
@@ -636,6 +637,32 @@ describe('KB-638 주문 편집', () => {
     expect(byTid(t0, 'place-no-results')).toHaveLength(0); // 대조: 기본은 MANUAL 행이 그 자리
     expect(byTid(t0, 'place-manual').length).toBeGreaterThan(0);
     mockSearchPlaces.mockImplementation(async () => []);
+  });
+
+  it('장소 쿼리 키에 언어 포함 — UI 언어를 바꾸면 옛 언어 결과(캐시)를 재사용하지 않는다(Codex #195)', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+    const render = () => {
+      let tree!: ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(
+          <QueryClientProvider client={qc}>
+            <PlacePickerSheet open resultsOnly onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+          </QueryClientProvider>,
+        );
+      });
+      trees.push(tree);
+      act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText('x'); });
+      return tree;
+    };
+    const keys = () => qc.getQueryCache().getAll().map((q) => JSON.stringify(q.queryKey));
+    mockLang.v = 'en';
+    render(); await flush();
+    expect(keys()).toEqual(expect.arrayContaining([JSON.stringify(['places', 'nearby', 'en']), JSON.stringify(['places', 'search', 'en', 'x'])]));
+    mockLang.v = 'ja';
+    render(); await flush();
+    expect(keys()).toEqual(expect.arrayContaining([JSON.stringify(['places', 'nearby', 'ja']), JSON.stringify(['places', 'search', 'ja', 'x'])]));
+    expect(keys()).not.toContain(JSON.stringify(['places', 'search', 'x'])); // 언어 없는 키(옛 형태) 0
+    mockLang.v = 'en';
   });
 
   it('PlacePickerSheet resultsOnly — 검색어가 있어도 MANUAL 행 없음(리뷰 쪽 기본값은 있음)', async () => {
