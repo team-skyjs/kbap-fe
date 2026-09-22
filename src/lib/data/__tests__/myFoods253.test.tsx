@@ -91,7 +91,8 @@ jest.mock('expo-image-picker', () => ({
 const mockUpload = jest.fn();
 jest.mock('@/lib/api/scanImage', () => ({ uploadImage: (...a: unknown[]) => mockUpload(...a) }));
 // 장소 검색 시트의 nearby/search — 실물은 expo-location 좌표를 기다린다(미목 시 행 멈춤). 결과는 비움(선택은 onPick 직접 호출).
-jest.mock('@/lib/api/places', () => ({ fetchNearbyPlaces: async () => [], fetchSearchPlaces: async () => [] }));
+const mockSearchPlaces = jest.fn(async () => [] as unknown[]);
+jest.mock('@/lib/api/places', () => ({ fetchNearbyPlaces: async () => [], fetchSearchPlaces: (...a: unknown[]) => mockSearchPlaces(...a) }));
 // 토스트는 상태만 — 호스트 애니메이션(reanimated)은 이 파일의 목 범위 밖
 jest.mock('@/components/topToastStore', () => ({ showTopToast: jest.fn(), dismissTopToast: jest.fn(), subscribeTopToast: () => () => {} }));
 // KB-636(#193 P2): 저장 진행 중 닫힘 방지 검증용 — 저장 결과를 테스트가 쥐고 있다가 풀어 준다
@@ -590,6 +591,51 @@ describe('KB-638 주문 편집', () => {
     expect(mockPatch).toHaveBeenCalledWith('/api/orders/123/place', { placeId: 'g2', name: 'New Place', address: 'Busan', language: 'en' });
     expect(byTid(tree, 'order-place-empty')).toHaveLength(0);
     expect(tree.root.findAll((n) => n.props?.children === 'New Place' && n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
+  });
+
+  it('장소 교체 후 영수증 LOCATION = 편집한 장소 주소(자동 추정 roadAddress는 폴백) — 헤더·카드와 같은 장소', async () => {
+    mockPatch.mockResolvedValueOnce({ ...EDIT_ORDER, roadAddress: '서울 중구 소공로 51', place: { placeId: 'g2', name: 'New Place', address: 'Busan, Haeundae', language: 'en' } });
+    const tree = await renderOrder({ ...EDIT_ORDER, roadAddress: '서울 중구 소공로 51' });
+    expect(byTid(tree, 'order-receipt-location')[0].props.children).toBe('서울 중구 소공로 51'); // 편집 전 = 자동 추정
+    act(() => { void (byTid(tree, 'order-place-edit')[0].props.onPress()); });
+    await flush();
+    const sheet = tree.root.findAll((n) => n.props?.resultsOnly === true)[0];
+    act(() => { void (sheet.props.onPick({ name: 'New Place', roadAddress: 'Busan, Haeundae', placeId: 'g2' })); });
+    await flush();
+    expect(byTid(tree, 'order-receipt-location')[0].props.children).toBe('Busan, Haeundae');
+  });
+
+  it('PlacePickerSheet resultsOnly — placeId 없는 결과는 렌더 0(기본값은 렌더) · 빈 결과 = 문구(기본값은 MANUAL 행)', async () => {
+    mockSearchPlaces.mockImplementation(async () => [
+      { name: 'NoId', address: null, latitude: 1, longitude: 2, placeId: null },
+      { name: 'WithId', address: 'Seoul', latitude: 1, longitude: 2, placeId: 'g9' },
+    ]);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const render = (resultsOnly: boolean, term: string) => {
+      let tree!: ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(
+          <QueryClientProvider client={qc}>
+            <PlacePickerSheet open resultsOnly={resultsOnly} onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+          </QueryClientProvider>,
+        );
+      });
+      trees.push(tree);
+      act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText(term); });
+      return tree;
+    };
+    let t1 = render(true, 'x'); await flush(); await flush();
+    expect(byTid(t1, 'place-pick-WithId').length).toBeGreaterThan(0);
+    expect(byTid(t1, 'place-pick-NoId')).toHaveLength(0);
+    let t0 = render(false, 'x'); await flush(); await flush();
+    expect(byTid(t0, 'place-pick-NoId').length).toBeGreaterThan(0); // 대조: 리뷰 기본 — 그대로
+    mockSearchPlaces.mockImplementation(async () => []);
+    t1 = render(true, 'zzz'); await flush(); await flush();
+    expect(byTid(t1, 'place-no-results').length).toBeGreaterThan(0);
+    t0 = render(false, 'zzz'); await flush(); await flush();
+    expect(byTid(t0, 'place-no-results')).toHaveLength(0); // 대조: 기본은 MANUAL 행이 그 자리
+    expect(byTid(t0, 'place-manual').length).toBeGreaterThan(0);
+    mockSearchPlaces.mockImplementation(async () => []);
   });
 
   it('PlacePickerSheet resultsOnly — 검색어가 있어도 MANUAL 행 없음(리뷰 쪽 기본값은 있음)', async () => {

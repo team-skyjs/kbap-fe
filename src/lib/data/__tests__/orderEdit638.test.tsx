@@ -32,7 +32,7 @@ const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 
 import { ApiError } from '@/lib/api/client';
-import { adaptOrderDetail, orderItemImage, type OrderDetail } from '../useOrders';
+import { adaptOrderDetail, orderItemImage, orderLocationLabel, type OrderDetail } from '../useOrders';
 import { orderEditErrorKey, useResetOrderItemImage, useSetOrderItemImage, useUpdateOrderPlace, ORDER_ITEM_IMAGE_PURPOSE } from '../useOrderEdit';
 import { sharePhotos } from '@/features/order/shareCard';
 
@@ -79,6 +79,16 @@ describe('② orderItemImage — 회원 사진 > 카탈로그', () => {
     const share = fs.readFileSync('src/features/order/shareCard.ts', 'utf8') as string;
     expect(share).toContain('.map((it) => orderItemImage(it) as string)');
   });
+});
+
+it('② orderLocationLabel — 편집 주소 우선 · 없으면 roadAddress · 둘 다 없음(빈 문자열 포함) = null · 영수증이 이 헬퍼를 탄다', () => {
+  expect(orderLocationLabel({ placeAddress: 'Busan', roadAddress: '서울' })).toBe('Busan');
+  expect(orderLocationLabel({ placeAddress: null, roadAddress: '서울' })).toBe('서울');
+  expect(orderLocationLabel({ placeAddress: ' ', roadAddress: null })).toBeNull();
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const detail = require('fs').readFileSync('src/app/profile/order/[id].tsx', 'utf8') as string;
+  expect(detail).toContain('{orderLocationLabel(q.data)}');
+  expect(detail).not.toContain('{q.data.roadAddress}');
 });
 
 /* ---- ③ 뮤테이션 ---- */

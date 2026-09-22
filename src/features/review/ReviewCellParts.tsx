@@ -137,7 +137,8 @@ export function PlacePickerSheet({
   const nearby = useQuery({ queryKey: ['places', 'nearby'], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
   const search = useQuery({ queryKey: ['places', 'search', term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
   const active = term ? search : nearby;
-  const results = active.data ?? [];
+  // Codex #195: resultsOnly(주문 장소 PATCH — placeId 필수)는 placeId 없는 결과를 **렌더하지 않는다**(골라도 보낼 수 없는 행 금지)
+  const results = (active.data ?? []).filter((p) => !resultsOnly || !!p.placeId);
   // 프리즈 픽스: 닫힘·확정 전부 키보드 선해제 경유(위 runAfterKeyboardHidden 참조)
   const close = () => runAfterKeyboardHidden(onClose);
   const pick = (p: ReviewPlaceTag) => runAfterKeyboardHidden(() => onPick(p));
@@ -176,8 +177,9 @@ export function PlacePickerSheet({
               <View style={{ paddingVertical: 18, alignItems: 'center' }}>
                 <ActivityIndicator color={C.ink3} />
               </View>
-            ) : results.length === 0 && !term ? (
-              <Text style={styles.noResults}>{t('review.placeNoResults')}</Text>
+            ) : results.length === 0 && (!term || resultsOnly) ? (
+              /* Codex #195: resultsOnly는 MANUAL 행이 없으니 검색어가 있어도 빈 결과 문구를 보인다(빈 화면 금지) */
+              <Text style={styles.noResults} testID="place-no-results">{t('review.placeNoResults')}</Text>
             ) : (
               results.map((p) => (
                 <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>

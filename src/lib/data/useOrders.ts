@@ -137,6 +137,12 @@ export function adaptOrderDetail(w: OrderDetailWire): OrderDetail {
   };
 }
 
+/** KB-638(Codex #195): 영수증 LOCATION 행 — 편집한 장소 주소(place.address) 우선, 자동 추정 roadAddress는 폴백.
+ *  orderPlaceLabel(식당명 → 주소)과 같은 족보의 단일 규칙 — 헤더·카드·영수증이 같은 장소를 보인다. */
+export function orderLocationLabel(order: { placeAddress?: string | null; roadAddress?: string | null }): string | null {
+  return order.placeAddress?.trim() || order.roadAddress?.trim() || null;
+}
+
 export function useOrders(enabled = true) {
   return useInfiniteQuery({
     queryKey: ['orders'],

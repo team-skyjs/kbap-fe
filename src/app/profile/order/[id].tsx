@@ -29,7 +29,7 @@ import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { orderItemImage, orderPlaceLabel, useOrderDetail, type OrderItem } from '@/lib/data/useOrders';
+import { orderItemImage, orderLocationLabel, orderPlaceLabel, useOrderDetail, type OrderItem } from '@/lib/data/useOrders';
 import { useResetOrderItemImage, useSetOrderItemImage, useUpdateOrderPlace } from '@/lib/data/useOrderEdit';
 import { choosePhotoSource } from '@/lib/data/profileImage';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
@@ -226,10 +226,11 @@ export default function OrderDetailScreen() {
               <Text style={styles.rcptLbl}>{t('myFoods.receiptDate')}</Text>
               <Text style={styles.rcptVal}>{formatOrderDate(q.data.orderedAt)}</Text>
             </View>
-            {!!q.data.roadAddress && (
+            {/* Codex #195: 장소를 편집하면 place.address가 정본 — 자동 추정 roadAddress는 폴백(orderLocationLabel 한 규칙, 헤더·카드와 같은 장소) */}
+            {!!orderLocationLabel(q.data) && (
               <View style={styles.rcptRow}>
                 <Text style={styles.rcptLbl}>{t('myFoods.receiptLocation')}</Text>
-                <Text style={[styles.rcptVal, styles.rcptValWrap]} numberOfLines={2}>{q.data.roadAddress}</Text>
+                <Text style={[styles.rcptVal, styles.rcptValWrap]} numberOfLines={2} testID="order-receipt-location">{orderLocationLabel(q.data)}</Text>
               </View>
             )}
             {q.data.totalPrice != null && q.data.totalPrice > 0 && (
