@@ -42,6 +42,12 @@
         "distribution": "internal"
       }
     },
+    "teamtest-prod": {
+      "extends": "teamtest",
+      "env": {
+        "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site"
+      }
+    },
     "production-apk": {
       "extends": "production",
       "distribution": "internal",
