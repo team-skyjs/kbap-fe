@@ -615,6 +615,40 @@ describe('KB-620 음식 상세 — 숨김(FOOD-001)은 조용한 안내', () => 
     spy.mockRestore();
   });
 
+  /* Codex #184 P1 2R — **캐시가 옛 판정을 살려 둔다.** TanStack Query는 재조회가 실패해도 이전
+     `data`를 유지한다. 숨겨지기 전에 한 번 열어 본 음식이면, 서버가 거둬들인 뒤에도 옛 판정(SAFE)과
+     액션 바가 계속 보인다 — false-safe(헌법 III). 스냅샷이 아니라 **판정 노드 자체**를 단언한다. */
+  it('캐시된 SAFE 상세 + FOOD-001 → 옛 판정·액션 바가 사라지고 숨김 안내만 (양성 대조군 동반)', () => {
+    // ⚠️ 양성 대조군 먼저: 에러가 없으면 같은 데이터에서 판정·액션 바가 **보여야** 한다.
+    // 이게 0이면 아래 "0"은 쿼리가 고장 난 것일 뿐 아무것도 증명하지 않는다.
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe'), isLoading: false, error: null, refetch: jest.fn() });
+    const live = render(<FoodDetailScreen />);
+    expect(byId(live, 'detail-verdict').length).toBeGreaterThan(0);
+    expect(byId(live, 'detail-bottom-bar').length).toBeGreaterThan(0);
+    expect(flat(live)).toContain('Kimchi Jjigae');
+
+    // 재조회가 FOOD-001로 실패 — 캐시(data)는 그대로 남아 있는 상태
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe'), isLoading: false, error: new ApiError('x', 400, 'FOOD-001'), refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'detail-verdict')).toHaveLength(0); // 옛 판정 없음
+    expect(tree.root.findAll((n) => n.props?.state === 'safe')).toHaveLength(0); // SAFE 표식 어디에도 없음
+    expect(byId(tree, 'detail-bottom-bar')).toHaveLength(0); // 액션 바 없음(쓸 수 없는 음식에 리뷰·문의 금지)
+    expect(flat(tree)).not.toContain('Kimchi Jjigae'); // 옛 이름(헤더 제목 포함)도 없음
+    expect(byId(tree, 'detail-food-hidden').length).toBeGreaterThan(0);
+    expect(byId(tree, 'detail-back').length).toBeGreaterThan(0); // 나갈 길은 남는다
+  });
+
+  it('캐시가 있어도 FOOD-001이 **아닌** 에러면 캐시를 그대로 보여 준다(과잉 차단 금지)', () => {
+    mockUseFoodDetail.mockReturnValue({
+      data: FOOD('safe'), isLoading: false, error: new ApiError('boom', 500, 'COMMON-001'), refetch: jest.fn(),
+    });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'detail-verdict').length).toBeGreaterThan(0); // 일시 네트워크 오류로 화면을 비우지 않는다
+    expect(byId(tree, 'detail-food-hidden')).toHaveLength(0);
+  });
+
   it('다른 에러는 기존 에러 블록 그대로(재시도 유지)', () => {
     withError(new ApiError('boom', 500, 'COMMON-001'));
     const tree = render(<FoodDetailScreen />);

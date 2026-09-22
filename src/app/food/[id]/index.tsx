@@ -93,7 +93,13 @@ export default function FoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
-  const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
+  const { data: fetched, isLoading, error, refetch } = useFoodDetail(id ?? '');
+  // KB-620(Codex #184 P1 2R): FOOD-001은 **캐시보다 우선**한다. TanStack Query는 재조회가 실패해도
+  // 이전에 받은 `data`를 그대로 유지하므로, 숨겨지기 전에 한 번 열어 본 음식이면 서버가 거둬들인
+  // 뒤에도 **옛 판정(SAFE일 수 있음)과 액션 바**가 계속 보인다 — false-safe(헌법 III). 수정 전엔
+  // 400 폴백이 캐시를 보수적 `unable`로 덮어써 그 조건을 지키고 있었다. 여기서 `food`를 비우면
+  // 판정 본문·액션 바·헤더 제목이 전부 따라 사라지고, 숨김 안내 분기(`error && !food`)가 선다.
+  const food = isFoodHidden(error) ? undefined : fetched;
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
 
