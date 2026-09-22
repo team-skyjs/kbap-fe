@@ -44,6 +44,7 @@
     },
     "teamtest-prod": {
       "extends": "teamtest",
+      "channel": "teamtest-prod",
       "env": {
         "EXPO_PUBLIC_BE_BASE": "https://prod.kbap.site"
       }

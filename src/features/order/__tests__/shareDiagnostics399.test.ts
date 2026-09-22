@@ -120,9 +120,10 @@ it('실패 이력이 없으면 힌트도 없다', () => {
 
 // `!isProdChannel()`로 negate하면 preview(production 백엔드를 쓰는 내부 배포)까지 포함돼
 // 원시 네이티브 문구가 샌다. **부정이 아니라 명시 허용**이어야 한다.
-it('진단 채널은 명시 허용 — preview·production은 제외, teamtest·development·로컬만', () => {
+it('진단 채널은 명시 허용 — preview·production은 제외, teamtest(-prod)·development·로컬만', () => {
   const flags = require('fs').readFileSync('src/lib/flags.ts', 'utf8') as string;
-  expect(flags).toContain("ch === 'teamtest' || ch === 'development'");
+  // P-407: teamtest-prod(prod 백엔드 리허설 테플)도 내부 테스터 전용 — 동작 해석표는 channelResolution407
+  expect(flags).toContain("ch === 'teamtest' || ch === 'teamtest-prod' || ch === 'development'");
   expect(flags).toContain('export function isDiagnosticChannel()');
   const sentry = require('fs').readFileSync('src/lib/sentry.ts', 'utf8') as string;
   // shareFailureSummary 본문만 본다 — tapSentrySelfcheck(P-114)의 isProdChannel은 별건이다
