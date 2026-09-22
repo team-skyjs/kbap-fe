@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import { track } from '@/lib/net/inflight';
+import { EVENTS, track as trackEvent } from '@/lib/analytics';
 import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
@@ -87,6 +88,7 @@ export async function requestPermission(): Promise<boolean> {
   if (!N) return false;
   try {
     const { status } = await N.requestPermissionsAsync();
+    trackEvent(EVENTS.push_permission, { state: status === 'granted' ? 'grant' : 'deny' }); // KB-630: 호출처 무관 1곳 — 예외(팝업 미표시)는 결과 아님
     return status === 'granted';
   } catch {
     return false;

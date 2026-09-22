@@ -29,6 +29,7 @@ import { useBottomInset } from '@/lib/useBottomInset';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { openWebPage } from '@/lib/openExternal';
 import { consentUrl, type ConsentKind } from '@/lib/push/consent';
+import { EVENTS, track } from '@/lib/analytics';
 
 export interface ConsentChecks {
   privacy: boolean;
@@ -68,8 +69,11 @@ export function NotificationSheet({
   // 닫힘 요청(나중에·스크림·안드 백버튼) = 훅 dismiss 경유: 슬라이드 다운 후 onClose 1회. 이미 닫히는 중이면 무시 —
   // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
   // 내부 시작 퇴장은 open이 그대로 true라 pointerEvents 게이트가 못 본다 → closing 상태로 즉시 무반응(Codex #150 P1).
+  const needsConsent = variant === 'consent';
   const [closing, setClosing] = React.useState(false);
   const requestClose = () => {
+    if (closing) return; // 닫힘 진행 중 재입력 — 이벤트도 1회만(KB-630)
+    if (needsConsent && !swipe.isClosing()) track(EVENTS.push_consent_response, { action: 'later' }); // KB-630: primer는 PushPrimerModal이 담당 · 드래그 퇴장 중 탭 = 중복 아님
     setClosing(true);
     swipe.dismiss();
   };
@@ -80,6 +84,10 @@ export function NotificationSheet({
   const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
   const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
   const [notice, setNotice] = React.useState(false); // 하나만 체크된 채 확인 탭 → 안내
+  const toggle = (kind: ConsentKind) => {
+    track(EVENTS.push_consent_response, { action: checks[kind] ? 'uncheck' : 'check', target: kind }); // KB-630
+    setChecks((c) => ({ ...c, [kind]: !c[kind] }));
+  };
   React.useEffect(() => {
     if (open) {
       setChecks(PRECHECKED); // 열릴 때 초기화(Codex 리뷰 #150: 닫힘 직후 리셋하면 퇴장 중 리셋값으로 확인될 수 있다)
@@ -87,7 +95,6 @@ export function NotificationSheet({
     }
   }, [open]);
 
-  const needsConsent = variant === 'consent';
   const ready = !needsConsent || (checks.privacy && checks.receive);
   React.useEffect(() => {
     if (ready) setNotice(false); // 둘 다 체크되면 안내 소거
@@ -96,6 +103,7 @@ export function NotificationSheet({
   const confirm = () => {
     if (swipe.isClosing()) return; // 스와이프 퇴장 중 확인 탭 — "나중에/끌어 닫기"를 택한 뒤 동의가 켜지면 안 된다(Codex #150 P1)
     if (!ready) {
+      track(EVENTS.push_consent_response, { action: 'blocked' }); // KB-630
       setNotice(true); // 탭은 받되 진행 안 함 — 둘 다 동의해야 켤 수 있음을 알린다
       if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(t('push.consentBothRequired')); // Android는 liveRegion이 읽어줌(중복 방지)
       return;
@@ -125,14 +133,14 @@ export function NotificationSheet({
                 kind="privacy"
                 label={t('push.privacyConsent')}
                 checked={checks.privacy}
-                onToggle={() => setChecks((c) => ({ ...c, privacy: !c.privacy }))}
+                onToggle={() => toggle('privacy')}
               />
               <View style={styles.hair} />
               <ConsentRow
                 kind="receive"
                 label={t('push.receiveConsent')}
                 checked={checks.receive}
-                onToggle={() => setChecks((c) => ({ ...c, receive: !c.receive }))}
+                onToggle={() => toggle('receive')}
               />
             </View>
           )}
@@ -177,7 +185,7 @@ function ConsentRow({ kind, label, checked, onToggle }: { kind: ConsentKind; lab
         </View>
         <Text style={styles.rowLabel}>{label}</Text>
       </Pressable>
-      <Pressable onPress={() => void openWebPage(consentUrl(kind))} hitSlop={8} testID={`consent-${kind}-full`}>
+      <Pressable onPress={() => { track(EVENTS.push_consent_response, { action: 'full_text', target: kind }); void openWebPage(consentUrl(kind)); }} hitSlop={8} testID={`consent-${kind}-full`}>
         <Text style={styles.viewFull}>{t('notif.viewFull')}</Text>
       </Pressable>
     </View>

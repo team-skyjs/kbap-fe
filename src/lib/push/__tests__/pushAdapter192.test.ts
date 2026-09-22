@@ -27,6 +27,8 @@ const mockApi = { put: jest.fn().mockResolvedValue(undefined) };
 jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } })); // 지연 접근(호이스팅)
+const mockAnalytics = { track: jest.fn() };
+jest.mock('@/lib/analytics', () => ({ EVENTS: { push_permission: 'push_permission' }, get track() { return mockAnalytics.track; } })); // KB-630: 권한 결과 이벤트 목
 const mockInbox = { invalidateNotifications: jest.fn() };
 jest.mock('@/lib/data/useNotifications', () => ({ get invalidateNotifications() { return mockInbox.invalidateNotifications; } })); // KB-499: 재조회 트리거 목
 
@@ -40,6 +42,7 @@ import {
   getPrimerResult,
   markPrimerResult,
   registerPushToken,
+  requestPermission,
   REVIEW_REMINDER_SECONDS,
   routeForNotificationData,
   scheduleReviewReminder,
@@ -264,4 +267,16 @@ it('KB-499: 수신·알림센터 잔존분·탭 = 서버 알림함 재조회(inv
     delete N.addNotificationReceivedListener;
     delete N.getPresentedNotificationsAsync;
   }
+});
+
+it('KB-630: requestPermission = OS 팝업 결과를 push_permission { state: grant|deny }로 1회 — 호출처(프라이머·설정 배너) 무관 · 예외 = 이벤트 0', async () => {
+  mockNotifications.requestPermissionsAsync.mockResolvedValueOnce({ status: 'granted' });
+  await expect(requestPermission()).resolves.toBe(true);
+  expect(mockAnalytics.track).toHaveBeenCalledWith('push_permission', { state: 'grant' });
+  mockNotifications.requestPermissionsAsync.mockResolvedValueOnce({ status: 'denied' });
+  await expect(requestPermission()).resolves.toBe(false);
+  expect(mockAnalytics.track).toHaveBeenLastCalledWith('push_permission', { state: 'deny' });
+  mockNotifications.requestPermissionsAsync.mockRejectedValueOnce(new Error('x'));
+  await expect(requestPermission()).resolves.toBe(false);
+  expect(mockAnalytics.track).toHaveBeenCalledTimes(2); // 팝업이 안 뜬 실패는 결과가 아니다
 });

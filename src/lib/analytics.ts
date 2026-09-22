@@ -77,6 +77,10 @@ export const EVENTS = {
   review_translate_toggle: 'review_translate_toggle',
   push_primer_response: 'push_primer_response',
   push_pref_toggle: 'push_pref_toggle',
+  // KB-630: 알림 켜기 흐름 클릭 3종. CSV 등재 예정
+  push_permission: 'push_permission', // OS 팝업 결과·설정 열기
+  push_consent_response: 'push_consent_response', // 광고성 동의 시트 클릭
+  push_settings_tap: 'push_settings_tap', // 알림 설정 화면 보조 클릭(토글은 push_pref_toggle)
   profile_avoid_update: 'profile_avoid_update',
   community_post_submit: 'community_post_submit',
   community_comment_submit: 'community_comment_submit',
@@ -130,6 +134,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   review_translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
+  // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
+  push_permission: ['state'], // grant|deny|settings_open
+  push_consent_response: ['action', 'target'], // action: check|uncheck|full_text|blocked|later · target: privacy|receive(check·uncheck·full_text만)
+  push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],
