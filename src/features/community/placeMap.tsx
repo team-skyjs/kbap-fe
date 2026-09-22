@@ -5,12 +5,12 @@
  * P-201: 좌표 보유 장소 = 좌표 딥링크(이름은 라벨) · 좌표 없음(MANUAL) = 이름 검색 폴백.
  */
 import * as React from 'react';
-import { Linking, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
-import { color as C, shadow } from '@/lib/theme';
+import { color as C } from '@/lib/theme';
 import { BrandGoogle, BrandKakao, BrandNaver } from '@/components/design4Assets';
-import { useBottomInset } from '@/lib/useBottomInset';
+import { SheetShell } from '@/components/SheetShell'; // P-409: 로컬 셸 → 공용(렌더 무변)
 import type { PlaceTagRef } from '@/lib/community/types';
 
 export type MapApp = 'naver' | 'kakao' | 'google';
@@ -45,20 +45,6 @@ export async function openMap(kind: MapApp, place: MapPlace): Promise<void> {
   } catch {
     await Linking.openURL(web).catch(() => {});
   }
-}
-
-function SheetShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  const bottom = useBottomInset();
-  const pad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, pad]} onPress={() => {}}>
-          {children}
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
 }
 
 /** KB-431 §2-6(4150:16861): 브랜드 색 버튼 3종(세로 스택) — 로고 에셋 없음 = 텍스트만.
@@ -103,9 +89,6 @@ export function PlaceTagSheet({ place, onClose }: { place: MapPlace | null; onCl
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  // KB-431: 시트 흰 radius 16 상단, pad 20/39, gap 24
-  sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingHorizontal: 20, paddingTop: 39, paddingBottom: 39, gap: 24, ...shadow.sh2 },
   title: { fontSize: 20, fontWeight: '700', color: C.ink },
   sub: { fontSize: 14, fontWeight: '400', color: C.ink2 },
   mapCol: { gap: 8 },

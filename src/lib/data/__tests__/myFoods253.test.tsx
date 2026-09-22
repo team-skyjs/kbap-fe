@@ -41,7 +41,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 // KB-434: 화면이 useMe(개인화 위험)·RecentRow(FoodCards)를 소비 — 표면 목
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { restrictions: [] } }) }));
-jest.mock('@/lib/analytics', () => ({ EVENTS: { review_write_tap: 'review_write_tap' }, track: jest.fn() }));
+const mockTrack = jest.fn();
+jest.mock('@/lib/analytics', () => ({ EVENTS: { review_write_tap: 'review_write_tap', order_share_view: 'order_share_view' }, track: (...a: unknown[]) => mockTrack(...a) }));
 const mockPush = jest.fn();
 const mockNavigate = jest.fn();
 jest.mock('expo-router', () => ({
@@ -242,8 +243,8 @@ it('P-259: ready 게이트 — false = 행 비활성+배지+리뷰 숏컷 0 · t
   expect(detail).toContain('disabled={it.foodId == null || it.ready === false}'); // 진입 비활성
   expect(detail).toContain("it.ready !== false && router.push"); // 탭 무반응
   expect(detail).toContain("t('myFoods.itemPending')"); // 준비중 배지
-  // KB-434: 행별 리뷰 숏컷 → FixedBottom 단일 버튼(첫 리뷰 가능 항목) — ready 게이트 승계
-  expect(detail).toContain('(it) => it.foodId != null && it.ready !== false'); // 준비중 = 리뷰 대상 제외
+  // KB-636: 리뷰 숏컷(Write a review) 자체가 제거됨 — 준비중 항목의 리뷰 진입 경로 0은 행 비활성(위)으로 충족
+  expect(detail).not.toContain('order-write-review');
   // 기본 이미지 URL 문자열로 준비중 판단 금지(종한 명시) — ready 필드가 유일 기준
   expect(detail).not.toMatch(/default[-_]?food|imageUrl[^\n]*(includes|match)/);
   const hooks = fs.readFileSync('src/lib/data/useOrders.ts', 'utf8') as string;
@@ -275,21 +276,20 @@ it('read-only 잠금 — 비범위 어포던스(장소 태그·사진 교체·di
   expect(profile).toContain("'/profile/my-foods' as Href");
   expect(profile).toContain("label={t('profile.myFoods')}"); // 메뉴 행 문법(KB-434 MenuRow)
   expect(profile).not.toContain('testID="profile-my-foods"'); // 구 헤더 링크 잔존 0
-  expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).toContain('/review` as Href');
+  // KB-636: 주문 상세 → 리뷰 작성 직행 배선 제거(리뷰 진입 = 항목 행 → 음식 상세)
+  expect(fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8')).not.toContain('/review` as Href');
 });
 
-it('P-355(KB-517): 2+개 = 앱 바텀시트(행 수·탭 라우팅), Alert.alert 0', async () => {
-  const { Alert } = require('react-native') as typeof import('react-native');
-  const alertSpy = jest.spyOn(Alert, 'alert');
-  mockGet.mockImplementation(async (path: string) =>
-    path === '/api/orders/123'
-      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 2, totalPrice: 12000,
-          items: [
-            { menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: null },
-            { menuName: '공기밥', quantity: 1, price: 1000, foodId: 8, imageRef: null },
-          ] }
-      : { items: [], hasNext: false, nextCursor: null },
-  );
+/* ---- KB-636(P-409, 예진 b36 실기): 공유 카드 = 시트. 본문 = 메뉴판·영수증·항목까지 ---- */
+const SHARE_ORDER = {
+  orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 2, totalPrice: 12000,
+  items: [
+    { menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: 'https://cdn.example.com/a.webp', ready: true },
+    { menuName: '공기밥', quantity: 1, price: 1000, foodId: 8, imageRef: 'https://cdn.example.com/b.webp', ready: true },
+  ],
+};
+async function renderOrder(order: unknown): Promise<ReactTestRenderer> {
+  mockGet.mockImplementation(async (path: string) => (path === '/api/orders/123' ? order : { items: [], hasNext: false, nextCursor: null }));
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   let tree!: ReactTestRenderer;
   act(() => {
@@ -301,40 +301,56 @@ it('P-355(KB-517): 2+개 = 앱 바텀시트(행 수·탭 라우팅), Alert.alert
   });
   trees.push(tree);
   await flush();
-  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-write-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-  expect(alertSpy).not.toHaveBeenCalled(); // 네이티브 목록 소멸
-  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet').length).toBeGreaterThanOrEqual(1);
-  const rows = new Set(
-    tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('order-dish-') && n.props.testID !== 'order-dish-sheet' && n.props.testID !== 'order-dish-grab' && n.props.testID !== 'order-dish-backdrop').map((n) => n.props.testID as string),
-  );
-  expect(rows).toEqual(new Set(['order-dish-7', 'order-dish-8'])); // 행 수 = reviewables
-  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-dish-8' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-  expect(mockPush).toHaveBeenLastCalledWith('/food/8/review');
-  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0); // 탭 = 닫힘
-  alertSpy.mockRestore();
-});
+  return tree;
+}
+const byTid = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id);
+const press = (tree: ReactTestRenderer, id: string) =>
+  act(() => { byTid(tree, id).find((n) => typeof n.props?.onPress === 'function')!.props.onPress(); });
 
-it('P-355(KB-517): 1개 = 시트 생략 직진(현행 유지)', async () => {
-  mockGet.mockImplementation(async (path: string) =>
-    path === '/api/orders/123'
-      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 1, totalPrice: 9000,
-          items: [{ menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: null }] }
-      : { items: [], hasNext: false, nextCursor: null },
-  );
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  let tree!: ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(
-      <QueryClientProvider client={qc}>
-        <OrderDetailScreen />
-      </QueryClientProvider>,
-    );
+describe('KB-636 공유 카드 시트', () => {
+  beforeEach(() => mockTrack.mockClear());
+
+  it('닫힘(기본) = 카드 미리보기·캡처 캔버스 **미마운트**(이미지 요청 0) · 노출 계측 0 · 하단 = Download image', async () => {
+    const tree = await renderOrder(SHARE_ORDER);
+    expect(byTid(tree, 'order-item-0').length).toBeGreaterThan(0); // 대조: 본문(항목)은 렌더됐다
+    expect(byTid(tree, 'order-share-section')).toHaveLength(0);
+    expect(byTid(tree, 'order-share-export-canvas')).toHaveLength(0);
+    expect(byTid(tree, 'order-share-sheet')).toHaveLength(0);
+    expect(mockTrack).not.toHaveBeenCalledWith('order_share_view', expect.anything());
+    const btn = byTid(tree, 'order-share-open')[0];
+    expect(btn).toBeTruthy();
+    expect(btn.findAll((n) => n.props?.children === 'myFoods.shareDownload').length).toBeGreaterThan(0); // "Download image" 기존 키
   });
-  trees.push(tree);
-  await flush();
-  act(() => { tree.root.findAll((n) => n.props?.testID === 'order-write-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
-  expect(mockPush).toHaveBeenLastCalledWith('/food/7/review');
-  expect(tree.root.findAll((n) => n.props?.testID === 'order-dish-sheet')).toHaveLength(0);
+
+  it('열림 = 시트 안에 카드 + 캡처 캔버스 + 저장·스토리 버튼 · 노출 1회(다시 열어도 주문당 1회)', async () => {
+    const tree = await renderOrder(SHARE_ORDER);
+    press(tree, 'order-share-open');
+    const sheet = byTid(tree, 'order-share-sheet')[0];
+    expect(sheet).toBeTruthy();
+    expect(sheet.findAll((n) => n.props?.testID === 'order-share-section').length).toBeGreaterThan(0);
+    expect(sheet.findAll((n) => n.props?.testID === 'order-share-export-canvas').length).toBeGreaterThan(0);
+    expect(sheet.findAll((n) => n.props?.testID === 'share-download').length).toBeGreaterThan(0);
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'order_share_view')).toHaveLength(1);
+    expect(mockTrack).toHaveBeenCalledWith('order_share_view', { item_count: 2, has_place: false });
+    // 닫기(스크림 탭 = onRequestClose와 같은 onClose) → 다시 열기 — 노출은 그대로 1회
+    const modal = tree.root.findAll((n) => typeof n.props?.onRequestClose === 'function' && n.props?.visible === true)[0];
+    act(() => { modal.props.onRequestClose(); });
+    expect(byTid(tree, 'order-share-sheet')).toHaveLength(0); // 닫힘 = 카드·캔버스 언마운트
+    press(tree, 'order-share-open');
+    expect(mockTrack.mock.calls.filter((c) => c[0] === 'order_share_view')).toHaveLength(1);
+  });
+
+  it('사진 0장 주문 = 하단 버튼 없음(빈 카드 금지 — P-380) · Write a review·음식 선택 시트 부재', async () => {
+    const tree = await renderOrder({
+      ...SHARE_ORDER,
+      items: SHARE_ORDER.items.map((it) => ({ ...it, imageRef: null })),
+    });
+    expect(byTid(tree, 'order-item-0').length).toBeGreaterThan(0); // 대조
+    expect(byTid(tree, 'order-share-open')).toHaveLength(0);
+    expect(byTid(tree, 'order-bottom-bar')).toHaveLength(0);
+    expect(byTid(tree, 'order-write-review')).toHaveLength(0);
+    expect(byTid(tree, 'order-dish-sheet')).toHaveLength(0);
+  });
 });
 
 describe('P-386(KB-456): 장소 라벨 = 식당명 → 주소 → 미렌더', () => {

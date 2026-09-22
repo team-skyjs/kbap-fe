@@ -233,7 +233,7 @@ describe('섹션 — 미리보기 영역·버튼 2개 규격', () => {
 
 it('배선 — 주문 상세가 사진 있을 때만 섹션을 렌더 · i18n 키 10로케일', () => {
   const src = read('src/app/profile/order/[id].tsx');
-  expect(src).toContain('{cardPhotos.length > 0 && ('); // 8R: 선별된 실사진 기준(thumbnails 직결 금지)
+  expect(src).toContain('cardPhotos.length > 0 && ('); // 8R: 선별된 실사진 기준(thumbnails 직결 금지) — KB-636: 하단 버튼 노출 조건
   expect(src).toContain('<OrderShareSection');
   expect(src).toContain('placeName: orderPlaceLabel(q.data)');
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
@@ -325,7 +325,7 @@ describe('④ 공유 사진 선별 — 서버 대체 이미지 배제 (Codex 8R)
     const src = read('src/app/profile/order/[id].tsx');
     expect(src).toContain('const cardPhotos = q.data ? sharePhotos(q.data.items) : []');
     expect(src).toContain('photos: cardPhotos');
-    expect(src).toContain('{cardPhotos.length > 0 && (');
+    expect(src).toContain('cardPhotos.length > 0 && (');
     expect(src).not.toContain('photos: q.data.thumbnails');
     expect(src).not.toContain('q.data.thumbnails.length > 0');
   });

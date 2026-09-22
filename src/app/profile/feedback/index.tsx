@@ -19,6 +19,13 @@ import { timeAgo } from '@/features/community/parts';
 import { useMyFeedbacks, type FeedbackItem } from '@/lib/data/useFeedback';
 import { color as C, radius } from '@/lib/theme';
 
+/** KB-635(P-409 계측): IconPlus(D4Plus) 글리프는 24 viewBox의 x=4…20(선 5…19 + round cap 1)이라 슬롯
+ *  **좌측에 size·4/24만큼 빈칸**이 있다(20 → 3.33pt). 알약 좌 패딩에서 그만큼 빼서 **눈에 보이는** 좌·우 여백을
+ *  같게 한다(우 24 = 텍스트 가장자리). */
+const PLUS_SIZE = 20;
+const PLUS_GLYPH_INSET = (PLUS_SIZE * 4) / 24;
+const FAB_PAD = 24;
+
 /** 서브 줄에 붙이는 상태 — OPEN은 시간만(발주: 답변·종료만 표기). */
 const STATUS_KEY = { ANSWERED: 'feedback.statusAnswered', CLOSED: 'feedback.statusClosed' } as const;
 
@@ -100,7 +107,7 @@ export default function FeedbackListScreen() {
         onPress={() => router.push('/profile/feedback/new' as Href)}
         testID="feedback-new-fab"
       >
-        <IconPlus size={20} color="#FFFFFF" />
+        <IconPlus size={PLUS_SIZE} color="#FFFFFF" />
         <Text style={styles.fabLabel}>{t('feedback.newInquiry')}</Text>
       </Pressable>
     </View>
@@ -124,7 +131,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: 15, fontWeight: '400', color: C.ink3 },
   // 알약: 우 24 · 하 insets+24(인라인) · 높이 52 · 좌우 24 · 라운딩 26 · 배경 C.ink · 그림자 없음
   fab: {
-    position: 'absolute', right: 24, height: 52, paddingHorizontal: 24, borderRadius: 26,
+    position: 'absolute', right: 24, height: 52, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,
     backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   fabLabel: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
