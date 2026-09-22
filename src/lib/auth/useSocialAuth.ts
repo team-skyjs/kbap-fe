@@ -20,10 +20,12 @@ import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import type { LoginEntry } from './loginEntry';
 import * as Crypto from 'expo-crypto';
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { AppleAuthProvider, getAuth, GoogleAuthProvider, signInWithCredential } from '@react-native-firebase/auth';
 import { exchangeLogin } from './beAuth';
+import { applyPendingActivityDefault, registerPushToken } from '@/lib/push/pushAdapter';
 
 // Firebase 프로젝트(k-bap-eb032)의 웹 클라이언트 ID (google-services.json
 // oauth_client client_type:3) — 시크릿 아님, 커밋 OK.
@@ -42,7 +44,7 @@ function ensureGoogleConfigured() {
 export type AuthErrorKind = 'network' | 'generic';
 export type AuthPhase = 'idle' | 'google' | 'apple';
 
-export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
+export function useSocialAuth(onSignedIn: (newMember: boolean) => void, entry: LoginEntry = 'intro') {
   const [phase, setPhase] = useState<AuthPhase>('idle');
   const [error, setError] = useState<AuthErrorKind | null>(null);
 
@@ -53,7 +55,13 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
   const exchange = async (): Promise<{ newMember: boolean; cancelled?: boolean }> => {
     const idToken = await getAuth().currentUser?.getIdToken();
     if (!idToken) throw new Error('no firebase id token after sign-in');
-    return exchangeLogin(idToken);
+    const exch = await exchangeLogin(idToken);
+    // KB-543: 토큰 API 회원 전용 — 세션 교환 성공 직후 1회 등록(비차단·비치명). 게스트 등록 경로 폐기.
+    if (!exch.cancelled) {
+      void registerPushToken();
+      void applyPendingActivityDefault(); // KB-631: 로그인 화면 팝업 허용분 activity 기본값 1회(서버 기본 false)
+    }
+    return exch;
   };
 
   // Codex #109 8R: 관문 = 함수 전체(hasPlayServices·nonce 해시·exchange의 getIdToken 포함) —
@@ -82,7 +90,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
         setPhase('idle'); // KB-421: 게스트 진입이 선행 — 세션 미설치, 내비·계측 생략
         return;
       }
-      track(EVENTS.auth_login_success, { provider: 'GOOGLE' }); // P-083
+      track(EVENTS.auth_login_success, { provider: 'GOOGLE', is_new: exch.newMember, entry }); // P-083 · P-389
       setUserProps({ user_info_is_registered: true }); // P-144: NRU 기준(false→true 전환)
       setPhase('idle');
       onSignedIn(exch.newMember);
@@ -115,7 +123,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void) {
         setPhase('idle'); // KB-421: 게스트 진입 선행 — 내비·계측 생략
         return;
       }
-      track(EVENTS.auth_login_success, { provider: 'APPLE' }); // P-083
+      track(EVENTS.auth_login_success, { provider: 'APPLE', is_new: res.newMember, entry }); // P-083 · P-389
       setUserProps({ user_info_is_registered: true }); // P-144
       setPhase('idle');
       onSignedIn(res.newMember);

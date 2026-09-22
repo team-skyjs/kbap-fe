@@ -10,8 +10,14 @@ jest.mock('@/lib/flags', () => ({ FLAGS: { pushEnabled: false }, isProdChannel: 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
+jest.mock('react-native', () => ({ Platform: { OS: 'android' } })); // KB-498: 채널 설정 분기까지 폭탄 목으로 잠근다
+const mockApi = { put: jest.fn() };
+jest.mock('@/lib/api/client', () => ({ get api() { return mockApi; }, apiLang: () => 'en' }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } }));
+// KB-497/543: 어댑터가 세션 가드·설정 캐시를 import — 네이티브(SecureStore)·react-query 의존 차단
+jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: jest.fn().mockResolvedValue(true) }));
+jest.mock('@/lib/data/useNotificationSettings', () => ({ NOTIF_SETTINGS_KEY: ['notifSettings'] }));
+jest.mock('@/lib/queryClient', () => ({ queryClient: { getQueryData: () => undefined } }));
 
 // 네이티브 모듈이 "존재하더라도" 게이트가 닫혔으면 손대지 않아야 한다 —
 // 호출되면 즉시 실패하도록 폭탄을 깔아둔다(구 런타임에선 이 require가 크래시).
@@ -27,19 +33,20 @@ jest.mock(
     get cancelScheduledNotificationAsync() { return boom(); },
     get getExpoPushTokenAsync() { return boom(); },
     get addNotificationResponseReceivedListener() { return boom(); },
+    get setNotificationChannelAsync() { return boom(); }, // KB-498
+    get AndroidImportance() { return boom(); },
   }),
   { virtual: true },
 );
 
 import {
-  addNotificationTapListener,
+  addNotificationTapListener, applyPendingActivityDefault, promptPermissionOnFirstLogin, // KB-631
   cancelReviewReminder,
   getPermissionStatus,
   pushAvailable,
   registerPushToken,
   requestPermission,
   scheduleReviewReminder,
-  unregisterPushToken,
 } from '../pushAdapter';
 
 it('플래그 off(킬스위치) = pushAvailable false', () => {
@@ -56,9 +63,9 @@ it('리마인더 예약·취소 = no-op(모듈 미접근 — 크래시 0)', asyn
   await expect(cancelReviewReminder('7')).resolves.toBeUndefined();
 });
 
-it('토큰 등록·해제 = no-op', async () => {
+it('토큰 등록 = no-op + 서버 호출 0 (KB-496: unregister 는 서버 로그아웃/탈퇴 처리로 소멸)', async () => {
   await expect(registerPushToken()).resolves.toBeUndefined();
-  await expect(unregisterPushToken()).resolves.toBeUndefined();
+  expect(mockApi.put).not.toHaveBeenCalled();
 });
 
 it('알림 탭 리스너 = 구독 0(해제 함수만 반환 — 호출해도 안전)', () => {
@@ -99,4 +106,14 @@ it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어
   expect(offenders).toEqual([]);
   // ⚠️ 대기 시간 상수는 QA 편의로 줄이지 않는다(발주 고정)
   expect(adapter).toContain('export const REVIEW_REMINDER_SECONDS = 3600;');
+});
+
+it('KB-631: 로그인 팝업·activity 기본값 헬퍼 = no-op (모듈 미접근·기록 0·서버 호출 0)', async () => {
+  const AsyncStorage = jest.requireMock('@react-native-async-storage/async-storage') as typeof import('@react-native-async-storage/async-storage').default;
+  await AsyncStorage.setItem('kbap.push.activityDefaultPending.v1', '1');
+  await expect(promptPermissionOnFirstLogin()).resolves.toBeUndefined();
+  await expect(applyPendingActivityDefault()).resolves.toBeUndefined();
+  expect(await AsyncStorage.getItem('kbap.push.prompted.v1')).toBeNull();
+  expect(await AsyncStorage.getItem('kbap.push.activityDefaultPending.v1')).toBe('1'); // 플래그 off = 손대지 않음
+  expect(mockApi.put).not.toHaveBeenCalled();
 });

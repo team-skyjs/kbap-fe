@@ -16,7 +16,7 @@ import { IconLock } from '@/components/icons';
 import { EVENTS, track } from '@/lib/analytics';
 
 // P-258: 'reviews'(읽기 차단 시절 유물 — P-235 게스트 열람 개방으로 소멸) → 'helpful'
-export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save' | 'report';
+export type GateContext = 'risk' | 'helpful' | 'writeReview' | 'scan' | 'profile' | 'save';
 
 /**
  * P-213: auth_gate_view trigger — 게이트 시트는 게스트 전환 퍼널의 단일 관문이라
@@ -31,7 +31,6 @@ const CONTEXT_TRIGGER: Record<GateContext, GateTrigger> = {
   scan: 'scan',
   risk: 'risk',
   profile: 'profile',
-  report: 'review', // P-281: 게스트 신고 게이트 — 리뷰 문맥
 };
 
 const COPY: Record<GateContext, { title: string; sub: string }> = {
@@ -41,7 +40,6 @@ const COPY: Record<GateContext, { title: string; sub: string }> = {
   scan: { title: 'gate.scanTitle', sub: 'gate.scanSub' },
   profile: { title: 'gate.profileTitle', sub: 'gate.profileSub' },
   save: { title: 'gate.saveTitle', sub: 'gate.saveSub' },
-  report: { title: 'gate.reportTitle', sub: 'gate.reportSub' },
 };
 
 export function AuthGateSheet({
@@ -73,7 +71,10 @@ export function AuthGateSheet({
 
   const goLogin = () => {
     onClose();
-    router.push(`/login?returnTo=${encodeURIComponent(pathname)}` as Href);
+    // P-389(KB-576): 가입 유입 경로 — auth_gate_view.trigger와 **같은 값**을 gate_* 로 넘긴다
+    // (두 이벤트를 같은 축으로 이어 붙이기 위함). 로그인 성공 시 auth_login_success.entry로 실린다.
+    const entry = `gate_${trigger ?? CONTEXT_TRIGGER[context]}`;
+    router.push(`/login?returnTo=${encodeURIComponent(pathname)}&entry=${entry}` as Href);
   };
 
   return (

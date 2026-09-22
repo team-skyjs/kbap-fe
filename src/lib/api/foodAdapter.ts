@@ -31,6 +31,25 @@ function refToUrl(ref: string | null | undefined): string | null {
   return ref && /^https?:\/\//.test(ref) ? ref : null;
 }
 
+/**
+ * P-383(KB-566): 상세 갤러리 이미지 — **BE 필드명을 아는 곳은 이 함수 하나뿐이다.**
+ * 최종 계약(KB-565 BE PR #264, 예진 결정): `images: [{ url }]` — 대표 = `imageRef`와 같은 URL이
+ * **항상 첫 번째**. `isPrimary`·`id`·`sortOrder`는 없다(와도 무시). **응답 순서를 그대로 쓴다
+ * (재정렬 금지 — 클라 정렬은 서버 정본 순서를 흐트러뜨릴 수 있다).**
+ *
+ * - 필드 부재(구 서버) = undefined → 화면이 photoUrl 정적 렌더(현행)
+ * - 갤러리 행 없음 = `[]` (서버가 imageRef로 지어내지 않음) → 역시 정적 렌더
+ * - 절대 URL만 통과(refToUrl), 중복 URL 제거(앞선 것 = 서버 우선순위 유지)
+ */
+export function adaptFoodImages(wire: unknown): string[] | undefined {
+  const raw = (wire as { images?: unknown }).images;
+  if (!Array.isArray(raw)) return undefined;
+  const urls = raw
+    .map((i) => refToUrl(i && typeof i === 'object' && typeof (i as { url?: unknown }).url === 'string' ? (i as { url: string }).url : null))
+    .filter((u): u is string => !!u);
+  return [...new Set(urls)]; // Set은 삽입 순서를 보존한다 — 첫 등장 위치 유지
+}
+
 /** 중첩 평점 단위 → 내부 집계. 계약 "리뷰 없으면 0.0·0(null 없음)" → count 0이면
  *  average null(화면 '—'). */
 function aggFromRating(r: ReviewRatingWire | undefined): RatingAggregate {
@@ -107,6 +126,8 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     // P-081: 와이어 정수 → 단계 enum (변환은 spiceAdapter 격리 — 스웨거 enum 재배포 시 스왑)
     spiceLevel: wireToFoodSpice(wire.spiciness),
     photoUrl: refToUrl(wire.imageRef),
+    images: adaptFoodImages(wire),
+    publishedAt: wire.publishedAt ?? null,
     ingredients,
     isRegistered,
     bookmarked: wire.bookmarked === true, // 계약: 비회원 항상 false (KB-142)
@@ -171,6 +192,7 @@ export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
     name: wire.name,
     nameKo: wire.koreanName ?? wire.name,
     photoUrl: refToUrl(wire.imageRef),
+    publishedAt: wire.publishedAt ?? null,
     risk: mapRisk(wire.overallRiskStatus),
     overall:
       rvCount > 0 && typeof wire.review?.averageRating === 'number'

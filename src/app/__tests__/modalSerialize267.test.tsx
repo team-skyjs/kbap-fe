@@ -51,7 +51,7 @@ jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   const chain = () => {
     const b: Record<string, (..._a: unknown[]) => unknown> = {};
-    for (const k of ['onUpdate', 'onEnd', 'onStart', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled', 'runOnJS']) b[k] = () => b;
+    for (const k of ['onUpdate', 'onEnd', 'onStart', 'onFinalize', 'onChange', 'numberOfTaps', 'maxPointers', 'minPointers', 'enabled', 'runOnJS']) b[k] = () => b; // KB-553: onFinalize(useSheetSwipeDismiss)
     return b;
   };
   return {
@@ -143,7 +143,6 @@ const mockGetPrimer = jest.fn();
 jest.mock('@/lib/push/pushAdapter', () => ({
   ...jest.requireActual('@/lib/push/pushAdapter'),
   getPrimerResult: () => mockGetPrimer(),
-  getPushSettings: jest.fn(async () => ({ helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null })),
   scheduleReviewReminder: jest.fn(async () => {}),
 }));
 

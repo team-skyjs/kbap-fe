@@ -159,6 +159,14 @@ export function countryLang(code: string): SupportedLang {
   return BY_CODE[code]?.lang ?? 'en';
 }
 
+/** P-395(KB-589): 온보딩 국적 선택에서 A–Z 위에 먼저 보여주는 상위 10개국.
+ *  근거 = 2025 KTO 방한객 연간 순위 — **배열 순서가 곧 표시 순서**(가나다·알파벳 정렬 금지).
+ *  감지국이 이 안에 있으면 화면에서 제외한다(핀 카드가 담당 — 중복 노출 방지).
+ *  **A–Z 기본 목록에서는 빠진다** — 감지국과 같은 규칙(featured 섹션에 있으면 A–Z에서 제외).
+ *  남겨두면 선택 시 두 곳이 강조돼 라디오가 둘 켜진 것처럼 보인다(P-154 강조 단일성).
+ *  검색은 전 국가 대상이라 발견성 손실은 없다. 9/18 예진·커맨드 센터 결정(#171 A안). */
+export const POPULAR_COUNTRIES = ['CN', 'JP', 'TW', 'US', 'HK', 'PH', 'VN', 'SG', 'ID', 'TH'] as const;
+
 /** Device region → a country code we know, else undefined. */
 export function deviceCountry(): string | undefined {
   const region = getLocales()[0]?.regionCode?.toUpperCase();

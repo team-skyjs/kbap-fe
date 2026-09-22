@@ -217,21 +217,15 @@ export async function submitReport(target: ReportTarget, id: string, reason: Rep
     console.log('[community] 신고 targetType 미지원(REVIEW뿐) — 플래그 off 표면 (도달 불가 경로)');
     return;
   }
-  try {
-    await api.post('/reports', {
-      targetType: 'REVIEW',
-      targetId: Number(id),
-      reason: REPORT_REASON_WIRE[reason],
-      ...(note ? { detail: note } : {}), // FE 300자 상한 유지 (계약 상한 500 내)
-    });
-  } catch (e) {
-    // P-186: 중복 신고 방어 — 409(이미 접수)는 멱등 취급(접수 확인 UX 유지), 그 외 전파
-    if ((e as { status?: number })?.status === 409) {
-      console.log('[report] 중복 신고(409) — 기접수 멱등 처리');
-      return;
-    }
-    throw e;
-  }
+  // P-387(KB-460): 인증 선택 — 게스트는 토큰 없이, 식별은 공용 client가 모든 요청에 붙이는
+  // X-Installation-Id 헤더로 한다. **바디에 installationId를 넣지 않는다**(계약 밖).
+  // 재신고 허용이라 409 분기도 없앴다(서버가 더 내지 않음 — BE #249·#250 dev 실측).
+  await api.post('/reports', {
+    targetType: 'REVIEW',
+    targetId: Number(id),
+    reason: REPORT_REASON_WIRE[reason],
+    ...(note ? { detail: note } : {}), // FE 300자 상한 유지 (계약 상한 500 내)
+  });
 }
 
 /* ---- 차단 — 멤버 단위 기존 API(리뷰와 공유), 커뮤니티 작성자도 실 memberId ---- */

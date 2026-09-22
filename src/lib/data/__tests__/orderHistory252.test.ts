@@ -3,7 +3,7 @@
  * 분기(비동의 = 생략·재요청 금지)·실패 무해·완료 지점 배선.
  */
 const mockPost = jest.fn();
-jest.mock('@/lib/api/client', () => ({ api: { post: (...a: unknown[]) => mockPost(...a) } }));
+jest.mock('@/lib/api/client', () => ({ api: { post: (...a: unknown[]) => mockPost(...a) }, apiLang: () => 'en' }));
 const mockGetPerm = jest.fn();
 const mockGetPos = jest.fn();
 const mockRequestPerm = jest.fn();
@@ -37,6 +37,7 @@ it('payload 실측 — imagePath·items(foodId 필수: 미매칭·미담김 제�
     items: [{ foodId: 7, menuName: '순두부찌개', quantity: 2, price: 9000 }],
     latitude: 37.5636,
     longitude: 126.9834,
+    lang: 'en', // P-386(KB-456): 타 API와 같은 규약(서버는 부재 시 ko 폴백)
   });
 });
 
@@ -134,4 +135,12 @@ describe('P-302(KB-455): 미결정 = 1회 요청 — 허용/거부/타임아웃 
     const body = mockPost.mock.calls[0][1] as Record<string, unknown>;
     expect(body).not.toHaveProperty('latitude');
   });
+});
+
+it('P-386(KB-456): lang은 좌표 없는 주문에도 항상 실린다(리더 언어 = 장소 해석 언어)', async () => {
+  mockGetPerm.mockResolvedValue({ status: 'denied' });
+  await saveOrderHistory({ imagePath: 'scan/1/m.jpg', items: ITEMS });
+  const body = mockPost.mock.calls[0][1] as Record<string, unknown>;
+  expect(body.lang).toBe('en');
+  expect(body.latitude).toBeUndefined();
 });

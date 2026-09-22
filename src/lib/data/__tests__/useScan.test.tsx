@@ -180,3 +180,18 @@ it('P-155: 킬스위치 off(기본) → dev 계열이어도 v1(items 전송·헤
   expect(body.items).toEqual([{ idx: 0, rawMenuName: '김치찌개' }]);
   expect(opts.headers).toBeUndefined();
 });
+
+it('P-384(KB-442): 스캔 성공 = 프로필(me) 정확 키 재조회 — 잔여는 서버 정본(클라 차감 0)', async () => {
+  const spy = jest.spyOn(QueryClient.prototype, 'invalidateQueries');
+  await runScan({ items: [], photo: null });
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['me', 'en'], exact: true });
+  spy.mockRestore();
+});
+
+it('P-384: 스캔 실패 = 프로필 재조회 없음(소비 안 됨)', async () => {
+  api.post.mockRejectedValue(Object.assign(new Error('boom'), { code: 'SCAN-001' }));
+  const spy = jest.spyOn(QueryClient.prototype, 'invalidateQueries');
+  await runScan({ items: [], photo: null });
+  expect(spy).not.toHaveBeenCalled();
+  spy.mockRestore();
+});

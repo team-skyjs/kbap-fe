@@ -1,0 +1,271 @@
+/**
+ * OrderShareCard (P-380/KB-518) — 주문 상세 하단 공유 섹션. 시안 `share-section`(2200:21205).
+ *
+ * 카드는 **폭 210 고정**(시안)이고, 4단계에서 이 뷰를 그대로 캡처해 1080×1920 캔버스에
+ * 얹는다. 그래서 카드 내부는 화면 폭에 반응하지 않는다 — 반응형으로 만들면 캡처 결과가
+ * 기기마다 달라진다.
+ *
+ * ⚠️ K-Bap 배지는 **시안(주황 필)과 다르다**(9/14 예진 결정). 마크의 그릇 색이 필 색과
+ * 같은 #FF7134라 필 위에서 그릇이 묻히고 K만 떠 보인다 → 필을 빼고 앱 아이콘 마크 +
+ * 텍스트로 간다. 참조 렌더 story-card-ref.png에는 옛 배지가 찍혀 있으니 그 부분만 제외.
+ */
+import * as React from 'react';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Txt as Text } from '@/components/Txt';
+import { RemoteImage } from '@/components/RemoteImage';
+import { IconDownload, IconInstagram } from '@/components/icons';
+import { SHARE_CARD_W, SHARE_GRID_H, shareCells } from './shareCard';
+import { CANVAS_H, CANVAS_W, CARD_SCALE, EXPORT_BG } from './shareExport';
+
+/** 앱 아이콘과 같은 마크(검은 K + 주황 그릇, 투명 배경) — 배지 교체분. */
+const BRAND_MARK = require('../../../assets/images/splash-mark-ios.png') as number;
+
+export type OrderShareCardProps = {
+  /** 사진 URL(최대 4). 0장이면 그리드를 통째로 생략한다 — 빈 칸·기본 이미지 금지. */
+  photos: string[];
+  /** place.name → roadAddress 폴백 결과. null이면 줄 자체를 숨긴다(빈 줄 금지). */
+  placeName: string | null;
+  /** "A, B, C 외 N" 완성 문자열. 빈 문자열이면 줄을 숨긴다. */
+  menuLine: string;
+  /** 메타줄 도시 — place.address가 있을 때만. null이면 날짜만 남는다. */
+  metaCity?: string | null;
+  /** 메타줄 날짜(항상 있다). */
+  metaDate: string;
+  /** 캡처용 인스턴스 — 페이드 없이 즉시 표시(찍는 순간 반투명이면 반투명이 찍힌다). */
+  instant?: boolean;
+  /** 칸별 렌더 결과 통지 — 캡처 게이트가 이걸 센다(성공/실패). */
+  onCellSettle?: (ok: boolean) => void;
+};
+
+/** 캡처 대상 = 이 뷰. 4단계에서 ref를 받아 그대로 찍는다. */
+export const OrderShareCard = React.forwardRef<View, OrderShareCardProps>(function OrderShareCard(
+  { photos, placeName, menuLine, metaCity, metaDate, instant, onCellSettle },
+  ref,
+) {
+  // 브랜드 라벨도 사용자 노출 문자열 — 전 로케일 공통값이지만 i18n 경유가 정본(하드코딩 금지)
+  const { t } = useTranslation();
+  const cells = shareCells(photos.length);
+  return (
+    <View ref={ref} style={styles.card} testID="order-share-card" collapsable={false}>
+      {cells.length > 0 && (
+        <View style={styles.grid} testID="share-photo-grid">
+          {cells.map((c, i) => (
+            <RemoteImage
+              key={`${photos[i]}-${i}`}
+              uri={photos[i]}
+              style={{ position: 'absolute', left: c.left, top: c.top, width: c.width, height: c.height }}
+              contentFit="cover"
+              transition={instant ? 0 : undefined}
+              onLoad={() => onCellSettle?.(true)}
+              onError={() => onCellSettle?.(false)}
+            />
+          ))}
+        </View>
+      )}
+      <View style={styles.info}>
+        {!!placeName && (
+          <Text style={styles.place} numberOfLines={2} testID="share-place-name">
+            {placeName}
+          </Text>
+        )}
+        {!!menuLine && (
+          <Text style={styles.menu} testID="share-menu-line">
+            {menuLine}
+          </Text>
+        )}
+        <View style={styles.metaRow}>
+          {/* P-196(9/14 예진): 도시·날짜는 문자 구분자 없이 **레이아웃(gap)으로 가른다** */}
+          <View style={styles.metaLeft} testID="share-meta-left">
+            {!!metaCity && (
+              <Text style={styles.meta} numberOfLines={1} testID="share-meta-city">
+                {metaCity}
+              </Text>
+            )}
+            <Text style={styles.meta} numberOfLines={1} testID="share-meta-date">
+              {metaDate}
+            </Text>
+          </View>
+          {/* 브랜드 = 마크 + 텍스트(배경·보더·라운드 없음 — 9/14 예진 결정) */}
+          <View style={styles.brand} testID="share-brand">
+            <Image source={BRAND_MARK} style={styles.brandMark} resizeMode="contain" />
+            <Text style={styles.brandText}>{t('brand')}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+});
+
+/**
+ * 내보내기 캔버스(P-380 4단계) — 화면 **밖**에 9:16 캔버스를 두고 카드를 75% 폭으로 확대해
+ * 중앙에 둔다. 캡처는 이 뷰를 찍는다(미리보기 카드를 찍으면 9:16이 아니다).
+ *
+ * 화면 밖 배치는 `opacity: 0`가 아니라 **좌표 밖**이다 — 투명 뷰는 플랫폼에 따라 빈 이미지로
+ * 찍힌다. `pointerEvents='none'`로 터치도 먹지 않게 한다.
+ */
+export const OrderShareExportCanvas = React.forwardRef<
+  View,
+  { card: OrderShareCardProps; onReady?: () => void; onFailed?: () => void }
+>(function OrderShareExportCanvas({ card, onReady, onFailed }, ref) {
+  // 캡처 가능 = **이 인스턴스의 모든 칸이 실제로 렌더됐을 때**. 프리페치 성공은 "URL이 캐시됐다"는
+  // 뜻일 뿐이라(디코드·마운트·페이드가 남는다) 게이트로 쓰면 반쯤 그려진 카드가 찍힌다(Codex 7R).
+  const need = Math.min(card.photos.length, 4);
+  const done = React.useRef(0);
+  const settled = React.useRef(false);
+  React.useEffect(() => {
+    done.current = 0;
+    settled.current = false;
+  }, [card.photos.join('|')]);
+  const onCellSettle = React.useCallback(
+    (ok: boolean) => {
+      if (settled.current) return;
+      if (!ok) {
+        settled.current = true;
+        return onFailed?.(); // 한 칸이라도 실패 = 빈 칸 카드 — 잠금 유지
+      }
+      done.current += 1;
+      if (done.current >= need) {
+        settled.current = true;
+        onReady?.();
+      }
+    },
+    [need, onReady, onFailed],
+  );
+  return (
+    <View style={styles.exportHost} pointerEvents="none">
+      <View ref={ref} style={styles.exportCanvas} testID="order-share-export-canvas" collapsable={false}>
+        <View style={{ transform: [{ scale: CARD_SCALE }] }}>
+          <OrderShareCard {...card} instant onCellSettle={onCellSettle} />
+        </View>
+      </View>
+    </View>
+  );
+});
+
+/** 카드 + 캡션 + 버튼 2개. 버튼 동작은 4단계에서 붙는다(여기선 핸들러 주입만). */
+export function OrderShareSection({
+  card,
+  caption,
+  downloadLabel,
+  instagramLabel,
+  onDownload,
+  onInstagram,
+  cardRef,
+  /** 스토리 버튼 노출 — iOS는 Meta appId가 있어야 true(없으면 눌러서 실패하는 경로를 없앤다). */
+  storyAvailable = true,
+  /** 스토리 버튼이 없을 때 대신 보여 줄 한 줄 안내("저장해서 인스타에서 공유"). */
+  storyHint,
+  /** 내보내기 이미지가 아직 로드 중 — 캡처 액션 비활성(빈 칸·셔머가 찍히는 것 방지). */
+  busy = false,
+  /** 이미지 프리페치 실패 — 잠금 유지 + 재시도 줄 노출(영구 비활성 방치 금지). */
+  failed = false,
+  failedLabel,
+  onRetryPhotos,
+}: {
+  card: OrderShareCardProps;
+  caption: string;
+  downloadLabel: string;
+  instagramLabel: string;
+  onDownload?: () => void;
+  onInstagram?: () => void;
+  cardRef?: React.Ref<View>;
+  storyAvailable?: boolean;
+  storyHint?: string;
+  busy?: boolean;
+  failed?: boolean;
+  failedLabel?: string;
+  onRetryPhotos?: () => void;
+}) {
+  return (
+    <View style={styles.section} testID="order-share-section">
+      <View style={styles.preview}>
+        <OrderShareCard ref={cardRef} {...card} />
+        <Text style={styles.caption}>{caption}</Text>
+      </View>
+      <View style={styles.bottom}>
+        <View style={styles.actions}>
+          {/* P-151 프레임 불변: 비활성은 **불투명도만** — 메트릭(높이·패딩·보더)은 그대로 */}
+          <Pressable style={[styles.action, busy && styles.actionBusy]} onPress={onDownload} disabled={busy} testID="share-download">
+            <IconDownload size={24} color="#6A6F7C" />
+            <Text style={styles.actionLabel}>{downloadLabel}</Text>
+          </Pressable>
+          {storyAvailable && (
+            <Pressable style={[styles.action, busy && styles.actionBusy]} onPress={onInstagram} disabled={busy} testID="share-instagram">
+              <IconInstagram size={24} />
+              <Text style={styles.actionLabel}>{instagramLabel}</Text>
+            </Pressable>
+          )}
+        </View>
+        {/* 사진 로드 실패 = 캡처 잠금 유지 + 눌러서 재시도(빈 칸 카드 저장 방지) */}
+        {failed && !!failedLabel && (
+          <Pressable onPress={onRetryPhotos} testID="share-photos-retry">
+            <Text style={[styles.storyHint, styles.retryText]}>{failedLabel}</Text>
+          </Pressable>
+        )}
+        {/* 스토리 버튼이 없는 동안의 대체 경로 안내 — 버튼 자리를 비워 두지 않는다 */}
+        {!storyAvailable && !!storyHint && (
+          <Text style={styles.storyHint} testID="share-story-hint">
+            {storyHint}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  section: { gap: 16, backgroundColor: '#FFFFFF' },
+  // 화면 밖(좌표) — 레이아웃에 영향 0, 캡처 대상으로는 살아 있다
+  exportHost: { position: 'absolute', left: -10000, top: 0 },
+  exportCanvas: { width: CANVAS_W, height: CANVAS_H, backgroundColor: EXPORT_BG, alignItems: 'center', justifyContent: 'center' },
+  preview: { paddingVertical: 20, paddingHorizontal: 24, alignItems: 'center', gap: 12, backgroundColor: '#F7F8FA' },
+
+  // story-card — 폭 210 고정·hug height·r20 + 부유 그림자
+  card: {
+    width: SHARE_CARD_W,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    overflow: 'hidden', // 그리드 모서리를 카드 라운드로 자른다
+    shadowColor: '#000000',
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  // 칸은 절대배치(장수별 변형) — 높이 210 고정
+  grid: { width: SHARE_CARD_W, height: SHARE_GRID_H, backgroundColor: '#EAEBEE' },
+
+  info: { padding: 14, gap: 10, backgroundColor: '#FFFFFF' },
+  place: { fontSize: 15, fontWeight: '700', letterSpacing: -0.15, color: '#1C1E21' },
+  menu: { fontSize: 11, lineHeight: 15.4, color: '#6B7280' }, // 1.4em
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  metaLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }, // 구분자 문자 대신 gap
+  meta: { flexShrink: 1, fontSize: 10, color: '#9196A1' },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  brandMark: { width: 16, height: 16 },
+  brandText: { fontSize: 11, fontWeight: '600', letterSpacing: -0.11, color: '#1C1E21' },
+
+  caption: { fontSize: 11, fontWeight: '500', letterSpacing: -0.11, color: '#9196A1' },
+
+  bottom: { paddingHorizontal: 20, paddingBottom: 12, gap: 12, backgroundColor: '#FFFFFF' },
+  actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
+  action: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    borderRadius: 14,
+  },
+  actionBusy: { opacity: 0.45 },
+  storyHint: { fontSize: 11, lineHeight: 15, color: '#9196A1', textAlign: 'center' },
+  retryText: { color: '#6A6F7C', textDecorationLine: 'underline' },
+  actionLabel: { fontSize: 12, lineHeight: 16.2, fontWeight: '600', letterSpacing: -0.12, color: '#2F3137', textAlign: 'center' },
+});
+
+export default OrderShareSection;

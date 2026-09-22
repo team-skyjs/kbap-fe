@@ -6,31 +6,28 @@
  * 파일의 **지연 require**(플래그+try 게이트) 경유. 화면/훅에서 직접 import 금지.
  * FLAGS.pushEnabled off = 전 기능 no-op (다음 네이티브 빌드 전 기본).
  *
- * 기획 정본: dropbox/yj/2026-08-13-푸시알림-BE-요청.md — 3종:
- *   ① Helpful 서버푸시(기본 on) ② 리뷰 유도 로컬(주문 완료 1h 후, 기본 on)
- *   ③ 리텐션 넛지 서버푸시(기본 off — 광고성, 옵트인 시각 기록: 정보통신망법).
- * BE 토큰 API = **계약 미정**(요청 문서 회신 대기) — sendTokenToServer만 배선점.
+ * 설정(KB-497) = **서버 정본** 2그룹 — 활동 알림(activity: Helpful + 리뷰 리마인더) ·
+ * K-Bap 소식(news: 광고성, 동의 2종 + 하위 mealTime). 로컬 설정 저장소는 없다
+ * (useNotificationSettings 캐시가 유일 미러). 토큰 등록은 회원 세션이 있을 때만(KB-543).
+ *
+ * 푸시 data 계약(KB-498) — 유형 enum 정본 = 서버(BE Swagger), 앱 쪽 정의는 아래 PUSH_TYPES 한 곳.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import { track } from '@/lib/net/inflight';
+import { EVENTS, track as trackEvent } from '@/lib/analytics';
 import i18n from '@/lib/i18n';
+import { api, apiLang } from '@/lib/api/client';
+import { hasBeSession } from '@/lib/auth/beAuth';
+import { queryClient } from '@/lib/queryClient';
+import { NOTIF_SETTINGS_KEY, patchNotificationSettings, type NotificationSettings } from '@/lib/data/useNotificationSettings';
 
-const SETTINGS_KEY = 'kbap.push.settings.v1';
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
+const ACTIVITY_PENDING_KEY = 'kbap.push.activityDefaultPending.v1'; // KB-631: 로그인 팝업 허용 → 로그인 후 activity 기본값 1회 적용 대기
 const REMINDERS_KEY = 'kbap.push.reminders.v1'; // { [foodId]: notificationId }
 
 export const REVIEW_REMINDER_SECONDS = 3600; // 주문 완료 → 1시간 후
-
-export interface PushSettings {
-  helpful: boolean;
-  reviewReminder: boolean;
-  nudge: boolean;
-  /** 넛지(광고성) 수신 동의 일시 — 서버 저장은 계약 후, 우선 로컬 기록. */
-  nudgeOptInAt: string | null;
-}
-export const DEFAULT_PUSH_SETTINGS: PushSettings = { helpful: true, reviewReminder: true, nudge: false, nudgeOptInAt: null };
 
 /* ---- 네이티브 모듈 지연 로드 (유일한 require 지점) ---- */
 
@@ -48,33 +45,6 @@ function loadNotifications(): NotificationsModule | null {
   } catch {
     return null; // 구 런타임(네이티브 미포함) — 조용히 무기능
   }
-}
-
-/* ---- 설정 (AsyncStorage — 기기 단위) ---- */
-
-export async function getPushSettings(): Promise<PushSettings> {
-  try {
-    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...DEFAULT_PUSH_SETTINGS, ...(JSON.parse(raw) as Partial<PushSettings>) };
-  } catch {
-    /* 저장소 오류 — 기본값 */
-  }
-  return { ...DEFAULT_PUSH_SETTINGS };
-}
-
-/** 저장 + 넛지 off→on 전환 시 동의 일시 스탬프(광고성 수신 동의 기록). */
-export async function savePushSettings(next: Omit<PushSettings, 'nudgeOptInAt'>): Promise<PushSettings> {
-  const prev = await getPushSettings();
-  const merged: PushSettings = {
-    ...next,
-    nudgeOptInAt: next.nudge && !prev.nudge ? new Date().toISOString() : prev.nudgeOptInAt,
-  };
-  try {
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
-  } catch {
-    /* 저장 실패 — 다음 진입 시 기본값 */
-  }
-  return merged;
 }
 
 /* ---- 권한 프라이머 노출 기록 (거절 시 재노출 0 — 설정 화면 안내만) ---- */
@@ -113,33 +83,79 @@ export async function getPermissionStatus(): Promise<PushPermission> {
   }
 }
 
-/** OS 권한 팝업 — 프라이머 수락 후에만 호출(iOS 1회성 보호는 프라이머 몫). */
+/** OS 권한 팝업 — 호출처 2곳: 첫 설치 로그인 화면(promptPermissionOnFirstLogin, KB-631) · 프라이머 수락(후순위). iOS 1회성 보호는 호출측 몫. */
 export async function requestPermission(): Promise<boolean> {
   const N = loadNotifications();
   if (!N) return false;
   try {
     const { status } = await N.requestPermissionsAsync();
+    trackEvent(EVENTS.push_permission, { state: status === 'granted' ? 'grant' : 'deny' }); // KB-630: 호출처 무관 1곳 — 예외(팝업 미표시)는 결과 아님
     return status === 'granted';
   } catch {
     return false;
   }
 }
 
-/* ---- 토큰 등록 (BE 계약 미정 — 이 함수만 배선점) ---- */
+/* ---- 첫 설치 로그인 화면 즉시 요청 (KB-631 / spec 006) ---- */
+
+let loginPromptInflight: Promise<void> | null = null;
+
+/**
+ * 첫 설치 로그인 화면(`/login?entry=intro`) 마운트 시 1회 — 앱 프라이머 없이 OS 팝업만(카메라 권한과 같은 방식).
+ * 서버 요청 0(게스트). 결과는 프라이머 기록에 남겨 스캔 결과 시트가 생략된다. OS가 이미 결정을 기억하면(재설치)
+ * 요청 없이 기록만. 예외·모듈 없음은 기록하지 않는다(다음 기회 = 스캔 시트·설정 배너).
+ * 허용이면 대기 표식을 남겨 로그인 성공 직후 applyPendingActivityDefault가 activity 기본값을 1회 켠다(서버 기본 false).
+ */
+export function promptPermissionOnFirstLogin(): Promise<void> {
+  loginPromptInflight ??= promptPermissionOnFirstLoginInner().finally(() => { loginPromptInflight = null; });
+  return loginPromptInflight;
+}
+async function promptPermissionOnFirstLoginInner(): Promise<void> {
+  if (!loadNotifications()) return;
+  if (await getPrimerResult()) return; // 이미 응답(로그인 팝업·프라이머 어느 쪽이든)
+  let status = await getPermissionStatus();
+  if (status === 'undetermined') {
+    await requestPermission(); // OS 팝업 + push_permission 계측(이 함수 안 1곳)
+    status = await getPermissionStatus(); // 예외는 결과가 아니다 — 재조회한 상태로만 기록
+  }
+  if (status === 'granted') {
+    await AsyncStorage.setItem(ACTIVITY_PENDING_KEY, '1').catch(() => {});
+    await markPrimerResult('accepted');
+  } else if (status === 'denied') {
+    await markPrimerResult('declined');
+  }
+}
+
+/**
+ * 로그인 성공(세션 교환) 직후 호출 — 로그인 화면에서 허용한 기기에 한해 PATCH {activity:true} 1회 후 표식 삭제
+ * (프라이머 수락 경로와 같은 기본값 적용). 실패도 삭제(설정 화면에서 직접 켤 수 있음). 세션 없음 = 표식 유지·이월.
+ */
+export async function applyPendingActivityDefault(): Promise<void> {
+  if (!loadNotifications()) return;
+  try {
+    if ((await AsyncStorage.getItem(ACTIVITY_PENDING_KEY)) == null) return;
+    if (!(await hasBeSession())) return;
+    await AsyncStorage.removeItem(ACTIVITY_PENDING_KEY).catch(() => {});
+    await patchNotificationSettings({ activity: true });
+  } catch (e) {
+    console.log('[push] activity 기본값 적용 실패(비치명)', (e as Error)?.message ?? e);
+  }
+}
+
+/* ---- 토큰 등록 ---- */
 
 interface PushTokenRegistration {
   token: string;
   platform: string;
   lang: string;
-  settings: PushSettings;
 }
 
 async function sendTokenToServer(reg: PushTokenRegistration): Promise<void> {
-  // BE 토큰 저장 API 계약 대기(2026-08-13 요청 문서) — 회신 오면 여기만 배선.
-  console.log('[push] token upsert (BE 계약 대기, no-op)', reg.token.slice(0, 24), reg.platform, reg.lang);
+  await api.put('/api/notifications/tokens', reg);
 }
 
-/** 앱 시작·언어 변경 시 upsert — 권한 없으면 조용히 스킵(게스트 포함).
+/** 앱 시작·로그인 성공·언어 변경 시 upsert — **회원 세션 없음·권한 없음이면 조용히 스킵**
+ *  (KB-543: 토큰 API 회원 전용, 게스트 요청 0). 실패(401 포함)는 비치명.
  *  Codex #109 10R: track 경유 — 콜드 스타트 +8s OTA 창과 겹치는 연산(관문 5곳째). */
 export function registerPushToken(): Promise<void> {
   return track(registerPushTokenInner());
@@ -148,20 +164,15 @@ async function registerPushTokenInner(): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {
+    if (!(await hasBeSession())) return; // KB-543: 게스트 토큰 등록 폐기
     const { status } = await N.getPermissionsAsync();
     if (status !== 'granted') return;
     const projectId = getProjectId();
     const { data: token } = await N.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-    await sendTokenToServer({ token, platform: Platform.OS, lang: i18n.language, settings: await getPushSettings() });
+    await sendTokenToServer({ token, platform: Platform.OS, lang: apiLang() });
   } catch (e) {
     console.log('[push] token register 실패(비치명)', (e as Error)?.message ?? e);
   }
-}
-
-/** 로그아웃·탈퇴 시 서버 토큰 삭제 골격 — 계약 후 배선(현재 no-op+로그). */
-export async function unregisterPushToken(): Promise<void> {
-  if (!FLAGS.pushEnabled) return;
-  console.log('[push] token delete (BE 계약 대기, no-op)');
 }
 
 function getProjectId(): string | undefined {
@@ -196,14 +207,14 @@ async function setReminderMap(map: Record<string, string>): Promise<void> {
 
 /**
  * 주문 완료 모달 닫힘 시점 호출 — 1시간 후 "아까 그 메뉴 어땠어요?" 예약.
- * 수신 설정 off·권한 없음·플래그 off = 예약 안 함. 같은 음식 기존 예약은 교체.
+ * 서버 설정 `activity`(리뷰 리마인더 통합) 캐시가 true일 때만 — 캐시 없음 = 예약 안 함(보수적).
+ * 권한 없음·플래그 off = 예약 안 함. 같은 음식 기존 예약은 교체. (KB-500에서 서버 배치로 이관 예정)
  */
 export async function scheduleReviewReminder(food: { foodId: string; name: string }): Promise<void> {
   const N = loadNotifications();
   if (!N) return;
   try {
-    const settings = await getPushSettings();
-    if (!settings.reviewReminder) return;
+    if (queryClient.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)?.activity !== true) return;
     const { status } = await N.getPermissionsAsync();
     if (status !== 'granted') return;
     await cancelReviewReminder(food.foodId); // 재주문 = 타이머 리셋
@@ -213,7 +224,8 @@ export async function scheduleReviewReminder(food: { foodId: string; name: strin
         body: i18n.t('push.reviewReminderBody', { name: food.name }),
         data: { type: 'REVIEW_REMINDER', foodId: food.foodId },
       },
-      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS },
+      // KB-498: Android는 activity 채널(MAX)로 — 없으면 expo 폴백 채널(기본 중요도). iOS는 channelId 무시.
+      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS, channelId: 'activity' },
     });
     await setReminderMap({ ...(await getReminderMap()), [food.foodId]: id });
   } catch (e) {
@@ -242,26 +254,30 @@ export async function cancelReviewReminder(foodId: string): Promise<void> {
 /**
  * 알림 탭 → 라우팅 콜백. 포그라운드 표시 핸들러(배너)도 여기서 1회 설정.
  * 콜드 스타트(종료 상태 알림 탭)는 마지막 응답 1회 처리. 반환 = 해제 함수.
+ * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·MEAL_TIME·foodId 없는 리마인더)이면 null.
+ * 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음). 경로가 없어도 id는 전달(읽음 처리용).
+ * 읽음 처리는 루트 레이아웃이 onPushTapped(id)로 수행(KB-499). Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
  */
-export function addNotificationTapListener(onRoute: (href: string) => void): () => void {
+export function addNotificationTapListener(onRoute: (href: string | null, notificationId?: number | string) => void): () => void {
   const N = loadNotifications();
   if (!N) return () => {};
-  // P-289: 발화 기록 — 알림함(실알림 전용)에 적재. id = request.identifier(중복 방지 키)
-  const record = (req: { identifier?: string; content: { data?: unknown } } | null | undefined) => {
+  // KB-499: 서버 알림함 재조회 트리거 — 수신(포그라운드)·알림센터 잔존분(부팅)·탭 진입 모두 목록 invalidate.
+  // 구 로컬 알림함 적재(P-289)는 소멸 — 서버 notification 행이 정본. 게스트(쿼리 비활성)면 no-op.
+  const bump = () => {
     try {
-      const d = req?.content?.data as { type?: string; foodId?: string | number } | undefined;
-      if (!req?.identifier || !d?.type) return;
-      const { recordInboxNotification } = require('@/lib/notifications/inbox') as typeof import('@/lib/notifications/inbox');
-      recordInboxNotification({
-        id: req.identifier,
-        type: d.type as 'REVIEW_REMINDER' | 'HELPFUL' | 'NUDGE' | 'NOTICE',
-        ...(d.foodId != null ? { foodId: String(d.foodId) } : {}),
-      });
+      (require('@/lib/data/useNotifications') as typeof import('@/lib/data/useNotifications')).invalidateNotifications();
     } catch {
-      /* 기록 실패 = 비치명(알림함만 비는 것) */
+      /* 비치명 */
     }
   };
   try {
+    // KB-498: Android 채널 2종 — activity(MAX: HELPFUL·REVIEW_REMINDER) · news(HIGH: 광고성 3종, 기기 설정에서 따로 끌 수 있게 분리).
+    // 채널 중요도는 생성 후 변경 불가라 'default'는 만들지 않는다(서버가 default로 보내면 expo 폴백 채널 = 지금과 동일).
+    // 이름은 설정 화면 그룹명 i18n 재사용. 멱등(재호출 = 이름만 갱신) · iOS 무동작 · 결과 대기 없음(부팅 지연 0).
+    if (Platform.OS === 'android') {
+      void N.setNotificationChannelAsync('activity', { name: i18n.t('notif.activityGroup'), importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {});
+      void N.setNotificationChannelAsync('news', { name: i18n.t('notif.newsGroup'), importance: N.AndroidImportance.HIGH, sound: 'default' }).catch(() => {});
+    }
     N.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowBanner: true,
@@ -270,18 +286,25 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
         shouldSetBadge: false,
       }),
     });
+    const routed = new Set<string>(); // KB-498: 콜드 스타트 — 마지막 응답 조회와 리스너가 같은 탭을 이중 전달하는 것 차단
     const emit = (resp: { notification: { request: { identifier?: string; content: { data?: unknown } } } } | null) => {
-      record(resp?.notification.request); // 백그라운드 발화 → 탭 진입도 회수
-      const href = resp ? routeForNotificationData(resp.notification.request.content.data) : null;
-      if (href) onRoute(href);
+      bump(); // 백그라운드 발화 → 탭 진입도 재조회
+      const id = resp?.notification.request.identifier;
+      if (id) {
+        if (routed.has(id)) return;
+        routed.add(id);
+      }
+      const data = resp?.notification.request.content.data as { notificationId?: number | string } | undefined;
+      if (!resp) return;
+      onRoute(routeForNotificationData(data), data?.notificationId); // 경로 null이어도 호출 — id 보존(Codex #149)
     };
     const sub = N.addNotificationResponseReceivedListener(emit);
-    // P-289 ①: 포그라운드 발화 즉시 기록
-    const recv = N.addNotificationReceivedListener?.((n: { request: { identifier?: string; content: { data?: unknown } } }) => record(n.request));
-    // P-289 ②: 백그라운드 발화분 재실행 회수(알림 센터에 떠 있는 것)
+    // 포그라운드 발화 즉시 재조회
+    const recv = N.addNotificationReceivedListener?.(() => bump());
+    // 백그라운드 발화분(알림 센터에 떠 있는 것) 부팅 시 재조회
     // #109 11R 잔여(P-348 동승): 부팅 알림 조회 2건도 track — OTA 정적 창 포함
     void track(N.getPresentedNotificationsAsync?.()
-      .then((list: { request: { identifier?: string; content: { data?: unknown } } }[]) => list.forEach((n) => record(n.request)))
+      .then((list: unknown[]) => { if (list.length) bump(); })
       .catch(() => {}) ?? Promise.resolve());
     void track(N.getLastNotificationResponseAsync().then(emit).catch(() => {}));
     return () => {
@@ -293,18 +316,32 @@ export function addNotificationTapListener(onRoute: (href: string) => void): () 
   }
 }
 
-/* ---- 딥링크 라우팅 (순수 함수 — 서버 data 스키마는 BE 확정 대기, 여기만 배선) ---- */
+/* ---- 푸시 유형 (KB-498 — 서버 enum과 동일, 정확 일치만) ---- */
+
+export const PUSH_TYPES = ['HELPFUL', 'SCAN_SUGGESTION', 'REVIEW_REMINDER', 'NEWS', 'MEAL_TIME'] as const;
+export type PushType = (typeof PUSH_TYPES)[number];
+
+export function isPushType(v: unknown): v is PushType {
+  return typeof v === 'string' && (PUSH_TYPES as readonly string[]).includes(v); // trim·대소문자 정규화 없음
+}
+
+/* ---- 딥링크 라우팅 (순수 함수 — 서버 data 계약 KB-498, 여기만 배선) ---- */
 
 export function routeForNotificationData(data: unknown): string | null {
   const d = data as { type?: string; foodId?: string | number } | null | undefined;
+  // KB-573(2026-09-16 종한 확정): 매핑은 FE 소유 — 서버는 type + 대상 id만. "어떻게 가는가"(홈 = 스택 리셋 +
+  // 탭 점프 · 그 외 navigate 재사용)는 lib/nav openNotificationRoute 한 곳. 여기는 경로 문자열만.
   switch (d?.type) {
     case 'HELPFUL':
-      return '/profile/reviews'; // 발주 6: HELPFUL → 내 리뷰
-    case 'NUDGE':
-      return '/scan'; // 넛지 → 스캔
+      return '/profile/reviews'; // 내 리뷰 목록 — 리뷰 id 미제공이라 상세 불가. 게스트 게이트는 화면 몫
+    case 'SCAN_SUGGESTION': // 구 NUDGE(2026-09-07 개명) — 구 이름은 default로 무동작
+    case 'MEAL_TIME':
+      return '/(tabs)'; // 홈 탭(광고성 유도 2종 동일 착지)
     case 'REVIEW_REMINDER':
-      return d.foodId != null ? `/food/${d.foodId}/review` : null;
+      return d.foodId != null ? `/food/${d.foodId}` : null; // 음식 상세(리뷰 작성 화면 아님 — 9/12 결정)
+    case 'NEWS':
+      return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:
-      return null; // 미지 타입 — 무동작(스키마 확장 안전)
+      return null; // 미지·구 이름·변형 — 무동작(정확 일치만)
   }
 }

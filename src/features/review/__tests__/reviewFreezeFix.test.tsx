@@ -8,6 +8,12 @@
 const mockKb = { visible: true, listeners: [] as Array<(e?: unknown) => void>, dismiss: jest.fn() };
 // P-348 ⑥/P-355: PhotoViewer·시트 크롬(RNGH·reanimated 실모듈 체인) — 이 스위트는 헬퍼·소스 잠금만이라 표면 목
 jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
+// P-390(KB-578): ExpandableBody가 공용 ExpandToggle → 아이콘(SVG)을 끌어온다 — 표면만 목
+jest.mock('react-native-svg', () => {
+  const R = require('react') as typeof import('react');
+  const mk = (name: string) => (props: Record<string, unknown>) => R.createElement(name, props, props.children as never);
+  return { __esModule: true, default: mk('Svg'), Svg: mk('Svg'), Path: mk('Path'), Rect: mk('Rect'), Defs: mk('Defs'), ClipPath: mk('ClipPath'), Circle: mk('Circle'), G: mk('G'), Line: mk('Line'), Polyline: mk('Polyline') };
+});
 jest.mock('react-native-reanimated', () => ({ __esModule: true, default: { View: () => null }, useSharedValue: (v: unknown) => ({ value: v }), withTiming: (v: unknown) => v, runOnJS: (f: unknown) => f }));
 jest.mock('react-native-gesture-handler', () => ({ GestureDetector: ({ children }: { children: unknown }) => children, GestureHandlerRootView: () => null, Gesture: { Pan: () => ({ runOnJS: function r() { return this; }, onUpdate: function u() { return this; }, onFinalize: function f() { return this; } }) } }));
 jest.mock('@/components/useSheetSwipeDismiss', () => ({ useSheetSwipeDismiss: () => ({ gesture: {}, dimStyle: {}, sheetStyle: {}, onSheetLayout: jest.fn(), dismiss: jest.fn() }) }));

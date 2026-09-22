@@ -55,9 +55,7 @@
     "profileSub": "가입하면 기피 성분 저장, 스캔 기록, 랭킹 쌓기가 가능해요.",
     "saveTitle": "먹어보고 싶은 음식을 저장하세요",
     "saveSub": "가입하면 음식을 북마크해서 나만의 안심 리스트를 만들 수 있어요.",
-    "keepBrowsing": "계속 둘러보기",
-    "reportTitle": "리뷰의 신뢰를 지켜 주세요",
-    "reportSub": "가입하면 리뷰를 신고할 수 있어요. 신고 내용은 K-Bap에서 확인해요."
+    "keepBrowsing": "계속 둘러보기"
   },
   "lock": {
     "verdictTitle": "나만의 안전 등급",
@@ -125,7 +123,7 @@
   "community": {
     "title": "커뮤니티",
     "deletedUser": "탈퇴한 사용자",
-    "justNow": "방금",
+    "justNow": "방금 전",
     "minsAgo": "{{count}}분 전",
     "hoursAgo": "{{count}}시간 전",
     "seeMore": "더보기",
@@ -213,9 +211,8 @@
     "lockedBody": "다른 여행자들과 팁과 새로운 발견을 나누는 공간이에요. 곧 만나요.",
     "sectionRecentlyScanned": "최근 스캔",
     "searchAllFoods": "전체 음식에서 찾기",
-    "reviewEligibleNote": "스캔한 음식에만 리뷰를 쓸 수 있어요.",
-    "goScanCta": "스캔하러 가기",
-    "sectionAllFoods": "전체 음식"
+    "sectionAllFoods": "전체 음식",
+    "reportFailed": "신고를 보내지 못했어요. 다시 시도해 주세요."
   },
   "risk": {
     "safe": "안전",
@@ -434,6 +431,7 @@
     "addPhoto": "사진 추가",
     "removePhoto": "사진 삭제",
     "postError": "리뷰를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
+    "foodHidden": "지금은 이 음식에 리뷰를 게시할 수 없어요. 작성한 내용은 이 화면에 그대로 있어요.",
     "likesCaption": "좋아요는 정렬에 영향을 주지 않아요",
     "placeRow": "어디서 드셨어요?",
     "placeSheetTitle": "장소 태그",
@@ -712,7 +710,8 @@
     "readAll": "전체 보기",
     "beFirstReview": "아직 리뷰가 없어요. 첫 리뷰를 남겨 보세요.",
     "ingGuestBody": "이 음식의 {{ingredient}} 사용 비율은 약 {{percent}}%예요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
-    "ingGuestBodyNoPct": "이 음식은 {{ingredient}} 사용이 흔해요. 식당마다 다를 수 있으니 사장님께 확인해 보세요."
+    "ingGuestBodyNoPct": "이 음식은 {{ingredient}} 사용이 흔해요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
+    "foodHidden": "지금은 이 음식 정보를 볼 수 없어요."
   },
   "states": {
     "catalogTitle": "상태",
@@ -770,7 +769,9 @@
     "recentEmpty": "최근 스캔이 없어요",
     "safeForYou": "내 기준 '안전' 판정 메뉴",
     "safeForYouSub": "못 먹는 재료 목록을 기준으로 판정했어요. 사장님께 꼭 확인하세요.",
-    "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요."
+    "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요.",
+    "mostReviewed": "리뷰가 많은 음식",
+    "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요."
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -876,10 +877,12 @@
       "groupAllergy": "알레르기",
       "apply": "내 목록에 적용"
     },
-    "countryLabel": "국가"
+    "countryLabel": "국가",
+    "popularCountries": "인기 국가"
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
+    "foodHidden": "지금은 이 음식을 저장할 수 없어요.",
     "title": "저장됨",
     "count_other": "음식 {{count}}개",
     "newestFirst": "최신순",
@@ -916,6 +919,8 @@
     "gallery": "갤러리에서 선택",
     "permTitle": "카메라 권한 필요",
     "permBody": "사진을 찍으려면 설정에서 카메라 접근을 허용해 주세요.",
+    "libraryPermTitle": "사진 권한 필요",
+    "libraryPermBody": "사진 접근이 꺼져 있어요. 설정에서 허용해 주세요.",
     "openSettings": "설정 열기"
   },
   "versionGate": {
@@ -944,42 +949,43 @@
     "caption": "처음 한 번만 표시돼요. 마크를 탭하면 다시 볼 수 있어요."
   },
   "push": {
-    "primerTitle": "리뷰 알림을 받아보실래요?",
-    "primerBody": "주문 1시간 후 리뷰 작성 알림을 보내드려요. 설정에서 언제든 바꿀 수 있어요.",
+    "primerTitle": "리뷰 알림을 받을까요?",
+    "primerBody": "스캔한 메뉴, 1시간 뒤 리뷰 작성을 알려드려요.",
     "primerYes": "알림 켜기",
-    "primerLater": "지금은 안 할게요",
+    "primerLater": "나중에",
+    "consentSheetTitle": "K-Bap 소식을 받을까요?",
+    "consentSheetBody": "이벤트/새 기능 소식을 광고성 알림으로 보내요.",
+    "privacyConsent": "마케팅 목적 개인정보 수집/이용 동의 (선택)",
+    "receiveConsent": "광고성 정보 수신 동의 (선택)",
+    "consentBothRequired": "두 항목에 모두 동의해야 알림을 켤 수 있어요.",
+    "consentConfirm": "동의하고 알림 켜기",
     "reviewReminderTitle": "식사 어떠셨어요?",
     "reviewReminderBody": "{{name}} 메뉴에 별점을 남겨주세요. 다른 여행자에게 큰 도움이 돼요."
   },
   "notif": {
     "title": "알림 설정",
-    "helpful": "리뷰 반응",
-    "helpfulSub": "내 리뷰에 '도움돼요' 반응이 달렸을 때",
-    "reminder": "리뷰 작성 알림",
-    "reminderSub": "주문 1시간 후 식사가 어땠는지 물어봐요",
-    "nudge": "메뉴 스캔 알림",
-    "nudgeSub": "가끔 점심시간에 메뉴판 스캔 알림을 보내요",
-    "osOff": "시스템 설정에서 K-Bap 알림이 꺼져 있어요.",
-    "osOffCta": "시스템 설정 열기",
-    "marketing": "광고성 정보 수신 동의",
-    "marketingSub": "이벤트와 추천 등 광고성 정보를 알림으로 받아요.",
-    "night": "야간 광고성 정보 수신 동의",
-    "nightSub": "밤 9시부터 다음 날 아침 8시 사이에도 광고성 정보를 받아요.",
-    "saveFailed": "저장하지 못했어요. 다시 시도해 주세요."
+    "activityGroup": "내 활동 알림",
+    "activity": "활동 알림",
+    "activitySub": "리뷰 반응/식사 후 리뷰 작성",
+    "newsGroup": "K-Bap 소식",
+    "news": "소식 알림",
+    "newsSub": "이벤트/새 기능 소식 (광고성)",
+    "mealTime": "식사 시간 알림",
+    "mealTimeSub": "점심/저녁 메뉴 스캔 알림 (광고성)",
+    "consentStatus": "광고성 수신 동의 {{date}} (v{{version}})",
+    "viewFull": "전문 보기",
+    "readFailed": "불러오지 못했어요. 탭해서 다시 시도",
+    "osOff": "기기 설정에서 알림이 꺼져 있어요.",
+    "osOffCta": "기기 설정 열기",
+    "saveFailed": "저장하지 못했어요. 다시 시도해 주세요.",
+    "offConfirmTitle": "알림을 끄시겠어요?",
+    "offConfirmBody": "유용한 정보나 이벤트 알림을 받지 못할 수도 있어요.",
+    "offConfirmCta": "알림 끄기"
   },
   "inbox": {
     "title": "알림",
     "empty": "아직 알림이 없어요",
     "emptyBody": "리뷰와 스캔 관련 소식이 여기에 표시돼요.",
-    "markAllRead": "모두 읽음으로 표시",
-    "helpfulTitle": "내 리뷰가 도움이 됐어요",
-    "helpfulBody": "김치찌개 리뷰에 '도움돼요' 반응이 달렸어요.",
-    "reminderTitle": "식사는 어떠셨나요?",
-    "reminderBody": "주문한 메뉴에 리뷰를 남겨 보세요.",
-    "noticeTitle": "K-Bap에 오신 걸 환영해요",
-    "noticeBody": "메뉴판을 스캔하면 음식별 위험도를 확인할 수 있어요.",
-    "nudgeTitle": "오늘 외식하시나요?",
-    "nudgeBody": "주문 전에 메뉴를 스캔해 보세요.",
     "newBadge": "NEW"
   },
   "myFoods": {
@@ -996,6 +1002,39 @@
     "dishes": "메뉴",
     "receiptDate": "날짜",
     "receiptLocation": "장소",
-    "receiptTotal": "합계"
+    "receiptTotal": "합계",
+    "shareMenuMore": "외 {{count}}",
+    "sharePreviewCaption": "9:16 스토리 카드 미리보기",
+    "shareDownload": "이미지\n저장",
+    "shareDownloadInline": "이미지 저장",
+    "shareInstagram": "인스타그램\n스토리",
+    "sharePhotoDenied": "사진 접근을 허용하면 스토리 카드를 저장할 수 있어요.",
+    "shareSaved": "사진첩에 저장했어요.",
+    "shareNoInstagram": "이 기기에 인스타그램이 없어요.",
+    "shareFailed": "스토리 카드를 만들지 못했어요. 다시 시도해 주세요.",
+    "shareStoryHint": "이미지를 저장한 뒤 인스타그램에서 공유해 주세요.",
+    "sharePhotosFailed": "사진을 불러오지 못했어요. 눌러서 다시 시도해 주세요.",
+    "itemPhotoTitle": "음식 사진",
+    "itemPhotoDefault": "기본 사진으로",
+    "editFailed": "변경하지 못했어요. 다시 시도해 주세요.",
+    "editPhotoNotReady": "사진 업로드가 끝나지 않았어요. 다시 시도해 주세요.",
+    "editNotFound": "주문 정보를 찾을 수 없어요. 새로고침해 주세요."
+  },
+  "feedback": {
+    "title": "문의하기",
+    "newInquiry": "새 문의",
+    "newTitle": "문의 작성",
+    "placeholder": "무슨 일이 있었는지, 또는 바라는 점을 알려주세요. 사진을 넣어도 좋아요.",
+    "send": "보내기",
+    "sent": "문의를 보냈어요. 고마워요!",
+    "sendFailed": "보내지 못했어요. 다시 시도해 주세요.",
+    "rateLimited": "최근 24시간 동안 문의를 많이 보내셨어요. 잠시 후에 다시 시도해 주세요.",
+    "statusOpen": "접수됨",
+    "statusAnswered": "답변 완료",
+    "statusClosed": "종료",
+    "emptyTitle": "아직 보낸 문의가 없어요",
+    "replyCount_other": "답변 {{count}}개",
+    "notFound": "이 문의를 찾을 수 없어요.",
+    "teamName": "K-Bap 팀"
   }
 }

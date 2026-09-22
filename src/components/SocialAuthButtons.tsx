@@ -19,6 +19,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { useSocialAuth } from '@/lib/auth/useSocialAuth';
+import type { LoginEntry } from '@/lib/auth/loginEntry';
 import { useShake } from '@/lib/useShake';
 import { IconGoogleG } from './icons';
 
@@ -27,13 +28,16 @@ const BTN_H = 48; // A-LG-03(KB-486) — Apple 슬롯 공유(네이티브 스타
 export function SocialAuthButtons({
   onSignedIn,
   onBusyChange,
+  entry = 'intro',
 }: {
   onSignedIn: (newMember: boolean) => void;
   /** KB-421: 소셜 진행 중(busy) 전파 — 로그인 화면이 게스트 진입을 잠그는 용도. */
   onBusyChange?: (busy: boolean) => void;
+  /** P-389(KB-576): 가입 유입 경로 — 로그인 화면이 쿼리에서 파싱해 넘긴다. */
+  entry?: LoginEntry;
 }) {
   const { t } = useTranslation();
-  const { phase, error, appleAvailable, signInWithGoogle, signInWithApple } = useSocialAuth(onSignedIn);
+  const { phase, error, appleAvailable, signInWithGoogle, signInWithApple } = useSocialAuth(onSignedIn, entry);
   const busy = phase !== 'idle';
   React.useEffect(() => {
     onBusyChange?.(busy);

@@ -126,7 +126,11 @@ it('①② 두 화면 = 같은 컴포넌트 + 소스 잠금 — 홈 = 세그먼�
   // 두 화면 모두 FoodExplorer 경유(자체 검색/탭/칩/그리드 마크업 잔존 0)
   const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
   const food = fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8') as string;
-  expect(home).toContain('<FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />');
+  // P-393(KB-580): 홈이 레일 데이터를 내려 주면서 여러 줄 호출로 바뀌었다 — 축만 잠근다
+  expect(home).toContain('<FoodExplorer');
+  expect(home).toContain('variant="embedded"');
+  expect(home).toContain('guest={isGuest}');
+  expect(home).toContain('srcTag="home"');
   expect(food).toContain('variant="screen"');
   expect(food).toContain('parseFoodFilterParams'); // See all 파라미터 수신(P-318)
   expect(food).not.toContain('initialTab'); // 세그먼트 소멸 — 탭 개념 없음

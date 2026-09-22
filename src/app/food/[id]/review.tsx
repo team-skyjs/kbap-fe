@@ -6,9 +6,13 @@
  * 성공 시 서버 재조회(무효화)가 진실 (목 캐시 삽입 폐기). Rating required
  * (1–5 integer). No emoji; reader text i18n'd; risk colors fixed.
  */
+// ⚠️ KB-602 래칫 기록(2026-09-21): 아래 `FLAGS.*` early return이 **훅 호출보다 위**에 있다 —
+// `react-hooks/rules-of-hooks`가 이 파일에서 위반으로 잡는다(현재 warn으로 내려둔 상태).
+// 지금 안전한 이유는 **FLAGS가 빌드 상수**라 한 빌드 안에서 분기가 고정된다는 것 하나뿐이다.
+// 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
+// early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { KeyboardDismissBar } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -18,19 +22,19 @@ import { foodSubtitle } from '@/lib/review/foodSubtitle';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
-import { SubHeader, Btn, CardPhoto, Star, Stars, RiskMark, IconCamera, IconCheck, IconChevron, IconClose, IconMapPin, IconPlus, IconSearch, Input } from '@/components';
+import { SubHeader, Btn, CardPhoto, Star, RiskMark, IconCamera, IconCheck, IconClose, IconMapPin, IconRetry, Input } from '@/components';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/useReviewMutations';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
+import { isFoodHidden } from '@/lib/api/client';
 import { showTopToast } from '@/components/topToastStore';
 import { Shimmer } from '@/components/Skeleton';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
-import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -44,9 +48,14 @@ const MAX = 1000; // P-085: 계약 확정값 (구 500)
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
-  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  // ⚠️ 가드는 **훅이 하나도 없는 바깥 컴포넌트**에 둔다(KB-620). 전엔 모든 훅 앞에 early return이
+  // 있었다 — FLAGS가 컴파일 상수라 런타임 순서는 안 바뀌지만, 린터는 그걸 몰라 rules-of-hooks로
+  // 잡고 React Compiler도 이 컴포넌트를 최적화하지 못한다. 분리하면 규칙이 구조적으로 선다.
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+  return <ReviewComposeScreen />;
+}
 
+function ReviewComposeScreen() {
   const { id, reviewId } = useLocalSearchParams<{ id: string; reviewId?: string }>();
   const router = useRouter();
   const { t } = useTranslation();
@@ -63,8 +72,9 @@ export default function ReviewCompose() {
   const [body, setBody] = useState('');
   const [photos, setPhotos] = useState<ReviewPhoto[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const [postError, setPostError] = useState(false);
-  const [eligGate, setEligGate] = useState(false); // P-251: REVIEW-004 자격 안내
+  /** 제출 실패 종류. ⚠️ 불리언 둘(에러·숨김)로 두면 "둘 다 참"이라는 **있을 수 없는 상태**가
+   *  생긴다 — 셋 중 하나로 고정한다. `hidden` = 음식이 일시 숨김(KB-620): 에러가 아니다. */
+  const [postError, setPostError] = useState<'failed' | 'hidden' | null>(null);
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
@@ -152,7 +162,7 @@ export default function ReviewCompose() {
   const post = () =>
     runPost(async () => {
       if (!canPostReview(rating)) return;
-      setPostError(false);
+      setPostError(null);
       try {
         // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
         const localUris = photos.filter((p) => p.kind === 'local').map((p) => p.uri);
@@ -187,13 +197,14 @@ export default function ReviewCompose() {
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
-        // P-251(BE #185): 403 REVIEW-004 = 자격 없음(진입 게이트를 뚫은 엣지 —
-        // 픽커 "전체에서 찾기" 경유 등) → 같은 자격 안내(BE message 미노출)
-        if ((e as { code?: string })?.code === 'REVIEW-004') {
-          setEligGate(true);
-          return;
-        }
-        setPostError(true); // 실패 = 버튼 복구(가드 finally) + 기존 에러 표면
+        // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
+        // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.
+        // 화면에 두면 사용자가 쓴 글이 남고, 음식이 돌아오면 그대로 다시 올릴 수 있다.
+        // FOOD-001은 **신규 작성만** 받는다 — 서버 `createReview`는 `getReadyFood`를 타지만 `updateReview`는
+        // 리뷰·이미지 소유권만 확인해서(음식 준비 상태 무관) 숨겨진 음식의 리뷰도 **수정은 성공**한다.
+        // 수정 경로도 이 catch를 지나므로 서버가 준비 상태 검사를 추가하면 그대로 대비된다(KB-626 정정 —
+        // KB-620 때 "신규·수정 모두 같은 FOOD-001"이라고 적었던 건 서버를 확인하지 않은 추론이었다).
+        setPostError(isFoodHidden(e) ? 'hidden' : 'failed'); // 실패 = 버튼 복구(가드 finally)
       }
     });
 
@@ -413,11 +424,19 @@ export default function ReviewCompose() {
 
 
 
-        <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
-        {postError && (
+        {postError === 'failed' && (
           <View style={styles.postErr}>
             <RiskMark state="caution" size={16} />
             <Text style={styles.postErrText}>{t('review.postError')}</Text>
+          </View>
+        )}
+        {/* KB-620: 숨김 안내는 **중립**이다 — RiskMark(안전 판정 아이콘)·주황 경고 틴트를 쓰지 않는다.
+            "이 음식을 잠시 못 쓴다" 옆에 판정 아이콘이 붙으면 음식 자체에 대한 판정으로 읽힌다(헌법 III).
+            틀(패딩·보더·라운딩)은 postErr와 같고 색만 다르다. */}
+        {postError === 'hidden' && (
+          <View style={styles.hiddenNote} testID="review-food-hidden">
+            <IconRetry size={16} color={C.inkInfo} />
+            <Text style={styles.hiddenNoteText}>{t('review.foodHidden')}</Text>
           </View>
         )}
       </ScrollView>
@@ -505,6 +524,9 @@ const styles = StyleSheet.create({
   // P-085: 제출 실패 안내 (온보딩 submitErr 톤)
   postErr: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fdf3e7', borderWidth: 1, borderColor: '#f3ddc0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
   postErrText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.ink, lineHeight: 17 },
+  // KB-620: postErr와 **같은 틀**, 중립 색(risk*·주황 계열 금지)
+  hiddenNote: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  hiddenNoteText: { flex: 1, fontFamily: font.body, fontSize: 12.5, color: C.inkInfo, lineHeight: 17 },
 
   // submitted
   // P-168 ②: 완료 모달 (P-162 confirm 문법과 동일 수치)

@@ -154,7 +154,7 @@ it('P-296 onDone 새 정체성 리렌더(entryChecked 플립 재현) — cancelA
 it('P-296 배선 소스 잠금 — _layout onDone = 안정 콜백(인라인 화살표 잔존 0)', () => {
   const fs = require('fs');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-  expect(layout).toContain('const onSplashDone = useCallback(() => setSplashVisible(false), []);');
+  expect(layout).toContain('const onSplashDone = useCallback(() => { setSplashVisible(false); markSplashDone(); }, []);'); // KB-631: 로그인 팝업 게이트 resolve 동승
   expect(layout).toContain('onDone={onSplashDone}');
   expect(layout).not.toContain('onDone={() =>');
 });
@@ -199,7 +199,10 @@ it('P-293③ reduce-motion + ready=false: 0.6s 후에도 보류 → ready=true�
 it('P-293④ 배선 소스 잠금 — hideAsync/active는 폰트만 게이트·Stack=entryChecked 조건부·ready 전달·SPLASH_MIN_MS 0', () => {
   const fs = require('fs');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-  expect(layout).toContain('if (fontsLoaded || fontError) {'); // entryChecked 대기 제거
+  // KB-602: active는 **파생값**이 됐다(effect setState 제거 — react-hooks/set-state-in-effect).
+  // 잠그려는 건 "폰트만 게이트"라는 성질이지 구현 형태가 아니다.
+  expect(layout).toContain('const splashActive = fontsLoaded || !!fontError;');
+  expect(layout).toContain('if (fontsLoaded || fontError) SplashScreen.hideAsync()'); // entryChecked 대기 제거
   expect(layout).not.toContain('(fontsLoaded || fontError) && entryChecked'); // 구 게이트 잔존 0
   expect(layout).toContain('{entryChecked && ('); // 렌더 가드(P-041/P-217)는 Stack 조건부가 승계
   expect(layout).toContain('ready={entryChecked}');
@@ -219,7 +222,10 @@ it('4s 캡 — active가 영영 안 와도 언마운트 보장(bootGate 캡 동�
 it('배선·네이티브 구성 소스 잠금 — hideAsync 프레임 활성·흰 배경·마크 에셋·81pt', () => {
   const fs = require('fs');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-  expect(layout).toContain('setSplashActive(true);'); // hideAsync와 같은 effect(프레임)
+  // KB-602: setSplashActive 소멸 — 파생값이라 폰트 로드와 **같은 렌더**에 active=true가 된다
+  // (전에는 effect가 한 프레임 뒤에 세워서 첫 렌더가 active=false로 낭비됐다).
+  expect(layout).not.toContain('setSplashActive'); // 상태 잔존 0
+  expect(layout).toContain('const splashActive = fontsLoaded || !!fontError;');
   expect(layout).toContain('SplashScreen.hideAsync().catch(() => {});');
   expect(layout).toContain('{splashVisible && <AnimatedSplash active={splashActive}');
   const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));

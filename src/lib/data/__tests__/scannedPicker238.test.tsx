@@ -64,9 +64,10 @@ it('배선 소스 잠금 — 픽커 리뷰 컨텍스트만 scanned, 음식탭·�
   const fs = require('fs');
   const picker = fs.readFileSync('src/app/community/compose.tsx', 'utf8') as string;
   expect(picker).toContain("context === 'review'");
-  expect(picker).toContain("useScanScope && !searchAll ? 'scanned' : undefined");
-  expect(picker).toContain('reviewInitial'); // 스캔 0건 = 인기 폴백 분기
-  expect(picker).toContain("testID=\"picker-search-all\""); // 전체 재검색 제안 행
+  // P-392(KB-584): 리뷰는 전체 검색 — scanned 범위는 filter 컨텍스트 전용으로 축소
+  expect(picker).toContain("useScanScope && !searchAll && !isReview ? ('scanned' as const) : undefined");
+  expect(picker).toContain('reviewInitial'); // 스캔분 유무 = 첫 목록 분기(빠른 선택)
+  expect(picker).toContain("testID=\"picker-search-all\""); // filter 컨텍스트의 전체 재검색 행은 존치
   // 다른 표면은 scope 인자 없이 호출(무변)
   expect(fs.readFileSync('src/app/search.tsx', 'utf8')).not.toContain("'scanned'");
   expect(fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8')).not.toContain("'scanned'");

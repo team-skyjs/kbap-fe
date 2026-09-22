@@ -104,7 +104,7 @@ it('P-147: GOOGLE 회원 + 애플 링크 잔존 → 게이트 미발동, 바로 
   expect(mockWithdrawBe).toHaveBeenCalled();
   expect(mockClearMember).toHaveBeenCalled(); // 탈퇴한 계정 draft·맵기 소거
   expect(mockCleanup).toHaveBeenCalled(); // P-147 ②: 잔존 링크 재발 방지
-  expect(mockReplace).toHaveBeenCalledWith('/login');
+  expect(mockReplace).toHaveBeenCalledWith('/login?entry=other'); // P-389: 탈퇴 후 복귀 — 인트로 아님
 });
 
 it('P-147: APPLE 회원 → 재인증 게이트 발동(탈퇴 미진행 — KB-162 현행)', async () => {
@@ -137,7 +137,7 @@ it('P-147: 클린업 실패해도 탈퇴 흐름 계속(best effort)', async () =
   });
   await confirmDelete(tree);
   expect(mockWithdrawBe).toHaveBeenCalled();
-  expect(mockReplace).toHaveBeenCalledWith('/login');
+  expect(mockReplace).toHaveBeenCalledWith('/login?entry=other'); // P-389: 탈퇴 후 복귀 — 인트로 아님
 });
 
 it('P-173 🚨: 탈퇴 확정 연타 → withdrawBe 1회(동기 가드 — PATCH 7발 로그 실증 봉쇄)', async () => {

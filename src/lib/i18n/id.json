@@ -55,9 +55,7 @@
     "profileSub": "Daftar untuk menyimpan pantangan Anda, melacak pindaian, dan membangun peringkat Anda.",
     "saveTitle": "Simpan hidangan yang ingin kamu coba",
     "saveSub": "Daftar untuk menandai hidangan dan membuat daftar makanan aman versimu.",
-    "keepBrowsing": "Lanjut menjelajah",
-    "reportTitle": "Bantu jaga ulasan tetap tepercaya",
-    "reportSub": "Daftar untuk melaporkan ulasan agar kami dapat meninjaunya."
+    "keepBrowsing": "Lanjut menjelajah"
   },
   "lock": {
     "verdictTitle": "Peringkat keamanan pribadi Anda",
@@ -213,9 +211,8 @@
     "lockedBody": "Bagikan tips dan temuan dengan sesama pelancong — segera hadir.",
     "sectionRecentlyScanned": "BARU DIPINDAI",
     "searchAllFoods": "Cari di semua hidangan",
-    "reviewEligibleNote": "Kamu hanya bisa mengulas makanan yang sudah kamu pindai.",
-    "goScanCta": "Pindai sekarang",
-    "sectionAllFoods": "Semua makanan"
+    "sectionAllFoods": "Semua makanan",
+    "reportFailed": "Laporan gagal dikirim. Coba lagi."
   },
   "risk": {
     "safe": "Aman",
@@ -388,6 +385,7 @@
     "addPhoto": "Tambah foto",
     "removePhoto": "Hapus foto",
     "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi.",
+    "foodHidden": "Ulasan untuk hidangan ini tidak bisa dikirim saat ini. Tulisanmu masih ada di layar ini.",
     "likesCaption": "Suka tidak memengaruhi urutan",
     "placeRow": "Kamu makan di mana?",
     "placeSheetTitle": "Tandai tempat",
@@ -554,7 +552,8 @@
     "readAll": "Lihat semua",
     "beFirstReview": "Belum ada ulasan — jadilah yang pertama!",
     "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
-    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan."
+    "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
+    "foodHidden": "Informasi hidangan ini tidak bisa dilihat saat ini."
   },
   "states": {
     "catalogTitle": "Status",
@@ -612,7 +611,9 @@
     "recentEmpty": "Belum ada pemindaian terbaru",
     "safeForYou": "Pilihan Safe untukmu",
     "safeForYouSub": "Berdasarkan daftar hindaranmu — selalu konfirmasi ke pemilik.",
-    "railFilterEmpty": "Belum ada hidangan {{risk}} di daftar ini. Coba filter lain."
+    "railFilterEmpty": "Belum ada hidangan {{risk}} di daftar ini. Coba filter lain.",
+    "mostReviewed": "Paling banyak diulas",
+    "mostReviewedSub": "Yang sedang ramai dibicarakan."
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",
@@ -718,7 +719,8 @@
       "groupAllergy": "Paket alergi",
       "apply": "Terapkan ke daftar saya"
     },
-    "countryLabel": "Negara"
+    "countryLabel": "Negara",
+    "popularCountries": "Populer"
   },
   "editProfile": {
     "title": "Edit profil",
@@ -880,6 +882,7 @@
   },
   "saved": {
     "error": "Tidak dapat memperbarui daftar simpanan. Silakan coba lagi.",
+    "foodHidden": "Hidangan ini tidak bisa disimpan saat ini.",
     "title": "Tersimpan",
     "count_other": "{{count}} hidangan",
     "newestFirst": "Terbaru dulu",
@@ -916,6 +919,8 @@
     "gallery": "Pilih dari galeri",
     "permTitle": "Perlu akses kamera",
     "permBody": "Izinkan akses kamera di Pengaturan untuk mengambil foto.",
+    "libraryPermTitle": "Perlu akses foto",
+    "libraryPermBody": "Akses foto dimatikan. Izinkan di Pengaturan.",
     "openSettings": "Buka Pengaturan"
   },
   "versionGate": {
@@ -944,42 +949,43 @@
     "caption": "Tampil sekali — ketuk tanda mana pun untuk melihat lagi."
   },
   "push": {
-    "primerTitle": "Terima info bermanfaat?",
-    "primerBody": "Kami akan memberi tahu saat ulasanmu dianggap membantu, dan mengingatkanmu menilai hidangan yang sudah dicoba. Bisa diubah kapan saja di pengaturan.",
-    "primerYes": "Aktifkan notifikasi",
+    "primerTitle": "Terima pengingat ulasan?",
+    "primerBody": "Satu jam setelah memindai, kami ingatkan untuk menulis ulasan.",
+    "primerYes": "Nyalakan",
     "primerLater": "Nanti saja",
+    "consentSheetTitle": "Terima berita K-Bap?",
+    "consentSheetBody": "Berita acara dan fitur baru dikirim sebagai notifikasi promosi.",
+    "privacyConsent": "Setuju pengumpulan dan penggunaan data pribadi untuk pemasaran (opsional)",
+    "receiveConsent": "Setuju menerima informasi promosi (opsional)",
+    "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
+    "consentConfirm": "Setuju dan nyalakan",
     "reviewReminderTitle": "Bagaimana makanannya?",
     "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain."
   },
   "notif": {
     "title": "Pengaturan notifikasi",
-    "helpful": "Reaksi ulasan",
-    "helpfulSub": "Saat seseorang menganggap ulasanmu membantu",
-    "reminder": "Pengingat ulasan",
-    "reminderSub": "Satu jam setelah memesan, tanya bagaimana rasanya",
-    "nudge": "Saran pindai",
-    "nudgeSub": "Sesekali mengingatkan memindai menu saat makan siang",
-    "osOff": "Notifikasi K-Bap dimatikan di pengaturan sistem.",
-    "osOffCta": "Buka pengaturan sistem",
-    "marketing": "Notifikasi pemasaran",
-    "marketingSub": "Terima info acara dan rekomendasi lewat notifikasi.",
-    "night": "Notifikasi malam hari",
-    "nightSub": "Terima juga antara pukul 21.00–08.00.",
-    "saveFailed": "Gagal menyimpan. Coba lagi."
+    "activityGroup": "Aktivitas saya",
+    "activity": "Notifikasi aktivitas",
+    "activitySub": "Reaksi ulasan / pengingat ulasan setelah makan",
+    "newsGroup": "Berita K-Bap",
+    "news": "Notifikasi berita",
+    "newsSub": "Acara dan fitur baru (promosi)",
+    "mealTime": "Pengingat waktu makan",
+    "mealTimeSub": "Ajakan pindai menu saat makan siang dan malam (promosi)",
+    "consentStatus": "Setuju menerima promosi {{date}} (v{{version}})",
+    "viewFull": "Lihat teks lengkap",
+    "readFailed": "Gagal memuat. Ketuk untuk coba lagi",
+    "osOff": "Notifikasi dimatikan di pengaturan perangkat.",
+    "osOffCta": "Buka pengaturan perangkat",
+    "saveFailed": "Gagal menyimpan. Coba lagi.",
+    "offConfirmTitle": "Matikan notifikasi?",
+    "offConfirmBody": "Kamu mungkin melewatkan info berguna dan acara.",
+    "offConfirmCta": "Matikan"
   },
   "inbox": {
     "title": "Notifikasi",
     "empty": "Belum ada notifikasi",
     "emptyBody": "Kabar tentang ulasan dan pemindaian akan muncul di sini.",
-    "markAllRead": "Tandai semua sudah dibaca",
-    "helpfulTitle": "Ulasanmu dinilai membantu",
-    "helpfulBody": "Ulasanmu tentang sup kimchi mendapat satu suara membantu.",
-    "reminderTitle": "Bagaimana makanannya?",
-    "reminderBody": "Tulis ulasan singkat untuk hidangan yang kamu pesan.",
-    "noticeTitle": "Selamat datang di K-Bap",
-    "noticeBody": "Pindai menu untuk tahu hidangan mana yang aman untukmu.",
-    "nudgeTitle": "Makan di luar hari ini?",
-    "nudgeBody": "Pindai menu sebelum memesan.",
     "newBadge": "NEW"
   },
   "myFoods": {
@@ -996,6 +1002,39 @@
     "dishes": "Hidangan",
     "receiptDate": "TANGGAL",
     "receiptLocation": "LOKASI",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} lagi",
+    "sharePreviewCaption": "Pratinjau kartu story 9:16",
+    "shareDownload": "Simpan\ngambar",
+    "shareDownloadInline": "Simpan gambar",
+    "shareInstagram": "Story\nInstagram",
+    "sharePhotoDenied": "Izinkan akses foto untuk menyimpan kartu story.",
+    "shareSaved": "Tersimpan ke galeri foto.",
+    "shareNoInstagram": "Instagram belum terpasang di ponsel ini.",
+    "shareFailed": "Gagal membuat kartu story. Coba lagi.",
+    "shareStoryHint": "Simpan gambarnya, lalu bagikan di Instagram.",
+    "sharePhotosFailed": "Gagal memuat foto. Ketuk untuk coba lagi.",
+    "itemPhotoTitle": "Foto hidangan",
+    "itemPhotoDefault": "Pakai foto bawaan",
+    "editFailed": "Perubahan tidak tersimpan. Coba lagi.",
+    "editPhotoNotReady": "Unggahan foto belum selesai. Coba lagi.",
+    "editNotFound": "Pesanan ini tidak ditemukan. Muat ulang lalu coba lagi."
+  },
+  "feedback": {
+    "title": "Hubungi kami",
+    "newInquiry": "Baru",
+    "newTitle": "Pertanyaan baru",
+    "placeholder": "Ceritakan apa yang terjadi, atau apa yang kamu harapkan. Boleh sertakan foto.",
+    "send": "Kirim",
+    "sent": "Terima kasih — pesanmu sudah kami terima.",
+    "sendFailed": "Gagal mengirim. Coba lagi.",
+    "rateLimited": "Kamu sudah mengirim banyak dalam 24 jam terakhir. Coba lagi nanti.",
+    "statusOpen": "Terbuka",
+    "statusAnswered": "Dijawab",
+    "statusClosed": "Ditutup",
+    "emptyTitle": "Belum ada pertanyaan",
+    "replyCount_other": "{{count}} balasan",
+    "notFound": "Pertanyaan ini tidak tersedia.",
+    "teamName": "Tim K-Bap"
   }
 }

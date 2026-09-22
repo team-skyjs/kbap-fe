@@ -21,6 +21,28 @@ export function isProdChannel(): boolean {
   return PROD_CHANNEL;
 }
 
+/** P-399: **진단 문구를 보여도 되는 채널**만 참. `!isProdChannel()`로 negate하면
+ *  `preview`(production 백엔드를 쓰는 내부 배포)까지 포함돼 원시 네이티브 에러 문자열이
+ *  샌다(Codex #176) — 그래서 부정이 아니라 **명시 허용**이다.
+ *  채널 부재(웹·jest·dev 런처)는 로컬 개발이라 포함한다.
+ *  P-407: `teamtest-prod`(prod 백엔드 리허설 테플 빌드)도 **내부 테스터 전용**이라 teamtest처럼 노출한다.
+ *  원칙 — 백엔드는 prod처럼(eas.json env), 진단 노출·OTA 적용 정책은 teamtest처럼. */
+function isDiagnosticChannelInner(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ch = (require('expo-updates') as { channel?: string | null }).channel;
+    return ch == null || ch === 'teamtest' || ch === 'teamtest-prod' || ch === 'development';
+  } catch {
+    return true; // 채널을 못 읽는 환경 = 로컬
+  }
+}
+const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
+
+/** 채널 판별 단일 소스(P-114) — 함수형 export로 jest 목 주입 가능. */
+export function isDiagnosticChannel(): boolean {
+  return DIAGNOSTIC_CHANNEL;
+}
+
 export const FLAGS = {
   /**
    * Category browsing UI: home "Browse by category" section + food-tab
@@ -109,8 +131,8 @@ export const FLAGS = {
    * (전부 기존 컴포넌트 재사용). 디자인 확정 후 채널 조건 재검토.
    */
   /**
-   * 알림함 (P-216/KB-39, 멘토링 8/15) — **러프**, dev 계열만. 목록 데이터는
-   * 로컬 목(notifications/inbox.ts) — BE 알림 목록 계약 오면 그 파일 한 곳 스왑.
+   * 알림함 (P-216/KB-39, 멘토링 8/15). 목록·배지 = 서버 `GET /api/notifications`
+   * (KB-499, lib/data/useNotifications — 기기 단위·7일·미읽음 파생). 로컬 기록 없음.
    */
   notificationCenter: true, // P-289(예진 9/7): 알림함 전 채널(실알림 전용 — inbox 목 소멸)
   /**

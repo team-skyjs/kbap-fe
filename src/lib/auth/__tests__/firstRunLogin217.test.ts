@@ -50,7 +50,8 @@ it('P-204 설치 ID 무관 — 정리 대상은 액세스·리프레시 토큰�
 it('부팅 경로 — 최초 실행이면 /login replace, 인트로 라우트·플래그 잔존 0', () => {
   const fs = require('fs');
   const layout = fs.readFileSync('src/app/_layout.tsx', 'utf8') as string;
-  expect(layout).toContain("router.replace('/login' as Href)");
+  // P-389(KB-576): 첫 진입은 유입 경로를 명시한다 — 부재를 intro로 접지 않기 때문(Codex #165)
+  expect(layout).toContain("router.replace('/login?entry=intro' as Href)");
   expect(layout).not.toContain("'/intro'");
   expect(layout).not.toContain('hasSeenIntro');
   // 화면·플래그 모듈 자체가 삭제됐다(보존형 아님 — 발주 명시)

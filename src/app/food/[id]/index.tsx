@@ -9,7 +9,7 @@
  * verdict 이유 = 성분 기준 조립만, caution 사유 = 중립 조립(ingBasis).
  * 게스트: 판정 미노출(잠금 슬롯) — 재료는 공개하되 마크·칩 미렌더(P-206/P-235).
  * Unregistered = "Unable to assess" 유지 — never assumed safe (FR-033).
- * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크·EligibilityGate 로직 무변.
+ * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
@@ -21,11 +21,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
-import { RiskMark, RiskBadge, CardPhoto, Chip, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech } from '@/components';
+import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
+import { HeroGallery } from '@/features/food/HeroGallery';
+import { useIsNewFood } from '@/lib/newFood';
 import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
 import { useFoodDetail } from '@/lib/data/useFoods';
@@ -39,13 +41,13 @@ import { IconFood, IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
-import { EligibilityGate } from '@/features/review/EligibilityGate';
 import { foodSpiceText, spiceRank } from '@/lib/spice';
 import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
+import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
 /** 시안 노트 03 — 히어로를 이만큼 지나면 헤더 솔리드+타이틀 페이드인 */
@@ -91,10 +93,17 @@ export default function FoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
 
-  const { data: food, isLoading, error, refetch } = useFoodDetail(id ?? '');
+  const { data: fetched, isLoading, error, refetch } = useFoodDetail(id ?? '');
+  // KB-620→626: 서버가 이 음식을 **지금** 거부했으면(FOOD-001 — 상세·리뷰 목록·북마크 어느 원천이든) 캐시보다
+  // 우선한다. TanStack은 재조회가 실패해도 이전 `data`를 유지하므로 그대로 쓰면 옛 판정(SAFE일 수 있음)과
+  // 액션 바가 남는다 — false-safe(헌법 III). 판정은 **이 한 줄**에서만 한다(hiddenFoods 신호). `food`를
+  // 비우면 판정 본문·액션 바·헤더 제목·리뷰 영역·CTA가 전부 따라 사라진다(`Registered` 언마운트).
+  // ⚠️ 상세 쿼리는 숨김 중에도 계속 돈다(`enabled`를 이 신호에 묶지 않는다) — 성공 응답이 신호를 푸는
+  // 유일한 경로라, 쿼리를 끄면 음식이 돌아와도 영영 숨김이 된다.
+  const hidden = useIsFoodHidden(id ?? '');
+  const food = hidden ? undefined : fetched;
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
-  const [eligGateRoot, setEligGateRoot] = useState(false);
 
   // P-139: 플로팅 헤더 — 스크롤 임계 통과 시 솔리드+타이틀 페이드인
   const [solid, setSolid] = useState(false);
@@ -119,6 +128,7 @@ export default function FoodDetailScreen() {
     toggleBm.mutate({
       snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
       add: adding,
+      fromDetail: true, // KB-626: 숨김이면 상세 안내가 설명한다 — 토스트 중복 금지
     });
   };
 
@@ -130,15 +140,35 @@ export default function FoodDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, error && !food ? { flexGrow: 1 } : null]}>
-        {error && !food && <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />}
+      <ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[{ paddingBottom: showBottomBar ? (barH || 107) + 12 : 40 }, (error || hidden) && !food ? { flexGrow: 1 } : null]}>
+        {/* KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면 에러 블록 대신 조용한 안내.
+            QueryErrorBlock을 쓰면 안 되는 이유 셋 — ① 재시도가 **영원히 실패**해 버튼이 함정이 된다
+            ② 안전 판정 글리프(RiskGlyph caution)가 붙어 음식 자체에 대한 판정처럼 읽힌다(헌법 III)
+            ③ error_state_view 계측이 나가 에러 지표(P-213)가 오염된다. EmptyBlock은 셋 다 없다.
+            뒤로는 상단 플로팅 버튼(항상 렌더)이 맡는다. 다른 에러는 기존 블록 그대로. */}
+        {hidden ? (
+          <View style={styles.hiddenFill}>
+            <EmptyBlock label={t('detail.foodHidden')} testID="detail-food-hidden" />
+          </View>
+        ) : error && !food ? (
+          <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />
+        ) : null}
         {/* P-287(4003:13466): 첫 로드 = 상세 스켈레톤(공백 금지) */}
-        {isLoading && !food && !error && <SkeletonFoodDetail />}
+        {isLoading && !food && !error && !hidden && <SkeletonFoodDetail />}
 
         {!isLoading && food && (
           <>
-            {/* §1-1: 히어로 정방(375×375) + 하단 어두운 선형 그라데이션(4150:16892) */}
-            {food.photoUrl ? (
+            {/* §1-1: 히어로 정방(375×375) + 하단 어두운 선형 그라데이션(4150:16892)
+                P-383(KB-566): 이미지 2장 이상 = 캐러셀(2초 자동·도트), 0·1장·부재 = 현행 정적 */}
+            {(food.images?.length ?? 0) >= 2 ? (
+              <View style={styles.hero} testID="detail-hero">
+                {/* 그라데이션은 사진 위·도트 아래에 깔려야 해서 overlay로 넘긴다 */}
+                <HeroGallery
+                  urls={food.images!}
+                  overlay={<LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)']} style={styles.heroGrad} pointerEvents="none" />}
+                />
+              </View>
+            ) : food.photoUrl ? (
               <View style={styles.hero} testID="detail-hero">
                 <CardPhoto uri={food.photoUrl} transition={200} borderRadius={0} />
                 <LinearGradient colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)']} style={styles.heroGrad} pointerEvents="none" />
@@ -172,7 +202,7 @@ export default function FoodDetailScreen() {
       </ScrollView>
 
       {/* §1-8: FixedBottom(4150:16963) — 아웃라인 Write + primary Ask(회원) /
-          게스트·Ask 부재 시 Write primary 단독. EligibilityGate 로직 무변. */}
+          게스트·Ask 부재 시 Write primary 단독. */}
       {showBottomBar && (
         <RegisteredBottomBar
           guest={isGuest}
@@ -181,11 +211,7 @@ export default function FoodDetailScreen() {
           insetsBottom={insets.bottom}
           t={t}
           onWrite={() => {
-            // Registered 내부 writeReview와 동일 게이트 — 이 바는 화면 루트 소유라 재조립
-            if (!isGuest && food?.reviewEligible === false) {
-              setEligGateRoot(true);
-              return;
-            }
+            // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관(BE #274: reviewEligible 항상 true)
             track(EVENTS.review_write_tap, { source: 'detail' });
             router.push(`/food/${id}/review` as Href);
           }}
@@ -201,7 +227,7 @@ export default function FoodDetailScreen() {
       <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, styles.fheadBg, solidFade]} pointerEvents="none" testID="fhead-bg" />
         <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={() => router.back()} hitSlop={8} testID="detail-back">
-          <IconChevron size={18} color={solid ? C.ink : '#fff'} style={{ transform: [{ rotate: '180deg' }] }} />
+          <IconArrowLeft size={18} color={solid ? C.ink : '#fff'} />
         </Pressable>
         <Animated.View style={[{ flex: 1, minWidth: 0 }, solidFade]}>
           <Text style={styles.fTitle} numberOfLines={1}>
@@ -215,7 +241,6 @@ export default function FoodDetailScreen() {
       {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
       <TopToastHost />
       <ScanCoachMark open={coachOpen} onClose={() => setCoachOpen(false)} t={t} />
-      <EligibilityGate open={eligGateRoot} onClose={() => setEligGateRoot(false)} />
     </View>
   );
 }
@@ -308,13 +333,9 @@ function Registered({
   router: Router;
   id: string;
 }) {
-  // P-251(BE #185): 리뷰 자격 게이트 — 회원 && reviewEligible === false(서버 정본)만.
-  const [eligGate, setEligGate] = useState(false);
+  const isNew = useIsNewFood(food.publishedAt);
   const writeReview = (source: 'detail') => {
-    if (!guest && food.reviewEligible === false) {
-      setEligGate(true);
-      return;
-    }
+    // P-392(KB-584): 자격 게이트 폐기 — 게스트 게이트(AuthGateSheet)는 그대로
     track(EVENTS.review_write_tap, { source });
     router.push(`/food/${id}/review` as Href);
   };
@@ -339,6 +360,8 @@ function Registered({
   // 쿼리 키) — 구 클라 필터는 "로드된 3장 안 교집합"이라 서버엔 있는데 0장이 떴다.
   const natQ = useFoodReviews(FLAGS.reviewsEnabled && natOnly && nationality ? id : '', nationality ?? undefined);
   const natLoading = natOnly && natQ.isLoading;
+  // KB-626: 리뷰 목록이 FOOD-001을 받으면 리뷰 fetch가 숨김 신호를 세우고(hiddenFoods), 부모가 그 신호
+  // 하나로 이 컴포넌트 전체를 내린다 — 여기서 따로 비우거나 막지 않는다(두면 대역이다).
   const activePreviews = natOnly ? (natQ.data?.pages[0]?.items ?? []) : previewSource;
   const shownPreviews = activePreviews.slice(0, REVIEW_PREVIEW_N);
   const deleteReview = useDeleteReview();
@@ -404,10 +427,8 @@ function Registered({
           )}
           <View style={styles.nameRow}>
             <Text style={styles.name}>{food.name}</Text>
-            {/* 9/5 예진 판정(Q4): NEW 배지 항상 표시 — 신규 등록 판별 데이터는 BE TODO */}
-            <View style={styles.newBadge} testID="detail-new-badge">
-              <Text style={styles.newBadgeText}>{t('inbox.newBadge')}</Text>
-            </View>
+            {/* P-385(KB-363): NEW = 서버 공개 시각 24시간 이내만(9/15 예진 — 9/5 '항상 표시' 폐기) */}
+            {isNew && <NewBadge testID="detail-new-badge" />}
           </View>
           {food.nameKo !== food.name && <Text style={styles.ko}>{food.nameKo}</Text>}
           {!!food.description && <Text style={styles.desc}>{food.description}</Text>}
@@ -507,7 +528,6 @@ function Registered({
           </View>
         </View>
       )}
-      <EligibilityGate open={eligGate} onClose={() => setEligGate(false)} />
       {FLAGS.reviewsEnabled && !food.reviewSummaryMissing && food.overall.count > 0 && (
         <View testID="review-brief">
           <View style={styles.thickDivider} />
@@ -693,6 +713,8 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  // KB-620: 숨김 안내를 잔여 높이 중앙에(상단 플로팅 헤더와 겹치지 않게)
+  hiddenFill: { flex: 1, justifyContent: 'center' },
   body: { paddingHorizontal: 20, paddingTop: 16, gap: 18 },
 
   // §1-1: 히어로 정방 + 그라데이션
@@ -723,8 +745,6 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FD-04
   name: { flexShrink: 1, fontSize: 24, fontWeight: '700', color: C.ink, lineHeight: 32 },
   // NEW 배지(시안 — primary pill h18 pad 1/5, 10/600 흰)
-  newBadge: { height: 18, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-  newBadgeText: { fontSize: 10, fontWeight: '600', color: '#fff' },
   ko: { fontSize: 14, fontWeight: '400', color: INK_TITLE },
   desc: { fontSize: 15, fontWeight: '400', color: '#4B4F58', lineHeight: 22 },
   scanPrice: { fontSize: 14, fontWeight: '700', color: C.ink },

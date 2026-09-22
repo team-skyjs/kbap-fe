@@ -410,19 +410,12 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   const isReview = context === 'review';
   const isGuest = useIsGuest(); // scanned 계열은 회원 전용(401 방어) — 게스트는 현행(인기+all)
   const useScanScope = (isReview || context === 'filter') && !isGuest;
-  // P-245: 자격 UX = 리뷰 컨텍스트 한정 — scanned 목록이 곧 자격 목록(서버 무의존 선행).
-  // 전체 음식은 비활성(흐림) + 탭 시 안내 강조(재량 채택 — 무반응보다 학습됨).
-  const eligible = isReview && !isGuest;
-  const [noticeHot, setNoticeHot] = React.useState(false);
-  const noticeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flashNotice = () => {
-    setNoticeHot(true);
-    if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(() => setNoticeHot(false), 1600);
-  };
-  React.useEffect(() => () => { if (noticeTimer.current) clearTimeout(noticeTimer.current); }, []);
-  const [searchAll, setSearchAll] = React.useState(false); // scanned 0건 → 전체 재검색 전환
-  const foods = useSearchFoods(kind === 'food' ? q : '', useScanScope && !searchAll ? 'scanned' : undefined);
+  // P-392(KB-584): 자격 UX 폐기 — 정책이 "회원이면 어떤 음식이든 리뷰"로 바뀌었다(BE #274).
+  // 스캔 목록은 **빠른 선택**으로 남기고(첫 화면), 전체 음식도 선택 가능.
+  const [searchAll, setSearchAll] = React.useState(false); // filter 컨텍스트: scanned 0건 → 전체 재검색
+  // 리뷰 픽커 검색은 **전체 음식**(임의 READY 음식 선택) — 기존 검색 훅 재사용, 새 UI 없음.
+  const searchScope = useScanScope && !searchAll && !isReview ? ('scanned' as const) : undefined;
+  const foods = useSearchFoods(kind === 'food' ? q : '', searchScope);
   // 빈 검색 = POPULAR 섹션(브라우즈 1페이지). RECENT(개인 최근 태그) 저장소는 목 단계 미도입 —
   // 장소는 목 전체가 RECENT 섹션으로 노출(리뷰 장소 픽커 P-095와 동일 관례).
   const browse = useInfiniteFoods();
@@ -445,28 +438,15 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   const scannedList = scanned.data ?? [];
   // P-349 ④(KB-512): scanned 판정 전 = 구역 분기·배너 미렌더(깜빡임) — 스켈레톤 행 6개
   const scanPending = kind === 'food' && useScanScope && scanned.isPending;
-  const reviewInitial = useScanScope && scannedList.length > 0; // filter: 0건 = 인기 폴백(현행)
-  // P-245: 리뷰 컨텍스트 브라우즈 = 스캔분(활성) / 전체(비활성) 2구역 — 인기 폴백 폐기
+  const reviewInitial = useScanScope && scannedList.length > 0; // 스캔분이 있으면 그게 첫 목록
+  // 브라우즈 첫 목록 = 스캔분(빠른 선택) · 없으면 인기. 검색 결과는 전부 선택 가능.
   const foodList = isBrowse
-    ? eligible
+    ? reviewInitial
       ? scannedList.slice(0, 20)
-      : reviewInitial
-        ? scannedList.slice(0, 20)
-        : (browse.data ?? []).slice(0, 20)
+      : (browse.data ?? []).slice(0, 20)
     : (foods.data ?? []);
-  // 비활성 목록: 브라우즈 = 전체 음식(참고용) · 검색 = "전체에서 찾기" 결과(searchAll)
-  const searchDisabled = eligible && !isBrowse && searchAll;
   const places = kind === 'place' ? searchPlaces(q) : [];
 
-  // P-245: 자격 안내 + 스캔 CTA — 비활성 행 탭 시 색만 강조(프레임 불변, P-103)
-  const eligNote = (
-    <View style={[styles.eligNote, noticeHot && styles.eligNoteHot]} testID="picker-elig-note">
-      <Text style={styles.eligNoteText}>{t('community.reviewEligibleNote')}</Text>
-      <Pressable style={styles.eligCta} hitSlop={6} onPress={() => { onClose(); router.navigate('/scan'); }} testID="picker-go-scan">
-        <Text style={styles.eligCtaText}>{t('community.goScanCta')}</Text>
-      </Pressable>
-    </View>
-  );
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
@@ -554,17 +534,16 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
             {/* 섹션 헤더 — mono 대문자. 빈 검색: 음식=POPULAR(브라우즈)·장소=RECENT(목).
                 P-245 자격 컨텍스트: 활성 구역(RECENTLY SCANNED)은 0건이면 헤더도 생략 —
                 안내+CTA가 메인(빈 컨테이너 금지, P-210). */}
-            {!(scanPending && isBrowse) && isBrowse && (kind !== 'food' || !eligible || scannedList.length > 0) && (
+            {!(scanPending && isBrowse) && isBrowse && (
               <Text style={styles.sectionHead}>
-                {t(kind === 'food' ? (eligible || reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')}
+                {t(kind === 'food' ? (reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')}
               </Text>
             )}
             {/* P-245: 검색에서 전체 결과로 전환된 상태 = 비활성 + 같은 안내(학습 역할) */}
-            {searchDisabled && eligNote}
             {!(scanPending && isBrowse) && (kind === 'food'
               ? foodList.map((f) => {
                   const selected = foodTags.some((x) => x.foodId === f.foodId);
-                  const disabled = searchDisabled; // 검색 전체 결과 = 선택 불가(P-245 ③)
+                  const disabled = false; // P-392: 자격 제한 폐기 — 검색 결과 전부 선택 가능
                   return (
                     <ResultRow
                       key={f.foodId}
@@ -581,7 +560,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                       sub={f.nameKo}
                       selected={selected}
                       disabled={disabled}
-                      onPress={() => (disabled ? flashNotice() : onToggleFood({ foodId: f.foodId, name: f.name }))}
+                      onPress={() => onToggleFood({ foodId: f.foodId, name: f.name })}
                     />
                   );
                 })
@@ -599,10 +578,10 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                     onPress={() => onTogglePlace(p)}
                   />
                 )))}
-            {/* P-245: 자격 브라우즈 — 안내+CTA(스캔 0건이면 이게 메인) + 전체 음식(비활성·참고) */}
-            {!scanPending && kind === 'food' && isBrowse && eligible && (
+            {/* P-392(KB-584): 스캔분 아래 전체 음식 — 이제 **선택 가능**(자격 제한 폐기).
+                스캔분이 없으면 위 브라우즈가 이미 인기 목록이라 이 구역은 중복 → 그때만 숨긴다. */}
+            {!scanPending && kind === 'food' && isBrowse && reviewInitial && (
               <>
-                {eligNote}
                 <Text style={styles.sectionHead}>{t('community.sectionAllFoods')}</Text>
                 {(browse.data ?? []).slice(0, 20).map((f) => (
                   <ResultRow
@@ -618,21 +597,22 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                     }
                     name={f.name}
                     sub={f.nameKo}
-                    selected={false}
-                    disabled
-                    onPress={flashNotice}
+                    selected={foodTags.some((x) => x.foodId === f.foodId)}
+                    onPress={() => onToggleFood({ foodId: f.foodId, name: f.name })}
                   />
                 ))}
               </>
             )}
-            {/* P-238: scanned 0건 → 전체에서 재검색 제안 행(P-245: 결과는 비활성 + 안내로 전환) */}
-            {kind === 'food' && !isBrowse && foods.data?.length === 0 && useScanScope && !searchAll && (
+            {/* P-238: scanned 0건 → 전체에서 재검색 제안 행. 리뷰는 이미 전체 검색이라 filter 전용. */}
+            {kind === 'food' && !isBrowse && foods.data?.length === 0 && useScanScope && !isReview && !searchAll && (
               <Pressable style={styles.searchAllRow} hitSlop={6} onPress={() => setSearchAll(true)} testID="picker-search-all">
                 <IconSearch size={15} color={C.primaryText} />
                 <Text style={styles.searchAllText}>{t('community.searchAllFoods')}</Text>
               </Pressable>
             )}
-            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || searchAll) && (
+            {/* P-392(KB-584): 리뷰는 처음부터 전체 검색이라 "전체에서 찾기" 단계가 없다 —
+                그 단계를 기다리는 조건이면 결과 0건에서 **아무 안내도 안 뜬다**(Codex #168). */}
+            {kind === 'food' && !isBrowse && foods.data?.length === 0 && (!useScanScope || isReview || searchAll) && (
               <Text style={styles.searchHint}>{t('community.searchFoodsHint')}</Text>
             )}
           </ScrollView>
@@ -704,15 +684,6 @@ function ResultRow({
 const styles = StyleSheet.create({
   // P-245: 자격 안내(리뷰 = 스캔한 음식만) + 스캔 CTA — 강조는 색만(프레임 불변)
   // KB-432 §2-9: 안내 카드(4150:16622) — bg #FFF4ED border #FFE5D5 r12 pad 12
-  eligNote: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginVertical: 10, padding: 12,
-    borderRadius: 12, backgroundColor: '#FFF4ED', borderWidth: 1, borderColor: '#FFE5D5',
-  },
-  eligNoteHot: { backgroundColor: primaryTint, borderColor: C.primary },
-  eligNoteText: { flex: 1, fontSize: 14, fontWeight: '400', lineHeight: 19, color: C.ink2 },
-  eligCta: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: '#FF7327' },
-  eligCtaText: { fontSize: 12, fontWeight: '600', color: '#fff' },
   resultRowOff: { opacity: 0.6 }, // §2-9: 미스캔 = 썸네일/텍스트 흐림(선택 불가 — P-245 유지)
   // P-238: 전체 재검색 제안 행
   searchAllRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingVertical: 12 },

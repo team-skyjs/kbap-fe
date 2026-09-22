@@ -25,11 +25,13 @@ import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
 import { SocialAuthButtons } from '@/components/SocialAuthButtons';
+import { parseLoginEntry } from '@/lib/auth/loginEntry';
 import { Wordmark } from '@/components/design4Assets';
 import { api } from '@/lib/api/client';
 import { GAP, TILE, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib/loginCollage';
 import { LEGAL_URLS } from '@/lib/legalText';
 import { openWebPage } from '@/lib/openExternal';
+import { promptPermissionOnFirstLogin } from '@/lib/push/pushAdapter'; import { whenSplashDone } from '@/lib/bootGate'; // KB-631 (한 줄: lint 래칫이 줄 번호 기준)
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const DISHES = [
@@ -110,7 +112,9 @@ export default function Login() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const bottom = useBottomInset(); // P-055: 안드 내비바 보정
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const { returnTo, entry: entryParam } = useLocalSearchParams<{ returnTo?: string; entry?: string }>();
+  // P-389(KB-576): 게이트·프로필에서 넘어온 유입 경로. 직접 진입(쿼리 없음) = 'intro'
+  const entry = parseLoginEntry(entryParam);
   // KB-421(Codex #19 P1-4): 소셜 로그인 진행 중 = 게스트 진입 잠금(UX 이중 방어)
   const [authBusy, setAuthBusy] = useState(false);
   const { height: winH } = useWindowDimensions();
@@ -136,6 +140,16 @@ export default function Login() {
     };
   }, []);
   const animate = focused && appActive && reduceMotion === false;
+
+  // KB-631(spec 006): 첫 설치 첫 표시(루트 레이아웃의 `/login?entry=intro` — 설치 센티널·스플래시 게이트 뒤)에서만
+  // OS 알림 권한 팝업 요청(카메라 권한과 같은 방식, 프라이머 없음). 게이트 복귀(returnTo)·재방문·기존 사용자는 0회.
+  // Codex P1: 마운트 시점엔 AnimatedSplash 오버레이(최소 3초)가 아직 위에 있어 팝업이 스플래시 위에 뜬다 —
+  // 오버레이가 걷힌 뒤(whenSplashDone) 요청해야 "로그인 화면이 실제로 보인 뒤"(FR-001)가 된다.
+  // 게스트라 서버 요청 없음 — 토큰 등록·activity 기본값은 로그인 성공 직후(useSocialAuth). 결과 기록 = 어댑터.
+  useEffect(() => {
+    if (entry === 'intro' && returnTo == null) void whenSplashDone().then(() => promptPermissionOnFirstLogin());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View
@@ -164,6 +178,7 @@ export default function Login() {
       <View style={styles.foot}>
         {/* KB-67: newMember → 온보딩 · onboardingCompleted=false도 온보딩(분기 무변) */}
         <SocialAuthButtons
+          entry={entry}
           onBusyChange={setAuthBusy}
           onSignedIn={(newMember) => {
             void (async () => {

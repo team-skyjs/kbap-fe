@@ -50,12 +50,17 @@ export function RiskMark({
   state = 'safe',
   size = 28,
   variant = 'solid',
+  color,
 }: {
   state?: RiskState;
   size?: number;
   variant?: 'solid' | 'outline';
+  /** P-391(KB-582): 색 주입 — 소형(14px) 표면에서 원색 글리프 대비가 2.0~3.0까지 떨어질 때
+   *  대비 보정 토큰(riskTextStrong)을 넘긴다. **형태는 그대로**(상태별 글리프 무변).
+   *  미지정 = 기존 원색(카드·배지 등 기존 표면 무변). */
+  color?: string;
 }) {
-  const c = RISK[state].color;
+  const c = color ?? RISK[state].color;
   if (variant === 'outline') {
     return (
       <Svg width={size} height={size} viewBox="0 0 22 22">

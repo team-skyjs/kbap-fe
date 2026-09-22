@@ -12,7 +12,7 @@ import { StickyHeader, useStickyScroll, useHeaderHeight } from '@/components';
 import { color as C } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { useUnreadCount } from '@/lib/notifications/inbox';
+import { useUnreadCount } from '@/lib/data/useNotifications';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { parseFoodFilterParams } from '@/features/food/foodFilterParams';
 
