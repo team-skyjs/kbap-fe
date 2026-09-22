@@ -19,9 +19,8 @@ import i18n from '../i18n';
 import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
-import { api, apiLang } from '../api/client';
+import { api, apiLang, isFoodHidden } from '../api/client';
 import { showTopToast } from '@/components/topToastStore';
-import { isFoodHidden } from '@/lib/api/client';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
 

@@ -707,7 +707,6 @@ describe('KB-626 상세 리뷰 영역 — FOOD-001은 조용히 비운다(캐시
       countryCode ? cachedButRefused(hidden()) : REVIEWS_PAGE(),
     );
     const tree = render(<FoodDetailScreen />);
-    const { act } = require('react-test-renderer');
     act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
     expect(byId(tree, 'detail-nat-error')).toHaveLength(0); // 재시도 함정 없음
     expect(byId(tree, 'detail-nat-empty')).toHaveLength(0); // "같은 국적 리뷰 없음"으로 위장하지 않음
@@ -720,7 +719,6 @@ describe('KB-626 상세 리뷰 영역 — FOOD-001은 조용히 비운다(캐시
     );
     const tree = render(<FoodDetailScreen />);
     expect(flat(tree)).toContain('Great and safe for me'); // 일시 오류로 목록을 비우지 않는다
-    const { act } = require('react-test-renderer');
     act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
     expect(byId(tree, 'detail-nat-error').length).toBeGreaterThan(0); // 기존 P-323 ⑤ 그대로
   });
