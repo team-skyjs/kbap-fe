@@ -1,6 +1,6 @@
 {
   "expo": {
-    "_localesComment": "KB-592: iOS 권한 문구 로케일화. Expo 내장 기능 — 이 맵이 <lang>.lproj/InfoPlist.strings를 생성한다(@expo/config-plugins ios/Locales). 플러그인 옵션의 영어 문구는 **폴백이라 지우지 않는다**(여기 없는 로케일이 그걸 쓴다). 키는 실제로 쓰는 4종만.",
+    "_localesComment": "KB-592: iOS 권한 문구 로케일화. Expo 내장 기능 — 이 맵이 <lang>.lproj/InfoPlist.strings를 생성한다(@expo/config-plugins ios/Locales). 플러그인 옵션의 영어 문구는 **폴백이라 지우지 않는다**(여기 없는 로케일이 그걸 쓴다). 키는 실제로 쓰는 5종만(9/22 모션 추가 — scan.tsx DeviceMotion, ASC ITMS-90683).",
     "locales": {
       "en": "./locales/en.json",
       "ko": "./locales/ko.json",
@@ -106,7 +106,7 @@
           "locationWhenInUsePermission": "K-Bap uses your location to find nearby restaurants, so you can tag a place in a review and record where you ate.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
-          "motionUsagePermission": false,
+          "motionUsagePermission": "K-Bap uses motion to notice when your phone is turned sideways while you scan a menu.",
           "_comment": "P-200: 리뷰 장소 태그 nearby용 — 사용 중 권한만(백그라운드 없음). 네이티브 — 빌드18 반영"
         }
       ],
@@ -142,7 +142,8 @@
       [
         "expo-sensors",
         {
-          "motionPermission": false
+          "motionPermission": "K-Bap uses motion to notice when your phone is turned sideways while you scan a menu.",
+          "_comment": "KB-592 후속(P-407 b35 제출 거부 ITMS-90683): scan.tsx가 DeviceMotion(가로 힌트)을 실제로 쓴다 — 문구 필수. expo-location motionUsagePermission도 **같은 문구**(두 플러그인이 같은 NSMotionUsageDescription을 쓰므로 적용 순서와 무관하게 결과를 고정). false로 되돌리면 업로드가 거부된다."
         }
       ],
       "expo-apple-authentication",
