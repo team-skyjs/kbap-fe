@@ -8,7 +8,8 @@
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { ReviewPage } from '@/lib/api/types';
-import { api, apiLang } from '@/lib/api/client';
+import { api, apiLang, isFoodHidden } from '@/lib/api/client';
+import { markFoodHidden, markFoodVisible } from './hiddenFoods';
 import { adaptReviewPage, type ReviewPageWire } from '@/lib/api/reviewAdapter';
 import { FLAGS } from '@/lib/flags';
 import { mockFoodReviews } from '@/lib/mocks/reviews';
@@ -33,7 +34,16 @@ export async function fetchFoodReviewsPage(
   q.set('foodId', foodId);
   if (cursor) q.set('cursor', cursor);
   if (countryCode) q.set('countryCode', countryCode);
-  return adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
+  // KB-626(#185 2R): 서버 `listReviews`는 foodId가 있으면 `getReadyFood`를 탄다 — FOOD-001 = 음식이 숨겨졌다.
+  // 받은 자리에서 숨김 신호를 세운다: 상세 본문의 캐시된 판정이 **상세 재조회를 기다리지 않고** 가려진다.
+  try {
+    const page = adaptReviewPage(await api.get<ReviewPageWire>(`/api/reviews?${q.toString()}`));
+    markFoodVisible(foodId);
+    return page;
+  } catch (e) {
+    if (isFoodHidden(e)) markFoodHidden(foodId);
+    throw e;
+  }
 }
 
 /** P-229: 피드 필터 — 스웨거 실측(8/18) 지원 파라미터 2종뿐(countryCode ISO-2 정확

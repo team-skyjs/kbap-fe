@@ -7,8 +7,8 @@
  * ① 목록 카드(검색·탐색)에서 → 빨간 에러 토스트 대신 **중립 안내 토스트**
  *    ⚠️ 기본 토스트는 ✓ 체크라 "저장 성공"처럼 읽히고, `icon:'alert'`는 안전 판정 글리프(caution)라
  *    음식에 판정이 붙은 것처럼 읽힌다 — 둘 다 금지. 중립 `icon:'info'`(IconInfo — 예진 확인 대상).
- * ② 상세 안에서 → **토스트 없음**. onSettled의 상세 무효화 → 재조회가 FOOD-001을 받아 상세가 숨김
- *    안내로 바뀐다(#184). 토스트까지 띄우면 같은 말을 두 번 한다.
+ * ② 상세 안에서 → **토스트 없음**. 거부를 삼키지 않고 **숨김 신호(hiddenFoods)를 즉시 세워** 상세가 그
+ *    자리에서 숨김 안내로 바뀐다 — 재조회를 기다리지 않는다(#185 2R). 토스트까지 띄우면 같은 말을 두 번 한다.
  * ③ 다른 에러는 기존 빨간 에러 토스트 그대로.
  *
  * `ApiError`·`isFoodHidden`은 **실물** — 판별까지 목으로 바꾸면 이 테스트는 빈 통이 된다.
@@ -57,9 +57,23 @@ async function runAdd(qc: QueryClient, fromDetail?: boolean) {
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 const hidden = () => new ApiError('해당 음식 정보를 찾을 수 없습니다', 400, 'FOOD-001');
 
+const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
+function readHidden(id: string): boolean {
+  let v = false;
+  function P() {
+    v = HIDDEN.useIsFoodHidden(id);
+    return null;
+  }
+  act(() => {
+    renderer.create(<P />);
+  });
+  return v;
+}
+
 beforeEach(() => {
   mockPost.mockReset();
   mockToast.mockReset();
+  HIDDEN.__resetHiddenFoodsForTest();
 });
 
 describe('KB-626 북마크 추가 — FOOD-001은 에러가 아니다', () => {
@@ -79,13 +93,26 @@ describe('KB-626 북마크 추가 — FOOD-001은 에러가 아니다', () => {
     expect(opts?.icon).toBe('info'); // 기본(✓ 성공)도 'alert'(caution 판정 글리프)도 아님
   });
 
-  it('상세에서 FOOD-001 → 토스트 없음(상세 안내가 설명) · 상세를 다시 조회시킨다', async () => {
-    const qc = client();
-    const spy = jest.spyOn(qc, 'invalidateQueries');
+  /* Codex #185 2R: 거부를 **삼키지 않고 전파**한다 — 숨김 신호를 세우면 상세가 그 즉시 판정·액션 바를
+     가린다. 이전엔 onSettled 재조회에 맡겨서, 재조회가 늦거나 네트워크로 실패하면 캐시 SAFE가 남았다. */
+  it('상세에서 FOOD-001 → 토스트 없음 · **숨김 신호를 즉시 세운다**(재조회를 기다리지 않음)', async () => {
+    expect(readHidden('7')).toBe(false); // 대조군
     mockPost.mockRejectedValueOnce(hidden());
-    await runAdd(qc, true);
+    await runAdd(client(), true);
     expect(mockToast).not.toHaveBeenCalled();
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['food', '7'] }); // → 상세가 FOOD-001을 받아 숨김 안내로
+    expect(readHidden('7')).toBe(true);
+  });
+
+  it('목록에서 FOOD-001도 신호를 세운다 — 그 음식 상세에 들어가면 첫 프레임부터 가려진다', async () => {
+    mockPost.mockRejectedValueOnce(hidden());
+    await runAdd(client());
+    expect(readHidden('7')).toBe(true);
+  });
+
+  it('다른 에러는 신호를 세우지 않는다', async () => {
+    mockPost.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
+    await runAdd(client(), true);
+    expect(readHidden('7')).toBe(false);
   });
 
   it('상세에서도 FOOD-001이 **아닌** 에러는 에러 토스트를 띄운다(과잉 침묵 금지)', async () => {

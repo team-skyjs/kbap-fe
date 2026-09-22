@@ -47,7 +47,7 @@ import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useFoodDetail } from '@/lib/data/useFoods';
-import { isFoodHidden } from '@/lib/api/client';
+import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { IconLock } from '@/components/icons';
@@ -77,7 +77,7 @@ function FoodReviewsScreen() {
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
 
-  const { data: food, error: detailError } = useFoodDetail(id ?? '');
+  const { data: food } = useFoodDetail(id ?? '');
   const writeReview = () => {
     // P-392(KB-584): 자격 게이트 폐기 — 회원이면 스캔 여부 무관
     track(EVENTS.review_write_tap, { source: 'list' });
@@ -97,15 +97,11 @@ function FoodReviewsScreen() {
   // keyset 커서 — 페이지 평탄화 + 하단 더보기(fetchNextPage).
   const reviewsQ = useFoodReviews(id ?? '', sameNatOnly && nationality ? nationality : undefined);
   const loaded = reviewsQ.data != null;
-  // KB-626(P-405 ③): FOOD-001 = 음식이 READY가 아님(서버 `getDetail`·`listReviews` 둘 다 `getReadyFood`에서 거부).
-  // 일반 에러와 달리 **받아 둔 목록도 보이지 않게** 한다 — 재시도해도 같고, 숨겨진 음식의 옛 리뷰를 남기지 않는다.
-  // 막는 장치는 **하나**다: 아래 내용 분기 전체(요약·리뷰·더보기)를 `!foodHidden`으로 막는다. 목록 자체를
-  // 비우는 코드를 따로 두지 않는다 — 두면 이 게이트가 대신 일해서 그 코드는 아무 일도 안 하는데 일하는
-  // 것처럼 보인다(뮤테이션으로 확인: 목록 비우기를 빼도 어떤 유닛도 안 깨졌다).
-  // ⚠️ **두 쿼리 중 어느 쪽이 거부해도** 숨긴다(Codex #185 P1). 리뷰 쿼리만 보면, 상세가 FOOD-001인데
-  // 리뷰 캐시가 독립적으로 신선하거나 아직 pending일 때 게이트가 서지 않아 캐시된 리뷰·요약·컨트롤이
-  // 그대로 남는다 — 리뷰 엔드포인트가 이 마운트에서 실패하지 않으면 끝까지.
-  const foodHidden = isFoodHidden(detailError) || isFoodHidden(reviewsQ.error);
+  // KB-626: 서버가 이 음식을 **지금** 거부했는가(FOOD-001 — 상세·리뷰 목록·북마크 어느 원천이든). 원천이 거부를
+  // 받은 자리에서 세운 신호(hiddenFoods) **하나**로 판정한다 — 이 화면의 쿼리 에러를 따로 보지 않는다
+  // (Codex #185: 리뷰 에러만 보면 상세 거부 + 리뷰 캐시 신선일 때 게이트가 안 선다. 신호는 둘 다 덮는다).
+  // 일반 에러와 달리 받아 둔 목록도 보이지 않게 한다 — 막는 장치는 아래 내용 분기 차단 하나.
+  const foodHidden = useIsFoodHidden(id ?? '');
   // P-186: 차단 회원 리뷰 클라 숨김 — 서버 필터링 미검증 보조(확인되면 제거)
   const { data: blockedUsers } = useBlockedUsers();
   const blockedIds = React.useMemo(() => new Set((blockedUsers ?? []).map((u) => u.id)), [blockedUsers]);

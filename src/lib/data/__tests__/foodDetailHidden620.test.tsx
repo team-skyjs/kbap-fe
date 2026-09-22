@@ -83,3 +83,84 @@ describe('useFoodDetail — 400은 코드로만 분기(status 폴백 없음)', (
     expect(s.data?.risk).toBe('unable');
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * KB-626(#185 2R) — **원천이 신호를 세우는가**. 화면은 숨김 신호(hiddenFoods) 하나로 판정하고,
+ * 신호는 FOOD-001을 받은 원천이 그 자리에서 세운다. 화면 테스트는 원천을 목으로 바꾸므로 여기서
+ * 원천 쪽 절반을 본다 — 네트워크만 목, 원천 코드·저장소는 **실물**. 이음매 = 같은 저장소.
+ * ──────────────────────────────────────────────────────────────────────────── */
+const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
+
+/** 저장소의 현재 값을 구독자 관점에서 읽는다(화면이 보는 것과 같은 경로). */
+function readHidden(id: string): boolean {
+  let v = false;
+  function P() {
+    v = HIDDEN.useIsFoodHidden(id);
+    return null;
+  }
+  act(() => {
+    renderer.create(<P />);
+  });
+  return v;
+}
+
+describe('원천 ① 상세 queryFn — FOOD-001이면 세우고, 성공하면 푼다', () => {
+  beforeEach(() => HIDDEN.__resetHiddenFoodsForTest());
+
+  it('FOOD-001 → 신호 섬', async () => {
+    expect(readHidden('123')).toBe(false); // 대조군: 처음엔 안 섬
+    mockGet.mockRejectedValueOnce(new ApiError('x', 400, 'FOOD-001'));
+    await runDetail('123');
+    expect(readHidden('123')).toBe(true);
+  });
+
+  it('FOOD-001이 아닌 에러(5xx·다른 400)는 세우지 않는다', async () => {
+    mockGet.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
+    await runDetail('123');
+    mockGet.mockRejectedValueOnce(new ApiError('bad', 400, 'COMMON-002'));
+    await runDetail('123');
+    expect(readHidden('123')).toBe(false);
+  });
+
+  /* 커맨드 센터 조건 ②: 상세 쿼리는 숨김 중에도 돌아야 한다(`enabled`를 신호에 묶지 않는다). 성공이
+     신호를 푸는 유일한 경로라, 쿼리를 끄면 음식이 돌아와도 영영 숨김이 된다. */
+  it('숨김 상태에서 마운트 → 성공 응답 → 풀림(음식이 돌아왔다)', async () => {
+    act(() => HIDDEN.markFoodHidden('123'));
+    expect(readHidden('123')).toBe(true);
+    mockGet.mockResolvedValueOnce({});
+    await runDetail('123');
+    expect(mockGet).toHaveBeenCalledTimes(1); // 숨김 중에도 쿼리가 실제로 나갔다
+    expect(readHidden('123')).toBe(false);
+  });
+
+  it('숨김 중 재조회가 **네트워크 에러**면 풀리지 않는다(재조회 실패는 해제 경로가 아님)', async () => {
+    act(() => HIDDEN.markFoodHidden('123'));
+    mockGet.mockRejectedValueOnce(new ApiError('NETWORK: timeout'));
+    await runDetail('123');
+    expect(readHidden('123')).toBe(true);
+  });
+});
+
+describe('원천 ② 리뷰 목록 fetch — FOOD-001이면 세우고, 성공하면 푼다', () => {
+  beforeEach(() => HIDDEN.__resetHiddenFoodsForTest());
+  const { fetchFoodReviewsPage } = jest.requireActual('../useFoodReviews') as typeof import('../useFoodReviews');
+
+  it('FOOD-001 → 신호 섬(상세 재조회를 기다리지 않는다) · 에러는 그대로 던진다', async () => {
+    mockGet.mockRejectedValueOnce(new ApiError('x', 400, 'FOOD-001'));
+    await expect(fetchFoodReviewsPage('55', null)).rejects.toBeInstanceOf(ApiError);
+    expect(readHidden('55')).toBe(true);
+  });
+
+  it('성공 → 풀림', async () => {
+    act(() => HIDDEN.markFoodHidden('55'));
+    mockGet.mockResolvedValueOnce({ items: [], hasNext: false, nextCursor: null });
+    await fetchFoodReviewsPage('55', null);
+    expect(readHidden('55')).toBe(false);
+  });
+
+  it('다른 에러는 세우지 않는다', async () => {
+    mockGet.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
+    await expect(fetchFoodReviewsPage('55', null)).rejects.toBeInstanceOf(ApiError);
+    expect(readHidden('55')).toBe(false);
+  });
+});

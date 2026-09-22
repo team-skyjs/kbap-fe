@@ -20,7 +20,8 @@ import i18n from '../i18n';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
-import { api, apiLang } from '../api/client';
+import { api, apiLang, isFoodHidden } from '../api/client';
+import { markFoodHidden, markFoodVisible } from './hiddenFoods';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
@@ -170,8 +171,17 @@ export function useFoodDetail(id: string) {
       //  · 폴백은 `unregisteredFoodDetail(id)`로 **숫자 id를 이름에** 넣어 사용자가 "123"이라는 음식을
       //    봤다(실사례). ⚠️ status로 분기하는 폴백을 되살리지 말 것 — 분기는 `ApiError.code`로만.
       //  (비숫자 id = 스캔한 미등록 음식은 위에서 네트워크 없이 처리 — 이름이 스캔 텍스트라 정당)
-      const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
-      return adaptFoodDetail(wire, id);
+      // KB-626(#185 2R): FOOD-001은 거부를 받은 **이 자리**에서 숨김 신호를 세운다 — 화면은 신호 하나로
+      // 가린다(hiddenFoods). 성공하면 푼다(음식이 다시 READY). catch는 표시만 하고 **그대로 다시 던진다** —
+      // 폴백 반환 금지(위 주석).
+      try {
+        const wire = await api.get<FoodDetailWire>(`/foods/${id}?lang=${apiLang()}`);
+        markFoodVisible(id);
+        return adaptFoodDetail(wire, id);
+      } catch (e) {
+        if (isFoodHidden(e)) markFoodHidden(id);
+        throw e;
+      }
     },
     enabled: !!id,
     retry: false, // surface BE/network errors straight to the error UI (spec DoD)

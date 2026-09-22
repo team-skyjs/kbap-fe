@@ -167,8 +167,15 @@ function render(el: React.ReactElement): ReactTestRenderer {
 const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id);
 
+/** KB-626: 숨김 신호(hiddenFoods)는 **실물**이다 — 화면은 이 신호 하나로 판정한다. 실제 앱에선 FOOD-001을
+ *  받은 원천(useFoodDetail·리뷰 fetch·북마크)이 세우는데, 이 파일은 그 훅들을 목으로 바꾸므로 테스트가
+ *  원천 대신 세운다(`hide()`). "원천이 세우는지"는 훅 수준 유닛(foodDetailHidden620·bookmarkHidden626)이 본다. */
+const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
+const hide = () => act(() => { HIDDEN.markFoodHidden('7'); });
+
 beforeEach(() => {
   jest.clearAllMocks();
+  HIDDEN.__resetHiddenFoodsForTest();
   mockIsGuest.mockReturnValue(false);
   mockUseMe.mockReturnValue(ME);
   mockUseFoodDetail.mockReturnValue({ data: FOOD('caution'), isLoading: false, error: null, refetch: jest.fn() });
@@ -580,8 +587,11 @@ it('P-385 Codex P2: 화면을 열어둔 채 24시간 경계를 넘으면 배지�
  * ──────────────────────────────────────────────────────────────────────────── */
 describe('KB-620 음식 상세 — 숨김(FOOD-001)은 조용한 안내', () => {
   const { ApiError } = jest.requireActual('@/lib/api/client') as typeof import('@/lib/api/client');
-  const withError = (error: unknown) =>
+  /** 상세 훅이 FOOD-001을 받으면 실제로는 queryFn이 숨김 신호를 세운다 — 목 환경이라 여기서 대신 세운다. */
+  const withError = (error: unknown) => {
     mockUseFoodDetail.mockReturnValue({ data: undefined, isLoading: false, error, refetch: jest.fn() });
+    if (ApiError && (error as { code?: string })?.code === 'FOOD-001' && error instanceof ApiError) hide();
+  };
 
   it('FOOD-001 → 숨김 안내만, 에러 블록·재시도 없음', () => {
     withError(new ApiError('해당 음식 정보를 찾을 수 없습니다', 400, 'FOOD-001'));
@@ -627,10 +637,11 @@ describe('KB-620 음식 상세 — 숨김(FOOD-001)은 조용한 안내', () => 
     expect(byId(live, 'detail-bottom-bar').length).toBeGreaterThan(0);
     expect(flat(live)).toContain('Kimchi Jjigae');
 
-    // 재조회가 FOOD-001로 실패 — 캐시(data)는 그대로 남아 있는 상태
+    // 재조회가 FOOD-001로 실패 — 캐시(data)는 그대로 남아 있는 상태. 원천(상세 queryFn)이 신호를 세운다.
     mockUseFoodDetail.mockReturnValue({
       data: FOOD('safe'), isLoading: false, error: new ApiError('x', 400, 'FOOD-001'), refetch: jest.fn(),
     });
+    hide();
     const tree = render(<FoodDetailScreen />);
     expect(byId(tree, 'detail-verdict')).toHaveLength(0); // 옛 판정 없음
     expect(tree.root.findAll((n) => n.props?.state === 'safe')).toHaveLength(0); // SAFE 표식 어디에도 없음
@@ -671,54 +682,57 @@ describe('KB-620 음식 상세 — 숨김(FOOD-001)은 조용한 안내', () => 
  * ⚠️ 처음부터 **"이미 리뷰가 캐시된 상태 + 에러"** 조합으로 짠다 — TanStack은 재조회 실패에도
  * 이전 data를 유지하므로, 에러만 보고 data를 그대로 쓰면 숨겨진 음식의 옛 리뷰가 남는다(#184 2R).
  * ──────────────────────────────────────────────────────────────────────────── */
-describe('KB-626 상세 리뷰 영역 — FOOD-001은 조용히 비운다(캐시된 목록 포함)', () => {
+describe('KB-626 상세 — 어느 원천의 거부든 신호 하나로 즉시 가린다(재조회 불필요)', () => {
   const { ApiError: ApiErr } = jest.requireActual('@/lib/api/client') as typeof import('@/lib/api/client');
-  const { queryClient } = jest.requireActual('@/lib/queryClient') as typeof import('@/lib/queryClient');
-  const hidden = () => new ApiErr('x', 400, 'FOOD-001');
   /** 캐시된 리뷰(data 있음) + 재조회 실패(error) — TanStack이 실제로 주는 모양 */
   const cachedButRefused = (error: unknown) => ({ ...REVIEWS_PAGE(), isError: true, error });
 
-  it('캐시된 리뷰 + FOOD-001 → 옛 리뷰 카드 0 · 에러 블록·재시도 0 (양성 대조군 동반)', () => {
-    // 양성 대조군: 에러가 없으면 같은 캐시에서 카드가 **보여야** 한다 — 이게 0이면 아래 0은 무의미
+  /* Codex #185 2R (i) — 상세는 캐시된 SAFE 그대로(상세 에러 없음, 재조회 안 끝남), **리뷰가** FOOD-001.
+     리뷰 fetch가 신호를 세우면 상세 재조회를 기다리지 않고 판정·액션 바가 사라져야 한다. */
+  it('캐시 SAFE 상세 + 리뷰 FOOD-001 → 재조회 없이 판정·액션 바·리뷰 0 + 중립 안내 (양성 대조군 동반)', () => {
+    // 양성 대조군: 신호가 없으면 같은 캐시에서 판정·액션 바·리뷰가 **보여야** 한다
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe'), isLoading: false, error: null, refetch: jest.fn() });
     const live = render(<FoodDetailScreen />);
+    expect(byId(live, 'detail-verdict').length).toBeGreaterThan(0);
+    expect(byId(live, 'detail-bottom-bar').length).toBeGreaterThan(0);
     expect(flat(live)).toContain('Great and safe for me');
 
-    mockFoodReviews.mockImplementation(() => cachedButRefused(hidden()));
+    mockFoodReviews.mockImplementation(() => cachedButRefused(new ApiErr('x', 400, 'FOOD-001')));
+    hide(); // 리뷰 fetch가 FOOD-001을 받은 자리에서 세운다 — 상세는 여전히 캐시 SAFE·에러 없음
     const tree = render(<FoodDetailScreen />);
-    expect(flat(tree)).not.toContain('Great and safe for me'); // 옛 목록을 버렸다
-    expect(flat(tree)).not.toContain('Loved it');
-    expect(byId(tree, 'query-error-block')).toHaveLength(0); // 재시도 함정 없음
-    expect(byId(tree, 'detail-nat-error')).toHaveLength(0);
+    expect(byId(tree, 'detail-verdict')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.state === 'safe')).toHaveLength(0);
+    expect(byId(tree, 'detail-bottom-bar')).toHaveLength(0);
+    expect(flat(tree)).not.toContain('Great and safe for me');
+    expect(byId(tree, 'detail-food-hidden').length).toBeGreaterThan(0);
   });
 
-  it('리뷰가 FOOD-001이면 상세를 다시 조회시킨다 — 본문의 캐시된 판정을 숨김 안내로 넘기려고 (양성 대조군 동반)', () => {
-    const spy = jest.spyOn(queryClient, 'invalidateQueries');
-    render(<FoodDetailScreen />); // 대조군: 정상이면 무효화 없음
-    expect(spy.mock.calls.filter(([f]) => JSON.stringify((f as { queryKey?: unknown })?.queryKey) === '["food","7"]')).toHaveLength(0);
-
-    mockFoodReviews.mockImplementation(() => cachedButRefused(hidden()));
-    render(<FoodDetailScreen />);
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['food', '7'] });
-    spy.mockRestore();
+  it('이미 떠 있는 화면에서 신호가 서면 **그 자리에서** 가린다(마운트 후 전환)', () => {
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('safe'), isLoading: false, error: null, refetch: jest.fn() });
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'detail-verdict').length).toBeGreaterThan(0); // 전: 보임
+    hide(); // 리뷰·북마크 응답이 도착한 순간
+    expect(byId(tree, 'detail-verdict')).toHaveLength(0); // 후: 같은 트리에서 즉시 사라짐
+    expect(byId(tree, 'detail-bottom-bar')).toHaveLength(0);
+    expect(byId(tree, 'detail-food-hidden').length).toBeGreaterThan(0);
   });
 
-  it('국가 필터 쿼리가 FOOD-001 → 에러 블록(재시도)·빈 문구 없이 비운다', () => {
+  it('국가 필터 쿼리의 FOOD-001도 같은 신호 — 에러 블록(재시도) 없이 중립 안내', () => {
     mockFoodReviews.mockImplementation((_foodId: string, countryCode?: string) =>
-      countryCode ? cachedButRefused(hidden()) : REVIEWS_PAGE(),
+      countryCode ? cachedButRefused(new ApiErr('x', 400, 'FOOD-001')) : REVIEWS_PAGE(),
     );
     const tree = render(<FoodDetailScreen />);
     act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
-    expect(byId(tree, 'detail-nat-error')).toHaveLength(0); // 재시도 함정 없음
-    expect(byId(tree, 'detail-nat-empty')).toHaveLength(0); // "같은 국적 리뷰 없음"으로 위장하지 않음
-    expect(flat(tree)).not.toContain('Great and safe for me');
+    hide(); // 국가 필터 fetch가 받은 자리에서
+    expect(byId(tree, 'detail-nat-error')).toHaveLength(0);
+    expect(byId(tree, 'detail-food-hidden').length).toBeGreaterThan(0);
   });
 
-  it('FOOD-001이 **아닌** 리뷰 에러는 기존대로 — 캐시 유지·국가 필터는 에러 블록(과잉 차단 금지)', () => {
-    mockFoodReviews.mockImplementation((_foodId: string, countryCode?: string) =>
-      countryCode ? cachedButRefused(new ApiErr('boom', 500, 'COMMON-001')) : cachedButRefused(new ApiErr('boom', 500, 'COMMON-001')),
-    );
+  it('(iii) FOOD-001이 **아닌** 리뷰 에러는 신호를 세우지 않는다 — 판정·캐시 유지, 국가 필터는 에러 블록', () => {
+    mockFoodReviews.mockImplementation(() => cachedButRefused(new ApiErr('boom', 500, 'COMMON-001')));
     const tree = render(<FoodDetailScreen />);
-    expect(flat(tree)).toContain('Great and safe for me'); // 일시 오류로 목록을 비우지 않는다
+    expect(byId(tree, 'detail-verdict').length).toBeGreaterThan(0); // 일시 오류로 판정을 가리지 않는다
+    expect(flat(tree)).toContain('Great and safe for me');
     act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
     expect(byId(tree, 'detail-nat-error').length).toBeGreaterThan(0); // 기존 P-323 ⑤ 그대로
   });

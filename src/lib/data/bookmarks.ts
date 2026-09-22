@@ -20,6 +20,7 @@ import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang, isFoodHidden } from '../api/client';
+import { markFoodHidden } from './hiddenFoods';
 import { showTopToast } from '@/components/topToastStore';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
@@ -162,14 +163,16 @@ export function useToggleBookmark() {
     onSuccess: (_d, { add }) => {
       showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'));
     },
-    onError: (e, { fromDetail }, ctx) => {
+    onError: (e, { snap, fromDetail }, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
       // KB-626(P-405): 음식이 READY가 아니면(FOOD-001 — 숨김·삭제) 서버 `bookmark`가 `getReadyFood`에서
       // 거부한다. 에러가 아니므로 빨간 토스트("다시 시도해 주세요")를 띄우지 않는다 — 다시 해도 같다.
-      // 상세 안에서 눌렀으면 아래 onSettled의 상세 무효화 → 재조회가 FOOD-001을 받아 상세가 숨김
-      // 안내로 바뀐다(#184) — 토스트까지 띄우면 같은 말을 두 번 한다.
+      // ⚠️ 거부를 **삼키지 않고 전파**한다(#185 2R): 숨김 신호를 세우면 상세 화면이 그 즉시 판정·액션 바를
+      // 가리고 숨김 안내로 바뀐다 — onSettled 재조회를 기다리지 않는다(재조회는 게이트가 아니다).
+      // 상세 안에서 눌렀으면 그 안내가 설명하므로 토스트는 생략(같은 말 두 번 금지).
       if (isFoodHidden(e)) {
+        markFoodHidden(snap.foodId);
         if (!fromDetail) showTopToast(i18n.t('saved.foodHidden'), { icon: 'info' }); // 중립 — 예진 확인 대상(P-405 (a))
         return;
       }

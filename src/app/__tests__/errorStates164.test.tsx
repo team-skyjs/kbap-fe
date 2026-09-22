@@ -103,8 +103,14 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
+/** KB-626: 숨김 신호(hiddenFoods)는 실물 — 화면은 이 신호 하나로 판정한다. 실제 앱에선 FOOD-001을 받은 원천
+ *  (상세·리뷰 fetch)이 세우는데 여기선 그 훅들이 목이라 테스트가 대신 세운다(`hide()`). */
+const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
+const hide = () => act(() => { HIDDEN.markFoodHidden('7'); });
+
 beforeEach(() => {
   jest.clearAllMocks();
+  HIDDEN.__resetHiddenFoodsForTest();
   mockDetail.mockReturnValue(DETAIL_OK); // KB-626: 상세는 기본 정상
   mockMyReviews.mockReturnValue({ data: [], error: null, refetch: jest.fn() });
   mockFoodReviews.mockReturnValue({
@@ -228,6 +234,7 @@ describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 �
     expect(byTestId(render(<FoodReviews />), 'helpful-r1').length).toBeGreaterThan(0);
 
     mockFoodReviews.mockReturnValue(state(new ApiError('x', 400, 'FOOD-001')));
+    hide(); // 리뷰 fetch가 받은 자리에서
     const tree = render(<FoodReviews />);
     const s = flat(tree);
     expect(byTestId(tree, 'helpful-r1')).toHaveLength(0); // 옛 목록 버림
@@ -248,6 +255,7 @@ describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 �
 
     mockDetail.mockReturnValue(detailHidden());
     mockFoodReviews.mockReturnValue(state(null)); // 리뷰 쪽은 캐시가 멀쩡하다
+    hide(); // 상세 fetch가 받은 자리에서 — 리뷰 캐시와 무관하게 선다
     const tree = render(<FoodReviews />);
     expect(byTestId(tree, 'helpful-r1')).toHaveLength(0); // 캐시된 리뷰 카드 없음
     expect(byTestId(tree, 'rating-summary-box')).toHaveLength(0); // 음식 요약·컨트롤 없음
@@ -258,6 +266,7 @@ describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 �
   it('상세 FOOD-001 + 리뷰 pending(data 없음·에러 없음) → 중립 안내', () => {
     mockDetail.mockReturnValue(detailHidden());
     mockFoodReviews.mockReturnValue({ ...state(null, undefined), isLoading: true });
+    hide();
     const tree = render(<FoodReviews />);
     expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
     expect(byTestId(tree, 'helpful-r1')).toHaveLength(0);
@@ -273,6 +282,7 @@ describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 �
 
   it('데이터 없음 + FOOD-001 → 에러 블록이 아니라 중립 안내', () => {
     mockFoodReviews.mockReturnValue(state(new ApiError('x', 400, 'FOOD-001'), undefined));
+    hide();
     const tree = render(<FoodReviews />);
     expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
     expect(flat(tree)).not.toContain('states.errorTitle');
