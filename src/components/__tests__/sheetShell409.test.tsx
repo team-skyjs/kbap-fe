@@ -15,9 +15,11 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 47, bottom: 0, left: 0, right: 0 }) }));
 
 import { PlaceTagSheet } from '@/features/community/placeMap';
+import { SheetShell } from '@/components/SheetShell';
+import { Dimensions, View } from 'react-native';
 
 const flat = (s: unknown) => Object.assign({}, ...[s].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
 
@@ -45,5 +47,33 @@ it('② 셸은 한 곳 — 장소 태그 시트·주문 공유 시트가 같은 
   const order = fs.readFileSync('src/app/profile/order/[id].tsx', 'utf8');
   for (const src of [place, order]) expect(src).toContain("import { SheetShell } from '@/components/SheetShell'");
   expect(place).not.toMatch(/function SheetShell\(/);
-  expect(order).toContain('<SheetShell onClose={() => setShareOpen(false)} overlay={<TopToastHost />}>');
+  expect(order).toContain('onClose={() => { if (!shareBusy.current) setShareOpen(false); }}');
+  expect(order).toContain('overlay={<TopToastHost />}');
+});
+
+/* Codex #193 P2: 내용이 창보다 크면(큰 글자·작은 기기·긴 장소명) 하단 정렬 시트의 **상단이 잘려** 닿을 수 없다.
+   최대 높이 = 창 높이 − 상단 안전영역, 내용은 ScrollView(flexGrow 0 — 들어맞으면 hug 그대로). */
+it('③ 넘침 — 시트 최대 높이 = 창 − 상단 안전영역 · 내용은 hug 스크롤 뷰 안(큰 내용도 전부 닿는다)', () => {
+  let r!: ReactTestRenderer;
+  act(() => {
+    r = renderer.create(
+      <SheetShell onClose={() => {}}>
+        <View testID="huge" style={{ height: 5000 }} />
+      </SheetShell>,
+    );
+  });
+  const host = (id: string) => r.root.findAll((n) => typeof n.type === 'string' && n.props.testID === id)[0];
+  const sheet = flat(host('sheet-shell').props.style);
+  expect(sheet.maxHeight).toBe(Dimensions.get('window').height - 47);
+  const scroll = r.root.findAll((n) => n.props?.testID === 'sheet-shell-scroll' && n.props?.contentContainerStyle)[0];
+  expect(flat(scroll.props.style).flexGrow).toBe(0); // hug — 들어맞으면 스크롤 영역이 내용 크기
+  expect(flat(scroll.props.contentContainerStyle).gap).toBe(24); // 자식 간격 무변
+  expect(scroll.findAll((n) => n.props?.testID === 'huge').length).toBeGreaterThan(0); // 내용이 스크롤 뷰 안
+});
+
+it('③ 장소 태그 시트도 같은 셸 — 내용이 스크롤 뷰 안에 들어가도 치수·순서 무변', () => {
+  let r!: ReactTestRenderer;
+  act(() => { r = renderer.create(<PlaceTagSheet place={{ name: 'Gwangjang Market', roadAddress: 'Seoul' }} onClose={() => {}} />); });
+  const scroll = r.root.findAll((n) => n.props?.testID === 'sheet-shell-scroll' && n.props?.contentContainerStyle)[0];
+  expect(scroll.findAll((n) => n.props?.testID === 'map-google').length).toBeGreaterThan(0);
 });

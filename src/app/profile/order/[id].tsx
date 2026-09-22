@@ -255,7 +255,12 @@ export default function OrderDetailScreen() {
       {/* KB-636 공유 카드 시트 — 열렸을 때만 마운트(닫힘 = 카드·캡처 캔버스·이미지 요청 0).
           overlay = 모달 컨텍스트 토스트 호스트(P-370 — 저장 완료·실패 토스트가 시트 위에 뜬다). */}
       {shareOpen && shareCard && (
-        <SheetShell onClose={() => setShareOpen(false)} overlay={<TopToastHost />}>
+        <SheetShell
+          // Codex #193 P2: 저장·스토리 진행 중(권한 요청·캡처 대기)에 닫으면 캔버스가 언마운트돼 captureRef가 null —
+          // 진행 중엔 스크림 탭·안드 백을 무시한다. export 함수는 내부 catch로 항상 결과를 돌려 shareBusy가 반드시 풀린다.
+          onClose={() => { if (!shareBusy.current) setShareOpen(false); }}
+          overlay={<TopToastHost />}
+        >
           {/* 재시도 = **미리보기·캡처 캔버스 둘 다** 리마운트(Codex 10R). 캔버스만 다시 올리면
               보이는 카드는 빈 칸인데 저장은 성공해서, 본 것과 저장된 것이 달라진다.
               캡처 대상 = 화면 밖 9:16 캔버스(절대배치 — 시트 높이에 안 들어간다) · 미리보기와 **같은 props**. */}

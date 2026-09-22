@@ -62,6 +62,16 @@ jest.mock('expo-image', () => {
 });
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (p: string) => mockGet(p) }, apiLang: () => 'en' }));
+// 토스트는 상태만 — 호스트 애니메이션(reanimated)은 이 파일의 목 범위 밖
+jest.mock('@/components/topToastStore', () => ({ showTopToast: jest.fn(), dismissTopToast: jest.fn(), subscribeTopToast: () => () => {} }));
+// KB-636(#193 P2): 저장 진행 중 닫힘 방지 검증용 — 저장 결과를 테스트가 쥐고 있다가 풀어 준다
+const mockSave = jest.fn(async (): Promise<string> => 'success');
+jest.mock('@/features/order/shareExport', () => ({
+  saveCardToPhotos: () => mockSave(),
+  shareCardToStory: async () => 'success',
+  storyShareAvailable: () => true,
+  lastShareErrorHint: () => null,
+}));
 
 import MyFoodsScreen from '@/app/profile/my-foods';
 import OrderDetailScreen from '@/app/profile/order/[id]';
@@ -338,6 +348,24 @@ describe('KB-636 공유 카드 시트', () => {
     expect(byTid(tree, 'order-share-sheet')).toHaveLength(0); // 닫힘 = 카드·캔버스 언마운트
     press(tree, 'order-share-open');
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'order_share_view')).toHaveLength(1);
+  });
+
+  /* Codex #193 P2: 저장·스토리 진행 중 스크림 탭 → 캔버스 언마운트 → captureRef null → 실패. 진행 중엔 닫기 무시. */
+  it('저장 진행 중엔 닫히지 않는다(캔버스 유지) · 끝나면 닫힌다', async () => {
+    let finish!: (r: string) => void;
+    mockSave.mockImplementationOnce(() => new Promise<string>((res) => (finish = res)));
+    const tree = await renderOrder(SHARE_ORDER);
+    press(tree, 'order-share-open');
+    const close = () => act(() => {
+      tree.root.findAll((n) => typeof n.props?.onRequestClose === 'function' && n.props?.visible === true)[0].props.onRequestClose();
+    });
+    act(() => { void byTid(tree, 'share-download').find((n) => typeof n.props?.onPress === 'function')!.props.onPress(); });
+    expect(mockSave).toHaveBeenCalledTimes(1); // 대조: 저장이 실제로 진행 중
+    close();
+    expect(byTid(tree, 'order-share-export-canvas').length).toBeGreaterThan(0); // 캡처 대상 유지
+    await act(async () => { finish('success'); await Promise.resolve(); });
+    close();
+    expect(byTid(tree, 'order-share-sheet')).toHaveLength(0); // 끝난 뒤엔 정상 닫힘
   });
 
   it('사진 0장 주문 = 하단 버튼 없음(빈 카드 금지 — P-380) · Write a review·음식 선택 시트 부재', async () => {
