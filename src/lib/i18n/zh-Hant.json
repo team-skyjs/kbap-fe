@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "此裝置未安裝 Instagram。",
     "shareFailed": "無法產生限時動態卡片，請再試一次。",
     "shareStoryHint": "先儲存圖片，再到 Instagram 分享。",
-    "sharePhotosFailed": "圖片載入失敗，點擊重試。"
+    "sharePhotosFailed": "圖片載入失敗，點擊重試。",
+    "itemPhotoTitle": "菜品照片",
+    "itemPhotoDefault": "使用預設照片",
+    "editFailed": "未能儲存變更，請再試一次。",
+    "editPhotoNotReady": "照片上傳未完成，請再試一次。",
+    "editNotFound": "找不到這筆訂單，請重新整理後再試。"
   },
   "feedback": {
     "title": "聯絡我們",

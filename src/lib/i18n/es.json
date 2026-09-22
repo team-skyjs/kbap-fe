@@ -1014,7 +1014,12 @@
     "shareNoInstagram": "Instagram no está instalado en este teléfono.",
     "shareFailed": "No se pudo crear la tarjeta de historia. Inténtalo de nuevo.",
     "shareStoryHint": "Guarda la imagen y compártela en Instagram.",
-    "sharePhotosFailed": "No se pudieron cargar las fotos. Toca para reintentar."
+    "sharePhotosFailed": "No se pudieron cargar las fotos. Toca para reintentar.",
+    "itemPhotoTitle": "Foto del plato",
+    "itemPhotoDefault": "Usar foto predeterminada",
+    "editFailed": "No se pudo guardar el cambio. Inténtalo de nuevo.",
+    "editPhotoNotReady": "La subida de la foto no terminó. Inténtalo de nuevo.",
+    "editNotFound": "No se encontró este pedido. Actualiza e inténtalo de nuevo."
   },
   "feedback": {
     "title": "Contáctanos",

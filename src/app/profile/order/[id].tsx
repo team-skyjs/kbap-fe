@@ -7,6 +7,9 @@
  * 생략(발주 규정·REPORTS): 사진 슬롯 4개(주문 사진 기능 부재). 데이터 훅·뷰어 무변.
  *
  * P-380(KB-518): 하단 공유 섹션 부활 — 스토리 카드 미리보기 + 저장/인스타 버튼.
+ * KB-638(P-413, 서버 #297): **편집** — 항목 썸네일 탭 → 사진 소스 시트(카메라/앨범/기본 사진으로) → 업로드+PUT 또는
+ *   DELETE · 장소 줄 탭(없으면 "어디서 드셨나요?" 자리) → 검색 결과 시트(직접 입력 없음) → PATCH. 편집 모드·연필 없음(D1).
+ *   응답 후 반영(useOrderEdit — 낙관 갱신 금지), 표시는 orderItemImage(회원 사진 우선) 한 곳.
  * P-409(KB-636, 예진 b36 실기): 공유 섹션을 본문에서 빼 **시트**로 옮겼다(본문 = 메뉴판·영수증·항목까지).
  *   하단 버튼 "Download image" → 시트(공용 SheetShell — 장소 태그 시트와 같은 골격). 시트 안 내용·치수·동작은
  *   본문 시절 그대로. **시트가 닫혀 있으면 카드·캡처 캔버스 미마운트 = 이미지 요청 0**(프리페치는 열 때 시작).
@@ -18,6 +21,7 @@ import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';
+import * as ImagePicker from 'expo-image-picker';
 import { ActionSheet, SubHeader } from '@/components';
 import { SheetShell } from '@/components/SheetShell';
 import { TopToastHost } from '@/components/TopToast';
@@ -25,7 +29,11 @@ import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { orderPlaceLabel, useOrderDetail } from '@/lib/data/useOrders';
+import { orderItemImage, orderLocationLabel, orderPlaceLabel, useOrderDetail, type OrderItem } from '@/lib/data/useOrders';
+import { useResetOrderItemImage, useSetOrderItemImage, useUpdateOrderPlace } from '@/lib/data/useOrderEdit';
+import { choosePhotoSource } from '@/lib/data/profileImage';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { PlacePickerSheet } from '@/features/review/ReviewCellParts';
 import { OrderShareExportCanvas, OrderShareSection } from '@/features/order/OrderShareCard';
 import { shareMenuLine, shareMetaCity, sharePhotos } from '@/features/order/shareCard';
 import { lastShareErrorHint, saveCardToPhotos, shareCardToStory, storyShareAvailable } from '@/features/order/shareExport';
@@ -50,6 +58,45 @@ export default function OrderDetailScreen() {
   const exportRef = React.useRef<View>(null);
   const shareBusy = React.useRef(false); // 연타 차단(캡처는 수백 ms 걸린다)
   const [photoDenied, setPhotoDenied] = React.useState(false); // 사진첩 권한 거부 안내 시트
+  // KB-638 편집 — 셋 다 공용 제출 가드 하나(연타 차단 규칙). 토스트는 useOrderEdit 안, 여기선 호출만.
+  const editGuard = useSubmitGuard();
+  const placeMut = useUpdateOrderPlace();
+  const setItemImage = useSetOrderItemImage();
+  const resetItemImage = useResetOrderItemImage();
+  const [placeSheet, setPlaceSheet] = React.useState(false);
+  const [cameraDenied, setCameraDenied] = React.useState(false); // 카메라 권한 거부 — 이 화면은 Alert 금지(P-355)라 공용 시트
+  const onItemPhoto = (it: OrderItem) =>
+    editGuard.run(async () => {
+      if (!id || !it.id) return; // id 없음 = 구응답 캐시(서버 #297 이전) — 편집 불가
+      // 리뷰 작성의 사진 픽커 재활용(iOS 네이티브 시트·안드 공용 ActionSheet). "기본 사진으로"는 회원 사진이 있을 때만(D4).
+      const src = await choosePhotoSource({
+        title: t('myFoods.itemPhotoTitle'),
+        camera: t('photo.take'),
+        gallery: t('photo.gallery'),
+        ...(it.userImageUrl ? { remove: t('myFoods.itemPhotoDefault') } : {}),
+        cancel: t('common.cancel'),
+      });
+      if (!src) return;
+      if (src === 'remove') {
+        await resetItemImage.mutateAsync({ orderId: id, itemId: it.id }).catch(() => {}); // 실패 토스트는 훅이
+        return;
+      }
+      let uri: string | null = null;
+      if (src === 'camera') {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          setCameraDenied(true);
+          return;
+        }
+        const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
+        uri = !res.canceled && res.assets?.[0]?.uri ? res.assets[0].uri : null;
+      } else {
+        const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+        uri = !res.canceled && res.assets?.[0]?.uri ? res.assets[0].uri : null;
+      }
+      if (!uri) return;
+      await setItemImage.mutateAsync({ orderId: id, itemId: it.id, uri }).catch(() => {});
+    });
   // Codex #151 P2: 내보내기 캔버스의 원격 이미지가 로드되기 전에 찍으면 빈 칸·셔머가 박힌다.
   // 프리페치가 끝나기 전까지 캡처 액션을 잠근다(캐시가 차면 양쪽 인스턴스가 같이 산다).
   // 5R: **실패도 잠금 유지** — RemoteImage 실패 칸은 빈 칸이라 그대로 찍으면 사진 없는 카드가 저장된다.
@@ -163,10 +210,15 @@ export default function OrderDetailScreen() {
             </Pressable>
           )}
 
-          {/* 장소명 18/600 — P-386(KB-456): 서버 식당명 우선, 없으면 주소 대체(조립 금지) */}
-          {!!orderPlaceLabel(q.data) && (
-            <Text style={styles.placeTitle} numberOfLines={2}>{orderPlaceLabel(q.data)}</Text>
-          )}
+          {/* 장소명 18/600 — P-386(KB-456): 서버 식당명 우선, 없으면 주소 대체(조립 금지).
+              KB-638: 탭 = 장소 검색 시트(교체). 라벨이 없는 주문도 같은 자리에 탭 영역(review.placeRow 재활용 — 처음 넣는 것도 같은 PATCH). */}
+          <Pressable onPress={() => setPlaceSheet(true)} disabled={editGuard.busy} style={styles.placeRow} testID="order-place-edit">
+            {orderPlaceLabel(q.data) ? (
+              <Text style={styles.placeTitle} numberOfLines={2}>{orderPlaceLabel(q.data)}</Text>
+            ) : (
+              <Text style={[styles.placeTitle, styles.placeHint]} numberOfLines={1} testID="order-place-empty">{t('review.placeRow')}</Text>
+            )}
+          </Pressable>
 
           {/* 영수증 카드(4150:14634) — 라벨 12/600 #B1B5BD + 값 14/500 #1C1E21 */}
           <View style={styles.receipt} testID="order-receipt">
@@ -174,10 +226,11 @@ export default function OrderDetailScreen() {
               <Text style={styles.rcptLbl}>{t('myFoods.receiptDate')}</Text>
               <Text style={styles.rcptVal}>{formatOrderDate(q.data.orderedAt)}</Text>
             </View>
-            {!!q.data.roadAddress && (
+            {/* Codex #195: 장소를 편집하면 place.address가 정본 — 자동 추정 roadAddress는 폴백(orderLocationLabel 한 규칙, 헤더·카드와 같은 장소) */}
+            {!!orderLocationLabel(q.data) && (
               <View style={styles.rcptRow}>
                 <Text style={styles.rcptLbl}>{t('myFoods.receiptLocation')}</Text>
-                <Text style={[styles.rcptVal, styles.rcptValWrap]} numberOfLines={2}>{q.data.roadAddress}</Text>
+                <Text style={[styles.rcptVal, styles.rcptValWrap]} numberOfLines={2} testID="order-receipt-location">{orderLocationLabel(q.data)}</Text>
               </View>
             )}
             {q.data.totalPrice != null && q.data.totalPrice > 0 && (
@@ -218,11 +271,19 @@ export default function OrderDetailScreen() {
                 onPress={() => it.foodId && it.ready !== false && router.push(`/food/${it.foodId}?src=list` as Href)}
                 testID={`order-item-${k}`}
               >
-                {it.imageUrl ? (
-                  <RemoteImage uri={it.imageUrl} style={styles.itemThumb} />
-                ) : (
-                  <View style={[styles.itemThumb, { backgroundColor: C.surface2 }]} />
-                )}
+                {/* KB-638: 썸네일 = 회원 사진 우선(orderItemImage) · 탭 = 사진 소스 시트. 진행 중엔 불투명도만(P-151 프레임 불변). */}
+                <Pressable
+                  onPress={() => void onItemPhoto(it)}
+                  disabled={!it.id || editGuard.busy}
+                  style={editGuard.busy ? styles.itemThumbBusy : undefined}
+                  testID={`order-item-photo-${k}`}
+                >
+                  {orderItemImage(it) ? (
+                    <RemoteImage uri={orderItemImage(it) as string} style={styles.itemThumb} />
+                  ) : (
+                    <View style={[styles.itemThumb, { backgroundColor: C.surface2 }]} />
+                  )}
+                </Pressable>
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                   <Text style={styles.itemName} numberOfLines={1}>{it.menuName}</Text>
                   {/* P-259: 준비중 표시 — 보조 텍스트 */}
@@ -297,6 +358,31 @@ export default function OrderDetailScreen() {
         </SheetShell>
       )}
 
+      {/* KB-638: 장소 교체 — 리뷰 장소 검색 시트 재활용, 결과 선택만(resultsOnly — MANUAL 행 없음, D3) */}
+      {placeSheet && (
+        <PlacePickerSheet
+          open
+          resultsOnly
+          onClose={() => setPlaceSheet(false)}
+          onPick={(p) => {
+            setPlaceSheet(false);
+            const placeId = p.placeId;
+            if (!id || !placeId) return; // resultsOnly라 placeId 없는 선택은 없다 — 방어
+            void editGuard.run(() =>
+              placeMut.mutateAsync({ orderId: id, place: { placeId, name: p.name, roadAddress: p.roadAddress } }).catch(() => {}),
+            );
+          }}
+          t={t}
+        />
+      )}
+      {/* KB-638: 카메라 권한 거부 — 사진첩 거부와 같은 공용 시트(설정 열기 1행), 문구는 기존 photo.permBody */}
+      <ActionSheet
+        open={cameraDenied}
+        title={t('photo.permBody')}
+        items={[{ key: 'settings', label: t('photo.openSettings'), onPress: () => void openAppSettings() }]}
+        onClose={() => setCameraDenied(false)}
+      />
+
       {/* 풀스크린 메뉴판 뷰어 — contain(전체 표시) + 명시 닫기 */}
       {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}
       {viewer && q.data?.scanImageUrl && (
@@ -310,7 +396,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   body: { paddingTop: 8, gap: 16 },
   scanImage: { height: 160, borderRadius: 8, backgroundColor: C.surface2 },
-  placeTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21', paddingHorizontal: 20 },
+  placeRow: { paddingHorizontal: 20 },
+  placeTitle: { fontSize: 18, fontWeight: '600', color: '#1C1E21' },
+  placeHint: { color: C.ink3 }, // KB-638: 장소 없음 — 같은 메트릭, 색만(탭하면 검색)
 
   // 영수증 카드 — pad 16, 행 space-between, line #DCDEE3
   receipt: { marginHorizontal: 20, paddingVertical: 16, paddingHorizontal: 0, gap: 16 }, // A-OD-01(KB-486: 보더 제거·좌우 0)
@@ -332,6 +420,7 @@ const styles = StyleSheet.create({
   items: { paddingHorizontal: 20, gap: 12, marginTop: -8 }, // A-OD-03(헤더→리스트 8)·A-OD-04(카드 간 12)
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 86, padding: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 8 }, // A-OD-04
   itemThumb: { width: 58, height: 58, borderRadius: 4, backgroundColor: C.surface2 },
+  itemThumbBusy: { opacity: 0.45 }, // KB-638: 편집 진행 중 — 메트릭 불변
   itemName: { fontSize: 14, fontWeight: '600', color: '#1C1E21' },
   itemPending: { fontSize: 11.5, fontWeight: '500', color: C.ink3 },
   itemRight: { flexDirection: 'row', alignItems: 'baseline', gap: 3 }, // A-OD-05(가로 1행)

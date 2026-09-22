@@ -1012,7 +1012,12 @@
     "shareNoInstagram": "Instagram isn't installed on this phone.",
     "shareFailed": "Couldn't create the story card. Try again.",
     "shareStoryHint": "Save the image, then share it on Instagram.",
-    "sharePhotosFailed": "Couldn't load the photos. Tap to retry."
+    "sharePhotosFailed": "Couldn't load the photos. Tap to retry.",
+    "itemPhotoTitle": "Dish photo",
+    "itemPhotoDefault": "Use default photo",
+    "editFailed": "Couldn't save the change. Try again.",
+    "editPhotoNotReady": "The photo upload didn't finish. Try again.",
+    "editNotFound": "Couldn't find this order. Refresh and try again."
   },
   "feedback": {
     "title": "Contact us",

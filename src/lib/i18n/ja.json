@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "この端末にInstagramがありません。",
     "shareFailed": "ストーリーカードを作成できませんでした。もう一度お試しください。",
     "shareStoryHint": "画像を保存してから、Instagramでシェアしてください。",
-    "sharePhotosFailed": "写真を読み込めませんでした。タップして再試行してください。"
+    "sharePhotosFailed": "写真を読み込めませんでした。タップして再試行してください。",
+    "itemPhotoTitle": "料理の写真",
+    "itemPhotoDefault": "標準の写真に戻す",
+    "editFailed": "変更を保存できませんでした。もう一度お試しください。",
+    "editPhotoNotReady": "写真のアップロードが完了していません。もう一度お試しください。",
+    "editNotFound": "この注文が見つかりません。更新してもう一度お試しください。"
   },
   "feedback": {
     "title": "お問い合わせ",

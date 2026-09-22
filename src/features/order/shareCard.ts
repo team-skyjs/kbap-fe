@@ -7,6 +7,7 @@
  * ② 메뉴줄 = 최대 3개 + 넘치면 "외 N".
  * ③ 가게명 = place.name → roadAddress → **줄 숨김**(빈 줄 금지).
  */
+import { orderItemImage } from '@/lib/data/useOrders';
 
 /** 카드 폭(시안 고정) — 미리보기·내보내기 공통 기준. */
 export const SHARE_CARD_W = 210;
@@ -112,10 +113,13 @@ export function shareMetaCity(address: string | null | undefined): string | null
  *
  * ⚠️ `=== true`가 아니라 **`!== false`**: 구 서버·구 캐시 응답엔 이 필드가 없다. `=== true`로 쓰면
  * 필드가 없는 응답에서 사진이 **전부** 사라진다 — 필드 부재는 "모름"이지 "없음"이 아니다.
+ *
+ * KB-638(P-413 D2): **회원 사진이 있으면 그 사진**(orderItemImage 한 곳) — ready·hasPhoto는 카탈로그 사진의
+ * 성질이라 회원 사진엔 적용하지 않는다(준비중 음식이어도 내가 찍은 사진은 내 카드에 실린다).
  */
-export function sharePhotos(items: { imageUrl: string | null; ready?: boolean; hasPhoto?: boolean }[]): string[] {
+export function sharePhotos(items: { imageUrl: string | null; userImageUrl?: string | null; ready?: boolean; hasPhoto?: boolean }[]): string[] {
   return items
-    .filter((it) => it.ready !== false && it.hasPhoto !== false && !!it.imageUrl)
-    .map((it) => it.imageUrl as string)
+    .filter((it) => !!it.userImageUrl || (it.ready !== false && it.hasPhoto !== false && !!it.imageUrl))
+    .map((it) => orderItemImage(it) as string)
     .slice(0, 4);
 }

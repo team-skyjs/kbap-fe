@@ -1013,7 +1013,12 @@
     "shareNoInstagram": "此设备未安装 Instagram。",
     "shareFailed": "无法生成故事卡片，请重试。",
     "shareStoryHint": "先保存图片，再到 Instagram 分享。",
-    "sharePhotosFailed": "图片加载失败，点击重试。"
+    "sharePhotosFailed": "图片加载失败，点击重试。",
+    "itemPhotoTitle": "菜品照片",
+    "itemPhotoDefault": "使用默认照片",
+    "editFailed": "未能保存更改，请重试。",
+    "editPhotoNotReady": "照片上传未完成，请重试。",
+    "editNotFound": "找不到这个订单，请刷新后重试。"
   },
   "feedback": {
     "title": "联系我们",

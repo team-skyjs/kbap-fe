@@ -52,7 +52,7 @@ jest.mock('expo-router', () => ({
   usePathname: () => '/profile/my-foods',
 }));
 jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k), i18n: { language: 'en' } }),
+  useTranslation: () => ({ t: (k: string, o?: { count?: number }) => (o?.count != null ? `${k}:${o.count}` : k), i18n: { language: mockLang.v } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
@@ -61,7 +61,39 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 const mockGet = jest.fn();
-jest.mock('@/lib/api/client', () => ({ api: { get: (p: string) => mockGet(p) }, apiLang: () => 'en' }));
+const mockLang = { v: 'en' };
+const mockPatch = jest.fn();
+const mockPut = jest.fn();
+const mockDel = jest.fn();
+jest.mock('@/lib/api/client', () => {
+  // KB-638: 편집 뮤테이션이 코드로 분기하므로 목 안에 같은 ApiError를 둔다(useOrderEdit의 instanceof와 동일 클래스)
+  class ApiError extends Error {
+    status?: number;
+    code?: string;
+    constructor(m: string, s?: number, c?: string) { super(m); this.status = s; this.code = c; } // 매개변수 프로퍼티 금지(목 팩토리 스코프 규칙)
+  }
+  return {
+    ApiError,
+    apiLang: () => mockLang.v,
+    api: { get: (p: string) => mockGet(p), patch: (...a: unknown[]) => mockPatch(...a), put: (...a: unknown[]) => mockPut(...a), del: (...a: unknown[]) => mockDel(...a) },
+  };
+});
+// KB-638: 사진 소스 시트(iOS 네이티브/안드 ActionSheet)·픽커·업로드 — 화면은 호출만 하므로 목
+const mockChoose = jest.fn();
+jest.mock('@/lib/data/profileImage', () => ({ choosePhotoSource: (...a: unknown[]) => mockChoose(...a) }));
+const mockCamPerm = jest.fn();
+const mockLaunchCamera = jest.fn();
+const mockLaunchLibrary = jest.fn();
+jest.mock('expo-image-picker', () => ({
+  requestCameraPermissionsAsync: () => mockCamPerm(),
+  launchCameraAsync: (...a: unknown[]) => mockLaunchCamera(...a),
+  launchImageLibraryAsync: (...a: unknown[]) => mockLaunchLibrary(...a),
+}));
+const mockUpload = jest.fn();
+jest.mock('@/lib/api/scanImage', () => ({ uploadImage: (...a: unknown[]) => mockUpload(...a) }));
+// 장소 검색 시트의 nearby/search — 실물은 expo-location 좌표를 기다린다(미목 시 행 멈춤). 결과는 비움(선택은 onPick 직접 호출).
+const mockSearchPlaces = jest.fn(async () => [] as unknown[]);
+jest.mock('@/lib/api/places', () => ({ fetchNearbyPlaces: async () => [], fetchSearchPlaces: (...a: unknown[]) => mockSearchPlaces(...a) }));
 // 토스트는 상태만 — 호스트 애니메이션(reanimated)은 이 파일의 목 범위 밖
 jest.mock('@/components/topToastStore', () => ({ showTopToast: jest.fn(), dismissTopToast: jest.fn(), subscribeTopToast: () => () => {} }));
 // KB-636(#193 P2): 저장 진행 중 닫힘 방지 검증용 — 저장 결과를 테스트가 쥐고 있다가 풀어 준다
@@ -75,6 +107,8 @@ jest.mock('@/features/order/shareExport', () => ({
 
 import MyFoodsScreen from '@/app/profile/my-foods';
 import OrderDetailScreen from '@/app/profile/order/[id]';
+// eslint-disable-next-line import/first -- jest.mock 선언 뒤여야 places·client 목이 걸린다(팩토리 호이스팅, 레포 관례)
+import { PlacePickerSheet } from '@/features/review/ReviewCellParts';
 import { useOrders } from '../useOrders';
 
 const ORDER = (over: Record<string, unknown> = {}) => ({
@@ -461,5 +495,258 @@ describe('P-386(KB-456): 장소 라벨 = 식당명 → 주소 → 미렌더', ()
     const texts = tree.root.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.children as string);
     expect(texts).toContain('홍대 김치집');
     expect(texts).not.toContain('서울 중구 소공로 51'); // roadAddress 폴백은 이때 쓰이지 않는다
+  });
+});
+
+/* ---- KB-638(P-413): 주문 편집 — 항목 썸네일 탭 → 사진 시트 → PUT/DELETE · 장소 줄 탭 → 검색 시트 → PATCH ---- */
+const EDIT_ORDER = {
+  orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 1, totalPrice: 9000, scanImageUrl: null,
+  items: [{ id: 7001, menuName: '순두부찌개', quantity: 1, price: 9000, foodId: 7, imageRef: 'https://cdn/catalog.jpg', ready: true, hasPhoto: true, userImageUrl: null }],
+};
+const EDIT_WITH_USER = { ...EDIT_ORDER, items: [{ ...EDIT_ORDER.items[0], userImageUrl: 'https://cdn/me.jpg' }] };
+const shownUri = (tree: ReactTestRenderer, k = 0) => {
+  const btn = byTid(tree, `order-item-photo-${k}`)[0];
+  return btn.findAll((n) => typeof n.props?.uri === 'string' || typeof n.props?.source?.uri === 'string').map((n) => n.props.uri ?? n.props.source.uri)[0];
+};
+
+describe('KB-638 주문 편집', () => {
+  beforeEach(() => { mockChoose.mockReset(); mockCamPerm.mockReset(); mockLaunchCamera.mockReset(); mockLaunchLibrary.mockReset(); mockUpload.mockReset(); mockPatch.mockReset(); mockPut.mockReset(); mockDel.mockReset(); });
+
+  it('썸네일 = 회원 사진 우선(있으면 me.jpg, 없으면 카탈로그) — 화면이 헬퍼를 탄다', async () => {
+    expect(shownUri(await renderOrder(EDIT_ORDER))).toBe('https://cdn/catalog.jpg');
+    expect(shownUri(await renderOrder(EDIT_WITH_USER))).toBe('https://cdn/me.jpg');
+  });
+
+  it('썸네일 탭 → 사진 시트(회원 사진 없으면 "기본 사진으로" 행 없음) → 앨범 → 업로드(ORDER_ITEM) → PUT → **응답으로** 썸네일 교체', async () => {
+    mockChoose.mockResolvedValueOnce('gallery');
+    mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///p.jpg' }] });
+    mockUpload.mockResolvedValueOnce({ path: 'orders/abc.jpg', publicUrl: 'x' });
+    let resolvePut!: (v: unknown) => void;
+    mockPut.mockReturnValueOnce(new Promise((r) => (resolvePut = r)));
+    const tree = await renderOrder(EDIT_ORDER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockChoose.mock.calls[0][0]).toMatchObject({ title: 'myFoods.itemPhotoTitle', camera: 'photo.take', gallery: 'photo.gallery', cancel: 'common.cancel' });
+    expect(mockChoose.mock.calls[0][0].remove).toBeUndefined();
+    expect(mockUpload).toHaveBeenCalledWith({ uri: 'file:///p.jpg', width: 0, height: 0 }, 'ORDER_ITEM');
+    expect(mockPut).toHaveBeenCalledWith('/api/orders/123/items/7001/image', { imagePath: 'orders/abc.jpg' });
+    expect(shownUri(tree)).toBe('https://cdn/catalog.jpg'); // 응답 전 = 그대로(낙관 갱신 0)
+    act(() => { void (resolvePut(EDIT_WITH_USER)); });
+    await flush();
+    expect(shownUri(tree)).toBe('https://cdn/me.jpg');
+  });
+
+  it('회원 사진이 있으면 "기본 사진으로" 행 → DELETE → 응답으로 카탈로그 복귀', async () => {
+    mockChoose.mockResolvedValueOnce('remove');
+    mockDel.mockResolvedValueOnce(EDIT_ORDER);
+    const tree = await renderOrder(EDIT_WITH_USER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockChoose.mock.calls[0][0].remove).toBe('myFoods.itemPhotoDefault');
+    expect(mockDel).toHaveBeenCalledWith('/api/orders/123/items/7001/image');
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(shownUri(tree)).toBe('https://cdn/catalog.jpg');
+  });
+
+  it('카메라 권한 거부 = 공용 시트(설정 열기) · 촬영 0 · Alert 0(P-355)', async () => {
+    mockChoose.mockResolvedValueOnce('camera');
+    mockCamPerm.mockResolvedValueOnce({ granted: false });
+    const tree = await renderOrder(EDIT_ORDER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockLaunchCamera).not.toHaveBeenCalled();
+    expect(tree.root.findAll((n) => n.props?.children === 'photo.permBody').length).toBeGreaterThan(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'ash-settings' || n.props?.children === 'photo.openSettings').length).toBeGreaterThan(0);
+  });
+
+  it('진행 중 재탭 = 시트 재호출 0(공용 제출 가드) · id 없는 구응답 항목 = 편집 비활성', async () => {
+    mockChoose.mockResolvedValueOnce('gallery');
+    mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///p.jpg' }] });
+    let finishUpload!: (v: unknown) => void;
+    mockUpload.mockReturnValueOnce(new Promise((r) => (finishUpload = r))); // 재탭 시점까지 대기
+    mockPut.mockResolvedValueOnce(EDIT_ORDER);
+    const tree = await renderOrder(EDIT_ORDER);
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    act(() => { void (byTid(tree, 'order-item-photo-0')[0].props.onPress()); });
+    await flush();
+    expect(mockChoose).toHaveBeenCalledTimes(1);
+    act(() => { void (finishUpload({ path: 'orders/a.jpg', publicUrl: 'x' })); });
+    await flush(); // 정리: 대기 중 뮤테이션을 남기지 않는다
+    const old = await renderOrder({ ...EDIT_ORDER, items: [{ ...EDIT_ORDER.items[0], id: undefined }] });
+    expect(byTid(old, 'order-item-photo-0')[0].props.disabled).toBe(true);
+  });
+
+  it('장소 줄 — 라벨 없으면 같은 자리에 review.placeRow(탭 가능) · 탭 → 검색 시트(결과만) → 선택 → PATCH → 응답으로 라벨 교체', async () => {
+    mockPatch.mockResolvedValueOnce({ ...EDIT_ORDER, place: { placeId: 'g2', name: 'New Place', address: 'Busan', language: 'en' } });
+    const tree = await renderOrder(EDIT_ORDER);
+    expect(byTid(tree, 'order-place-empty')[0].props.children).toBe('review.placeRow');
+    act(() => { void (byTid(tree, 'order-place-edit')[0].props.onPress()); });
+    await flush();
+    const sheetBottom = byTid(tree, 'place-sheet-bottom');
+    expect(sheetBottom.length).toBeGreaterThan(0);
+    const sheet = tree.root.findAll((n) => n.props?.resultsOnly === true)[0];
+    expect(sheet).toBeTruthy();
+    act(() => { void (sheet.props.onPick({ name: 'New Place', roadAddress: 'Busan', placeId: 'g2' })); });
+    await flush();
+    expect(mockPatch).toHaveBeenCalledWith('/api/orders/123/place', { placeId: 'g2', name: 'New Place', address: 'Busan', language: 'en' });
+    expect(byTid(tree, 'order-place-empty')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.children === 'New Place' && n.props?.numberOfLines === 2).length).toBeGreaterThan(0);
+  });
+
+  it('장소 교체 후 영수증 LOCATION = 편집한 장소 주소(자동 추정 roadAddress는 폴백) — 헤더·카드와 같은 장소', async () => {
+    mockPatch.mockResolvedValueOnce({ ...EDIT_ORDER, roadAddress: '서울 중구 소공로 51', place: { placeId: 'g2', name: 'New Place', address: 'Busan, Haeundae', language: 'en' } });
+    const tree = await renderOrder({ ...EDIT_ORDER, roadAddress: '서울 중구 소공로 51' });
+    expect(byTid(tree, 'order-receipt-location')[0].props.children).toBe('서울 중구 소공로 51'); // 편집 전 = 자동 추정
+    act(() => { void (byTid(tree, 'order-place-edit')[0].props.onPress()); });
+    await flush();
+    const sheet = tree.root.findAll((n) => n.props?.resultsOnly === true)[0];
+    act(() => { void (sheet.props.onPick({ name: 'New Place', roadAddress: 'Busan, Haeundae', placeId: 'g2' })); });
+    await flush();
+    expect(byTid(tree, 'order-receipt-location')[0].props.children).toBe('Busan, Haeundae');
+  });
+
+  it('PlacePickerSheet resultsOnly — placeId 없는 결과는 렌더 0(기본값은 렌더) · 빈 결과 = 문구(기본값은 MANUAL 행)', async () => {
+    mockSearchPlaces.mockImplementation(async () => [
+      { name: 'NoId', address: null, latitude: 1, longitude: 2, placeId: null },
+      { name: 'WithId', address: 'Seoul', latitude: 1, longitude: 2, placeId: 'g9' },
+    ]);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const render = (resultsOnly: boolean, term: string) => {
+      let tree!: ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(
+          <QueryClientProvider client={qc}>
+            <PlacePickerSheet open resultsOnly={resultsOnly} onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+          </QueryClientProvider>,
+        );
+      });
+      trees.push(tree);
+      act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText(term); });
+      return tree;
+    };
+    let t1 = render(true, 'x'); await flush(); await flush();
+    expect(byTid(t1, 'place-pick-WithId').length).toBeGreaterThan(0);
+    expect(byTid(t1, 'place-pick-NoId')).toHaveLength(0);
+    let t0 = render(false, 'x'); await flush(); await flush();
+    expect(byTid(t0, 'place-pick-NoId').length).toBeGreaterThan(0); // 대조: 리뷰 기본 — 그대로
+    mockSearchPlaces.mockImplementation(async () => []);
+    t1 = render(true, 'zzz'); await flush(); await flush();
+    expect(byTid(t1, 'place-no-results').length).toBeGreaterThan(0);
+    t0 = render(false, 'zzz'); await flush(); await flush();
+    expect(byTid(t0, 'place-no-results')).toHaveLength(0); // 대조: 기본은 MANUAL 행이 그 자리
+    expect(byTid(t0, 'place-manual').length).toBeGreaterThan(0);
+    mockSearchPlaces.mockImplementation(async () => []);
+  });
+
+  it('검색 실패(오프라인·5xx) = 오류 문구 + 재시도 — "결과 없음"으로 보이지 않는다(Codex #195 4R) · 재시도 후 진짜 빈 결과', async () => {
+    mockSearchPlaces.mockImplementationOnce(async () => { throw new Error('NETWORK: offline'); });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <QueryClientProvider client={qc}>
+          <PlacePickerSheet open resultsOnly onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+        </QueryClientProvider>,
+      );
+    });
+    trees.push(tree);
+    act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText('x'); });
+    await flush(); await flush();
+    expect(byTid(tree, 'place-search-error').length).toBeGreaterThan(0);
+    expect(byTid(tree, 'place-no-results')).toHaveLength(0);
+    expect(mockSearchPlaces).toHaveBeenCalledTimes(1);
+    act(() => { void (byTid(tree, 'place-search-retry')[0].props.onPress()); });
+    await flush(); await flush();
+    expect(mockSearchPlaces).toHaveBeenCalledTimes(2); // 재시도 = 재요청
+    expect(byTid(tree, 'place-search-error')).toHaveLength(0);
+    expect(byTid(tree, 'place-no-results').length).toBeGreaterThan(0); // 이번엔 진짜 빈 결과
+  });
+
+  /* Codex #195 4R 마감: 시트 상태 4개 × 모드 2개 — 무엇이 보이고 무엇이 없는지를 표로 잠근다(검색어 'x' 기준). */
+  const ROWS = [
+    // state      resultsOnly  spinner error  empty  manual pick=[WithId, NoId]
+    ['loading',   false,       true,   false, false, true,  []],
+    ['loading',   true,        true,   false, false, false, []],
+    ['error',     false,       false,  true,  false, true,  []],
+    ['error',     true,        false,  true,  false, false, []],
+    ['empty',     false,       false,  false, false, true,  []], // 기본: MANUAL 행이 빈 결과 자리
+    ['empty',     true,        false,  false, true,  false, []],
+    ['ok',        false,       false,  false, false, true,  ['WithId', 'NoId']],
+    ['ok',        true,        false,  false, false, false, ['WithId']], // id 없는 결과 제외
+  ] as const;
+  it.each(ROWS)('시트 상태표 — %s / resultsOnly=%s → spinner=%s error=%s empty=%s manual=%s picks=%j', async (state, resultsOnly, spinner, error, empty, manual, picks) => {
+    const RESULTS = [
+      { name: 'WithId', address: 'Seoul', latitude: 1, longitude: 2, placeId: 'g9' },
+      { name: 'NoId', address: null, latitude: 1, longitude: 2, placeId: null },
+    ];
+    mockSearchPlaces.mockImplementationOnce(() =>
+      state === 'loading' ? new Promise(() => {}) : state === 'error' ? Promise.reject(new Error('5xx')) : Promise.resolve(state === 'ok' ? RESULTS : []),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <QueryClientProvider client={qc}>
+          <PlacePickerSheet open resultsOnly={resultsOnly} onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+        </QueryClientProvider>,
+      );
+    });
+    trees.push(tree);
+    act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText('x'); });
+    await flush(); await flush();
+    const { ActivityIndicator } = require('react-native') as typeof import('react-native'); // eslint-disable-line @typescript-eslint/no-require-imports
+    expect(tree.root.findAllByType(ActivityIndicator).length > 0).toBe(spinner);
+    expect(byTid(tree, 'place-search-error').length > 0).toBe(error);
+    expect(byTid(tree, 'place-no-results').length > 0).toBe(empty);
+    expect(byTid(tree, 'place-manual').length > 0).toBe(manual);
+    expect(['WithId', 'NoId'].filter((n) => byTid(tree, `place-pick-${n}`).length > 0)).toEqual([...picks]);
+    if (state === 'loading') qc.clear(); // 영원히 대기하는 쿼리 정리
+  });
+
+  it('장소 쿼리 키에 언어 포함 — UI 언어를 바꾸면 옛 언어 결과(캐시)를 재사용하지 않는다(Codex #195)', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+    const render = () => {
+      let tree!: ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(
+          <QueryClientProvider client={qc}>
+            <PlacePickerSheet open resultsOnly onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+          </QueryClientProvider>,
+        );
+      });
+      trees.push(tree);
+      act(() => { tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0].props.onChangeText('x'); });
+      return tree;
+    };
+    const keys = () => qc.getQueryCache().getAll().map((q) => JSON.stringify(q.queryKey));
+    mockLang.v = 'en';
+    render(); await flush();
+    expect(keys()).toEqual(expect.arrayContaining([JSON.stringify(['places', 'nearby', 'en']), JSON.stringify(['places', 'search', 'en', 'x'])]));
+    mockLang.v = 'ja';
+    render(); await flush();
+    expect(keys()).toEqual(expect.arrayContaining([JSON.stringify(['places', 'nearby', 'ja']), JSON.stringify(['places', 'search', 'ja', 'x'])]));
+    expect(keys()).not.toContain(JSON.stringify(['places', 'search', 'x'])); // 언어 없는 키(옛 형태) 0
+    mockLang.v = 'en';
+  });
+
+  it('PlacePickerSheet resultsOnly — 검색어가 있어도 MANUAL 행 없음(리뷰 쪽 기본값은 있음)', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    const render = (resultsOnly: boolean) => {
+      let tree!: ReactTestRenderer;
+      act(() => {
+        tree = renderer.create(
+          <QueryClientProvider client={qc}>
+            <PlacePickerSheet open resultsOnly={resultsOnly} onClose={() => {}} onPick={() => {}} t={((k: string) => k) as never} />
+          </QueryClientProvider>,
+        );
+      });
+      trees.push(tree);
+      const input = tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
+      act(() => { input.props.onChangeText('Gwangjang'); });
+      return tree;
+    };
+    expect(byTid(render(false), 'place-manual').length).toBeGreaterThan(0); // 대조: 리뷰 기본
+    expect(byTid(render(true), 'place-manual')).toHaveLength(0);
   });
 });

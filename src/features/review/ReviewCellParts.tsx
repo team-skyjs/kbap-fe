@@ -21,6 +21,7 @@ import { EVENTS, track } from '@/lib/analytics';
 import { showTopToast } from '@/components/topToastStore';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNearbyPlaces, fetchSearchPlaces, type ReviewPlace } from '@/lib/api/places';
+import { useTranslation } from 'react-i18next';
 import { KeyboardDismissBar } from '@/components/KeyboardDismissBar';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { Input } from '@/components/KeyboardDismissBar';
@@ -122,19 +123,27 @@ export function PlacePickerSheet({
   onClose,
   onPick,
   t,
+  resultsOnly = false,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (p: ReviewPlaceTag) => void;
   t: TFn;
+  /** KB-638(P-413 D3): 검색 결과만 — MANUAL(직접 입력) 행 숨김. 주문 장소 PATCH는 placeId 필수라 이름만으론 보낼 수 없다. */
+  resultsOnly?: boolean;
 }) {
   const [q, setQ] = React.useState('');
   const term = q.trim();
   const bottomInset = useBottomInset(); // Codex #31: 푸터 하단 인셋
-  const nearby = useQuery({ queryKey: ['places', 'nearby'], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
-  const search = useQuery({ queryKey: ['places', 'search', term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
+  // Codex #195: 결과의 name/address는 요청 언어로 온다 — 키에 lang을 넣어 UI 언어를 바꾼 뒤 옛 언어 결과를 재사용하지 않는다
+  // (주문 장소 PATCH의 language=apiLang()이 결과를 받은 언어와 항상 같아진다). 키는 UI 언어면 충분 —
+  // api client를 여기서 import하면 secure-store 네이티브 체인이 딸려와 가벼운 테스트가 깨진다.
+  const lang = useTranslation().i18n?.language ?? 'en';
+  const nearby = useQuery({ queryKey: ['places', 'nearby', lang], queryFn: fetchNearbyPlaces, enabled: open, staleTime: 60_000 });
+  const search = useQuery({ queryKey: ['places', 'search', lang, term], queryFn: () => fetchSearchPlaces(term), enabled: open && term.length > 0 });
   const active = term ? search : nearby;
-  const results = active.data ?? [];
+  // Codex #195: resultsOnly(주문 장소 PATCH — placeId 필수)는 placeId 없는 결과를 **렌더하지 않는다**(골라도 보낼 수 없는 행 금지)
+  const results = (active.data ?? []).filter((p) => !resultsOnly || !!p.placeId);
   // 프리즈 픽스: 닫힘·확정 전부 키보드 선해제 경유(위 runAfterKeyboardHidden 참조)
   const close = () => runAfterKeyboardHidden(onClose);
   const pick = (p: ReviewPlaceTag) => runAfterKeyboardHidden(() => onPick(p));
@@ -161,7 +170,7 @@ export function PlacePickerSheet({
           {!term && <Text style={styles.recentLbl}>{t('review.placeNearby').toUpperCase()}</Text>}
           <ScrollView keyboardDismissMode="on-drag" style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
             {/* P-201: 직접 입력(MANUAL) — 결과 미선택 채로 이름만 태그(좌표·주소 없음) */}
-            {!!term && (
+            {!!term && !resultsOnly && (
               <Pressable style={styles.resultRow} onPress={() => pick({ name: term, roadAddress: null })} testID="place-manual">
                 <IconPlus size={16} color={C.ink3} />
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -173,8 +182,17 @@ export function PlacePickerSheet({
               <View style={{ paddingVertical: 18, alignItems: 'center' }}>
                 <ActivityIndicator color={C.ink3} />
               </View>
-            ) : results.length === 0 && !term ? (
-              <Text style={styles.noResults}>{t('review.placeNoResults')}</Text>
+            ) : active.isError ? (
+              /* Codex #195 4R: 오프라인·5xx로 검색이 끝나지 않은 것을 "결과 없음"으로 보이지 않는다 — 오류 문구 + 재시도(기존 키) */
+              <View style={{ paddingVertical: 26, alignItems: 'center', gap: 8 }} testID="place-search-error">
+                <Text style={styles.noResults}>{t('states.errorTitle')}</Text>
+                <Pressable onPress={() => void active.refetch()} hitSlop={8} testID="place-search-retry">
+                  <Text style={[styles.noResults, { textDecorationLine: 'underline', paddingVertical: 0 }]}>{t('common.retry')}</Text>
+                </Pressable>
+              </View>
+            ) : results.length === 0 && (!term || resultsOnly) ? (
+              /* Codex #195: resultsOnly는 MANUAL 행이 없으니 검색어가 있어도 빈 결과 문구를 보인다(빈 화면 금지) */
+              <Text style={styles.noResults} testID="place-no-results">{t('review.placeNoResults')}</Text>
             ) : (
               results.map((p) => (
                 <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>
