@@ -120,7 +120,10 @@ it('권한 문구 10로케일 — locales 맵·파일·키 전수', () => {
   for (const lang of LANGS) {
     const path = locales[lang].replace(/^\.\//, '');
     expect(fs.existsSync(path)).toBe(true);
-    const d = JSON.parse(fs.readFileSync(path, 'utf8')) as Record<string, string>;
+    const file = JSON.parse(fs.readFileSync(path, 'utf8')) as { ios?: Record<string, string>; android?: unknown; [k: string]: unknown };
+    // P-408(vc23 실패): 최상위 키는 Android strings.xml에도 써져 릴리스 린트(ExtraTranslation)가 깨진다 — 반드시 ios 섹션 안에만
+    expect(Object.keys(file)).toEqual(['ios']);
+    const d = file.ios!;
     // 실제로 쓰는 5종만 — 안 쓰는 키를 넣으면 그 권한 다이얼로그가 되살아난다
     expect(Object.keys(d).sort()).toEqual([...PLIST_KEYS].sort());
     for (const k of PLIST_KEYS) expect(d[k].length).toBeGreaterThan(10);
@@ -136,7 +139,7 @@ it('영어 폴백은 플러그인 옵션에 그대로 남는다(locales에 없�
 });
 
 it('ko 권한 문구 — 대시(—) 부연 없이(AGENTS.md 신규 한국어 카피 기준)', () => {
-  const ko = JSON.parse(fs.readFileSync('locales/ko.json', 'utf8')) as Record<string, string>;
+  const ko = (JSON.parse(fs.readFileSync('locales/ko.json', 'utf8')) as { ios: Record<string, string> }).ios;
   for (const [k, v] of Object.entries(ko)) expect(`${k}:${v}`).not.toContain('—');
 });
 
@@ -185,5 +188,31 @@ describe('설치된 권한 모듈이 요구하는 Usage 키 ⊆ 실제 Info.plis
 
   it('추적(ATT) 문구는 여전히 없다(9/21 예진 D2 — 요구 키 검사가 이걸 끌어들이지 않게)', () => {
     expect('NSUserTrackingUsageDescription' in infoPlist).toBe(false);
+  });
+});
+
+/* ---- P-408(vc23 실패) — locales는 iOS 전용이어야 한다 ----
+ * Expo의 `locales` 맵은 **양 플랫폼**에 적용된다: 파일의 최상위 키는 iOS InfoPlist.strings **와** Android
+ * values-b+<lang>/strings.xml 둘 다에 써진다. Android 기본 로케일(values/strings.xml)엔 그 키가 없어서
+ * 릴리스 린트 `lintVitalRelease`가 ExtraTranslation으로 빌드를 막는다(vc23 실측 — #173 이후 첫 Android 빌드).
+ * 잠금은 플러그인이 실제로 쓰는 리졸버(@expo/config-plugins utils/locales)로 본다 — 플랫폼별 결과가 정본이다. */
+describe('locales 플랫폼 분리 — Android 문자열 0 · iOS InfoPlist.strings 10로케일 5키 그대로', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getResolvedLocalesAsync } = require('@expo/config-plugins/build/utils/locales') as {
+    getResolvedLocalesAsync: (root: string, input: Record<string, string>, platform: 'ios' | 'android') => Promise<{ localesMap: Record<string, Record<string, string>> }>;
+  };
+
+  it('Android: 어느 로케일에도 문자열 0(strings.xml에 키가 들어가지 않는다)', async () => {
+    const { localesMap } = await getResolvedLocalesAsync(process.cwd(), APP.expo.locales, 'android');
+    expect(Object.keys(localesMap).sort()).toEqual([...LANGS].sort()); // 대조: 리졸버가 10로케일을 실제로 읽었다
+    for (const lang of LANGS) expect(localesMap[lang]).toEqual({});
+  });
+
+  it('iOS: 10로케일 모두 Info.plist 5키 그대로(#173 회귀 0)', async () => {
+    const { localesMap } = await getResolvedLocalesAsync(process.cwd(), APP.expo.locales, 'ios');
+    for (const lang of LANGS) {
+      expect(Object.keys(localesMap[lang]).sort()).toEqual([...PLIST_KEYS].sort());
+      for (const k of PLIST_KEYS) expect(localesMap[lang][k].length).toBeGreaterThan(10);
+    }
   });
 });
