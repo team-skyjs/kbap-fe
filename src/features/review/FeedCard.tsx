@@ -101,8 +101,9 @@ export function FeedCard({
         {!!review.staffKindness && <RatingAxis label={t('review.extrasService')} value={review.staffKindness} />}
       </View>
 
-      {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.body} />}
+      {/* P-390(KB-578): 사진 위·본문 아래 — 4표면 동일 순서(예진 실기: 반대였다) */}
       <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} />
+      {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.body} />}
 
       {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
       {showFood && (

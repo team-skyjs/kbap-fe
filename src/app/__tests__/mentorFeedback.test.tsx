@@ -67,7 +67,7 @@ jest.mock('@/components/SocialAuthButtons', () => {
   const Mock = (props: Record<string, unknown>) => <View testID="social-auth" {...props} />;
   return { SocialAuthButtons: Mock };
 });
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => true }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => true, useSession: () => false })); // KB-499: 배지 훅 — 게스트 = 요청 0
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({ data: undefined, isLoading: false, isError: false, refetch: jest.fn() }),
   useMyReviews: () => ({ data: [] }),

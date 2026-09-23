@@ -22,15 +22,19 @@ import { I18nextProvider } from 'react-i18next';
 
 import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
-import { gateSplash, prefetchAfterCleanup } from '@/lib/bootGate';
+import { invalidateNotifications, onPushTapped } from '@/lib/data/useNotifications';
+import { gateSplash, markSplashDone, prefetchAfterCleanup } from '@/lib/bootGate';
 import { initSessionFromStorage, installBeAuth, onSessionExpired } from '@/lib/auth/beAuth';
 import { cleanupIfFreshInstall } from '@/lib/auth/freshInstall';
 import { FLAGS } from '@/lib/flags';
+import { openNotificationRoute } from '@/lib/nav';
 import i18n from '@/lib/i18n';
 import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 import { TopToastHost } from '@/components/TopToast';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import { initMetaSdk } from '@/lib/metaSdk';
+import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
@@ -73,16 +77,31 @@ export default function RootLayout() {
     // KB-421: 세션 스토어 부팅 초기화도 **cleanup 이후 직렬** — 모듈 스코프 선읽기가
     // 삭제 전 Keychain을 읽어 회원으로 선고착하던 레이스(P-205 mina 부활) 봉쇄.
     void cleanupDone.then(() => initSessionFromStorage()).catch(() => {});
+    // P-389(KB-576) + P-205: 콜드 스타트 회원 판정도 **cleanup 뒤 직렬**. 재설치 시 iOS
+    // Keychain에 이전 세션이 남아 있어, 병렬로 읽으면 곧 지워질 그 세션을 보고 '회원'으로
+    // 찍는다 — 고치려던 콜드 스타트 세그먼트가 옛 계정으로 오염된다(Codex #165 2R).
+    // 모름(저장소 오류)이면 세팅하지 않는다: 잘못된 false로 덮으면 회원이 게스트로 뒤집힌다.
+    void cleanupDone
+      .then(() => isRegisteredForAnalytics())
+      .then((reg) => { if (reg !== null) setUserProps({ user_info_is_registered: reg }); })
+      .catch(() => {});
     const ready = cleanupDone
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
     void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
+    if (FLAGS.pushEnabled) {
+      const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
+      void cleanupDone.then(() => push.registerPushToken()).catch(() => {});
+    }
   }, []);
 
   // P-144(KB-316): app_opened(P-215 개명) = 실행 + 포그라운드 복귀마다 (DAU 분모,
   // 멘토 지시) · 시작 시 user property(lang·os) 세팅 — CSV 트리거 준수.
   useEffect(() => {
     track(EVENTS.app_opened);
+    // P-397(KB-600): Meta SDK — 설치 어트리뷰션만. 광고 추적 비활성 선언 1회
+    // (앱 이벤트는 네이티브 자동, ATT 프롬프트 없음). 모듈 부재 시 no-op.
+    initMetaSdk();
     // P-213: country 선심기 — 기기 로케일 region(게스트 세그먼트 복구).
     // 온보딩 제출 시 실제 국적으로 덮어씀(설계 원문 — 서버가 아는 값이 정본).
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -94,7 +113,10 @@ export default function RootLayout() {
       ...(region ? { user_info_country: region } : {}),
     });
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') track(EVENTS.app_opened);
+      if (st === 'active') {
+        track(EVENTS.app_opened);
+        invalidateNotifications(); // KB-499: 포그라운드 복귀 = 알림함·배지 재조회(게스트면 no-op)
+      }
     });
     return () => sub.remove();
   }, []);
@@ -104,7 +126,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (entryChecked && needsLogin.current) {
       needsLogin.current = false;
-      router.replace('/login' as Href);
+      router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로
     }
   }, [entryChecked, router]);
 
@@ -112,15 +134,17 @@ export default function RootLayout() {
   // 활성 — 정지 마크(동일 위치) 위에서 모션 A 시작, 종료 페이드로 첫 화면과 크로스페이드.
   // P-293: entryChecked 대기 제거(b25 실기 — 정지 마크 ~1s 멈춤) — 모션은 폰트 준비
   // 즉시 시작, 부트 완료는 ready(entryChecked)로 전달해 페이드아웃만 잡는다.
-  const [splashActive, setSplashActive] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
   // P-296(Codex #52 P1): 인라인 onDone은 리렌더마다 새 정체성 — 안정 콜백으로
-  const onSplashDone = useCallback(() => setSplashVisible(false), []);
+  const onSplashDone = useCallback(() => { setSplashVisible(false); markSplashDone(); }, []); // KB-631: 로그인 화면 OS 팝업 게이트
+  // KB-602: **파생값** — 전에는 effect에서 setState했는데 렌더가 한 번 더 돌았고
+  // (react-hooks/set-state-in-effect), 그 한 프레임 동안 스플래시가 active=false로
+  // 그려져 애니메이션 시작이 밀렸다. 아래 early return(`!fontsLoaded && !fontError`)
+  // 때문에 이 값이 쓰이는 시점엔 조건이 이미 참이라, 상태로 들고 있을 이유가 없다.
+  const splashActive = fontsLoaded || !!fontError;
+  // 남는 건 side effect 하나 — 네이티브 스플래시 감추기.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      setSplashActive(true);
-      SplashScreen.hideAsync().catch(() => {});
-    }
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
   }, [fontsLoaded, fontError]);
 
   // KB-67: refresh 만료 = 세션 정리. 게스트 모드에선 로그인 화면을 강제하지
@@ -132,7 +156,7 @@ export default function RootLayout() {
         const session = require('@/lib/auth/session') as typeof import('@/lib/auth/session');
         void session.logOut().catch(() => {});
       }
-      if (!FLAGS.guestMode) router.replace('/login' as Href);
+      if (!FLAGS.guestMode) router.replace('/login?entry=other' as Href); // P-389: 세션 만료 복귀 — 인트로 아님
     });
     return () => onSessionExpired(null);
   }, [router]);
@@ -140,18 +164,24 @@ export default function RootLayout() {
   // P-192: 푸시 배선 — 앱 시작 토큰 upsert + 언어 변경 재등록(토큰=기기 속성이라
   // lang 저장 필요, 정본 문서) + 알림 탭 딥링크. 전부 플래그+lazy(어댑터) 게이트 —
   // pushEnabled off·구 런타임 = 전 구간 no-op.
+  // KB-573: entryChecked 뒤 등록 — Stack 마운트 전 navigate는 expo-router가 throw
+  // (store.assertIsReady "Attempted to navigate before mounting the Root Layout"). 콜드 스타트
+  // 탭(getLastNotificationResponseAsync)은 스플래시 게이트(≥1200ms)보다 먼저 해소되므로 등록 자체를 늦춘다.
+  // 이동 방식(홈 = 스택 리셋 + 탭 점프 · 그 외 navigate)은 lib/nav openNotificationRoute 한 곳.
   useEffect(() => {
-    if (!FLAGS.pushEnabled) return;
+    if (!FLAGS.pushEnabled || !entryChecked) return;
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
-    void push.registerPushToken();
-    const unsub = push.addNotificationTapListener((href) => router.push(href as Href));
+    const unsub = push.addNotificationTapListener((href, notificationId) => {
+      void onPushTapped(notificationId); // KB-499: 이 기기 알림 행 읽음 처리 + 재조회(게스트 = 이동만)
+      if (href) openNotificationRoute(router, href); // href null = 이동 없는 유형(KB-498) · KB-573: 홈 = 스택 리셋
+    });
     const onLang = () => void push.registerPushToken();
     i18n.on('languageChanged', onLang);
     return () => {
       unsub();
       i18n.off('languageChanged', onLang);
     };
-  }, [router]);
+  }, [router, entryChecked]);
 
   // P-293: 폰트만 게이트 — entryChecked 전엔 스플래시 오버레이만 렌더(아래 조건부).
   // 렌더 가드(P-041/P-217: 판별 전 홈·리다이렉트 금지)는 Stack 조건부가 승계.

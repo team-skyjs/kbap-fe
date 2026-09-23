@@ -51,9 +51,7 @@
     "profileSub": "Sign up to save what you avoid, track scans and build your ranking.",
     "saveTitle": "Save dishes you want to try",
     "saveSub": "Sign up to bookmark dishes for later.",
-    "keepBrowsing": "Keep browsing",
-    "reportTitle": "Help keep reviews trustworthy",
-    "reportSub": "Sign up to report a review so we can look into it."
+    "keepBrowsing": "Keep browsing"
   },
   "lock": {
     "verdictTitle": "Your personal safety rating",
@@ -209,9 +207,8 @@
     "lockedBody": "Share tips and finds with other travelers. Opening soon.",
     "sectionRecentlyScanned": "RECENTLY SCANNED",
     "searchAllFoods": "Search all dishes",
-    "reviewEligibleNote": "You can only review foods you've scanned.",
-    "goScanCta": "Go scan",
-    "sectionAllFoods": "All foods"
+    "sectionAllFoods": "All foods",
+    "reportFailed": "Couldn't send your report. Try again."
   },
   "risk": {
     "safe": "Safe",
@@ -431,6 +428,7 @@
     "addPhoto": "Add photo",
     "removePhoto": "Remove photo",
     "postError": "Couldn't save your review. Check your connection and try again.",
+    "foodHidden": "You can't post a review for this dish right now. What you wrote is still here on this screen.",
     "likesCaption": "Likes don't change the sort",
     "placeRow": "Where did you eat?",
     "placeSheetTitle": "Tag a place",
@@ -709,7 +707,8 @@
     "readAll": "Read all",
     "beFirstReview": "No reviews yet. Be the first.",
     "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It varies by restaurant. Ask the owner to be sure.",
-    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It varies by restaurant. Ask the owner to be sure."
+    "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It varies by restaurant. Ask the owner to be sure.",
+    "foodHidden": "This dish isn't available to view right now."
   },
   "states": {
     "catalogTitle": "States",
@@ -768,7 +767,9 @@
     "recentEmpty": "No recent scans",
     "safeForYou": "Rated safe for you",
     "safeForYouSub": "Based on your avoid list. Always confirm with the owner.",
-    "railFilterEmpty": "No {{risk}} dishes in this list yet. Try another filter."
+    "railFilterEmpty": "No {{risk}} dishes in this list yet. Try another filter.",
+    "mostReviewed": "Most reviewed",
+    "mostReviewedSub": "What people are talking about."
   },
   "onboarding": {
     "welcomeTag": "Know what to avoid before you order.",
@@ -874,10 +875,12 @@
       "groupAllergy": "Allergy bundles",
       "apply": "Apply to my list"
     },
-    "countryLabel": "Country"
+    "countryLabel": "Country",
+    "popularCountries": "Popular"
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
+    "foodHidden": "You can't save this dish right now.",
     "title": "Saved",
     "count_one": "{{count}} dish",
     "count_other": "{{count}} dishes",
@@ -915,6 +918,8 @@
     "gallery": "Choose from gallery",
     "permTitle": "Camera access needed",
     "permBody": "Allow camera access in Settings to take a photo.",
+    "libraryPermTitle": "Photo access needed",
+    "libraryPermBody": "Photo access is turned off. Allow it in Settings to attach a photo.",
     "openSettings": "Open Settings"
   },
   "versionGate": {
@@ -943,42 +948,45 @@
     "caption": "Shown once. Tap any mark to see this again."
   },
   "push": {
-    "primerTitle": "Turn on notifications?",
-    "primerBody": "We'll let you know when someone finds your review helpful, and remind you to rate a dish you tried. You can change this anytime in settings.",
-    "primerYes": "Turn on notifications",
+    "primerTitle": "Get review reminders?",
+    "primerBody": "We'll remind you to review the menu you scanned, an hour later.",
+    "primerYes": "Turn on",
     "primerLater": "Not now",
+    "consentSheetTitle": "Get K-Bap news?",
+    "consentSheetBody": "Promotional alerts about events and new features.",
+    "privacyConsent": "Consent to marketing data collection and use (optional)",
+    "receiveConsent": "Consent to receive promotional messages (optional)",
+    "consentBothRequired": "Please agree to both items to turn on notifications.",
+    "consentConfirm": "Agree and turn on",
     "reviewReminderTitle": "How was your meal?",
     "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers."
   },
   "notif": {
     "title": "Notifications",
-    "helpful": "Review reactions",
-    "helpfulSub": "When someone finds your review helpful",
-    "reminder": "Review reminders",
-    "reminderSub": "Asks how it was an hour after you order",
-    "nudge": "Scan suggestions",
-    "nudgeSub": "Occasional lunch-time reminders to scan a menu",
-    "osOff": "Notifications are turned off for K-Bap in system settings.",
-    "osOffCta": "Open system settings",
-    "marketing": "Marketing notifications",
-    "marketingSub": "Get event and recommendation updates by push.",
-    "night": "Nighttime notifications",
-    "nightSub": "Also receive them between 9 PM and 8 AM.",
-    "saveFailed": "Couldn’t save. Please try again."
+    "activityGroup": "My activity",
+    "activity": "Activity alerts",
+    "activitySub": "Review reactions / post-meal review reminder",
+    "newsGroup": "K-Bap news",
+    "news": "News alerts",
+    "newsSub": "Events and new features (promotional)",
+    "mealTime": "Mealtime reminder",
+    "mealTimeSub": "Lunch and dinner menu-scan nudge (promotional)",
+    "consentStatus": "Promotional consent {{date}} (v{{version}})",
+    "viewFull": "View full text",
+    "readFailed": "Couldn't load. Tap to retry",
+    "osOff": "Notifications are off in your device settings.",
+    "osOffCta": "Open device settings",
+    "osAsk": "Turn on notifications to get review reactions and news.",
+    "osAskCta": "Turn on notifications",
+    "saveFailed": "Couldn’t save. Please try again.",
+    "offConfirmTitle": "Turn off notifications?",
+    "offConfirmBody": "You may miss useful updates and event alerts.",
+    "offConfirmCta": "Turn off"
   },
   "inbox": {
     "title": "Notifications",
     "empty": "No notifications yet",
     "emptyBody": "Updates about your reviews and scans will show up here.",
-    "markAllRead": "Mark all as read",
-    "helpfulTitle": "Someone found your review helpful",
-    "helpfulBody": "Your review on Kimchi Stew got a helpful vote.",
-    "reminderTitle": "How was your meal?",
-    "reminderBody": "Leave a quick review of the dish you ordered.",
-    "noticeTitle": "Welcome to K-Bap",
-    "noticeBody": "Scan a menu to see your dish ratings.",
-    "nudgeTitle": "Eating out today?",
-    "nudgeBody": "Scan the menu before you order.",
     "newBadge": "NEW"
   },
   "myFoods": {
@@ -995,6 +1003,40 @@
     "dishes": "Dishes",
     "receiptDate": "DATE",
     "receiptLocation": "LOCATION",
-    "receiptTotal": "TOTAL"
+    "receiptTotal": "TOTAL",
+    "shareMenuMore": "+{{count}} more",
+    "sharePreviewCaption": "9:16 Story Card preview",
+    "shareDownload": "Download\nimage",
+    "shareDownloadInline": "Download image",
+    "shareInstagram": "Instagram\nStory",
+    "sharePhotoDenied": "Allow photo access to save your story card.",
+    "shareSaved": "Saved to your photos.",
+    "shareNoInstagram": "Instagram isn't installed on this phone.",
+    "shareFailed": "Couldn't create the story card. Try again.",
+    "shareStoryHint": "Save the image, then share it on Instagram.",
+    "sharePhotosFailed": "Couldn't load the photos. Tap to retry.",
+    "itemPhotoTitle": "Dish photo",
+    "itemPhotoDefault": "Use default photo",
+    "editFailed": "Couldn't save the change. Try again.",
+    "editPhotoNotReady": "The photo upload didn't finish. Try again.",
+    "editNotFound": "Couldn't find this order. Refresh and try again."
+  },
+  "feedback": {
+    "title": "Contact us",
+    "newInquiry": "New",
+    "newTitle": "New inquiry",
+    "placeholder": "Tell us what happened, or what you'd like to see. Photos help.",
+    "send": "Send",
+    "sent": "Thanks — we got your message.",
+    "sendFailed": "Couldn't send. Try again.",
+    "rateLimited": "You've sent a lot in the last 24 hours. Try again later.",
+    "statusOpen": "Open",
+    "statusAnswered": "Answered",
+    "statusClosed": "Closed",
+    "emptyTitle": "No inquiries yet",
+    "replyCount_one": "{{count}} reply",
+    "replyCount_other": "{{count}} replies",
+    "notFound": "This inquiry isn't available.",
+    "teamName": "K-Bap team"
   }
 }

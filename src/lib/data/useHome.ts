@@ -23,6 +23,8 @@ interface HomeWire {
   authenticated: boolean;
   avoidedSubstances: { code: string; name: string }[];
   popularFoods: MenuSummaryWire[];
+  /** P-393(KB-580, BE #273): 활성 리뷰 수 내림차순·READY만·최대 10. 구 서버엔 없다. */
+  mostReviewedFoods?: MenuSummaryWire[] | null;
   recentScans: MenuSummaryWire[];
 }
 
@@ -37,6 +39,8 @@ export async function fetchHome(): Promise<HomeResponse> {
     authenticated: wire.authenticated,
     avoided: wire.avoidedSubstances ?? [],
     recommended: (wire.popularFoods ?? []).map(adaptMenuSummary),
+    // P-393: 필드 부재(구 서버) = 빈 배열 → 섹션 자체가 안 뜬다
+    mostReviewed: (wire.mostReviewedFoods ?? []).map(adaptMenuSummary),
     recent: (wire.recentScans ?? []).map(adaptMenuSummary),
   };
 }

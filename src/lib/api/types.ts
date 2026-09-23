@@ -66,6 +66,15 @@ export interface User {
   dietCategories?: string[];
   /** P-165(#145): 유저 통화(ISO-4217) — 서버 정본, null/생략 = 미설정(국적 폴백). */
   currency?: string | null;
+  /** P-384(KB-442): 스캔 쿼터 — 서버 정본. null = 구서버(필드 부재)·판별 불가 → 게이트·넛지 없음. */
+  scanQuota?: ScanQuota | null;
+}
+
+export interface ScanQuota {
+  count: number;
+  limit: number;
+  unlocked: boolean;
+  remaining: number | 'unlimited';
 }
 
 export interface UserUpdate {
@@ -96,6 +105,8 @@ export interface FoodCard {
   popularityRank?: number;
   /** One-line reader-language blurb for search result cards. Optional; BE fills it (KB-71). */
   blurb?: string;
+  /** P-385(KB-363): 서버 공개 시각 — NEW 배지 판정은 lib/newFood.isNewFood 한 곳에서. */
+  publishedAt?: string | null;
 }
 
 export interface IngredientRisk {
@@ -131,6 +142,11 @@ export interface FoodDetail {
   description: string; // reader language, ≤150 chars (EN)
   spiceLevel: SpiceLevel | null; // P-081: enum 단계 (null = 데이터 없음); spiceTolerance와 순서 비교
   photoUrl: string | null;
+  /** P-383(KB-566): 히어로 갤러리 URL(대표 먼저·정렬 순). 2장 이상일 때만 캐러셀 —
+   *  부재(구 서버·mock)·0·1장 = 현행 photoUrl 정적 렌더. */
+  images?: string[];
+  /** P-385(KB-363): 서버 공개 시각 — NEW 배지 판정은 lib/newFood.isNewFood 한 곳에서. */
+  publishedAt?: string | null;
   ingredients: IngredientRisk[]; // 90%+ inclusion, danger→caution→safe order (FR-014)
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)
   /** 조회 회원의 저장(북마크) 여부 (KB-142). 옵셔널 = mock/미등록 경로 — 미설정은 false 취급. */
@@ -206,6 +222,8 @@ export interface AvoidedSubstance {
 export interface HomeResponse {
   recent: FoodCard[];
   recommended: FoodCard[];
+  /** P-393(KB-580): 리뷰 많은 음식 — 구 서버·0건 = 빈 배열(섹션 숨김). */
+  mostReviewed: FoodCard[];
   /** LIVE(KB-69) 전용 — false면 개인화 섹션은 가입 유도 UI. mock에선 생략. */
   authenticated?: boolean;
   /** LIVE(KB-69) 전용 — 지역화된 기피 성분명. mock에선 생략(restrictionLabel 폴백). */

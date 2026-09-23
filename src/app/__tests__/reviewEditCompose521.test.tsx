@@ -54,9 +54,11 @@ jest.mock('react-i18next', () => ({
 }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 const mockBack = jest.fn();
+/** KB-620: 편집(reviewId 있음)·신규(없음) 두 경로를 같은 스위트에서 — beforeEach가 편집으로 되돌린다. */
+const mockParams: { id: string; reviewId?: string } = { id: '7', reviewId: 'r1' };
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: mockBack, replace: jest.fn() }),
-  useLocalSearchParams: () => ({ id: '7', reviewId: 'r1' }),
+  useLocalSearchParams: () => mockParams,
   useSegments: () => [],
   usePathname: () => '/',
   Redirect: () => null,
@@ -75,11 +77,12 @@ jest.mock('@/lib/analytics', () => ({ EVENTS: {}, track: jest.fn() }));
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {} }));
 const mockUpdate = jest.fn().mockResolvedValue(undefined);
+const mockCreate = jest.fn().mockResolvedValue(undefined);
 jest.mock('@/lib/data/useReviewMutations', () => {
   const actual = jest.requireActual('@/lib/data/useReviewMutations') as Record<string, unknown>;
   return {
     findCachedReview: actual.findCachedReview, // 실구현 — 시드 캐시 조회 검증
-    useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }),
+    useCreateReview: () => ({ mutateAsync: mockCreate }),
     useUpdateReview: () => ({ mutateAsync: mockUpdate, isPending: false }),
     useDeleteReview: () => ({ mutate: jest.fn() }),
   };
@@ -117,6 +120,7 @@ const byId = (t2: ReactTestRenderer, id: string) => t2.root.findAll((n) => n.pro
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams.reviewId = 'r1';
   queryClient.clear();
   queryClient.setQueryData(['me', 'reviews'], [REVIEW]);
 });
@@ -170,4 +174,90 @@ it('⑤ ReviewEditSheet 소멸 — 컴포넌트·4표면 배선·전용 키 잔�
     expect(j).not.toContain('"viewTitle"');
     expect(j).not.toContain('"noBody"');
   }
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * KB-620(9/22 예진) — 제출 중 음식이 이미지 재생성으로 **일시 숨김**(FOOD-001)이면
+ * 에러 표면 대신 조용한 안내 + **화면 유지**.
+ *
+ * ⚠️ 닫지 않는 게 핵심이다: 리뷰엔 초안 저장소가 없어서 화면을 닫는 순간 본문·사진이
+ * 사라진다. 원 발주는 "닫고 목록으로"였으나 그러면 에러 대신 **사용자가 쓴 글이 사라진다**
+ * — 지금보다 나빠진다. 화면에 두면 글이 남고, 음식이 돌아오면 그대로 다시 올릴 수 있다.
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('KB-620 리뷰 제출 — 음식 숨김(FOOD-001)은 조용한 안내 + 화면 유지', () => {
+  const { ApiError } = jest.requireActual('@/lib/api/client') as typeof import('@/lib/api/client');
+  const hidden = () => new ApiError('해당 음식 정보를 찾을 수 없습니다', 400, 'FOOD-001');
+
+  /** 별점 n을 누른다 — 별 Pressable엔 testID가 없어 크기(48) 별을 가진 누름 노드로 찾는다. */
+  const pressStar = (tree: ReactTestRenderer, n: number) => {
+    const stars = tree.root.findAll(
+      (x) => typeof x.props?.onPress === 'function' && x.findAll((c) => c.props?.size === 48 && c.props?.fillPct !== undefined).length === 1,
+    );
+    act(() => { stars[n - 1].props.onPress(); });
+  };
+  const typeBody = (tree: ReactTestRenderer, text: string) => {
+    const input = tree.root.findAllByType(TextInput)[0];
+    act(() => { input.props.onChangeText(text); });
+  };
+
+  // ⚠️ 서버 `updateReview`는 지금 FOOD-001을 **내지 않는다**(`getReadyFood` 미호출 — KB-626에서 확인).
+  // 이 테스트는 서버가 준비 상태 검사를 추가할 때를 대비한 **방어 잠금**이다 — 수정도 같은 catch를
+  // 지나므로 그때 화면을 닫거나 글을 버리지 않는지 미리 본다. 실제 경로는 아래 신규 작성 테스트다.
+  it('편집 저장 중 FOOD-001(서버 현재 미발생 — 방어) → 숨김 안내 · 에러 안내 없음 · 화면 유지 · 본문 보존', async () => {
+    mockUpdate.mockRejectedValueOnce(hidden());
+    const tree = render(<ReviewCompose />);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+
+    expect(byId(tree, 'review-food-hidden').length).toBeGreaterThan(0);
+    const flat = JSON.stringify(tree.toJSON());
+    expect(flat).toContain('review.foodHidden');
+    expect(flat).not.toContain('review.postError'); // 빨간 에러 안내가 아니다
+    expect(mockBack).not.toHaveBeenCalled(); // 닫지 않는다 — 초안 저장소가 없다
+    expect(flat).toContain('good taste'); // 사용자가 쓴 글이 그대로 있다
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('신규 작성 중 FOOD-001 → 같은 처리(같은 catch를 지난다) · 입력한 글 보존 · 완료 모달 없음', async () => {
+    mockParams.reviewId = undefined;
+    mockCreate.mockRejectedValueOnce(hidden());
+    const tree = render(<ReviewCompose />);
+    pressStar(tree, 4);
+    typeBody(tree, 'my unsent draft');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+
+    expect(mockCreate).toHaveBeenCalledTimes(1); // 실제로 제출 경로를 탔다(별점 미입력으로 막힌 게 아니다)
+    expect(byId(tree, 'review-food-hidden').length).toBeGreaterThan(0);
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(JSON.stringify(tree.toJSON())).toContain('my unsent draft');
+    expect(byId(tree, 'review-posted-confirm')).toHaveLength(0);
+  });
+
+  it('다른 에러는 기존 에러 안내 그대로(숨김 안내 아님)', async () => {
+    mockUpdate.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
+    const tree = render(<ReviewCompose />);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    const flat = JSON.stringify(tree.toJSON());
+    expect(flat).toContain('review.postError');
+    expect(byId(tree, 'review-food-hidden')).toHaveLength(0);
+  });
+
+  it('숨김 안내에는 안전 판정 아이콘(RiskMark)이 없다 — 음식에 대한 판정으로 읽히면 안 된다', async () => {
+    mockUpdate.mockRejectedValueOnce(hidden());
+    const tree = render(<ReviewCompose />);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    const note = byId(tree, 'review-food-hidden')[0];
+    // RiskMark는 `state` prop(safe/caution/danger/unable)을 받는다 — 안내 안에 그런 노드가 0이어야 한다
+    const verdictNodes = note.findAll((n) => ['safe', 'caution', 'danger', 'unable'].includes(n.props?.state as string));
+    expect(verdictNodes).toHaveLength(0);
+  });
+
+  it('다시 누르면 안내가 지워진다 — 음식이 돌아와 성공하면 흔적이 남지 않는다', async () => {
+    mockUpdate.mockRejectedValueOnce(hidden()).mockResolvedValueOnce(undefined);
+    const tree = render(<ReviewCompose />);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(byId(tree, 'review-food-hidden').length).toBeGreaterThan(0);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    expect(byId(tree, 'review-food-hidden')).toHaveLength(0);
+    expect(mockBack).toHaveBeenCalledTimes(1); // 두 번째는 정상 저장 → 복귀
+  });
 });

@@ -55,9 +55,7 @@
     "profileSub": "註冊即可儲存忌口食材、追蹤掃描紀錄並累積你的排名。",
     "saveTitle": "收藏你想嘗試的菜色",
     "saveSub": "註冊後即可收藏菜色，打造屬於你的安心美食清單。",
-    "keepBrowsing": "繼續瀏覽",
-    "reportTitle": "幫助維持評價的可信度",
-    "reportSub": "註冊後即可檢舉評價，我們會進行審查。"
+    "keepBrowsing": "繼續瀏覽"
   },
   "lock": {
     "verdictTitle": "你的專屬安全評級",
@@ -213,9 +211,8 @@
     "lockedBody": "與其他旅行者分享心得和發現——敬請期待。",
     "sectionRecentlyScanned": "最近掃描",
     "searchAllFoods": "在全部菜色中搜尋",
-    "reviewEligibleNote": "只能給你掃描過的菜品寫評價。",
-    "goScanCta": "去掃描",
-    "sectionAllFoods": "全部菜品"
+    "sectionAllFoods": "全部菜品",
+    "reportFailed": "檢舉傳送失敗，請再試一次。"
   },
   "risk": {
     "safe": "安全",
@@ -388,6 +385,7 @@
     "addPhoto": "新增照片",
     "removePhoto": "刪除照片",
     "postError": "評價儲存失敗。請檢查網路後再試一次。",
+    "foodHidden": "目前無法為這道菜發布評價。你寫的內容仍保留在此頁面。",
     "likesCaption": "按讚不影響排序",
     "placeRow": "你在哪裡吃的？",
     "placeSheetTitle": "標記地點",
@@ -420,7 +418,7 @@
     "translatedFrom": "從{{lang}}翻譯",
     "anonymous": "已註銷用戶",
     "today": "今天",
-    "daysAgo": "{{count}} 天前",
+    "daysAgo": "{{count}}天前",
     "weeksAgo": "{{count}} 週前",
     "emptyTitle": "尚無評論",
     "emptyBody": "還沒有評價。來寫下第一條吧。",
@@ -554,7 +552,8 @@
     "readAll": "查看全部",
     "beFirstReview": "還沒有評價 — 來寫第一條吧！",
     "ingGuestBody": "{{ingredient}}約在此菜{{percent}}%的版本中使用。各家餐廳可能不同——想確認請詢問店主。",
-    "ingGuestBodyNoPct": "{{ingredient}}常用於此菜。各家餐廳可能不同——想確認請詢問店主。"
+    "ingGuestBodyNoPct": "{{ingredient}}常用於此菜。各家餐廳可能不同——想確認請詢問店主。",
+    "foodHidden": "目前無法查看這道菜的資訊。"
   },
   "states": {
     "catalogTitle": "狀態",
@@ -612,7 +611,9 @@
     "recentEmpty": "尚無最近掃描",
     "safeForYou": "依你的清單篩出的 Safe 菜色",
     "safeForYouSub": "依你的迴避清單判定——請務必向店家確認。",
-    "railFilterEmpty": "此清單暫無「{{risk}}」菜色，試試其他篩選。"
+    "railFilterEmpty": "此清單暫無「{{risk}}」菜色，試試其他篩選。",
+    "mostReviewed": "評價最多",
+    "mostReviewedSub": "大家都在聊的菜。"
   },
   "onboarding": {
     "welcomeTag": "點餐前，先知道什麼能安心吃。",
@@ -718,7 +719,8 @@
       "groupAllergy": "過敏組合",
       "apply": "套用到我的清單"
     },
-    "countryLabel": "國家"
+    "countryLabel": "國家",
+    "popularCountries": "熱門國家"
   },
   "editProfile": {
     "title": "編輯個人資料",
@@ -880,6 +882,7 @@
   },
   "saved": {
     "error": "無法更新收藏清單，請重試。",
+    "foodHidden": "目前無法收藏這道菜。",
     "title": "已收藏",
     "count_other": "{{count}} 道菜",
     "newestFirst": "最新優先",
@@ -916,6 +919,8 @@
     "gallery": "從相簿選擇",
     "permTitle": "需要相機權限",
     "permBody": "要拍照，請在設定中允許存取相機。",
+    "libraryPermTitle": "需要相片權限",
+    "libraryPermBody": "相片權限已關閉。請在設定中允許。",
     "openSettings": "開啟設定"
   },
   "versionGate": {
@@ -944,42 +949,45 @@
     "caption": "僅顯示一次——點按任意標記可再次查看。"
   },
   "push": {
-    "primerTitle": "接收實用通知？",
-    "primerBody": "當有人覺得你的評價有幫助時通知你，並提醒你為吃過的菜寫評價。可隨時在設定中更改。",
+    "primerTitle": "要接收評論提醒嗎？",
+    "primerBody": "掃描菜單一小時後，我們會提醒你撰寫評論。",
     "primerYes": "開啟通知",
-    "primerLater": "暫不",
+    "primerLater": "以後再說",
+    "consentSheetTitle": "要接收 K-Bap 資訊嗎？",
+    "consentSheetBody": "以廣告通知的形式發送活動和新功能資訊。",
+    "privacyConsent": "同意為行銷目的蒐集和使用個人資料（選填）",
+    "receiveConsent": "同意接收廣告資訊（選填）",
+    "consentBothRequired": "需同意兩項才能開啟通知。",
+    "consentConfirm": "同意並開啟通知",
     "reviewReminderTitle": "這頓飯怎麼樣？",
     "reviewReminderBody": "告訴我們{{name}}怎麼樣——你的評分能幫助其他旅行者。"
   },
   "notif": {
     "title": "通知設定",
-    "helpful": "評價回饋",
-    "helpfulSub": "有人覺得你的評價有幫助時",
-    "reminder": "評價提醒",
-    "reminderSub": "點餐1小時後詢問用餐感受",
-    "nudge": "掃描推薦",
-    "nudgeSub": "偶爾在午餐時間提醒你掃描菜單",
-    "osOff": "系統設定中已關閉 K-Bap 的通知。",
-    "osOffCta": "開啟系統設定",
-    "marketing": "行銷通知",
-    "marketingSub": "透過推播接收活動與推薦消息。",
-    "night": "夜間通知",
-    "nightSub": "晚上9點至早上8點也接收。",
-    "saveFailed": "儲存失敗，請重試。"
+    "activityGroup": "我的動態通知",
+    "activity": "動態提醒",
+    "activitySub": "評論獲得回饋/用餐後撰寫評論提醒",
+    "newsGroup": "K-Bap 資訊",
+    "news": "資訊提醒",
+    "newsSub": "活動與新功能資訊（廣告）",
+    "mealTime": "用餐時間提醒",
+    "mealTimeSub": "午餐和晚餐掃描菜單提醒（廣告）",
+    "consentStatus": "已同意接收廣告 {{date}} (v{{version}})",
+    "viewFull": "查看全文",
+    "readFailed": "載入失敗，點擊重試",
+    "osOff": "裝置設定中已關閉通知。",
+    "osOffCta": "開啟裝置設定",
+    "osAsk": "開啟通知即可接收評價回饋和最新消息。",
+    "osAskCta": "開啟通知",
+    "saveFailed": "儲存失敗，請重試。",
+    "offConfirmTitle": "要關閉通知嗎？",
+    "offConfirmBody": "你可能會錯過有用的資訊和活動提醒。",
+    "offConfirmCta": "關閉通知"
   },
   "inbox": {
     "title": "通知",
     "empty": "目前沒有通知",
     "emptyBody": "關於評價和掃描的消息會顯示在這裡。",
-    "markAllRead": "全部標為已讀",
-    "helpfulTitle": "有人覺得你的評價有幫助",
-    "helpfulBody": "你對泡菜鍋的評價獲得了一個有幫助。",
-    "reminderTitle": "這餐如何？",
-    "reminderBody": "為你點的菜寫個簡短評價吧。",
-    "noticeTitle": "歡迎使用 K-Bap",
-    "noticeBody": "掃描菜單即可了解哪些菜對你是安全的。",
-    "nudgeTitle": "今天在外面用餐嗎？",
-    "nudgeBody": "點餐前先掃描菜單吧。",
     "newBadge": "新"
   },
   "myFoods": {
@@ -996,6 +1004,39 @@
     "dishes": "菜品",
     "receiptDate": "日期",
     "receiptLocation": "地點",
-    "receiptTotal": "合計"
+    "receiptTotal": "合計",
+    "shareMenuMore": "等{{count}}項",
+    "sharePreviewCaption": "9:16 限時動態卡片預覽",
+    "shareDownload": "儲存\n圖片",
+    "shareDownloadInline": "儲存圖片",
+    "shareInstagram": "Instagram\n限時動態",
+    "sharePhotoDenied": "允許存取照片後即可儲存限時動態卡片。",
+    "shareSaved": "已儲存到相簿。",
+    "shareNoInstagram": "此裝置未安裝 Instagram。",
+    "shareFailed": "無法產生限時動態卡片，請再試一次。",
+    "shareStoryHint": "先儲存圖片，再到 Instagram 分享。",
+    "sharePhotosFailed": "圖片載入失敗，點擊重試。",
+    "itemPhotoTitle": "菜品照片",
+    "itemPhotoDefault": "使用預設照片",
+    "editFailed": "未能儲存變更，請再試一次。",
+    "editPhotoNotReady": "照片上傳未完成，請再試一次。",
+    "editNotFound": "找不到這筆訂單，請重新整理後再試。"
+  },
+  "feedback": {
+    "title": "聯絡我們",
+    "newInquiry": "新增",
+    "newTitle": "新增意見",
+    "placeholder": "告訴我們發生了什麼，或你希望看到什麼。可以附上照片。",
+    "send": "傳送",
+    "sent": "已收到你的意見，謝謝！",
+    "sendFailed": "傳送失敗，請再試一次。",
+    "rateLimited": "過去 24 小時內傳送次數較多，請稍後再試。",
+    "statusOpen": "待處理",
+    "statusAnswered": "已回覆",
+    "statusClosed": "已結案",
+    "emptyTitle": "還沒有意見",
+    "replyCount_other": "{{count}} 則回覆",
+    "notFound": "找不到這則意見。",
+    "teamName": "K-Bap 團隊"
   }
 }

@@ -150,18 +150,40 @@ describe('댓글 — replies 1뎁스 평탄화 + cursor 루프', () => {
   });
 });
 
-describe('P-186: 신고 중복 방어', () => {
-  it('409(기접수) = 멱등 처리(무throw) · 그 외 에러는 전파', async () => {
+describe('P-387(KB-460): 신고 계약 — 재신고 허용 · 바디에 installationId 없음', () => {
+  it('409 멱등 분기 소멸 — 서버가 더 내지 않는다(내면 전파돼야 관측된다)', async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { api } = require('@/lib/api/client');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { ApiError } = jest.requireActual('@/lib/api/client') as { ApiError: new (m: string, s?: number) => Error };
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const adapter = require('../adapter') as typeof import('../adapter');
     api.post.mockRejectedValueOnce(Object.assign(new Error('dup'), { status: 409 }));
-    await expect(adapter.submitReport('review', '7', 'spam', null)).resolves.toBeUndefined();
-    api.post.mockRejectedValueOnce(Object.assign(new Error('boom'), { status: 500 }));
-    await expect(adapter.submitReport('review', '7', 'spam', null)).rejects.toThrow('boom');
-    void ApiError;
+    await expect(adapter.submitReport('review', '7', 'spam', null)).rejects.toThrow('dup');
+    const src = require('fs').readFileSync('src/lib/community/adapter.ts', 'utf8') as string;
+    expect(src).not.toContain('status === 409');
+  });
+
+  it('바디 = targetType·targetId·reason(+detail)뿐 — installationId 금지(헤더가 식별)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { api } = require('@/lib/api/client');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const adapter = require('../adapter') as typeof import('../adapter');
+    api.post.mockResolvedValueOnce(undefined);
+    await adapter.submitReport('review', '7', 'spam', null);
+    const [path, body] = api.post.mock.calls[api.post.mock.calls.length - 1] as [string, Record<string, unknown>];
+    expect(path).toBe('/reports');
+    expect(Object.keys(body).sort()).toEqual(['reason', 'targetId', 'targetType']);
+    expect(body).not.toHaveProperty('installationId');
+  });
+
+  it('같은 리뷰 재신고 = 그대로 요청(클라가 막지 않는다)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { api } = require('@/lib/api/client');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const adapter = require('../adapter') as typeof import('../adapter');
+    api.post.mockResolvedValue(undefined);
+    const before = api.post.mock.calls.length;
+    await adapter.submitReport('review', '7', 'spam', null);
+    await adapter.submitReport('review', '7', 'spam', null);
+    expect(api.post.mock.calls.length - before).toBe(2);
   });
 });

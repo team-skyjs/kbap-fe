@@ -15,6 +15,7 @@ import { api } from '@/lib/api/client';
 import { buildReviewUpdate, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
 import type { Review, ReviewPage, User } from '@/lib/api/types';
 import { FLAGS } from '@/lib/flags';
+import { trackReadyFood } from './hiddenFoods';
 import { buildReviewExtras, EMPTY_EXTRAS, type ReviewExtras } from '@/lib/review/reviewExtras';
 
 function useInvalidateReviews() {
@@ -25,6 +26,11 @@ function useInvalidateReviews() {
     // P-211 ③: 전역 피드 — 누락 시 피드 발 작성이 복귀 후에도 안 보임(P-196 like와 같은 족보).
     // 생성/수정/삭제 전부 이 함수 경유 — 무효화 대상 추가는 여기 한 곳만.
     void qc.invalidateQueries({ queryKey: ['reviews', 'global'] });
+    // P-384(KB-442): 리뷰 = 스캔 해금 조건 — 프로필 쿼터(scanUnlocked·scanRemaining) 재조회
+    void qc.invalidateQueries({ queryKey: ['me', i18n.language], exact: true });
+    // P-393(KB-580): 홈 "리뷰 많은 음식" 랭킹도 리뷰 수 파생 — 빼면 staleTime(60s) 동안
+    // 복귀해도 이전 순위가 그대로 보인다(Codex #169). 프리픽스 매칭이라 언어 키 전부 걸린다.
+    void qc.invalidateQueries({ queryKey: ['home'] });
   };
 }
 
@@ -64,7 +70,9 @@ export function useCreateReview() {
         });
         return;
       }
-      await api.post('/api/reviews', { // P-165(#144) 버전리스
+      // KB-626(#185 5R): 서버 `createReview`는 `getReadyFood`를 탄다 — FOOD-001이면 숨김 신호(상세 판정 즉시 가림),
+      // 성공이면 해제. 화면(review.tsx)은 기존대로 자기 에러 문구를 그린다.
+      await trackReadyFood(input.foodId, () => api.post('/api/reviews', { // P-165(#144) 버전리스
         foodId: Number(input.foodId),
         rating: input.rating,
         // P-236(KB-347): 2축 — 미평가 = 0(서버 규약)
@@ -87,7 +95,7 @@ export function useCreateReview() {
                     },
             }
           : {}),
-      });
+      }));
     },
     onSuccess: (_d, v) => {
       if (FLAGS.reviewsLiveEnabled) invalidate(v.foodId);

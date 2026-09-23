@@ -35,7 +35,7 @@ import { ModerationFlow, type ModTarget } from '@/features/community/moderation'
 import { EVENTS, track } from '@/lib/analytics';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { FeedCard } from '@/features/review/FeedCard';
-import { useUnreadCount } from '@/lib/notifications/inbox';
+import { useUnreadCount } from '@/lib/data/useNotifications';
 import type { FoodCard } from '@/lib/api/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
@@ -116,7 +116,13 @@ export default function Home() {
       <UpdateNudgeBanner />
 
       {/* KB-430 후속 → P-317: 검색·세그먼트·칩 + 가로 레일 = FoodExplorer embedded */}
-      <FoodExplorer variant="embedded" guest={isGuest} srcTag="home" />
+      <FoodExplorer
+        variant="embedded"
+        guest={isGuest}
+        srcTag="home"
+        mostReviewed={home?.mostReviewed ?? []}
+        mostReviewedLoading={isLoading}
+      />
 
       {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
           (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
@@ -124,7 +130,7 @@ export default function Home() {
       <>
       <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
       {isGuest ? (
-        <Pressable style={styles.guestCta} onPress={() => router.push('/login' as Href)}>
+        <Pressable style={styles.guestCta} onPress={() => router.push('/login?entry=other' as Href)}>
           <View style={styles.guestCtaIc}>
             <IconLock size={18} color={C.ink2} />
           </View>
@@ -196,7 +202,7 @@ export default function Home() {
             mine={false}
             /* P-339 ②: ⋯ 전 카드(구 showMore=false 폐기) — 홈은 신고만·차단 없음 */
             onOpenFood={() => rv.foodId && openFood(rv.foodId)}
-            onGuestHelpful={() => router.push('/login' as Href)}
+            onGuestHelpful={() => router.push('/login?entry=gate_review' as Href)} // P-389: 게이트 시트와 같은 축(helpful → review)
             onMore={() =>
               setMod({
                 type: 'review',

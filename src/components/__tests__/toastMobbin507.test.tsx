@@ -323,3 +323,40 @@ describe('P-373(KB-537): Close 억제 + 핸드오프 잔여 시간', () => {
     expect(read('src/features/community/parts.tsx')).toContain('IconBubbleEmpty');
   });
 });
+
+/* KB-626(P-405 ②) — icon:'info' = 중립 안내 변형. 기본(✓)은 성공으로, 'alert'(RiskGlyph caution)는
+   안전 판정으로 읽혀 "지금은 이 음식을 저장할 수 없어요" 같은 음식 안내에 못 쓴다.
+   같은 흰 점 슬롯에 아이콘만 교체 — 프레임 불변. (IconInfo = 새 자산, 예진 확인 대상) */
+describe('KB-626 icon:info — 중립 안내 변형', () => {
+  const findIconPaths = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => typeof n.props?.d === 'string').map((n) => n.props.d as string);
+  const verdictGlyphs = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.state === 'caution');
+  const dotSlots = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => typeof n.type === 'string' && (n.props?.style as { width?: number; borderRadius?: number } | undefined)?.width === 22 && (n.props?.style as { borderRadius?: number })?.borderRadius === 11);
+
+  it("icon:'alert'는 판정 글리프를 그린다 — 양성 대조군(글리프 탐지가 살아 있음)", () => {
+    const tree = render();
+    act(() => { showTopToast('x', { icon: 'alert' }); });
+    expect(verdictGlyphs(tree).length).toBeGreaterThan(0);
+  });
+
+  it("icon:'info' → IconInfo(원 안 i)만 · 판정 글리프·체크 없음 · 같은 흰 점 슬롯", () => {
+    const tree = render();
+    act(() => { showTopToast('지금은 이 음식을 저장할 수 없어요.', { icon: 'info' }); });
+    const paths = findIconPaths(tree);
+    expect(paths).toContain('M12 16v-4'); // IconInfo 세로선
+    expect(paths).toContain('M12 8h.01'); // IconInfo 점
+    expect(verdictGlyphs(tree)).toHaveLength(0); // RiskGlyph caution 없음
+    // 기본 변형(✓)과 경로가 겹치지 않는다 — 체크를 그리지 않았다
+    act(() => { showTopToast('y'); });
+    const checkPaths = findIconPaths(tree);
+    expect(checkPaths.some((d) => d === 'M12 16v-4')).toBe(false);
+    expect(dotSlots(tree).length).toBe(1); // 슬롯은 기본 변형과 같은 22·r11 흰 점 하나
+  });
+
+  it("icon:'info'도 흰 점 슬롯 하나 — 프레임 불변(기본 변형과 같은 자리·크기)", () => {
+    const tree = render();
+    act(() => { showTopToast('z', { icon: 'info' }); });
+    expect(dotSlots(tree).length).toBe(1);
+  });
+});

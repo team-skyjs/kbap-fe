@@ -1401,3 +1401,81 @@
 ## KB-377 직렬화 + OTA 2발 (2026-08-26, PR #2 — 새 사이클 첫 건)
 - [x] 코치마크·푸시 프라이머 직렬화(iOS onDismiss 트리거 — Codex P1 반영) — abab832(squash), main 릴리스 9a04ccb.
 - [x] teamtest OTA(ios 912128ff·and 74ca706d) · production OTA(ios 79cd453a·and 226fe568, 태그 ota-prod-20260826-2) — Metro 캐시 함정 발견으로 --clear 게이트 승격.
+
+## 푸시 토큰 서버 등록 배선 (2026-09-08, KB-496)
+- [x] sendTokenToServer 실배선 — PUT /api/notifications/tokens { token, platform, lang }(settings 미전송 — 알림 회원 전용 결정), X-API-Version 전역 1.1(client.ts 기본값 1.0→1.1, 개별 지정 제거 — 1.1 = 1.0 전부 포함·develop은 TestFlight에서 실행되므로 전역 승격 확정 2026-09-10), unregisterPushToken 삭제(서버 로그아웃/탈퇴 처리). 게스트 프라이머 제거는 스캔 isGuest 게이트로 이미 충족 — 코드 무변경 — b96028c·cae22ad·e7229de → 전역 1.1 확정.
+- [x] tsc 0 · jest 161스위트 1098/1098.
+- [ ] dev client 실기기 upsert 200 + BE notification_device 행/member 연결 교차 확인 → 확인 후 PR ready. 발행은 KB-501(예진 승인·teamtest OTA).
+
+## 알림 설정 2그룹 재편 + 서버 정본화 (2026-09-11, KB-497 — Spec Kit 1호)
+- [x] 결정(종한·UX 리서치·BE 세션): 표면은 하단 시트 1종(NotificationSheet primer/consent) · 홈 통합 표면(A안) 제외 · 온보딩 프라이머 제거(OS 권한 = 스캔 결과 시트 1곳) · 설정 화면 = 「내 활동 알림」 activity / 「K-Bap 소식」 news(소식 토글 OFF→ON = 동의 시트, 동의 2종 체크 + 전문 링크) + 하위 mealTime(소식 OFF면 비활성, 끄기 = 동의 철회 아님) · 카드 사각형·섹션 설명·발송 시간대/철회 안내 문구 삭제(Codex UX 리라이트) · 피그마 「KB-497 알림 설정 시안」(Y6LTZdrUxqu69jnvYWsvoA).
+- [x] 데이터: useNotificationSettings(GET/PATCH 낙관·롤백·모듈 seq로 최신 응답만 반영, 훅 밖 patchNotificationSettings 공유) · 로컬 3토글 저장소·guestConsent 삭제 · 리마인더 게이트 = 서버 activity 캐시 · consent.ts(버전 상수 2·NOTIF_SETTINGS_API_VERSION 자리) · LEGAL_URLS marketingPrivacy/Receive.
+- [x] KB-543(BE #260): 토큰 등록 회원 전용 — pushAdapter hasBeSession 가드 1줄 + useSocialAuth exchange 성공 직후 1회, 401 비치명. KB-544: 설정 토글 (회원, 기기)·동의 원장 회원 단위·스키마 동일·기본값 전부 false — 새 X-API-Version 값은 상수 1곳(착수 시 채움, null = 현행 레거시).
+- [x] i18n notif/push 10로케일 키 교체(구 3토글·야간 키 0, 패리티 유닛) · 게스트 = 프로필 진입점 제거 + 라우트 AuthGateSheet · P-151 메트릭 유닛(Switch·비활성 행·체크박스).
+- [x] tsc 0 · jest 208스위트 1407/1407(신규 7스위트).
+- [x] 외부 의존: kbap-legal 전문 페이지 2개(marketing-privacy-consent / advertising-receipt-consent.html — 9/14 종한 전달, 200 확인, KB-553에서 URL 교체) · 9개 언어 문구 검수(ko는 Codex 리라이트 반영) · KB-544 배포 후 버전 값·기기별 독립 실측(quickstart §4) · "나중에" 쿨다운 재노출은 후속 티켓. 발행은 KB-501.
+
+## 푸시 data 계약 반영 — 유형 5종·알림 id·Android 채널 (2026-09-11, KB-498 — Spec Kit 2호 `specs/002-push-data-contract`)
+- [x] 유형 enum 5종(HELPFUL·SCAN_SUGGESTION(구 NUDGE)·REVIEW_REMINDER·NEWS(구 NOTICE 폐기)·MEAL_TIME 신설) — 정의는 pushAdapter PUSH_TYPES 한 곳, 정확 일치만(구 이름·대소문자·공백 = 미지 = 무동작·미기록). 딥링크(9/12 종한 결정): REVIEW_REMINDER→음식 상세 /food/{id} · NEWS·MEAL_TIME→이동 없음 · HELPFUL·SCAN_SUGGESTION→임시 디버깅 화면 push-landing("착지 미정, 기획 필요" — 평일 팀 공유 후 확정 시 교체·파일 삭제).
+- [x] 탭 콜백 = 탭마다 항상 호출 (href | null, notificationId) — 이동 없는 유형도 id 전달(Codex 3R, 읽음 처리용), 루트 레이아웃 if(href) 가드 1줄. notificationId 형 변환 0, 없으면 undefined + 콜드 스타트 이중 전달 차단(마지막 응답 조회·리스너가 같은 identifier면 1회). 읽음 호출은 후속(서버 알림함 전환).
+- [x] 알림함: KEYS 5종 모듈 상수 = 런타임 가드(어댑터 런타임 import 금지 — api·auth가 딸려 옴), 미지 유형 기록 0, 하이드레이트 시 구 NUDGE/NOTICE 잔존 드롭(호환 변환 없음). i18n inbox 10로케일 nudge*/notice* → scanSuggestion*(구 nudge 문구 승계)·news*·mealTime* — 광고성 3종 문구에 (광고)·수신거부 없음(서버 부착).
+- [x] Android: 탭 구독 시 채널 2종 1회 — activity(MAX: HELPFUL·REVIEW_REMINDER)·news(HIGH: 광고성 3종), 이름 = notif.activityGroup/newsGroup i18n 재사용, default 채널 미생성(중요도 생성 후 불변 — Codex #149 P1·P2 → 9/12 종한 결정으로 분리). 서버 channelId 매핑은 KB-469·470·471·474 본문 + KB-468 코멘트에 반영. iOS·플래그 off = 호출 0(폭탄 목 잠금).
+- [x] Codex #149 반영: 채널 이름 i18n(P2) · inbox 가드 own-key(hasOwnProperty, P2 — 'constructor' 등 프로토타입 키 차단) · P1(기존 default 채널 중요도 고정)은 전제 불성립으로 기각(expo가 미존재 channelId를 폴백 채널로 보냄 — 소스 확인).
+- [x] 법적 근거 조사(재설치 시 광고성 동의): OS 권한≠수신동의, 동의 단위 = 로그인 회원, 앱 삭제는 소멸 사유 아님, 탈퇴만 파기 — KISA 안내서 7차(2025.12) 원문 확인. 메모리 push-consent-reinstall-legal.
+- [ ] Android 실기기 헤드업·소리 확인(quickstart §수동, 백그라운드 상태 수신) — 미실시, 발행 전 필수. 발행은 KB-501(예진 승인).
+
+## 알림 시트 슬라이드·드래그 닫힘 모션 + 문구 중간점→슬래시 (2026-09-14, KB-553 — Spec Kit 3호 `specs/003-notification-sheet-motion`)
+- [x] NotificationSheet(primer·consent) 모션: Modal은 fade(딤만) + 공용 훅 useSheetSwipeDismiss 가산 확장 — animateIn(시트만 화면 아래에서 240ms ease-out 직선 등장) · dismiss(onDone) 노출(나중에·확인·스크림·백버튼·드래그 5경로 전부 180ms 슬라이드 다운 후 Modal 숨김, visible 지연) · 핸들·제목 드래그(임계 통과 = 퇴장 후 onClose 1회 · 미만/취소 = 스프링 복귀 · 딤 비례 페이드) + Modal 내부 GestureHandlerRootView(Codex #98 3R P2). 훅 기본 동작·선례 시트 3곳·호출부 2곳·props·testID·시트 메트릭 무변(P-151 유닛). 제스처 영역 = 핸들+제목만(유닛으로 트리 단언).
+- [x] Codex 3차(PR #150) P1 회귀 수정: 닫힘 경로를 훅 경유로 바꾼 뒤 open이 true인 채 퇴장하는 180ms에 확인 탭이 통과(나중에 → 동의 ON 가능) → closing 상태로 즉시 무반응 + 훅 isClosing() 가드(드래그 퇴장 포함). quickstart 표 최종 계약으로.
+- [x] GitHub Codex 인라인 라운드(PR #150) 5건 반영·1건 기각: P1 onMutate await 간극 세대 불일치 → 동기화 · 닫힘 경로(나중에·스크림·백버튼) 훅 dismiss 경유로 onClose 1회 보장 · announce iOS 한정 · winH ref · spec FR-002/005 시트 전체로 개정.
+- [x] Codex 독립 리뷰(PR #150, Important 4·Minor 1) 반영: PATCH 큐 세션 세대 가드(계정 전환 시 대기 요청 폐기·캐시 재시딩 0) · 시트 퇴장 중 pointerEvents none + 체크 리셋을 열림 시로 · 훅 closing/closed 3상(퇴장 중 외부 dismiss는 완료 시 코얼레싱) · 미충족 안내 VoiceOver announce + a11y 트리 제외 · 지연 완료 목 유닛. 기각: activeOffsetY(실기 미관찰).
+- [x] OS 알림 권한 꺼짐(종한, 9/14, 지시 2회): 1차 "동의 내역 미노출·배너만" → 통째 숨김 → 2차 "아래 UI 숨기지 마" → 배너 + 설정 UI 흐림(opacity 0.4)·조작 불가·행 disabled로 정착. 판정 전 스켈레톤 게이트 철회. 서버 값 무변.
+- [x] 실기 4차(종한, 9/14): 식사 시간만 OFF → 소식 토글 잠깐 OFF — 동의 확정 PATCH 반영 전 다음 PATCH가 병렬 도착해 서버가 반영 전 행으로 응답(enabled:false), seq상 최신이라 캐시 덮음. 설정 PATCH 클라 직렬화(앞 요청 settle 후 전송, 낙관 즉시) + 경합 재현 유닛. Swagger 재확인: 응답 news.enabled = 기기 토글 저장값(동의 미결합) → 3차의 "소식 OFF 응답 의미" 미확인 해소.
+- [x] 실기 3차(종한, 9/14): 동의 확정 후 소식·식사 시간 토글 깜빡임 — dev Swagger가 KB-544 계약(동의 기록 = news.consent:true + 버전 2종)으로 바뀌어 있었고 앱은 enabled+버전만 보내 동의 미기록 → 응답에서 OFF 복귀. 페이로드 교체(consent·enabled·mealTime:true 동봉 — 소식 ON = 식사 시간 ON, 종한) + predictSettings가 요청에 없는 mealTime을 앞서 예측하던 것 제거. 소식 OFF 응답 의미(enabled = 동의 유효?)는 실기 확인 항목.
+- [x] 스코프 추가(종한, 9/14): 동의 시트 체크 2종 사전 체크 상태로 열림 + 하나만 체크된 채 확인 탭 = 진행 0·"두 항목에 모두 동의해야" 인라인 안내(고정 슬롯, P-151) · push.consentBothRequired 10로케일. ⚠ 사전 체크 광고성 동의의 법적 유효성은 PR 리뷰 포인트(KISA 안내서 계열).
+- [x] 실기 2차(종한, 9/14): 제스처 영역 핸들+제목 → 시트 전체(스크롤 없는 시트라 P-337 한정 사유 없음, Pan 이동 후 활성화라 탭 통과). 실기 재확인 = 체크박스 흔들 탭 씹힘 여부.
+- [x] 실기 1차 피드백(종한, 9/14) 2건 반영: ① 1차 `Modal slide` 안은 딤 레이어가 시트와 같이 올라옴 → fade + 훅 등장으로 교체(선례 시트 3곳도 같은 구조 = 같은 증상, 별도 티켓 후보) ② 스프링 등장 "둥 뜸" → 직선 ease-out.
+- [x] 문구: notif.activitySub·newsSub·mealTimeSub·push.consentSheetBody·privacyConsent 중간점→슬래시 — ko 5·ja 4(나카구로 `・` 포함, 리뷰 확인 포인트)·zh-Hans/Hant 1. 나머지 6로케일 중간점 없음 = 무변. 10로케일 중간점 0 유닛.
+- [x] 테스트: notificationSheet497 +5(소스 잠금·프레임 불변·드래그 배선·영역 한정·훅 배선) · notifKeys497 +1 · 시트를 렌더하는 화면 스위트 7에 RNGH 표면 목 보강(onFinalize 누락 5·목 부재 2 — 훅 도입의 예측된 파급, research R-8). tsc 0 · jest 209스위트 1423/1423.
+- [x] draft PR #150(develop). iOS 실기는 종한 3차 피드백 반영 후 최종 재확인 대기 · Android 미확인(모달 내 제스처 루트 동작). 발행은 예진 승인(JS-only OTA 가능). 리뷰 포인트 3: 사전 체크 동의 법적 유효성 · ja 나카구로 치환 · 소식 OFF 응답 의미.
+
+## 알림함 서버 전환 + 도착 시각 상대 표기 (2026-09-16, KB-499 — Spec Kit 4호 `specs/004-inbox-server`)
+- [x] clarify 5문항(종한, 9/16): ① 종 배지 = 기존 NEW 필 고정(숫자 없음) ② 알림함 항목 탭 = 읽음 + 푸시 탭과 같은 이동 — 목록 응답에 `type`·`foodId`가 없어 **BE 확장 요청 프롬프트 전달**(kbap-16, dev 배포 대기; 앱은 필드 없으면 이동 없음) ③ "모두 읽음" 제거(전체 읽음 계약 없음) ④ 상대 시각 = 커뮤니티 공용 `timeAgo` 재사용, ko `community.justNow` "방금"→"방금 전" + zh-Hans/Hant `reviews.daysAgo` 공백 제거 ⑤ 게스트 = 로그인 화면 직행(`Redirect /login?returnTo=/notifications`, 시트·문구 신설 0).
+- [x] 데이터: `lib/api/notificationAdapter.ts`(와이어→InboxItem, `at` ISO·type/foodId 옵션) · `lib/data/useNotifications.ts`(`['notifications']` 쿼리 1개 — 화면·헤더 3곳 공유, `useUnreadCount` = `read===false` select 파생, 낙관 읽음 + 세션 세대 가드 롤백, `onPushTapped` = hasBeSession→PATCH→invalidate). **활성 = `useSession()===true`만**(Jira 제안 `!useIsGuest`는 부팅 미확정에 게스트 401 1회 — R-2). 무효화 5시점: 마운트·AppState active(_layout)·푸시 수신/잔존분/탭(pushAdapter `bump`)·읽음 onSettled·staleTime 0.
+- [x] 삭제: `lib/notifications/inbox.ts`(kbap.inbox.v1 로컬 스토어)·`inbox216` 스위트. 화면 `notifications.tsx` = 스켈레톤(`SkeletonInbox`)·`QueryErrorBlock` 재시도·`EmptyBlock`·서버 title/body·`timeAgo`, 소스 잠금 리터럴(deleteEmpty329·parityDsHome486) 유지. flags 주석 갱신.
+- [x] i18n: 10로케일 `inbox` 11키 제거(유형별 문구·markAllRead), 신설 0. `inboxKeys498` 개정(4키 패리티·제거 키 부재·상대 시각 4키·zh 공백 0·gate 신설 없음 잠금).
+- [x] 테스트: 신규 `useNotifications499`(어댑터·목록/파생·세션 게이트·낙관/롤백·세대 가드·onPushTapped·실클라 X-Installation-Id 헤더 2요청) · `inbox499`(3상태·행·탭 이동 4종·프레임 불변·게스트 Redirect·소스 잠금) · `timeAgo499`(경계 9종+en/zh) · `pushAdapter192` +1(invalidate 3경로). 헤더를 렌더하는 스위트 7곳 목 보강(`useSession` 추가 5·`useNotifications` 목 3 — 부분 목/Provider 부재의 예측된 파급). tsc 0(shareExport 3건은 워크트리 node_modules 부재 — 부모 체크아웃에 KB-518 신규 dep 미설치, 무관) · jest 220스위트 1604/1605 — **실패 1 = 기존**(`prodFlagSurfaces436` app.json 1.0.3 vs 테스트 1.0.2, #162 범프 미반영, 이 브랜치 무관).
+- [x] BE 응답 `type`(필수)·`foodId`(nullable) dev Swagger 반영 확인(9/16 저녁) — 어댑터 무변(옵션 필드), 항목 탭 이동 실기 가능.
+- [ ] dev 실기(quickstart §3 1~9) 미실시 — 검증 회원 소식 동의 ON 선행, 관리자 test-push. 발행은 예진 승인(JS-only OTA 가능).
+- [x] Codex 1R(#163) P2 1건 반영: 읽음 롤백을 목록 스냅샷 → **그 항목의 이전 read 값**으로(연달아 탭한 두 요청이 서로 덮는 결함). 겸해서 읽음 성공 시 전체 재조회 제거(응답 항목 교체가 정본, 종한 지시 9/16) — 유닛 ⑨ 연달아 탭 2시나리오 추가.
+- [x] Codex 2R P2 1건 반영(종한 결정 9/17): 실패 보정 GET도 삭제 — 진행 중인 다른 읽음 요청과 응답 순서 경합. **읽음은 프론트가 항목 단위로 관리, 읽음 뒤 목록 API 재호출 0**, 서버와 잠시 어긋나면 다음 재조회 시점에 맞춰지는 것으로 수용.
+- [x] PR #163(develop, ready). 리뷰 포인트 3: ① 커뮤니티 "방금"→"방금 전" 공유 문구 ② `enabled = useSession()===true` ③ 항목 탭 이동은 BE 배포 전 비활성.
+
+## KB-573 푸시 탭 착지 확정 — MEAL_TIME·SCAN_SUGGESTION→홈, HELPFUL→내 리뷰, 임시 push-landing 제거 (2026-09-16, 워크트리 feat/kb573-push-landing · spec 005)
+
+- [x] 착지 확정(종한 9/16, clarify 3문항): MEAL_TIME·SCAN_SUGGESTION → 홈 탭 `/(tabs)`(열려 있던 화면 전부 닫힘, 뒤로 가기 없음) · HELPFUL → `/profile/reviews`(리뷰 id 미제공이라 상세 불가, 게스트 게이트는 화면 몫) · 리마인더=음식 상세 · NEWS=이동 없음 유지. 서로 다른 알림 연속 탭 = 맨 위 같은 화면이면 재사용(권고안 채택).
+- [x] "어떻게 가는가"는 `lib/nav.ts` `openNotificationRoute` 한 곳 — expo-router 56 StackRouter는 getId 없으면 name이 최상단과 다를 때 push·navigate 모두 새로 쌓아, 홈은 `dismissAll` 선행 후 `navigate('/(tabs)')`(탭 점프). 호출부 2곳(루트 레이아웃 탭 콜백·알림함 항목 탭) `router.push` → 헬퍼.
+- [x] 콜드 스타트 게이트: 푸시 리스너 등록을 `entryChecked` 뒤로. 근거(소스) — expo-router `store.assertIsReady()`가 Stack 마운트 전 navigate에 throw("Attempted to navigate before mounting the Root Layout"), `getLastNotificationResponseAsync`는 스플래시 게이트(≥1200ms)보다 먼저 해소. 실기 미관측 추정 — 아래 실기 D-3·D-4가 유일한 검증.
+- [x] 임시 화면 `src/app/push-landing.tsx` 삭제 · `push.landingTbd*` 10로케일 제거 · 어댑터 case 교체(주석 정리). 잠금 유닛 landingRemoved573(로케일 키 부재·어댑터 소스 push-landing 0·파일 부재).
+- [x] 테스트: nav573 +5(홈 dismissAll→navigate 순서·canDismiss false·throw 방어·내 리뷰·음식 상세) · pushAdapter192 매핑 3케이스 교체 + 레이아웃 소스 잠금(entryChecked 게이트·헬퍼 경유·router.push 0) · landingRemoved573 +3. tsc 0 · jest 220스위트 1601/1601. 동승 정리 2건: pushSurfaces192 레이아웃 소스 잠금을 새 게이트 문자열로 · prodFlagSurfaces436의 앱 버전 기대 1.0.2→1.0.3(e53b63d 범프 이후 develop에서 이미 깨져 있던 기존 실패).
+- [x] 문서: specs/002 spec.md(개요·AS 1·2·5·FR-002)·contracts §2 표 갱신. push-landing 언급 0.
+- [ ] 실기(종한, iOS·Android): quickstart D-1~D-10 — **D-3·D-4(콜드 스타트) 필수**. 완료 전 OTA 발행 금지(OTA 게이트 커밋).
+
+
+## KB-631 첫 설치 로그인 화면 OS 알림 권한 즉시 요청 — 카메라 권한과 같은 방식 (2026-09-22, 워크트리 feat/kb631-login-push-prompt · spec 006)
+
+- [x] 결정(종한 9/22): 첫 설치 → 스플래시 뒤 로그인 화면 첫 표시에 앱 프라이머 없이 OS 팝업 즉시. KB-497 "첫 스캔 결과 1곳"(B안) 폐기 — 스캔 시트·설정 배너는 후순위. 근거 = 9/22 실측(스캔 안 거친 회원 undetermined → 토큰 미등록 → 푸시 0·설정 탭 토글 무효).
+- [x] 트리거 = 기존 첫 설치 경로 `router.replace('/login?entry=intro')` 하나에 얹음 — `login.tsx` 마운트 effect `entry==='intro' && returnTo==null` → 어댑터 `promptPermissionOnFirstLogin()`. 새 센티널 없음. 결과는 프라이머 기록 `kbap.push.prompted.v1`에 accepted/declined → `scan.tsx` 시트 코드 무변으로 생략.
+- [x] 시퀀스: 기록 있음→0 · OS unavailable→기록 0(이월) · granted/denied 기억→요청 0·기록만 · undetermined→`requestPermission()`(push_permission 계측 그 자리)→**재조회 상태로만** 기록(예외≠결과). in-flight 합치기.
+- [x] 플랜 발견 누락(R-4): dev Swagger `activity` 기기 기본 **false** — 프라이머 수락 경로만 PATCH true였음. 허용 시 `kbap.push.activityDefaultPending.v1` 표식 → 로그인 성공 직후(`useSocialAuth.exchange`, registerPushToken 옆) `applyPendingActivityDefault()` PATCH 1회 후 삭제(실패도 삭제). 계정 전환·재로그인에서 끈 값 안 되돌림. spec FR-010 추가.
+- [x] 테스트: loginPrompt631 +17(시퀀스 8·표식 4·생애주기 2·소스 잠금 3) · loginPushPrompt631 +4(intro 1회·returnTo 0·무파라미터 0·gate 0) · pushProdGuard221 +1(플래그 off no-op). tsc 0.
+- [x] 문서: specs/001 US4 폐기·US6 후순위 표기 · PushPrimerModal 헤더 주석.
+- [ ] 실기(종한, iOS 필수): quickstart D-1~D-12 — **D-1·D-2·D-3(허용→로그인→토큰+activity)·D-4(거부→배너)·D-5(스캔 시트 0)·D-11/12(설정 탭 토글 실효)** 완료 전 OTA 발행 금지(OTA 게이트 커밋).
+
+## KB-618 알림 설정 — OS 권한 undetermined 「알림 켜기」 배너 (2026-09-22, 워크트리 feat/kb618-notif-os-ask)
+
+- [x] 실측(종한 9/22): 재설치 후 스캔 없이 알림 설정 진입·동의 → 서버 설정만 ON, OS 설정에 앱 알림 항목 자체가 없음(토큰 미등록·푸시 0). iOS는 `requestPermissionsAsync` 1회 호출 전엔 설정 앱 항목이 생기지 않는다.
+- [x] 원인: `notifications.tsx` 배너 조건이 `denied`만. KB-497(9/11) 이전엔 온보딩 프라이머가 모든 신규 회원을 granted/denied로 만들어 `undetermined`가 설정 화면에 도달하지 않았는데, 온보딩 프라이머 제거로 경로가 열림. 스캔 프라이머 「나중에」 후에도 복구 경로 0. KB-423(토글 시점 프롬프트)은 미구현 상태로 9/16 완료 처리돼 있었음.
+- [x] 수정(기존 배너 재사용, 화면 1파일): `osOff = denied || undetermined`(흐림·무반응 공통). `undetermined` = 문구 `notif.osAsk` + CTA `osAskCta`(「알림 켜기」), 탭 = `requestPermission()` → 허용 시 `registerPushToken()` → 권한 재조회로 배너 소멸·토글 활성 / 거부 시 denied 배너(기기 설정 열기)로 전환. testID `notif-os-ask`(denied `notif-os-off`와 분리). i18n 2키 10로케일.
+- [x] 테스트: notificationSettings497 +2(undetermined 배너·진입만으론 팝업 0·탭→팝업 1회→토큰 1회→배너 소멸·body auto / 거부→토큰 0·denied 전환) · notifKeys497 REQUIRED +2. US5 spy.mockRestore 이후 RN preset AppState 반환값 undefined로 후속 렌더가 깨지는 순서 의존 → 블록 스텁으로 고정. tsc 0 · 관련 16스위트 145/145.
+- [ ] iOS 실기(종한): 재설치 → 로그인 → 알림 설정 → 「알림 켜기」 → OS 팝업 허용 → 설정 앱 항목 생성 + 서버 `notification_device` 행 확인. 완료 전 OTA 발행 금지(JS-only, 발행은 예진 승인).

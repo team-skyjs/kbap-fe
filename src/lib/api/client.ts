@@ -51,7 +51,7 @@ function readRequestId(res: Response): string | undefined {
 /** 유일 헤더 예외 엔드포인트 — 무인증·X-API-Version 자체가 없는 버전 게이트. */
 export const APP_VERSION_PATH = '/api/app-version';
 
-const API_VERSION_HEADER = '1.0';
+const API_VERSION_HEADER = '1.1';
 
 /** 기기/앱 헤더 — 형식 고정: `iOS 18.1` / `AOS 14`(안드는 API 레벨 아닌 릴리스). */
 function deviceHeaders(): Record<string, string> {
@@ -79,6 +79,11 @@ export class ApiError extends Error {
     this.code = code;
   }
 }
+
+/** KB-620: 음식이 **일시적으로 숨겨짐**(서버 `PENDING_IMAGE` — 이미지 재생성 중) → `FOOD-001`.
+ *  에러가 아니라 **곧 돌아올 상태**라, 에러 표면(빨간 안내·재시도·에러 계측)이 아니라 조용한
+ *  안내로 다룬다(9/22 예진). 판별은 이 한 곳 — 리뷰 작성·음식 상세가 공유한다. */
+export const isFoodHidden = (e: unknown): boolean => e instanceof ApiError && e.code === 'FOOD-001';
 
 /** BE generic envelope. Branch on `success` (NOT HTTP status alone) — §0. */
 export interface BaseResponse<T> {

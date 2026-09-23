@@ -74,9 +74,27 @@ export async function loadTokens(): Promise<{ access: string; refresh: string } 
     cached = rec ? { access: rec.access, refresh: rec.refresh } : null;
   } catch {
     if (cached !== undefined) return cached;
+    // P-389(KB-576): 저장소 읽기 실패는 **게스트가 아니다** — 계측이 회원을 게스트로
+    // 오인하지 않도록 표식을 남긴다(세션 취급은 종전대로 null = 게스트 시작).
+    readFailed = true;
     cached = null;
   }
   return cached;
+}
+
+/** 마지막 읽기가 저장소 오류였는지 — 성공·저장·삭제가 일어나면 해제된다. */
+let readFailed = false;
+
+/**
+ * P-389(KB-576): 계측용 회원 판정 — **true/false/모름(null)** 3값.
+ * `loadTokens()`는 저장소 오류를 내부에서 삼키고 null(게스트)을 돌려주기 때문에,
+ * 그 값만 보면 SecureStore 일시 오류가 회원을 게스트로 찍어 세그먼트를 오염시킨다.
+ * 모름이면 호출측이 **값을 싣지 않는다**(잘못된 값보다 빈 값이 낫다).
+ */
+export async function isRegisteredForAnalytics(): Promise<boolean | null> {
+  const tk = await loadTokens();
+  if (tk) return true;
+  return readFailed ? null : false;
 }
 
 /** KB-421 최종: 저장소 **쓰기 직렬화 체인** — save/clear가 순서대로만 실행돼
@@ -109,6 +127,7 @@ export function saveTokens(
   const g = sessionGen; // 호출 시점 세대(동기)
   const mine = { access, refresh };
   cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)
+  readFailed = false; // 쓰기 성공 = 저장소 정상
   return serialized(async () => {
     try {
       // P-322 v2: 단일 레코드 1회 쓰기 = 원자 — 부분 저장(혼합 마커) 구조적 불가
@@ -150,6 +169,7 @@ export function revertTokensIf(access: string, refresh: string): Promise<void> {
 
 export function clearTokens(): Promise<void> {
   cached = null; // 동기 — 경계의 즉시성 유지
+  readFailed = false; // 명시적 삭제 = 게스트 확정(모름 아님)
   return serialized(async () => {
     try {
       await Promise.all([SESSION_KEY, ...LEGACY_KEYS].map((k) => SecureStore.deleteItemAsync(k)));

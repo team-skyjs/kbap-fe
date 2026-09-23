@@ -56,7 +56,7 @@ jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 const mockSheet = jest.fn(() => null);
 jest.mock('@/app/community/compose', () => ({ TagPickerSheet: (p: unknown) => mockSheet(p) }));
 const mockIsGuest = jest.fn(() => false);
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest(), useSession: () => (mockIsGuest() ? false : null) })); // KB-499: 헤더 배지 훅이 useSession도 읽음(null = 쿼리 비활성)
 const mockToggle = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useToggleReviewLike: () => ({ mutate: mockToggle }),
@@ -64,8 +64,9 @@ jest.mock('@/lib/data/useReviewMutations', () => ({
   useDeleteReview: () => ({ mutate: jest.fn() }),
 }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
-const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null } | undefined }));
+const mockMe = jest.fn(() => ({ data: { id: '9', nationality: 'US' } as { id: string; nationality: string | null; scanQuota?: unknown } | undefined }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
+jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 })); // KB-499: 헤더 배지 = react-query 훅 — 이 스위트는 Provider 없이 렌더
 const mockFeed = jest.fn();
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: (enabled: boolean, filters: unknown) => mockFeed(enabled, filters) }));
 
@@ -378,5 +379,30 @@ describe('P-371(KB-534): 컨트롤 행 좌측 — 게스트/국적 없음 = 라�
     const tree = render();
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-profile-toggle').length).toBeGreaterThanOrEqual(1);
     expect(labels(tree)).toHaveLength(0);
+  });
+});
+
+describe('P-384(KB-442): 쿼터 넛지 카드 = 회원 && 잔여 0 && 미해금만', () => {
+  const nudge = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'quota-nudge').length;
+  const Q = (remaining: number | 'unlimited', unlocked: boolean) => ({ count: 3, limit: 3, unlocked, remaining });
+
+  it('회원 + 잔여 0 + 미해금 = 노출', () => {
+    mockMe.mockReturnValue({ data: { id: '9', nationality: 'US', scanQuota: Q(0, false) } });
+    expect(nudge(render())).toBeGreaterThan(0);
+  });
+
+  it('잔여 있음 · 해금 · 쿼터 미상(구서버) = 미노출', () => {
+    for (const scanQuota of [Q(1, false), Q('unlimited', true), null]) {
+      mockMe.mockReturnValue({ data: { id: '9', nationality: 'US', scanQuota } });
+      const tree = render();
+      expect(nudge(tree)).toBe(0);
+      act(() => tree.unmount());
+    }
+  });
+
+  it('게스트 = 미노출(캐시에 소진 프로필이 남아 있어도)', () => {
+    mockIsGuest.mockReturnValue(true);
+    mockMe.mockReturnValue({ data: { id: '9', nationality: 'US', scanQuota: Q(0, false) } });
+    expect(nudge(render())).toBe(0);
   });
 });

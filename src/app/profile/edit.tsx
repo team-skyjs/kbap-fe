@@ -310,7 +310,7 @@ export default function EditProfile() {
                   testID={`currency-${item.code}`}
                 >
                   <Text style={styles.curSym}>{item.symbol}</Text>
-                  <Text style={styles.curName}>{item.code} · {item.name}</Text>
+                  <Text style={styles.curName}>{item.code} {item.name}</Text>
                   {currency === item.code && <IconCheck size={16} color={C.primary} />}
                 </Pressable>
               )}

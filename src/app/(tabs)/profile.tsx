@@ -105,7 +105,7 @@ export default function Profile() {
       }
       // ⑪-2: 로그아웃 후 로그인 화면 강제 대신 홈 — 게스트로 계속 둘러보기
       // (세션만료 처리와 동일 정책, guestMode OFF일 때만 /login).
-      router.replace((FLAGS.guestMode ? '/(tabs)' : '/login') as Href);
+      router.replace((FLAGS.guestMode ? '/(tabs)' : '/login?entry=other') as Href); // P-389: 로그아웃 후 복귀 — 인트로 아님
     } finally {
       setLoggingOut(false);
     }
@@ -148,7 +148,7 @@ export default function Profile() {
               </View>
               <Pressable
                 style={({ pressed }) => [styles.editBtn, pressed && { backgroundColor: C.surface2 }]}
-                onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile' as Href)} // Codex #72 P2: 로그인 후 프로필 복귀
+                onPress={() => router.push('/login?returnTo=%2F(tabs)%2Fprofile&entry=profile' as Href)} // Codex #72 P2: 로그인 후 프로필 복귀 · P-389 entry
                 testID="guest-signin"
               >
                 <Text style={styles.editBtnText}>{t('intro.signUp')}</Text>
@@ -158,9 +158,9 @@ export default function Profile() {
               {canOpenLangSettings && (
                 <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
-              {FLAGS.pushEnabled && (
-                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
-              )}
+              {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
+              {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
+              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
               <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
@@ -196,7 +196,6 @@ export default function Profile() {
                       <Text style={styles.natText} numberOfLines={1} testID="nation-pill">
                         {countryByCode(me.nationality)?.name ?? me.nationality}
                       </Text>
-                      <Text style={styles.natText}>·</Text>
                     </>
                   )}
                   <Text style={styles.natText}>{lang.split('-')[0].toUpperCase()}</Text>
@@ -326,6 +325,8 @@ export default function Profile() {
               {FLAGS.pushEnabled && (
                 <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
+              {/* P-394(KB-586): 문의 — 게스트 분기에도 같은 행이 있다 */}
+              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
               <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}

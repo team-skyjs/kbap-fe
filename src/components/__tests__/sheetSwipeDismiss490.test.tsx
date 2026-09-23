@@ -12,7 +12,8 @@ jest.mock('react-native-reanimated', () => {
     __esModule: true,
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),
-    withSpring: (v: unknown) => v,
+    Easing: { out: (e: unknown) => e, inOut: (e: unknown) => e, cubic: 'cubic', quad: 'quad', linear: 'linear' }, // KB-553 ENTER_TIMING
+    withSpring: jest.fn((v: unknown) => v),
     // 완료 콜백 즉시 발화(성공) — 퇴장 애니메이션 종단 = onClose 경로 검증(호출 기록 = 스파이)
     withTiming: jest.fn((v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
       if (cb) cb(true);
@@ -30,10 +31,10 @@ import { useSheetSwipeDismiss } from '../useSheetSwipeDismiss';
 type PanEvent = { translationY: number; velocityY: number };
 type PanHandlers = { onUpdate?: (e: PanEvent) => void; onFinalize?: (e: PanEvent, success: boolean) => void };
 
-function mount(onClose: () => void, open = true) {
+function mount(onClose: () => void, open = true, opts?: { animateIn?: boolean }) {
   const out: { swipe?: ReturnType<typeof useSheetSwipeDismiss> } = {};
   function Probe() {
-    out.swipe = useSheetSwipeDismiss(onClose, open);
+    out.swipe = useSheetSwipeDismiss(onClose, open, opts);
     return null;
   }
   act(() => { renderer.create(<Probe />); });
@@ -115,4 +116,80 @@ it('배선 — TagPickerSheet·온보딩 약관 시트: 제스처 영역 = 핸�
   expect(coBlock).not.toMatch(/FlatList|ScrollView/);
   const obBlock = /<GestureDetector gesture=\{swipe\.gesture\}>([^]*?)<\/GestureDetector>/.exec(ob)![1];
   expect(obBlock).not.toMatch(/FlatList|ScrollView/);
+});
+
+it('KB-553 animateIn: open 시 화면 아래에서 ease-out 240ms 직선 등장(스프링 0) — 기본(false)은 0 리셋만(선례 시트 무변)', () => {
+  const { withTiming, withSpring } = require('react-native-reanimated') as { withTiming: jest.Mock; withSpring: jest.Mock };
+  withTiming.mockClear(); withSpring.mockClear();
+  mount(jest.fn());
+  expect(withTiming).not.toHaveBeenCalled();
+  mount(jest.fn(), true, { animateIn: true });
+  expect(withSpring).not.toHaveBeenCalled(); // "둥" 뜨는 스프링 등장 금지
+  expect(withTiming).toHaveBeenCalledTimes(1);
+  expect(withTiming.mock.calls[0][0]).toBe(0);
+  expect(withTiming.mock.calls[0][1]).toMatchObject({ duration: 240 });
+});
+
+it('KB-553 dismiss(onDone): 외부 닫힘 = 슬라이드 다운(180ms) 후 onDone · 드래그로 이미 내려간 뒤 호출 = 애니메이션 없이 즉시 onDone', () => {
+  const { withTiming } = require('react-native-reanimated') as { withTiming: jest.Mock };
+  withTiming.mockClear();
+  const onClose = jest.fn();
+  const { swipe } = mount(onClose);
+  const onDone = jest.fn();
+  swipe.dismiss(onDone);
+  expect(withTiming).toHaveBeenCalledTimes(1);
+  expect(withTiming.mock.calls[0][1]).toEqual({ duration: 180 });
+  expect(onDone).toHaveBeenCalledTimes(1);
+  expect(onClose).not.toHaveBeenCalled(); // 외부 경로는 onClose 대신 onDone만
+
+  withTiming.mockClear();
+  const onClose2 = jest.fn();
+  const m2 = mount(onClose2);
+  m2.handlers.onFinalize?.({ translationY: 120, velocityY: 0 }, true); // 드래그 닫힘 → onClose 1회
+  expect(onClose2).toHaveBeenCalledTimes(1);
+  const onDone2 = jest.fn();
+  m2.swipe.dismiss(onDone2);
+  expect(withTiming).toHaveBeenCalledTimes(1); // 추가 애니메이션 0
+  expect(onDone2).toHaveBeenCalledTimes(1);
+  m2.swipe.dismiss(); // 내부 기본(onClose) 재호출은 무동작 — 단일 발사 유지
+  expect(onClose2).toHaveBeenCalledTimes(1);
+});
+
+it('Codex #150: 퇴장 진행 중 외부 dismiss = 완료 시 함께 1회(즉시 X) · 완료 뒤 = 즉시 · 취소(finished=false) = 미호출', () => {
+  const { withTiming } = require('react-native-reanimated') as { withTiming: jest.Mock };
+  let cb: ((f: boolean) => void) | undefined;
+  withTiming.mockImplementationOnce((v: unknown, _c?: unknown, c?: (f: boolean) => void) => { cb = c; return v; }); // 지연 완료
+  const onClose = jest.fn();
+  const { handlers, swipe } = mount(onClose);
+  handlers.onFinalize?.({ translationY: 120, velocityY: 0 }, true); // 드래그 퇴장 시작(진행 중)
+  expect(onClose).not.toHaveBeenCalled();
+  const a = jest.fn(); const b = jest.fn();
+  swipe.dismiss(a); // 진행 중 백버튼/스크림 → 즉시 X
+  swipe.dismiss(b);
+  expect(a).not.toHaveBeenCalled();
+  expect(b).not.toHaveBeenCalled();
+  handlers.onUpdate?.({ translationY: 10, velocityY: 0 }); // closing 중 드래그 무시(추종 X) — 예외 없음
+  cb!(true); // 애니메이션 완료
+  expect(onClose).toHaveBeenCalledTimes(1);
+  expect(a).toHaveBeenCalledTimes(1);
+  expect(b).toHaveBeenCalledTimes(1);
+  const c = jest.fn();
+  swipe.dismiss(c); // 완료 뒤 = 즉시
+  expect(c).toHaveBeenCalledTimes(1);
+  expect(a).toHaveBeenCalledTimes(1); // 중복 0
+
+  // 취소: 재오픈 등으로 애니메이션이 끊기면(finished=false) 완료 콜백 미호출 — 재오픈 effect가 상태를 리셋한다
+  withTiming.mockImplementationOnce((v: unknown, _c?: unknown, c2?: (f: boolean) => void) => { cb = c2; return v; });
+  const onClose2 = jest.fn();
+  const m2 = mount(onClose2);
+  const d = jest.fn();
+  m2.swipe.dismiss(d);
+  cb!(false);
+  expect(d).not.toHaveBeenCalled();
+});
+
+it('Codex #150 P2: 등장 effect는 open 전환에만 반응 — winH(회전)는 deps 밖(소스 잠금)', () => {
+  const src = require('fs').readFileSync('src/components/useSheetSwipeDismiss.ts', 'utf8') as string;
+  expect(src).toMatch(/\}, \[open, ty, animateIn\]\);/);
+  expect(src).toContain('winHRef.current');
 });

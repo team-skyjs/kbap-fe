@@ -17,9 +17,11 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
 import { ActionSheet, DESTRUCTIVE } from '@/components/ActionSheet';
 import { Btn, Flag, IconCheck, IconEdit, IconProfile, IconReport, IconTrash, IconUserX, Input } from '@/components';
+import { showTopToast } from '@/components/topToastStore';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { TopToastHost } from '@/components/TopToast';
 import { useBlockUser, useSubmitReport } from '@/lib/community/hooks';
 import { useIsGuest } from '@/lib/auth/useSession';
-import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { FLAGS } from '@/lib/flags';
 import type { CommunityAuthor, ReportReason, ReportTarget } from '@/lib/community/types';
 import { authorName } from './parts';
@@ -57,11 +59,10 @@ export function ModerationFlow({
 }) {
   const { t } = useTranslation();
   const isGuest = useIsGuest(); // P-281: 게스트 = 차단 숨김·신고 게이트(호출처 5곳 무변)
-  const [gateOpen, setGateOpen] = React.useState(false);
   const [phase, setPhase] = React.useState<'menu' | 'report' | 'blockConfirm' | 'blocking'>('menu');
-  const [reason, setReason] = React.useState<ReportReason | null>(null);
-  const [note, setNote] = React.useState('');
   const [reported, setReported] = React.useState(false);
+  const targetRef = React.useRef(target); // 늦은 뮤테이션 콜백이 현재 대상과 같은지 대조용
+  targetRef.current = target;
   const submitReport = useSubmitReport();
   const blockUser = useBlockUser();
 
@@ -82,10 +83,7 @@ export function ModerationFlow({
   // 대상이 바뀔 때 플로우 리셋
   React.useEffect(() => {
     setPhase('menu');
-    setReason(null);
-    setNote('');
     setReported(false);
-    setGateOpen(false);
   }, [target?.type, target?.id]);
 
   if (!target) return null;
@@ -96,11 +94,20 @@ export function ModerationFlow({
     onClose();
   };
 
-  const doReport = () => {
-    // P-173: reported 전환 전 같은-틱 더블탭 = 이중 신고 — 동기 가드
-    if (!reason || reported || submitReport.isPending) return;
-    submitReport.mutate({ target: target.type, id: target.id, reason, note: reason === 'other' && note.trim() ? note.trim() : null });
-    setReported(true); // 적재만 — 확인 상태로 전환 (즉시 숨김 없음)
+  // 제출 자체는 부모가 알고, **가드·사유 입력은 대상별 시트가 갖는다**(아래 ReportSheet).
+  const doReport = async (reason: ReportReason, note: string) => {
+    // Codex #161 P2: 응답이 늦는 사이 다른 대상으로 넘어가면 콜백이 **그 대상**의 시트를
+    // 완료로 바꿔 버린다(신고한 적 없는데 Thanks) — 제출 시점 대상을 묶어 두고 대조한다.
+    const submittedFor = `${target.type}:${target.id}`;
+    const isSameTarget = () => submittedFor === `${targetRef.current?.type}:${targetRef.current?.id}`;
+    try {
+      await submitReport.mutateAsync({ target: target.type, id: target.id, reason, note: note || null });
+      // P-387(KB-460): **응답 성공 후에만** 완료 화면 — 실패했는데 "접수됐다"고 말하지 않는다.
+      if (isSameTarget()) setReported(true);
+    } catch {
+      // 실패 = 사유·메모를 그대로 두고 재시도(reported 유지 false) + 모달 안 토스트
+      if (isSameTarget()) showTopToast(t('community.reportFailed'), { error: true });
+    }
   };
 
   const doBlock = async () => {
@@ -124,19 +131,6 @@ export function ModerationFlow({
 
   /* ---- ① ⋯ 메뉴 (공용 ActionSheet) ---- */
   if (phase === 'menu') {
-    // P-281: 게스트 Report 게이트 — ⋯ 시트는 닫고 게이트만(시트 위 시트 금지)
-    if (gateOpen) {
-      return (
-        <AuthGateSheet
-          context="report"
-          open
-          onClose={() => {
-            setGateOpen(false);
-            onClose();
-          }}
-        />
-      );
-    }
     const KIND_MINE = { post: 'community.yourPost', comment: 'community.yourComment', review: 'community.yourReview' } as const;
     const KIND_BY = { post: 'community.postBy', comment: 'community.commentBy', review: 'community.reviewBy' } as const;
     const title = target.mine ? t(KIND_MINE[target.type]) : t(KIND_BY[target.type], { name });
@@ -163,10 +157,10 @@ export function ModerationFlow({
                 // P-142: 커뮤니티 신고 = 플래그 off(/reports targetType이 REVIEW뿐) — 리뷰 타깃만 노출
                 // P-190: keepOpen — 조기 onClose(setMod null = 플로우 언마운트)가 페이즈
                 // 전환을 죽이던 반려 버그(Q-40①②) 수정. 전환 렌더가 시트를 대체한다.
-                // P-281: 게스트 Report = 사유 시트 대신 로그인 게이트(서버 /reports 회원 전용 —
-                // 가짜 Thanks 방지). keepOpen — 게이트 렌더가 시트를 대체한다.
+                // P-387(KB-460): 게스트도 회원과 같은 신고 시트 — 서버 /reports가 인증 선택으로
+                // 바뀌었다(BE #249·#250, X-Installation-Id 헤더로 식별). P-281 로그인 게이트는 폐기.
                 ...(target.type === 'review' || FLAGS.communityReportEnabled
-                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => (isGuest ? setGateOpen(true) : setPhase('report')) }]
+                  ? [{ key: 'report', label: t('community.report'), icon: <IconReport size={17} color={C.ink} />, keepOpen: true, onPress: () => setPhase('report') }]
                   : []),
                 // P-281: 게스트 = 차단 항목 자체 미노출(예진 지시 — /members/me/blocks 회원 전용)
                 // P-339 ②: 탈퇴 리뷰(작성자 부재)·신고 전용 표면(홈)도 차단 미노출
@@ -205,29 +199,11 @@ export function ModerationFlow({
                 </Btn>
               </View>
             ) : (
-              <View style={{ gap: 12 }}>
-                <Text style={styles.title}>{t('community.reportTitle')}</Text>
-                {REASONS.map((r) => (
-                  <Pressable key={r} style={styles.reasonRow} onPress={() => setReason(r)}>
-                    <View style={[styles.radio, reason === r && styles.radioOn]}>{reason === r && <View style={styles.radioDot} />}</View>
-                    <Text style={styles.reasonText}>{t(`community.reason.${r}`)}</Text>
-                  </Pressable>
-                ))}
-                {reason === 'other' && (
-                  <Input
-                    value={note}
-                    onChangeText={(v) => setNote(v.slice(0, NOTE_MAX))}
-                    placeholder={t('community.reasonOtherPlaceholder')}
-                    placeholderTextColor={C.ink3}
-                    multiline
-                    style={styles.noteInput}
-                    textAlignVertical="top"
-                  />
-                )}
-                <Btn variant={reason ? 'primary' : 'off'} onPress={reason ? doReport : undefined}>
-                  {t('community.reportSubmit')}
-                </Btn>
-              </View>
+              /* Codex #161 3R: 제출 가드를 **대상별**로. 전역 가드였을 때는 호출처가 같은
+                 ModerationFlow를 유지한 채 target만 바꾸므로, A의 응답이 끝날 때까지 B의
+                 신고가 스피너에 묶였다. 가드가 이 자식에 살면 대상 전환(phase 리셋)에서
+                 함께 사라진다 — key는 시트가 마운트된 채 대상만 바뀌는 변형까지 막는 보험. */
+              <ReportSheet key={`${target.type}:${target.id}`} onSubmit={doReport} />
             ))}
 
           {phase === 'blockConfirm' && (
@@ -242,6 +218,10 @@ export function ModerationFlow({
             </View>
           )}
 
+          {/* P-370(KB-533) 문법: 네이티브 Modal은 루트 토스트 호스트 위에 뜬다 —
+              실패 안내가 가려지지 않도록 이 모달 안에도 호스트를 둔다(Codex #161 P2) */}
+          <TopToastHost />
+
           {phase === 'blocking' && (
             /* 텍스트만 ≥2초 — 버튼·스피너 없음 (확정 정책, 시안 스피너 불채택) */
             <View style={{ paddingVertical: 30, alignItems: 'center' }}>
@@ -252,6 +232,48 @@ export function ModerationFlow({
       </Pressable>
       <KeyboardDismissBar modal />
     </Modal>
+  );
+}
+
+/**
+ * ReportSheet — 사유 선택 + 제출. 공용 제출 가드(P-173)를 **이 자식이** 들고 있어서
+ * 대상이 바뀌면 가드도 함께 사라진다. 부모(ModerationFlow)는 호출처에서 계속 마운트된
+ * 채 target만 바뀌므로, 가드를 부모에 두면 A의 응답이 B의 제출을 막는다(Codex #161 3R).
+ */
+function ReportSheet({ onSubmit }: { onSubmit: (reason: ReportReason, note: string) => Promise<void> }) {
+  const { t } = useTranslation();
+  const [reason, setReason] = React.useState<ReportReason | null>(null);
+  const [note, setNote] = React.useState('');
+  const guard = useSubmitGuard(); // 동기 ref + busy — 같은 대상 더블탭 1건만
+  return (
+    <View style={{ gap: 12 }}>
+      <Text style={styles.title}>{t('community.reportTitle')}</Text>
+      {REASONS.map((r) => (
+        <Pressable key={r} style={styles.reasonRow} onPress={() => setReason(r)} testID={`report-reason-${r}`}>
+          <View style={[styles.radio, reason === r && styles.radioOn]}>{reason === r && <View style={styles.radioDot} />}</View>
+          <Text style={styles.reasonText}>{t(`community.reason.${r}`)}</Text>
+        </Pressable>
+      ))}
+      {reason === 'other' && (
+        <Input
+          value={note}
+          onChangeText={(v) => setNote(v.slice(0, NOTE_MAX))}
+          placeholder={t('community.reasonOtherPlaceholder')}
+          placeholderTextColor={C.ink3}
+          multiline
+          style={styles.noteInput}
+          textAlignVertical="top"
+        />
+      )}
+      <Btn
+        variant={reason ? 'primary' : 'off'}
+        onPress={reason ? () => void guard.run(() => onSubmit(reason, reason === 'other' ? note.trim() : '')) : undefined}
+        busy={guard.busy}
+        testID="report-submit"
+      >
+        {t('community.reportSubmit')}
+      </Btn>
+    </View>
   );
 }
 

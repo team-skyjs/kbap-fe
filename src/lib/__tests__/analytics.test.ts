@@ -109,6 +109,31 @@ it('P-144: CSV 이벤트·속성 스키마 1:1 — 신규 7종 + 확장 2종', (
   expect(a.sanitize(a.EVENTS.food_detail_view, { source: 'scan', food_id: '7' })).toEqual({ source: 'scan', food_id: '7' });
 });
 
+/* ---- P-389(KB-576): 가입 경로·user_type — CSV 두 행과 1:1 ---- */
+
+it('P-389: auth_login_success = provider·is_new·entry · app_tab_view = tab·user_type (그 외 드롭)', () => {
+  const a = loadAnalytics('test-key');
+  expect(a.sanitize(a.EVENTS.auth_login_success, { provider: 'GOOGLE', is_new: true, entry: 'gate_review' }))
+    .toEqual({ provider: 'GOOGLE', is_new: true, entry: 'gate_review' });
+  expect(a.sanitize(a.EVENTS.app_tab_view, { tab: 'home', user_type: 'guest' })).toEqual({ tab: 'home', user_type: 'guest' });
+  // 화이트리스트 밖(식별자·경로 등)은 계속 드롭돼야 한다
+  expect(a.sanitize(a.EVENTS.auth_login_success, { provider: 'APPLE', email: 'a@b.c', return_to: '/food/7' }))
+    .toEqual({ provider: 'APPLE' });
+});
+
+it('P-389: entry 값 열거 = CSV 전사본과 1:1 (스키마 밖 값·부재는 other)', () => {
+  // ⚠️ CSV는 **spec 레포**에 있다 — 파일을 직접 읽으면 FE만 체크아웃하는 CI에서 ENOENT로
+  // 전 PR이 깨진다(Codex #165 P1). P-144 전사 잠금과 같은 방식으로 값을 여기 옮겨 적는다:
+  // amplitude-taxonomy.csv `auth_login_success.entry` 열과 이 배열이 **함께 움직여야** 한다.
+  const CSV_ENTRY_VALUES = ['intro', 'gate_bookmark', 'gate_review', 'gate_scan', 'gate_community', 'gate_risk', 'gate_profile', 'profile', 'other'];
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { parseLoginEntry, LOGIN_ENTRIES } = require('@/lib/auth/loginEntry') as typeof import('@/lib/auth/loginEntry');
+  expect([...LOGIN_ENTRIES]).toEqual(CSV_ENTRY_VALUES);
+  for (const v of CSV_ENTRY_VALUES) expect(parseLoginEntry(v)).toBe(v);
+  expect(parseLoginEntry(undefined)).toBe('other'); // 부재 = 알 수 없음(인트로로 접지 않는다)
+  expect(parseLoginEntry('gate_unknown')).toBe('other'); // 스키마 밖 값이 대시보드로 새지 않는다
+});
+
 it('P-144: user property — 허용 키만 통과(PII 키 드롭) + Identify 경유(익명 유지)', () => {
   const a = loadAnalytics('test-key');
   // sanitize: 재료명·닉네임·이메일 등 허용 밖 키 드롭

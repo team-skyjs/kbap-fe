@@ -104,10 +104,10 @@ export default function SavedScreen() {
           }
           ListHeaderComponent={
             <View style={{ gap: 4 }}>
-              {/* 헤더 메타(pad 8/24 상당) — "2 dishes" 16/600 + "· Newest first" 14/400 */}
+              {/* 헤더 메타(pad 8/24 상당) — "2 dishes" 16/600 + "Newest first" 14/400 (가운뎃점은 P-196 규칙으로 제거) */}
               <View style={styles.meta}>
                 <Text style={styles.metaCount}>{t('saved.count', { count: (list ?? []).length })}</Text>
-                <Text style={styles.metaSub}>· {t('saved.newestFirst')}</Text>
+                <Text style={styles.metaSub}>{t('saved.newestFirst')}</Text>
               </View>
               {/* 위험 칩 필터(@y146) — D-2 홈과 동일 칩·순서 */}
               <View style={styles.chipRow}>

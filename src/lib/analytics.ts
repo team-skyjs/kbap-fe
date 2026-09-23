@@ -22,9 +22,12 @@
  * |                          | upload·network·server)                     |
  * | food_detail_view         | source (scan|list|search|home|other)       |
  * | review_submit            | (props 없음)                                |
- * | auth_login_success            | provider (APPLE|GOOGLE)                    |
+ * | auth_login_success            | provider (APPLE|GOOGLE), is_new (bool),    |
+ * |                              | entry (intro|gate_*|profile|other)         |
  * | auth_guest_enter              | (props 없음)                                |
- * | app_tab_view                 | tab (home|food|reviews|community|profile)  |
+ * | profile_feedback_submit      | has_photos, photo_count                    |
+ * | app_tab_view                 | tab (home|food|reviews|community|profile), |
+ * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
@@ -74,10 +77,20 @@ export const EVENTS = {
   review_translate_toggle: 'review_translate_toggle',
   push_primer_response: 'push_primer_response',
   push_pref_toggle: 'push_pref_toggle',
+  // KB-630: 알림 켜기 흐름 클릭 3종. CSV 등재 예정
+  push_permission: 'push_permission', // OS 팝업 결과·설정 열기
+  push_consent_response: 'push_consent_response', // 광고성 동의 시트 클릭
+  push_settings_tap: 'push_settings_tap', // 알림 설정 화면 보조 클릭(토글은 push_pref_toggle)
   profile_avoid_update: 'profile_avoid_update',
   community_post_submit: 'community_post_submit',
   community_comment_submit: 'community_comment_submit',
   auth_account_delete: 'auth_account_delete',
+  // P-380(KB-518, 5단계): 주문 공유 카드. CSV 등재 예정
+  order_share_view: 'order_share_view',
+  order_share_save: 'order_share_save',
+  order_share_story: 'order_share_story',
+  // P-394(KB-586): 문의 전송. CSV 등재 예정
+  profile_feedback_submit: 'profile_feedback_submit',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -93,7 +106,9 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_complete: ['degraded', 'item_count', 'success', 'fail_reason'], // P-144 확장
   food_detail_view: ['source', 'food_id'], // P-144: food_id 추가(카탈로그 id — PII 아님)
   review_submit: ['has_photos', 'photo_count', 'rating'], // P-144 확장
-  auth_login_success: ['provider'],
+  // P-389(KB-576): is_new = 서버 newMember(가입/재로그인 구분) · entry = 가입 유입 경로.
+  // 실패·취소는 종전대로 미전송이라 전환율 분모는 auth_gate_view가 유지한다.
+  auth_login_success: ['provider', 'is_new', 'entry'],
   auth_guest_enter: [],
   app_opened: [],
   scan_start: ['source'],
@@ -104,7 +119,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   search_query: ['keyword', 'result_count', 'matched', 'len_bucket'],
   review_write_tap: ['source'],
   food_bookmark_toggle: ['on'],
-  app_tab_view: ['tab'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
+  // P-389(KB-576): user_type = BE 토큰 유무(guest|registered) — 탭별 회원/게스트 분해용.
+  app_tab_view: ['tab', 'user_type'], // home|food|reviews|community|profile — KB-429: community 슬롯 → reviews 교체(community 값은 구버전 이벤트 호환용 잔존)
   auth_gate_view: ['trigger'], // bookmark|review|scan|community|risk|profile
   // P-214 — ⛔ 전송 금지(발주 고정): 장소명·주소·좌표 / 신고 note / 대상 memberId·닉네임 /
   // 본문·사진 URI / 프리셋 항목명. 아래 키 밖은 어댑터가 드롭(화이트리스트가 방어선).
@@ -118,10 +134,20 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   review_translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
+  // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
+  push_permission: ['state'], // grant|deny|settings_open
+  push_consent_response: ['action', 'target'], // action: check|uncheck|full_text|blocked|later · target: privacy|receive(check·uncheck·full_text만)
+  push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
   community_post_submit: ['photo_count', 'food_tag_count', 'has_place'], // 장소명 금지 — boolean만
   community_comment_submit: ['is_reply'],
   auth_account_delete: [],
+  // P-380 🔒: 속성은 **음식 개수·장소 유무**까지만(발주 고정) — 가게명·주소·좌표·사진 URI 금지.
+  order_share_view: ['item_count', 'has_place'],
+  order_share_save: ['result', 'item_count', 'has_place'], // result: tap|success|denied|error
+  order_share_story: ['result', 'item_count', 'has_place'], // result: tap|success|not_installed|error
+  // P-394 🔒: 본문·기기정보·사진 URI 금지 — 사진 유무·개수만(발주 고정).
+  profile_feedback_submit: ['has_photos', 'photo_count'],
 };
 
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정

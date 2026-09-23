@@ -116,15 +116,15 @@ describe('④ Tag a food 시트 첫 렌더', () => {
     expect(cp).toContain('testID="picker-skeleton"');
     expect(cp).toContain("skelThumb: { width: 48, height: 48, borderRadius: 24 }");
     // 구역 분기·본문 목록·자격 블록 전부 scanPending 게이트 뒤
-    expect(cp).toContain('{!(scanPending && isBrowse) && isBrowse && (kind !== ');
+    expect(cp).toContain('{!(scanPending && isBrowse) && isBrowse && (');
     expect(cp).toContain("{!(scanPending && isBrowse) && (kind === 'food'");
-    expect(cp).toContain("{!scanPending && kind === 'food' && isBrowse && eligible && (");
+    // P-392(KB-584): 자격 블록 → 전체 음식 구역(선택 가능)으로 대체 — 게이트는 그대로 scanPending 뒤
+    expect(cp).toContain("{!scanPending && kind === 'food' && isBrowse && reviewInitial && (");
   });
 
-  it('판정 후 분기 현행 — 0건 = 안내+CTA(eligNote 메인), n건 = RECENTLY SCANNED 헤더', () => {
-    // 소스 구조 잠금: eligNote(배너)는 eligible 블록 안·스켈레톤 게이트 뒤에만
-    expect(cp).toContain("t(kind === 'food' ? (eligible || reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')");
-    expect(cp).toContain("<Text style={styles.eligNoteText}>{t('community.reviewEligibleNote')}</Text>");
+  it('판정 후 분기 — 스캔분 있으면 RECENTLY SCANNED, 없으면 인기(P-392: 자격 안내 폐기)', () => {
+    expect(cp).toContain("t(kind === 'food' ? (reviewInitial ? 'community.sectionRecentlyScanned' : 'community.sectionPopular') : 'community.sectionRecent')");
+    expect(cp).not.toContain('reviewEligibleNote'); // 자격 안내 배너 소멸
   });
 });
 

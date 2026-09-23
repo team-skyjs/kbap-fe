@@ -1,0 +1,7 @@
+{
+  "NSCameraUsageDescription": "K-Bap 使用相机扫描菜单、拍摄评价照片和设置头像。",
+  "NSPhotoLibraryUsageDescription": "K-Bap 访问照片，用于扫描已保存的菜单、为评价和帖子添加照片、设置头像或在反馈中附上照片。",
+  "NSPhotoLibraryAddUsageDescription": "将你的 K-Bap 故事卡保存到照片库。",
+  "NSLocationWhenInUseUsageDescription": "K-Bap 使用位置信息查找附近餐厅，便于在评价中标记地点并记录你用餐的位置。",
+  "NSMotionUsageDescription": "K-Bap 使用运动传感器，在你扫描菜单时判断手机是否横过来了。"
+}

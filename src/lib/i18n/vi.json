@@ -55,9 +55,7 @@
     "profileSub": "Đăng ký để lưu những thứ bạn tránh, theo dõi lịch sử quét và xây dựng thứ hạng của bạn.",
     "saveTitle": "Lưu những món bạn muốn thử",
     "saveSub": "Đăng ký để đánh dấu món ăn và tạo danh sách món an toàn của riêng bạn.",
-    "keepBrowsing": "Tiếp tục xem",
-    "reportTitle": "Giúp giữ độ tin cậy cho đánh giá",
-    "reportSub": "Đăng ký để báo cáo đánh giá và chúng tôi sẽ xem xét."
+    "keepBrowsing": "Tiếp tục xem"
   },
   "lock": {
     "verdictTitle": "Mức đánh giá an toàn dành riêng cho bạn",
@@ -213,9 +211,8 @@
     "lockedBody": "Chia sẻ mẹo và khám phá với du khách khác — sắp ra mắt.",
     "sectionRecentlyScanned": "QUÉT GẦN ĐÂY",
     "searchAllFoods": "Tìm trong tất cả món",
-    "reviewEligibleNote": "Bạn chỉ có thể đánh giá món ăn mà bạn đã quét.",
-    "goScanCta": "Quét ngay",
-    "sectionAllFoods": "Tất cả món ăn"
+    "sectionAllFoods": "Tất cả món ăn",
+    "reportFailed": "Không gửi được báo cáo. Hãy thử lại."
   },
   "risk": {
     "safe": "An toàn",
@@ -388,6 +385,7 @@
     "addPhoto": "Thêm ảnh",
     "removePhoto": "Xóa ảnh",
     "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại.",
+    "foodHidden": "Hiện không thể đăng đánh giá cho món này. Nội dung bạn viết vẫn còn trên màn hình này.",
     "likesCaption": "Lượt thích không ảnh hưởng thứ tự",
     "placeRow": "Bạn đã ăn ở đâu?",
     "placeSheetTitle": "Gắn thẻ địa điểm",
@@ -554,7 +552,8 @@
     "readAll": "Xem tất cả",
     "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!",
     "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
-    "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn."
+    "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
+    "foodHidden": "Hiện không thể xem thông tin món này."
   },
   "states": {
     "catalogTitle": "Trạng thái",
@@ -612,7 +611,9 @@
     "recentEmpty": "Chưa có lượt quét gần đây",
     "safeForYou": "Món Safe theo hồ sơ của bạn",
     "safeForYouSub": "Dựa trên danh sách cần tránh của bạn — luôn xác nhận với chủ quán.",
-    "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác."
+    "railFilterEmpty": "Chưa có món {{risk}} trong danh sách này. Hãy thử bộ lọc khác.",
+    "mostReviewed": "Được đánh giá nhiều nhất",
+    "mostReviewedSub": "Món mọi người đang nói tới."
   },
   "onboarding": {
     "welcomeTag": "Biết món nào an toàn để ăn — trước khi bạn gọi món.",
@@ -718,7 +719,8 @@
       "groupAllergy": "Nhóm dị ứng",
       "apply": "Áp dụng vào danh sách"
     },
-    "countryLabel": "Quốc gia"
+    "countryLabel": "Quốc gia",
+    "popularCountries": "Phổ biến"
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",
@@ -880,6 +882,7 @@
   },
   "saved": {
     "error": "Không thể cập nhật danh sách đã lưu. Vui lòng thử lại.",
+    "foodHidden": "Hiện không thể lưu món này.",
     "title": "Đã lưu",
     "count_other": "{{count}} món",
     "newestFirst": "Mới nhất trước",
@@ -916,6 +919,8 @@
     "gallery": "Chọn từ thư viện",
     "permTitle": "Cần quyền truy cập máy ảnh",
     "permBody": "Hãy cho phép truy cập máy ảnh trong Cài đặt để chụp ảnh.",
+    "libraryPermTitle": "Cần quyền truy cập ảnh",
+    "libraryPermBody": "Quyền truy cập ảnh đang tắt. Hãy cho phép trong Cài đặt.",
     "openSettings": "Mở Cài đặt"
   },
   "versionGate": {
@@ -944,42 +949,45 @@
     "caption": "Chỉ hiện một lần — chạm vào dấu bất kỳ để xem lại."
   },
   "push": {
-    "primerTitle": "Nhận thông báo hữu ích?",
-    "primerBody": "Chúng tôi sẽ báo khi có người thấy đánh giá của bạn hữu ích, và nhắc bạn đánh giá món đã ăn. Có thể thay đổi bất cứ lúc nào trong cài đặt.",
+    "primerTitle": "Nhận nhắc viết đánh giá?",
+    "primerBody": "Sau 1 giờ, chúng tôi sẽ nhắc bạn đánh giá thực đơn vừa quét.",
     "primerYes": "Bật thông báo",
     "primerLater": "Để sau",
+    "consentSheetTitle": "Nhận tin từ K-Bap?",
+    "consentSheetBody": "Gửi tin về sự kiện và tính năng mới dưới dạng thông báo quảng cáo.",
+    "privacyConsent": "Đồng ý thu thập và sử dụng thông tin cá nhân cho tiếp thị (tùy chọn)",
+    "receiveConsent": "Đồng ý nhận thông tin quảng cáo (tùy chọn)",
+    "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
+    "consentConfirm": "Đồng ý và bật thông báo",
     "reviewReminderTitle": "Bữa ăn thế nào?",
     "reviewReminderBody": "Cho chúng tôi biết {{name}} thế nào — một đánh giá nhanh sẽ giúp các du khách khác."
   },
   "notif": {
     "title": "Cài đặt thông báo",
-    "helpful": "Phản hồi đánh giá",
-    "helpfulSub": "Khi có người thấy đánh giá của bạn hữu ích",
-    "reminder": "Nhắc viết đánh giá",
-    "reminderSub": "Hỏi cảm nhận sau khi gọi món 1 tiếng",
-    "nudge": "Gợi ý quét menu",
-    "nudgeSub": "Thỉnh thoảng nhắc quét menu vào giờ ăn trưa",
-    "osOff": "Thông báo của K-Bap đang tắt trong cài đặt hệ thống.",
-    "osOffCta": "Mở cài đặt hệ thống",
-    "marketing": "Thông báo tiếp thị",
-    "marketingSub": "Nhận tin sự kiện và gợi ý qua thông báo.",
-    "night": "Thông báo ban đêm",
-    "nightSub": "Nhận cả trong khoảng 21h–8h sáng.",
-    "saveFailed": "Không lưu được. Vui lòng thử lại."
+    "activityGroup": "Hoạt động của tôi",
+    "activity": "Thông báo hoạt động",
+    "activitySub": "Phản hồi đánh giá / nhắc viết đánh giá sau bữa ăn",
+    "newsGroup": "Tin từ K-Bap",
+    "news": "Thông báo tin tức",
+    "newsSub": "Sự kiện và tính năng mới (quảng cáo)",
+    "mealTime": "Nhắc giờ ăn",
+    "mealTimeSub": "Gợi ý quét thực đơn bữa trưa và tối (quảng cáo)",
+    "consentStatus": "Đã đồng ý nhận quảng cáo {{date}} (v{{version}})",
+    "viewFull": "Xem toàn văn",
+    "readFailed": "Không tải được. Chạm để thử lại",
+    "osOff": "Thông báo đang tắt trong cài đặt thiết bị.",
+    "osOffCta": "Mở cài đặt thiết bị",
+    "osAsk": "Bật thông báo để nhận phản hồi đánh giá và tin tức.",
+    "osAskCta": "Bật thông báo",
+    "saveFailed": "Không lưu được. Vui lòng thử lại.",
+    "offConfirmTitle": "Tắt thông báo?",
+    "offConfirmBody": "Bạn có thể bỏ lỡ thông tin hữu ích và sự kiện.",
+    "offConfirmCta": "Tắt"
   },
   "inbox": {
     "title": "Thông báo",
     "empty": "Chưa có thông báo",
     "emptyBody": "Tin tức về đánh giá và lượt quét sẽ hiện ở đây.",
-    "markAllRead": "Đánh dấu tất cả đã đọc",
-    "helpfulTitle": "Đánh giá của bạn hữu ích",
-    "helpfulBody": "Đánh giá món canh kimchi của bạn nhận được một lượt hữu ích.",
-    "reminderTitle": "Bữa ăn thế nào?",
-    "reminderBody": "Hãy viết nhanh một đánh giá cho món bạn đã gọi.",
-    "noticeTitle": "Chào mừng đến với K-Bap",
-    "noticeBody": "Quét thực đơn để biết món nào an toàn cho bạn.",
-    "nudgeTitle": "Hôm nay ăn ngoài chứ?",
-    "nudgeBody": "Hãy quét thực đơn trước khi gọi món.",
     "newBadge": "NEW"
   },
   "myFoods": {
@@ -996,6 +1004,39 @@
     "dishes": "Món ăn",
     "receiptDate": "NGÀY",
     "receiptLocation": "ĐỊA ĐIỂM",
-    "receiptTotal": "TỔNG"
+    "receiptTotal": "TỔNG",
+    "shareMenuMore": "+{{count}} món nữa",
+    "sharePreviewCaption": "Xem trước thẻ story 9:16",
+    "shareDownload": "Lưu\nảnh",
+    "shareDownloadInline": "Lưu ảnh",
+    "shareInstagram": "Story\nInstagram",
+    "sharePhotoDenied": "Cho phép truy cập ảnh để lưu thẻ story.",
+    "shareSaved": "Đã lưu vào ảnh của bạn.",
+    "shareNoInstagram": "Điện thoại này chưa cài Instagram.",
+    "shareFailed": "Không tạo được thẻ story. Hãy thử lại.",
+    "shareStoryHint": "Lưu ảnh rồi chia sẻ trên Instagram.",
+    "sharePhotosFailed": "Không tải được ảnh. Chạm để thử lại.",
+    "itemPhotoTitle": "Ảnh món ăn",
+    "itemPhotoDefault": "Dùng ảnh mặc định",
+    "editFailed": "Không lưu được thay đổi. Hãy thử lại.",
+    "editPhotoNotReady": "Ảnh chưa tải lên xong. Hãy thử lại.",
+    "editNotFound": "Không tìm thấy đơn này. Hãy làm mới rồi thử lại."
+  },
+  "feedback": {
+    "title": "Liên hệ",
+    "newInquiry": "Mới",
+    "newTitle": "Liên hệ mới",
+    "placeholder": "Hãy cho chúng tôi biết chuyện gì đã xảy ra, hoặc điều bạn mong muốn. Có thể kèm ảnh.",
+    "send": "Gửi",
+    "sent": "Cảm ơn bạn — chúng tôi đã nhận được.",
+    "sendFailed": "Không gửi được. Vui lòng thử lại.",
+    "rateLimited": "Bạn đã gửi khá nhiều trong 24 giờ qua. Vui lòng thử lại sau.",
+    "statusOpen": "Đang chờ",
+    "statusAnswered": "Đã trả lời",
+    "statusClosed": "Đã đóng",
+    "emptyTitle": "Chưa có liên hệ nào",
+    "replyCount_other": "{{count}} trả lời",
+    "notFound": "Không tìm thấy liên hệ này.",
+    "teamName": "Đội ngũ K-Bap"
   }
 }

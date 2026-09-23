@@ -5,11 +5,15 @@
 import * as fs from 'fs';
 
 it('시트 3종 — IconClose 잔존 0 + 배경 탭(backdrop onPress=onClose) 유지', () => {
-  for (const p of ['src/components/AuthGateSheet.tsx', 'src/components/ActionSheet.tsx', 'src/features/community/placeMap.tsx']) {
+  // P-409: PlaceTagSheet의 셸이 components/SheetShell로 공용화됐다 — 배경 탭 닫힘은 셸에서, X 부재는 양쪽에서 본다
+  for (const p of ['src/components/AuthGateSheet.tsx', 'src/components/ActionSheet.tsx', 'src/components/SheetShell.tsx']) {
     const s = fs.readFileSync(p, 'utf8');
     expect(s).not.toContain('IconClose');
     expect(s).toMatch(/backdrop\} onPress=\{onClose\}|styles\.backdrop\} onPress=\{onClose\}/);
   }
+  const place = fs.readFileSync('src/features/community/placeMap.tsx', 'utf8');
+  expect(place).not.toContain('IconClose');
+  expect(place).toContain("import { SheetShell } from '@/components/SheetShell'"); // 셸 경유 = 배경 탭 닫힘 승계
 });
 
 it('화면 헤더·뷰어·입력 클리어 X = 유지(제거 아님) — 스캔 카메라·owner·사진 뷰어', () => {

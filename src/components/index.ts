@@ -13,6 +13,8 @@ export { TopBar } from './TopBar';
 export { EmptyBlock, QueryErrorBlock, classifyQueryError, ScreenCenterFill } from './StateBlock'; // P-359: 구 StateBlock·stateIconColor 폐기
 export { SkeletonList, SkeletonHome, SkeletonFoodGrid, SkeletonProfile, Shimmer } from './Skeleton';
 export { CardPhoto } from './CardPhoto';
+export { NewBadge } from './NewBadge';
+export { ExpandToggle, EXPAND_TOGGLE_MIN_H } from './ExpandToggle';
 export { PressScale } from './PressScale';
 export { Spinner } from './Spinner';
 export { ActionSheet, DESTRUCTIVE, type ActionSheetItem } from './ActionSheet';

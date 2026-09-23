@@ -41,15 +41,14 @@ import {
   IconLock,
   IconSearch,
   Input,
-  RiskMark,
-} from '@/components';
+  RiskMark, IconArrowLeft } from '@/components';
 import { PepperOn, PepperOff } from '@/components/design4Assets';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
 import { useShake } from '@/lib/useShake';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
-import { COUNTRIES, countryByCode, deviceCountry, type Country } from '@/lib/onboarding/countries';
+import { COUNTRIES, POPULAR_COUNTRIES, countryByCode, deviceCountry, type Country } from '@/lib/onboarding/countries';
 import { POPULAR_DISHES, restrictionLabel } from '@/lib/onboarding/data';
 import { isSpiceLevel, SPICE_LEVEL_EXAMPLE, SPICE_LEVEL_LABEL, spiceRank, type SpiceLevel } from '@/lib/spice';
 import { wireToSpiceLevel } from '@/lib/api/spiceAdapter';
@@ -68,8 +67,6 @@ import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { queryClient } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
-import { PushPrimerModal } from '@/features/push/PushPrimerModal';
-import { getPrimerResult } from '@/lib/push/pushAdapter';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
@@ -123,7 +120,6 @@ export default function Onboarding() {
   const [submitError, setSubmitError] = useState(false); // 제출 실패 — 화면 유지+표시
   const [presets, setPresets] = useState<Set<string>>(new Set()); // P-203: 프리셋 선택(복수 = 합집합)
   const dietPresets = useDietPresets(); // P-208: 서버 매핑 우선·상수 폴백
-  const [pushPrimer, setPushPrimer] = useState(false); // P-192: 회원 진입점 — 제출 성공 직후 1회
   // P-080: 요약 카드에서 행 수정으로 점프한 경우 — 해당 스텝의 계속/스킵이 요약으로 복귀
   const { shakeStyle, shake } = useShake(); // P-032: 제출 에러 진동
   const hydrated = useRef(false);
@@ -229,11 +225,7 @@ export default function Onboarding() {
       // 제출 전 fetch된 홈/프로필 캐시(개인화 빈 값)가 staleTime(60s) 동안
       // 살아남아 "저장 안 된 것처럼" 보이는 버그 방지 — 전부 fresh로.
       queryClient.clear();
-      // P-192: 회원 푸시 프라이머 — 온보딩 마지막(제출 성공 직후) 1회. 이미 응답했으면 직행.
-      if (FLAGS.pushEnabled && (await getPrimerResult()) == null) {
-        setPushPrimer(true);
-        return; // 홈 직행은 모달 onDone에서
-      }
+      // KB-497: 온보딩 직후 푸시 프라이머 제거(UX 리서치 B안) — OS 권한 요청은 첫 스캔 결과 시트 1곳.
       // P-080: SuccessCheck는 요약 카드 진입 연출로 결합(스펙) — 완료 오버레이 없이 직행
       router.replace('/(tabs)');
     } catch (e) {
@@ -340,7 +332,7 @@ export default function Onboarding() {
         <View style={[styles.body, { flex: 1 }]}>
           <View style={styles.miniHeader}>
             <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
-              <IconChevron size={24} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+              <IconArrowLeft size={24} color={C.ink2} />
             </Pressable>
           </View>
           <Nationality selected={nationality} onSelect={setNationality} t={t} />
@@ -356,7 +348,7 @@ export default function Onboarding() {
         {/* P-130: 단계 프로그레스 바 소멸(v3) — 백 버튼만 남긴 미니 헤더 */}
         <View style={styles.miniHeader}>
           <Pressable onPress={back} hitSlop={10} style={styles.miniBack} testID="ob-back">
-            <IconChevron size={24} color={C.ink2} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconArrowLeft size={24} color={C.ink2} />
           </Pressable>
         </View>
 
@@ -448,7 +440,6 @@ export default function Onboarding() {
       />
 
       {/* P-192: 회원 푸시 프라이머 — 제출 성공 직후 1회, 응답 후 홈 직행 */}
-      <PushPrimerModal surface="onboarding" open={pushPrimer} onDone={() => router.replace('/(tabs)')} />
     </View>
   );
 }
@@ -590,11 +581,23 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
     const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, i18n.language));
     const filtered = query
       ? all.filter((c) => c.name.toLowerCase().includes(query) || (c.native ?? '').toLowerCase().includes(query))
-      : all.filter((c) => c.code !== detected); // 핀 카드가 감지국 담당 — 본 리스트 중복 제거
+      : // 핀 카드가 감지국 담당 — 본 리스트 중복 제거. P-395(KB-589): Popular 그룹도 같은 규칙으로
+        // 뺀다. 남겨두면 선택 시 Popular와 A–Z **양쪽이 강조**돼 라디오가 둘 켜져 보인다
+        // (P-154 "강조 1곳"). featured 섹션에 있으면 A–Z에서 빠진다 — 규칙 하나로 통일.
+        // 검색 중에는 이 필터가 아예 안 걸리므로 전 국가가 그대로 찾힌다.
+        all.filter((c) => c.code !== detected && !POPULAR_COUNTRIES.includes(c.code as (typeof POPULAR_COUNTRIES)[number]))
     return filtered;
   }, [query, detected]);
 
-  const Row = (c: Country, pinned: boolean) => {
+  // P-395(KB-589): 상위 10개국 — **상수 배열 순서 그대로**(정렬하지 않는다).
+  // 감지국은 핀 카드가 이미 보여주므로 여기선 뺀다 — 그래서 9개가 될 수 있다.
+  const popular = useMemo(
+    () => POPULAR_COUNTRIES.filter((c) => c !== detected).map(countryByCode).filter((c): c is Country => !!c),
+    [detected],
+  );
+
+  // idPrefix: 같은 나라가 Popular와 A–Z 양쪽에 나오므로 testID가 겹치지 않게 구분한다.
+  const Row = (c: Country, pinned: boolean, idPrefix = '') => {
     const on = c.code === selected;
     return (
       <Pressable
@@ -603,7 +606,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         // 시안: 선택 = primaryTint bg + primary 1px r8 / 비선택 = #EAEBEE 1px
         style={[pinned ? styles.natPinRow : styles.natTile, on && styles.natOn]}
         onPress={() => onSelect(c.code)}
-        testID={`nat-${c.code}`}
+        testID={`nat-${idPrefix}${c.code}`}
       >
         <View style={styles.natFlagSlot}>
           <Text style={styles.natFlag}>{flagEmoji(c.code)}</Text>
@@ -660,6 +663,16 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
             <View style={styles.natNotice}>
               <RiskMark state="caution" size={16} />
               <Text style={styles.natNoticeText}>{t('onboarding.nationalityNotice')}</Text>
+            </View>
+          </>
+        )}
+        {/* P-395(KB-589): 방한 상위 10개국 — 검색 중이면 핀과 함께 숨긴다(기존 규칙) */}
+        {!query && popular.length > 0 && (
+          <>
+            <Text style={styles.natSecText}>{t('onboarding.popularCountries')}</Text>
+            <View style={styles.natGrid} testID="nat-popular-grid">
+              {popular.map((c) => Row(c, false, 'pop-'))}
+              {popular.length % 2 === 1 && <View style={styles.natTilePad} testID="nat-popular-pad" />}
             </View>
           </>
         )}

@@ -3,7 +3,7 @@
  * 분리해 lib(bookmarks 등)이 애니메이션 스택을 끌고 오지 않게 한다(잼 격리 포함).
  */
 /** P-366 ③(KB-529): icon — 'check'(기본) | 'alert'(흰 원 안 느낌표 — 에러 변형 아님). */
-export type ToastMsg = { text: string; error?: boolean; icon?: 'check' | 'alert'; key: number };
+export type ToastMsg = { text: string; error?: boolean; icon?: 'check' | 'alert' | 'info'; key: number };
 
 // P-370(KB-533): 리스너 = 스택 — 네이티브 모달(scan fullScreenModal) 위 화면의
 // 호스트가 마지막에 마운트돼 수신, 언마운트하면 이전(루트) 호스트 자동 복원.
@@ -28,7 +28,7 @@ function remaining(): number | null {
 }
 
 /** 어디서든 호출 — 호스트 미마운트(빈 스택)면 조용히 무시(웹·테스트 안전). */
-export function showTopToast(text: string, opts?: { error?: boolean; icon?: 'check' | 'alert' }) {
+export function showTopToast(text: string, opts?: { error?: boolean; icon?: 'check' | 'alert' | 'info' }) {
   const msg: ToastMsg = { text, error: opts?.error, icon: opts?.icon, key: ++seq };
   lastMsg = { msg, at: Date.now() };
   pendingHandoff = false; // 새 토스트가 보류분을 대체

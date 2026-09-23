@@ -29,7 +29,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
@@ -53,6 +53,7 @@ import { dismissNudge, isNudgeDismissed } from '@/lib/scan/nudgeSession';
 import { personalRisk } from '@/lib/risk';
 import { spring } from '@/lib/motion';
 import { useMe } from '@/lib/data/useMe';
+import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { ScanResultOverlay } from '@/features/scan/ScanResultOverlay';
@@ -176,10 +177,37 @@ export default function Scan() {
   // P-255: 최선 노력 사전 확인 — 004만 즉시 잠금(fail() 미경유 = scan_complete 계측
   // 오염 0 — 스캔 시도가 아니다), 그 외 실패는 무시(최종 판정 = 스캔 단계 분기·시나리오 E).
   const quotaLockRef = useRef(false); // 선발급 잠금 판별 — 타 에러 화면 오복원 방지
+  // P-384(KB-442): 프로필 쿼터(서버 정본)가 이미 소진이면 티켓 응답을 기다리지 않고 즉시 안내.
+  // 티켓 요청은 그대로 보낸다 — 403 SCAN-004 경로 유지 + 프로필이 낡았으면(리뷰로 해금)
+  // 발급 성공이 아래 복원 분기로 카메라를 되돌린다.
+  // 발급 성공으로 반증된 쿼터 객체는 재조회로 바뀌기 전까지 다시 잠그지 않는다(복귀마다 깜빡임 방지).
+  const quotaRef = useRef(me?.scanQuota);
+  quotaRef.current = me?.scanQuota;
+  const disprovenQuota = useRef<unknown>(undefined);
+  // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
+  // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
+  const lockFromProfile = useCallback(() => {
+    const quota = quotaRef.current;
+    if (!canLockQuota() || !isScanQuotaExhausted(quota) || quota === disprovenQuota.current || quotaLockRef.current) return;
+    quotaLockRef.current = true;
+    setError({ stage: 'quota', detail: 'profile scanRemaining 0' });
+    setPhase('error');
+  }, []);
+  // Codex #159 P2: 포커스 유지 중 재조회로 소진이 도착해도(3번째 스캔 성공 → 다시 찍기) 촬영 전에 안내.
+  // 카메라 단계에서만 — 스캔 중·결과 화면은 끊지 않는다.
+  useEffect(() => {
+    if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
+  }, [phase, me?.scanQuota, isGuest, lockFromProfile]);
   const preflight = useCallback(async () => {
     if (!scanV2Enabled()) return;
+    const quota = quotaRef.current;
+    lockFromProfile();
     try {
       preTicket.current = await issueScanTicket();
+      if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (quotaLockRef.current) {
         // 리뷰 작성 후 복귀(시나리오 C) — 해금 반영해 카메라 복원(잠금이었을 때만)
         quotaLockRef.current = false;
@@ -190,6 +218,7 @@ export default function Scan() {
       const code = (e as { code?: string })?.code;
       if (code === 'SCAN-004') {
         preTicket.current = null;
+        if (!canLockQuota()) return;
         quotaLockRef.current = true;
         setError({ stage: 'quota', detail: 'preflight SCAN-004' });
         setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
@@ -202,7 +231,7 @@ export default function Scan() {
         setPhase('error');
       }
     }
-  }, []);
+  }, [lockFromProfile]);
   useFocusEffect(
     useCallback(() => {
       if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입
@@ -611,7 +640,7 @@ export default function Scan() {
         {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.qhBack} testID="result-back">
-            <IconChevron size={24} color={C.ink} style={{ transform: [{ rotate: '180deg' }] }} />
+            <IconArrowLeft size={24} color={C.ink} />
           </Pressable>
           <Text style={styles.qhTitle} numberOfLines={1}>{t('scan.cameraTitle')}</Text>
           {/* P-285(최종본 2200:21514): 재촬영 = camera_restart 24 — P-161 확인 모달 경유 복원 */}

@@ -55,9 +55,7 @@
     "profileSub": "登録すると、避ける食材の保存、スキャン履歴の確認、ランキング作りができます。",
     "saveTitle": "気になる料理を保存しよう",
     "saveSub": "登録すると料理をブックマークして、自分だけの安心リストが作れます。",
-    "keepBrowsing": "このまま見て回る",
-    "reportTitle": "レビューの信頼性を守りましょう",
-    "reportSub": "登録するとレビューを報告でき、私たちが確認します。"
+    "keepBrowsing": "このまま見て回る"
   },
   "lock": {
     "verdictTitle": "あなた専用の安全評価",
@@ -213,9 +211,8 @@
     "lockedBody": "旅行者同士でヒントや発見をシェアする場所 — もうすぐ。",
     "sectionRecentlyScanned": "最近のスキャン",
     "searchAllFoods": "すべての料理から探す",
-    "reviewEligibleNote": "レビューはスキャンした料理にのみ書けます。",
-    "goScanCta": "スキャンする",
-    "sectionAllFoods": "すべての料理"
+    "sectionAllFoods": "すべての料理",
+    "reportFailed": "通報を送信できませんでした。もう一度お試しください。"
   },
   "risk": {
     "safe": "安全",
@@ -388,6 +385,7 @@
     "addPhoto": "写真を追加",
     "removePhoto": "写真を削除",
     "postError": "レビューを保存できませんでした。接続を確認して再試行してください。",
+    "foodHidden": "現在、この料理にはレビューを投稿できません。書いた内容はこの画面にそのまま残っています。",
     "likesCaption": "いいねは並び順に影響しません",
     "placeRow": "どこで食べましたか？",
     "placeSheetTitle": "場所をタグ付け",
@@ -554,7 +552,8 @@
     "readAll": "すべて見る",
     "beFirstReview": "まだレビューがありません — 最初のレビューを！",
     "ingGuestBody": "{{ingredient}}はこの料理の約{{percent}}%のバージョンに使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
-    "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。"
+    "ingGuestBodyNoPct": "{{ingredient}}はこの料理によく使われています。お店によって異なる場合があるので、確実に知りたいときは店主に確認してください。",
+    "foodHidden": "現在、この料理の情報は表示できません。"
   },
   "states": {
     "catalogTitle": "状態",
@@ -612,7 +611,9 @@
     "recentEmpty": "最近のスキャンはありません",
     "safeForYou": "あなた基準のSafeメニュー",
     "safeForYouSub": "回避リストに基づく判定です。お店に必ず確認してください。",
-    "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。"
+    "railFilterEmpty": "このリストには{{risk}}のメニューがまだありません。他のフィルターをお試しください。",
+    "mostReviewed": "レビューが多い料理",
+    "mostReviewedSub": "みんながよく話している一品。"
   },
   "onboarding": {
     "welcomeTag": "注文する前に、食べても安全か分かる。",
@@ -718,7 +719,8 @@
       "groupAllergy": "アレルギーセット",
       "apply": "リストに適用"
     },
-    "countryLabel": "国"
+    "countryLabel": "国",
+    "popularCountries": "人気の国"
   },
   "editProfile": {
     "title": "プロフィール編集",
@@ -880,6 +882,7 @@
   },
   "saved": {
     "error": "保存リストを更新できませんでした。もう一度お試しください。",
+    "foodHidden": "現在、この料理は保存できません。",
     "title": "保存済み",
     "count_other": "{{count}}件の料理",
     "newestFirst": "新しい順",
@@ -916,6 +919,8 @@
     "gallery": "ギャラリーから選択",
     "permTitle": "カメラへのアクセスが必要です",
     "permBody": "写真を撮るには設定でカメラへのアクセスを許可してください。",
+    "libraryPermTitle": "写真へのアクセスが必要です",
+    "libraryPermBody": "写真へのアクセスがオフです。設定で許可してください。",
     "openSettings": "設定を開く"
   },
   "versionGate": {
@@ -944,42 +949,45 @@
     "caption": "一度だけ表示されます — マークをタップすると再表示。"
   },
   "push": {
-    "primerTitle": "お役立ち情報を受け取りますか？",
-    "primerBody": "レビューが役に立ったときにお知らせし、食べた料理のレビューもリマインドします。設定でいつでも変更できます。",
+    "primerTitle": "レビュー通知を受け取りますか？",
+    "primerBody": "スキャンしたメニューのレビュー作成を1時間後にお知らせします。",
     "primerYes": "通知をオンにする",
     "primerLater": "あとで",
+    "consentSheetTitle": "K-Bapのお知らせを受け取りますか？",
+    "consentSheetBody": "イベントや新機能のお知らせを広告通知として送ります。",
+    "privacyConsent": "マーケティング目的の個人情報収集/利用への同意（任意）",
+    "receiveConsent": "広告性情報の受信への同意（任意）",
+    "consentBothRequired": "通知をオンにするには両方に同意してください。",
+    "consentConfirm": "同意して通知をオンにする",
     "reviewReminderTitle": "お食事はいかがでしたか？",
     "reviewReminderBody": "{{name}}はいかがでしたか？評価が他の旅行者の助けになります。"
   },
   "notif": {
     "title": "通知設定",
-    "helpful": "レビューへの反応",
-    "helpfulSub": "レビューが「役に立った」を受け取ったとき",
-    "reminder": "レビューリマインダー",
-    "reminderSub": "注文の1時間後に感想をお聞きします",
-    "nudge": "スキャンのおすすめ",
-    "nudgeSub": "ときどきランチタイムにメニュースキャンをご提案",
-    "osOff": "システム設定でK-Bapの通知がオフになっています。",
-    "osOffCta": "システム設定を開く",
-    "marketing": "マーケティング通知に同意",
-    "marketingSub": "イベントやおすすめのお知らせをプッシュで受け取ります。",
-    "night": "夜間通知に同意",
-    "nightSub": "夜9時〜朝8時の間も受け取ります。",
-    "saveFailed": "保存できませんでした。もう一度お試しください。"
+    "activityGroup": "アクティビティ通知",
+    "activity": "アクティビティ通知",
+    "activitySub": "レビューへの反応/食後のレビュー作成",
+    "newsGroup": "K-Bapのお知らせ",
+    "news": "お知らせ通知",
+    "newsSub": "イベント/新機能のお知らせ（広告）",
+    "mealTime": "食事時間の通知",
+    "mealTimeSub": "昼/夜のメニュースキャン通知（広告）",
+    "consentStatus": "広告受信に同意 {{date}} (v{{version}})",
+    "viewFull": "全文を見る",
+    "readFailed": "読み込めませんでした。タップして再試行",
+    "osOff": "端末の設定で通知がオフになっています。",
+    "osOffCta": "端末の設定を開く",
+    "osAsk": "通知をオンにすると、レビューへの反応やお知らせを受け取れます。",
+    "osAskCta": "通知をオンにする",
+    "saveFailed": "保存できませんでした。もう一度お試しください。",
+    "offConfirmTitle": "通知をオフにしますか？",
+    "offConfirmBody": "お得な情報やイベントの通知を受け取れなくなる場合があります。",
+    "offConfirmCta": "オフにする"
   },
   "inbox": {
     "title": "お知らせ",
     "empty": "まだお知らせはありません",
     "emptyBody": "レビューやスキャンに関するお知らせがここに表示されます。",
-    "markAllRead": "すべて既読にする",
-    "helpfulTitle": "レビューが役に立ちました",
-    "helpfulBody": "キムチチゲのレビューが「役に立った」を獲得しました。",
-    "reminderTitle": "お食事はいかがでしたか？",
-    "reminderBody": "注文した料理のレビューを書いてみましょう。",
-    "noticeTitle": "K-Bapへようこそ",
-    "noticeBody": "メニューをスキャンすると安全な料理がわかります。",
-    "nudgeTitle": "今日は外食ですか？",
-    "nudgeBody": "注文する前にメニューをスキャンしましょう。",
     "newBadge": "NEW"
   },
   "myFoods": {
@@ -996,6 +1004,39 @@
     "dishes": "料理",
     "receiptDate": "日付",
     "receiptLocation": "場所",
-    "receiptTotal": "合計"
+    "receiptTotal": "合計",
+    "shareMenuMore": "ほか{{count}}件",
+    "sharePreviewCaption": "9:16 ストーリーカードのプレビュー",
+    "shareDownload": "画像を\n保存",
+    "shareDownloadInline": "画像を保存",
+    "shareInstagram": "Instagram\nストーリー",
+    "sharePhotoDenied": "写真へのアクセスを許可すると、ストーリーカードを保存できます。",
+    "shareSaved": "写真に保存しました。",
+    "shareNoInstagram": "この端末にInstagramがありません。",
+    "shareFailed": "ストーリーカードを作成できませんでした。もう一度お試しください。",
+    "shareStoryHint": "画像を保存してから、Instagramでシェアしてください。",
+    "sharePhotosFailed": "写真を読み込めませんでした。タップして再試行してください。",
+    "itemPhotoTitle": "料理の写真",
+    "itemPhotoDefault": "標準の写真に戻す",
+    "editFailed": "変更を保存できませんでした。もう一度お試しください。",
+    "editPhotoNotReady": "写真のアップロードが完了していません。もう一度お試しください。",
+    "editNotFound": "この注文が見つかりません。更新してもう一度お試しください。"
+  },
+  "feedback": {
+    "title": "お問い合わせ",
+    "newInquiry": "新規",
+    "newTitle": "新しいお問い合わせ",
+    "placeholder": "何が起きたか、またはご要望をお聞かせください。写真も添えられます。",
+    "send": "送信",
+    "sent": "お問い合わせを受け付けました。ありがとうございます。",
+    "sendFailed": "送信できませんでした。もう一度お試しください。",
+    "rateLimited": "過去24時間に送信が多くなっています。しばらくしてからもう一度お試しください。",
+    "statusOpen": "受付中",
+    "statusAnswered": "回答済み",
+    "statusClosed": "クローズ",
+    "emptyTitle": "まだお問い合わせはありません",
+    "replyCount_other": "回答 {{count}}件",
+    "notFound": "このお問い合わせは見つかりません。",
+    "teamName": "K-Bapチーム"
   }
 }

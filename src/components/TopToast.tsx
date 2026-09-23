@@ -16,7 +16,7 @@ import Animated, { Easing, ReduceMotion, cancelAnimation, runOnJS, useAnimatedSt
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
-import { IconAlertTri, IconCheck } from '@/components/icons';
+import { IconAlertTri, IconCheck, IconInfo } from '@/components/icons';
 import { RiskGlyph } from '@/components/RiskMark';
 import Svg from 'react-native-svg';
 
@@ -118,7 +118,12 @@ export function TopToastHost() {
         ) : (
           <View style={styles.checkDot} pointerEvents="none">
             {/* P-366 ③: icon='alert' = 같은 흰 원 안 느낌표(에러 변형 아님 — 배경·크기 동일) */}
-            {msg.icon === 'alert' ? (
+            {/* KB-626: icon='info' = 중립 안내(판정·성공·에러 뜻 없음) — 같은 흰 점, 아이콘만 교체.
+                'alert'는 RiskGlyph caution(안전 판정 글리프)이라 **음식 관련 안내엔 쓰지 않는다**.
+                크기·굵기는 같은 슬롯의 IconCheck(12 · 기본)와 동일 — 임의 수치 없음. */}
+            {msg.icon === 'info' ? (
+              <IconInfo size={12} color="#2F3137" />
+            ) : msg.icon === 'alert' ? (
               <Svg width={12} height={12} viewBox="0 0 22 22">
                 <RiskGlyph state="caution" fill="#2F3137" />
               </Svg>

@@ -19,7 +19,8 @@ import i18n from '../i18n';
 import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
-import { api, apiLang } from '../api/client';
+import { api, apiLang, isFoodHidden } from '../api/client';
+import { trackReadyFood } from './hiddenFoods';
 import { showTopToast } from '@/components/topToastStore';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
@@ -102,6 +103,13 @@ export function useSavedIds(): { ids: Set<string>; ready: boolean } {
   return { ids, ready: !saved.hasNextPage && !saved.isFetching };
 }
 
+/** `POST /bookmarks`의 **유일한** 호출 경로 — 추가·Undo 복원 공용. 서버 `bookmark`는 `getReadyFood`를
+ *  타므로 성공 = READY 증거, FOOD-001 = 숨김 — 부기는 `trackReadyFood`가 한다(#185 5R: 복원만 빠졌던 사고).
+ *  취소(PATCH)는 서버 `unbookmark`가 READY 검사를 안 타므로 부기 대상이 아니다. */
+function postBookmark(foodId: string): Promise<unknown> {
+  return trackReadyFood(foodId, () => api.post('/bookmarks', { foodId: Number(foodId) }));
+}
+
 /** 캐시(와이어 페이지)에 낙관적 add/remove. 이전 상태를 반환해 롤백에 쓴다. */
 function optimisticWrite(
   qc: ReturnType<typeof useQueryClient>,
@@ -139,9 +147,11 @@ function optimisticWrite(
 export function useToggleBookmark() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ snap, add }: { snap: BookmarkSnapshot; add: boolean }) => {
+    /** `fromDetail`: 음식 상세 안에서 눌렀는가 — 숨김(FOOD-001)이면 상세가 자기 안내를 그리므로
+     *  토스트를 겹치지 않는다(KB-626). 목록 카드(검색·탐색)에서는 생략 = false. */
+    mutationFn: async ({ snap, add }: { snap: BookmarkSnapshot; add: boolean; fromDetail?: boolean }) => {
       if (add) {
-        await api.post('/bookmarks', { foodId: Number(snap.foodId) });
+        await postBookmark(snap.foodId);
       } else {
         await api.patch(`/bookmarks/${snap.foodId}`); // ⚠️ 취소 = PATCH (DELETE 아님)
       }
@@ -160,9 +170,19 @@ export function useToggleBookmark() {
     onSuccess: (_d, { add }) => {
       showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'));
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (e, { snap, fromDetail }, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
+      // KB-626(P-405): 음식이 READY가 아니면(FOOD-001 — 숨김·삭제) 서버 `bookmark`가 `getReadyFood`에서
+      // 거부한다. 에러가 아니므로 빨간 토스트("다시 시도해 주세요")를 띄우지 않는다 — 다시 해도 같다.
+      // ⚠️ 거부를 **삼키지 않고 전파**한다(#185 2R): 숨김 신호를 세우면 상세 화면이 그 즉시 판정·액션 바를
+      // 가리고 숨김 안내로 바뀐다 — onSettled 재조회를 기다리지 않는다(재조회는 게이트가 아니다).
+      // 상세 안에서 눌렀으면 그 안내가 설명하므로 토스트는 생략(같은 말 두 번 금지).
+      if (isFoodHidden(e)) {
+        // 신호는 postBookmark(trackReadyFood)가 이미 세웠다 — 여기선 화면 정책(토스트)만
+        if (!fromDetail) showTopToast(i18n.t('saved.foodHidden'), { icon: 'info' }); // 중립 — 예진 확인 대상(P-405 (a))
+        return;
+      }
       showTopToast(i18n.t('saved.error'), { error: true }); // P-346: AlertTri 변형
     },
     onSettled: (_d, _e, { snap }) => {
@@ -198,7 +218,7 @@ export function useRestoreBookmark() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (snap: BookmarkSnapshot) => {
-      await api.post('/bookmarks', { foodId: Number(snap.foodId) });
+      await postBookmark(snap.foodId); // FOOD-001이면 신호 설정 — 화면은 기존대로 조용한 롤백(토스트 없음)
     },
     onMutate: async (snap) => {
       await qc.cancelQueries({ queryKey: QK() });

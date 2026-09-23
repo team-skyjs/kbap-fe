@@ -16,7 +16,7 @@ import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { color as C, radius } from '@/lib/theme';
+import { color as C, primaryTint, radius } from '@/lib/theme';
 import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
@@ -42,7 +42,7 @@ export type GridTab = 'popular' | 'saved' | 'food';
 type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 
-/** P-318 정렬 — new(publishedAt)는 KB-439 배포 전 시트에서 비활성(선택 불가).
+/** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
  *  전체가 재정렬돼 항목이 튐(구조 결함). 서버 sort=name 생기면 재도입(TODO). */
 type FoodSort = 'popular' | 'new';
@@ -61,10 +61,17 @@ export function FoodExplorer({
   srcTag,
   onScroll,
   topPad = 0,
+  mostReviewed = [],
+  mostReviewedLoading = false,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
   guest: boolean;
+  /** P-393(KB-580): 홈 "리뷰 많은 음식" 레일 소스 — 홈 화면이 useHome에서 받아 내린다.
+   *  여기서 직접 조회하지 않는 이유: 음식 탭·검색 등 다른 소비처가 홈 쿼리에 묶이면
+   *  QueryClient 없는 표면까지 끌려간다(실측: 기존 스위트 3개가 깨졌다). 0건 = 섹션 미렌더. */
+  mostReviewed?: FoodCard[];
+  mostReviewedLoading?: boolean;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -278,6 +285,7 @@ export function FoodExplorer({
                   selected={riskChip === c}
                   onPress={() => onChip(c)}
                   testID={`home-chip-${c}`}
+                  risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
                 />
               ))}
               <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
@@ -306,6 +314,7 @@ export function FoodExplorer({
                 selected={riskChip === c}
                 onPress={() => onChip(c)}
                 testID={`home-chip-${c}`}
+                risk={c === 'all' ? undefined : c} // P-391: all만 중립, 나머지는 상태색
               />
             ))}
           </View>
@@ -388,7 +397,10 @@ export function FoodExplorer({
             key: v,
             label: t(`food.sort_${v}`),
             icon: v === sort ? <IconCheck size={15} color={C.primary} /> : undefined,
-            disabled: v === 'new', // KB-439(publishedAt) 배포 전 비활성 — 배포 시 disabled 해제 + 정렬 분기
+            // P-385(KB-363): KB-439로 publishedAt은 왔지만 **서버 정렬 파라미터가 없다**(dev Swagger
+            // /api/foods = cursor·lang·risk뿐, 9/15 실측). 커서 페이지 위 클라 정렬은 P-335 A–Z와 같은
+            // 재정렬 튐 결함이라 쓰지 않는다 → 서버 sort 생길 때까지 비활성 유지.
+            disabled: v === 'new',
             // P-342 ②: NEW = "준비 중" 칩(KB-439 배포 시 칩 제거)
             trailing: v === 'new' ? (
               <View style={styles.soonChip}>
@@ -478,7 +490,7 @@ export function FoodExplorer({
             testID="home-rail-see-all"
           >
             <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
-            <IconChevron size={16} color={INK_TITLE} />
+            <IconChevron size={16} color={C.primaryText} />
           </Pressable>
         </ScrollView>
       )}
@@ -494,6 +506,32 @@ export function FoodExplorer({
                 <View key={i} style={styles.safeGridRow}>
                   {row.map((item) => card(item, styles.safeGridCell))}
                   {row.length === 1 && <View style={styles.safeGridCell} testID="home-safe-grid-filler" />}
+                </View>
+              ))}
+          </View>
+        </>
+      )}
+      {/* P-393(KB-580): 리뷰 많은 음식 — 게스트·회원 공통. **Rated safe for you와 같은 UI**
+          (9/18 예진 원문 — 2×2 그리드). safe 구역 다음이고, 게스트는 safe가 없어 자연히
+          인기 레일 다음이 된다. 그리드·셀·카드·스켈레톤 전부 기존 것 재사용(새 스타일 0). */}
+      {variant === 'embedded' && mostReviewedLoading && (
+        <View style={styles.railSkel} testID="home-most-reviewed-skel">
+          {[0, 1].map((i) => (
+            <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
+          ))}
+        </View>
+      )}
+      {variant === 'embedded' && mostReviewed.length > 0 && (
+        <>
+          <SectionHead label={t('home.mostReviewed')} title={t('home.mostReviewedSub')} testID="home-most-reviewed-head" />
+          {/* safe 구역과 동일 규칙: 상위 4개·2열, 홀수 마지막 행은 빈 셀로 채워 카드가 늘어나지 않게 */}
+          <View style={styles.safeGrid} testID="home-most-reviewed-grid">
+            {[mostReviewed.slice(0, 2), mostReviewed.slice(2, 4)]
+              .filter((row) => row.length > 0)
+              .map((row, i) => (
+                <View key={i} style={styles.safeGridRow}>
+                  {row.map((item) => card(item, styles.safeGridCell))}
+                  {row.length === 1 && <View style={styles.safeGridCell} testID="home-most-reviewed-filler" />}
                 </View>
               ))}
           </View>
@@ -551,9 +589,26 @@ const styles = StyleSheet.create({
   rail: { flexGrow: 0 },
   railContent: { paddingHorizontal: 20, gap: 12 },
   // 폭은 렌더 시 cardW로 주입(P-319) — 비율·모양만 여기서
-  // P-339 ①(KB-494): 점선 카드 폐기 — 카드 높이 세로 중앙 텍스트+chevron, 배경·보더 없음
-  seeAllCard: { aspectRatio: 174 / 203, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 12 },
-  seeAllText: { fontSize: 14, fontWeight: '600', color: INK_TITLE }, // P-339 ①
+  // P-339 ①(KB-494) → P-396(KB-590): 레일 끝 더보기가 눈에 안 띈다는 실기 피드백 —
+  // 주황 포인트로 승격. 배경·보더는 DS에 이미 있는 primary 쌍(온보딩 선택 타일과 같은
+  // `primaryTint` + `C.primary` 보더) 그대로, 새 hex 0. 비율·폭·탭 동작은 무변이고
+  // RN 보더는 박스 안쪽이라 카드 크기도 그대로다.
+  seeAllCard: {
+    aspectRatio: 174 / 203,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: 12,
+    backgroundColor: primaryTint,
+    borderWidth: 1,
+    borderColor: C.primary,
+    borderRadius: radius.sm,
+  },
+  // 텍스트·chevron은 `C.primaryText`. 발주는 `C.primary`였지만 그 값은 이 틴트 위에서
+  // 대비 2.61로 AA(4.5)는커녕 비텍스트 3:1도 못 넘는다 — P-284가 "12~14px primary 텍스트는
+  // primaryText"로 이미 정해둔 이유가 이것이고, primaryText는 같은 배경에서 4.91이다.
+  seeAllText: { fontSize: 14, fontWeight: '600', color: C.primaryText },
   // P-321 레일 상태 블록(전부 ScrollView 밖 세로 배치 — 줄바꿈 보장)
   railSkel: { flexDirection: 'row', gap: 12, paddingHorizontal: 20 },
   // 디자이너 빈 상태(4003:6689) = 중앙 정렬 — EmptyBlock과 본문·CTA 정렬 통일
