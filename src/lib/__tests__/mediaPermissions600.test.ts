@@ -8,10 +8,11 @@ it('앨범 선택 권한 — iOS만 요청(Android = 시스템 Photo Picker)', (
   expect(needsPhotoLibraryPermission('web')).toBe(false);
 });
 
-it('저장 권한 — iOS·Android 9 이하만 요청, Android 10+는 요청 0(선언 안 된 READ 권한 요청 = 즉시 denied 방지)', () => {
+it('저장 권한 — iOS·Android 10(API 29) 이하만 요청, Android 11+는 요청 0(네이티브 SDK_INT < R 검사와 같은 경계 — Codex #201 P1)', () => {
   expect(needsSavePermission('ios', 17)).toBe(true);
   expect(needsSavePermission('android', 28)).toBe(true); // WRITE_EXTERNAL_STORAGE(maxSdk 32)
-  expect(needsSavePermission('android', 29)).toBe(false);
+  expect(needsSavePermission('android', 29)).toBe(true); // Android 10: expo-media-library가 아직 WRITE를 검사한다
+  expect(needsSavePermission('android', 30)).toBe(false);
   expect(needsSavePermission('android', 34)).toBe(false);
 });
 

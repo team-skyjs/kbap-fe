@@ -150,7 +150,8 @@ export const defaultDeps: ShareDeps = {
     }
   },
   requestSavePermission: async () => {
-    // KB-600(P-408): Android 10+는 MediaStore 저장에 권한이 필요 없고, READ_MEDIA를 제거해 요청하면 즉시 denied — 요청 없이 저장.
+    // KB-600(P-408): Android 11+(API 30)는 저장에 권한이 필요 없고 READ_MEDIA를 제거해 요청하면 즉시 denied — 요청 없이 저장.
+    // Android 10 이하는 WRITE_EXTERNAL_STORAGE(maxSdk 32)를 아직 검사한다(네이티브 SDK_INT < R) — 기존 요청 흐름 유지.
     if (!needsSavePermission()) return true;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const MediaLibrary = require('expo-media-library') as typeof import('expo-media-library');
