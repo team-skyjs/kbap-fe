@@ -978,6 +978,8 @@
     "readFailed": "No se pudo cargar. Toca para reintentar",
     "osOff": "Las notificaciones están desactivadas en los ajustes del dispositivo.",
     "osOffCta": "Abrir ajustes del dispositivo",
+    "osAsk": "Activa las notificaciones para recibir reacciones a tus reseñas y novedades.",
+    "osAskCta": "Activar notificaciones",
     "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
     "offConfirmTitle": "¿Desactivar las notificaciones?",
     "offConfirmBody": "Podrías perderte información útil y eventos.",

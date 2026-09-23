@@ -69,10 +69,15 @@ jest.mock('@/lib/openExternal', () => ({
   // P-381(KB-541 후속): 설정 열기도 공용 헬퍼 경유 — 실패 시 토스트는 헬퍼 자체 스위트가 잠근다
   openAppSettings: (...a: unknown[]) => mockOpenSettings(...a),
 }));
-const mockAdapter = { getPermissionStatus: jest.fn().mockResolvedValue('granted'), registerPushToken: jest.fn().mockResolvedValue(undefined) };
+const mockAdapter = {
+  getPermissionStatus: jest.fn().mockResolvedValue('granted'),
+  registerPushToken: jest.fn().mockResolvedValue(undefined),
+  requestPermission: jest.fn().mockResolvedValue(true),
+};
 jest.mock('@/lib/push/pushAdapter', () => ({
   get getPermissionStatus() { return mockAdapter.getPermissionStatus; },
   get registerPushToken() { return mockAdapter.registerPushToken; },
+  get requestPermission() { return mockAdapter.requestPermission; },
 }));
 const mockData = {
   query: { data: undefined as unknown, isLoading: false, isError: false, refetch: jest.fn() },
@@ -290,6 +295,46 @@ it('US5 OS 권한 denied = 배너 + 아래 설정 UI는 보이되 흐림·무반
   expect(mockAdapter.getPermissionStatus).toHaveBeenCalledTimes(1);
   expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1);
   AppState.addEventListener = orig;
+});
+
+/* ---------- KB-618: undetermined ---------- */
+// US5의 spy.mockRestore() 뒤 RN preset AppState.addEventListener가 undefined를 돌려 언마운트가 깨진다 — 이 블록은 구독 스텁을 고정
+let appStateSpy: jest.SpyInstance;
+beforeEach(() => { appStateSpy = jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never); });
+afterEach(() => appStateSpy.mockRestore());
+it('KB-618 OS 권한 undetermined = 「알림 켜기」 배너(흐림·무반응 동일), 탭 = OS 팝업 → 허용 시 토큰 등록 + 배너 소멸·토글 활성', async () => {
+  mockAdapter.getPermissionStatus.mockResolvedValue('undetermined');
+  mockAdapter.requestPermission.mockResolvedValue(true);
+  mockData.query.data = ON;
+  const tree = await render();
+  expect(has(tree, 'notif-os-ask')).toBe(true);
+  expect(has(tree, 'notif-os-off')).toBe(false); // denied 배너와 별개 id
+  const body = tree.root.findAll((n) => n.props?.testID === 'notif-settings-body' && typeof n.type === 'string')[0];
+  expect(body.props.pointerEvents).toBe('none'); // 권한 전엔 토글 조작 불가(denied와 같은 처리)
+  expect(mockAdapter.requestPermission).not.toHaveBeenCalled(); // 진입만으론 OS 팝업 0 (iOS 1회성 보호)
+  expect(mockAdapter.registerPushToken).not.toHaveBeenCalled();
+  mockAdapter.getPermissionStatus.mockResolvedValue('granted'); // 팝업 뒤 재조회 값
+  await tap(tree, 'notif-os-ask');
+  expect(mockAdapter.requestPermission).toHaveBeenCalledTimes(1);
+  expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1);
+  expect(mockOpenSettings).not.toHaveBeenCalled(); // undetermined 탭은 설정 앱이 아니라 OS 팝업
+  expect(has(tree, 'notif-os-ask')).toBe(false);
+  expect(has(tree, 'notif-os-off')).toBe(false);
+  const bodyAfter = tree.root.findAll((n) => n.props?.testID === 'notif-settings-body' && typeof n.type === 'string')[0];
+  expect(bodyAfter.props.pointerEvents).toBe('auto');
+});
+
+it('KB-618 undetermined 탭 → OS 팝업 거부 = 토큰 등록 0, 배너가 denied(기기 설정 열기)로 전환', async () => {
+  mockAdapter.getPermissionStatus.mockResolvedValue('undetermined');
+  mockAdapter.requestPermission.mockResolvedValue(false);
+  mockData.query.data = ON;
+  const tree = await render();
+  mockAdapter.getPermissionStatus.mockResolvedValue('denied');
+  await tap(tree, 'notif-os-ask');
+  expect(mockAdapter.requestPermission).toHaveBeenCalledTimes(1);
+  expect(mockAdapter.registerPushToken).not.toHaveBeenCalled();
+  expect(has(tree, 'notif-os-ask')).toBe(false);
+  expect(has(tree, 'notif-os-off')).toBe(true);
 });
 
 /* ---------- 소스 잠금 ---------- */

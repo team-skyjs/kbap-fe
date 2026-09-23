@@ -25,12 +25,11 @@ import { Shimmer } from '@/components/Skeleton';
 import { FLAGS } from '@/lib/flags';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { EVENTS, track } from '@/lib/analytics';
-import { openWebPage } from '@/lib/openExternal';
+import { openAppSettings, openWebPage } from '@/lib/openExternal';
 import { consentUrl, PRIVACY_CONSENT_VERSION, RECEIVE_CONSENT_VERSION } from '@/lib/push/consent';
 import { useNotificationSettings, useUpdateNotificationSettings, type NotificationSettings as Settings } from '@/lib/data/useNotificationSettings';
 import { NotificationSheet } from '@/features/push/NotificationSheet';
-import { getPermissionStatus, registerPushToken, type PushPermission } from '@/lib/push/pushAdapter';
-import { openAppSettings } from '@/lib/openExternal';
+import { getPermissionStatus, registerPushToken, requestPermission, type PushPermission } from '@/lib/push/pushAdapter';
 
 export default function NotificationSettings() {
   // 컴파일 상수 가드 — 훅 순서 무영향 (reviews.tsx 문법)
@@ -103,7 +102,15 @@ function NotificationSettingsScreen() {
     setConsentOpen(false);
   };
 
-  const osOff = permission === 'denied';
+  // KB-618: undetermined(한 번도 안 물어봄)도 배너 — 스캔 프라이머를 안 거친 기기의 유일한 OS 팝업 진입점.
+  // KB-497 이전엔 온보딩 프라이머가 모든 신규 회원을 granted/denied로 만들어 이 상태가 여기 도달하지 않았다.
+  const osAsk = permission === 'undetermined';
+  const osOff = permission === 'denied' || osAsk;
+  const askPermission = async () => {
+    const granted = await requestPermission(); // OS 팝업 1회 — 이후 상태는 granted/denied로 고정
+    if (granted) await registerPushToken();
+    setPermission(await getPermissionStatus());
+  };
   const consent = s?.news.enabled ? consentCaption(s, i18n.language) : null;
 
   return (
@@ -112,11 +119,16 @@ function NotificationSettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {osOff && (
           /* OS 권한 꺼짐 — 안내 + 설정 딥링크. 아래 설정 UI는 보이되 흐리게·조작 불가(9/14 종한 2차) */
-          <Pressable style={styles.banner} onPress={() => { track(EVENTS.push_permission, { state: 'settings_open' }); void openAppSettings(); }} testID="notif-os-off">
+          <Pressable
+            style={styles.banner}
+            // KB-630 계측: 팝업 결과(grant/deny)는 requestPermission 안에서 1곳 — 여기선 설정 열기만
+            onPress={() => { if (osAsk) { void askPermission(); return; } track(EVENTS.push_permission, { state: 'settings_open' }); void openAppSettings(); }}
+            testID={osAsk ? 'notif-os-ask' : 'notif-os-off'}
+          >
             <IconBell size={16} color={C.riskCaution} />
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.bannerText}>{t('notif.osOff')}</Text>
-              <Text style={styles.bannerCta}>{t('notif.osOffCta')}</Text>
+              <Text style={styles.bannerText}>{t(osAsk ? 'notif.osAsk' : 'notif.osOff')}</Text>
+              <Text style={styles.bannerCta}>{t(osAsk ? 'notif.osAskCta' : 'notif.osOffCta')}</Text>
             </View>
           </Pressable>
         )}
