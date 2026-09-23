@@ -68,6 +68,12 @@
         "releaseStatus": "completed"
       }
     },
+    "production-internal": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "completed"
+      }
+    },
     "teamtest": {
       "ios": {
         "ascAppId": "6788635067"
