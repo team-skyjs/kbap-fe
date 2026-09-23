@@ -16,6 +16,7 @@ import { Input } from '@/components/KeyboardDismissBar';
 import { showTopToast } from '@/components/topToastStore';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { openAppSettings } from '@/lib/openExternal';
+import { needsPhotoLibraryPermission } from '@/lib/mediaPermissions';
 import { EVENTS, track } from '@/lib/analytics';
 import { FEEDBACK_MAX_LEN, FEEDBACK_MAX_PHOTOS, useSubmitFeedback } from '@/lib/data/useFeedback';
 import { color as C, radius } from '@/lib/theme';
@@ -46,15 +47,18 @@ export default function FeedbackComposeScreen() {
     if (remaining <= 0 || importing) return;
     setImporting(true);
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        // 사진 라이브러리 권한이다 — 카메라 문구(scan.*)를 쓰면 유저가 엉뚱한 설정을
-        // 바꾸고도 첨부를 못 한다(Codex #170). 권한이 다르면 문구도 달라야 한다.
-        Alert.alert(t('photo.libraryPermTitle'), t('photo.libraryPermBody'), [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
-        ]);
-        return;
+      // KB-600(P-408): Android는 시스템 Photo Picker — READ_MEDIA 권한을 제거했으므로 요청하면 즉시 denied. iOS만 요청.
+      if (needsPhotoLibraryPermission()) {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          // 사진 라이브러리 권한이다 — 카메라 문구(scan.*)를 쓰면 유저가 엉뚱한 설정을
+          // 바꾸고도 첨부를 못 한다(Codex #170). 권한이 다르면 문구도 달라야 한다.
+          Alert.alert(t('photo.libraryPermTitle'), t('photo.libraryPermBody'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('photo.openSettings'), onPress: () => void openAppSettings() },
+          ]);
+          return;
+        }
       }
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],

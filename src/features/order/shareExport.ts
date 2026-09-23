@@ -13,6 +13,7 @@ import type { View } from 'react-native';
 import Constants from 'expo-constants';
 import { SHARE_CARD_W } from './shareCard';
 import { reportShareFailure, shareFailureSummary } from '@/lib/sentry';
+import { needsSavePermission } from '@/lib/mediaPermissions';
 
 /** 내보내기 픽셀 규격 — 인스타 스토리 기준. */
 export const EXPORT_W = 1080;
@@ -117,6 +118,7 @@ const PLATFORM_OS: string = (() => {
   }
 })();
 
+
 export interface ShareDeps {
   capture: (ref: React.RefObject<View | null>) => Promise<string>;
   requestSavePermission: () => Promise<boolean>;
@@ -148,6 +150,9 @@ export const defaultDeps: ShareDeps = {
     }
   },
   requestSavePermission: async () => {
+    // KB-600(P-408): Android 11+(API 30)는 저장에 권한이 필요 없고 READ_MEDIA를 제거해 요청하면 즉시 denied — 요청 없이 저장.
+    // Android 10 이하는 WRITE_EXTERNAL_STORAGE(maxSdk 32)를 아직 검사한다(네이티브 SDK_INT < R) — 기존 요청 흐름 유지.
+    if (!needsSavePermission()) return true;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const MediaLibrary = require('expo-media-library') as typeof import('expo-media-library');
     // writeOnly = 저장 전용 권한(읽기 요구 금지 — granularPermissions photo와 같은 이유)

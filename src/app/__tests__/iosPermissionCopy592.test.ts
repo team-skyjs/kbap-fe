@@ -157,6 +157,7 @@ const REQUIRED_BY_MODULE: Record<string, string[]> = {
 
 describe('설치된 권한 모듈이 요구하는 Usage 키 ⊆ 실제 Info.plist(introspect) — 값이 비거나 없는 키 0', () => {
   let infoPlist: Record<string, unknown>;
+  let usesPermission: { name: string; remove: boolean; maxSdk?: string }[];
   beforeAll(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { execFileSync } = require('child_process') as typeof import('child_process');
@@ -165,7 +166,9 @@ describe('설치된 권한 모듈이 요구하는 Usage 키 ⊆ 실제 Info.plis
       stdio: ['ignore', 'pipe', 'ignore'],
       maxBuffer: 64 * 1024 * 1024,
     });
-    infoPlist = JSON.parse(out)._internal.modResults.ios.infoPlist as Record<string, unknown>;
+    const mods = JSON.parse(out)._internal.modResults as { ios: { infoPlist: Record<string, unknown> }; android: { manifest: { manifest: { 'uses-permission'?: { $: Record<string, string> }[] } } } };
+    infoPlist = mods.ios.infoPlist;
+    usesPermission = (mods.android.manifest.manifest['uses-permission'] ?? []).map((p) => ({ name: p.$['android:name'], remove: p.$['tools:node'] === 'remove', maxSdk: p.$['android:maxSdkVersion'] }));
   }, 180_000);
 
   it('표의 모듈은 실제로 설치돼 있다(표가 허공을 검사하지 않게)', () => {
@@ -184,6 +187,20 @@ describe('설치된 권한 모듈이 요구하는 Usage 키 ⊆ 실제 Info.plis
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  /* KB-600(P-408 vc24 거부 — Play 사진·동영상 권한 정책, 9/24 예진 결정): "핵심 기능" 선언 대신 READ_MEDIA 계열 제거.
+     라이브러리(expo-image-picker·expo-media-library)가 매니페스트로 선언하므로 병합 단계 차단(tools:node=remove)을 본다. */
+  it('Android 사진 권한 — READ_MEDIA_IMAGES·READ_MEDIA_VISUAL_USER_SELECTED·READ_EXTERNAL_STORAGE 차단 · READ_MEDIA_VIDEO 없음 · CAMERA 유지 · WRITE_EXTERNAL_STORAGE maxSdk 32', () => {
+    const byName = Object.fromEntries(usesPermission.map((p) => [p.name, p]));
+    for (const p of ['android.permission.READ_MEDIA_IMAGES', 'android.permission.READ_MEDIA_VISUAL_USER_SELECTED', 'android.permission.READ_EXTERNAL_STORAGE']) {
+      expect(byName[p]?.remove).toBe(true);
+      expect(APP.expo.android.blockedPermissions).toContain(p);
+    }
+    expect(byName['android.permission.READ_MEDIA_VIDEO']).toBeUndefined();
+    expect(byName['android.permission.CAMERA']).toMatchObject({ remove: false });
+    expect(byName['android.permission.WRITE_EXTERNAL_STORAGE']).toMatchObject({ remove: false, maxSdk: '32' }); // 정책 대상 아님(Android ≤12 저장)
+    expect(byName['android.permission.RECORD_AUDIO']?.remove).toBe(true); // 기존 차단 보존
   });
 
   it('추적(ATT) 문구는 여전히 없다(9/21 예진 D2 — 요구 키 검사가 이걸 끌어들이지 않게)', () => {
