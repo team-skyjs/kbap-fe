@@ -176,6 +176,24 @@ it('② 사진은 purpose=FEEDBACK으로 올린 path만 전송(최대 3장)', as
   ]);
 });
 
+/* ---- KB-600(P-408): Android = 권한 요청 없이 시스템 Photo Picker ---- */
+it('② 앨범 선택 — 헬퍼가 "권한 불필요"(Android)면 requestMediaLibraryPermissionsAsync 0 · 픽커는 뜬다', async () => {
+  const mp = require('@/lib/mediaPermissions') as typeof import('@/lib/mediaPermissions'); // eslint-disable-line @typescript-eslint/no-require-imports
+  const spy = jest.spyOn(mp, 'needsPhotoLibraryPermission').mockReturnValue(false);
+  const picker = jest.requireMock('expo-image-picker') as { launchImageLibraryAsync: jest.Mock; requestMediaLibraryPermissionsAsync: jest.Mock };
+  picker.requestMediaLibraryPermissionsAsync.mockClear(); picker.launchImageLibraryAsync.mockClear();
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  await act(async () => { await byId(r, 'feedback-photo-add').props.onPress(); });
+  expect(picker.requestMediaLibraryPermissionsAsync).not.toHaveBeenCalled();
+  expect(picker.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+  spy.mockRestore();
+  // 대조: iOS(기본 = true)면 권한을 먼저 묻는다
+  picker.requestMediaLibraryPermissionsAsync.mockClear();
+  await act(async () => { await byId(r, 'feedback-photo-add').props.onPress(); });
+  expect(picker.requestMediaLibraryPermissionsAsync).toHaveBeenCalledTimes(1);
+});
+
 /* ---- ③④ 완료 시점 ---- */
 
 it('③ 성공 후에만 완료 — 토스트 + back, 계측 1회', async () => {

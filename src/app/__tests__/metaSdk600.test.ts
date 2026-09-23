@@ -75,7 +75,9 @@ it('② Android 광고 ID 허용 — 수집 true · 광고 권한 차단 0 · �
     'android.permission.ACCESS_ADSERVICES_CUSTOM_AUDIENCE',
     'android.permission.ACCESS_ADSERVICES_TOPICS',
   ]) expect(blocked).not.toContain(p);
-  expect(blocked).toEqual(['android.permission.ACTIVITY_RECOGNITION', 'android.permission.RECORD_AUDIO']);
+  // KB-592 차단 2종은 보존(KB-600 P-408에서 사진 권한 3종이 추가돼 정확 일치 대신 포함 + 광고 권한 부재로 잠근다)
+  expect(blocked).toEqual(expect.arrayContaining(['android.permission.ACTIVITY_RECOGNITION', 'android.permission.RECORD_AUDIO']));
+  expect(blocked.filter((p) => /AD_ID|ADSERVICES/.test(p))).toEqual([]);
   expect(APP.expo.android.permissions).toEqual(['android.permission.CAMERA']); // RECORD_AUDIO 없음(KB-592)
 });
 
