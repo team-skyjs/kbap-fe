@@ -1471,3 +1471,11 @@
 - [x] 테스트: loginPrompt631 +17(시퀀스 8·표식 4·생애주기 2·소스 잠금 3) · loginPushPrompt631 +4(intro 1회·returnTo 0·무파라미터 0·gate 0) · pushProdGuard221 +1(플래그 off no-op). tsc 0.
 - [x] 문서: specs/001 US4 폐기·US6 후순위 표기 · PushPrimerModal 헤더 주석.
 - [ ] 실기(종한, iOS 필수): quickstart D-1~D-12 — **D-1·D-2·D-3(허용→로그인→토큰+activity)·D-4(거부→배너)·D-5(스캔 시트 0)·D-11/12(설정 탭 토글 실효)** 완료 전 OTA 발행 금지(OTA 게이트 커밋).
+
+## KB-618 알림 설정 — OS 권한 undetermined 「알림 켜기」 배너 (2026-09-22, 워크트리 feat/kb618-notif-os-ask)
+
+- [x] 실측(종한 9/22): 재설치 후 스캔 없이 알림 설정 진입·동의 → 서버 설정만 ON, OS 설정에 앱 알림 항목 자체가 없음(토큰 미등록·푸시 0). iOS는 `requestPermissionsAsync` 1회 호출 전엔 설정 앱 항목이 생기지 않는다.
+- [x] 원인: `notifications.tsx` 배너 조건이 `denied`만. KB-497(9/11) 이전엔 온보딩 프라이머가 모든 신규 회원을 granted/denied로 만들어 `undetermined`가 설정 화면에 도달하지 않았는데, 온보딩 프라이머 제거로 경로가 열림. 스캔 프라이머 「나중에」 후에도 복구 경로 0. KB-423(토글 시점 프롬프트)은 미구현 상태로 9/16 완료 처리돼 있었음.
+- [x] 수정(기존 배너 재사용, 화면 1파일): `osOff = denied || undetermined`(흐림·무반응 공통). `undetermined` = 문구 `notif.osAsk` + CTA `osAskCta`(「알림 켜기」), 탭 = `requestPermission()` → 허용 시 `registerPushToken()` → 권한 재조회로 배너 소멸·토글 활성 / 거부 시 denied 배너(기기 설정 열기)로 전환. testID `notif-os-ask`(denied `notif-os-off`와 분리). i18n 2키 10로케일.
+- [x] 테스트: notificationSettings497 +2(undetermined 배너·진입만으론 팝업 0·탭→팝업 1회→토큰 1회→배너 소멸·body auto / 거부→토큰 0·denied 전환) · notifKeys497 REQUIRED +2. US5 spy.mockRestore 이후 RN preset AppState 반환값 undefined로 후속 렌더가 깨지는 순서 의존 → 블록 스텁으로 고정. tsc 0 · 관련 16스위트 145/145.
+- [ ] iOS 실기(종한): 재설치 → 로그인 → 알림 설정 → 「알림 켜기」 → OS 팝업 허용 → 설정 앱 항목 생성 + 서버 `notification_device` 행 확인. 완료 전 OTA 발행 금지(JS-only, 발행은 예진 승인).

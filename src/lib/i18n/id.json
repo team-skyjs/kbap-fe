@@ -977,6 +977,8 @@
     "readFailed": "Gagal memuat. Ketuk untuk coba lagi",
     "osOff": "Notifikasi dimatikan di pengaturan perangkat.",
     "osOffCta": "Buka pengaturan perangkat",
+    "osAsk": "Aktifkan notifikasi untuk menerima reaksi ulasan dan kabar terbaru.",
+    "osAskCta": "Aktifkan notifikasi",
     "saveFailed": "Gagal menyimpan. Coba lagi.",
     "offConfirmTitle": "Matikan notifikasi?",
     "offConfirmBody": "Kamu mungkin melewatkan info berguna dan acara.",
