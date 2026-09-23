@@ -194,6 +194,22 @@ it('② 앨범 선택 — 헬퍼가 "권한 불필요"(Android)면 requestMediaL
   expect(picker.requestMediaLibraryPermissionsAsync).toHaveBeenCalledTimes(1);
 });
 
+/* ---- Codex #196: 픽커 세션을 넘어 같은 사진을 두 번 골라도 첨부는 1장 ---- */
+it('② 같은 사진을 두 번 고르면 1장만(중복 URI 0 · 전송 imagePaths 1)', async () => {
+  const picker = jest.requireMock('expo-image-picker') as { launchImageLibraryAsync: jest.Mock; requestMediaLibraryPermissionsAsync: jest.Mock };
+  picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///same.jpg' }] });
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  const add = () => act(async () => { await byId(r, 'feedback-photo-add').props.onPress(); });
+  await add();
+  await add(); // 두 번째 픽커 세션 — 같은 URI
+  const rows = r.root.findAll((n) => typeof n.type === 'string' && n.props?.accessibilityLabel === 'review.removePhoto'); // 슬롯당 삭제 버튼 1개
+  expect(rows).toHaveLength(1);
+  await typeAndSend(r);
+  expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({ photoUris: ['file:///same.jpg'] }));
+  picker.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: [] });
+});
+
 /* ---- ③④ 완료 시점 ---- */
 
 it('③ 성공 후에만 완료 — 토스트 + back, 계측 1회', async () => {
