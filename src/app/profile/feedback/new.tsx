@@ -67,7 +67,8 @@ export default function FeedbackComposeScreen() {
         selectionLimit: remaining,
       });
       if (!res.canceled && res.assets?.length) {
-        setPhotos((cur) => [...cur, ...res.assets.map((a) => a.uri)].slice(0, FEEDBACK_MAX_PHOTOS));
+        // Codex #196: 픽커를 두 번 열어 같은 사진을 고르면 URI가 중복돼 key 충돌·삭제 시 둘 다 제거·업로드 2회 — Set으로 중복 제거
+        setPhotos((cur) => [...new Set([...cur, ...res.assets.map((a) => a.uri)])].slice(0, FEEDBACK_MAX_PHOTOS));
       }
     } finally {
       setImporting(false);
