@@ -1,7 +1,9 @@
 {
-  "NSCameraUsageDescription": "메뉴를 스캔하고, 리뷰 사진을 찍고, 프로필 사진을 설정할 때 카메라를 사용해요.",
-  "NSPhotoLibraryUsageDescription": "저장해 둔 메뉴 사진을 스캔하거나, 리뷰·게시글·문의에 사진을 첨부하거나, 프로필 사진을 설정할 때 사진에 접근해요.",
-  "NSPhotoLibraryAddUsageDescription": "스토리 카드를 사진첩에 저장해요.",
-  "NSLocationWhenInUseUsageDescription": "근처 식당을 찾아 리뷰에 장소를 태그하고, 어디서 먹었는지 기록할 때 위치를 사용해요.",
-  "NSMotionUsageDescription": "메뉴를 스캔할 때 휴대폰이 옆으로 돌아갔는지 알아채려고 모션 센서를 사용해요."
+  "ios": {
+    "NSCameraUsageDescription": "메뉴를 스캔하고, 리뷰 사진을 찍고, 프로필 사진을 설정할 때 카메라를 사용해요.",
+    "NSPhotoLibraryUsageDescription": "저장해 둔 메뉴 사진을 스캔하거나, 리뷰·게시글·문의에 사진을 첨부하거나, 프로필 사진을 설정할 때 사진에 접근해요.",
+    "NSPhotoLibraryAddUsageDescription": "스토리 카드를 사진첩에 저장해요.",
+    "NSLocationWhenInUseUsageDescription": "근처 식당을 찾아 리뷰에 장소를 태그하고, 어디서 먹었는지 기록할 때 위치를 사용해요.",
+    "NSMotionUsageDescription": "메뉴를 스캔할 때 휴대폰이 옆으로 돌아갔는지 알아채려고 모션 센서를 사용해요."
+  }
 }

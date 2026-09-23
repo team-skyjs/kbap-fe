@@ -1,7 +1,9 @@
 {
-  "NSCameraUsageDescription": "K-Bap usa la cámara para escanear menús, tomar fotos para tus reseñas y poner tu foto de perfil.",
-  "NSPhotoLibraryUsageDescription": "K-Bap accede a tus fotos para escanear un menú guardado, añadir fotos a reseñas y publicaciones, poner tu foto de perfil o adjuntarlas a una consulta.",
-  "NSPhotoLibraryAddUsageDescription": "Guarda tu tarjeta de historia de K-Bap en tu fototeca.",
-  "NSLocationWhenInUseUsageDescription": "K-Bap usa tu ubicación para encontrar restaurantes cerca, etiquetar un lugar en una reseña y recordar dónde comiste.",
-  "NSMotionUsageDescription": "K-Bap usa los sensores de movimiento para notar cuando giras el teléfono de lado mientras escaneas un menú."
+  "ios": {
+    "NSCameraUsageDescription": "K-Bap usa la cámara para escanear menús, tomar fotos para tus reseñas y poner tu foto de perfil.",
+    "NSPhotoLibraryUsageDescription": "K-Bap accede a tus fotos para escanear un menú guardado, añadir fotos a reseñas y publicaciones, poner tu foto de perfil o adjuntarlas a una consulta.",
+    "NSPhotoLibraryAddUsageDescription": "Guarda tu tarjeta de historia de K-Bap en tu fototeca.",
+    "NSLocationWhenInUseUsageDescription": "K-Bap usa tu ubicación para encontrar restaurantes cerca, etiquetar un lugar en una reseña y recordar dónde comiste.",
+    "NSMotionUsageDescription": "K-Bap usa los sensores de movimiento para notar cuando giras el teléfono de lado mientras escaneas un menú."
+  }
 }
