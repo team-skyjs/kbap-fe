@@ -32,4 +32,47 @@ module.exports = defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    // ── 헌법 게이트 하드화(2026-09-26) ─────────────────────────────────────
+    // 발주문마다 글로 실어 보내던 규칙을 CI 실패로 옮긴다(도입 시점 기존 위반 0 — error).
+    // 판별 못 하는 건 여전히 리뷰 몫: useSubmitGuard 누락, false-safe 강등 경로.
+    files: ["src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          // 헌법: UI 이모지 0(SVG만). 국기는 예외(FlagEmoji, 헌법 v2.3.0) — regional indicator
+          // 범위(D83C DDE6–DDFF)는 아래 범위에서 빠져 있다. 주석은 AST 노드가 아니라 안 걸린다.
+          selector:
+            "JSXText[value=/\\uD83C[\\uDF00-\\uDFFF]|\\uD83D[\\uDC00-\\uDEFF]|\\uD83E[\\uDD00-\\uDEFF]|[\\u2600-\\u27BF]/]",
+          message: "UI 텍스트에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
+        },
+        {
+          selector:
+            "JSXAttribute > Literal[value=/\\uD83C[\\uDF00-\\uDFFF]|\\uD83D[\\uDC00-\\uDEFF]|\\uD83E[\\uDD00-\\uDEFF]|[\\u2600-\\u27BF]/]",
+          message: "UI 속성에 이모지 금지 — SVG 아이콘 사용(헌법).",
+        },
+        {
+          // 헌법: i18n 하드코딩 0. JSX 텍스트·속성·{'…'}의 한글만 잡는다(console.log·주석 제외).
+          // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
+          selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer > Literal)[value=/[가-힣]/]",
+          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
+        },
+      ],
+    },
+  },
+  {
+    // P-147: 회원 속성(provider·가입 상태·판정)은 서버 API가 정본 — 화면·기능 계층에서
+    // Firebase providerData 읽기 금지. 정리·철회 유틸(src/lib/auth)만 허용.
+    files: ["src/app/**/*.{ts,tsx}", "src/features/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          property: "providerData",
+          message: "회원 속성 판별은 서버 profile이 정본(P-147). providerData는 src/lib/auth 유틸에서만.",
+        },
+      ],
+    },
+  },
 ]);
