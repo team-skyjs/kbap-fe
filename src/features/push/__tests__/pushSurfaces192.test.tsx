@@ -80,6 +80,8 @@ const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } }));
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 const mockOpenSettings = jest.fn().mockResolvedValue(true);
+const mockFinishAfterOs = jest.fn();
+jest.mock('@/lib/push/scanNudge', () => ({ get finishAfterOsSettings() { return mockFinishAfterOs; } }));
 jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn(), get openAppSettings() { return mockOpenSettings; } }));
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
   'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'getPrimerResult',
@@ -260,17 +262,20 @@ it('mode=osDenied: 확인 = 기기 설정 열기 1회 · OS 팝업 0 · 프라�
   expect(tree.root.findAll((n) => n.props?.testID === 'notif-sheet-primer').length).toBeGreaterThan(0); // 같은 시트 골격
   await tap(tree, 'notif-sheet-confirm');
   expect(mockOpenSettings).toHaveBeenCalledTimes(1);
+  expect(mockFinishAfterOs).toHaveBeenCalledTimes(1); // 복귀 시 허용됐으면 토큰+activity ON (9/28 실기)
+  expect(mockFinishAfterOs.mock.invocationCallOrder[0]).toBeLessThan(mockOpenSettings.mock.invocationCallOrder[0]); // 나가기 전에 리스너
   expect(mockAdapter.requestPermission).not.toHaveBeenCalled();
   expect(mockAdapter.markPrimerResult).not.toHaveBeenCalled();
   expect(mockPatch).not.toHaveBeenCalled();
   expect(onDone).toHaveBeenCalled();
 });
 
-it('mode=activityOff: 확인 = PATCH activity:true 1회 · OS 팝업 0 · 설정 열기 0 · 프라이머 기록 0', async () => {
+it('mode=activityOff: 확인 = 토큰 등록 + PATCH activity:true 1회 · OS 팝업 0 · 설정 열기 0 · 프라이머 기록 0', async () => {
   const onDone = jest.fn();
   const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" mode="activityOff" />);
   await tap(tree, 'notif-sheet-confirm');
   expect(mockPatch).toHaveBeenCalledWith({ activity: true });
+  expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1); // 앱 시작 뒤 OS에서 허용한 기기 = 미등록일 수 있음
   expect(mockAdapter.requestPermission).not.toHaveBeenCalled();
   expect(mockOpenSettings).not.toHaveBeenCalled();
   expect(mockAdapter.markPrimerResult).not.toHaveBeenCalled();
