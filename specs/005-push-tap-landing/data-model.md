@@ -9,8 +9,8 @@
 | `MEAL_TIME` | `'/(tabs)'` (홈 탭) | 9/16 결정. 이전 = 이동 없음 |
 | `HELPFUL` | `'/profile/reviews'` (내 리뷰 목록) | 9/16 결정. 리뷰 id 미제공 → 상세 불가 |
 | `SCAN_SUGGESTION` | `'/(tabs)'` (홈 탭) | 9/16 확정(clarify). 식사 시간과 동일 |
-| `REVIEW_REMINDER` + `foodId` | `` `/food/${foodId}` `` | 기존 유지 |
-| `REVIEW_REMINDER` (foodId 없음) | `null` | 기존 유지 |
+| `REVIEW_REMINDER` + `orderId`(숫자) | `` `/profile/order/${orderId}` `` | KB-500(2026-09-28) 주문 상세로 변경 |
+| `REVIEW_REMINDER` (orderId 없음·비숫자·구 foodId만) | `null` | KB-500 |
 | `NEWS` | `null` | 기존 유지(알림함 열람용) |
 | 그 외(미지·구 이름·대소문자·공백) | `null` | 기존 유지(정확 일치만) |
 

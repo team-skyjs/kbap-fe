@@ -82,20 +82,18 @@ it('P-256: 실패 로그 = status·code 동반(400 진단 — 조사 대기 food
   spy.mockRestore();
 });
 
-it('배선 소스 잠금 — 완료 지점(P-192 리마인더와 동일) 저장 + 스캔 경로 관통', () => {
+it('배선 소스 잠금 — 완료 지점(done 탭) 저장·계측 + 스캔 경로 관통', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   const card = fs.readFileSync('src/features/order/FlippedOrderCard.tsx', 'utf8') as string;
-  // P-256: 호출 시점 = done 탭(모달 전) — go home 미탭 이탈에도 저장·계측·리마인더 발화
+  // P-256: 호출 시점 = done 탭(모달 전) — go home 미탭 이탈에도 저장·계측 발화(리마인더는 KB-500부터 서버 배치)
   const beforeModal = card.split('order-done-confirm')[0];
   const afterModal = card.split('order-done-confirm')[1] ?? '';
   expect(beforeModal).toContain('saveOrderHistory({ imagePath: orderImagePath, items })');
-  expect(beforeModal).toContain('scheduleReviewReminder'); // 동일 시점 동반 이동(재량 ②)
   expect(beforeModal).toContain('EVENTS.order_done');
   expect(beforeModal).toContain('if (committedRef.current) return;'); // 1회 가드(재탭 이중 발화 0)
-  // 모달 go home = 복귀만 — 저장/계측/리마인더 잔존 0
+  // 모달 go home = 복귀만 — 저장/계측 잔존 0
   expect(afterModal).not.toContain('saveOrderHistory');
-  expect(afterModal).not.toContain('scheduleReviewReminder');
   expect(afterModal).not.toContain('EVENTS.order_done');
   expect(fs.readFileSync('src/app/scan-order.tsx', 'utf8')).toContain('orderImagePath={imgParam || null}');
   expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain('&img=');

@@ -38,7 +38,6 @@ import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
-import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { Modal } from 'react-native';
@@ -191,7 +190,6 @@ function ReviewComposeScreen() {
         });
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
         // P-236: extras는 mutateAsync 페이로드로 서버 전송(로컬 프리뷰 폐기)
-        if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
         // 프리즈 방어(9/5, Codex #24): dismiss 직후 동기 present는 hide 애니메이션과
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)

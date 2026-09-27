@@ -9,8 +9,8 @@
 | `{type:'MEAL_TIME'}` | `'/(tabs)'` |
 | `{type:'HELPFUL'}` | `'/profile/reviews'` |
 | `{type:'SCAN_SUGGESTION'}` | `'/(tabs)'` |
-| `{type:'REVIEW_REMINDER', foodId:7}` / `foodId:'7'` | `'/food/7'` |
-| `{type:'REVIEW_REMINDER'}` | `null` |
+| `{type:'REVIEW_REMINDER', orderId:12}` / `orderId:'12'` | `'/profile/order/12'` (KB-500) |
+| `{type:'REVIEW_REMINDER'}` / `foodId:7`만 / 비숫자 | `null` |
 | `{type:'NEWS'}` | `null` |
 | `{type:'NUDGE'}` · `{type:'helpful'}` · `{type:'HELPFUL '}` · `{type:'UNKNOWN_FUTURE'}` · `undefined` · `{}` | `null` |
 

@@ -6,7 +6,7 @@
  * 파일의 **지연 require**(플래그+try 게이트) 경유. 화면/훅에서 직접 import 금지.
  * FLAGS.pushEnabled off = 전 기능 no-op (다음 네이티브 빌드 전 기본).
  *
- * 설정(KB-497) = **서버 정본** 2그룹 — 활동 알림(activity: Helpful + 리뷰 리마인더) ·
+ * 설정(KB-497) = **서버 정본** 2그룹 — 활동 알림(activity: Helpful + 리뷰 리마인더, KB-500부터 리마인더도 서버 배치) ·
  * K-Bap 소식(news: 광고성, 동의 2종 + 하위 mealTime). 로컬 설정 저장소는 없다
  * (useNotificationSettings 캐시가 유일 미러). 토큰 등록은 회원 세션이 있을 때만(KB-543).
  *
@@ -20,14 +20,10 @@ import { EVENTS, track as trackEvent } from '@/lib/analytics';
 import i18n from '@/lib/i18n';
 import { api, apiLang } from '@/lib/api/client';
 import { hasBeSession } from '@/lib/auth/beAuth';
-import { queryClient } from '@/lib/queryClient';
-import { NOTIF_SETTINGS_KEY, patchNotificationSettings, type NotificationSettings } from '@/lib/data/useNotificationSettings';
+import { patchNotificationSettings } from '@/lib/data/useNotificationSettings';
 
 const PROMPTED_KEY = 'kbap.push.prompted.v1';
 const ACTIVITY_PENDING_KEY = 'kbap.push.activityDefaultPending.v1'; // KB-631: 로그인 팝업 허용 → 로그인 후 activity 기본값 1회 적용 대기
-const REMINDERS_KEY = 'kbap.push.reminders.v1'; // { [foodId]: notificationId }
-
-export const REVIEW_REMINDER_SECONDS = 3600; // 주문 완료 → 1시간 후
 
 /* ---- 네이티브 모듈 지연 로드 (유일한 require 지점) ---- */
 
@@ -185,76 +181,12 @@ function getProjectId(): string | undefined {
   }
 }
 
-/* ---- 로컬 리뷰 유도 알림 (BE 무관 — 표 ②) ---- */
-
-async function getReminderMap(): Promise<Record<string, string>> {
-  try {
-    const raw = await AsyncStorage.getItem(REMINDERS_KEY);
-    if (raw) return JSON.parse(raw) as Record<string, string>;
-  } catch {
-    /* 손상 — 빈 맵 */
-  }
-  return {};
-}
-
-async function setReminderMap(map: Record<string, string>): Promise<void> {
-  try {
-    await AsyncStorage.setItem(REMINDERS_KEY, JSON.stringify(map));
-  } catch {
-    /* 기록 실패 — 취소 불가 최악 1회 중복 */
-  }
-}
-
-/**
- * 주문 완료 모달 닫힘 시점 호출 — 1시간 후 "아까 그 메뉴 어땠어요?" 예약.
- * 서버 설정 `activity`(리뷰 리마인더 통합) 캐시가 true일 때만 — 캐시 없음 = 예약 안 함(보수적).
- * 권한 없음·플래그 off = 예약 안 함. 같은 음식 기존 예약은 교체. (KB-500에서 서버 배치로 이관 예정)
- */
-export async function scheduleReviewReminder(food: { foodId: string; name: string }): Promise<void> {
-  const N = loadNotifications();
-  if (!N) return;
-  try {
-    if (queryClient.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)?.activity !== true) return;
-    const { status } = await N.getPermissionsAsync();
-    if (status !== 'granted') return;
-    await cancelReviewReminder(food.foodId); // 재주문 = 타이머 리셋
-    const id = await N.scheduleNotificationAsync({
-      content: {
-        title: i18n.t('push.reviewReminderTitle'),
-        body: i18n.t('push.reviewReminderBody', { name: food.name }),
-        data: { type: 'REVIEW_REMINDER', foodId: food.foodId },
-      },
-      // KB-498: Android는 activity 채널(MAX)로 — 없으면 expo 폴백 채널(기본 중요도). iOS는 channelId 무시.
-      trigger: { type: N.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: REVIEW_REMINDER_SECONDS, channelId: 'activity' },
-    });
-    await setReminderMap({ ...(await getReminderMap()), [food.foodId]: id });
-  } catch (e) {
-    console.log('[push] reminder 예약 실패(비치명)', (e as Error)?.message ?? e);
-  }
-}
-
-/** 그 음식 리뷰 작성 완료 시 호출 — 예약 취소(이미 발화됐으면 no-op). */
-export async function cancelReviewReminder(foodId: string): Promise<void> {
-  const N = loadNotifications();
-  if (!N) return;
-  try {
-    const map = await getReminderMap();
-    const id = map[foodId];
-    if (!id) return;
-    await N.cancelScheduledNotificationAsync(id);
-    delete map[foodId];
-    await setReminderMap(map);
-  } catch {
-    /* 취소 실패 — 알림 1회 더 오는 것뿐 */
-  }
-}
-
 /* ---- 알림 탭 구독 (루트 레이아웃 1곳 배선) ---- */
 
 /**
  * 알림 탭 → 라우팅 콜백. 포그라운드 표시 핸들러(배너)도 여기서 1회 설정.
  * 콜드 스타트(종료 상태 알림 탭)는 마지막 응답 1회 처리. 반환 = 해제 함수.
- * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·MEAL_TIME·foodId 없는 리마인더)이면 null.
+ * KB-498: 탭마다 항상 호출 — href는 이동 없는 유형(NEWS·orderId 없는 리마인더)이면 null.
  * 2번째 인자 = 서버 알림 id(기기 단위, data.notificationId 그대로 — 형 변환 없음). 경로가 없어도 id는 전달(읽음 처리용).
  * 읽음 처리는 루트 레이아웃이 onPushTapped(id)로 수행(KB-499). Android는 여기서 activity(MAX)·news(HIGH) 채널을 1회 설정.
  */
@@ -328,7 +260,7 @@ export function isPushType(v: unknown): v is PushType {
 /* ---- 딥링크 라우팅 (순수 함수 — 서버 data 계약 KB-498, 여기만 배선) ---- */
 
 export function routeForNotificationData(data: unknown): string | null {
-  const d = data as { type?: string; foodId?: string | number } | null | undefined;
+  const d = data as { type?: string; orderId?: string | number } | null | undefined;
   // KB-573(2026-09-16 종한 확정): 매핑은 FE 소유 — 서버는 type + 대상 id만. "어떻게 가는가"(홈 = 스택 리셋 +
   // 탭 점프 · 그 외 navigate 재사용)는 lib/nav openNotificationRoute 한 곳. 여기는 경로 문자열만.
   switch (d?.type) {
@@ -337,8 +269,12 @@ export function routeForNotificationData(data: unknown): string | null {
     case 'SCAN_SUGGESTION': // 구 NUDGE(2026-09-07 개명) — 구 이름은 default로 무동작
     case 'MEAL_TIME':
       return '/(tabs)'; // 홈 탭(광고성 유도 2종 동일 착지)
-    case 'REVIEW_REMINDER':
-      return d.foodId != null ? `/food/${d.foodId}` : null; // 음식 상세(리뷰 작성 화면 아님 — 9/12 결정)
+    case 'REVIEW_REMINDER': {
+      // KB-500: 서버 배치 리마인더 = 주문 단위(data.orderId, int64) → 주문 상세. 숫자 문자열만 인정, 정밀도는 문자열로 보존.
+      // 구 로컬 알림의 foodId는 폐기 — 값이 와도 무동작(오착지 금지).
+      const s = d.orderId == null ? '' : String(d.orderId);
+      return /^\d+$/.test(s) ? `/profile/order/${s}` : null;
+    }
     case 'NEWS':
       return null; // 앱만 켜짐 — 이동 없음(알림함 열람·읽음 처리만)
     default:

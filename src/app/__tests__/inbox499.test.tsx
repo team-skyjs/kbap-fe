@@ -1,6 +1,6 @@
 /**
  * KB-499 — 알림함 화면(서버 정본): 3상태(스켈레톤·에러 재시도·빈) · 행 = 서버 문자열 + 상대 시각 ·
- * 탭 = 미읽음만 읽음 뮤테이션 + type/foodId 기반 이동(없으면 알림함 유지) · 게스트 = 로그인 Redirect ·
+ * 탭 = 미읽음만 읽음 뮤테이션 + type/orderId 기반 이동(없으면 알림함 유지) · 게스트 = 로그인 Redirect ·
  * 읽음/미읽음 행 프레임 불변 · 소스 잠금(로컬 스토어·모두 읽음·게이트 시트 부재).
  */
 import * as React from 'react';
@@ -55,7 +55,7 @@ jest.mock('@/lib/analytics', () => ({ track: jest.fn(), EVENTS: { error_state_vi
 let mockGuest = false;
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockGuest, useSession: () => (mockGuest ? false : true) }));
 
-type Item = { id: number; title: string; body: string; at: string; read: boolean; type?: string; foodId?: string };
+type Item = { id: number; title: string; body: string; at: string; read: boolean; type?: string; orderId?: string };
 const mockInbox = {
   data: undefined as Item[] | undefined,
   isPending: false,
@@ -144,10 +144,10 @@ it('④ 행 — 서버 title/body 문자열 그대로(t 미경유) + 상대 시�
   expect(mockT).not.toHaveBeenCalledWith('reviews.today'); // 구 relativeDate 소멸
 });
 
-it('⑨⑩⑪ 탭 — 미읽음만 mutate · type 없음 = 이동 0 · REVIEW_REMINDER+foodId = /food/7 · NEWS = 이동 0 · HELPFUL = 푸시 규칙과 동일', () => {
+it('⑨⑩⑪ 탭 — 미읽음만 mutate · type 없음 = 이동 0 · REVIEW_REMINDER+orderId = /profile/order/12 · NEWS = 이동 0 · HELPFUL = 푸시 규칙과 동일', () => {
   mockInbox.data = [
     ...items,
-    { id: 3, title: 'r', body: 'r', at: ago(1000), read: false, type: 'REVIEW_REMINDER', foodId: '7' },
+    { id: 3, title: 'r', body: 'r', at: ago(1000), read: false, type: 'REVIEW_REMINDER', orderId: '12' },
     { id: 4, title: 'n', body: 'n', at: ago(1000), read: false, type: 'NEWS' },
     { id: 5, title: 'h', body: 'h', at: ago(1000), read: true, type: 'HELPFUL' },
   ];
@@ -159,7 +159,7 @@ it('⑨⑩⑪ 탭 — 미읽음만 mutate · type 없음 = 이동 0 · REVIEW_RE
   expect(mockMutate).toHaveBeenCalledTimes(1);
   press(tree, 'inbox-3');
   expect(mockMutate).toHaveBeenLastCalledWith(3);
-  expect(mockNavigate).toHaveBeenLastCalledWith('/food/7');
+  expect(mockNavigate).toHaveBeenLastCalledWith('/profile/order/12');
   press(tree, 'inbox-4');
   expect(mockMutate).toHaveBeenLastCalledWith(4);
   expect(mockNavigate).toHaveBeenCalledTimes(1); // NEWS 이동 없음
