@@ -7,6 +7,12 @@
  * 이 저장이 없으면 정보성 알림이 0건). 거절(나중에)은 기록만, 재노출 0(설정 화면에서 켤 수 있음).
  * 진입점 = 스캔 결과 직후 1회(코치마크와 직렬화, KB-377) — KB-631부터 **후순위**: 첫 설치는 로그인 화면에서 OS 팝업을
  * 바로 띄우고 같은 기록을 남기므로(pushAdapter promptPermissionOnFirstLogin) 이 시트는 그 경로를 못 본 기기(구버전 업데이트)만 본다.
+ *
+ * mode(2026-09-28, 종한 — 리마인더 서버 전환 후속, 판정은 lib/push/scanNudge):
+ *  - 'primer'(기본)  : 위 그대로.
+ *  - 'osDenied'      : OS 권한 거부 — 「기기 설정 열기」(Linking.openSettings). 기록 없음, 매 스캔마다.
+ *  - 'activityOff'   : OS 허용·서버 활동 알림 OFF — 「알림 켜기」= PATCH activity:true(OS 팝업 없음). 기록 없음, 매 스캔마다.
+ *  두 모드의 「나중에」는 닫기만(markPrimerResult 호출 안 함). 문구는 push.nudgeTitle/Body(종한 확정).
  */
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,18 +21,45 @@ import { markPrimerResult, registerPushToken, requestPermission } from '@/lib/pu
 import { hasBeSession } from '@/lib/auth/beAuth';
 import { patchNotificationSettings } from '@/lib/data/useNotificationSettings';
 import { EVENTS, track } from '@/lib/analytics';
+import { openAppSettings } from '@/lib/openExternal';
+import type { ScanNudgeMode } from '@/lib/push/scanNudge';
 
 export function PushPrimerModal({
   open,
   onDone,
   surface,
+  mode = 'primer',
 }: {
   open: boolean;
   onDone: () => void;
   /** P-214: 노출 표면 — 승낙률 비교. KB-497: 스캔 결과만 남음. */
   surface: 'scan';
+  mode?: ScanNudgeMode;
 }) {
   const { t } = useTranslation();
+  if (mode !== 'primer') {
+    const denied = mode === 'osDenied';
+    const confirm = async () => {
+      if (denied) {
+        track(EVENTS.push_permission, { state: 'settings_open' }); // 설정 화면 배너와 같은 계측
+        await openAppSettings(); // 복귀 후 재판정은 다음 스캔에서
+      } else {
+        await patchNotificationSettings({ activity: true }).catch(() => {}); // 실패 = 설정 화면에서 직접 켤 수 있음
+      }
+      onDone();
+    };
+    return (
+      <NotificationSheet
+        open={open}
+        variant="primer"
+        title={t('push.nudgeTitle')}
+        body={t('push.nudgeBody')}
+        confirmLabel={t(denied ? 'notif.osOffCta' : 'push.primerYes')}
+        onConfirm={confirm}
+        onClose={onDone}
+      />
+    );
+  }
 
   const accept = async () => {
     track(EVENTS.push_primer_response, { action: 'accept', surface }); // P-214

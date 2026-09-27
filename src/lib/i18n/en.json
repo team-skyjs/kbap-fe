@@ -957,7 +957,9 @@
     "privacyConsent": "Consent to marketing data collection and use (optional)",
     "receiveConsent": "Consent to receive promotional messages (optional)",
     "consentBothRequired": "Please agree to both items to turn on notifications.",
-    "consentConfirm": "Agree and turn on"
+    "consentConfirm": "Agree and turn on",
+    "nudgeTitle": "Keep review alerts on?",
+    "nudgeBody": "We'll remind you to review what you ordered before you forget,\nand let you know when someone reacts to your review."
   },
   "notif": {
     "title": "Notifications",

@@ -13,6 +13,7 @@
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
+import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, AppState, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
@@ -67,7 +68,6 @@ import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
-import { getPrimerResult } from '@/lib/push/pushAdapter';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -256,13 +256,15 @@ export default function Scan() {
   // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
   // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
   // present → iOS UIKit presentation 교착(첫 스캔 먹통 — 실기 2건).
+  // 2026-09-28(종한): 판정 확장 — OS 거부 / 서버 활동 알림 OFF면 매 스캔마다 유도(lib/push/scanNudge), 그 외는 기존 1회 프라이머.
   const [pushPrimer, setPushPrimer] = useState(false);
+  const [nudgeMode, setNudgeMode] = useState<ScanNudgeMode>('primer');
   const maybeShowPrimer = useCallback(() => {
     if (!FLAGS.pushEnabled) return;
-    void getPrimerResult().then((r) => {
-      if (r == null) setPushPrimer(true);
+    void decideScanNudge(isGuest).then((m) => {
+      if (m) { setNudgeMode(m); setPushPrimer(true); }
     });
-  }, []);
+  }, [isGuest]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -795,7 +797,7 @@ export default function Scan() {
 
         {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
             온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
-        <PushPrimerModal surface="scan" open={pushPrimer} onDone={() => setPushPrimer(false)} />
+        <PushPrimerModal surface="scan" mode={nudgeMode} open={pushPrimer} onDone={() => setPushPrimer(false)} />
       </View>
     );
   }

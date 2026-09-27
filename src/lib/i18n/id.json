@@ -958,7 +958,9 @@
     "privacyConsent": "Setuju pengumpulan dan penggunaan data pribadi untuk pemasaran (opsional)",
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
     "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
-    "consentConfirm": "Setuju dan nyalakan"
+    "consentConfirm": "Setuju dan nyalakan",
+    "nudgeTitle": "Aktifkan notifikasi ulasan?",
+    "nudgeBody": "Kami ingatkan untuk mengulas menu yang kamu pesan sebelum lupa,\ndan kabari saat ada yang merespons ulasanmu."
   },
   "notif": {
     "title": "Pengaturan notifikasi",
