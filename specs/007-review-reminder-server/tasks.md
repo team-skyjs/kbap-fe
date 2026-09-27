@@ -78,7 +78,7 @@
 - [X] T021 [P] `specs/005-push-tap-landing/data-model.md`(12·13행)·`contracts/push-tap-landing.md`(12·13행)·`quickstart.md` D-6: 리마인더 행을 `orderId` → `/profile/order/{id}`로
 - [X] T022 [P] `PROGRESS.md` 말미: `## 리뷰 리마인더 서버 전환 (2026-09-28, KB-500 — Spec Kit 7호 \`specs/007-review-reminder-server\`)` — 결정(B안 주문 상세 무변 · 로컬 예약 삭제 · orderId 정규식 · foodId 폐기) + 열린 항목(릴리스 일정 BE 회신 · 배포 경로는 예진 승인)
 - [X] T023 `npx tsc --noEmit` 0 · `npx jest` 전체 통과 · `grep -rn 'scheduleReviewReminder\|cancelReviewReminder\|REVIEW_REMINDER_SECONDS\|reviewReminderTitle\|reviewReminderBody' src` 0건 · `npx eslint src/lib/push src/features/order/FlippedOrderCard.tsx src/app/food src/app/notifications.tsx src/lib/api/notificationAdapter.ts`
-- [ ] T024 커밋(`feat(push): 리뷰 리마인더 서버 전환 — 로컬 예약 제거·orderId 주문 상세 착지`, 본문 Jira: KB-500) → push → `open-draft-pr` 스킬로 draft PR(base develop). 본문: spec 경로 · B안 결정 · **릴리스 일정 BE 회신 필요**·배포 시 서버 배치 동기 주의 · 실기 D-1~D-8 미실행 명기
+- [X] T024 커밋(`feat(push): 리뷰 리마인더 서버 전환 — 로컬 예약 제거·orderId 주문 상세 착지`, 본문 Jira: KB-500) → push → `open-draft-pr` 스킬로 draft PR(base develop). 본문: spec 경로 · B안 결정 · **릴리스 일정 BE 회신 필요**·배포 시 서버 배치 동기 주의 · 실기 D-1~D-8 미실행 명기
 
 ## Dependencies
 
