@@ -32,4 +32,60 @@ module.exports = defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    // ── 헌법 게이트 하드화(2026-09-26, KB-644) ─────────────────────────────
+    // 발주문마다 글로 실어 보내던 규칙을 CI 실패로 옮긴다(도입 시점 기존 위반 0 — error).
+    // 판별 못 하는 건 여전히 리뷰 몫: useSubmitGuard 누락, false-safe 강등 경로.
+    //
+    // 잡는 위치(Codex #204 2R): JSX 텍스트 · JSX 속성 문자열 · JSX 표현식 **안의 모든** 문자열·
+    // 템플릿 리터럴(`{'😀'}`, `{cond ? '한글' : x}`, `{`총 ${n}개`}`, `label={`…`}`).
+    // 한계: JSX 밖 변수에 담았다가 넘기는 문자열(`const s = '한글'; <T>{s}</T>`)은 못 잡는다 —
+    // 값 추적은 lint 범위 밖, 리뷰 몫.
+    files: ["src/**/*.tsx"],
+    // 테스트는 서버가 준 한국어 데이터(음식명·주소)를 픽스처로 JSX에 넣는다 — UI 카피가 아니다.
+    ignores: ["**/__tests__/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          // 헌법: UI 이모지 0(SVG만). 판정 = Unicode `Extended_Pictographic`(표준 이모지 속성 —
+          // 🟢 같은 도형·⚠️ 포함). 국기(regional indicator 쌍)는 이 속성에 없어 자동 예외
+          // (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
+          // keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
+          selector:
+            ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/\\p{Extended_Pictographic}|\\u20E3/u]",
+          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
+        },
+        {
+          selector: "JSXExpressionContainer TemplateElement[value.raw=/\\p{Extended_Pictographic}|\\u20E3/u]",
+          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
+        },
+        {
+          // 헌법: i18n 하드코딩 0. 주석·console.log(JSX 밖)는 AST 대상이 아니라 안 걸린다.
+          // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
+          selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/[가-힣]/]",
+          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
+        },
+        {
+          selector: "JSXExpressionContainer TemplateElement[value.raw=/[가-힣]/]",
+          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
+        },
+      ],
+    },
+  },
+  {
+    // P-147: 회원 속성(provider·가입 상태·판정)은 서버 API가 정본 — Firebase providerData 읽기 금지.
+    // 예외는 정리·철회 유틸(src/lib/auth)뿐(Codex #204 2R: src/lib 헬퍼 경유 우회 차단).
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/lib/auth/**", "**/__tests__/**"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          property: "providerData",
+          message: "회원 속성 판별은 서버 profile이 정본(P-147). providerData는 src/lib/auth 유틸에서만.",
+        },
+      ],
+    },
+  },
 ]);
