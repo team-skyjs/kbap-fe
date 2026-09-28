@@ -8,17 +8,17 @@
 export interface NotificationWire {
   id: number; title: string; body: string; receivedAt: number; read: boolean;
   type?: string;                       // BE 확장분(dev 배포 대기) — 없으면 undefined
-  foodId?: number | string | null;     // REVIEW_REMINDER만
+  orderId?: number | string | null;    // REVIEW_REMINDER만 (KB-500 — 구 foodId 제거)
 }
 export interface InboxItem {
   id: number; title: string; body: string; at: string /* ISO */; read: boolean;
-  type?: string; foodId?: string;
+  type?: string; orderId?: string;
 }
 export function toInboxItem(w: NotificationWire): InboxItem
 ```
 
 - `at = new Date(receivedAt).toISOString()`; `receivedAt`이 유한수가 아니면 현재 시각.
-- `type`은 그대로 통과(검증은 `routeForNotificationData`), `foodId`는 `w.foodId != null ? String(w.foodId) : undefined`.
+- `type`은 그대로 통과(검증은 `routeForNotificationData`), `orderId`는 `w.orderId != null ? String(w.orderId) : undefined`.
 
 ## 2. `src/lib/data/useNotifications.ts`
 
@@ -60,7 +60,7 @@ export function onPushTapped(notificationId?: number | string): Promise<void>; /
 | 빈 상태 | `notif-empty` | 기존 인라인 센터 구조·리터럴 유지(`items.length === 0 && { flexGrow: 1 }`) |
 | 행 | `inbox-${item.id}` | `title`(1줄) · `body`(2줄) · `timeAgo(item.at, t)` · `title` 스타일 리터럴 `fontSize: 15, fontWeight: '700'` 유지 |
 | 미읽음 점 | `unread-${item.id}` | 고정 `dotSlot` 안. 읽음 행은 점 없음 |
-| 탭 | — | `if (!item.read) markRead.mutate(item.id); const href = routeForNotificationData({ type: item.type, foodId: item.foodId }); if (href) router.push(href as Href);` — `type` 없음/미지 = 이동 없음 |
+| 탭 | — | `if (!item.read) markRead.mutate(item.id); const href = routeForNotificationData({ type: item.type, orderId: item.orderId }); if (href) openNotificationRoute(router, href);` — `type` 없음/미지 = 이동 없음 |
 
 프레임 불변: 읽음/미읽음 행 flatten 스타일은 `backgroundColor` 외 전부 동일.
 

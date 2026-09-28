@@ -32,7 +32,7 @@ grep -rn "push-landing\|landingTbd" src | grep -v __tests__ ; ls src/app/push-la
 | D-3 | 앱 완전 종료(스와이프 킬) | MEAL_TIME 탭 | 스플래시 → 홈 탭. 크래시·Sentry 이벤트 0 |
 | D-4 | 앱 완전 종료 | HELPFUL 탭 | 스플래시 → 내 리뷰 목록, 뒤로 = 홈 |
 | D-5 | 앱 백그라운드, 회원 | HELPFUL 두 건 연속 탭 | 내 리뷰 목록 1장(뒤로 1회면 이전 화면) |
-| D-6 | 음식 상세 `/food/A` 열린 상태 | REVIEW_REMINDER(foodId B) 탭 | 상세가 B로 갱신(새 화면 쌓이지 않음), 내용·스크롤 정상 |
+| D-6 | 주문 상세 `/profile/order/A` 열린 상태 | REVIEW_REMINDER(orderId B) 탭 (KB-500) | 상세가 B로 갱신(새 화면 쌓이지 않음), 내용·스크롤 정상 |
 | D-7 | 로그아웃(게스트) 상태, 알림 센터에 HELPFUL 잔존 | 탭 | 내 리뷰 화면의 로그인 유도 시트(AuthGateSheet) |
 | D-8 | 앱 백그라운드, 음식 상세 열린 상태 | SCAN_SUGGESTION 탭 | 홈 탭, 뒤로 가기 대상 없음(D-1과 동일) |
 | D-9 | 앱 백그라운드 | NEWS 탭 / `{"type":"NUDGE"}` 탭 | 앱만 열림, 이동 없음 |

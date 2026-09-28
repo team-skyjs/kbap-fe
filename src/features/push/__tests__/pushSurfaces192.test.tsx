@@ -62,10 +62,7 @@ jest.mock('@/lib/push/pushAdapter', () => ({
   markPrimerResult: jest.fn().mockResolvedValue(undefined),
   requestPermission: jest.fn().mockResolvedValue(true),
   registerPushToken: jest.fn().mockResolvedValue(undefined),
-  scheduleReviewReminder: jest.fn().mockResolvedValue(undefined),
-  cancelReviewReminder: jest.fn().mockResolvedValue(undefined),
   getPrimerResult: jest.fn().mockResolvedValue(null),
-  REVIEW_REMINDER_SECONDS: 3600,
   getPermissionStatus: jest.fn().mockResolvedValue('granted'),
   pushAvailable: jest.fn(() => true),
 }));
@@ -83,7 +80,7 @@ jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn() }));
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
-  'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'scheduleReviewReminder' | 'cancelReviewReminder' | 'getPrimerResult',
+  'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'getPrimerResult',
   jest.Mock
 >;
 
@@ -216,7 +213,7 @@ it('KB-497 소스 잠금: scan.tsx 프라이머 = PushPrimerModal(시트 래퍼)
   expect(primer).toContain("variant=\"primer\"");
 });
 
-it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = 첫 foodId 항목 예약 + onDone', async () => {
+it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = onDone (KB-500: 로컬 리마인더 예약 없음)', async () => {
   const onDone = jest.fn();
   const items = [
     { nameKo: '김밥', name: 'Kimbap', qty: 1, priceKrw: 3000, foodId: null }, // 미매칭 — 건너뜀
@@ -228,16 +225,10 @@ it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = 첫 foo
   // Done 탭 → 완료 모달
   const doneBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.done').length > 0).pop()!;
   await act(async () => doneBtn.props.onPress());
-  // 모달의 홈 버튼 탭 = 예약(foodId 보유 첫 항목) 후 onDone
+  // 모달의 홈 버튼 탭 = onDone(리마인더는 서버 배치 — 앱 예약 0)
   const homeBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.doneHome').length > 0).pop()!;
   await act(async () => homeBtn.props.onPress());
-  expect(mockAdapter.scheduleReviewReminder).toHaveBeenCalledWith({ foodId: '7', name: 'Kimchi Jjigae' });
   expect(onDone).toHaveBeenCalled();
-});
-
-it('리뷰 작성 성공 시 예약 취소 배선 — 소스 잠금(작성 화면 cancelReviewReminder)', () => {
-  const src = require('fs').readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
-  expect(src).toContain('cancelReviewReminder(id)');
 });
 
 it('KB-496(Codex #104 P2-4): OS 설정 복귀(AppState active) = 권한 재조회 + 토큰 등록 — 재시작 없이 배너 해제·등록', () => {

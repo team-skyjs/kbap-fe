@@ -72,7 +72,6 @@ jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimbap', nameKo: '김밥', risk: 'safe' } }),
 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
-jest.mock('@/lib/push/pushAdapter', () => ({ cancelReviewReminder: jest.fn() }));
 jest.mock('@/lib/analytics', () => ({ EVENTS: {}, track: jest.fn() }));
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {} }));

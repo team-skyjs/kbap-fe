@@ -958,9 +958,7 @@
     "privacyConsent": "Đồng ý thu thập và sử dụng thông tin cá nhân cho tiếp thị (tùy chọn)",
     "receiveConsent": "Đồng ý nhận thông tin quảng cáo (tùy chọn)",
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
-    "consentConfirm": "Đồng ý và bật thông báo",
-    "reviewReminderTitle": "Bữa ăn thế nào?",
-    "reviewReminderBody": "Cho chúng tôi biết {{name}} thế nào — một đánh giá nhanh sẽ giúp các du khách khác."
+    "consentConfirm": "Đồng ý và bật thông báo"
   },
   "notif": {
     "title": "Cài đặt thông báo",

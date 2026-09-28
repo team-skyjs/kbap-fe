@@ -36,7 +36,8 @@
 | 필드 | 타입 | 필수 | 의미 |
 |------|------|------|------|
 | `type` | string | ✓ | 푸시 `data.type`과 같은 enum: `HELPFUL` `SCAN_SUGGESTION` `REVIEW_REMINDER` `NEWS` `MEAL_TIME`. 구 행은 저장 문자열 그대로 가능(앱은 미지 유형 = 이동 없음) |
-| `foodId` | int64, nullable | — | `REVIEW_REMINDER`만 값, 그 외 항상 null. REVIEW_REMINDER라도 값이 없거나 정수가 아니면 null |
+| `orderId` | int64, nullable | — | `REVIEW_REMINDER`만 값, 그 외 항상 null(KB-500, 서버 PR #305). 앱은 숫자 문자열만 인정 |
+| `foodId` | int64, nullable | — | 호환용 잔존 — **항상 null**. 앱은 읽지 않는다(KB-500) |
 
 X-API-Version 불변(가산 필드). 앱 어댑터는 두 필드를 **옵션**으로 읽어 구 응답·구 행에서도 깨지지 않는다(모르는 유형 = 이동 없음).
 
@@ -45,7 +46,7 @@ X-API-Version 불변(가산 필드). 앱 어댑터는 두 필드를 **옵션**�
 - 본문 없음. **멱등** — 이미 읽은 항목도 200.
 - 응답 `payload: NotificationResponse`(갱신 항목, `read: true`).
 - 404 `NOTIFICATION-002`: 타인·다른 기기·부재 알림(구분 없음). 7일 지난 알림은 정상 처리(200).
-- 앱 호출 지점: 알림함 항목 탭(미읽음만; 탭 후 `type`·`foodId`로 푸시 탭과 같은 이동) · 푸시 탭(`data.notificationId`, 회원 기기만).
+- 앱 호출 지점: 알림함 항목 탭(미읽음만; 탭 후 `type`·`orderId`로 푸시 탭과 같은 이동) · 푸시 탭(`data.notificationId`, 회원 기기만).
 
 ## 사용하지 않는 것
 

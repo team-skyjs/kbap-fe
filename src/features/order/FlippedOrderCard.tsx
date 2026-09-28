@@ -18,7 +18,6 @@ import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
-import { scheduleReviewReminder } from '@/lib/push/pushAdapter';
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
@@ -59,7 +58,7 @@ export function FlippedOrderCard({
   const [zoomed, setZoomed] = React.useState(false);
   // P-162: Done = 무반응 아님 — 완료 확인 모달 경유 후 onDone(홈 이동)
   const [doneOpen, setDoneOpen] = React.useState(false);
-  // P-256: 완료 확정 1회 가드 — done 재탭·모달 재경유에도 저장/계측/리마인더 1회
+  // P-256: 완료 확정 1회 가드 — done 재탭·모달 재경유에도 저장/계측 1회
   const committedRef = React.useRef(false);
   // P-166: 모달 등장과 동시 폭죽 — DURATION 후 자연 소멸(언마운트), 매 완료마다
   const [confetti, setConfetti] = React.useState(false);
@@ -141,14 +140,11 @@ export function FlippedOrderCard({
             setDoneOpen(true);
             setConfetti(true); // P-166: 모달 등장과 동시 버스트
             // P-256(예진 HAR 판독): 완료 확정 = **이 done 탭** — go home 전 이탈해도
-            // 저장·계측·리마인더가 남도록 전부 여기서 발화. 재탭·모달 경유 이중 발화는
-            // 1회 가드(ref)로 봉쇄. order_done·리마인더 동반 이동(재량 ② — 퍼널 종점
-            // 정확도·go home 미탭 유실 방지, 발주 권고안 그대로).
+            // 저장·계측이 남도록 전부 여기서 발화. 재탭·모달 경유 이중 발화는
+            // 1회 가드(ref)로 봉쇄. (리뷰 리마인더는 KB-500부터 서버 배치 — 로컬 예약 없음)
             if (committedRef.current) return;
             committedRef.current = true;
             track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
-            const target = items.find((i) => i.foodId != null && i.qty > 0);
-            if (target?.foodId) void scheduleReviewReminder({ foodId: String(target.foodId), name: target.name });
             // P-252→256: 주문 이력 저장 — 실패 무해(내부 흡수·code 로그), UX 무영향
             void saveOrderHistory({ imagePath: orderImagePath, items });
           }}
@@ -168,7 +164,7 @@ export function FlippedOrderCard({
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
               <Btn
-                onPress={onDone} /* P-256: 저장·계측·리마인더는 done 탭으로 이동 — 여기는 복귀만 */
+                onPress={onDone} /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만 */
               >
                 {t('order.doneHome')}
               </Btn>
