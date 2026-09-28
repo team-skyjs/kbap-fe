@@ -35,7 +35,7 @@ export async function decideScanNudge(isGuest: boolean): Promise<ScanNudgeMode |
  * 바뀌었으면 토큰 등록 + PATCH activity:true(프라이머 수락과 같은 기본값). 여전히 denied면 아무것도 하지 않는다
  * (다음 스캔에서 재유도). 9/28 실기: 이 처리가 없으면 OS에서 켜고 돌아와도 활동 알림 토글이 OFF로 남는다.
  */
-export function finishAfterOsSettings(): void {
+export function finishAfterOsSettings(): () => void {
   const sub = AppState.addEventListener('change', (st) => {
     if (st !== 'active') return;
     sub.remove();
@@ -45,4 +45,5 @@ export function finishAfterOsSettings(): void {
       await patchNotificationSettings({ activity: true }).catch(() => {}); // 실패 = 설정 화면에서 직접 켤 수 있음
     })();
   });
+  return () => sub.remove(); // Codex 리뷰: 설정 열기 실패 시 호출부가 해제 — 무관한 복귀에 발화·누적 방지
 }

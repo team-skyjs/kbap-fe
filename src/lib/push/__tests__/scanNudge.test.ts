@@ -94,3 +94,9 @@ it('기기 설정 복귀: 여전히 거부면 아무것도 안 함(다음 스캔
   expect(mockAdapter.registerPushToken).not.toHaveBeenCalled();
   expect(mockPatch).not.toHaveBeenCalled();
 });
+
+it('반환된 해제 함수 = 리스너 제거(설정 열기 실패 시 호출부가 사용) — 이후 복귀에 무동작', async () => {
+  const cancel = finishAfterOsSettings();
+  cancel();
+  expect(mockAppState.remove).toHaveBeenCalledTimes(1);
+});

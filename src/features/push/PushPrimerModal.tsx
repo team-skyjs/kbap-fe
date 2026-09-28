@@ -42,8 +42,8 @@ export function PushPrimerModal({
     const confirm = async () => {
       if (denied) {
         track(EVENTS.push_permission, { state: 'settings_open' }); // 설정 화면 배너와 같은 계측
-        finishAfterOsSettings(); // 복귀 시 허용됐으면 토큰 등록 + activity ON (9/28 실기: 없으면 토글 OFF 잔존)
-        await openAppSettings();
+        const cancel = finishAfterOsSettings(); // 복귀 시 허용됐으면 토큰 등록 + activity ON (9/28 실기: 없으면 토글 OFF 잔존)
+        if (!(await openAppSettings())) cancel(); // 못 열었으면 리스너 해제(Codex 리뷰)
       } else {
         await registerPushToken(); // OS는 이미 허용 — 앱 시작 이후 허용된 기기면 아직 미등록일 수 있다
         await patchNotificationSettings({ activity: true }).catch(() => {}); // 실패 = 설정 화면에서 직접 켤 수 있음

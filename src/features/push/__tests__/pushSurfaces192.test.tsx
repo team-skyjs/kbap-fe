@@ -80,7 +80,8 @@ const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } }));
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
 const mockOpenSettings = jest.fn().mockResolvedValue(true);
-const mockFinishAfterOs = jest.fn();
+const mockCancelAfterOs = jest.fn();
+const mockFinishAfterOs = jest.fn(() => mockCancelAfterOs);
 jest.mock('@/lib/push/scanNudge', () => ({ get finishAfterOsSettings() { return mockFinishAfterOs; } }));
 jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn(), get openAppSettings() { return mockOpenSettings; } }));
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
@@ -264,10 +265,18 @@ it('mode=osDenied: 확인 = 기기 설정 열기 1회 · OS 팝업 0 · 프라�
   expect(mockOpenSettings).toHaveBeenCalledTimes(1);
   expect(mockFinishAfterOs).toHaveBeenCalledTimes(1); // 복귀 시 허용됐으면 토큰+activity ON (9/28 실기)
   expect(mockFinishAfterOs.mock.invocationCallOrder[0]).toBeLessThan(mockOpenSettings.mock.invocationCallOrder[0]); // 나가기 전에 리스너
+  expect(mockCancelAfterOs).not.toHaveBeenCalled(); // 열기 성공 = 리스너 유지
   expect(mockAdapter.requestPermission).not.toHaveBeenCalled();
   expect(mockAdapter.markPrimerResult).not.toHaveBeenCalled();
   expect(mockPatch).not.toHaveBeenCalled();
   expect(onDone).toHaveBeenCalled();
+});
+
+it('mode=osDenied: 설정 열기 실패(false) → 복귀 리스너 즉시 해제 (Codex 리뷰)', async () => {
+  mockOpenSettings.mockResolvedValueOnce(false);
+  const tree = render(<PushPrimerModal open onDone={jest.fn()} surface="scan" mode="osDenied" />);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(mockCancelAfterOs).toHaveBeenCalledTimes(1);
 });
 
 it('mode=activityOff: 확인 = 토큰 등록 + PATCH activity:true 1회 · OS 팝업 0 · 설정 열기 0 · 프라이머 기록 0', async () => {
@@ -297,4 +306,7 @@ it('배선 잠금: scan.tsx 판정 = decideScanNudge(isGuest) → mode 전달', 
   expect(scan).toContain('decideScanNudge(isGuest)');
   expect(scan).toContain('<PushPrimerModal surface="scan" mode={nudgeMode}');
   expect(scan).not.toContain('getPrimerResult'); // 판정은 scanNudge 한 곳
+  // Codex 리뷰: 결과 1회당 1회(마커 탭→코치마크 닫힘 재호출에 재노출 0) · 카메라 복귀에서 리셋
+  expect(scan).toContain('if (nudgeShownRef.current) return;');
+  expect(scan).toContain("if (phase !== 'result') { nudgeShownRef.current = false; return; }");
 });

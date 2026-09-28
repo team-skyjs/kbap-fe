@@ -259,10 +259,13 @@ export default function Scan() {
   // 2026-09-28(종한): 판정 확장 — OS 거부 / 서버 활동 알림 OFF면 매 스캔마다 유도(lib/push/scanNudge), 그 외는 기존 1회 프라이머.
   const [pushPrimer, setPushPrimer] = useState(false);
   const [nudgeMode, setNudgeMode] = useState<ScanNudgeMode>('primer');
+  // Codex 리뷰: 결과 1회당 시트 1회 — 「나중에」 뒤 마커 탭→코치마크 닫힘이 판정을 다시 불러도 재노출 0. 새 스캔(카메라 복귀)에서 리셋.
+  const nudgeShownRef = useRef(false);
   const maybeShowPrimer = useCallback(() => {
     if (!FLAGS.pushEnabled) return;
+    if (nudgeShownRef.current) return;
     void decideScanNudge(isGuest).then((m) => {
-      if (m) { setNudgeMode(m); setPushPrimer(true); }
+      if (m && !nudgeShownRef.current) { nudgeShownRef.current = true; setNudgeMode(m); setPushPrimer(true); }
     });
   }, [isGuest]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
@@ -295,7 +298,7 @@ export default function Scan() {
   // 코치마크 우선, 뜨면 프라이머는 보류(코치 onClose에서 재평가). 코치마크가 없으면
   // (이번에 안 뜸·기존자 재도달) 프라이머 단독 판정 = 현행 시맨틱 무변.
   useEffect(() => {
-    if (phase !== 'result') return;
+    if (phase !== 'result') { nudgeShownRef.current = false; return; }
     void (async () => {
       if (!coachChecked.current) {
         coachChecked.current = true;
