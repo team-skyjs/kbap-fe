@@ -171,7 +171,7 @@ const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props
  *  받은 원천(useFoodDetail·리뷰 fetch·북마크)이 세우는데, 이 파일은 그 훅들을 목으로 바꾸므로 테스트가
  *  원천 대신 세운다(`hide()`). "원천이 세우는지"는 훅 수준 유닛(foodDetailHidden620·bookmarkHidden626)이 본다. */
 const HIDDEN = jest.requireActual('@/lib/data/hiddenFoods') as typeof import('@/lib/data/hiddenFoods');
-const hide = () => act(() => { HIDDEN.markFoodHidden('7'); });
+const hide = (reason?: 'updating' | 'gone') => act(() => { HIDDEN.markFoodHidden('7', reason); });
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -600,6 +600,25 @@ describe('KB-620 음식 상세 — 숨김(FOOD-001)은 조용한 안내', () => 
     expect(byId(tree, 'query-error-block')).toHaveLength(0); // 재시도 함정 없음
     expect(flat(tree)).toContain('detail.foodHidden');
     expect(flat(tree)).not.toContain('common.retry');
+  });
+
+  /* KB-650(서버 #292): 018 = 존재하나 READY 아님(재생성 중 — 돌아온다) → 회복 문구. 001 = 없음·삭제 → 중립.
+     같은 EmptyBlock·같은 testID(레이아웃 불변) — 문구만 갈린다. */
+  it('KB-650: FOOD-018 → 회복 문구(detail.foodUpdating) · 001 중립 문구는 안 나온다 · 에러 블록 0', () => {
+    withError(new ApiError('갱신 중', 400, 'FOOD-018'));
+    hide('updating');
+    const tree = render(<FoodDetailScreen />);
+    expect(byId(tree, 'detail-food-hidden').length).toBeGreaterThan(0);
+    expect(byId(tree, 'query-error-block')).toHaveLength(0);
+    expect(flat(tree)).toContain('detail.foodUpdating');
+    expect(flat(tree)).not.toContain('detail.foodHidden');
+  });
+
+  it('KB-650: FOOD-001 → 중립 문구만(회복 문구 0) — 삭제된 음식에 "잠시 후" 약속 금지', () => {
+    withError(new ApiError('x', 400, 'FOOD-001'));
+    const tree = render(<FoodDetailScreen />);
+    expect(flat(tree)).toContain('detail.foodHidden');
+    expect(flat(tree)).not.toContain('detail.foodUpdating');
   });
 
   it('FOOD-001이어도 뒤로가기는 남아 있다(플로팅 헤더는 항상 렌더)', () => {

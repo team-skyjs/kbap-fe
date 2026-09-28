@@ -22,12 +22,12 @@
  * 성공이 푼다. 숨김 쪽 오판은 판정을 가릴 뿐 SAFE를 만들지 않는다.
  */
 import { useSyncExternalStore } from 'react';
-import { isFoodHidden } from '@/lib/api/client';
+import { foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
 
 /** 단조 증가 시계 — 요청 출발과 거부 수신의 선후만 비교한다(벽시계 아님). */
 let clock = 0;
-/** foodId → 가장 최근 거부를 받은 시각. 있으면 숨김. */
-const hiddenSince = new Map<string, number>();
+/** foodId → 가장 최근 거부(시각 + 사유). 있으면 숨김. 사유(KB-650)는 문구 분기용 — 판정은 존재 여부 하나. */
+const hiddenSince = new Map<string, { at: number; reason: FoodHiddenReason }>();
 const listeners = new Set<() => void>();
 const emit = () => {
   for (const l of listeners) l();
@@ -53,30 +53,36 @@ export async function trackReadyFood<T>(foodId: string, run: () => Promise<T>): 
     markFoodVisible(foodId, startedAt); // run 뒤 = 적응 끝난 페이로드(#185 4R)
     return result;
   } catch (e) {
-    if (isFoodHidden(e)) markFoodHidden(foodId);
+    const reason = foodHiddenReason(e);
+    if (reason) markFoodHidden(foodId, reason);
     throw e;
   }
 }
 
 /** FOOD-001을 받은 자리에서 호출 — 이 음식의 캐시된 판정을 즉시 가린다. 이미 숨김이면 시각만 갱신
  *  (더 최근 거부 이후에 출발한 성공만 풀 수 있게). */
-export function markFoodHidden(foodId: string) {
+export function markFoodHidden(foodId: string, reason: FoodHiddenReason = 'gone') {
   if (!foodId) return;
-  const wasHidden = hiddenSince.has(foodId);
-  hiddenSince.set(foodId, ++clock);
-  if (!wasHidden) emit();
+  const prev = hiddenSince.get(foodId);
+  hiddenSince.set(foodId, { at: ++clock, reason });
+  if (!prev || prev.reason !== reason) emit(); // 사유가 바뀌면(018→001) 문구도 바뀌어야 한다
 }
 
 /** 성공 해제 — `trackReadyFood` 전용(원천이 직접 부르지 않는다). 마지막 거부 이후 출발한 요청만 푼다. */
 function markFoodVisible(foodId: string, requestStartedAt: number) {
-  const since = hiddenSince.get(foodId);
+  const since = hiddenSince.get(foodId)?.at;
   if (since === undefined || requestStartedAt <= since) return; // 거부 전에 나간 옛 성공은 무시
   hiddenSince.delete(foodId);
   emit();
 }
 
 export function useIsFoodHidden(foodId: string): boolean {
-  const snap = () => hiddenSince.has(foodId);
+  return useFoodHiddenReason(foodId) !== null;
+}
+
+/** KB-650: 숨김 사유 — `null` = 보임. 화면은 이걸로 018(회복 문구)/001(중립 문구)을 가른다. */
+export function useFoodHiddenReason(foodId: string): FoodHiddenReason | null {
+  const snap = () => hiddenSince.get(foodId)?.reason ?? null;
   return useSyncExternalStore(subscribe, snap, snap);
 }
 
@@ -85,6 +91,9 @@ export function useIsFoodHidden(foodId: string): boolean {
  *  있었다(KB-626 3R 실측: 파일 전체 실행에서만 재현). React 경로(화면이 읽는지)는 화면 테스트가 본다. */
 export function __isFoodHiddenForTest(foodId: string): boolean {
   return hiddenSince.has(foodId);
+}
+export function __foodHiddenReasonForTest(foodId: string): FoodHiddenReason | null {
+  return hiddenSince.get(foodId)?.reason ?? null;
 }
 
 /** 테스트 격리 전용 — 모듈 상태가 테스트 사이에 새지 않게. */

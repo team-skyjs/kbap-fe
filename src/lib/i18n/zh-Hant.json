@@ -386,6 +386,7 @@
     "removePhoto": "刪除照片",
     "postError": "評價儲存失敗。請檢查網路後再試一次。",
     "foodHidden": "目前無法為這道菜發布評價。你寫的內容仍保留在此頁面。",
+    "foodUpdating": "這道菜的資訊正在更新中，暫時無法發布評價。你寫的內容仍保留在此頁面。",
     "likesCaption": "按讚不影響排序",
     "placeRow": "你在哪裡吃的？",
     "placeSheetTitle": "標記地點",
@@ -553,7 +554,8 @@
     "beFirstReview": "還沒有評價 — 來寫第一條吧！",
     "ingGuestBody": "{{ingredient}}約在此菜{{percent}}%的版本中使用。各家餐廳可能不同——想確認請詢問店主。",
     "ingGuestBodyNoPct": "{{ingredient}}常用於此菜。各家餐廳可能不同——想確認請詢問店主。",
-    "foodHidden": "目前無法查看這道菜的資訊。"
+    "foodHidden": "目前無法查看這道菜的資訊。",
+    "foodUpdating": "這道菜的資訊正在更新中，請稍後再來查看。"
   },
   "states": {
     "catalogTitle": "狀態",
@@ -883,6 +885,7 @@
   "saved": {
     "error": "無法更新收藏清單，請重試。",
     "foodHidden": "目前無法收藏這道菜。",
+    "foodUpdating": "這道菜的資訊正在更新中，暫時無法收藏。",
     "title": "已收藏",
     "count_other": "{{count}} 道菜",
     "newestFirst": "最新優先",

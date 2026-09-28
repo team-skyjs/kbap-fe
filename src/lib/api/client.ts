@@ -80,10 +80,18 @@ export class ApiError extends Error {
   }
 }
 
-/** KB-620: 음식이 **일시적으로 숨겨짐**(서버 `PENDING_IMAGE` — 이미지 재생성 중) → `FOOD-001`.
- *  에러가 아니라 **곧 돌아올 상태**라, 에러 표면(빨간 안내·재시도·에러 계측)이 아니라 조용한
- *  안내로 다룬다(9/22 예진). 판별은 이 한 곳 — 리뷰 작성·음식 상세가 공유한다. */
-export const isFoodHidden = (e: unknown): boolean => e instanceof ApiError && e.code === 'FOOD-001';
+/** KB-650(서버 #292, KB-625): 음식이 READY가 아닐 때 서버 `getReadyFood`가 주는 사유 —
+ *  `'updating'` = **존재하나 READY 아님**(`FOOD-018` — 이미지 재생성 중, 곧 돌아온다 → 회복 문구)
+ *  `'gone'`     = **없음·삭제**(`FOOD-001` — 돌아온다는 약속 금지 → 중립 문구, KB-620 가드).
+ *  둘 다 에러가 아니라 조용한 안내(9/22 예진). 판별은 **이 한 곳**(ApiError.code — 메시지 매칭 금지). */
+export type FoodHiddenReason = 'updating' | 'gone';
+export const foodHiddenReason = (e: unknown): FoodHiddenReason | null => {
+  if (!(e instanceof ApiError)) return null;
+  if (e.code === 'FOOD-018') return 'updating';
+  if (e.code === 'FOOD-001') return 'gone';
+  return null;
+};
+export const isFoodHidden = (e: unknown): boolean => foodHiddenReason(e) !== null;
 
 /** BE generic envelope. Branch on `success` (NOT HTTP status alone) — §0. */
 export interface BaseResponse<T> {

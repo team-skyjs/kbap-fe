@@ -28,7 +28,7 @@ import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/u
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
-import { isFoodHidden } from '@/lib/api/client';
+import { foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
 import { showTopToast } from '@/components/topToastStore';
 import { Shimmer } from '@/components/Skeleton';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -73,7 +73,7 @@ function ReviewComposeScreen() {
   const [submitted, setSubmitted] = useState(false);
   /** 제출 실패 종류. ⚠️ 불리언 둘(에러·숨김)로 두면 "둘 다 참"이라는 **있을 수 없는 상태**가
    *  생긴다 — 셋 중 하나로 고정한다. `hidden` = 음식이 일시 숨김(KB-620): 에러가 아니다. */
-  const [postError, setPostError] = useState<'failed' | 'hidden' | null>(null);
+  const [postError, setPostError] = useState<'failed' | FoodHiddenReason | null>(null); // KB-650: 숨김은 사유별
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
@@ -202,7 +202,7 @@ function ReviewComposeScreen() {
         // 리뷰·이미지 소유권만 확인해서(음식 준비 상태 무관) 숨겨진 음식의 리뷰도 **수정은 성공**한다.
         // 수정 경로도 이 catch를 지나므로 서버가 준비 상태 검사를 추가하면 그대로 대비된다(KB-626 정정 —
         // KB-620 때 "신규·수정 모두 같은 FOOD-001"이라고 적었던 건 서버를 확인하지 않은 추론이었다).
-        setPostError(isFoodHidden(e) ? 'hidden' : 'failed'); // 실패 = 버튼 복구(가드 finally)
+        setPostError(foodHiddenReason(e) ?? 'failed'); // 실패 = 버튼 복구(가드 finally)
       }
     });
 
@@ -431,9 +431,16 @@ function ReviewComposeScreen() {
         {/* KB-620: 숨김 안내는 **중립**이다 — RiskMark(안전 판정 아이콘)·주황 경고 틴트를 쓰지 않는다.
             "이 음식을 잠시 못 쓴다" 옆에 판정 아이콘이 붙으면 음식 자체에 대한 판정으로 읽힌다(헌법 III).
             틀(패딩·보더·라운딩)은 postErr와 같고 색만 다르다. */}
-        {postError === 'hidden' && (
-          <View style={styles.hiddenNote} testID="review-food-hidden">
+        {/* KB-650: 018(재생성 중) = 회복 문구 + IconRetry("돌아온다") · 001(없음·삭제) = 중립 문구, 텍스트만
+            (되돌아온다는 암시 금지 — KB-620 가드). 틀은 같고 아이콘 슬롯만 다르다. */}
+        {postError === 'updating' && (
+          <View style={styles.hiddenNote} testID="review-food-updating">
             <IconRetry size={16} color={C.inkInfo} />
+            <Text style={styles.hiddenNoteText}>{t('review.foodUpdating')}</Text>
+          </View>
+        )}
+        {postError === 'gone' && (
+          <View style={styles.hiddenNote} testID="review-food-hidden">
             <Text style={styles.hiddenNoteText}>{t('review.foodHidden')}</Text>
           </View>
         )}
