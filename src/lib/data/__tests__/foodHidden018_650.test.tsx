@@ -90,6 +90,29 @@ describe('trackReadyFood — 사유를 싣는다(판별은 client.ts 한 곳)', 
     expect(reason()).toBeNull();
   });
 
+  /* Codex #207 P2: 요청이 겹치면 **먼저 출발한** 요청의 거부가 뒤늦게 온다. 그 018이 더 나중 요청의 001을 덮으면
+     삭제된 음식에 "새로 고치는 중"을 약속한다. 사유는 가장 늦게 출발한 요청의 것 — 도착 순서가 아니라 출발 순서. */
+  it('먼저 출발한 옛 요청의 늦은 018은 나중 요청의 001을 덮지 못한다(도착 순서 ≠ 출발 순서)', async () => {
+    let rejectOld!: (e: unknown) => void;
+    const old = trackReadyFood('7', () => new Promise((_r, rej) => (rejectOld = rej))).catch(() => undefined); // 출발 1
+    await trackReadyFood('7', () => Promise.reject(gone())).catch(() => undefined); // 출발 2 → 먼저 도착: gone
+    expect(reason()).toBe('gone');
+    rejectOld(updating()); // 출발 1의 늦은 도착
+    await old;
+    expect(reason()).toBe('gone'); // 여전히 gone — 숨김은 유지
+    expect(__foodHiddenReasonForTest('7')).not.toBeNull();
+  });
+
+  it('양성 대조군: 나중에 출발한 요청의 001은 먼저 도착한 018을 덮는다(출발 순서대로 최신)', async () => {
+    let rejectNew!: (e: unknown) => void;
+    await trackReadyFood('7', () => Promise.reject(updating())).catch(() => undefined); // 출발 1 → updating
+    const newer = trackReadyFood('7', () => new Promise((_r, rej) => (rejectNew = rej))).catch(() => undefined); // 출발 2
+    expect(reason()).toBe('updating');
+    rejectNew(gone());
+    await newer;
+    expect(reason()).toBe('gone');
+  });
+
   it('사유 전환(018→001)은 구독자에 알린다 — 화면 문구가 바뀌어야 한다', async () => {
     const seen: (string | null)[] = [];
     function Probe() {
