@@ -958,7 +958,9 @@
     "privacyConsent": "Đồng ý thu thập và sử dụng thông tin cá nhân cho tiếp thị (tùy chọn)",
     "receiveConsent": "Đồng ý nhận thông tin quảng cáo (tùy chọn)",
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
-    "consentConfirm": "Đồng ý và bật thông báo"
+    "consentConfirm": "Đồng ý và bật thông báo",
+    "nudgeTitle": "Bật thông báo đánh giá nhé?",
+    "nudgeBody": "Chúng tôi sẽ nhắc bạn đánh giá món đã gọi trước khi quên,\nvà báo khi có người phản hồi đánh giá của bạn."
   },
   "notif": {
     "title": "Cài đặt thông báo",

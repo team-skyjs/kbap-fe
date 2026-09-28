@@ -958,7 +958,9 @@
     "privacyConsent": "マーケティング目的の個人情報収集/利用への同意（任意）",
     "receiveConsent": "広告性情報の受信への同意（任意）",
     "consentBothRequired": "通知をオンにするには両方に同意してください。",
-    "consentConfirm": "同意して通知をオンにする"
+    "consentConfirm": "同意して通知をオンにする",
+    "nudgeTitle": "レビュー通知をオンにしますか？",
+    "nudgeBody": "注文したメニューを忘れる前にレビューをお知らせし、\nあなたのレビューに反応があったときもお伝えします。"
   },
   "notif": {
     "title": "通知設定",

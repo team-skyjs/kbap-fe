@@ -959,7 +959,9 @@
     "privacyConsent": "Consentimiento para recopilar y usar datos con fines de marketing (opcional)",
     "receiveConsent": "Consentimiento para recibir información publicitaria (opcional)",
     "consentBothRequired": "Acepta ambos puntos para activar las notificaciones.",
-    "consentConfirm": "Aceptar y activar"
+    "consentConfirm": "Aceptar y activar",
+    "nudgeTitle": "¿Activar avisos de reseñas?",
+    "nudgeBody": "Te recordaremos reseñar lo que pediste antes de que lo olvides,\ny te avisaremos cuando alguien reaccione a tu reseña."
   },
   "notif": {
     "title": "Ajustes de notificaciones",

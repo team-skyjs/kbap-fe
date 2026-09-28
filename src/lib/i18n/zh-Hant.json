@@ -958,7 +958,9 @@
     "privacyConsent": "同意為行銷目的蒐集和使用個人資料（選填）",
     "receiveConsent": "同意接收廣告資訊（選填）",
     "consentBothRequired": "需同意兩項才能開啟通知。",
-    "consentConfirm": "同意並開啟通知"
+    "consentConfirm": "同意並開啟通知",
+    "nudgeTitle": "開啟評價提醒？",
+    "nudgeBody": "在你忘記之前提醒你評價點過的菜，\n有人對你的評價做出反應時也會通知你。"
   },
   "notif": {
     "title": "通知設定",
