@@ -47,7 +47,7 @@ import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import type { FoodDetail, IngredientRisk, Review } from '@/lib/api/types';
-import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
+import { useFoodHiddenReason } from '@/lib/data/hiddenFoods';
 
 const RISK_ORDER: Record<RiskState, number> = { danger: 0, caution: 1, unable: 2, safe: 3 };
 /** 시안 노트 03 — 히어로를 이만큼 지나면 헤더 솔리드+타이틀 페이드인 */
@@ -100,7 +100,8 @@ export default function FoodDetailScreen() {
   // 비우면 판정 본문·액션 바·헤더 제목·리뷰 영역·CTA가 전부 따라 사라진다(`Registered` 언마운트).
   // ⚠️ 상세 쿼리는 숨김 중에도 계속 돈다(`enabled`를 이 신호에 묶지 않는다) — 성공 응답이 신호를 푸는
   // 유일한 경로라, 쿼리를 끄면 음식이 돌아와도 영영 숨김이 된다.
-  const hidden = useIsFoodHidden(id ?? '');
+  const hiddenReason = useFoodHiddenReason(id ?? ''); // KB-650: 'updating'(018) | 'gone'(001) | null
+  const hidden = hiddenReason !== null;
   const food = hidden ? undefined : fetched;
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
@@ -148,7 +149,8 @@ export default function FoodDetailScreen() {
             뒤로는 상단 플로팅 버튼(항상 렌더)이 맡는다. 다른 에러는 기존 블록 그대로. */}
         {hidden ? (
           <View style={styles.hiddenFill}>
-            <EmptyBlock label={t('detail.foodHidden')} testID="detail-food-hidden" />
+            {/* KB-650: 018(재생성 중 — 돌아온다) = 회복 문구 · 001(없음·삭제) = 중립 문구. 블록은 같다(레이아웃 불변). */}
+            <EmptyBlock label={t(hiddenReason === 'updating' ? 'detail.foodUpdating' : 'detail.foodHidden')} testID="detail-food-hidden" />
           </View>
         ) : error && !food ? (
           <QueryErrorBlock error={error} onRetry={() => void refetch()} onGoBack={() => router.back()} />

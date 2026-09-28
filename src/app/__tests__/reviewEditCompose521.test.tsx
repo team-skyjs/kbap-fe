@@ -231,6 +231,41 @@ describe('KB-620 리뷰 제출 — 음식 숨김(FOOD-001)은 조용한 안내 +
     expect(byId(tree, 'review-posted-confirm')).toHaveLength(0);
   });
 
+  /* KB-650(서버 #292): 018 = 재생성 중(돌아온다) → 회복 문구 + IconRetry. 001 = 없음·삭제 → 중립 문구,
+     **텍스트만**(되돌아온다는 암시 금지 — foodHidden620 가드와 같은 이유). 틀은 같고 아이콘 슬롯만 다르다. */
+  it('KB-650: 신규 작성 중 FOOD-018 → review.foodUpdating + IconRetry · 화면 유지 · 글 보존', async () => {
+    const { IconRetry } = jest.requireActual('@/components/icons') as typeof import('@/components/icons');
+    mockParams.reviewId = undefined;
+    mockCreate.mockRejectedValueOnce(new ApiError('갱신 중', 400, 'FOOD-018'));
+    const tree = render(<ReviewCompose />);
+    pressStar(tree, 4);
+    typeBody(tree, 'my unsent draft');
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    const note = byId(tree, 'review-food-updating');
+    expect(note.length).toBeGreaterThan(0);
+    expect(note[0].findAllByType(IconRetry)).toHaveLength(1);
+    const flat = JSON.stringify(tree.toJSON());
+    expect(flat).toContain('review.foodUpdating');
+    expect(flat).not.toContain('review.foodHidden');
+    expect(flat).not.toContain('review.postError');
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(flat).toContain('my unsent draft');
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('KB-650: FOOD-001 안내는 텍스트만 — IconRetry 0 · 회복 문구 0', async () => {
+    const { IconRetry } = jest.requireActual('@/components/icons') as typeof import('@/components/icons');
+    mockUpdate.mockRejectedValueOnce(hidden());
+    const tree = render(<ReviewCompose />);
+    await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+    const note = byId(tree, 'review-food-hidden');
+    expect(note.length).toBeGreaterThan(0);
+    expect(note[0].findAllByType(IconRetry)).toHaveLength(0);
+    expect(JSON.stringify(tree.toJSON())).not.toContain('review.foodUpdating');
+  });
+
   it('다른 에러는 기존 에러 안내 그대로(숨김 안내 아님)', async () => {
     mockUpdate.mockRejectedValueOnce(new ApiError('boom', 500, 'COMMON-001'));
     const tree = render(<ReviewCompose />);
