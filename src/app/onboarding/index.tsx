@@ -503,20 +503,23 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
   const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
-  const [error, setError] = useState(false);
+  // KB-603 3R 스윕: 실패도 **어느 문서의 것인지** 달아 저장(remote.doc과 같은 규칙) — 이전 문서의 늦은 fetch 실패가 다음
+  // 문서에 실패 화면을 붙이지 않는다. 표시는 현재 doc과 같을 때만.
+  const [errorDoc, setErrorDoc] = useState<LegalDoc | null>(null);
+  const error = errorDoc != null && errorDoc === doc;
   const isRemote = doc === 'terms' || doc === 'privacy';
 
   // KB-603: 문서가 바뀌면 이전 결과·에러를 지운다 — 렌더 중 이전값 비교(React 공식 패턴). fetch(부수효과)만 effect.
   const [prevDoc, setPrevDoc] = useState(doc);
   if (doc !== prevDoc) {
     setPrevDoc(doc);
-    setError(false);
+    setErrorDoc(null);
     setRemote(null);
   }
   const load = useCallback((d: LegalDoc) => {
     fetchLegalText(d)
       .then((text) => setRemote({ doc: d, text }))
-      .catch(() => setError(true));
+      .catch(() => setErrorDoc(d));
   }, []);
   useEffect(() => {
     if (doc === 'terms' || doc === 'privacy') load(doc);
@@ -549,7 +552,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
             error ? (
               <View style={styles.legalError}>
                 <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
-                <Pressable onPress={() => { if (!doc) return; setError(false); setRemote(null); load(doc as LegalDoc); }} hitSlop={8}>
+                <Pressable onPress={() => { if (!doc) return; setErrorDoc(null); setRemote(null); load(doc as LegalDoc); }} hitSlop={8}>
                   <Text style={styles.legalRetry}>{t('common.retry')}</Text>
                 </Pressable>
               </View>
