@@ -3,7 +3,7 @@
  * 프로필 맵기 섹션/공식 줄 부재 잠금.
  */
 import * as React from 'react';
-import { TextInput } from 'react-native';
+import { TextInput, Keyboard } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
@@ -214,6 +214,33 @@ it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 �
   // 끝 커서 → 추종 재개 (target = 700 − (700−336) + 16 = 352)
   act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 10, end: 10 } } }));
   expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  spy.mockRestore();
+});
+
+/* KB-657(PR-3) 기준 동작 잠금 — 키보드가 **내려간 뒤**의 커서 추종: keyboardDidHide는 ref를 직접 쓰지 않고 setKbH(0)만 하므로
+   `kbHRef`는 **렌더 값(kbH)에서** 동기화돼야 한다. 동기화가 빠지면 옛 336이 남아 목표가 352로 계산된다. 이 테스트는
+   refs 정리(렌더 중 쓰기 → layout effect) 수정 전 커밋에서 초록이어야 한다. */
+it('KB-657: 키보드 hide 뒤 끝 커서 셀렉션 = kbH 0 기준 목표(700 − 700 + 16 = 16)', () => {
+  const listeners: Record<string, (e: unknown) => void> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e: unknown) => void) => {
+    listeners[ev] = cb;
+    return { remove: jest.fn() } as never;
+  }) as never);
+  const tree = render(<ReviewCompose />);
+  act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
+  act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } })); // blockBottom 700
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onSelectionChange());
+  expect(scrollTo).toHaveBeenLastCalledWith({ y: 352, animated: true }); // 대조: 키보드 올라온 상태
+  act(() => listeners['keyboardDidHide']?.({}));
+  act(() => input.props.onSelectionChange());
+  expect(scrollTo).toHaveBeenLastCalledWith({ y: 16, animated: true }); // kbH 0 반영
   spy.mockRestore();
 });
 
