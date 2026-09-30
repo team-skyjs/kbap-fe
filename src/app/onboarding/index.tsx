@@ -506,9 +506,14 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
   const [error, setError] = useState(false);
   const isRemote = doc === 'terms' || doc === 'privacy';
 
-  const load = useCallback((d: LegalDoc) => {
+  // KB-603: 문서가 바뀌면 이전 결과·에러를 지운다 — 렌더 중 이전값 비교(React 공식 패턴). fetch(부수효과)만 effect.
+  const [prevDoc, setPrevDoc] = useState(doc);
+  if (doc !== prevDoc) {
+    setPrevDoc(doc);
     setError(false);
     setRemote(null);
+  }
+  const load = useCallback((d: LegalDoc) => {
     fetchLegalText(d)
       .then((text) => setRemote({ doc: d, text }))
       .catch(() => setError(true));
@@ -544,7 +549,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
             error ? (
               <View style={styles.legalError}>
                 <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
-                <Pressable onPress={() => doc && load(doc as LegalDoc)} hitSlop={8}>
+                <Pressable onPress={() => { if (!doc) return; setError(false); setRemote(null); load(doc as LegalDoc); }} hitSlop={8}>
                   <Text style={styles.legalRetry}>{t('common.retry')}</Text>
                 </Pressable>
               </View>

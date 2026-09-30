@@ -7,7 +7,7 @@
  * provider (KB-203 — Apple/Google). Save persists nickname/spice via PATCH /me.
  */
 import { RemoteImage } from '@/components/RemoteImage';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -48,16 +48,15 @@ export default function EditProfile() {
   const [seeded, setSeeded] = useState(false);
   // P-060: 언어 = OS 정본 — OS 앱 설정 열기, 안드12- 숨김
   const canOpenLangSettings = Platform.OS === 'ios' || (Platform.OS === 'android' && Number(Platform.Version) >= 33);
-  useEffect(() => {
-    if (me && !seeded) {
-      setNickname(me.nickname);
-      setSpice(me.spiceTolerance);
-      // P-165 → KB-418: 서버값이 국가 파생값과 같으면 "자동"으로 시딩 — 자동
-      // 저장 후에도(서버엔 파생 코드가 실제로 저장됨) UI는 자동으로 보인다.
-      setCurrency(me.currency == null || me.currency === currencyForCountry(me.nationality) ? null : me.currency);
-      setSeeded(true);
-    }
-  }, [me, seeded]);
+  // KB-603: 서버값 1회 시딩 — effect(빈 폼이 한 프레임 먼저 그려짐)가 아니라 렌더 중(React 공식 "이전 값 비교" 패턴)
+  if (me && !seeded) {
+    setSeeded(true);
+    setNickname(me.nickname);
+    setSpice(me.spiceTolerance);
+    // P-165 → KB-418: 서버값이 국가 파생값과 같으면 "자동"으로 시딩 — 자동
+    // 저장 후에도(서버엔 파생 코드가 실제로 저장됨) UI는 자동으로 보인다.
+    setCurrency(me.currency == null || me.currency === currencyForCountry(me.nationality) ? null : me.currency);
+  }
 
   const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
