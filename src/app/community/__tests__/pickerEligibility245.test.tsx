@@ -206,6 +206,27 @@ it('필터 컨텍스트(P-229) 무변 — 전체 선택 가능·자격 UI 잔존
   expect(onToggleFood).toHaveBeenCalledWith({ foodId: '10', name: 'Tteokbokki' });
 });
 
+/* Codex #208 P2(KB-603): 검색어가 **바뀔 때마다** scanned 우선 복귀 — 같은 검색어로 되돌아와도 전체 검색이 되살아나면 안 된다. */
+it('필터 컨텍스트: egg → 전체 검색 → zzz → 다시 egg = scanned 범위로 복귀(전체 검색 행 다시 노출)', () => {
+  const scopes: (string | undefined)[] = [];
+  mockSearch.mockImplementation((q: string, scope?: string) => {
+    if (q) scopes.push(scope);
+    return { data: [] };
+  });
+  mockScanned.mockReturnValue({ data: [] });
+  const tree = render(sheet({ context: 'filter' }));
+  const input = () => tree.root.findAll((n) => typeof n.props?.onChangeText === 'function')[0];
+  const searchAllRow = () => tree.root.findAll((n) => n.props?.testID === 'picker-search-all');
+  act(() => input().props.onChangeText('egg'));
+  expect(searchAllRow().length).toBeGreaterThan(0); // scanned 0건 → 전체 검색 제안
+  act(() => searchAllRow()[0].props.onPress());
+  expect(scopes.at(-1)).toBeUndefined(); // 전체 검색으로
+  act(() => input().props.onChangeText('zzz'));
+  act(() => input().props.onChangeText('egg'));
+  expect(scopes.at(-1)).toBe('scanned'); // 되돌아온 egg = scanned 우선
+  expect(searchAllRow().length).toBeGreaterThan(0); // 제안 행도 다시
+});
+
 it('글 작성(compose) 컨텍스트 무변 — 인기 목록 활성 + 캡션 렌더', () => {
   const onToggleFood = jest.fn();
   const tree = render(sheet({ context: 'compose', onToggleFood }));

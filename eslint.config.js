@@ -27,7 +27,7 @@ module.exports = defineConfig([
       "react-hooks/rules-of-hooks": "warn",
       "react-hooks/refs": "warn",
       "react-hooks/immutability": "warn",
-      "react-hooks/set-state-in-effect": "warn",
+      // "react-hooks/set-state-in-effect" — KB-603(2026-09-30) 19건 소진 → error 복귀(recommended 기본)
       "react-hooks/globals": "warn",
       "react-hooks/preserve-manual-memoization": "warn",
     },

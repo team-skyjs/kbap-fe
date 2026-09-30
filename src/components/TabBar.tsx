@@ -54,7 +54,13 @@ function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean })
   // P-313(KB-480): 소스 = useMyAvatarUrl 정본 한 함수(헤더 동일 — 기본 프사 URL 포함).
   const url = useMyAvatarUrl();
   const [failed, setFailed] = React.useState(false);
-  React.useEffect(() => setFailed(false), [url]); // 사진 변경·삭제 시 상태 리셋(재시도)
+  // KB-603: 사진 변경·삭제 **전환마다** 리셋(재시도) — 렌더 중 전환 비교(React 공식 패턴). 값 키(failedUrl === url)면
+  // A→null→A(재로그인 등)에서 옛 실패가 남아 영영 재시도하지 않는다(Codex #208 P2).
+  const [prevUrl, setPrevUrl] = React.useState(url);
+  if (url !== prevUrl) {
+    setPrevUrl(url);
+    setFailed(false);
+  }
   const showPhoto = !!url && !failed;
   // P-315(KB-482): 사진·플레이스홀더 동일 상태 규칙 — 활성 = 오렌지 2px 링 + 원본,
   // 비활성 = 투명 링(동일 폭 — P-151) + opacity 0.6(예진 결정). 원형은 링(overflow
