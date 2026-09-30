@@ -215,20 +215,6 @@ function ReviewComposeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const bodyInputRef = useRef<TextInput>(null);
   const [kbH, setKbH] = useState(0);
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      kbHRef.current = e.endCoordinates?.height ?? 0;
-      setKbH(kbHRef.current);
-      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
-      if (atEnd.current) ensureCursorVisible();
-    });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const svH = useRef(0); // ScrollView 뷰포트 높이 실측
   const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
   const kbHRef = useRef(0);
@@ -244,6 +230,21 @@ function ReviewComposeScreen() {
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
+  // KB-657: 이 effect는 위 ref·ensureCursorVisible을 읽으므로 그 **선언 뒤**에 둔다(컴파일러 "선언 전 접근" — 마운트 1회
+  // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      kbHRef.current = e.endCoordinates?.height ?? 0;
+      setKbH(kbHRef.current);
+      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
+      if (atEnd.current) ensureCursorVisible();
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
 
   // ⚠️ 가드는 전 훅 선언 뒤(P-358: 편집 로딩→로드 전환 시 훅 수 불변)
