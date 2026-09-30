@@ -103,6 +103,23 @@ describe('VersionGate — 스토어 실패 문구는 게이트 기준으로 리�
     expect(byId(tree, 'version-gate-store-error')).toHaveLength(0);
   });
 
+  /* Codex #208 3R: 세대 증가는 passive effect — 새 게이트가 **렌더된 뒤, effect가 돌기 전**에 옛 시도가 끝나면 세대 검사를
+     통과한다. 같은 act 안에서 update → resolve(마이크로태스크)를 돌리면 이 창이 재현된다(effect는 act 끝에 flush). */
+  it('옛 시도가 "새 게이트 렌더 뒤·effect 전" 창에 실패로 끝나도 새 게이트에 실패 문구가 붙지 않는다', async () => {
+    mockGate.mockReturnValue(blocked('https://store/a'));
+    let resolve!: (ok: boolean) => void;
+    mockOpen.mockReturnValue(new Promise<boolean>((r) => (resolve = r)));
+    const tree = render(<VersionGateOverlay />);
+    press(tree);
+    mockGate.mockReturnValue(blocked('https://store/b'));
+    await act(async () => {
+      tree.update(<VersionGateOverlay />); // 새 게이트 렌더(세대 effect는 아직)
+      resolve(false);
+      await Promise.resolve(); // 옛 시도의 콜백이 여기서 돈다
+    });
+    expect(byId(tree, 'version-gate-store-error')).toHaveLength(0);
+  });
+
   it('같은 게이트에서 재시도 성공 → 실패 문구 소거(대조군: 실패 표시 경로가 살아 있다)', async () => {
     mockGate.mockReturnValue(blocked('https://store/a'));
     mockOpen.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
