@@ -53,8 +53,9 @@ function AvatarIcon({ size = 24 }: IconProps) {
 function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean }) {
   // P-313(KB-480): 소스 = useMyAvatarUrl 정본 한 함수(헤더 동일 — 기본 프사 URL 포함).
   const url = useMyAvatarUrl();
-  const [failed, setFailed] = React.useState(false);
-  React.useEffect(() => setFailed(false), [url]); // 사진 변경·삭제 시 상태 리셋(재시도)
+  // KB-603: 실패를 URL에 묶는다 — 사진 변경·삭제 시 파생값이 저절로 리셋(재시도, effect 없음)
+  const [failedUrl, setFailedUrl] = React.useState<string | null>(null);
+  const failed = failedUrl === url;
   const showPhoto = !!url && !failed;
   // P-315(KB-482): 사진·플레이스홀더 동일 상태 규칙 — 활성 = 오렌지 2px 링 + 원본,
   // 비활성 = 투명 링(동일 폭 — P-151) + opacity 0.6(예진 결정). 원형은 링(overflow
@@ -69,7 +70,7 @@ function ProfileTabIcon({ size = 24, active }: IconProps & { active?: boolean })
           <RemoteImage
             key={url}
             uri={url!}
-            onError={() => setFailed(true)}
+            onError={() => setFailedUrl(url)}
             style={[styles.avatarImg, { borderRadius: (size - 4) / 2 }]}
             transition={0}
           />

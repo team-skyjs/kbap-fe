@@ -37,7 +37,8 @@ export function useAutoSlide(count: number, paused: boolean) {
   const start = React.useCallback(() => {
     stop();
     if (countRef.current < 2 || pausedRef.current || holdRef.current) return;
-    timerRef.current = setInterval(() => setIndex((i) => (i + 1) % countRef.current), AUTO_SLIDE_MS);
+    // KB-603: 범위 밖(장수 축소) index는 0에서 출발 — 아래 파생 클램프와 같은 기준(두 틱 연속 0 방지)
+    timerRef.current = setInterval(() => setIndex((i) => ((i >= countRef.current ? 0 : i) + 1) % countRef.current), AUTO_SLIDE_MS);
   }, [stop]);
 
   // start는 ref를 읽으므로 정지·장수 변화에 반응하려면 여기서 의존성으로 받는다
@@ -46,10 +47,8 @@ export function useAutoSlide(count: number, paused: boolean) {
     return stop;
   }, [start, stop, paused, count]);
 
-  // 장수가 줄어 index가 범위를 벗어나면 처음으로(리페치로 이미지 목록이 바뀌는 경우)
-  React.useEffect(() => {
-    if (index >= count) setIndex(0);
-  }, [count, index]);
+  // 장수가 줄어 index가 범위를 벗어나면 처음으로(리페치로 이미지 목록이 바뀌는 경우) — KB-603: 파생값(effect 리셋 없음)
+  const shown = index >= count ? 0 : index;
 
   /** 사용자가 직접 넘겼을 때 — 그 장으로 맞추고 2초를 새로 센다. */
   const onUserSwipe = React.useCallback(
@@ -68,5 +67,5 @@ export function useAutoSlide(count: number, paused: boolean) {
     stop();
   }, [stop]);
 
-  return { index, onUserSwipe, pause };
+  return { index: shown, onUserSwipe, pause };
 }

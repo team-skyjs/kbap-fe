@@ -26,8 +26,6 @@ export function VersionGateOverlay() {
   // 안드로이드에서 토스트(elevation 8)가 그 뒤에 깔려 사용자가 아무것도 못 본다.
   // 전역 토스트 elevation을 올려 해결하면 다른 화면의 모달·시트 위에도 뜨게 되므로,
   // 전체 화면을 막는 이 화면 안에서 보여주는 쪽을 택한다(사용자가 볼 곳도 여기뿐이다).
-  const [storeFailed, setStoreFailed] = React.useState(false);
-
   React.useEffect(() => startVersionGate(), []);
 
   // P-381 3~5R(Codex P3·P2): 이 컴포넌트는 앱 생애 내내 마운트돼 있고 통과 시 null만
@@ -40,10 +38,13 @@ export function VersionGateOverlay() {
   //  - 같은 게이트에서 두 번 눌러도 앞 시도는 세대가 밀려 결과가 폐기된다.
   // 버튼 비활성 대신 세대를 쓰는 이유 = 실패 후 재시도를 막지 않기 위해서다.
   const storeUrl = 'storeUrl' in gate ? gate.storeUrl : null; // pass 변형엔 필드가 없다
+  // KB-603: 실패 문구를 게이트 키에 묶는다 — 게이트가 바뀌면 파생값이 저절로 false(effect 리셋 없음).
+  const gateKey = `${gate.mode}\u0000${storeUrl ?? ''}`;
+  const [failedAt, setFailedAt] = React.useState<string | null>(null);
+  const storeFailed = failedAt === gateKey;
   const attemptRef = React.useRef(0);
   React.useEffect(() => {
-    attemptRef.current += 1;
-    setStoreFailed(false);
+    attemptRef.current += 1; // 게이트가 바뀌면 진행 중 시도를 전부 무효화 — ref만(상태 없음)
   }, [gate.mode, storeUrl]);
 
   // 안드 하드웨어 백 차단 — 게이트는 dismiss 불가
@@ -65,11 +66,11 @@ export function VersionGateOverlay() {
         <View style={{ alignSelf: 'stretch', marginTop: 10 }}>
           <Btn
             onPress={() => {
-              setStoreFailed(false);
+              setFailedAt(null);
               const my = ++attemptRef.current; // 이 시도의 세대
               void openStoreLink(gate.storeUrl!, { silent: true }).then((ok) => {
                 if (attemptRef.current !== my) return; // 더 새 시도가 있었거나 게이트가 바뀜 — 폐기
-                setStoreFailed(!ok);
+                setFailedAt(ok ? null : gateKey);
               });
             }}
           >

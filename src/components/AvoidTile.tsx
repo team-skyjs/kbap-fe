@@ -23,11 +23,10 @@ export function useIngredientImageChain(code: string, imageUrl?: string | null):
     const chain = [ingredientCutoutUrl(code), imageUrl, ingredientImageUrl(code)].filter((u): u is string => !!u);
     return chain.filter((u, i) => chain.indexOf(u) === i); // 중복 제거
   }, [imageUrl, code]);
-  const [srcIdx, setSrcIdx] = React.useState(0);
-  React.useEffect(() => {
-    setSrcIdx(0);
-  }, [sources]); // 카탈로그 도착/언어 전환 시 체인 리셋
-  const nextSource = React.useCallback(() => setSrcIdx((i) => i + 1), []);
+  // KB-603: 인덱스를 체인(sources)에 묶는다 — 체인이 바뀌면(카탈로그 도착/언어 전환) 파생값이 저절로 0(effect 리셋 없음)
+  const [pos, setPos] = React.useState<{ chain: string[]; i: number }>({ chain: sources, i: 0 });
+  const srcIdx = pos.chain === sources ? pos.i : 0;
+  const nextSource = React.useCallback(() => setPos((p) => ({ chain: sources, i: (p.chain === sources ? p.i : 0) + 1 })), [sources]);
   return { uri: sources[srcIdx] ?? null, isCutout: srcIdx === 0, nextSource };
 }
 
@@ -56,10 +55,9 @@ export function AvoidTile({
   children?: React.ReactNode;
 }) {
   const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
-  const [loaded, setLoaded] = React.useState(false);
-  React.useEffect(() => {
-    setLoaded(false);
-  }, [uri]); // 체인 리셋·다음 소스 전환 시 로딩 상태 복귀
+  // KB-603: "어느 소스가 로드됐나"를 기억한다 — 체인 리셋·다음 소스 전환 시 파생값 loaded가 저절로 false(effect 리셋 없음)
+  const [loadedUri, setLoadedUri] = React.useState<string | null>(null);
+  const loaded = uri != null && loadedUri === uri;
   const failed = !uri; // 체인 소진 = 실패 확정
   return (
     <View style={[styles.tile, { backgroundColor: failed ? tint : '#FFFFFF', borderRadius: radius }, radius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>{/* P-341: 사진 상태 = 흰 배경(tint는 실패 폴백만) */}
@@ -78,11 +76,8 @@ export function AvoidTile({
           style={isCutout ? styles.photoCut : styles.photo}
           contentFit={isCutout ? 'contain' : 'cover'}
           transition={120}
-          onLoad={() => setLoaded(true)}
-          onError={() => {
-            setLoaded(false);
-            nextSource();
-          }}
+          onLoad={() => setLoadedUri(uri)}
+          onError={nextSource}
           testID={`avtile-img-${code}`}
         />
       )}
