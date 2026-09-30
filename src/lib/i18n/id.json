@@ -386,6 +386,7 @@
     "removePhoto": "Hapus foto",
     "postError": "Ulasan gagal disimpan. Periksa koneksi lalu coba lagi.",
     "foodHidden": "Ulasan untuk hidangan ini tidak bisa dikirim saat ini. Tulisanmu masih ada di layar ini.",
+    "foodUpdating": "Informasi hidangan ini sedang diperbarui, jadi ulasan belum bisa dikirim saat ini. Tulisanmu masih ada di layar ini.",
     "likesCaption": "Suka tidak memengaruhi urutan",
     "placeRow": "Kamu makan di mana?",
     "placeSheetTitle": "Tandai tempat",
@@ -553,7 +554,8 @@
     "beFirstReview": "Belum ada ulasan — jadilah yang pertama!",
     "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
     "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
-    "foodHidden": "Informasi hidangan ini tidak bisa dilihat saat ini."
+    "foodHidden": "Informasi hidangan ini tidak bisa dilihat saat ini.",
+    "foodUpdating": "Informasi hidangan ini sedang diperbarui. Silakan cek lagi sebentar lagi."
   },
   "states": {
     "catalogTitle": "Status",
@@ -883,6 +885,7 @@
   "saved": {
     "error": "Tidak dapat memperbarui daftar simpanan. Silakan coba lagi.",
     "foodHidden": "Hidangan ini tidak bisa disimpan saat ini.",
+    "foodUpdating": "Informasi hidangan ini sedang diperbarui, jadi belum bisa disimpan saat ini.",
     "title": "Tersimpan",
     "count_other": "{{count}} hidangan",
     "newestFirst": "Terbaru dulu",
@@ -959,8 +962,8 @@
     "receiveConsent": "Setuju menerima informasi promosi (opsional)",
     "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
     "consentConfirm": "Setuju dan nyalakan",
-    "reviewReminderTitle": "Bagaimana makanannya?",
-    "reviewReminderBody": "Ceritakan bagaimana {{name}} tadi — penilaian singkatmu membantu wisatawan lain."
+    "nudgeTitle": "Aktifkan notifikasi ulasan?",
+    "nudgeBody": "Kami ingatkan untuk mengulas menu yang kamu pesan sebelum lupa,\ndan kabari saat ada yang merespons ulasanmu."
   },
   "notif": {
     "title": "Pengaturan notifikasi",

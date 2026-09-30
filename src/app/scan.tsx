@@ -13,7 +13,8 @@
  *
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
+import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { ActivityIndicator, Alert, AppState, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,7 +68,6 @@ import { ingredientLabel } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FLAGS, SYSTEM_CAMERA_AUTOLAUNCH } from '@/lib/flags';
 import { PushPrimerModal } from '@/features/push/PushPrimerModal';
-import { getPrimerResult } from '@/lib/push/pushAdapter';
 import { openAppSettings } from '@/lib/openExternal';
 
 type Photo = { uri: string; width: number; height: number } | null;
@@ -182,12 +182,17 @@ export default function Scan() {
   // 발급 성공이 아래 복원 분기로 카메라를 되돌린다.
   // 발급 성공으로 반증된 쿼터 객체는 재조회로 바뀌기 전까지 다시 잠그지 않는다(복귀마다 깜빡임 방지).
   const quotaRef = useRef(me?.scanQuota);
-  quotaRef.current = me?.scanQuota;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  useLayoutEffect(() => {
+    quotaRef.current = me?.scanQuota;
+  });
   const disprovenQuota = useRef<unknown>(undefined);
   // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
   // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
   const phaseRef = useRef(phase);
-  phaseRef.current = phase;
+  useLayoutEffect(() => {
+    phaseRef.current = phase;
+  });
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   const lockFromProfile = useCallback(() => {
     const quota = quotaRef.current;
@@ -256,13 +261,18 @@ export default function Scan() {
   // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
   // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
   // present → iOS UIKit presentation 교착(첫 스캔 먹통 — 실기 2건).
+  // 2026-09-28(종한): 판정 확장 — OS 거부 / 서버 활동 알림 OFF면 매 스캔마다 유도(lib/push/scanNudge), 그 외는 기존 1회 프라이머.
   const [pushPrimer, setPushPrimer] = useState(false);
+  const [nudgeMode, setNudgeMode] = useState<ScanNudgeMode>('primer');
+  // Codex 리뷰: 결과 1회당 시트 1회 — 「나중에」 뒤 마커 탭→코치마크 닫힘이 판정을 다시 불러도 재노출 0. 새 스캔(카메라 복귀)에서 리셋.
+  const nudgeShownRef = useRef(false);
   const maybeShowPrimer = useCallback(() => {
     if (!FLAGS.pushEnabled) return;
-    void getPrimerResult().then((r) => {
-      if (r == null) setPushPrimer(true);
+    if (nudgeShownRef.current) return;
+    void decideScanNudge(isGuest).then((m) => {
+      if (m && !nudgeShownRef.current) { nudgeShownRef.current = true; setNudgeMode(m); setPushPrimer(true); }
     });
-  }, []);
+  }, [isGuest]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -293,7 +303,7 @@ export default function Scan() {
   // 코치마크 우선, 뜨면 프라이머는 보류(코치 onClose에서 재평가). 코치마크가 없으면
   // (이번에 안 뜸·기존자 재도달) 프라이머 단독 판정 = 현행 시맨틱 무변.
   useEffect(() => {
-    if (phase !== 'result') return;
+    if (phase !== 'result') { nudgeShownRef.current = false; return; }
     void (async () => {
       if (!coachChecked.current) {
         coachChecked.current = true;
@@ -795,7 +805,7 @@ export default function Scan() {
 
         {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
             온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
-        <PushPrimerModal surface="scan" open={pushPrimer} onDone={() => setPushPrimer(false)} />
+        <PushPrimerModal surface="scan" mode={nudgeMode} open={pushPrimer} onDone={() => setPushPrimer(false)} />
       </View>
     );
   }

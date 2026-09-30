@@ -55,9 +55,13 @@ export function ReviewFeed() {
   // Codex #94 P2: 게스트 전환·국적 소실 시 on 잔존 → emptySameNat 오노출 — 리셋 +
   // 쿼리·빈 상태가 같은 effective 판정을 쓴다.
   const filterActive = profileFilter && !isGuest && !!myNat;
-  React.useEffect(() => {
+  // KB-603: 같은 조건을 렌더 중 이전값 비교로(React 공식 패턴) — on 잔존이 한 프레임도 보이지 않는다
+  const filterKey = `${isGuest}\u0000${myNat ?? ''}\u0000${profileFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = React.useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     if ((isGuest || !myNat) && profileFilter) setProfileFilter(false);
-  }, [isGuest, myNat, profileFilter]);
+  }
   const feed = useGlobalReviews(true, { sort, countryCode: filterActive ? myNat : undefined });
   const deleteReview = useDeleteReview();
   const myId = me?.id;
@@ -89,7 +93,10 @@ export function ReviewFeed() {
     void feed.refetch().finally(() => setRefreshing(false));
   };
   const staleRef = React.useRef(false);
-  staleRef.current = feed.isStale;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    staleRef.current = feed.isStale;
+  });
   const refetch = feed.refetch;
   useFocusEffect(
     React.useCallback(() => {

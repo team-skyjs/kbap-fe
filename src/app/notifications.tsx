@@ -4,7 +4,7 @@
  *
  * 데이터 = GET /api/notifications(lib/data/useNotifications) — 이 기기(X-Installation-Id)로 온 최근 7일, 최신순.
  * 제목·본문은 발송 시점 언어로 서버가 저장한 문자열 그대로(앱 가공 0). 상대 시각은 커뮤니티 공용 timeAgo.
- * 항목 탭 = 미읽음이면 낙관 읽음(PATCH) + routeForNotificationData(type·foodId — BE 확장분, 없으면 이동 없음).
+ * 항목 탭 = 미읽음이면 낙관 읽음(PATCH) + routeForNotificationData(type·orderId — 없으면 이동 없음).
  * 전체 읽음 계약이 없어 "모두 읽음"은 없다. 게스트 = 로그인 직행(Redirect, 2026-09-16 clarify).
  */
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -37,10 +37,10 @@ export default function Notifications() {
 
   const items = data ?? [];
 
-  // 이동은 읽음 응답을 기다리지 않는다(US3 ③). type·foodId는 BE 확장분 — 없거나 미지 유형이면 null → 알림함 유지.
+  // 이동은 읽음 응답을 기다리지 않는다(US3 ③). type·orderId(REVIEW_REMINDER만, KB-500) — 없거나 미지 유형이면 null → 알림함 유지.
   const open = (n: InboxItem) => {
     if (!n.read) markRead.mutate(n.id);
-    const href = routeForNotificationData({ type: n.type, foodId: n.foodId });
+    const href = routeForNotificationData({ type: n.type, orderId: n.orderId });
     if (href) openNotificationRoute(router, href); // KB-573: 홈은 스택 리셋(알림함 화면도 닫힘)
   };
 

@@ -21,9 +21,14 @@ export function useAutoSlide(count: number, paused: boolean) {
   // 들고 있어도 **지금의** paused·count를 보도록 ref로 읽는다. 클로저에 박으면 정지 중에
   // 뒤늦게 도착한 호출이 타이머를 되살리고, 그걸 치울 의존성 변화도 더 오지 않는다.
   const pausedRef = React.useRef(paused);
-  pausedRef.current = paused;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    pausedRef.current = paused;
+  });
   const countRef = React.useRef(count);
-  countRef.current = count;
+  React.useLayoutEffect(() => {
+    countRef.current = count;
+  });
   // Codex P2(9R): 제스처 정지는 **지속 상태**여야 한다. 타이머만 끄면(stop) 누르고 있는 동안
   // 외부 정지(동작 줄이기 조회 해소·포커스 복귀 등)가 풀릴 때 효과가 start()를 불러 되살아난다.
   // hold는 pause()로 켜지고 onUserSwipe(손 뗀 뒤 안착)로만 꺼진다.
@@ -37,7 +42,8 @@ export function useAutoSlide(count: number, paused: boolean) {
   const start = React.useCallback(() => {
     stop();
     if (countRef.current < 2 || pausedRef.current || holdRef.current) return;
-    timerRef.current = setInterval(() => setIndex((i) => (i + 1) % countRef.current), AUTO_SLIDE_MS);
+    // KB-603: 범위 밖(장수 축소) index는 0에서 출발 — 아래 파생 클램프와 같은 기준(두 틱 연속 0 방지)
+    timerRef.current = setInterval(() => setIndex((i) => ((i >= countRef.current ? 0 : i) + 1) % countRef.current), AUTO_SLIDE_MS);
   }, [stop]);
 
   // start는 ref를 읽으므로 정지·장수 변화에 반응하려면 여기서 의존성으로 받는다
@@ -46,10 +52,9 @@ export function useAutoSlide(count: number, paused: boolean) {
     return stop;
   }, [start, stop, paused, count]);
 
-  // 장수가 줄어 index가 범위를 벗어나면 처음으로(리페치로 이미지 목록이 바뀌는 경우)
-  React.useEffect(() => {
-    if (index >= count) setIndex(0);
-  }, [count, index]);
+  // 장수가 줄어 index가 범위를 벗어나면 처음으로(리페치로 이미지 목록이 바뀌는 경우) — KB-603: 렌더 중 즉시 되돌린다
+  // (React 공식 패턴, 같은 렌더에서 0). 표시값만 클램프하면 저장된 옛 index가 장수가 다시 늘 때 되살아난다(Codex #208 P2).
+  if (index >= count && index !== 0) setIndex(0);
 
   /** 사용자가 직접 넘겼을 때 — 그 장으로 맞추고 2초를 새로 센다. */
   const onUserSwipe = React.useCallback(

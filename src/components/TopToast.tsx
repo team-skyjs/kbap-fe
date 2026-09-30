@@ -68,11 +68,18 @@ export function TopToastHost() {
   // 리스너 등록은 마운트 1회 — 렌더마다 재등록하면 클린업이 진행 중 타이머를 지운다.
   // 최신 값은 ref로 참조(reanimated sharedValue는 안정 — 클로저 캡처 무해).
   const dismissRef = React.useRef(dismiss);
-  dismissRef.current = dismiss;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    dismissRef.current = dismiss;
+  });
   const enterFromRef = React.useRef(enterFrom);
-  enterFromRef.current = enterFrom;
+  React.useLayoutEffect(() => {
+    enterFromRef.current = enterFrom;
+  });
   const reducedRef = React.useRef(reducedMotion);
-  reducedRef.current = reducedMotion;
+  React.useLayoutEffect(() => {
+    reducedRef.current = reducedMotion;
+  });
   React.useEffect(() => {
     const unsubscribe = subscribeTopToast((m, remainingMs) => {
       setMsg(m);

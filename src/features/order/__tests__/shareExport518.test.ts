@@ -191,6 +191,8 @@ describe('Codex P2 — 내보내기 이미지 로드 전 캡처 금지', () => {
   it('화면이 프리페치 완료까지 busy로 잠그고, 실패해도 영구 잠금되지 않는다', () => {
     const src = read('src/app/profile/order/[id].tsx');
     expect(src).toContain("const [photosState, setPhotosState] = React.useState<'loading' | 'ready' | 'failed'>('loading')");
+    // KB-603: 사진·재시도·시트 열림 **전환마다** 렌더 중 리셋(같은 키로 되돌아와도 — 재오픈 = 캔버스 새 마운트, Codex #208 P1)
+    expect(src).toMatch(/if \(canvasKey !== prevCanvasKey\) \{\s*setPrevCanvasKey\(canvasKey\);\s*setPhotosState\(photosKey \? 'loading' : 'ready'\);/);
     expect(src).toContain("busy={photosState !== 'ready'}");
     // 7R: 게이트 = 캔버스 실제 렌더 완료(프리페치 = URL 캐시일 뿐)
     expect(src).toContain("onReady={() => setPhotosState('ready')}");

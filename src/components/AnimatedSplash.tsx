@@ -96,7 +96,10 @@ export function AnimatedSplash({
   // finish 정체성을 바꾸면 모션 effect cleanup이 타이머·애니메이션을 도중 취소하고
   // started 가드로 재시작도 없어 스플래시가 멈췄다(느린 부팅에서 4s 캡까지 정지).
   const onDoneRef = React.useRef(onDone);
-  onDoneRef.current = onDone;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    onDoneRef.current = onDone;
+  });
   const finish = React.useCallback(() => {
     if (doneRef.current) return;
     doneRef.current = true;

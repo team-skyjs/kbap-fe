@@ -22,12 +22,13 @@
  * 성공이 푼다. 숨김 쪽 오판은 판정을 가릴 뿐 SAFE를 만들지 않는다.
  */
 import { useSyncExternalStore } from 'react';
-import { isFoodHidden } from '@/lib/api/client';
+import { foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
 
 /** 단조 증가 시계 — 요청 출발과 거부 수신의 선후만 비교한다(벽시계 아님). */
 let clock = 0;
-/** foodId → 가장 최근 거부를 받은 시각. 있으면 숨김. */
-const hiddenSince = new Map<string, number>();
+/** foodId → 가장 최근 거부. 있으면 숨김. `at` = 거부 **수신** 시각(해제 비교용) · `reason` = 문구 분기용(KB-650) ·
+ *  `reasonFrom` = 그 사유를 준 요청의 **출발** 시각 — 더 먼저 출발한 옛 요청의 늦은 거부가 사유를 덮지 못하게(Codex #207). */
+const hiddenSince = new Map<string, { at: number; reason: FoodHiddenReason; reasonFrom: number }>();
 const listeners = new Set<() => void>();
 const emit = () => {
   for (const l of listeners) l();
@@ -53,30 +54,41 @@ export async function trackReadyFood<T>(foodId: string, run: () => Promise<T>): 
     markFoodVisible(foodId, startedAt); // run 뒤 = 적응 끝난 페이로드(#185 4R)
     return result;
   } catch (e) {
-    if (isFoodHidden(e)) markFoodHidden(foodId);
+    const reason = foodHiddenReason(e);
+    if (reason) markFoodHidden(foodId, reason, startedAt);
     throw e;
   }
 }
 
 /** FOOD-001을 받은 자리에서 호출 — 이 음식의 캐시된 판정을 즉시 가린다. 이미 숨김이면 시각만 갱신
  *  (더 최근 거부 이후에 출발한 성공만 풀 수 있게). */
-export function markFoodHidden(foodId: string) {
+/** `startedAt` = 거부를 준 요청의 출발 시각(`trackReadyFood`가 넘긴다 · 직접 호출 = 지금). 요청이 겹치면 **먼저 출발한**
+ *  요청의 거부가 뒤늦게 올 수 있다 — 그 사유(018)가 더 나중 요청의 사유(001)를 덮으면 삭제된 음식에 "새로 고치는 중"을
+ *  약속한다(Codex #207 P2). 사유는 **가장 늦게 출발한 요청**의 것을 지킨다. 숨김 자체·`at`은 어느 거부든 갱신(보수). */
+export function markFoodHidden(foodId: string, reason: FoodHiddenReason = 'gone', startedAt: number = ++clock) {
   if (!foodId) return;
-  const wasHidden = hiddenSince.has(foodId);
-  hiddenSince.set(foodId, ++clock);
-  if (!wasHidden) emit();
+  const prev = hiddenSince.get(foodId);
+  const stale = prev !== undefined && startedAt < prev.reasonFrom; // 더 먼저 출발한 옛 요청의 늦은 거부
+  const next = stale ? { at: ++clock, reason: prev.reason, reasonFrom: prev.reasonFrom } : { at: ++clock, reason, reasonFrom: startedAt };
+  hiddenSince.set(foodId, next);
+  if (!prev || prev.reason !== next.reason) emit(); // 사유가 바뀌면(018→001) 문구도 바뀌어야 한다
 }
 
 /** 성공 해제 — `trackReadyFood` 전용(원천이 직접 부르지 않는다). 마지막 거부 이후 출발한 요청만 푼다. */
 function markFoodVisible(foodId: string, requestStartedAt: number) {
-  const since = hiddenSince.get(foodId);
+  const since = hiddenSince.get(foodId)?.at;
   if (since === undefined || requestStartedAt <= since) return; // 거부 전에 나간 옛 성공은 무시
   hiddenSince.delete(foodId);
   emit();
 }
 
 export function useIsFoodHidden(foodId: string): boolean {
-  const snap = () => hiddenSince.has(foodId);
+  return useFoodHiddenReason(foodId) !== null;
+}
+
+/** KB-650: 숨김 사유 — `null` = 보임. 화면은 이걸로 018(회복 문구)/001(중립 문구)을 가른다. */
+export function useFoodHiddenReason(foodId: string): FoodHiddenReason | null {
+  const snap = () => hiddenSince.get(foodId)?.reason ?? null;
   return useSyncExternalStore(subscribe, snap, snap);
 }
 
@@ -85,6 +97,9 @@ export function useIsFoodHidden(foodId: string): boolean {
  *  있었다(KB-626 3R 실측: 파일 전체 실행에서만 재현). React 경로(화면이 읽는지)는 화면 테스트가 본다. */
 export function __isFoodHiddenForTest(foodId: string): boolean {
   return hiddenSince.has(foodId);
+}
+export function __foodHiddenReasonForTest(foodId: string): FoodHiddenReason | null {
+  return hiddenSince.get(foodId)?.reason ?? null;
 }
 
 /** 테스트 격리 전용 — 모듈 상태가 테스트 사이에 새지 않게. */

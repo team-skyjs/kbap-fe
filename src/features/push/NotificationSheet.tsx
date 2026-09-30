@@ -61,44 +61,49 @@ export function NotificationSheet({
   const swipe = useSheetSwipeDismiss(onClose, open, { animateIn: true });
   // 닫힘 경로 전부(나중에·확인·스크림·백버튼·드래그) = 시트 슬라이드 다운 → Modal fade-out. 드래그로 이미 내려갔으면 즉시.
   const [visible, setVisible] = React.useState(open);
+  const [closing, setClosing] = React.useState(false);
+  const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
+  const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
+  const [notice, setNotice] = React.useState(false); // 하나만 체크된 채 확인 탭 → 안내
+  // KB-603: 열릴 때 초기화(표시·closing·체크·안내)는 렌더 중 이전값 비교(React 공식 패턴) — 닫힘 직후가 아니라 열릴 때
+  // (Codex 리뷰 #150: 닫힘 직후 리셋하면 퇴장 중 리셋값으로 확인될 수 있다). 슬라이드 다운(부수효과)만 effect.
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setVisible(true);
+      setClosing(false);
+      setChecks(PRECHECKED);
+      setNotice(false);
+    }
+  }
   React.useEffect(() => {
-    if (open) setVisible(true);
-    else if (visible) swipe.dismiss(() => setVisible(false));
+    if (!open && visible) swipe.dismiss(() => setVisible(false)); // 콜백 = 애니메이션 뒤(동기 setState 아님)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open 전환에만 반응
   }, [open]);
   // 닫힘 요청(나중에·스크림·안드 백버튼) = 훅 dismiss 경유: 슬라이드 다운 후 onClose 1회. 이미 닫히는 중이면 무시 —
   // 퇴장 중 백버튼 재입력·스와이프 퇴장 중 탭이 onClose를 두 번 부르던 경로 차단(Codex 리뷰 #150 P2).
   // 내부 시작 퇴장은 open이 그대로 true라 pointerEvents 게이트가 못 본다 → closing 상태로 즉시 무반응(Codex #150 P1).
   const needsConsent = variant === 'consent';
-  const [closing, setClosing] = React.useState(false);
   const requestClose = () => {
     if (closing) return; // 닫힘 진행 중 재입력 — 이벤트도 1회만(KB-630)
     if (needsConsent && !swipe.isClosing()) track(EVENTS.push_consent_response, { action: 'later' }); // KB-630: primer는 PushPrimerModal이 담당 · 드래그 퇴장 중 탭 = 중복 아님
     setClosing(true);
     swipe.dismiss();
   };
-  React.useEffect(() => {
-    if (open) setClosing(false);
-  }, [open]);
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
-  const PRECHECKED: ConsentChecks = { privacy: true, receive: true };
-  const [checks, setChecks] = React.useState<ConsentChecks>(PRECHECKED);
-  const [notice, setNotice] = React.useState(false); // 하나만 체크된 채 확인 탭 → 안내
   const toggle = (kind: ConsentKind) => {
     track(EVENTS.push_consent_response, { action: checks[kind] ? 'uncheck' : 'check', target: kind }); // KB-630
     setChecks((c) => ({ ...c, [kind]: !c[kind] }));
   };
-  React.useEffect(() => {
-    if (open) {
-      setChecks(PRECHECKED); // 열릴 때 초기화(Codex 리뷰 #150: 닫힘 직후 리셋하면 퇴장 중 리셋값으로 확인될 수 있다)
-      setNotice(false);
-    }
-  }, [open]);
 
   const ready = !needsConsent || (checks.privacy && checks.receive);
-  React.useEffect(() => {
-    if (ready) setNotice(false); // 둘 다 체크되면 안내 소거
-  }, [ready]);
+  // 둘 다 체크되는 순간 안내 소거 — KB-603: 렌더 중 이전값 비교
+  const [prevReady, setPrevReady] = React.useState(ready);
+  if (ready !== prevReady) {
+    setPrevReady(ready);
+    if (ready) setNotice(false);
+  }
 
   const confirm = () => {
     if (swipe.isClosing()) return; // 스와이프 퇴장 중 확인 탭 — "나중에/끌어 닫기"를 택한 뒤 동의가 켜지면 안 된다(Codex #150 P1)

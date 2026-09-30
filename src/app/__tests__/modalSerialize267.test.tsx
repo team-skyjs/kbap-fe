@@ -143,7 +143,6 @@ const mockGetPrimer = jest.fn();
 jest.mock('@/lib/push/pushAdapter', () => ({
   ...jest.requireActual('@/lib/push/pushAdapter'),
   getPrimerResult: () => mockGetPrimer(),
-  scheduleReviewReminder: jest.fn(async () => {}),
 }));
 
 import Scan from '../scan';

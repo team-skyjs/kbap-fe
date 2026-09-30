@@ -3,6 +3,7 @@
  * 회원이면 activity:true, 거절=기록만) + 주문 완료 Done 경유 예약 호출(재현 경로) + 배선 소스 잠금.
  * KB-497: 프라이머 = NotificationSheet(하단 시트), 온보딩 진입점 제거, 설정 화면 = 서버 정본 훅(목).
  */
+import * as fs from 'fs';
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -62,10 +63,7 @@ jest.mock('@/lib/push/pushAdapter', () => ({
   markPrimerResult: jest.fn().mockResolvedValue(undefined),
   requestPermission: jest.fn().mockResolvedValue(true),
   registerPushToken: jest.fn().mockResolvedValue(undefined),
-  scheduleReviewReminder: jest.fn().mockResolvedValue(undefined),
-  cancelReviewReminder: jest.fn().mockResolvedValue(undefined),
   getPrimerResult: jest.fn().mockResolvedValue(null),
-  REVIEW_REMINDER_SECONDS: 3600,
   getPermissionStatus: jest.fn().mockResolvedValue('granted'),
   pushAvailable: jest.fn(() => true),
 }));
@@ -81,9 +79,13 @@ jest.mock('@/lib/data/useNotificationSettings', () => ({
 const mockSession = { hasBeSession: jest.fn().mockResolvedValue(true) };
 jest.mock('@/lib/auth/beAuth', () => ({ get hasBeSession() { return mockSession.hasBeSession; } }));
 jest.mock('@/components/AuthGateSheet', () => ({ AuthGateSheet: () => null }));
-jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn() }));
+const mockOpenSettings = jest.fn().mockResolvedValue(true);
+const mockCancelAfterOs = jest.fn();
+const mockFinishAfterOs = jest.fn(() => mockCancelAfterOs);
+jest.mock('@/lib/push/scanNudge', () => ({ get finishAfterOsSettings() { return mockFinishAfterOs; } }));
+jest.mock('@/lib/openExternal', () => ({ openWebPage: jest.fn(), get openAppSettings() { return mockOpenSettings; } }));
 const mockAdapter = jest.requireMock('@/lib/push/pushAdapter') as Record<
-  'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'scheduleReviewReminder' | 'cancelReviewReminder' | 'getPrimerResult',
+  'markPrimerResult' | 'requestPermission' | 'registerPushToken' | 'getPrimerResult',
   jest.Mock
 >;
 
@@ -216,7 +218,7 @@ it('KB-497 소스 잠금: scan.tsx 프라이머 = PushPrimerModal(시트 래퍼)
   expect(primer).toContain("variant=\"primer\"");
 });
 
-it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = 첫 foodId 항목 예약 + onDone', async () => {
+it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = onDone (KB-500: 로컬 리마인더 예약 없음)', async () => {
   const onDone = jest.fn();
   const items = [
     { nameKo: '김밥', name: 'Kimbap', qty: 1, priceKrw: 3000, foodId: null }, // 미매칭 — 건너뜀
@@ -228,16 +230,10 @@ it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = 첫 foo
   // Done 탭 → 완료 모달
   const doneBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.done').length > 0).pop()!;
   await act(async () => doneBtn.props.onPress());
-  // 모달의 홈 버튼 탭 = 예약(foodId 보유 첫 항목) 후 onDone
+  // 모달의 홈 버튼 탭 = onDone(리마인더는 서버 배치 — 앱 예약 0)
   const homeBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.doneHome').length > 0).pop()!;
   await act(async () => homeBtn.props.onPress());
-  expect(mockAdapter.scheduleReviewReminder).toHaveBeenCalledWith({ foodId: '7', name: 'Kimchi Jjigae' });
   expect(onDone).toHaveBeenCalled();
-});
-
-it('리뷰 작성 성공 시 예약 취소 배선 — 소스 잠금(작성 화면 cancelReviewReminder)', () => {
-  const src = require('fs').readFileSync('src/app/food/[id]/review.tsx', 'utf8') as string;
-  expect(src).toContain('cancelReviewReminder(id)');
 });
 
 it('KB-496(Codex #104 P2-4): OS 설정 복귀(AppState active) = 권한 재조회 + 토큰 등록 — 재시작 없이 배너 해제·등록', () => {
@@ -257,4 +253,60 @@ it('KB-496(Codex #104 P2-4): OS 설정 복귀(AppState active) = 권한 재조�
   expect(perm).toHaveBeenCalledTimes(1);
   expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1);
   spy.mockRestore();
+});
+
+/* ---- 스캔 직후 알림 유도 모드(2026-09-28 종한 결정) — 판정은 scanNudge 유닛, 여기는 시트 동작 ---- */
+
+it('mode=osDenied: 확인 = 기기 설정 열기 1회 · OS 팝업 0 · 프라이머 기록 0 · PATCH 0 · onDone', async () => {
+  const onDone = jest.fn();
+  const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" mode="osDenied" />);
+  expect(tree.root.findAll((n) => n.props?.testID === 'notif-sheet-primer').length).toBeGreaterThan(0); // 같은 시트 골격
+  await tap(tree, 'notif-sheet-confirm');
+  expect(mockOpenSettings).toHaveBeenCalledTimes(1);
+  expect(mockFinishAfterOs).toHaveBeenCalledTimes(1); // 복귀 시 허용됐으면 토큰+activity ON (9/28 실기)
+  expect(mockFinishAfterOs.mock.invocationCallOrder[0]).toBeLessThan(mockOpenSettings.mock.invocationCallOrder[0]); // 나가기 전에 리스너
+  expect(mockCancelAfterOs).not.toHaveBeenCalled(); // 열기 성공 = 리스너 유지
+  expect(mockAdapter.requestPermission).not.toHaveBeenCalled();
+  expect(mockAdapter.markPrimerResult).not.toHaveBeenCalled();
+  expect(mockPatch).not.toHaveBeenCalled();
+  expect(onDone).toHaveBeenCalled();
+});
+
+it('mode=osDenied: 설정 열기 실패(false) → 복귀 리스너 즉시 해제 (Codex 리뷰)', async () => {
+  mockOpenSettings.mockResolvedValueOnce(false);
+  const tree = render(<PushPrimerModal open onDone={jest.fn()} surface="scan" mode="osDenied" />);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(mockCancelAfterOs).toHaveBeenCalledTimes(1);
+});
+
+it('mode=activityOff: 확인 = 토큰 등록 + PATCH activity:true 1회 · OS 팝업 0 · 설정 열기 0 · 프라이머 기록 0', async () => {
+  const onDone = jest.fn();
+  const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" mode="activityOff" />);
+  await tap(tree, 'notif-sheet-confirm');
+  expect(mockPatch).toHaveBeenCalledWith({ activity: true });
+  expect(mockAdapter.registerPushToken).toHaveBeenCalledTimes(1); // 앱 시작 뒤 OS에서 허용한 기기 = 미등록일 수 있음
+  expect(mockAdapter.requestPermission).not.toHaveBeenCalled();
+  expect(mockOpenSettings).not.toHaveBeenCalled();
+  expect(mockAdapter.markPrimerResult).not.toHaveBeenCalled();
+  expect(onDone).toHaveBeenCalled();
+});
+
+it('mode=osDenied·activityOff 「나중에」 = 닫기만 — 기록 0(매 스캔 재노출 전제)', async () => {
+  for (const mode of ['osDenied', 'activityOff'] as const) {
+    const onDone = jest.fn();
+    const tree = render(<PushPrimerModal open onDone={onDone} surface="scan" mode={mode} />);
+    await tap(tree, 'notif-sheet-later');
+    expect(mockAdapter.markPrimerResult).not.toHaveBeenCalled();
+    expect(onDone).toHaveBeenCalled();
+  }
+});
+
+it('배선 잠금: scan.tsx 판정 = decideScanNudge(isGuest) → mode 전달', () => {
+  const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
+  expect(scan).toContain('decideScanNudge(isGuest)');
+  expect(scan).toContain('<PushPrimerModal surface="scan" mode={nudgeMode}');
+  expect(scan).not.toContain('getPrimerResult'); // 판정은 scanNudge 한 곳
+  // Codex 리뷰: 결과 1회당 1회(마커 탭→코치마크 닫힘 재호출에 재노출 0) · 카메라 복귀에서 리셋
+  expect(scan).toContain('if (nudgeShownRef.current) return;');
+  expect(scan).toContain("if (phase !== 'result') { nudgeShownRef.current = false; return; }");
 });

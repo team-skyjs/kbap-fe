@@ -140,11 +140,16 @@ export default function OrderDetailScreen() {
   };
 
   const photosKey = cardPhotos.join('|');
-  React.useEffect(() => {
-    // 사진이 바뀌면(주문 전환·재시도) · **시트를 다시 열면**(캔버스 새로 마운트) 다시 잠근다 — 캔버스가
-    // 로드 완료를 다시 알려 준다. 닫힌 동안엔 캔버스가 없으니 잠금 상태로 둔다.
+  // 사진이 바뀌면(주문 전환·재시도) · **시트를 다시 열면**(캔버스 새로 마운트) 다시 잠근다 — 캔버스가
+  // 로드 완료를 다시 알려 준다. 닫힌 동안엔 캔버스가 없으니 잠금 상태로 둔다.
+  // KB-603: effect가 아니라 렌더 중 **전환** 비교(React 공식 패턴) — 값이 같은 키로 돌아와도(시트 닫기→다시 열기 = 같은
+  // shareOpen=true) 전환마다 리셋한다(Codex #208 P1: 값 키 파생이면 재오픈 직후 옛 'ready'가 남아 캡처가 빈 사진을 담는다).
+  const canvasKey = `${photosKey}\u0000${retry}\u0000${shareOpen}`;
+  const [prevCanvasKey, setPrevCanvasKey] = React.useState(canvasKey);
+  if (canvasKey !== prevCanvasKey) {
+    setPrevCanvasKey(canvasKey);
     setPhotosState(photosKey ? 'loading' : 'ready');
-  }, [photosKey, retry, shareOpen]);
+  }
 
   // 실패 문구 + (비production 한정) 단계·원인 1줄
   const shareFailText = (base: string) => {

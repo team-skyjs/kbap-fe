@@ -24,12 +24,74 @@ module.exports = defineConfig([
     // ③ refs·immutability·globals·preserve-manual-memoization.
     // 소진이 끝난 룰은 이 블록에서 **지운다**(= error 복귀).
     rules: {
-      "react-hooks/rules-of-hooks": "warn",
+      // "react-hooks/rules-of-hooks" — KB-604(2026-09-30) 11건 소진 → error 복귀(recommended 기본)
+      // KB-657 PR-3(2026-10-01): 렌더 중 최신값 ref 쓰기 19건 → useLayoutEffect 동기화. 잔여 = ① 제스처/팬 콜백 안의 ref 접근
+      // 11건(PhotoViewer·useSheetSwipeDismiss·scan Pinch·SpiceLevelSlider PanResponder — 실행은 이벤트 시점, 빌더가 렌더 중이라
+      // 컴파일러가 잡음. 워클릿 경계 = 실기 확인 필요, 변경 없음) ② onboarding footer 4건(ref를 읽는 콜백 advance를 담은
+      // 일반 객체를 렌더 중 읽음 — 컴파일러 오염, 동작 무관) → warn 유지 · 래칫 기준값 = 15.
       "react-hooks/refs": "warn",
+      // KB-657 PR-2(2026-10-01): 잔여 20건 = 전부 reanimated shared value 쓰기(`sv.value = withX(…)`, 정식 사용법 — 코드 변경 금지).
+      // 룰에 제외 옵션이 없어 warn 유지 · 래칫 기준값 = 20(늘면 lint:changed가 잡는다).
       "react-hooks/immutability": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/globals": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
+      // "react-hooks/set-state-in-effect" — KB-603(2026-09-30) 19건 소진 → error 복귀(recommended 기본)
+      // "react-hooks/globals" — KB-657 PR-1(2026-09-30) 12건 소진 → error 복귀(recommended 기본)
+      // "react-hooks/preserve-manual-memoization" — KB-657 PR-1(2026-09-30) 4건 소진 → error 복귀
+    },
+  },
+  {
+    // ── 헌법 게이트 하드화(2026-09-26, KB-644) ─────────────────────────────
+    // 발주문마다 글로 실어 보내던 규칙을 CI 실패로 옮긴다(도입 시점 기존 위반 0 — error).
+    // 판별 못 하는 건 여전히 리뷰 몫: useSubmitGuard 누락, false-safe 강등 경로.
+    //
+    // 잡는 위치(Codex #204 2R): JSX 텍스트 · JSX 속성 문자열 · JSX 표현식 **안의 모든** 문자열·
+    // 템플릿 리터럴(`{'😀'}`, `{cond ? '한글' : x}`, `{`총 ${n}개`}`, `label={`…`}`).
+    // 한계: JSX 밖 변수에 담았다가 넘기는 문자열(`const s = '한글'; <T>{s}</T>`)은 못 잡는다 —
+    // 값 추적은 lint 범위 밖, 리뷰 몫.
+    files: ["src/**/*.tsx"],
+    // 테스트는 서버가 준 한국어 데이터(음식명·주소)를 픽스처로 JSX에 넣는다 — UI 카피가 아니다.
+    ignores: ["**/__tests__/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          // 헌법: UI 이모지 0(SVG만). 판정 = Unicode `Extended_Pictographic`(표준 이모지 속성 —
+          // 🟢 같은 도형·⚠️ 포함). 국기(regional indicator 쌍)는 이 속성에 없어 자동 예외
+          // (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
+          // keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
+          selector:
+            ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/\\p{Extended_Pictographic}|\\u20E3/u]",
+          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
+        },
+        {
+          selector: "JSXExpressionContainer TemplateElement[value.raw=/\\p{Extended_Pictographic}|\\u20E3/u]",
+          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
+        },
+        {
+          // 헌법: i18n 하드코딩 0. 주석·console.log(JSX 밖)는 AST 대상이 아니라 안 걸린다.
+          // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
+          selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/[가-힣]/]",
+          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
+        },
+        {
+          selector: "JSXExpressionContainer TemplateElement[value.raw=/[가-힣]/]",
+          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
+        },
+      ],
+    },
+  },
+  {
+    // P-147: 회원 속성(provider·가입 상태·판정)은 서버 API가 정본 — Firebase providerData 읽기 금지.
+    // 예외는 정리·철회 유틸(src/lib/auth)뿐(Codex #204 2R: src/lib 헬퍼 경유 우회 차단).
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/lib/auth/**", "**/__tests__/**"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          property: "providerData",
+          message: "회원 속성 판별은 서버 profile이 정본(P-147). providerData는 src/lib/auth 유틸에서만.",
+        },
+      ],
     },
   },
 ]);

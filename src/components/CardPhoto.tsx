@@ -29,11 +29,16 @@ export function CardPhoto({
 }) {
   const [settled, setSettled] = React.useState(false);
   const [failed, setFailed] = React.useState(false);
-  // #116 P2 ③: 리사이클/소스 교체 시 상태 리셋 — 이전 항목의 실패가 새 이미지를 가리지 않게
-  React.useEffect(() => {
+  // #116 P2 ③ → KB-603: 리사이클/소스 교체 **전환마다** 리셋(이전 항목의 실패가 새 이미지를 가리지 않는다) — effect가 아니라
+  // 렌더 중 전환 비교(React 공식 패턴, 옛 상태가 한 프레임도 안 보임). 값 키로 파생하면 A→B→A에서 옛 실패가 남아
+  // 재시도를 잃는다(Codex #208 TabBar와 같은 계열).
+  const key = `${recyclingKey ?? ''}\u0000${uri ?? ''}`;
+  const [prevKey, setPrevKey] = React.useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
     setSettled(false);
     setFailed(false);
-  }, [uri, recyclingKey]);
+  }
   const round = borderRadius != null ? { borderRadius, overflow: 'hidden' as const } : null;
   const shimmerStyle: ViewStyle[] = round ? [FILL, round] : [FILL];
   const imageStyle: ImageStyle[] = round ? [FILL, round] : [FILL];

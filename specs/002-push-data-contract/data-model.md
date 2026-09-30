@@ -6,7 +6,7 @@
 |----|---------|--------|-----------|
 | `HELPFUL` | `/push-landing?type=HELPFUL` (임시 — 기획 미정) | 아니오 | `inbox.helpfulTitle/Body` (기존) |
 | `SCAN_SUGGESTION` | `/push-landing?type=SCAN_SUGGESTION` (임시 — 기획 미정) | 예 | `inbox.scanSuggestionTitle/Body` (신규, 구 nudge 문구 승계) |
-| `REVIEW_REMINDER` | `/food/{foodId}` 음식 상세 (foodId 없으면 없음) | 아니오 | `inbox.reminderTitle/Body` (기존) |
+| `REVIEW_REMINDER` | `/profile/order/{orderId}` 주문 상세 (orderId 숫자 아니면 없음 — KB-500) | 아니오 | `inbox.reminderTitle/Body` (기존) |
 | `NEWS` | 없음 | 예 | `inbox.newsTitle/Body` (신규) |
 | `MEAL_TIME` | 없음 | 예 | `inbox.mealTimeTitle/Body` (신규) |
 
@@ -19,10 +19,10 @@
 | 필드 | 타입 | 필수 | 비고 |
 |------|------|------|------|
 | `type` | `PushType` 문자열 | 예 | 미지 값은 무시 |
-| `foodId` | `string \| number` | REVIEW_REMINDER만 | 경로 생성 시 문자열화 (`/food/7/review`) |
+| `orderId` | `number(int64) \| string` | REVIEW_REMINDER만 (KB-500) | `String()` 후 `/^\d+$/` 통과 시만 경로(`/profile/order/12`), 정밀도는 문자열 보존. 구 `foodId`는 폐기(와도 무시) |
 | `notificationId` | `number \| string` | 서버 푸시는 항상, 로컬 알림·구 서버는 없음 | 형 변환 없이 그대로 전달 |
 
-로컬 리뷰 리마인더(`scheduleReviewReminder`)가 만드는 data는 `{ type: 'REVIEW_REMINDER', foodId }` — `notificationId` 없음(변경 없음, FR-010).
+로컬 리뷰 리마인더는 KB-500(2026-09-28)에서 삭제 — 리마인더는 서버 배치(주문 저장 60~65분 후)만 발송한다. 구 버전이 남긴 로컬 알림(`{type, foodId}`)은 탭해도 이동 없음.
 
 ## InboxItem (기기 로컬 알림함, AsyncStorage `kbap.inbox.v1`)
 
@@ -32,7 +32,7 @@ titleKey: string      // i18n 키
 bodyKey: string
 at: string            // ISO
 read: boolean
-data: { type: PushType; foodId?: string }
+data: { type: PushType; orderId?: number | string }
 ```
 
 변경점: `data.type` 유니온이 `PushType`으로 교체. 저장 포맷·키 불변.

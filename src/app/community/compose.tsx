@@ -413,6 +413,13 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   // P-392(KB-584): 자격 UX 폐기 — 정책이 "회원이면 어떤 음식이든 리뷰"로 바뀌었다(BE #274).
   // 스캔 목록은 **빠른 선택**으로 남기고(첫 화면), 전체 음식도 선택 가능.
   const [searchAll, setSearchAll] = React.useState(false); // filter 컨텍스트: scanned 0건 → 전체 재검색
+  // KB-603: 검색어가 **바뀔 때마다** scanned 우선으로 복귀 — 렌더 중 전환 비교(React 공식 패턴). 값 키(searchAllFor === q)로
+  // 파생하면 같은 검색어로 되돌아올 때 전체 검색이 되살아난다(Codex #208 P2).
+  const [prevQ, setPrevQ] = React.useState(q);
+  if (q !== prevQ) {
+    setPrevQ(q);
+    setSearchAll(false);
+  }
   // 리뷰 픽커 검색은 **전체 음식**(임의 READY 음식 선택) — 기존 검색 훅 재사용, 새 UI 없음.
   const searchScope = useScanScope && !searchAll && !isReview ? ('scanned' as const) : undefined;
   const foods = useSearchFoods(kind === 'food' ? q : '', searchScope);
@@ -422,12 +429,12 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
   // P-238: 리뷰 픽커 초기 목록 = 내 최근 스캔(스웨거 명시 — 검색 API가 아니라 스캔 내역
   // 조회). 스캔 이력 0건 = 기존 인기 목록 폴백(빈 화면 금지 — P-210).
   const scanned = useScannedFoods(useScanScope && kind === 'food');
-  React.useEffect(() => {
+  // KB-603: 시트가 닫히면(kind → null) 검색 상태 리셋 — effect가 아니라 렌더 중 이전값 비교(React 공식 패턴, 낭비 렌더 0)
+  const [prevKind, setPrevKind] = React.useState(kind);
+  if (kind !== prevKind) {
+    setPrevKind(kind);
     if (kind == null) { setQ(''); setSearchAll(false); }
-  }, [kind]);
-  React.useEffect(() => {
-    setSearchAll(false); // 검색어가 바뀌면 scanned 우선으로 복귀
-  }, [q]);
+  }
   // P-337(KB-490): 핸들+헤더 스와이프 닫기 — 리스트 스크롤과 충돌 방지(제스처 영역 한정)
   const swipe = useSheetSwipeDismiss(onClose, kind != null);
   if (!kind) return null;

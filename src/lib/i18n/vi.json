@@ -386,6 +386,7 @@
     "removePhoto": "Xóa ảnh",
     "postError": "Không lưu được đánh giá. Kiểm tra kết nối và thử lại.",
     "foodHidden": "Hiện không thể đăng đánh giá cho món này. Nội dung bạn viết vẫn còn trên màn hình này.",
+    "foodUpdating": "Thông tin món này đang được cập nhật nên hiện chưa thể đăng đánh giá. Nội dung bạn viết vẫn còn trên màn hình này.",
     "likesCaption": "Lượt thích không ảnh hưởng thứ tự",
     "placeRow": "Bạn đã ăn ở đâu?",
     "placeSheetTitle": "Gắn thẻ địa điểm",
@@ -553,7 +554,8 @@
     "beFirstReview": "Chưa có đánh giá — hãy là người đầu tiên!",
     "ingGuestBody": "{{ingredient}} được dùng trong khoảng {{percent}}% phiên bản của món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
     "ingGuestBodyNoPct": "{{ingredient}} thường được dùng trong món này. Có thể khác nhau tùy quán — hãy hỏi chủ quán để chắc chắn.",
-    "foodHidden": "Hiện không thể xem thông tin món này."
+    "foodHidden": "Hiện không thể xem thông tin món này.",
+    "foodUpdating": "Thông tin món này đang được cập nhật. Vui lòng kiểm tra lại sau ít phút."
   },
   "states": {
     "catalogTitle": "Trạng thái",
@@ -883,6 +885,7 @@
   "saved": {
     "error": "Không thể cập nhật danh sách đã lưu. Vui lòng thử lại.",
     "foodHidden": "Hiện không thể lưu món này.",
+    "foodUpdating": "Thông tin món này đang được cập nhật nên hiện chưa thể lưu.",
     "title": "Đã lưu",
     "count_other": "{{count}} món",
     "newestFirst": "Mới nhất trước",
@@ -959,8 +962,8 @@
     "receiveConsent": "Đồng ý nhận thông tin quảng cáo (tùy chọn)",
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
     "consentConfirm": "Đồng ý và bật thông báo",
-    "reviewReminderTitle": "Bữa ăn thế nào?",
-    "reviewReminderBody": "Cho chúng tôi biết {{name}} thế nào — một đánh giá nhanh sẽ giúp các du khách khác."
+    "nudgeTitle": "Bật thông báo đánh giá nhé?",
+    "nudgeBody": "Chúng tôi sẽ nhắc bạn đánh giá món đã gọi trước khi quên,\nvà báo khi có người phản hồi đánh giá của bạn."
   },
   "notif": {
     "title": "Cài đặt thông báo",

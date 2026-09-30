@@ -11,7 +11,7 @@
 // 지금 안전한 이유는 **FLAGS가 빌드 상수**라 한 빌드 안에서 분기가 고정된다는 것 하나뿐이다.
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
@@ -28,7 +28,7 @@ import { findCachedReview, useCreateReview, useUpdateReview } from '@/lib/data/u
 import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
-import { isFoodHidden } from '@/lib/api/client';
+import { foodHiddenReason, type FoodHiddenReason } from '@/lib/api/client';
 import { showTopToast } from '@/components/topToastStore';
 import { Shimmer } from '@/components/Skeleton';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -38,7 +38,6 @@ import { EVENTS, track } from '@/lib/analytics';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
-import { cancelReviewReminder } from '@/lib/push/pushAdapter';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { Modal } from 'react-native';
@@ -74,7 +73,7 @@ function ReviewComposeScreen() {
   const [submitted, setSubmitted] = useState(false);
   /** 제출 실패 종류. ⚠️ 불리언 둘(에러·숨김)로 두면 "둘 다 참"이라는 **있을 수 없는 상태**가
    *  생긴다 — 셋 중 하나로 고정한다. `hidden` = 음식이 일시 숨김(KB-620): 에러가 아니다. */
-  const [postError, setPostError] = useState<'failed' | 'hidden' | null>(null);
+  const [postError, setPostError] = useState<'failed' | FoodHiddenReason | null>(null); // KB-650: 숨김은 사유별
   // P-095 목 → P-201 실연결: 장소 태그(선택·최대 1) — nearby/search 실 API, MANUAL 직접 입력
   const [place, setPlace] = useState<ReviewPlaceTag | null>(null);
   const [bodyFocused, setBodyFocused] = useState(false); // §2-6: focus = primary 보더
@@ -191,7 +190,6 @@ function ReviewComposeScreen() {
         });
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
         // P-236: extras는 mutateAsync 페이로드로 서버 전송(로컬 프리뷰 폐기)
-        if (id) void cancelReviewReminder(id); // P-192: 리뷰 썼으면 유도 알림 예약 취소
         // 프리즈 방어(9/5, Codex #24): dismiss 직후 동기 present는 hide 애니메이션과
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
@@ -204,7 +202,7 @@ function ReviewComposeScreen() {
         // 리뷰·이미지 소유권만 확인해서(음식 준비 상태 무관) 숨겨진 음식의 리뷰도 **수정은 성공**한다.
         // 수정 경로도 이 catch를 지나므로 서버가 준비 상태 검사를 추가하면 그대로 대비된다(KB-626 정정 —
         // KB-620 때 "신규·수정 모두 같은 FOOD-001"이라고 적었던 건 서버를 확인하지 않은 추론이었다).
-        setPostError(isFoodHidden(e) ? 'hidden' : 'failed'); // 실패 = 버튼 복구(가드 finally)
+        setPostError(foodHiddenReason(e) ?? 'failed'); // 실패 = 버튼 복구(가드 finally)
       }
     });
 
@@ -217,6 +215,28 @@ function ReviewComposeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const bodyInputRef = useRef<TextInput>(null);
   const [kbH, setKbH] = useState(0);
+  const svH = useRef(0); // ScrollView 뷰포트 높이 실측
+  const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
+  const kbHRef = useRef(0);
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  useLayoutEffect(() => {
+    kbHRef.current = kbH;
+  });
+  // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
+  // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
+  const atEnd = useRef(true);
+  const bodyLenRef = useRef(0);
+  useLayoutEffect(() => {
+    bodyLenRef.current = body.length;
+  });
+  const ensureCursorVisible = () => {
+    const visible = svH.current - kbHRef.current;
+    if (visible <= 0 || !blockBottom.current) return;
+    const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
+    if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
+  };
+  // KB-657: 이 effect는 위 ref·ensureCursorVisible을 읽으므로 그 **선언 뒤**에 둔다(컴파일러 "선언 전 접근" — 마운트 1회
+  // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
       kbHRef.current = e.endCoordinates?.height ?? 0;
@@ -229,23 +249,7 @@ function ReviewComposeScreen() {
       show.remove();
       hide.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const svH = useRef(0); // ScrollView 뷰포트 높이 실측
-  const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
-  const kbHRef = useRef(0);
-  kbHRef.current = kbH;
-  // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
-  // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
-  const atEnd = useRef(true);
-  const bodyLenRef = useRef(0);
-  bodyLenRef.current = body.length;
-  const ensureCursorVisible = () => {
-    const visible = svH.current - kbHRef.current;
-    if (visible <= 0 || !blockBottom.current) return;
-    const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
-    if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
-  };
 
 
   // ⚠️ 가드는 전 훅 선언 뒤(P-358: 편집 로딩→로드 전환 시 훅 수 불변)
@@ -433,9 +437,16 @@ function ReviewComposeScreen() {
         {/* KB-620: 숨김 안내는 **중립**이다 — RiskMark(안전 판정 아이콘)·주황 경고 틴트를 쓰지 않는다.
             "이 음식을 잠시 못 쓴다" 옆에 판정 아이콘이 붙으면 음식 자체에 대한 판정으로 읽힌다(헌법 III).
             틀(패딩·보더·라운딩)은 postErr와 같고 색만 다르다. */}
-        {postError === 'hidden' && (
-          <View style={styles.hiddenNote} testID="review-food-hidden">
+        {/* KB-650: 018(재생성 중) = 회복 문구 + IconRetry("돌아온다") · 001(없음·삭제) = 중립 문구, 텍스트만
+            (되돌아온다는 암시 금지 — KB-620 가드). 틀은 같고 아이콘 슬롯만 다르다. */}
+        {postError === 'updating' && (
+          <View style={styles.hiddenNote} testID="review-food-updating">
             <IconRetry size={16} color={C.inkInfo} />
+            <Text style={styles.hiddenNoteText}>{t('review.foodUpdating')}</Text>
+          </View>
+        )}
+        {postError === 'gone' && (
+          <View style={styles.hiddenNote} testID="review-food-hidden">
             <Text style={styles.hiddenNoteText}>{t('review.foodHidden')}</Text>
           </View>
         )}

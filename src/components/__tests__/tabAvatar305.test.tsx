@@ -80,6 +80,20 @@ it('P-313: 기본 프사 URL도 헤더와 동일하게 이미지 렌더(정본 =
   expect(fs.readFileSync('src/components/TabBar.tsx', 'utf8')).not.toContain('isDefaultProfileImage');
 });
 
+/* Codex #208 P2(KB-603): 소스 **전이마다** 실패 해제 — A 실패 → null(로그아웃) → 다시 A(같은 계정 재로그인) = 재시도. */
+it('A 실패 → null → 다시 A = 재시도(사진 다시 마운트)', () => {
+  const t = render();
+  const upd = () => act(() => { t.update(<TabBar active="home" labels={LABELS} onPress={jest.fn()} onScan={jest.fn()} />); });
+  act(() => mockRemote.mock.calls[0][0].onError());
+  expect(photo(t).length).toBe(0);
+  mockMe.mockReturnValue({ data: { profileImageUrl: null } });
+  upd();
+  expect(photo(t).length).toBe(0);
+  mockMe.mockReturnValue({ data: { profileImageUrl: 'https://cdn.kbap.site/p/9.jpg' } });
+  upd();
+  expect(photo(t).length).toBeGreaterThanOrEqual(1); // 옛 실패가 남아 있으면 0
+});
+
 it('로드 실패(onError) = 플레이스홀더 폴백 · URL 변경 = 재시도(갱신)', () => {
   const t = render();
   act(() => mockRemote.mock.calls[0][0].onError());

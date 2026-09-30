@@ -10,7 +10,7 @@
 // 앞의 FLAGS 계열과 달리 `useIsGuest()`는 **런타임 값**이라, 로그인/로그아웃으로 값이 뒤집히면
 // 훅 순서가 실제로 바뀐다(`useSubmitGuard`가 조건부 호출됨) — 잠재 버그다.
 // 소진 발주(KB-603~) 1순위 후보. 코드 변경은 이번 PR 범위 밖이라 표시만 남긴다.
-import { useEffect, useState, useRef } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -32,23 +32,22 @@ export default function EditRestrictions() {
   const update = useUpdateMe();
 
   const [sel, setSel] = useState<string[]>([]);
-  const [seeded, setSeeded] = useState(false);
+  // KB-603: 시딩 시점 개수(P-214 delta 기준선)를 시딩 상태에 함께 담는다(null = 미시딩) — 렌더 중 ref 쓰기 대신 상태
+  const [seed, setSeed] = useState<{ initialCount: number } | null>(null);
   // P-203: 카테고리 재적용 — 적용 = 기존 선택과 합집합(기존 삭제 금지·안전)
   // P-227 ②: 프로필 식이 Edit 진입 = 프리셋 시트 자동 오픈(기존 시트 재사용)
   // P-227 ③: 프리셋 적용 전 확인 팝업 — "회피 성분을 이에 맞게 채울까요?"
   // P-243: 시트 초기 표시 = 서버 정본(me.dietCategories) — me 도착 후 seeding(아래 effect)
   // P-214: 변경 폭(delta)·경로(via) 계측 재료 — 시딩 시점 개수가 기준선
-  const initialCount = useRef(0);
-  useEffect(() => {
-    if (me && !seeded) {
-      setSel(me.restrictions.map((r) => r.code));
-      initialCount.current = me.restrictions.length;
-      setSeeded(true);
-    }
-  }, [me, seeded]);
+  // 서버값 1회 시딩 — effect(빈 선택이 한 프레임 먼저 그려짐)가 아니라 렌더 중(React 공식 "이전 값 비교" 패턴)
+  if (me && !seed) {
+    setSeed({ initialCount: me.restrictions.length });
+    setSel(me.restrictions.map((r) => r.code));
+  }
 
   const toggle = (code: string) => setSel((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
   const isGuest = useIsGuest();
+  const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄 — KB-604: 게스트 return보다 위(순수 로컬 훅, 부수효과 0)
 
   // 라우트 자체 가드 (⑧-b) — 진입로는 프로필/홈 Edit(게이트·게스트 미노출)뿐이지만
   // 딥링크 이중 방어. 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
@@ -61,7 +60,6 @@ export default function EditRestrictions() {
     );
   }
 
-  const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄
   function save() {
     void runSave(
       () =>
@@ -74,7 +72,7 @@ export default function EditRestrictions() {
                 // P-214: 변경 시점·폭 계측(user property는 현재값만 남음). 항목명 금지 — 개수만.
                 track(EVENTS.profile_avoid_update, {
                   count: sel.length,
-                  delta: sel.length - initialCount.current,
+                  delta: sel.length - (seed?.initialCount ?? 0),
                   via: 'manual', // P-339 ⑧: 프리셋 채우기 소멸 — 이 화면은 항상 수동
                 });
                 router.back();

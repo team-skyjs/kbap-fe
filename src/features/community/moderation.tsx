@@ -62,7 +62,10 @@ export function ModerationFlow({
   const [phase, setPhase] = React.useState<'menu' | 'report' | 'blockConfirm' | 'blocking'>('menu');
   const [reported, setReported] = React.useState(false);
   const targetRef = React.useRef(target); // 늦은 뮤테이션 콜백이 현재 대상과 같은지 대조용
-  targetRef.current = target;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    targetRef.current = target;
+  });
   const submitReport = useSubmitReport();
   const blockUser = useBlockUser();
 
@@ -80,11 +83,14 @@ export function ModerationFlow({
     };
   }, []);
 
-  // 대상이 바뀔 때 플로우 리셋
-  React.useEffect(() => {
+  // 대상이 바뀔 때 플로우 리셋 — KB-603: 렌더 중 이전값 비교(React 공식 패턴), 옛 대상의 phase가 한 프레임도 보이지 않는다
+  const targetKey = target ? `${target.type}\u0000${target.id}` : null;
+  const [prevTargetKey, setPrevTargetKey] = React.useState(targetKey);
+  if (targetKey !== prevTargetKey) {
+    setPrevTargetKey(targetKey);
     setPhase('menu');
     setReported(false);
-  }, [target?.type, target?.id]);
+  }
 
   if (!target) return null;
   const name = authorName(target.author, t);

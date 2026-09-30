@@ -1479,3 +1479,13 @@
 - [x] 수정(기존 배너 재사용, 화면 1파일): `osOff = denied || undetermined`(흐림·무반응 공통). `undetermined` = 문구 `notif.osAsk` + CTA `osAskCta`(「알림 켜기」), 탭 = `requestPermission()` → 허용 시 `registerPushToken()` → 권한 재조회로 배너 소멸·토글 활성 / 거부 시 denied 배너(기기 설정 열기)로 전환. testID `notif-os-ask`(denied `notif-os-off`와 분리). i18n 2키 10로케일.
 - [x] 테스트: notificationSettings497 +2(undetermined 배너·진입만으론 팝업 0·탭→팝업 1회→토큰 1회→배너 소멸·body auto / 거부→토큰 0·denied 전환) · notifKeys497 REQUIRED +2. US5 spy.mockRestore 이후 RN preset AppState 반환값 undefined로 후속 렌더가 깨지는 순서 의존 → 블록 스텁으로 고정. tsc 0 · 관련 16스위트 145/145.
 - [ ] iOS 실기(종한): 재설치 → 로그인 → 알림 설정 → 「알림 켜기」 → OS 팝업 허용 → 설정 앱 항목 생성 + 서버 `notification_device` 행 확인. 완료 전 OTA 발행 금지(JS-only, 발행은 예진 승인).
+
+## 리뷰 리마인더 서버 전환 (2026-09-28, KB-500 — Spec Kit 7호 `specs/007-review-reminder-server`, 워크트리 feat/kb500-review-reminder-server)
+
+- [x] 발주(서버 PR #305·KB-469): 서버 배치가 주문 저장 60~65분 뒤 `REVIEW_REMINDER{orderId(int64), notificationId}` 발송 → 앱 5건 반영. clarify 1결정(종한): 주문 상세 리뷰 진입 = **B안, 현재대로**(행 탭 = 음식 상세 → 리뷰 작성, `ready=false`·`foodId` 없음 비활성 기존 P-259) — 주문 상세·Android 채널(activity)·nav 헬퍼·루트 배선 코드 변경 0.
+- [x] 로컬 예약 **삭제**(플래그 아님): `pushAdapter` "로컬 리뷰 유도 알림" 섹션(schedule/cancel·REMINDERS_KEY·REVIEW_REMINDER_SECONDS) + 호출부 2곳(FlippedOrderCard done 탭·review.tsx 작성 성공) + 10로케일 `push.reviewReminder*`. 잔존 AsyncStorage `kbap.push.reminders.v1`은 고아(정리 코드 없음). 구 버전이 남긴 로컬 알림은 최대 1회 발화·탭해도 이동 없음.
+- [x] 착지: `routeForNotificationData` REVIEW_REMINDER = `String(orderId)`가 `/^\d+$/`일 때만 `/profile/order/{orderId}`(정밀도 문자열 보존), 그 외 null(오착지 금지). 알림함 어댑터 `foodId`→`orderId`(와이어 nullable → String), `notifications.tsx` 탭 인자 교체.
+- [x] 테스트: pushAdapter192 매핑 9케이스·리스너/콜드 orderId · reviewReminderServer500 신설(삭제 잠금 4 + foodId 잔존 null) · prodGuard221·pushSurfaces192·orderHistory252·modalSerialize267·reviewEditCompose521·inbox499·useNotifications499 갱신. tsc 0.
+- [x] 문서: specs/002·004·005 리마인더 행 orderId·주문 상세로 갱신.
+- [ ] **열린 항목(종한→BE)**: 서버 배치 prod 활성화 = 이 앱 버전 릴리스와 동기 — 릴리스 일정 회신 필요. 로컬 예약 제거가 배치 활성화보다 먼저 기기에 도달해야 중복 알림 0. 배포 경로(OTA/네이티브)·시점은 예진 승인.
+- [ ] 실기(iOS·Android): quickstart D-1~D-8 — 백그라운드/종료 탭 주문 상세·다른 주문 갱신·orderId 없음 무동작·알림함 탭·게스트·예약 0건·activity 채널.

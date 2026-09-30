@@ -13,7 +13,7 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { RemoteImage } from '@/components/RemoteImage';
-import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -171,13 +171,17 @@ export default function Onboarding() {
 
   // P-088④: 안드 하드웨어 백 = 온보딩 내 스텝 back과 동일 — 첫 스텝이면 기본
   // 동작(앱 종료 관례). iOS 스와이프 백은 _layout gestureEnabled:false가 차단.
-  const backRef = useRef({ idx, back });
-  backRef.current = { idx, back };
+  // KB-657: 최신 idx만 ref에 두고(커밋 시 동기화) 리스너는 back()의 i>0 분기를 그대로 인라인 — back 함수를 ref에
+  // 담으면 컴파일러가 back을 든 footer 객체까지 "ref 값"으로 보고 렌더 중 읽기로 잡는다. 동작 동일(i>0 = 이전 스텝).
+  const idxRef = useRef(idx);
+  useLayoutEffect(() => {
+    idxRef.current = idx;
+  });
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      const { idx: i, back: goBack } = backRef.current;
+      const i = idxRef.current;
       if (i > 0) {
-        goBack();
+        setStep(ORDER[i - 1]); // = back() when i > 0
         return true;
       }
       return false; // 첫 스텝 — 기본(앱 종료)
@@ -503,15 +507,23 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
   const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
-  const [error, setError] = useState(false);
+  // KB-603 3R 스윕: 실패도 **어느 문서의 것인지** 달아 저장(remote.doc과 같은 규칙) — 이전 문서의 늦은 fetch 실패가 다음
+  // 문서에 실패 화면을 붙이지 않는다. 표시는 현재 doc과 같을 때만.
+  const [errorDoc, setErrorDoc] = useState<LegalDoc | null>(null);
+  const error = errorDoc != null && errorDoc === doc;
   const isRemote = doc === 'terms' || doc === 'privacy';
 
-  const load = useCallback((d: LegalDoc) => {
-    setError(false);
+  // KB-603: 문서가 바뀌면 이전 결과·에러를 지운다 — 렌더 중 이전값 비교(React 공식 패턴). fetch(부수효과)만 effect.
+  const [prevDoc, setPrevDoc] = useState(doc);
+  if (doc !== prevDoc) {
+    setPrevDoc(doc);
+    setErrorDoc(null);
     setRemote(null);
+  }
+  const load = useCallback((d: LegalDoc) => {
     fetchLegalText(d)
       .then((text) => setRemote({ doc: d, text }))
-      .catch(() => setError(true));
+      .catch(() => setErrorDoc(d));
   }, []);
   useEffect(() => {
     if (doc === 'terms' || doc === 'privacy') load(doc);
@@ -544,7 +556,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
             error ? (
               <View style={styles.legalError}>
                 <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
-                <Pressable onPress={() => doc && load(doc as LegalDoc)} hitSlop={8}>
+                <Pressable onPress={() => { if (!doc) return; setErrorDoc(null); setRemote(null); load(doc as LegalDoc); }} hitSlop={8}>
                   <Text style={styles.legalRetry}>{t('common.retry')}</Text>
                 </Pressable>
               </View>
@@ -574,11 +586,14 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (code: string) => void; t: TFn }) {
   const [q, setQ] = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
-  const detected = deviceCountry();
+  // KB-657: 호출 결과를 그대로 메모 deps에 두면 컴파일러가 "나중에 변이될 수 있는 값"으로 보고 메모를 버린다 — 마운트 1회
+  // 상태로 고정(같은 파일 nationality 초기값과 같은 문법). 기기 로케일은 마운트 중 안 바뀐다.
+  const [detected] = useState(deviceCountry);
   const detectedCountry = detected ? countryByCode(detected) : undefined;
   const query = q.trim().toLowerCase();
+  const lang = i18n.language; // KB-657: 메모 안에서 모듈 전역을 읽으면 컴파일러가 의존성 불일치로 메모를 버린다 — 값으로 고정해 deps에 명시
   const list = useMemo(() => {
-    const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, i18n.language));
+    const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, lang));
     const filtered = query
       ? all.filter((c) => c.name.toLowerCase().includes(query) || (c.native ?? '').toLowerCase().includes(query))
       : // 핀 카드가 감지국 담당 — 본 리스트 중복 제거. P-395(KB-589): Popular 그룹도 같은 규칙으로
@@ -587,7 +602,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         // 검색 중에는 이 필터가 아예 안 걸리므로 전 국가가 그대로 찾힌다.
         all.filter((c) => c.code !== detected && !POPULAR_COUNTRIES.includes(c.code as (typeof POPULAR_COUNTRIES)[number]))
     return filtered;
-  }, [query, detected]);
+  }, [query, detected, lang]);
 
   // P-395(KB-589): 상위 10개국 — **상수 배열 순서 그대로**(정렬하지 않는다).
   // 감지국은 핀 카드가 이미 보여주므로 여기선 뺀다 — 그래서 9개가 될 수 있다.

@@ -432,6 +432,7 @@
     "removePhoto": "사진 삭제",
     "postError": "리뷰를 저장하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
     "foodHidden": "지금은 이 음식에 리뷰를 게시할 수 없어요. 작성한 내용은 이 화면에 그대로 있어요.",
+    "foodUpdating": "지금은 이 음식 정보를 새로 고치는 중이라 리뷰를 게시할 수 없어요. 작성한 내용은 이 화면에 그대로 있어요.",
     "likesCaption": "좋아요는 정렬에 영향을 주지 않아요",
     "placeRow": "어디서 드셨어요?",
     "placeSheetTitle": "장소 태그",
@@ -711,7 +712,8 @@
     "beFirstReview": "아직 리뷰가 없어요. 첫 리뷰를 남겨 보세요.",
     "ingGuestBody": "이 음식의 {{ingredient}} 사용 비율은 약 {{percent}}%예요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
     "ingGuestBodyNoPct": "이 음식은 {{ingredient}} 사용이 흔해요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
-    "foodHidden": "지금은 이 음식 정보를 볼 수 없어요."
+    "foodHidden": "지금은 이 음식 정보를 볼 수 없어요.",
+    "foodUpdating": "이 음식 정보를 새로 고치는 중이에요. 잠시 후 다시 확인해 주세요."
   },
   "states": {
     "catalogTitle": "상태",
@@ -883,6 +885,7 @@
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
     "foodHidden": "지금은 이 음식을 저장할 수 없어요.",
+    "foodUpdating": "이 음식 정보를 새로 고치는 중이라 지금은 저장할 수 없어요.",
     "title": "저장됨",
     "count_other": "음식 {{count}}개",
     "newestFirst": "최신순",
@@ -959,8 +962,8 @@
     "receiveConsent": "광고성 정보 수신 동의 (선택)",
     "consentBothRequired": "두 항목에 모두 동의해야 알림을 켤 수 있어요.",
     "consentConfirm": "동의하고 알림 켜기",
-    "reviewReminderTitle": "식사 어떠셨어요?",
-    "reviewReminderBody": "{{name}} 메뉴에 별점을 남겨주세요. 다른 여행자에게 큰 도움이 돼요."
+    "nudgeTitle": "리뷰 알림, 켜두실래요?",
+    "nudgeBody": "주문한 메뉴를 잊기 전에 리뷰할 수 있도록 알려드리고,\n내 리뷰에 새로운 반응이 생기면 소식도 전해드려요."
   },
   "notif": {
     "title": "알림 설정",

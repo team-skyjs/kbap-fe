@@ -87,12 +87,14 @@ function serveApi() {
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 8)); });
 
-const renders = { a: 0, b: 0 };
+// KB-657: 렌더 중 바깥 객체 변이 금지 → 렌더마다 jest.fn 호출, 횟수는 호출 기록으로
+const rendered = { a: jest.fn(), b: jest.fn() };
+const renders = { get a() { return rendered.a.mock.calls.length; }, get b() { return rendered.b.mock.calls.length; } };
 
 /** FoodExplorer 드레인 effect(P-332 수정본) 복제 — 소스가 바뀌면 이 복제와 기대를 함께 갱신. */
 function Drainer({ tag }: { tag: 'a' | 'b' }) {
   const saved = useBookmarks();
-  renders[tag] += 1;
+  rendered[tag]();
   if (renders[tag] > 300) throw new Error(`LOOP: ${tag} 렌더 300회 초과`);
   React.useEffect(() => {
     if (saved.hasNextPage && !saved.isFetchingNextPage && !saved.isFetching)
@@ -117,7 +119,7 @@ beforeEach(() => {
   (api.post as jest.Mock).mockResolvedValue(undefined);
   (api.patch as jest.Mock).mockResolvedValue(undefined);
   serveApi();
-  renders.a = 0; renders.b = 0;
+  rendered.a.mockClear(); rendered.b.mockClear();
 });
 
 it('① 드레인 effect 메커니즘 — 동시 2구독 + 토글 invalidate 후 fetch·렌더 유한', async () => {

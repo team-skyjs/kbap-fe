@@ -19,7 +19,7 @@ import i18n from '../i18n';
 import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
-import { api, apiLang, isFoodHidden } from '../api/client';
+import { api, apiLang, foodHiddenReason } from '../api/client';
 import { trackReadyFood } from './hiddenFoods';
 import { showTopToast } from '@/components/topToastStore';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
@@ -178,9 +178,11 @@ export function useToggleBookmark() {
       // ⚠️ 거부를 **삼키지 않고 전파**한다(#185 2R): 숨김 신호를 세우면 상세 화면이 그 즉시 판정·액션 바를
       // 가리고 숨김 안내로 바뀐다 — onSettled 재조회를 기다리지 않는다(재조회는 게이트가 아니다).
       // 상세 안에서 눌렀으면 그 안내가 설명하므로 토스트는 생략(같은 말 두 번 금지).
-      if (isFoodHidden(e)) {
+      const reason = foodHiddenReason(e);
+      if (reason) {
         // 신호는 postBookmark(trackReadyFood)가 이미 세웠다 — 여기선 화면 정책(토스트)만
-        if (!fromDetail) showTopToast(i18n.t('saved.foodHidden'), { icon: 'info' }); // 중립 — 예진 확인 대상(P-405 (a))
+        // KB-650: 018(재생성 중) = 회복 문구 · 001(없음·삭제) = 중립 문구. 둘 다 중립 아이콘(판정 글리프 금지).
+        if (!fromDetail) showTopToast(i18n.t(reason === 'updating' ? 'saved.foodUpdating' : 'saved.foodHidden'), { icon: 'info' });
         return;
       }
       showTopToast(i18n.t('saved.error'), { error: true }); // P-346: AlertTri 변형

@@ -5,11 +5,10 @@
  * · 헤더 알림 벨 = 자리만(무동작) · 작성 FAB(회원) · ⋯ = 공용 ModerationFlow.
  * 데이터는 전부 community/adapter(목) 경유 — 계약 배포 시 어댑터만 스왑.
  */
-// ⚠️ KB-602 래칫 기록(2026-09-21): 아래 `FLAGS.*` early return이 **훅 호출보다 위**에 있다 —
-// `react-hooks/rules-of-hooks`가 이 파일에서 위반으로 잡는다(현재 warn으로 내려둔 상태).
-// 지금 안전한 이유는 **FLAGS가 빌드 상수**라 한 빌드 안에서 분기가 고정된다는 것 하나뿐이다.
-// 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
-// early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
+// KB-604(KB-602 래칫 소진): `FLAGS.*` 게이트는 **훅 없는 바깥 컴포넌트**(Community)에 두고 훅·화면은
+// CommunityPosts로 분리 — review.tsx(KB-620)·reviews.tsx(KB-626)와 같은 문법. 플래그가 런타임 값이 돼도
+// 훅 순서가 구조적으로 선다. 부수 효과: 글 기능 off 빌드에선 피드 쿼리·글 훅이 아예 마운트되지 않는다(전엔
+// early return 위에서 useCommunityFeed가 돌아 목 피드를 조회했다 — 낭비 제거, 화면 무변).
 import * as React from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
@@ -36,6 +35,18 @@ import { FoodTagSheet, PlaceTagSheet } from '@/features/community/tagSheets';
 const GUEST_PAGE_LIMIT = 2;
 
 export default function Community() {
+  const { t } = useTranslation(); // ComingSoon 문구용 — 게이트에 이 훅 하나뿐(조건부 return보다 위)
+  // P-289(구 KB-436 #34): 리뷰 피드 생존 분기 = coming-soon 가드보다 **앞** — 순서 회귀 방지
+  // (플래그 전부 true라 지금은 무영향, prod에서 리뷰 탭이 통째로 잠기던 b22 계열 차단)
+  if (FLAGS.reviewsLiveEnabled && !FLAGS.communityPostsEnabled) return <ReviewFeed />;
+  // P-113: 리뷰 계열 off + 채널 잠금일 때만 coming-soon 플레이스홀더
+  if (!FLAGS.communityEnabled) return <ComingSoon t={t} />;
+  // P-179: 글 기능은 보존형 플래그 뒤(코드 무삭제).
+  if (!FLAGS.communityPostsEnabled) return <ReviewFeed />;
+  return <CommunityPosts />;
+}
+
+function CommunityPosts() {
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -51,14 +62,6 @@ export default function Community() {
   const [foodSheet, setFoodSheet] = React.useState<{ foodId: string; name: string } | null>(null);
   const [placeSheet, setPlaceSheet] = React.useState<CommunityPost | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
-
-  // P-289(구 KB-436 #34): 리뷰 피드 생존 분기 = coming-soon 가드보다 **앞** — 순서 회귀 방지
-  // (플래그 전부 true라 지금은 무영향, prod에서 리뷰 탭이 통째로 잠기던 b22 계열 차단)
-  if (FLAGS.reviewsLiveEnabled && !FLAGS.communityPostsEnabled) return <ReviewFeed />;
-  // P-113: 리뷰 계열 off + 채널 잠금일 때만 coming-soon 플레이스홀더
-  if (!FLAGS.communityEnabled) return <ComingSoon t={t} />;
-  // P-179: 글 기능은 보존형 플래그 뒤(코드 무삭제).
-  if (!FLAGS.communityPostsEnabled) return <ReviewFeed />;
 
   const pages = feed.data?.pages ?? [];
   const posts = pages.flatMap((p) => p.items);

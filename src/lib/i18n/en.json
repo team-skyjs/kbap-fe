@@ -429,6 +429,7 @@
     "removePhoto": "Remove photo",
     "postError": "Couldn't save your review. Check your connection and try again.",
     "foodHidden": "You can't post a review for this dish right now. What you wrote is still here on this screen.",
+    "foodUpdating": "This dish's info is being refreshed, so you can't post a review right now. What you wrote is still here on this screen.",
     "likesCaption": "Likes don't change the sort",
     "placeRow": "Where did you eat?",
     "placeSheetTitle": "Tag a place",
@@ -708,7 +709,8 @@
     "beFirstReview": "No reviews yet. Be the first.",
     "ingGuestBody": "{{ingredient}} is used in about {{percent}}% of versions of this dish. It varies by restaurant. Ask the owner to be sure.",
     "ingGuestBodyNoPct": "{{ingredient}} is commonly used in this dish. It varies by restaurant. Ask the owner to be sure.",
-    "foodHidden": "This dish isn't available to view right now."
+    "foodHidden": "This dish isn't available to view right now.",
+    "foodUpdating": "This dish's info is being refreshed. Please check back in a little while."
   },
   "states": {
     "catalogTitle": "States",
@@ -881,6 +883,7 @@
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
     "foodHidden": "You can't save this dish right now.",
+    "foodUpdating": "This dish's info is being refreshed, so you can't save it right now.",
     "title": "Saved",
     "count_one": "{{count}} dish",
     "count_other": "{{count}} dishes",
@@ -958,8 +961,8 @@
     "receiveConsent": "Consent to receive promotional messages (optional)",
     "consentBothRequired": "Please agree to both items to turn on notifications.",
     "consentConfirm": "Agree and turn on",
-    "reviewReminderTitle": "How was your meal?",
-    "reviewReminderBody": "How was the {{name}}? A quick rating helps other travelers."
+    "nudgeTitle": "Keep review alerts on?",
+    "nudgeBody": "We'll remind you to review what you ordered before you forget,\nand let you know when someone reacts to your review."
   },
   "notif": {
     "title": "Notifications",

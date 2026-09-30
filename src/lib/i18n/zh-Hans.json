@@ -386,6 +386,7 @@
     "removePhoto": "删除照片",
     "postError": "评价保存失败。请检查网络后重试。",
     "foodHidden": "目前无法为这道菜发布评价。你写的内容仍保留在此页面。",
+    "foodUpdating": "这道菜的信息正在更新中，暂时无法发布评价。你写的内容仍保留在此页面。",
     "likesCaption": "点赞不影响排序",
     "placeRow": "你在哪里吃的？",
     "placeSheetTitle": "标记地点",
@@ -553,7 +554,8 @@
     "beFirstReview": "还没有评价 — 来写第一条吧！",
     "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
     "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。",
-    "foodHidden": "目前无法查看这道菜的信息。"
+    "foodHidden": "目前无法查看这道菜的信息。",
+    "foodUpdating": "这道菜的信息正在更新中，请稍后再来查看。"
   },
   "states": {
     "catalogTitle": "状态",
@@ -883,6 +885,7 @@
   "saved": {
     "error": "无法更新收藏列表，请重试。",
     "foodHidden": "目前无法收藏这道菜。",
+    "foodUpdating": "这道菜的信息正在更新中，暂时无法收藏。",
     "title": "已收藏",
     "count_other": "{{count}} 道菜",
     "newestFirst": "最新优先",
@@ -959,8 +962,8 @@
     "receiveConsent": "同意接收广告信息（可选）",
     "consentBothRequired": "需同意两项才能开启通知。",
     "consentConfirm": "同意并开启通知",
-    "reviewReminderTitle": "这顿饭怎么样？",
-    "reviewReminderBody": "告诉我们{{name}}怎么样——你的评分能帮助其他旅行者。"
+    "nudgeTitle": "开启评价提醒？",
+    "nudgeBody": "在你忘记之前提醒你评价点过的菜，\n有人对你的评价做出反应时也会通知你。"
   },
   "notif": {
     "title": "通知设置",

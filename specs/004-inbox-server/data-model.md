@@ -14,7 +14,7 @@
 | `receivedAt` | number (epoch ms) | ✓ | 도착 시각 |
 | `read` | boolean | ✓ | 이 기기에서 읽음 여부 |
 | `type` | string | ✓(BE 배포 후) | 푸시 `data.type`과 같은 enum `HELPFUL SCAN_SUGGESTION REVIEW_REMINDER NEWS MEAL_TIME`. 구 행은 저장 문자열 그대로 가능. **배포 전 응답엔 없음 — 앱은 옵션으로 읽는다** |
-| `foodId` | number \| string \| null | — | `REVIEW_REMINDER`만 값, 그 외 null. 직렬화 차이로 문자열 가능(푸시 규약과 동일) |
+| `orderId` | number(int64) \| string \| null | — | `REVIEW_REMINDER`만 값, 그 외 null(KB-500, 2026-09-28). 직렬화 차이로 문자열 가능. 구 `foodId`는 서버가 항상 null — 앱 타입에서 제거 |
 
 `readAt` 없음.
 
@@ -28,9 +28,9 @@
 | `at` | string (ISO 8601) | `new Date(receivedAt).toISOString()`. `receivedAt`이 유한수가 아니면 현재 시각(방금 전 표기) |
 | `read` | boolean | 그대로 |
 | `type` | string \| undefined | 와이어 `type` 그대로(없으면 undefined). 검증은 `routeForNotificationData`가 함(미지 = 이동 없음) |
-| `foodId` | string \| undefined | 와이어 `foodId`가 null/undefined가 아니면 `String()`; 아니면 undefined |
+| `orderId` | string \| undefined | 와이어 `orderId`가 null/undefined가 아니면 `String()`; 아니면 undefined |
 
-기존 `InboxItem`(`titleKey/bodyKey/data`)과 필드가 다르다 — 화면의 `t(item.titleKey)` 2곳이 서버 문자열로 바뀌고, 이동 입력은 `{ type: item.type, foodId: item.foodId }`.
+기존 `InboxItem`(`titleKey/bodyKey/data`)과 필드가 다르다 — 화면의 `t(item.titleKey)` 2곳이 서버 문자열로 바뀌고, 이동 입력은 `{ type: item.type, orderId: item.orderId }`.
 
 ### 목록 (query `['notifications']`)
 
@@ -51,7 +51,7 @@
 [unread] --tap--> [read (낙관, PATCH 진행)] --200--> [read (응답 항목으로 교체, 재조회 없음)]
                                           --error--> [그 항목만 이전 read로 복원 (세대 일치 시만)] (재조회 없음)
 [read]   --tap--> (읽음 변화 없음, 요청 0)
-어느 경우든 탭 직후: href = routeForNotificationData({type, foodId}); href면 router.push(href), null이면 알림함 유지
+어느 경우든 탭 직후: href = routeForNotificationData({type, orderId}); href면 openNotificationRoute(router, href), null이면 알림함 유지
 ```
 
 - 롤백 조건: `ctx.gen === currentGen()`. 뮤테이션 중 로그아웃·계정 전환이 있었으면 복원하지 않는다.

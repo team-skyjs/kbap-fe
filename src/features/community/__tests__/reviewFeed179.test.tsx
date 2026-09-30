@@ -39,7 +39,12 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/community',
   // P-194: 포커스 재조회 — 렌더마다 cb 즉시 발화 = "포커스 중" 시뮬레이션
-  useFocusEffect: (cb: () => void) => cb(),
+  // KB-657: 실제 useFocusEffect는 커밋 뒤(포커스 시) 실행 — 렌더 중 즉시 호출하던 옛 목은 layout effect로 동기화되는
+  // staleRef를 한 커밋 먼저 읽어 거짓 실패. effect 시점으로(heroGallery566·homeFeed317 문법).
+  useFocusEffect: (cb: () => void) => {
+    const { useEffect } = jest.requireActual('react') as typeof import('react');
+    useEffect(cb, [cb]);
+  },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),

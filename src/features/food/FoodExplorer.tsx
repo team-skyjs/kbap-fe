@@ -166,19 +166,27 @@ export function FoodExplorer({
   // 사용자가 화면에서 바꾼 칩은 다음 파라미터 변경 전까지 유지(마운트 시엔 초기값과 동일해 무동작).
   // Codex #80 3R P2: guest는 deps에서 분리(ref) — 세션 상태 전환이 파라미터 재적용으로
   // 사용자 선택을 리셋하지 않게. 게스트 강등은 아래 별도 effect가 개인화 상태만 내린다.
-  const guestRef = React.useRef(guest);
-  guestRef.current = guest;
   // Codex #81 P1: paramsKey(See all마다 갱신되는 t) 포함 — 같은 segment/risk의 재진입도 발화.
-  React.useEffect(() => {
-    if (variant !== 'screen') return;
-    setSavedOnly(initialSaved === true && !guestRef.current);
-    setRiskChip(guestRef.current ? 'all' : (initialRisk ?? 'all'));
-  }, [variant, initialSaved, initialRisk, paramsKey]);
-  React.useEffect(() => {
-    if (!guest) return; // 게스트 전환(만료) = 개인화 필터만 강등 — 그 외 선택 보존
-    setSavedOnly(false);
-    setRiskChip('all');
-  }, [guest]);
+  // KB-603: 파라미터 재동기화 = 렌더 중 이전값 비교(React 공식 패턴) — 옛 칩이 한 프레임도 보이지 않는다.
+  // guest는 키 밖(위 주석 그대로 — 세션 전환이 사용자 선택을 리셋하지 않는다).
+  const paramsSyncKey = `${variant}\u0000${String(initialSaved)}\u0000${initialRisk ?? ''}\u0000${paramsKey ?? ''}`;
+  const [prevParamsSyncKey, setPrevParamsSyncKey] = React.useState(paramsSyncKey);
+  if (paramsSyncKey !== prevParamsSyncKey) {
+    setPrevParamsSyncKey(paramsSyncKey);
+    if (variant === 'screen') {
+      setSavedOnly(initialSaved === true && !guest);
+      setRiskChip(guest ? 'all' : (initialRisk ?? 'all'));
+    }
+  }
+  // 게스트 전환(만료) = 개인화 필터만 강등 — 그 외 선택 보존. KB-603: 렌더 중 이전값 비교(위와 같은 패턴)
+  const [prevGuest, setPrevGuest] = React.useState(guest);
+  if (guest !== prevGuest) {
+    setPrevGuest(guest);
+    if (guest) {
+      setSavedOnly(false);
+      setRiskChip('all');
+    }
+  }
   const [gate, setGate] = React.useState(false);
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
   // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).

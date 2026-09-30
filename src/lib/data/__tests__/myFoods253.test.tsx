@@ -152,12 +152,10 @@ it('훅 — 커서 페이징 쿼리 실측 + 어댑터 null 방어(주소·비UR
     hasNext: true,
     nextCursor: 'CUR-2',
   });
-  let data: ReturnType<typeof useOrders>['data'];
-  let fetchNext!: () => void;
+  const seen = jest.fn<void, [ReturnType<typeof useOrders>]>(); // KB-657: 렌더 중 바깥 변이 금지 → 호출 기록에서 읽는다
+  const out = { get data() { return seen.mock.calls.at(-1)?.[0].data; }, fetchNext: () => void seen.mock.calls.at(-1)![0].fetchNextPage() };
   function H() {
-    const q = useOrders();
-    data = q.data;
-    fetchNext = () => void q.fetchNextPage();
+    seen(useOrders());
     return null;
   }
   let tree!: ReactTestRenderer;
@@ -170,14 +168,14 @@ it('훅 — 커서 페이징 쿼리 실측 + 어댑터 null 방어(주소·비UR
     await new Promise((r) => setTimeout(r, 0));
   });
   // react-query 반영이 렌더 act 밖으로 밀릴 수 있어 데이터 도착까지 짧게 재플러시
-  for (let i = 0; i < 5 && data === undefined; i++) {
+  for (let i = 0; i < 5 && out.data === undefined; i++) {
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
   }
   expect(mockGet).toHaveBeenCalledWith('/api/orders');
-  expect(data![0].roadAddress).toBeNull();
-  expect(data![0].thumbnails).toEqual(['https://cdn/a.jpg']); // 비URL·null 드롭
-  expect(data![0].scanImageUrl).toBeNull(); // 비URL 방어
-  await act(async () => { fetchNext(); await new Promise((r) => setTimeout(r, 0)); });
+  expect(out.data![0].roadAddress).toBeNull();
+  expect(out.data![0].thumbnails).toEqual(['https://cdn/a.jpg']); // 비URL·null 드롭
+  expect(out.data![0].scanImageUrl).toBeNull(); // 비URL 방어
+  await act(async () => { out.fetchNext(); await new Promise((r) => setTimeout(r, 0)); });
   expect(mockGet).toHaveBeenLastCalledWith('/api/orders?cursor=CUR-2'); // 커서 그대로 반환
   await act(async () => { tree.unmount(); });
   qc.clear();
@@ -384,6 +382,22 @@ describe('KB-636 공유 카드 시트', () => {
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'order_share_view')).toHaveLength(1);
   });
 
+  /* Codex #208 P1(KB-603): 시트 닫기→다시 열기 = 캔버스 새 마운트 — 옛 'ready'가 남으면 렌더 전 캡처(빈 사진). */
+  it('캔버스 ready 뒤 닫았다 다시 열면 **다시 busy**(photosState ≠ ready) · 새 캔버스 ready로 풀린다', async () => {
+    const tree = await renderOrder(SHARE_ORDER);
+    press(tree, 'order-share-open');
+    const canvas = () => tree.root.findAll((n) => typeof n.props?.onReady === 'function')[0];
+    const section = () => tree.root.findAll((n) => typeof n.props?.busy === 'boolean' && typeof n.props?.onDownload === 'function')[0];
+    expect(section().props.busy).toBe(true); // 대조: 열자마자 잠금
+    act(() => canvas().props.onReady());
+    expect(section().props.busy).toBe(false);
+    act(() => { tree.root.findAll((n) => typeof n.props?.onRequestClose === 'function' && n.props?.visible === true)[0].props.onRequestClose(); });
+    press(tree, 'order-share-open');
+    expect(section().props.busy).toBe(true); // 다시 연 직후 — 옛 ready 잔존 금지
+    act(() => canvas().props.onReady());
+    expect(section().props.busy).toBe(false);
+  });
+
   /* Codex #193 P2: 저장·스토리 진행 중 스크림 탭 → 캔버스 언마운트 → captureRef null → 실패. 진행 중엔 닫기 무시. */
   it('저장 진행 중엔 닫히지 않는다(캔버스 유지) · 끝나면 닫힌다', async () => {
     let finish!: (r: string) => void;
@@ -457,9 +471,10 @@ describe('P-386(KB-456): 장소 라벨 = 식당명 → 주소 → 미렌더', ()
 
   async function ordersData() {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-    let data: ReturnType<typeof useOrders>['data'];
+    const seen = jest.fn<void, [ReturnType<typeof useOrders>]>(); // KB-657
+    const out = { get data() { return seen.mock.calls.at(-1)?.[0].data; } };
     function H() {
-      data = useOrders().data;
+      seen(useOrders());
       return null;
     }
     await act(async () => {
@@ -470,10 +485,10 @@ describe('P-386(KB-456): 장소 라벨 = 식당명 → 주소 → 미렌더', ()
       );
       await new Promise((r) => setTimeout(r, 0));
     });
-    for (let i = 0; i < 5 && data === undefined; i++) {
+    for (let i = 0; i < 5 && out.data === undefined; i++) {
       await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     }
-    return data!;
+    return out.data!;
   }
 
   it('어댑터 — place.name 매핑 · place null/부재(prod 구응답) = placeName null', async () => {

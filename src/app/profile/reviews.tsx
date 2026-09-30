@@ -33,15 +33,19 @@ import type { Review } from '@/lib/api/types';
 
 export default function MyReviews() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
-  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  // KB-604: 가드는 **훅 없는 바깥 컴포넌트**에(review.tsx KB-620 문법) — off면 내 리뷰·음식 쿼리가 마운트되지 않는다(전과 동일).
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+  return <MyReviewsScreen />;
+}
 
+function MyReviewsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: reviews, isLoading: reviewsLoading, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
   const { data: foods } = useFoods();
   // P-182: 수정/삭제는 셀 ⋮(항상 본인 화면) — ActionSheet 현 로직
   const deleteReview = useDeleteReview();
+  const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]); // KB-657: 이를 읽는 onMore보다 위(선언 전 접근 → 메모 폐기)
   const confirmDelete = (rv: Review) => {
     Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -55,8 +59,6 @@ export default function MyReviews() {
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
-
-  const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]);
 
   // P-336(9/8 예진): 위험 칩 필터 소멸 — 목록 = 전체(최신순). 시안 2200:21038 칩은 B(유지 이탈).
   const list = useMemo(() => {

@@ -41,12 +41,10 @@ jest.mock(
 
 import {
   addNotificationTapListener, applyPendingActivityDefault, promptPermissionOnFirstLogin, // KB-631
-  cancelReviewReminder,
   getPermissionStatus,
   pushAvailable,
   registerPushToken,
   requestPermission,
-  scheduleReviewReminder,
 } from '../pushAdapter';
 
 it('플래그 off(킬스위치) = pushAvailable false', () => {
@@ -56,11 +54,6 @@ it('플래그 off(킬스위치) = pushAvailable false', () => {
 it('권한 API = 요청 0 — 상태는 unavailable, 요청은 false', async () => {
   await expect(getPermissionStatus()).resolves.toBe('unavailable');
   await expect(requestPermission()).resolves.toBe(false);
-});
-
-it('리마인더 예약·취소 = no-op(모듈 미접근 — 크래시 0)', async () => {
-  await expect(scheduleReviewReminder({ foodId: '7', name: 'Kimchi Stew' })).resolves.toBeUndefined();
-  await expect(cancelReviewReminder('7')).resolves.toBeUndefined();
 });
 
 it('토큰 등록 = no-op + 서버 호출 0 (KB-496: unregister 는 서버 로그아웃/탈퇴 처리로 소멸)', async () => {
@@ -104,8 +97,6 @@ it('소스 잠금 — P-268 전 채널 개방 + expo-notifications 접근은 어
   };
   walk('src');
   expect(offenders).toEqual([]);
-  // ⚠️ 대기 시간 상수는 QA 편의로 줄이지 않는다(발주 고정)
-  expect(adapter).toContain('export const REVIEW_REMINDER_SECONDS = 3600;');
 });
 
 it('KB-631: 로그인 팝업·activity 기본값 헬퍼 = no-op (모듈 미접근·기록 0·서버 호출 0)', async () => {

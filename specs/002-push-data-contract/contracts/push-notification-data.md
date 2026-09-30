@@ -18,7 +18,7 @@
 
 - `title`·`body`: 토큰 등록 시 보고한 `lang`으로 서버가 결정. 광고성 유형은 "(광고)" 접두·수신거부 안내 서버 부착. **앱은 가공하지 않는다.**
 - `data.type`: `HELPFUL | SCAN_SUGGESTION | REVIEW_REMINDER | NEWS | MEAL_TIME`.
-- `data.foodId`: `REVIEW_REMINDER`만. 숫자 또는 문자열.
+- `data.orderId`: `REVIEW_REMINDER`만(KB-500). int64 — 숫자 또는 숫자 문자열. 구 `foodId`는 폐기(앱이 읽지 않음).
 - `data.notificationId`: 기기 단위 알림 히스토리 id. 항상 포함(서버 발송분). 숫자(직렬화 차이로 문자열 가능).
 - `channelId`: 유형별 — HELPFUL·REVIEW_REMINDER → `activity`, SCAN_SUGGESTION·NEWS·MEAL_TIME → `news`. 앱이 Android에서 이 두 채널을 만든다(activity MAX·news HIGH). `default`는 앱에 없어 폴백 채널(조용함)로 떨어진다. BE 반영: KB-469·470·471 DoD, KB-474 문서화, KB-468 코멘트(2026-09-12).
 
@@ -29,12 +29,13 @@
 | `{type:'HELPFUL', notificationId:1}` | `/profile/reviews` (내 리뷰 목록) | `inbox.helpful*` | `1` |
 | `{type:'SCAN_SUGGESTION'}` | `/(tabs)` (홈 탭) | `inbox.scanSuggestion*` | `undefined` |
 | `{type:'MEAL_TIME', notificationId:4}` | `/(tabs)` (홈 탭, 콜백 `('/(tabs)', 4)`) | `inbox.mealTime*` | `4` |
-| `{type:'REVIEW_REMINDER', foodId:7}` | `/food/7` (음식 상세) | `inbox.reminder*` (foodId `'7'`) | — |
+| `{type:'REVIEW_REMINDER', orderId:12}` / `'12'` | `/profile/order/12` (주문 상세, KB-500) | 기록됨 | — |
+| `{type:'REVIEW_REMINDER', foodId:7}` (구 로컬 알림) | `null` | 기록됨 | — |
 | `{type:'REVIEW_REMINDER'}` | `null` (콜백 `(null, id)`) | 기록됨 | — |
 | `{type:'NEWS', notificationId:3}` | `null` (콜백 `(null, 3)`) | `inbox.news*` | `3` |
 | `{type:'NUDGE'}` / `{type:'NOTICE'}` / `{type:'helpful'}` | `null` (콜백 `(null, id)`) | 기록 안 됨 | — |
 | `undefined` / `{}` | `null` | 기록 안 됨 | — |
-| `{type:'REVIEW_REMINDER', foodId:7, notificationId:'9'}` | `/food/7` | 기록됨 | `'9'` (문자열 그대로) |
+| `{type:'REVIEW_REMINDER', orderId:12, notificationId:'9'}` | `/profile/order/12` | 기록됨 | `'9'` (문자열 그대로) |
 
 착지 개정 KB-573(2026-09-16). 이동 방식(홈 = 스택 리셋 + 탭 점프 · 그 외 navigate 재사용)은 specs/005-push-tap-landing/contracts/push-tap-landing.md §2.
 
