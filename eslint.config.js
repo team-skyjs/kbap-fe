@@ -26,6 +26,8 @@ module.exports = defineConfig([
     rules: {
       // "react-hooks/rules-of-hooks" — KB-604(2026-09-30) 11건 소진 → error 복귀(recommended 기본)
       "react-hooks/refs": "warn",
+      // KB-657 PR-2(2026-10-01): 잔여 20건 = 전부 reanimated shared value 쓰기(`sv.value = withX(…)`, 정식 사용법 — 코드 변경 금지).
+      // 룰에 제외 옵션이 없어 warn 유지 · 래칫 기준값 = 20(늘면 lint:changed가 잡는다).
       "react-hooks/immutability": "warn",
       // "react-hooks/set-state-in-effect" — KB-603(2026-09-30) 19건 소진 → error 복귀(recommended 기본)
       // "react-hooks/globals" — KB-657 PR-1(2026-09-30) 12건 소진 → error 복귀(recommended 기본)
