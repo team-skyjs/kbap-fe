@@ -56,14 +56,18 @@ const deferred = <T,>(): Deferred<T> => {
   return { promise, resolve, reject };
 };
 
-let latestInbox: ReturnType<typeof useInbox> | null = null;
-let latestUnread = -1;
-let latestMutate: ((id: number) => void) | null = null;
+// KB-657: 렌더 중 바깥 변수 재할당·변이 금지 → 훅 반환값을 jest.fn에 넘기고 마지막 호출에서 읽는다
+const seen = jest.fn<void, [{ inbox: ReturnType<typeof useInbox>; unread: number; mutate: (id: number) => void }]>();
+const latest = {
+  get inbox() { return seen.mock.calls.at(-1)?.[0].inbox ?? null; },
+  get unread() { return seen.mock.calls.at(-1)?.[0].unread ?? -1; },
+  get mutate() { return seen.mock.calls.at(-1)?.[0].mutate ?? null; },
+};
 function Harness() {
-  latestInbox = useInbox();
-  latestUnread = useUnreadCount();
+  const inbox = useInbox();
+  const unread = useUnreadCount();
   const m = useMarkRead();
-  latestMutate = (id) => m.mutate(id);
+  seen({ inbox, unread, mutate: (id) => m.mutate(id) });
   return null;
 }
 const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -96,10 +100,10 @@ it('② 목록·미읽음 파생 — 세션 true: GET 1회(/api/notifications), 
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
-  await until(() => (latestInbox?.data?.length ?? 0) === 3, 'loaded');
+  await until(() => (latest.inbox?.data?.length ?? 0) === 3, 'loaded');
   expect((api.get as jest.Mock).mock.calls.map((c) => c[0])).toEqual(['/api/notifications']);
-  expect(latestInbox!.data!.map((i) => i.id)).toEqual([1, 2, 3]);
-  expect(latestUnread).toBe(2);
+  expect(latest.inbox!.data!.map((i) => i.id)).toEqual([1, 2, 3]);
+  expect(latest.unread).toBe(2);
 });
 
 it('③ 세션 게이트 — null·false = 요청 0·배지 0, true 확정 시 fetch 1회', async () => {
@@ -107,13 +111,13 @@ it('③ 세션 게이트 — null·false = 요청 0·배지 0, true 확정 시 f
   await mount(qc); // session null(부팅 미확정)
   await tick();
   expect(api.get).not.toHaveBeenCalled();
-  expect(latestUnread).toBe(0);
+  expect(latest.unread).toBe(0);
   act(() => initSessionState(false)); // 게스트 확정
   await tick();
   expect(api.get).not.toHaveBeenCalled();
-  expect(latestUnread).toBe(0);
+  expect(latest.unread).toBe(0);
   act(() => setSessionState(true)); // 로그인 경계
-  await until(() => latestUnread === 2, 'member');
+  await until(() => latest.unread === 2, 'member');
   expect(api.get).toHaveBeenCalledTimes(1);
 });
 
@@ -121,62 +125,62 @@ it('⑤⑥ 읽음 낙관 → 실패 = 그 항목 원복 / 성공 = 응답 항목
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
-  await until(() => latestUnread === 2);
+  await until(() => latest.unread === 2);
   // 실패
   const d1 = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(d1.promise);
-  act(() => latestMutate!(1));
+  act(() => latest.mutate!(1));
   await tick();
-  expect(latestUnread).toBe(1); // 낙관 즉시
+  expect(latest.unread).toBe(1); // 낙관 즉시
   expect(qc.getQueryData<{ id: number; read: boolean }[]>(NOTIFICATIONS_KEY)!.find((i) => i.id === 1)!.read).toBe(true);
   expect(api.patch).toHaveBeenCalledWith('/api/notifications/1/read');
   const getsBefore = (api.get as jest.Mock).mock.calls.length;
   d1.reject(new Error('NETWORK: down'));
-  await until(() => latestUnread === 2, 'rollback');
+  await until(() => latest.unread === 2, 'rollback');
   await tick();
   await tick();
   expect((api.get as jest.Mock).mock.calls.length).toBe(getsBefore); // 실패에도 보정 GET 없음(2R)
   // 성공 — 응답으로 그 항목만 교체, 추가 GET 0
   const d2 = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(d2.promise);
-  act(() => latestMutate!(2));
+  act(() => latest.mutate!(2));
   await tick();
-  expect(latestUnread).toBe(1);
+  expect(latest.unread).toBe(1);
   const getsBefore2 = (api.get as jest.Mock).mock.calls.length;
   d2.resolve(wire(2, true, { title: 'from-server' }));
   await until(() => qc.getQueryData<{ id: number; title: string }[]>(NOTIFICATIONS_KEY)!.find((i) => i.id === 2)!.title === 'from-server', 'replaced');
   await tick();
   expect((api.get as jest.Mock).mock.calls.length).toBe(getsBefore2);
-  expect(latestUnread).toBe(1);
+  expect(latest.unread).toBe(1);
 });
 
 it('⑨ 연달아 탭(Codex #163) — A 실패·B 성공 = A만 미읽음 복귀·B 읽음 유지 / 둘 다 실패 = 둘 다 미읽음', async () => {
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
-  await until(() => latestUnread === 2);
+  await until(() => latest.unread === 2);
   const read = (id: number) => qc.getQueryData<{ id: number; read: boolean }[]>(NOTIFICATIONS_KEY)!.find((i) => i.id === id)!.read;
   const dA = deferred<NotificationWire>();
   const dB = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(dA.promise).mockReturnValueOnce(dB.promise);
-  act(() => latestMutate!(1));
-  act(() => latestMutate!(2));
+  act(() => latest.mutate!(1));
+  act(() => latest.mutate!(2));
   await tick();
-  expect(latestUnread).toBe(0);
+  expect(latest.unread).toBe(0);
   const getsAtStart = (api.get as jest.Mock).mock.calls.length;
   dB.resolve(wire(2, true));
   await tick();
   dA.reject(new Error('NETWORK: down'));
   await until(() => read(1) === false, 'A rolled back');
   expect(read(2)).toBe(true); // A 롤백이 B를 지우지 않는다
-  await until(() => latestUnread === 1);
+  await until(() => latest.unread === 1);
   expect((api.get as jest.Mock).mock.calls.length).toBe(getsAtStart); // 읽음 처리 중 목록 GET 0 — 지연 GET이 B를 덮는 경합 자체가 없다
   // 둘 다 실패
   const dA2 = deferred<NotificationWire>();
   const dC = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(dA2.promise).mockReturnValueOnce(dC.promise);
-  act(() => latestMutate!(1));
-  act(() => latestMutate!(3)); // 3은 이미 읽음 → 낙관 변화 없음
+  act(() => latest.mutate!(1));
+  act(() => latest.mutate!(3)); // 3은 이미 읽음 → 낙관 변화 없음
   await tick();
   dA2.reject(new Error('NETWORK: down'));
   dC.reject(new Error('NETWORK: down'));
@@ -189,10 +193,10 @@ it('⑦ 세션 세대 가드 — 뮤테이션 중 계정 경계(gen bump + clear
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
-  await until(() => latestUnread === 2);
+  await until(() => latest.unread === 2);
   const d = deferred<NotificationWire>();
   (api.patch as jest.Mock).mockReturnValueOnce(d.promise);
-  act(() => latestMutate!(1));
+  act(() => latest.mutate!(1));
   await tick();
   // 경계: 로그아웃(세대 증가 + 캐시 소멸 + 세션 false → 쿼리 비활성이라 재조회도 없음)
   bumpSessionGen();
@@ -203,18 +207,18 @@ it('⑦ 세션 세대 가드 — 뮤테이션 중 계정 경계(gen bump + clear
   await tick();
   await tick();
   expect(qc.getQueryData(NOTIFICATIONS_KEY)).toBeUndefined();
-  expect(latestUnread).toBe(0);
+  expect(latest.unread).toBe(0);
 });
 
 it('④ 이미 읽은 항목 — 훅은 호출자가 걸러야 하므로 계약만: 읽음 항목 PATCH도 멱등(200)으로 응답 교체 없이 유지', async () => {
   initSessionState(true);
   const qc = qcFactory();
   await mount(qc);
-  await until(() => latestUnread === 2);
+  await until(() => latest.unread === 2);
   (api.patch as jest.Mock).mockResolvedValue(wire(3, true));
-  act(() => latestMutate!(3));
+  act(() => latest.mutate!(3));
   await tick();
-  expect(latestUnread).toBe(2); // 변화 없음
+  expect(latest.unread).toBe(2); // 변화 없음
 });
 
 it('⑧ onPushTapped — 회원: PATCH + 공유 클라이언트 invalidate · 문자열 id 허용 · 게스트/없음/비수치 = 0', async () => {

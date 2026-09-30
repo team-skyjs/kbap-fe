@@ -38,12 +38,16 @@ const deferred = <T,>(): Deferred<T> => {
   return { promise, resolve, reject };
 };
 
-let latestMutate: ((p: NotificationSettingsPatch) => void) | null = null;
-let latestQuery: ReturnType<typeof useNotificationSettings> | null = null;
+// KB-657: 렌더 중 바깥 변수 재할당·변이 금지 → 훅 반환값을 jest.fn에 넘기고 마지막 호출에서 읽는다
+const seen = jest.fn<void, [{ query: ReturnType<typeof useNotificationSettings>; mutate: (p: NotificationSettingsPatch) => void }]>();
+const latest = {
+  get query() { return seen.mock.calls.at(-1)?.[0].query ?? null; },
+  get mutate() { return seen.mock.calls.at(-1)?.[0].mutate ?? null; },
+};
 function Harness() {
-  latestQuery = useNotificationSettings();
+  const query = useNotificationSettings();
   const m = useUpdateNotificationSettings();
-  latestMutate = (p) => m.mutate(p);
+  seen({ query, mutate: (p) => m.mutate(p) });
   return null;
 }
 async function mount(qc: QueryClient) {
@@ -74,7 +78,7 @@ it('(a) GET 응답이 그대로 캐시에 들어간다', async () => {
   await mount(qc);
   expect(api.get).toHaveBeenCalledWith('/api/notifications/settings', undefined);
   expect(qc.getQueryData(NOTIF_SETTINGS_KEY)).toEqual(OFF);
-  expect(latestQuery?.data).toEqual(OFF);
+  expect(latest.query?.data).toEqual(OFF);
 });
 
 it('(b) PATCH 낙관 반영 → 서버 응답 전체로 교체', async () => {
@@ -82,7 +86,7 @@ it('(b) PATCH 낙관 반영 → 서버 응답 전체로 교체', async () => {
   await mount(qc);
   const d = deferred<NotificationSettings>();
   (api.patch as jest.Mock).mockReturnValueOnce(d.promise);
-  act(() => latestMutate!({ activity: true }));
+  act(() => latest.mutate!({ activity: true }));
   await tick();
   expect((qc.getQueryData(NOTIF_SETTINGS_KEY) as NotificationSettings).activity).toBe(true); // 낙관
   expect(api.patch).toHaveBeenCalledWith('/api/notifications/settings', { activity: true }, undefined);
@@ -96,14 +100,15 @@ it('(c) PATCH 실패 → 스냅샷 롤백 + error 노출', async () => {
   const qc = qcFactory();
   await mount(qc);
   (api.patch as jest.Mock).mockRejectedValueOnce(Object.assign(new Error('NOTIFICATION-001'), { status: 400 }));
-  let mutation!: ReturnType<typeof useUpdateNotificationSettings>;
-  function H2() { mutation = useUpdateNotificationSettings(); return null; }
+  const seen2 = jest.fn<void, [ReturnType<typeof useUpdateNotificationSettings>]>(); // KB-657
+  const mutation = { get current() { return seen2.mock.calls.at(-1)![0]; } };
+  function H2() { seen2(useUpdateNotificationSettings()); return null; }
   await act(async () => { renderer.create(<QueryClientProvider client={qc}><H2 /></QueryClientProvider>); });
-  act(() => mutation.mutate({ news: { mealTime: true } }));
+  act(() => mutation.current!.mutate({ news: { mealTime: true } }));
   await tick();
   await tick();
   expect(qc.getQueryData(NOTIF_SETTINGS_KEY)).toEqual(OFF); // 롤백
-  expect(mutation.isError).toBe(true);
+  expect(mutation.current!.isError).toBe(true);
 });
 
 it('(d) 연타: 늦게 도착한 첫 응답은 무시되고 마지막 응답만 반영된다', async () => {
@@ -111,9 +116,9 @@ it('(d) 연타: 늦게 도착한 첫 응답은 무시되고 마지막 응답만 
   await mount(qc);
   const d1 = deferred<NotificationSettings>(), d2 = deferred<NotificationSettings>();
   (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockReturnValueOnce(d2.promise);
-  act(() => latestMutate!({ activity: true }));
+  act(() => latest.mutate!({ activity: true }));
   await tick();
-  act(() => latestMutate!({ activity: false }));
+  act(() => latest.mutate!({ activity: false }));
   await tick();
   d2.resolve({ ...OFF, activity: false });
   await tick();
@@ -129,7 +134,7 @@ it('(d2) 훅 밖 patchNotificationSettings도 같은 seq를 공유한다 — 프
   (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockReturnValueOnce(d2.promise);
   const primer = patchNotificationSettings({ activity: true }, qc); // 프라이머(훅 밖)
   await tick();
-  act(() => latestMutate!({ activity: false })); // 설정 화면에서 끔
+  act(() => latest.mutate!({ activity: false })); // 설정 화면에서 끔
   await tick();
   d2.resolve({ ...OFF, activity: false });
   await tick();
@@ -145,7 +150,7 @@ it('(e) NOTIF_SETTINGS_API_VERSION 문자열이면 GET/PATCH에 엔드포인트 
   await mount(qc);
   expect(api.get).toHaveBeenCalledWith('/api/notifications/settings', { headers: { 'X-API-Version': '2.1' } });
   (api.patch as jest.Mock).mockResolvedValueOnce(OFF);
-  act(() => latestMutate!({ activity: true }));
+  act(() => latest.mutate!({ activity: true }));
   await tick();
   expect(api.patch).toHaveBeenCalledWith('/api/notifications/settings', { activity: true }, { headers: { 'X-API-Version': '2.1' } });
 });
@@ -182,9 +187,9 @@ it('PATCH 직렬화: 앞 요청이 끝나기 전엔 다음 PATCH를 보내지 �
   const d2 = deferred<NotificationSettings>();
   (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockReturnValueOnce(d2.promise);
   await mount(qc);
-  act(() => latestMutate!({ news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } }));
+  act(() => latest.mutate!({ news: { consent: true, privacyConsentVersion: 1, receiveConsentVersion: 1, enabled: true, mealTime: true } }));
   await tick();
-  act(() => latestMutate!({ news: { mealTime: false } }));
+  act(() => latest.mutate!({ news: { mealTime: false } }));
   await tick();
   expect(api.patch).toHaveBeenCalledTimes(1); // 두 번째는 대기
   const optimistic = qc.getQueryData<NotificationSettings>(NOTIF_SETTINGS_KEY)!;
@@ -206,9 +211,9 @@ it('PATCH 직렬화: 앞 요청이 실패해도 다음 요청은 전송된다', 
   const d1 = deferred<NotificationSettings>();
   (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockResolvedValueOnce({ ...ON, news: { ...ON.news, mealTime: false } });
   await mount(qc);
-  act(() => latestMutate!({ activity: false }));
+  act(() => latest.mutate!({ activity: false }));
   await tick();
-  act(() => latestMutate!({ news: { mealTime: false } }));
+  act(() => latest.mutate!({ news: { mealTime: false } }));
   await tick();
   expect(api.patch).toHaveBeenCalledTimes(1);
   await act(async () => { d1.reject(new Error('500')); });
@@ -224,9 +229,9 @@ it('PATCH 큐: 대기 중 세션 세대가 바뀌면(로그아웃·계정 전환
   const d1 = deferred<NotificationSettings>();
   (api.patch as jest.Mock).mockReturnValueOnce(d1.promise).mockResolvedValue(OFF);
   await mount(qc);
-  act(() => latestMutate!({ activity: false }));
+  act(() => latest.mutate!({ activity: false }));
   await tick();
-  act(() => latestMutate!({ news: { mealTime: false } })); // 큐 대기
+  act(() => latest.mutate!({ news: { mealTime: false } })); // 큐 대기
   await tick();
   expect(api.patch).toHaveBeenCalledTimes(1);
   bumpSessionGen(); // 계정 경계 — 인증 경계는 queryClient.clear()도 함께 한다

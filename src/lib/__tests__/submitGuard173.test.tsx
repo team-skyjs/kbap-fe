@@ -20,9 +20,11 @@ jest.mock('react-native-reanimated', () => {
 import { useSubmitGuard } from '../useSubmitGuard';
 import { Btn } from '@/components/Btn';
 
-let guard!: ReturnType<typeof useSubmitGuard>;
+// KB-657: 렌더 중 바깥 변수 재할당·변이 금지 → 훅 반환값을 jest.fn에 넘기고 마지막 호출에서 읽는다
+const seen = jest.fn<void, [ReturnType<typeof useSubmitGuard>]>();
+const guard = () => seen.mock.calls.at(-1)![0];
 function Probe() {
-  guard = useSubmitGuard();
+  seen(useSubmitGuard());
   return null;
 }
 
@@ -38,14 +40,14 @@ it('같은 틱 연타 3회 = 1발사 · 완료 후엔 재실행 가능', async (
   render(<Probe />);
   const fn = jest.fn().mockResolvedValue(undefined);
   await act(async () => {
-    void guard.run(fn);
-    void guard.run(fn);
-    void guard.run(fn);
+    void guard().run(fn);
+    void guard().run(fn);
+    void guard().run(fn);
     await Promise.resolve();
   });
   expect(fn).toHaveBeenCalledTimes(1);
   await act(async () => {
-    await guard.run(fn); // 완료 후 재실행 — 1회성 아님
+    await guard().run(fn); // 완료 후 재실행 — 1회성 아님
   });
   expect(fn).toHaveBeenCalledTimes(2);
 });
@@ -54,11 +56,11 @@ it('실패해도 finally 복구 — 다음 제출 가능(에러는 로그 흡수
   render(<Probe />);
   const fail = jest.fn().mockRejectedValue(new Error('HTTP 500'));
   await act(async () => {
-    await guard.run(fail);
+    await guard().run(fail);
   });
   const ok = jest.fn().mockResolvedValue(undefined);
   await act(async () => {
-    await guard.run(ok);
+    await guard().run(ok);
   });
   expect(ok).toHaveBeenCalledTimes(1);
 });
