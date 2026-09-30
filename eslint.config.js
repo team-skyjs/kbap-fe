@@ -24,7 +24,7 @@ module.exports = defineConfig([
     // ③ refs·immutability·globals·preserve-manual-memoization.
     // 소진이 끝난 룰은 이 블록에서 **지운다**(= error 복귀).
     rules: {
-      "react-hooks/rules-of-hooks": "warn",
+      // "react-hooks/rules-of-hooks" — KB-604(2026-09-30) 11건 소진 → error 복귀(recommended 기본)
       "react-hooks/refs": "warn",
       "react-hooks/immutability": "warn",
       // "react-hooks/set-state-in-effect" — KB-603(2026-09-30) 19건 소진 → error 복귀(recommended 기본)
