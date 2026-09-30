@@ -582,11 +582,14 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (code: string) => void; t: TFn }) {
   const [q, setQ] = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
-  const detected = deviceCountry();
+  // KB-657: 호출 결과를 그대로 메모 deps에 두면 컴파일러가 "나중에 변이될 수 있는 값"으로 보고 메모를 버린다 — 마운트 1회
+  // 상태로 고정(같은 파일 nationality 초기값과 같은 문법). 기기 로케일은 마운트 중 안 바뀐다.
+  const [detected] = useState(deviceCountry);
   const detectedCountry = detected ? countryByCode(detected) : undefined;
   const query = q.trim().toLowerCase();
+  const lang = i18n.language; // KB-657: 메모 안에서 모듈 전역을 읽으면 컴파일러가 의존성 불일치로 메모를 버린다 — 값으로 고정해 deps에 명시
   const list = useMemo(() => {
-    const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, i18n.language));
+    const all = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, lang));
     const filtered = query
       ? all.filter((c) => c.name.toLowerCase().includes(query) || (c.native ?? '').toLowerCase().includes(query))
       : // 핀 카드가 감지국 담당 — 본 리스트 중복 제거. P-395(KB-589): Popular 그룹도 같은 규칙으로
@@ -595,7 +598,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         // 검색 중에는 이 필터가 아예 안 걸리므로 전 국가가 그대로 찾힌다.
         all.filter((c) => c.code !== detected && !POPULAR_COUNTRIES.includes(c.code as (typeof POPULAR_COUNTRIES)[number]))
     return filtered;
-  }, [query, detected]);
+  }, [query, detected, lang]);
 
   // P-395(KB-589): 상위 10개국 — **상수 배열 순서 그대로**(정렬하지 않는다).
   // 감지국은 핀 카드가 이미 보여주므로 여기선 뺀다 — 그래서 9개가 될 수 있다.

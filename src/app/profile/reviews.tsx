@@ -45,6 +45,7 @@ function MyReviewsScreen() {
   const { data: foods } = useFoods();
   // P-182: 수정/삭제는 셀 ⋮(항상 본인 화면) — ActionSheet 현 로직
   const deleteReview = useDeleteReview();
+  const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]); // KB-657: 이를 읽는 onMore보다 위(선언 전 접근 → 메모 폐기)
   const confirmDelete = (rv: Review) => {
     Alert.alert(t('editReview.deleteConfirmTitle'), t('editReview.deleteConfirmBody'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -58,8 +59,6 @@ function MyReviewsScreen() {
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
-
-  const foodMap = useMemo(() => new Map((foods ?? []).map((f) => [f.foodId, f])), [foods]);
 
   // P-336(9/8 예진): 위험 칩 필터 소멸 — 목록 = 전체(최신순). 시안 2200:21038 칩은 B(유지 이탈).
   const list = useMemo(() => {

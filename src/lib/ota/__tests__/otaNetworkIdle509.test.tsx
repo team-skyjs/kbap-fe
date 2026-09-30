@@ -172,9 +172,10 @@ it('#109 P-363(KB-526): 구독 콜백 = 동기 dispatch 0(마이크로태스크 
   jest.useFakeTimers();
   const { incInflight, decInflight } = require('@/lib/net/inflight') as typeof import('@/lib/net/inflight');
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  let renders = 0;
+  const onRender = jest.fn(); // KB-657: 렌더 중 바깥 카운터 재할당 금지 → 호출 기록
+  const renders = () => onRender.mock.calls.length;
   function CountProbe() {
-    renders += 1;
+    onRender();
     useNetworkIdle();
     return null;
   }
@@ -185,12 +186,12 @@ it('#109 P-363(KB-526): 구독 콜백 = 동기 dispatch 0(마이크로태스크 
       </QueryClientProvider>,
     );
   });
-  const base = renders;
+  const base = renders();
   incInflight(); // 구독 콜백 동기 실행(렌더 중 시나리오 대역)
-  expect(renders).toBe(base); // 동기 dispatch 0 — React 경고 봉쇄
+  expect(renders()).toBe(base); // 동기 dispatch 0 — React 경고 봉쇄
   incInflight(); // busy true→true 무전이 — 추가 스케줄 없음
   await act(async () => { jest.advanceTimersByTime(0); }); // 마이크로태스크 플러시
-  expect(renders).toBe(base + 1); // 전이 1회분만
+  expect(renders()).toBe(base + 1); // 전이 1회분만
   act(() => { decInflight(); decInflight(); });
 });
 
