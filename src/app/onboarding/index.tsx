@@ -13,7 +13,7 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { RemoteImage } from '@/components/RemoteImage';
-import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
 import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -171,13 +171,17 @@ export default function Onboarding() {
 
   // P-088④: 안드 하드웨어 백 = 온보딩 내 스텝 back과 동일 — 첫 스텝이면 기본
   // 동작(앱 종료 관례). iOS 스와이프 백은 _layout gestureEnabled:false가 차단.
-  const backRef = useRef({ idx, back });
-  backRef.current = { idx, back };
+  // KB-657: 최신 idx만 ref에 두고(커밋 시 동기화) 리스너는 back()의 i>0 분기를 그대로 인라인 — back 함수를 ref에
+  // 담으면 컴파일러가 back을 든 footer 객체까지 "ref 값"으로 보고 렌더 중 읽기로 잡는다. 동작 동일(i>0 = 이전 스텝).
+  const idxRef = useRef(idx);
+  useLayoutEffect(() => {
+    idxRef.current = idx;
+  });
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      const { idx: i, back: goBack } = backRef.current;
+      const i = idxRef.current;
       if (i > 0) {
-        goBack();
+        setStep(ORDER[i - 1]); // = back() when i > 0
         return true;
       }
       return false; // 첫 스텝 — 기본(앱 종료)

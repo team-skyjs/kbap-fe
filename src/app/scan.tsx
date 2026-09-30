@@ -14,7 +14,7 @@
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { ActivityIndicator, Alert, AppState, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -182,12 +182,17 @@ export default function Scan() {
   // 발급 성공이 아래 복원 분기로 카메라를 되돌린다.
   // 발급 성공으로 반증된 쿼터 객체는 재조회로 바뀌기 전까지 다시 잠그지 않는다(복귀마다 깜빡임 방지).
   const quotaRef = useRef(me?.scanQuota);
-  quotaRef.current = me?.scanQuota;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  useLayoutEffect(() => {
+    quotaRef.current = me?.scanQuota;
+  });
   const disprovenQuota = useRef<unknown>(undefined);
   // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
   // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
   const phaseRef = useRef(phase);
-  phaseRef.current = phase;
+  useLayoutEffect(() => {
+    phaseRef.current = phase;
+  });
   const canLockQuota = () => phaseRef.current === 'camera' || phaseRef.current === 'error';
   const lockFromProfile = useCallback(() => {
     const quota = quotaRef.current;

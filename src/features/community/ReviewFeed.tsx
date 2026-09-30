@@ -93,7 +93,10 @@ export function ReviewFeed() {
     void feed.refetch().finally(() => setRefreshing(false));
   };
   const staleRef = React.useRef(false);
-  staleRef.current = feed.isStale;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    staleRef.current = feed.isStale;
+  });
   const refetch = feed.refetch;
   useFocusEffect(
     React.useCallback(() => {

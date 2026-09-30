@@ -25,6 +25,10 @@ module.exports = defineConfig([
     // 소진이 끝난 룰은 이 블록에서 **지운다**(= error 복귀).
     rules: {
       // "react-hooks/rules-of-hooks" — KB-604(2026-09-30) 11건 소진 → error 복귀(recommended 기본)
+      // KB-657 PR-3(2026-10-01): 렌더 중 최신값 ref 쓰기 19건 → useLayoutEffect 동기화. 잔여 = ① 제스처/팬 콜백 안의 ref 접근
+      // 11건(PhotoViewer·useSheetSwipeDismiss·scan Pinch·SpiceLevelSlider PanResponder — 실행은 이벤트 시점, 빌더가 렌더 중이라
+      // 컴파일러가 잡음. 워클릿 경계 = 실기 확인 필요, 변경 없음) ② onboarding footer 4건(ref를 읽는 콜백 advance를 담은
+      // 일반 객체를 렌더 중 읽음 — 컴파일러 오염, 동작 무관) → warn 유지 · 래칫 기준값 = 15.
       "react-hooks/refs": "warn",
       // KB-657 PR-2(2026-10-01): 잔여 20건 = 전부 reanimated shared value 쓰기(`sv.value = withX(…)`, 정식 사용법 — 코드 변경 금지).
       // 룰에 제외 옵션이 없어 warn 유지 · 래칫 기준값 = 20(늘면 lint:changed가 잡는다).

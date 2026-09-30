@@ -56,7 +56,10 @@ export function useHome() {
   // 포커스 시 stale(기본 staleTime 60s 경과 또는 invalidate됨)일 때만 재조회.
   // 전면 폴링 아님: fresh하면 no-op.
   const stale = React.useRef(false);
-  stale.current = query.isStale;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    stale.current = query.isStale;
+  });
   const refetch = query.refetch;
   useFocusEffect(
     React.useCallback(() => {

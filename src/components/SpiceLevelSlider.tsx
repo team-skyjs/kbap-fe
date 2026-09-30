@@ -19,7 +19,7 @@
  * (P-088 유닛 잠금 유지). JS 스레드 PanResponder — 워클릿 없음.
  * 온보딩·프로필 수정 공용 — 여기 한 곳 수정으로 양쪽 반영.
  */
-import { useRef, useState } from 'react';
+import { useRef, useState, useLayoutEffect } from 'react';
 import { LayoutAnimation, PanResponder, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
@@ -47,9 +47,12 @@ export function SpiceLevelSlider({
   const rank = level == null ? -1 : spiceRank(level);
 
   const ref = useRef({ trackW, onChange, onDragStateChange, offsetX: 0, liveRank: rank });
-  ref.current.trackW = trackW;
-  ref.current.onChange = onChange;
-  ref.current.onDragStateChange = onDragStateChange;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  useLayoutEffect(() => {
+    ref.current.trackW = trackW;
+    ref.current.onChange = onChange;
+    ref.current.onDragStateChange = onDragStateChange;
+  });
 
   const clampX = (x: number, w: number) => Math.min(w, Math.max(0, x));
   const nearest = (x: number, w: number) => Math.min(STOPS, Math.max(0, Math.round((x / w) * STOPS)));
