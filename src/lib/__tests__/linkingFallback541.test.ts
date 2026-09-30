@@ -143,7 +143,7 @@ describe('P-381 2R(Codex P2) — 하드 게이트는 인라인, 소프트 넛지
     expect(vg).toContain('{ silent: true }');
     // KB-603: 실패 표시는 게이트 키에 묶인 상태(파생값) — 반환값 ok로 세우고/지운다. 동작(표시·게이트 변경 리셋·
     // 옛 시도 폐기)은 setStateInEffect603 유닛이 잠근다. 여기선 "반환값으로 실패를 받는" 배선만 본다.
-    expect(vg).toMatch(/\.then\(\(ok\) => \{[\s\S]*setFailedAt\(ok \? null : gateKey\)/);
+    expect(vg).toMatch(/\.then\(\(ok\) => \{[\s\S]*setStoreFailed\(!ok\)/);
     expect(vg).toContain('testID="version-gate-store-error"');
     expect(vg).toContain("t('versionGate.storeFailed')");
     // 넛지 배너: 옵션 없는 호출 = 공용 토스트 경로
@@ -155,12 +155,12 @@ describe('P-381 2R(Codex P2) — 하드 게이트는 인라인, 소프트 넛지
     // ① 게이트가 바뀌면 이펙트가 세대를 올려 진행 중 시도를 전부 무효화한다(KB-603: 실패 문구 리셋은 게이트 키 파생값 —
     //    이펙트엔 ref 증가만 남는다)
     expect(vg).toMatch(/attemptRef\.current \+= 1;[^}]*\}, \[gate\.mode, storeUrl\]\)/);
-    expect(vg).toContain('const storeFailed = failedAt === gateKey;');
+    expect(vg).toMatch(/if \(gateKey !== prevGateKey\) \{\s*setPrevGateKey\(gateKey\);\s*setStoreFailed\(false\);/); // 전환 리셋(렌더 중)
     // ② 시도마다 세대를 매기고, 결과 적용 전에 최신 세대인지 본다
     expect(vg).toContain('const my = ++attemptRef.current;');
     expect(vg).toMatch(/if \(attemptRef\.current !== my\) return;/);
     // 무조건 적용하던 형태가 남아 있으면 안 된다
-    expect(vg).not.toMatch(/\.then\(\(ok\) => setFailedAt\(/); // 세대 검사 없이 바로 적용하는 형태
+    expect(vg).not.toMatch(/\.then\(\(ok\) => setStoreFailed\(!ok\)\)/);
     // 검사 이원화 금지 — 게이트 정체 대조(구 방식)가 함께 남아 있으면 정본이 흐려진다
     expect(vg).not.toContain('gateIdRef');
   });

@@ -89,6 +89,20 @@ describe('VersionGate — 스토어 실패 문구는 게이트 기준으로 리�
     expect(byId(tree, 'version-gate-store-error')).toHaveLength(0);
   });
 
+  it('게이트 A→B→A로 되돌아와도 옛 실패 문구가 되살아나지 않는다(전환 리셋 — 값 키 파생 금지)', async () => {
+    mockGate.mockReturnValue(blocked('https://store/a'));
+    mockOpen.mockResolvedValue(false);
+    const tree = render(<VersionGateOverlay />);
+    press(tree);
+    await act(async () => {});
+    expect(byId(tree, 'version-gate-store-error').length).toBeGreaterThan(0);
+    mockGate.mockReturnValue(blocked('https://store/b'));
+    act(() => tree.update(<VersionGateOverlay />));
+    mockGate.mockReturnValue(blocked('https://store/a'));
+    act(() => tree.update(<VersionGateOverlay />));
+    expect(byId(tree, 'version-gate-store-error')).toHaveLength(0);
+  });
+
   it('같은 게이트에서 재시도 성공 → 실패 문구 소거(대조군: 실패 표시 경로가 살아 있다)', async () => {
     mockGate.mockReturnValue(blocked('https://store/a'));
     mockOpen.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
@@ -110,6 +124,14 @@ describe('AvoidTile — 소스 기준 리셋', () => {
     expect(byId(tree, 'avtile-skel-EGG')).toHaveLength(0);
     act(() => tree.update(tile('MILK')));
     expect(byId(tree, 'avtile-skel-MILK').length).toBeGreaterThan(0);
+  });
+
+  it('EGG 로드 완료 → MILK → 다시 EGG = 스켈레톤 복귀(전이마다 리셋 — 옛 loaded 잔존 금지)', () => {
+    const tree = render(tile('EGG'));
+    act(() => byId(tree, 'avtile-img-EGG')[0].props.onLoad());
+    act(() => tree.update(tile('MILK')));
+    act(() => tree.update(tile('EGG')));
+    expect(byId(tree, 'avtile-skel-EGG').length).toBeGreaterThan(0);
   });
 
   it('체인 2단으로 내려간 뒤 code가 바뀌면 새 체인의 선두(누끼)부터', () => {
@@ -142,5 +164,23 @@ describe('useAutoSlide — 장수 축소 시 index 클램프', () => {
     expect(out.current!.index).toBe(0);
     act(() => jest.advanceTimersByTime(AUTO_SLIDE_MS));
     expect(out.current!.index).toBe(1);
+  });
+
+  it('축소 뒤 정지 상태에서 장수가 다시 늘어도 옛 index(3)로 되돌아가지 않는다(저장값도 0 — Codex #208)', () => {
+    const out: { current: ReturnType<typeof useAutoSlide> | null } = { current: null };
+    function Probe({ c, p }: { c: number; p: boolean }) {
+      out.current = useAutoSlide(c, p);
+      return null;
+    }
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<Probe c={5} p={false} />);
+    });
+    act(() => jest.advanceTimersByTime(AUTO_SLIDE_MS * 3));
+    expect(out.current!.index).toBe(3);
+    act(() => tree.update(<Probe c={2} p={true} />)); // 축소 + 정지(타이머 없음)
+    expect(out.current!.index).toBe(0);
+    act(() => tree.update(<Probe c={5} p={true} />)); // 다시 늘어남 — 틱 없이
+    expect(out.current!.index).toBe(0);
   });
 });

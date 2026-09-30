@@ -102,9 +102,7 @@ export default function OrderDetailScreen() {
   // 5R: **실패도 잠금 유지** — RemoteImage 실패 칸은 빈 칸이라 그대로 찍으면 사진 없는 카드가 저장된다.
   // 7R: 게이트 기준 = 프리페치(= URL 캐시됨)가 아니라 **내보내기 캔버스의 실제 렌더 완료**.
   // 캐시돼 있어도 디코드·마운트·페이드가 남아서, 프리페치만 보면 반쯤 그려진 카드가 찍힌다.
-  // KB-603: 캔버스 결과를 (사진·재시도·시트 열림) 키에 묶는다 — 키가 바뀌면(주문 전환·재시도·시트 재오픈 = 캔버스 새
-  // 마운트) 파생값 photosState가 저절로 'loading'(effect 리셋 없음). 사진이 없으면 잠글 게 없어 'ready'.
-  const [photosDone, setPhotosDone] = React.useState<{ key: string; state: 'ready' | 'failed' } | null>(null);
+  const [photosState, setPhotosState] = React.useState<'loading' | 'ready' | 'failed'>('loading');
   const [retry, setRetry] = React.useState(0); // 재시도 = 캔버스 리마운트(칸 로드 재시작)
 
   // P-380: 카드 데이터 — 미리보기와 내보내기 캔버스가 **같은 값**을 쓴다(둘이 어긋나면
@@ -144,8 +142,14 @@ export default function OrderDetailScreen() {
   const photosKey = cardPhotos.join('|');
   // 사진이 바뀌면(주문 전환·재시도) · **시트를 다시 열면**(캔버스 새로 마운트) 다시 잠근다 — 캔버스가
   // 로드 완료를 다시 알려 준다. 닫힌 동안엔 캔버스가 없으니 잠금 상태로 둔다.
+  // KB-603: effect가 아니라 렌더 중 **전환** 비교(React 공식 패턴) — 값이 같은 키로 돌아와도(시트 닫기→다시 열기 = 같은
+  // shareOpen=true) 전환마다 리셋한다(Codex #208 P1: 값 키 파생이면 재오픈 직후 옛 'ready'가 남아 캡처가 빈 사진을 담는다).
   const canvasKey = `${photosKey}\u0000${retry}\u0000${shareOpen}`;
-  const photosState: 'loading' | 'ready' | 'failed' = !photosKey ? 'ready' : photosDone?.key === canvasKey ? photosDone.state : 'loading';
+  const [prevCanvasKey, setPrevCanvasKey] = React.useState(canvasKey);
+  if (canvasKey !== prevCanvasKey) {
+    setPrevCanvasKey(canvasKey);
+    setPhotosState(photosKey ? 'loading' : 'ready');
+  }
 
   // 실패 문구 + (비production 한정) 단계·원인 1줄
   const shareFailText = (base: string) => {
@@ -330,8 +334,8 @@ export default function OrderDetailScreen() {
             <OrderShareExportCanvas
               ref={exportRef}
               card={shareCard}
-              onReady={() => setPhotosDone({ key: canvasKey, state: 'ready' })}
-              onFailed={() => setPhotosDone({ key: canvasKey, state: 'failed' })}
+              onReady={() => setPhotosState('ready')}
+              onFailed={() => setPhotosState('failed')}
             />
             <OrderShareSection
               card={shareCard}

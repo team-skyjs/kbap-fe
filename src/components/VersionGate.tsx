@@ -38,10 +38,15 @@ export function VersionGateOverlay() {
   //  - 같은 게이트에서 두 번 눌러도 앞 시도는 세대가 밀려 결과가 폐기된다.
   // 버튼 비활성 대신 세대를 쓰는 이유 = 실패 후 재시도를 막지 않기 위해서다.
   const storeUrl = 'storeUrl' in gate ? gate.storeUrl : null; // pass 변형엔 필드가 없다
-  // KB-603: 실패 문구를 게이트 키에 묶는다 — 게이트가 바뀌면 파생값이 저절로 false(effect 리셋 없음).
+  // KB-603: 게이트가 바뀌면 실패 문구 리셋 — effect가 아니라 렌더 중 **전환** 비교(React 공식 패턴). 값 키로 파생하면
+  // 같은 게이트로 되돌아올 때 옛 실패가 되살아난다(Codex #208 같은 계열). 세대 증가(ref)는 effect에 남긴다.
+  const [storeFailed, setStoreFailed] = React.useState(false);
   const gateKey = `${gate.mode}\u0000${storeUrl ?? ''}`;
-  const [failedAt, setFailedAt] = React.useState<string | null>(null);
-  const storeFailed = failedAt === gateKey;
+  const [prevGateKey, setPrevGateKey] = React.useState(gateKey);
+  if (gateKey !== prevGateKey) {
+    setPrevGateKey(gateKey);
+    setStoreFailed(false);
+  }
   const attemptRef = React.useRef(0);
   React.useEffect(() => {
     attemptRef.current += 1; // 게이트가 바뀌면 진행 중 시도를 전부 무효화 — ref만(상태 없음)
@@ -66,11 +71,11 @@ export function VersionGateOverlay() {
         <View style={{ alignSelf: 'stretch', marginTop: 10 }}>
           <Btn
             onPress={() => {
-              setFailedAt(null);
+              setStoreFailed(false);
               const my = ++attemptRef.current; // 이 시도의 세대
               void openStoreLink(gate.storeUrl!, { silent: true }).then((ok) => {
                 if (attemptRef.current !== my) return; // 더 새 시도가 있었거나 게이트가 바뀜 — 폐기
-                setFailedAt(ok ? null : gateKey);
+                setStoreFailed(!ok);
               });
             }}
           >

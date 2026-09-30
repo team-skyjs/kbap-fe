@@ -384,6 +384,22 @@ describe('KB-636 공유 카드 시트', () => {
     expect(mockTrack.mock.calls.filter((c) => c[0] === 'order_share_view')).toHaveLength(1);
   });
 
+  /* Codex #208 P1(KB-603): 시트 닫기→다시 열기 = 캔버스 새 마운트 — 옛 'ready'가 남으면 렌더 전 캡처(빈 사진). */
+  it('캔버스 ready 뒤 닫았다 다시 열면 **다시 busy**(photosState ≠ ready) · 새 캔버스 ready로 풀린다', async () => {
+    const tree = await renderOrder(SHARE_ORDER);
+    press(tree, 'order-share-open');
+    const canvas = () => tree.root.findAll((n) => typeof n.props?.onReady === 'function')[0];
+    const section = () => tree.root.findAll((n) => typeof n.props?.busy === 'boolean' && typeof n.props?.onDownload === 'function')[0];
+    expect(section().props.busy).toBe(true); // 대조: 열자마자 잠금
+    act(() => canvas().props.onReady());
+    expect(section().props.busy).toBe(false);
+    act(() => { tree.root.findAll((n) => typeof n.props?.onRequestClose === 'function' && n.props?.visible === true)[0].props.onRequestClose(); });
+    press(tree, 'order-share-open');
+    expect(section().props.busy).toBe(true); // 다시 연 직후 — 옛 ready 잔존 금지
+    act(() => canvas().props.onReady());
+    expect(section().props.busy).toBe(false);
+  });
+
   /* Codex #193 P2: 저장·스토리 진행 중 스크림 탭 → 캔버스 언마운트 → captureRef null → 실패. 진행 중엔 닫기 무시. */
   it('저장 진행 중엔 닫히지 않는다(캔버스 유지) · 끝나면 닫힌다', async () => {
     let finish!: (r: string) => void;

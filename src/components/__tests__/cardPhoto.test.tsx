@@ -86,6 +86,21 @@ it('P-353 ③: uri null = 처음부터 기본 음식 이미지', () => {
   expect(img.props.source).toBe(DEFAULT_FOOD_IMAGE);
 });
 
+/* Codex #208(KB-603) 같은 계열: 소스 **전이마다** 리셋 — a 실패 → b → 다시 a = a를 다시 시도(shimmer도 복귀). */
+it('a 실패 → b → 다시 a = a 재시도 + shimmer 복귀(옛 failed·settled 잔존 금지)', () => {
+  const { DEFAULT_FOOD_IMAGE } = jest.requireActual('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
+  const tree = render(<CardPhoto uri="https://cdn.example/a.jpg" />);
+  const img = () => tree.root.findByType('ExpoImage' as never) as unknown as { props: { source: string; onError: () => void; onLoad: () => void } };
+  act(() => img().props.onError());
+  expect(img().props.source).toBe(DEFAULT_FOOD_IMAGE);
+  act(() => { tree.update(<CardPhoto uri="https://cdn.example/b.jpg" />); });
+  act(() => img().props.onLoad());
+  expect(shimmerCount(tree)).toBe(0);
+  act(() => { tree.update(<CardPhoto uri="https://cdn.example/a.jpg" />); });
+  expect(img().props.source).toBe('https://cdn.example/a.jpg'); // failed 리셋 — 다시 시도
+  expect(shimmerCount(tree)).toBe(1); // settled 리셋
+});
+
 it('#116 P2 ③: uri 교체 = failed·settled 리셋 — 이전 실패가 새 이미지를 가리지 않는다', () => {
   const { DEFAULT_FOOD_IMAGE } = require('@/lib/api/foodAdapter') as typeof import('@/lib/api/foodAdapter');
   const tree = render(<CardPhoto uri="https://cdn.example/a.jpg" />);

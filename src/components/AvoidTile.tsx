@@ -55,9 +55,14 @@ export function AvoidTile({
   children?: React.ReactNode;
 }) {
   const { uri, isCutout, nextSource } = useIngredientImageChain(code, imageUrl);
-  // KB-603: "어느 소스가 로드됐나"를 기억한다 — 체인 리셋·다음 소스 전환 시 파생값 loaded가 저절로 false(effect 리셋 없음)
-  const [loadedUri, setLoadedUri] = React.useState<string | null>(null);
-  const loaded = uri != null && loadedUri === uri;
+  const [loaded, setLoaded] = React.useState(false);
+  // KB-603: 체인 리셋·다음 소스 **전환마다** 로딩 상태 복귀 — 렌더 중 전환 비교(React 공식 패턴). 값 키(loadedUri === uri)면
+  // A→B→A에서 스켈레톤 없이 옛 loaded가 남는다(Codex #208 같은 계열).
+  const [prevUri, setPrevUri] = React.useState(uri);
+  if (uri !== prevUri) {
+    setPrevUri(uri);
+    setLoaded(false);
+  }
   const failed = !uri; // 체인 소진 = 실패 확정
   return (
     <View style={[styles.tile, { backgroundColor: failed ? tint : '#FFFFFF', borderRadius: radius }, radius === 0 && { borderWidth: 0 }, selected && styles.tileOn, style]} testID={`avtile-${code}`}>{/* P-341: 사진 상태 = 흰 배경(tint는 실패 폴백만) */}
@@ -76,8 +81,11 @@ export function AvoidTile({
           style={isCutout ? styles.photoCut : styles.photo}
           contentFit={isCutout ? 'contain' : 'cover'}
           transition={120}
-          onLoad={() => setLoadedUri(uri)}
-          onError={nextSource}
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setLoaded(false);
+            nextSource();
+          }}
           testID={`avtile-img-${code}`}
         />
       )}
