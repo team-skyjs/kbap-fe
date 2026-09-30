@@ -34,7 +34,6 @@ import { getPermissionStatus, registerPushToken, requestPermission, type PushPer
 export default function NotificationSettings() {
   // 컴파일 상수 가드 — 훅 순서 무영향 (reviews.tsx 문법)
   if (!FLAGS.pushEnabled) return <Redirect href="/" />;
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return <NotificationSettingsScreen />;
 }
 

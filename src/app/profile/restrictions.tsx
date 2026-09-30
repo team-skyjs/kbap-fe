@@ -47,6 +47,7 @@ export default function EditRestrictions() {
 
   const toggle = (code: string) => setSel((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
   const isGuest = useIsGuest();
+  const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄 — KB-604: 게스트 return보다 위(순수 로컬 훅, 부수효과 0)
 
   // 라우트 자체 가드 (⑧-b) — 진입로는 프로필/홈 Edit(게이트·게스트 미노출)뿐이지만
   // 딥링크 이중 방어. 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
@@ -59,7 +60,6 @@ export default function EditRestrictions() {
     );
   }
 
-  const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄
   function save() {
     void runSave(
       () =>

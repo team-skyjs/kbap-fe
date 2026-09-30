@@ -33,9 +33,12 @@ import type { Review } from '@/lib/api/types';
 
 export default function MyReviews() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
-  // FLAGS는 컴파일 상수라 훅 순서에 영향 없음 (플래그 켜면 이 가드는 no-op)
+  // KB-604: 가드는 **훅 없는 바깥 컴포넌트**에(review.tsx KB-620 문법) — off면 내 리뷰·음식 쿼리가 마운트되지 않는다(전과 동일).
   if (!FLAGS.reviewsEnabled) return <Redirect href="/" />;
+  return <MyReviewsScreen />;
+}
 
+function MyReviewsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { data: reviews, isLoading: reviewsLoading, error: reviewsError, refetch: refetchReviews } = useMyReviews(); // P-164
