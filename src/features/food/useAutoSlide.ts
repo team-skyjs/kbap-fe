@@ -21,9 +21,14 @@ export function useAutoSlide(count: number, paused: boolean) {
   // 들고 있어도 **지금의** paused·count를 보도록 ref로 읽는다. 클로저에 박으면 정지 중에
   // 뒤늦게 도착한 호출이 타이머를 되살리고, 그걸 치울 의존성 변화도 더 오지 않는다.
   const pausedRef = React.useRef(paused);
-  pausedRef.current = paused;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    pausedRef.current = paused;
+  });
   const countRef = React.useRef(count);
-  countRef.current = count;
+  React.useLayoutEffect(() => {
+    countRef.current = count;
+  });
   // Codex P2(9R): 제스처 정지는 **지속 상태**여야 한다. 타이머만 끄면(stop) 누르고 있는 동안
   // 외부 정지(동작 줄이기 조회 해소·포커스 복귀 등)가 풀릴 때 효과가 start()를 불러 되살아난다.
   // hold는 pause()로 켜지고 onUserSwipe(손 뗀 뒤 안착)로만 꺼진다.

@@ -40,7 +40,10 @@ export function useSheetSwipeDismiss(onClose: () => void, open = true, opts: { a
   // 시트가 남은 채 Modal이 사라짐. 측정 전 폴백 = 화면 높이(항상 화면 밖 보장).
   const winH = useWindowDimensions().height;
   const winHRef = React.useRef(winH); // 등장 effect는 open 전환에만 반응 — 회전(winH 변화)으로 재생되면 열린 시트가 튄다(Codex #150 P2)
-  winHRef.current = winH;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    winHRef.current = winH;
+  });
   const sheetH = React.useRef(0);
   const onSheetLayout = React.useCallback((e: LayoutChangeEvent) => {
     sheetH.current = e.nativeEvent.layout.height;

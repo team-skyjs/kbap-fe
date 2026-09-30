@@ -11,7 +11,7 @@
 // 지금 안전한 이유는 **FLAGS가 빌드 상수**라 한 빌드 안에서 분기가 고정된다는 것 하나뿐이다.
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
@@ -218,12 +218,17 @@ function ReviewComposeScreen() {
   const svH = useRef(0); // ScrollView 뷰포트 높이 실측
   const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
   const kbHRef = useRef(0);
-  kbHRef.current = kbH;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  useLayoutEffect(() => {
+    kbHRef.current = kbH;
+  });
   // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
   // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
   const atEnd = useRef(true);
   const bodyLenRef = useRef(0);
-  bodyLenRef.current = body.length;
+  useLayoutEffect(() => {
+    bodyLenRef.current = body.length;
+  });
   const ensureCursorVisible = () => {
     const visible = svH.current - kbHRef.current;
     if (visible <= 0 || !blockBottom.current) return;

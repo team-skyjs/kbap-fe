@@ -62,7 +62,10 @@ export function ModerationFlow({
   const [phase, setPhase] = React.useState<'menu' | 'report' | 'blockConfirm' | 'blocking'>('menu');
   const [reported, setReported] = React.useState(false);
   const targetRef = React.useRef(target); // 늦은 뮤테이션 콜백이 현재 대상과 같은지 대조용
-  targetRef.current = target;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    targetRef.current = target;
+  });
   const submitReport = useSubmitReport();
   const blockUser = useBlockUser();
 

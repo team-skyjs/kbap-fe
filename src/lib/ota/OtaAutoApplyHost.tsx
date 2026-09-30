@@ -96,7 +96,10 @@ export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }
   const [ready, setReady] = React.useState(false);
   // #109 4R: AppState 콜백에서 동기 참조용 — ready 후 재체크(네이티브 프라미스) 생략
   const readyRef = React.useRef(false);
-  readyRef.current = ready;
+  // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
+  React.useLayoutEffect(() => {
+    readyRef.current = ready;
+  });
   // P-304: 부팅 가드 반응 소스 — appState(active 복귀)·가드 충족 시각 타이머 재평가
   const [appActive, setAppActive] = React.useState(AppState.currentState === 'active');
   const [guardTick, setGuardTick] = React.useState(0);
