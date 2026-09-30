@@ -206,6 +206,6 @@ it('⑤⑥ 소스 감사 — 온보딩 ORDER 5스텝(프리셋 포함)·탭 4 �
   expect(homeSrc).toContain('variant="embedded"');
   expect(fs.readFileSync('src/app/(tabs)/food.tsx', 'utf8')).toContain('variant="screen"');
   expect(fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8')).toContain('return <ReviewFeed />');
-  // 버전 1.0.3(프로필 하단 버전 줄 소스) — #162 범프(ITMS-90186) 반영, 범프 시 함께 갱신
-  expect(JSON.parse(fs.readFileSync('app.json', 'utf8')).expo.version).toBe('1.0.3');
+  // 버전 1.0.4(프로필 하단 버전 줄 소스) — KB-656 범프(ASC 1.0.3 트레인 마감, P-424 ②) 반영, 범프 시 함께 갱신
+  expect(JSON.parse(fs.readFileSync('app.json', 'utf8')).expo.version).toBe('1.0.4');
 });
