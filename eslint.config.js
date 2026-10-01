@@ -2,6 +2,37 @@
 const { defineConfig } = require('eslint/config');
 const expoConfig = require("eslint-config-expo/flat");
 
+// ── 헌법 UI 카피 규칙(KB-644 → KB-664) ─────────────────────────────────────
+// 헌법: UI 이모지 0(SVG만). 판정 = Unicode `Extended_Pictographic`(표준 이모지 속성 —
+// 🟢 같은 도형·⚠️ 포함). 국기(regional indicator 쌍)는 이 속성에 없어 자동 예외
+// (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
+// keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
+const EMOJI_ANY = "\\p{Extended_Pictographic}|\\u20E3";
+// 승인 예외는 **글자별로 따로** 연다(Codex #215 2R·3R) — 각 예외의 정의된 용도를 그리는 전용 컴포넌트에서만.
+// 큰 화면 파일(온보딩·음식 상세·프로필 수정)은 넣지 않는다 — 넣으면 그 화면의 아무 JSX에서나 통과한다.
+// ① 맵기 🌶️(U+1F336) = 맵기 표시 컴포넌트. 👶는 여기서도 에러(슬라이더·고추 렌더러는 HOT/EXTREME까지 그린다).
+//    기준 차이: 🌶️도 지금 사용처는 0(SVG)이지만 헌법이 "맵기 표시"에 승인한 글자이고 두 컴포넌트가 바로 그 맵기 표시
+//    전용이라 미리 열어 둔다. 👶는 승인 범위가 특정 배지 하나라 그 컴포넌트가 생길 때 연다.
+const EMOJI_EXCEPT_PEPPER = "(?!\\u{1F336})\\p{Extended_Pictographic}|\\u20E3";
+const PEPPER_SURFACES = [
+  "src/components/SpicePeppers.tsx",
+  "src/components/SpiceLevelSlider.tsx",
+];
+// ② 아기 👶(U+1F476): 예외 **없음**(지금 쓰는 자리 0 — 배지 컴포넌트 없음·kidsBadge 키 미사용). 👶는 NONE/MILD
+// "아이도 먹을 수 있음" 배지 전용 컴포넌트를 만들 때 그 파일 하나만 예외 목록에 추가한다(헌법 v2.3.1 승인 범위).
+const EMOJI_MSG = "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji. 승인 예외는 맵기 🌶️만(SpicePeppers·SpiceLevelSlider). 👶는 NONE/MILD 배지 전용 컴포넌트를 만들 때 config에 추가.";
+const HANGUL_MSG = "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.";
+function uiCopyRules(emoji) {
+  return [
+    { selector: `:matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/${emoji}/u]`, message: EMOJI_MSG },
+    { selector: `JSXExpressionContainer TemplateElement[value.raw=/${emoji}/u]`, message: EMOJI_MSG },
+    // 헌법: i18n 하드코딩 0. 주석·console.log(JSX 밖)는 AST 대상이 아니라 안 걸린다.
+    // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
+    { selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/[가-힣]/]", message: HANGUL_MSG },
+    { selector: "JSXExpressionContainer TemplateElement[value.raw=/[가-힣]/]", message: HANGUL_MSG },
+  ];
+}
+
 module.exports = defineConfig([
   expoConfig,
   {
@@ -50,34 +81,15 @@ module.exports = defineConfig([
     files: ["src/**/*.tsx"],
     // 테스트는 서버가 준 한국어 데이터(음식명·주소)를 픽스처로 JSX에 넣는다 — UI 카피가 아니다.
     ignores: ["**/__tests__/**"],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          // 헌법: UI 이모지 0(SVG만). 판정 = Unicode `Extended_Pictographic`(표준 이모지 속성 —
-          // 🟢 같은 도형·⚠️ 포함). 국기(regional indicator 쌍)는 이 속성에 없어 자동 예외
-          // (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
-          // keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
-          selector:
-            ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/\\p{Extended_Pictographic}|\\u20E3/u]",
-          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
-        },
-        {
-          selector: "JSXExpressionContainer TemplateElement[value.raw=/\\p{Extended_Pictographic}|\\u20E3/u]",
-          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
-        },
-        {
-          // 헌법: i18n 하드코딩 0. 주석·console.log(JSX 밖)는 AST 대상이 아니라 안 걸린다.
-          // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
-          selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/[가-힣]/]",
-          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
-        },
-        {
-          selector: "JSXExpressionContainer TemplateElement[value.raw=/[가-힣]/]",
-          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
-        },
-      ],
-    },
+    rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_ANY)] },
+  },
+  {
+    // KB-664(Codex #213 P2 → #215 2R·3R): AGENTS.md L22 승인 예외 중 맵기 🌶️만 맵기 표시 컴포넌트(PEPPER_SURFACES)에서
+    // 허용. 👶는 예외 없음(위 상수 주석). 그 밖에선 계속 에러.
+    // flat config는 같은 룰을 블록 단위로 **교체**하므로 한글 규칙까지 그대로 다시 싣는다(uiCopyRules 공유).
+    files: PEPPER_SURFACES,
+    ignores: ["**/__tests__/**"],
+    rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_EXCEPT_PEPPER)] },
   },
   {
     // P-147: 회원 속성(provider·가입 상태·판정)은 서버 API가 정본 — Firebase providerData 읽기 금지.
