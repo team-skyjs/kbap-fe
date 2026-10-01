@@ -115,6 +115,24 @@ it('탭 → 계약대로 요청 → 본문이 번역문으로 교체 · 버튼 "
   expect(mockPost).toHaveBeenCalledTimes(1);
 });
 
+it('요청 중 = 스피너 + "Translating…"(reviews.translating) · 버튼 비활성 · 본문은 원문 그대로 → 응답 오면 번역문 + See original', async () => {
+  let resolve!: (v: unknown) => void;
+  mockPost.mockReturnValue(new Promise((r) => (resolve = r)));
+  const t = render(REVIEW());
+  await press(t);
+  expect(out(t)).toContain('reviews.translating');
+  expect(out(t)).not.toContain('translation.translate"');
+  expect(out(t)).toContain('Really good soup');
+  expect(btn(t).props.disabled).toBe(true);
+  await act(async () => {
+    resolve({ targetType: 'REVIEW', targetId: 53, language: 'ko', text: '정말 맛있는 국' });
+    await Promise.resolve();
+  });
+  expect(out(t)).not.toContain('reviews.translating');
+  expect(out(t)).toContain('translation.seeOriginal');
+  expect(out(t)).toContain('정말 맛있는 국');
+});
+
 it('503 TRANSLATION-001 → 토스트(에러 변형) + 원문 유지 · 버튼은 다시 "Translate"', async () => {
   mockPost.mockRejectedValue(new ApiError('translation failed', 503, 'TRANSLATION-001'));
   const t = render(REVIEW());
