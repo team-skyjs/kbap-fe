@@ -287,6 +287,8 @@
     "quotaTitle": "免費掃描次數已用完",
     "quotaBody": "寫一則評價即可解鎖無限掃描。",
     "quotaCta": "寫評價",
+    "freeLeft_other": "剩餘 {{count}} 次免費掃描",
+    "badgeUnit_other": "次",
     "later": "稍後",
     "errUpload": "照片上傳失敗，請重試。",
     "stayHint": "大約需要 30–40 秒 — 離開應用可能會遺失結果。",

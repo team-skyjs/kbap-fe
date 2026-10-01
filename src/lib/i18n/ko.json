@@ -287,6 +287,8 @@
     "quotaTitle": "무료 스캔을 모두 사용했어요",
     "quotaBody": "리뷰를 1건 작성하면 스캔을 무제한으로 이용할 수 있어요.",
     "quotaCta": "리뷰 작성하기",
+    "freeLeft_other": "무료 스캔이 {{count}}회 남았어요",
+    "badgeUnit_other": "회",
     "later": "나중에",
     "errUpload": "사진을 올리지 못했어요. 다시 시도해 주세요.",
     "stayHint": "30~40초 정도 걸릴 수 있어요. 앱을 벗어나면 결과를 놓칠 수 있어요.",

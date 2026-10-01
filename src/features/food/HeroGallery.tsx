@@ -7,12 +7,12 @@
  * - 하단 도트는 View로 그린다(이모지 금지), 히어로 안쪽 하단
  */
 import * as React from 'react';
-import { AccessibilityInfo, AppState, FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { FlatList, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Image } from 'expo-image';
-import { useFocusEffect } from 'expo-router';
 import { CardPhoto } from '@/components';
 import { color as C } from '@/lib/theme';
 import { useAutoSlide } from './useAutoSlide';
+import { useMotionPaused } from '@/lib/useMotionPaused';
 
 /** 현재 장 도트 색 — 발주 "primary". 비활성은 ink 계열(사진 위 가독성 위해 ink3). */
 export const DOT_ACTIVE = C.primary;
@@ -20,48 +20,9 @@ export const DOT_INACTIVE = C.ink3;
 /** 손을 뗀 뒤 스크롤 이벤트가 이만큼 끊기면 스냅 완료로 본다(스로틀 16ms의 충분한 배수). */
 export const QUIET_MS = 250;
 
-/** 명시적으로 뒤로 간 경우만 멈춘다. 초기값이 null·'unknown'일 수 있어서(RN AppState는 네이티브
- *  상수가 오기 전 null로 시작) === 'active'로 판정하면 자동 넘김이 영영 시작 안 할 수 있다. */
-const isForeground = (s: string | null | undefined) => s !== 'background' && s !== 'inactive';
-
-function usePaused(): boolean {
-  const [focused, setFocused] = React.useState(true);
-  const [active, setActive] = React.useState(isForeground(AppState.currentState));
-  // Codex P2(8R): 동작 줄이기 설정은 **확인되기 전까지 켜진 것으로 본다**(null = 미확인 → 정지).
-  // 조회가 늦거나 실패해도 그 설정을 켠 사용자에게 애니메이션이 먼저 나가면 안 된다.
-  // (AppState와 반대로 두는 이유: 이건 접근성 선호라 불확실하면 움직이지 않는 쪽이 안전하다.)
-  const [reduceMotion, setReduceMotion] = React.useState<boolean | null>(null);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setFocused(true);
-      return () => setFocused(false);
-    }, []),
-  );
-
-  React.useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => setActive(isForeground(s)));
-    return () => sub.remove();
-  }, []);
-
-  React.useEffect(() => {
-    let alive = true;
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((v) => alive && setReduceMotion(!!v))
-      .catch(() => {}); // 실패 = 미확인 유지(null) → 정지. 설정 변경 이벤트가 오면 그때 반영
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => setReduceMotion(!!v));
-    return () => {
-      alive = false;
-      sub.remove();
-    };
-  }, []);
-
-  return !focused || !active || reduceMotion !== false;
-}
-
 export function HeroGallery({ urls, overlay }: { urls: string[]; /** 사진 위·도트 아래 레이어(그라데이션) */ overlay?: React.ReactNode }) {
   const { width } = useWindowDimensions();
-  const paused = usePaused();
+  const paused = useMotionPaused();
   const { index, onUserSwipe, pause } = useAutoSlide(urls.length, paused);
   const listRef = React.useRef<FlatList<string>>(null);
   // 제스처 상태는 **손가락 기준 두 가지뿐**이다: 누르고 있나(touching), 뗐나(released).

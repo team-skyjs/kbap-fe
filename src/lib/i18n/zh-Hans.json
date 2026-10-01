@@ -287,6 +287,8 @@
     "quotaTitle": "免费扫描次数已用完",
     "quotaBody": "写一条评价即可解锁无限扫描。",
     "quotaCta": "写评价",
+    "freeLeft_other": "剩余 {{count}} 次免费扫描",
+    "badgeUnit_other": "次",
     "later": "稍后",
     "errUpload": "照片上传失败，请重试。",
     "stayHint": "大约需要 30–40 秒 — 离开应用可能会丢失结果。",

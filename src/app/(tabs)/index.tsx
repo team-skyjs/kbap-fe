@@ -35,6 +35,7 @@ import { ModerationFlow, type ModTarget } from '@/features/community/moderation'
 import { EVENTS, track } from '@/lib/analytics';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { FeedCard } from '@/features/review/FeedCard';
+import { HomeQuotaBadge } from '@/features/scan/HomeQuotaBadge';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -251,6 +252,9 @@ export default function Home() {
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
       />
+
+      {/* KB-680(P-432): 우하단 불꽃 "무료 스캔 N회 남음" — 플래그 countdownBadge(진단 채널만) · 노출 조건은 컴포넌트 안 */}
+      <HomeQuotaBadge />
 
       {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
