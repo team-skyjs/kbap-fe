@@ -228,6 +228,38 @@ describe('모션 트리거', () => {
     expect(shown(t)).toBe(false);
   });
 
+  it('공부 재확인 ①: 가려진 채 해금 대기 중 다시 숫자로 돌아오면 → 축하 취소, 복귀 시 폭죽 없이 숫자 뱃지(눌림 가능)', async () => {
+    jest.useFakeTimers();
+    mockQuota = Q(1);
+    const t = render();
+    await flush();
+    mockFocused = false;
+    rerender(t);
+    mockQuota = Q('unlimited', true); // 해금 → 대기
+    rerender(t);
+    mockQuota = Q(1); // 되돌려진 해금(재조회 정정)
+    rerender(t);
+    mockFocused = true;
+    rerender(t);
+    // 복귀 직후(폭죽이 났다면 재생 중일 시점) — 축하 아님: 파티클 0 · 눌림 가능
+    const btnEl = byId(t, 'countdown-badge')[0];
+    expect(btnEl.props.disabled).toBe(false);
+    expect(btnEl.findAll((n) => n.props?.style && JSON.stringify(n.props.style).includes('"borderRadius":3')).length).toBe(0);
+    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 2));
+    expect(shown(t)).toBe(true);
+    expect(valueText(t)).toBe(1);
+  });
+
+  it('공부 재확인 ②: 동작 줄이기 조회 실패(미확인 고착) + 화면 보임 → 해금 시 폭죽 없이 즉시 종료(대기 고착 0)', async () => {
+    (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockImplementation(() => Promise.reject(new Error('unavailable')));
+    mockQuota = Q(1);
+    const t = render();
+    await flush();
+    mockQuota = Q('unlimited', true);
+    rerender(t);
+    expect(shown(t)).toBe(false);
+  });
+
   it('공부 메모 ②: remaining만 unlimited(누락·음수 → 판별 불가)이고 unlocked 아님 = 축하 아님, 바로 숨김', async () => {
     mockQuota = Q(1);
     const t = render();
@@ -279,9 +311,10 @@ describe('축하 종료 타이머 정리(언마운트·재트리거·동작 줄�
     const end = jest.fn();
     let t!: ReactTestRenderer;
     act(() => {
-      t = renderer.create(badge(true, end));
+      t = renderer.create(badge(false, end));
     });
-    await flush();
+    await flush(); // 동작 줄이기 확정(false) 뒤에 축하 — 실제 흐름도 전이는 마운트 후
+    act(() => t.update(badge(true, end)));
     act(() => t.unmount());
     act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 2));
     expect(end).not.toHaveBeenCalled();
@@ -291,9 +324,10 @@ describe('축하 종료 타이머 정리(언마운트·재트리거·동작 줄�
     const end = jest.fn();
     let t!: ReactTestRenderer;
     act(() => {
-      t = renderer.create(badge(true, end));
+      t = renderer.create(badge(false, end));
     });
-    await flush();
+    await flush(); // 동작 줄이기 확정(false) 뒤에 축하 — 실제 흐름도 전이는 마운트 후
+    act(() => t.update(badge(true, end)));
     act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 100));
     act(() => t.update(badge(false, end)));
     act(() => t.update(badge(true, end)));
@@ -306,10 +340,12 @@ describe('축하 종료 타이머 정리(언마운트·재트리거·동작 줄�
   it('동작 줄이기 = 즉시 1회 · 종료 타이머 없음', async () => {
     mockReduced = true;
     const end = jest.fn();
+    let t!: ReactTestRenderer;
     act(() => {
-      renderer.create(badge(true, end));
+      t = renderer.create(badge(false, end));
     });
     await flush();
+    act(() => t.update(badge(true, end)));
     expect(end).toHaveBeenCalledTimes(1);
     act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 2));
     expect(end).toHaveBeenCalledTimes(1); // 종료 타이머 없음(두 번째 호출 0)
@@ -319,9 +355,10 @@ describe('축하 종료 타이머 정리(언마운트·재트리거·동작 줄�
     const end = jest.fn();
     let t!: ReactTestRenderer;
     act(() => {
-      t = renderer.create(badge(true, end));
+      t = renderer.create(badge(false, end));
     });
-    await flush();
+    await flush(); // 동작 줄이기 확정(false) 뒤에 축하 — 실제 흐름도 전이는 마운트 후
+    act(() => t.update(badge(true, end)));
     act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 100));
     mockFocused = false;
     act(() => t.update(badge(true, end)));

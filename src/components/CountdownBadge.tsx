@@ -50,7 +50,7 @@ export interface CountdownBadgeProps {
 
 export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = false, onCelebrateEnd, accessibilityLabel, testID = 'countdown-badge' }: CountdownBadgeProps) {
   // 판정 한 벌(useMotionState) — paused = blur·background·동작 줄이기(미확인 포함), reduceMotion = 확정값
-  const { paused, reduceMotion } = useMotionState();
+  const { paused, visible, reduceMotion } = useMotionState();
   const still = reduceMotion !== false; // 동작 줄이기 켜짐·미확인 = 팝·폭죽 없음
   const pulse = useSharedValue(1);
   const pop = useSharedValue(1);
@@ -74,12 +74,12 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
   React.useEffect(() => {
     if (value < prevValue.current) pendingPop.current = true;
     prevValue.current = value;
-    if (!pendingPop.current || paused) return;
+    if (!pendingPop.current || !visible) return;
     pendingPop.current = false;
     if (still) return;
     pop.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, spring.pop));
     flicker.value = withSequence(withTiming(0.45, { duration: 120 }), withTiming(1, { duration: 200 }));
-  }, [value, paused, still, pop, flicker]);
+  }, [value, visible, still, pop, flicker]);
 
   // 해제 축하 — 폭죽(선언형 withTiming, 콜백 없음) 후 퇴장은 JS 타이머. 언마운트·재트리거·동작 줄이기 전환 = cleanup으로 정리
   const endRef = React.useRef(onCelebrateEnd);
@@ -87,20 +87,20 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
     endRef.current = onCelebrateEnd;
   });
   // 시작은 **화면이 보일 때**(공부 #221 지적 1): 무제한 전환은 리뷰 작성 화면에서 일어나 홈이 가려진 채 감지된다 —
-  // paused(blur·background) 동안은 마지막 숫자를 든 채 대기, 보이면 1회. blur·background로 중단되면 cleanup이 타이머 해제 → 다시 보일 때 처음부터.
-  const showBurst = celebrate && !paused && reduceMotion === false;
+  // 안 보이는 동안은 마지막 숫자를 든 채 대기, 보이면 1회. blur·background로 중단되면 cleanup이 타이머 해제 → 다시 보일 때 처음부터.
+  // 보이는데 동작 줄이기가 확정 false가 아니면(켜짐·조회 실패로 미확인 고착) 폭죽 없이 즉시 종료 — 대기 고착 금지(공부 #221 재확인 ②).
+  const showBurst = celebrate && visible && reduceMotion === false;
   React.useEffect(() => {
-    if (!celebrate) return;
-    if (reduceMotion === true) {
-      endRef.current?.(); // 동작 줄이기 = 폭죽 없이 즉시 종료
+    if (!celebrate || !visible) return;
+    if (reduceMotion !== false) {
+      endRef.current?.();
       return;
     }
-    if (paused) return;
     burst.value = 0;
     burst.value = withTiming(1, { duration: BURST_MS });
     const timer = setTimeout(() => endRef.current?.(), CELEBRATE_END_MS);
     return () => clearTimeout(timer);
-  }, [celebrate, paused, reduceMotion, burst]);
+  }, [celebrate, visible, reduceMotion, burst]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value * (1 + burst.value * 0.15) }],

@@ -54,6 +54,7 @@ export function HomeQuotaBadge() {
     setPrev({ m: model, id: memberId });
     if (prev.id !== memberId) setCelebrating(null); // 계정 전환 = 진행 중 축하도 취소
     else if (prev.m && !model && unlockedNow) setCelebrating(prev.m);
+    else if (model) setCelebrating(null); // 대기 중 다시 숫자 = 되돌려진 해금 → 축하 취소(공부 #221 재확인 ①)
   }
 
   const [sheet, setSheet] = React.useState(false);
