@@ -8,7 +8,6 @@ import * as React from 'react';
 import { StyleSheet } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
-const mockTimingCbs: ((finished: boolean) => void)[] = [];
 const mockSpring = jest.fn((v: unknown) => v);
 let mockReduced = false;
 jest.mock('react-native-reanimated', () => {
@@ -19,15 +18,11 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: (f: () => unknown) => f(),
     useReducedMotion: () => mockReduced,
-    withTiming: (v: unknown, _c?: unknown, cb?: (f: boolean) => void) => {
-      if (cb) mockTimingCbs.push(cb);
-      return v;
-    },
+    withTiming: (v: unknown) => v,
     withSpring: (v: unknown) => mockSpring(v),
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
-    runOnJS: (f: (...a: unknown[]) => unknown) => f,
   };
 });
 jest.mock('expo-router', () => ({
@@ -58,7 +53,7 @@ jest.mock('@/lib/flags', () => {
 });
 
 import { HomeQuotaBadge, quotaBadgeModel, BADGE_BOTTOM } from '../HomeQuotaBadge';
-import { CountdownBadge, BADGE_H, BADGE_W } from '@/components/CountdownBadge';
+import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS } from '@/components/CountdownBadge';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
 
@@ -79,7 +74,6 @@ beforeEach(() => {
   mockGuest = false;
   mockReduced = false;
   mockFlag.on = true;
-  mockTimingCbs.length = 0;
   mockSpring.mockClear();
   mockPicker.mockClear();
   mockPush.mockClear();
@@ -170,18 +164,24 @@ describe('모션 트리거', () => {
     expect(mockSpring).toHaveBeenCalledTimes(1);
   });
 
-  it('숫자 → 무제한(리뷰 작성 후) = 마지막 숫자로 폭죽 1회 → 끝나면 사라짐', () => {
-    mockQuota = Q(1);
-    const t = render();
-    mockQuota = Q('unlimited', true);
-    rerender(t);
-    expect(shown(t)).toBe(true); // 축하 중
-    expect(valueText(t)).toBe(1);
-    expect(mockTimingCbs.length).toBe(1);
-    act(() => mockTimingCbs[0](true));
-    expect(shown(t)).toBe(false);
-    rerender(t);
-    expect(shown(t)).toBe(false); // 재트리거 0
+  it('숫자 → 무제한(리뷰 작성 후) = 마지막 숫자로 폭죽 1회 → JS 타이머 뒤 사라짐', () => {
+    jest.useFakeTimers();
+    try {
+      mockQuota = Q(1);
+      const t = render();
+      mockQuota = Q('unlimited', true);
+      rerender(t);
+      expect(shown(t)).toBe(true); // 축하 중
+      expect(valueText(t)).toBe(1);
+      act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 1));
+      expect(shown(t)).toBe(true);
+      act(() => jest.advanceTimersByTime(1));
+      expect(shown(t)).toBe(false);
+      rerender(t);
+      expect(shown(t)).toBe(false); // 재트리거 0
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('숫자 → 게스트·null(판별 불가)은 축하가 아니다 — 바로 숨김', () => {
@@ -190,7 +190,6 @@ describe('모션 트리거', () => {
     mockQuota = null;
     rerender(t);
     expect(shown(t)).toBe(false);
-    expect(mockTimingCbs.length).toBe(0);
   });
 
   it('동작 줄이기 = 폭죽 없이 즉시 종료 · 숫자 팝 없음', () => {
@@ -202,8 +201,58 @@ describe('모션 트리거', () => {
     expect(mockSpring).not.toHaveBeenCalled();
     mockQuota = Q('unlimited', true);
     rerender(t);
-    expect(shown(t)).toBe(false);
-    expect(mockTimingCbs.length).toBe(0);
+    expect(shown(t)).toBe(false); // 타이머 없이 즉시
+  });
+});
+
+describe('축하 종료 타이머 정리(언마운트·재트리거·동작 줄이기)', () => {
+  const badge = (celebrate: boolean, end: () => void) => <CountdownBadge value={1} unitLabel="회" state="active" onPress={() => {}} celebrate={celebrate} onCelebrateEnd={end} />;
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('언마운트 = 타이머 해제(종료 콜백 0)', () => {
+    const end = jest.fn();
+    let t!: ReactTestRenderer;
+    act(() => {
+      t = renderer.create(badge(true, end));
+    });
+    act(() => t.unmount());
+    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 2));
+    expect(end).not.toHaveBeenCalled();
+  });
+
+  it('재트리거(꺼졌다 다시 켜짐) = 새 타이머 1개 — 옛 타이머는 발화 안 함', () => {
+    const end = jest.fn();
+    let t!: ReactTestRenderer;
+    act(() => {
+      t = renderer.create(badge(true, end));
+    });
+    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 100));
+    act(() => t.update(badge(false, end)));
+    act(() => t.update(badge(true, end)));
+    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 1));
+    expect(end).not.toHaveBeenCalled();
+    act(() => jest.advanceTimersByTime(1));
+    expect(end).toHaveBeenCalledTimes(1);
+  });
+
+  it('동작 줄이기 = 즉시 1회 · 타이머 0', () => {
+    mockReduced = true;
+    const end = jest.fn();
+    act(() => {
+      renderer.create(badge(true, end));
+    });
+    expect(end).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('소스 잠금 — 뱃지 경로에 워클릿→JS 경계 0(runOnJS·worklet 지시자·애니메이션 완료 콜백 없음)', () => {
+    const fs = require('fs') as typeof import('fs');
+    for (const f of ['src/components/CountdownBadge.tsx', 'src/components/FlameShape.tsx', 'src/features/scan/HomeQuotaBadge.tsx']) {
+      const code = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+      expect(code).not.toMatch(/runOnJS|runOnUI|'worklet'|scheduleOnRN/);
+      expect(code).not.toMatch(/with(Timing|Spring)\([^()]*(\([^()]*\)[^()]*)*,[^()]*(\{[^{}]*\})[^()]*,/); // 3번째 인자(콜백) 없음
+    }
   });
 });
 

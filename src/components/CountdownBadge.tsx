@@ -6,13 +6,13 @@
  * - 크기 고정(BADGE_W×BADGE_H) — 글자 배율·단위 길이가 바뀌어도 프레임 불변(단위는 1줄 + 축소 맞춤).
  * - active ↔ empty는 불꽃 색만 바뀐다(P-151 — 메트릭 불변).
  * - 모션(reanimated만): 대기 펄스(화면 포커스·포그라운드·동작 줄이기 꺼짐일 때만 반복) · 값이 줄면 숫자 팝 + 불꽃 1회
- *   깜빡 · `celebrate`가 켜지면 폭죽 1회 후 사라지고 `onCelebrateEnd`. 동작 줄이기 = 정지 화면, 폭죽 없이 바로 종료.
+ *   깜빡 · `celebrate`가 켜지면 폭죽 1회 후 사라지고 `onCelebrateEnd`(JS 타이머 — 애니메이션 완료 콜백 없음). 동작 줄이기 = 정지 화면, 폭죽 없이 바로 종료.
+ * - UI 스레드 코드 = useAnimatedStyle 3개(공유값·숫자 상수만 읽음, JS 함수 호출 0) + 선언형 withTiming/withRepeat/withSequence/withSpring.
  */
 import * as React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
-  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -31,6 +31,8 @@ export const BADGE_W = 64;
 export const BADGE_H = 72;
 const PARTICLES = 12;
 const BURST_MS = 700;
+/** 폭죽 종료 = JS 타이머(애니메이션 길이 + 여유). 완료 콜백(runOnJS)을 쓰지 않아 워클릿→JS 경계 0(P-065/P-131 취지). */
+export const CELEBRATE_END_MS = BURST_MS + 100;
 
 export interface CountdownBadgeProps {
   value: number;
@@ -73,23 +75,21 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
     flicker.value = withSequence(withTiming(0.45, { duration: 120 }), withTiming(1, { duration: 200 }));
   }, [value, reduced, pop, flicker]);
 
-  // 해제 축하 — 폭죽 후 퇴장. 완료 콜백은 UI 스레드 → runOnJS
+  // 해제 축하 — 폭죽(선언형 withTiming, 콜백 없음) 후 퇴장은 JS 타이머. 언마운트·재트리거·동작 줄이기 전환 = cleanup으로 정리
   const endRef = React.useRef(onCelebrateEnd);
   React.useLayoutEffect(() => {
     endRef.current = onCelebrateEnd;
   });
   React.useEffect(() => {
     if (!celebrate) return;
-    const end = () => endRef.current?.();
     if (reduced) {
-      end();
+      endRef.current?.(); // 동작 줄이기 = 폭죽 없이 즉시 종료
       return;
     }
     burst.value = 0;
-    burst.value = withTiming(1, { duration: BURST_MS }, (finished) => {
-      'worklet';
-      if (finished) runOnJS(end)();
-    });
+    burst.value = withTiming(1, { duration: BURST_MS });
+    const timer = setTimeout(() => endRef.current?.(), CELEBRATE_END_MS);
+    return () => clearTimeout(timer);
   }, [celebrate, reduced, burst]);
 
   const bodyStyle = useAnimatedStyle(() => ({
