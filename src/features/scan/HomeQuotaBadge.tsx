@@ -58,6 +58,10 @@ export function HomeQuotaBadge() {
   }
 
   const [sheet, setSheet] = React.useState(false);
+  // Codex #221 P2: 시트가 열린 채 노출 자격이 사라지면(세션 만료·게스트·해금·null) 닫는다 — 렌더 중 동기화.
+  // 주 경로(시트 → 리뷰 쓰기 → 해금)에선 해금 시점에 시트가 이미 닫혀 있어 축하와 순서가 엮이지 않는다
+  // (리뷰 쓰기 탭이 먼저 시트를 닫고, 픽커 예약(pickerAfterDismiss)은 사용자가 고른 것이라 그대로 둔다).
+  if (sheet && !model) setSheet(false);
   const [picker, setPicker] = React.useState(false);
   const pickerAfterDismiss = React.useRef(false);
   const openPicker = () => {

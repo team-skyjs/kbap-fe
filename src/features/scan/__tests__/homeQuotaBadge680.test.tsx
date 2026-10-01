@@ -149,6 +149,22 @@ describe('탭 → 안내 시트 → 리뷰 쓰기(스캔 잠금과 같은 픽커
     expect(mockPush).toHaveBeenCalledWith('/food/7/review');
   });
 
+  it.each([
+    ['세션 만료(게스트)', () => (mockGuest = true)],
+    ['해금(무제한)', () => (mockQuota = Q('unlimited', true))],
+    ['판별 불가(null)', () => (mockQuota = null)],
+  ])('Codex #221 P2: 시트가 열린 채 자격 소멸(%s) → 시트 닫힘', (_n, lose) => {
+    mockQuota = Q(2);
+    const t = render();
+    act(() => byId(t, 'countdown-badge')[0].props.onPress());
+    const modalVisible = () => t.root.findAll((n) => typeof n.props?.onDismiss === 'function' && 'visible' in n.props)[0].props.visible;
+    expect(modalVisible()).toBe(true);
+    lose();
+    rerender(t);
+    expect(modalVisible()).toBe(false);
+    expect(mockPicker).not.toHaveBeenCalled(); // 닫힘이 픽커를 열지 않는다(리뷰 쓰기를 안 눌렀으면)
+  });
+
   it('0회 시트 제목 = 기존 소진 문구(scan.quotaTitle)', () => {
     mockQuota = Q(0);
     const t = render();
