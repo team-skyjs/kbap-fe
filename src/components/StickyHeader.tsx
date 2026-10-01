@@ -166,7 +166,7 @@ export function StickyHeader({
     <Animated.View style={[styles.root, { height: H, paddingTop: insets.top + TOP_PAD }, slide]}>
       <View style={styles.bar}>
         {mode === 'back' ? (
-          <PressScale style={styles.iconBtn} onPress={onBack} hitSlop={8}>
+          <PressScale style={styles.iconBtn} onPress={onBack} hitSlop={8} testID="header-back">
             <IconArrowLeft size={20} color={C.ink} />
           </PressScale>
         ) : (
@@ -189,12 +189,12 @@ export function StickyHeader({
 
         <View style={styles.actions}>
           {search && (
-            <PressScale style={styles.actionBtn} onPress={onSearch} hitSlop={10}>
+            <PressScale style={styles.actionBtn} onPress={onSearch} hitSlop={10} testID="header-search">
               <IconSearch size={23} color={C.ink} sw={1.8} />
             </PressScale>
           )}
           {signIn && (
-            <PressScale style={styles.signInPill} onPress={onSignIn} hitSlop={8}>
+            <PressScale style={styles.signInPill} onPress={onSignIn} hitSlop={8} testID="header-signin">
               <Text style={styles.signInText}>Sign in</Text>
             </PressScale>
           )}

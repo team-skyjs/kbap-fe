@@ -28,7 +28,7 @@ export default function OwnerConfirm() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <PressScale style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8}>
+      <PressScale style={[styles.close, { top: insets.top + 10 }]} onPress={() => router.back()} hitSlop={8} testID="owner-close">
         <IconClose size={22} color={C.ink2} />
       </PressScale>
 

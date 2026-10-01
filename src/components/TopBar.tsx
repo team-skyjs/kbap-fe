@@ -34,7 +34,7 @@ export function TopBar({
   return (
     <View style={styles.root}>
       {back ? (
-        <Pressable style={styles.back} onPress={onBack} hitSlop={8}>
+        <Pressable style={styles.back} onPress={onBack} hitSlop={8} testID="header-back">
           <IconArrowLeft size={18} color={C.ink} />
         </Pressable>
       ) : (
@@ -46,7 +46,7 @@ export function TopBar({
         ))}
       </View>
       {skipLabel ? (
-        <Pressable onPress={onSkip} hitSlop={8}>
+        <Pressable onPress={onSkip} hitSlop={8} testID="header-skip">
           <Text style={styles.skip}>{skipLabel}</Text>
         </Pressable>
       ) : (
