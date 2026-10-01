@@ -5,7 +5,8 @@
  * - 정본 = `me.scanQuota`(서버) — 클라는 횟수를 세지 않는다. 노출 = 남은 횟수가 숫자인 회원(0 포함 — 꺼진 불꽃).
  *   숨김 = 무제한 · 게스트 · scanQuota null(구서버 — 판별 불가는 막지도 보여주지도 않는다) · 플래그 off.
  * - 탭 = 안내 시트(남은 횟수 · "리뷰를 쓰면 무제한" · 리뷰 쓰기) → 스캔 잠금 화면과 같은 TagPickerSheet(context=review).
- * - 숫자 → 무제한 전환(리뷰 작성 후 복귀) = 마지막 숫자로 폭죽 1회 후 사라짐.
+ * - 숫자 → 해금(리뷰 작성 후) = 마지막 숫자로 폭죽 1회 후 사라짐 — 시작은 홈이 보일 때(CountdownBadge). 축하 조건은
+ *   `unlocked === true` + **같은 회원**(remaining 누락·음수 → 'unlimited' 판별 불가 응답, 계정 전환은 축하 아님).
  */
 import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -44,13 +45,15 @@ export function HomeQuotaBadge() {
   const { data: me } = useMe();
   const model = FLAGS.countdownBadge ? quotaBadgeModel(me?.scanQuota, isGuest) : null;
 
-  // 숫자 → 무제한 전환 감지 = 렌더 중 이전값 비교(KB-603 — 값 키가 아니라 전이)
-  const unlockedNow = FLAGS.countdownBadge && !isGuest && me?.scanQuota?.remaining === 'unlimited';
-  const [prev, setPrev] = React.useState<QuotaBadgeModel | null>(model);
+  // 숫자 → 해금 전이 감지 = 렌더 중 이전값 비교(KB-603 — 값 키가 아니라 전이)
+  const memberId = me?.id ?? null;
+  const unlockedNow = FLAGS.countdownBadge && !isGuest && me?.scanQuota?.unlocked === true;
+  const [prev, setPrev] = React.useState<{ m: QuotaBadgeModel | null; id: string | null }>({ m: model, id: memberId });
   const [celebrating, setCelebrating] = React.useState<QuotaBadgeModel | null>(null);
-  if ((prev?.value ?? null) !== (model?.value ?? null) || prev?.state !== model?.state) {
-    setPrev(model);
-    if (prev && !model && unlockedNow) setCelebrating(prev);
+  if (prev.m?.value !== model?.value || prev.m?.state !== model?.state || prev.id !== memberId) {
+    setPrev({ m: model, id: memberId });
+    if (prev.id !== memberId) setCelebrating(null); // 계정 전환 = 진행 중 축하도 취소
+    else if (prev.m && !model && unlockedNow) setCelebrating(prev.m);
   }
 
   const [sheet, setSheet] = React.useState(false);

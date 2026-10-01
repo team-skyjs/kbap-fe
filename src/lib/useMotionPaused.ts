@@ -10,7 +10,8 @@ import { useFocusEffect } from 'expo-router';
  *  상수가 오기 전 null로 시작) === 'active'로 판정하면 자동 넘김이 영영 시작 안 할 수 있다. */
 const isForeground = (s: string | null | undefined) => s !== 'background' && s !== 'inactive';
 
-export function useMotionPaused(): boolean {
+/** 모션 판정 한 벌 — paused(반복·시작 보류)와 reduceMotion(null = 미확인)을 같은 출처에서. KB-680: 뱃지의 팝·폭죽도 이 값. */
+export function useMotionState(): { paused: boolean; reduceMotion: boolean | null } {
   const [focused, setFocused] = React.useState(true);
   const [active, setActive] = React.useState(isForeground(AppState.currentState));
   // Codex P2(8R): 동작 줄이기 설정은 **확인되기 전까지 켜진 것으로 본다**(null = 미확인 → 정지).
@@ -42,5 +43,9 @@ export function useMotionPaused(): boolean {
     };
   }, []);
 
-  return !focused || !active || reduceMotion !== false;
+  return { paused: !focused || !active || reduceMotion !== false, reduceMotion };
+}
+
+export function useMotionPaused(): boolean {
+  return useMotionState().paused;
 }

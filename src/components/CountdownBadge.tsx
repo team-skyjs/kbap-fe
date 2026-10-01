@@ -1,6 +1,9 @@
 /**
- * CountdownBadge (KB-680, P-432) — 불꽃 안에 큰 숫자 + 단위. **공용**: 횟수·시간 어느 카운트다운이든 호출부가
- * 값을 넣는다(뱃지는 쿼터·타이머를 모른다). 위치·노출 조건도 호출부 몫.
+ * CountdownBadge (KB-680, P-432) — 불꽃 안에 큰 숫자 + 단위. 호출부가 값을 넣는다(뱃지는 쿼터·타이머를 모른다).
+ * 위치·노출 조건도 호출부 몫.
+ * **계약(정직하게)**: 지금은 "드물게 줄어드는 작은 정수"(스캔 횟수 등)용이다. 값이 줄 때마다 팝·깜빡이 나서
+ * 매초 줄어드는 시간 카운트다운엔 맞지 않고, "2:05" 같은 표기도 못 넣는다 — 시간에 쓰려면 감소 모션 끄기 prop과
+ * 표시 문자열 prop이 필요하다(사용처가 생길 때 추가). 세 자리까지는 숫자가 축소 맞춤으로 한 줄에 들어간다.
  * 스펙 = spec specs/001-personalized-menu-mvp/countdown-badge-2026-10-02.md (시안 D-21 전 프로토타입).
  *
  * - 크기 고정(BADGE_W×BADGE_H) — 글자 배율·단위 길이가 바뀌어도 프레임 불변(단위는 1줄 + 축소 맞춤).
@@ -14,7 +17,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -23,7 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { FlameShape } from '@/components/FlameShape';
-import { useMotionPaused } from '@/lib/useMotionPaused';
+import { useMotionState } from '@/lib/useMotionPaused';
 import { spring } from '@/lib/motion';
 import { color as C, font, shadow, type as type_ } from '@/lib/theme';
 
@@ -47,8 +49,9 @@ export interface CountdownBadgeProps {
 }
 
 export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = false, onCelebrateEnd, accessibilityLabel, testID = 'countdown-badge' }: CountdownBadgeProps) {
-  const paused = useMotionPaused();
-  const reduced = useReducedMotion();
+  // 판정 한 벌(useMotionState) — paused = blur·background·동작 줄이기(미확인 포함), reduceMotion = 확정값
+  const { paused, reduceMotion } = useMotionState();
+  const still = reduceMotion !== false; // 동작 줄이기 켜짐·미확인 = 팝·폭죽 없음
   const pulse = useSharedValue(1);
   const pop = useSharedValue(1);
   const flicker = useSharedValue(1);
@@ -65,32 +68,39 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
     return () => cancelAnimation(pulse);
   }, [paused, state, celebrate, pulse]);
 
-  // 값 감소 = 숫자 팝 + 불꽃 1회 깜빡(증가·첫 렌더는 무반응)
+  // 값 감소 = 숫자 팝 + 불꽃 1회 깜빡(증가·첫 렌더는 무반응). 화면이 가려진 동안(스캔 화면) 줄었으면 보일 때 1회
   const prevValue = React.useRef(value);
+  const pendingPop = React.useRef(false);
   React.useEffect(() => {
-    const dropped = value < prevValue.current;
+    if (value < prevValue.current) pendingPop.current = true;
     prevValue.current = value;
-    if (!dropped || reduced) return;
+    if (!pendingPop.current || paused) return;
+    pendingPop.current = false;
+    if (still) return;
     pop.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, spring.pop));
     flicker.value = withSequence(withTiming(0.45, { duration: 120 }), withTiming(1, { duration: 200 }));
-  }, [value, reduced, pop, flicker]);
+  }, [value, paused, still, pop, flicker]);
 
   // 해제 축하 — 폭죽(선언형 withTiming, 콜백 없음) 후 퇴장은 JS 타이머. 언마운트·재트리거·동작 줄이기 전환 = cleanup으로 정리
   const endRef = React.useRef(onCelebrateEnd);
   React.useLayoutEffect(() => {
     endRef.current = onCelebrateEnd;
   });
+  // 시작은 **화면이 보일 때**(공부 #221 지적 1): 무제한 전환은 리뷰 작성 화면에서 일어나 홈이 가려진 채 감지된다 —
+  // paused(blur·background) 동안은 마지막 숫자를 든 채 대기, 보이면 1회. blur·background로 중단되면 cleanup이 타이머 해제 → 다시 보일 때 처음부터.
+  const showBurst = celebrate && !paused && reduceMotion === false;
   React.useEffect(() => {
     if (!celebrate) return;
-    if (reduced) {
+    if (reduceMotion === true) {
       endRef.current?.(); // 동작 줄이기 = 폭죽 없이 즉시 종료
       return;
     }
+    if (paused) return;
     burst.value = 0;
     burst.value = withTiming(1, { duration: BURST_MS });
     const timer = setTimeout(() => endRef.current?.(), CELEBRATE_END_MS);
     return () => clearTimeout(timer);
-  }, [celebrate, reduced, burst]);
+  }, [celebrate, paused, reduceMotion, burst]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value * (1 + burst.value * 0.15) }],
@@ -111,7 +121,7 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
         <FlameShape width={BADGE_W} height={BADGE_H} state={state} />
         <View style={styles.label} pointerEvents="none">
           <Animated.View style={numStyle}>
-            <Text style={styles.num} numberOfLines={1} testID={`${testID}-value`}>
+            <Text style={styles.num} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} testID={`${testID}-value`}>
               {value}
             </Text>
           </Animated.View>
@@ -120,7 +130,7 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
           </Text>
         </View>
       </Animated.View>
-      {celebrate && !reduced && Array.from({ length: PARTICLES }, (_, i) => <Particle key={i} index={i} progress={burst} />)}
+      {showBurst && Array.from({ length: PARTICLES }, (_, i) => <Particle key={i} index={i} progress={burst} />)}
     </Pressable>
   );
 }
@@ -144,7 +154,7 @@ const styles = StyleSheet.create({
   root: { width: BADGE_W, height: BADGE_H, alignItems: 'center', justifyContent: 'center' },
   body: { width: BADGE_W, height: BADGE_H, ...shadow.sh2 },
   label: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', paddingTop: 14, paddingHorizontal: 10 },
-  num: { fontFamily: font.display, fontSize: type_.sectionTitle.fontSize, color: C.surface, includeFontPadding: false },
+  num: { maxWidth: BADGE_W - 20, fontFamily: font.display, fontSize: type_.sectionTitle.fontSize, color: C.surface, includeFontPadding: false },
   unit: { fontFamily: font.bodyBold, fontSize: type_.tabLabel.fontSize, color: C.surface, maxWidth: BADGE_W - 20 },
   particle: { position: 'absolute', width: 6, height: 6, borderRadius: 3, top: BADGE_H / 2 - 3, left: BADGE_W / 2 - 3 },
 });
