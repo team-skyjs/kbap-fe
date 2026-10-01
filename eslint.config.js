@@ -11,6 +11,8 @@ const EMOJI_ANY = "\\p{Extended_Pictographic}|\\u20E3";
 // 승인 예외는 **글자별로 따로** 연다(Codex #215 2R·3R) — 각 예외의 정의된 용도를 그리는 전용 컴포넌트에서만.
 // 큰 화면 파일(온보딩·음식 상세·프로필 수정)은 넣지 않는다 — 넣으면 그 화면의 아무 JSX에서나 통과한다.
 // ① 맵기 🌶️(U+1F336) = 맵기 표시 컴포넌트. 👶는 여기서도 에러(슬라이더·고추 렌더러는 HOT/EXTREME까지 그린다).
+//    기준 차이: 🌶️도 지금 사용처는 0(SVG)이지만 헌법이 "맵기 표시"에 승인한 글자이고 두 컴포넌트가 바로 그 맵기 표시
+//    전용이라 미리 열어 둔다. 👶는 승인 범위가 특정 배지 하나라 그 컴포넌트가 생길 때 연다.
 const EMOJI_EXCEPT_PEPPER = "(?!\\u{1F336})\\p{Extended_Pictographic}|\\u20E3";
 const PEPPER_SURFACES = [
   "src/components/SpicePeppers.tsx",
@@ -18,7 +20,7 @@ const PEPPER_SURFACES = [
 ];
 // ② 아기 👶(U+1F476): 예외 **없음**(지금 쓰는 자리 0 — 배지 컴포넌트 없음·kidsBadge 키 미사용). 👶는 NONE/MILD
 // "아이도 먹을 수 있음" 배지 전용 컴포넌트를 만들 때 그 파일 하나만 예외 목록에 추가한다(헌법 v2.3.1 승인 범위).
-const EMOJI_MSG = "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji. 승인 예외(맵기 🌶️·아기 👶)는 맵기 표면에서만.";
+const EMOJI_MSG = "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji. 승인 예외는 맵기 🌶️만(SpicePeppers·SpiceLevelSlider). 👶는 NONE/MILD 배지 전용 컴포넌트를 만들 때 config에 추가.";
 const HANGUL_MSG = "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.";
 function uiCopyRules(emoji) {
   return [
