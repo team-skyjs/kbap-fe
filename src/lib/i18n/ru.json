@@ -411,6 +411,11 @@
     "extrasService": "Сервис",
     "extrasTaste": "Вкус"
   },
+  "translation": {
+    "translate": "Перевести",
+    "seeOriginal": "Показать оригинал",
+    "translateFailed": "Не удалось перевести. Попробуйте ещё раз."
+  },
   "reviews": {
     "headerTitle": "Отзывы",
     "subtitle": "отзывов: {{count}}",

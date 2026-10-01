@@ -405,6 +405,11 @@
     "extrasService": "接客",
     "extrasTaste": "味"
   },
+  "translation": {
+    "translate": "翻訳する",
+    "seeOriginal": "原文を見る",
+    "translateFailed": "翻訳できませんでした。もう一度お試しください。"
+  },
   "reviews": {
     "headerTitle": "レビュー",
     "subtitle": "{{count}} 件のレビュー",

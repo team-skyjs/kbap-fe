@@ -78,12 +78,12 @@ describe('ExpandToggle — 보이는 타깃', () => {
 describe('리뷰 셀 — 사진 위·본문 아래(4표면)', () => {
   it('FeedCard(홈 피드·상세 프리뷰·프로필 내 리뷰) = 사진 → 본문', () => {
     const src = read('src/features/review/FeedCard.tsx');
-    expect(src.indexOf('<ReviewPhotoStrip')).toBeLessThan(src.indexOf('<ExpandableBody'));
+    expect(src.indexOf('<ReviewPhotoStrip')).toBeLessThan(src.indexOf('<ReviewBody') /* KB-679: 본문 = 공용 ReviewBody(내부가 ExpandableBody) */);
   });
 
   it('음식 리뷰 목록 = 사진 → 본문', () => {
     const src = read('src/app/food/[id]/reviews.tsx');
-    expect(src.indexOf('<ReviewPhotoStrip')).toBeLessThan(src.indexOf('<ExpandableBody'));
+    expect(src.indexOf('<ReviewPhotoStrip')).toBeLessThan(src.indexOf('<ReviewBody') /* KB-679: 본문 = 공용 ReviewBody(내부가 ExpandableBody) */);
   });
 
   it('토글 렌더는 공용 컴포넌트 경유 — 표면이 seeMore를 직접 그리지 않는다', () => {

@@ -9,6 +9,8 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
 // P-348 ⑥: PhotoViewer(RNGH·reanimated) — jest 네이티브 부재 통짜 목
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   const chain = () => {

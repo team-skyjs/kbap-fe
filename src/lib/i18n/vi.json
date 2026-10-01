@@ -405,6 +405,11 @@
     "extrasService": "Thái độ phục vụ",
     "extrasTaste": "Hương vị"
   },
+  "translation": {
+    "translate": "Dịch",
+    "seeOriginal": "Xem bản gốc",
+    "translateFailed": "Không thể dịch. Vui lòng thử lại."
+  },
   "reviews": {
     "headerTitle": "Đánh giá",
     "subtitle": "{{count}} đánh giá",

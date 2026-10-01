@@ -81,7 +81,8 @@ jest.mock('@/lib/data/useFoods', () => ({
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useToggleReviewLike: () => ({ mutate: jest.fn() }), useDeleteReview: () => ({ mutate: jest.fn() }) }));
-jest.mock('@/lib/data/useReviewTranslation', () => ({ useReviewTranslation: () => ({ translate: jest.fn(), state: {} }) }));
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
 
 const mockRefetch = jest.fn();

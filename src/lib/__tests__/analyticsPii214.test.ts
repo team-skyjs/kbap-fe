@@ -99,7 +99,7 @@ describe('② ③ ④ 배선 소스 잠금 — 공용 1곳 원칙', () => {
     expect(sb).toContain('useSegments'); // 화면 식별 = 라우트 패턴(실 id 미포함)
     const parts = read('src/features/review/ReviewCellParts.tsx');
     expect(parts).toContain('EVENTS.review_helpful_toggle');
-    expect(read('src/lib/data/useReviewTranslation.ts')).toContain('EVENTS.review_translate_toggle');
+    expect(read('src/lib/data/useContentTranslation.ts')).toContain('EVENTS.review_translate_toggle'); // KB-679: 공용 번역 훅 한 곳
     // 소비 표면은 자체 배선 금지
     expect(read('src/features/community/ReviewFeed.tsx')).not.toContain('review_helpful_toggle');
     expect(read('src/app/food/[id]/reviews.tsx')).not.toContain('translate_toggle');

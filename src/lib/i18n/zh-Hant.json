@@ -405,6 +405,11 @@
     "extrasService": "服務態度",
     "extrasTaste": "味道"
   },
+  "translation": {
+    "translate": "翻譯",
+    "seeOriginal": "查看原文",
+    "translateFailed": "無法翻譯，請再試一次。"
+  },
   "reviews": {
     "headerTitle": "評論",
     "subtitle": "{{count}} 則評論",

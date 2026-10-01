@@ -15,7 +15,7 @@ import { color as C } from '@/lib/theme';
 import { CardPhoto, RankMedal, Star, IconChevron, IconFood, IconMore } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
 import { FlagEmoji } from '@/components/FlagEmoji';
-import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -103,7 +103,7 @@ export function FeedCard({
 
       {/* P-390(KB-578): 사진 위·본문 아래 — 4표면 동일 순서(예진 실기: 반대였다) */}
       <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} />
-      {!!review.body && <ExpandableBody body={review.body} t={t} style={styles.body} />}
+      <ReviewBody review={review} t={t} style={styles.body} />
 
       {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
       {showFood && (

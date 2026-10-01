@@ -67,11 +67,6 @@ export const FLAGS = {
    */
   reviewsLiveEnabled: true,
   /**
-   * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
-   * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
-   */
-  reviewTranslationEnabled: false,
-  /**
    * 시스템 카메라 경로 (P-137, 8/6 예진 A/B) — true면 스캔 탭 = 런처 화면 +
    * launchCameraAsync(네이티브 줌·가로·플래시). false = 현행 커스텀 인앱 카메라.
    * 비교 확정 전 — 커스텀 코드 삭제 금지.

@@ -7,6 +7,8 @@
  */
 const mockKb = { visible: true, listeners: [] as Array<(e?: unknown) => void>, dismiss: jest.fn() };
 // P-348 ⑥/P-355: PhotoViewer·시트 크롬(RNGH·reanimated 실모듈 체인) — 이 스위트는 헬퍼·소스 잠금만이라 표면 목
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('@/components/PhotoViewer', () => ({ PhotoViewer: () => null }));
 // P-390(KB-578): ExpandableBody가 공용 ExpandToggle → 아이콘(SVG)을 끌어온다 — 표면만 목
 jest.mock('react-native-svg', () => {
