@@ -8,7 +8,8 @@
  * - 요청은 **버튼을 눌렀을 때만**(자동 번역 0). 결과는 react-query 캐시(키 = 종류·id·언어) — 원문으로 돌렸다가
  *   다시 번역해도 재요청 0, 언어를 바꾸면 다른 키.
  * - 보기 상태(원문/번역)는 **카드 로컬 상태** — 서버가 아는 사실이 아니라 보기 설정이다.
- * - 실패 = 토스트(에러 변형) + 원문 유지. 실패는 캐시하지 않는다(다음 탭에서 다시 요청).
+ * - 실패(503·400 REVIEW-001·네트워크·빈 text) = 토스트(에러 변형) + 원문 유지. 실패는 캐시하지 않는다(다음 탭에서 다시 요청).
+ * - 캐시 키에 본문 해시 · 보기 상태는 "보고 있는 키" — 본문·언어가 바뀌면 원문으로 돌아가고 다음 탭에 재요청.
  */
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -35,11 +36,13 @@ export interface ContentTranslation {
   toggle: () => void;
 }
 
-export function useContentTranslation(targetType: TranslationTargetType, targetId: string): ContentTranslation {
+export function useContentTranslation(targetType: TranslationTargetType, targetId: string, text: string): ContentTranslation {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const lang = i18n?.language ?? 'en';
-  const queryKey = React.useMemo(() => ['translation', targetType, targetId, lang] as const, [targetType, targetId, lang]);
+  // #220 공부 ①: 키에 본문 해시 — 리뷰가 수정되면(누가 고쳤든) 다른 키 = 옛 번역 재사용 0, 다음 탭에 재요청
+  const queryKey = React.useMemo(() => ['translation', targetType, targetId, lang, hashText(text)] as const, [targetType, targetId, lang, text]);
+  const keyStr = queryKey.join('|');
   // 캐시 구독만(자동 요청 0) — 탭에서 fetchQuery로 채운다
   const { data } = useQuery({
     queryKey,
@@ -47,29 +50,46 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     enabled: false,
     staleTime: Infinity,
   });
-  const [showing, setShowing] = React.useState(false);
+  // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
+  const [shownKey, setShownKey] = React.useState<string | null>(null);
+  const showing = shownKey === keyStr && data != null;
   const [loading, setLoading] = React.useState(false);
+  const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
 
   const toggle = React.useCallback(() => {
     if (loading) return;
     if (showing) {
-      track(EVENTS.review_translate_toggle, { action: 'original', target: 'review' });
-      setShowing(false);
+      track(EVENTS.review_translate_toggle, { action: 'original', target });
+      setShownKey(null);
       return;
     }
-    track(EVENTS.review_translate_toggle, { action: 'translate', target: 'review' });
     if (data != null) {
-      setShowing(true); // 캐시 — 재요청 0
+      track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'ok' });
+      setShownKey(keyStr); // 캐시 — 재요청 0
       return;
     }
     setLoading(true);
     qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, retry: 0 })
-      .then(() => setShowing(true))
-      .catch(() => showTopToast(t('translation.translateFailed'), { error: true })) // 원문 유지
+      .then(() => {
+        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'ok' });
+        setShownKey(keyStr);
+      })
+      .catch(() => {
+        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'fail' });
+        showTopToast(t('translation.translateFailed'), { error: true }); // 원문 유지
+      })
       .finally(() => setLoading(false));
-  }, [data, loading, qc, queryKey, showing, t, targetId, targetType]);
+  }, [data, keyStr, loading, qc, queryKey, showing, t, target, targetId, targetType]);
 
-  return { translatedText: showing && data != null ? data : null, showingTranslated: showing && data != null, loading, toggle };
+  return { translatedText: showing ? data : null, showingTranslated: showing, loading, toggle };
+}
+
+/** 키용 짧은 해시(djb2) — 본문 원문을 키에 통째로 싣지 않으려는 것뿐, 보안 용도 아님.
+ *  ponytail: 충돌 시 최악 = 다른 본문의 번역 재사용(같은 리뷰·같은 언어 안에서만) — 32비트라 실사용 무시 가능. */
+function hashText(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
 }
 
 async function fetchTranslation(targetType: TranslationTargetType, targetId: string): Promise<string> {
@@ -78,5 +98,7 @@ async function fetchTranslation(targetType: TranslationTargetType, targetId: str
     targetType,
     targetId: Number.isFinite(id) ? id : targetId,
   });
-  return res.text ?? '';
+  // #220 공부 메모 ③: 빈 결과 = 실패(throw → 미캐시·토스트) — 빈 본문 + See original 방지
+  if (!res?.text?.trim()) throw new Error('empty translation');
+  return res.text;
 }

@@ -39,6 +39,12 @@ type TFn = (k: string, o?: Record<string, unknown>) => string;
 export function ExpandableBody({ body, t, style, footerStart }: { body: string; t: TFn; style?: object; footerStart?: React.ReactNode }) {
   const [expanded, setExpanded] = React.useState(false);
   const [clamped, setClamped] = React.useState(false);
+  // #220 공부 메모 ①: 본문이 바뀌면(원문↔번역·수정) 접힌 상태로 돌아가 줄 수를 다시 잰다 — 렌더 중 전환 비교(KB-603)
+  const [prevBody, setPrevBody] = React.useState(body);
+  if (body !== prevBody) {
+    setPrevBody(body);
+    setExpanded(false);
+  }
   const toggle = (clamped || expanded) && (
     <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} testID="body-toggle" />
   );
@@ -48,7 +54,7 @@ export function ExpandableBody({ body, t, style, footerStart }: { body: string; 
         style={[styles.body, style]}
         numberOfLines={expanded ? undefined : 3}
         onTextLayout={(e) => {
-          if (!expanded && e.nativeEvent.lines.length >= 3) setClamped(true);
+          if (!expanded) setClamped(e.nativeEvent.lines.length >= 3); // 접힌 상태에서 매번 판정(짧은 본문 복귀 시 See more 잔상 0)
         }}
       >
         {body}
@@ -70,8 +76,8 @@ export function ExpandableBody({ body, t, style, footerStart }: { body: string; 
  *  모두 이걸 쓴다(표면별 복붙 금지). 본문이 있으면 항상 번역 버튼(예진 10/2 — 언어 감지 없음), 누르면 본문이 번역문으로
  *  교체되고 버튼은 "See original". 빈 본문(사진·별점만) = 본문·버튼 둘 다 없음. */
 export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
-  const tx = useContentTranslation('REVIEW', review.id);
   const original = review.body?.trim() ? review.body : null;
+  const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   if (!original) return null;
   return (
     <ExpandableBody

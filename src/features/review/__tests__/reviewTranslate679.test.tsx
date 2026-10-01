@@ -30,14 +30,15 @@ jest.mock('expo-image', () => {
   return { Image: View };
 });
 jest.mock('expo-router', () => ({ useSegments: () => [], useRouter: () => ({ push: jest.fn() }) }));
-jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'ko' } }) }));
+let mockLang = 'ko'; // #220 공부 ②: 앱 언어 전환 시나리오용 가변
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: mockLang } }) }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'ko', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false, useSession: () => null }));
 const mockPost = jest.fn();
 jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client') as Record<string, unknown>;
-  return { ...actual, api: { get: jest.fn(), post: (...a: unknown[]) => mockPost(...a), patch: jest.fn(), del: jest.fn() }, apiLang: () => 'ko' };
+  return { ...actual, api: { get: jest.fn(), post: (...a: unknown[]) => mockPost(...a), patch: jest.fn(), del: jest.fn() }, apiLang: () => mockLang };
 });
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
@@ -50,18 +51,20 @@ const REVIEW = (over: Partial<Review> = {}): Review =>
   ({ id: '53', foodId: '7', rating: 5, body: 'Really good soup', createdAt: '2026-10-01', authorNationality: 'US', author: { nickname: 'Amy', memberId: 9 }, ...over }) as Review;
 
 let qc: QueryClient;
+const card = (review: Review) => (
+  <QueryClientProvider client={qc}>
+    <FeedCard review={review} t={(k) => k} mine={false} onOpenFood={jest.fn()} onGuestHelpful={jest.fn()} onMore={jest.fn()} />
+  </QueryClientProvider>
+);
 function render(review: Review): ReactTestRenderer {
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   let tree!: ReactTestRenderer;
   act(() => {
-    tree = renderer.create(
-      <QueryClientProvider client={qc}>
-        <FeedCard review={review} t={(k) => k} mine={false} onOpenFood={jest.fn()} onGuestHelpful={jest.fn()} onMore={jest.fn()} />
-      </QueryClientProvider>,
-    );
+    tree = renderer.create(card(review));
   });
   return tree;
 }
+const rerender = (tree: ReactTestRenderer, review: Review) => act(() => tree.update(card(review)));
 const btn = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'translate-btn' && typeof n.props.onPress === 'function')[0];
 const out = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
 const press = async (t: ReactTestRenderer) => {
@@ -72,6 +75,7 @@ const press = async (t: ReactTestRenderer) => {
 };
 
 beforeEach(() => {
+  mockLang = 'ko';
   mockPost.mockReset();
   mockToast.mockReset();
 });
@@ -132,6 +136,64 @@ it('실패는 캐시하지 않는다 — 실패 뒤 다시 누르면 재요청',
   await press(t);
   expect(mockPost).toHaveBeenCalledTimes(2);
   expect(out(t)).toContain('정말 맛있는 국');
+});
+
+it('#220 공부 ①: 번역 보기 중 리뷰 본문이 바뀌면 → 새 원문이 보이고, 다시 번역하면 요청이 나간다(옛 번역 재사용 0)', async () => {
+  mockPost
+    .mockResolvedValueOnce({ targetType: 'REVIEW', targetId: 53, language: 'ko', text: '정말 맛있는 국' })
+    .mockResolvedValueOnce({ targetType: 'REVIEW', targetId: 53, language: 'ko', text: '조금 짠 국' });
+  const t = render(REVIEW());
+  await press(t);
+  expect(out(t)).toContain('정말 맛있는 국');
+  rerender(t, REVIEW({ body: 'A bit salty soup' })); // 작성자가 수정 → 목록 재조회
+  expect(out(t)).toContain('A bit salty soup');
+  expect(out(t)).not.toContain('정말 맛있는 국');
+  expect(out(t)).toContain('translation.translate');
+  await press(t);
+  expect(mockPost).toHaveBeenCalledTimes(2);
+  expect(out(t)).toContain('조금 짠 국');
+});
+
+it('#220 공부 ②: 번역 보기 → 앱 언어 변경 → 원문 · 한 번 탭 = 요청 1회 + 번역 표시(첫 탭이 먹히지 않음)', async () => {
+  mockPost
+    .mockResolvedValueOnce({ targetType: 'REVIEW', targetId: 53, language: 'ko', text: '정말 맛있는 국' })
+    .mockResolvedValueOnce({ targetType: 'REVIEW', targetId: 53, language: 'ja', text: '本当においしいスープ' });
+  const t = render(REVIEW());
+  await press(t);
+  mockLang = 'ja';
+  rerender(t, REVIEW());
+  expect(out(t)).toContain('Really good soup');
+  expect(out(t)).toContain('translation.translate');
+  await press(t);
+  expect(mockPost).toHaveBeenCalledTimes(2);
+  expect(mockPost).toHaveBeenLastCalledWith('/api/translations?lang=ja', { targetType: 'REVIEW', targetId: 53 });
+  expect(out(t)).toContain('本当においしいスープ');
+});
+
+it('#220 공부 메모 ③: 서버가 빈 text → 실패 처리(토스트 · 원문 · 미캐시 → 다음 탭 재요청)', async () => {
+  mockPost.mockResolvedValueOnce({ targetType: 'REVIEW', targetId: 53, language: 'ko', text: '  ' }).mockResolvedValueOnce({ targetType: 'REVIEW', targetId: 53, language: 'ko', text: '정말 맛있는 국' });
+  const t = render(REVIEW());
+  await press(t);
+  expect(mockToast).toHaveBeenCalledWith('translation.translateFailed', { error: true });
+  expect(out(t)).toContain('Really good soup');
+  expect(out(t)).not.toContain('translation.seeOriginal');
+  await press(t);
+  expect(mockPost).toHaveBeenCalledTimes(2);
+  expect(out(t)).toContain('정말 맛있는 국');
+});
+
+it('#220 공부 메모 ①: 긴 본문(See more) → 짧은 본문으로 바뀌면 펼침 토글 잔상 0', () => {
+  const t = render(REVIEW());
+  const layout = (n: number) =>
+    act(() => {
+      t.root.findAll((x) => typeof x.props?.onTextLayout === 'function')[0].props.onTextLayout({ nativeEvent: { lines: Array(n).fill({}) } });
+    });
+  const hasToggle = () => t.root.findAll((x) => x.props?.testID === 'body-toggle').length > 0;
+  layout(5);
+  expect(hasToggle()).toBe(true);
+  rerender(t, REVIEW({ body: 'Short' }));
+  layout(1);
+  expect(hasToggle()).toBe(false);
 });
 
 it('표면 경유 소스 잠금 — FeedCard·음식별 전체 리뷰 모두 공용 ReviewBody(본문 직접 렌더·옛 번역 훅 0)', () => {
