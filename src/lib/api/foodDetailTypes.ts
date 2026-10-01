@@ -28,6 +28,9 @@ export interface IngredientWire {
 export interface AvoidedIngredientWire {
   code: string;
   riskStatus: BeRiskStatus;
+  /** KB-599(서버 KB-598 #281): 회원이 **직접 고른** 회피 code — 직접 매치면 자기 자신(`code`와 같음),
+   *  함의 매치(새우 회피 → 새우젓)면 그 상위 code. 구 서버는 부재. */
+  matchedBy?: string | null;
 }
 
 /** P-107(KB-275, BE #121): 평점 단위 — 계약상 리뷰 없으면 0.0·0 (null 없음). */

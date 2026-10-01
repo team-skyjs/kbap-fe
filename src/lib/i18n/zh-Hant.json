@@ -540,6 +540,7 @@
     "noIngredientData": "尚無食材資料",
     "noIngredientBody": "尚無評分、描述或食材資料。我們已記錄這道菜以改善目錄。",
     "ofShops": "約 {{pct}}% 的店家",
+    "avoidImplied": "包含在您迴避的{{ingredient}}中",
     "writeReview": "撰寫評論",
     "spiceAboveYou": "比你能接受的更辣",
     "addProfileHint": "新增你的飲食限制以查看個人化評估。",

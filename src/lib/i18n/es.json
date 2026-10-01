@@ -540,6 +540,7 @@
     "noIngredientData": "Aún no hay datos de ingredientes",
     "noIngredientBody": "Aún no hay valoración, descripción ni datos de ingredientes. Hemos registrado este plato para mejorar el catálogo.",
     "ofShops": "~{{pct}}% de los locales",
+    "avoidImplied": "Incluido en tu evitación de {{ingredient}}",
     "writeReview": "Escribir una reseña",
     "spiceAboveYou": "más picante de lo que toleras",
     "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado.",

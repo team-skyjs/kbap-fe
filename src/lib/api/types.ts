@@ -115,6 +115,9 @@ export interface IngredientRisk {
   percentage: number | null;
   risk: RiskState;
   note: string | null; // e.g. "store-dependent"
+  /** KB-599: 이 재료가 회원의 **다른** 회피 code에 포함돼 걸렸으면 그 code(새우 회피 → 새우젓이면 'SHRIMP').
+   *  직접 매치·matchedBy 부재(구 서버)·비회원 = 없음. 화면은 카탈로그에 있는 code일 때만 근거 문구를 그린다. */
+  impliedBy?: string | null;
 }
 
 /** Traceable basis for a risk verdict (FR-012). */

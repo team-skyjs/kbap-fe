@@ -695,6 +695,7 @@
     "noIngredientData": "No ingredient data yet",
     "noIngredientBody": "No ingredient data yet. It's on our list to add.",
     "ofShops": "~{{pct}}% of shops",
+    "avoidImplied": "Included in your {{ingredient}} avoidance",
     "writeReview": "Write a review",
     "spiceAboveYou": "hotter than your taste",
     "addProfileHint": "Add your restrictions to see a personalized verdict.",

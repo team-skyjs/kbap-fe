@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
+import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
 import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
@@ -494,6 +495,12 @@ function Registered({
                       <IngChainImage code={ing.code} imageUrl={cat.imageUrl(ing.code)} size={48} iconSize={28} />
                     </View>
                     <Text style={styles.ingTileName} numberOfLines={1}>{ing.name}</Text>
+                    {/* KB-599: 함의 매치 근거(새우 회피 → 새우젓) — 회원·카탈로그 code일 때만, 2줄 클램프. 뒤에 % 줄이 오면 하단 여백은 그 줄이 맡는다 */}
+                    {!guest && ing.impliedBy && isCatalogIngredient(ing.impliedBy) && (
+                      <Text style={ing.percentage != null ? [styles.ingTileSub, { marginBottom: 0 }] : styles.ingTileSub} numberOfLines={2} testID={`ing-implied-${ing.code}`}>
+                        {t('detail.avoidImplied', { ingredient: ingredientLabel(ing.impliedBy) })}
+                      </Text>
+                    )}
                     {ing.percentage != null && (
                       <Text style={styles.ingTileSub} numberOfLines={1}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
                     )}

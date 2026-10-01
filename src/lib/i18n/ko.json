@@ -698,6 +698,7 @@
     "noIngredientData": "아직 재료 데이터가 없어요",
     "noIngredientBody": "평점, 설명, 재료 데이터가 아직 없어요. 카탈로그 개선을 위해 이 요리를 기록해 뒀어요.",
     "ofShops": "가게의 약 {{pct}}%",
+    "avoidImplied": "{{ingredient}} 회피에 포함",
     "writeReview": "리뷰 쓰기",
     "spiceAboveYou": "내 기준보다 매워요",
     "addProfileHint": "제한을 등록하면 나만의 평가를 볼 수 있어요.",

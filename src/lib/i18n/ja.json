@@ -540,6 +540,7 @@
     "noIngredientData": "まだ食材データがありません",
     "noIngredientBody": "評価・説明・食材データはまだありません。カタログ改善のためこの料理を記録しました。",
     "ofShops": "店舗の約{{pct}}%",
+    "avoidImplied": "{{ingredient}}の回避に含まれます",
     "writeReview": "レビューを書く",
     "spiceAboveYou": "あなたの好みより辛い",
     "addProfileHint": "食事制限を追加すると、あなた専用の判定が表示されます。",
