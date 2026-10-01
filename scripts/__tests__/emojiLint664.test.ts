@@ -5,9 +5,11 @@
  */
 import { execFileSync } from 'node:child_process';
 
-const SPICE_FILE = 'src/components/SpicePeppers.tsx'; // 맵기 표면(승인 예외 허용)
-const SPICE_ROUTE = 'src/app/food/[id]/index.tsx'; // 대괄호 경로도 glob이 잡는지
+const SPICE_FILE = 'src/components/SpicePeppers.tsx'; // 맵기 전용 컴포넌트(승인 예외 허용)
+const SPICE_SLIDER = 'src/components/SpiceLevelSlider.tsx';
 const OTHER_FILE = 'src/components/StateBlock.tsx'; // 그 외 화면
+// Codex #215 2R: 맵기를 **일부** 그리는 큰 화면 — 예외 밖(화면 아무 JSX에서나 통과하면 안 됨)
+const BIG_SCREENS = ['src/app/onboarding/index.tsx', 'src/app/food/[id]/index.tsx', 'src/app/profile/edit.tsx'];
 
 type Msg = { ruleId: string | null; message: string };
 function lint(file: string, code: string): Msg[] {
@@ -31,10 +33,15 @@ describe.each([
   ['JSX 텍스트', jsxText],
   ['템플릿 리터럴', jsxTemplate],
 ])('%s', (_label, wrap) => {
-  it('맵기 표면: 🌶️(VS16 포함)·👶 = 통과', () => {
+  it('맵기 전용 컴포넌트: 🌶️(VS16 포함)·👶 = 통과', () => {
     expect(emojiErrors(SPICE_FILE, wrap('\u{1F336}\u{FE0F}'))).toHaveLength(0);
     expect(emojiErrors(SPICE_FILE, wrap('\u{1F476}'))).toHaveLength(0);
-    expect(emojiErrors(SPICE_ROUTE, wrap('\u{1F336}'))).toHaveLength(0);
+    expect(emojiErrors(SPICE_SLIDER, wrap('\u{1F336}'))).toHaveLength(0);
+  });
+
+  it.each(BIG_SCREENS)('큰 화면 %s: 🌶️·👶도 에러(전용 컴포넌트로 빼야 함)', (file) => {
+    expect(emojiErrors(file, wrap('\u{1F336}'))).toHaveLength(1);
+    expect(emojiErrors(file, wrap('\u{1F476}'))).toHaveLength(1);
   });
 
   it('맵기 표면이어도 그 밖의 이모지·keycap = 에러', () => {
