@@ -87,13 +87,19 @@ function adaptReviewSummary(wire: FoodDetailWire): Pick<FoodDetail, 'overall' | 
   };
 }
 
+/** KB-599: 서버 `matchedBy`(회원이 직접 고른 code) → 함의 근거 code. 직접 매치(자기 자신)·부재·빈 값 = null. */
+export function impliedByOf(matchedBy: string | null | undefined, code: string | null | undefined): string | null {
+  if (!matchedBy || !code || matchedBy === code) return null;
+  return matchedBy;
+}
+
 export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetail {
   // P-239: 신스키마 재료 마크 = avoidedIngredients(회원 겹침) 클라 조인.
   // 배열 = 회원 신스키마(미겹침 = 서버 의미상 SAFE — 구계약의 재료별 SAFE와 동일 정보량),
   // null/부재 = 비회원 신스키마(판정 자체 없음 → unable, 게스트 렌더는 마크 슬롯 미렌더)
   // 또는 구스키마(재료 내 riskStatus — prod 폴백 경로가 우선 처리).
   const avoidedMap = Array.isArray(wire.avoidedIngredients)
-    ? new Map(wire.avoidedIngredients.map((a) => [a.code, a.riskStatus]))
+    ? new Map(wire.avoidedIngredients.map((a) => [a.code, a]))
     : null;
   const ingredients: IngredientRisk[] = (wire.ingredients ?? []).map((ing, i) => ({
     // 신스키마 = 실코드(81종 — 스캔 v1 폴백 조인·owner 파라미터 정확도↑),
@@ -105,9 +111,11 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
       ing.riskStatus != null
         ? mapRisk(ing.riskStatus) // 구스키마(prod) — 기존 경로 무변
         : avoidedMap
-          ? mapRisk(avoidedMap.get(ing.code ?? '') ?? 'SAFE') // 회원 조인 — 겹침만 위험 마크
+          ? mapRisk(avoidedMap.get(ing.code ?? '')?.riskStatus ?? 'SAFE') // 회원 조인 — 겹침만 위험 마크
           : 'unable', // 비회원 — 판정 없음(마크 미렌더)
     note: null,
+    // KB-599: 함의 매치 근거 — matchedBy가 재료 자신과 다를 때만(직접 매치·부재 = 없음)
+    impliedBy: impliedByOf(avoidedMap?.get(ing.code ?? '')?.matchedBy, ing.code),
   }));
 
   // Unregistered ⇒ the "Unable to assess" screen (FR-033). A dish the BE can't

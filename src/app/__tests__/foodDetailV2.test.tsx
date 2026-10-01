@@ -756,3 +756,36 @@ describe('KB-626 상세 — 어느 원천의 거부든 신호 하나로 즉시 �
     expect(byId(tree, 'detail-nat-error').length).toBeGreaterThan(0); // 기존 P-323 ⑤ 그대로
   });
 });
+
+/* KB-599 — 함의 회피 근거 문구("Included in your {재료} avoidance"). 서버 matchedBy가 재료 자신과 다르면
+   재료 타일 이름 아래 1줄(2줄 클램프). 직접 매치·카탈로그 밖 code·비회원 = 생략. */
+describe('KB-599 재료 타일 — 함의 회피 근거 문구', () => {
+  const withIngs = (ings: FoodDetail['ingredients']) =>
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('danger', { ingredients: ings }), isLoading: false, error: null, refetch: jest.fn() });
+  const implied = (tree: ReactTestRenderer, code: string) => byId(tree, `ing-implied-${code}`);
+
+  it('다른 code로 매치(SHRIMP 회피 → 새우젓) = 문구 1줄(2줄 클램프) · 키 avoidImplied', () => {
+    withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'SHRIMP' }]);
+    const tree = render(<FoodDetailScreen />);
+    const node = implied(tree, 'SALTED_SHRIMP');
+    expect(node.length).toBeGreaterThan(0);
+    expect(node[0].props.numberOfLines).toBe(2);
+    expect(flat(tree)).toContain('detail.avoidImplied');
+  });
+
+  it('직접 매치(impliedBy 없음) = 문구 없음', () => {
+    withIngs([{ code: 'SHRIMP', name: 'Shrimp', percentage: 30, risk: 'danger', note: null, impliedBy: null }]);
+    expect(implied(render(<FoodDetailScreen />), 'SHRIMP')).toHaveLength(0);
+  });
+
+  it('카탈로그에 없는 code = 생략(구 서버·신규 code 호환)', () => {
+    withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'NOT_A_CATALOG_CODE' }]);
+    expect(implied(render(<FoodDetailScreen />), 'SALTED_SHRIMP')).toHaveLength(0);
+  });
+
+  it('비회원 = 생략(판정 마크 자체가 없다)', () => {
+    mockIsGuest.mockReturnValue(true);
+    withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'SHRIMP' }]);
+    expect(implied(render(<FoodDetailScreen />), 'SALTED_SHRIMP')).toHaveLength(0);
+  });
+});

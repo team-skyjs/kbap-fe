@@ -540,6 +540,7 @@
     "noIngredientData": "Belum ada data bahan",
     "noIngredientBody": "Belum ada penilaian, deskripsi, atau data bahan. Kami telah mencatat hidangan ini untuk memperbaiki katalog.",
     "ofShops": "~{{pct}}% dari toko",
+    "avoidImplied": "Termasuk dalam {{ingredient}} yang kamu hindari",
     "writeReview": "Tulis ulasan",
     "spiceAboveYou": "lebih pedas dari selera Anda",
     "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
