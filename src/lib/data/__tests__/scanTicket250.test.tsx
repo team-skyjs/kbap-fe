@@ -220,11 +220,13 @@ it('소스 잠금 — 잔여 횟수 계산·티켓 영구 저장·만료 클라 
   expect(scanSrc).toContain('/review` as Href');
 });
 
-it('KB-441(P-297): 선발급 MEMBER-003 = 촬영 전 즉시 표면화(be 스테이지·fail 미경유) 소스 잠금', () => {
+it('KB-441 → KB-670: 선발급 MEMBER-003 = 티켓만 버림 — 에러 화면·fail 미경유(세션 만료 흐름이 처리) 소스 잠금', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const src = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(src).toContain("setError({ stage: 'be', detail: 'preflight MEMBER-003' })");
+  const start = src.indexOf("code === 'MEMBER-003'");
+  const block = src.slice(start, src.indexOf('}', src.indexOf('preTicket.current = null;', start)));
+  expect(block).toContain('preTicket.current = null;');
+  expect(block).not.toContain('setError('); // 게스트 전환 뒤 남는 로컬 에러 화면 금지(동작은 scanQuotaPreNotice384 KB-670)
   // 계측 오염 0(P-255 원칙): 선발급 실패는 스캔 시도가 아니다 — fail() 경유 금지
-  const block = src.slice(src.indexOf("code === 'MEMBER-003'"), src.indexOf("setError({ stage: 'be'"));
   expect(block).not.toContain('fail(');
 });
