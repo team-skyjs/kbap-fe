@@ -10,8 +10,6 @@ import { QueryClient, QueryClientProvider, type InfiniteData } from '@tanstack/r
 const mockFlagState = { live: false };
 jest.mock('@/lib/flags', () => ({
   FLAGS: {
-    categoryUI: false,
-    onboardingTriedDishes: false,
     guestMode: true,
     reviewsEnabled: true,
     reviewTranslationEnabled: false,

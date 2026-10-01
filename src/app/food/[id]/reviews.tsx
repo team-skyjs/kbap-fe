@@ -39,7 +39,6 @@ import {
   IconCheck,
   IconChevron,
   IconChevronDown,
-  IconMapPin,
   IconMore,
   CardPhoto,
 } from '@/components';
@@ -433,13 +432,6 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
       )}
 
       {/* P-095: 장소 한 줄(핀+이름 — 태그 있을 때만) */}
-      {/* P-116: 장소 한 줄 — placeTagsEnabled 숨김(KB-274 대기) */}
-      {FLAGS.placeTagsEnabled && review.place && (
-        <View style={styles.placeLine}>
-          <IconMapPin size={12} color={C.ink3} />
-          <Text style={styles.placeLineText} numberOfLines={1}>{review.place.name}</Text>
-        </View>
-      )}
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
         <View style={styles.itemFootRight}>
@@ -522,8 +514,6 @@ const styles = StyleSheet.create({
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   itemPressed: { opacity: 0.75 },
-  placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  placeLineText: { fontFamily: font.body, fontSize: 12, color: C.ink2, flexShrink: 1 },
   itemFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemFootRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   likeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },

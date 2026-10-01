@@ -28,7 +28,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
-import { FLAGS } from '@/lib/flags';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, MedalEmblem, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
@@ -48,6 +47,11 @@ const COUNTER_SHOW = 1800;
 const COUNTER_WARN = 1950;
 const PHOTO_MAX = 4;
 const FOOD_TAG_MAX = 3;
+
+/** P-142 → KB-674: 커뮤니티 글 장소 태그 = **서버 계약 부재**(어댑터가 placeTag를 전송하지 않는다 — community/adapter postBody).
+ *  예전엔 리뷰 장소 줄과 함께 `FLAGS.placeTagsEnabled`에 묶여 있었다 — 그 플래그는 소비처가 사라져 삭제했고,
+ *  이 행은 사유가 그대로라 사유 이름을 단 상수로 분리했다. 계약 배포 시 true + 어댑터 배선. */
+const COMMUNITY_POST_PLACE_CONTRACT = false;
 
 export default function CommunityCompose() {
   const router = useRouter();
@@ -237,8 +241,8 @@ export default function CommunityCompose() {
             chips={foodTags.map((f) => ({ key: f.foodId, label: f.name, onRemove: () => setFoodTags((cur) => cur.filter((x) => x.foodId !== f.foodId)) }))}
             onPress={() => setTagSheet('food')}
           />
-          {/* P-142: 장소 태그 = 계약 부재(foodTags만) — placeTagsEnabled로 게이트(KB-274 복원 시 재개) */}
-          {FLAGS.placeTagsEnabled && (
+          {/* P-142: 장소 태그 = 계약 부재(foodTags만) — COMMUNITY_POST_PLACE_CONTRACT로 게이트 */}
+          {COMMUNITY_POST_PLACE_CONTRACT && (
             <TagRow
               iconTile={<View style={[styles.tagIconTile, { backgroundColor: accentTint }]}><IconMapPin size={15} color={C.accent} /></View>}
               placeholder={t('community.tagPlace')}
@@ -267,7 +271,7 @@ export default function CommunityCompose() {
             tinted={foodTags.length > 0 && foodTags.length < FOOD_TAG_MAX}
             onPress={() => setTagSheet('food')}
           />
-          {FLAGS.placeTagsEnabled && (
+          {COMMUNITY_POST_PLACE_CONTRACT && (
             <ToolBtn
               icon={<IconMapPin size={20} color={placeTag ? C.ink3 : C.ink2} />}
               tinted={false}
