@@ -40,6 +40,10 @@ jest.mock('@/lib/api/client', () => {
   const actual = jest.requireActual('@/lib/api/client') as Record<string, unknown>;
   return { ...actual, api: { get: jest.fn(), post: (...a: unknown[]) => mockPost(...a), patch: jest.fn(), del: jest.fn() }, apiLang: () => mockLang };
 });
+jest.mock('@/lib/flags', () => {
+  const a = jest.requireActual('@/lib/flags') as { FLAGS: Record<string, unknown> };
+  return { ...a, FLAGS: { ...a.FLAGS, contentTranslation: true } }; // 가변 사본 — off 케이스는 테스트 안에서 전환
+});
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 
@@ -194,6 +198,30 @@ it('#220 공부 메모 ①: 긴 본문(See more) → 짧은 본문으로 바뀌�
   rerender(t, REVIEW({ body: 'Short' }));
   layout(1);
   expect(hasToggle()).toBe(false);
+});
+
+it('Codex #220 P1: 플래그 contentTranslation = 진단 채널만(production·preview off — 서버 KB-678 prod 배포 전 깨진 버튼 금지)', () => {
+  const flagOn = (channel: string | null) => {
+    let v: unknown;
+    jest.isolateModules(() => {
+      jest.doMock('expo-updates', () => ({ channel }));
+      v = (jest.requireActual('@/lib/flags') as { FLAGS: { contentTranslation: boolean } }).FLAGS.contentTranslation;
+    });
+    return v;
+  };
+  expect([flagOn('production'), flagOn('preview'), flagOn('teamtest'), flagOn('teamtest-prod'), flagOn(null)]).toEqual([false, false, true, true, true]);
+});
+
+it('플래그 off = 버튼 없음 · 본문은 그대로', () => {
+  const flags = jest.requireMock('@/lib/flags') as { FLAGS: { contentTranslation: boolean } };
+  flags.FLAGS.contentTranslation = false;
+  try {
+    const t = render(REVIEW());
+    expect(btn(t)).toBeUndefined();
+    expect(out(t)).toContain('Really good soup');
+  } finally {
+    flags.FLAGS.contentTranslation = true;
+  }
 });
 
 it('표면 경유 소스 잠금 — FeedCard·음식별 전체 리뷰 모두 공용 ReviewBody(본문 직접 렌더·옛 번역 훅 0)', () => {

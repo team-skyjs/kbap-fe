@@ -84,7 +84,7 @@ export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style
       body={tx.translatedText ?? original}
       t={t}
       style={style}
-      footerStart={<TranslateButton showingTranslated={tx.showingTranslated} loading={tx.loading} onPress={tx.toggle} />}
+      footerStart={FLAGS.contentTranslation ? <TranslateButton showingTranslated={tx.showingTranslated} loading={tx.loading} onPress={tx.toggle} /> : undefined}
     />
   );
 }
