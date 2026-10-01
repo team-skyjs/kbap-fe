@@ -2,6 +2,35 @@
 const { defineConfig } = require('eslint/config');
 const expoConfig = require("eslint-config-expo/flat");
 
+// ── 헌법 UI 카피 규칙(KB-644 → KB-664) ─────────────────────────────────────
+// 헌법: UI 이모지 0(SVG만). 판정 = Unicode `Extended_Pictographic`(표준 이모지 속성 —
+// 🟢 같은 도형·⚠️ 포함). 국기(regional indicator 쌍)는 이 속성에 없어 자동 예외
+// (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
+// keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
+const EMOJI_ANY = "\\p{Extended_Pictographic}|\\u20E3";
+// 맵기 표면 전용: 🌶️(U+1F336)·👶(U+1F476)만 빼고 나머지 이모지는 그대로 잡는다(부정 전방탐색).
+const EMOJI_EXCEPT_SPICE = "(?![\\u{1F336}\\u{1F476}])\\p{Extended_Pictographic}|\\u20E3";
+// 승인 예외(맵기 🌶️·아기 👶)를 쓸 수 있는 파일 = 맵기를 그리는 표면.
+const SPICE_SURFACES = [
+  "src/components/SpicePeppers.tsx",
+  "src/components/SpiceLevelSlider.tsx",
+  "src/app/onboarding/index.tsx",
+  "src/app/food/[[]id]/index.tsx",
+  "src/app/profile/edit.tsx",
+];
+const EMOJI_MSG = "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji. 승인 예외(맵기 🌶️·아기 👶)는 맵기 표면에서만.";
+const HANGUL_MSG = "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.";
+function uiCopyRules(emoji) {
+  return [
+    { selector: `:matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/${emoji}/u]`, message: EMOJI_MSG },
+    { selector: `JSXExpressionContainer TemplateElement[value.raw=/${emoji}/u]`, message: EMOJI_MSG },
+    // 헌법: i18n 하드코딩 0. 주석·console.log(JSX 밖)는 AST 대상이 아니라 안 걸린다.
+    // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
+    { selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/[가-힣]/]", message: HANGUL_MSG },
+    { selector: "JSXExpressionContainer TemplateElement[value.raw=/[가-힣]/]", message: HANGUL_MSG },
+  ];
+}
+
 module.exports = defineConfig([
   expoConfig,
   {
@@ -50,34 +79,16 @@ module.exports = defineConfig([
     files: ["src/**/*.tsx"],
     // 테스트는 서버가 준 한국어 데이터(음식명·주소)를 픽스처로 JSX에 넣는다 — UI 카피가 아니다.
     ignores: ["**/__tests__/**"],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          // 헌법: UI 이모지 0(SVG만). 판정 = Unicode `Extended_Pictographic`(표준 이모지 속성 —
-          // 🟢 같은 도형·⚠️ 포함). 국기(regional indicator 쌍)는 이 속성에 없어 자동 예외
-          // (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
-          // keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
-          selector:
-            ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/\\p{Extended_Pictographic}|\\u20E3/u]",
-          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
-        },
-        {
-          selector: "JSXExpressionContainer TemplateElement[value.raw=/\\p{Extended_Pictographic}|\\u20E3/u]",
-          message: "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji.",
-        },
-        {
-          // 헌법: i18n 하드코딩 0. 주석·console.log(JSX 밖)는 AST 대상이 아니라 안 걸린다.
-          // 사장님 카드 한국어는 src/lib/order/orderCard.ts(.ts)라 이 규칙 밖.
-          selector: ":matches(JSXText, JSXAttribute > Literal, JSXExpressionContainer Literal)[value=/[가-힣]/]",
-          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
-        },
-        {
-          selector: "JSXExpressionContainer TemplateElement[value.raw=/[가-힣]/]",
-          message: "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.",
-        },
-      ],
-    },
+    rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_ANY)] },
+  },
+  {
+    // KB-664(Codex #213 P2): AGENTS.md L22의 **승인 예외 두 개**는 맵기 표면에서만 허용 —
+    // 맵기 🌶️(U+1F336) · 아기 👶(U+1F476, 맵기 NONE·MILD "아이도 먹을 수 있음" 배지 한정, 헌법 v2.3.1).
+    // 문맥 = 맵기를 그리는 파일 목록(아래). 그 밖에선 두 글자도 계속 에러, 이 파일들에서도 다른 이모지는 에러.
+    // flat config는 같은 룰을 블록 단위로 **교체**하므로 한글 규칙까지 그대로 다시 싣는다(uiCopyRules 공유).
+    files: SPICE_SURFACES,
+    ignores: ["**/__tests__/**"],
+    rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_EXCEPT_SPICE)] },
   },
   {
     // P-147: 회원 속성(provider·가입 상태·판정)은 서버 API가 정본 — Firebase providerData 읽기 금지.
