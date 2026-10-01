@@ -559,7 +559,7 @@ export default function Scan() {
   const GateSheet = <AuthGateSheet context="scan" open={gateOpen} onClose={() => setGateOpen(false)} />;
 
   const Close = (
-    <Pressable style={[styles.close, { top: insets.top + 8 }]} onPress={() => router.back()} hitSlop={8}>
+    <Pressable style={[styles.close, { top: insets.top + 8 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
       <Animated.View style={uiRotate}>
         <IconClose size={22} color="#fff" />
       </Animated.View>
@@ -902,7 +902,7 @@ export default function Scan() {
   if (FLAGS.systemCamera) {
     return (
       <View style={styles.launcherRoot}>
-        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8}>
+        <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
           <IconClose size={22} color={C.ink2} />
         </Pressable>
         <View style={styles.launcherBody}>

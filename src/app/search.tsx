@@ -113,7 +113,7 @@ export default function Search() {
     <View style={styles.root}>
       {/* header: back + input + clear */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <PressScale onPress={() => router.back()} hitSlop={8} style={styles.back}>
+        <PressScale onPress={() => router.back()} hitSlop={8} style={styles.back} testID="search-back">
           <IconArrowLeft size={22} color={C.ink} />
         </PressScale>
         {/* P-345(KB-506): 홈 searchBox 동일(h48 r4 surface2 pad16, 보더 없음) — 포커스 시

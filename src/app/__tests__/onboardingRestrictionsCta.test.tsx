@@ -25,7 +25,7 @@ jest.mock('@/lib/data/useIngredientCatalog', () => ({
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-// 컴포넌트 인덱스(TopBar→StickyHeader)가 reanimated를 끌고 옴 — 표면 mock
+// 컴포넌트 인덱스(StickyHeader 등)가 reanimated를 끌고 옴 — 표면 mock
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   const chain = () => {

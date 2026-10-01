@@ -122,7 +122,7 @@ export function TabBar({
       <View style={styles.slot}>
         <View style={styles.iconSpace} />
         <Text style={[styles.tlbl, { color: C.inkMute }]}>{labels.scan}</Text>
-        <Pressable style={styles.fab} onPress={onScan} hitSlop={8}>
+        <Pressable style={styles.fab} onPress={onScan} hitSlop={8} testID="tab-scan">
           <IconTabScan size={24} color="#fff" />
         </Pressable>
       </View>
@@ -147,7 +147,7 @@ function Tab({
 }) {
   const { Icon } = tab;
   return (
-    <Pressable style={styles.tab} onPress={onPress} hitSlop={4}>
+    <Pressable style={styles.tab} onPress={onPress} hitSlop={4} testID={`tab-${tab.key}`}>
       {/* P-313: 활성 아이콘 = 라벨과 같은 primary */}
       <Icon size={24} color={active ? C.primary : C.inkDisabled} active={active} />
       <Text style={[styles.tlbl, { color: active ? C.primary : C.inkMute }]} numberOfLines={1} adjustsFontSizeToFit>

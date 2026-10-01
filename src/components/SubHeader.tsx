@@ -75,7 +75,7 @@ export function SubHeader({
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       <View style={styles.row} onLayout={onRowLayout}>
-        <PressScale style={styles.back} onPress={onBack} hitSlop={8}>
+        <PressScale style={styles.back} onPress={onBack} hitSlop={8} testID="header-back">
           <IconArrowLeft size={20} color={C.ink} />
         </PressScale>
         {/* 흐름에서 빼서 행 중앙에 고정 — 좌우 슬롯 폭과 무관해진다. pointerEvents 없이 두면
