@@ -8,15 +8,16 @@ const expoConfig = require("eslint-config-expo/flat");
 // (FlagEmoji, 헌법 v2.3.0). ✓·★·→ 같은 텍스트 기호도 속성 밖이라 통과한다(의도).
 // keycap(1️⃣ = 숫자+VS16+U+20E3)은 구성 문자가 속성 밖이라 U+20E3을 따로 잡는다.
 const EMOJI_ANY = "\\p{Extended_Pictographic}|\\u20E3";
-// 맵기 표면 전용: 🌶️(U+1F336)·👶(U+1F476)만 빼고 나머지 이모지는 그대로 잡는다(부정 전방탐색).
-const EMOJI_EXCEPT_SPICE = "(?![\\u{1F336}\\u{1F476}])\\p{Extended_Pictographic}|\\u20E3";
-// 승인 예외(맵기 🌶️·아기 👶)를 쓸 수 있는 파일 = **맵기만 그리는 전용 컴포넌트**(Codex #215 2R).
-// 큰 화면 파일(온보딩·음식 상세·프로필 수정)은 넣지 않는다 — 넣으면 그 화면의 아무 JSX에서나 두 글자가 통과한다.
-// 큰 화면에서 쓰려면 전용 컴포넌트로 빼서 이 목록에 추가한다(👶 = NONE·MILD "아이도 먹을 수 있음" 배지 전용 컴포넌트).
-const SPICE_SURFACES = [
+// 승인 예외는 **글자별로 따로** 연다(Codex #215 2R·3R) — 각 예외의 정의된 용도를 그리는 전용 컴포넌트에서만.
+// 큰 화면 파일(온보딩·음식 상세·프로필 수정)은 넣지 않는다 — 넣으면 그 화면의 아무 JSX에서나 통과한다.
+// ① 맵기 🌶️(U+1F336) = 맵기 표시 컴포넌트. 👶는 여기서도 에러(슬라이더·고추 렌더러는 HOT/EXTREME까지 그린다).
+const EMOJI_EXCEPT_PEPPER = "(?!\\u{1F336})\\p{Extended_Pictographic}|\\u20E3";
+const PEPPER_SURFACES = [
   "src/components/SpicePeppers.tsx",
   "src/components/SpiceLevelSlider.tsx",
 ];
+// ② 아기 👶(U+1F476): 예외 **없음**(지금 쓰는 자리 0 — 배지 컴포넌트 없음·kidsBadge 키 미사용). 👶는 NONE/MILD
+// "아이도 먹을 수 있음" 배지 전용 컴포넌트를 만들 때 그 파일 하나만 예외 목록에 추가한다(헌법 v2.3.1 승인 범위).
 const EMOJI_MSG = "UI에 이모지 금지 — SVG 아이콘 사용(헌법). 국기는 FlagEmoji. 승인 예외(맵기 🌶️·아기 👶)는 맵기 표면에서만.";
 const HANGUL_MSG = "JSX에 한글 리터럴 금지 — i18n 키(t('…'))로. 사장님 카드 문구는 orderCard.ts.";
 function uiCopyRules(emoji) {
@@ -81,13 +82,12 @@ module.exports = defineConfig([
     rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_ANY)] },
   },
   {
-    // KB-664(Codex #213 P2): AGENTS.md L22의 **승인 예외 두 개**는 맵기 표면에서만 허용 —
-    // 맵기 🌶️(U+1F336) · 아기 👶(U+1F476, 맵기 NONE·MILD "아이도 먹을 수 있음" 배지 한정, 헌법 v2.3.1).
-    // 문맥 = 맵기 전용 컴포넌트 파일(SPICE_SURFACES). 그 밖에선 두 글자도 계속 에러, 이 파일들에서도 다른 이모지는 에러.
+    // KB-664(Codex #213 P2 → #215 2R·3R): AGENTS.md L22 승인 예외 중 맵기 🌶️만 맵기 표시 컴포넌트(PEPPER_SURFACES)에서
+    // 허용. 👶는 예외 없음(위 상수 주석). 그 밖에선 계속 에러.
     // flat config는 같은 룰을 블록 단위로 **교체**하므로 한글 규칙까지 그대로 다시 싣는다(uiCopyRules 공유).
-    files: SPICE_SURFACES,
+    files: PEPPER_SURFACES,
     ignores: ["**/__tests__/**"],
-    rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_EXCEPT_SPICE)] },
+    rules: { "no-restricted-syntax": ["error", ...uiCopyRules(EMOJI_EXCEPT_PEPPER)] },
   },
   {
     // P-147: 회원 속성(provider·가입 상태·판정)은 서버 API가 정본 — Firebase providerData 읽기 금지.

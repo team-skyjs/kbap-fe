@@ -1,11 +1,11 @@
 /**
- * KB-664(Codex #213 P2) — 헌법 이모지 게이트의 **승인 예외 두 개**(AGENTS.md L22: 맵기 🌶️ · 아기 👶 —
- * 맵기 NONE·MILD 배지 한정, 헌법 v2.3.1)를 맵기 표면 파일에서만 통과시킨다.
+ * KB-664(Codex #213 P2 → #215 2R·3R) — 헌법 이모지 게이트의 승인 예외 중 맵기 🌶️만 맵기 표시 컴포넌트
+ * (SpicePeppers·SpiceLevelSlider)에서 통과. 아기 👶(NONE·MILD 배지 한정, 헌법 v2.3.1)는 쓰는 자리가 없어 예외 없음.
  * 레포의 실제 eslint 설정으로 stdin 린트(파일 경로만 가장) — JSX 텍스트·템플릿 리터럴 두 선택자 모두.
  */
 import { execFileSync } from 'node:child_process';
 
-const SPICE_FILE = 'src/components/SpicePeppers.tsx'; // 맵기 전용 컴포넌트(승인 예외 허용)
+const SPICE_FILE = 'src/components/SpicePeppers.tsx'; // 맵기 표시 컴포넌트(🌶️만 허용)
 const SPICE_SLIDER = 'src/components/SpiceLevelSlider.tsx';
 const OTHER_FILE = 'src/components/StateBlock.tsx'; // 그 외 화면
 // Codex #215 2R: 맵기를 **일부** 그리는 큰 화면 — 예외 밖(화면 아무 JSX에서나 통과하면 안 됨)
@@ -33,11 +33,13 @@ describe.each([
   ['JSX 텍스트', jsxText],
   ['템플릿 리터럴', jsxTemplate],
 ])('%s', (_label, wrap) => {
-  it('맵기 전용 컴포넌트: 🌶️(VS16 포함)·👶 = 통과', () => {
+  it('맵기 표시 컴포넌트: 🌶️(VS16 포함) = 통과 · 👶 = 에러(Codex #215 3R — 슬라이더·고추 렌더러는 HOT/EXTREME까지 그린다)', () => {
     expect(emojiErrors(SPICE_FILE, wrap('\u{1F336}\u{FE0F}'))).toHaveLength(0);
-    expect(emojiErrors(SPICE_FILE, wrap('\u{1F476}'))).toHaveLength(0);
     expect(emojiErrors(SPICE_SLIDER, wrap('\u{1F336}'))).toHaveLength(0);
+    expect(emojiErrors(SPICE_FILE, wrap('\u{1F476}'))).toHaveLength(1);
+    expect(emojiErrors(SPICE_SLIDER, wrap('\u{1F476}'))).toHaveLength(1);
   });
+
 
   it.each(BIG_SCREENS)('큰 화면 %s: 🌶️·👶도 에러(전용 컴포넌트로 빼야 함)', (file) => {
     expect(emojiErrors(file, wrap('\u{1F336}'))).toHaveLength(1);
