@@ -157,7 +157,7 @@ export default function EditProfile() {
         onBack={() => router.back()}
         trailing={
           <Pressable onPress={save} disabled={photoBusy || saving} hitSlop={8} style={[styles.saveWrap, (photoBusy || saving) && { opacity: 0.35 }]}>
-            <Text style={styles.saveLink}>{t('common.save')}</Text>
+            <Text style={styles.saveLink} numberOfLines={1}>{t('common.save')}</Text>
           </Pressable>
         }
       />
