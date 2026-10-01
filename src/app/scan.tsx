@@ -228,12 +228,11 @@ export default function Scan() {
         setError({ stage: 'quota', detail: 'preflight SCAN-004' });
         setPhase('error'); // 카메라 미표시 — 즉시 쿼터 잠금(P-250 quota UI 재사용)
       } else if (code === 'MEMBER-003') {
-        // KB-441(b27 실기): 좀비 세션 — 세션 무효화는 client 훅(beAuth) 몫.
-        // 여기선 촬영·업로드 전에 즉시 표면화(구조: 촬영 후에야 본 스캔 400이 뜨던 지연 제거).
-        // fail 헬퍼 미경유 = 스캔 시도 아님(scan_complete 계측 오염 0 — P-255 원칙 동일).
+        // KB-441 → KB-670: 서버가 모르는 회원(탈퇴·정지 — 서버 KB-669로 전 회원 API 확대)의 남은 토큰.
+        // 세션 무효화는 client 훅(beAuth)이 하고, 세션이 만료되면 isGuest가 바뀌어 아래 라우트 가드가 게스트
+        // 게이트를 그린다. 여기서 에러 화면(로컬 state)을 세우면 게스트 전환 뒤에도 남아 재로그인 시 카메라
+        // 대신 보였다 — 세우지 않는다. 티켓만 버린다(fail 미경유 = scan_complete 계측 오염 0, P-255 원칙).
         preTicket.current = null;
-        setError({ stage: 'be', detail: 'preflight MEMBER-003' });
-        setPhase('error');
       }
     }
   }, [lockFromProfile]);
