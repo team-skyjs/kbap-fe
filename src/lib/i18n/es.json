@@ -407,6 +407,11 @@
     "extrasService": "Atención",
     "extrasTaste": "Sabor"
   },
+  "translation": {
+    "translate": "Traducir",
+    "seeOriginal": "Ver original",
+    "translateFailed": "No se pudo traducir. Inténtalo de nuevo."
+  },
   "reviews": {
     "headerTitle": "Reseñas",
     "subtitle": "{{count}} reseñas",

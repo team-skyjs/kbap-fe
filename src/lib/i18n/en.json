@@ -450,6 +450,11 @@
     "extrasService": "Service",
     "extrasTaste": "Taste"
   },
+  "translation": {
+    "translate": "Translate",
+    "seeOriginal": "See original",
+    "translateFailed": "Couldn't translate this. Please try again."
+  },
   "reviews": {
     "headerTitle": "Reviews",
     "subtitle": "{{count}} reviews",

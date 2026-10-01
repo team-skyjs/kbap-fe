@@ -131,7 +131,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry
   review_helpful_toggle: ['on', 'surface'],
-  review_translate_toggle: ['action', 'target'], // action: translate|original · target: review|post
+  review_translate_toggle: ['action', 'target', 'result'], // action: translate|original · target: review|post · result: ok|fail(KB-679 — 번역 시도 결과, original엔 없음)
   push_primer_response: ['action', 'surface'], // accept|later · onboarding|scan
   push_pref_toggle: ['key', 'on'],
   // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.

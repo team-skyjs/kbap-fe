@@ -451,6 +451,11 @@
     "extrasService": "친절도",
     "extrasTaste": "맛"
   },
+  "translation": {
+    "translate": "번역하기",
+    "seeOriginal": "원문 보기",
+    "translateFailed": "번역하지 못했어요. 다시 시도해 주세요."
+  },
   "reviews": {
     "headerTitle": "리뷰",
     "subtitle": "리뷰 {{count}}개",

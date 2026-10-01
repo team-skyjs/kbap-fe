@@ -67,11 +67,6 @@ export const FLAGS = {
    */
   reviewsLiveEnabled: true,
   /**
-   * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
-   * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
-   */
-  reviewTranslationEnabled: false,
-  /**
    * 시스템 카메라 경로 (P-137, 8/6 예진 A/B) — true면 스캔 탭 = 런처 화면 +
    * launchCameraAsync(네이티브 줌·가로·플래시). false = 현행 커스텀 인앱 카메라.
    * 비교 확정 전 — 커스텀 코드 삭제 금지.
@@ -147,6 +142,12 @@ export const FLAGS = {
    * 명시 허용(isDiagnosticChannel) — `!isProdChannel()` negate는 preview까지 연다(channel-gate 원칙).
    */
   countdownBadge: DIAGNOSTIC_CHANNEL,
+  /**
+   * 리뷰 본문 번역 버튼 (P-431/KB-679) — 서버 KB-678(`POST /api/translations`) 배포 전 노출 = 항상 실패하는 버튼.
+   * **진단 채널만**(teamtest·teamtest-prod·dev·로컬, 명시 허용) → prod 서버 배포 확인 후 `true`(Codex #220 P1).
+   * off = 본문만(버튼 없음), 원문 렌더 무변.
+   */
+  contentTranslation: DIAGNOSTIC_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

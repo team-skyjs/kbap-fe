@@ -9,6 +9,8 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('@/lib/community/hooks', () => ({
   useBlockedUsers: () => ({ data: [] }),
 })); // P-186: 차단 숨김 훅 표면 목

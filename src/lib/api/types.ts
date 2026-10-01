@@ -202,7 +202,7 @@ export interface Review {
   authorNationality: string | null;
   authorRankTier: string | null;
   anonymized: boolean; // author 부재(탈퇴) = true
-  /** 번역 축 — 리뷰 번역 계약 미배포(P-085 지시 7): UI는 FLAGS.reviewTranslationEnabled로 비노출. */
+  /** 구 번역 축(P-085) — 미사용. KB-679부터 번역은 POST /api/translations 온디맨드(useContentTranslation). */
   bodyLanguage?: string;
   translatedBody?: string | null;
   /** P-095 목 → P-201(KB-249) 실계약: 장소 태그 — MANUAL은 name만(좌표·주소 null). */

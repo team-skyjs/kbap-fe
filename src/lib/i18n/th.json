@@ -405,6 +405,11 @@
     "extrasService": "ความเป็นมิตร",
     "extrasTaste": "รสชาติ"
   },
+  "translation": {
+    "translate": "แปล",
+    "seeOriginal": "ดูต้นฉบับ",
+    "translateFailed": "แปลไม่สำเร็จ โปรดลองอีกครั้ง"
+  },
   "reviews": {
     "headerTitle": "รีวิว",
     "subtitle": "{{count}} รีวิว",

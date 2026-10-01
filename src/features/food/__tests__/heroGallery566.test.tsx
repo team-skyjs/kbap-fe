@@ -7,6 +7,8 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // HeroGallery 의존 표면 목(호이스팅) — isolateModules로 따로 부르면 React가 두 벌 로드돼
 // 훅 디스패처가 null이 된다(실측). 정지 판단 자체는 실제 usePaused 경로를 탄다.
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('expo-router', () => ({
   useFocusEffect: (cb: () => void) => {
     const { useEffect } = require('react');

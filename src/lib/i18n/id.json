@@ -405,6 +405,11 @@
     "extrasService": "Keramahan",
     "extrasTaste": "Rasa"
   },
+  "translation": {
+    "translate": "Terjemahkan",
+    "seeOriginal": "Lihat asli",
+    "translateFailed": "Tidak bisa menerjemahkan. Coba lagi."
+  },
   "reviews": {
     "headerTitle": "Ulasan",
     "subtitle": "{{count}} ulasan",

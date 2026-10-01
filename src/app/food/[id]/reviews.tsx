@@ -32,7 +32,6 @@ import {
   Flag,
   QueryErrorBlock,
   Spinner,
-  IconGlobe,
   IconProfile,
   IconBubbleEmpty,
   IconPlus,
@@ -50,14 +49,12 @@ import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { IconLock } from '@/components/icons';
-import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
-const READER_LANG = 'en'; // MVP reader language
 
 export default function FoodReviews() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -363,8 +360,6 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
   // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
-  const tx = useReviewTranslation(review, READER_LANG);
-  const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
 
   return (
     /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
@@ -398,39 +393,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
       <ReviewPlaceLine place={review.place ?? null} />
       <ReviewExtrasLine review={review} mine={mine} />
 
-      {!!tx.text && <ExpandableBody body={tx.text} t={t} />}
-
-      {/* per-review translation control — P-085 지시 7: 번역 계약 미배포, 플래그 비노출
-          (useReviewTranslation 코드는 보존 — 계약 배포 시 플래그 복원) */}
-      {FLAGS.reviewTranslationEnabled && tx.canTranslate && (
-        <View style={styles.txRow}>
-          {tx.loading ? (
-            <View style={styles.txInline}>
-              <Spinner size={14} color={C.accent} />
-              <Text style={styles.txMuted}>{t('reviews.translating')}</Text>
-            </View>
-          ) : tx.error ? (
-            <View style={styles.txInline}>
-              <Text style={styles.txError}>{t('reviews.translateFailed')}</Text>
-              <Pressable onPress={tx.retry} hitSlop={6}>
-                <Text style={styles.txLink}>{t('reviews.retry')}</Text>
-              </Pressable>
-            </View>
-          ) : tx.showingTranslated ? (
-            <View style={styles.txInline}>
-              <Text style={styles.txMuted}>{t('reviews.translatedFrom', { lang: langName })}</Text>
-              <Pressable onPress={tx.showOriginal} hitSlop={6}>
-                <Text style={styles.txLink}>{t('reviews.showOriginal')}</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable style={styles.txInline} onPress={tx.translate} hitSlop={6}>
-              <IconGlobe size={14} color={C.accent} />
-              <Text style={styles.txLink}>{t('reviews.translate')}</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
+      <ReviewBody review={review} t={t} />
 
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
@@ -525,11 +488,6 @@ const styles = StyleSheet.create({
   whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, flexShrink: 1 },
   reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
   reviewBodyKo: { fontFamily: font.ko },
-  txRow: { flexDirection: 'row', alignItems: 'center' },
-  txInline: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  txLink: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.accent },
-  txMuted: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
-  txError: { fontFamily: font.body, fontSize: 12, color: C.riskDanger },
   when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
   // P-085 keyset 더보기
   loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12 },
