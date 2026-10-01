@@ -394,6 +394,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
 
       {/* P-182 ②: 사진 = 공용 스트립+풀스크린 뷰어 */}
       <ReviewPhotoStrip photos={review.photos ?? []} />
+      {/* 장소는 여기서 한 번만(KB-674 — 공용 ReviewPlaceLine, 태그 있을 때만). 아래에 장소 줄을 또 넣으면 2중 표시. */}
       <ReviewPlaceLine place={review.place ?? null} />
       <ReviewExtrasLine review={review} mine={mine} />
 
@@ -431,7 +432,6 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
         </View>
       )}
 
-      {/* P-095: 장소 한 줄(핀+이름 — 태그 있을 때만) */}
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
         <View style={styles.itemFootRight}>
