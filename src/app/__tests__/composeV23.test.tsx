@@ -110,7 +110,7 @@ it('2존 구조 — 히어로 헤딩·작성자 랭킹 필·태그 행 2개(0/3�
   expect(all).toContain('community.composeHeading');
   expect(all).toContain('ranking.tier.newcomer');
   expect(all).toContain('community.tagDish');
-  // P-142: 장소 태그 = 계약 부재 → placeTagsEnabled off로 행 미노출 잠금
+  // P-142: 장소 태그 = 계약 부재 → COMMUNITY_POST_PLACE_CONTRACT(KB-674 분리) false로 행 미노출 잠금
   expect(all).not.toContain('community.tagPlace');
   expect(all).toContain('0/3');
   expect(all).not.toContain('0/1');

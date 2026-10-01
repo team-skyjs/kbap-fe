@@ -1,7 +1,7 @@
 /**
  * KB-403(P-272): 리뷰 기능 prod 공개 — P-110 숨김(당시 미완) 해제.
  * reviewsEnabled·reviewExtrasEnabled·reviewPlaceEnabled = 전 채널 공개,
- * communityEnabled 계열·placeTagsEnabled(KB-274)는 잠금 유지. 발행은 심사 후(전략 A).
+ * communityEnabled 계열은 잠금 유지(placeTagsEnabled는 KB-674에서 소비처 0으로 삭제). 발행은 심사 후(전략 A).
  *
  * Codex P2 반영 노트: 초안은 채널을 목킹해 FLAGS를 재로드하는 방식이었으나
  * ① expo-constants 목킹은 flags의 실소스(expo-updates.channel)와 무관했고(지적 타당)
@@ -24,10 +24,10 @@ it('공개 3종 = 리터럴 true(채널식 소멸 — prod 포함 전 채널 보
   }
 });
 
-it('잠금 유지 — communityEnabled = true(P-289 전 채널)·placeTagsEnabled(KB-274) = false 무변', () => {
+it('잠금 유지 — communityEnabled = true(P-289 전 채널) · placeTagsEnabled 삭제(KB-674)', () => {
   expect(flagsSrc).toContain('communityEnabled: true'); // P-289(예진 9/7) 전 채널
   expect(flagsSrc).not.toContain('homeAllContent'); // P-289: 소비처 0 — 삭제
-  expect(flagsSrc).toContain('placeTagsEnabled: false');
+  expect(flagsSrc).not.toContain('placeTagsEnabled'); // KB-674: 소비처 0 — 삭제(음식별 리뷰 장소 = 공용 ReviewPlaceLine)
 });
 
 it('잠금 표면 분리 — 리뷰 게이트 소비처는 reviewsEnabled 단독(커뮤니티 플래그 비의존)', () => {

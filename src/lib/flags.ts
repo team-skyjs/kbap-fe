@@ -45,17 +45,6 @@ export function isDiagnosticChannel(): boolean {
 
 export const FLAGS = {
   /**
-   * Category browsing UI: home "Browse by category" section + food-tab
-   * category chips. Excluded from MVP (KB-108, 2026-07-08 회의) — the list
-   * contract has no category param yet. Set true to bring both back.
-   */
-  categoryUI: false,
-  /**
-   * Onboarding "dishes you've tried" (recommendation seed) step. Excluded
-   * from MVP (KB-110 / FR-005) — set true to restore the step in v2.
-   */
-  onboardingTriedDishes: false,
-  /**
    * 게스트(비회원) 조회 모드 — 2026-07-13 회의 확정, MVP 기본 ON.
    * OFF = 로그인 필수 동작(QA용 안전장치). KB-77/78/84.
    */
@@ -77,12 +66,6 @@ export const FLAGS = {
    * 좋아요·신고(리뷰만)·차단까지 이 플래그가 스위칭. 문제 시 false로 재봉인.
    */
   reviewsLiveEnabled: true,
-  /**
-   * 리뷰 장소 태그 (P-116, 8/4 회의) — 장소 검색 BE(KB-274)가 카카오 월렛
-   * 블록으로 미배포 → 이번 릴리스 전면 숨김(전 채널). 배포 시 true 한 줄 복원.
-   * 커뮤니티 작성의 장소 행은 이 플래그 무관(coming-soon으로 미출시 — 별도).
-   */
-  placeTagsEnabled: false,
   /**
    * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
    * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
@@ -116,20 +99,10 @@ export const FLAGS = {
    */
   scanV2: true,
   /**
-   * 홈 "You avoid n things" 칸 (P-171, 8/11 예진) — 홈에서 불필요 판정.
-   * 컴포넌트·코드 보존(타 화면 재활용 대비) — true 한 줄로 복원.
-   */
-  homeAvoidBanner: false,
-  /**
    * 커뮤니티 "글" 기능(피드·작성·댓글) — P-179: 탭을 전역 리뷰 피드로 전환하며
    * 보존형 숨김(코드 무삭제 — 홈 배너·scanV2 킬스위치 문법). true 한 줄 복원.
    */
   communityPostsEnabled: false,
-  /**
-   * 홈 전 콘텐츠 노출 (P-216/KB-310, 멘토 #9·12·37) — **디자이너 캡쳐용 러프**,
-   * dev 계열만. 음식 탐색·리뷰 피드·인기 검색·저장 목록 섹션을 홈에 얹는다
-   * (전부 기존 컴포넌트 재사용). 디자인 확정 후 채널 조건 재검토.
-   */
   /**
    * 알림함 (P-216/KB-39, 멘토링 8/15). 목록·배지 = 서버 `GET /api/notifications`
    * (KB-499, lib/data/useNotifications — 기기 단위·7일·미읽음 파생). 로컬 기록 없음.
