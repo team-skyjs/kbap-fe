@@ -287,6 +287,8 @@
     "quotaTitle": "Bạn đã dùng hết lượt quét miễn phí",
     "quotaBody": "Viết một đánh giá để mở khóa quét không giới hạn.",
     "quotaCta": "Viết đánh giá",
+    "freeLeft_other": "Còn {{count}} lượt quét miễn phí",
+    "badgeUnit_other": "lượt",
     "later": "Để sau",
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
     "stayHint": "Quá trình này có thể mất 30–40 giây — rời khỏi ứng dụng có thể làm mất kết quả.",

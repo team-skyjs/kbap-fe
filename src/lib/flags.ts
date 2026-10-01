@@ -141,6 +141,12 @@ export const FLAGS = {
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.
    */
   communityTranslateEnabled: false,
+  /**
+   * 홈 카운트다운 뱃지(불꽃 — 무료 스캔 N회 남음) 프로토타입 (P-432/KB-680) — 시안 D-21 확정 전이라
+   * **진단 채널만**(teamtest·teamtest-prod·dev·로컬). production·preview off = 홈 무변.
+   * 명시 허용(isDiagnosticChannel) — `!isProdChannel()` negate는 preview까지 연다(channel-gate 원칙).
+   */
+  countdownBadge: DIAGNOSTIC_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

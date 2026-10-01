@@ -287,6 +287,8 @@
     "quotaTitle": "Pemindaian gratismu sudah habis",
     "quotaBody": "Tulis ulasan untuk membuka pemindaian tanpa batas.",
     "quotaCta": "Tulis ulasan",
+    "freeLeft_other": "Sisa {{count}} pindai gratis",
+    "badgeUnit_other": "pindai",
     "later": "Nanti",
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
     "stayHint": "Proses ini bisa memakan waktu 30–40 detik — keluar dari aplikasi dapat menghilangkan hasilnya.",

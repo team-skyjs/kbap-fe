@@ -19,19 +19,25 @@ export function SheetShell({
   children,
   onClose,
   overlay,
+  visible = true,
+  onDismiss,
 }: {
   children: React.ReactNode;
   onClose: () => void;
   /** 모달 **루트**에 얹는 노드(시트 박스 밖) — 예: 모달 컨텍스트 TopToastHost(P-370). 시트 안에 두면
    *  절대배치 기준이 시트 박스가 되어 토스트가 카드 위에 겹친다. */
   overlay?: React.ReactNode;
+  /** KB-680: 마운트 유지형 호출부용(기본 true = 기존 사용처 무변). */
+  visible?: boolean;
+  /** KB-680: iOS 네이티브 dismiss 완료 — 시트를 닫고 **다음 모달**을 띄울 때 여기서(P-267 선례: onClose 직후 present = race). 안드 미지원. */
+  onDismiss?: () => void;
 }) {
   const bottom = useBottomInset();
   const { height } = useWindowDimensions();
   const { top } = useSafeAreaInsets();
   const pad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, pad, { maxHeight: height - top }]} onPress={() => {}} testID="sheet-shell">
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} bounces={false} testID="sheet-shell-scroll">

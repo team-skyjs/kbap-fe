@@ -1,0 +1,152 @@
+/**
+ * CountdownBadge (KB-680, P-432) — 불꽃 안에 큰 숫자 + 단위. **공용**: 횟수·시간 어느 카운트다운이든 호출부가
+ * 값을 넣는다(뱃지는 쿼터·타이머를 모른다). 위치·노출 조건도 호출부 몫.
+ * 스펙 = spec specs/001-personalized-menu-mvp/countdown-badge-2026-10-02.md (시안 D-21 전 프로토타입).
+ *
+ * - 크기 고정(BADGE_W×BADGE_H) — 글자 배율·단위 길이가 바뀌어도 프레임 불변(단위는 1줄 + 축소 맞춤).
+ * - active ↔ empty는 불꽃 색만 바뀐다(P-151 — 메트릭 불변).
+ * - 모션(reanimated만): 대기 펄스(화면 포커스·포그라운드·동작 줄이기 꺼짐일 때만 반복) · 값이 줄면 숫자 팝 + 불꽃 1회
+ *   깜빡 · `celebrate`가 켜지면 폭죽 1회 후 사라지고 `onCelebrateEnd`. 동작 줄이기 = 정지 화면, 폭죽 없이 바로 종료.
+ */
+import * as React from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { Txt as Text } from '@/components/Txt';
+import { FlameShape } from '@/components/FlameShape';
+import { useMotionPaused } from '@/lib/useMotionPaused';
+import { spring } from '@/lib/motion';
+import { color as C, font, shadow, type as type_ } from '@/lib/theme';
+
+export const BADGE_W = 64;
+export const BADGE_H = 72;
+const PARTICLES = 12;
+const BURST_MS = 700;
+
+export interface CountdownBadgeProps {
+  value: number;
+  unitLabel: string;
+  state: 'active' | 'empty';
+  onPress: () => void;
+  /** false → true 전환 시 폭죽 1회(값이 "끝"이 아니라 "해제"될 때) */
+  celebrate?: boolean;
+  onCelebrateEnd?: () => void;
+  accessibilityLabel?: string;
+  testID?: string;
+}
+
+export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = false, onCelebrateEnd, accessibilityLabel, testID = 'countdown-badge' }: CountdownBadgeProps) {
+  const paused = useMotionPaused();
+  const reduced = useReducedMotion();
+  const pulse = useSharedValue(1);
+  const pop = useSharedValue(1);
+  const flicker = useSharedValue(1);
+  const burst = useSharedValue(0);
+
+  // 대기 펄스 — 반복은 포커스·포그라운드·동작 줄이기 꺼짐일 때만
+  React.useEffect(() => {
+    if (paused || state !== 'active' || celebrate) {
+      cancelAnimation(pulse);
+      pulse.value = 1;
+      return;
+    }
+    pulse.value = withRepeat(withSequence(withTiming(1.05, { duration: 900 }), withTiming(1, { duration: 900 })), -1);
+    return () => cancelAnimation(pulse);
+  }, [paused, state, celebrate, pulse]);
+
+  // 값 감소 = 숫자 팝 + 불꽃 1회 깜빡(증가·첫 렌더는 무반응)
+  const prevValue = React.useRef(value);
+  React.useEffect(() => {
+    const dropped = value < prevValue.current;
+    prevValue.current = value;
+    if (!dropped || reduced) return;
+    pop.value = withSequence(withTiming(1.3, { duration: 120 }), withSpring(1, spring.pop));
+    flicker.value = withSequence(withTiming(0.45, { duration: 120 }), withTiming(1, { duration: 200 }));
+  }, [value, reduced, pop, flicker]);
+
+  // 해제 축하 — 폭죽 후 퇴장. 완료 콜백은 UI 스레드 → runOnJS
+  const endRef = React.useRef(onCelebrateEnd);
+  React.useLayoutEffect(() => {
+    endRef.current = onCelebrateEnd;
+  });
+  React.useEffect(() => {
+    if (!celebrate) return;
+    const end = () => endRef.current?.();
+    if (reduced) {
+      end();
+      return;
+    }
+    burst.value = 0;
+    burst.value = withTiming(1, { duration: BURST_MS }, (finished) => {
+      'worklet';
+      if (finished) runOnJS(end)();
+    });
+  }, [celebrate, reduced, burst]);
+
+  const bodyStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value * (1 + burst.value * 0.15) }],
+    opacity: flicker.value * (1 - burst.value),
+  }));
+  const numStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={celebrate}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={styles.root}
+      testID={testID}
+    >
+      <Animated.View style={[styles.body, bodyStyle]}>
+        <FlameShape width={BADGE_W} height={BADGE_H} state={state} />
+        <View style={styles.label} pointerEvents="none">
+          <Animated.View style={numStyle}>
+            <Text style={styles.num} numberOfLines={1} testID={`${testID}-value`}>
+              {value}
+            </Text>
+          </Animated.View>
+          <Text style={styles.unit} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            {unitLabel}
+          </Text>
+        </View>
+      </Animated.View>
+      {celebrate && !reduced && Array.from({ length: PARTICLES }, (_, i) => <Particle key={i} index={i} progress={burst} />)}
+    </Pressable>
+  );
+}
+
+const PARTICLE_COLORS = [C.primary, C.primary2, C.accent];
+
+function Particle({ index, progress }: { index: number; progress: { value: number } }) {
+  const angle = (index / PARTICLES) * Math.PI * 2;
+  const style = useAnimatedStyle(() => {
+    const d = 18 + progress.value * 30;
+    return {
+      opacity: 1 - progress.value,
+      transform: [{ translateX: Math.cos(angle) * d }, { translateY: Math.sin(angle) * d }],
+    };
+  });
+  return <Animated.View pointerEvents="none" style={[styles.particle, { backgroundColor: PARTICLE_COLORS[index % PARTICLE_COLORS.length] }, style]} />;
+}
+
+const styles = StyleSheet.create({
+  // 크기 고정 = 상태·글자 배율과 무관한 프레임(P-151)
+  root: { width: BADGE_W, height: BADGE_H, alignItems: 'center', justifyContent: 'center' },
+  body: { width: BADGE_W, height: BADGE_H, ...shadow.sh2 },
+  label: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', paddingTop: 14, paddingHorizontal: 10 },
+  num: { fontFamily: font.display, fontSize: type_.sectionTitle.fontSize, color: C.surface, includeFontPadding: false },
+  unit: { fontFamily: font.bodyBold, fontSize: type_.tabLabel.fontSize, color: C.surface, maxWidth: BADGE_W - 20 },
+  particle: { position: 'absolute', width: 6, height: 6, borderRadius: 3, top: BADGE_H / 2 - 3, left: BADGE_W / 2 - 3 },
+});
+
+export default CountdownBadge;
