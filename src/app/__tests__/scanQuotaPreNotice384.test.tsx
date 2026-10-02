@@ -3,6 +3,7 @@
  * 티켓 요청은 유지(403 SCAN-004 경로) + 낡은 프로필(해금됨)은 발급 성공이 카메라 복원.
  */
 import * as React from 'react';
+import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
@@ -135,6 +136,8 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
+// KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
+beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsGuest.mockReturnValue(false);
