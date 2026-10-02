@@ -48,6 +48,33 @@ export function chipFadeShown(scrollX: number, contentW: number, viewW: number):
   return contentW - viewW - scrollX > 1;
 }
 
+/** KB-707: 가로 스크롤 줄 공용 — "오른쪽에 숨은 것이 있나"(끝 페이드 표시) + 바운스 끔. 칩 줄·홈 세그먼트 탭이 같이 쓴다.
+ *  scrollProps를 ScrollView에 펼치고, more가 참일 때만 끝 페이드를 그린다. */
+function useMoreOnRight() {
+  const m = React.useRef({ x: 0, content: 0, view: 0 });
+  const [more, setMore] = React.useState(false);
+  const update = () => setMore(chipFadeShown(m.current.x, m.current.content, m.current.view));
+  const scrollProps = {
+    scrollEventThrottle: 32,
+    // 다 들어가는 언어에서 줄이 좌우로 튕기지 않게(iOS 기본 바운스 · Android 오버스크롤 글로우)
+    alwaysBounceHorizontal: false,
+    overScrollMode: 'never' as const,
+    onScroll: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
+      m.current.x = e.nativeEvent.contentOffset.x;
+      update();
+    },
+    onContentSizeChange: (w: number) => {
+      m.current.content = w;
+      update();
+    },
+    onLayout: (e: { nativeEvent: { layout: { width: number } } }) => {
+      m.current.view = e.nativeEvent.layout.width;
+      update();
+    },
+  };
+  return { more, scrollProps, metrics: m };
+}
+
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
  *  전체가 재정렬돼 항목이 튐(구조 결함). 서버 sort=name 생기면 재도입(TODO). */
@@ -200,12 +227,24 @@ export function FoodExplorer({
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
   // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).
   const chipScrollRef = React.useRef<ScrollView | null>(null);
-  // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드
-  const chipMetrics = React.useRef({ x: 0, content: 0, view: 0 });
-  const [chipMore, setChipMore] = React.useState(false);
-  const updateChipMore = () => {
-    const m = chipMetrics.current;
-    setChipMore(chipFadeShown(m.x, m.content, m.view));
+  // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드(홈 탭과 공용 판정)
+  const chipLine = useMoreOnRight();
+  // KB-707: 홈 세그먼트 탭 줄 — 같은 판정 + 누른 탭을 화면 안으로
+  const tabLine = useMoreOnRight();
+  const tabsScrollRef = React.useRef<ScrollView | null>(null);
+  const tabLayouts = React.useRef<Record<string, { x: number; w: number }>>({});
+  const revealTab = (key: GridTab, last: boolean) => {
+    const sv = tabsScrollRef.current;
+    if (!sv) return;
+    if (last) {
+      sv.scrollToEnd({ animated: true }); // 셋째(마지막) 탭 = 끝까지
+      return;
+    }
+    const l = tabLayouts.current[key];
+    const v = tabLine.metrics.current;
+    if (!l || !v.view) return;
+    if (l.x < v.x) sv.scrollTo({ x: Math.max(0, l.x - 16), animated: true });
+    else if (l.x + l.w > v.x + v.view) sv.scrollTo({ x: l.x + l.w - v.view + 16, animated: true });
   };
   React.useEffect(() => {
     if (variant !== 'screen') return;
@@ -272,15 +311,34 @@ export function FoodExplorer({
       {variant === 'embedded' && (
         <>
           {/* KB-707: 긴 언어(ru·id)에서 셋째 탭이 말줄임 없이 화면 밖으로 잘렸다 — 줄이지 않고 가로 스크롤로 도달 가능하게(다 들어가면 모양 동일) */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsRow} testID="home-tabs-scroll">
+          <View style={styles.tabsScroll}>
+          <ScrollView
+            ref={tabsScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsRow}
+            testID="home-tabs-scroll"
+            {...tabLine.scrollProps}
+          >
             {(
               [
                 ['popular', t('home.popularTitle')],
                 ['saved', t('saved.title')],
                 ['food', t('food.title')],
               ] as [GridTab, string][]
-            ).map(([key, label]) => (
-              <Pressable key={key} style={styles.tab} onPress={() => setGridTab(key)} testID={`home-tab-${key}`}>
+            ).map(([key, label], i, all) => (
+              <Pressable
+                key={key}
+                style={styles.tab}
+                onPress={() => {
+                  setGridTab(key);
+                  revealTab(key, i === all.length - 1); // 잘린 탭을 누르면 화면 안으로
+                }}
+                onLayout={(e) => {
+                  tabLayouts.current[key] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
+                }}
+                testID={`home-tab-${key}`}
+              >
                 <Text style={[styles.tabLabel, gridTab === key && styles.tabLabelOn]} numberOfLines={1}>
                   {label}
                 </Text>
@@ -289,6 +347,18 @@ export function FoodExplorer({
               </Pressable>
             ))}
           </ScrollView>
+          {/* 칩 줄과 같은 끝 페이드 — 오른쪽에 숨은 탭이 있을 때만(ru·id에서 셋째 탭이 있다는 신호) */}
+          {tabLine.more && (
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.chipFade}
+              pointerEvents="none"
+              testID="home-tabs-fade"
+            />
+          )}
+          </View>
           <View style={styles.tabsDivider} />
         </>
       )}
@@ -305,19 +375,7 @@ export function FoodExplorer({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.chipScrollContent}
               testID="food-chip-scroll"
-              scrollEventThrottle={32}
-              onScroll={(e) => {
-                chipMetrics.current.x = e.nativeEvent.contentOffset.x;
-                updateChipMore();
-              }}
-              onContentSizeChange={(w) => {
-                chipMetrics.current.content = w;
-                updateChipMore();
-              }}
-              onLayout={(e) => {
-                chipMetrics.current.view = e.nativeEvent.layout.width;
-                updateChipMore();
-              }}
+              {...chipLine.scrollProps}
             >
               {RISK_CHIPS.map((c) => (
                 <Chip
@@ -332,7 +390,7 @@ export function FoodExplorer({
               <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
             </ScrollView>
             {/* 우측 흰→투명 페이드 — 스크롤 가능함을 암시(터치 투과). KB-707: 오른쪽에 숨은 칩이 있을 때만 */}
-            {chipMore && (
+            {chipLine.more && (
             <LinearGradient
               colors={['rgba(255,255,255,0)', '#FFFFFF']}
               start={{ x: 0, y: 0 }}

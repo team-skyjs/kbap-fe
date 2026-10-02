@@ -64,7 +64,7 @@ import { FEEDBACK_FAB_GAP, FEEDBACK_FAB_H, feedbackListBottomPad } from '@/app/p
 // eslint-disable-next-line import/first -- 위와 같음
 import * as fs from 'fs';
 // eslint-disable-next-line import/first -- 위와 같음
-import { StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import type { Review } from '@/lib/api/types';
 
 const REVIEW = {
@@ -172,6 +172,47 @@ describe('KB-707', () => {
     expect(tabs).toBeTruthy();
     expect(tabs.props.horizontal).toBe(true);
     for (const k of ['popular', 'saved', 'food']) expect(tabs.findAll((n: { props?: { testID?: string } }) => n.props?.testID === `home-tab-${k}`).length).toBeGreaterThan(0);
+  });
+
+  it('(2) #235 공부: 잘린 탭을 누르면 화면 안으로(셋째 = 끝까지 · 그 밖 = 보이게) · 오른쪽에 숨은 탭이 있을 때만 끝 페이드(칩 줄과 같은 판정)', () => {
+    const toEnd = jest.spyOn(ScrollView.prototype as unknown as { scrollToEnd: () => void }, 'scrollToEnd').mockImplementation(() => {});
+    const to = jest.spyOn(ScrollView.prototype as unknown as { scrollTo: (o: unknown) => void }, 'scrollTo').mockImplementation(() => {});
+    try {
+      const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+      const tabs = tree.root.findAll((n) => n.props?.testID === 'home-tabs-scroll')[0];
+      const tab = (k: string) => tree.root.findAll((n) => n.props?.testID === `home-tab-${k}` && typeof n.props?.onPress === 'function')[0];
+      // ru: 뷰포트 300 · 줄 420 → 넘침 = 페이드
+      act(() => tabs.props.onLayout({ nativeEvent: { layout: { width: 300, height: 40 } } }));
+      act(() => tabs.props.onContentSizeChange(420, 40));
+      expect(tree.root.findAll((n) => n.props?.testID === 'home-tabs-fade').length).toBeGreaterThan(0);
+      act(() => tab('popular').props.onLayout({ nativeEvent: { layout: { x: 16, y: 0, width: 150, height: 40 } } }));
+      act(() => tab('saved').props.onLayout({ nativeEvent: { layout: { x: 170, y: 0, width: 110, height: 40 } } }));
+      act(() => tab('food').props.onLayout({ nativeEvent: { layout: { x: 284, y: 0, width: 120, height: 40 } } }));
+      act(() => tab('food').props.onPress());
+      expect(toEnd).toHaveBeenCalledTimes(1); // 셋째 = 끝까지
+      // 끝까지 민 상태에서 첫 탭 = 왼쪽이 잘림 → 보이게
+      act(() => tabs.props.onScroll({ nativeEvent: { contentOffset: { x: 120, y: 0 } } }));
+      expect(tree.root.findAll((n) => n.props?.testID === 'home-tabs-fade')).toHaveLength(0); // 끝 = 페이드 없음
+      act(() => tab('popular').props.onPress());
+      expect(to).toHaveBeenLastCalledWith({ x: 0, animated: true });
+      // 이미 다 보이는 탭 = 스크롤 0
+      to.mockClear();
+      act(() => tabs.props.onScroll({ nativeEvent: { contentOffset: { x: 0, y: 0 } } }));
+      act(() => tab('saved').props.onPress());
+      expect(to).not.toHaveBeenCalled();
+    } finally {
+      toEnd.mockRestore();
+      to.mockRestore();
+    }
+  });
+
+  it('(1)(2) #235 공부: 가로 줄은 다 들어가도 튕기지 않는다 — iOS 바운스 끔 · Android 오버스크롤 끔(칩 줄·홈 탭 둘 다)', () => {
+    const screen = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+    const home = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+    for (const sv of [screen.root.findAll((n) => n.props?.testID === 'food-chip-scroll')[0], home.root.findAll((n) => n.props?.testID === 'home-tabs-scroll')[0]]) {
+      expect(sv.props.alwaysBounceHorizontal).toBe(false);
+      expect(sv.props.overScrollMode).toBe('never');
+    }
   });
 
   it('(3) 떠 있는 버튼 + 스크롤 목록 — 목록 끝 여백 ≥ 버튼 윗변 + 16(마지막 항목이 버튼 위로 올라온다)', () => {
