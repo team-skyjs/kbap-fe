@@ -515,6 +515,7 @@ export function FoodExplorer({
         {/* P-318: 정렬 시트 — 공용 ActionSheet(리뷰 P-237 문법), 현재값 = SVG 체크 */}
         <ActionSheet
           open={sortSheet}
+          testID="food-sort-sheet" // KB-709: 행 = food-sort-sheet-{정렬 키}
           title={t('reviews.sortTitle')}
           items={FOOD_SORTS.map((v) => ({
             key: v,

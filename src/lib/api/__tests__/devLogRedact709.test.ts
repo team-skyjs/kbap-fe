@@ -1,0 +1,55 @@
+/**
+ * KB-709(P-449 ②) — 개발 로거: 요청·응답 본문의 토큰 원문이 로그 어디에도 없다(헤더는 원래 가림).
+ */
+jest.mock('@/lib/installationId', () => ({ getInstallationId: () => Promise.resolve('test-install-id') }));
+jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
+jest.mock('@/lib/data/config', () => ({ BE_BASE: 'https://test.host' }));
+jest.mock('react-native-reanimated', () => {
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  return {
+    __esModule: true,
+    default: { View, createAnimatedComponent: (c: unknown) => c },
+    useSharedValue: (v: unknown) => ({ value: v }),
+    useAnimatedStyle: () => ({}),
+    withSpring: (v: unknown) => v,
+    withTiming: (v: unknown) => v,
+    cancelAnimation: () => {},
+  };
+});
+
+// eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
+import { api, setAuthTokenProvider } from '../client';
+// eslint-disable-next-line import/first -- 위와 같음
+import { redactSecrets, redactText } from '../redactLog';
+
+const SECRETS = ['RT-REQ-1', 'AT-RES-2', 'RT-RES-3', 'ID-RES-4', 'AT-HDR-5', 'PW-6'];
+
+afterEach(() => jest.restoreAllMocks());
+
+it('dev 로그(요청 →·응답 ←) 어디에도 토큰 원문 없음 — 본문 중첩·대소문자 무관, 가림 표시는 남음', async () => {
+  expect(__DEV__).toBe(true); // 로거가 켜진 환경에서 검증
+  setAuthTokenProvider(() => Promise.resolve('AT-HDR-5'));
+  const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      text: () => Promise.resolve(JSON.stringify({ success: true, message: null, payload: { accessToken: 'AT-RES-2', RefreshToken: 'RT-RES-3', member: { idToken: 'ID-RES-4', nickname: 'Mina' } } })),
+    }),
+  ) as unknown as typeof fetch;
+  await api.post('/auth/refresh', { refreshToken: 'RT-REQ-1', nested: { password: 'PW-6' }, keep: 'visible' });
+  const out = log.mock.calls.map((args) => args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')).join('\n');
+  expect(out).toContain('[api] →');
+  expect(out).toContain('[api] ←');
+  for (const s of SECRETS) expect({ s, leaked: out.includes(s) }).toEqual({ s, leaked: false });
+  expect(out).toContain('***');
+  expect(out).toContain('visible'); // 비밀이 아닌 값은 그대로(디버깅 가치 유지)
+  expect(out).toContain('Mina');
+});
+
+it('redactSecrets/redactText — 키 이름 기준·중첩·배열 · 잘린(비 JSON) 본문도 가림', () => {
+  expect(redactSecrets({ a: 1, list: [{ ACCESS_TOKEN: 'x' }], authorizationCode: 'c', clientSecret: 's' })).toEqual({ a: 1, list: [{ ACCESS_TOKEN: '***' }], authorizationCode: '***', clientSecret: '***' });
+  expect(redactText('{"payload":{"accessToken":"abc"}')).toBe('{"payload":{"accessToken":"***"}'); // 4000자 자르기 등으로 깨진 JSON
+  expect(redactText('plain text')).toBe('plain text');
+});

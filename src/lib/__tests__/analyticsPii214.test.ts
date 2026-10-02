@@ -11,7 +11,7 @@ const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
 describe('① 🔒 검색어 PII 교정', () => {
   it('자유 텍스트(미매칭) = keyword 자체 미생성 + matched:false·길이 버킷만', () => {
-    const p = searchKeywordProps('내 여자친구 땅콩 알러지 있는데 뭐 먹지', []);
+    const p = searchKeywordProps('내 여자친구 땅콩 알러지 있는데 뭐 먹지', [], 0);
     expect(p.matched).toBe(false);
     expect('keyword' in p).toBe(false); // 생략 ≠ 빈 문자열
     expect(p.len_bucket).toBe('11+');
@@ -20,18 +20,20 @@ describe('① 🔒 검색어 PII 교정', () => {
   });
 
   it('카탈로그 매칭 = 매칭된 카탈로그 값 전송(사용자 원문 아님 — 오타·문장 유출 0)', () => {
-    const exact = searchKeywordProps('  Peanut  ', []);
+    const exact = searchKeywordProps('  Peanut  ', [], 0);
     expect(exact).toMatchObject({ matched: true, keyword: 'peanut' });
     // 결과 음식명 매칭(서버 카탈로그 값)
-    const food = searchKeywordProps('kimchi', ['Kimchi Stew', '김치찌개']);
+    const food = searchKeywordProps('kimchi', ['Kimchi Stew', '김치찌개'], 1);
     expect(food.matched).toBe(true);
     expect(food.keyword).toBe('kimchi stew'); // 접두 매칭 시 전송값 = 카탈로그 항목
+    // KB-709: result_count = 음식 수(이름 수 아님) — 음식 1개(영문·한글 이름 2개)인데 2로 나가던 것
+    expect(food.result_count).toBe(1);
   });
 
   it('길이 버킷 경계 + 1글자 입력은 접두 매칭 금지(과도 매칭 방지)', () => {
-    expect(searchKeywordProps('abc', []).len_bucket).toBe('1-3');
-    expect(searchKeywordProps('abcd', []).len_bucket).toBe('4-10');
-    expect(searchKeywordProps('p', []).matched).toBe(false); // 1글자 = 미매칭 유지
+    expect(searchKeywordProps('abc', [], 0).len_bucket).toBe('1-3');
+    expect(searchKeywordProps('abcd', [], 0).len_bucket).toBe('4-10');
+    expect(searchKeywordProps('p', [], 0).matched).toBe(false); // 1글자 = 미매칭 유지
   });
 
   it('배선 — 검색 화면이 원문 대신 searchKeywordProps 경유', () => {
