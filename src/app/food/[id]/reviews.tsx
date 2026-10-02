@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', ...shadow.sh1 },
   knobOn: { alignSelf: 'flex-end' },
 
-  item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 },
+  item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 }, // gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임(유닛)
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   itemPressed: { opacity: 0.75 },

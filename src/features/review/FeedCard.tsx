@@ -129,7 +129,7 @@ export function FeedCard({
 
 const styles = StyleSheet.create({
   // 카드(4150:13934) — 구분선형(보더·그림자 소멸)
-  card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486)
+  card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486) · gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임 — 줄이면 라벨 상자가 위 사진 터치를 덮는다(유닛)
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 }, // A-FC-01
   who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
   whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02

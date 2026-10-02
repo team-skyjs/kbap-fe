@@ -406,9 +406,22 @@
     "extrasTaste": "Hương vị"
   },
   "translation": {
-    "translate": "Dịch",
-    "seeOriginal": "Xem bản gốc",
-    "translateFailed": "Không thể dịch. Vui lòng thử lại."
+    "showTranslation": "Hiện bản dịch",
+    "translatedFrom": "Đã dịch từ {{language}}",
+    "translated": "Đã dịch",
+    "translateFailed": "Không thể dịch. Vui lòng thử lại.",
+    "lang": {
+      "en": "tiếng Anh",
+      "ko": "tiếng Hàn",
+      "ja": "tiếng Nhật",
+      "zh-Hans": "tiếng Trung (Giản thể)",
+      "zh-Hant": "tiếng Trung (Phồn thể)",
+      "vi": "tiếng Việt",
+      "id": "tiếng Indonesia",
+      "th": "tiếng Thái",
+      "ru": "tiếng Nga",
+      "es": "tiếng Tây Ban Nha"
+    }
   },
   "reviews": {
     "headerTitle": "Đánh giá",

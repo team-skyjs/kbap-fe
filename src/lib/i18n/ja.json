@@ -406,9 +406,22 @@
     "extrasTaste": "味"
   },
   "translation": {
-    "translate": "翻訳する",
-    "seeOriginal": "原文を見る",
-    "translateFailed": "翻訳できませんでした。もう一度お試しください。"
+    "showTranslation": "翻訳を表示",
+    "translatedFrom": "{{language}}から翻訳",
+    "translated": "翻訳済み",
+    "translateFailed": "翻訳できませんでした。もう一度お試しください。",
+    "lang": {
+      "en": "英語",
+      "ko": "韓国語",
+      "ja": "日本語",
+      "zh-Hans": "中国語（簡体字）",
+      "zh-Hant": "中国語（繁体字）",
+      "vi": "ベトナム語",
+      "id": "インドネシア語",
+      "th": "タイ語",
+      "ru": "ロシア語",
+      "es": "スペイン語"
+    }
   },
   "reviews": {
     "headerTitle": "レビュー",

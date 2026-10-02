@@ -451,9 +451,22 @@
     "extrasTaste": "Taste"
   },
   "translation": {
-    "translate": "Translate",
-    "seeOriginal": "See original",
-    "translateFailed": "Couldn't translate this. Please try again."
+    "showTranslation": "Show translation",
+    "translatedFrom": "Translated from {{language}}",
+    "translated": "Translated",
+    "translateFailed": "Couldn't translate this. Please try again.",
+    "lang": {
+      "en": "English",
+      "ko": "Korean",
+      "ja": "Japanese",
+      "zh-Hans": "Chinese (Simplified)",
+      "zh-Hant": "Chinese (Traditional)",
+      "vi": "Vietnamese",
+      "id": "Indonesian",
+      "th": "Thai",
+      "ru": "Russian",
+      "es": "Spanish"
+    }
   },
   "reviews": {
     "headerTitle": "Reviews",

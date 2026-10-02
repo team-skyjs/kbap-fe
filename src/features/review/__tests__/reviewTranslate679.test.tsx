@@ -87,7 +87,7 @@ beforeEach(() => {
 it('본문 있는 리뷰 = "Translate" 버튼 항상 노출(언어 감지 없음)', () => {
   const t = render(REVIEW());
   expect(btn(t)).toBeTruthy();
-  expect(out(t)).toContain('translation.translate');
+  expect(out(t)).toContain('translation.showTranslation');
 });
 
 it('빈 본문 리뷰(사진·별점만) = 버튼 없음', () => {
@@ -103,12 +103,12 @@ it('탭 → 계약대로 요청 → 본문이 번역문으로 교체 · 버튼 "
   expect(mockPost).toHaveBeenCalledWith('/api/translations?lang=ko', { targetType: 'REVIEW', targetId: 53 });
   expect(out(t)).toContain('정말 맛있는 국');
   expect(out(t)).not.toContain('Really good soup');
-  expect(out(t)).toContain('translation.seeOriginal');
+  expect(out(t)).toContain('translation.translated');
 
   await press(t); // 원문 보기
   expect(out(t)).toContain('Really good soup');
   expect(out(t)).not.toContain('정말 맛있는 국');
-  expect(out(t)).toContain('translation.translate');
+  expect(out(t)).toContain('translation.showTranslation');
 
   await press(t); // 다시 번역 — 캐시
   expect(out(t)).toContain('정말 맛있는 국');
@@ -121,7 +121,7 @@ it('요청 중 = 스피너 + "Translating…"(reviews.translating) · 버튼 비
   const t = render(REVIEW());
   await press(t);
   expect(out(t)).toContain('reviews.translating');
-  expect(out(t)).not.toContain('translation.translate"');
+  expect(out(t)).not.toContain('translation.showTranslation"');
   expect(out(t)).toContain('Really good soup');
   expect(btn(t).props.disabled).toBe(true);
   await act(async () => {
@@ -129,7 +129,7 @@ it('요청 중 = 스피너 + "Translating…"(reviews.translating) · 버튼 비
     await Promise.resolve();
   });
   expect(out(t)).not.toContain('reviews.translating');
-  expect(out(t)).toContain('translation.seeOriginal');
+  expect(out(t)).toContain('translation.translated');
   expect(out(t)).toContain('정말 맛있는 국');
 });
 
@@ -139,8 +139,8 @@ it('503 TRANSLATION-001 → 토스트(에러 변형) + 원문 유지 · 버튼�
   await press(t);
   expect(mockToast).toHaveBeenCalledWith('translation.translateFailed', { error: true });
   expect(out(t)).toContain('Really good soup');
-  expect(out(t)).toContain('translation.translate');
-  expect(out(t)).not.toContain('translation.seeOriginal');
+  expect(out(t)).toContain('translation.showTranslation');
+  expect(out(t)).not.toContain('translation.translated');
 });
 
 it('계약 보충: 안 보이는 리뷰(400 REVIEW-001) → 같은 처리 — 토스트 + 원문 유지', async () => {
@@ -170,7 +170,7 @@ it('#220 공부 ①: 번역 보기 중 리뷰 본문이 바뀌면 → 새 원문
   rerender(t, REVIEW({ body: 'A bit salty soup' })); // 작성자가 수정 → 목록 재조회
   expect(out(t)).toContain('A bit salty soup');
   expect(out(t)).not.toContain('정말 맛있는 국');
-  expect(out(t)).toContain('translation.translate');
+  expect(out(t)).toContain('translation.showTranslation');
   await press(t);
   expect(mockPost).toHaveBeenCalledTimes(2);
   expect(out(t)).toContain('조금 짠 국');
@@ -185,7 +185,7 @@ it('#220 공부 ②: 번역 보기 → 앱 언어 변경 → 원문 · 한 번 �
   mockLang = 'ja';
   rerender(t, REVIEW());
   expect(out(t)).toContain('Really good soup');
-  expect(out(t)).toContain('translation.translate');
+  expect(out(t)).toContain('translation.showTranslation');
   await press(t);
   expect(mockPost).toHaveBeenCalledTimes(2);
   expect(mockPost).toHaveBeenLastCalledWith('/api/translations?lang=ja', { targetType: 'REVIEW', targetId: 53 });
@@ -198,7 +198,7 @@ it('#220 공부 메모 ③: 서버가 빈 text → 실패 처리(토스트 · �
   await press(t);
   expect(mockToast).toHaveBeenCalledWith('translation.translateFailed', { error: true });
   expect(out(t)).toContain('Really good soup');
-  expect(out(t)).not.toContain('translation.seeOriginal');
+  expect(out(t)).not.toContain('translation.translated');
   await press(t);
   expect(mockPost).toHaveBeenCalledTimes(2);
   expect(out(t)).toContain('정말 맛있는 국');
