@@ -59,9 +59,10 @@ jest.mock('@/features/review/FeedCard', () => {
   const { View } = require('react-native');
   return { FeedCard: ({ review }: { review: { id: string } }) => <View testID={`feed-${review.id}`} /> };
 });
-jest.mock('@/lib/data/useHome', () => ({
-  useHome: () => ({ isLoading: false, isError: false, error: null, refetch: jest.fn(), data: { authenticated: true, recent: [] } }),
-}));
+// KB-712: 홈 쿼리 상태를 테스트별로 바꿀 수 있게(기본 = 로드 완료)
+const HOME_LOADED = { isLoading: false, isPending: false, isError: false, error: null, refetch: jest.fn(), data: { authenticated: true, recent: [] as unknown[], recommended: [] as unknown[] } };
+let mockHome: Record<string, unknown> = HOME_LOADED;
+jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '1', restrictions: [] } }) }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
 const mockFeed = jest.fn();
@@ -118,4 +119,23 @@ it('죽은 홈 검색 줄 스타일 제거 — 실제 검색 줄은 FoodExplorer
   expect(fe).toContain("searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 0 }");
   expect(fe).toMatch(/searchBox: \{\s*flex: 1,\s*height: 48,/); // 줄 높이 = 스캔 버튼 48(세로 가운데) → 줄 아래 끝 = 버튼 아래 끝
   expect(fe).toMatch(/scanBtn: \{ width: 48, height: 48,/);
+});
+
+// KB-712(#237 공부): 홈이 FoodExplorer에 넘기는 인기 레일 prop — 화면이 실제로 만드는 모양 그대로 확인
+describe('KB-712 홈 → 인기 레일 prop', () => {
+  afterEach(() => { mockHome = HOME_LOADED; });
+  const lastProps = () => mockExplorer.mock.calls.at(-1)![0] as { popular?: unknown[]; popularLoading?: boolean };
+  it('데이터 없는 pending(요청이 멈춘 상태 — isLoading false라 레일이 마운트됨) = popular undefined + popularLoading true → 레일 스켈레톤', () => {
+    mockHome = { ...HOME_LOADED, isPending: true, data: undefined };
+    act(() => { renderer.create(<Home />); });
+    expect(lastProps().popular).toBeUndefined();
+    expect(lastProps().popularLoading).toBe(true);
+  });
+  it('로드 완료 = /home recommended 그대로 · 로딩 false', () => {
+    const rec = [{ foodId: '30' }, { foodId: '10' }];
+    mockHome = { ...HOME_LOADED, data: { ...HOME_LOADED.data, recommended: rec } };
+    act(() => { renderer.create(<Home />); });
+    expect(lastProps().popular).toBe(rec);
+    expect(lastProps().popularLoading).toBe(false);
+  });
 });

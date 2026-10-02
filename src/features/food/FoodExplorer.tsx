@@ -103,6 +103,8 @@ export function FoodExplorer({
   topPad = 0,
   mostReviewed = [],
   mostReviewedLoading = false,
+  popular,
+  popularLoading = false,
   onScanRowBottom,
 }: {
   variant: 'embedded' | 'screen';
@@ -113,6 +115,10 @@ export function FoodExplorer({
    *  QueryClient 없는 표면까지 끌려간다(실측: 기존 스위트 3개가 깨졌다). 0건 = 섹션 미렌더. */
   mostReviewed?: FoodCard[];
   mostReviewedLoading?: boolean;
+  /** KB-712(P-448): 홈 레일 Popular + 칩 All 소스 = `/home`의 popularFoods(서버 랜덤 — 순서 그대로, 재정렬·사진 우선 재배치 금지).
+   *  mostReviewed와 같은 이유로 홈 화면이 useHome에서 받아 내린다(요청 추가 0). 미전달(음식 탭)·빈 값(구 서버·MOCK) = 기존 목록 앞부분. */
+  popular?: FoodCard[];
+  popularLoading?: boolean;
   /** KB-701: 검색 줄(= 스캔 버튼 — 같은 48 높이, 세로 가운데) 아래 끝의 y — 이 컴포넌트 위쪽 기준. 홈 뱃지 앵커. */
   onScanRowBottom?: (y: number) => void;
   initialTab?: GridTab;
@@ -268,10 +274,15 @@ export function FoodExplorer({
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
   const { ids: savedIds, ready: savedReady } = useSavedIds();
+  // KB-712: 홈 Popular + All = /home 랜덤(로딩 중이거나 1건 이상일 때) — 비었으면 기존 경로로 폴백.
+  // 로딩 중 홈은 popular={undefined}를 넘긴다(빈 배열 아님) — `popular != null`로 걸면 /foods가 먼저 보였다 바뀌는 팝인(#237 공부)
+  const homePopular = variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
   const gridSource: FoodCard[] =
     variant === 'screen'
       ? savedOnly ? savedListFoods : (browse.data ?? []) // P-318: 세그먼트 소멸 — Saved는 토글 칩
-      : gridTab === 'popular' ? popularPhotoFoods(browse.data) : gridTab === 'saved' ? savedListFoods : (browse.data ?? []);
+      : gridTab === 'popular'
+        ? homePopular ? (popular ?? []) : popularPhotoFoods(browse.data)
+        : gridTab === 'saved' ? savedListFoods : (browse.data ?? []);
   // P-350: 위험 칩 = 서버 필터(&risk=) — 클라 personalRisk 필터 소멸(무한로딩 원인)
   const filtered = gridSource;
   // P-318 정렬: 인기 = 목록 응답 순서 그대로(서버 정렬 정본 — P-335로 클라 정렬 소멸).
@@ -541,7 +552,7 @@ export function FoodExplorer({
   // 줄바꿈 없이 잘리던 실기 결함) — ScrollView는 카드 ≥1일 때만 마운트.
   // Codex #85 2R P2: Saved 탭 데이터 = 북마크 쿼리 독립 — 로딩도 에러처럼 탭별 스코프
   // (카탈로그 콜드 로딩이 캐시된 저장 카드를 스켈레톤으로 가리지 않게).
-  const railLoading =
+  const railLoading = homePopular ? popularLoading : // KB-712: /home 소스면 그 로딩만(목록 로딩이 /home 카드를 가리지 않게)
     (gridTab === 'saved' ? savedList.isLoading : browse.isLoading) ||
     // P-350: 얇은 페이지 채움 중(0건·hasNext) = 빈 상태 아님 — 스켈레톤 유지
     (riskChip !== 'all' && gridFoods.length === 0 && gridQ.hasNextPage);

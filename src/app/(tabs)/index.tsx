@@ -63,7 +63,7 @@ export default function Home() {
   const [scanRowBottom, setScanRowBottom] = useState<number | null>(null);
   const badgeTop = exploreY != null && scanRowBottom != null ? headerH + exploreY + scanRowBottom + BADGE_GAP : null;
 
-  const { data: home, isLoading, isError, error, refetch } = useHome();
+  const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
@@ -129,6 +129,10 @@ export default function Home() {
           srcTag="home"
           mostReviewed={home?.mostReviewed ?? []}
           mostReviewedLoading={isLoading}
+          popular={home?.recommended}
+          // isPending(데이터 아직 없음) — isLoading(첫 요청 진행 중)이면 위 SkeletonHome이 이미 덮는다. 그 밖의 "데이터 없음"
+          // (오프라인 등으로 요청이 멈춘 pending: isLoading false)에서 레일이 /foods 폴백을 먼저 그렸다 바꾸지 않게(#237 공부)
+          popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
         />
       </View>
