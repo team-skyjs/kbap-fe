@@ -29,7 +29,7 @@ import { useToggleReviewLike } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
 import { useContentTranslation } from '@/lib/data/useContentTranslation';
-import { TranslateButton } from '@/components/TranslateButton';
+import { TRANSLATE_LABEL_BOX, TranslateButton } from '@/components/TranslateButton';
 import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
@@ -74,7 +74,8 @@ export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style
   if (!original) return null;
   const label = FLAGS.contentTranslation && !tx.sameLanguage;
   return (
-    <View>
+    // 라벨이 있을 때만 래퍼를 카드 gap 안으로 8 올린다 — 라벨 상자(44)의 위 여유가 래퍼(부모) 안에 들어오게(시각 위치 무변)
+    <View style={label ? { marginTop: -TRANSLATE_LABEL_BOX.padTop } : undefined}>
       {label && (
         <TranslateButton
           state={tx.loading ? 'loading' : tx.showingTranslated ? 'translated' : 'idle'}

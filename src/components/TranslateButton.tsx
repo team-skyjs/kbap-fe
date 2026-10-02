@@ -17,10 +17,13 @@ export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fo
 /** 언어 이름을 아는 코드 = 앱 10개 언어(서버가 이 글자 그대로 정규화해 보낸다 — KB-688). */
 export const TRANSLATION_LANG_CODES = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'] as const;
 
-/** 라벨 줄 높이(1줄 고정) + 터치 확장. 유효 터치 높이 = 17 + 8 + 19 = 44(Codex #223 P2 — 최소 터치 타깃).
- *  위는 8까지만(카드 gap 8 — 위 사진 썸네일 터치 영역과 겹치지 않게), 나머지는 아래로(라벨-본문 간격 6 + 본문 첫 줄 — 본문은 비대화형). */
+/** 라벨 줄 높이(1줄 고정). */
 export const TRANSLATE_LABEL_LINE_H = 17;
-export const TRANSLATE_LABEL_HIT_SLOP = { top: 8, bottom: 19, left: 8, right: 16 } as const;
+/** 실제 레이아웃 상자 = padTop 8 + 줄 17 + padBottom 19 = **44**(Codex #223 P2 — hitSlop은 부모 경계 밖에서 잘리므로 쓰지 않는다).
+ *  시각 위치는 음수 margin으로 상쇄: 위 8은 ReviewBody 래퍼가 marginTop −8로 카드 gap(8) 안으로 올라가 흡수(위 사진 썸네일과
+ *  겹치지 않음 — 상자는 래퍼 안), 아래 19 중 13은 marginBottom −13으로 본문 첫 줄 위에 겹친다(본문은 비대화형 · 라벨이 zIndex 위).
+ *  라벨-본문 시각 간격 = padBottom + marginBottom = 6(레퍼런스 비율, 본문 한 줄 19의 약 1/3). */
+export const TRANSLATE_LABEL_BOX = { padTop: 8, padBottom: 19, gapBelow: 6 } as const;
 
 export type TranslateLabelState = 'idle' | 'loading' | 'translated';
 
@@ -40,7 +43,6 @@ export function TranslateButton({ state, sourceLanguage, onPress }: { state: Tra
       style={styles.row}
       onPress={onPress}
       disabled={state === 'loading'}
-      hitSlop={TRANSLATE_LABEL_HIT_SLOP} // 라벨 줄은 낮게(레퍼런스 간격) — 터치 영역은 hitSlop으로 44
       accessibilityRole="button"
       accessibilityState={{ busy: state === 'loading' }}
       testID="translate-btn"
@@ -53,8 +55,13 @@ export function TranslateButton({ state, sourceLanguage, onPress }: { state: Tra
 }
 
 const styles = StyleSheet.create({
-  // 본문과의 간격 = 본문 한 줄(19)의 약 1/3(레퍼런스 비율)
-  row: { alignSelf: 'flex-start', marginBottom: 6 },
+  row: {
+    alignSelf: 'flex-start',
+    paddingTop: TRANSLATE_LABEL_BOX.padTop,
+    paddingBottom: TRANSLATE_LABEL_BOX.padBottom,
+    marginBottom: TRANSLATE_LABEL_BOX.gapBelow - TRANSLATE_LABEL_BOX.padBottom,
+    zIndex: 1, // 아래로 겹친 상자 부분의 터치가 본문(뒤 형제)이 아니라 라벨로
+  },
   label: { fontFamily: font.body, fontSize: TRANSLATE_LABEL.fontSize, lineHeight: TRANSLATE_LABEL_LINE_H },
 });
 

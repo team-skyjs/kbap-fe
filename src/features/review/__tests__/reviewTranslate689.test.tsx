@@ -52,7 +52,7 @@ jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[])
 import { FeedCard } from '../FeedCard';
 import type { Review } from '@/lib/api/types';
 import { StyleSheet } from 'react-native';
-import { TRANSLATE_LABEL, TRANSLATE_LABEL_HIT_SLOP, TRANSLATE_LABEL_LINE_H } from '@/components/TranslateButton';
+import { TRANSLATE_LABEL, TRANSLATE_LABEL_BOX, TRANSLATE_LABEL_LINE_H } from '@/components/TranslateButton';
 
 const REVIEW = (over: Partial<Review> = {}): Review =>
   ({ id: '53', foodId: '7', rating: 5, body: 'Really good soup', createdAt: '2026-10-01', authorNationality: 'US', author: { nickname: 'Amy', memberId: 9 }, ...over }) as Review;
@@ -97,17 +97,48 @@ it('상수 = 스펙 값(레퍼런스 픽셀 실측) — 번역 전 #1B95E0 · �
   expect(TRANSLATE_LABEL).toEqual({ idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 });
 });
 
-it('Codex #223 P2: 유효 터치 높이 ≥ 44(라벨 줄 + hitSlop 위아래) · 위 확장은 카드 gap 8 이내 · 라벨 1줄 고정', () => {
+it('Codex #223 P2(2차): 터치 = **실제 레이아웃 상자 44**(hitSlop 없음) · 상자가 부모(래퍼) 안 · 시각 간격 무변 · 라벨이 본문 위 z', () => {
   const t = render(REVIEW());
   const b = btn(t);
-  const slop = b.props.hitSlop as { top: number; bottom: number };
-  expect(slop).toEqual(TRANSLATE_LABEL_HIT_SLOP);
-  const lab = labelText(t);
-  expect(lab.style).toEqual(expect.objectContaining({ lineHeight: TRANSLATE_LABEL_LINE_H }));
-  expect(TRANSLATE_LABEL_LINE_H + slop.top + slop.bottom).toBeGreaterThanOrEqual(44);
-  expect(slop.top).toBeLessThanOrEqual(8);
-  const host = b.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
-  expect(host.props.numberOfLines).toBe(1);
+  expect(b.props.hitSlop).toBeUndefined(); // 부모 경계에서 잘리는 hitSlop에 기대지 않는다
+  const box = StyleSheet.flatten(b.props.style) as { paddingTop: number; paddingBottom: number; marginTop?: number; marginBottom: number; zIndex?: number };
+  expect(labelText(t).style).toEqual(expect.objectContaining({ lineHeight: TRANSLATE_LABEL_LINE_H }));
+  const boxH = box.paddingTop + TRANSLATE_LABEL_LINE_H + box.paddingBottom;
+  expect(boxH).toBeGreaterThanOrEqual(44);
+  // 부모 안: 상자 위쪽은 래퍼 top에서 시작(음수 marginTop 금지) · 래퍼는 카드 gap(8) 안에서만 올라감
+  expect(box.marginTop ?? 0).toBeGreaterThanOrEqual(0);
+  let wrapper = b.parent;
+  while (wrapper && !(typeof wrapper.type === 'string' && wrapper.props?.style)) wrapper = wrapper.parent;
+  const wrap = StyleSheet.flatten(wrapper!.props.style) as { marginTop?: number };
+  expect(wrap.marginTop).toBe(-box.paddingTop);
+  expect(box.paddingTop).toBeLessThanOrEqual(8); // FeedCard·전체 리뷰 카드 gap 8 — 위 사진/줄과 겹치지 않음
+  // 상자 아래 끝이 래퍼 안: 래퍼 최소 높이 = padTop + 줄 + 간격 + 본문 한 줄(19)
+  const BODY_LINE = 19;
+  expect(boxH).toBeLessThanOrEqual(box.paddingTop + TRANSLATE_LABEL_LINE_H + TRANSLATE_LABEL_BOX.gapBelow + BODY_LINE);
+  // 시각 위치 무변: 라벨 글자 = 앞 형제 + gap 8 − 8 + 8 · 본문 = 라벨 줄 + 6
+  expect(wrap.marginTop! + box.paddingTop).toBe(0);
+  expect(box.paddingBottom + box.marginBottom).toBe(6);
+  expect(box.zIndex).toBe(1);
+  // 라벨이 숨으면 래퍼 보정도 없다(본문 위치 무변)
+});
+
+it('라벨 숨김(플래그 off) = 래퍼 marginTop 보정 없음 — 본문 위치 그대로', () => {
+  const flags = jest.requireMock('@/lib/flags') as { FLAGS: { contentTranslation: boolean } };
+  flags.FLAGS.contentTranslation = false;
+  try {
+    const t = render(REVIEW());
+    expect(btn(t)).toBeUndefined();
+    const bodyText = t.root.findAll((x) => typeof x.props?.onTextLayout === 'function')[0];
+    let p = bodyText.parent;
+    const margins: unknown[] = [];
+    while (p) {
+      if (typeof p.type === 'string' && p.props?.style) margins.push((StyleSheet.flatten(p.props.style) as { marginTop?: number }).marginTop);
+      p = p.parent;
+    }
+    expect(margins).not.toContain(-TRANSLATE_LABEL_BOX.padTop);
+  } finally {
+    flags.FLAGS.contentTranslation = true;
+  }
 });
 
 it('라벨은 본문 **위**(같은 카드 안 렌더 순서) · 본문 아래 버튼 없음 · 번역 전 = "Show translation" #1B95E0 12.5', () => {
