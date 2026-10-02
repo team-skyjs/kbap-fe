@@ -63,3 +63,19 @@ it('release 2회 = then 1회 · 풀린 뒤엔 막지 않음', () => {
   expect(backs.map((b) => b.mock.calls.length)).toEqual([1, 0, 0]); // 첫 then만 · 뒤로 1회
   expect(mockPrevent.on).toBe(false);
 });
+
+// #236 /review C: 확인 창이 뜬 채 제출 성공(완료 모달) → 두 Modal 동시 visible = 겹침 프리즈 전례
+it('확인 창이 떠 있는 동안 지킬 것이 없어지면(dirty 해제·release) 스스로 닫힌다', () => {
+  let t!: ReactTestRenderer;
+  act(() => { t = renderer.create(<Harness dirty />); });
+  act(() => mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }));
+  expect(modalOpen(t)).toBe(true);
+  act(() => t.update(<Harness dirty={false} />)); // 제출 성공 → 완료 상태
+  expect(modalOpen(t)).toBe(false);
+  act(() => t.update(<Harness dirty />));
+  expect(modalOpen(t)).toBe(false); // 다시 dirty가 돼도 옛 확인 창이 되살아나지 않음
+  act(() => mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }));
+  expect(modalOpen(t)).toBe(true);
+  act(() => api.release(() => {})); // 저장 성공 → 복귀 경로
+  expect(modalOpen(t)).toBe(false);
+});

@@ -120,7 +120,10 @@ function ReviewComposeScreen() {
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
-  const leave = useLeaveConfirm(draftKey(rating, body, photos, place, extras) !== baseline && !submitted);
+  // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
+  // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
+  const formShown = !isGuest && !(editing && !editReviewData);
+  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted);
   const canPost = canPostReview(rating) && !posting;
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
@@ -257,6 +260,7 @@ function ReviewComposeScreen() {
   // 커서 추종을 불러, 포커스도 입력도 없는데 본문 블록 끝이 보이게 53.7pt 스크롤했다(카드 윗줄이 헤더 밑으로).
   // → 추종은 **본문이 포커스된 동안에만**(호출부 셋 — 크기 변화·선택 변화·키보드 표시 — 이 모두 여기를 지난다).
   const bodyFocusedRef = useRef(false);
+  const followedBy = useRef(0); // KB-708 D: 이모지 키보드로 따라 내린 누적량(되돌릴 몫)
   const bodyLenRef = useRef(0);
   useLayoutEffect(() => {
     bodyLenRef.current = body.length;
@@ -285,7 +289,17 @@ function ReviewComposeScreen() {
     else if (touchY.current != null) ensureTappedLineVisible();
     // KB-708(5): 중간을 고치는 중(탭 대용값은 입력 시작에 지워짐) 키보드가 더 커지면(이모지 키보드 +53) 캐럿 좌표가 없으니
     // 줄어든 만큼 그대로 내려 아래 끝에 있던 내용(편집 중인 줄)을 계속 보이게. 포커스 없으면 무동작(#228 진입 직후 스크롤 금지 유지).
-    else if (bodyFocusedRef.current && shrinkBy > 0 && shrinkBy <= SHRINK_FOLLOW_MAX) scrollRef.current?.scrollTo({ y: scrollY.current + shrinkBy, animated: true });
+    else if (bodyFocusedRef.current && shrinkBy > 0 && shrinkBy <= SHRINK_FOLLOW_MAX) {
+      scrollRef.current?.scrollTo({ y: scrollY.current + shrinkBy, animated: true });
+      followedBy.current += shrinkBy; // #236 /review D: 이모지 키보드를 끄면 이만큼 되돌린다(켤 때마다 53씩 쌓이던 것)
+    }
+  };
+  // 뷰포트가 다시 늘면(이모지 키보드 끔) 따라 내린 양만큼 되돌림 — 포커스 중 · 상한 이내만, 내린 적 없으면 무동작
+  const unfollowOnViewportGrow = (growBy: number) => {
+    if (!bodyFocusedRef.current || followedBy.current <= 0 || growBy > SHRINK_FOLLOW_MAX) return;
+    const back = Math.min(growBy, followedBy.current);
+    followedBy.current -= back;
+    scrollRef.current?.scrollTo({ y: Math.max(0, scrollY.current - back), animated: true });
   };
   // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
   const followRef = useRef(followOnViewportChange);
@@ -369,6 +383,7 @@ function ReviewComposeScreen() {
           svH.current = h;
           // KAV 레이아웃과 keyboardDidShow의 순서에 기대지 않게 — 포커스 중 뷰포트가 줄면 한 번 더(가드·식은 같음)
           if (shrank) followOnViewportChange(prevH - h);
+          else if (prevH > 0 && h > prevH) unfollowOnViewportGrow(h - prevH);
         }}
       >
         {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
@@ -474,6 +489,7 @@ function ReviewComposeScreen() {
             }}
             onBlur={() => {
               bodyFocusedRef.current = false;
+              followedBy.current = 0; // 포커스가 끝나면 되돌릴 양도 잊는다(키보드가 내려가며 늘어나는 뷰포트는 되돌림 대상 아님)
               touchY.current = null;
               setBodyFocused(false);
             }}

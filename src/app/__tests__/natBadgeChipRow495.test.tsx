@@ -268,6 +268,7 @@ describe('KB-708 (1)', () => {
       expect({ variant, context: gate().context, open: gate().open }).toEqual({ variant, context: 'risk', open: true });
       act(() => gate().onClose());
       expect(gate().open).toBe(false);
+      expect(gate().context).toBe('risk'); // #236 /review E: 닫히는 동안(iOS 페이드아웃) 문구 맥락 유지 — 'save'로 바뀌면 북마크 문구가 비친다
       if (variant === 'screen') {
         act(() => tree.root.findAll((n) => n.props?.testID === 'food-chip-saved' && typeof n.props?.onPress === 'function')[0].props.onPress());
         expect({ context: gate().context, open: gate().open }).toEqual({ context: 'save', open: true });

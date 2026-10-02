@@ -231,7 +231,8 @@ export function FoodExplorer({
     }
   }
   // KB-708: 게이트 문맥 — 위험도 칩 = 판정 문구(risk), 북마크·Saved 칩 = 저장 문구(save). null = 닫힘
-  const [gate, setGate] = React.useState<'risk' | 'save' | null>(null);
+  // 열림과 문구 맥락을 따로 — 닫을 때 맥락은 남긴다(닫는 순간 'save'로 바뀌면 페이드아웃 0.3초 동안 북마크 문구가 비친다 — #236 /review E)
+  const [gate, setGate] = React.useState<{ ctx: 'risk' | 'save'; open: boolean }>({ ctx: 'save', open: false });
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
   // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).
   const chipScrollRef = React.useRef<ScrollView | null>(null);
@@ -278,7 +279,7 @@ export function FoodExplorer({
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
   const onBookmark = (f: FoodCard) => {
-    if (guest) return setGate('save');
+    if (guest) return setGate({ ctx: 'save', open: true });
     if (!savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
@@ -288,12 +289,12 @@ export function FoodExplorer({
 
   // 9/5 발주: 게스트 칩 = 렌더하되 개인화 칩 탭 = 게이트(선택 All 유지)
   const onChip = (c: RiskChip) => {
-    if (c !== 'all' && guest) return setGate('risk'); // KB-708: 칩 맥락 = 개인 판정(상세 잠금 줄과 같은 문구) — 북마크 문구가 떴다
+    if (c !== 'all' && guest) return setGate({ ctx: 'risk', open: true }); // KB-708: 칩 맥락 = 개인 판정(상세 잠금 줄과 같은 문구) — 북마크 문구가 떴다
     setRiskChip(c);
   };
   // P-318: Saved 토글 칩 — 게스트는 저장 게이트(북마크·개인화 칩과 동일 문맥)
   const onSavedChip = () => {
-    if (guest) return setGate('save'); // Saved 칩 = 저장 문구가 맞다
+    if (guest) return setGate({ ctx: 'save', open: true }); // Saved 칩 = 저장 문구가 맞다
     setSavedOnly((v) => !v);
   };
 
@@ -522,7 +523,7 @@ export function FoodExplorer({
           }))}
           onClose={() => setSortSheet(false)}
         />
-        <AuthGateSheet context={gate ?? 'save'} open={gate != null} onClose={() => setGate(null)} />
+        <AuthGateSheet context={gate.ctx} open={gate.open} onClose={() => setGate((g) => ({ ...g, open: false }))} />
       </>
     );
   }
@@ -648,7 +649,7 @@ export function FoodExplorer({
           </View>
         </>
       )}
-      <AuthGateSheet context={gate ?? 'save'} open={gate != null} onClose={() => setGate(null)} />
+      <AuthGateSheet context={gate.ctx} open={gate.open} onClose={() => setGate((g) => ({ ...g, open: false }))} />
     </View>
   );
 }

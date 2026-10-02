@@ -53,6 +53,8 @@ jest.mock('expo-router', () => ({
   useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => mockComposeParams,
+  usePathname: () => '/', // 게스트 분기 AuthGateSheet
+  useSegments: () => [],
 }));
 // KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
 const mockNavDispatch = jest.fn();
@@ -67,7 +69,8 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+const mockSession = { guest: false }; // KB-708 B: 작성 중 세션 만료(게스트 전환) 시나리오만 true
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockSession.guest }));
 jest.mock('@/lib/data/useMe', () => ({
   useMe: () => ({
     data: {
@@ -159,7 +162,20 @@ describe('KB-708 이탈 확인(커뮤니티)', () => {
     act(() => tree.root.findAll((n) => n.props?.testID === 'discard-go' && typeof n.props?.onPress === 'function')[0].props.onPress());
     expect(mockNavDispatch).toHaveBeenCalledWith(action);
   });
-  it('수정: 프리필만 = 막지 않음(안 고친 수정은 조용히 닫힘) · 고치면 막음 · 되돌리면 다시 안 막음', () => {
+  it('B: 작성 중 세션 만료(게스트 전환) = 막지 않음 — 게스트 분기엔 확인 창이 없다', () => {
+    const tree = render();
+    act(() => bodyInput(tree).props.onChangeText('draft'));
+    expect(mockPrevent.on).toBe(true);
+    mockSession.guest = true;
+    try {
+      act(() => bodyInput(tree).props.onChangeText('draft 2')); // 앱에선 useIsGuest 구독이 다시 그림 — 목은 구독이 없어 상태 변화로
+      expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm')).toHaveLength(0);
+      expect(mockPrevent.on).toBe(false);
+    } finally {
+      mockSession.guest = false;
+    }
+  });
+  it('수정: 프리필만 = 막지 않음(안 고친 수정은 조용히 닫힘) · 고치면 막음 · 되돌리면 다시 안 막음', async () => {
     mockComposeParams = { editId: 'p1' };
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
     qc.setQueryData(['community', 'post', 'p1'], { id: 'p1', body: 'old body', photos: [], foodTags: [], placeTag: null });
@@ -176,6 +192,13 @@ describe('KB-708 이탈 확인(커뮤니티)', () => {
     act(() => bodyInput(tree).props.onChangeText('old body!'));
     expect(mockPrevent.on).toBe(true);
     act(() => bodyInput(tree).props.onChangeText('old body'));
+    expect(mockPrevent.on).toBe(false);
+    // #236 /review G: 재조회로 서버 값이 바뀌어도(프리필은 1회라 화면 값 그대로) 안 고쳤으면 dirty 아님 — 기준 = 프리필 시점 스냅샷
+    await act(async () => {
+      qc.setQueryData(['community', 'post', 'p1'], { id: 'p1', body: 'server changed', photos: [], foodTags: [], placeTag: null });
+      await new Promise((r) => setTimeout(r, 0)); // TanStack 알림은 다음 틱
+    });
+    expect(bodyInput(tree).props.value).toBe('old body');
     expect(mockPrevent.on).toBe(false);
   });
 });

@@ -75,6 +75,8 @@ export default function CommunityCompose() {
   const [tagSheet, setTagSheet] = React.useState<'food' | 'place' | null>(null);
   const [posted, setPosted] = React.useState(false);
   const seeded = React.useRef(false);
+  // 수정 기준 = 프리필 시점 스냅샷(#236 /review G — 살아 있는 editingPost와 비교하면 재조회로 값이 바뀔 때 안 고쳤는데 dirty)
+  const [baseline, setBaseline] = React.useState<string | null>(null);
 
   // 수정 모드 — 기존 글 프리필 (1회)
   React.useEffect(() => {
@@ -83,6 +85,7 @@ export default function CommunityCompose() {
       setPhotos(editingPost.photos);
       setFoodTags(editingPost.foodTags);
       setPlaceTag(editingPost.placeTag);
+      setBaseline(JSON.stringify([editingPost.body, editingPost.photos, editingPost.foodTags, editingPost.placeTag]));
       seeded.current = true;
     }
   }, [editingPost]);
@@ -93,8 +96,8 @@ export default function CommunityCompose() {
 
   // KB-708: 작성 = 뭐라도 넣었으면 · 수정 = 프리필 값과 달라졌으면(안 고친 수정은 조용히 닫힘 — 리뷰 수정과 같은 규칙)
   const draft = JSON.stringify([body, photos, foodTags, placeTag]);
-  const dirty = editingPost
-    ? draft !== JSON.stringify([editingPost.body, editingPost.photos, editingPost.foodTags, editingPost.placeTag])
+  const dirty = editId
+    ? baseline != null && draft !== baseline // 프리필 전(미도착) = 지킬 것 없음
     : body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
   const back = () => router.back(); // 확인은 아래 useLeaveConfirm이 모든 뒤로 경로에서
 
@@ -119,7 +122,8 @@ export default function CommunityCompose() {
   // P-173: 글 작성은 비멱등(연타 = 중복 글) — 공용 가드(동기 ref, isPending 상태 가드는 레이스)
   const { busy: submitting, run: runSubmit } = useSubmitGuard();
   // KB-708: 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 성공 뒤 = 완료 모달 → 막지 않음
-  const leave = useLeaveConfirm(dirty && !posted);
+  // #236 /review B: 게스트 분기(early return)엔 확인 창이 없다 — 거기서 막으면 나갈 길이 로그인뿐. 폼 분기에서만 막는다
+  const leave = useLeaveConfirm(!isGuest && dirty && !posted);
   const submit = () => {
     if (!canPost || submitting) return;
     const input = { body: body.trim(), photos, foodTags, placeTag };

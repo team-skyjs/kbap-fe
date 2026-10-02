@@ -331,3 +331,16 @@ it('KB-708 이탈 확인(수정): 프리필 직후 = 막지 않음 · 고치면 
   expect(mockPrevent.on).toBe(false);
   expect(mockBack).toHaveBeenCalledTimes(1);
 });
+
+// #236 /review B: 수정 미도착 분기(early return — 스켈레톤·notFound)엔 확인 창이 없다 → 거기서 막으면 갇힘
+it('KB-708 B: 고친 뒤 리뷰가 캐시에서 사라져 미도착 분기로 가면 막지 않음 · 확인 창 0', () => {
+  const tree = render(<ReviewCompose />);
+  const input = tree.root.findAll((n) => n.props?.multiline === true && typeof n.props?.onChangeText === 'function')[0];
+  act(() => input.props.onChangeText('good taste, edited'));
+  expect(mockPrevent.on).toBe(true);
+  queryClient.setQueryData(['me', 'reviews'], []);
+  act(() => input.props.onChangeText('good taste, edited again')); // 재렌더 계기(캐시 읽기는 렌더 중 — 구독 아님)
+  expect(byId(tree, 'edit-loading').length + byId(tree, 'edit-not-found').length).toBeGreaterThan(0); // 미도착 분기
+  expect(byId(tree, 'leave-confirm')).toHaveLength(0);
+  expect(mockPrevent.on).toBe(false);
+});

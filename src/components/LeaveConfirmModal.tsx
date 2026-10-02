@@ -26,13 +26,16 @@ export function useLeaveConfirm(dirty: boolean) {
   const [pending, setPending] = React.useState<NavAction | null>(null);
   const [released, setReleased] = React.useState<(() => void) | null>(null);
   usePreventRemove(dirty && released == null, ({ data }) => setPending(data.action));
+  // 지킬 것이 없어지면 대기 중인 이동도 버린다(렌더 중 전이 — 나중에 다시 dirty가 돼도 옛 확인 창이 되살아나지 않게)
+  if (pending != null && (!dirty || released != null)) setPending(null);
   React.useEffect(() => {
     if (!released) return;
     released();
   }, [released]);
   return {
     modal: {
-      visible: pending != null,
+      // 지킬 것이 없어지면 스스로 닫힘 — 확인 창이 뜬 채 제출이 성공하면(리뷰 신규·커뮤니티 = 완료 모달) Modal 두 장이 겹친다(겹침 프리즈 전례)
+      visible: pending != null && dirty && released == null,
       onKeep: () => setPending(null),
       onDiscard: () => {
         setPending(null);
