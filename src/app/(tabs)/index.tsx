@@ -129,6 +129,8 @@ export default function Home() {
           srcTag="home"
           mostReviewed={home?.mostReviewed ?? []}
           mostReviewedLoading={isLoading}
+          popular={home?.recommended}
+          popularLoading={isLoading}
           onScanRowBottom={setScanRowBottom}
         />
       </View>
