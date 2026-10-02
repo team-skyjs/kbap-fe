@@ -44,6 +44,9 @@ import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/
 import { openAppSettings } from '@/lib/openExternal';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
+// ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
+// 커서가 위쪽이면 화면 밖으로 밀리므로 무동작. 캐럿 좌표를 얻게 되면 이 상한 대신 그 줄로 맞출 것.
+const SHRINK_FOLLOW_MAX = 120;
 
 /** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점) */
 function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown): string {
@@ -113,11 +116,11 @@ function ReviewComposeScreen() {
   }, [editing, editReviewData]);
   // KB-708: 변경이 있을 때만 이탈 확인 — 뒤로 가기 버튼·스와이프 뒤로·Android 하드웨어 뒤로 전부(usePreventRemove = 네이티브 스택 제스처까지).
   // 등록 성공(완료 모달)·저장 성공(복귀) 뒤에는 막지 않는다.
-  const leave = useLeaveConfirm(draftKey(rating, body, photos, place, extras) !== baseline && !submitted);
 
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
+  const leave = useLeaveConfirm(draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
   const canPost = canPostReview(rating) && !posting;
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
@@ -282,7 +285,7 @@ function ReviewComposeScreen() {
     else if (touchY.current != null) ensureTappedLineVisible();
     // KB-708(5): 중간을 고치는 중(탭 대용값은 입력 시작에 지워짐) 키보드가 더 커지면(이모지 키보드 +53) 캐럿 좌표가 없으니
     // 줄어든 만큼 그대로 내려 아래 끝에 있던 내용(편집 중인 줄)을 계속 보이게. 포커스 없으면 무동작(#228 진입 직후 스크롤 금지 유지).
-    else if (bodyFocusedRef.current && shrinkBy > 0) scrollRef.current?.scrollTo({ y: scrollY.current + shrinkBy, animated: true });
+    else if (bodyFocusedRef.current && shrinkBy > 0 && shrinkBy <= SHRINK_FOLLOW_MAX) scrollRef.current?.scrollTo({ y: scrollY.current + shrinkBy, animated: true });
   };
   // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
   const followRef = useRef(followOnViewportChange);

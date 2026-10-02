@@ -29,9 +29,9 @@ export default function FeedbackComposeScreen() {
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);
   const submit = useSubmitFeedback();
-  // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 성공 뒤엔 막지 않고 닫힘
-  const leave = useLeaveConfirm(body.trim().length > 0 || photos.length > 0);
   const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
+  // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 중 = 막기만(모달 0) · 전송 성공 뒤엔 막지 않고 닫힘
+  const leave = useLeaveConfirm(body.trim().length > 0 || photos.length > 0, guard.busy);
   // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
   // 도착한 성공 콜백이 router.back()을 부르면 **지금 화면**이 닫힌다(내 문의 → 작성으로
   // 되돌아가는 역주행). 이 화면이 아직 떠 있을 때만 닫는다(Codex #170).

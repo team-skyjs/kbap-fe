@@ -17,13 +17,18 @@ type NavAction = Parameters<Parameters<typeof usePreventRemove>[1]>[0]['data']['
 
 /**
  * `dirty` 동안 이탈을 막는다. 성공(등록·저장·전송) 뒤 떠날 땐 `release(then)` — 막기를 먼저 풀고 **다음 렌더에서** then을 1회 실행
- * (같은 틱에 router.back()을 부르면 아직 막힌 상태라 성공한 작성에 "버릴까요?"가 뜬다).
+ * (같은 틱에 router.back()을 부르면 아직 막힌 상태라 성공한 작성에 "버릴까요?"가 뜬다). 두 번 불러도 첫 then만(뒤로 2회 = 화면 두 장 방지).
+ * `submitting` 동안은 **막기만 하고 확인 창은 띄우지 않는다** — "그만두기"로 닫혀도 요청은 이미 나가 있어 등록된다(사용자는 버렸다고 믿음).
+ * 끝나면 성공 = release 경로 · 실패 = 다시 dirty 확인 경로.
  */
-export function useLeaveConfirm(dirty: boolean) {
+export function useLeaveConfirm(dirty: boolean, submitting = false) {
   const navigation = useNavigation();
   const [pending, setPending] = React.useState<NavAction | null>(null);
   const [released, setReleased] = React.useState<(() => void) | null>(null);
-  usePreventRemove(dirty && released == null, ({ data }) => setPending(data.action));
+  usePreventRemove((dirty || submitting) && released == null, ({ data }) => {
+    if (submitting) return; // 제출 중 = 이동만 막음(모달 0)
+    setPending(data.action);
+  });
   React.useEffect(() => {
     if (!released) return;
     released();
@@ -37,7 +42,7 @@ export function useLeaveConfirm(dirty: boolean) {
         if (pending) navigation.dispatch(pending); // 막았던 그 이동(뒤로·스와이프·하드웨어)을 그대로 진행
       },
     },
-    release: (then: () => void = () => {}) => setReleased(() => then),
+    release: (then: () => void = () => {}) => setReleased((prev) => prev ?? then), // 이미 풀렸으면 무시
   };
 }
 

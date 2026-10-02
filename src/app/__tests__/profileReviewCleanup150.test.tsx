@@ -457,9 +457,8 @@ it('KB-700(#228 공부 델타): 가운데 탭 → 입력 시작 → 뷰포트가
   act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 121, end: 121 } } }));
   scrollTo.mockClear();
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 330 } } })); // 키보드 높이 증가로 다시 축소
-  // 옛 탭 줄 목표(700 − 330 + 16 = 386)로 되돌리지 않는다 — KB-708(5): 대신 줄어든 만큼(370) 그대로 내려 편집 중인 줄을 유지
-  expect(scrollTo).not.toHaveBeenCalledWith({ y: 386, animated: true });
-  expect(scrollTo).toHaveBeenCalledWith({ y: 370, animated: true });
+  // 옛 탭 줄로 되돌리지 않는다 · KB-708(5) 상한: 370pt 축소(키보드 통째 재등장 규모)는 "줄어든 만큼 내림"도 안 함
+  expect(scrollTo).not.toHaveBeenCalled();
   spy.mockRestore();
 });
 
@@ -504,5 +503,10 @@ it('KB-708 (5): 중간을 고치는 중 이모지 키보드로 키보드가 +53 
   scrollTo.mockClear();
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } })); // 이모지 키보드 +53
   expect(scrollTo).toHaveBeenCalledWith({ y: 253, animated: true });
+  // 큰 축소(키보드가 통째로 다시 올라옴 ~300) = 무동작 — 커서가 위쪽이면 화면 밖으로 밀어내므로
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
+  expect(scrollTo).not.toHaveBeenCalled();
   spy.mockRestore();
 });
