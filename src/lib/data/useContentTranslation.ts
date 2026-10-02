@@ -6,7 +6,7 @@
  * 계약(초안 — 정본은 서버 KB-678 dev 배포 후 Swagger): `POST /api/translations?lang={앱 언어}`
  *   body `{ targetType, targetId }` → 200 `{ targetType, targetId, language, text }` · 503 `TRANSLATION-001`.
  * - 요청은 **버튼을 눌렀을 때만**(자동 번역 0). 결과는 react-query 캐시(키 = 종류·id·언어) — 원문으로 돌렸다가
- *   다시 번역해도 재요청 0, 언어를 바꾸면 다른 키.
+ *   다시 번역해도 재요청 0, 언어를 바꾸면 다른 키. 캐시는 **세션 동안**(gcTime ∞ — 셀이 내려가거나 화면을 떠났다 와도 유지).
  * - 보기 상태(원문/번역)는 **카드 로컬 상태** — 서버가 아는 사실이 아니라 보기 설정이다.
  * - 실패(503·400 REVIEW-001·네트워크·빈 text) = 토스트(에러 변형) + 원문 유지. 실패는 캐시하지 않는다(다음 탭에서 다시 요청).
  * - 캐시 키에 본문 해시 · 보기 상태는 "보고 있는 키" — 본문·언어가 바뀌면 원문으로 돌아가고 다음 탭에 재요청.
@@ -44,7 +44,7 @@ export interface ContentTranslation {
   loading: boolean;
   /** 번역을 보여 주는 중일 때의 원문 언어(KB-688) — null = 모름("Translated"). */
   sourceLanguage: string | null;
-  /** KB-689: 원문 언어 == 요청 언어로 확인된 글 — 번역 표시 안 함 + 라벨 숨김(세션 동안 = 캐시). */
+  /** KB-689: 원문 언어 == 요청 언어로 확인된 글 — 번역 표시 안 함 + 라벨 숨김(세션 동안 — 캐시 gcTime ∞, 앱 재시작·본문/언어 변경 시 다시 판정). */
   sameLanguage: boolean;
   /** 버튼 한 번 — 원문이면 번역(캐시 있으면 즉시), 번역 중이면 원문으로. */
   toggle: () => void;
@@ -63,6 +63,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     queryFn: () => fetchTranslation(targetType, targetId),
     enabled: false,
     staleTime: Infinity,
+    gcTime: Infinity, // 세션 동안 유지 — 기본 5분이면 셀 가상화·화면 이탈 뒤 같은 언어 숨김이 풀리고 번역도 재요청(#223 공부)
   });
   // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
   const [shownKey, setShownKey] = React.useState<string | null>(null);
@@ -86,7 +87,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
       return;
     }
     setLoading(true);
-    qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, retry: 0 })
+    qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 })
       .then((res) => {
         const same = res.sourceLanguage != null && res.sourceLanguage === res.language;
         track(EVENTS.review_translate_toggle, { action: 'translate', target, result: same ? 'same' : 'ok' });

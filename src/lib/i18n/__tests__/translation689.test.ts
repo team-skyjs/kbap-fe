@@ -18,7 +18,16 @@ it.each(LOCALES)('%s — showTranslation · translatedFrom({{language}}) · tran
   expect(/\p{Extended_Pictographic}/u.test(JSON.stringify(t))).toBe(false);
 });
 
-it('ko 문구(K-큐 대상) — 번역 보기 · {{language}}에서 번역 · 번역됨 · 영어', () => {
+it('ko 문구(K-큐 대상 · 상태 문구는 해요체 — Codex #223 P1) — 번역 보기 · {{language}}에서 번역했어요 · 번역했어요 · 영어', () => {
   const t = tr('ko');
-  expect([t.showTranslation, t.translatedFrom, t.translated, (t.lang as Record<string, string>).en]).toEqual(['번역 보기', '{{language}}에서 번역', '번역됨', '영어']);
+  expect([t.showTranslation, t.translatedFrom, t.translated, (t.lang as Record<string, string>).en]).toEqual(['번역 보기', '{{language}}에서 번역했어요', '번역했어요', '영어']);
+});
+
+it('ko 가장 긴 라벨("중국어(번체)에서 번역했어요")도 1줄에 들어간다 — 320pt 카드 내부 폭(280) × 글자 배율 1.3 기준 보수 추정', () => {
+  const t = tr('ko');
+  const names = Object.values(t.lang as Record<string, string>);
+  const longest = names.map((n) => String(t.translatedFrom).replace('{{language}}', n)).sort((a, b) => b.length - a.length)[0];
+  expect(longest.length).toBe('중국어(번체)에서 번역했어요'.length); // 간체·번체 동률 최장(15자)
+  // 한글 1자 ≈ 글자 크기 폭(12.5) · 괄호·공백도 1자로 보수 계산 → 15자 × 12.5 × 1.3 = 243.75 < 280
+  expect(longest.length * 12.5 * 1.3).toBeLessThan(280);
 });

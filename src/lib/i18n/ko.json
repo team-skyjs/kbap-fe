@@ -453,8 +453,8 @@
   },
   "translation": {
     "showTranslation": "번역 보기",
-    "translatedFrom": "{{language}}에서 번역",
-    "translated": "번역됨",
+    "translatedFrom": "{{language}}에서 번역했어요",
+    "translated": "번역했어요",
     "translateFailed": "번역하지 못했어요. 다시 시도해 주세요.",
     "lang": {
       "en": "영어",

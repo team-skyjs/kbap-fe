@@ -52,7 +52,7 @@ jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[])
 import { FeedCard } from '../FeedCard';
 import type { Review } from '@/lib/api/types';
 import { StyleSheet } from 'react-native';
-import { TRANSLATE_LABEL } from '@/components/TranslateButton';
+import { TRANSLATE_LABEL, TRANSLATE_LABEL_HIT_SLOP, TRANSLATE_LABEL_LINE_H } from '@/components/TranslateButton';
 
 const REVIEW = (over: Partial<Review> = {}): Review =>
   ({ id: '53', foodId: '7', rating: 5, body: 'Really good soup', createdAt: '2026-10-01', authorNationality: 'US', author: { nickname: 'Amy', memberId: 9 }, ...over }) as Review;
@@ -95,6 +95,19 @@ beforeEach(() => {
 
 it('상수 = 스펙 값(레퍼런스 픽셀 실측) — 번역 전 #1B95E0 · 번역 중/후 #536471 · 글자 12.5', () => {
   expect(TRANSLATE_LABEL).toEqual({ idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 });
+});
+
+it('Codex #223 P2: 유효 터치 높이 ≥ 44(라벨 줄 + hitSlop 위아래) · 위 확장은 카드 gap 8 이내 · 라벨 1줄 고정', () => {
+  const t = render(REVIEW());
+  const b = btn(t);
+  const slop = b.props.hitSlop as { top: number; bottom: number };
+  expect(slop).toEqual(TRANSLATE_LABEL_HIT_SLOP);
+  const lab = labelText(t);
+  expect(lab.style).toEqual(expect.objectContaining({ lineHeight: TRANSLATE_LABEL_LINE_H }));
+  expect(TRANSLATE_LABEL_LINE_H + slop.top + slop.bottom).toBeGreaterThanOrEqual(44);
+  expect(slop.top).toBeLessThanOrEqual(8);
+  const host = b.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
+  expect(host.props.numberOfLines).toBe(1);
 });
 
 it('라벨은 본문 **위**(같은 카드 안 렌더 순서) · 본문 아래 버튼 없음 · 번역 전 = "Show translation" #1B95E0 12.5', () => {
@@ -163,6 +176,56 @@ it('sourceLanguage === language(요청 언어) → 번역 표시로 바꾸지 �
   expect(mockToast).not.toHaveBeenCalled();
   rerender(t, REVIEW());
   expect(btn(t)).toBeUndefined();
+});
+
+it('같은 언어로 숨긴 뒤 본문이 바뀌면(수정) · 앱 언어가 바뀌면 → 라벨이 돌아온다(다시 판정)', async () => {
+  mockPost.mockResolvedValue(RES({ sourceLanguage: 'ko', language: 'ko', text: 'Really good soup' }));
+  const t = render(REVIEW());
+  await press(t);
+  expect(btn(t)).toBeUndefined();
+  rerender(t, REVIEW({ body: 'Edited soup review' }));
+  expect(labelText(t).text).toBe('translation.showTranslation');
+  rerender(t, REVIEW()); // 원래 본문 = 같은 언어로 확인된 키 → 다시 숨김
+  expect(btn(t)).toBeUndefined();
+  mockLang = 'ja';
+  rerender(t, REVIEW());
+  expect(labelText(t).text).toBe('translation.showTranslation');
+});
+
+it('#223 공부: 캐시 = 세션 동안 — 구독이 끊기고 기본 gc(5분)를 한참 넘겨도 유지 · 다시 보이면 요청 0 · 같은 언어 숨김도 유지', async () => {
+  jest.useFakeTimers();
+  try {
+    mockPost
+      .mockResolvedValueOnce(RES()) // 리뷰 53 = 영어 → 번역
+      .mockResolvedValueOnce(RES({ targetId: 54, sourceLanguage: 'ko', language: 'ko', text: 'Same lang' })); // 리뷰 54 = 같은 언어
+    const t = render(REVIEW());
+    await press(t);
+    const t2Review = REVIEW({ id: '54', body: 'Same lang' });
+    let t2!: ReactTestRenderer;
+    act(() => {
+      t2 = renderer.create(card(t2Review));
+    });
+    await press(t2);
+    expect(btn(t2)).toBeUndefined();
+    act(() => t.unmount()); // 셀 가상화로 내려감 = 구독 해제
+    act(() => t2.unmount());
+    act(() => jest.advanceTimersByTime(60 * 60 * 1000)); // 기본 gcTime 5분 ≪ 1시간
+    expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(2);
+    let back!: ReactTestRenderer;
+    act(() => {
+      back = renderer.create(card(REVIEW()));
+    });
+    await press(back);
+    expect(out(back)).toContain('정말 맛있는 국'); // 캐시에서 즉시
+    let back2!: ReactTestRenderer;
+    act(() => {
+      back2 = renderer.create(card(t2Review));
+    });
+    expect(btn(back2)).toBeUndefined(); // 같은 언어 숨김 유지
+    expect(mockPost).toHaveBeenCalledTimes(2);
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 it('본문 접힘("more")과 함께 — 라벨은 접힘 대상 밖(본문 Text 위 별도 줄), 펼침 토글은 본문 아래', () => {

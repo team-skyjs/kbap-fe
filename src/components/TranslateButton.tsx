@@ -17,6 +17,11 @@ export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fo
 /** 언어 이름을 아는 코드 = 앱 10개 언어(서버가 이 글자 그대로 정규화해 보낸다 — KB-688). */
 export const TRANSLATION_LANG_CODES = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'] as const;
 
+/** 라벨 줄 높이(1줄 고정) + 터치 확장. 유효 터치 높이 = 17 + 8 + 19 = 44(Codex #223 P2 — 최소 터치 타깃).
+ *  위는 8까지만(카드 gap 8 — 위 사진 썸네일 터치 영역과 겹치지 않게), 나머지는 아래로(라벨-본문 간격 6 + 본문 첫 줄 — 본문은 비대화형). */
+export const TRANSLATE_LABEL_LINE_H = 17;
+export const TRANSLATE_LABEL_HIT_SLOP = { top: 8, bottom: 19, left: 8, right: 16 } as const;
+
 export type TranslateLabelState = 'idle' | 'loading' | 'translated';
 
 export function TranslateButton({ state, sourceLanguage, onPress }: { state: TranslateLabelState; sourceLanguage: string | null; onPress: () => void }) {
@@ -35,7 +40,7 @@ export function TranslateButton({ state, sourceLanguage, onPress }: { state: Tra
       style={styles.row}
       onPress={onPress}
       disabled={state === 'loading'}
-      hitSlop={{ top: 10, bottom: 6, left: 8, right: 16 }} // 라벨 줄은 낮게(레퍼런스 간격) — 터치 영역은 hitSlop으로
+      hitSlop={TRANSLATE_LABEL_HIT_SLOP} // 라벨 줄은 낮게(레퍼런스 간격) — 터치 영역은 hitSlop으로 44
       accessibilityRole="button"
       accessibilityState={{ busy: state === 'loading' }}
       testID="translate-btn"
@@ -50,7 +55,7 @@ export function TranslateButton({ state, sourceLanguage, onPress }: { state: Tra
 const styles = StyleSheet.create({
   // 본문과의 간격 = 본문 한 줄(19)의 약 1/3(레퍼런스 비율)
   row: { alignSelf: 'flex-start', marginBottom: 6 },
-  label: { fontFamily: font.body, fontSize: TRANSLATE_LABEL.fontSize, lineHeight: 17 },
+  label: { fontFamily: font.body, fontSize: TRANSLATE_LABEL.fontSize, lineHeight: TRANSLATE_LABEL_LINE_H },
 });
 
 export default TranslateButton;
