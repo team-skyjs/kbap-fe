@@ -259,6 +259,33 @@ it('#223 공부: 캐시 = 세션 동안 — 구독이 끊기고 기본 gc(5분)�
   }
 });
 
+it('Codex #223 P2: 스크롤만 한 리뷰(탭 0)는 캐시 항목을 만들지 않는다 — 마운트 중에도·언마운트 뒤에도 0', () => {
+  const t = render(REVIEW());
+  const more: ReactTestRenderer[] = [];
+  for (let i = 0; i < 5; i++) {
+    act(() => {
+      more.push(renderer.create(card(REVIEW({ id: String(100 + i), body: `Review ${i}` }))));
+    });
+  }
+  expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(0);
+  act(() => {
+    t.unmount();
+    more.forEach((m) => m.unmount());
+  });
+  expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(0);
+});
+
+it('플래그 off = 훅이 캐시 항목을 만들지 않는다(라벨 없음)', () => {
+  const flags = jest.requireMock('@/lib/flags') as { FLAGS: { contentTranslation: boolean } };
+  flags.FLAGS.contentTranslation = false;
+  try {
+    render(REVIEW());
+    expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(0);
+  } finally {
+    flags.FLAGS.contentTranslation = true;
+  }
+});
+
 it('본문 접힘("more")과 함께 — 라벨은 접힘 대상 밖(본문 Text 위 별도 줄), 펼침 토글은 본문 아래', () => {
   const t = render(REVIEW());
   act(() => {

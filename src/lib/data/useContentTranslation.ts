@@ -12,7 +12,7 @@
  * - 캐시 키에 본문 해시 · 보기 상태는 "보고 있는 키" — 본문·언어가 바뀌면 원문으로 돌아가고 다음 탭에 재요청.
  */
 import * as React from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, apiLang } from '@/lib/api/client';
 import { showTopToast } from '@/components/topToastStore';
@@ -57,14 +57,11 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   // #220 공부 ①: 키에 본문 해시 — 리뷰가 수정되면(누가 고쳤든) 다른 키 = 옛 번역 재사용 0, 다음 탭에 재요청
   const queryKey = React.useMemo(() => ['translation', targetType, targetId, lang, hashText(text)] as const, [targetType, targetId, lang, text]);
   const keyStr = queryKey.join('|');
-  // 캐시 구독만(자동 요청 0) — 탭에서 fetchQuery로 채운다
-  const { data } = useQuery({
-    queryKey,
-    queryFn: () => fetchTranslation(targetType, targetId),
-    enabled: false,
-    staleTime: Infinity,
-    gcTime: Infinity, // 세션 동안 유지 — 기본 5분이면 셀 가상화·화면 이탈 뒤 같은 언어 숨김이 풀리고 번역도 재요청(#223 공부)
-  });
+  // 캐시 **읽기만**(Codex #223 P2): useQuery(enabled:false)는 리뷰마다 빈 캐시 항목을 만들어 무한 스크롤에 쌓인다 —
+  // getQueryData는 항목을 만들지 않는다. 항목은 탭 시점 fetchQuery만 만들고(gcTime ∞ = 받아 온 번역·같은 언어 판정만 세션 동안),
+  // 재렌더 계기는 탭 흐름의 로컬 상태(loading·shownKey)와 부모 props(본문·언어) — 같은 리뷰가 두 곳에 동시에 떠 있으면
+  // 다른 쪽은 다음 렌더에 반영(ponytail: 실사용상 동시 노출 없음, 필요해지면 useSyncExternalStore로 캐시 구독).
+  const data = qc.getQueryData<TranslationResult>(queryKey);
   // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
   const [shownKey, setShownKey] = React.useState<string | null>(null);
   // KB-689: sourceLanguage === language(요청 언어) = text가 원문 그대로 → 번역 표시로 전환하지 않는다(판정 = 문자열 일치만, 서버 계약)

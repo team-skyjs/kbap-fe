@@ -22,7 +22,8 @@ export const TRANSLATE_LABEL_LINE_H = 17;
 /** 실제 레이아웃 상자 = padTop 8 + 줄 17 + padBottom 19 = **44**(Codex #223 P2 — hitSlop은 부모 경계 밖에서 잘리므로 쓰지 않는다).
  *  시각 위치는 음수 margin으로 상쇄: 위 8은 ReviewBody 래퍼가 marginTop −8로 카드 gap(8) 안으로 올라가 흡수(위 사진 썸네일과
  *  겹치지 않음 — 상자는 래퍼 안), 아래 19 중 13은 marginBottom −13으로 본문 첫 줄 위에 겹친다(본문은 비대화형 · 라벨이 zIndex 위).
- *  라벨-본문 시각 간격 = padBottom + marginBottom = 6(레퍼런스 비율, 본문 한 줄 19의 약 1/3). */
+ *  라벨-본문 시각 간격 = padBottom + marginBottom = 6(레퍼런스 비율, 본문 한 줄 19의 약 1/3).
+ *  가로: minWidth 44(오른쪽으로만 넓어짐 — 라벨 줄 오른쪽은 빈 공간, 다른 터치 대상 없음) · maxWidth 100%(부모 안). */
 export const TRANSLATE_LABEL_BOX = { padTop: 8, padBottom: 19, gapBelow: 6 } as const;
 
 export type TranslateLabelState = 'idle' | 'loading' | 'translated';
@@ -57,6 +58,8 @@ export function TranslateButton({ state, sourceLanguage, onPress }: { state: Tra
 const styles = StyleSheet.create({
   row: {
     alignSelf: 'flex-start',
+    minWidth: 44, // Codex #223 P2(3차): 가로도 44 — 짧은 라벨("已翻译" ≈ 38pt)에서도 상자는 44(글자는 왼쪽 그대로)
+    maxWidth: '100%', // 긴 라벨(id·vi 등)은 부모 폭에서 말줄임 — 상자가 부모 밖으로 안 나감
     paddingTop: TRANSLATE_LABEL_BOX.padTop,
     paddingBottom: TRANSLATE_LABEL_BOX.padBottom,
     marginBottom: TRANSLATE_LABEL_BOX.gapBelow - TRANSLATE_LABEL_BOX.padBottom,
