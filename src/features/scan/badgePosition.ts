@@ -2,7 +2,7 @@
  * KB-706(P-445) — 홈 불꽃 뱃지 끌어 놓기 위치(순수 계산 + 저장 키).
  * 놓으면 가까운 좌/우 가장자리(여백 20)로 붙고 높이는 놓은 그대로. 위치는 **기기 단위**로 기억(회원 아님 — 탈퇴 정리 대상 아님).
  * 범위 = 위: **홈 검색 줄(검색창 + 스캔 버튼) 아래 끝 + 여백 — 불꽃이 가장 커진 프레임·불티까지 그려지는 영역 기준**(#234 QA: 위 한계를 헤더로 두면
- *  뱃지가 스캔 버튼(주 CTA)·검색창을 덮어 버튼을 누르려다 시트가 열렸다), 검색 줄 측정 전엔 헤더 아래 · 아래: 탭바 FAB 돌출부 위.
+ *  뱃지가 스캔 버튼(주 CTA)·검색창을 덮어 버튼을 누르려다 시트가 열렸다) · 아래: 탭바 FAB 돌출부 위. 검색 줄 측정 전엔 그리지 않는다.
  *  화면 크기가 달라지거나 한계 위에 저장된 값은 복원 때 범위 안으로 당긴다.
  */
 import { BADGE_DRAWN_ABOVE, BADGE_H, BADGE_W } from '@/components/CountdownBadge';
@@ -10,8 +10,7 @@ import { FAB_OVERHANG } from '@/components/TabBar';
 
 export const BADGE_POS_KEY = 'kb706.quotaBadgePos.v1';
 export const BADGE_EDGE = 20;
-/** 헤더 아래 여유(검색 줄 측정 전) · 검색 줄 아래 여백 */
-const TOP_CLEAR = 4;
+/** 검색 줄 아래 여백 */
 export const ROW_CLEAR = 4;
 /** 탭바 FAB 돌출 위 여유 */
 const BOTTOM_CLEAR = FAB_OVERHANG + 8;
@@ -36,9 +35,14 @@ export function parseBadgePos(raw: string | null | undefined): BadgePos | null {
   return null;
 }
 
-/** 뱃지 상자 top의 최솟값 — 검색 줄 아래 끝(측정 앵커)이 있으면 그 아래 여백 + 불꽃이 상자 위로 그려지는 높이, 없으면 헤더 아래 */
-export function badgeMinTop(rowBottom: number | null, headerH: number): number {
-  return rowBottom != null ? rowBottom + ROW_CLEAR + BADGE_DRAWN_ABOVE : headerH + TOP_CLEAR;
+/** 뱃지 상자 top의 최솟값 — 검색 줄 아래 끝(측정 앵커) + 여백 + 불꽃이 상자 위로 그려지는 높이 */
+export function badgeMinTop(rowBottom: number): number {
+  return rowBottom + ROW_CLEAR + BADGE_DRAWN_ABOVE;
+}
+
+/** 자리 = 저장값 있으면 그 쪽 가장자리·높이를 범위 안으로, 없으면 기본 자리(오른쪽 · 위 한계) — 세 입력이 다 있을 때만 부른다 */
+export function badgePlace(saved: BadgePos | null, areaW: number, b: { min: number; max: number }): { x: number; y: number } {
+  return saved ? { x: edgeX(saved.side, areaW), y: clampTop(saved.top, b) } : { x: edgeX('right', areaW), y: b.min };
 }
 
 /** 끌 수 있는 세로 범위(홈 영역 높이 · 위 한계 badgeMinTop) */

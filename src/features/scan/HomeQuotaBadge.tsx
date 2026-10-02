@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { CountdownBadge } from '@/components/CountdownBadge';
-import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, cachedBadgePos, rememberBadgePos, badgeBounds, badgeMinTop, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
+import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, cachedBadgePos, rememberBadgePos, badgeBounds, badgeMinTop, badgePlace, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
 import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -68,7 +68,7 @@ export function _resetQuotaCelebrationMemoryForTest() {
 }
 
 /** top = 홈이 측정한 앵커(null = 아직 측정 전 → 그리지 않는다. 축하 상태는 이 컴포넌트에 남아 측정 뒤 이어진다). */
-export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: number }) {
+export function HomeQuotaBadge({ top }: { top: number | null }) {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
@@ -141,15 +141,14 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
   // ── KB-706: 끌어 놓기 — 놓으면 가까운 좌/우 가장자리, 높이 유지, 기기 저장(놓을 때 1회). 저장값 없음 = 기본 자리(스캔 버튼 아래 측정 앵커 `top`, 오른쪽).
   const [area, setArea] = React.useState<{ w: number; h: number } | null>(null);
   // 저장 위치 상태 기계(#234 공부): 'loading'(읽는 중 — **그리지 않는다**: 기본 자리에 먼저 보였다가 저장 자리로 튀지 않게) → null(없음·읽기 실패 =
-  // 기본 자리) | 값. 사용자가 끌어 놓은 뒤 늦게 온 읽기 결과는 버린다(Codex #234 ② — 사용자 변경이 최신).
+  // 기본 자리) | 값. 읽는 중엔 뱃지가 없어 끌 수도 없으므로 "늦은 읽기가 사용자 이동을 덮는" 경로(Codex #234 ②)는 구조적으로 없다.
   const [saved, setSaved] = React.useState<BadgePos | null | 'loading'>(() => cachedBadgePos() ?? (cachedBadgePos() === null ? null : 'loading'));
-  const userMoved = useSharedValue(false);
   React.useEffect(() => {
     if (!FLAGS.countdownBadge) return; // 플래그 off(production) = 뱃지 없음 — 저장소 IO도 0
     if (cachedBadgePos() !== undefined) return; // 이번 세션에 이미 읽음(재마운트)
     let alive = true;
     const settle = (v: BadgePos | null) => {
-      if (!alive || userMoved.get()) return;
+      if (!alive) return;
       rememberBadgePos(v);
       setSaved(v);
     };
@@ -159,20 +158,13 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
     return () => {
       alive = false;
     };
-  }, [userMoved]);
-  const restored = saved === 'loading' ? null : saved;
-  // #234 QA: 위 한계 = 검색 줄 아래 끝(앵커 top − BADGE_GAP) + 여백 + 불꽃이 그려지는 높이 — 기본 자리·끌기·복원 모두 이 한계 이하
-  const rowBottom = top != null ? top - BADGE_GAP : null;
-  const minTop = badgeMinTop(rowBottom, headerH);
-  const bounds = area ? badgeBounds(area.h, minTop) : null;
-  const pos =
-    area && bounds && saved !== 'loading'
-      ? restored
-        ? { x: edgeX(restored.side, area.w), y: clampTop(restored.top, bounds) }
-        : top != null
-          ? { x: edgeX('right', area.w), y: clampTop(top, bounds) }
-          : null
-      : null;
+  }, []);
+  // 단일 게이트(Codex #234 4R): 저장값 읽기 끝 + 영역 측정 끝 + 검색 줄 앵커 측정 끝 — 셋이 다 있어야 자리를 계산하고 그린다.
+  // 위 한계 = 검색 줄 아래 끝(앵커 top − BADGE_GAP) + 여백 + 불꽃이 그려지는 높이(#234 QA). 임시 한계 경로 없음.
+  // (앵커가 안 오는 상태 = 홈 로딩 스켈레톤(검색 줄·스캔 버튼 자체가 없음) — 그때 뱃지가 없는 것이 맞다. 홈 에러 상태는 뱃지를 마운트하지 않는다.)
+  const ready = area != null && saved !== 'loading' && top != null;
+  const bounds = ready ? badgeBounds(area.h, badgeMinTop(top - BADGE_GAP)) : null;
+  const pos = ready && bounds ? badgePlace(saved, area.w, bounds) : null;
   const px = useSharedValue(0);
   const py = useSharedValue(0);
   // 끌기 상태도 공유값(.get/.set) — 렌더 중 만든 제스처 콜백이 ref를 읽으면 React Compiler가 "렌더 중 ref 접근"으로 컴포넌트를 건너뛴다
@@ -210,12 +202,11 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
       py.set(clampTop(startY.get() + e.translationY, bounds));
     })
     .onEnd((_e, success) => {
-      // 시스템이 제스처를 가져가 끝난 것(success false)·측정 전 = 취소와 같이 — 저장 없이 onFinalize가 제자리로(#234 공부)
-      if (!success || !area) return;
+      // 시스템이 제스처를 가져가 끝난 것(success false)·자리 미확정 = 취소와 같이 — 저장 없이 onFinalize가 제자리로(#234 공부)
+      if (!success || !area || !bounds) return;
       ended.set(true);
       const next: BadgePos = { side: nearestSide(px.get(), area.w), top: py.get() };
       px.set(withSpring(edgeX(next.side, area.w)));
-      userMoved.set(true);
       rememberBadgePos(next);
       setSaved(next);
       AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify(next)).catch(() => {}); // 저장 실패 = 이번 세션만 유지

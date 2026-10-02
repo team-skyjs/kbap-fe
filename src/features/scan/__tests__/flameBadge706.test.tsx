@@ -95,7 +95,7 @@ afterEach(() => {
     }
   }
 });
-const el = () => <HomeQuotaBadge top={ANCHOR} headerH={HEADER} />;
+const el = (top: number | null = ANCHOR) => <HomeQuotaBadge top={top} />;
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
@@ -293,19 +293,21 @@ describe('Codex #234 — 끝 콜백이 안 오는 경로 · 늦은 읽기', () =
     expect(t.root.findAll((n) => n.props?.testID === 'quota-sheet-title').length).toBeGreaterThan(0);
   });
 
-  it('② 사용자 이동이 읽기보다 먼저면 늦게 온 옛 저장값이 그 자리를 되돌리지 않는다(읽기 중엔 안 그려 실사용 경로는 막혔지만 방어 유지)', async () => {
+  it('② 늦은 읽기가 사용자 이동을 덮는 경로는 구조적으로 없다 — 읽는 중엔 안 그리고, 그 사이 끝난 제스처는 취소(저장 0) → 읽기 결과가 그대로 적용', async () => {
     let resolveRead!: (v: string | null) => void;
     (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => new Promise<string | null>((r) => { resolveRead = r; }));
     const t = render();
     await flush();
     layout(t);
-    expect(host(t, 'home-quota-badge')).toHaveLength(0); // 읽는 중 = 안 그림
-    drag(t, -250, 120); // (제스처 콜백 직접 구동) 왼쪽으로 놓음 — 시작 위치 0 기준
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: MIN_TOP }));
+    expect(host(t, 'home-quota-badge')).toHaveLength(0); // 읽는 중 = 안 그림(끌 대상이 없다)
+    const setItem = AsyncStorage.setItem as jest.Mock;
+    setItem.mockClear();
+    drag(t, -250, 120); // (제스처 콜백 직접 구동) 자리 미확정 중 끝난 제스처
+    expect(setItem).not.toHaveBeenCalled();
     await act(async () => {
-      resolveRead(JSON.stringify({ side: 'right', top: 300 })); // 이전 실행의 옛 자리가 늦게 도착
+      resolveRead(JSON.stringify({ side: 'left', top: 300 }));
     });
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: MIN_TOP }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: 300 }));
   });
 });
 
@@ -380,9 +382,57 @@ describe('#234 QA — 위 한계 = 홈 검색 줄 아래(그려지는 영역 기
     expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP }));
   });
 
-  it('검색 줄 측정 전(앵커 없음)엔 헤더 아래가 한계', () => {
-    expect(require('../badgePosition').badgeMinTop(null, HEADER)).toBe(HEADER + 4);
-    expect(require('../badgePosition').badgeMinTop(ROW_BOTTOM, HEADER)).toBe(MIN_TOP);
+  it('Codex #234 4R: 검색 줄 앵커 측정 전엔 저장 자리가 있어도 그리지 않는다(임시 한계로 그렸다가 튀지 않게)', async () => {
+    await AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify({ side: 'left', top: 150 })); // 헤더 기준이면 그려질 높이, 최종 한계(MIN_TOP)보다 위
+    let t!: ReactTestRenderer;
+    act(() => {
+      t = renderer.create(el(null));
+    });
+    mountedTrees.push(t);
+    await flush();
+    layout(t);
+    expect(host(t, 'home-quota-badge')).toHaveLength(0);
+    act(() => t.update(el(ANCHOR)));
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: MIN_TOP }));
+    expect(require('../badgePosition').badgeMinTop(ROW_BOTTOM)).toBe(MIN_TOP);
+  });
+
+  it('Codex #234 4R: 세 입력(저장값 읽기·영역 측정·검색 줄 앵커)의 도착 순서 6가지 × 저장값 유무 — 그려지는 첫 자리 = 최종 자리, 셋 전엔 안 그림', async () => {
+    const orders: ('read' | 'layout' | 'anchor')[][] = [
+      ['read', 'layout', 'anchor'], ['read', 'anchor', 'layout'], ['layout', 'read', 'anchor'],
+      ['layout', 'anchor', 'read'], ['anchor', 'read', 'layout'], ['anchor', 'layout', 'read'],
+    ];
+    for (const stored of [{ side: 'left', top: 150 }, null] as const) {
+      for (const order of orders) {
+        _setBadgePosCacheForTest(undefined);
+        let resolveRead!: (v: string | null) => void;
+        (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => new Promise<string | null>((r) => { resolveRead = r; }));
+        let t!: ReactTestRenderer;
+        act(() => {
+          t = renderer.create(el(null));
+        });
+        await flush();
+        let anchored = false;
+        const seen: string[] = [];
+        for (const step of order) {
+          if (step === 'read') await act(async () => resolveRead(stored ? JSON.stringify(stored) : null));
+          if (step === 'layout') layout(t);
+          if (step === 'anchor') {
+            anchored = true;
+            act(() => t.update(el(ANCHOR)));
+          }
+          if (host(t, 'home-quota-badge').length) {
+            act(() => t.update(el(anchored ? ANCHOR : null))); // 배치 effect 뒤 스타일
+            const p = StyleSheet.flatten(host(t, 'home-quota-badge')[0].props.style) as { opacity?: number; transform?: { translateX?: number; translateY?: number }[] };
+            const tr = p.transform ?? [];
+            if (p.opacity !== 0) seen.push(`${tr.find((o) => 'translateX' in o)?.translateX},${tr.find((o) => 'translateY' in o)?.translateY}`);
+          }
+        }
+        const final = stored ? `20,${MIN_TOP}` : `${AREA.w - 20 - BADGE_W},${MIN_TOP}`;
+        expect({ order: order.join('>'), stored: !!stored, seen: [...new Set(seen)] }).toEqual({ order: order.join('>'), stored: !!stored, seen: [final] });
+        act(() => t.unmount());
+      }
+    }
   });
 });
 
