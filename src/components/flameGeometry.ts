@@ -149,3 +149,20 @@ export function sparkFrame(i: number, t: number): { d: string; opacity: number }
 /** 가라앉은 모양(동작 줄이기·꺼진 불꽃·정지) */
 export const OUTER_REST_D = toPathD(OUTER_FRAMES[0]);
 export const INNER_REST_D = toPathD(INNER_FRAMES[0]);
+
+/** 일렁임 한 바퀴 동안 **그려지는** 가장 높은 y(단위) — 부푼 정점의 봉우리 끝 + 보이는 불티, 캔버스 위 끝에서 잘림.
+ *  뱃지가 위쪽 요소(홈 검색 줄)를 덮지 않게 하는 한계 계산용(#234 QA — 히트 영역이 아니라 그려지는 영역 기준). */
+export function flameDrawnTopUnit(): number {
+  let top = Infinity;
+  for (const f of OUTER_FRAMES) for (let k = 1; k < f.length; k += 2) top = Math.min(top, f[k]);
+  let shapeTop = Infinity;
+  for (let k = 1; k < SPARK.length; k += 2) shapeTop = Math.min(shapeTop, SPARK[k]);
+  for (const s of SPARKS) {
+    for (let i = 0; i <= 100; i++) {
+      const u = i / 100;
+      const y = s.from[1] + (s.to[1] - s.from[1]) * u;
+      top = Math.min(top, y + shapeTop * (1 - u * 0.5));
+    }
+  }
+  return Math.max(top, FLAME_VIEWBOX.y);
+}

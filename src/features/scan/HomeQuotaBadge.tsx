@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { CountdownBadge } from '@/components/CountdownBadge';
-import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, cachedBadgePos, rememberBadgePos, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
+import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, cachedBadgePos, rememberBadgePos, badgeBounds, badgeMinTop, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
 import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -161,7 +161,10 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
     };
   }, [userMoved]);
   const restored = saved === 'loading' ? null : saved;
-  const bounds = area ? badgeBounds(area.h, headerH) : null;
+  // #234 QA: 위 한계 = 검색 줄 아래 끝(앵커 top − BADGE_GAP) + 여백 + 불꽃이 그려지는 높이 — 기본 자리·끌기·복원 모두 이 한계 이하
+  const rowBottom = top != null ? top - BADGE_GAP : null;
+  const minTop = badgeMinTop(rowBottom, headerH);
+  const bounds = area ? badgeBounds(area.h, minTop) : null;
   const pos =
     area && bounds && saved !== 'loading'
       ? restored
@@ -241,7 +244,7 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
         {shown && (pos != null || (!area && saved === null && top != null)) && (
           <GestureDetector gesture={pan}>
             {/* 저장값 읽기가 끝나야 그린다. 영역 측정 전(첫 프레임)·저장값 없음 = 옛 기본 자리(오른쪽 BADGE_RIGHT · 측정 앵커 top), 측정 뒤엔 translate(끌기·저장 위치) */}
-            <Animated.View style={pos != null ? [styles.float, floatStyle] : [styles.anchor, { top }]} testID="home-quota-badge">
+            <Animated.View style={pos != null ? [styles.float, floatStyle] : [styles.anchor, { top: minTop }]} testID="home-quota-badge">
               <CountdownBadge
                 value={shown.value}
                 state={shown.state}

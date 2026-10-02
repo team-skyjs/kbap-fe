@@ -63,7 +63,7 @@ jest.mock('@/lib/flags', () => {
 
 import { _setBadgePosCacheForTest } from '../badgePosition';
 import { HomeQuotaBadge, quotaBadgeModel, BADGE_RIGHT, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS } from '@/components/CountdownBadge';
+import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS, BADGE_DRAWN_ABOVE } from '@/components/CountdownBadge';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
 
@@ -465,12 +465,13 @@ describe('프레임 불변 · 홈 하단 미겹침', () => {
     mockQuota = Q(2);
     const t = render();
     const float = () => t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type === 'string');
-    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', top: 100, right: 20 }));
+    // #234: 측정 전 기본 자리 = 앵커(검색 줄 아래 끝 + 4)에서 불꽃이 그려지는 높이만큼 아래 — 검색 줄·스캔 버튼을 덮지 않게
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', top: 100 + BADGE_DRAWN_ABOVE, right: 20 }));
     expect(BADGE_RIGHT).toBe(20);
     act(() => t.update(<HomeQuotaBadge top={null} />));
     expect(float()).toHaveLength(0);
     act(() => t.update(<HomeQuotaBadge top={140} />));
-    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ top: 140 }));
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ top: 140 + BADGE_DRAWN_ABOVE }));
   });
 
   it('KB-706 색·구성 — 스펙 실측값 그대로(뱃지 전용 상수 한 곳) · 흰 테두리 없음 · 바깥/안쪽 = 봉우리 둘(M + C×6) · 꺼진 불꽃 = 기존 회색 토큰', () => {

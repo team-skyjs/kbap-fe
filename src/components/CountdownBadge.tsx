@@ -27,7 +27,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { FlameShape } from '@/components/FlameShape';
-import { FLAME_COLORS, FLAME_LOOP_MS, FLAME_VIEWBOX } from '@/components/flameGeometry';
+import { FLAME_COLORS, FLAME_LOOP_MS, FLAME_VIEWBOX, flameDrawnTopUnit } from '@/components/flameGeometry';
 import { useMotionState } from '@/lib/useMotionPaused';
 import { spring } from '@/lib/motion';
 import { color as C, font } from '@/lib/theme';
@@ -38,6 +38,8 @@ export const BADGE_H = 72;
 export const FLAME_SCALE = 0.5;
 const FLAME_LEFT = BADGE_W / 2 - (50 - FLAME_VIEWBOX.x) * FLAME_SCALE;
 const FLAME_TOP = BADGE_H - 2 - (136 - FLAME_VIEWBOX.y) * FLAME_SCALE;
+/** 터치 상자 위 끝보다 불꽃(부푼 정점·불티 포함)이 그려질 수 있는 높이(px) — 위쪽 요소를 덮지 않게 하는 한계 계산용(#234) */
+export const BADGE_DRAWN_ABOVE = Math.max(0, -(FLAME_TOP + (flameDrawnTopUnit() - FLAME_VIEWBOX.y) * FLAME_SCALE));
 /** 숫자 중심 = rest 안쪽 불꽃 가운데(단위 y 100) */
 const NUM_CENTER_Y = FLAME_TOP + (100 - FLAME_VIEWBOX.y) * FLAME_SCALE;
 const NUM_BOX_H = 34;

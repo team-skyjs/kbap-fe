@@ -70,16 +70,20 @@ jest.mock('@/lib/flags', () => {
 });
 
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { BADGE_H, BADGE_W } from '@/components/CountdownBadge';
+import { BADGE_DRAWN_ABOVE, BADGE_H, BADGE_W, FLAME_SCALE } from '@/components/CountdownBadge';
 import { BADGE_POS_KEY, _setBadgePosCacheForTest, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos } from '../badgePosition';
-import { OUTER_REST_D } from '@/components/flameGeometry';
+import { FLAME_VIEWBOX, OUTER_FRAMES, OUTER_REST_D, flameDrawnTopUnit } from '@/components/flameGeometry';
+import { BADGE_GAP } from '../HomeQuotaBadge';
 import { FAB_OVERHANG } from '@/components/TabBar';
 
 const { pans } = require('@/__tests__/helpers/gestureHandlerMock') as typeof import('@/__tests__/helpers/gestureHandlerMock');
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
 const AREA = { w: 390, h: 700 };
 const HEADER = 100;
-const ANCHOR = 160;
+const ANCHOR = 160; // 측정 앵커 = 검색 줄 아래 끝(156) + BADGE_GAP
+const ROW_BOTTOM = ANCHOR - 4;
+/** #234: 위 한계 = 검색 줄 아래 끝 + 4 + 불꽃이 상자 위로 그려지는 높이 — 기본 자리도 여기 */
+const MIN_TOP = ROW_BOTTOM + 4 + BADGE_DRAWN_ABOVE;
 
 const mountedTrees: ReactTestRenderer[] = [];
 afterEach(() => {
@@ -198,9 +202,9 @@ describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
   it('측정 전 = 기본 자리(오른쪽 20 · 측정 앵커) · 측정 뒤 = 같은 자리(translate)', async () => {
     const t = render();
     await flush();
-    expect(place(t)).toEqual(expect.objectContaining({ top: ANCHOR, right: 20 }));
+    expect(place(t)).toEqual(expect.objectContaining({ top: MIN_TOP, right: 20 }));
     layout(t);
-    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP }));
   });
 
   it('왼쪽으로 끌어 놓으면 왼쪽 가장자리(20)에 붙고 높이는 놓은 그대로 · 놓을 때 1회 저장', async () => {
@@ -210,9 +214,9 @@ describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
     const setItem = AsyncStorage.setItem as jest.Mock; // 목 자체가 jest.fn(spyOn·restore 하면 구현이 지워진다)
     setItem.mockClear();
     drag(t, -250, 120);
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: ANCHOR + 120 }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: MIN_TOP + 120 })); // 시작 = 기본 자리(한계)
     expect(setItem).toHaveBeenCalledTimes(1);
-    expect(setItem).toHaveBeenCalledWith(BADGE_POS_KEY, JSON.stringify({ side: 'left', top: ANCHOR + 120 }));
+    expect(setItem).toHaveBeenCalledWith(BADGE_POS_KEY, JSON.stringify({ side: 'left', top: MIN_TOP + 120 }));
   });
 
   it('재마운트(재실행) = 저장 자리 복원 · 범위 밖 저장값은 범위 안으로', async () => {
@@ -231,12 +235,12 @@ describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
     expect(place(t2)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: AREA.h - BADGE_H - (FAB_OVERHANG + 8) }));
   });
 
-  it('끄는 동안 위로는 헤더 아래까지만(상태 표시줄 가림막 포함 헤더 높이 + 4)', async () => {
+  it('끄는 동안 위로는 검색 줄 아래 + 여백 + 불꽃 그림 높이까지만(#234 — 헤더 아래가 아님)', async () => {
     const t = render();
     await flush();
     layout(t);
     drag(t, 0, -1000);
-    expect(place(t).y).toBe(HEADER + 4);
+    expect(place(t).y).toBe(MIN_TOP);
   });
 
   it('탭/끌기 구분 — 짧은 이동(8 미만)은 탭(시트) · 끌기 직후 들어온 탭은 시트를 안 연다', async () => {
@@ -269,7 +273,7 @@ describe('Codex #234 — 끝 콜백이 안 오는 경로 · 늦은 읽기', () =
     act(() => p.handlers.onStart?.());
     act(() => p.handlers.onUpdate?.({ translationX: -250, translationY: 120 }));
     act(() => p.handlers.onFinalize?.()); // OS 끼어들기 — onEnd 없음
-    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR })); // 끌던 좌표에 멈춰 남지 않음
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP })); // 끌던 좌표에 멈춰 남지 않음
     expect(setItem).not.toHaveBeenCalled();
     await act(async () => {
       await new Promise((r) => setTimeout(r, 350));
@@ -286,11 +290,11 @@ describe('Codex #234 — 끝 콜백이 안 오는 경로 · 늦은 읽기', () =
     layout(t);
     expect(host(t, 'home-quota-badge')).toHaveLength(0); // 읽는 중 = 안 그림
     drag(t, -250, 120); // (제스처 콜백 직접 구동) 왼쪽으로 놓음 — 시작 위치 0 기준
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: 120 }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: MIN_TOP }));
     await act(async () => {
       resolveRead(JSON.stringify({ side: 'right', top: 300 })); // 이전 실행의 옛 자리가 늦게 도착
     });
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: 120 }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: MIN_TOP }));
   });
 });
 
@@ -323,7 +327,7 @@ describe('#234 공부 — 저장값 읽기 상태 기계', () => {
     const t = render();
     await flush();
     layout(t);
-    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP }));
   });
 
   it('시스템이 가져가 끝난 끌기(onEnd success=false) = 취소와 같이 — 저장 0 · 제자리', async () => {
@@ -338,7 +342,37 @@ describe('#234 공부 — 저장값 읽기 상태 기계', () => {
     act(() => p.handlers.onEnd?.({}, false));
     act(() => p.handlers.onFinalize?.());
     expect(setItem).not.toHaveBeenCalled();
-    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP }));
+  });
+});
+
+describe('#234 QA — 위 한계 = 홈 검색 줄 아래(그려지는 영역 기준)', () => {
+  it('한계 자리에서 불꽃이 가장 커진 프레임·불티까지 검색 줄 아래 끝 + 4 밑에 그려진다 · 기본 자리도 그 한계', async () => {
+    // 상자 top이 한계일 때 불꽃 캔버스 위쪽 그림의 화면 y — 바깥 불꽃 키프레임 전부 + 불티(flameDrawnTopUnit)
+    const flameTopPx = MIN_TOP + (72 - 2 - (136 - FLAME_VIEWBOX.y) * FLAME_SCALE); // 캔버스 top(상자 기준 -30) 의 화면 y
+    const drawnY = (unit: number) => flameTopPx + (unit - FLAME_VIEWBOX.y) * FLAME_SCALE;
+    for (const f of OUTER_FRAMES) for (let k = 1; k < f.length; k += 2) expect(drawnY(f[k])).toBeGreaterThanOrEqual(ROW_BOTTOM + 4);
+    expect(drawnY(flameDrawnTopUnit())).toBeGreaterThanOrEqual(ROW_BOTTOM + 4);
+    expect(BADGE_DRAWN_ABOVE).toBeGreaterThan(0);
+    const t = render();
+    await flush();
+    layout(t);
+    expect(place(t).y).toBe(MIN_TOP); // 기본 자리 = 한계(옛 기본 자리 ANCHOR는 검색 줄과 겹쳤다)
+    expect(place(t).y).toBeGreaterThan(ANCHOR);
+  });
+
+  it('한계보다 위에 저장된 값(옛 빌드에서 헤더 바로 아래로 끌어 둔 자리)은 복원 때 한계로 보정', async () => {
+    await AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify({ side: 'right', top: HEADER + 4 }));
+    const t = render();
+    await flush();
+    layout(t);
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP }));
+  });
+
+  it('검색 줄 측정 전(앵커 없음)엔 헤더 아래가 한계', () => {
+    expect(require('../badgePosition').badgeMinTop(null, HEADER)).toBe(HEADER + 4);
+    expect(require('../badgePosition').badgeMinTop(ROW_BOTTOM, HEADER)).toBe(MIN_TOP);
+    void BADGE_GAP;
   });
 });
 
@@ -348,7 +382,7 @@ describe('위치 계산(순수)', () => {
     for (const bad of [null, '', 'x', '{"side":"up","top":1}', '{"side":"left","top":"1"}', '{"side":"left"}']) expect(parseBadgePos(bad)).toBeNull();
   });
   it('범위·가장자리·가까운 쪽', () => {
-    const b = badgeBounds(700, 100);
+    const b = badgeBounds(700, 104);
     expect(b).toEqual({ min: 104, max: 700 - BADGE_H - (FAB_OVERHANG + 8) });
     expect(clampTop(0, b)).toBe(104);
     expect(clampTop(9999, b)).toBe(b.max);
