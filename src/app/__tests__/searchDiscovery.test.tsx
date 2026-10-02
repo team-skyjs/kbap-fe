@@ -129,3 +129,27 @@ it('빈 상태 인기 사진 섹션 — 랭크순 카드(사진 우선) + 탭 = 
   act(() => cards[0].props.onPress());
   expect(mockPush).toHaveBeenCalledWith('/food/kimchi?src=search');
 });
+
+// KB-709(P-449 ①): result_count가 화면 결과 수의 2배로 나갔다 — 원인 = 매칭용 이름 목록(음식마다 name·nameKo 2개)의 길이를 그대로 셌다
+it('KB-709 검색 계측 result_count = 화면에 보인 결과 음식 수(이름 수 아님) · 이벤트 1회', () => {
+  const analytics = jest.requireActual<typeof import('@/lib/analytics')>('@/lib/analytics');
+  const spy = jest.spyOn(analytics, 'track').mockImplementation(() => {});
+  try {
+    mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, data: CATALOG, fetchNextPage: jest.fn(), hasNextPage: false, isFetchingNextPage: false });
+    const tree = render(<Search />);
+    const input = tree.root.findAllByType(TextInput)[0];
+    act(() => input.props.onChangeText('kim'));
+    act(() => input.props.onSubmitEditing());
+    const shown = new Set(
+      tree.root
+        .findAll((n) => typeof n.type === 'string' && typeof n.props?.testID === 'string' && CATALOG.some((f) => n.props.testID.endsWith(`-${f.foodId}`)))
+        .map((n) => CATALOG.find((f) => (n.props.testID as string).endsWith(`-${f.foodId}`))!.foodId),
+    );
+    expect(shown.size).toBe(CATALOG.length); // 화면 결과 음식 2개
+    const calls = spy.mock.calls.filter(([e]) => e === analytics.EVENTS.search_query);
+    expect(calls).toHaveLength(1);
+    expect((calls[0][1] as { result_count: number }).result_count).toBe(shown.size); // 전엔 4(이름 4개)
+  } finally {
+    spy.mockRestore();
+  }
+});

@@ -98,7 +98,7 @@ export default function Search() {
     trackedFor.current = submitted;
     track(
       EVENTS.search_query,
-      searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[])),
+      searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted, search.isLoading]);

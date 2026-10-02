@@ -29,6 +29,7 @@ import { BE_BASE } from '../data/config';
 import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
 import { track } from '../net/inflight';
+import { redactSecrets, redactText } from './redactLog';
 
 /** P-378(KB-542): 서버 상관관계 id — 헤더 부재·비표준 Headers 구현 모두 undefined로.
  *  관측 보조 값이라 여기서 예외가 새면 안 된다(원래 오류 흐름을 가려버린다). */
@@ -218,8 +219,8 @@ async function requestInner<T>(
     // eslint-disable-next-line no-console
     console.log(
       `[api] → ${method} ${url}`,
-      { headers: { ...headers, ...(headers.Authorization ? { Authorization: 'Bearer ***' } : {}) } },
-      body != null ? body : '(no body)',
+      { headers: redactSecrets(headers) },
+      body != null ? redactSecrets(body) : '(no body)', // KB-709: 본문 토큰(갱신 요청의 refreshToken 등)도 가림
     );
   }
   // P-115: AbortSignal.timeout은 RN Hermes 미보장 — AbortController+setTimeout
@@ -276,7 +277,9 @@ async function requestInner<T>(
   // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
   if (__DEV__) {
     // eslint-disable-next-line no-console
-    console.log(`[api] ← ${res.status} ${method} ${url}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
+    // KB-709: 응답 본문 토큰(로그인·갱신의 accessToken·refreshToken) 가림 — 자르기 전에 가린다(잘린 JSON도 정규식 폴백)
+    const shown = redactText(text);
+    console.log(`[api] ← ${res.status} ${method} ${url}`, shown.length > 4000 ? `${shown.slice(0, 4000)}… (${shown.length}B)` : shown);
   }
 
   // 204 / empty body (e.g. DELETE) — nothing to unwrap.

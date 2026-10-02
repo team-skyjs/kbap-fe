@@ -52,7 +52,7 @@ export default function OwnerConfirm() {
       </ScrollView>
 
       <View style={[styles.foot, { paddingBottom: bottom + 18 }]}>
-        <PressScale style={styles.done} onPress={() => router.back()}>
+        <PressScale style={styles.done} onPress={() => router.back()} testID="owner-done">
           <Text style={styles.doneText}>{t('owner.done')}</Text>
         </PressScale>
       </View>

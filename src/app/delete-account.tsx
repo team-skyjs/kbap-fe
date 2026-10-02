@@ -135,7 +135,7 @@ export default function DeleteAccount() {
         </View>
 
         {/* 체크박스 행 중앙 — Checkbox 20 r4(D-5 consent 문법) */}
-        <Pressable style={styles.consent} onPress={() => setAgreed(!agreed)}>
+        <Pressable style={styles.consent} onPress={() => setAgreed(!agreed)} testID="delete-agree">
           <View style={[styles.check, agreed && styles.checkOn]}>{agreed && <IconCheck size={13} color="#fff" />}</View>
           <Text style={styles.consentText}>{t('profile.delete.confirm')}</Text>
         </Pressable>
@@ -146,7 +146,7 @@ export default function DeleteAccount() {
       <View style={[styles.bottomBar, { paddingBottom: bottom + 10 }]} testID="delete-bottom-bar">
         {/* Codex #90 P2: 고정 200은 320폭에서 Cancel 압사 — 시안 비율 3:5(375 = 120/200) */}
         <View style={{ flex: 3 }}>
-          <Btn variant="ghost" onPress={() => router.back()}>
+          <Btn variant="ghost" onPress={() => router.back()} testID="delete-cancel">
             {t('profile.delete.cancel')}
           </Btn>
         </View>

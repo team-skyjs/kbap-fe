@@ -262,6 +262,7 @@ export function ReviewFeed() {
       {/* P-237: 소팅 시트 — 공용 ActionSheet 재사용(5종·현재값 표시) */}
       <ActionSheet
         open={sortSheet}
+        testID="feed-sort-sheet"
         title={t('reviews.sortTitle')}
         items={SORT_OPTIONS.map((v) => ({
           key: v,

@@ -251,6 +251,7 @@ function FoodReviewsScreen() {
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
                   <Pressable
+                    testID="reviews-load-more"
                     style={styles.loadMore}
                     onPress={() => void reviewsQ.fetchNextPage()}
                     disabled={reviewsQ.isFetchingNextPage}
@@ -274,6 +275,7 @@ function FoodReviewsScreen() {
       {/* KB-431 §2-4: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
       <ActionSheet
         open={sortSheet}
+        testID="reviews-sort-sheet"
         title={t('reviews.sortTitle')}
         items={(['recent', 'rating'] as const).map((v) => ({
           key: v,
@@ -363,7 +365,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
 
   return (
     /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
-    <View style={styles.item}>
+    <View style={styles.item} testID={`review-item-${review.id}`}>
       <View style={styles.itemTop}>
         <View style={styles.who}>
           {anon || !review.authorNationality ? (

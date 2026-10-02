@@ -293,11 +293,12 @@ function ReviewComposeScreen() {
     else if (bodyFocusedRef.current && shrinkBy > 0 && shrinkBy <= SHRINK_FOLLOW_MAX) {
       const target = scrollY.current + shrinkBy;
       scrollRef.current?.scrollTo({ y: target, animated: true });
-      followedBy.current += shrinkBy; // #236 /review D: 이모지 키보드를 끄면 이만큼 되돌린다(켤 때마다 53씩 쌓이던 것)
+      followedBy.current += shrinkBy; // #236 /review D: 되돌림 후보(켤 때마다 53씩 쌓이던 것) — 실제 되돌림 조건은 아래 unfollow
       followedAt.current = target; // 되돌림은 이 위치 그대로일 때만(그 사이 사용자가 스크롤했으면 무효)
     }
   };
-  // 뷰포트가 다시 늘면(이모지 키보드 끔) 따라 내린 양만큼 되돌림 — 포커스 중 · 상한 이내만, 내린 적 없으면 무동작
+  // 뷰포트가 다시 늘면(이모지 키보드 끔) 따라 내린 양만큼 되돌리려 하지만, 위치가 그대로일 때만이라 실기에선 대개 제자리에 머문다
+  // (QA 10/3: 끈 뒤 처음 위치로 돌아오지 않음 — 가림은 없어 유지 판정). 포커스 중 · 상한 이내만, 내린 적 없으면 무동작
   const unfollowOnViewportGrow = (growBy: number) => {
     // 큰 증가(키보드만 내려감 — Android 뒤로 등) 또는 따라 내린 뒤 사용자가 스크롤함 = 되돌릴 몫 폐기(이유 없이 53pt 튀던 것)
     if (growBy > SHRINK_FOLLOW_MAX || Math.abs(scrollY.current - followedAt.current) > 1) followedBy.current = 0;
