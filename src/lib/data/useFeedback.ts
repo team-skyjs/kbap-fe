@@ -22,10 +22,10 @@ export const FEEDBACK_MAX_PHOTOS = 3;
 export const FEEDBACK_MAX_LEN = 2000;
 
 /** 문의 전송 — 사진은 먼저 업로드해 path로 바꾼 뒤 한 번에 보낸다. */
-export async function submitFeedback(input: { content: string; photoUris: string[] }): Promise<{ id: string }> {
+export async function submitFeedback(input: { content: string; photoUris: string[]; signal?: AbortSignal }): Promise<{ id: string }> {
   const paths: string[] = [];
   for (const uri of input.photoUris.slice(0, FEEDBACK_MAX_PHOTOS)) {
-    const { path } = await uploadImage({ uri, width: 0, height: 0 }, FEEDBACK_IMAGE_PURPOSE);
+    const { path } = await uploadImage({ uri, width: 0, height: 0 }, FEEDBACK_IMAGE_PURPOSE, { signal: input.signal }); // KB-711: 이탈 시 취소
     paths.push(path);
   }
   const payload = await api.post<{ id?: number | string }>('/api/feedbacks', {

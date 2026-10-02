@@ -226,9 +226,10 @@ it('#109 3R P1: inflight.track — 네이티브 업로드 프라미스 진행 �
   rejectP(new Error('fail'));
   await expect(p2).rejects.toThrow('fail');
   expect(inflightCount()).toBe(0);
-  // 배선: uploadAsync = track 경유(발급·complete는 client.ts 경유라 자동)
+  // 배선: 네이티브 PUT = track 경유(발급·complete는 client.ts 경유라 자동) — KB-711: 상한·취소 래퍼(putWithLimit)째로 track
   const si = require('fs').readFileSync('src/lib/api/scanImage.ts', 'utf8') as string;
-  expect(si).toContain('track(FileSystem.uploadAsync(');
+  expect(si).toContain('track(putWithLimit(');
+  expect(si).toContain('FileSystem.createUploadTask(');
 });
 
 

@@ -34,12 +34,12 @@ export function canPostReview(rating: number): boolean {
 }
 
 /** presigned 업로드 → 전송용 path 배열. 실패는 throw(호출측 표면화 — 부분 업로드 잔존 없음). */
-export async function uploadReviewImages(uris: string[]): Promise<string[]> {
+export async function uploadReviewImages(uris: string[], signal?: AbortSignal): Promise<string[]> {
   // P-086 봉인: 실연결 off·무세션 → 로컬 URI 패스스루 (P-077 목 경로 — 업로드 호출 0)
   if (!FLAGS.reviewsLiveEnabled || !(await hasBeSession())) return uris;
   const paths: string[] = [];
   for (const uri of uris) {
-    const { path } = await uploadImage({ uri, width: 0, height: 0 }, REVIEW_IMAGE_PURPOSE);
+    const { path } = await uploadImage({ uri, width: 0, height: 0 }, REVIEW_IMAGE_PURPOSE, { signal }); // KB-711: 이탈 시 취소
     paths.push(path);
   }
   return paths;

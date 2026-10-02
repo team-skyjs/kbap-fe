@@ -5,9 +5,11 @@
  */
 const mockGetInfoAsync = jest.fn();
 const mockUploadAsync = jest.fn();
+const mockCancelAsync = jest.fn().mockResolvedValue(undefined);
+// KB-711: PUT = createUploadTask(상한·취소 가능) — 기존 단언은 같은 (url, uri, options)로 mockUploadAsync에 그대로 모인다
 jest.mock('expo-file-system/legacy', () => ({
   getInfoAsync: (...a: unknown[]) => mockGetInfoAsync(...a),
-  uploadAsync: (...a: unknown[]) => mockUploadAsync(...a),
+  createUploadTask: (...a: unknown[]) => ({ uploadAsync: () => mockUploadAsync(...a), cancelAsync: () => mockCancelAsync() }),
   FileSystemUploadType: { BINARY_CONTENT: 'binary' },
 }));
 jest.mock('@/lib/api/client', () => ({ api: { post: jest.fn() } }));
@@ -21,7 +23,10 @@ jest.mock('expo-image-manipulator', () => ({
 const { api } = require('@/lib/api/client');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-import { imageContentType, resolveScanImagePath, uploadImage } from '../scanImage';
+// eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
+import { imageContentType, resolveScanImagePath, uploadImage, UPLOAD_PUT_TIMEOUT_MS } from '../scanImage';
+// eslint-disable-next-line import/first -- 위와 같음
+import { isUploadAborted } from '../uploadAbort';
 
 const PHOTO = { uri: 'file:///cache/menu.jpg', width: 1000, height: 1400 };
 const ISSUED = {
@@ -143,5 +148,52 @@ describe('P-189: 원격 사진 렌더 = expo-image(디스크 캐시) 소스 잠�
       expect(/from 'expo-image'|RemoteImage|CardPhoto/.test(src)).toBe(true);
       expect(src).not.toMatch(/import \{[^}]*\bImage\b[^}]*\} from 'react-native'/);
     }
+  });
+});
+
+// ── KB-711: PUT 상한·이탈 취소
+describe('KB-711 업로드 상한·취소', () => {
+  afterEach(() => jest.useRealTimers());
+  it('PUT이 끝나지 않으면 UPLOAD_PUT_TIMEOUT_MS 뒤 일반 실패(취소 아님) + 네이티브 업로드 취소 · complete 0', async () => {
+    jest.useFakeTimers();
+    mockUploadAsync.mockImplementation(() => new Promise(() => {}));
+    const p = uploadImage(PHOTO, 'REVIEW');
+    const caught = p.catch((e: unknown) => e);
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(UPLOAD_PUT_TIMEOUT_MS + 1);
+    const e = await caught;
+    expect(e).toBeInstanceOf(Error);
+    expect(isUploadAborted(e)).toBe(false); // 각 화면의 기존 실패 경로(재시도 가능)로
+    expect(String((e as Error).message)).toContain('timeout');
+    expect(mockCancelAsync).toHaveBeenCalledTimes(1);
+    expect(api.post).not.toHaveBeenCalledWith('/images/complete', expect.anything());
+  });
+  it('PUT 중 signal 중단 = UploadAbortedError + 네이티브 업로드 취소 · complete 0', async () => {
+    mockUploadAsync.mockImplementation(() => new Promise(() => {}));
+    const ctl = new AbortController();
+    const p = uploadImage(PHOTO, 'REVIEW', { signal: ctl.signal });
+    const caught = p.catch((e: unknown) => e);
+    for (let i = 0; i < 5; i++) await Promise.resolve(); // 발급까지 진행
+    expect(mockUploadAsync).toHaveBeenCalledTimes(1);
+    ctl.abort();
+    expect(isUploadAborted(await caught)).toBe(true);
+    expect(mockCancelAsync).toHaveBeenCalledTimes(1);
+    expect(api.post).not.toHaveBeenCalledWith('/images/complete', expect.anything());
+  });
+  it('이미 중단된 signal = 발급 요청조차 안 나감(다음 사진·본 요청 차단)', async () => {
+    const ctl = new AbortController();
+    ctl.abort();
+    const e = await uploadImage(PHOTO, 'REVIEW', { signal: ctl.signal }).catch((x: unknown) => x);
+    expect(isUploadAborted(e)).toBe(true);
+    expect(api.post).not.toHaveBeenCalled();
+    expect(mockUploadAsync).not.toHaveBeenCalled();
+  });
+  it('스캔 회귀 0 — 업로드 상한 초과도 텍스트-only 폴백(null), 서버 처리 대기와 무관', async () => {
+    jest.useFakeTimers();
+    mockUploadAsync.mockImplementation(() => new Promise(() => {}));
+    const p = resolveScanImagePath(PHOTO);
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(UPLOAD_PUT_TIMEOUT_MS + 1);
+    await expect(p).resolves.toBe(null);
   });
 });

@@ -42,6 +42,7 @@ import { searchPlaces } from '@/lib/community/places';
 import type { FoodTagRef, PlaceTagRef } from '@/lib/community/types';
 import { EVENTS, track } from '@/lib/analytics';
 import { Shimmer } from '@/components/Skeleton';
+import { useUploadAbort } from '@/lib/useUploadAbort';
 
 const BODY_MAX = 2000;
 const COUNTER_SHOW = 1800;
@@ -121,12 +122,13 @@ export default function CommunityCompose() {
 
   // P-173: 글 작성은 비멱등(연타 = 중복 글) — 공용 가드(동기 ref, isPending 상태 가드는 레이스)
   const { busy: submitting, run: runSubmit } = useSubmitGuard();
+  const nextUploadSignal = useUploadAbort(); // KB-711: 올리는 중 화면을 떠나면 사진 업로드 취소
   // KB-708: 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 성공 뒤 = 완료 모달 → 막지 않음
   // #236 /review B: 게스트 분기(early return)엔 확인 창이 없다 — 거기서 막으면 나갈 길이 로그인뿐. 폼 분기에서만 막는다
   const leave = useLeaveConfirm(!isGuest && dirty && !posted, submitting);
   const submit = () => {
     if (!canPost || submitting) return;
-    const input = { body: body.trim(), photos, foodTags, placeTag };
+    const input = { body: body.trim(), photos, foodTags, placeTag, signal: nextUploadSignal() };
     void runSubmit(
       () =>
         new Promise<void>((resolve) => {
