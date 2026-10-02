@@ -434,7 +434,10 @@ function ReviewComposeScreen() {
           <Input
             ref={bodyInputRef}
             value={body}
-            onChangeText={(v) => setBody(v.slice(0, MAX))}
+            onChangeText={(v) => {
+              touchY.current = null; // 입력이 시작되면 캐럿이 탭한 줄을 떠난다 — 뒤의 뷰포트 축소가 옛 탭 줄로 되돌리지 않게(#228 공부)
+              setBody(v.slice(0, MAX));
+            }}
             placeholder={t('review.placeholder')}
             placeholderTextColor={C.inkDisabled}
             multiline

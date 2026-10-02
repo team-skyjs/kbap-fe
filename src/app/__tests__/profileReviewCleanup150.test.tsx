@@ -426,3 +426,27 @@ it('KB-700(#228 공부): 긴 본문의 **중간 줄**을 탭(끝 커서 아님) 
   expect(scrollTo).not.toHaveBeenCalled();
   spy.mockRestore();
 });
+
+it('KB-700(#228 공부 델타): 가운데 탭 → 입력 시작 → 뷰포트가 다시 줄어도(이모지 키보드 등) 옛 탭 줄로 되돌리지 않는다', () => {
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation((() => ({ remove: jest.fn() })) as never);
+  const tree = render(<ReviewCompose />);
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
+  act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 900 } } }));
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onChangeText('x'.repeat(400)));
+  act(() => input.props.onLayout({ nativeEvent: { layout: { y: 30, height: 800 } } }));
+  act(() => input.props.onPressIn({ nativeEvent: { locationY: 350 } }));
+  act(() => input.props.onFocus());
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 120, end: 120 } } }));
+  act(() => input.props.onChangeText('x'.repeat(401))); // 입력 시작 — 캐럿이 탭 위치를 떠남
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 121, end: 121 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 330 } } })); // 키보드 높이 증가로 다시 축소
+  expect(scrollTo).not.toHaveBeenCalled();
+  spy.mockRestore();
+});
