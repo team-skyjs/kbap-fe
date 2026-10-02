@@ -25,6 +25,11 @@ import { color as C, radius } from '@/lib/theme';
 const PLUS_SIZE = 20;
 const PLUS_GLYPH_INSET = (PLUS_SIZE * 4) / 24;
 const FAB_PAD = 24;
+/** KB-707: 알약 높이·바닥 간격 — 목록 끝 여백이 이것으로 계산된다(옛 고정 96 < 홈 인디케이터 기기의 알약 윗변 ≈ 34 + 24 + 52 → 마지막 행이 알약 밑) */
+export const FEEDBACK_FAB_H = 52;
+export const FEEDBACK_FAB_GAP = 24;
+/** 목록 끝 여백 = 알약 윗변 + 16 */
+export const feedbackListBottomPad = (bottomInset: number) => bottomInset + FEEDBACK_FAB_GAP + FEEDBACK_FAB_H + 16;
 
 /** 서브 줄에 붙이는 상태 — OPEN은 시간만(발주: 답변·종료만 표기). */
 const STATUS_KEY = { ANSWERED: 'feedback.statusAnswered', CLOSED: 'feedback.statusClosed' } as const;
@@ -59,7 +64,7 @@ export default function FeedbackListScreen() {
         <FlatList
           data={items}
           keyExtractor={(f) => f.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: feedbackListBottomPad(insets.bottom) }]}
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (q.hasNextPage && !q.isFetchingNextPage) void q.fetchNextPage(); }}
           ListFooterComponent={
@@ -101,9 +106,9 @@ export default function FeedbackListScreen() {
           }}
         />
       )}
-      {/* 목록 위 절대 배치 — 빈 상태에도 그대로(빈 상태 CTA 대신). 하 여백 96이 마지막 행을 비켜 준다. */}
+      {/* 목록 위 절대 배치 — 빈 상태에도 그대로(빈 상태 CTA 대신). 목록 끝 여백(feedbackListBottomPad)이 마지막 행을 비켜 준다. */}
       <Pressable
-        style={[styles.fab, { bottom: insets.bottom + 24 }]}
+        style={[styles.fab, { bottom: insets.bottom + FEEDBACK_FAB_GAP }]}
         onPress={() => router.push('/profile/feedback/new' as Href)}
         testID="feedback-new-fab"
       >
@@ -116,7 +121,7 @@ export default function FeedbackListScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
-  list: { paddingTop: 8, paddingHorizontal: 0, paddingBottom: 96 },
+  list: { paddingTop: 8, paddingHorizontal: 0 }, // 끝 여백은 인라인(feedbackListBottomPad — 기기 인셋 반영)
   foot: { paddingVertical: 16, alignItems: 'center' },
   // 커뮤니티 피드 푸터 에러와 같은 치수(새 값 발명 없음)
   footErr: { paddingVertical: 20, alignItems: 'center', gap: 10 },
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: 15, fontWeight: '400', color: C.ink3 },
   // 알약: 우 24 · 하 insets+24(인라인) · 높이 52 · 좌우 24 · 라운딩 26 · 배경 C.ink · 그림자 없음
   fab: {
-    position: 'absolute', right: 24, height: 52, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,
+    position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,
     backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   fabLabel: { fontSize: 17, fontWeight: '600', color: '#FFFFFF' },
