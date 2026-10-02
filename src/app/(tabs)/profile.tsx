@@ -193,7 +193,7 @@ export default function Profile() {
                   {!!me.nationality && (
                     <>
                       <FlagEmoji code={me.nationality} size={14} />
-                      <Text style={styles.natText} numberOfLines={1} testID="nation-pill">
+                      <Text style={styles.natText} numberOfLines={2} testID="nation-pill">{/* KB-707: "United Sta…" 잘림 — 두 줄까지 */}
                         {countryByCode(me.nationality)?.name ?? me.nationality}
                       </Text>
                     </>
@@ -406,7 +406,8 @@ const styles = StyleSheet.create({
   nameUnset: { fontSize: 16, fontWeight: '400', color: C.ink3 },
   natRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
   natText: { fontSize: 14, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
-  editBtn: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
+  // KB-707: 고정 폭 68이라 vi·th·ja "로그인" 글자가 테두리에 닿았다 — 최소 68 + 좌우 여백 12, 내용에 맞춰 넓어짐(짧은 글자는 그대로 68)
+  editBtn: { minWidth: 68, paddingHorizontal: 12, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
   editBtnText: { fontSize: 13, fontWeight: '500', color: '#2F3137' }, // A-PF-03
 
   // 랭킹 카드(4150:14390) — mx 20 h147 r8 border #F2F3F6 + 그라데이션

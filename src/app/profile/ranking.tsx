@@ -197,7 +197,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
               <View style={[styles.medalGlow, { shadowColor: MEDAL_COLORS[tier.level - 1] }]}>
                 <RankMedal level={tier.level} size={28} />
               </View>
-              <Text style={styles.rankName} numberOfLines={1}>{t(`ranking.tier.${tier.key}`)}</Text>
+              <Text style={styles.rankName} numberOfLines={2}>{t(`ranking.tier.${tier.key}`)}</Text>{/* KB-707: "K-Food Mas…" — 두 줄까지 */}
               <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
               <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
             </View>
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
   nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
   medalGlow: { shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 }, // P-369 ②: shadowColor = 등급색(인라인)
-  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6 },
+  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
   rankKo: { fontSize: 12, fontWeight: '400', color: C.ink3, marginTop: 2 },
   rankPts: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 6 },
 

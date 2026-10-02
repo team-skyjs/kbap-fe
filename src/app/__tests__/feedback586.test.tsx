@@ -481,15 +481,19 @@ it('⑦ i18n — feedback 키 10개 로케일 전수(ko 등 단수형 없는 언
 it('P-406 치수 — 행·알약·목록 여백이 발주 전사값 그대로', () => {
   // 스타일 상수는 StyleSheet에 박혀 있어 렌더 트리로 보기보다 소스가 정확하다(tileUnify505와 같은 방식)
   const src = read('src/app/profile/feedback/index.tsx');
-  expect(src).toMatch(/list: \{ paddingTop: 8, paddingHorizontal: 0, paddingBottom: 96 \}/);
+  // KB-707: 목록 끝 여백 = 알약 윗변 + 16(기기 인셋 반영 — 옛 고정 96은 홈 인디케이터 기기에서 마지막 행을 알약 밑에 뒀다)
+  expect(src).toMatch(/list: \{ paddingTop: 8, paddingHorizontal: 0 \}/);
+  expect(src).toMatch(/feedbackListBottomPad = \(bottomInset: number\) => bottomInset \+ FEEDBACK_FAB_GAP \+ FEEDBACK_FAB_H \+ 16/);
   expect(src).toMatch(/row: \{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 16 \}/);
   expect(src).toMatch(/rowText: \{ flex: 1, gap: 4 \}/);
   expect(src).toMatch(/title: \{ fontSize: 17, fontWeight: '400', color: C\.ink \}/);
   expect(src).toMatch(/sub: \{ fontSize: 15, fontWeight: '400', color: C\.ink3 \}/);
   expect(src).toMatch(/subRow: \{ flexDirection: 'row', alignItems: 'baseline', gap: 8 \}/);
-  expect(src).toMatch(/position: 'absolute', right: 24, height: 52, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  expect(src).toMatch(/position: 'absolute', right: 24, height: FEEDBACK_FAB_H, paddingLeft: FAB_PAD - PLUS_GLYPH_INSET, paddingRight: FAB_PAD, borderRadius: 26,\s*backgroundColor: C\.ink, flexDirection: 'row', alignItems: 'center', gap: 8,/);
+  expect(src).toMatch(/export const FEEDBACK_FAB_H = 52;/); // KB-707: 알약 높이 52는 상수로(목록 끝 여백 계산과 공유)
   expect(src).toMatch(/fabLabel: \{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' \}/);
-  expect(src).toMatch(/bottom: insets\.bottom \+ 24/);
+  expect(src).toMatch(/bottom: insets\.bottom \+ FEEDBACK_FAB_GAP/);
+  expect(src).toMatch(/export const FEEDBACK_FAB_GAP = 24;/); // KB-707: 바닥 간격 24도 상수로(값 무변)
   expect(src).toMatch(/<IconPlus size=\{PLUS_SIZE\} color="#FFFFFF" \/>/);
   expect(src).toMatch(/<IconChevron size=\{20\} color=\{C\.ink3\} \/>/);
   // 보더·그림자 없음(행·알약) — 스타일 블록만 본다(푸터 재시도 버튼의 보더는 기존 그대로)

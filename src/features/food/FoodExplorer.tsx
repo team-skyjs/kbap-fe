@@ -41,6 +41,12 @@ export type GridTab = 'popular' | 'saved' | 'food';
  *  P-318: See all 파라미터(RiskChipParam)와 같은 유니언 — 홈→음식 탭 승계 무변환. */
 type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
+/** KB-707: Food 탭 칩 줄 끝 페이드 폭 — 칩 줄 끝 여백도 이만큼(끝까지 밀면 마지막 칩이 페이드 밖으로 완전히 나온다) */
+export const CHIP_FADE_W = 24;
+/** KB-707: 끝 페이드("더 있다" 표시)는 아직 오른쪽에 숨은 칩이 있을 때만 — 끝까지 밀었거나 다 들어가면 숨김(마지막 칩을 덮지 않게) */
+export function chipFadeShown(scrollX: number, contentW: number, viewW: number): boolean {
+  return contentW - viewW - scrollX > 1;
+}
 
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
@@ -194,6 +200,13 @@ export function FoodExplorer({
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
   // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).
   const chipScrollRef = React.useRef<ScrollView | null>(null);
+  // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드
+  const chipMetrics = React.useRef({ x: 0, content: 0, view: 0 });
+  const [chipMore, setChipMore] = React.useState(false);
+  const updateChipMore = () => {
+    const m = chipMetrics.current;
+    setChipMore(chipFadeShown(m.x, m.content, m.view));
+  };
   React.useEffect(() => {
     if (variant !== 'screen') return;
     const idx = savedOnly ? RISK_CHIPS.length : RISK_CHIPS.indexOf(riskChip);
@@ -258,7 +271,8 @@ export function FoodExplorer({
           음식 탭은 세그먼트 소멸(v2 정본 — 카탈로그 단일 뷰 + 필터·정렬) */}
       {variant === 'embedded' && (
         <>
-          <View style={styles.tabsRow}>
+          {/* KB-707: 긴 언어(ru·id)에서 셋째 탭이 말줄임 없이 화면 밖으로 잘렸다 — 줄이지 않고 가로 스크롤로 도달 가능하게(다 들어가면 모양 동일) */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabsRow} testID="home-tabs-scroll">
             {(
               [
                 ['popular', t('home.popularTitle')],
@@ -274,7 +288,7 @@ export function FoodExplorer({
                 <View style={[styles.tabBar, gridTab === key && styles.tabBarOn]} />
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
           <View style={styles.tabsDivider} />
         </>
       )}
@@ -291,6 +305,19 @@ export function FoodExplorer({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.chipScrollContent}
               testID="food-chip-scroll"
+              scrollEventThrottle={32}
+              onScroll={(e) => {
+                chipMetrics.current.x = e.nativeEvent.contentOffset.x;
+                updateChipMore();
+              }}
+              onContentSizeChange={(w) => {
+                chipMetrics.current.content = w;
+                updateChipMore();
+              }}
+              onLayout={(e) => {
+                chipMetrics.current.view = e.nativeEvent.layout.width;
+                updateChipMore();
+              }}
             >
               {RISK_CHIPS.map((c) => (
                 <Chip
@@ -304,14 +331,17 @@ export function FoodExplorer({
               ))}
               <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
             </ScrollView>
-            {/* 우측 흰→투명 페이드 24 — 스크롤 가능함을 암시(터치 투과) */}
+            {/* 우측 흰→투명 페이드 — 스크롤 가능함을 암시(터치 투과). KB-707: 오른쪽에 숨은 칩이 있을 때만 */}
+            {chipMore && (
             <LinearGradient
               colors={['rgba(255,255,255,0)', '#FFFFFF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.chipFade}
               pointerEvents="none"
+              testID="food-chip-fade"
             />
+            )}
           </View>
           <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="food-sort">
             <Text style={styles.sortLabel} numberOfLines={1}>{t(`food.sort_${sort}`)}</Text>
@@ -573,7 +603,8 @@ const styles = StyleSheet.create({
   scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
-  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 14, gap: 4 }, // A-HM-03
+  tabsScroll: { flexGrow: 0, marginTop: 14 }, // KB-707: 가로 스크롤(세로로 자라지 않게 flexGrow 0 — P-319)
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 4 }, // A-HM-03
   // A-DS-03(KB-486): 라벨 14/700 · 비활성 #9196A1 · 패딩 10
   tab: { paddingHorizontal: 10, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
   tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' },
@@ -586,8 +617,9 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04(홈 무변)
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
-  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: 8, height: 34 },
-  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 24 },
+  // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
+  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W, height: 34 },
+  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
   soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },
   soonChipText: { fontSize: 12, fontWeight: '500', color: '#6A6F7C' },

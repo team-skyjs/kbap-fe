@@ -57,7 +57,14 @@ jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => (
 jest.mock('@/lib/analytics', () => ({ EVENTS: new Proxy({}, { get: (_t, k) => String(k) }), track: jest.fn() }));
 
 import { FeedCard } from '@/features/review/FeedCard';
-import { FoodExplorer } from '@/features/food/FoodExplorer';
+// eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
+import { CHIP_FADE_W, FoodExplorer } from '@/features/food/FoodExplorer';
+// eslint-disable-next-line import/first -- 위와 같음
+import { FEEDBACK_FAB_GAP, FEEDBACK_FAB_H, feedbackListBottomPad } from '@/app/profile/feedback/index';
+// eslint-disable-next-line import/first -- 위와 같음
+import * as fs from 'fs';
+// eslint-disable-next-line import/first -- 위와 같음
+import { StyleSheet } from 'react-native';
 import type { Review } from '@/lib/api/types';
 
 const REVIEW = {
@@ -101,6 +108,9 @@ it('2-A 음식 탭 칩 = 한 줄 가로 스크롤 + 우측 페이드 + 정렬 �
   const scroll = tree.root.findAll((n) => n.props?.testID === 'food-chip-scroll')[0];
   expect(scroll).toBeTruthy();
   expect(scroll.props.horizontal).toBe(true);
+  // KB-707: 끝 페이드는 오른쪽에 숨은 칩이 있을 때만(아래 KB-707 테스트) — 넘칠 때 나타난다
+  act(() => scroll.props.onLayout({ nativeEvent: { layout: { width: 200, height: 34 } } }));
+  act(() => scroll.props.onContentSizeChange(420, 34));
   expect(tree.root.findAll((n) => n.props?.testID === 'chip-fade').length).toBeGreaterThanOrEqual(1);
   // 정렬 버튼은 스크롤 밖(형제) — 스크롤 서브트리에 미포함
   expect(scroll.findAll((n: { props?: { testID?: string } }) => n.props?.testID === 'food-sort')).toHaveLength(0);
@@ -129,4 +139,67 @@ it('2-A 파라미터 진입 — 선택 칩이 뒤쪽이면 마운트 시 scrollT
   } finally {
     ScrollView.prototype.scrollTo = orig;
   }
+});
+
+// ── KB-707(P-446) 작은 화면·긴 언어 — 가려지거나 잘리는 요소
+describe('KB-707', () => {
+  const fade = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'chip-fade').length > 0;
+  it('(1) Food 탭 칩 줄 — 스크롤 영역은 정렬 버튼 왼쪽에서 끝 · 끝 여백 = 페이드 폭 · 페이드는 오른쪽에 숨은 칩이 있을 때만(끝까지 밀면 사라져 마지막 칩을 안 덮음)', () => {
+    const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+    const scroll = tree.root.findAll((n) => n.props?.testID === 'food-chip-scroll')[0];
+    expect(scroll.findAll((n: { props?: { testID?: string } }) => n.props?.testID === 'food-sort')).toHaveLength(0); // 버튼 아래로 안 깔림
+    const pad = (StyleSheet.flatten(scroll.props.contentContainerStyle) as { paddingRight?: number }).paddingRight;
+    expect(pad).toBe(CHIP_FADE_W); // 옛 8 < 페이드 24 → 끝까지 밀어도 마지막 칩 끝이 페이드에 덮였다
+    // SE(375) en: 뷰포트 ~230 · 칩 줄 ~430 → 넘침 = 페이드(더 있다)
+    act(() => scroll.props.onLayout({ nativeEvent: { layout: { width: 230, height: 34 } } }));
+    act(() => scroll.props.onContentSizeChange(430, 34));
+    expect(fade(tree)).toBe(true);
+    // 끝까지 밀면(마지막 칩 = Saved·Caution 도달) 페이드가 사라진다
+    act(() => scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 200, y: 0 } } }));
+    expect(fade(tree)).toBe(false);
+    // 중간 = 다시 표시
+    act(() => scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 100, y: 0 } } }));
+    expect(fade(tree)).toBe(true);
+    // 다 들어가는 넓은 화면·짧은 언어 = 페이드 없음
+    act(() => scroll.props.onContentSizeChange(220, 34));
+    act(() => scroll.props.onScroll({ nativeEvent: { contentOffset: { x: 0, y: 0 } } }));
+    expect(fade(tree)).toBe(false);
+  });
+
+  it('(2) 홈 세그먼트 세 탭 = 가로 스크롤 안(줄이지 않고 도달 가능 — ru·id에서 셋째 탭이 화면 밖으로 잘렸다)', () => {
+    const tree = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" />);
+    const tabs = tree.root.findAll((n) => n.props?.testID === 'home-tabs-scroll')[0];
+    expect(tabs).toBeTruthy();
+    expect(tabs.props.horizontal).toBe(true);
+    for (const k of ['popular', 'saved', 'food']) expect(tabs.findAll((n: { props?: { testID?: string } }) => n.props?.testID === `home-tab-${k}`).length).toBeGreaterThan(0);
+  });
+
+  it('(3) 떠 있는 버튼 + 스크롤 목록 — 목록 끝 여백 ≥ 버튼 윗변 + 16(마지막 항목이 버튼 위로 올라온다)', () => {
+    // 문의 목록: 알약 바닥 = 인셋 + 24, 높이 52 → 끝 여백이 인셋을 따라간다(옛 고정 96 < 34 + 24 + 52 = 110)
+    for (const inset of [0, 21, 34]) expect(feedbackListBottomPad(inset)).toBeGreaterThanOrEqual(inset + FEEDBACK_FAB_GAP + FEEDBACK_FAB_H + 16);
+    // 리뷰 피드: 버튼 bottom 18 · 높이 8+20+8 = 36 → 윗변 54, 끝 여백 96
+    const rf = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8');
+    expect(rf).toMatch(/paddingBottom: 96, flexGrow: 1/);
+    expect(rf).toMatch(/fab: \{\s*position: 'absolute',\s*right: 14,\s*bottom: 18,[\s\S]*?paddingVertical: 8,/);
+    expect(96).toBeGreaterThanOrEqual(18 + 8 * 2 + 20 + 16);
+    // 커뮤니티: 버튼 bottom 18 · 높이 54 → 윗변 72, 끝 여백 96
+    const cm = fs.readFileSync('src/app/(tabs)/community.tsx', 'utf8');
+    expect(cm).toMatch(/fab: \{ position: 'absolute', right: 18, bottom: 18, width: 54, height: 54/);
+    expect(cm).toMatch(/paddingBottom: 96, flexGrow: 1/);
+    expect(96).toBeGreaterThanOrEqual(18 + 54 + 16);
+  });
+
+  it('(4) 프로필 게스트 로그인·Edit 버튼 = 최소 68 + 좌우 여백 12(고정 폭 아님 — vi·th·ja 글자가 테두리에 닿았다)', () => {
+    const pf = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8');
+    expect(pf).toMatch(/editBtn: \{ minWidth: 68, paddingHorizontal: 12,/);
+    expect(pf).not.toMatch(/editBtn: \{[^}]*\bwidth: 68/);
+  });
+
+  it('(5) 잘림 — 국적 영문명(온보딩 타일·프로필)·랭킹 이름 = 두 줄까지', () => {
+    expect(fs.readFileSync('src/app/onboarding/index.tsx', 'utf8')).toContain('<Text style={styles.natSub} numberOfLines={2}>{c.name}</Text>');
+    expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toMatch(/<Text style=\{styles\.natText\} numberOfLines=\{2\} testID="nation-pill">/);
+    const rk = fs.readFileSync('src/app/profile/ranking.tsx', 'utf8');
+    expect(rk).toMatch(/<Text style=\{styles\.rankName\} numberOfLines=\{2\}>/);
+    expect(rk).toMatch(/rankName: \{[^}]*textAlign: 'center'/);
+  });
 });

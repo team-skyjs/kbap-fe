@@ -149,7 +149,7 @@ describe('P-181: 프로필 소형 4건', () => {
     expect(nat.props.children).not.toBe('US'); // 코드 생짜 소멸
     const btn = tree.root.findAll((n) => n.props?.testID === 'profile-edit-pencil' && typeof n.props?.style !== 'function')[0];
     const st = flatten(btn.props.style);
-    expect(st.width).toBe(68);
+    expect(st.minWidth).toBe(68); // KB-707: 짧은 글자는 그대로 68, 긴 언어는 내용에 맞춰 넓어짐(고정 폭이면 vi·th·ja가 테두리에 닿았다)
     expect(st.height).toBe(36);
     expect(st.borderRadius).toBe(8);
     expect(st.borderColor).toBe('#DCDEE3');

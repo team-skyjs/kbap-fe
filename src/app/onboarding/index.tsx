@@ -631,7 +631,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.natName} numberOfLines={2}>{c.native ?? c.name}</Text>
           {c.native && c.native !== c.name && (
-            <Text style={styles.natSub} numberOfLines={1}>{c.name}</Text>
+            <Text style={styles.natSub} numberOfLines={2}>{c.name}</Text>
           )}
         </View>
         {/* 시안: Radio 16(D-1 Choice 문법) — 선택 = primary 5px 링 */}

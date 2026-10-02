@@ -29,7 +29,7 @@ it('A-HM — 검색 pt0·padH16·placeholder #D1D3D8(스캔 버튼 bg는 C 이�
   expect(fx).toMatch(/searchRow: \{[^}]*paddingTop: 0/);
   expect(fx).toContain("color: '#D1D3D8'");
   expect(fx).toMatch(/scanBtn: \{[^}]*backgroundColor: C\.primary/); // A-HM-02 제외분(C 이관)
-  expect(fx).toMatch(/tabsRow: \{[^}]*marginTop: 14/);
+  expect(fx).toMatch(/tabsScroll: \{[^}]*marginTop: 14/); // KB-707: 탭 줄이 가로 스크롤로 감싸지며 위 간격은 감싸개로(값 무변)
   expect(fx).toMatch(/chipRow: \{[^}]*paddingTop: 18, paddingBottom: 14/);
   const cards = read('src/features/food/FoodCards.tsx');
   expect(cards).toMatch(/gmeta: \{[^}]*gap: 5, marginTop: 10/);
