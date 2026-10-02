@@ -31,6 +31,7 @@ import { FLAGS } from '@/lib/flags';
 import { useContentTranslation } from '@/lib/data/useContentTranslation';
 import { TRANSLATE_LABEL_BOX, TranslateButton } from '@/components/TranslateButton';
 import type { Review } from '@/lib/api/types';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
@@ -67,12 +68,17 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
 /** KB-679(P-431): 리뷰 본문 **단일 렌더 지점** — FeedCard(홈·리뷰 피드·음식 상세 3장·내 리뷰)와 음식별 전체 리뷰가
  *  모두 이걸 쓴다(표면별 복붙 금지). 빈 본문(사진·별점만) = 본문·라벨 둘 다 없음.
  *  KB-689(P-434) 2차 X 방식: 번역 라벨은 본문 **위 왼쪽** 한 줄(접힘 대상 밖) — 누르기 전엔 모든 리뷰에 보이고(언어 감지 없음),
- *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시. */
+ *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시.
+ *  KB-703 ②: 서버가 판별한 리뷰 언어(`review.language`)가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건).
+ *  null·필드 없음(판별 불가·구서버) = 지금처럼 표시, 안내 문구 없음. 앱 언어는 구독형(useAppLanguage — 렌더 중 싱글턴 직접 읽기 금지, KB-695). */
 export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
   const original = review.body?.trim() ? review.body : null;
   const tx = useContentTranslation('REVIEW', review.id, original ?? '');
+  // 앱 언어 원값과 비교(clampLang 안 거침 — 앱 10개 언어 = 서버 언어 집합. 어긋나면 "다름" = 표시 쪽이라 안전, client 모듈 의존도 안 늘림)
+  const appLang = useAppLanguage();
   if (!original) return null;
-  const label = FLAGS.contentTranslation; // KB-703: 탭 뒤 같은 언어로 판정돼도 라벨을 숨기지 않는다(처음부터 숨김은 서버 language 도입 뒤 — 후속)
+  const sameAsApp = review.language != null && review.language === appLang;
+  const label = FLAGS.contentTranslation && !sameAsApp; // 탭 뒤 같은 언어로 판정돼도 숨기지 않는다(KB-703 ①) — 숨김은 처음부터만
   return (
     // 라벨이 있을 때만 래퍼를 카드 gap 안으로 8 올린다 — 라벨 상자(44)의 위 여유가 래퍼(부모) 안에 들어오게(시각 위치 무변)
     <View style={label ? { marginTop: -TRANSLATE_LABEL_BOX.padTop } : undefined}>

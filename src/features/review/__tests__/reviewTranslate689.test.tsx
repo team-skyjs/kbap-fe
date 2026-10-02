@@ -34,7 +34,7 @@ let mockLang = 'ko'; // #220 공부 ②: 앱 언어 전환 시나리오용 가�
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string, o?: { language?: string }) => (o?.language ? `${k}:${o.language}` : k), i18n: { language: mockLang } }),
 }));
-jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'ko', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
+jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { get language() { return mockLang; }, t: (k: string) => k, getFixedT: () => (k: string) => k } })); // KB-703 ②: useAppLanguage가 읽는 값 = 앱 언어 시나리오와 같게
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false, useSession: () => null }));
 const mockPost = jest.fn();
@@ -331,4 +331,40 @@ it('본문 접힘("more")과 함께 — 라벨은 접힘 대상 밖(본문 Text 
   const s = out(t);
   expect(s.indexOf('translation.showTranslation')).toBeLessThan(s.indexOf('Really good soup'));
   expect(s.indexOf('Really good soup')).toBeLessThan(s.indexOf('"body-toggle"'));
+});
+
+// ── KB-703 ②: 서버 review.language가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건)
+it('KB-703 ②: review.language === 앱 언어(ko) → 첫 렌더부터 라벨 없음 · 번역 요청 0', () => {
+  const t = render(REVIEW({ language: 'ko' }));
+  expect(btn(t)).toBeUndefined();
+  expect(out(t)).toContain('Really good soup'); // 본문은 그대로
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+it('KB-703 ②: language null·필드 없음(판별 불가·구서버)·다른 언어 → 지금처럼 라벨 표시, 안내 문구 없음', () => {
+  for (const r of [REVIEW({ language: null }), REVIEW(), REVIEW({ language: 'en' })]) {
+    const t = render(r);
+    expect(labelText(t).text).toBe('translation.showTranslation');
+  }
+});
+
+it('KB-703 ②: 앱 언어가 바뀌면 다시 판정 — ko 리뷰는 ko에서 숨김, ja로 바꾸면 라벨이 나타난다(구독형 언어)', () => {
+  const t = render(REVIEW({ language: 'ko' }));
+  expect(btn(t)).toBeUndefined();
+  mockLang = 'ja';
+  rerender(t, REVIEW({ language: 'ko' }));
+  expect(labelText(t).text).toBe('translation.showTranslation');
+  mockLang = 'ko';
+  rerender(t, REVIEW({ language: 'ko' }));
+  expect(btn(t)).toBeUndefined();
+});
+
+it('KB-703 ②: 어댑터 — 문자열만 그대로, 빈 값·없음·비문자 = null', () => {
+  const { adaptReview } = jest.requireActual('@/lib/api/reviewAdapter') as typeof import('@/lib/api/reviewAdapter');
+  const base = { reviewId: 1, rating: 5, content: 'x', imageUrls: [], createdAt: '2026-10-02' };
+  expect(adaptReview({ ...base, language: 'ko' }).language).toBe('ko');
+  expect(adaptReview({ ...base, language: '' }).language).toBeNull();
+  expect(adaptReview({ ...base, language: null }).language).toBeNull();
+  expect(adaptReview(base).language).toBeNull();
+  expect(adaptReview({ ...base, language: 7 as unknown as string }).language).toBeNull();
 });

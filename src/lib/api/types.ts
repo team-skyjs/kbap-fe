@@ -202,6 +202,8 @@ export interface Review {
   authorNationality: string | null;
   authorRankTier: string | null;
   anonymized: boolean; // author 부재(탈퇴) = true
+  /** KB-703 ②: 서버가 판별한 본문 언어(앱 언어 코드) — null = 판별 불가·구서버. 앱 언어와 같으면 번역 라벨을 **처음부터** 숨긴다. */
+  language?: string | null;
   /** 구 번역 축(P-085) — 미사용. KB-679부터 번역은 POST /api/translations 온디맨드(useContentTranslation). */
   bodyLanguage?: string;
   translatedBody?: string | null;
