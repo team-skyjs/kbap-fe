@@ -35,8 +35,9 @@ export function useIsNewFood(publishedAt: string | null | undefined): boolean {
   const isNew = isNewFood(publishedAt, now);
   useEffect(() => {
     if (!isNew) return;
-    const left = Date.parse(publishedAt!) + NEW_FOOD_WINDOW_MS - Date.now();
-    const id = setTimeout(() => setNow(Date.now()), Math.max(0, left));
+    const boundary = Date.parse(publishedAt!) + NEW_FOOD_WINDOW_MS;
+    // 타이머는 벽시계와 다른 축이라 경계보다 조금 일찍 발화할 수 있다 → now를 경계 이상으로(일찍 깨도 내려감 — 재등록 없이 고착 방지, #226 공부)
+    const id = setTimeout(() => setNow(Math.max(Date.now(), boundary)), Math.max(0, boundary - Date.now()));
     return () => clearTimeout(id);
   }, [isNew, publishedAt]);
   return isNew;

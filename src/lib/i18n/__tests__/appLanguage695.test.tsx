@@ -42,8 +42,22 @@ it.each([
   ['src/lib/data/useIngredientCatalog.ts', 1],
   ['src/lib/data/useMe.ts', 1],
   ['src/lib/data/bookmarks.ts', 1],
+  ['src/lib/data/useDietPresets.ts', 1], // #226 공부: apiLang()이 함수 뒤에서 싱글턴을 읽던 자리
 ])('%s — 렌더 중 쿼리 키는 useAppLanguage 값(queryKey 안 i18n.language 0) · 훅 %i곳', (file, hooks) => {
   const src = fs.readFileSync(file, 'utf8');
   expect(src.match(/const lang = useAppLanguage\(\);/g) ?? []).toHaveLength(hooks as number);
   expect(src).not.toMatch(/queryKey:[^\n]*i18n\.language/);
+  expect(src).not.toMatch(/queryKey:[^\n]*apiLang\(\)/);
+});
+
+it('src/lib/data 전체 — 쿼리 키에 언어 싱글턴 직접 읽기(i18n.language·apiLang()) 0 · 새 훅도 자동으로 그물', () => {
+  const dir = 'src/lib/data';
+  for (const f of fs.readdirSync(dir).filter((n) => /\.tsx?$/.test(n))) {
+    // 콜백 안 캐시 조작(invalidate·cancel·set·get·refetch·remove)의 키는 호출 시점 읽기라 제외 — 렌더 중 useQuery 옵션 키만 본다
+    const lines = fs.readFileSync(`${dir}/${f}`, 'utf8').split('\n');
+    const hits = lines.filter(
+      (l) => /queryKey:[^\n]*(i18n\.language|apiLang\(\))/.test(l) && !/(invalidate|cancel|set|get|refetch|remove)Quer(y|ies)\w*\(/.test(l),
+    );
+    expect({ f, hits }).toEqual({ f, hits: [] });
+  }
 });

@@ -62,7 +62,9 @@ export function networkQuietNow(qc: QueryClient, now = Date.now()): boolean {
 /** KB-695: 판정을 렌더 본문의 일반 호출(`return networkQuietNow(qc)`)로 두면 React Compiler가 [qc]로 메모이즈해 첫 렌더 값이
  *  굳었다(비-prod에서 세션 중 자동 reload 막힘 · prod는 항상 defer라 무증상). useSyncExternalStore = 렌더마다 getSnapshot을
  *  **호출 시점**으로 다시 계산(컴파일러가 캐시하지 않는 훅 경계) — "새 요청 시작 = 같은 렌더에서 동기 false"(#109 2R) 유지.
- *  이벤트·정착 타이머는 스토어 변경 통지(onChange)로. 구독 본문(quietRef 갱신·마이크로태스크 지연·busy 전이 생략)은 기존 그대로. */
+ *  이벤트·정착 타이머는 스토어 변경 통지(onChange)로. 구독 본문(quietRef 갱신·마이크로태스크 지연·busy 전이 생략)은 기존 그대로.
+ *  알려진 지연(옛 설계와 같은 성질): 이미 true인데 busy 아닌 캐시 이벤트가 오면 since가 리셋돼 실제 값은 false지만 전이가 없어
+ *  통지를 생략 → 렌더 값이 최대 OTA_NETWORK_IDLE_MS 동안 낡은 true. tryApply의 호출 시점 게이트가 막으므로 무해. */
 export function useNetworkIdle(): boolean {
   const qc = useQueryClient();
   const subscribe = React.useCallback(
