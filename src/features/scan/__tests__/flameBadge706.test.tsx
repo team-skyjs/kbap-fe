@@ -71,7 +71,7 @@ jest.mock('@/lib/flags', () => {
 
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { BADGE_H, BADGE_W } from '@/components/CountdownBadge';
-import { BADGE_POS_KEY, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos } from '../badgePosition';
+import { BADGE_POS_KEY, _setBadgePosCacheForTest, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos } from '../badgePosition';
 import { OUTER_REST_D } from '@/components/flameGeometry';
 import { FAB_OVERHANG } from '@/components/TabBar';
 
@@ -124,7 +124,7 @@ function drag(t: ReactTestRenderer, dx: number, dy: number) {
   const p = lastPan();
   act(() => p.handlers.onStart?.());
   act(() => p.handlers.onUpdate?.({ translationX: dx, translationY: dy }));
-  act(() => p.handlers.onEnd?.());
+  act(() => p.handlers.onEnd?.({}, true)); // 정상 놓기(success)
   act(() => p.handlers.onFinalize?.());
   void t;
 }
@@ -132,6 +132,7 @@ function drag(t: ReactTestRenderer, dx: number, dy: number) {
 const outer = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'flame-outer' && typeof n.type !== 'string')[0];
 
 beforeEach(async () => {
+  _setBadgePosCacheForTest(undefined); // KB-706: 뱃지 위치 세션 캐시 — 읽기 전부터(상태 기계 검증)
   _resetQuotaCelebrationMemoryForTest();
   mockMeEmpty = false;
   mockQuota = Q(2);
@@ -152,8 +153,8 @@ beforeEach(async () => {
 describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
   it('보임 + 동작 줄이기 꺼짐 확인 = 일렁임 루프 시작(키프레임 path · 불티) · 미확인 동안은 정지', async () => {
     const t = render();
-    expect(mockRepeat).not.toHaveBeenCalled(); // 미확인(조회 전) = 움직임 금지(#229)
-    expect(outer(t).props.d).toBe(OUTER_REST_D);
+    expect(mockRepeat).not.toHaveBeenCalled(); // 미확인(조회 전) = 움직임 금지(#229) · 저장 위치 읽기 전 = 아직 안 그림(#234 공부)
+    expect(host(t, 'home-quota-badge')).toHaveLength(0);
     await flush();
     expect(mockRepeat).toHaveBeenCalledTimes(1);
     expect(outer(t).props.animatedProps).toBeDefined(); // 일렁임 = animatedProps(d)
@@ -222,6 +223,7 @@ describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
     expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: 300 }));
     act(() => t.unmount());
     mountedTrees.length = 0;
+    _setBadgePosCacheForTest(undefined); // 앱 재실행 = 세션 캐시 없음 → 저장소에서 읽음
     await AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify({ side: 'right', top: 5000 })); // 큰 화면에서 저장 → 작은 화면
     const t2 = render();
     await flush();
@@ -276,18 +278,67 @@ describe('Codex #234 — 끝 콜백이 안 오는 경로 · 늦은 읽기', () =
     expect(t.root.findAll((n) => n.props?.testID === 'quota-sheet-title').length).toBeGreaterThan(0);
   });
 
-  it('② 저장값 읽기가 끝나기 전에 끌어 놓으면 → 늦게 온 옛 저장값이 방금 놓은 자리를 되돌리지 않는다', async () => {
+  it('② 사용자 이동이 읽기보다 먼저면 늦게 온 옛 저장값이 그 자리를 되돌리지 않는다(읽기 중엔 안 그려 실사용 경로는 막혔지만 방어 유지)', async () => {
     let resolveRead!: (v: string | null) => void;
     (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => new Promise<string | null>((r) => { resolveRead = r; }));
     const t = render();
     await flush();
-    layout(t); // 읽기 미결 — 기본 자리
-    drag(t, -250, 120); // 왼쪽으로 놓음
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: ANCHOR + 120 }));
+    layout(t);
+    expect(host(t, 'home-quota-badge')).toHaveLength(0); // 읽는 중 = 안 그림
+    drag(t, -250, 120); // (제스처 콜백 직접 구동) 왼쪽으로 놓음 — 시작 위치 0 기준
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: 120 }));
     await act(async () => {
       resolveRead(JSON.stringify({ side: 'right', top: 300 })); // 이전 실행의 옛 자리가 늦게 도착
     });
-    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: ANCHOR + 120 }));
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: 120 }));
+  });
+});
+
+describe('#234 공부 — 저장값 읽기 상태 기계', () => {
+  it('저장 자리가 있고 읽기가 측정보다 늦게 끝나도 기본 자리 프레임이 한 번도 안 그려진다 → 읽기 뒤 바로 저장 자리', async () => {
+    let resolveRead!: (v: string | null) => void;
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => new Promise<string | null>((r) => { resolveRead = r; }));
+    const t = render();
+    const seen: string[] = [];
+    const snap = () => {
+      if (host(t, 'home-quota-badge').length) {
+        const p = place(t);
+        seen.push(`${p.x ?? 'r' + p.right},${p.y ?? p.top}`);
+      }
+    };
+    snap();
+    await flush();
+    snap();
+    layout(t);
+    snap();
+    await act(async () => {
+      resolveRead(JSON.stringify({ side: 'left', top: 300 }));
+    });
+    snap();
+    expect(seen).toEqual(['20,300']); // 기본 자리(r20,160 / 306,160)·translate(0,0) 0회
+  });
+
+  it('읽기 실패 = 기본 자리로 뜬다(읽는 중 상태에 갇혀 영영 안 뜨지 않음)', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => Promise.reject(new Error('io')));
+    const t = render();
+    await flush();
+    layout(t);
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR }));
+  });
+
+  it('시스템이 가져가 끝난 끌기(onEnd success=false) = 취소와 같이 — 저장 0 · 제자리', async () => {
+    const t = render();
+    await flush();
+    layout(t);
+    const setItem = AsyncStorage.setItem as jest.Mock;
+    setItem.mockClear();
+    const p = lastPan();
+    act(() => p.handlers.onStart?.());
+    act(() => p.handlers.onUpdate?.({ translationX: -250, translationY: 120 }));
+    act(() => p.handlers.onEnd?.({}, false));
+    act(() => p.handlers.onFinalize?.());
+    expect(setItem).not.toHaveBeenCalled();
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR }));
   });
 });
 

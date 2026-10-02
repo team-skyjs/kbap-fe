@@ -57,6 +57,7 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: { ...a.FLAGS, countdownBadge: true } };
 });
 
+import { _setBadgePosCacheForTest } from '../badgePosition';
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { setSessionState, _resetSessionForTest } from '@/lib/auth/useSession';
 
@@ -114,6 +115,7 @@ async function mount(): Promise<ReactTestRenderer> {
 }
 
 beforeEach(() => {
+  _setBadgePosCacheForTest(null); // KB-706: 뱃지 위치 세션 캐시 — 저장값 없음(기본 자리)으로 즉시
   _resetQuotaCelebrationMemoryForTest(); // KB-699
   _resetSessionForTest();
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);

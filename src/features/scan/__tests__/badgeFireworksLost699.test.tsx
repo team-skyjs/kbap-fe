@@ -64,6 +64,7 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: new Proxy(a.FLAGS, { get: (t, k) => (k === 'countdownBadge' ? mockFlag.on : t[k as string]) }) };
 });
 
+import { _setBadgePosCacheForTest } from '../badgePosition';
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { CELEBRATE_END_MS } from '@/components/CountdownBadge';
 
@@ -97,6 +98,7 @@ const shown = (t: ReactTestRenderer) => byId(t, 'home-quota-badge').length > 0;
 const valueText = (t: ReactTestRenderer) => byId(t, 'countdown-badge-value')[0]?.props.children;
 
 beforeEach(() => {
+  _setBadgePosCacheForTest(null); // KB-706: 뱃지 위치 세션 캐시 — 저장값 없음(기본 자리)으로 즉시
   _resetQuotaCelebrationMemoryForTest(); // KB-699: 세션 메모리는 테스트 간에 비운다
   mockMeEmpty = false;
   mockQuota = null;

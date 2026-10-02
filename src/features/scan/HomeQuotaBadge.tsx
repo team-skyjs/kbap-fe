@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { CountdownBadge } from '@/components/CountdownBadge';
-import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
+import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, cachedBadgePos, rememberBadgePos, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
 import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -140,26 +140,32 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
 
   // ── KB-706: 끌어 놓기 — 놓으면 가까운 좌/우 가장자리, 높이 유지, 기기 저장(놓을 때 1회). 저장값 없음 = 기본 자리(스캔 버튼 아래 측정 앵커 `top`, 오른쪽).
   const [area, setArea] = React.useState<{ w: number; h: number } | null>(null);
-  const [saved, setSaved] = React.useState<BadgePos | null>(null);
-  // Codex #234 ②: 읽기가 끝나기 전에 사용자가 끌어 놓았으면 늦게 온 읽기 결과(옛 자리)를 버린다 — 사용자 변경이 최신
+  // 저장 위치 상태 기계(#234 공부): 'loading'(읽는 중 — **그리지 않는다**: 기본 자리에 먼저 보였다가 저장 자리로 튀지 않게) → null(없음·읽기 실패 =
+  // 기본 자리) | 값. 사용자가 끌어 놓은 뒤 늦게 온 읽기 결과는 버린다(Codex #234 ② — 사용자 변경이 최신).
+  const [saved, setSaved] = React.useState<BadgePos | null | 'loading'>(() => cachedBadgePos() ?? (cachedBadgePos() === null ? null : 'loading'));
   const userMoved = useSharedValue(false);
   React.useEffect(() => {
+    if (!FLAGS.countdownBadge) return; // 플래그 off(production) = 뱃지 없음 — 저장소 IO도 0
+    if (cachedBadgePos() !== undefined) return; // 이번 세션에 이미 읽음(재마운트)
     let alive = true;
+    const settle = (v: BadgePos | null) => {
+      if (!alive || userMoved.get()) return;
+      rememberBadgePos(v);
+      setSaved(v);
+    };
     AsyncStorage.getItem(BADGE_POS_KEY)
-      .then((raw) => {
-        if (!alive || userMoved.get()) return;
-        setSaved(parseBadgePos(raw));
-      })
-      .catch(() => {}); // 읽기 실패 = 기본 자리
+      .then((raw) => settle(parseBadgePos(raw)))
+      .catch(() => settle(null)); // 읽기 실패 = "없음"으로 확정(안 하면 'loading'이 남아 뱃지가 영영 안 뜬다)
     return () => {
       alive = false;
     };
   }, [userMoved]);
+  const restored = saved === 'loading' ? null : saved;
   const bounds = area ? badgeBounds(area.h, headerH) : null;
   const pos =
-    area && bounds
-      ? saved
-        ? { x: edgeX(saved.side, area.w), y: clampTop(saved.top, bounds) }
+    area && bounds && saved !== 'loading'
+      ? restored
+        ? { x: edgeX(restored.side, area.w), y: clampTop(restored.top, bounds) }
         : top != null
           ? { x: edgeX('right', area.w), y: clampTop(top, bounds) }
           : null
@@ -196,12 +202,14 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
       px.set(startX.get() + e.translationX);
       py.set(clampTop(startY.get() + e.translationY, bounds));
     })
-    .onEnd(() => {
-      if (!area) return; // 측정 전 = 취소와 같이(onFinalize가 제자리로)
+    .onEnd((_e, success) => {
+      // 시스템이 제스처를 가져가 끝난 것(success false)·측정 전 = 취소와 같이 — 저장 없이 onFinalize가 제자리로(#234 공부)
+      if (!success || !area) return;
       ended.set(true);
       const next: BadgePos = { side: nearestSide(px.get(), area.w), top: py.get() };
       px.set(withSpring(edgeX(next.side, area.w)));
       userMoved.set(true);
+      rememberBadgePos(next);
       setSaved(next);
       AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify(next)).catch(() => {}); // 저장 실패 = 이번 세션만 유지
     })
@@ -230,9 +238,9 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
     <>
       {/* 홈 영역 측정 + 뱃지 밖 터치 통과(box-none) */}
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={(e) => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
-        {shown && (pos != null || (!area && !saved && top != null)) && (
+        {shown && (pos != null || (!area && saved === null && top != null)) && (
           <GestureDetector gesture={pan}>
-            {/* 영역 측정 전(첫 프레임)엔 옛 기본 자리(오른쪽 BADGE_RIGHT · 측정 앵커 top) — 측정 뒤엔 translate(끌기·저장 위치). 저장값이 있으면 측정까지 1프레임 대기(튐 방지) */}
+            {/* 저장값 읽기가 끝나야 그린다. 영역 측정 전(첫 프레임)·저장값 없음 = 옛 기본 자리(오른쪽 BADGE_RIGHT · 측정 앵커 top), 측정 뒤엔 translate(끌기·저장 위치) */}
             <Animated.View style={pos != null ? [styles.float, floatStyle] : [styles.anchor, { top }]} testID="home-quota-badge">
               <CountdownBadge
                 value={shown.value}

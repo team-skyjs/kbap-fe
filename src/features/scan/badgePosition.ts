@@ -51,3 +51,16 @@ export function edgeX(side: BadgeSide, areaW: number): number {
 export function nearestSide(x: number, areaW: number): BadgeSide {
   return x + BADGE_W / 2 < areaW / 2 ? 'left' : 'right';
 }
+
+/** 세션 캐시 — 첫 읽기(또는 놓기) 뒤 홈 재마운트는 저장소를 기다리지 않고 바로 그 자리(undefined = 아직 안 읽음) */
+let posCache: BadgePos | null | undefined;
+export function cachedBadgePos(): BadgePos | null | undefined {
+  return posCache;
+}
+export function rememberBadgePos(v: BadgePos | null): void {
+  posCache = v;
+}
+/** 유닛용 — undefined = 읽기 전, null = 저장값 없음 */
+export function _setBadgePosCacheForTest(v: BadgePos | null | undefined): void {
+  posCache = v;
+}
