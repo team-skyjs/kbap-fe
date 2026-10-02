@@ -15,7 +15,11 @@ import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SheetShell } from '@/components/SheetShell';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { CountdownBadge } from '@/components/CountdownBadge';
+import { BADGE_EDGE, BADGE_POS_KEY, DRAG_SLOP, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos, type BadgePos } from './badgePosition';
 import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -39,7 +43,7 @@ export function quotaBadgeModel(quota: ScanQuota | null | undefined, isGuest: bo
  *  고정 오프셋은 넛지가 뜨면 스캔 버튼과 겹쳤다). 오른쪽 = 검색 줄 paddingHorizontal 20(스캔 버튼 오른쪽 끝과 정렬).
  *  화면 고정 플로팅(스크롤해도 같은 자리 — 축하가 보이게). */
 export const BADGE_GAP = 4;
-export const BADGE_RIGHT = 20;
+export const BADGE_RIGHT = BADGE_EDGE; // 기본 자리 = 오른쪽 가장자리(KB-706 끌어 놓기의 가장자리 여백과 같은 값)
 
 /** KB-699: 회원별 마지막 숫자 쿼터 — 세션 메모리(앱 재시작 시 비움). 해금 축하를 재조회 빈 렌더·홈 트리 재마운트 너머로 잇는다. */
 const lastNumericQuota = new Map<string, QuotaBadgeModel>();
@@ -64,7 +68,7 @@ export function _resetQuotaCelebrationMemoryForTest() {
 }
 
 /** top = 홈이 측정한 앵커(null = 아직 측정 전 → 그리지 않는다. 축하 상태는 이 컴포넌트에 남아 측정 뒤 이어진다). */
-export function HomeQuotaBadge({ top }: { top: number | null }) {
+export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: number }) {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
@@ -134,23 +138,99 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
     setPicker(true);
   };
 
+  // ── KB-706: 끌어 놓기 — 놓으면 가까운 좌/우 가장자리, 높이 유지, 기기 저장(놓을 때 1회). 저장값 없음 = 기본 자리(스캔 버튼 아래 측정 앵커 `top`, 오른쪽).
+  const [area, setArea] = React.useState<{ w: number; h: number } | null>(null);
+  const [saved, setSaved] = React.useState<BadgePos | null>(null);
+  React.useEffect(() => {
+    let alive = true;
+    AsyncStorage.getItem(BADGE_POS_KEY)
+      .then((raw) => alive && setSaved(parseBadgePos(raw)))
+      .catch(() => {}); // 읽기 실패 = 기본 자리
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const bounds = area ? badgeBounds(area.h, headerH) : null;
+  const pos =
+    area && bounds
+      ? saved
+        ? { x: edgeX(saved.side, area.w), y: clampTop(saved.top, bounds) }
+        : top != null
+          ? { x: edgeX('right', area.w), y: clampTop(top, bounds) }
+          : null
+      : null;
+  const px = useSharedValue(0);
+  const py = useSharedValue(0);
+  // 끌기 상태도 공유값(.get/.set) — 렌더 중 만든 제스처 콜백이 ref를 읽으면 React Compiler가 "렌더 중 ref 접근"으로 컴포넌트를 건너뛴다
+  const dragging = useSharedValue(false);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
+  const justDragged = useSharedValue(false);
+  const posX = pos?.x;
+  const posY = pos?.y;
+  React.useEffect(() => {
+    if (posX == null || posY == null || dragging.get()) return;
+    px.set(posX);
+    py.set(posY);
+  }, [posX, posY, px, py, dragging]);
+  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
+  // 콜백은 JS 스레드(runOnJS(true) — 레포 제스처 관례, 워클릿 경계 0). 공유값은 JS에서 써도 UI에 반영된다.
+  // 공유값은 .get()/.set() — React Compiler가 훅 반환값의 `.value =` 대입을 "수정 불가"로 보고 컴포넌트를 건너뛰지 않게(reanimated 4 권장).
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .minDistance(DRAG_SLOP)
+    .onStart(() => {
+      dragging.set(true);
+      startX.set(px.get());
+      startY.set(py.get());
+    })
+    .onUpdate((e) => {
+      if (!bounds) return;
+      px.set(startX.get() + e.translationX);
+      py.set(clampTop(startY.get() + e.translationY, bounds));
+    })
+    .onEnd(() => {
+      if (!area) return;
+      const next: BadgePos = { side: nearestSide(px.get(), area.w), top: py.get() };
+      px.set(withSpring(edgeX(next.side, area.w)));
+      setSaved(next);
+      AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify(next)).catch(() => {}); // 저장 실패 = 이번 세션만 유지
+    })
+    .onFinalize(() => {
+      if (dragging.get()) {
+        justDragged.set(true);
+        setTimeout(() => justDragged.set(false), 300); // 놓는 순간 따라 들어올 수 있는 탭만 막는 짧은 창
+      }
+      dragging.set(false);
+    });
+  // 끌기 직후 손을 뗄 때 들어올 수 있는 탭은 시트를 열지 않는다(끌기 = 시트 안 열림)
+  const openSheet = () => {
+    if (justDragged.get()) return;
+    setSheet(true);
+  };
+
   const shown = celebrating?.model ?? model;
   const left = shown && shown.value > 0 ? t('scan.freeLeft', { count: shown.value }) : t('scan.quotaTitle');
   return (
     <>
-      {shown && top != null && (
-        <View style={[styles.float, { top }]} pointerEvents="box-none" testID="home-quota-badge">
-          <CountdownBadge
-            value={shown.value}
-            unitLabel={t('scan.badgeUnit', { count: shown.value })}
-            state={shown.state}
-            onPress={() => setSheet(true)}
-            celebrate={celebrating != null}
-            onCelebrateEnd={endCelebration}
-            accessibilityLabel={left}
-          />
-        </View>
-      )}
+      {/* 홈 영역 측정 + 뱃지 밖 터치 통과(box-none) */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={(e) => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+        {shown && (pos != null || (!area && !saved && top != null)) && (
+          <GestureDetector gesture={pan}>
+            {/* 영역 측정 전(첫 프레임)엔 옛 기본 자리(오른쪽 BADGE_RIGHT · 측정 앵커 top) — 측정 뒤엔 translate(끌기·저장 위치). 저장값이 있으면 측정까지 1프레임 대기(튐 방지) */}
+            <Animated.View style={pos != null ? [styles.float, floatStyle] : [styles.anchor, { top }]} testID="home-quota-badge">
+              <CountdownBadge
+                value={shown.value}
+                state={shown.state}
+                onPress={openSheet}
+                celebrate={celebrating != null}
+                onCelebrateEnd={endCelebration}
+                accessibilityLabel={left}
+              />
+            </Animated.View>
+          </GestureDetector>
+        )}
+      </View>
       <SheetShell visible={sheet} onClose={() => setSheet(false)} onDismiss={onSheetDismiss}>
         <View style={styles.copy}>
           <Text style={styles.title} testID="quota-sheet-title">{left}</Text>
@@ -182,7 +262,8 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
 }
 
 const styles = StyleSheet.create({
-  float: { position: 'absolute', right: BADGE_RIGHT },
+  float: { position: 'absolute', left: 0, top: 0 }, // 위치 = translate(px, py) — 기본 = 오른쪽 BADGE_RIGHT·측정 앵커
+  anchor: { position: 'absolute', right: BADGE_RIGHT },
   copy: { gap: 8 },
   title: { ...type_.sectionTitle, fontFamily: font.bodyBold, color: C.ink },
   body: { ...type_.body, fontFamily: font.body, color: C.ink2 },

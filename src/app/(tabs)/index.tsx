@@ -262,7 +262,7 @@ export default function Home() {
       />
 
       {/* KB-680(P-432) → KB-701: 불꽃 "무료 스캔 N회 남음" = 스캔 버튼 바로 아래(스크롤 0 기준, 화면 고정) — 플래그 countdownBadge(진단 채널만) · 노출 조건은 컴포넌트 안 */}
-      <HomeQuotaBadge top={badgeTop} />
+      <HomeQuotaBadge top={badgeTop} headerH={headerH} />
 
       {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />

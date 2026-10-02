@@ -1,24 +1,80 @@
 /**
- * FlameShape (KB-680) — 카운트다운 뱃지의 불꽃 그림 **한 곳**. 시안(D-21) 확정 전 임시 형태 — 레퍼런스(Me+ 스트릭:
- * 둥근 아래 · 위로 솟은 끝 · 흰 테두리)를 근사. 시안이 오면 이 파일만 교체한다(뱃지·호출부 무변).
- * 색 = DS 토큰만(active = primary 단색 — KB-701 그라데이션 제거, empty = ink3). 위험도 4색 금지(뱃지가 위험 판정으로 읽히면 안 됨).
+ * FlameShape — 카운트다운 뱃지 불꽃(KB-706 2차: 예진 영상 레퍼런스의 구성·색 + 계속 일렁임).
+ * 모양·색·키프레임 데이터 = flameGeometry.ts. 여기는 그리기만.
+ *
+ * - active: 바깥(세로 4정지 그라데이션) · 안쪽 불꽃(봉우리 → 가운데 → 아래, 바닥 빛으로 녹아듦) · 바닥 노란 빛 · 불티 2개. 흰 테두리 없음.
+ * - empty(0회 — 꺼진 불꽃): 같은 모양 회색 · 정지 · 빛·불티 없음(바깥 ink3 · 안쪽 한 단계 진한 ink2 — 기존 토큰).
+ * - `phase`(0..1 공유값)가 있으면 그 값으로 일렁인다 — d·opacity를 useAnimatedProps 워클릿이 계산(UI 스레드, JS 0).
+ *   없으면(동작 줄이기·가려짐·꺼진 불꽃) 가라앉은 모양으로 정지.
+ * - 캔버스 = FLAME_VIEWBOX(rest 불꽃 + 위쪽 일렁임·불티 여유) × `scale`(px/단위). 배치는 호출부(터치 상자보다 크다 — pointerEvents none).
  */
 import * as React from 'react';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, Ellipse, LinearGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Animated, { useAnimatedProps, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { color as C } from '@/lib/theme';
+import {
+  FLAME_COLORS,
+  FLAME_TIMES,
+  FLAME_VIEWBOX as V,
+  INNER_FRAMES,
+  INNER_REST_D,
+  OUTER_FRAMES,
+  OUTER_REST_D,
+  lerpFrames,
+  sparkFrame,
+  toPathD,
+} from './flameGeometry';
 
-const VB_W = 64;
-const VB_H = 72;
-// KB-701(예진 10/2 실기): 옛 path의 왼쪽 안쪽 홈(흰 테두리가 몸통 안으로 휘어 들어감)이 숫자 왼쪽 위와 겹쳐 안 보였다 → 홈 없는 물방울형.
-// 몸통 안 흰 선 0 = 숫자 영역(라벨 박스) 전체가 단색 위.
-export const FLAME_PATH = 'M32 4 C41 15 57 25 58 45 C59 60 47 69 32 69 C17 69 5 60 6 45 C7 25 23 15 32 4 Z';
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-export function FlameShape({ width, height, state }: { width: number; height: number; state: 'active' | 'empty' }) {
+export function FlameShape({ scale, state, phase }: { scale: number; state: 'active' | 'empty'; phase?: SharedValue<number> }) {
   const on = state === 'active';
+  const rest = useSharedValue(0);
+  const p = phase ?? rest;
+  const animated = on && phase != null;
+  const outerProps = useAnimatedProps(() => ({ d: toPathD(lerpFrames(OUTER_FRAMES, FLAME_TIMES, p.value)) }));
+  const innerProps = useAnimatedProps(() => ({ d: toPathD(lerpFrames(INNER_FRAMES, FLAME_TIMES, p.value)) }));
+  const spark0 = useAnimatedProps(() => sparkFrame(0, p.value));
+  const spark1 = useAnimatedProps(() => sparkFrame(1, p.value));
   return (
-    <Svg width={width} height={height} viewBox={`0 0 ${VB_W} ${VB_H}`} testID={`flame-${state}`}>
-      {/* KB-701: 그라데이션(위쪽 연한 보조 주황) 제거 — 숫자 위 밝은 영역이 흰 글자 대비를 깎았다. 단색 = 기존 토큰(새 색 0) */}
-      <Path d={FLAME_PATH} fill={on ? C.primary : C.ink3} stroke={C.surface} strokeWidth={4} strokeLinejoin="round" />
+    <Svg width={V.w * scale} height={V.h * scale} viewBox={`${V.x} ${V.y} ${V.w} ${V.h}`} testID={`flame-${state}`}>
+      <Defs>
+        <LinearGradient id="flameOuter" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={FLAME_COLORS.outer[0]} />
+          <Stop offset="0.35" stopColor={FLAME_COLORS.outer[1]} />
+          <Stop offset="0.75" stopColor={FLAME_COLORS.outer[2]} />
+          <Stop offset="1" stopColor={FLAME_COLORS.outer[3]} />
+        </LinearGradient>
+        <LinearGradient id="flameInner" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={FLAME_COLORS.innerPeak[0]} />
+          <Stop offset="0.25" stopColor={FLAME_COLORS.innerPeak[1]} />
+          <Stop offset="0.6" stopColor={FLAME_COLORS.innerMid} />
+          <Stop offset="1" stopColor={FLAME_COLORS.innerBottom} stopOpacity={0.2} />
+        </LinearGradient>
+        <RadialGradient id="flameGlow" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor={FLAME_COLORS.glow[0]} />
+          <Stop offset="0.55" stopColor={FLAME_COLORS.glow[1]} stopOpacity={0.85} />
+          <Stop offset="1" stopColor={FLAME_COLORS.glow[1]} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      {animated ? (
+        <>
+          <AnimatedPath animatedProps={outerProps} fill="url(#flameOuter)" testID="flame-outer" />
+          <AnimatedPath animatedProps={innerProps} fill="url(#flameInner)" testID="flame-inner" />
+        </>
+      ) : (
+        <>
+          <Path d={OUTER_REST_D} fill={on ? 'url(#flameOuter)' : C.ink3} testID="flame-outer" />
+          <Path d={INNER_REST_D} fill={on ? 'url(#flameInner)' : C.ink2} testID="flame-inner" />
+        </>
+      )}
+      {on && <Ellipse cx={50} cy={122} rx={30} ry={15} fill="url(#flameGlow)" testID="flame-glow" />}
+      {animated && (
+        <>
+          <AnimatedPath animatedProps={spark0} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
+          <AnimatedPath animatedProps={spark1} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
+        </>
+      )}
     </Svg>
   );
 }
