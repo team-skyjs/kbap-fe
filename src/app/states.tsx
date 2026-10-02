@@ -9,7 +9,6 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { SubHeader, SkeletonList } from '@/components';
@@ -18,10 +17,10 @@ import { EmptyBlock } from '@/components/StateBlock';
 export default function States() {
   const router = useRouter();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    // KB-710(5): 위 안전 영역은 SubHeader가 이미 더한다 — 여기서 또 더해 헤더가 다른 하위 화면보다 그만큼(SE 20pt) 아래였다
+    <View style={styles.root}>
       <SubHeader title={t('states.catalogTitle')} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <Item label={t('states.labelLoading')}>

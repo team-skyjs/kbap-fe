@@ -7,7 +7,7 @@
  * P-387 규약: 완료 안내는 **응답 성공 후에만**. 실패면 본문·사진을 유지하고 재시도.
  */
 import * as React from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
@@ -97,7 +97,9 @@ export default function FeedbackComposeScreen() {
     });
 
   return (
-    <View style={styles.root}>
+    // KB-710(4): iOS KeyboardAvoidingView(padding) — #228 규칙에서 "Send가 스크롤 본문 안이라 스크롤로 닿는다"는 사유로 빠져 있었지만,
+    // 회피 없이는 키보드가 떠도 ScrollView가 줄지 않아 스크롤 범위가 생기지 않는다 → SE에서 Send 위 19pt만 보이고 닿을 수도 없었다.
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="feedback-kav">
       {/* P-406: 목록이 첫 화면이 됐다 — "My inquiries" 링크 제거(뒤로 = 목록) */}
       <SubHeader title={t('feedback.newTitle')} onBack={() => router.back()} />
       <LeaveConfirmModal {...leave.modal} />
@@ -142,7 +144,7 @@ export default function FeedbackComposeScreen() {
           {t('feedback.send')}
         </Btn>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -294,14 +294,16 @@ function RegisteredBottomBar({
     >
       {FLAGS.reviewsEnabled && !(scanEntry && onAsk) && (
         <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
-          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write">
+          {/* KB-710(2): 두 버튼 높이 맞춤 — 큰 글자에서 좁은 Write만 두 줄로 접혀 키가 달랐다. 줄(row)은 슬롯을 가장 큰 쪽에
+              맞춰 늘리니 버튼이 슬롯을 채우면 같은 높이(기본 크기 = 둘 다 48 그대로) */}
+          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write" style={styles.bottomBtnFill}>
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
       {onAsk && (
         <View style={{ flex: scanEntry ? 1 : narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) · P-353 ②: 스캔 진입 = 전폭 */}
-          <Btn fitLabel onPress={onAsk} testID="bottom-ask">
+          <Btn fitLabel onPress={onAsk} testID="bottom-ask" style={styles.bottomBtnFill}>
             {t('detail.askOwner')}
           </Btn>
         </View>
@@ -505,7 +507,8 @@ function Registered({
                       </Text>
                     )}
                     {ing.percentage != null && (
-                      <Text style={styles.ingTileSub} numberOfLines={1}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
+                      // KB-710(3): 두 줄까지 — SE 큰 글자에서 "~98% of sho…" 잘림. 기본 크기는 한 줄 그대로, 같은 줄 타일은 줄바꿈 격자가 높이를 맞춘다
+                      <Text style={styles.ingTileSub} numberOfLines={2} testID={`ing-shops-${ing.code}`}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
                     )}
                     {/* caution 변형: "Ask the owner" 풋터(h30 primaryTint) → 사장님 카드(기존 진입점) */}
                     {!guest && dRisk === 'caution' && (
@@ -824,6 +827,7 @@ const styles = StyleSheet.create({
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
+  bottomBtnFill: { flexGrow: 1 }, // KB-710(2): 슬롯 높이 채움(옆 버튼과 같은 높이)
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 
   // Unregistered(현행 유지 — 토큰만)

@@ -66,15 +66,20 @@ export default function RankingScreen() {
   );
 }
 
-/** KB-708(6): 랭킹 그리드의 줄 — 1~3등급 = 0줄, 4~6 = 1줄, 7(풀) = 2줄 */
+/** KB-708(6): 기본 폭의 줄(1~3 · 4~6 · 7) — KB-710(7): **배치 측정 전 첫 프레임 폴백**만. 실제 줄은 rankRowKey(카드 y) */
 export function rankRow(level: number): number {
   return level <= 3 ? 0 : level <= 6 ? 1 : 2;
 }
-/** 줄마다 가장 높은 카드 내용 높이 */
-export function rowMaxHeights(contentH: Record<number, number>): Record<number, number> {
-  const out: Record<number, number> = {};
+/** KB-710(7): 줄 판정 = 실제 배치 y(같은 줄 카드는 위 끝 y가 같다). 폭 약 331pt 미만에서 한 줄 2장으로 접혀도 맞다. 측정 전 = 기본 폭 줄 */
+export function rankRowKey(level: number, cardY: Record<number, number>): string {
+  const y = cardY[level];
+  return y != null ? `y${Math.round(y)}` : `r${rankRow(level)}`;
+}
+/** 줄마다 가장 높은 카드 내용 높이(키 = rankRowKey) */
+export function rowMaxHeights(contentH: Record<number, number>, cardY: Record<number, number> = {}): Record<string, number> {
+  const out: Record<string, number> = {};
   for (const [lv, h] of Object.entries(contentH)) {
-    const r = rankRow(Number(lv));
+    const r = rankRowKey(Number(lv), cardY);
     out[r] = Math.max(out[r] ?? 0, h);
   }
   return out;
@@ -83,7 +88,8 @@ export function rowMaxHeights(contentH: Record<number, number>): Record<number, 
 function RankingBody({ rk }: { rk: Ranking }) {
   const { t } = useTranslation();
   const [contentH, setContentH] = React.useState<Record<number, number>>({});
-  const rowContentH = rowMaxHeights(contentH);
+  const [cardY, setCardY] = React.useState<Record<number, number>>({}); // KB-710(7): 카드 위 끝 y(줄 판정)
+  const rowContentH = rowMaxHeights(contentH, cardY);
   const cur: Tier = tierByKey(rk.tier) ?? TIERS[0];
   const next = rk.nextTier ? tierByKey(rk.nextTier) : null;
   const bd = rk.breakdown;
@@ -193,10 +199,14 @@ function RankingBody({ rk }: { rk: Ranking }) {
       <View style={styles.rankGrid}>
         {TIERS.map((tier) => {
           const now = tier.level === cur.level;
-          const row = rankRow(tier.level);
+          const row = rankRowKey(tier.level, cardY);
           return (
             <View
               key={tier.key}
+              onLayout={(e) => {
+                const y = Math.round(e.nativeEvent.layout.y);
+                setCardY((m) => (m[tier.level] === y ? m : { ...m, [tier.level]: y }));
+              }}
               style={[
                 styles.rankCard,
                 tier.level >= 4 && tier.level !== 7 && styles.rankCardRow2,

@@ -159,3 +159,17 @@ describe('소스 잠금', () => {
     expect(read('src/features/food/FoodExplorer.tsx')).toContain('saved={savedIds.has(item.foodId)}');
   });
 });
+
+// KB-710(6): 레일 구성이 바뀌면(첫 카드 id가 달라짐) 가로 스크롤을 처음으로 — 옛 위치가 남아 새 첫 카드가 잘린 채 시작했다(KB-712 QA)
+it('KB-710 레일 첫 카드가 바뀌면 scrollTo x 0 · 같은 레일에서 판정만 바뀌면 위치 유지', () => {
+  const t = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" popular={RANDOM} />);
+  const rail = t.root.findAll((n) => n.props?.testID === 'home-rail' && n.instance != null)[0];
+  const scrollTo = jest.fn();
+  (rail.instance as { scrollTo: unknown }).scrollTo = scrollTo;
+  // 같은 구성 · 위험도만 바뀜 = 위치 유지
+  act(() => t.update(<FoodExplorer variant="embedded" guest={false} srcTag="home" popular={RANDOM.map((f) => ({ ...f, risk: 'caution' as const }))} />));
+  expect(scrollTo).not.toHaveBeenCalled();
+  // /home 재조회로 새 랜덤 구성 = 처음으로
+  act(() => t.update(<FoodExplorer variant="embedded" guest={false} srcTag="home" popular={[FOOD('99', 'New first'), ...RANDOM]} />));
+  expect(scrollTo).toHaveBeenCalledWith({ x: 0, animated: false });
+});

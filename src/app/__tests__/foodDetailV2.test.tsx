@@ -332,6 +332,27 @@ describe('P-231: 상세 맵기 = 고추 5개 프레임(SpicePeppers)', () => {
 describe('P-228: Ask the owner 플로팅', () => {
   afterEach(() => mockIsGuest.mockReturnValue(false));
 
+  // KB-710(3): SE 큰 글자에서 재료 타일 부제 "~98% of sho…" 잘림 — 두 줄까지(기본 크기는 한 줄 그대로, 격자 3열 무변)
+  it('KB-710 재료 타일 "~N% of shops" = 두 줄까지', () => {
+    const tree = render(<FoodDetailScreen />);
+    const sub = byId(tree, 'ing-shops-ONION').find((n) => typeof n.type === 'string')!;
+    expect(sub.props.numberOfLines).toBe(2);
+  });
+
+  // KB-710(2): 큰 글자에서 좁은 Write만 두 줄로 접혀 두 버튼 키가 달랐다 — 둘 다 슬롯 높이를 채운다(줄은 슬롯을 가장 큰 쪽에 맞춤)
+  it('KB-710 하단 바 두 버튼 = 같은 높이 규칙 — 줄(row)은 슬롯을 늘리고(stretch) 두 버튼은 슬롯을 채움(flexGrow 1)', () => {
+    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+    const tree = render(<FoodDetailScreen />);
+    const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
+    const barStyle = StyleSheet.flatten(bar.props.style) as { flexDirection?: string; alignItems?: string };
+    expect(barStyle.flexDirection).toBe('row');
+    expect(barStyle.alignItems ?? 'stretch').toBe('stretch');
+    for (const id of ['bottom-write', 'bottom-ask']) {
+      const btn = byId(tree, id).find((n) => typeof n.type !== 'string' && n.props?.style != null)!;
+      expect({ id, grow: (StyleSheet.flatten(btn.props.style) as { flexGrow?: number }).flexGrow }).toEqual({ id, grow: 1 });
+    }
+  });
+
   it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {
     const tree = render(<FoodDetailScreen />);
     expect(byId(tree, 'detail-bottom-bar').length).toBeGreaterThanOrEqual(1);
