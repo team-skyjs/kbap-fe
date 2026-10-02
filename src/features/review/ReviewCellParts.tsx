@@ -67,12 +67,12 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
 /** KB-679(P-431): 리뷰 본문 **단일 렌더 지점** — FeedCard(홈·리뷰 피드·음식 상세 3장·내 리뷰)와 음식별 전체 리뷰가
  *  모두 이걸 쓴다(표면별 복붙 금지). 빈 본문(사진·별점만) = 본문·라벨 둘 다 없음.
  *  KB-689(P-434) 2차 X 방식: 번역 라벨은 본문 **위 왼쪽** 한 줄(접힘 대상 밖) — 누르기 전엔 모든 리뷰에 보이고(언어 감지 없음),
- *  원문 언어 == 요청 언어로 확인된 리뷰는 라벨을 숨긴다. */
+ *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시. */
 export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
   const original = review.body?.trim() ? review.body : null;
   const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   if (!original) return null;
-  const label = FLAGS.contentTranslation && !tx.sameLanguage;
+  const label = FLAGS.contentTranslation; // KB-703: 탭 뒤 같은 언어로 판정돼도 라벨을 숨기지 않는다(처음부터 숨김은 서버 language 도입 뒤 — 후속)
   return (
     // 라벨이 있을 때만 래퍼를 카드 gap 안으로 8 올린다 — 라벨 상자(44)의 위 여유가 래퍼(부모) 안에 들어오게(시각 위치 무변)
     <View style={label ? { marginTop: -TRANSLATE_LABEL_BOX.padTop } : undefined}>

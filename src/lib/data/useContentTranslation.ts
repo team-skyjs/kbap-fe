@@ -28,8 +28,6 @@ export interface ContentTranslation {
   loading: boolean;
   /** 번역을 보여 주는 중일 때의 원문 언어(도메인 — 어댑터가 판정). 번역 중이 아니면 null. */
   source: TranslationSource | null;
-  /** KB-689: 원문 언어 == 요청 언어로 확인된 글 — 번역 표시 안 함 + 라벨 숨김(세션 동안 — 캐시 gcTime ∞, 앱 재시작·본문/언어 변경 시 다시 판정). */
-  sameLanguage: boolean;
   /** 버튼 한 번 — 원문이면 번역(캐시 있으면 즉시), 번역 중이면 원문으로. */
   toggle: () => void;
 }
@@ -50,9 +48,10 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   const data = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
   const [shownKey, setShownKey] = React.useState<string | null>(null);
-  // KB-689: 같은 언어(어댑터 판정) = text가 원문 그대로 → 번역 표시로 전환하지 않는다
-  const sameLanguage = data?.sameLanguage === true;
-  const showing = shownKey === keyStr && data != null && !sameLanguage;
+  // KB-703(예진 10/2 "버튼이 갑자기 사라지는 경우는 없게"): 같은 언어 응답도 **일반 번역 결과처럼** 보여 준다 —
+  // 라벨은 "Translated from ○○"/"Translated", 본문은 받은 글(원문과 같아도), 다시 누르면 원문. 탭 뒤 라벨이 사라지는 경로 0.
+  // (어댑터의 sameLanguage는 계측 result=same에만 쓴다 — 표시에 안 씀)
+  const showing = shownKey === keyStr && data != null;
   const [loading, setLoading] = React.useState(false);
   const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
 
@@ -64,8 +63,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
       return;
     }
     if (data != null) {
-      if (sameLanguage) return; // 라벨이 숨겨져 있어 실사용 경로 아님 — 방어
-      track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'ok' });
+      track(EVENTS.review_translate_toggle, { action: 'translate', target, result: data.sameLanguage ? 'same' : 'ok' });
       setShownKey(keyStr); // 캐시 — 재요청 0
       return;
     }
@@ -73,7 +71,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 })
       .then((tr) => {
         track(EVENTS.review_translate_toggle, { action: 'translate', target, result: tr.sameLanguage ? 'same' : 'ok' }); // 계측 = enum만(원시 코드 0)
-        if (!tr.sameLanguage) setShownKey(keyStr); // 같은 언어 = 원문 유지, 라벨은 sameLanguage로 숨김
+        setShownKey(keyStr); // 같은 언어여도 그대로 표시(KB-703)
       })
       .catch(() => {
         // Codex #223 P2: 실패해도 fetchQuery가 만든 항목(오류 상태)이 gcTime ∞로 남는다 → 그 항목만 제거(무한 보존 = 성공만)
@@ -82,14 +80,13 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
         showTopToast(t('translation.translateFailed'), { error: true }); // 원문 유지
       })
       .finally(() => setLoading(false));
-  }, [data, keyStr, loading, qc, queryKey, sameLanguage, showing, t, target, targetId, targetType]);
+  }, [data, keyStr, loading, qc, queryKey, showing, t, target, targetId, targetType]);
 
   return {
     translatedText: showing ? data.text : null,
     showingTranslated: showing,
     loading,
     source: showing ? data.source : null,
-    sameLanguage,
     toggle,
   };
 }
