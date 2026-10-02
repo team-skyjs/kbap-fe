@@ -4,7 +4,7 @@
  * KB-689(P-434) — 번역 2차: X 방식. 스펙 = spec translate-2026-10-02.md **2차 절** · 레퍼런스 translate-ref-x-before/after.png.
  * 본문 **위 왼쪽** 한 줄 라벨: 번역 전 "Show translation"(#1B95E0) → 번역 중 "Translating…"(#536471) →
  * 번역 후 "Translated from {언어}"(#536471, 누르면 원문). 원문 언어 = 응답 sourceLanguage(KB-688 · null·없음 = "Translated").
- * 원문 언어 == 요청 언어 = 번역 표시 안 함 + 그 리뷰 라벨 숨김.
+ * KB-703(예진 10/2): 원문 언어 == 요청 언어여도 **라벨은 사라지지 않는다** — 일반 번역 결과처럼 표시(받은 글 · "Translated from ○○").
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
@@ -204,32 +204,35 @@ it.each([
   expect(labelText(t).text).toBe(want);
 });
 
-it('sourceLanguage === language(요청 언어) → 번역 표시로 바꾸지 않고 그 리뷰 라벨 숨김(토스트 0, 재렌더에도 숨김)', async () => {
+it('KB-703: sourceLanguage === language(같은 언어) → 라벨이 사라지지 않고 일반 번역 결과처럼 — "Translated from 한국어" · 받은 글 · 다시 누르면 원문', async () => {
   mockPost.mockResolvedValue(RES({ sourceLanguage: 'ko', language: 'ko', text: 'Really good soup' }));
   const t = render(REVIEW());
   await press(t);
-  expect(btn(t)).toBeUndefined();
-  expect(out(t)).toContain('Really good soup');
+  expect(btn(t)).toBeDefined(); // 탭 뒤 사라지는 경로 0
+  expect(labelText(t).text).toBe('translation.translatedFrom:translation.lang.ko');
+  expect(out(t)).toContain('Really good soup'); // 받은 글(원문과 같음)
   expect(mockToast).not.toHaveBeenCalled();
   rerender(t, REVIEW());
-  expect(btn(t)).toBeUndefined();
+  expect(btn(t)).toBeDefined();
+  await press(t);
+  expect(labelText(t).text).toBe('translation.showTranslation');
 });
 
-it('같은 언어로 숨긴 뒤 본문이 바뀌면(수정) · 앱 언어가 바뀌면 → 라벨이 돌아온다(다시 판정)', async () => {
+it('KB-703: 같은 언어 응답 뒤 본문 수정 · 앱 언어 변경에도 라벨은 계속 있다(다시 "Show translation")', async () => {
   mockPost.mockResolvedValue(RES({ sourceLanguage: 'ko', language: 'ko', text: 'Really good soup' }));
   const t = render(REVIEW());
   await press(t);
-  expect(btn(t)).toBeUndefined();
+  expect(btn(t)).toBeDefined();
   rerender(t, REVIEW({ body: 'Edited soup review' }));
   expect(labelText(t).text).toBe('translation.showTranslation');
-  rerender(t, REVIEW()); // 원래 본문 = 같은 언어로 확인된 키 → 다시 숨김
-  expect(btn(t)).toBeUndefined();
+  rerender(t, REVIEW());
+  expect(btn(t)).toBeDefined();
   mockLang = 'ja';
   rerender(t, REVIEW());
   expect(labelText(t).text).toBe('translation.showTranslation');
 });
 
-it('#223 공부: 캐시 = 세션 동안 — 구독이 끊기고 기본 gc(5분)를 한참 넘겨도 유지 · 다시 보이면 요청 0 · 같은 언어 숨김도 유지', async () => {
+it('#223 공부: 캐시 = 세션 동안 — 구독이 끊기고 기본 gc(5분)를 한참 넘겨도 유지 · 다시 보이면 요청 0 · 같은 언어 결과도 캐시에서(KB-703 — 라벨 유지)', async () => {
   jest.useFakeTimers();
   try {
     mockPost
@@ -243,7 +246,7 @@ it('#223 공부: 캐시 = 세션 동안 — 구독이 끊기고 기본 gc(5분)�
       t2 = renderer.create(card(t2Review));
     });
     await press(t2);
-    expect(btn(t2)).toBeUndefined();
+    expect(btn(t2)).toBeDefined(); // KB-703: 같은 언어여도 라벨 유지
     act(() => t.unmount()); // 셀 가상화로 내려감 = 구독 해제
     act(() => t2.unmount());
     act(() => jest.advanceTimersByTime(60 * 60 * 1000)); // 기본 gcTime 5분 ≪ 1시간
@@ -258,8 +261,10 @@ it('#223 공부: 캐시 = 세션 동안 — 구독이 끊기고 기본 gc(5분)�
     act(() => {
       back2 = renderer.create(card(t2Review));
     });
-    expect(btn(back2)).toBeUndefined(); // 같은 언어 숨김 유지
-    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect(labelText(back2).text).toBe('translation.showTranslation'); // 라벨 있음(숨김 0)
+    await press(back2);
+    expect(labelText(back2).text).toBe('translation.translatedFrom:translation.lang.ko'); // 캐시에서 즉시
+    expect(mockPost).toHaveBeenCalledTimes(2); // 재요청 0
   } finally {
     jest.useRealTimers();
   }
