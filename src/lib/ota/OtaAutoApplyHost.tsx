@@ -59,37 +59,44 @@ export function networkQuietNow(qc: QueryClient, now = Date.now()): boolean {
   return quietRef.since != null && now - quietRef.since >= OTA_NETWORK_IDLE_MS && !netBusy(qc);
 }
 
+/** KB-695: 판정을 렌더 본문의 일반 호출(`return networkQuietNow(qc)`)로 두면 React Compiler가 [qc]로 메모이즈해 첫 렌더 값이
+ *  굳었다(비-prod에서 세션 중 자동 reload 막힘 · prod는 항상 defer라 무증상). useSyncExternalStore = 렌더마다 getSnapshot을
+ *  **호출 시점**으로 다시 계산(컴파일러가 캐시하지 않는 훅 경계) — "새 요청 시작 = 같은 렌더에서 동기 false"(#109 2R) 유지.
+ *  이벤트·정착 타이머는 스토어 변경 통지(onChange)로. 구독 본문(quietRef 갱신·마이크로태스크 지연·busy 전이 생략)은 기존 그대로. */
 export function useNetworkIdle(): boolean {
   const qc = useQueryClient();
-  const [, force] = React.useReducer((n: number) => n + 1, 0);
-  React.useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let alive = true; // P-363: 언마운트 후 지연 dispatch 방지
-    let lastBusy: boolean | null = null;
-    const onEvent = () => {
-      // >0 = 창 닫힘 · 0 = 이벤트 자체가 활동 증거라 지금부터 재계량 —
-      // RQ notify 배치로 시작·종료가 한 콜백에 합쳐져도 리셋이 산다(9R P1)
-      const busy = netBusy(qc);
-      quietRef.since = busy ? null : Date.now();
-      if (timer) clearTimeout(timer);
-      if (!busy) timer = setTimeout(() => { if (alive) force(); }, OTA_NETWORK_IDLE_MS + 10); // 정착 시 리렌더 1회
-      // P-363(KB-526): QueryCache는 렌더 중(useQuery 관찰자 추가)에도 동기로 이벤트를
-      // 쏜다 — 즉시 dispatch = "다른 컴포넌트 렌더 중 setState" 경고. 마이크로태스크로
-      // 지연 + busy 전이 없으면 생략(전역 캐시 이벤트마다 Host 리렌더 방지 — 판정은
-      // 호출 시점 networkQuietNow가 담당이라 표시 지연 무해).
-      if (lastBusy === busy) return;
-      lastBusy = busy;
-      queueMicrotask(() => { if (alive) force(); });
-    };
-    const subs = [subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)];
-    onEvent(); // 마운트 시점 동기화
-    return () => {
-      alive = false;
-      for (const u of subs) u();
-      if (timer) clearTimeout(timer);
-    };
-  }, [qc]);
-  return networkQuietNow(qc);
+  const subscribe = React.useCallback(
+    (onChange: () => void) => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      let alive = true; // P-363: 구독 해제 후 지연 통지 방지
+      let lastBusy: boolean | null = null;
+      const onEvent = () => {
+        // >0 = 창 닫힘 · 0 = 이벤트 자체가 활동 증거라 지금부터 재계량 —
+        // RQ notify 배치로 시작·종료가 한 콜백에 합쳐져도 리셋이 산다(9R P1)
+        const busy = netBusy(qc);
+        quietRef.since = busy ? null : Date.now();
+        if (timer) clearTimeout(timer);
+        if (!busy) timer = setTimeout(() => { if (alive) onChange(); }, OTA_NETWORK_IDLE_MS + 10); // 정착 시 재평가 1회
+        // P-363(KB-526): QueryCache는 렌더 중(useQuery 관찰자 추가)에도 동기로 이벤트를
+        // 쏜다 — 즉시 통지 = "다른 컴포넌트 렌더 중 setState" 경고. 마이크로태스크로
+        // 지연 + busy 전이 없으면 생략(전역 캐시 이벤트마다 Host 리렌더 방지 — 판정은
+        // 호출 시점 networkQuietNow가 담당이라 표시 지연 무해).
+        if (lastBusy === busy) return;
+        lastBusy = busy;
+        queueMicrotask(() => { if (alive) onChange(); });
+      };
+      const subs = [subscribeInflight(onEvent), qc.getQueryCache().subscribe(onEvent), qc.getMutationCache().subscribe(onEvent)];
+      onEvent(); // 구독 시점 동기화
+      return () => {
+        alive = false;
+        for (const u of subs) u();
+        if (timer) clearTimeout(timer);
+      };
+    },
+    [qc],
+  );
+  const getSnapshot = React.useCallback(() => networkQuietNow(qc), [qc]);
+  return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
 
 export function OtaAutoApplyHost({ splashDone = true }: { splashDone?: boolean }) {

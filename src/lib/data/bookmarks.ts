@@ -16,6 +16,7 @@
 import * as React from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import i18n from '../i18n';
+import { useAppLanguage } from '../i18n/useAppLanguage';
 import type { RiskState } from '@/lib/theme';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes';
@@ -62,10 +63,11 @@ type Pages = InfiniteData<PageMenuSummaryWire, number | undefined>;
  *  낙관 쓰기(optimisticWrite)는 무필터 캐시(QK)만 — risk 캐시는 onSettled
  *  invalidate(['bookmarks'] 접두)로 동기화. */
 export function useBookmarks(risk?: RiskFilterChip) {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const isGuest = useIsGuest();
   const wire = riskWireOf(risk);
   return useInfiniteQuery({
-    queryKey: wire ? ([...QK(), wire] as const) : QK(),
+    queryKey: wire ? (['bookmarks', lang, wire] as const) : (['bookmarks', lang] as const), // = QK() 값(구독 언어)
     enabled: !isGuest, // 인증 필수 API — 게스트는 게이트로 진입 자체가 차단됨
     initialPageParam: undefined as number | undefined,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {

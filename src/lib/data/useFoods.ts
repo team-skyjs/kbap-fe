@@ -16,7 +16,7 @@
  *   Query keys include the reader language so a live switch refetches.
  */
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import i18n from '../i18n';
+import { useAppLanguage } from '../i18n/useAppLanguage';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
 import type { PageMenuSummaryWire } from '../api/foodListTypes';
@@ -86,11 +86,12 @@ export async function fetchFoodsPage(pageParam: number | undefined, riskWire?: s
 export const FOODS_PAGE_SIZE = 20; // 서버 FoodService/BookmarkService PAGE_SIZE 동치
 
 export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boolean }) {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const wire = riskWireOf(risk);
   return useInfiniteQuery({
     enabled: opts?.enabled ?? true, // #112 2R ②: Saved 활성 중 비활성 browse risk 쿼리 억제
     // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지)
-    queryKey: wire ? ['foods', 'list', i18n.language, wire] : ['foods', 'list', i18n.language],
+    queryKey: wire ? ['foods', 'list', lang, wire] : ['foods', 'list', lang],
     initialPageParam: undefined as number | undefined,
     queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire),
     // #112 P1 ①(P-332 문법 이식): 커서 에코 가드 — 얇은 페이지 자동 연속 페치가
@@ -116,9 +117,10 @@ export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boole
  *  cursor 무시** — 스웨거 규약이라 scanned에선 cursor를 아예 안 보낸다).
  *  미전달 = all 기본(음식탭·홈 검색 무변 — 회귀 유닛 잠금). */
 export function useSearchFoods(keyword: string, scope?: 'scanned') {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const term = keyword.trim();
   return useInfiniteQuery({
-    queryKey: ['foods', 'search', term, scope ?? 'all', i18n.language],
+    queryKey: ['foods', 'search', term, scope ?? 'all', lang],
     initialPageParam: undefined as number | undefined,
     enabled: term.length > 0,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
@@ -138,8 +140,9 @@ export function useSearchFoods(keyword: string, scope?: 'scanned') {
 /** P-238: 본인 스캔 음식(최신 스캔순) — GET /api/foods/scanned. 회원 전용(게스트 =
  *  호출 0, 화면이 인기 폴백 담당). 커서 = 마지막 foodId. 리뷰 픽커 초기 목록용. */
 export function useScannedFoods(enabled = true) {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   return useInfiniteQuery({
-    queryKey: ['foods', 'scanned', i18n.language],
+    queryKey: ['foods', 'scanned', lang],
     initialPageParam: undefined as number | undefined,
     enabled,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
@@ -155,10 +158,11 @@ export function useScannedFoods(enabled = true) {
 export const HIDDEN_RECHECK_MS = 30_000;
 
 export function useFoodDetail(id: string) {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const hidden = useIsFoodHidden(id);
   return useQuery({
     // reader language in the key: switching language refetches the localized detail.
-    queryKey: ['food', id, i18n.language],
+    queryKey: ['food', id, lang],
     queryFn: async (): Promise<FoodDetail> => {
       if (MOCK_MODE_FOODS) {
         return MOCK_FOOD_DETAILS[id] ?? MOCK_FOOD_UNREGISTERED;
