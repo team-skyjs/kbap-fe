@@ -156,7 +156,7 @@ it('배선 잠금 — 리뷰 작성·문의 작성·커뮤니티 글쓰기 모�
   const review = read('src/app/food/[id]/review.tsx');
   expect(review).toContain('useUploadAbort()');
   expect(review).toContain('uploadReviewImages(localUris, signal)');
-  expect(review).toContain('if (signal.aborted) throw new UploadAbortedError();'); // 본 요청 직전 확인
+  expect(review).toContain('if (signal.aborted) return;'); // 본 요청 직전 확인
   expect(review).toContain('if (isUploadAborted(e)) return;');
   const fb = read('src/app/profile/feedback/new.tsx');
   expect(fb).toContain('signal: nextUploadSignal()');

@@ -43,7 +43,7 @@ import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlace
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { openAppSettings } from '@/lib/openExternal';
 import { useUploadAbort } from '@/lib/useUploadAbort';
-import { isUploadAborted, UploadAbortedError } from '@/lib/api/uploadAbort';
+import { isUploadAborted } from '@/lib/api/uploadAbort';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -195,7 +195,8 @@ function ReviewComposeScreen() {
         const signal = nextUploadSignal();
         const uploaded = await uploadReviewImages(localUris, signal);
         // KB-711: 본 요청 직전 이탈 확인 — 마지막 장 complete 도중(또는 사진 0장) 떠났으면 등록·저장하지 않는다
-        if (signal.aborted) throw new UploadAbortedError();
+        // (throw가 아니라 return — try 안 throw는 컴파일러가 이 컴포넌트를 건너뛰는 사유를 하나 더 늘린다)
+        if (signal.aborted) return;
         let li = 0;
         const imagePaths = photos.map((p) => (p.kind === 'remote' ? imageUrlToPath(p.url) : uploaded[li++]));
         if (editing && editReviewData) {
