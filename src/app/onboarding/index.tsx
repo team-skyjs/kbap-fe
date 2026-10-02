@@ -14,7 +14,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -330,7 +330,9 @@ export default function Onboarding() {
   })();
 
   return (
-    <View style={[styles.app, { paddingTop: insets.top }]}>
+    // KB-700(하단 고정 바 + 입력창 전수): 국가·기피 재료 검색 입력 중 하단 CTA 푸터가 키보드 뒤에 남지 않게 — 리뷰 작성·프로필 편집과 같은
+    // iOS KeyboardAvoidingView(padding). 푸터는 이미 ScrollView의 형제라 키보드 위로 따라 올라온다. 안드는 adjustResize라 그대로.
+    <KeyboardAvoidingView style={[styles.app, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="ob-kav">
       {/* P-133: 국적 스텝 = 헤더·검색 고정, 리스트만 스크롤(시안 kbap-ob4) — 자체 스크롤 구조 */}
       {step === 'nationality' ? (
         <View style={[styles.body, { flex: 1 }]}>
@@ -444,7 +446,7 @@ export default function Onboarding() {
       />
 
       {/* P-192: 회원 푸시 프라이머 — 제출 성공 직후 1회, 응답 후 홈 직행 */}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

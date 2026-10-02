@@ -12,7 +12,7 @@
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -40,7 +40,6 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
-import { Modal } from 'react-native';
 import { openAppSettings } from '@/lib/openExternal';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
@@ -217,6 +216,13 @@ function ReviewComposeScreen() {
   const [kbH, setKbH] = useState(0);
   const svH = useRef(0); // ScrollView 뷰포트 높이 실측
   const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
+  // KB-700(#228 공부): 문서 중간을 탭하면(atEnd false) 키보드가 올라와 뷰포트가 줄 때 그 줄이 뷰포트 밖으로 밀릴 수 있다 —
+  // 예전엔 시스템 키보드 인셋(automaticallyAdjustKeyboardInsets)이 커서를 보이게 했는데 KAV로 바꾸며 빠졌다. RN은 캐럿 좌표를 안 주므로
+  // **탭한 위치(onPressIn locationY)** 를 캐럿 줄의 대용으로 쓴다.
+  const blockTop = useRef(0);
+  const inputTopInBlock = useRef(0);
+  const touchY = useRef<number | null>(null);
+  const scrollY = useRef(0);
   const kbHRef = useRef(0);
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   useLayoutEffect(() => {
@@ -225,26 +231,54 @@ function ReviewComposeScreen() {
   // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
   // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
   const atEnd = useRef(true);
+  // KB-700 ①(QA 진단 로그로 확정): 마운트 직후 본문 Input의 첫 onContentSizeChange/onSelectionChange가 atEnd 초기값 true로
+  // 커서 추종을 불러, 포커스도 입력도 없는데 본문 블록 끝이 보이게 53.7pt 스크롤했다(카드 윗줄이 헤더 밑으로).
+  // → 추종은 **본문이 포커스된 동안에만**(호출부 셋 — 크기 변화·선택 변화·키보드 표시 — 이 모두 여기를 지난다).
+  const bodyFocusedRef = useRef(false);
   const bodyLenRef = useRef(0);
   useLayoutEffect(() => {
     bodyLenRef.current = body.length;
   });
   const ensureCursorVisible = () => {
-    const visible = svH.current - kbHRef.current;
+    if (!bodyFocusedRef.current) return;
+    // KB-700: iOS는 화면이 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
+    // 키보드를 또 빼면 이중 차감. Android(adjustResize)는 기존 계산 유지(Q-87 실기 통과 경로 무변).
+    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
     if (visible <= 0 || !blockBottom.current) return;
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
+  const ensureTappedLineVisible = () => {
+    if (!bodyFocusedRef.current || touchY.current == null) return;
+    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
+    if (visible <= 0) return;
+    const lineTop = blockTop.current + inputTopInBlock.current + touchY.current - 12;
+    const lineBottom = lineTop + 32; // 탭한 줄(본문 줄 높이 + 여유)
+    if (lineBottom > scrollY.current + visible) scrollRef.current?.scrollTo({ y: lineBottom - visible + 16, animated: true });
+    else if (lineTop < scrollY.current) scrollRef.current?.scrollTo({ y: Math.max(0, lineTop - 16), animated: true });
+  };
+  /** 키보드 표시·뷰포트 축소 때 한 번: 끝 커서면 블록 끝, 아니면 탭한 줄 */
+  const followOnViewportChange = () => {
+    if (atEnd.current) ensureCursorVisible();
+    else ensureTappedLineVisible();
+  };
+  // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
+  const followRef = useRef(followOnViewportChange);
+  useLayoutEffect(() => {
+    followRef.current = followOnViewportChange;
+  });
   // KB-657: 이 effect는 위 ref·ensureCursorVisible을 읽으므로 그 **선언 뒤**에 둔다(컴파일러 "선언 전 접근" — 마운트 1회
   // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
       kbHRef.current = e.endCoordinates?.height ?? 0;
       setKbH(kbHRef.current);
-      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
-      if (atEnd.current) ensureCursorVisible();
+      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서 = 블록 끝 · 중간 = 탭한 줄)
+      followRef.current();
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKbH(0);
+    });
     return () => {
       show.remove();
       hide.remove();
@@ -287,7 +321,9 @@ function ReviewComposeScreen() {
 
 
   return (
-    <View style={styles.root}>
+    // KB-700: iOS = KeyboardAvoidingView(padding) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다(글쓰기 compose와 같은 패턴).
+    // Android = adjustResize라 창 자체가 줄어 불필요(behavior undefined — compose와 동일).
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="review-kav">
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
       <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
@@ -297,9 +333,17 @@ function ReviewComposeScreen() {
         ref={scrollRef}
         keyboardDismissMode="on-drag"
         contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
-        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} // P-348 ⑤: 수동 kbH 패딩 = 키보드 위 공백(안드 = adjustResize라 불필요)
+        // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
+        scrollEventThrottle={16}
+        onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
         keyboardShouldPersistTaps="handled"
-        onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          const shrank = svH.current > 0 && h < svH.current;
+          svH.current = h;
+          // KAV 레이아웃과 keyboardDidShow의 순서에 기대지 않게 — 포커스 중 뷰포트가 줄면 한 번 더(가드·식은 같음)
+          if (shrank) followOnViewportChange();
+        }}
       >
         {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
         <View style={styles.foodChip}>
@@ -332,7 +376,7 @@ function ReviewComposeScreen() {
           {/* §2-3(4150:16468): 별 48 gap 11, stroke 3 — 채움/빈 색은 시안(D-1 Stars 토큰) */}
           <View style={styles.starPick}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
+              <Pressable key={i} onPress={() => setRating(i)} hitSlop={4} testID={`review-star-${i}`}>
                 <Star size={48} fillPct={i <= rating ? 100 : 0} />
               </Pressable>
             ))}
@@ -381,19 +425,34 @@ function ReviewComposeScreen() {
         <View
           style={styles.block}
           testID="body-block"
-          onLayout={(e) => { blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
+          onLayout={(e) => {
+            blockTop.current = e.nativeEvent.layout.y;
+            blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height;
+          }}
         >
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
           <Input
             ref={bodyInputRef}
             value={body}
-            onChangeText={(v) => setBody(v.slice(0, MAX))}
+            onChangeText={(v) => {
+              touchY.current = null; // 입력이 시작되면 캐럿이 탭한 줄을 떠난다 — 뒤의 뷰포트 축소가 옛 탭 줄로 되돌리지 않게(#228 공부)
+              setBody(v.slice(0, MAX));
+            }}
             placeholder={t('review.placeholder')}
             placeholderTextColor={C.inkDisabled}
             multiline
             style={[styles.textarea, bodyFocused && styles.textareaFocus]}
-            onFocus={() => setBodyFocused(true)}
-            onBlur={() => setBodyFocused(false)}
+            onFocus={() => {
+              bodyFocusedRef.current = true;
+              setBodyFocused(true);
+            }}
+            onBlur={() => {
+              bodyFocusedRef.current = false;
+              touchY.current = null;
+              setBodyFocused(false);
+            }}
+            onPressIn={(e) => { touchY.current = e.nativeEvent.locationY; }}
+            onLayout={(e) => { inputTopInBlock.current = e.nativeEvent.layout.y; }}
             textAlignVertical="top"
             onContentSizeChange={() => {
               if (atEnd.current) ensureCursorVisible();
@@ -490,7 +549,7 @@ function ReviewComposeScreen() {
       )}
       {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
       <TopToastHost />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

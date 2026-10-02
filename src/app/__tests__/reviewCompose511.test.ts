@@ -35,11 +35,12 @@ it('③④ 사진 슬롯 = 아이콘만 + 탭 = 촬영/갤러리 시트(choosePh
   expect(rv).not.toContain("require('expo-document-picker')"); // 파일 선택 = 비범위(TODO — 주석 언급만 허용)
 });
 
-it('⑤ 키보드 — 수동 kbH 패딩 소멸 + iOS automaticallyAdjustKeyboardInsets(커서 추종 kbH 실측은 유지)', () => {
+it('⑤ 키보드 — 수동 kbH 패딩 소멸 + (KB-700) iOS = 화면 KeyboardAvoidingView(padding) · 시스템 인셋 제거(이중 방지) · 커서 추종 실측 유지', () => {
   const rv = read('src/app/food/[id]/review.tsx');
   expect(rv).toContain('{ paddingBottom: 28 }');
   expect(rv).not.toContain('28 + kbH');
-  expect(rv).toContain("automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}");
+  expect(rv).toContain("<KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}");
+  expect(rv).not.toContain('automaticallyAdjustKeyboardInsets={');
   expect(rv).toContain('ensureCursorVisible'); // 스크롤 계산용 실측 유지
 });
 

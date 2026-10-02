@@ -8,7 +8,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -151,7 +151,9 @@ export default function EditProfile() {
   };
 
   return (
-    <View style={styles.root}>
+    // KB-700(QA — 닉네임 포커스 시 키보드 아래로 Save 바 주황이 비침): 리뷰 작성·글쓰기와 같은 방식 — iOS KeyboardAvoidingView(padding),
+    // 하단 Save 바는 절대 위치가 아닌 ScrollView의 형제(키보드 위로 따라 올라온다). 안드는 adjustResize라 그대로.
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="edit-kav">
       <SubHeader
         title={t('editProfile.title')}
         onBack={() => router.back()}
@@ -325,13 +327,13 @@ export default function EditProfile() {
         </Btn>
       </View>
 
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 120, gap: 20 },
+  body: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28, gap: 20 }, // KB-700: Save 바가 흐름 안(형제)이라 바 높이만큼의 보정 120 불필요
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
   saveLink: { fontSize: 13, fontWeight: '600', color: '#1C1E21' },
 
@@ -363,7 +365,7 @@ const styles = StyleSheet.create({
   linkedLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1C1E21' },
   linkedVal: { fontSize: 13, fontWeight: '500', color: '#8E8883' },
 
-  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line }, // A-ED-11(padH 16 — 헤어라인은 C-07 무접촉)
+  savebar: { paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line }, // A-ED-11(padH 16 — 헤어라인은 C-07 무접촉)
 
   // P-165 통화 피커 — 온보딩 natSearch/natRow 문법 수치 재사용
   curBody: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },
