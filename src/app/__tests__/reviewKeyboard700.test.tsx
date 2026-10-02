@@ -32,7 +32,6 @@ it('메인 별점 5개 testID = review-star-{1..5} · 세부(Taste/Speed/Service
 // profile/restrictions를 옛 스캔이 못 봤다)를 그리는 것. 예외는 사유와 함께 여기에만.
 const NO_FIXED_BAR_INPUT: Record<string, string> = {
   'src/app/search.tsx': '하단 고정 바 없음(검색 입력이 상단)',
-  'src/app/profile/feedback/new.tsx': '전송 버튼이 스크롤 본문 안(고정 바 아님 — 키보드가 덮어도 스크롤로 닿음)',
   'src/app/(tabs)/index.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안 — 시트 자체 키보드 처리',
   'src/app/(tabs)/community.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
   'src/app/food/[id]/index.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
@@ -87,4 +86,17 @@ it('프로필 편집 — Save 바는 절대 위치가 아니라 KAV 안 ScrollVi
   expect(ed).not.toContain('paddingBottom: 120');
   const kavClose = ed.lastIndexOf('</KeyboardAvoidingView>');
   expect(ed.indexOf('testID="edit-bottom-bar"')).toBeLessThan(kavClose);
+});
+
+// KB-710(4): 문의 작성은 "Send가 스크롤 본문 안이라 스크롤로 닿는다"는 사유로 예외였지만 그 전제가 틀렸다 — 회피 없이는 키보드가 떠도
+// ScrollView가 줄지 않아 스크롤 범위 0(SE에서 Send 위 19pt만 보이고 닿지도 못함). 예외에서 빼고 KAV — 위 전수 스캔이 이제 이 화면도 잡는다
+it('KB-710 문의 작성 = iOS KAV(padding) · Send는 KAV 안 ScrollView 본문(키보드 위 영역에서 스크롤로 닿음) · 예외 목록에 없음', () => {
+  const src = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
+  const kav = src.indexOf(`<KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="feedback-kav">`);
+  const send = src.indexOf('testID="feedback-send"');
+  const close = src.lastIndexOf('</KeyboardAvoidingView>');
+  expect(kav).toBeGreaterThan(-1);
+  expect(send).toBeGreaterThan(kav);
+  expect(close).toBeGreaterThan(send);
+  expect(Object.keys(NO_FIXED_BAR_INPUT)).not.toContain('src/app/profile/feedback/new.tsx');
 });

@@ -287,6 +287,13 @@ export function FoodExplorer({
   const filtered = gridSource;
   // P-318 정렬: 인기 = 목록 응답 순서 그대로(서버 정렬 정본 — P-335로 클라 정렬 소멸).
   const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : filtered;
+  // KB-710(6): 레일 구성이 바뀌면(첫 카드 id가 달라짐 — /home 랜덤 재조회·칩·세그먼트 전환) 가로 스크롤을 처음으로.
+  // 같은 레일 안에서 북마크·판정만 바뀌면 첫 id가 같아 위치 유지. (전엔 옛 위치가 남아 새 첫 카드가 잘린 채 시작 — KB-712 QA)
+  const railRef = React.useRef<ScrollView | null>(null);
+  const railFirstId = variant === 'embedded' ? (gridFoods[0]?.foodId ?? null) : null;
+  React.useEffect(() => {
+    railRef.current?.scrollTo({ x: 0, animated: false });
+  }, [railFirstId]);
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
   const onBookmark = (f: FoodCard) => {
@@ -601,6 +608,7 @@ export function FoodExplorer({
         /* P-320: 평범한 ScrollView + map — 세로 FlatList 헤더 안 중첩 VirtualizedList가
            레일마다 화면 높이 공백을 만들던 원인(#84 실기 확정). flexGrow:0 유지(#83). */
         <ScrollView
+          ref={railRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.rail}

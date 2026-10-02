@@ -56,7 +56,7 @@ jest.mock('@/lib/data/useRanking', () => ({ useRanking: () => mockRk }));
 beforeEach(() => { mockRk.data = RK_DEFAULT(); });
 
 // eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
-import RankingScreen, { rankRow, rowMaxHeights } from '../profile/ranking';
+import RankingScreen, { rankRow, rankRowKey, rowMaxHeights } from '../profile/ranking';
 // eslint-disable-next-line import/first -- 위와 같음
 import { StyleSheet as RNStyleSheet } from 'react-native';
 
@@ -186,6 +186,31 @@ it('KB-708 (6): 같은 줄 카드 내용 높이 = 그 줄 최대(이름이 두 �
   const minH = (k: string) => (RNStyleSheet.flatten(wrap(k).props.style) as { minHeight?: number }).minHeight;
   expect([minH(k4), minH(k5), minH(k6)]).toEqual([100, 100, 100]); // 같은 줄 = 가장 높은 카드에 맞춤
   expect([minH(k1), minH(k2), minH(k3)]).toEqual([80, 80, 80]); // 한 줄 이름만 있는 줄 = 자기 높이(시안 무변)
-  expect(rowMaxHeights({ 1: 80, 2: 90, 4: 70, 7: 60 })).toEqual({ 0: 90, 1: 70, 2: 60 });
+  expect(rowMaxHeights({ 1: 80, 2: 90, 4: 70, 7: 60 })).toEqual({ r0: 90, r1: 70, r2: 60 }); // 배치 측정 전 = 기본 폭 줄(KB-710)
   expect([rankRow(1), rankRow(3), rankRow(4), rankRow(6), rankRow(7)]).toEqual([0, 0, 1, 1, 2]);
+});
+
+// KB-710(7): 줄 판정이 "한 줄 3장"(rankRow 상수)을 가정했다 — 폭 약 331pt 미만에서 한 줄 2장으로 접히면 같은 줄 카드가
+// 다른 묶음 높이를 받아 메달이 어긋났다. 줄 = 실제 배치 y(카드 onLayout)로 판정.
+it('KB-710 (7): 한 줄 2장으로 접힌 배치 — 같은 y의 카드끼리 높이를 맞춘다(1·2 / 3·4 / 5·6 / 7)', () => {
+  const tree = render(<RankingScreen />);
+  const keys = tree.root
+    .findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('rank-content-') && typeof n.type === 'string')
+    .map((n) => n.props.testID.replace('rank-content-', '') as string);
+  expect(keys).toHaveLength(7);
+  const card = (i: number) => tree.root.findAll((n) => typeof n.type === 'string' && typeof n.props?.onLayout === 'function' && (n.props?.testID === `rank-${keys[i]}` || n.props?.testID === 'rank-now'))
+    .find((n) => n.findAll((c) => c.props?.testID === `rank-content-${keys[i]}`).length > 0)!;
+  const wrap = (i: number) => tree.root.findAll((n) => n.props?.testID === `rank-content-${keys[i]}` && typeof n.type === 'string')[0];
+  const inner = (i: number) => wrap(i).children[0] as unknown as { props: { onLayout: (e: unknown) => void } };
+  // 2장씩: y 0(1·2) · 150(3·4) · 300(5·6) · 450(7)
+  const Y = [0, 0, 150, 150, 300, 300, 450];
+  for (let i = 0; i < 7; i++) act(() => card(i).props.onLayout({ nativeEvent: { layout: { x: 0, y: Y[i], width: 160, height: 140 } } }));
+  // 3번째 카드(두 번째 줄 왼쪽)만 이름 두 줄(100), 나머지 80
+  for (let i = 0; i < 7; i++) act(() => inner(i).props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 140, height: i === 2 ? 100 : 80 } } }));
+  const minH = (i: number) => (RNStyleSheet.flatten(wrap(i).props.style) as { minHeight?: number }).minHeight;
+  expect([minH(0), minH(1)]).toEqual([80, 80]); // 옛 판정(1~3 한 묶음)이면 100이 번졌다
+  expect([minH(2), minH(3)]).toEqual([100, 100]); // 옛 판정이면 4번째(다른 묶음)는 80
+  expect([minH(4), minH(5), minH(6)]).toEqual([80, 80, 80]);
+  expect(rankRowKey(3, { 3: 150.4 })).toBe('y150');
+  expect(rankRowKey(3, {})).toBe('r0'); // 측정 전 폴백
 });
