@@ -15,8 +15,8 @@
     "close": "Закрыть",
     "leaveTitle": "Выйти без сохранения?",
     "leaveBody": "Черновик не сохранится.",
-    "keepWriting": "Продолжить",
-    "discard": "Отменить"
+    "keepWriting": "Остаться",
+    "discard": "Выйти"
   },
   "intro": {
     "skip": "Пропустить",

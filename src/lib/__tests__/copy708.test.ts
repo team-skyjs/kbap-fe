@@ -68,6 +68,9 @@ describe('(4) 이탈 확인 문구 — 네 화면(리뷰 작성·수정·문의�
     }
     expect((load('en') as unknown as { common: Record<string, string> }).common.leaveTitle).toBe('Leave without saving?');
     expect((load('ko') as unknown as { common: Record<string, string> }).common.leaveTitle).toBe('작성을 그만둘까요?');
+    // ru: "Выйти без сохранения?" 아래 "Продолжить"(계속)/"Отменить"(취소)는 "나가기를 계속/취소"로 읽혀 동작과 반대 → 남기/나가기
+    const ru = (load('ru') as unknown as { common: Record<string, string> }).common;
+    expect([ru.keepWriting, ru.discard]).toEqual(['Остаться', 'Выйти']);
   });
   it('LeaveConfirmModal은 common 키만 쓴다(community.* 참조 0)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- 소스 잠금
