@@ -243,4 +243,14 @@ describe('KB-707', () => {
     expect(rk).toMatch(/<Text style=\{styles\.rankName\} numberOfLines=\{2\}>/);
     expect(rk).toMatch(/rankName: \{[^}]*textAlign: 'center'/);
   });
+
+  it('(5) #235 Codex: 두 줄 이름에서 랭킹 카드가 넘치지 않게 — 고정 높이 0(최소 높이 = 시안 145·129 한 줄 기준) · 줄 안 stretch', () => {
+    const rk = fs.readFileSync('src/app/profile/ranking.tsx', 'utf8');
+    const styleBlock = rk.slice(rk.indexOf('rankGrid:'), rk.indexOf('rankCardNow:'));
+    expect(styleBlock).not.toMatch(/(^|[^a-zA-Z])height: \d/); // 고정 높이 없음
+    expect(styleBlock).toMatch(/rankCard: \{[^}]*minHeight: 145/);
+    expect(styleBlock).toMatch(/rankCardRow2: \{ minHeight: 129 \}/);
+    expect(styleBlock).toMatch(/rankCardFull: \{[^}]*minHeight: 129/);
+    expect(styleBlock).toMatch(/rankGrid: \{[^}]*alignItems: 'stretch'/);
+  });
 });

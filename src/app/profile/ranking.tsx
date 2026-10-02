@@ -285,10 +285,12 @@ const styles = StyleSheet.create({
   gainText: { fontSize: 13, fontWeight: '500', color: '#FFFFFF' },
 
   // P-327 §5: 헤드→그리드 10 · 비현재 보더 없음(NOW만 primary 1) · 1행 h145/2행·풀 h129
-  rankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, marginTop: 10 },
-  rankCard: { width: '31.5%', flexGrow: 1, height: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
-  rankCardRow2: { height: 129 },
-  rankCardFull: { width: '100%', height: 129 },
+  // KB-707(#235 Codex): 이름을 두 줄까지 허용 → 고정 높이면 NOW 카드(세로 여백 40)에서 메달·두 줄 이름·한국어·점수가 넘쳤다.
+  // 높이 = 최소값(시안 145·129 = 이름 한 줄일 때 — 한 줄 언어는 모양 무변) + 줄 안 카드끼리 가장 높은 카드에 맞춤(stretch).
+  rankGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: 8, paddingHorizontal: 20, marginTop: 10 },
+  rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  rankCardRow2: { minHeight: 129 },
+  rankCardFull: { width: '100%', minHeight: 129 },
   rankCardNow: { borderWidth: 1, borderColor: C.primary, paddingTop: 24, paddingBottom: 16 },
   nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
   nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
