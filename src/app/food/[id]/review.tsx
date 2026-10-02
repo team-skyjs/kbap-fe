@@ -12,7 +12,7 @@
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -40,10 +40,19 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
-import { Modal } from 'react-native';
 import { openAppSettings } from '@/lib/openExternal';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
+
+// ── TEMP KB-700 진단(머지 전 제거) ── 진입 직후 첫 스크롤 위치 ≠ 0의 원인 채집: 마운트 뒤 첫 onScroll·키보드 이벤트의 순서·값.
+// __DEV__ 한정 · [KB-700] 접두 · 마운트 후 3초 동안만(이후 무음).
+const KB700_DIAG_T0 = { at: 0 };
+function kbDiag(kind: string, v: number) {
+  if (!__DEV__) return;
+  const t = Date.now() - KB700_DIAG_T0.at;
+  if (t > 3000) return;
+  console.log(`[KB-700] +${t}ms ${kind} ${Math.round(v * 10) / 10}`);
+}
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -56,6 +65,11 @@ export default function ReviewCompose() {
 
 function ReviewComposeScreen() {
   const { id, reviewId } = useLocalSearchParams<{ id: string; reviewId?: string }>();
+  // TEMP KB-700 진단 — 마운트 시각 기준점(머지 전 제거)
+  useEffect(() => {
+    KB700_DIAG_T0.at = Date.now();
+    kbDiag('mount', 0);
+  }, []);
   const router = useRouter();
   const { t } = useTranslation();
   const { data: food } = useFoodDetail(id ?? '');
@@ -230,7 +244,9 @@ function ReviewComposeScreen() {
     bodyLenRef.current = body.length;
   });
   const ensureCursorVisible = () => {
-    const visible = svH.current - kbHRef.current;
+    // KB-700: iOS는 화면이 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
+    // 키보드를 또 빼면 이중 차감. Android(adjustResize)는 기존 계산 유지(Q-87 실기 통과 경로 무변).
+    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
     if (visible <= 0 || !blockBottom.current) return;
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
@@ -239,12 +255,16 @@ function ReviewComposeScreen() {
   // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      kbDiag('keyboardDidShow', e.endCoordinates?.height ?? 0); // TEMP KB-700 진단
       kbHRef.current = e.endCoordinates?.height ?? 0;
       setKbH(kbHRef.current);
       // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
       if (atEnd.current) ensureCursorVisible();
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      kbDiag('keyboardDidHide', 0); // TEMP KB-700 진단
+      setKbH(0);
+    });
     return () => {
       show.remove();
       hide.remove();
@@ -287,7 +307,9 @@ function ReviewComposeScreen() {
 
 
   return (
-    <View style={styles.root}>
+    // KB-700: iOS = KeyboardAvoidingView(padding) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다(글쓰기 compose와 같은 패턴).
+    // Android = adjustResize라 창 자체가 줄어 불필요(behavior undefined — compose와 동일).
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="review-kav">
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
       <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
@@ -297,7 +319,9 @@ function ReviewComposeScreen() {
         ref={scrollRef}
         keyboardDismissMode="on-drag"
         contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
-        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} // P-348 ⑤: 수동 kbH 패딩 = 키보드 위 공백(안드 = adjustResize라 불필요)
+        // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
+        onScroll={(e) => kbDiag('onScroll', e.nativeEvent.contentOffset.y)} // TEMP KB-700 진단
+        scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
       >
@@ -332,7 +356,7 @@ function ReviewComposeScreen() {
           {/* §2-3(4150:16468): 별 48 gap 11, stroke 3 — 채움/빈 색은 시안(D-1 Stars 토큰) */}
           <View style={styles.starPick}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
+              <Pressable key={i} onPress={() => setRating(i)} hitSlop={4} testID={`review-star-${i}`}>
                 <Star size={48} fillPct={i <= rating ? 100 : 0} />
               </Pressable>
             ))}
@@ -490,7 +514,7 @@ function ReviewComposeScreen() {
       )}
       {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
       <TopToastHost />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
