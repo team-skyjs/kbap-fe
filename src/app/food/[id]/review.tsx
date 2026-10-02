@@ -44,16 +44,6 @@ import { openAppSettings } from '@/lib/openExternal';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 
-// ── TEMP KB-700 진단(머지 전 제거) ── 진입 직후 첫 스크롤 위치 ≠ 0의 원인 채집: 마운트 뒤 첫 onScroll·키보드 이벤트의 순서·값.
-// __DEV__ 한정 · [KB-700] 접두 · 마운트 후 3초 동안만(이후 무음).
-const KB700_DIAG_T0 = { at: 0 };
-function kbDiag(kind: string, v: number) {
-  if (!__DEV__) return;
-  const t = Date.now() - KB700_DIAG_T0.at;
-  if (t > 3000) return;
-  console.log(`[KB-700] +${t}ms ${kind} ${Math.round(v * 10) / 10}`);
-}
-
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
   // ⚠️ 가드는 **훅이 하나도 없는 바깥 컴포넌트**에 둔다(KB-620). 전엔 모든 훅 앞에 early return이
@@ -65,11 +55,6 @@ export default function ReviewCompose() {
 
 function ReviewComposeScreen() {
   const { id, reviewId } = useLocalSearchParams<{ id: string; reviewId?: string }>();
-  // TEMP KB-700 진단 — 마운트 시각 기준점(머지 전 제거)
-  useEffect(() => {
-    KB700_DIAG_T0.at = Date.now();
-    kbDiag('mount', 0);
-  }, []);
   const router = useRouter();
   const { t } = useTranslation();
   const { data: food } = useFoodDetail(id ?? '');
@@ -239,11 +224,16 @@ function ReviewComposeScreen() {
   // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
   // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
   const atEnd = useRef(true);
+  // KB-700 ①(QA 진단 로그로 확정): 마운트 직후 본문 Input의 첫 onContentSizeChange/onSelectionChange가 atEnd 초기값 true로
+  // 커서 추종을 불러, 포커스도 입력도 없는데 본문 블록 끝이 보이게 53.7pt 스크롤했다(카드 윗줄이 헤더 밑으로).
+  // → 추종은 **본문이 포커스된 동안에만**(호출부 셋 — 크기 변화·선택 변화·키보드 표시 — 이 모두 여기를 지난다).
+  const bodyFocusedRef = useRef(false);
   const bodyLenRef = useRef(0);
   useLayoutEffect(() => {
     bodyLenRef.current = body.length;
   });
   const ensureCursorVisible = () => {
+    if (!bodyFocusedRef.current) return;
     // KB-700: iOS는 화면이 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
     // 키보드를 또 빼면 이중 차감. Android(adjustResize)는 기존 계산 유지(Q-87 실기 통과 경로 무변).
     const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
@@ -255,14 +245,12 @@ function ReviewComposeScreen() {
   // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
-      kbDiag('keyboardDidShow', e.endCoordinates?.height ?? 0); // TEMP KB-700 진단
       kbHRef.current = e.endCoordinates?.height ?? 0;
       setKbH(kbHRef.current);
       // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
       if (atEnd.current) ensureCursorVisible();
     });
     const hide = Keyboard.addListener('keyboardDidHide', () => {
-      kbDiag('keyboardDidHide', 0); // TEMP KB-700 진단
       setKbH(0);
     });
     return () => {
@@ -320,7 +308,6 @@ function ReviewComposeScreen() {
         keyboardDismissMode="on-drag"
         contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
         // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
-        onScroll={(e) => kbDiag('onScroll', e.nativeEvent.contentOffset.y)} // TEMP KB-700 진단
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
@@ -416,8 +403,14 @@ function ReviewComposeScreen() {
             placeholderTextColor={C.inkDisabled}
             multiline
             style={[styles.textarea, bodyFocused && styles.textareaFocus]}
-            onFocus={() => setBodyFocused(true)}
-            onBlur={() => setBodyFocused(false)}
+            onFocus={() => {
+              bodyFocusedRef.current = true;
+              setBodyFocused(true);
+            }}
+            onBlur={() => {
+              bodyFocusedRef.current = false;
+              setBodyFocused(false);
+            }}
             textAlignVertical="top"
             onContentSizeChange={() => {
               if (atEnd.current) ensureCursorVisible();

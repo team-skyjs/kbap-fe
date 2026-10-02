@@ -183,6 +183,7 @@ it('P-158 ①(P-150② 재작업): 커서 추종 — 키보드 실측 패딩 + �
   const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } })); // blockBottom 700
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onFocus?.()); // KB-700 ①: 커서 추종은 본문 포커스 동안만 — 실제 입력 흐름(포커스 → 선택·입력)
   expect(typeof input.props.onSelectionChange).toBe('function');
   act(() => input.props.onSelectionChange());
   // target = blockBottom 700 − 가시 364(이미 키보드 제외 — iOS는 kbH를 또 빼지 않음) + 16 = 352(Q-87 실기 통과 때와 같은 위치)
@@ -208,6 +209,7 @@ it('P-163 ②: 커서 추종 게이트 — 중간 편집 무개입, 문서 끝 �
   const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } }));
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onFocus?.()); // KB-700 ①: 커서 추종은 본문 포커스 동안만 — 실제 입력 흐름(포커스 → 선택·입력)
   act(() => input.props.onChangeText('0123456789')); // len 10
   scrollTo.mockClear();
   // 중간 커서 → 무개입 (성장 이벤트도 게이트)
@@ -239,6 +241,7 @@ it('KB-657: 키보드 hide 뒤 끝 커서 셀렉션 = kbH 0 기준 목표(700 �
   const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
   act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 400 } } })); // blockBottom 700
   const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onFocus?.()); // KB-700 ①: 커서 추종은 본문 포커스 동안만 — 실제 입력 흐름(포커스 → 선택·입력)
   act(() => input.props.onSelectionChange());
   expect(scrollTo).toHaveBeenLastCalledWith({ y: 352, animated: true }); // 대조: 키보드 올라온 상태
   act(() => listeners['keyboardDidHide']?.({}));
@@ -351,4 +354,36 @@ it('KB-700 ③: 메인 별점 렌더 — review-star-1..5 존재 · 누르면 �
   for (let i = 1; i <= 5; i++) expect(star(i).length).toBeGreaterThan(0);
   act(() => star(3)[0].props.onPress());
   expect(flatJson(tree)).toContain('"3"');
+});
+
+it('KB-700 ①: 마운트 직후(본문 포커스 없음) — 크기·선택 변화·키보드 표시가 와도 스크롤 0 · 포커스 뒤엔 추종 · 블러 뒤 다시 무개입', () => {
+  const listeners: Record<string, (e: unknown) => void> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e: unknown) => void) => {
+    listeners[ev] = cb;
+    return { remove: jest.fn() } as never;
+  }) as never);
+  const tree = render(<ReviewCompose />);
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
+  act(() => block.props.onLayout({ nativeEvent: { layout: { y: 330, height: 420 } } })); // blockBottom 750 > 가시 700 — 옛 코드면 66 스크롤
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  // QA 로그와 같은 순서: 마운트 → (포커스·입력 없이) 첫 크기·선택 이벤트 / 다른 입력창(검색 시트)이 띄운 키보드
+  act(() => input.props.onContentSizeChange());
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 0, end: 0 } } }));
+  act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
+  expect(scrollTo).not.toHaveBeenCalled();
+  // 본문 포커스 → 추종(Q-87 유지)
+  act(() => input.props.onFocus());
+  act(() => input.props.onContentSizeChange());
+  expect(scrollTo).toHaveBeenCalledWith({ y: 750 - 700 + 16, animated: true });
+  // 블러 → 다시 무개입
+  scrollTo.mockClear();
+  act(() => input.props.onBlur());
+  act(() => input.props.onContentSizeChange());
+  expect(scrollTo).not.toHaveBeenCalled();
+  spy.mockRestore();
 });
