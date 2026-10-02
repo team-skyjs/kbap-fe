@@ -22,8 +22,6 @@ import { AccessibilityInfo } from 'react-native';
 import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
 import { HeroGallery, QUIET_MS } from '../HeroGallery';
 import { adaptFoodImages } from '@/lib/api/foodAdapter';
-// eslint-disable-next-line import/first -- 이 파일의 다른 import와 같은 위치(jest.mock 뒤)
-import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
@@ -36,28 +34,16 @@ function mountSlide(count: number, paused = false) {
   }
   let tree!: ReactTestRenderer;
   act(() => {
-    tree = keep(renderer.create(<Probe c={count} p={paused} />));
+    tree = renderer.create(<Probe c={count} p={paused} />);
   });
   const rerender = (c: number, p: boolean) => act(() => tree.update(<Probe c={c} p={p} />));
   return { out, tree, rerender };
 }
 
-// #229: 동작 줄이기 확인값은 떠 있는 모든 훅에 전달된다 — 앞 테스트의 트리가 남아 있으면 다음 테스트의 확인에 재렌더돼 섞인다 → 매 테스트 언마운트
-const mountedTrees: ReactTestRenderer[] = [];
-const keep = (t: ReactTestRenderer) => (mountedTrees.push(t), t);
 beforeEach(() => {
-  _resetMotionMemoryForTest(); // KB-699: 동작 줄이기 확인값은 세션 메모리 — 테스트마다 미확인(null)에서 시작
   jest.useFakeTimers();
 });
 afterEach(() => {
-  while (mountedTrees.length) {
-    const tr = mountedTrees.pop()!;
-    try {
-      act(() => tr.unmount());
-    } catch {
-      /* 이미 언마운트 */
-    }
-  }
   jest.useRealTimers();
   jest.restoreAllMocks();
 });
@@ -255,7 +241,7 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
     jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
     let tree!: ReactTestRenderer;
     await act(async () => {
-      tree = keep(renderer.create(<HeroGallery urls={URLS} />));
+      tree = renderer.create(<HeroGallery urls={URLS} />);
     });
     await act(async () => {
       await Promise.resolve(); // isReduceMotionEnabled 해소
@@ -289,7 +275,7 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockReturnValue(new Promise<boolean>((r) => { resolveRM = r; }));
     jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
     let tree!: ReactTestRenderer;
-    await act(async () => { tree = keep(renderer.create(<HeroGallery urls={URLS} />)); });
+    await act(async () => { tree = renderer.create(<HeroGallery urls={URLS} />); });
     // 틱은 하나씩 따로 진행한다 — 3장에 3틱을 몰면 순환해 0으로 돌아와 '안 움직임'과 구분이 안 된다
     for (let k = 0; k < 2; k++) {
       act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 조회 미해결 상태로 시간 경과
@@ -304,7 +290,7 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockRejectedValue(new Error('unavailable'));
     jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
     let tree!: ReactTestRenderer;
-    await act(async () => { tree = keep(renderer.create(<HeroGallery urls={URLS} />)); });
+    await act(async () => { tree = renderer.create(<HeroGallery urls={URLS} />); });
     await act(async () => { await Promise.resolve(); });
     for (let k = 0; k < 2; k++) {
       act(() => { jest.advanceTimersByTime(AUTO_SLIDE_MS); }); // 순환 착시 방지 — 틱마다 확인
@@ -337,7 +323,7 @@ describe('드래그 — 누르면 멈추고, 손 뗀 뒤 스크롤이 멈춘 자
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     jest.spyOn(AccessibilityInfo, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
     let tree!: ReactTestRenderer;
-    await act(async () => { tree = keep(renderer.create(<HeroGallery urls={URLS} />)); });
+    await act(async () => { tree = renderer.create(<HeroGallery urls={URLS} />); });
     await act(async () => { await Promise.resolve(); });
     return tree;
   };

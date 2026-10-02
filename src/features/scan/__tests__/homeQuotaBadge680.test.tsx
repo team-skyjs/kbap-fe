@@ -56,7 +56,6 @@ jest.mock('@/lib/flags', () => {
 
 import { HomeQuotaBadge, quotaBadgeModel, BADGE_RIGHT, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { FLAME_PATH } from '@/components/FlameShape';
-import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS } from '@/components/CountdownBadge';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
@@ -90,7 +89,6 @@ const valueText = (t: ReactTestRenderer) => byId(t, 'countdown-badge-value')[0]?
 
 beforeEach(() => {
   _resetQuotaCelebrationMemoryForTest(); // KB-699: 세션 메모리는 테스트 간에 비운다
-  _resetMotionMemoryForTest();
   mockQuota = null;
   mockMemberId = 'm1';
   mockGuest = false;

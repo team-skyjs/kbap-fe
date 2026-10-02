@@ -58,7 +58,6 @@ jest.mock('@/lib/flags', () => {
 });
 
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 import { CELEBRATE_END_MS } from '@/components/CountdownBadge';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
@@ -92,7 +91,6 @@ const valueText = (t: ReactTestRenderer) => byId(t, 'countdown-badge-value')[0]?
 
 beforeEach(() => {
   _resetQuotaCelebrationMemoryForTest(); // KB-699: 세션 메모리는 테스트 간에 비운다
-  _resetMotionMemoryForTest();
   mockMeEmpty = false;
   mockQuota = null;
   mockMemberId = 'm1';
@@ -120,8 +118,10 @@ it('순서 ①: 쿼터 0 → me 재조회 중 빈 값(data undefined) → 무제
   mockMeEmpty = false;
   mockQuota = Q('unlimited', true);
   rerender(t);
-  expect(shown(t)).toBe(true); // 축하 중(마지막 숫자 0)
+  expect(shown(t)).toBe(true); // 축하 중(마지막 숫자 0) — 빈 렌더에 뱃지가 내려갔다 다시 올라와 동작 줄이기는 미확인 → 대기
   expect(valueText(t)).toBe(0);
+  await flush(); // 다시 마운트된 뱃지의 조회 완료(false) → 폭죽 시작
+  expect(shown(t)).toBe(true);
   act(() => jest.advanceTimersByTime(CELEBRATE_END_MS));
   expect(shown(t)).toBe(false);
 });
@@ -203,4 +203,57 @@ it('⑤ 축하 보류 중 계정 전환(m1 → m2) = 취소 + m1 기억 삭제 �
   mockFocused = true;
   rerender(t);
   expect(shown(t)).toBe(false);
+});
+
+// ── #229 Codex 3차 → 단순안: 동작 줄이기 미확인(null) = 기다림. 세션 캐시 없음 — 이 마운트의 조회 완료가 깨운다.
+function deferredReduce() {
+  let settle!: { ok: (v: boolean) => void; fail: () => void };
+  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockImplementation(
+    () => new Promise<boolean>((ok, fail) => { settle = { ok, fail: () => fail(new Error('unavailable')) }; }),
+  );
+  return () => settle;
+}
+
+it('⑥ 미확인(조회 중)에 해금 → 즉시 끝내지 않고 마지막 숫자로 대기 → false 확인 = 폭죽 1회 뒤 사라짐', async () => {
+  jest.useFakeTimers();
+  const settle = deferredReduce();
+  mockQuota = Q(1);
+  const t = render(); // 조회 아직 안 끝남(미확인)
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(true); // 대기 — 옛 규칙(미확인 = 즉시 종료)이면 여기서 사라졌다
+  expect(valueText(t)).toBe(1);
+  act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 2));
+  expect(shown(t)).toBe(true); // 확인 전엔 시간이 가도 시작·종료 없음
+  await act(async () => { settle().ok(false); });
+  expect(shown(t)).toBe(true); // 폭죽 중
+  act(() => jest.advanceTimersByTime(CELEBRATE_END_MS));
+  expect(shown(t)).toBe(false);
+});
+
+it('⑦ 미확인에 해금 → 조회 실패 = 켜진 것으로 확정 → 폭죽 없이 바로 사라짐(대기 고착 0)', async () => {
+  const settle = deferredReduce();
+  mockQuota = Q(1);
+  const t = render();
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(true);
+  await act(async () => { settle().fail(); });
+  expect(shown(t)).toBe(false);
+});
+
+it('⑧ Codex #229: 조회보다 먼저 온 변경 이벤트(켬)를 늦게 도착한 조회 결과(false)가 되돌리지 않는다 — 폭죽 없이 끝', async () => {
+  const settle = deferredReduce();
+  let onChange: ((v: boolean) => void) | undefined;
+  jest.spyOn(AccessibilityInfo, 'addEventListener').mockImplementation(((_: string, cb: (v: boolean) => void) => {
+    onChange = cb;
+    return { remove: () => {} };
+  }) as never);
+  mockQuota = Q(1);
+  const t = render();
+  act(() => onChange!(true)); // 사용자가 동작 줄이기를 켬
+  await act(async () => { settle().ok(false); }); // 마운트 때 시작한 조회가 늦게 옛 값으로 도착
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(false); // 켜짐 유지 → 폭죽 없이 즉시 종료
 });

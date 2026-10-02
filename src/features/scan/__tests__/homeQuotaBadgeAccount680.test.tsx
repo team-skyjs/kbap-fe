@@ -51,7 +51,6 @@ jest.mock('@/lib/flags', () => {
 });
 
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 import { setSessionState, _resetSessionForTest } from '@/lib/auth/useSession';
 
 const profile = (memberId: number, quota: { unlocked: boolean; remaining: number | null }) => ({
@@ -109,7 +108,6 @@ async function mount(): Promise<ReactTestRenderer> {
 
 beforeEach(() => {
   _resetQuotaCelebrationMemoryForTest(); // KB-699
-  _resetMotionMemoryForTest();
   _resetSessionForTest();
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
 });

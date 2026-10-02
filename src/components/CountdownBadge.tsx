@@ -88,11 +88,12 @@ export function CountdownBadge({ value, unitLabel, state, onPress, celebrate = f
   });
   // 시작은 **화면이 보일 때**(공부 #221 지적 1): 무제한 전환은 리뷰 작성 화면에서 일어나 홈이 가려진 채 감지된다 —
   // 안 보이는 동안은 마지막 숫자를 든 채 대기, 보이면 1회. blur·background로 중단되면 cleanup이 타이머 해제 → 다시 보일 때 처음부터.
-  // 보이는데 동작 줄이기가 확정 false가 아니면(켜짐·조회 실패로 미확인 고착) 폭죽 없이 즉시 종료 — 대기 고착 금지(공부 #221 재확인 ②).
+  // 동작 줄이기: 미확인(null) = **기다림**(KB-699 #229 — 막 마운트된 뱃지가 미확인이라 축하를 즉시 끝내 폭죽이 유실됐다). 조회가 끝나면
+  // 반드시 boolean(실패 = true)으로 바뀌어 깨운다. 켜짐(true) = 폭죽 없이 즉시 종료(공부 #221 재확인 ②의 "대기 고착 금지"는 실패 = true로 유지).
   const showBurst = celebrate && visible && reduceMotion === false;
   React.useEffect(() => {
-    if (!celebrate || !visible) return;
-    if (reduceMotion !== false) {
+    if (!celebrate || !visible || reduceMotion === null) return;
+    if (reduceMotion) {
       endRef.current?.();
       return;
     }
