@@ -188,12 +188,25 @@ describe('KB-711 업로드 상한·취소', () => {
     expect(api.post).not.toHaveBeenCalled();
     expect(mockUploadAsync).not.toHaveBeenCalled();
   });
-  it('스캔 회귀 0 — 업로드 상한 초과도 텍스트-only 폴백(null), 서버 처리 대기와 무관', async () => {
+  // #240 공부: 스캔은 카메라 원본(2~4MB)이라 60초가 그대로 경계 — 끊으면 빈 imagePath → 서버 400(스캔 실패). 스캔 PUT은 상한 없음
+  it('MENU_SCAN은 60초를 넘겨도 PUT을 끊지 않는다(취소 0) — 늦게라도 끝나면 path 반환', async () => {
+    jest.useFakeTimers();
+    let finishPut!: (v: unknown) => void;
+    mockUploadAsync.mockImplementation(() => new Promise((r) => (finishPut = r)));
+    const p = resolveScanImagePath(PHOTO);
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(UPLOAD_PUT_TIMEOUT_MS * 3);
+    expect(mockCancelAsync).not.toHaveBeenCalled();
+    finishPut({ status: 200 });
+    await expect(p).resolves.toBe('scan/1/a.jpg');
+  });
+  it('그 밖의 목적은 상한 그대로(기본값) · timeoutMs 명시 가능', async () => {
     jest.useFakeTimers();
     mockUploadAsync.mockImplementation(() => new Promise(() => {}));
-    const p = resolveScanImagePath(PHOTO);
+    const caught = uploadImage(PHOTO, 'PROFILE', { timeoutMs: 5_000 }).catch((e: unknown) => e);
     await Promise.resolve();
-    await jest.advanceTimersByTimeAsync(UPLOAD_PUT_TIMEOUT_MS + 1);
-    await expect(p).resolves.toBe(null);
+    await jest.advanceTimersByTimeAsync(5_001);
+    expect(String(((await caught) as Error).message)).toContain('timeout 5000ms');
+    expect(mockCancelAsync).toHaveBeenCalledTimes(1);
   });
 });

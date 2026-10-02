@@ -90,7 +90,8 @@ jest.mock('expo-file-system/legacy', () => ({
   FileSystemUploadType: { BINARY_CONTENT: 'binary' },
 }));
 const mockPost = jest.fn();
-jest.mock('@/lib/api/client', () => ({ api: { post: (...a: unknown[]) => mockPost(...a), get: jest.fn() } }));
+const mockPut = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/api/client', () => ({ api: { post: (...a: unknown[]) => mockPost(...a), put: (...a: unknown[]) => mockPut(...a), get: jest.fn() } }));
 jest.mock('@/lib/deviceInfo', () => ({ collectDeviceInfo: () => ({}) }));
 
 // eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
@@ -154,7 +155,8 @@ it('배선 잠금 — 리뷰 작성·문의 작성·커뮤니티 글쓰기 모�
   const read = (p: string) => (jest.requireActual('fs') as typeof import('fs')).readFileSync(p, 'utf8');
   const review = read('src/app/food/[id]/review.tsx');
   expect(review).toContain('useUploadAbort()');
-  expect(review).toContain('uploadReviewImages(localUris, nextUploadSignal())');
+  expect(review).toContain('uploadReviewImages(localUris, signal)');
+  expect(review).toContain('if (signal.aborted) throw new UploadAbortedError();'); // 본 요청 직전 확인
   expect(review).toContain('if (isUploadAborted(e)) return;');
   const fb = read('src/app/profile/feedback/new.tsx');
   expect(fb).toContain('signal: nextUploadSignal()');
@@ -165,4 +167,48 @@ it('배선 잠금 — 리뷰 작성·문의 작성·커뮤니티 글쓰기 모�
   expect(read('src/lib/review/reviewPhotos.ts')).toContain("REVIEW_IMAGE_PURPOSE, { signal })");
   expect(read('src/lib/data/useFeedback.ts')).toContain('{ signal: input.signal }');
   expect(read('src/lib/community/adapter.ts')).toContain("'COMMUNITY', { signal })");
+});
+
+// #240 공부: bail()은 PUT 뒤·complete 앞뿐 — 마지막 장 complete 도중(최대 15초)에 떠나면 본 요청이 그대로 나갔다
+it('마지막 장 complete 도중 이탈 → 본 요청 직전 신호 확인으로 /api/feedbacks 0 · 토스트 0', async () => {
+  let releaseComplete!: () => void;
+  const completeGate = new Promise<void>((r) => (releaseComplete = r));
+  mockTaskUpload.mockResolvedValue({ status: 200 }); // PUT은 끝남
+  mockPost.mockImplementation(async (path: string) => {
+    if (path === '/images/upload-url') return { uploadUrl: 'https://s/put', method: 'PUT', requiredHeaders: {}, publicUrl: 'https://cdn/x.jpg', objectKey: 'fb/x.jpg' };
+    if (path === '/images/complete') { await completeGate; return { path: 'fb/x.jpg' }; } // complete 진행 중
+    if (path === '/api/feedbacks') return { id: 1 };
+    throw new Error(path);
+  });
+  const r = await setup();
+  await act(async () => { void byId(r, 'feedback-send').props.onPress(); });
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  expect(mockPost.mock.calls.map(([p]) => p)).toContain('/images/complete'); // complete 도중
+  await act(async () => { mockBlur.fn(); r.unmount(); }); // 이탈
+  await act(async () => { releaseComplete(); await completeGate; });
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  expect(mockPost.mock.calls.map(([p]) => p)).not.toContain('/api/feedbacks');
+  expect(mockToast).not.toHaveBeenCalled();
+});
+
+it('사진 0장 — 이미 중단된 신호면 본 요청을 보내지 않는다(전엔 사진이 없으면 신호를 아예 안 봤다)', async () => {
+  const { submitFeedback } = jest.requireActual<typeof import('@/lib/data/useFeedback')>('@/lib/data/useFeedback');
+  const { isUploadAborted } = jest.requireActual<typeof import('@/lib/api/uploadAbort')>('@/lib/api/uploadAbort');
+  const ctl = new AbortController();
+  ctl.abort();
+  const e = await submitFeedback({ content: 'x', photoUris: [], signal: ctl.signal }).catch((x: unknown) => x);
+  expect(isUploadAborted(e)).toBe(true);
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+it('커뮤니티 — 사진 0장 · 중단된 신호면 글 작성·수정 요청 0', async () => {
+  const adapter = jest.requireActual<typeof import('@/lib/community/adapter')>('@/lib/community/adapter');
+  const ctl = new AbortController();
+  ctl.abort();
+  const input = { body: 'b', photos: [], foodTags: [], placeTag: null, signal: ctl.signal };
+  const isAborted = jest.requireActual<typeof import('@/lib/api/uploadAbort')>('@/lib/api/uploadAbort').isUploadAborted;
+  expect(isAborted(await adapter.createPost(input).catch((x: unknown) => x))).toBe(true);
+  expect(isAborted(await adapter.updatePost('1', input).catch((x: unknown) => x))).toBe(true);
+  expect(mockPost).not.toHaveBeenCalled();
+  expect(mockPut).not.toHaveBeenCalled();
 });
