@@ -23,10 +23,6 @@ jest.mock('react-native-reanimated', () => {
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
-    interpolate: () => 0,
-    Extrapolation: { CLAMP: 'clamp' },
-    useReducedMotion: () => false,
-    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 }, // KB-701: 뱃지 위치가 StickyHeader(headerHeight)를 import
   };
 });
 jest.mock('expo-router', () => ({
@@ -58,8 +54,7 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: new Proxy(a.FLAGS, { get: (t, k) => (k === 'countdownBadge' ? mockFlag.on : t[k as string]) }) };
 });
 
-import { HomeQuotaBadge, quotaBadgeModel, BADGE_RIGHT, BADGE_TOP_BELOW_HEADER, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { headerHeight } from '@/components/StickyHeader';
+import { HomeQuotaBadge, quotaBadgeModel, BADGE_RIGHT, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { FLAME_PATH } from '@/components/FlameShape';
 import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS } from '@/components/CountdownBadge';
@@ -81,12 +76,12 @@ afterEach(() => {
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
-    tree = renderer.create(<HomeQuotaBadge />);
+    tree = renderer.create(<HomeQuotaBadge top={100} />);
   });
   mountedTrees.push(tree);
   return tree;
 }
-const rerender = (t: ReactTestRenderer) => act(() => t.update(<HomeQuotaBadge />));
+const rerender = (t: ReactTestRenderer) => act(() => t.update(<HomeQuotaBadge top={100} />));
 /** 동작 줄이기 조회(Promise) 반영 — 확정 전엔 paused(보수) */
 const flush = () => act(async () => {});
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type !== 'string');
@@ -446,20 +441,16 @@ describe('프레임 불변 · 홈 하단 미겹침', () => {
     expect(frame(<CountdownBadge value={999} unitLabel="scans" state="active" onPress={() => {}} />)).toEqual({ w: BADGE_W, h: BADGE_H });
   });
 
-  it('KB-701 위치 — 홈 우상단, 스캔 버튼 바로 아래(헤더 높이 + 검색 줄 12+48 + 4) · 오른쪽 끝 = 스캔 버튼 오른쪽(20) · 렌더 값 일치', () => {
-    const home = require('fs').readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
-    // 홈 검색 줄·스캔 버튼 치수에서 유도 — 홈 레이아웃이 바뀌면 red(뱃지가 버튼 아래를 벗어남)
-    expect(home).toContain("searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 12 }");
-    expect(home).toMatch(/scanBtn: \{ width: 48, height: 48,/);
-    expect(home).toMatch(/contentContainerStyle=\{\{ paddingTop: headerH,/); // 리스트 시작 = 헤더 높이
-    expect(BADGE_TOP_BELOW_HEADER).toBe(12 + 48 + 4);
-    expect(BADGE_RIGHT).toBe(20);
+  it('KB-701 위치 — top = 홈이 측정해 내려 준 값 그대로 · right 20(스캔 버튼 오른쪽 끝) · top null(측정 전) = 그리지 않음', () => {
     mockQuota = Q(2);
     const t = render();
-    const float = StyleSheet.flatten(t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type === 'string')[0].props.style);
-    expect(float).toEqual(expect.objectContaining({ position: 'absolute', top: headerHeight(0) + 64, right: 20 }));
-    expect((float as { bottom?: number }).bottom).toBeUndefined(); // 옛 우하단 아님
-    expect(home).toContain('<HomeQuotaBadge />');
+    const float = () => t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type === 'string');
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', top: 100, right: 20 }));
+    expect(BADGE_RIGHT).toBe(20);
+    act(() => t.update(<HomeQuotaBadge top={null} />));
+    expect(float()).toHaveLength(0);
+    act(() => t.update(<HomeQuotaBadge top={140} />));
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ top: 140 }));
   });
 
   it('KB-701 가독성 — 불꽃 = 단색(그라데이션 0) · 몸통 안 흰 선(안쪽 홈) 없는 물방울형', () => {

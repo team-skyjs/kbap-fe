@@ -22,10 +22,6 @@ jest.mock('react-native-reanimated', () => {
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
-    interpolate: () => 0,
-    Extrapolation: { CLAMP: 'clamp' },
-    useReducedMotion: () => false,
-    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 }, // KB-701: 뱃지 위치가 StickyHeader(headerHeight)를 import
   };
 });
 jest.mock('expo-router', () => ({
@@ -101,7 +97,7 @@ async function mount(): Promise<ReactTestRenderer> {
   act(() => {
     t = renderer.create(
       <QueryClientProvider client={qc}>
-        <HomeQuotaBadge />
+        <HomeQuotaBadge top={100} />
       </QueryClientProvider>,
     );
   });

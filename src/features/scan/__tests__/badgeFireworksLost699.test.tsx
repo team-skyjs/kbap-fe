@@ -25,10 +25,6 @@ jest.mock('react-native-reanimated', () => {
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
-    interpolate: () => 0,
-    Extrapolation: { CLAMP: 'clamp' },
-    useReducedMotion: () => false,
-    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 }, // KB-701: 뱃지 위치가 StickyHeader(headerHeight)를 import
   };
 });
 jest.mock('expo-router', () => ({
@@ -82,12 +78,12 @@ afterEach(() => {
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
-    tree = renderer.create(<HomeQuotaBadge />);
+    tree = renderer.create(<HomeQuotaBadge top={100} />);
   });
   mountedTrees.push(tree);
   return tree;
 }
-const rerender = (t: ReactTestRenderer) => act(() => t.update(<HomeQuotaBadge />));
+const rerender = (t: ReactTestRenderer) => act(() => t.update(<HomeQuotaBadge top={100} />));
 /** 동작 줄이기 조회(Promise) 반영 — 확정 전엔 paused(보수) */
 const flush = () => act(async () => {});
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type !== 'string');
@@ -142,13 +138,69 @@ it('순서 ②: 홈이 가려진 채 무제한 → (홈 트리 재마운트 — 
   act(() => t.unmount()); // 홈 트리가 바뀌어 뱃지가 내려감(홈 재조회 에러 블록 등)
   let t2!: ReactTestRenderer;
   act(() => {
-    t2 = renderer.create(<HomeQuotaBadge />);
+    t2 = renderer.create(<HomeQuotaBadge top={100} />);
   });
   mountedTrees.push(t2);
   mockFocused = true; // 완료 → Done → 홈
-  act(() => t2.update(<HomeQuotaBadge />));
+  act(() => t2.update(<HomeQuotaBadge top={100} />));
   await flush();
   expect(shown(t2)).toBe(true); // 마지막 숫자를 든 채 폭죽
   act(() => jest.advanceTimersByTime(CELEBRATE_END_MS));
   expect(shown(t2)).toBe(false);
+});
+
+// ── #229 Codex P2 · 공부 지적 — 축하의 주인 회원(끝·취소 때 지울 기억은 "지금 me"가 아니라 축하 주인의 것)
+it('③ 축하가 끝나는 순간 me가 비어 있어도 그 회원의 기억을 지운다 — me 복귀 시 폭죽 재생 0', async () => {
+  jest.useFakeTimers();
+  mockQuota = Q(2);
+  const t = render();
+  await flush();
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(true); // 축하 중
+  mockMeEmpty = true; // 끝나기 직전 재조회 빈 렌더
+  rerender(t);
+  act(() => jest.advanceTimersByTime(CELEBRATE_END_MS));
+  expect(shown(t)).toBe(false);
+  mockMeEmpty = false; // 같은 회원 복귀(여전히 해금)
+  rerender(t);
+  expect(shown(t)).toBe(false);
+});
+
+it('④ 축하 보류 중 로그아웃(게스트) = 이전 회원의 뱃지·폭죽 0 · 같은 회원 재로그인(해금)에도 재축하 0', async () => {
+  mockQuota = Q(2);
+  const t = render();
+  await flush();
+  mockFocused = false; // 리뷰 작성 화면 — 홈 가려짐(축하 보류)
+  rerender(t);
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(true); // 보류된 축하(마지막 숫자)
+  mockGuest = true; // 홈을 보기 전에 로그아웃
+  rerender(t);
+  expect(shown(t)).toBe(false);
+  mockFocused = true;
+  rerender(t);
+  expect(shown(t)).toBe(false); // 게스트 홈 — 폭죽 0
+  mockGuest = false; // 같은 회원 재로그인(해금 상태)
+  rerender(t);
+  expect(shown(t)).toBe(false); // 기억이 지워져 재축하 0
+});
+
+it('⑤ 축하 보류 중 계정 전환(m1 → m2) = 취소 + m1 기억 삭제 — m1이 해금된 채 돌아와도 재축하 0', async () => {
+  mockQuota = Q(2);
+  const t = render();
+  await flush();
+  mockFocused = false;
+  rerender(t);
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(true);
+  mockMemberId = 'm2'; // 다른 회원(해금, 숫자 기억 없음)
+  rerender(t);
+  expect(shown(t)).toBe(false);
+  mockMemberId = 'm1';
+  mockFocused = true;
+  rerender(t);
+  expect(shown(t)).toBe(false);
 });

@@ -1,5 +1,5 @@
 /**
- * HomeQuotaBadge (KB-680, P-432) — 홈 우하단 플로팅 "무료 스캔 N회 남음" 불꽃 + 안내 시트.
+ * HomeQuotaBadge (KB-680, P-432) — 홈 플로팅(KB-701: 스캔 버튼 바로 아래) "무료 스캔 N회 남음" 불꽃 + 안내 시트.
  * 스펙 = spec specs/001-personalized-menu-mvp/countdown-badge-2026-10-02.md (예진 10/2 결정).
  *
  * - 정본 = `me.scanQuota`(서버) — 클라는 횟수를 세지 않는다. 노출 = 남은 횟수가 숫자인 회원(0 포함 — 꺼진 불꽃).
@@ -16,7 +16,6 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { SheetShell } from '@/components/SheetShell';
 import { CountdownBadge } from '@/components/CountdownBadge';
-import { useHeaderHeight } from '@/components/StickyHeader';
 import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -36,9 +35,10 @@ export function quotaBadgeModel(quota: ScanQuota | null | undefined, isGuest: bo
 }
 
 /** KB-701(예진 10/2): 위치 = **홈 우상단, 검색 줄 스캔 버튼 바로 아래**(탭 줄·칩 줄 오른쪽 끝 위로 뜬다 — 예진 표시 자리).
- *  홈 리스트는 헤더 높이(useHeaderHeight)에서 시작하고 검색 줄 = paddingTop 12 + 스캔 버튼 48 → 버튼 아래 끝 = 헤더 + 60, 4pt 띄움.
- *  오른쪽 = 검색 줄 paddingHorizontal 20(스캔 버튼 오른쪽 끝과 정렬). 화면 고정 플로팅(스크롤해도 같은 자리 — 축하가 보이게). */
-export const BADGE_TOP_BELOW_HEADER = 12 + 48 + 4;
+ *  top은 홈이 **실제 렌더된 검색 줄을 측정해** 내려 준다(헤더 + FoodExplorer 위치(넛지 유무) + 검색 줄 아래 끝 + BADGE_GAP — Codex #229:
+ *  고정 오프셋은 넛지가 뜨면 스캔 버튼과 겹쳤다). 오른쪽 = 검색 줄 paddingHorizontal 20(스캔 버튼 오른쪽 끝과 정렬).
+ *  화면 고정 플로팅(스크롤해도 같은 자리 — 축하가 보이게). */
+export const BADGE_GAP = 4;
 export const BADGE_RIGHT = 20;
 
 /** KB-699: 회원별 마지막 숫자 쿼터 — 세션 메모리(앱 재시작 시 비움). 해금 축하를 재조회 빈 렌더·홈 트리 재마운트 너머로 잇는다. */
@@ -63,12 +63,12 @@ export function _resetQuotaCelebrationMemoryForTest() {
   lastNumericQuota.clear();
 }
 
-export function HomeQuotaBadge() {
+/** top = 홈이 측정한 앵커(null = 아직 측정 전 → 그리지 않는다. 축하 상태는 이 컴포넌트에 남아 측정 뒤 이어진다). */
+export function HomeQuotaBadge({ top }: { top: number | null }) {
   const { t } = useTranslation();
   const router = useRouter();
   const isGuest = useIsGuest();
   const { data: me } = useMe();
-  const headerH = useHeaderHeight(); // KB-701: 우상단 위치 기준(홈 리스트 시작 = 헤더 높이)
   const model = FLAGS.countdownBadge ? quotaBadgeModel(me?.scanQuota, isGuest) : null;
 
   // KB-699: 축하 판정을 **회원별 마지막 숫자 쿼터(세션 메모리)**로 잇는다. 옛 렌더 중 전이 비교(prev → 지금)는 전이를 한 컴포넌트
@@ -79,7 +79,9 @@ export function HomeQuotaBadge() {
   const unlockedNow = FLAGS.countdownBadge && !isGuest && me?.scanQuota?.unlocked === true;
   const getLast = React.useCallback(() => (memberId ? lastNumericQuota.get(memberId) ?? null : null), [memberId]);
   const last = React.useSyncExternalStore(subscribeLastNumeric, getLast, getLast);
-  const [celebrating, setCelebrating] = React.useState<QuotaBadgeModel | null>(null);
+  // 축하의 **주인 회원**을 함께 든다(Codex #229 · 공부 #229) — 끝·취소 때 지울 기억이 "지금 me"가 아니라 이 회원의 것이어야 한다
+  // (끝나는 순간 me가 비어 있거나 계정이 바뀌었어도).
+  const [celebrating, setCelebrating] = React.useState<{ memberId: string; model: QuotaBadgeModel } | null>(null);
   // 숫자를 본 순간마다 기억(효과 — 바깥 저장소 쓰기)
   const modelValue = model?.value;
   const modelState = model?.state;
@@ -87,19 +89,24 @@ export function HomeQuotaBadge() {
     if (memberId && modelValue != null && modelState) rememberNumeric(memberId, { value: modelValue, state: modelState });
   }, [memberId, modelValue, modelState]);
   // 축하 시작 = 같은 회원이 해금됐고 그 회원의 마지막 숫자를 기억하고 있을 때(중간의 빈 렌더·재마운트와 무관)
-  if (unlockedNow && last && !celebrating) setCelebrating(last);
-  // 되돌려진 해금(대기 중 다시 숫자) = 축하 취소(공부 #221 재확인 ①)
+  if (unlockedNow && memberId && last && !celebrating) setCelebrating({ memberId, model: last });
+  // 되돌려진 해금(대기 중 다시 숫자) = 축하 취소(공부 #221 재확인 ①) — 기억은 효과가 새 숫자로 덮는다
   if (model && celebrating) setCelebrating(null);
-  // 계정 전환 = 진행 중 축하 취소 — **실제로 다른 두 회원**일 때만(재조회 중 빈 렌더 null은 전환이 아니다)
-  const [prevMemberId, setPrevMemberId] = React.useState(memberId);
-  if (memberId && memberId !== prevMemberId) {
-    setPrevMemberId(memberId);
-    if (prevMemberId && celebrating) setCelebrating(null);
+  // 주인이 떠남 = 축하 취소 + 그 회원의 기억 삭제: 로그아웃(게스트 — 세션 스토어라 재조회 빈 렌더와 구분됨, 공부 #229 지적 1) ·
+  // 실제로 다른 회원(계정 전환). 재조회 중 빈 렌더(memberId null)는 떠남이 아니다(KB-699 ①).
+  // 기억 삭제는 바깥 저장소 쓰기라 효과에서 — 렌더는 "누구를 지울지"만 상태로 남긴다(매번 새 객체 = 같은 회원 반복도 다시 실행).
+  const [dropped, setDropped] = React.useState<{ memberId: string } | null>(null);
+  if (celebrating && (isGuest || (memberId != null && memberId !== celebrating.memberId))) {
+    setDropped({ memberId: celebrating.memberId });
+    setCelebrating(null);
   }
-  // 기억은 축하가 **끝날 때** 지운다(onCelebrateEnd) — 시작 때 지우면 축하 대기 중(홈 가려짐) 트리가 다시 마운트될 때 잃는다.
+  React.useEffect(() => {
+    if (dropped) forgetNumeric(dropped.memberId);
+  }, [dropped]);
+  // 끝 = 그 축하 주인의 기억을 지운다(onCelebrateEnd) — 시작 때 지우면 축하 대기 중(홈 가려짐) 트리가 다시 마운트될 때 잃는다.
   // 진행 중엔 `!celebrating` 가드가 재트리거를 막는다.
   const endCelebration = () => {
-    if (memberId) forgetNumeric(memberId);
+    if (celebrating) forgetNumeric(celebrating.memberId);
     setCelebrating(null);
   };
 
@@ -122,12 +129,12 @@ export function HomeQuotaBadge() {
     setPicker(true);
   };
 
-  const shown = celebrating ?? model;
+  const shown = celebrating?.model ?? model;
   const left = shown && shown.value > 0 ? t('scan.freeLeft', { count: shown.value }) : t('scan.quotaTitle');
   return (
     <>
-      {shown && (
-        <View style={[styles.float, { top: headerH + BADGE_TOP_BELOW_HEADER }]} pointerEvents="box-none" testID="home-quota-badge">
+      {shown && top != null && (
+        <View style={[styles.float, { top }]} pointerEvents="box-none" testID="home-quota-badge">
           <CountdownBadge
             value={shown.value}
             unitLabel={t('scan.badgeUnit', { count: shown.value })}
