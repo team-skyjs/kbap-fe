@@ -127,9 +127,10 @@ it('빈 값(구 서버·MOCK)·미전달(음식 탭 등) = 기존 폴백(/foods 
 });
 
 it('/home 로딩 = 레일 스켈레톤(목록이 이미 있어도 잠깐 보였다 바뀌는 팝인 없음) · /foods 로딩이 /home 카드를 가리지 않음', () => {
-  const loading = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" popular={[]} popularLoading />);
+  // 홈이 실제로 넘기는 모양 = popular={undefined}(데이터 없음) + popularLoading — 빈 배열이 아니다(#237 공부)
+  const loading = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" popular={undefined} popularLoading />);
   expect(host(loading, (id) => id === 'home-rail-skel')).toHaveLength(1);
-  expect(railOrder(loading)).toEqual([]);
+  expect(railOrder(loading)).toEqual([]); // /foods 폴백이 먼저 보이지 않음
   mockInfinite.mockReturnValue(list([], { isLoading: true }));
   const ready = render(<FoodExplorer variant="embedded" guest={false} srcTag="home" popular={RANDOM} />);
   expect(host(ready, (id) => id === 'home-rail-skel')).toHaveLength(0);
@@ -150,7 +151,7 @@ describe('소스 잠금', () => {
     expect(read('src/features/food/FoodExplorer.tsx')).not.toMatch(/from '@\/lib\/data\/useHome'/);
     const home = read('src/app/(tabs)/index.tsx');
     expect(home).toContain('popular={home?.recommended}');
-    expect(home).toContain('popularLoading={isLoading}');
+    expect(home).toContain('popularLoading={isPending}');
   });
   it('북마크 토글이 /home을 무효화하지 않는다 — 랜덤 레일이 토글 한 번에 통째로 바뀌지 않게(저장 표시는 북마크 쿼리의 savedIds)', () => {
     const bm = read('src/lib/data/bookmarks.ts');
