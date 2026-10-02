@@ -21,6 +21,8 @@ import { needsPhotoLibraryPermission } from '@/lib/mediaPermissions';
 import { EVENTS, track } from '@/lib/analytics';
 import { FEEDBACK_MAX_LEN, FEEDBACK_MAX_PHOTOS, useSubmitFeedback } from '@/lib/data/useFeedback';
 import { color as C, radius } from '@/lib/theme';
+import { useUploadAbort } from '@/lib/useUploadAbort';
+import { isUploadAborted } from '@/lib/api/uploadAbort';
 
 export default function FeedbackComposeScreen() {
   const router = useRouter();
@@ -30,6 +32,7 @@ export default function FeedbackComposeScreen() {
   const [importing, setImporting] = React.useState(false);
   const submit = useSubmitFeedback();
   const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
+  const nextUploadSignal = useUploadAbort(); // KB-711: 전송 중 화면을 떠나면 사진 업로드 취소
   // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 성공 뒤엔 막지 않고 닫힘
   const leave = useLeaveConfirm(body.trim().length > 0 || photos.length > 0, guard.busy); // 전송 중 = 막지 않음(그냥 나감)
   // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
@@ -82,7 +85,7 @@ export default function FeedbackComposeScreen() {
   const onSend = () =>
     void guard.run(async () => {
       try {
-        await submit.mutateAsync({ content: body.trim(), photoUris: photos });
+        await submit.mutateAsync({ content: body.trim(), photoUris: photos, signal: nextUploadSignal() });
         // P-387: 성공 응답 뒤에만 완료 — 계측 속성은 개수·유무만(본문·기기정보 금지)
         track(EVENTS.profile_feedback_submit, { has_photos: photos.length > 0, photo_count: photos.length });
         showTopToast(t('feedback.sent')); // 토스트 호스트는 루트에 있어 어느 화면이든 뜬다
@@ -90,6 +93,7 @@ export default function FeedbackComposeScreen() {
           if (focused.current) router.back();
         });
       } catch (e) {
+        if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 다른 화면 위에 실패 토스트를 띄우지 않는다
         // 429(일일 한도)는 전용 안내 — 일반 실패와 구분된다
         const code = (e as { code?: string })?.code;
         showTopToast(t(code === 'FEEDBACK-003' ? 'feedback.rateLimited' : 'feedback.sendFailed'), { error: true });

@@ -15,6 +15,7 @@
 import { api, apiLang } from '@/lib/api/client';
 import { FLAGS } from '@/lib/flags';
 import { uploadImage } from '@/lib/api/scanImage';
+import { UploadAbortedError } from '@/lib/api/uploadAbort';
 import { imageUrlToPath } from '@/lib/api/reviewAdapter';
 import type {
   BlockedUser,
@@ -111,30 +112,34 @@ export async function fetchPost(id: string): Promise<CommunityPost | null> {
 }
 
 /** 로컬 사진 → COMMUNITY purpose 업로드 path · 기존 CDN URL → path 역변환(수정 유지분). */
-async function resolveImagePaths(photos: string[]): Promise<string[]> {
+async function resolveImagePaths(photos: string[], signal?: AbortSignal): Promise<string[]> {
   const paths: string[] = [];
   for (const uri of photos) {
     if (uri.startsWith('http')) paths.push(imageUrlToPath(uri));
-    else paths.push((await uploadImage({ uri, width: 0, height: 0 }, 'COMMUNITY')).path);
+    else paths.push((await uploadImage({ uri, width: 0, height: 0 }, 'COMMUNITY', { signal })).path); // KB-711: 이탈 시 취소
   }
   return paths;
 }
 
-const postBody = async (input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null }) => ({
+const postBody = async (input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null; signal?: AbortSignal }) => ({
   content: input.body,
-  imagePaths: await resolveImagePaths(input.photos),
+  imagePaths: await resolveImagePaths(input.photos, input.signal),
   foodIds: input.foodTags.map((f) => Number(f.foodId)),
   // placeTag: 계약 부재 — 전송 필드 없음(임의 구현 금지)
 });
 
-export async function createPost(input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null }): Promise<CommunityPost> {
-  const w = await api.post<PostItemWire>('/community/posts', await postBody(input));
+export async function createPost(input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null; signal?: AbortSignal }): Promise<CommunityPost> {
+  const body = await postBody(input);
+  if (input.signal?.aborted) throw new UploadAbortedError(); // KB-711: 본 요청 직전 이탈 확인(사진 0장 포함)
+  const w = await api.post<PostItemWire>('/community/posts', body);
   // 작성 응답(PostingResponse)은 목록형과 필드가 달라 최소 매핑 — 화면은 무효화 재조회가 진실
   return adaptPost(w ?? { postId: 0 });
 }
 
-export async function updatePost(id: string, input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null }): Promise<void> {
-  await api.put(`/community/posts/${id}`, await postBody(input));
+export async function updatePost(id: string, input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null; signal?: AbortSignal }): Promise<void> {
+  const body = await postBody(input);
+  if (input.signal?.aborted) throw new UploadAbortedError(); // KB-711: 본 요청 직전 이탈 확인(사진 0장 포함)
+  await api.put(`/community/posts/${id}`, body);
 }
 
 export async function deletePost(id: string): Promise<void> {

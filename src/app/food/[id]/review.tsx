@@ -42,6 +42,8 @@ import { useBottomInset } from '@/lib/useBottomInset';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { openAppSettings } from '@/lib/openExternal';
+import { useUploadAbort } from '@/lib/useUploadAbort';
+import { isUploadAborted } from '@/lib/api/uploadAbort';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -120,6 +122,7 @@ function ReviewComposeScreen() {
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
+  const nextUploadSignal = useUploadAbort(); // KB-711: 올리는 중 화면을 떠나면 사진 업로드 취소
   // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
@@ -189,7 +192,11 @@ function ReviewComposeScreen() {
       try {
         // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
         const localUris = photos.filter((p) => p.kind === 'local').map((p) => p.uri);
-        const uploaded = await uploadReviewImages(localUris);
+        const signal = nextUploadSignal();
+        const uploaded = await uploadReviewImages(localUris, signal);
+        // KB-711: 본 요청 직전 이탈 확인 — 마지막 장 complete 도중(또는 사진 0장) 떠났으면 등록·저장하지 않는다
+        // (throw가 아니라 return — try 안 throw는 컴파일러가 이 컴포넌트를 건너뛰는 사유를 하나 더 늘린다)
+        if (signal.aborted) return;
         let li = 0;
         const imagePaths = photos.map((p) => (p.kind === 'remote' ? imageUrlToPath(p.url) : uploaded[li++]));
         if (editing && editReviewData) {
@@ -218,6 +225,7 @@ function ReviewComposeScreen() {
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
+        if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 떠난 화면에 실패 표시 없음
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
         // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
         // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.

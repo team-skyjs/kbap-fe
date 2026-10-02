@@ -10,6 +10,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { uploadImage } from '@/lib/api/scanImage';
+import { UploadAbortedError } from '@/lib/api/uploadAbort';
 import { collectDeviceInfo } from '@/lib/deviceInfo';
 // 와이어 변환은 어댑터 층에만 둔다(AGENTS.md 어댑터 격리 — Codex #170)
 import { adaptFeedbackPage, type FeedbackPageWire } from '@/lib/api/feedbackAdapter';
@@ -22,12 +23,14 @@ export const FEEDBACK_MAX_PHOTOS = 3;
 export const FEEDBACK_MAX_LEN = 2000;
 
 /** 문의 전송 — 사진은 먼저 업로드해 path로 바꾼 뒤 한 번에 보낸다. */
-export async function submitFeedback(input: { content: string; photoUris: string[] }): Promise<{ id: string }> {
+export async function submitFeedback(input: { content: string; photoUris: string[]; signal?: AbortSignal }): Promise<{ id: string }> {
   const paths: string[] = [];
   for (const uri of input.photoUris.slice(0, FEEDBACK_MAX_PHOTOS)) {
-    const { path } = await uploadImage({ uri, width: 0, height: 0 }, FEEDBACK_IMAGE_PURPOSE);
+    const { path } = await uploadImage({ uri, width: 0, height: 0 }, FEEDBACK_IMAGE_PURPOSE, { signal: input.signal }); // KB-711: 이탈 시 취소
     paths.push(path);
   }
+  // KB-711: 본 요청 직전 이탈 확인 — 마지막 장 complete 도중(또는 사진 0장) 떠났으면 전송하지 않는다
+  if (input.signal?.aborted) throw new UploadAbortedError();
   const payload = await api.post<{ id?: number | string }>('/api/feedbacks', {
     content: input.content,
     // 빈 배열도 보내지 않는다 — 계약상 선택 필드(서버가 "없음"과 "빈 값"을 구분할 이유를 만들지 않는다)

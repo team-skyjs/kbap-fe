@@ -226,7 +226,7 @@ it('③ 성공 후에만 완료 — 토스트 + back, 계측 1회', async () => 
   let r!: ReactTestRenderer;
   await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
   await typeAndSend(r);
-  expect(mockSubmit).toHaveBeenCalledWith({ content: 'hello', photoUris: [] });
+  expect(mockSubmit).toHaveBeenCalledWith({ content: 'hello', photoUris: [], signal: expect.any(AbortSignal) }); // KB-711: 이탈 시 업로드 취소 신호
   expect(mockToast).toHaveBeenCalledWith('feedback.sent');
   expect(mockBack).toHaveBeenCalledTimes(1);
   expect(mockTrack).toHaveBeenCalledWith('profile_feedback_submit', { has_photos: false, photo_count: 0 });
