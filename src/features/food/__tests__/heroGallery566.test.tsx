@@ -22,6 +22,8 @@ import { AccessibilityInfo } from 'react-native';
 import { useAutoSlide, AUTO_SLIDE_MS } from '../useAutoSlide';
 import { HeroGallery, QUIET_MS } from '../HeroGallery';
 import { adaptFoodImages } from '@/lib/api/foodAdapter';
+// eslint-disable-next-line import/first -- 이 파일의 다른 import와 같은 위치(jest.mock 뒤)
+import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 
 const read = (p: string) => require('fs').readFileSync(p, 'utf8') as string;
 
@@ -41,6 +43,7 @@ function mountSlide(count: number, paused = false) {
 }
 
 beforeEach(() => {
+  _resetMotionMemoryForTest(); // KB-699: 동작 줄이기 확인값은 세션 메모리 — 테스트마다 미확인(null)에서 시작
   jest.useFakeTimers();
 });
 afterEach(() => {

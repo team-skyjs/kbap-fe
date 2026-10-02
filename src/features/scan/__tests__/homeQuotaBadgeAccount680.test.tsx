@@ -22,6 +22,10 @@ jest.mock('react-native-reanimated', () => {
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
+    interpolate: () => 0,
+    Extrapolation: { CLAMP: 'clamp' },
+    useReducedMotion: () => false,
+    Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 }, // KB-701: 뱃지 위치가 StickyHeader(headerHeight)를 import
   };
 });
 jest.mock('expo-router', () => ({
@@ -50,7 +54,8 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: { ...a.FLAGS, countdownBadge: true } };
 });
 
-import { HomeQuotaBadge } from '../HomeQuotaBadge';
+import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
+import { _resetMotionMemoryForTest } from '@/lib/useMotionPaused';
 import { setSessionState, _resetSessionForTest } from '@/lib/auth/useSession';
 
 const profile = (memberId: number, quota: { unlocked: boolean; remaining: number | null }) => ({
@@ -78,6 +83,18 @@ const refetchMe = async () => {
 };
 const shown = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type !== 'string').length > 0;
 
+// KB-699: 뱃지는 세션 저장소를 구독한다 — 앞 테스트의 트리가 남아 있으면 저장소 통지에 재렌더돼 목 카운트가 섞인다 → 매 테스트 뒤 언마운트
+const mountedTrees: ReactTestRenderer[] = [];
+afterEach(() => {
+  while (mountedTrees.length) {
+    const tr = mountedTrees.pop()!;
+    try {
+      act(() => tr.unmount());
+    } catch {
+      /* 이미 언마운트 */
+    }
+  }
+});
 async function mount(): Promise<ReactTestRenderer> {
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   let t!: ReactTestRenderer;
@@ -88,12 +105,15 @@ async function mount(): Promise<ReactTestRenderer> {
       </QueryClientProvider>,
     );
   });
+  mountedTrees.push(t);
   await flush();
   await flush();
   return t;
 }
 
 beforeEach(() => {
+  _resetQuotaCelebrationMemoryForTest(); // KB-699
+  _resetMotionMemoryForTest();
   _resetSessionForTest();
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
 });
