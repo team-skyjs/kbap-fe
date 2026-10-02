@@ -159,6 +159,8 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
     expect(mockRepeat).not.toHaveBeenCalled(); // 미확인(조회 전) = 움직임 금지(#229) · 저장 위치 읽기 전 = 아직 안 그림(#234 공부)
     expect(host(t, 'home-quota-badge')).toHaveLength(0);
     await flush();
+    layout(t);
+    await flush(); // 측정 뒤 마운트된 뱃지의 동작 줄이기 조회
     expect(mockRepeat).toHaveBeenCalledTimes(1);
     expect(outer(t).props.animatedProps).toBeDefined(); // 일렁임 = animatedProps(d)
     expect(t.root.findAll((n) => n.props?.testID === 'flame-spark').length).toBeGreaterThan(0);
@@ -168,6 +170,8 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
     mockReduced = true;
     const t = render();
     await flush();
+    layout(t);
+    await flush(); // 측정 뒤 마운트된 뱃지의 동작 줄이기 조회
     expect(mockRepeat).not.toHaveBeenCalled();
     expect(outer(t).props.d).toBe(OUTER_REST_D);
     expect(t.root.findAll((n) => n.props?.testID === 'flame-spark')).toHaveLength(0);
@@ -176,6 +180,8 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
   it('홈이 가려지면 정지(가라앉은 모양) · 다시 보이면 재개', async () => {
     const t = render();
     await flush();
+    layout(t);
+    await flush(); // 측정 뒤 마운트된 뱃지의 동작 줄이기 조회
     expect(outer(t).props.animatedProps).toBeDefined();
     mockFocused = false; // 리뷰 작성 화면 등으로
     rerender(t);
@@ -191,6 +197,8 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
     mockQuota = Q(0);
     const t = render();
     await flush();
+    layout(t);
+    await flush(); // 측정 뒤 마운트된 뱃지의 동작 줄이기 조회
     expect(mockRepeat).not.toHaveBeenCalled();
     expect(t.root.findAll((n) => n.props?.testID === 'flame-empty').length).toBeGreaterThan(0);
     expect(t.root.findAll((n) => n.props?.testID === 'flame-glow' || n.props?.testID === 'flame-spark')).toHaveLength(0);
@@ -198,12 +206,16 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
 });
 
 describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
-  it('측정 전 = 기본 자리(오른쪽 20 · 측정 앵커) · 측정 뒤 = 같은 자리(translate)', async () => {
+  it('측정 전 = 안 그림 · 자리가 정해진 첫 커밋은 투명(Codex #234 3R — (0,0) 프레임 금지) · 배치 뒤 = 기본 자리 불투명', async () => {
     const t = render();
     await flush();
-    expect(place(t)).toEqual(expect.objectContaining({ top: MIN_TOP, right: 20 }));
+    expect(host(t, 'home-quota-badge')).toHaveLength(0); // 영역 측정 전 = 그리지 않음(다른 경로의 자리를 먼저 그리지 않는다)
     layout(t);
-    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP }));
+    // 목의 useAnimatedStyle은 렌더 때 계산 — 측정 직후 커밋된 스타일 = 공유값이 채워지기 전 프레임
+    const first = StyleSheet.flatten(host(t, 'home-quota-badge')[0].props.style) as { opacity?: number; transform?: { translateX?: number }[] };
+    expect(first.opacity).toBe(0);
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: MIN_TOP })); // effect가 자리·placed를 같이 세운 뒤
+    expect((StyleSheet.flatten(host(t, 'home-quota-badge')[0].props.style) as { opacity?: number }).opacity).toBe(1);
   });
 
   it('왼쪽으로 끌어 놓으면 왼쪽 가장자리(20)에 붙고 높이는 놓은 그대로 · 놓을 때 1회 저장', async () => {

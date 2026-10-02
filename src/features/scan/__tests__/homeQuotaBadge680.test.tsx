@@ -79,11 +79,17 @@ afterEach(() => {
     }
   }
 });
+/** KB-706: 뱃지는 홈 영역 측정(레이어 onLayout) 뒤에야 그려진다 — 측정을 흉내 낸다 */
+const layoutBadge = (t: ReactTestRenderer) => {
+  const layer = t.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.pointerEvents === 'box-none' && typeof n.type === 'string')[0];
+  if (layer) act(() => layer.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 800 } } }));
+};
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(<HomeQuotaBadge top={100} />);
   });
+  layoutBadge(tree);
   mountedTrees.push(tree);
   return tree;
 }
@@ -461,17 +467,20 @@ describe('프레임 불변 · 홈 하단 미겹침', () => {
     expect(frame(<CountdownBadge value={999} unitLabel="scans" state="active" onPress={() => {}} />)).toEqual({ w: BADGE_W, h: BADGE_H });
   });
 
-  it('KB-701 위치 — top = 홈이 측정해 내려 준 값 그대로 · right 20(스캔 버튼 오른쪽 끝) · top null(측정 전) = 그리지 않음', () => {
+  it('KB-701 → KB-706 위치 — 영역 측정 전엔 안 그림 · 측정 뒤 그림(자리·한계·불투명 전환은 flameBadge706) · 앵커 top null = 측정 전과 같이 기본 한계(헤더 아래)', () => {
     mockQuota = Q(2);
-    const t = render();
+    let t!: ReactTestRenderer;
+    act(() => {
+      t = renderer.create(<HomeQuotaBadge top={100} />);
+    });
+    mountedTrees.push(t);
     const float = () => t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type === 'string');
-    // #234: 측정 전 기본 자리 = 앵커(검색 줄 아래 끝 + 4)에서 불꽃이 그려지는 높이만큼 아래 — 검색 줄·스캔 버튼을 덮지 않게
-    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', top: 100 + BADGE_DRAWN_ABOVE, right: 20 }));
-    expect(BADGE_RIGHT).toBe(20);
-    act(() => t.update(<HomeQuotaBadge top={null} />));
     expect(float()).toHaveLength(0);
-    act(() => t.update(<HomeQuotaBadge top={140} />));
-    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ top: 140 + BADGE_DRAWN_ABOVE }));
+    layoutBadge(t);
+    expect(float()).toHaveLength(1);
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', left: 0, top: 0 }));
+    expect(BADGE_RIGHT).toBe(20);
+    void BADGE_DRAWN_ABOVE;
   });
 
   it('KB-706 색·구성 — 스펙 실측값 그대로(뱃지 전용 상수 한 곳) · 흰 테두리 없음 · 바깥/안쪽 = 봉우리 둘(M + C×6) · 꺼진 불꽃 = 기존 회색 토큰', () => {

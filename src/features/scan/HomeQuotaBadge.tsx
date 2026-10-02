@@ -183,12 +183,16 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
   const ended = useSharedValue(false); // 이번 끌기에 onEnd(정상 놓기)가 왔나 — 취소(onFinalize만)와 구분
   const posX = pos?.x;
   const posY = pos?.y;
+  // Codex #234 3R: pos가 처음 정해지는 렌더에선 px/py가 아직 0 — 그대로 그리면 (0,0)에 한 프레임 비친다. 자리를 쓴 뒤 같은 묶음에서 placed=1을
+  // 세우고, 그 전엔 투명(JS에서 쓴 공유값은 UI에 비동기로 가므로 useLayoutEffect만으로는 보장이 안 된다 — 자리와 표시를 같은 반영 묶음으로).
+  const placed = useSharedValue(0);
   React.useEffect(() => {
     if (posX == null || posY == null || dragging.get()) return;
     px.set(posX);
     py.set(posY);
-  }, [posX, posY, px, py, dragging]);
-  const floatStyle = useAnimatedStyle(() => ({ transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
+    placed.set(1);
+  }, [posX, posY, px, py, dragging, placed]);
+  const floatStyle = useAnimatedStyle(() => ({ opacity: placed.get(), transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
   // 콜백은 JS 스레드(runOnJS(true) — 레포 제스처 관례, 워클릿 경계 0). 공유값은 JS에서 써도 UI에 반영된다.
   // 공유값은 .get()/.set() — React Compiler가 훅 반환값의 `.value =` 대입을 "수정 불가"로 보고 컴포넌트를 건너뛰지 않게(reanimated 4 권장).
   const pan = Gesture.Pan()
@@ -241,10 +245,10 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
     <>
       {/* 홈 영역 측정 + 뱃지 밖 터치 통과(box-none) */}
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={(e) => setArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
-        {shown && (pos != null || (!area && saved === null && top != null)) && (
+        {shown && pos != null && (
           <GestureDetector gesture={pan}>
-            {/* 저장값 읽기가 끝나야 그린다. 영역 측정 전(첫 프레임)·저장값 없음 = 옛 기본 자리(오른쪽 BADGE_RIGHT · 측정 앵커 top), 측정 뒤엔 translate(끌기·저장 위치) */}
-            <Animated.View style={pos != null ? [styles.float, floatStyle] : [styles.anchor, { top: minTop }]} testID="home-quota-badge">
+            {/* 그리는 조건 = 저장값 읽기 끝 + 영역 측정 끝(자리 확정). 처음 자리가 공유값에 실리기 전 프레임은 투명(placed) — (0,0)·다른 경로의 자리를 그리지 않는다 */}
+            <Animated.View style={[styles.float, floatStyle]} testID="home-quota-badge">
               <CountdownBadge
                 value={shown.value}
                 state={shown.state}
@@ -289,7 +293,6 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
 
 const styles = StyleSheet.create({
   float: { position: 'absolute', left: 0, top: 0 }, // 위치 = translate(px, py) — 기본 = 오른쪽 BADGE_RIGHT·측정 앵커
-  anchor: { position: 'absolute', right: BADGE_RIGHT },
   copy: { gap: 8 },
   title: { ...type_.sectionTitle, fontFamily: font.bodyBold, color: C.ink },
   body: { ...type_.body, fontFamily: font.body, color: C.ink2 },

@@ -98,6 +98,11 @@ afterEach(() => {
     }
   }
 });
+/** KB-706: 뱃지는 홈 영역 측정(레이어 onLayout) 뒤에야 그려진다 — 측정을 흉내 낸다 */
+const layoutBadge = (t: ReactTestRenderer) => {
+  const layer = t.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.pointerEvents === 'box-none' && typeof n.type === 'string')[0];
+  if (layer) act(() => layer.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 800 } } }));
+};
 async function mount(): Promise<ReactTestRenderer> {
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   let t!: ReactTestRenderer;
@@ -109,6 +114,7 @@ async function mount(): Promise<ReactTestRenderer> {
     );
   });
   mountedTrees.push(t);
+  layoutBadge(t);
   await flush();
   await flush();
   return t;
