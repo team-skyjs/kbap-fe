@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports --
    jest 구조상 불가피: BOOTED_AT·quietRef가 모듈 로드 시각을 잡으므로 가짜 시계를 켠 **뒤** 호스트를 require한다. */
 /**
- * KB-695(#226 Codex P2) — "발행값 true에서 busy 아닌 캐시 이벤트가 정적 창을 리셋하면 그 창 안에서 거절된 tryApply가 재시도 계기를 잃는다".
- * ① 시나리오 잠금: ready · 발행값 true → 가드 직전 리셋 → 가드 tryApply 거절 → **다른 활동 없이** 정착 뒤 적용.
- *    ⚠️ 이 테스트는 옛 "busy 전이 없으면 통지 생략"으로 되돌려도 초록이다 — useSyncExternalStore는 **모든 렌더에서 getSnapshot을 다시
- *    읽고**, 적용 effect는 렌더 뒤에만 돈다. 가드 타이머(guardTick) 재렌더가 리셋된 스냅샷(false)을 읽어 발행값이 false가 되므로
- *    정착 통지(true)가 "값 변화"가 되어 재렌더·재시도가 일어난다(Codex가 짚은 고착은 #226 이전의 렌더 중 계산 + 컴파일러 메모 구조의 것).
- *    그래서 이 파일은 판별 테스트가 아니라 **결과 잠금**이다(어느 구조로 바뀌어도 "다른 활동 없이 정착 뒤 적용"이 깨지면 red).
- * ② 통지 보강(모든 이벤트를 코얼레스해 통지)의 비용 상한 잠금 — P-363 "전역 캐시 이벤트마다 Host 리렌더 방지" 유지.
+ * KB-695(#226 Codex P2) — 정적 창 리셋 통지.
+ * ① 시나리오(가드 **직전** 리셋): ready · 발행값 true → 가드 직전 리셋 → 가드 tryApply 거절 → 다른 활동 없이 정착 뒤 적용.
+ *    이 경우는 가드 재렌더가 리셋된 스냅샷(false)을 **다시 읽어** 풀리므로 옛 "busy 전이 없으면 생략"으로 되돌려도 초록 = **결과 잠금**.
+ *    리셋이 **렌더와 그 effect 사이**에 끼면 지금 구조에서도 옛 방식은 고착한다 — 그 판별은 `otaIdleWindow695`(옛 방식 → red).
+ * ② 통지 보강의 재렌더 상한 — P-363 "전역 캐시 이벤트마다 Host 리렌더 방지" 유지(옛 생략 → red: false 발행이 안 나옴).
+ *    ⚠️ 코얼레스(`pending` 가드)는 이 테스트가 잠그지 않는다 — 재렌더 상한은 useSyncExternalStore가 보장하고 코얼레스는 마이크로태스크 수만 줄인다.
  */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
