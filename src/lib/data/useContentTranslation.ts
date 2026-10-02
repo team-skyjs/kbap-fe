@@ -41,11 +41,13 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   // #220 공부 ①: 키에 본문 해시 — 리뷰가 수정되면(누가 고쳤든) 다른 키 = 옛 번역 재사용 0, 다음 탭에 재요청
   const queryKey = React.useMemo(() => ['translation', targetType, targetId, lang, hashText(text)] as const, [targetType, targetId, lang, text]);
   const keyStr = queryKey.join('|');
-  // 캐시 **읽기만**(Codex #223 P2): useQuery(enabled:false)는 리뷰마다 빈 캐시 항목을 만들어 무한 스크롤에 쌓인다 —
-  // getQueryData는 항목을 만들지 않는다. 항목은 탭 시점 fetchQuery만 만들고(gcTime ∞ = 받아 온 번역·같은 언어 판정만 세션 동안),
-  // 재렌더 계기는 탭 흐름의 로컬 상태(loading·shownKey)와 부모 props(본문·언어) — 같은 리뷰가 두 곳에 동시에 떠 있으면
-  // 다른 쪽은 다음 렌더에 반영(ponytail: 실사용상 동시 노출 없음, 필요해지면 useSyncExternalStore로 캐시 구독).
-  const data = qc.getQueryData<Translation>(queryKey);
+  // 캐시를 **구독으로** 읽는다(KB-694): 렌더 중 `qc.getQueryData(queryKey)`를 그냥 부르면 React Compiler가 [qc, queryKey]로
+  // 메모이즈해 fetch 뒤 재렌더에도 첫 렌더의 undefined가 남았다("번역 보기"를 눌러도 화면 무변 — teamtest 실기).
+  // useSyncExternalStore = 바깥 가변 상태를 렌더에 쓰는 정석: 캐시 이벤트마다 getSnapshot을 다시 불러 값이 바뀐 경우만 재렌더.
+  // 항목은 만들지 않는다(getQueryData는 읽기만 — Codex #223 P2 "누르지 않은 리뷰 항목 0" 유지). 항목 생성은 탭 시점 fetchQuery뿐.
+  const subscribe = React.useCallback((onChange: () => void) => qc.getQueryCache().subscribe(onChange), [qc]);
+  const getSnapshot = React.useCallback(() => qc.getQueryData<Translation>(queryKey), [qc, queryKey]);
+  const data = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
   const [shownKey, setShownKey] = React.useState<string | null>(null);
   // KB-689: 같은 언어(어댑터 판정) = text가 원문 그대로 → 번역 표시로 전환하지 않는다
