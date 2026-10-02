@@ -229,6 +229,9 @@ export default function FoodDetailScreen() {
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 원 back(제목 없음) → 솔리드+타이틀 */}
       <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, styles.fheadBg, solidFade]} pointerEvents="none" testID="fhead-bg" />
+        {/* KB-696: 상태 표시줄 영역은 스크롤 뒤(solid) **불투명** — 헤더 바 배경(FHEAD_BAR_BG)이 반투명이라 그 위로 글자·재료 그림이 비쳤다.
+            히어로 위(맨 위)에선 헤더처럼 투명(solidFade). */}
+        <Animated.View style={[styles.fheadStatusShield, { height: insets.top }, solidFade]} pointerEvents="none" testID="fhead-status-shield" />
         <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={() => router.back()} hitSlop={8} testID="detail-back">
           <IconArrowLeft size={18} color={solid ? C.ink : '#fff'} />
         </Pressable>
@@ -720,6 +723,10 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
   );
 }
 
+/** 상세 헤더 바 배경 — 시안 값(KB-431 D-3, 4% 투명). KB-696: 블러 없는 반투명이라 스크롤 시 뒤가 비친다 →
+ *  불투명 전환은 시안 이탈이라 **예진 결정 대기**(커맨드 센터 추천 = 불투명). 결정 나면 이 한 줄만 바꾼다. */
+const FHEAD_BAR_BG = 'rgba(255,255,255,0.96)';
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   // KB-620: 숨김 안내를 잔여 높이 중앙에(상단 플로팅 헤더와 겹치지 않게)
@@ -733,7 +740,8 @@ const styles = StyleSheet.create({
 
   // 플로팅 헤더(P-139 유지)
   fhead: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 8 },
-  fheadBg: { backgroundColor: 'rgba(255,255,255,0.96)', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  fheadBg: { backgroundColor: FHEAD_BAR_BG, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  fheadStatusShield: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.surface }, // KB-696
   fBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
   fBtnSolid: { backgroundColor: 'transparent' },
   fTitle: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink, textAlign: 'center' },
