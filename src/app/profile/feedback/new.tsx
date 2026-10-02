@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Btn, IconCamera, IconClose, SubHeader } from '@/components';
 import { Input } from '@/components/KeyboardDismissBar';
 import { showTopToast } from '@/components/topToastStore';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { openAppSettings } from '@/lib/openExternal';
 import { needsPhotoLibraryPermission } from '@/lib/mediaPermissions';
@@ -28,6 +29,8 @@ export default function FeedbackComposeScreen() {
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);
   const submit = useSubmitFeedback();
+  // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 성공 뒤엔 막지 않고 닫힘
+  const leave = useLeaveConfirm(body.trim().length > 0 || photos.length > 0);
   const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
   // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
   // 도착한 성공 콜백이 router.back()을 부르면 **지금 화면**이 닫힌다(내 문의 → 작성으로
@@ -83,7 +86,9 @@ export default function FeedbackComposeScreen() {
         // P-387: 성공 응답 뒤에만 완료 — 계측 속성은 개수·유무만(본문·기기정보 금지)
         track(EVENTS.profile_feedback_submit, { has_photos: photos.length > 0, photo_count: photos.length });
         showTopToast(t('feedback.sent')); // 토스트 호스트는 루트에 있어 어느 화면이든 뜬다
-        if (focused.current) router.back();
+        leave.release(() => {
+          if (focused.current) router.back();
+        });
       } catch (e) {
         // 429(일일 한도)는 전용 안내 — 일반 실패와 구분된다
         const code = (e as { code?: string })?.code;
@@ -95,6 +100,7 @@ export default function FeedbackComposeScreen() {
     <View style={styles.root}>
       {/* P-406: 목록이 첫 화면이 됐다 — "My inquiries" 링크 제거(뒤로 = 목록) */}
       <SubHeader title={t('feedback.newTitle')} onBack={() => router.back()} />
+      <LeaveConfirmModal {...leave.modal} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Input
           value={body}

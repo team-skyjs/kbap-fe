@@ -13,10 +13,11 @@
 import * as React from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { Txt as Text } from '@/components/Txt';
+import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, primaryTint, radius } from '@/lib/theme';
+import { CHIP_LABEL_LH } from '@/components/Chip';
 import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
@@ -43,6 +44,12 @@ type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
 /** KB-707: Food 탭 칩 줄 끝 페이드 폭 — 칩 줄 끝 여백도 이만큼(끝까지 밀면 마지막 칩이 페이드 밖으로 완전히 나온다) */
 export const CHIP_FADE_W = 24;
+/** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.
+ *  RN은 lineHeight도 글자 배율(상한 MAX_FONT_SCALE)만큼 키우므로 칩은 스스로 커지는데, 줄이 34로 고정이라 잘렸다(XXXL QA). */
+export const CHIP_ROW_H = 34;
+export function chipRowHeight(fontScale: number): number {
+  return CHIP_ROW_H + CHIP_LABEL_LH * (Math.min(Math.max(fontScale, 1), MAX_FONT_SCALE) - 1);
+}
 /** KB-707: 끝 페이드("더 있다" 표시)는 아직 오른쪽에 숨은 칩이 있을 때만 — 끝까지 밀었거나 다 들어가면 숨김(마지막 칩을 덮지 않게) */
 export function chipFadeShown(scrollX: number, contentW: number, viewW: number): boolean {
   return contentW - viewW - scrollX > 1;
@@ -223,10 +230,12 @@ export function FoodExplorer({
       setRiskChip('all');
     }
   }
-  const [gate, setGate] = React.useState(false);
+  // KB-708: 게이트 문맥 — 위험도 칩 = 판정 문구(risk), 북마크·Saved 칩 = 저장 문구(save). null = 닫힘
+  const [gate, setGate] = React.useState<'risk' | 'save' | null>(null);
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
   // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).
   const chipScrollRef = React.useRef<ScrollView | null>(null);
+  const { fontScale } = useWindowDimensions(); // KB-708: 칩 줄 높이가 큰 글자를 따라감
   // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드(홈 탭과 공용 판정)
   const chipLine = useMoreOnRight();
   // KB-707: 홈 세그먼트 탭 줄 — 같은 판정 + 누른 탭을 화면 안으로
@@ -269,7 +278,7 @@ export function FoodExplorer({
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
   const onBookmark = (f: FoodCard) => {
-    if (guest) return setGate(true);
+    if (guest) return setGate('save');
     if (!savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
@@ -279,12 +288,12 @@ export function FoodExplorer({
 
   // 9/5 발주: 게스트 칩 = 렌더하되 개인화 칩 탭 = 게이트(선택 All 유지)
   const onChip = (c: RiskChip) => {
-    if (c !== 'all' && guest) return setGate(true);
+    if (c !== 'all' && guest) return setGate('risk'); // KB-708: 칩 맥락 = 개인 판정(상세 잠금 줄과 같은 문구) — 북마크 문구가 떴다
     setRiskChip(c);
   };
   // P-318: Saved 토글 칩 — 게스트는 저장 게이트(북마크·개인화 칩과 동일 문맥)
   const onSavedChip = () => {
-    if (guest) return setGate(true);
+    if (guest) return setGate('save'); // Saved 칩 = 저장 문구가 맞다
     setSavedOnly((v) => !v);
   };
 
@@ -373,7 +382,7 @@ export function FoodExplorer({
               ref={chipScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipScrollContent}
+              contentContainerStyle={[styles.chipScrollContent, { height: chipRowHeight(fontScale) }]}
               testID="food-chip-scroll"
               {...chipLine.scrollProps}
             >
@@ -513,7 +522,7 @@ export function FoodExplorer({
           }))}
           onClose={() => setSortSheet(false)}
         />
-        <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
+        <AuthGateSheet context={gate ?? 'save'} open={gate != null} onClose={() => setGate(null)} />
       </>
     );
   }
@@ -639,7 +648,7 @@ export function FoodExplorer({
           </View>
         </>
       )}
-      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
+      <AuthGateSheet context={gate ?? 'save'} open={gate != null} onClose={() => setGate(null)} />
     </View>
   );
 }
@@ -676,7 +685,7 @@ const styles = StyleSheet.create({
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
   // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
-  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W, height: 34 },
+  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 높이 = chipRowHeight(fontScale) 인라인
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
   soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },

@@ -107,7 +107,8 @@
     "recentClearAll": "Clear all",
     "recentEmptyHint": "Your recent searches will show up here.",
     "popular": "Popular right now",
-    "resultCount": "{{count}} results",
+    "resultCount_one": "{{count}} result",
+    "resultCount_other": "{{count}} results",
     "noResultsTitle": "No matches found",
     "samples": [
       "Kimchi Stew",

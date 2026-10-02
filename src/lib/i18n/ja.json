@@ -111,7 +111,7 @@
     "recentClearAll": "すべて削除",
     "recentEmptyHint": "最近の検索履歴がここに表示されます。",
     "popular": "話題の検索",
-    "resultCount": "{{count}} 件の結果",
+    "resultCount_other": "{{count}} 件の結果",
     "noResultsTitle": "見つかりませんでした",
     "samples": [
       "キムチチゲ",

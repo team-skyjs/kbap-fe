@@ -83,7 +83,17 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useFocusEffect: () => {},
+}));
+// KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
@@ -447,6 +457,52 @@ it('KB-700(#228 공부 델타): 가운데 탭 → 입력 시작 → 뷰포트가
   act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 121, end: 121 } } }));
   scrollTo.mockClear();
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 330 } } })); // 키보드 높이 증가로 다시 축소
+  // 옛 탭 줄 목표(700 − 330 + 16 = 386)로 되돌리지 않는다 — KB-708(5): 대신 줄어든 만큼(370) 그대로 내려 편집 중인 줄을 유지
+  expect(scrollTo).not.toHaveBeenCalledWith({ y: 386, animated: true });
+  expect(scrollTo).toHaveBeenCalledWith({ y: 370, animated: true });
+  spy.mockRestore();
+});
+
+// ── KB-708 (4) 작성 중 이탈 확인 — 변경 있을 때만 · 등록 성공(완료 모달) 뒤엔 없음
+it('KB-708 이탈 확인(작성): 빈 화면 = 막지 않음 · 별점을 고르면 막음 → 뒤로 = 확인 시트 · 그만두기 = 막은 이동 진행 · 등록 성공 뒤 = 안 막음', async () => {
+  const tree = render(<ReviewCompose />);
+  expect(mockPrevent.on).toBe(false);
+  const star = (i: number) => tree.root.findAll((n) => n.props?.testID === `review-star-${i}` && typeof n.props?.onPress === 'function')[0];
+  act(() => star(4).props.onPress());
+  expect(mockPrevent.on).toBe(true);
+  const action = { type: 'POP' };
+  act(() => mockPrevent.cb!({ data: { action } }));
+  expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm').length).toBeGreaterThan(0);
+  act(() => tree.root.findAll((n) => n.props?.testID === 'discard-go' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockNavDispatch).toHaveBeenCalledWith(action);
+  // 등록 성공 → 완료 상태 = 막지 않음(Done으로 나갈 때 "버릴까요?"가 뜨지 않게)
+  await act(async () => { tree.root.findAll((n) => n.props?.testID === 'post-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  await act(async () => {});
+  expect(mockPrevent.on).toBe(false);
+});
+
+it('KB-708 (5): 중간을 고치는 중 이모지 키보드로 키보드가 +53 커지면 줄어든 만큼 내려 편집 중인 줄을 계속 보이게 · 포커스 없으면 무동작', () => {
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation((() => ({ remove: jest.fn() })) as never);
+  const tree = render(<ReviewCompose />);
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  // 포커스 없음 + 뷰포트 축소 = 무동작
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
   expect(scrollTo).not.toHaveBeenCalled();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  // 수정 모드처럼 긴 본문 중간 편집(탭 대용값은 입력으로 지워짐)
+  act(() => input.props.onChangeText('x'.repeat(400)));
+  act(() => input.props.onPressIn({ nativeEvent: { locationY: 200 } }));
+  act(() => input.props.onFocus());
+  act(() => input.props.onChangeText('x'.repeat(401)));
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 150, end: 150 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 200 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } })); // 이모지 키보드 +53
+  expect(scrollTo).toHaveBeenCalledWith({ y: 253, animated: true });
   spy.mockRestore();
 });

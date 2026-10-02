@@ -111,7 +111,7 @@
     "recentClearAll": "ล้างทั้งหมด",
     "recentEmptyHint": "การค้นหาล่าสุดของคุณจะแสดงที่นี่",
     "popular": "กำลังได้รับความนิยม",
-    "resultCount": "{{count}} รายการ",
+    "resultCount_other": "{{count}} รายการ",
     "noResultsTitle": "ไม่พบรายการที่ตรงกัน",
     "samples": [
       "ซุปกิมจิ",

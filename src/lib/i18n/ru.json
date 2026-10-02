@@ -111,7 +111,10 @@
     "recentClearAll": "Очистить всё",
     "recentEmptyHint": "Здесь появятся ваши недавние запросы.",
     "popular": "Сейчас популярно",
-    "resultCount": "Результатов: {{count}}",
+    "resultCount_one": "{{count}} результат",
+    "resultCount_few": "{{count}} результата",
+    "resultCount_many": "{{count}} результатов",
+    "resultCount_other": "{{count}} результата",
     "noResultsTitle": "Ничего не найдено",
     "samples": [
       "Кимчи чиге",

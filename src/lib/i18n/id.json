@@ -111,7 +111,7 @@
     "recentClearAll": "Hapus semua",
     "recentEmptyHint": "Pencarian terakhir Anda akan muncul di sini.",
     "popular": "Populer saat ini",
-    "resultCount": "{{count}} hasil",
+    "resultCount_other": "{{count}} hasil",
     "noResultsTitle": "Tidak ada hasil yang cocok",
     "samples": [
       "Sup Kimchi",

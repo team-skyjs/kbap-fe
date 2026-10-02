@@ -48,9 +48,20 @@ jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
+let mockComposeParams: { editId?: string } = {}; // KB-708: 수정 모드 이탈 확인 테스트만 editId를 준다
 jest.mock('expo-router', () => ({
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockComposeParams,
+}));
+// KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
 }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -129,4 +140,42 @@ it('Post 필 게이팅 — 빈 본문 비활성 → 입력 시 활성 → 2,000�
 it('사진 추가 타일 — 대시 보더 + n/4 카운터 노출', () => {
   const tree = render();
   expect(texts(tree)).toContain('0/4');
+});
+
+// ── KB-708 (4) 보강 — 커뮤니티 글쓰기: X뿐 아니라 스와이프·하드웨어 뒤로까지 같은 확인 · 수정은 고쳤을 때만
+describe('KB-708 이탈 확인(커뮤니티)', () => {
+  afterEach(() => {
+    mockComposeParams = {};
+    mockNavDispatch.mockClear();
+  });
+  it('작성: 빈 초안 = 막지 않음 · 쓰면 막음(헤더 X·스와이프·하드웨어 공통 경로) → 확인 시트 → 그만두기 = 막은 이동 진행', () => {
+    const tree = render();
+    expect(mockPrevent.on).toBe(false);
+    act(() => bodyInput(tree).props.onChangeText('draft'));
+    expect(mockPrevent.on).toBe(true);
+    const action = { type: 'POP' };
+    act(() => mockPrevent.cb!({ data: { action } }));
+    expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm').length).toBeGreaterThan(0);
+    act(() => tree.root.findAll((n) => n.props?.testID === 'discard-go' && typeof n.props?.onPress === 'function')[0].props.onPress());
+    expect(mockNavDispatch).toHaveBeenCalledWith(action);
+  });
+  it('수정: 프리필만 = 막지 않음(안 고친 수정은 조용히 닫힘) · 고치면 막음 · 되돌리면 다시 안 막음', () => {
+    mockComposeParams = { editId: 'p1' };
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    qc.setQueryData(['community', 'post', 'p1'], { id: 'p1', body: 'old body', photos: [], foodTags: [], placeTag: null });
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <QueryClientProvider client={qc}>
+          <CommunityCompose />
+        </QueryClientProvider>,
+      );
+    });
+    expect(bodyInput(tree).props.value).toBe('old body');
+    expect(mockPrevent.on).toBe(false);
+    act(() => bodyInput(tree).props.onChangeText('old body!'));
+    expect(mockPrevent.on).toBe(true);
+    act(() => bodyInput(tree).props.onChangeText('old body'));
+    expect(mockPrevent.on).toBe(false);
+  });
 });

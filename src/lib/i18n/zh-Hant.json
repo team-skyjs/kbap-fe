@@ -111,7 +111,7 @@
     "recentClearAll": "全部清除",
     "recentEmptyHint": "你最近的搜尋會顯示在這裡。",
     "popular": "熱門搜尋",
-    "resultCount": "{{count}} 個結果",
+    "resultCount_other": "{{count}} 個結果",
     "noResultsTitle": "找不到符合的結果",
     "samples": [
       "泡菜鍋",

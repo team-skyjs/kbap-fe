@@ -16,6 +16,7 @@ import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingVi
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import * as ImagePicker from 'expo-image-picker';
 import { choosePhotoSource } from '@/lib/data/profileImage';
 import { foodSubtitle } from '@/lib/review/foodSubtitle';
@@ -43,6 +44,11 @@ import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/
 import { openAppSettings } from '@/lib/openExternal';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
+
+/** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점) */
+function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown): string {
+  return JSON.stringify([rating, body, photos, place, extras]);
+}
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -86,15 +92,28 @@ function ReviewComposeScreen() {
 
   // P-358: 프리필 — 리뷰 도착 시 1회(별·본문·extras·place·사진 = 원격 슬롯)
   const prefilledRef = useRef(false);
+  // KB-708: 이탈 확인의 기준 = 화면이 처음 가진 값(작성 = 빈 값, 수정 = 프리필 직후) — 지금 값과 다르면 "변경 있음"
+  const [baseline, setBaseline] = useState(() => draftKey(0, '', [], null, EMPTY_EXTRAS));
   useEffect(() => {
     if (!editing || !editReviewData || prefilledRef.current) return;
     prefilledRef.current = true;
-    setRating(editReviewData.rating);
-    setBody(editReviewData.body ?? '');
-    setExtras(extrasFromReview(editReviewData));
-    setPlace(editReviewData.place ?? null);
-    setPhotos((editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })));
+    const pre = {
+      rating: editReviewData.rating,
+      body: editReviewData.body ?? '',
+      extras: extrasFromReview(editReviewData),
+      place: editReviewData.place ?? null,
+      photos: (editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })),
+    };
+    setRating(pre.rating);
+    setBody(pre.body);
+    setExtras(pre.extras);
+    setPlace(pre.place);
+    setPhotos(pre.photos);
+    setBaseline(draftKey(pre.rating, pre.body, pre.photos, pre.place, pre.extras));
   }, [editing, editReviewData]);
+  // KB-708: 변경이 있을 때만 이탈 확인 — 뒤로 가기 버튼·스와이프 뒤로·Android 하드웨어 뒤로 전부(usePreventRemove = 네이티브 스택 제스처까지).
+  // 등록 성공(완료 모달)·저장 성공(복귀) 뒤에는 막지 않는다.
+  const leave = useLeaveConfirm(draftKey(rating, body, photos, place, extras) !== baseline && !submitted);
 
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
@@ -174,9 +193,9 @@ function ReviewComposeScreen() {
             current: editReviewData,
             changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths }, // place 해제 = null 명시
           });
-          // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358)
+          // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358). KB-708: 이탈 확인 해제 뒤 복귀(저장한 변경을 "버릴까요?"로 묻지 않게)
           showTopToast(t('editReview.savedToast'));
-          router.back();
+          leave.release(() => router.back());
           return;
         }
         await createReview.mutateAsync({
@@ -258,9 +277,12 @@ function ReviewComposeScreen() {
     else if (lineTop < scrollY.current) scrollRef.current?.scrollTo({ y: Math.max(0, lineTop - 16), animated: true });
   };
   /** 키보드 표시·뷰포트 축소 때 한 번: 끝 커서면 블록 끝, 아니면 탭한 줄 */
-  const followOnViewportChange = () => {
+  const followOnViewportChange = (shrinkBy = 0) => {
     if (atEnd.current) ensureCursorVisible();
-    else ensureTappedLineVisible();
+    else if (touchY.current != null) ensureTappedLineVisible();
+    // KB-708(5): 중간을 고치는 중(탭 대용값은 입력 시작에 지워짐) 키보드가 더 커지면(이모지 키보드 +53) 캐럿 좌표가 없으니
+    // 줄어든 만큼 그대로 내려 아래 끝에 있던 내용(편집 중인 줄)을 계속 보이게. 포커스 없으면 무동작(#228 진입 직후 스크롤 금지 유지).
+    else if (bodyFocusedRef.current && shrinkBy > 0) scrollRef.current?.scrollTo({ y: scrollY.current + shrinkBy, animated: true });
   };
   // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
   const followRef = useRef(followOnViewportChange);
@@ -339,10 +361,11 @@ function ReviewComposeScreen() {
         keyboardShouldPersistTaps="handled"
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
-          const shrank = svH.current > 0 && h < svH.current;
+          const prevH = svH.current;
+          const shrank = prevH > 0 && h < prevH;
           svH.current = h;
           // KAV 레이아웃과 keyboardDidShow의 순서에 기대지 않게 — 포커스 중 뷰포트가 줄면 한 번 더(가드·식은 같음)
-          if (shrank) followOnViewportChange();
+          if (shrank) followOnViewportChange(prevH - h);
         }}
       >
         {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
@@ -520,6 +543,8 @@ function ReviewComposeScreen() {
       </View>
 
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
+      {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
+      <LeaveConfirmModal {...leave.modal} />
       <Modal visible={submitted} transparent animationType="fade" onRequestClose={() => router.back()}>
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard} testID="review-posted-confirm">

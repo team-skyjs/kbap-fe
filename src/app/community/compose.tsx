@@ -33,6 +33,7 @@ import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, Icon
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useMe } from '@/lib/data/useMe';
 import { useInfiniteFoods, useSearchFoods, useScannedFoods } from '@/lib/data/useFoods';
@@ -72,7 +73,6 @@ export default function CommunityCompose() {
   const [foodTags, setFoodTags] = React.useState<FoodTagRef[]>([]);
   const [placeTag, setPlaceTag] = React.useState<PlaceTagRef | null>(null);
   const [tagSheet, setTagSheet] = React.useState<'food' | 'place' | null>(null);
-  const [leaveConfirm, setLeaveConfirm] = React.useState(false);
   const [posted, setPosted] = React.useState(false);
   const seeded = React.useRef(false);
 
@@ -91,12 +91,14 @@ export default function CommunityCompose() {
   const overLimit = len > BODY_MAX;
   const canPost = body.trim().length > 0 && !overLimit && !createPost.isPending && !updatePost.isPending;
 
-  const dirty = body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
-
-  const back = () => {
-    if (dirty && !posted) return setLeaveConfirm(true); // 빈 초안은 조용히 닫힘
-    router.back();
-  };
+  // KB-708: 작성 = 뭐라도 넣었으면 · 수정 = 프리필 값과 달라졌으면(안 고친 수정은 조용히 닫힘 — 리뷰 수정과 같은 규칙)
+  const draft = JSON.stringify([body, photos, foodTags, placeTag]);
+  const dirty = editingPost
+    ? draft !== JSON.stringify([editingPost.body, editingPost.photos, editingPost.foodTags, editingPost.placeTag])
+    : body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
+  // 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 등록·수정 성공 뒤 = 완료 모달 → 막지 않음
+  const leave = useLeaveConfirm(dirty && !posted);
+  const back = () => router.back();
 
   const pickPhotos = async () => {
     if (photos.length >= PHOTO_MAX) return;
@@ -296,24 +298,8 @@ export default function CommunityCompose() {
         t={t}
       />
 
-      {/* 이탈 확인 — dirty만 (빈 초안은 조용히 닫힘). 시안 문법: 라운드 26 카드 */}
-      <Modal visible={leaveConfirm} transparent animationType="fade" onRequestClose={() => setLeaveConfirm(false)}>
-        <View style={styles.confirmBackdrop}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>{t('community.leaveTitle')}</Text>
-            <Text style={styles.confirmBody}>{t('community.leaveBody')}</Text>
-            <View style={{ gap: 9, marginTop: 6 }}>
-              <Btn variant="ghost" onPress={() => setLeaveConfirm(false)}>
-                {t('community.keepWriting')}
-              </Btn>
-              {/* P-175: destructive도 보더 버튼 프레임(재스캔 모달과 동일 문법) */}
-              <Btn variant="dangerGhost" onPress={() => { setLeaveConfirm(false); router.back(); }} testID="discard-go">
-                {t('community.discard')}
-              </Btn>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 이탈 확인 — dirty만 (빈 초안은 조용히 닫힘). 공용 LeaveConfirmModal(KB-708 — 리뷰 작성·수정과 공유) */}
+      <LeaveConfirmModal {...leave.modal} />
 
       {/* 게시 성공 — 상단 원형 일러 슬롯(마스코트 부재 → SuccessCheck 대체, 스펙 허용) */}
       <Modal visible={posted} transparent animationType="fade">
@@ -759,7 +745,6 @@ const styles = StyleSheet.create({
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   illoSlot: { width: 88, height: 88, borderRadius: 44, backgroundColor: primaryTint2, alignItems: 'center', justifyContent: 'center' },
 
   /* tag picker sheet — 시안 4 */

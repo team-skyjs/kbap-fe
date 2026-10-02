@@ -61,7 +61,17 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useSegments: () => [],
   usePathname: () => '/',
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   Redirect: () => null,
+}));
+// KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
 }));
 jest.mock('expo-image', () => {
   const { View } = require('react-native');
@@ -294,4 +304,30 @@ describe('KB-620 리뷰 제출 — 음식 숨김(FOOD-001)은 조용한 안내 +
     expect(byId(tree, 'review-food-hidden')).toHaveLength(0);
     expect(mockBack).toHaveBeenCalledTimes(1); // 두 번째는 정상 저장 → 복귀
   });
+});
+
+// ── KB-708 (4) 수정 중 이탈 확인 — 변경 있을 때만 · 저장 성공 뒤엔 없음
+it('KB-708 이탈 확인(수정): 프리필 직후 = 막지 않음 · 고치면 막음 → 뒤로 = 확인 시트 → 계속 쓰기/그만두기(막은 이동 그대로) · 저장 성공 뒤 = 안 막고 복귀 1회', async () => {
+  const tree = render(<ReviewCompose />);
+  expect(mockPrevent.on).toBe(false); // 프리필만 됨 = 변경 없음
+  const input = tree.root.findAll((n) => n.props?.multiline === true && typeof n.props?.onChangeText === 'function')[0];
+  act(() => input.props.onChangeText('good taste, edited'));
+  expect(mockPrevent.on).toBe(true);
+  const action = { type: 'GO_BACK' };
+  act(() => mockPrevent.cb!({ data: { action } })); // 뒤로(버튼·스와이프·하드웨어 공통 경로)
+  expect(byId(tree, 'leave-confirm').length).toBeGreaterThan(0);
+  act(() => byId(tree, 'discard-keep')[0].props.onPress());
+  expect(byId(tree, 'leave-confirm')).toHaveLength(0);
+  expect(mockNavDispatch).not.toHaveBeenCalled();
+  act(() => mockPrevent.cb!({ data: { action } }));
+  act(() => byId(tree, 'discard-go')[0].props.onPress());
+  expect(mockNavDispatch).toHaveBeenCalledWith(action);
+  // 되돌리면(원래 본문) 다시 변경 없음
+  act(() => input.props.onChangeText('good taste'));
+  expect(mockPrevent.on).toBe(false);
+  // 고친 뒤 저장 성공 = 막지 않고 복귀 1회
+  act(() => input.props.onChangeText('good taste, edited'));
+  await act(async () => { byId(tree, 'post-review')[0].props.onPress(); });
+  expect(mockPrevent.on).toBe(false);
+  expect(mockBack).toHaveBeenCalledTimes(1);
 });

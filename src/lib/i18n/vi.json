@@ -111,7 +111,7 @@
     "recentClearAll": "Xóa tất cả",
     "recentEmptyHint": "Các tìm kiếm gần đây của bạn sẽ hiển thị ở đây.",
     "popular": "Đang thịnh hành",
-    "resultCount": "{{count}} kết quả",
+    "resultCount_other": "{{count}} kết quả",
     "noResultsTitle": "Không tìm thấy kết quả nào",
     "samples": [
       "Canh kimchi",

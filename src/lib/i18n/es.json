@@ -111,7 +111,8 @@
     "recentClearAll": "Borrar todo",
     "recentEmptyHint": "Tus búsquedas recientes aparecerán aquí.",
     "popular": "Populares ahora",
-    "resultCount": "{{count}} resultados",
+    "resultCount_one": "{{count}} resultado",
+    "resultCount_other": "{{count}} resultados",
     "noResultsTitle": "No se encontraron coincidencias",
     "samples": [
       "Guiso de kimchi",

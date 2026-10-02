@@ -111,7 +111,7 @@
     "recentClearAll": "전체 삭제",
     "recentEmptyHint": "최근 검색어가 여기에 표시돼요.",
     "popular": "지금 인기",
-    "resultCount": "{{count}}개 결과",
+    "resultCount_other": "{{count}}개 결과",
     "noResultsTitle": "검색 결과가 없어요",
     "samples": [
       "김치찌개",

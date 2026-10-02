@@ -64,7 +64,17 @@ const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
   useLocalSearchParams: () => ({ id: '7' }),
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   usePathname: () => '/',
+}));
+// KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),

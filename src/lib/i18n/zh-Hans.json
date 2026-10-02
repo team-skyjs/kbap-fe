@@ -111,7 +111,7 @@
     "recentClearAll": "全部清除",
     "recentEmptyHint": "你最近的搜索会显示在这里。",
     "popular": "当前热门",
-    "resultCount": "{{count}} 个结果",
+    "resultCount_other": "{{count}} 个结果",
     "noResultsTitle": "未找到匹配结果",
     "samples": [
       "泡菜汤",
