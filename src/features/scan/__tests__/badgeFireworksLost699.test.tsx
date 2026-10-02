@@ -257,3 +257,32 @@ it('⑧ Codex #229: 조회보다 먼저 온 변경 이벤트(켬)를 늦게 도�
   rerender(t);
   expect(shown(t)).toBe(false); // 켜짐 유지 → 폭죽 없이 즉시 종료
 });
+
+it('⑨ Codex #229: m1이 숫자인 채로 떠남(m2 전환) → m1이 다른 곳에서 해금된 채 복귀 = 이 세션이 본 적 없는 전이라 폭죽 0', async () => {
+  mockQuota = Q(2);
+  const t = render();
+  await flush();
+  expect(shown(t)).toBe(true); // m1 숫자 2(축하 중 아님)
+  mockMemberId = 'm2'; // 계정 전환 — m2는 무제한
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  expect(shown(t)).toBe(false);
+  mockMemberId = 'm1'; // m1 복귀 — 그사이 다른 기기에서 해금
+  rerender(t);
+  await flush();
+  expect(shown(t)).toBe(false);
+});
+
+it('⑩ 같은 경로를 로그아웃(게스트)으로 — m1 숫자 → 게스트 → m1 해금된 채 재로그인 = 폭죽 0', async () => {
+  mockQuota = Q(2);
+  const t = render();
+  await flush();
+  mockGuest = true;
+  rerender(t);
+  expect(shown(t)).toBe(false);
+  mockGuest = false;
+  mockQuota = Q('unlimited', true);
+  rerender(t);
+  await flush();
+  expect(shown(t)).toBe(false);
+});

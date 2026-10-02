@@ -92,14 +92,19 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   if (unlockedNow && memberId && last && !celebrating) setCelebrating({ memberId, model: last });
   // 되돌려진 해금(대기 중 다시 숫자) = 축하 취소(공부 #221 재확인 ①) — 기억은 효과가 새 숫자로 덮는다
   if (model && celebrating) setCelebrating(null);
-  // 주인이 떠남 = 축하 취소 + 그 회원의 기억 삭제: 로그아웃(게스트 — 세션 스토어라 재조회 빈 렌더와 구분됨, 공부 #229 지적 1) ·
-  // 실제로 다른 회원(계정 전환). 재조회 중 빈 렌더(memberId null)는 떠남이 아니다(KB-699 ①).
+  // 회원이 떠남 = 그 회원의 기억 삭제(축하 중이 아니어도 — Codex #229: A가 숫자인 채 떠났다가 다른 곳에서 해금되고 돌아오면, 이 세션이
+  // 본 적 없는 전이로 낡은 기억이 폭죽을 띄웠다) + 진행·보류 중 축하 취소. 떠남 = 로그아웃(게스트 — 세션 스토어라 재조회 빈 렌더와 구분됨,
+  // 공부 #229 지적 1) · 실제로 다른 회원(계정 전환). 재조회 중 빈 렌더(memberId null)는 떠남이 아니다(KB-699 ①).
   // 기억 삭제는 바깥 저장소 쓰기라 효과에서 — 렌더는 "누구를 지울지"만 상태로 남긴다(매번 새 객체 = 같은 회원 반복도 다시 실행).
+  const [present, setPresent] = React.useState<string | null>(memberId); // 마지막으로 본 회원(빈 렌더 너머로 유지)
   const [dropped, setDropped] = React.useState<{ memberId: string } | null>(null);
-  if (celebrating && (isGuest || (memberId != null && memberId !== celebrating.memberId))) {
-    setDropped({ memberId: celebrating.memberId });
-    setCelebrating(null);
+  const leaving = present != null && (isGuest || (memberId != null && memberId !== present)) ? present : null;
+  if (leaving) {
+    setDropped({ memberId: leaving });
+    if (celebrating) setCelebrating(null);
   }
+  const nextPresent = isGuest ? null : memberId ?? present;
+  if (nextPresent !== present) setPresent(nextPresent);
   React.useEffect(() => {
     if (dropped) forgetNumeric(dropped.memberId);
   }, [dropped]);
