@@ -11,8 +11,8 @@ import { useFocusEffect } from 'expo-router';
 const isForeground = (s: string | null | undefined) => s !== 'background' && s !== 'inactive';
 
 /** 모션 판정 한 벌 — visible(포커스·포그라운드) · reduceMotion(null = 미확인) · paused(둘의 합: 반복 정지)를 같은 출처에서.
- *  KB-680: 뱃지의 팝·폭죽도 이 값. "보이는가"와 "동작 줄이기"를 따로 내주는 이유 = 조회가 끝내 실패(null 고착)해도
- *  보이는 순간 "움직이지 않고 끝내기"를 고를 수 있게(대기 고착 방지). */
+ *  KB-680: 뱃지의 팝·폭죽도 이 값. KB-699(#229): 미확인(null)은 **기다림**(움직임 금지 + 축하 보류) — 이 마운트의 조회가 끝나면
+ *  반드시 boolean으로 바뀐다(실패 = true로 확정 → 움직이지 않고 끝내기). 그래서 대기가 고착되지 않는다. */
 export function useMotionState(): { paused: boolean; visible: boolean; reduceMotion: boolean | null } {
   const [focused, setFocused] = React.useState(true);
   const [active, setActive] = React.useState(isForeground(AppState.currentState));
@@ -35,10 +35,14 @@ export function useMotionState(): { paused: boolean; visible: boolean; reduceMot
 
   React.useEffect(() => {
     let alive = true;
+    let changed = false; // Codex #229: 조회보다 늦게 시작해 먼저 온 변경 이벤트가 더 새 값 — 늦게 도착한 조회 결과로 되돌리지 않는다
     void AccessibilityInfo.isReduceMotionEnabled()
-      .then((v) => alive && setReduceMotion(!!v))
-      .catch(() => {}); // 실패 = 미확인 유지(null) → 정지. 설정 변경 이벤트가 오면 그때 반영
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => setReduceMotion(!!v));
+      .then((v) => alive && !changed && setReduceMotion(!!v))
+      .catch(() => alive && !changed && setReduceMotion(true)); // 실패 = 켜진 것으로 확정(정지 · 축하는 폭죽 없이 끝) — 미확인 대기 고착 0
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => {
+      changed = true;
+      setReduceMotion(!!v);
+    });
     return () => {
       alive = false;
       sub.remove();

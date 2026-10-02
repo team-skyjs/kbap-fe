@@ -63,6 +63,7 @@ export function FoodExplorer({
   topPad = 0,
   mostReviewed = [],
   mostReviewedLoading = false,
+  onScanRowBottom,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
@@ -72,6 +73,8 @@ export function FoodExplorer({
    *  QueryClient 없는 표면까지 끌려간다(실측: 기존 스위트 3개가 깨졌다). 0건 = 섹션 미렌더. */
   mostReviewed?: FoodCard[];
   mostReviewedLoading?: boolean;
+  /** KB-701: 검색 줄(= 스캔 버튼 — 같은 48 높이, 세로 가운데) 아래 끝의 y — 이 컴포넌트 위쪽 기준. 홈 뱃지 앵커. */
+  onScanRowBottom?: (y: number) => void;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -236,7 +239,10 @@ export function FoodExplorer({
   const top = (
     <View>
       {/* 검색 행 + 스캔 버튼 (4150:16377 @y100) */}
-      <View style={styles.searchRow}>
+      <View
+        style={styles.searchRow}
+        onLayout={onScanRowBottom && ((e) => onScanRowBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height))}
+      >
         <Pressable style={styles.searchBox} onPress={() => router.push('/search' as Href)} testID="home-search">
           <Text style={styles.searchPh} numberOfLines={1}>
             {t('food.searchPlaceholder')}

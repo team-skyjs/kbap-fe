@@ -54,19 +54,33 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: new Proxy(a.FLAGS, { get: (t, k) => (k === 'countdownBadge' ? mockFlag.on : t[k as string]) }) };
 });
 
-import { HomeQuotaBadge, quotaBadgeModel, BADGE_BOTTOM } from '../HomeQuotaBadge';
+import { HomeQuotaBadge, quotaBadgeModel, BADGE_RIGHT, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
+import { FLAME_PATH } from '@/components/FlameShape';
 import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS } from '@/components/CountdownBadge';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
 
+// KB-699: 뱃지는 세션 저장소를 구독한다 — 앞 테스트의 트리가 남아 있으면 저장소 통지에 재렌더돼 목 카운트가 섞인다 → 매 테스트 뒤 언마운트
+const mountedTrees: ReactTestRenderer[] = [];
+afterEach(() => {
+  while (mountedTrees.length) {
+    const tr = mountedTrees.pop()!;
+    try {
+      act(() => tr.unmount());
+    } catch {
+      /* 이미 언마운트 */
+    }
+  }
+});
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
-    tree = renderer.create(<HomeQuotaBadge />);
+    tree = renderer.create(<HomeQuotaBadge top={100} />);
   });
+  mountedTrees.push(tree);
   return tree;
 }
-const rerender = (t: ReactTestRenderer) => act(() => t.update(<HomeQuotaBadge />));
+const rerender = (t: ReactTestRenderer) => act(() => t.update(<HomeQuotaBadge top={100} />));
 /** 동작 줄이기 조회(Promise) 반영 — 확정 전엔 paused(보수) */
 const flush = () => act(async () => {});
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type !== 'string');
@@ -74,6 +88,7 @@ const shown = (t: ReactTestRenderer) => byId(t, 'home-quota-badge').length > 0;
 const valueText = (t: ReactTestRenderer) => byId(t, 'countdown-badge-value')[0]?.props.children;
 
 beforeEach(() => {
+  _resetQuotaCelebrationMemoryForTest(); // KB-699: 세션 메모리는 테스트 간에 비운다
   mockQuota = null;
   mockMemberId = 'm1';
   mockGuest = false;
@@ -424,11 +439,25 @@ describe('프레임 불변 · 홈 하단 미겹침', () => {
     expect(frame(<CountdownBadge value={999} unitLabel="scans" state="active" onPress={() => {}} />)).toEqual({ w: BADGE_W, h: BADGE_H });
   });
 
-  it('뱃지 윗변(bottom+높이) ≤ 홈 리스트 하단 여백 — 마지막 콘텐츠(면책)를 스크롤로 꺼낼 수 있다', () => {
-    const src = require('fs').readFileSync('src/app/(tabs)/index.tsx', 'utf8') as string;
-    const pad = Number(/contentContainerStyle=\{\{ paddingTop: headerH, paddingBottom: (\d+) \}\}/.exec(src)![1]);
-    expect(BADGE_BOTTOM + BADGE_H).toBeLessThanOrEqual(pad);
-    expect(src).toContain('<HomeQuotaBadge />');
+  it('KB-701 위치 — top = 홈이 측정해 내려 준 값 그대로 · right 20(스캔 버튼 오른쪽 끝) · top null(측정 전) = 그리지 않음', () => {
+    mockQuota = Q(2);
+    const t = render();
+    const float = () => t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type === 'string');
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', top: 100, right: 20 }));
+    expect(BADGE_RIGHT).toBe(20);
+    act(() => t.update(<HomeQuotaBadge top={null} />));
+    expect(float()).toHaveLength(0);
+    act(() => t.update(<HomeQuotaBadge top={140} />));
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ top: 140 }));
+  });
+
+  it('KB-701 가독성 — 불꽃 = 단색(그라데이션 0) · 몸통 안 흰 선(안쪽 홈) 없는 물방울형', () => {
+    const src = require('fs').readFileSync('src/components/FlameShape.tsx', 'utf8') as string;
+    expect(src).not.toMatch(/LinearGradient|primary2/);
+    expect(src).toContain('fill={on ? C.primary : C.ink3}');
+    // 홈(안쪽으로 휘어 들어가는 곡선) 없는 path — 곡선 4개(오른쪽 위·오른쪽 아래·왼쪽 아래·왼쪽 위로 꼭짓점 복귀)
+    expect(FLAME_PATH).toBe('M32 4 C41 15 57 25 58 45 C59 60 47 69 32 69 C17 69 5 60 6 45 C7 25 23 15 32 4 Z');
+    expect((FLAME_PATH.match(/C/g) ?? []).length).toBe(4);
   });
 });
 
