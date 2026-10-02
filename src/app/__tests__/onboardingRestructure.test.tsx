@@ -4,6 +4,7 @@
  *  - ③ 마크 데모: 탭 순환 safe→caution→danger→unable→safe (RiskMark 재사용)
  */
 import * as React from 'react';
+import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
@@ -108,6 +109,8 @@ const continueBtn = (tree: ReactTestRenderer) =>
   })!;
 const textNodes = (tree: ReactTestRenderer, text: string) => tree.root.findAll((n) => n.props?.children === text);
 
+// KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
+beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 it('약관 게이트 — 3항목 미동의면 계속 off, 개별 3행 전부 체크 시 진행 가능', async () => {
   mockDraft = null;
   const tree = await render();
