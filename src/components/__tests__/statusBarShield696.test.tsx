@@ -68,6 +68,8 @@ describe('① StickyHeader 상태 표시줄 가림막', () => {
     if (hidden) expect((hs.transform as { translateY: number }[])[0].translateY).toBeLessThan(0); // 헤더는 그대로 빠진다(애니메이션 무변)
   });
 
+  // ⚠️ 문자열 확인 — 루트 스타일이 **실제로 적용되는지는 안 본다**. 실제 불변식(가림막 색 == 헤더 색)은 위 렌더 단언이 잡고,
+  //    이 칸은 "사용처가 늘거나 다른 배경 화면이 생기면 알림"용 그물이다.
   it('StickyHeader 사용 화면 루트 배경 = 전부 C.surface(가림막 색과 같음) — 다른 배경 화면이 생기면 red', () => {
     const users = ['src/app/(tabs)/food.tsx', 'src/app/(tabs)/index.tsx', 'src/app/(tabs)/profile.tsx', 'src/app/food/[id]/reviews.tsx', 'src/features/community/ReviewFeed.tsx'];
     const all = require('child_process').execSync("git grep -l '<StickyHeader' -- src ':!**/__tests__/**'", { encoding: 'utf8' }).split('\n').filter((f: string) => f && !f.endsWith('StickyHeader.tsx') && !f.endsWith('SubHeader.tsx'));
@@ -76,6 +78,7 @@ describe('① StickyHeader 상태 표시줄 가림막', () => {
   });
 });
 
+// ⚠️ ②는 **소스 문자열 대조**뿐이다(상세 화면 렌더는 무거워서) — 구조·값이 소스에 그대로 있는지만 잠그고, 실제 화면은 QA 시뮬레이터 확인으로.
 describe('② 음식 상세 — 스크롤 뒤 상태 표시줄 영역 불투명', () => {
   const src = fs.readFileSync('src/app/food/[id]/index.tsx', 'utf8');
   it('fhead 안 상태 표시줄 가림막 = 높이 insets.top · solidFade(히어로 위 투명 → 스크롤 뒤 불투명) · 터치 통과 · 불투명 C.surface', () => {
@@ -84,9 +87,9 @@ describe('② 음식 상세 — 스크롤 뒤 상태 표시줄 영역 불투명'
     // fhead-bg 뒤(위 z)에 온다
     expect(src.indexOf('testID="fhead-status-shield"')).toBeGreaterThan(src.indexOf('testID="fhead-bg"'));
   });
-  it('헤더 바 배경 = 상수 한 곳(예진 결정 대기 — 시안 0.96 유지)', () => {
-    expect(src).toContain("const FHEAD_BAR_BG = 'rgba(255,255,255,0.96)';");
+  it('헤더 바 배경 = 상수 한 곳 · 불투명 화면 배경 토큰(예진 10/2 결정 — 시안 96% 투명 폐기)', () => {
+    expect(src).toContain('const FHEAD_BAR_BG = C.surface;');
     expect(src).toContain('fheadBg: { backgroundColor: FHEAD_BAR_BG,');
-    expect(src.match(/rgba\(255,255,255,0\.96\)/g) ?? []).toHaveLength(1);
+    expect(src).not.toMatch(/rgba\(255,255,255,0\.96\)/); // 반투명 값이 다시 들어오면 red
   });
 });

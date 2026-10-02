@@ -723,9 +723,9 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
   );
 }
 
-/** 상세 헤더 바 배경 — 시안 값(KB-431 D-3, 4% 투명). KB-696: 블러 없는 반투명이라 스크롤 시 뒤가 비친다 →
- *  불투명 전환은 시안 이탈이라 **예진 결정 대기**(커맨드 센터 추천 = 불투명). 결정 나면 이 한 줄만 바꾼다. */
-const FHEAD_BAR_BG = 'rgba(255,255,255,0.96)';
+/** 상세 헤더 바 배경 — KB-696: **예진 10/2 결정으로 시안 96% 흰색(4% 투명) → 불투명**(화면 배경 토큰).
+ *  블러 없는 4% 투명은 스크롤 시 뒤 글자·재료 그림이 비치기만 했다. */
+const FHEAD_BAR_BG = C.surface;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
