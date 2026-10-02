@@ -24,16 +24,20 @@ export function isProdChannel(): boolean {
 /** P-399: **진단 문구를 보여도 되는 채널**만 참. `!isProdChannel()`로 negate하면
  *  `preview`(production 백엔드를 쓰는 내부 배포)까지 포함돼 원시 네이티브 에러 문자열이
  *  샌다(Codex #176) — 그래서 부정이 아니라 **명시 허용**이다.
- *  채널 부재(웹·jest·dev 런처)는 로컬 개발이라 포함한다.
+ *  채널 부재(null·빈 문자열·못 읽음 — 웹·jest·dev client)는 **__DEV__일 때만** 로컬 개발로 포함한다(KB-691).
  *  P-407: `teamtest-prod`(prod 백엔드 리허설 테플 빌드)도 **내부 테스터 전용**이라 teamtest처럼 노출한다.
  *  원칙 — 백엔드는 prod처럼(eas.json env), 진단 노출·OTA 적용 정책은 teamtest처럼. */
 function isDiagnosticChannelInner(): boolean {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ch = (require('expo-updates') as { channel?: string | null }).channel;
-    return ch == null || ch === 'teamtest' || ch === 'teamtest-prod' || ch === 'development';
+    // KB-691: 채널 부재 = null **또는 빈 문자열**(dev client는 네이티브가 ""를 준다 — expo-updates AppController.swift
+    // `requestHeaders["expo-channel-name"] ?? ""`). 부재는 **개발 번들(__DEV__)일 때만** 로컬로 본다 — EAS 빌드 프로필은
+    // 전부 채널을 박으므로 릴리스에서 부재 = 비정상 → 진단 끔(production·preview로 새는 방향 차단).
+    if (ch == null || ch === '') return __DEV__;
+    return ch === 'teamtest' || ch === 'teamtest-prod' || ch === 'development';
   } catch {
-    return true; // 채널을 못 읽는 환경 = 로컬
+    return __DEV__; // 채널을 못 읽는 환경 — 개발 번들일 때만 로컬
   }
 }
 const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();

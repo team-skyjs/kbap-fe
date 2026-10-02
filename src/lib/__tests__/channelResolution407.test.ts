@@ -8,16 +8,27 @@
 import * as fs from 'fs';
 
 type Flags = typeof import('@/lib/flags');
-function flagsFor(channel: string | null): Flags {
+const g = globalThis as unknown as { __DEV__: boolean };
+const DEV0 = g.__DEV__;
+/** channel = undefined → expo-updates require가 던지는 경우(모듈 없음) */
+function flagsFor(channel: string | null | undefined, dev = true): Flags {
   let out!: Flags;
+  g.__DEV__ = dev;
   jest.isolateModules(() => {
-    jest.doMock('expo-updates', () => ({ channel }));
+    if (channel === undefined)
+      jest.doMock('expo-updates', () => {
+        throw new Error('no native module');
+      });
+    else jest.doMock('expo-updates', () => ({ channel }));
     out = require('@/lib/flags') as Flags; // eslint-disable-line @typescript-eslint/no-require-imports
   });
   return out;
 }
 
-afterEach(() => jest.dontMock('expo-updates'));
+afterEach(() => {
+  jest.dontMock('expo-updates');
+  g.__DEV__ = DEV0;
+});
 
 describe('채널 해석표 — 실제 flags.ts', () => {
   it.each([
@@ -27,11 +38,45 @@ describe('채널 해석표 — 실제 flags.ts', () => {
     ['teamtest', false, true],
     ['teamtest-prod', false, true], // P-407: 진단·OTA 정책은 teamtest처럼
     ['development', false, true],
-    [null, false, true], // 로컬
+    [null, false, true], // 로컬(__DEV__)
   ])('%s → isProdChannel=%s · isDiagnosticChannel=%s', (channel, prod, diag) => {
     const f = flagsFor(channel as string | null);
     expect(f.isProdChannel()).toBe(prod);
     expect(f.isDiagnosticChannel()).toBe(diag);
+  });
+});
+
+describe('KB-691 — 채널 부재(빈 문자열·null·모듈 없음)는 __DEV__일 때만 진단 채널', () => {
+  // 실측: 시뮬레이터 dev client(Metro)에서 ExpoUpdates.channel = "" (expo-updates 56.0.19 AppController.swift:79
+  // `requestHeaders["expo-channel-name"] ?? ""`). 릴리스 번들은 EAS 프로필이 전부 채널을 박으므로 부재 = 비정상 → 끈다.
+  it.each([
+    // channel,   __DEV__, diagnostic
+    ['', true, true], // dev client(Metro) — QA가 번역 라벨·뱃지를 보려면 켜져야 한다
+    ['', false, false], // 릴리스 번들인데 채널이 비었다 = 비정상 → 진단 금지
+    [null, true, true],
+    [null, false, false], // 기존엔 릴리스여도 켜졌다(좁힘)
+    [undefined, true, true], // expo-updates를 못 읽음(웹 등)
+    [undefined, false, false],
+    ['production', true, false], // __DEV__여도 명시 채널은 채널대로 — production·preview는 절대 on 금지
+    ['preview', true, false],
+    ['production', false, false],
+    ['preview', false, false],
+    ['teamtest', false, true],
+    ['teamtest-prod', false, true],
+    ['development', false, true],
+  ])('channel %j · __DEV__ %s → isDiagnosticChannel=%s', (channel, dev, diag) => {
+    const f = flagsFor(channel as string | null | undefined, dev as boolean);
+    expect(f.isDiagnosticChannel()).toBe(diag);
+    // 진단 채널에 매인 플래그도 같은 값(채널 → 플래그 전파)
+    expect(f.FLAGS.contentTranslation).toBe(diag);
+    expect(f.FLAGS.countdownBadge).toBe(diag);
+    expect(f.isProdChannel()).toBe(channel === 'production');
+  });
+
+  it('eas.json 빌드 프로필은 전부 채널을 가진다(상속 포함) — 릴리스에서 채널 부재가 정상 경로가 아님을 잠근다', () => {
+    const eas = JSON.parse(fs.readFileSync('eas.json', 'utf8')) as { build: Record<string, { extends?: string; channel?: string }> };
+    const chOf = (k: string): string | undefined => eas.build[k].channel ?? (eas.build[k].extends ? chOf(eas.build[k].extends!) : undefined);
+    for (const k of Object.keys(eas.build)) expect(chOf(k)).toBeTruthy();
   });
 });
 
