@@ -1,4 +1,4 @@
-/** KB-708 — useLeaveConfirm: 제출 중엔 막기만(모달 0) · release 2회 = then 1회. */
+/** KB-708 — useLeaveConfirm: 제출 중에도 확인 창으로 나갈 수 있음(갇힘 방지) · release 2회 = then 1회. */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -29,8 +29,8 @@ let api!: ReturnType<typeof useLeaveConfirm>;
 const exposeApi = (l: ReturnType<typeof useLeaveConfirm>) => {
   api = l;
 };
-function Harness({ dirty, submitting, onApi = exposeApi }: { dirty: boolean; submitting: boolean; onApi?: typeof exposeApi }) {
-  const leave = useLeaveConfirm(dirty, submitting);
+function Harness({ dirty, onApi = exposeApi }: { dirty: boolean; onApi?: typeof exposeApi }) {
+  const leave = useLeaveConfirm(dirty);
   React.useEffect(() => onApi(leave)); // 렌더 밖에서 넘김(렌더 중 바깥 변수 재할당 = 컴파일러 위반)
   return <LeaveConfirmModal {...leave.modal} />;
 }
@@ -38,20 +38,21 @@ const modalOpen = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testI
 
 beforeEach(() => mockNavDispatch.mockClear());
 
-it('제출 중 뒤로 = 막기만(모달 0 · 이동 0 · 화면 유지) → 끝나고 실패(dirty 유지)면 다시 확인 창', () => {
+// #236 공부: 제출 중 이동을 막아 두면 상한 없는 사진 업로드(약한 망)에서 뒤로 가기가 무반응 = 갇힘(361fc31 대비 회귀)
+it('제출 중 뒤로 = 확인 창 · 그만두기 = 막았던 이동 그대로 진행(갇히지 않음)', () => {
   let t!: ReactTestRenderer;
-  act(() => { t = renderer.create(<Harness dirty submitting />); });
+  act(() => { t = renderer.create(<Harness dirty />); });
   expect(mockPrevent.on).toBe(true);
-  act(() => mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }));
-  expect(modalOpen(t)).toBe(false);
-  expect(mockNavDispatch).not.toHaveBeenCalled();
-  act(() => t.update(<Harness dirty submitting={false} />)); // 요청 실패 — 내용은 남음
-  act(() => mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }));
+  const action = { type: 'GO_BACK' };
+  act(() => mockPrevent.cb!({ data: { action } }));
   expect(modalOpen(t)).toBe(true);
+  act(() => t.root.findAll((n) => n.props?.testID === 'discard-go' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockNavDispatch).toHaveBeenCalledWith(action);
+  expect(modalOpen(t)).toBe(false);
 });
 
 it('release 2회 = then 1회 · 풀린 뒤엔 막지 않음', () => {
-  act(() => { renderer.create(<Harness dirty submitting={false} />); });
+  act(() => { renderer.create(<Harness dirty />); });
   // 화면은 렌더마다 새 클로저(() => router.back())를 넘긴다 — 같은 함수로 테스트하면 옛 구현도 통과해 버림
   const backs = [jest.fn(), jest.fn(), jest.fn()];
   act(() => {

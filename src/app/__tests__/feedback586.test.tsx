@@ -572,3 +572,23 @@ it('KB-708 이탈 확인(문의): 빈 화면 = 막지 않음 · 쓰면 막음 �
   expect(mockBack).toHaveBeenCalledTimes(1);
   expect(r.root.findAllByProps({ testID: 'leave-confirm' })).toHaveLength(0);
 });
+
+// #236 공부: 전송 중(사진 업로드 = 상한·취소 없음) 뒤로를 무반응으로 막으면 약한 망에서 사용자가 갇힌다 → 전송 중에도 확인 창으로 나갈 수 있어야
+it('KB-708 전송 중 뒤로 = 확인 창 · 그만두기 = 나감(갇히지 않음) · 늦게 온 성공은 back을 한 번 더 부르지 않음', async () => {
+  let resolve!: (v: unknown) => void;
+  mockSubmit.mockImplementationOnce(() => new Promise((r) => (resolve = r)));
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
+  await act(async () => { input.props.onChangeText('slow upload'); });
+  let sent!: Promise<unknown>;
+  await act(async () => { sent = byId(r, 'feedback-send').props.onPress(); }); // 전송 중(가드 busy)
+  const action = { type: 'GO_BACK' };
+  await act(async () => { mockPrevent.cb!({ data: { action } }); });
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
+  await act(async () => { byId(r, 'discard-go').props.onPress(); });
+  expect(mockNavDispatch).toHaveBeenCalledWith(action); // 나감
+  await act(async () => { mockBlur.fn(); r.unmount(); }); // 화면이 실제로 닫힘
+  await act(async () => { resolve({ id: '1' }); await sent; });
+  expect(mockBack).not.toHaveBeenCalled(); // 이미 나간 뒤 back 추가 0
+});

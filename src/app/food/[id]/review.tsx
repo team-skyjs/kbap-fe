@@ -120,7 +120,7 @@ function ReviewComposeScreen() {
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
-  const leave = useLeaveConfirm(draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
+  const leave = useLeaveConfirm(draftKey(rating, body, photos, place, extras) !== baseline && !submitted);
   const canPost = canPostReview(rating) && !posting;
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등

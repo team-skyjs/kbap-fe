@@ -118,8 +118,8 @@ export default function CommunityCompose() {
 
   // P-173: 글 작성은 비멱등(연타 = 중복 글) — 공용 가드(동기 ref, isPending 상태 가드는 레이스)
   const { busy: submitting, run: runSubmit } = useSubmitGuard();
-  // KB-708: 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 올리는 중 = 막기만 · 성공 뒤 = 완료 모달 → 막지 않음
-  const leave = useLeaveConfirm(dirty && !posted, submitting);
+  // KB-708: 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 성공 뒤 = 완료 모달 → 막지 않음
+  const leave = useLeaveConfirm(dirty && !posted);
   const submit = () => {
     if (!canPost || submitting) return;
     const input = { body: body.trim(), photos, foodTags, placeTag };
