@@ -141,15 +141,20 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
   // ── KB-706: 끌어 놓기 — 놓으면 가까운 좌/우 가장자리, 높이 유지, 기기 저장(놓을 때 1회). 저장값 없음 = 기본 자리(스캔 버튼 아래 측정 앵커 `top`, 오른쪽).
   const [area, setArea] = React.useState<{ w: number; h: number } | null>(null);
   const [saved, setSaved] = React.useState<BadgePos | null>(null);
+  // Codex #234 ②: 읽기가 끝나기 전에 사용자가 끌어 놓았으면 늦게 온 읽기 결과(옛 자리)를 버린다 — 사용자 변경이 최신
+  const userMoved = useSharedValue(false);
   React.useEffect(() => {
     let alive = true;
     AsyncStorage.getItem(BADGE_POS_KEY)
-      .then((raw) => alive && setSaved(parseBadgePos(raw)))
+      .then((raw) => {
+        if (!alive || userMoved.get()) return;
+        setSaved(parseBadgePos(raw));
+      })
       .catch(() => {}); // 읽기 실패 = 기본 자리
     return () => {
       alive = false;
     };
-  }, []);
+  }, [userMoved]);
   const bounds = area ? badgeBounds(area.h, headerH) : null;
   const pos =
     area && bounds
@@ -166,6 +171,7 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
   const justDragged = useSharedValue(false);
+  const ended = useSharedValue(false); // 이번 끌기에 onEnd(정상 놓기)가 왔나 — 취소(onFinalize만)와 구분
   const posX = pos?.x;
   const posY = pos?.y;
   React.useEffect(() => {
@@ -181,6 +187,7 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
     .minDistance(DRAG_SLOP)
     .onStart(() => {
       dragging.set(true);
+      ended.set(false);
       startX.set(px.get());
       startY.set(py.get());
     })
@@ -190,13 +197,21 @@ export function HomeQuotaBadge({ top, headerH }: { top: number | null; headerH: 
       py.set(clampTop(startY.get() + e.translationY, bounds));
     })
     .onEnd(() => {
-      if (!area) return;
+      if (!area) return; // 측정 전 = 취소와 같이(onFinalize가 제자리로)
+      ended.set(true);
       const next: BadgePos = { side: nearestSide(px.get(), area.w), top: py.get() };
       px.set(withSpring(edgeX(next.side, area.w)));
+      userMoved.set(true);
       setSaved(next);
       AsyncStorage.setItem(BADGE_POS_KEY, JSON.stringify(next)).catch(() => {}); // 저장 실패 = 이번 세션만 유지
     })
     .onFinalize(() => {
+      // Codex #234 ①: 끌기가 취소되면(OS 끼어들기·경쟁 제스처) onEnd 없이 여기만 온다 — 공유값 변경은 리렌더를 안 일으켜 위치 effect도
+      // 다시 안 돈다 → 지금 자리(저장값·기본 자리)로 스냅(저장은 안 함)
+      if (dragging.get() && !ended.get() && posX != null && posY != null) {
+        px.set(withSpring(posX));
+        py.set(withSpring(posY));
+      }
       if (dragging.get()) {
         justDragged.set(true);
         setTimeout(() => justDragged.set(false), 300); // 놓는 순간 따라 들어올 수 있는 탭만 막는 짧은 창

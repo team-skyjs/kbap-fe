@@ -256,6 +256,41 @@ describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
   });
 });
 
+describe('Codex #234 — 끝 콜백이 안 오는 경로 · 늦은 읽기', () => {
+  it('① 끌기 취소(onEnd 없이 onFinalize만) = 지금 자리로 돌아가고 저장 0 · 탭 가드는 짧은 창 뒤 풀림', async () => {
+    const t = render();
+    await flush();
+    layout(t);
+    const setItem = AsyncStorage.setItem as jest.Mock;
+    setItem.mockClear();
+    const p = lastPan();
+    act(() => p.handlers.onStart?.());
+    act(() => p.handlers.onUpdate?.({ translationX: -250, translationY: 120 }));
+    act(() => p.handlers.onFinalize?.()); // OS 끼어들기 — onEnd 없음
+    expect(place(t)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: ANCHOR })); // 끌던 좌표에 멈춰 남지 않음
+    expect(setItem).not.toHaveBeenCalled();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350));
+    });
+    act(() => t.root.findAll((n) => n.props?.testID === 'countdown-badge' && typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(t.root.findAll((n) => n.props?.testID === 'quota-sheet-title').length).toBeGreaterThan(0);
+  });
+
+  it('② 저장값 읽기가 끝나기 전에 끌어 놓으면 → 늦게 온 옛 저장값이 방금 놓은 자리를 되돌리지 않는다', async () => {
+    let resolveRead!: (v: string | null) => void;
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => new Promise<string | null>((r) => { resolveRead = r; }));
+    const t = render();
+    await flush();
+    layout(t); // 읽기 미결 — 기본 자리
+    drag(t, -250, 120); // 왼쪽으로 놓음
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: ANCHOR + 120 }));
+    await act(async () => {
+      resolveRead(JSON.stringify({ side: 'right', top: 300 })); // 이전 실행의 옛 자리가 늦게 도착
+    });
+    expect(place(t)).toEqual(expect.objectContaining({ x: 20, y: ANCHOR + 120 }));
+  });
+});
+
 describe('위치 계산(순수)', () => {
   it('저장값 파싱 — 형식이 어긋나면 기본 자리(null)', () => {
     expect(parseBadgePos('{"side":"left","top":200}')).toEqual({ side: 'left', top: 200 });
