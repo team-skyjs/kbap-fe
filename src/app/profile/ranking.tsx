@@ -66,8 +66,24 @@ export default function RankingScreen() {
   );
 }
 
+/** KB-708(6): 랭킹 그리드의 줄 — 1~3등급 = 0줄, 4~6 = 1줄, 7(풀) = 2줄 */
+export function rankRow(level: number): number {
+  return level <= 3 ? 0 : level <= 6 ? 1 : 2;
+}
+/** 줄마다 가장 높은 카드 내용 높이 */
+export function rowMaxHeights(contentH: Record<number, number>): Record<number, number> {
+  const out: Record<number, number> = {};
+  for (const [lv, h] of Object.entries(contentH)) {
+    const r = rankRow(Number(lv));
+    out[r] = Math.max(out[r] ?? 0, h);
+  }
+  return out;
+}
+
 function RankingBody({ rk }: { rk: Ranking }) {
   const { t } = useTranslation();
+  const [contentH, setContentH] = React.useState<Record<number, number>>({});
+  const rowContentH = rowMaxHeights(contentH);
   const cur: Tier = tierByKey(rk.tier) ?? TIERS[0];
   const next = rk.nextTier ? tierByKey(rk.nextTier) : null;
   const bd = rk.breakdown;
@@ -177,6 +193,7 @@ function RankingBody({ rk }: { rk: Ranking }) {
       <View style={styles.rankGrid}>
         {TIERS.map((tier) => {
           const now = tier.level === cur.level;
+          const row = rankRow(tier.level);
           return (
             <View
               key={tier.key}
@@ -193,13 +210,25 @@ function RankingBody({ rk }: { rk: Ranking }) {
                   <Text style={styles.nowBadgeText}>{t('ranking.now')}</Text>
                 </View>
               )}
-              {/* P-327 → P-369 ②: 메달 글로우 0/3 blur8 @0.40 — 색 = 각 등급 메달 원색(C-38) */}
-              <View style={[styles.medalGlow, { shadowColor: MEDAL_COLORS[tier.level - 1] }]}>
-                <RankMedal level={tier.level} size={28} />
+              {/* KB-708(6): 같은 줄 카드끼리 내용 높이를 가장 높은 카드에 맞춤 — 이름이 두 줄인 카드만 메달이 10pt 위로 뜨던 것(가운데 정렬).
+                  한 줄 이름만 있는 줄은 자기 높이 그대로라 시안 모양 무변. 바깥 = 줄 최대 높이(위 정렬), 안 = 실제 내용 높이 측정 */}
+              <View style={[styles.rankContent, { minHeight: rowContentH[row] ?? 0 }]} testID={`rank-content-${tier.key}`}>
+                <View
+                  style={styles.rankContentInner}
+                  onLayout={(e) => {
+                    const h = Math.round(e.nativeEvent.layout.height);
+                    setContentH((m) => (m[tier.level] === h ? m : { ...m, [tier.level]: h }));
+                  }}
+                >
+                  {/* P-327 → P-369 ②: 메달 글로우 0/3 blur8 @0.40 — 색 = 각 등급 메달 원색(C-38) */}
+                  <View style={[styles.medalGlow, { shadowColor: MEDAL_COLORS[tier.level - 1] }]}>
+                    <RankMedal level={tier.level} size={28} />
+                  </View>
+                  <Text style={styles.rankName} numberOfLines={2}>{t(`ranking.tier.${tier.key}`)}</Text>{/* KB-707: "K-Food Mas…" — 두 줄까지 */}
+                  <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
+                  <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
+                </View>
               </View>
-              <Text style={styles.rankName} numberOfLines={2}>{t(`ranking.tier.${tier.key}`)}</Text>{/* KB-707: "K-Food Mas…" — 두 줄까지 */}
-              <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
-              <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
             </View>
           );
         })}
@@ -290,6 +319,8 @@ const styles = StyleSheet.create({
   rankGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: 8, paddingHorizontal: 20, marginTop: 10 },
   rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
   rankCardRow2: { minHeight: 129 },
+  rankContent: { alignSelf: 'stretch', alignItems: 'center' }, // KB-708(6): 줄 최대 내용 높이(minHeight 인라인) · 위 정렬
+  rankContentInner: { alignItems: 'center' },
   rankCardFull: { width: '100%', minHeight: 129 },
   rankCardNow: { borderWidth: 1, borderColor: C.primary, paddingTop: 24, paddingBottom: 16 },
   nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },

@@ -12,7 +12,11 @@
     "retry": "Reintentar",
     "skip": "Omitir",
     "save": "Guardar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "leaveTitle": "¿Salir sin guardar?",
+    "leaveBody": "El borrador no se guardará.",
+    "keepWriting": "Seguir escribiendo",
+    "discard": "Descartar"
   },
   "intro": {
     "skip": "Omitir",
@@ -111,7 +115,8 @@
     "recentClearAll": "Borrar todo",
     "recentEmptyHint": "Tus búsquedas recientes aparecerán aquí.",
     "popular": "Populares ahora",
-    "resultCount": "{{count}} resultados",
+    "resultCount_one": "{{count}} resultado",
+    "resultCount_other": "{{count}} resultados",
     "noResultsTitle": "No se encontraron coincidencias",
     "samples": [
       "Guiso de kimchi",
@@ -177,10 +182,6 @@
     "post": "Publicar",
     "composePlaceholder": "Comparte lo que sea sobre comer en Corea…",
     "cover": "Portada",
-    "leaveTitle": "¿Descartar esta publicación?",
-    "leaveBody": "El borrador no se guardará.",
-    "keepWriting": "Seguir escribiendo",
-    "discard": "Descartar",
     "postedTitle": "¡Publicado!",
     "editedTitle": "Publicación actualizada",
     "tagFoodTitle": "Etiquetar comida",
@@ -289,8 +290,6 @@
     "quotaCta": "Escribir reseña",
     "freeLeft_one": "Te queda {{count}} escaneo gratis",
     "freeLeft_other": "Te quedan {{count}} escaneos gratis",
-    "badgeUnit_one": "escaneo",
-    "badgeUnit_other": "escaneos",
     "later": "Más tarde",
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
     "stayHint": "Puede tardar entre 30 y 40 segundos; si sales de la app, podrías perder el resultado.",
@@ -602,7 +601,6 @@
     "guestScansTitle": "Inicia sesión para guardar tu historial de escaneos y recibir valoraciones de seguridad personalizadas.",
     "greetingSub": "Esto es lo que es seguro para ti hoy.",
     "greetingSubEmpty": "Encontremos tu primer plato seguro.",
-    "avoidCount": "Evitas {{count}} cosas",
     "edit": "Editar",
     "scanTitle": "Escanear un menú",
     "scanSub": "Apunta a un menú coreano para ver tu riesgo.",
@@ -784,7 +782,6 @@
     "title": "Editar restricciones",
     "save": "Guardar restricciones",
     "notice": "Esto controla cada alerta de seguridad. Mantenlo preciso: los cambios se aplican a todos los platos de inmediato.",
-    "avoidCount": "Evitas {{count}} cosas",
     "avoidNone": "Nada evitado aún",
     "tapToRemove": "toca × para quitar",
     "searchPlaceholder": "Buscar ingredientes…",
@@ -1062,8 +1059,6 @@
     "statusAnswered": "Respondida",
     "statusClosed": "Cerrada",
     "emptyTitle": "Aún no tienes consultas",
-    "replyCount_one": "{{count}} respuesta",
-    "replyCount_other": "{{count}} respuestas",
     "notFound": "Esta consulta no está disponible.",
     "teamName": "Equipo K-Bap"
   }

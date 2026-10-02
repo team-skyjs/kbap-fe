@@ -58,13 +58,15 @@ jest.mock('@/lib/analytics', () => ({ EVENTS: new Proxy({}, { get: (_t, k) => St
 
 import { FeedCard } from '@/features/review/FeedCard';
 // eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
-import { CHIP_FADE_W, FoodExplorer } from '@/features/food/FoodExplorer';
+import { CHIP_FADE_W, FoodExplorer, chipRowHeight } from '@/features/food/FoodExplorer';
 // eslint-disable-next-line import/first -- 위와 같음
 import { FEEDBACK_FAB_GAP, FEEDBACK_FAB_H, feedbackListBottomPad } from '@/app/profile/feedback/index';
 // eslint-disable-next-line import/first -- 위와 같음
 import * as fs from 'fs';
 // eslint-disable-next-line import/first -- 위와 같음
 import { ScrollView, StyleSheet } from 'react-native';
+// eslint-disable-next-line import/first -- 위와 같음
+import { AuthGateSheet } from '@/components/AuthGateSheet';
 import type { Review } from '@/lib/api/types';
 
 const REVIEW = {
@@ -121,7 +123,7 @@ it('2-A 음식 탭 칩 = 한 줄 가로 스크롤 + 우측 페이드 + 정렬 �
   // 행 높이 고정 소스 잠금(칩 34 + pad 14/12 + 헤어라인)
   const fx = require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8') as string;
   expect(fx).toMatch(/chipRowScreen: \{[^}]*paddingTop: 14, paddingBottom: 12[^}]*borderBottomColor: '#EAEBEE'/);
-  expect(fx).toMatch(/chipScrollContent: \{[^}]*height: 34/);
+  expect(fx).toContain('export const CHIP_ROW_H = 34'); // KB-708: 기본 크기 줄 높이 34 그대로(큰 글자에서만 늘어남 — chipRowHeight)
 });
 
 it('2-A 파라미터 진입 — 선택 칩이 뒤쪽이면 마운트 시 scrollTo', () => {
@@ -252,5 +254,47 @@ describe('KB-707', () => {
     expect(styleBlock).toMatch(/rankCardRow2: \{ minHeight: 129 \}/);
     expect(styleBlock).toMatch(/rankCardFull: \{[^}]*minHeight: 129/);
     expect(styleBlock).toMatch(/rankGrid: \{[^}]*alignItems: 'stretch'/);
+  });
+});
+
+// ── KB-708 (1) 게스트 위험도 칩 게이트 = 판정 문구(risk) · 북마크·Saved 칩 = 저장 문구(save)
+describe('KB-708 (1)', () => {
+  it('게스트: 위험도 칩(홈·Food 탭) → 게이트 context risk · Saved 칩 → save · 닫으면 닫힘', () => {
+    for (const variant of ['embedded', 'screen'] as const) {
+      const tree = render(<FoodExplorer variant={variant} guest srcTag={variant === 'embedded' ? 'home' : 'list'} />);
+      const gate = () => tree.root.findAllByType(AuthGateSheet)[0].props as { context: string; open: boolean; onClose: () => void };
+      expect(gate().open).toBe(false);
+      act(() => tree.root.findAll((n) => n.props?.testID === 'home-chip-safe' && typeof n.props?.onPress === 'function')[0].props.onPress());
+      expect({ variant, context: gate().context, open: gate().open }).toEqual({ variant, context: 'risk', open: true });
+      act(() => gate().onClose());
+      expect(gate().open).toBe(false);
+      expect(gate().context).toBe('risk'); // #236 /review E: 닫히는 동안(iOS 페이드아웃) 문구 맥락 유지 — 'save'로 바뀌면 북마크 문구가 비친다
+      if (variant === 'screen') {
+        act(() => tree.root.findAll((n) => n.props?.testID === 'food-chip-saved' && typeof n.props?.onPress === 'function')[0].props.onPress());
+        expect({ context: gate().context, open: gate().open }).toEqual({ context: 'save', open: true });
+      }
+    }
+  });
+});
+
+// ── KB-708 (7) 보강 — Food 탭 칩 줄 높이: 기본 34 그대로 · 큰 글자(상한 ×1.3)에서 칩 라벨 줄 높이 늘어난 만큼 같이 늘어남
+describe('KB-708 (7) 칩 줄 높이', () => {
+  it('chipRowHeight: 1 = 34 · 1.3 = 34 + 24×0.3 · 상한 넘는 배율도 ×1.3까지 · 작은 글자 = 34(시안 아래로 안 줄어듦)', () => {
+    expect(chipRowHeight(1)).toBe(34);
+    expect(chipRowHeight(1.3)).toBeCloseTo(41.2, 5);
+    expect(chipRowHeight(3.1)).toBeCloseTo(41.2, 5);
+    expect(chipRowHeight(0.85)).toBe(34);
+  });
+  it('렌더: 칩 스크롤 내용 높이 = chipRowHeight(창 fontScale) — 기본 34 · XXXL(3.1) 41.2', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- spyOn은 실제 모듈 객체여야 함(import * = 인터롭 사본이라 컴포넌트가 안 봄)
+    const spy = jest.spyOn(require('react-native') as typeof import('react-native'), 'useWindowDimensions');
+    for (const [fs, h] of [[1, 34], [3.1, 41.2]] as const) {
+      spy.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: fs });
+      const tree = render(<FoodExplorer variant="screen" guest={false} srcTag="list" />);
+      const sv = tree.root.findAll((n) => n.props?.testID === 'food-chip-scroll' && n.props?.contentContainerStyle != null)[0];
+      expect((StyleSheet.flatten(sv.props.contentContainerStyle) as { height: number }).height).toBeCloseTo(h, 5);
+      tree.unmount();
+    }
+    spy.mockRestore();
   });
 });

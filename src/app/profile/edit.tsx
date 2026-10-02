@@ -19,7 +19,8 @@ import { AvatarPlaceholder } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { type SpiceChoice } from '@/lib/spice';
-import { countryByCode } from '@/lib/onboarding/countries';
+import { countryDisplayName } from '@/lib/onboarding/countries';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { IconLock } from '@/components/icons';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -31,6 +32,7 @@ import { currencyForCountry, currencyUpdateFor, saveCurrency, SUPPORTED_CURRENCI
 import { openAppSettings } from '@/lib/openExternal';
 
 export default function EditProfile() {
+  const appLang = useAppLanguage(); // KB-708: 국가명 표시(엔도님 판정)
   const router = useRouter();
   const { t } = useTranslation();
   const { lang } = useLocale();
@@ -58,7 +60,6 @@ export default function EditProfile() {
     setCurrency(me.currency == null || me.currency === currencyForCountry(me.nationality) ? null : me.currency);
   }
 
-  const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 = PATCH 중복 봉쇄
   function save() {
@@ -207,7 +208,7 @@ export default function EditProfile() {
           <Text style={styles.fieldLbl}>{t('editProfile.nationality')}</Text>
           <View style={[styles.field, styles.fieldDisabled]}>
             {!!me?.nationality && <Flag code={me.nationality} size={18} />}
-            <Text style={[styles.val, styles.valDisabled]}>{nation?.name ?? me?.nationality}</Text>
+            <Text style={[styles.val, styles.valDisabled]}>{me?.nationality ? countryDisplayName(me.nationality, appLang) : null}</Text>
             <IconLock size={15} color={C.ink3} />
           </View>
           <Text style={styles.hint}>{t('editProfile.nationalityLocked')}</Text>

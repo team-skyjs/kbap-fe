@@ -154,6 +154,21 @@ export function countryByCode(code: string): Country | undefined {
   return BY_CODE[code];
 }
 
+/** KB-708: 엔도님(native)이 **어느 앱 언어로** 쓰였나 — 대부분 기본 앱 언어(lang)와 같지만 둘이 다른 곳:
+ *  KR = 기본 앱 언어는 en(외국인 대상 — 온보딩 자동 선택 무변)이지만 엔도님 '한국'은 ko ·
+ *  KZ = 엔도님 'Қазақстан'은 카자흐어(지원 앱 언어 아님)라 ru 사용자에게 보이면 안 됨. */
+const ENDONYM_LANG: Record<string, SupportedLang | null> = { KR: 'ko', KZ: null };
+
+/** KB-708: 사용자에게 보이는 국가명 — 엔도님이 **지금 앱 언어로 쓰인 것**이면 엔도님(ko + KR = '한국', ja + JP = '日本'),
+ *  그 밖은 영어 이름. 로케일별 국가명 데이터가 없어서 좁게만(10로케일 × 국가 표는 범위 밖). en은 "특정 언어 없음" 기본값이라
+ *  엔도님 트리거가 아니다(en 앱 + DE = 'Germany', 'Deutschland' 아님). 앱 언어는 호출부가 useAppLanguage로(KB-695). */
+export function countryDisplayName(code: string, appLang: string): string {
+  const c = BY_CODE[code];
+  if (!c) return code;
+  const nativeLang = code in ENDONYM_LANG ? ENDONYM_LANG[code] : c.lang;
+  return c.native && nativeLang != null && nativeLang !== 'en' && nativeLang === appLang ? c.native : c.name;
+}
+
 /** Reader language a nationality should default to (supported, else 'en'). */
 export function countryLang(code: string): SupportedLang {
   return BY_CODE[code]?.lang ?? 'en';

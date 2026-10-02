@@ -55,7 +55,10 @@ const mockRk: { data: ReturnType<typeof RK_DEFAULT> } = { data: RK_DEFAULT() };
 jest.mock('@/lib/data/useRanking', () => ({ useRanking: () => mockRk }));
 beforeEach(() => { mockRk.data = RK_DEFAULT(); });
 
-import RankingScreen from '../profile/ranking';
+// eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
+import RankingScreen, { rankRow, rowMaxHeights } from '../profile/ranking';
+// eslint-disable-next-line import/first -- 위와 같음
+import { StyleSheet as RNStyleSheet } from 'react-native';
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -167,4 +170,22 @@ it('Codex #89 P2: ScreenCenterFill = box-none — 오버레이가 헤더·탭 �
   const tree = render(React.createElement(ScreenCenterFill, null, React.createElement(View)));
   const fill = tree.root.findAll((n) => n.props?.pointerEvents === 'box-none');
   expect(fill.length).toBeGreaterThanOrEqual(1);
+});
+
+it('KB-708 (6): 같은 줄 카드 내용 높이 = 그 줄 최대(이름이 두 줄인 카드가 있으면 이웃도 같은 높이 · 위 정렬 → 메달 높이 같음) · 한 줄만 있는 줄은 자기 높이', () => {
+  const tree = render(<RankingScreen />);
+  const wrap = (key: string) => tree.root.findAll((n) => n.props?.testID === `rank-content-${key}` && typeof n.type === 'string')[0];
+  const inner = (key: string) => wrap(key).children[0] as unknown as { props: { onLayout: (e: unknown) => void } };
+  const lay = (key: string, h: number) => act(() => inner(key).props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 90, height: h } } }));
+  // 둘째 줄: 4·5 = 한 줄 이름(80), 6 = 두 줄 이름(100, "K-Food Master")
+  const keys = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('rank-content-') && typeof n.type === 'string').map((n) => n.props.testID.replace('rank-content-', ''));
+  expect(keys).toHaveLength(7);
+  const [k1, k2, k3, k4, k5, k6] = keys;
+  lay(k1, 80); lay(k2, 80); lay(k3, 80);
+  lay(k4, 80); lay(k5, 80); lay(k6, 100);
+  const minH = (k: string) => (RNStyleSheet.flatten(wrap(k).props.style) as { minHeight?: number }).minHeight;
+  expect([minH(k4), minH(k5), minH(k6)]).toEqual([100, 100, 100]); // 같은 줄 = 가장 높은 카드에 맞춤
+  expect([minH(k1), minH(k2), minH(k3)]).toEqual([80, 80, 80]); // 한 줄 이름만 있는 줄 = 자기 높이(시안 무변)
+  expect(rowMaxHeights({ 1: 80, 2: 90, 4: 70, 7: 60 })).toEqual({ 0: 90, 1: 70, 2: 60 });
+  expect([rankRow(1), rankRow(3), rankRow(4), rankRow(6), rankRow(7)]).toEqual([0, 0, 1, 1, 2]);
 });

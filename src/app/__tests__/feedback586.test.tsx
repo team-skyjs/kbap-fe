@@ -49,6 +49,7 @@ const mockBack = jest.fn();
 const mockPush = jest.fn();
 let mockRouteId = '12';
 jest.mock('expo-router', () => ({
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useRouter: () => ({ push: mockPush, back: mockBack, replace: jest.fn() }),
   useLocalSearchParams: () => ({ id: mockRouteId }),
   useSegments: () => [],
@@ -61,6 +62,15 @@ jest.mock('expo-router', () => ({
       mockBlur.fn = typeof off === 'function' ? off : () => {};
       return typeof off === 'function' ? off : undefined;
     }, [cb]);
+  },
+}));
+// KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
   },
 }));
 const mockBlur: { fn: () => void } = { fn: () => {} };
@@ -471,8 +481,8 @@ it('⑦ i18n — feedback 키 10개 로케일 전수(ko 등 단수형 없는 언
     const fb = JSON.parse(read(`src/lib/i18n/${lang}.json`)).feedback;
     expect(fb).toBeTruthy();
     for (const k of plain) expect(typeof fb[k]).toBe('string');
-    // 복수형은 언어별 형태 수가 다르다 — _other는 어느 언어에나 있어야 한다
-    expect(typeof fb.replyCount_other).toBe('string');
+    // KB-708: replyCount는 호출 0(답변 수 미표시 — 위 ⑤)이라 삭제
+    expect(Object.keys(fb).filter((k) => k.startsWith('replyCount'))).toEqual([]);
   }
 });
 
@@ -537,4 +547,55 @@ it('KB-635 Send = 검정(C.ink) + 흰 글자 · 본문 공백이면 기존 off �
   const label = sendHost(r).findAll((n) => typeof n.type === 'string' && n.props.children === 'feedback.send')[0];
   const lc = (Object.assign({}, ...[label.props.style].flat(Infinity).filter(Boolean)) as { color?: string }).color;
   expect(lc).toBe('#FFFFFF');
+});
+
+// ── KB-708 (4) 보강 — 문의 작성도 쓴 채 뒤로 가면 이탈 확인 · 전송 성공 뒤엔 막지 않고 닫힘(확인 0)
+it('KB-708 이탈 확인(문의): 빈 화면 = 막지 않음 · 쓰면 막음 → 뒤로 = 확인 시트 · 그만두기 = 막은 이동 진행 · 전송 성공 = 풀고 back 1회', async () => {
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  expect(mockPrevent.on).toBe(false);
+  const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
+  await act(async () => { input.props.onChangeText('half written'); });
+  expect(mockPrevent.on).toBe(true);
+  const action = { type: 'GO_BACK' };
+  await act(async () => { mockPrevent.cb!({ data: { action } }); });
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
+  await act(async () => { byId(r, 'discard-keep').props.onPress(); });
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' })).toHaveLength(0);
+  expect(mockNavDispatch).not.toHaveBeenCalled();
+  await act(async () => { mockPrevent.cb!({ data: { action } }); });
+  await act(async () => { byId(r, 'discard-go').props.onPress(); });
+  expect(mockNavDispatch).toHaveBeenCalledWith(action);
+  // 전송 성공 → 막기 해제 + 복귀 1회(확인 시트 0)
+  await act(async () => { await byId(r, 'feedback-send').props.onPress(); });
+  expect(mockPrevent.on).toBe(false);
+  expect(mockBack).toHaveBeenCalledTimes(1);
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' })).toHaveLength(0);
+});
+
+// #236 /review 2R: 전송 중엔 막지도 확인 창을 띄우지도 않는다 — 막으면 갇히고(상한 없는 업로드), 띄우면 뜬 채 성공 시 모달 두 장이 한 커밋
+it('KB-708 전송 중 뒤로 = 막지 않음(prevent off · 확인 창 0 → 그냥 나감) · 늦게 온 성공은 back을 한 번 더 부르지 않음', async () => {
+  let resolve!: (v: unknown) => void;
+  mockSubmit.mockImplementationOnce(() => new Promise((r) => (resolve = r)));
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  const input = r.root.findAllByType(TextInput).find((n) => n.props.testID === 'feedback-body')!;
+  await act(async () => { input.props.onChangeText('slow upload'); });
+  let sent!: Promise<unknown>;
+  await act(async () => { sent = byId(r, 'feedback-send').props.onPress(); }); // 전송 중(가드 busy)
+  expect(mockPrevent.on).toBe(false); // 막지 않음 = 네비게이터가 그대로 화면을 닫는다
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' })).toHaveLength(0);
+  await act(async () => { mockBlur.fn(); r.unmount(); }); // 화면이 실제로 닫힘
+  await act(async () => { resolve({ id: '1' }); await sent; });
+  expect(mockBack).not.toHaveBeenCalled(); // 이미 나간 뒤 back 추가 0
+});
+
+it('KB-708 전송 실패로 끝나면 다시 막음 → 뒤로 = 확인 창(내용은 남아 있다)', async () => {
+  mockSubmit.mockRejectedValueOnce(new Error('boom'));
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  await typeAndSend(r, 'keep me');
+  expect(mockPrevent.on).toBe(true);
+  await act(async () => { mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }); });
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
 });

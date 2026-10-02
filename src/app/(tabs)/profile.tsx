@@ -42,7 +42,8 @@ import { INGREDIENTS } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FlagEmoji } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
-import { countryByCode } from '@/lib/onboarding/countries';
+import { countryDisplayName } from '@/lib/onboarding/countries';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import Constants from 'expo-constants';
@@ -57,6 +58,7 @@ import { openAppSettings } from '@/lib/openExternal';
 
 export default function Profile() {
   const { t } = useTranslation();
+  const appLang = useAppLanguage(); // KB-708: 국가명 표시(엔도님 판정) — 구독형(렌더 중 i18n 싱글턴 직접 읽기 금지, KB-695)
   const router = useRouter();
   const isGuest = useIsGuest();
   const avatarUrl = useMyAvatarUrl(); // P-313: 탭바와 정본 공유
@@ -194,7 +196,7 @@ export default function Profile() {
                     <>
                       <FlagEmoji code={me.nationality} size={14} />
                       <Text style={styles.natText} numberOfLines={2} testID="nation-pill">{/* KB-707: "United Sta…" 잘림 — 두 줄까지 */}
-                        {countryByCode(me.nationality)?.name ?? me.nationality}
+                        {countryDisplayName(me.nationality, appLang)}
                       </Text>
                     </>
                   )}

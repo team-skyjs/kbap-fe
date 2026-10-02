@@ -83,7 +83,17 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ id: '7' }),
   usePathname: () => '/',
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), // KB-708 이탈 확인
   useFocusEffect: () => {},
+}));
+// KB-708: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백)을 기록 → 테스트가 뒤로 가기를 흉내
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
@@ -98,7 +108,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? k, getFixedT: () => (k: string, o?: { defaultValue?: string }) => o?.defaultValue ?? k } }));
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', setLang: jest.fn() }) }));
-jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
+const mockSession = { guest: false }; // KB-708 B: 작성 중 세션 만료(게스트 전환) 시나리오만 true
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockSession.guest }));
 jest.mock('@/components/SocialAuthButtons', () => ({ SocialAuthButtons: () => null }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => ({ data: undefined }) }));
 
@@ -447,6 +458,110 @@ it('KB-700(#228 공부 델타): 가운데 탭 → 입력 시작 → 뷰포트가
   act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 121, end: 121 } } }));
   scrollTo.mockClear();
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 330 } } })); // 키보드 높이 증가로 다시 축소
+  // 옛 탭 줄로 되돌리지 않는다 · KB-708(5) 상한: 370pt 축소(키보드 통째 재등장 규모)는 "줄어든 만큼 내림"도 안 함
   expect(scrollTo).not.toHaveBeenCalled();
   spy.mockRestore();
+});
+
+// ── KB-708 (4) 작성 중 이탈 확인 — 변경 있을 때만 · 등록 성공(완료 모달) 뒤엔 없음
+it('KB-708 이탈 확인(작성): 빈 화면 = 막지 않음 · 별점을 고르면 막음 → 뒤로 = 확인 시트 · 그만두기 = 막은 이동 진행 · 등록 성공 뒤 = 안 막음', async () => {
+  const tree = render(<ReviewCompose />);
+  expect(mockPrevent.on).toBe(false);
+  const star = (i: number) => tree.root.findAll((n) => n.props?.testID === `review-star-${i}` && typeof n.props?.onPress === 'function')[0];
+  act(() => star(4).props.onPress());
+  expect(mockPrevent.on).toBe(true);
+  const action = { type: 'POP' };
+  act(() => mockPrevent.cb!({ data: { action } }));
+  expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm').length).toBeGreaterThan(0);
+  act(() => tree.root.findAll((n) => n.props?.testID === 'discard-go' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(mockNavDispatch).toHaveBeenCalledWith(action);
+  // 등록 성공 → 완료 상태 = 막지 않음(Done으로 나갈 때 "버릴까요?"가 뜨지 않게)
+  await act(async () => { tree.root.findAll((n) => n.props?.testID === 'post-review' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+  await act(async () => {});
+  expect(mockPrevent.on).toBe(false);
+});
+
+it('KB-708 (5): 중간을 고치는 중 이모지 키보드로 키보드가 +53 커지면 줄어든 만큼 내려 편집 중인 줄을 계속 보이게 · 포커스 없으면 무동작', () => {
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation((() => ({ remove: jest.fn() })) as never);
+  const tree = render(<ReviewCompose />);
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  // 포커스 없음 + 뷰포트 축소 = 무동작
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
+  expect(scrollTo).not.toHaveBeenCalled();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  // 수정 모드처럼 긴 본문 중간 편집(탭 대용값은 입력으로 지워짐)
+  act(() => input.props.onChangeText('x'.repeat(400)));
+  act(() => input.props.onPressIn({ nativeEvent: { locationY: 200 } }));
+  act(() => input.props.onFocus());
+  act(() => input.props.onChangeText('x'.repeat(401)));
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 150, end: 150 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 200 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } })); // 이모지 키보드 +53
+  expect(scrollTo).toHaveBeenCalledWith({ y: 253, animated: true });
+  // #236 /review D: 이모지 키보드를 끄면(+53 회복) 따라 내린 만큼 되돌린다 — 토글마다 53씩 쌓여 편집 줄이 위로 사라지던 것
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 253 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  expect(scrollTo).toHaveBeenCalledWith({ y: 200, animated: true });
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 200 } } }));
+  // 토글 3번 = 제자리(누적 0)
+  for (let i = 0; i < 3; i++) {
+    act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
+    act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 253 } } }));
+    act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+    act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 200 } } }));
+  }
+  expect(scrollTo).toHaveBeenLastCalledWith({ y: 200, animated: true });
+  // 내린 적 없이 늘기만 하면 무동작
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 400 } } }));
+  expect(scrollTo).not.toHaveBeenCalled();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  // #236 /review 2R: 따라 내린 뒤 사용자가 직접 스크롤했으면 복귀 시 되돌리지 않는다(이유 없이 53pt 튀던 것)
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } })); // 이모지 켬 → 따라 내림
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 253 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 120 } } })); // 사용자가 위로 스크롤
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } })); // 이모지 끔
+  expect(scrollTo).not.toHaveBeenCalled();
+  // 큰 증가(포커스 유지한 채 키보드만 내려감 — Android 뒤로) = 되돌릴 몫 폐기 → 이후 작은 증가에도 무동작
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 173 } } }));
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } })); // +300
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 558 } } })); // 다시 이모지 수준 축소 → 따라 내림(새 몫)
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 226 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } })); // +53 → 새 몫만 되돌림(옛 53은 폐기돼 합산 0)
+  expect(scrollTo).toHaveBeenCalledTimes(1);
+  expect(scrollTo).toHaveBeenCalledWith({ y: 173, animated: true });
+  // 큰 축소(키보드가 통째로 다시 올라옴 ~300) = 무동작 — 커서가 위쪽이면 화면 밖으로 밀어내므로
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
+  expect(scrollTo).not.toHaveBeenCalled();
+  spy.mockRestore();
+});
+
+// #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트 분기는 early return이라 모달이 없다
+it('KB-708 B: 작성 중 세션 만료(게스트 전환) = 막지 않음(게이트·뒤로로 나갈 수 있음) · 확인 창 0', () => {
+  const tree = render(<ReviewCompose />);
+  const star = (i: number) => tree.root.findAll((n) => n.props?.testID === `review-star-${i}` && typeof n.props?.onPress === 'function')[0];
+  act(() => star(4).props.onPress());
+  expect(mockPrevent.on).toBe(true); // 폼 분기 = 막음
+  mockSession.guest = true;
+  try {
+    // 앱에선 useIsGuest 구독이 화면을 다시 그린다 — 목은 구독이 없으니 화면 안 상태 변화로 재렌더(루트 update는 래퍼의 같은 자식 요소라 건너뜀)
+    act(() => star(5).props.onPress());
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-star-5')).toHaveLength(0); // 게스트 분기(폼 없음)
+    expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm')).toHaveLength(0); // 이 분기엔 모달이 없다
+    expect(mockPrevent.on).toBe(false); // 그러니 막지도 않는다
+  } finally {
+    mockSession.guest = false;
+  }
 });
