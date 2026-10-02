@@ -228,6 +228,9 @@ export function StickyHeader({
 
       <Animated.View style={[styles.hairline, hairlineStyle]} />
     </Animated.View>
+    {/* KB-696: 상태 표시줄 가림막 — 헤더는 숨을 때 상태 표시줄 영역째 -H로 빠지므로(3e60f69부터) 그 영역을 덮는 고정 불투명 층.
+        헤더보다 위 z라 헤더가 이 뒤로 들어간다(헤더 모양·높이·애니메이션 무변). 배경 = 헤더와 같은 화면 배경 토큰, 터치 통과. */}
+    <View pointerEvents="none" style={[styles.statusShield, { height: insets.top }]} testID="status-bar-shield" />
     </>
   );
 }
@@ -243,6 +246,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface, // always solid while visible (§6)
     // P-312(KB-479): 상시 그림자(sh1) 제거 — 헤어라인만, 그것도 스크롤 시에만(iOS scroll-edge 관례)
   },
+  // KB-696: 상태 표시줄 가림막 — 사용 화면 루트 배경이 전부 C.surface(food·index·profile·food/[id]/reviews·ReviewFeed)라 같은 토큰
+  statusShield: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 11, backgroundColor: C.surface },
   bar: { height: BAR_H, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   titleWrap: {
     position: 'absolute',
