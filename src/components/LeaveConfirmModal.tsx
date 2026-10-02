@@ -1,7 +1,7 @@
 /**
  * LeaveConfirmModal + useLeaveConfirm — 작성 중 이탈 확인(KB-708: 커뮤니티 글쓰기에서 추출 — 리뷰 작성·수정·문의 작성 공유).
  * useLeaveConfirm = 변경이 있을 때 **화면을 떠나는 모든 길**(헤더 뒤로·스와이프 뒤로·Android 하드웨어 뒤로)을 막고 시트를 띄운다.
- * 시안 문법: 라운드 26 카드 · "계속 쓰기"(ghost) + "그만두기"(dangerGhost, 보더 버튼 프레임 — P-175). 문구 키 = community.leave*.
+ * 시안 문법: 라운드 26 카드 · "계속 쓰기"(ghost) + "그만두기"(dangerGhost, 보더 버튼 프레임 — P-175). 문구 키 = common.leaveTitle·leaveBody·keepWriting·discard(KB-708: 네 화면 공용 — 'post' 낱말 없는 중립 제목).
  */
 import * as React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
@@ -47,15 +47,15 @@ export function LeaveConfirmModal({ visible, onKeep, onDiscard }: { visible: boo
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
       <View style={styles.confirmBackdrop}>
         <View style={styles.confirmCard} testID="leave-confirm">
-          <Text style={styles.confirmTitle}>{t('community.leaveTitle')}</Text>
-          <Text style={styles.confirmBody}>{t('community.leaveBody')}</Text>
+          <Text style={styles.confirmTitle}>{t('common.leaveTitle')}</Text>
+          <Text style={styles.confirmBody}>{t('common.leaveBody')}</Text>
           <View style={{ gap: 9, marginTop: 6 }}>
             <Btn variant="ghost" onPress={onKeep} testID="discard-keep">
-              {t('community.keepWriting')}
+              {t('common.keepWriting')}
             </Btn>
             {/* P-175: destructive도 보더 버튼 프레임(재스캔 모달과 동일 문법) */}
             <Btn variant="dangerGhost" onPress={onDiscard} testID="discard-go">
-              {t('community.discard')}
+              {t('common.discard')}
             </Btn>
           </View>
         </View>

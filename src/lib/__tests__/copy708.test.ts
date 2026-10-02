@@ -49,3 +49,30 @@ describe('(3) 국가명 — 엔도님이 지금 앱 언어로 쓰인 것일 때�
     expect(countryDisplayName('ZZ', 'ko')).toBe('ZZ'); // 모르는 코드 = 코드 그대로(옛 동작)
   });
 });
+
+describe('(4) 이탈 확인 문구 — 네 화면(리뷰 작성·수정·문의·커뮤니티) 공용 중립 키', () => {
+  const LEAVE = ['leaveTitle', 'leaveBody', 'keepWriting', 'discard'] as const;
+  // 로케일별 '글/게시물' 낱말 — 리뷰·문의 화면에서 어색했던 원인(제목에 남으면 안 됨)
+  const POST_WORDS: Record<string, string[]> = {
+    en: ['post'], es: ['publicación'], ru: ['пост'], ja: ['投稿'], 'zh-Hans': ['帖子'], 'zh-Hant': ['貼文'],
+    vi: ['bài viết'], id: ['postingan'], th: ['โพสต์'], ko: ['게시물', '글을'],
+  };
+  it('10개 로케일 모두 common에 네 키 · community에 옛 키 0(키 두 벌 금지) · 제목에 post 낱말 없음 · en = "Leave without saving?"', () => {
+    for (const l of LOCALES) {
+      const j = load(l) as unknown as { common: Record<string, string>; community: Record<string, string> };
+      for (const k of LEAVE) {
+        expect({ l, k, has: typeof j.common[k] === 'string' && j.common[k].length > 0 }).toEqual({ l, k, has: true });
+        expect({ l, k, legacy: k in j.community }).toEqual({ l, k, legacy: false });
+      }
+      for (const w of POST_WORDS[l]) expect({ l, title: j.common.leaveTitle.toLowerCase().includes(w) }).toEqual({ l, title: false });
+    }
+    expect((load('en') as unknown as { common: Record<string, string> }).common.leaveTitle).toBe('Leave without saving?');
+    expect((load('ko') as unknown as { common: Record<string, string> }).common.leaveTitle).toBe('작성을 그만둘까요?');
+  });
+  it('LeaveConfirmModal은 common 키만 쓴다(community.* 참조 0)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- 소스 잠금
+    const src = (require('fs') as typeof import('fs')).readFileSync('src/components/LeaveConfirmModal.tsx', 'utf8');
+    for (const k of LEAVE) expect(src).toContain(`t('common.${k}')`);
+    expect(src).not.toMatch(/t\('community\./);
+  });
+});

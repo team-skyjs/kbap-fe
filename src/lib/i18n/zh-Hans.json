@@ -12,7 +12,11 @@
     "retry": "重试",
     "skip": "跳过",
     "save": "保存",
-    "close": "关闭"
+    "close": "关闭",
+    "leaveTitle": "不保存就离开吗？",
+    "leaveBody": "草稿不会被保存。",
+    "keepWriting": "继续写",
+    "discard": "放弃"
   },
   "intro": {
     "skip": "跳过",
@@ -177,10 +181,6 @@
     "post": "发布",
     "composePlaceholder": "分享任何关于在韩国吃饭的事…",
     "cover": "封面",
-    "leaveTitle": "放弃这篇帖子？",
-    "leaveBody": "草稿不会被保存。",
-    "keepWriting": "继续写",
-    "discard": "放弃",
     "postedTitle": "已发布！",
     "editedTitle": "帖子已更新",
     "tagFoodTitle": "标记菜品",

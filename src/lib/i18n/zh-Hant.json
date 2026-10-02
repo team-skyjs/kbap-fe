@@ -12,7 +12,11 @@
     "retry": "重試",
     "skip": "略過",
     "save": "儲存",
-    "close": "關閉"
+    "close": "關閉",
+    "leaveTitle": "不儲存就離開嗎？",
+    "leaveBody": "草稿不會被儲存。",
+    "keepWriting": "繼續寫",
+    "discard": "放棄"
   },
   "intro": {
     "skip": "略過",
@@ -177,10 +181,6 @@
     "post": "發布",
     "composePlaceholder": "分享任何關於在韓國吃飯的事…",
     "cover": "封面",
-    "leaveTitle": "放棄這篇貼文？",
-    "leaveBody": "草稿不會被儲存。",
-    "keepWriting": "繼續寫",
-    "discard": "放棄",
     "postedTitle": "已發布！",
     "editedTitle": "貼文已更新",
     "tagFoodTitle": "標記菜色",

@@ -12,7 +12,11 @@
     "retry": "Reintentar",
     "skip": "Omitir",
     "save": "Guardar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "leaveTitle": "¿Salir sin guardar?",
+    "leaveBody": "El borrador no se guardará.",
+    "keepWriting": "Seguir escribiendo",
+    "discard": "Descartar"
   },
   "intro": {
     "skip": "Omitir",
@@ -178,10 +182,6 @@
     "post": "Publicar",
     "composePlaceholder": "Comparte lo que sea sobre comer en Corea…",
     "cover": "Portada",
-    "leaveTitle": "¿Descartar esta publicación?",
-    "leaveBody": "El borrador no se guardará.",
-    "keepWriting": "Seguir escribiendo",
-    "discard": "Descartar",
     "postedTitle": "¡Publicado!",
     "editedTitle": "Publicación actualizada",
     "tagFoodTitle": "Etiquetar comida",

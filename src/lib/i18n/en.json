@@ -8,7 +8,11 @@
     "goBack": "Go back",
     "retry": "Retry",
     "skip": "Skip",
-    "close": "Close"
+    "close": "Close",
+    "leaveTitle": "Leave without saving?",
+    "leaveBody": "Your draft won’t be saved.",
+    "keepWriting": "Keep writing",
+    "discard": "Discard"
   },
   "intro": {
     "skip": "Skip",
@@ -174,10 +178,6 @@
     "post": "Post",
     "composePlaceholder": "Share anything about eating in Korea…",
     "cover": "Cover",
-    "leaveTitle": "Discard this post?",
-    "leaveBody": "Your draft won’t be saved.",
-    "keepWriting": "Keep writing",
-    "discard": "Discard",
     "postedTitle": "Posted!",
     "editedTitle": "Post updated",
     "tagFoodTitle": "Tag a food",

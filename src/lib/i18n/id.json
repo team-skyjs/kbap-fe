@@ -12,7 +12,11 @@
     "retry": "Coba lagi",
     "skip": "Lewati",
     "save": "Simpan",
-    "close": "Tutup"
+    "close": "Tutup",
+    "leaveTitle": "Keluar tanpa menyimpan?",
+    "leaveBody": "Draf tidak akan disimpan.",
+    "keepWriting": "Lanjut menulis",
+    "discard": "Buang"
   },
   "intro": {
     "skip": "Lewati",
@@ -177,10 +181,6 @@
     "post": "Posting",
     "composePlaceholder": "Bagikan apa saja tentang makan di Korea…",
     "cover": "Sampul",
-    "leaveTitle": "Buang postingan ini?",
-    "leaveBody": "Draf tidak akan disimpan.",
-    "keepWriting": "Lanjut menulis",
-    "discard": "Buang",
     "postedTitle": "Terposting!",
     "editedTitle": "Postingan diperbarui",
     "tagFoodTitle": "Tandai makanan",

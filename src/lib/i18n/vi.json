@@ -12,7 +12,11 @@
     "retry": "Thử lại",
     "skip": "Bỏ qua",
     "save": "Lưu",
-    "close": "Đóng"
+    "close": "Đóng",
+    "leaveTitle": "Rời đi mà không lưu?",
+    "leaveBody": "Bản nháp sẽ không được lưu.",
+    "keepWriting": "Viết tiếp",
+    "discard": "Bỏ"
   },
   "intro": {
     "skip": "Bỏ qua",
@@ -177,10 +181,6 @@
     "post": "Đăng",
     "composePlaceholder": "Chia sẻ bất cứ điều gì về ăn uống ở Hàn Quốc…",
     "cover": "Ảnh bìa",
-    "leaveTitle": "Bỏ bài viết này?",
-    "leaveBody": "Bản nháp sẽ không được lưu.",
-    "keepWriting": "Viết tiếp",
-    "discard": "Bỏ",
     "postedTitle": "Đã đăng!",
     "editedTitle": "Đã cập nhật bài viết",
     "tagFoodTitle": "Gắn thẻ món ăn",

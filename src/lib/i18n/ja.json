@@ -12,7 +12,11 @@
     "retry": "再試行",
     "skip": "スキップ",
     "save": "保存",
-    "close": "閉じる"
+    "close": "閉じる",
+    "leaveTitle": "保存せずに戻りますか？",
+    "leaveBody": "下書きは保存されません。",
+    "keepWriting": "書き続ける",
+    "discard": "やめる"
   },
   "intro": {
     "skip": "スキップ",
@@ -177,10 +181,6 @@
     "post": "投稿",
     "composePlaceholder": "韓国での食事について何でもシェアしよう…",
     "cover": "カバー",
-    "leaveTitle": "投稿をやめますか？",
-    "leaveBody": "下書きは保存されません。",
-    "keepWriting": "書き続ける",
-    "discard": "やめる",
     "postedTitle": "投稿しました！",
     "editedTitle": "投稿を更新しました",
     "tagFoodTitle": "料理をタグ付け",

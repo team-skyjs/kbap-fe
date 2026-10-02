@@ -12,7 +12,11 @@
     "retry": "ลองใหม่",
     "skip": "ข้าม",
     "save": "บันทึก",
-    "close": "ปิด"
+    "close": "ปิด",
+    "leaveTitle": "ออกโดยไม่บันทึกใช่ไหม?",
+    "leaveBody": "แบบร่างจะไม่ถูกบันทึก",
+    "keepWriting": "เขียนต่อ",
+    "discard": "ทิ้ง"
   },
   "intro": {
     "skip": "ข้าม",
@@ -177,10 +181,6 @@
     "post": "โพสต์",
     "composePlaceholder": "แชร์อะไรก็ได้เกี่ยวกับการกินในเกาหลี…",
     "cover": "ปก",
-    "leaveTitle": "ทิ้งโพสต์นี้?",
-    "leaveBody": "แบบร่างจะไม่ถูกบันทึก",
-    "keepWriting": "เขียนต่อ",
-    "discard": "ทิ้ง",
     "postedTitle": "โพสต์แล้ว!",
     "editedTitle": "อัปเดตโพสต์แล้ว",
     "tagFoodTitle": "แท็กอาหาร",

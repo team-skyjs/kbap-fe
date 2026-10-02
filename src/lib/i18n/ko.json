@@ -12,7 +12,11 @@
     "goBack": "돌아가기",
     "retry": "재시도",
     "skip": "건너뛰기",
-    "close": "닫기"
+    "close": "닫기",
+    "leaveTitle": "작성을 그만둘까요?",
+    "leaveBody": "작성 중인 내용은 저장되지 않아요.",
+    "keepWriting": "계속 쓰기",
+    "discard": "그만두기"
   },
   "intro": {
     "skip": "건너뛰기",
@@ -177,10 +181,6 @@
     "post": "게시",
     "composePlaceholder": "한국에서의 식사에 대해 무엇이든 적어보세요…",
     "cover": "커버",
-    "leaveTitle": "작성을 그만둘까요?",
-    "leaveBody": "작성 중인 내용은 저장되지 않아요.",
-    "keepWriting": "계속 쓰기",
-    "discard": "그만두기",
     "postedTitle": "게시했어요!",
     "editedTitle": "글을 수정했어요",
     "tagFoodTitle": "음식 태그",
