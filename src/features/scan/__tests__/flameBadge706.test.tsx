@@ -73,7 +73,6 @@ import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuot
 import { BADGE_DRAWN_ABOVE, BADGE_H, BADGE_W, FLAME_SCALE } from '@/components/CountdownBadge';
 import { BADGE_POS_KEY, _setBadgePosCacheForTest, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos } from '../badgePosition';
 import { FLAME_VIEWBOX, OUTER_FRAMES, OUTER_REST_D, flameDrawnTopUnit } from '@/components/flameGeometry';
-import { BADGE_GAP } from '../HomeQuotaBadge';
 import { FAB_OVERHANG } from '@/components/TabBar';
 
 const { pans } = require('@/__tests__/helpers/gestureHandlerMock') as typeof import('@/__tests__/helpers/gestureHandlerMock');
@@ -372,7 +371,6 @@ describe('#234 QA — 위 한계 = 홈 검색 줄 아래(그려지는 영역 기
   it('검색 줄 측정 전(앵커 없음)엔 헤더 아래가 한계', () => {
     expect(require('../badgePosition').badgeMinTop(null, HEADER)).toBe(HEADER + 4);
     expect(require('../badgePosition').badgeMinTop(ROW_BOTTOM, HEADER)).toBe(MIN_TOP);
-    void BADGE_GAP;
   });
 });
 
