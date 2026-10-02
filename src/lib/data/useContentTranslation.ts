@@ -25,6 +25,16 @@ interface TranslationWire {
   targetId: number | string;
   language: string;
   text: string;
+  /** KB-688: 원문 언어 — 앱 10개 언어면 앱 lang 코드와 글자까지 같게 정규화, 그 밖은 BCP 47 언어 부분 소문자, 판별 못 하면 null.
+   *  구서버는 키 없음(undefined → null 취급). */
+  sourceLanguage?: string | null;
+}
+
+/** 캐시에 두는 번역 결과 — 같은 언어 판정·라벨 언어 이름까지 한 번에 */
+interface TranslationResult {
+  text: string;
+  language: string;
+  sourceLanguage: string | null;
 }
 
 export interface ContentTranslation {
@@ -32,6 +42,10 @@ export interface ContentTranslation {
   translatedText: string | null;
   showingTranslated: boolean;
   loading: boolean;
+  /** 번역을 보여 주는 중일 때의 원문 언어(KB-688) — null = 모름("Translated"). */
+  sourceLanguage: string | null;
+  /** KB-689: 원문 언어 == 요청 언어로 확인된 글 — 번역 표시 안 함 + 라벨 숨김(세션 동안 = 캐시). */
+  sameLanguage: boolean;
   /** 버튼 한 번 — 원문이면 번역(캐시 있으면 즉시), 번역 중이면 원문으로. */
   toggle: () => void;
 }
@@ -52,7 +66,9 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   });
   // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
   const [shownKey, setShownKey] = React.useState<string | null>(null);
-  const showing = shownKey === keyStr && data != null;
+  // KB-689: sourceLanguage === language(요청 언어) = text가 원문 그대로 → 번역 표시로 전환하지 않는다(판정 = 문자열 일치만, 서버 계약)
+  const sameLanguage = data != null && data.sourceLanguage != null && data.sourceLanguage === data.language;
+  const showing = shownKey === keyStr && data != null && !sameLanguage;
   const [loading, setLoading] = React.useState(false);
   const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
 
@@ -64,24 +80,33 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
       return;
     }
     if (data != null) {
+      if (sameLanguage) return; // 라벨이 숨겨져 있어 실사용 경로 아님 — 방어
       track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'ok' });
       setShownKey(keyStr); // 캐시 — 재요청 0
       return;
     }
     setLoading(true);
     qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, retry: 0 })
-      .then(() => {
-        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'ok' });
-        setShownKey(keyStr);
+      .then((res) => {
+        const same = res.sourceLanguage != null && res.sourceLanguage === res.language;
+        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: same ? 'same' : 'ok' });
+        if (!same) setShownKey(keyStr); // 같은 언어 = 원문 유지, 라벨은 sameLanguage로 숨김
       })
       .catch(() => {
         track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'fail' });
         showTopToast(t('translation.translateFailed'), { error: true }); // 원문 유지
       })
       .finally(() => setLoading(false));
-  }, [data, keyStr, loading, qc, queryKey, showing, t, target, targetId, targetType]);
+  }, [data, keyStr, loading, qc, queryKey, sameLanguage, showing, t, target, targetId, targetType]);
 
-  return { translatedText: showing ? data : null, showingTranslated: showing, loading, toggle };
+  return {
+    translatedText: showing ? data.text : null,
+    showingTranslated: showing,
+    loading,
+    sourceLanguage: showing ? data.sourceLanguage : null,
+    sameLanguage,
+    toggle,
+  };
 }
 
 /** 키용 짧은 해시(djb2) — 본문 원문을 키에 통째로 싣지 않으려는 것뿐, 보안 용도 아님.
@@ -92,7 +117,7 @@ function hashText(s: string): string {
   return (h >>> 0).toString(36);
 }
 
-async function fetchTranslation(targetType: TranslationTargetType, targetId: string): Promise<string> {
+async function fetchTranslation(targetType: TranslationTargetType, targetId: string): Promise<TranslationResult> {
   const id = Number(targetId);
   const res = await api.post<TranslationWire>(`/api/translations?lang=${apiLang()}`, {
     targetType,
@@ -100,5 +125,5 @@ async function fetchTranslation(targetType: TranslationTargetType, targetId: str
   });
   // #220 공부 메모 ③: 빈 결과 = 실패(throw → 미캐시·토스트) — 빈 본문 + See original 방지
   if (!res?.text?.trim()) throw new Error('empty translation');
-  return res.text;
+  return { text: res.text, language: res.language, sourceLanguage: res.sourceLanguage ?? null };
 }

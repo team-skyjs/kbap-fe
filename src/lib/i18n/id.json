@@ -406,9 +406,22 @@
     "extrasTaste": "Rasa"
   },
   "translation": {
-    "translate": "Terjemahkan",
-    "seeOriginal": "Lihat asli",
-    "translateFailed": "Tidak bisa menerjemahkan. Coba lagi."
+    "showTranslation": "Tampilkan terjemahan",
+    "translatedFrom": "Diterjemahkan dari bahasa {{language}}",
+    "translated": "Diterjemahkan",
+    "translateFailed": "Tidak bisa menerjemahkan. Coba lagi.",
+    "lang": {
+      "en": "Inggris",
+      "ko": "Korea",
+      "ja": "Jepang",
+      "zh-Hans": "Tionghoa (Sederhana)",
+      "zh-Hant": "Tionghoa (Tradisional)",
+      "vi": "Vietnam",
+      "id": "Indonesia",
+      "th": "Thai",
+      "ru": "Rusia",
+      "es": "Spanyol"
+    }
   },
   "reviews": {
     "headerTitle": "Ulasan",

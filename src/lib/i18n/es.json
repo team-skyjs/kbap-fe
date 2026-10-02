@@ -408,9 +408,22 @@
     "extrasTaste": "Sabor"
   },
   "translation": {
-    "translate": "Traducir",
-    "seeOriginal": "Ver original",
-    "translateFailed": "No se pudo traducir. Inténtalo de nuevo."
+    "showTranslation": "Mostrar traducción",
+    "translatedFrom": "Traducido del {{language}}",
+    "translated": "Traducido",
+    "translateFailed": "No se pudo traducir. Inténtalo de nuevo.",
+    "lang": {
+      "en": "inglés",
+      "ko": "coreano",
+      "ja": "japonés",
+      "zh-Hans": "chino simplificado",
+      "zh-Hant": "chino tradicional",
+      "vi": "vietnamita",
+      "id": "indonesio",
+      "th": "tailandés",
+      "ru": "ruso",
+      "es": "español"
+    }
   },
   "reviews": {
     "headerTitle": "Reseñas",

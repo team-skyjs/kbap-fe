@@ -34,9 +34,8 @@ import type { Review } from '@/lib/api/types';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
-/** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). KB-679: `footerStart` = 같은 줄 좌측 슬롯(번역 버튼) —
- *  펼침 토글(우측)과 한 줄에 놓아 카드 높이를 늘리지 않는다. 클램프 규칙은 원문·번역문 동일(같은 Text). */
-export function ExpandableBody({ body, t, style, footerStart }: { body: string; t: TFn; style?: object; footerStart?: React.ReactNode }) {
+/** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). 클램프 규칙은 원문·번역문 동일(같은 Text). */
+export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style?: object }) {
   const [expanded, setExpanded] = React.useState(false);
   const [clamped, setClamped] = React.useState(false);
   // #220 공부 메모 ①: 본문이 바뀌면(원문↔번역·수정) 접힌 상태로 돌아가 줄 수를 다시 잰다 — 렌더 중 전환 비교(KB-603)
@@ -60,32 +59,31 @@ export function ExpandableBody({ body, t, style, footerStart }: { body: string; 
         {body}
       </Text>
       {/* P-390(KB-578): 좌측 작은 텍스트 → 공용 ExpandToggle(우측·44px·chevron) */}
-      {footerStart ? (
-        <View style={styles.bodyFoot}>
-          {footerStart}
-          {toggle}
-        </View>
-      ) : (
-        toggle
-      )}
+      {toggle}
     </View>
   );
 }
 
 /** KB-679(P-431): 리뷰 본문 **단일 렌더 지점** — FeedCard(홈·리뷰 피드·음식 상세 3장·내 리뷰)와 음식별 전체 리뷰가
- *  모두 이걸 쓴다(표면별 복붙 금지). 본문이 있으면 항상 번역 버튼(예진 10/2 — 언어 감지 없음), 누르면 본문이 번역문으로
- *  교체되고 버튼은 "See original". 빈 본문(사진·별점만) = 본문·버튼 둘 다 없음. */
+ *  모두 이걸 쓴다(표면별 복붙 금지). 빈 본문(사진·별점만) = 본문·라벨 둘 다 없음.
+ *  KB-689(P-434) 2차 X 방식: 번역 라벨은 본문 **위 왼쪽** 한 줄(접힘 대상 밖) — 누르기 전엔 모든 리뷰에 보이고(언어 감지 없음),
+ *  원문 언어 == 요청 언어로 확인된 리뷰는 라벨을 숨긴다. */
 export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
   const original = review.body?.trim() ? review.body : null;
   const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   if (!original) return null;
+  const label = FLAGS.contentTranslation && !tx.sameLanguage;
   return (
-    <ExpandableBody
-      body={tx.translatedText ?? original}
-      t={t}
-      style={style}
-      footerStart={FLAGS.contentTranslation ? <TranslateButton showingTranslated={tx.showingTranslated} loading={tx.loading} onPress={tx.toggle} /> : undefined}
-    />
+    <View>
+      {label && (
+        <TranslateButton
+          state={tx.loading ? 'loading' : tx.showingTranslated ? 'translated' : 'idle'}
+          sourceLanguage={tx.sourceLanguage}
+          onPress={tx.toggle}
+        />
+      )}
+      <ExpandableBody body={tx.translatedText ?? original} t={t} style={style} />
+    </View>
   );
 }
 
@@ -435,7 +433,6 @@ export function HelpfulButton({
 
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
-  bodyFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, // KB-679: 번역(좌)·펼침(우) 한 줄
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)

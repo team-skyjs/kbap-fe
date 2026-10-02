@@ -406,9 +406,22 @@
     "extrasTaste": "รสชาติ"
   },
   "translation": {
-    "translate": "แปล",
-    "seeOriginal": "ดูต้นฉบับ",
-    "translateFailed": "แปลไม่สำเร็จ โปรดลองอีกครั้ง"
+    "showTranslation": "แสดงคำแปล",
+    "translatedFrom": "แปลจากภาษา{{language}}",
+    "translated": "แปลแล้ว",
+    "translateFailed": "แปลไม่สำเร็จ โปรดลองอีกครั้ง",
+    "lang": {
+      "en": "อังกฤษ",
+      "ko": "เกาหลี",
+      "ja": "ญี่ปุ่น",
+      "zh-Hans": "จีนตัวย่อ",
+      "zh-Hant": "จีนตัวเต็ม",
+      "vi": "เวียดนาม",
+      "id": "อินโดนีเซีย",
+      "th": "ไทย",
+      "ru": "รัสเซีย",
+      "es": "สเปน"
+    }
   },
   "reviews": {
     "headerTitle": "รีวิว",

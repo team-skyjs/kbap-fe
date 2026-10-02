@@ -406,9 +406,22 @@
     "extrasTaste": "味道"
   },
   "translation": {
-    "translate": "翻译",
-    "seeOriginal": "查看原文",
-    "translateFailed": "无法翻译，请重试。"
+    "showTranslation": "显示翻译",
+    "translatedFrom": "翻译自{{language}}",
+    "translated": "已翻译",
+    "translateFailed": "无法翻译，请重试。",
+    "lang": {
+      "en": "英语",
+      "ko": "韩语",
+      "ja": "日语",
+      "zh-Hans": "简体中文",
+      "zh-Hant": "繁体中文",
+      "vi": "越南语",
+      "id": "印度尼西亚语",
+      "th": "泰语",
+      "ru": "俄语",
+      "es": "西班牙语"
+    }
   },
   "reviews": {
     "headerTitle": "点评",

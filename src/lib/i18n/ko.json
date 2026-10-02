@@ -452,9 +452,22 @@
     "extrasTaste": "맛"
   },
   "translation": {
-    "translate": "번역하기",
-    "seeOriginal": "원문 보기",
-    "translateFailed": "번역하지 못했어요. 다시 시도해 주세요."
+    "showTranslation": "번역 보기",
+    "translatedFrom": "{{language}}에서 번역",
+    "translated": "번역됨",
+    "translateFailed": "번역하지 못했어요. 다시 시도해 주세요.",
+    "lang": {
+      "en": "영어",
+      "ko": "한국어",
+      "ja": "일본어",
+      "zh-Hans": "중국어(간체)",
+      "zh-Hant": "중국어(번체)",
+      "vi": "베트남어",
+      "id": "인도네시아어",
+      "th": "태국어",
+      "ru": "러시아어",
+      "es": "스페인어"
+    }
   },
   "reviews": {
     "headerTitle": "리뷰",
