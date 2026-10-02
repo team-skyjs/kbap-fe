@@ -139,10 +139,14 @@ const OPEN_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
 /** Languages the BE accepts for `lang` / Accept-Language. Others → 400, so clamp. */
 const ALLOWED_LANGS = new Set(['ko', 'zh-Hans', 'en', 'ja', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']);
 
-/** Active reader language, clamped to what the BE supports (fallback en). */
-export function apiLang(): string {
-  const l = i18n.language;
+/** BE가 받는 언어로 고정(아니면 en) — 순수 함수. 렌더 중 키에는 `clampLang(useAppLanguage())`(KB-695 — 싱글턴 직접 읽기 금지). */
+export function clampLang(l: string): string {
   return ALLOWED_LANGS.has(l) ? l : 'en';
+}
+
+/** Active reader language, clamped to what the BE supports (fallback en). **호출 시점** 읽기 — 요청 함수·콜백 전용. */
+export function apiLang(): string {
+  return clampLang(i18n.language);
 }
 
 /** P-115: 기본 타임아웃 — 응답 유실(fetch 침묵) 시에도 reject 보장, 무한 스켈레톤

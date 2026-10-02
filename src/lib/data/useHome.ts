@@ -9,7 +9,7 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
-import i18n from '../i18n';
+import { useAppLanguage } from '../i18n/useAppLanguage';
 import type { HomeResponse } from '../api/types';
 import type { MenuSummaryWire } from '../api/foodListTypes';
 import { api, apiLang } from '../api/client';
@@ -46,9 +46,10 @@ export async function fetchHome(): Promise<HomeResponse> {
 }
 
 export function useHome() {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const query = useQuery({
     // 언어 전환 시 성분명·음식명 재지역화
-    queryKey: ['home', i18n.language],
+    queryKey: ['home', lang],
     queryFn: fetchHome,
   });
 

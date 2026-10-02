@@ -13,6 +13,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
+import { useAppLanguage } from '../i18n/useAppLanguage';
 import type { Review, User, UserUpdate } from '../api/types';
 import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
@@ -39,9 +40,10 @@ export async function fetchMe(): Promise<User> {
 }
 
 export function useMe() {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   return useQuery({
     // 언어 전환 시 성분명 지역화 대비(현재 프로필은 코드만이라 무해)
-    queryKey: ['me', i18n.language],
+    queryKey: ['me', lang],
     queryFn: fetchMe,
   });
 }

@@ -11,7 +11,7 @@
  * 공개 API라 게스트/온보딩에서도 동작. 카탈로그는 사실상 정적 — staleTime 24h.
  */
 import { useQuery } from '@tanstack/react-query';
-import i18n from '../i18n';
+import { useAppLanguage } from '../i18n/useAppLanguage';
 import { api, apiLang } from '../api/client';
 import { ingredientLabel } from '../mocks/ingredients';
 
@@ -36,8 +36,9 @@ export function catalogImageUrl(cat: Map<string, IngredientCatalogItem> | undefi
 }
 
 export function useIngredientCatalog() {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const q = useQuery({
-    queryKey: ['ingredientCatalog', i18n.language],
+    queryKey: ['ingredientCatalog', lang],
     queryFn: fetchIngredientCatalog,
     staleTime: 24 * 3600_000,
   });
