@@ -12,6 +12,7 @@ const sweep = require('../compiler-sweep.cjs') as {
   collectImpureHelpers: (s: { rel: string; code: string }[], failures?: string[]) => Map<string, string>;
   diffBaseline: (items: { key: string }[], base: { key: string; count: number; verdict: string }[]) => { fresh: { key: string; extra: number }[]; gone: { key: string }[] };
   runSweep: (srcRoot: string) => { files: number; compiled: number; failures: string[] };
+  didNotRun: (r: { files: number; compiled: number; failures: string[]; items: unknown[] }, baselineTotal: number) => boolean;
 };
 
 const keys = (code: string, impure = new Map<string, string>()) => sweep.sweepSource(code, 'x/Comp.tsx', impure).items.map((i) => i.key);
@@ -70,4 +71,22 @@ it('기준선 파일 = 판정 4종만 · 키 중복 0 · 개수 ≥ 1', () => {
     expect(it2.count).toBeGreaterThanOrEqual(1);
   }
   expect(new Set(b.items.map((i) => i.key)).size).toBe(b.items.length);
+});
+
+it('#231: 렌더 중 동기 콜백(배열 메서드) 안의 읽기 = 후보 — 컴파일러가 _temp로 끌어올리거나 tN에 메모해도 따라간다 · 이벤트 핸들러 안은 아님', () => {
+  const hoisted = keys(`export function A({ items }: { items: string[] }) { const xs = items.map(() => Date.now()); return <Text>{xs.join()}</Text>; }`);
+  expect(hoisted).toEqual(['direct | x/Comp.tsx | time/random | deps | Date.now()']); // items.map(_temp) + 모듈 수준 _temp
+  const memoized = keys(`export function B({ items, k }: { items: string[]; k: number }) { const xs = items.map((i) => i + k + Date.now()); return <Text>{xs.join()}</Text>; }`);
+  expect(memoized).toEqual(['direct | x/Comp.tsx | time/random | deps | Date.now()']); // t2 = i => … ; items.map(t2)
+  const handler = keys(`export function C({ items }: { items: string[] }) { const onPress = () => items.map(() => Date.now()); return <Pressable onPress={onPress} />; }`);
+  expect(handler).toEqual([]);
+});
+
+it('#231: 기준선이 있는데 후보 0 = "안 돌았다"(탐지가 통째로 빗나감) · 기준선도 0이면 정상', () => {
+  const ran = { files: 233, compiled: 346, failures: [], items: [] };
+  expect(sweep.didNotRun(ran, 12)).toBe(true);
+  expect(sweep.didNotRun(ran, 0)).toBe(false);
+  expect(sweep.didNotRun({ ...ran, items: [{}] }, 12)).toBe(false);
+  expect(sweep.didNotRun({ ...ran, files: 0 }, 0)).toBe(true);
+  expect(sweep.didNotRun({ ...ran, failures: ['x'] }, 0)).toBe(true);
 });
