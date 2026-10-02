@@ -15,15 +15,22 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => {
+      const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; // KB-706: 컴파일러 호환 .get/.set
+      return sv;
+    },
     useAnimatedStyle: (f: () => unknown) => f(),
     withTiming: (v: unknown) => v,
     withSpring: (v: unknown) => v,
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
+    useAnimatedProps: (f: () => unknown) => f(), // KB-706 불꽃 일렁임
+    Easing: { linear: (x: number) => x },
   };
 });
+// KB-706: 끌어 놓기 — GestureDetector는 자식 그대로, Pan 콜백은 기록(테스트가 직접 몬다)
+jest.mock('react-native-gesture-handler', () => require('@/__tests__/helpers/gestureHandlerMock'));
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
   useFocusEffect: (cb: () => (() => void) | void) => {
@@ -50,6 +57,7 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: { ...a.FLAGS, countdownBadge: true } };
 });
 
+import { _setBadgePosCacheForTest } from '../badgePosition';
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { setSessionState, _resetSessionForTest } from '@/lib/auth/useSession';
 
@@ -90,6 +98,11 @@ afterEach(() => {
     }
   }
 });
+/** KB-706: 뱃지는 홈 영역 측정(레이어 onLayout) 뒤에야 그려진다 — 측정을 흉내 낸다 */
+const layoutBadge = (t: ReactTestRenderer) => {
+  const layer = t.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.pointerEvents === 'box-none' && typeof n.type === 'string')[0];
+  if (layer) act(() => layer.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 800 } } }));
+};
 async function mount(): Promise<ReactTestRenderer> {
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   let t!: ReactTestRenderer;
@@ -101,12 +114,14 @@ async function mount(): Promise<ReactTestRenderer> {
     );
   });
   mountedTrees.push(t);
+  layoutBadge(t);
   await flush();
   await flush();
   return t;
 }
 
 beforeEach(() => {
+  _setBadgePosCacheForTest(null); // KB-706: 뱃지 위치 세션 캐시 — 저장값 없음(기본 자리)으로 즉시
   _resetQuotaCelebrationMemoryForTest(); // KB-699
   _resetSessionForTest();
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);

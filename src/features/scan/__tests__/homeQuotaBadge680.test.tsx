@@ -16,15 +16,22 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => {
+      const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; // KB-706: 컴파일러 호환 .get/.set
+      return sv;
+    },
     useAnimatedStyle: (f: () => unknown) => f(),
     withTiming: (v: unknown) => v,
     withSpring: (v: unknown) => mockSpring(v),
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
+    useAnimatedProps: (f: () => unknown) => f(), // KB-706 불꽃 일렁임
+    Easing: { linear: (x: number) => x },
   };
 });
+// KB-706: 끌어 놓기 — GestureDetector는 자식 그대로, Pan 콜백은 기록(테스트가 직접 몬다)
+jest.mock('react-native-gesture-handler', () => require('@/__tests__/helpers/gestureHandlerMock'));
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
   useFocusEffect: (cb: () => (() => void) | void) => {
@@ -54,9 +61,9 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: new Proxy(a.FLAGS, { get: (t, k) => (k === 'countdownBadge' ? mockFlag.on : t[k as string]) }) };
 });
 
+import { _setBadgePosCacheForTest } from '../badgePosition';
 import { HomeQuotaBadge, quotaBadgeModel, BADGE_RIGHT, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { FLAME_PATH } from '@/components/FlameShape';
-import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS } from '@/components/CountdownBadge';
+import { CountdownBadge, BADGE_H, BADGE_W, CELEBRATE_END_MS, BADGE_DRAWN_ABOVE } from '@/components/CountdownBadge';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
 
@@ -72,11 +79,17 @@ afterEach(() => {
     }
   }
 });
+/** KB-706: 뱃지는 홈 영역 측정(레이어 onLayout) 뒤에야 그려진다 — 측정을 흉내 낸다 */
+const layoutBadge = (t: ReactTestRenderer) => {
+  const layer = t.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.pointerEvents === 'box-none' && typeof n.type === 'string')[0];
+  if (layer) act(() => layer.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 800 } } }));
+};
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(<HomeQuotaBadge top={100} />);
   });
+  layoutBadge(tree);
   mountedTrees.push(tree);
   return tree;
 }
@@ -88,6 +101,7 @@ const shown = (t: ReactTestRenderer) => byId(t, 'home-quota-badge').length > 0;
 const valueText = (t: ReactTestRenderer) => byId(t, 'countdown-badge-value')[0]?.props.children;
 
 beforeEach(() => {
+  _setBadgePosCacheForTest(null); // KB-706: 뱃지 위치 세션 캐시 — 저장값 없음(기본 자리)으로 즉시
   _resetQuotaCelebrationMemoryForTest(); // KB-699: 세션 메모리는 테스트 간에 비운다
   mockQuota = null;
   mockMemberId = 'm1';
@@ -118,12 +132,16 @@ describe('quotaBadgeModel — 쿼터(서버 정본) → 뱃지 값', () => {
 });
 
 describe('홈 뱃지 렌더', () => {
-  it('3회 · 1회 = 켜진 불꽃 + 숫자 + 복수형 단위', () => {
+  it('3회 · 1회 = 켜진 불꽃 + **숫자만**(KB-706 — 단위 글자 없음, 접근성 문구는 그대로)', () => {
     mockQuota = Q(3);
     const t = render();
     expect(valueText(t)).toBe(3);
-    expect(JSON.stringify(t.toJSON())).toContain('"flame-active"');
-    expect(JSON.stringify(t.toJSON())).toContain('scan.badgeUnit:3');
+    const json = JSON.stringify(t.toJSON());
+    expect(json).toContain('"flame-active"');
+    expect(json).not.toContain('scan.badgeUnit');
+    const badge = t.root.findAll((n) => n.props?.testID === 'countdown-badge' && n.props?.accessibilityLabel != null)[0];
+    expect(badge.props.accessibilityLabel).toBe('scan.freeLeft:3');
+    expect(badge.findAll((n) => typeof n.props?.children === 'number' || typeof n.props?.children === 'string').filter((n) => typeof n.type === 'string').length).toBe(1); // 글자 = 숫자 하나
     mockQuota = Q(1);
     rerender(t);
     expect(valueText(t)).toBe(1);
@@ -401,13 +419,23 @@ describe('축하 종료 타이머 정리(언마운트·재트리거·동작 줄�
     expect(end).toHaveBeenCalledTimes(1);
   });
 
-  it('소스 잠금 — 뱃지 경로에 워클릿→JS 경계 0(runOnJS·worklet 지시자·애니메이션 완료 콜백 없음)', () => {
+  it('소스 잠금 — 워클릿→JS 경계 0: UI 스레드 코드(불꽃 일렁임)는 flameGeometry의 \'worklet\' 함수만 · 끌기 콜백은 JS 스레드(.runOnJS(true)) · 애니메이션 완료 콜백 없음', () => {
     const fs = require('fs') as typeof import('fs');
-    for (const f of ['src/components/CountdownBadge.tsx', 'src/components/FlameShape.tsx', 'src/features/scan/HomeQuotaBadge.tsx']) {
-      const code = fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-      expect(code).not.toMatch(/runOnJS|runOnUI|'worklet'|scheduleOnRN/);
+    const strip = (f: string) => fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    for (const f of ['src/components/CountdownBadge.tsx', 'src/components/FlameShape.tsx', 'src/features/scan/HomeQuotaBadge.tsx', 'src/components/flameGeometry.ts']) {
+      const code = strip(f);
+      expect(code).not.toMatch(/(?<!\.)runOnJS\(|runOnUI|scheduleOnRN/); // 워클릿 → JS 호출 0(`.runOnJS(true)` = RNGH 콜백 JS 스레드 설정은 허용)
       expect(code).not.toMatch(/with(Timing|Spring)\([^()]*(\([^()]*\)[^()]*)*,[^()]*(\{[^{}]*\})[^()]*,/); // 3번째 인자(콜백) 없음
     }
+    // 끌기 = RNGH 콜백을 JS 스레드로(레포 제스처 관례 P-131 — 워클릿 경계 없음)
+    expect(strip('src/features/scan/HomeQuotaBadge.tsx')).toMatch(/Gesture\.Pan\(\)\s*\.runOnJS\(true\)/);
+    // useAnimatedProps 안에서 부르는 함수는 전부 'worklet'(P-065 — jest는 워클릿 경계를 못 잡는다)
+    const geo = fs.readFileSync('src/components/flameGeometry.ts', 'utf8');
+    for (const fn of ['lerpFrames', 'toPathD', 'sparkD', 'sparkFrame']) {
+      expect(geo).toMatch(new RegExp(`function ${fn}\\([^)]*\\)[^\\n]*\\{\\n\\s*'worklet';`)); // 본문 첫 줄
+    }
+    expect(strip('src/components/CountdownBadge.tsx')).not.toMatch(/'worklet'/);
+    expect(strip('src/features/scan/HomeQuotaBadge.tsx')).not.toMatch(/'worklet'/);
   });
 });
 
@@ -439,25 +467,44 @@ describe('프레임 불변 · 홈 하단 미겹침', () => {
     expect(frame(<CountdownBadge value={999} unitLabel="scans" state="active" onPress={() => {}} />)).toEqual({ w: BADGE_W, h: BADGE_H });
   });
 
-  it('KB-701 위치 — top = 홈이 측정해 내려 준 값 그대로 · right 20(스캔 버튼 오른쪽 끝) · top null(측정 전) = 그리지 않음', () => {
+  it('KB-701 → KB-706 위치 — 영역 측정 전엔 안 그림 · 측정 뒤 그림(자리·한계·불투명 전환은 flameBadge706) · 앵커 top null = 측정 전과 같이 기본 한계(헤더 아래)', () => {
     mockQuota = Q(2);
-    const t = render();
+    let t!: ReactTestRenderer;
+    act(() => {
+      t = renderer.create(<HomeQuotaBadge top={100} />);
+    });
+    mountedTrees.push(t);
     const float = () => t.root.findAll((n) => n.props?.testID === 'home-quota-badge' && typeof n.type === 'string');
-    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', top: 100, right: 20 }));
-    expect(BADGE_RIGHT).toBe(20);
-    act(() => t.update(<HomeQuotaBadge top={null} />));
     expect(float()).toHaveLength(0);
-    act(() => t.update(<HomeQuotaBadge top={140} />));
-    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ top: 140 }));
+    layoutBadge(t);
+    expect(float()).toHaveLength(1);
+    expect(StyleSheet.flatten(float()[0].props.style)).toEqual(expect.objectContaining({ position: 'absolute', left: 0, top: 0 }));
+    expect(BADGE_RIGHT).toBe(20);
+    void BADGE_DRAWN_ABOVE;
   });
 
-  it('KB-701 가독성 — 불꽃 = 단색(그라데이션 0) · 몸통 안 흰 선(안쪽 홈) 없는 물방울형', () => {
-    const src = require('fs').readFileSync('src/components/FlameShape.tsx', 'utf8') as string;
-    expect(src).not.toMatch(/LinearGradient|primary2/);
-    expect(src).toContain('fill={on ? C.primary : C.ink3}');
-    // 홈(안쪽으로 휘어 들어가는 곡선) 없는 path — 곡선 4개(오른쪽 위·오른쪽 아래·왼쪽 아래·왼쪽 위로 꼭짓점 복귀)
-    expect(FLAME_PATH).toBe('M32 4 C41 15 57 25 58 45 C59 60 47 69 32 69 C17 69 5 60 6 45 C7 25 23 15 32 4 Z');
-    expect((FLAME_PATH.match(/C/g) ?? []).length).toBe(4);
+  it('KB-706 색·구성 — 스펙 실측값 그대로(뱃지 전용 상수 한 곳) · 흰 테두리 없음 · 바깥/안쪽 = 봉우리 둘(M + C×6) · 꺼진 불꽃 = 기존 회색 토큰', () => {
+    const geo = require('@/components/flameGeometry') as typeof import('@/components/flameGeometry');
+    expect(geo.FLAME_COLORS.outer).toEqual(['#FEDC33', '#FBAF27', '#F57F18', '#F57C0E']);
+    expect(geo.FLAME_COLORS.innerPeak).toEqual(['#F47233', '#F57638']);
+    expect(geo.FLAME_COLORS.innerMid).toBe('#F68A30');
+    expect(geo.FLAME_COLORS.innerBottom).toBe('#F7AC20');
+    expect(geo.FLAME_COLORS.glow).toEqual(['#FDDC13', '#FAD014']);
+    const shape = require('fs').readFileSync('src/components/FlameShape.tsx', 'utf8') as string;
+    expect(shape).not.toMatch(/stroke=/); // 흰 테두리 제거(레퍼런스에 없음)
+    expect(shape).toContain('C.ink3'); // 꺼진 불꽃 바깥
+    expect(shape).toContain('C.ink2'); // 꺼진 불꽃 안쪽(한 단계 다른 회색)
+    for (const d of [geo.OUTER_REST_D, geo.INNER_REST_D]) {
+      expect(d.startsWith('M')).toBe(true);
+      expect((d.match(/C/g) ?? []).length).toBe(6);
+    }
+    // 키프레임 = 같은 명령 구조(보간 가능) · 첫/끝 = rest(끊김 없는 반복)
+    for (const frames of [geo.OUTER_FRAMES, geo.INNER_FRAMES]) {
+      expect(new Set(frames.map((f) => f.length)).size).toBe(1);
+      expect(frames[frames.length - 1]).toEqual(frames[0]);
+    }
+    expect(geo.FLAME_TIMES[0]).toBe(0);
+    expect(geo.FLAME_TIMES[geo.FLAME_TIMES.length - 1]).toBe(1);
   });
 });
 

@@ -18,15 +18,22 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => {
+      const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; // KB-706: 컴파일러 호환 .get/.set
+      return sv;
+    },
     useAnimatedStyle: (f: () => unknown) => f(),
     withTiming: (v: unknown) => v,
     withSpring: (v: unknown) => mockSpring(v),
     withRepeat: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
+    useAnimatedProps: (f: () => unknown) => f(), // KB-706 불꽃 일렁임
+    Easing: { linear: (x: number) => x },
   };
 });
+// KB-706: 끌어 놓기 — GestureDetector는 자식 그대로, Pan 콜백은 기록(테스트가 직접 몬다)
+jest.mock('react-native-gesture-handler', () => require('@/__tests__/helpers/gestureHandlerMock'));
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
   useFocusEffect: (cb: () => (() => void) | void) => {
@@ -57,6 +64,7 @@ jest.mock('@/lib/flags', () => {
   return { ...a, FLAGS: new Proxy(a.FLAGS, { get: (t, k) => (k === 'countdownBadge' ? mockFlag.on : t[k as string]) }) };
 });
 
+import { _setBadgePosCacheForTest } from '../badgePosition';
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
 import { CELEBRATE_END_MS } from '@/components/CountdownBadge';
 
@@ -74,11 +82,17 @@ afterEach(() => {
     }
   }
 });
+/** KB-706: 뱃지는 홈 영역 측정(레이어 onLayout) 뒤에야 그려진다 — 측정을 흉내 낸다 */
+const layoutBadge = (t: ReactTestRenderer) => {
+  const layer = t.root.findAll((n) => typeof n.props?.onLayout === 'function' && n.props?.pointerEvents === 'box-none' && typeof n.type === 'string')[0];
+  if (layer) act(() => layer.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 800 } } }));
+};
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(<HomeQuotaBadge top={100} />);
   });
+  layoutBadge(tree);
   mountedTrees.push(tree);
   return tree;
 }
@@ -90,6 +104,7 @@ const shown = (t: ReactTestRenderer) => byId(t, 'home-quota-badge').length > 0;
 const valueText = (t: ReactTestRenderer) => byId(t, 'countdown-badge-value')[0]?.props.children;
 
 beforeEach(() => {
+  _setBadgePosCacheForTest(null); // KB-706: 뱃지 위치 세션 캐시 — 저장값 없음(기본 자리)으로 즉시
   _resetQuotaCelebrationMemoryForTest(); // KB-699: 세션 메모리는 테스트 간에 비운다
   mockMeEmpty = false;
   mockQuota = null;
@@ -140,6 +155,7 @@ it('순서 ②: 홈이 가려진 채 무제한 → (홈 트리 재마운트 — 
   act(() => {
     t2 = renderer.create(<HomeQuotaBadge top={100} />);
   });
+  layoutBadge(t2);
   mountedTrees.push(t2);
   mockFocused = true; // 완료 → Done → 홈
   act(() => t2.update(<HomeQuotaBadge top={100} />));
