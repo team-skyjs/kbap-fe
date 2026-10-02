@@ -3,19 +3,18 @@
  * 스펙 = spec translate-2026-10-02.md 2차 절 · 레퍼런스 translate-ref-x-before/after.png(X 게시물 화면).
  * - 번역 전 "Show translation" #1B95E0 · 번역 중 "Translating…" #536471 · 번역 후 "Translated from {언어}" #536471(누르면 원문)
  * - 글자 12.5(본문 13.5보다 한 단계 작게), 굵기 = 본문과 같음, 1줄 고정(상태가 바뀌어도 높이 불변). 아이콘·번역 평가 없음.
- * - 원문 언어 = 서버 sourceLanguage(KB-688): 앱 10개 코드와 **정확 일치**면 그 이름, 그 밖·null·없음 = "Translated".
+ * - 원문 언어 = 도메인 값 `TranslationSource`(translationAdapter가 와이어를 판정 — 이 컴포넌트는 원시 코드를 모른다):
+ *   known → "Translated from {그 언어 이름}", unknown → "Translated".
  */
 import * as React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { font } from '@/lib/theme';
+import type { TranslationSource } from '@/lib/api/translationAdapter';
 
 /** 번역 라벨 **전용** 값 — DS 토큰에 없는 X 동일 색(예진 지시, 레퍼런스 픽셀 실측). 다른 곳에서 쓰지 않는다. */
 export const TRANSLATE_LABEL = { idleColor: '#1B95E0', mutedColor: '#536471', fontSize: 12.5 } as const;
-
-/** 언어 이름을 아는 코드 = 앱 10개 언어(서버가 이 글자 그대로 정규화해 보낸다 — KB-688). */
-export const TRANSLATION_LANG_CODES = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'] as const;
 
 /** 라벨 줄 높이(1줄 고정). */
 export const TRANSLATE_LABEL_LINE_H = 17;
@@ -28,16 +27,15 @@ export const TRANSLATE_LABEL_BOX = { padTop: 8, padBottom: 19, gapBelow: 6 } as 
 
 export type TranslateLabelState = 'idle' | 'loading' | 'translated';
 
-export function TranslateButton({ state, sourceLanguage, onPress }: { state: TranslateLabelState; sourceLanguage: string | null; onPress: () => void }) {
+export function TranslateButton({ state, source, onPress }: { state: TranslateLabelState; source: TranslationSource | null; onPress: () => void }) {
   const { t } = useTranslation();
-  const known = sourceLanguage != null && (TRANSLATION_LANG_CODES as readonly string[]).includes(sourceLanguage);
   const label =
     state === 'idle'
       ? t('translation.showTranslation')
       : state === 'loading'
         ? t('reviews.translating')
-        : known
-          ? t('translation.translatedFrom', { language: t(`translation.lang.${sourceLanguage}`) })
+        : source?.kind === 'known'
+          ? t('translation.translatedFrom', { language: t(`translation.lang.${source.code}`) })
           : t('translation.translated');
   return (
     <Pressable

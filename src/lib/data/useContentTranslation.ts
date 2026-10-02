@@ -15,35 +15,19 @@ import * as React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, apiLang } from '@/lib/api/client';
+import { adaptTranslation, type Translation, type TranslationSource, type TranslationWire } from '@/lib/api/translationAdapter';
 import { showTopToast } from '@/components/topToastStore';
 import { EVENTS, track } from '@/lib/analytics';
 
 export type TranslationTargetType = 'REVIEW';
-
-interface TranslationWire {
-  targetType: string;
-  targetId: number | string;
-  language: string;
-  text: string;
-  /** KB-688: 원문 언어 — 앱 10개 언어면 앱 lang 코드와 글자까지 같게 정규화, 그 밖은 BCP 47 언어 부분 소문자, 판별 못 하면 null.
-   *  구서버는 키 없음(undefined → null 취급). */
-  sourceLanguage?: string | null;
-}
-
-/** 캐시에 두는 번역 결과 — 같은 언어 판정·라벨 언어 이름까지 한 번에 */
-interface TranslationResult {
-  text: string;
-  language: string;
-  sourceLanguage: string | null;
-}
 
 export interface ContentTranslation {
   /** 번역문을 보여 주는 중이면 그 텍스트, 아니면 null(= 원문을 그린다). */
   translatedText: string | null;
   showingTranslated: boolean;
   loading: boolean;
-  /** 번역을 보여 주는 중일 때의 원문 언어(KB-688) — null = 모름("Translated"). */
-  sourceLanguage: string | null;
+  /** 번역을 보여 주는 중일 때의 원문 언어(도메인 — 어댑터가 판정). 번역 중이 아니면 null. */
+  source: TranslationSource | null;
   /** KB-689: 원문 언어 == 요청 언어로 확인된 글 — 번역 표시 안 함 + 라벨 숨김(세션 동안 — 캐시 gcTime ∞, 앱 재시작·본문/언어 변경 시 다시 판정). */
   sameLanguage: boolean;
   /** 버튼 한 번 — 원문이면 번역(캐시 있으면 즉시), 번역 중이면 원문으로. */
@@ -61,11 +45,11 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
   // getQueryData는 항목을 만들지 않는다. 항목은 탭 시점 fetchQuery만 만들고(gcTime ∞ = 받아 온 번역·같은 언어 판정만 세션 동안),
   // 재렌더 계기는 탭 흐름의 로컬 상태(loading·shownKey)와 부모 props(본문·언어) — 같은 리뷰가 두 곳에 동시에 떠 있으면
   // 다른 쪽은 다음 렌더에 반영(ponytail: 실사용상 동시 노출 없음, 필요해지면 useSyncExternalStore로 캐시 구독).
-  const data = qc.getQueryData<TranslationResult>(queryKey);
+  const data = qc.getQueryData<Translation>(queryKey);
   // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
   const [shownKey, setShownKey] = React.useState<string | null>(null);
-  // KB-689: sourceLanguage === language(요청 언어) = text가 원문 그대로 → 번역 표시로 전환하지 않는다(판정 = 문자열 일치만, 서버 계약)
-  const sameLanguage = data != null && data.sourceLanguage != null && data.sourceLanguage === data.language;
+  // KB-689: 같은 언어(어댑터 판정) = text가 원문 그대로 → 번역 표시로 전환하지 않는다
+  const sameLanguage = data?.sameLanguage === true;
   const showing = shownKey === keyStr && data != null && !sameLanguage;
   const [loading, setLoading] = React.useState(false);
   const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
@@ -85,12 +69,13 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     }
     setLoading(true);
     qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 })
-      .then((res) => {
-        const same = res.sourceLanguage != null && res.sourceLanguage === res.language;
-        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: same ? 'same' : 'ok' });
-        if (!same) setShownKey(keyStr); // 같은 언어 = 원문 유지, 라벨은 sameLanguage로 숨김
+      .then((tr) => {
+        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: tr.sameLanguage ? 'same' : 'ok' }); // 계측 = enum만(원시 코드 0)
+        if (!tr.sameLanguage) setShownKey(keyStr); // 같은 언어 = 원문 유지, 라벨은 sameLanguage로 숨김
       })
       .catch(() => {
+        // Codex #223 P2: 실패해도 fetchQuery가 만든 항목(오류 상태)이 gcTime ∞로 남는다 → 그 항목만 제거(무한 보존 = 성공만)
+        qc.removeQueries({ queryKey, exact: true });
         track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'fail' });
         showTopToast(t('translation.translateFailed'), { error: true }); // 원문 유지
       })
@@ -101,7 +86,7 @@ export function useContentTranslation(targetType: TranslationTargetType, targetI
     translatedText: showing ? data.text : null,
     showingTranslated: showing,
     loading,
-    sourceLanguage: showing ? data.sourceLanguage : null,
+    source: showing ? data.source : null,
     sameLanguage,
     toggle,
   };
@@ -115,13 +100,14 @@ function hashText(s: string): string {
   return (h >>> 0).toString(36);
 }
 
-async function fetchTranslation(targetType: TranslationTargetType, targetId: string): Promise<TranslationResult> {
+async function fetchTranslation(targetType: TranslationTargetType, targetId: string): Promise<Translation> {
   const id = Number(targetId);
   const res = await api.post<TranslationWire>(`/api/translations?lang=${apiLang()}`, {
     targetType,
     targetId: Number.isFinite(id) ? id : targetId,
   });
-  // #220 공부 메모 ③: 빈 결과 = 실패(throw → 미캐시·토스트) — 빈 본문 + See original 방지
-  if (!res?.text?.trim()) throw new Error('empty translation');
-  return { text: res.text, language: res.language, sourceLanguage: res.sourceLanguage ?? null };
+  const tr = adaptTranslation(res); // 와이어 판정은 어댑터에서만 — 이 아래는 도메인 값
+  // #220 공부 메모 ③: 빈 결과 = 실패(throw → 항목 제거·토스트) — 빈 본문 + 번역 라벨 방지
+  if (!tr.text?.trim()) throw new Error('empty translation');
+  return tr;
 }

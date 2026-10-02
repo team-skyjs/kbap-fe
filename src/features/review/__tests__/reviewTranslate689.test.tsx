@@ -49,6 +49,7 @@ jest.mock('@/lib/flags', () => {
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 
+import { ApiError } from '@/lib/api/client';
 import { FeedCard } from '../FeedCard';
 import type { Review } from '@/lib/api/types';
 import { StyleSheet } from 'react-native';
@@ -111,7 +112,12 @@ it('Codex #223 P2(2차): 터치 = **실제 레이아웃 상자 44**(hitSlop 없�
   while (wrapper && !(typeof wrapper.type === 'string' && wrapper.props?.style)) wrapper = wrapper.parent;
   const wrap = StyleSheet.flatten(wrapper!.props.style) as { marginTop?: number };
   expect(wrap.marginTop).toBe(-box.paddingTop);
-  expect(box.paddingTop).toBeLessThanOrEqual(8); // FeedCard·전체 리뷰 카드 gap 8 — 위 사진/줄과 겹치지 않음
+  // 위 확장 ≤ 두 카드의 실제 gap(숫자 8 직접 비교 금지 — 카드 gap을 줄이면 라벨 상자가 위 사진 터치를 덮는데 초록이 되는 것 방지)
+  const fs = require('fs') as typeof import('fs');
+  const gapOf = (file: string, styleKey: string) => Number(new RegExp(`\\b${styleKey}: \\{[^}]*\\bgap: (\\d+)`).exec(fs.readFileSync(file, 'utf8'))![1]);
+  for (const g of [gapOf('src/features/review/FeedCard.tsx', 'card'), gapOf('src/app/food/[id]/reviews.tsx', 'item')]) {
+    expect(box.paddingTop).toBeLessThanOrEqual(g);
+  }
   // 상자 아래 끝이 래퍼 안: 래퍼 최소 높이 = padTop + 줄 + 간격 + 본문 한 줄(19)
   const BODY_LINE = 19;
   expect(boxH).toBeLessThanOrEqual(box.paddingTop + TRANSLATE_LABEL_LINE_H + TRANSLATE_LABEL_BOX.gapBelow + BODY_LINE);
@@ -273,6 +279,30 @@ it('Codex #223 P2: 스크롤만 한 리뷰(탭 0)는 캐시 항목을 만들지 
     more.forEach((m) => m.unmount());
   });
   expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(0);
+});
+
+it('Codex #223 P2: 실패한 번역은 캐시에 남지 않는다 — 실패 N건 뒤 항목 0 · 성공은 유지 · 실패 뒤 다시 누르면 재요청', async () => {
+  mockPost
+    .mockRejectedValueOnce(new ApiError('x', 503, 'TRANSLATION-001'))
+    .mockRejectedValueOnce(new ApiError('x', 503, 'TRANSLATION-001'))
+    .mockRejectedValueOnce(new Error('network'))
+    .mockResolvedValueOnce(RES());
+  const t = render(REVIEW());
+  const others = [1, 2].map((i) => {
+    let r!: ReactTestRenderer;
+    act(() => {
+      r = renderer.create(card(REVIEW({ id: String(200 + i), body: `Other ${i}` })));
+    });
+    return r;
+  });
+  await press(t);
+  await press(others[0]);
+  await press(others[1]);
+  expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(0);
+  await press(t); // 실패 뒤 재시도 = 재요청 → 성공
+  expect(mockPost).toHaveBeenCalledTimes(4);
+  expect(qc.getQueryCache().findAll({ queryKey: ['translation'] }).length).toBe(1);
+  expect(out(t)).toContain('정말 맛있는 국');
 });
 
 it('플래그 off = 훅이 캐시 항목을 만들지 않는다(라벨 없음)', () => {

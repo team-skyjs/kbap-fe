@@ -79,7 +79,7 @@ export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style
       {label && (
         <TranslateButton
           state={tx.loading ? 'loading' : tx.showingTranslated ? 'translated' : 'idle'}
-          sourceLanguage={tx.sourceLanguage}
+          source={tx.source}
           onPress={tx.toggle}
         />
       )}

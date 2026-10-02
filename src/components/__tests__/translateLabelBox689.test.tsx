@@ -25,20 +25,22 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: 
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
-import { TranslateButton, TRANSLATE_LABEL, TRANSLATE_LABEL_LINE_H, TRANSLATION_LANG_CODES, type TranslateLabelState } from '../TranslateButton';
+import { TranslateButton, TRANSLATE_LABEL, TRANSLATE_LABEL_LINE_H, type TranslateLabelState } from '../TranslateButton';
+import { SUPPORTED_LANGS } from '@/lib/i18n/languages';
+import type { TranslationSource } from '@/lib/api/translationAdapter';
 
-type Case = { state: TranslateLabelState; src: string | null };
+type Case = { state: TranslateLabelState; src: TranslationSource | null };
 const CASES: Case[] = [
   { state: 'idle', src: null },
   { state: 'loading', src: null },
-  { state: 'translated', src: null }, // 폴백 "Translated"
-  ...TRANSLATION_LANG_CODES.map((c) => ({ state: 'translated' as const, src: c })),
+  { state: 'translated', src: { kind: 'unknown' } }, // 폴백 "Translated"
+  ...SUPPORTED_LANGS.map((c) => ({ state: 'translated' as const, src: { kind: 'known' as const, code: c } })),
 ];
 
 function renderCase(c: Case) {
   let t!: ReactTestRenderer;
   act(() => {
-    t = renderer.create(<TranslateButton state={c.state} sourceLanguage={c.src} onPress={() => {}} />);
+    t = renderer.create(<TranslateButton state={c.state} source={c.src} onPress={() => {}} />);
   });
   const btn = t.root.findAll((n) => n.props?.testID === 'translate-btn' && typeof n.props?.onPress === 'function')[0];
   const text = btn.findAll((n) => typeof n.type === 'string' && typeof n.props.children === 'string')[0];
