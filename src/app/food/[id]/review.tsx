@@ -216,6 +216,13 @@ function ReviewComposeScreen() {
   const [kbH, setKbH] = useState(0);
   const svH = useRef(0); // ScrollView 뷰포트 높이 실측
   const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
+  // KB-700(#228 공부): 문서 중간을 탭하면(atEnd false) 키보드가 올라와 뷰포트가 줄 때 그 줄이 뷰포트 밖으로 밀릴 수 있다 —
+  // 예전엔 시스템 키보드 인셋(automaticallyAdjustKeyboardInsets)이 커서를 보이게 했는데 KAV로 바꾸며 빠졌다. RN은 캐럿 좌표를 안 주므로
+  // **탭한 위치(onPressIn locationY)** 를 캐럿 줄의 대용으로 쓴다.
+  const blockTop = useRef(0);
+  const inputTopInBlock = useRef(0);
+  const touchY = useRef<number | null>(null);
+  const scrollY = useRef(0);
   const kbHRef = useRef(0);
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   useLayoutEffect(() => {
@@ -241,14 +248,33 @@ function ReviewComposeScreen() {
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
+  const ensureTappedLineVisible = () => {
+    if (!bodyFocusedRef.current || touchY.current == null) return;
+    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
+    if (visible <= 0) return;
+    const lineTop = blockTop.current + inputTopInBlock.current + touchY.current - 12;
+    const lineBottom = lineTop + 32; // 탭한 줄(본문 줄 높이 + 여유)
+    if (lineBottom > scrollY.current + visible) scrollRef.current?.scrollTo({ y: lineBottom - visible + 16, animated: true });
+    else if (lineTop < scrollY.current) scrollRef.current?.scrollTo({ y: Math.max(0, lineTop - 16), animated: true });
+  };
+  /** 키보드 표시·뷰포트 축소 때 한 번: 끝 커서면 블록 끝, 아니면 탭한 줄 */
+  const followOnViewportChange = () => {
+    if (atEnd.current) ensureCursorVisible();
+    else ensureTappedLineVisible();
+  };
+  // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
+  const followRef = useRef(followOnViewportChange);
+  useLayoutEffect(() => {
+    followRef.current = followOnViewportChange;
+  });
   // KB-657: 이 effect는 위 ref·ensureCursorVisible을 읽으므로 그 **선언 뒤**에 둔다(컴파일러 "선언 전 접근" — 마운트 1회
   // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
       kbHRef.current = e.endCoordinates?.height ?? 0;
       setKbH(kbHRef.current);
-      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
-      if (atEnd.current) ensureCursorVisible();
+      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서 = 블록 끝 · 중간 = 탭한 줄)
+      followRef.current();
     });
     const hide = Keyboard.addListener('keyboardDidHide', () => {
       setKbH(0);
@@ -309,8 +335,15 @@ function ReviewComposeScreen() {
         contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
         // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
         scrollEventThrottle={16}
+        onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
         keyboardShouldPersistTaps="handled"
-        onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          const shrank = svH.current > 0 && h < svH.current;
+          svH.current = h;
+          // KAV 레이아웃과 keyboardDidShow의 순서에 기대지 않게 — 포커스 중 뷰포트가 줄면 한 번 더(가드·식은 같음)
+          if (shrank) followOnViewportChange();
+        }}
       >
         {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
         <View style={styles.foodChip}>
@@ -392,7 +425,10 @@ function ReviewComposeScreen() {
         <View
           style={styles.block}
           testID="body-block"
-          onLayout={(e) => { blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
+          onLayout={(e) => {
+            blockTop.current = e.nativeEvent.layout.y;
+            blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height;
+          }}
         >
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
           <Input
@@ -409,8 +445,11 @@ function ReviewComposeScreen() {
             }}
             onBlur={() => {
               bodyFocusedRef.current = false;
+              touchY.current = null;
               setBodyFocused(false);
             }}
+            onPressIn={(e) => { touchY.current = e.nativeEvent.locationY; }}
+            onLayout={(e) => { inputTopInBlock.current = e.nativeEvent.layout.y; }}
             textAlignVertical="top"
             onContentSizeChange={() => {
               if (atEnd.current) ensureCursorVisible();

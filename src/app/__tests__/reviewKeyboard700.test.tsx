@@ -27,27 +27,56 @@ it('메인 별점 5개 testID = review-star-{1..5} · 세부(Taste/Speed/Service
 });
 
 // ── KB-700 범위 추가(QA: 프로필 편집도 같은 비침) — "입력창이 있는 화면은 iOS KAV(padding)" 를 **전수 스캔**으로 잠근다.
-// 파일 목록이 아니라 src/app 전체를 매번 훑는다(열거형 잠금은 그 뒤 생긴 화면을 못 본다 — P-196). 예외는 사유와 함께 여기에만.
-const NO_FIXED_BOTTOM_BAR: Record<string, string> = {
+// 파일 목록이 아니라 매번 훑는다(열거형 잠금은 그 뒤 생긴 화면을 못 본다 — P-196). 화면 = src/app 파일 중 입력을 **직접** 그리거나
+// **입력을 품은 컴포넌트**(components·features에서 본문에 Input/TextInput이 있는 export — #228 공부: IngredientFilter를 통한
+// profile/restrictions를 옛 스캔이 못 봤다)를 그리는 것. 예외는 사유와 함께 여기에만.
+const NO_FIXED_BAR_INPUT: Record<string, string> = {
   'src/app/search.tsx': '하단 고정 바 없음(검색 입력이 상단)',
   'src/app/profile/feedback/new.tsx': '전송 버튼이 스크롤 본문 안(고정 바 아님 — 키보드가 덮어도 스크롤로 닿음)',
+  'src/app/(tabs)/index.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안 — 시트 자체 키보드 처리',
+  'src/app/(tabs)/community.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
+  'src/app/food/[id]/index.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
+  'src/app/food/[id]/reviews.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
+  'src/app/profile/order/[id].tsx': '입력은 장소 선택 시트(PlacePickerSheet — 모달) 안',
 };
-function screensWithInputs(dir: string, out: string[] = []): string[] {
+const INPUT_TAG = /<(Input|TextInput)\b/;
+function tsxFiles(dir: string, out: string[] = []): string[] {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = `${dir}/${e.name}`;
     if (e.isDirectory()) {
-      if (e.name !== '__tests__') screensWithInputs(p, out);
-    } else if (/\.tsx$/.test(e.name) && /<(Input|TextInput)\b/.test(fs.readFileSync(p, 'utf8'))) out.push(p);
+      if (e.name !== '__tests__') tsxFiles(p, out);
+    } else if (/\.tsx$/.test(e.name)) out.push(p);
   }
   return out;
 }
+/** components·features의 export 컴포넌트 중 **자기 본문**에 입력이 있는 것(export 경계로 잘라 본다) */
+function inputComponents(): string[] {
+  const names = new Set<string>();
+  for (const f of [...tsxFiles('src/components'), ...tsxFiles('src/features')]) {
+    for (const chunk of fs.readFileSync(f, 'utf8').split(/^(?=export (?:default )?function |export const [A-Z]\w* = )/m)) {
+      const m = /^export (?:default )?(?:function|const) ([A-Z]\w*)/.exec(chunk);
+      if (m && INPUT_TAG.test(chunk)) names.add(m[1]);
+    }
+  }
+  return [...names];
+}
+function screensWithInputs(): string[] {
+  const comps = inputComponents();
+  return tsxFiles('src/app').filter((f) => {
+    const s = fs.readFileSync(f, 'utf8');
+    return INPUT_TAG.test(s) || comps.some((n) => new RegExp(`<${n}\\b`).test(s));
+  });
+}
 
-it('입력창이 있는 화면 전수 = iOS KeyboardAvoidingView(padding) — 예외는 사유가 적힌 것만', () => {
-  const screens = screensWithInputs('src/app');
-  expect(screens.length).toBeGreaterThanOrEqual(7); // 스캔이 비면(경로 바뀜 등) 통과가 아니라 실패
-  const missing = screens.filter((f) => !NO_FIXED_BOTTOM_BAR[f] && !/<KeyboardAvoidingView[^>]*behavior=\{Platform\.OS === 'ios' \? 'padding' : undefined\}/.test(fs.readFileSync(f, 'utf8')));
+it('입력창이 있는 화면 전수(직접 + 입력 품은 컴포넌트 경유) = iOS KeyboardAvoidingView(padding) — 예외는 사유가 적힌 것만', () => {
+  expect(inputComponents()).toEqual(expect.arrayContaining(['IngredientFilter', 'PlacePickerSheet', 'ModerationFlow']));
+  const screens = screensWithInputs();
+  // 고정값 — 화면이 늘거나 줄면 한 번 멈춰 서서 KAV/예외 판단을 하게(스캔이 비어도 실패)
+  expect(screens).toHaveLength(13);
+  expect(screens).toContain('src/app/profile/restrictions.tsx');
+  const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{Platform\.OS === 'ios' \? 'padding' : undefined\}/.test(fs.readFileSync(f, 'utf8')));
   expect(missing).toEqual([]);
-  for (const f of Object.keys(NO_FIXED_BOTTOM_BAR)) expect(screens).toContain(f); // 예외 목록이 낡으면 알림
+  for (const f of Object.keys(NO_FIXED_BAR_INPUT)) expect(screens).toContain(f); // 예외 목록이 낡으면 알림
 });
 
 it('프로필 편집 — Save 바는 절대 위치가 아니라 KAV 안 ScrollView의 형제(키보드 위로 따라 올라옴), 본문 하단 보정 120 제거', () => {

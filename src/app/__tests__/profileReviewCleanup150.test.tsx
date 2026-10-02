@@ -387,3 +387,42 @@ it('KB-700 ①: 마운트 직후(본문 포커스 없음) — 크기·선택 변
   expect(scrollTo).not.toHaveBeenCalled();
   spy.mockRestore();
 });
+
+it('KB-700(#228 공부): 긴 본문의 **중간 줄**을 탭(끝 커서 아님) → 키보드로 뷰포트가 줄면 탭한 줄이 보이게 한 번 스크롤 · 위쪽 줄 탭은 무개입', () => {
+  const listeners: Record<string, (e: unknown) => void> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e: unknown) => void) => {
+    listeners[ev] = cb;
+    return { remove: jest.fn() } as never;
+  }) as never);
+  const tree = render(<ReviewCompose />);
+  const sv = tree.root.findAll((n) => typeof n.props?.onLayout === 'function' && Array.isArray(n.props?.contentContainerStyle))[0];
+  const scrollTo = jest.fn();
+  const svInst = sv.instance as { scrollTo?: unknown } | null;
+  if (svInst) (svInst as { scrollTo: unknown }).scrollTo = scrollTo;
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } })); // 키보드 전 뷰포트
+  const block = tree.root.findAll((n) => n.props?.testID === 'body-block' && typeof n.props?.onLayout === 'function')[0];
+  act(() => block.props.onLayout({ nativeEvent: { layout: { y: 300, height: 900 } } })); // 수정 모드 — 긴 본문(블록 끝 1200)
+  const input = tree.root.findAllByType(TextInput).find((n) => n.props.multiline === true)!;
+  act(() => input.props.onChangeText('x'.repeat(400)));
+  act(() => input.props.onLayout({ nativeEvent: { layout: { y: 30, height: 800 } } })); // 블록 안 입력 위치
+  // 화면 아래쪽 줄 탭: 콘텐츠 y = 300 + 30 + 350 = 680 (키보드 전엔 보임)
+  act(() => input.props.onPressIn({ nativeEvent: { locationY: 350 } }));
+  act(() => input.props.onFocus());
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 120, end: 120 } } })); // 중간 커서 → atEnd false
+  scrollTo.mockClear();
+  // 키보드 → KAV로 뷰포트 364. 탭한 줄(668~700)이 364 밖 → 700 − 364 + 16 = 352
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  expect(scrollTo).toHaveBeenCalledWith({ y: 352, animated: true });
+  // 이미 보이는 줄 탭 = 무개입: 스크롤 200에서 콘텐츠 y 300 + 30 + 20 = 350 탭 → 줄어든 뷰포트(200~564) 안
+  scrollTo.mockClear();
+  act(() => input.props.onBlur());
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 700 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 200 } } }));
+  act(() => input.props.onPressIn({ nativeEvent: { locationY: 20 } }));
+  act(() => input.props.onFocus());
+  act(() => input.props.onSelectionChange({ nativeEvent: { selection: { start: 5, end: 5 } } }));
+  act(() => listeners['keyboardDidShow']?.({ endCoordinates: { height: 336 } }));
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  expect(scrollTo).not.toHaveBeenCalled();
+  spy.mockRestore();
+});
