@@ -10,7 +10,8 @@ export function redactSecrets(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(redactSecrets);
   if (value && typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, SECRET_KEY.test(k) && v != null && typeof v !== 'object' ? MASK : redactSecrets(v)]),
+      // 비밀 패턴 키는 값이 객체·배열이어도 통째로 가림({"tokens":{"access":"…"}} — 안쪽 키가 비밀 패턴이 아니어도 새지 않게)
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, SECRET_KEY.test(k) && v != null ? MASK : redactSecrets(v)]),
     );
   }
   return value;
