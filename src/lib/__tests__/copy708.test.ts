@@ -11,7 +11,8 @@ const load = (l: string) => require(`@/lib/i18n/${l}.json`) as { search: Record<
 
 // (2) + #236 /review A: Hermes엔 Intl.PluralRules가 없어 i18next는 `count === 1 ? one : other` 더미 규칙으로 떨어진다(폴리필 0).
 // `_other`만 둔 로케일은 1건에서 `_one`을 못 찾아 en으로 폴백("1 result"), ru는 few/many가 영영 안 골라진다. jest(Node Intl)에선 안 보임.
-const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'scan.badgeUnit', 'home.avoidCount', 'restrictionsEdit.avoidCount', 'saved.count', 'myFoods.itemCount', 'feedback.replyCount'];
+// #236 /review 2R: 호출 0이던 죽은 키 4개(home·restrictionsEdit.avoidCount · scan.badgeUnit · feedback.replyCount)는 삭제
+const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'saved.count', 'myFoods.itemCount'];
 const get = (l: string, path: string): string | undefined => {
   const [sec, key] = path.split('.');
   return (load(l) as unknown as Record<string, Record<string, string>>)[sec]?.[key];
@@ -33,6 +34,14 @@ describe('(2) 복수형 — Intl.PluralRules 없는 실기(Hermes)에서도 그 
     for (const base of PLURAL_BASES) {
       const forms = ['one', 'few', 'many', 'other'].map((f) => get('ru', `${base}_${f}`));
       expect({ base, same: new Set(forms).size === 1 }).toEqual({ base, same: true });
+    }
+    // 수 구분 없는 7로케일 = `_one === _other` — 한쪽만 고치면 실기(더미 규칙)에서 1건일 때만 옛 문구가 나온다
+    for (const l of ['ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th']) for (const base of PLURAL_BASES) {
+      expect({ l, base, same: get(l, `${base}_one`) === get(l, `${base}_other`) }).toEqual({ l, base, same: true });
+    }
+    // 죽은 키는 어느 로케일에도 없다
+    for (const l of LOCALES) for (const dead of ['home.avoidCount', 'restrictionsEdit.avoidCount', 'scan.badgeUnit', 'feedback.replyCount']) {
+      expect({ l, dead, left: Object.keys((load(l) as unknown as Record<string, Record<string, string>>)[dead.split('.')[0]] ?? {}).filter((k) => k.startsWith(dead.split('.')[1])) }).toEqual({ l, dead, left: [] });
     }
   });
 
@@ -112,6 +121,9 @@ describe('(4) 이탈 확인 문구 — 네 화면(리뷰 작성·수정·문의�
     // ru: "Выйти без сохранения?" 아래 "Продолжить"(계속)/"Отменить"(취소)는 "나가기를 계속/취소"로 읽혀 동작과 반대 → 남기/나가기
     const ru = (load('ru') as unknown as { common: Record<string, string> }).common;
     expect([ru.keepWriting, ru.discard]).toEqual(['Остаться', 'Выйти']);
+    // ja·zh: "やめる"(그만두다)·"放弃"(포기)는 "돌아가기를 그만둔다"로 읽혀 ru와 같은 결함 → 나가기/파기를 직접 말한다(#236 /review 2R)
+    const c = (l: string) => (load(l) as unknown as { common: Record<string, string> }).common.discard;
+    expect([c('ja'), c('zh-Hans'), c('zh-Hant')]).toEqual(['破棄する', '离开', '離開']);
   });
   it('LeaveConfirmModal은 common 키만 쓴다(community.* 참조 0)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- 소스 잠금

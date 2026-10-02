@@ -175,6 +175,21 @@ describe('KB-708 이탈 확인(커뮤니티)', () => {
       mockSession.guest = false;
     }
   });
+  it('수정: 글이 아직 안 왔을 때(조회 지연·실패 — 폼은 열려 있음) 입력하면 막는다 · 빈 채면 안 막음', () => {
+    mockComposeParams = { editId: 'p1' };
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } }); // 데이터 없음 = 프리필 전
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <QueryClientProvider client={qc}>
+          <CommunityCompose />
+        </QueryClientProvider>,
+      );
+    });
+    expect(mockPrevent.on).toBe(false);
+    act(() => bodyInput(tree).props.onChangeText('typed before load'));
+    expect(mockPrevent.on).toBe(true); // 확인 없이 버려지던 것(#236 /review 2R)
+  });
   it('수정: 프리필만 = 막지 않음(안 고친 수정은 조용히 닫힘) · 고치면 막음 · 되돌리면 다시 안 막음', async () => {
     mockComposeParams = { editId: 'p1' };
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });

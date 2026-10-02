@@ -96,9 +96,9 @@ export default function CommunityCompose() {
 
   // KB-708: 작성 = 뭐라도 넣었으면 · 수정 = 프리필 값과 달라졌으면(안 고친 수정은 조용히 닫힘 — 리뷰 수정과 같은 규칙)
   const draft = JSON.stringify([body, photos, foodTags, placeTag]);
-  const dirty = editId
-    ? baseline != null && draft !== baseline // 프리필 전(미도착) = 지킬 것 없음
-    : body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
+  const typed = body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
+  // 프리필 전(조회 지연·실패 중에도 폼은 열려 있다) = 입력이 있으면 지킨다(#236 /review 2R)
+  const dirty = editId ? (baseline != null ? draft !== baseline : typed) : typed;
   const back = () => router.back(); // 확인은 아래 useLeaveConfirm이 모든 뒤로 경로에서
 
   const pickPhotos = async () => {
@@ -123,7 +123,7 @@ export default function CommunityCompose() {
   const { busy: submitting, run: runSubmit } = useSubmitGuard();
   // KB-708: 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 성공 뒤 = 완료 모달 → 막지 않음
   // #236 /review B: 게스트 분기(early return)엔 확인 창이 없다 — 거기서 막으면 나갈 길이 로그인뿐. 폼 분기에서만 막는다
-  const leave = useLeaveConfirm(!isGuest && dirty && !posted);
+  const leave = useLeaveConfirm(!isGuest && dirty && !posted, submitting);
   const submit = () => {
     if (!canPost || submitting) return;
     const input = { body: body.trim(), photos, foodTags, placeTag };

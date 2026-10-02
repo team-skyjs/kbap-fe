@@ -1,4 +1,4 @@
-/** KB-708 — useLeaveConfirm: 제출 중에도 확인 창으로 나갈 수 있음(갇힘 방지) · release 2회 = then 1회. */
+/** KB-708 — useLeaveConfirm: 제출 중엔 막지 않음(그냥 나감 · 모달 0) · release 2회 = then 1회 · 지킬 것이 없어지면 확인 창 스스로 닫힘. */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -29,8 +29,8 @@ let api!: ReturnType<typeof useLeaveConfirm>;
 const exposeApi = (l: ReturnType<typeof useLeaveConfirm>) => {
   api = l;
 };
-function Harness({ dirty, onApi = exposeApi }: { dirty: boolean; onApi?: typeof exposeApi }) {
-  const leave = useLeaveConfirm(dirty);
+function Harness({ dirty, submitting = false, onApi = exposeApi }: { dirty: boolean; submitting?: boolean; onApi?: typeof exposeApi }) {
+  const leave = useLeaveConfirm(dirty, submitting);
   React.useEffect(() => onApi(leave)); // 렌더 밖에서 넘김(렌더 중 바깥 변수 재할당 = 컴파일러 위반)
   return <LeaveConfirmModal {...leave.modal} />;
 }
@@ -38,10 +38,14 @@ const modalOpen = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testI
 
 beforeEach(() => mockNavDispatch.mockClear());
 
-// #236 공부: 제출 중 이동을 막아 두면 상한 없는 사진 업로드(약한 망)에서 뒤로 가기가 무반응 = 갇힘(361fc31 대비 회귀)
-it('제출 중 뒤로 = 확인 창 · 그만두기 = 막았던 이동 그대로 진행(갇히지 않음)', () => {
+// #236 /review 2R: 제출 중 막으면 갇히고(상한 없는 업로드), 확인 창을 띄우면 뜬 채 성공 시 dismiss+완료 모달 present가 한 커밋(iOS 프리즈 전례)
+// → 제출 중엔 막지도 띄우지도 않는다(그냥 나감). 실패로 끝나면 다시 평소 확인 창.
+it('제출 중 = 막지 않음(prevent off · 모달 0) → 제출 실패로 끝나면 다시 막음 · 뒤로 = 확인 창 · 그만두기 = 나감', () => {
   let t!: ReactTestRenderer;
-  act(() => { t = renderer.create(<Harness dirty />); });
+  act(() => { t = renderer.create(<Harness dirty submitting />); });
+  expect(mockPrevent.on).toBe(false);
+  expect(modalOpen(t)).toBe(false);
+  act(() => t.update(<Harness dirty submitting={false} />)); // 실패 — 내용은 남음
   expect(mockPrevent.on).toBe(true);
   const action = { type: 'GO_BACK' };
   act(() => mockPrevent.cb!({ data: { action } }));

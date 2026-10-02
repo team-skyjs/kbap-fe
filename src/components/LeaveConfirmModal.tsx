@@ -18,14 +18,16 @@ type NavAction = Parameters<Parameters<typeof usePreventRemove>[1]>[0]['data']['
 /**
  * `dirty` 동안 이탈을 막는다. 성공(등록·저장·전송) 뒤 떠날 땐 `release(then)` — 막기를 먼저 풀고 **다음 렌더에서** then을 1회 실행
  * (같은 틱에 router.back()을 부르면 아직 막힌 상태라 성공한 작성에 "버릴까요?"가 뜬다). 두 번 불러도 첫 then만(뒤로 2회 = 화면 두 장 방지).
- * 제출 중에도 dirty면 평소처럼 확인 창 — 사진 업로드엔 상한·취소가 없어 막아 두면 약한 망에서 사용자가 갇힌다(#236 공부).
- * 알려진 한계: 제출 중 "그만두기"로 나가도 이미 나간 요청은 등록될 수 있다(업로드 상한·취소는 별도 이슈).
+ * `submitting` 동안은 **막지 않는다(확인 창도 없음)** — 그냥 나간다(KB-708 이전 동작). 막으면 상한 없는 사진 업로드에서 갇히고(#236 공부),
+ * 확인 창을 띄우면 그 창이 뜬 채 성공 시 확인 창 dismiss + 완료 모달 present가 한 커밋 = iOS 모달 프리즈 전례(#236 /review 2R).
+ * 확인 창은 제출 중이 아닐 때만 열리고, 열려 있으면 제출 버튼을 누를 수 없으니 두 모달이 겹칠 길이 없다.
+ * 제출 중 이탈의 제대로 된 처리(업로드 취소·안내)는 KB-711.
  */
-export function useLeaveConfirm(dirty: boolean) {
+export function useLeaveConfirm(dirty: boolean, submitting = false) {
   const navigation = useNavigation();
   const [pending, setPending] = React.useState<NavAction | null>(null);
   const [released, setReleased] = React.useState<(() => void) | null>(null);
-  usePreventRemove(dirty && released == null, ({ data }) => setPending(data.action));
+  usePreventRemove(dirty && !submitting && released == null, ({ data }) => setPending(data.action));
   // 지킬 것이 없어지면 대기 중인 이동도 버린다(렌더 중 전이 — 나중에 다시 dirty가 돼도 옛 확인 창이 되살아나지 않게)
   if (pending != null && (!dirty || released != null)) setPending(null);
   React.useEffect(() => {

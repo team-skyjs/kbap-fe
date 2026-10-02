@@ -16,7 +16,7 @@
     "leaveTitle": "保存せずに戻りますか？",
     "leaveBody": "下書きは保存されません。",
     "keepWriting": "書き続ける",
-    "discard": "やめる"
+    "discard": "破棄する"
   },
   "intro": {
     "skip": "スキップ",
@@ -290,8 +290,6 @@
     "quotaCta": "レビューを書く",
     "freeLeft_one": "無料スキャン残り{{count}}回",
     "freeLeft_other": "無料スキャン残り{{count}}回",
-    "badgeUnit_one": "回",
-    "badgeUnit_other": "回",
     "later": "あとで",
     "errUpload": "写真をアップロードできませんでした。もう一度お試しください。",
     "stayHint": "30〜40秒ほどかかることがあります — アプリを離れると結果が失われる場合があります。",
@@ -603,8 +601,6 @@
     "guestScansTitle": "サインインすると、スキャン履歴を保存でき、あなたに合わせた安全評価が受けられます。",
     "greetingSub": "今日あなたに安全な料理はこちら。",
     "greetingSubEmpty": "最初の安全な料理を見つけましょう。",
-    "avoidCount_one": "{{count}} 件を避けています",
-    "avoidCount_other": "{{count}} 件を避けています",
     "edit": "編集",
     "scanTitle": "メニューをスキャン",
     "scanSub": "韓国語のメニューに向けてあなたのリスクを確認。",
@@ -786,8 +782,6 @@
     "title": "制限を編集",
     "save": "制限を保存",
     "notice": "すべての安全警告の基準になります。正確に保ってください。変更はすべての料理に即時反映されます。",
-    "avoidCount_one": "{{count}}件を避けています",
-    "avoidCount_other": "{{count}}件を避けています",
     "avoidNone": "まだ避けるものはありません",
     "tapToRemove": "×をタップで削除",
     "searchPlaceholder": "食材を検索…",
@@ -1065,8 +1059,6 @@
     "statusAnswered": "回答済み",
     "statusClosed": "クローズ",
     "emptyTitle": "まだお問い合わせはありません",
-    "replyCount_one": "回答 {{count}}件",
-    "replyCount_other": "回答 {{count}}件",
     "notFound": "このお問い合わせは見つかりません。",
     "teamName": "K-Bapチーム"
   }

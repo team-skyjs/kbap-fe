@@ -528,15 +528,15 @@ describe('플래그 countdownBadge = 진단 채널만(teamtest on / production·
   });
 });
 
-describe('i18n — freeLeft·badgeUnit 10로케일', () => {
+describe('i18n — freeLeft 10로케일(badgeUnit은 호출 0이라 KB-708에서 삭제)', () => {
   const fs = require('fs') as typeof import('fs');
   const LOCALES = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'];
   it.each(LOCALES)('%s — other 형 존재 · {{count}} 포함 · 이모지 0', (l) => {
     const scan = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).scan as Record<string, string>;
     expect(scan.freeLeft_other).toContain('{{count}}');
-    expect(scan.badgeUnit_other?.trim()).toBeTruthy();
-    for (const [k, v] of Object.entries(scan)) if (/^(freeLeft|badgeUnit)_/.test(k)) expect(/\p{Extended_Pictographic}/u.test(v)).toBe(false);
+    expect(Object.keys(scan).filter((k) => k.startsWith('badgeUnit'))).toEqual([]);
+    for (const [k, v] of Object.entries(scan)) if (/^freeLeft_/.test(k)) expect(/\p{Extended_Pictographic}/u.test(v)).toBe(false);
     if (['en', 'es', 'ru'].includes(l)) expect(scan.freeLeft_one).toBeTruthy();
-    if (l === 'ru') expect([scan.freeLeft_few, scan.freeLeft_many, scan.badgeUnit_few, scan.badgeUnit_many].every(Boolean)).toBe(true);
+    if (l === 'ru') expect([scan.freeLeft_few, scan.freeLeft_many].every(Boolean)).toBe(true);
   });
 });

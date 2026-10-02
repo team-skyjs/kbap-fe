@@ -123,7 +123,7 @@ function ReviewComposeScreen() {
   // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
-  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted);
+  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
   const canPost = canPostReview(rating) && !posting;
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
@@ -261,6 +261,7 @@ function ReviewComposeScreen() {
   // → 추종은 **본문이 포커스된 동안에만**(호출부 셋 — 크기 변화·선택 변화·키보드 표시 — 이 모두 여기를 지난다).
   const bodyFocusedRef = useRef(false);
   const followedBy = useRef(0); // KB-708 D: 이모지 키보드로 따라 내린 누적량(되돌릴 몫)
+  const followedAt = useRef(0); // 마지막으로 따라 내린(또는 되돌린) 목표 y — scrollY가 여기 그대로일 때만 되돌림
   const bodyLenRef = useRef(0);
   useLayoutEffect(() => {
     bodyLenRef.current = body.length;
@@ -290,16 +291,21 @@ function ReviewComposeScreen() {
     // KB-708(5): 중간을 고치는 중(탭 대용값은 입력 시작에 지워짐) 키보드가 더 커지면(이모지 키보드 +53) 캐럿 좌표가 없으니
     // 줄어든 만큼 그대로 내려 아래 끝에 있던 내용(편집 중인 줄)을 계속 보이게. 포커스 없으면 무동작(#228 진입 직후 스크롤 금지 유지).
     else if (bodyFocusedRef.current && shrinkBy > 0 && shrinkBy <= SHRINK_FOLLOW_MAX) {
-      scrollRef.current?.scrollTo({ y: scrollY.current + shrinkBy, animated: true });
+      const target = scrollY.current + shrinkBy;
+      scrollRef.current?.scrollTo({ y: target, animated: true });
       followedBy.current += shrinkBy; // #236 /review D: 이모지 키보드를 끄면 이만큼 되돌린다(켤 때마다 53씩 쌓이던 것)
+      followedAt.current = target; // 되돌림은 이 위치 그대로일 때만(그 사이 사용자가 스크롤했으면 무효)
     }
   };
   // 뷰포트가 다시 늘면(이모지 키보드 끔) 따라 내린 양만큼 되돌림 — 포커스 중 · 상한 이내만, 내린 적 없으면 무동작
   const unfollowOnViewportGrow = (growBy: number) => {
-    if (!bodyFocusedRef.current || followedBy.current <= 0 || growBy > SHRINK_FOLLOW_MAX) return;
+    // 큰 증가(키보드만 내려감 — Android 뒤로 등) 또는 따라 내린 뒤 사용자가 스크롤함 = 되돌릴 몫 폐기(이유 없이 53pt 튀던 것)
+    if (growBy > SHRINK_FOLLOW_MAX || Math.abs(scrollY.current - followedAt.current) > 1) followedBy.current = 0;
+    if (!bodyFocusedRef.current || followedBy.current <= 0) return;
     const back = Math.min(growBy, followedBy.current);
     followedBy.current -= back;
-    scrollRef.current?.scrollTo({ y: Math.max(0, scrollY.current - back), animated: true });
+    followedAt.current = Math.max(0, scrollY.current - back);
+    scrollRef.current?.scrollTo({ y: followedAt.current, animated: true });
   };
   // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
   const followRef = useRef(followOnViewportChange);

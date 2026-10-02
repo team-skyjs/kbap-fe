@@ -16,7 +16,7 @@
     "leaveTitle": "不保存就离开吗？",
     "leaveBody": "草稿不会被保存。",
     "keepWriting": "继续写",
-    "discard": "放弃"
+    "discard": "离开"
   },
   "intro": {
     "skip": "跳过",
@@ -290,8 +290,6 @@
     "quotaCta": "写评价",
     "freeLeft_one": "剩余 {{count}} 次免费扫描",
     "freeLeft_other": "剩余 {{count}} 次免费扫描",
-    "badgeUnit_one": "次",
-    "badgeUnit_other": "次",
     "later": "稍后",
     "errUpload": "照片上传失败，请重试。",
     "stayHint": "大约需要 30–40 秒 — 离开应用可能会丢失结果。",
@@ -603,8 +601,6 @@
     "guestScansTitle": "登录后即可保存扫描记录，并获得专属于你的安全评级。",
     "greetingSub": "以下是今天适合你的菜品。",
     "greetingSubEmpty": "一起找到你的第一道安全菜品吧。",
-    "avoidCount_one": "你需要避开 {{count}} 项",
-    "avoidCount_other": "你需要避开 {{count}} 项",
     "edit": "编辑",
     "scanTitle": "扫描菜单",
     "scanSub": "对准韩国菜单，查看你的风险。",
@@ -786,8 +782,6 @@
     "title": "编辑禁忌",
     "save": "保存禁忌",
     "notice": "这将影响所有安全警告。请保持准确，更改会立即应用于所有菜品。",
-    "avoidCount_one": "你忌口 {{count}} 种",
-    "avoidCount_other": "你忌口 {{count}} 种",
     "avoidNone": "尚未设置忌口",
     "tapToRemove": "点击 × 移除",
     "searchPlaceholder": "搜索食材…",
@@ -1065,8 +1059,6 @@
     "statusAnswered": "已回复",
     "statusClosed": "已关闭",
     "emptyTitle": "还没有反馈",
-    "replyCount_one": "{{count}} 条回复",
-    "replyCount_other": "{{count}} 条回复",
     "notFound": "找不到这条反馈。",
     "teamName": "K-Bap 团队"
   }

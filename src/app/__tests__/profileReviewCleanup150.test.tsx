@@ -522,6 +522,24 @@ it('KB-708 (5): 중간을 고치는 중 이모지 키보드로 키보드가 +53 
   scrollTo.mockClear();
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 400 } } }));
   expect(scrollTo).not.toHaveBeenCalled();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } }));
+  // #236 /review 2R: 따라 내린 뒤 사용자가 직접 스크롤했으면 복귀 시 되돌리지 않는다(이유 없이 53pt 튀던 것)
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } })); // 이모지 켬 → 따라 내림
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 253 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 120 } } })); // 사용자가 위로 스크롤
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 364 } } })); // 이모지 끔
+  expect(scrollTo).not.toHaveBeenCalled();
+  // 큰 증가(포커스 유지한 채 키보드만 내려감 — Android 뒤로) = 되돌릴 몫 폐기 → 이후 작은 증가에도 무동작
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 311 } } }));
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 173 } } }));
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } })); // +300
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 558 } } })); // 다시 이모지 수준 축소 → 따라 내림(새 몫)
+  act(() => sv.props.onScroll({ nativeEvent: { contentOffset: { y: 226 } } }));
+  scrollTo.mockClear();
+  act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } })); // +53 → 새 몫만 되돌림(옛 53은 폐기돼 합산 0)
+  expect(scrollTo).toHaveBeenCalledTimes(1);
+  expect(scrollTo).toHaveBeenCalledWith({ y: 173, animated: true });
   // 큰 축소(키보드가 통째로 다시 올라옴 ~300) = 무동작 — 커서가 위쪽이면 화면 밖으로 밀어내므로
   act(() => sv.props.onLayout({ nativeEvent: { layout: { height: 611 } } }));
   scrollTo.mockClear();

@@ -47,10 +47,8 @@ it('food/[id]/reviews.tsx — 사어 게이트 제거(실개방 setter 부재 �
   expect(list).not.toContain('gateOpen');
 });
 
-it('P-356(KB-519): avoidCount 단수 변형 — en _one 2곳 · 복수 = _other(KB-708: 맨 키 → _other — Hermes 더미 복수 규칙 대응)', () => {
+it('P-356(KB-519) → KB-708: avoidCount는 호출 0(화면에서 빠진 뒤 남은 키)이라 삭제 — 홈·회피 편집 모두', () => {
   const en = JSON.parse(readFileSync('src/lib/i18n/en.json', 'utf8')) as Record<string, Record<string, string>>;
-  expect(en.home.avoidCount_one).toBe('You avoid {{count}} ingredient');
-  expect(en.restrictionsEdit.avoidCount_one).toBe('You avoid {{count}} ingredient');
-  expect(en.home.avoidCount_other).toBe('You avoid {{count}} ingredients');
-  expect(en.restrictionsEdit.avoidCount_other).toBe('You avoid {{count}} ingredients');
+  expect(Object.keys(en.home).filter((k) => k.startsWith('avoidCount'))).toEqual([]);
+  expect(Object.keys(en.restrictionsEdit).filter((k) => k.startsWith('avoidCount'))).toEqual([]);
 });

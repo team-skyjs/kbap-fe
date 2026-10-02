@@ -481,8 +481,8 @@ it('⑦ i18n — feedback 키 10개 로케일 전수(ko 등 단수형 없는 언
     const fb = JSON.parse(read(`src/lib/i18n/${lang}.json`)).feedback;
     expect(fb).toBeTruthy();
     for (const k of plain) expect(typeof fb[k]).toBe('string');
-    // 복수형은 언어별 형태 수가 다르다 — _other는 어느 언어에나 있어야 한다
-    expect(typeof fb.replyCount_other).toBe('string');
+    // KB-708: replyCount는 호출 0(답변 수 미표시 — 위 ⑤)이라 삭제
+    expect(Object.keys(fb).filter((k) => k.startsWith('replyCount'))).toEqual([]);
   }
 });
 
@@ -573,8 +573,8 @@ it('KB-708 이탈 확인(문의): 빈 화면 = 막지 않음 · 쓰면 막음 �
   expect(r.root.findAllByProps({ testID: 'leave-confirm' })).toHaveLength(0);
 });
 
-// #236 공부: 전송 중(사진 업로드 = 상한·취소 없음) 뒤로를 무반응으로 막으면 약한 망에서 사용자가 갇힌다 → 전송 중에도 확인 창으로 나갈 수 있어야
-it('KB-708 전송 중 뒤로 = 확인 창 · 그만두기 = 나감(갇히지 않음) · 늦게 온 성공은 back을 한 번 더 부르지 않음', async () => {
+// #236 /review 2R: 전송 중엔 막지도 확인 창을 띄우지도 않는다 — 막으면 갇히고(상한 없는 업로드), 띄우면 뜬 채 성공 시 모달 두 장이 한 커밋
+it('KB-708 전송 중 뒤로 = 막지 않음(prevent off · 확인 창 0 → 그냥 나감) · 늦게 온 성공은 back을 한 번 더 부르지 않음', async () => {
   let resolve!: (v: unknown) => void;
   mockSubmit.mockImplementationOnce(() => new Promise((r) => (resolve = r)));
   let r!: ReactTestRenderer;
@@ -583,12 +583,19 @@ it('KB-708 전송 중 뒤로 = 확인 창 · 그만두기 = 나감(갇히지 않
   await act(async () => { input.props.onChangeText('slow upload'); });
   let sent!: Promise<unknown>;
   await act(async () => { sent = byId(r, 'feedback-send').props.onPress(); }); // 전송 중(가드 busy)
-  const action = { type: 'GO_BACK' };
-  await act(async () => { mockPrevent.cb!({ data: { action } }); });
-  expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
-  await act(async () => { byId(r, 'discard-go').props.onPress(); });
-  expect(mockNavDispatch).toHaveBeenCalledWith(action); // 나감
+  expect(mockPrevent.on).toBe(false); // 막지 않음 = 네비게이터가 그대로 화면을 닫는다
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' })).toHaveLength(0);
   await act(async () => { mockBlur.fn(); r.unmount(); }); // 화면이 실제로 닫힘
   await act(async () => { resolve({ id: '1' }); await sent; });
   expect(mockBack).not.toHaveBeenCalled(); // 이미 나간 뒤 back 추가 0
+});
+
+it('KB-708 전송 실패로 끝나면 다시 막음 → 뒤로 = 확인 창(내용은 남아 있다)', async () => {
+  mockSubmit.mockRejectedValueOnce(new Error('boom'));
+  let r!: ReactTestRenderer;
+  await act(async () => { r = renderer.create(<FeedbackComposeScreen />); });
+  await typeAndSend(r, 'keep me');
+  expect(mockPrevent.on).toBe(true);
+  await act(async () => { mockPrevent.cb!({ data: { action: { type: 'GO_BACK' } } }); });
+  expect(r.root.findAllByProps({ testID: 'leave-confirm' }).length).toBeGreaterThan(0);
 });

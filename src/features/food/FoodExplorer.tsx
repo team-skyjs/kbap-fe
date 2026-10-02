@@ -230,7 +230,7 @@ export function FoodExplorer({
       setRiskChip('all');
     }
   }
-  // KB-708: 게이트 문맥 — 위험도 칩 = 판정 문구(risk), 북마크·Saved 칩 = 저장 문구(save). null = 닫힘
+  // KB-708: 게이트 문맥 — 위험도 칩 = 판정 문구(risk), 북마크·Saved 칩 = 저장 문구(save). 열림(open)과 문구(ctx)를 따로 둔다
   // 열림과 문구 맥락을 따로 — 닫을 때 맥락은 남긴다(닫는 순간 'save'로 바뀌면 페이드아웃 0.3초 동안 북마크 문구가 비친다 — #236 /review E)
   const [gate, setGate] = React.useState<{ ctx: 'risk' | 'save'; open: boolean }>({ ctx: 'save', open: false });
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
