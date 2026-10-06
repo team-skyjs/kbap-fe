@@ -106,7 +106,7 @@
     "sortNewSoon": "Coming soon"
   },
   "search": {
-    "placeholder": "Search food, ingredient…",
+    "placeholder": "Search food…",
     "recent": "Recent searches",
     "recentClearAll": "Clear all",
     "recentEmptyHint": "Your recent searches will show up here.",

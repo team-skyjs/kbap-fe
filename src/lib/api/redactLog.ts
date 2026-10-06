@@ -3,7 +3,7 @@
  * (로그인·토큰 갱신의 accessToken·refreshToken 등)은 원문으로 찍혔다. 키 이름 기준(대소문자 무시·중첩·배열 포함).
  * 운영 번들은 로그 호출부가 `if (__DEV__)` 안이라 데드코드로 제거된다(이 함수도 dev에서만 불림).
  */
-const SECRET_KEY = /token|secret|password|authorization|cookie/i;
+const SECRET_KEY = /token|secret|password|authorization|cookie|ticket/i; // KB-722: ticket — /scans/tickets 응답 JWT(QA 관찰)
 const MASK = '***';
 
 export function redactSecrets(value: unknown): unknown {
@@ -22,6 +22,6 @@ export function redactText(text: string): string {
   try {
     return JSON.stringify(redactSecrets(JSON.parse(text)));
   } catch {
-    return text.replace(/("[^"]*(?:token|secret|password|authorization|cookie)[^"]*"\s*:\s*)"(?:[^"\\]|\\.)*"/gi, `$1"${MASK}"`);
+    return text.replace(/("[^"]*(?:token|secret|password|authorization|cookie|ticket)[^"]*"\s*:\s*)"(?:[^"\\]|\\.)*"/gi, `$1"${MASK}"`);
   }
 }
