@@ -95,7 +95,7 @@
   "food": {
     "title": "สำรวจอาหาร",
     "sub": "ทุกเมนูติดป้ายความเสี่ยงของคุณ",
-    "searchPlaceholder": "ค้นหาอาหารหรือส่วนผสม…",
+    "searchPlaceholder": "ค้นหาอาหาร…",
     "sort_popular": "ยอดนิยม",
     "sort_new": "ใหม่ล่าสุด",
     "categories": {
