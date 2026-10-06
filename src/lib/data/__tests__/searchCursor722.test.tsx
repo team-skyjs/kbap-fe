@@ -20,6 +20,7 @@ function Probe() {
   return null;
 }
 const latest = () => seen.mock.calls.at(-1)![0];
+beforeEach(() => { mockGet.mockReset(); seen.mockClear(); }); // 테스트 간 호출 수·렌더 기록 누적 방지
 // TanStack notifyManager는 setTimeout(0)(매크로태스크)로 구독자에게 알린다 — 마이크로태스크만 비우면 상태를 읽는 시점이 운에 걸린다(#241 CI 재현).
 // 조건이 될 때까지 실제 타이머 한 틱씩 기다린다(상한 있음).
 const waitUntil = async (cond: () => boolean) => {
@@ -46,6 +47,26 @@ it('문자열 nextCursor("k:9f3a|2026")를 다음 페이지 요청의 cursor=로
   expect(mockGet).toHaveBeenCalledTimes(2);
   expect(String(mockGet.mock.calls[1][0])).toContain(`cursor=${encodeURIComponent(OPAQUE)}`); // 숫자 변환·파싱 0
   expect(latest().hasNextPage).toBe(false);
+  await act(async () => { tree.unmount(); });
+  qc.clear();
+});
+
+// KB-722 /review: 서버가 같은 커서를 되돌리는 회귀 — 가드 없이는 끝까지 스크롤할 때마다 같은 페이지가 다시 붙는다(FlatList 키 중복)
+it('같은 nextCursor가 다시 오면 hasNextPage false(browse·북마크와 같은 에코 가드) — 추가 요청 0', async () => {
+  const SAME = '1:3:601';
+  mockGet
+    .mockResolvedValueOnce({ items: [], hasNext: true, nextCursor: SAME })
+    .mockResolvedValueOnce({ items: [], hasNext: true, nextCursor: SAME }); // 서버가 커서를 전진시키지 않음
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+  let tree!: renderer.ReactTestRenderer;
+  await act(async () => { tree = renderer.create(<QueryClientProvider client={qc}><Probe /></QueryClientProvider>); });
+  await waitUntil(() => latest().status === 'success');
+  expect(latest().hasNextPage).toBe(true);
+  const beforeNext = latest().dataUpdatedAt;
+  await act(async () => { await latest().fetchNextPage(); });
+  await waitUntil(() => latest().dataUpdatedAt > beforeNext && latest().fetchStatus === 'idle');
+  expect(mockGet).toHaveBeenCalledTimes(2);
+  expect(latest().hasNextPage).toBe(false); // 가드 없이는 true → 세 번째 요청이 같은 커서로 나간다
   await act(async () => { tree.unmount(); });
   qc.clear();
 });

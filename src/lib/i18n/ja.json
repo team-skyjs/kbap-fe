@@ -110,7 +110,6 @@
     "sortNewSoon": "準備中"
   },
   "search": {
-    "placeholder": "料理を検索…",
     "recent": "最近の検索",
     "recentClearAll": "すべて削除",
     "recentEmptyHint": "最近の検索履歴がここに表示されます。",

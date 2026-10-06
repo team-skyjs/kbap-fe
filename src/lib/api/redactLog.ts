@@ -3,7 +3,14 @@
  * (로그인·토큰 갱신의 accessToken·refreshToken 등)은 원문으로 찍혔다. 키 이름 기준(대소문자 무시·중첩·배열 포함).
  * 운영 번들은 로그 호출부가 `if (__DEV__)` 안이라 데드코드로 제거된다(이 함수도 dev에서만 불림).
  */
-const SECRET_KEY = /token|secret|password|authorization|cookie|ticket/i; // KB-722: ticket — /scans/tickets 응답 JWT(QA 관찰)
+/** 키 이름에 **포함**되면 비밀(accessToken·clientSecret·…) */
+const SECRET_WORDS = 'token|secret|password|authorization|cookie';
+/** 키 이름이 **정확히** 이것일 때만 비밀 — KB-722: 스캔 티켓 JWT(/scans/tickets 응답 `ticket`, 요청 헤더 `X-Scan-Ticket`).
+ *  부분 일치로 두면 ticketId·scanTicket까지 가려져 P-255 선발급 티켓 재사용 디버깅이 불가능해진다. */
+const SECRET_EXACT = 'ticket|x-scan-ticket';
+const SECRET_KEY = new RegExp(`${SECRET_WORDS}|^(?:${SECRET_EXACT})$`, 'i');
+/** 잘린(비 JSON) 본문용 — 같은 목록으로 조립(목록 하나) */
+const SECRET_PAIR = new RegExp(`("(?:[^"]*(?:${SECRET_WORDS})[^"]*|${SECRET_EXACT})"\\s*:\\s*)"(?:[^"\\\\]|\\\\.)*"`, 'gi');
 const MASK = '***';
 
 export function redactSecrets(value: unknown): unknown {
@@ -22,6 +29,6 @@ export function redactText(text: string): string {
   try {
     return JSON.stringify(redactSecrets(JSON.parse(text)));
   } catch {
-    return text.replace(/("[^"]*(?:token|secret|password|authorization|cookie|ticket)[^"]*"\s*:\s*)"(?:[^"\\]|\\.)*"/gi, `$1"${MASK}"`);
+    return text.replace(SECRET_PAIR, `$1"${MASK}"`);
   }
 }
