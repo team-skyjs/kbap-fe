@@ -95,7 +95,7 @@
   "food": {
     "title": "Выбор блюд",
     "sub": "У каждого блюда — ваш уровень риска.",
-    "searchPlaceholder": "Найти блюдо или ингредиент…",
+    "searchPlaceholder": "Найти блюдо…",
     "sort_popular": "Популярные",
     "sort_new": "Новые",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "Скоро"
   },
   "search": {
-    "placeholder": "Найти блюдо, ингредиент…",
     "recent": "Недавние запросы",
     "recentClearAll": "Очистить всё",
     "recentEmptyHint": "Здесь появятся ваши недавние запросы.",

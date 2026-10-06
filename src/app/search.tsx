@@ -124,7 +124,7 @@ export default function Search() {
             style={styles.input}
             value={query}
             onChangeText={setQuery}
-            placeholder={seedKeyword ? t('search.placeholderSeed', { name: seedKeyword }) : t('search.placeholder')}
+            placeholder={seedKeyword ? t('search.placeholderSeed', { name: seedKeyword }) : t('food.searchPlaceholder')} /* KB-722: 홈 검색창과 한 키(중복 키 제거) */
             placeholderTextColor="#D1D3D8"
             selectionColor={C.primary}
             autoFocus

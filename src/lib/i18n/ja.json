@@ -95,7 +95,7 @@
   "food": {
     "title": "料理を探す",
     "sub": "すべての料理にあなたのリスクを表示。",
-    "searchPlaceholder": "料理や食材を検索…",
+    "searchPlaceholder": "料理を検索…",
     "sort_popular": "人気順",
     "sort_new": "新着順",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "準備中"
   },
   "search": {
-    "placeholder": "料理や食材を検索…",
     "recent": "最近の検索",
     "recentClearAll": "すべて削除",
     "recentEmptyHint": "最近の検索履歴がここに表示されます。",

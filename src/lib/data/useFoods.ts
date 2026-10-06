@@ -57,7 +57,7 @@ export function useFoods(query?: string) {
  * BE's nextCursor (last item's foodId — treated as opaque).
  */
 /** 목록 페이지 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
-export async function fetchFoodsPage(pageParam: number | undefined, riskWire?: string): Promise<PageMenuSummaryWire> {
+export async function fetchFoodsPage(pageParam: string | number | undefined, riskWire?: string): Promise<PageMenuSummaryWire> {
   if (MOCK_MODE_FOODS) {
     return {
       items: MOCK_FOODS.map((f) => ({
@@ -92,7 +92,7 @@ export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boole
     enabled: opts?.enabled ?? true, // #112 2R ②: Saved 활성 중 비활성 browse risk 쿼리 억제
     // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지)
     queryKey: wire ? ['foods', 'list', lang, wire] : ['foods', 'list', lang],
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as string | number | undefined,
     queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire),
     // #112 P1 ①(P-332 문법 이식): 커서 에코 가드 — 얇은 페이지 자동 연속 페치가
     // 커서 미전진 경계 응답에서 무한 루프(이 PR이 잡으려던 증상)가 되지 않게,
@@ -121,7 +121,7 @@ export function useSearchFoods(keyword: string, scope?: 'scanned') {
   const term = keyword.trim();
   return useInfiniteQuery({
     queryKey: ['foods', 'search', term, scope ?? 'all', lang],
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as string | number | undefined,
     enabled: term.length > 0,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
       // scanned = 페이징 없음(cursor 전송 금지 — 서버가 무시하지만 규약 준수)
@@ -132,7 +132,12 @@ export function useSearchFoods(keyword: string, scope?: 'scanned') {
         `/foods/search?keyword=${encodeURIComponent(term)}${cursor}${scopeQ}&lang=${apiLang()}`,
       );
     },
-    getNextPageParam: (last) => (last.hasNext && last.nextCursor != null ? last.nextCursor : undefined),
+    // KB-722: 커서 에코 가드(browse·북마크와 같은 문법) — 서버가 같은 커서를 되돌리면 끝까지 스크롤할 때마다 같은 페이지가 다시 붙는다(키 중복)
+    getNextPageParam: (last, _pages, lastParam, allParams) =>
+      last.hasNext && last.nextCursor != null &&
+      last.nextCursor !== lastParam && !allParams.includes(last.nextCursor)
+        ? last.nextCursor
+        : undefined,
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
 }
@@ -143,7 +148,7 @@ export function useScannedFoods(enabled = true) {
   const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   return useInfiniteQuery({
     queryKey: ['foods', 'scanned', lang],
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as string | number | undefined,
     enabled,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
       const cursor = pageParam != null ? `?cursor=${encodeURIComponent(String(pageParam))}&lang=${apiLang()}` : `?lang=${apiLang()}`;

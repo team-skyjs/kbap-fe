@@ -95,7 +95,7 @@
   "food": {
     "title": "Explorar comida",
     "sub": "Cada plato etiquetado con tu riesgo.",
-    "searchPlaceholder": "Buscar comida o ingrediente…",
+    "searchPlaceholder": "Buscar comida…",
     "sort_popular": "Populares",
     "sort_new": "Nuevos",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "Próximamente"
   },
   "search": {
-    "placeholder": "Buscar comida, ingrediente…",
     "recent": "Búsquedas recientes",
     "recentClearAll": "Borrar todo",
     "recentEmptyHint": "Tus búsquedas recientes aparecerán aquí.",

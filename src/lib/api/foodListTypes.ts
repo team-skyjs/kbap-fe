@@ -33,5 +33,5 @@ export interface MenuSummaryWire {
 export interface PageMenuSummaryWire {
   items: MenuSummaryWire[];
   hasNext: boolean;
-  nextCursor?: number | null; // absent/null on the last page
+  nextCursor?: string | number | null; // absent/null on the last page — 불투명(KB-721: "1:3:601" 형식 문자열, 그대로 되돌려 보낸다)
 }

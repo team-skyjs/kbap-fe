@@ -56,7 +56,7 @@ function toWire(snap: BookmarkSnapshot): MenuSummaryWire {
   };
 }
 
-type Pages = InfiniteData<PageMenuSummaryWire, number | undefined>;
+type Pages = InfiniteData<PageMenuSummaryWire, string | number | undefined>;
 
 /** 서버 북마크 목록 — 커서 무한스크롤, 카드는 목록과 동일 어댑터.
  *  P-350(KB-492): risk = 서버 필터(&risk=SAFE 등) — 지정 시 쿼리키 분리.
@@ -69,7 +69,7 @@ export function useBookmarks(risk?: RiskFilterChip) {
   return useInfiniteQuery({
     queryKey: wire ? (['bookmarks', lang, wire] as const) : (['bookmarks', lang] as const), // = QK() 값(구독 언어)
     enabled: !isGuest, // 인증 필수 API — 게스트는 게이트로 진입 자체가 차단됨
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as string | number | undefined,
     queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
       const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
       const riskQ = wire ? `&risk=${wire}` : '';

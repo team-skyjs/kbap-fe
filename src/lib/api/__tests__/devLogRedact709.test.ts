@@ -52,6 +52,9 @@ it('redactSecrets/redactText — 키 이름 기준·중첩·배열 · 잘린(비
   expect(redactSecrets({ a: 1, list: [{ ACCESS_TOKEN: 'x' }], authorizationCode: 'c', clientSecret: 's' })).toEqual({ a: 1, list: [{ ACCESS_TOKEN: '***' }], authorizationCode: '***', clientSecret: '***' });
   expect(redactText('{"payload":{"accessToken":"abc"}')).toBe('{"payload":{"accessToken":"***"}'); // 4000자 자르기 등으로 깨진 JSON
   expect(redactText('plain text')).toBe('plain text');
+  // KB-722(KB-709 메모): /scans/tickets 응답의 JWT(`ticket`)·요청 헤더 `X-Scan-Ticket`만 — ticketId·scanTicket은 디버깅값이라 남긴다(P-255 선발급 재사용 추적)
+  expect(redactSecrets({ ticket: 'eyJhbGciOi.AAA', 'X-Scan-Ticket': 'eyJ.BBB', scanTicket: 'T2', ticketId: 7 })).toEqual({ ticket: '***', 'X-Scan-Ticket': '***', scanTicket: 'T2', ticketId: 7 });
+  expect(redactText('{"payload":{"ticket":"eyJhbGciOi.AAA","ticketId":7}')).toBe('{"payload":{"ticket":"***","ticketId":7}');
   // 비밀 패턴 키의 값이 객체·배열이어도 통째로 — 안쪽 키(access·refresh)가 패턴이 아니어도 새지 않게
   expect(redactSecrets({ tokens: { access: 'AAA', refresh: 'RRR' }, secretList: ['S1'], ok: { keep: 1 } })).toEqual({ tokens: '***', secretList: '***', ok: { keep: 1 } });
   expect(redactText('{"payload":{"tokens":{"access":"AAA"}}}')).not.toContain('AAA');

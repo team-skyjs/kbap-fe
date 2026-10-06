@@ -95,7 +95,7 @@
   "food": {
     "title": "สำรวจอาหาร",
     "sub": "ทุกเมนูติดป้ายความเสี่ยงของคุณ",
-    "searchPlaceholder": "ค้นหาอาหารหรือส่วนผสม…",
+    "searchPlaceholder": "ค้นหาอาหาร…",
     "sort_popular": "ยอดนิยม",
     "sort_new": "ใหม่ล่าสุด",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "เร็วๆ นี้"
   },
   "search": {
-    "placeholder": "ค้นหาอาหาร ส่วนผสม…",
     "recent": "การค้นหาล่าสุด",
     "recentClearAll": "ล้างทั้งหมด",
     "recentEmptyHint": "การค้นหาล่าสุดของคุณจะแสดงที่นี่",

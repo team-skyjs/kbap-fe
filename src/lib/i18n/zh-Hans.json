@@ -95,7 +95,7 @@
   "food": {
     "title": "探索美食",
     "sub": "每道菜都标注了适合你的风险等级。",
-    "searchPlaceholder": "搜索菜品或食材…",
+    "searchPlaceholder": "搜索菜品…",
     "sort_popular": "热门",
     "sort_new": "最新",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "即将上线"
   },
   "search": {
-    "placeholder": "搜索菜品、食材…",
     "recent": "最近搜索",
     "recentClearAll": "全部清除",
     "recentEmptyHint": "你最近的搜索会显示在这里。",

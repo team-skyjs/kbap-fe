@@ -95,7 +95,7 @@
   "food": {
     "title": "Jelajahi makanan",
     "sub": "Setiap hidangan ditandai dengan risiko Anda.",
-    "searchPlaceholder": "Cari makanan atau bahan…",
+    "searchPlaceholder": "Cari makanan…",
     "sort_popular": "Terpopuler",
     "sort_new": "Terbaru",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "Segera hadir"
   },
   "search": {
-    "placeholder": "Cari makanan, bahan…",
     "recent": "Pencarian terakhir",
     "recentClearAll": "Hapus semua",
     "recentEmptyHint": "Pencarian terakhir Anda akan muncul di sini.",

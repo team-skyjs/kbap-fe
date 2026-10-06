@@ -95,7 +95,7 @@
   "food": {
     "title": "Khám phá món ăn",
     "sub": "Mỗi món đều được gắn mức rủi ro của bạn.",
-    "searchPlaceholder": "Tìm món ăn hoặc nguyên liệu…",
+    "searchPlaceholder": "Tìm món ăn…",
     "sort_popular": "Phổ biến",
     "sort_new": "Mới nhất",
     "categories": {
@@ -110,7 +110,6 @@
     "sortNewSoon": "Sắp ra mắt"
   },
   "search": {
-    "placeholder": "Tìm món ăn, nguyên liệu…",
     "recent": "Tìm kiếm gần đây",
     "recentClearAll": "Xóa tất cả",
     "recentEmptyHint": "Các tìm kiếm gần đây của bạn sẽ hiển thị ở đây.",

@@ -115,7 +115,7 @@ it('placeholder — 카탈로그 시드 로테이션(리더 언어 번역명), �
   // 미로드 → 기본 placeholder
   mockUseInfiniteFoods.mockReturnValue({ ...OK_QUERY, data: undefined }); // KB-310: 미로드 = probe 데이터 부재
   const tree2 = render(<Search />);
-  expect(tree2.root.findAllByType(TextInput)[0].props.placeholder).toBe('search.placeholder');
+  expect(tree2.root.findAllByType(TextInput)[0].props.placeholder).toBe('food.searchPlaceholder'); // KB-722: 홈 검색창과 한 키
 });
 
 it('빈 상태 인기 사진 섹션 — 랭크순 카드(사진 우선) + 탭 = 상세 진입(검색 실행 아님)', () => {
@@ -152,4 +152,23 @@ it('KB-709 검색 계측 result_count = 화면에 보인 결과 음식 수(이�
   } finally {
     spy.mockRestore();
   }
+});
+
+// KB-722(P-452 ②): 결과 목록 = 서버 순서 그대로(KB-721 관련도 정렬을 그대로 수용) — 앱의 인기순·이름순 재정렬 0
+it('KB-722 검색 결과 = 서버 응답 순서 그대로(popularityRank·이름과 무관)', () => {
+  // 서버가 관련도로 준 순서: rank 2 → rank 1 → rank 없음 (앱이 rank/이름으로 다시 섞으면 바뀐다)
+  const SERVER_ORDER = [
+    { ...CATALOG[0], foodId: 'bibim' }, // rank 2
+    { ...CATALOG[1], foodId: 'kimchi' }, // rank 1
+    { ...CATALOG[0], foodId: 'alpha', name: 'Alpha Soup', nameKo: '알파', popularityRank: null },
+  ];
+  mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, data: SERVER_ORDER, fetchNextPage: jest.fn(), hasNextPage: false, isFetchingNextPage: false });
+  const tree = render(<Search />);
+  const input = tree.root.findAllByType(TextInput)[0];
+  act(() => input.props.onChangeText('a'));
+  act(() => input.props.onSubmitEditing());
+  const shown = tree.root
+    .findAll((n) => typeof n.type === 'string' && typeof n.props?.testID === 'string' && /^home-food-/.test(n.props.testID))
+    .map((n) => (n.props.testID as string).replace('home-food-', ''));
+  expect(shown).toEqual(['bibim', 'kimchi', 'alpha']);
 });

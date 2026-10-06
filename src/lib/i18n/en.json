@@ -91,7 +91,7 @@
   "food": {
     "title": "Explore food",
     "sub": "Each dish rated for you.",
-    "searchPlaceholder": "Search food or ingredient…",
+    "searchPlaceholder": "Search food…",
     "sort_popular": "Popular",
     "sort_new": "New",
     "categories": {
@@ -106,7 +106,6 @@
     "sortNewSoon": "Coming soon"
   },
   "search": {
-    "placeholder": "Search food, ingredient…",
     "recent": "Recent searches",
     "recentClearAll": "Clear all",
     "recentEmptyHint": "Your recent searches will show up here.",
