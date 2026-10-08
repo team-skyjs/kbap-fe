@@ -20,6 +20,7 @@ import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
 import { setSentryUser } from '../sentry';
+import { setAnalyticsUser } from '../analytics';
 import { FLAGS } from '../flags';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
@@ -31,11 +32,13 @@ import { toBeCode } from '../mocks/ingredients';
 export async function fetchMe(): Promise<User> {
   if (!(await hasBeSession())) {
     setSentryUser(null); // P-197: 게스트 = 식별 해제
+    setAnalyticsUser(null); // KB-732: 게스트 = Amplitude userId 해제(호출 0이 아니라 해제 — 로그인→게스트 전환 잔존 방지)
     return MOCK_USER; // guest/dev fallback
   }
   const wire = await api.get<MyProfileWire>('/members/me/profile');
   const user = adaptProfile(wire, await loadLocalSpice());
   setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
+  setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
   return user;
 }
 

@@ -15,7 +15,11 @@ class MockIdentify {
     return this;
   }
 }
-jest.mock('@amplitude/analytics-react-native', () => ({ init: mockInit, track: mockTrack, identify: mockIdentify, Identify: MockIdentify }));
+const mockSetUserId = jest.fn();
+const mockSetDeviceId = jest.fn();
+jest.mock('@amplitude/analytics-react-native', () => ({ init: mockInit, track: mockTrack, identify: mockIdentify, Identify: MockIdentify, setUserId: mockSetUserId, setDeviceId: mockSetDeviceId }));
+let mockUuidN = 0;
+jest.mock('expo-crypto', () => ({ randomUUID: () => `uuid-${++mockUuidN}` }));
 
 const KEY_NAME = 'EXPO_PUBLIC_AMPLITUDE_API_KEY';
 
@@ -161,4 +165,45 @@ it('P-144: 키 없음 → setUserProps도 no-op', () => {
   a.setUserProps({ user_info_country: 'US' });
   expect(mockIdentify).not.toHaveBeenCalled();
   expect(mockInit).not.toHaveBeenCalled();
+});
+
+/* ---- KB-732: 회원 식별 ---- */
+beforeEach(() => { mockSetUserId.mockClear(); mockSetDeviceId.mockClear(); });
+it('KB-732: setAnalyticsUser — 회원 번호 문자열로 setUserId · null = undefined(해제) · 기기 id는 건드리지 않음', () => {
+  const a = loadAnalytics('k');
+  a.setAnalyticsUser('42');
+  expect(mockSetUserId).toHaveBeenCalledWith('42');
+  a.setAnalyticsUser(null);
+  expect(mockSetUserId).toHaveBeenLastCalledWith(undefined);
+  expect(mockSetDeviceId).not.toHaveBeenCalled();
+});
+
+it('KB-732: resetAnalyticsDevice — 새 uuid로 setDeviceId(부를 때마다 다른 값)', () => {
+  const a = loadAnalytics('k');
+  const first = a.resetAnalyticsDevice();
+  const second = a.resetAnalyticsDevice();
+  expect(first).toBeTruthy();
+  expect(second).not.toBe(first);
+  expect(mockSetDeviceId.mock.calls.map((c) => c[0])).toEqual([first, second]);
+});
+
+it('KB-732: 키 없음 → setAnalyticsUser·resetAnalyticsDevice 모두 no-op(SDK 로드 0)', () => {
+  const a = loadAnalytics(undefined);
+  a.setAnalyticsUser('42');
+  expect(a.resetAnalyticsDevice()).toBeUndefined();
+  expect(mockSetUserId).not.toHaveBeenCalled();
+  expect(mockSetDeviceId).not.toHaveBeenCalled();
+  expect(mockInit).not.toHaveBeenCalled();
+});
+
+it('어댑터 격리 — analytics.ts가 쓰는 SDK API는 허용 목록뿐(init·track·Identify·identify·setUserId·setDeviceId) · SDK 직접 호출은 이 파일 하나', () => {
+  const fs = jest.requireActual<typeof import('fs')>('fs');
+  const src = fs.readFileSync('src/lib/analytics.ts', 'utf8');
+  const used = new Set([...src.matchAll(/\bamp\.(\w+)\(/g)].map((m) => m[1]));
+  expect([...used].sort()).toEqual(['Identify', 'identify', 'init', 'setDeviceId', 'setUserId', 'track']);
+  // KB-732: 상단 주석의 "setUserId 없음" 정정 — 옛 문구 잔존 0
+  expect(src).not.toContain('setUserId·Identify 호출 없음');
+  const { execSync } = jest.requireActual<typeof import('child_process')>('child_process');
+  const importers = execSync("git grep -l \"@amplitude/analytics-react-native\" -- 'src/**/*.ts' 'src/**/*.tsx' ':!src/**/__tests__/**'", { encoding: 'utf8' }).trim().split('\n');
+  expect(importers).toEqual(['src/lib/analytics.ts']);
 });

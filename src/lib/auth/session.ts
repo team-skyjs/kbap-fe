@@ -12,6 +12,7 @@
 import { getAuth, onAuthStateChanged, signOut } from '@react-native-firebase/auth';
 import { track } from '@/lib/net/inflight';
 import { setSentryUser } from '@/lib/sentry';
+import { setAnalyticsUser } from '@/lib/analytics';
 
 /** Firebase user, derived from the modular API (namespaced types mismatch it). */
 export type AuthUser = NonNullable<ReturnType<typeof getAuth>['currentUser']>;
@@ -34,5 +35,6 @@ export function currentUser(): AuthUser | null {
  *  Codex #109 7R: track 경유 — OTA 정적 창(KB-509)이 로그아웃 왕복을 본다. */
 export async function logOut(): Promise<void> {
   setSentryUser(null); // P-197: 식별 해제 — 로그아웃 후 이벤트에 memberId 잔존 방지
+  setAnalyticsUser(null); // KB-732: Amplitude userId 해제(기기 id 유지)
   await track(signOut(getAuth()));
 }

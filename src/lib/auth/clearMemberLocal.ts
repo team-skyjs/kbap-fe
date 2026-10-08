@@ -15,8 +15,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearOnboardingDraft } from '@/lib/onboarding/draft';
 import { SPICE_KEY } from '@/lib/onboarding/submit';
+import { resetAnalyticsDevice, setAnalyticsUser } from '@/lib/analytics';
 
 export async function clearMemberLocalState(): Promise<void> {
+  // KB-732: 탈퇴 = Amplitude userId 해제 + 기기 id 재생성(탈퇴 전 익명 이력과 단절). 로그아웃(logOut)은 해제만.
+  setAnalyticsUser(null);
+  resetAnalyticsDevice();
   await clearOnboardingDraft();
   await AsyncStorage.removeItem(SPICE_KEY).catch(() => {});
   console.log('[auth] member local state cleared (onboarding draft, spice)');

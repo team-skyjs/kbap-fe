@@ -30,8 +30,10 @@
  * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
- * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
- * (setUserId·Identify 호출 없음). 허용 키 밖 prop은 드롭(유닛 잠금).
+ * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송. 식별 = **회원 번호**(`members/me`의 memberId 문자열)
+ * `setUserId` — KB-732(10/8 예진: 가입자가 전부 익명이던 것, 이메일·해시 아님) · user property는 허용 키만(Identify).
+ * 게스트·로그아웃 = userId 해제(기기 id 유지) · 탈퇴 = 해제 + 기기 id 재생성. 허용 키 밖 prop은 드롭(유닛 잠금).
+ * 이 파일 밖에서 SDK 직접 호출 금지 — 공개 = track · setUserProps · setAnalyticsUser · resetAnalyticsDevice.
  *
  * 키: `EXPO_PUBLIC_AMPLITUDE_API_KEY` — 없으면 **no-op**(콘솔 debug만),
  * 키 주입 시 코드 변경 0. ⚠️ Amplitude 웹 위저드 지시 무시(발주 명시):
@@ -166,7 +168,7 @@ function ensureInit(): boolean {
     // lazy require — 키 없는 환경(웹 개발·유닛)에서 SDK 로드 자체를 회피
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
-    amp.init(KEY); // userId 미전달 — 익명 device id만
+    amp.init(KEY); // userId는 members/me 성공 시 setAnalyticsUser가 붙인다(KB-732) — init 시점엔 아직 모른다
     initialized = true;
   }
   return true;
@@ -197,7 +199,7 @@ export function sanitizeUserProps(props: Partial<Record<UserPropKey, unknown>>):
   );
 }
 
-/** P-144: user property 세팅 — Identify(익명 device id 유지, setUserId 없음). */
+/** P-144: user property 세팅 — Identify(허용 키만). setUserId 없음이던 결정은 KB-732로 변경 — 식별은 setAnalyticsUser. */
 export function setUserProps(props: Partial<Record<UserPropKey, string | number | boolean>>): void {
   const clean = sanitizeUserProps(props);
   if (!Object.keys(clean).length) return;
@@ -210,4 +212,33 @@ export function setUserProps(props: Partial<Record<UserPropKey, string | number 
   const id = new amp.Identify();
   for (const [k, v] of Object.entries(clean)) id.set(k, v as string | number | boolean);
   amp.identify(id);
+}
+
+/**
+ * KB-732: 회원 식별 — `members/me` 응답의 회원 번호(문자열)로 setUserId. null = 해제(게스트·로그아웃 — 기기 id는 유지).
+ * 호출 지점은 P-197 Sentry 식별과 같은 세 곳(fetchMe 성공/게스트 · logOut · 탈퇴 정리)뿐 — 화면 코드에서 부르지 않는다.
+ */
+export function setAnalyticsUser(memberId: string | null): void {
+  if (!ensureInit()) {
+    if (__DEV__) console.log('[analytics:noop] setUserId', memberId == null ? '(cleared)' : '(set)');
+    return;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
+  amp.setUserId(memberId ?? undefined);
+}
+
+/** KB-732: 탈퇴 — 기기 id를 새로 뽑아 탈퇴 전 익명 이력과 끊는다(재가입이 같은 기기 프로필로 이어지지 않게). 새 id 반환(유닛용). */
+export function resetAnalyticsDevice(): string | undefined {
+  if (!ensureInit()) {
+    if (__DEV__) console.log('[analytics:noop] setDeviceId (new)');
+    return undefined;
+  }
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
+  const { randomUUID } = require('expo-crypto') as typeof import('expo-crypto');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  const id = randomUUID();
+  amp.setDeviceId(id);
+  return id;
 }
