@@ -102,11 +102,11 @@ it('열림 = survey_view 1회 · 뒤로 가기(onRequestClose)·배경은 닫지
 it('페이지 0: 3문항 전부 답해야 다음 활성 · 다음 = 점 이동 + 이전 버튼', async () => {
   const t = render();
   expect(has(t, 'survey-dot-0-on')).toBe(1);
-  expect(btn(t, 'survey-next').props.disabled).toBe(true);
+  expect(btn(t, 'survey-next').props.variant).toBe('off');
   await press(t, 'survey-opt-ageBand-TWENTIES'); await press(t, 'survey-opt-gender-FEMALE');
-  expect(btn(t, 'survey-next').props.disabled).toBe(true);
+  expect(btn(t, 'survey-next').props.variant).toBe('off');
   await press(t, 'survey-opt-acquisition-SNS_AD');
-  expect(btn(t, 'survey-next').props.disabled).toBe(false);
+  expect(btn(t, 'survey-next').props.variant).toBe('primary');
   expect(has(t, 'survey-back')).toBe(0);
   await press(t, 'survey-next');
   expect(has(t, 'survey-dot-1-on')).toBe(1);
@@ -114,7 +114,7 @@ it('페이지 0: 3문항 전부 답해야 다음 활성 · 다음 = 점 이동 +
   expect(has(t, 'survey-q-tripTiming')).toBe(0); // 상황 미응답 = 분기 숨김
   await press(t, 'survey-back');
   expect(has(t, 'survey-dot-0-on')).toBe(1);
-  expect(btn(t, 'survey-next').props.disabled).toBe(false); // 답 유지
+  expect(btn(t, 'survey-next').props.variant).toBe('primary'); // 답 유지
 });
 
 it('페이지 1 분기: TRIP_PLANNED = 시기+기간 · 상황 전환 = 분기 답 비움(돌아와도 미응답) · TRAVELING_NOW = 기간만', async () => {
@@ -122,14 +122,14 @@ it('페이지 1 분기: TRIP_PLANNED = 시기+기간 · 상황 전환 = 분기 �
   await fillPage0(t); await press(t, 'survey-next');
   await press(t, 'survey-opt-situation-TRIP_PLANNED');
   expect(has(t, 'survey-q-tripTiming')).toBe(1); expect(has(t, 'survey-q-tripDuration')).toBe(1);
-  expect(btn(t, 'survey-next').props.disabled).toBe(true);
+  expect(btn(t, 'survey-next').props.variant).toBe('off');
   await press(t, 'survey-opt-tripTiming-THIS_YEAR'); await press(t, 'survey-opt-tripDuration-ONE_WEEK');
-  expect(btn(t, 'survey-next').props.disabled).toBe(false);
+  expect(btn(t, 'survey-next').props.variant).toBe('primary');
   await press(t, 'survey-opt-situation-LIVING_IN_KOREA');
   expect(has(t, 'survey-q-tripTiming')).toBe(0); expect(has(t, 'survey-q-tripDuration')).toBe(0);
-  expect(btn(t, 'survey-next').props.disabled).toBe(false);
+  expect(btn(t, 'survey-next').props.variant).toBe('primary');
   await press(t, 'survey-opt-situation-TRIP_PLANNED');
-  expect(btn(t, 'survey-next').props.disabled).toBe(true); // 비워졌다 — 다시 답해야
+  expect(btn(t, 'survey-next').props.variant).toBe('off'); // 비워졌다 — 다시 답해야
   expect(t.root.findAll((x) => x.props?.testID === 'survey-opt-tripTiming-THIS_YEAR' && x.props?.accessibilityState?.selected === true)).toHaveLength(0);
   await press(t, 'survey-opt-situation-TRAVELING_NOW');
   expect(has(t, 'survey-q-tripTiming')).toBe(0); expect(has(t, 'survey-q-tripDuration')).toBe(1);
@@ -138,7 +138,11 @@ it('페이지 1 분기: TRIP_PLANNED = 시기+기간 · 상황 전환 = 분기 �
 it('제출 = PUT /members/me/survey body 계약 그대로(대문자·정수·미해당 분기 null) → me 캐시 surveyCompleted=true + user property 7키(시기 제외) + survey_submit', async () => {
   mockPut.mockImplementation(async (_p: string, body: Record<string, unknown>) => ({ ...body, surveyVersion: 1, answeredAt: '2026-10-08T22:08:45.123456' }));
   const t = render();
-  await toPage2(t, 'TRAVELING_NOW');
+  await fillPage0(t); await press(t, 'survey-next');
+  await press(t, 'survey-opt-situation-TRAVELING_NOW'); await press(t, 'survey-opt-tripDuration-ONE_WEEK'); await press(t, 'survey-next');
+  expect(btn(t, 'survey-submit').props.variant).toBe('off'); // 미응답 = 회색(off) — 활성과 같은 주황 금지(QA 10/9)
+  await press(t, 'survey-opt-purpose-MENU_READING'); await press(t, 'survey-opt-foodAffinity-4');
+  expect(btn(t, 'survey-submit').props.variant).toBe('primary');
   expect(has(t, 'survey-dot-2-on')).toBe(1);
   await press(t, 'survey-submit');
   expect(mockPut).toHaveBeenCalledTimes(1);
@@ -244,14 +248,14 @@ it('라디오 원을 직접 탭해도 선택 · accessibilityRole=radio + access
 it('생애주기: 시트 열린 채 세션 경계(open=false) → 다시 열리면 빈 폼 · 계정 전환(A→B, open 유지)도 빈 폼 — A의 답을 B로 제출 0', async () => {
   const t = render(true, 'A');
   await fillPage0(t);
-  expect(btn(t, 'survey-next').props.disabled).toBe(false);
+  expect(btn(t, 'survey-next').props.variant).toBe('primary');
   update(t, false, 'A'); // 세션 경계 = me 캐시 비움 → open=false
   update(t, true, 'B');
   expect(has(t, 'survey-dot-0-on')).toBe(1);
-  expect(btn(t, 'survey-next').props.disabled).toBe(true); // 비어 있다
+  expect(btn(t, 'survey-next').props.variant).toBe('off'); // 비어 있다
   await fillPage0(t);
   update(t, true, 'C'); // open 유지한 채 회원 번호만 바뀜(계정 전환)
-  expect(btn(t, 'survey-next').props.disabled).toBe(true);
+  expect(btn(t, 'survey-next').props.variant).toBe('off');
   expect(mockTrack.mock.calls.filter(([e]) => e === 'survey_view')).toHaveLength(3); // 폼 마운트마다 1회
 });
 

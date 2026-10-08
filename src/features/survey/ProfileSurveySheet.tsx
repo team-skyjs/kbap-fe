@@ -133,7 +133,7 @@ function SurveyForm() {
           </View>
         )}
         <View style={styles.actionNext}>
-          <Btn onPress={onPrimary} disabled={!complete} busy={guard.busy} testID={last ? 'survey-submit' : 'survey-next'}>
+          <Btn variant={complete ? 'primary' : 'off'} onPress={onPrimary} busy={guard.busy} testID={last ? 'survey-submit' : 'survey-next'}>
             {last ? (failed ? t('survey.retry') : t('survey.submit')) : t('survey.next')}
           </Btn>
         </View>
