@@ -268,3 +268,45 @@ it('성공 뒤 확인 재조회는 현재 언어 키 exact — 접두 매치로 
   expect(spy).toHaveBeenCalledTimes(1);
   expect(spy).toHaveBeenCalledWith({ queryKey: ['me', 'en'], exact: true });
 });
+
+/* ---- KB-733: 큐 스텝 — 완전히 닫힌 뒤 onClosed(iOS = SheetShell onDismiss · Android = 폼 언마운트) ---- */
+const renderClosable = (open: boolean, onClosed: () => void) => {
+  let t!: ReactTestRenderer;
+  act(() => { t = renderer.create(<QueryClientProvider client={qc}><ProfileSurveySheet open={open} memberId="1" onClosed={onClosed} /></QueryClientProvider>); });
+  trees.push(t);
+  return t;
+};
+it('KB-733 iOS: 닫힘 알림은 Modal onDismiss(언마운트 아님) — 열려 있는 동안 0 · onDismiss → 1', () => {
+  const { Platform } = jest.requireActual<typeof import('react-native')>('react-native');
+  const prev = Platform.OS;
+  Platform.OS = 'ios';
+  try {
+    const onClosed = jest.fn();
+    const t = renderClosable(true, onClosed);
+    expect(onClosed).not.toHaveBeenCalled();
+    const modal = modalOf(t);
+    expect(typeof modal.props.onDismiss).toBe('function');
+    act(() => { t.update(<QueryClientProvider client={qc}><ProfileSurveySheet open={false} memberId="1" onClosed={onClosed} /></QueryClientProvider>); });
+    expect(onClosed).not.toHaveBeenCalled(); // 폼 언마운트로는 안 부른다 — 네이티브 dismiss 완료가 기준(P-267)
+    act(() => { modal.props.onDismiss(); });
+    expect(onClosed).toHaveBeenCalledTimes(1);
+  } finally {
+    Platform.OS = prev;
+  }
+});
+it('KB-733 Android: onDismiss 미지원 — open=false로 폼이 언마운트될 때 onClosed 1회 · Modal onDismiss 미배선', () => {
+  const { Platform } = jest.requireActual<typeof import('react-native')>('react-native');
+  const prev = Platform.OS;
+  Platform.OS = 'android';
+  try {
+    const onClosed = jest.fn();
+    const t = renderClosable(true, onClosed);
+    expect(modalOf(t).props.onDismiss).toBeUndefined();
+    expect(onClosed).not.toHaveBeenCalled();
+    act(() => { t.update(<QueryClientProvider client={qc}><ProfileSurveySheet open={false} memberId="1" onClosed={onClosed} /></QueryClientProvider>); });
+    expect(onClosed).toHaveBeenCalledTimes(1);
+    expect(isSurveyPresented()).toBe(false);
+  } finally {
+    Platform.OS = prev;
+  }
+});

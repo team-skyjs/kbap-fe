@@ -30,10 +30,8 @@ import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 �
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { ProfileSurveySheet } from '@/features/survey/ProfileSurveySheet';
-import { shouldShowSurvey } from '@/lib/survey/profileSurvey';
-import { useSurveyHiddenThisRun } from '@/lib/survey/surveySession';
-import { useSplashDone } from '@/lib/useSplashDone';
-import { useVersionGate } from '@/lib/versionGate';
+import { useProfileSurveyStep } from '@/features/survey/useProfileSurveyStep';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -69,15 +67,18 @@ export default function Home() {
   const badgeTop = exploreY != null && scanRowBottom != null ? headerH + exploreY + scanRowBottom + BADGE_GAP : null;
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
-  const { data: me } = useMe();
-  // KB-729: 설문 시트 = 서버 surveyCompleted===false + 스플래시 걷힌 뒤(Modal은 별도 창이라 스플래시 위에 뜬다) + 이번 실행 "나중에" 아님
-  // + 강제 업데이트 게이트 아님(RN Modal은 네이티브 최상위라 _layout의 일반 View 게이트를 덮는다, /review 1)
-  // + 홈이 포커스일 때만(딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에 마운트해 대상 화면 위로 뜬다 — #243 큐 연결 전 임시 가드, /review 4)
-  const splashDone = useSplashDone();
-  const surveyHidden = useSurveyHiddenThisRun();
-  const versionGate = useVersionGate();
-  const [homeFocused, setHomeFocused] = useState(false);
-  useFocusEffect(useCallback(() => { setHomeFocused(true); return () => setHomeFocused(false); }, []));
+  const { data: me, isError: meError } = useMe();
+  // KB-733: 홈의 일회성 모달 큐(oneShotQueue, KB-730) — 포커스마다 등록·블러에 폐기. 등록 순서 고정: 코치마크 → 푸시 넛지(홈에 생기면) → 설문 → 리뷰 유도(홈 트리거가 생기면).
+  // 설문 스텝(useProfileSurveyStep): 스플래시·members/me 판정 가능까지 기다린 뒤 서버 surveyCompleted===false 회원에게만, 이번 실행 "나중에"·강제 업데이트 게이트면 건너뜀.
+  // 딥링크·푸시 콜드 스타트((tabs) 앵커가 index를 밑에 마운트)는 블러의 cancelPending이 막는다 — 종전 homeFocused 임시 가드(/review #244 4) 대체.
+  const modalQueue = useOneShotQueue();
+  const survey = useProfileSurveyStep({ me, meKnown: me !== undefined || meError });
+  const surveyStep = survey.step;
+  const cancelSurvey = survey.cancelPending;
+  useFocusEffect(useCallback(() => {
+    modalQueue.add(surveyStep());
+    return () => { cancelSurvey(); modalQueue.clear(); };
+  }, [modalQueue, surveyStep, cancelSurvey]));
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
@@ -285,8 +286,8 @@ export default function Home() {
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
 
       {/* KB-729: 가입 회원 1회 프로필 설문 — 서버 surveyCompleted===false일 때만(게스트·구서버 = 없음). 닫기 불가, 제출 성공 = 캐시 갱신으로 닫힘.
-          화면별 일회성 모달 큐(#243) 연결은 그 머지 뒤 후속 PR — 홈엔 현재 다른 일회성 모달이 없다 */}
-      <ProfileSurveySheet open={shouldShowSurvey(me) && splashDone && !surveyHidden && versionGate.mode !== 'blocked' && homeFocused} memberId={me?.id} />
+          KB-733: 큐 스텝 — open은 큐 차례 + 서버 값, 완전히 닫힌 뒤 onClosed → 다음 스텝 */}
+      <ProfileSurveySheet open={survey.open} memberId={me?.id} onClosed={survey.onClosed} />
     </View>
   );
 }

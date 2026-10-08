@@ -7,7 +7,7 @@
  * 폼은 열려 있을 때만 + 회원 번호 키로 마운트: 세션 경계·계정 전환(A→B)이면 반쯤 쓴 답을 폐기(생애주기 불변 규칙).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
@@ -31,15 +31,16 @@ const OPTIONS: Record<Exclude<SurveyField, 'foodAffinity'>, readonly string[]> =
 };
 
 /** 껍데기 — 쿼리 훅 없음. 폼은 열려 있을 때만 마운트(닫힌 홈·QueryClientProvider 없는 유닛에 뮤테이션 훅이 붙지 않는다) + 회원 번호 키 */
-export function ProfileSurveySheet({ open, memberId }: { open: boolean; memberId?: string }) {
+export function ProfileSurveySheet({ open, memberId, onClosed }: { open: boolean; memberId?: string; onClosed?: () => void }) {
   return (
-    <SheetShell visible={open} dismissable={false}>
-      {open && <SurveyForm key={memberId ?? ''} />}
+    // KB-733: 완전히 닫힌 뒤 큐에 done — iOS는 Modal onDismiss(P-267: onClose 직후 present = race), Android는 폼 언마운트(onDismiss 미지원)
+    <SheetShell visible={open} dismissable={false} onDismiss={Platform.OS === 'ios' ? onClosed : undefined}>
+      {open && <SurveyForm key={memberId ?? ''} onClosed={onClosed} />}
     </SheetShell>
   );
 }
 
-function SurveyForm() {
+function SurveyForm({ onClosed }: { onClosed?: () => void }) {
   const { t } = useTranslation();
   const [page, setPage] = React.useState(0);
   const [answers, setAnswers] = React.useState<SurveyAnswers>(EMPTY_ANSWERS);
@@ -52,10 +53,15 @@ function SurveyForm() {
   const submit = useSubmitProfileSurvey();
 
   // 노출 1회 계측 — 폼 마운트 = 열림(AuthGateSheet 관례) · 떠 있는 동안 알림 탭 딥링크 보류(닫힌 뒤 실행)
+  const onClosedRef = React.useRef(onClosed);
+  React.useEffect(() => { onClosedRef.current = onClosed; }, [onClosed]);
   React.useEffect(() => {
     track(EVENTS.survey_view);
     setSurveyPresented(true);
-    return () => setSurveyPresented(false);
+    return () => {
+      setSurveyPresented(false);
+      if (Platform.OS !== 'ios') onClosedRef.current?.(); // Android: 닫힘 = 언마운트(iOS는 SheetShell onDismiss)
+    };
   }, []);
 
   const set = (field: SurveyField, value: string | number) => {
