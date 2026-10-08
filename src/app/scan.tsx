@@ -43,6 +43,9 @@ import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
 
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { recordScanSuccess, scanTriggerDue } from '@/lib/reviewPrompt';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   menu: 'scan.sortMenu',
   priceDesc: 'scan.sortPriceDesc',
@@ -111,6 +114,7 @@ export default function Scan() {
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
+  const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회째 — 결과 화면 진입 직후 리뷰 유도
   const [photo, setPhoto] = useState<Photo>(null);
   // ⑦(KB-137) 촬영/갤러리 파일 캐시 누적 방지 — 결과 오버레이가 photo.uri를
   // 렌더하므로 OCR 직후가 아니라 **표시 수명이 끝날 때** 삭제: 새 사진으로
@@ -370,6 +374,11 @@ export default function Scan() {
         setScanPath(res.imagePath ?? ''); // P-252: 주문 이력 식별자
         setView('list'); // P-138⑤: 기본=List (예진 8/6 오너 결정 — P-071 대체)
         setPhase('result');
+        // KB-730: 기기 로컬 스캔 성공 카운트 → 정확히 2회째에만 리뷰 유도(실패·에러 경로는 여기를 안 지난다).
+        // 재촬영 확인·정렬 시트가 열려 있으면 건너뜀(트리거 소모 0)
+        void recordScanSuccess().then((n) => {
+          if (scanTriggerDue(n)) void reviewPrompt.request('scan', { blocked: retakeConfirm || sortSheet });
+        });
       },
       onError: (e) => {
         const msg = (e as Error)?.message ?? String(e);
@@ -762,6 +771,7 @@ export default function Scan() {
           onClose={() => setSortSheet(false)}
         />
         {GateSheet}
+        <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} />
         {/* P-370(KB-533): 모달 컨텍스트 자체 토스트 호스트(스택 top) */}
         <TopToastHost />
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료

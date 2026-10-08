@@ -95,6 +95,9 @@ export const EVENTS = {
   order_share_story: 'order_share_story',
   // P-394(KB-586): 문의 전송. CSV 등재 예정
   profile_feedback_submit: 'profile_feedback_submit',
+  // KB-730: 리뷰 유도 시트 노출·응답. CSV 등재 요청(스펙 레포)
+  review_prompt_view: 'review_prompt_view',
+  review_prompt_response: 'review_prompt_response',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -131,6 +134,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_item_add: ['risk'],
   scan_item_remove: ['risk'],
   order_done: ['item_count'],
+  review_prompt_view: ['trigger'], // scan|review|order (KB-730)
+  review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
   error_state_view: ['screen', 'kind', 'action'], // kind: error|offline|empty · action: view|retry

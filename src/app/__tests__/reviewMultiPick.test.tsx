@@ -188,7 +188,7 @@ describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 �
     expect(mockMutateAsync).toHaveBeenCalledTimes(1);
   });
 
-  it('성공 → P-162 문법 완료 모달(화면 전환 아님) + 확인 = 상세 복귀', async () => {
+  it('성공 → P-162 문법 완료 모달(화면 전환 아님) + 확인 = KB-730 리뷰 유도 시트(완료 모달 닫힌 뒤·겹침 0) → 나중에 = 상세 복귀 1회', async () => {
     const tree = render(<ReviewCompose />);
     pickStar(tree);
     await act(async () => {
@@ -196,8 +196,16 @@ describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 �
     });
     expect(tree.root.findAll((n) => n.props?.testID === 'review-posted-confirm').length).toBeGreaterThanOrEqual(1);
     const back = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.done').length > 0).pop()!;
-    act(() => back.props.onPress());
-    expect(mockRouter.back).toHaveBeenCalled();
+    await act(async () => { back.props.onPress(); });
+    for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+    // KB-730: 첫 노출 조건 충족(저장 상태 없음) → 시트가 열리고 복귀는 응답 뒤
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string').length).toBe(1);
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-posted-confirm' && n.props?.visible === true)).toHaveLength(0);
+    expect(mockRouter.back).not.toHaveBeenCalled();
+    const later = tree.root.findAll((n) => n.props?.testID === 'review-prompt-later' && typeof n.props?.onPress === 'function')[0];
+    await act(async () => { later.props.onPress(); });
+    for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+    expect(mockRouter.back).toHaveBeenCalledTimes(1);
     // 구 풀화면 요소(내 리뷰 보기) 소멸
     expect(JSON.stringify(tree.toJSON())).not.toContain('review.seeMyReviews');
   });

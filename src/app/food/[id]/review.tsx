@@ -44,6 +44,8 @@ import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/
 import { openAppSettings } from '@/lib/openExternal';
 import { useUploadAbort } from '@/lib/useUploadAbort';
 import { isUploadAborted } from '@/lib/api/uploadAbort';
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -123,6 +125,7 @@ function ReviewComposeScreen() {
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
   const nextUploadSignal = useUploadAbort(); // KB-711: 올리는 중 화면을 떠나면 사진 업로드 취소
+  const reviewPrompt = useReviewPrompt(); // KB-730: 등록 완료 모달 뒤 리뷰 유도
   // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
@@ -579,6 +582,7 @@ function ReviewComposeScreen() {
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
       {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
       <LeaveConfirmModal {...leave.modal} />
+      <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} />
       <Modal visible={submitted} transparent animationType="fade" onRequestClose={() => router.back()}>
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard} testID="review-posted-confirm">
@@ -589,7 +593,15 @@ function ReviewComposeScreen() {
             <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: food?.name ?? '' })}</Text>
             <View style={{ marginTop: 6 }}>
               {/* P-211 ①: 진입점 무관 "Done" 단일 문구 — 피드 발 작성은 목적지가 상세가 아님 */}
-              <Btn onPress={() => router.back()}>{t('review.done')}</Btn>
+              {/* KB-730: 완료 모달을 닫은 **뒤** 리뷰 유도 시트(겹침 0) — 조건 미달이면 바로 복귀 */}
+              <Btn
+                onPress={() => {
+                  setSubmitted(false);
+                  void reviewPrompt.request('review', { after: () => router.back() }).then((shown) => { if (!shown) router.back(); });
+                }}
+              >
+                {t('review.done')}
+              </Btn>
             </View>
           </View>
         </View>

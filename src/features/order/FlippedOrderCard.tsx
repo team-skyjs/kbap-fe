@@ -21,6 +21,8 @@ import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from 
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 
 export interface OrderItem {
   nameKo: string;
@@ -58,6 +60,7 @@ export function FlippedOrderCard({
   const [zoomed, setZoomed] = React.useState(false);
   // P-162: Done = 무반응 아님 — 완료 확인 모달 경유 후 onDone(홈 이동)
   const [doneOpen, setDoneOpen] = React.useState(false);
+  const reviewPrompt = useReviewPrompt(); // KB-730: 주문 완료 모달 뒤 리뷰 유도
   // P-256: 완료 확정 1회 가드 — done 재탭·모달 재경유에도 저장/계측 1회
   const committedRef = React.useRef(false);
   // P-166: 모달 등장과 동시 폭죽 — DURATION 후 자연 소멸(언마운트), 매 완료마다
@@ -153,6 +156,7 @@ export function FlippedOrderCard({
         </Btn>
       </View>
 
+      <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} />
       {/* P-162: 주문 완료 확인 모달 — 스캔 재촬영 모달과 같은 카드 문법, 성공 체크 톤 */}
       <Modal visible={doneOpen} transparent animationType="fade" onRequestClose={() => setDoneOpen(false)}>
         <View style={styles.confirmBackdrop}>
@@ -164,7 +168,11 @@ export function FlippedOrderCard({
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
               <Btn
-                onPress={onDone} /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만 */
+                /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만. KB-730: 완료 모달을 닫은 뒤 리뷰 유도 시트(겹침 0), 조건 미달이면 바로 복귀 */
+                onPress={() => {
+                  setDoneOpen(false);
+                  void reviewPrompt.request('order', { after: onDone }).then((shown) => { if (!shown) onDone(); });
+                }}
               >
                 {t('order.doneHome')}
               </Btn>

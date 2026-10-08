@@ -233,6 +233,10 @@ it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = onDone 
   // 모달의 홈 버튼 탭 = onDone(리마인더는 서버 배치 — 앱 예약 0)
   const homeBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.doneHome').length > 0).pop()!;
   await act(async () => homeBtn.props.onPress());
+  // KB-730: 복귀 전에 리뷰 유도 시트가 끼어들 수 있다(첫 노출) — 이 테스트의 관심은 리마인더 부재뿐이라 '나중에'로 넘긴다
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  const later = tree.root.findAll((n) => n.props?.testID === 'review-prompt-later' && typeof n.props?.onPress === 'function')[0];
+  if (later) { await act(async () => { later.props.onPress(); }); for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); }); }
   expect(onDone).toHaveBeenCalled();
 });
 

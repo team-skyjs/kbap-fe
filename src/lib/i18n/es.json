@@ -1132,5 +1132,11 @@
     "later": "Ahora no",
     "retry": "Reintentar",
     "error": "No pudimos guardar tus respuestas. Inténtalo de nuevo."
+  },
+  "reviewPrompt": {
+    "title": "¿Te está ayudando K-Bap?",
+    "positive": "Me gusta",
+    "negative": "No mucho",
+    "later": "Después"
   }
 }

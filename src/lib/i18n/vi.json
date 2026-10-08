@@ -1132,5 +1132,11 @@
     "later": "Để sau",
     "retry": "Thử lại",
     "error": "Không lưu được câu trả lời. Vui lòng thử lại."
+  },
+  "reviewPrompt": {
+    "title": "K-Bap có hữu ích với bạn không?",
+    "positive": "Thích",
+    "negative": "Không hẳn",
+    "later": "Để sau"
   }
 }

@@ -1132,5 +1132,11 @@
     "later": "나중에",
     "retry": "다시 시도",
     "error": "답변을 저장하지 못했어요. 다시 시도해 주세요."
+  },
+  "reviewPrompt": {
+    "title": "K-Bap이 도움이 됐나요?",
+    "positive": "좋아요",
+    "negative": "별로예요",
+    "later": "나중에"
   }
 }

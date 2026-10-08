@@ -1132,5 +1132,11 @@
     "later": "稍後",
     "retry": "重試",
     "error": "無法儲存你的回答，請再試一次。"
+  },
+  "reviewPrompt": {
+    "title": "K-Bap 對你有幫助嗎？",
+    "positive": "喜歡",
+    "negative": "不太滿意",
+    "later": "稍後"
   }
 }

@@ -294,3 +294,21 @@ it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto),
   });
   expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBe(0); // 취소 = 복구
 });
+
+// KB-730: 스캔 성공 **2회째**에만 리뷰 유도 시트(결과 화면 진입 직후) — 1회째·3회째는 아님. 실패 경로는 onSuccess를 안 타므로 자동 제외
+it('KB-730 스캔 성공 2회째 → 리뷰 유도 시트 1 · 1회째 → 0', async () => {
+  const asMod = jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock') as { default?: unknown } & Record<string, unknown>;
+  const AsyncStorage = (asMod.default ?? asMod) as { clear: () => Promise<void>; setItem: (k: string, v: string) => Promise<void>; getItem: (k: string) => Promise<string | null>; removeItem: (k: string) => Promise<void> };
+  const sheets = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string').length;
+  const settle = async () => { for (let i = 0; i < 8; i++) await act(async () => { await Promise.resolve(); }); };
+  await AsyncStorage.removeItem('kbap.reviewPrompt.v1');
+  const first = render(<Scan />);
+  await act(async () => { await galleryBtn(first).props.onPress(); }); // 성공 1회째
+  await settle();
+  expect(sheets(first)).toBe(0);
+  expect(JSON.parse((await AsyncStorage.getItem('kbap.reviewPrompt.v1')) ?? '{}').scanSuccess).toBe(1);
+  const second = render(<Scan />);
+  await act(async () => { await galleryBtn(second).props.onPress(); }); // 성공 2회째
+  await settle();
+  expect(sheets(second)).toBe(1);
+});
