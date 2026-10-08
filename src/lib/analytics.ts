@@ -32,8 +32,8 @@
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송. 식별 = **회원 번호**(`members/me`의 memberId 문자열)
  * `setUserId` — KB-732(10/8 예진: 가입자가 전부 익명이던 것, 이메일·해시 아님) · user property는 허용 키만(Identify).
- * 게스트 = userId 해제 · 로그아웃·탈퇴 = 해제 + 기기 id 재생성(이전 회원 귀속 방지). 허용 키 밖 prop은 드롭(유닛 잠금).
- * 이 파일 밖에서 SDK 직접 호출 금지 — 공개 = track · setUserProps · setAnalyticsUser · resetAnalyticsDevice.
+ * 세션 종료(로그아웃·만료·탈퇴·재설치 정리) = 해제 + 기기 id 재생성(SDK reset — 이전 회원 귀속 방지). 허용 키 밖 prop은 드롭(유닛 잠금).
+ * 이 파일 밖에서 SDK 직접 호출 금지 — 공개 = track · setUserProps · setAnalyticsUser · resetAnalyticsIdentity · clearStaleAnalyticsIdentity.
  *
  * 키: `EXPO_PUBLIC_AMPLITUDE_API_KEY` — 없으면 **no-op**(콘솔 debug만),
  * 키 주입 시 코드 변경 0. ⚠️ Amplitude 웹 위저드 지시 무시(발주 명시):
@@ -218,30 +218,45 @@ export function setUserProps(props: Partial<Record<UserPropKey, string | number 
 }
 
 /**
- * KB-732: 회원 식별 — `members/me` 응답의 회원 번호(문자열)로 setUserId. null = 해제(게스트·로그아웃 — 기기 id는 유지).
- * 호출 지점은 P-197 Sentry 식별과 같은 세 곳(fetchMe 성공/게스트 · logOut · 탈퇴 정리)뿐 — 화면 코드에서 부르지 않는다.
+ * KB-732: 회원 식별 — `members/me` 응답의 회원 번호(문자열)로 setUserId. 호출 지점 = fetchMe 성공 한 곳(로그인 직후·세션 복원 공통).
+ * 화면 코드에서 부르지 않는다.
  */
-export function setAnalyticsUser(memberId: string | null): void {
+export function setAnalyticsUser(memberId: string): void {
   if (!ensureInit()) {
-    if (__DEV__) console.log('[analytics:noop] setUserId', memberId == null ? '(cleared)' : '(set)');
+    if (__DEV__) console.log('[analytics:noop] setUserId (set)');
     return;
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
-  amp.setUserId(memberId ?? undefined);
+  amp.setUserId(memberId);
 }
 
-/** KB-732: 로그아웃·탈퇴 — 기기 id를 새로 뽑아 이전 회원의 기기 프로필과 끊는다(이후 익명 이벤트가 그 회원에게 귀속되지 않게). 새 id 반환(유닛용). */
-export function resetAnalyticsDevice(): string | undefined {
+/**
+ * KB-732: 식별 해제 + 기기 id 재생성 = SDK `reset()`(setUserId(undefined) + 새 device id, react-native-client 1.6.8).
+ * 호출 지점 = BE 세션 종료 **단일 경계**(beAuth.endSessionBoundary — 로그아웃·만료·탈퇴·재설치 정리 네 경로) + 부팅 잔존 정리.
+ * 기기 id까지 바꾸는 이유: Amplitude는 기기 id↔사용자 매핑을 기억해 userId 없는 이벤트를 그 기기의 마지막 사용자에게 귀속시킨다
+ * (잃는 것 = 같은 기기 두 계정 연결뿐).
+ */
+export function resetAnalyticsIdentity(): void {
   if (!ensureInit()) {
-    if (__DEV__) console.log('[analytics:noop] setDeviceId (new)');
-    return undefined;
+    if (__DEV__) console.log('[analytics:noop] reset');
+    return;
   }
-  /* eslint-disable @typescript-eslint/no-require-imports */
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
-  const { randomUUID } = require('expo-crypto') as typeof import('expo-crypto');
-  /* eslint-enable @typescript-eslint/no-require-imports */
-  const id = randomUUID();
-  amp.setDeviceId(id);
-  return id;
+  amp.reset();
+}
+
+/**
+ * KB-732: 부팅 잔존 정리 — 앱 종료 중 서버측 만료 등으로 로컬 BE 토큰은 없는데 SDK가 저장해 둔 userId가 남아 있으면
+ * 첫 track 전에 reset 1회. **이미 익명이면 아무것도 하지 않는다**(무조건 reset하면 게스트의 기기 id가 부팅마다 바뀌어 게스트 세션이 안 이어진다).
+ * @returns reset 했는지(유닛용)
+ */
+export function clearStaleAnalyticsIdentity(): boolean {
+  if (!ensureInit()) return false;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
+  if (amp.getUserId() == null) return false;
+  amp.reset();
+  return true;
 }

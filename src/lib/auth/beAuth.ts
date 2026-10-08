@@ -13,6 +13,7 @@
  */
 import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthorized, setSessionGenerationProvider } from '@/lib/api/client';
 import { track } from '@/lib/net/inflight';
+import { clearStaleAnalyticsIdentity, resetAnalyticsIdentity } from '@/lib/analytics';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
@@ -92,6 +93,13 @@ export async function endSessionBoundary(): Promise<void> {
   refreshing = null;
   const done = track(clearTokens()); // cached=null 동기 선행 · 7R: SecureStore 삭제도 track
   resetServerCache(false);
+  // KB-732: Amplitude 식별 해제 + 기기 id 재생성 — 세션이 끝나는 네 경로(로그아웃·만료·탈퇴·재설치 정리)가 전부 여기를 지난다.
+  // 저장소 정리와 독립(throw해도 경계는 완주) — 유도 시트·계측은 안전 기능이 아니다.
+  try {
+    resetAnalyticsIdentity();
+  } catch {
+    /* SDK 없음·초기화 실패 — 계측만 포기 */
+  }
   await done;
 }
 
@@ -253,5 +261,15 @@ export function installBeAuth(): void {
 
 /** KB-421: 부팅 세션 초기화 — cleanup 직렬화 이후에만 호출할 것(_layout). */
 export function initSessionFromStorage(): Promise<void> {
-  return hasBeSession().then(initSessionState);
+  return hasBeSession().then((has) => {
+    // KB-732: 토큰 없이 부팅(앱 종료 중 서버측 만료 등) — SDK가 복원한 옛 userId가 첫 이벤트에 붙지 않게 1회 정리(이미 익명이면 no-op)
+    if (!has) {
+      try {
+        clearStaleAnalyticsIdentity();
+      } catch {
+        /* 계측만 포기 */
+      }
+    }
+    return initSessionState(has);
+  });
 }

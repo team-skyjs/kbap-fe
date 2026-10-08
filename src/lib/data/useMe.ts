@@ -32,8 +32,7 @@ import { toBeCode } from '../mocks/ingredients';
 /** 내 프로필 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
 export async function fetchMe(): Promise<User> {
   if (!(await hasBeSession())) {
-    setSentryUser(null); // P-197: 게스트 = 식별 해제
-    setAnalyticsUser(null); // KB-732: 게스트 = Amplitude userId 해제(호출 0이 아니라 해제 — 로그인→게스트 전환 잔존 방지)
+    setSentryUser(null); // P-197: 게스트 = 식별 해제 (Amplitude 해제는 세션 경계·부팅 정리 몫 — KB-732)
     return MOCK_USER; // guest/dev fallback
   }
   const gen = currentGen(); // 공부 #242 3: 요청 시작 시점의 세션 세대

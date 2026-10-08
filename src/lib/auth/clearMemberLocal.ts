@@ -15,12 +15,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearOnboardingDraft } from '@/lib/onboarding/draft';
 import { SPICE_KEY } from '@/lib/onboarding/submit';
-import { resetAnalyticsDevice, setAnalyticsUser } from '@/lib/analytics';
 
 export async function clearMemberLocalState(): Promise<void> {
-  // KB-732: 탈퇴 = Amplitude userId 해제 + 기기 id 재생성(탈퇴 전 익명 이력과 단절). 로그아웃(logOut)도 같은 두 호출.
-  setAnalyticsUser(null);
-  resetAnalyticsDevice();
+  // KB-732: Amplitude 해제·기기 id 재생성은 withdrawBe → endSessionBoundary가 한다 — 여기(저장소 소거)에 부수효과를 두면 throw 시 KB-177 소거가 막힌다
   await clearOnboardingDraft();
   await AsyncStorage.removeItem(SPICE_KEY).catch(() => {});
   console.log('[auth] member local state cleared (onboarding draft, spice)');
