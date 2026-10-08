@@ -47,28 +47,50 @@ const mockMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe() }) }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: { pages: [] }, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }) }));
+let mockResolveSplash: () => void = () => {};
+jest.mock('@/lib/bootGate', () => ({ ...jest.requireActual('@/lib/bootGate'), whenSplashDone: () => new Promise<void>((r) => { mockResolveSplash = r; }) }));
 const mockSheet = jest.fn();
 jest.mock('@/features/survey/ProfileSurveySheet', () => ({ ProfileSurveySheet: (p: { open: boolean }) => { mockSheet(p.open); return null; } }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import Home from '../(tabs)/index';
+import { _resetSurveyHiddenForTest, hideSurveyThisRun } from '@/lib/survey/surveySession';
 /* eslint-enable import/first */
 
 const trees: ReactTestRenderer[] = [];
-const render = (me: Record<string, unknown>) => {
+const mount = (me: Record<string, unknown>) => {
   mockMe.mockReturnValue(me);
   let t!: ReactTestRenderer;
   act(() => { t = renderer.create(<Home />); });
   trees.push(t);
-  return mockSheet.mock.calls.at(-1)?.[0];
+  return t;
 };
+const lastOpen = () => mockSheet.mock.calls.at(-1)?.[0];
+const splash = async () => { await act(async () => { mockResolveSplash(); await Promise.resolve(); }); };
+const render = async (me: Record<string, unknown>) => { mount(me); await splash(); return lastOpen(); };
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => { jest.clearAllMocks(); _resetSurveyHiddenForTest(); });
 
-it('surveyCompleted=false 회원 = 시트 open · true = 닫힘 · 게스트(필드 없음) = 닫힘 · 구서버(null) = 닫힘 · 온보딩 미완 = 닫힘', () => {
-  expect(render({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true })).toBe(true);
-  expect(render({ id: '1', restrictions: [], surveyCompleted: true, onboardingCompleted: true })).toBe(false);
-  expect(render({ id: 'u_001', restrictions: [] })).toBe(false);
-  expect(render({ id: '1', restrictions: [], surveyCompleted: null })).toBe(false);
-  expect(render({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: false })).toBe(false);
+it('surveyCompleted=false 회원 = 시트 open · true = 닫힘 · 게스트(필드 없음) = 닫힘 · 구서버(null) = 닫힘 · 온보딩 미완 = 닫힘', async () => {
+  expect(await render({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true })).toBe(true);
+  expect(await render({ id: '1', restrictions: [], surveyCompleted: true, onboardingCompleted: true })).toBe(false);
+  expect(await render({ id: 'u_001', restrictions: [] })).toBe(false);
+  expect(await render({ id: '1', restrictions: [], surveyCompleted: null })).toBe(false);
+  expect(await render({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: false })).toBe(false);
+});
+
+it('콜드 스타트: 스플래시가 걷히기 전엔 open=false(별도 창 Modal이 스플래시 위에 뜨는 것 방지) → 걷힌 뒤 true', async () => {
+  mount({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true });
+  expect(lastOpen()).toBe(false);
+  await splash();
+  expect(lastOpen()).toBe(true);
+});
+
+it('"나중에"(이번 실행 숨김) = open=false · 리셋(재시작)이면 다시 true', async () => {
+  const me = { id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true };
+  expect(await render(me)).toBe(true);
+  act(() => hideSurveyThisRun());
+  expect(lastOpen()).toBe(false);
+  _resetSurveyHiddenForTest();
+  expect(await render(me)).toBe(true);
 });

@@ -1125,6 +1125,7 @@
     "next": "Next",
     "back": "Back",
     "submit": "Done",
+    "later": "Not now",
     "retry": "Try again",
     "error": "Couldn't save your answers. Please try again."
   }

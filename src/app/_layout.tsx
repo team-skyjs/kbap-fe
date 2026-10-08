@@ -40,6 +40,7 @@ import { KeyboardDismissBar } from '@/components';
 import { VersionGateOverlay } from '@/components/VersionGate';
 import { PhotoSourceSheetHost } from '@/components/PhotoSourceSheetHost';
 import { OtaAutoApplyHost } from '@/lib/ota/OtaAutoApplyHost';
+import { deferUntilSurveyClosed } from '@/lib/survey/surveySession';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -173,7 +174,8 @@ export default function RootLayout() {
     const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
     const unsub = push.addNotificationTapListener((href, notificationId) => {
       void onPushTapped(notificationId); // KB-499: 이 기기 알림 행 읽음 처리 + 재조회(게스트 = 이동만)
-      if (href) openNotificationRoute(router, href); // href null = 이동 없는 유형(KB-498) · KB-573: 홈 = 스택 리셋
+      // KB-729: 닫기 불가 설문 시트가 떠 있으면 이동을 시트가 닫힌 뒤로(그 위로 fullScreenModal이 열리면 KB-377류 교착)
+      if (href) deferUntilSurveyClosed(() => openNotificationRoute(router, href)); // href null = 이동 없는 유형(KB-498) · KB-573: 홈 = 스택 리셋
     });
     const onLang = () => void push.registerPushToken();
     i18n.on('languageChanged', onLang);

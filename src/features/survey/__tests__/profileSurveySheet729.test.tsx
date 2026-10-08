@@ -45,6 +45,7 @@ jest.mock('@/lib/api/client', () => ({
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ProfileSurveySheet } from '../ProfileSurveySheet';
 import { ApiError } from '@/lib/api/client';
+import { _resetSurveyHiddenForTest, isSurveyHiddenThisRun, isSurveyPresented } from '@/lib/survey/surveySession';
 /* eslint-enable import/first */
 
 let qc: QueryClient;
@@ -60,6 +61,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   qc.setQueryData(['me', 'en'], { id: '1', surveyCompleted: false, restrictions: [] });
+  qc.setQueryData(['me', 'ja'], { id: '1', surveyCompleted: false, restrictions: [] }); // 다른 언어 키 — 제출 뒤 언어 전환 시 옛 false로 시트 재노출 방지(공부 3)
+  qc.setQueryData(['me', 'reviews'], [{ id: 'r1' }]);
+  _resetSurveyHiddenForTest();
 });
 const flush = async () => { for (let i = 0; i < 8; i++) await act(async () => { await Promise.resolve(); }); };
 const press = async (t: ReactTestRenderer, id: string) => {
@@ -138,6 +142,8 @@ it('제출 = PUT /members/me/survey body 계약 그대로(대문자·정수·미
   expect(mockPut).toHaveBeenCalledTimes(1);
   expect(mockPut).toHaveBeenCalledWith('/members/me/survey', { ageBand: 'TWENTIES', gender: 'FEMALE', acquisition: 'SNS_AD', situation: 'TRAVELING_NOW', tripTiming: null, tripDuration: 'ONE_WEEK', purpose: 'MENU_READING', foodAffinity: 4 });
   expect(qc.getQueryData<{ surveyCompleted: boolean }>(['me', 'en'])?.surveyCompleted).toBe(true);
+  expect(qc.getQueryData<{ surveyCompleted: boolean }>(['me', 'ja'])?.surveyCompleted).toBe(true); // 전 언어 키
+  expect(qc.getQueryData(['me', 'reviews'])).toEqual([{ id: 'r1' }]); // 배열 캐시는 무변
   expect(mockSetUserProps).toHaveBeenCalledTimes(1);
   expect(mockSetUserProps).toHaveBeenCalledWith({ survey_age_band: 'TWENTIES', survey_gender: 'FEMALE', survey_acquisition: 'SNS_AD', survey_situation: 'TRAVELING_NOW', survey_trip_duration: 'ONE_WEEK', survey_purpose: 'MENU_READING', survey_food_affinity: 4 });
   expect(mockTrack).toHaveBeenCalledWith('survey_submit');
@@ -166,6 +172,32 @@ it('400 = 코드 결함 → Sentry(status·code) + 시트 유지·재시도 라�
   expect(mockSetUserProps).not.toHaveBeenCalled();
   expect(mockTrack).not.toHaveBeenCalledWith('survey_submit');
   expect(JSON.stringify(t.toJSON())).toContain('survey.retry');
+  // 공부 #244 1: 4xx = "나중에" 노출 → 이번 실행만 숨김(메모리) — 영구 저장 0, 재시작(모듈 리셋)이면 다시 뜬다(surveySession729)
+  expect(has(t, 'survey-later')).toBe(1);
+  expect(isSurveyHiddenThisRun()).toBe(false);
+  await press(t, 'survey-later');
+  expect(isSurveyHiddenThisRun()).toBe(true);
+});
+
+it('네트워크 1회 실패 = 재시도만("나중에" 0) · 2회 연속 = "나중에" 노출', async () => {
+  mockPut.mockRejectedValue(new TypeError('Network request failed'));
+  const t = render();
+  await toPage2(t);
+  await press(t, 'survey-submit');
+  expect(has(t, 'survey-error')).toBe(1);
+  expect(has(t, 'survey-later')).toBe(0);
+  await press(t, 'survey-submit');
+  expect(has(t, 'survey-later')).toBe(1);
+  expect(mockReport).not.toHaveBeenCalled();
+});
+
+it('시트가 떠 있는 동안 = presented(딥링크 보류) · 닫히면(open=false) 해제', () => {
+  let t!: ReactTestRenderer;
+  act(() => { t = renderer.create(<QueryClientProvider client={qc}><ProfileSurveySheet open /></QueryClientProvider>); });
+  trees.push(t);
+  expect(isSurveyPresented()).toBe(true);
+  act(() => { t.update(<QueryClientProvider client={qc}><ProfileSurveySheet open={false} /></QueryClientProvider>); });
+  expect(isSurveyPresented()).toBe(false);
 });
 
 it('네트워크 실패 = 재시도 + 시트 유지, Sentry 0 · 재시도 성공 = 닫힘 조건(캐시 true) · 제출 연타 = PUT 1회', async () => {

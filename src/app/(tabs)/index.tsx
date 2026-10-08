@@ -31,6 +31,8 @@ import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
 import { ProfileSurveySheet } from '@/features/survey/ProfileSurveySheet';
 import { shouldShowSurvey } from '@/lib/survey/profileSurvey';
+import { useSurveyHiddenThisRun } from '@/lib/survey/surveySession';
+import { useSplashDone } from '@/lib/useSplashDone';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -67,6 +69,9 @@ export default function Home() {
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
+  // KB-729: 설문 시트 = 서버 surveyCompleted===false + 스플래시 걷힌 뒤(Modal은 별도 창이라 스플래시 위에 뜬다) + 이번 실행 "나중에" 아님
+  const splashDone = useSplashDone();
+  const surveyHidden = useSurveyHiddenThisRun();
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
@@ -275,7 +280,7 @@ export default function Home() {
 
       {/* KB-729: 가입 회원 1회 프로필 설문 — 서버 surveyCompleted===false일 때만(게스트·구서버 = 없음). 닫기 불가, 제출 성공 = 캐시 갱신으로 닫힘.
           화면별 일회성 모달 큐(#243) 연결은 그 머지 뒤 후속 PR — 홈엔 현재 다른 일회성 모달이 없다 */}
-      <ProfileSurveySheet open={shouldShowSurvey(me)} />
+      <ProfileSurveySheet open={shouldShowSurvey(me) && splashDone && !surveyHidden} />
     </View>
   );
 }

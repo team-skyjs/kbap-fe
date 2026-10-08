@@ -1129,6 +1129,7 @@
     "next": "Siguiente",
     "back": "Atrás",
     "submit": "Listo",
+    "later": "Ahora no",
     "retry": "Reintentar",
     "error": "No pudimos guardar tus respuestas. Inténtalo de nuevo."
   }

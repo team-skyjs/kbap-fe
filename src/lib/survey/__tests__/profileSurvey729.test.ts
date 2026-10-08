@@ -101,11 +101,11 @@ describe('트리거(서버 정본) + 어댑터', () => {
   });
 });
 
-it('i18n: survey.* 키 — 10로케일 전부 en과 같은 키 집합(문항 8·옵션 29·선호 5·버튼 4·안내 3)', () => {
+it('i18n: survey.* 키 — 10로케일 전부 en과 같은 키 집합(문항 8·옵션 29·선호 5·버튼 5·안내 3)', () => {
   const locales = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'];
   const flat = (o: Record<string, unknown>, p = ''): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${p}${k}.`) : [`${p}${k}`]));
   const en = flat((require('@/lib/i18n/en.json') as { survey: Record<string, unknown> }).survey).sort();
-  expect(en).toHaveLength(8 + 29 + 5 + 4 + 3);
+  expect(en).toHaveLength(8 + 29 + 5 + 5 + 3);
   for (const field of ['ageBand', 'gender', 'acquisition', 'situation', 'tripTiming', 'tripDuration', 'purpose']) expect(en).toContain(`q.${field}`);
   for (const c of SITUATIONS) expect(en).toContain(`opt.situation.${c}`);
   for (const n of FOOD_AFFINITIES) expect(en).toContain(`affinity.${n}`);

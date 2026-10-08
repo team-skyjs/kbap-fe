@@ -6,7 +6,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/lib/api/client';
 import type { User } from '@/lib/api/types';
 import { EVENTS, setUserProps, track, type UserPropKey } from '@/lib/analytics';
-import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { reportSurveyContractError } from '@/lib/sentry';
 import { surveyUserProps, type MemberSurveyResponseWire, type MemberSurveyWire } from '@/lib/survey/profileSurvey';
 
@@ -14,15 +13,16 @@ export const SURVEY_PATH = '/members/me/survey';
 
 export function useSubmitProfileSurvey() {
   const qc = useQueryClient();
-  const lang = useAppLanguage();
   return useMutation({
     mutationFn: async (body: MemberSurveyWire) => {
       const res = await api.put<MemberSurveyResponseWire | null>(SURVEY_PATH, body);
       return res ?? body; // 응답 본문이 비면 보낸 값(이미 분기 정규화됨) 기준
     },
     onSuccess: (saved) => {
-      // 서버 정본 즉시 반영(시트가 닫힌다) + 재조회로 확정 — 로컬 플래그 없음
-      qc.setQueryData<User>(['me', lang], (u) => (u ? { ...u, surveyCompleted: true } : u));
+      // 서버 정본 즉시 반영(시트가 닫힌다) + 재조회로 확정 — 로컬 플래그 없음.
+      // 전 언어 키(['me', lang] 전부) — 제출 뒤 언어를 바꾸면 옛 false 캐시가 먼저 그려져 시트가 떴다 닫히고 survey_view가 겹친다(공부 #244 3).
+      // ['me','reviews'](배열)는 건드리지 않는다.
+      qc.setQueriesData<User>({ queryKey: ['me'] }, (u) => (u && typeof u === 'object' && !Array.isArray(u) ? { ...u, surveyCompleted: true } : u));
       void qc.invalidateQueries({ queryKey: ['me'] });
       setUserProps(surveyUserProps(saved) as Partial<Record<UserPropKey, string | number>>);
       track(EVENTS.survey_submit);

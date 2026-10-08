@@ -4,26 +4,20 @@
  * 한식 선호 1~5는 Chip 행. 3페이지 — 보이는 문항이 다 답해져야 다음/제출 활성. 제출은 useSubmitGuard + Btn busy(헌법).
  * 실패 = 한 줄 안내 + 재시도(시트 유지). 큰 글자(Txt ×1.3 상한)·SE 폭 = 세로 스크롤(ScrollView, 시트 최대 높이 86%).
  */
-import * as React from "react";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-} from "react-native";
-import { useTranslation } from "react-i18next";
-import { Txt as Text } from "@/components/Txt";
-import { Btn } from "@/components/Btn";
-import { Chip } from "@/components/Chip";
-import { Radio } from "@/components/Choice";
-import { useBottomInset } from "@/lib/useBottomInset";
-import { useSubmitGuard } from "@/lib/useSubmitGuard";
-import { EVENTS, track } from "@/lib/analytics";
-import { color as C, font, shadow } from "@/lib/theme";
-import { useSubmitProfileSurvey } from "@/lib/data/useProfileSurvey";
+import * as React from 'react';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Txt as Text } from '@/components/Txt';
+import { Btn } from '@/components/Btn';
+import { Chip } from '@/components/Chip';
+import { Radio } from '@/components/Choice';
+import { useBottomInset } from '@/lib/useBottomInset';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { EVENTS, track } from '@/lib/analytics';
+import { color as C, font, shadow } from '@/lib/theme';
+import { useSubmitProfileSurvey } from '@/lib/data/useProfileSurvey';
+import { ApiError } from '@/lib/api/client';
+import { hideSurveyThisRun, setSurveyPresented } from '@/lib/survey/surveySession';
 import {
   ACQUISITIONS,
   AGE_BANDS,
@@ -41,12 +35,9 @@ import {
   visibleFields,
   type SurveyAnswers,
   type SurveyField,
-} from "@/lib/survey/profileSurvey";
+} from '@/lib/survey/profileSurvey';
 
-const OPTIONS: Record<
-  Exclude<SurveyField, "foodAffinity">,
-  readonly string[]
-> = {
+const OPTIONS: Record<Exclude<SurveyField, 'foodAffinity'>, readonly string[]> = {
   ageBand: AGE_BANDS,
   gender: GENDERS,
   acquisition: ACQUISITIONS,
@@ -60,13 +51,7 @@ const OPTIONS: Record<
 export function ProfileSurveySheet({ open }: { open: boolean }) {
   return (
     // 닫기 불가: onRequestClose = Android 뒤로 가기 무시(no-op) · 배경은 Pressable 아님
-    <Modal
-      visible={open}
-      transparent
-      animationType="fade"
-      onRequestClose={() => {}}
-      testID="survey-modal"
-    >
+    <Modal visible={open} transparent animationType="fade" onRequestClose={() => {}} testID="survey-modal">
       {open && <SurveyForm />}
     </Modal>
   );
@@ -79,19 +64,23 @@ function SurveyForm() {
   const [page, setPage] = React.useState(0);
   const [answers, setAnswers] = React.useState<SurveyAnswers>(EMPTY_ANSWERS);
   const [failed, setFailed] = React.useState(false);
+  // 공부 #244 1: 실패가 4xx(계약 결함·탈퇴 처리 중 MEMBER-003 등)이거나 2회 연속이면 "나중에"(이번 실행만 숨김) — 벽돌화 방지. 1회 네트워크 실패는 재시도만
+  const [failCount, setFailCount] = React.useState(0);
+  const [client4xx, setClient4xx] = React.useState(false);
+  const canDefer = client4xx || failCount >= 2;
   const guard = useSubmitGuard();
   const submit = useSubmitProfileSurvey();
 
   // 노출 1회 계측 — 폼 마운트 = 열림(AuthGateSheet 관례)
   React.useEffect(() => {
     track(EVENTS.survey_view);
+    setSurveyPresented(true); // 떠 있는 동안 알림 탭 딥링크 보류(닫힌 뒤 실행)
+    return () => setSurveyPresented(false);
   }, []);
 
   const set = (field: SurveyField, value: string | number) => {
     setFailed(false);
-    setAnswers((a) =>
-      normalizeAnswers({ ...a, [field]: value } as SurveyAnswers),
-    ); // 상황이 바뀌면 묻지 않는 분기 답은 비운다
+    setAnswers((a) => normalizeAnswers({ ...a, [field]: value } as SurveyAnswers)); // 상황이 바뀌면 묻지 않는 분기 답은 비운다
   };
   const last = page === PAGES.length - 1;
   const complete = isPageComplete(page, answers);
@@ -108,8 +97,10 @@ function SurveyForm() {
       setFailed(false); // 재시도 시작 = 이전 안내 제거(성공하면 시트가 닫히고, 실패면 다시 켠다)
       try {
         await submit.mutateAsync(body); // 성공 = members/me 캐시 갱신 → open=false(부모) — 시트는 서버 값으로만 닫힌다
-      } catch {
+      } catch (e) {
         setFailed(true); // 네트워크·400 모두 시트 유지 + 재시도(400의 Sentry는 훅)
+        setFailCount((n) => n + 1);
+        if (e instanceof ApiError && e.status != null && e.status >= 400 && e.status < 500) setClient4xx(true);
       }
     });
   };
@@ -117,41 +108,28 @@ function SurveyForm() {
   return (
     <View style={styles.backdrop} testID="survey-backdrop">
       <View
-        style={[
-          styles.sheet,
-          { maxHeight: Math.round(height * 0.86) },
-          Platform.OS === "android" ? { paddingBottom: 18 + bottom } : null,
-        ]}
+        style={[styles.sheet, { maxHeight: Math.round(height * 0.86) }, Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null]}
         testID="survey-sheet"
       >
         <View style={styles.dotRow} testID="survey-dots">
           {PAGES.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, i === page && styles.dotOn]}
-              testID={`survey-dot-${i}-${i === page ? "on" : "off"}`}
-            />
+            <View key={i} style={[styles.dot, i === page && styles.dotOn]} testID={`survey-dot-${i}-${i === page ? 'on' : 'off'}`} />
           ))}
         </View>
-        <Text style={styles.title}>{t("survey.title")}</Text>
-        <Text style={styles.sub}>{t("survey.sub")}</Text>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollBody}
-          showsVerticalScrollIndicator={false}
-          testID={`survey-page-${page}`}
-        >
+        <Text style={styles.title}>{t('survey.title')}</Text>
+        <Text style={styles.sub}>{t('survey.sub')}</Text>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false} testID={`survey-page-${page}`}>
           {fields.map((field) => (
             <View key={field} style={styles.q} testID={`survey-q-${field}`}>
               <Text style={styles.qLabel}>{t(`survey.q.${field}`)}</Text>
-              {field === "foodAffinity" ? (
+              {field === 'foodAffinity' ? (
                 <View style={styles.chipRow}>
                   {FOOD_AFFINITIES.map((n) => (
                     <Chip
                       key={n}
                       label={t(`survey.affinity.${n}`)}
                       selected={answers.foodAffinity === n}
-                      onPress={() => set("foodAffinity", n)}
+                      onPress={() => set('foodAffinity', n)}
                       testID={`survey-opt-foodAffinity-${n}`}
                     />
                   ))}
@@ -169,11 +147,7 @@ function SurveyForm() {
                       accessibilityState={{ selected }}
                     >
                       <Radio selected={selected} />
-                      <Text
-                        style={[styles.optLabel, selected && styles.optLabelOn]}
-                      >
-                        {t(`survey.opt.${field}.${code}`)}
-                      </Text>
+                      <Text style={[styles.optLabel, selected && styles.optLabelOn]}>{t(`survey.opt.${field}.${code}`)}</Text>
                     </Pressable>
                   );
                 })
@@ -183,8 +157,13 @@ function SurveyForm() {
         </ScrollView>
         {failed && (
           <Text style={styles.err} testID="survey-error">
-            {t("survey.error")}
+            {t('survey.error')}
           </Text>
+        )}
+        {canDefer && (
+          <Pressable onPress={hideSurveyThisRun} hitSlop={10} style={styles.laterBtn} testID="survey-later">
+            <Text style={styles.later}>{t('survey.later')}</Text>
+          </Pressable>
         )}
         <View style={styles.actions}>
           {page > 0 && (
@@ -198,22 +177,13 @@ function SurveyForm() {
                 disabled={guard.busy}
                 testID="survey-back"
               >
-                {t("survey.back")}
+                {t('survey.back')}
               </Btn>
             </View>
           )}
           <View style={styles.actionNext}>
-            <Btn
-              onPress={onPrimary}
-              disabled={!complete}
-              busy={guard.busy}
-              testID={last ? "survey-submit" : "survey-next"}
-            >
-              {last
-                ? failed
-                  ? t("survey.retry")
-                  : t("survey.submit")
-                : t("survey.next")}
+            <Btn onPress={onPrimary} disabled={!complete} busy={guard.busy} testID={last ? 'survey-submit' : 'survey-next'}>
+              {last ? (failed ? t('survey.retry') : t('survey.submit')) : t('survey.next')}
             </Btn>
           </View>
         </View>
@@ -225,8 +195,8 @@ function SurveyForm() {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: C.card,
@@ -238,7 +208,7 @@ const styles = StyleSheet.create({
     gap: 8,
     ...shadow.sh2,
   },
-  dotRow: { flexDirection: "row", gap: 4 },
+  dotRow: { flexDirection: 'row', gap: 4 },
   dot: { width: 17, height: 4, borderRadius: 8, backgroundColor: C.line2 },
   dotOn: { backgroundColor: C.primary },
   title: {
@@ -259,8 +229,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   optRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
     minHeight: 44,
     paddingVertical: 4,
@@ -273,15 +243,17 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   optLabelOn: { color: C.ink, fontFamily: font.bodyBold },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingTop: 4 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingTop: 4 },
   err: {
     fontFamily: font.body,
     fontSize: 13,
     color: C.riskDangerText,
     lineHeight: 18,
-    textAlign: "center",
+    textAlign: 'center',
   },
-  actions: { flexDirection: "row", gap: 10, paddingTop: 4 },
+  actions: { flexDirection: 'row', gap: 10, paddingTop: 4 },
+  laterBtn: { alignSelf: 'center', padding: 8 },
+  later: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2 },
   actionBack: { flex: 1 },
   actionNext: { flex: 2 },
 });
