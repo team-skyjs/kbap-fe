@@ -50,12 +50,14 @@ import { _resetSurveyHiddenForTest, isSurveyHiddenThisRun, isSurveyPresented } f
 
 let qc: QueryClient;
 const trees: ReactTestRenderer[] = [];
-const render = (open = true) => {
+const render = (open = true, memberId = '1') => {
   let t!: ReactTestRenderer;
-  act(() => { t = renderer.create(<QueryClientProvider client={qc}><ProfileSurveySheet open={open} /></QueryClientProvider>); });
+  act(() => { t = renderer.create(<QueryClientProvider client={qc}><ProfileSurveySheet open={open} memberId={memberId} /></QueryClientProvider>); });
   trees.push(t);
   return t;
 };
+const update = (t: ReactTestRenderer, open: boolean, memberId = '1') => act(() => { t.update(<QueryClientProvider client={qc}><ProfileSurveySheet open={open} memberId={memberId} /></QueryClientProvider>); });
+const modalOf = (t: ReactTestRenderer) => t.root.findAll((x) => typeof x.props?.onRequestClose === 'function')[0];
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
 beforeEach(() => {
   jest.clearAllMocks();
@@ -88,10 +90,10 @@ it('열림 = survey_view 1회 · 뒤로 가기(onRequestClose)·배경은 닫지
   const t = render();
   expect(mockTrack).toHaveBeenCalledWith('survey_view');
   expect(mockTrack).toHaveBeenCalledTimes(1);
-  const modal = t.root.findAll((x) => x.props?.testID === 'survey-modal')[0];
+  const modal = modalOf(t);
   act(() => { modal.props.onRequestClose(); });
   expect(modal.props.visible).toBe(true);
-  expect(t.root.findAll((x) => x.props?.testID === 'survey-backdrop' && typeof x.props?.onPress === 'function')).toHaveLength(0);
+  expect(t.root.findAll((x) => x.props?.testID === 'sheet-shell-backdrop' && typeof x.type === 'string')[0].props.onPress).toBeUndefined(); // SheetShell dismissable=false
   mockTrack.mockClear();
   render(false);
   expect(mockTrack).not.toHaveBeenCalled();
@@ -160,14 +162,14 @@ it('TRIP_PLANNED 제출 = user property 8키(시기·기간 포함) — 서버 �
   expect(mockSetUserProps.mock.calls[0][0]).toMatchObject({ survey_trip_timing: 'THIS_YEAR', survey_trip_duration: 'ONE_WEEK' });
 });
 
-it('400 = 코드 결함 → Sentry(status·code) + 시트 유지·재시도 라벨 · 캐시·user property·submit 계측 무변', async () => {
-  mockPut.mockRejectedValue(new ApiError('bad', 400, 'MEMBER-003'));
+it('400(검증 코드) = 코드 결함 → Sentry(status·code) + 시트 유지·재시도 라벨 · 캐시·user property·submit 계측 무변', async () => {
+  mockPut.mockRejectedValue(new ApiError('bad', 400, 'COMMON-001'));
   const t = render();
   await toPage2(t);
   await press(t, 'survey-submit');
-  expect(mockReport).toHaveBeenCalledWith(400, 'MEMBER-003');
+  expect(mockReport).toHaveBeenCalledWith(400, 'COMMON-001');
   expect(has(t, 'survey-error')).toBe(1);
-  expect(t.root.findAll((x) => x.props?.testID === 'survey-modal')[0].props.visible).toBe(true);
+  expect(modalOf(t).props.visible).toBe(true);
   expect(qc.getQueryData<{ surveyCompleted: boolean }>(['me', 'en'])?.surveyCompleted).toBe(false);
   expect(mockSetUserProps).not.toHaveBeenCalled();
   expect(mockTrack).not.toHaveBeenCalledWith('survey_submit');
@@ -217,4 +219,48 @@ it('네트워크 실패 = 재시도 + 시트 유지, Sentry 0 · 재시도 성�
   await flush();
   expect(qc.getQueryData<{ surveyCompleted: boolean }>(['me', 'en'])?.surveyCompleted).toBe(true);
   expect(has(t, 'survey-error')).toBe(0);
+});
+
+it('400 MEMBER-003(좀비 세션) = 계약 결함 아님 — Sentry 0 · 재시도·나중에 0(세션 만료 경로가 닫는다)', async () => {
+  mockPut.mockRejectedValue(new ApiError('gone', 400, 'MEMBER-003'));
+  const t = render();
+  await toPage2(t);
+  await press(t, 'survey-submit');
+  expect(mockReport).not.toHaveBeenCalled();
+  expect(has(t, 'survey-error')).toBe(0);
+  expect(has(t, 'survey-later')).toBe(0);
+  expect(JSON.stringify(t.toJSON())).not.toContain('survey.retry');
+});
+
+it('라디오 원을 직접 탭해도 선택 · accessibilityRole=radio + accessibilityState.checked', async () => {
+  const t = render();
+  await press(t, 'survey-radio-ageBand-THIRTIES'); // 행이 아니라 원(Radio Pressable)
+  const row = t.root.findAll((x) => x.props?.testID === 'survey-opt-ageBand-THIRTIES' && typeof x.props?.onPress === 'function')[0];
+  expect(row.props.accessibilityRole).toBe('radio');
+  expect(row.props.accessibilityState).toEqual({ checked: true });
+  expect(t.root.findAll((x) => x.props?.testID === 'survey-opt-ageBand-TEENS' && typeof x.props?.onPress === 'function')[0].props.accessibilityState).toEqual({ checked: false });
+});
+
+it('생애주기: 시트 열린 채 세션 경계(open=false) → 다시 열리면 빈 폼 · 계정 전환(A→B, open 유지)도 빈 폼 — A의 답을 B로 제출 0', async () => {
+  const t = render(true, 'A');
+  await fillPage0(t);
+  expect(btn(t, 'survey-next').props.disabled).toBe(false);
+  update(t, false, 'A'); // 세션 경계 = me 캐시 비움 → open=false
+  update(t, true, 'B');
+  expect(has(t, 'survey-dot-0-on')).toBe(1);
+  expect(btn(t, 'survey-next').props.disabled).toBe(true); // 비어 있다
+  await fillPage0(t);
+  update(t, true, 'C'); // open 유지한 채 회원 번호만 바뀜(계정 전환)
+  expect(btn(t, 'survey-next').props.disabled).toBe(true);
+  expect(mockTrack.mock.calls.filter(([e]) => e === 'survey_view')).toHaveLength(3); // 폼 마운트마다 1회
+});
+
+it('성공 뒤 확인 재조회는 현재 언어 키 exact — 접두 매치로 [me, reviews]까지 재조회하지 않는다', async () => {
+  mockPut.mockImplementation(async (_p: string, body: Record<string, unknown>) => body);
+  const spy = jest.spyOn(qc, 'invalidateQueries');
+  const t = render();
+  await toPage2(t);
+  await press(t, 'survey-submit');
+  expect(spy).toHaveBeenCalledTimes(1);
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['me', 'en'], exact: true });
 });

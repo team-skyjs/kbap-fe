@@ -9,7 +9,7 @@ it('시트 3종 — IconClose 잔존 0 + 배경 탭(backdrop onPress=onClose) �
   for (const p of ['src/components/AuthGateSheet.tsx', 'src/components/ActionSheet.tsx', 'src/components/SheetShell.tsx']) {
     const s = fs.readFileSync(p, 'utf8');
     expect(s).not.toContain('IconClose');
-    expect(s).toMatch(/backdrop\} onPress=\{onClose\}|styles\.backdrop\} onPress=\{onClose\}/);
+    expect(s).toMatch(/backdrop\} onPress=\{onClose\}|styles\.backdrop\} onPress=\{onClose\}|styles\.backdrop\} onPress=\{dismissable \? onClose : undefined\}/); // KB-729: SheetShell dismissable(기본 true = 배경 탭 닫힘 그대로)
   }
   const place = fs.readFileSync('src/features/community/placeMap.tsx', 'utf8');
   expect(place).not.toContain('IconClose');

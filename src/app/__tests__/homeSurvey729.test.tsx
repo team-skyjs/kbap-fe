@@ -24,13 +24,17 @@ jest.mock('react-native-reanimated', () => {
 });
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
 jest.mock('expo-image', () => { const { View } = jest.requireActual<typeof import('react-native')>('react-native'); return { Image: View }; });
+let mockFocused = true;
 jest.mock('expo-router', () => ({
   useSegments: () => [],
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), navigate: jest.fn() }),
   usePathname: () => '/',
-  useFocusEffect: () => {},
+  // 포커스면 마운트 시 콜백 실행(블러 = 미실행) — 홈이 포커스일 때만 시트(/review 4)
+  useFocusEffect: (cb: () => void | (() => void)) => { const R = jest.requireActual<typeof import('react')>('react'); R.useEffect(() => (mockFocused ? cb() : undefined), []); },
   Redirect: () => null,
 }));
+const mockGate = jest.fn(() => ({ mode: 'pass' }));
+jest.mock('@/lib/versionGate', () => ({ ...jest.requireActual('@/lib/versionGate'), useVersionGate: () => mockGate() }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }), initReactI18next: { type: '3rdParty', init: () => {} } }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
@@ -50,7 +54,7 @@ jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data:
 let mockResolveSplash: () => void = () => {};
 jest.mock('@/lib/bootGate', () => ({ ...jest.requireActual('@/lib/bootGate'), whenSplashDone: () => new Promise<void>((r) => { mockResolveSplash = r; }) }));
 const mockSheet = jest.fn();
-jest.mock('@/features/survey/ProfileSurveySheet', () => ({ ProfileSurveySheet: (p: { open: boolean }) => { mockSheet(p.open); return null; } }));
+jest.mock('@/features/survey/ProfileSurveySheet', () => ({ ProfileSurveySheet: (p: { open: boolean; memberId?: string }) => { mockSheet(p.open, p.memberId); return null; } }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import Home from '../(tabs)/index';
@@ -69,7 +73,7 @@ const lastOpen = () => mockSheet.mock.calls.at(-1)?.[0];
 const splash = async () => { await act(async () => { mockResolveSplash(); await Promise.resolve(); }); };
 const render = async (me: Record<string, unknown>) => { mount(me); await splash(); return lastOpen(); };
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
-beforeEach(() => { jest.clearAllMocks(); _resetSurveyHiddenForTest(); });
+beforeEach(() => { jest.clearAllMocks(); _resetSurveyHiddenForTest(); mockFocused = true; mockGate.mockReturnValue({ mode: 'pass' }); });
 
 it('surveyCompleted=false 회원 = 시트 open · true = 닫힘 · 게스트(필드 없음) = 닫힘 · 구서버(null) = 닫힘 · 온보딩 미완 = 닫힘', async () => {
   expect(await render({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true })).toBe(true);
@@ -93,4 +97,21 @@ it('"나중에"(이번 실행 숨김) = open=false · 리셋(재시작)이면 �
   expect(lastOpen()).toBe(false);
   _resetSurveyHiddenForTest();
   expect(await render(me)).toBe(true);
+});
+
+it('강제 업데이트 게이트(blocked) = open=false(Modal이 게이트 View를 덮지 않게) · nudge/pass = true', async () => {
+  const me = { id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true };
+  mockGate.mockReturnValue({ mode: 'blocked', storeUrl: null } as never);
+  expect(await render(me)).toBe(false);
+  mockGate.mockReturnValue({ mode: 'nudge', latestVersion: '9.9.9', storeUrl: null } as never);
+  expect(await render(me)).toBe(true);
+});
+
+it('홈이 포커스가 아니면(딥링크·푸시 콜드 스타트로 다른 화면이 위) open=false · memberId 전달', async () => {
+  const me = { id: '42', restrictions: [], surveyCompleted: false, onboardingCompleted: true };
+  mockFocused = false;
+  expect(await render(me)).toBe(false);
+  mockFocused = true;
+  expect(await render(me)).toBe(true);
+  expect(mockSheet.mock.calls.at(-1)?.[1]).toBe('42');
 });
