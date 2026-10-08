@@ -13,7 +13,7 @@ const mockStore = jest.fn(async () => true);
 jest.mock('@/lib/storeReview', () => ({ requestStoreReview: () => mockStore() }));
 
 /* eslint-disable import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례 */
-import { canShow, EMPTY_PROMPT_STATE, loadPromptState, markDone, markShown, PROMPT_INTERVAL_MS, PROMPT_MAX_SHOWS, recordScanSuccess, REVIEW_PROMPT_KEY, savePromptState, scanTriggerDue, type PromptTrigger } from '@/lib/reviewPrompt';
+import { canShow, EMPTY_PROMPT_STATE, fixClockRewind, loadPromptState, markDone, markShown, PROMPT_INTERVAL_MS, PROMPT_MAX_SHOWS, recordScanSuccess, REVIEW_PROMPT_KEY, savePromptState, scanTriggerDue, type PromptTrigger } from '@/lib/reviewPrompt';
 import { useReviewPrompt } from '@/lib/useReviewPrompt';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 /* eslint-enable import/first */
@@ -32,13 +32,19 @@ describe('규칙(reviewPrompt.ts)', () => {
     expect(canShow(s, T0 + 100 * DAY)).toBe(false); // 3회 소진
     expect(canShow(markDone(EMPTY_PROMPT_STATE), T0 + 100 * DAY)).toBe(false);
   });
-  it('스캔 트리거는 성공 2회째에만(1·3회째 아님) · 저장 왕복 · 깨진 값 = 처음처럼', async () => {
-    expect([1, 2, 3].map(scanTriggerDue)).toEqual([false, true, false]);
+  it('스캔 트리거 = 성공 2회 이상 + 스캔 경로 미노출(2회째가 막혔으면 3회째에 · 띄운 뒤엔 끝) · 저장 왕복 · 깨진 값 = 처음처럼 · 시계 되돌림', async () => {
+    const at = (scanSuccess: number, scanPrompted = false) => scanTriggerDue({ ...EMPTY_PROMPT_STATE, scanSuccess, scanPrompted });
+    expect([at(1), at(2), at(3), at(3, true)]).toEqual([false, true, true, false]);
+    expect(markShown(EMPTY_PROMPT_STATE, T0, 'scan').scanPrompted).toBe(true);
+    expect(markShown(EMPTY_PROMPT_STATE, T0, 'review').scanPrompted).toBe(false);
+    // 시계가 과거로 가면 lastShownAt을 지금으로(간격 기준 재설정) · 정상이면 그대로
+    expect(fixClockRewind(markShown(EMPTY_PROMPT_STATE, T0 + DAY), T0).lastShownAt).toBe(T0);
+    expect(fixClockRewind(markShown(EMPTY_PROMPT_STATE, T0), T0 + DAY).lastShownAt).toBe(T0);
     expect(await recordScanSuccess()).toBe(1);
     expect(await recordScanSuccess()).toBe(2);
     expect((await loadPromptState()).scanSuccess).toBe(2);
     await savePromptState(markDone(markShown(EMPTY_PROMPT_STATE, T0)));
-    expect(await loadPromptState()).toEqual({ lastShownAt: T0, shows: 1, done: true, scanSuccess: 0 });
+    expect(await loadPromptState()).toEqual({ lastShownAt: T0, shows: 1, done: true, scanSuccess: 0, scanPrompted: false });
     await AsyncStorage.setItem(REVIEW_PROMPT_KEY, '{not json');
     expect(await loadPromptState()).toEqual(EMPTY_PROMPT_STATE);
   });
@@ -55,24 +61,39 @@ async function mount() { let t!: renderer.ReactTestRenderer; await act(async () 
 beforeEach(async () => { jest.clearAllMocks(); seen.mockClear(); await AsyncStorage.clear(); jest.spyOn(Date, 'now').mockReturnValue(T0); });
 afterEach(() => jest.restoreAllMocks());
 
-it.each<PromptTrigger>(['scan', 'review', 'order'])('트리거 %s — 조건 충족 = 열림·view 계측·노출 기록 / 7일 미만 재요청 = 안 열림·소모 0 / 7일 뒤 = 다시 열림 / 3회 뒤 = 끝', async (trigger) => {
+it.each<PromptTrigger>(['scan', 'review', 'order'])('트리거 %s — 조건 충족 = 열림 · 노출 기록·view 계측은 onShow(실제로 보인 뒤) / 7일 미만 = 안 열림·소모 0 / 7일 뒤 = 다시 / 3회 뒤 = 끝', async (trigger) => {
+  await savePromptState({ ...EMPTY_PROMPT_STATE, scanSuccess: 2 }); // 스캔 트리거 조건(2회 이상) — 다른 트리거엔 무관
   const t = await mount();
   expect(await latest().request(trigger)).toBe(true);
   await flush();
   expect(latest().open).toBe(true);
   expect(latest().trigger).toBe(trigger);
+  expect(mockTrack).not.toHaveBeenCalled(); // present 전 = 소모·계측 0
+  expect((await loadPromptState()).shows).toBe(0);
+  await act(async () => { latest().onShow(); });
+  await flush();
   expect(mockTrack).toHaveBeenCalledWith('review_prompt_view', { trigger });
   expect((await loadPromptState()).shows).toBe(1);
+  if (trigger === 'scan') expect((await loadPromptState()).scanPrompted).toBe(true);
   await act(async () => { await latest().respond('later'); });
+  if (trigger === 'scan') await savePromptState({ ...(await loadPromptState()), scanPrompted: false }); // 이하 간격·횟수 규칙 확인용
   (Date.now as jest.Mock).mockReturnValue(T0 + 3 * DAY);
   expect(await latest().request(trigger)).toBe(false);
   expect((await loadPromptState()).shows).toBe(1); // 소모 0
   (Date.now as jest.Mock).mockReturnValue(T0 + 7 * DAY);
   expect(await latest().request(trigger)).toBe(true);
+  await flush();
+  await act(async () => { latest().onShow(); });
+  await flush();
   await act(async () => { await latest().respond('later'); });
+  if (trigger === 'scan') await savePromptState({ ...(await loadPromptState()), scanPrompted: false });
   (Date.now as jest.Mock).mockReturnValue(T0 + 14 * DAY);
   expect(await latest().request(trigger)).toBe(true);
+  await flush();
+  await act(async () => { latest().onShow(); });
+  await flush();
   await act(async () => { await latest().respond('later'); });
+  if (trigger === 'scan') await savePromptState({ ...(await loadPromptState()), scanPrompted: false });
   (Date.now as jest.Mock).mockReturnValue(T0 + 365 * DAY);
   expect(await latest().request(trigger)).toBe(false); // 3회 소진
   await act(async () => { t.unmount(); });
@@ -97,17 +118,18 @@ it('응답 — 나중에: 닫힘·종료 아님 / 좋아요: 기본 평점 창 �
   expect(after).toHaveBeenCalledTimes(1);
 
   (Date.now as jest.Mock).mockReturnValue(T0 + 7 * DAY);
-  await latest().request('scan', { after });
+  await latest().request('review', { after });
   await act(async () => { await latest().respond('positive'); });
   expect(mockStore).toHaveBeenCalledTimes(1);
   expect((await loadPromptState()).done).toBe(true);
   expect(after).toHaveBeenCalledTimes(2);
   expect(mockPush).not.toHaveBeenCalled();
-  expect(await latest().request('scan')).toBe(false); // 종료 뒤 영영 안 뜸
+  expect(await latest().request('review')).toBe(false); // 종료 뒤 영영 안 뜸
 
   await AsyncStorage.clear();
   await latest().request('review', { after });
   await act(async () => { await latest().respond('negative'); });
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); // 복귀(after) 뒤 InteractionManager 틱
   expect(mockPush).toHaveBeenCalledWith('/profile/feedback/new');
   expect((await loadPromptState()).done).toBe(true);
   expect(mockStore).toHaveBeenCalledTimes(1); // 별로예요는 평점 창 요청 0
@@ -131,4 +153,33 @@ describe('문구·계측', () => {
     expect(a.sanitize(a.EVENTS.review_prompt_view, { trigger: 'scan', junk: 1 })).toEqual({ trigger: 'scan' });
     expect(a.sanitize(a.EVENTS.review_prompt_response, { answer: 'later', trigger: 'scan' })).toEqual({ answer: 'later' });
   });
+});
+
+it('응답은 한 번만 — 페이드 중 더블탭(별로예요 ×2) = 계측 1회·문의 이동 1회 · answered로 버튼 비활성 신호', async () => {
+  await mount();
+  await latest().request('order');
+  await act(async () => { void latest().respond('negative'); void latest().respond('negative'); });
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  expect(mockTrack.mock.calls.filter(([e]) => e === 'review_prompt_response')).toHaveLength(1);
+  expect(mockPush).toHaveBeenCalledTimes(1);
+  expect(latest().answered).toBe(true);
+});
+
+it('step(trigger, { after }) — 조건 미달이면 present=false + after 즉시 · 조건 충족이면 present=true, 응답 뒤 after, 닫힌 뒤 done', async () => {
+  await mount();
+  const after = jest.fn();
+  const done = jest.fn();
+  await savePromptState(markDone(EMPTY_PROMPT_STATE));
+  expect(await latest().step('review', { after }).present(done)).toBe(false);
+  expect(after).toHaveBeenCalledTimes(1);
+  expect(done).not.toHaveBeenCalled();
+  await AsyncStorage.clear();
+  expect(await latest().step('review', { after }).present(done)).toBe(true);
+  await flush();
+  expect(after).toHaveBeenCalledTimes(1);
+  await act(async () => { await latest().respond('later'); });
+  expect(after).toHaveBeenCalledTimes(2);
+  expect(done).not.toHaveBeenCalled(); // 큐의 done은 시트가 완전히 닫힌 뒤(onClosed)
+  act(() => latest().onClosed());
+  expect(done).toHaveBeenCalledTimes(1);
 });

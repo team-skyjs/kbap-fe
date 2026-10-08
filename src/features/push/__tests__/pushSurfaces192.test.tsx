@@ -129,6 +129,17 @@ const tap = async (tree: ReactTestRenderer, testID: string) => {
 
 // P-192 "off 고정" → P-221: dev 계열 활성화(빌드18이 네이티브 모듈 보유).
 // 🔴 prod는 여전히 차단 — 스토어 배포판에 모듈이 없어 켜면 크래시.
+/** RTR은 Modal onDismiss를 안 쏜다 — 닫힌(visible=false) Modal의 onDismiss를 테스트가 대신 호출(iOS 직렬화 체인 흉내) */
+const fireDismissed = async (tree: ReactTestRenderer) => {
+  const seen = new Set<unknown>();
+  for (const n of tree.root.findAll((x) => typeof x.props?.onDismiss === 'function' && x.props?.visible === false)) {
+    if (seen.has(n.props.onDismiss)) continue;
+    seen.add(n.props.onDismiss);
+    await act(async () => { n.props.onDismiss(); });
+  }
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+};
+
 it('P-221: 플래그 게이트 = 채널 조건(전역 true 금지) — 설정 화면은 게이트 뒤', async () => {
   expect(FLAGS.pushEnabled).toBe(true); // 유닛 = dev 계열(PROD_CHANNEL false)
   const tree = render(<NotificationSettings />);
@@ -143,7 +154,7 @@ it('배선 잠금(소스) — 전 표면이 플래그 게이트 뒤 + P-268 전 
   expect(fs.readFileSync('src/lib/flags.ts', 'utf8')).toContain('pushEnabled: true'); // P-289(예진 9/7): 전 채널 — KB-422 재숨김 종료
   // 프로필 행(회원 분기)·스캔 프라이머·루트 배선 — 전부 플래그 게이트 뒤. 온보딩 프라이머는 제거(KB-497)
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).toContain('FLAGS.pushEnabled && (');
-  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled) return");
+  expect(fs.readFileSync('src/app/scan.tsx', 'utf8')).toContain("!FLAGS.pushEnabled || nudgeShownRef.current) return false");
   expect(fs.readFileSync('src/app/_layout.tsx', 'utf8')).toContain('if (!FLAGS.pushEnabled || !entryChecked) return;'); // KB-573: 플래그 게이트 유지 + entryChecked(콜드 스타트) 게이트
   const onboarding = fs.readFileSync('src/app/onboarding/index.tsx', 'utf8') as string;
   expect(onboarding).not.toContain('PushPrimerModal');
@@ -209,10 +220,10 @@ it('OS 권한 거부 = 토큰 등록·PATCH 0회, onDone은 호출', async () =>
   expect(onDone).toHaveBeenCalled();
 });
 
-it('KB-497 소스 잠금: scan.tsx 프라이머 = PushPrimerModal(시트 래퍼) + 코치마크 직렬화(maybeShowPrimer) 유지', () => {
+it('KB-497 소스 잠금: scan.tsx 프라이머 = PushPrimerModal(시트 래퍼) + 코치마크 직렬화(일회성 모달 큐 — KB-730) 유지', () => {
   const scan = require('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(scan).toContain('<PushPrimerModal surface="scan"');
-  expect(scan).toContain('maybeShowPrimer'); // KB-377: 코치마크 닫힌 뒤에만
+  expect(scan).toContain('<PushPrimerModal\n          surface="scan"');
+  expect(scan).toContain('modalQueue'); // KB-377: 코치마크 닫힌 뒤에만
   const primer = require('fs').readFileSync('src/features/push/PushPrimerModal.tsx', 'utf8') as string;
   expect(primer).toContain('<NotificationSheet');
   expect(primer).toContain("variant=\"primer\"");
@@ -233,10 +244,13 @@ it('주문 완료 재현 경로: Done → 확인 모달 → 홈 버튼 = onDone 
   // 모달의 홈 버튼 탭 = onDone(리마인더는 서버 배치 — 앱 예약 0)
   const homeBtn = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.doneHome').length > 0).pop()!;
   await act(async () => homeBtn.props.onPress());
-  // KB-730: 복귀 전에 리뷰 유도 시트가 끼어들 수 있다(첫 노출) — 이 테스트의 관심은 리마인더 부재뿐이라 '나중에'로 넘긴다
-  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  // KB-730: 완료 모달이 완전히 닫힌 뒤(iOS onDismiss) 리뷰 유도 시트(첫 노출) → '나중에' → 복귀. 시트 존재는 명시 단언(약화 금지)
+  await fireDismissed(tree);
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string')).toHaveLength(1);
+  expect(onDone).not.toHaveBeenCalled();
   const later = tree.root.findAll((n) => n.props?.testID === 'review-prompt-later' && typeof n.props?.onPress === 'function')[0];
-  if (later) { await act(async () => { later.props.onPress(); }); for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); }); }
+  await act(async () => { later.props.onPress(); });
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
   expect(onDone).toHaveBeenCalled();
 });
 
@@ -308,9 +322,9 @@ it('mode=osDenied·activityOff 「나중에」 = 닫기만 — 기록 0(매 스�
 it('배선 잠금: scan.tsx 판정 = decideScanNudge(isGuest) → mode 전달', () => {
   const scan = fs.readFileSync('src/app/scan.tsx', 'utf8');
   expect(scan).toContain('decideScanNudge(isGuest)');
-  expect(scan).toContain('<PushPrimerModal surface="scan" mode={nudgeMode}');
+  expect(scan).toContain('<PushPrimerModal\n          surface="scan"\n          mode={nudgeMode}');
   expect(scan).not.toContain('getPrimerResult'); // 판정은 scanNudge 한 곳
   // Codex 리뷰: 결과 1회당 1회(마커 탭→코치마크 닫힘 재호출에 재노출 0) · 카메라 복귀에서 리셋
-  expect(scan).toContain('if (nudgeShownRef.current) return;');
-  expect(scan).toContain("if (phase !== 'result') { nudgeShownRef.current = false; return; }");
+  expect(scan).toContain('if (!m || nudgeShownRef.current) return false;');
+  expect(scan).toContain("if (phase !== 'result') { nudgeShownRef.current = false; modalQueue.clear(); return; }");
 });

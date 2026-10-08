@@ -20,18 +20,23 @@ export interface PromptState {
   shows: number;
   done: boolean;
   scanSuccess: number;
+  /** 스캔 경로로 이미 띄웠나 — 스캔 트리거는 성공 2회 이상 + 아직 안 띄움(막혀서 못 띄운 회차는 소모 0) */
+  scanPrompted: boolean;
 }
-export const EMPTY_PROMPT_STATE: PromptState = { lastShownAt: null, shows: 0, done: false, scanSuccess: 0 };
+export const EMPTY_PROMPT_STATE: PromptState = { lastShownAt: null, shows: 0, done: false, scanSuccess: 0, scanPrompted: false };
 
 /** 뜰 수 있나 — 종료 아님 · 누적 3회 미만 · 마지막 노출로부터 7일 이상(첫 노출은 즉시) */
 export function canShow(s: PromptState, now: number): boolean {
   if (s.done || s.shows >= PROMPT_MAX_SHOWS) return false;
   return s.lastShownAt == null || now - s.lastShownAt >= PROMPT_INTERVAL_MS;
 }
-export const markShown = (s: PromptState, now: number): PromptState => ({ ...s, shows: s.shows + 1, lastShownAt: now });
+/** 실제로 보인 뒤(onShow) 소모 — 스캔 경로면 scanPrompted도 */
+export const markShown = (s: PromptState, now: number, trigger?: PromptTrigger): PromptState => ({ ...s, shows: s.shows + 1, lastShownAt: now, scanPrompted: s.scanPrompted || trigger === 'scan' });
 export const markDone = (s: PromptState): PromptState => ({ ...s, done: true });
-/** 스캔 트리거 = 성공 **2회째**에 딱 한 번(3회째부터는 아님) */
-export const scanTriggerDue = (scanSuccess: number): boolean => scanSuccess === SCAN_TRIGGER_AT;
+/** 스캔 트리거 = 성공 2회 이상이고 스캔 경로로 아직 안 띄움(2회째가 막혔으면 3회째에) */
+export const scanTriggerDue = (s: PromptState): boolean => s.scanSuccess >= SCAN_TRIGGER_AT && !s.scanPrompted;
+/** 시계 되돌림(lastShownAt이 미래) — 간격 기준점을 지금으로 재설정 */
+export const fixClockRewind = (s: PromptState, now: number): PromptState => (s.lastShownAt != null && now - s.lastShownAt < 0 ? { ...s, lastShownAt: now } : s);
 
 export async function loadPromptState(): Promise<PromptState> {
   try {
@@ -43,6 +48,7 @@ export async function loadPromptState(): Promise<PromptState> {
       shows: typeof v.shows === 'number' ? v.shows : 0,
       done: v.done === true,
       scanSuccess: typeof v.scanSuccess === 'number' ? v.scanSuccess : 0,
+      scanPrompted: v.scanPrompted === true,
     };
   } catch {
     return EMPTY_PROMPT_STATE; // 깨진 값·스토리지 불능 = 처음처럼(유도 시트는 안전 기능이 아님)
@@ -57,4 +63,8 @@ export async function recordScanSuccess(): Promise<number> {
   const next = { ...s, scanSuccess: s.scanSuccess + 1 };
   await savePromptState(next);
   return next.scanSuccess;
+}
+/** dev 전용 — QA 반복 확인용 초기화(/states). 운영은 호출 경로 0 */
+export async function resetPromptStateForDev(): Promise<void> {
+  await AsyncStorage.removeItem(REVIEW_PROMPT_KEY).catch(() => {});
 }

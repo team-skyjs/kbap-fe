@@ -1,3 +1,4 @@
+import { useState } from 'react';
 /**
  * States catalog (mockup Screen J) — the shared empty / loading / error /
  * offline / unable states in one place. These components (StateBlock,
@@ -13,8 +14,12 @@ import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';
 import { SubHeader, SkeletonList } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
+import { Btn } from '@/components/Btn';
+import { isDiagnosticChannel } from '@/lib/flags';
+import { resetPromptStateForDev } from '@/lib/reviewPrompt';
 
 export default function States() {
+  const [diagChannel] = useState(isDiagnosticChannel); // 빌드 상수 — 마운트 시 1회 읽기(KB-697: 렌더 중 zero-arg 호출 아님)
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -27,6 +32,14 @@ export default function States() {
           <SkeletonList />
         </Item>
 
+        {/* KB-730: QA 반복 확인용 — 리뷰 유도 상태(노출 시각·횟수·종료·스캔 카운트) 초기화. 진단 채널(dev·teamtest)에서만 */}
+        {diagChannel && (
+          <Item label="Review prompt (dev)">
+            <Btn variant="ghost" onPress={() => void resetPromptStateForDev()} testID="states-reset-review-prompt">
+              Reset review prompt state
+            </Btn>
+          </Item>
+        )}
         <Item label={t('states.labelEmpty')}>
           {/* P-359(KB-522): 구 StateBlock 폐기 — 디자이너 공용 EmptyBlock(4003:6689)이 유일 빈 상태 */}
           <EmptyBlock label={t('states.emptyReviewsTitle')} />

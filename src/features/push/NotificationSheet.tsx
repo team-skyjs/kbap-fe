@@ -44,6 +44,7 @@ export function NotificationSheet({
   confirmLabel,
   onConfirm,
   onClose,
+  onDismiss,
 }: {
   open: boolean;
   variant: 'primer' | 'consent';
@@ -53,6 +54,8 @@ export function NotificationSheet({
   /** consent 변형은 두 체크가 모두 true인 상태로만 호출된다. */
   onConfirm: (consents?: ConsentChecks) => Promise<void> | void;
   onClose: () => void;
+  /** KB-730: 완전히 닫힌 뒤(iOS) — 일회성 모달 큐의 다음 스텝 */
+  onDismiss?: () => void;
 }) {
   const { t } = useTranslation();
   const { busy, run } = useSubmitGuard();
@@ -119,7 +122,7 @@ export function NotificationSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={requestClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={requestClose} onDismiss={onDismiss}>
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
       {/* 퇴장 중(open=false·Modal 아직 보임)엔 스크림·시트 전부 무반응 — 닫히는 시트에서 확인이 눌리지 않게(Codex #150) */}

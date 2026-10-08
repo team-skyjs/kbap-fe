@@ -174,6 +174,17 @@ it('다중 업로드 — 각 파일이 uploadImage(REVIEW) 경유(HEIC 재인코
   expect(out).toEqual(['review/1/x.jpg', 'review/1/x.jpg', 'review/1/x.jpg']);
 });
 
+/** RTR은 Modal onDismiss를 안 쏜다 — 닫힌(visible=false) Modal의 onDismiss를 테스트가 대신 호출(iOS 직렬화 체인 흉내) */
+const fireDismissed = async (tree: ReactTestRenderer) => {
+  const seen = new Set<unknown>();
+  for (const n of tree.root.findAll((x) => typeof x.props?.onDismiss === 'function' && x.props?.visible === false)) {
+    if (seen.has(n.props.onDismiss)) continue;
+    seen.add(n.props.onDismiss);
+    await act(async () => { n.props.onDismiss(); });
+  }
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+};
+
 describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 복구', () => {
   it('연타 → 제출 1건만 발사(동기 ref 가드 — 업로드 선행 구간 포함)', async () => {
     const tree = render(<ReviewCompose />);
@@ -198,14 +209,19 @@ describe('P-168 🚨: 리뷰 제출 연타·완료 모달·헤더 Post·실패 �
     const back = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.done').length > 0).pop()!;
     await act(async () => { back.props.onPress(); });
     for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
-    // KB-730: 첫 노출 조건 충족(저장 상태 없음) → 시트가 열리고 복귀는 응답 뒤
-    expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string').length).toBe(1);
-    expect(tree.root.findAll((n) => n.props?.testID === 'review-posted-confirm' && n.props?.visible === true)).toHaveLength(0);
+    // KB-730: Done = 완료 모달 표시만 접음(submitted 유지) → 이탈 확인 재무장 0 · Post 비활성 유지 · dismiss 전 시트 0
+    expect(mockPrevent.on).toBe(false);
+    expect(postBtn(tree).props.disabled).toBe(true);
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string')).toHaveLength(0);
+    expect(mockRouter.back).not.toHaveBeenCalled();
+    await fireDismissed(tree); // iOS: 완료 모달이 완전히 닫힌 뒤 유도 시트(첫 노출)
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string')).toHaveLength(1);
     expect(mockRouter.back).not.toHaveBeenCalled();
     const later = tree.root.findAll((n) => n.props?.testID === 'review-prompt-later' && typeof n.props?.onPress === 'function')[0];
     await act(async () => { later.props.onPress(); });
     for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
     expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    expect(mockPrevent.on).toBe(false); // 나중에 뒤에도 재무장 0
     // 구 풀화면 요소(내 리뷰 보기) 소멸
     expect(JSON.stringify(tree.toJSON())).not.toContain('review.seeMyReviews');
   });

@@ -44,6 +44,17 @@ beforeEach(() => {
   mockReduced = false;
 });
 
+/** RTR은 Modal onDismiss를 안 쏜다 — 닫힌(visible=false) Modal의 onDismiss를 테스트가 대신 호출(iOS 직렬화 체인 흉내) */
+const fireDismissed = async (tree: ReactTestRenderer) => {
+  const seen = new Set<unknown>();
+  for (const n of tree.root.findAll((x) => typeof x.props?.onDismiss === 'function' && x.props?.visible === false)) {
+    if (seen.has(n.props.onDismiss)) continue;
+    seen.add(n.props.onDismiss);
+    await act(async () => { n.props.onDismiss(); });
+  }
+  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+};
+
 it('파티클 수 상수·pointerEvents none·위험도 4색 미사용', () => {
   const tree = render(<ConfettiBurst />);
   const root = tree.root.findAll((n) => n.props?.testID === 'confetti')[0];
@@ -101,6 +112,8 @@ it('KB-730 주문 완료 → 복귀 탭 = 유도 시트(첫 노출) → 나중�
   const home = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.doneHome').length > 0).pop()!;
   await act(async () => { home.props.onPress(); });
   for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string')).toHaveLength(0); // dismiss 전 present 0(프리즈 방지)
+  await fireDismissed(tree); // iOS: 완료 모달이 완전히 닫힌 뒤
   expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string')).toHaveLength(1);
   expect(onDone).not.toHaveBeenCalled();
   await press('review-prompt-later');
@@ -110,7 +123,7 @@ it('KB-730 주문 완료 → 복귀 탭 = 유도 시트(첫 노출) → 나중�
   await act(async () => { doneBtn.props.onPress(); });
   const home2 = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'order.doneHome').length > 0).pop()!;
   await act(async () => { home2.props.onPress(); });
-  for (let i = 0; i < 6; i++) await act(async () => { await Promise.resolve(); });
+  await fireDismissed(tree);
   expect(tree.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string')).toHaveLength(0);
   expect(onDone).toHaveBeenCalledTimes(2);
 });
