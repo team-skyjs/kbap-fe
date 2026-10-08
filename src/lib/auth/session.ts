@@ -34,5 +34,6 @@ export function currentUser(): AuthUser | null {
  *  Codex #109 7R: track 경유 — OTA 정적 창(KB-509)이 로그아웃 왕복을 본다. */
 export async function logOut(): Promise<void> {
   setSentryUser(null); // P-197: 식별 해제 — 로그아웃 후 이벤트에 memberId 잔존 방지
+  // KB-732: Amplitude 해제는 BE 세션 경계(beAuth.endSessionBoundary)가 한다 — Firebase 전용인 여기에 두면 web 로그아웃이 빠진다
   await track(signOut(getAuth()));
 }

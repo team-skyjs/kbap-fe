@@ -30,8 +30,10 @@
  * |                              | user_type (guest|registered)               |
  * | auth_gate_view           | trigger (게스트 게이트 노출 계기)             |
  *
- * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송 — **익명 device id만**
- * (setUserId·Identify 호출 없음). 허용 키 밖 prop은 드롭(유닛 잠금).
+ * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송. 식별 = **회원 번호**(`members/me`의 memberId 문자열)
+ * `setUserId` — KB-732(10/8 예진: 가입자가 전부 익명이던 것, 이메일·해시 아님) · user property는 허용 키만(Identify).
+ * 세션 종료(로그아웃·만료·탈퇴·재설치 정리) = 해제 + 기기 id 재생성(SDK reset — 이전 회원 귀속 방지). 허용 키 밖 prop은 드롭(유닛 잠금).
+ * 이 파일 밖에서 SDK 직접 호출 금지 — 공개 = track · setUserProps · setAnalyticsUser · resetAnalyticsIdentity · clearStaleAnalyticsIdentity.
  *
  * 키: `EXPO_PUBLIC_AMPLITUDE_API_KEY` — 없으면 **no-op**(콘솔 debug만),
  * 키 주입 시 코드 변경 0. ⚠️ Amplitude 웹 위저드 지시 무시(발주 명시):
@@ -166,7 +168,10 @@ function ensureInit(): boolean {
     // lazy require — 키 없는 환경(웹 개발·유닛)에서 SDK 로드 자체를 회피
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
-    amp.init(KEY); // userId 미전달 — 익명 device id만
+    // userId는 members/me 성공 시 setAnalyticsUser가 붙인다(KB-732) — init 시점엔 아직 모른다.
+    // minIdLength 1: Amplitude 서버 기본 최소 id 길이 5 — 회원 번호는 1부터라 1~4자리 회원의 이벤트가 전부 400으로
+    // 버려진다(SDK는 재시도 없이 드롭). 옵션을 주면 SDK가 min_id_length를 실어 보낸다. 접두어 방식은 Sentry·서버 로그 대조가 깨져 안 씀.
+    amp.init(KEY, undefined, { minIdLength: 1 });
     initialized = true;
   }
   return true;
@@ -197,7 +202,7 @@ export function sanitizeUserProps(props: Partial<Record<UserPropKey, unknown>>):
   );
 }
 
-/** P-144: user property 세팅 — Identify(익명 device id 유지, setUserId 없음). */
+/** P-144: user property 세팅 — Identify(허용 키만). setUserId 없음이던 결정은 KB-732로 변경 — 식별은 setAnalyticsUser. */
 export function setUserProps(props: Partial<Record<UserPropKey, string | number | boolean>>): void {
   const clean = sanitizeUserProps(props);
   if (!Object.keys(clean).length) return;
@@ -210,4 +215,48 @@ export function setUserProps(props: Partial<Record<UserPropKey, string | number 
   const id = new amp.Identify();
   for (const [k, v] of Object.entries(clean)) id.set(k, v as string | number | boolean);
   amp.identify(id);
+}
+
+/**
+ * KB-732: 회원 식별 — `members/me` 응답의 회원 번호(문자열)로 setUserId. 호출 지점 = fetchMe 성공 한 곳(로그인 직후·세션 복원 공통).
+ * 화면 코드에서 부르지 않는다.
+ */
+export function setAnalyticsUser(memberId: string): void {
+  if (!ensureInit()) {
+    if (__DEV__) console.log('[analytics:noop] setUserId (set)');
+    return;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
+  amp.setUserId(memberId);
+}
+
+/**
+ * KB-732: 식별 해제 + 기기 id 재생성 = SDK `reset()`(setUserId(undefined) + 새 device id, react-native-client 1.6.8).
+ * 호출 지점 = BE 세션 종료 **단일 경계**(beAuth.endSessionBoundary — 로그아웃·만료·탈퇴·재설치 정리 네 경로) + 부팅 잔존 정리.
+ * 기기 id까지 바꾸는 이유: Amplitude는 기기 id↔사용자 매핑을 기억해 userId 없는 이벤트를 그 기기의 마지막 사용자에게 귀속시킨다
+ * (잃는 것 = 같은 기기 두 계정 연결뿐).
+ */
+export function resetAnalyticsIdentity(): void {
+  if (!ensureInit()) {
+    if (__DEV__) console.log('[analytics:noop] reset');
+    return;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
+  amp.reset();
+}
+
+/**
+ * KB-732: 부팅 잔존 정리 — 앱 종료 중 서버측 만료 등으로 로컬 BE 토큰은 없는데 SDK가 저장해 둔 userId가 남아 있으면
+ * 첫 track 전에 reset 1회. **이미 익명이면 아무것도 하지 않는다**(무조건 reset하면 게스트의 기기 id가 부팅마다 바뀌어 게스트 세션이 안 이어진다).
+ * @returns reset 했는지(유닛용)
+ */
+export function clearStaleAnalyticsIdentity(): boolean {
+  if (!ensureInit()) return false;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
+  if (amp.getUserId() == null) return false;
+  amp.reset();
+  return true;
 }
