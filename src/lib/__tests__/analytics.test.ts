@@ -54,7 +54,7 @@ it('키 있음 → init 1회(익명 — userId 미전달) + track 전달', () =>
   a.track(a.EVENTS.scan_complete, { degraded: true, item_count: 6 });
   a.track(a.EVENTS.review_submit);
   expect(mockInit).toHaveBeenCalledTimes(1);
-  expect(mockInit).toHaveBeenCalledWith('test-key');
+  expect(mockInit).toHaveBeenCalledWith('test-key', undefined, expect.objectContaining({ minIdLength: 1 })); // KB-732: minIdLength 동승(userId는 여전히 미전달)
   expect(mockTrack).toHaveBeenCalledWith('scan_complete', { degraded: true, item_count: 6 });
   expect(mockTrack).toHaveBeenCalledWith('review_submit', undefined);
 });
@@ -206,4 +206,11 @@ it('어댑터 격리 — analytics.ts가 쓰는 SDK API는 허용 목록뿐(init
   const { execSync } = jest.requireActual<typeof import('child_process')>('child_process');
   const importers = execSync("git grep -l \"@amplitude/analytics-react-native\" -- 'src/**/*.ts' 'src/**/*.tsx' ':!src/**/__tests__/**'", { encoding: 'utf8' }).trim().split('\n');
   expect(importers).toEqual(['src/lib/analytics.ts']);
+});
+
+it('KB-732(공부 #242 1): init 옵션에 minIdLength 1 — 1~4자리 회원 번호 이벤트가 서버(기본 최소 5자)에서 버려지지 않게', () => {
+  const a = loadAnalytics('k');
+  a.setAnalyticsUser('7');
+  expect(mockInit).toHaveBeenCalledTimes(1);
+  expect(mockInit).toHaveBeenCalledWith('k', undefined, expect.objectContaining({ minIdLength: 1 }));
 });

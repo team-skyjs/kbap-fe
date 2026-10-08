@@ -19,6 +19,7 @@ import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
+import { currentGen } from '../auth/beTokens';
 import { setSentryUser } from '../sentry';
 import { setAnalyticsUser } from '../analytics';
 import { FLAGS } from '../flags';
@@ -35,10 +36,14 @@ export async function fetchMe(): Promise<User> {
     setAnalyticsUser(null); // KB-732: 게스트 = Amplitude userId 해제(호출 0이 아니라 해제 — 로그인→게스트 전환 잔존 방지)
     return MOCK_USER; // guest/dev fallback
   }
+  const gen = currentGen(); // 공부 #242 3: 요청 시작 시점의 세션 세대
   const wire = await api.get<MyProfileWire>('/members/me/profile');
   const user = adaptProfile(wire, await loadLocalSpice());
-  setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
-  setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
+  // 응답 도착 전에 로그아웃(세션 경계 = 세대 bump)됐으면 옛 회원 번호로 식별을 되살리지 않는다(queryClient.clear()는 진행 중 요청을 취소하지 않음)
+  if (currentGen() === gen) {
+    setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
+    setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
+  }
   return user;
 }
 

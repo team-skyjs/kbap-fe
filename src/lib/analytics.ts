@@ -32,7 +32,7 @@
  *
  * PII 금지: 닉네임·이메일·국적·회피 재료 내용 미전송. 식별 = **회원 번호**(`members/me`의 memberId 문자열)
  * `setUserId` — KB-732(10/8 예진: 가입자가 전부 익명이던 것, 이메일·해시 아님) · user property는 허용 키만(Identify).
- * 게스트·로그아웃 = userId 해제(기기 id 유지) · 탈퇴 = 해제 + 기기 id 재생성. 허용 키 밖 prop은 드롭(유닛 잠금).
+ * 게스트 = userId 해제 · 로그아웃·탈퇴 = 해제 + 기기 id 재생성(이전 회원 귀속 방지). 허용 키 밖 prop은 드롭(유닛 잠금).
  * 이 파일 밖에서 SDK 직접 호출 금지 — 공개 = track · setUserProps · setAnalyticsUser · resetAnalyticsDevice.
  *
  * 키: `EXPO_PUBLIC_AMPLITUDE_API_KEY` — 없으면 **no-op**(콘솔 debug만),
@@ -168,7 +168,10 @@ function ensureInit(): boolean {
     // lazy require — 키 없는 환경(웹 개발·유닛)에서 SDK 로드 자체를 회피
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const amp = require('@amplitude/analytics-react-native') as typeof import('@amplitude/analytics-react-native');
-    amp.init(KEY); // userId는 members/me 성공 시 setAnalyticsUser가 붙인다(KB-732) — init 시점엔 아직 모른다
+    // userId는 members/me 성공 시 setAnalyticsUser가 붙인다(KB-732) — init 시점엔 아직 모른다.
+    // minIdLength 1: Amplitude 서버 기본 최소 id 길이 5 — 회원 번호는 1부터라 1~4자리 회원의 이벤트가 전부 400으로
+    // 버려진다(SDK는 재시도 없이 드롭). 옵션을 주면 SDK가 min_id_length를 실어 보낸다. 접두어 방식은 Sentry·서버 로그 대조가 깨져 안 씀.
+    amp.init(KEY, undefined, { minIdLength: 1 });
     initialized = true;
   }
   return true;
@@ -228,7 +231,7 @@ export function setAnalyticsUser(memberId: string | null): void {
   amp.setUserId(memberId ?? undefined);
 }
 
-/** KB-732: 탈퇴 — 기기 id를 새로 뽑아 탈퇴 전 익명 이력과 끊는다(재가입이 같은 기기 프로필로 이어지지 않게). 새 id 반환(유닛용). */
+/** KB-732: 로그아웃·탈퇴 — 기기 id를 새로 뽑아 이전 회원의 기기 프로필과 끊는다(이후 익명 이벤트가 그 회원에게 귀속되지 않게). 새 id 반환(유닛용). */
 export function resetAnalyticsDevice(): string | undefined {
   if (!ensureInit()) {
     if (__DEV__) console.log('[analytics:noop] setDeviceId (new)');

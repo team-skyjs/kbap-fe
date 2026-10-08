@@ -5,12 +5,15 @@
 jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/i18n/useAppLanguage', () => ({ useAppLanguage: () => 'en' }));
-jest.mock('@/lib/sentry', () => ({ setSentryUser: jest.fn(), reportProfileContractDrift: jest.fn() }));
 const mockSetUser = jest.fn();
 const mockResetDevice = jest.fn();
 jest.mock('@/lib/analytics', () => ({ setAnalyticsUser: (id: unknown) => mockSetUser(id), resetAnalyticsDevice: () => mockResetDevice(), track: jest.fn(), setUserProps: jest.fn(), EVENTS: {} }));
 const mockHasSession = jest.fn();
 jest.mock('@/lib/auth/beAuth', () => ({ hasBeSession: () => mockHasSession() }));
+const mockGen = jest.fn(() => 1);
+jest.mock('@/lib/auth/beTokens', () => ({ currentGen: () => mockGen() }));
+const mockSentry = jest.fn();
+jest.mock('@/lib/sentry', () => ({ setSentryUser: (id: unknown) => mockSentry(id), reportProfileContractDrift: jest.fn() }));
 const mockGet = jest.fn();
 jest.mock('@/lib/api/client', () => ({ api: { get: (...a: unknown[]) => mockGet(...a), patch: jest.fn() }, apiLang: () => 'en' }));
 jest.mock('@/lib/onboarding/submit', () => ({ loadLocalSpice: async () => null, SPICE_KEY: 'kbap.profile.spice.v1', spiceChoiceToWire: () => null }));
@@ -24,7 +27,7 @@ import { clearMemberLocalState } from '@/lib/auth/clearMemberLocal';
 
 const WIRE = { memberId: 7, nickname: 'Mina', countryCode: 'US', readerLanguage: 'en', spiceTolerance: null, avoidanceSubstanceCodes: [], rank: null };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => { jest.clearAllMocks(); mockGen.mockReturnValue(1); });
 
 it('members/me 성공(로그인 직후·앱 시작 세션 복원 공통 지점) → setUserId 1회 · 값은 회원 번호 **문자열**(토큰 클레임 아님)', async () => {
   mockHasSession.mockResolvedValue(true);
@@ -51,11 +54,20 @@ it('탈퇴 정리 → 해제(null) + 기기 id 재생성 1회', async () => {
   expect(mockResetDevice).toHaveBeenCalledTimes(1);
 });
 
-it('로그아웃(session.logOut) = 해제만 — 기기 id 재생성 없음(소스 잠금: RNFB 없이)', () => {
+it('로그아웃 도중 도착한 옛 members/me 응답(세션 세대 바뀜) → 식별 호출 0(Sentry·Amplitude 둘 다) · 값은 그대로 반환', async () => {
+  mockHasSession.mockResolvedValue(true);
+  mockGet.mockImplementation(async () => { mockGen.mockReturnValue(2); return WIRE; }); // 응답 전에 로그아웃(세대 bump)
+  const me = await fetchMe();
+  expect(me.id).toBe('7');
+  expect(mockSetUser).not.toHaveBeenCalled();
+  expect(mockSentry).not.toHaveBeenCalled();
+});
+
+it('로그아웃(session.logOut) = 해제 + 기기 id 재생성(공부 #242 2 — 이전 회원 귀속 방지) (소스 잠금: RNFB 없이)', () => {
   const s = readFileSync('src/lib/auth/session.ts', 'utf8');
   const fn = s.slice(s.indexOf('export async function logOut'));
   expect(fn).toContain('setAnalyticsUser(null)');
-  expect(fn).not.toContain('resetAnalyticsDevice');
+  expect(fn).toContain('resetAnalyticsDevice()');
   // 화면 코드에서 식별 API 직접 호출 0 — 세 지점뿐
   const { execSync } = jest.requireActual<typeof import('child_process')>('child_process');
   const callers = execSync("git grep -l 'setAnalyticsUser\\|resetAnalyticsDevice' -- 'src/**/*.ts' 'src/**/*.tsx' ':!src/**/__tests__/**'", { encoding: 'utf8' }).trim().split('\n').sort();
