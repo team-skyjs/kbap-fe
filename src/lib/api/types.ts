@@ -68,6 +68,8 @@ export interface User {
   currency?: string | null;
   /** P-384(KB-442): 스캔 쿼터 — 서버 정본. null = 구서버(필드 부재)·판별 불가 → 게이트·넛지 없음. */
   scanQuota?: ScanQuota | null;
+  /** KB-729: 프로필 설문을 현재 문항 버전으로 제출했나 — 서버 정본(KB-728). null = 구서버(필드 부재) → 시트 없음. 게스트 mock은 생략. */
+  surveyCompleted?: boolean | null;
 }
 
 export interface ScanQuota {

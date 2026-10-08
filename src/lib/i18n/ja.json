@@ -1060,5 +1060,76 @@
     "emptyTitle": "まだお問い合わせはありません",
     "notFound": "このお問い合わせは見つかりません。",
     "teamName": "K-Bapチーム"
+  },
+  "survey": {
+    "title": "K-Bapをもっとあなたに合わせるために",
+    "sub": "1分で終わる簡単な質問です。",
+    "q": {
+      "ageBand": "年代を教えてください",
+      "gender": "性別",
+      "acquisition": "K-Bapをどこで知りましたか？",
+      "situation": "今の状況は？",
+      "tripTiming": "旅行はいつですか？",
+      "tripDuration": "滞在期間は？",
+      "purpose": "K-Bapを主に何に使いたいですか？",
+      "foodAffinity": "韓国料理はどのくらい好きですか？"
+    },
+    "opt": {
+      "ageBand": {
+        "TEENS": "10代",
+        "TWENTIES": "20代",
+        "THIRTIES": "30代",
+        "FORTIES": "40代",
+        "FIFTIES_PLUS": "50代以上"
+      },
+      "gender": {
+        "FEMALE": "女性",
+        "MALE": "男性",
+        "OTHER": "その他",
+        "UNDISCLOSED": "回答しない"
+      },
+      "acquisition": {
+        "STORE_SEARCH": "アプリストアの検索",
+        "SNS_AD": "SNS広告",
+        "FRIEND": "友人の紹介",
+        "BLOG_VIDEO": "ブログ・動画",
+        "OTHER": "その他"
+      },
+      "situation": {
+        "TRAVELING_NOW": "今、韓国を旅行中",
+        "TRIP_PLANNED": "韓国旅行を計画中",
+        "LIVING_IN_KOREA": "韓国に住んでいる",
+        "INTERESTED_NO_PLAN": "興味はあるが予定はない"
+      },
+      "tripTiming": {
+        "DATE_FIXED": "日程が決まっている",
+        "THIS_YEAR": "今年中",
+        "SOMEDAY": "いつか"
+      },
+      "tripDuration": {
+        "UP_TO_3_DAYS": "3日以内",
+        "ONE_WEEK": "1週間ほど",
+        "TWO_WEEKS": "2週間ほど",
+        "MONTH_PLUS": "1か月以上"
+      },
+      "purpose": {
+        "MENU_READING": "メニューを読む",
+        "ALLERGY_AVOIDANCE": "アレルゲンを避ける",
+        "EXPLORE_FOOD": "新しい料理を探す",
+        "OTHER": "その他"
+      }
+    },
+    "affinity": {
+      "1": "あまり",
+      "2": "少し",
+      "3": "ふつう",
+      "4": "好き",
+      "5": "大好き"
+    },
+    "next": "次へ",
+    "back": "戻る",
+    "submit": "完了",
+    "retry": "もう一度",
+    "error": "回答を保存できませんでした。もう一度お試しください。"
   }
 }

@@ -1060,5 +1060,76 @@
     "emptyTitle": "Belum ada pertanyaan",
     "notFound": "Pertanyaan ini tidak tersedia.",
     "teamName": "Tim K-Bap"
+  },
+  "survey": {
+    "title": "Bantu K-Bap lebih cocok untukmu",
+    "sub": "Beberapa pertanyaan singkat — kurang dari semenit.",
+    "q": {
+      "ageBand": "Berapa usiamu?",
+      "gender": "Jenis kelamin",
+      "acquisition": "Dari mana kamu tahu K-Bap?",
+      "situation": "Bagaimana situasimu sekarang?",
+      "tripTiming": "Kapan perjalananmu?",
+      "tripDuration": "Berapa lama kamu akan tinggal?",
+      "purpose": "Untuk apa kamu terutama memakai K-Bap?",
+      "foodAffinity": "Seberapa suka kamu dengan makanan Korea?"
+    },
+    "opt": {
+      "ageBand": {
+        "TEENS": "Di bawah 20",
+        "TWENTIES": "20-an",
+        "THIRTIES": "30-an",
+        "FORTIES": "40-an",
+        "FIFTIES_PLUS": "50 ke atas"
+      },
+      "gender": {
+        "FEMALE": "Perempuan",
+        "MALE": "Laki-laki",
+        "OTHER": "Lainnya",
+        "UNDISCLOSED": "Tidak ingin menjawab"
+      },
+      "acquisition": {
+        "STORE_SEARCH": "Pencarian di app store",
+        "SNS_AD": "Iklan media sosial",
+        "FRIEND": "Rekomendasi teman",
+        "BLOG_VIDEO": "Blog atau video",
+        "OTHER": "Lainnya"
+      },
+      "situation": {
+        "TRAVELING_NOW": "Sedang berwisata di Korea",
+        "TRIP_PLANNED": "Merencanakan perjalanan ke Korea",
+        "LIVING_IN_KOREA": "Tinggal di Korea",
+        "INTERESTED_NO_PLAN": "Hanya tertarik, belum ada rencana"
+      },
+      "tripTiming": {
+        "DATE_FIXED": "Tanggal sudah pasti",
+        "THIS_YEAR": "Tahun ini",
+        "SOMEDAY": "Suatu saat"
+      },
+      "tripDuration": {
+        "UP_TO_3_DAYS": "Maksimal 3 hari",
+        "ONE_WEEK": "Sekitar seminggu",
+        "TWO_WEEKS": "Sekitar dua minggu",
+        "MONTH_PLUS": "Sebulan atau lebih"
+      },
+      "purpose": {
+        "MENU_READING": "Membaca menu",
+        "ALLERGY_AVOIDANCE": "Menghindari alergen",
+        "EXPLORE_FOOD": "Menemukan hidangan baru",
+        "OTHER": "Lainnya"
+      }
+    },
+    "affinity": {
+      "1": "Kurang suka",
+      "2": "Sedikit",
+      "3": "Biasa saja",
+      "4": "Suka",
+      "5": "Sangat suka"
+    },
+    "next": "Lanjut",
+    "back": "Kembali",
+    "submit": "Selesai",
+    "retry": "Coba lagi",
+    "error": "Jawaban tidak tersimpan. Silakan coba lagi."
   }
 }

@@ -73,7 +73,7 @@ it('user property = user_info_ 접두 — 구 키는 드롭(화이트리스트�
 });
 
 it('전 이벤트가 도메인 접두 규칙 준수 — 규칙 주석도 소스에 상비', () => {
-  const DOMAINS = ['app', 'auth', 'onboarding', 'scan', 'order', 'owner', 'food', 'search', 'review', 'community', 'profile', 'push', 'error'];
+  const DOMAINS = ['app', 'auth', 'onboarding', 'scan', 'order', 'owner', 'food', 'search', 'review', 'community', 'profile', 'push', 'error', 'survey']; // KB-729: survey_* (기획안 이벤트명 그대로)
   for (const name of Object.values(EVENTS)) {
     expect(DOMAINS.some((d) => name.startsWith(`${d}_`))).toBe(true);
   }

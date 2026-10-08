@@ -1060,5 +1060,76 @@
     "emptyTitle": "Aún no tienes consultas",
     "notFound": "Esta consulta no está disponible.",
     "teamName": "Equipo K-Bap"
+  },
+  "survey": {
+    "title": "Ayúdanos a adaptar K-Bap a ti",
+    "sub": "Unas preguntas rápidas: menos de un minuto.",
+    "q": {
+      "ageBand": "¿Cuántos años tienes?",
+      "gender": "Género",
+      "acquisition": "¿Cómo conociste K-Bap?",
+      "situation": "¿Cuál es tu situación ahora?",
+      "tripTiming": "¿Cuándo es tu viaje?",
+      "tripDuration": "¿Cuánto tiempo te quedarás?",
+      "purpose": "¿Para qué usarás K-Bap principalmente?",
+      "foodAffinity": "¿Cuánto te gusta la comida coreana?"
+    },
+    "opt": {
+      "ageBand": {
+        "TEENS": "Menos de 20",
+        "TWENTIES": "20–29",
+        "THIRTIES": "30–39",
+        "FORTIES": "40–49",
+        "FIFTIES_PLUS": "50 o más"
+      },
+      "gender": {
+        "FEMALE": "Mujer",
+        "MALE": "Hombre",
+        "OTHER": "Otro",
+        "UNDISCLOSED": "Prefiero no decirlo"
+      },
+      "acquisition": {
+        "STORE_SEARCH": "Búsqueda en la tienda de apps",
+        "SNS_AD": "Anuncio en redes sociales",
+        "FRIEND": "Un amigo me lo contó",
+        "BLOG_VIDEO": "Blog o video",
+        "OTHER": "Otro"
+      },
+      "situation": {
+        "TRAVELING_NOW": "Viajando por Corea ahora",
+        "TRIP_PLANNED": "Planeando un viaje a Corea",
+        "LIVING_IN_KOREA": "Vivo en Corea",
+        "INTERESTED_NO_PLAN": "Solo interés, sin planes aún"
+      },
+      "tripTiming": {
+        "DATE_FIXED": "Fechas fijadas",
+        "THIS_YEAR": "Este año",
+        "SOMEDAY": "Algún día"
+      },
+      "tripDuration": {
+        "UP_TO_3_DAYS": "Hasta 3 días",
+        "ONE_WEEK": "Una semana aprox.",
+        "TWO_WEEKS": "Dos semanas aprox.",
+        "MONTH_PLUS": "Un mes o más"
+      },
+      "purpose": {
+        "MENU_READING": "Leer menús",
+        "ALLERGY_AVOIDANCE": "Evitar alérgenos",
+        "EXPLORE_FOOD": "Descubrir platos nuevos",
+        "OTHER": "Otro"
+      }
+    },
+    "affinity": {
+      "1": "No mucho",
+      "2": "Un poco",
+      "3": "Está bien",
+      "4": "Me gusta",
+      "5": "Me encanta"
+    },
+    "next": "Siguiente",
+    "back": "Atrás",
+    "submit": "Listo",
+    "retry": "Reintentar",
+    "error": "No pudimos guardar tus respuestas. Inténtalo de nuevo."
   }
 }

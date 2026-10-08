@@ -1060,5 +1060,76 @@
     "emptyTitle": "还没有反馈",
     "notFound": "找不到这条反馈。",
     "teamName": "K-Bap 团队"
+  },
+  "survey": {
+    "title": "让 K-Bap 更懂你",
+    "sub": "几个简单的问题，不到一分钟。",
+    "q": {
+      "ageBand": "你的年龄段？",
+      "gender": "性别",
+      "acquisition": "你是怎么知道 K-Bap 的？",
+      "situation": "你现在的情况是？",
+      "tripTiming": "什么时候出行？",
+      "tripDuration": "打算停留多久？",
+      "purpose": "你主要想用 K-Bap 做什么？",
+      "foodAffinity": "你有多喜欢韩餐？"
+    },
+    "opt": {
+      "ageBand": {
+        "TEENS": "20 岁以下",
+        "TWENTIES": "20 多岁",
+        "THIRTIES": "30 多岁",
+        "FORTIES": "40 多岁",
+        "FIFTIES_PLUS": "50 岁及以上"
+      },
+      "gender": {
+        "FEMALE": "女",
+        "MALE": "男",
+        "OTHER": "其他",
+        "UNDISCLOSED": "不愿透露"
+      },
+      "acquisition": {
+        "STORE_SEARCH": "应用商店搜索",
+        "SNS_AD": "社交媒体广告",
+        "FRIEND": "朋友推荐",
+        "BLOG_VIDEO": "博客或视频",
+        "OTHER": "其他"
+      },
+      "situation": {
+        "TRAVELING_NOW": "正在韩国旅行",
+        "TRIP_PLANNED": "正在计划韩国之旅",
+        "LIVING_IN_KOREA": "住在韩国",
+        "INTERESTED_NO_PLAN": "只是感兴趣，暂无计划"
+      },
+      "tripTiming": {
+        "DATE_FIXED": "日期已定",
+        "THIS_YEAR": "今年内",
+        "SOMEDAY": "将来某天"
+      },
+      "tripDuration": {
+        "UP_TO_3_DAYS": "3 天以内",
+        "ONE_WEEK": "一周左右",
+        "TWO_WEEKS": "两周左右",
+        "MONTH_PLUS": "一个月以上"
+      },
+      "purpose": {
+        "MENU_READING": "看懂菜单",
+        "ALLERGY_AVOIDANCE": "避开过敏原",
+        "EXPLORE_FOOD": "发现新菜品",
+        "OTHER": "其他"
+      }
+    },
+    "affinity": {
+      "1": "不太喜欢",
+      "2": "有一点",
+      "3": "还行",
+      "4": "喜欢",
+      "5": "非常喜欢"
+    },
+    "next": "下一步",
+    "back": "上一步",
+    "submit": "完成",
+    "retry": "重试",
+    "error": "无法保存你的回答，请重试。"
   }
 }

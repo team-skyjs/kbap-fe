@@ -54,6 +54,8 @@ export interface MyProfileWire {
   scanCount?: number;
   freeScanLimit?: number;
   scanUnlocked?: boolean;
+  /** KB-728: 설문 제출 여부(현재 문항 버전) — 부재 = 구서버 */
+  surveyCompleted?: boolean;
   /** 잔여 무료 횟수 — 무제한(unlocked)이면 null(Swagger). -1은 문서에 없지만 무제한 센티널로 방어. */
   scanRemaining?: number | null;
 }
@@ -177,6 +179,7 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     })),
     rank: wire.ranking != null ? adaptRanking(wire.ranking) : null,
     onboardingCompleted: wire.onboardingCompleted,
+    surveyCompleted: typeof wire.surveyCompleted === 'boolean' ? wire.surveyCompleted : null, // KB-729: 구서버 = null(시트 없음) — 로컬 플래그로 판별 금지
     // P-243: 식이 카테고리 서버 정본(BE #179) — 부재(구응답) = 빈 배열
     dietCategories: Array.isArray(wire.dietCategories) ? wire.dietCategories : [],
     scanQuota: adaptScanQuota(wire),

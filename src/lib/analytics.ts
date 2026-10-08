@@ -5,8 +5,8 @@
  * ── 네이밍 규칙 (P-215/KB-316 — 태소노미 CSV와 1:1) ────────────────
  * 이벤트 = `<도메인>_<행동>`. 도메인 =
  *   app · auth · onboarding · scan · order · owner · food · search ·
- *   review · community · profile · push · error
- * user property = `user_info_` 접두 (예: user_info_country).
+ *   review · community · profile · push · error · survey(KB-729 프로필 설문 — 기획안 이벤트명 survey_view/survey_submit 그대로)
+ * user property = `user_info_` 접두 (예: user_info_country). 예외 = KB-729 설문 답 `survey_*`(기획안 지정 키 — 허용 목록에 명시).
  * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
  *
  * ── 1차 이벤트 스키마 (이 표가 정본 — 커뮤니티 등 이벤트 추가는 여기만) ──
@@ -81,6 +81,8 @@ export const EVENTS = {
   push_pref_toggle: 'push_pref_toggle',
   // KB-630: 알림 켜기 흐름 클릭 3종. CSV 등재 예정
   push_permission: 'push_permission', // OS 팝업 결과·설정 열기
+  survey_view: 'survey_view', // KB-729: 프로필 설문 시트 노출
+  survey_submit: 'survey_submit', // KB-729: 제출 성공(답은 user property)
   push_consent_response: 'push_consent_response', // 광고성 동의 시트 클릭
   push_settings_tap: 'push_settings_tap', // 알림 설정 화면 보조 클릭(토글은 push_pref_toggle)
   profile_avoid_update: 'profile_avoid_update',
@@ -138,6 +140,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   push_pref_toggle: ['key', 'on'],
   // KB-630 — 값은 enum만(문구·URL 금지). state 체계는 scan_permission 준용.
   push_permission: ['state'], // grant|deny|settings_open
+  survey_view: [],
+  survey_submit: [],
   push_consent_response: ['action', 'target'], // action: check|uncheck|full_text|blocked|later · target: privacy|receive(check·uncheck·full_text만)
   push_settings_tap: ['target'], // news_off_cancel|consent_full|retry_save|retry_load
   profile_avoid_update: ['count', 'delta', 'via'], // via: manual|preset (항목명 금지 — 개수만)
@@ -155,7 +159,11 @@ const ALLOWED: Record<EventName, readonly string[]> = {
 /** P-144 user property 허용 키 — CSV와 1:1. country는 alpha-2 코드(멘토 확정
  *  정본 — KB-265 통과 기준 = 닉네임·이메일·재료명 미전송, 개수·enum·코드는 허용).
  *  currency는 ⑪ 도입 후(이번 범위 아님). ip_country는 SDK 자동. */
-const ALLOWED_USER_PROPS = ['user_info_country', 'user_info_lang', 'user_info_os', 'user_info_os_version', 'user_info_spice_level', 'user_info_avoid_count', 'user_info_is_registered', 'user_info_currency'] as const;
+const ALLOWED_USER_PROPS = [
+  'user_info_country', 'user_info_lang', 'user_info_os', 'user_info_os_version', 'user_info_spice_level', 'user_info_avoid_count', 'user_info_is_registered', 'user_info_currency',
+  // KB-729 프로필 설문 — 서버 enum 코드 그대로(PII 아님·자유 텍스트 없음). 분기 미해당(tripTiming·tripDuration)은 보내지 않는다
+  'survey_age_band', 'survey_gender', 'survey_acquisition', 'survey_situation', 'survey_trip_timing', 'survey_trip_duration', 'survey_purpose', 'survey_food_affinity',
+] as const;
 export type UserPropKey = (typeof ALLOWED_USER_PROPS)[number];
 
 const KEY = process.env.EXPO_PUBLIC_AMPLITUDE_API_KEY;

@@ -29,6 +29,8 @@ import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
+import { ProfileSurveySheet } from '@/features/survey/ProfileSurveySheet';
+import { shouldShowSurvey } from '@/lib/survey/profileSurvey';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -270,6 +272,10 @@ export default function Home() {
 
       {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
+
+      {/* KB-729: 가입 회원 1회 프로필 설문 — 서버 surveyCompleted===false일 때만(게스트·구서버 = 없음). 닫기 불가, 제출 성공 = 캐시 갱신으로 닫힘.
+          화면별 일회성 모달 큐(#243) 연결은 그 머지 뒤 후속 PR — 홈엔 현재 다른 일회성 모달이 없다 */}
+      <ProfileSurveySheet open={shouldShowSurvey(me)} />
     </View>
   );
 }
