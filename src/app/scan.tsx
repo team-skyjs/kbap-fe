@@ -43,6 +43,10 @@ import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
 
 // P-354(KB-516): 정렬 라벨 — 메뉴판 순 → 가격 높은순 → 가격 낮은순(시트 순서 동일)
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { recordScanSuccess } from '@/lib/reviewPrompt';
+import { useOneShotQueue, type QueueStep } from '@/lib/oneShotQueue';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 const SORT_LABEL_KEY: Record<ResultSortMode, string> = {
   menu: 'scan.sortMenu',
   priceDesc: 'scan.sortPriceDesc',
@@ -111,6 +115,12 @@ export default function Scan() {
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
+  const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
+  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화: 코치마크 → 알림 넛지 → (설문 KB-729) → 리뷰 유도
+  const coachDoneRef = useRef<(() => void) | null>(null);
+  const primerDoneRef = useRef<(() => void) | null>(null);
+  const settle = (ref: React.MutableRefObject<(() => void) | null>) => { const f = ref.current; ref.current = null; f?.(); };
+  const scanRecordedRef = useRef<Promise<unknown>>(Promise.resolve()); // 성공 카운트 저장 완료 → 리뷰 스텝 판정 순서 보장
   const [photo, setPhoto] = useState<Photo>(null);
   // ⑦(KB-137) 촬영/갤러리 파일 캐시 누적 방지 — 결과 오버레이가 photo.uri를
   // 렌더하므로 OCR 직후가 아니라 **표시 수명이 끝날 때** 삭제: 새 사진으로
@@ -265,13 +275,20 @@ export default function Scan() {
   const [nudgeMode, setNudgeMode] = useState<ScanNudgeMode>('primer');
   // Codex 리뷰: 결과 1회당 시트 1회 — 「나중에」 뒤 마커 탭→코치마크 닫힘이 판정을 다시 불러도 재노출 0. 새 스캔(카메라 복귀)에서 리셋.
   const nudgeShownRef = useRef(false);
-  const maybeShowPrimer = useCallback(() => {
-    if (!FLAGS.pushEnabled) return;
-    if (nudgeShownRef.current) return;
-    void decideScanNudge(isGuest).then((m) => {
-      if (m && !nudgeShownRef.current) { nudgeShownRef.current = true; setNudgeMode(m); setPushPrimer(true); }
-    });
-  }, [isGuest]);
+  // 큐 스텝: 알림 넛지 — 안 뜨면 false(다음 스텝), 뜨면 완전히 닫힌 뒤 done
+  const nudgeStep = useCallback((): QueueStep => ({
+    key: 'push-nudge',
+    present: async (done) => {
+      if (!FLAGS.pushEnabled || nudgeShownRef.current) return false;
+      const m = await decideScanNudge(isGuest);
+      if (!m || nudgeShownRef.current) return false;
+      nudgeShownRef.current = true;
+      primerDoneRef.current = done;
+      setNudgeMode(m);
+      setPushPrimer(true);
+      return true;
+    },
+  }), [isGuest]);
   // P-061①→P-062⓪ 보수: state 가드는 리렌더 전 연타를 못 막음(스테일 클로저) —
   // **ref 동기 가드**(진입 즉시 검사·세트)가 실차단, state는 시각적 disable 전용.
   const capturingRef = useRef(false);
@@ -301,21 +318,25 @@ export default function Scan() {
   // P-267(KB-377): 일회성 모달 직렬화 — 결과 도달마다 **한 흐름에서 순차 판정**.
   // 코치마크 우선, 뜨면 프라이머는 보류(코치 onClose에서 재평가). 코치마크가 없으면
   // (이번에 안 뜸·기존자 재도달) 프라이머 단독 판정 = 현행 시맨틱 무변.
+  const reviewStep = reviewPrompt.step; // useCallback 안정 — 훅 반환 객체 자체는 매 렌더 새것
+  // KB-730: 결과 도달마다 큐에 순서대로 — 코치마크(1회) → 넛지 → 리뷰 유도. 한 스텝이 완전히 닫혀야 다음(동시 present 절대 금지, KB-377)
   useEffect(() => {
-    if (phase !== 'result') { nudgeShownRef.current = false; return; }
-    void (async () => {
-      if (!coachChecked.current) {
+    if (phase !== 'result') { nudgeShownRef.current = false; modalQueue.clear(); return; }
+    modalQueue.add({
+      key: 'coach-mark',
+      present: async (done) => {
+        if (coachChecked.current) return false;
         coachChecked.current = true;
-        const show = await shouldShowCoachMark();
-        if (show) {
-          setCoachOpen(true);
-          markCoachSeen();
-          return; // 프라이머 보류 — 동시 present 절대 금지(KB-377 교착)
-        }
-      }
-      maybeShowPrimer();
-    })();
-  }, [phase, maybeShowPrimer]);
+        if (!(await shouldShowCoachMark())) return false;
+        coachDoneRef.current = done;
+        setCoachOpen(true);
+        markCoachSeen();
+        return true;
+      },
+    });
+    modalQueue.add(nudgeStep());
+    modalQueue.add(reviewStep('scan', { ready: scanRecordedRef.current }));
+  }, [phase, modalQueue, nudgeStep, reviewStep]); // 전부 안정(큐 ref·useCallback) — isGuest 전환 시 재평가는 종전(maybeShowPrimer 의존)과 동일
 
   useEffect(() => {
     if (Platform.OS !== 'android') return; // iOS는 카메라 콜백이 담당
@@ -369,6 +390,8 @@ export default function Scan() {
         setFx(res.fx); // P-242: v2 실환율 관통(스캔 1회 = 환율 1스냅샷)
         setScanPath(res.imagePath ?? ''); // P-252: 주문 이력 식별자
         setView('list'); // P-138⑤: 기본=List (예진 8/6 오너 결정 — P-071 대체)
+        // KB-730: 기기 로컬 스캔 성공 카운트(판정은 큐의 리뷰 스텝이 상태로 — 2회 이상 + 스캔 경로 미노출). 실패·에러 경로는 여기를 안 지난다
+        scanRecordedRef.current = recordScanSuccess().catch(() => {});
         setPhase('result');
       },
       onError: (e) => {
@@ -762,6 +785,7 @@ export default function Scan() {
           onClose={() => setSortSheet(false)}
         />
         {GateSheet}
+        <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
         {/* P-370(KB-533): 모달 컨텍스트 자체 토스트 호스트(스택 top) */}
         <TopToastHost />
         {/* P-267 Codex P1: 프라이머 트리거 = iOS는 onDismiss(네이티브 dismiss 완료
@@ -769,8 +793,8 @@ export default function Scan() {
             플랫폼 — 교착 자체가 iOS UIKit 이슈라 무해) */}
         <ScanCoachMark
           open={coachOpen}
-          onClose={() => { setCoachOpen(false); if (Platform.OS !== 'ios') maybeShowPrimer(); }}
-          onDismiss={Platform.OS === 'ios' ? maybeShowPrimer : undefined}
+          onClose={() => { setCoachOpen(false); if (Platform.OS !== 'ios') settle(coachDoneRef); }}
+          onDismiss={Platform.OS === 'ios' ? () => settle(coachDoneRef) : undefined}
           t={t}
         />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
@@ -804,7 +828,13 @@ export default function Scan() {
 
         {/* P-192: 푸시 프라이머 — 첫 스캔 완료 후 1회(미응답자만: 게스트 개방 대비 +
             온보딩 프라이머 이전 기존 회원 커버 — 응답 기록 시 재노출 0) */}
-        <PushPrimerModal surface="scan" mode={nudgeMode} open={pushPrimer} onDone={() => setPushPrimer(false)} />
+        <PushPrimerModal
+          surface="scan"
+          mode={nudgeMode}
+          open={pushPrimer}
+          onDone={() => { setPushPrimer(false); if (Platform.OS !== 'ios') settle(primerDoneRef); }}
+          onDismiss={Platform.OS === 'ios' ? () => settle(primerDoneRef) : undefined}
+        />
       </View>
     );
   }

@@ -1128,5 +1128,11 @@
     "later": "Not now",
     "retry": "Try again",
     "error": "Couldn't save your answers. Please try again."
+  },
+  "reviewPrompt": {
+    "title": "Is K-Bap helping you?",
+    "positive": "Yes, I like it",
+    "negative": "Not really",
+    "later": "Later"
   }
 }

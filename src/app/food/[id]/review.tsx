@@ -44,6 +44,9 @@ import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/
 import { openAppSettings } from '@/lib/openExternal';
 import { useUploadAbort } from '@/lib/useUploadAbort';
 import { isUploadAborted } from '@/lib/api/uploadAbort';
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
 // ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
@@ -123,11 +126,15 @@ function ReviewComposeScreen() {
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
   const nextUploadSignal = useUploadAbort(); // KB-711: 올리는 중 화면을 떠나면 사진 업로드 취소
+  const reviewPrompt = useReviewPrompt(); // KB-730: 등록 완료 모달 뒤 리뷰 유도
+  const modalQueue = useOneShotQueue(); // KB-730: 화면 일회성 모달 큐(완료 모달이 완전히 닫힌 뒤 유도 시트)
+  const [confirmClosed, setConfirmClosed] = useState(false); // 완료 모달 표시만 접는다 — submitted는 유지(이탈 확인 재무장·Post 재활성 방지)
+  const runAfterPosted = () => modalQueue.add(reviewPrompt.step('review', { after: () => router.back() }));
   // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
   // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
   const formShown = !isGuest && !(editing && !editReviewData);
   const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
-  const canPost = canPostReview(rating) && !posting;
+  const canPost = canPostReview(rating) && !posting && !submitted; // KB-730: 등록 뒤 Post 재활성 0(중복 리뷰 — P-168 류)
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
   // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
@@ -579,7 +586,15 @@ function ReviewComposeScreen() {
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
       {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
       <LeaveConfirmModal {...leave.modal} />
-      <Modal visible={submitted} transparent animationType="fade" onRequestClose={() => router.back()}>
+      <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
+      {/* KB-730: Done = 모달 표시만 접고(submitted 유지) iOS는 onDismiss(완전히 닫힌 뒤)에서 유도 시트 큐 — dismiss 직후 present = 프리즈(#236 2R) */}
+      <Modal
+        visible={submitted && !confirmClosed}
+        transparent
+        animationType="fade"
+        onRequestClose={() => router.back()}
+        onDismiss={Platform.OS === 'ios' ? () => { if (confirmClosed) runAfterPosted(); } : undefined}
+      >
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard} testID="review-posted-confirm">
             <View style={styles.doneCheck}>
@@ -589,7 +604,16 @@ function ReviewComposeScreen() {
             <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: food?.name ?? '' })}</Text>
             <View style={{ marginTop: 6 }}>
               {/* P-211 ①: 진입점 무관 "Done" 단일 문구 — 피드 발 작성은 목적지가 상세가 아님 */}
-              <Btn onPress={() => router.back()}>{t('review.done')}</Btn>
+              {/* KB-730: 완료 모달을 닫은 **뒤** 리뷰 유도 시트(겹침 0) — 조건 미달이면 바로 복귀 */}
+              <Btn
+                onPress={() => {
+                  setConfirmClosed(true);
+                  if (Platform.OS !== 'ios') runAfterPosted(); // Android: onDismiss 미지원
+                }}
+                testID="review-posted-done"
+              >
+                {t('review.done')}
+              </Btn>
             </View>
           </View>
         </View>

@@ -27,11 +27,14 @@ import { finishAfterOsSettings, type ScanNudgeMode } from '@/lib/push/scanNudge'
 export function PushPrimerModal({
   open,
   onDone,
+  onDismiss,
   surface,
   mode = 'primer',
 }: {
   open: boolean;
   onDone: () => void;
+  /** KB-730: 완전히 닫힌 뒤(iOS) — 스캔 일회성 모달 큐의 다음 스텝 */
+  onDismiss?: () => void;
   /** P-214: 노출 표면 — 승낙률 비교. KB-497: 스캔 결과만 남음. */
   surface: 'scan';
   mode?: ScanNudgeMode;
@@ -59,6 +62,7 @@ export function PushPrimerModal({
         confirmLabel={t(denied ? 'notif.osOffCta' : 'push.primerYes')}
         onConfirm={confirm}
         onClose={onDone}
+        onDismiss={onDismiss}
       />
     );
   }
