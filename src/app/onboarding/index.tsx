@@ -45,6 +45,7 @@ import {
 import { PepperOn, PepperOff } from '@/components/design4Assets';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
+import { ProgressDots } from '@/components/ProgressDots';
 import { useShake } from '@/lib/useShake';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -824,13 +825,7 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
 function ObTitle({ title, sub, dotCount, dotActive }: { title: string; sub?: string; dotCount?: number; dotActive?: number }) {
   return (
     <View style={{ marginBottom: 18, gap: 8 }}>
-      {dotCount != null && dotActive != null && (
-        <View style={styles.dotRow} testID="ob-dots">
-          {Array.from({ length: dotCount }).map((_, i) => (
-            <View key={i} style={[styles.dot, i === dotActive && styles.dotOn]} testID={`ob-dot-${i}-${i === dotActive ? 'on' : 'off'}`} />
-          ))}
-        </View>
-      )}
+      {dotCount != null && dotActive != null && <ProgressDots count={dotCount} active={dotActive} />}
       <Text style={styles.obTitle}>{title}</Text>
       {!!sub && <Text style={styles.obSub}>{sub}</Text>}
     </View>
@@ -906,9 +901,6 @@ const styles = StyleSheet.create({
   // titles (KB-433 §3: 20/700 + 14/500 #9196A1 + 진행 점)
   obTitle: { fontSize: 20, fontWeight: '700', color: C.ink },
   obSub: { fontSize: 14, fontWeight: '500', color: C.ink3, lineHeight: 21, marginTop: 0 }, // A-NT-03/04
-  dotRow: { flexDirection: 'row', gap: 4 },
-  dot: { width: 17, height: 4, borderRadius: 8, backgroundColor: C.line2 },
-  dotOn: { backgroundColor: C.primary },
 
   // fields
   // KB-149 프로필 사진 (edit.tsx avatar 패턴)

@@ -1060,5 +1060,77 @@
     "emptyTitle": "아직 보낸 문의가 없어요",
     "notFound": "이 문의를 찾을 수 없어요.",
     "teamName": "K-Bap 팀"
+  },
+  "survey": {
+    "title": "K-Bap을 더 잘 맞추려고요",
+    "sub": "1분이면 끝나는 간단한 질문이에요.",
+    "q": {
+      "ageBand": "나이대를 알려주세요",
+      "gender": "성별",
+      "acquisition": "K-Bap을 어떻게 알게 되셨나요?",
+      "situation": "지금 어떤 상황이신가요?",
+      "tripTiming": "여행은 언제인가요?",
+      "tripDuration": "얼마나 머무시나요?",
+      "purpose": "K-Bap을 주로 어디에 쓰고 싶으세요?",
+      "foodAffinity": "한식을 얼마나 좋아하세요?"
+    },
+    "opt": {
+      "ageBand": {
+        "TEENS": "10대",
+        "TWENTIES": "20대",
+        "THIRTIES": "30대",
+        "FORTIES": "40대",
+        "FIFTIES_PLUS": "50대 이상"
+      },
+      "gender": {
+        "FEMALE": "여성",
+        "MALE": "남성",
+        "OTHER": "기타",
+        "UNDISCLOSED": "밝히지 않음"
+      },
+      "acquisition": {
+        "STORE_SEARCH": "앱 스토어 검색",
+        "SNS_AD": "SNS 광고",
+        "FRIEND": "지인 소개",
+        "BLOG_VIDEO": "블로그·영상",
+        "OTHER": "기타"
+      },
+      "situation": {
+        "TRAVELING_NOW": "지금 한국 여행 중",
+        "TRIP_PLANNED": "한국 여행 계획 중",
+        "LIVING_IN_KOREA": "한국에 살고 있어요",
+        "INTERESTED_NO_PLAN": "관심만 있고 계획은 없어요"
+      },
+      "tripTiming": {
+        "DATE_FIXED": "날짜가 정해졌어요",
+        "THIS_YEAR": "올해 안에",
+        "SOMEDAY": "언젠가"
+      },
+      "tripDuration": {
+        "UP_TO_3_DAYS": "3일 이내",
+        "ONE_WEEK": "일주일 정도",
+        "TWO_WEEKS": "2주 정도",
+        "MONTH_PLUS": "한 달 이상"
+      },
+      "purpose": {
+        "MENU_READING": "메뉴 읽기",
+        "ALLERGY_AVOIDANCE": "알레르기 피하기",
+        "EXPLORE_FOOD": "새로운 음식 찾기",
+        "OTHER": "기타"
+      }
+    },
+    "affinity": {
+      "1": "별로예요",
+      "2": "조금",
+      "3": "괜찮아요",
+      "4": "좋아해요",
+      "5": "정말 좋아해요"
+    },
+    "next": "다음",
+    "back": "이전",
+    "submit": "완료",
+    "later": "나중에",
+    "retry": "다시 시도",
+    "error": "답변을 저장하지 못했어요. 다시 시도해 주세요."
   }
 }

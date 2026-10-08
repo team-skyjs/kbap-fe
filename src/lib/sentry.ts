@@ -66,6 +66,15 @@ export function reportProfileContractDrift(missing: string[]): void {
   });
 }
 
+/** KB-729: 설문 제출 400 = 서버 계약과 앱 body가 어긋난 코드 결함(대소문자 enum·분기 null·정수 범위). 시트는 유지되고
+ *  사용자는 재시도만 보지만, 원인은 여기서만 보인다. PII 0 — 응답 code·status만(답 내용은 올리지 않는다). */
+export function reportSurveyContractError(status: number | undefined, code: string | undefined): void {
+  Sentry.captureMessage('survey_submit_rejected', {
+    level: 'error',
+    tags: { status: String(status ?? 'none'), code: code ?? 'none' },
+  });
+}
+
 /** KB-518 공유 실패 진단(P-399) — `catch { return 'error' }`가 에러를 통째로 버려서
  *  b34 100% 실패의 원인을 어디서도 볼 수 없었다(Console·Metro·Sentry 전부 깜깜).
  *  **어느 단계에서 깨졌는지**가 핵심이라 step을 태그로 올린다. PII 0 — 파일 경로·URI·
