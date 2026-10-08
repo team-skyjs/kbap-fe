@@ -5,6 +5,7 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = jest.requireActual<typeof import('react-native')>('react-native');
@@ -52,9 +53,12 @@ jest.mock('@/features/review/FeedCard', () => ({ FeedCard: () => null }));
 jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({ isLoading: false, isError: false, error: null, refetch: jest.fn(), data: { authenticated: true, recent: [] } }),
 }));
+// members/me: 렌더(useMe)와 판정(fetchMe — 큐 스텝이 ensureQueryData로 읽음) 둘 다 mockMe
 const mockMe = jest.fn();
-let mockMeError = false;
-jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe(), isError: mockMeError }) }));
+jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: mockMe() }), fetchMe: async () => mockMe() }));
+jest.mock('@/lib/i18n/useAppLanguage', () => ({ useAppLanguage: () => 'en' }));
+// 스텝이 쓰는 싱글턴 queryClient = 이 테스트의 mockQc(테스트마다 새 인스턴스)
+jest.mock('@/lib/queryClient', () => ({ get queryClient() { return mockQc; } }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data: { pages: [] }, hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }) }));
 let mockResolveSplash: () => void = () => {};
@@ -67,11 +71,13 @@ import Home from '../(tabs)/index';
 import { _resetSurveyHiddenForTest, hideSurveyThisRun } from '@/lib/survey/surveySession';
 /* eslint-enable import/first */
 
+let mockQc: QueryClient;
+const wrap = () => <QueryClientProvider client={mockQc}><Home /></QueryClientProvider>;
 const trees: ReactTestRenderer[] = [];
 const mount = (me: Record<string, unknown>) => {
   mockMe.mockReturnValue(me);
   let t!: ReactTestRenderer;
-  act(() => { t = renderer.create(<Home />); });
+  act(() => { t = renderer.create(wrap()); });
   trees.push(t);
   return t;
 };
@@ -81,7 +87,7 @@ const drain = async () => { for (let i = 0; i < 8; i++) await Promise.resolve();
 const splash = async () => { await act(async () => { mockResolveSplash(); await drain(); }); };
 const render = async (me: Record<string, unknown>) => { mount(me); await splash(); return lastOpen(); };
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
-beforeEach(() => { jest.clearAllMocks(); _resetSurveyHiddenForTest(); mockFocused = true; mockMeError = false; mockBlur = () => {}; mockGate.mockReturnValue({ mode: 'pass' }); });
+beforeEach(() => { jest.clearAllMocks(); _resetSurveyHiddenForTest(); mockFocused = true; mockBlur = () => {}; mockGate.mockReturnValue({ mode: 'pass' }); mockQc = new QueryClient({ defaultOptions: { queries: { retry: false } } }); });
 
 it('surveyCompleted=false 회원 = 시트 open · true = 닫힘 · 게스트(필드 없음) = 닫힘 · 구서버(null) = 닫힘 · 온보딩 미완 = 닫힘', async () => {
   expect(await render({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true })).toBe(true);
@@ -133,20 +139,14 @@ it('KB-733: 스텝이 기다리는 동안(스플래시 전) 블러되면 — 걷
   expect(await render(me)).toBe(true);
 });
 
-it('KB-733: 콜드 스타트 — 포커스가 members/me보다 먼저(아직 모름)여도 소모하지 않고 기다렸다가 도착 뒤 true · 조회 실패(isError)면 판정 끝 = false', async () => {
-  mockMe.mockReturnValue(undefined);
+it('KB-733: 콜드 스타트 — 포커스가 members/me보다 먼저여도 판정은 ensureQueryData(캐시/재조회)로 → 렌더 me가 아직 undefined여도 true', async () => {
+  const me = { id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true };
+  mockMe.mockReturnValueOnce(undefined).mockReturnValue(me); // 첫 렌더만 undefined, fetchMe·이후 렌더는 회원
   let t!: ReactTestRenderer;
-  act(() => { t = renderer.create(<Home />); });
+  act(() => { t = renderer.create(wrap()); });
   trees.push(t);
   await splash();
-  expect(lastOpen()).toBe(false); // 아직 모름 — 안 띄움이 아니라 대기
-  mockMe.mockReturnValue({ id: '1', restrictions: [], surveyCompleted: false, onboardingCompleted: true });
-  await act(async () => { t.update(<Home />); await drain(); });
   expect(lastOpen()).toBe(true);
-
-  mockMe.mockReturnValue(undefined);
-  mockMeError = true;
-  expect(await render({} as never)).toBe(false);
 });
 
 it('KB-733: 큐 — 제출로 닫혀 onClosed가 오면 차례 반납(open=false 유지) · 같은 포커스에서 다시 뜨지 않는다', async () => {
@@ -155,7 +155,7 @@ it('KB-733: 큐 — 제출로 닫혀 onClosed가 오면 차례 반납(open=false
   const onClosed = mockSheet.mock.calls.at(-1)?.[2] as () => void;
   expect(typeof onClosed).toBe('function');
   mockMe.mockReturnValue({ ...me, surveyCompleted: true }); // 제출 성공 = 캐시 true
-  act(() => { trees.at(-1)!.update(<Home />); });
+  act(() => { trees.at(-1)!.update(wrap()); });
   expect(lastOpen()).toBe(false);
   await act(async () => { onClosed(); await drain(); });
   expect(lastOpen()).toBe(false);

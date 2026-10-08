@@ -67,18 +67,18 @@ export default function Home() {
   const badgeTop = exploreY != null && scanRowBottom != null ? headerH + exploreY + scanRowBottom + BADGE_GAP : null;
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
-  const { data: me, isError: meError } = useMe();
-  // KB-733: 홈의 일회성 모달 큐(oneShotQueue, KB-730) — 포커스마다 등록·블러에 폐기. 등록 순서 고정: 코치마크 → 푸시 넛지(홈에 생기면) → 설문 → 리뷰 유도(홈 트리거가 생기면).
-  // 설문 스텝(useProfileSurveyStep): 스플래시·members/me 판정 가능까지 기다린 뒤 서버 surveyCompleted===false 회원에게만, 이번 실행 "나중에"·강제 업데이트 게이트면 건너뜀.
-  // 딥링크·푸시 콜드 스타트((tabs) 앵커가 index를 밑에 마운트)는 블러의 cancelPending이 막는다 — 종전 homeFocused 임시 가드(/review #244 4) 대체.
+  const { data: me } = useMe();
+  // KB-733: 홈의 일회성 모달 큐(oneShotQueue, KB-730) — 포커스마다 등록·블러에 clear(대기 스텝 폐기 + 판정 전 대기 abort).
+  // 등록 순서 고정: 코치마크 → 푸시 넛지(홈에 생기면) → 설문 → 리뷰 유도(홈 트리거가 생기면).
+  // 설문 스텝(useProfileSurveyStep): 스플래시·members/me(판정 시점에 캐시/재조회)를 기다린 뒤 서버 surveyCompleted===false 회원에게만.
+  // 딥링크·푸시 콜드 스타트((tabs) 앵커가 index를 밑에 마운트)는 블러의 clear가 막는다 — 종전 homeFocused 임시 가드(/review #244 4) 대체.
   const modalQueue = useOneShotQueue();
-  const survey = useProfileSurveyStep({ me, meKnown: me !== undefined || meError });
+  const survey = useProfileSurveyStep();
   const surveyStep = survey.step;
-  const cancelSurvey = survey.cancelPending;
   useFocusEffect(useCallback(() => {
     modalQueue.add(surveyStep());
-    return () => { cancelSurvey(); modalQueue.clear(); };
-  }, [modalQueue, surveyStep, cancelSurvey]));
+    return () => modalQueue.clear();
+  }, [modalQueue, surveyStep]));
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
