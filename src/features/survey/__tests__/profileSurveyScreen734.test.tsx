@@ -1,5 +1,6 @@
 /**
  * KB-734 설문 전체 화면(구 KB-729 시트) — 한 화면 한 문항 · 선택 → SURVEY_ADVANCE.ms 뒤 자동 진행(동작 줄이기 = 즉시) · 재선택은 마지막 답만 ·
+ * 전환 직후 SURVEY_SETTLE.ms 안 탭 = 무시(공부 #246 1) · 마지막 문항도 지연 뒤 제출(지연 안 재선택 = 교체, 1회) ·
  * 뒤로(상단·Android 뒤로 가기) = 이전 문항 답 유지, 첫 문항은 무시(닫기 불가) · 분기 끼어듦/상황 전환 시 분기 답 비움 ·
  * 마지막 문항 탭 = 바로 제출(완료 버튼 없음) · 제출 중 선택지 비활성 · 제출 body = 계약 코드값 · 성공 = me 캐시 surveyCompleted=true +
  * user property(분기 제외) + survey_submit · 400 = Sentry + 화면 유지 · 네트워크 실패 = 재시도 + Sentry 0 · 연타 = 1회(useSubmitGuard) ·
@@ -47,7 +48,7 @@ jest.mock('@/lib/api/client', () => ({
 }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
-import { ProfileSurveyScreen, SURVEY_ADVANCE } from '../ProfileSurveyScreen';
+import { ProfileSurveyScreen, SURVEY_ADVANCE, SURVEY_SETTLE } from '../ProfileSurveyScreen';
 import { ApiError } from '@/lib/api/client';
 import { _resetSurveyHiddenForTest, isSurveyHiddenThisRun, isSurveyPresented } from '@/lib/survey/surveySession';
 /* eslint-enable import/first */
@@ -63,7 +64,7 @@ const render = (open = true, memberId = '1') => {
 const update = (t: ReactTestRenderer, open: boolean, memberId = '1') => act(() => { t.update(<QueryClientProvider client={qc}><ProfileSurveyScreen open={open} memberId={memberId} /></QueryClientProvider>); });
 const modalOf = (t: ReactTestRenderer) => t.root.findAll((x) => typeof x.props?.onRequestClose === 'function')[0];
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
-beforeAll(() => { SURVEY_ADVANCE.ms = 80; }); // 실제 타이머로 "지연 뒤 전환"을 본다(TanStack 알림도 setTimeout(0) — 가짜 타이머 금지). flush(마이크로태스크 8회)보다 넉넉히
+beforeAll(() => { SURVEY_ADVANCE.ms = 80; SURVEY_SETTLE.ms = 100; }); // 실제 타이머로 "지연 뒤 전환"을 본다(TanStack 알림도 setTimeout(0) — 가짜 타이머 금지). flush(마이크로태스크 8회)보다 넉넉히
 beforeEach(() => {
   jest.clearAllMocks();
   mockReduced = false;
@@ -83,7 +84,8 @@ const tap = async (t: ReactTestRenderer, id: string) => {
   await flush();
 };
 /** 선택지 탭 + 자동 진행 완료까지 */
-const settle = () => wait(SURVEY_ADVANCE.ms + 30);
+const settle = () => wait(SURVEY_ADVANCE.ms + SURVEY_SETTLE.ms + 40); // 전환 + 전환 직후 무시 창까지
+const goBack = async (t: ReactTestRenderer) => { await tap(t, 'header-back'); await wait(SURVEY_SETTLE.ms + 20); }; // 뒤로도 문항 전환 = 무시 창
 const pick = async (t: ReactTestRenderer, id: string) => { await tap(t, id); await settle(); };
 const has = (t: ReactTestRenderer, id: string) => t.root.findAll((x) => x.props?.testID === id && typeof x.type === 'string').length;
 const btn = (t: ReactTestRenderer, id: string) => t.root.findAll((x) => x.props?.testID === id && typeof x.props?.onPress === 'function' && typeof x.type !== 'string')[0];
@@ -108,7 +110,9 @@ it('전체 화면 Modal(fullScreen·불투명) · 열림 = survey_view 1회 · �
   expect(modal.props.presentationStyle).toBe('fullScreen');
   expect(modal.props.transparent).toBeFalsy();
   expect(question(t)).toEqual(['ageBand']);
-  expect(has(t, 'survey-back')).toBe(0);
+  expect(has(t, 'header-back')).toBe(0); // 공용 SubHeader hideBack — 같은 폭 자리표시자
+  expect(has(t, 'header-back-slot')).toBe(1);
+  expect(t.root.findAll((x) => typeof x.type !== 'string' && x.props?.titleFit === true && x.props?.title === 'survey.title')).toHaveLength(1); // 긴 제목 1줄 축소(/review 6)
   act(() => { modal.props.onRequestClose(); });
   expect(modal.props.visible).toBe(true);
   expect(question(t)).toEqual(['ageBand']);
@@ -128,8 +132,8 @@ it('자동 진행: 탭 즉시 = 선택 표시만(아직 같은 문항) → SURVE
   expect(question(t)).toEqual(['gender']);
   expect(has(t, 'survey-dot-1-on')).toBe(1);
   expect(has(t, 'survey-dots')).toBe(1);
-  expect(has(t, 'survey-back')).toBe(1);
-  await tap(t, 'survey-back');
+  expect(has(t, 'header-back')).toBe(1);
+  await goBack(t);
   expect(question(t)).toEqual(['ageBand']);
   expect(checked(t, 'survey-opt-ageBand-TWENTIES')).toBe(true); // 답 유지
   expect(has(t, 'survey-dot-0-on')).toBe(1);
@@ -148,12 +152,12 @@ it('지연 안에 재선택 = 마지막 답만·전환 1회 · 지연 안에 뒤
   await tap(t, 'survey-opt-ageBand-FORTIES');
   await settle();
   expect(question(t)).toEqual(['gender']); // 두 번 넘어가 acquisition이 되면 안 된다
-  await tap(t, 'survey-back');
+  await goBack(t);
   expect(checked(t, 'survey-opt-ageBand-FORTIES')).toBe(true);
   expect(checked(t, 'survey-opt-ageBand-TEENS')).toBe(false);
   await pick(t, 'survey-opt-ageBand-FORTIES');
   await tap(t, 'survey-opt-gender-MALE'); // gender 선택 → 지연 중
-  await tap(t, 'survey-back'); // 지연 안에 뒤로
+  await goBack(t); // 지연 안에 뒤로
   await settle();
   expect(question(t)).toEqual(['ageBand']); // 타이머가 살아 있었다면 gender로 되밀렸다
   expect(has(t, 'survey-dot-0-on')).toBe(1);
@@ -182,28 +186,31 @@ it('분기: TRIP_PLANNED = 상황 뒤 시기→기간(총 8) · 돌아가 상황
   expect(question(t)).toEqual(['tripDuration']);
   await pick(t, 'survey-opt-tripDuration-ONE_WEEK');
   expect(question(t)).toEqual(['purpose']);
-  await tap(t, 'survey-back'); await tap(t, 'survey-back'); await tap(t, 'survey-back');
+  await goBack(t); await goBack(t); await goBack(t);
   expect(question(t)).toEqual(['situation']);
   await pick(t, 'survey-opt-situation-LIVING_IN_KOREA');
   expect(question(t)).toEqual(['purpose']); // 분기 문항 없음
   expect(t.root.findAll((x) => typeof x.type === 'string' && /^survey-dot-\d+-(on|off)$/.test(String(x.props?.testID)))).toHaveLength(6);
-  await tap(t, 'survey-back');
+  await goBack(t);
   await pick(t, 'survey-opt-situation-TRIP_PLANNED');
   expect(question(t)).toEqual(['tripTiming']);
   expect(checked(t, 'survey-opt-tripTiming-THIS_YEAR')).toBe(false); // 비워졌다 — 다시 답해야
-  await tap(t, 'survey-back');
+  await goBack(t);
   await pick(t, 'survey-opt-situation-TRAVELING_NOW');
   expect(question(t)).toEqual(['tripDuration']);
   expect(checked(t, 'survey-opt-tripDuration-ONE_WEEK')).toBe(false);
 });
 
-it('마지막 문항(한식 선호) 탭 = 바로 제출: PUT /members/me/survey body 계약 그대로(대문자·정수·미해당 분기 null) → me 캐시 surveyCompleted=true + user property 7키(시기 제외) + survey_submit', async () => {
+it('마지막 문항(한식 선호) 탭 = 지연 뒤 제출(완료 버튼 없음): PUT /members/me/survey body 계약 그대로(대문자·정수·미해당 분기 null) → me 캐시 surveyCompleted=true + user property 7키(시기 제외) + survey_submit', async () => {
   mockPut.mockImplementation(async (_p: string, body: Record<string, unknown>) => ({ ...body, surveyVersion: 1, answeredAt: '2026-10-08T22:08:45.123456' }));
   const t = render();
   await toLast(t);
   expect(has(t, 'survey-dot-6-on')).toBe(1);
   expect(mockPut).not.toHaveBeenCalled();
   await tap(t, 'survey-opt-foodAffinity-4');
+  expect(checked(t, 'survey-opt-foodAffinity-4')).toBe(true);
+  expect(mockPut).not.toHaveBeenCalled(); // 지연 전 — 실수 탭 교체 창
+  await settle();
   expect(mockPut).toHaveBeenCalledTimes(1);
   expect(mockPut).toHaveBeenCalledWith('/members/me/survey', { ageBand: 'TWENTIES', gender: 'FEMALE', acquisition: 'SNS_AD', situation: 'TRAVELING_NOW', tripTiming: null, tripDuration: 'ONE_WEEK', purpose: 'MENU_READING', foodAffinity: 4 });
   expect(qc.getQueryData<{ surveyCompleted: boolean }>(['me', 'en'])?.surveyCompleted).toBe(true);
@@ -220,7 +227,7 @@ it('TRIP_PLANNED 제출 = user property 8키(시기·기간 포함) — 서버 �
   mockPut.mockImplementation(async (_p: string, body: Record<string, unknown>) => body);
   const t = render();
   await toLast(t, 'TRIP_PLANNED');
-  await tap(t, 'survey-opt-foodAffinity-5');
+  await pick(t, 'survey-opt-foodAffinity-5');
   expect(Object.keys(mockSetUserProps.mock.calls[0][0] as object)).toHaveLength(8);
   expect(mockSetUserProps.mock.calls[0][0]).toMatchObject({ survey_trip_timing: 'THIS_YEAR', survey_trip_duration: 'ONE_WEEK', survey_food_affinity: 5 });
 });
@@ -229,7 +236,7 @@ it('400(검증 코드) = 코드 결함 → Sentry(status·code) + 화면 유지�
   mockPut.mockRejectedValue(new ApiError('bad', 400, 'COMMON-001'));
   const t = render();
   await toLast(t);
-  await tap(t, 'survey-opt-foodAffinity-4');
+  await pick(t, 'survey-opt-foodAffinity-4');
   expect(mockReport).toHaveBeenCalledWith(400, 'COMMON-001');
   expect(has(t, 'survey-error')).toBe(1);
   expect(btn(t, 'survey-retry')).toBeTruthy();
@@ -250,14 +257,14 @@ it('네트워크 1회 실패 = 재시도만("나중에" 0) · 재시도 버튼 2
   mockPut.mockRejectedValue(new TypeError('Network request failed'));
   const t = render();
   await toLast(t);
-  await tap(t, 'survey-opt-foodAffinity-4');
+  await pick(t, 'survey-opt-foodAffinity-4');
   expect(has(t, 'survey-error')).toBe(1);
   expect(has(t, 'survey-later')).toBe(0);
   await tap(t, 'survey-retry');
   expect(mockPut).toHaveBeenCalledTimes(2);
   expect(has(t, 'survey-later')).toBe(1);
   expect(mockReport).not.toHaveBeenCalled();
-  await tap(t, 'survey-opt-foodAffinity-5'); // 다른 답으로 바꿔 탭 = 그 답으로 재제출
+  await pick(t, 'survey-opt-foodAffinity-5'); // 다른 답으로 바꿔 탭 = 지연 뒤 그 답으로 재제출
   expect(mockPut).toHaveBeenCalledTimes(3);
   expect(mockPut.mock.calls[2][1]).toMatchObject({ foodAffinity: 5 });
 });
@@ -276,7 +283,7 @@ it('제출 중 = 선택지·뒤로 비활성 + 스피너 · 재시도 연타 = P
   mockPut.mockRejectedValueOnce(new TypeError('Network request failed')).mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
   const t = render();
   await toLast(t);
-  await tap(t, 'survey-opt-foodAffinity-4');
+  await pick(t, 'survey-opt-foodAffinity-4');
   expect(has(t, 'survey-error')).toBe(1);
   expect(mockReport).not.toHaveBeenCalled();
   expect(mockPut).toHaveBeenCalledTimes(1);
@@ -286,7 +293,7 @@ it('제출 중 = 선택지·뒤로 비활성 + 스피너 · 재시도 연타 = P
   expect(btn(t, 'survey-retry').props.busy).toBe(true); // 재시도 중에도 버튼은 자리 유지(안 스피너) — 버튼↔스피너 깜빡임 0
   expect(has(t, 'survey-error')).toBe(0); // 재시도 시작 = 이전 안내 제거
   expect(t.root.findAll((x) => x.props?.testID === 'survey-opt-foodAffinity-3' && typeof x.props?.onPress === 'function')[0].props.disabled).toBe(true);
-  expect(btn(t, 'survey-back').props.disabled).toBe(true);
+  expect(t.root.findAll((x) => x.props?.testID === 'header-back' && typeof x.type !== 'string')[0].props.onPress).toBeUndefined(); // 제출 중 뒤로 비활성
   await tap(t, 'survey-opt-foodAffinity-3'); // 비활성 — 재제출 0
   expect(mockPut).toHaveBeenCalledTimes(2);
   await act(async () => { resolve({ ageBand: 'TWENTIES', gender: 'FEMALE', acquisition: 'SNS_AD', situation: 'TRAVELING_NOW', tripTiming: null, tripDuration: 'ONE_WEEK', purpose: 'MENU_READING', foodAffinity: 4 }); });
@@ -300,7 +307,7 @@ it('첫 제출 중(실패 전) = 재시도 버튼 없이 스피너만 · 선택�
   mockPut.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
   const t = render();
   await toLast(t);
-  await tap(t, 'survey-opt-foodAffinity-2');
+  await pick(t, 'survey-opt-foodAffinity-2');
   expect(btn(t, 'survey-retry')).toBeUndefined(); // 실패한 적 없음 = 재시도 버튼 없음
   expect(t.root.findAll((x) => x.props?.testID === 'survey-opt-foodAffinity-2' && typeof x.props?.onPress === 'function')[0].props.disabled).toBe(true);
   expect(t.root.findAll((x) => typeof x.type !== 'string' && x.type && (x.type as { name?: string }).name === 'Spinner')).toHaveLength(1);
@@ -313,7 +320,7 @@ it('400 MEMBER-003(좀비 세션) = 계약 결함 아님 — Sentry 0 · 재시�
   mockPut.mockRejectedValue(new ApiError('gone', 400, 'MEMBER-003'));
   const t = render();
   await toLast(t);
-  await tap(t, 'survey-opt-foodAffinity-4');
+  await pick(t, 'survey-opt-foodAffinity-4');
   expect(mockReport).not.toHaveBeenCalled();
   expect(has(t, 'survey-error')).toBe(0);
   expect(has(t, 'survey-later')).toBe(0);
@@ -367,9 +374,106 @@ it('성공 뒤 확인 재조회는 현재 언어 키 exact — 접두 매치로 
   const spy = jest.spyOn(qc, 'invalidateQueries');
   const t = render();
   await toLast(t);
-  await tap(t, 'survey-opt-foodAffinity-4');
+  await pick(t, 'survey-opt-foodAffinity-4');
   expect(spy).toHaveBeenCalledTimes(1);
   expect(spy).toHaveBeenCalledWith({ queryKey: ['me', 'en'], exact: true });
+});
+
+it('공부 #246 1: 문항이 바뀐 직후 SURVEY_SETTLE.ms 안의 선택지 탭 = 무시(이전 문항을 향한 재탭·연타가 새 문항을 넘기지 않는다) · 창이 지나면 정상', async () => {
+  const t = render();
+  await tap(t, 'survey-opt-ageBand-TWENTIES');
+  await wait(SURVEY_ADVANCE.ms + 15); // 전환 직후(무시 창 안)
+  expect(question(t)).toEqual(['gender']);
+  await tap(t, 'survey-opt-gender-FEMALE'); // 같은 줄 연타
+  expect(checked(t, 'survey-opt-gender-FEMALE')).toBe(false);
+  await settle();
+  expect(question(t)).toEqual(['gender']); // 넘어가지 않았다
+  await tap(t, 'survey-opt-gender-FEMALE');
+  expect(checked(t, 'survey-opt-gender-FEMALE')).toBe(true);
+  await settle();
+  expect(question(t)).toEqual(['acquisition']);
+});
+
+it('공부 #246 1: 뒤로 가기 직후도 같은 무시 창 · 마지막 문항(purpose→foodAffinity) 전환 직후 탭은 제출 0', async () => {
+  const t = render();
+  await pick(t, 'survey-opt-ageBand-TWENTIES');
+  await tap(t, 'header-back');
+  await tap(t, 'survey-opt-ageBand-TEENS'); // 뒤로 직후
+  expect(checked(t, 'survey-opt-ageBand-TEENS')).toBe(false);
+  expect(checked(t, 'survey-opt-ageBand-TWENTIES')).toBe(true);
+  await wait(SURVEY_SETTLE.ms + 20);
+  await pick(t, 'survey-opt-ageBand-TWENTIES'); await pick(t, 'survey-opt-gender-FEMALE'); await pick(t, 'survey-opt-acquisition-SNS_AD');
+  await pick(t, 'survey-opt-situation-LIVING_IN_KOREA');
+  await tap(t, 'survey-opt-purpose-MENU_READING');
+  await wait(SURVEY_ADVANCE.ms + 15);
+  expect(question(t)).toEqual(['foodAffinity']);
+  await tap(t, 'survey-opt-foodAffinity-1'); // 전환 직후 같은 줄 — 무시
+  await settle();
+  expect(mockPut).not.toHaveBeenCalled();
+  expect(checked(t, 'survey-opt-foodAffinity-1')).toBe(false);
+});
+
+it('마지막 문항: 지연 안에 다시 고르면 교체 — 마지막 답으로 제출 1회 · 지연 안 뒤로 = 제출 취소', async () => {
+  mockPut.mockImplementation(async (_p: string, body: Record<string, unknown>) => body);
+  const t = render();
+  await toLast(t);
+  await tap(t, 'survey-opt-foodAffinity-2');
+  await tap(t, 'survey-opt-foodAffinity-5');
+  await settle();
+  expect(mockPut).toHaveBeenCalledTimes(1);
+  expect(mockPut.mock.calls[0][1]).toMatchObject({ foodAffinity: 5 });
+  mockPut.mockClear();
+  qc.setQueryData(['me', 'en'], { id: '1', surveyCompleted: false, restrictions: [] });
+  const t2 = render();
+  await toLast(t2);
+  await tap(t2, 'survey-opt-foodAffinity-3');
+  await goBack(t2); // 지연 안 뒤로 = 제출 타이머 취소
+  await settle();
+  expect(mockPut).not.toHaveBeenCalled();
+  expect(question(t2)).toEqual(['purpose']);
+});
+
+it('/review 1: 실패 뒤 뒤로 가면 푸터(재시도·안내·나중에) 없음 + 실패 상태 리셋 — 다시 마지막에 오면 깨끗(옛 답 재시도·빈 toWire 재시도 0)', async () => {
+  mockPut.mockRejectedValueOnce(new ApiError('bad', 400, 'COMMON-001')).mockImplementation(async (_p: string, body: Record<string, unknown>) => body);
+  const t = render();
+  await toLast(t);
+  await pick(t, 'survey-opt-foodAffinity-4');
+  expect(has(t, 'survey-error')).toBe(1); expect(has(t, 'survey-retry')).toBe(1); expect(has(t, 'survey-later')).toBe(1);
+  await goBack(t);
+  expect(question(t)).toEqual(['purpose']);
+  expect(has(t, 'survey-error')).toBe(0); expect(has(t, 'survey-retry')).toBe(0); expect(has(t, 'survey-later')).toBe(0);
+  await pick(t, 'survey-opt-purpose-EXPLORE_FOOD');
+  expect(question(t)).toEqual(['foodAffinity']);
+  expect(has(t, 'survey-retry')).toBe(0); // 리셋 — 한 번 실패했다는 흔적 없음
+  expect(has(t, 'survey-later')).toBe(0);
+  await pick(t, 'survey-opt-foodAffinity-4');
+  expect(mockPut).toHaveBeenCalledTimes(2);
+  expect(mockPut.mock.calls[1][1]).toMatchObject({ purpose: 'EXPLORE_FOOD', foodAffinity: 4 });
+});
+
+it('/review 2: 하단 슬롯 패딩 = useBottomInset(Android 3버튼 내비 48 바닥) + 16 — 실패 뒤 유일한 출구가 내비바 아래로 못 들어간다', () => {
+  const { Platform, StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  const prev = Platform.OS;
+  Platform.OS = 'android';
+  try {
+    const t = render();
+    const foot = t.root.findAll((x) => x.props?.testID === 'survey-foot' && typeof x.type === 'string')[0];
+    expect(StyleSheet.flatten(foot.props.style).paddingBottom).toBe(48 + 16); // 인셋 0 보고 기기에서도 48
+  } finally {
+    Platform.OS = prev;
+  }
+});
+
+it('/review 3: 선택 전후 선택지 라벨 스타일 = 색만 다르다(프레임 불변 — 굵기·크기·줄높이 동일)', async () => {
+  const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  const t = render();
+  await tap(t, 'survey-opt-ageBand-TWENTIES');
+  const label = (id: string) => StyleSheet.flatten(t.root.findAll((x) => x.props?.testID === id && typeof x.props?.onPress === 'function')[0].findAllByProps({ numberOfLines: undefined }).filter((n) => typeof n.type !== 'string' && n.props?.style && typeof n.props.children === 'string')[0].props.style) as Record<string, unknown>;
+  const on = label('survey-opt-ageBand-TWENTIES');
+  const off = label('survey-opt-ageBand-TEENS');
+  expect(on.color).not.toBe(off.color);
+  const strip = (o: Record<string, unknown>) => { const { color: _c, ...rest } = o; return rest; };
+  expect(strip(on)).toEqual(strip(off));
 });
 
 /* ---- KB-733: 큐 스텝 — 완전히 닫힌 뒤 onClosed(iOS = Modal onDismiss · Android = 폼 언마운트) ---- */
