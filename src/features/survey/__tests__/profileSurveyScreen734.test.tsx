@@ -476,6 +476,20 @@ it('/review 3: 선택 전후 선택지 라벨 스타일 = 색만 다르다(프�
   expect(strip(on)).toEqual(strip(off));
 });
 
+it('QA 1: 첫 문항(hideBack) 헤더 = 2문항 헤더와 같은 높이 — 자리표시자가 뒤로 버튼과 같은 38×38 · 제목은 두 문항 모두 렌더', async () => {
+  const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  const t = render();
+  const slot = t.root.findAll((x) => x.props?.testID === 'header-back-slot' && typeof x.type === 'string')[0];
+  const slotStyle = StyleSheet.flatten(slot.props.style) as { width: number; height: number };
+  expect(JSON.stringify(t.toJSON())).toContain('survey.title');
+  await pick(t, 'survey-opt-ageBand-TWENTIES');
+  const back = t.root.findAll((x) => x.props?.testID === 'header-back' && typeof x.type === 'string')[0];
+  const backStyle = StyleSheet.flatten(back.props.style) as { width: number; height: number };
+  expect(backStyle.height).toBeGreaterThan(0);
+  expect([slotStyle.width, slotStyle.height]).toEqual([backStyle.width, backStyle.height]); // 행 높이를 주는 자식이 양쪽 다 있다
+  expect(JSON.stringify(t.toJSON())).toContain('survey.title');
+});
+
 /* ---- KB-733: 큐 스텝 — 완전히 닫힌 뒤 onClosed(iOS = Modal onDismiss · Android = 폼 언마운트) ---- */
 const renderClosable = (open: boolean, onClosed: () => void) => {
   let t!: ReactTestRenderer;

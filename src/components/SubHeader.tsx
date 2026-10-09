@@ -34,7 +34,7 @@ export function SubHeader({
 }: {
   title: string;
   onBack?: () => void;
-  /** KB-734: 뒤로 자리를 비운다(같은 폭 자리표시자 — 타이틀 중앙·헤더 높이 무변). 설문 첫 문항처럼 "돌아갈 곳 없음"을 아이콘 없이 보일 때 */
+  /** KB-734: 뒤로 자리를 비운다(같은 폭·높이 자리표시자 — 타이틀 중앙·헤더 높이 무변). 설문 첫 문항처럼 "돌아갈 곳 없음"을 아이콘 없이 보일 때 */
   hideBack?: boolean;
   /** KB-734: 긴 타이틀(ru/es/th × 큰 글자)을 자르지 않고 1줄에 맞춰 축소(최소 0.7) — 높이 무변. 기본 false = 기존 화면 무변 */
   titleFit?: boolean;
@@ -82,7 +82,9 @@ export function SubHeader({
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       <View style={styles.row} onLayout={onRowLayout}>
         {hideBack ? (
-          <View style={{ width: BACK_W }} testID="header-back-slot" />
+          // 뒤로 버튼과 **같은 치수**(38×38) — width만 주면 행에 높이를 주는 자식이 없어(타이틀은 absolute) 행 높이 0 → 첫 문항에서
+          // 제목이 안 보이고 다음 문항부터 내용이 38pt 내려앉는다(KB-734 QA 1)
+          <View style={styles.back} testID="header-back-slot" />
         ) : (
           <PressScale style={styles.back} onPress={onBack} hitSlop={8} testID="header-back">
             <IconArrowLeft size={20} color={C.ink} />
