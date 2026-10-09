@@ -5,6 +5,7 @@
  * 스텝의 present는 "안 뜸"이면 false를 돌려 즉시 다음으로(소모 0).
  *
  * 취소(KB-733 /review 3): `clear()`는 대기 스텝을 버리고, **present 전에 기다리는 중인 스텝**엔 `signal`로 abort를 알린다 — 스텝은
+ * (KB-735: 현재 어떤 스텝도 `waitStep`/signal을 쓰지 않는다 — 유일 사용자였던 홈 설문 스텝이 폐기됨. 판정 전 대기가 있는 스텝이 생기면 그대로 쓴다)
  * `waitStep`으로 기다리면 취소·상한에 false로 끝난다(큐가 running에 고정되지 않는다). 이미 띄운 모달(present가 true를 돌려준 뒤)은 건드리지 않는다.
  */
 import * as React from 'react';

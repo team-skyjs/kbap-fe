@@ -15,20 +15,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadow } from '@/lib/theme';
 import { useBottomInset } from '@/lib/useBottomInset';
 
-const noop = () => {};
-
 export function SheetShell({
   children,
-  onClose = noop,
+  onClose,
   overlay,
   visible = true,
   onDismiss,
-  dismissable = true,
 }: {
   children: React.ReactNode;
-  onClose?: () => void;
-  /** false = 닫기 불가(스크림 탭·안드 백 무시) — 제출로만 닫히는 필수 시트용. 기본 true = 기존 사용처 무변. */
-  dismissable?: boolean;
+  onClose: () => void;
   /** 모달 **루트**에 얹는 노드(시트 박스 밖) — 예: 모달 컨텍스트 TopToastHost(P-370). 시트 안에 두면
    *  절대배치 기준이 시트 박스가 되어 토스트가 카드 위에 겹친다. */
   overlay?: React.ReactNode;
@@ -42,8 +37,8 @@ export function SheetShell({
   const { top } = useSafeAreaInsets();
   const pad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={dismissable ? onClose : noop} onDismiss={onDismiss}>
-      <Pressable style={styles.backdrop} onPress={dismissable ? onClose : undefined} testID="sheet-shell-backdrop">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, pad, { maxHeight: height - top }]} onPress={() => {}} testID="sheet-shell">
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} bounces={false} testID="sheet-shell-scroll">
             {children}

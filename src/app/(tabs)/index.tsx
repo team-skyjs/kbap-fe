@@ -65,8 +65,9 @@ export default function Home() {
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
-  // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면
-  // scan.tsx처럼 useOneShotQueue를 포커스마다 등록·블러에 clear 하는 배선으로 되살린다.
+  // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면 useOneShotQueue를
+  // **포커스에 등록·블러에 clear**로 되살린다: `useFocusEffect(useCallback(() => { queue.add(step()); return () => queue.clear(); }, [queue, step]))`
+  // — 딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에 마운트하므로, 블러의 clear가 없으면 대상 화면 위에 모달이 겹쳐 KB-377류 교착.
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
