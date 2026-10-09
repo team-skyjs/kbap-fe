@@ -29,15 +29,9 @@ export function SubHeader({
   title,
   onBack,
   trailing,
-  hideBack = false,
-  titleFit = false,
 }: {
   title: string;
   onBack?: () => void;
-  /** KB-734: 뒤로 자리를 비운다(같은 폭·높이 자리표시자 — 타이틀 중앙·헤더 높이 무변). 설문 첫 문항처럼 "돌아갈 곳 없음"을 아이콘 없이 보일 때 */
-  hideBack?: boolean;
-  /** KB-734: 긴 타이틀(ru/es/th × 큰 글자)을 자르지 않고 1줄에 맞춰 축소(최소 0.7) — 높이 무변. 기본 false = 기존 화면 무변 */
-  titleFit?: boolean;
   /** 우측 액션(텍스트 링크·스피너 등). **계약(KB-613)**: 슬롯은 최대 TRAILING_MAX_W(120pt)로 막히고, 텍스트는
    *  반드시 `numberOfLines={1}`로 넘길 것 — 없으면 좁은 화면에서 줄바꿈돼 헤더 높이가 늘어난다. 더 긴 액션이
    *  필요하면 아이콘으로 바꾼다. */
@@ -81,19 +75,13 @@ export function SubHeader({
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       <View style={styles.row} onLayout={onRowLayout}>
-        {hideBack ? (
-          // 뒤로 버튼과 **같은 치수**(38×38) — width만 주면 행에 높이를 주는 자식이 없어(타이틀은 absolute) 행 높이 0 → 첫 문항에서
-          // 제목이 안 보이고 다음 문항부터 내용이 38pt 내려앉는다(KB-734 QA 1)
-          <View style={styles.back} testID="header-back-slot" />
-        ) : (
-          <PressScale style={styles.back} onPress={onBack} hitSlop={8} testID="header-back">
-            <IconArrowLeft size={20} color={C.ink} />
-          </PressScale>
-        )}
+        <PressScale style={styles.back} onPress={onBack} hitSlop={8} testID="header-back">
+          <IconArrowLeft size={20} color={C.ink} />
+        </PressScale>
         {/* 흐름에서 빼서 행 중앙에 고정 — 좌우 슬롯 폭과 무관해진다. pointerEvents 없이 두면
             타이틀이 back/trailing 위를 덮어 탭을 먹는다(StickyHeader와 같은 처리). */}
         <View style={[styles.titleWrap, { left: leftInset, right: rightInset }]} pointerEvents="none">
-          <Text numberOfLines={1} style={styles.title} adjustsFontSizeToFit={titleFit} minimumFontScale={titleFit ? 0.7 : undefined}>
+          <Text numberOfLines={1} style={styles.title}>
             {title}
           </Text>
         </View>

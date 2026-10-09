@@ -6,6 +6,7 @@
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { ProgressDots } from '@/components/ProgressDots';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
 jest.mock('@/lib/data/useDietPresets', () => {
@@ -216,6 +217,17 @@ it('KB-433 §3: 진행 점 — 국가 스텝 = 첫 점 활성, 나머지 비활�
   expect(st.width).toBe(17);
   expect(st.height).toBe(4);
   expect(st.backgroundColor).toBe('#FF7134');
+});
+
+it('ProgressDots 공용 — count개 · 활성 1개 · 접두 testID(온보딩 ob-dot 기본 / 호출측 접두)', () => {
+  let r!: ReactTestRenderer;
+  act(() => { r = renderer.create(<ProgressDots count={3} active={1} />); });
+  const ids = r.root.findAll((n) => typeof n.type === 'string' && /^ob-dot-/.test(String(n.props?.testID))).map((n) => n.props.testID);
+  expect(ids).toEqual(['ob-dot-0-off', 'ob-dot-1-on', 'ob-dot-2-off']);
+  act(() => { r.update(<ProgressDots count={2} active={0} testID="x-dots" dotTestIDPrefix="x-dot" />); });
+  expect(r.root.findAll((n) => n.props?.testID === 'x-dot-0-on' && typeof n.type === 'string')).toHaveLength(1);
+  expect(r.root.findAll((n) => n.props?.testID === 'x-dots' && typeof n.type === 'string')).toHaveLength(1);
+  act(() => r.unmount());
 });
 
 it('KB-433 §2 → 9/5 후속: 로그인 콜라주 — 12장 순환 + 마퀴(포커스·모션 게이트) + 그라데이션', () => {
