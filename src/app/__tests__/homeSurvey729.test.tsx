@@ -64,7 +64,7 @@ jest.mock('@/lib/data/useFoodReviews', () => ({ useGlobalReviews: () => ({ data:
 let mockResolveSplash: () => void = () => {};
 jest.mock('@/lib/bootGate', () => ({ ...jest.requireActual('@/lib/bootGate'), whenSplashDone: () => new Promise<void>((r) => { mockResolveSplash = r; }) }));
 const mockSheet = jest.fn();
-jest.mock('@/features/survey/ProfileSurveySheet', () => ({ ProfileSurveySheet: (p: { open: boolean; memberId?: string; onClosed?: () => void }) => { mockSheet(p.open, p.memberId, p.onClosed); return null; } }));
+jest.mock('@/features/survey/ProfileSurveyScreen', () => ({ ProfileSurveyScreen: (p: { open: boolean; memberId?: string; onClosed?: () => void }) => { mockSheet(p.open, p.memberId, p.onClosed); return null; } }));
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import Home from '../(tabs)/index';

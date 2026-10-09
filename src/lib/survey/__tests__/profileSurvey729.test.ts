@@ -1,10 +1,10 @@
 /**
  * KB-729 프로필 설문 — 순수 규칙·어댑터·트리거·10로케일 키.
- * 분기(tripTiming=TRIP_PLANNED만 · tripDuration=TRIP_PLANNED·TRAVELING_NOW) · 전부 필수 · 와이어 = 대문자 enum 그대로 + 정수 ·
+ * 분기(tripTiming=TRIP_PLANNED만 · tripDuration=TRIP_PLANNED·TRAVELING_NOW) · 문항 순서(KB-734 한 화면 한 문항) · 전부 필수 · 와이어 = 대문자 enum 그대로 + 정수 ·
  * user property는 분기 미해당 키 제외 · 트리거 4분기(false/true/게스트/구서버) · 온보딩 미완 = 재개 배너 우선.
  */
 import {
-  EMPTY_ANSWERS, isComplete, isPageComplete, normalizeAnswers, PAGES, shouldShowSurvey, surveyUserProps, toWire, visibleFields,
+  EMPTY_ANSWERS, isComplete, normalizeAnswers, QUESTION_ORDER, questionFlow, shouldShowSurvey, surveyUserProps, toWire,
   AGE_BANDS, GENDERS, ACQUISITIONS, SITUATIONS, TRIP_TIMINGS, TRIP_DURATIONS, PURPOSES, FOOD_AFFINITIES, type SurveyAnswers,
 } from '@/lib/survey/profileSurvey';
 import { adaptProfile, type MyProfileWire } from '@/lib/api/memberAdapter';
@@ -15,12 +15,15 @@ jest.mock('@/lib/sentry', () => ({ reportProfileContractDrift: jest.fn() }));
 const full: SurveyAnswers = { ageBand: 'TWENTIES', gender: 'FEMALE', acquisition: 'SNS_AD', situation: 'TRIP_PLANNED', tripTiming: 'THIS_YEAR', tripDuration: 'ONE_WEEK', purpose: 'MENU_READING', foodAffinity: 4 };
 
 describe('분기·필수', () => {
-  it('TRIP_PLANNED = 시기+기간 · TRAVELING_NOW = 기간만 · LIVING/INTERESTED = 둘 다 없음', () => {
-    expect(visibleFields(1, { ...EMPTY_ANSWERS, situation: 'TRIP_PLANNED' })).toEqual(['situation', 'tripTiming', 'tripDuration']);
-    expect(visibleFields(1, { ...EMPTY_ANSWERS, situation: 'TRAVELING_NOW' })).toEqual(['situation', 'tripDuration']);
-    expect(visibleFields(1, { ...EMPTY_ANSWERS, situation: 'LIVING_IN_KOREA' })).toEqual(['situation']);
-    expect(visibleFields(1, { ...EMPTY_ANSWERS, situation: 'INTERESTED_NO_PLAN' })).toEqual(['situation']);
-    expect(visibleFields(1, EMPTY_ANSWERS)).toEqual(['situation']); // 미응답 = 분기 숨김
+  it('문항 순서(KB-734): TRIP_PLANNED = 상황 뒤 시기+기간(8) · TRAVELING_NOW = 기간만(7) · LIVING/INTERESTED = 둘 다 없음(6) · 미응답 = 분기 없음', () => {
+    const base = ['ageBand', 'gender', 'acquisition', 'situation'];
+    expect(questionFlow({ ...EMPTY_ANSWERS, situation: 'TRIP_PLANNED' })).toEqual([...base, 'tripTiming', 'tripDuration', 'purpose', 'foodAffinity']);
+    expect(questionFlow({ ...EMPTY_ANSWERS, situation: 'TRAVELING_NOW' })).toEqual([...base, 'tripDuration', 'purpose', 'foodAffinity']);
+    expect(questionFlow({ ...EMPTY_ANSWERS, situation: 'LIVING_IN_KOREA' })).toEqual([...base, 'purpose', 'foodAffinity']);
+    expect(questionFlow({ ...EMPTY_ANSWERS, situation: 'INTERESTED_NO_PLAN' })).toEqual([...base, 'purpose', 'foodAffinity']);
+    expect(questionFlow(EMPTY_ANSWERS)).toEqual([...base, 'purpose', 'foodAffinity']); // 미응답 = 분기 숨김
+    expect(QUESTION_ORDER).toHaveLength(8);
+    expect(QUESTION_ORDER[QUESTION_ORDER.length - 1]).toBe('foodAffinity'); // 마지막 문항 탭 = 제출
   });
 
   it('상황이 바뀌면 묻지 않는 분기 답은 비운다(서버 정규화와 같은 값) · 묻는 분기는 유지', () => {
@@ -29,19 +32,13 @@ describe('분기·필수', () => {
     expect(normalizeAnswers(full)).toEqual(full);
   });
 
-  it('페이지 완료 = 보이는 문항 전부 응답(전부 필수, 건너뛰기 없음)', () => {
-    expect(isPageComplete(0, EMPTY_ANSWERS)).toBe(false);
-    expect(isPageComplete(0, { ...EMPTY_ANSWERS, ageBand: 'TEENS', gender: 'MALE' })).toBe(false);
-    expect(isPageComplete(0, { ...EMPTY_ANSWERS, ageBand: 'TEENS', gender: 'MALE', acquisition: 'FRIEND' })).toBe(true);
-    expect(isPageComplete(1, { ...EMPTY_ANSWERS, situation: 'TRIP_PLANNED' })).toBe(false);
-    expect(isPageComplete(1, { ...EMPTY_ANSWERS, situation: 'TRIP_PLANNED', tripTiming: 'SOMEDAY' })).toBe(false);
-    expect(isPageComplete(1, { ...EMPTY_ANSWERS, situation: 'TRIP_PLANNED', tripTiming: 'SOMEDAY', tripDuration: 'MONTH_PLUS' })).toBe(true);
-    expect(isPageComplete(1, { ...EMPTY_ANSWERS, situation: 'INTERESTED_NO_PLAN' })).toBe(true);
-    expect(isPageComplete(2, { ...EMPTY_ANSWERS, purpose: 'OTHER' })).toBe(false);
-    expect(isPageComplete(2, { ...EMPTY_ANSWERS, purpose: 'OTHER', foodAffinity: 1 })).toBe(true);
-    expect(PAGES).toHaveLength(3);
+  it('완료 = 묻는 문항 전부 응답(전부 필수, 건너뛰기 없음) — 분기 미해당은 비어 있어도 완료', () => {
+    expect(isComplete(EMPTY_ANSWERS)).toBe(false);
     expect(isComplete(full)).toBe(true);
     expect(isComplete({ ...full, purpose: null })).toBe(false);
+    expect(isComplete({ ...full, tripTiming: null })).toBe(false); // TRIP_PLANNED인데 시기 미응답
+    expect(isComplete({ ...full, situation: 'TRAVELING_NOW', tripTiming: null })).toBe(true); // 기간만 묻는다
+    expect(isComplete({ ...full, situation: 'LIVING_IN_KOREA', tripTiming: null, tripDuration: null })).toBe(true);
   });
 });
 
@@ -101,11 +98,12 @@ describe('트리거(서버 정본) + 어댑터', () => {
   });
 });
 
-it('i18n: survey.* 키 — 10로케일 전부 en과 같은 키 집합(문항 8·옵션 29·선호 5·버튼 5·안내 3)', () => {
+it('i18n: survey.* 키 — 10로케일 전부 en과 같은 키 집합(문항 8·옵션 29·선호 5·버튼 3·안내 2) — KB-734: 다음/완료/부제 키 삭제', () => {
   const locales = ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es'];
   const flat = (o: Record<string, unknown>, p = ''): string[] => Object.entries(o).flatMap(([k, v]) => (v && typeof v === 'object' ? flat(v as Record<string, unknown>, `${p}${k}.`) : [`${p}${k}`]));
   const en = flat((require('@/lib/i18n/en.json') as { survey: Record<string, unknown> }).survey).sort();
-  expect(en).toHaveLength(8 + 29 + 5 + 5 + 3);
+  expect(en).toHaveLength(8 + 29 + 5 + 3 + 2);
+  for (const gone of ['next', 'submit', 'sub']) expect(en).not.toContain(gone); // 자동 진행·마지막 탭 제출 = 버튼 문구 불필요
   for (const field of ['ageBand', 'gender', 'acquisition', 'situation', 'tripTiming', 'tripDuration', 'purpose']) expect(en).toContain(`q.${field}`);
   for (const c of SITUATIONS) expect(en).toContain(`opt.situation.${c}`);
   for (const n of FOOD_AFFINITIES) expect(en).toContain(`affinity.${n}`);

@@ -1063,7 +1063,6 @@
   },
   "survey": {
     "title": "Ayúdanos a adaptar K-Bap a ti",
-    "sub": "Unas preguntas rápidas: menos de un minuto.",
     "q": {
       "ageBand": "¿Cuántos años tienes?",
       "gender": "Género",
@@ -1126,9 +1125,7 @@
       "4": "Me gusta",
       "5": "Me encanta"
     },
-    "next": "Siguiente",
     "back": "Atrás",
-    "submit": "Listo",
     "later": "Ahora no",
     "retry": "Reintentar",
     "error": "No pudimos guardar tus respuestas. Inténtalo de nuevo."

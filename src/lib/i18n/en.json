@@ -1059,7 +1059,6 @@
   },
   "survey": {
     "title": "Help us tailor K-Bap to you",
-    "sub": "A few quick questions — it takes under a minute.",
     "q": {
       "ageBand": "How old are you?",
       "gender": "Gender",
@@ -1122,9 +1121,7 @@
       "4": "I like it",
       "5": "I love it"
     },
-    "next": "Next",
     "back": "Back",
-    "submit": "Done",
     "later": "Not now",
     "retry": "Try again",
     "error": "Couldn't save your answers. Please try again."

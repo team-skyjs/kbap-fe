@@ -1,7 +1,8 @@
 /**
  * profileSurvey (KB-729) — 가입 회원 1회 프로필 설문의 **순수 규칙**: 문항·코드값(서버 enum 그대로 — dev Swagger
  * `PUT /api/members/me/survey`, Jackson 대소문자 구분이라 소문자는 400)·분기(tripTiming은 TRIP_PLANNED만,
- * tripDuration은 TRIP_PLANNED·TRAVELING_NOW)·페이지 완료 판정·와이어 변환·Amplitude user property.
+ * tripDuration은 TRIP_PLANNED·TRAVELING_NOW)·문항 순서(KB-734: 한 화면 한 문항 — 분기 문항은 상황 뒤에 끼어든다)·
+ * 와이어 변환·Amplitude user property.
  * 트리거는 서버가 정본(`User.surveyCompleted`) — 로컬 플래그로 판별하지 않는다(헌법·P-147).
  */
 import type { User } from '@/lib/api/types';
@@ -68,29 +69,21 @@ export function normalizeAnswers(a: SurveyAnswers): SurveyAnswers {
   };
 }
 
-/** 페이지 구성 — 시트 안 3페이지, 한 페이지 2~3문항(발주 (2)). 분기 문항은 상황에 따라 2페이지에 붙는다 */
-export const PAGES: readonly (readonly SurveyField[])[] = [
-  ['ageBand', 'gender', 'acquisition'],
-  ['situation', 'tripTiming', 'tripDuration'],
-  ['purpose', 'foodAffinity'],
-];
+/** 문항 순서(KB-734) — 한 화면 한 문항. 분기(tripTiming·tripDuration)는 상황 바로 뒤. 총 문항 수는 6~8(상황에 따라) */
+export const QUESTION_ORDER: readonly SurveyField[] = ['ageBand', 'gender', 'acquisition', 'situation', 'tripTiming', 'tripDuration', 'purpose', 'foodAffinity'];
 
-/** 이 답 상태에서 실제로 묻는 문항(분기 반영) */
-export function visibleFields(page: number, a: SurveyAnswers): SurveyField[] {
-  return (PAGES[page] ?? []).filter((f) => {
+/** 이 답 상태에서 실제로 묻는 문항을 순서대로(분기 반영). 상황 미응답이면 분기는 아직 없다 — 답하는 순간 뒤에 끼어든다 */
+export function questionFlow(a: SurveyAnswers): SurveyField[] {
+  return QUESTION_ORDER.filter((f) => {
     if (f === 'tripTiming') return needsTripTiming(a.situation);
     if (f === 'tripDuration') return needsTripDuration(a.situation);
     return true;
   });
 }
 
-/** 전부 필수 — 보이는 문항이 모두 답해져야 다음/제출 활성 */
-export function isPageComplete(page: number, a: SurveyAnswers): boolean {
-  return visibleFields(page, a).every((f) => a[f] != null);
-}
-
+/** 전부 필수 — 묻는 문항이 모두 답해져야 제출 */
 export function isComplete(a: SurveyAnswers): boolean {
-  return PAGES.every((_, i) => isPageComplete(i, a));
+  return questionFlow(a).every((f) => a[f] != null);
 }
 
 /** 완성된 답 → 요청 본문. 미완성이면 null(제출 버튼이 막지만 이중 방어) */
