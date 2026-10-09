@@ -141,12 +141,12 @@ it('③·/review 5: 강제 업데이트 blocked는 일시 조건 — 턴 유지�
 });
 
 it('④ 공부 1: present true 직후·첫 렌더 전에 me 재조회가 surveyCompleted:true(영구 조건) → 열린 적 없음 · done 1회 → 리뷰 유도', async () => {
-  const t = await mount();
+  await mount();
+  // ensureQueryData는 present 시작(마운트) 시점의 캐시값(false)으로 이미 결정된 promise — 그 뒤·판정 전에 재조회 결과(true)가 캐시에 먼저 닿는 순서를
+  // 타이머 없이 고정한다(KB-734 2R: 이전 "drain 뒤 setQueryData + update 같은 배치" 구성은 act 플러시·TanStack 알림 타이머 순서에 기대 부하에서 흔들렸다)
   await act(async () => {
+    mockQc.setQueryData(['me', 'en'], { ...MEMBER, surveyCompleted: true });
     mockResolveSplash();
-    await drain(); // present: 판정 true → setTurn 예약
-    mockQc.setQueryData(['me', 'en'], { ...MEMBER, surveyCompleted: true }); // 같은 배치에 재조회 결과
-    t.update(<QueryClientProvider client={mockQc}><Host /></QueryClientProvider>);
     await drain();
   });
   await flush();
