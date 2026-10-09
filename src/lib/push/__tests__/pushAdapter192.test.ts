@@ -203,7 +203,7 @@ it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 �
   expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
   expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
   // KB-498: 콜백 href null(이동 없는 유형) 가드 — null 이동 금지. KB-573: 이동은 lib/nav 헬퍼 경유(홈 = 스택 리셋), 직접 router.push 0
-  expect(layout).toContain('if (href) deferUntilSurveyClosed(() => openNotificationRoute(router, href))'); // KB-729: 닫기 불가 설문 시트 표시 중엔 이동 보류(닫힌 뒤 실행)
+  expect(layout).toContain('if (href) openNotificationRoute(router, href)'); // KB-735: 보류 없이 즉시 이동
   expect(layout).not.toContain('router.push(href');
   // KB-573: 탭 리스너 등록은 entryChecked 뒤 — Stack 마운트 전 navigate는 expo-router throw(콜드 스타트 탭 유실/크래시)
   expect(layout).toContain('if (!FLAGS.pushEnabled || !entryChecked) return;');

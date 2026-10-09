@@ -1,4 +1,4 @@
-/** KB-729 — SheetShell dismissable=false: 스크림 탭·안드 백 무시(onClose 0) · 기본(true)은 기존 닫힘 무변. ProgressDots: 접두 testID·활성 1개. */
+/** SheetShell dismissable=false: 스크림 탭·안드 백 무시(onClose 0) · 기본(true)은 기존 닫힘 무변. ProgressDots: 접두 testID·활성 1개. */
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
 
@@ -26,12 +26,12 @@ it('dismissable=false — 스크림 onPress 없음 · onRequestClose는 onClose�
   expect(onClose).toHaveBeenCalledTimes(2);
 });
 
-it('ProgressDots — count개 · 활성 1개 · 접두 testID(온보딩 ob-dot 기본 / 설문 survey-dot)', () => {
+it('ProgressDots — count개 · 활성 1개 · 접두 testID(온보딩 ob-dot 기본 / 호출측 접두)', () => {
   let r!: renderer.ReactTestRenderer;
   act(() => { r = renderer.create(<ProgressDots count={3} active={1} />); });
   const ids = r.root.findAll((n) => typeof n.type === 'string' && /^ob-dot-/.test(String(n.props?.testID))).map((n) => n.props.testID);
   expect(ids).toEqual(['ob-dot-0-off', 'ob-dot-1-on', 'ob-dot-2-off']);
-  act(() => { r.update(<ProgressDots count={2} active={0} testID="survey-dots" dotTestIDPrefix="survey-dot" />); });
-  expect(r.root.findAll((n) => n.props?.testID === 'survey-dot-0-on' && typeof n.type === 'string')).toHaveLength(1);
-  expect(r.root.findAll((n) => n.props?.testID === 'survey-dots' && typeof n.type === 'string')).toHaveLength(1);
+  act(() => { r.update(<ProgressDots count={2} active={0} testID="x-dots" dotTestIDPrefix="x-dot" />); });
+  expect(r.root.findAll((n) => n.props?.testID === 'x-dot-0-on' && typeof n.type === 'string')).toHaveLength(1);
+  expect(r.root.findAll((n) => n.props?.testID === 'x-dots' && typeof n.type === 'string')).toHaveLength(1);
 });

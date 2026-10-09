@@ -1,5 +1,5 @@
 /**
- * ProgressDots — 진행 점(KB-433 §3 title-stack: 17×4 r8, 활성 primary / 나머지 line2, gap 4). 온보딩 ObTitle에서 공용화(KB-729 설문 시트 재사용).
+ * ProgressDots — 진행 점(KB-433 §3 title-stack: 17×4 r8, 활성 primary / 나머지 line2, gap 4). 온보딩 ObTitle에서 공용화.
  * testID는 호출측 접두(온보딩 `ob-dot-i-on|off` 잠금 유지).
  */
 import * as React from 'react';

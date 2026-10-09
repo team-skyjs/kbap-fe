@@ -116,7 +116,7 @@ export default function Scan() {
 
   const [phase, setPhase] = useState<Phase>('camera');
   const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
-  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화: 코치마크 → 알림 넛지 → (설문 KB-729) → 리뷰 유도
+  const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화: 코치마크 → 알림 넛지 → 리뷰 유도
   const coachDoneRef = useRef<(() => void) | null>(null);
   const primerDoneRef = useRef<(() => void) | null>(null);
   const settle = (ref: React.MutableRefObject<(() => void) | null>) => { const f = ref.current; ref.current = null; f?.(); };

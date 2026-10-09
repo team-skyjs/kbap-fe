@@ -9,7 +9,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
@@ -29,9 +29,6 @@ import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
-import { ProfileSurveyScreen } from '@/features/survey/ProfileSurveyScreen';
-import { useProfileSurveyStep } from '@/features/survey/useProfileSurveyStep';
-import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { personalRisk } from '@/lib/risk';
 import { FLAGS } from '@/lib/flags';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
@@ -68,17 +65,8 @@ export default function Home() {
 
   const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
-  // KB-733: 홈의 일회성 모달 큐(oneShotQueue, KB-730) — 포커스마다 등록·블러에 clear(대기 스텝 폐기 + 판정 전 대기 abort).
-  // 등록 순서 고정: 코치마크 → 푸시 넛지(홈에 생기면) → 설문 → 리뷰 유도(홈 트리거가 생기면).
-  // 설문 스텝(useProfileSurveyStep): 스플래시·members/me(판정 시점에 캐시/재조회)를 기다린 뒤 서버 surveyCompleted===false 회원에게만.
-  // 딥링크·푸시 콜드 스타트((tabs) 앵커가 index를 밑에 마운트)는 블러의 clear가 막는다 — 종전 homeFocused 임시 가드(/review #244 4) 대체.
-  const modalQueue = useOneShotQueue();
-  const survey = useProfileSurveyStep();
-  const surveyStep = survey.step;
-  useFocusEffect(useCallback(() => {
-    modalQueue.add(surveyStep());
-    return () => modalQueue.clear();
-  }, [modalQueue, surveyStep]));
+  // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면
+  // scan.tsx처럼 useOneShotQueue를 포커스마다 등록·블러에 clear 하는 배선으로 되살린다.
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
@@ -285,9 +273,6 @@ export default function Home() {
       {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
 
-      {/* KB-729: 가입 회원 1회 프로필 설문 — 서버 surveyCompleted===false일 때만(게스트·구서버 = 없음). 닫기 불가, 제출 성공 = 캐시 갱신으로 닫힘.
-          KB-733: 큐 스텝 — open은 큐 차례 + 서버 값, 완전히 닫힌 뒤 onClosed → 다음 스텝 · KB-734: 전체 화면, 한 문항씩 자동 진행 */}
-      <ProfileSurveyScreen open={survey.open} memberId={me?.id} onClosed={survey.onClosed} />
     </View>
   );
 }

@@ -27,7 +27,7 @@ export function SheetShell({
 }: {
   children: React.ReactNode;
   onClose?: () => void;
-  /** KB-729: false = 닫기 불가(스크림 탭·안드 백 무시) — 필수 설문처럼 제출로만 닫히는 시트. 기본 true = 기존 사용처 무변. */
+  /** false = 닫기 불가(스크림 탭·안드 백 무시) — 제출로만 닫히는 필수 시트용. 기본 true = 기존 사용처 무변. */
   dismissable?: boolean;
   /** 모달 **루트**에 얹는 노드(시트 박스 밖) — 예: 모달 컨텍스트 TopToastHost(P-370). 시트 안에 두면
    *  절대배치 기준이 시트 박스가 되어 토스트가 카드 위에 겹친다. */
