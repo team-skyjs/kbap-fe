@@ -1063,7 +1063,6 @@
   },
   "survey": {
     "title": "Bantu K-Bap lebih cocok untukmu",
-    "sub": "Beberapa pertanyaan singkat — kurang dari semenit.",
     "q": {
       "ageBand": "Berapa usiamu?",
       "gender": "Jenis kelamin",
@@ -1126,9 +1125,7 @@
       "4": "Suka",
       "5": "Sangat suka"
     },
-    "next": "Lanjut",
     "back": "Kembali",
-    "submit": "Selesai",
     "later": "Nanti saja",
     "retry": "Coba lagi",
     "error": "Jawaban tidak tersimpan. Silakan coba lagi."

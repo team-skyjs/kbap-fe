@@ -1063,7 +1063,6 @@
   },
   "survey": {
     "title": "Giúp K-Bap phù hợp hơn với bạn",
-    "sub": "Vài câu hỏi ngắn — chưa đến một phút.",
     "q": {
       "ageBand": "Bạn bao nhiêu tuổi?",
       "gender": "Giới tính",
@@ -1126,9 +1125,7 @@
       "4": "Thích",
       "5": "Rất thích"
     },
-    "next": "Tiếp",
     "back": "Quay lại",
-    "submit": "Xong",
     "later": "Để sau",
     "retry": "Thử lại",
     "error": "Không lưu được câu trả lời. Vui lòng thử lại."

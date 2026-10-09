@@ -29,7 +29,7 @@ import { FoodExplorer } from '@/features/food/FoodExplorer';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
-import { ProfileSurveySheet } from '@/features/survey/ProfileSurveySheet';
+import { ProfileSurveyScreen } from '@/features/survey/ProfileSurveyScreen';
 import { useProfileSurveyStep } from '@/features/survey/useProfileSurveyStep';
 import { useOneShotQueue } from '@/lib/oneShotQueue';
 import { personalRisk } from '@/lib/risk';
@@ -286,8 +286,8 @@ export default function Home() {
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
 
       {/* KB-729: 가입 회원 1회 프로필 설문 — 서버 surveyCompleted===false일 때만(게스트·구서버 = 없음). 닫기 불가, 제출 성공 = 캐시 갱신으로 닫힘.
-          KB-733: 큐 스텝 — open은 큐 차례 + 서버 값, 완전히 닫힌 뒤 onClosed → 다음 스텝 */}
-      <ProfileSurveySheet open={survey.open} memberId={me?.id} onClosed={survey.onClosed} />
+          KB-733: 큐 스텝 — open은 큐 차례 + 서버 값, 완전히 닫힌 뒤 onClosed → 다음 스텝 · KB-734: 전체 화면, 한 문항씩 자동 진행 */}
+      <ProfileSurveyScreen open={survey.open} memberId={me?.id} onClosed={survey.onClosed} />
     </View>
   );
 }
