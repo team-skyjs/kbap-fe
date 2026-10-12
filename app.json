@@ -204,6 +204,7 @@
       [
         "react-native-google-mobile-ads",
         {
+          "androidSdk": "classic",
           "androidAppId": "ca-app-pub-7408893286425419~5399089266",
           "iosAppId": "ca-app-pub-7408893286425419~7833680917",
           "userTrackingUsageDescription": "K-Bap uses your device identifier to show ads that are more relevant to you and to measure how they perform.",
