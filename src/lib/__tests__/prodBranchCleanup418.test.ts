@@ -15,6 +15,8 @@ const ALLOWED = new Set([
   'src/lib/flags.ts', // 정의부
   'src/lib/sentry.ts', // 환경 라벨(prod/dev)·prod 셀프체크 트리거 무동작
   'src/lib/ota/OtaAutoApplyHost.tsx', // KB-420: OTA 적용 정책(즉시/안전 순간) — API 송신 아님
+  'src/lib/ads/units.ts', // KB-739: 광고 단위 ID — production만 실 단위, 그 외 Google 데모(실 단위 클릭 = 계정 정지 사유)
+  'src/lib/ads/adsSession.ts', // KB-739: 비prod = UMP 디버그 지오(EEA) 강제
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {

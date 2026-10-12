@@ -1066,5 +1066,14 @@
     "positive": "はい、気に入っています",
     "negative": "あまり",
     "later": "あとで"
+  },
+  "ads": {
+    "sponsored": "広告",
+    "privacyOptions": "プライバシー設定",
+    "report": "広告を報告",
+    "reportPrefill": "広告の報告: ",
+    "watchToUnlock": "広告を見て解除 ({{n}}/{{total}})",
+    "rewardLimit": "今日はここまでです。明日またお試しください。",
+    "rewardError": "視聴を記録できませんでした。もう一度お試しください。"
   }
 }

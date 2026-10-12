@@ -112,6 +112,7 @@ const PLIST_KEYS = [
   'NSPhotoLibraryAddUsageDescription',
   'NSLocationWhenInUseUsageDescription',
   'NSMotionUsageDescription', // 9/22 — scan.tsx DeviceMotion
+  'NSUserTrackingUsageDescription', // KB-739 — AdMob ATT(광고·expo-tracking-transparency 플러그인 한 쌍)
 ];
 
 it('권한 문구 10로케일 — locales 맵·파일·키 전수', () => {
@@ -203,8 +204,8 @@ describe('설치된 권한 모듈이 요구하는 Usage 키 ⊆ 실제 Info.plis
     expect(byName['android.permission.RECORD_AUDIO']?.remove).toBe(true); // 기존 차단 보존
   });
 
-  it('추적(ATT) 문구는 여전히 없다(9/21 예진 D2 — 요구 키 검사가 이걸 끌어들이지 않게)', () => {
-    expect('NSUserTrackingUsageDescription' in infoPlist).toBe(false);
+  it('추적(ATT) 문구 있음(KB-739 AdMob — 9/21 D2 뒤집음) — 광고 플러그인·expo-tracking-transparency 같은 문자열', () => {
+    expect(String(infoPlist.NSUserTrackingUsageDescription ?? '').length).toBeGreaterThan(10);
   });
 });
 

@@ -4,6 +4,7 @@
     "NSPhotoLibraryUsageDescription": "K-Bap accesses your photos so you can scan a saved menu, add photos to reviews and posts, set a profile picture, or attach them to an inquiry.",
     "NSPhotoLibraryAddUsageDescription": "Save your K-Bap story card to your photo library.",
     "NSLocationWhenInUseUsageDescription": "K-Bap uses your location to find nearby restaurants, so you can tag a place in a review and record where you ate.",
-    "NSMotionUsageDescription": "K-Bap uses motion to notice when your phone is turned sideways while you scan a menu."
+    "NSMotionUsageDescription": "K-Bap uses motion to notice when your phone is turned sideways while you scan a menu.",
+    "NSUserTrackingUsageDescription": "K-Bap uses your device identifier to show ads that are more relevant to you and to measure how they perform."
   }
 }

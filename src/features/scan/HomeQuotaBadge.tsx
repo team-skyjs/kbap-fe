@@ -14,6 +14,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
+import { UnlockActions } from '@/features/ads/RewardedUnlock';
 import { SheetShell } from '@/components/SheetShell';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -258,7 +259,9 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
           <Text style={styles.body}>{t('scan.quotaBody')}</Text>
         </View>
         <View style={styles.actions}>
-          <Btn onPress={openPicker} testID="quota-sheet-review">{t('scan.quotaCta')}</Btn>
+          {/* KB-739 ⑥: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 광고 버튼은 회원·서버 adRewards·광고 준비됨일 때만(남은 횟수 0 = 이 시트 자체가 그때만 뜬다).
+              해제(서버 scanUnlocked) = 시트 닫기 — 프로필 재조회로 뱃지 모델이 null이 되며 사라진다 */}
+          <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
           <Btn variant="ghost" onPress={() => setSheet(false)} testID="quota-sheet-later">{t('scan.later')}</Btn>
         </View>
       </SheetShell>

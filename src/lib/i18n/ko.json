@@ -1066,5 +1066,14 @@
     "positive": "좋아요",
     "negative": "별로예요",
     "later": "나중에"
+  },
+  "ads": {
+    "sponsored": "광고",
+    "privacyOptions": "개인정보 옵션",
+    "report": "광고 신고",
+    "reportPrefill": "광고 신고: ",
+    "watchToUnlock": "광고 보고 풀기 ({{n}}/{{total}})",
+    "rewardLimit": "오늘은 여기까지예요. 내일 다시 시도해 주세요.",
+    "rewardError": "시청 기록을 저장하지 못했어요. 다시 시도해 주세요."
   }
 }

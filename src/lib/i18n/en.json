@@ -1062,5 +1062,14 @@
     "positive": "Yes, I like it",
     "negative": "Not really",
     "later": "Later"
+  },
+  "ads": {
+    "sponsored": "Sponsored",
+    "privacyOptions": "Privacy options",
+    "report": "Report an ad",
+    "reportPrefill": "Report an ad: ",
+    "watchToUnlock": "Watch an ad to unlock ({{n}}/{{total}})",
+    "rewardLimit": "That's all for today. Try again tomorrow.",
+    "rewardError": "Couldn't record that view. Please try again."
   }
 }

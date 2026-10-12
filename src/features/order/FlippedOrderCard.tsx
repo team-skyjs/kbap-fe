@@ -10,6 +10,7 @@
  * 기피 = avoidNoticeKo 문장+전체 나열). 미러는 같은 데이터의 리더 언어 표현
  * (신규 한국어 0).
  */
+import { OrderDoneInterstitial, type InterstitialController } from '@/features/ads/OrderDoneInterstitial';
 import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
@@ -64,7 +65,22 @@ export function FlippedOrderCard({
   const reviewPrompt = useReviewPrompt(); // KB-730: 주문 완료 모달 뒤 리뷰 유도
   const modalQueue = useOneShotQueue(); // 완료 모달이 완전히 닫힌 뒤(iOS onDismiss) 유도 시트
   const [leaving, setLeaving] = React.useState(false);
-  const runAfterDone = () => modalQueue.add(reviewPrompt.step('order', { after: onDone }));
+  // KB-739 ④-①: 리뷰 유도 → (전면 광고, 세션 1회·준비됐을 때만) → 홈 복귀. 광고는 큐에 덧붙여 유도 시트가 **완전히 닫힌 뒤** 뜬다(겹침 0);
+  // 광고 호스트가 없으면(플래그 off·초기화 전·미수신) 종전처럼 응답 즉시 복귀. 복귀(onDone)는 광고가 닫힌 뒤
+  const interstitial = React.useRef<InterstitialController | null>(null);
+  const afterPrompt = () => {
+    const adStep = interstitial.current?.step();
+    if (!adStep) { onDone(); return; }
+    modalQueue.add({
+      key: adStep.key,
+      present: (done, signal) => {
+        const shown = adStep.present(() => { onDone(); done(); }, signal);
+        if (!shown) onDone(); // 준비 안 됨·세션 상한 = 바로 복귀
+        return shown;
+      },
+    });
+  };
+  const runAfterDone = () => modalQueue.add(reviewPrompt.step('order', { after: afterPrompt }));
   // P-256: 완료 확정 1회 가드 — done 재탭·모달 재경유에도 저장/계측 1회
   const committedRef = React.useRef(false);
   // P-166: 모달 등장과 동시 폭죽 — DURATION 후 자연 소멸(언마운트), 매 완료마다
@@ -160,6 +176,7 @@ export function FlippedOrderCard({
         </Btn>
       </View>
 
+      <OrderDoneInterstitial controllerRef={interstitial} />
       <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
       {/* P-162: 주문 완료 확인 모달 — 스캔 재촬영 모달과 같은 카드 문법, 성공 체크 톤 */}
       <Modal visible={doneOpen} transparent animationType="fade" onRequestClose={() => setDoneOpen(false)} onDismiss={Platform.OS === 'ios' ? () => { if (leaving) runAfterDone(); } : undefined}>

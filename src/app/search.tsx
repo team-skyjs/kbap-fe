@@ -14,7 +14,7 @@
  * the KB-25 RiskPill. Blank keywords never leave the client (server 400s).
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +26,8 @@ import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
+import { AdBanner } from '@/features/ads/AdBanner';
+import { useBottomInset } from '@/lib/useBottomInset';
 import { placeholderKeyword, popularPhotoFoods } from '@/lib/search/discovery';
 import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
@@ -108,6 +110,14 @@ export default function Search() {
   };
 
   const showingSearch = submitted.length > 0;
+  // KB-739: 키보드가 떠 있는 동안 하단 배너 숨김(autoFocus 입력창 — 키보드 뒤에 깔리거나 결과를 더 밀지 않게)
+  const bottomInset = useBottomInset();
+  const [keyboardShown, setKeyboardShown] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardShown(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardShown(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -245,6 +255,13 @@ export default function Search() {
         <ScreenCenterFill>
           <EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" />
         </ScreenCenterFill>
+      )}
+      {/* KB-739 ④-②: 하단 적응형 앵커 배너 — 리스트의 형제(겹침 0, 결과가 배너만큼 짧아진다) · 키보드 떠 있으면 숨김 · 탭바 없는 화면이라 내비 바로 옆 아님.
+          미수신·초기화 전 = 높이 0 */}
+      {!keyboardShown && (
+        <View style={{ paddingBottom: bottomInset }}>
+          <AdBanner placement="search_banner" />
+        </View>
       )}
       {/* #116 P2 ②: 게스트 북마크 = 저장 게이트(홈/음식 탭 동일) */}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />

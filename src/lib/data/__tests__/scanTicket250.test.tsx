@@ -213,7 +213,8 @@ it('소스 잠금 — 잔여 횟수 계산·티켓 영구 저장·만료 클라 
   const scanSrc = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(scanSrc).not.toMatch(/remaining|잔여/); // 잔여 횟수 클라 계산·표시 부재
   // quota UI: 리뷰 작성하기 = 리뷰 픽커(P-245 자격 UX) + 나중에
-  expect(scanSrc).toContain("t('scan.quotaCta')");
+  expect(scanSrc).toContain('<UnlockActions reviewTestID="scan-quota-review"'); // KB-739: 리뷰 쓰기 + 광고 보고 풀기 2택(리뷰 CTA는 UnlockActions 안)
+  expect(scanSrc).toContain('onWriteReview={() => setQuotaPicker(true)}');
   expect(scanSrc).toContain("t('scan.later')");
   expect(scanSrc).toContain('<TagPickerSheet');
   expect(scanSrc).toContain('context="review"');

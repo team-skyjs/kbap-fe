@@ -1066,5 +1066,14 @@
     "positive": "喜歡",
     "negative": "不太滿意",
     "later": "稍後"
+  },
+  "ads": {
+    "sponsored": "廣告",
+    "privacyOptions": "隱私選項",
+    "report": "檢舉廣告",
+    "reportPrefill": "檢舉廣告：",
+    "watchToUnlock": "觀看廣告解鎖（{{n}}/{{total}}）",
+    "rewardLimit": "今天到此為止，請明天再試。",
+    "rewardError": "未能記錄這次觀看，請再試一次。"
   }
 }

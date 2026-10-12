@@ -1066,5 +1066,14 @@
     "positive": "Thích",
     "negative": "Không hẳn",
     "later": "Để sau"
+  },
+  "ads": {
+    "sponsored": "Quảng cáo",
+    "privacyOptions": "Tùy chọn quyền riêng tư",
+    "report": "Báo cáo quảng cáo",
+    "reportPrefill": "Báo cáo quảng cáo: ",
+    "watchToUnlock": "Xem quảng cáo để mở khóa ({{n}}/{{total}})",
+    "rewardLimit": "Hôm nay đến đây thôi. Hãy thử lại vào ngày mai.",
+    "rewardError": "Không ghi nhận được lượt xem. Vui lòng thử lại."
   }
 }

@@ -8,7 +8,7 @@
  */
 import * as React from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { Btn, IconCamera, IconClose, SubHeader } from '@/components';
@@ -27,14 +27,17 @@ import { isUploadAborted } from '@/lib/api/uploadAbort';
 export default function FeedbackComposeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [body, setBody] = React.useState('');
+  // KB-739: 설정 "광고 신고" 진입 = 본문 프리필(Apple 2.5.18 신고 창구). 프리필만 있는 상태는 '비어 있음'으로 본다(이탈 확인 0)
+  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
+  const initialBody = prefill === 'ad' ? t('ads.reportPrefill') : '';
+  const [body, setBody] = React.useState(initialBody);
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);
   const submit = useSubmitFeedback();
   const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
   const nextUploadSignal = useUploadAbort(); // KB-711: 전송 중 화면을 떠나면 사진 업로드 취소
   // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 성공 뒤엔 막지 않고 닫힘
-  const leave = useLeaveConfirm(body.trim().length > 0 || photos.length > 0, guard.busy); // 전송 중 = 막지 않음(그냥 나감)
+  const leave = useLeaveConfirm(body.trim() !== initialBody.trim() || photos.length > 0, guard.busy); // 전송 중 = 막지 않음(그냥 나감)
   // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
   // 도착한 성공 콜백이 router.back()을 부르면 **지금 화면**이 닫힌다(내 문의 → 작성으로
   // 되돌아가는 역주행). 이 화면이 아직 떠 있을 때만 닫는다(Codex #170).

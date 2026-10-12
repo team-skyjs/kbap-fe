@@ -36,6 +36,8 @@ import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { FeedCard } from '@/features/review/FeedCard';
+import { FeedAd } from '@/features/ads/FeedAd';
+import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { IconFood, IconLock, IconStar } from '@/components/icons';
@@ -594,12 +596,15 @@ function Registered({
               <EmptyBlock label={t('reviews.emptySameNat')} />
             </View>
           )}
-          {!natLoading && !(natOnly && natQ.isError) && shownPreviews.map((r) => (
+          {/* KB-739 ④-③: 리뷰 3개마다 네이티브 광고 1개(실패 시 인라인 배너, 미수신 = 높이 0) — 리뷰 카드와 같은 폭·여백 */}
+          {!natLoading && !(natOnly && natQ.isError) && withFeedAds(shownPreviews, (x) => x.id).map((row) => row.kind === 'ad' ? (
+            <FeedAd key={row.key} testID={`ad-feed-${row.slot}`} />
+          ) : (
             <FeedCard
-              key={r.id}
-              review={r}
+              key={row.key}
+              review={row.item}
               t={t}
-              mine={r.memberId != null && r.memberId === myId}
+              mine={row.item.memberId != null && row.item.memberId === myId}
               showFood={false} /* 자기 자신 음식 칩 무의미 */
               /* P-339 ② 2R: 탈퇴 리뷰도 ⋯(신고만) — showMore 게이트 잔존 제거 */
               onOpenFood={() => {}}
@@ -607,10 +612,10 @@ function Registered({
               onMore={() =>
                 setMod({
                   type: 'review',
-                  id: r.id,
-                  author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
-                  mine: r.memberId != null && r.memberId === myId,
-                  anonymized: r.anonymized === true,
+                  id: row.item.id,
+                  author: { id: row.item.author?.memberId ?? row.item.memberId ?? `rv-${row.item.id}`, nickname: row.item.author?.nickname ?? null, nationality: row.item.authorNationality },
+                  mine: row.item.memberId != null && row.item.memberId === myId,
+                  anonymized: row.item.anonymized === true,
                 })
               }
             />

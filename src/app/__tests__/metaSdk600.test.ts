@@ -56,11 +56,19 @@ it('② 플러그인 옵션 — 설치 어트리뷰션 구성 잠금', () => {
   expect(fb!.isAutoInitEnabled).toBe(true);
 });
 
-it('② ATT 없음 — iosUserTrackingPermission 부재 · NSUserTracking 문구 0', () => {
-  // 이 키가 생기면 ATT 프롬프트가 뜨고 App Store 개인정보 라벨이 "추적"으로 바뀐다(9/21 예진 D2)
-  expect('iosUserTrackingPermission' in fb!).toBe(false);
-  expect(RAW).not.toContain('NSUserTrackingUsageDescription');
-  expect(RAW).not.toContain('expo-tracking-transparency');
+it('② ATT 있음(KB-739, 9/21 D2 뒤집음) — fbsdk 플러그인엔 여전히 iosUserTrackingPermission 없음(문구는 광고·ATT 플러그인 한 쌍 + 10로케일) · Meta 추적 플래그는 ATT 결과를 따른다', () => {
+  expect('iosUserTrackingPermission' in fb!).toBe(false); // 문구 소유자는 react-native-google-mobile-ads·expo-tracking-transparency(같은 문자열)
+  const ads = APP.expo.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'react-native-google-mobile-ads') as [string, { userTrackingUsageDescription: string }] | undefined;
+  const att = APP.expo.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-tracking-transparency') as [string, { userTrackingPermission: string }] | undefined;
+  expect(ads?.[1].userTrackingUsageDescription).toBeTruthy();
+  expect(att?.[1].userTrackingPermission).toBe(ads?.[1].userTrackingUsageDescription);
+  for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']) {
+    const s = (require(`../../../locales/${l}.json`) as { ios: Record<string, string> }).ios.NSUserTrackingUsageDescription;
+    expect(String(s ?? '').trim()).not.toBe('');
+  }
+  const src = fs.readFileSync('src/lib/metaSdk.ts', 'utf8');
+  expect(src).toContain('Settings.setAdvertiserTrackingEnabled(false)'); // 기동 시 false
+  expect(src).toContain('export function setMetaTrackingEnabled'); // ATT 결과 반영(adsSession)
 });
 
 /* 9/22 예진 결정: Android 광고 ID **허용**. 9/21 초안(차단 4종 + 수집 false)을 되돌렸다 — 선언만 두고
