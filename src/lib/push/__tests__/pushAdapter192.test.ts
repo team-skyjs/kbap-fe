@@ -170,12 +170,13 @@ it('KB-498: Android = activity(MAX)·news(HIGH) 채널 각 1회, 이름은 i18n 
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(2);
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
       'activity',
-      expect.objectContaining({ name: 'notif.activityGroup', importance: 7, sound: 'default' }),
+      expect.objectContaining({ name: 'notif.activityGroup', importance: 7 }),
     );
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
       'news',
-      expect.objectContaining({ name: 'notif.newsGroup', importance: 6, sound: 'default' }),
+      expect.objectContaining({ name: 'notif.newsGroup', importance: 6 }),
     );
+    for (const call of mockNotifications.setNotificationChannelAsync.mock.calls) expect(call[1]).not.toHaveProperty('sound'); // KB-739 #249 /review 11: sound 생략 = 시스템 기본음('default'는 커스텀 파일명으로 검증돼 경고·무음 위험)
     const ids = mockNotifications.setNotificationChannelAsync.mock.calls.map((c: unknown[]) => c[0]);
     expect(ids).not.toContain('default'); // 중요도는 생성 후 불변 — default는 만들지 않는다
     const src = require('fs').readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;

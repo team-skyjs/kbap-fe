@@ -1066,5 +1066,14 @@
     "positive": "Suka",
     "negative": "Kurang",
     "later": "Nanti"
+  },
+  "ads": {
+    "sponsored": "Iklan",
+    "privacyOptions": "Opsi privasi",
+    "report": "Laporkan iklan",
+    "reportPrefill": "Laporkan iklan: ",
+    "watchToUnlock": "Tonton iklan untuk membuka ({{n}}/{{total}})",
+    "rewardLimit": "Cukup untuk hari ini. Coba lagi besok.",
+    "rewardError": "Tontonan tidak tercatat. Silakan coba lagi."
   }
 }

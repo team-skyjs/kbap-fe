@@ -5,7 +5,7 @@
  * ── 네이밍 규칙 (P-215/KB-316 — 태소노미 CSV와 1:1) ────────────────
  * 이벤트 = `<도메인>_<행동>`. 도메인 =
  *   app · auth · onboarding · scan · order · owner · food · search ·
- *   review · community · profile · push · error
+ *   review · community · profile · push · error · ad(KB-739 AdMob — ad_impression/ad_click/ad_reward_earned/ad_consent_result)
  * user property = `user_info_` 접두 (예: user_info_country).
  * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
  *
@@ -96,6 +96,11 @@ export const EVENTS = {
   // KB-730: 리뷰 유도 시트 노출·응답. CSV 등재 요청(스펙 레포)
   review_prompt_view: 'review_prompt_view',
   review_prompt_response: 'review_prompt_response',
+  // KB-739: AdMob 4종. CSV 등재는 커맨드 센터. 값은 enum만(format·placement·status) + remaining 정수
+  ad_impression: 'ad_impression',
+  ad_click: 'ad_click',
+  ad_reward_earned: 'ad_reward_earned',
+  ad_consent_result: 'ad_consent_result',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -133,6 +138,11 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   scan_item_remove: ['risk'],
   order_done: ['item_count'],
   review_prompt_view: ['trigger'], // scan|review|order (KB-730)
+  // KB-739: format = banner|native|interstitial|rewarded · placement = lib/ads/units AdPlacement · status = UMP 상태 소문자|error
+  ad_impression: ['format', 'placement'],
+  ad_click: ['format', 'placement'],
+  ad_reward_earned: ['placement', 'remaining'],
+  ad_consent_result: ['status'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open

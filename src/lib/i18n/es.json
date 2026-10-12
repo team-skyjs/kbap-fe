@@ -1066,5 +1066,14 @@
     "positive": "Me gusta",
     "negative": "No mucho",
     "later": "Después"
+  },
+  "ads": {
+    "sponsored": "Publicidad",
+    "privacyOptions": "Opciones de privacidad",
+    "report": "Denunciar un anuncio",
+    "reportPrefill": "Denuncia de anuncio: ",
+    "watchToUnlock": "Ver un anuncio para desbloquear ({{n}}/{{total}})",
+    "rewardLimit": "Por hoy es todo. Inténtalo mañana.",
+    "rewardError": "No se pudo registrar la visualización. Inténtalo de nuevo."
   }
 }

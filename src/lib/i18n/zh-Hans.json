@@ -1066,5 +1066,14 @@
     "positive": "喜欢",
     "negative": "不太满意",
     "later": "稍后"
+  },
+  "ads": {
+    "sponsored": "广告",
+    "privacyOptions": "隐私选项",
+    "report": "举报广告",
+    "reportPrefill": "举报广告：",
+    "watchToUnlock": "观看广告解锁（{{n}}/{{total}}）",
+    "rewardLimit": "今天到此为止，请明天再试。",
+    "rewardError": "未能记录本次观看，请重试。"
   }
 }

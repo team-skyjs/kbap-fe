@@ -23,6 +23,7 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
+import { UnlockActions } from '@/features/ads/RewardedUnlock';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoomPreset } from '@/features/scan/cameraZoom';
@@ -884,7 +885,8 @@ export default function Scan() {
               (새 티켓 자동 재발급 금지 — 재촬영 = 사용자 주도 새 시도) */}
           {stage === 'quota' ? (
             <>
-              <Btn onPress={() => setQuotaPicker(true)} testID="scan-quota-review">{t('scan.quotaCta')}</Btn>
+              {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight(새 티켓) → 카메라 복원(시나리오 C와 같은 경로) */}
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => void preflight()} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (

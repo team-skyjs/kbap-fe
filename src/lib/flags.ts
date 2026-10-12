@@ -135,6 +135,12 @@ export const FLAGS = {
    */
   pushEnabled: true, // P-289(예진 9/7): 권한 팝업·설정·리마인더 전 채널(KB-422 재숨김 사유 소멸)
   /**
+   * KB-739(에픽 KB-737, 10/12 예진): AdMob — 전부 true, 채널 무관. 단위 ID는 lib/ads/units.ts가 production 채널만 실값,
+   * 그 외 Google 데모 고정. off·미수신·초기화 전이면 자리는 **높이 0으로 접힘**(빈 칸·스켈레톤 금지). 스토어 빌드 플래그
+   * 감사표에 광고 항목(발주 완료 절). 형식별 off는 해당 자리만 접힌다(enabled=false면 SDK 로드 자체를 안 한다).
+   */
+  ads: { enabled: true, banner: true, interstitial: true, native: true, rewarded: true },
+  /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.

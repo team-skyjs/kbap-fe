@@ -35,6 +35,7 @@ import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { FLAGS } from '@/lib/flags';
+import { showPrivacyOptions, usePrivacyOptionsRequired } from '@/lib/ads/adsSession';
 import { tierByKey, TIERS } from '@/lib/ranking';
 import { AvoidTile } from '@/components/AvoidTile';
 import { FB_TINT } from '@/components/IngredientTileSections';
@@ -57,6 +58,7 @@ import { openAppSettings } from '@/lib/openExternal';
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 
 export default function Profile() {
+  const privacyOptions = usePrivacyOptionsRequired(); // KB-739
   const { t } = useTranslation();
   const appLang = useAppLanguage(); // KB-708: 국가명 표시(엔도님 판정) — 구독형(렌더 중 i18n 싱글턴 직접 읽기 금지, KB-695)
   const router = useRouter();
@@ -163,6 +165,10 @@ export default function Profile() {
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
               <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              {/* KB-739: 광고 신고(Apple 2.5.18) — 게스트도 광고를 보므로 같은 행(/review 9) */}
+              {FLAGS.ads.enabled && (
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+              )}
               <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
@@ -329,6 +335,13 @@ export default function Profile() {
               )}
               {/* P-394(KB-586): 문의 — 게스트 분기에도 같은 행이 있다 */}
               <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              {/* KB-739: UMP 개인정보 옵션(EEA 등 REQUIRED일 때만) · 광고 신고(Apple 2.5.18) = 문의 작성 프리필 */}
+              {privacyOptions && (
+                <MenuRow testID="profile-menu-ad-privacy" label={t('ads.privacyOptions')} chevron onPress={() => void showPrivacyOptions()} />
+              )}
+              {FLAGS.ads.enabled && (
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+              )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
               <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}

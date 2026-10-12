@@ -68,6 +68,14 @@ export interface User {
   currency?: string | null;
   /** P-384(KB-442): 스캔 쿼터 — 서버 정본. null = 구서버(필드 부재)·판별 불가 → 게이트·넛지 없음. */
   scanQuota?: ScanQuota | null;
+  /** KB-739/KB-740: 보상형 광고 적립 — 서버 정본. null = 구서버(필드 부재) → 광고 해제 경로 숨김. remaining 0 = 해제됨(n/3 카드 안 그림) */
+  adRewards?: AdRewards | null;
+}
+
+export interface AdRewards {
+  count: number;
+  forUnlock: number;
+  remaining: number;
 }
 
 export interface ScanQuota {
