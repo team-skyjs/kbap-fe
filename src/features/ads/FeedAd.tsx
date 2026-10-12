@@ -3,6 +3,10 @@
  * 네이티브 no-fill·실패면 인라인 배너(feed_banner)로 폴백, 그것도 없으면 높이 0. "Sponsored" 배지 + AdChoices(우상단 — SDK 오버레이,
  * 그 자리를 비워 둔다) 필수. 등록한 asset만 클릭된다(NativeAsset 바로 안에 뷰, 래퍼 금지 — 라이브러리 규칙).
  * 계측: ad_impression/ad_click(format native·placement feed_native).
+ *
+ * **NativeAdView 자체엔 padding·border 금지**(QA 6R, iOS 검증기 "assets outside native ad view"): Fabric RCTViewComponentView는 contentView
+ * (= GADNativeAdView, 자식이 여기 꽂힌다)를 *content frame*(bounds − padding − border)으로 잡는데 자식의 Yoga 프레임은 바깥 원점 기준이라
+ * padding만큼 두 번 밀려 마지막 자산(CTA)이 광고 뷰 밖으로 넘친다. 여백·구분선은 바깥 View가, NativeAdView는 레이아웃(gap)만.
  */
 import * as React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
@@ -39,8 +43,11 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
 
   if (ad.status === 'no-fill' || ad.status === 'error') return <AdBanner placement="feed_banner" inline testID={testID} />; // 폴백
   if (!nativeAd) return null; // idle·loading = 0 높이
+  // 미디어 높이 = 수신 자산 비율(라이브러리가 mediaContent.aspectRatio를 주지만 없으면 0 높이) — 없으면 16:9, 세로형은 1:1로 상한(피드 카드 높이 폭주 방지)
+  const mediaRatio = Math.max(nativeAd.mediaContent?.aspectRatio || 16 / 9, 1);
   return (
-    <NativeAdView nativeAd={nativeAd} style={styles.card} testID={testID ?? 'ad-native-feed_native'}>
+    <View style={styles.card}>
+    <NativeAdView nativeAd={nativeAd} style={styles.inner} testID={testID ?? 'ad-native-feed_native'}>
       <View style={styles.top}>
         {nativeAd.icon && (
           <NativeAsset assetType={NativeAssetType.ICON}>
@@ -68,16 +75,18 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
           <Text style={styles.body} numberOfLines={3}>{nativeAd.body}</Text>
         </NativeAsset>
       ) : null}
-      <NativeMediaView style={styles.media} resizeMode="cover" />
+      <NativeMediaView style={[styles.media, { aspectRatio: mediaRatio }]} resizeMode="cover" />
       <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
         <Text style={styles.cta} numberOfLines={1}>{nativeAd.callToAction}</Text>
       </NativeAsset>
     </NativeAdView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // FeedCard와 동일 프레임
+  card: { paddingVertical: 22, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: C.line }, // FeedCard와 동일 프레임 — 바깥 View
+  inner: { gap: 8 }, // NativeAdView: padding·border·margin 0(위 주석)
   top: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   icon: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.surface2 },
   who: { flex: 1, minWidth: 0, gap: 2 },
@@ -87,6 +96,6 @@ const styles = StyleSheet.create({
   badge: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: C.line2 },
   adChoicesSpace: { width: 22, height: 22 },
   body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
-  media: { width: '100%', aspectRatio: 16 / 9, borderRadius: 8, backgroundColor: C.surface2 },
+  media: { width: '100%', borderRadius: 8, backgroundColor: C.surface2 }, // aspectRatio는 수신 자산별(인라인)
   cta: { alignSelf: 'flex-start', fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, lineHeight: 20, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: C.primary },
 });
