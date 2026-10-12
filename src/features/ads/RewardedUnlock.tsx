@@ -5,7 +5,8 @@
  *
  * 흐름: 로드 완료마다 rewardKey(UUID) 새로 발급 → 사용자가 탭 → 보상형 표시 → EARNED_REWARD → `POST ad-rewards` {rewardKey, adUnitId}
  * → 응답 `remainingForUnlock`으로 n/3 표시(**서버 응답만**, 로컬 카운트 0) · `scanUnlocked`면 onUnlocked(시트 닫고 스캔 허용).
- * 429 = "오늘은 여기까지" 안내 · 400 = 재시도 없이 닫기 · 네트워크 = 안내 + 다음 광고 재로드. 성공 뒤 프로필 캐시 invalidate(훅).
+ * 429 = "오늘은 여기까지" 안내 · 400 = 재시도 없이 닫기 · 네트워크 = **같은 rewardKey 보관 → 버튼 재탭에 같은 키로 재신고**(멱등 — 본 광고의 보상 소실 0,
+ * /review 1), 성공한 뒤에만 새 광고·새 키. 성공 뒤 프로필 캐시 invalidate(훅).
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -58,18 +59,19 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
   const [failure, setFailure] = React.useState<AdRewardFailure | null>(null);
   const keyRef = React.useRef<string | null>(null);
   const claimedRef = React.useRef<string | null>(null);
+  // 네트워크 실패로 신고 못 한 보상 — 같은 키로 재신고할 때까지 보관(새 로드가 와도 덮지 않는다)
+  const pendingRef = React.useRef<{ rewardKey: string; adUnitId: string } | null>(null);
 
-  React.useEffect(() => { if (status === 'loaded') keyRef.current = Crypto.randomUUID(); }, [status]); // 로드마다 새 키(멱등 단위)
+  React.useEffect(() => { if (status === 'loaded' && !pendingRef.current) keyRef.current = Crypto.randomUUID(); }, [status]); // 로드마다 새 키(멱등 단위) — 미신고 보상이 있으면 유지
   React.useEffect(() => { if (impression) track(EVENTS.ad_impression, { format: 'rewarded', placement: PLACEMENT }); }, [impression]);
   React.useEffect(() => { if (clicked) track(EVENTS.ad_click, { format: 'rewarded', placement: PLACEMENT }); }, [clicked]);
 
   const { mutateAsync } = claim;
-  React.useEffect(() => {
-    const key = keyRef.current;
-    if (!earnedReward || !key || claimedRef.current === key) return;
-    claimedRef.current = key; // 같은 보상 1회만 신고(상태 재렌더에 따른 재발화 차단)
-    void mutateAsync({ rewardKey: key, adUnitId: unitId })
+  const submitClaim = React.useCallback((input: { rewardKey: string; adUnitId: string }) => {
+    pendingRef.current = input;
+    return mutateAsync(input)
       .then((r) => {
+        pendingRef.current = null;
         setFailure(null);
         setRemaining(r.remainingForUnlock);
         track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock });
@@ -78,25 +80,36 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
       .catch((e: unknown) => {
         const kind = classifyAdRewardError(e);
         setFailure(kind);
+        if (kind !== 'network') pendingRef.current = null; // 400·429 = 재신고 대상 아님
         if (kind === 'rejected') onClose();
       });
-  }, [earnedReward, mutateAsync, unitId, onUnlocked, onClose]);
+  }, [mutateAsync, onUnlocked, onClose]);
+  React.useEffect(() => {
+    const key = keyRef.current;
+    if (!earnedReward || !key || claimedRef.current === key) return;
+    claimedRef.current = key; // 같은 보상 1회만 자동 신고(상태 재렌더에 따른 재발화 차단) — 재시도는 버튼 탭
+    void submitClaim({ rewardKey: key, adUnitId: unitId });
+  }, [earnedReward, submitClaim, unitId]);
 
-  // 닫힌 뒤 다음 광고 미리 로드(아직 해제 전·상한 아님일 때)
-  React.useEffect(() => { if (status === 'closed' && remaining > 0 && failure !== 'limit') load(); }, [status, remaining, failure, load]);
+  // 닫힌 뒤 다음 광고 미리 로드(아직 해제 전·상한 아님·미신고 보상 없음일 때)
+  React.useEffect(() => { if (status === 'closed' && remaining > 0 && failure !== 'limit' && !pendingRef.current) load(); }, [status, remaining, failure, load]);
 
   const busy = status === 'showing' || claim.isPending;
   const loaded = status === 'loaded';
+  const retryPending = failure === 'network'; // 보상은 받았는데 신고만 못 함 — 버튼 = 같은 키 재신고(광고 다시 안 봄)
   const watched = Math.max(0, initial.forUnlock - remaining);
   return (
     <View style={styles.rewarded}>
       <Btn
-        variant={loaded && failure !== 'limit' ? 'secondary' : 'off'}
+        variant={retryPending || (loaded && failure !== 'limit') ? 'secondary' : 'off'}
         busy={busy}
-        onPress={() => { if (loaded && failure !== 'limit') show(); }}
+        onPress={() => {
+          if (retryPending && pendingRef.current) { void submitClaim(pendingRef.current); return; }
+          if (loaded && failure !== 'limit') show();
+        }}
         testID="quota-watch-ad"
       >
-        {t('ads.watchToUnlock', { n: watched, total: initial.forUnlock })}
+        {retryPending ? t('common.tryAgain') : t('ads.watchToUnlock', { n: watched, total: initial.forUnlock })}
       </Btn>
       {failure === 'limit' && <Text style={styles.note} testID="quota-ad-limit">{t('ads.rewardLimit')}</Text>}
       {failure === 'network' && <Text style={styles.note} testID="quota-ad-error">{t('ads.rewardError')}</Text>}

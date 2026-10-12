@@ -61,7 +61,8 @@ export async function initAds(): Promise<void> {
   if (!sdk) { setState('unavailable'); return; }
   try {
     const { AdsConsent, AdsConsentDebugGeography, AdsConsentPrivacyOptionsRequirementStatus, MaxAdContentRating } = sdk;
-    await AdsConsent.gatherConsent(isProdChannel() ? undefined : { debugGeography: AdsConsentDebugGeography.EEA });
+    // 동의 갱신 실패(오프라인 등)는 치명 아님 — 지난 세션의 동의가 캐시돼 있으면(getConsentInfo.canRequestAds) 그대로 진행(/review 8)
+    await AdsConsent.gatherConsent(isProdChannel() ? undefined : { debugGeography: AdsConsentDebugGeography.EEA }).catch(() => undefined);
     const info = await AdsConsent.getConsentInfo();
     privacyOptionsRequired = info.privacyOptionsRequirementStatus === AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
     track(EVENTS.ad_consent_result, { status: String(info.status).toLowerCase() }); // unknown|required|not_required|obtained

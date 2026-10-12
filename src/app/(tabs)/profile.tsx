@@ -165,6 +165,10 @@ export default function Profile() {
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
               <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              {/* KB-739: 광고 신고(Apple 2.5.18) — 게스트도 광고를 보므로 같은 행(/review 9) */}
+              {FLAGS.ads.enabled && (
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+              )}
               <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">

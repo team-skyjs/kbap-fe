@@ -256,13 +256,9 @@ export default function Search() {
           <EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" />
         </ScreenCenterFill>
       )}
-      {/* KB-739 ④-②: 하단 적응형 앵커 배너 — 리스트의 형제(겹침 0, 결과가 배너만큼 짧아진다) · 키보드 떠 있으면 숨김 · 탭바 없는 화면이라 내비 바로 옆 아님.
-          미수신·초기화 전 = 높이 0 */}
-      {!keyboardShown && (
-        <View style={{ paddingBottom: bottomInset }}>
-          <AdBanner placement="search_banner" />
-        </View>
-      )}
+      {/* KB-739 ④-②: 하단 적응형 앵커 배너 — 리스트의 형제(겹침 0, 결과가 배너만큼 짧아진다) · 키보드 떠 있으면 스타일로 숨김(마운트 유지) ·
+          탭바 없는 화면이라 내비 바로 옆 아님. 미수신·초기화 전 = 높이 0(인셋도 0) */}
+      <AdBanner placement="search_banner" visible={!keyboardShown} bottomInset={bottomInset} />
       {/* #116 P2 ②: 게스트 북마크 = 저장 게이트(홈/음식 탭 동일) */}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>

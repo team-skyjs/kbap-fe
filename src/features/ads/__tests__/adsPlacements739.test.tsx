@@ -30,9 +30,9 @@ jest.mock('@/lib/api/client', () => ({ ...jest.requireActual('@/lib/api/client')
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
 import { AdBanner } from '../AdBanner';
-import { OrderDoneInterstitial, type InterstitialController } from '../OrderDoneInterstitial';
+import { INTERSTITIAL_SHOW_TIMEOUT, OrderDoneInterstitial, type InterstitialController } from '../OrderDoneInterstitial';
 import { UnlockActions } from '../RewardedUnlock';
-import { _resetAdsSessionForTest, initAds, markInterstitialShown } from '@/lib/ads/adsSession';
+import { _resetAdsSessionForTest, canShowInterstitial, initAds, markInterstitialShown } from '@/lib/ads/adsSession';
 import { _resetAdsSdkForTest } from '@/lib/ads/sdk';
 import { FLAGS } from '@/lib/flags';
 import * as adsModule from 'react-native-google-mobile-ads';
@@ -87,6 +87,24 @@ describe('배너', () => {
     expect(slot().props.style[1].height).toBe(0);
   });
 
+  it('/review 6·7: visible=false = 높이 0·인셋 0으로 숨기되 BannerAd 마운트 유지(재요청 0) · 인셋은 광고가 떠 있을 때만', async () => {
+    await act(async () => { await initAds(); });
+    const el = (visible: boolean) => <AdBanner placement="search_banner" visible={visible} bottomInset={34} />;
+    const t = render(el(true));
+    const slot = () => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner' && typeof x.type === 'string')[0];
+    expect(slot().props.style[1]).toEqual({ height: 0, paddingBottom: 0 }); // 로드 전 = 빈 띠 0
+    const props = mockAds.banners.at(-1)!;
+    act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 320, height: 50 }); });
+    expect(slot().props.style[1]).toEqual({ height: 50, paddingBottom: 34 });
+    const mounted = mockAds.banners.length;
+    rerender(t, el(false)); // 키보드 떠 있음
+    expect(slot().props.style[1]).toEqual({ height: 0, paddingBottom: 0 });
+    expect(mockAds.banners.length).toBe(mounted); // 언마운트/재마운트 0
+    rerender(t, el(true));
+    expect(slot().props.style[1]).toEqual({ height: 50, paddingBottom: 34 });
+    expect(mockAds.banners.length).toBe(mounted);
+  });
+
   it('플래그 banner=false / enabled=false = 렌더 0', async () => {
     await act(async () => { await initAds(); });
     adsFlags.banner = false;
@@ -103,7 +121,7 @@ describe('전면(주문 완료)', () => {
     render(host(ref));
     expect(ref.current).toBeNull();
   });
-  it('준비 안 됨 = present false · 준비됨 = show 1회 + 세션 상한 → 닫힘에 done 1회 · 두 번째 스텝 = false', async () => {
+  it('준비 안 됨 = present false · 준비됨 = show 1회 → 실제 노출(showing)에서만 세션 상한 소모(/review 4) → 닫힘에 done 1회 · 두 번째 스텝 = false', async () => {
     await act(async () => { await initAds(); });
     const ref = { current: null as InterstitialController | null };
     const t = render(host(ref));
@@ -115,12 +133,33 @@ describe('전면(주문 완료)', () => {
     expect(ref.current!.step().present(done, new AbortController().signal)).toBe(true);
     expect(mockAds.interstitial.show).toHaveBeenCalledTimes(1);
     expect(done).not.toHaveBeenCalled();
+    expect(canShowInterstitial()).toBe(true); // 아직 안 떴다 — 상한 미소모
+    act(() => mockAds.update('interstitial', { status: 'showing' }));
+    rerender(t, host(ref));
+    expect(canShowInterstitial()).toBe(false); // 떴다
     act(() => mockAds.update('interstitial', { status: 'closed' }));
     rerender(t, host(ref));
     expect(done).toHaveBeenCalledTimes(1);
     act(() => mockAds.update('interstitial', { status: 'loaded' }));
     rerender(t, host(ref));
     expect(ref.current!.step().present(jest.fn(), new AbortController().signal)).toBe(false); // 세션 1회 상한
+  });
+  it('/review 3: show()가 조용히 실패해 status가 안 움직이면 타임아웃 뒤 done 1회(큐 블록 0) · 상한 미소모', async () => {
+    INTERSTITIAL_SHOW_TIMEOUT.ms = 30;
+    await act(async () => { await initAds(); });
+    const ref = { current: null as InterstitialController | null };
+    const t = render(host(ref));
+    act(() => mockAds.update('interstitial', { status: 'loaded' }));
+    rerender(t, host(ref));
+    const done = jest.fn();
+    expect(ref.current!.step().present(done, new AbortController().signal)).toBe(true);
+    expect(done).not.toHaveBeenCalled();
+    await act(async () => { await new Promise((r) => setTimeout(r, 60)); });
+    expect(done).toHaveBeenCalledTimes(1);
+    expect(canShowInterstitial()).toBe(true); // 안 떴으니 상한 그대로
+    act(() => mockAds.update('interstitial', { status: 'closed' })); // 늦게 닫힘 이벤트가 와도 done 재호출 0
+    rerender(t, host(ref));
+    expect(done).toHaveBeenCalledTimes(1);
   });
   it('세션 상한이 이미 찼으면(다른 곳에서 표시) 준비됐어도 false', async () => {
     await act(async () => { await initAds(); });
@@ -224,8 +263,8 @@ describe('보상형(스캔 해제)', () => {
     expect(has(t, 'quota-ad-limit')).toBe(0);
   });
 
-  it('네트워크 실패 = 안내 + 닫힘 뒤 재로드(재시도 가능)', async () => {
-    mockPost.mockRejectedValueOnce(new TypeError('Network request failed'));
+  it('/review 1(=공부): 네트워크 실패 = 보상 소실 0 — 같은 rewardKey 보관, 닫혀도 새 광고 로드 0, 버튼 = 다시 시도 → 같은 키로 재신고 → 성공 뒤에만 새 키·재로드', async () => {
+    mockPost.mockRejectedValueOnce(new TypeError('Network request failed')).mockResolvedValueOnce({ rewardCount: 1, remainingForUnlock: 2, scanUnlocked: false });
     await act(async () => { await initAds(); });
     const t2 = render(actions());
     act(() => mockAds.update('rewarded', { status: 'loaded', earnedReward: false }));
@@ -233,9 +272,27 @@ describe('보상형(스캔 해제)', () => {
     act(() => mockAds.update('rewarded', { status: 'showing', earnedReward: true }));
     rerender(t2, actions());
     await flush();
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    const firstKey = (mockPost.mock.calls[0][1] as { rewardKey: string }).rewardKey;
     expect(has(t2, 'quota-ad-error')).toBe(1);
     act(() => mockAds.update('rewarded', { status: 'closed', earnedReward: false }));
     rerender(t2, actions());
-    expect(mockAds.rewarded.load).toHaveBeenCalled();
+    expect(mockAds.rewarded.load).not.toHaveBeenCalled(); // 미신고 보상이 있는 동안 새 광고 0
+    expect(btn(t2, 'quota-watch-ad').props.variant).toBe('secondary');
+    expect(hasText(t2, 'common.tryAgain')).toBe(true);
+    await act(async () => { btn(t2, 'quota-watch-ad').props.onPress(); });
+    await flush();
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    expect((mockPost.mock.calls[1][1] as { rewardKey: string }).rewardKey).toBe(firstKey); // 같은 키 = 멱등 재신고
+    expect(has(t2, 'quota-ad-error')).toBe(0);
+    expect(hasText(t2, 'ads.watchToUnlock:{"n":1,"total":3}')).toBe(true);
+    expect(mockAds.rewarded.show).not.toHaveBeenCalled(); // 광고를 다시 보지 않았다
+    act(() => mockAds.update('rewarded', { status: 'loaded' }));
+    rerender(t2, actions());
+    act(() => mockAds.update('rewarded', { status: 'showing', earnedReward: true }));
+    rerender(t2, actions());
+    await flush();
+    expect(mockPost).toHaveBeenCalledTimes(3);
+    expect((mockPost.mock.calls[2][1] as { rewardKey: string }).rewardKey).not.toBe(firstKey); // 성공 뒤 새 키
   });
 });

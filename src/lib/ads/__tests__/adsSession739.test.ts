@@ -21,7 +21,7 @@ import { _resetAdsSessionForTest, getAdsState, initAds, isAdsReady, isPrivacyOpt
 import { _resetAdsSdkForTest, getAdsSdk } from '@/lib/ads/sdk';
 import { FLAGS } from '@/lib/flags';
 /* eslint-enable import/first */
-const { mockAds } = adsModule as unknown as typeof import('../../../../__mocks__/react-native-google-mobile-ads');
+const { mockAds, AdsConsent: AdsConsentMock } = adsModule as unknown as typeof import('../../../../__mocks__/react-native-google-mobile-ads');
 const { mockAtt } = attModule as unknown as typeof import('../../../../__mocks__/expo-tracking-transparency');
 const adsFlags = FLAGS.ads as { enabled: boolean };
 
@@ -85,12 +85,29 @@ it('canRequestAds=false(동의 거부·미수집) = unavailable — initialize 0
   } finally { Platform.OS = prev; }
 });
 
-it('동의 요청 실패(오프라인) = unavailable + ad_consent_result error — 앱 흐름은 계속(throw 0)', async () => {
+it('/review 8: 동의 갱신 실패(오프라인)여도 지난 세션 동의가 캐시돼 canRequestAds=true면 초기화 진행 → ready', async () => {
   mockAds.gatherConsent.mockRejectedValueOnce(new Error('network'));
+  await expect(initAds()).resolves.toBeUndefined();
+  expect(getAdsState()).toBe('ready');
+  expect(mockAds.initialize).toHaveBeenCalledTimes(1);
+  expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'obtained' });
+});
+
+it('동의 갱신 실패 + 캐시도 없음(canRequestAds=false) = unavailable · getConsentInfo까지 실패 = unavailable + ad_consent_result error — 앱 흐름은 계속(throw 0)', async () => {
+  mockAds.gatherConsent.mockRejectedValueOnce(new Error('network'));
+  mockAds.consentInfo = { ...mockAds.consentInfo, status: 'UNKNOWN', canRequestAds: false };
   await expect(initAds()).resolves.toBeUndefined();
   expect(getAdsState()).toBe('unavailable');
   expect(mockAds.initialize).not.toHaveBeenCalled();
-  expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'error' });
+  _resetAdsSessionForTest();
+  mockAds.gatherConsent.mockRejectedValueOnce(new Error('network'));
+  const orig = AdsConsentMock.getConsentInfo;
+  AdsConsentMock.getConsentInfo = async () => { throw new Error('native'); };
+  try {
+    await expect(initAds()).resolves.toBeUndefined();
+    expect(getAdsState()).toBe('unavailable');
+    expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'error' });
+  } finally { AdsConsentMock.getConsentInfo = orig; }
 });
 
 it('두 번째 initAds는 no-op(동의·초기화 1회)', async () => {

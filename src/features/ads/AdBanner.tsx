@@ -13,17 +13,26 @@ import { adUnitId, type AdPlacement } from '@/lib/ads/units';
 
 const INLINE_MAX_HEIGHT = 250;
 
-export function AdBanner({ placement, inline = false, testID }: { placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>; inline?: boolean; testID?: string }) {
+export function AdBanner({ placement, inline = false, testID, visible = true, bottomInset = 0 }: {
+  placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>;
+  inline?: boolean;
+  testID?: string;
+  /** false = 스타일로만 숨김(높이 0) — BannerAd는 마운트 유지(언마운트/재마운트마다 새 요청·노출이 되지 않게, /review 7) */
+  visible?: boolean;
+  /** 앵커 배너 아래 안전영역 — 광고가 실제로 떠 있을 때만 더한다(높이 0이면 빈 띠 금지, /review 6) */
+  bottomInset?: number;
+}) {
   const sdk = useAdsSdk(); // ready 전 = null → 자리 0
   if (!FLAGS.ads.banner || !sdk) return null;
-  return <BannerSlot sdk={sdk} placement={placement} inline={inline} testID={testID} />;
+  return <BannerSlot sdk={sdk} placement={placement} inline={inline} testID={testID} visible={visible} bottomInset={bottomInset} />;
 }
 
-function BannerSlot({ sdk, placement, inline, testID }: { sdk: AdsSdk; placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>; inline: boolean; testID?: string }) {
+function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { sdk: AdsSdk; placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>; inline: boolean; testID?: string; visible: boolean; bottomInset: number }) {
   const [height, setHeight] = React.useState(0);
   const { BannerAd, BannerAdSize } = sdk;
+  const shown = visible && height > 0;
   return (
-    <View style={[styles.slot, { height }]} testID={testID ?? `ad-banner-${placement}`} accessibilityElementsHidden={height === 0}>
+    <View style={[styles.slot, { height: shown ? height : 0, paddingBottom: shown ? bottomInset : 0 }]} testID={testID ?? `ad-banner-${placement}`} accessibilityElementsHidden={!shown}>
       <BannerAd
         unitId={adUnitId(placement)}
         size={inline ? BannerAdSize.INLINE_ADAPTIVE_BANNER : BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
@@ -39,5 +48,5 @@ function BannerSlot({ sdk, placement, inline, testID }: { sdk: AdsSdk; placement
 }
 
 const styles = StyleSheet.create({
-  slot: { width: '100%', overflow: 'hidden', alignItems: 'center' },
+  slot: { width: '100%', overflow: 'hidden', alignItems: 'center', boxSizing: 'content-box' },
 });

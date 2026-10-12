@@ -207,8 +207,10 @@ export function addNotificationTapListener(onRoute: (href: string | null, notifi
     // 채널 중요도는 생성 후 변경 불가라 'default'는 만들지 않는다(서버가 default로 보내면 expo 폴백 채널 = 지금과 동일).
     // 이름은 설정 화면 그룹명 i18n 재사용. 멱등(재호출 = 이름만 갱신) · iOS 무동작 · 결과 대기 없음(부팅 지연 0).
     if (Platform.OS === 'android') {
-      void N.setNotificationChannelAsync('activity', { name: i18n.t('notif.activityGroup'), importance: N.AndroidImportance.MAX, sound: 'default' }).catch(() => {});
-      void N.setNotificationChannelAsync('news', { name: i18n.t('notif.newsGroup'), importance: N.AndroidImportance.HIGH, sound: 'default' }).catch(() => {});
+      // KB-739(#249 /review 11): 채널 `sound`는 **커스텀 파일명**(NotificationChannelInput.sound: string — 플러그인 sounds 배열에 있어야 함). 'default'는
+      // 파일명으로 해석돼 expo-notifications 57 검증(#43189)이 LogBox 경고("Custom sound 'default' not found")를 내고 무음 채널이 될 수 있다 → 생략 = 시스템 기본음
+      void N.setNotificationChannelAsync('activity', { name: i18n.t('notif.activityGroup'), importance: N.AndroidImportance.MAX }).catch(() => {});
+      void N.setNotificationChannelAsync('news', { name: i18n.t('notif.newsGroup'), importance: N.AndroidImportance.HIGH }).catch(() => {});
     }
     N.setNotificationHandler({
       handleNotification: async () => ({

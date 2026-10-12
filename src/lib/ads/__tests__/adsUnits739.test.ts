@@ -2,6 +2,7 @@
  * KB-739 — 단위 ID 채널 분기(production만 실값, 그 외 Google 데모) · 플랫폼별 · 3개마다 삽입 인덱스·key 안정 · 전면 세션 상한 ·
  * 보상 응답 분기(429 limit / 4xx rejected / 네트워크) · i18n ads.* 10로케일 + 이모지 0.
  */
+import * as fs from 'fs';
 import { Platform } from 'react-native';
 
 let mockProd = false;
@@ -91,6 +92,22 @@ describe('보상 응답 분기', () => {
     expect(classifyAdRewardError(new ApiError('gone', 400, 'MEMBER-003'))).toBe('rejected');
     expect(classifyAdRewardError(new ApiError('down', 503))).toBe('network');
     expect(classifyAdRewardError(new TypeError('Network request failed'))).toBe('network');
+  });
+});
+
+describe('/review 9·10·11 소스 잠금', () => {
+  it('광고 신고 행 = 회원·게스트 분기 둘 다(Apple 2.5.18) · 문의 작성 프리필·이탈 확인은 프리필을 비어 있음으로', () => {
+    const profile = fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8');
+    expect(profile.match(/testID="profile-menu-ad-report"/g)).toHaveLength(2);
+    const compose = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
+    expect(compose).toContain("prefill === 'ad' ? t('ads.reportPrefill') : ''");
+    expect(compose).toContain("useLeaveConfirm((body.trim().length > 0 && body.trim() !== initialBody.trim()) || photos.length > 0");
+  });
+  it('Android 알림 채널 sound 옵션 없음(생략 = 시스템 기본음) — expo-notifications 57은 sound를 커스텀 파일명으로 검증해 "default"에 경고·무음 위험', () => {
+    const push = fs.readFileSync('src/lib/push/pushAdapter.ts', 'utf8');
+    const channels = push.match(/setNotificationChannelAsync\([^)]*\)/g) ?? [];
+    expect(channels.length).toBeGreaterThanOrEqual(2);
+    for (const c of channels) expect(c).not.toMatch(/sound/);
   });
 });
 
