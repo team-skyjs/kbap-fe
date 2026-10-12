@@ -71,8 +71,24 @@ export async function initAds(): Promise<void> {
   try {
     const { AdsConsent, AdsConsentDebugGeography, AdsConsentPrivacyOptionsRequirementStatus, MaxAdContentRating } = sdk;
     // 동의 갱신 실패(오프라인 등)는 치명 아님 — 지난 세션의 동의가 캐시돼 있으면(getConsentInfo.canRequestAds) 그대로 진행(/review 8)
-    await AdsConsent.gatherConsent(consentDebugOptions(isProdChannel(), process.env.EXPO_PUBLIC_UMP_TEST_DEVICES, AdsConsentDebugGeography.EEA)).catch(() => undefined);
+    const debug = consentDebugOptions(isProdChannel(), process.env.EXPO_PUBLIC_UMP_TEST_DEVICES, AdsConsentDebugGeography.EEA);
+    if (debug) {
+      // 비prod 진단 경로(QA 5R): reset()으로 이전 NOT_REQUIRED 캐시 무력화 → 넘긴 옵션·반환을 Metro 로그에 → 필요 시 폼
+      try {
+        AdsConsent.reset();
+        console.log('[ads] consent requestInfoUpdate options', JSON.stringify(debug));
+        const updated = await AdsConsent.requestInfoUpdate(debug);
+        console.log('[ads] consent requestInfoUpdate result', JSON.stringify(updated));
+        const shown = await AdsConsent.loadAndShowConsentFormIfRequired();
+        console.log('[ads] consent form result', JSON.stringify(shown));
+      } catch (e) {
+        console.warn('[ads] consent gather failed (debug)', String(e));
+      }
+    } else {
+      await AdsConsent.gatherConsent().catch(() => undefined);
+    }
     const info = await AdsConsent.getConsentInfo();
+    if (debug) console.log('[ads] consent info', JSON.stringify(info));
     privacyOptionsRequired = info.privacyOptionsRequirementStatus === AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
     track(EVENTS.ad_consent_result, { status: String(info.status).toLowerCase() }); // unknown|required|not_required|obtained
     if (!info.canRequestAds) { setState('unavailable'); return; }

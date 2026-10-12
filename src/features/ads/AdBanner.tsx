@@ -1,7 +1,8 @@
 /**
  * AdBanner (KB-739 ④-②·③ 폴백) — 배너 자리 하나. 플래그 off·SDK 부재·초기화 전·미수신·실패 = **높이 0**(빈 칸·스켈레톤 금지).
- * 높이는 SDK가 `onAdLoaded`/`onSizeChange`로 알려준 실측만 쓴다. 앵커(검색 하단) = ANCHORED_ADAPTIVE_BANNER(폭 기준 최적 높이 —
- * QA 4R: LARGE_*는 컨테이너가 112dp로 잡혀 320×50 데모 광고가 레터박스), 인라인(피드) = INLINE_ADAPTIVE_BANNER(maxHeight로 상한).
+ * 높이는 SDK가 `onAdLoaded`로 알려준 **수신 크리에이티브 크기**만 쓴다(`onSizeChange`는 컨테이너 크기라 덮지 않는다 — QA 5R: 468×60 수신에 98dp 슬롯 = 검은 띠).
+ * 앵커(검색 하단) = ANCHORED_ADAPTIVE_BANNER(QA 4R: LARGE_*는 컨테이너 112dp 레터박스), 인라인(피드) = INLINE_ADAPTIVE_BANNER(maxHeight로 상한).
+ * 슬롯 배경 투명·가로 중앙 정렬. 개발 번들(__DEV__)은 수신 크기를 Metro 로그에 찍는다.
  * 계측: ad_impression / ad_click(format·placement만 — 광고 내용 0).
  */
 import * as React from 'react';
@@ -38,8 +39,8 @@ function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { 
         unitId={adUnitId(placement)}
         size={inline ? BannerAdSize.INLINE_ADAPTIVE_BANNER : BannerAdSize.ANCHORED_ADAPTIVE_BANNER} /* ANCHORED_*: 타입은 deprecated 표기지만 지원 사이즈 — LARGE_*는 112dp 컨테이너에 50dp 크리에이티브가 레터박스(QA 4R) */
         maxHeight={inline ? INLINE_MAX_HEIGHT : undefined}
-        onAdLoaded={(d) => setHeight(Math.ceil(d.height))}
-        onSizeChange={(d) => setHeight(Math.ceil(d.height))}
+        onAdLoaded={(d) => { if (__DEV__) console.log('[ads] banner loaded', placement, JSON.stringify(d)); setHeight(Math.ceil(d.height)); }}
+        onSizeChange={(d) => { if (__DEV__) console.log('[ads] banner sizeChange(ignored)', placement, JSON.stringify(d)); }}
         onAdFailedToLoad={() => setHeight(0)} // no-fill·네트워크 = 접힘
         onAdImpression={() => track(EVENTS.ad_impression, { format: 'banner', placement })}
         onAdClicked={() => track(EVENTS.ad_click, { format: 'banner', placement })}
@@ -49,5 +50,5 @@ function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { 
 }
 
 const styles = StyleSheet.create({
-  slot: { width: '100%', overflow: 'hidden', alignItems: 'center', boxSizing: 'content-box' },
+  slot: { width: '100%', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', boxSizing: 'content-box' },
 });

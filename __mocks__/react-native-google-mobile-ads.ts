@@ -16,6 +16,8 @@ export const mockAds = {
     notify();
   },
   gatherConsent: jest.fn(async () => ({})),
+  requestInfoUpdate: jest.fn(async () => mockAds.consentInfo),
+  resetCalls: 0,
   consentInfo: { status: 'OBTAINED', canRequestAds: true, privacyOptionsRequirementStatus: 'NOT_REQUIRED', isConsentFormAvailable: false },
   showPrivacyOptionsForm: jest.fn(async () => mockAds.consentInfo),
   initialize: jest.fn(async () => []),
@@ -26,7 +28,7 @@ export const mockAds = {
   native: { status: 'idle' as string, nativeAd: null as unknown, error: null, retry: jest.fn(), destroy: jest.fn() },
   banners: [] as Record<string, unknown>[],
   reset() {
-    this.gatherConsent.mockClear(); this.showPrivacyOptionsForm.mockClear(); this.initialize.mockClear(); this.setRequestConfiguration.mockClear();
+    this.gatherConsent.mockClear(); this.requestInfoUpdate.mockClear(); this.resetCalls = 0; this.showPrivacyOptionsForm.mockClear(); this.initialize.mockClear(); this.setRequestConfiguration.mockClear();
     this.consentInfo = { status: 'OBTAINED', canRequestAds: true, privacyOptionsRequirementStatus: 'NOT_REQUIRED', isConsentFormAvailable: false };
     this.interstitial = { status: 'idle', show: jest.fn(), load: jest.fn(), impression: false, clicked: false };
     this.rewarded = { status: 'idle', show: jest.fn(), load: jest.fn(), impression: false, clicked: false, earnedReward: false, reward: null };
@@ -37,11 +39,11 @@ export const mockAds = {
 
 export const AdsConsent = {
   gatherConsent: (o?: unknown) => mockAds.gatherConsent(o),
-  requestInfoUpdate: async () => mockAds.consentInfo,
+  requestInfoUpdate: (o?: unknown) => mockAds.requestInfoUpdate(o),
   getConsentInfo: async () => mockAds.consentInfo,
   showPrivacyOptionsForm: () => mockAds.showPrivacyOptionsForm(),
   loadAndShowConsentFormIfRequired: async () => mockAds.consentInfo,
-  reset: async () => {},
+  reset: () => { mockAds.resetCalls += 1; },
 };
 export const AdsConsentDebugGeography = { DISABLED: 0, EEA: 1, NOT_EEA: 2 };
 export const AdsConsentStatus = { UNKNOWN: 'UNKNOWN', REQUIRED: 'REQUIRED', NOT_REQUIRED: 'NOT_REQUIRED', OBTAINED: 'OBTAINED' };

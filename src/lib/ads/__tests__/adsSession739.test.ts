@@ -39,7 +39,9 @@ it('정상: EEA 디버그 지오(비prod) → 동의 OK → iOS ATT 1회(결과 
   try {
     expect(getAdsState()).toBe('idle');
     await initAds();
-    expect(mockAds.gatherConsent).toHaveBeenCalledWith({ debugGeography: 1, testDeviceIdentifiers: [] }); // EEA(기기 미등록)
+    expect(mockAds.requestInfoUpdate).toHaveBeenCalledWith({ debugGeography: 1, testDeviceIdentifiers: [] }); // 비prod 진단 경로: reset → requestInfoUpdate(EEA) → 폼
+    expect(mockAds.resetCalls).toBe(1);
+    expect(mockAds.gatherConsent).not.toHaveBeenCalled();
     expect(mockAtt.calls).toBe(1);
     expect(mockMetaTracking).toHaveBeenCalledWith(false);
     expect(mockAds.setRequestConfiguration).toHaveBeenCalledWith(expect.objectContaining({ maxAdContentRating: 'PG', tagForChildDirectedTreatment: false }));
@@ -47,7 +49,7 @@ it('정상: EEA 디버그 지오(비prod) → 동의 OK → iOS ATT 1회(결과 
     expect(isAdsReady()).toBe(true);
     expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'obtained' });
     // 순서: 동의 → ATT → 초기화
-    const order = [mockAds.gatherConsent.mock.invocationCallOrder[0], mockAds.initialize.mock.invocationCallOrder[0]];
+    const order = [mockAds.requestInfoUpdate.mock.invocationCallOrder[0], mockAds.initialize.mock.invocationCallOrder[0]];
     expect(order[0]).toBeLessThan(order[1]);
   } finally { Platform.OS = prev; }
 });
@@ -57,7 +59,8 @@ it('production = 디버그 지오 없음 · ATT 허용 → Meta true', async () 
   try {
     mockProd = true; mockAtt.granted = true;
     await initAds();
-    expect(mockAds.gatherConsent).toHaveBeenCalledWith(undefined);
+    expect(mockAds.gatherConsent).toHaveBeenCalledWith(undefined); // production = 실 흐름(디버그 옵션·reset 0 — 목 래퍼가 undefined를 전달)
+    expect(mockAds.resetCalls).toBe(0);
     expect(mockMetaTracking).toHaveBeenCalledWith(true);
     expect(isAdsReady()).toBe(true);
   } finally { Platform.OS = prev; }
@@ -86,7 +89,7 @@ it('canRequestAds=false(동의 거부·미수집) = unavailable — initialize 0
 });
 
 it('/review 8: 동의 갱신 실패(오프라인)여도 지난 세션 동의가 캐시돼 canRequestAds=true면 초기화 진행 → ready', async () => {
-  mockAds.gatherConsent.mockRejectedValueOnce(new Error('network'));
+  mockAds.requestInfoUpdate.mockRejectedValueOnce(new Error('network')); // 비prod 경로
   await expect(initAds()).resolves.toBeUndefined();
   expect(getAdsState()).toBe('ready');
   expect(mockAds.initialize).toHaveBeenCalledTimes(1);
@@ -94,13 +97,13 @@ it('/review 8: 동의 갱신 실패(오프라인)여도 지난 세션 동의가 
 });
 
 it('동의 갱신 실패 + 캐시도 없음(canRequestAds=false) = unavailable · getConsentInfo까지 실패 = unavailable + ad_consent_result error — 앱 흐름은 계속(throw 0)', async () => {
-  mockAds.gatherConsent.mockRejectedValueOnce(new Error('network'));
+  mockAds.requestInfoUpdate.mockRejectedValueOnce(new Error('network'));
   mockAds.consentInfo = { ...mockAds.consentInfo, status: 'UNKNOWN', canRequestAds: false };
   await expect(initAds()).resolves.toBeUndefined();
   expect(getAdsState()).toBe('unavailable');
   expect(mockAds.initialize).not.toHaveBeenCalled();
   _resetAdsSessionForTest();
-  mockAds.gatherConsent.mockRejectedValueOnce(new Error('network'));
+  mockAds.requestInfoUpdate.mockRejectedValueOnce(new Error('network'));
   const orig = AdsConsentMock.getConsentInfo;
   AdsConsentMock.getConsentInfo = async () => { throw new Error('native'); };
   try {
@@ -113,7 +116,7 @@ it('동의 갱신 실패 + 캐시도 없음(canRequestAds=false) = unavailable �
 it('두 번째 initAds는 no-op(동의·초기화 1회)', async () => {
   await initAds();
   await initAds();
-  expect(mockAds.gatherConsent).toHaveBeenCalledTimes(1);
+  expect(mockAds.requestInfoUpdate).toHaveBeenCalledTimes(1);
   expect(mockAds.initialize).toHaveBeenCalledTimes(1);
 });
 
@@ -135,9 +138,10 @@ it('QA 4R: UMP 디버그 옵션 — 비prod = EEA + EXPO_PUBLIC_UMP_TEST_DEVICES
   process.env.EXPO_PUBLIC_UMP_TEST_DEVICES = 'hash1,hash2';
   try {
     await initAds();
-    expect(mockAds.gatherConsent).toHaveBeenCalledWith({ debugGeography: 1, testDeviceIdentifiers: ['hash1', 'hash2'] });
+    expect(mockAds.requestInfoUpdate).toHaveBeenCalledWith({ debugGeography: 1, testDeviceIdentifiers: ['hash1', 'hash2'] });
     _resetAdsSessionForTest(); mockAds.reset(); mockProd = true;
     await initAds();
+    expect(mockAds.requestInfoUpdate).not.toHaveBeenCalled();
     expect(mockAds.gatherConsent).toHaveBeenCalledWith(undefined);
   } finally {
     if (prev === undefined) delete process.env.EXPO_PUBLIC_UMP_TEST_DEVICES; else process.env.EXPO_PUBLIC_UMP_TEST_DEVICES = prev;

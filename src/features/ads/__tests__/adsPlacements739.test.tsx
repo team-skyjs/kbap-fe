@@ -80,7 +80,11 @@ describe('배너', () => {
     expect(props.size).toBe('ANCHORED_ADAPTIVE_BANNER'); // QA 4R: LARGE_*는 112dp 컨테이너 레터박스
     act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 320, height: 50 }); });
     expect(slot().props.style[1].height).toBe(50);
-    act(() => { (props.onSizeChange as (d: { width: number; height: number }) => void)({ width: 320, height: 100 }); }); // 수신 크기 100 = 슬롯 100
+    act(() => { (props.onSizeChange as (d: { width: number; height: number }) => void)({ width: 360, height: 98 }); }); // QA 5R: 컨테이너 크기는 무시 — 수신 50 유지
+    expect(slot().props.style[1].height).toBe(50);
+    act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 468, height: 60 }); }); // 다음 수신 60 = 슬롯 60
+    expect(slot().props.style[1].height).toBe(60);
+    act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 320, height: 100 }); });
     expect(slot().props.style[1].height).toBe(100);
     act(() => { (props.onAdImpression as () => void)(); (props.onAdClicked as () => void)(); });
     expect(mockTrack).toHaveBeenCalledWith('ad_impression', { format: 'banner', placement: 'search_banner' });
