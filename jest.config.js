@@ -24,8 +24,5 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  // KB-738(Expo 57): @sentry/react-native 8은 `@sentry/core` 등 하위 패키지를 exports의 "react-native" 조건으로 ESM(build/esm)으로 내준다 —
-  // 프리셋 패턴은 @sentry/react-native만 변환해 `export` 토큰에서 78스위트가 죽었다. @sentry 전체를 변환 대상에 넣는다.
-  transformIgnorePatterns: expoPreset.transformIgnorePatterns.map((p) => p.replace('@sentry/react-native', '@sentry')),
   testMatch: ['**/__tests__/**/*.test.ts?(x)', '**/*.test.ts?(x)'],
 };
