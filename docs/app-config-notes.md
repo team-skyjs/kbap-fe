@@ -32,7 +32,7 @@ P-380(KB-518): 저장 전용 — 기본값은 READ_MEDIA_IMAGES/VIDEO/AUDIO 3종
 
 ## `plugins[react-native-fbsdk-next]._comment`
 
-KB-600(P-397): 설치 어트리뷰션 목적. iosUserTrackingPermission은 **의도적으로 생략** — ATT 프롬프트 없이 간다(9/21 예진 D2). iOS는 ATT가 없으니 IDFA가 0이라 advertiserIDCollectionEnabled:true여도 iOS 라벨 영향 없음(JS setAdvertiserTrackingEnabled(false) 유지). Android는 광고 ID 수집 허용(9/22 예진 — android._adIdComment). clientToken은 공개값(App Secret 아님). 네이티브 — 다음 빌드 반영
+KB-600(P-397): 설치 어트리뷰션 목적. iosUserTrackingPermission은 **의도적으로 생략** — ATT 프롬프트 없이 간다(9/21 예진 D2). iOS는 ATT가 없으니 IDFA가 0이라 advertiserIDCollectionEnabled:true여도 iOS 라벨 영향 없음(JS setAdvertiserTrackingEnabled(false) 유지). Android는 광고 ID 수집 허용(9/22 예진 — 이 문서의 "`expo.android` 광고 ID 권한(차단하지 않음)" 절). clientToken은 공개값(App Secret 아님). 네이티브 — 다음 빌드 반영
 
 ## `plugins[react-native-share]._comment`
 
