@@ -71,7 +71,8 @@ export function FlippedOrderCard({
   const afterPrompt = (answer: 'positive' | 'negative' | 'later' | null) => {
     const adStep = interstitial.current?.step();
     // 별로예요 = 리뷰 유도가 복귀 뒤 문의 작성을 push한다(runAfterInteractions) — 광고 스텝이 복귀를 미루면 그 push가 dismissAll+replace에 지워진다(/review 2) → 종전처럼 즉시 복귀
-    if (!adStep || answer === 'negative') { onDone(); return; }
+    // 좋아요 = requestStoreReview() 뒤 iOS 평점 창(StoreKit)/Android 인앱 리뷰 시트가 떠 있을 수 있다 — 전면 광고가 덮거나 끊지 않게 역시 즉시 복귀(공부 2R)
+    if (!adStep || answer === 'negative' || answer === 'positive') { onDone(); return; }
     modalQueue.add({
       key: adStep.key,
       present: (done, signal) => {

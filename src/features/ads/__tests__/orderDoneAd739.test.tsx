@@ -94,6 +94,17 @@ it('나중에 = 유도 시트 닫힌 뒤 전면 show → 닫히면 onDone 1회(�
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
+it('공부 2R: 좋아요 = 평점 창(StoreKit/인앱 리뷰)이 떠 있을 수 있어 광고 스텝 건너뛰고 즉시 onDone · show 0', async () => {
+  const onDone = jest.fn();
+  const tree = await mountWithLoadedAd(onDone);
+  await press(tree, 'review-prompt-positive');
+  expect(onDone).toHaveBeenCalledTimes(1);
+  await fireDismissed(tree, true);
+  await flush();
+  expect(mockAds.interstitial.show).not.toHaveBeenCalled();
+  expect(canShowInterstitial()).toBe(true);
+});
+
 it('/review 2: 별로예요 = 광고 스텝 건너뛰고 즉시 onDone(문의 push가 dismissAll+replace에 지워지지 않게) · 광고 show 0', async () => {
   const onDone = jest.fn();
   const tree = await mountWithLoadedAd(onDone);
