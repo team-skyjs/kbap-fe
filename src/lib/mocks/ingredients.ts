@@ -100,6 +100,11 @@ export function toBeCode(code: string): string | null {
   return LEGACY_TO_BE[slug] ?? null;
 }
 
+/** KB-599: 81종 카탈로그에 있는 code인지 — 함의 근거 문구는 카탈로그 이름이 있을 때만 그린다(없으면 생략). */
+export function isCatalogIngredient(code: string): boolean {
+  return code in BY_CODE;
+}
+
 /**
  * Reader-language display name. 구 slug 번역(ingredients.<slug>)이 있으면
  * 재사용, 없으면 카탈로그 영어명. 레거시 ing:slug 코드도 라벨링된다.

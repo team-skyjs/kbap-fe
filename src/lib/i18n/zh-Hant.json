@@ -12,7 +12,11 @@
     "retry": "重試",
     "skip": "略過",
     "save": "儲存",
-    "close": "關閉"
+    "close": "關閉",
+    "leaveTitle": "不儲存就離開嗎？",
+    "leaveBody": "草稿不會被儲存。",
+    "keepWriting": "繼續寫",
+    "discard": "離開"
   },
   "intro": {
     "skip": "略過",
@@ -91,7 +95,7 @@
   "food": {
     "title": "探索美食",
     "sub": "每道菜都標註了你的風險。",
-    "searchPlaceholder": "搜尋食物或食材…",
+    "searchPlaceholder": "搜尋食物…",
     "sort_popular": "熱門",
     "sort_new": "最新",
     "categories": {
@@ -106,12 +110,12 @@
     "sortNewSoon": "即將上線"
   },
   "search": {
-    "placeholder": "搜尋食物、食材…",
     "recent": "最近搜尋",
     "recentClearAll": "全部清除",
     "recentEmptyHint": "你最近的搜尋會顯示在這裡。",
     "popular": "熱門搜尋",
-    "resultCount": "{{count}} 個結果",
+    "resultCount_one": "{{count}} 個結果",
+    "resultCount_other": "{{count}} 個結果",
     "noResultsTitle": "找不到符合的結果",
     "samples": [
       "泡菜鍋",
@@ -177,10 +181,6 @@
     "post": "發布",
     "composePlaceholder": "分享任何關於在韓國吃飯的事…",
     "cover": "封面",
-    "leaveTitle": "放棄這篇貼文？",
-    "leaveBody": "草稿不會被儲存。",
-    "keepWriting": "繼續寫",
-    "discard": "放棄",
     "postedTitle": "已發布！",
     "editedTitle": "貼文已更新",
     "tagFoodTitle": "標記菜色",
@@ -287,6 +287,8 @@
     "quotaTitle": "免費掃描次數已用完",
     "quotaBody": "寫一則評價即可解鎖無限掃描。",
     "quotaCta": "寫評價",
+    "freeLeft_one": "剩餘 {{count}} 次免費掃描",
+    "freeLeft_other": "剩餘 {{count}} 次免費掃描",
     "later": "稍後",
     "errUpload": "照片上傳失敗，請重試。",
     "stayHint": "大約需要 30–40 秒 — 離開應用可能會遺失結果。",
@@ -402,6 +404,24 @@
     "extrasSpeed": "上菜速度",
     "extrasService": "服務態度",
     "extrasTaste": "味道"
+  },
+  "translation": {
+    "showTranslation": "顯示翻譯",
+    "translatedFrom": "翻譯自{{language}}",
+    "translated": "已翻譯",
+    "translateFailed": "無法翻譯，請再試一次。",
+    "lang": {
+      "en": "英文",
+      "ko": "韓文",
+      "ja": "日文",
+      "zh-Hans": "簡體中文",
+      "zh-Hant": "繁體中文",
+      "vi": "越南文",
+      "id": "印尼文",
+      "th": "泰文",
+      "ru": "俄文",
+      "es": "西班牙文"
+    }
   },
   "reviews": {
     "headerTitle": "評論",
@@ -540,6 +560,7 @@
     "noIngredientData": "尚無食材資料",
     "noIngredientBody": "尚無評分、描述或食材資料。我們已記錄這道菜以改善目錄。",
     "ofShops": "約 {{pct}}% 的店家",
+    "avoidImplied": "包含在您迴避的{{ingredient}}中",
     "writeReview": "撰寫評論",
     "spiceAboveYou": "比你能接受的更辣",
     "addProfileHint": "新增你的飲食限制以查看個人化評估。",
@@ -579,7 +600,6 @@
     "guestScansTitle": "登入後即可保留掃描紀錄，並獲得專屬於你的安全評級。",
     "greetingSub": "以下是今天適合你的選擇。",
     "greetingSubEmpty": "來找出你的第一道安全菜色吧。",
-    "avoidCount": "你有 {{count}} 項要避開",
     "edit": "編輯",
     "scanTitle": "掃描菜單",
     "scanSub": "對準韓國菜單以查看你的風險。",
@@ -761,7 +781,6 @@
     "title": "編輯飲食限制",
     "save": "儲存限制",
     "notice": "這會影響所有安全警示。請保持正確，變更會立即套用至所有菜色。",
-    "avoidCount": "你避開 {{count}} 項",
     "avoidNone": "尚未避開任何項目",
     "tapToRemove": "點 × 移除",
     "searchPlaceholder": "搜尋食材…",
@@ -887,6 +906,7 @@
     "foodHidden": "目前無法收藏這道菜。",
     "foodUpdating": "這道菜的資訊正在更新中，暫時無法收藏。",
     "title": "已收藏",
+    "count_one": "{{count}} 道菜",
     "count_other": "{{count}} 道菜",
     "newestFirst": "最新優先",
     "swipeHint": "向左滑動卡片即可移除",
@@ -1038,8 +1058,22 @@
     "statusAnswered": "已回覆",
     "statusClosed": "已結案",
     "emptyTitle": "還沒有意見",
-    "replyCount_other": "{{count}} 則回覆",
     "notFound": "找不到這則意見。",
     "teamName": "K-Bap 團隊"
+  },
+  "reviewPrompt": {
+    "title": "K-Bap 對你有幫助嗎？",
+    "positive": "喜歡",
+    "negative": "不太滿意",
+    "later": "稍後"
+  },
+  "ads": {
+    "sponsored": "廣告",
+    "privacyOptions": "隱私選項",
+    "report": "檢舉廣告",
+    "reportPrefill": "檢舉廣告：",
+    "watchToUnlock": "觀看廣告解鎖（{{n}}/{{total}}）",
+    "rewardLimit": "今天到此為止，請明天再試。",
+    "rewardError": "未能記錄這次觀看，請再試一次。"
   }
 }

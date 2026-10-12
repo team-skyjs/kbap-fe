@@ -1,0 +1,112 @@
+/**
+ * useContentTranslation (KB-679, P-431) — 콘텐츠 본문 번역 공용 훅. 1차 표면 = 리뷰(`REVIEW`), 게시글·댓글은
+ * targetType만 바꿔 그대로 붙인다(본문 렌더는 호출부 몫 — 이 훅은 "지금 무엇을 보여 줄지"만 준다).
+ * 스펙 = spec specs/001-personalized-menu-mvp/translate-2026-10-02.md (예진 10/2: 항상 노출 · 본문 교체 · 토글).
+ *
+ * 계약(초안 — 정본은 서버 KB-678 dev 배포 후 Swagger): `POST /api/translations?lang={앱 언어}`
+ *   body `{ targetType, targetId }` → 200 `{ targetType, targetId, language, text }` · 503 `TRANSLATION-001`.
+ * - 요청은 **버튼을 눌렀을 때만**(자동 번역 0). 결과는 react-query 캐시(키 = 종류·id·언어) — 원문으로 돌렸다가
+ *   다시 번역해도 재요청 0, 언어를 바꾸면 다른 키. 캐시는 **세션 동안**(gcTime ∞ — 셀이 내려가거나 화면을 떠났다 와도 유지).
+ * - 보기 상태(원문/번역)는 **카드 로컬 상태** — 서버가 아는 사실이 아니라 보기 설정이다.
+ * - 실패(503·400 REVIEW-001·네트워크·빈 text) = 토스트(에러 변형) + 원문 유지. 실패는 캐시하지 않는다(다음 탭에서 다시 요청).
+ * - 캐시 키에 본문 해시 · 보기 상태는 "보고 있는 키" — 본문·언어가 바뀌면 원문으로 돌아가고 다음 탭에 재요청.
+ */
+import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { api, apiLang } from '@/lib/api/client';
+import { adaptTranslation, type Translation, type TranslationSource, type TranslationWire } from '@/lib/api/translationAdapter';
+import { showTopToast } from '@/components/topToastStore';
+import { EVENTS, track } from '@/lib/analytics';
+
+export type TranslationTargetType = 'REVIEW';
+
+export interface ContentTranslation {
+  /** 번역문을 보여 주는 중이면 그 텍스트, 아니면 null(= 원문을 그린다). */
+  translatedText: string | null;
+  showingTranslated: boolean;
+  loading: boolean;
+  /** 번역을 보여 주는 중일 때의 원문 언어(도메인 — 어댑터가 판정). 번역 중이 아니면 null. */
+  source: TranslationSource | null;
+  /** 버튼 한 번 — 원문이면 번역(캐시 있으면 즉시), 번역 중이면 원문으로. */
+  toggle: () => void;
+}
+
+export function useContentTranslation(targetType: TranslationTargetType, targetId: string, text: string): ContentTranslation {
+  const { t, i18n } = useTranslation();
+  const qc = useQueryClient();
+  const lang = i18n?.language ?? 'en';
+  // #220 공부 ①: 키에 본문 해시 — 리뷰가 수정되면(누가 고쳤든) 다른 키 = 옛 번역 재사용 0, 다음 탭에 재요청
+  const queryKey = React.useMemo(() => ['translation', targetType, targetId, lang, hashText(text)] as const, [targetType, targetId, lang, text]);
+  const keyStr = queryKey.join('|');
+  // 캐시를 **구독으로** 읽는다(KB-694): 렌더 중 `qc.getQueryData(queryKey)`를 그냥 부르면 React Compiler가 [qc, queryKey]로
+  // 메모이즈해 fetch 뒤 재렌더에도 첫 렌더의 undefined가 남았다("번역 보기"를 눌러도 화면 무변 — teamtest 실기).
+  // useSyncExternalStore = 바깥 가변 상태를 렌더에 쓰는 정석: 캐시 이벤트마다 getSnapshot을 다시 불러 값이 바뀐 경우만 재렌더.
+  // 항목은 만들지 않는다(getQueryData는 읽기만 — Codex #223 P2 "누르지 않은 리뷰 항목 0" 유지). 항목 생성은 탭 시점 fetchQuery뿐.
+  const subscribe = React.useCallback((onChange: () => void) => qc.getQueryCache().subscribe(onChange), [qc]);
+  const getSnapshot = React.useCallback(() => qc.getQueryData<Translation>(queryKey), [qc, queryKey]);
+  const data = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  // #220 공부 ②: 보기 상태 = "어느 키의 번역을 보고 있나". 키가 바뀌면(언어·본문) 저절로 원문 — 표시와 탭 판정이 같은 값을 본다
+  const [shownKey, setShownKey] = React.useState<string | null>(null);
+  // KB-703(예진 10/2 "버튼이 갑자기 사라지는 경우는 없게"): 같은 언어 응답도 **일반 번역 결과처럼** 보여 준다 —
+  // 라벨은 "Translated from ○○"/"Translated", 본문은 받은 글(원문과 같아도), 다시 누르면 원문. 탭 뒤 라벨이 사라지는 경로 0.
+  // (어댑터의 sameLanguage는 계측 result=same에만 쓴다 — 표시에 안 씀)
+  const showing = shownKey === keyStr && data != null;
+  const [loading, setLoading] = React.useState(false);
+  const target = targetType.toLowerCase(); // 계측 enum(review|post …) — 공용 훅이라 하드코딩 금지
+
+  const toggle = React.useCallback(() => {
+    if (loading) return;
+    if (showing) {
+      track(EVENTS.review_translate_toggle, { action: 'original', target });
+      setShownKey(null);
+      return;
+    }
+    if (data != null) {
+      track(EVENTS.review_translate_toggle, { action: 'translate', target, result: data.sameLanguage ? 'same' : 'ok' });
+      setShownKey(keyStr); // 캐시 — 재요청 0
+      return;
+    }
+    setLoading(true);
+    qc.fetchQuery({ queryKey, queryFn: () => fetchTranslation(targetType, targetId), staleTime: Infinity, gcTime: Infinity, retry: 0 })
+      .then((tr) => {
+        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: tr.sameLanguage ? 'same' : 'ok' }); // 계측 = enum만(원시 코드 0)
+        setShownKey(keyStr); // 같은 언어여도 그대로 표시(KB-703)
+      })
+      .catch(() => {
+        // Codex #223 P2: 실패해도 fetchQuery가 만든 항목(오류 상태)이 gcTime ∞로 남는다 → 그 항목만 제거(무한 보존 = 성공만)
+        qc.removeQueries({ queryKey, exact: true });
+        track(EVENTS.review_translate_toggle, { action: 'translate', target, result: 'fail' });
+        showTopToast(t('translation.translateFailed'), { error: true }); // 원문 유지
+      })
+      .finally(() => setLoading(false));
+  }, [data, keyStr, loading, qc, queryKey, showing, t, target, targetId, targetType]);
+
+  return {
+    translatedText: showing ? data.text : null,
+    showingTranslated: showing,
+    loading,
+    source: showing ? data.source : null,
+    toggle,
+  };
+}
+
+/** 키용 짧은 해시(djb2) — 본문 원문을 키에 통째로 싣지 않으려는 것뿐, 보안 용도 아님.
+ *  ponytail: 충돌 시 최악 = 다른 본문의 번역 재사용(같은 리뷰·같은 언어 안에서만) — 32비트라 실사용 무시 가능. */
+function hashText(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+async function fetchTranslation(targetType: TranslationTargetType, targetId: string): Promise<Translation> {
+  const id = Number(targetId);
+  const res = await api.post<TranslationWire>(`/api/translations?lang=${apiLang()}`, {
+    targetType,
+    targetId: Number.isFinite(id) ? id : targetId,
+  });
+  const tr = adaptTranslation(res); // 와이어 판정은 어댑터에서만 — 이 아래는 도메인 값
+  // #220 공부 메모 ③: 빈 결과 = 실패(throw → 항목 제거·토스트) — 빈 본문 + 번역 라벨 방지
+  if (!tr.text?.trim()) throw new Error('empty translation');
+  return tr;
+}

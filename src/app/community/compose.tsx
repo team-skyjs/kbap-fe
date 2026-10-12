@@ -28,12 +28,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color as C, font, primaryTint, primaryTint2, accentTint, radius, shadow } from '@/lib/theme';
-import { FLAGS } from '@/lib/flags';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { Btn, Flag, IconCheck, IconClose, IconFood, IconGallery, IconGlobe, IconMapPin, IconPlus, IconProfile, IconSearch, MedalEmblem, SubHeader, Input } from '@/components';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { useIsGuest } from '@/lib/auth/useSession';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { useMe } from '@/lib/data/useMe';
 import { useInfiniteFoods, useSearchFoods, useScannedFoods } from '@/lib/data/useFoods';
@@ -42,12 +42,18 @@ import { searchPlaces } from '@/lib/community/places';
 import type { FoodTagRef, PlaceTagRef } from '@/lib/community/types';
 import { EVENTS, track } from '@/lib/analytics';
 import { Shimmer } from '@/components/Skeleton';
+import { useUploadAbort } from '@/lib/useUploadAbort';
 
 const BODY_MAX = 2000;
 const COUNTER_SHOW = 1800;
 const COUNTER_WARN = 1950;
 const PHOTO_MAX = 4;
 const FOOD_TAG_MAX = 3;
+
+/** P-142 → KB-674: 커뮤니티 글 장소 태그 = **서버 계약 부재**(어댑터가 placeTag를 전송하지 않는다 — community/adapter postBody).
+ *  예전엔 리뷰 장소 줄과 함께 `FLAGS.placeTagsEnabled`에 묶여 있었다 — 그 플래그는 소비처가 사라져 삭제했고,
+ *  이 행은 사유가 그대로라 사유 이름을 단 상수로 분리했다. 계약 배포 시 true + 어댑터 배선. */
+const COMMUNITY_POST_PLACE_CONTRACT = false;
 
 export default function CommunityCompose() {
   const router = useRouter();
@@ -68,9 +74,10 @@ export default function CommunityCompose() {
   const [foodTags, setFoodTags] = React.useState<FoodTagRef[]>([]);
   const [placeTag, setPlaceTag] = React.useState<PlaceTagRef | null>(null);
   const [tagSheet, setTagSheet] = React.useState<'food' | 'place' | null>(null);
-  const [leaveConfirm, setLeaveConfirm] = React.useState(false);
   const [posted, setPosted] = React.useState(false);
   const seeded = React.useRef(false);
+  // 수정 기준 = 프리필 시점 스냅샷(#236 /review G — 살아 있는 editingPost와 비교하면 재조회로 값이 바뀔 때 안 고쳤는데 dirty)
+  const [baseline, setBaseline] = React.useState<string | null>(null);
 
   // 수정 모드 — 기존 글 프리필 (1회)
   React.useEffect(() => {
@@ -79,6 +86,7 @@ export default function CommunityCompose() {
       setPhotos(editingPost.photos);
       setFoodTags(editingPost.foodTags);
       setPlaceTag(editingPost.placeTag);
+      setBaseline(JSON.stringify([editingPost.body, editingPost.photos, editingPost.foodTags, editingPost.placeTag]));
       seeded.current = true;
     }
   }, [editingPost]);
@@ -87,12 +95,12 @@ export default function CommunityCompose() {
   const overLimit = len > BODY_MAX;
   const canPost = body.trim().length > 0 && !overLimit && !createPost.isPending && !updatePost.isPending;
 
-  const dirty = body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
-
-  const back = () => {
-    if (dirty && !posted) return setLeaveConfirm(true); // 빈 초안은 조용히 닫힘
-    router.back();
-  };
+  // KB-708: 작성 = 뭐라도 넣었으면 · 수정 = 프리필 값과 달라졌으면(안 고친 수정은 조용히 닫힘 — 리뷰 수정과 같은 규칙)
+  const draft = JSON.stringify([body, photos, foodTags, placeTag]);
+  const typed = body.trim().length > 0 || photos.length > 0 || foodTags.length > 0 || placeTag != null;
+  // 프리필 전(조회 지연·실패 중에도 폼은 열려 있다) = 입력이 있으면 지킨다(#236 /review 2R)
+  const dirty = editId ? (baseline != null ? draft !== baseline : typed) : typed;
+  const back = () => router.back(); // 확인은 아래 useLeaveConfirm이 모든 뒤로 경로에서
 
   const pickPhotos = async () => {
     if (photos.length >= PHOTO_MAX) return;
@@ -114,9 +122,13 @@ export default function CommunityCompose() {
 
   // P-173: 글 작성은 비멱등(연타 = 중복 글) — 공용 가드(동기 ref, isPending 상태 가드는 레이스)
   const { busy: submitting, run: runSubmit } = useSubmitGuard();
+  const nextUploadSignal = useUploadAbort(); // KB-711: 올리는 중 화면을 떠나면 사진 업로드 취소
+  // KB-708: 헤더 X·스와이프 뒤로·Android 하드웨어 뒤로 전부 같은 확인(전엔 X만 막았다). 성공 뒤 = 완료 모달 → 막지 않음
+  // #236 /review B: 게스트 분기(early return)엔 확인 창이 없다 — 거기서 막으면 나갈 길이 로그인뿐. 폼 분기에서만 막는다
+  const leave = useLeaveConfirm(!isGuest && dirty && !posted, submitting);
   const submit = () => {
     if (!canPost || submitting) return;
-    const input = { body: body.trim(), photos, foodTags, placeTag };
+    const input = { body: body.trim(), photos, foodTags, placeTag, signal: nextUploadSignal() };
     void runSubmit(
       () =>
         new Promise<void>((resolve) => {
@@ -237,8 +249,8 @@ export default function CommunityCompose() {
             chips={foodTags.map((f) => ({ key: f.foodId, label: f.name, onRemove: () => setFoodTags((cur) => cur.filter((x) => x.foodId !== f.foodId)) }))}
             onPress={() => setTagSheet('food')}
           />
-          {/* P-142: 장소 태그 = 계약 부재(foodTags만) — placeTagsEnabled로 게이트(KB-274 복원 시 재개) */}
-          {FLAGS.placeTagsEnabled && (
+          {/* P-142: 장소 태그 = 계약 부재(foodTags만) — COMMUNITY_POST_PLACE_CONTRACT로 게이트 */}
+          {COMMUNITY_POST_PLACE_CONTRACT && (
             <TagRow
               iconTile={<View style={[styles.tagIconTile, { backgroundColor: accentTint }]}><IconMapPin size={15} color={C.accent} /></View>}
               placeholder={t('community.tagPlace')}
@@ -267,7 +279,7 @@ export default function CommunityCompose() {
             tinted={foodTags.length > 0 && foodTags.length < FOOD_TAG_MAX}
             onPress={() => setTagSheet('food')}
           />
-          {FLAGS.placeTagsEnabled && (
+          {COMMUNITY_POST_PLACE_CONTRACT && (
             <ToolBtn
               icon={<IconMapPin size={20} color={placeTag ? C.ink3 : C.ink2} />}
               tinted={false}
@@ -292,24 +304,8 @@ export default function CommunityCompose() {
         t={t}
       />
 
-      {/* 이탈 확인 — dirty만 (빈 초안은 조용히 닫힘). 시안 문법: 라운드 26 카드 */}
-      <Modal visible={leaveConfirm} transparent animationType="fade" onRequestClose={() => setLeaveConfirm(false)}>
-        <View style={styles.confirmBackdrop}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>{t('community.leaveTitle')}</Text>
-            <Text style={styles.confirmBody}>{t('community.leaveBody')}</Text>
-            <View style={{ gap: 9, marginTop: 6 }}>
-              <Btn variant="ghost" onPress={() => setLeaveConfirm(false)}>
-                {t('community.keepWriting')}
-              </Btn>
-              {/* P-175: destructive도 보더 버튼 프레임(재스캔 모달과 동일 문법) */}
-              <Btn variant="dangerGhost" onPress={() => { setLeaveConfirm(false); router.back(); }} testID="discard-go">
-                {t('community.discard')}
-              </Btn>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 이탈 확인 — dirty만 (빈 초안은 조용히 닫힘). 공용 LeaveConfirmModal(KB-708 — 리뷰 작성·수정과 공유) */}
+      <LeaveConfirmModal {...leave.modal} />
 
       {/* 게시 성공 — 상단 원형 일러 슬롯(마스코트 부재 → SuccessCheck 대체, 스펙 허용) */}
       <Modal visible={posted} transparent animationType="fade">
@@ -755,7 +751,6 @@ const styles = StyleSheet.create({
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
   confirmTitle: { fontFamily: font.display, fontSize: 17.5, color: C.ink, textAlign: 'center' },
-  confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   illoSlot: { width: 88, height: 88, borderRadius: 44, backgroundColor: primaryTint2, alignItems: 'center', justifyContent: 'center' },
 
   /* tag picker sheet — 시안 4 */

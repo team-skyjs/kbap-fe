@@ -24,16 +24,20 @@ export function isProdChannel(): boolean {
 /** P-399: **진단 문구를 보여도 되는 채널**만 참. `!isProdChannel()`로 negate하면
  *  `preview`(production 백엔드를 쓰는 내부 배포)까지 포함돼 원시 네이티브 에러 문자열이
  *  샌다(Codex #176) — 그래서 부정이 아니라 **명시 허용**이다.
- *  채널 부재(웹·jest·dev 런처)는 로컬 개발이라 포함한다.
+ *  채널 부재(null·빈 문자열·못 읽음 — 웹·jest·dev client)는 **__DEV__일 때만** 로컬 개발로 포함한다(KB-691).
  *  P-407: `teamtest-prod`(prod 백엔드 리허설 테플 빌드)도 **내부 테스터 전용**이라 teamtest처럼 노출한다.
  *  원칙 — 백엔드는 prod처럼(eas.json env), 진단 노출·OTA 적용 정책은 teamtest처럼. */
 function isDiagnosticChannelInner(): boolean {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ch = (require('expo-updates') as { channel?: string | null }).channel;
-    return ch == null || ch === 'teamtest' || ch === 'teamtest-prod' || ch === 'development';
+    // KB-691: 채널 부재 = null **또는 빈 문자열**(dev client는 네이티브가 ""를 준다 — expo-updates AppController.swift
+    // `requestHeaders["expo-channel-name"] ?? ""`). 부재는 **개발 번들(__DEV__)일 때만** 로컬로 본다 — EAS 빌드 프로필은
+    // 전부 채널을 박으므로 릴리스에서 부재 = 비정상 → 진단 끔(production·preview로 새는 방향 차단).
+    if (ch == null || ch === '') return __DEV__;
+    return ch === 'teamtest' || ch === 'teamtest-prod' || ch === 'development';
   } catch {
-    return true; // 채널을 못 읽는 환경 = 로컬
+    return __DEV__; // 채널을 못 읽는 환경 — 개발 번들일 때만 로컬
   }
 }
 const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
@@ -44,17 +48,6 @@ export function isDiagnosticChannel(): boolean {
 }
 
 export const FLAGS = {
-  /**
-   * Category browsing UI: home "Browse by category" section + food-tab
-   * category chips. Excluded from MVP (KB-108, 2026-07-08 회의) — the list
-   * contract has no category param yet. Set true to bring both back.
-   */
-  categoryUI: false,
-  /**
-   * Onboarding "dishes you've tried" (recommendation seed) step. Excluded
-   * from MVP (KB-110 / FR-005) — set true to restore the step in v2.
-   */
-  onboardingTriedDishes: false,
   /**
    * 게스트(비회원) 조회 모드 — 2026-07-13 회의 확정, MVP 기본 ON.
    * OFF = 로그인 필수 동작(QA용 안전장치). KB-77/78/84.
@@ -77,17 +70,6 @@ export const FLAGS = {
    * 좋아요·신고(리뷰만)·차단까지 이 플래그가 스위칭. 문제 시 false로 재봉인.
    */
   reviewsLiveEnabled: true,
-  /**
-   * 리뷰 장소 태그 (P-116, 8/4 회의) — 장소 검색 BE(KB-274)가 카카오 월렛
-   * 블록으로 미배포 → 이번 릴리스 전면 숨김(전 채널). 배포 시 true 한 줄 복원.
-   * 커뮤니티 작성의 장소 행은 이 플래그 무관(coming-soon으로 미출시 — 별도).
-   */
-  placeTagsEnabled: false,
-  /**
-   * 리뷰 번역 버튼 — 리뷰 번역이 BE 계약에 아직 없음 (P-085 지시 7, 종한 질의 중).
-   * 기제작 코드(useReviewTranslation)는 보존 — 계약 배포 시 true로 복원.
-   */
-  reviewTranslationEnabled: false,
   /**
    * 시스템 카메라 경로 (P-137, 8/6 예진 A/B) — true면 스캔 탭 = 런처 화면 +
    * launchCameraAsync(네이티브 줌·가로·플래시). false = 현행 커스텀 인앱 카메라.
@@ -116,20 +98,10 @@ export const FLAGS = {
    */
   scanV2: true,
   /**
-   * 홈 "You avoid n things" 칸 (P-171, 8/11 예진) — 홈에서 불필요 판정.
-   * 컴포넌트·코드 보존(타 화면 재활용 대비) — true 한 줄로 복원.
-   */
-  homeAvoidBanner: false,
-  /**
    * 커뮤니티 "글" 기능(피드·작성·댓글) — P-179: 탭을 전역 리뷰 피드로 전환하며
    * 보존형 숨김(코드 무삭제 — 홈 배너·scanV2 킬스위치 문법). true 한 줄 복원.
    */
   communityPostsEnabled: false,
-  /**
-   * 홈 전 콘텐츠 노출 (P-216/KB-310, 멘토 #9·12·37) — **디자이너 캡쳐용 러프**,
-   * dev 계열만. 음식 탐색·리뷰 피드·인기 검색·저장 목록 섹션을 홈에 얹는다
-   * (전부 기존 컴포넌트 재사용). 디자인 확정 후 채널 조건 재검토.
-   */
   /**
    * 알림함 (P-216/KB-39, 멘토링 8/15). 목록·배지 = 서버 `GET /api/notifications`
    * (KB-499, lib/data/useNotifications — 기기 단위·7일·미읽음 파생). 로컬 기록 없음.
@@ -163,11 +135,29 @@ export const FLAGS = {
    */
   pushEnabled: true, // P-289(예진 9/7): 권한 팝업·설정·리마인더 전 채널(KB-422 재숨김 사유 소멸)
   /**
+   * KB-739(에픽 KB-737, 10/12 예진): AdMob — 전부 true, 채널 무관. 단위 ID는 lib/ads/units.ts가 production 채널만 실값,
+   * 그 외 Google 데모 고정. off·미수신·초기화 전이면 자리는 **높이 0으로 접힘**(빈 칸·스켈레톤 금지). 스토어 빌드 플래그
+   * 감사표에 광고 항목(발주 완료 절). 형식별 off는 해당 자리만 접힌다(enabled=false면 SDK 로드 자체를 안 한다).
+   */
+  ads: { enabled: true, banner: true, interstitial: true, native: true, rewarded: true },
+  /**
    * 커뮤니티 상세 번역 토글 (P-142) — lang이 하드 필수(누락 400)라 "원문"
    * 조회 수단이 계약에 없음(응답도 단일 content) → off = 토글 미노출, 본문은
    * 항상 lang=리더 언어 응답. 원문 규약(sourceLang·원문 필드 등) 배포 시 재개.
    */
   communityTranslateEnabled: false,
+  /**
+   * 홈 카운트다운 뱃지(불꽃 — 무료 스캔 N회 남음) 프로토타입 (P-432/KB-680) — 시안 D-21 확정 전이라
+   * **진단 채널만**(teamtest·teamtest-prod·dev·로컬). production·preview off = 홈 무변.
+   * 명시 허용(isDiagnosticChannel) — `!isProdChannel()` negate는 preview까지 연다(channel-gate 원칙).
+   */
+  countdownBadge: DIAGNOSTIC_CHANNEL,
+  /**
+   * 리뷰 본문 번역 버튼 (P-431/KB-679) — 서버 KB-678(`POST /api/translations`) 배포 전 노출 = 항상 실패하는 버튼.
+   * **진단 채널만**(teamtest·teamtest-prod·dev·로컬, 명시 허용) → prod 서버 배포 확인 후 `true`(Codex #220 P1).
+   * off = 본문만(버튼 없음), 원문 렌더 무변.
+   */
+  contentTranslation: DIAGNOSTIC_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

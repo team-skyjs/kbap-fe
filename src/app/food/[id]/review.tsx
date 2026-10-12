@@ -12,10 +12,11 @@
 // 플래그가 런타임 값(원격 컨피그·A/B 등)이 되는 순간 훅 순서가 깨진다. 소진 발주(KB-603~)에서
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { Alert, Platform, ActivityIndicator, Image, Keyboard, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import * as ImagePicker from 'expo-image-picker';
 import { choosePhotoSource } from '@/lib/data/profileImage';
 import { foodSubtitle } from '@/lib/review/foodSubtitle';
@@ -40,10 +41,22 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { ExtrasRater, PlacePickerSheet, runAfterKeyboardHidden, type ReviewPlaceTag } from '@/features/review/ReviewCellParts';
 import { EMPTY_EXTRAS, extrasFromReview, type ReviewExtras } from '@/lib/review/reviewExtras';
-import { Modal } from 'react-native';
 import { openAppSettings } from '@/lib/openExternal';
+import { useUploadAbort } from '@/lib/useUploadAbort';
+import { isUploadAborted } from '@/lib/api/uploadAbort';
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 
 const MAX = 1000; // P-085: 계약 확정값 (구 500)
+// ponytail: 이모지·예측 바 전환(+44~53pt)만 줄어든 만큼 내린다 — 키보드가 통째로 다시 올라오는 큰 축소(앱 복귀 등 ~300pt)는
+// 커서가 위쪽이면 화면 밖으로 밀리므로 무동작. 캐럿 좌표를 얻게 되면 이 상한 대신 그 줄로 맞출 것.
+const SHRINK_FOLLOW_MAX = 120;
+
+/** KB-708: 이탈 확인 비교용 — 화면이 들고 있는 작성 값 한 벌(별·본문·사진·장소·세부 별점) */
+function draftKey(rating: number, body: string, photos: unknown[], place: unknown, extras: unknown): string {
+  return JSON.stringify([rating, body, photos, place, extras]);
+}
 
 export default function ReviewCompose() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -87,20 +100,41 @@ function ReviewComposeScreen() {
 
   // P-358: 프리필 — 리뷰 도착 시 1회(별·본문·extras·place·사진 = 원격 슬롯)
   const prefilledRef = useRef(false);
+  // KB-708: 이탈 확인의 기준 = 화면이 처음 가진 값(작성 = 빈 값, 수정 = 프리필 직후) — 지금 값과 다르면 "변경 있음"
+  const [baseline, setBaseline] = useState(() => draftKey(0, '', [], null, EMPTY_EXTRAS));
   useEffect(() => {
     if (!editing || !editReviewData || prefilledRef.current) return;
     prefilledRef.current = true;
-    setRating(editReviewData.rating);
-    setBody(editReviewData.body ?? '');
-    setExtras(extrasFromReview(editReviewData));
-    setPlace(editReviewData.place ?? null);
-    setPhotos((editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })));
+    const pre = {
+      rating: editReviewData.rating,
+      body: editReviewData.body ?? '',
+      extras: extrasFromReview(editReviewData),
+      place: editReviewData.place ?? null,
+      photos: (editReviewData.photos ?? []).map((url) => ({ kind: 'remote' as const, url })),
+    };
+    setRating(pre.rating);
+    setBody(pre.body);
+    setExtras(pre.extras);
+    setPlace(pre.place);
+    setPhotos(pre.photos);
+    setBaseline(draftKey(pre.rating, pre.body, pre.photos, pre.place, pre.extras));
   }, [editing, editReviewData]);
+  // KB-708: 변경이 있을 때만 이탈 확인 — 뒤로 가기 버튼·스와이프 뒤로·Android 하드웨어 뒤로 전부(usePreventRemove = 네이티브 스택 제스처까지).
+  // 등록 성공(완료 모달)·저장 성공(복귀) 뒤에는 막지 않는다.
 
   // P-168 🚨 → P-173 공용화: isPending은 mutateAsync 구간만 커버 — 사진 업로드 선행
   // 구간 포함 전체를 useSubmitGuard(동기 ref+busy)가 단일 비행으로 보장.
   const { busy: posting, run: runPost } = useSubmitGuard();
-  const canPost = canPostReview(rating) && !posting;
+  const nextUploadSignal = useUploadAbort(); // KB-711: 올리는 중 화면을 떠나면 사진 업로드 취소
+  const reviewPrompt = useReviewPrompt(); // KB-730: 등록 완료 모달 뒤 리뷰 유도
+  const modalQueue = useOneShotQueue(); // KB-730: 화면 일회성 모달 큐(완료 모달이 완전히 닫힌 뒤 유도 시트)
+  const [confirmClosed, setConfirmClosed] = useState(false); // 완료 모달 표시만 접는다 — submitted는 유지(이탈 확인 재무장·Post 재활성 방지)
+  const runAfterPosted = () => modalQueue.add(reviewPrompt.step('review', { after: () => router.back() }));
+  // #236 /review B: 막는 조건 ⊆ 확인 창이 렌더되는 조건 — 게스트(세션 만료)·수정 미도착 분기는 아래 early return이라 모달이 없다.
+  // 거기서 막으면 뒤로·게이트 "둘러보기"가 전부 무반응 = 나갈 길이 로그인뿐. 폼이 보이는 분기에서만 막는다.
+  const formShown = !isGuest && !(editing && !editReviewData);
+  const leave = useLeaveConfirm(formShown && draftKey(rating, body, photos, place, extras) !== baseline && !submitted, posting);
+  const canPost = canPostReview(rating) && !posting && !submitted; // KB-730: 등록 뒤 Post 재활성 0(중복 리뷰 — P-168 류)
 
   // P-156: 갤러리 멀티 선택 — selectionLimit = 남은 슬롯(3 − 현재). 구형 안드 등
   // limit 미준수 산출물은 addReviewPhotos slice(3)가 방어 + 안내 토스트 1회.
@@ -165,7 +199,11 @@ function ReviewComposeScreen() {
       try {
         // P-358: 신규(local)만 업로드, 기존(remote)은 URL→path 역변환 — 슬롯 순서 보존
         const localUris = photos.filter((p) => p.kind === 'local').map((p) => p.uri);
-        const uploaded = await uploadReviewImages(localUris);
+        const signal = nextUploadSignal();
+        const uploaded = await uploadReviewImages(localUris, signal);
+        // KB-711: 본 요청 직전 이탈 확인 — 마지막 장 complete 도중(또는 사진 0장) 떠났으면 등록·저장하지 않는다
+        // (throw가 아니라 return — try 안 throw는 컴파일러가 이 컴포넌트를 건너뛰는 사유를 하나 더 늘린다)
+        if (signal.aborted) return;
         let li = 0;
         const imagePaths = photos.map((p) => (p.kind === 'remote' ? imageUrlToPath(p.url) : uploaded[li++]));
         if (editing && editReviewData) {
@@ -175,9 +213,9 @@ function ReviewComposeScreen() {
             current: editReviewData,
             changes: { rating, body: body.trim() || null, place, extras, photos: imagePaths }, // place 해제 = null 명시
           });
-          // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358)
+          // 저장 성공 = 복귀 + 상단 토스트(완료 모달 아님 — P-358). KB-708: 이탈 확인 해제 뒤 복귀(저장한 변경을 "버릴까요?"로 묻지 않게)
           showTopToast(t('editReview.savedToast'));
-          router.back();
+          leave.release(() => router.back());
           return;
         }
         await createReview.mutateAsync({
@@ -194,6 +232,7 @@ function ReviewComposeScreen() {
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)
         await runAfterKeyboardHidden(() => setSubmitted(true)); // await = 지연 창에도 posting 가드 유지(P-173)
       } catch (e) {
+        if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 떠난 화면에 실패 표시 없음
         console.log('[review] post failed — staying on screen:', (e as Error)?.message);
         // KB-620(9/22 예진): 음식이 이미지 재생성으로 **일시 숨김**이면 에러 표면 대신 조용한 안내.
         // ⚠️ 화면을 닫지 않는다 — 리뷰엔 초안 저장소가 없어 닫는 순간 본문·사진이 사라진다.
@@ -217,6 +256,13 @@ function ReviewComposeScreen() {
   const [kbH, setKbH] = useState(0);
   const svH = useRef(0); // ScrollView 뷰포트 높이 실측
   const blockBottom = useRef(0); // 입력 블록 하단 y(스크롤 콘텐츠 좌표) — 커서 하단 프록시
+  // KB-700(#228 공부): 문서 중간을 탭하면(atEnd false) 키보드가 올라와 뷰포트가 줄 때 그 줄이 뷰포트 밖으로 밀릴 수 있다 —
+  // 예전엔 시스템 키보드 인셋(automaticallyAdjustKeyboardInsets)이 커서를 보이게 했는데 KAV로 바꾸며 빠졌다. RN은 캐럿 좌표를 안 주므로
+  // **탭한 위치(onPressIn locationY)** 를 캐럿 줄의 대용으로 쓴다.
+  const blockTop = useRef(0);
+  const inputTopInBlock = useRef(0);
+  const touchY = useRef<number | null>(null);
+  const scrollY = useRef(0);
   const kbHRef = useRef(0);
   // KB-657: 최신값 ref는 렌더 중이 아니라 커밋(layout effect)에서 동기화 — 리더는 전부 이벤트·리스너·passive effect(layout 뒤)
   useLayoutEffect(() => {
@@ -225,26 +271,75 @@ function ReviewComposeScreen() {
   // P-163: 블록 하단 프록시는 "커서 = 문서 끝"일 때만 유효 — 중간/상단 편집 시
   // 하단 추종이 화면을 뺏는 회귀(실기 스샷). 셀렉션으로 끝 여부를 추적해 게이트.
   const atEnd = useRef(true);
+  // KB-700 ①(QA 진단 로그로 확정): 마운트 직후 본문 Input의 첫 onContentSizeChange/onSelectionChange가 atEnd 초기값 true로
+  // 커서 추종을 불러, 포커스도 입력도 없는데 본문 블록 끝이 보이게 53.7pt 스크롤했다(카드 윗줄이 헤더 밑으로).
+  // → 추종은 **본문이 포커스된 동안에만**(호출부 셋 — 크기 변화·선택 변화·키보드 표시 — 이 모두 여기를 지난다).
+  const bodyFocusedRef = useRef(false);
+  const followedBy = useRef(0); // KB-708 D: 이모지 키보드로 따라 내린 누적량(되돌릴 몫)
+  const followedAt = useRef(0); // 마지막으로 따라 내린(또는 되돌린) 목표 y — scrollY가 여기 그대로일 때만 되돌림
   const bodyLenRef = useRef(0);
   useLayoutEffect(() => {
     bodyLenRef.current = body.length;
   });
   const ensureCursorVisible = () => {
-    const visible = svH.current - kbHRef.current;
+    if (!bodyFocusedRef.current) return;
+    // KB-700: iOS는 화면이 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
+    // 키보드를 또 빼면 이중 차감. Android(adjustResize)는 기존 계산 유지(Q-87 실기 통과 경로 무변).
+    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
     if (visible <= 0 || !blockBottom.current) return;
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
+  const ensureTappedLineVisible = () => {
+    if (!bodyFocusedRef.current || touchY.current == null) return;
+    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
+    if (visible <= 0) return;
+    const lineTop = blockTop.current + inputTopInBlock.current + touchY.current - 12;
+    const lineBottom = lineTop + 32; // 탭한 줄(본문 줄 높이 + 여유)
+    if (lineBottom > scrollY.current + visible) scrollRef.current?.scrollTo({ y: lineBottom - visible + 16, animated: true });
+    else if (lineTop < scrollY.current) scrollRef.current?.scrollTo({ y: Math.max(0, lineTop - 16), animated: true });
+  };
+  /** 키보드 표시·뷰포트 축소 때 한 번: 끝 커서면 블록 끝, 아니면 탭한 줄 */
+  const followOnViewportChange = (shrinkBy = 0) => {
+    if (atEnd.current) ensureCursorVisible();
+    else if (touchY.current != null) ensureTappedLineVisible();
+    // KB-708(5): 중간을 고치는 중(탭 대용값은 입력 시작에 지워짐) 키보드가 더 커지면(이모지 키보드 +53) 캐럿 좌표가 없으니
+    // 줄어든 만큼 그대로 내려 아래 끝에 있던 내용(편집 중인 줄)을 계속 보이게. 포커스 없으면 무동작(#228 진입 직후 스크롤 금지 유지).
+    else if (bodyFocusedRef.current && shrinkBy > 0 && shrinkBy <= SHRINK_FOLLOW_MAX) {
+      const target = scrollY.current + shrinkBy;
+      scrollRef.current?.scrollTo({ y: target, animated: true });
+      followedBy.current += shrinkBy; // #236 /review D: 되돌림 후보(켤 때마다 53씩 쌓이던 것) — 실제 되돌림 조건은 아래 unfollow
+      followedAt.current = target; // 되돌림은 이 위치 그대로일 때만(그 사이 사용자가 스크롤했으면 무효)
+    }
+  };
+  // 뷰포트가 다시 늘면(이모지 키보드 끔) 따라 내린 양만큼 되돌리려 하지만, 위치가 그대로일 때만이라 실기에선 대개 제자리에 머문다
+  // (QA 10/3: 끈 뒤 처음 위치로 돌아오지 않음 — 가림은 없어 유지 판정). 포커스 중 · 상한 이내만, 내린 적 없으면 무동작
+  const unfollowOnViewportGrow = (growBy: number) => {
+    // 큰 증가(키보드만 내려감 — Android 뒤로 등) 또는 따라 내린 뒤 사용자가 스크롤함 = 되돌릴 몫 폐기(이유 없이 53pt 튀던 것)
+    if (growBy > SHRINK_FOLLOW_MAX || Math.abs(scrollY.current - followedAt.current) > 1) followedBy.current = 0;
+    if (!bodyFocusedRef.current || followedBy.current <= 0) return;
+    const back = Math.min(growBy, followedBy.current);
+    followedBy.current -= back;
+    followedAt.current = Math.max(0, scrollY.current - back);
+    scrollRef.current?.scrollTo({ y: followedAt.current, animated: true });
+  };
+  // 마운트 1회 등록한 키보드 리스너가 최신 함수를 부르게(최신 콜백 ref — CountdownBadge endRef와 같은 방식)
+  const followRef = useRef(followOnViewportChange);
+  useLayoutEffect(() => {
+    followRef.current = followOnViewportChange;
+  });
   // KB-657: 이 effect는 위 ref·ensureCursorVisible을 읽으므로 그 **선언 뒤**에 둔다(컴파일러 "선언 전 접근" — 마운트 1회
   // 등록이라 실행 순서는 무변: 사이에 다른 effect 없음).
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', (e) => {
       kbHRef.current = e.endCoordinates?.height ?? 0;
       setKbH(kbHRef.current);
-      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서만)
-      if (atEnd.current) ensureCursorVisible();
+      // P-163: 포커스 시점엔 키보드 높이가 없어 스크롤이 못 뜀 — 실측 도착 시 1회(끝 커서 = 블록 끝 · 중간 = 탭한 줄)
+      followRef.current();
     });
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKbH(0);
+    });
     return () => {
       show.remove();
       hide.remove();
@@ -287,7 +382,9 @@ function ReviewComposeScreen() {
 
 
   return (
-    <View style={styles.root}>
+    // KB-700: iOS = KeyboardAvoidingView(padding) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다(글쓰기 compose와 같은 패턴).
+    // Android = adjustResize라 창 자체가 줄어 불필요(behavior undefined — compose와 동일).
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="review-kav">
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
       <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
@@ -297,9 +394,19 @@ function ReviewComposeScreen() {
         ref={scrollRef}
         keyboardDismissMode="on-drag"
         contentContainerStyle={[styles.body, { paddingBottom: 28 }]}
-        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} // P-348 ⑤: 수동 kbH 패딩 = 키보드 위 공백(안드 = adjustResize라 불필요)
+        // KB-700: automaticallyAdjustKeyboardInsets 제거 — 바깥 KAV가 ScrollView를 키보드 위로 줄이므로 인셋까지 더하면 이중(P-348 ⑤의 "수동 패딩 공백"과 같은 문제)
+        scrollEventThrottle={16}
+        onScroll={(e) => { scrollY.current = e.nativeEvent.contentOffset.y; }}
         keyboardShouldPersistTaps="handled"
-        onLayout={(e) => { svH.current = e.nativeEvent.layout.height; }}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          const prevH = svH.current;
+          const shrank = prevH > 0 && h < prevH;
+          svH.current = h;
+          // KAV 레이아웃과 keyboardDidShow의 순서에 기대지 않게 — 포커스 중 뷰포트가 줄면 한 번 더(가드·식은 같음)
+          if (shrank) followOnViewportChange(prevH - h);
+          else if (prevH > 0 && h > prevH) unfollowOnViewportGrow(h - prevH);
+        }}
       >
         {/* KB-432 §2-2: 대상 카드(4150:16477) — 이미지 48 r4 + 이름 14/600 + "ko n reviews" */}
         <View style={styles.foodChip}>
@@ -332,7 +439,7 @@ function ReviewComposeScreen() {
           {/* §2-3(4150:16468): 별 48 gap 11, stroke 3 — 채움/빈 색은 시안(D-1 Stars 토큰) */}
           <View style={styles.starPick}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <Pressable key={i} onPress={() => setRating(i)} hitSlop={4}>
+              <Pressable key={i} onPress={() => setRating(i)} hitSlop={4} testID={`review-star-${i}`}>
                 <Star size={48} fillPct={i <= rating ? 100 : 0} />
               </Pressable>
             ))}
@@ -381,19 +488,35 @@ function ReviewComposeScreen() {
         <View
           style={styles.block}
           testID="body-block"
-          onLayout={(e) => { blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height; }}
+          onLayout={(e) => {
+            blockTop.current = e.nativeEvent.layout.y;
+            blockBottom.current = e.nativeEvent.layout.y + e.nativeEvent.layout.height;
+          }}
         >
           <Text style={styles.label}>{t('review.reviewLabel')}</Text>
           <Input
             ref={bodyInputRef}
             value={body}
-            onChangeText={(v) => setBody(v.slice(0, MAX))}
+            onChangeText={(v) => {
+              touchY.current = null; // 입력이 시작되면 캐럿이 탭한 줄을 떠난다 — 뒤의 뷰포트 축소가 옛 탭 줄로 되돌리지 않게(#228 공부)
+              setBody(v.slice(0, MAX));
+            }}
             placeholder={t('review.placeholder')}
             placeholderTextColor={C.inkDisabled}
             multiline
             style={[styles.textarea, bodyFocused && styles.textareaFocus]}
-            onFocus={() => setBodyFocused(true)}
-            onBlur={() => setBodyFocused(false)}
+            onFocus={() => {
+              bodyFocusedRef.current = true;
+              setBodyFocused(true);
+            }}
+            onBlur={() => {
+              bodyFocusedRef.current = false;
+              followedBy.current = 0; // 포커스가 끝나면 되돌릴 양도 잊는다(키보드가 내려가며 늘어나는 뷰포트는 되돌림 대상 아님)
+              touchY.current = null;
+              setBodyFocused(false);
+            }}
+            onPressIn={(e) => { touchY.current = e.nativeEvent.locationY; }}
+            onLayout={(e) => { inputTopInBlock.current = e.nativeEvent.layout.y; }}
             textAlignVertical="top"
             onContentSizeChange={() => {
               if (atEnd.current) ensureCursorVisible();
@@ -461,7 +584,17 @@ function ReviewComposeScreen() {
       </View>
 
       {/* P-168 ②: 완료 = P-162 주문 완료 모달 문법(화면 전환 없이) — 확인 = 상세 복귀 */}
-      <Modal visible={submitted} transparent animationType="fade" onRequestClose={() => router.back()}>
+      {/* KB-708: 작성 중 이탈 확인(커뮤니티 글쓰기와 같은 컴포넌트·문구) */}
+      <LeaveConfirmModal {...leave.modal} />
+      <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
+      {/* KB-730: Done = 모달 표시만 접고(submitted 유지) iOS는 onDismiss(완전히 닫힌 뒤)에서 유도 시트 큐 — dismiss 직후 present = 프리즈(#236 2R) */}
+      <Modal
+        visible={submitted && !confirmClosed}
+        transparent
+        animationType="fade"
+        onRequestClose={() => router.back()}
+        onDismiss={Platform.OS === 'ios' ? () => { if (confirmClosed) runAfterPosted(); } : undefined}
+      >
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard} testID="review-posted-confirm">
             <View style={styles.doneCheck}>
@@ -471,7 +604,16 @@ function ReviewComposeScreen() {
             <Text style={styles.confirmBody}>{t('review.postedBody', { rating, name: food?.name ?? '' })}</Text>
             <View style={{ marginTop: 6 }}>
               {/* P-211 ①: 진입점 무관 "Done" 단일 문구 — 피드 발 작성은 목적지가 상세가 아님 */}
-              <Btn onPress={() => router.back()}>{t('review.done')}</Btn>
+              {/* KB-730: 완료 모달을 닫은 **뒤** 리뷰 유도 시트(겹침 0) — 조건 미달이면 바로 복귀 */}
+              <Btn
+                onPress={() => {
+                  setConfirmClosed(true);
+                  if (Platform.OS !== 'ios') runAfterPosted(); // Android: onDismiss 미지원
+                }}
+                testID="review-posted-done"
+              >
+                {t('review.done')}
+              </Btn>
             </View>
           </View>
         </View>
@@ -490,7 +632,7 @@ function ReviewComposeScreen() {
       )}
       {/* P-370(KB-533): 모달 컨텍스트 토스트 호스트(스택 top — 언마운트 시 루트 복원) */}
       <TopToastHost />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

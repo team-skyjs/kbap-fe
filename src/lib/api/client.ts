@@ -29,6 +29,7 @@ import { BE_BASE } from '../data/config';
 import { captureApi5xx } from '../sentry';
 import { getInstallationId } from '../installationId';
 import { track } from '../net/inflight';
+import { redactSecrets, redactText } from './redactLog';
 
 /** P-378(KB-542): 서버 상관관계 id — 헤더 부재·비표준 Headers 구현 모두 undefined로.
  *  관측 보조 값이라 여기서 예외가 새면 안 된다(원래 오류 흐름을 가려버린다). */
@@ -139,10 +140,14 @@ const OPEN_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/logout'];
 /** Languages the BE accepts for `lang` / Accept-Language. Others → 400, so clamp. */
 const ALLOWED_LANGS = new Set(['ko', 'zh-Hans', 'en', 'ja', 'zh-Hant', 'vi', 'id', 'th', 'ru', 'es']);
 
-/** Active reader language, clamped to what the BE supports (fallback en). */
-export function apiLang(): string {
-  const l = i18n.language;
+/** BE가 받는 언어로 고정(아니면 en) — 순수 함수. 렌더 중 키에는 `clampLang(useAppLanguage())`(KB-695 — 싱글턴 직접 읽기 금지). */
+export function clampLang(l: string): string {
   return ALLOWED_LANGS.has(l) ? l : 'en';
+}
+
+/** Active reader language, clamped to what the BE supports (fallback en). **호출 시점** 읽기 — 요청 함수·콜백 전용. */
+export function apiLang(): string {
+  return clampLang(i18n.language);
 }
 
 /** P-115: 기본 타임아웃 — 응답 유실(fetch 침묵) 시에도 reject 보장, 무한 스켈레톤
@@ -214,8 +219,8 @@ async function requestInner<T>(
     // eslint-disable-next-line no-console
     console.log(
       `[api] → ${method} ${url}`,
-      { headers: { ...headers, ...(headers.Authorization ? { Authorization: 'Bearer ***' } : {}) } },
-      body != null ? body : '(no body)',
+      { headers: redactSecrets(headers) },
+      body != null ? redactSecrets(body) : '(no body)', // KB-709: 본문 토큰(갱신 요청의 refreshToken 등)도 가림
     );
   }
   // P-115: AbortSignal.timeout은 RN Hermes 미보장 — AbortController+setTimeout
@@ -272,7 +277,9 @@ async function requestInner<T>(
   // dev에선 콘솔이 네트워크 인스펙터 대용. 프로덕션 번들에선 데드코드로 제거된다.
   if (__DEV__) {
     // eslint-disable-next-line no-console
-    console.log(`[api] ← ${res.status} ${method} ${url}`, text.length > 4000 ? `${text.slice(0, 4000)}… (${text.length}B)` : text);
+    // KB-709: 응답 본문 토큰(로그인·갱신의 accessToken·refreshToken) 가림 — 자르기 전에 가린다(잘린 JSON도 정규식 폴백)
+    const shown = redactText(text);
+    console.log(`[api] ← ${res.status} ${method} ${url}`, shown.length > 4000 ? `${shown.slice(0, 4000)}… (${shown.length}B)` : shown);
   }
 
   // 204 / empty body (e.g. DELETE) — nothing to unwrap.

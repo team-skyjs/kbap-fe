@@ -9,6 +9,8 @@
  * NOTE: react-navigation is vendored inside expo-router (SDK 56), so we don't
  * import @react-navigation/bottom-tabs — the tabBar render prop infers its type.
  */
+import { initAds } from '@/lib/ads/adsSession';
+import { whenSplashDone } from '@/lib/bootGate';
 import * as React from 'react';
 import { Tabs, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +75,16 @@ function AppTabBar({
   );
 }
 
+/** KB-739: 광고 동의·초기화 1회 — 탭 진입(로그인/게스트 결정 뒤) + 스플래시 뒤 + 다음 틱(QA 4R: 기동 직후 ANR 의심 — 초기화를 스플래시 종료 프레임과
+ *  분리). 로그인 화면의 푸시 프롬프트(whenSplashDone)와 겹치지 않게 여기 */
+function useInitAdsOnce() {
+  React.useEffect(() => {
+    void whenSplashDone().then(() => { setTimeout(() => { void initAds(); }, 0); }); // RN 0.86: InteractionManager deprecated(QA 5R) — 다음 틱으로 미루는 의도만 유지
+  }, []);
+}
+
 export default function TabsLayout() {
+  useInitAdsOnce();
   return (
     <>
       <Tabs

@@ -10,8 +10,9 @@
  * 기피 = avoidNoticeKo 문장+전체 나열). 미러는 같은 데이터의 리더 언어 표현
  * (신규 한국어 0).
  */
+import { OrderDoneInterstitial, type InterstitialController } from '@/features/ads/OrderDoneInterstitial';
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
@@ -21,6 +22,9 @@ import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from 
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
+import { useReviewPrompt } from '@/lib/useReviewPrompt';
+import { useOneShotQueue } from '@/lib/oneShotQueue';
+import { ReviewPromptSheet } from '@/components/ReviewPromptSheet';
 
 export interface OrderItem {
   nameKo: string;
@@ -58,6 +62,27 @@ export function FlippedOrderCard({
   const [zoomed, setZoomed] = React.useState(false);
   // P-162: Done = 무반응 아님 — 완료 확인 모달 경유 후 onDone(홈 이동)
   const [doneOpen, setDoneOpen] = React.useState(false);
+  const reviewPrompt = useReviewPrompt(); // KB-730: 주문 완료 모달 뒤 리뷰 유도
+  const modalQueue = useOneShotQueue(); // 완료 모달이 완전히 닫힌 뒤(iOS onDismiss) 유도 시트
+  const [leaving, setLeaving] = React.useState(false);
+  // KB-739 ④-①: 리뷰 유도 → (전면 광고, 세션 1회·준비됐을 때만) → 홈 복귀. 광고는 큐에 덧붙여 유도 시트가 **완전히 닫힌 뒤** 뜬다(겹침 0);
+  // 광고 호스트가 없으면(플래그 off·초기화 전·미수신) 종전처럼 응답 즉시 복귀. 복귀(onDone)는 광고가 닫힌 뒤
+  const interstitial = React.useRef<InterstitialController | null>(null);
+  const afterPrompt = (answer: 'positive' | 'negative' | 'later' | null) => {
+    const adStep = interstitial.current?.step();
+    // 별로예요 = 리뷰 유도가 복귀 뒤 문의 작성을 push한다(runAfterInteractions) — 광고 스텝이 복귀를 미루면 그 push가 dismissAll+replace에 지워진다(/review 2) → 종전처럼 즉시 복귀
+    // 좋아요 = requestStoreReview() 뒤 iOS 평점 창(StoreKit)/Android 인앱 리뷰 시트가 떠 있을 수 있다 — 전면 광고가 덮거나 끊지 않게 역시 즉시 복귀(공부 2R)
+    if (!adStep || answer === 'negative' || answer === 'positive') { onDone(); return; }
+    modalQueue.add({
+      key: adStep.key,
+      present: (done, signal) => {
+        const shown = adStep.present(() => { onDone(); done(); }, signal);
+        if (!shown) onDone(); // 준비 안 됨·세션 상한 = 바로 복귀
+        return shown;
+      },
+    });
+  };
+  const runAfterDone = () => { setLeaving(false); modalQueue.add(reviewPrompt.step('order', { after: afterPrompt })); }; // leaving 리셋 — onDismiss 재발화 시 큐 중복 등록 0
   // P-256: 완료 확정 1회 가드 — done 재탭·모달 재경유에도 저장/계측 1회
   const committedRef = React.useRef(false);
   // P-166: 모달 등장과 동시 폭죽 — DURATION 후 자연 소멸(언마운트), 매 완료마다
@@ -153,8 +178,10 @@ export function FlippedOrderCard({
         </Btn>
       </View>
 
+      <OrderDoneInterstitial controllerRef={interstitial} />
+      <ReviewPromptSheet open={reviewPrompt.open} onAnswer={reviewPrompt.respond} onShow={reviewPrompt.onShow} onClosed={reviewPrompt.onClosed} disabled={reviewPrompt.answered} />
       {/* P-162: 주문 완료 확인 모달 — 스캔 재촬영 모달과 같은 카드 문법, 성공 체크 톤 */}
-      <Modal visible={doneOpen} transparent animationType="fade" onRequestClose={() => setDoneOpen(false)}>
+      <Modal visible={doneOpen} transparent animationType="fade" onRequestClose={() => setDoneOpen(false)} onDismiss={Platform.OS === 'ios' ? () => { if (leaving) runAfterDone(); } : undefined}>
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard} testID="order-done-confirm">
             <View style={styles.doneCheck}>
@@ -164,7 +191,12 @@ export function FlippedOrderCard({
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
               <Btn
-                onPress={onDone} /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만 */
+                /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만. KB-730: 완료 모달을 닫은 뒤 리뷰 유도 시트(겹침 0), 조건 미달이면 바로 복귀 */
+                onPress={() => {
+                  setLeaving(true);
+                  setDoneOpen(false);
+                  if (Platform.OS !== 'ios') runAfterDone(); // Android: onDismiss 미지원
+                }}
               >
                 {t('order.doneHome')}
               </Btn>

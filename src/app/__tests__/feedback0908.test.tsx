@@ -21,11 +21,11 @@ it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)�
   const mod = read('src/features/community/moderation.tsx');
   expect(mod).toContain('!isGuest && !target.anonymized && !target.reportOnly');
   const rf = read('src/features/community/ReviewFeed.tsx');
-  expect(rf).toContain('anonymized: item.anonymized === true');
+  expect(rf).toContain('anonymized: row.item.anonymized === true'); // KB-739: 피드 행 = withFeedAds(row.item)
   // Codex #100 P2 ①: 상세 프리뷰 showMore 게이트 잔존 제거 — showMore prop 소비처 0(기본 true)
   const fd = read('src/app/food/[id]/index.tsx');
   expect(fd).not.toContain('showMore={');
-  expect(fd).toContain('anonymized: r.anonymized === true');
+  expect(fd).toContain('anonymized: row.item.anonymized === true'); // KB-739: 리뷰 미리보기 행 = withFeedAds(row.item)
   // Codex #100 2R ①: 전체 리스트도 — 탈퇴 ⋯ 게이트 소멸 + anonymized 전달
   const rl = read('src/app/food/[id]/reviews.tsx');
   expect(rl).not.toContain('!r.anonymized ?');

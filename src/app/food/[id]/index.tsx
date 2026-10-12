@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FLAGS } from '@/lib/flags';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, riskTone, shadow, type RiskState } from '@/lib/theme';
+import { ingredientLabel, isCatalogIngredient } from '@/lib/mocks/ingredients';
 import { RiskMark, RiskBadge, CardPhoto, Chip, NewBadge, Star, Stars, BookmarkStar, Btn, IconChevron, IconSpeech, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
@@ -35,6 +36,8 @@ import { useFoodReviews } from '@/lib/data/useFoodReviews';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { FeedCard } from '@/features/review/FeedCard';
+import { FeedAd } from '@/features/ads/FeedAd';
+import { withFeedAds } from '@/lib/ads/feedSlots';
 import { useToggleBookmark } from '@/lib/data/bookmarks';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { IconFood, IconLock, IconStar } from '@/components/icons';
@@ -228,6 +231,9 @@ export default function FoodDetailScreen() {
       {/* P-139 ②: 플로팅 헤더 — 사진 위 반투명 원 back(제목 없음) → 솔리드+타이틀 */}
       <View style={[styles.fhead, { paddingTop: insets.top + 6 }]} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, styles.fheadBg, solidFade]} pointerEvents="none" testID="fhead-bg" />
+        {/* KB-696: 상태 표시줄 영역은 스크롤 뒤(solid) **불투명** — 헤더 바 배경(FHEAD_BAR_BG)이 반투명이라 그 위로 글자·재료 그림이 비쳤다.
+            히어로 위(맨 위)에선 헤더처럼 투명(solidFade). */}
+        <Animated.View style={[styles.fheadStatusShield, { height: insets.top }, solidFade]} pointerEvents="none" testID="fhead-status-shield" />
         <Pressable style={[styles.fBtn, solid && styles.fBtnSolid]} onPress={() => router.back()} hitSlop={8} testID="detail-back">
           <IconArrowLeft size={18} color={solid ? C.ink : '#fff'} />
         </Pressable>
@@ -290,14 +296,16 @@ function RegisteredBottomBar({
     >
       {FLAGS.reviewsEnabled && !(scanEntry && onAsk) && (
         <View style={onAsk ? { flex: narrow ? 1 : 3 } : { flex: 1 }} testID="bottom-write-slot">{/* P-334: flex 3/5(P-329 판정 문법) */}
-          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write">
+          {/* KB-710(2): 두 버튼 높이 맞춤 — 큰 글자에서 좁은 Write만 두 줄로 접혀 키가 달랐다. 줄(row)은 슬롯을 가장 큰 쪽에
+              맞춰 늘리니 버튼이 슬롯을 채우면 같은 높이(기본 크기 = 둘 다 48 그대로) */}
+          <Btn variant={onAsk ? 'ghost' : 'primary'} fitLabel onPress={onWrite} testID="bottom-write" style={styles.bottomBtnFill}>
             {t('reviews.writeReview')}
           </Btn>
         </View>
       )}
       {onAsk && (
         <View style={{ flex: scanEntry ? 1 : narrow ? 1 : 5 }} testID="bottom-ask-slot">{/* P-334: 시안 = 라벨 단독(말풍선 아이콘 제거) · P-353 ②: 스캔 진입 = 전폭 */}
-          <Btn fitLabel onPress={onAsk} testID="bottom-ask">
+          <Btn fitLabel onPress={onAsk} testID="bottom-ask" style={styles.bottomBtnFill}>
             {t('detail.askOwner')}
           </Btn>
         </View>
@@ -494,8 +502,15 @@ function Registered({
                       <IngChainImage code={ing.code} imageUrl={cat.imageUrl(ing.code)} size={48} iconSize={28} />
                     </View>
                     <Text style={styles.ingTileName} numberOfLines={1}>{ing.name}</Text>
+                    {/* KB-599: 함의 매치 근거(새우 회피 → 새우젓) — 회원·카탈로그 code일 때만, 2줄 클램프. 뒤에 % 줄이 오면 하단 여백은 그 줄이 맡는다 */}
+                    {!guest && ing.impliedBy && isCatalogIngredient(ing.impliedBy) && (
+                      <Text style={ing.percentage != null ? [styles.ingTileSub, { marginBottom: 0 }] : styles.ingTileSub} numberOfLines={2} testID={`ing-implied-${ing.code}`}>
+                        {t('detail.avoidImplied', { ingredient: ingredientLabel(ing.impliedBy) })}
+                      </Text>
+                    )}
                     {ing.percentage != null && (
-                      <Text style={styles.ingTileSub} numberOfLines={1}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
+                      // KB-710(3): 두 줄까지 — SE 큰 글자에서 "~98% of sho…" 잘림. 기본 크기는 한 줄 그대로, 같은 줄 타일은 줄바꿈 격자가 높이를 맞춘다
+                      <Text style={styles.ingTileSub} numberOfLines={2} testID={`ing-shops-${ing.code}`}>{t('detail.ofShops', { pct: Math.round(ing.percentage) })}</Text>
                     )}
                     {/* caution 변형: "Ask the owner" 풋터(h30 primaryTint) → 사장님 카드(기존 진입점) */}
                     {!guest && dRisk === 'caution' && (
@@ -581,12 +596,15 @@ function Registered({
               <EmptyBlock label={t('reviews.emptySameNat')} />
             </View>
           )}
-          {!natLoading && !(natOnly && natQ.isError) && shownPreviews.map((r) => (
+          {/* KB-739 ④-③: 리뷰 3개마다 네이티브 광고 1개(실패 시 인라인 배너, 미수신 = 높이 0) — 리뷰 카드와 같은 폭·여백 */}
+          {!natLoading && !(natOnly && natQ.isError) && withFeedAds(shownPreviews, (x) => x.id).map((row) => row.kind === 'ad' ? (
+            <FeedAd key={row.key} testID={`ad-feed-${row.slot}`} />
+          ) : (
             <FeedCard
-              key={r.id}
-              review={r}
+              key={row.key}
+              review={row.item}
               t={t}
-              mine={r.memberId != null && r.memberId === myId}
+              mine={row.item.memberId != null && row.item.memberId === myId}
               showFood={false} /* 자기 자신 음식 칩 무의미 */
               /* P-339 ② 2R: 탈퇴 리뷰도 ⋯(신고만) — showMore 게이트 잔존 제거 */
               onOpenFood={() => {}}
@@ -594,10 +612,10 @@ function Registered({
               onMore={() =>
                 setMod({
                   type: 'review',
-                  id: r.id,
-                  author: { id: r.author?.memberId ?? r.memberId ?? `rv-${r.id}`, nickname: r.author?.nickname ?? null, nationality: r.authorNationality },
-                  mine: r.memberId != null && r.memberId === myId,
-                  anonymized: r.anonymized === true,
+                  id: row.item.id,
+                  author: { id: row.item.author?.memberId ?? row.item.memberId ?? `rv-${row.item.id}`, nickname: row.item.author?.nickname ?? null, nationality: row.item.authorNationality },
+                  mine: row.item.memberId != null && row.item.memberId === myId,
+                  anonymized: row.item.anonymized === true,
                 })
               }
             />
@@ -713,6 +731,10 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
   );
 }
 
+/** 상세 헤더 바 배경 — KB-696: **예진 10/2 결정으로 시안 96% 흰색(4% 투명) → 불투명**(화면 배경 토큰).
+ *  블러 없는 4% 투명은 스크롤 시 뒤 글자·재료 그림이 비치기만 했다. */
+const FHEAD_BAR_BG = C.surface;
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
   // KB-620: 숨김 안내를 잔여 높이 중앙에(상단 플로팅 헤더와 겹치지 않게)
@@ -726,7 +748,8 @@ const styles = StyleSheet.create({
 
   // 플로팅 헤더(P-139 유지)
   fhead: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingBottom: 8 },
-  fheadBg: { backgroundColor: 'rgba(255,255,255,0.96)', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  fheadBg: { backgroundColor: FHEAD_BAR_BG, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.hair },
+  fheadStatusShield: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.surface }, // KB-696
   fBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(20,24,31,0.38)', alignItems: 'center', justifyContent: 'center' },
   fBtnSolid: { backgroundColor: 'transparent' },
   fTitle: { fontFamily: font.bodySemi, fontSize: 16, color: C.ink, textAlign: 'center' },
@@ -809,6 +832,7 @@ const styles = StyleSheet.create({
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 17, paddingHorizontal: 20 },
 
   // §1-8: FixedBottom
+  bottomBtnFill: { flexGrow: 1 }, // KB-710(2): 슬롯 높이 채움(옆 버튼과 같은 높이)
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', gap: 16, paddingHorizontal: 20, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line },
 
   // Unregistered(현행 유지 — 토큰만)

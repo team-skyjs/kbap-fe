@@ -28,29 +28,68 @@ import { Input } from '@/components/KeyboardDismissBar';
 import { useToggleReviewLike } from '@/lib/data/useReviewMutations';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
+import { useContentTranslation } from '@/lib/data/useContentTranslation';
+import { TRANSLATE_LABEL_BOX, TranslateButton } from '@/components/TranslateButton';
 import type { Review } from '@/lib/api/types';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
-/** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). */
+/** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). 클램프 규칙은 원문·번역문 동일(같은 Text). */
 export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style?: object }) {
   const [expanded, setExpanded] = React.useState(false);
   const [clamped, setClamped] = React.useState(false);
+  // #220 공부 메모 ①: 본문이 바뀌면(원문↔번역·수정) 접힌 상태로 돌아가 줄 수를 다시 잰다 — 렌더 중 전환 비교(KB-603)
+  const [prevBody, setPrevBody] = React.useState(body);
+  if (body !== prevBody) {
+    setPrevBody(body);
+    setExpanded(false);
+  }
+  const toggle = (clamped || expanded) && (
+    <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} testID="body-toggle" />
+  );
   return (
     <View style={{ gap: 3 }}>
       <Text
         style={[styles.body, style]}
         numberOfLines={expanded ? undefined : 3}
         onTextLayout={(e) => {
-          if (!expanded && e.nativeEvent.lines.length >= 3) setClamped(true);
+          if (!expanded) setClamped(e.nativeEvent.lines.length >= 3); // 접힌 상태에서 매번 판정(짧은 본문 복귀 시 See more 잔상 0)
         }}
       >
         {body}
       </Text>
       {/* P-390(KB-578): 좌측 작은 텍스트 → 공용 ExpandToggle(우측·44px·chevron) */}
-      {(clamped || expanded) && (
-        <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} testID="body-toggle" />
+      {toggle}
+    </View>
+  );
+}
+
+/** KB-679(P-431): 리뷰 본문 **단일 렌더 지점** — FeedCard(홈·리뷰 피드·음식 상세 3장·내 리뷰)와 음식별 전체 리뷰가
+ *  모두 이걸 쓴다(표면별 복붙 금지). 빈 본문(사진·별점만) = 본문·라벨 둘 다 없음.
+ *  KB-689(P-434) 2차 X 방식: 번역 라벨은 본문 **위 왼쪽** 한 줄(접힘 대상 밖) — 누르기 전엔 모든 리뷰에 보이고(언어 감지 없음),
+ *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시.
+ *  KB-703 ②: 서버가 판별한 리뷰 언어(`review.language`)가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건).
+ *  null·필드 없음(판별 불가·구서버) = 지금처럼 표시, 안내 문구 없음. 앱 언어는 구독형(useAppLanguage — 렌더 중 싱글턴 직접 읽기 금지, KB-695). */
+export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
+  const original = review.body?.trim() ? review.body : null;
+  const tx = useContentTranslation('REVIEW', review.id, original ?? '');
+  // 앱 언어 원값과 비교(clampLang 안 거침 — 앱 10개 언어 = 서버 언어 집합. 어긋나면 "다름" = 표시 쪽이라 안전, client 모듈 의존도 안 늘림)
+  const appLang = useAppLanguage();
+  if (!original) return null;
+  const sameAsApp = review.language != null && review.language === appLang;
+  const label = FLAGS.contentTranslation && !sameAsApp; // 탭 뒤 같은 언어로 판정돼도 숨기지 않는다(KB-703 ①) — 숨김은 처음부터만
+  return (
+    // 라벨이 있을 때만 래퍼를 카드 gap 안으로 8 올린다 — 라벨 상자(44)의 위 여유가 래퍼(부모) 안에 들어오게(시각 위치 무변)
+    <View style={label ? { marginTop: -TRANSLATE_LABEL_BOX.padTop } : undefined}>
+      {label && (
+        <TranslateButton
+          state={tx.loading ? 'loading' : tx.showingTranslated ? 'translated' : 'idle'}
+          source={tx.source}
+          onPress={tx.toggle}
+        />
       )}
+      <ExpandableBody body={tx.translatedText ?? original} t={t} style={style} />
     </View>
   );
 }

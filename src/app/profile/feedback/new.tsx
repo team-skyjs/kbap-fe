@@ -7,28 +7,37 @@
  * P-387 규약: 완료 안내는 **응답 성공 후에만**. 실패면 본문·사진을 유지하고 재시도.
  */
 import * as React from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import { Btn, IconCamera, IconClose, SubHeader } from '@/components';
 import { Input } from '@/components/KeyboardDismissBar';
 import { showTopToast } from '@/components/topToastStore';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { openAppSettings } from '@/lib/openExternal';
 import { needsPhotoLibraryPermission } from '@/lib/mediaPermissions';
 import { EVENTS, track } from '@/lib/analytics';
 import { FEEDBACK_MAX_LEN, FEEDBACK_MAX_PHOTOS, useSubmitFeedback } from '@/lib/data/useFeedback';
 import { color as C, radius } from '@/lib/theme';
+import { useUploadAbort } from '@/lib/useUploadAbort';
+import { isUploadAborted } from '@/lib/api/uploadAbort';
 
 export default function FeedbackComposeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const [body, setBody] = React.useState('');
+  // KB-739: 설정 "광고 신고" 진입 = 본문 프리필(Apple 2.5.18 신고 창구). 프리필만 있는 상태는 '비어 있음'으로 본다(이탈 확인 0)
+  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
+  const initialBody = prefill === 'ad' ? t('ads.reportPrefill') : '';
+  const [body, setBody] = React.useState(initialBody);
   const [photos, setPhotos] = React.useState<string[]>([]);
   const [importing, setImporting] = React.useState(false);
   const submit = useSubmitFeedback();
   const guard = useSubmitGuard(); // P-173: 동기 ref + busy — 같은 틱 더블탭 1건만
+  const nextUploadSignal = useUploadAbort(); // KB-711: 전송 중 화면을 떠나면 사진 업로드 취소
+  // KB-708: 본문·사진이 있으면 이탈 확인(헤더 뒤로·스와이프·하드웨어 뒤로). 전송 성공 뒤엔 막지 않고 닫힘
+  const leave = useLeaveConfirm((body.trim().length > 0 && body.trim() !== initialBody.trim()) || photos.length > 0, guard.busy); // 프리필만·프리필 지운 빈 폼 = 이탈 확인 0(/review 10) // 전송 중 = 막지 않음(그냥 나감)
   // 업로드·전송이 끝나기 전에 유저가 뒤로 가거나 "내 문의"로 넘어갈 수 있다. 그때 늦게
   // 도착한 성공 콜백이 router.back()을 부르면 **지금 화면**이 닫힌다(내 문의 → 작성으로
   // 되돌아가는 역주행). 이 화면이 아직 떠 있을 때만 닫는다(Codex #170).
@@ -79,12 +88,15 @@ export default function FeedbackComposeScreen() {
   const onSend = () =>
     void guard.run(async () => {
       try {
-        await submit.mutateAsync({ content: body.trim(), photoUris: photos });
+        await submit.mutateAsync({ content: body.trim(), photoUris: photos, signal: nextUploadSignal() });
         // P-387: 성공 응답 뒤에만 완료 — 계측 속성은 개수·유무만(본문·기기정보 금지)
         track(EVENTS.profile_feedback_submit, { has_photos: photos.length > 0, photo_count: photos.length });
         showTopToast(t('feedback.sent')); // 토스트 호스트는 루트에 있어 어느 화면이든 뜬다
-        if (focused.current) router.back();
+        leave.release(() => {
+          if (focused.current) router.back();
+        });
       } catch (e) {
+        if (isUploadAborted(e)) return; // KB-711: 화면을 떠나 업로드를 취소한 것 — 다른 화면 위에 실패 토스트를 띄우지 않는다
         // 429(일일 한도)는 전용 안내 — 일반 실패와 구분된다
         const code = (e as { code?: string })?.code;
         showTopToast(t(code === 'FEEDBACK-003' ? 'feedback.rateLimited' : 'feedback.sendFailed'), { error: true });
@@ -92,9 +104,12 @@ export default function FeedbackComposeScreen() {
     });
 
   return (
-    <View style={styles.root}>
+    // KB-710(4): iOS KeyboardAvoidingView(padding) — #228 규칙에서 "Send가 스크롤 본문 안이라 스크롤로 닿는다"는 사유로 빠져 있었지만,
+    // 회피 없이는 키보드가 떠도 ScrollView가 줄지 않아 스크롤 범위가 생기지 않는다 → SE에서 Send 위 19pt만 보이고 닿을 수도 없었다.
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="feedback-kav">
       {/* P-406: 목록이 첫 화면이 됐다 — "My inquiries" 링크 제거(뒤로 = 목록) */}
       <SubHeader title={t('feedback.newTitle')} onBack={() => router.back()} />
+      <LeaveConfirmModal {...leave.modal} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Input
           value={body}
@@ -136,7 +151,7 @@ export default function FeedbackComposeScreen() {
           {t('feedback.send')}
         </Btn>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

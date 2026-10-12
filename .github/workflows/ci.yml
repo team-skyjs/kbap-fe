@@ -28,3 +28,7 @@ jobs:
         run: |
           git fetch --no-tags origin develop
           node ./scripts/lint-changed.mjs
+      # KB-697: React Compiler가 렌더 중 바깥 값 읽기(시간·캐시·싱글턴)를 첫 값에 굳히는 자리 — 기준선(건별 판정) 대비 **새 항목만 경고**(비차단).
+      # "통과"와 "안 돌았다"는 다르다: 0파일·컴파일 0·변환 실패·기준선 읽기 실패 = 이 단계 실패. 결과는 잡 요약(Summary)에.
+      - name: compiler freeze sweep (비차단 리포트)
+        run: node ./scripts/compiler-sweep.cjs

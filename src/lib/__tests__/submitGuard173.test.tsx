@@ -98,9 +98,13 @@ it('P-175: dangerGhost — 취소(ghost)와 같은 버튼 프레임(보더+라�
 
 it('P-175: 노출처 전수 — 재스캔·커뮤니티 이탈 destructive 행 = dangerGhost(텍스트 행 잔존 0)', () => {
   const fs = require('fs');
-  for (const f of ['src/app/scan.tssx'.replace('tssx', 'tsx'), 'src/app/community/compose.tsx']) {
+  // KB-708: 커뮤니티 이탈 확인은 공용 LeaveConfirmModal로 추출(리뷰 작성·수정·문의 작성 공유) — 버튼은 거기, 화면은 그걸 쓰는지 잠금
+  for (const f of ['src/app/scan.tssx'.replace('tssx', 'tsx'), 'src/components/LeaveConfirmModal.tsx']) {
     const src = fs.readFileSync(f, 'utf8') as string;
     expect(src).toContain('variant="dangerGhost"');
     expect(src).not.toContain('discardRow'); // 구 텍스트 행 문법 소멸
   }
+  const compose = fs.readFileSync('src/app/community/compose.tsx', 'utf8') as string;
+  expect(compose).toContain('<LeaveConfirmModal');
+  expect(compose).not.toContain('discardRow');
 });

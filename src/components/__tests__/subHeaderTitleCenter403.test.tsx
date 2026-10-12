@@ -152,12 +152,12 @@ describe('Codex #181 P2 — 넓은 trailing 아래로 타이틀이 들어가지 
     expect(left).toBe(120 + SIDE_GAP); // 큰 쪽(120)을 양옆에 예약
   });
 
-  it('예약 폭이 trailing 실측폭 이상이라 글자가 겹치지 않는다', () => {
+  it('예약 폭이 trailing 실측폭 이상이라 글자가 겹치지 않는다(KB-613: 실측폭 상한 120)', () => {
     for (const w of [60, 120, 180]) {
       const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
       layoutTrailing(tree, w);
       const { left } = titleInsets(tree, TITLE);
-      expect(left).toBeGreaterThanOrEqual(w + SIDE_GAP);
+      expect(left).toBeGreaterThanOrEqual(Math.min(w, 120) + SIDE_GAP); // 슬롯이 120에서 막히므로 실제 폭도 ≤120
     }
   });
 
@@ -276,7 +276,7 @@ describe('Codex #181 2R — 좁은 화면에서 타이틀이 소멸하지 않는
   it('비대칭으로 떨어져도 겹치지는 않는다 — 우측 예약이 trailing 폭 이상', () => {
     for (const [rowW, trailW] of [[288, 120], [288, 160], [260, 140]] as const) {
       const { right } = measure(rowW, trailW);
-      expect(right).toBeGreaterThanOrEqual(trailW + GAP);
+      expect(right).toBeGreaterThanOrEqual(Math.min(trailW, 120) + GAP); // KB-613: 슬롯 상한 120 — 실제 폭도 그 이하
     }
   });
 
@@ -301,6 +301,8 @@ describe('Codex #181 2R — 좁은 화면에서 타이틀이 소멸하지 않는
  * 즉 이 극단은 이 PR이 만든 게 아니라 **원래 그랬던 상태**이고, 회귀가 아니다.
  * (trailing을 잘라 타이틀에 자리를 내주는 건 "액션 라벨을 자를 것인가"라는 제품 판단이라
  *  별건으로 넘긴다 — 임의 노드에 maxWidth를 걸면 줄바꿈으로 헤더 높이가 늘 위험도 있다.)
+ * → KB-613에서 결정: 슬롯 상한 120 + 호출부 `numberOfLines={1}`(파일 하단 KB-613 블록). 그래서 아래
+ *   등식은 **상한을 적용한 trailing 폭** 기준이다(120 초과 입력은 120으로 측정된다).
  * ──────────────────────────────────────────────────────────────────────────── */
 describe('Codex #181 3R — 비대칭 모드 = 수정 전 flex:1과 같은 타이틀 폭', () => {
   const BACK = 38;
@@ -317,7 +319,7 @@ describe('Codex #181 3R — 비대칭 모드 = 수정 전 flex:1과 같은 타�
     });
 
   /** 수정 전 배치: row(gap 16) = back(38) | title(flex:1) | trailing(W) */
-  const beforeFix = (rowW: number, trailW: number) => rowW - BACK - GAP - GAP - trailW;
+  const beforeFix = (rowW: number, trailW: number) => rowW - BACK - GAP - GAP - Math.min(trailW, 120); // KB-613 상한
 
   it('비대칭으로 떨어진 경우 타이틀 폭이 수정 전과 1pt도 다르지 않다', () => {
     // 전부 비대칭 구간(행 − 2·reserve < 96)인 조합들
@@ -329,6 +331,60 @@ describe('Codex #181 3R — 비대칭 모드 = 수정 전 flex:1과 같은 타�
       const { left, right } = titleInsets(tree, TITLE);
       expect(left).not.toBe(right); // 비대칭 구간임을 먼저 확인(대칭이면 이 등식은 성립 안 한다)
       expect(rowW - (left as number) - (right as number)).toBe(beforeFix(rowW, trailW));
+    }
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * KB-613 — `trailing` 축약 정책 ②(슬롯 상한 120 + 호출부 한 줄). 320pt 화면(내부 행 288)에서
+ * ja × 1.3배율 라벨(≈146pt)이면 `38 + 146 + 32 + 96 = 312 > 288` — 라벨을 막지 않으면 어떤 배치로도
+ * 타이틀 폭이 안 나온다. 슬롯 상한이 타이틀 최소 폭(96)을 보장하는지, 기본(en·1배율) 모양은 그대로인지.
+ * ──────────────────────────────────────────────────────────────────────────── */
+describe('KB-613 trailing 축약 정책', () => {
+  const ROW_320 = 288; // 320pt − 좌우 패딩 16×2
+  const hosts = (tree: ReactTestRenderer) => {
+    const all = tree.root.findAll((n) => typeof n.type === 'string' && typeof (n.props as { onLayout?: unknown }).onLayout === 'function');
+    const st = (n: (typeof all)[number]) => flat((n.props as { style?: unknown }).style);
+    return { row: all.filter((n) => st(n).flexDirection === 'row')[0], trail: all.filter((n) => st(n).flexDirection === undefined)[0], st };
+  };
+  const fire = (node: { props: unknown }, width: number) =>
+    act(() => {
+      (node.props as { onLayout: (e: unknown) => void }).onLayout({ nativeEvent: { layout: { width, height: 38, x: 0, y: 0 } } });
+    });
+  const titleWidth = (tree: ReactTestRenderer, rowW: number) => {
+    const { left, right } = titleInsets(tree, TITLE);
+    return rowW - (left as number) - (right as number);
+  };
+
+  it('320pt × ja × 1.3배율(trailing 146pt) → 타이틀 폭 ≥ 96(읽을 수 있는 최소)', () => {
+    const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+    const { row, trail } = hosts(tree);
+    fire(row, ROW_320);
+    fire(trail, 146);
+    expect(titleWidth(tree, ROW_320)).toBeGreaterThanOrEqual(96);
+  });
+
+  it('슬롯 자체가 120pt로 막힌다(라벨은 그 안에서 말줄임) · trailing이 없으면 상한 스타일 없음(28개 화면 무변)', () => {
+    const withT = hosts(render(<SubHeader title={TITLE} trailing={wideTrailing} />));
+    expect(withT.st(withT.trail).maxWidth).toBe(120);
+    const none = hosts(render(<SubHeader title={TITLE} />));
+    expect(none.st(none.trail).maxWidth).toBeUndefined();
+  });
+
+  it('기본(en Save ≈40pt · 375pt 화면) 모양 무변 — 대칭 중앙 max(38,40)+16 = 56/56(상한 밖이라 수정 전과 동일)', () => {
+    const tree = render(<SubHeader title={TITLE} trailing={wideTrailing} />);
+    const { row, trail } = hosts(tree);
+    fire(row, 343);
+    fire(trail, 40);
+    expect(titleInsets(tree, TITLE)).toEqual({ left: 56, right: 56 });
+  });
+
+  it('호출부 계약 — trailing 텍스트는 한 줄(numberOfLines={1}): profile/edit · profile/restrictions', () => {
+    const fs = require('fs') as typeof import('fs');
+    for (const f of ['src/app/profile/edit.tsx', 'src/app/profile/restrictions.tsx']) {
+      const src = fs.readFileSync(f, 'utf8');
+      const block = src.slice(src.indexOf('trailing={'), src.indexOf('/>', src.indexOf('trailing={')));
+      expect(block).toContain('numberOfLines={1}');
     }
   });
 });

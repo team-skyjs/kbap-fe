@@ -35,6 +35,7 @@ import { ModerationFlow, type ModTarget } from '@/features/community/moderation'
 import { EVENTS, track } from '@/lib/analytics';
 import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { FeedCard } from '@/features/review/FeedCard';
+import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
 import { useUnreadCount } from '@/lib/data/useNotifications';
 import type { FoodCard } from '@/lib/api/types';
 
@@ -57,9 +58,16 @@ export default function Home() {
   const router = useRouter();
   const { onScroll, hidden, atTop } = useStickyScroll();
   const headerH = useHeaderHeight();
+  // KB-701: 불꽃 뱃지 앵커 — FoodExplorer 래퍼의 y(넛지 유무 반영) + 그 안 검색 줄 아래 끝. 둘 다 재야 위치가 정해진다(그 전엔 뱃지 미표시).
+  const [exploreY, setExploreY] = useState<number | null>(null);
+  const [scanRowBottom, setScanRowBottom] = useState<number | null>(null);
+  const badgeTop = exploreY != null && scanRowBottom != null ? headerH + exploreY + scanRowBottom + BADGE_GAP : null;
 
-  const { data: home, isLoading, isError, error, refetch } = useHome();
+  const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
   const { data: me } = useMe();
+  // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면 useOneShotQueue를
+  // **포커스에 등록·블러에 clear**로 되살린다: `useFocusEffect(useCallback(() => { queue.add(step()); return () => queue.clear(); }, [queue, step]))`
+  // — 딥링크·푸시 콜드 스타트는 (tabs) 앵커가 index를 밑에 마운트하므로, 블러의 clear가 없으면 대상 화면 위에 모달이 겹쳐 KB-377류 교착.
   const recent = home?.recent ?? [];
   const restrictions = me?.restrictions ?? [];
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
@@ -116,13 +124,21 @@ export default function Home() {
       <UpdateNudgeBanner />
 
       {/* KB-430 후속 → P-317: 검색·세그먼트·칩 + 가로 레일 = FoodExplorer embedded */}
-      <FoodExplorer
-        variant="embedded"
-        guest={isGuest}
-        srcTag="home"
-        mostReviewed={home?.mostReviewed ?? []}
-        mostReviewedLoading={isLoading}
-      />
+      {/* KB-701: 뱃지 앵커 = 실제 렌더된 검색 줄(스캔 버튼) — 위의 업데이트 넛지 유무로 내려가는 만큼을 측정(고정 오프셋 금지, Codex #229) */}
+      <View onLayout={(e) => setExploreY(e.nativeEvent.layout.y)}>
+        <FoodExplorer
+          variant="embedded"
+          guest={isGuest}
+          srcTag="home"
+          mostReviewed={home?.mostReviewed ?? []}
+          mostReviewedLoading={isLoading}
+          popular={home?.recommended}
+          // isPending(데이터 아직 없음) — isLoading(첫 요청 진행 중)이면 위 SkeletonHome이 이미 덮는다. 그 밖의 "데이터 없음"
+          // (오프라인 등으로 요청이 멈춘 pending: isLoading false)에서 레일이 /foods 폴백을 먼저 그렸다 바꾸지 않게(#237 공부)
+          popularLoading={isPending}
+          onScanRowBottom={setScanRowBottom}
+        />
+      </View>
 
       {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
           (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
@@ -252,8 +268,12 @@ export default function Home() {
         onBell={() => router.push('/notifications' as Href)}
       />
 
+      {/* KB-680(P-432) → KB-701: 불꽃 "무료 스캔 N회 남음" = 스캔 버튼 바로 아래(스크롤 0 기준, 화면 고정) — 플래그 countdownBadge(진단 채널만) · 노출 조건은 컴포넌트 안 */}
+      <HomeQuotaBadge top={badgeTop} />
+
       {/* P-339 ②: 홈 피드 ⋯ = 신고만(reportOnly — 차단·수정 없음, 게스트는 플로우 내 게이트) */}
       <ModerationFlow target={mod} onClose={() => setMod(null)} onEdit={() => {}} onDelete={() => {}} onBlocked={() => {}} />
+
     </View>
   );
 }
@@ -264,21 +284,6 @@ export { FoodGridCard, RecentRow } from '@/features/food/FoodCards';
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-
-  // 검색 행 (§1-2)
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingTop: 12 },
-  searchBox: {
-    flex: 1,
-    height: 48,
-    borderRadius: 4,
-    backgroundColor: C.surface2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-  },
-  searchPh: { flex: 1, fontSize: 15, fontWeight: '400', color: C.ink3, marginRight: 8 },
-  scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 20, gap: 4 },

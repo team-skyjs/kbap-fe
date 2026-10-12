@@ -42,6 +42,7 @@ export function ActionSheet({
   avatar,
   items,
   onClose,
+  testID,
 }: {
   open: boolean;
   /** 대상 명시 제목 — 예: "Post by Mina" / "Your comment" */
@@ -50,13 +51,15 @@ export function ActionSheet({
   avatar?: ReactNode;
   items: ActionSheetItem[];
   onClose: () => void;
+  /** KB-709: QA 자동화 — 시트 = testID, 행 = `${testID}-${key}`(좌표 누름 대신). 생략 시 무변 */
+  testID?: string;
 }) {
   const bottom = useBottomInset();
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null;
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}}>
+        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}} testID={testID}>
           <View style={styles.header}>
             {avatar && <View style={styles.avatar}>{avatar}</View>}
             <Text style={styles.title} numberOfLines={1}>
@@ -68,6 +71,7 @@ export function ActionSheet({
             {items.map((it, i) => (
               <Pressable
                 key={it.key}
+                testID={testID ? `${testID}-${it.key}` : undefined}
                 style={[styles.row, i > 0 && styles.rowDivider]}
                 disabled={it.disabled}
                 onPress={() => {

@@ -3,6 +3,7 @@
  * 티켓 요청은 유지(403 SCAN-004 경로) + 낡은 프로필(해금됨)은 발급 성공이 카메라 복원.
  */
 import * as React from 'react';
+import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
@@ -135,6 +136,8 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
+// KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
+beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsGuest.mockReturnValue(false);
@@ -243,5 +246,45 @@ describe('Codex #159 P1: 완료된 스캔 결과는 복귀 포커스로 쿼터 �
     expect(mockIssue).toHaveBeenCalledTimes(2); // 서버 티켓 확인은 유지
     expect(quotaShown(tree)).toBe(false);
     expect(inResult(tree)).toBe(true);
+  });
+});
+
+/* KB-670: 선발급 MEMBER-003(탈퇴·정지 회원의 남은 토큰 — 서버 KB-669로 전 회원 API 확대)은 세션 만료 흐름(KB-441
+   beAuth → 게스트 전환)이 처리한다. 스캔 화면은 로컬 에러 화면을 세우지 않는다 — 세웠던 에러 state는 게스트 전환 뒤에도
+   남아, 같은 기기에서 다시 로그인하면 카메라 대신 에러 화면이 보였다. */
+describe('KB-670 선발급 MEMBER-003 = 에러 화면 없음 · 게스트 전환 시 게스트 게이트', () => {
+  const errorShown = (tree: ReactTestRenderer) => JSON.stringify(tree.toJSON()).includes('scan.stage.be');
+  const guestGate = (tree: ReactTestRenderer) =>
+    tree.root.findAll((n) => n.props?.context === 'scan' && n.props?.open === true && typeof n.props?.onClose === 'function').length > 0;
+
+  it('MEMBER-003 → 에러 화면을 세우지 않는다(카메라 단계 유지)', async () => {
+    mockIssue.mockRejectedValue(Object.assign(new Error('no member'), { code: 'MEMBER-003' }));
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); });
+    expect(mockIssue).toHaveBeenCalled(); // 대조: 선발급이 실제로 MEMBER-003을 받았다
+    expect(errorShown(tree)).toBe(false);
+  });
+
+  it('세션 만료로 게스트 전환 → 게스트 게이트 · 이어서 재로그인해도 옛 에러 화면이 남지 않는다', async () => {
+    mockIssue.mockRejectedValueOnce(Object.assign(new Error('no member'), { code: 'MEMBER-003' }));
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); });
+    mockIsGuest.mockReturnValue(true); // KB-441 경로: sessionExpired → 게스트 재평가
+    await act(async () => { tree.update(<Scan />); });
+    expect(guestGate(tree)).toBe(true);
+    mockIssue.mockReturnValue(deferred().promise);
+    mockIsGuest.mockReturnValue(false); // 같은 화면에서 재로그인
+    await act(async () => { tree.update(<Scan />); });
+    expect(errorShown(tree)).toBe(false);
+  });
+
+  it('대조군: SCAN-004(쿼터)는 그대로 안내 화면(다른 preflight 오류 무변)', async () => {
+    mockIssue.mockRejectedValue(Object.assign(new Error('quota'), { code: 'SCAN-004' }));
+    mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(1) } });
+    let tree!: ReactTestRenderer;
+    await act(async () => { tree = renderer.create(<Scan />); });
+    expect(quotaShown(tree)).toBe(true);
   });
 });

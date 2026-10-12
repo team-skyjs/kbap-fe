@@ -14,7 +14,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { ActivityIndicator, BackHandler, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -45,6 +45,7 @@ import {
 import { PepperOn, PepperOff } from '@/components/design4Assets';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
+import { ProgressDots } from '@/components/ProgressDots';
 import { useShake } from '@/lib/useShake';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
@@ -330,7 +331,9 @@ export default function Onboarding() {
   })();
 
   return (
-    <View style={[styles.app, { paddingTop: insets.top }]}>
+    // KB-700(하단 고정 바 + 입력창 전수): 국가·기피 재료 검색 입력 중 하단 CTA 푸터가 키보드 뒤에 남지 않게 — 리뷰 작성·프로필 편집과 같은
+    // iOS KeyboardAvoidingView(padding). 푸터는 이미 ScrollView의 형제라 키보드 위로 따라 올라온다. 안드는 adjustResize라 그대로.
+    <KeyboardAvoidingView style={[styles.app, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="ob-kav">
       {/* P-133: 국적 스텝 = 헤더·검색 고정, 리스트만 스크롤(시안 kbap-ob4) — 자체 스크롤 구조 */}
       {step === 'nationality' ? (
         <View style={[styles.body, { flex: 1 }]}>
@@ -444,7 +447,7 @@ export default function Onboarding() {
       />
 
       {/* P-192: 회원 푸시 프라이머 — 제출 성공 직후 1회, 응답 후 홈 직행 */}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -629,7 +632,7 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.natName} numberOfLines={2}>{c.native ?? c.name}</Text>
           {c.native && c.native !== c.name && (
-            <Text style={styles.natSub} numberOfLines={1}>{c.name}</Text>
+            <Text style={styles.natSub} numberOfLines={2}>{c.name}</Text>
           )}
         </View>
         {/* 시안: Radio 16(D-1 Choice 문법) — 선택 = primary 5px 링 */}
@@ -822,13 +825,7 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
 function ObTitle({ title, sub, dotCount, dotActive }: { title: string; sub?: string; dotCount?: number; dotActive?: number }) {
   return (
     <View style={{ marginBottom: 18, gap: 8 }}>
-      {dotCount != null && dotActive != null && (
-        <View style={styles.dotRow} testID="ob-dots">
-          {Array.from({ length: dotCount }).map((_, i) => (
-            <View key={i} style={[styles.dot, i === dotActive && styles.dotOn]} testID={`ob-dot-${i}-${i === dotActive ? 'on' : 'off'}`} />
-          ))}
-        </View>
-      )}
+      {dotCount != null && dotActive != null && <ProgressDots count={dotCount} active={dotActive} />}
       <Text style={styles.obTitle}>{title}</Text>
       {!!sub && <Text style={styles.obSub}>{sub}</Text>}
     </View>
@@ -904,9 +901,6 @@ const styles = StyleSheet.create({
   // titles (KB-433 §3: 20/700 + 14/500 #9196A1 + 진행 점)
   obTitle: { fontSize: 20, fontWeight: '700', color: C.ink },
   obSub: { fontSize: 14, fontWeight: '500', color: C.ink3, lineHeight: 21, marginTop: 0 }, // A-NT-03/04
-  dotRow: { flexDirection: 'row', gap: 4 },
-  dot: { width: 17, height: 4, borderRadius: 8, backgroundColor: C.line2 },
-  dotOn: { backgroundColor: C.primary },
 
   // fields
   // KB-149 프로필 사진 (edit.tsx avatar 패턴)

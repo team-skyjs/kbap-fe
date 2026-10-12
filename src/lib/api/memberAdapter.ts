@@ -12,7 +12,7 @@
  *   - email ← 계약에 없음(소셜 전용) → undefined
  */
 import { reportProfileContractDrift } from '../sentry';
-import type { Ranking, RestrictionKind, ScanQuota, User } from './types';
+import type { AdRewards, Ranking, RestrictionKind, ScanQuota, User } from './types';
 import type { SpiceChoice } from '@/lib/spice';
 import { wireToSpiceChoice } from './spiceAdapter';
 
@@ -56,6 +56,10 @@ export interface MyProfileWire {
   scanUnlocked?: boolean;
   /** 잔여 무료 횟수 — 무제한(unlocked)이면 null(Swagger). -1은 문서에 없지만 무제한 센티널로 방어. */
   scanRemaining?: number | null;
+  /** KB-740: 보상형 광고 적립(누적·해제 필요 수·남은 수) — 부재 = 구서버 */
+  adRewardCount?: number;
+  adRewardsForUnlock?: number;
+  adRewardRemainingForUnlock?: number;
 }
 
 /** P-384(KB-442): 쿼터 정규화. scanUnlocked 부재 = 구서버 → null(판별 불가 — 클라가 막지 않는다,
@@ -72,6 +76,13 @@ export function adaptScanQuota(wire: Pick<MyProfileWire, 'scanCount' | 'freeScan
 }
 
 /** 소진 = 스캔 탭 사전 안내·리뷰 탭 넛지의 단일 규칙. */
+/** KB-739: 세 필드가 전부 정수일 때만 — 하나라도 없으면 null(광고 해제 경로 숨김, 리뷰 경로는 무변) */
+export function adaptAdRewards(wire: Pick<MyProfileWire, 'adRewardCount' | 'adRewardsForUnlock' | 'adRewardRemainingForUnlock'>): AdRewards | null {
+  const { adRewardCount: c, adRewardsForUnlock: f, adRewardRemainingForUnlock: r } = wire;
+  if (typeof c !== 'number' || typeof f !== 'number' || typeof r !== 'number') return null;
+  return { count: c, forUnlock: f, remaining: Math.max(0, r) };
+}
+
 export function isScanQuotaExhausted(q: ScanQuota | null | undefined): boolean {
   return !!q && !q.unlocked && q.remaining === 0;
 }
@@ -180,5 +191,6 @@ export function adaptProfile(wire: MyProfileWire, localSpice: SpiceChoice | null
     // P-243: 식이 카테고리 서버 정본(BE #179) — 부재(구응답) = 빈 배열
     dietCategories: Array.isArray(wire.dietCategories) ? wire.dietCategories : [],
     scanQuota: adaptScanQuota(wire),
+    adRewards: adaptAdRewards(wire), // KB-739
   };
 }

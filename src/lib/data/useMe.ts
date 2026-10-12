@@ -13,12 +13,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
+import { useAppLanguage } from '../i18n/useAppLanguage';
 import type { Review, User, UserUpdate } from '../api/types';
 import { api, apiLang } from '../api/client';
 import { adaptProfile, type MyProfileWire, type ProfileUpdateWire } from '../api/memberAdapter';
 import { adaptReviewPage, type ReviewPageWire } from '../api/reviewAdapter';
 import { hasBeSession } from '../auth/beAuth';
+import { currentGen } from '../auth/beTokens';
 import { setSentryUser } from '../sentry';
+import { setAnalyticsUser } from '../analytics';
 import { FLAGS } from '../flags';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
@@ -29,19 +32,25 @@ import { toBeCode } from '../mocks/ingredients';
 /** 내 프로필 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
 export async function fetchMe(): Promise<User> {
   if (!(await hasBeSession())) {
-    setSentryUser(null); // P-197: 게스트 = 식별 해제
+    setSentryUser(null); // P-197: 게스트 = 식별 해제 (Amplitude 해제는 세션 경계·부팅 정리 몫 — KB-732)
     return MOCK_USER; // guest/dev fallback
   }
+  const gen = currentGen(); // 공부 #242 3: 요청 시작 시점의 세션 세대
   const wire = await api.get<MyProfileWire>('/members/me/profile');
   const user = adaptProfile(wire, await loadLocalSpice());
-  setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
+  // 응답 도착 전에 로그아웃(세션 경계 = 세대 bump)됐으면 옛 회원 번호로 식별을 되살리지 않는다(queryClient.clear()는 진행 중 요청을 취소하지 않음)
+  if (currentGen() === gen) {
+    setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
+    setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
+  }
   return user;
 }
 
 export function useMe() {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   return useQuery({
     // 언어 전환 시 성분명 지역화 대비(현재 프로필은 코드만이라 무해)
-    queryKey: ['me', i18n.language],
+    queryKey: ['me', lang],
     queryFn: fetchMe,
   });
 }

@@ -12,7 +12,11 @@
     "retry": "再試行",
     "skip": "スキップ",
     "save": "保存",
-    "close": "閉じる"
+    "close": "閉じる",
+    "leaveTitle": "保存せずに戻りますか？",
+    "leaveBody": "下書きは保存されません。",
+    "keepWriting": "書き続ける",
+    "discard": "破棄する"
   },
   "intro": {
     "skip": "スキップ",
@@ -91,7 +95,7 @@
   "food": {
     "title": "料理を探す",
     "sub": "すべての料理にあなたのリスクを表示。",
-    "searchPlaceholder": "料理や食材を検索…",
+    "searchPlaceholder": "料理を検索…",
     "sort_popular": "人気順",
     "sort_new": "新着順",
     "categories": {
@@ -106,12 +110,12 @@
     "sortNewSoon": "準備中"
   },
   "search": {
-    "placeholder": "料理や食材を検索…",
     "recent": "最近の検索",
     "recentClearAll": "すべて削除",
     "recentEmptyHint": "最近の検索履歴がここに表示されます。",
     "popular": "話題の検索",
-    "resultCount": "{{count}} 件の結果",
+    "resultCount_one": "{{count}} 件の結果",
+    "resultCount_other": "{{count}} 件の結果",
     "noResultsTitle": "見つかりませんでした",
     "samples": [
       "キムチチゲ",
@@ -177,10 +181,6 @@
     "post": "投稿",
     "composePlaceholder": "韓国での食事について何でもシェアしよう…",
     "cover": "カバー",
-    "leaveTitle": "投稿をやめますか？",
-    "leaveBody": "下書きは保存されません。",
-    "keepWriting": "書き続ける",
-    "discard": "やめる",
     "postedTitle": "投稿しました！",
     "editedTitle": "投稿を更新しました",
     "tagFoodTitle": "料理をタグ付け",
@@ -287,6 +287,8 @@
     "quotaTitle": "無料スキャンをすべて使い切りました",
     "quotaBody": "レビューを書くとスキャンが無制限になります。",
     "quotaCta": "レビューを書く",
+    "freeLeft_one": "無料スキャン残り{{count}}回",
+    "freeLeft_other": "無料スキャン残り{{count}}回",
     "later": "あとで",
     "errUpload": "写真をアップロードできませんでした。もう一度お試しください。",
     "stayHint": "30〜40秒ほどかかることがあります — アプリを離れると結果が失われる場合があります。",
@@ -402,6 +404,24 @@
     "extrasSpeed": "提供スピード",
     "extrasService": "接客",
     "extrasTaste": "味"
+  },
+  "translation": {
+    "showTranslation": "翻訳を表示",
+    "translatedFrom": "{{language}}から翻訳",
+    "translated": "翻訳済み",
+    "translateFailed": "翻訳できませんでした。もう一度お試しください。",
+    "lang": {
+      "en": "英語",
+      "ko": "韓国語",
+      "ja": "日本語",
+      "zh-Hans": "中国語（簡体字）",
+      "zh-Hant": "中国語（繁体字）",
+      "vi": "ベトナム語",
+      "id": "インドネシア語",
+      "th": "タイ語",
+      "ru": "ロシア語",
+      "es": "スペイン語"
+    }
   },
   "reviews": {
     "headerTitle": "レビュー",
@@ -540,6 +560,7 @@
     "noIngredientData": "まだ食材データがありません",
     "noIngredientBody": "評価・説明・食材データはまだありません。カタログ改善のためこの料理を記録しました。",
     "ofShops": "店舗の約{{pct}}%",
+    "avoidImplied": "{{ingredient}}の回避に含まれます",
     "writeReview": "レビューを書く",
     "spiceAboveYou": "あなたの好みより辛い",
     "addProfileHint": "食事制限を追加すると、あなた専用の判定が表示されます。",
@@ -579,7 +600,6 @@
     "guestScansTitle": "サインインすると、スキャン履歴を保存でき、あなたに合わせた安全評価が受けられます。",
     "greetingSub": "今日あなたに安全な料理はこちら。",
     "greetingSubEmpty": "最初の安全な料理を見つけましょう。",
-    "avoidCount": "{{count}} 件を避けています",
     "edit": "編集",
     "scanTitle": "メニューをスキャン",
     "scanSub": "韓国語のメニューに向けてあなたのリスクを確認。",
@@ -761,7 +781,6 @@
     "title": "制限を編集",
     "save": "制限を保存",
     "notice": "すべての安全警告の基準になります。正確に保ってください。変更はすべての料理に即時反映されます。",
-    "avoidCount": "{{count}}件を避けています",
     "avoidNone": "まだ避けるものはありません",
     "tapToRemove": "×をタップで削除",
     "searchPlaceholder": "食材を検索…",
@@ -887,6 +906,7 @@
     "foodHidden": "現在、この料理は保存できません。",
     "foodUpdating": "この料理の情報を更新中のため、今は保存できません。",
     "title": "保存済み",
+    "count_one": "{{count}}件の料理",
     "count_other": "{{count}}件の料理",
     "newestFirst": "新しい順",
     "swipeHint": "カードを左にスワイプで削除",
@@ -1038,8 +1058,22 @@
     "statusAnswered": "回答済み",
     "statusClosed": "クローズ",
     "emptyTitle": "まだお問い合わせはありません",
-    "replyCount_other": "回答 {{count}}件",
     "notFound": "このお問い合わせは見つかりません。",
     "teamName": "K-Bapチーム"
+  },
+  "reviewPrompt": {
+    "title": "K-Bapは役に立っていますか？",
+    "positive": "はい、気に入っています",
+    "negative": "あまり",
+    "later": "あとで"
+  },
+  "ads": {
+    "sponsored": "広告",
+    "privacyOptions": "プライバシー設定",
+    "report": "広告を報告",
+    "reportPrefill": "広告の報告: ",
+    "watchToUnlock": "広告を見て解除 ({{n}}/{{total}})",
+    "rewardLimit": "今日はここまでです。明日またお試しください。",
+    "rewardError": "視聴を記録できませんでした。もう一度お試しください。"
   }
 }

@@ -68,6 +68,14 @@ export interface User {
   currency?: string | null;
   /** P-384(KB-442): 스캔 쿼터 — 서버 정본. null = 구서버(필드 부재)·판별 불가 → 게이트·넛지 없음. */
   scanQuota?: ScanQuota | null;
+  /** KB-739/KB-740: 보상형 광고 적립 — 서버 정본. null = 구서버(필드 부재) → 광고 해제 경로 숨김. remaining 0 = 해제됨(n/3 카드 안 그림) */
+  adRewards?: AdRewards | null;
+}
+
+export interface AdRewards {
+  count: number;
+  forUnlock: number;
+  remaining: number;
 }
 
 export interface ScanQuota {
@@ -115,6 +123,9 @@ export interface IngredientRisk {
   percentage: number | null;
   risk: RiskState;
   note: string | null; // e.g. "store-dependent"
+  /** KB-599: 이 재료가 회원의 **다른** 회피 code에 포함돼 걸렸으면 그 code(새우 회피 → 새우젓이면 'SHRIMP').
+   *  직접 매치·matchedBy 부재(구 서버)·비회원 = 없음. 화면은 카탈로그에 있는 code일 때만 근거 문구를 그린다. */
+  impliedBy?: string | null;
 }
 
 /** Traceable basis for a risk verdict (FR-012). */
@@ -199,7 +210,9 @@ export interface Review {
   authorNationality: string | null;
   authorRankTier: string | null;
   anonymized: boolean; // author 부재(탈퇴) = true
-  /** 번역 축 — 리뷰 번역 계약 미배포(P-085 지시 7): UI는 FLAGS.reviewTranslationEnabled로 비노출. */
+  /** KB-703 ②: 서버가 판별한 본문 언어(앱 언어 코드) — null = 판별 불가·구서버. 앱 언어와 같으면 번역 라벨을 **처음부터** 숨긴다. */
+  language?: string | null;
+  /** 구 번역 축(P-085) — 미사용. KB-679부터 번역은 POST /api/translations 온디맨드(useContentTranslation). */
   bodyLanguage?: string;
   translatedBody?: string | null;
   /** P-095 목 → P-201(KB-249) 실계약: 장소 태그 — MANUAL은 name만(좌표·주소 null). */

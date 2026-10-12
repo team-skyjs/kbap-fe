@@ -81,7 +81,8 @@ jest.mock('@/lib/data/useFoods', () => ({
 jest.mock('@/lib/data/useReviewMutations', () => ({
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
   useToggleReviewLike: () => ({ mutate: jest.fn() }), useDeleteReview: () => ({ mutate: jest.fn() }) }));
-jest.mock('@/lib/data/useReviewTranslation', () => ({ useReviewTranslation: () => ({ translate: jest.fn(), state: {} }) }));
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('@/features/community/moderation', () => ({ ModerationFlow: () => null }));
 
 const mockRefetch = jest.fn();
@@ -286,5 +287,32 @@ describe('KB-626 전체 리뷰 화면 — FOOD-001은 중립 안내, 캐시된 �
     const tree = render(<FoodReviews />);
     expect(byTestId(tree, 'reviews-food-hidden').length).toBeGreaterThan(0);
     expect(flat(tree)).not.toContain('states.errorTitle');
+  });
+});
+
+/* KB-674(KB-672 취소 원인) — 음식별 전체 리뷰의 장소는 공용 ReviewPlaceLine **한 곳**에서만 그린다. 옛 placeTagsEnabled 중복
+   블록을 지웠으니, 장소 있는 리뷰 = 장소명 정확히 1회(켜면 2회였던 회귀 잠금) · 장소 없음 = 0회. */
+describe('KB-674 전체 리뷰 화면 — 장소 1회 표시', () => {
+  const review = (over: Record<string, unknown> = {}) => ({
+    id: 'r9', foodId: '7', rating: 4, body: 'nice', createdAt: '2026-09-30', authorNationality: 'US', authorRankTier: null,
+    author: { nickname: 'Amy', memberId: 9 }, ...over,
+  });
+  const page = (items: unknown[]) => ({
+    data: { pages: [{ items, hasNext: false, nextCursor: null }] }, isError: false, error: null, refetch: mockRefetch,
+    hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn(),
+  });
+  const NAME = 'Gwangjang Market Stall 12';
+  const count = (tree: ReactTestRenderer) => flat(tree).split(NAME).length - 1;
+
+  it('장소 있는 리뷰 → 장소명 정확히 1회', () => {
+    mockFoodReviews.mockReturnValue(page([review({ place: { name: NAME, address: 'Jongno-gu, Seoul' } })]));
+    expect(count(render(<FoodReviews />))).toBe(1);
+  });
+
+  it('장소 없는 리뷰 → 0회 · 카드는 렌더(대조)', () => {
+    mockFoodReviews.mockReturnValue(page([review({ place: null })]));
+    const tree = render(<FoodReviews />);
+    expect(count(tree)).toBe(0);
+    expect(tree.root.findAll((n) => n.props?.testID === 'helpful-r9').length).toBeGreaterThan(0);
   });
 });

@@ -56,6 +56,8 @@ export interface ReviewWire {
   likedByMe?: boolean;
   /** P-201(KB-249): 장소 태그 — source = KAKAO_PLACE/MANUAL/AUTHOR_LOCATION. */
   place?: { name?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; source?: string | null; placeId?: string | null } | null;
+  /** KB-702(서버) → KB-703 ②: 리뷰 본문 언어 = 앱 언어 코드(clampLang 집합) · 판별 못 하면 null · 구서버엔 필드 없음. */
+  language?: string | null;
 }
 
 export interface ReviewPageWire {
@@ -112,6 +114,8 @@ export function adaptReview(wire: ReviewWire): Review {
     // 번역 축 — 계약 미배포(지시 7): 원문 언어 미상, UI는 플래그로 비노출
     bodyLanguage: undefined,
     translatedBody: null,
+    // KB-703 ②: 빈 문자열·비문자 = 판별 불가(null) — 버튼은 지금처럼 보인다(숨김은 확신할 때만)
+    language: typeof wire.language === 'string' && wire.language.trim() !== '' ? wire.language : null,
     // P-108: 좋아요 = 서버값 (목 로컬 계산 폐기 — 토글 낙관 반영은 뮤테이션 몫)
     likes: wire.likeCount ?? 0,
     myLike: wire.likedByMe === true,

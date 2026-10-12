@@ -170,12 +170,13 @@ it('KB-498: Android = activity(MAX)·news(HIGH) 채널 각 1회, 이름은 i18n 
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(2);
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
       'activity',
-      expect.objectContaining({ name: 'notif.activityGroup', importance: 7, sound: 'default' }),
+      expect.objectContaining({ name: 'notif.activityGroup', importance: 7 }),
     );
     expect(mockNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
       'news',
-      expect.objectContaining({ name: 'notif.newsGroup', importance: 6, sound: 'default' }),
+      expect.objectContaining({ name: 'notif.newsGroup', importance: 6 }),
     );
+    for (const call of mockNotifications.setNotificationChannelAsync.mock.calls) expect(call[1]).not.toHaveProperty('sound'); // KB-739 #249 /review 11: sound 생략 = 시스템 기본음('default'는 커스텀 파일명으로 검증돼 경고·무음 위험)
     const ids = mockNotifications.setNotificationChannelAsync.mock.calls.map((c: unknown[]) => c[0]);
     expect(ids).not.toContain('default'); // 중요도는 생성 후 불변 — default는 만들지 않는다
     const src = require('fs').readFileSync('src/lib/push/pushAdapter.ts', 'utf8') as string;
@@ -203,7 +204,7 @@ it('KB-496(Codex #104 P1-1): 앱 시작 토큰 upsert = cleanup 직렬(소스 �
   expect(layout.match(/registerPushToken\(\)/g)).toHaveLength(2);
   expect(layout).not.toMatch(/^\s*void push\.registerPushToken\(\);/m);
   // KB-498: 콜백 href null(이동 없는 유형) 가드 — null 이동 금지. KB-573: 이동은 lib/nav 헬퍼 경유(홈 = 스택 리셋), 직접 router.push 0
-  expect(layout).toContain('if (href) openNotificationRoute(router, href)');
+  expect(layout).toContain('if (href) openNotificationRoute(router, href)'); // KB-735: 보류 없이 즉시 이동
   expect(layout).not.toContain('router.push(href');
   // KB-573: 탭 리스너 등록은 entryChecked 뒤 — Stack 마운트 전 navigate는 expo-router throw(콜드 스타트 탭 유실/크래시)
   expect(layout).toContain('if (!FLAGS.pushEnabled || !entryChecked) return;');

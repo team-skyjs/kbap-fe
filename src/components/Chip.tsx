@@ -11,6 +11,8 @@ import { RiskMark } from './RiskMark';
 import { color as C, radius, riskTone, riskTextStrong, type RiskState } from '@/lib/theme';
 
 const INK_ACTIVE = '#2F3137'; // 시안 gray-900(발주 표 외 명시값)
+/** 라벨 줄 높이(KB-708: 20 → 24) — 칩을 담는 고정 높이 줄이 큰 글자에서 같이 늘어날 양을 계산할 때 쓴다 */
+export const CHIP_LABEL_LH = 24;
 
 export function Chip({
   label,
@@ -57,13 +59,15 @@ export function Chip({
 }
 
 const styles = StyleSheet.create({
-  chip: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1 },
+  // KB-708(7): 세로 여백 8 → 6 · 줄 높이 20 → 24 — 칩 높이는 그대로(6+24+6 = 8+20+8 = 36), 글자 상자만 4pt 넓혀
+  // vi "Thận trọng"의 아래 점·g 꼬리(위아래로 쌓인 성조 부호가 어센트를 올려 고정 줄 높이 20에서 아래가 잘렸다)를 살린다.
+  chip: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1 },
   // 마크 + 라벨 — 프레임 불변(P-151): 선택/비선택 모두 같은 슬롯·같은 패딩
   chipRisk: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   on: { backgroundColor: INK_ACTIVE, borderColor: INK_ACTIVE },
   off: { backgroundColor: '#FFFFFF', borderColor: C.line },
-  // P-371: lineHeight 20 고정 — 8+20+8=36 칩 높이 유지, Android 한글 세로 중앙
-  label: { fontSize: 14, fontWeight: '500', lineHeight: 20 },
+  // P-371: 줄 높이 고정(칩 높이 36 유지, Android 한글 세로 중앙) — KB-708: 20 → 24(여백 8 → 6과 짝)
+  label: { fontSize: 14, fontWeight: '500', lineHeight: CHIP_LABEL_LH },
 });
 
 export default Chip;

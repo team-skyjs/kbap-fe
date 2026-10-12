@@ -16,6 +16,7 @@ import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, TextInpu
 import { color as C } from '@/lib/theme';
 import { resolveFont } from '@/lib/i18n/fonts';
 import { IconChevronDown } from './icons';
+import { MAX_FONT_SCALE } from './Txt';
 
 export const KEYBOARD_ACCESSORY_ID = 'kbap-kbd-dismiss';
 
@@ -31,6 +32,8 @@ export const Input = React.forwardRef<TextInput, TextInputProps>(function Input(
       ref={ref}
       style={override ? [restStyle, override] : style}
       inputAccessoryViewID={Platform.OS === 'ios' ? KEYBOARD_ACCESSORY_ID : undefined}
+      // KB-710(1): 입력 글자도 Txt와 같은 큰 글자 상한(×1.3) — AX3에서 입력창만 주변 글자의 약 2배였다
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
       {...props}
     />
   );

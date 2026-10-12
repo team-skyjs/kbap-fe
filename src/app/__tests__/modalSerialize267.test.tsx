@@ -208,8 +208,10 @@ it('②-b 배선 — Modal onDismiss 연결 + 안드는 onClose 경로(플랫폼
   const fs = require('fs');
   expect(fs.readFileSync('src/features/scan/ScanCoachMark.tsx', 'utf8')).toContain('onDismiss={onDismiss}');
   const scan = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
-  expect(scan).toContain("onDismiss={Platform.OS === 'ios' ? maybeShowPrimer : undefined}");
-  expect(scan).toContain("if (Platform.OS !== 'ios') maybeShowPrimer();"); // 안드 = onDismiss 미지원
+  // KB-730: 프라이머 직접 호출 → 일회성 모달 큐의 done(settle) — iOS는 onDismiss, 안드는 onClose(onDismiss 미지원)
+  expect(scan).toContain("onDismiss={Platform.OS === 'ios' ? () => settle(coachDoneRef) : undefined}");
+  expect(scan).toContain("if (Platform.OS !== 'ios') settle(coachDoneRef);");
+  expect(scan).toContain("modalQueue.add(nudgeStep());"); // 코치 → 넛지 순서는 큐가 보장
 });
 
 it('③ 코치마크 비대상(기존자) = 프라이머 단독 present(현행 무변)', async () => {

@@ -152,7 +152,7 @@ it('KB-310 Codex P2: 프로브 실패·콜드 캐시 = 인기 레일 통째 미�
   expect(tree.root.findAll((n) => String(n.props?.testID ?? '').startsWith('pop-'))).toHaveLength(0);
   // placeholder = 기본 문구 폴백(시드 로테이션 미적용)
   const input = tree.root.findAll((n) => typeof n.props?.placeholder === 'string')[0];
-  expect(input.props.placeholder).toBe('search.placeholder');
+  expect(input.props.placeholder).toBe('food.searchPlaceholder'); // KB-722: 홈 검색창과 한 키
 });
 
 it('제출 검색 NETWORK 에러 → J4 (StateBlock→QueryErrorBlock 톤 통일)', () => {

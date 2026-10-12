@@ -135,3 +135,38 @@ describe('P-385(KB-363): publishedAt 매핑 — 부재는 null', () => {
     expect(adaptFoodDetail(WIRE, '7').publishedAt).toBeNull();
   });
 });
+
+/* KB-599(서버 KB-598 #281): avoidedIngredients[].matchedBy = 회원이 직접 고른 code. 함의 매치(새우 회피 → 새우젓)만
+   근거 code(impliedBy)로 싣는다 — 자기 자신(직접 매치)·부재(구 서버)·비회원은 없음. */
+describe('KB-599 impliedBy — 함의 매치 근거', () => {
+  const wire = (avoided: FoodDetailWire['avoidedIngredients']): FoodDetailWire =>
+    ({
+      ...WIRE,
+      ingredients: [
+        { code: 'SALTED_SHRIMP', name: 'Salted shrimp', inclusionPercent: 40 },
+        { code: 'SHRIMP', name: 'Shrimp', inclusionPercent: 30 },
+        { code: 'ONION', name: 'Onion', inclusionPercent: 90 },
+      ],
+      avoidedIngredients: avoided,
+    }) as FoodDetailWire;
+  const byCode = (w: FoodDetailWire) => Object.fromEntries(adaptFoodDetail(w, '1').ingredients.map((i) => [i.code, i]));
+
+  it('다른 code로 매치(SHRIMP → SALTED_SHRIMP) = impliedBy SHRIMP · 마크 유지', () => {
+    const m = byCode(wire([{ code: 'SALTED_SHRIMP', riskStatus: 'DANGER', matchedBy: 'SHRIMP' }]));
+    expect(m.SALTED_SHRIMP.impliedBy).toBe('SHRIMP');
+    expect(m.SALTED_SHRIMP.risk).toBe('danger');
+  });
+
+  it('직접 매치(matchedBy = 자기 자신) = 없음', () => {
+    const m = byCode(wire([{ code: 'SHRIMP', riskStatus: 'DANGER', matchedBy: 'SHRIMP' }]));
+    expect(m.SHRIMP.impliedBy).toBeNull();
+    expect(m.SHRIMP.risk).toBe('danger');
+  });
+
+  it('matchedBy 부재(구 서버)·null = 없음 · 겹침 없는 재료 = 없음 · 비회원(avoided null) = 없음', () => {
+    expect(byCode(wire([{ code: 'SALTED_SHRIMP', riskStatus: 'DANGER' }])).SALTED_SHRIMP.impliedBy).toBeNull();
+    expect(byCode(wire([{ code: 'SALTED_SHRIMP', riskStatus: 'DANGER', matchedBy: null }])).SALTED_SHRIMP.impliedBy).toBeNull();
+    expect(byCode(wire([{ code: 'SALTED_SHRIMP', riskStatus: 'DANGER', matchedBy: 'SHRIMP' }])).ONION.impliedBy).toBeNull();
+    expect(byCode(wire(null)).SALTED_SHRIMP.impliedBy).toBeNull();
+  });
+});

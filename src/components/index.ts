@@ -9,7 +9,6 @@ export { Btn, type BtnVariant } from './Btn';
 export { StickyHeader, useStickyScroll, useHeaderHeight, type StickyHeaderProps } from './StickyHeader';
 export { SubHeader } from './SubHeader';
 export { TabBar, type TabKey, type TabBarLabels } from './TabBar';
-export { TopBar } from './TopBar';
 export { EmptyBlock, QueryErrorBlock, classifyQueryError, ScreenCenterFill } from './StateBlock'; // P-359: 구 StateBlock·stateIconColor 폐기
 export { SkeletonList, SkeletonHome, SkeletonFoodGrid, SkeletonProfile, Shimmer } from './Skeleton';
 export { CardPhoto } from './CardPhoto';

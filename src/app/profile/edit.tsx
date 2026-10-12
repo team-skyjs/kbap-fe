@@ -8,7 +8,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,8 @@ import { AvatarPlaceholder } from '@/components/design4Assets';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
 import { type SpiceChoice } from '@/lib/spice';
-import { countryByCode } from '@/lib/onboarding/countries';
+import { countryDisplayName } from '@/lib/onboarding/countries';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { IconLock } from '@/components/icons';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
@@ -31,6 +32,7 @@ import { currencyForCountry, currencyUpdateFor, saveCurrency, SUPPORTED_CURRENCI
 import { openAppSettings } from '@/lib/openExternal';
 
 export default function EditProfile() {
+  const appLang = useAppLanguage(); // KB-708: 국가명 표시(엔도님 판정)
   const router = useRouter();
   const { t } = useTranslation();
   const { lang } = useLocale();
@@ -58,7 +60,6 @@ export default function EditProfile() {
     setCurrency(me.currency == null || me.currency === currencyForCountry(me.nationality) ? null : me.currency);
   }
 
-  const nation = me?.nationality ? countryByCode(me.nationality) : undefined;
 
   const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 = PATCH 중복 봉쇄
   function save() {
@@ -151,13 +152,15 @@ export default function EditProfile() {
   };
 
   return (
-    <View style={styles.root}>
+    // KB-700(QA — 닉네임 포커스 시 키보드 아래로 Save 바 주황이 비침): 리뷰 작성·글쓰기와 같은 방식 — iOS KeyboardAvoidingView(padding),
+    // 하단 Save 바는 절대 위치가 아닌 ScrollView의 형제(키보드 위로 따라 올라온다). 안드는 adjustResize라 그대로.
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="edit-kav">
       <SubHeader
         title={t('editProfile.title')}
         onBack={() => router.back()}
         trailing={
           <Pressable onPress={save} disabled={photoBusy || saving} hitSlop={8} style={[styles.saveWrap, (photoBusy || saving) && { opacity: 0.35 }]}>
-            <Text style={styles.saveLink}>{t('common.save')}</Text>
+            <Text style={styles.saveLink} numberOfLines={1}>{t('common.save')}</Text>
           </Pressable>
         }
       />
@@ -205,7 +208,7 @@ export default function EditProfile() {
           <Text style={styles.fieldLbl}>{t('editProfile.nationality')}</Text>
           <View style={[styles.field, styles.fieldDisabled]}>
             {!!me?.nationality && <Flag code={me.nationality} size={18} />}
-            <Text style={[styles.val, styles.valDisabled]}>{nation?.name ?? me?.nationality}</Text>
+            <Text style={[styles.val, styles.valDisabled]}>{me?.nationality ? countryDisplayName(me.nationality, appLang) : null}</Text>
             <IconLock size={15} color={C.ink3} />
           </View>
           <Text style={styles.hint}>{t('editProfile.nationalityLocked')}</Text>
@@ -325,13 +328,13 @@ export default function EditProfile() {
         </Btn>
       </View>
 
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
-  body: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 120, gap: 20 },
+  body: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28, gap: 20 }, // KB-700: Save 바가 흐름 안(형제)이라 바 높이만큼의 보정 120 불필요
   saveWrap: { paddingHorizontal: 6, height: 38, justifyContent: 'center' },
   saveLink: { fontSize: 13, fontWeight: '600', color: '#1C1E21' },
 
@@ -363,7 +366,7 @@ const styles = StyleSheet.create({
   linkedLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1C1E21' },
   linkedVal: { fontSize: 13, fontWeight: '500', color: '#8E8883' },
 
-  savebar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line }, // A-ED-11(padH 16 — 헤어라인은 C-07 무접촉)
+  savebar: { paddingHorizontal: 16, paddingTop: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: C.line }, // A-ED-11(padH 16 — 헤어라인은 C-07 무접촉)
 
   // P-165 통화 피커 — 온보딩 natSearch/natRow 문법 수치 재사용
   curBody: { flex: 1, paddingHorizontal: 18, paddingTop: 8 },

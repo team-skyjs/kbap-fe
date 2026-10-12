@@ -12,7 +12,11 @@
     "retry": "Thử lại",
     "skip": "Bỏ qua",
     "save": "Lưu",
-    "close": "Đóng"
+    "close": "Đóng",
+    "leaveTitle": "Rời đi mà không lưu?",
+    "leaveBody": "Bản nháp sẽ không được lưu.",
+    "keepWriting": "Viết tiếp",
+    "discard": "Bỏ"
   },
   "intro": {
     "skip": "Bỏ qua",
@@ -91,7 +95,7 @@
   "food": {
     "title": "Khám phá món ăn",
     "sub": "Mỗi món đều được gắn mức rủi ro của bạn.",
-    "searchPlaceholder": "Tìm món ăn hoặc nguyên liệu…",
+    "searchPlaceholder": "Tìm món ăn…",
     "sort_popular": "Phổ biến",
     "sort_new": "Mới nhất",
     "categories": {
@@ -106,12 +110,12 @@
     "sortNewSoon": "Sắp ra mắt"
   },
   "search": {
-    "placeholder": "Tìm món ăn, nguyên liệu…",
     "recent": "Tìm kiếm gần đây",
     "recentClearAll": "Xóa tất cả",
     "recentEmptyHint": "Các tìm kiếm gần đây của bạn sẽ hiển thị ở đây.",
     "popular": "Đang thịnh hành",
-    "resultCount": "{{count}} kết quả",
+    "resultCount_one": "{{count}} kết quả",
+    "resultCount_other": "{{count}} kết quả",
     "noResultsTitle": "Không tìm thấy kết quả nào",
     "samples": [
       "Canh kimchi",
@@ -177,10 +181,6 @@
     "post": "Đăng",
     "composePlaceholder": "Chia sẻ bất cứ điều gì về ăn uống ở Hàn Quốc…",
     "cover": "Ảnh bìa",
-    "leaveTitle": "Bỏ bài viết này?",
-    "leaveBody": "Bản nháp sẽ không được lưu.",
-    "keepWriting": "Viết tiếp",
-    "discard": "Bỏ",
     "postedTitle": "Đã đăng!",
     "editedTitle": "Đã cập nhật bài viết",
     "tagFoodTitle": "Gắn thẻ món ăn",
@@ -287,6 +287,8 @@
     "quotaTitle": "Bạn đã dùng hết lượt quét miễn phí",
     "quotaBody": "Viết một đánh giá để mở khóa quét không giới hạn.",
     "quotaCta": "Viết đánh giá",
+    "freeLeft_one": "Còn {{count}} lượt quét miễn phí",
+    "freeLeft_other": "Còn {{count}} lượt quét miễn phí",
     "later": "Để sau",
     "errUpload": "Không tải được ảnh lên. Vui lòng thử lại.",
     "stayHint": "Quá trình này có thể mất 30–40 giây — rời khỏi ứng dụng có thể làm mất kết quả.",
@@ -402,6 +404,24 @@
     "extrasSpeed": "Tốc độ phục vụ",
     "extrasService": "Thái độ phục vụ",
     "extrasTaste": "Hương vị"
+  },
+  "translation": {
+    "showTranslation": "Hiện bản dịch",
+    "translatedFrom": "Đã dịch từ {{language}}",
+    "translated": "Đã dịch",
+    "translateFailed": "Không thể dịch. Vui lòng thử lại.",
+    "lang": {
+      "en": "tiếng Anh",
+      "ko": "tiếng Hàn",
+      "ja": "tiếng Nhật",
+      "zh-Hans": "tiếng Trung (Giản thể)",
+      "zh-Hant": "tiếng Trung (Phồn thể)",
+      "vi": "tiếng Việt",
+      "id": "tiếng Indonesia",
+      "th": "tiếng Thái",
+      "ru": "tiếng Nga",
+      "es": "tiếng Tây Ban Nha"
+    }
   },
   "reviews": {
     "headerTitle": "Đánh giá",
@@ -540,6 +560,7 @@
     "noIngredientData": "Chưa có dữ liệu nguyên liệu",
     "noIngredientBody": "Chưa có điểm, mô tả hay dữ liệu nguyên liệu. Chúng tôi đã ghi nhận món này để cải thiện danh mục.",
     "ofShops": "~{{pct}}% số quán",
+    "avoidImplied": "Thuộc nhóm {{ingredient}} bạn tránh",
     "writeReview": "Viết đánh giá",
     "spiceAboveYou": "cay hơn khẩu vị của bạn",
     "addProfileHint": "Thêm hạn chế của bạn để xem đánh giá cá nhân hóa.",
@@ -579,7 +600,6 @@
     "guestScansTitle": "Đăng nhập để lưu lịch sử quét và nhận đánh giá an toàn dành riêng cho bạn.",
     "greetingSub": "Đây là những món an toàn cho bạn hôm nay.",
     "greetingSubEmpty": "Cùng tìm món an toàn đầu tiên của bạn nào.",
-    "avoidCount": "Bạn tránh {{count}} thứ",
     "edit": "Sửa",
     "scanTitle": "Quét thực đơn",
     "scanSub": "Hướng vào thực đơn Hàn để xem mức rủi ro của bạn.",
@@ -761,7 +781,6 @@
     "title": "Chỉnh sửa hạn chế",
     "save": "Lưu hạn chế",
     "notice": "Điều này chi phối mọi cảnh báo an toàn. Giữ chính xác — thay đổi áp dụng ngay cho mọi món.",
-    "avoidCount": "Bạn tránh {{count}} thứ",
     "avoidNone": "Chưa tránh gì",
     "tapToRemove": "chạm × để xóa",
     "searchPlaceholder": "Tìm nguyên liệu…",
@@ -887,6 +906,7 @@
     "foodHidden": "Hiện không thể lưu món này.",
     "foodUpdating": "Thông tin món này đang được cập nhật nên hiện chưa thể lưu.",
     "title": "Đã lưu",
+    "count_one": "{{count}} món",
     "count_other": "{{count}} món",
     "newestFirst": "Mới nhất trước",
     "swipeHint": "Vuốt thẻ sang trái để xóa",
@@ -1038,8 +1058,22 @@
     "statusAnswered": "Đã trả lời",
     "statusClosed": "Đã đóng",
     "emptyTitle": "Chưa có liên hệ nào",
-    "replyCount_other": "{{count}} trả lời",
     "notFound": "Không tìm thấy liên hệ này.",
     "teamName": "Đội ngũ K-Bap"
+  },
+  "reviewPrompt": {
+    "title": "K-Bap có hữu ích với bạn không?",
+    "positive": "Thích",
+    "negative": "Không hẳn",
+    "later": "Để sau"
+  },
+  "ads": {
+    "sponsored": "Quảng cáo",
+    "privacyOptions": "Tùy chọn quyền riêng tư",
+    "report": "Báo cáo quảng cáo",
+    "reportPrefill": "Báo cáo quảng cáo: ",
+    "watchToUnlock": "Xem quảng cáo để mở khóa ({{n}}/{{total}})",
+    "rewardLimit": "Hôm nay đến đây thôi. Hãy thử lại vào ngày mai.",
+    "rewardError": "Không ghi nhận được lượt xem. Vui lòng thử lại."
   }
 }

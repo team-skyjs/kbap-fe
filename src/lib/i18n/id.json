@@ -12,7 +12,11 @@
     "retry": "Coba lagi",
     "skip": "Lewati",
     "save": "Simpan",
-    "close": "Tutup"
+    "close": "Tutup",
+    "leaveTitle": "Keluar tanpa menyimpan?",
+    "leaveBody": "Draf tidak akan disimpan.",
+    "keepWriting": "Lanjut menulis",
+    "discard": "Buang"
   },
   "intro": {
     "skip": "Lewati",
@@ -91,7 +95,7 @@
   "food": {
     "title": "Jelajahi makanan",
     "sub": "Setiap hidangan ditandai dengan risiko Anda.",
-    "searchPlaceholder": "Cari makanan atau bahan…",
+    "searchPlaceholder": "Cari makanan…",
     "sort_popular": "Terpopuler",
     "sort_new": "Terbaru",
     "categories": {
@@ -106,12 +110,12 @@
     "sortNewSoon": "Segera hadir"
   },
   "search": {
-    "placeholder": "Cari makanan, bahan…",
     "recent": "Pencarian terakhir",
     "recentClearAll": "Hapus semua",
     "recentEmptyHint": "Pencarian terakhir Anda akan muncul di sini.",
     "popular": "Populer saat ini",
-    "resultCount": "{{count}} hasil",
+    "resultCount_one": "{{count}} hasil",
+    "resultCount_other": "{{count}} hasil",
     "noResultsTitle": "Tidak ada hasil yang cocok",
     "samples": [
       "Sup Kimchi",
@@ -177,10 +181,6 @@
     "post": "Posting",
     "composePlaceholder": "Bagikan apa saja tentang makan di Korea…",
     "cover": "Sampul",
-    "leaveTitle": "Buang postingan ini?",
-    "leaveBody": "Draf tidak akan disimpan.",
-    "keepWriting": "Lanjut menulis",
-    "discard": "Buang",
     "postedTitle": "Terposting!",
     "editedTitle": "Postingan diperbarui",
     "tagFoodTitle": "Tandai makanan",
@@ -287,6 +287,8 @@
     "quotaTitle": "Pemindaian gratismu sudah habis",
     "quotaBody": "Tulis ulasan untuk membuka pemindaian tanpa batas.",
     "quotaCta": "Tulis ulasan",
+    "freeLeft_one": "Sisa {{count}} pindai gratis",
+    "freeLeft_other": "Sisa {{count}} pindai gratis",
     "later": "Nanti",
     "errUpload": "Foto gagal diunggah. Silakan coba lagi.",
     "stayHint": "Proses ini bisa memakan waktu 30–40 detik — keluar dari aplikasi dapat menghilangkan hasilnya.",
@@ -402,6 +404,24 @@
     "extrasSpeed": "Kecepatan penyajian",
     "extrasService": "Keramahan",
     "extrasTaste": "Rasa"
+  },
+  "translation": {
+    "showTranslation": "Tampilkan terjemahan",
+    "translatedFrom": "Diterjemahkan dari bahasa {{language}}",
+    "translated": "Diterjemahkan",
+    "translateFailed": "Tidak bisa menerjemahkan. Coba lagi.",
+    "lang": {
+      "en": "Inggris",
+      "ko": "Korea",
+      "ja": "Jepang",
+      "zh-Hans": "Tionghoa (Sederhana)",
+      "zh-Hant": "Tionghoa (Tradisional)",
+      "vi": "Vietnam",
+      "id": "Indonesia",
+      "th": "Thai",
+      "ru": "Rusia",
+      "es": "Spanyol"
+    }
   },
   "reviews": {
     "headerTitle": "Ulasan",
@@ -540,6 +560,7 @@
     "noIngredientData": "Belum ada data bahan",
     "noIngredientBody": "Belum ada penilaian, deskripsi, atau data bahan. Kami telah mencatat hidangan ini untuk memperbaiki katalog.",
     "ofShops": "~{{pct}}% dari toko",
+    "avoidImplied": "Termasuk dalam {{ingredient}} yang kamu hindari",
     "writeReview": "Tulis ulasan",
     "spiceAboveYou": "lebih pedas dari selera Anda",
     "addProfileHint": "Tambahkan pantangan Anda untuk melihat penilaian yang dipersonalisasi.",
@@ -579,7 +600,6 @@
     "guestScansTitle": "Masuk untuk menyimpan riwayat pindaian dan mendapatkan penilaian keamanan pribadi Anda.",
     "greetingSub": "Ini yang aman untuk Anda hari ini.",
     "greetingSubEmpty": "Mari temukan hidangan aman pertama Anda.",
-    "avoidCount": "Anda menghindari {{count}} hal",
     "edit": "Ubah",
     "scanTitle": "Pindai menu",
     "scanSub": "Arahkan ke menu Korea untuk melihat risiko Anda.",
@@ -761,7 +781,6 @@
     "title": "Edit pantangan",
     "save": "Simpan pantangan",
     "notice": "Ini mengatur semua peringatan keamanan. Jaga keakuratannya — perubahan berlaku untuk semua hidangan seketika.",
-    "avoidCount": "Anda menghindari {{count}} hal",
     "avoidNone": "Belum ada yang dihindari",
     "tapToRemove": "ketuk × untuk menghapus",
     "searchPlaceholder": "Cari bahan…",
@@ -887,6 +906,7 @@
     "foodHidden": "Hidangan ini tidak bisa disimpan saat ini.",
     "foodUpdating": "Informasi hidangan ini sedang diperbarui, jadi belum bisa disimpan saat ini.",
     "title": "Tersimpan",
+    "count_one": "{{count}} hidangan",
     "count_other": "{{count}} hidangan",
     "newestFirst": "Terbaru dulu",
     "swipeHint": "Geser kartu ke kiri untuk menghapus",
@@ -1038,8 +1058,22 @@
     "statusAnswered": "Dijawab",
     "statusClosed": "Ditutup",
     "emptyTitle": "Belum ada pertanyaan",
-    "replyCount_other": "{{count}} balasan",
     "notFound": "Pertanyaan ini tidak tersedia.",
     "teamName": "Tim K-Bap"
+  },
+  "reviewPrompt": {
+    "title": "Apakah K-Bap membantu Anda?",
+    "positive": "Suka",
+    "negative": "Kurang",
+    "later": "Nanti"
+  },
+  "ads": {
+    "sponsored": "Iklan",
+    "privacyOptions": "Opsi privasi",
+    "report": "Laporkan iklan",
+    "reportPrefill": "Laporkan iklan: ",
+    "watchToUnlock": "Tonton iklan untuk membuka ({{n}}/{{total}})",
+    "rewardLimit": "Cukup untuk hari ini. Coba lagi besok.",
+    "rewardError": "Tontonan tidak tercatat. Silakan coba lagi."
   }
 }

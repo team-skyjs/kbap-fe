@@ -66,8 +66,30 @@ export default function RankingScreen() {
   );
 }
 
+/** KB-708(6): 기본 폭의 줄(1~3 · 4~6 · 7) — KB-710(7): **배치 측정 전 첫 프레임 폴백**만. 실제 줄은 rankRowKey(카드 y) */
+export function rankRow(level: number): number {
+  return level <= 3 ? 0 : level <= 6 ? 1 : 2;
+}
+/** KB-710(7): 줄 판정 = 실제 배치 y(같은 줄 카드는 위 끝 y가 같다). 폭 약 331pt 미만에서 한 줄 2장으로 접혀도 맞다. 측정 전 = 기본 폭 줄 */
+export function rankRowKey(level: number, cardY: Record<number, number>): string {
+  const y = cardY[level];
+  return y != null ? `y${Math.round(y)}` : `r${rankRow(level)}`;
+}
+/** 줄마다 가장 높은 카드 내용 높이(키 = rankRowKey) */
+export function rowMaxHeights(contentH: Record<number, number>, cardY: Record<number, number> = {}): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [lv, h] of Object.entries(contentH)) {
+    const r = rankRowKey(Number(lv), cardY);
+    out[r] = Math.max(out[r] ?? 0, h);
+  }
+  return out;
+}
+
 function RankingBody({ rk }: { rk: Ranking }) {
   const { t } = useTranslation();
+  const [contentH, setContentH] = React.useState<Record<number, number>>({});
+  const [cardY, setCardY] = React.useState<Record<number, number>>({}); // KB-710(7): 카드 위 끝 y(줄 판정)
+  const rowContentH = rowMaxHeights(contentH, cardY);
   const cur: Tier = tierByKey(rk.tier) ?? TIERS[0];
   const next = rk.nextTier ? tierByKey(rk.nextTier) : null;
   const bd = rk.breakdown;
@@ -177,9 +199,14 @@ function RankingBody({ rk }: { rk: Ranking }) {
       <View style={styles.rankGrid}>
         {TIERS.map((tier) => {
           const now = tier.level === cur.level;
+          const row = rankRowKey(tier.level, cardY);
           return (
             <View
               key={tier.key}
+              onLayout={(e) => {
+                const y = Math.round(e.nativeEvent.layout.y);
+                setCardY((m) => (m[tier.level] === y ? m : { ...m, [tier.level]: y }));
+              }}
               style={[
                 styles.rankCard,
                 tier.level >= 4 && tier.level !== 7 && styles.rankCardRow2,
@@ -193,13 +220,25 @@ function RankingBody({ rk }: { rk: Ranking }) {
                   <Text style={styles.nowBadgeText}>{t('ranking.now')}</Text>
                 </View>
               )}
-              {/* P-327 → P-369 ②: 메달 글로우 0/3 blur8 @0.40 — 색 = 각 등급 메달 원색(C-38) */}
-              <View style={[styles.medalGlow, { shadowColor: MEDAL_COLORS[tier.level - 1] }]}>
-                <RankMedal level={tier.level} size={28} />
+              {/* KB-708(6): 같은 줄 카드끼리 내용 높이를 가장 높은 카드에 맞춤 — 이름이 두 줄인 카드만 메달이 10pt 위로 뜨던 것(가운데 정렬).
+                  한 줄 이름만 있는 줄은 자기 높이 그대로라 시안 모양 무변. 바깥 = 줄 최대 높이(위 정렬), 안 = 실제 내용 높이 측정 */}
+              <View style={[styles.rankContent, { minHeight: rowContentH[row] ?? 0 }]} testID={`rank-content-${tier.key}`}>
+                <View
+                  style={styles.rankContentInner}
+                  onLayout={(e) => {
+                    const h = Math.round(e.nativeEvent.layout.height);
+                    setContentH((m) => (m[tier.level] === h ? m : { ...m, [tier.level]: h }));
+                  }}
+                >
+                  {/* P-327 → P-369 ②: 메달 글로우 0/3 blur8 @0.40 — 색 = 각 등급 메달 원색(C-38) */}
+                  <View style={[styles.medalGlow, { shadowColor: MEDAL_COLORS[tier.level - 1] }]}>
+                    <RankMedal level={tier.level} size={28} />
+                  </View>
+                  <Text style={styles.rankName} numberOfLines={2}>{t(`ranking.tier.${tier.key}`)}</Text>{/* KB-707: "K-Food Mas…" — 두 줄까지 */}
+                  <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
+                  <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
+                </View>
               </View>
-              <Text style={styles.rankName} numberOfLines={1}>{t(`ranking.tier.${tier.key}`)}</Text>
-              <Text style={styles.rankKo} numberOfLines={1}>{t(`ranking.tierKo.${tier.key}`)}</Text>
-              <Text style={[styles.rankPts, now && { color: C.primary }]}>{t('ranking.tickPts', { at: tier.at })}</Text>
             </View>
           );
         })}
@@ -285,15 +324,19 @@ const styles = StyleSheet.create({
   gainText: { fontSize: 13, fontWeight: '500', color: '#FFFFFF' },
 
   // P-327 §5: 헤드→그리드 10 · 비현재 보더 없음(NOW만 primary 1) · 1행 h145/2행·풀 h129
-  rankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, marginTop: 10 },
-  rankCard: { width: '31.5%', flexGrow: 1, height: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
-  rankCardRow2: { height: 129 },
-  rankCardFull: { width: '100%', height: 129 },
+  // KB-707(#235 Codex): 이름을 두 줄까지 허용 → 고정 높이면 NOW 카드(세로 여백 40)에서 메달·두 줄 이름·한국어·점수가 넘쳤다.
+  // 높이 = 최소값(시안 145·129 = 이름 한 줄일 때 — 한 줄 언어는 모양 무변) + 줄 안 카드끼리 가장 높은 카드에 맞춤(stretch).
+  rankGrid: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: 8, paddingHorizontal: 20, marginTop: 10 },
+  rankCard: { width: '31.5%', flexGrow: 1, minHeight: 145, borderRadius: 8, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' },
+  rankCardRow2: { minHeight: 129 },
+  rankContent: { alignSelf: 'stretch', alignItems: 'center' }, // KB-708(6): 줄 최대 내용 높이(minHeight 인라인) · 위 정렬
+  rankContentInner: { alignItems: 'center' },
+  rankCardFull: { width: '100%', minHeight: 129 },
   rankCardNow: { borderWidth: 1, borderColor: C.primary, paddingTop: 24, paddingBottom: 16 },
   nowBadge: { position: 'absolute', top: 4, left: 4, backgroundColor: INK_TITLE, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 6 },
   nowBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
   medalGlow: { shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 }, // P-369 ②: shadowColor = 등급색(인라인)
-  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6 },
+  rankName: { fontSize: 15, fontWeight: '600', color: '#1C1E21', marginTop: 6, textAlign: 'center' }, // KB-707: 두 줄로 감쌀 때 가운데
   rankKo: { fontSize: 12, fontWeight: '400', color: C.ink3, marginTop: 2 },
   rankPts: { fontSize: 13, fontWeight: '500', color: C.ink3, marginTop: 6 },
 

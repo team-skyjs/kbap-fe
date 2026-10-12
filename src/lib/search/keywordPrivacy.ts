@@ -27,11 +27,12 @@ function lenBucket(term: string): SearchKeywordProps['len_bucket'] {
 
 /**
  * @param raw 사용자 입력 원문(전송되지 않는다 — 판정에만 사용)
- * @param resultNames 이번 검색 결과의 음식명(name·nameKo 등) — 서버 카탈로그 값
+ * @param resultNames 이번 검색 결과의 음식명(name·nameKo 등) — 서버 카탈로그 값. **매칭 판정용**(음식 1개에 이름이 여럿)
+ * @param resultCount 화면에 보인 결과 음식 수 — KB-709: 전엔 resultNames.length를 썼는데 음식마다 영문·한글 2개라 2배로 나갔다
  */
-export function searchKeywordProps(raw: string, resultNames: readonly string[]): SearchKeywordProps {
+export function searchKeywordProps(raw: string, resultNames: readonly string[], resultCount: number): SearchKeywordProps {
   const term = norm(raw);
-  const base = { matched: false as boolean, len_bucket: lenBucket(raw), result_count: resultNames.length };
+  const base = { matched: false as boolean, len_bucket: lenBucket(raw), result_count: resultCount };
   if (!term) return base;
 
   // 카탈로그 = 재료 81종(코드·영문명) + 이번 결과 음식명. 정확 일치 또는

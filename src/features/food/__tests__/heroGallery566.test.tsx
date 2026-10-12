@@ -3,10 +3,13 @@
  * 타이머 규칙은 useAutoSlide를 가짜 타이머로, 매핑은 adaptFoodImages로 실기 없이 잠근다.
  */
 import * as React from 'react';
+import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // HeroGallery 의존 표면 목(호이스팅) — isolateModules로 따로 부르면 React가 두 벌 로드돼
 // 훅 디스패처가 null이 된다(실측). 정지 판단 자체는 실제 usePaused 경로를 탄다.
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('expo-router', () => ({
   useFocusEffect: (cb: () => void) => {
     const { useEffect } = require('react');
@@ -38,6 +41,8 @@ function mountSlide(count: number, paused = false) {
   return { out, tree, rerender };
 }
 
+// KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
+beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.useFakeTimers();
 });
@@ -209,10 +214,13 @@ describe('소스 잠금 — 배선·금지 규칙', () => {
 
   it('갤러리 = 페이징·blur/background/reduce motion 정지·2장째부터 prefetch·도트는 View', () => {
     const g = read('src/features/food/HeroGallery.tsx');
+    // KB-680: 정지 훅은 공용 lib/useMotionPaused로 이동(카운트다운 뱃지와 공유) — 갤러리는 그 훅 경유
+    const pausedHook = read('src/lib/useMotionPaused.ts');
     expect(g).toContain('pagingEnabled');
-    expect(g).toContain('useFocusEffect');
-    expect(g).toContain("AppState.addEventListener('change'");
-    expect(g).toContain('isReduceMotionEnabled');
+    expect(g).toContain('const paused = useMotionPaused();');
+    expect(pausedHook).toContain('useFocusEffect');
+    expect(pausedHook).toContain("AppState.addEventListener('change'");
+    expect(pausedHook).toContain('isReduceMotionEnabled');
     expect(g).toContain('Image.prefetch(urls.slice(1))');
     expect(g).toContain('dot: { width: 6, height: 6, borderRadius: 3 }'); // 상태 전환은 색만(프레임 불변)
   });
@@ -260,7 +268,7 @@ describe('HeroGallery 렌더 — 실제 정지 신호 배선', () => {
 
   it('AppState 초기값이 null이어도 자동 넘김이 시작된다(네이티브 상수 도착 전 — 실측으로 잡은 결함)', () => {
     // 'active'와 같을 때만 활성으로 보면 null·'unknown'에서 영영 시작 안 한다 → 명시적 뒤로감만 정지
-    const g = read('src/features/food/HeroGallery.tsx');
+    const g = read('src/lib/useMotionPaused.ts'); // KB-680: 훅 이동
     expect(g).toContain("const isForeground = (s: string | null | undefined) => s !== 'background' && s !== 'inactive';");
     expect(g).not.toContain("AppState.currentState === 'active'");
   });

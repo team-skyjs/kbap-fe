@@ -10,11 +10,8 @@ import { QueryClient, QueryClientProvider, type InfiniteData } from '@tanstack/r
 const mockFlagState = { live: false };
 jest.mock('@/lib/flags', () => ({
   FLAGS: {
-    categoryUI: false,
-    onboardingTriedDishes: false,
     guestMode: true,
     reviewsEnabled: true,
-    reviewTranslationEnabled: false,
     get reviewsLiveEnabled() {
       return mockFlagState.live;
     },
@@ -250,7 +247,7 @@ it('P-165(#144): 리뷰 경로 전수 버전리스 — v1 상대 경로(`/review
     'src/lib/data/useFoodReviews.ts',
     'src/lib/data/useMe.ts',
     'src/lib/data/useReviewMutations.ts',
-    'src/lib/data/useReviewTranslation.ts',
+    'src/lib/data/useContentTranslation.ts', // KB-679: 번역 = /api/translations(구 useReviewTranslation 대체)
   ]) {
     const src = fs.readFileSync(f, 'utf8') as string;
     // api.*('/reviews…') 형태(=/api/v1/reviews로 나가는 상대 경로) 금지 — /api/reviews만 허용

@@ -187,17 +187,25 @@ it('#109 P-363(KB-526): 구독 콜백 = 동기 dispatch 0(마이크로태스크 
     );
   });
   const base = renders();
-  incInflight(); // 구독 콜백 동기 실행(렌더 중 시나리오 대역)
-  expect(renders()).toBe(base); // 동기 dispatch 0 — React 경고 봉쇄
-  incInflight(); // busy true→true 무전이 — 추가 스케줄 없음
-  await act(async () => { jest.advanceTimersByTime(0); }); // 마이크로태스크 플러시
-  expect(renders()).toBe(base + 1); // 전이 1회분만
-  act(() => { decInflight(); decInflight(); });
+  try {
+    incInflight(); // 구독 콜백 동기 실행(렌더 중 시나리오 대역)
+    expect(renders()).toBe(base); // 동기 dispatch 0 — React 경고 봉쇄
+    incInflight(); // busy true→true 무전이 — 추가 스케줄 없음
+    await act(async () => { jest.advanceTimersByTime(0); }); // 마이크로태스크 플러시
+    // KB-695: useSyncExternalStore는 **값이 바뀔 때만** 재렌더 — 여기선 idle false→false(정착 전)라 0회.
+    // 옛 force() 방식의 "전이 1회 재렌더"보다 적다(상한 base+1 유지 = 이벤트 폭주 재렌더 0).
+    expect(renders()).toBeLessThanOrEqual(base + 1);
+    expect(renders()).toBe(base);
+  } finally {
+    act(() => { decInflight(); decInflight(); }); // 실패해도 카운터 복구(다음 테스트 연쇄 실패 방지)
+  }
 });
 
 it('#109 2R P1 ② → 9R: 훅 배선 잠금 — 반환·tryApply 최종 게이트 = 같은 quietRef 호출 시점 계산', () => {
   const host = require('fs').readFileSync('src/lib/ota/OtaAutoApplyHost.tsx', 'utf8') as string;
-  expect(host).toContain('return networkQuietNow(qc);');
+  expect(host).toContain('const getSnapshot = React.useCallback(() => networkQuietNow(qc), [qc]);'); // KB-695: 렌더마다 호출 시점 계산(useSyncExternalStore)
+  expect(host).toContain('return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot);');
+  expect(host).not.toContain('return networkQuietNow(qc);'); // 렌더 본문 일반 호출 = 컴파일러가 [qc]로 굳힌다
   expect(host).toContain('if (!networkQuietNow(queryClient)) return false;');
 });
 
@@ -218,9 +226,10 @@ it('#109 3R P1: inflight.track — 네이티브 업로드 프라미스 진행 �
   rejectP(new Error('fail'));
   await expect(p2).rejects.toThrow('fail');
   expect(inflightCount()).toBe(0);
-  // 배선: uploadAsync = track 경유(발급·complete는 client.ts 경유라 자동)
+  // 배선: 네이티브 PUT = track 경유(발급·complete는 client.ts 경유라 자동) — KB-711: 상한·취소 래퍼(putWithLimit)째로 track
   const si = require('fs').readFileSync('src/lib/api/scanImage.ts', 'utf8') as string;
-  expect(si).toContain('track(FileSystem.uploadAsync(');
+  expect(si).toContain('track(putWithLimit(');
+  expect(si).toContain('FileSystem.createUploadTask(');
 });
 
 

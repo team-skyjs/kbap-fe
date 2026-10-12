@@ -12,7 +12,11 @@
     "retry": "Повторить",
     "skip": "Пропустить",
     "save": "Сохранить",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "leaveTitle": "Выйти без сохранения?",
+    "leaveBody": "Черновик не сохранится.",
+    "keepWriting": "Остаться",
+    "discard": "Выйти"
   },
   "intro": {
     "skip": "Пропустить",
@@ -91,7 +95,7 @@
   "food": {
     "title": "Выбор блюд",
     "sub": "У каждого блюда — ваш уровень риска.",
-    "searchPlaceholder": "Найти блюдо или ингредиент…",
+    "searchPlaceholder": "Найти блюдо…",
     "sort_popular": "Популярные",
     "sort_new": "Новые",
     "categories": {
@@ -106,12 +110,14 @@
     "sortNewSoon": "Скоро"
   },
   "search": {
-    "placeholder": "Найти блюдо, ингредиент…",
     "recent": "Недавние запросы",
     "recentClearAll": "Очистить всё",
     "recentEmptyHint": "Здесь появятся ваши недавние запросы.",
     "popular": "Сейчас популярно",
-    "resultCount": "Результатов: {{count}}",
+    "resultCount_one": "Результатов: {{count}}",
+    "resultCount_few": "Результатов: {{count}}",
+    "resultCount_many": "Результатов: {{count}}",
+    "resultCount_other": "Результатов: {{count}}",
     "noResultsTitle": "Ничего не найдено",
     "samples": [
       "Кимчи чиге",
@@ -177,10 +183,6 @@
     "post": "Опубликовать",
     "composePlaceholder": "Поделитесь чем угодно о еде в Корее…",
     "cover": "Обложка",
-    "leaveTitle": "Отменить пост?",
-    "leaveBody": "Черновик не сохранится.",
-    "keepWriting": "Продолжить",
-    "discard": "Отменить",
     "postedTitle": "Опубликовано!",
     "editedTitle": "Пост обновлён",
     "tagFoodTitle": "Отметить блюдо",
@@ -287,6 +289,10 @@
     "quotaTitle": "Бесплатные сканирования закончились",
     "quotaBody": "Напишите отзыв, чтобы открыть безлимитное сканирование.",
     "quotaCta": "Написать отзыв",
+    "freeLeft_one": "Осталось бесплатных сканирований: {{count}}",
+    "freeLeft_few": "Осталось бесплатных сканирований: {{count}}",
+    "freeLeft_many": "Осталось бесплатных сканирований: {{count}}",
+    "freeLeft_other": "Осталось бесплатных сканирований: {{count}}",
     "later": "Позже",
     "errUpload": "Не удалось загрузить фото. Попробуйте ещё раз.",
     "stayHint": "Это может занять 30–40 секунд — если выйти из приложения, результат может потеряться.",
@@ -402,6 +408,24 @@
     "extrasSpeed": "Скорость подачи",
     "extrasService": "Сервис",
     "extrasTaste": "Вкус"
+  },
+  "translation": {
+    "showTranslation": "Показать перевод",
+    "translatedFrom": "Переведено с {{language}}",
+    "translated": "Переведено",
+    "translateFailed": "Не удалось перевести. Попробуйте ещё раз.",
+    "lang": {
+      "en": "английского",
+      "ko": "корейского",
+      "ja": "японского",
+      "zh-Hans": "китайского (упрощённого)",
+      "zh-Hant": "китайского (традиционного)",
+      "vi": "вьетнамского",
+      "id": "индонезийского",
+      "th": "тайского",
+      "ru": "русского",
+      "es": "испанского"
+    }
   },
   "reviews": {
     "headerTitle": "Отзывы",
@@ -540,6 +564,7 @@
     "noIngredientData": "Данных об ингредиентах пока нет",
     "noIngredientBody": "Пока нет оценки, описания и данных об ингредиентах. Мы зафиксировали блюдо для пополнения каталога.",
     "ofShops": "~{{pct}}% заведений",
+    "avoidImplied": "{{ingredient}} — входит в избегаемое",
     "writeReview": "Написать отзыв",
     "spiceAboveYou": "острее, чем вы любите",
     "addProfileHint": "Добавьте ограничения, чтобы увидеть персональную оценку.",
@@ -579,7 +604,6 @@
     "guestScansTitle": "Войдите, чтобы сохранять историю сканирований и получать персональные оценки безопасности.",
     "greetingSub": "Вот что безопасно для вас сегодня.",
     "greetingSubEmpty": "Найдём ваше первое безопасное блюдо.",
-    "avoidCount": "Вы избегаете: {{count}}",
     "edit": "Изменить",
     "scanTitle": "Сканировать меню",
     "scanSub": "Наведите на корейское меню, чтобы увидеть риск.",
@@ -761,7 +785,6 @@
     "title": "Ограничения",
     "save": "Сохранить",
     "notice": "Влияет на все предупреждения. Держите список точным — изменения применяются сразу.",
-    "avoidCount": "Исключено: {{count}}",
     "avoidNone": "Пока ничего не исключено",
     "tapToRemove": "нажмите ×, чтобы убрать",
     "searchPlaceholder": "Поиск ингредиентов…",
@@ -887,10 +910,10 @@
     "foodHidden": "Сейчас нельзя сохранить это блюдо.",
     "foodUpdating": "Информация об этом блюде обновляется, поэтому сейчас нельзя её сохранить.",
     "title": "Сохранённое",
-    "count_one": "{{count}} блюдо",
-    "count_few": "{{count}} блюда",
-    "count_many": "{{count}} блюд",
-    "count_other": "{{count}} блюда",
+    "count_one": "Блюд: {{count}}",
+    "count_few": "Блюд: {{count}}",
+    "count_many": "Блюд: {{count}}",
+    "count_other": "Блюд: {{count}}",
     "newestFirst": "Сначала новые",
     "swipeHint": "Смахните карточку влево, чтобы удалить",
     "emptyTitle": "Пока ничего не сохранено",
@@ -1002,8 +1025,10 @@
     "orderTitle": "Заказ",
     "total": "Итого",
     "itemPending": "Скоро появится в K-Bap",
-    "itemCount_one": "{{count}} блюдо",
-    "itemCount_other": "{{count}} блюд",
+    "itemCount_one": "{{count}} шт.",
+    "itemCount_few": "{{count}} шт.",
+    "itemCount_many": "{{count}} шт.",
+    "itemCount_other": "{{count}} шт.",
     "emptyOrdersTitle": "Заказов пока нет",
     "emptyOrdersBody": "Закажите из отсканированного меню — история появится здесь.",
     "emptyScansTitle": "Сканирований пока нет",
@@ -1041,11 +1066,22 @@
     "statusAnswered": "Есть ответ",
     "statusClosed": "Закрыто",
     "emptyTitle": "Обращений пока нет",
-    "replyCount_one": "{{count}} ответ",
-    "replyCount_few": "{{count}} ответа",
-    "replyCount_many": "{{count}} ответов",
-    "replyCount_other": "{{count}} ответа",
     "notFound": "Это обращение недоступно.",
     "teamName": "Команда K-Bap"
+  },
+  "reviewPrompt": {
+    "title": "K-Bap вам помогает?",
+    "positive": "Нравится",
+    "negative": "Не очень",
+    "later": "Позже"
+  },
+  "ads": {
+    "sponsored": "Реклама",
+    "privacyOptions": "Параметры конфиденциальности",
+    "report": "Пожаловаться на рекламу",
+    "reportPrefill": "Жалоба на рекламу: ",
+    "watchToUnlock": "Посмотреть рекламу и открыть ({{n}}/{{total}})",
+    "rewardLimit": "На сегодня всё. Попробуйте завтра.",
+    "rewardError": "Не удалось записать просмотр. Попробуйте ещё раз."
   }
 }

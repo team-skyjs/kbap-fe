@@ -3,6 +3,7 @@
  * 썸네일 1~4·빈 상태·상세 라우팅)·read-only(비범위 어포던스 잔존 0).
  */
 import * as React from 'react';
+import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -140,6 +141,8 @@ const flush = async () => {
 };
 const flat = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
 
+// KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
+beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
   mockGet.mockResolvedValue({ items: [ORDER()], hasNext: false, nextCursor: null });

@@ -48,7 +48,7 @@ function useInvalidateCommunity() {
 export function useCreatePost() {
   const invalidate = useInvalidateCommunity();
   return useMutation({
-    mutationFn: (input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null }) =>
+    mutationFn: (input: { body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null; signal?: AbortSignal }) =>
       adapter.createPost(input),
     onSuccess: invalidate,
   });
@@ -57,7 +57,7 @@ export function useCreatePost() {
 export function useUpdatePost() {
   const invalidate = useInvalidateCommunity();
   return useMutation({
-    mutationFn: (input: { id: string; body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null }) =>
+    mutationFn: (input: { id: string; body: string; photos: string[]; foodTags: FoodTagRef[]; placeTag: PlaceTagRef | null; signal?: AbortSignal }) =>
       adapter.updatePost(input.id, input),
     onSuccess: invalidate,
   });

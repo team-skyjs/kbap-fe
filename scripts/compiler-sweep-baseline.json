@@ -1,0 +1,17 @@
+{
+  "_doc": "KB-697 컴파일러 굳는 자리 기준선 — scripts/compiler-sweep.cjs가 이 목록에 없는 후보만 '새 항목'으로 경고한다. 판정: 잠복(언어·시간이 바뀌어도 의존이 안 바뀌면 옛 값 — 고칠 대상, 별도 이슈) · 경미(상대 시간이 다음 재계산까지 멈춤) · 안전(의존에 바뀌는 값이 있어 제때 재계산) · 오탐(불변값·초깃값·지역 함수). 기준 = develop 06e2c2b(공부 세션 kb695-compiler-sweep README 건별 판정과 같은 12건).",
+  "base": "06e2c2b",
+  "items": [
+    { "key": "direct | app/onboarding/index.tsx | singleton | deps | i18n.language", "count": 1, "verdict": "잠복", "note": "언어 정렬 — 메모 의존(detected·q 등)에 언어가 없어 화면에 머문 채 언어가 바뀌면 옛 정렬" },
+    { "key": "direct | app/profile/notifications.tsx | singleton | deps | i18n.language", "count": 1, "verdict": "잠복", "note": "광고성 동의 캡션 — 의존 i18n은 같은 객체라 언어 변경에 재계산 안 됨" },
+    { "key": "helper | app/community/post/[id].tsx | reads Date.now() | deps | timeAgo(post.createdAt, t)", "count": 1, "verdict": "경미", "note": "상대 시간 — 다음 재계산(createdAt·t 변경)까지 멈춤" },
+    { "key": "helper | app/community/post/[id].tsx | reads Date.now() | deps | timeAgo(c.createdAt, t)", "count": 1, "verdict": "경미", "note": "댓글 상대 시간 — 같음" },
+    { "key": "helper | app/food/[id]/reviews.tsx | reads Date.now() | deps | relativeDate(review.createdAt, t)", "count": 1, "verdict": "경미", "note": "리뷰 상대 시간 — 같음" },
+    { "key": "helper | features/community/parts.tsx | reads Date.now() | deps | timeAgo(post.createdAt, t)", "count": 1, "verdict": "경미", "note": "피드 상대 시간 — 같음" },
+    { "key": "helper | app/profile/my-foods.tsx | reads i18n.language | deps | formatOrderDate(order.orderedAt)", "count": 2, "verdict": "안전", "note": "의존에 t — 언어가 바뀌면 t가 바뀌어 재계산" },
+    { "key": "helper | lib/newFood.ts | reads Date.now() | deps | isNewFood(publishedAt, now)", "count": 1, "verdict": "안전", "note": "#226에서 now를 인자로 — 의존에 보임" },
+    { "key": "direct | features/order/FlippedOrderCard.tsx | zero-arg call | deps | koCard()", "count": 1, "verdict": "오탐", "note": "컴포넌트 안 지역 함수" },
+    { "key": "direct | lib/ota/OtaAutoApplyHost.tsx | zero-arg call | once | isProdChannel()", "count": 1, "verdict": "오탐", "note": "빌드 상수(채널) — 불변" },
+    { "key": "direct | lib/useMotionPaused.ts | singleton | once | AppState.currentState", "count": 1, "verdict": "오탐", "note": "useState 초깃값 — 이후는 AppState 리스너" }
+  ]
+}

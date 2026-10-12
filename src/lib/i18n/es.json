@@ -12,7 +12,11 @@
     "retry": "Reintentar",
     "skip": "Omitir",
     "save": "Guardar",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "leaveTitle": "¿Salir sin guardar?",
+    "leaveBody": "El borrador no se guardará.",
+    "keepWriting": "Seguir escribiendo",
+    "discard": "Descartar"
   },
   "intro": {
     "skip": "Omitir",
@@ -91,7 +95,7 @@
   "food": {
     "title": "Explorar comida",
     "sub": "Cada plato etiquetado con tu riesgo.",
-    "searchPlaceholder": "Buscar comida o ingrediente…",
+    "searchPlaceholder": "Buscar comida…",
     "sort_popular": "Populares",
     "sort_new": "Nuevos",
     "categories": {
@@ -106,12 +110,12 @@
     "sortNewSoon": "Próximamente"
   },
   "search": {
-    "placeholder": "Buscar comida, ingrediente…",
     "recent": "Búsquedas recientes",
     "recentClearAll": "Borrar todo",
     "recentEmptyHint": "Tus búsquedas recientes aparecerán aquí.",
     "popular": "Populares ahora",
-    "resultCount": "{{count}} resultados",
+    "resultCount_one": "{{count}} resultado",
+    "resultCount_other": "{{count}} resultados",
     "noResultsTitle": "No se encontraron coincidencias",
     "samples": [
       "Guiso de kimchi",
@@ -177,10 +181,6 @@
     "post": "Publicar",
     "composePlaceholder": "Comparte lo que sea sobre comer en Corea…",
     "cover": "Portada",
-    "leaveTitle": "¿Descartar esta publicación?",
-    "leaveBody": "El borrador no se guardará.",
-    "keepWriting": "Seguir escribiendo",
-    "discard": "Descartar",
     "postedTitle": "¡Publicado!",
     "editedTitle": "Publicación actualizada",
     "tagFoodTitle": "Etiquetar comida",
@@ -287,6 +287,8 @@
     "quotaTitle": "Has usado todos tus escaneos gratis",
     "quotaBody": "Escribe una reseña para desbloquear escaneos ilimitados.",
     "quotaCta": "Escribir reseña",
+    "freeLeft_one": "Te queda {{count}} escaneo gratis",
+    "freeLeft_other": "Te quedan {{count}} escaneos gratis",
     "later": "Más tarde",
     "errUpload": "No pudimos subir la foto. Inténtalo de nuevo.",
     "stayHint": "Puede tardar entre 30 y 40 segundos; si sales de la app, podrías perder el resultado.",
@@ -402,6 +404,24 @@
     "extrasSpeed": "Rapidez",
     "extrasService": "Atención",
     "extrasTaste": "Sabor"
+  },
+  "translation": {
+    "showTranslation": "Mostrar traducción",
+    "translatedFrom": "Traducido del {{language}}",
+    "translated": "Traducido",
+    "translateFailed": "No se pudo traducir. Inténtalo de nuevo.",
+    "lang": {
+      "en": "inglés",
+      "ko": "coreano",
+      "ja": "japonés",
+      "zh-Hans": "chino simplificado",
+      "zh-Hant": "chino tradicional",
+      "vi": "vietnamita",
+      "id": "indonesio",
+      "th": "tailandés",
+      "ru": "ruso",
+      "es": "español"
+    }
   },
   "reviews": {
     "headerTitle": "Reseñas",
@@ -540,6 +560,7 @@
     "noIngredientData": "Aún no hay datos de ingredientes",
     "noIngredientBody": "Aún no hay valoración, descripción ni datos de ingredientes. Hemos registrado este plato para mejorar el catálogo.",
     "ofShops": "~{{pct}}% de los locales",
+    "avoidImplied": "{{ingredient}}: incluido en lo que evitas",
     "writeReview": "Escribir una reseña",
     "spiceAboveYou": "más picante de lo que toleras",
     "addProfileHint": "Agrega tus restricciones para ver un veredicto personalizado.",
@@ -579,7 +600,6 @@
     "guestScansTitle": "Inicia sesión para guardar tu historial de escaneos y recibir valoraciones de seguridad personalizadas.",
     "greetingSub": "Esto es lo que es seguro para ti hoy.",
     "greetingSubEmpty": "Encontremos tu primer plato seguro.",
-    "avoidCount": "Evitas {{count}} cosas",
     "edit": "Editar",
     "scanTitle": "Escanear un menú",
     "scanSub": "Apunta a un menú coreano para ver tu riesgo.",
@@ -761,7 +781,6 @@
     "title": "Editar restricciones",
     "save": "Guardar restricciones",
     "notice": "Esto controla cada alerta de seguridad. Mantenlo preciso: los cambios se aplican a todos los platos de inmediato.",
-    "avoidCount": "Evitas {{count}} cosas",
     "avoidNone": "Nada evitado aún",
     "tapToRemove": "toca × para quitar",
     "searchPlaceholder": "Buscar ingredientes…",
@@ -1039,9 +1058,22 @@
     "statusAnswered": "Respondida",
     "statusClosed": "Cerrada",
     "emptyTitle": "Aún no tienes consultas",
-    "replyCount_one": "{{count}} respuesta",
-    "replyCount_other": "{{count}} respuestas",
     "notFound": "Esta consulta no está disponible.",
     "teamName": "Equipo K-Bap"
+  },
+  "reviewPrompt": {
+    "title": "¿Te está ayudando K-Bap?",
+    "positive": "Me gusta",
+    "negative": "No mucho",
+    "later": "Después"
+  },
+  "ads": {
+    "sponsored": "Publicidad",
+    "privacyOptions": "Opciones de privacidad",
+    "report": "Denunciar un anuncio",
+    "reportPrefill": "Denuncia de anuncio: ",
+    "watchToUnlock": "Ver un anuncio para desbloquear ({{n}}/{{total}})",
+    "rewardLimit": "Por hoy es todo. Inténtalo mañana.",
+    "rewardError": "No se pudo registrar la visualización. Inténtalo de nuevo."
   }
 }

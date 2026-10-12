@@ -6,6 +6,8 @@ import * as React from 'react';
 import { View } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) })); // KB-730 리뷰 유도 시트(useBottomInset)
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }), usePathname: () => '/', useLocalSearchParams: () => ({}) })); // KB-730 useReviewPrompt
 jest.mock('react-native-reanimated', () => {
   const { View: V } = require('react-native');
   return {

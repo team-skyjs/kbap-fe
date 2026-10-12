@@ -5,6 +5,7 @@
  *  - ③ D3 하단 바 — 원형 버튼 4(리스트/위험도/원본/다시찍기)·활성 뷰 주황
  */
 import * as React from 'react';
+import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // scanDefaultView 프렐류드 재사용
@@ -90,6 +91,7 @@ jest.mock('react-i18next', () => ({
   initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
+jest.mock('@/lib/push/scanNudge', () => ({ decideScanNudge: async () => null })); // KB-730: 큐가 넛지 판정을 기다린다 — 안 뜸으로
 jest.mock('@/features/scan/ScanCoachMark', () => ({ ScanCoachMark: () => null, shouldShowCoachMark: async () => false, markCoachSeen: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -139,6 +141,8 @@ const texts = (tree: ReactTestRenderer, s: string) => tree.root.findAll((n) => n
 const galleryBtn = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => n.props?.accessibilityLabel === 'scan.gallery' && typeof n.props?.onPress === 'function')[0];
 
+// KB-698: 첫 렌더의 react-native 지연 모듈 로딩·변환(콜드 캐시 1회 비용)을 첫 테스트의 5000ms 밖으로 — 원인·실측은 helpers 주석
+beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 beforeEach(() => {
   jest.clearAllMocks();
   mockLaunchLibrary.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:menu.jpg', width: 900, height: 1200 }] });
@@ -290,4 +294,22 @@ it('P-191: 갤러리 원본 로드 중 = 로딩 오버레이(scan.loadingPhoto),
     await new Promise((r) => setTimeout(r, 0));
   });
   expect(tree.root.findAll((n) => n.props?.testID === 'importing-overlay').length).toBe(0); // 취소 = 복구
+});
+
+// KB-730: 스캔 성공 **2회째**에만 리뷰 유도 시트(결과 화면 진입 직후) — 1회째·3회째는 아님. 실패 경로는 onSuccess를 안 타므로 자동 제외
+it('KB-730 스캔 성공 2회째 → 리뷰 유도 시트 1 · 1회째 → 0', async () => {
+  const asMod = jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock') as { default?: unknown } & Record<string, unknown>;
+  const AsyncStorage = (asMod.default ?? asMod) as { clear: () => Promise<void>; setItem: (k: string, v: string) => Promise<void>; getItem: (k: string) => Promise<string | null>; removeItem: (k: string) => Promise<void> };
+  const sheets = (t: ReactTestRenderer) => t.root.findAll((n) => n.props?.testID === 'review-prompt' && typeof n.type === 'string').length;
+  const settle = async () => { for (let i = 0; i < 24; i++) await act(async () => { await Promise.resolve(); }); }; // 큐 3스텝(코치·넛지·리뷰) 비동기 판정 통과
+  await AsyncStorage.removeItem('kbap.reviewPrompt.v1');
+  const first = render(<Scan />);
+  await act(async () => { await galleryBtn(first).props.onPress(); }); // 성공 1회째
+  await settle();
+  expect(sheets(first)).toBe(0);
+  expect(JSON.parse((await AsyncStorage.getItem('kbap.reviewPrompt.v1')) ?? '{}').scanSuccess).toBe(1);
+  const second = render(<Scan />);
+  await act(async () => { await galleryBtn(second).props.onPress(); }); // 성공 2회째
+  await settle();
+  expect(sheets(second)).toBe(1);
 });

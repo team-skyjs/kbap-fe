@@ -13,7 +13,7 @@
  *   kebab 이름을 주석으로 병기). 수제 제작은 Lucide에 없는 형태뿐.
  * - **교체 금지(브랜드 시맨틱)**: RiskMark(위험도 4상태 — RiskMark.tsx),
  *   IconApple·IconGoogleG(공식 로고 — 경로/색 수정 금지), Cat*(카테고리
- *   일러스트, categoryUI 플래그), Flag(국기 — Flag.tsx), SuccessCheck 등.
+ *   일러스트, 구 categoryUI 플래그 — KB-674 삭제), Flag(국기 — Flag.tsx), SuccessCheck 등.
  * - NO unicode/system emoji (헌법 — 유일 예외는 맵기 🌶️).
  * ────────────────────────────────────────────────────────────────
  */
@@ -336,7 +336,7 @@ export const IconInstagram = ({ size = 24, style }: IconProps) => (
   </Svg>
 );
 
-/* ============ 카테고리 일러스트 (categoryUI 플래그, 교체 금지) ============ */
+/* ============ 카테고리 일러스트 (구 categoryUI 플래그 — KB-674 삭제, 교체 금지) ============ */
 export const CatStew = (p: IconProps) => (
   <Glyph {...p}>
     <Path d="M4 10 h16 a8 8 0 0 1 -16 0 Z" />

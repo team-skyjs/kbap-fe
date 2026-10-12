@@ -9,6 +9,8 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+// KB-679: 리뷰 본문 = 공용 ReviewBody → 번역 훅(react-query). 이 스위트는 Provider 없이 렌더하므로 훅만 목(원문 표시 상태)
+jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: () => ({ translatedText: null, showingTranslated: false, loading: false, toggle: jest.fn() }) }));
 jest.mock('@/lib/community/hooks', () => ({
   useBlockedUsers: () => ({ data: [] }),
 })); // P-186: 차단 숨김 훅 표면 목
@@ -329,6 +331,27 @@ describe('P-231: 상세 맵기 = 고추 5개 프레임(SpicePeppers)', () => {
 
 describe('P-228: Ask the owner 플로팅', () => {
   afterEach(() => mockIsGuest.mockReturnValue(false));
+
+  // KB-710(3): SE 큰 글자에서 재료 타일 부제 "~98% of sho…" 잘림 — 두 줄까지(기본 크기는 한 줄 그대로, 격자 3열 무변)
+  it('KB-710 재료 타일 "~N% of shops" = 두 줄까지', () => {
+    const tree = render(<FoodDetailScreen />);
+    const sub = byId(tree, 'ing-shops-ONION').find((n) => typeof n.type === 'string')!;
+    expect(sub.props.numberOfLines).toBe(2);
+  });
+
+  // KB-710(2): 큰 글자에서 좁은 Write만 두 줄로 접혀 두 버튼 키가 달랐다 — 둘 다 슬롯 높이를 채운다(줄은 슬롯을 가장 큰 쪽에 맞춤)
+  it('KB-710 하단 바 두 버튼 = 같은 높이 규칙 — 줄(row)은 슬롯을 늘리고(stretch) 두 버튼은 슬롯을 채움(flexGrow 1)', () => {
+    const { StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+    const tree = render(<FoodDetailScreen />);
+    const bar = byId(tree, 'detail-bottom-bar').find((n) => typeof n.type === 'string')!;
+    const barStyle = StyleSheet.flatten(bar.props.style) as { flexDirection?: string; alignItems?: string };
+    expect(barStyle.flexDirection).toBe('row');
+    expect(barStyle.alignItems ?? 'stretch').toBe('stretch');
+    for (const id of ['bottom-write', 'bottom-ask']) {
+      const btn = byId(tree, id).find((n) => typeof n.type !== 'string' && n.props?.style != null)!;
+      expect({ id, grow: (StyleSheet.flatten(btn.props.style) as { flexGrow?: number }).flexGrow }).toEqual({ id, grow: 1 });
+    }
+  });
 
   it('회원+등록 음식 = FixedBottom(아웃라인 Write + primary Ask) + 콘텐츠 바닥 여백', () => {
     const tree = render(<FoodDetailScreen />);
@@ -754,5 +777,38 @@ describe('KB-626 상세 — 어느 원천의 거부든 신호 하나로 즉시 �
     expect(flat(tree)).toContain('Great and safe for me');
     act(() => byId(tree, 'detail-nat-toggle')[0].props.onPress());
     expect(byId(tree, 'detail-nat-error').length).toBeGreaterThan(0); // 기존 P-323 ⑤ 그대로
+  });
+});
+
+/* KB-599 — 함의 회피 근거 문구("Included in your {재료} avoidance"). 서버 matchedBy가 재료 자신과 다르면
+   재료 타일 이름 아래 1줄(2줄 클램프). 직접 매치·카탈로그 밖 code·비회원 = 생략. */
+describe('KB-599 재료 타일 — 함의 회피 근거 문구', () => {
+  const withIngs = (ings: FoodDetail['ingredients']) =>
+    mockUseFoodDetail.mockReturnValue({ data: FOOD('danger', { ingredients: ings }), isLoading: false, error: null, refetch: jest.fn() });
+  const implied = (tree: ReactTestRenderer, code: string) => byId(tree, `ing-implied-${code}`);
+
+  it('다른 code로 매치(SHRIMP 회피 → 새우젓) = 문구 1줄(2줄 클램프) · 키 avoidImplied', () => {
+    withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'SHRIMP' }]);
+    const tree = render(<FoodDetailScreen />);
+    const node = implied(tree, 'SALTED_SHRIMP');
+    expect(node.length).toBeGreaterThan(0);
+    expect(node[0].props.numberOfLines).toBe(2);
+    expect(flat(tree)).toContain('detail.avoidImplied');
+  });
+
+  it('직접 매치(impliedBy 없음) = 문구 없음', () => {
+    withIngs([{ code: 'SHRIMP', name: 'Shrimp', percentage: 30, risk: 'danger', note: null, impliedBy: null }]);
+    expect(implied(render(<FoodDetailScreen />), 'SHRIMP')).toHaveLength(0);
+  });
+
+  it('카탈로그에 없는 code = 생략(구 서버·신규 code 호환)', () => {
+    withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'NOT_A_CATALOG_CODE' }]);
+    expect(implied(render(<FoodDetailScreen />), 'SALTED_SHRIMP')).toHaveLength(0);
+  });
+
+  it('비회원 = 생략(판정 마크 자체가 없다)', () => {
+    mockIsGuest.mockReturnValue(true);
+    withIngs([{ code: 'SALTED_SHRIMP', name: 'Salted shrimp', percentage: 40, risk: 'danger', note: null, impliedBy: 'SHRIMP' }]);
+    expect(implied(render(<FoodDetailScreen />), 'SALTED_SHRIMP')).toHaveLength(0);
   });
 });

@@ -13,10 +13,11 @@
 import * as React from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { Txt as Text } from '@/components/Txt';
+import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, primaryTint, radius } from '@/lib/theme';
+import { CHIP_LABEL_LH } from '@/components/Chip';
 import { Btn, Chip, IconSearch, IconTabScan, IconChevron, IconChevronDown, IconCheck, Spinner, SkeletonFoodGrid, QueryErrorBlock, ScreenCenterFill } from '@/components';
 import { EmptyBlock } from '@/components/StateBlock';
 import { Shimmer } from '@/components/Skeleton';
@@ -41,6 +42,45 @@ export type GridTab = 'popular' | 'saved' | 'food';
  *  P-318: See all 파라미터(RiskChipParam)와 같은 유니언 — 홈→음식 탭 승계 무변환. */
 type RiskChip = RiskChipParam;
 const RISK_CHIPS: RiskChip[] = ['all', 'safe', 'danger', 'caution'];
+/** KB-707: Food 탭 칩 줄 끝 페이드 폭 — 칩 줄 끝 여백도 이만큼(끝까지 밀면 마지막 칩이 페이드 밖으로 완전히 나온다) */
+export const CHIP_FADE_W = 24;
+/** Food 탭 칩 줄 높이(시안 34). KB-708: 큰 글자에선 칩 라벨 줄 높이가 늘어난 만큼 같이 늘어난다 — 기본 크기 = 34 그대로.
+ *  RN은 lineHeight도 글자 배율(상한 MAX_FONT_SCALE)만큼 키우므로 칩은 스스로 커지는데, 줄이 34로 고정이라 잘렸다(XXXL QA). */
+export const CHIP_ROW_H = 34;
+export function chipRowHeight(fontScale: number): number {
+  return CHIP_ROW_H + CHIP_LABEL_LH * (Math.min(Math.max(fontScale, 1), MAX_FONT_SCALE) - 1);
+}
+/** KB-707: 끝 페이드("더 있다" 표시)는 아직 오른쪽에 숨은 칩이 있을 때만 — 끝까지 밀었거나 다 들어가면 숨김(마지막 칩을 덮지 않게) */
+export function chipFadeShown(scrollX: number, contentW: number, viewW: number): boolean {
+  return contentW - viewW - scrollX > 1;
+}
+
+/** KB-707: 가로 스크롤 줄 공용 — "오른쪽에 숨은 것이 있나"(끝 페이드 표시) + 바운스 끔. 칩 줄·홈 세그먼트 탭이 같이 쓴다.
+ *  scrollProps를 ScrollView에 펼치고, more가 참일 때만 끝 페이드를 그린다. */
+function useMoreOnRight() {
+  const m = React.useRef({ x: 0, content: 0, view: 0 });
+  const [more, setMore] = React.useState(false);
+  const update = () => setMore(chipFadeShown(m.current.x, m.current.content, m.current.view));
+  const scrollProps = {
+    scrollEventThrottle: 32,
+    // 다 들어가는 언어에서 줄이 좌우로 튕기지 않게(iOS 기본 바운스 · Android 오버스크롤 글로우)
+    alwaysBounceHorizontal: false,
+    overScrollMode: 'never' as const,
+    onScroll: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
+      m.current.x = e.nativeEvent.contentOffset.x;
+      update();
+    },
+    onContentSizeChange: (w: number) => {
+      m.current.content = w;
+      update();
+    },
+    onLayout: (e: { nativeEvent: { layout: { width: number } } }) => {
+      m.current.view = e.nativeEvent.layout.width;
+      update();
+    },
+  };
+  return { more, scrollProps, metrics: m };
+}
 
 /** P-318 정렬 — new는 서버 정렬 파라미터 부재로 시트에서 비활성(선택 불가, P-385 실측).
  *  P-335(9/8 예진): A–Z 제거 — 커서 페이지네이션 위 클라 정렬은 페이지 도착마다
@@ -63,6 +103,9 @@ export function FoodExplorer({
   topPad = 0,
   mostReviewed = [],
   mostReviewedLoading = false,
+  popular,
+  popularLoading = false,
+  onScanRowBottom,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
@@ -72,6 +115,12 @@ export function FoodExplorer({
    *  QueryClient 없는 표면까지 끌려간다(실측: 기존 스위트 3개가 깨졌다). 0건 = 섹션 미렌더. */
   mostReviewed?: FoodCard[];
   mostReviewedLoading?: boolean;
+  /** KB-712(P-448): 홈 레일 Popular + 칩 All 소스 = `/home`의 popularFoods(서버 랜덤 — 순서 그대로, 재정렬·사진 우선 재배치 금지).
+   *  mostReviewed와 같은 이유로 홈 화면이 useHome에서 받아 내린다(요청 추가 0). 미전달(음식 탭)·빈 값(구 서버·MOCK) = 기존 목록 앞부분. */
+  popular?: FoodCard[];
+  popularLoading?: boolean;
+  /** KB-701: 검색 줄(= 스캔 버튼 — 같은 48 높이, 세로 가운데) 아래 끝의 y — 이 컴포넌트 위쪽 기준. 홈 뱃지 앵커. */
+  onScanRowBottom?: (y: number) => void;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -187,10 +236,32 @@ export function FoodExplorer({
       setRiskChip('all');
     }
   }
-  const [gate, setGate] = React.useState(false);
+  // KB-708: 게이트 문맥 — 위험도 칩 = 판정 문구(risk), 북마크·Saved 칩 = 저장 문구(save). 열림(open)과 문구(ctx)를 따로 둔다
+  // 열림과 문구 맥락을 따로 — 닫을 때 맥락은 남긴다(닫는 순간 'save'로 바뀌면 페이드아웃 0.3초 동안 북마크 문구가 비친다 — #236 /review E)
+  const [gate, setGate] = React.useState<{ ctx: 'risk' | 'save'; open: boolean }>({ ctx: 'save', open: false });
   // P-340 2-A → Codex #101 P2: 선택 칩 가시화 — 마운트뿐 아니라 See all 파라미터
   // 재동기화(마운트 유지 화면) 뒤에도 재실행(riskChip/savedOnly/paramsKey deps).
   const chipScrollRef = React.useRef<ScrollView | null>(null);
+  const { fontScale } = useWindowDimensions(); // KB-708: 칩 줄 높이가 큰 글자를 따라감
+  // KB-707: 칩 줄이 정렬 버튼 왼쪽에서 끝나는 스크롤 영역 — 오른쪽에 숨은 칩이 있을 때만 끝 페이드(홈 탭과 공용 판정)
+  const chipLine = useMoreOnRight();
+  // KB-707: 홈 세그먼트 탭 줄 — 같은 판정 + 누른 탭을 화면 안으로
+  const tabLine = useMoreOnRight();
+  const tabsScrollRef = React.useRef<ScrollView | null>(null);
+  const tabLayouts = React.useRef<Record<string, { x: number; w: number }>>({});
+  const revealTab = (key: GridTab, last: boolean) => {
+    const sv = tabsScrollRef.current;
+    if (!sv) return;
+    if (last) {
+      sv.scrollToEnd({ animated: true }); // 셋째(마지막) 탭 = 끝까지
+      return;
+    }
+    const l = tabLayouts.current[key];
+    const v = tabLine.metrics.current;
+    if (!l || !v.view) return;
+    if (l.x < v.x) sv.scrollTo({ x: Math.max(0, l.x - 16), animated: true });
+    else if (l.x + l.w > v.x + v.view) sv.scrollTo({ x: l.x + l.w - v.view + 16, animated: true });
+  };
   React.useEffect(() => {
     if (variant !== 'screen') return;
     const idx = savedOnly ? RISK_CHIPS.length : RISK_CHIPS.indexOf(riskChip);
@@ -203,18 +274,30 @@ export function FoodExplorer({
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
   const { ids: savedIds, ready: savedReady } = useSavedIds();
+  // KB-712: 홈 Popular + All = /home 랜덤(로딩 중이거나 1건 이상일 때) — 비었으면 기존 경로로 폴백.
+  // 로딩 중 홈은 popular={undefined}를 넘긴다(빈 배열 아님) — `popular != null`로 걸면 /foods가 먼저 보였다 바뀌는 팝인(#237 공부)
+  const homePopular = variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
   const gridSource: FoodCard[] =
     variant === 'screen'
       ? savedOnly ? savedListFoods : (browse.data ?? []) // P-318: 세그먼트 소멸 — Saved는 토글 칩
-      : gridTab === 'popular' ? popularPhotoFoods(browse.data) : gridTab === 'saved' ? savedListFoods : (browse.data ?? []);
+      : gridTab === 'popular'
+        ? homePopular ? (popular ?? []) : popularPhotoFoods(browse.data)
+        : gridTab === 'saved' ? savedListFoods : (browse.data ?? []);
   // P-350: 위험 칩 = 서버 필터(&risk=) — 클라 personalRisk 필터 소멸(무한로딩 원인)
   const filtered = gridSource;
   // P-318 정렬: 인기 = 목록 응답 순서 그대로(서버 정렬 정본 — P-335로 클라 정렬 소멸).
   const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : filtered;
+  // KB-710(6): 레일 구성이 바뀌면(첫 카드 id가 달라짐 — /home 랜덤 재조회·칩·세그먼트 전환) 가로 스크롤을 처음으로.
+  // 같은 레일 안에서 북마크·판정만 바뀌면 첫 id가 같아 위치 유지. (전엔 옛 위치가 남아 새 첫 카드가 잘린 채 시작 — KB-712 QA)
+  const railRef = React.useRef<ScrollView | null>(null);
+  const railFirstId = variant === 'embedded' ? (gridFoods[0]?.foodId ?? null) : null;
+  React.useEffect(() => {
+    railRef.current?.scrollTo({ x: 0, animated: false });
+  }, [railFirstId]);
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
 
   const onBookmark = (f: FoodCard) => {
-    if (guest) return setGate(true);
+    if (guest) return setGate({ ctx: 'save', open: true });
     if (!savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
@@ -224,19 +307,22 @@ export function FoodExplorer({
 
   // 9/5 발주: 게스트 칩 = 렌더하되 개인화 칩 탭 = 게이트(선택 All 유지)
   const onChip = (c: RiskChip) => {
-    if (c !== 'all' && guest) return setGate(true);
+    if (c !== 'all' && guest) return setGate({ ctx: 'risk', open: true }); // KB-708: 칩 맥락 = 개인 판정(상세 잠금 줄과 같은 문구) — 북마크 문구가 떴다
     setRiskChip(c);
   };
   // P-318: Saved 토글 칩 — 게스트는 저장 게이트(북마크·개인화 칩과 동일 문맥)
   const onSavedChip = () => {
-    if (guest) return setGate(true);
+    if (guest) return setGate({ ctx: 'save', open: true }); // Saved 칩 = 저장 문구가 맞다
     setSavedOnly((v) => !v);
   };
 
   const top = (
     <View>
       {/* 검색 행 + 스캔 버튼 (4150:16377 @y100) */}
-      <View style={styles.searchRow}>
+      <View
+        style={styles.searchRow}
+        onLayout={onScanRowBottom && ((e) => onScanRowBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height))}
+      >
         <Pressable style={styles.searchBox} onPress={() => router.push('/search' as Href)} testID="home-search">
           <Text style={styles.searchPh} numberOfLines={1}>
             {t('food.searchPlaceholder')}
@@ -252,15 +338,35 @@ export function FoodExplorer({
           음식 탭은 세그먼트 소멸(v2 정본 — 카탈로그 단일 뷰 + 필터·정렬) */}
       {variant === 'embedded' && (
         <>
-          <View style={styles.tabsRow}>
+          {/* KB-707: 긴 언어(ru·id)에서 셋째 탭이 말줄임 없이 화면 밖으로 잘렸다 — 줄이지 않고 가로 스크롤로 도달 가능하게(다 들어가면 모양 동일) */}
+          <View style={styles.tabsScroll}>
+          <ScrollView
+            ref={tabsScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsRow}
+            testID="home-tabs-scroll"
+            {...tabLine.scrollProps}
+          >
             {(
               [
                 ['popular', t('home.popularTitle')],
                 ['saved', t('saved.title')],
                 ['food', t('food.title')],
               ] as [GridTab, string][]
-            ).map(([key, label]) => (
-              <Pressable key={key} style={styles.tab} onPress={() => setGridTab(key)} testID={`home-tab-${key}`}>
+            ).map(([key, label], i, all) => (
+              <Pressable
+                key={key}
+                style={styles.tab}
+                onPress={() => {
+                  setGridTab(key);
+                  revealTab(key, i === all.length - 1); // 잘린 탭을 누르면 화면 안으로
+                }}
+                onLayout={(e) => {
+                  tabLayouts.current[key] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
+                }}
+                testID={`home-tab-${key}`}
+              >
                 <Text style={[styles.tabLabel, gridTab === key && styles.tabLabelOn]} numberOfLines={1}>
                   {label}
                 </Text>
@@ -268,6 +374,18 @@ export function FoodExplorer({
                 <View style={[styles.tabBar, gridTab === key && styles.tabBarOn]} />
               </Pressable>
             ))}
+          </ScrollView>
+          {/* 칩 줄과 같은 끝 페이드 — 오른쪽에 숨은 탭이 있을 때만(ru·id에서 셋째 탭이 있다는 신호) */}
+          {tabLine.more && (
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', '#FFFFFF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.chipFade}
+              pointerEvents="none"
+              testID="home-tabs-fade"
+            />
+          )}
           </View>
           <View style={styles.tabsDivider} />
         </>
@@ -283,8 +401,9 @@ export function FoodExplorer({
               ref={chipScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipScrollContent}
+              contentContainerStyle={[styles.chipScrollContent, { height: chipRowHeight(fontScale) }]}
               testID="food-chip-scroll"
+              {...chipLine.scrollProps}
             >
               {RISK_CHIPS.map((c) => (
                 <Chip
@@ -298,14 +417,17 @@ export function FoodExplorer({
               ))}
               <Chip label={t('saved.title')} selected={savedOnly} onPress={onSavedChip} testID="food-chip-saved" />
             </ScrollView>
-            {/* 우측 흰→투명 페이드 24 — 스크롤 가능함을 암시(터치 투과) */}
+            {/* 우측 흰→투명 페이드 — 스크롤 가능함을 암시(터치 투과). KB-707: 오른쪽에 숨은 칩이 있을 때만 */}
+            {chipLine.more && (
             <LinearGradient
               colors={['rgba(255,255,255,0)', '#FFFFFF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.chipFade}
               pointerEvents="none"
+              testID="food-chip-fade"
             />
+            )}
           </View>
           <Pressable style={styles.sortBtn} onPress={() => setSortSheet(true)} testID="food-sort">
             <Text style={styles.sortLabel} numberOfLines={1}>{t(`food.sort_${sort}`)}</Text>
@@ -400,6 +522,7 @@ export function FoodExplorer({
         {/* P-318: 정렬 시트 — 공용 ActionSheet(리뷰 P-237 문법), 현재값 = SVG 체크 */}
         <ActionSheet
           open={sortSheet}
+          testID="food-sort-sheet" // KB-709: 행 = food-sort-sheet-{정렬 키}
           title={t('reviews.sortTitle')}
           items={FOOD_SORTS.map((v) => ({
             key: v,
@@ -419,7 +542,7 @@ export function FoodExplorer({
           }))}
           onClose={() => setSortSheet(false)}
         />
-        <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
+        <AuthGateSheet context={gate.ctx} open={gate.open} onClose={() => setGate((g) => ({ ...g, open: false }))} />
       </>
     );
   }
@@ -437,7 +560,7 @@ export function FoodExplorer({
   // 줄바꿈 없이 잘리던 실기 결함) — ScrollView는 카드 ≥1일 때만 마운트.
   // Codex #85 2R P2: Saved 탭 데이터 = 북마크 쿼리 독립 — 로딩도 에러처럼 탭별 스코프
   // (카탈로그 콜드 로딩이 캐시된 저장 카드를 스켈레톤으로 가리지 않게).
-  const railLoading =
+  const railLoading = homePopular ? popularLoading : // KB-712: /home 소스면 그 로딩만(목록 로딩이 /home 카드를 가리지 않게)
     (gridTab === 'saved' ? savedList.isLoading : browse.isLoading) ||
     // P-350: 얇은 페이지 채움 중(0건·hasNext) = 빈 상태 아님 — 스켈레톤 유지
     (riskChip !== 'all' && gridFoods.length === 0 && gridQ.hasNextPage);
@@ -485,6 +608,7 @@ export function FoodExplorer({
         /* P-320: 평범한 ScrollView + map — 세로 FlatList 헤더 안 중첩 VirtualizedList가
            레일마다 화면 높이 공백을 만들던 원인(#84 실기 확정). flexGrow:0 유지(#83). */
         <ScrollView
+          ref={railRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.rail}
@@ -545,7 +669,7 @@ export function FoodExplorer({
           </View>
         </>
       )}
-      <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
+      <AuthGateSheet context={gate.ctx} open={gate.open} onClose={() => setGate((g) => ({ ...g, open: false }))} />
     </View>
   );
 }
@@ -567,7 +691,8 @@ const styles = StyleSheet.create({
   scanBtn: { width: 48, height: 48, borderRadius: 8, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
 
   // 언더라인 탭 (§1-3)
-  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 14, gap: 4 }, // A-HM-03
+  tabsScroll: { flexGrow: 0, marginTop: 14 }, // KB-707: 가로 스크롤(세로로 자라지 않게 flexGrow 0 — P-319)
+  tabsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 4 }, // A-HM-03
   // A-DS-03(KB-486): 라벨 14/700 · 비활성 #9196A1 · 패딩 10
   tab: { paddingHorizontal: 10, height: 40, justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
   tabLabel: { fontSize: 14, fontWeight: '700', color: '#9196A1' },
@@ -580,8 +705,9 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14 }, // A-HM-04(홈 무변)
   // P-340 2-A: 한 줄 고정(칩 34) + pad 14/12 + 하단 헤어라인 — 정렬 버튼은 스크롤 밖 우측
   chipRowScreen: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14, paddingBottom: 12, paddingRight: 20, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#EAEBEE' }, // P-351 ②(#114 P2): 헤어라인 아래 12 — top은 ListHeader라 contentContainer paddingTop은 헤더째 밀림
-  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: 8, height: 34 },
-  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 24 },
+  // KB-707: 오른쪽 끝 여백 = 페이드 폭 — 끝까지 밀면 마지막 칩이 페이드·정렬 버튼에 가리지 않는다(옛 8 < 페이드 24 → 마지막 칩 끝 16pt가 늘 덮였다)
+  chipScrollContent: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 20, paddingRight: CHIP_FADE_W }, // 높이 = chipRowHeight(fontScale) 인라인
+  chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: CHIP_FADE_W },
   // P-342 ②: 정렬 시트 NEW "준비 중" 칩(DS 소형 pill)
   soonChip: { backgroundColor: '#F2F3F6', borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8 },
   soonChipText: { fontSize: 12, fontWeight: '500', color: '#6A6F7C' },

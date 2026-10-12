@@ -9,7 +9,8 @@
  * 서버에만 있는 신규 코드는 무시(그룹·라벨 미정 — 상수 갱신 발주에서 수용).
  */
 import { useQuery } from '@tanstack/react-query';
-import { api, apiLang } from '@/lib/api/client';
+import { api, apiLang, clampLang } from '@/lib/api/client';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { DIET_PRESETS, presetSubstanceCodes, type DietPreset } from '@/lib/onboarding/dietPresets';
 
 interface DietWire {
@@ -42,8 +43,11 @@ async function fetchDietPresets(): Promise<Map<string, { codes: string[]; name: 
 
 /** 프리셋 15종 — 서버 매핑 우선, 실패·로딩·부재 코드는 상수 폴백. UI 축(그룹·라벨)은 상수. */
 export function useDietPresets(): ResolvedPreset[] {
+  // KB-695(#226 공부): 렌더 중 `apiLang()`(싱글턴 i18n.language를 함수 뒤에서 읽음)은 컴파일러가 인스턴스당 1회로 굳힌다 —
+  // 구독 값 + 같은 규칙의 순수 함수로(키 값 무변)
+  const lang = useAppLanguage();
   const q = useQuery({
-    queryKey: ['diets', 'presets', apiLang()],
+    queryKey: ['diets', 'presets', clampLang(lang)],
     queryFn: fetchDietPresets,
     staleTime: 24 * 60 * 60_000, // 카탈로그 관례 — 매핑은 하루 단위면 충분
   });

@@ -32,14 +32,12 @@ import {
   Flag,
   QueryErrorBlock,
   Spinner,
-  IconGlobe,
   IconProfile,
   IconBubbleEmpty,
   IconPlus,
   IconCheck,
   IconChevron,
   IconChevronDown,
-  IconMapPin,
   IconMore,
   CardPhoto,
 } from '@/components';
@@ -51,14 +49,12 @@ import { useIsFoodHidden } from '@/lib/data/hiddenFoods';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { IconLock } from '@/components/icons';
-import { useReviewTranslation } from '@/lib/data/useReviewTranslation';
 import { ModerationFlow, type ModTarget } from '@/features/community/moderation';
 import { useBlockedUsers } from '@/lib/community/hooks';
-import { ExpandableBody, HelpfulButton, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
+import { HelpfulButton, ReviewBody, ReviewPhotoStrip, ReviewExtrasLine, ReviewPlaceLine } from '@/features/review/ReviewCellParts';
 import { useDeleteReview } from '@/lib/data/useReviewMutations';
 import type { RatingAggregate, Review } from '@/lib/api/types';
 
-const READER_LANG = 'en'; // MVP reader language
 
 export default function FoodReviews() {
   // KB-148: 리뷰 MVP 제외 — 진입점이 없어도 딥링크/백스택으로 도달 가능하니 홈으로.
@@ -255,6 +251,7 @@ function FoodReviewsScreen() {
                 {/* P-085: keyset 더보기 — hasNext일 때만 */}
                 {reviewsQ.hasNextPage && (
                   <Pressable
+                    testID="reviews-load-more"
                     style={styles.loadMore}
                     onPress={() => void reviewsQ.fetchNextPage()}
                     disabled={reviewsQ.isFetchingNextPage}
@@ -278,6 +275,7 @@ function FoodReviewsScreen() {
       {/* KB-431 §2-4: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
       <ActionSheet
         open={sortSheet}
+        testID="reviews-sort-sheet"
         title={t('reviews.sortTitle')}
         items={(['recent', 'rating'] as const).map((v) => ({
           key: v,
@@ -364,12 +362,10 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
   // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
-  const tx = useReviewTranslation(review, READER_LANG);
-  const langName = t(`reviews.lang.${tx.fromLang}`, { defaultValue: tx.fromLang });
 
   return (
     /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
-    <View style={styles.item}>
+    <View style={styles.item} testID={`review-item-${review.id}`}>
       <View style={styles.itemTop}>
         <View style={styles.who}>
           {anon || !review.authorNationality ? (
@@ -395,51 +391,12 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
 
       {/* P-182 ②: 사진 = 공용 스트립+풀스크린 뷰어 */}
       <ReviewPhotoStrip photos={review.photos ?? []} />
+      {/* 장소는 여기서 한 번만(KB-674 — 공용 ReviewPlaceLine, 태그 있을 때만). 아래에 장소 줄을 또 넣으면 2중 표시. */}
       <ReviewPlaceLine place={review.place ?? null} />
       <ReviewExtrasLine review={review} mine={mine} />
 
-      {!!tx.text && <ExpandableBody body={tx.text} t={t} />}
+      <ReviewBody review={review} t={t} />
 
-      {/* per-review translation control — P-085 지시 7: 번역 계약 미배포, 플래그 비노출
-          (useReviewTranslation 코드는 보존 — 계약 배포 시 플래그 복원) */}
-      {FLAGS.reviewTranslationEnabled && tx.canTranslate && (
-        <View style={styles.txRow}>
-          {tx.loading ? (
-            <View style={styles.txInline}>
-              <Spinner size={14} color={C.accent} />
-              <Text style={styles.txMuted}>{t('reviews.translating')}</Text>
-            </View>
-          ) : tx.error ? (
-            <View style={styles.txInline}>
-              <Text style={styles.txError}>{t('reviews.translateFailed')}</Text>
-              <Pressable onPress={tx.retry} hitSlop={6}>
-                <Text style={styles.txLink}>{t('reviews.retry')}</Text>
-              </Pressable>
-            </View>
-          ) : tx.showingTranslated ? (
-            <View style={styles.txInline}>
-              <Text style={styles.txMuted}>{t('reviews.translatedFrom', { lang: langName })}</Text>
-              <Pressable onPress={tx.showOriginal} hitSlop={6}>
-                <Text style={styles.txLink}>{t('reviews.showOriginal')}</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable style={styles.txInline} onPress={tx.translate} hitSlop={6}>
-              <IconGlobe size={14} color={C.accent} />
-              <Text style={styles.txLink}>{t('reviews.translate')}</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
-
-      {/* P-095: 장소 한 줄(핀+이름 — 태그 있을 때만) */}
-      {/* P-116: 장소 한 줄 — placeTagsEnabled 숨김(KB-274 대기) */}
-      {FLAGS.placeTagsEnabled && review.place && (
-        <View style={styles.placeLine}>
-          <IconMapPin size={12} color={C.ink3} />
-          <Text style={styles.placeLineText} numberOfLines={1}>{review.place.name}</Text>
-        </View>
-      )}
       <View style={styles.itemFoot}>
         <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
         <View style={styles.itemFootRight}>
@@ -518,12 +475,10 @@ const styles = StyleSheet.create({
   knob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff', ...shadow.sh1 },
   knobOn: { alignSelf: 'flex-end' },
 
-  item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 },
+  item: { backgroundColor: C.card, borderWidth: 1, borderColor: C.hair, borderRadius: radius.sm, padding: 14, gap: 8, ...shadow.sh1 }, // gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임(유닛)
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemTopRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   itemPressed: { opacity: 0.75 },
-  placeLine: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  placeLineText: { fontFamily: font.body, fontSize: 12, color: C.ink2, flexShrink: 1 },
   itemFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemFootRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   likeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -535,11 +490,6 @@ const styles = StyleSheet.create({
   whoName: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.ink, flexShrink: 1 },
   reviewBody: { fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 20 },
   reviewBodyKo: { fontFamily: font.ko },
-  txRow: { flexDirection: 'row', alignItems: 'center' },
-  txInline: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  txLink: { fontFamily: font.bodyBold, fontSize: 12.5, color: C.accent },
-  txMuted: { fontFamily: font.body, fontSize: 12, color: C.ink3 },
-  txError: { fontFamily: font.body, fontSize: 12, color: C.riskDanger },
   when: { fontFamily: font.body, fontSize: 11.5, color: C.ink3 },
   // P-085 keyset 더보기
   loadMore: { alignItems: 'center', paddingVertical: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12 },

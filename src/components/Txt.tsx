@@ -17,7 +17,7 @@ import { resolveFont } from '@/lib/i18n/fonts';
 // P-031(KB-206): 시스템 큰글씨 상한 ×1.3 — 고정높이 레이아웃(칩·행·버튼) 잘림
 // 방지. 전 화면이 Txt를 쓰므로 여기 한 곳이 전역 관통. 정식 Dynamic Type
 // 대응(레이아웃 스케일링)은 출시 후 범위.
-const MAX_FONT_SCALE = 1.3;
+export const MAX_FONT_SCALE = 1.3;
 
 // P-371(KB-534): Android 폰트 상하 패딩 제거 — 고정 높이 컨테이너(칩·필·버튼)
 // 안 한글 글리프가 아래로 처지는 근본 원인. iOS는 이 prop을 무시하므로 무영향.

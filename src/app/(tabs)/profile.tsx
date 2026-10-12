@@ -35,6 +35,7 @@ import { useMe, useMyReviews } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBookmarks } from '@/lib/data/bookmarks';
 import { FLAGS } from '@/lib/flags';
+import { showPrivacyOptions, usePrivacyOptionsRequired } from '@/lib/ads/adsSession';
 import { tierByKey, TIERS } from '@/lib/ranking';
 import { AvoidTile } from '@/components/AvoidTile';
 import { FB_TINT } from '@/components/IngredientTileSections';
@@ -42,7 +43,8 @@ import { INGREDIENTS } from '@/lib/mocks/ingredients';
 import { useIngredientCatalog } from '@/lib/data/useIngredientCatalog';
 import { FlagEmoji } from '@/components';
 import { AvatarPlaceholder } from '@/components/design4Assets';
-import { countryByCode } from '@/lib/onboarding/countries';
+import { countryDisplayName } from '@/lib/onboarding/countries';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 import { resetToOnboarding } from '@/lib/nav';
 import { LANG_ENDONYM } from '@/lib/i18n/languages';
 import Constants from 'expo-constants';
@@ -56,7 +58,9 @@ import { openAppSettings } from '@/lib/openExternal';
 // P-129: 게스트 프로필 탭 = 로그인 화면 임베드 — 로그인 성공 후 프로필 복귀
 
 export default function Profile() {
+  const privacyOptions = usePrivacyOptionsRequired(); // KB-739
   const { t } = useTranslation();
+  const appLang = useAppLanguage(); // KB-708: 국가명 표시(엔도님 판정) — 구독형(렌더 중 i18n 싱글턴 직접 읽기 금지, KB-695)
   const router = useRouter();
   const isGuest = useIsGuest();
   const avatarUrl = useMyAvatarUrl(); // P-313: 탭바와 정본 공유
@@ -156,12 +160,16 @@ export default function Profile() {
             </View>
             <View style={styles.menuList}>
               {canOpenLangSettings && (
-                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
+                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
-              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
-              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
+              <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              {/* KB-739: 광고 신고(Apple 2.5.18) — 게스트도 광고를 보므로 같은 행(/review 9) */}
+              {FLAGS.ads.enabled && (
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+              )}
+              <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
             </View>
             <Pressable onPress={onVersionTap} style={styles.verRow} testID="app-version-row">
               <Text style={styles.verText}>v{Constants.expoConfig?.version ?? '0.0.0'}</Text>
@@ -193,8 +201,8 @@ export default function Profile() {
                   {!!me.nationality && (
                     <>
                       <FlagEmoji code={me.nationality} size={14} />
-                      <Text style={styles.natText} numberOfLines={1} testID="nation-pill">
-                        {countryByCode(me.nationality)?.name ?? me.nationality}
+                      <Text style={styles.natText} numberOfLines={2} testID="nation-pill">{/* KB-707: "United Sta…" 잘림 — 두 줄까지 */}
+                        {countryDisplayName(me.nationality, appLang)}
                       </Text>
                     </>
                   )}
@@ -308,41 +316,49 @@ export default function Profile() {
             <View style={[styles.menuList, { marginTop: -20 }]}>{/* A-PF-09: Show all→메뉴 0 */}
               {/* My Foods — 시안 §1-4 목록 부재·§5 화면 진입점(질문 누적, 기능 유지) */}
               {/* P-300(KB-449, 9/7 예진): 값 없는 이동 행 전부 chevron — 값 행(Saved·My reviews·Language)은 무변 */}
-              <MenuRow label={t('profile.myFoods')} chevron onPress={() => router.push('/profile/my-foods' as Href)} />
-              <MenuRow label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
+              <MenuRow testID="profile-menu-my-foods" label={t('profile.myFoods')} chevron onPress={() => router.push('/profile/my-foods' as Href)} />
+              <MenuRow testID="profile-menu-saved" label={t('profile.saved')} value={String(bookmarks?.length ?? 0)} onPress={() => router.push('/profile/saved' as Href)} />
               {FLAGS.reviewsEnabled && (
-                <MenuRow label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
+                <MenuRow testID="profile-menu-reviews" label={t('myReviews.title')} value={String(reviews?.length ?? 0)} onPress={() => router.push('/profile/reviews' as Href)} />
               )}
               {/* Codex #33 P2: 식이 카테고리 편집 = /profile/diet 유일 편집 경로(1.1 dietCategories) —
                   섹션 소멸로 진입 0이 되던 것 복원. 시안 §1-4 목록 부재 = 질문 누적(My Foods 행 계열) */}
               {FLAGS.dietPresetsEnabled && (
-                <MenuRow label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
+                <MenuRow testID="profile-menu-diet" label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
-                <MenuRow label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
+                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
               {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
               {FLAGS.pushEnabled && (
-                <MenuRow label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
+                <MenuRow testID="profile-menu-notifications" label={t('notif.title')} chevron onPress={() => router.push('/profile/notifications' as Href)} />
               )}
               {/* P-394(KB-586): 문의 — 게스트 분기에도 같은 행이 있다 */}
-              <MenuRow label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              <MenuRow testID="profile-menu-feedback" label={t('feedback.title')} chevron onPress={() => router.push('/profile/feedback' as Href)} />
+              {/* KB-739: UMP 개인정보 옵션(EEA 등 REQUIRED일 때만) · 광고 신고(Apple 2.5.18) = 문의 작성 프리필 */}
+              {privacyOptions && (
+                <MenuRow testID="profile-menu-ad-privacy" label={t('ads.privacyOptions')} chevron onPress={() => void showPrivacyOptions()} />
+              )}
+              {FLAGS.ads.enabled && (
+                <MenuRow testID="profile-menu-ad-report" label={t('ads.report')} chevron onPress={() => router.push('/profile/feedback/new?prefill=ad' as Href)} />
+              )}
               {/* P-061③: 안전 고지 페이지(EN/KO) */}
-              <MenuRow label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
+              <MenuRow testID="profile-menu-safety" label={t('profile.safetyNotice')} chevron onPress={() => void openWebPage(SAFETY_NOTICE_URL)} />
               {/* P-087(KB-251): 차단 목록 — Apple 1.2 해제 수단 */}
               {FLAGS.communityEnabled && (
-                <MenuRow label={t('community.blockedTitle')} chevron onPress={() => router.push('/community/blocked' as Href)} />
+                <MenuRow testID="profile-menu-blocked" label={t('community.blockedTitle')} chevron onPress={() => router.push('/community/blocked' as Href)} />
               )}
               {/* 로그아웃 chevron 유지 확정(2026-07-15 예진 — 시안 무chevron이지만 예진 확정 우선). 재제거 금지.
                   ⑪-1: 확인 모달 + 진행 중 스피너(무반응 연타 방지). */}
               <MenuRow
+                testID="profile-menu-logout"
                 label={t('profile.logout')}
                 dim
                 chevron
                 trailing={loggingOut ? <Spinner size={16} /> : undefined}
                 onPress={confirmLogout}
               />
-              <MenuRow label={t('profile.deleteAccount')} dim chevron onPress={() => router.push('/delete-account' as Href)} />
+              <MenuRow testID="profile-menu-delete" label={t('profile.deleteAccount')} dim chevron onPress={() => router.push('/delete-account' as Href)} />
             </View>
 
             {/* P-212: 앱 버전 줄 — 라벨은 전 채널, 7연타 트리거는 dev 계열만(내부 게이트) */}
@@ -368,6 +384,7 @@ function MenuRow({
   chevron,
   trailing,
   onPress,
+  testID,
 }: {
   label: string;
   value?: string;
@@ -375,9 +392,11 @@ function MenuRow({
   chevron?: boolean;
   trailing?: React.ReactNode;
   onPress?: () => void;
+  /** KB-709: QA 자동화 — profile-menu-{행} */
+  testID?: string;
 }) {
   return (
-    <Pressable style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: C.surface2 }]} onPress={onPress}>
+    <Pressable style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: C.surface2 }]} onPress={onPress} testID={testID}>
       <Text style={[styles.menuLabel, dim && { color: C.ink3 }]}>{label}</Text>
       {value != null && <Text style={styles.menuValue}>{value}</Text>}
       {trailing}
@@ -406,7 +425,8 @@ const styles = StyleSheet.create({
   nameUnset: { fontSize: 16, fontWeight: '400', color: C.ink3 },
   natRow: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
   natText: { fontSize: 14, fontWeight: '400', color: '#5A636A', flexShrink: 1 },
-  editBtn: { width: 68, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
+  // KB-707: 고정 폭 68이라 vi·th·ja "로그인" 글자가 테두리에 닿았다 — 최소 68 + 좌우 여백 12, 내용에 맞춰 넓어짐(짧은 글자는 그대로 68)
+  editBtn: { minWidth: 68, paddingHorizontal: 12, height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#DCDEE3', alignItems: 'center', justifyContent: 'center' },
   editBtnText: { fontSize: 13, fontWeight: '500', color: '#2F3137' }, // A-PF-03
 
   // 랭킹 카드(4150:14390) — mx 20 h147 r8 border #F2F3F6 + 그라데이션
