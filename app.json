@@ -1,6 +1,5 @@
 {
   "expo": {
-    "_localesComment": "KB-592: iOS 권한 문구 로케일화. Expo 내장 기능 — 이 맵이 <lang>.lproj/InfoPlist.strings를 생성한다(@expo/config-plugins ios/Locales). 플러그인 옵션의 영어 문구는 **폴백이라 지우지 않는다**(여기 없는 로케일이 그걸 쓴다). 키는 실제로 쓰는 5종만(9/22 모션 추가 — scan.tsx DeviceMotion, ASC ITMS-90683).",
     "locales": {
       "en": "./locales/en.json",
       "ko": "./locales/ko.json",
@@ -43,19 +42,16 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "_permissionsComment": "KB-592: RECORD_AUDIO 제거 — 오디오 녹음 코드가 0인데 선언만 남아 Play 스토어에 '오디오 녹음'으로 노출됐다(미사용 권한 선언 = 정책 리스크). expo-camera의 recordAudioAndroid: false로 플러그인 경로를 막고, 그래도 라이브러리 AndroidManifest가 직접 선언하므로(prebuild 실측) blockedPermissions로 병합 단계에서 제거한다.",
       "permissions": [
         "android.permission.CAMERA"
       ],
-      "_adIdComment": "KB-600(P-397 6): 광고 ID 허용 — 9/22 예진 결정. facebook-core AAR이 스스로 선언하는 광고 권한(AD_ID·ACCESS_ADSERVICES_AD_ID/ATTRIBUTION/CUSTOM_AUDIENCE/TOPICS)을 **차단하지 않는다**(9/21 초안의 차단은 되돌림). advertiserIDCollectionEnabled:true와 한 쌍 — 선언만 두고 수집을 끄면 의미가 없다. ⚠️ Play Console 데이터 보안에 '광고 ID 수집' 신고가 필요하다(이미 출시된 목록의 신고 변경). 병합은 Gradle 단계라 expo prebuild 출력엔 안 보인다 — 빌드 로그/APK 매니페스트로 확인.",
       "blockedPermissions": [
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_EXTERNAL_STORAGE"
-      ],
-      "_mediaPermissionsComment": "KB-600(P-408 vc24 거부, 9/24 예진 결정): Play 사진·동영상 권한 정책 — \"핵심 기능\" 선언 대신 READ_MEDIA_IMAGES·READ_MEDIA_VISUAL_USER_SELECTED·READ_EXTERNAL_STORAGE 제거. 앨범 선택은 시스템 Photo Picker(권한 불필요), 스토리 카드 저장은 Android 10+ 읽기 권한 불필요. expo-image-picker·expo-media-library가 라이브러리 매니페스트로 선언하므로 병합 단계 차단."
+      ]
     },
     "web": {
       "output": "static",
@@ -226,7 +222,14 @@
         "projectId": "249f1d0b-6a85-4aaf-ac33-973f558ce180"
       },
       "metaAppId": "2530115400831168",
-      "_metaAppIdComment": "P-380(KB-518): Meta App ID — iOS 인스타 스토리 공유의 전제(react-native-share 계약). 공개 값이라 커밋 OK(시크릿 아님). 발급 = developers.facebook.com 팀 계정 앱 'K-Bap'. 비면 iOS Story 버튼은 숨고 Download만 남는다(Android 무관)"
+      "_metaAppIdComment": "P-380(KB-518): Meta App ID — iOS 인스타 스토리 공유의 전제(react-native-share 계약). 공개 값이라 커밋 OK(시크릿 아님). 발급 = developers.facebook.com 팀 계정 앱 'K-Bap'. 비면 iOS Story 버튼은 숨고 Download만 남는다(Android 무관)",
+      "_docs": {
+        "_why": "KB-738: app.json 스키마 검사(expo-doctor 57)가 루트·android의 _*Comment 키를 거부 — 설명문은 스키마가 허용하는 extra 아래로(내용 무변, 앱 런타임엔 영향 없음)",
+        "locales": "KB-592: iOS 권한 문구 로케일화. Expo 내장 기능 — 이 맵이 <lang>.lproj/InfoPlist.strings를 생성한다(@expo/config-plugins ios/Locales). 플러그인 옵션의 영어 문구는 **폴백이라 지우지 않는다**(여기 없는 로케일이 그걸 쓴다). 키는 실제로 쓰는 5종만(9/22 모션 추가 — scan.tsx DeviceMotion, ASC ITMS-90683).",
+        "androidPermissions": "KB-592: RECORD_AUDIO 제거 — 오디오 녹음 코드가 0인데 선언만 남아 Play 스토어에 '오디오 녹음'으로 노출됐다(미사용 권한 선언 = 정책 리스크). expo-camera의 recordAudioAndroid: false로 플러그인 경로를 막고, 그래도 라이브러리 AndroidManifest가 직접 선언하므로(prebuild 실측) blockedPermissions로 병합 단계에서 제거한다.",
+        "androidAdId": "KB-600(P-397 6): 광고 ID 허용 — 9/22 예진 결정. facebook-core AAR이 스스로 선언하는 광고 권한(AD_ID·ACCESS_ADSERVICES_AD_ID/ATTRIBUTION/CUSTOM_AUDIENCE/TOPICS)을 **차단하지 않는다**(9/21 초안의 차단은 되돌림). advertiserIDCollectionEnabled:true와 한 쌍 — 선언만 두고 수집을 끄면 의미가 없다. ⚠️ Play Console 데이터 보안에 '광고 ID 수집' 신고가 필요하다(이미 출시된 목록의 신고 변경). 병합은 Gradle 단계라 expo prebuild 출력엔 안 보인다 — 빌드 로그/APK 매니페스트로 확인.",
+        "androidMediaPermissions": "KB-600(P-408 vc24 거부, 9/24 예진 결정): Play 사진·동영상 권한 정책 — \"핵심 기능\" 선언 대신 READ_MEDIA_IMAGES·READ_MEDIA_VISUAL_USER_SELECTED·READ_EXTERNAL_STORAGE 제거. 앨범 선택은 시스템 Photo Picker(권한 불필요), 스토리 카드 저장은 Android 10+ 읽기 권한 불필요. expo-image-picker·expo-media-library가 라이브러리 매니페스트로 선언하므로 병합 단계 차단."
+      }
     },
     "runtimeVersion": {
       "policy": "fingerprint"
