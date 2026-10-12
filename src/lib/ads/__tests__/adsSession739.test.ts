@@ -17,7 +17,7 @@ jest.mock('@/lib/metaSdk', () => ({ setMetaTrackingEnabled: (v: boolean) => mock
 import { Platform } from 'react-native';
 import * as adsModule from 'react-native-google-mobile-ads';
 import * as attModule from 'expo-tracking-transparency';
-import { _resetAdsSessionForTest, getAdsState, initAds, isAdsReady, isPrivacyOptionsRequired, showPrivacyOptions } from '@/lib/ads/adsSession';
+import { _resetAdsSessionForTest, consentDebugOptions, getAdsState, initAds, isAdsReady, isPrivacyOptionsRequired, showPrivacyOptions } from '@/lib/ads/adsSession';
 import { _resetAdsSdkForTest, getAdsSdk } from '@/lib/ads/sdk';
 import { FLAGS } from '@/lib/flags';
 /* eslint-enable import/first */
@@ -39,7 +39,7 @@ it('정상: EEA 디버그 지오(비prod) → 동의 OK → iOS ATT 1회(결과 
   try {
     expect(getAdsState()).toBe('idle');
     await initAds();
-    expect(mockAds.gatherConsent).toHaveBeenCalledWith({ debugGeography: 1 }); // EEA
+    expect(mockAds.gatherConsent).toHaveBeenCalledWith({ debugGeography: 1, testDeviceIdentifiers: [] }); // EEA(기기 미등록)
     expect(mockAtt.calls).toBe(1);
     expect(mockMetaTracking).toHaveBeenCalledWith(false);
     expect(mockAds.setRequestConfiguration).toHaveBeenCalledWith(expect.objectContaining({ maxAdContentRating: 'PG', tagForChildDirectedTreatment: false }));
@@ -125,6 +125,24 @@ it('FLAGS.ads.enabled=false = SDK require 0 → unavailable, 동의·초기화·
   expect(mockAds.gatherConsent).not.toHaveBeenCalled();
   expect(mockAds.initialize).not.toHaveBeenCalled();
   expect(mockTrack).not.toHaveBeenCalled();
+});
+
+it('QA 4R: UMP 디버그 옵션 — 비prod = EEA + EXPO_PUBLIC_UMP_TEST_DEVICES(쉼표·공백 정리) · production = undefined(env가 있어도 절대 포함 0)', async () => {
+  expect(consentDebugOptions(false, ' abc , def,, ', 1)).toEqual({ debugGeography: 1, testDeviceIdentifiers: ['abc', 'def'] });
+  expect(consentDebugOptions(false, undefined, 1)).toEqual({ debugGeography: 1, testDeviceIdentifiers: [] });
+  expect(consentDebugOptions(true, 'abc,def', 1)).toBeUndefined();
+  const prev = process.env.EXPO_PUBLIC_UMP_TEST_DEVICES;
+  process.env.EXPO_PUBLIC_UMP_TEST_DEVICES = 'hash1,hash2';
+  try {
+    await initAds();
+    expect(mockAds.gatherConsent).toHaveBeenCalledWith({ debugGeography: 1, testDeviceIdentifiers: ['hash1', 'hash2'] });
+    _resetAdsSessionForTest(); mockAds.reset(); mockProd = true;
+    await initAds();
+    expect(mockAds.gatherConsent).toHaveBeenCalledWith(undefined);
+  } finally {
+    if (prev === undefined) delete process.env.EXPO_PUBLIC_UMP_TEST_DEVICES; else process.env.EXPO_PUBLIC_UMP_TEST_DEVICES = prev;
+    mockProd = false;
+  }
 });
 
 it('개인정보 옵션: REQUIRED면 노출 · showPrivacyOptions 뒤 상태 재반영', async () => {

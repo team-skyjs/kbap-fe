@@ -6,7 +6,9 @@
  * 초기화 전엔 광고 요청 0(컴포넌트가 `useAdsReady()`로 막는다). 동의 실패·오프라인·네이티브 부재 = `unavailable`(광고 없이 진행,
  * 앱 흐름 차단 금지). 렌더는 useSyncExternalStore 구독(모듈 변수 직접 읽기는 컴파일러가 굳힌다 — KB-694).
  *
- * 비prod 채널은 `debugGeography: EEA`로 동의 폼을 강제한다(QA·teamtest 실측용 — 시뮬레이터는 자동 테스트 기기, 실기기는 등록 전엔 무시됨).
+ * 비prod 채널은 `debugGeography: EEA`로 동의 폼을 강제한다 — UMP 디버그 설정은 **testDeviceIdentifiers에 등록된 기기에만** 적용되므로(QA 4R 실측:
+ * 에뮬레이터도 미등록이면 not_required) 비prod에서만 `EXPO_PUBLIC_UMP_TEST_DEVICES`(쉼표 구분 해시 ID)를 함께 넘긴다. 해시 ID는 첫 실행 시
+ * UMP가 logcat/Xcode 콘솔에 "addTestDeviceHashedId(\"…\")"로 찍는다. production 채널엔 디버그 옵션 자체를 넘기지 않는다(유닛 잠금).
  */
 import { Platform } from 'react-native';
 import { useSyncExternalStore } from 'react';
@@ -16,6 +18,13 @@ import { setMetaTrackingEnabled } from '@/lib/metaSdk';
 import { getAdsSdk, type AdsSdk } from './sdk';
 
 export type AdsState = 'idle' | 'running' | 'ready' | 'unavailable';
+
+/** 비prod 전용 UMP 디버그 옵션 — production이면 undefined(실 동의 흐름). 순수 함수: 테스트 잠금용 */
+export function consentDebugOptions(prod: boolean, env: string | undefined, eea: number): { debugGeography: number; testDeviceIdentifiers: string[] } | undefined {
+  if (prod) return undefined;
+  const testDeviceIdentifiers = (env ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return { debugGeography: eea, testDeviceIdentifiers };
+}
 
 let state: AdsState = 'idle';
 let privacyOptionsRequired = false;
@@ -62,7 +71,7 @@ export async function initAds(): Promise<void> {
   try {
     const { AdsConsent, AdsConsentDebugGeography, AdsConsentPrivacyOptionsRequirementStatus, MaxAdContentRating } = sdk;
     // 동의 갱신 실패(오프라인 등)는 치명 아님 — 지난 세션의 동의가 캐시돼 있으면(getConsentInfo.canRequestAds) 그대로 진행(/review 8)
-    await AdsConsent.gatherConsent(isProdChannel() ? undefined : { debugGeography: AdsConsentDebugGeography.EEA }).catch(() => undefined);
+    await AdsConsent.gatherConsent(consentDebugOptions(isProdChannel(), process.env.EXPO_PUBLIC_UMP_TEST_DEVICES, AdsConsentDebugGeography.EEA)).catch(() => undefined);
     const info = await AdsConsent.getConsentInfo();
     privacyOptionsRequired = info.privacyOptionsRequirementStatus === AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
     track(EVENTS.ad_consent_result, { status: String(info.status).toLowerCase() }); // unknown|required|not_required|obtained

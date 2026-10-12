@@ -77,9 +77,11 @@ describe('배너', () => {
     expect(slot().props.style[1].height).toBe(0);
     const props = mockAds.banners.at(-1)!;
     expect(props.unitId).toBe('ca-app-pub-3940256099942544/2934735716'); // 비prod = 데모(iOS)
-    expect(props.size).toBe('LARGE_ANCHORED_ADAPTIVE_BANNER');
+    expect(props.size).toBe('ANCHORED_ADAPTIVE_BANNER'); // QA 4R: LARGE_*는 112dp 컨테이너 레터박스
     act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 320, height: 50 }); });
     expect(slot().props.style[1].height).toBe(50);
+    act(() => { (props.onSizeChange as (d: { width: number; height: number }) => void)({ width: 320, height: 100 }); }); // 수신 크기 100 = 슬롯 100
+    expect(slot().props.style[1].height).toBe(100);
     act(() => { (props.onAdImpression as () => void)(); (props.onAdClicked as () => void)(); });
     expect(mockTrack).toHaveBeenCalledWith('ad_impression', { format: 'banner', placement: 'search_banner' });
     expect(mockTrack).toHaveBeenCalledWith('ad_click', { format: 'banner', placement: 'search_banner' });

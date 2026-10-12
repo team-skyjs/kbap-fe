@@ -1,7 +1,8 @@
 /**
  * AdBanner (KB-739 ④-②·③ 폴백) — 배너 자리 하나. 플래그 off·SDK 부재·초기화 전·미수신·실패 = **높이 0**(빈 칸·스켈레톤 금지).
- * 높이는 SDK가 `onAdLoaded`로 알려준 실측(적응형)만 쓴다. 앵커(검색 하단) = LARGE_ANCHORED_ADAPTIVE_BANNER, 인라인(피드) =
- * INLINE_ADAPTIVE_BANNER(maxHeight로 상한). 계측: ad_impression / ad_click(format·placement만 — 광고 내용 0).
+ * 높이는 SDK가 `onAdLoaded`/`onSizeChange`로 알려준 실측만 쓴다. 앵커(검색 하단) = ANCHORED_ADAPTIVE_BANNER(폭 기준 최적 높이 —
+ * QA 4R: LARGE_*는 컨테이너가 112dp로 잡혀 320×50 데모 광고가 레터박스), 인라인(피드) = INLINE_ADAPTIVE_BANNER(maxHeight로 상한).
+ * 계측: ad_impression / ad_click(format·placement만 — 광고 내용 0).
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -35,7 +36,7 @@ function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { 
     <View style={[styles.slot, { height: shown ? height : 0, paddingBottom: shown ? bottomInset : 0 }]} testID={testID ?? `ad-banner-${placement}`} accessibilityElementsHidden={!shown}>
       <BannerAd
         unitId={adUnitId(placement)}
-        size={inline ? BannerAdSize.INLINE_ADAPTIVE_BANNER : BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
+        size={inline ? BannerAdSize.INLINE_ADAPTIVE_BANNER : BannerAdSize.ANCHORED_ADAPTIVE_BANNER} /* ANCHORED_*: 타입은 deprecated 표기지만 지원 사이즈 — LARGE_*는 112dp 컨테이너에 50dp 크리에이티브가 레터박스(QA 4R) */
         maxHeight={inline ? INLINE_MAX_HEIGHT : undefined}
         onAdLoaded={(d) => setHeight(Math.ceil(d.height))}
         onSizeChange={(d) => setHeight(Math.ceil(d.height))}

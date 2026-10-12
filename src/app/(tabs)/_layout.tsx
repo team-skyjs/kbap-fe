@@ -12,6 +12,7 @@
 import { initAds } from '@/lib/ads/adsSession';
 import { whenSplashDone } from '@/lib/bootGate';
 import * as React from 'react';
+import { InteractionManager } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
@@ -75,10 +76,11 @@ function AppTabBar({
   );
 }
 
-/** KB-739: 광고 동의·초기화 1회 — 탭 진입(로그인/게스트 결정 뒤) + 스플래시 뒤. 로그인 화면의 푸시 프롬프트(whenSplashDone)와 겹치지 않게 여기 */
+/** KB-739: 광고 동의·초기화 1회 — 탭 진입(로그인/게스트 결정 뒤) + 스플래시 뒤 + 첫 화면 인터랙션 뒤(QA 4R: 기동 직후 ANR 의심 — 초기화를 메인 스레드
+ *  바쁜 구간 뒤로). 로그인 화면의 푸시 프롬프트(whenSplashDone)와 겹치지 않게 여기 */
 function useInitAdsOnce() {
   React.useEffect(() => {
-    void whenSplashDone().then(() => initAds());
+    void whenSplashDone().then(() => { InteractionManager.runAfterInteractions(() => { void initAds(); }); });
   }, []);
 }
 
