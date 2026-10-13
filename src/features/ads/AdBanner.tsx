@@ -30,25 +30,32 @@ export function AdBanner({ placement, inline = false, testID, visible = true, bo
 }
 
 function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { sdk: AdsSdk; placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>; inline: boolean; testID?: string; visible: boolean; bottomInset: number }) {
-  const [height, setHeight] = React.useState(0);
+  // KB-774: 수신 크리에이티브 크기(폭·높이) — 네이티브 배너 뷰가 크리에이티브보다 크면(큰 글씨 최대 iOS 실측: 320×100 수신) 남는 자리가
+  // 검은 바탕으로 칠해져 좌우·아래(인셋 패딩 위로 넘침) 띠가 됐다. 크리에이티브 크기 클립 상자로 네이티브 뷰를 가운데 잘라 띠 0.
+  const [size, setSize] = React.useState<{ w: number; h: number } | null>(null);
+  const height = size?.h ?? 0;
   const { BannerAd, BannerAdSize } = sdk;
   const shown = visible && height > 0;
+  const slotTestID = testID ?? `ad-banner-${placement}`;
   return (
-    <View style={[styles.slot, { height: shown ? height : 0, paddingBottom: shown ? bottomInset : 0 }]} testID={testID ?? `ad-banner-${placement}`} accessibilityElementsHidden={!shown}>
-      <BannerAd
-        unitId={adUnitId(placement)}
-        size={inline ? BannerAdSize.INLINE_ADAPTIVE_BANNER : BannerAdSize.ANCHORED_ADAPTIVE_BANNER} /* ANCHORED_*: 타입은 deprecated 표기지만 지원 사이즈 — LARGE_*는 112dp 컨테이너에 50dp 크리에이티브가 레터박스(QA 4R) */
-        maxHeight={inline ? INLINE_MAX_HEIGHT : undefined}
-        onAdLoaded={(d) => { if (__DEV__) console.log('[ads] banner loaded', placement, JSON.stringify(d)); setHeight(Math.ceil(d.height)); }}
-        onSizeChange={(d) => { if (__DEV__) console.log('[ads] banner sizeChange(ignored)', placement, JSON.stringify(d)); }}
-        onAdFailedToLoad={() => setHeight(0)} // no-fill·네트워크 = 접힘
-        onAdImpression={() => track(EVENTS.ad_impression, { format: 'banner', placement })}
-        onAdClicked={() => track(EVENTS.ad_click, { format: 'banner', placement })}
-      />
+    <View style={[styles.slot, { height: shown ? height : 0, paddingBottom: shown ? bottomInset : 0 }]} testID={slotTestID} accessibilityElementsHidden={!shown}>
+      <View style={[styles.clip, size && { width: size.w, height: size.h }]} testID={`${slotTestID}-clip`}>
+        <BannerAd
+          unitId={adUnitId(placement)}
+          size={inline ? BannerAdSize.INLINE_ADAPTIVE_BANNER : BannerAdSize.ANCHORED_ADAPTIVE_BANNER} /* ANCHORED_*: 타입은 deprecated 표기지만 지원 사이즈 — LARGE_*는 112dp 컨테이너에 50dp 크리에이티브가 레터박스(QA 4R) */
+          maxHeight={inline ? INLINE_MAX_HEIGHT : undefined}
+          onAdLoaded={(d) => { if (__DEV__) console.log('[ads] banner loaded', placement, JSON.stringify(d)); setSize({ w: Math.ceil(d.width), h: Math.ceil(d.height) }); }}
+          onSizeChange={(d) => { if (__DEV__) console.log('[ads] banner sizeChange(ignored)', placement, JSON.stringify(d)); }}
+          onAdFailedToLoad={() => setSize(null)} // no-fill·네트워크 = 접힘
+          onAdImpression={() => track(EVENTS.ad_impression, { format: 'banner', placement })}
+          onAdClicked={() => track(EVENTS.ad_click, { format: 'banner', placement })}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   slot: { width: '100%', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', boxSizing: 'content-box' },
+  clip: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, // 로드 전 = 크기 미지정(슬롯 높이 0이 숨김)
 });

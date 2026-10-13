@@ -148,7 +148,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ad_impression: ['format', 'placement', 'surface'],
   ad_click: ['format', 'placement', 'surface'],
   ad_reward_earned: ['placement', 'remaining', 'surface'],
-  ad_consent_result: ['status'],
+  ad_consent_result: ['status', 'can_request_ads', 'gdpr_applies', 'personalized_consent'], // KB-774: boolean만(TC 문자열 원문 금지)
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open

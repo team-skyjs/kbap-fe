@@ -112,6 +112,21 @@ describe('배너', () => {
     expect(mockAds.banners.length).toBe(mounted);
   });
 
+  it('KB-774: 클립 상자 = 수신 크리에이티브 폭·높이(네이티브 뷰 남는 자리 검은 띠 차단) · 실패 = 크기 해제', async () => {
+    await act(async () => { await initAds(); });
+    const t = render(<AdBanner placement="search_banner" bottomInset={34} />);
+    const clip = () => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner-clip' && typeof x.type === 'string')[0];
+    const flat = () => Object.assign({}, ...(clip().props.style as object[]).filter(Boolean)) as Record<string, unknown>;
+    expect(flat().width).toBeUndefined();
+    const props = mockAds.banners.at(-1)!;
+    act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 320, height: 100 }); });
+    expect(flat()).toMatchObject({ width: 320, height: 100, overflow: 'hidden' });
+    act(() => { (props.onSizeChange as (d: { width: number; height: number }) => void)({ width: 402, height: 120 }); }); // 컨테이너 크기는 무시
+    expect(flat()).toMatchObject({ width: 320, height: 100 });
+    act(() => { (props.onAdFailedToLoad as (e: Error) => void)(new Error('no-fill')); });
+    expect(flat().width).toBeUndefined();
+  });
+
   it('플래그 banner=false / enabled=false = 렌더 0', async () => {
     await act(async () => { await initAds(); });
     adsFlags.banner = false;

@@ -62,6 +62,18 @@ async function requestTracking(): Promise<void> {
   }
 }
 
+/** KB-774: GDPR 적용 여부 + 맞춤 광고 동의(TCF 목적 1·3·4 전부 = Google 맞춤 광고 요건). 비적용·조회 실패 = gdpr_applies만/빈 객체 */
+export async function consentChoice(consent: Pick<AdsSdk['AdsConsent'], 'getGdprApplies' | 'getPurposeConsents'>): Promise<{ gdpr_applies?: boolean; personalized_consent?: boolean }> {
+  try {
+    const gdpr = await consent.getGdprApplies();
+    if (!gdpr) return { gdpr_applies: false };
+    const p = await consent.getPurposeConsents(); // '1'/'0' 문자열, 인덱스 0 = 목적 1
+    return { gdpr_applies: true, personalized_consent: p[0] === '1' && p[2] === '1' && p[3] === '1' };
+  } catch {
+    return {};
+  }
+}
+
 /** 앱 기동 1회(탭 진입·스플래시 뒤). 두 번째 호출부터 no-op */
 export async function initAds(): Promise<void> {
   if (state !== 'idle') return;
@@ -90,7 +102,8 @@ export async function initAds(): Promise<void> {
     const info = await AdsConsent.getConsentInfo();
     if (debug) console.log('[ads] consent info', JSON.stringify(info));
     privacyOptionsRequired = info.privacyOptionsRequirementStatus === AdsConsentPrivacyOptionsRequirementStatus.REQUIRED;
-    track(EVENTS.ad_consent_result, { status: String(info.status).toLowerCase() }); // unknown|required|not_required|obtained
+    // KB-774: status=obtained는 "선택을 받았다"일 뿐 — [Do not consent]도 obtained. 동의 여부는 TCF 목적 동의(boolean만, TC 문자열 원문 미전송)
+    track(EVENTS.ad_consent_result, { status: String(info.status).toLowerCase(), can_request_ads: !!info.canRequestAds, ...(await consentChoice(AdsConsent)) }); // unknown|required|not_required|obtained
     if (!info.canRequestAds) { setState('unavailable'); return; }
     await requestTracking();
     const ads = sdk.default();
