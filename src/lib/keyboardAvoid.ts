@@ -17,8 +17,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const KAV_BEHAVIOR = 'padding' as const;
 
-/** 창 아래 끝 → 키보드 위 끝(px). 키보드 없으면 0. */
-export function useKeyboardLift(): number {
+/** 안드 키보드 내리기 바(KeyboardDismissBar AndroidBar) 높이 — 바 스타일이 이 값으로 고정된다. 바를 띄우는 Modal 시트는 리프트에 이만큼 더한다
+ *  (KB-768 QA: 신고 Submit 아래 ~20px가 바에 잘림). iOS는 액세서리 바가 키보드 프레임 안이라 더하지 않는다. */
+export const DISMISS_BAR_H = 40;
+
+/** 창 아래 끝 → 키보드 위 끝(px). 키보드 없으면 0. `dismissBar` = 그 위에 안드 내리기 바가 뜨는 자리(Modal 시트) — 바 높이까지 비운다. */
+export function useKeyboardLift({ dismissBar = false }: { dismissBar?: boolean } = {}): number {
   const insets = useSafeAreaInsets();
   const [h, setH] = React.useState(0);
   React.useEffect(() => {
@@ -34,5 +38,5 @@ export function useKeyboardLift(): number {
     };
   }, []);
   if (h <= 0) return 0;
-  return Platform.OS === 'android' ? h + insets.bottom : h;
+  return Platform.OS === 'android' ? h + insets.bottom + (dismissBar ? DISMISS_BAR_H : 0) : h;
 }

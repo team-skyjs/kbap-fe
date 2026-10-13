@@ -399,7 +399,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
    *  'filter'(P-229 음식 필터) = 자격 무관 — 전체 활성 유지(스캔 우선 정렬만 공유). */
   context?: 'compose' | 'review' | 'filter';
 }) {
-  const kbLift = useKeyboardLift(); // KB-768
+  const kbLift = useKeyboardLift({ dismissBar: true }); // KB-768: 키보드·내리기 바 위로
   const bottomInset = useBottomInset();
   const router = useRouter();
   const [q, setQ] = React.useState('');
