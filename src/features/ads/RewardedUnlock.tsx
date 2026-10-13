@@ -58,8 +58,12 @@ export function UnlockActions({ onWriteReview, onUnlocked, onClose, reviewTestID
   );
 }
 
-function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; initial: { count: number; forUnlock: number; remaining: number }; onUnlocked: () => void; onClose: () => void }) {
-  const { t } = useTranslation();
+export type RewardedSurface = 'dialog';
+type RewardsInit = { count: number; forUnlock: number; remaining: number };
+
+/** 보상형 광고 해제의 상태 기계(KB-739 → KB-765 추출) — 표면(스캔 화면 버튼 · 홈 한도 다이얼로그 타일)이 같은 로직을 그린다.
+ *  로드마다 새 rewardKey · EARNED_REWARD 1회 자동 신고 · 네트워크 실패 = 같은 키 보관·재신고 · 429 상한 · 400 닫기 · 서버 응답만으로 n/3. */
+function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => void, onClose: () => void, surface?: RewardedSurface) {
   const unitId = adUnitId(PLACEMENT);
   const ad = sdk.useRewardedAd({ adUnitId: unitId, autoLoad: true });
   const { status, earnedReward, show, load, impression, clicked } = ad;
@@ -71,10 +75,12 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
   const claimedRef = React.useRef<string | null>(null);
   // 네트워크 실패로 신고 못 한 보상 — 같은 키로 재신고할 때까지 보관(새 로드가 와도 덮지 않는다)
   const pendingRef = React.useRef<{ rewardKey: string; adUnitId: string } | null>(null);
+  // KB-765: 표면 구분(홈 다이얼로그 = 'dialog') — 기존 이벤트 이름 그대로, 속성만 추가. 스캔 화면 버튼은 미지정(종전과 동일)
+  const surfaceProp = surface ? { surface } : {};
 
   React.useEffect(() => { if (status === 'loaded' && !pendingRef.current) keyRef.current = Crypto.randomUUID(); }, [status]); // 로드마다 새 키(멱등 단위) — 미신고 보상이 있으면 유지
-  React.useEffect(() => { if (impression) track(EVENTS.ad_impression, { format: 'rewarded', placement: PLACEMENT }); }, [impression]);
-  React.useEffect(() => { if (clicked) track(EVENTS.ad_click, { format: 'rewarded', placement: PLACEMENT }); }, [clicked]);
+  React.useEffect(() => { if (impression) track(EVENTS.ad_impression, { format: 'rewarded', placement: PLACEMENT, ...surfaceProp }); }, [impression]); // eslint-disable-line react-hooks/exhaustive-deps -- 노출 1회(표면은 마운트 동안 불변)
+  React.useEffect(() => { if (clicked) track(EVENTS.ad_click, { format: 'rewarded', placement: PLACEMENT, ...surfaceProp }); }, [clicked]); // eslint-disable-line react-hooks/exhaustive-deps -- 위와 같음
 
   const { mutateAsync } = claim;
   const submitClaim = React.useCallback((input: { rewardKey: string; adUnitId: string }) => {
@@ -84,7 +90,7 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
         pendingRef.current = null;
         setFailure(null);
         setRemaining(r.remainingForUnlock);
-        track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock });
+        track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock, ...(surface ? { surface } : {}) });
         if (__DEV__) console.log('[ads] reward claim ok', JSON.stringify(r)); // KB-759 원인 특정(개발 번들만)
         if (r.scanUnlocked) onUnlocked();
       })
@@ -95,7 +101,7 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
         if (kind !== 'network') pendingRef.current = null; // 400·429 = 재신고 대상 아님
         if (kind === 'rejected') onClose();
       });
-  }, [mutateAsync, onUnlocked, onClose]);
+  }, [mutateAsync, onUnlocked, onClose, surface]);
   React.useEffect(() => {
     const key = keyRef.current;
     if (!earnedReward || !key || claimedRef.current === key) return;
@@ -109,24 +115,47 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
   const busy = status === 'showing' || claim.isPending;
   const loaded = status === 'loaded';
   const retryPending = failure === 'network'; // 보상은 받았는데 신고만 못 함 — 버튼 = 같은 키 재신고(광고 다시 안 봄)
-  const watched = Math.max(0, initial.forUnlock - remaining);
+  const pressable = retryPending || (loaded && failure !== 'limit');
+  const press = () => {
+    if (retryPending && pendingRef.current) { void submitClaim(pendingRef.current); return; }
+    if (loaded && failure !== 'limit') show();
+  };
+  return { watched: Math.max(0, initial.forUnlock - remaining), total: initial.forUnlock, busy, loaded, retryPending, pressable, failure, press };
+}
+
+function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; initial: RewardsInit; onUnlocked: () => void; onClose: () => void }) {
+  const { t } = useTranslation();
+  const r = useRewardedUnlock(sdk, initial, onUnlocked, onClose);
   return (
     <View style={styles.rewarded}>
-      <Btn
-        variant={retryPending || (loaded && failure !== 'limit') ? 'secondary' : 'off'}
-        busy={busy}
-        onPress={() => {
-          if (retryPending && pendingRef.current) { void submitClaim(pendingRef.current); return; }
-          if (loaded && failure !== 'limit') show();
-        }}
-        testID="quota-watch-ad"
-      >
-        {retryPending ? t('common.tryAgain') : t('ads.watchToUnlock', { n: watched, total: initial.forUnlock })}
+      <Btn variant={r.pressable ? 'secondary' : 'off'} busy={r.busy} onPress={r.press} testID="quota-watch-ad">
+        {r.retryPending ? t('common.tryAgain') : t('ads.watchToUnlock', { n: r.watched, total: r.total })}
       </Btn>
-      {failure === 'limit' && <Text style={styles.note} testID="quota-ad-limit">{t('ads.rewardLimit')}</Text>}
-      {failure === 'network' && <Text style={styles.note} testID="quota-ad-error">{t('ads.rewardError')}</Text>}
+      {r.failure === 'limit' && <Text style={styles.note} testID="quota-ad-limit">{t('ads.rewardLimit')}</Text>}
+      {r.failure === 'network' && <Text style={styles.note} testID="quota-ad-error">{t('ads.rewardError')}</Text>}
     </View>
   );
+}
+
+/** 홈 한도 다이얼로그(KB-765)의 광고 타일 원천 — 보일 때만 sdk·rewards를 준다(조건 = useCanWatchAd와 동일). */
+export function useAdUnlockSource(): { sdk: AdsSdk; rewards: RewardsInit } | null {
+  const isGuest = useIsGuest();
+  const { data: me } = useMe();
+  const sdk = useAdsSdk();
+  const rewards = me?.adRewards ?? null;
+  return FLAGS.ads.rewarded && sdk && !isGuest && rewards != null && rewards.remaining > 0 ? { sdk, rewards } : null;
+}
+
+/** KB-765 광고 타일 — 상태 기계는 버튼과 같고 그리는 것만 다르다. children = 타일 표면(호출측 스타일), note = 상한·실패 안내 슬롯 */
+export function RewardedTile({ sdk, initial, onUnlocked, onClose, render }: {
+  sdk: AdsSdk;
+  initial: RewardsInit;
+  onUnlocked: () => void;
+  onClose: () => void;
+  render: (r: ReturnType<typeof useRewardedUnlock>) => React.ReactNode;
+}) {
+  const r = useRewardedUnlock(sdk, initial, onUnlocked, onClose, 'dialog');
+  return <>{render(r)}</>;
 }
 
 const styles = StyleSheet.create({

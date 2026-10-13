@@ -139,9 +139,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   order_done: ['item_count'],
   review_prompt_view: ['trigger'], // scan|review|order (KB-730)
   // KB-739: format = banner|native|interstitial|rewarded · placement = lib/ads/units AdPlacement · status = UMP 상태 소문자|error
-  ad_impression: ['format', 'placement'],
-  ad_click: ['format', 'placement'],
-  ad_reward_earned: ['placement', 'remaining'],
+  // KB-765: surface = 'dialog'(홈 스캔 한도 다이얼로그에서 난 보상형 이벤트 — 스캔 화면은 미지정)
+  ad_impression: ['format', 'placement', 'surface'],
+  ad_click: ['format', 'placement', 'surface'],
+  ad_reward_earned: ['placement', 'remaining', 'surface'],
   ad_consent_result: ['status'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered

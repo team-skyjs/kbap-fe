@@ -12,10 +12,7 @@ import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Txt as Text } from '@/components/Txt';
-import { Btn } from '@/components/Btn';
-import { UnlockActions, useCanWatchAd } from '@/features/ads/RewardedUnlock';
-import { SheetShell } from '@/components/SheetShell';
+import { QuotaDialog } from './QuotaDialog';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -25,7 +22,6 @@ import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
-import { color as C, font, type as type_ } from '@/lib/theme';
 import type { ScanQuota } from '@/lib/api/types';
 
 export interface QuotaBadgeModel {
@@ -121,7 +117,6 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   };
 
   const [sheet, setSheet] = React.useState(false);
-  const canWatchAd = useCanWatchAd(); // KB-759 /review 4: 본문이 광고를 약속하는 건 광고 버튼이 실제로 있을 때만
   // Codex #221 P2: 시트가 열린 채 노출 자격이 사라지면(세션 만료·게스트·해금·null) 닫는다 — 렌더 중 동기화.
   // 주 경로(시트 → 리뷰 쓰기 → 해금)에선 해금 시점에 시트가 이미 닫혀 있어 축하와 순서가 엮이지 않는다
   // (리뷰 쓰기 탭이 먼저 시트를 닫고, 픽커 예약(pickerAfterDismiss)은 사용자가 고른 것이라 그대로 둔다).
@@ -254,19 +249,21 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
           </GestureDetector>
         )}
       </View>
-      <SheetShell visible={sheet} onClose={() => setSheet(false)} onDismiss={onSheetDismiss}>
-        <View style={styles.copy}>
-          <Text style={styles.title} testID="quota-sheet-title">{left}</Text>
-          <Text style={styles.body}>{t(canWatchAd ? 'scan.quotaBodyUnlock' : 'scan.quotaBody')}</Text>
-        </View>
-        <View style={styles.actions}>
-          {/* KB-759(예진 실기 b43): 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3)를 **남은 무료 횟수와 무관하게 상시**(KB-739 /review 5의 "0일 때만" 분기 폐기).
-              광고 버튼 자체의 조건(회원·서버 adRewards·광고 준비됨)은 UnlockActions 안에 그대로 — 게스트·구서버·미준비면 리뷰 버튼만.
-              해제(서버 scanUnlocked) = 시트 닫기 — 프로필 재조회로 뱃지 모델이 null이 되며 사라진다 */}
-          <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
-          <Btn variant="ghost" onPress={() => setSheet(false)} testID="quota-sheet-later">{t('scan.later')}</Btn>
-        </View>
-      </SheetShell>
+      {/* KB-765(D-23 E2): 바텀시트 → 가운데 다이얼로그 — 표면만 교체. 2택(리뷰 / 광고 n/3)은 남은 무료 횟수와 무관하게 상시(KB-759),
+          광고 타일 조건(회원·서버 adRewards·광고 준비됨)·해제 뒤 닫힘(프로필 재조회로 뱃지 모델 null)·리뷰 픽커 순서(iOS onDismiss)는 그대로 */}
+      {/* 상시 마운트(바텀시트와 같음) — 자격이 사라지면 위 렌더 중 동기화가 sheet를 끄고 visible=false로 닫힌다(Codex #221 P2) */}
+      {(
+        <QuotaDialog
+          visible={sheet}
+          value={shown?.value ?? 0}
+          state={shown?.state ?? 'empty'}
+          title={left}
+          onWriteReview={openPicker}
+          onUnlocked={() => setSheet(false)}
+          onClose={() => setSheet(false)}
+          onDismiss={onSheetDismiss}
+        />
+      )}
       {/* 열릴 때만 마운트(스캔 잠금 화면과 같은 방식) — 홈에서 픽커 검색 훅이 상시 돌지 않게 */}
       {picker && (
       <TagPickerSheet
@@ -289,8 +286,4 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
 
 const styles = StyleSheet.create({
   float: { position: 'absolute', left: 0, top: 0 }, // 위치 = translate(px, py) — 기본 = 오른쪽 BADGE_RIGHT·측정 앵커
-  copy: { gap: 8 },
-  title: { ...type_.sectionTitle, fontFamily: font.bodyBold, color: C.ink },
-  body: { ...type_.body, fontFamily: font.body, color: C.ink2 },
-  actions: { gap: 8 },
 });
