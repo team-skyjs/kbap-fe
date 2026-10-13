@@ -15,7 +15,7 @@ import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
@@ -231,7 +231,8 @@ const styles = StyleSheet.create({
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   flipCard: {
-    backgroundColor: primaryTint,
+    // KB-780: 불투명 합성색 — 반투명(primaryTint) + elevation(sh1)이면 Android가 그림자를 카드 아래 전체에 그려 회색 띠로 비쳤다(iOS는 무관)
+    backgroundColor: primaryTintSolid,
     borderWidth: 1.5,
     borderColor: 'rgba(226,88,12,0.22)',
     borderRadius: radius.lg,
