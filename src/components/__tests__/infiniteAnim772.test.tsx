@@ -9,7 +9,7 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { Shimmer } from '@/components/Skeleton';
 import { Spinner } from '@/components/Spinner';
 
-const mockAnim = { useAnimatedStyle: jest.fn(() => ({})), withRepeat: jest.fn((v: unknown) => v) };
+const mockAnim = { useAnimatedStyle: jest.fn(() => ({})), withRepeat: jest.fn((v: unknown) => v), reduced: false };
 jest.mock('react-native-reanimated', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock 팩토리는 import 불가(호이스팅)
   const { View } = require('react-native');
@@ -19,6 +19,7 @@ jest.mock('react-native-reanimated', () => {
     useSharedValue: (v: unknown) => ({ value: v }),
     get useAnimatedStyle() { return mockAnim.useAnimatedStyle; },
     get withRepeat() { return mockAnim.withRepeat; },
+    useReducedMotion: () => mockAnim.reduced,
     withTiming: (v: unknown) => v,
     interpolate: () => 0,
     Easing: { linear: 0 },
@@ -36,6 +37,7 @@ it.each([
   ['Spinner', () => <Spinner />],
 ])('%s — CSS 무한 애니메이션, useAnimatedStyle 매퍼·withRepeat 0', (_name, el) => {
   jest.clearAllMocks();
+  mockAnim.reduced = false;
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(el());
@@ -43,5 +45,19 @@ it.each([
   expect(infiniteNodes(tree).length).toBeGreaterThan(0);
   expect(mockAnim.useAnimatedStyle).not.toHaveBeenCalled();
   expect(mockAnim.withRepeat).not.toHaveBeenCalled();
+  act(() => tree.unmount());
+});
+
+it.each([
+  ['Shimmer', () => <Shimmer style={{ width: 100, height: 20 }} />],
+  ['Spinner', () => <Spinner />],
+])('%s — 동작 줄이기 = 애니메이션 스타일 없음(정적)', (_name, el) => {
+  mockAnim.reduced = true;
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(el());
+  });
+  expect(infiniteNodes(tree)).toHaveLength(0);
+  expect(tree.toJSON()).not.toBeNull();
   act(() => tree.unmount());
 });

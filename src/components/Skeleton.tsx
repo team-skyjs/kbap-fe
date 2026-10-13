@@ -4,7 +4,7 @@
  */
 import * as React from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { color as C, radius } from '@/lib/theme';
 
 // KB-772: 무한 스윕은 CSS 애니메이션(네이티브 레지스트리 구동) — useAnimatedStyle 매퍼는 언마운트 직후에도 몇 프레임
@@ -16,11 +16,14 @@ const SWEEP = {
 };
 
 function Shimmer({ style }: { style?: ViewStyle | ViewStyle[] }) {
+  const reduceMotion = useReducedMotion(); // 동작 줄이기 = 스윕 없이 고정 블록
   return (
     <View style={[styles.block, style]}>
-      <Animated.View
-        style={[styles.sweep, { animationName: SWEEP, animationDuration: '1400ms', animationTimingFunction: 'linear', animationIterationCount: 'infinite' }]}
-      />
+      {!reduceMotion && (
+        <Animated.View
+          style={[styles.sweep, { animationName: SWEEP, animationDuration: '1400ms', animationTimingFunction: 'linear', animationIterationCount: 'infinite' }]}
+        />
+      )}
     </View>
   );
 }
