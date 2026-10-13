@@ -14,6 +14,7 @@ import { CountdownBadge } from '@/components/CountdownBadge';
 import { IconEdit } from '@/components/icons';
 import { RewardedTile, useAdUnlockSource } from '@/features/ads/RewardedUnlock';
 import { color as C, font } from '@/lib/theme';
+import { EVENTS, track } from '@/lib/analytics';
 
 const DIM = 'rgba(28, 30, 33, 0.5)'; // gray-1000(ink) 50%
 const PRIMARY_12 = 'rgba(255, 113, 52, 0.12)'; // primary(#FF7134) 12% — 타일 아이콘 원
@@ -69,11 +70,14 @@ export function QuotaDialog({ visible, value, state, title, onWriteReview, onUnl
 }) {
   const { t } = useTranslation();
   const ad = useAdUnlockSource();
+  // KB-765 계측: 선택 = review | ad | later(뒤로가기·딤 탭도 later — 같은 닫기)
+  const select = (option: 'review' | 'ad' | 'later') => track(EVENTS.scan_quota_dialog_select, { option });
+  const later = () => { select('later'); onClose(); };
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose} onDismiss={onDismiss}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={later} onDismiss={onDismiss}>
       <View style={styles.backdrop}>
         {/* 딤 탭 = 나중에 */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessible={false} testID="quota-dialog-dim" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={later} accessible={false} testID="quota-dialog-dim" />
         <View style={styles.card} accessibilityViewIsModal testID="quota-dialog">
           <ScrollView bounces={false} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <View style={styles.hero}>
@@ -86,7 +90,7 @@ export function QuotaDialog({ visible, value, state, title, onWriteReview, onUnl
                 icon={<IconEdit size={22} color={C.primary} />}
                 title={t('scan.quotaTileReviewTitle')}
                 sub={t('scan.quotaTileReviewSub')}
-                onPress={onWriteReview}
+                onPress={() => { select('review'); onWriteReview(); }}
                 a11y={`${t('scan.quotaTileReviewTitle')}. ${t('scan.quotaTileReviewSub')}`}
                 testID="quota-sheet-review"
               />
@@ -103,7 +107,7 @@ export function QuotaDialog({ visible, value, state, title, onWriteReview, onUnl
                         icon={<PlayGlyph />}
                         title={t('scan.quotaTileAdTitle', { count: r.total })}
                         sub={sub}
-                        onPress={r.press}
+                        onPress={() => { select('ad'); r.press(); }}
                         disabled={!r.pressable}
                         busy={r.busy || (!r.loaded && !r.retryPending && r.failure !== 'limit')}
                         a11y={`${t('scan.quotaTileAdTitle', { count: r.total })}. ${sub}`}
@@ -122,7 +126,7 @@ export function QuotaDialog({ visible, value, state, title, onWriteReview, onUnl
                 />
               )}
             </View>
-            <Pressable onPress={onClose} accessibilityRole="button" style={styles.later} hitSlop={4} testID="quota-sheet-later">
+            <Pressable onPress={later} accessibilityRole="button" style={styles.later} hitSlop={4} testID="quota-sheet-later">
               <Text style={styles.laterText}>{t('scan.later')}</Text>
             </Pressable>
           </ScrollView>

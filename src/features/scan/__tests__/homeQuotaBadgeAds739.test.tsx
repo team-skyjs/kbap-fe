@@ -70,6 +70,8 @@ type MockR = { watched: number; total: number; busy: boolean; loaded: boolean; r
 let mockAdSource: { sdk: object; rewards: object } | null = { sdk: {}, rewards: { count: 1, forUnlock: 3, remaining: 2 } };
 const mockR: MockR = { watched: 1, total: 3, busy: false, loaded: true, retryPending: false, pressable: true, failure: null, press: jest.fn() };
 const mockTileProps = jest.fn();
+const mockTrack = jest.fn();
+jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
 jest.mock('@/features/ads/RewardedUnlock', () => ({
   useAdUnlockSource: () => mockAdSource,
   RewardedTile: (p: { render: (r: MockR) => unknown; onUnlocked: () => void; onClose: () => void }) => { mockTileProps(p); return p.render(mockR); },
@@ -213,4 +215,27 @@ it('KB-765: 히어로 = 홈 불꽃 뱃지 0회 회색 그대로(CountdownBadge �
   expect(hero.props.accessibilityRole).toBeUndefined();
   expect(hero.props.accessible).toBe(false);
   expect(hostId(t, 'flame-empty').length).toBeGreaterThan(0);
+});
+
+it('KB-765 계측: 열기 = scan_quota_dialog_view {remaining} 1회 · 선택 = scan_quota_dialog_select {option: review|ad|later} · 뒤로가기·딤 = later', () => {
+  mockQuota = Q(2);
+  const t = render();
+  open(t);
+  expect(mockTrack).toHaveBeenCalledWith('scan_quota_dialog_view', { remaining: 2 });
+  expect(mockTrack.mock.calls.filter(([e]) => e === 'scan_quota_dialog_view')).toHaveLength(1);
+  act(() => tiles(t, 'quota-watch-ad')[0].props.onPress());
+  expect(mockTrack).toHaveBeenLastCalledWith('scan_quota_dialog_select', { option: 'ad' });
+  act(() => tiles(t, 'quota-sheet-review')[0].props.onPress());
+  expect(mockTrack).toHaveBeenLastCalledWith('scan_quota_dialog_select', { option: 'review' });
+  for (const close of [
+    () => byId(t, 'quota-sheet-later')[0].props.onPress(),
+    () => t.root.findAll((n) => typeof n.props?.onRequestClose === 'function')[0].props.onRequestClose(),
+    () => byId(t, 'quota-dialog-dim')[0].props.onPress(),
+  ]) {
+    open(t);
+    mockTrack.mockClear();
+    act(close);
+    expect(mockTrack).toHaveBeenCalledWith('scan_quota_dialog_select', { option: 'later' });
+    expect(dialogVisible(t)).toBe(false);
+  }
 });

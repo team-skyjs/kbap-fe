@@ -22,6 +22,7 @@ import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
+import { EVENTS, track } from '@/lib/analytics';
 import type { ScanQuota } from '@/lib/api/types';
 
 export interface QuotaBadgeModel {
@@ -225,6 +226,8 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   const openSheet = () => {
     if (justDragged.get()) return;
     setSheet(true);
+    // KB-765: 다이얼로그 노출 — 여는 탭에서 1회(이벤트 핸들러 — effect 아님). remaining = 그 순간 남은 무료 횟수
+    track(EVENTS.scan_quota_dialog_view, { remaining: model?.value ?? 0 });
   };
 
   const shown = celebrating?.model ?? model;

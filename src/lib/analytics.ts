@@ -74,6 +74,9 @@ export const EVENTS = {
   order_done: 'order_done',
   owner_ask_open: 'owner_ask_open',
   scan_permission: 'scan_permission',
+  // KB-765: 홈 스캔 한도 다이얼로그 — 노출(남은 무료 횟수) · 선택(review|ad|later — 뒤로가기·딤 탭 = later)
+  scan_quota_dialog_view: 'scan_quota_dialog_view',
+  scan_quota_dialog_select: 'scan_quota_dialog_select',
   error_state_view: 'error_state_view',
   review_helpful_toggle: 'review_helpful_toggle',
   review_translate_toggle: 'review_translate_toggle',
@@ -122,6 +125,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   auth_guest_enter: [],
   app_opened: [],
   scan_start: ['source'],
+  scan_quota_dialog_view: ['remaining'],
+  scan_quota_dialog_select: ['option'],
   scan_result_item_tap: ['risk'],
   order_card_open: ['item_count', 'has_avoids'],
   // P-214 🔒: keyword = **카탈로그 매칭 시에만**(호출처 searchKeywordProps가 판정) —
