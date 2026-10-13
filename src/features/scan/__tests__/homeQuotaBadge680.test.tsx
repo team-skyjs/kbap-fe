@@ -508,7 +508,7 @@ describe('프레임 불변 · 홈 하단 미겹침', () => {
   });
 });
 
-describe('플래그 countdownBadge = 진단 채널만(teamtest on / production·preview off)', () => {
+describe('플래그 countdownBadge = 전 채널 on (KB-763 10/13 production 활성 — 이전: 진단 채널만)', () => {
   const flagOn = (channel: string | null) => {
     let v: unknown;
     jest.isolateModules(() => {
@@ -518,8 +518,8 @@ describe('플래그 countdownBadge = 진단 채널만(teamtest on / production·
     return v;
   };
   it.each([
-    ['production', false],
-    ['preview', false],
+    ['production', true],
+    ['preview', true],
     ['teamtest', true],
     ['teamtest-prod', true],
     [null, true], // 로컬·jest
