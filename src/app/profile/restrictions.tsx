@@ -11,7 +11,8 @@
 // 훅 순서가 실제로 바뀐다(`useSubmitGuard`가 조건부 호출됨) — 잠재 버그다.
 // 소진 발주(KB-603~) 1순위 후보. 코드 변경은 이번 PR 범위 밖이라 표시만 남긴다.
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +87,7 @@ export default function EditRestrictions() {
 
   return (
     // KB-700(#228 공부 지적 — 전수 스캔이 못 본 화면): IngredientFilter 검색 입력 중 하단 Save 바가 키보드 뒤 → 같은 iOS KAV(padding)
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="restrictions-kav">
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="restrictions-kav">
       <SubHeader
         title={t('restrictionsEdit.title')}
         onBack={() => router.back()}

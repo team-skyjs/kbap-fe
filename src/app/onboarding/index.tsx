@@ -14,7 +14,8 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -332,8 +333,8 @@ export default function Onboarding() {
 
   return (
     // KB-700(하단 고정 바 + 입력창 전수): 국가·기피 재료 검색 입력 중 하단 CTA 푸터가 키보드 뒤에 남지 않게 — 리뷰 작성·프로필 편집과 같은
-    // iOS KeyboardAvoidingView(padding). 푸터는 이미 ScrollView의 형제라 키보드 위로 따라 올라온다. 안드는 adjustResize라 그대로.
-    <KeyboardAvoidingView style={[styles.app, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="ob-kav">
+    // KeyboardAvoidingView(padding, KB-768부터 두 플랫폼 — 안드 edge-to-edge는 adjustResize가 창을 안 줄인다). 푸터는 ScrollView의 형제라 키보드 위로 따라 올라온다.
+    <KeyboardAvoidingView style={[styles.app, { paddingTop: insets.top }]} behavior={KAV_BEHAVIOR} testID="ob-kav">
       {/* P-133: 국적 스텝 = 헤더·검색 고정, 리스트만 스크롤(시안 kbap-ob4) — 자체 스크롤 구조 */}
       {step === 'nationality' ? (
         <View style={[styles.body, { flex: 1 }]}>
