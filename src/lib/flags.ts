@@ -147,11 +147,11 @@ export const FLAGS = {
    */
   communityTranslateEnabled: false,
   /**
-   * 홈 카운트다운 뱃지(불꽃 — 무료 스캔 N회 남음) 프로토타입 (P-432/KB-680) — 시안 D-21 확정 전이라
-   * **진단 채널만**(teamtest·teamtest-prod·dev·로컬). production·preview off = 홈 무변.
-   * 명시 허용(isDiagnosticChannel) — `!isProdChannel()` negate는 preview까지 연다(channel-gate 원칙).
+   * 홈 카운트다운 뱃지(불꽃 — 무료 스캔 N회 남음) (P-432/KB-680) — **10/13 production 활성(KB-763, 예진 승인)**: 전제였던
+   * prod 서버 보상형 API(KB-740)는 release 26.10.2로 배포됨. 이전엔 시안 D-21 확정 전이라 진단 채널만(DIAGNOSTIC_CHANNEL).
+   * 채널 무관 true — 문제 시 이 한 줄을 DIAGNOSTIC_CHANNEL로 되돌리면 production·preview에서만 사라진다.
    */
-  countdownBadge: DIAGNOSTIC_CHANNEL,
+  countdownBadge: true,
   /**
    * 리뷰 본문 번역 버튼 (P-431/KB-679) — 서버 KB-678(`POST /api/translations`) 배포 전 노출 = 항상 실패하는 버튼.
    * **진단 채널만**(teamtest·teamtest-prod·dev·로컬, 명시 허용) → prod 서버 배포 확인 후 `true`(Codex #220 P1).
