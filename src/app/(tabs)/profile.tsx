@@ -12,7 +12,7 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SAFETY_NOTICE_URL } from '@/lib/legalText';
-import { openLanguageSettings, openWebPage } from '@/lib/openExternal';
+import { openAppSettings, openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -159,7 +159,7 @@ export default function Profile() {
             </View>
             <View style={styles.menuList}>
               {canOpenLangSettings && (
-                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openLanguageSettings()} />
+                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
               {/* KB-497: 알림은 회원 전용 — 게스트 분기에 알림 설정 진입점 없음(라우트는 AuthGateSheet 이중 방어) */}
               {/* P-394(KB-586): 문의는 게스트도 가능(설치 ID 식별) — 로그인 게이트 없음 */}
@@ -329,7 +329,7 @@ export default function Profile() {
                 <MenuRow testID="profile-menu-diet" label={t('profile.dietTitle')} chevron onPress={() => router.push('/profile/diet' as Href)} />
               )}
               {canOpenLangSettings && (
-                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openLanguageSettings()} />
+                <MenuRow testID="profile-menu-language" label={t('profile.language')} value={LANG_ENDONYM[lang] ?? lang} onPress={() => void openAppSettings()} />
               )}
               {/* P-192: 알림 설정 — 푸시 플래그 종속 그대로 */}
               {FLAGS.pushEnabled && (

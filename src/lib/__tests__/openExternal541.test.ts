@@ -66,8 +66,7 @@ it('적용 4표면 = openWebPage 경유 · Linking.openURL 잔재 0', () => {
   const profile = read('src/app/(tabs)/profile.tsx');
   expect((profile.match(/openWebPage\(SAFETY_NOTICE_URL\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
   // P-381: OS 설정도 공용 헬퍼 경유(웹뷰로 여는 것은 여전히 금지 — 설정은 링크가 아니다)
-  // KB-776: Language 행 = openLanguageSettings(Android 33+ 앱 언어 인텐트 → 실패·그 외 openAppSettings 폴백 — openLanguageSettings776)
-  expect((profile.match(/openLanguageSettings\(\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
+  expect((profile.match(/openAppSettings\(\)/g) ?? []).length).toBe(2); // 게스트·회원 두 분기
   expect(read('src/lib/legalText.ts')).toContain("export const SAFETY_NOTICE_URL = 'https://team-skyjs.github.io/kbap-legal/safety.html'");
 });
 

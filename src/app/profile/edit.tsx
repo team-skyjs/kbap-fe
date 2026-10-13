@@ -30,7 +30,7 @@ import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter';
 import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 import { currencyForCountry, currencyUpdateFor, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
-import { openLanguageSettings } from '@/lib/openExternal';
+import { openAppSettings } from '@/lib/openExternal';
 import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 
 export default function EditProfile() {
@@ -242,7 +242,7 @@ export default function EditProfile() {
         {canOpenLangSettings && (
           <View style={styles.fieldset}>
             <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')}</Text>
-            <Pressable style={styles.field} onPress={() => void openLanguageSettings()}>
+            <Pressable style={styles.field} onPress={() => void openAppSettings()}>
               <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
               <IconChevron size={16} color={C.ink3} />
             </Pressable>
