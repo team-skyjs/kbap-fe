@@ -278,6 +278,8 @@
     "retakeBody": "Kết quả hiện tại sẽ bị xóa.",
     "retakeBodyWithCart": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
     "retakeConfirm": "Quét lại",
+    "leaveTitle": "Rời khỏi kết quả quét?",
+    "leaveConfirm": "Rời đi",
     "loadingPhoto": "Đang tải ảnh…",
     "errNotMenu": "Ảnh này không giống thực đơn. Hãy chụp lại nhé.",
     "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",

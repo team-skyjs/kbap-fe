@@ -278,6 +278,8 @@
     "retakeBody": "지금 결과가 사라져요.",
     "retakeBodyWithCart": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
     "retakeConfirm": "다시 스캔",
+    "leaveTitle": "스캔 결과에서 나갈까요?",
+    "leaveConfirm": "나가기",
     "loadingPhoto": "사진 불러오는 중…",
     "errNotMenu": "메뉴판으로 보이지 않아요. 다시 찍어 주세요.",
     "errBusy": "메뉴를 읽지 못했어요. 잠시 후 다시 시도해 주세요.",

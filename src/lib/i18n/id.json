@@ -278,6 +278,8 @@
     "retakeBody": "Hasil saat ini akan dihapus.",
     "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
     "retakeConfirm": "Pindai ulang",
+    "leaveTitle": "Keluar dari hasil pindai?",
+    "leaveConfirm": "Keluar",
     "loadingPhoto": "Memuat foto…",
     "errNotMenu": "Ini sepertinya bukan menu. Coba foto ulang.",
     "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",

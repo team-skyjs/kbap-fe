@@ -278,6 +278,8 @@
     "retakeBody": "Se descartarán los resultados actuales.",
     "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
     "retakeConfirm": "Reescanear",
+    "leaveTitle": "¿Salir de los resultados?",
+    "leaveConfirm": "Salir",
     "loadingPhoto": "Cargando foto…",
     "errNotMenu": "Esto no parece un menú. Vuelve a tomar la foto.",
     "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
