@@ -6,9 +6,13 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { api } from '@/lib/api/client'; // jest.mock 호이스팅 — 아래 팩토리의 mock
+import { FoodExplorer } from '@/features/food/FoodExplorer';
+import { FoodGridCard } from '@/features/food/FoodCards';
+import type { FoodCard } from '@/lib/api/types';
 
 jest.mock('react-native-reanimated', () => {
-  const { View, ScrollView, FlatList } = require('react-native');
+  const { View, ScrollView, FlatList } = jest.requireActual('react-native');
   return {
     __esModule: true,
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
@@ -26,7 +30,7 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 jest.mock('expo-image', () => {
-  const { View } = require('react-native');
+  const { View } = jest.requireActual('react-native');
   return { Image: View };
 });
 jest.mock('expo-router', () => ({
@@ -42,7 +46,7 @@ jest.mock('react-i18next', () => ({
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+  jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k, getFixedT: () => (k: string) => k } }));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
@@ -52,14 +56,6 @@ jest.mock('@/lib/api/client', () => ({
   api: { get: jest.fn(), post: jest.fn().mockResolvedValue(undefined), patch: jest.fn().mockResolvedValue(undefined) },
   apiLang: () => 'en',
 }));
-
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { api } = require('@/lib/api/client');
-/* eslint-enable @typescript-eslint/no-require-imports */
-
-import { FoodExplorer } from '@/features/food/FoodExplorer';
-import { FoodGridCard } from '@/features/food/FoodCards';
-import type { FoodCard } from '@/lib/api/types';
 
 const WIRE = (id: number, bookmarked?: boolean) => ({
   foodId: id, name: `F${id}`, koreanName: `푸${id}`, imageRef: null, spiciness: 0, overallRiskStatus: 'SAFE', bookmarked,
