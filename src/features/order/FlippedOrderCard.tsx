@@ -15,7 +15,7 @@ import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, radius, shadow } from '@/lib/theme';
+import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
@@ -124,8 +124,9 @@ export function FlippedOrderCard({
   );
 
   return (
-    /* P-149 ①: 화면 전체 스크롤 — 항목 多(실증 14개)면 카드가 세로 성장해도
-       내역·미러·합계·Done 전부 도달. 짧은 내용은 flexGrow로 Done 하단 유지. */
+    /* KB-780(QA Android 9개·회피 4개 재현): 합계·Done이 긴 카드에서 스크롤 아래로 밀려 안 보였다(스크롤 표시 꺼짐 — 단서 없음).
+       → 본문(카드·미러)만 스크롤, **예상 합계 + Done은 ScrollView 밖 하단 고정 바**(두 플랫폼 — 하단 인셋은 화면 루트 paddingBottom). */
+    <View style={styles.root}>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} testID="order-scroll">
       {/* 뒤집힌 카드 — 크게 중앙(시안), 맞은편에서 정방향으로 읽힌다 */}
       <View style={styles.flipCard} testID="flip-card">
@@ -148,7 +149,10 @@ export function FlippedOrderCard({
         )}
         <Text style={styles.mirrorCaption}>{t('order.mirrorTitle')}</Text>
       </View>
+    </ScrollView>
 
+      {/* KB-780: 하단 고정 바 — 예상 합계 + Done(스크롤과 무관하게 항상 보임) */}
+      <View style={styles.footBar} testID="order-foot-bar">
       {totalKrw > 0 && (
         <View style={styles.totalRow} testID="est-total">
           <Text style={styles.totalLabel}>{t('order.estimatedTotal')}</Text>
@@ -176,6 +180,7 @@ export function FlippedOrderCard({
         >
           {t('order.done')}
         </Btn>
+      </View>
       </View>
 
       <OrderDoneInterstitial controllerRef={interstitial} />
@@ -218,12 +223,15 @@ export function FlippedOrderCard({
           </Pressable>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { flexGrow: 1, paddingHorizontal: 18, paddingBottom: 8 },
+  root: { flex: 1 },
+  body: { flexGrow: 1, paddingHorizontal: 18, paddingBottom: 16 },
+  // KB-780: 하단 고정 바 — 본문과 같은 좌우 여백, 위 경계 헤어라인(스크롤 본문과 구분)
+  footBar: { paddingHorizontal: 18, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.hair, backgroundColor: '#fff' },
   // P-162 완료 모달 (scan.tsx confirm 문법과 동일 수치)
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 28 },
   confirmCard: { alignSelf: 'stretch', backgroundColor: C.card, borderRadius: 26, padding: 22, gap: 8, ...shadow.shPop },
@@ -231,7 +239,8 @@ const styles = StyleSheet.create({
   confirmBody: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19, textAlign: 'center' },
   doneCheck: { alignSelf: 'center', width: 52, height: 52, borderRadius: 26, backgroundColor: primaryTint, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   flipCard: {
-    backgroundColor: primaryTint,
+    // KB-780: 불투명 합성색 — 반투명(primaryTint) + elevation(sh1)이면 Android가 그림자를 카드 아래 전체에 그려 회색 띠로 비쳤다(iOS는 무관)
+    backgroundColor: primaryTintSolid,
     borderWidth: 1.5,
     borderColor: 'rgba(226,88,12,0.22)',
     borderRadius: radius.lg,
@@ -284,12 +293,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 10,
     paddingHorizontal: 4,
   },
   totalLabel: { fontFamily: font.bodyBold, fontSize: 13, color: C.ink2 },
   totalVal: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, fontVariant: ['tabular-nums'] },
-  foot: { marginTop: 'auto', paddingTop: 12 },
+  foot: { paddingTop: 10 },
   zoomContent: { flexGrow: 1, justifyContent: 'center', padding: 28, paddingTop: 64 },
   zoomClose: { position: 'absolute', top: 54, right: 18, width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' },
   zoomFull: { flex: 1, backgroundColor: '#fff' },
