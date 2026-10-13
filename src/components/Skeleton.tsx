@@ -4,27 +4,23 @@
  */
 import * as React from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  interpolate,
-} from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { color as C, radius } from '@/lib/theme';
 
+// KB-772: 무한 스윕은 CSS 애니메이션(네이티브 레지스트리 구동) — useAnimatedStyle 매퍼는 언마운트 직후에도 몇 프레임
+// 갱신을 남겨 Android에서 죽은 뷰 태그가 동기 갱신 목록에 ~2초 잔존했고, SVG 첫 그리기 이벤트마다 태그별 예외+스택 로그가
+// 쏟아져 ANR(정렬 전환 = 카드 일괄 언마운트 + 새 SVG 다수). CSS 경로는 그 목록(performNonLayoutOperations)을 타지 않는다.
+const SWEEP = {
+  from: { transform: [{ translateX: -220 }] },
+  to: { transform: [{ translateX: 220 }] },
+};
+
 function Shimmer({ style }: { style?: ViewStyle | ViewStyle[] }) {
-  const p = useSharedValue(0);
-  React.useEffect(() => {
-    p.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.linear }), -1, false);
-  }, [p]);
-  const sweep = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(p.value, [0, 1], [-220, 220]) }],
-  }));
   return (
     <View style={[styles.block, style]}>
-      <Animated.View style={[styles.sweep, sweep]} />
+      <Animated.View
+        style={[styles.sweep, { animationName: SWEEP, animationDuration: '1400ms', animationTimingFunction: 'linear', animationIterationCount: 'infinite' }]}
+      />
     </View>
   );
 }

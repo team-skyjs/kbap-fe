@@ -170,7 +170,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
             "top": 0,
             "width": 120,
           },
-          {},
+          {
+            "animationDuration": "1400ms",
+            "animationIterationCount": "infinite",
+            "animationName": {
+              "from": {
+                "transform": [
+                  {
+                    "translateX": -220,
+                  },
+                ],
+              },
+              "to": {
+                "transform": [
+                  {
+                    "translateX": 220,
+                  },
+                ],
+              },
+            },
+            "animationTimingFunction": "linear",
+          },
         ]
       }
     />
@@ -215,7 +235,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -257,7 +297,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -292,7 +352,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -370,7 +450,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                     "top": 0,
                     "width": 120,
                   },
-                  {},
+                  {
+                    "animationDuration": "1400ms",
+                    "animationIterationCount": "infinite",
+                    "animationName": {
+                      "from": {
+                        "transform": [
+                          {
+                            "translateX": -220,
+                          },
+                        ],
+                      },
+                      "to": {
+                        "transform": [
+                          {
+                            "translateX": 220,
+                          },
+                        ],
+                      },
+                    },
+                    "animationTimingFunction": "linear",
+                  },
                 ]
               }
             />
@@ -403,7 +503,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                     "top": 0,
                     "width": 120,
                   },
-                  {},
+                  {
+                    "animationDuration": "1400ms",
+                    "animationIterationCount": "infinite",
+                    "animationName": {
+                      "from": {
+                        "transform": [
+                          {
+                            "translateX": -220,
+                          },
+                        ],
+                      },
+                      "to": {
+                        "transform": [
+                          {
+                            "translateX": 220,
+                          },
+                        ],
+                      },
+                    },
+                    "animationTimingFunction": "linear",
+                  },
                 ]
               }
             />
@@ -436,7 +556,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                     "top": 0,
                     "width": 120,
                   },
-                  {},
+                  {
+                    "animationDuration": "1400ms",
+                    "animationIterationCount": "infinite",
+                    "animationName": {
+                      "from": {
+                        "transform": [
+                          {
+                            "translateX": -220,
+                          },
+                        ],
+                      },
+                      "to": {
+                        "transform": [
+                          {
+                            "translateX": 220,
+                          },
+                        ],
+                      },
+                    },
+                    "animationTimingFunction": "linear",
+                  },
                 ]
               }
             />
@@ -469,7 +609,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                     "top": 0,
                     "width": 120,
                   },
-                  {},
+                  {
+                    "animationDuration": "1400ms",
+                    "animationIterationCount": "infinite",
+                    "animationName": {
+                      "from": {
+                        "transform": [
+                          {
+                            "translateX": -220,
+                          },
+                        ],
+                      },
+                      "to": {
+                        "transform": [
+                          {
+                            "translateX": 220,
+                          },
+                        ],
+                      },
+                    },
+                    "animationTimingFunction": "linear",
+                  },
                 ]
               }
             />
@@ -502,7 +662,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                     "top": 0,
                     "width": 120,
                   },
-                  {},
+                  {
+                    "animationDuration": "1400ms",
+                    "animationIterationCount": "infinite",
+                    "animationName": {
+                      "from": {
+                        "transform": [
+                          {
+                            "translateX": -220,
+                          },
+                        ],
+                      },
+                      "to": {
+                        "transform": [
+                          {
+                            "translateX": 220,
+                          },
+                        ],
+                      },
+                    },
+                    "animationTimingFunction": "linear",
+                  },
                 ]
               }
             />
@@ -535,7 +715,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                     "top": 0,
                     "width": 120,
                   },
-                  {},
+                  {
+                    "animationDuration": "1400ms",
+                    "animationIterationCount": "infinite",
+                    "animationName": {
+                      "from": {
+                        "transform": [
+                          {
+                            "translateX": -220,
+                          },
+                        ],
+                      },
+                      "to": {
+                        "transform": [
+                          {
+                            "translateX": 220,
+                          },
+                        ],
+                      },
+                    },
+                    "animationTimingFunction": "linear",
+                  },
                 ]
               }
             />
@@ -571,7 +771,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -606,7 +826,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -641,7 +881,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -676,7 +936,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -710,7 +990,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -753,7 +1053,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -786,7 +1106,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -819,7 +1159,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -852,7 +1212,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -903,7 +1283,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -945,7 +1345,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -987,7 +1407,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1029,7 +1469,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1071,7 +1531,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1113,7 +1593,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1155,7 +1655,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1197,7 +1717,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1239,7 +1779,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                   "top": 0,
                   "width": 120,
                 },
-                {},
+                {
+                  "animationDuration": "1400ms",
+                  "animationIterationCount": "infinite",
+                  "animationName": {
+                    "from": {
+                      "transform": [
+                        {
+                          "translateX": -220,
+                        },
+                      ],
+                    },
+                    "to": {
+                      "transform": [
+                        {
+                          "translateX": 220,
+                        },
+                      ],
+                    },
+                  },
+                  "animationTimingFunction": "linear",
+                },
               ]
             }
           />
@@ -1274,7 +1834,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -1307,7 +1887,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -1340,7 +1940,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -1404,7 +2024,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1439,7 +2079,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1474,7 +2134,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1509,7 +2189,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1551,7 +2251,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1586,7 +2306,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1621,7 +2361,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1656,7 +2416,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1700,7 +2480,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -1743,7 +2543,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1778,7 +2598,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1813,7 +2653,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1848,7 +2708,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1883,7 +2763,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -1927,7 +2827,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -1970,7 +2890,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2005,7 +2945,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2040,7 +3000,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2075,7 +3055,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2110,7 +3110,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2154,7 +3174,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -2197,7 +3237,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2232,7 +3292,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2267,7 +3347,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2302,7 +3402,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2337,7 +3457,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2381,7 +3521,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -2424,7 +3584,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2459,7 +3639,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2494,7 +3694,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2529,7 +3749,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2564,7 +3804,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2616,7 +3876,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2651,7 +3931,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2684,7 +3984,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2729,7 +4049,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2764,7 +4104,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2799,7 +4159,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2834,7 +4214,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2869,7 +4269,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2904,7 +4324,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -2940,7 +4380,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -2975,7 +4435,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -3010,7 +4490,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -3052,7 +4552,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3085,7 +4605,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3118,7 +4658,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3161,7 +4721,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3194,7 +4774,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3227,7 +4827,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3279,7 +4899,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3314,7 +4954,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3347,7 +5007,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3392,7 +5072,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3427,7 +5127,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3462,7 +5182,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3497,7 +5237,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3532,7 +5292,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3567,7 +5347,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3603,7 +5403,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -3638,7 +5458,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -3673,7 +5513,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -3715,7 +5575,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3748,7 +5628,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3781,7 +5681,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3824,7 +5744,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3857,7 +5797,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3890,7 +5850,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3942,7 +5922,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -3977,7 +5977,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4010,7 +6030,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4055,7 +6095,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4090,7 +6150,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4125,7 +6205,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4160,7 +6260,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4195,7 +6315,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4230,7 +6370,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4266,7 +6426,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -4301,7 +6481,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -4336,7 +6536,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
               "top": 0,
               "width": 120,
             },
-            {},
+            {
+              "animationDuration": "1400ms",
+              "animationIterationCount": "infinite",
+              "animationName": {
+                "from": {
+                  "transform": [
+                    {
+                      "translateX": -220,
+                    },
+                  ],
+                },
+                "to": {
+                  "transform": [
+                    {
+                      "translateX": 220,
+                    },
+                  ],
+                },
+              },
+              "animationTimingFunction": "linear",
+            },
           ]
         }
       />
@@ -4378,7 +6598,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4411,7 +6651,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4444,7 +6704,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4487,7 +6767,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4520,7 +6820,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
@@ -4553,7 +6873,27 @@ exports[`③ 스켈레톤 — 홈·상세 구조 스냅샷 + 톤(#F2F3F6 이미�
                 "top": 0,
                 "width": 120,
               },
-              {},
+              {
+                "animationDuration": "1400ms",
+                "animationIterationCount": "infinite",
+                "animationName": {
+                  "from": {
+                    "transform": [
+                      {
+                        "translateX": -220,
+                      },
+                    ],
+                  },
+                  "to": {
+                    "transform": [
+                      {
+                        "translateX": 220,
+                      },
+                    ],
+                  },
+                },
+                "animationTimingFunction": "linear",
+              },
             ]
           }
         />
