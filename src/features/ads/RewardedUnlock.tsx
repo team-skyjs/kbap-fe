@@ -26,6 +26,16 @@ import { adUnitId } from '@/lib/ads/units';
 
 const PLACEMENT = 'scan_unlock_rewarded';
 
+/** 광고 보고 풀기 버튼이 실제로 보이는 조건 — 본문 문구(quotaBodyUnlock vs quotaBody)도 같은 판정을 쓴다(KB-759 /review 4: 버튼 없는데 "광고 보기" 약속 금지).
+ *  게스트·구서버(adRewards null)·SDK 미준비·남은 0 = false. 429 상한은 버튼이 남아 "오늘은 여기까지" 안내를 띄우므로 여기서 가리지 않는다. */
+export function useCanWatchAd(): boolean {
+  const isGuest = useIsGuest();
+  const { data: me } = useMe();
+  const sdk = useAdsSdk();
+  const rewards = me?.adRewards ?? null;
+  return FLAGS.ads.rewarded && !!sdk && !isGuest && rewards != null && rewards.remaining > 0;
+}
+
 export function UnlockActions({ onWriteReview, onUnlocked, onClose, reviewTestID = 'quota-sheet-review' }: {
   onWriteReview: () => void;
   /** 서버가 scanUnlocked=true를 돌려줬다 — 호출측이 시트를 닫고 스캔을 허용 */
@@ -75,10 +85,12 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
         setFailure(null);
         setRemaining(r.remainingForUnlock);
         track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock });
+        if (__DEV__) console.log('[ads] reward claim ok', JSON.stringify(r)); // KB-759 원인 특정(개발 번들만)
         if (r.scanUnlocked) onUnlocked();
       })
       .catch((e: unknown) => {
         const kind = classifyAdRewardError(e);
+        if (__DEV__) console.log('[ads] reward claim fail', kind, String((e as { code?: string })?.code ?? e));
         setFailure(kind);
         if (kind !== 'network') pendingRef.current = null; // 400·429 = 재신고 대상 아님
         if (kind === 'rejected') onClose();

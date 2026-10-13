@@ -14,7 +14,7 @@ import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
-import { UnlockActions } from '@/features/ads/RewardedUnlock';
+import { UnlockActions, useCanWatchAd } from '@/features/ads/RewardedUnlock';
 import { SheetShell } from '@/components/SheetShell';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -121,6 +121,7 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   };
 
   const [sheet, setSheet] = React.useState(false);
+  const canWatchAd = useCanWatchAd(); // KB-759 /review 4: 본문이 광고를 약속하는 건 광고 버튼이 실제로 있을 때만
   // Codex #221 P2: 시트가 열린 채 노출 자격이 사라지면(세션 만료·게스트·해금·null) 닫는다 — 렌더 중 동기화.
   // 주 경로(시트 → 리뷰 쓰기 → 해금)에선 해금 시점에 시트가 이미 닫혀 있어 축하와 순서가 엮이지 않는다
   // (리뷰 쓰기 탭이 먼저 시트를 닫고, 픽커 예약(pickerAfterDismiss)은 사용자가 고른 것이라 그대로 둔다).
@@ -256,16 +257,13 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
       <SheetShell visible={sheet} onClose={() => setSheet(false)} onDismiss={onSheetDismiss}>
         <View style={styles.copy}>
           <Text style={styles.title} testID="quota-sheet-title">{left}</Text>
-          <Text style={styles.body}>{t('scan.quotaBody')}</Text>
+          <Text style={styles.body}>{t(canWatchAd ? 'scan.quotaBodyUnlock' : 'scan.quotaBody')}</Text>
         </View>
         <View style={styles.actions}>
-          {/* KB-739 ⑥: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3)는 **남은 무료 횟수 0일 때만**(/review 5), 남아 있으면 기존 안내 그대로. 광고 버튼은 회원·서버 adRewards·광고 준비됨 조건 추가.
+          {/* KB-759(예진 실기 b43): 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3)를 **남은 무료 횟수와 무관하게 상시**(KB-739 /review 5의 "0일 때만" 분기 폐기).
+              광고 버튼 자체의 조건(회원·서버 adRewards·광고 준비됨)은 UnlockActions 안에 그대로 — 게스트·구서버·미준비면 리뷰 버튼만.
               해제(서버 scanUnlocked) = 시트 닫기 — 프로필 재조회로 뱃지 모델이 null이 되며 사라진다 */}
-          {shown && shown.value === 0 ? (
-            <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
-          ) : (
-            <Btn onPress={openPicker} testID="quota-sheet-review">{t('scan.quotaCta')}</Btn>
-          )}
+          <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
           <Btn variant="ghost" onPress={() => setSheet(false)} testID="quota-sheet-later">{t('scan.later')}</Btn>
         </View>
       </SheetShell>
