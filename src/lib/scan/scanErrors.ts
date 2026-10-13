@@ -20,7 +20,7 @@ export const ERROR_MSG: Record<ErrorStage, string> = {
   busy: 'scan.errBusy', // SCAN-002(503) — 인식 실패: 사용자 잘못 아님(잠시 후 재시도)
   upload: 'scan.errUpload', // SCAN-001(400) — 이미지 접근 불가: 업로드부터 재시도
   outage: 'scan.errOutage', // SCAN-006(503) — P-250 개정: 가이드 문구 취지 i18n("횟수 차감 없이 다시 시도")
-  quota: 'scan.quotaBody', // SCAN-004(403, P-250) — 무료 3회 소진: 리뷰 작성 유도(티켓 발급·스캔 양쪽 동일 분기)
+  quota: 'scan.quotaBodyUnlock', // SCAN-004(403, P-250) — 무료 3회 소진: 리뷰 쓰기 / 광고 보고 풀기 양쪽 안내(KB-759 — 화면에 두 CTA가 있다; 피드 넛지는 리뷰 전용 quotaBody 유지)
   processing: 'scan.errProcessing', // SCAN-005(409, P-250) — 같은 티켓 처리 중: 새 티켓 자동 재발급 금지
 };
 

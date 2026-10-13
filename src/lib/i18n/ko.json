@@ -286,6 +286,7 @@
     "errProcessing": "이미 스캔을 처리하고 있어요. 잠시만 기다려 주세요.",
     "quotaTitle": "무료 스캔을 모두 사용했어요",
     "quotaBody": "리뷰를 1건 작성하면 스캔을 무제한으로 이용할 수 있어요.",
+    "quotaBodyUnlock": "리뷰를 1건 작성하거나 광고를 보면 스캔을 무제한으로 이용할 수 있어요.",
     "quotaCta": "리뷰 작성하기",
     "freeLeft_one": "무료 스캔이 {{count}}회 남았어요",
     "freeLeft_other": "무료 스캔이 {{count}}회 남았어요",

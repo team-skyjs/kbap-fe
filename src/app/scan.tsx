@@ -221,8 +221,11 @@ export default function Scan() {
     if (!scanV2Enabled()) return;
     const quota = quotaRef.current;
     lockFromProfile();
+    // KB-759 원인 특정(개발 번들만): 해제 응답 뒤 카메라 미복귀 — 잠금 상태·티켓 결과를 Metro 로그로
+    if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, quota }));
     try {
       preTicket.current = await issueScanTicket();
+      if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (quotaLockRef.current) {
         // 리뷰 작성 후 복귀(시나리오 C) — 해금 반영해 카메라 복원(잠금이었을 때만)
@@ -232,6 +235,7 @@ export default function Scan() {
       }
     } catch (e) {
       const code = (e as { code?: string })?.code;
+      if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e));
       if (code === 'SCAN-004') {
         preTicket.current = null;
         if (!canLockQuota()) return;
@@ -886,7 +890,7 @@ export default function Scan() {
           {stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight(새 티켓) → 카메라 복원(시나리오 C와 같은 경로) */}
-              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => void preflight()} onClose={() => router.back()} />
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (__DEV__) console.log('[scan] ad unlock → preflight'); void preflight(); }} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (

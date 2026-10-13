@@ -286,6 +286,7 @@
     "errProcessing": "Este escaneo ya se está procesando. Espera un momento.",
     "quotaTitle": "Has usado todos tus escaneos gratis",
     "quotaBody": "Escribe una reseña para desbloquear escaneos ilimitados.",
+    "quotaBodyUnlock": "Escribe una reseña o mira unos anuncios para desbloquear el escaneo ilimitado.",
     "quotaCta": "Escribir reseña",
     "freeLeft_one": "Te queda {{count}} escaneo gratis",
     "freeLeft_other": "Te quedan {{count}} escaneos gratis",

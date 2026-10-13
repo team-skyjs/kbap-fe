@@ -256,16 +256,13 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
       <SheetShell visible={sheet} onClose={() => setSheet(false)} onDismiss={onSheetDismiss}>
         <View style={styles.copy}>
           <Text style={styles.title} testID="quota-sheet-title">{left}</Text>
-          <Text style={styles.body}>{t('scan.quotaBody')}</Text>
+          <Text style={styles.body}>{t('scan.quotaBodyUnlock')}</Text>
         </View>
         <View style={styles.actions}>
-          {/* KB-739 ⑥: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3)는 **남은 무료 횟수 0일 때만**(/review 5), 남아 있으면 기존 안내 그대로. 광고 버튼은 회원·서버 adRewards·광고 준비됨 조건 추가.
+          {/* KB-759(예진 실기 b43): 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3)를 **남은 무료 횟수와 무관하게 상시**(KB-739 /review 5의 "0일 때만" 분기 폐기).
+              광고 버튼 자체의 조건(회원·서버 adRewards·광고 준비됨)은 UnlockActions 안에 그대로 — 게스트·구서버·미준비면 리뷰 버튼만.
               해제(서버 scanUnlocked) = 시트 닫기 — 프로필 재조회로 뱃지 모델이 null이 되며 사라진다 */}
-          {shown && shown.value === 0 ? (
-            <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
-          ) : (
-            <Btn onPress={openPicker} testID="quota-sheet-review">{t('scan.quotaCta')}</Btn>
-          )}
+          <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
           <Btn variant="ghost" onPress={() => setSheet(false)} testID="quota-sheet-later">{t('scan.later')}</Btn>
         </View>
       </SheetShell>

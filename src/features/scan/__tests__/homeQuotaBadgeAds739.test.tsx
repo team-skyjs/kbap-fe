@@ -1,6 +1,6 @@
 /* eslint-disable import/first, @typescript-eslint/no-require-imports --
    jest 구조상 불가피: 대상의 import는 jest.mock 선언 **뒤**여야 목이 걸린다(팩토리 호이스팅). 레포 관례 동일. */
-/** KB-739 /review 5 — 제한 도달 시트의 2택(UnlockActions)은 **남은 무료 횟수 0일 때만**, 남아 있으면 기존 리뷰 CTA만.
+/** KB-739 /review 5 → **KB-759 뒤집음**: 제한 도달 시트의 2택(UnlockActions)은 남은 무료 횟수와 무관하게 상시(1~3이어도 리뷰 쓰기 + 광고 보고 풀기).
  * 하네스는 homeQuotaBadge680과 동일(아래 목 블록 복제).
  *
  * 원본 주석:
@@ -80,14 +80,18 @@ const render = () => { let t!: ReactTestRenderer; act(() => { t = renderer.creat
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type !== 'string');
 const hostId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
 
-it('남은 무료 횟수 2 = 시트에 리뷰 CTA만(광고 2택 0)', () => {
-  mockQuota = Q(2);
-  const t = render();
-  act(() => byId(t, 'countdown-badge')[0].props.onPress());
-  expect(t.root.findByProps({ testID: 'quota-sheet-title' }).props.children).toBe('scan.freeLeft:2');
-  expect(hostId(t, 'quota-sheet-review')).toHaveLength(1);
-  expect(hostId(t, 'unlock-actions')).toHaveLength(0);
-  expect(mockUnlock).not.toHaveBeenCalled();
+it('KB-759: 남은 무료 횟수 1~3 = 시트에 2택(UnlockActions) 상시 · 본문 = 리뷰/광고 양쪽 안내 키', () => {
+  for (const n of [1, 2, 3]) {
+    mockQuota = Q(n);
+    const t = render();
+    act(() => byId(t, 'countdown-badge')[0].props.onPress());
+    expect(t.root.findByProps({ testID: 'quota-sheet-title' }).props.children).toBe(`scan.freeLeft:${n}`);
+    expect(hostId(t, 'unlock-actions')).toHaveLength(1);
+    expect(mockUnlock).toHaveBeenCalled();
+    expect(JSON.stringify(t.toJSON())).toContain('scan.quotaBodyUnlock');
+    expect(JSON.stringify(t.toJSON())).not.toContain('"scan.quotaBody"');
+    act(() => t.unmount()); trees.pop();
+  }
 });
 
 it('남은 무료 횟수 0 = 2택(UnlockActions) · 해제 콜백 = 시트 닫기', () => {

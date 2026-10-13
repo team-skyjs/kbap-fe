@@ -75,10 +75,12 @@ function RewardedButton({ sdk, initial, onUnlocked, onClose }: { sdk: AdsSdk; in
         setFailure(null);
         setRemaining(r.remainingForUnlock);
         track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock });
+        if (__DEV__) console.log('[ads] reward claim ok', JSON.stringify(r)); // KB-759 원인 특정(개발 번들만)
         if (r.scanUnlocked) onUnlocked();
       })
       .catch((e: unknown) => {
         const kind = classifyAdRewardError(e);
+        if (__DEV__) console.log('[ads] reward claim fail', kind, String((e as { code?: string })?.code ?? e));
         setFailure(kind);
         if (kind !== 'network') pendingRef.current = null; // 400·429 = 재신고 대상 아님
         if (kind === 'rejected') onClose();

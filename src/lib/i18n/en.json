@@ -282,6 +282,7 @@
     "errProcessing": "This scan is already being processed. Please wait a moment.",
     "quotaTitle": "You've used all your free scans",
     "quotaBody": "Write a review to unlock unlimited scanning.",
+    "quotaBodyUnlock": "Write a review or watch a few ads to unlock unlimited scanning.",
     "quotaCta": "Write a review",
     "freeLeft_one": "{{count}} free scan left",
     "freeLeft_other": "{{count}} free scans left",
