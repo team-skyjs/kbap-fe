@@ -239,3 +239,19 @@ it('KB-765 계측: 열기 = scan_quota_dialog_view {remaining} 1회 · 선택 = 
     expect(dialogVisible(t)).toBe(false);
   }
 });
+
+it('KB-765 QA: 다이얼로그가 열린 동안 홈 뱃지는 숨김(투명도 0 · 터치 0 · 마운트·자리 유지) — 히어로와 불꽃 두 개 방지 · 닫으면 다시 보임', () => {
+  mockQuota = Q(0);
+  const t = render();
+  const badge = () => hostId(t, 'home-quota-badge')[0];
+  // 다이얼로그 숨김 = 단독 { opacity: 0 } 스타일 조각(배치 전 투명은 floatStyle 몫 — #234, 별개)
+  const hidden = () => [badge().props.style].flat(Infinity as 1).some((x) => !!x && typeof x === 'object' && Object.keys(x).length === 1 && (x as { opacity?: number }).opacity === 0);
+  expect(hidden()).toBe(false);
+  open(t);
+  expect(badge()).toBeDefined();
+  expect(hidden()).toBe(true);
+  expect(badge().props.pointerEvents).toBe('none');
+  act(() => byId(t, 'quota-sheet-later')[0].props.onPress());
+  expect(hidden()).toBe(false);
+  expect(badge().props.pointerEvents).toBe('auto');
+});

@@ -239,7 +239,9 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
         {shown && pos != null && (
           <GestureDetector gesture={pan}>
             {/* 그리는 조건 = 저장값 읽기 끝 + 영역 측정 끝(자리 확정). 처음 자리가 공유값에 실리기 전 프레임은 투명(placed) — (0,0)·다른 경로의 자리를 그리지 않는다 */}
-            <Animated.View style={[styles.float, floatStyle]} testID="home-quota-badge">
+            {/* KB-765 QA: 다이얼로그가 열린 동안 홈 뱃지는 숨김 — iOS Modal(별도 창)의 딤 아래에 있지만 0회 회색 불꽃이 딤에 어두워져
+                딤 위에 뜬 것처럼 보였고, 히어로와 불꽃이 두 개가 됐다. 마운트·자리 유지(투명도만) — 닫으면 그 자리 그대로 */}
+            <Animated.View style={[styles.float, floatStyle, sheet && styles.hiddenWhileDialog]} testID="home-quota-badge" pointerEvents={sheet ? 'none' : 'auto'}>
               <CountdownBadge
                 value={shown.value}
                 state={shown.state}
@@ -288,5 +290,6 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
 }
 
 const styles = StyleSheet.create({
+  hiddenWhileDialog: { opacity: 0 }, // KB-765: 다이얼로그 열린 동안(히어로가 같은 불꽃)
   float: { position: 'absolute', left: 0, top: 0 }, // 위치 = translate(px, py) — 기본 = 오른쪽 BADGE_RIGHT·측정 앵커
 });
