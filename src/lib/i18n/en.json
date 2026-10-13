@@ -12,7 +12,10 @@
     "leaveTitle": "Leave without saving?",
     "leaveBody": "Your draft won’t be saved.",
     "keepWriting": "Keep writing",
-    "discard": "Discard"
+    "discard": "Discard",
+    "leaveEditTitle": "Leave without saving?",
+    "leaveEditBody": "Your changes won’t be saved.",
+    "keepEditing": "Keep editing"
   },
   "intro": {
     "skip": "Skip",
@@ -413,7 +416,7 @@
   "restrictionsEdit": {
     "title": "Edit restrictions",
     "save": "Save restrictions",
-    "notice": "All safety warnings use this list. Changes apply right away.",
+    "notice": "All safety warnings use this list. Tap Save to apply your changes.",
     "avoidNone": "Nothing avoided yet",
     "tapToRemove": "tap × to remove",
     "searchPlaceholder": "Search ingredients…",

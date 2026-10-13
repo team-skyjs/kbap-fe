@@ -16,7 +16,10 @@
     "leaveTitle": "不保存就离开吗？",
     "leaveBody": "草稿不会被保存。",
     "keepWriting": "继续写",
-    "discard": "离开"
+    "discard": "离开",
+    "leaveEditTitle": "不保存就离开吗？",
+    "leaveEditBody": "你的更改不会被保存。",
+    "keepEditing": "继续编辑"
   },
   "intro": {
     "skip": "跳过",
@@ -792,7 +795,7 @@
   "restrictionsEdit": {
     "title": "编辑禁忌",
     "save": "保存禁忌",
-    "notice": "这将影响所有安全警告。请保持准确，更改会立即应用于所有菜品。",
+    "notice": "所有安全提示都以此列表为准。点击保存后更改才会生效。",
     "avoidNone": "尚未设置忌口",
     "tapToRemove": "点击 × 移除",
     "searchPlaceholder": "搜索食材…",

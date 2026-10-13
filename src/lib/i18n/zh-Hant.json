@@ -16,7 +16,10 @@
     "leaveTitle": "不儲存就離開嗎？",
     "leaveBody": "草稿不會被儲存。",
     "keepWriting": "繼續寫",
-    "discard": "離開"
+    "discard": "離開",
+    "leaveEditTitle": "不儲存就離開嗎？",
+    "leaveEditBody": "你的變更不會被儲存。",
+    "keepEditing": "繼續編輯"
   },
   "intro": {
     "skip": "略過",
@@ -792,7 +795,7 @@
   "restrictionsEdit": {
     "title": "編輯飲食限制",
     "save": "儲存限制",
-    "notice": "這會影響所有安全警示。請保持正確，變更會立即套用至所有菜色。",
+    "notice": "所有安全提示都以此清單為準。點擊儲存後變更才會生效。",
     "avoidNone": "尚未避開任何項目",
     "tapToRemove": "點 × 移除",
     "searchPlaceholder": "搜尋食材…",

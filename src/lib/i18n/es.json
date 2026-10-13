@@ -16,7 +16,10 @@
     "leaveTitle": "¿Salir sin guardar?",
     "leaveBody": "El borrador no se guardará.",
     "keepWriting": "Seguir escribiendo",
-    "discard": "Descartar"
+    "discard": "Descartar",
+    "leaveEditTitle": "¿Salir sin guardar?",
+    "leaveEditBody": "Tus cambios no se guardarán.",
+    "keepEditing": "Seguir editando"
   },
   "intro": {
     "skip": "Omitir",
@@ -792,7 +795,7 @@
   "restrictionsEdit": {
     "title": "Editar restricciones",
     "save": "Guardar restricciones",
-    "notice": "Esto controla cada alerta de seguridad. Mantenlo preciso: los cambios se aplican a todos los platos de inmediato.",
+    "notice": "Todas las alertas de seguridad usan esta lista. Toca Guardar para aplicar los cambios.",
     "avoidNone": "Nada evitado aún",
     "tapToRemove": "toca × para quitar",
     "searchPlaceholder": "Buscar ingredientes…",

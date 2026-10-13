@@ -16,7 +16,10 @@
     "leaveTitle": "保存せずに戻りますか？",
     "leaveBody": "下書きは保存されません。",
     "keepWriting": "書き続ける",
-    "discard": "破棄する"
+    "discard": "破棄する",
+    "leaveEditTitle": "保存せずに戻りますか？",
+    "leaveEditBody": "変更内容は保存されません。",
+    "keepEditing": "編集を続ける"
   },
   "intro": {
     "skip": "スキップ",
@@ -792,7 +795,7 @@
   "restrictionsEdit": {
     "title": "制限を編集",
     "save": "制限を保存",
-    "notice": "すべての安全警告の基準になります。正確に保ってください。変更はすべての料理に即時反映されます。",
+    "notice": "すべての安全警告の基準になります。変更は保存を押すと反映されます。",
     "avoidNone": "まだ避けるものはありません",
     "tapToRemove": "×をタップで削除",
     "searchPlaceholder": "食材を検索…",

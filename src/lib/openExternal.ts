@@ -17,7 +17,7 @@
  * unhandled rejection으로 흘렀고, 사용자는 눌러도 아무 일이 없었다.
  * → **`void Linking.*` 직접 호출 금지**(글롭 순회 잠금). 실패는 반드시 보이게 한다.
  */
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { showTopToast } from '@/components/topToastStore';
 import i18n from '@/lib/i18n';
@@ -51,6 +51,24 @@ export async function openAppSettings(): Promise<boolean> {
     showTopToast(i18n.t('states.settingsFailed'), { error: true });
     return false;
   }
+}
+
+/**
+ * KB-776(QA B2-5): 언어 설정 열기. Android 13(API 33)+는 시스템 **앱 언어** 화면(APP_LOCALE_SETTINGS)으로 —
+ * 전엔 일반 앱 정보로 가서 언어 행을 다시 찾아야 했다. app.json supportedLocales(localeConfig)로 K-Bap이 목록에 있다.
+ * ponytail: RN sendIntent는 data URI(package:)를 못 실어 K-Bap 상세 직행이 아닌 앱 언어 목록까지 — 직행은 네이티브 모듈
+ * (expo-intent-launcher) 필요 = 지문 회전·재빌드라 보류. 그 미만·iOS·인텐트 실패는 기존 openAppSettings.
+ */
+export async function openLanguageSettings(): Promise<boolean> {
+  if (Platform.OS === 'android' && Number(Platform.Version) >= 33) {
+    try {
+      await Linking.sendIntent('android.settings.APP_LOCALE_SETTINGS');
+      return true;
+    } catch {
+      // 제조사 설정 앱에 화면이 없으면 앱 정보로
+    }
+  }
+  return openAppSettings();
 }
 
 /**
