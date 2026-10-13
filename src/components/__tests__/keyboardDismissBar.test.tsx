@@ -7,6 +7,7 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { Keyboard, Platform } from 'react-native';
 
 import { Input, KeyboardDismissBar, KEYBOARD_ACCESSORY_ID } from '../KeyboardDismissBar';
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) })); // KB-768: useKeyboardLift(내비 바 인셋) — 프로바이더 없는 하네스
 
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -51,17 +52,20 @@ it('iOS modal 변형 — null (루트 액세서리 1개가 모달 포함 전역 
   expect(tree.toJSON()).toBeNull();
 });
 
-it('안드 바 — 키보드 show 때만 표시, hide 시 사라짐', () => {
+it('안드 바 — 키보드 show 때만 표시(KB-768: 키보드 위 끝 = 높이 + 내비 바 인셋에 붙음), hide 시 사라짐', () => {
   Platform.OS = 'android';
-  const listeners: Record<string, () => void> = {};
-  jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: () => void) => {
+  const listeners: Record<string, (e?: { endCoordinates: { height: number } }) => void> = {};
+  jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, cb: (e?: { endCoordinates: { height: number } }) => void) => {
     listeners[ev] = cb;
     return { remove: jest.fn() };
   }) as never);
   const tree = render(<KeyboardDismissBar />);
   expect(tree.toJSON()).toBeNull(); // 키보드 없음 = 바 없음
-  act(() => listeners['keyboardDidShow']());
+  act(() => listeners['keyboardDidShow']({ endCoordinates: { height: 300 } }));
   expect(tree.root.findAll((n) => typeof n.props?.onPress === 'function').length).toBeGreaterThan(0);
+  // edge-to-edge라 창이 안 줄어 bottom 0이면 키보드 뒤 — 키보드 위 끝(300 + 내비 바 인셋 0[목])에 붙는다
+  const wrap = tree.root.findAll((n) => typeof n.type === 'string' && n.props?.pointerEvents === 'box-none')[0];
+  expect(Object.assign({}, ...[wrap.props.style].flat())).toMatchObject({ position: 'absolute', bottom: 300 });
   act(() => listeners['keyboardDidHide']());
   expect(tree.toJSON()).toBeNull();
 });

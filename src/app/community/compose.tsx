@@ -18,6 +18,7 @@ import * as React from 'react';
 import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { RemoteImage } from '@/components/RemoteImage';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KAV_BEHAVIOR, useKeyboardLift } from '@/lib/keyboardAvoid';
 import Animated from 'react-native-reanimated';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';
@@ -157,7 +158,7 @@ export default function CommunityCompose() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR}>
       {/* ── 상단 warm hero (시안 1존) ── */}
       <View style={[styles.hero, { paddingTop: insets.top + 8 }]}>
         <View style={styles.heroBar}>
@@ -398,6 +399,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
    *  'filter'(P-229 음식 필터) = 자격 무관 — 전체 활성 유지(스캔 우선 정렬만 공유). */
   context?: 'compose' | 'review' | 'filter';
 }) {
+  const kbLift = useKeyboardLift(); // KB-768
   const bottomInset = useBottomInset();
   const router = useRouter();
   const [q, setQ] = React.useState('');
@@ -459,7 +461,8 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
       <View style={styles.pickerBackdrop}>
         {/* P-337: 딤 전용 레이어 — 시트 드래그에 비례 페이드(시트 컨테이너에 걸면 시트도 바랜다) */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.pickerDim, swipe.dimStyle]} pointerEvents="none" />
-        <Animated.View style={[styles.pickerSheet, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
+        {/* KB-768: 안드 edge-to-edge라 Modal 창이 안 줄어 하단이 키보드 뒤 — 시트 아래를 키보드 위 끝까지 비운다. iOS 무변 */}
+        <Animated.View style={[styles.pickerSheet, Platform.OS === 'android' && kbLift > 0 && { paddingBottom: kbLift }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
           <GestureDetector gesture={swipe.gesture}>
             <View>{/* P-337 제스처 영역 = 핸들 + 제목 헤더(내부 리스트 스크롤 우선) */}
               <Pressable

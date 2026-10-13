@@ -13,6 +13,7 @@
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { Alert, Platform, ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { TopToastHost } from '@/components/TopToast';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -283,16 +284,16 @@ function ReviewComposeScreen() {
   });
   const ensureCursorVisible = () => {
     if (!bodyFocusedRef.current) return;
-    // KB-700: iOS는 화면이 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
-    // 키보드를 또 빼면 이중 차감. Android(adjustResize)는 기존 계산 유지(Q-87 실기 통과 경로 무변).
-    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
+    // KB-700 → KB-768: 두 플랫폼 모두 KeyboardAvoidingView(padding)라 ScrollView 자체가 키보드 위로 줄어든다(svH = 이미 키보드 제외 높이) —
+    // 키보드를 또 빼면 이중 차감(예전 Android 차감은 adjustResize 전제였고 edge-to-edge로 깨졌다).
+    const visible = svH.current;
     if (visible <= 0 || !blockBottom.current) return;
     const target = blockBottom.current - visible + 16; // 커서 줄이 키보드 위 16pt
     if (target > 0) scrollRef.current?.scrollTo({ y: target, animated: true });
   };
   const ensureTappedLineVisible = () => {
     if (!bodyFocusedRef.current || touchY.current == null) return;
-    const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);
+    const visible = svH.current; // KB-768: 위와 같은 이유로 두 플랫폼 동일
     if (visible <= 0) return;
     const lineTop = blockTop.current + inputTopInBlock.current + touchY.current - 12;
     const lineBottom = lineTop + 32; // 탭한 줄(본문 줄 높이 + 여유)
@@ -382,9 +383,9 @@ function ReviewComposeScreen() {
 
 
   return (
-    // KB-700: iOS = KeyboardAvoidingView(padding) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다(글쓰기 compose와 같은 패턴).
-    // Android = adjustResize라 창 자체가 줄어 불필요(behavior undefined — compose와 동일).
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="review-kav">
+    // KB-700 → KB-768: KeyboardAvoidingView(padding, 두 플랫폼) — 하단 고정 "Post review" 바가 키보드 위로 따라 올라온다.
+    // Android도 edge-to-edge(Expo 57)라 adjustResize가 창을 줄이지 않는다 — lib/keyboardAvoid 참조.
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="review-kav">
       {/* P-168 ③: 헤더 Post 소멸 — 제출 진입점은 하단 "Post review" 단일화 */}
       <SubHeader title={t(editing ? 'editReview.title' : 'review.title')} onBack={() => router.back()} />
       {capNote && <Snackbar icon={null} text={t('review.photoCapNote', { max: REVIEW_MAX_PHOTOS })} />}
