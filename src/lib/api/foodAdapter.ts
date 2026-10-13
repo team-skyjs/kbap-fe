@@ -206,5 +206,6 @@ export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
       rvCount > 0 && typeof wire.review?.averageRating === 'number'
         ? { average: wire.review.averageRating, count: rvCount }
         : NO_RATING,
+    bookmarked: wire.bookmarked === true, // KB-779: 계약 비회원 false·부재 false — 홈 별의 정본
   };
 }

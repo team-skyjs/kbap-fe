@@ -16,6 +16,7 @@ jest.mock('@/lib/api/client', () => ({
     patch: jest.fn().mockResolvedValue(undefined),
   },
   apiLang: () => 'en',
+  foodHiddenReason: () => null, // KB-779 실패 롤백 케이스 — onError가 호출
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -85,4 +86,70 @@ it('저장 상태에서 토글(remove) → PATCH /bookmarks/{id} 발사 (DELETE�
   expect(api.patch).toHaveBeenCalledWith('/bookmarks/7');
   expect(api.post).not.toHaveBeenCalled();
   expect((qc.getQueryData(['food', '7', 'en']) as { bookmarked: boolean }).bookmarked).toBe(false); // 낙관 반전
+});
+
+/* ---- KB-779: 홈 카드 캐시 낙관 반전 — /bookmarks 드레인 없이 별이 즉시 바뀐다 ---- */
+describe('KB-779 홈 캐시(["home", lang]) 낙관 반전', () => {
+  const card = (foodId: string, bookmarked: boolean) => ({ foodId, name: foodId, nameKo: foodId, photoUrl: null, risk: 'safe', overall: { average: null, count: 0 }, bookmarked });
+  const HOME = () => ({
+    authenticated: true,
+    avoided: [],
+    recommended: [card('7', false), card('8', false)],
+    mostReviewed: [card('7', false)],
+    recent: [card('7', false), card('9', true)],
+  });
+  type Home = ReturnType<typeof HOME>;
+  const home = (qc: QueryClient) => qc.getQueryData<Home>(['home', 'en'])!;
+  const wirePages = () => ({
+    pages: [{ items: [{ foodId: 7, name: 'B', koreanName: '비', imageRef: null, spiciness: 0, overallRiskStatus: 'SAFE', bookmarked: false }, { foodId: 8, name: 'C', koreanName: '씨', imageRef: null, spiciness: 0, overallRiskStatus: 'SAFE', bookmarked: false }], hasNext: false }],
+    pageParams: [undefined],
+  });
+  type Pages = ReturnType<typeof wirePages>;
+
+  it('add → recommended·mostReviewed·recent에서 해당 foodId의 bookmarked만 true · 다른 카드 무변', async () => {
+    const qc = client();
+    qc.setQueryData(['home', 'en'], HOME());
+    await runToggle(qc, true);
+    const h = home(qc);
+    expect(h.recommended.map((c) => c.bookmarked)).toEqual([true, false]);
+    expect(h.mostReviewed.map((c) => c.bookmarked)).toEqual([true]);
+    expect(h.recent.map((c) => c.bookmarked)).toEqual([true, true]);
+  });
+
+  it('실패 → 홈 캐시 원복(별이 되돌아간다)', async () => {
+    const qc = client();
+    const before = HOME();
+    qc.setQueryData(['home', 'en'], before);
+    (api.post as jest.Mock).mockRejectedValueOnce(new Error('500'));
+    await runToggle(qc, true);
+    expect(home(qc)).toEqual(before);
+  });
+
+  it('홈 캐시 없음(홈 미방문) = 무크래시 · 캐시 생성 없음', async () => {
+    const qc = client();
+    await runToggle(qc, true);
+    expect(qc.getQueryData(['home', 'en'])).toBeUndefined();
+  });
+
+  it('settle 시 ["home"] invalidate 없음 — popularFoods 서버 랜덤(KB-712) 재조회 = 레일 셔플·스크롤 리셋(KB-710)', async () => {
+    const qc = client();
+    qc.setQueryData(['home', 'en'], HOME());
+    const spy = jest.spyOn(qc, 'invalidateQueries');
+    await runToggle(qc, true);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['bookmarks'] })); // 스파이 실효 확인
+    expect(spy.mock.calls.some(([o]) => (o?.queryKey as unknown[] | undefined)?.[0] === 'home')).toBe(false);
+  });
+
+  it('/foods 와이어 페이지 캐시(홈 Food 탭·위험 칩 레일 소스)도 같은 카드만 반전 · 실패 원복', async () => {
+    const qc = client();
+    qc.setQueryData(['foods', 'list', 'en'], wirePages());
+    qc.setQueryData(['foods', 'list', 'en', 'SAFE'], wirePages());
+    await runToggle(qc, true);
+    for (const key of [['foods', 'list', 'en'], ['foods', 'list', 'en', 'SAFE']]) {
+      expect(qc.getQueryData<Pages>(key)!.pages[0].items.map((i) => i.bookmarked)).toEqual([true, false]);
+    }
+    (api.patch as jest.Mock).mockRejectedValueOnce(new Error('500'));
+    await runToggle(qc, false);
+    expect(qc.getQueryData<Pages>(['foods', 'list', 'en'])!.pages[0].items.map((i) => i.bookmarked)).toEqual([true, false]);
+  });
 });

@@ -153,10 +153,10 @@ describe('소스 잠금', () => {
     expect(home).toContain('popular={home?.recommended}');
     expect(home).toContain('popularLoading={isPending}');
   });
-  it('북마크 토글이 /home을 무효화하지 않는다 — 랜덤 레일이 토글 한 번에 통째로 바뀌지 않게(저장 표시는 북마크 쿼리의 savedIds)', () => {
+  it('북마크 토글이 /home을 무효화하지 않는다 — 랜덤 레일이 토글 한 번에 통째로 바뀌지 않게(KB-779: 저장 표시는 카드 bookmarked, 토글은 홈 캐시 낙관 반전만)', () => {
     const bm = read('src/lib/data/bookmarks.ts');
-    expect(bm).not.toMatch(/['"]home['"]/);
-    expect(read('src/features/food/FoodExplorer.tsx')).toContain('saved={savedIds.has(item.foodId)}');
+    expect(bm).not.toMatch(/invalidateQueries\(\{ queryKey: \['home'/);
+    expect(read('src/features/food/FoodExplorer.tsx')).toContain('saved={isSaved(item)}');
   });
 });
 

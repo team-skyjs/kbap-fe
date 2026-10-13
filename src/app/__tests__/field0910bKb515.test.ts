@@ -28,10 +28,10 @@ it('③ 기본 이미지 = 앱 번들 로컬 에셋(어댑터 경계 한 곳) �
 
 it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), 검색 게스트 = AuthGateSheet', () => {
   const bm = read('src/lib/data/bookmarks.ts');
-  expect(bm).toContain('export function useSavedIds(): { ids: Set<string>; ready: boolean } {');
+  expect(bm).toContain('export function useSavedIds(opts?: { enabled?: boolean }): { ids: Set<string>; ready: boolean } {'); // KB-779: 홈은 Saved 탭 활성 시에만
   expect(bm).toContain('void saved.fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계
   const fe = read('src/features/food/FoodExplorer.tsx');
-  expect(fe).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds();');
+  expect(fe).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });'); // KB-779
   expect(fe).not.toContain('saved.fetchNextPage({ cancelRefetch: false })'); // 자체 드레인 소멸
   const sr = read('src/app/search.tsx');
   expect(sr).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds();');
@@ -42,7 +42,7 @@ it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), �
 it('#116 2R — ready(드레인 완료) 전 토글 무시(POST 오발 방지) + 스캔 썸네일 CardPhoto 경유', () => {
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain('return { ids, ready: !saved.hasNextPage && !saved.isFetching };');
-  expect(read('src/features/food/FoodExplorer.tsx')).toContain('if (!savedReady) return;');
+  expect(read('src/features/food/FoodExplorer.tsx')).toContain("if (variant === 'screen' && !savedReady) return;"); // KB-779: 홈은 카드 bookmarked가 방향 — 가드 불필요
   expect(read('src/app/search.tsx')).toContain('if (!savedReady) return;');
   const rich = read('src/features/scan/ScanRichList.tsx');
   expect(rich).toContain('<CardPhoto uri={thumb} borderRadius={4} />'); // 깨진 URL = 기본 이미지 폴백

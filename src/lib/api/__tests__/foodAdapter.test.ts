@@ -170,3 +170,14 @@ describe('KB-599 impliedBy — 함의 매치 근거', () => {
     expect(byCode(wire(null)).SALTED_SHRIMP.impliedBy).toBeNull();
   });
 });
+
+describe('KB-779: 목록 요약 bookmarked 통과 — 홈 카드 별이 /bookmarks 드레인 없이 이 값으로 그려진다', () => {
+  const base = { foodId: 7, name: 'Bibimbap', koreanName: '비빔밥', imageRef: null, spiciness: 0, overallRiskStatus: 'SAFE' as const };
+  it('true/false 그대로', () => {
+    expect(adaptMenuSummary({ ...base, bookmarked: true }).bookmarked).toBe(true);
+    expect(adaptMenuSummary({ ...base, bookmarked: false }).bookmarked).toBe(false);
+  });
+  it('부재(구응답·비회원) = false', () => {
+    expect(adaptMenuSummary(base).bookmarked).toBe(false);
+  });
+});
