@@ -185,7 +185,7 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
         </View>
         <View style={styles.label}>
           <Animated.View style={numStyle}>
-            <Text style={styles.num} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} testID={`${testID}-value`}>
+            <Text style={[styles.num, state === 'empty' && styles.numEmpty]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} testID={`${testID}-value`}>
               {value}
             </Text>
           </Animated.View>
@@ -229,6 +229,8 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
+  // R-64: 0회 = 그림자 색만 중립 회색(오프셋·반경 불변 — 상태로 바뀌는 건 색뿐, P-151)
+  numEmpty: { textShadowColor: FLAME_COLORS.numberShadowEmpty },
   particle: { position: 'absolute', width: 6, height: 6, borderRadius: 3, top: BADGE_H / 2 - 3, left: BADGE_W / 2 - 3 },
 });
 

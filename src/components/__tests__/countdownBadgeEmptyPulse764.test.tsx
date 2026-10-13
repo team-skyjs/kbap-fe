@@ -33,6 +33,7 @@ let mockMotion = { paused: false, visible: true, reduceMotion: false as boolean 
 jest.mock('@/lib/useMotionPaused', () => ({ useMotionState: () => mockMotion }));
 
 import { BADGE_H, BADGE_W, CountdownBadge, EMPTY_PULSE, GLOW_D } from '../CountdownBadge';
+import { FLAME_COLORS } from '../flameGeometry';
 
 const trees: ReactTestRenderer[] = [];
 afterEach(() => { while (trees.length) act(() => trees.pop()!.unmount()); });
@@ -146,4 +147,14 @@ it('P-151: active ↔ empty 프레임 메트릭 불변 — 터치 상자·글로
   const e = metrics(render({ state: 'empty' }));
   expect(a).toEqual(e);
   expect(a.root).toEqual([BADGE_W, BADGE_H]);
+});
+
+it('R-64: 숫자 그림자 — empty = 중립 회색(주황 아님) · active = 주황 유지(KB-701) · 오프셋·반경은 상태 무관(P-151)', () => {
+  const numStyle = (state: 'active' | 'empty') => flat(host(render({ state }), 'countdown-badge-value').props.style);
+  const a = numStyle('active');
+  const e = numStyle('empty');
+  expect(a.textShadowColor).toBe(FLAME_COLORS.numberShadow);
+  expect(e.textShadowColor).toBe(FLAME_COLORS.numberShadowEmpty);
+  expect(e.textShadowColor).not.toBe(FLAME_COLORS.numberShadow);
+  expect([e.textShadowOffset, e.textShadowRadius, e.fontSize]).toEqual([a.textShadowOffset, a.textShadowRadius, a.fontSize]);
 });
