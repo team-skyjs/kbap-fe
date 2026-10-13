@@ -156,6 +156,7 @@ describe('배선·워크플로·i18n 소스 잠금', () => {
     expect(yml).toContain('develop');
     expect(yml).toContain('prod.kbap.site'); // grep 가드(0건 아니면 실패)
     expect(yml).toContain('dev.kbap.site'); // 목표 호스트 주입 + 1건 이상 확인
+    expect(yml).toContain('npx expo export --clear --platform ios --platform android'); // web 번들은 AdMob 네이티브 컴포넌트로 실패 — 발행 대상만(d9f6f98d 로봇 실패)
     expect(yml).toContain('--channel teamtest');
     expect(yml).toContain('--clear-cache');
     expect(yml).toMatch(/export[^\n]*--clear/); // Metro 캐시 클리어(8/26 규칙)

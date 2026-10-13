@@ -53,7 +53,8 @@ jobs:
           bash scripts/ota-fp-gate.sh "$CUR_IOS" "$CUR_AND" "$BUILD_IOS" "$BUILD_AND"
       - name: Export + host guard (dev 1+ / prod 0)
         run: |
-          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx expo export --clear
+          # KB-739 이후 web 번들(서버 렌더)이 AdMob 네이티브 컴포넌트 import로 실패 — 발행 대상(네이티브)만 export(d9f6f98d 로봇 실패 원인)
+          EXPO_PUBLIC_BE_BASE=https://dev.kbap.site npx expo export --clear --platform ios --platform android
           if grep -R "prod.kbap.site" dist -l; then
             echo "FAIL: prod host leaked into teamtest bundle"; exit 1
           fi
