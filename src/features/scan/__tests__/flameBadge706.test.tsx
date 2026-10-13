@@ -34,7 +34,7 @@ jest.mock('react-native-reanimated', () => {
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
     useAnimatedProps: (f: () => unknown) => f(), // KB-706 불꽃 일렁임
-    Easing: { linear: (x: number) => x },
+    Easing: { linear: (x: number) => x, ease: (x: number) => x, inOut: (f: unknown) => f },
   };
 });
 // KB-706: 끌어 놓기 — GestureDetector는 자식 그대로, Pan 콜백은 기록(테스트가 직접 몬다)
@@ -193,15 +193,31 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
     expect(mockRepeat).toHaveBeenCalledTimes(1);
   });
 
-  it('꺼진 불꽃(0회) = 회색 정지 — 루프 0 · 빛·불티 0', async () => {
+  it('KB-764: 꺼진 불꽃(0회) = 회색 그대로 일렁임 + 강한 펄스(루프 2 — 일렁임·펄스) · 노란 빛·불티 0 · 회색 글로우 마운트', async () => {
     mockQuota = Q(0);
     const t = render();
     await flush();
     layout(t);
     await flush(); // 측정 뒤 마운트된 뱃지의 동작 줄이기 조회
-    expect(mockRepeat).not.toHaveBeenCalled();
+    expect(mockRepeat).toHaveBeenCalledTimes(2);
     expect(t.root.findAll((n) => n.props?.testID === 'flame-empty').length).toBeGreaterThan(0);
+    expect(outer(t).props.animatedProps).toBeDefined(); // 일렁임
+    expect(outer(t).props.fill).not.toMatch(/url\(/); // 회색(그라데이션 아님)
     expect(t.root.findAll((n) => n.props?.testID === 'flame-glow' || n.props?.testID === 'flame-spark')).toHaveLength(0);
+    expect(t.root.findAll((n) => n.props?.testID === 'countdown-badge-empty-glow' && typeof n.type === 'string').length).toBe(1);
+  });
+
+  it('KB-764: 꺼진 불꽃 + 동작 줄이기 = 전부 정지(루프 0 · 가라앉은 모양 · 글로우 0)', async () => {
+    mockQuota = Q(0);
+    mockReduced = true;
+    const t = render();
+    await flush();
+    layout(t);
+    await flush();
+    expect(mockRepeat).not.toHaveBeenCalled();
+    expect(outer(t).props.d).toBe(OUTER_REST_D);
+    const glow = t.root.findAll((n) => n.props?.testID === 'countdown-badge-empty-glow' && typeof n.type === 'string')[0];
+    expect(JSON.stringify(glow.props.style)).toContain('"opacity":0');
   });
 });
 

@@ -3,9 +3,9 @@
  * 모양·색·키프레임 데이터 = flameGeometry.ts. 여기는 그리기만.
  *
  * - active: 바깥(세로 4정지 그라데이션) · 안쪽 불꽃(봉우리 → 가운데 → 아래, 바닥 빛으로 녹아듦) · 바닥 노란 빛 · 불티 2개. 흰 테두리 없음.
- * - empty(0회 — 꺼진 불꽃): 같은 모양 회색 · 정지 · 빛·불티 없음(바깥 ink3 · 안쪽 한 단계 진한 ink2 — 기존 토큰).
- * - `phase`(0..1 공유값)가 있으면 그 값으로 일렁인다 — d·opacity를 useAnimatedProps 워클릿이 계산(UI 스레드, JS 0).
- *   없으면(동작 줄이기·가려짐·꺼진 불꽃) 가라앉은 모양으로 정지.
+ * - empty(0회 — 꺼진 불꽃): 같은 모양 회색 · 빛·불티 없음(바깥 ink3 · 안쪽 한 단계 진한 ink2 — 기존 토큰). **KB-764: 회색 그대로 일렁인다**(phase가 오면).
+ * - `phase`(0..1 공유값)가 있으면 그 값으로 일렁인다(두 상태 모두) — d·opacity를 useAnimatedProps 워클릿이 계산(UI 스레드, JS 0).
+ *   없으면(동작 줄이기·가려짐·축하 중) 가라앉은 모양으로 정지. 불티·바닥 노란 빛은 active 전용.
  * - 캔버스 = FLAME_VIEWBOX(rest 불꽃 + 위쪽 일렁임·불티 여유) × `scale`(px/단위). 배치는 호출부(터치 상자보다 크다 — pointerEvents none).
  */
 import * as React from 'react';
@@ -31,7 +31,7 @@ export function FlameShape({ scale, state, phase }: { scale: number; state: 'act
   const on = state === 'active';
   const rest = useSharedValue(0);
   const p = phase ?? rest;
-  const animated = on && phase != null;
+  const animated = phase != null; // KB-764: empty도 일렁임(회색)
   const outerProps = useAnimatedProps(() => ({ d: toPathD(lerpFrames(OUTER_FRAMES, FLAME_TIMES, p.value)) }));
   const innerProps = useAnimatedProps(() => ({ d: toPathD(lerpFrames(INNER_FRAMES, FLAME_TIMES, p.value)) }));
   const spark0 = useAnimatedProps(() => sparkFrame(0, p.value));
@@ -59,8 +59,8 @@ export function FlameShape({ scale, state, phase }: { scale: number; state: 'act
       </Defs>
       {animated ? (
         <>
-          <AnimatedPath animatedProps={outerProps} fill="url(#flameOuter)" testID="flame-outer" />
-          <AnimatedPath animatedProps={innerProps} fill="url(#flameInner)" testID="flame-inner" />
+          <AnimatedPath animatedProps={outerProps} fill={on ? 'url(#flameOuter)' : C.ink3} testID="flame-outer" />
+          <AnimatedPath animatedProps={innerProps} fill={on ? 'url(#flameInner)' : C.ink2} testID="flame-inner" />
         </>
       ) : (
         <>
@@ -69,7 +69,7 @@ export function FlameShape({ scale, state, phase }: { scale: number; state: 'act
         </>
       )}
       {on && <Ellipse cx={50} cy={122} rx={30} ry={15} fill="url(#flameGlow)" testID="flame-glow" />}
-      {animated && (
+      {on && animated && (
         <>
           <AnimatedPath animatedProps={spark0} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
           <AnimatedPath animatedProps={spark1} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />

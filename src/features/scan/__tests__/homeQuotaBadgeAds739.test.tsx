@@ -28,7 +28,7 @@ jest.mock('react-native-reanimated', () => {
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
     useAnimatedProps: (f: () => unknown) => f(), // KB-706 불꽃 일렁임
-    Easing: { linear: (x: number) => x },
+    Easing: { linear: (x: number) => x, ease: (x: number) => x, inOut: (f: unknown) => f },
   };
 });
 // KB-706: 끌어 놓기 — GestureDetector는 자식 그대로, Pan 콜백은 기록(테스트가 직접 몬다)
