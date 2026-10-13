@@ -992,7 +992,7 @@
     "consentBothRequired": "需同意两项才能开启通知。",
     "consentConfirm": "同意并开启通知",
     "nudgeTitle": "开启评价提醒？",
-    "nudgeBody": "在你忘记之前提醒你评价点过的菜，\n有人对你的评价做出反应时也会通知你。"
+    "nudgeBody": "在你忘记之前提醒你评价点过的菜，有人对你的评价做出反应时也会通知你。"
   },
   "notif": {
     "title": "通知设置",

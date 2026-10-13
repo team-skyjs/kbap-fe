@@ -72,8 +72,11 @@ export async function getPermissionStatus(): Promise<PushPermission> {
   const N = loadNotifications();
   if (!N) return 'unavailable';
   try {
-    const { status } = await N.getPermissionsAsync();
-    return status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined';
+    const { status, canAskAgain } = await N.getPermissionsAsync();
+    // KB-770: Android 13+는 한 번도 안 물어본 POST_NOTIFICATIONS도 'denied'로 준다 — 다시 물을 수 있으면(canAskAgain) 미결정(OS 팝업 경로).
+    // iOS의 denied는 늘 canAskAgain=false라 판정 불변. 영구 거부만 'denied'(설정 열기 경로).
+    if (status === 'granted') return 'granted';
+    return status === 'denied' && canAskAgain !== true ? 'denied' : 'undetermined';
   } catch {
     return 'unavailable';
   }
