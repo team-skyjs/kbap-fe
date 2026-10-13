@@ -23,7 +23,8 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
-import { UnlockActions } from '@/features/ads/RewardedUnlock';
+import { UnlockActions, useCanWatchAd } from '@/features/ads/RewardedUnlock';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoomPreset } from '@/features/scan/cameraZoom';
@@ -199,7 +200,16 @@ export default function Scan() {
   });
   const disprovenQuota = useRef<unknown>(undefined);
   // KB-759 방어 2: 광고 해제 경로의 티켓 재발급 상태 — 'opening'(요청 중) · 'failed'(실패 → 다시 시도 버튼). 조용히 삼키지 않는다.
-  const [unlockState, setUnlockState] = useState<'idle' | 'opening' | 'failed'>('idle');
+  // /review 2: 상태는 **그 상태를 띄운 쿼터 에러 객체**에 묶는다 — 화면이 카메라로 가거나 다른 에러(fail·새 쿼터 잠금)로 바뀌면
+  // 객체가 달라져 자동으로 'idle'(리셋 호출을 경로마다 흩뿌리지 않는다). 겹친 preflight의 늦은 실패도 지난 객체에 묶여 안 보인다.
+  const [unlock, setUnlock] = useState<{ kind: 'opening' | 'failed'; forError: object } | null>(null);
+  const unlockState: 'idle' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
+  const errorRef = useRef(error);
+  useLayoutEffect(() => {
+    errorRef.current = error;
+  });
+  const { busy: unlockRetrying, run: runUnlockRetry } = useSubmitGuard(); // /review 3: 재시도 = 공용 제출 가드(CLAUDE.md)
+  const canWatchAd = useCanWatchAd(); // /review 4: 광고 버튼이 실제로 있을 때만 "광고 보기"를 약속하는 문구
   // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
   // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
   const phaseRef = useRef(phase);
@@ -226,9 +236,11 @@ export default function Scan() {
     if (!scanV2Enabled()) return;
     const quota = quotaRef.current;
     const unlocked = opts?.unlocked === true;
+    const forError = errorRef.current; // 해제 경로 = 지금 떠 있는 쿼터 에러에 묶는다
+    const prevDisproven = disprovenQuota.current;
     if (unlocked) {
       disprovenQuota.current = quota;
-      setUnlockState('opening');
+      if (forError) setUnlock({ kind: 'opening', forError });
     } else {
       lockFromProfile();
     }
@@ -238,19 +250,27 @@ export default function Scan() {
       preTicket.current = await issueScanTicket();
       if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
+      if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
       if (quotaLockRef.current || unlocked) {
         // 리뷰 작성 후 복귀(시나리오 C)·광고 해제 — 해금 반영해 카메라 복원
         quotaLockRef.current = false;
-        setUnlockState('idle');
+        setUnlock(null);
         setError(null);
         setPhase('camera');
       }
     } catch (e) {
       const code = (e as { code?: string })?.code;
       if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e), JSON.stringify({ unlocked }));
-      if (unlocked) {
-        setUnlockState('failed'); // 해제는 됐는데 카메라를 못 열었다 — 제한 화면을 "해제됨 · 다시 시도"로
+      if (unlocked && code !== 'SCAN-004') {
+        // 해제는 됐는데 카메라를 못 열었다(네트워크 등) — 제한 화면을 "해제됨 · 다시 시도"로. 늦은 실패는 지난 에러 객체에 묶여 안 보인다
+        if (forError) setUnlock({ kind: 'failed', forError });
         return;
+      }
+      if (unlocked) {
+        // /review 1: 해제 응답을 받았는데 티켓은 아직 004(서버 해제가 티켓 경로에 안 보임) — 'failed'로 묶지 않고 기존 004 처리로:
+        // 반증 되돌림(프로필 잠금 정상화 — 무한 403 재시도 방지) + 해제 상태 해제 → 제한 화면·리뷰/광고 CTA 복원
+        disprovenQuota.current = prevDisproven;
+        setUnlock(null);
       }
       if (code === 'SCAN-004') {
         preTicket.current = null;
@@ -892,7 +912,7 @@ export default function Scan() {
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
         <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(stage === 'quota' && unlockState !== 'idle' ? (unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
+        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
@@ -906,7 +926,8 @@ export default function Scan() {
           {stage === 'quota' && unlockState !== 'idle' ? (
             <>
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
-              {unlockState === 'failed' && <Btn onPress={() => void preflight({ unlocked: true })} testID="scan-unlock-retry">{t('common.retry')}</Btn>}
+              {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t('common.retry')}</Btn>
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (

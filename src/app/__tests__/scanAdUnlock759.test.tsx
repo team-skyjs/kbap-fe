@@ -214,6 +214,49 @@ it('방어 2: 해제 응답 뒤 티켓 재발급 실패(네트워크·비-004) =
   expect(tree.root.findAll((n) => n.props?.testID === 'scan-quota-later').length).toBe(0); // 에러 화면 자체가 사라짐 = 카메라
 });
 
+it('#252 /review 1: 해제 응답 뒤 티켓이 아직 SCAN-004 = "해제됨/다시 시도"로 묶지 않고 기존 제한 화면(리뷰·광고 CTA) 복원 + 반증 되돌림', async () => {
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render();
+  await flush();
+  await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true }); // 티켓은 계속 004
+  const json = JSON.stringify(tree.toJSON());
+  expect(json).not.toContain('scan.unlockedTitle');
+  expect(json).toContain('scan.quotaTitle');
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-unlock-retry')).toHaveLength(0);
+  expect(quotaShown(tree)).toBe(true); // 리뷰 CTA 복원
+});
+
+it('#252 /review 3: 다시 시도 = 공용 제출 가드 — 응답 전 연타 = 티켓 요청 1회 · 요청 중 Btn busy', async () => {
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render();
+  await flush();
+  mockIssue.mockReset(); mockIssue.mockRejectedValueOnce(new Error('network'));
+  await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
+  const retry = () => tree.root.findAll((n) => n.props?.testID === 'scan-unlock-retry' && typeof n.props?.onPress === 'function' && typeof n.type !== 'string')[0];
+  let release!: (v: string) => void;
+  mockIssue.mockImplementation(() => new Promise<string>((r) => { release = r; }));
+  await act(async () => { retry().props.onPress(); retry().props.onPress(); retry().props.onPress(); });
+  expect(mockIssue).toHaveBeenCalledTimes(2); // 해제 직후 1 + 재시도 1(연타 2회는 가드에 막힘)
+  expect(retry().props.busy).toBe(true); // 요청 중 = Btn busy(스피너·비활성)
+  await act(async () => { release('t-unlocked'); await flush(); });
+  expect(tree.root.findAll((n) => n.props?.testID === 'scan-quota-later')).toHaveLength(0); // 카메라
+});
+
+it('#252 /review 4: 제한 화면 본문 — 광고 버튼이 있으면 quotaBodyUnlock, 구서버(adRewards null)면 기존 quotaBody', async () => {
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(3));
+  const tree = render();
+  await flush();
+  expect(JSON.stringify(tree.toJSON())).toContain('scan.quotaBodyUnlock');
+  mockUseMe.mockReturnValue({ data: { restrictions: [], scanQuota: QUOTA(0), adRewards: null } });
+  act(() => { tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); });
+  const json = JSON.stringify(tree.toJSON());
+  expect(json).toContain('"scan.quotaBody"');
+  expect(json).not.toContain('scan.quotaBodyUnlock');
+});
+
 it('방어 1·반증: 프로필 재조회가 늦어 preflight가 옛 소진 스냅샷을 쥐어도 해제 응답 → 카메라, 그 뒤 재렌더(옛 프로필 그대로)에도 재잠금 0', async () => {
   mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
   mockUseMe.mockReturnValue(me(1)); // 끝까지 소진 상태(재조회 미도착)

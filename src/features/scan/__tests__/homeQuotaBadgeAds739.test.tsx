@@ -64,7 +64,8 @@ jest.mock('@/lib/flags', () => {
 
 import { _setBadgePosCacheForTest } from '../badgePosition';
 const mockUnlock = jest.fn();
-jest.mock('@/features/ads/RewardedUnlock', () => ({ UnlockActions: (p: Record<string, unknown>) => { mockUnlock(p); const { View } = jest.requireActual<typeof import('react-native')>('react-native'); return <View testID="unlock-actions" />; } }));
+let mockCanWatch = true;
+jest.mock('@/features/ads/RewardedUnlock', () => ({ useCanWatchAd: () => mockCanWatch, UnlockActions: (p: Record<string, unknown>) => { mockUnlock(p); const { View } = jest.requireActual<typeof import('react-native')>('react-native'); return <View testID="unlock-actions" />; } }));
 
 import { HomeQuotaBadge } from '../HomeQuotaBadge';
 
@@ -92,6 +93,17 @@ it('KB-759: 남은 무료 횟수 1~3 = 시트에 2택(UnlockActions) 상시 · �
     expect(JSON.stringify(t.toJSON())).not.toContain('"scan.quotaBody"');
     act(() => t.unmount()); trees.pop();
   }
+});
+
+it('#252 /review 4: 광고 버튼이 없으면(구서버·SDK 없음·게스트 — useCanWatchAd false) 본문은 기존 리뷰 전용 quotaBody', () => {
+  mockCanWatch = false;
+  try {
+    mockQuota = Q(2);
+    const t = render();
+    act(() => byId(t, 'countdown-badge')[0].props.onPress());
+    expect(JSON.stringify(t.toJSON())).toContain('"scan.quotaBody"');
+    expect(JSON.stringify(t.toJSON())).not.toContain('scan.quotaBodyUnlock');
+  } finally { mockCanWatch = true; }
 });
 
 it('남은 무료 횟수 0 = 2택(UnlockActions) · 해제 콜백 = 시트 닫기', () => {
