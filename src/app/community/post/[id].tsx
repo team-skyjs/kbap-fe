@@ -8,7 +8,8 @@
  * ModerationFlow(상세발 차단 = 피드 복귀+토스트).
  */
 import * as React from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -144,7 +145,7 @@ export default function CommunityPostDetail() {
   return (
     <View style={styles.root}>
       <SubHeader title={t('community.postTitle')} onBack={() => router.back()} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={KAV_BEHAVIOR}>
         <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <AuthorRow
             author={post.author}

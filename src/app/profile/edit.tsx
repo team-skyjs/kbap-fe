@@ -9,6 +9,7 @@
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -152,9 +153,9 @@ export default function EditProfile() {
   };
 
   return (
-    // KB-700(QA — 닉네임 포커스 시 키보드 아래로 Save 바 주황이 비침): 리뷰 작성·글쓰기와 같은 방식 — iOS KeyboardAvoidingView(padding),
-    // 하단 Save 바는 절대 위치가 아닌 ScrollView의 형제(키보드 위로 따라 올라온다). 안드는 adjustResize라 그대로.
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="edit-kav">
+    // KB-700(QA — 닉네임 포커스 시 키보드 아래로 Save 바 주황이 비침): 리뷰 작성·글쓰기와 같은 방식 — KeyboardAvoidingView(padding, KB-768부터 두 플랫폼),
+    // 하단 Save 바는 절대 위치가 아닌 ScrollView의 형제(키보드 위로 따라 올라온다). 안드도 edge-to-edge라 회피 필요(lib/keyboardAvoid).
+    <KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="edit-kav">
       <SubHeader
         title={t('editProfile.title')}
         onBack={() => router.back()}

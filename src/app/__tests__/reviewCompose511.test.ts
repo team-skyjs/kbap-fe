@@ -39,7 +39,7 @@ it('⑤ 키보드 — 수동 kbH 패딩 소멸 + (KB-700) iOS = 화면 KeyboardA
   const rv = read('src/app/food/[id]/review.tsx');
   expect(rv).toContain('{ paddingBottom: 28 }');
   expect(rv).not.toContain('28 + kbH');
-  expect(rv).toContain("<KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}");
+  expect(rv).toContain("<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR}"); // KB-768: 두 플랫폼 padding(안드 edge-to-edge)
   expect(rv).not.toContain('automaticallyAdjustKeyboardInsets={');
   expect(rv).toContain('ensureCursorVisible'); // 스크롤 계산용 실측 유지
 });

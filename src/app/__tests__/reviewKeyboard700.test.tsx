@@ -8,7 +8,7 @@ import * as fs from 'fs';
 const src = fs.readFileSync('src/app/food/[id]/review.tsx', 'utf8');
 
 it('하단 Post 바가 KAV **안**(키보드 위로 따라 올라옴) · ScrollView와 형제 · 시스템 인셋 없음', () => {
-  const kav = src.indexOf("<KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID=\"review-kav\">");
+  const kav = src.indexOf("<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID=\"review-kav\">");
   const bar = src.indexOf('testID="review-bottom-bar"');
   const close = src.indexOf('</KeyboardAvoidingView>');
   expect(kav).toBeGreaterThan(-1);
@@ -17,8 +17,10 @@ it('하단 Post 바가 KAV **안**(키보드 위로 따라 올라옴) · ScrollV
   expect(src).not.toContain('automaticallyAdjustKeyboardInsets={');
 });
 
-it('커서 추종 가시 높이 — iOS는 KAV로 줄어든 뷰포트 그대로(키보드 이중 차감 0) · Android는 기존(키보드 차감)', () => {
-  expect(src).toContain("const visible = svH.current - (Platform.OS === 'ios' ? 0 : kbHRef.current);");
+it('커서 추종 가시 높이 — 두 플랫폼 KAV로 줄어든 뷰포트 그대로(키보드 이중 차감 0, KB-768)', () => {
+  // KB-768: 안드도 KAV(padding)가 뷰포트를 줄이므로 두 플랫폼 모두 키보드 차감 0(옛 안드 차감 = adjustResize 전제, edge-to-edge로 깨짐)
+  expect(src).toContain('const visible = svH.current;');
+  expect(src).not.toContain('svH.current - (Platform.OS');
 });
 
 it('메인 별점 5개 testID = review-star-{1..5} · 세부(Taste/Speed/Service)는 기존 extras-{axis}-{n} 유지', () => {
@@ -73,7 +75,7 @@ it('입력창이 있는 화면 전수(직접 + 입력 품은 컴포넌트 경유
   // 고정값 — 화면이 늘거나 줄면 한 번 멈춰 서서 KAV/예외 판단을 하게(스캔이 비어도 실패)
   expect(screens).toHaveLength(13);
   expect(screens).toContain('src/app/profile/restrictions.tsx');
-  const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{Platform\.OS === 'ios' \? 'padding' : undefined\}/.test(fs.readFileSync(f, 'utf8')));
+  const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{KAV_BEHAVIOR\}/.test(fs.readFileSync(f, 'utf8')));
   expect(missing).toEqual([]);
   for (const f of Object.keys(NO_FIXED_BAR_INPUT)) expect(screens).toContain(f); // 예외 목록이 낡으면 알림
 });
@@ -92,7 +94,7 @@ it('프로필 편집 — Save 바는 절대 위치가 아니라 KAV 안 ScrollVi
 // ScrollView가 줄지 않아 스크롤 범위 0(SE에서 Send 위 19pt만 보이고 닿지도 못함). 예외에서 빼고 KAV — 위 전수 스캔이 이제 이 화면도 잡는다
 it('KB-710 문의 작성 = iOS KAV(padding) · Send는 KAV 안 ScrollView 본문(키보드 위 영역에서 스크롤로 닿음) · 예외 목록에 없음', () => {
   const src = fs.readFileSync('src/app/profile/feedback/new.tsx', 'utf8');
-  const kav = src.indexOf(`<KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="feedback-kav">`);
+  const kav = src.indexOf(`<KeyboardAvoidingView style={styles.root} behavior={KAV_BEHAVIOR} testID="feedback-kav">`);
   const send = src.indexOf('testID="feedback-send"');
   const close = src.lastIndexOf('</KeyboardAvoidingView>');
   expect(kav).toBeGreaterThan(-1);
