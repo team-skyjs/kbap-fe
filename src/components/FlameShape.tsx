@@ -34,8 +34,6 @@ export function FlameShape({ scale, state, phase }: { scale: number; state: 'act
   const animated = phase != null; // KB-764: empty도 일렁임(회색)
   const outerProps = useAnimatedProps(() => ({ d: toPathD(lerpFrames(OUTER_FRAMES, FLAME_TIMES, p.value)) }));
   const innerProps = useAnimatedProps(() => ({ d: toPathD(lerpFrames(INNER_FRAMES, FLAME_TIMES, p.value)) }));
-  const spark0 = useAnimatedProps(() => sparkFrame(0, p.value));
-  const spark1 = useAnimatedProps(() => sparkFrame(1, p.value));
   return (
     <Svg width={V.w * scale} height={V.h * scale} viewBox={`${V.x} ${V.y} ${V.w} ${V.h}`} testID={`flame-${state}`}>
       <Defs>
@@ -69,12 +67,19 @@ export function FlameShape({ scale, state, phase }: { scale: number; state: 'act
         </>
       )}
       {on && <Ellipse cx={50} cy={122} rx={30} ry={15} fill="url(#flameGlow)" testID="flame-glow" />}
-      {on && animated && (
-        <>
-          <AnimatedPath animatedProps={spark0} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
-          <AnimatedPath animatedProps={spark1} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
-        </>
-      )}
+      {/* #258 /review 6: 불티는 active 전용 자식 — empty에서 안 그리는 불티 워클릿이 매 프레임 돌지 않게 */}
+      {on && phase != null && <Sparks phase={phase} />}
     </Svg>
+  );
+}
+
+function Sparks({ phase }: { phase: SharedValue<number> }) {
+  const spark0 = useAnimatedProps(() => sparkFrame(0, phase.value));
+  const spark1 = useAnimatedProps(() => sparkFrame(1, phase.value));
+  return (
+    <>
+      <AnimatedPath animatedProps={spark0} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
+      <AnimatedPath animatedProps={spark1} fill={FLAME_COLORS.outer[1]} testID="flame-spark" />
+    </>
   );
 }
