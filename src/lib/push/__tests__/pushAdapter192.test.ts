@@ -38,6 +38,7 @@ import { queryClient } from '@/lib/queryClient';
 import { NOTIF_SETTINGS_KEY } from '@/lib/data/useNotificationSettings';
 import {
   addNotificationTapListener,
+  getPermissionStatus,
   getPrimerResult,
   markPrimerResult,
   registerPushToken,
@@ -257,4 +258,24 @@ it('KB-630: requestPermission = OS 팝업 결과를 push_permission { state: gra
   mockNotifications.requestPermissionsAsync.mockRejectedValueOnce(new Error('x'));
   await expect(requestPermission()).resolves.toBe(false);
   expect(mockAnalytics.track).toHaveBeenCalledTimes(2); // 팝업이 안 뜬 실패는 결과가 아니다
+});
+
+describe('KB-770: OS 권한 판정 — Android 13+ 미요청(denied+canAskAgain)은 미결정', () => {
+  const perm = (p: Record<string, unknown>) => mockNotifications.getPermissionsAsync.mockResolvedValue(p as never);
+  it('granted → granted', async () => {
+    perm({ status: 'granted', canAskAgain: true });
+    expect(await getPermissionStatus()).toBe('granted');
+  });
+  it('Android denied + canAskAgain=true(한 번도 안 물어봄) → undetermined(OS 팝업 경로)', async () => {
+    perm({ status: 'denied', canAskAgain: true });
+    expect(await getPermissionStatus()).toBe('undetermined');
+  });
+  it('denied + canAskAgain=false(영구 거부) → denied(설정 열기 경로)', async () => {
+    perm({ status: 'denied', canAskAgain: false });
+    expect(await getPermissionStatus()).toBe('denied');
+  });
+  it('iOS undetermined → undetermined(현행 유지)', async () => {
+    perm({ status: 'undetermined', canAskAgain: true });
+    expect(await getPermissionStatus()).toBe('undetermined');
+  });
 });

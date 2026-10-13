@@ -982,7 +982,7 @@
     "consentBothRequired": "Please agree to both items to turn on notifications.",
     "consentConfirm": "Agree and turn on",
     "nudgeTitle": "Keep review alerts on?",
-    "nudgeBody": "We'll remind you to review what you ordered before you forget,\nand let you know when someone reacts to your review."
+    "nudgeBody": "We'll remind you to review what you ordered before you forget, and let you know when someone reacts to your review."
   },
   "notif": {
     "title": "Notifications",
