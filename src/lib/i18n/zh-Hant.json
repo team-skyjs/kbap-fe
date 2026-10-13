@@ -278,6 +278,8 @@
     "retakeBody": "當前結果將被清除。",
     "retakeBodyWithCart": "當前結果和已加入的{{count}}項將被清除。",
     "retakeConfirm": "重新掃描",
+    "leaveTitle": "離開掃描結果?",
+    "leaveConfirm": "離開",
     "loadingPhoto": "正在載入照片…",
     "errNotMenu": "這看起來不像菜單，請重新拍照。",
     "errBusy": "未能識別菜單，請稍後再試。",

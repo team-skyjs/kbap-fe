@@ -278,6 +278,8 @@
     "retakeBody": "今の結果は破棄されます。",
     "retakeBodyWithCart": "今の結果と追加した{{count}}件が破棄されます。",
     "retakeConfirm": "再スキャン",
+    "leaveTitle": "スキャン結果を閉じますか?",
+    "leaveConfirm": "閉じる",
     "loadingPhoto": "写真を読み込み中…",
     "errNotMenu": "メニュー表に見えません。もう一度撮影してください。",
     "errBusy": "メニューを読み取れませんでした。しばらくしてからお試しください。",
