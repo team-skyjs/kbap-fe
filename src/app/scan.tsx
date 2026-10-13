@@ -198,6 +198,8 @@ export default function Scan() {
     quotaRef.current = me?.scanQuota;
   });
   const disprovenQuota = useRef<unknown>(undefined);
+  // KB-759 방어 2: 광고 해제 경로의 티켓 재발급 상태 — 'opening'(요청 중) · 'failed'(실패 → 다시 시도 버튼). 조용히 삼키지 않는다.
+  const [unlockState, setUnlockState] = useState<'idle' | 'opening' | 'failed'>('idle');
   // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
   // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
   const phaseRef = useRef(phase);
@@ -217,25 +219,39 @@ export default function Scan() {
   useEffect(() => {
     if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
   }, [phase, me?.scanQuota, isGuest, lockFromProfile]);
-  const preflight = useCallback(async () => {
+  // KB-759(QA 로그 판독): 해제 응답 뒤 preflight가 쥔 quota는 프로필 재조회 전의 **옛 스냅샷**(소진)일 수 있고, 복원이 티켓 200에만
+  // 기대고 있었다(실패는 catch가 조용히 삼킴 → 제한 화면에 광고 버튼만 사라진 채 잔류). `unlocked` = 서버가 scanUnlocked:true를 돌려준 직후:
+  // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
+  const preflight = useCallback(async (opts?: { unlocked?: boolean }) => {
     if (!scanV2Enabled()) return;
     const quota = quotaRef.current;
-    lockFromProfile();
-    // KB-759 원인 특정(개발 번들만): 해제 응답 뒤 카메라 미복귀 — 잠금 상태·티켓 결과를 Metro 로그로
-    if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, quota }));
+    const unlocked = opts?.unlocked === true;
+    if (unlocked) {
+      disprovenQuota.current = quota;
+      setUnlockState('opening');
+    } else {
+      lockFromProfile();
+    }
+    // KB-759 진단(개발 번들만): 잠금 상태·티켓 결과를 Metro 로그로
+    if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, unlocked, quota }));
     try {
       preTicket.current = await issueScanTicket();
-      if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current }));
+      if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
-      if (quotaLockRef.current) {
-        // 리뷰 작성 후 복귀(시나리오 C) — 해금 반영해 카메라 복원(잠금이었을 때만)
+      if (quotaLockRef.current || unlocked) {
+        // 리뷰 작성 후 복귀(시나리오 C)·광고 해제 — 해금 반영해 카메라 복원
         quotaLockRef.current = false;
+        setUnlockState('idle');
         setError(null);
         setPhase('camera');
       }
     } catch (e) {
       const code = (e as { code?: string })?.code;
-      if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e));
+      if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e), JSON.stringify({ unlocked }));
+      if (unlocked) {
+        setUnlockState('failed'); // 해제는 됐는데 카메라를 못 열었다 — 제한 화면을 "해제됨 · 다시 시도"로
+        return;
+      }
       if (code === 'SCAN-004') {
         preTicket.current = null;
         if (!canLockQuota()) return;
@@ -875,8 +891,8 @@ export default function Scan() {
         {GateSheet}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
-        <Text style={styles.errStage}>{stage === 'quota' ? t('scan.quotaTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
+        <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
+        <Text style={styles.statusText}>{t(stage === 'quota' && unlockState !== 'idle' ? (unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
@@ -887,10 +903,16 @@ export default function Scan() {
           {/* P-250: quota = 리뷰 작성하기(픽커) + 나중에 · outage = 다시 시도(새 티켓
               발급부터 — postScan이 시도마다 신규 발급) + 나중에 · processing = 재촬영만
               (새 티켓 자동 재발급 금지 — 재촬영 = 사용자 주도 새 시도) */}
-          {stage === 'quota' ? (
+          {stage === 'quota' && unlockState !== 'idle' ? (
             <>
-              {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight(새 티켓) → 카메라 복원(시나리오 C와 같은 경로) */}
-              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (__DEV__) console.log('[scan] ad unlock → preflight'); void preflight(); }} onClose={() => router.back()} />
+              {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
+              {unlockState === 'failed' && <Btn onPress={() => void preflight({ unlocked: true })} testID="scan-unlock-retry">{t('common.retry')}</Btn>}
+              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+            </>
+          ) : stage === 'quota' ? (
+            <>
+              {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (__DEV__) console.log('[scan] ad unlock → preflight'); void preflight({ unlocked: true }); }} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
