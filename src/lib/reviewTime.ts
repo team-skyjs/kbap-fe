@@ -25,6 +25,13 @@ function fullDate(d: Date, t: TFn, monthKey: 'monShort' | 'monLong'): string {
   });
 }
 
+/** KB-775: 날짜만(연도 포함, 앱 언어 패턴 — 리뷰 카드 7일 이상과 같은 표기). 주문 상세 헤더 등 "그 날짜"를 말하는 곳 */
+export function formatCalendarDate(at: number | string, t: TFn): { label: string; a11y: string } {
+  const d = new Date(at);
+  if (Number.isNaN(d.getTime())) return { label: '', a11y: '' };
+  return { label: fullDate(d, t, 'monShort'), a11y: fullDate(d, t, 'monLong') };
+}
+
 export function formatReviewTime(iso: string, t: TFn, now: number = Date.now()): { label: string; a11y: string } {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return { label: '', a11y: '' };

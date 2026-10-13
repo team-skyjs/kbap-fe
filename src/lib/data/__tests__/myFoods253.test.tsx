@@ -76,6 +76,7 @@ jest.mock('@/lib/api/client', () => {
   return {
     ApiError,
     apiLang: () => mockLang.v,
+    clampLang: (l: string) => l, // KB-775: 상세 쿼리 키의 언어(useAppLanguage → clampLang)
     api: { get: (p: string) => mockGet(p), patch: (...a: unknown[]) => mockPatch(...a), put: (...a: unknown[]) => mockPut(...a), del: (...a: unknown[]) => mockDel(...a) },
   };
 });
@@ -767,4 +768,36 @@ describe('KB-638 주문 편집', () => {
     expect(byTid(render(false), 'place-manual').length).toBeGreaterThan(0); // 대조: 리뷰 기본
     expect(byTid(render(true), 'place-manual')).toHaveLength(0);
   });
+});
+
+it('KB-775: 주문 상세 — 메뉴 목록 = 사용자 언어 이름(서버 name) · 없으면 주문한 한국어(menuName) · 헤더 = 주문 날짜(My Foods 오표기 제거)', async () => {
+  mockGet.mockImplementation(async (path: string) =>
+    path === '/api/orders/123'
+      ? { orderId: 123, orderedAt: 1765700640000, roadAddress: null, totalQuantity: 3, totalPrice: 27000,
+          items: [
+            { menuName: '순두부찌개', name: 'Soft Tofu Stew', quantity: 1, price: 9000, foodId: 7, imageRef: null },
+            { menuName: '제육볶음', name: null, quantity: 1, price: 9000, foodId: 8, imageRef: null, ready: false }, // 준비중 = null
+            { menuName: '김치찌개', name: '   ', quantity: 1, price: 9000, foodId: null, imageRef: null }, // 빈 이름 = 폴백
+          ] }
+      : { items: [], hasNext: false, nextCursor: null },
+  );
+  const qc1 = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <QueryClientProvider client={qc1}>
+        <OrderDetailScreen />
+      </QueryClientProvider>,
+    );
+  });
+  trees.push(tree);
+  await flush();
+  const s = JSON.stringify(tree.toJSON());
+  expect(s).toContain('Soft Tofu Stew');
+  expect(s).not.toContain('"순두부찌개"'); // DB 음식 = 사용자 언어로 대체
+  expect(s).toContain('제육볶음'); // 준비중(name null) = 주문한 한국어
+  expect(s).toContain('김치찌개'); // 빈 이름 = 한국어
+  const header = tree.root.findAll((n) => typeof n.props?.title === 'string' && typeof n.props?.onBack === 'function')[0];
+  expect(header.props.title).toBe('reviewTime.date'); // 목 t는 키 그대로 — KB-781 날짜 패턴
+  expect(header.props.title).not.toBe('profile.myFoods');
 });
