@@ -14,7 +14,7 @@
 import * as React from 'react';
 import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { color as C } from '@/lib/theme';
-import { useKeyboardLift } from '@/lib/keyboardAvoid';
+import { DISMISS_BAR_H, useKeyboardLift } from '@/lib/keyboardAvoid';
 import { resolveFont } from '@/lib/i18n/fonts';
 import { IconChevronDown } from './icons';
 import { MAX_FONT_SCALE } from './Txt';
@@ -82,7 +82,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.hair,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    height: DISMISS_BAR_H, // KB-768 후속: 시트 리프트가 이 높이를 더한다 — 고정
+    alignItems: 'center',
   },
   btn: { width: 36, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   androidWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },

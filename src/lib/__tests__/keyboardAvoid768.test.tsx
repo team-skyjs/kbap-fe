@@ -13,7 +13,7 @@ import { Keyboard, Platform } from 'react-native';
 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 24, left: 0, right: 0 }) }));
 
-import { KAV_BEHAVIOR, useKeyboardLift } from '../keyboardAvoid';
+import { DISMISS_BAR_H, KAV_BEHAVIOR, useKeyboardLift } from '../keyboardAvoid';
 
 const SRC = path.join(__dirname, '..', '..');
 const walk = (d: string): string[] => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
@@ -40,7 +40,7 @@ describe('① 소스 잠금 — 키보드 회피 단일 규칙', () => {
   });
   it('신고 시트·내리기 바·장소 시트 2곳 = useKeyboardLift(안드도 리프트 — Modal 창도 edge-to-edge)', () => {
     const read = (...seg: string[]) => fs.readFileSync(path.join(SRC, ...seg), 'utf8');
-    expect(read('features', 'community', 'moderation.tsx')).toContain('const kbH = useKeyboardLift();');
+    expect(read('features', 'community', 'moderation.tsx')).toContain('const kbH = useKeyboardLift({ dismissBar: true });');
     expect(read('features', 'community', 'moderation.tsx')).not.toContain("if (Platform.OS !== 'ios') return;");
     expect(read('components', 'KeyboardDismissBar.tsx')).toContain('bottom: lift');
     expect(read('features', 'review', 'ReviewCellParts.tsx')).toContain("Platform.OS === 'android' && kbLift > 0 && { paddingBottom: kbLift }");
@@ -57,9 +57,9 @@ describe('② useKeyboardLift', () => {
     spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, fn: L) => { handlers[ev] = fn; return { remove: () => {} }; }) as never);
   });
   afterEach(() => spy.mockRestore());
-  const mount = () => {
+  const mount = (opts?: { dismissBar?: boolean }) => {
     const out = { v: -1 };
-    const Probe = () => { out.v = useKeyboardLift(); return null; };
+    const Probe = () => { out.v = useKeyboardLift(opts); return null; };
     act(() => { renderer.create(<Probe />); });
     return out;
   };
@@ -76,6 +76,43 @@ describe('② useKeyboardLift', () => {
       expect(r.v).toBe(want);
       act(() => handlers.keyboardDidHide({ endCoordinates: { height: 0 } }));
       expect(r.v).toBe(0);
+    } finally { Platform.OS = prev; }
+  });
+});
+
+describe('③ KB-768 후속 — 내리기 바를 띄우는 Modal 시트', () => {
+  it('바 높이 상수 = 40 · 시트 3곳(신고·리뷰 장소·글쓰기 장소)이 dismissBar 옵션 · 바 스타일이 그 높이로 고정', () => {
+    expect(DISMISS_BAR_H).toBe(40);
+    const read = (...seg: string[]) => fs.readFileSync(path.join(SRC, ...seg), 'utf8');
+    expect(read('features', 'community', 'moderation.tsx')).toContain('useKeyboardLift({ dismissBar: true })');
+    expect(read('features', 'review', 'ReviewCellParts.tsx')).toContain('useKeyboardLift({ dismissBar: true })');
+    expect(read('app', 'community', 'compose.tsx')).toContain('useKeyboardLift({ dismissBar: true })');
+    expect(read('components', 'KeyboardDismissBar.tsx')).toMatch(/height: DISMISS_BAR_H/);
+  });
+});
+
+describe('③ useKeyboardLift({ dismissBar })', () => {
+  type L = (e: { endCoordinates: { height: number } }) => void;
+  let handlers: Record<string, L>;
+  let spy: jest.SpyInstance;
+  beforeEach(() => {
+    handlers = {};
+    spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, fn: L) => { handlers[ev] = fn; return { remove: () => {} }; }) as never);
+  });
+  afterEach(() => spy.mockRestore());
+  it.each([
+    ['android', 300 + 24 + 40], // 높이 + 내비 바 + 내리기 바
+    ['ios', 300], // iOS 액세서리 바는 키보드 프레임 안
+  ])('%s → %s · 키보드 없으면 0(바 높이만 더하지 않음)', (os, want) => {
+    const prev = Platform.OS;
+    Platform.OS = os as typeof Platform.OS;
+    try {
+      const out = { v: -1 };
+      const Probe = () => { out.v = useKeyboardLift({ dismissBar: true }); return null; };
+      act(() => { renderer.create(<Probe />); });
+      expect(out.v).toBe(0);
+      act(() => handlers.keyboardDidShow({ endCoordinates: { height: 300 } }));
+      expect(out.v).toBe(want);
     } finally { Platform.OS = prev; }
   });
 });
