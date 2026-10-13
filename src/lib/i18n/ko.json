@@ -910,7 +910,8 @@
       "apply": "내 목록에 적용"
     },
     "countryLabel": "국가",
-    "popularCountries": "인기 국가"
+    "popularCountries": "인기 국가",
+    "searchNoResults": "검색 결과가 없어요. 다른 표기로 찾아보세요."
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",

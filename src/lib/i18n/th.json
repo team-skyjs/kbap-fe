@@ -753,7 +753,8 @@
       "apply": "ใช้กับรายการของฉัน"
     },
     "countryLabel": "ประเทศ",
-    "popularCountries": "ยอดนิยม"
+    "popularCountries": "ยอดนิยม",
+    "searchNoResults": "ไม่พบผลลัพธ์ ลองสะกดแบบอื่น"
   },
   "editProfile": {
     "title": "แก้ไขโปรไฟล์",

@@ -906,7 +906,8 @@
       "apply": "Apply to my list"
     },
     "countryLabel": "Country",
-    "popularCountries": "Popular"
+    "popularCountries": "Popular",
+    "searchNoResults": "No matches. Try a different spelling."
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",

@@ -753,7 +753,8 @@
       "apply": "リストに適用"
     },
     "countryLabel": "国",
-    "popularCountries": "人気の国"
+    "popularCountries": "人気の国",
+    "searchNoResults": "見つかりません。別の表記で探してみてください。"
   },
   "editProfile": {
     "title": "プロフィール編集",

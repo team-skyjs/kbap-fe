@@ -753,7 +753,8 @@
       "apply": "Áp dụng vào danh sách"
     },
     "countryLabel": "Quốc gia",
-    "popularCountries": "Phổ biến"
+    "popularCountries": "Phổ biến",
+    "searchNoResults": "Không có kết quả. Hãy thử cách viết khác."
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",

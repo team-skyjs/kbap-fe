@@ -753,7 +753,8 @@
       "apply": "套用到我的清單"
     },
     "countryLabel": "國家",
-    "popularCountries": "熱門國家"
+    "popularCountries": "熱門國家",
+    "searchNoResults": "找不到結果。換個寫法試試。"
   },
   "editProfile": {
     "title": "編輯個人資料",

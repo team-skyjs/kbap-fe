@@ -14,7 +14,7 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import Animated, {
   cancelAnimation,
@@ -43,7 +43,7 @@ import {
   IconSearch,
   Input,
   RiskMark, IconArrowLeft } from '@/components';
-import { PepperOn, PepperOff } from '@/components/design4Assets';
+import { SpicePeppers } from '@/components/SpicePeppers';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
 import { ProgressDots } from '@/components/ProgressDots';
@@ -55,7 +55,7 @@ import { POPULAR_DISHES, restrictionLabel } from '@/lib/onboarding/data';
 import { isSpiceLevel, SPICE_LEVEL_EXAMPLE, SPICE_LEVEL_LABEL, spiceRank, type SpiceLevel } from '@/lib/spice';
 import { wireToSpiceLevel } from '@/lib/api/spiceAdapter';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
-import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
+import { fetchLegalBlocks, type LegalBlock, type LegalDoc } from '@/lib/legalText';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { IngredientTileSections } from '@/components/IngredientTileSections';
@@ -104,9 +104,10 @@ export default function Onboarding() {
   const [step, setStep] = useState<Step>('consent');
 
   // collected LOCALLY (KB-110) — nothing leaves the device until the final
-  // batch submit. Nationality defaults to the device region when recognized.
+  // batch submit. KB-773(QA A1-6): 국적은 **미리 고르지 않는다** — 기기 지역(한국 유심·지역 설정의 외국인 = KR)으로 사전 선택하면
+  // Continue만 눌러 잘못 고정되는 위험(실재현, 국적은 변경 불가). "휴대폰 기준" 카드는 추천으로만 보이고 사용자가 직접 고른다.
   // P-130: 닉네임·사진 = 자동 프로필(제출 시 생성) — 온보딩 UI 무노출
-  const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
+  const [nationality, setNationality] = useState<string | null>(null);
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   // P-051 원칙 유지(화면 그대로 제출) · P-081: 내부 표현 = enum (와이어 변환은
   // spiceAdapter 격리). 기본 MEDIUM은 종전 기본 5(앵커)와 와이어 동일.
@@ -134,7 +135,7 @@ export default function Onboarding() {
       if (d && !hydrated.current) {
         if (d.consented) setConsents({ terms: true, privacy: true, safety: true });
         // P-130: 구버전 draft의 nickname·profileImageUrl은 무시(자동 프로필) — 무해 파싱
-        setNationality(d.nationality);
+        setNationality(d.nationality ?? null); // 고르기 전 저장된 draft = 미선택 그대로
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
         // P-081: 구버전 draft(number)는 근사 스냅 마이그레이션, null(스킵)은 기본 MEDIUM 표시
         setSpice(d.spice == null ? 'MEDIUM' : isSpiceLevel(d.spice) ? d.spice : wireToSpiceLevel(d.spice));
@@ -203,6 +204,12 @@ export default function Onboarding() {
     setSubmitting(true);
     setSubmitError(false);
     try {
+      if (!nationality) {
+        // 국적 단계를 거치지 않고는 못 오지만(Continue 비활성), 혹시라도 미선택이면 제출하지 않고 국적으로 되돌린다
+        setSubmitting(false);
+        setStep('nationality');
+        return;
+      }
       await submitOnboardingProfile({
         nationality,
         language: lang,
@@ -284,6 +291,18 @@ export default function Onboarding() {
 
   // KB-197→P-055: 안드 내비바 클리어런스는 공용 훅으로 승격 (전수 적용)
   const bottomInset = useBottomInset();
+  // KB-773(QA A1-7): 검색 스텝(국적·회피)에서 키보드가 열리면 CTA 푸터를 내린다 — SE에서 키보드 위로 올라온 푸터가 결과 영역을 0으로 만들었다.
+  // 진행은 키보드를 내리면(드래그·완료) 다시 보이는 푸터로. 다른 스텝은 무변.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const footerHidden = keyboardOpen && (step === 'nationality' || step === 'restrictions');
 
   // P-101(Q-23): 6스텝 CTA 공용 푸터 — 어느 스텝에서도 CTA 프레임(y·높이) 픽셀
   // 동일. Skip/노트는 CTA 아래 **고정 높이 슬롯**(없는 스텝은 빈 슬롯 유지).
@@ -298,7 +317,8 @@ export default function Onboarding() {
           note: t('onboarding.consentNote'),
         };
       case 'nationality':
-        return { label: t('onboarding.continue'), onPress: advance };
+        // KB-773: 사용자가 직접 고르기 전엔 비활성(사전 선택 없음)
+        return { label: t('onboarding.continue'), variant: nationality ? 'primary' : 'off', onPress: nationality ? advance : undefined };
       case 'presets':
         // P-203: 선택사항 — Continue(선택분 주입)·Skip(주입 없음)
         return {
@@ -416,6 +436,7 @@ export default function Onboarding() {
       {/* P-133: 시안 푸터 규격 — 패딩 12/20/34·헤어라인·CTA radius 16/패딩 17·primary 글로우 */}
       {/* KB-433 §3: FixedBottom — Default = outline(좌 119w) + primary(grow) /
           Variant2(스킵 없는 스텝) = primary 단독. 노트는 고정 슬롯 유지(CTA y 불변). */}
+      {!footerHidden && (
       <View testID="ob-footer" style={[styles.footer, { paddingBottom: Math.max(bottomInset, 20) + 14 }]}>
         <View style={styles.footerRow}>
           {footer.onSkip && (
@@ -435,6 +456,7 @@ export default function Onboarding() {
           {footer.note ? <Text style={[styles.tag, { textAlign: 'center' }]}>{footer.note}</Text> : null}
         </View>
       </View>
+      )}
 
       {/* P-080: 약관 전문 바텀시트 — Agree 시 해당 행 체크 + 닫힘 */}
       <LegalSheet
@@ -483,14 +505,25 @@ function Consent({
       <View style={styles.consentRows}>
         {rows.map(({ k, label }) => (
           <View key={k} style={styles.consentRow}>
-            <Pressable style={styles.consentRowMain} onPress={() => onToggle(k)} hitSlop={6}>
+            {/* KB-773(QA A1-8): 체크 = 체크 상자만, **라벨·> 탭 = 전문 열기**(전엔 라벨도 체크만 해 전문은 작은 >로만 열렸다) */}
+            <Pressable
+              style={styles.consentCheckHit}
+              onPress={() => onToggle(k)}
+              hitSlop={6}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: consents[k] }}
+              accessibilityLabel={label}
+              testID={`consent-check-${k}`}
+            >
               <View style={[styles.check, consents[k] && styles.checkOn]}>{consents[k] && <IconCheck size={15} color="#fff" />}</View>
+            </Pressable>
+            <Pressable style={styles.consentRowMain} onPress={() => onOpenDoc(k)} accessibilityRole="button" testID={`consent-open-${k}`}>
               <Text style={styles.consentRowText} numberOfLines={2}>
                 {label} <Text style={styles.requiredTag}>({t('onboarding.requiredTag')})</Text>
               </Text>
-            </Pressable>
-            <Pressable onPress={() => onOpenDoc(k)} hitSlop={10} style={styles.consentChevron}>
-              <IconChevron size={16} color={C.ink3} />
+              <View style={styles.consentChevron}>
+                <IconChevron size={16} color={C.ink3} />
+              </View>
             </Pressable>
           </View>
         ))}
@@ -510,7 +543,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
   // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
-  const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
+  const [remote, setRemote] = useState<{ doc: string; blocks: LegalBlock[] } | null>(null);
   // KB-603 3R 스윕: 실패도 **어느 문서의 것인지** 달아 저장(remote.doc과 같은 규칙) — 이전 문서의 늦은 fetch 실패가 다음
   // 문서에 실패 화면을 붙이지 않는다. 표시는 현재 doc과 같을 때만.
   const [errorDoc, setErrorDoc] = useState<LegalDoc | null>(null);
@@ -525,8 +558,8 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
     setRemote(null);
   }
   const load = useCallback((d: LegalDoc) => {
-    fetchLegalText(d)
-      .then((text) => setRemote({ doc: d, text }))
+    fetchLegalBlocks(d)
+      .then((blocks) => setRemote({ doc: d, blocks }))
       .catch(() => setErrorDoc(d));
   }, []);
   useEffect(() => {
@@ -565,7 +598,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
                 </Pressable>
               </View>
             ) : remoteReady ? (
-              <Text style={styles.legalText}>{remote.text}</Text>
+              <LegalBlocks blocks={remote.blocks} />
             ) : (
               <View style={styles.legalLoading}>
                 <ActivityIndicator color={C.primary} />
@@ -583,11 +616,45 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
 }
 
 
+/** KB-773(QA A1-5): 약관 전문 블록 렌더 — 제목·문단·목록·표. 표는 폰 폭에 3열이 안 들어가 **행마다 카드**(머리 라벨 + 값).
+ *  목록 불릿 = 작은 원(View) — 기호 문자 렌더 금지(CLAUDE.md), 가운데 점 금지(예진 10/14). */
+function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {
+  return (
+    <View style={styles.legalBlocks} testID="legal-blocks">
+      {blocks.map((b, i) => {
+        if (b.type === 'heading') return <Text key={i} style={b.level === 1 ? styles.legalH1 : b.level === 2 ? styles.legalH2 : styles.legalH3} accessibilityRole="header">{b.text}</Text>;
+        if (b.type === 'paragraph') return <Text key={i} style={styles.legalP}>{b.text}</Text>;
+        if (b.type === 'listItem')
+          return (
+            <View key={i} style={styles.legalLi}>
+              <View style={styles.legalBullet} />
+              <Text style={[styles.legalP, { flex: 1 }]}>{b.text}</Text>
+            </View>
+          );
+        return (
+          <View key={i} style={styles.legalTable} testID="legal-table">
+            {b.rows.map((row, r) => (
+              <View key={r} style={[styles.legalRow, r > 0 && styles.legalRowSep]}>
+                {row.map((cell, c) => (
+                  <View key={c} style={styles.legalCell}>
+                    {!!b.head[c] && <Text style={styles.legalCellHead}>{b.head[c]}</Text>}
+                    <Text style={c === 0 ? styles.legalCellFirst : styles.legalP}>{cell}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 /** ② 국적 (P-130 v3 → P-133 시안 kbap-ob4 정합).
  *  헤더·검색 고정 + 리스트만 스크롤 · 감지국 핀 카드(기본 선택 — 시안 결정:
  *  대부분 유저는 Continue만) · quiet 불변 안내 · 행 62 고정(리플로 방지) ·
  *  검색 시 핀/안내 숨김 인플레이스 필터. 국기 = 이모지(26pt/34 슬롯). */
-function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (code: string) => void; t: TFn }) {
+function Nationality({ selected, onSelect, t }: { selected: string | null; onSelect: (code: string) => void; t: TFn }) {
   const [q, setQ] = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
   // KB-657: 호출 결과를 그대로 메모 deps에 두면 컴파일러가 "나중에 변이될 수 있는 값"으로 보고 메모를 버린다 — 마운트 1회
@@ -702,6 +769,8 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
           {/* P-333 동류(9/8 판정): 홀수면 마지막 타일이 47%+grow로 풀폭 확장 — 자리표시자로 2열 유지 */}
           {list.length % 2 === 1 && <View style={styles.natTilePad} testID="nat-grid-pad" />}
         </View>
+        {/* KB-773(QA A1-7): 검색 결과 없음 안내(전엔 빈 화면) */}
+        {!!query && list.length === 0 && <Text style={styles.searchEmpty} testID="nat-search-empty">{t('onboarding.searchNoResults')}</Text>}
       </ScrollView>
     </View>
   );
@@ -774,7 +843,8 @@ function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; 
         )}
       </View>
       {/* P-150 ①: 섹션+타일 그리드 = 공용 컴포넌트(프로필 회피 수정과 공유) */}
-      <IngredientTileSections selected={sel} onToggle={onToggle} query={query} />
+      {/* KB-773(QA A1-7): 검색 결과 없음 안내 — 공용 컴포넌트의 emptyText(컴포넌트는 무변) */}
+      <IngredientTileSections selected={sel} onToggle={onToggle} query={query} emptyText={t('onboarding.searchNoResults')} />
     </View>
   );
 }
@@ -791,12 +861,9 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
       {/* KB-433 §4-②(4150:14286): 고추 SVG 20 × 점등 rank(0~4) + 레벨명 20/700 + 설명 12/400
           (이모지·kids 배지·캐러셀 = 시안 부재로 소멸 — 이모지 예외 종료) */}
       <View style={{ alignItems: 'center', gap: 4, marginTop: 42 }}>{/* A-SP-01/03(KB-486): ObTitle→고추 60(mb18+42) */}
+        {/* KB-773(QA A1-3): 고추 4개 → 공용 SpicePeppers 5개(음식 상세와 같은 규칙 — 5단계 슬라이더·설명 "five heat levels"와 일치) */}
         <View style={styles.chiliRow}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <View key={i} testID={`spice-pepper-${i}-${i < rank ? 'on' : 'off'}`}>
-              {i < rank ? <PepperOn height={20} /> : <PepperOff height={20} />}
-            </View>
-          ))}
+          <SpicePeppers rank={rank} size={20} />
         </View>
         <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
         <Text style={styles.spiceDesc}>{t(`onboarding.spiceDesc${rank}`)}</Text>
@@ -933,8 +1000,11 @@ const styles = StyleSheet.create({
   consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 20 },
   consentRows: { marginTop: 12, gap: 2 },
   consentRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9 },
+  // KB-773: 체크 상자 = 따로 탭(32 상자 + hitSlop 6 ≈ 44) — 음수 여백으로 체크·라벨의 보이는 자리는 종전과 같게
+  consentCheckHit: { width: 32, height: 32, marginLeft: -6, alignItems: 'center', justifyContent: 'center' },
   consentRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11 },
   consentRowText: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 19 },
+  searchEmpty: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink3, paddingVertical: 16, textAlign: 'center' }, // KB-773
   requiredTag: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
   consentChevron: { padding: 4 },
 
@@ -987,6 +1057,20 @@ const styles = StyleSheet.create({
   sheetTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
   legalScroll: { flexGrow: 0, minHeight: 180, borderWidth: 1, borderColor: C.hair, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, backgroundColor: C.surface },
   legalText: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20, paddingVertical: 10 },
+  // KB-773: 약관 블록 — 제목 단계·문단·목록(원 불릿)·표(행 카드: 머리 라벨 + 값)
+  legalBlocks: { gap: 10, paddingVertical: 10 },
+  legalH1: { fontFamily: font.bodyBold, fontSize: 17, lineHeight: 24, color: C.ink, marginTop: 4 },
+  legalH2: { fontFamily: font.bodyBold, fontSize: 15, lineHeight: 22, color: C.ink, marginTop: 12 },
+  legalH3: { fontFamily: font.bodyBold, fontSize: 14, lineHeight: 20, color: C.ink, marginTop: 6 },
+  legalP: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20 },
+  legalLi: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingLeft: 4 },
+  legalBullet: { width: 4, height: 4, borderRadius: 2, backgroundColor: C.ink2, marginTop: 8 },
+  legalTable: { borderWidth: 1, borderColor: C.line, borderRadius: radius.sm, overflow: 'hidden' },
+  legalRow: { padding: 12, gap: 6 },
+  legalRowSep: { borderTopWidth: 1, borderTopColor: C.line },
+  legalCell: { gap: 2 },
+  legalCellHead: { fontFamily: font.body, fontSize: 11, lineHeight: 15, color: C.ink3 },
+  legalCellFirst: { fontFamily: font.bodyBold, fontSize: 13, lineHeight: 20, color: C.ink },
   legalLoading: { paddingVertical: 40, alignItems: 'center' },
   legalError: { paddingVertical: 30, alignItems: 'center', gap: 10 },
   legalErrorText: { fontFamily: font.body, fontSize: 13, color: C.ink2, textAlign: 'center' },
