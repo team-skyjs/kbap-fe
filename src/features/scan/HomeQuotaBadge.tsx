@@ -182,7 +182,13 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
     py.set(posY);
     placed.set(1);
   }, [posX, posY, px, py, dragging, placed]);
-  const floatStyle = useAnimatedStyle(() => ({ opacity: placed.get(), transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
+  // KB-765 QA 2R: 다이얼로그가 열린 동안 숨김은 **애니메이션 스타일 안에서** — 정적 { opacity: 0 }을 뒤에 덧대면 useAnimatedStyle이
+  // 네이티브에 매 프레임 opacity(placed)를 써서 덮는다(jest는 정적 스타일만 봐서 못 잡았다). sheet → 공유값(effect) → 같은 식 하나.
+  const dialogHidden = useSharedValue(0);
+  React.useEffect(() => {
+    dialogHidden.set(sheet ? 1 : 0);
+  }, [sheet, dialogHidden]);
+  const floatStyle = useAnimatedStyle(() => ({ opacity: placed.get() * (1 - dialogHidden.get()), transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
   // 콜백은 JS 스레드(runOnJS(true) — 레포 제스처 관례, 워클릿 경계 0). 공유값은 JS에서 써도 UI에 반영된다.
   // 공유값은 .get()/.set() — React Compiler가 훅 반환값의 `.value =` 대입을 "수정 불가"로 보고 컴포넌트를 건너뛰지 않게(reanimated 4 권장).
   const pan = Gesture.Pan()
@@ -241,7 +247,7 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
             {/* 그리는 조건 = 저장값 읽기 끝 + 영역 측정 끝(자리 확정). 처음 자리가 공유값에 실리기 전 프레임은 투명(placed) — (0,0)·다른 경로의 자리를 그리지 않는다 */}
             {/* KB-765 QA: 다이얼로그가 열린 동안 홈 뱃지는 숨김 — iOS Modal(별도 창)의 딤 아래에 있지만 0회 회색 불꽃이 딤에 어두워져
                 딤 위에 뜬 것처럼 보였고, 히어로와 불꽃이 두 개가 됐다. 마운트·자리 유지(투명도만) — 닫으면 그 자리 그대로 */}
-            <Animated.View style={[styles.float, floatStyle, sheet && styles.hiddenWhileDialog]} testID="home-quota-badge" pointerEvents={sheet ? 'none' : 'auto'}>
+            <Animated.View style={[styles.float, floatStyle]} testID="home-quota-badge" pointerEvents={sheet ? 'none' : 'auto'}>
               <CountdownBadge
                 value={shown.value}
                 state={shown.state}
@@ -290,6 +296,5 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
 }
 
 const styles = StyleSheet.create({
-  hiddenWhileDialog: { opacity: 0 }, // KB-765: 다이얼로그 열린 동안(히어로가 같은 불꽃)
   float: { position: 'absolute', left: 0, top: 0 }, // 위치 = translate(px, py) — 기본 = 오른쪽 BADGE_RIGHT·측정 앵커
 });

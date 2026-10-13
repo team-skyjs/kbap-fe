@@ -19,10 +19,14 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: { View, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => {
-      const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; // KB-706: 컴파일러 호환 .get/.set
-      return sv;
-    },
+    // KB-765 QA 2R: 공유값은 렌더 사이에 유지(실물처럼) — 매 렌더 새로 만들면 placed·dialogHidden이 0으로 돌아가 애니메이션 출력을 볼 수 없다
+    useSharedValue: (v: unknown) =>
+      (require('react') as typeof import('react')).useRef(
+        (() => {
+          const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; // KB-706: 컴파일러 호환 .get/.set
+          return sv;
+        })(),
+      ).current,
     useAnimatedStyle: (f: () => unknown) => f(),
     withTiming: (v: unknown) => v,
     withSpring: (v: unknown) => mockSpring(v),
@@ -240,18 +244,24 @@ it('KB-765 계측: 열기 = scan_quota_dialog_view {remaining} 1회 · 선택 = 
   }
 });
 
-it('KB-765 QA: 다이얼로그가 열린 동안 홈 뱃지는 숨김(투명도 0 · 터치 0 · 마운트·자리 유지) — 히어로와 불꽃 두 개 방지 · 닫으면 다시 보임', () => {
+it('KB-765 QA 2R: 다이얼로그가 열린 동안 홈 뱃지 숨김 = **애니메이션 스타일 출력**의 opacity 0(정적 덧대기는 네이티브에서 덮인다) · 터치 0 · 닫으면 복귀', () => {
   mockQuota = Q(0);
   const t = render();
   const badge = () => hostId(t, 'home-quota-badge')[0];
-  // 다이얼로그 숨김 = 단독 { opacity: 0 } 스타일 조각(배치 전 투명은 floatStyle 몫 — #234, 별개)
-  const hidden = () => [badge().props.style].flat(Infinity as 1).some((x) => !!x && typeof x === 'object' && Object.keys(x).length === 1 && (x as { opacity?: number }).opacity === 0);
-  expect(hidden()).toBe(false);
+  // 애니메이션 스타일 = transform을 가진 조각(useAnimatedStyle 출력) — 그 조각의 opacity만 본다(정적 조각은 무시)
+  const animatedOpacity = () => ([badge().props.style].flat(Infinity as 1).find((x) => !!x && typeof x === 'object' && 'transform' in (x as object)) as { opacity: number }).opacity;
+  // 정적 opacity 덧대기 금지(QA 1R 원인) — 스타일 배열에 opacity만 가진 조각이 없어야 한다
+  const staticOpacityPatch = () => [badge().props.style].flat(Infinity as 1).some((x) => !!x && typeof x === 'object' && !('transform' in (x as object)) && 'opacity' in (x as object));
+  const rerenderNow = () => act(() => { t.update(<HomeQuotaBadge top={100} />); }); // 실물은 공유값 변화로 매퍼가 다시 돈다 — 목은 렌더로
+  rerenderNow();
+  expect(animatedOpacity()).toBe(1);
   open(t);
-  expect(badge()).toBeDefined();
-  expect(hidden()).toBe(true);
+  rerenderNow();
+  expect(animatedOpacity()).toBe(0);
+  expect(staticOpacityPatch()).toBe(false);
   expect(badge().props.pointerEvents).toBe('none');
   act(() => byId(t, 'quota-sheet-later')[0].props.onPress());
-  expect(hidden()).toBe(false);
+  rerenderNow();
+  expect(animatedOpacity()).toBe(1);
   expect(badge().props.pointerEvents).toBe('auto');
 });
