@@ -257,7 +257,6 @@
     "resultTitle": "{{count}}개 요리 스캔됨",
     "unmatchedNote": "카탈로그에 없는 요리예요 — 사장님께 확인하세요.",
     "degradedNote": "이번에 일부 항목은 평가하지 못했어요 — 주의해서 드세요.",
-    "spikeNote": "Spike: 위험도는 백엔드에서 실시간으로 와요 (현재는 mock).",
     "nudgeAction": "못 먹는 재료를 설정",
     "nudgeRest": "하면 내 기준으로 음식별 위험도가 표시돼요",
     "permissionSettingsBody": "카메라 접근이 꺼져 있어요. 설정에서 허용해 주세요.",
