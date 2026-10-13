@@ -333,3 +333,22 @@ describe('P-171: 칩 1줄 오버플로', () => {
     expect(r.rest).toBe(2);
   });
 });
+
+it('KB-780: 예상 합계 + Done = ScrollView 밖 하단 고정 바(긴 카드에서도 항상 보임) · 본문(카드·미러)만 스크롤', () => {
+  // 9개 + 회피 4개 = QA 재현 크기
+  const items = Array.from({ length: 9 }, (_, i) => ({ nameKo: `메뉴${i + 1}`, name: `Dish ${i + 1}`, qty: 1, priceKrw: 9000 }));
+  const tree = render(
+    <FlippedOrderCard items={items} avoidCodes={['EGG', 'MILK', 'CHEESE', 'WALNUT']} avoidNames={['Egg', 'Milk', 'Cheese', 'Walnut']} currency="USD" onDone={() => {}} t={t} />,
+  );
+  const host = (id: string) => tree.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0];
+  const scroll = tree.root.findAll((n) => n.props?.testID === 'order-scroll')[0];
+  const bar = host('order-foot-bar');
+  expect(bar).toBeDefined();
+  const inside = (anc: { findAll: (p: (n: { props?: { testID?: string } }) => boolean) => unknown[] }, id: string) => anc.findAll((n) => n.props?.testID === id).length > 0;
+  expect(inside(bar, 'est-total')).toBe(true);
+  expect(bar.findAll((n) => typeof n.props?.onPress === 'function').length).toBeGreaterThan(0); // Done
+  expect(inside(scroll, 'est-total')).toBe(false); // 스크롤 밖
+  expect(inside(scroll, 'order-foot-bar')).toBe(false);
+  expect(inside(scroll, 'flip-card')).toBe(true);
+  expect(inside(scroll, 'order-mirror')).toBe(true);
+});
