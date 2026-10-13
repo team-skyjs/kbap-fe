@@ -745,7 +745,8 @@
       "apply": "应用到我的列表"
     },
     "countryLabel": "国家",
-    "popularCountries": "热门国家"
+    "popularCountries": "热门国家",
+    "searchNoResults": "没有找到结果。换个写法试试。"
   },
   "editProfile": {
     "title": "编辑资料",

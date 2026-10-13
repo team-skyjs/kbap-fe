@@ -749,7 +749,8 @@
       "apply": "Применить к списку"
     },
     "countryLabel": "Страна",
-    "popularCountries": "Популярные"
+    "popularCountries": "Популярные",
+    "searchNoResults": "Ничего не найдено. Попробуйте другое написание."
   },
   "editProfile": {
     "title": "Профиль",

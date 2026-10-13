@@ -745,7 +745,8 @@
       "apply": "Terapkan ke daftar saya"
     },
     "countryLabel": "Negara",
-    "popularCountries": "Populer"
+    "popularCountries": "Populer",
+    "searchNoResults": "Tidak ada hasil. Coba ejaan lain."
   },
   "editProfile": {
     "title": "Edit profil",

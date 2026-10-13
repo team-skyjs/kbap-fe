@@ -189,12 +189,13 @@ it('P-119 → KB-433: 히어로 프레임 고정 · NONE(0)↔HOT(3) 스타일 �
 });
 
 /* ---- KB-433 §4-②: SVG 고추 점등 · 예시 타일 3개 고정 행 + 레벨 전환 교체 ---- */
-it('KB-433: SVG 고추 점등 = rank(HOT=3점등) — 이모지·kids 배지 소멸', async () => {
+it('KB-433 → KB-773: SVG 고추 = 공용 SpicePeppers **5개**(음식 상세와 같은 규칙) · 점등 = rank(HOT=3점등) — 이모지·kids 배지 소멸', async () => {
   const a = await renderSpiceStep();
   await selectStop(a, 3); // HOT
-  const ons = new Set(a.root.filter ? [] : a.root.findAll((n) => typeof n.props?.testID === 'string' && /^spice-pepper-\d-on$/.test(n.props.testID)).map((n) => n.props.testID as string));
-  expect(ons.size).toBe(3);
-  expect(a.root.findAll((n) => n.props?.testID === 'spice-pepper-3-off').length).toBeGreaterThanOrEqual(1);
+  const ids = (re: RegExp) => new Set(a.root.findAll((n) => typeof n.props?.testID === 'string' && re.test(n.props.testID)).map((n) => n.props.testID as string));
+  expect(ids(/^pepper-\d-(on|off)$/).size).toBe(5); // QA A1-3: 4개 → 5단계와 일치
+  expect(ids(/^pepper-\d-on$/).size).toBe(3);
+  expect(a.root.findAll((n) => n.props?.testID === 'pepper-4-off').length).toBeGreaterThanOrEqual(1);
   expect(a.root.findAll((n) => n.props?.testID === 'kid-badge')).toHaveLength(0);
 });
 
