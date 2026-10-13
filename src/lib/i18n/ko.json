@@ -16,7 +16,10 @@
     "leaveTitle": "작성을 그만둘까요?",
     "leaveBody": "작성 중인 내용은 저장되지 않아요.",
     "keepWriting": "계속 쓰기",
-    "discard": "그만두기"
+    "discard": "그만두기",
+    "leaveEditTitle": "저장하지 않고 나갈까요?",
+    "leaveEditBody": "바꾼 내용은 저장되지 않아요.",
+    "keepEditing": "계속 편집"
   },
   "intro": {
     "skip": "건너뛰기",
@@ -417,7 +420,7 @@
   "restrictionsEdit": {
     "title": "제한 수정",
     "save": "제한 저장",
-    "notice": "모든 안전 경고의 기준이 돼요. 정확하게 유지하세요 — 변경은 모든 요리에 즉시 적용돼요.",
+    "notice": "모든 안전 경고의 기준이 돼요. 바꾼 내용은 저장을 눌러야 반영돼요.",
     "avoidNone": "아직 피하는 것이 없어요",
     "tapToRemove": "×를 탭해 제거",
     "searchPlaceholder": "재료 검색…",

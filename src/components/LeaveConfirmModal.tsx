@@ -48,17 +48,19 @@ export function useLeaveConfirm(dirty: boolean, submitting = false) {
   };
 }
 
-export function LeaveConfirmModal({ visible, onKeep, onDiscard }: { visible: boolean; onKeep: () => void; onDiscard: () => void }) {
+/** KB-776(QA B3-3): `kind="edit"` = 편집 화면(식단·회피·프로필) 문구 — "작성/초안" 대신 "바꾼 내용". 동작·프레임은 같다. */
+export function LeaveConfirmModal({ visible, onKeep, onDiscard, kind = 'draft' }: { visible: boolean; onKeep: () => void; onDiscard: () => void; kind?: 'draft' | 'edit' }) {
   const { t } = useTranslation();
+  const edit = kind === 'edit';
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
       <View style={styles.confirmBackdrop}>
         <View style={styles.confirmCard} testID="leave-confirm">
-          <Text style={styles.confirmTitle}>{t('common.leaveTitle')}</Text>
-          <Text style={styles.confirmBody}>{t('common.leaveBody')}</Text>
+          <Text style={styles.confirmTitle}>{t(edit ? 'common.leaveEditTitle' : 'common.leaveTitle')}</Text>
+          <Text style={styles.confirmBody}>{t(edit ? 'common.leaveEditBody' : 'common.leaveBody')}</Text>
           <View style={{ gap: 9, marginTop: 6 }}>
             <Btn variant="ghost" onPress={onKeep} testID="discard-keep">
-              {t('common.keepWriting')}
+              {t(edit ? 'common.keepEditing' : 'common.keepWriting')}
             </Btn>
             {/* P-175: destructive도 보더 버튼 프레임(재스캔 모달과 동일 문법) */}
             <Btn variant="dangerGhost" onPress={onDiscard} testID="discard-go">

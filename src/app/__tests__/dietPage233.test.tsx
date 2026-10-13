@@ -33,7 +33,17 @@ jest.mock('react-native-reanimated', () => {
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
+// KB-776: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백) 기록(KB-708 문의·작성 테스트와 같은 방식)
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
+}));
 jest.mock('expo-router', () => ({
+  useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }),
   useSegments: () => [],
   useRouter: () => ({ push: mockPush, back: mockBack, replace: mockReplace }),
   usePathname: () => '/',
@@ -155,4 +165,32 @@ it('P-243 역추론 잔존 0 — 활성 판정에 codes.every(⊆회피) 패턴 
   expect(page).toContain('me?.dietCategories'); // 서버 정본 소스
   // KB-434 D-6: 프로필 탭은 식이 섹션 자체 소멸 — 역추론 잔존 0
   expect(fs.readFileSync('src/app/(tabs)/profile.tsx', 'utf8')).not.toContain('codes.every');
+});
+
+/* ---- KB-776(QA B3-3): 미저장 뒤로 = 이탈 확인(문의 작성과 같은 공용 훅·편집 문구) ---- */
+it('KB-776: 무변경 = 막지 않음 · 칩 변경 = 막음(헤더·스와이프·하드웨어 뒤로 공통) → 확인 창(편집 문구) → 그만두기 = 막았던 이동 그대로', async () => {
+  const tree = render();
+  expect(mockPrevent.on).toBe(false);
+  await tap(tree, 'dietpage-VEGAN');
+  expect(mockPrevent.on).toBe(true);
+  await act(async () => { mockPrevent.cb?.({ data: { action: { type: 'GO_BACK' } } }); });
+  const modal = tree.root.findAll((n) => n.props?.testID === 'leave-confirm' && typeof n.type === 'string');
+  expect(modal).toHaveLength(1);
+  const s = JSON.stringify(tree.toJSON());
+  expect(s).toContain('common.leaveEditTitle');
+  expect(s).toContain('common.keepEditing');
+  await tap(tree, 'discard-go');
+  expect(mockNavDispatch).toHaveBeenCalledWith({ type: 'GO_BACK' });
+  expect(mockMutate).not.toHaveBeenCalled(); // 그만두기 = 저장 0
+});
+
+it('KB-776: 되돌리면(같은 칩 다시 탭) 막기 해제 · 저장 성공 뒤엔 막지 않음(사후 모달 Yes·No 이동에 확인 창 0)', async () => {
+  const tree = render();
+  await tap(tree, 'dietpage-VEGAN');
+  await tap(tree, 'dietpage-VEGAN');
+  expect(mockPrevent.on).toBe(false);
+  await tap(tree, 'dietpage-VEGAN');
+  await tap(tree, 'diet-save');
+  expect(mockMutate).toHaveBeenCalledTimes(1);
+  expect(mockPrevent.on).toBe(false);
 });

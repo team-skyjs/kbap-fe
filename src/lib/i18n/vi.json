@@ -16,7 +16,10 @@
     "leaveTitle": "Rời đi mà không lưu?",
     "leaveBody": "Bản nháp sẽ không được lưu.",
     "keepWriting": "Viết tiếp",
-    "discard": "Bỏ"
+    "discard": "Bỏ",
+    "leaveEditTitle": "Rời đi mà không lưu?",
+    "leaveEditBody": "Thay đổi của bạn sẽ không được lưu.",
+    "keepEditing": "Tiếp tục chỉnh sửa"
   },
   "intro": {
     "skip": "Bỏ qua",
@@ -792,7 +795,7 @@
   "restrictionsEdit": {
     "title": "Chỉnh sửa hạn chế",
     "save": "Lưu hạn chế",
-    "notice": "Điều này chi phối mọi cảnh báo an toàn. Giữ chính xác — thay đổi áp dụng ngay cho mọi món.",
+    "notice": "Mọi cảnh báo an toàn đều dựa trên danh sách này. Nhấn Lưu để áp dụng thay đổi.",
     "avoidNone": "Chưa tránh gì",
     "tapToRemove": "chạm × để xóa",
     "searchPlaceholder": "Tìm nguyên liệu…",

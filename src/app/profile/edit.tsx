@@ -31,6 +31,7 @@ import { isDefaultProfileImage, providerLabelKey } from '@/lib/api/memberAdapter
 import { choosePhotoSource, pickBySource, uploadProfileImage, PROFILE_IMAGE_CLEAR } from '@/lib/data/profileImage';
 import { currencyForCountry, currencyUpdateFor, saveCurrency, SUPPORTED_CURRENCIES } from '@/lib/exchange';
 import { openAppSettings } from '@/lib/openExternal';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 
 export default function EditProfile() {
   const appLang = useAppLanguage(); // KB-708: 국가명 표시(엔도님 판정)
@@ -85,7 +86,7 @@ export default function EditProfile() {
           // P-165: 로컬 캐시 동기화 — 서버 정본 원칙(resolveCurrency 체인의 캐시 강등).
           // KB-418: 항상 실코드 저장(자동도 파생 코드가 나감 — null 캐시 클리어 소멸)
           if (currencyWire !== undefined) saveCurrency(currencyWire);
-          router.back();
+          leave.release(() => router.back()); // KB-776: 막기를 먼저 풀고 다음 렌더에서 뒤로
         },
         onSettled: () => resolve(), // P-173: 응답(성공/실패)까지 busy 유지
       },
@@ -101,6 +102,15 @@ export default function EditProfile() {
   const [photoError, setPhotoError] = useState(false);
   const [photoDraft, setPhotoDraft] = useState<string | null>(null); // PATCH 값: path 또는 PROFILE_IMAGE_CLEAR
   const [photoPreview, setPhotoPreview] = useState<string | null>(null); // 로컬 uri — 서버 path는 렌더 불가(P-006)
+  // KB-776(QA B3-3): 미저장 이탈 확인 — 식단·회피 편집과 같은 공용 훅. 기준 = 시딩과 같은 규칙(서버값), 사진 드래프트 = 변경
+  const dirty =
+    seeded &&
+    me != null &&
+    ((nickname.trim() || me.nickname) !== me.nickname || // 빈 닉네임 = 저장 시 기존값(save와 같은 규칙)
+      spice !== me.spiceTolerance ||
+      currency !== (me.currency == null || me.currency === currencyForCountry(me.nationality) ? null : me.currency) ||
+      photoDraft != null);
+  const leave = useLeaveConfirm(dirty, saving || photoBusy);
 
   // 표시 사진 = 드래프트 우선: 삭제 드래프트 → 플레이스홀더 / 새 사진 드래프트 → 로컬 미리보기
   const shownPhotoUri = photoDraft === PROFILE_IMAGE_CLEAR ? null : (photoPreview ?? me?.profileImageUrl ?? null);
@@ -329,6 +339,7 @@ export default function EditProfile() {
         </Btn>
       </View>
 
+      <LeaveConfirmModal {...leave.modal} kind="edit" />
     </KeyboardAvoidingView>
   );
 }

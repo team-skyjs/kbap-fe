@@ -102,6 +102,8 @@ describe('(3) 국가명 — 엔도님이 지금 앱 언어로 쓰인 것일 때�
 
 describe('(4) 이탈 확인 문구 — 네 화면(리뷰 작성·수정·문의·커뮤니티) 공용 중립 키', () => {
   const LEAVE = ['leaveTitle', 'leaveBody', 'keepWriting', 'discard'] as const;
+  // KB-776(QA B3-3): 편집 화면(식단·회피·프로필) 변형 — "작성/초안" 대신 "바꾼 내용". 그만두기(discard)는 공유
+  const LEAVE_EDIT = ['leaveEditTitle', 'leaveEditBody', 'keepEditing'] as const;
   // 로케일별 '글/게시물' 낱말 — 리뷰·문의 화면에서 어색했던 원인(제목에 남으면 안 됨)
   const POST_WORDS: Record<string, string[]> = {
     en: ['post'], es: ['publicación'], ru: ['пост'], ja: ['投稿'], 'zh-Hans': ['帖子'], 'zh-Hant': ['貼文'],
@@ -121,6 +123,12 @@ describe('(4) 이탈 확인 문구 — 네 화면(리뷰 작성·수정·문의�
     // ru: "Выйти без сохранения?" 아래 "Продолжить"(계속)/"Отменить"(취소)는 "나가기를 계속/취소"로 읽혀 동작과 반대 → 남기/나가기
     const ru = (load('ru') as unknown as { common: Record<string, string> }).common;
     expect([ru.keepWriting, ru.discard]).toEqual(['Остаться', 'Выйти']);
+    expect(ru.keepEditing).toBe('Остаться'); // KB-776: 편집 변형도 같은 결함 금지("Продолжить" = 나가기를 계속)
+    for (const l of LOCALES) {
+      const cm = (load(l) as unknown as { common: Record<string, string> }).common;
+      for (const k of LEAVE_EDIT) expect({ l, k, has: typeof cm[k] === 'string' && cm[k].length > 0 }).toEqual({ l, k, has: true });
+      for (const w of POST_WORDS[l]) expect({ l, title: cm.leaveEditTitle.toLowerCase().includes(w) }).toEqual({ l, title: false });
+    }
     // ja·zh: "やめる"(그만두다)·"放弃"(포기)는 "돌아가기를 그만둔다"로 읽혀 ru와 같은 결함 → 나가기/파기를 직접 말한다(#236 /review 2R)
     const c = (l: string) => (load(l) as unknown as { common: Record<string, string> }).common.discard;
     expect([c('ja'), c('zh-Hans'), c('zh-Hant')]).toEqual(['破棄する', '离开', '離開']);
@@ -128,7 +136,8 @@ describe('(4) 이탈 확인 문구 — 네 화면(리뷰 작성·수정·문의�
   it('LeaveConfirmModal은 common 키만 쓴다(community.* 참조 0)', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- 소스 잠금
     const src = (require('fs') as typeof import('fs')).readFileSync('src/components/LeaveConfirmModal.tsx', 'utf8');
-    for (const k of LEAVE) expect(src).toContain(`t('common.${k}')`);
+    for (const k of LEAVE) expect(src).toContain(`'common.${k}'`); // KB-776: 편집 변형과 삼항으로 고름 — 키 참조 자체를 잠금
+    for (const k of LEAVE_EDIT) expect(src).toContain(`'common.${k}'`);
     expect(src).not.toMatch(/t\('community\./);
   });
 });

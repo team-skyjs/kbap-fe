@@ -16,7 +16,10 @@
     "leaveTitle": "Keluar tanpa menyimpan?",
     "leaveBody": "Draf tidak akan disimpan.",
     "keepWriting": "Lanjut menulis",
-    "discard": "Buang"
+    "discard": "Buang",
+    "leaveEditTitle": "Keluar tanpa menyimpan?",
+    "leaveEditBody": "Perubahanmu tidak akan disimpan.",
+    "keepEditing": "Lanjut mengedit"
   },
   "intro": {
     "skip": "Lewati",
@@ -792,7 +795,7 @@
   "restrictionsEdit": {
     "title": "Edit pantangan",
     "save": "Simpan pantangan",
-    "notice": "Ini mengatur semua peringatan keamanan. Jaga keakuratannya — perubahan berlaku untuk semua hidangan seketika.",
+    "notice": "Semua peringatan keamanan memakai daftar ini. Ketuk Simpan untuk menerapkan perubahan.",
     "avoidNone": "Belum ada yang dihindari",
     "tapToRemove": "ketuk × untuk menghapus",
     "searchPlaceholder": "Cari bahan…",
