@@ -12,7 +12,7 @@ const load = (l: string) => require(`@/lib/i18n/${l}.json`) as { search: Record<
 // (2) + #236 /review A: Hermes엔 Intl.PluralRules가 없어 i18next는 `count === 1 ? one : other` 더미 규칙으로 떨어진다(폴리필 0).
 // `_other`만 둔 로케일은 1건에서 `_one`을 못 찾아 en으로 폴백("1 result"), ru는 few/many가 영영 안 골라진다. jest(Node Intl)에선 안 보임.
 // #236 /review 2R: 호출 0이던 죽은 키 4개(home·restrictionsEdit.avoidCount · scan.badgeUnit · feedback.replyCount)는 삭제
-const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'saved.count', 'myFoods.itemCount', 'scan.quotaTileAdTitle']; // KB-765: 광고 n편 보기
+const PLURAL_BASES = ['search.resultCount', 'scan.freeLeft', 'saved.count', 'myFoods.itemCount', 'scan.quotaTileAdTitle', 'reviewTime.minutesAgo', 'reviewTime.hoursAgo', 'reviewTime.daysAgo']; // KB-765: 광고 n편 보기 · KB-781: 작성 시각
 const get = (l: string, path: string): string | undefined => {
   const [sec, key] = path.split('.');
   return (load(l) as unknown as Record<string, Record<string, string>>)[sec]?.[key];
