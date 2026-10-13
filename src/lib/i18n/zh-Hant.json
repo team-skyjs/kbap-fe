@@ -257,7 +257,6 @@
     "resultTitle": "已掃描 {{count}} 道菜",
     "unmatchedNote": "不在我們的目錄中——請向店家確認。",
     "degradedNote": "這次有部分項目無法判斷——請謹慎留意。",
-    "spikeNote": "Spike：風險由後端即時提供（目前為模擬資料）。",
     "nudgeAction": "設定忌口食材",
     "nudgeRest": "後，我們會在這份菜單上標出該避開的菜",
     "permissionSettingsBody": "相機權限已關閉。請在設定中允許。",
