@@ -9,7 +9,8 @@
  *
  * - 터치 상자 고정(BADGE_W×BADGE_H) — 불꽃 캔버스는 위로 더 크다(일렁임·불티 여유, 터치 안 받음).
  * - active ↔ empty는 불꽃 색만 바뀐다(P-151 — 메트릭 불변).
- * - 모션(reanimated만): **계속 일렁임**(KB-706 — 펄스 대체, 1.1초 루프 · 포커스·포그라운드·동작 줄이기 꺼짐일 때만 · 꺼진 불꽃은 정지) · 값이 줄면 숫자 팝 + 불꽃 1회
+ * - 모션(reanimated만): **계속 일렁임**(KB-706 — 펄스 대체, 1.1초 루프 · 포커스·포그라운드·동작 줄이기 꺼짐일 때만 · KB-764: 꺼진 불꽃도 회색으로 일렁임)
+ *   · **0회(empty) 전용 강한 펄스**(KB-764 — 몸통 scale + 뒤 회색 글로우 opacity, 상수 EMPTY_PULSE 한 곳. active는 펄스 없음 유지) · 값이 줄면 숫자 팝 + 불꽃 1회
  *   깜빡 · `celebrate`가 켜지면 폭죽 1회 후 사라지고 `onCelebrateEnd`(JS 타이머 — 애니메이션 완료 콜백 없음). 동작 줄이기 = 정지 화면, 폭죽 없이 바로 종료.
  * - UI 스레드 코드 = useAnimatedStyle(공유값·숫자 상수만) + FlameShape의 useAnimatedProps(flameGeometry의 'worklet' 함수만) + 선언형 withTiming/withRepeat/withSequence/withSpring.
  */
@@ -26,6 +27,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
+import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { FlameShape } from '@/components/FlameShape';
 import { FLAME_COLORS, FLAME_LOOP_MS, FLAME_VIEWBOX, flameDrawnTopUnit } from '@/components/flameGeometry';
 import { useMotionState } from '@/lib/useMotionPaused';
@@ -38,8 +40,15 @@ export const BADGE_H = 72;
 export const FLAME_SCALE = 0.5;
 const FLAME_LEFT = BADGE_W / 2 - (50 - FLAME_VIEWBOX.x) * FLAME_SCALE;
 const FLAME_TOP = BADGE_H - 2 - (136 - FLAME_VIEWBOX.y) * FLAME_SCALE;
-/** 터치 상자 위 끝보다 불꽃(부푼 정점·불티 포함)이 그려질 수 있는 높이(px) — 위쪽 요소를 덮지 않게 하는 한계 계산용(#234) */
-export const BADGE_DRAWN_ABOVE = Math.max(0, -(FLAME_TOP + (flameDrawnTopUnit() - FLAME_VIEWBOX.y) * FLAME_SCALE));
+/** KB-764(예진 10/13): 0회 불꽃 강한 펄스 — 시뮬 캡처로 예진 확인 뒤 조정하는 자리(여기 한 곳). 반 주기씩 올라갔다 내려온다(ease in-out).
+ *  글로우는 0.35↔0.7로 같은 주기에 맞춰 오르내린다(자기 공유값 — 렌더 중 JS 값을 워클릿이 읽지 않게, #258 /review 3). */
+export const EMPTY_PULSE = { scaleTo: 1.12, periodMs: 1200, glowFrom: 0.35, glowTo: 0.7, settleMs: 200 } as const;
+/** 몸통 scale 기준점(상자 가운데) 기준 y를 펄스 정점(scaleTo)으로 키운 자리 — 그려지는 범위 계산용 */
+const peakY = (y: number) => BADGE_H / 2 + (y - BADGE_H / 2) * Math.max(1, EMPTY_PULSE.scaleTo);
+/** 터치 상자 위 끝보다 불꽃(부푼 정점·불티·**0회 펄스 정점** 포함)이 그려질 수 있는 높이(px) — 위쪽 요소를 덮지 않게 하는 한계 계산용(#234 · #258 /review 1) */
+export const BADGE_DRAWN_ABOVE = Math.max(0, -peakY(FLAME_TOP + (flameDrawnTopUnit() - FLAME_VIEWBOX.y) * FLAME_SCALE));
+/** 터치 상자 아래 끝보다 불꽃이 그려질 수 있는 높이(px) — 0회 펄스 정점에서 rest 불꽃 아래(상자 아래 2px 위)가 내려온 만큼. 아래 한계 계산용 */
+export const BADGE_DRAWN_BELOW = Math.max(0, Math.ceil(peakY(BADGE_H - 2) - BADGE_H));
 /** 숫자 중심 = rest 안쪽 불꽃 가운데(단위 y 100) */
 const NUM_CENTER_Y = FLAME_TOP + (100 - FLAME_VIEWBOX.y) * FLAME_SCALE;
 const NUM_BOX_H = 34;
@@ -47,6 +56,9 @@ const PARTICLES = 12;
 const BURST_MS = 700;
 /** 폭죽 종료 = JS 타이머(애니메이션 길이 + 여유). 완료 콜백(runOnJS)을 쓰지 않아 워클릿→JS 경계 0(P-065/P-131 취지). */
 export const CELEBRATE_END_MS = BURST_MS + 100;
+// 뒤 회색 글로우(상자 가운데 원) — 지름은 펄스 정점에서도 터치 상자 안에 들어오게 상수에서 파생(#258 /review 1: 84px는 탭바까지 덮었다).
+// 절대 배치라 프레임(터치 상자) 불변.
+export const GLOW_D = Math.floor(Math.min(BADGE_W, BADGE_H) / Math.max(1, EMPTY_PULSE.scaleTo));
 
 export interface CountdownBadgeProps {
   value: number;
@@ -67,9 +79,31 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
   const pop = useSharedValue(1);
   const flicker = useSharedValue(1);
   const burst = useSharedValue(0);
+  const pulse = useSharedValue(0); // KB-764 0회 펄스 0..1(몸통 scale)
+  const glow = useSharedValue(0); // KB-764 0회 글로우 opacity(0 · 0.35↔0.7)
 
-  // KB-706: 계속 일렁임(펄스 대체) — 반복은 포커스·포그라운드·동작 줄이기 확정 꺼짐(미확인 = 정지, #229 규칙)일 때만. 그 밖·꺼진 불꽃·축하 중 = 가라앉은 모양.
-  const flickering = !paused && state === 'active' && !celebrate;
+  // KB-706: 계속 일렁임(펄스 대체) — 반복은 포커스·포그라운드·동작 줄이기 확정 꺼짐(미확인 = 정지, #229 규칙)일 때만. 그 밖·축하 중 = 가라앉은 모양.
+  // KB-764: 꺼진 불꽃(empty)도 일렁인다(회색 그대로).
+  const flickering = !paused && !celebrate;
+  const pulsing = flickering && state === 'empty';
+  React.useEffect(() => {
+    if (!pulsing) {
+      // #258 /review 2: 멈출 때 지금 값에서 짧게 가라앉힌다(1.12 → 1 한 프레임 점프 금지)
+      cancelAnimation(pulse);
+      cancelAnimation(glow);
+      const settle = { duration: EMPTY_PULSE.settleMs };
+      pulse.value = withTiming(0, settle);
+      glow.value = withTiming(0, settle);
+      return;
+    }
+    const half = { duration: EMPTY_PULSE.periodMs / 2, easing: Easing.inOut(Easing.ease) };
+    pulse.value = withRepeat(withSequence(withTiming(1, half), withTiming(0, half)), -1, false);
+    glow.value = withRepeat(withSequence(withTiming(EMPTY_PULSE.glowTo, half), withTiming(EMPTY_PULSE.glowFrom, half)), -1, false);
+    return () => {
+      cancelAnimation(pulse);
+      cancelAnimation(glow);
+    };
+  }, [pulsing, pulse, glow]);
   React.useEffect(() => {
     if (!flickering) {
       cancelAnimation(phase);
@@ -117,9 +151,12 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
   }, [celebrate, visible, reduceMotion, burst]);
 
   const bodyStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + burst.value * 0.15 }],
+    transform: [{ scale: (1 + burst.value * 0.15) * (1 + pulse.value * (EMPTY_PULSE.scaleTo - 1)) }],
     opacity: flicker.value * (1 - burst.value),
   }));
+  // 글로우는 두 상태 모두 마운트(P-151 — 상태로 레이아웃 불변), 보이는 건 0회 펄스 동안만. 정지(동작 줄이기·가려짐) = 0 → 정지 화면은 종전과 같다.
+  // opacity는 공유값만(렌더 중 JS 값 0 — 파일 헤더 UI 스레드 규칙).
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
   const numStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
   return (
@@ -132,12 +169,23 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
       testID={testID}
     >
       <Animated.View style={[styles.body, bodyStyle]} pointerEvents="none">
+        <Animated.View style={[styles.glow, glowStyle]} pointerEvents="none" testID={`${testID}-empty-glow`}>
+          <Svg width={GLOW_D} height={GLOW_D}>
+            <Defs>
+              <RadialGradient id="emptyGlow" cx="50%" cy="50%" r="50%">
+                <Stop offset="0" stopColor={C.ink3} stopOpacity={0.9} />
+                <Stop offset="1" stopColor={C.ink3} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
+            <Circle cx={GLOW_D / 2} cy={GLOW_D / 2} r={GLOW_D / 2} fill="url(#emptyGlow)" />
+          </Svg>
+        </Animated.View>
         <View style={styles.flame}>
           <FlameShape scale={FLAME_SCALE} state={state} phase={flickering ? phase : undefined} />
         </View>
         <View style={styles.label}>
           <Animated.View style={numStyle}>
-            <Text style={styles.num} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} testID={`${testID}-value`}>
+            <Text style={[styles.num, state === 'empty' && styles.numEmpty]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6} testID={`${testID}-value`}>
               {value}
             </Text>
           </Animated.View>
@@ -168,6 +216,7 @@ const styles = StyleSheet.create({
   // KB-706: 그림자·흰 테두리 없음(레퍼런스에 없음). 불꽃 캔버스는 상자보다 크다(위로 일렁임·불티) — 터치는 상자만.
   body: { width: BADGE_W, height: BADGE_H },
   flame: { position: 'absolute', left: FLAME_LEFT, top: FLAME_TOP },
+  glow: { position: 'absolute', left: (BADGE_W - GLOW_D) / 2, top: (BADGE_H - GLOW_D) / 2, width: GLOW_D, height: GLOW_D },
   label: { position: 'absolute', left: 0, right: 0, top: NUM_CENTER_Y - NUM_BOX_H / 2, height: NUM_BOX_H, alignItems: 'center', justifyContent: 'center' },
   // 흰 숫자 + 불꽃의 어두운 주황 그림자(FLAME_COLORS.numberShadow — 제안값) — 주황·노랑 위에서 또렷하게(KB-701 재발 방지)
   num: {
@@ -180,6 +229,8 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
+  // R-64: 0회 = 그림자 색만 중립 회색(오프셋·반경 불변 — 상태로 바뀌는 건 색뿐, P-151)
+  numEmpty: { textShadowColor: FLAME_COLORS.numberShadowEmpty },
   particle: { position: 'absolute', width: 6, height: 6, borderRadius: 3, top: BADGE_H / 2 - 3, left: BADGE_W / 2 - 3 },
 });
 

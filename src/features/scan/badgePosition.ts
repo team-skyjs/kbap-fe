@@ -5,7 +5,7 @@
  *  뱃지가 스캔 버튼(주 CTA)·검색창을 덮어 버튼을 누르려다 시트가 열렸다) · 아래: 탭바 FAB 돌출부 위. 검색 줄 측정 전엔 그리지 않는다.
  *  화면 크기가 달라지거나 한계 위에 저장된 값은 복원 때 범위 안으로 당긴다.
  */
-import { BADGE_DRAWN_ABOVE, BADGE_H, BADGE_W } from '@/components/CountdownBadge';
+import { BADGE_DRAWN_ABOVE, BADGE_DRAWN_BELOW, BADGE_H, BADGE_W } from '@/components/CountdownBadge';
 import { FAB_OVERHANG } from '@/components/TabBar';
 
 export const BADGE_POS_KEY = 'kb706.quotaBadgePos.v1';
@@ -48,7 +48,7 @@ export function badgePlace(saved: BadgePos | null, areaW: number, b: { min: numb
 /** 끌 수 있는 세로 범위(홈 영역 높이 · 위 한계 badgeMinTop) */
 export function badgeBounds(areaH: number, minTop: number): { min: number; max: number } {
   const min = minTop;
-  return { min, max: Math.max(min, areaH - BADGE_H - BOTTOM_CLEAR) };
+  return { min, max: Math.max(min, areaH - BADGE_H - BADGE_DRAWN_BELOW - BOTTOM_CLEAR) }; // KB-764: 0회 펄스 정점이 상자 아래로 그려지는 만큼
 }
 
 export function clampTop(top: number, b: { min: number; max: number }): number {
