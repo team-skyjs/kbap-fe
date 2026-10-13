@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { ActivityIndicator, Keyboard, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -184,13 +185,15 @@ export function PlacePickerSheet({
   // Codex #195: resultsOnly(주문 장소 PATCH — placeId 필수)는 placeId 없는 결과를 **렌더하지 않는다**(골라도 보낼 수 없는 행 금지)
   const results = (active.data ?? []).filter((p) => !resultsOnly || !!p.placeId);
   // 프리즈 픽스: 닫힘·확정 전부 키보드 선해제 경유(위 runAfterKeyboardHidden 참조)
+  const kbLift = useKeyboardLift(); // KB-768: 안드 시트 하단을 키보드 위로(훅은 아래 이른 반환 전)
   const close = () => runAfterKeyboardHidden(onClose);
   const pick = (p: ReviewPlaceTag) => runAfterKeyboardHidden(() => onPick(p));
   if (!open) return null;
   return (
     <Modal visible transparent animationType="slide" onRequestClose={close}>
       <View style={styles.pickerBackdrop}>
-        <View style={styles.pickerSheet}>
+        {/* KB-768(QA B2-1 125): 안드 edge-to-edge라 Modal 창이 안 줄어 하단(목록·닫기)이 키보드 뒤 — 시트 아래를 키보드 위 끝까지 비운다. iOS 무변 */}
+        <View style={[styles.pickerSheet, Platform.OS === 'android' && kbLift > 0 && { paddingBottom: kbLift }]}>
           {/* A-RW-11(KB-486): 제목 중앙·X 없음(닫기 = 스크림 탭 현행 유지) */}
           <View style={styles.pickerHeader}>
             <Text style={styles.pickerTitle}>{t('review.placeSheetTitle')}</Text>

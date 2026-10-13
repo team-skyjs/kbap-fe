@@ -3,8 +3,8 @@
  *
  * iOS: InputAccessoryView(공유 nativeID) — 키보드 위 액세서리 바에 ↓ 버튼.
  *      전 TextInput은 아래 `Input` 래퍼로 연결(신규 화면도 래퍼만 쓰면 자동).
- * 안드: 키보드 show/hide 이벤트 기반 하단 고정 바 — softwareKeyboardLayoutMode
- *      기본 resize라 bottom:0 = 키보드 바로 위. 표시 중에만 렌더.
+ * 안드: 키보드 show/hide 이벤트 기반 바 — KB-768: edge-to-edge(Expo 57)라 창이 줄지 않으므로
+ *      bottom = 키보드 위 끝(useKeyboardLift). 표시 중에만 렌더.
  * 톤은 앱 스타일(카드 배경+hairline) — 시스템 흉내 금지(발주).
  *
  * 배치: 루트 _layout에 1회 + **TextInput을 품은 Modal 안마다 `modal` 프롭으로
@@ -14,6 +14,7 @@
 import * as React from 'react';
 import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { color as C } from '@/lib/theme';
+import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { resolveFont } from '@/lib/i18n/fonts';
 import { IconChevronDown } from './icons';
 import { MAX_FONT_SCALE } from './Txt';
@@ -49,20 +50,12 @@ function Bar() {
   );
 }
 
-/** 안드 — 키보드 표시 중에만 하단 고정(resize 모드: bottom 0 = 키보드 위). */
+/** 안드 — 키보드 표시 중에만, 키보드 위 끝에 붙여서(KB-768: edge-to-edge라 창이 안 줄어 bottom 0 = 키보드 뒤). */
 function AndroidBar() {
-  const [visible, setVisible] = React.useState(false);
-  React.useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setVisible(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setVisible(false));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
-  if (!visible) return null;
+  const lift = useKeyboardLift();
+  if (lift <= 0) return null;
   return (
-    <View style={styles.androidWrap} pointerEvents="box-none">
+    <View style={[styles.androidWrap, { bottom: lift }]} pointerEvents="box-none">
       <Bar />
     </View>
   );

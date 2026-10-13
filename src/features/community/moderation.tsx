@@ -10,8 +10,9 @@
  * - 전부 공용 ActionSheet('context' 변형) 경유 — 글·댓글·대댓글 동일 배선.
  */
 import * as React from 'react';
-import { Keyboard, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { KeyboardDismissBar } from '@/components';
+import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -69,19 +70,9 @@ export function ModerationFlow({
   const submitReport = useSubmitReport();
   const blockUser = useBlockUser();
 
-  // P-194: "Something else" 자유입력이 키보드에 가림 — P-158 실측 문법(keyboardDidShow
-  // 높이) 재사용, 시트를 키보드 위로 리프트. iOS만 — Android는 resize 모드가 창을
-  // 줄여 자동 회피(중복 리프트 방지).
-  const [kbH, setKbH] = React.useState(0);
-  React.useEffect(() => {
-    if (Platform.OS !== 'ios') return;
-    const show = Keyboard.addListener('keyboardDidShow', (e) => setKbH(e.endCoordinates?.height ?? 0));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbH(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
+  // P-194: "Something else" 자유입력이 키보드에 가림 — 시트를 키보드 위로 리프트.
+  // KB-768: 두 플랫폼 — 안드도 edge-to-edge(Expo 57)라 Modal 창이 resize되지 않는다(lib/keyboardAvoid).
+  const kbH = useKeyboardLift();
 
   // 대상이 바뀔 때 플로우 리셋 — KB-603: 렌더 중 이전값 비교(React 공식 패턴), 옛 대상의 phase가 한 프레임도 보이지 않는다
   const targetKey = target ? `${target.type}\u0000${target.id}` : null;
