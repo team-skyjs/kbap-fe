@@ -34,7 +34,7 @@ jest.mock('react-native-reanimated', () => {
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     cancelAnimation: () => {},
     useAnimatedProps: (f: () => unknown) => f(), // KB-706 불꽃 일렁임
-    Easing: { linear: (x: number) => x },
+    Easing: { linear: (x: number) => x, ease: (x: number) => x, inOut: (f: unknown) => f },
   };
 });
 // KB-706: 끌어 놓기 — GestureDetector는 자식 그대로, Pan 콜백은 기록(테스트가 직접 몬다)
@@ -70,7 +70,7 @@ jest.mock('@/lib/flags', () => {
 });
 
 import { HomeQuotaBadge, _resetQuotaCelebrationMemoryForTest } from '../HomeQuotaBadge';
-import { BADGE_DRAWN_ABOVE, BADGE_H, BADGE_W, FLAME_SCALE } from '@/components/CountdownBadge';
+import { BADGE_DRAWN_ABOVE, BADGE_DRAWN_BELOW, BADGE_H, BADGE_W, FLAME_SCALE } from '@/components/CountdownBadge';
 import { BADGE_POS_KEY, _setBadgePosCacheForTest, badgeBounds, clampTop, edgeX, nearestSide, parseBadgePos } from '../badgePosition';
 import { FLAME_VIEWBOX, OUTER_FRAMES, OUTER_REST_D, flameDrawnTopUnit } from '@/components/flameGeometry';
 import { FAB_OVERHANG } from '@/components/TabBar';
@@ -193,15 +193,31 @@ describe('계속 일렁임 — 펄스 대체 · 정지 조건', () => {
     expect(mockRepeat).toHaveBeenCalledTimes(1);
   });
 
-  it('꺼진 불꽃(0회) = 회색 정지 — 루프 0 · 빛·불티 0', async () => {
+  it('KB-764: 꺼진 불꽃(0회) = 회색 그대로 일렁임 + 강한 펄스(루프 3 — 일렁임·펄스·글로우) · 노란 빛·불티 0 · 회색 글로우 마운트', async () => {
     mockQuota = Q(0);
     const t = render();
     await flush();
     layout(t);
     await flush(); // 측정 뒤 마운트된 뱃지의 동작 줄이기 조회
-    expect(mockRepeat).not.toHaveBeenCalled();
+    expect(mockRepeat).toHaveBeenCalledTimes(3); // 일렁임 · 펄스 · 글로우(#258 /review 3 — 글로우 자기 공유값)
     expect(t.root.findAll((n) => n.props?.testID === 'flame-empty').length).toBeGreaterThan(0);
+    expect(outer(t).props.animatedProps).toBeDefined(); // 일렁임
+    expect(outer(t).props.fill).not.toMatch(/url\(/); // 회색(그라데이션 아님)
     expect(t.root.findAll((n) => n.props?.testID === 'flame-glow' || n.props?.testID === 'flame-spark')).toHaveLength(0);
+    expect(t.root.findAll((n) => n.props?.testID === 'countdown-badge-empty-glow' && typeof n.type === 'string').length).toBe(1);
+  });
+
+  it('KB-764: 꺼진 불꽃 + 동작 줄이기 = 전부 정지(루프 0 · 가라앉은 모양 · 글로우 0)', async () => {
+    mockQuota = Q(0);
+    mockReduced = true;
+    const t = render();
+    await flush();
+    layout(t);
+    await flush();
+    expect(mockRepeat).not.toHaveBeenCalled();
+    expect(outer(t).props.d).toBe(OUTER_REST_D);
+    const glow = t.root.findAll((n) => n.props?.testID === 'countdown-badge-empty-glow' && typeof n.type === 'string')[0];
+    expect(JSON.stringify(glow.props.style)).toContain('"opacity":0');
   });
 });
 
@@ -243,7 +259,7 @@ describe('끌어 놓기 — 가장자리 스냅 · 저장 · 복원', () => {
     const t2 = render();
     await flush();
     layout(t2);
-    expect(place(t2)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: AREA.h - BADGE_H - (FAB_OVERHANG + 8) }));
+    expect(place(t2)).toEqual(expect.objectContaining({ x: AREA.w - 20 - BADGE_W, y: AREA.h - BADGE_H - BADGE_DRAWN_BELOW - (FAB_OVERHANG + 8) })); // KB-764: 0회 펄스 정점이 상자 아래로 그려지는 만큼
   });
 
   it('끄는 동안 위로는 검색 줄 아래 + 여백 + 불꽃 그림 높이까지만(#234 — 헤더 아래가 아님)', async () => {
@@ -443,7 +459,8 @@ describe('위치 계산(순수)', () => {
   });
   it('범위·가장자리·가까운 쪽', () => {
     const b = badgeBounds(700, 104);
-    expect(b).toEqual({ min: 104, max: 700 - BADGE_H - (FAB_OVERHANG + 8) });
+    expect(b).toEqual({ min: 104, max: 700 - BADGE_H - BADGE_DRAWN_BELOW - (FAB_OVERHANG + 8) });
+    expect(BADGE_DRAWN_BELOW).toBeGreaterThan(0); // 0회 펄스 정점(1.12)에서 불꽃 아래가 상자 밖으로 내려온다
     expect(clampTop(0, b)).toBe(104);
     expect(clampTop(9999, b)).toBe(b.max);
     expect(edgeX('left', 390)).toBe(20);
