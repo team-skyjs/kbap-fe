@@ -135,7 +135,7 @@ it('KB-709 검색 계측 result_count = 화면에 보인 결과 음식 수(이�
   const analytics = jest.requireActual<typeof import('@/lib/analytics')>('@/lib/analytics');
   const spy = jest.spyOn(analytics, 'track').mockImplementation(() => {});
   try {
-    mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, data: CATALOG, fetchNextPage: jest.fn(), hasNextPage: false, isFetchingNextPage: false });
+    mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, isSuccess: true, data: CATALOG, fetchNextPage: jest.fn(), hasNextPage: false, isFetchingNextPage: false }); // KB-786: 성공 검색만 계측(실 쿼리의 isSuccess)
     const tree = render(<Search />);
     const input = tree.root.findAllByType(TextInput)[0];
     act(() => input.props.onChangeText('kim'));

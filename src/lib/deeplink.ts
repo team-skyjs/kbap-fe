@@ -87,12 +87,17 @@ let resolveOnBlur = false;
 let gates = 0;
 let pending: string | null = null;
 let gateTimer: ReturnType<typeof setTimeout> | null = null;
+/** KB-786(#281 Codex P2): 게이트 해제 지연 중(타이머 대기) — 이 동안 온 새 링크도 보류로 받아 보류분을 교체한다(옛 링크가 새 링크 위로 뒤늦게 덮지 않게) */
+let releasing = false;
 /** 게이트가 풀린 뒤 다음 화면 포커스(로그인→온보딩 교체 등)가 이어 붙을 시간 — 그 사이엔 flush하지 않는다 */
 const GATE_RELEASE_MS = 300;
 
 function go(to: string): void {
   try {
-    router.push(to as Href);
+    // KB-786(#278 Codex P2): 탭 목적지 = 이미 있는 (tabs) 셸로 되돌아가 탭 전환(dismissTo = React Navigation popTo — 없으면 현재 화면 교체).
+    // push면 홈에서 kbap://home이 셸 2장, 상세에서 열면 back이 링크 전 상세로 갔다. 스택 화면(상세·검색 등)은 그대로 push.
+    if (to.startsWith('/(tabs)')) router.dismissTo(to as Href);
+    else router.push(to as Href);
   } catch {
     /* 라우터 미준비 — 무시(보류 경로가 다시 시도) */
   }
@@ -101,7 +106,7 @@ function go(to: string): void {
 /** KB-783 후속(Android QA 10/14): 진입이 정착했고 게이트(로그인·온보딩) 위가 아니면 **어느 화면이든 즉시**(탭 밖 상세 스택 포함).
  *  전엔 탭 포커스일 때만 이동 → 상세에서 받은 링크가 보류됐다가 back으로 탭에 돌아오는 순간 엉뚱하게 점프했다. */
 function canNavigateNow(): boolean {
-  return entryResolved && gates === 0 && tabsSeen;
+  return entryResolved && gates === 0 && !releasing && tabsSeen;
 }
 
 /** 두 입구(+native-intent·에어브릿지 콜백) 공용. 이동했거나 보류했으면 true. */
@@ -111,7 +116,8 @@ export function handleDeeplink(url: string, now: number = Date.now()): boolean {
   if (last && last.to === to && now - last.at < DEDUPE_MS) return true; // 같은 링크가 두 입구로 — 1회만
   last = { to, at: now };
   if (!canNavigateNow()) {
-    pending = to; // 스플래시·로그인·온보딩 위 — 게이트 통과 후 이동(마지막 것만)
+    pending = to; // 스플래시·로그인·온보딩 위(·게이트 해제 대기) — 통과 후 이동(마지막 것만)
+    notifyEntry(); // KB-786: 보류 상태 변화 = 화면 조회 보류(useScreenTracking)
     return true;
   }
   go(to);
@@ -122,7 +128,8 @@ function flushIfReady(): void {
   if (!canNavigateNow() || !pending) return;
   const to = pending;
   pending = null;
-  go(to);
+  go(to); // 이동 먼저 — 아래 알림으로 화면 조회가 재개될 때 세그먼트는 이미 목적지(첫 기록 = 딥링크 목적지)
+  notifyEntry();
 }
 
 /** (tabs) 포커스 신호(useFocusEffect). 진입이 정착했으면 보류분 1회 이동. */
@@ -135,6 +142,12 @@ export function setDeeplinkReady(on: boolean): void {
     notifyEntry();
     return;
   }
+  if (on && gates === 0 && releasing) {
+    // 탭이 포커스됐고 게이트도 없다 = 안전한 착지 — 해제 대기를 끝내고 바로(KB-786)
+    releasing = false;
+    if (gateTimer) clearTimeout(gateTimer);
+    gateTimer = null;
+  }
   if (on) flushIfReady();
 }
 
@@ -143,9 +156,12 @@ export function setDeeplinkGate(on: boolean): void {
   gates = Math.max(0, gates + (on ? 1 : -1));
   if (gateTimer) clearTimeout(gateTimer);
   gateTimer = null;
+  releasing = false;
   if (on || !pending) return;
+  releasing = true;
   gateTimer = setTimeout(() => {
     gateTimer = null;
+    releasing = false;
     flushIfReady();
   }, GATE_RELEASE_MS);
 }
@@ -175,6 +191,12 @@ export function subscribeEntryResolved(cb: () => void): () => void {
   };
 }
 
+/** KB-786(#280 Codex P2): 보류된 딥링크가 있으면 화면 조회를 미룬다 — 콜드 스타트 딥링크에서 기본 루트(홈)가 먼저 기록되던 것.
+ *  이동(flush) 뒤 알림으로 재개되면 그때 화면 = 목적지. */
+export function hasPendingDeeplink(): boolean {
+  return pending !== null;
+}
+
 /** 진입 정착 여부 — 홈 진입 계측(HOME_VIEWED)도 같은 신호로 막는다(로그인 게이트 전 홈 마운트는 '홈 진입'이 아니다) */
 export function isEntryResolved(): boolean {
   return entryResolved;
@@ -188,6 +210,7 @@ export function __resetDeeplinkForTest(entry = true): void {
   entryResolved = entry;
   resolveOnBlur = false;
   gates = 0;
+  releasing = false;
   if (gateTimer) clearTimeout(gateTimer);
   gateTimer = null;
   pending = null;
