@@ -6,8 +6,10 @@
  * 그래서 같은 URL이 ①②로 두 번 올 수 있다 → 짧은 창 안의 같은 경로는 1회만 이동(중복 이동 0).
  *
  * 허용 경로 = 아래 ROUTES 표뿐(알 수 없는 경로·파라미터 형식 불일치 = 무시). 알림 탭은 이 경로가 아니다(expo-notifications 데이터 → pushAdapter).
- * 게이트: 홈 탭 레이아웃이 마운트되기 전(부팅·온보딩·로그인 중)에 도착하면 보류했다가 탭 진입 시 1회 이동(마지막 것만).
+ * 게이트: 진입 정착 전(스플래시·신규 설치) 또는 로그인·온보딩 화면 위에서 도착하면 보류했다가 통과 뒤 1회 이동(마지막 것만).
+ * 정착 뒤 일반 화면(탭·탭 밖 상세 스택)에선 즉시 이동.
  */
+import * as React from 'react';
 import { router, type Href } from 'expo-router';
 
 export const DEEPLINK_SCHEME = 'kbap';
@@ -72,14 +74,21 @@ export function isOwnedSystemUrl(url: string): boolean {
 const DEDUPE_MS = 3000;
 let last: { to: string; at: number } | null = null;
 let tabsFocused = false;
+/** 이 프로세스에서 탭이 한 번이라도 포커스됐나 — 네비게이터가 떠 있고 진입을 탭으로 통과했다는 신호(콜드 스타트에 스택 마운트 전 push 유실 방지) */
+let tabsSeen = false;
 /** 진입 게이트 정착(#278 Codex 3R) — RootLayout이 첫 실행 판별(entryChecked)과 로그인 리다이렉트까지 끝냈는가.
- *  신규 설치는 (tabs)가 먼저 마운트·포커스된 **뒤** 루트 effect가 /login으로 교체한다(자식 effect가 먼저 돈다) — 그 틈에
- *  탭 포커스만 보고 이동하면 보류 링크가 로그인 직전에 소비·유실된다. 그래서 준비 = 탭 포커스 ∧ 진입 정착. */
+ *  신규 설치는 (tabs)가 먼저 마운트·포커스된 **뒤** 루트 effect가 /login으로 교체한다(자식 effect가 먼저 돈다) — 그 틈의 탭 포커스로
+ *  이동하면 보류 링크가 로그인 직전에 소비·유실된다. */
 let entryResolved = false;
 /** 신규 설치: /login 교체(state 갱신)는 즉시지만 탭의 blur(포커스 정리)는 다음 렌더 — 그 사이 정착하면 아직 focused인 탭 기준으로
  *  로그인 위에 밀어 넣는다(#278 Codex 4R). 그래서 교체 직후엔 "탭을 떠날 때 정착"으로 예약한다. */
 let resolveOnBlur = false;
+/** 게이트 화면(로그인·온보딩)이 포커스 중인 수 — 이 위에선 이동하지 않고 보류(useDeeplinkGate) */
+let gates = 0;
 let pending: string | null = null;
+let gateTimer: ReturnType<typeof setTimeout> | null = null;
+/** 게이트가 풀린 뒤 다음 화면 포커스(로그인→온보딩 교체 등)가 이어 붙을 시간 — 그 사이엔 flush하지 않는다 */
+const GATE_RELEASE_MS = 300;
 
 function go(to: string): void {
   try {
@@ -89,14 +98,20 @@ function go(to: string): void {
   }
 }
 
+/** KB-783 후속(Android QA 10/14): 진입이 정착했고 게이트(로그인·온보딩) 위가 아니면 **어느 화면이든 즉시**(탭 밖 상세 스택 포함).
+ *  전엔 탭 포커스일 때만 이동 → 상세에서 받은 링크가 보류됐다가 back으로 탭에 돌아오는 순간 엉뚱하게 점프했다. */
+function canNavigateNow(): boolean {
+  return entryResolved && gates === 0 && tabsSeen;
+}
+
 /** 두 입구(+native-intent·에어브릿지 콜백) 공용. 이동했거나 보류했으면 true. */
 export function handleDeeplink(url: string, now: number = Date.now()): boolean {
   const to = resolveDeeplink(url);
   if (!to) return false; // 미지 경로·에어브릿지 https 원본(SDK가 kbap://로 다시 준다) = 무시
   if (last && last.to === to && now - last.at < DEDUPE_MS) return true; // 같은 링크가 두 입구로 — 1회만
   last = { to, at: now };
-  if (!(tabsFocused && entryResolved)) {
-    pending = to; // 게이트 뒤 — 탭 진입 시 이동(마지막 것만)
+  if (!canNavigateNow()) {
+    pending = to; // 스플래시·로그인·온보딩 위 — 게이트 통과 후 이동(마지막 것만)
     return true;
   }
   go(to);
@@ -104,27 +119,40 @@ export function handleDeeplink(url: string, now: number = Date.now()): boolean {
 }
 
 function flushIfReady(): void {
-  if (!(tabsFocused && entryResolved) || !pending) return;
+  if (!canNavigateNow() || !pending) return;
   const to = pending;
   pending = null;
   go(to);
 }
 
-/** (tabs) 포커스 신호(useFocusEffect). 진입이 정착했으면 보류분 1회 이동. 블러(로그인·온보딩이 위·교체) = 다시 보류. */
+/** (tabs) 포커스 신호(useFocusEffect). 진입이 정착했으면 보류분 1회 이동. */
 export function setDeeplinkReady(on: boolean): void {
   tabsFocused = on;
+  if (on) tabsSeen = true;
   if (!on && resolveOnBlur) {
     resolveOnBlur = false;
-    entryResolved = true; // 탭을 떠난 뒤 정착 — 이동은 다음 탭 포커스(로그인·온보딩 뒤)에서
+    entryResolved = true; // 탭을 떠난 뒤 정착 — 이동은 게이트 통과 뒤(탭 포커스·게이트 해제)
     return;
   }
-  flushIfReady();
+  if (on) flushIfReady();
+}
+
+/** 게이트 화면(로그인·온보딩) 포커스 동안 이동 보류. 해제는 짧은 지연 뒤 재확인(다음 게이트가 이어 붙으면 그대로 보류) */
+export function setDeeplinkGate(on: boolean): void {
+  gates = Math.max(0, gates + (on ? 1 : -1));
+  if (gateTimer) clearTimeout(gateTimer);
+  gateTimer = null;
+  if (on || !pending) return;
+  gateTimer = setTimeout(() => {
+    gateTimer = null;
+    flushIfReady();
+  }, GATE_RELEASE_MS);
 }
 
 /** RootLayout 전용 — 진입 게이트 정착(일반 부팅 = 스택 렌더 전, 신규 설치 = /login 교체 직후). 한 번 true면 유지(앱 프로세스 동안). */
 export function markEntryResolved(): void {
   entryResolved = true;
-  flushIfReady();
+  if (tabsFocused) flushIfReady();
 }
 
 /** RootLayout 전용 — 신규 설치 /login 교체 **직후**. 탭이 아직 포커스면 블러 때 정착(그 전엔 이동 0), 탭이 없으면 즉시 정착. */
@@ -142,7 +170,19 @@ export function isEntryResolved(): boolean {
 export function __resetDeeplinkForTest(entry = true): void {
   last = null;
   tabsFocused = false;
-  entryResolved = entry; // 기존 유닛 = 정착된 앱(진입 흐름 유닛만 false로 시작)
+  tabsSeen = entry; // 기존 유닛 = 정착된 앱(탭을 이미 지나옴) — 진입 흐름 유닛만 false로 시작
+  entryResolved = entry;
   resolveOnBlur = false;
+  gates = 0;
+  if (gateTimer) clearTimeout(gateTimer);
+  gateTimer = null;
   pending = null;
+}
+
+/** 로그인·온보딩 화면 전용 — 마운트 동안 딥링크 보류(게이트). 두 화면은 떠날 때 항상 replace(언마운트)라 마운트 = 그 위에 있음 */
+export function useDeeplinkGate(): void {
+  React.useEffect(() => {
+    setDeeplinkGate(true);
+    return () => setDeeplinkGate(false);
+  }, []);
 }

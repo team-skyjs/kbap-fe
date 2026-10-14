@@ -6,7 +6,7 @@
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ router: { push: (h: string) => mockPush(h) } }));
 
-import { handleDeeplink, isEntryResolved, isOwnedSystemUrl, markEntryResolved, markEntryResolvedAfterLeavingTabs, resolveDeeplink, setDeeplinkReady, SUPPORTED_DEEPLINKS, __resetDeeplinkForTest } from '../deeplink';
+import { handleDeeplink, isEntryResolved, isOwnedSystemUrl, markEntryResolved, markEntryResolvedAfterLeavingTabs, resolveDeeplink, setDeeplinkGate, setDeeplinkReady, SUPPORTED_DEEPLINKS, __resetDeeplinkForTest } from '../deeplink';
 import { redirectSystemPath } from '../../app/+native-intent';
 
 beforeEach(() => {
@@ -60,6 +60,8 @@ it('준비됨 = 즉시 이동 · 같은 링크가 두 입구로 연달아 = 1회
 });
 
 it('게이트 전 도착(지연 딥링크·콜드 스타트) = 보류 → 탭 진입 시 1회(마지막 것만) · 재진입에 재이동 0', () => {
+  __resetDeeplinkForTest(false); // 콜드 스타트: 스택·진입 전
+  markEntryResolved(); // 일반 부팅 — 정착은 됐어도 탭(네비게이터)이 아직 없다 → 보류
   handleDeeplink('kbap://scan', 1);
   handleDeeplink('kbap://food/9', 2);
   expect(mockPush).not.toHaveBeenCalled();
@@ -128,6 +130,66 @@ it('일반 부팅(로그인 리다이렉트 없음) = 스택 렌더 전 정착 �
   expect(mockPush).not.toHaveBeenCalled(); // 탭이 아직 없다
   setDeeplinkReady(true);
   expect(mockPush.mock.calls).toEqual([['/scan']]);
+});
+
+describe('KB-783 후속(Android QA 10/14) — 정착 뒤엔 어느 화면이든 즉시, 보류는 스플래시·로그인·온보딩 위만', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('탭 밖 스택(상세 등 — 탭 블러)에서 받은 링크 = 즉시 이동, back으로 탭 복귀 시 재점프 0', () => {
+    setDeeplinkReady(true); // 홈
+    setDeeplinkReady(false); // 상세 push → 탭 블러
+    handleDeeplink('kbap://profile', 1);
+    expect(mockPush.mock.calls).toEqual([['/(tabs)/profile']]);
+    setDeeplinkReady(true); // back으로 탭
+    expect(mockPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('로그인·온보딩(게이트) 위 = 보류 → 로그인→온보딩 교체 사이엔 flush 0 → 게이트 해제 뒤 1회(탭 밖 화면 복귀여도)', () => {
+    setDeeplinkReady(false); // 상세 위에서 로그인 push
+    setDeeplinkGate(true); // 로그인 마운트
+    handleDeeplink('kbap://food/3', 1);
+    expect(mockPush).not.toHaveBeenCalled();
+    setDeeplinkGate(false); // 로그인 → 온보딩 교체: 로그인 언마운트…
+    setDeeplinkGate(true); // …온보딩 마운트(같은 커밋)
+    jest.advanceTimersByTime(1000);
+    expect(mockPush).not.toHaveBeenCalled(); // 온보딩 위 이동 0
+    setDeeplinkGate(false); // 온보딩 완료 → 원래 화면
+    jest.advanceTimersByTime(299);
+    expect(mockPush).not.toHaveBeenCalled(); // 다음 게이트가 이어 붙을 시간
+    jest.advanceTimersByTime(1);
+    expect(mockPush.mock.calls).toEqual([['/food/3']]);
+  });
+
+  it('게이트 위에서 새로 받은 링크도 보류(즉시 이동 0)', () => {
+    setDeeplinkGate(true);
+    handleDeeplink('kbap://search', 1);
+    expect(mockPush).not.toHaveBeenCalled();
+    setDeeplinkGate(false);
+    jest.advanceTimersByTime(300);
+    expect(mockPush.mock.calls).toEqual([['/search']]);
+  });
+
+  it('3R·4R 회귀 유지 — 신규 설치: 정착 전 링크는 탭 블러·로그인 게이트 동안 보류, 온보딩 뒤 탭에서 1회', () => {
+    __resetDeeplinkForTest(false);
+    handleDeeplink('kbap://food/7', 1);
+    setDeeplinkReady(true); // (tabs) 먼저 포커스
+    markEntryResolvedAfterLeavingTabs(); // /login 교체 직후(탭 아직 focused)
+    expect(mockPush).not.toHaveBeenCalled();
+    setDeeplinkReady(false); // 탭 blur → 정착
+    setDeeplinkGate(true); // 로그인 마운트
+    handleDeeplink('kbap://scan', 5000); // 로그인 위에서 새 링크
+    expect(mockPush).not.toHaveBeenCalled();
+    setDeeplinkGate(false);
+    setDeeplinkGate(true); // 온보딩
+    jest.advanceTimersByTime(1000);
+    expect(mockPush).not.toHaveBeenCalled();
+    setDeeplinkGate(false); // 온보딩 끝 → 탭 교체
+    setDeeplinkReady(true);
+    expect(mockPush.mock.calls).toEqual([['/scan']]); // 마지막 것만 1회
+    jest.advanceTimersByTime(1000);
+    expect(mockPush).toHaveBeenCalledTimes(1); // 게이트 해제 타이머가 중복 이동하지 않음
+  });
 });
 
 it('isOwnedSystemUrl — 스킴·에어브릿지 호스트만', () => {
