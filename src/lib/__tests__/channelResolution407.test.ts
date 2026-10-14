@@ -67,8 +67,8 @@ describe('KB-691 — 채널 부재(빈 문자열·null·모듈 없음)는 __DEV_
   ])('channel %j · __DEV__ %s → isDiagnosticChannel=%s', (channel, dev, diag) => {
     const f = flagsFor(channel as string | null | undefined, dev as boolean);
     expect(f.isDiagnosticChannel()).toBe(diag);
-    // 진단 채널에 매인 플래그도 같은 값(채널 → 플래그 전파)
-    expect(f.FLAGS.contentTranslation).toBe(diag);
+    // KB-679(10/14): 번역 버튼은 전 채널 공개 — 채널과 무관(이전엔 진단 채널에 매인 대표 플래그)
+    expect(f.FLAGS.contentTranslation).toBe(true);
     expect(f.FLAGS.countdownBadge).toBe(true); // KB-763(10/13): production 포함 전 채널 on — 채널과 무관
     expect(f.isProdChannel()).toBe(channel === 'production');
   });
