@@ -152,6 +152,39 @@ it('KB-786(#280 P2): 콜드 스타트 딥링크 — 기본 루트(홈)는 기록
   expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: 'food/[id]' }]]);
 });
 
+it('#283 2R P2: 신규 설치 콜드 딥링크 — 로그인→온보딩 이동은 도착이 아님, flush 뒤 목적지가 첫 screen_view', () => {
+  __resetDeeplinkForTest(false);
+  handleDeeplink('kbap://food/7', 1);
+  markEntryResolved();
+  setDeeplinkGate(true); // 로그인 게이트
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = ['login'];
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
+  mockSegments = ['onboarding'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack).not.toHaveBeenCalled(); // 게이트 통과 중 화면 변화 = 도착 아님
+  mockSegments = ['(tabs)'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack).not.toHaveBeenCalled();
+  jest.useFakeTimers();
+  try {
+    act(() => setDeeplinkGate(false));
+    act(() => setDeeplinkReady(true)); // 탭 포커스 → flush(큐만)
+    act(() => tree.update(<Probe />));
+    expect(mockTrack).not.toHaveBeenCalled();
+    mockSegments = ['food', '[id]'];
+    act(() => tree.update(<Probe />));
+    expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: 'food/[id]' }]]);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 it('#283 P2: 목적지가 지금 화면과 같으면(kbap://home on 홈) 세그먼트 변화가 없으니 상한(1.5s) 뒤 그 화면 1회', () => {
   jest.useFakeTimers();
   try {

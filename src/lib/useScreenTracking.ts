@@ -9,7 +9,7 @@ import * as React from 'react';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
 import { screenFromSegments, setCurrentScreen } from '@/lib/uiClick';
-import { hasPendingDeeplink, isEntryResolved, releaseNavHold, subscribeEntryResolved } from '@/lib/deeplink';
+import { hasPendingDeeplink, isDeeplinkQueued, isEntryResolved, releaseNavHold, subscribeEntryResolved } from '@/lib/deeplink';
 
 /** PR 280 Codex P2: 진입 정착(lib/deeplink — 첫 실행 판별·로그인 리다이렉트 끝) **뒤에만** screen_view. 신규 설치는 부팅 때 (tabs)가 먼저
  *  마운트됐다가 /login으로 교체된다 — 그 (tabs)/index는 실제 진입이 아니다. 정착 순간 현재 화면을 1회 기록한다. */
@@ -27,7 +27,8 @@ export function useScreenTracking(): void {
     // 보류 대기는 **첫 기록만**(콜드 스타트) — 그 뒤 로그인·온보딩 위 보류 중에도 화면 조회는 그대로
     if (!resolved) return;
     if (holding && prev.current === null) {
-      if (heldOn.current === null) heldOn.current = screen;
+      // 이동 전(로그인·온보딩 게이트 통과 중)엔 기준 화면을 따라가기만 — flush 뒤 그 기준과 달라져야 도착
+      if (heldOn.current === null || isDeeplinkQueued()) heldOn.current = screen;
       if (screen === heldOn.current) return; // 아직 옛 경로(이동 큐만 들어감) — 기록 0
       releaseNavHold(); // 세그먼트가 바뀜 = 목적지 도착 → 보류 해제 후 이 화면을 첫 기록으로
     }

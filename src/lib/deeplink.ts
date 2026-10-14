@@ -221,6 +221,11 @@ export function hasPendingDeeplink(): boolean {
   return pending !== null || navAwait;
 }
 
+/** 아직 이동 전(게이트·탭 대기) — 이 동안의 화면 변화(로그인→온보딩)는 목적지 도착이 아니다(#283 Codex 2R P2) */
+export function isDeeplinkQueued(): boolean {
+  return pending !== null;
+}
+
 /** 진입 정착 여부 — 홈 진입 계측(HOME_VIEWED)도 같은 신호로 막는다(로그인 게이트 전 홈 마운트는 '홈 진입'이 아니다) */
 export function isEntryResolved(): boolean {
   return entryResolved;
