@@ -91,6 +91,13 @@
           "@react-native-ml-kit/text-recognition"
         ]
       }
+    },
+    "autolinking": {
+      "ios": {
+        "buildFromSource": [
+          "expo-image"
+        ]
+      }
     }
   }
 }
