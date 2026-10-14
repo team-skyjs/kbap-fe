@@ -76,6 +76,9 @@ let tabsFocused = false;
  *  신규 설치는 (tabs)가 먼저 마운트·포커스된 **뒤** 루트 effect가 /login으로 교체한다(자식 effect가 먼저 돈다) — 그 틈에
  *  탭 포커스만 보고 이동하면 보류 링크가 로그인 직전에 소비·유실된다. 그래서 준비 = 탭 포커스 ∧ 진입 정착. */
 let entryResolved = false;
+/** 신규 설치: /login 교체(state 갱신)는 즉시지만 탭의 blur(포커스 정리)는 다음 렌더 — 그 사이 정착하면 아직 focused인 탭 기준으로
+ *  로그인 위에 밀어 넣는다(#278 Codex 4R). 그래서 교체 직후엔 "탭을 떠날 때 정착"으로 예약한다. */
+let resolveOnBlur = false;
 let pending: string | null = null;
 
 function go(to: string): void {
@@ -110,6 +113,11 @@ function flushIfReady(): void {
 /** (tabs) 포커스 신호(useFocusEffect). 진입이 정착했으면 보류분 1회 이동. 블러(로그인·온보딩이 위·교체) = 다시 보류. */
 export function setDeeplinkReady(on: boolean): void {
   tabsFocused = on;
+  if (!on && resolveOnBlur) {
+    resolveOnBlur = false;
+    entryResolved = true; // 탭을 떠난 뒤 정착 — 이동은 다음 탭 포커스(로그인·온보딩 뒤)에서
+    return;
+  }
   flushIfReady();
 }
 
@@ -117,6 +125,12 @@ export function setDeeplinkReady(on: boolean): void {
 export function markEntryResolved(): void {
   entryResolved = true;
   flushIfReady();
+}
+
+/** RootLayout 전용 — 신규 설치 /login 교체 **직후**. 탭이 아직 포커스면 블러 때 정착(그 전엔 이동 0), 탭이 없으면 즉시 정착. */
+export function markEntryResolvedAfterLeavingTabs(): void {
+  if (tabsFocused) resolveOnBlur = true;
+  else markEntryResolved();
 }
 
 /** 진입 정착 여부 — 홈 진입 계측(HOME_VIEWED)도 같은 신호로 막는다(로그인 게이트 전 홈 마운트는 '홈 진입'이 아니다) */
@@ -129,5 +143,6 @@ export function __resetDeeplinkForTest(entry = true): void {
   last = null;
   tabsFocused = false;
   entryResolved = entry; // 기존 유닛 = 정착된 앱(진입 흐름 유닛만 false로 시작)
+  resolveOnBlur = false;
   pending = null;
 }

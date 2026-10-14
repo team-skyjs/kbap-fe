@@ -274,7 +274,7 @@ describe('배선 잠금(소스) — 기존 Amplitude 지점 옆', () => {
     ['src/lib/data/useMe.ts', ['setAirbridgeUser(user.id)', 'observeScanQuota(user.id, user.scanQuota?.unlocked)']],
     ['src/lib/auth/beAuth.ts', ['clearAirbridgeUser()']],
     // #278 Codex 3R: 진입 정착 = 일반 부팅은 스택 렌더 전, 신규 설치는 /login 교체 **뒤**
-    ['src/app/_layout.tsx', ['initAirbridgeDeeplinks(handleDeeplink)', 'if (!needsLogin.current) markEntryResolved();\n      setEntryChecked(true);', "router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로\n      markEntryResolved();"]],
+    ['src/app/_layout.tsx', ['initAirbridgeDeeplinks(handleDeeplink)', 'if (!needsLogin.current) markEntryResolved();\n      setEntryChecked(true);', 'markEntryResolvedAfterLeavingTabs();']],
   ];
   it.each(WIRING)('%s', (file, calls) => {
     const s = read(file);

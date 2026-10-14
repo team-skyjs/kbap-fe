@@ -35,7 +35,7 @@ import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { initMetaSdk } from '@/lib/metaSdk';
 import { initAirbridgeDeeplinks } from '@/lib/airbridge';
-import { handleDeeplink, markEntryResolved } from '@/lib/deeplink';
+import { handleDeeplink, markEntryResolved, markEntryResolvedAfterLeavingTabs } from '@/lib/deeplink';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
@@ -135,7 +135,8 @@ export default function RootLayout() {
     if (entryChecked && needsLogin.current) {
       needsLogin.current = false;
       router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로
-      markEntryResolved(); // KB-783: 교체 **뒤** 정착 — 그 전에 마운트된 탭의 포커스는 보류 링크를 쓰지 않는다(로그인·온보딩 뒤 탭 포커스에서 1회)
+      // KB-783: 교체 **뒤** 정착 — 단 교체 직후엔 탭이 아직 focused(blur는 다음 렌더)라 탭을 떠날 때 정착(#278 Codex 4R). 이동은 로그인·온보딩 뒤 탭 포커스에서 1회
+      markEntryResolvedAfterLeavingTabs();
     }
   }, [entryChecked, router]);
 
