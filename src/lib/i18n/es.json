@@ -16,7 +16,10 @@
     "leaveTitle": "¿Salir sin guardar?",
     "leaveBody": "El borrador no se guardará.",
     "keepWriting": "Seguir escribiendo",
-    "discard": "Descartar"
+    "discard": "Descartar",
+    "leaveEditTitle": "¿Salir sin guardar?",
+    "leaveEditBody": "Tus cambios no se guardarán.",
+    "keepEditing": "Seguir editando"
   },
   "intro": {
     "skip": "Omitir",
@@ -278,6 +281,8 @@
     "retakeBody": "Se descartarán los resultados actuales.",
     "retakeBodyWithCart": "Se descartarán los resultados y {{count}} artículo(s) añadidos.",
     "retakeConfirm": "Reescanear",
+    "leaveTitle": "¿Salir de los resultados?",
+    "leaveConfirm": "Salir",
     "loadingPhoto": "Cargando foto…",
     "errNotMenu": "Esto no parece un menú. Vuelve a tomar la foto.",
     "errBusy": "No pudimos leer el menú. Inténtalo de nuevo en un momento.",
@@ -285,6 +290,12 @@
     "errProcessing": "Este escaneo ya se está procesando. Espera un momento.",
     "quotaTitle": "Has usado todos tus escaneos gratis",
     "quotaBody": "Escribe una reseña para desbloquear escaneos ilimitados.",
+    "quotaDialogBody": "Haz una de las dos para desbloquear escaneos ilimitados.",
+    "quotaTileReviewTitle": "Escribe 1 reseña",
+    "quotaTileReviewSub": "Se desbloquea al publicar",
+    "quotaTileAdTitle_one": "Mira {{count}} anuncio",
+    "quotaTileAdTitle_other": "Mira {{count}} anuncios",
+    "quotaTileAdProgress": "{{n}}/{{total}} vistos",
     "quotaBodyUnlock": "Escribe una reseña o mira unos anuncios para desbloquear el escaneo ilimitado.",
     "unlockedTitle": "¡Escaneo ilimitado desbloqueado!",
     "unlockedOpening": "Reabriendo la cámara…",
@@ -745,7 +756,8 @@
       "apply": "Aplicar a mi lista"
     },
     "countryLabel": "País",
-    "popularCountries": "Populares"
+    "popularCountries": "Populares",
+    "searchNoResults": "Sin resultados. Prueba con otra ortografía."
   },
   "editProfile": {
     "title": "Editar perfil",
@@ -783,7 +795,7 @@
   "restrictionsEdit": {
     "title": "Editar restricciones",
     "save": "Guardar restricciones",
-    "notice": "Esto controla cada alerta de seguridad. Mantenlo preciso: los cambios se aplican a todos los platos de inmediato.",
+    "notice": "Todas las alertas de seguridad usan esta lista. Toca Guardar para aplicar los cambios.",
     "avoidNone": "Nada evitado aún",
     "tapToRemove": "toca × para quitar",
     "searchPlaceholder": "Buscar ingredientes…",
@@ -986,7 +998,7 @@
     "consentBothRequired": "Acepta ambos puntos para activar las notificaciones.",
     "consentConfirm": "Aceptar y activar",
     "nudgeTitle": "¿Activar avisos de reseñas?",
-    "nudgeBody": "Te recordaremos reseñar lo que pediste antes de que lo olvides,\ny te avisaremos cuando alguien reaccione a tu reseña."
+    "nudgeBody": "Te recordaremos reseñar lo que pediste antes de que lo olvides, y te avisaremos cuando alguien reaccione a tu reseña."
   },
   "notif": {
     "title": "Ajustes de notificaciones",
@@ -1078,5 +1090,40 @@
     "watchToUnlock": "Ver un anuncio para desbloquear ({{n}}/{{total}})",
     "rewardLimit": "Por hoy es todo. Inténtalo mañana.",
     "rewardError": "No se pudo registrar la visualización. Inténtalo de nuevo."
+  },
+  "reviewTime": {
+    "justNow": "Ahora",
+    "minutesAgo_one": "hace {{count}} min",
+    "minutesAgo_other": "hace {{count}} min",
+    "hoursAgo_one": "hace {{count}} h",
+    "hoursAgo_other": "hace {{count}} h",
+    "daysAgo_one": "hace {{count}} d",
+    "daysAgo_other": "hace {{count}} d",
+    "date": "{{day}} {{mon}} {{year}}",
+    "dateLong": "{{day}} de {{mon}} de {{year}}",
+    "monShort1": "ene",
+    "monShort2": "feb",
+    "monShort3": "mar",
+    "monShort4": "abr",
+    "monShort5": "may",
+    "monShort6": "jun",
+    "monShort7": "jul",
+    "monShort8": "ago",
+    "monShort9": "sept",
+    "monShort10": "oct",
+    "monShort11": "nov",
+    "monShort12": "dic",
+    "monLong1": "enero",
+    "monLong2": "febrero",
+    "monLong3": "marzo",
+    "monLong4": "abril",
+    "monLong5": "mayo",
+    "monLong6": "junio",
+    "monLong7": "julio",
+    "monLong8": "agosto",
+    "monLong9": "septiembre",
+    "monLong10": "octubre",
+    "monLong11": "noviembre",
+    "monLong12": "diciembre"
   }
 }

@@ -11,7 +11,7 @@
  * Unregistered = "Unable to assess" 유지 — never assumed safe (FR-033).
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -44,6 +44,7 @@ import { IconFood, IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { foodSpiceText, spiceRank } from '@/lib/spice';
 import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
@@ -106,6 +107,13 @@ export default function FoodDetailScreen() {
   const hiddenReason = useFoodHiddenReason(id ?? ''); // KB-650: 'updating'(018) | 'gone'(001) | null
   const hidden = hiddenReason !== null;
   const food = hidden ? undefined : fetched;
+  // KB-783 ⑧: 음식 상세 — 판정이 보일 때(food 확정)만, 음식마다 1회. 숨김(false-safe 비움) 중엔 보내지 않는다
+  const abViewed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!food || abViewed.current === food.foodId) return;
+    abViewed.current = food.foodId;
+    airbridge.productView({ id: food.foodId, name: food.nameKo });
+  }, [food]);
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
 

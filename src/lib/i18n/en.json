@@ -12,7 +12,10 @@
     "leaveTitle": "Leave without saving?",
     "leaveBody": "Your draft won’t be saved.",
     "keepWriting": "Keep writing",
-    "discard": "Discard"
+    "discard": "Discard",
+    "leaveEditTitle": "Leave without saving?",
+    "leaveEditBody": "Your changes won’t be saved.",
+    "keepEditing": "Keep editing"
   },
   "intro": {
     "skip": "Skip",
@@ -274,6 +277,8 @@
     "retakeBody": "Your current results will be discarded.",
     "retakeBodyWithCart": "Your results and {{count}} added item(s) will be discarded.",
     "retakeConfirm": "Rescan",
+    "leaveTitle": "Leave scan results?",
+    "leaveConfirm": "Leave",
     "loadingPhoto": "Loading photo…",
     "errNotMenu": "That doesn't look like a menu. Try taking the photo again.",
     "errBusy": "We couldn't read the menu. Please try again in a moment.",
@@ -281,6 +286,12 @@
     "errProcessing": "This scan is already being processed. Please wait a moment.",
     "quotaTitle": "You've used all your free scans",
     "quotaBody": "Write a review to unlock unlimited scanning.",
+    "quotaDialogBody": "Do either one to unlock unlimited scans.",
+    "quotaTileReviewTitle": "Write 1 review",
+    "quotaTileReviewSub": "Unlock as soon as you post",
+    "quotaTileAdTitle_one": "Watch {{count}} ad",
+    "quotaTileAdTitle_other": "Watch {{count}} ads",
+    "quotaTileAdProgress": "{{n}}/{{total}} watched",
     "quotaBodyUnlock": "Write a review or watch a few ads to unlock unlimited scanning.",
     "unlockedTitle": "You're unlocked!",
     "unlockedOpening": "Reopening the camera…",
@@ -405,7 +416,7 @@
   "restrictionsEdit": {
     "title": "Edit restrictions",
     "save": "Save restrictions",
-    "notice": "All safety warnings use this list. Changes apply right away.",
+    "notice": "All safety warnings use this list. Tap Save to apply your changes.",
     "avoidNone": "Nothing avoided yet",
     "tapToRemove": "tap × to remove",
     "searchPlaceholder": "Search ingredients…",
@@ -898,7 +909,8 @@
       "apply": "Apply to my list"
     },
     "countryLabel": "Country",
-    "popularCountries": "Popular"
+    "popularCountries": "Popular",
+    "searchNoResults": "No matches. Try a different spelling."
   },
   "saved": {
     "error": "Couldn't update your saved list. Please try again.",
@@ -982,7 +994,7 @@
     "consentBothRequired": "Please agree to both items to turn on notifications.",
     "consentConfirm": "Agree and turn on",
     "nudgeTitle": "Keep review alerts on?",
-    "nudgeBody": "We'll remind you to review what you ordered before you forget,\nand let you know when someone reacts to your review."
+    "nudgeBody": "We'll remind you to review what you ordered before you forget, and let you know when someone reacts to your review."
   },
   "notif": {
     "title": "Notifications",
@@ -1074,5 +1086,40 @@
     "watchToUnlock": "Watch an ad to unlock ({{n}}/{{total}})",
     "rewardLimit": "That's all for today. Try again tomorrow.",
     "rewardError": "Couldn't record that view. Please try again."
+  },
+  "reviewTime": {
+    "justNow": "Just now",
+    "minutesAgo_one": "{{count}}m ago",
+    "minutesAgo_other": "{{count}}m ago",
+    "hoursAgo_one": "{{count}}h ago",
+    "hoursAgo_other": "{{count}}h ago",
+    "daysAgo_one": "{{count}}d ago",
+    "daysAgo_other": "{{count}}d ago",
+    "date": "{{mon}} {{day}}, {{year}}",
+    "dateLong": "{{mon}} {{day}}, {{year}}",
+    "monShort1": "Jan",
+    "monShort2": "Feb",
+    "monShort3": "Mar",
+    "monShort4": "Apr",
+    "monShort5": "May",
+    "monShort6": "Jun",
+    "monShort7": "Jul",
+    "monShort8": "Aug",
+    "monShort9": "Sep",
+    "monShort10": "Oct",
+    "monShort11": "Nov",
+    "monShort12": "Dec",
+    "monLong1": "January",
+    "monLong2": "February",
+    "monLong3": "March",
+    "monLong4": "April",
+    "monLong5": "May",
+    "monLong6": "June",
+    "monLong7": "July",
+    "monLong8": "August",
+    "monLong9": "September",
+    "monLong10": "October",
+    "monLong11": "November",
+    "monLong12": "December"
   }
 }

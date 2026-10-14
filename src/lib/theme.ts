@@ -77,6 +77,9 @@ export const riskTextStrong = {
 
 export const primaryTint = 'rgba(255,113,52,0.05)'; // 시안 "primary 5%"
 export const primaryTint2 = 'rgba(255,113,52,0.03)';
+/** KB-780: primaryTint를 흰 바탕 위에 미리 합성한 **불투명** 값(#FFF8F5). 그림자(elevation)를 단 뷰에 반투명 바탕을 쓰면 Android가 그림자를
+ *  뷰 아래 전체에 그려 반투명 바탕 너머로 회색 띠가 비친다(주문 카드 실기) — 흰 화면 위 카드는 이 값으로(iOS 시각 동일). */
+export const primaryTintSolid = '#FFF8F5';
 export const accentTint = 'rgba(14,154,167,0.08)';
 
 export const radius = { lg: 10, sm: 8, xs: 4, pill: 999 } as const; // Alert 4123:4019 · tag/input · 버튼/카드

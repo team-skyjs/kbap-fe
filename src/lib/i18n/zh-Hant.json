@@ -16,7 +16,10 @@
     "leaveTitle": "不儲存就離開嗎？",
     "leaveBody": "草稿不會被儲存。",
     "keepWriting": "繼續寫",
-    "discard": "離開"
+    "discard": "離開",
+    "leaveEditTitle": "不儲存就離開嗎？",
+    "leaveEditBody": "你的變更不會被儲存。",
+    "keepEditing": "繼續編輯"
   },
   "intro": {
     "skip": "略過",
@@ -278,6 +281,8 @@
     "retakeBody": "當前結果將被清除。",
     "retakeBodyWithCart": "當前結果和已加入的{{count}}項將被清除。",
     "retakeConfirm": "重新掃描",
+    "leaveTitle": "離開掃描結果?",
+    "leaveConfirm": "離開",
     "loadingPhoto": "正在載入照片…",
     "errNotMenu": "這看起來不像菜單，請重新拍照。",
     "errBusy": "未能識別菜單，請稍後再試。",
@@ -285,6 +290,12 @@
     "errProcessing": "該掃描請求正在處理中，請稍候。",
     "quotaTitle": "免費掃描次數已用完",
     "quotaBody": "寫一則評價即可解鎖無限掃描。",
+    "quotaDialogBody": "完成任一項即可解鎖無限掃描。",
+    "quotaTileReviewTitle": "寫 1 則評價",
+    "quotaTileReviewSub": "發布後立即解鎖",
+    "quotaTileAdTitle_one": "觀看 {{count}} 則廣告",
+    "quotaTileAdTitle_other": "觀看 {{count}} 則廣告",
+    "quotaTileAdProgress": "已看 {{n}}/{{total}}",
     "quotaBodyUnlock": "撰寫一則評價或觀看幾次廣告，即可解鎖無限掃描。",
     "unlockedTitle": "已解鎖無限掃描！",
     "unlockedOpening": "正在重新開啟相機…",
@@ -745,7 +756,8 @@
       "apply": "套用到我的清單"
     },
     "countryLabel": "國家",
-    "popularCountries": "熱門國家"
+    "popularCountries": "熱門國家",
+    "searchNoResults": "找不到結果。換個寫法試試。"
   },
   "editProfile": {
     "title": "編輯個人資料",
@@ -783,7 +795,7 @@
   "restrictionsEdit": {
     "title": "編輯飲食限制",
     "save": "儲存限制",
-    "notice": "這會影響所有安全警示。請保持正確，變更會立即套用至所有菜色。",
+    "notice": "所有安全提示都以此清單為準。點擊儲存後變更才會生效。",
     "avoidNone": "尚未避開任何項目",
     "tapToRemove": "點 × 移除",
     "searchPlaceholder": "搜尋食材…",
@@ -986,7 +998,7 @@
     "consentBothRequired": "需同意兩項才能開啟通知。",
     "consentConfirm": "同意並開啟通知",
     "nudgeTitle": "開啟評價提醒？",
-    "nudgeBody": "在你忘記之前提醒你評價點過的菜，\n有人對你的評價做出反應時也會通知你。"
+    "nudgeBody": "在你忘記之前提醒你評價點過的菜，有人對你的評價做出反應時也會通知你。"
   },
   "notif": {
     "title": "通知設定",
@@ -1078,5 +1090,40 @@
     "watchToUnlock": "觀看廣告解鎖（{{n}}/{{total}}）",
     "rewardLimit": "今天到此為止，請明天再試。",
     "rewardError": "未能記錄這次觀看，請再試一次。"
+  },
+  "reviewTime": {
+    "justNow": "剛剛",
+    "minutesAgo_one": "{{count}}分鐘前",
+    "minutesAgo_other": "{{count}}分鐘前",
+    "hoursAgo_one": "{{count}}小時前",
+    "hoursAgo_other": "{{count}}小時前",
+    "daysAgo_one": "{{count}}天前",
+    "daysAgo_other": "{{count}}天前",
+    "date": "{{year}}年{{month}}月{{day}}日",
+    "dateLong": "{{year}}年{{month}}月{{day}}日",
+    "monShort1": "1月",
+    "monShort2": "2月",
+    "monShort3": "3月",
+    "monShort4": "4月",
+    "monShort5": "5月",
+    "monShort6": "6月",
+    "monShort7": "7月",
+    "monShort8": "8月",
+    "monShort9": "9月",
+    "monShort10": "10月",
+    "monShort11": "11月",
+    "monShort12": "12月",
+    "monLong1": "1月",
+    "monLong2": "2月",
+    "monLong3": "3月",
+    "monLong4": "4月",
+    "monLong5": "5月",
+    "monLong6": "6月",
+    "monLong7": "7月",
+    "monLong8": "8月",
+    "monLong9": "9月",
+    "monLong10": "10月",
+    "monLong11": "11月",
+    "monLong12": "12月"
   }
 }

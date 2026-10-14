@@ -32,7 +32,7 @@ const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a) }));
 
 import { ApiError } from '@/lib/api/client';
-import { adaptOrderDetail, orderItemImage, orderLocationLabel, type OrderDetail } from '../useOrders';
+import { adaptOrderDetail, orderDetailKey, orderItemImage, orderLocationLabel, type OrderDetail } from '../useOrders';
 import { orderEditErrorKey, useResetOrderItemImage, useSetOrderItemImage, useUpdateOrderPlace, ORDER_ITEM_IMAGE_PURPOSE } from '../useOrderEdit';
 import { sharePhotos } from '@/features/order/shareCard';
 
@@ -95,7 +95,7 @@ it('② orderLocationLabel — 편집 주소 우선 · 없으면 roadAddress · 
 type Hooks = { place: ReturnType<typeof useUpdateOrderPlace>; set: ReturnType<typeof useSetOrderItemImage>; reset: ReturnType<typeof useResetOrderItemImage> };
 async function mount(seed?: OrderDetail): Promise<{ qc: QueryClient; hooks: () => Hooks }> {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  if (seed) qc.setQueryData(['orders', seed.orderId], seed);
+  if (seed) qc.setQueryData(orderDetailKey(seed.orderId, 'ja'), seed); // KB-775: 상세 키에 언어(목 apiLang = ja)
   qc.setQueryData(['orders'], { pages: [], pageParams: [] }); // 목록 캐시(무효화 대상)
   let h!: Hooks;
   function Harness() {
@@ -123,7 +123,7 @@ describe('③ 장소 교체 PATCH', () => {
     const { qc, hooks } = await mount(SEED);
     await act(async () => { await hooks().place.mutateAsync({ orderId: '123', place: { placeId: 'g2', name: 'New Place', roadAddress: 'Busan' } }); });
     expect(mockPatch).toHaveBeenCalledWith('/api/orders/123/place', { placeId: 'g2', name: 'New Place', address: 'Busan', language: 'ja' });
-    expect(qc.getQueryData<OrderDetail>(['orders', '123'])?.placeName).toBe('New Place');
+    expect(qc.getQueryData<OrderDetail>(orderDetailKey('123', 'ja'))?.placeName).toBe('New Place');
     expect(listStale(qc)).toBe(true);
     expect(mockToast).not.toHaveBeenCalled();
   });
@@ -141,9 +141,9 @@ describe('③ 장소 교체 PATCH', () => {
     const { qc, hooks } = await mount(SEED);
     let p!: Promise<unknown>;
     act(() => { p = hooks().place.mutateAsync({ orderId: '123', place: { placeId: 'g2', name: 'New Place', roadAddress: null } }).catch(() => {}); });
-    expect(qc.getQueryData<OrderDetail>(['orders', '123'])?.placeName).toBe('Old Place'); // 대기 중 — 그대로
+    expect(qc.getQueryData<OrderDetail>(orderDetailKey('123', 'ja'))?.placeName).toBe('Old Place'); // 대기 중 — 그대로
     await act(async () => { reject(new ApiError('nope', 404, 'ORDER-002')); await p; });
-    expect(qc.getQueryData<OrderDetail>(['orders', '123'])?.placeName).toBe('Old Place');
+    expect(qc.getQueryData<OrderDetail>(orderDetailKey('123', 'ja'))?.placeName).toBe('Old Place');
     expect(listStale(qc)).toBe(false);
     expect(mockToast).toHaveBeenCalledTimes(1);
     expect(mockToast).toHaveBeenCalledWith('myFoods.editNotFound', { error: true });
@@ -159,7 +159,7 @@ describe('③ 항목 사진 PUT / DELETE', () => {
     expect(mockUpload).toHaveBeenCalledWith({ uri: 'file:///tmp/p.jpg', width: 0, height: 0 }, ORDER_ITEM_IMAGE_PURPOSE);
     expect(ORDER_ITEM_IMAGE_PURPOSE).toBe('ORDER_ITEM');
     expect(mockPut).toHaveBeenCalledWith('/api/orders/123/items/7001/image', { imagePath: 'orders/abc.jpg' });
-    expect(qc.getQueryData<OrderDetail>(['orders', '123'])?.items[0].userImageUrl).toBe('https://cdn/me.jpg');
+    expect(qc.getQueryData<OrderDetail>(orderDetailKey('123', 'ja'))?.items[0].userImageUrl).toBe('https://cdn/me.jpg');
     expect(listStale(qc)).toBe(true);
   });
 
@@ -168,7 +168,7 @@ describe('③ 항목 사진 PUT / DELETE', () => {
     const { qc, hooks } = await mount(SEED);
     await act(async () => { await hooks().set.mutateAsync({ orderId: '123', itemId: '7001', uri: 'file:///x' }).catch(() => {}); });
     expect(mockPut).not.toHaveBeenCalled();
-    expect(qc.getQueryData<OrderDetail>(['orders', '123'])?.items[0].userImageUrl).toBeNull();
+    expect(qc.getQueryData<OrderDetail>(orderDetailKey('123', 'ja'))?.items[0].userImageUrl).toBeNull();
     expect(mockToast).toHaveBeenCalledWith('myFoods.editFailed', { error: true });
   });
 
@@ -188,7 +188,7 @@ describe('③ 항목 사진 PUT / DELETE', () => {
     const { qc, hooks } = await mount({ ...SEED, items: [{ ...SEED.items[0], userImageUrl: 'https://cdn/me.jpg' }] });
     await act(async () => { await hooks().reset.mutateAsync({ orderId: '123', itemId: '7001' }); });
     expect(mockDel).toHaveBeenCalledWith('/api/orders/123/items/7001/image');
-    expect(qc.getQueryData<OrderDetail>(['orders', '123'])?.items[0].userImageUrl).toBeNull();
+    expect(qc.getQueryData<OrderDetail>(orderDetailKey('123', 'ja'))?.items[0].userImageUrl).toBeNull();
     expect(listStale(qc)).toBe(true);
   });
 });

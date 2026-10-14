@@ -27,6 +27,7 @@ import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useDietPresets } from '@/lib/data/useDietPresets';
 import { unionResolvedCodes, type PresetGroup } from '@/lib/onboarding/dietPresets';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 
 const GROUP_LABEL: Record<PresetGroup, string> = {
   diet: 'onboarding.presets.groupDiet',
@@ -54,6 +55,9 @@ export default function DietPresetsScreen() {
 
   const [savedModal, setSavedModal] = useState(false);
   const { busy: saving, run: runSave } = useSubmitGuard();
+  // KB-776(QA B3-3): 미저장 이탈 확인 — 문의 작성과 같은 공용 훅(헤더·스와이프·하드웨어 뒤로 전부)
+  const dirty = sel != null && (sel.size !== initialActive.size || [...sel].some((id) => !initialActive.has(id)));
+  const leave = useLeaveConfirm(dirty, saving);
 
   const save = () =>
     runSave(async () => {
@@ -74,6 +78,7 @@ export default function DietPresetsScreen() {
       await new Promise<void>((resolve, reject) => {
         update.mutate(patch, { onSuccess: () => resolve(), onError: (e) => reject(e) });
       });
+      leave.release(); // 저장 완료 — 이후 이동(모달 Yes·No)은 막지 않는다
       setSavedModal(true); // 반영 완료 — 사후 모달(Yes = 미세 조정 / No = 복귀)
     });
 
@@ -111,6 +116,7 @@ export default function DietPresetsScreen() {
         </Btn>
       </View>
 
+      <LeaveConfirmModal {...leave.modal} kind="edit" />
       {/* 저장 성공 사후 모달 — 반영은 이미 됨(No여도 유지) */}
       <Modal visible={savedModal} transparent animationType="fade" onRequestClose={() => { setSavedModal(false); router.back(); }}>
         <View style={styles.confirmBackdrop}>

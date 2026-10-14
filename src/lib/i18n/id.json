@@ -16,7 +16,10 @@
     "leaveTitle": "Keluar tanpa menyimpan?",
     "leaveBody": "Draf tidak akan disimpan.",
     "keepWriting": "Lanjut menulis",
-    "discard": "Buang"
+    "discard": "Buang",
+    "leaveEditTitle": "Keluar tanpa menyimpan?",
+    "leaveEditBody": "Perubahanmu tidak akan disimpan.",
+    "keepEditing": "Lanjut mengedit"
   },
   "intro": {
     "skip": "Lewati",
@@ -278,6 +281,8 @@
     "retakeBody": "Hasil saat ini akan dihapus.",
     "retakeBodyWithCart": "Hasil dan {{count}} item yang ditambahkan akan dihapus.",
     "retakeConfirm": "Pindai ulang",
+    "leaveTitle": "Keluar dari hasil pindai?",
+    "leaveConfirm": "Keluar",
     "loadingPhoto": "Memuat foto…",
     "errNotMenu": "Ini sepertinya bukan menu. Coba foto ulang.",
     "errBusy": "Kami tidak bisa membaca menu. Coba lagi sebentar lagi.",
@@ -285,6 +290,12 @@
     "errProcessing": "Pemindaian ini sedang diproses. Mohon tunggu sebentar.",
     "quotaTitle": "Pemindaian gratismu sudah habis",
     "quotaBody": "Tulis ulasan untuk membuka pemindaian tanpa batas.",
+    "quotaDialogBody": "Lakukan salah satu untuk membuka pemindaian tanpa batas.",
+    "quotaTileReviewTitle": "Tulis 1 ulasan",
+    "quotaTileReviewSub": "Terbuka begitu diposting",
+    "quotaTileAdTitle_one": "Tonton {{count}} iklan",
+    "quotaTileAdTitle_other": "Tonton {{count}} iklan",
+    "quotaTileAdProgress": "{{n}}/{{total}} ditonton",
     "quotaBodyUnlock": "Tulis ulasan atau tonton beberapa iklan untuk membuka pemindaian tanpa batas.",
     "unlockedTitle": "Pemindaian tanpa batas terbuka!",
     "unlockedOpening": "Membuka kembali kamera…",
@@ -745,7 +756,8 @@
       "apply": "Terapkan ke daftar saya"
     },
     "countryLabel": "Negara",
-    "popularCountries": "Populer"
+    "popularCountries": "Populer",
+    "searchNoResults": "Tidak ada hasil. Coba ejaan lain."
   },
   "editProfile": {
     "title": "Edit profil",
@@ -783,7 +795,7 @@
   "restrictionsEdit": {
     "title": "Edit pantangan",
     "save": "Simpan pantangan",
-    "notice": "Ini mengatur semua peringatan keamanan. Jaga keakuratannya — perubahan berlaku untuk semua hidangan seketika.",
+    "notice": "Semua peringatan keamanan memakai daftar ini. Ketuk Simpan untuk menerapkan perubahan.",
     "avoidNone": "Belum ada yang dihindari",
     "tapToRemove": "ketuk × untuk menghapus",
     "searchPlaceholder": "Cari bahan…",
@@ -986,7 +998,7 @@
     "consentBothRequired": "Setujui kedua item untuk mengaktifkan notifikasi.",
     "consentConfirm": "Setuju dan nyalakan",
     "nudgeTitle": "Aktifkan notifikasi ulasan?",
-    "nudgeBody": "Kami ingatkan untuk mengulas menu yang kamu pesan sebelum lupa,\ndan kabari saat ada yang merespons ulasanmu."
+    "nudgeBody": "Kami ingatkan untuk mengulas menu yang kamu pesan sebelum lupa, dan kabari saat ada yang merespons ulasanmu."
   },
   "notif": {
     "title": "Pengaturan notifikasi",
@@ -1078,5 +1090,40 @@
     "watchToUnlock": "Tonton iklan untuk membuka ({{n}}/{{total}})",
     "rewardLimit": "Cukup untuk hari ini. Coba lagi besok.",
     "rewardError": "Tontonan tidak tercatat. Silakan coba lagi."
+  },
+  "reviewTime": {
+    "justNow": "Baru saja",
+    "minutesAgo_one": "{{count}} mnt lalu",
+    "minutesAgo_other": "{{count}} mnt lalu",
+    "hoursAgo_one": "{{count}} jam lalu",
+    "hoursAgo_other": "{{count}} jam lalu",
+    "daysAgo_one": "{{count}} hr lalu",
+    "daysAgo_other": "{{count}} hr lalu",
+    "date": "{{day}} {{mon}} {{year}}",
+    "dateLong": "{{day}} {{mon}} {{year}}",
+    "monShort1": "Jan",
+    "monShort2": "Feb",
+    "monShort3": "Mar",
+    "monShort4": "Apr",
+    "monShort5": "Mei",
+    "monShort6": "Jun",
+    "monShort7": "Jul",
+    "monShort8": "Agu",
+    "monShort9": "Sep",
+    "monShort10": "Okt",
+    "monShort11": "Nov",
+    "monShort12": "Des",
+    "monLong1": "Januari",
+    "monLong2": "Februari",
+    "monLong3": "Maret",
+    "monLong4": "April",
+    "monLong5": "Mei",
+    "monLong6": "Juni",
+    "monLong7": "Juli",
+    "monLong8": "Agustus",
+    "monLong9": "September",
+    "monLong10": "Oktober",
+    "monLong11": "November",
+    "monLong12": "Desember"
   }
 }

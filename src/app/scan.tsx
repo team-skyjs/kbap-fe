@@ -15,14 +15,15 @@
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { ActivityIndicator, Alert, AppState, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { UnlockActions, useCanWatchAd } from '@/features/ads/RewardedUnlock';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
@@ -35,6 +36,7 @@ import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
+import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
@@ -307,6 +309,19 @@ export default function Scan() {
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
+  // KB-769: 담은 항목이 있는 결과에서 떠나는 모든 길(헤더 ‹·Android 하드웨어 back·iOS 스와이프)을 다시찍기와 같은 확인 창으로.
+  // 포커스일 때만 — 주문 카드(scan-order)의 완료 = dismissAll이 아래에 깔린 이 화면을 지울 때 확인 창이 뜨면 안 된다.
+  const isFocused = useIsFocused();
+  const leave = useLeaveConfirm(isFocused && phase === 'result' && cartCount > 0);
+  // KB-769: 미등록 안내는 Modal이 아닌 오버레이라 하드웨어 back이 화면째 닫았다 — 열려 있으면 back = 안내만 닫기
+  useEffect(() => {
+    if (!unmatchedOpen) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setUnmatchedOpen(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [unmatchedOpen]);
   // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter).
   // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
   // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
@@ -425,6 +440,9 @@ export default function Scan() {
         // 세면 107개 스캔이 0으로 발화(8/18 실측) — 전체 결과 수(매칭+미매칭)로 교정.
         // v1은 items가 본 경로라 현행 합산식으로도 동일(photoOnly는 idx=null 보충분).
         track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length + res.photoOnly.length });
+        // KB-783 ⑥: 스캔 1회 소모(쿼터 = 스캔 전 서버 스냅샷 그대로 전달) + 결과 목록(인식 메뉴 수)
+        airbridge.scanSpend(quotaRef.current);
+        airbridge.scanResults(res.items.length + res.photoOnly.length);
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
@@ -795,7 +813,7 @@ export default function Scan() {
               currency={currency}
               fx={fx}
               cart={cart}
-              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); bumpCart(d.itemId, 1); }}
+              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); airbridge.addToCart({ id: d.foodId ?? `menu:${d.itemId}`, name: d.koreanName ?? d.rawMenuName }); bumpCart(d.itemId, 1); }}
               onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
@@ -840,27 +858,29 @@ export default function Scan() {
         />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         {/* P-161: 다시찍기 확인 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 재사용 */}
-        <Modal visible={retakeConfirm} transparent animationType="fade" onRequestClose={() => setRetakeConfirm(false)}>
+        {/* KB-769: 같은 카드를 이탈 확인에도 — 제목·확인 버튼만 leave 문구, 본문은 담은 개수 문구 재사용 */}
+        <Modal visible={retakeConfirm || leave.modal.visible} transparent animationType="fade" onRequestClose={() => (retakeConfirm ? setRetakeConfirm(false) : leave.modal.onKeep())}>
           <View style={styles.confirmBackdrop}>
-            <View style={styles.confirmCard} testID="retake-confirm">
-              <Text style={styles.confirmTitle}>{t('scan.retakeTitle')}</Text>
+            <View style={styles.confirmCard} testID={retakeConfirm ? 'retake-confirm' : 'scan-leave-confirm'}>
+              <Text style={styles.confirmTitle}>{t(retakeConfirm ? 'scan.retakeTitle' : 'scan.leaveTitle')}</Text>
               <Text style={styles.confirmBody}>
                 {cartCount > 0 ? t('scan.retakeBodyWithCart', { count: cartCount }) : t('scan.retakeBody')}
               </Text>
               <View style={{ gap: 9, marginTop: 6 }}>
-                <Btn variant="ghost" onPress={() => setRetakeConfirm(false)}>
+                <Btn variant="ghost" onPress={() => (retakeConfirm ? setRetakeConfirm(false) : leave.modal.onKeep())} testID="scan-confirm-cancel">
                   {t('profile.delete.cancel')}
                 </Btn>
                 {/* P-175: destructive도 보더 버튼 프레임 — 텍스트 행이 버튼처럼 안 보이던 지적 */}
                 <Btn
                   variant="dangerGhost"
                   onPress={() => {
+                    if (!retakeConfirm) { leave.modal.onDiscard(); return; } // KB-769: 막았던 이동(back·스와이프)을 그대로 진행
                     setRetakeConfirm(false);
                     setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
                   }}
-                  testID="retake-go"
+                  testID={retakeConfirm ? 'retake-go' : 'scan-leave-go'}
                 >
-                  {t('scan.retakeConfirm')}
+                  {t(retakeConfirm ? 'scan.retakeConfirm' : 'scan.leaveConfirm')}
                 </Btn>
               </View>
             </View>

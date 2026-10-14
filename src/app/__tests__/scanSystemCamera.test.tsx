@@ -96,7 +96,11 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
 });
+// KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
+jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
+  useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',

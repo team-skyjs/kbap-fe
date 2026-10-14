@@ -30,7 +30,11 @@
         "LSApplicationQueriesSchemes": [
           "instagram-stories"
         ]
-      }
+      },
+      "associatedDomains": [
+        "applinks:kbap.airbridge.io",
+        "applinks:kbap.abr.ge"
+      ]
     },
     "android": {
       "package": "com.rocher.kbap",
@@ -50,6 +54,64 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
         "android.permission.READ_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "kbap.airbridge.io"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "kbap.abr.ge"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "http",
+              "host": "kbap.airbridge.io"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "http",
+              "host": "kbap.abr.ge"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -267,6 +329,12 @@
         "expo-tracking-transparency",
         {
           "userTrackingPermission": "K-Bap uses your device identifier to show ads that are more relevant to you and to measure how they perform."
+        }
+      ],
+      [
+        "./plugins/withAirbridge",
+        {
+          "appName": "kbap"
         }
       ]
     ],

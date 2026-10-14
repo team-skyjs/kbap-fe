@@ -23,6 +23,7 @@ import type { MenuSummaryWire, PageMenuSummaryWire } from '../api/foodListTypes'
 import { api, apiLang, foodHiddenReason } from '../api/client';
 import { trackReadyFood } from './hiddenFoods';
 import { showTopToast } from '@/components/topToastStore';
+import { airbridge } from '@/lib/airbridge';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
 
@@ -203,8 +204,10 @@ export function useToggleBookmark() {
     },
     // P-339 ⑤(KB-494): 상단 토스트 = 이 뮤테이션 한 곳(전 표면 공용 — 화면별 배선 금지).
     // 저장 화면의 스와이프 해제(useRemoveBookmark)는 Undo 스낵바 현행 유지(중복 방지).
-    onSuccess: (_d, { add }) => {
+    onSuccess: (_d, { snap, add }) => {
       showTopToast(i18n.t(add ? 'saved.toast' : 'saved.removed'));
+      // KB-783 ⑨(#278 Codex P1): 찜 = 서버 저장 **성공**에서만, 이 공용 뮤테이션 한 곳(상세·검색·FoodExplorer 전 표면) — 화면별 배선 금지
+      if (add) airbridge.wishlist({ id: snap.foodId, name: snap.nameKo });
     },
     onError: (e, { snap, add, fromDetail }, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
@@ -265,6 +268,9 @@ export function useRestoreBookmark() {
       await qc.cancelQueries({ queryKey: QK() });
       await flipCardBookmarked(qc, snap.foodId, true); // Codex(#264): 홈·목록 카드 별 동기
       return { prev: optimisticWrite(qc, snap.foodId, toWire(snap)) };
+    },
+    onSuccess: (_d, snap) => {
+      airbridge.wishlist({ id: snap.foodId, name: snap.nameKo }); // KB-783 ⑨: 저장 목록 되돌리기 = 재저장(성공만)
     },
     onError: (_e, snap, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);

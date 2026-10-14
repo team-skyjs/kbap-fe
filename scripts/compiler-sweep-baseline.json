@@ -6,7 +6,7 @@
     { "key": "direct | app/profile/notifications.tsx | singleton | deps | i18n.language", "count": 1, "verdict": "잠복", "note": "광고성 동의 캡션 — 의존 i18n은 같은 객체라 언어 변경에 재계산 안 됨" },
     { "key": "helper | app/community/post/[id].tsx | reads Date.now() | deps | timeAgo(post.createdAt, t)", "count": 1, "verdict": "경미", "note": "상대 시간 — 다음 재계산(createdAt·t 변경)까지 멈춤" },
     { "key": "helper | app/community/post/[id].tsx | reads Date.now() | deps | timeAgo(c.createdAt, t)", "count": 1, "verdict": "경미", "note": "댓글 상대 시간 — 같음" },
-    { "key": "helper | app/food/[id]/reviews.tsx | reads Date.now() | deps | relativeDate(review.createdAt, t)", "count": 1, "verdict": "경미", "note": "리뷰 상대 시간 — 같음" },
+    { "key": "helper | lib/reviewTime.ts | reads Date.now() | deps | formatReviewTime(iso, t, now)", "count": 1, "verdict": "안전", "note": "KB-781 useReviewTime — now를 state로 들고 인자로(isNewFood와 같은 방식), 다음 표기 경계 타이머가 갱신" },
     { "key": "helper | features/community/parts.tsx | reads Date.now() | deps | timeAgo(post.createdAt, t)", "count": 1, "verdict": "경미", "note": "피드 상대 시간 — 같음" },
     { "key": "helper | app/profile/my-foods.tsx | reads i18n.language | deps | formatOrderDate(order.orderedAt)", "count": 2, "verdict": "안전", "note": "의존에 t — 언어가 바뀌면 t가 바뀌어 재계산" },
     { "key": "helper | lib/newFood.ts | reads Date.now() | deps | isNewFood(publishedAt, now)", "count": 1, "verdict": "안전", "note": "#226에서 now를 인자로 — 의존에 보임" },

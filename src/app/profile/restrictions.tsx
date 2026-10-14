@@ -18,7 +18,8 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { color as C, font, shadow } from '@/lib/theme';
-import { SubHeader, Btn, RiskMark, IconCheck } from '@/components';
+import { SubHeader, Btn, RiskMark, IconCheck, IconInfo } from '@/components';
+import { LeaveConfirmModal, useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { IngredientFilter } from '@/components/IngredientFilter';
 import { useMe, useUpdateMe } from '@/lib/data/useMe';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
@@ -49,6 +50,10 @@ export default function EditRestrictions() {
   const toggle = (code: string) => setSel((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
   const isGuest = useIsGuest();
   const { busy: saving, run: runSave } = useSubmitGuard(); // P-173: 저장 연타 봉쇄 — KB-604: 게스트 return보다 위(순수 로컬 훅, 부수효과 0)
+  // KB-776(QA B3-3): 미저장 이탈 확인 — 게스트 return보다 위(훅 순서). 기준 = 서버 정본(me.restrictions), 순서 무관 비교
+  const base = me?.restrictions.map((r) => r.code) ?? [];
+  const dirty = !isGuest && seed != null && (sel.length !== base.length || sel.some((c) => !base.includes(c)));
+  const leave = useLeaveConfirm(dirty, saving);
 
   // 라우트 자체 가드 (⑧-b) — 진입로는 프로필/홈 Edit(게이트·게스트 미노출)뿐이지만
   // 딥링크 이중 방어. 게스트는 콘텐츠(mock 포함) 미마운트, 시트 닫으면 뒤로.
@@ -76,7 +81,7 @@ export default function EditRestrictions() {
                   delta: sel.length - (seed?.initialCount ?? 0),
                   via: 'manual', // P-339 ⑧: 프리셋 채우기 소멸 — 이 화면은 항상 수동
                 });
-                router.back();
+                leave.release(() => router.back()); // 막기를 먼저 풀고 다음 렌더에서 뒤로(저장 성공에 확인 창 0)
               },
               onSettled: () => resolve(),
             },
@@ -98,8 +103,9 @@ export default function EditRestrictions() {
         }
       />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <View style={styles.notice}>
-          <RiskMark state="danger" size={22} />
+        {/* KB-776(QA B3-4): 빨간 위험 마크(원 안 ✕)가 닫기 버튼처럼 보였다 — 안내는 DS 정보 아이콘. 문구 = "저장하면 반영"(Save 버튼과 일치) */}
+        <View style={styles.notice} testID="restrictions-notice">
+          <IconInfo size={20} color={C.ink2} />
           <Text style={styles.noticeText}>{t('restrictionsEdit.notice')}</Text>
         </View>
 
@@ -113,10 +119,11 @@ export default function EditRestrictions() {
       </ScrollView>
 
       <View style={styles.savebar}>
-        <Btn icon={<IconCheck size={17} color="#fff" />} onPress={save}>
+        <Btn icon={<IconCheck size={17} color="#fff" />} busy={saving} onPress={save} testID="restrictions-save">
           {t('restrictionsEdit.save')}
         </Btn>
       </View>
+      <LeaveConfirmModal {...leave.modal} kind="edit" />
     </KeyboardAvoidingView>
   );
 }

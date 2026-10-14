@@ -31,7 +31,7 @@ jest.mock('@/lib/api/client', () => ({ ...jest.requireActual('@/lib/api/client')
 import { ApiError } from '@/lib/api/client';
 import { AdBanner } from '../AdBanner';
 import { INTERSTITIAL_SHOW_TIMEOUT, OrderDoneInterstitial, type InterstitialController } from '../OrderDoneInterstitial';
-import { UnlockActions } from '../RewardedUnlock';
+import { RewardedTile, UnlockActions } from '../RewardedUnlock';
 import { FeedAd } from '../FeedAd';
 import { _resetAdsSessionForTest, canShowInterstitial, initAds, markInterstitialShown } from '@/lib/ads/adsSession';
 import { _resetAdsSdkForTest } from '@/lib/ads/sdk';
@@ -110,6 +110,21 @@ describe('배너', () => {
     rerender(t, el(true));
     expect(slot().props.style[1]).toEqual({ height: 50, paddingBottom: 34 });
     expect(mockAds.banners.length).toBe(mounted);
+  });
+
+  it('KB-774: 클립 상자 = 수신 크리에이티브 폭·높이(네이티브 뷰 남는 자리 검은 띠 차단) · 실패 = 크기 해제', async () => {
+    await act(async () => { await initAds(); });
+    const t = render(<AdBanner placement="search_banner" bottomInset={34} />);
+    const clip = () => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner-clip' && typeof x.type === 'string')[0];
+    const flat = () => Object.assign({}, ...(clip().props.style as object[]).filter(Boolean)) as Record<string, unknown>;
+    expect(flat().width).toBeUndefined();
+    const props = mockAds.banners.at(-1)!;
+    act(() => { (props.onAdLoaded as (d: { width: number; height: number }) => void)({ width: 320, height: 100 }); });
+    expect(flat()).toMatchObject({ width: 320, height: 100, overflow: 'hidden' });
+    act(() => { (props.onSizeChange as (d: { width: number; height: number }) => void)({ width: 402, height: 120 }); }); // 컨테이너 크기는 무시
+    expect(flat()).toMatchObject({ width: 320, height: 100 });
+    act(() => { (props.onAdFailedToLoad as (e: Error) => void)(new Error('no-fill')); });
+    expect(flat().width).toBeUndefined();
   });
 
   it('플래그 banner=false / enabled=false = 렌더 0', async () => {
@@ -222,6 +237,36 @@ describe('보상형(스캔 해제)', () => {
     mockMe = { id: '1', adRewards: null }; rerender(t, actions()); expect(btn(t, 'quota-watch-ad')).toBeUndefined();
     mockMe = { id: '1', adRewards: { count: 3, forUnlock: 3, remaining: 0 } }; rerender(t, actions()); expect(btn(t, 'quota-watch-ad')).toBeUndefined();
     expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it('KB-765: RewardedTile(홈 다이얼로그) = 같은 상태 기계 — 로드 → press = show → 보상 → POST 1회 · watched 1/3 · 계측에 surface: dialog(스캔 화면 버튼은 미지정)', async () => {
+    const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+    mockPost.mockResolvedValue({ rewardCount: 1, remainingForUnlock: 2, scanUnlocked: false });
+    await act(async () => { await initAds(); });
+    const seen: { watched: number; total: number; pressable: boolean; press: () => void }[] = [];
+    const tile = () => (
+      <RewardedTile
+        sdk={adsModule as never}
+        initial={{ count: 0, forUnlock: 3, remaining: 3 }}
+        onUnlocked={jest.fn()}
+        onClose={jest.fn()}
+        render={(r) => { seen.push(r); return <View testID="tile-probe" />; }}
+      />
+    );
+    const t = render(tile());
+    act(() => mockAds.update('rewarded', { status: 'loaded', impression: true }));
+    rerender(t, tile());
+    expect(mockTrack).toHaveBeenCalledWith('ad_impression', { format: 'rewarded', placement: 'scan_unlock_rewarded', surface: 'dialog' });
+    expect(seen.at(-1)!.pressable).toBe(true);
+    await act(async () => { seen.at(-1)!.press(); });
+    expect(mockAds.rewarded.show).toHaveBeenCalledTimes(1);
+    act(() => mockAds.update('rewarded', { status: 'showing', earnedReward: true }));
+    rerender(t, tile());
+    await flush();
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    expect(mockTrack).toHaveBeenCalledWith('ad_reward_earned', { placement: 'scan_unlock_rewarded', remaining: 2, surface: 'dialog' });
+    rerender(t, tile());
+    expect(seen.at(-1)!).toMatchObject({ watched: 1, total: 3 });
   });
 
   it('로드 → 탭 = show · EARNED_REWARD → POST {rewardKey(로드 시 UUID), adUnitId(데모 보상형)} 1회 · 200 remaining 2 = 1/3 표시 + 캐시 invalidate · 같은 보상 재렌더 = POST 재발화 0', async () => {
