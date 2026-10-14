@@ -7,7 +7,8 @@
  * 항목 탭 = 미읽음이면 낙관 읽음(PATCH) + routeForNotificationData(type·orderId — 없으면 이동 없음).
  * 전체 읽음 계약이 없어 "모두 읽음"은 없다. 게스트 = 로그인 직행(Redirect, 2026-09-16 clarify).
  */
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';

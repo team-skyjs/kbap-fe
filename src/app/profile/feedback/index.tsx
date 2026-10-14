@@ -7,7 +7,8 @@
  * 재활용: `SubHeader`·`StateBlock`(빈/오류)·스켈레톤·커서 무한 스크롤·`timeAgo`(커뮤니티)·`IconPlus`(커뮤니티 글 FAB).
  */
 import * as React from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';

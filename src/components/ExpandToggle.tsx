@@ -10,7 +10,8 @@
  * 아이콘 = `IconChevronDown` 기존 크기·색.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { IconChevronDown } from '@/components/icons';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +33,7 @@ export function ExpandToggle({
   labelExpanded?: string;
   /** 기본 = reviews.seeMore */
   labelCollapsed?: string;
-  testID?: string;
+  testID: string; // KB-784(PR 280 Codex P2): 필수 — 생략하면 ui_click target이 'unlabeled'로 샌다(tsc가 모든 사용처를 강제)
 }) {
   const { t } = useTranslation();
   const label = expanded ? (labelExpanded ?? t('reviews.seeLess')) : (labelCollapsed ?? t('reviews.seeMore'));

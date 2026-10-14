@@ -132,6 +132,7 @@ export function setDeeplinkReady(on: boolean): void {
   if (!on && resolveOnBlur) {
     resolveOnBlur = false;
     entryResolved = true; // 탭을 떠난 뒤 정착 — 이동은 게이트 통과 뒤(탭 포커스·게이트 해제)
+    notifyEntry();
     return;
   }
   if (on) flushIfReady();
@@ -152,6 +153,7 @@ export function setDeeplinkGate(on: boolean): void {
 /** RootLayout 전용 — 진입 게이트 정착(일반 부팅 = 스택 렌더 전, 신규 설치 = /login 교체 직후). 한 번 true면 유지(앱 프로세스 동안). */
 export function markEntryResolved(): void {
   entryResolved = true;
+  notifyEntry();
   if (tabsFocused) flushIfReady();
 }
 
@@ -159,6 +161,18 @@ export function markEntryResolved(): void {
 export function markEntryResolvedAfterLeavingTabs(): void {
   if (tabsFocused) resolveOnBlur = true;
   else markEntryResolved();
+}
+
+/** KB-784(PR 280 Codex P2): 진입 정착을 구독 가능하게 — screen_view가 신규 설치의 부팅 라우팅(정착 전 (tabs)/index)을 기록하지 않도록 */
+const entryListeners = new Set<() => void>();
+function notifyEntry(): void {
+  for (const l of [...entryListeners]) l();
+}
+export function subscribeEntryResolved(cb: () => void): () => void {
+  entryListeners.add(cb);
+  return () => {
+    entryListeners.delete(cb);
+  };
 }
 
 /** 진입 정착 여부 — 홈 진입 계측(HOME_VIEWED)도 같은 신호로 막는다(로그인 게이트 전 홈 마운트는 '홈 진입'이 아니다) */

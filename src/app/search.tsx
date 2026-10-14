@@ -14,7 +14,8 @@
  * the KB-25 RiskPill. Blank keywords never leave the client (server 400s).
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { FlatList, Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -160,7 +161,7 @@ export default function Search() {
           <View style={styles.secHead}>
             <Text style={styles.secTag}>{t('search.recent')}</Text>
             {recent.length > 0 && (
-              <Pressable onPress={clear} hitSlop={6}>
+              <Pressable testID="search-recent-clear-all" onPress={clear} hitSlop={6}>
                 <Text style={styles.clearAll}>{t('search.recentClearAll')}</Text>
               </Pressable>
             )}
@@ -174,10 +175,10 @@ export default function Search() {
               {recent.map((rterm) => (
                 <View key={rterm} style={styles.recentRow}>
                   <IconSearch size={16} color={C.ink3} />
-                  <Pressable style={styles.recentTap} onPress={() => doSearch(rterm)}>
+                  <Pressable testID="search-recent-term" style={styles.recentTap} onPress={() => doSearch(rterm)}>
                     <Text style={styles.recentText} numberOfLines={1}>{rterm}</Text>
                   </Pressable>
-                  <Pressable onPress={() => remove(rterm)} hitSlop={8}>
+                  <Pressable testID="search-recent-remove" onPress={() => remove(rterm)} hitSlop={8}>
                     <IconClose size={15} color={C.ink3} />
                   </Pressable>
                 </View>

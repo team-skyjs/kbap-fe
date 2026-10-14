@@ -13,7 +13,8 @@
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import * as React from 'react';
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useReviewTime } from '@/lib/reviewTime';
 import { Txt as Text } from '@/components/Txt';
 import { TopToastHost } from '@/components/TopToast';
@@ -384,7 +385,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
         <View style={styles.itemTopRight}>
           <Stars value={review.rating} size={14} />
           {onMore && (
-            <Pressable hitSlop={10} onPress={onMore}>
+            <Pressable testID="reviews-more" hitSlop={10} onPress={onMore}>
               <IconMore size={16} color={C.ink3} />
             </Pressable>
           )}

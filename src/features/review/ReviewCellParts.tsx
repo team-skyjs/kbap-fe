@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
@@ -237,7 +238,7 @@ export function PlacePickerSheet({
               <Text style={styles.noResults} testID="place-no-results">{t('review.placeNoResults')}</Text>
             ) : (
               results.map((p) => (
-                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>
+                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`} uiTarget="place-pick">{/* KB-784: 장소명(자유 텍스트) = 계측 target에서 제외 */}
                   <IconMapPin size={12} color={C.ink3} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>

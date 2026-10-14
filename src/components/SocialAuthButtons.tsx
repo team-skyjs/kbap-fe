@@ -12,7 +12,8 @@
  *    "Sign in with Google" (i18n follows Google's own localized strings).
  */
 import * as React from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -22,6 +23,7 @@ import { useSocialAuth } from '@/lib/auth/useSocialAuth';
 import type { LoginEntry } from '@/lib/auth/loginEntry';
 import { useShake } from '@/lib/useShake';
 import { IconGoogleG } from './icons';
+import { trackUiClick } from '@/lib/uiClick';
 
 const BTN_H = 48; // A-LG-03(KB-486) — Apple 슬롯 공유(네이티브 스타일 자체는 C-22)
 
@@ -61,18 +63,19 @@ export function SocialAuthButtons({
               <ActivityIndicator color="#fff" />
             </View>
           ) : (
-            <AppleAuthentication.AppleAuthenticationButton
+            <AppleAuthentication.AppleAuthenticationButton testID="auth-apple"
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
               cornerRadius={4} /* P-339 ⑥: 구글(r4)과 통일 — 시안 Button r4 */
               style={styles.apple}
-              onPress={() => { if (!busy) void signInWithApple(); }}
+              // KB-784: 네이티브 서드파티 버튼(components/Pressable 밖) — ui_click 직접(uiClickCoverage784 R6)
+              onPress={() => { trackUiClick('auth-apple'); if (!busy) void signInWithApple(); }}
             />
           )}
         </View>
       )}
 
-      <Pressable
+      <Pressable testID="auth-google"
         style={[styles.google, busy && phase !== 'google' && styles.dim]}
         disabled={busy}
         onPress={() => void signInWithGoogle()}

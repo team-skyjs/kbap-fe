@@ -15,7 +15,8 @@
  * - UI 스레드 코드 = useAnimatedStyle(공유값·숫자 상수만) + FlameShape의 useAnimatedProps(flameGeometry의 'worklet' 함수만) + 선언형 withTiming/withRepeat/withSequence/withSpring.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, {
   Easing,
   cancelAnimation,

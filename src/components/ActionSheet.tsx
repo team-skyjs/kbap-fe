@@ -13,7 +13,8 @@
  * "시스템 기능 호출=시스템 UI(프로필 사진 시트), 콘텐츠 액션=이 컴포넌트" 구분.
  */
 import type { ReactNode } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -52,14 +53,14 @@ export function ActionSheet({
   items: ActionSheetItem[];
   onClose: () => void;
   /** KB-709: QA 자동화 — 시트 = testID, 행 = `${testID}-${key}`(좌표 누름 대신). 생략 시 무변 */
-  testID?: string;
+  testID: string; // KB-784(PR 280 Codex P2): 필수 — 생략하면 ui_click target이 'unlabeled'로 샌다(tsc가 모든 사용처를 강제) — 행 = `${testID}-${key}`
 }) {
   const bottom = useBottomInset();
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null;
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}} testID={testID}>
+      <Pressable testID="action-sheet-backdrop" style={styles.backdrop} onPress={onClose}>
+        <Pressable style={[styles.sheet, sheetPad]} noTrack onPress={() => {}} testID={testID}>
           <View style={styles.header}>
             {avatar && <View style={styles.avatar}>{avatar}</View>}
             <Text style={styles.title} numberOfLines={1}>
@@ -71,7 +72,7 @@ export function ActionSheet({
             {items.map((it, i) => (
               <Pressable
                 key={it.key}
-                testID={testID ? `${testID}-${it.key}` : undefined}
+                testID={`${testID}-${it.key}`}
                 style={[styles.row, i > 0 && styles.rowDivider]}
                 disabled={it.disabled}
                 onPress={() => {

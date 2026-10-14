@@ -12,7 +12,8 @@
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -547,7 +548,7 @@ function Registered({
           <View style={styles.thickDivider} />
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
           <View style={{ paddingHorizontal: 20 }}>
-            <Btn variant="ghost" onPress={() => writeReview('detail')}>
+            <Btn testID="detail-write-review" variant="ghost" onPress={() => writeReview('detail')}>
               {t('reviews.writeReview')}
             </Btn>
           </View>
@@ -630,7 +631,7 @@ function Registered({
           ))}
 
           <View style={styles.rvMore}>
-            <Btn variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
+            <Btn testID="detail-read-all-reviews" variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
               {t('detail.readAll')}
             </Btn>
           </View>
@@ -655,8 +656,8 @@ function Registered({
 
       {/* §1-6: 재료 상세 바텀시트(4150:17055) */}
       <Modal visible={ingSheet != null} transparent animationType="fade" onRequestClose={() => setIngSheet(null)}>
-        <Pressable style={styles.sheetScrim} onPress={() => setIngSheet(null)}>
-          <Pressable style={styles.ingSheet} onPress={() => {}} testID="ing-sheet">
+        <Pressable testID="ing-sheet-backdrop" style={styles.sheetScrim} onPress={() => setIngSheet(null)}>
+          <Pressable style={styles.ingSheet} noTrack onPress={() => {}} testID="ing-sheet">
             {ingSheet && (
               <>
                 <View style={styles.ingSheetTop}>
@@ -725,7 +726,7 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
         </View>
       </View>
 
-      <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk}>
+      <Btn testID="detail-ask-owner" icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk}>
         {t('detail.askOwner')}
       </Btn>
 

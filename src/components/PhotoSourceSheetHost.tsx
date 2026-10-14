@@ -68,7 +68,7 @@ export function PhotoSourceSheetHost() {
   // 행 선택이 먼저 settle하면 no-op이 되게 한다(스크림/X/백버튼만 null로 남음).
   const deferCancel = () => setTimeout(() => settle(req, null), 0);
   return (
-    <ActionSheet
+    <ActionSheet testID="photo-source"
       open
       title={L.title}
       items={[

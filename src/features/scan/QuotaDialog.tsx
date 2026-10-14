@@ -6,7 +6,8 @@
  * 딤·뒤로가기 = "나중에"와 동일. 텍스트는 전부 자동 줄바꿈(독일어 1.8배 = 제목·옵션 제목 2줄), 큰 글씨 최대에선 카드 안 스크롤.
  */
 import * as React from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';

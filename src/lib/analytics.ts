@@ -6,6 +6,7 @@
  * 이벤트 = `<도메인>_<행동>`. 도메인 =
  *   app · auth · onboarding · scan · order · owner · food · search ·
  *   review · community · profile · push · error · ad(KB-739 AdMob — ad_impression/ad_click/ad_reward_earned/ad_consent_result)
+ *   · screen(KB-784 screen_view — 라우트 패턴) · ui(KB-784 ui_click — 공용 Pressable 자동) · home(KB-784 홈 섹션·카드 노출/클릭)
  * user property = `user_info_` 접두 (예: user_info_country).
  * 신규 추가 시 이 규칙을 먼저 적용할 것 — CSV 대조 유닛이 구 이름을 막는다.
  *
@@ -104,6 +105,12 @@ export const EVENTS = {
   ad_click: 'ad_click',
   ad_reward_earned: 'ad_reward_earned',
   ad_consent_result: 'ad_consent_result',
+  // KB-784(10/14 예진): 전면 계측. 표시 이름(한국어)은 커맨드 센터가 Amplitude 트래킹 플랜에서 붙인다(코드 = 영문 snake_case).
+  screen_view: 'screen_view', // 루트 레이아웃 1곳 — screen = 라우트 패턴(id 값 없음), 포그라운드 복귀 재발화 없음
+  ui_click: 'ui_click', // components/Pressable 한 곳 — screen + target(정규화 testID)
+  home_section_view: 'home_section_view', // 홈 섹션 노출(50%↑ + 스크롤 정지, 홈 진입당 1회)
+  home_card_view: 'home_card_view', // 홈 카드 노출(같은 규칙)
+  home_card_click: 'home_card_click', // 홈 카드 클릭(섹션·위치) — 표시 이름 "홈컨텐츠_카드_클릭"
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -149,6 +156,13 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ad_click: ['format', 'placement', 'surface'],
   ad_reward_earned: ['placement', 'remaining', 'surface'],
   ad_consent_result: ['status', 'can_request_ads', 'gdpr_applies', 'personalized_consent'], // KB-774: boolean만(TC 문자열 원문 금지)
+  // KB-784: screen = 라우트 패턴(예 food/[id] — 실제 id 없음) · target = testID 정규화(숫자·대문자 코드·비ASCII 토큰 → :v, lib/uiClick)
+  // section = popular|saved|food|safe|most_reviewed|recent|reviews|guest_cta · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
+  screen_view: ['screen'],
+  ui_click: ['screen', 'target'],
+  home_section_view: ['section'],
+  home_card_view: ['section', 'position', 'food_id'],
+  home_card_click: ['section', 'position', 'food_id'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open

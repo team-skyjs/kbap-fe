@@ -7,6 +7,7 @@ import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { ProgressDots } from '@/components/ProgressDots';
+import { Pressable } from '@/components/Pressable';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
 jest.mock('@/lib/data/useDietPresets', () => {
@@ -120,7 +121,8 @@ it('약관 게이트 — 3항목 미동의면 계속 off, 개별 3행 전부 체
   expect(continueBtn(tree).props.variant).toBe('off');
   expect(continueBtn(tree).props.onPress).toBeUndefined();
   // 개별 행 체크 3개 (hitSlop 6이 지문 — 행 본문 Pressable)
-  const rows = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 6);
+  // KB-784: components/Pressable 래퍼 아래 RN Pressable도 같은 props를 가진다 — 앱 레벨(래퍼) 요소만 센다
+  const rows = tree.root.findAll((n) => n.type === Pressable && typeof n.props?.onPress === 'function' && n.props?.hitSlop === 6);
   expect(rows.length).toBe(3);
   for (const row of rows) {
     await act(async () => {
