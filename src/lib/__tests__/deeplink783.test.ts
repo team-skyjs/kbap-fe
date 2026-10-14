@@ -4,14 +4,23 @@
  * · 게이트(탭 진입 전) 보류 → 탭 진입 시 1회 · OS URL 중 맡지 않는 것(개발 클라이언트)은 라우터 기존 동작.
  */
 const mockPush = jest.fn();
-const mockDismissTo = jest.fn();
-jest.mock('expo-router', () => ({ router: { push: (h: string) => mockPush(h), dismissTo: (h: string) => mockDismissTo(h) } }));
+const mockNavigate = jest.fn();
+const mockDismissAll = jest.fn();
+let mockCanDismiss = true;
+jest.mock('expo-router', () => ({
+  router: {
+    push: (h: string) => mockPush(h),
+    navigate: (h: string) => mockNavigate(h),
+    dismissAll: () => mockDismissAll(),
+    canDismiss: () => mockCanDismiss,
+  },
+}));
 
 import { handleDeeplink, isEntryResolved, isOwnedSystemUrl, markEntryResolved, markEntryResolvedAfterLeavingTabs, resolveDeeplink, setDeeplinkGate, setDeeplinkReady, SUPPORTED_DEEPLINKS, __resetDeeplinkForTest } from '../deeplink';
 import { redirectSystemPath } from '../../app/+native-intent';
 
 /** KB-786: 이동 = 스택 push 또는 탭 dismissTo — 순서 그대로 */
-const navs = () => [...mockPush.mock.calls.map((c, i) => ({ o: mockPush.mock.invocationCallOrder[i], to: c[0] })), ...mockDismissTo.mock.calls.map((c, i) => ({ o: mockDismissTo.mock.invocationCallOrder[i], to: c[0] }))].sort((a, b) => a.o - b.o).map((x) => x.to);
+const navs = () => [...mockPush.mock.calls.map((c, i) => ({ o: mockPush.mock.invocationCallOrder[i], to: c[0] })), ...mockNavigate.mock.calls.map((c, i) => ({ o: mockNavigate.mock.invocationCallOrder[i], to: c[0] }))].sort((a, b) => a.o - b.o).map((x) => x.to);
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -144,8 +153,9 @@ describe('KB-783 후속(Android QA 10/14) — 정착 뒤엔 어느 화면이든 
     setDeeplinkReady(true); // 홈
     setDeeplinkReady(false); // 상세 push → 탭 블러
     handleDeeplink('kbap://profile', 1);
-    expect(navs()).toEqual(['/(tabs)/profile']); // KB-786: 탭 목적지 = dismissTo(기존 셸로)
-    expect(mockDismissTo).toHaveBeenCalledWith('/(tabs)/profile');
+    expect(navs()).toEqual(['/(tabs)/profile']); // KB-786: 탭 목적지 = 스택 비우고(dismissAll) 탭 인식 navigate
+    expect(mockDismissAll).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith('/(tabs)/profile');
     setDeeplinkReady(true); // back으로 탭
     expect(navs()).toHaveLength(1);
   });
@@ -201,12 +211,22 @@ describe('KB-786', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
 
-  it('#278 P2: 탭 목적지(home·food·reviews·profile) = dismissTo(셸 중복 0) · 스택 목적지 = push', () => {
+  it('#278 P2·#283 P1: 탭 목적지 = 스택 비우고(dismissAll — 상세 위면) 탭 인식 navigate(다른 탭에 있어도 그 탭으로) · 스택 목적지 = push', () => {
     for (const u of ['kbap://home', 'kbap://food', 'kbap://reviews', 'kbap://profile']) handleDeeplink(u, Math.random() * 1e9);
     handleDeeplink('kbap://food/12', 2e9);
     handleDeeplink('kbap://search', 3e9);
-    expect(mockDismissTo.mock.calls.map((c) => c[0])).toEqual(['/(tabs)', '/(tabs)/food', '/(tabs)/community', '/(tabs)/profile']);
+    expect(mockNavigate.mock.calls.map((c) => c[0])).toEqual(['/(tabs)', '/(tabs)/food', '/(tabs)/community', '/(tabs)/profile']);
     expect(mockPush.mock.calls.map((c) => c[0])).toEqual(['/food/12', '/search']);
+    // 비우기가 탭 전환보다 먼저
+    expect(mockDismissAll.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
+  });
+
+  it('#283 P1: 프로필 탭(스택에 더 비울 것 없음)에서 kbap://home = dismissAll 없이 navigate("/(tabs)") — 홈 탭으로 전환', () => {
+    mockCanDismiss = false;
+    handleDeeplink('kbap://home', 1);
+    expect(mockDismissAll).not.toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith('/(tabs)');
+    mockCanDismiss = true;
   });
 
   it('#281 P2: 게이트 해제 지연 중 새 링크 B = 보류분 교체 → 지연 끝에 B만(옛 A가 B 위로 덮지 않음)', () => {

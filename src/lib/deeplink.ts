@@ -89,15 +89,27 @@ let pending: string | null = null;
 let gateTimer: ReturnType<typeof setTimeout> | null = null;
 /** KB-786(#281 Codex P2): 게이트 해제 지연 중(타이머 대기) — 이 동안 온 새 링크도 보류로 받아 보류분을 교체한다(옛 링크가 새 링크 위로 뒤늦게 덮지 않게) */
 let releasing = false;
+/** KB-786(#283 Codex P2): 보류분을 이동시킨 직후 — go()는 액션을 큐에 넣을 뿐이라 세그먼트가 아직 옛 경로다. 화면 조회가 실제 이동(세그먼트 변화)을
+ *  볼 때까지 첫 기록을 계속 미룬다(useScreenTracking이 releaseNavHold). 목적지가 지금 화면과 같으면 변화가 없으니 시간 상한으로 푼다. */
+let navAwait = false;
+let navAwaitTimer: ReturnType<typeof setTimeout> | null = null;
+const NAV_AWAIT_MAX_MS = 1500;
 /** 게이트가 풀린 뒤 다음 화면 포커스(로그인→온보딩 교체 등)가 이어 붙을 시간 — 그 사이엔 flush하지 않는다 */
 const GATE_RELEASE_MS = 300;
 
 function go(to: string): void {
   try {
-    // KB-786(#278 Codex P2): 탭 목적지 = 이미 있는 (tabs) 셸로 되돌아가 탭 전환(dismissTo = React Navigation popTo — 없으면 현재 화면 교체).
-    // push면 홈에서 kbap://home이 셸 2장, 상세에서 열면 back이 링크 전 상세로 갔다. 스택 화면(상세·검색 등)은 그대로 push.
-    if (to.startsWith('/(tabs)')) router.dismissTo(to as Href);
-    else router.push(to as Href);
+    // KB-786(#278 Codex P2 → #283 Codex P1): 탭 목적지 = 루트 스택을 (tabs) 셸까지 비우고(dismissAll) **탭 인식 navigate**로 탭 전환 —
+    // 푸시 알림 탭과 같은 검증된 방식(lib/nav openNotificationRoute, KB-573). dismissTo('/(tabs)')는 스택 히스토리만 보고 탭은 안 바꿨다
+    // (프로필 탭에서 kbap://home = 그대로 프로필). push면 셸 중복·back이 링크 전 상세로. 스택 화면(상세·검색 등)은 그대로 push.
+    if (to.startsWith('/(tabs)')) {
+      try {
+        if (router.canDismiss()) router.dismissAll();
+      } catch {
+        /* 스택 밖 — 무시 */
+      }
+      router.navigate(to as Href);
+    } else router.push(to as Href);
   } catch {
     /* 라우터 미준비 — 무시(보류 경로가 다시 시도) */
   }
@@ -128,7 +140,19 @@ function flushIfReady(): void {
   if (!canNavigateNow() || !pending) return;
   const to = pending;
   pending = null;
-  go(to); // 이동 먼저 — 아래 알림으로 화면 조회가 재개될 때 세그먼트는 이미 목적지(첫 기록 = 딥링크 목적지)
+  go(to);
+  // 이동은 큐에 들어갔을 뿐 — 화면 조회 보류는 세그먼트가 실제로 바뀔 때(releaseNavHold) 또는 상한 뒤 해제(#283 Codex P2)
+  navAwait = true;
+  if (navAwaitTimer) clearTimeout(navAwaitTimer);
+  navAwaitTimer = setTimeout(releaseNavHold, NAV_AWAIT_MAX_MS);
+}
+
+/** useScreenTracking 전용 — 보류분 이동 뒤 세그먼트가 바뀐 것을 확인했을 때(또는 상한) 화면 조회 재개 */
+export function releaseNavHold(): void {
+  if (navAwaitTimer) clearTimeout(navAwaitTimer);
+  navAwaitTimer = null;
+  if (!navAwait) return;
+  navAwait = false;
   notifyEntry();
 }
 
@@ -194,7 +218,7 @@ export function subscribeEntryResolved(cb: () => void): () => void {
 /** KB-786(#280 Codex P2): 보류된 딥링크가 있으면 화면 조회를 미룬다 — 콜드 스타트 딥링크에서 기본 루트(홈)가 먼저 기록되던 것.
  *  이동(flush) 뒤 알림으로 재개되면 그때 화면 = 목적지. */
 export function hasPendingDeeplink(): boolean {
-  return pending !== null;
+  return pending !== null || navAwait;
 }
 
 /** 진입 정착 여부 — 홈 진입 계측(HOME_VIEWED)도 같은 신호로 막는다(로그인 게이트 전 홈 마운트는 '홈 진입'이 아니다) */
@@ -211,6 +235,9 @@ export function __resetDeeplinkForTest(entry = true): void {
   resolveOnBlur = false;
   gates = 0;
   releasing = false;
+  navAwait = false;
+  if (navAwaitTimer) clearTimeout(navAwaitTimer);
+  navAwaitTimer = null;
   if (gateTimer) clearTimeout(gateTimer);
   gateTimer = null;
   pending = null;

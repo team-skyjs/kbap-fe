@@ -144,10 +144,36 @@ it('KB-786(#280 P2): 콜드 스타트 딥링크 — 기본 루트(홈)는 기록
   act(() => { tree = renderer.create(<Probe />); });
   mounted.push(tree);
   expect(mockTrack).not.toHaveBeenCalled(); // 보류 중 — 허수 홈 0
-  mockSegments = ['food', '[id]']; // flush의 push가 반영된 세그먼트
-  act(() => setDeeplinkReady(true)); // 탭 포커스 → 보류 flush → 알림
+  act(() => setDeeplinkReady(true)); // 탭 포커스 → 보류 flush(이동은 큐에만)
+  act(() => tree.update(<Probe />)); // #283 P2: 세그먼트가 아직 옛 경로 — 기록 0
+  expect(mockTrack).not.toHaveBeenCalled();
+  mockSegments = ['food', '[id]']; // 내비게이션 커밋 → 세그먼트 = 목적지
   act(() => tree.update(<Probe />));
   expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: 'food/[id]' }]]);
+});
+
+it('#283 P2: 목적지가 지금 화면과 같으면(kbap://home on 홈) 세그먼트 변화가 없으니 상한(1.5s) 뒤 그 화면 1회', () => {
+  jest.useFakeTimers();
+  try {
+    __resetDeeplinkForTest(false);
+    handleDeeplink('kbap://home', 1);
+    markEntryResolved();
+    function Probe() {
+      useScreenTracking();
+      return null;
+    }
+    mockSegments = ['(tabs)'];
+    let tree!: renderer.ReactTestRenderer;
+    act(() => { tree = renderer.create(<Probe />); });
+    mounted.push(tree);
+    act(() => setDeeplinkReady(true));
+    act(() => tree.update(<Probe />));
+    expect(mockTrack).not.toHaveBeenCalled();
+    act(() => { jest.advanceTimersByTime(1500); });
+    expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: '(tabs)/index' }]]);
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 it('KB-786: 보류 대기는 첫 기록만 — 이후 로그인 위 보류 중에도 화면 조회는 계속', () => {

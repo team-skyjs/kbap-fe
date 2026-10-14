@@ -9,7 +9,7 @@ import * as React from 'react';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
 import { screenFromSegments, setCurrentScreen } from '@/lib/uiClick';
-import { hasPendingDeeplink, isEntryResolved, subscribeEntryResolved } from '@/lib/deeplink';
+import { hasPendingDeeplink, isEntryResolved, releaseNavHold, subscribeEntryResolved } from '@/lib/deeplink';
 
 /** PR 280 Codex P2: 진입 정착(lib/deeplink — 첫 실행 판별·로그인 리다이렉트 끝) **뒤에만** screen_view. 신규 설치는 부팅 때 (tabs)가 먼저
  *  마운트됐다가 /login으로 교체된다 — 그 (tabs)/index는 실제 진입이 아니다. 정착 순간 현재 화면을 1회 기록한다. */
@@ -20,10 +20,18 @@ export function useScreenTracking(): void {
   // KB-786(#280 Codex P2): 보류 딥링크가 있으면(콜드 스타트 kbap://) 기본 루트를 기록하지 않고 이동 뒤 목적지부터
   const holding = React.useSyncExternalStore(subscribeEntryResolved, hasPendingDeeplink, hasPendingDeeplink);
   const prev = React.useRef<string | null>(null);
+  /** 첫 기록을 미루는 동안 보이던 화면 — 이것과 다른 세그먼트가 오면 = 딥링크 이동이 실제 반영됨(#283 Codex P2) */
+  const heldOn = React.useRef<string | null>(null);
   React.useEffect(() => {
     setCurrentScreen(screen); // ui_click 화면은 정착과 무관하게 최신
     // 보류 대기는 **첫 기록만**(콜드 스타트) — 그 뒤 로그인·온보딩 위 보류 중에도 화면 조회는 그대로
-    if (!resolved || (holding && prev.current === null) || prev.current === screen) return;
+    if (!resolved) return;
+    if (holding && prev.current === null) {
+      if (heldOn.current === null) heldOn.current = screen;
+      if (screen === heldOn.current) return; // 아직 옛 경로(이동 큐만 들어감) — 기록 0
+      releaseNavHold(); // 세그먼트가 바뀜 = 목적지 도착 → 보류 해제 후 이 화면을 첫 기록으로
+    }
+    if (prev.current === screen) return;
     prev.current = screen;
     track(EVENTS.screen_view, { screen });
   }, [screen, resolved, holding]);
