@@ -70,6 +70,8 @@ import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { queryClient } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
+import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
@@ -229,6 +231,10 @@ export default function Onboarding() {
         avoid_skipped: skipped.restrictions,
         spice_skipped: spiceSkipped,
       });
+      // KB-783 ④: 온보딩 완료(게스트 포함) — 게스트 여부 = BE 토큰 유무(탭 계측과 같은 판별, 모름 = 생략)
+      void isRegisteredForAnalytics()
+        .then((reg) => airbridge.completeTutorial({ guest: reg == null ? null : !reg }))
+        .catch(() => airbridge.completeTutorial({ guest: null }));
       // P-144: user property — CSV 트리거(온보딩 제출 시 갱신). 재료명 아닌 개수·enum·코드만.
       setUserProps({
         user_info_country: nationality,

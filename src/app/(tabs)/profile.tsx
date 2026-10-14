@@ -9,6 +9,7 @@
  * Data via useMe()/useMyReviews()/useBookmarks() — 훅·로그아웃·게이트 로직 무변.
  */
 import { RemoteImage } from '@/components/RemoteImage';
+import { airbridge } from '@/lib/airbridge';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SAFETY_NOTICE_URL } from '@/lib/legalText';
@@ -97,6 +98,7 @@ export default function Profile() {
   };
   async function doLogout() {
     setLoggingOut(true);
+    airbridge.signOut(); // KB-783 ③: 사용자가 누른 로그아웃만(만료·탈퇴는 아님) — 식별 해제(clearUser)는 세션 경계가 한다
     try {
       // KB-67: BE 세션 폐기(POST /auth/logout + 토큰 삭제) 후
       // Firebase signOut(네이티브 전용 — lazy require).

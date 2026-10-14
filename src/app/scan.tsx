@@ -23,6 +23,7 @@ import { useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { UnlockActions, useCanWatchAd } from '@/features/ads/RewardedUnlock';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
@@ -439,6 +440,9 @@ export default function Scan() {
         // 세면 107개 스캔이 0으로 발화(8/18 실측) — 전체 결과 수(매칭+미매칭)로 교정.
         // v1은 items가 본 경로라 현행 합산식으로도 동일(photoOnly는 idx=null 보충분).
         track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length + res.photoOnly.length });
+        // KB-783 ⑥: 스캔 1회 소모(쿼터 = 스캔 전 서버 스냅샷 그대로 전달) + 결과 목록(인식 메뉴 수)
+        airbridge.scanSpend(quotaRef.current);
+        airbridge.scanResults(res.items.length + res.photoOnly.length);
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
@@ -809,7 +813,7 @@ export default function Scan() {
               currency={currency}
               fx={fx}
               cart={cart}
-              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); bumpCart(d.itemId, 1); }}
+              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); airbridge.addToCart({ id: d.foodId ?? `menu:${d.itemId}`, name: d.koreanName ?? d.rawMenuName }); bumpCart(d.itemId, 1); }}
               onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면

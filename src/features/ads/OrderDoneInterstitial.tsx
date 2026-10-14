@@ -11,6 +11,7 @@
 import * as React from 'react';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import type { QueueStep } from '@/lib/oneShotQueue';
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { canShowInterstitial, markInterstitialShown, useAdsSdk } from '@/lib/ads/adsSession';
@@ -49,8 +50,8 @@ function Host({ sdk, controllerRef }: { sdk: AdsSdk; controllerRef: React.Mutabl
     if (status === 'closed' || status === 'error') finishRef.current();
   }, [status]);
   React.useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); }, []);
-  React.useEffect(() => { if (impression) track(EVENTS.ad_impression, { format: 'interstitial', placement: 'order_done_interstitial' }); }, [impression]);
-  React.useEffect(() => { if (clicked) track(EVENTS.ad_click, { format: 'interstitial', placement: 'order_done_interstitial' }); }, [clicked]);
+  React.useEffect(() => { if (impression) { track(EVENTS.ad_impression, { format: 'interstitial', placement: 'order_done_interstitial' }); airbridge.adImpression('interstitial', 'order_done_interstitial'); } }, [impression]);
+  React.useEffect(() => { if (clicked) { track(EVENTS.ad_click, { format: 'interstitial', placement: 'order_done_interstitial' }); airbridge.adClick('interstitial', 'order_done_interstitial'); } }, [clicked]);
 
   const loadedRef = React.useRef(false);
   React.useEffect(() => { loadedRef.current = status === 'loaded'; }, [status]);

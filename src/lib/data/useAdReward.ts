@@ -6,6 +6,7 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/lib/api/client';
+import { noteAdUnlock } from '@/lib/airbridge';
 
 export interface AdRewardResponse {
   rewardCount: number;
@@ -28,6 +29,10 @@ export function useClaimAdReward() {
   return useMutation({
     mutationFn: (input: { rewardKey: string; adUnitId: string }) =>
       api.post<AdRewardResponse>('/api/members/me/ad-rewards', { rewardKey: input.rewardKey, adUnitId: input.adUnitId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }), // 재조회 완료까지 대기(실패해도 resolve — throwOnError 기본 false)
+    onSuccess: (r) => {
+      // KB-783 ⑮(#278 Codex P1): 해제 표식은 프로필 재조회 **전에** — 재조회가 false→true 전이를 먼저 관측하면 'review'로 잘못 센다
+      if (r.scanUnlocked) noteAdUnlock();
+      return qc.invalidateQueries({ queryKey: ['me'] }); // 재조회 완료까지 대기(실패해도 resolve — throwOnError 기본 false)
+    },
   });
 }

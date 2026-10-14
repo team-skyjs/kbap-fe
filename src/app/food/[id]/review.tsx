@@ -37,6 +37,7 @@ import { useIsGuest } from '@/lib/auth/useSession';
 import { Snackbar } from '@/components/Snackbar';
 import { AuthGateSheet } from '@/components/AuthGateSheet';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { addReviewPhotos, canPostReview, removeReviewPhoto, reviewPhotoKey, REVIEW_MAX_PHOTOS, uploadReviewImages, type ReviewPhoto } from '@/lib/review/reviewPhotos';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -228,6 +229,7 @@ function ReviewComposeScreen() {
           extras, // P-236: servingSpeed·staffKindness(미평가 = 0)
         });
         track(EVENTS.review_submit, { has_photos: photos.length > 0, photo_count: photos.length, rating }); // P-083→144 확장
+        airbridge.rate({ foodId: id ?? '', rating, hasPhoto: photos.length > 0 }); // KB-783 ⑫ — 새 리뷰 등록만(수정은 위에서 return)
         // P-236: extras는 mutateAsync 페이로드로 서버 전송(로컬 프리뷰 폐기)
         // 프리즈 방어(9/5, Codex #24): dismiss 직후 동기 present는 hide 애니메이션과
         // 겹침 — 시트와 동일 헬퍼로 통일(키보드 내려간 뒤 확인 Modal 표시)

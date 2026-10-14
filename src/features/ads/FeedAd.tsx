@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { color as C, font } from '@/lib/theme';
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { useAdsSdk } from '@/lib/ads/adsSession';
@@ -35,8 +36,8 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
   React.useEffect(() => {
     if (!nativeAd) return;
     const subs = [
-      nativeAd.addAdEventListener(NativeAdEventType.IMPRESSION, () => track(EVENTS.ad_impression, { format: 'native', placement: 'feed_native' })),
-      nativeAd.addAdEventListener(NativeAdEventType.CLICKED, () => track(EVENTS.ad_click, { format: 'native', placement: 'feed_native' })),
+      nativeAd.addAdEventListener(NativeAdEventType.IMPRESSION, () => { track(EVENTS.ad_impression, { format: 'native', placement: 'feed_native' }); airbridge.adImpression('native', 'feed_native'); }),
+      nativeAd.addAdEventListener(NativeAdEventType.CLICKED, () => { track(EVENTS.ad_click, { format: 'native', placement: 'feed_native' }); airbridge.adClick('native', 'feed_native'); }),
     ];
     return () => subs.forEach((s) => s.remove());
   }, [nativeAd, NativeAdEventType]);

@@ -16,6 +16,7 @@
  * ⚠️ NATIVE ONLY (Firebase/google-signin native modules) — 재빌드 필요.
  */
 import { track as trackInflight } from '@/lib/net/inflight'; // analytics track과 이름 충돌 회피
+import { airbridge } from '@/lib/airbridge';
 import { useState } from 'react';
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -91,6 +92,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void, entry: L
         return;
       }
       track(EVENTS.auth_login_success, { provider: 'GOOGLE', is_new: exch.newMember, entry }); // P-083 · P-389
+      if (exch.newMember) airbridge.signUp(); else airbridge.signIn(); // KB-783 ①② — 가입 = 서버가 신규 회원이라고 답한 로그인
       setUserProps({ user_info_is_registered: true }); // P-144: NRU 기준(false→true 전환)
       setPhase('idle');
       onSignedIn(exch.newMember);
@@ -124,6 +126,7 @@ export function useSocialAuth(onSignedIn: (newMember: boolean) => void, entry: L
         return;
       }
       track(EVENTS.auth_login_success, { provider: 'APPLE', is_new: res.newMember, entry }); // P-083 · P-389
+      if (res.newMember) airbridge.signUp(); else airbridge.signIn(); // KB-783 ①② — 가입 = 서버가 신규 회원이라고 답한 로그인
       setUserProps({ user_info_is_registered: true }); // P-144
       setPhase('idle');
       onSignedIn(res.newMember);
