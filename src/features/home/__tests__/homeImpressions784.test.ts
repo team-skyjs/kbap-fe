@@ -116,6 +116,22 @@ it('PR 280 Codex P2: 비동기 측정 응답 전에 스크롤이 다시 시작�
   expect(mockTrack).toHaveBeenCalledWith('home_section_view', { section: 'popular' });
 });
 
+it('KB-786(#280 P2): 빠른 blur→refocus — 이전 방문의 늦은 측정 응답은 새 방문에 기록 0(새 방문 측정은 정상)', () => {
+  const t = new ImpressionTracker(VP);
+  const cbs: ((x: number, y: number, w: number, h: number) => void)[] = [];
+  const asyncNode = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => { cbs.push(cb); } };
+  t.focus();
+  t.register({ kind: 'section', section: 'recent' }, asyncNode);
+  jest.advanceTimersByTime(400); // 방문 1 측정 요청
+  t.blur();
+  t.focus(); // 방문 2
+  cbs[0](0, 200, 400, 200); // 방문 1의 늦은 응답
+  expect(mockTrack).not.toHaveBeenCalled();
+  jest.advanceTimersByTime(400); // 방문 2 측정
+  cbs[1](0, 200, 400, 200);
+  expect(mockTrack).toHaveBeenCalledTimes(1);
+});
+
 it('카드 클릭 = home_card_click {section, position, food_id}', () => {
   trackHomeCardClick('most_reviewed', 2, '41');
   expect(mockTrack).toHaveBeenCalledWith('home_card_click', { section: 'most_reviewed', position: 2, food_id: '41' });

@@ -41,6 +41,8 @@ export class ImpressionTracker {
   private scrolling = 0;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private active = false;
+  /** KB-786(#280 Codex P2): 방문 세대 — 빠른 blur→refocus 때 이전 방문의 늦은 측정 응답이 새 방문의 seen을 채우지 않게 */
+  private visit = 0;
   constructor(private viewport: Viewport) {}
 
   /** 창 크기·헤더·탭바가 바뀌면 화면이 effect에서 갱신(렌더 중 ref 읽기 없이) */
@@ -50,6 +52,7 @@ export class ImpressionTracker {
 
   /** 포커스 = 새 홈 진입: 본 목록 비우고 정착 뒤 측정 */
   focus(): void {
+    this.visit += 1;
     this.active = true;
     this.seen.clear();
     this.scrolling = 0;
@@ -81,12 +84,13 @@ export class ImpressionTracker {
   measureNow(): void {
     if (!this.active || this.scrolling) return;
     const v = this.viewport;
+    const visit = this.visit;
     for (const [k, { node, target }] of this.nodes) {
       if (this.seen.has(k)) continue;
       try {
         node.measureInWindow((x, y, width, height) => {
           // PR 280 Codex P2: 측정은 비동기 — 응답 전에 스크롤이 다시 시작됐으면(정지 아님) 버린다. 다음 정지에서 다시 잰다
-          if (!this.active || this.scrolling || this.seen.has(k)) return;
+          if (!this.active || this.visit !== visit || this.scrolling || this.seen.has(k)) return;
           if (visibleFraction({ x, y, width, height }, v) < VISIBLE_THRESHOLD) return;
           this.seen.add(k);
           if (target.kind === 'section') track(EVENTS.home_section_view, { section: target.section });

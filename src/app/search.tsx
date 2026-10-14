@@ -98,13 +98,14 @@ export default function Search() {
   // 매칭된 카탈로그 값 전송, 미매칭은 matched:false + 길이 버킷만(keywordPrivacy).
   const trackedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!submitted || search.isLoading || trackedFor.current === submitted) return;
+    // KB-786(#278 Codex P2): 요청이 **성공한** 검색만 — 실패(오프라인·5xx)를 "결과 0건"으로 남기지 않고, 같은 검색어 재시도 성공분이 기록되게
+    if (!submitted || search.isLoading || !search.isSuccess || trackedFor.current === submitted) return;
     trackedFor.current = submitted;
     const kw = searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length);
     track(EVENTS.search_query, kw);
     airbridge.searchResults({ keyword: kw.keyword, resultCount: kw.result_count }); // KB-783 ⑦ — 같은 프라이버시 규칙(매칭값만)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submitted, search.isLoading]);
+  }, [submitted, search.isLoading, search.isSuccess]);
   const reset = () => {
     setQuery('');
     setSubmitted('');

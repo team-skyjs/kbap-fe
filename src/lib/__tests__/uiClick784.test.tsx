@@ -16,12 +16,17 @@ import * as fs from 'fs';
 import renderer, { act } from 'react-test-renderer';
 import { normalizeTarget, screenFromSegments, setCurrentScreen } from '../uiClick';
 import { useScreenTracking } from '../useScreenTracking';
-import { markEntryResolved, markEntryResolvedAfterLeavingTabs, setDeeplinkReady, __resetDeeplinkForTest } from '../deeplink';
+import { handleDeeplink, markEntryResolved, markEntryResolvedAfterLeavingTabs, setDeeplinkGate, setDeeplinkReady, __resetDeeplinkForTest } from '../deeplink';
 import { Pressable } from '@/components/Pressable';
 import { Txt } from '@/components/Txt';
 import { INGREDIENTS } from '@/lib/mocks/ingredients';
 import { COUNTRIES } from '@/lib/onboarding/countries';
 
+/** 화면 조회 Probe는 진입·보류 스토어를 구독한다 — 테스트 사이에 남으면 다음 테스트의 알림에 반응해 기록이 섞인다 */
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  while (mounted.length) act(() => mounted.pop()!.unmount());
+});
 beforeEach(() => {
   mockTrack.mockReset();
   setCurrentScreen('root');
@@ -76,6 +81,7 @@ it('useScreenTracking — 패턴이 바뀔 때만 1회 · 같은 패턴 재렌�
   mockSegments = ['(tabs)'];
   let tree!: renderer.ReactTestRenderer;
   act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
   mockSegments = ['(tabs)']; // 같은 패턴(포그라운드 복귀·재렌더)
   act(() => tree.update(<Probe />));
   mockSegments = ['food', '[id]'];
@@ -99,6 +105,7 @@ it('#280 Codex P2: 신규 설치 — 진입 정착 전 부팅 (tabs)/index는 �
   mockSegments = ['(tabs)'];
   let tree!: renderer.ReactTestRenderer;
   act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
   act(() => setDeeplinkReady(true)); // 탭이 먼저 포커스
   act(() => markEntryResolvedAfterLeavingTabs()); // /login 교체 직후(아직 탭 focused)
   mockSegments = ['login'];
@@ -120,8 +127,106 @@ it('일반 부팅 — 스택 렌더 전 정착 → 첫 화면 바로 기록', ()
     return null;
   }
   mockSegments = ['(tabs)'];
-  act(() => { renderer.create(<Probe />); });
+  act(() => { mounted.push(renderer.create(<Probe />)); });
   expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: '(tabs)/index' }]]);
+});
+
+it('KB-786(#280 P2): 콜드 스타트 딥링크 — 기본 루트(홈)는 기록 0, 이동 뒤 목적지가 첫 screen_view', () => {
+  __resetDeeplinkForTest(false);
+  handleDeeplink('kbap://food/7', 1); // 실행 URL — 보류
+  markEntryResolved(); // 일반 부팅: 스택 전 정착
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = ['(tabs)']; // 기본 루트가 먼저 그려짐
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
+  expect(mockTrack).not.toHaveBeenCalled(); // 보류 중 — 허수 홈 0
+  act(() => setDeeplinkReady(true)); // 탭 포커스 → 보류 flush(이동은 큐에만)
+  act(() => tree.update(<Probe />)); // #283 P2: 세그먼트가 아직 옛 경로 — 기록 0
+  expect(mockTrack).not.toHaveBeenCalled();
+  mockSegments = ['food', '[id]']; // 내비게이션 커밋 → 세그먼트 = 목적지
+  act(() => tree.update(<Probe />));
+  expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: 'food/[id]' }]]);
+});
+
+it('#283 2R P2: 신규 설치 콜드 딥링크 — 로그인→온보딩 이동은 도착이 아님, flush 뒤 목적지가 첫 screen_view', () => {
+  __resetDeeplinkForTest(false);
+  handleDeeplink('kbap://food/7', 1);
+  markEntryResolved();
+  setDeeplinkGate(true); // 로그인 게이트
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = ['login'];
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
+  mockSegments = ['onboarding'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack).not.toHaveBeenCalled(); // 게이트 통과 중 화면 변화 = 도착 아님
+  mockSegments = ['(tabs)'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack).not.toHaveBeenCalled();
+  jest.useFakeTimers();
+  try {
+    act(() => setDeeplinkGate(false));
+    act(() => setDeeplinkReady(true)); // 탭 포커스 → flush(큐만)
+    act(() => tree.update(<Probe />));
+    expect(mockTrack).not.toHaveBeenCalled();
+    mockSegments = ['food', '[id]'];
+    act(() => tree.update(<Probe />));
+    expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: 'food/[id]' }]]);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+it('#283 P2: 목적지가 지금 화면과 같으면(kbap://home on 홈) 세그먼트 변화가 없으니 상한(1.5s) 뒤 그 화면 1회', () => {
+  jest.useFakeTimers();
+  try {
+    __resetDeeplinkForTest(false);
+    handleDeeplink('kbap://home', 1);
+    markEntryResolved();
+    function Probe() {
+      useScreenTracking();
+      return null;
+    }
+    mockSegments = ['(tabs)'];
+    let tree!: renderer.ReactTestRenderer;
+    act(() => { tree = renderer.create(<Probe />); });
+    mounted.push(tree);
+    act(() => setDeeplinkReady(true));
+    act(() => tree.update(<Probe />));
+    expect(mockTrack).not.toHaveBeenCalled();
+    act(() => { jest.advanceTimersByTime(1500); });
+    expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: '(tabs)/index' }]]);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+it('KB-786: 보류 대기는 첫 기록만 — 이후 로그인 위 보류 중에도 화면 조회는 계속', () => {
+  __resetDeeplinkForTest(true);
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = ['(tabs)'];
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
+  act(() => setDeeplinkGate(true)); // 로그인
+  act(() => { handleDeeplink('kbap://scan', 1); }); // 로그인 위에서 보류
+  mockSegments = ['login'];
+  act(() => tree.update(<Probe />));
+  mockSegments = ['onboarding'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack.mock.calls.map((c) => (c[1] as { screen: string }).screen)).toEqual(['(tabs)/index', 'login', 'onboarding']);
+  act(() => setDeeplinkGate(false));
 });
 
 it('포그라운드 복귀 재발화 없음 — 화면 조회 훅은 AppState를 구독하지 않는다(예진 10/14)', () => {
