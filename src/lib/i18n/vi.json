@@ -313,6 +313,11 @@
     "resultsSubSafe": "{{safe}} được đánh giá an toàn trong {{total}} món",
     "safeEmpty": "Thực đơn này không có món được đánh giá an toàn",
     "missNote": "Chưa có trong cơ sở dữ liệu — sẽ được thêm trong vài ngày tới.",
+    "closestMatchChip": "Món gần nhất",
+    "closestMatchLine": "Trên menu: {{scanned}}",
+    "closestMatchSheetTitle": "Chúng tôi đã ghép với một món tương tự",
+    "closestMatchSheetBody": "Menu ghi “{{scanned}}”. Chúng tôi đang hiển thị {{food}} ({{foodKo}}), món gần nhất trong danh mục, nên nguyên liệu và mức rủi ro của bạn dựa trên {{food}}.",
+    "closestMatchSeeDetails": "Xem chi tiết {{food}}",
     "searchOnGoogle": "Tìm trên Google",
     "resultsEmpty": "Không có kết quả quét"
   },

@@ -313,6 +313,11 @@
     "resultsSubSafe": "共{{total}}道中{{safe}}道評定為安全",
     "safeEmpty": "此菜單沒有評定為安全的菜品",
     "missNote": "尚未收錄在資料庫中 — 幾天內會新增。",
+    "closestMatchChip": "最接近的料理",
+    "closestMatchLine": "菜單寫作 {{scanned}}",
+    "closestMatchSheetTitle": "我們為您配對了相似料理",
+    "closestMatchSheetBody": "菜單上寫的是「{{scanned}}」。我們顯示的是最接近的{{food}}（{{foodKo}}），因此食材與風險等級以{{food}}為準。",
+    "closestMatchSeeDetails": "查看{{food}}詳情",
     "searchOnGoogle": "在Google搜尋",
     "resultsEmpty": "沒有掃描結果"
   },

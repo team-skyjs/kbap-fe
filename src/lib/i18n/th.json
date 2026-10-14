@@ -313,6 +313,11 @@
     "resultsSubSafe": "ประเมินว่าปลอดภัย {{safe}} จาก {{total}} เมนู",
     "safeEmpty": "เมนูนี้ไม่มีอาหารที่ประเมินว่าปลอดภัย",
     "missNote": "ยังไม่อยู่ในฐานข้อมูล — จะเพิ่มภายในไม่กี่วัน",
+    "closestMatchChip": "เมนูที่ใกล้เคียงที่สุด",
+    "closestMatchLine": "ในเมนูเขียนว่า {{scanned}}",
+    "closestMatchSheetTitle": "เราจับคู่กับเมนูที่คล้ายกันให้แล้ว",
+    "closestMatchSheetBody": "ในเมนูเขียนว่า “{{scanned}}” เรากำลังแสดง {{food}} ({{foodKo}}) ซึ่งเป็นเมนูที่ใกล้เคียงที่สุดในแคตตาล็อกของเรา ดังนั้นส่วนผสมและระดับความเสี่ยงของคุณจึงอิงจาก {{food}}",
+    "closestMatchSeeDetails": "ดูรายละเอียด {{food}}",
     "searchOnGoogle": "ค้นหาใน Google",
     "resultsEmpty": "ไม่มีผลการสแกน"
   },

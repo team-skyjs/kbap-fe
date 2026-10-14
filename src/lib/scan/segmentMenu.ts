@@ -37,6 +37,18 @@ export interface ResultDish extends MenuDish {
   imageUrl?: string | null;
   /** P-219 v2: 겹친 회피 성분(overlapped=true만) — 비면 섹션 자체 미렌더. */
   avoidances?: import('@/lib/api/scanAdapter').AvoidanceHit[];
+  /** KB-789 v3.0: 유사 음식으로 대체된 항목 — 행에 Closest match 칩 + "Menu says …" 줄.
+   *  옵셔널 = imageUrl/avoidances와 같은 픽스처 호환 관례(어댑터 출력은 항상 채움). */
+  substituted?: boolean;
+  /** KB-789 v3.0: 메뉴판 원문(substituted일 때). 부재 = null. */
+  originalScannedName?: string | null;
+}
+
+/** KB-789: 주문 카드 `nameKo` = **메뉴판에 적힌 이름** — 식당 직원에게 보여주는 줄이라 대체 항목은
+ *  원문(originalScannedName)을 우선. 표시명(name)·foodId는 대체 음식 유지(호출처). */
+export function orderNameKo(d: Pick<ResultDish, 'substituted' | 'originalScannedName' | 'koreanName' | 'rawMenuName'>): string {
+  if (d.substituted && d.originalScannedName) return d.originalScannedName;
+  return d.koreanName ?? d.rawMenuName;
 }
 
 export interface SegmentedMenu {

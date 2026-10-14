@@ -88,9 +88,10 @@ jest.mock('expo-router', () => ({
   useIsFocused: () => true,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }), // KB-789: push 공유 목(상세 이동 단언)
   usePathname: () => '/scan',
 }));
+const mockPush = jest.fn();
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
   initReactI18next: { type: '3rdParty', init: () => {} },
@@ -372,5 +373,60 @@ describe('KB-769 스캔 결과 뒤로가기 가드', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  // KB-789: 유사 음식 대체 항목 설명 카드 — 칩 콜백 → 카드 · 상세 버튼 → /food/[대체 foodId] · 배경 탭/back 닫힘 · 이벤트 1건
+  describe('KB-789 Closest match 카드', () => {
+    const sub = (tree: ReactTestRenderer) => ({ ...list(tree).props.dishes[0], substituted: true, originalScannedName: '된장찌게' });
+    const press = (tree: ReactTestRenderer, id: string) => act(() => byId(tree, id).filter((n) => typeof n.props.onPress === 'function')[0].props.onPress());
+    const analytics = require('@/lib/analytics') as typeof import('@/lib/analytics');
+
+    it('칩 콜백 → 카드(제목·본문·상세 버튼 1개) + scan_closest_match_open{food_id} 1건 · 상세 버튼 → 대체 음식 상세(src=scan)', async () => {
+      const track = jest.spyOn(analytics, 'track');
+      try {
+        const tree = await toResult();
+        expect(typeof list(tree).props.onClosestMatch).toBe('function');
+        act(() => list(tree).props.onClosestMatch(sub(tree)));
+        const s = JSON.stringify(tree.toJSON());
+        expect(s).toContain('scan.closestMatchSheetTitle');
+        expect(s).toContain('scan.closestMatchSheetBody');
+        expect(s).toContain('scan.closestMatchSeeDetails');
+        expect(s).not.toContain('common.gotIt'); // 확인 버튼 없음 — 상세 버튼 1개
+        expect(track).toHaveBeenCalledWith('scan_closest_match_open', { food_id: '1' });
+        press(tree, 'closest-details');
+        expect(mockPush).toHaveBeenCalledTimes(1);
+        expect(String(mockPush.mock.calls[0][0])).toMatch(/^\/food\/1\?.*src=scan/);
+        expect(JSON.stringify(tree.toJSON())).not.toContain('scan.closestMatchSheetTitle'); // 이동 시 카드 닫힘
+      } finally {
+        track.mockRestore();
+      }
+    });
+
+    it('배경 탭 = 닫힘(이동 0) · 카드 자체 탭 = 유지 · Android back = 카드만 닫힘', async () => {
+      const handlers: (() => boolean)[] = [];
+      const spy = jest.spyOn(BackHandler, 'addEventListener').mockImplementation(((_e: string, h: () => boolean) => {
+        handlers.push(h);
+        return { remove: () => handlers.splice(handlers.indexOf(h), 1) };
+      }) as unknown as typeof BackHandler.addEventListener);
+      try {
+        const tree = await toResult();
+        act(() => list(tree).props.onClosestMatch(sub(tree)));
+        press(tree, 'closest-card');
+        expect(JSON.stringify(tree.toJSON())).toContain('scan.closestMatchSheetTitle');
+        press(tree, 'closest-backdrop');
+        expect(JSON.stringify(tree.toJSON())).not.toContain('scan.closestMatchSheetTitle');
+        expect(mockPush).not.toHaveBeenCalled();
+        // back
+        act(() => list(tree).props.onClosestMatch(sub(tree)));
+        expect(handlers.length).toBeGreaterThan(0);
+        let consumed = false;
+        act(() => { consumed = handlers[handlers.length - 1](); });
+        expect(consumed).toBe(true);
+        expect(JSON.stringify(tree.toJSON())).not.toContain('scan.closestMatchSheetTitle');
+        expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // 결과 유지
+      } finally {
+        spy.mockRestore();
+      }
+    });
   });
 });

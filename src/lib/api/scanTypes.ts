@@ -70,6 +70,12 @@ export interface ScanResultWire {
   imageRef?: string | null;
   /** P-219 v2: null = 온보딩 미완료 회원 · [] = 기피 미등록 or matched=false. */
   avoidances?: AvoidanceOverlapWire[] | null;
+  /** KB-789 v3.0: 비전이 읽은 메뉴명이 미등록이라 벡터 검색(score ≥ 0.6)으로 READY 음식에
+   *  **대체된** 항목. foodId·name·사진·riskLevel·avoidances 전부 대체 음식 기준.
+   *  2.0 응답엔 부재(옵셔널) — 어댑터가 false로. */
+  substituted?: boolean;
+  /** KB-789 v3.0: 대체 전 메뉴판 원문(substituted=true일 때만 의미). 2.0 = 부재. */
+  originalScannedName?: string | null;
 }
 
 /** POST /images/upload-url — presigned 발급 (req/res, 2026-07-16 배포). */

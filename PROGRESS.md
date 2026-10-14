@@ -1506,3 +1506,13 @@
 - [x] `fetchHome` `api.get` 에 `{ headers: { 'X-API-Version': '1.2' } }`(기존 `opts.headers` 병합 패턴, useMe PATCH 1.1과 동일). 훅·부트 프리페치가 같은 함수라 한 곳. 기본 `API_VERSION_HEADER`·타 엔드포인트 무변.
 - [x] 테스트: fetchHome(목 api) 호출 인자 1.2 잠금 · homeApiVersion785 신설(실 client 경유 fetch 헤더 — 홈 1.2 / `/foods`·프로필 PATCH 1.1 유지 / 구 응답 호환). tsc 0 · jest 전체 통과.
 - [ ] dev 실기 홈 렌더 확인(BE 1.2 핸들러 배포 시). 배포는 예진 승인.
+
+## KB-789 스캔 결과 유사 음식 대체 항목 — Closest match 칩 + 설명 카드 (2026-10-15, 워크트리 feat/kb789-scan-closest-match)
+
+- [x] 계약: `SCAN_API_VERSION` 2.0 → **3.0**(티켓 발급·스캔 두 경로 같은 상수). 와이어 `substituted?`·`originalScannedName?`(옵셔널) → 어댑터 `verdict`가 `substituted = === true`·원문 공백/비문자열 = null로 정규화(ScanOverlayItem·PhotoOnlyItem 공통). `ResultDish`는 imageUrl/avoidances 관례대로 옵셔널(픽스처 호환) — scan.tsx 두 매핑(resultDishes·photoDishes)에서 전달.
+- [x] 행(시안 B 14289:8235): `RichRow` 이름 줄 아래 `closest-{itemId}` 칩(공용 Pressable + hitSlop 8 · `IconSparkles` 12 primary · 11/600 primary · primary 12% 틴트 · pad 2/8 · pill · 보더 없음) + `scan.closestMatchLine`(missText 13/ink3 — 시안 수치, 발주 11.5 대신) 1줄(원문 결측 시 줄 생략). 칩 탭 = `onClosestMatch(dish)`(행 탭 = 상세 그대로). 미등록(`matched=false`) 행 무변.
+- [x] 카드(시안 C4 14297:8300): `ClosestMatchNotice` — `UnmatchedNotice` 골격·`notice*` 스타일 공유, sparkles 30 primary, 제목/본문/`closest-details` primary Btn 1개(= `openDish` 재사용 → `/food/[대체 foodId]?…src=scan`), 배경 탭 닫힘, Android back = 카드만 닫힘(KB-769 오버레이 규칙을 unmatched와 한 effect로 통합).
+- [x] 주문 카드: `orderNameKo(d)`(segmentMenu) — 대체 항목 `nameKo = originalScannedName`(직원에게 보여주는 줄), `name`·`foodId`는 대체 음식. 원문 결측은 koreanName 폴백.
+- [x] 계측: `scan_closest_match_open` {food_id} 1건(카드 열림). i18n 5키 × 10로케일(en·ko·ja·zh-Hans·zh-Hant·es·id·ru·th·vi — 발주 본문 JSON 그대로).
+- [x] 테스트: scanClosestMatch789(api) 6 — 3.0 매핑·2.0 폴백·방어·photoOnly·orderNameKo·sanitize / scanClosestMatch789(features) 4 — 칩·줄 렌더·비대체 미렌더·미등록 무변·칩 탭 콜백(onOpen 0)·메트릭·원문 결측 / closestMatchKeys789 3 — 10로케일 키·자리표시자·부정 문구 0 / scanDesign +2 — 카드 열림·이벤트·상세 push·배경/back 닫힘. useScan·scanTicket250 헤더 기대 3.0. tsc 0 · jest 314 스위트 2795/2795.
+- [ ] 실기(종한): 칩 hitSlop·카드 열림·상세 이동 + dev BE 3.0 응답에서 `substituted` 행 실표시. 2.0 응답에서도 칩 미표시로 정상. OTA는 예진 승인.
