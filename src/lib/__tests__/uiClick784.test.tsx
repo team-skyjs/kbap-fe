@@ -229,6 +229,22 @@ it('KB-786: 보류 대기는 첫 기록만 — 이후 로그인 위 보류 중�
   act(() => setDeeplinkGate(false));
 });
 
+it('KB-786: 내비게이터 마운트 전 빈 세그먼트(root)는 screen_view 0 — 첫 기록은 실제 화면', () => {
+  __resetDeeplinkForTest(true);
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = [];
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<Probe />); });
+  mounted.push(tree);
+  expect(mockTrack).not.toHaveBeenCalled();
+  mockSegments = ['(tabs)'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: '(tabs)/index' }]]);
+});
+
 it('포그라운드 복귀 재발화 없음 — 화면 조회 훅은 AppState를 구독하지 않는다(예진 10/14)', () => {
   expect(fs.readFileSync('src/lib/useScreenTracking.ts', 'utf8')).not.toMatch(/AppState/);
 });
