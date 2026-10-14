@@ -14,8 +14,19 @@ const [babelJest, babelOpts] = expoPreset.transform[JS];
  */
 const COMPILED = '^(?!.*(?:/__tests__/|/node_modules/|\\.test\\.)).*/src/.*\\.[jt]sx?$';
 
+/**
+ * KB-783: airbridge-react-native-sdk는 ESM(`export`)로만 배포 — 프리셋의 node_modules 변환 허용 목록에 더한다.
+ * 실 SDK가 유닛에서도 로드되고, 네이티브 모듈(EventInteractor)이 없으니 스스로 no-op(앱의 웹·구 런타임과 같은 경로).
+ * 프리셋 패턴 문자열이 바뀌면(업그레이드) 아래 assert가 깨져 알린다 — 조용히 변환 누락으로 수백 스위트가 죽는 것보다 낫다.
+ */
+const [presetIgnore, ...restIgnore] = expoPreset.transformIgnorePatterns;
+const ESM_PKGS = 'airbridge-react-native-sdk';
+if (!presetIgnore.endsWith('))')) throw new Error('jest-expo transformIgnorePatterns 형식이 바뀜 — ESM_PKGS 주입 위치 재확인');
+const transformIgnorePatterns = [presetIgnore.replace(/\)\)$/, `|${ESM_PKGS}))`), ...restIgnore];
+
 module.exports = {
   preset: 'jest-expo',
+  transformIgnorePatterns,
   transform: {
     // 먼저 매칭되는 패턴이 이긴다 — 목록 파일 = 컴파일러 on
     [COMPILED]: [babelJest, { ...babelOpts, caller: { ...babelOpts.caller, supportsReactCompiler: true } }],

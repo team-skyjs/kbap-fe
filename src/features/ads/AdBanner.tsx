@@ -9,6 +9,7 @@ import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId, type AdPlacement } from '@/lib/ads/units';
@@ -47,8 +48,8 @@ function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { 
           onAdLoaded={(d) => { if (__DEV__) console.log('[ads] banner loaded', placement, JSON.stringify(d)); setSize({ w: Math.ceil(d.width), h: Math.ceil(d.height) }); }}
           onSizeChange={(d) => { if (__DEV__) console.log('[ads] banner sizeChange(ignored)', placement, JSON.stringify(d)); }}
           onAdFailedToLoad={() => setSize(null)} // no-fill·네트워크 = 접힘
-          onAdImpression={() => track(EVENTS.ad_impression, { format: 'banner', placement })}
-          onAdClicked={() => track(EVENTS.ad_click, { format: 'banner', placement })}
+          onAdImpression={() => { track(EVENTS.ad_impression, { format: 'banner', placement }); airbridge.adImpression('banner', placement); }}
+          onAdClicked={() => { track(EVENTS.ad_click, { format: 'banner', placement }); airbridge.adClick('banner', placement); }}
         />
       </View>
     </View>

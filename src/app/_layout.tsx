@@ -34,6 +34,8 @@ import { TopToastHost } from '@/components/TopToast';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { initMetaSdk } from '@/lib/metaSdk';
+import { initAirbridgeDeeplinks } from '@/lib/airbridge';
+import { handleDeeplink } from '@/lib/deeplink';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
@@ -102,6 +104,8 @@ export default function RootLayout() {
     // P-397(KB-600): Meta SDK — 설치 어트리뷰션만. 광고 추적 비활성 선언 1회
     // (앱 이벤트는 네이티브 자동, ATT 프롬프트 없음). 모듈 부재 시 no-op.
     initMetaSdk();
+    // KB-783: 에어브릿지 딥링크 콜백 1회 등록(SDK 초기화·설치 계측은 네이티브 자동 — 토큰은 빌드 시 주입)
+    initAirbridgeDeeplinks(handleDeeplink);
     // P-213: country 선심기 — 기기 로케일 region(게스트 세그먼트 복구).
     // 온보딩 제출 시 실제 국적으로 덮어씀(설계 원문 — 서버가 아는 값이 정본).
     // eslint-disable-next-line @typescript-eslint/no-require-imports

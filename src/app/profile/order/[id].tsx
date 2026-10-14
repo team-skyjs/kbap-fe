@@ -41,6 +41,7 @@ import { lastShareErrorHint, saveCardToPhotos, shareCardToStory, storyShareAvail
 import { showTopToast } from '@/components/topToastStore';
 import { openAppSettings } from '@/lib/openExternal';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { convertKrw, currencyForCountry } from '@/lib/exchange';
@@ -166,6 +167,7 @@ export default function OrderDetailScreen() {
     const r = await saveCardToPhotos(exportRef);
     shareBusy.current = false;
     track(EVENTS.order_share_save, { ...shareProps, result: r });
+    if (r === 'success') airbridge.share('save'); // KB-783 ⑬ — 성공만
     if (r === 'success') return showTopToast(t('myFoods.shareSaved'));
     // 권한 거부 = 안내 + 설정 열기(P-381 openAppSettings 재사용 — 앱이 직접 못 연다).
     // 네이티브 Alert가 아니라 공용 시트 — 이 화면은 P-355로 Alert를 걷어낸 자리다.
@@ -183,6 +185,7 @@ export default function OrderDetailScreen() {
     const r = await shareCardToStory(exportRef);
     shareBusy.current = false;
     track(EVENTS.order_share_story, { ...shareProps, result: r });
+    if (r === 'success') airbridge.share('instagram_story'); // KB-783 ⑬ — 성공만
     if (r === 'success') return;
     // 미설치는 앱스토어로 보내지 않는다(발주 고정) — 문구만
     showTopToast(

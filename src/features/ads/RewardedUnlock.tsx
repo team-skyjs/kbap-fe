@@ -16,6 +16,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge, noteAdUnlock } from '@/lib/airbridge';
 import { color as C, font } from '@/lib/theme';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -79,8 +80,8 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
   const surfaceProp = surface ? { surface } : {};
 
   React.useEffect(() => { if (status === 'loaded' && !pendingRef.current) keyRef.current = Crypto.randomUUID(); }, [status]); // 로드마다 새 키(멱등 단위) — 미신고 보상이 있으면 유지
-  React.useEffect(() => { if (impression) track(EVENTS.ad_impression, { format: 'rewarded', placement: PLACEMENT, ...surfaceProp }); }, [impression]); // eslint-disable-line react-hooks/exhaustive-deps -- 노출 1회(표면은 마운트 동안 불변)
-  React.useEffect(() => { if (clicked) track(EVENTS.ad_click, { format: 'rewarded', placement: PLACEMENT, ...surfaceProp }); }, [clicked]); // eslint-disable-line react-hooks/exhaustive-deps -- 위와 같음
+  React.useEffect(() => { if (impression) { track(EVENTS.ad_impression, { format: 'rewarded', placement: PLACEMENT, ...surfaceProp }); airbridge.adImpression('rewarded', PLACEMENT); } }, [impression]); // eslint-disable-line react-hooks/exhaustive-deps -- 노출 1회(표면은 마운트 동안 불변)
+  React.useEffect(() => { if (clicked) { track(EVENTS.ad_click, { format: 'rewarded', placement: PLACEMENT, ...surfaceProp }); airbridge.adClick('rewarded', PLACEMENT); } }, [clicked]); // eslint-disable-line react-hooks/exhaustive-deps -- 위와 같음
 
   const { mutateAsync } = claim;
   const submitClaim = React.useCallback((input: { rewardKey: string; adUnitId: string }) => {
@@ -92,7 +93,10 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
         setRemaining(r.remainingForUnlock);
         track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock, ...(surface ? { surface } : {}) });
         if (__DEV__) console.log('[ads] reward claim ok', JSON.stringify(r)); // KB-759 원인 특정(개발 번들만)
-        if (r.scanUnlocked) onUnlocked();
+        if (r.scanUnlocked) {
+          noteAdUnlock(); // KB-783 ⑮ 'ad' — 서버가 해제를 확정한 응답에서만(뒤따르는 프로필 전이는 리뷰로 세지 않는다)
+          onUnlocked();
+        }
       })
       .catch((e: unknown) => {
         const kind = classifyAdRewardError(e);

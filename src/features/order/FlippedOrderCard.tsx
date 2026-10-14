@@ -14,6 +14,7 @@ import { OrderDoneInterstitial, type InterstitialController } from '@/features/a
 import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
@@ -173,7 +174,9 @@ export function FlippedOrderCard({
             // 1회 가드(ref)로 봉쇄. (리뷰 리마인더는 KB-500부터 서버 배치 — 로컬 예약 없음)
             if (committedRef.current) return;
             committedRef.current = true;
-            track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
+            const itemCount = items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0);
+            track(EVENTS.order_done, { item_count: itemCount });
+            airbridge.orderComplete(itemCount); // KB-783 ⑪ — 금액 없음(예상 합계는 실결제 아님)
             // P-252→256: 주문 이력 저장 — 실패 무해(내부 흡수·code 로그), UX 무영향
             void saveOrderHistory({ imagePath: orderImagePath, items });
           }}
