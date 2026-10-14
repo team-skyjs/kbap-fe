@@ -25,7 +25,8 @@ export function useScreenTracking(): void {
   React.useEffect(() => {
     setCurrentScreen(screen); // ui_click 화면은 정착과 무관하게 최신
     // 보류 대기는 **첫 기록만**(콜드 스타트) — 그 뒤 로그인·온보딩 위 보류 중에도 화면 조회는 그대로
-    if (!resolved) return;
+    // KB-786: 내비게이터 마운트 전 빈 세그먼트('root')는 화면이 아니다 — 콜드 스타트마다 허수 screen_view "root" 1건(Amplitude 실측 10/14)
+    if (!resolved || screen === 'root') return;
     if (holding && prev.current === null) {
       // 이동 전(로그인·온보딩 게이트 통과 중)엔 기준 화면을 따라가기만 — flush 뒤 그 기준과 달라져야 도착
       if (heldOn.current === null || isDeeplinkQueued()) heldOn.current = screen;
