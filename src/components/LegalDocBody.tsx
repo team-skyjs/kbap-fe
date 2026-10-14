@@ -4,7 +4,8 @@
  * 표는 폰 폭에 3열이 안 들어가 **행마다 카드**(머리 라벨 + 값). 목록 불릿 = 작은 원(View) — 기호 문자·가운데 점 금지.
  */
 import * as React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius } from '@/lib/theme';

@@ -14,7 +14,8 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useMemo, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { BackHandler, Keyboard, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Keyboard, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import Animated, {
   cancelAnimation,
@@ -456,7 +457,9 @@ export default function Onboarding() {
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
+            {/* KB-784: testID 추가로 기존 react-hooks/refs 오탐(footer.onPress → finish → useSubmitGuard ref)이 이 줄에 다시 걸림 — 규칙 오탐, 동작 무관 */}
+            {/* eslint-disable-next-line react-hooks/refs */}
+            <Btn testID="ob-continue" variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
               {footer.label}
             </Btn>
           </View>
@@ -538,7 +541,7 @@ function Consent({
         ))}
       </View>
       {/* P-130(v3): 전체 동의 = 개별 3행 아래(맨 밑) — 그 외 무변 */}
-      <Pressable style={[styles.consent, allAgreed && styles.consentAllOn, { marginTop: 12 }]} onPress={onToggleAll}>
+      <Pressable testID="consent-all" style={[styles.consent, allAgreed && styles.consentAllOn, { marginTop: 12 }]} onPress={onToggleAll}>
         <View style={[styles.check, allAgreed && styles.checkOn]}>{allAgreed && <IconCheck size={15} color="#fff" />}</View>
         <Text style={styles.consentText}>{t('onboarding.agreeAll')}</Text>
       </Pressable>
@@ -564,7 +567,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[styles.sheetScrim, swipe.dimStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable testID="legal-sheet-backdrop" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       <Animated.View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
         <GestureDetector gesture={swipe.gesture}>
@@ -582,7 +585,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
             <Text style={styles.legalText}>{safetyText}</Text>
           )}
         </ScrollView>
-        <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
+        <Btn testID="legal-agree" onPress={onAgree}>{t('onboarding.agree')}</Btn>
       </Animated.View>
       </GestureHandlerRootView>
     </Modal>

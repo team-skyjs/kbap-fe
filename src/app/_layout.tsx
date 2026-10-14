@@ -11,6 +11,7 @@ import 'react-native-gesture-handler';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
+import { useScreenTracking } from '@/lib/useScreenTracking';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -54,6 +55,7 @@ initSentry();
 installBeAuth();
 
 export default function RootLayout() {
+  useScreenTracking(); // KB-784: screen_view — 라우트 패턴이 바뀔 때 1회(포그라운드 복귀 재발화 없음)
   const [fontsLoaded, fontError] = useAppFonts();
   const router = useRouter();
 

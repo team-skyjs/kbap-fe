@@ -12,7 +12,8 @@
  */
 import { OrderDoneInterstitial, type InterstitialController } from '@/features/ads/OrderDoneInterstitial';
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
 import { Txt as Text } from '@/components/Txt';
@@ -165,7 +166,7 @@ export function FlippedOrderCard({
       )}
 
       <View style={styles.foot}>
-        <Btn
+        <Btn testID="order-done"
           onPress={() => {
             setDoneOpen(true);
             setConfetti(true); // P-166: 모달 등장과 동시 버스트
@@ -199,7 +200,7 @@ export function FlippedOrderCard({
             <Text style={styles.confirmTitle}>{t('order.doneTitle')}</Text>
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
-              <Btn
+              <Btn testID="order-done-close"
                 /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만. KB-730: 완료 모달을 닫은 뒤 리뷰 유도 시트(겹침 0), 조건 미달이면 바로 복귀 */
                 onPress={() => {
                   setLeaving(true);

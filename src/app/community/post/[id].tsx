@@ -8,7 +8,8 @@
  * ModerationFlow(상세발 차단 = 피드 복귀+토스트).
  */
 import * as React from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
@@ -158,7 +159,7 @@ export default function CommunityPostDetail() {
           {/* P-142: 번역 토글 = 플래그 off — lang 하드 필수 계약이라 원문 조회 수단
               부재(본문은 항상 서버측 리더 언어 응답). 원문 규약 배포 시 재개. */}
           {FLAGS.communityTranslateEnabled && (
-            <Pressable hitSlop={6} onPress={() => setTranslated((v) => { track(EVENTS.review_translate_toggle, { action: v ? 'original' : 'translate', target: 'post' }); return !v; })} style={styles.txRow}>
+            <Pressable testID="post-translate" hitSlop={6} onPress={() => setTranslated((v) => { track(EVENTS.review_translate_toggle, { action: v ? 'original' : 'translate', target: 'post' }); return !v; })} style={styles.txRow}>
               <Text style={styles.txLink}>{translated ? t('reviews.showOriginal') : t('reviews.translate')}</Text>
               {translated && <Text style={styles.txState}>{t('community.translatedState')}</Text>}
             </Pressable>
@@ -168,9 +169,9 @@ export default function CommunityPostDetail() {
           {(post.foodTags.length > 0 || post.placeTag) && (
             <View style={styles.tagRow}>
               {post.foodTags.map((f) => (
-                <TagChip key={f.foodId} kind="food" label={f.name} onPress={() => setFoodSheet(f)} />
+                <TagChip testID="post-tag-food" key={f.foodId} kind="food" label={f.name} onPress={() => setFoodSheet(f)} />
               ))}
-              {post.placeTag && <TagChip kind="place" label={post.placeTag.name} onPress={() => setPlaceOpen(true)} />}
+              {post.placeTag && <TagChip testID="post-tag-place" kind="place" label={post.placeTag.name} onPress={() => setPlaceOpen(true)} />}
             </View>
           )}
           <ReactionBar
@@ -204,7 +205,7 @@ export default function CommunityPostDetail() {
                   <IconLock size={18} color={C.ink2} />
                 </View>
                 <Text style={styles.guestPopText}>{t('community.guestComments')}</Text>
-                <Pressable style={styles.guestPopBtn} onPress={() => setGateOpen(true)}>
+                <Pressable testID="post-guest-signup" style={styles.guestPopBtn} onPress={() => setGateOpen(true)}>
                   <Text style={styles.guestPopBtnText}>{t('intro.signUp')}</Text>
                 </Pressable>
               </View>
@@ -236,7 +237,7 @@ export default function CommunityPostDetail() {
                 <Text style={styles.inputStateText} numberOfLines={1}>
                   {editing ? t('community.editingComment') : t('community.replyingTo', { name: displayNickname(reply!.mention) })}
                 </Text>
-                <Pressable
+                <Pressable testID="post-reply-cancel"
                   hitSlop={8}
                   onPress={() => {
                     setReply(null);
@@ -257,7 +258,7 @@ export default function CommunityPostDetail() {
                 style={styles.input}
                 multiline
               />
-              <Pressable style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnOff]} onPress={send} disabled={!input.trim() || sending}>
+              <Pressable testID="post-comment-send" style={[styles.sendBtn, (!input.trim() || sending) && styles.sendBtnOff]} onPress={send} disabled={!input.trim() || sending}>
                 <IconSend size={17} color="#fff" />
               </Pressable>
             </View>
@@ -369,7 +370,7 @@ function CommentRow({
       </Text>
       <View style={styles.commentActions}>
         <ReactionBar likes={c.likes} dislikes={c.dislikes} myReaction={c.myReaction} onReact={(r) => onReact(c, r)} />
-        <Pressable hitSlop={8} onPress={onReply}>
+        <Pressable testID="comment-reply" hitSlop={8} onPress={onReply}>
           <Text style={styles.replyLink}>{t('community.reply')}</Text>
         </Pressable>
       </View>

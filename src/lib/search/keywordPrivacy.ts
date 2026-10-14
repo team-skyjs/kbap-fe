@@ -44,7 +44,10 @@ export function searchKeywordProps(raw: string, resultNames: readonly string[], 
 
   const exact = catalog.find((c) => c === term);
   if (exact) return { ...base, matched: true, keyword: exact };
-  const prefixed = catalog.find((c) => c.startsWith(term) && term.length >= 2);
-  if (prefixed) return { ...base, matched: true, keyword: prefixed };
+  // KB-784(QA 10/14): 접두 일치 = **입력어(정규화) 그대로** — 전엔 접두가 맞는 첫 카탈로그 항목을 보내 "bibimbap" 검색이
+  // "bibimbap with thick soybean paste"로 집계됐다(결과 순서에 따라 임의의 다른 음식). 입력어가 카탈로그 값의 접두이므로
+  // 카탈로그 밖 정보(자유 텍스트)는 여전히 0 — P-214 경계 유지.
+  const prefixed = catalog.some((c) => c.startsWith(term)) && term.length >= 2;
+  if (prefixed) return { ...base, matched: true, keyword: term };
   return base; // 미매칭 = keyword 자체를 만들지 않는다(생략 ≠ 빈 문자열)
 }

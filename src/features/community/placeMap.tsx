@@ -5,7 +5,8 @@
  * P-201: 좌표 보유 장소 = 좌표 딥링크(이름은 라벨) · 좌표 없음(MANUAL) = 이름 검색 폴백.
  */
 import * as React from 'react';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C } from '@/lib/theme';

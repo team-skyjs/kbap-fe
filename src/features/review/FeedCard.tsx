@@ -9,7 +9,8 @@
  * Speed/Service=P-236 2축, 0=미평가 비표시) · 본문 · 사진 104 · 음식/장소 칩.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, type as type_ } from '@/lib/theme';
 import { useReviewTime } from '@/lib/reviewTime';

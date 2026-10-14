@@ -13,7 +13,8 @@
  * 단위(KB-544): 토글은 (회원, 기기), 동의는 회원. 시안: 피그마 「KB-497 알림 설정 시안」 1·1b.
  */
 import * as React from 'react';
-import { AppState, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { AppState, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { Redirect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';

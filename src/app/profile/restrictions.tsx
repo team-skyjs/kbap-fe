@@ -11,7 +11,8 @@
 // 훅 순서가 실제로 바뀐다(`useSubmitGuard`가 조건부 호출됨) — 잠재 버그다.
 // 소진 발주(KB-603~) 1순위 후보. 코드 변경은 이번 PR 범위 밖이라 표시만 남긴다.
 import { useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -97,7 +98,7 @@ export default function EditRestrictions() {
         title={t('restrictionsEdit.title')}
         onBack={() => router.back()}
         trailing={
-          <Pressable onPress={save} disabled={saving} hitSlop={8} style={[styles.saveWrap, saving && { opacity: 0.35 }]}>
+          <Pressable testID="restrictions-save-header" onPress={save} disabled={saving} hitSlop={8} style={[styles.saveWrap, saving && { opacity: 0.35 }]}>
             <Text style={styles.saveLink} numberOfLines={1}>{t('common.save')}</Text>
           </Pressable>
         }

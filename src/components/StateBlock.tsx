@@ -119,7 +119,7 @@ export function QueryErrorBlock({
       {/* Codex #47 6차: 줄수 제한 제거 — ja/ru/th 카피 절단 방지(i18n 가변 길이 헌법), 높이 hug */}
       <Text style={styles.errBody}>{t(offline ? 'states.offlineBody' : 'states.errorBody')}</Text>
       <View style={{ alignSelf: 'stretch', gap: 9, marginTop: 10 }}>{/* A-ER-02: 본문→버튼 16(gap 6 + 10) */}
-        <Btn
+        <Btn testID="state-retry"
           variant="ghost"
           onPress={() => {
             track(EVENTS.error_state_view, { screen, kind: offline ? 'offline' : 'error', action: 'retry' });
@@ -129,7 +129,7 @@ export function QueryErrorBlock({
           {t('common.retry')}
         </Btn>
         {onGoBack && (
-          <Btn variant="ghost" onPress={onGoBack}>
+          <Btn testID="state-go-back" variant="ghost" onPress={onGoBack}>
             {t('common.goBack')}
           </Btn>
         )}

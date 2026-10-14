@@ -4,7 +4,8 @@
  * onShow = 실제로 보인 뒤(소모·계측 시점) · onClosed = 완전히 닫힌 뒤(iOS onDismiss / Android는 onDismiss 미지원 → 응답 직후)
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
@@ -36,7 +37,7 @@ export function ReviewPromptSheet({
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={later} onShow={onShow} onDismiss={Platform.OS === 'ios' ? onClosed : undefined}>
       <Pressable style={styles.backdrop} onPress={later} testID="review-prompt-backdrop">
-        <Pressable style={[styles.sheet, Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null]} onPress={() => {}} testID="review-prompt">
+        <Pressable style={[styles.sheet, Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null]} noTrack onPress={() => {}} testID="review-prompt">
           <Text style={styles.title}>{t('reviewPrompt.title')}</Text>
           <View style={styles.actions}>
             <Btn onPress={() => answer('positive')} disabled={disabled} testID="review-prompt-positive">{t('reviewPrompt.positive')}</Btn>

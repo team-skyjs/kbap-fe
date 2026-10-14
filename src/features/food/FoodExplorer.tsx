@@ -11,7 +11,8 @@
  * 데이터 훅·북마크 토글·위험 필터 로직 = 홈 구현 이동(무변).
  */
 import * as React from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { MAX_FONT_SCALE, Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -34,6 +35,8 @@ import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { popularPhotoFoods } from '@/lib/search/discovery';
 import type { FoodCard } from '@/lib/api/types';
+import { EVENTS, track } from '@/lib/analytics';
+import { trackHomeCardClick, useImpressionRef, useImpressionScrollProps, type HomeSection } from '@/features/home/homeImpressions';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900
 
@@ -300,10 +303,18 @@ export function FoodExplorer({
     railRef.current?.scrollTo({ x: 0, animated: false });
   }, [railFirstId]);
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=${srcTag}` as Href);
+  // KB-784: 홈 섹션 노출 노드(홈 밖 = undefined — 컨텍스트 없음). 레일 섹션 키 = 현재 탭(popular|saved|food)
+  const railImpressionRef = useImpressionRef(variant === 'embedded' ? gridTab : null);
+  const safeImpressionRef = useImpressionRef(variant === 'embedded' ? 'safe' : null);
+  const mostReviewedImpressionRef = useImpressionRef(variant === 'embedded' ? 'most_reviewed' : null);
+  const railScrollProps = useImpressionScrollProps();
 
   const onBookmark = (f: FoodCard) => {
     if (guest) return setGate({ ctx: 'save', open: true });
     if (variant === 'screen' && !savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시(KB-779: 홈은 카드값이 방향)
+    // KB-784(감사 §5): 홈·음식 탭 카드 하트 = 기존 도메인 이벤트 그대로(이름·속성 무변) — 상세·저장 목록만 집계되던 과소 보정.
+    // 방향 = 실제 뮤테이션과 같은 판정(isSaved — KB-779 홈 카드값/화면 savedIds)
+    track(EVENTS.food_bookmark_toggle, { on: !isSaved(f) });
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
       add: !isSaved(f),
@@ -458,9 +469,12 @@ export function FoodExplorer({
     </View>
   );
 
-  const card = (item: FoodCard, cellStyle?: object) => (
-    <FoodGridCard
+  // KB-784: 홈(embedded) 카드 = 섹션·위치를 실어 노출·클릭 계측(HomeGridCard). 음식 탭(screen)은 section 없음 = 계측 없음
+  const card = (item: FoodCard, cellStyle?: object, section?: HomeSection, position?: number) => (
+    <HomeGridCard
       key={item.foodId}
+      section={variant === 'embedded' ? section : undefined}
+      position={position}
       food={item}
       risk={personalRisk(item.risk, hasR)}
       guest={guest}
@@ -612,15 +626,18 @@ export function FoodExplorer({
       ) : (
         /* P-320: 평범한 ScrollView + map — 세로 FlatList 헤더 안 중첩 VirtualizedList가
            레일마다 화면 높이 공백을 만들던 원인(#84 실기 확정). flexGrow:0 유지(#83). */
+        // KB-784: 레일 섹션 노출 노드 = 레일을 감싼 무스타일 View(측정 전용 — 세로 흐름·폭은 그대로). 섹션 키 = 현재 탭
+        <View ref={railImpressionRef} collapsable={false} testID="home-rail-section">
         <ScrollView
           ref={railRef}
+          {...railScrollProps} // KB-784: 가로 스크롤 정지 = 카드 노출 판정
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.rail}
           contentContainerStyle={styles.railContent}
           testID="home-rail"
         >
-          {gridFoods.map((item) => card(item, { width: cardW }))}
+          {gridFoods.map((item, i) => card(item, { width: cardW }, gridTab, i))}
           <Pressable
             style={[styles.seeAllCard, { width: cardW }]}
             onPress={() => router.push(foodTabHref(gridTab as GridSegment, riskChip as RiskChipParam, Date.now()) as Href)}
@@ -630,18 +647,19 @@ export function FoodExplorer({
             <IconChevron size={16} color={C.primaryText} />
           </Pressable>
         </ScrollView>
+        </View>
       )}
       {safePicks.length >= 2 && (
         <>
           <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />
           {/* P-326: 행 단위 2열(flex:1 셀) — 구 47% 근사가 우측 ≈5pt 잔여로 좌우 비대칭.
               홀수(3장) 마지막 행은 빈 셀로 채워 카드가 행 전체로 늘어나지 않게(#85 2R 유지). */}
-          <View style={styles.safeGrid} testID="home-safe-grid">
+          <View ref={safeImpressionRef} style={styles.safeGrid} testID="home-safe-grid">
             {[safePicks.slice(0, 2), safePicks.slice(2, 4)]
               .filter((row) => row.length > 0)
               .map((row, i) => (
                 <View key={i} style={styles.safeGridRow}>
-                  {row.map((item) => card(item, styles.safeGridCell))}
+                  {row.map((item) => card(item, styles.safeGridCell, 'safe', safePicks.indexOf(item)))}
                   {row.length === 1 && <View style={styles.safeGridCell} testID="home-safe-grid-filler" />}
                 </View>
               ))}
@@ -662,12 +680,12 @@ export function FoodExplorer({
         <>
           <SectionHead label={t('home.mostReviewed')} title={t('home.mostReviewedSub')} testID="home-most-reviewed-head" />
           {/* safe 구역과 동일 규칙: 상위 4개·2열, 홀수 마지막 행은 빈 셀로 채워 카드가 늘어나지 않게 */}
-          <View style={styles.safeGrid} testID="home-most-reviewed-grid">
+          <View ref={mostReviewedImpressionRef} style={styles.safeGrid} testID="home-most-reviewed-grid">
             {[mostReviewed.slice(0, 2), mostReviewed.slice(2, 4)]
               .filter((row) => row.length > 0)
               .map((row, i) => (
                 <View key={i} style={styles.safeGridRow}>
-                  {row.map((item) => card(item, styles.safeGridCell))}
+                  {row.map((item) => card(item, styles.safeGridCell, 'most_reviewed', mostReviewed.indexOf(item)))}
                   {row.length === 1 && <View style={styles.safeGridCell} testID="home-most-reviewed-filler" />}
                 </View>
               ))}
@@ -765,3 +783,23 @@ const styles = StyleSheet.create({
   gridCell: { flex: 1, marginBottom: 16 },
   gridCellCard: { width: '100%' },
 });
+
+/** KB-784: 홈 카드 = FoodGridCard + 노출 노드 등록 + 클릭 계측(home_card_click). section 없으면(음식 탭) 그대로 FoodGridCard */
+function HomeGridCard({
+  section,
+  position,
+  onPress,
+  ...rest
+}: React.ComponentProps<typeof FoodGridCard> & { section?: HomeSection; position?: number }) {
+  const impressionRef = useImpressionRef(section ?? null, position, rest.food.foodId);
+  return (
+    <FoodGridCard
+      {...rest}
+      ref={impressionRef}
+      onPress={() => {
+        if (section && position != null) trackHomeCardClick(section, position, rest.food.foodId);
+        onPress();
+      }}
+    />
+  );
+}

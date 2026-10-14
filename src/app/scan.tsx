@@ -15,7 +15,8 @@
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
@@ -787,7 +788,7 @@ export default function Scan() {
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
               <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)} style={{ paddingHorizontal: 16, paddingTop: 10 }}>
-                <Pressable style={styles.nudgeCard} onPress={() => router.push('/profile/restrictions' as Href)}>
+                <Pressable testID="scan-nudge-restrictions" style={styles.nudgeCard} onPress={() => router.push('/profile/restrictions' as Href)}>
                   <View style={styles.nudgeIc}>
                     <IconBulb size={18} color="#fff" />
                   </View>
@@ -795,7 +796,7 @@ export default function Scan() {
                     <Text style={styles.nudgeCardStrong}>{t('scan.nudgeAction')}</Text>
                     {t('scan.nudgeRest')}
                   </Text>
-                  <Pressable hitSlop={8} onPress={() => { dismissNudge(); setNudgeHidden(true); }}>
+                  <Pressable testID="scan-nudge-dismiss" hitSlop={8} onPress={() => { dismissNudge(); setNudgeHidden(true); }}>
                     <IconClose size={14} color={C.ink3} />
                   </Pressable>
                 </Pressable>
@@ -832,7 +833,7 @@ export default function Scan() {
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
         {/* §1-1: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
-        <ActionSheet
+        <ActionSheet testID="scan-sort"
           open={sortSheet}
           title={t('reviews.sortTitle')}
           items={(['menu', 'priceDesc', 'priceAsc'] as ResultSortMode[]).map((m) => ({
@@ -1009,7 +1010,7 @@ export default function Scan() {
           <Text style={styles.launcherTitle}>{t('scan.cameraTitle')}</Text>
           <Text style={styles.launcherHint}>{t('scan.launcherHint')}</Text>
           <View style={{ alignSelf: 'stretch', marginTop: 10 }} testID="sys-capture-wrap">
-            <Btn onPress={() => void captureViaSystem()} disabled={capturing}>
+            <Btn testID="scan-system-camera" onPress={() => void captureViaSystem()} disabled={capturing}>
               {t('photo.take')}
             </Btn>
           </View>
@@ -1058,7 +1059,7 @@ export default function Scan() {
             <View style={styles.permAlert}>
               <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
               <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-              <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
+              <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
                 {t('photo.openSettings')}
               </Btn>
             </View>
@@ -1070,7 +1071,7 @@ export default function Scan() {
             <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
             <View style={{ width: '100%', maxWidth: 280 }}>
               {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-              <Btn onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+              <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
                 {t('scan.grant')}
               </Btn>
             </View>
@@ -1113,20 +1114,20 @@ export default function Scan() {
         {/* P-136 D: 방향별 힌트 — 세로 = 줌·전체 담기 / 가로 = 와이드 메뉴판 */}
         <Text style={styles.hint}>{t(uiDeg === 0 ? 'scan.cameraHintPortrait' : 'scan.cameraHintLandscape')}</Text>
         <View style={styles.camRow}>
-          <Pressable style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
+          <Pressable testID="scan-gallery" style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
             <Animated.View style={uiRotate}>
               <IconGallery size={22} color="#fff" />
             </Animated.View>
           </Pressable>
           {granted ? (
-            <Pressable style={[styles.shutter, capturing && styles.shutterOff]} onPress={capture} disabled={capturing}>
+            <Pressable testID="scan-shutter" style={[styles.shutter, capturing && styles.shutterOff]} onPress={capture} disabled={capturing}>
               <View style={styles.shutterInner} />
             </Pressable>
           ) : (
             <View style={styles.shutterSpacer} />
           )}
           {granted ? (
-            <Pressable style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
+            <Pressable testID="scan-flip" style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
               <Animated.View style={uiRotate}>
                 <IconFlip size={22} color="#fff" />
               </Animated.View>
@@ -1178,13 +1179,13 @@ function ScanSweepOverlay() {
 function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => void; t: (k: string) => string }) {
   if (!open) return null;
   return (
-    <Pressable style={styles.noticeBackdrop} onPress={onClose}>
-      <Pressable style={styles.noticeCard} onPress={() => {}}>
+    <Pressable testID="unmatched-backdrop" style={styles.noticeBackdrop} onPress={onClose}>
+      <Pressable testID="unmatched-card" style={styles.noticeCard} noTrack onPress={() => {}}>
         <RiskMark state="unable" size={30} />
         <Text style={styles.noticeTitle}>{t('scan.unmatchedSheetTitle')}</Text>
         <Text style={styles.noticeBody}>{t('scan.unmatchedSheetBody')}</Text>
         <View style={{ alignSelf: 'stretch' }}>
-          <Btn variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
+          <Btn testID="unmatched-gotit" variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
         </View>
       </Pressable>
     </Pressable>
@@ -1194,7 +1195,7 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
 function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void; onMarkPress?: () => void }) {
   const tone = riskTone[dish.risk];
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable testID="dishrow" style={styles.row} onPress={onPress}>
       {/* P-134: 마크 탭 = 코치마크 재열람 (마크 데모 대체) */}
       <Pressable onPress={onMarkPress} hitSlop={8} testID="dishrow-mark">
         <RiskMark state={dish.risk} size={24} />

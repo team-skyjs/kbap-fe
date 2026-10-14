@@ -12,7 +12,8 @@
  * (iOS 액세서리는 키보드 소속이라 루트 1개로 전역 커버 — modal 변형은 iOS null).
  */
 import * as React from 'react';
-import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { InputAccessoryView, Keyboard, Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { color as C } from '@/lib/theme';
 import { DISMISS_BAR_H, useKeyboardLift } from '@/lib/keyboardAvoid';
 import { resolveFont } from '@/lib/i18n/fonts';
@@ -43,7 +44,7 @@ export const Input = React.forwardRef<TextInput, TextInputProps>(function Input(
 function Bar() {
   return (
     <View style={styles.bar}>
-      <Pressable style={styles.btn} hitSlop={8} onPress={() => Keyboard.dismiss()} accessibilityLabel="dismiss keyboard">
+      <Pressable testID="keyboard-dismiss" style={styles.btn} hitSlop={8} onPress={() => Keyboard.dismiss()} accessibilityLabel="dismiss keyboard">
         <IconChevronDown size={18} color={C.ink2} />
       </Pressable>
     </View>

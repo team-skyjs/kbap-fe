@@ -7,7 +7,7 @@
  * Korean text is DATA (OwnerConfirmation), not i18n. menuNameKo matches the
  * scanned menu name (FR-019). Reader caption/button are i18n.
  */
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

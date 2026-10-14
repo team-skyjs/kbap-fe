@@ -10,7 +10,8 @@
  * 텍스트로 간다. 참조 렌더 story-card-ref.png에는 옛 배지가 찍혀 있으니 그 부분만 제외.
  */
 import * as React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { RemoteImage } from '@/components/RemoteImage';

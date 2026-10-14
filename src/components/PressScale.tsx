@@ -8,6 +8,7 @@ import * as React from 'react';
 import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { PRESS_SCALE, spring } from '@/lib/motion';
+import { trackUiClick } from '@/lib/uiClick';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -15,12 +16,21 @@ export function PressScale({
   style,
   children,
   ...rest
-}: PressableProps & { style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
+}: PressableProps & { style?: StyleProp<ViewStyle>; children?: React.ReactNode; testID: string /* KB-784: 필수 — ui_click target */ }) {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
     <AnimatedPressable
       {...rest}
+      // KB-784: 애니메이션 래퍼라 RN Pressable 직접 사용 예외 — 계측은 여기서(components/Pressable과 같은 규칙)
+      onPress={
+        rest.onPress
+          ? (e) => {
+              trackUiClick(rest.testID ?? undefined);
+              rest.onPress?.(e);
+            }
+          : undefined
+      }
       onPressIn={(e) => {
         scale.value = withSpring(PRESS_SCALE, spring.press);
         rest.onPressIn?.(e);

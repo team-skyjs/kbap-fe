@@ -16,7 +16,7 @@
  *   <StickyHeader hidden={hidden} mode="brand" search bell />   // rendered AFTER the ScrollView
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Txt as Text } from '@/components/Txt';
 import Animated, {
   Easing,
@@ -217,7 +217,7 @@ export function StickyHeader({
           {bookmark && (
             /* 디자인(Bookmark Mods B): 흰 칩 없이 bare 아이콘 — search/bell과 동일 처리.
                unsaved=아웃라인, saved=primary 채움 */
-            <PressScale style={styles.actionBtn} onPress={onBookmark} hitSlop={8}>
+            <PressScale testID="header-bookmark" style={styles.actionBtn} onPress={onBookmark} hitSlop={8}>
               <Animated.View style={bmPop}>
                 {bookmarkSaved ? (
                   <IconStar size={22} color={C.primary} fill={C.primary} sw={0} />
