@@ -15,7 +15,8 @@
  * - UI 스레드 코드 = useAnimatedStyle(공유값·숫자 상수만) + FlameShape의 useAnimatedProps(flameGeometry의 'worklet' 함수만) + 선언형 withTiming/withRepeat/withSequence/withSpring.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -63,7 +64,8 @@ export const GLOW_D = Math.floor(Math.min(BADGE_W, BADGE_H) / Math.max(1, EMPTY_
 export interface CountdownBadgeProps {
   value: number;
   state: 'active' | 'empty';
-  onPress: () => void;
+  /** 없으면 장식용(KB-765 다이얼로그 히어로) — 같은 그림·모션, 탭·버튼 역할 없음·접근성 트리에서 숨김 */
+  onPress?: () => void;
   /** false → true 전환 시 폭죽 1회(값이 "끝"이 아니라 "해제"될 때) */
   celebrate?: boolean;
   onCelebrateEnd?: () => void;
@@ -159,15 +161,8 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
   const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
   const numStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={celebrate}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      style={styles.root}
-      testID={testID}
-    >
+  const body = (
+    <>
       <Animated.View style={[styles.body, bodyStyle]} pointerEvents="none">
         <Animated.View style={[styles.glow, glowStyle]} pointerEvents="none" testID={`${testID}-empty-glow`}>
           <Svg width={GLOW_D} height={GLOW_D}>
@@ -192,6 +187,26 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
         </View>
       </Animated.View>
       {showBurst && Array.from({ length: PARTICLES }, (_, i) => <Particle key={i} index={i} progress={burst} />)}
+    </>
+  );
+  if (!onPress) {
+    // KB-765: 장식용 — 제목이 같은 정보를 말하므로 접근성 트리에서 숨김
+    return (
+      <View style={styles.root} testID={testID} accessible={false} importantForAccessibility="no-hide-descendants" pointerEvents="none">
+        {body}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={celebrate}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={styles.root}
+      testID={testID}
+    >
+      {body}
     </Pressable>
   );
 }

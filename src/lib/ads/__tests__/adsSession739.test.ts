@@ -47,7 +47,7 @@ it('정상: EEA 디버그 지오(비prod) → 동의 OK → iOS ATT 1회(결과 
     expect(mockAds.setRequestConfiguration).toHaveBeenCalledWith(expect.objectContaining({ maxAdContentRating: 'PG', tagForChildDirectedTreatment: false }));
     expect(mockAds.initialize).toHaveBeenCalledTimes(1);
     expect(isAdsReady()).toBe(true);
-    expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'obtained' });
+    expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', expect.objectContaining({ status: 'obtained' }));
     // 순서: 동의 → ATT → 초기화
     const order = [mockAds.requestInfoUpdate.mock.invocationCallOrder[0], mockAds.initialize.mock.invocationCallOrder[0]];
     expect(order[0]).toBeLessThan(order[1]);
@@ -84,7 +84,7 @@ it('canRequestAds=false(동의 거부·미수집) = unavailable — initialize 0
     expect(getAdsState()).toBe('unavailable');
     expect(mockAds.initialize).not.toHaveBeenCalled();
     expect(mockAtt.calls).toBe(0);
-    expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'required' });
+    expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', expect.objectContaining({ status: 'required' }));
   } finally { Platform.OS = prev; }
 });
 
@@ -93,7 +93,7 @@ it('/review 8: 동의 갱신 실패(오프라인)여도 지난 세션 동의가 
   await expect(initAds()).resolves.toBeUndefined();
   expect(getAdsState()).toBe('ready');
   expect(mockAds.initialize).toHaveBeenCalledTimes(1);
-  expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', { status: 'obtained' });
+  expect(mockTrack).toHaveBeenCalledWith('ad_consent_result', expect.objectContaining({ status: 'obtained' }));
 });
 
 it('동의 갱신 실패 + 캐시도 없음(canRequestAds=false) = unavailable · getConsentInfo까지 실패 = unavailable + ad_consent_result error — 앱 흐름은 계속(throw 0)', async () => {
@@ -157,4 +157,29 @@ it('개인정보 옵션: REQUIRED면 노출 · showPrivacyOptions 뒤 상태 재
   await showPrivacyOptions();
   expect(mockAds.showPrivacyOptionsForm).toHaveBeenCalledTimes(1);
   expect(isPrivacyOptionsRequired()).toBe(false);
+});
+
+describe('KB-774: ad_consent_result 동의/거부 구분(boolean만)', () => {
+  const consentEvent = () => mockTrack.mock.calls.find((c) => c[0] === 'ad_consent_result')?.[1];
+  it('EEA 동의 = obtained + personalized_consent true', async () => {
+    mockAds.gdprApplies = true; mockAds.purposeConsents = '11111111111';
+    await initAds();
+    expect(consentEvent()).toEqual({ status: 'obtained', can_request_ads: true, gdpr_applies: true, personalized_consent: true });
+  });
+  it('EEA [Do not consent] = 같은 obtained지만 personalized_consent false(구분 가능)', async () => {
+    mockAds.gdprApplies = true; mockAds.purposeConsents = '';
+    await initAds();
+    expect(consentEvent()).toEqual({ status: 'obtained', can_request_ads: true, gdpr_applies: true, personalized_consent: false });
+  });
+  it('GDPR 비적용 = gdpr_applies false만(동의 필드 없음)', async () => {
+    mockAds.consentInfo = { ...mockAds.consentInfo, status: 'NOT_REQUIRED' };
+    await initAds();
+    expect(consentEvent()).toEqual({ status: 'not_required', can_request_ads: true, gdpr_applies: false });
+  });
+  it('TC 문자열 원문은 보내지 않는다 — 허용 키 = status·can_request_ads·gdpr_applies·personalized_consent', async () => {
+    mockAds.gdprApplies = true; mockAds.purposeConsents = '1011';
+    await initAds();
+    expect(Object.keys(consentEvent()).sort()).toEqual(['can_request_ads', 'gdpr_applies', 'personalized_consent', 'status']);
+    expect(Object.values(consentEvent()).every((v) => typeof v === 'boolean' || typeof v === 'string' && !/^[01]+$/.test(v))).toBe(true);
+  });
 });

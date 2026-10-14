@@ -7,7 +7,8 @@
  *  저장해 같은 버전으론 재노출 안 함.
  */
 import * as React from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
@@ -72,7 +73,7 @@ export function VersionGateOverlay() {
       <Text style={styles.body}>{t('versionGate.gateBody')}</Text>
       {gate.storeUrl != null && (
         <View style={{ alignSelf: 'stretch', marginTop: 10 }}>
-          <Btn
+          <Btn testID="version-gate-update"
             onPress={() => {
               setFailedFor(null);
               const my = ++attemptRef.current; // 이 시도의 세대
@@ -124,11 +125,11 @@ export function UpdateNudgeBanner() {
       </Text>
       {gate.storeUrl != null && (
         /* 소프트 넛지 = 커버가 없는 자리라 실패는 공용 토스트로 충분하다(하드 게이트와 경로가 다르다) */
-        <Pressable hitSlop={8} onPress={() => void openStoreLink(gate.storeUrl!)}>
+        <Pressable testID="version-nudge-update" hitSlop={8} onPress={() => void openStoreLink(gate.storeUrl!)}>
           <Text style={styles.bannerCta}>{t('versionGate.nudgeCta')}</Text>
         </Pressable>
       )}
-      <Pressable hitSlop={8} onPress={dismiss}>
+      <Pressable testID="version-nudge-dismiss" hitSlop={8} onPress={dismiss}>
         <IconClose size={14} color={C.ink3} />
       </Pressable>
     </View>

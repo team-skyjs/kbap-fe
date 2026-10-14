@@ -3,7 +3,8 @@
  * Saved). Presentational only; visibility/timers are the caller's job.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -32,7 +33,7 @@ export function Snackbar({
         {icon}
         <Text style={styles.text}>{text}</Text>
         {actionLabel != null && (
-          <Pressable onPress={onAction} hitSlop={10}>
+          <Pressable testID="snackbar-action" onPress={onAction} hitSlop={10}>
             <Text style={styles.action}>{actionLabel}</Text>
           </Pressable>
         )}

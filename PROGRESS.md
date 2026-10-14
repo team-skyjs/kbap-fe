@@ -1489,3 +1489,13 @@
 - [x] 문서: specs/002·004·005 리마인더 행 orderId·주문 상세로 갱신.
 - [ ] **열린 항목(종한→BE)**: 서버 배치 prod 활성화 = 이 앱 버전 릴리스와 동기 — 릴리스 일정 회신 필요. 로컬 예약 제거가 배치 활성화보다 먼저 기기에 도달해야 중복 알림 0. 배포 경로(OTA/네이티브)·시점은 예진 승인.
 - [ ] 실기(iOS·Android): quickstart D-1~D-8 — 백그라운드/종료 탭 주문 상세·다른 주문 갱신·orderId 없음 무동작·알림함 탭·게스트·예약 0건·activity 채널.
+
+## KB-779 홈이 /home 카드의 bookmarked를 직접 써서 /bookmarks 전 페이지 드레인을 없앤다 (2026-10-13, 워크트리 feat/kb779-home-bookmarked-card)
+
+- [x] 원인: `adaptMenuSummary`가 `bookmarked`를 버려 홈이 `useSavedIds`(/bookmarks 전 페이지 드레인)로 별·토글 방향을 재계산 — 저장 N건이면 홈 진입마다 ceil(N/20)회. dev Swagger 확인: `/home`·`/foods`·`/bookmarks`·`/foods/search`·`/foods/scanned` 전부 `FoodSummaryResponse.bookmarked` 동봉.
+- [x] 어댑터: `FoodCard.bookmarked?`(옵셔널 — mock·스냅샷 호환) ← `wire.bookmarked === true`(부재·비회원 false).
+- [x] 홈(embedded): `isSaved(f) = f.bookmarked === true` 로 별·토글 방향, `savedReady` 가드는 screen만. `useBookmarks`/`useSavedIds`에 `{ enabled }` 추가 — 홈은 Saved 탭 활성 시에만(`bookmarksOn = variant === 'screen' || savedTabActive`), 음식 탭(screen)은 기존 savedIds 경로 무변(비범위).
+- [x] `useToggleBookmark` 낙관 쓰기: `flipCardBookmarked` — `['home', lang]` recommended/mostReviewed/recent + `['foods', …]` 와이어 페이지(홈 Food 탭·위험 칩 레일 소스 — 이게 없으면 그 카드 별이 안 바뀐다)에서 해당 foodId만 반전, 실패 시 스냅샷 원복. `['home']` invalidate 없음(KB-712 랜덤 레일 셔플·KB-710 스크롤 리셋 방지) — 다음 포커스 stale 재조회에 맡김.
+- [x] 테스트: homeBookmarkedCard779 신설 4(콜드 스타트 /bookmarks 0회·Saved 탭 탭 시 호출 / 별 = 카드값 / 방향 PATCH·POST / Food 탭 /foods 소스) · toggleBookmark +5(홈 3배열 반전·실패 원복·캐시 없음 무크래시·home invalidate 0·/foods 페이지 반전) · foodAdapter +2 · 소스 잠금 갱신(field0910bKb515·homePopularRandom712·riskServerFilter492·design4Home430 ⑤). tsc 0 · jest 296 스위트 2556/2556.
+- [x] Codex 리뷰(#264) 4건 반영(10/14): ① 롤백 = 실패 카드만 반대 반전(스냅샷 복원은 그 사이 성공한 다른 토글까지 지움) ② 쓰기 전 `['home']`·`['foods']` 진행 중 재조회 cancel(데이터 있는 쿼리만 — 초기 로딩 홈을 끊으면 스켈레톤 정지) ③ `useRemoveBookmark`/`useRestoreBookmark`도 카드 캐시 반전(저장 화면 해제 후 홈 복귀 시 별 잔존·방향 역전) ④ `useSavedIds` 드레인 effect `enabled` 가드(수동 fetchNextPage는 enabled가 안 막음). toggleBookmark +4. jest 296 스위트 2560/2560.
+- [ ] 실기(홈 콜드 스타트 네트워크 로그 `GET /bookmarks` 0회 · 레일 별 탭 즉시 반전·롤백 · Saved 탭 전환 시 목록 로드 · 저장 화면 스와이프 해제 후 홈 별). 발행은 예진 승인.

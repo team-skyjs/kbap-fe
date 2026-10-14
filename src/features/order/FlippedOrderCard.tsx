@@ -12,8 +12,10 @@
  */
 import { OrderDoneInterstitial, type InterstitialController } from '@/features/ads/OrderDoneInterstitial';
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from '@/lib/theme';
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
@@ -164,7 +166,7 @@ export function FlippedOrderCard({
       )}
 
       <View style={styles.foot}>
-        <Btn
+        <Btn testID="order-done"
           onPress={() => {
             setDoneOpen(true);
             setConfetti(true); // P-166: 모달 등장과 동시 버스트
@@ -173,7 +175,10 @@ export function FlippedOrderCard({
             // 1회 가드(ref)로 봉쇄. (리뷰 리마인더는 KB-500부터 서버 배치 — 로컬 예약 없음)
             if (committedRef.current) return;
             committedRef.current = true;
-            track(EVENTS.order_done, { item_count: items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0) });
+            const itemCount = items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0);
+            track(EVENTS.order_done, { item_count: itemCount });
+            // KB-783 ⑪ — 금액 없음(예상 합계는 실결제 아님). totalQuantity = 수량 합(#278 Codex P2), item_count = 메뉴 줄 수
+            airbridge.orderComplete({ lines: itemCount, units: items.reduce((n, i) => n + (i.qty > 0 ? i.qty : 0), 0) });
             // P-252→256: 주문 이력 저장 — 실패 무해(내부 흡수·code 로그), UX 무영향
             void saveOrderHistory({ imagePath: orderImagePath, items });
           }}
@@ -195,7 +200,7 @@ export function FlippedOrderCard({
             <Text style={styles.confirmTitle}>{t('order.doneTitle')}</Text>
             <Text style={styles.confirmBody}>{t('order.doneBody')}</Text>
             <View style={{ marginTop: 6 }}>
-              <Btn
+              <Btn testID="order-done-close"
                 /* P-256: 저장·계측은 done 탭으로 이동 — 여기는 복귀만. KB-730: 완료 모달을 닫은 뒤 리뷰 유도 시트(겹침 0), 조건 미달이면 바로 복귀 */
                 onPress={() => {
                   setLeaving(true);

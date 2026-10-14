@@ -6,7 +6,8 @@
  * never asked. 안전 배너/Save 게이트는 소비 화면 몫(무변).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Input } from './KeyboardDismissBar';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';

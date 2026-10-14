@@ -7,6 +7,7 @@ import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { ProgressDots } from '@/components/ProgressDots';
+import { Pressable } from '@/components/Pressable';
 
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
 jest.mock('@/lib/data/useDietPresets', () => {
@@ -76,6 +77,8 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock('expo-image-picker', () => ({}));
+// KB-773: 약관 전문 시트(GestureHandlerRootView·스와이프 닫기)를 여는 테스트용 — 레포 공용 목
+jest.mock('react-native-gesture-handler', () => jest.requireActual('@/__tests__/helpers/gestureHandlerMock'));
 jest.mock('@/lib/data/profileImage', () => ({ choosePhotoSource: jest.fn(), pickBySource: jest.fn(), uploadProfileImage: jest.fn() }));
 jest.mock('@/lib/onboarding/submit', () => ({ UNSET: 'UNSET', submitOnboardingProfile: jest.fn() }));
 jest.mock('@/lib/queryClient', () => ({ queryClient: { clear: jest.fn() } }));
@@ -118,7 +121,8 @@ it('약관 게이트 — 3항목 미동의면 계속 off, 개별 3행 전부 체
   expect(continueBtn(tree).props.variant).toBe('off');
   expect(continueBtn(tree).props.onPress).toBeUndefined();
   // 개별 행 체크 3개 (hitSlop 6이 지문 — 행 본문 Pressable)
-  const rows = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.props?.hitSlop === 6);
+  // KB-784: components/Pressable 래퍼 아래 RN Pressable도 같은 props를 가진다 — 앱 레벨(래퍼) 요소만 센다
+  const rows = tree.root.findAll((n) => n.type === Pressable && typeof n.props?.onPress === 'function' && n.props?.hitSlop === 6);
   expect(rows.length).toBe(3);
   for (const row of rows) {
     await act(async () => {
@@ -155,6 +159,10 @@ it('P-130 → P-203: 스텝 순서 — 약관→국적→프리셋(신설)→회
   await act(async () => { agreeAll[0].props.onPress(); });
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 국적
   expect(textNodes(tree, 'onboarding.nationalityTitle').length).toBeGreaterThanOrEqual(1);
+  // KB-773: 국적은 미리 고르지 않는다 — 고르기 전 Continue 비활성, 직접 고르면 활성
+  expect(continueBtn(tree).props.onPress).toBeUndefined();
+  const usTile = tree.root.findAll((n) => n.props?.testID === 'nat-US' && typeof n.props?.onPress === 'function')[0];
+  await act(async () => { usTile.props.onPress(); });
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 프리셋(P-203 — dev 계열)
   expect(textNodes(tree, 'onboarding.presets.title').length).toBeGreaterThanOrEqual(1);
   await act(async () => { continueBtn(tree).props.onPress(); }); // → 회피
@@ -371,4 +379,83 @@ it('P-154 ①: 일반 행 선택 = 핀 카드와 동일 강조(주황 보더+틴
   // 강조 단일성 — 추천 행(US)은 무강조로 전환(#EAEBEE)
   const pin = flat2(tree.root.findAll((n) => n.props?.testID === 'nat-US')[0].props.style);
   expect(pin.borderColor).toBe('#EAEBEE');
+});
+
+/* ---- KB-773 온보딩 UX 묶음(QA-SWEEP 10/13 A1-5·A1-6·A1-7·A1-8) ---- */
+const toNationality = async (tree: ReactTestRenderer) => {
+  const agreeAll = tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'onboarding.agreeAll').length > 0);
+  await act(async () => { agreeAll[0].props.onPress(); });
+  await act(async () => { continueBtn(tree).props.onPress(); });
+};
+const radioOn = (tree: ReactTestRenderer, id: string) => {
+  const row = tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+  const flat = (s: unknown) => Object.assign({}, ...[s].flat(Infinity as 1).filter(Boolean) as object[]) as Record<string, unknown>;
+  return row.findAll((n) => typeof n.type === 'string' && flat(n.props?.style).borderWidth === 5).length > 0; // natRadioOn = 5 링
+};
+
+it('KB-773 A1-6: 국적 = 사전 선택 없음 — "휴대폰 기준" 감지국 카드는 보이되 미선택 · Continue 비활성 → 직접 고르면 활성', async () => {
+  mockDraft = null;
+  const tree = await render();
+  await toNationality(tree);
+  expect(textNodes(tree, 'onboarding.fromYourPhone').length).toBeGreaterThanOrEqual(1); // 추천은 그대로
+  expect(radioOn(tree, 'nat-US')).toBe(false); // 감지국(목 US)도 미선택
+  expect(continueBtn(tree).props.variant).toBe('off');
+  expect(continueBtn(tree).props.onPress).toBeUndefined();
+  const us = tree.root.findAll((n) => n.props?.testID === 'nat-US' && typeof n.props?.onPress === 'function')[0];
+  await act(async () => { us.props.onPress(); });
+  expect(radioOn(tree, 'nat-US')).toBe(true);
+  expect(continueBtn(tree).props.variant).toBe('primary');
+  expect(textNodes(tree, 'onboarding.nationalityNotice').length).toBeGreaterThanOrEqual(1); // 확정 전 안내(변경 불가) 유지
+});
+
+it('KB-773 A1-7: 국적 검색 결과 없음 = 안내 문구 · 검색 스텝에서 키보드가 열리면 CTA 푸터를 내린다(SE 결과 영역 확보)', async () => {
+  mockDraft = null;
+  const { Keyboard } = jest.requireActual<typeof import('react-native')>('react-native');
+  const handlers: Record<string, () => void> = {};
+  const spy = jest.spyOn(Keyboard, 'addListener').mockImplementation(((ev: string, fn: () => void) => { handlers[ev] = fn; return { remove: () => {} }; }) as never);
+  try {
+    const tree = await render();
+    await toNationality(tree);
+    const input = tree.root.findAll((n) => n.props?.placeholder === 'onboarding.nationalitySearch' && typeof n.props?.onChangeText === 'function')[0];
+    await act(async () => { input.props.onChangeText('zzzz-none'); });
+    expect(tree.root.findAll((n) => n.props?.testID === 'nat-search-empty' && typeof n.type === 'string')).toHaveLength(1);
+    expect(textNodes(tree, 'onboarding.searchNoResults').length).toBeGreaterThanOrEqual(1);
+    expect(tree.root.findAll((n) => n.props?.testID === 'ob-footer')).not.toHaveLength(0);
+    await act(async () => { handlers.keyboardDidShow?.(); });
+    expect(tree.root.findAll((n) => n.props?.testID === 'ob-footer')).toHaveLength(0);
+    await act(async () => { handlers.keyboardDidHide?.(); });
+    expect(tree.root.findAll((n) => n.props?.testID === 'ob-footer')).not.toHaveLength(0);
+  } finally { spy.mockRestore(); }
+});
+
+it('KB-773 A1-8 + A1-5: 약관 라벨 탭 = 전문 열기(체크는 체크 상자만) · 전문 = 구조 블록(사이트 제목 kbap-legal 0 · 표 = 행 카드)', async () => {
+  mockDraft = null;
+  const html = `<html><body><div class="markdown-body"><h1><a href="https://team-skyjs.github.io/kbap-legal/">kbap-legal</a></h1>
+    <h1>K-Bap Privacy Policy</h1><p>Intro text.</p><h3>1. Data</h3>
+    <table><thead><tr><th>Category</th><th>Items</th></tr></thead><tbody><tr><td>Account</td><td>Login ID</td></tr></tbody></table>
+    <ul><li>Rule one</li></ul></div></body></html>`;
+  const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({ ok: true, status: 200, text: async () => html } as unknown as Response);
+  try {
+    const tree = await render();
+    const check = () => tree.root.findAll((n) => n.props?.testID === 'consent-check-privacy' && typeof n.props?.onPress === 'function')[0];
+    expect(check().props.accessibilityState).toMatchObject({ checked: false });
+    // 라벨 탭 = 전문(체크 무변)
+    const open = tree.root.findAll((n) => n.props?.testID === 'consent-open-privacy' && typeof n.props?.onPress === 'function')[0];
+    await act(async () => { open.props.onPress(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(check().props.accessibilityState).toMatchObject({ checked: false });
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('privacy-policy.html'));
+    const blocks = tree.root.findAll((n) => n.props?.testID === 'legal-blocks' && typeof n.type === 'string')[0];
+    expect(blocks).toBeDefined();
+    const s = JSON.stringify(tree.toJSON());
+    expect(s).not.toContain('"kbap-legal"');
+    expect(s).toContain('K-Bap Privacy Policy');
+    expect(tree.root.findAll((n) => n.props?.testID === 'legal-table' && typeof n.type === 'string')).toHaveLength(1);
+    expect(s).toContain('Category');
+    expect(s).toContain('Login ID');
+    expect(s).not.toContain('·'); // 목록 불릿 = 도형(View), 가운데 점 문자 0
+    // 체크 상자 탭 = 체크
+    await act(async () => { check().props.onPress(); });
+    expect(check().props.accessibilityState).toMatchObject({ checked: true });
+  } finally { fetchSpy.mockRestore(); }
 });

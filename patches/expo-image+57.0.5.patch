@@ -1,0 +1,25 @@
+diff --git a/node_modules/expo-image/ios/ImageView.swift b/node_modules/expo-image/ios/ImageView.swift
+index 45c13d3..435a589 100644
+--- a/node_modules/expo-image/ios/ImageView.swift
++++ b/node_modules/expo-image/ios/ImageView.swift
+@@ -128,8 +128,20 @@ public final class ImageView: ExpoView {
+     sdImageView.layer.minificationFilter = .trilinear
+ 
+     addSubview(sdImageView)
++
++    // KB-771 (patch-package): React Native(RCTViewComponentView.invalidateLayer)이 clipsToBounds 뷰의 UIImageView 자식에
++    // 그 시점 bounds 크기의 마스크를 씌우는데, 이후 sdImageView 크기와 어긋나면 이미지가 왼쪽 위 작은 창으로만 보인다(iOS 26 실측).
++    // 이 뷰는 clipsToBounds + (RN이 설정하는) cornerRadius/마스크로 이미 자기 영역을 자르므로 자식 마스크는 중복 — 들어오는 즉시 걷어낸다.
++    // 한계: 테두리 두께가 있는 이미지에서 안쪽 모서리 반경 보정이 빠진다(앱은 이미지 자체에 테두리를 쓰지 않음).
++    subviewMaskObservation = sdImageView.layer.observe(\.mask, options: [.new]) { layer, _ in
++      if layer.mask != nil {
++        layer.mask = nil
++      }
++    }
+   }
+ 
++  private var subviewMaskObservation: NSKeyValueObservation?
++
+   deinit {
+     // Cancel pending requests when the view is deallocated.
+     cancelPendingOperation()

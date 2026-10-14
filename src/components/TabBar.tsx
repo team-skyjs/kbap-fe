@@ -8,7 +8,8 @@
  * 재사용, 키·아이콘·라벨만 교체). Labels come from i18n via the consumer.
  */
 import * as React from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Txt as Text } from '@/components/Txt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

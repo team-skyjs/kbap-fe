@@ -8,7 +8,8 @@
  * 서버 total 없음)로 생략(발주 규정 — REPORTS 기재). 데이터 훅 무변.
  */
 import * as React from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';

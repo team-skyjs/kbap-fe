@@ -5,7 +5,8 @@
  * (FeedCard 분리와 같은 계열, P-201).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, riskTextStrong, shadow, type RiskState } from '@/lib/theme';
 import { Btn, CardPhoto, NewBadge, RiskBadge, IconFood } from '@/components';
@@ -35,6 +36,7 @@ export function FoodGridCard({
   onPress,
   onBookmark,
   style,
+  ref,
 }: {
   food: FoodCard;
   risk: RiskState;
@@ -45,10 +47,12 @@ export function FoodGridCard({
   onBookmark: () => void;
   /** KB-434 저장 그리드(FlatList 셀) — 홈 flexWrap 폭(47%) 오버라이드용 */
   style?: StyleProp<ViewStyle>;
+  /** KB-784: 홈 카드 노출 측정(measureInWindow) — 홈 밖은 미전달 */
+  ref?: React.Ref<View>;
 }) {
   const isNew = useIsNewFood(food.publishedAt);
   return (
-    <Pressable style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
+    <Pressable ref={ref} style={[styles.gcard, style]} onPress={onPress} testID={`home-food-${food.foodId}`}>
       <View style={styles.gphoto}>
         {/* P-353 ③(KB-515): 사진 없음/실패 = CardPhoto 내부 기본 이미지(구 IconFood 박스 폐기) */}
         <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
@@ -95,15 +99,18 @@ export function RecentRow({
   reviewLabel,
   onPress,
   onReview,
+  ref,
 }: {
   food: FoodCard;
   risk: RiskState;
   reviewLabel: string;
   onPress: () => void;
   onReview: () => void;
+  /** KB-784: 홈 카드 노출 측정 — 홈 밖은 미전달 */
+  ref?: React.Ref<View>;
 }) {
   return (
-    <Pressable style={styles.rrow} onPress={onPress} testID={`home-recent-${food.foodId}`}>
+    <Pressable ref={ref} style={styles.rrow} onPress={onPress} testID={`home-recent-${food.foodId}`}>
       <View style={styles.rthumb}>
         <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
         <View style={styles.rbadge}>

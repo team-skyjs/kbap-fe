@@ -5,7 +5,8 @@
  * 동일 폭, selected는 bg와 동색 보더로 자리 유지).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from './Txt';
 import { RiskMark } from './RiskMark';
 import { color as C, radius, riskTone, riskTextStrong, type RiskState } from '@/lib/theme';
@@ -24,7 +25,7 @@ export function Chip({
   label: string;
   selected?: boolean;
   onPress?: () => void;
-  testID?: string;
+  testID: string; // KB-784(PR 280 Codex P2): 필수 — 생략하면 ui_click target이 'unlabeled'로 샌다(tsc가 모든 사용처를 강제)
   /** P-391(KB-582): 위험도 필터 칩 — 선택 시 **RiskMark와 같은 토큰**으로 칠한다(예진 실기: 색이 달랐다). */
   risk?: RiskState;
 }) {

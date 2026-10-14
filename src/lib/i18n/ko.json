@@ -16,7 +16,10 @@
     "leaveTitle": "작성을 그만둘까요?",
     "leaveBody": "작성 중인 내용은 저장되지 않아요.",
     "keepWriting": "계속 쓰기",
-    "discard": "그만두기"
+    "discard": "그만두기",
+    "leaveEditTitle": "저장하지 않고 나갈까요?",
+    "leaveEditBody": "바꾼 내용은 저장되지 않아요.",
+    "keepEditing": "계속 편집"
   },
   "intro": {
     "skip": "건너뛰기",
@@ -278,6 +281,8 @@
     "retakeBody": "지금 결과가 사라져요.",
     "retakeBodyWithCart": "지금 결과와 담은 메뉴 {{count}}개가 사라져요.",
     "retakeConfirm": "다시 스캔",
+    "leaveTitle": "스캔 결과에서 나갈까요?",
+    "leaveConfirm": "나가기",
     "loadingPhoto": "사진 불러오는 중…",
     "errNotMenu": "메뉴판으로 보이지 않아요. 다시 찍어 주세요.",
     "errBusy": "메뉴를 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
@@ -285,6 +290,16 @@
     "errProcessing": "이미 스캔을 처리하고 있어요. 잠시만 기다려 주세요.",
     "quotaTitle": "무료 스캔을 모두 사용했어요",
     "quotaBody": "리뷰를 1건 작성하면 스캔을 무제한으로 이용할 수 있어요.",
+    "quotaDialogBody": "둘 중 하나만 하면 스캔이 무제한으로 풀려요.",
+    "quotaTileReviewTitle": "리뷰 1건 쓰기",
+    "quotaTileReviewSub": "후기 남기고 바로 풀기",
+    "quotaTileAdTitle_one": "광고 {{count}}편 보기",
+    "quotaTileAdTitle_other": "광고 {{count}}편 보기",
+    "quotaTileAdProgress": "{{n}}/{{total}} 시청 완료",
+    "quotaBodyUnlock": "리뷰를 1건 작성하거나 광고를 보면 스캔을 무제한으로 이용할 수 있어요.",
+    "unlockedTitle": "스캔이 무제한으로 풀렸어요!",
+    "unlockedOpening": "카메라를 다시 여는 중…",
+    "unlockedRetry": "카메라를 다시 열지 못했어요. 다시 시도해 주세요.",
     "quotaCta": "리뷰 작성하기",
     "freeLeft_one": "무료 스캔이 {{count}}회 남았어요",
     "freeLeft_other": "무료 스캔이 {{count}}회 남았어요",
@@ -405,7 +420,7 @@
   "restrictionsEdit": {
     "title": "제한 수정",
     "save": "제한 저장",
-    "notice": "모든 안전 경고의 기준이 돼요. 정확하게 유지하세요 — 변경은 모든 요리에 즉시 적용돼요.",
+    "notice": "모든 안전 경고의 기준이 돼요. 바꾼 내용은 저장을 눌러야 반영돼요.",
     "avoidNone": "아직 피하는 것이 없어요",
     "tapToRemove": "×를 탭해 제거",
     "searchPlaceholder": "재료 검색…",
@@ -898,7 +913,8 @@
       "apply": "내 목록에 적용"
     },
     "countryLabel": "국가",
-    "popularCountries": "인기 국가"
+    "popularCountries": "인기 국가",
+    "searchNoResults": "검색 결과가 없어요. 다른 표기로 찾아보세요."
   },
   "saved": {
     "error": "저장 목록을 변경하지 못했어요. 다시 시도해 주세요.",
@@ -982,7 +998,7 @@
     "consentBothRequired": "두 항목에 모두 동의해야 알림을 켤 수 있어요.",
     "consentConfirm": "동의하고 알림 켜기",
     "nudgeTitle": "리뷰 알림, 켜두실래요?",
-    "nudgeBody": "주문한 메뉴를 잊기 전에 리뷰할 수 있도록 알려드리고,\n내 리뷰에 새로운 반응이 생기면 소식도 전해드려요."
+    "nudgeBody": "주문한 메뉴를 잊기 전에 리뷰할 수 있도록 알려드리고, 내 리뷰에 새로운 반응이 생기면 소식도 전해드려요."
   },
   "notif": {
     "title": "알림 설정",
@@ -1074,5 +1090,40 @@
     "watchToUnlock": "광고 보고 풀기 ({{n}}/{{total}})",
     "rewardLimit": "오늘은 여기까지예요. 내일 다시 시도해 주세요.",
     "rewardError": "시청 기록을 저장하지 못했어요. 다시 시도해 주세요."
+  },
+  "reviewTime": {
+    "justNow": "방금",
+    "minutesAgo_one": "{{count}}분 전",
+    "minutesAgo_other": "{{count}}분 전",
+    "hoursAgo_one": "{{count}}시간 전",
+    "hoursAgo_other": "{{count}}시간 전",
+    "daysAgo_one": "{{count}}일 전",
+    "daysAgo_other": "{{count}}일 전",
+    "date": "{{year}}년 {{month}}월 {{day}}일",
+    "dateLong": "{{year}}년 {{month}}월 {{day}}일",
+    "monShort1": "1월",
+    "monShort2": "2월",
+    "monShort3": "3월",
+    "monShort4": "4월",
+    "monShort5": "5월",
+    "monShort6": "6월",
+    "monShort7": "7월",
+    "monShort8": "8월",
+    "monShort9": "9월",
+    "monShort10": "10월",
+    "monShort11": "11월",
+    "monShort12": "12월",
+    "monLong1": "1월",
+    "monLong2": "2월",
+    "monLong3": "3월",
+    "monLong4": "4월",
+    "monLong5": "5월",
+    "monLong6": "6월",
+    "monLong7": "7월",
+    "monLong8": "8월",
+    "monLong9": "9월",
+    "monLong10": "10월",
+    "monLong11": "11월",
+    "monLong12": "12월"
   }
 }

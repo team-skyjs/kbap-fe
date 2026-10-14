@@ -10,7 +10,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 // eslint-disable-next-line import/first -- jest.mock 선언 뒤(팩토리 호이스팅) — 레포 관례
 import { ActionSheet } from '../ActionSheet';
 
-it('ActionSheet testID — 시트 = testID · 행 = `${testID}-${key}` (생략 시 행 ID 없음)', () => {
+it('ActionSheet testID — 시트 = testID · 행 = `${testID}-${key}` (KB-784: testID 필수 — 생략은 tsc가 막는다)', () => {
   const items = ['popular', 'new', 'rating'].map((key) => ({ key, label: key, onPress: jest.fn() }));
   let t!: ReactTestRenderer;
   act(() => { t = renderer.create(<ActionSheet open title="Sort" items={items} onClose={jest.fn()} testID="food-sort-sheet" />); });
@@ -19,8 +19,6 @@ it('ActionSheet testID — 시트 = testID · 행 = `${testID}-${key}` (생략 �
   // 행 누름 = 그 항목
   act(() => t.root.findAll((n) => n.props?.testID === 'food-sort-sheet-rating' && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(items[2].onPress).toHaveBeenCalledTimes(1);
-  act(() => { t.update(<ActionSheet open title="Sort" items={items} onClose={jest.fn()} />); });
-  expect(ids((id) => id.includes('-popular'))).toEqual([]);
 });
 
 describe('화면별 testID 존재(소스 잠금)', () => {

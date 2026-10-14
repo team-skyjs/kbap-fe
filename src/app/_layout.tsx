@@ -11,6 +11,7 @@ import 'react-native-gesture-handler';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { Stack, useRouter, type Href } from 'expo-router';
+import { useScreenTracking } from '@/lib/useScreenTracking';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -34,6 +35,8 @@ import { TopToastHost } from '@/components/TopToast';
 import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { initMetaSdk } from '@/lib/metaSdk';
+import { initAirbridgeDeeplinks } from '@/lib/airbridge';
+import { handleDeeplink, markEntryResolved, markEntryResolvedAfterLeavingTabs } from '@/lib/deeplink';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
@@ -52,6 +55,7 @@ initSentry();
 installBeAuth();
 
 export default function RootLayout() {
+  useScreenTracking(); // KB-784: screen_view — 라우트 패턴이 바뀔 때 1회(포그라운드 복귀 재발화 없음)
   const [fontsLoaded, fontError] = useAppFonts();
   const router = useRouter();
 
@@ -88,7 +92,11 @@ export default function RootLayout() {
     const ready = cleanupDone
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
-    void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
+    void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => {
+      // KB-783(#278 Codex 3R): 로그인 리다이렉트가 없으면 진입은 지금 정착 — 스택(탭)이 그려지기 **전**에 표시해 첫 포커스가 바로 쓴다
+      if (!needsLogin.current) markEntryResolved();
+      setEntryChecked(true);
+    });
     if (FLAGS.pushEnabled) {
       const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
       void cleanupDone.then(() => push.registerPushToken()).catch(() => {});
@@ -102,6 +110,8 @@ export default function RootLayout() {
     // P-397(KB-600): Meta SDK — 설치 어트리뷰션만. 광고 추적 비활성 선언 1회
     // (앱 이벤트는 네이티브 자동, ATT 프롬프트 없음). 모듈 부재 시 no-op.
     initMetaSdk();
+    // KB-783: 에어브릿지 딥링크 콜백 1회 등록(SDK 초기화·설치 계측은 네이티브 자동 — 토큰은 빌드 시 주입)
+    initAirbridgeDeeplinks(handleDeeplink);
     // P-213: country 선심기 — 기기 로케일 region(게스트 세그먼트 복구).
     // 온보딩 제출 시 실제 국적으로 덮어씀(설계 원문 — 서버가 아는 값이 정본).
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -127,6 +137,8 @@ export default function RootLayout() {
     if (entryChecked && needsLogin.current) {
       needsLogin.current = false;
       router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로
+      // KB-783: 교체 **뒤** 정착 — 단 교체 직후엔 탭이 아직 focused(blur는 다음 렌더)라 탭을 떠날 때 정착(#278 Codex 4R). 이동은 로그인·온보딩 뒤 탭 포커스에서 1회
+      markEntryResolvedAfterLeavingTabs();
     }
   }, [entryChecked, router]);
 

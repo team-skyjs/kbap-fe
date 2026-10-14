@@ -53,7 +53,16 @@ jest.mock('react-i18next', () => ({
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', setLang: jest.fn() }) }));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en' }] }));
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }) }));
+// KB-776: 이탈 확인 — usePreventRemove(번들 react-navigation) 목: 마지막 호출의 (막는지, 콜백) 기록(KB-708 문의·작성 테스트와 같은 방식)
+const mockNavDispatch = jest.fn();
+const mockPrevent: { on: boolean; cb: ((o: { data: { action: unknown } }) => void) | null } = { on: false, cb: null };
+jest.mock('expo-router/build/react-navigation/core', () => ({
+  usePreventRemove: (on: boolean, cb: (o: { data: { action: unknown } }) => void) => {
+    mockPrevent.on = on;
+    mockPrevent.cb = cb;
+  },
+}));
+jest.mock('expo-router', () => ({ useNavigation: () => ({ dispatch: (a: unknown) => mockNavDispatch(a) }), useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }) }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -184,4 +193,35 @@ it('업로드 실패 — 드래프트 미반영(저장에 사진 필드 생략) 
   act(() => headerSave(tree).props.onPress());
   expect(mockMutate).toHaveBeenCalledTimes(1);
   expect('profileImageUrl' in mockMutate.mock.calls[0][0]).toBe(false); // 실패분 미전송
+});
+
+/* ---- KB-776(QA B3-3): 미저장 뒤로 = 이탈 확인(식단·회피 편집과 같은 공용 훅) ---- */
+it('KB-776: 무변경 = 막지 않음 · 닉네임 변경·사진 드래프트 = 막음 · 빈 닉네임(저장 시 기존값) = 변경 아님', async () => {
+  const tree = render(<EditProfile />);
+  expect(mockPrevent.on).toBe(false);
+  const nick = () => tree.root.findAll((n) => n.props?.value !== undefined && typeof n.props?.onChangeText === 'function')[0]; // 첫 입력 = 닉네임
+  await act(async () => { nick().props.onChangeText('B'); });
+  expect(mockPrevent.on).toBe(true);
+  await act(async () => { nick().props.onChangeText('  '); });
+  expect(mockPrevent.on).toBe(false);
+  await act(async () => { nick().props.onChangeText('A'); });
+  const upload = armUpload();
+  await act(async () => { avatar(tree).props.onPress(); });
+  await act(async () => { upload.resolve('images/profile/new.jpg'); });
+  expect(mockPrevent.on).toBe(true);
+  await act(async () => { mockPrevent.cb?.({ data: { action: { type: 'GO_BACK' } } }); });
+  expect(JSON.stringify(tree.toJSON())).toContain('common.leaveEditTitle');
+});
+
+it('KB-776: 저장 성공 = 막기를 풀고 다음 렌더에서 뒤로(성공한 저장에 확인 창 0)', async () => {
+  mockMutate.mockImplementation((_b: unknown, o?: { onSuccess?: () => void; onSettled?: () => void }) => { o?.onSuccess?.(); o?.onSettled?.(); });
+  const upload = armUpload();
+  const tree = render(<EditProfile />);
+  await act(async () => { avatar(tree).props.onPress(); });
+  await act(async () => { upload.resolve('images/profile/new.jpg'); });
+  expect(mockPrevent.on).toBe(true);
+  await act(async () => { headerSave(tree).props.onPress(); });
+  expect(mockMutate).toHaveBeenCalledTimes(1);
+  expect(mockPrevent.on).toBe(false);
+  expect(tree.root.findAll((n) => n.props?.testID === 'leave-confirm' && typeof n.type === 'string')).toHaveLength(0);
 });

@@ -11,7 +11,8 @@
  * 발주 규정대로 12장 축소, 1.0MB). JS 번들 자산 — OTA 가능.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, AppState, Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Image, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { IconArrowLeft } from '@/components/icons';
@@ -32,6 +33,7 @@ import { GAP, TILE, collageLayoutFor, marqueeDuration, marqueeSpan } from '@/lib
 import { LEGAL_URLS } from '@/lib/legalText';
 import { openWebPage } from '@/lib/openExternal';
 import { promptPermissionOnFirstLogin } from '@/lib/push/pushAdapter'; import { whenSplashDone } from '@/lib/bootGate'; // KB-631 (한 줄: lint 래칫이 줄 번호 기준)
+import { useDeeplinkGate } from '@/lib/deeplink';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const DISHES = [
@@ -108,6 +110,7 @@ function Collage({ animate, availH }: { animate: boolean; availH: number }) {
 
 /** P-311(KB-478): embedded(프로필 탭 임베드) 변형 폐기 — 로그인은 독립 화면뿐. */
 export default function Login() {
+  useDeeplinkGate(); // KB-783: 이 화면 위에선 딥링크 보류(통과 뒤 1회 이동)
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

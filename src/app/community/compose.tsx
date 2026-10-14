@@ -17,7 +17,8 @@
 import * as React from 'react';
 import { Image } from 'expo-image'; // P-189: 원격 사진 = 디스크 캐시
 import { RemoteImage } from '@/components/RemoteImage';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR, useKeyboardLift } from '@/lib/keyboardAvoid';
 import Animated from 'react-native-reanimated';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -162,10 +163,10 @@ export default function CommunityCompose() {
       {/* ── 상단 warm hero (시안 1존) ── */}
       <View style={[styles.hero, { paddingTop: insets.top + 8 }]}>
         <View style={styles.heroBar}>
-          <Pressable style={styles.xBtn} hitSlop={6} onPress={back}>
+          <Pressable testID="compose-close" style={styles.xBtn} hitSlop={6} onPress={back}>
             <IconClose size={17} color={C.ink2} />
           </Pressable>
-          <Pressable style={[styles.postPill, canPost ? styles.postPillOn : styles.postPillOff]} onPress={submit} disabled={!canPost}>
+          <Pressable testID="compose-post" style={[styles.postPill, canPost ? styles.postPillOn : styles.postPillOff]} onPress={submit} disabled={!canPost}>
             <Text style={[styles.postPillText, !canPost && styles.postPillTextOff]}>{t('community.post')}</Text>
           </Pressable>
         </View>
@@ -220,20 +221,20 @@ export default function CommunityCompose() {
           {/* ② 사진 — 76px 타일 + 대시 보더 추가 타일(+, n/4). [0]=커버, 길게 눌러 승격 */}
           <View style={styles.photoRow}>
             {photos.map((uri, i) => (
-              <Pressable key={uri} style={styles.photoWrap} onLongPress={() => promoteCover(uri)} delayLongPress={250}>
+              <Pressable testID="compose-photo" key={uri} style={styles.photoWrap} onLongPress={() => promoteCover(uri)} delayLongPress={250}>
                 <Image source={{ uri }} style={styles.photo} />
                 {i === 0 && (
                   <View style={styles.coverBadge}>
                     <Text style={styles.coverBadgeText}>{t('community.cover')}</Text>
                   </View>
                 )}
-                <Pressable style={styles.photoDel} hitSlop={8} onPress={() => setPhotos((cur) => cur.filter((u) => u !== uri))}>
+                <Pressable testID="compose-photo-remove" style={styles.photoDel} hitSlop={8} onPress={() => setPhotos((cur) => cur.filter((u) => u !== uri))}>
                   <IconClose size={11} color="#fff" />
                 </Pressable>
               </Pressable>
             ))}
             {photos.length < PHOTO_MAX && (
-              <Pressable style={styles.addTile} onPress={() => void pickPhotos()}>
+              <Pressable testID="compose-photo-add" style={styles.addTile} onPress={() => void pickPhotos()}>
                 <IconPlus size={16} color={C.ink3} />
                 <Text style={styles.addTileText}>
                   {photos.length}/{PHOTO_MAX}
@@ -243,7 +244,7 @@ export default function CommunityCompose() {
           </View>
 
           {/* ③ 태그 행 2개 — 틴트 아이콘 타일 + placeholder/칩 + mono 카운터 */}
-          <TagRow
+          <TagRow testID="compose-tag-food"
             iconTile={<View style={[styles.tagIconTile, { backgroundColor: primaryTint }]}><IconFood size={15} color={C.primary} /></View>}
             placeholder={t('community.tagDish')}
             counter={`${foodTags.length}/${FOOD_TAG_MAX}`}
@@ -252,7 +253,7 @@ export default function CommunityCompose() {
           />
           {/* P-142: 장소 태그 = 계약 부재(foodTags만) — COMMUNITY_POST_PLACE_CONTRACT로 게이트 */}
           {COMMUNITY_POST_PLACE_CONTRACT && (
-            <TagRow
+            <TagRow testID="compose-tag-place"
               iconTile={<View style={[styles.tagIconTile, { backgroundColor: accentTint }]}><IconMapPin size={15} color={C.accent} /></View>}
               placeholder={t('community.tagPlace')}
               counter={`${placeTag ? 1 : 0}/1`}
@@ -270,18 +271,18 @@ export default function CommunityCompose() {
 
         {/* ── 하단 글리프 바 — 키보드 위에 붙음(KAV), 첨부 상태 틴트 유지 ── */}
         <View style={[styles.toolbar, { paddingBottom: bottomInset + 8 }]}>
-          <ToolBtn
+          <ToolBtn testID="compose-tool-photo"
             icon={<IconGallery size={20} color={photos.length >= PHOTO_MAX ? C.ink3 : photos.length > 0 ? C.primary : C.ink2} />}
             tinted={photos.length > 0 && photos.length < PHOTO_MAX}
             onPress={() => void pickPhotos()}
           />
-          <ToolBtn
+          <ToolBtn testID="compose-tool-food"
             icon={<IconFood size={20} color={foodTags.length >= FOOD_TAG_MAX ? C.ink3 : foodTags.length > 0 ? C.primary : C.ink2} />}
             tinted={foodTags.length > 0 && foodTags.length < FOOD_TAG_MAX}
             onPress={() => setTagSheet('food')}
           />
           {COMMUNITY_POST_PLACE_CONTRACT && (
-            <ToolBtn
+            <ToolBtn testID="compose-tool-place"
               icon={<IconMapPin size={20} color={placeTag ? C.ink3 : C.ink2} />}
               tinted={false}
               onPress={() => setTagSheet('place')}
@@ -318,7 +319,7 @@ export default function CommunityCompose() {
               </View>
               <Text style={styles.confirmTitle}>{t(editId ? 'community.editedTitle' : 'community.postedTitle')}</Text>
               <View style={{ alignSelf: 'stretch' }}>
-                <Btn onPress={() => router.back()}>{t('common.gotIt')}</Btn>
+                <Btn testID="compose-done" onPress={() => router.back()}>{t('common.gotIt')}</Btn>
               </View>
             </View>
           </View>
@@ -335,15 +336,17 @@ function TagRow({
   counter,
   chips,
   onPress,
+  testID,
 }: {
   iconTile: React.ReactNode;
   placeholder: string;
   counter: string;
   chips: { key: string; label: string; onRemove: () => void }[];
   onPress: () => void;
+  testID: string; // KB-784: ui_click target
 }) {
   return (
-    <Pressable style={styles.tagRowBox} onPress={onPress}>
+    <Pressable testID={testID} style={styles.tagRowBox} onPress={onPress}>
       {iconTile}
       {chips.length === 0 ? (
         <Text style={styles.tagRowPlaceholder}>{placeholder}</Text>
@@ -354,7 +357,7 @@ function TagRow({
               <Text style={styles.tagChipText} numberOfLines={1}>
                 {c.label}
               </Text>
-              <Pressable hitSlop={8} onPress={c.onRemove}>
+              <Pressable testID="compose-tag-remove" hitSlop={8} onPress={c.onRemove}>
                 <IconClose size={11} color={C.ink3} />
               </Pressable>
             </View>
@@ -366,9 +369,9 @@ function TagRow({
   );
 }
 
-function ToolBtn({ icon, tinted, onPress }: { icon: React.ReactNode; tinted: boolean; onPress: () => void }) {
+function ToolBtn({ icon, tinted, onPress, testID }: { icon: React.ReactNode; tinted: boolean; onPress: () => void; testID: string }) {
   return (
-    <Pressable style={[styles.toolBtn, tinted && styles.toolBtnTinted]} onPress={onPress} hitSlop={6}>
+    <Pressable testID={testID} style={[styles.toolBtn, tinted && styles.toolBtnTinted]} onPress={onPress} hitSlop={6}>
       {icon}
     </Pressable>
   );
@@ -399,7 +402,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
    *  'filter'(P-229 음식 필터) = 자격 무관 — 전체 활성 유지(스캔 우선 정렬만 공유). */
   context?: 'compose' | 'review' | 'filter';
 }) {
-  const kbLift = useKeyboardLift(); // KB-768
+  const kbLift = useKeyboardLift({ dismissBar: true }); // KB-768: 키보드·내리기 바 위로
   const bottomInset = useBottomInset();
   const router = useRouter();
   const [q, setQ] = React.useState('');
@@ -493,7 +496,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                 ? foodTags.map((f) => (
                     <View key={f.foodId} style={styles.tagChip}>
                       <Text style={styles.tagChipText} numberOfLines={1}>{f.name}</Text>
-                      <Pressable hitSlop={8} onPress={() => onToggleFood(f)}>
+                      <Pressable testID="compose-food-tag-remove" hitSlop={8} onPress={() => onToggleFood(f)}>
                         <IconClose size={11} color={C.ink3} />
                       </Pressable>
                     </View>
@@ -501,7 +504,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                 : placeTag && (
                     <View style={styles.tagChip}>
                       <Text style={styles.tagChipText} numberOfLines={1}>{placeTag.name}</Text>
-                      <Pressable hitSlop={8} onPress={() => onTogglePlace(placeTag)}>
+                      <Pressable testID="compose-place-tag-remove" hitSlop={8} onPress={() => onTogglePlace(placeTag)}>
                         <IconClose size={11} color={C.ink3} />
                       </Pressable>
                     </View>
@@ -551,7 +554,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                   const selected = foodTags.some((x) => x.foodId === f.foodId);
                   const disabled = false; // P-392: 자격 제한 폐기 — 검색 결과 전부 선택 가능
                   return (
-                    <ResultRow
+                    <ResultRow testID="compose-result-food"
                       key={f.foodId}
                       thumb={
                         f.photoUrl ? (
@@ -571,7 +574,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
                   );
                 })
               : places.map((p) => (
-                  <ResultRow
+                  <ResultRow testID="compose-result-place"
                     key={p.name}
                     thumb={
                       <View style={[styles.rowThumb, styles.rowThumbPlace]}>
@@ -590,7 +593,7 @@ export function TagPickerSheet({ // P-179: 리뷰 피드 FAB 음식 픽커가 �
               <>
                 <Text style={styles.sectionHead}>{t('community.sectionAllFoods')}</Text>
                 {(browse.data ?? []).slice(0, 20).map((f) => (
-                  <ResultRow
+                  <ResultRow testID="compose-result-food-all"
                     key={`all-${f.foodId}`}
                     thumb={
                       f.photoUrl ? (
@@ -660,17 +663,19 @@ function ResultRow({
   selected,
   onPress,
   disabled = false,
+  testID,
 }: {
   thumb: React.ReactNode;
   name: string;
   sub: string;
   selected: boolean;
   onPress: () => void;
+  testID: string; // KB-784: ui_click target
   /** P-245: 자격 밖(비활성·흐림) — 탭 = 선택 대신 안내 강조(호출측이 onPress로 처리). */
   disabled?: boolean;
 }) {
   return (
-    <Pressable style={[styles.resultRow, disabled && styles.resultRowOff]} onPress={onPress}>
+    <Pressable testID={testID} style={[styles.resultRow, disabled && styles.resultRowOff]} onPress={onPress}>
       {thumb}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={[styles.resultText, selected && styles.resultTextOn]} numberOfLines={1}>

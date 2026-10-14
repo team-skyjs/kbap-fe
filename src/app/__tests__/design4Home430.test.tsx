@@ -12,7 +12,7 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => { const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; return sv; }, // KB-706 컴파일러 호환 .get/.set(KB-765 홈 뱃지 effect가 .set 호출)
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     useReducedMotion: () => false,
@@ -61,6 +61,7 @@ const mockFood = (id: string, risk: string) => ({
   photoUrl: `https://img/${id}.jpg`,
   risk,
   overall: { average: 4, count: 2 },
+  bookmarked: false,
 });
 jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({
@@ -206,20 +207,19 @@ it('③ 알림 — unread 행 = primaryTint 배경 + 점, read 행 = 흰 배경 
   expect(src).not.toContain('icUnread');
 });
 
-it('⑤ 북마크 전 페이지 드레인(Codex #28) — hasNextPage면 fetchNextPage + 후속 페이지 저장분이 그리드에 저장 표시', () => {
-  // 2페이지째에서 합류한 저장분이라 가정(첫 페이지엔 없던 id 2)
+it('⑤ 홈 레일 저장 별 = 카드의 bookmarked(KB-779 — 북마크 목록 드레인 아님): 저장 카드 = #FFE812 fill · 미저장 = 아웃라인', () => {
+  // 북마크 목록엔 id 2가 있어도 홈은 그 집합을 보지 않는다 — /foods 카드의 bookmarked(id 1만 true)가 정본
   mockBookmarks.data = [mockFood('2', 'danger')];
-  mockBookmarks.hasNextPage = true;
+  mockCatalog[0].bookmarked = true;
   const tree = render(<Home />);
-  expect(mockBookmarks.fetchNextPage).toHaveBeenCalled(); // 드레인 개시(소진까지 페이지당 1회)
-  // 저장 집합이 전 페이지 데이터 기준 — id 2 카드 = 저장 별(#FFE812 fill, 9/5 판정 4129:10701)
   const fills = (id: string) => {
     const bm = byId(tree, `home-bm-${id}`)[0];
     expect(bm).toBeTruthy();
     return bm.findAll((n) => n.props?.fill != null).map((n) => n.props.fill as string);
   };
-  expect(fills('2')).toContain('#FFE812');
-  expect(fills('1')).not.toContain('#FFE812'); // 미저장 카드 = 아웃라인(무채움)
+  expect(fills('1')).toContain('#FFE812'); // 9/5 판정 4129:10701
+  expect(fills('2')).not.toContain('#FFE812');
+  mockCatalog[0].bookmarked = false;
 });
 
 it('⑥ 벨 NEW 배지 — i18n 키 경유(리터럴 금지) 소스 잠금', () => {

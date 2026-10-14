@@ -11,8 +11,9 @@
  * Unregistered = "Unable to assess" 유지 — never assumed safe (FR-033).
  * personalRisk·재료 데이터·리뷰 훅·저장 토글·지도 딥링크 무변.
  */
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Modal, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -44,6 +45,7 @@ import { IconFood, IconLock, IconStar } from '@/components/icons';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { foodSpiceText, spiceRank } from '@/lib/spice';
 import { SpicePeppers } from '@/components/SpicePeppers';
 import { formatKrw, parseScanPrice } from '@/lib/scan/segmentMenu';
@@ -106,6 +108,13 @@ export default function FoodDetailScreen() {
   const hiddenReason = useFoodHiddenReason(id ?? ''); // KB-650: 'updating'(018) | 'gone'(001) | null
   const hidden = hiddenReason !== null;
   const food = hidden ? undefined : fetched;
+  // KB-783 ⑧: 음식 상세 — 판정이 보일 때(food 확정)만, 음식마다 1회. 숨김(false-safe 비움) 중엔 보내지 않는다
+  const abViewed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!food || abViewed.current === food.foodId) return;
+    abViewed.current = food.foodId;
+    airbridge.productView({ id: food.foodId, name: food.nameKo });
+  }, [food]);
   const { data: me } = useMe();
   // §1-8 FixedBottom의 리뷰 자격 게이트 — 화면 루트 소유(바가 루트 소유라 함께)
 
@@ -539,7 +548,7 @@ function Registered({
           <View style={styles.thickDivider} />
           <Text style={styles.rvBeFirst}>{t('detail.beFirstReview')}</Text>
           <View style={{ paddingHorizontal: 20 }}>
-            <Btn variant="ghost" onPress={() => writeReview('detail')}>
+            <Btn testID="detail-write-review" variant="ghost" onPress={() => writeReview('detail')}>
               {t('reviews.writeReview')}
             </Btn>
           </View>
@@ -622,7 +631,7 @@ function Registered({
           ))}
 
           <View style={styles.rvMore}>
-            <Btn variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
+            <Btn testID="detail-read-all-reviews" variant="ghost" iconEnd={<IconChevron size={16} color={INK_TITLE} />} onPress={() => router.push(`/food/${id}/reviews` as Href)}>{/* P-334: 시안 chevron 16 */}
               {t('detail.readAll')}
             </Btn>
           </View>
@@ -647,8 +656,8 @@ function Registered({
 
       {/* §1-6: 재료 상세 바텀시트(4150:17055) */}
       <Modal visible={ingSheet != null} transparent animationType="fade" onRequestClose={() => setIngSheet(null)}>
-        <Pressable style={styles.sheetScrim} onPress={() => setIngSheet(null)}>
-          <Pressable style={styles.ingSheet} onPress={() => {}} testID="ing-sheet">
+        <Pressable testID="ing-sheet-backdrop" style={styles.sheetScrim} onPress={() => setIngSheet(null)}>
+          <Pressable style={styles.ingSheet} noTrack onPress={() => {}} testID="ing-sheet">
             {ingSheet && (
               <>
                 <View style={styles.ingSheetTop}>
@@ -717,7 +726,7 @@ function Unregistered({ food, t, onAsk }: { food: FoodDetail; t: TFn; onAsk: () 
         </View>
       </View>
 
-      <Btn icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk}>
+      <Btn testID="detail-ask-owner" icon={<IconSpeech size={20} color="#fff" />} onPress={onAsk}>
         {t('detail.askOwner')}
       </Btn>
 

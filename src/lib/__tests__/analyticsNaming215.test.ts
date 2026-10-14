@@ -73,7 +73,7 @@ it('user property = user_info_ 접두 — 구 키는 드롭(화이트리스트�
 });
 
 it('전 이벤트가 도메인 접두 규칙 준수 — 규칙 주석도 소스에 상비', () => {
-  const DOMAINS = ['app', 'auth', 'onboarding', 'scan', 'order', 'owner', 'food', 'search', 'review', 'community', 'profile', 'push', 'error', 'ad']; // KB-739: ad_* (AdMob 4종)
+  const DOMAINS = ['app', 'auth', 'onboarding', 'scan', 'order', 'owner', 'food', 'search', 'review', 'community', 'profile', 'push', 'error', 'ad', 'screen', 'ui', 'home']; // KB-739: ad_* (AdMob 4종) · KB-784: screen·ui·home
   for (const name of Object.values(EVENTS)) {
     expect(DOMAINS.some((d) => name.startsWith(`${d}_`))).toBe(true);
   }

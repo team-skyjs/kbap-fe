@@ -25,7 +25,12 @@ describe('① 🔒 검색어 PII 교정', () => {
     // 결과 음식명 매칭(서버 카탈로그 값)
     const food = searchKeywordProps('kimchi', ['Kimchi Stew', '김치찌개'], 1);
     expect(food.matched).toBe(true);
-    expect(food.keyword).toBe('kimchi stew'); // 접두 매칭 시 전송값 = 카탈로그 항목
+    expect(food.keyword).toBe('kimchi'); // KB-784: 접두 매칭 = 입력어(정규화) — 카탈로그 값의 접두라 자유 텍스트 0, 임의의 긴 음식명으로 바뀌지 않는다
+    // QA 10/14 재현: "bibimbap" 검색이 결과 첫 항목 "bibimbap with thick soybean paste"로 나가던 것
+    expect(searchKeywordProps('Bibimbap ', ['Bibimbap with Thick Soybean Paste', 'Bibimbap'], 2).keyword).toBe('bibimbap');
+    expect(searchKeywordProps('bibim', ['Bibimbap with Thick Soybean Paste'], 1).keyword).toBe('bibim');
+    // 접두도 아니면 여전히 미전송(자유 텍스트 0)
+    expect(searchKeywordProps('my peanut allergy', ['Bibimbap'], 1)).toEqual({ matched: false, len_bucket: '11+', result_count: 1 });
     // KB-709: result_count = 음식 수(이름 수 아님) — 음식 1개(영문·한글 이름 2개)인데 2로 나가던 것
     expect(food.result_count).toBe(1);
   });

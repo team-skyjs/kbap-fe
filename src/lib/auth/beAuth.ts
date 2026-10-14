@@ -14,6 +14,7 @@
 import { api, ApiError, setAuthTokenProvider, setOnMemberMissing, setOnUnauthorized, setSessionGenerationProvider } from '@/lib/api/client';
 import { track } from '@/lib/net/inflight';
 import { clearStaleAnalyticsIdentity, resetAnalyticsIdentity } from '@/lib/analytics';
+import { clearAirbridgeUser } from '@/lib/airbridge';
 import { queryClient } from '@/lib/queryClient';
 import { bumpSessionGen, clearTokens, currentGen, loadTokens, revertTokensIf, saveTokens } from './beTokens';
 import { getSessionState, initSessionState, setSessionState } from './useSession';
@@ -100,6 +101,7 @@ export async function endSessionBoundary(): Promise<void> {
   } catch {
     /* SDK 없음·초기화 실패 — 계측만 포기 */
   }
+  clearAirbridgeUser(); // KB-783: 같은 경계(로그아웃·만료·탈퇴·재설치 정리) — 내부 try/catch
   await done;
 }
 
@@ -269,6 +271,7 @@ export function initSessionFromStorage(): Promise<void> {
       } catch {
         /* 계측만 포기 */
       }
+      clearAirbridgeUser(); // KB-783: 세션 없는 부팅 = 이전 회원 귀속 잔재 정리(재설치·만료 — 같은 자리)
     }
     return initSessionState(has);
   });

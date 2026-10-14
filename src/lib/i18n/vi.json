@@ -16,7 +16,10 @@
     "leaveTitle": "Rời đi mà không lưu?",
     "leaveBody": "Bản nháp sẽ không được lưu.",
     "keepWriting": "Viết tiếp",
-    "discard": "Bỏ"
+    "discard": "Bỏ",
+    "leaveEditTitle": "Rời đi mà không lưu?",
+    "leaveEditBody": "Thay đổi của bạn sẽ không được lưu.",
+    "keepEditing": "Tiếp tục chỉnh sửa"
   },
   "intro": {
     "skip": "Bỏ qua",
@@ -278,6 +281,8 @@
     "retakeBody": "Kết quả hiện tại sẽ bị xóa.",
     "retakeBodyWithCart": "Kết quả và {{count}} mục đã thêm sẽ bị xóa.",
     "retakeConfirm": "Quét lại",
+    "leaveTitle": "Rời khỏi kết quả quét?",
+    "leaveConfirm": "Rời đi",
     "loadingPhoto": "Đang tải ảnh…",
     "errNotMenu": "Ảnh này không giống thực đơn. Hãy chụp lại nhé.",
     "errBusy": "Chúng tôi chưa đọc được thực đơn. Vui lòng thử lại sau giây lát.",
@@ -285,6 +290,16 @@
     "errProcessing": "Yêu cầu quét này đang được xử lý. Vui lòng chờ một lát.",
     "quotaTitle": "Bạn đã dùng hết lượt quét miễn phí",
     "quotaBody": "Viết một đánh giá để mở khóa quét không giới hạn.",
+    "quotaDialogBody": "Làm một trong hai để mở khóa quét không giới hạn.",
+    "quotaTileReviewTitle": "Viết 1 bài đánh giá",
+    "quotaTileReviewSub": "Mở khóa ngay khi đăng",
+    "quotaTileAdTitle_one": "Xem {{count}} quảng cáo",
+    "quotaTileAdTitle_other": "Xem {{count}} quảng cáo",
+    "quotaTileAdProgress": "Đã xem {{n}}/{{total}}",
+    "quotaBodyUnlock": "Viết một bài đánh giá hoặc xem vài quảng cáo để mở khóa quét không giới hạn.",
+    "unlockedTitle": "Đã mở khóa quét không giới hạn!",
+    "unlockedOpening": "Đang mở lại máy ảnh…",
+    "unlockedRetry": "Không thể mở lại máy ảnh. Hãy thử lại.",
     "quotaCta": "Viết đánh giá",
     "freeLeft_one": "Còn {{count}} lượt quét miễn phí",
     "freeLeft_other": "Còn {{count}} lượt quét miễn phí",
@@ -741,7 +756,8 @@
       "apply": "Áp dụng vào danh sách"
     },
     "countryLabel": "Quốc gia",
-    "popularCountries": "Phổ biến"
+    "popularCountries": "Phổ biến",
+    "searchNoResults": "Không có kết quả. Hãy thử cách viết khác."
   },
   "editProfile": {
     "title": "Chỉnh sửa hồ sơ",
@@ -779,7 +795,7 @@
   "restrictionsEdit": {
     "title": "Chỉnh sửa hạn chế",
     "save": "Lưu hạn chế",
-    "notice": "Điều này chi phối mọi cảnh báo an toàn. Giữ chính xác — thay đổi áp dụng ngay cho mọi món.",
+    "notice": "Mọi cảnh báo an toàn đều dựa trên danh sách này. Nhấn Lưu để áp dụng thay đổi.",
     "avoidNone": "Chưa tránh gì",
     "tapToRemove": "chạm × để xóa",
     "searchPlaceholder": "Tìm nguyên liệu…",
@@ -982,7 +998,7 @@
     "consentBothRequired": "Hãy đồng ý cả hai mục để bật thông báo.",
     "consentConfirm": "Đồng ý và bật thông báo",
     "nudgeTitle": "Bật thông báo đánh giá nhé?",
-    "nudgeBody": "Chúng tôi sẽ nhắc bạn đánh giá món đã gọi trước khi quên,\nvà báo khi có người phản hồi đánh giá của bạn."
+    "nudgeBody": "Chúng tôi sẽ nhắc bạn đánh giá món đã gọi trước khi quên, và báo khi có người phản hồi đánh giá của bạn."
   },
   "notif": {
     "title": "Cài đặt thông báo",
@@ -1074,5 +1090,40 @@
     "watchToUnlock": "Xem quảng cáo để mở khóa ({{n}}/{{total}})",
     "rewardLimit": "Hôm nay đến đây thôi. Hãy thử lại vào ngày mai.",
     "rewardError": "Không ghi nhận được lượt xem. Vui lòng thử lại."
+  },
+  "reviewTime": {
+    "justNow": "Vừa xong",
+    "minutesAgo_one": "{{count}} phút trước",
+    "minutesAgo_other": "{{count}} phút trước",
+    "hoursAgo_one": "{{count}} giờ trước",
+    "hoursAgo_other": "{{count}} giờ trước",
+    "daysAgo_one": "{{count}} ngày trước",
+    "daysAgo_other": "{{count}} ngày trước",
+    "date": "{{day}} {{mon}}, {{year}}",
+    "dateLong": "{{day}} {{mon}}, {{year}}",
+    "monShort1": "thg 1",
+    "monShort2": "thg 2",
+    "monShort3": "thg 3",
+    "monShort4": "thg 4",
+    "monShort5": "thg 5",
+    "monShort6": "thg 6",
+    "monShort7": "thg 7",
+    "monShort8": "thg 8",
+    "monShort9": "thg 9",
+    "monShort10": "thg 10",
+    "monShort11": "thg 11",
+    "monShort12": "thg 12",
+    "monLong1": "tháng 1",
+    "monLong2": "tháng 2",
+    "monLong3": "tháng 3",
+    "monLong4": "tháng 4",
+    "monLong5": "tháng 5",
+    "monLong6": "tháng 6",
+    "monLong7": "tháng 7",
+    "monLong8": "tháng 8",
+    "monLong9": "tháng 9",
+    "monLong10": "tháng 10",
+    "monLong11": "tháng 11",
+    "monLong12": "tháng 12"
   }
 }

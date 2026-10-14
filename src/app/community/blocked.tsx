@@ -2,7 +2,8 @@
  * Blocked users (P-087/KB-251 D-06) — 설정 내 차단 목록 (Apple 1.2 해제 수단).
  * 단방향 차단 안내(확정 카피 계열) · Unblock = 행 내 즉시(확인 없음) · 빈 상태.
  */
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -49,7 +50,7 @@ export default function BlockedUsers() {
                 <Text style={styles.name} numberOfLines={1}>
                   {authorName({ id: u.id, nickname: u.nickname, nationality: u.nationality }, t)}
                 </Text>
-                <Pressable style={styles.unblockBtn} onPress={() => unblock.mutate(u.id)} hitSlop={6}>
+                <Pressable testID="blocked-unblock" style={styles.unblockBtn} onPress={() => unblock.mutate(u.id)} hitSlop={6}>
                   <Text style={styles.unblockText}>{t('community.unblock')}</Text>
                 </Pressable>
               </View>

@@ -218,7 +218,7 @@ it('#220 공부 메모 ①: 긴 본문(See more) → 짧은 본문으로 바뀌�
   expect(hasToggle()).toBe(false);
 });
 
-it('Codex #220 P1: 플래그 contentTranslation = 진단 채널만(production·preview off — 서버 KB-678 prod 배포 전 깨진 버튼 금지)', () => {
+it('KB-679(10/14 예진): 플래그 contentTranslation = 전 채널 on(production·preview 포함 — prod 라우트 실측 뒤 공개, 이전 Codex #220 P1 진단 채널만)', () => {
   const flagOn = (channel: string | null) => {
     let v: unknown;
     jest.isolateModules(() => {
@@ -227,7 +227,7 @@ it('Codex #220 P1: 플래그 contentTranslation = 진단 채널만(production·p
     });
     return v;
   };
-  expect([flagOn('production'), flagOn('preview'), flagOn('teamtest'), flagOn('teamtest-prod'), flagOn(null)]).toEqual([false, false, true, true, true]);
+  expect([flagOn('production'), flagOn('preview'), flagOn('teamtest'), flagOn('teamtest-prod'), flagOn(null)]).toEqual([true, true, true, true, true]);
 });
 
 it('플래그 off = 버튼 없음 · 본문은 그대로', () => {

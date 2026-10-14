@@ -7,7 +7,8 @@
  * P-387 규약: 완료 안내는 **응답 성공 후에만**. 실패면 본문·사진을 유지하고 재시도.
  */
 import * as React from 'react';
-import { Alert, Image, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -127,7 +128,7 @@ export default function FeedbackComposeScreen() {
           {photos.map((uri) => (
             <View key={uri} style={styles.photoThumbWrap}>
               <Image source={{ uri }} style={styles.photoThumb} />
-              <Pressable
+              <Pressable testID="feedback-photo-remove"
                 accessibilityLabel={t('review.removePhoto')}
                 style={styles.photoDel}
                 hitSlop={8}

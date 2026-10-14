@@ -16,7 +16,10 @@
     "leaveTitle": "ออกโดยไม่บันทึกใช่ไหม?",
     "leaveBody": "แบบร่างจะไม่ถูกบันทึก",
     "keepWriting": "เขียนต่อ",
-    "discard": "ทิ้ง"
+    "discard": "ทิ้ง",
+    "leaveEditTitle": "ออกโดยไม่บันทึกใช่ไหม?",
+    "leaveEditBody": "การเปลี่ยนแปลงจะไม่ถูกบันทึก",
+    "keepEditing": "แก้ไขต่อ"
   },
   "intro": {
     "skip": "ข้าม",
@@ -278,6 +281,8 @@
     "retakeBody": "ผลปัจจุบันจะถูกลบ",
     "retakeBodyWithCart": "ผลและ {{count}} รายการที่เพิ่มจะถูกลบ",
     "retakeConfirm": "สแกนใหม่",
+    "leaveTitle": "ออกจากผลการสแกนไหม?",
+    "leaveConfirm": "ออก",
     "loadingPhoto": "กำลังโหลดรูป…",
     "errNotMenu": "ภาพนี้ดูไม่เหมือนเมนู ลองถ่ายใหม่อีกครั้ง",
     "errBusy": "อ่านเมนูไม่สำเร็จ กรุณาลองใหม่ในอีกสักครู่",
@@ -285,6 +290,16 @@
     "errProcessing": "คำขอสแกนนี้กำลังประมวลผลอยู่ โปรดรอสักครู่",
     "quotaTitle": "ใช้สแกนฟรีครบแล้ว",
     "quotaBody": "เขียนรีวิวเพื่อปลดล็อกการสแกนไม่จำกัด",
+    "quotaDialogBody": "ทำอย่างใดอย่างหนึ่งเพื่อปลดล็อกการสแกนไม่จำกัด",
+    "quotaTileReviewTitle": "เขียนรีวิว 1 รายการ",
+    "quotaTileReviewSub": "ปลดล็อกทันทีที่โพสต์",
+    "quotaTileAdTitle_one": "ดูโฆษณา {{count}} รายการ",
+    "quotaTileAdTitle_other": "ดูโฆษณา {{count}} รายการ",
+    "quotaTileAdProgress": "ดูแล้ว {{n}}/{{total}}",
+    "quotaBodyUnlock": "เขียนรีวิวหรือดูโฆษณาสองสามครั้งเพื่อปลดล็อกการสแกนไม่จำกัด",
+    "unlockedTitle": "ปลดล็อกการสแกนไม่จำกัดแล้ว!",
+    "unlockedOpening": "กำลังเปิดกล้องอีกครั้ง…",
+    "unlockedRetry": "เปิดกล้องอีกครั้งไม่ได้ กรุณาลองใหม่",
     "quotaCta": "เขียนรีวิว",
     "freeLeft_one": "เหลือสแกนฟรี {{count}} ครั้ง",
     "freeLeft_other": "เหลือสแกนฟรี {{count}} ครั้ง",
@@ -741,7 +756,8 @@
       "apply": "ใช้กับรายการของฉัน"
     },
     "countryLabel": "ประเทศ",
-    "popularCountries": "ยอดนิยม"
+    "popularCountries": "ยอดนิยม",
+    "searchNoResults": "ไม่พบผลลัพธ์ ลองสะกดแบบอื่น"
   },
   "editProfile": {
     "title": "แก้ไขโปรไฟล์",
@@ -779,7 +795,7 @@
   "restrictionsEdit": {
     "title": "แก้ไขข้อจำกัด",
     "save": "บันทึกข้อจำกัด",
-    "notice": "ข้อมูลนี้ควบคุมคำเตือนความปลอดภัยทั้งหมด ระบุให้ถูกต้อง — การเปลี่ยนจะมีผลกับทุกเมนูทันที",
+    "notice": "คำเตือนความปลอดภัยทั้งหมดอิงจากรายการนี้ แตะบันทึกเพื่อใช้การเปลี่ยนแปลง",
     "avoidNone": "ยังไม่มีสิ่งที่หลีกเลี่ยง",
     "tapToRemove": "แตะ × เพื่อลบ",
     "searchPlaceholder": "ค้นหาส่วนผสม…",
@@ -982,7 +998,7 @@
     "consentBothRequired": "โปรดยินยอมทั้งสองข้อเพื่อเปิดการแจ้งเตือน",
     "consentConfirm": "ยินยอมและเปิดการแจ้งเตือน",
     "nudgeTitle": "เปิดการแจ้งเตือนรีวิวไหม?",
-    "nudgeBody": "เราจะเตือนให้รีวิวเมนูที่สั่งก่อนที่จะลืม\nและแจ้งเมื่อมีคนตอบสนองต่อรีวิวของคุณ"
+    "nudgeBody": "เราจะเตือนให้รีวิวเมนูที่สั่งก่อนที่จะลืม และแจ้งเมื่อมีคนตอบสนองต่อรีวิวของคุณ"
   },
   "notif": {
     "title": "ตั้งค่าการแจ้งเตือน",
@@ -1074,5 +1090,40 @@
     "watchToUnlock": "ดูโฆษณาเพื่อปลดล็อก ({{n}}/{{total}})",
     "rewardLimit": "วันนี้ครบแล้ว ลองใหม่พรุ่งนี้นะ",
     "rewardError": "บันทึกการรับชมไม่สำเร็จ กรุณาลองอีกครั้ง"
+  },
+  "reviewTime": {
+    "justNow": "เมื่อสักครู่",
+    "minutesAgo_one": "{{count}} นาทีที่แล้ว",
+    "minutesAgo_other": "{{count}} นาทีที่แล้ว",
+    "hoursAgo_one": "{{count}} ชั่วโมงที่แล้ว",
+    "hoursAgo_other": "{{count}} ชั่วโมงที่แล้ว",
+    "daysAgo_one": "{{count}} วันที่แล้ว",
+    "daysAgo_other": "{{count}} วันที่แล้ว",
+    "date": "{{day}} {{mon}} {{year}}",
+    "dateLong": "{{day}} {{mon}} {{year}}",
+    "monShort1": "ม.ค.",
+    "monShort2": "ก.พ.",
+    "monShort3": "มี.ค.",
+    "monShort4": "เม.ย.",
+    "monShort5": "พ.ค.",
+    "monShort6": "มิ.ย.",
+    "monShort7": "ก.ค.",
+    "monShort8": "ส.ค.",
+    "monShort9": "ก.ย.",
+    "monShort10": "ต.ค.",
+    "monShort11": "พ.ย.",
+    "monShort12": "ธ.ค.",
+    "monLong1": "มกราคม",
+    "monLong2": "กุมภาพันธ์",
+    "monLong3": "มีนาคม",
+    "monLong4": "เมษายน",
+    "monLong5": "พฤษภาคม",
+    "monLong6": "มิถุนายน",
+    "monLong7": "กรกฎาคม",
+    "monLong8": "สิงหาคม",
+    "monLong9": "กันยายน",
+    "monLong10": "ตุลาคม",
+    "monLong11": "พฤศจิกายน",
+    "monLong12": "ธันวาคม"
   }
 }

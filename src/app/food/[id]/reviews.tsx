@@ -13,7 +13,9 @@
 // early return을 훅 아래로 내리거나 래퍼 컴포넌트로 분리할 것.
 import * as React from 'react';
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
+import { useReviewTime } from '@/lib/reviewTime';
 import { Txt as Text } from '@/components/Txt';
 import { TopToastHost } from '@/components/TopToast';
 import Animated from 'react-native-reanimated';
@@ -362,6 +364,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
   // → 국적 코드 폴백 ③ countryCode null(미보유) → 국기 대신 중립 아바타.
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
+  const when = useReviewTime(review.createdAt, t); // KB-781 — 다음 표기 경계에 갱신
 
   return (
     /* P-182 ②: 카드 전체 탭 제거 — 요소별 액션만 */
@@ -382,7 +385,7 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
         <View style={styles.itemTopRight}>
           <Stars value={review.rating} size={14} />
           {onMore && (
-            <Pressable hitSlop={10} onPress={onMore}>
+            <Pressable testID="reviews-more" hitSlop={10} onPress={onMore}>
               <IconMore size={16} color={C.ink3} />
             </Pressable>
           )}
@@ -398,7 +401,8 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
       <ReviewBody review={review} t={t} />
 
       <View style={styles.itemFoot}>
-        <Text style={styles.when}>{relativeDate(review.createdAt, t)}</Text>
+        {/* KB-781: 7일 미만 상대 · 이상 = 날짜 + 연도(옛 "n주 전" 폐기) — 리뷰 카드 공용 규칙, 스크린리더 = 전체 날짜 */}
+        <Text style={styles.when} accessibilityLabel={when.a11y}>{when.label}</Text>
         <View style={styles.itemFootRight}>
           {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
           <HelpfulButton review={review} mine={mine} foodId={foodId} t={t} />
@@ -408,13 +412,6 @@ function ReviewItem({ review, t, mine, foodId, onMore }: { review: Review; t: TF
   );
 }
 
-function relativeDate(iso: string, t: TFn): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const days = Math.floor(ms / 86_400_000);
-  if (days <= 0) return t('reviews.today');
-  if (days < 7) return t('reviews.daysAgo', { count: days });
-  return t('reviews.weeksAgo', { count: Math.floor(days / 7) });
-}
 
 function Switch({ on }: { on: boolean }) {
   return (

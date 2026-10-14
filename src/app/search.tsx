@@ -14,7 +14,8 @@
  * the KB-25 RiskPill. Blank keywords never leave the client (server 400s).
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { FlatList, Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,6 +34,7 @@ import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { searchKeywordProps } from '@/lib/search/keywordPrivacy';
 import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard } from '@/lib/api/types';
@@ -98,10 +100,9 @@ export default function Search() {
   useEffect(() => {
     if (!submitted || search.isLoading || trackedFor.current === submitted) return;
     trackedFor.current = submitted;
-    track(
-      EVENTS.search_query,
-      searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length),
-    );
+    const kw = searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length);
+    track(EVENTS.search_query, kw);
+    airbridge.searchResults({ keyword: kw.keyword, resultCount: kw.result_count }); // KB-783 ⑦ — 같은 프라이버시 규칙(매칭값만)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted, search.isLoading]);
   const reset = () => {
@@ -160,7 +161,7 @@ export default function Search() {
           <View style={styles.secHead}>
             <Text style={styles.secTag}>{t('search.recent')}</Text>
             {recent.length > 0 && (
-              <Pressable onPress={clear} hitSlop={6}>
+              <Pressable testID="search-recent-clear-all" onPress={clear} hitSlop={6}>
                 <Text style={styles.clearAll}>{t('search.recentClearAll')}</Text>
               </Pressable>
             )}
@@ -174,10 +175,10 @@ export default function Search() {
               {recent.map((rterm) => (
                 <View key={rterm} style={styles.recentRow}>
                   <IconSearch size={16} color={C.ink3} />
-                  <Pressable style={styles.recentTap} onPress={() => doSearch(rterm)}>
+                  <Pressable testID="search-recent-term" style={styles.recentTap} onPress={() => doSearch(rterm)}>
                     <Text style={styles.recentText} numberOfLines={1}>{rterm}</Text>
                   </Pressable>
-                  <Pressable onPress={() => remove(rterm)} hitSlop={8}>
+                  <Pressable testID="search-recent-remove" onPress={() => remove(rterm)} hitSlop={8}>
                     <IconClose size={15} color={C.ink3} />
                   </Pressable>
                 </View>

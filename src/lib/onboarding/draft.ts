@@ -22,7 +22,8 @@ export interface OnboardingDraft {
   consented: boolean; // signup-time consent already given
   step: DraftStep; // resume point
   nickname: string;
-  nationality: string; // ISO 3166-1 alpha-2
+  /** ISO 3166-1 alpha-2 · null = 아직 안 고름(KB-773: 기기 지역으로 미리 고르지 않는다) */
+  nationality: string | null;
   language: string; // reader language (one of the 9)
   restrictions: string[] | null; // null = skipped (미설정)
   /** P-081: enum 단계. 구버전 draft는 number(0~10) — 로더가 근사 스냅 마이그레이션. null = skipped. */

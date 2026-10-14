@@ -13,8 +13,9 @@
  * Constitution v2.2.0: no emoji (SVG) — 유일 예외 맵기 표시의 🌶️.
  */
 import { RemoteImage } from '@/components/RemoteImage';
-import { useMemo, useCallback, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
-import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useEffect, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
+import { BackHandler, Keyboard, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import Animated, {
   cancelAnimation,
@@ -43,7 +44,7 @@ import {
   IconSearch,
   Input,
   RiskMark, IconArrowLeft } from '@/components';
-import { PepperOn, PepperOff } from '@/components/design4Assets';
+import { SpicePeppers } from '@/components/SpicePeppers';
 import { SuccessCheck } from '@/components/SuccessCheck';
 import { Spinner } from '@/components/Spinner';
 import { ProgressDots } from '@/components/ProgressDots';
@@ -55,7 +56,8 @@ import { POPULAR_DISHES, restrictionLabel } from '@/lib/onboarding/data';
 import { isSpiceLevel, SPICE_LEVEL_EXAMPLE, SPICE_LEVEL_LABEL, spiceRank, type SpiceLevel } from '@/lib/spice';
 import { wireToSpiceLevel } from '@/lib/api/spiceAdapter';
 import { SpiceLevelSlider } from '@/components/SpiceLevelSlider';
-import { fetchLegalText, type LegalDoc } from '@/lib/legalText';
+import { type LegalDoc } from '@/lib/legalText';
+import { LegalDocBody } from '@/components/LegalDocBody';
 import { FLAGS } from '@/lib/flags';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft, type DraftStep } from '@/lib/onboarding/draft';
 import { IngredientTileSections } from '@/components/IngredientTileSections';
@@ -69,6 +71,9 @@ import { submitOnboardingProfile, UNSET } from '@/lib/onboarding/submit';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { queryClient } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
+import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
+import { useDeeplinkGate } from '@/lib/deeplink';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
@@ -96,6 +101,7 @@ type ConsentKey = 'terms' | 'privacy' | 'safety';
 const CONSENT_KEYS: ConsentKey[] = ['terms', 'privacy', 'safety'];
 
 export default function Onboarding() {
+  useDeeplinkGate(); // KB-783: 이 화면 위에선 딥링크 보류(통과 뒤 1회 이동)
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -104,9 +110,10 @@ export default function Onboarding() {
   const [step, setStep] = useState<Step>('consent');
 
   // collected LOCALLY (KB-110) — nothing leaves the device until the final
-  // batch submit. Nationality defaults to the device region when recognized.
+  // batch submit. KB-773(QA A1-6): 국적은 **미리 고르지 않는다** — 기기 지역(한국 유심·지역 설정의 외국인 = KR)으로 사전 선택하면
+  // Continue만 눌러 잘못 고정되는 위험(실재현, 국적은 변경 불가). "휴대폰 기준" 카드는 추천으로만 보이고 사용자가 직접 고른다.
   // P-130: 닉네임·사진 = 자동 프로필(제출 시 생성) — 온보딩 UI 무노출
-  const [nationality, setNationality] = useState(() => deviceCountry() ?? 'US');
+  const [nationality, setNationality] = useState<string | null>(null);
   const [restrictions, setRestrictions] = useState<Set<string>>(new Set());
   // P-051 원칙 유지(화면 그대로 제출) · P-081: 내부 표현 = enum (와이어 변환은
   // spiceAdapter 격리). 기본 MEDIUM은 종전 기본 5(앵커)와 와이어 동일.
@@ -134,7 +141,7 @@ export default function Onboarding() {
       if (d && !hydrated.current) {
         if (d.consented) setConsents({ terms: true, privacy: true, safety: true });
         // P-130: 구버전 draft의 nickname·profileImageUrl은 무시(자동 프로필) — 무해 파싱
-        setNationality(d.nationality);
+        setNationality(d.nationality ?? null); // 고르기 전 저장된 draft = 미선택 그대로
         if (d.restrictions) setRestrictions(new Set(d.restrictions));
         // P-081: 구버전 draft(number)는 근사 스냅 마이그레이션, null(스킵)은 기본 MEDIUM 표시
         setSpice(d.spice == null ? 'MEDIUM' : isSpiceLevel(d.spice) ? d.spice : wireToSpiceLevel(d.spice));
@@ -203,6 +210,12 @@ export default function Onboarding() {
     setSubmitting(true);
     setSubmitError(false);
     try {
+      if (!nationality) {
+        // 국적 단계를 거치지 않고는 못 오지만(Continue 비활성), 혹시라도 미선택이면 제출하지 않고 국적으로 되돌린다
+        setSubmitting(false);
+        setStep('nationality');
+        return;
+      }
       await submitOnboardingProfile({
         nationality,
         language: lang,
@@ -221,6 +234,10 @@ export default function Onboarding() {
         avoid_skipped: skipped.restrictions,
         spice_skipped: spiceSkipped,
       });
+      // KB-783 ④: 온보딩 완료(게스트 포함) — 게스트 여부 = BE 토큰 유무(탭 계측과 같은 판별, 모름 = 생략)
+      void isRegisteredForAnalytics()
+        .then((reg) => airbridge.completeTutorial({ guest: reg == null ? null : !reg }))
+        .catch(() => airbridge.completeTutorial({ guest: null }));
       // P-144: user property — CSV 트리거(온보딩 제출 시 갱신). 재료명 아닌 개수·enum·코드만.
       setUserProps({
         user_info_country: nationality,
@@ -284,6 +301,18 @@ export default function Onboarding() {
 
   // KB-197→P-055: 안드 내비바 클리어런스는 공용 훅으로 승격 (전수 적용)
   const bottomInset = useBottomInset();
+  // KB-773(QA A1-7): 검색 스텝(국적·회피)에서 키보드가 열리면 CTA 푸터를 내린다 — SE에서 키보드 위로 올라온 푸터가 결과 영역을 0으로 만들었다.
+  // 진행은 키보드를 내리면(드래그·완료) 다시 보이는 푸터로. 다른 스텝은 무변.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const footerHidden = keyboardOpen && (step === 'nationality' || step === 'restrictions');
 
   // P-101(Q-23): 6스텝 CTA 공용 푸터 — 어느 스텝에서도 CTA 프레임(y·높이) 픽셀
   // 동일. Skip/노트는 CTA 아래 **고정 높이 슬롯**(없는 스텝은 빈 슬롯 유지).
@@ -298,7 +327,8 @@ export default function Onboarding() {
           note: t('onboarding.consentNote'),
         };
       case 'nationality':
-        return { label: t('onboarding.continue'), onPress: advance };
+        // KB-773: 사용자가 직접 고르기 전엔 비활성(사전 선택 없음)
+        return { label: t('onboarding.continue'), variant: nationality ? 'primary' : 'off', onPress: nationality ? advance : undefined };
       case 'presets':
         // P-203: 선택사항 — Continue(선택분 주입)·Skip(주입 없음)
         return {
@@ -416,6 +446,7 @@ export default function Onboarding() {
       {/* P-133: 시안 푸터 규격 — 패딩 12/20/34·헤어라인·CTA radius 16/패딩 17·primary 글로우 */}
       {/* KB-433 §3: FixedBottom — Default = outline(좌 119w) + primary(grow) /
           Variant2(스킵 없는 스텝) = primary 단독. 노트는 고정 슬롯 유지(CTA y 불변). */}
+      {!footerHidden && (
       <View testID="ob-footer" style={[styles.footer, { paddingBottom: Math.max(bottomInset, 20) + 14 }]}>
         <View style={styles.footerRow}>
           {footer.onSkip && (
@@ -426,7 +457,9 @@ export default function Onboarding() {
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Btn variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
+            {/* KB-784: testID 추가로 기존 react-hooks/refs 오탐(footer.onPress → finish → useSubmitGuard ref)이 이 줄에 다시 걸림 — 규칙 오탐, 동작 무관 */}
+            {/* eslint-disable-next-line react-hooks/refs */}
+            <Btn testID="ob-continue" variant={footer.variant ?? 'primary'} icon={footer.icon} onPress={footer.onPress}>
               {footer.label}
             </Btn>
           </View>
@@ -435,6 +468,7 @@ export default function Onboarding() {
           {footer.note ? <Text style={[styles.tag, { textAlign: 'center' }]}>{footer.note}</Text> : null}
         </View>
       </View>
+      )}
 
       {/* P-080: 약관 전문 바텀시트 — Agree 시 해당 행 체크 + 닫힘 */}
       <LegalSheet
@@ -483,20 +517,31 @@ function Consent({
       <View style={styles.consentRows}>
         {rows.map(({ k, label }) => (
           <View key={k} style={styles.consentRow}>
-            <Pressable style={styles.consentRowMain} onPress={() => onToggle(k)} hitSlop={6}>
+            {/* KB-773(QA A1-8): 체크 = 체크 상자만, **라벨·> 탭 = 전문 열기**(전엔 라벨도 체크만 해 전문은 작은 >로만 열렸다) */}
+            <Pressable
+              style={styles.consentCheckHit}
+              onPress={() => onToggle(k)}
+              hitSlop={6}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: consents[k] }}
+              accessibilityLabel={label}
+              testID={`consent-check-${k}`}
+            >
               <View style={[styles.check, consents[k] && styles.checkOn]}>{consents[k] && <IconCheck size={15} color="#fff" />}</View>
+            </Pressable>
+            <Pressable style={styles.consentRowMain} onPress={() => onOpenDoc(k)} accessibilityRole="button" testID={`consent-open-${k}`}>
               <Text style={styles.consentRowText} numberOfLines={2}>
                 {label} <Text style={styles.requiredTag}>({t('onboarding.requiredTag')})</Text>
               </Text>
-            </Pressable>
-            <Pressable onPress={() => onOpenDoc(k)} hitSlop={10} style={styles.consentChevron}>
-              <IconChevron size={16} color={C.ink3} />
+              <View style={styles.consentChevron}>
+                <IconChevron size={16} color={C.ink3} />
+              </View>
             </Pressable>
           </View>
         ))}
       </View>
       {/* P-130(v3): 전체 동의 = 개별 3행 아래(맨 밑) — 그 외 무변 */}
-      <Pressable style={[styles.consent, allAgreed && styles.consentAllOn, { marginTop: 12 }]} onPress={onToggleAll}>
+      <Pressable testID="consent-all" style={[styles.consent, allAgreed && styles.consentAllOn, { marginTop: 12 }]} onPress={onToggleAll}>
         <View style={[styles.check, allAgreed && styles.checkOn]}>{allAgreed && <IconCheck size={15} color="#fff" />}</View>
         <Text style={styles.consentText}>{t('onboarding.agreeAll')}</Text>
       </Pressable>
@@ -510,41 +555,19 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
   // 이 시트는 마운트 유지형(visible=doc) — open 전환 시 훅이 translateY 리셋.
   const swipe = useSheetSwipeDismiss(onClose, doc != null);
   const bottomInset = useBottomInset();
-  const [remote, setRemote] = useState<{ doc: string; text: string } | null>(null);
-  // KB-603 3R 스윕: 실패도 **어느 문서의 것인지** 달아 저장(remote.doc과 같은 규칙) — 이전 문서의 늦은 fetch 실패가 다음
-  // 문서에 실패 화면을 붙이지 않는다. 표시는 현재 doc과 같을 때만.
-  const [errorDoc, setErrorDoc] = useState<LegalDoc | null>(null);
-  const error = errorDoc != null && errorDoc === doc;
   const isRemote = doc === 'terms' || doc === 'privacy';
-
-  // KB-603: 문서가 바뀌면 이전 결과·에러를 지운다 — 렌더 중 이전값 비교(React 공식 패턴). fetch(부수효과)만 effect.
-  const [prevDoc, setPrevDoc] = useState(doc);
-  if (doc !== prevDoc) {
-    setPrevDoc(doc);
-    setErrorDoc(null);
-    setRemote(null);
-  }
-  const load = useCallback((d: LegalDoc) => {
-    fetchLegalText(d)
-      .then((text) => setRemote({ doc: d, text }))
-      .catch(() => setErrorDoc(d));
-  }, []);
-  useEffect(() => {
-    if (doc === 'terms' || doc === 'privacy') load(doc);
-  }, [doc, load]);
 
   const title =
     doc === 'terms' ? t('onboarding.termsOfService') : doc === 'privacy' ? t('onboarding.privacyPolicy') : t('profile.safetyNotice');
   // 안전 고지 = 구 consent 화면 문구 재사용 (아이콘 나열만 삭제 — 스펙)
   const safetyText = [t('onboarding.consentGuidance'), t('onboarding.consentVary'), t('onboarding.consentYours')].join('\n\n');
-  const remoteReady = remote != null && remote.doc === doc;
 
   return (
     <Modal visible={doc != null} transparent animationType="slide" onRequestClose={onClose}>
       {/* Codex #98 3R P2: Modal = 안드 별도 네이티브 루트 — 자체 GestureHandlerRootView 필수 */}
       <GestureHandlerRootView style={{ flex: 1 }}>
       <Animated.View style={[styles.sheetScrim, swipe.dimStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable testID="legal-sheet-backdrop" style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
       <Animated.View style={[styles.legalSheet, { paddingBottom: bottomInset + 16 }, swipe.sheetStyle]} onLayout={swipe.onSheetLayout}>
         <GestureDetector gesture={swipe.gesture}>
@@ -557,25 +580,12 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
         </GestureDetector>
         <ScrollView keyboardDismissMode="on-drag" style={styles.legalScroll} showsVerticalScrollIndicator>
           {isRemote ? (
-            error ? (
-              <View style={styles.legalError}>
-                <Text style={styles.legalErrorText}>{t('onboarding.legalLoadError')}</Text>
-                <Pressable onPress={() => { if (!doc) return; setErrorDoc(null); setRemote(null); load(doc as LegalDoc); }} hitSlop={8}>
-                  <Text style={styles.legalRetry}>{t('common.retry')}</Text>
-                </Pressable>
-              </View>
-            ) : remoteReady ? (
-              <Text style={styles.legalText}>{remote.text}</Text>
-            ) : (
-              <View style={styles.legalLoading}>
-                <ActivityIndicator color={C.primary} />
-              </View>
-            )
+            <LegalDocBody doc={doc as LegalDoc} />
           ) : (
             <Text style={styles.legalText}>{safetyText}</Text>
           )}
         </ScrollView>
-        <Btn onPress={onAgree}>{t('onboarding.agree')}</Btn>
+        <Btn testID="legal-agree" onPress={onAgree}>{t('onboarding.agree')}</Btn>
       </Animated.View>
       </GestureHandlerRootView>
     </Modal>
@@ -587,7 +597,7 @@ function LegalSheet({ doc, onAgree, onClose, t }: { doc: ConsentKey | null; onAg
  *  헤더·검색 고정 + 리스트만 스크롤 · 감지국 핀 카드(기본 선택 — 시안 결정:
  *  대부분 유저는 Continue만) · quiet 불변 안내 · 행 62 고정(리플로 방지) ·
  *  검색 시 핀/안내 숨김 인플레이스 필터. 국기 = 이모지(26pt/34 슬롯). */
-function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (code: string) => void; t: TFn }) {
+function Nationality({ selected, onSelect, t }: { selected: string | null; onSelect: (code: string) => void; t: TFn }) {
   const [q, setQ] = useState('');
   const [searchFocus, setSearchFocus] = useState(false);
   // KB-657: 호출 결과를 그대로 메모 deps에 두면 컴파일러가 "나중에 변이될 수 있는 값"으로 보고 메모를 버린다 — 마운트 1회
@@ -702,6 +712,8 @@ function Nationality({ selected, onSelect, t }: { selected: string; onSelect: (c
           {/* P-333 동류(9/8 판정): 홀수면 마지막 타일이 47%+grow로 풀폭 확장 — 자리표시자로 2열 유지 */}
           {list.length % 2 === 1 && <View style={styles.natTilePad} testID="nat-grid-pad" />}
         </View>
+        {/* KB-773(QA A1-7): 검색 결과 없음 안내(전엔 빈 화면) */}
+        {!!query && list.length === 0 && <Text style={styles.searchEmpty} testID="nat-search-empty">{t('onboarding.searchNoResults')}</Text>}
       </ScrollView>
     </View>
   );
@@ -774,7 +786,8 @@ function Restrictions({ selected, onToggle, onClear, t }: { selected: string[]; 
         )}
       </View>
       {/* P-150 ①: 섹션+타일 그리드 = 공용 컴포넌트(프로필 회피 수정과 공유) */}
-      <IngredientTileSections selected={sel} onToggle={onToggle} query={query} />
+      {/* KB-773(QA A1-7): 검색 결과 없음 안내 — 공용 컴포넌트의 emptyText(컴포넌트는 무변) */}
+      <IngredientTileSections selected={sel} onToggle={onToggle} query={query} emptyText={t('onboarding.searchNoResults')} />
     </View>
   );
 }
@@ -791,12 +804,9 @@ function Spice({ level, setLevel, onDragStateChange, t }: { level: SpiceLevel; s
       {/* KB-433 §4-②(4150:14286): 고추 SVG 20 × 점등 rank(0~4) + 레벨명 20/700 + 설명 12/400
           (이모지·kids 배지·캐러셀 = 시안 부재로 소멸 — 이모지 예외 종료) */}
       <View style={{ alignItems: 'center', gap: 4, marginTop: 42 }}>{/* A-SP-01/03(KB-486): ObTitle→고추 60(mb18+42) */}
+        {/* KB-773(QA A1-3): 고추 4개 → 공용 SpicePeppers 5개(음식 상세와 같은 규칙 — 5단계 슬라이더·설명 "five heat levels"와 일치) */}
         <View style={styles.chiliRow}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <View key={i} testID={`spice-pepper-${i}-${i < rank ? 'on' : 'off'}`}>
-              {i < rank ? <PepperOn height={20} /> : <PepperOff height={20} />}
-            </View>
-          ))}
+          <SpicePeppers rank={rank} size={20} />
         </View>
         <Text style={styles.bandName}>{t(SPICE_LEVEL_LABEL[level])}</Text>
         <Text style={styles.spiceDesc}>{t(`onboarding.spiceDesc${rank}`)}</Text>
@@ -933,8 +943,11 @@ const styles = StyleSheet.create({
   consentText: { flex: 1, fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 20 },
   consentRows: { marginTop: 12, gap: 2 },
   consentRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 9 },
+  // KB-773: 체크 상자 = 따로 탭(32 상자 + hitSlop 6 ≈ 44) — 음수 여백으로 체크·라벨의 보이는 자리는 종전과 같게
+  consentCheckHit: { width: 32, height: 32, marginLeft: -6, alignItems: 'center', justifyContent: 'center' },
   consentRowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 11 },
   consentRowText: { flex: 1, fontFamily: font.body, fontSize: 14, color: C.ink, lineHeight: 19 },
+  searchEmpty: { fontFamily: font.body, fontSize: 13.5, lineHeight: 19, color: C.ink3, paddingVertical: 16, textAlign: 'center' }, // KB-773
   requiredTag: { fontFamily: font.body, fontSize: 12.5, color: C.ink3 },
   consentChevron: { padding: 4 },
 
@@ -987,10 +1000,6 @@ const styles = StyleSheet.create({
   sheetTitle: { fontFamily: font.display, fontSize: 18, color: C.ink },
   legalScroll: { flexGrow: 0, minHeight: 180, borderWidth: 1, borderColor: C.hair, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, backgroundColor: C.surface },
   legalText: { fontFamily: font.body, fontSize: 13, color: C.ink, lineHeight: 20, paddingVertical: 10 },
-  legalLoading: { paddingVertical: 40, alignItems: 'center' },
-  legalError: { paddingVertical: 30, alignItems: 'center', gap: 10 },
-  legalErrorText: { fontFamily: font.body, fontSize: 13, color: C.ink2, textAlign: 'center' },
-  legalRetry: { fontFamily: font.bodyBold, fontSize: 13.5, color: C.primary, padding: 4 },
 
   linkbtn: { fontFamily: font.bodyBold, fontSize: 14, color: C.ink2, textAlign: 'center', padding: 6 },
 });

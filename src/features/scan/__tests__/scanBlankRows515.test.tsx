@@ -11,6 +11,7 @@ jest.mock('react-native-reanimated', () => {
   const { View: V } = require('react-native');
   return {
     __esModule: true,
+    useReducedMotion: () => false, // KB-772: Shimmer·Spinner
     default: { View: V, createAnimatedComponent: (c: unknown) => c },
     useSharedValue: (v: unknown) => ({ value: v }),
     useAnimatedStyle: () => ({}),

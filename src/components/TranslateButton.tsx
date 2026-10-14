@@ -7,7 +7,8 @@
  *   known → "Translated from {그 언어 이름}", unknown → "Translated".
  */
 import * as React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { font } from '@/lib/theme';

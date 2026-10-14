@@ -8,7 +8,8 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { ActivityIndicator, Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, Modal, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
@@ -185,7 +186,7 @@ export function PlacePickerSheet({
   // Codex #195: resultsOnly(주문 장소 PATCH — placeId 필수)는 placeId 없는 결과를 **렌더하지 않는다**(골라도 보낼 수 없는 행 금지)
   const results = (active.data ?? []).filter((p) => !resultsOnly || !!p.placeId);
   // 프리즈 픽스: 닫힘·확정 전부 키보드 선해제 경유(위 runAfterKeyboardHidden 참조)
-  const kbLift = useKeyboardLift(); // KB-768: 안드 시트 하단을 키보드 위로(훅은 아래 이른 반환 전)
+  const kbLift = useKeyboardLift({ dismissBar: true }); // KB-768: 안드 시트 하단을 키보드·내리기 바 위로(훅은 아래 이른 반환 전)
   const close = () => runAfterKeyboardHidden(onClose);
   const pick = (p: ReviewPlaceTag) => runAfterKeyboardHidden(() => onPick(p));
   if (!open) return null;
@@ -237,7 +238,7 @@ export function PlacePickerSheet({
               <Text style={styles.noResults} testID="place-no-results">{t('review.placeNoResults')}</Text>
             ) : (
               results.map((p) => (
-                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`}>
+                <Pressable key={`${p.name}-${p.latitude ?? ''}`} style={styles.resultRow} onPress={() => pick(toTag(p))} testID={`place-pick-${p.name}`} uiTarget="place-pick">{/* KB-784: 장소명(자유 텍스트) = 계측 target에서 제외 */}
                   <IconMapPin size={12} color={C.ink3} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.resultText} numberOfLines={1}>{p.name}</Text>

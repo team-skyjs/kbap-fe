@@ -15,15 +15,18 @@
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
 import { useCallback, useEffect, useRef, useState, useLayoutEffect } from 'react';
-import { ActivityIndicator, Alert, AppState, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Txt as Text } from '@/components/Txt';
-import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
-import { UnlockActions } from '@/features/ads/RewardedUnlock';
+import { airbridge } from '@/lib/airbridge';
+import { UnlockActions, useCanWatchAd } from '@/features/ads/RewardedUnlock';
+import { useSubmitGuard } from '@/lib/useSubmitGuard';
 import { CameraView, useCameraPermissions, type CameraType, type CameraOrientation } from 'expo-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoomPreset } from '@/features/scan/cameraZoom';
@@ -34,6 +37,7 @@ import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib
 import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
+import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
 import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
@@ -198,6 +202,17 @@ export default function Scan() {
     quotaRef.current = me?.scanQuota;
   });
   const disprovenQuota = useRef<unknown>(undefined);
+  // KB-759 방어 2: 광고 해제 경로의 티켓 재발급 상태 — 'opening'(요청 중) · 'failed'(실패 → 다시 시도 버튼). 조용히 삼키지 않는다.
+  // /review 2: 상태는 **그 상태를 띄운 쿼터 에러 객체**에 묶는다 — 화면이 카메라로 가거나 다른 에러(fail·새 쿼터 잠금)로 바뀌면
+  // 객체가 달라져 자동으로 'idle'(리셋 호출을 경로마다 흩뿌리지 않는다). 겹친 preflight의 늦은 실패도 지난 객체에 묶여 안 보인다.
+  const [unlock, setUnlock] = useState<{ kind: 'opening' | 'failed'; forError: object } | null>(null);
+  const unlockState: 'idle' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
+  const errorRef = useRef(error);
+  useLayoutEffect(() => {
+    errorRef.current = error;
+  });
+  const { busy: unlockRetrying, run: runUnlockRetry } = useSubmitGuard(); // /review 3: 재시도 = 공용 제출 가드(CLAUDE.md)
+  const canWatchAd = useCanWatchAd(); // /review 4: 광고 버튼이 실제로 있을 때만 "광고 보기"를 약속하는 문구
   // Codex #159 P1: 쿼터 잠금은 촬영 전(카메라)·에러 화면에만 — 완료된 스캔 결과·진행 중 스캔을
   // 복귀 포커스로 덮지 않는다(상세 → 뒤로가기). 서버 티켓 확인은 그대로 보낸다.
   const phaseRef = useRef(phase);
@@ -217,21 +232,49 @@ export default function Scan() {
   useEffect(() => {
     if (phase === 'camera' && !isGuest && scanV2Enabled()) lockFromProfile();
   }, [phase, me?.scanQuota, isGuest, lockFromProfile]);
-  const preflight = useCallback(async () => {
+  // KB-759(QA 로그 판독): 해제 응답 뒤 preflight가 쥔 quota는 프로필 재조회 전의 **옛 스냅샷**(소진)일 수 있고, 복원이 티켓 200에만
+  // 기대고 있었다(실패는 catch가 조용히 삼킴 → 제한 화면에 광고 버튼만 사라진 채 잔류). `unlocked` = 서버가 scanUnlocked:true를 돌려준 직후:
+  // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
+  const preflight = useCallback(async (opts?: { unlocked?: boolean }) => {
     if (!scanV2Enabled()) return;
     const quota = quotaRef.current;
-    lockFromProfile();
+    const unlocked = opts?.unlocked === true;
+    const forError = errorRef.current; // 해제 경로 = 지금 떠 있는 쿼터 에러에 묶는다
+    const prevDisproven = disprovenQuota.current;
+    if (unlocked) {
+      disprovenQuota.current = quota;
+      if (forError) setUnlock({ kind: 'opening', forError });
+    } else {
+      lockFromProfile();
+    }
+    // KB-759 진단(개발 번들만): 잠금 상태·티켓 결과를 Metro 로그로
+    if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, unlocked, quota }));
     try {
       preTicket.current = await issueScanTicket();
+      if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
-      if (quotaLockRef.current) {
-        // 리뷰 작성 후 복귀(시나리오 C) — 해금 반영해 카메라 복원(잠금이었을 때만)
+      if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
+      if (quotaLockRef.current || unlocked) {
+        // 리뷰 작성 후 복귀(시나리오 C)·광고 해제 — 해금 반영해 카메라 복원
         quotaLockRef.current = false;
+        setUnlock(null);
         setError(null);
         setPhase('camera');
       }
     } catch (e) {
       const code = (e as { code?: string })?.code;
+      if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e), JSON.stringify({ unlocked }));
+      if (unlocked && code !== 'SCAN-004') {
+        // 해제는 됐는데 카메라를 못 열었다(네트워크 등) — 제한 화면을 "해제됨 · 다시 시도"로. 늦은 실패는 지난 에러 객체에 묶여 안 보인다
+        if (forError) setUnlock({ kind: 'failed', forError });
+        return;
+      }
+      if (unlocked) {
+        // /review 1: 해제 응답을 받았는데 티켓은 아직 004(서버 해제가 티켓 경로에 안 보임) — 'failed'로 묶지 않고 기존 004 처리로:
+        // 반증 되돌림(프로필 잠금 정상화 — 무한 403 재시도 방지) + 해제 상태 해제 → 제한 화면·리뷰/광고 CTA 복원
+        disprovenQuota.current = prevDisproven;
+        setUnlock(null);
+      }
       if (code === 'SCAN-004') {
         preTicket.current = null;
         if (!canLockQuota()) return;
@@ -267,6 +310,19 @@ export default function Scan() {
   const [unmatchedOpen, setUnmatchedOpen] = useState(false); // KB-140 unmatched 안내
   // P-161: 다시찍기 확인 — 실수 탭 1회에 결과·담은 항목 통째 유실 방지(항상 노출)
   const [retakeConfirm, setRetakeConfirm] = useState(false);
+  // KB-769: 담은 항목이 있는 결과에서 떠나는 모든 길(헤더 ‹·Android 하드웨어 back·iOS 스와이프)을 다시찍기와 같은 확인 창으로.
+  // 포커스일 때만 — 주문 카드(scan-order)의 완료 = dismissAll이 아래에 깔린 이 화면을 지울 때 확인 창이 뜨면 안 된다.
+  const isFocused = useIsFocused();
+  const leave = useLeaveConfirm(isFocused && phase === 'result' && cartCount > 0);
+  // KB-769: 미등록 안내는 Modal이 아닌 오버레이라 하드웨어 back이 화면째 닫았다 — 열려 있으면 back = 안내만 닫기
+  useEffect(() => {
+    if (!unmatchedOpen) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setUnmatchedOpen(false);
+      return true;
+    });
+    return () => sub.remove();
+  }, [unmatchedOpen]);
   // P-192: 푸시 프라이머 — 스캔 완료 도달 시 미응답자만 1회(기록 = pushAdapter).
   // P-267(KB-377): 단독 effect 폐지 — 코치마크와 **직렬화**(아래 결과 진입 effect가
   // 순차 판정). 동시 present = 네이티브 fullScreenModal 위 RN Modal 2개 같은 커밋
@@ -385,6 +441,9 @@ export default function Scan() {
         // 세면 107개 스캔이 0으로 발화(8/18 실측) — 전체 결과 수(매칭+미매칭)로 교정.
         // v1은 items가 본 경로라 현행 합산식으로도 동일(photoOnly는 idx=null 보충분).
         track(EVENTS.scan_complete, { success: true, degraded: res.degraded, item_count: res.items.length + res.photoOnly.length });
+        // KB-783 ⑥: 스캔 1회 소모(쿼터 = 스캔 전 서버 스냅샷 그대로 전달) + 결과 목록(인식 메뉴 수)
+        airbridge.scanSpend(quotaRef.current);
+        airbridge.scanResults(res.items.length + res.photoOnly.length);
         setItems(res.items);
         setPhotoOnly(res.photoOnly);
         setDegraded(res.degraded);
@@ -729,7 +788,7 @@ export default function Scan() {
           <ScrollView contentContainerStyle={{ paddingBottom: bottom + 120 }} showsVerticalScrollIndicator={false}>
             {showNudge && (
               <Animated.View entering={FadeInDown.springify().damping(spring.sheet.damping).stiffness(spring.sheet.stiffness)} style={{ paddingHorizontal: 16, paddingTop: 10 }}>
-                <Pressable style={styles.nudgeCard} onPress={() => router.push('/profile/restrictions' as Href)}>
+                <Pressable testID="scan-nudge-restrictions" style={styles.nudgeCard} onPress={() => router.push('/profile/restrictions' as Href)}>
                   <View style={styles.nudgeIc}>
                     <IconBulb size={18} color="#fff" />
                   </View>
@@ -737,7 +796,7 @@ export default function Scan() {
                     <Text style={styles.nudgeCardStrong}>{t('scan.nudgeAction')}</Text>
                     {t('scan.nudgeRest')}
                   </Text>
-                  <Pressable hitSlop={8} onPress={() => { dismissNudge(); setNudgeHidden(true); }}>
+                  <Pressable testID="scan-nudge-dismiss" hitSlop={8} onPress={() => { dismissNudge(); setNudgeHidden(true); }}>
                     <IconClose size={14} color={C.ink3} />
                   </Pressable>
                 </Pressable>
@@ -755,7 +814,7 @@ export default function Scan() {
               currency={currency}
               fx={fx}
               cart={cart}
-              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); bumpCart(d.itemId, 1); }}
+              onAdd={(d) => { track(EVENTS.scan_item_add, { risk: d.risk }); airbridge.addToCart({ id: d.foodId ?? `menu:${d.itemId}`, name: d.koreanName ?? d.rawMenuName }); bumpCart(d.itemId, 1); }}
               onRemove={(d) => { track(EVENTS.scan_item_remove, { risk: d.risk }); bumpCart(d.itemId, -1); }}
               onOpen={openDish}
               onMarkPress={() => setCoachOpen(true)} // P-134 재열람 — 캡슐 철거 후 리스트 표면
@@ -774,7 +833,7 @@ export default function Scan() {
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
         {/* §1-1: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
-        <ActionSheet
+        <ActionSheet testID="scan-sort"
           open={sortSheet}
           title={t('reviews.sortTitle')}
           items={(['menu', 'priceDesc', 'priceAsc'] as ResultSortMode[]).map((m) => ({
@@ -800,27 +859,29 @@ export default function Scan() {
         />
         <UnmatchedNotice open={unmatchedOpen} onClose={() => setUnmatchedOpen(false)} t={t} />
         {/* P-161: 다시찍기 확인 — 커뮤니티 이탈 모달 문법(라운드 26 카드) 재사용 */}
-        <Modal visible={retakeConfirm} transparent animationType="fade" onRequestClose={() => setRetakeConfirm(false)}>
+        {/* KB-769: 같은 카드를 이탈 확인에도 — 제목·확인 버튼만 leave 문구, 본문은 담은 개수 문구 재사용 */}
+        <Modal visible={retakeConfirm || leave.modal.visible} transparent animationType="fade" onRequestClose={() => (retakeConfirm ? setRetakeConfirm(false) : leave.modal.onKeep())}>
           <View style={styles.confirmBackdrop}>
-            <View style={styles.confirmCard} testID="retake-confirm">
-              <Text style={styles.confirmTitle}>{t('scan.retakeTitle')}</Text>
+            <View style={styles.confirmCard} testID={retakeConfirm ? 'retake-confirm' : 'scan-leave-confirm'}>
+              <Text style={styles.confirmTitle}>{t(retakeConfirm ? 'scan.retakeTitle' : 'scan.leaveTitle')}</Text>
               <Text style={styles.confirmBody}>
                 {cartCount > 0 ? t('scan.retakeBodyWithCart', { count: cartCount }) : t('scan.retakeBody')}
               </Text>
               <View style={{ gap: 9, marginTop: 6 }}>
-                <Btn variant="ghost" onPress={() => setRetakeConfirm(false)}>
+                <Btn variant="ghost" onPress={() => (retakeConfirm ? setRetakeConfirm(false) : leave.modal.onKeep())} testID="scan-confirm-cancel">
                   {t('profile.delete.cancel')}
                 </Btn>
                 {/* P-175: destructive도 보더 버튼 프레임 — 텍스트 행이 버튼처럼 안 보이던 지적 */}
                 <Btn
                   variant="dangerGhost"
                   onPress={() => {
+                    if (!retakeConfirm) { leave.modal.onDiscard(); return; } // KB-769: 막았던 이동(back·스와이프)을 그대로 진행
                     setRetakeConfirm(false);
                     setItems([]); setPhotoOnly([]); setDishes([]); setPhoto(null); setCart(new Map()); setSafeOnly(false); setSortMode('menu'); setPhase('camera'); // P-354: 컨트롤은 스캔 세션 한정
                   }}
-                  testID="retake-go"
+                  testID={retakeConfirm ? 'retake-go' : 'scan-leave-go'}
                 >
-                  {t('scan.retakeConfirm')}
+                  {t(retakeConfirm ? 'scan.retakeConfirm' : 'scan.leaveConfirm')}
                 </Btn>
               </View>
             </View>
@@ -871,8 +932,8 @@ export default function Scan() {
         {GateSheet}
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
-        <Text style={styles.errStage}>{stage === 'quota' ? t('scan.quotaTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(ERROR_MSG[stage])}</Text>
+        <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
+        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
@@ -883,10 +944,17 @@ export default function Scan() {
           {/* P-250: quota = 리뷰 작성하기(픽커) + 나중에 · outage = 다시 시도(새 티켓
               발급부터 — postScan이 시도마다 신규 발급) + 나중에 · processing = 재촬영만
               (새 티켓 자동 재발급 금지 — 재촬영 = 사용자 주도 새 시도) */}
-          {stage === 'quota' ? (
+          {stage === 'quota' && unlockState !== 'idle' ? (
             <>
-              {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight(새 티켓) → 카메라 복원(시나리오 C와 같은 경로) */}
-              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => void preflight()} onClose={() => router.back()} />
+              {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
+              {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t('common.retry')}</Btn>
+              <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
+            </>
+          ) : stage === 'quota' ? (
+            <>
+              {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (__DEV__) console.log('[scan] ad unlock → preflight'); void preflight({ unlocked: true }); }} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
@@ -942,7 +1010,7 @@ export default function Scan() {
           <Text style={styles.launcherTitle}>{t('scan.cameraTitle')}</Text>
           <Text style={styles.launcherHint}>{t('scan.launcherHint')}</Text>
           <View style={{ alignSelf: 'stretch', marginTop: 10 }} testID="sys-capture-wrap">
-            <Btn onPress={() => void captureViaSystem()} disabled={capturing}>
+            <Btn testID="scan-system-camera" onPress={() => void captureViaSystem()} disabled={capturing}>
               {t('photo.take')}
             </Btn>
           </View>
@@ -991,7 +1059,7 @@ export default function Scan() {
             <View style={styles.permAlert}>
               <Text style={styles.permAlertTitle}>{t('scan.permissionTitle')}</Text>
               <Text style={[styles.permAlertBody, { marginBottom: 13 }]}>{t('scan.permissionSettingsBody')}</Text>
-              <Btn onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
+              <Btn testID="scan-perm-settings" onPress={() => { track(EVENTS.scan_permission, { state: 'settings_open' }); void openAppSettings(); }}>
                 {t('photo.openSettings')}
               </Btn>
             </View>
@@ -1003,7 +1071,7 @@ export default function Scan() {
             <Text style={styles.permBody}>{t('scan.permissionBody')}</Text>
             <View style={{ width: '100%', maxWidth: 280 }}>
               {/* P-214: 권한 퍼널 — 요청 후 결과(grant|deny) 구분 */}
-              <Btn onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
+              <Btn testID="scan-perm-grant" onPress={() => void requestPermission().then((r) => track(EVENTS.scan_permission, { state: r?.granted ? 'grant' : 'deny' }))}>
                 {t('scan.grant')}
               </Btn>
             </View>
@@ -1046,20 +1114,20 @@ export default function Scan() {
         {/* P-136 D: 방향별 힌트 — 세로 = 줌·전체 담기 / 가로 = 와이드 메뉴판 */}
         <Text style={styles.hint}>{t(uiDeg === 0 ? 'scan.cameraHintPortrait' : 'scan.cameraHintLandscape')}</Text>
         <View style={styles.camRow}>
-          <Pressable style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
+          <Pressable testID="scan-gallery" style={[styles.sideBtn, capturing && styles.shutterOff]} onPress={pickFromGallery} disabled={capturing} hitSlop={8} accessibilityLabel={t('scan.gallery')}>
             <Animated.View style={uiRotate}>
               <IconGallery size={22} color="#fff" />
             </Animated.View>
           </Pressable>
           {granted ? (
-            <Pressable style={[styles.shutter, capturing && styles.shutterOff]} onPress={capture} disabled={capturing}>
+            <Pressable testID="scan-shutter" style={[styles.shutter, capturing && styles.shutterOff]} onPress={capture} disabled={capturing}>
               <View style={styles.shutterInner} />
             </Pressable>
           ) : (
             <View style={styles.shutterSpacer} />
           )}
           {granted ? (
-            <Pressable style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
+            <Pressable testID="scan-flip" style={styles.sideBtn} onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))} hitSlop={8} accessibilityLabel={t('scan.flip')}>
               <Animated.View style={uiRotate}>
                 <IconFlip size={22} color="#fff" />
               </Animated.View>
@@ -1111,13 +1179,13 @@ function ScanSweepOverlay() {
 function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => void; t: (k: string) => string }) {
   if (!open) return null;
   return (
-    <Pressable style={styles.noticeBackdrop} onPress={onClose}>
-      <Pressable style={styles.noticeCard} onPress={() => {}}>
+    <Pressable testID="unmatched-backdrop" style={styles.noticeBackdrop} onPress={onClose}>
+      <Pressable testID="unmatched-card" style={styles.noticeCard} noTrack onPress={() => {}}>
         <RiskMark state="unable" size={30} />
         <Text style={styles.noticeTitle}>{t('scan.unmatchedSheetTitle')}</Text>
         <Text style={styles.noticeBody}>{t('scan.unmatchedSheetBody')}</Text>
         <View style={{ alignSelf: 'stretch' }}>
-          <Btn variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
+          <Btn testID="unmatched-gotit" variant="ghost" onPress={onClose}>{t('common.gotIt')}</Btn>
         </View>
       </Pressable>
     </Pressable>
@@ -1127,7 +1195,7 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
 function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void; onMarkPress?: () => void }) {
   const tone = riskTone[dish.risk];
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable testID="dishrow" style={styles.row} onPress={onPress}>
       {/* P-134: 마크 탭 = 코치마크 재열람 (마크 데모 대체) */}
       <Pressable onPress={onMarkPress} hitSlop={8} testID="dishrow-mark">
         <RiskMark state={dish.risk} size={24} />

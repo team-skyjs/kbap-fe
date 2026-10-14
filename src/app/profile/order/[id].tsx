@@ -16,10 +16,12 @@
  *   "Write a review" 제거 — 리뷰 진입은 항목 행 → 음식 상세.
  */
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { formatCalendarDate } from '@/lib/reviewTime';
 import { color as C } from '@/lib/theme';
 import * as ImagePicker from 'expo-image-picker';
 import { ActionSheet, SubHeader } from '@/components';
@@ -29,7 +31,7 @@ import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { SkeletonOrderDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { PhotoViewer } from '@/components/PhotoViewer';
-import { orderItemImage, orderLocationLabel, orderPlaceLabel, useOrderDetail, type OrderItem } from '@/lib/data/useOrders';
+import { orderItemImage, orderLocationLabel, orderPlaceLabel, useOrderDetail, type OrderItem, orderItemName } from '@/lib/data/useOrders';
 import { useResetOrderItemImage, useSetOrderItemImage, useUpdateOrderPlace } from '@/lib/data/useOrderEdit';
 import { choosePhotoSource } from '@/lib/data/profileImage';
 import { useSubmitGuard } from '@/lib/useSubmitGuard';
@@ -40,6 +42,7 @@ import { lastShareErrorHint, saveCardToPhotos, shareCardToStory, storyShareAvail
 import { showTopToast } from '@/components/topToastStore';
 import { openAppSettings } from '@/lib/openExternal';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { useMe } from '@/lib/data/useMe';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { convertKrw, currencyForCountry } from '@/lib/exchange';
@@ -109,13 +112,14 @@ export default function OrderDetailScreen() {
   // 사용자가 본 것과 저장된 것이 달라진다)
   // Codex 8R: thumbnails는 준비중·무사진 항목에 **서버 대체 이미지**가 섞인다(계약 명시) —
   // 카드엔 실사진만(9/14 예진 ①: 빈 칸·기본 이미지로 채우지 않는다). 판별은 items.ready(계약)로.
+  const headerDate = q.data ? formatCalendarDate(q.data.orderedAt, t) : { label: '', a11y: '' };
   const cardPhotos = q.data ? sharePhotos(q.data.items) : [];
   const shareCard = q.data
     ? {
         photos: cardPhotos,
         placeName: orderPlaceLabel(q.data),
         menuLine: shareMenuLine(
-          q.data.items.map((it) => it.menuName),
+          q.data.items.map(orderItemName), // KB-775: 사용자 언어 이름(없으면 주문한 한국어)
           (count) => t('myFoods.shareMenuMore', { count }),
         ),
         // 도시는 place.address(회원 언어 해석)가 올 때만 — roadAddress는 한국어라
@@ -164,6 +168,7 @@ export default function OrderDetailScreen() {
     const r = await saveCardToPhotos(exportRef);
     shareBusy.current = false;
     track(EVENTS.order_share_save, { ...shareProps, result: r });
+    if (r === 'success') airbridge.share('save'); // KB-783 ⑬ — 성공만
     if (r === 'success') return showTopToast(t('myFoods.shareSaved'));
     // 권한 거부 = 안내 + 설정 열기(P-381 openAppSettings 재사용 — 앱이 직접 못 연다).
     // 네이티브 Alert가 아니라 공용 시트 — 이 화면은 P-355로 Alert를 걷어낸 자리다.
@@ -181,6 +186,7 @@ export default function OrderDetailScreen() {
     const r = await shareCardToStory(exportRef);
     shareBusy.current = false;
     track(EVENTS.order_share_story, { ...shareProps, result: r });
+    if (r === 'success') airbridge.share('instagram_story'); // KB-783 ⑬ — 성공만
     if (r === 'success') return;
     // 미설치는 앱스토어로 보내지 않는다(발주 고정) — 문구만
     showTopToast(
@@ -196,7 +202,8 @@ export default function OrderDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <SubHeader title={t('profile.myFoods')} onBack={() => router.back()} />
+      {/* KB-775: 헤더 = 주문 날짜(KB-781 날짜 패턴 — 연도 포함·앱 언어, 가운데 점 0). 예전 "My Foods"는 오표기. 로딩·실패 중엔 빈 제목 */}
+      <SubHeader title={headerDate.label} onBack={() => router.back()} />
       {q.isError ? (
         <QueryErrorBlock error={q.error} onRetry={() => void q.refetch()} onGoBack={() => router.back()} />
       ) : !q.data ? (
@@ -290,7 +297,7 @@ export default function OrderDetailScreen() {
                   )}
                 </Pressable>
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                  <Text style={styles.itemName} numberOfLines={1}>{it.menuName}</Text>
+                  <Text style={styles.itemName} numberOfLines={1}>{orderItemName(it)}</Text>
                   {/* P-259: 준비중 표시 — 보조 텍스트 */}
                   {it.ready === false && (
                     <Text style={styles.itemPending} testID={`order-item-pending-${k}`}>{t('myFoods.itemPending')}</Text>
@@ -354,7 +361,7 @@ export default function OrderDetailScreen() {
           </View>
           {/* P-380: 사진첩 권한 거부 안내 — 저장은 시트 안에서만 일어나므로 시트 트리에 둔다
               (시트 모달 위에 떠야 한다 — 바깥에 두면 가려진다). */}
-          <ActionSheet
+          <ActionSheet testID="share-photo-denied"
             open={photoDenied}
             title={t('myFoods.sharePhotoDenied')}
             items={[{ key: 'settings', label: t('photo.openSettings'), onPress: () => void openAppSettings() }]}
@@ -381,7 +388,7 @@ export default function OrderDetailScreen() {
         />
       )}
       {/* KB-638: 카메라 권한 거부 — 사진첩 거부와 같은 공용 시트(설정 열기 1행), 문구는 기존 photo.permBody */}
-      <ActionSheet
+      <ActionSheet testID="camera-denied"
         open={cameraDenied}
         title={t('photo.permBody')}
         items={[{ key: 'settings', label: t('photo.openSettings'), onPress: () => void openAppSettings() }]}
