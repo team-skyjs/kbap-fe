@@ -100,6 +100,22 @@ it('블러(홈을 떠남) 뒤엔 측정 0 · 언마운트(null 등록) 대상은
   expect(mockTrack).not.toHaveBeenCalled();
 });
 
+it('PR 280 Codex P2: 비동기 측정 응답 전에 스크롤이 다시 시작되면 그 측정은 버리고, 다음 정지에서 다시', () => {
+  const t = new ImpressionTracker(VP);
+  let pendingCb: ((x: number, y: number, w: number, h: number) => void) | null = null;
+  const asyncNode = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => { pendingCb = cb; } };
+  t.focus();
+  t.register({ kind: 'section', section: 'popular' }, asyncNode);
+  jest.advanceTimersByTime(400); // 측정 요청(응답 대기)
+  t.scrollBegin(); // 응답 전에 다시 스크롤
+  pendingCb!(0, 200, 400, 200); // 늦은 응답(보이는 위치였더라도)
+  expect(mockTrack).not.toHaveBeenCalled();
+  t.scrollEnd(true);
+  jest.advanceTimersByTime(0);
+  pendingCb!(0, 200, 400, 200); // 정지 뒤 새 측정 응답
+  expect(mockTrack).toHaveBeenCalledWith('home_section_view', { section: 'popular' });
+});
+
 it('카드 클릭 = home_card_click {section, position, food_id}', () => {
   trackHomeCardClick('most_reviewed', 2, '41');
   expect(mockTrack).toHaveBeenCalledWith('home_card_click', { section: 'most_reviewed', position: 2, food_id: '41' });
@@ -116,7 +132,7 @@ describe('배선 잠금(소스) — 홈 섹션 7종·카드 클릭·스크롤 �
     }
   });
   it('FoodExplorer: 레일(탭 = 섹션)·safe·most_reviewed 섹션 · 카드 위치 · 가로 정지 props · 홈 카드 하트 = food_bookmark_toggle(기존 이름·속성)', () => {
-    for (const s of ["useImpressionRef(variant === 'embedded' ? gridTab : null)", "'safe', safePicks.indexOf(item)", "'most_reviewed', mostReviewed.indexOf(item)", 'card(item, { width: cardW }, gridTab, i)', '{...railScrollProps}', 'track(EVENTS.food_bookmark_toggle, { on: !savedIds.has(f.foodId) });', 'trackHomeCardClick(section, position, rest.food.foodId)']) {
+    for (const s of ["useImpressionRef(variant === 'embedded' ? gridTab : null)", "'safe', safePicks.indexOf(item)", "'most_reviewed', mostReviewed.indexOf(item)", 'card(item, { width: cardW }, gridTab, i)', '{...railScrollProps}', 'track(EVENTS.food_bookmark_toggle, { on: !isSaved(f) });', 'trackHomeCardClick(section, position, rest.food.foodId)']) {
       expect({ s, has: fx.includes(s) }).toEqual({ s, has: true });
     }
   });

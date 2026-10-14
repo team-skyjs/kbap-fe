@@ -85,7 +85,8 @@ export class ImpressionTracker {
       if (this.seen.has(k)) continue;
       try {
         node.measureInWindow((x, y, width, height) => {
-          if (!this.active || this.seen.has(k)) return;
+          // PR 280 Codex P2: 측정은 비동기 — 응답 전에 스크롤이 다시 시작됐으면(정지 아님) 버린다. 다음 정지에서 다시 잰다
+          if (!this.active || this.scrolling || this.seen.has(k)) return;
           if (visibleFraction({ x, y, width, height }, v) < VISIBLE_THRESHOLD) return;
           this.seen.add(k);
           if (target.kind === 'section') track(EVENTS.home_section_view, { section: target.section });
