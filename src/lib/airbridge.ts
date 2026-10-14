@@ -80,21 +80,52 @@ const products = (list: Product[]) => ({
   })),
 });
 
-/** 가입·로그인 이벤트 대기분 — 로그인 응답 시점엔 회원 번호가 아직 없다(members/me 성공에서 식별). 식별 직후 1회 발사해 익명 전환으로 남지 않게. */
+/** 가입·로그인 이벤트 대기분 — 로그인 응답(POST /auth/login)엔 회원 번호가 없다(members/me 성공에서 식별). 식별 직후 1회 발사해 익명 전환으로 남지 않게.
+ *  신규 회원은 로그인 → 온보딩으로 바로 가서 탭(=members/me)까지 시간이 걸린다 — 그 사이 앱이 죽어도 남도록 **기기 저장소에도** 둔다(#278 Codex P2).
+ *  지워지는 때: 발사 직후 · 세션 경계(clearAirbridgeUser). */
 let pendingAuth: string | null = null;
+const PENDING_KEY = 'airbridge.pendingAuth.v1';
+const AUTH_CATEGORIES: readonly string[] = [CATEGORY.SIGN_UP, CATEGORY.SIGN_IN];
+
+type Store = { getItem(k: string): Promise<string | null>; setItem(k: string, v: string): Promise<void>; removeItem(k: string): Promise<void> };
+let store: Store | null | undefined;
+/** AsyncStorage 지연 로드 — SDK와 같은 이유(이 모듈은 beAuth·useMe 경유로 많은 유닛이 로드). 실패 = 메모리만 */
+function kv(): Store | null {
+  if (store !== undefined) return store;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const m = require('@react-native-async-storage/async-storage') as { default?: Store } & Partial<Store>;
+    store = m.default ?? (typeof m.getItem === 'function' ? (m as Store) : null); // ESM default · CJS 목 둘 다
+  } catch {
+    store = null;
+  }
+  return store;
+}
+
+/** 저장소 호출은 전부 여기로 — 동기 throw·메서드 부재(부분 목)·비동기 거부 모두 삼킨다(세션 경계·로그아웃 경로에서 불린다 — 계측이 로그아웃을 깨면 안 된다) */
+function kvRun<T>(op: (s: Store) => Promise<T>, fallback: T): Promise<T> {
+  try {
+    const s = kv();
+    if (!s) return Promise.resolve(fallback);
+    return op(s).catch(() => fallback);
+  } catch {
+    return Promise.resolve(fallback);
+  }
+}
+
+function holdAuth(category: string): void {
+  pendingAuth = category;
+  void kvRun((s) => s.setItem(PENDING_KEY, category), undefined);
+}
 
 /** 광고 형식 — lib/analytics의 ad_* format enum과 같은 값 */
 export type AdFormat = 'banner' | 'interstitial' | 'rewarded' | 'native';
 
 export const airbridge = {
   /** 1 회원가입 완료 = 서버가 신규 회원이라고 답한 로그인(newMember). **식별 뒤 발사**(#278 Codex P1) — setAirbridgeUser가 비운다 */
-  signUp: () => {
-    pendingAuth = C.SIGN_UP;
-  },
+  signUp: () => holdAuth(C.SIGN_UP),
   /** 2 기존 회원 로그인 — 위와 같이 식별 뒤 */
-  signIn: () => {
-    pendingAuth = C.SIGN_IN;
-  },
+  signIn: () => holdAuth(C.SIGN_IN),
   /** 3 사용자가 누른 로그아웃(만료·재설치 정리는 아님) */
   signOut: () => send(C.SIGN_OUT),
   /** 4 온보딩 완료(게스트 포함). guest = BE 토큰 유무(서버 세션이 정본), 모름(null) = 속성 생략 */
@@ -118,8 +149,8 @@ export const airbridge = {
   wishlist: (p: Product) => send(C.ADD_TO_WISHLIST, products([p])),
   /** 10 주문 카드 담기 */
   addToCart: (p: Product) => send(C.ADDED_TO_CART, products([{ ...p, quantity: 1 }])),
-  /** 11 주문 카드 Done — 금액 없음 */
-  orderComplete: (itemCount: number) => send(C.ORDER_COMPLETED, { [A.TOTAL_QUANTITY]: itemCount }, { item_count: itemCount }),
+  /** 11 주문 카드 Done — 금액 없음. totalQuantity = 담은 수량 합, item_count = 메뉴 줄 수 */
+  orderComplete: (p: { lines: number; units: number }) => send(C.ORDER_COMPLETED, { [A.TOTAL_QUANTITY]: p.units }, { item_count: p.lines }),
   /** 12 리뷰 등록 */
   rate: (p: { foodId: string; rating: number; hasPhoto: boolean }) =>
     send(C.RATE, { [A.RATE]: p.rating, [A.MAX_RATE]: 5, ...products([{ id: p.foodId }]) }, { has_photo: p.hasPhoto }),
@@ -157,7 +188,17 @@ export function setAirbridgeUser(memberId: string): void {
   }
   const auth = pendingAuth;
   pendingAuth = null;
-  if (auth) send(auth);
+  if (auth) {
+    send(auth);
+    void kvRun((s) => s.removeItem(PENDING_KEY), undefined);
+    return;
+  }
+  // 메모리에 없으면(앱이 다시 켜짐 — 온보딩 중 종료 등) 저장분 확인. 세션 경계가 지우므로 남아 있으면 이 세션의 것.
+  void kvRun((s) => s.getItem(PENDING_KEY), null).then((v) => {
+    if (!v || !AUTH_CATEGORIES.includes(v)) return;
+    void kvRun((s) => s.removeItem(PENDING_KEY), undefined);
+    send(v);
+  });
 }
 
 /** 세션 끝(로그아웃·만료·탈퇴·재설치 정리 — beAuth.endSessionBoundary) */
@@ -165,6 +206,7 @@ export function clearAirbridgeUser(): void {
   quota = null;
   adUnlockPending = false; // #278 Codex P2: 세션 경계에서 같이 비운다 — 남으면 다음 회원의 리뷰 해제 전이를 삼킨다
   pendingAuth = null; // 식별 전에 세션이 끝났으면 그 가입·로그인은 누구의 것도 아니다
+  void kvRun((s) => s.removeItem(PENDING_KEY), undefined);
   if (Platform.OS === 'web') return;
   try {
     ab()?.clearUser();
@@ -201,6 +243,7 @@ export function observeScanQuota(memberId: string, unlocked: boolean | null | un
 /** 유닛 전용 */
 export function __resetAirbridgeStateForTest(): void {
   sdk = undefined;
+  store = undefined;
   pendingAuth = null;
   deeplinkInit = false;
   quota = null;

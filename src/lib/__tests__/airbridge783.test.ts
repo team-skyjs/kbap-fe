@@ -20,8 +20,10 @@ jest.mock('airbridge-react-native-sdk', () => {
   };
 });
 const mockHandle = jest.fn();
+jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 import * as fs from 'fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as path from 'path';
 import { AirbridgeCategory } from 'airbridge-react-native-sdk';
 import {
@@ -45,10 +47,12 @@ const PII_KEYS = /email|nick|nationality|country|phone|avoid|restriction|allerg|
 const keysDeep = (v: unknown): string[] =>
   v && typeof v === 'object' ? Object.entries(v as object).flatMap(([k, x]) => [k, ...keysDeep(x)]) : [];
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
   __resetAirbridgeStateForTest();
+  await AsyncStorage.clear();
 });
+const flush = () => new Promise((r) => setTimeout(r, 0));
 
 it('15개 지점 래퍼 = 전부 표준 카테고리(커스텀 0) · 속성 키에 PII 0', () => {
   airbridge.signUp();
@@ -64,7 +68,7 @@ it('15개 지점 래퍼 = 전부 표준 카테고리(커스텀 0) · 속성 키�
   airbridge.productView({ id: '12', name: '비빔밥' });
   airbridge.wishlist({ id: '12', name: '비빔밥' });
   airbridge.addToCart({ id: '12', name: '비빔밥' });
-  airbridge.orderComplete(3);
+  airbridge.orderComplete({ lines: 2, units: 3 });
   airbridge.rate({ foodId: '12', rating: 4, hasPhoto: true });
   airbridge.share('save');
   airbridge.adImpression('banner', 'home_banner');
@@ -110,26 +114,68 @@ describe('①② 가입·로그인 = 식별 뒤(#278 Codex P1)', () => {
     expect(mockTrack.mock.calls[0][0]).toBe('airbridge.user.signup');
     expect(mockSetUserID.mock.invocationCallOrder[0]).toBeLessThan(mockTrack.mock.invocationCallOrder[0]);
   });
-  it('세션 복원(로그인 없는 members/me) = 재발사 0 · 식별 전에 세션이 끝나면 버림', () => {
+  it('세션 복원(로그인 없는 members/me) = 재발사 0 · 식별 전에 세션이 끝나면 버림(저장분 포함)', async () => {
     airbridge.signIn();
     setAirbridgeUser('42');
+    await flush();
     setAirbridgeUser('42'); // 앱 재시작 복원 등
+    await flush();
     expect(mockTrack).toHaveBeenCalledTimes(1);
     airbridge.signIn();
+    await flush();
     clearAirbridgeUser();
+    await flush();
     setAirbridgeUser('43');
+    await flush();
+    expect(mockTrack).toHaveBeenCalledTimes(1);
+    expect(await AsyncStorage.getItem('airbridge.pendingAuth.v1')).toBeNull();
+  });
+  it('#278 Codex P2: 온보딩 중 앱 종료(메모리 유실) → 다음 실행의 식별에서 저장분 SIGN_UP 1회, setUserID 다음 · 발사 뒤 저장 비움', async () => {
+    airbridge.signUp();
+    await flush();
+    expect(await AsyncStorage.getItem('airbridge.pendingAuth.v1')).toBe('airbridge.user.signup');
+    __resetAirbridgeStateForTest(); // 프로세스 재시작 = 메모리만 사라짐(기기 저장소 유지)
+    setAirbridgeUser('42');
+    await flush();
+    await flush();
+    expect(mockTrack.mock.calls.map((c) => c[0])).toEqual(['airbridge.user.signup']);
+    expect(mockSetUserID.mock.invocationCallOrder[0]).toBeLessThan(mockTrack.mock.invocationCallOrder[0]);
+    expect(await AsyncStorage.getItem('airbridge.pendingAuth.v1')).toBeNull();
+    setAirbridgeUser('42');
+    await flush();
     expect(mockTrack).toHaveBeenCalledTimes(1);
   });
 });
 
-it('⑪ 주문 완료 = 금액·통화 0(예상 합계는 실결제 아님) · 개수만', () => {
-  airbridge.orderComplete(3);
+it('저장소 부분 목(removeItem 없음)·동기 throw에도 세션 경계·식별·가입이 던지지 않는다(로그아웃 경로 — freshInstall 유닛 실측)', async () => {
+  await new Promise<void>((done) => {
+    jest.isolateModules(() => {
+      jest.doMock('@react-native-async-storage/async-storage', () => ({ getItem: async () => null, setItem: async () => {} }));
+      const m = jest.requireActual('../airbridge') as typeof import('../airbridge');
+      expect(() => { m.airbridge.signUp(); m.setAirbridgeUser('1'); m.clearAirbridgeUser(); }).not.toThrow();
+      done();
+    });
+  });
+  await new Promise<void>((done) => {
+    jest.isolateModules(() => {
+      jest.doMock('@react-native-async-storage/async-storage', () => ({ getItem: () => { throw new Error('x'); }, setItem: () => { throw new Error('x'); }, removeItem: () => { throw new Error('x'); } }));
+      const m = jest.requireActual('../airbridge') as typeof import('../airbridge');
+      expect(() => { m.airbridge.signIn(); m.clearAirbridgeUser(); m.setAirbridgeUser('2'); }).not.toThrow();
+      done();
+    });
+  });
+  await flush();
+});
+
+it('⑪ 주문 완료 = 금액·통화 0(예상 합계는 실결제 아님) · totalQuantity = 수량 합 · item_count = 줄 수(#278 Codex P2)', () => {
+  airbridge.orderComplete({ lines: 2, units: 3 }); // 비빔밥 2 + 국 1
   const [, semantic, custom] = mockTrack.mock.calls[0];
   const keys = [...keysDeep(semantic), ...keysDeep(custom)];
   expect(keys).not.toContain('value');
   expect(keys).not.toContain('currency');
   expect(keys).not.toContain('price');
   expect(semantic).toEqual({ totalQuantity: 3 });
+  expect(custom).toEqual({ item_count: 2 });
 });
 
 it('⑦ 검색 = 매칭된 카탈로그 값만 query · 미매칭은 query 없이 결과 수만(자유 텍스트 전송 0)', () => {
@@ -216,13 +262,15 @@ describe('배선 잠금(소스) — 기존 Amplitude 지점 옆', () => {
     ['src/app/food/[id]/index.tsx', ['airbridge.productView(']],
     // ⑨ 찜 = 공용 뮤테이션 성공 지점 한 곳(#278 Codex P1 — 상세·검색·FoodExplorer 전 표면, 실패 저장 미집계)
     ['src/lib/data/bookmarks.ts', ['if (add) airbridge.wishlist({ id: snap.foodId', 'airbridge.wishlist({ id: snap.foodId, name: snap.nameKo }); // KB-783 ⑨: 저장 목록']],
-    ['src/features/order/FlippedOrderCard.tsx', ['airbridge.orderComplete(itemCount)']],
+    ['src/features/order/FlippedOrderCard.tsx', ['airbridge.orderComplete({ lines: itemCount, units: items.reduce((n, i) => n + (i.qty > 0 ? i.qty : 0), 0) })']],
     ['src/app/food/[id]/review.tsx', ['airbridge.rate(']],
     ['src/app/profile/order/[id].tsx', ["if (r === 'success') airbridge.share('save')", "if (r === 'success') airbridge.share('instagram_story')"]],
     ['src/features/ads/AdBanner.tsx', ["airbridge.adImpression('banner'", "airbridge.adClick('banner'"]],
     ['src/features/ads/FeedAd.tsx', ["airbridge.adImpression('native'", "airbridge.adClick('native'"]],
     ['src/features/ads/OrderDoneInterstitial.tsx', ["airbridge.adImpression('interstitial'", "airbridge.adClick('interstitial'"]],
-    ['src/features/ads/RewardedUnlock.tsx', ["airbridge.adImpression('rewarded'", "airbridge.adClick('rewarded'", 'noteAdUnlock()']],
+    ['src/features/ads/RewardedUnlock.tsx', ["airbridge.adImpression('rewarded'", "airbridge.adClick('rewarded'"]],
+    // ⑮ 광고 해제 표식 = 보상 뮤테이션 onSuccess, 프로필 재조회(await) **전**(#278 Codex P1)
+    ['src/lib/data/useAdReward.ts', ["if (r.scanUnlocked) noteAdUnlock();\n      return qc.invalidateQueries({ queryKey: ['me'] })"]],
     ['src/lib/data/useMe.ts', ['setAirbridgeUser(user.id)', 'observeScanQuota(user.id, user.scanQuota?.unlocked)']],
     ['src/lib/auth/beAuth.ts', ['clearAirbridgeUser()']],
     ['src/app/_layout.tsx', ['initAirbridgeDeeplinks(handleDeeplink)']],

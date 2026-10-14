@@ -16,7 +16,7 @@ import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
-import { airbridge, noteAdUnlock } from '@/lib/airbridge';
+import { airbridge } from '@/lib/airbridge';
 import { color as C, font } from '@/lib/theme';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
@@ -93,10 +93,7 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
         setRemaining(r.remainingForUnlock);
         track(EVENTS.ad_reward_earned, { placement: PLACEMENT, remaining: r.remainingForUnlock, ...(surface ? { surface } : {}) });
         if (__DEV__) console.log('[ads] reward claim ok', JSON.stringify(r)); // KB-759 원인 특정(개발 번들만)
-        if (r.scanUnlocked) {
-          noteAdUnlock(); // KB-783 ⑮ 'ad' — 서버가 해제를 확정한 응답에서만(뒤따르는 프로필 전이는 리뷰로 세지 않는다)
-          onUnlocked();
-        }
+        if (r.scanUnlocked) onUnlocked(); // KB-783 ⑮ 'ad' 표식은 useClaimAdReward.onSuccess(재조회 전)에서
       })
       .catch((e: unknown) => {
         const kind = classifyAdRewardError(e);

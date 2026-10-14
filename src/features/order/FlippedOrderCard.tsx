@@ -176,7 +176,8 @@ export function FlippedOrderCard({
             committedRef.current = true;
             const itemCount = items.reduce((n, i) => n + (i.qty > 0 ? 1 : 0), 0);
             track(EVENTS.order_done, { item_count: itemCount });
-            airbridge.orderComplete(itemCount); // KB-783 ⑪ — 금액 없음(예상 합계는 실결제 아님)
+            // KB-783 ⑪ — 금액 없음(예상 합계는 실결제 아님). totalQuantity = 수량 합(#278 Codex P2), item_count = 메뉴 줄 수
+            airbridge.orderComplete({ lines: itemCount, units: items.reduce((n, i) => n + (i.qty > 0 ? i.qty : 0), 0) });
             // P-252→256: 주문 이력 저장 — 실패 무해(내부 흡수·code 로그), UX 무영향
             void saveOrderHistory({ imagePath: orderImagePath, items });
           }}
