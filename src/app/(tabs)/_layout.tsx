@@ -12,7 +12,7 @@
 import { initAds } from '@/lib/ads/adsSession';
 import { whenSplashDone } from '@/lib/bootGate';
 import * as React from 'react';
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs, useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
 import { EVENTS, track } from '@/lib/analytics';
@@ -50,11 +50,14 @@ function AppTabBar({
   // P-213: app_tab_view(P-215 개명) — 활성 탭이 바뀔 때 1회(탭 탭·프로그램 전환·첫 진입 전부 포함,
   // 같은 탭 재탭은 무발화). 4탭 계측을 여기 한 곳으로 — 화면별 배선 금지.
   const lastTab = React.useRef<TabKey | null>(null);
-  // KB-783: 탭 레이아웃 = 부팅·온보딩·로그인 게이트 통과 지점 — 보류된 딥링크(지연 딥링크 포함) 여기서 1회 이동
-  React.useEffect(() => {
-    setDeeplinkReady(true);
-    return () => setDeeplinkReady(false);
-  }, []);
+  // KB-783: 탭이 **실제로 보일 때**만 딥링크 준비 — 보류분(지연 딥링크 포함)은 여기서 1회 이동.
+  // #278 Codex P2: 레이아웃은 /login·/onboarding이 위에 push돼도 마운트로 남는다 → 마운트가 아니라 포커스(루트 스택에서 (tabs) 활성)를 따른다.
+  useFocusEffect(
+    React.useCallback(() => {
+      setDeeplinkReady(true);
+      return () => setDeeplinkReady(false);
+    }, []),
+  );
   React.useEffect(() => {
     if (lastTab.current === active) return;
     lastTab.current = active;

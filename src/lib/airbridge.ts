@@ -80,14 +80,21 @@ const products = (list: Product[]) => ({
   })),
 });
 
+/** 가입·로그인 이벤트 대기분 — 로그인 응답 시점엔 회원 번호가 아직 없다(members/me 성공에서 식별). 식별 직후 1회 발사해 익명 전환으로 남지 않게. */
+let pendingAuth: string | null = null;
+
 /** 광고 형식 — lib/analytics의 ad_* format enum과 같은 값 */
 export type AdFormat = 'banner' | 'interstitial' | 'rewarded' | 'native';
 
 export const airbridge = {
-  /** 1 회원가입 완료 = 서버가 신규 회원이라고 답한 로그인(newMember) */
-  signUp: () => send(C.SIGN_UP),
-  /** 2 기존 회원 로그인 */
-  signIn: () => send(C.SIGN_IN),
+  /** 1 회원가입 완료 = 서버가 신규 회원이라고 답한 로그인(newMember). **식별 뒤 발사**(#278 Codex P1) — setAirbridgeUser가 비운다 */
+  signUp: () => {
+    pendingAuth = C.SIGN_UP;
+  },
+  /** 2 기존 회원 로그인 — 위와 같이 식별 뒤 */
+  signIn: () => {
+    pendingAuth = C.SIGN_IN;
+  },
   /** 3 사용자가 누른 로그아웃(만료·재설치 정리는 아님) */
   signOut: () => send(C.SIGN_OUT),
   /** 4 온보딩 완료(게스트 포함). guest = BE 토큰 유무(서버 세션이 정본), 모름(null) = 속성 생략 */
@@ -140,7 +147,7 @@ export function initAirbridgeDeeplinks(handleDeeplink: (url: string) => unknown)
   }
 }
 
-/** 로그인·세션 복원(members/me 성공 — lib/data/useMe) = 회원 번호만 */
+/** 로그인·세션 복원(members/me 성공 — lib/data/useMe) = 회원 번호만. 대기 중인 가입·로그인 이벤트는 식별 **다음에** 보낸다 */
 export function setAirbridgeUser(memberId: string): void {
   if (Platform.OS === 'web') return;
   try {
@@ -148,11 +155,16 @@ export function setAirbridgeUser(memberId: string): void {
   } catch {
     /* noop */
   }
+  const auth = pendingAuth;
+  pendingAuth = null;
+  if (auth) send(auth);
 }
 
 /** 세션 끝(로그아웃·만료·탈퇴·재설치 정리 — beAuth.endSessionBoundary) */
 export function clearAirbridgeUser(): void {
   quota = null;
+  adUnlockPending = false; // #278 Codex P2: 세션 경계에서 같이 비운다 — 남으면 다음 회원의 리뷰 해제 전이를 삼킨다
+  pendingAuth = null; // 식별 전에 세션이 끝났으면 그 가입·로그인은 누구의 것도 아니다
   if (Platform.OS === 'web') return;
   try {
     ab()?.clearUser();
@@ -189,6 +201,7 @@ export function observeScanQuota(memberId: string, unlocked: boolean | null | un
 /** 유닛 전용 */
 export function __resetAirbridgeStateForTest(): void {
   sdk = undefined;
+  pendingAuth = null;
   deeplinkInit = false;
   quota = null;
   adUnlockPending = false;

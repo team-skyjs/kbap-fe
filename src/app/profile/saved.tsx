@@ -21,7 +21,6 @@ import { Snackbar } from '@/components/Snackbar';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { EVENTS, track } from '@/lib/analytics';
-import { airbridge } from '@/lib/airbridge';
 import { useBookmarks, useRemoveBookmark, useRestoreBookmark, type BookmarkSnapshot } from '@/lib/data/bookmarks';
 import type { FoodCard } from '@/lib/api/types';
 import { personalRisk } from '@/lib/risk';
@@ -55,7 +54,6 @@ export default function SavedScreen() {
   const onUndo = () => {
     if (!undo) return;
     track(EVENTS.food_bookmark_toggle, { on: true }); // P-214: 되돌리기 = 재등록(기존 이벤트 재사용 — 신규 없음)
-    airbridge.wishlist({ id: undo.foodId, name: undo.nameKo }); // KB-783 ⑨ — 되돌리기 = 재저장
     restore.mutate(undo);
     if (undoTimer.current) clearTimeout(undoTimer.current);
     setUndo(null);

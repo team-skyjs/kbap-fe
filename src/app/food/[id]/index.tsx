@@ -136,7 +136,6 @@ export default function FoodDetailScreen() {
     if (!food) return;
     const adding = !saved;
     track(EVENTS.food_bookmark_toggle, { on: adding }); // P-144
-    if (adding) airbridge.wishlist({ id: food.foodId, name: food.nameKo }); // KB-783 ⑨ — 저장만(해제는 표준 이벤트 없음)
     // P-339 ⑤: 성공/실패 토스트 = 공용 상단 토스트(useToggleBookmark 한 곳) — 로컬 스낵바 소멸
     toggleBm.mutate({
       snap: { foodId: food.foodId, name: food.name, nameKo: food.nameKo, risk: food.risk, photoUrl: food.photoUrl },
