@@ -1499,3 +1499,10 @@
 - [x] 테스트: homeBookmarkedCard779 신설 4(콜드 스타트 /bookmarks 0회·Saved 탭 탭 시 호출 / 별 = 카드값 / 방향 PATCH·POST / Food 탭 /foods 소스) · toggleBookmark +5(홈 3배열 반전·실패 원복·캐시 없음 무크래시·home invalidate 0·/foods 페이지 반전) · foodAdapter +2 · 소스 잠금 갱신(field0910bKb515·homePopularRandom712·riskServerFilter492·design4Home430 ⑤). tsc 0 · jest 296 스위트 2556/2556.
 - [x] Codex 리뷰(#264) 4건 반영(10/14): ① 롤백 = 실패 카드만 반대 반전(스냅샷 복원은 그 사이 성공한 다른 토글까지 지움) ② 쓰기 전 `['home']`·`['foods']` 진행 중 재조회 cancel(데이터 있는 쿼리만 — 초기 로딩 홈을 끊으면 스켈레톤 정지) ③ `useRemoveBookmark`/`useRestoreBookmark`도 카드 캐시 반전(저장 화면 해제 후 홈 복귀 시 별 잔존·방향 역전) ④ `useSavedIds` 드레인 effect `enabled` 가드(수동 fetchNextPage는 enabled가 안 막음). toggleBookmark +4. jest 296 스위트 2560/2560.
 - [ ] 실기(홈 콜드 스타트 네트워크 로그 `GET /bookmarks` 0회 · 레일 별 탭 즉시 반전·롤백 · Saved 탭 전환 시 목록 로드 · 저장 화면 스와이프 해제 후 홈 별). 발행은 예진 승인.
+
+## KB-785 홈 조회만 X-API-Version 1.2 (2026-10-14, 워크트리 feat/kb785-home-api-version)
+
+- [x] dev Swagger 대조: `/home` 1.2 = 인기 음식 소스만 변경(조회 수 상위 → 운영 풀 `food_marketing_popular` 호출마다 무작위 최대 10개). 응답 형태 1.1과 동일 → `HomeWire`·어댑트 무변.
+- [x] `fetchHome` `api.get` 에 `{ headers: { 'X-API-Version': '1.2' } }`(기존 `opts.headers` 병합 패턴, useMe PATCH 1.1과 동일). 훅·부트 프리페치가 같은 함수라 한 곳. 기본 `API_VERSION_HEADER`·타 엔드포인트 무변.
+- [x] 테스트: fetchHome(목 api) 호출 인자 1.2 잠금 · homeApiVersion785 신설(실 client 경유 fetch 헤더 — 홈 1.2 / `/foods`·프로필 PATCH 1.1 유지 / 구 응답 호환). tsc 0 · jest 전체 통과.
+- [ ] dev 실기 홈 렌더 확인(BE 1.2 핸들러 배포 시). 배포는 예진 승인.

@@ -19,6 +19,9 @@ import { MOCK_HOME } from '../mocks/foods';
 /** 오프라인 데모용 스위치 — 게스트도 LIVE가 정상 경로다. */
 const MOCK_MODE_HOME = false;
 
+/** KB-785: GET /home 전용 X-API-Version — 다른 엔드포인트는 client.ts 기본값. */
+export const HOME_API_VERSION = '1.2';
+
 interface HomeWire {
   authenticated: boolean;
   avoidedSubstances: { code: string; name: string }[];
@@ -34,7 +37,9 @@ export async function fetchHome(): Promise<HomeResponse> {
   // KB-199(P-023): lang 필수 승격(BE 7/20 밤) — 미전송 시 홈 400. /foods와 동일 패턴.
   // 표시 언어를 파라미터가 담당해 Q-13 언어 전환 잔상·게스트/미설정 영어도 해소
   // (회원 DB appLanguage 기반 번역 → 요청 언어 기반).
-  const wire = await api.get<HomeWire>(`/home?lang=${apiLang()}`);
+  // KB-785: 홈만 1.2 — popularFoods가 조회 수 집계 → 운영 풀(food_marketing_popular) 무작위 10개.
+  // 응답 형태는 1.1과 동일(dev Swagger) — HomeWire 무변. 기본 API_VERSION_HEADER·타 엔드포인트는 그대로.
+  const wire = await api.get<HomeWire>(`/home?lang=${apiLang()}`, { headers: { 'X-API-Version': HOME_API_VERSION } });
   return {
     authenticated: wire.authenticated,
     avoided: wire.avoidedSubstances ?? [],
