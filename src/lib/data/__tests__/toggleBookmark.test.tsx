@@ -7,6 +7,7 @@
 import * as React from 'react';
 import renderer, { act } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useToggleBookmark, useRemoveBookmark, useRestoreBookmark, useSavedIds, type BookmarkSnapshot } from '../bookmarks';
 
 jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en', t: (k: string) => k } })); // P-339 ⑤: 토스트 발화가 t 사용
 jest.mock('@/lib/api/client', () => ({
@@ -25,7 +26,6 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false })); // Code
 const { api } = require('@/lib/api/client');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-import { useToggleBookmark, useRemoveBookmark, useRestoreBookmark, useSavedIds, type BookmarkSnapshot } from '../bookmarks';
 
 const SNAP: BookmarkSnapshot = {
   foodId: '7',

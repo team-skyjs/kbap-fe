@@ -98,11 +98,12 @@ export function useBookmarks(risk?: RiskFilterChip, opts?: { enabled?: boolean }
 export function useSavedIds(opts?: { enabled?: boolean }): { ids: Set<string>; ready: boolean } {
   const saved = useBookmarks(undefined, opts);
   const enabled = opts?.enabled !== false;
+  const { hasNextPage, isFetchingNextPage, isFetching, fetchNextPage } = saved;
   React.useEffect(() => {
     // Codex(#264): RQ enabled는 자동 fetch만 막는다 — 수동 fetchNextPage는 통과하므로 여기서도 가드(비활성 홈이 남의 부분 캐시를 드레인 금지)
-    if (enabled && saved.hasNextPage && !saved.isFetchingNextPage && !saved.isFetching)
-      void saved.fetchNextPage({ cancelRefetch: false });
-  }, [enabled, saved.hasNextPage, saved.isFetchingNextPage, saved.isFetching, saved.fetchNextPage]);
+    if (enabled && hasNextPage && !isFetchingNextPage && !isFetching)
+      void fetchNextPage({ cancelRefetch: false });
+  }, [enabled, hasNextPage, isFetchingNextPage, isFetching, fetchNextPage]);
   const data = saved.data;
   const ids = React.useMemo(() => new Set((data ?? []).map((f) => f.foodId)), [data]);
   // #116 2R ①: ready = 드레인 완료 — 부분 집합으로 add/remove 방향 오판(POST 오발) 방지
