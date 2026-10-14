@@ -85,7 +85,7 @@ export function AuthGateSheet({
             시트엔 스프링이 안 맞음(예진 실기 "이상함", P-035·047과 같은 절제
             사례). 원복 = Modal fade 단독(P-031 이전). 퇴장·backdrop 무변. */}
         {/* 카드 탭이 backdrop으로 새지 않게 */}
-        <Pressable testID="gate-sheet" style={[styles.sheet, sheetPad]} onPress={() => {}}>
+        <Pressable testID="gate-sheet" style={[styles.sheet, sheetPad]} noTrack onPress={() => {}}>
           {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭·하단 버튼(전 시트 공통) */}
           <View style={styles.glyph}>
             <IconLock size={24} color={C.primary} />

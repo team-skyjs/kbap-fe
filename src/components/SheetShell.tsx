@@ -40,7 +40,7 @@ export function SheetShell({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
       <Pressable testID="sheet-backdrop" style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, pad, { maxHeight: height - top }]} onPress={() => {}} testID="sheet-shell">
+        <Pressable style={[styles.sheet, pad, { maxHeight: height - top }]} noTrack onPress={() => {}} testID="sheet-shell">
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} bounces={false} testID="sheet-shell-scroll">
             {children}
           </ScrollView>

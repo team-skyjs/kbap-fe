@@ -37,7 +37,7 @@ export function ReviewPromptSheet({
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={later} onShow={onShow} onDismiss={Platform.OS === 'ios' ? onClosed : undefined}>
       <Pressable style={styles.backdrop} onPress={later} testID="review-prompt-backdrop">
-        <Pressable style={[styles.sheet, Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null]} onPress={() => {}} testID="review-prompt">
+        <Pressable style={[styles.sheet, Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null]} noTrack onPress={() => {}} testID="review-prompt">
           <Text style={styles.title}>{t('reviewPrompt.title')}</Text>
           <View style={styles.actions}>
             <Btn onPress={() => answer('positive')} disabled={disabled} testID="review-prompt-positive">{t('reviewPrompt.positive')}</Btn>

@@ -16,6 +16,7 @@ import * as fs from 'fs';
 import renderer, { act } from 'react-test-renderer';
 import { normalizeTarget, screenFromSegments, setCurrentScreen } from '../uiClick';
 import { useScreenTracking } from '../useScreenTracking';
+import { markEntryResolved, markEntryResolvedAfterLeavingTabs, setDeeplinkReady, __resetDeeplinkForTest } from '../deeplink';
 import { Pressable } from '@/components/Pressable';
 import { Txt } from '@/components/Txt';
 import { INGREDIENTS } from '@/lib/mocks/ingredients';
@@ -67,6 +68,7 @@ it('screenFromSegments — 라우트 패턴(id 값 없음), (tabs) 루트 = 홈'
 });
 
 it('useScreenTracking — 패턴이 바뀔 때만 1회 · 같은 패턴 재렌더 0 · ui_click의 screen 갱신', () => {
+  __resetDeeplinkForTest(true); // 진입 정착된 앱
   function Probe() {
     useScreenTracking();
     return null;
@@ -86,6 +88,40 @@ it('useScreenTracking — 패턴이 바뀔 때만 1회 · 같은 패턴 재렌�
   const press = mount(<Pressable testID="detail-ask-owner" onPress={() => {}} />);
   act(() => press.root.findAll((n) => n.props.testID === 'detail-ask-owner' && n.type !== Pressable)[0].props.onPress({}));
   expect(mockTrack).toHaveBeenLastCalledWith('ui_click', { screen: 'food/[id]', target: 'detail-ask-owner' });
+});
+
+it('#280 Codex P2: 신규 설치 — 진입 정착 전 부팅 (tabs)/index는 기록 0, 로그인으로 교체 뒤 정착 순간 현재 화면(login) 1회', () => {
+  __resetDeeplinkForTest(false);
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = ['(tabs)'];
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<Probe />); });
+  act(() => setDeeplinkReady(true)); // 탭이 먼저 포커스
+  act(() => markEntryResolvedAfterLeavingTabs()); // /login 교체 직후(아직 탭 focused)
+  mockSegments = ['login'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack).not.toHaveBeenCalled(); // 정착 전 — (tabs)/index도 login도 아직
+  act(() => setDeeplinkReady(false)); // 탭 blur → 정착
+  expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: 'login' }]]);
+  mockSegments = ['onboarding'];
+  act(() => tree.update(<Probe />));
+  expect(mockTrack).toHaveBeenLastCalledWith('screen_view', { screen: 'onboarding' });
+  expect(mockTrack).toHaveBeenCalledTimes(2);
+});
+
+it('일반 부팅 — 스택 렌더 전 정착 → 첫 화면 바로 기록', () => {
+  __resetDeeplinkForTest(false);
+  markEntryResolved();
+  function Probe() {
+    useScreenTracking();
+    return null;
+  }
+  mockSegments = ['(tabs)'];
+  act(() => { renderer.create(<Probe />); });
+  expect(mockTrack.mock.calls).toEqual([['screen_view', { screen: '(tabs)/index' }]]);
 });
 
 it('포그라운드 복귀 재발화 없음 — 화면 조회 훅은 AppState를 구독하지 않는다(예진 10/14)', () => {

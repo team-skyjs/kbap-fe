@@ -16,7 +16,7 @@ export function PressScale({
   style,
   children,
   ...rest
-}: PressableProps & { style?: StyleProp<ViewStyle>; children?: React.ReactNode }) {
+}: PressableProps & { style?: StyleProp<ViewStyle>; children?: React.ReactNode; testID: string /* KB-784: 필수 — ui_click target */ }) {
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (

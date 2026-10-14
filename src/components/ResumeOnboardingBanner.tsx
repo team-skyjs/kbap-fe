@@ -58,7 +58,7 @@ export function ResumeOnboardingBanner() {
       {/* backdrop tap = "나중에" (keeps the draft) */}
       <Pressable testID="resume-backdrop" style={styles.backdrop} onPress={() => setVisible(false)}>
         {/* stop card taps from falling through to the backdrop */}
-        <Pressable testID="resume-card" style={styles.card} onPress={() => {}}>
+        <Pressable testID="resume-card" style={styles.card} noTrack onPress={() => {}}>
           <View style={styles.glyph}>
             <IconProfile size={26} color={C.primary} />
           </View>

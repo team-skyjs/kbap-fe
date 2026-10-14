@@ -361,7 +361,7 @@ export default function OrderDetailScreen() {
           </View>
           {/* P-380: 사진첩 권한 거부 안내 — 저장은 시트 안에서만 일어나므로 시트 트리에 둔다
               (시트 모달 위에 떠야 한다 — 바깥에 두면 가려진다). */}
-          <ActionSheet
+          <ActionSheet testID="share-photo-denied"
             open={photoDenied}
             title={t('myFoods.sharePhotoDenied')}
             items={[{ key: 'settings', label: t('photo.openSettings'), onPress: () => void openAppSettings() }]}
@@ -388,7 +388,7 @@ export default function OrderDetailScreen() {
         />
       )}
       {/* KB-638: 카메라 권한 거부 — 사진첩 거부와 같은 공용 시트(설정 열기 1행), 문구는 기존 photo.permBody */}
-      <ActionSheet
+      <ActionSheet testID="camera-denied"
         open={cameraDenied}
         title={t('photo.permBody')}
         items={[{ key: 'settings', label: t('photo.openSettings'), onPress: () => void openAppSettings() }]}

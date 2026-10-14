@@ -146,7 +146,7 @@ export function ReactionBar({
 }
 
 /** 태그 칩 (음식/장소) — 탭 시 바텀시트 미리보기는 호출측. */
-export function TagChip({ kind, label, onPress, testID }: { kind: 'food' | 'place'; label: string; onPress?: () => void; testID?: string }) {
+export function TagChip({ kind, label, onPress, testID }: { kind: 'food' | 'place'; label: string; onPress?: () => void; testID: string }) {
   // A-DS-04(KB-486): 장소 변형 = pill 배경/패딩 제거 — 핀 12 + 12/700 + chevron 12, gap 2.
   // 텍스트 색 = P-284 inkInfo 유지.
   if (kind === 'place') {

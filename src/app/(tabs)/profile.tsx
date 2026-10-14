@@ -401,7 +401,7 @@ function MenuRow({
   trailing?: React.ReactNode;
   onPress?: () => void;
   /** KB-709: QA 자동화 — profile-menu-{행} */
-  testID?: string;
+  testID: string; // KB-784(PR 280 Codex P2): 필수 — 생략하면 ui_click target이 'unlabeled'로 샌다(tsc가 모든 사용처를 강제)
 }) {
   return (
     <Pressable style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: C.surface2 }]} onPress={onPress} testID={testID}>

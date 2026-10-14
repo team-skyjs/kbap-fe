@@ -11,21 +11,24 @@ import { trackUiClick } from '@/lib/uiClick';
 export type AppPressableProps = PressableProps & {
   /** 계측 target 고정값 — testID에 자유 텍스트가 섞이는 자리용(없으면 testID) */
   uiTarget?: string;
+  /** PR 280 Codex P2: 계측 제외 — 시트 카드의 배경 닫힘 방지 인터셉터(`onPress={() => {}}`)처럼 버튼이 아닌 자리 전용.
+   *  잠금(uiClickCoverage784 R7)이 빈 핸들러에만 허용한다. */
+  noTrack?: boolean;
 };
 
-export const Pressable = React.forwardRef<View, AppPressableProps>(function Pressable({ onPress, onLongPress, uiTarget, ...rest }, ref) {
+export const Pressable = React.forwardRef<View, AppPressableProps>(function Pressable({ onPress, onLongPress, uiTarget, noTrack, ...rest }, ref) {
   const target = uiTarget ?? rest.testID ?? undefined;
   return (
     <RNPressable
       ref={ref}
       {...rest}
       onPress={
-        onPress
+        onPress && !noTrack
           ? (e) => {
               trackUiClick(target);
               onPress(e);
             }
-          : undefined
+          : onPress
       }
       onLongPress={
         onLongPress

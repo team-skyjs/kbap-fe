@@ -30,6 +30,9 @@ type Site = { file: string; line: number; tag: string };
 const pressSites: (Site & { labeled: boolean; thirdParty: boolean; tracksSelf: boolean })[] = [];
 const rawImports: string[] = [];
 const freeTextIds: string[] = [];
+const noTrackMismatch: string[] = [];
+/** 안쪽 누르는 요소에 testID를 **전달**(식별자·멤버)하는 파일 — R8이 그 prop이 필수(또는 기본값)인지 본다 */
+const forwardingFiles = new Set<string>();
 for (const file of FILES) {
   const sf = parse(file);
   const visit = (n: ts.Node) => {
@@ -46,6 +49,10 @@ for (const file of FILES) {
       const names = attrs.map((a) => a.name.getText(sf));
       if (names.includes('onPress') || names.includes('onLongPress')) {
         const tag = n.tagName.getText(sf);
+        const onPressAttr = attrs.find((a) => a.name.getText(sf) === 'onPress');
+        const emptyHandler = !!onPressAttr && /^\{\s*\(\)\s*=>\s*\{\s*\}\s*\}$/.test(onPressAttr.initializer?.getText(sf) ?? '');
+        const noTrack = names.includes('noTrack');
+        if (emptyHandler !== noTrack && !RAW_OK.has(file)) noTrackMismatch.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1} <${tag}> empty=${emptyHandler} noTrack=${noTrack}`);
         const onPressText = attrs.find((a) => a.name.getText(sf) === 'onPress')?.initializer?.getText(sf) ?? '';
         pressSites.push({
           file,
@@ -57,6 +64,10 @@ for (const file of FILES) {
         });
       }
       const tid = attrs.find((a) => a.name.getText(sf) === 'testID');
+      if ((names.includes('onPress') || names.includes('onLongPress')) && /^(Pressable|AnimatedPressable)$/.test(n.tagName.getText(sf)) && !names.includes('uiTarget')) {
+        const e = tid?.initializer && ts.isJsxExpression(tid.initializer) ? tid.initializer.expression : undefined;
+        if (e && (ts.isIdentifier(e) || ts.isPropertyAccessExpression(e))) forwardingFiles.add(file);
+      }
       const init = tid?.initializer && ts.isJsxExpression(tid.initializer) ? tid.initializer.expression : undefined;
       if (init && ts.isTemplateExpression(init) && init.templateSpans.some((s) => FREE_TEXT.test(s.expression.getText(sf))) && !names.includes('uiTarget')) {
         freeTextIds.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1} ${init.getText(sf)}`);
@@ -103,6 +114,21 @@ it('SELF_LABELED 공용 컴포넌트는 실제로 안쪽 Pressable에 testID가 
     for (const c of SELF_LABELED) if (new RegExp(`function ${c}\\b`).test(src)) defs[c] = f;
   }
   expect(Object.keys(defs).sort()).toEqual([...SELF_LABELED].sort());
+});
+
+it('R7(#280 Codex P2): 배경 닫힘 방지 인터셉터(빈 onPress)는 noTrack(계측 제외), noTrack은 빈 onPress에만 — 실제 버튼을 숨기는 opt-out 금지', () => {
+  expect(noTrackMismatch).toEqual([]);
+});
+
+it('R8(#280 Codex P2): testID를 안쪽 Pressable로 전달하는 공용 컴포넌트는 그 prop을 필수(또는 기본값)로 — 사용처 생략 = tsc 실패(데이터 배열 행 포함)', () => {
+  expect(forwardingFiles.size).toBeGreaterThan(5); // 순회 유효성(Btn·Chip·ActionSheet…)
+  const optional = [...forwardingFiles].filter((f) => {
+    const src = fs.readFileSync(f, 'utf8');
+    return /\btestID\?:/.test(src) && !/\btestID = ['`]/.test(src);
+  });
+  expect(optional).toEqual([]);
+  // PressScale은 rest 스프레드로 전달 — 타입에 필수 선언
+  expect(fs.readFileSync('src/components/PressScale.tsx', 'utf8')).toMatch(/testID: string/);
 });
 
 it('R5: Gesture.Tap/LongPress = 사진 더블탭 확대 2곳뿐(버튼 아님)', () => {

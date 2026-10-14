@@ -833,7 +833,7 @@ export default function Scan() {
         <OrderPill count={cartCount} onPress={goOrder} t={t} bottom={bottom + 16} />
 
         {/* §1-1: 정렬 시트 — 공용 ActionSheet(현 2옵션·현재값 체크) */}
-        <ActionSheet
+        <ActionSheet testID="scan-sort"
           open={sortSheet}
           title={t('reviews.sortTitle')}
           items={(['menu', 'priceDesc', 'priceAsc'] as ResultSortMode[]).map((m) => ({
@@ -1180,7 +1180,7 @@ function UnmatchedNotice({ open, onClose, t }: { open: boolean; onClose: () => v
   if (!open) return null;
   return (
     <Pressable testID="unmatched-backdrop" style={styles.noticeBackdrop} onPress={onClose}>
-      <Pressable testID="unmatched-card" style={styles.noticeCard} onPress={() => {}}>
+      <Pressable testID="unmatched-card" style={styles.noticeCard} noTrack onPress={() => {}}>
         <RiskMark state="unable" size={30} />
         <Text style={styles.noticeTitle}>{t('scan.unmatchedSheetTitle')}</Text>
         <Text style={styles.noticeBody}>{t('scan.unmatchedSheetBody')}</Text>

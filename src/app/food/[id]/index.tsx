@@ -657,7 +657,7 @@ function Registered({
       {/* §1-6: 재료 상세 바텀시트(4150:17055) */}
       <Modal visible={ingSheet != null} transparent animationType="fade" onRequestClose={() => setIngSheet(null)}>
         <Pressable testID="ing-sheet-backdrop" style={styles.sheetScrim} onPress={() => setIngSheet(null)}>
-          <Pressable style={styles.ingSheet} onPress={() => {}} testID="ing-sheet">
+          <Pressable style={styles.ingSheet} noTrack onPress={() => {}} testID="ing-sheet">
             {ingSheet && (
               <>
                 <View style={styles.ingSheetTop}>

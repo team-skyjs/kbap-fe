@@ -9,15 +9,19 @@ import * as React from 'react';
 import { useSegments } from 'expo-router';
 import { EVENTS, track } from '@/lib/analytics';
 import { screenFromSegments, setCurrentScreen } from '@/lib/uiClick';
+import { isEntryResolved, subscribeEntryResolved } from '@/lib/deeplink';
 
+/** PR 280 Codex P2: 진입 정착(lib/deeplink — 첫 실행 판별·로그인 리다이렉트 끝) **뒤에만** screen_view. 신규 설치는 부팅 때 (tabs)가 먼저
+ *  마운트됐다가 /login으로 교체된다 — 그 (tabs)/index는 실제 진입이 아니다. 정착 순간 현재 화면을 1회 기록한다. */
 export function useScreenTracking(): void {
   const segments = useSegments();
   const screen = screenFromSegments(segments);
+  const resolved = React.useSyncExternalStore(subscribeEntryResolved, isEntryResolved, isEntryResolved);
   const prev = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (prev.current === screen) return;
+    setCurrentScreen(screen); // ui_click 화면은 정착과 무관하게 최신
+    if (!resolved || prev.current === screen) return;
     prev.current = screen;
-    setCurrentScreen(screen);
     track(EVENTS.screen_view, { screen });
-  }, [screen]);
+  }, [screen, resolved]);
 }

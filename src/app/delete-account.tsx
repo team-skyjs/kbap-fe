@@ -166,7 +166,7 @@ export default function DeleteAccount() {
       {/* KB-162 Apple 재인증 게이트 — prompt: 안내+시트 진입 / 그 외: 중단 사유 (계정 유지) */}
       {gate != null && (
         <Pressable testID="delete-gate-backdrop" style={styles.gateBackdrop} onPress={revoking ? undefined : () => setGate(null)}>
-          <Pressable testID="delete-gate-card" style={styles.gateCard} onPress={() => {}}>
+          <Pressable testID="delete-gate-card" style={styles.gateCard} noTrack onPress={() => {}}>
             <RiskMark state={gate === 'prompt' ? 'caution' : 'unable'} size={30} />
             <Text style={styles.gateText}>{t(GATE_MSG[gate])}</Text>
             <View style={{ alignSelf: 'stretch', gap: 9 }}>

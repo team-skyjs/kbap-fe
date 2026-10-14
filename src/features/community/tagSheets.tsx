@@ -26,7 +26,7 @@ function SheetShell({ children, onClose }: { children: React.ReactNode; onClose:
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable testID="tag-sheet-backdrop" style={styles.backdrop} onPress={onClose}>
-        <Pressable testID="tag-sheet-card" style={[styles.sheet, pad]} onPress={() => {}}>
+        <Pressable testID="tag-sheet-card" style={[styles.sheet, pad]} noTrack onPress={() => {}}>
           {children}
         </Pressable>
       </Pressable>

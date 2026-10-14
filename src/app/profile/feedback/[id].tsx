@@ -62,7 +62,7 @@ export default function FeedbackDetailScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.body}>
           <View style={styles.head}>
-            <Chip label={t(STATUS_KEY[item.status])} selected={item.status === 'ANSWERED'} />
+            <Chip testID="feedback-status" label={t(STATUS_KEY[item.status])} selected={item.status === 'ANSWERED'} />
             <Text style={styles.date}>{formatOrderDate(Date.parse(item.createdAt))}</Text>
           </View>
           <Text style={styles.content} testID="feedback-detail-content">{item.content}</Text>

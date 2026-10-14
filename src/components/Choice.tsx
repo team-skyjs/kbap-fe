@@ -10,7 +10,7 @@ import { Pressable } from '@/components/Pressable';
 import Svg, { Path } from 'react-native-svg';
 import { color as C } from '@/lib/theme';
 
-export function Checkbox({ checked, onPress, testID }: { checked: boolean; onPress?: () => void; testID?: string }) {
+export function Checkbox({ checked, onPress, testID }: { checked: boolean; onPress?: () => void; testID: string }) {
   return (
     <Pressable style={[styles.box, checked ? styles.boxOn : styles.boxOff]} onPress={onPress} testID={testID} hitSlop={8}>
       {checked && (
@@ -22,7 +22,7 @@ export function Checkbox({ checked, onPress, testID }: { checked: boolean; onPre
   );
 }
 
-export function Radio({ selected, onPress, testID }: { selected: boolean; onPress?: () => void; testID?: string }) {
+export function Radio({ selected, onPress, testID }: { selected: boolean; onPress?: () => void; testID: string }) {
   return (
     <Pressable onPress={onPress} testID={testID} hitSlop={8}>
       <View style={[styles.radio, selected ? styles.radioOn : styles.radioOff]} />

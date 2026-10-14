@@ -140,7 +140,7 @@ export function ModerationFlow({
       </View>
     );
     return (
-      <ActionSheet
+      <ActionSheet testID="mod-actions"
         open
         title={title}
         avatar={avatar}
@@ -176,7 +176,7 @@ export function ModerationFlow({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
       <Pressable testID="mod-backdrop" style={styles.backdrop} onPress={phase === 'blocking' ? undefined : close}>
-        <Pressable style={[styles.sheet, kbH > 0 && { marginBottom: kbH }]} onPress={() => {}} testID="mod-sheet">
+        <Pressable style={[styles.sheet, kbH > 0 && { marginBottom: kbH }]} noTrack onPress={() => {}} testID="mod-sheet">
           {phase === 'report' &&
             (reported ? (
               /* 확인 상태 + 차단 2차 제안 */
