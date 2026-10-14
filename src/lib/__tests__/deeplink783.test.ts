@@ -6,7 +6,7 @@
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ router: { push: (h: string) => mockPush(h) } }));
 
-import { handleDeeplink, isOwnedSystemUrl, resolveDeeplink, setDeeplinkReady, SUPPORTED_DEEPLINKS, __resetDeeplinkForTest } from '../deeplink';
+import { handleDeeplink, isEntryResolved, isOwnedSystemUrl, markEntryResolved, resolveDeeplink, setDeeplinkReady, SUPPORTED_DEEPLINKS, __resetDeeplinkForTest } from '../deeplink';
 import { redirectSystemPath } from '../../app/+native-intent';
 
 beforeEach(() => {
@@ -80,6 +80,34 @@ it('+native-intent: 맡은 URL = 처리기로 + 라우터 이동 없음(null) ·
   expect(redirectSystemPath({ path: dev, initial: true })).toBe(dev);
   expect(redirectSystemPath({ path: '/food/1', initial: false })).toBe('/food/1');
   expect(mockPush).toHaveBeenCalledTimes(1);
+});
+
+it('#278 Codex 3R: 신규 설치 → 로그인 → 온보딩 → 홈 — 진입 정착 전 탭 포커스는 보류 링크를 쓰지 않고, 정착 뒤 탭 포커스에서 1회', () => {
+  __resetDeeplinkForTest(false); // 콜드 스타트: 진입 미정착
+  handleDeeplink('kbap://food/7', 1); // 설치 후 첫 실행 링크(콜드·지연 딥링크)
+  // RootLayout: entryChecked → 스택 렌더 → (tabs) 먼저 마운트·포커스(자식 effect가 먼저)
+  setDeeplinkReady(true);
+  expect(isEntryResolved()).toBe(false);
+  expect(mockPush).not.toHaveBeenCalled(); // 로그인 교체 직전 소비 금지
+  // 루트 effect: /login으로 교체 → 탭 언마운트(블러) → 그 다음 정착 표시
+  setDeeplinkReady(false);
+  markEntryResolved();
+  expect(mockPush).not.toHaveBeenCalled(); // 로그인 화면 위로 이동 금지
+  // 로그인 → 온보딩(탭 없음) → 완료 후 탭 포커스
+  setDeeplinkReady(true);
+  expect(mockPush.mock.calls).toEqual([['/food/7']]);
+  setDeeplinkReady(false);
+  setDeeplinkReady(true);
+  expect(mockPush).toHaveBeenCalledTimes(1);
+});
+
+it('일반 부팅(로그인 리다이렉트 없음) = 스택 렌더 전 정착 → 첫 탭 포커스에서 바로 이동', () => {
+  __resetDeeplinkForTest(false);
+  handleDeeplink('kbap://scan', 1);
+  markEntryResolved(); // gateSplash.then: needsLogin 아님
+  expect(mockPush).not.toHaveBeenCalled(); // 탭이 아직 없다
+  setDeeplinkReady(true);
+  expect(mockPush.mock.calls).toEqual([['/scan']]);
 });
 
 it('isOwnedSystemUrl — 스킴·에어브릿지 호스트만', () => {

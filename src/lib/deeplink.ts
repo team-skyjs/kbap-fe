@@ -71,7 +71,11 @@ export function isOwnedSystemUrl(url: string): boolean {
 
 const DEDUPE_MS = 3000;
 let last: { to: string; at: number } | null = null;
-let ready = false;
+let tabsFocused = false;
+/** 진입 게이트 정착(#278 Codex 3R) — RootLayout이 첫 실행 판별(entryChecked)과 로그인 리다이렉트까지 끝냈는가.
+ *  신규 설치는 (tabs)가 먼저 마운트·포커스된 **뒤** 루트 effect가 /login으로 교체한다(자식 effect가 먼저 돈다) — 그 틈에
+ *  탭 포커스만 보고 이동하면 보류 링크가 로그인 직전에 소비·유실된다. 그래서 준비 = 탭 포커스 ∧ 진입 정착. */
+let entryResolved = false;
 let pending: string | null = null;
 
 function go(to: string): void {
@@ -88,7 +92,7 @@ export function handleDeeplink(url: string, now: number = Date.now()): boolean {
   if (!to) return false; // 미지 경로·에어브릿지 https 원본(SDK가 kbap://로 다시 준다) = 무시
   if (last && last.to === to && now - last.at < DEDUPE_MS) return true; // 같은 링크가 두 입구로 — 1회만
   last = { to, at: now };
-  if (!ready) {
+  if (!(tabsFocused && entryResolved)) {
     pending = to; // 게이트 뒤 — 탭 진입 시 이동(마지막 것만)
     return true;
   }
@@ -96,19 +100,34 @@ export function handleDeeplink(url: string, now: number = Date.now()): boolean {
   return true;
 }
 
-/** (tabs) 레이아웃 마운트 = 부팅·온보딩·로그인 게이트 통과. 보류분 1회 이동. 언마운트(온보딩으로 교체 등) = 다시 보류. */
+function flushIfReady(): void {
+  if (!(tabsFocused && entryResolved) || !pending) return;
+  const to = pending;
+  pending = null;
+  go(to);
+}
+
+/** (tabs) 포커스 신호(useFocusEffect). 진입이 정착했으면 보류분 1회 이동. 블러(로그인·온보딩이 위·교체) = 다시 보류. */
 export function setDeeplinkReady(on: boolean): void {
-  ready = on;
-  if (on && pending) {
-    const to = pending;
-    pending = null;
-    go(to);
-  }
+  tabsFocused = on;
+  flushIfReady();
+}
+
+/** RootLayout 전용 — 진입 게이트 정착(일반 부팅 = 스택 렌더 전, 신규 설치 = /login 교체 직후). 한 번 true면 유지(앱 프로세스 동안). */
+export function markEntryResolved(): void {
+  entryResolved = true;
+  flushIfReady();
+}
+
+/** 진입 정착 여부 — 홈 진입 계측(HOME_VIEWED)도 같은 신호로 막는다(로그인 게이트 전 홈 마운트는 '홈 진입'이 아니다) */
+export function isEntryResolved(): boolean {
+  return entryResolved;
 }
 
 /** 유닛 전용 */
-export function __resetDeeplinkForTest(): void {
+export function __resetDeeplinkForTest(entry = true): void {
   last = null;
-  ready = false;
+  tabsFocused = false;
+  entryResolved = entry; // 기존 유닛 = 정착된 앱(진입 흐름 유닛만 false로 시작)
   pending = null;
 }

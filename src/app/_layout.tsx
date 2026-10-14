@@ -35,7 +35,7 @@ import { useAppFonts } from '@/lib/useAppFonts';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { initMetaSdk } from '@/lib/metaSdk';
 import { initAirbridgeDeeplinks } from '@/lib/airbridge';
-import { handleDeeplink } from '@/lib/deeplink';
+import { handleDeeplink, markEntryResolved } from '@/lib/deeplink';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { color } from '@/lib/theme';
 import { KeyboardDismissBar } from '@/components';
@@ -90,7 +90,11 @@ export default function RootLayout() {
     const ready = cleanupDone
       .then((fresh) => { needsLogin.current = fresh === true; })
       .catch(() => {}); // 판별 실패도 부트는 진행 (기존 finally 시맨틱 유지)
-    void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => setEntryChecked(true));
+    void gateSplash({ ready, prefetch: prefetchAfterCleanup(cleanupDone) }).then(() => {
+      // KB-783(#278 Codex 3R): 로그인 리다이렉트가 없으면 진입은 지금 정착 — 스택(탭)이 그려지기 **전**에 표시해 첫 포커스가 바로 쓴다
+      if (!needsLogin.current) markEntryResolved();
+      setEntryChecked(true);
+    });
     if (FLAGS.pushEnabled) {
       const push = require('@/lib/push/pushAdapter') as typeof import('@/lib/push/pushAdapter');
       void cleanupDone.then(() => push.registerPushToken()).catch(() => {});
@@ -131,6 +135,7 @@ export default function RootLayout() {
     if (entryChecked && needsLogin.current) {
       needsLogin.current = false;
       router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로
+      markEntryResolved(); // KB-783: 교체 **뒤** 정착 — 그 전에 마운트된 탭의 포커스는 보류 링크를 쓰지 않는다(로그인·온보딩 뒤 탭 포커스에서 1회)
     }
   }, [entryChecked, router]);
 

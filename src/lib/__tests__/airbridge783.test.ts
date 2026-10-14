@@ -256,7 +256,7 @@ describe('배선 잠금(소스) — 기존 Amplitude 지점 옆', () => {
     ['src/lib/auth/useSocialAuth.ts', ['airbridge.signUp()', 'airbridge.signIn()']],
     ['src/app/(tabs)/profile.tsx', ['airbridge.signOut()']],
     ['src/app/onboarding/index.tsx', ['airbridge.completeTutorial(']],
-    ['src/app/(tabs)/_layout.tsx', ["if (active === 'home') airbridge.homeView()", 'useFocusEffect(', 'setDeeplinkReady(true)', 'return () => setDeeplinkReady(false)']],
+    ['src/app/(tabs)/_layout.tsx', ["if (active === 'home' && isEntryResolved()) airbridge.homeView()", 'useFocusEffect(', 'setDeeplinkReady(true)', 'return () => setDeeplinkReady(false)']],
     ['src/app/scan.tsx', ['airbridge.scanSpend(quotaRef.current)', 'airbridge.scanResults(', 'airbridge.addToCart(']],
     ['src/app/search.tsx', ['airbridge.searchResults({ keyword: kw.keyword']],
     ['src/app/food/[id]/index.tsx', ['airbridge.productView(']],
@@ -273,7 +273,8 @@ describe('배선 잠금(소스) — 기존 Amplitude 지점 옆', () => {
     ['src/lib/data/useAdReward.ts', ["if (r.scanUnlocked) noteAdUnlock();\n      return qc.invalidateQueries({ queryKey: ['me'] })"]],
     ['src/lib/data/useMe.ts', ['setAirbridgeUser(user.id)', 'observeScanQuota(user.id, user.scanQuota?.unlocked)']],
     ['src/lib/auth/beAuth.ts', ['clearAirbridgeUser()']],
-    ['src/app/_layout.tsx', ['initAirbridgeDeeplinks(handleDeeplink)']],
+    // #278 Codex 3R: 진입 정착 = 일반 부팅은 스택 렌더 전, 신규 설치는 /login 교체 **뒤**
+    ['src/app/_layout.tsx', ['initAirbridgeDeeplinks(handleDeeplink)', 'if (!needsLogin.current) markEntryResolved();\n      setEntryChecked(true);', "router.replace('/login?entry=intro' as Href); // P-389: 첫 진입 = 인트로 가입 경로\n      markEntryResolved();"]],
   ];
   it.each(WIRING)('%s', (file, calls) => {
     const s = read(file);

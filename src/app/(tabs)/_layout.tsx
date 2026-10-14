@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { TabBar, type TabKey } from '@/components';
 import { EVENTS, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
-import { setDeeplinkReady } from '@/lib/deeplink';
+import { isEntryResolved, setDeeplinkReady } from '@/lib/deeplink';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
 import { ResumeOnboardingBanner } from '@/components/ResumeOnboardingBanner';
 
@@ -61,7 +61,7 @@ function AppTabBar({
   React.useEffect(() => {
     if (lastTab.current === active) return;
     lastTab.current = active;
-    if (active === 'home') airbridge.homeView(); // KB-783 ⑤
+    if (active === 'home' && isEntryResolved()) airbridge.homeView(); // KB-783 ⑤ — 진입 게이트 정착 뒤만(#278 Codex 3R P2: 신규 설치의 로그인 전 홈 마운트 제외)
     // P-389(KB-576): user_type = BE 토큰 유무(서버가 아는 사실이 정본 — 로컬 플래그 금지 P-147).
     // 비동기라 이벤트가 한 틱 늦지만, 탭 전환 계측은 순서가 아니라 발화가 기준이다.
     // **모름(저장소 오류)이면 user_type을 빼고 보낸다** — 회원을 게스트로 찍는 것보다 빈 값이 낫다(Codex #165).
