@@ -29,7 +29,7 @@ it('③ 기본 이미지 = 앱 번들 로컬 에셋(어댑터 경계 한 곳) �
 it('#116 P2 ①② — 판정 드레인 = 공용 useSavedIds(중복 배선 0), 검색 게스트 = AuthGateSheet', () => {
   const bm = read('src/lib/data/bookmarks.ts');
   expect(bm).toContain('export function useSavedIds(opts?: { enabled?: boolean }): { ids: Set<string>; ready: boolean } {'); // KB-779: 홈은 Saved 탭 활성 시에만
-  expect(bm).toContain('void saved.fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계
+  expect(bm).toContain('void fetchNextPage({ cancelRefetch: false });'); // P-332 문법 승계(KB-779 Codex ④: enabled 가드 + 구조분해)
   const fe = read('src/features/food/FoodExplorer.tsx');
   expect(fe).toContain('const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });'); // KB-779
   expect(fe).not.toContain('saved.fetchNextPage({ cancelRefetch: false })'); // 자체 드레인 소멸
