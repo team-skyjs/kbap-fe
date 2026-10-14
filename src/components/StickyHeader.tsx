@@ -109,6 +109,8 @@ export type StickyHeaderProps = {
   bell?: boolean;
   /** 안 읽은 알림 수 — 0이면 뱃지 미표시(숫자는 9+ 상한) */
   bellCount?: number;
+  /** KB-777: 홈 전용 — 앱바 마크·벨의 **보이는 끝**을 홈 본문 거터(20)에 맞춘다(헤더 거터는 16). 다른 화면·back 모드는 안 쓴다. */
+  alignToHomeGutter?: boolean;
   onBell?: () => void;
   onBack?: () => void;
   onSearch?: () => void;
@@ -128,6 +130,7 @@ export function StickyHeader({
   bookmarkSaved,
   bell,
   bellCount = 0,
+  alignToHomeGutter = false,
   onBell,
   onBack,
   onSearch,
@@ -170,8 +173,10 @@ export function StickyHeader({
             <IconArrowLeft size={20} color={C.ink} />
           </PressScale>
         ) : (
-          /* 9/5 시안 원본 SVG(4123:3613, 18.55×20) — .fig 디코드 appbar-mark 그대로 */
-          <AppBarMark height={20} />
+          /* 9/5 시안 원본 SVG(4123:3613, 18.55×20) — .fig 디코드 appbar-mark 그대로. KB-777: 홈은 마크 시작선을 거터 20에 */
+          <View style={alignToHomeGutter ? { marginLeft: HOME_MARK_INSET } : undefined} testID="header-mark">
+            <AppBarMark height={20} />
+          </View>
         )}
 
         {title != null && (
@@ -187,7 +192,7 @@ export function StickyHeader({
           </View>
         )}
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, alignToHomeGutter && { marginRight: -HOME_BELL_OUTSET }]} testID="header-actions">
           {search && (
             <PressScale style={styles.actionBtn} onPress={onSearch} hitSlop={10} testID="header-search">
               <IconSearch size={23} color={C.ink} sw={1.8} />
@@ -234,6 +239,15 @@ export function StickyHeader({
     </>
   );
 }
+
+/**
+ * KB-777(예진 10/13 실기): 홈 앱바를 본문 거터(20 — 검색·칩·카드)에 **보이는 글리프 기준**으로 맞춘다. 헤더 거터는 16.
+ * - 마크: 바깥 그릇 경로가 viewBox x=0부터 그려져 상자 왼쪽 = 글리프 왼쪽 → 16 + 4 = 20.
+ * - 벨: 40 터치 상자 안 22 아이콘이 가운데(9) + lucide 벨 오른쪽 발(중심 (20,16) r1 → x 21.0) + 획 절반 0.9 → 24단위 중 2.1 = 1.9px 안쪽.
+ *   보이는 오른쪽 끝 = 화면 끝에서 16 + 9 + 1.9 ≈ 26.9 → 스캔 버튼(채운 상자, 거터 20)과 6.9 차 → 7만큼 바깥으로(터치 상자는 화면 안).
+ */
+const HOME_MARK_INSET = 4;
+const HOME_BELL_OUTSET = 7;
 
 const styles = StyleSheet.create({
   root: {

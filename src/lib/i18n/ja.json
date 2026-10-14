@@ -16,7 +16,10 @@
     "leaveTitle": "保存せずに戻りますか？",
     "leaveBody": "下書きは保存されません。",
     "keepWriting": "書き続ける",
-    "discard": "破棄する"
+    "discard": "破棄する",
+    "leaveEditTitle": "保存せずに戻りますか？",
+    "leaveEditBody": "変更内容は保存されません。",
+    "keepEditing": "編集を続ける"
   },
   "intro": {
     "skip": "スキップ",
@@ -278,6 +281,8 @@
     "retakeBody": "今の結果は破棄されます。",
     "retakeBodyWithCart": "今の結果と追加した{{count}}件が破棄されます。",
     "retakeConfirm": "再スキャン",
+    "leaveTitle": "スキャン結果を閉じますか?",
+    "leaveConfirm": "閉じる",
     "loadingPhoto": "写真を読み込み中…",
     "errNotMenu": "メニュー表に見えません。もう一度撮影してください。",
     "errBusy": "メニューを読み取れませんでした。しばらくしてからお試しください。",
@@ -285,6 +290,16 @@
     "errProcessing": "このスキャンはすでに処理中です。少しお待ちください。",
     "quotaTitle": "無料スキャンをすべて使い切りました",
     "quotaBody": "レビューを書くとスキャンが無制限になります。",
+    "quotaDialogBody": "どちらか1つでスキャンが無制限になります。",
+    "quotaTileReviewTitle": "レビューを1件書く",
+    "quotaTileReviewSub": "投稿するとすぐ解除",
+    "quotaTileAdTitle_one": "広告を{{count}}本見る",
+    "quotaTileAdTitle_other": "広告を{{count}}本見る",
+    "quotaTileAdProgress": "{{n}}/{{total}} 視聴済み",
+    "quotaBodyUnlock": "レビューを1件書くか、広告を数回見るとスキャンが無制限になります。",
+    "unlockedTitle": "スキャンが無制限になりました！",
+    "unlockedOpening": "カメラを再起動しています…",
+    "unlockedRetry": "カメラを再起動できませんでした。もう一度お試しください。",
     "quotaCta": "レビューを書く",
     "freeLeft_one": "無料スキャン残り{{count}}回",
     "freeLeft_other": "無料スキャン残り{{count}}回",
@@ -741,7 +756,8 @@
       "apply": "リストに適用"
     },
     "countryLabel": "国",
-    "popularCountries": "人気の国"
+    "popularCountries": "人気の国",
+    "searchNoResults": "見つかりません。別の表記で探してみてください。"
   },
   "editProfile": {
     "title": "プロフィール編集",
@@ -779,7 +795,7 @@
   "restrictionsEdit": {
     "title": "制限を編集",
     "save": "制限を保存",
-    "notice": "すべての安全警告の基準になります。正確に保ってください。変更はすべての料理に即時反映されます。",
+    "notice": "すべての安全警告の基準になります。変更は保存を押すと反映されます。",
     "avoidNone": "まだ避けるものはありません",
     "tapToRemove": "×をタップで削除",
     "searchPlaceholder": "食材を検索…",
@@ -982,7 +998,7 @@
     "consentBothRequired": "通知をオンにするには両方に同意してください。",
     "consentConfirm": "同意して通知をオンにする",
     "nudgeTitle": "レビュー通知をオンにしますか？",
-    "nudgeBody": "注文したメニューを忘れる前にレビューをお知らせし、\nあなたのレビューに反応があったときもお伝えします。"
+    "nudgeBody": "注文したメニューを忘れる前にレビューをお知らせし、あなたのレビューに反応があったときもお伝えします。"
   },
   "notif": {
     "title": "通知設定",
@@ -1074,5 +1090,40 @@
     "watchToUnlock": "広告を見て解除 ({{n}}/{{total}})",
     "rewardLimit": "今日はここまでです。明日またお試しください。",
     "rewardError": "視聴を記録できませんでした。もう一度お試しください。"
+  },
+  "reviewTime": {
+    "justNow": "たった今",
+    "minutesAgo_one": "{{count}}分前",
+    "minutesAgo_other": "{{count}}分前",
+    "hoursAgo_one": "{{count}}時間前",
+    "hoursAgo_other": "{{count}}時間前",
+    "daysAgo_one": "{{count}}日前",
+    "daysAgo_other": "{{count}}日前",
+    "date": "{{year}}年{{month}}月{{day}}日",
+    "dateLong": "{{year}}年{{month}}月{{day}}日",
+    "monShort1": "1月",
+    "monShort2": "2月",
+    "monShort3": "3月",
+    "monShort4": "4月",
+    "monShort5": "5月",
+    "monShort6": "6月",
+    "monShort7": "7月",
+    "monShort8": "8月",
+    "monShort9": "9月",
+    "monShort10": "10月",
+    "monShort11": "11月",
+    "monShort12": "12月",
+    "monLong1": "1月",
+    "monLong2": "2月",
+    "monLong3": "3月",
+    "monLong4": "4月",
+    "monLong5": "5月",
+    "monLong6": "6月",
+    "monLong7": "7月",
+    "monLong8": "8月",
+    "monLong9": "9月",
+    "monLong10": "10月",
+    "monLong11": "11月",
+    "monLong12": "12月"
   }
 }

@@ -3,7 +3,8 @@
  *
  * 리마인더·리뷰 반응은 서버 배치가 보내므로 OS 권한 + 서버 활동 알림(activity)이 둘 다 켜져야 도달한다.
  * 판정(우선순위 순):
- *  - OS 거부(denied)            → 'osDenied'   : 「기기 설정 열기」. 매 스캔마다(재노출 억제 없음).
+ *  - OS 거부(denied, 다시 물을 수 없음) → 'osDenied': 「기기 설정 열기」. 매 스캔마다(재노출 억제 없음).
+ *    Android 13+ 미요청(denied+canAskAgain)은 getPermissionStatus가 미결정으로 돌려준다(KB-770) — 프라이머 경로.
  *  - OS 허용 + 서버 activity false → 'activityOff': 「알림 켜기」= PATCH activity:true. 매 스캔마다.
  *  - 그 외(미결정·unavailable)   → 기존 프라이머 1회 규칙(getPrimerResult null일 때만 'primer').
  * OS 미결정은 로그인 화면 OS 팝업(KB-631)이 담당 — 여기서 새 표면을 만들지 않는다.

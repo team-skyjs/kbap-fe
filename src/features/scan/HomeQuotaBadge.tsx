@@ -12,10 +12,7 @@ import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Txt as Text } from '@/components/Txt';
-import { Btn } from '@/components/Btn';
-import { UnlockActions } from '@/features/ads/RewardedUnlock';
-import { SheetShell } from '@/components/SheetShell';
+import { QuotaDialog } from './QuotaDialog';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
@@ -25,7 +22,7 @@ import { TagPickerSheet } from '@/app/community/compose';
 import { useMe } from '@/lib/data/useMe';
 import { useIsGuest } from '@/lib/auth/useSession';
 import { FLAGS } from '@/lib/flags';
-import { color as C, font, type as type_ } from '@/lib/theme';
+import { EVENTS, track } from '@/lib/analytics';
 import type { ScanQuota } from '@/lib/api/types';
 
 export interface QuotaBadgeModel {
@@ -185,7 +182,13 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
     py.set(posY);
     placed.set(1);
   }, [posX, posY, px, py, dragging, placed]);
-  const floatStyle = useAnimatedStyle(() => ({ opacity: placed.get(), transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
+  // KB-765 QA 2R: 다이얼로그가 열린 동안 숨김은 **애니메이션 스타일 안에서** — 정적 { opacity: 0 }을 뒤에 덧대면 useAnimatedStyle이
+  // 네이티브에 매 프레임 opacity(placed)를 써서 덮는다(jest는 정적 스타일만 봐서 못 잡았다). sheet → 공유값(effect) → 같은 식 하나.
+  const dialogHidden = useSharedValue(0);
+  React.useEffect(() => {
+    dialogHidden.set(sheet ? 1 : 0);
+  }, [sheet, dialogHidden]);
+  const floatStyle = useAnimatedStyle(() => ({ opacity: placed.get() * (1 - dialogHidden.get()), transform: [{ translateX: px.get() }, { translateY: py.get() }] }));
   // 콜백은 JS 스레드(runOnJS(true) — 레포 제스처 관례, 워클릿 경계 0). 공유값은 JS에서 써도 UI에 반영된다.
   // 공유값은 .get()/.set() — React Compiler가 훅 반환값의 `.value =` 대입을 "수정 불가"로 보고 컴포넌트를 건너뛰지 않게(reanimated 4 권장).
   const pan = Gesture.Pan()
@@ -229,6 +232,8 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   const openSheet = () => {
     if (justDragged.get()) return;
     setSheet(true);
+    // KB-765: 다이얼로그 노출 — 여는 탭에서 1회(이벤트 핸들러 — effect 아님). remaining = 그 순간 남은 무료 횟수
+    track(EVENTS.scan_quota_dialog_view, { remaining: model?.value ?? 0 });
   };
 
   const shown = celebrating?.model ?? model;
@@ -240,7 +245,9 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
         {shown && pos != null && (
           <GestureDetector gesture={pan}>
             {/* 그리는 조건 = 저장값 읽기 끝 + 영역 측정 끝(자리 확정). 처음 자리가 공유값에 실리기 전 프레임은 투명(placed) — (0,0)·다른 경로의 자리를 그리지 않는다 */}
-            <Animated.View style={[styles.float, floatStyle]} testID="home-quota-badge">
+            {/* KB-765 QA: 다이얼로그가 열린 동안 홈 뱃지는 숨김 — iOS Modal(별도 창)의 딤 아래에 있지만 0회 회색 불꽃이 딤에 어두워져
+                딤 위에 뜬 것처럼 보였고, 히어로와 불꽃이 두 개가 됐다. 마운트·자리 유지(투명도만) — 닫으면 그 자리 그대로 */}
+            <Animated.View style={[styles.float, floatStyle]} testID="home-quota-badge" pointerEvents={sheet ? 'none' : 'auto'}>
               <CountdownBadge
                 value={shown.value}
                 state={shown.state}
@@ -253,22 +260,21 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
           </GestureDetector>
         )}
       </View>
-      <SheetShell visible={sheet} onClose={() => setSheet(false)} onDismiss={onSheetDismiss}>
-        <View style={styles.copy}>
-          <Text style={styles.title} testID="quota-sheet-title">{left}</Text>
-          <Text style={styles.body}>{t('scan.quotaBody')}</Text>
-        </View>
-        <View style={styles.actions}>
-          {/* KB-739 ⑥: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3)는 **남은 무료 횟수 0일 때만**(/review 5), 남아 있으면 기존 안내 그대로. 광고 버튼은 회원·서버 adRewards·광고 준비됨 조건 추가.
-              해제(서버 scanUnlocked) = 시트 닫기 — 프로필 재조회로 뱃지 모델이 null이 되며 사라진다 */}
-          {shown && shown.value === 0 ? (
-            <UnlockActions onWriteReview={openPicker} onUnlocked={() => setSheet(false)} onClose={() => setSheet(false)} />
-          ) : (
-            <Btn onPress={openPicker} testID="quota-sheet-review">{t('scan.quotaCta')}</Btn>
-          )}
-          <Btn variant="ghost" onPress={() => setSheet(false)} testID="quota-sheet-later">{t('scan.later')}</Btn>
-        </View>
-      </SheetShell>
+      {/* KB-765(D-23 E2): 바텀시트 → 가운데 다이얼로그 — 표면만 교체. 2택(리뷰 / 광고 n/3)은 남은 무료 횟수와 무관하게 상시(KB-759),
+          광고 타일 조건(회원·서버 adRewards·광고 준비됨)·해제 뒤 닫힘(프로필 재조회로 뱃지 모델 null)·리뷰 픽커 순서(iOS onDismiss)는 그대로 */}
+      {/* 상시 마운트(바텀시트와 같음) — 자격이 사라지면 위 렌더 중 동기화가 sheet를 끄고 visible=false로 닫힌다(Codex #221 P2) */}
+      {(
+        <QuotaDialog
+          visible={sheet}
+          value={shown?.value ?? 0}
+          state={shown?.state ?? 'empty'}
+          title={left}
+          onWriteReview={openPicker}
+          onUnlocked={() => setSheet(false)}
+          onClose={() => setSheet(false)}
+          onDismiss={onSheetDismiss}
+        />
+      )}
       {/* 열릴 때만 마운트(스캔 잠금 화면과 같은 방식) — 홈에서 픽커 검색 훅이 상시 돌지 않게 */}
       {picker && (
       <TagPickerSheet
@@ -291,8 +297,4 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
 
 const styles = StyleSheet.create({
   float: { position: 'absolute', left: 0, top: 0 }, // 위치 = translate(px, py) — 기본 = 오른쪽 BADGE_RIGHT·측정 앵커
-  copy: { gap: 8 },
-  title: { ...type_.sectionTitle, fontFamily: font.bodyBold, color: C.ink },
-  body: { ...type_.body, fontFamily: font.body, color: C.ink2 },
-  actions: { gap: 8 },
 });

@@ -16,7 +16,10 @@
     "leaveTitle": "不保存就离开吗？",
     "leaveBody": "草稿不会被保存。",
     "keepWriting": "继续写",
-    "discard": "离开"
+    "discard": "离开",
+    "leaveEditTitle": "不保存就离开吗？",
+    "leaveEditBody": "你的更改不会被保存。",
+    "keepEditing": "继续编辑"
   },
   "intro": {
     "skip": "跳过",
@@ -278,6 +281,8 @@
     "retakeBody": "当前结果将被清除。",
     "retakeBodyWithCart": "当前结果和已加入的{{count}}项将被清除。",
     "retakeConfirm": "重新扫描",
+    "leaveTitle": "离开扫描结果?",
+    "leaveConfirm": "离开",
     "loadingPhoto": "正在加载照片…",
     "errNotMenu": "这看起来不像菜单，请重新拍照。",
     "errBusy": "未能识别菜单，请稍后再试。",
@@ -285,6 +290,16 @@
     "errProcessing": "该扫描请求正在处理中，请稍候。",
     "quotaTitle": "免费扫描次数已用完",
     "quotaBody": "写一条评价即可解锁无限扫描。",
+    "quotaDialogBody": "完成任意一项即可解锁无限扫描。",
+    "quotaTileReviewTitle": "写 1 条评价",
+    "quotaTileReviewSub": "发布后立即解锁",
+    "quotaTileAdTitle_one": "观看 {{count}} 个广告",
+    "quotaTileAdTitle_other": "观看 {{count}} 个广告",
+    "quotaTileAdProgress": "已看 {{n}}/{{total}}",
+    "quotaBodyUnlock": "写一条评价或观看几次广告，即可解锁无限扫描。",
+    "unlockedTitle": "已解锁无限扫描！",
+    "unlockedOpening": "正在重新打开相机…",
+    "unlockedRetry": "无法重新打开相机，请重试。",
     "quotaCta": "写评价",
     "freeLeft_one": "剩余 {{count}} 次免费扫描",
     "freeLeft_other": "剩余 {{count}} 次免费扫描",
@@ -741,7 +756,8 @@
       "apply": "应用到我的列表"
     },
     "countryLabel": "国家",
-    "popularCountries": "热门国家"
+    "popularCountries": "热门国家",
+    "searchNoResults": "没有找到结果。换个写法试试。"
   },
   "editProfile": {
     "title": "编辑资料",
@@ -779,7 +795,7 @@
   "restrictionsEdit": {
     "title": "编辑禁忌",
     "save": "保存禁忌",
-    "notice": "这将影响所有安全警告。请保持准确，更改会立即应用于所有菜品。",
+    "notice": "所有安全提示都以此列表为准。点击保存后更改才会生效。",
     "avoidNone": "尚未设置忌口",
     "tapToRemove": "点击 × 移除",
     "searchPlaceholder": "搜索食材…",
@@ -982,7 +998,7 @@
     "consentBothRequired": "需同意两项才能开启通知。",
     "consentConfirm": "同意并开启通知",
     "nudgeTitle": "开启评价提醒？",
-    "nudgeBody": "在你忘记之前提醒你评价点过的菜，\n有人对你的评价做出反应时也会通知你。"
+    "nudgeBody": "在你忘记之前提醒你评价点过的菜，有人对你的评价做出反应时也会通知你。"
   },
   "notif": {
     "title": "通知设置",
@@ -1074,5 +1090,40 @@
     "watchToUnlock": "观看广告解锁（{{n}}/{{total}}）",
     "rewardLimit": "今天到此为止，请明天再试。",
     "rewardError": "未能记录本次观看，请重试。"
+  },
+  "reviewTime": {
+    "justNow": "刚刚",
+    "minutesAgo_one": "{{count}}分钟前",
+    "minutesAgo_other": "{{count}}分钟前",
+    "hoursAgo_one": "{{count}}小时前",
+    "hoursAgo_other": "{{count}}小时前",
+    "daysAgo_one": "{{count}}天前",
+    "daysAgo_other": "{{count}}天前",
+    "date": "{{year}}年{{month}}月{{day}}日",
+    "dateLong": "{{year}}年{{month}}月{{day}}日",
+    "monShort1": "1月",
+    "monShort2": "2月",
+    "monShort3": "3月",
+    "monShort4": "4月",
+    "monShort5": "5月",
+    "monShort6": "6月",
+    "monShort7": "7月",
+    "monShort8": "8月",
+    "monShort9": "9月",
+    "monShort10": "10月",
+    "monShort11": "11月",
+    "monShort12": "12月",
+    "monLong1": "1月",
+    "monLong2": "2月",
+    "monLong3": "3月",
+    "monLong4": "4月",
+    "monLong5": "5月",
+    "monLong6": "6月",
+    "monLong7": "7月",
+    "monLong8": "8月",
+    "monLong9": "9月",
+    "monLong10": "10月",
+    "monLong11": "11月",
+    "monLong12": "12月"
   }
 }

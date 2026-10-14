@@ -22,6 +22,7 @@ import { hasBeSession } from '../auth/beAuth';
 import { currentGen } from '../auth/beTokens';
 import { setSentryUser } from '../sentry';
 import { setAnalyticsUser } from '../analytics';
+import { observeScanQuota, setAirbridgeUser } from '../airbridge';
 import { FLAGS } from '../flags';
 import { loadLocalSpice, SPICE_KEY } from '../onboarding/submit';
 import { spiceChoiceToWire } from '../api/spiceAdapter';
@@ -42,6 +43,8 @@ export async function fetchMe(): Promise<User> {
   if (currentGen() === gen) {
     setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
     setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
+    setAirbridgeUser(user.id); // KB-783: 같은 지점·같은 값(회원 번호만 — 이메일 등 PII 금지)
+    observeScanQuota(user.id, user.scanQuota?.unlocked); // KB-783 ⑮: 리뷰 해제 = 서버 프로필 전이로만 안다
   }
   return user;
 }

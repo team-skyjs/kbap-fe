@@ -161,3 +161,14 @@ describe('P-181: 프로필 소형 4건', () => {
     expect(JSON.parse(en).home.safeTitle).toBe('Popular dishes');
   });
 });
+
+it('KB-776(QA B2-4): 회원 메뉴에 약관·개인정보처리방침 행 = 법적 문서 화면(doc 파라미터)', () => {
+  mockUseMe.mockReturnValue(ME([]));
+  const tree = render();
+  for (const [id, doc] of [['profile-menu-terms', 'terms'], ['profile-menu-privacy', 'privacy']] as const) {
+    const row = tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+    expect(row).toBeDefined();
+    act(() => row.props.onPress());
+    expect(mockPush).toHaveBeenLastCalledWith(`/profile/legal?doc=${doc}`);
+  }
+});

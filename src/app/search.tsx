@@ -33,6 +33,7 @@ import { useMe } from '@/lib/data/useMe';
 import { useRecentSearches } from '@/lib/data/useRecentSearches';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
+import { airbridge } from '@/lib/airbridge';
 import { searchKeywordProps } from '@/lib/search/keywordPrivacy';
 import { useIsGuest } from '@/lib/auth/useSession';
 import type { FoodCard } from '@/lib/api/types';
@@ -98,10 +99,9 @@ export default function Search() {
   useEffect(() => {
     if (!submitted || search.isLoading || trackedFor.current === submitted) return;
     trackedFor.current = submitted;
-    track(
-      EVENTS.search_query,
-      searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length),
-    );
+    const kw = searchKeywordProps(submitted, results.flatMap((f) => [f.name, f.nameKo].filter(Boolean) as string[]), results.length);
+    track(EVENTS.search_query, kw);
+    airbridge.searchResults({ keyword: kw.keyword, resultCount: kw.result_count }); // KB-783 ⑦ — 같은 프라이버시 규칙(매칭값만)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submitted, search.isLoading]);
   const reset = () => {

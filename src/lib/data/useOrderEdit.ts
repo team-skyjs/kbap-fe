@@ -16,7 +16,7 @@ import i18n from '../i18n';
 import { api, apiLang, ApiError } from '@/lib/api/client';
 import { uploadImage } from '@/lib/api/scanImage';
 import { showTopToast } from '@/components/topToastStore';
-import { adaptOrderDetail, type OrderDetail, type OrderDetailWire } from './useOrders';
+import { adaptOrderDetail, orderDetailKey, type OrderDetail, type OrderDetailWire } from './useOrders';
 
 /** dev Swagger UploadUrlRequest.purpose enum 실측(9/23): … | ORDER_ITEM */
 export const ORDER_ITEM_IMAGE_PURPOSE = 'ORDER_ITEM';
@@ -32,7 +32,7 @@ export function orderEditErrorKey(e: unknown): string {
 function useApplyOrderDetail() {
   const qc = useQueryClient();
   return (detail: OrderDetail) => {
-    qc.setQueryData<OrderDetail>(['orders', detail.orderId], detail);
+    qc.setQueryData<OrderDetail>(orderDetailKey(detail.orderId, apiLang()), detail); // KB-775: 상세 키 = 언어 포함(편집 응답도 요청 언어 name)
     void qc.invalidateQueries({ queryKey: ['orders'], exact: true }); // 목록 카드 thumbnails — 상세(['orders', id])는 방금 교체했으니 제외
   };
 }

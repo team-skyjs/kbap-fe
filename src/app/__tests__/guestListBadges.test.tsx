@@ -22,6 +22,7 @@ jest.mock('react-native-reanimated', () => {
   };
   return {
     __esModule: true,
+    useReducedMotion: () => false, // KB-772: Shimmer·Spinner
     withSpring: (v: unknown) => v,
     ReducedMotionConfig: () => null,
     ReduceMotion: { System: 'system' },

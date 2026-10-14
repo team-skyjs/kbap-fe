@@ -45,7 +45,7 @@ jest.mock('react-native-reanimated', () => {
     ZoomOut: chain(),
     FadeInDown: chain(),
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => { const sv = { value: v, get: () => sv.value, set: (n: unknown) => { sv.value = n; } }; return sv; }, // KB-706 컴파일러 호환 .get/.set(KB-765 홈 뱃지 effect가 .set 호출)
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     useReducedMotion: () => false,

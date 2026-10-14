@@ -298,3 +298,33 @@ describe('KB-708 (7) 칩 줄 높이', () => {
     spy.mockRestore();
   });
 });
+
+it('KB-781 리뷰 카드 작성 시각 — name-group(가로 wrap · 간격 8 · 줄 간격 2) = [닉네임(말줄임)+메달(간격 4)] + [시각(안 잘림 · 스크린리더 전체 날짜)] · 구분 문자 0', () => {
+  const tree = render(<FeedCard review={REVIEW} t={t} mine={false} onOpenFood={() => {}} onMore={() => {}} />);
+  const when = tree.root.findAll((n) => n.props?.testID === 'feed-when-r1' && typeof n.type === 'string')[0];
+  expect(when).toBeDefined();
+  expect(when.props.numberOfLines).toBeUndefined(); // 시각은 안 잘림
+  expect(when.props.accessibilityLabel).toBe('reviewTime.dateLong'); // 2026-08-11 = 7일 이상 → 전체 날짜(목 t는 키 그대로)
+  expect(when.props.children).toBe('reviewTime.date');
+  const flat = (s: unknown) => Object.assign({}, ...[s].flat(Infinity as 1).filter(Boolean) as object[]) as Record<string, unknown>;
+  // name-group = 시각의 부모(호스트) — 가로 wrap
+  let group = when.parent;
+  while (group && (typeof group.type !== 'string' || flat(group.props.style).flexWrap !== 'wrap')) group = group.parent;
+  expect(flat(group!.props.style)).toMatchObject({ flexDirection: 'row', flexWrap: 'wrap', columnGap: 8, rowGap: 2 });
+  const name = group!.findAll((n) => typeof n.type === 'string' && n.props?.children === 'Amy')[0];
+  expect(name.props.numberOfLines).toBe(1); // 닉네임만 말줄임
+  expect(flat(group!.findAll((n) => typeof n.type === 'string' && flat(n.props?.style).gap === 4)[0].props.style)).toMatchObject({ flexDirection: 'row', gap: 4 }); // 닉네임+메달
+  expect(JSON.stringify(tree.toJSON())).not.toContain('·'); // 가운데 점 금지(예진 10/14)
+});
+
+it('KB-781: 열어 둔 카드도 다음 경계에 갱신 — 방금(10초 전) → 50초 뒤 "분 전"(렌더 중 Date.now() 고착 방지)', () => {
+  jest.useFakeTimers({ now: new Date('2026-10-14T12:00:00Z') });
+  try {
+    const fresh = { ...REVIEW, id: 'r2', createdAt: '2026-10-14T11:59:50Z' } as Review;
+    const tree = render(<FeedCard review={fresh} t={t} mine={false} onOpenFood={() => {}} onMore={() => {}} />);
+    const label = () => tree.root.findAll((n) => n.props?.testID === 'feed-when-r2' && typeof n.type === 'string')[0].props.children;
+    expect(label()).toBe('reviewTime.justNow');
+    act(() => { jest.advanceTimersByTime(50_000); });
+    expect(label()).toBe('reviewTime.minutesAgo');
+  } finally { jest.useRealTimers(); }
+});

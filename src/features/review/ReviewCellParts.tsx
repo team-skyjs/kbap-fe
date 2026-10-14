@@ -185,7 +185,7 @@ export function PlacePickerSheet({
   // Codex #195: resultsOnly(주문 장소 PATCH — placeId 필수)는 placeId 없는 결과를 **렌더하지 않는다**(골라도 보낼 수 없는 행 금지)
   const results = (active.data ?? []).filter((p) => !resultsOnly || !!p.placeId);
   // 프리즈 픽스: 닫힘·확정 전부 키보드 선해제 경유(위 runAfterKeyboardHidden 참조)
-  const kbLift = useKeyboardLift(); // KB-768: 안드 시트 하단을 키보드 위로(훅은 아래 이른 반환 전)
+  const kbLift = useKeyboardLift({ dismissBar: true }); // KB-768: 안드 시트 하단을 키보드·내리기 바 위로(훅은 아래 이른 반환 전)
   const close = () => runAfterKeyboardHidden(onClose);
   const pick = (p: ReviewPlaceTag) => runAfterKeyboardHidden(() => onPick(p));
   if (!open) return null;

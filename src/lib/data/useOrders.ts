@@ -6,7 +6,8 @@
  * 실패 = 표준 에러 블록).
  */
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api/client';
+import { api, clampLang } from '@/lib/api/client';
+import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 
 /** 절대 URL만 통과(refToUrl 규칙 — 렌더 불가 값 차단). */
 function urlOrNull(v: string | null | undefined): string | null {
@@ -26,6 +27,8 @@ interface OrderSummaryWire {
 
 interface OrderItemWire {
   menuName?: string | null;
+  /** KB-775(서버 #400 KB-782): 요청 언어(Accept-Language) 공개 이름. 준비중 음식·미지원 언어·헤더 없음 = null → 화면은 name ?? menuName. */
+  name?: string | null;
   quantity?: number;
   price?: number | null; // null = 스캔 가격 미인식(총액 제외)
   foodId?: number | null;
@@ -68,7 +71,10 @@ export interface OrderSummary {
 export interface OrderItem {
   /** null = 구응답(서버 #297 이전 캐시) — 사진 편집 불가 */
   id: string | null;
+  /** 주문 시점 한국어 스냅샷(서버 menuName) */
   menuName: string;
+  /** KB-775: 사용자 언어 공개 이름 — null이면 menuName(DB에 없는 음식·준비중). 표시는 orderItemName 한 곳으로 */
+  name: string | null;
   quantity: number;
   price: number | null;
   foodId: string | null;
@@ -114,6 +120,19 @@ export function orderItemImage(item: { userImageUrl?: string | null; imageUrl: s
   return item.userImageUrl ?? item.imageUrl;
 }
 
+/**
+ * KB-775(예진 규칙): 주문 항목 표시 이름 = **DB에 있는 음식이면 사용자 언어**(서버 name), 없으면(준비중·미등록) **주문한 한국어**(menuName).
+ * 주문 상세 메뉴 목록·스토리 카드 메뉴 줄이 이 한 곳을 통한다. 가게 이름(place 축)은 무관.
+ */
+export function orderItemName(item: { name?: string | null; menuName: string }): string {
+  return item.name?.trim() || item.menuName;
+}
+
+/** KB-775: 주문 상세 캐시 키에 앱 언어 — 언어를 바꾼 직후 이전 언어 이름이 남지 않게(서버 name은 Accept-Language 기준). */
+export function orderDetailKey(orderId: string, lang: string): readonly unknown[] {
+  return ['orders', orderId, lang];
+}
+
 /** OrderDetailResponse → OrderDetail. 조회(GET)와 편집 응답(PATCH/PUT/DELETE) 공용 — 응답 후 반영은 이걸로 캐시를 통째로 교체한다. */
 export function adaptOrderDetail(w: OrderDetailWire): OrderDetail {
   return {
@@ -122,6 +141,7 @@ export function adaptOrderDetail(w: OrderDetailWire): OrderDetail {
     items: (w.items ?? []).map((i) => ({
       id: i.id != null ? String(i.id) : null,
       menuName: i.menuName ?? '',
+      name: i.name?.trim() || null, // 빈 문자열도 null — 한국어 스냅샷으로 폴백
       quantity: i.quantity ?? 0,
       price: typeof i.price === 'number' ? i.price : null, // null = 단가 미표시
       foodId: i.foodId != null ? String(i.foodId) : null,
@@ -156,8 +176,9 @@ export function useOrders(enabled = true) {
 }
 
 export function useOrderDetail(orderId: string) {
+  const lang = clampLang(useAppLanguage()); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   return useQuery({
-    queryKey: ['orders', orderId],
+    queryKey: orderDetailKey(orderId, lang),
     enabled: !!orderId,
     queryFn: async (): Promise<OrderDetail> => adaptOrderDetail(await api.get<OrderDetailWire>(`/api/orders/${orderId}`)),
   });

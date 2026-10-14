@@ -7,6 +7,7 @@
 import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { BackHandler } from 'react-native';
 
 // scanDefaultView 프렐류드 재사용
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
@@ -81,7 +82,11 @@ jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
   return { LinearGradient: View };
 });
+// KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
+jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
+  useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   useFocusEffect: (cb: () => void) => cb(), // P-255: 진입 선발급 훅 목
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
@@ -312,4 +317,60 @@ it('KB-730 스캔 성공 2회째 → 리뷰 유도 시트 1 · 1회째 → 0', a
   await act(async () => { await galleryBtn(second).props.onPress(); }); // 성공 2회째
   await settle();
   expect(sheets(second)).toBe(1);
+});
+
+describe('KB-769 스캔 결과 뒤로가기 가드', () => {
+  type Prevent = { on: boolean; cb: (o: { data: { action: unknown } }) => void };
+  const g = globalThis as { __prevent?: Prevent; __navDispatch?: (a: unknown) => void };
+  const toResult = async () => {
+    const tree = render(<Scan />);
+    await act(async () => {
+      await galleryBtn(tree).props.onPress();
+    });
+    return tree;
+  };
+  const list = (tree: ReactTestRenderer) => tree.root.findAll((n) => typeof n.props?.onAdd === 'function' && Array.isArray(n.props?.dishes))[0];
+  const byId = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id);
+
+  it('담은 게 없으면 막지 않는다 → 담으면 back(헤더·하드웨어·스와이프 = beforeRemove) 막고 확인 창 → 취소 = 머묾 · 나가기 = 막았던 이동 그대로', async () => {
+    const dispatched: unknown[] = [];
+    g.__navDispatch = (a) => dispatched.push(a);
+    const tree = await toResult();
+    expect(g.__prevent?.on).toBe(false);
+    act(() => list(tree).props.onAdd(list(tree).props.dishes[0]));
+    expect(g.__prevent?.on).toBe(true);
+    const action = { type: 'GO_BACK' };
+    act(() => g.__prevent!.cb({ data: { action } }));
+    expect(byId(tree, 'scan-leave-confirm').length).toBeGreaterThan(0);
+    expect(JSON.stringify(tree.toJSON())).toContain('scan.leaveTitle');
+    act(() => byId(tree, 'scan-confirm-cancel').filter((n) => typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(byId(tree, 'scan-leave-confirm')).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+    act(() => g.__prevent!.cb({ data: { action } }));
+    act(() => byId(tree, 'scan-leave-go').filter((n) => typeof n.props.onPress === 'function')[0].props.onPress());
+    expect(dispatched).toEqual([action]);
+  });
+
+  it('미등록 안내 열림 + Android 하드웨어 back = 안내만 닫힘(결과·담은 항목 유지, 화면 이탈 0)', async () => {
+    const handlers: (() => boolean)[] = [];
+    const spy = jest.spyOn(BackHandler, 'addEventListener').mockImplementation(((_e: string, h: () => boolean) => {
+      handlers.push(h);
+      return { remove: () => handlers.splice(handlers.indexOf(h), 1) };
+    }) as unknown as typeof BackHandler.addEventListener);
+    try {
+      const tree = await toResult();
+      act(() => list(tree).props.onAdd(list(tree).props.dishes[0]));
+      expect(handlers).toHaveLength(0);
+      act(() => list(tree).props.onOpen({ ...list(tree).props.dishes[0], matched: false }));
+      expect(JSON.stringify(tree.toJSON())).toContain('scan.unmatchedSheetTitle');
+      let consumed = false;
+      act(() => { consumed = handlers[handlers.length - 1](); });
+      expect(consumed).toBe(true); // 기본 back(화면 닫기) 소비
+      expect(JSON.stringify(tree.toJSON())).not.toContain('scan.unmatchedSheetTitle');
+      expect(JSON.stringify(tree.toJSON())).toContain('₩8,000'); // 결과 유지
+      expect(handlers).toHaveLength(0); // 닫히면 리스너 해제 → 다음 back은 이탈 가드로
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
