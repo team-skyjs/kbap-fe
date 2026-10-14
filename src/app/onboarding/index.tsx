@@ -72,6 +72,7 @@ import { queryClient } from '@/lib/queryClient';
 import { EVENTS, setUserProps, track } from '@/lib/analytics';
 import { airbridge } from '@/lib/airbridge';
 import { isRegisteredForAnalytics } from '@/lib/auth/beTokens';
+import { useDeeplinkGate } from '@/lib/deeplink';
 
 // P-130(온보딩 v3, 8/6 확정): 마찰 제로 4스텝 — 유저 입력은 국적·회피·맵기뿐.
 // 프로필(닉네임·사진)·마크 데모·요약 스텝 소멸(자동 프로필·첫 스캔 코치마크로 이관).
@@ -99,6 +100,7 @@ type ConsentKey = 'terms' | 'privacy' | 'safety';
 const CONSENT_KEYS: ConsentKey[] = ['terms', 'privacy', 'safety'];
 
 export default function Onboarding() {
+  useDeeplinkGate(); // KB-783: 이 화면 위에선 딥링크 보류(통과 뒤 1회 이동)
   const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
