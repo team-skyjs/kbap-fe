@@ -122,8 +122,8 @@ it('③ FoodExplorer 소스 잠금 — 클라 위험 필터 부재·riskChip 훅
   const fe = require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8') as string;
   expect(fe).not.toContain("gridSource.filter((f) => personalRisk(f.risk, hasR) === riskChip)");
   expect(fe).toContain('const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive });'); // 2R ②: Saved 활성 = browse 휴면
-  expect(fe).toContain("const savedList = useBookmarks(savedTabActive ? riskChip : 'all');");
-  expect(fe).toContain('const saved = useBookmarks();'); // 판정 소스(드레인) = 무필터 유지
+  expect(fe).toContain("const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn });"); // KB-779: 홈은 Saved 탭 활성 시에만
+  expect(fe).toContain('const saved = useBookmarks(undefined, { enabled: bookmarksOn });'); // 무필터 유지(저장 0건 판정)
   expect(fe).toContain('if (gridLen < FOODS_PAGE_SIZE && gridQ.hasNextPage && !gridQ.isFetching)');
   expect(fe).toContain("if (gridQ.isError) return; // 3R ①"); // 에러 = 자동 페치 중단
   expect(fe).toContain('fillFailedAtRef.current.at === gridQ.dataUpdatedAt // 성공 재조회(갱신 시각 변화) = 마커 무효(6R P2)'); // 5R ①→6R: 쿼리 스코프+갱신 시각 실패 마커

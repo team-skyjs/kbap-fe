@@ -115,6 +115,9 @@ export interface FoodCard {
   blurb?: string;
   /** P-385(KB-363): 서버 공개 시각 — NEW 배지 판정은 lib/newFood.isNewFood 한 곳에서. */
   publishedAt?: string | null;
+  /** KB-779: 서버 FoodSummaryResponse.bookmarked(비회원 항상 false). 홈 카드 별·토글 방향의 정본 —
+   *  /bookmarks 전 페이지 드레인 대체. 옵셔널 = mock·스냅샷 호환(부재 = 미저장). */
+  bookmarked?: boolean;
 }
 
 export interface IngredientRisk {

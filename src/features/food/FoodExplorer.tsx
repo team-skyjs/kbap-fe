@@ -152,8 +152,12 @@ export function FoodExplorer({
   // (riskChip 'all'이면 같은 쿼리키 = 캐시 공유, 추가 요청 없음).
   const savedTabActive = variant === 'screen' ? savedOnly : gridTab === 'saved';
   const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive }); // #112 2R ②: Saved 활성 = browse 휴면
-  const saved = useBookmarks();
-  const savedList = useBookmarks(savedTabActive ? riskChip : 'all');
+  // KB-779: 홈(embedded) 별·토글 방향 = 카드의 bookmarked(/home·/foods·/bookmarks 전부 FoodSummaryResponse 동봉)
+  // → 북마크 쿼리(드레인 포함)는 Saved 탭이 활성일 때만(빈 상태 판정·목록). 콜드 스타트 GET /bookmarks 0회.
+  // 음식 탭(screen)은 기존 savedIds 판정 경로 그대로(비범위).
+  const bookmarksOn = variant === 'screen' || savedTabActive;
+  const saved = useBookmarks(undefined, { enabled: bookmarksOn });
+  const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn });
   const toggleBookmark = useToggleBookmark();
 
   // P-349 ③(KB-512): 당겨서 새로고침 — #112 3R ②: 활성 쿼리만(browse는 Saved 활성 중
@@ -273,7 +277,8 @@ export function FoodExplorer({
   // (P-332 가드 문법 포함 — 중복 배선 금지, 검색 등 다른 표면과 공유).
   const savedFoods = saved.data ?? []; // 무필터 — 북마크 판정 소스(savedIds)·저장 0건 판단
   const savedListFoods = savedList.data ?? []; // Saved 목록 소스(risk 적용분)
-  const { ids: savedIds, ready: savedReady } = useSavedIds();
+  const { ids: savedIds, ready: savedReady } = useSavedIds({ enabled: bookmarksOn });
+  const isSaved = (f: FoodCard) => (variant === 'embedded' ? f.bookmarked === true : savedIds.has(f.foodId)); // KB-779
   // KB-712: 홈 Popular + All = /home 랜덤(로딩 중이거나 1건 이상일 때) — 비었으면 기존 경로로 폴백.
   // 로딩 중 홈은 popular={undefined}를 넘긴다(빈 배열 아님) — `popular != null`로 걸면 /foods가 먼저 보였다 바뀌는 팝인(#237 공부)
   const homePopular = variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
@@ -298,10 +303,10 @@ export function FoodExplorer({
 
   const onBookmark = (f: FoodCard) => {
     if (guest) return setGate({ ctx: 'save', open: true });
-    if (!savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시
+    if (variant === 'screen' && !savedReady) return; // #116 2R ①: 드레인 완료 전 = 방향 오판 위험 — 무시(KB-779: 홈은 카드값이 방향)
     toggleBookmark.mutate({
       snap: { foodId: f.foodId, name: f.name, nameKo: f.nameKo, risk: f.risk, photoUrl: f.photoUrl },
-      add: !savedIds.has(f.foodId),
+      add: !isSaved(f),
     });
   };
 
@@ -459,7 +464,7 @@ export function FoodExplorer({
       food={item}
       risk={personalRisk(item.risk, hasR)}
       guest={guest}
-      saved={savedIds.has(item.foodId)}
+      saved={isSaved(item)}
       riskLabel={t(`risk.${personalRisk(item.risk, hasR)}`)}
       onPress={() => openFood(item.foodId)}
       onBookmark={() => onBookmark(item)}
