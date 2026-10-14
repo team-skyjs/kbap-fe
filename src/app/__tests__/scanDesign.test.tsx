@@ -8,6 +8,8 @@ import * as React from 'react';
 import { preloadReactNative, PRELOAD_TIMEOUT_MS } from '@/__tests__/helpers/preloadReactNative';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { BackHandler } from 'react-native';
+import * as fs from 'fs';
+import * as analytics from '@/lib/analytics';
 
 // scanDefaultView 프렐류드 재사용
 // P-174: 재료 카탈로그 훅 표면 목 — 폴백 경로(서버 무데이터) = 종전 렌더와 동일
@@ -275,7 +277,7 @@ it('P-222: 진행 화면 = 이탈 자제 안내 보조 한 줄(주 문구 유지
   expect(scanning).toContain('testID="scan-stay-hint"');
   // 10 로케일 문구 존재(하드코딩 0)
   for (const lang of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'vi', 'ru', 'th', 'es', 'id']) {
-    const dict = JSON.parse(require('fs').readFileSync(`src/lib/i18n/${lang}.json`, 'utf8')) as { scan: Record<string, string> };
+    const dict = JSON.parse(fs.readFileSync(`src/lib/i18n/${lang}.json`, 'utf8')) as { scan: Record<string, string> };
     expect(typeof dict.scan.stayHint).toBe('string');
   }
   // 발주 고정: 진행 화면에서 백그라운드 감지 구독·경고 모달·keep-awake 도입 금지
@@ -379,7 +381,6 @@ describe('KB-769 스캔 결과 뒤로가기 가드', () => {
   describe('KB-789 Closest match 카드', () => {
     const sub = (tree: ReactTestRenderer) => ({ ...list(tree).props.dishes[0], substituted: true, originalScannedName: '된장찌게' });
     const press = (tree: ReactTestRenderer, id: string) => act(() => byId(tree, id).filter((n) => typeof n.props.onPress === 'function')[0].props.onPress());
-    const analytics = require('@/lib/analytics') as typeof import('@/lib/analytics');
 
     it('칩 콜백 → 카드(제목·본문·상세 버튼 1개) + scan_closest_match_open{food_id} 1건 · 상세 버튼 → 대체 음식 상세(src=scan)', async () => {
       const track = jest.spyOn(analytics, 'track');

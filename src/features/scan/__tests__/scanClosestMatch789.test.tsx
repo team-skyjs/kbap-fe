@@ -4,11 +4,13 @@
  */
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
+import { ScanRichList } from '@/features/scan/ScanRichList';
+import type { ResultDish } from '@/lib/scan/segmentMenu';
 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }), usePathname: () => '/', useLocalSearchParams: () => ({}) }));
 jest.mock('react-native-reanimated', () => {
-  const { View: V } = require('react-native');
+  const { View: V } = jest.requireActual<typeof import('react-native')>('react-native');
   return {
     __esModule: true,
     useReducedMotion: () => false,
@@ -25,9 +27,7 @@ jest.mock('react-native-reanimated', () => {
     Easing: { out: () => () => 0, quad: 0, linear: () => 0, inOut: () => () => 0 },
   };
 });
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@react-native-async-storage/async-storage', () => jest.requireActual('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('expo-localization', () => ({ getLocales: () => [{ languageTag: 'en', languageCode: 'en', regionCode: 'US' }] }));
 jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', script: 'latin' }) }));
 jest.mock('@/lib/i18n', () => ({
@@ -36,8 +36,6 @@ jest.mock('@/lib/i18n', () => ({
 }));
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => ({ data: undefined }) }));
 
-import { ScanRichList } from '@/features/scan/ScanRichList';
-import type { ResultDish } from '@/lib/scan/segmentMenu';
 
 // 보간 확인용 — 옵션이 있으면 키 뒤에 값 병기
 const t = (k: string, o?: Record<string, unknown>) => (o ? `${k}:${Object.values(o).join('|')}` : k);

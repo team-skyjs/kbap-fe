@@ -34,7 +34,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconList, IconScanLines, IconGallery, IconFlip, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
