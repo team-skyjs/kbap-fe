@@ -10,7 +10,8 @@
 // 훅 순서가 구조적으로 선다. 부수 효과: 글 기능 off 빌드에선 피드 쿼리·글 훅이 아예 마운트되지 않는다(전엔
 // early return 위에서 useCommunityFeed가 돌아 목 피드를 조회했다 — 낭비 제거, 화면 무변).
 import * as React from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -136,7 +137,7 @@ function CommunityPosts() {
         ListFooterComponent={
           guestCapped && feed.hasNextPage ? (
             /* 게스트 2페이지 상한 — 이후는 로그인 게이트 */
-            <Pressable style={styles.guestGate} onPress={() => setGate('profile')}>
+            <Pressable testID="reviews-guest-gate" style={styles.guestGate} onPress={() => setGate('profile')}>
               <Text style={styles.guestGateTitle}>{t('community.guestGateTitle')}</Text>
               <Text style={styles.guestGateSub}>{t('community.guestGateSub')}</Text>
             </Pressable>
@@ -150,7 +151,7 @@ function CommunityPosts() {
 
       {/* 작성 FAB — 쓰기 = 회원 */}
       {/* P-099(Q-25): 탭 콘텐츠는 탭바 위에서 끝남 — 고정 18pt(관례 위치) */}
-      <Pressable
+      <Pressable testID="reviews-compose-fab"
         style={styles.fab}
         onPress={() => requireMember(() => router.push('/community/compose' as Href))}
       >

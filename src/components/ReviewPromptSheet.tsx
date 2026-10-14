@@ -4,7 +4,8 @@
  * onShow = 실제로 보인 뒤(소모·계측 시점) · onClosed = 완전히 닫힌 뒤(iOS onDismiss / Android는 onDismiss 미지원 → 응답 직후)
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { Btn } from '@/components/Btn';

@@ -6,7 +6,8 @@
  */
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { FLAGS } from '@/lib/flags';
@@ -50,7 +51,7 @@ export function AuthorRow({ author, when, onMore, t }: { author: CommunityAuthor
         <Text style={styles.when}>{when}</Text>
       </View>
       {onMore && (
-        <Pressable hitSlop={10} onPress={onMore}>
+        <Pressable testID="post-more" hitSlop={10} onPress={onMore}>
           <IconMore size={18} color={C.ink3} />
         </Pressable>
       )}
@@ -135,7 +136,7 @@ export function ReactionBar({
         </Pressable>
       )}
       {onComment && (
-        <Pressable style={styles.reactBtn} hitSlop={8} onPress={onComment}>
+        <Pressable testID="post-comment" style={styles.reactBtn} hitSlop={8} onPress={onComment}>
           <IconBubbleEmpty size={17} color={C.ink2} />
           {commentCount != null && commentCount > 0 && <Text style={styles.reactCount}>{commentCount}</Text>}
         </Pressable>
@@ -191,7 +192,7 @@ export function PostCard({
   return (
     <View style={styles.card}>
       <AuthorRow author={post.author} when={timeAgo(post.createdAt, t)} onMore={onMore} t={t} />
-      <Pressable onPress={onOpen}>
+      <Pressable testID="post-body-open" onPress={onOpen}>
         <Text
           style={styles.body}
           numberOfLines={5}
@@ -205,9 +206,9 @@ export function PostCard({
       {(post.foodTags.length > 0 || post.placeTag) && (
         <View style={styles.tagRow}>
           {post.foodTags.map((f) => (
-            <TagChip key={f.foodId} kind="food" label={f.name} onPress={() => onTagFood(f.foodId, f.name)} />
+            <TagChip testID="feed-tag-food" key={f.foodId} kind="food" label={f.name} onPress={() => onTagFood(f.foodId, f.name)} />
           ))}
-          {post.placeTag && <TagChip kind="place" label={post.placeTag.name} onPress={onTagPlace} />}
+          {post.placeTag && <TagChip testID="feed-tag-place" kind="place" label={post.placeTag.name} onPress={onTagPlace} />}
         </View>
       )}
       <ReactionBar

@@ -82,6 +82,7 @@ jest.mock('@/features/ads/RewardedUnlock', () => ({
 }));
 
 import { HomeQuotaBadge } from '../HomeQuotaBadge';
+import { Pressable } from '@/components/Pressable';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
 const trees: ReactTestRenderer[] = [];
@@ -107,7 +108,8 @@ const flatStyle = (n: { props: { style?: unknown } }, pressed = false) => {
 };
 const json = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
 // 타일 = 그 testID를 가진 Pressable(함수 스타일) — Tile 래퍼·내부 호스트와 구분
-const tiles = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.style === 'function');
+// KB-784: components/Pressable 래퍼와 그 안 RN Pressable이 같은 props를 가진다 — 앱 레벨(래퍼) 요소만
+const tiles = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.type === Pressable && n.props?.testID === id && typeof n.props?.style === 'function');
 
 it('KB-765: 뱃지 탭 = 가운데 다이얼로그(바텀시트 아님) — 남은 1~3 제목 "n회 남음" · 0 = "모두 사용" · 2택 상시', () => {
   for (const n of [0, 1, 2, 3]) {

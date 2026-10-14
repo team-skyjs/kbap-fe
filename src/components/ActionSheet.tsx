@@ -13,7 +13,8 @@
  * "시스템 기능 호출=시스템 UI(프로필 사진 시트), 콘텐츠 액션=이 컴포넌트" 구분.
  */
 import type { ReactNode } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { color as C, font, radius, shadow } from '@/lib/theme';
@@ -58,7 +59,7 @@ export function ActionSheet({
   const sheetPad = Platform.OS === 'android' ? { paddingBottom: 14 + bottom } : null;
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable testID="action-sheet-backdrop" style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}} testID={testID}>
           <View style={styles.header}>
             {avatar && <View style={styles.avatar}>{avatar}</View>}

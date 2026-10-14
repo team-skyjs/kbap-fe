@@ -10,7 +10,8 @@
  * - 전부 공용 ActionSheet('context' 변형) 경유 — 글·댓글·대댓글 동일 배선.
  */
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KeyboardDismissBar } from '@/components';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
@@ -174,7 +175,7 @@ export function ModerationFlow({
           onClose 없이 페이즈 전환, 이 렌더가 시트를 대체한다 ---- */
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
-      <Pressable style={styles.backdrop} onPress={phase === 'blocking' ? undefined : close}>
+      <Pressable testID="mod-backdrop" style={styles.backdrop} onPress={phase === 'blocking' ? undefined : close}>
         <Pressable style={[styles.sheet, kbH > 0 && { marginBottom: kbH }]} onPress={() => {}} testID="mod-sheet">
           {phase === 'report' &&
             (reported ? (
@@ -186,12 +187,12 @@ export function ModerationFlow({
                 <Text style={styles.title}>{t('community.reportThanks')}</Text>
                 {/* Codex #100 2R: 초기 메뉴와 같은 가드 — 익명·신고 전용 표면은 차단 제안 없음 */}
                 {!target.mine && !isGuest && !target.anonymized && !target.reportOnly && (
-                  <Pressable style={styles.blockSuggest} onPress={() => setPhase('blockConfirm')}>
+                  <Pressable testID="mod-block-suggest" style={styles.blockSuggest} onPress={() => setPhase('blockConfirm')}>
                     <IconUserX size={16} color={DESTRUCTIVE} />
                     <Text style={styles.blockSuggestText}>{t('community.blockUser', { name })}</Text>
                   </Pressable>
                 )}
-                <Btn variant="ghost" onPress={close}>
+                <Btn testID="mod-done" variant="ghost" onPress={close}>
                   {t('common.gotIt')}
                 </Btn>
               </View>
@@ -208,8 +209,8 @@ export function ModerationFlow({
               <Text style={styles.title}>{t('community.blockConfirmTitle', { name })}</Text>
               {/* 단방향 카피 확정 — "You won't see their posts or comments" 계열 */}
               <Text style={styles.sub}>{t('community.blockConfirmBody')}</Text>
-              <Btn onPress={() => void doBlock()}>{t('community.blockConfirmCta')}</Btn>
-              <Btn variant="ghost" onPress={close}>
+              <Btn testID="mod-block-confirm" onPress={() => void doBlock()}>{t('community.blockConfirmCta')}</Btn>
+              <Btn testID="mod-block-cancel" variant="ghost" onPress={close}>
                 {t('common.cancel')}
               </Btn>
             </View>

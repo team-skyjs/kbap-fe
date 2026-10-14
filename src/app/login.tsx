@@ -11,7 +11,8 @@
  * 발주 규정대로 12장 축소, 1.0MB). JS 번들 자산 — OTA 가능.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, AppState, Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Image, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { Txt as Text } from '@/components/Txt';
 import { IconArrowLeft } from '@/components/icons';

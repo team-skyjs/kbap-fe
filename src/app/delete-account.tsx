@@ -16,7 +16,8 @@
  * 후 Firebase 계정 클린업(best effort — 재가입 시 링크 잔존 재발 방지).
  */
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { FLAGS } from '@/lib/flags';
@@ -164,17 +165,17 @@ export default function DeleteAccount() {
 
       {/* KB-162 Apple 재인증 게이트 — prompt: 안내+시트 진입 / 그 외: 중단 사유 (계정 유지) */}
       {gate != null && (
-        <Pressable style={styles.gateBackdrop} onPress={revoking ? undefined : () => setGate(null)}>
-          <Pressable style={styles.gateCard} onPress={() => {}}>
+        <Pressable testID="delete-gate-backdrop" style={styles.gateBackdrop} onPress={revoking ? undefined : () => setGate(null)}>
+          <Pressable testID="delete-gate-card" style={styles.gateCard} onPress={() => {}}>
             <RiskMark state={gate === 'prompt' ? 'caution' : 'unable'} size={30} />
             <Text style={styles.gateText}>{t(GATE_MSG[gate])}</Text>
             <View style={{ alignSelf: 'stretch', gap: 9 }}>
               {gate === 'prompt' && (
-                <Btn variant={revoking ? 'off' : 'primary'} onPress={revoking ? undefined : () => void runWithdraw(onAppleContinue)}>
+                <Btn testID="delete-apple-continue" variant={revoking ? 'off' : 'primary'} onPress={revoking ? undefined : () => void runWithdraw(onAppleContinue)}>
                   {t('profile.delete.appleGateBtn')}
                 </Btn>
               )}
-              <Btn variant="ghost" onPress={revoking ? undefined : () => setGate(null)}>
+              <Btn testID="delete-gate-cancel" variant="ghost" onPress={revoking ? undefined : () => setGate(null)}>
                 {t('profile.delete.cancel')}
               </Btn>
             </View>

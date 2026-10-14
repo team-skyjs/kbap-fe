@@ -5,7 +5,7 @@
  * 노출: AsyncStorage 1회 플래그 · 재열람 = 스캔 결과/상세의 RiskMark 탭(마크 데모 대체).
  */
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, radius, shadow, type RiskState } from '@/lib/theme';
@@ -65,7 +65,7 @@ export function ScanCoachMark({
             ))}
           </View>
           <View style={{ alignSelf: 'stretch', marginTop: 4 }}>
-            <Btn onPress={onClose}>{t('common.gotIt')}</Btn>
+            <Btn testID="coach-gotit" onPress={onClose}>{t('common.gotIt')}</Btn>
           </View>
           <Text style={styles.caption}>{t('coach.caption')}</Text>
         </View>

@@ -7,7 +7,8 @@
  * never returns.
  */
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -55,14 +56,14 @@ export function ResumeOnboardingBanner() {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => setVisible(false)}>
       {/* backdrop tap = "나중에" (keeps the draft) */}
-      <Pressable style={styles.backdrop} onPress={() => setVisible(false)}>
+      <Pressable testID="resume-backdrop" style={styles.backdrop} onPress={() => setVisible(false)}>
         {/* stop card taps from falling through to the backdrop */}
-        <Pressable style={styles.card} onPress={() => {}}>
+        <Pressable testID="resume-card" style={styles.card} onPress={() => {}}>
           <View style={styles.glyph}>
             <IconProfile size={26} color={C.primary} />
           </View>
           <Text style={styles.title}>{t('onboarding.resumeTitle')}</Text>
-          <Btn
+          <Btn testID="resume-continue"
             onPress={() => {
               setVisible(false);
               resetToOnboarding(router); // P-088④ 스택 리셋
@@ -70,7 +71,7 @@ export function ResumeOnboardingBanner() {
           >
             {t('onboarding.resumeCta')}
           </Btn>
-          <Pressable onPress={() => setVisible(false)} hitSlop={10}>
+          <Pressable testID="resume-later" onPress={() => setVisible(false)} hitSlop={10}>
             <Text style={styles.later}>{t('onboarding.resumeLater')}</Text>
           </Pressable>
         </Pressable>

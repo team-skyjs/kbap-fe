@@ -11,7 +11,8 @@
  * 표시 중 재발화 = 타이머 리셋·텍스트 교체(재진입 애니메이션 없음).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, ReduceMotion, cancelAnimation, runOnJS, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';

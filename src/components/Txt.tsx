@@ -13,6 +13,7 @@ import * as React from 'react';
 import { Text as RNText, StyleSheet, type TextProps, type TextStyle } from 'react-native';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { resolveFont } from '@/lib/i18n/fonts';
+import { trackUiClick } from '@/lib/uiClick';
 
 // P-031(KB-206): 시스템 큰글씨 상한 ×1.3 — 고정높이 레이아웃(칩·행·버튼) 잘림
 // 방지. 전 화면이 Txt를 쓰므로 여기 한 곳이 전역 관통. 정식 Dynamic Type
@@ -24,7 +25,17 @@ export const MAX_FONT_SCALE = 1.3;
 // 명시 스타일이 뒤에 오므로 필요 시 개별 override 가능.
 const base = { includeFontPadding: false } as const;
 
-export function Txt({ style, maxFontSizeMultiplier = MAX_FONT_SCALE, ...rest }: TextProps) {
+export function Txt({ style, maxFontSizeMultiplier = MAX_FONT_SCALE, onPress: rawOnPress, ...restProps }: TextProps) {
+  // KB-784: 링크처럼 누르는 텍스트도 ui_click(components/Pressable과 같은 규칙) — onPress 없는 글자는 무변
+  const rest: TextProps = rawOnPress
+    ? {
+        ...restProps,
+        onPress: (e) => {
+          trackUiClick(restProps.testID ?? undefined);
+          rawOnPress(e);
+        },
+      }
+    : restProps;
   const { script } = useLocale();
   const flat = StyleSheet.flatten(style) as TextStyle | undefined;
   // KB-429(디자인 4차): 전역 자간 -1%(fontSize×-0.01) — 명시 letterSpacing이

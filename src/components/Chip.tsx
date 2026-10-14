@@ -5,7 +5,8 @@
  * 동일 폭, selected는 bg와 동색 보더로 자리 유지).
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from './Txt';
 import { RiskMark } from './RiskMark';
 import { color as C, radius, riskTone, riskTextStrong, type RiskState } from '@/lib/theme';

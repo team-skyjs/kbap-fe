@@ -16,7 +16,8 @@
  *   "Write a review" 제거 — 리뷰 진입은 항목 행 → 음식 상세.
  */
 import * as React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';

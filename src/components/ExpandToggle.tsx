@@ -10,7 +10,8 @@
  * 아이콘 = `IconChevronDown` 기존 크기·색.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { IconChevronDown } from '@/components/icons';
 import { useTranslation } from 'react-i18next';

@@ -5,7 +5,8 @@
  * 화면 배선은 D-5(온보딩) 등 후속 — 여기선 프리미티브만.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Svg, { Path } from 'react-native-svg';
 import { color as C } from '@/lib/theme';
 

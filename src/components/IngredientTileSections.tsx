@@ -5,7 +5,8 @@
  * 검색어(query)로 인플레이스 필터 — 검색창·카운트·요약 칩은 소비 화면 몫.
  */
 import * as React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useTranslation } from 'react-i18next';
 import { color as C, font } from '@/lib/theme';

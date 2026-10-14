@@ -8,6 +8,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, shadow } from '@/lib/theme';
 import { PRESS_SCALE, spring } from '@/lib/motion';
+import { trackUiClick } from '@/lib/uiClick';
 
 export type BtnVariant = 'primary' | 'ghost' | 'off' | 'secondary' | 'danger' | 'dangerGhost' | 'ink';
 
@@ -50,7 +51,15 @@ export function Btn({
   const [pressed, setPressed] = React.useState(false);
   return (
     <AnimatedPressable
-      onPress={onPress}
+      // KB-784: 애니메이션 래퍼라 RN Pressable을 직접 쓰는 예외 — 계측은 여기서(components/Pressable과 같은 규칙)
+      onPress={
+        onPress
+          ? () => {
+              trackUiClick(testID);
+              onPress();
+            }
+          : undefined
+      }
       onPressIn={() => {
         setPressed(true);
         scale.value = withSpring(PRESS_SCALE, spring.press);

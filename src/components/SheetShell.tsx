@@ -10,7 +10,8 @@
  * 후속: community/tagSheets.tsx의 SheetShell 복사본(라운드 26 · 스크림 0.45)과 합치기 — 스타일이 달라 범위 밖.
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadow } from '@/lib/theme';
 import { useBottomInset } from '@/lib/useBottomInset';
@@ -38,7 +39,7 @@ export function SheetShell({
   const pad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} onDismiss={onDismiss}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable testID="sheet-backdrop" style={styles.backdrop} onPress={onClose}>
         <Pressable style={[styles.sheet, pad, { maxHeight: height - top }]} onPress={() => {}} testID="sheet-shell">
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} bounces={false} testID="sheet-shell-scroll">
             {children}

@@ -17,7 +17,8 @@
  * 식이 선언 문맥이라 **저장 즉시 반영 + 사후 모달** — 두 경로는 의도적으로 다르다.
  */
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';

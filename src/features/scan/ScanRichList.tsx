@@ -17,7 +17,8 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { CardPhoto } from '@/components/CardPhoto';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';

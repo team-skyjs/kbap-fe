@@ -5,7 +5,8 @@
  * 로그인 성공 시 보던 맥락으로 복귀한다 (guest-access-policy §0-3).
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { usePathname, useRouter, type Href } from 'expo-router';
@@ -79,20 +80,20 @@ export function AuthGateSheet({
 
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable testID="gate-backdrop" style={styles.backdrop} onPress={onClose}>
         {/* P-053(KB-206 반려): P-031의 SlideInDown.springify 등장 제거 — 게이트
             시트엔 스프링이 안 맞음(예진 실기 "이상함", P-035·047과 같은 절제
             사례). 원복 = Modal fade 단독(P-031 이전). 퇴장·backdrop 무변. */}
         {/* 카드 탭이 backdrop으로 새지 않게 */}
-        <Pressable style={[styles.sheet, sheetPad]} onPress={() => {}}>
+        <Pressable testID="gate-sheet" style={[styles.sheet, sheetPad]} onPress={() => {}}>
           {/* P-310(KB-477): 우상단 X 제거 — 닫힘 = 배경 탭·하단 버튼(전 시트 공통) */}
           <View style={styles.glyph}>
             <IconLock size={24} color={C.primary} />
           </View>
           <Text style={styles.title}>{t(copy.title)}</Text>
           <Text style={styles.sub}>{t(copy.sub)}</Text>
-          <Btn onPress={goLogin}>{t('intro.signUp')}</Btn>
-          <Pressable onPress={onClose} hitSlop={10}>
+          <Btn testID="gate-signup" onPress={goLogin}>{t('intro.signUp')}</Btn>
+          <Pressable testID="gate-keep-browsing" onPress={onClose} hitSlop={10}>
             <Text style={styles.later}>{t('gate.keepBrowsing')}</Text>
           </Pressable>
         </Pressable>

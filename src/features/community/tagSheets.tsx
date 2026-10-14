@@ -7,7 +7,8 @@
  * 마크 금지, §지도 딥링크 로고 조사) · 딥링크 실패(미설치) 시 웹 폴백.
  */
 import * as React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -24,8 +25,8 @@ function SheetShell({ children, onClose }: { children: React.ReactNode; onClose:
   const pad = Platform.OS === 'android' ? { paddingBottom: 18 + bottom } : null;
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, pad]} onPress={() => {}}>
+      <Pressable testID="tag-sheet-backdrop" style={styles.backdrop} onPress={onClose}>
+        <Pressable testID="tag-sheet-card" style={[styles.sheet, pad]} onPress={() => {}}>
           {children}
         </Pressable>
       </Pressable>
@@ -62,7 +63,7 @@ export function FoodTagSheet({ target, onClose }: { target: { foodId: string; na
         <RiskMark state={risk} size={20} />
         <Text style={styles.riskText}>{t(`risk.${risk}`)}</Text>
       </View>
-      <Btn onPress={() => { onClose(); router.push(`/food/${target.foodId}?src=tag_sheet` as Href); }}>{t('community.viewDetails')}</Btn>
+      <Btn testID="tag-sheet-view-details" onPress={() => { onClose(); router.push(`/food/${target.foodId}?src=tag_sheet` as Href); }}>{t('community.viewDetails')}</Btn>
     </SheetShell>
   );
 }

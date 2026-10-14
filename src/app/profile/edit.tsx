@@ -8,7 +8,8 @@
  */
 import { RemoteImage } from '@/components/RemoteImage';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, View, Platform } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { KAV_BEHAVIOR } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter } from 'expo-router';
@@ -170,7 +171,7 @@ export default function EditProfile() {
         title={t('editProfile.title')}
         onBack={() => router.back()}
         trailing={
-          <Pressable onPress={save} disabled={photoBusy || saving} hitSlop={8} style={[styles.saveWrap, (photoBusy || saving) && { opacity: 0.35 }]}>
+          <Pressable testID="edit-save-header" onPress={save} disabled={photoBusy || saving} hitSlop={8} style={[styles.saveWrap, (photoBusy || saving) && { opacity: 0.35 }]}>
             <Text style={styles.saveLink} numberOfLines={1}>{t('common.save')}</Text>
           </Pressable>
         }
@@ -242,7 +243,7 @@ export default function EditProfile() {
         {canOpenLangSettings && (
           <View style={styles.fieldset}>
             <Text style={styles.fieldLbl}>{t('editProfile.readerLanguage')}</Text>
-            <Pressable style={styles.field} onPress={() => void openAppSettings()}>
+            <Pressable testID="edit-language" style={styles.field} onPress={() => void openAppSettings()}>
               <Text style={styles.val}>{LANG_ENDONYM[lang] ?? lang}</Text>
               <IconChevron size={16} color={C.ink3} />
             </Pressable>
@@ -256,7 +257,7 @@ export default function EditProfile() {
             <SpiceLevelSlider level={spice === 'SKIP' ? null : spice} onChange={setSpice} onDragStateChange={setSliderDragging} />
           </View>
           {spice !== 'SKIP' && (
-            <Pressable hitSlop={8} onPress={() => setSpice('SKIP')}>
+            <Pressable testID="edit-spice-clear" hitSlop={8} onPress={() => setSpice('SKIP')}>
               <Text style={styles.spiceClear}>{t('editProfile.spiceClear')}</Text>
             </Pressable>
           )}
@@ -334,7 +335,7 @@ export default function EditProfile() {
 
       {/* BottomBar Single(4150:14473) — primary "✓ Save changes"(P-173 가드 무변) */}
       <View style={[styles.savebar, { paddingBottom: bottom + 10 }]} testID="edit-bottom-bar">
-        <Btn variant={photoBusy ? 'off' : 'primary'} busy={saving} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
+        <Btn testID="edit-save" variant={photoBusy ? 'off' : 'primary'} busy={saving} icon={<IconCheck size={17} color="#fff" />} onPress={photoBusy ? undefined : save}>
           {t('editProfile.save')}
         </Btn>
       </View>

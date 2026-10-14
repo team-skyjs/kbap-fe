@@ -16,7 +16,8 @@
  * 확인 버튼 = useSubmitGuard + Btn busy(공용 제출 가드). 시안: 피그마 「KB-497 알림 설정 시안」 2·3.
  */
 import * as React from 'react';
-import { AccessibilityInfo, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Modal, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import Animated from 'react-native-reanimated';
 import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSheetSwipeDismiss } from '@/components/useSheetSwipeDismiss';

@@ -5,11 +5,13 @@
  * REVIEWS 무한 스크롤 피드(P-317 v2) · 면책. 데이터 훅·라우트 무변 — 표시만 교체.
  * 구 표면(인사말·식단 배너·스캔 CTA·Safe for you·카테고리)은 시안 부재로 제거.
  */
-import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import Animated from 'react-native-reanimated';
-import { useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { color as C, riskText, shadow, type RiskState } from '@/lib/theme';
 import { UpdateNudgeBanner } from '@/components/VersionGate';
@@ -37,7 +39,9 @@ import { useGlobalReviews } from '@/lib/data/useFoodReviews';
 import { FeedCard } from '@/features/review/FeedCard';
 import { HomeQuotaBadge, BADGE_GAP } from '@/features/scan/HomeQuotaBadge';
 import { useUnreadCount } from '@/lib/data/useNotifications';
-import type { FoodCard } from '@/lib/api/types';
+import type { Review } from '@/lib/api/types';
+import { TABBAR_CONTENT_H } from '@/components/TabBar';
+import { HomeImpressionContext, ImpressionTracker, trackHomeCardClick, useImpressionRef, useImpressionScrollProps } from '@/features/home/homeImpressions';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900 (D-1 Chip과 동일 명시값)
 
@@ -54,6 +58,28 @@ const REVIEW_CHIPS: [ReviewChip, string][] = [
 const RECENT_N = 4;
 
 export default function Home() {
+  // KB-784: 홈 노출 계측 — 홈 진입(포커스)마다 본 목록 리셋. 뷰포트 = 창 − 위 헤더 − 아래 탭바(측정 시점 값 — ref로 최신)
+  const headerHForVp = useHeaderHeight();
+  const { height: winH, width: winW } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [impressions] = useState(() => new ImpressionTracker({ top: 0, bottom: winH, left: 0, right: winW }));
+  useEffect(() => {
+    impressions.setViewport({ top: headerHForVp, bottom: winH - (TABBAR_CONTENT_H + insets.bottom), left: 0, right: winW });
+  }, [impressions, headerHForVp, winH, winW, insets.bottom]);
+  useFocusEffect(
+    useCallback(() => {
+      impressions.focus();
+      return () => impressions.blur();
+    }, [impressions]),
+  );
+  return (
+    <HomeImpressionContext.Provider value={impressions}>
+      <HomeBody />
+    </HomeImpressionContext.Provider>
+  );
+}
+
+function HomeBody() {
   const { t } = useTranslation();
   const router = useRouter();
   const { onScroll, hidden, atTop } = useStickyScroll();
@@ -73,6 +99,11 @@ export default function Home() {
   const isGuest = home?.authenticated === false; // LIVE에서만 판정됨
   const hasR = restrictions.length > 0;
   const openFood = (foodId: string) => router.push(`/food/${foodId}?src=home` as Href);
+  // KB-784: 섹션 노출 노드(home_section_view)
+  const recentImpressionRef = useImpressionRef('recent');
+  const guestCtaImpressionRef = useImpressionRef('guest_cta');
+  const reviewsImpressionRef = useImpressionRef('reviews');
+  const listScrollProps = useImpressionScrollProps(); // 세로 스크롤 정지 = 노출 판정(reanimated onScroll 워클릿과 별개 JS 콜백)
 
   const unread = useUnreadCount();
   const [reviewChip, setReviewChip] = useState<ReviewChip>('all');
@@ -143,10 +174,11 @@ export default function Home() {
       {/* RECENTLY SCANNED (§1-6~7) — P-314(KB-481): 회원 0건 = 섹션 통째 숨김
           (구 P-287 빈 블록 폐기 — 로딩은 SkeletonHome이 선행). 게스트 CTA는 유지. */}
       {(isGuest || recent.length > 0) && (
-      <>
+      // KB-784: 최근 스캔 섹션 노출 노드 = 섹션 전체(무스타일 View — 세로 흐름 그대로). 게스트는 가입 CTA가 섹션(guest_cta)
+      <View ref={isGuest ? guestCtaImpressionRef : recentImpressionRef} collapsable={false} testID="home-recent-section">
       <SectionHead label={t('home.recentTitle')} title={t('home.recentSub')} testID="home-recent-head" />
       {isGuest ? (
-        <Pressable style={styles.guestCta} onPress={() => router.push('/login?entry=other' as Href)}>
+        <Pressable testID="home-guest-cta" style={styles.guestCta} onPress={() => router.push('/login?entry=other' as Href)}>
           <View style={styles.guestCtaIc}>
             <IconLock size={18} color={C.ink2} />
           </View>
@@ -155,9 +187,10 @@ export default function Home() {
         </Pressable>
       ) : (
         <>
-          {recent.slice(0, RECENT_N).map((f) => (
-            <RecentRow
+          {recent.slice(0, RECENT_N).map((f, i) => (
+            <HomeRecentRow
               key={f.foodId}
+              position={i}
               food={f}
               risk={personalRisk(f.risk, hasR)}
               reviewLabel={t('home.review')}
@@ -177,14 +210,14 @@ export default function Home() {
           )}
         </>
       )}
-      </>
+      </View>
       )}
 
       {/* REVIEWS — P-317: 프리뷰 3장+More → 무한 스크롤 피드 헤더(칩 유지) */}
       {FLAGS.reviewsEnabled && feedReviews.length > 0 && (
         <>
           <SectionHead label={t('reviews.headerTitle')} title={t('home.reviewsSub')} testID="home-reviews-head" />
-          <View style={styles.chipRow}>
+          <View ref={reviewsImpressionRef} style={styles.chipRow}>{/* KB-784: 리뷰 섹션 노출 노드 = 헤드 아래 칩 줄 */}
             {REVIEW_CHIPS.map(([c, key]) => (
               <Chip
                 key={c}
@@ -206,18 +239,24 @@ export default function Home() {
         data={isLoading || !FLAGS.reviewsEnabled ? [] : feedReviews}
         keyExtractor={(rv) => rv.id}
         onScroll={onScroll}
+        {...listScrollProps}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 110 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         ListHeaderComponent={header}
-        renderItem={({ item: rv }) => (
+        renderItem={({ item: rv, index }) => (
+          <HomeFeedItem review={rv} position={index}>
           <FeedCard
             review={rv}
             t={t}
             mine={false}
             /* P-339 ②: ⋯ 전 카드(구 showMore=false 폐기) — 홈은 신고만·차단 없음 */
-            onOpenFood={() => rv.foodId && openFood(rv.foodId)}
+            onOpenFood={() => {
+              if (!rv.foodId) return;
+              trackHomeCardClick('reviews', index, rv.foodId); // KB-784: 리뷰 카드의 음식 칩 = 리뷰 섹션 카드 클릭
+              openFood(rv.foodId);
+            }}
             onGuestHelpful={() => router.push('/login?entry=gate_review' as Href)} // P-389: 게이트 시트와 같은 축(helpful → review)
             onMore={() =>
               setMod({
@@ -230,6 +269,7 @@ export default function Home() {
               })
             }
           />
+          </HomeFeedItem>
         )}
         onEndReachedThreshold={0.6}
         onEndReached={loadMoreReviews}
@@ -329,3 +369,28 @@ const styles = StyleSheet.create({
   // 면책 (§1-10)
   disc: { fontSize: 12, fontWeight: '400', color: C.ink3, lineHeight: 18, paddingHorizontal: 20, paddingTop: 32, paddingBottom: 40 },
 });
+
+/** KB-784: 최근 스캔 행 = RecentRow + 노출 노드 + 카드 클릭(recent, 위치) */
+function HomeRecentRow({ position, onPress, ...rest }: React.ComponentProps<typeof RecentRow> & { position: number }) {
+  const ref = useImpressionRef('recent', position, rest.food.foodId);
+  return (
+    <RecentRow
+      {...rest}
+      ref={ref}
+      onPress={() => {
+        trackHomeCardClick('recent', position, rest.food.foodId);
+        onPress();
+      }}
+    />
+  );
+}
+
+/** KB-784: 리뷰 피드 카드 노출 노드(무스타일 View — FlatList 셀 안 흐름 그대로). 음식 없는 리뷰는 카드 노출 대상 아님 */
+function HomeFeedItem({ review, position, children }: { review: Review; position: number; children: React.ReactNode }) {
+  const ref = useImpressionRef(review.foodId ? 'reviews' : null, position, review.foodId ?? undefined);
+  return (
+    <View ref={ref} collapsable={false}>
+      {children}
+    </View>
+  );
+}

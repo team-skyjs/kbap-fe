@@ -11,7 +11,8 @@
 import { RemoteImage } from '@/components/RemoteImage';
 import { airbridge } from '@/lib/airbridge';
 import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Pressable } from '@/components/Pressable';
 import { SAFETY_NOTICE_URL } from '@/lib/legalText';
 import { openAppSettings, openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
@@ -225,7 +226,7 @@ export default function Profile() {
 
             {/* 미완료 프로필(서버 플래그) — 온보딩 이어하기 유도 행(시안 부재 — 기능 유지) */}
             {me.onboardingCompleted === false && (
-              <Pressable style={styles.finishRow} onPress={() => resetToOnboarding(router)}>
+              <Pressable testID="profile-finish-onboarding" style={styles.finishRow} onPress={() => resetToOnboarding(router)}>
                 <Text style={styles.finishText}>{t('onboarding.resumeTitle')}</Text>
                 <Text style={styles.finishCta}>{t('onboarding.resumeCta')}</Text>
               </Pressable>
@@ -276,7 +277,7 @@ export default function Profile() {
                         const item = INGREDIENTS.find((i) => i.code === r.code);
                         return (
                           <View key={r.code} style={{ flex: 1 }}>
-                            <Pressable style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
+                            <Pressable testID="profile-avoid-tile" style={styles.dietTile} onPress={() => router.push('/profile/restrictions' as Href)}>
                               <View style={styles.dietImg}>
                                 <AvoidTile
                                   radius={0} /* A-PF-07 */
