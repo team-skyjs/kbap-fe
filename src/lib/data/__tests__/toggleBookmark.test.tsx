@@ -19,11 +19,13 @@ jest.mock('@/lib/api/client', () => ({
   foodHiddenReason: () => null, // KB-779 실패 롤백 케이스 — onError가 호출
 }));
 
+jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false })); // Codex ④: useSavedIds 드레인 케이스
+
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { api } = require('@/lib/api/client');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-import { useToggleBookmark, type BookmarkSnapshot } from '../bookmarks';
+import { useToggleBookmark, useRemoveBookmark, useRestoreBookmark, useSavedIds, type BookmarkSnapshot } from '../bookmarks';
 
 const SNAP: BookmarkSnapshot = {
   foodId: '7',
@@ -151,5 +153,92 @@ describe('KB-779 홈 캐시(["home", lang]) 낙관 반전', () => {
     (api.patch as jest.Mock).mockRejectedValueOnce(new Error('500'));
     await runToggle(qc, false);
     expect(qc.getQueryData<Pages>(['foods', 'list', 'en'])!.pages[0].items.map((i) => i.bookmarked)).toEqual([true, false]);
+  });
+});
+
+/* ---- Codex 리뷰(#264) 반영 — 낙관 반전의 경쟁 조건 ---- */
+describe('KB-779 Codex 리뷰: 카드 캐시 반전 경쟁 조건', () => {
+  type H = { toggle: ReturnType<typeof useToggleBookmark>; remove: ReturnType<typeof useRemoveBookmark>; restore: ReturnType<typeof useRestoreBookmark> };
+  function Hooks({ fn, done }: { fn: (h: H) => Promise<unknown>; done: () => void }) {
+    const h = { toggle: useToggleBookmark(), remove: useRemoveBookmark(), restore: useRestoreBookmark() };
+    React.useEffect(() => { void fn(h).finally(done); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return null;
+  }
+  async function run(qc: QueryClient, fn: (h: H) => Promise<unknown>) {
+    let settled!: () => void;
+    const done = new Promise<void>((r) => (settled = r));
+    await act(async () => {
+      renderer.create(<QueryClientProvider client={qc}><Hooks fn={fn} done={settled} /></QueryClientProvider>);
+    });
+    await act(async () => { await done; });
+  }
+  const card = (foodId: string, bookmarked: boolean) => ({ foodId, name: foodId, nameKo: foodId, photoUrl: null, risk: 'safe', overall: { average: null, count: 0 }, bookmarked });
+  const HOME = (b7 = false, b8 = false) => ({ authenticated: true, avoided: [], recommended: [card('7', b7), card('8', b8)], mostReviewed: [], recent: [] });
+  const stars = (qc: QueryClient) => qc.getQueryData<ReturnType<typeof HOME>>(['home', 'en'])!.recommended.map((c) => c.bookmarked);
+  const snap = (foodId: string): BookmarkSnapshot => ({ ...SNAP, foodId });
+  beforeEach(() => { // clearAllMocks는 구현을 안 지운다 — ①의 지연 reject 구현 잔존 방지
+    (api.post as jest.Mock).mockResolvedValue(undefined);
+    (api.patch as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  it('① 두 카드 연속 토글 — 앞(7)이 뒤(8) 성공 뒤에 실패해도 8의 별은 남고 7만 되돌아간다', async () => {
+    const qc = client();
+    qc.setQueryData(['home', 'en'], HOME());
+    let fail7!: (e: Error) => void;
+    (api.post as jest.Mock).mockImplementation((_u: string, body: { foodId: number }) =>
+      body.foodId === 7 ? new Promise((_r, rej) => (fail7 = rej)) : Promise.resolve(undefined));
+    await run(qc, async (h) => {
+      const p7 = h.toggle.mutateAsync({ snap: snap('7'), add: true }).catch(() => {});
+      await h.toggle.mutateAsync({ snap: snap('8'), add: true }); // 8 먼저 성공
+      expect(stars(qc)).toEqual([true, true]);
+      fail7(new Error('500'));
+      await p7;
+    });
+    expect(stars(qc)).toEqual([false, true]);
+  });
+
+  it('② 홈·/foods 재조회가 진행 중일 때 토글 — 늦게 도착한 옛 응답이 낙관 반영을 덮지 않는다(쓰기 전 cancel)', async () => {
+    const qc = client();
+    qc.setQueryData(['home', 'en'], HOME());
+    qc.setQueryData(['foods', 'list', 'en'], { pages: [{ items: [{ foodId: 7, bookmarked: false }], hasNext: false }], pageParams: [undefined] });
+    let arriveHome!: (v: unknown) => void;
+    let arriveFoods!: (v: unknown) => void;
+    const homeFetch = qc.fetchQuery({ queryKey: ['home', 'en'], queryFn: () => new Promise((r) => (arriveHome = r)) }).catch(() => {});
+    const foodsFetch = qc.fetchInfiniteQuery({ queryKey: ['foods', 'list', 'en'], initialPageParam: undefined, queryFn: () => new Promise((r) => (arriveFoods = r)) }).catch(() => {});
+    await run(qc, (h) => h.toggle.mutateAsync({ snap: snap('7'), add: true }));
+    arriveHome(HOME()); // 옛 상태(별 꺼짐) 늦게 도착
+    arriveFoods({ items: [{ foodId: 7, bookmarked: false }], hasNext: false });
+    await act(async () => { await Promise.all([homeFetch, foodsFetch]); });
+    expect(stars(qc)).toEqual([true, false]);
+    expect(qc.getQueryData<{ pages: { items: { bookmarked: boolean }[] }[] }>(['foods', 'list', 'en'])!.pages[0].items[0].bookmarked).toBe(true);
+  });
+
+  it('③ 저장 화면 스와이프 해제·Undo 복원도 홈 카드 별을 같이 바꾼다 · 해제 실패 = 원복', async () => {
+    const qc = client();
+    qc.setQueryData(['home', 'en'], HOME(true));
+    await run(qc, (h) => h.remove.mutateAsync('7'));
+    expect(stars(qc)).toEqual([false, false]);
+    await run(qc, (h) => h.restore.mutateAsync(snap('7')));
+    expect(stars(qc)).toEqual([true, false]);
+    (api.patch as jest.Mock).mockRejectedValueOnce(new Error('500'));
+    await run(qc, (h) => h.remove.mutateAsync('7').catch(() => {}));
+    expect(stars(qc)).toEqual([true, false]);
+  });
+
+  it('④ useSavedIds({enabled:false}) — 다른 화면이 남긴 부분 캐시(hasNext)가 있어도 다음 페이지를 당기지 않는다', async () => {
+    const partial = () => ({ pages: [{ items: [], hasNext: true, nextCursor: 'c1' }], pageParams: [undefined] });
+    (api.get as jest.Mock).mockResolvedValue({ items: [], hasNext: false, nextCursor: null });
+    const Probe = ({ enabled }: { enabled: boolean }) => { useSavedIds({ enabled }); return null; };
+    const mount = async (enabled: boolean) => {
+      const qc = client();
+      qc.setQueryData(['bookmarks', 'en'], partial());
+      await act(async () => { renderer.create(<QueryClientProvider client={qc}><Probe enabled={enabled} /></QueryClientProvider>); });
+      await act(async () => { await new Promise((r) => setTimeout(r, 5)); });
+    };
+    await mount(true); // 대조군 — 활성이면 드레인이 돈다(테스트 실효 확인)
+    expect(api.get).toHaveBeenCalledTimes(1);
+    (api.get as jest.Mock).mockClear();
+    await mount(false);
+    expect(api.get).not.toHaveBeenCalled();
   });
 });
