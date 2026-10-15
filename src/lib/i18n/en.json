@@ -309,6 +309,11 @@
     "resultsSubSafe": "{{safe}} of {{total}} rated safe",
     "safeEmpty": "No dishes rated safe on this menu",
     "missNote": "Not in our catalog yet. It should be added within a few days.",
+    "closestMatchChip": "Closest match",
+    "closestMatchLine": "Menu says {{scanned}}",
+    "closestMatchSheetTitle": "We matched this to a similar dish",
+    "closestMatchSheetBody": "The menu lists “{{scanned}}”. We’re showing {{food}} ({{foodKo}}), the closest match in our catalog, so the ingredients and your risk level are based on {{food}}.",
+    "closestMatchSeeDetails": "See {{food}} details",
     "searchOnGoogle": "Search on Google",
     "resultsEmpty": "No scan results"
   },

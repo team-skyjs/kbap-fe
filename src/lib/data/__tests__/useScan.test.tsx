@@ -121,7 +121,7 @@ it('업로드 실패(null) → imagePath "" 폴백, 스캔은 계속 (텍스트-
 
 
 /* ---- P-153: 스캔 v2 채널 분기 ---- */
-it('P-153 → P-219 v2(dev 계열): items 미전송 + X-API-Version 2.0 + lang·currency 쿼리', async () => {
+it('P-153 → P-219 v2(dev 계열): items 미전송 + X-API-Version 3.0 + lang·currency 쿼리', async () => {
   mockProd = false;
   mockScanV2 = true; // P-155 킬스위치 — v2 유닛은 강제 on(코드 보존 잠금)
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
@@ -131,7 +131,7 @@ it('P-153 → P-219 v2(dev 계열): items 미전송 + X-API-Version 2.0 + lang·
   expect(body.items).toEqual([]); // 서버 비전 OCR — 클라 items 무시 경로
   expect(body.imagePath).toBe('scans/1/a.jpg');
   // P-250: 티켓 헤더 동시 탑재(가이드 QA #2) — 발급받은 그 시도의 값
-  expect(opts.headers).toEqual({ 'X-API-Version': '2.0', 'X-Scan-Ticket': 'TICKET-1' });
+  expect(opts.headers).toEqual({ 'X-API-Version': '3.0', 'X-Scan-Ticket': 'TICKET-1' });
 });
 
 // P-219 ②: currency 누락 = 스캔 전면 사망(400)이라 끝단에서 USD 강제 — 3케이스 실측
@@ -150,7 +150,7 @@ it.each([
 
 // KB-418(P-201): P-219 채널 게이트 소멸 — prod 서버도 신계약(v2)이라 채널 무관
 // 플래그만 본다. 구 "prod = v1 고정" 잠금을 뒤집어 재잠금.
-it('KB-418: prod 채널 + 플래그 on = v2 (채널 게이트 소멸 — 티켓·2.0 헤더·currency 쿼리)', async () => {
+it('KB-418: prod 채널 + 플래그 on = v2 (채널 게이트 소멸 — 티켓·3.0 헤더·currency 쿼리)', async () => {
   mockProd = true;
   mockScanV2 = true;
   mockResolvePath.mockResolvedValue('scans/1/a.jpg');
@@ -158,7 +158,7 @@ it('KB-418: prod 채널 + 플래그 on = v2 (채널 게이트 소멸 — 티켓�
   const [path, body, opts] = scanCalls()[0] as [string, { items: unknown[] }, { headers: Record<string, string> }];
   expect(path).toBe('/scans?lang=en&currency=USD');
   expect(body.items).toEqual([]); // 서버 비전 OCR
-  expect(opts.headers).toEqual({ 'X-API-Version': '2.0', 'X-Scan-Ticket': 'TICKET-1' });
+  expect(opts.headers).toEqual({ 'X-API-Version': '3.0', 'X-Scan-Ticket': 'TICKET-1' });
 });
 
 it('P-155 킬스위치 off = 채널 무관 v1 (prod 채널) — 롤백 경로 보존', async () => {

@@ -313,6 +313,11 @@
     "resultsSubSafe": "{{safe}} dinilai aman dari {{total}}",
     "safeEmpty": "Tidak ada hidangan yang dinilai aman di menu ini",
     "missNote": "Belum ada di basis data kami — akan ditambahkan dalam beberapa hari.",
+    "closestMatchChip": "Paling mirip",
+    "closestMatchLine": "Di menu: {{scanned}}",
+    "closestMatchSheetTitle": "Kami cocokkan dengan hidangan serupa",
+    "closestMatchSheetBody": "Di menu tertulis “{{scanned}}”. Kami menampilkan {{food}} ({{foodKo}}), yang paling mirip di katalog kami, jadi bahan dan tingkat risiko Anda mengacu pada {{food}}.",
+    "closestMatchSeeDetails": "Lihat detail {{food}}",
     "searchOnGoogle": "Cari di Google",
     "resultsEmpty": "Tidak ada hasil pemindaian"
   },

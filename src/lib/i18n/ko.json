@@ -313,6 +313,11 @@
     "resultsSubSafe": "전체 {{total}} 중 '안전' 판정 {{safe}}",
     "safeEmpty": "이 메뉴에는 '안전' 판정 음식이 없어요",
     "missNote": "아직 데이터베이스에 없어요 — 며칠 내로 등록될 거예요.",
+    "closestMatchChip": "가장 가까운 음식",
+    "closestMatchLine": "메뉴 표기: {{scanned}}",
+    "closestMatchSheetTitle": "비슷한 음식으로 안내해 드려요",
+    "closestMatchSheetBody": "메뉴에는 “{{scanned}}”라고 적혀 있어요. 가장 가까운 음식인 {{food}}({{foodKo}}) 정보를 보여드리고 있어서, 재료와 위험도는 {{food}} 기준이에요.",
+    "closestMatchSeeDetails": "{{food}} 상세 보기",
     "searchOnGoogle": "구글에서 검색",
     "resultsEmpty": "스캔 결과가 없어요"
   },
