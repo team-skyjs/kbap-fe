@@ -34,14 +34,15 @@ beforeEach(() => {
   global.fetch = fetchMock as unknown as typeof fetch;
 });
 
-it('GET /home 요청 헤더 X-API-Version = 1.2 (lang 파라미터 유지) + 구 응답(mostReviewedFoods 부재) 호환', async () => {
+it('GET /home 요청 헤더 X-API-Version = 1.3(KB-800 — 1.2 동작 포함) (lang 파라미터 유지) + 구 응답(mostReviewedFoods 부재) 호환', async () => {
   const res = await fetchHome();
   const [url, init] = fetchMock.mock.calls[0] as Call;
   expect(url).toBe('https://dev.kbap.site/api/home?lang=en');
-  expect(init.headers['X-API-Version']).toBe('1.2');
+  expect(init.headers['X-API-Version']).toBe('1.3');
   expect(init.headers['X-App-Version']).toBe('1.0.1'); // 병합 — 기본 헤더 3종 유실 0
   expect(res.avoided).toEqual([{ code: 'EGG', name: 'Egg' }]);
   expect(res.mostReviewed).toEqual([]);
+  expect(res.topRated).toEqual([]); // KB-800: 구 서버 topRatedFoods 부재 = 빈 배열
 });
 
 it('다른 엔드포인트는 전역 기본(1.1) 그대로 — /foods GET · /members/me/profile PATCH', async () => {

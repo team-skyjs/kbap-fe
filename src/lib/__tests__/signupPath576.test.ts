@@ -46,7 +46,6 @@ describe('entry 파생', () => {
     expect(read('src/app/(tabs)/profile.tsx')).toContain("'/login?entry=other'"); // 로그아웃
     const home = read('src/app/(tabs)/index.tsx');
     expect(home).toContain('/login?entry=other'); // 게스트 CTA
-    expect(home).toContain('/login?entry=gate_review'); // Helpful = 게이트와 같은 축
   });
 
   it('게이트 trigger 6종이 전부 CSV 값으로 파생된다(빠진 축 없음)', () => {

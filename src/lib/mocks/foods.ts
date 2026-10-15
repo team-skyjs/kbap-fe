@@ -36,10 +36,15 @@ export const MOCK_HOME: HomeResponse = {
   ],
   // P-393(KB-580): 리뷰 많은 음식 — 목은 인기와 다른 순서로 두어 레일이 구분되게
   mostReviewed: [byId['tteokbokki'], byId['bibimbap'], byId['sundubu-jjigae']],
+  // KB-800: 평점 높은 음식 — 세부 null 케이스(japchae) 포함
+  topRated: [
+    { ...byId['samgyeopsal'], taste: 4.8, servingSpeed: 4.4, staffKindness: 4.6, overallRating: 4.6 },
+    { ...byId['japchae'], taste: 4.5, servingSpeed: null, staffKindness: null, overallRating: 4.5 },
+  ],
 };
 
 /** Empty-state home (new user, 0 scans) — handoff §6 home-empty-rec. */
-export const MOCK_HOME_EMPTY: HomeResponse = { recent: [], recommended: [], mostReviewed: [] };
+export const MOCK_HOME_EMPTY: HomeResponse = { recent: [], recommended: [], mostReviewed: [], topRated: [] };
 
 export const MOCK_FOOD_DETAILS: Record<string, FoodDetail> = {
   'kimchi-jjigae': {
