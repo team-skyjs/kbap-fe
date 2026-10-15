@@ -451,7 +451,7 @@ export function ReviewFoodChip({ review, t, onOpen }: { review: Review; t: TFn; 
       </View>
       <View style={styles.foodText}>
         <Text style={styles.foodName} numberOfLines={1}>{name}</Text>
-        {!!review.foodNameKo && <Text style={styles.foodKo} numberOfLines={1}>{review.foodNameKo}</Text>}
+        {!!review.foodKoreanName && <Text style={styles.foodKo} numberOfLines={1}>{review.foodKoreanName}</Text>}
       </View>
       <IconChevron size={16} color={C.ink3} />
     </Pressable>

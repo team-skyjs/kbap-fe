@@ -43,7 +43,7 @@
 ## Requirements
 
 ### Functional Requirements
-- **FR-001** (R-04): 어댑터가 `food.koreanName` → `Review.foodNameKo`(null 가능) 매핑, 단건 `GET /api/reviews/{id}?lang=` fetch.
+- **FR-001** (R-04): 어댑터가 `food.koreanName` → `Review.foodKoreanName`(null 가능) 매핑, 단건 `GET /api/reviews/{id}?lang=` fetch.
 - **FR-002** (R-04): `useReview(id)` 키 `['reviews','detail',id]`, staleTime 0.
 - **FR-003** (R-05): `ReviewTabCard` — 디자인 스펙 화면 ① 규격. FeedCard 는 `ReviewAuthorLine` 추출 외 무변.
 - **FR-004** (R-06): `ReviewPhotoCarousel` — snapToInterval 319, decelerationRate fast, disableIntervalMomentum, 배지 현재 장만, 실패 폴백.
@@ -56,7 +56,7 @@
 - **FR-011** (R-16): `review_card_view{photo_count,position,review_id}` — 홈 KB-784 판정(50%↑·스크롤 정지·포커스당 1회), 광고 행 제외.
 
 ### Key Entities
-- **Review**: 기존 + `foodNameKo?: string | null`.
+- **Review**: 기존 + `foodKoreanName?: string | null`.
 
 ## Success Criteria
 - **SC-001**: 사진 카드 481pt·사진 없음 236pt(장수 무관 동일 높이 — 유닛으로 메트릭 잠금).
@@ -65,7 +65,7 @@
 - **SC-004**: tsc 0 · jest 전체 통과 · lint-changed 0.
 
 ## Assumptions
-- 필드명은 designer·리더 지시대로 `foodNameKo`(계획 문구 `foodKoreanName` 과 같은 의미).
+- 필드명은 cto 결정 기록대로 `foodKoreanName`(디자이너 초안의 foodNameKo 는 폐기).
 - 음식 칩 높이는 designer 정본대로 부제 유무와 무관 48.
 - `reviews.photoCount` 는 배지 "{{index}}/{{total}}" 와 캐러셀 접근성 값에 쓴다.
 - 상세 헤더는 `SubHeader`(trailing 슬롯) — 스크롤 반응형 불필요.

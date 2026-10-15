@@ -81,7 +81,7 @@ const { api, ApiError } = require('@/lib/api/client');
 
 const SEED = {
   id: '42', foodId: '1', rating: 5, servingSpeed: 4, staffKindness: 0, body: 'Broth was rich.', photos: ['https://cdn/a.jpg', 'https://cdn/b.jpg', 'https://cdn/c.jpg'],
-  memberId: '7', foodName: 'Seolleongtang', foodNameKo: '설렁탕', foodImageUrl: 'https://cdn/f.jpg',
+  memberId: '7', foodName: 'Seolleongtang', foodKoreanName: '설렁탕', foodImageUrl: 'https://cdn/f.jpg',
   author: { memberId: '7', nickname: 'foodie', nationality: 'VN', tier: 'GOURMET', level: 2 },
   authorNationality: 'VN', authorRankTier: 'GOURMET', anonymized: false, createdAt: '2026-10-16T00:00:00Z', likes: 34, myLike: false, place: null,
 } as Review;

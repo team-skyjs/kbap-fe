@@ -66,12 +66,12 @@ afterEach(() => {
   act(() => trees.splice(0).forEach((t) => t.unmount()));
 });
 
-describe('어댑터 — food.koreanName → foodNameKo (C-2)', () => {
+describe('어댑터 — food.koreanName → foodKoreanName (C-2)', () => {
   it('값 매핑 · lang=ko null · 구서버(필드 없음)·음식 없음 = null', () => {
-    expect(adaptReview(WIRE).foodNameKo).toBe('설렁탕');
-    expect(adaptReview({ ...WIRE, food: { ...WIRE.food!, koreanName: null } }).foodNameKo).toBeNull();
-    expect(adaptReview({ ...WIRE, food: { foodId: 1, name: 'Seolleongtang' } }).foodNameKo).toBeNull();
-    expect(adaptReview({ ...WIRE, food: null }).foodNameKo).toBeNull();
+    expect(adaptReview(WIRE).foodKoreanName).toBe('설렁탕');
+    expect(adaptReview({ ...WIRE, food: { ...WIRE.food!, koreanName: null } }).foodKoreanName).toBeNull();
+    expect(adaptReview({ ...WIRE, food: { foodId: 1, name: 'Seolleongtang' } }).foodKoreanName).toBeNull();
+    expect(adaptReview({ ...WIRE, food: null }).foodKoreanName).toBeNull();
   });
 });
 
@@ -80,7 +80,7 @@ describe('단건 조회 (C-1)', () => {
     api.get.mockResolvedValueOnce(WIRE);
     const r = await fetchReview('42');
     expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en');
-    expect(r).toMatchObject({ id: '42', foodId: '1', foodName: 'Seolleongtang', foodNameKo: '설렁탕', likes: 34, myLike: true, staffKindness: 0 });
+    expect(r).toMatchObject({ id: '42', foodId: '1', foodName: 'Seolleongtang', foodKoreanName: '설렁탕', likes: 34, myLike: true, staffKindness: 0 });
   });
 
   it('REVIEW-001 판별은 HTTP 상태가 아니라 code', () => {

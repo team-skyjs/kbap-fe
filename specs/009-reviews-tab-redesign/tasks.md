@@ -7,7 +7,7 @@
 - [X] T001 워크트리 `npm ci` + 베이스라인 `npx jest --ci`
 
 ## Phase 2: Foundational (계약·데이터)
-- [X] T002 `reviewAdapter.ts` `ReviewFoodWire.koreanName` + `adaptReview.foodNameKo` · `types.ts` `Review.foodNameKo`
+- [X] T002 `reviewAdapter.ts` `ReviewFoodWire.koreanName` + `adaptReview.foodKoreanName` · `types.ts` `Review.foodKoreanName`
 - [X] T003 `useFoodReviews.ts` `fetchReview`·`useReview`(키 `['reviews','detail',id]`, staleTime 0, 플래그 off = 네트워크 0)
 - [X] T004 `useReviewMutations.ts` 상세 키: `flipLikeCaches`·`currentMyLike`·`findCachedReview`·`useInvalidateReviews` + `removeReviewFromFeeds`
 - [X] T005 [P] `src/lib/data/__tests__/reviewDetail802.test.ts` — 어댑터 매핑·부재 폴백, fetchReview 경로, Helpful 상세↔피드 동기화·롤백, 무효화, 피드 제거

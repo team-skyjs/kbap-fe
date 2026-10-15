@@ -53,7 +53,7 @@ const t = (k: string) => k;
 const P3 = ['https://cdn/a.jpg', 'https://cdn/b.jpg', 'https://cdn/c.jpg'];
 const REVIEW = {
   id: 'r1', foodId: '7', rating: 4, servingSpeed: 0, staffKindness: 3, body: 'Great dish', photos: P3,
-  foodName: 'Seolleongtang', foodNameKo: '설렁탕', foodImageUrl: 'https://cdn/f.jpg',
+  foodName: 'Seolleongtang', foodKoreanName: '설렁탕', foodImageUrl: 'https://cdn/f.jpg',
   author: { memberId: '9', nickname: 'Amy', nationality: 'US', tier: 'taster', level: 2 },
   authorNationality: 'US', authorRankTier: 'taster', anonymized: false, createdAt: '2026-10-16T00:00:00Z', likes: 34, myLike: false,
 } as Review;
@@ -168,7 +168,7 @@ describe('ReviewTabCard', () => {
 
   it('상태가 바뀌어도 메트릭 불변 — 눌림(배경만)·부제 없음(칩 48)·평점 0(빈 별 + —)', () => {
     const a = card();
-    const b = card({ foodNameKo: null, rating: 0, servingSpeed: 0, staffKindness: 0, photos: [] });
+    const b = card({ foodKoreanName: null, rating: 0, servingSpeed: 0, staffKindness: 0, photos: [] });
     const strip = (s: Record<string, unknown>) => {
       const { backgroundColor: _bg, ...rest } = s;
       return rest;

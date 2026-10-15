@@ -5,7 +5,7 @@
 
 ## Summary
 
-어댑터에 `food.koreanName → foodNameKo` 와 단건 `fetchReview` 를 더하고 `useReview`(키 `['reviews','detail',id]`, staleTime 0)를 만든다. 리뷰 탭 `ReviewFeed` 의 `FeedCard` 를 신규 `ReviewTabCard`(작성자 줄 · `ReviewFoodChip` · `ReviewPhotoCarousel` · 평점 3줄 · 하단 줄)로 바꾸고, 카드 탭은 상세 캐시 시드 → `review_card_open` → `/review/{id}?photo=` push. 상세 `app/review/[id].tsx` 를 되살리되 단건 쿼리를 정본으로 둔다(KB-307 재발 방지). Helpful·무효화 캐시 경로에 상세 키를 더하고, 노출 계측은 홈 `ImpressionTracker` 에 `review` 대상 종류를 더해 재사용한다. 순수 JS(네이티브 무변).
+어댑터에 `food.koreanName → foodKoreanName` 와 단건 `fetchReview` 를 더하고 `useReview`(키 `['reviews','detail',id]`, staleTime 0)를 만든다. 리뷰 탭 `ReviewFeed` 의 `FeedCard` 를 신규 `ReviewTabCard`(작성자 줄 · `ReviewFoodChip` · `ReviewPhotoCarousel` · 평점 3줄 · 하단 줄)로 바꾸고, 카드 탭은 상세 캐시 시드 → `review_card_open` → `/review/{id}?photo=` push. 상세 `app/review/[id].tsx` 를 되살리되 단건 쿼리를 정본으로 둔다(KB-307 재발 방지). Helpful·무효화 캐시 경로에 상세 키를 더하고, 노출 계측은 홈 `ImpressionTracker` 에 `review` 대상 종류를 더해 재사용한다. 순수 JS(네이티브 무변).
 
 ## Technical Context
 
@@ -34,7 +34,7 @@
 ## Project Structure
 
 ```text
-src/lib/api/reviewAdapter.ts · types.ts          # foodNameKo
+src/lib/api/reviewAdapter.ts · types.ts          # foodKoreanName
 src/lib/data/useFoodReviews.ts                   # fetchReview · useReview · REVIEW_DETAIL_KEY
 src/lib/data/useReviewMutations.ts               # 상세 키 동기화 · removeReviewFromFeeds
 src/features/review/ReviewCellParts.tsx          # ReviewAuthorLine(추출) · ReviewFoodChip · ReviewRatingLines · ReviewBody expanded
