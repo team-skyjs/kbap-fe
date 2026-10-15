@@ -13,8 +13,11 @@ import { Pressable } from '@/components/Pressable';
 import { useKeyboardLift } from '@/lib/keyboardAvoid';
 import { Txt as Text } from '@/components/Txt';
 import { ExpandToggle } from '@/components/ExpandToggle';
-import { color as C, font, radius, shadow } from '@/lib/theme';
-import { Btn, IconMapPin, IconPlus, IconSearch, IconSmile, IconThumbsUp, IconZap, Star } from '@/components';
+import { color as C, font, radius, shadow, type as type_ } from '@/lib/theme';
+import { Btn, CardPhoto, IconChevron, IconMapPin, IconPlus, IconSearch, IconSmile, IconThumbsUp, IconZap, RankMedal, Star } from '@/components';
+import { AvatarPlaceholder } from '@/components/design4Assets';
+import { FlagEmoji } from '@/components/FlagEmoji';
+import { useReviewTime } from '@/lib/reviewTime';
 import { EMPTY_EXTRAS, extrasFromReview, hasAnyExtras, type ReviewExtras } from '@/lib/review/reviewExtras';
 import { PlaceTagSheet } from '@/features/community/placeMap';
 import { TagChip } from '@/features/community/parts';
@@ -73,7 +76,7 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
  *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시.
  *  KB-703 ②: 서버가 판별한 리뷰 언어(`review.language`)가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건).
  *  null·필드 없음(판별 불가·구서버) = 지금처럼 표시, 안내 문구 없음. 앱 언어는 구독형(useAppLanguage — 렌더 중 싱글턴 직접 읽기 금지, KB-695). */
-export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
+export function ReviewBody({ review, t, style, expanded = false }: { review: Review; t: TFn; style?: object; /** KB-802 리뷰 상세: 클램프·See more 없이 전문 */ expanded?: boolean }) {
   const original = review.body?.trim() ? review.body : null;
   const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   // 앱 언어 원값과 비교(clampLang 안 거침 — 앱 10개 언어 = 서버 언어 집합. 어긋나면 "다름" = 표시 쪽이라 안전, client 모듈 의존도 안 늘림)
@@ -91,7 +94,11 @@ export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style
           onPress={tx.toggle}
         />
       )}
-      <ExpandableBody body={tx.translatedText ?? original} t={t} style={style} />
+      {expanded ? (
+        <Text style={[styles.body, style]} testID="body-full">{tx.translatedText ?? original}</Text>
+      ) : (
+        <ExpandableBody body={tx.translatedText ?? original} t={t} style={style} />
+      )}
     </View>
   );
 }
@@ -386,6 +393,101 @@ export function ReviewExtrasLine({ review, mine: _mine }: { review: Review; mine
   );
 }
 
+/** KB-802: 리뷰 작성자 줄 — FeedCard 작성자 블록을 떼어 냄(FeedCard·리뷰 탭 카드·리뷰 상세 공용, 시각 무변).
+ *  ⋯·Helpful 은 넣지 않는다(표면이 옆에 둔다). testID 는 FeedCard 현행 유지(feed-flag·feed-when). */
+export function ReviewAuthorLine({ review, t }: { review: Review; t: TFn }) {
+  const anon = review.anonymized;
+  const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
+  const when = useReviewTime(review.createdAt, t);
+  return (
+    <View style={styles.who}>
+      {/* 9/5 예진 판정(Q3): 아바타 24 통일 — 시안 avatar-placeholder SVG.
+          P-340(KB-495, 1-B): 우하단 국기 배지 14 — FlagEmoji(유니코드 국기 이모지)는
+          **국기 한정 헌법 이모지 예외(예진 결정 9/8)**. 탈퇴·국적 null = 배지 없음. */}
+      <View style={styles.avatarWrap}>
+        <View style={styles.avatar}>
+          <AvatarPlaceholder height={24} />
+        </View>
+        {/* Codex #101 P2: 배지 = 순수 장식(스크린리더 무음) — 국가명 10로케일 도입 안 함, 닉네임만 읽힘 */}
+        {!anon && !!review.authorNationality && (
+          <View
+            style={styles.flagBadge}
+            testID={`feed-flag-${review.id}`}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <FlagEmoji code={review.authorNationality} size={10} />
+          </View>
+        )}
+      </View>
+      {/* KB-781(D-25 v2): name-group = [닉네임+메달(간격 4)] + [작성 시각] — 가로 wrap(간격 8, 줄 간격 2). 공간이 모자라면 시각이 닉네임 아래로.
+          닉네임만 말줄임, 시각은 안 잘림. 구분 문자 없음(가운데 점 금지 — 간격으로만). 스크린리더 = 전체 날짜 */}
+      <View style={styles.nameGroup}>
+        <View style={styles.nameRow}>
+          <Text style={styles.whoName} numberOfLines={1}>{name}</Text>
+          {!anon && !!review.authorRankTier && <RankMedal level={review.author?.level ?? 1} size={16} />}
+        </View>
+        {!!when.label && (
+          <Text style={styles.when} accessibilityLabel={when.a11y} testID={`feed-when-${review.id}`}>{when.label}</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+/** KB-802: 음식 칩 — 썸네일 32 + 영문(요청 언어)명 + 한국어 부제. 부제 null 이어도 높이 48 고정(세로 가운데). 탭 = 음식 상세. */
+export function ReviewFoodChip({ review, t, onOpen }: { review: Review; t: TFn; onOpen: () => void }) {
+  const name = review.foodName ?? t('myReviews.viewDish');
+  return (
+    <Pressable
+      style={styles.foodChip}
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={t('reviews.openFoodA11y', { food: name })}
+      testID={`feed-food-${review.id}`}
+    >
+      <View style={styles.foodThumb}>
+        <CardPhoto uri={review.foodImageUrl} recyclingKey={review.foodId} borderRadius={radius.xs} />
+      </View>
+      <View style={styles.foodText}>
+        <Text style={styles.foodName} numberOfLines={1}>{name}</Text>
+        {!!review.foodNameKo && <Text style={styles.foodKo} numberOfLines={1}>{review.foodNameKo}</Text>}
+      </View>
+      <IconChevron size={16} color={C.ink3} />
+    </Pressable>
+  );
+}
+
+/** KB-802: 평점 3줄(맛=rating · 속도 · 친절) — 3축 항상 표시, 0 = 빈 별 5개 + "—"(같은 자리·같은 크기). 줄 20 · 간격 4 = 68. */
+export function ReviewRatingLines({ review, t }: { review: Review; t: TFn }) {
+  const rows: [string, number][] = [
+    [t('review.extrasTaste'), review.rating],
+    [t('review.extrasSpeed'), review.servingSpeed ?? 0],
+    [t('review.extrasService'), review.staffKindness ?? 0],
+  ];
+  return (
+    <View style={styles.rateBox}>
+      {rows.map(([label, v]) => (
+        <View
+          key={label}
+          style={styles.rateRow}
+          accessible
+          accessibilityLabel={`${label} ${v > 0 ? t('reviews.ratingPoints', { n: v }) : t('reviews.ratingNone')}`}
+          testID="review-rating-line"
+        >
+          <Text style={styles.rateLabel} numberOfLines={1}>{label}</Text>
+          <View style={styles.rateStars}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Star key={i} size={16} fillPct={Math.max(0, Math.min(1, v - i)) * 100} />
+            ))}
+          </View>
+          <Text style={[styles.rateValue, v <= 0 && styles.rateNone]}>{v > 0 ? String(v) : '\u2014'}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function HelpfulButton({
   review,
   mine,
@@ -444,6 +546,28 @@ export function HelpfulButton({
 
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
+  // KB-802: ReviewAuthorLine — FeedCard 에서 이관(값 무변)
+  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
+  whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02
+  nameGroup: { flex: 1, minWidth: 0, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, maxWidth: '100%' },
+  when: { ...type_.caption, color: C.ink3, flexShrink: 0 }, // caption1-regular · gray-600
+  avatarWrap: { width: 24, height: 24 }, // P-340: 배지 오버행 수용(overflow 기본 visible)
+  avatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8F6FF', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.10)' }, // A-FC-03
+  flagBadge: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }, // P-342 ④
+  // KB-802 음식 칩(02_designer_spec ①-②) — 48 고정
+  foodChip: { height: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 8, paddingRight: 12, backgroundColor: C.surface2, borderRadius: radius.sm },
+  foodThumb: { width: 32, height: 32, borderRadius: radius.xs, overflow: 'hidden' },
+  foodText: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  foodName: { fontSize: 14, fontWeight: '600', color: C.ink },
+  foodKo: { fontSize: 12, fontWeight: '400', color: C.ink3 },
+  // KB-802 평점 3줄(①-④) — 라벨 고정 폭 112 · 별 16(간격 2) · 수치
+  rateBox: { gap: 4 },
+  rateRow: { height: 20, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rateLabel: { width: 112, fontSize: 13, fontWeight: '500', color: C.ink2 },
+  rateStars: { flexDirection: 'row', gap: 2 },
+  rateValue: { fontSize: 13, fontWeight: '600', color: '#2F3137' }, // FeedCard INK_TITLE
+  rateNone: { color: C.ink3 },
   // P-202: 3축 섹션(작성·수정 공용) + 셀 축약 — 기본 스타일(디자이너 폴리시 전)
   // KB-432 §2-4: 카드 박스 소멸 — mx 39 플랫 2행
   extrasBox: { gap: 18, marginHorizontal: 20 }, // P-348 ⑦: 39는 ko/id 라벨+별 5개 공존 불가(i18n 예외)

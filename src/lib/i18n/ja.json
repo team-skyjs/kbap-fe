@@ -491,7 +491,14 @@
     "ratingAll": "すべての評価",
     "ratingMin": "{{min}}点以上",
     "countryOnly": "{{code}}のみ",
-    "allReviews": "すべてのレビュー"
+    "allReviews": "すべてのレビュー",
+    "readReview": "レビューを読む",
+    "ratingNone": "評価なし",
+    "cardA11y": "{{name}}さんの{{food}}のレビューを読む",
+    "cardA11yDetail": "写真{{photos}}枚、味 {{taste}}、提供の速さ {{speed}}、接客 {{service}}、参考になった {{helpful}}",
+    "ratingPoints": "{{n}}点",
+    "openFoodA11y": "{{food}}、料理の情報を見る",
+    "photoCount": "{{index}}/{{total}}"
   },
   "ranking": {
     "headerTitle": "マイランキング",
@@ -1131,5 +1138,11 @@
     "monLong10": "10月",
     "monLong11": "11月",
     "monLong12": "12月"
+  },
+  "reviewDetail": {
+    "title": "レビュー",
+    "notFound": "削除されたか、表示できないレビューです",
+    "photoA11y": "レビュー写真、拡大して見る",
+    "moreA11y": "その他"
   }
 }

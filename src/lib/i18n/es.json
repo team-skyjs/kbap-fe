@@ -491,7 +491,14 @@
     "ratingAll": "Todas las valoraciones",
     "ratingMin": "{{min}}+ estrellas",
     "countryOnly": "Solo {{code}}",
-    "allReviews": "Todas las reseñas"
+    "allReviews": "Todas las reseñas",
+    "readReview": "Leer reseña",
+    "ratingNone": "Sin valorar",
+    "cardA11y": "Leer la reseña de {{name}} sobre {{food}}",
+    "cardA11yDetail": "{{photos}} fotos, sabor {{taste}}, rapidez {{speed}}, amabilidad {{service}}, útil {{helpful}}",
+    "ratingPoints": "{{n}} puntos",
+    "openFoodA11y": "{{food}}, ver información del plato",
+    "photoCount": "{{index}}/{{total}}"
   },
   "ranking": {
     "headerTitle": "Mi clasificación",
@@ -1131,5 +1138,11 @@
     "monLong10": "octubre",
     "monLong11": "noviembre",
     "monLong12": "diciembre"
+  },
+  "reviewDetail": {
+    "title": "Reseña",
+    "notFound": "Esta reseña se eliminó o no está disponible",
+    "photoA11y": "Foto de la reseña, ver en grande",
+    "moreA11y": "Más"
   }
 }

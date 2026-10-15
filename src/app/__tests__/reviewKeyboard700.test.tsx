@@ -37,6 +37,7 @@ const NO_FIXED_BAR_INPUT: Record<string, string> = {
   'src/app/(tabs)/community.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
   'src/app/food/[id]/index.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
   'src/app/food/[id]/reviews.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
+  'src/app/review/[id].tsx': '입력은 신고 시트(ModerationFlow — 모달) 안', // KB-802 리뷰 상세
   'src/app/profile/order/[id].tsx': '입력은 장소 선택 시트(PlacePickerSheet — 모달) 안',
 };
 const INPUT_TAG = /<(Input|TextInput)\b/;
@@ -72,7 +73,7 @@ it('입력창이 있는 화면 전수(직접 + 입력 품은 컴포넌트 경유
   expect(inputComponents()).toEqual(expect.arrayContaining(['IngredientFilter', 'PlacePickerSheet', 'ModerationFlow']));
   const screens = screensWithInputs();
   // 고정값 — 화면이 늘거나 줄면 한 번 멈춰 서서 KAV/예외 판단을 하게(스캔이 비어도 실패)
-  expect(screens).toHaveLength(12); // KB-800: 홈 = 신고 시트 소멸로 입력 화면에서 빠짐
+  expect(screens).toHaveLength(13); // KB-800: 홈 = 신고 시트 소멸로 입력 화면에서 빠짐 · KB-802: 리뷰 상세(⋯ 신고 시트) 추가
   expect(screens).toContain('src/app/profile/restrictions.tsx');
   const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{KAV_BEHAVIOR\}/.test(fs.readFileSync(f, 'utf8')));
   expect(missing).toEqual([]);
