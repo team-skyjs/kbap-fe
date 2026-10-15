@@ -70,8 +70,8 @@ it('리뷰 상세 = 단건 쿼리(useReview) 정본 — 캐시 전용 상세 재
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const src = require('fs').readFileSync('src/app/review/[id].tsx', 'utf8') as string;
   expect(src).toContain('useReview(id)');
-  expect(src).not.toContain('useGlobalReviews');
-  expect(src).not.toContain('useFoodReviews');
+  expect(src).not.toContain('useGlobalReviews(');
+  expect(src).not.toContain('useFoodReviews('); // 목록 캐시 훅 호출 금지(모듈 경로 import 는 무관)
 });
 
 it('ExpandableBody — 3줄 도달 시 See more, 탭 = 전문 펼침(See less), 재탭 = 접기', () => {
