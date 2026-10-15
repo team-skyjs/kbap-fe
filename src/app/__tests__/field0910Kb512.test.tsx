@@ -89,12 +89,13 @@ describe('② PhotoViewer 줌 계약', () => {
 });
 
 describe('③ 당겨서 새로고침 3탭', () => {
-  it('홈 — RefreshControl + progressViewOffset=headerH + 키 접두 3종 무효화', () => {
+  it('홈 — RefreshControl + progressViewOffset=headerH + 키 접두 3종 무효화(KB-800: 홈 리뷰 피드 제거로 reviews 무효화 없음)', () => {
     const home = read('src/app/(tabs)/index.tsx');
     expect(home).toContain('refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}');
-    for (const key of ["['home']", "['foods']", "['bookmarks']", "['reviews', 'global']"]) {
+    for (const key of ["['home']", "['foods']", "['bookmarks']"]) {
       expect(home).toContain(`queryClient.invalidateQueries({ queryKey: ${key} })`);
     }
+    expect(home).not.toContain("['reviews', 'global']");
   });
 
   it('음식 탭 — RefreshControl + progressViewOffset=topPad + savedOnly면 bookmarks 동반', () => {

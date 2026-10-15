@@ -7,13 +7,13 @@
  *    첫 진입·데이터 도착(등록)은 짧은 지연 뒤 1회 측정.
  *  - **홈 진입(포커스)당 같은 대상 1회** — 포커스마다 본 목록을 비운다. 같은 진입 안에서 새로고침·레일 탭 왕복은 다시 보내지 않는다.
  *  - 측정 = measureInWindow(정지 시점만 — 스크롤 중 비용 0). JS 스크롤 콜백(onMomentumScrollEnd 등)만 쓰고 reanimated onScroll 워클릿은 건드리지 않는다.
- * 섹션 키 = popular|saved|food(레일 탭) · safe · most_reviewed · recent · reviews · guest_cta. 카드 food_id = 카탈로그 id(PII 아님).
+ * 섹션 키 = popular|saved|food(레일 탭) · safe · most_reviewed · recent · top_rated(KB-800 — 구 reviews 피드 대체) · guest_cta. 카드 food_id = 카탈로그 id(PII 아님).
  */
 import * as React from 'react';
 import type { View } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 
-export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'reviews' | 'guest_cta';
+export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta';
 export type Rect = { x: number; y: number; width: number; height: number };
 export type Viewport = { top: number; bottom: number; left: number; right: number };
 

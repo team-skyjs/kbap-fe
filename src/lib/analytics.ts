@@ -160,7 +160,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ad_reward_earned: ['placement', 'remaining', 'surface'],
   ad_consent_result: ['status', 'can_request_ads', 'gdpr_applies', 'personalized_consent'], // KB-774: boolean만(TC 문자열 원문 금지)
   // KB-784: screen = 라우트 패턴(예 food/[id] — 실제 id 없음) · target = testID 정규화(숫자·대문자 코드·비ASCII 토큰 → :v, lib/uiClick)
-  // section = popular|saved|food|safe|most_reviewed|recent|reviews|guest_cta · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
+  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta (KB-800: reviews → top_rated) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
   screen_view: ['screen'],
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
