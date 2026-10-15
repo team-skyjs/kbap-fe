@@ -67,6 +67,7 @@ const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
 // KB-802: 상세 부활 — KB-307 삭제 사유("단건 GET 부재 — 목록 캐시 재렌더")가 재발하지 않게 단건 쿼리 경유를 잠근다
 it('리뷰 상세 = 단건 쿼리(useReview) 정본 — 캐시 전용 상세 재발 금지', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const src = require('fs').readFileSync('src/app/review/[id].tsx', 'utf8') as string;
   expect(src).toContain('useReview(id)');
   expect(src).not.toContain('useGlobalReviews');

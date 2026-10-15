@@ -284,6 +284,7 @@ describe('P-186: 타 유저 신고·차단', () => {
   it('KB-802: 리스트 카드엔 ⋯ 없음 — 신고·차단·수정·삭제는 리뷰 상세 헤더(ModerationFlow 미배선)', () => {
     const tree = render();
     expect(tree.root.findAll((n) => n.props?.testID === 'feed-more-r1')).toHaveLength(0);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     expect(require('fs').readFileSync('src/features/community/ReviewFeed.tsx', 'utf8')).not.toContain('<ModerationFlow');
   });
 });

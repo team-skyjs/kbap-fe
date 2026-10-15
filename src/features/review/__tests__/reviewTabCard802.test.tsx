@@ -1,3 +1,4 @@
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- jest.mock 팩토리 안 require · 목 등록 뒤 import(레포 테스트 관례) */
 /**
  * KB-802 ReviewPhotoCarousel(스냅 산식·장수별 분기·배지·실패 폴백) + ReviewTabCard(높이 메트릭 481/236 불변·본문 미렌더·탭 위임).
  */

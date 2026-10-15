@@ -1,3 +1,4 @@
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- jest.mock 팩토리 안 require · 목 등록 뒤 import(레포 테스트 관례) */
 /**
  * KB-802 리뷰 상세(app/review/[id]) — 시드 즉시 렌더 + 백그라운드 단건 · 캐시 없음 스켈레톤 · REVIEW-001 notFound + 피드 제거 ·
  * 그 밖 오류 = 오류 블록 + 재시도 · 사진 이어받기·뷰어 · 본문 전문 · ⋯ 배선 · 음식 칩 source · Helpful 게스트 게이트.
@@ -76,7 +77,6 @@ import ReviewDetailRoute from '../review/[id]';
 import type { Review, ReviewPage } from '@/lib/api/types';
 import type { ReviewWire } from '@/lib/api/reviewAdapter';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { api, ApiError } = require('@/lib/api/client');
 
 const SEED = {
@@ -252,8 +252,7 @@ it('게스트 Helpful = 로그인 게이트(helpful) · 뮤테이션 0', async (
 });
 
 it('R-13: 상세 screen_view = 루트 자동 계측의 라우트 패턴 review/[id](실제 id 없음) — 화면 코드에 계측 추가 없음', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { screenFromSegments } = require('@/lib/uiClick') as typeof import('@/lib/uiClick');
+    const { screenFromSegments } = require('@/lib/uiClick') as typeof import('@/lib/uiClick');
   expect(screenFromSegments(['review', '[id]'])).toBe('review/[id]');
   expect(require('fs').readFileSync('src/app/review/[id].tsx', 'utf8')).not.toContain('screen_view');
 });

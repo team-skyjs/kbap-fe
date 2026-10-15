@@ -1,3 +1,4 @@
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- jest.mock 팩토리 안 require · 목 등록 뒤 import(레포 테스트 관례) */
 /**
  * KB-802 데이터 계층 — 어댑터 koreanName(C-2) · 단건 조회(C-1) · 상세 쿼리 시드→갱신 · Helpful 상세↔피드 동기화 ·
  * 무효화 · REVIEW-001 피드 제거.
@@ -41,7 +42,6 @@ import { fetchReview, isReviewNotFound, reviewDetailKey, useReview } from '../us
 import { findCachedReview, removeReviewFromFeeds, useDeleteReview, useToggleReviewLike } from '../useReviewMutations';
 import type { Review, ReviewPage } from '@/lib/api/types';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { api, ApiError } = require('@/lib/api/client');
 
 const WIRE: ReviewWire = {
