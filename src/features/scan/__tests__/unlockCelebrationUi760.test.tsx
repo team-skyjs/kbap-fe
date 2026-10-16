@@ -9,7 +9,7 @@ jest.mock('@/components/FlameShape', () => ({ FlameShape: () => null }));
 jest.mock('@/components/CountdownBadge', () => ({ QuotaBurstParticle: () => null }));
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
-  return { __esModule: true, default: { View }, useSharedValue: (value: number) => ({ value }), useAnimatedStyle: () => ({}), cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
+  return { __esModule: true, default: { View }, useSharedValue: (value: number) => { const shared = { value, set: (next: number) => { shared.value = next; } }; return shared; }, useAnimatedStyle: () => ({}), cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
 });
 jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
   const { Pressable, Text } = jest.requireActual('react-native');

@@ -38,11 +38,11 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
     return () => { alive = false; app.remove(); motion.remove(); };
   }, []);
   React.useEffect(() => {
-    if (!visible || reduceMotion) { entrance.value = 1; return; }
-    entrance.value = 0;
-    entrance.value = withTiming(1, { duration: 550 });
-    burst.value = 0;
-    burst.value = withTiming(1, { duration: 700 });
+    if (!visible || reduceMotion) { entrance.set(1); return; }
+    entrance.set(0);
+    entrance.set(withTiming(1, { duration: 550 }));
+    burst.set(0);
+    burst.set(withTiming(1, { duration: 700 }));
     return () => { cancelAnimation(burst); cancelAnimation(entrance); };
   }, [visible, reduceMotion, burst, entrance]);
   React.useEffect(() => () => { if (shown.current !== null) consumeUnlock(shown.current); }, []);
