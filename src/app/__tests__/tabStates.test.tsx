@@ -1,3 +1,4 @@
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 /**
  * P-007(KB-174) false-empty 제거 잠금 — 7/20 BE 장애 회귀.
  * 에러인데 빈 상태("아직 스캔이 없어요")로 위장하거나 백지가 되면 안 된다:

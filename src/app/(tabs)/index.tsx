@@ -1,3 +1,4 @@
+import { useSelectedHomeFoods } from '@/lib/data/useSelectedHomeFoods';
 /**
  * Home tab — KB-430(P-275) 디자인 4차 D-2 (Figma 4150:16377).
  * AppBar(로고+벨) · 검색 행(+스캔 버튼) · 언더라인 탭(Popular/Saved/Food) ·
@@ -75,7 +76,8 @@ function HomeBody() {
   const [scanRowBottom, setScanRowBottom] = useState<number | null>(null);
   const badgeTop = exploreY != null && scanRowBottom != null ? headerH + exploreY + scanRowBottom + BADGE_GAP : null;
 
-  const { data: home, isLoading, isPending, isError, error, refetch } = useHome();
+  const { data: home, isLoading, isError, error, refetch } = useHome();
+  const selected = useSelectedHomeFoods();
   const { data: me } = useMe();
   // KB-735: 홈에는 현재 일회성 모달 스텝이 없다. 홈 트리거(코치마크·넛지·리뷰 유도)가 생기면 useOneShotQueue를
   // **포커스에 등록·블러에 clear**로 되살린다: `useFocusEffect(useCallback(() => { queue.add(step()); return () => queue.clear(); }, [queue, step]))`
@@ -101,6 +103,7 @@ function HomeBody() {
     setRefreshing(true);
     void Promise.all([
       queryClient.invalidateQueries({ queryKey: ['home'] }),
+      queryClient.invalidateQueries({ queryKey: ['selectedHomeFoods'] }),
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
     ]).finally(() => setRefreshing(false));
@@ -133,10 +136,13 @@ function HomeBody() {
           srcTag="home"
           mostReviewed={home?.mostReviewed ?? []}
           mostReviewedLoading={isLoading}
-          popular={home?.recommended}
+          selectedPopular
+          popular={selected.data?.items}
+          popularError={selected.isError ? selected.error : undefined}
+          onPopularRetry={() => void selected.refetch()}
           // isPending(데이터 아직 없음) — isLoading(첫 요청 진행 중)이면 위 SkeletonHome이 이미 덮는다. 그 밖의 "데이터 없음"
           // (오프라인 등으로 요청이 멈춘 pending: isLoading false)에서 레일이 /foods 폴백을 먼저 그렸다 바꾸지 않게(#237 공부)
-          popularLoading={isPending}
+          popularLoading={selected.isPending}
           onScanRowBottom={setScanRowBottom}
         />
       </View>

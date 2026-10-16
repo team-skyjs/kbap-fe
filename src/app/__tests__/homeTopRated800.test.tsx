@@ -1,3 +1,4 @@
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 /**
  * KB-800 홈 하단 = "평점 높은 음식" 행 + 스캔 CTA (구 P-317 리뷰 무한 피드 대체 — homeFeed317 삭제).
  * ① 행 N개 서버 순서 · 세부 null = 빈 별 + "—" ② 빈 배열 = 헤더 부재·CTA 존재 ③ CTA → navigate('/scan')

@@ -1,3 +1,4 @@
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 /* eslint-disable @typescript-eslint/no-require-imports, import/first -- jest.mock 팩토리 안 require · 목 등록 뒤 import(homeFeed317 하네스) */
 /**
  * KB-701 · Codex #229 — 홈 불꽃 뱃지 앵커 = **실제 렌더된 검색 줄(스캔 버튼) 바로 아래**.

@@ -242,3 +242,19 @@ describe('KB-779 Codex 리뷰: 카드 캐시 반전 경쟁 조건', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 });
+
+// Selected cache is a summary envelope, not a paginated list or HomeResponse.
+it.each([false, true])('selected cache bookmark success/rollback (reject=%s) preserves order and unavailable IDs', async (reject) => {
+  const qc = client();
+  const key = ['selectedHomeFoods','prod','1.1','manifest','7,8','en',true,0,0];
+  qc.setQueryData(key,{items:[{...SNAP,bookmarked:false},{...SNAP,foodId:'8',bookmarked:false}],unavailableFoodIds:[]});
+  if (reject) api.post.mockRejectedValueOnce(new Error('offline'));
+  else api.post.mockResolvedValueOnce(undefined);
+  await runToggle(qc,true);
+  const data = qc.getQueryData<{items:{foodId:string;bookmarked:boolean}[];unavailableFoodIds:number[]}>(key)!;
+  expect(data.items.map((x) => x.foodId)).toEqual(['7','8']);
+  expect(data.items.map((x) => x.bookmarked)).toEqual([!reject,false]);
+  expect(data.unavailableFoodIds).toEqual([]);
+  expect(qc.getQueryState(key)?.isInvalidated).toBe(true);
+  qc.clear();
+});

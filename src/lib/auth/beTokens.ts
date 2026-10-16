@@ -6,6 +6,7 @@
  * 구 v1 키 2종은 최초 로드 시 **읽지 않고 삭제만**(= 환경 미상 → 폐기 정책과 동일).
  * 웹은 secure store가 없어 메모리만으로 동작(세션 한정).
  */
+import { advanceSelectedContext } from '@/features/home/selectedFoods';
 import * as SecureStore from 'expo-secure-store';
 import { BE_BASE } from '@/lib/data/config';
 
@@ -26,6 +27,7 @@ let cached: { access: string; refresh: string } | null | undefined; // undefined
 let sessionGen = 0;
 export function bumpSessionGen(): void {
   sessionGen++;
+  advanceSelectedContext();
 }
 export function currentGen(): number {
   return sessionGen;
