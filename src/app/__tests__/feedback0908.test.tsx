@@ -18,8 +18,10 @@ it('② ⋯ 전 카드 — 탈퇴 리뷰 포함(FeedCard anon 게이트 소멸)�
   expect(home).not.toContain('<ModerationFlow'); // KB-800: 홈 리뷰 피드 소멸 → 홈 신고 플로우도 없음
   const mod = read('src/features/community/moderation.tsx');
   expect(mod).toContain('!isGuest && !target.anonymized && !target.reportOnly');
-  const rf = read('src/features/community/ReviewFeed.tsx');
-  expect(rf).toContain('anonymized: row.item.anonymized === true'); // KB-739: 피드 행 = withFeedAds(row.item)
+  // KB-802: 리뷰 탭 ⋯ = 리뷰 상세 헤더로 이동(리스트 카드엔 ⋯ 없음)
+  const rd = read('src/app/review/[id].tsx');
+  expect(rd).toContain('anonymized: review.anonymized === true');
+  expect(read('src/features/community/ReviewFeed.tsx')).not.toContain('<ModerationFlow');
   // Codex #100 P2 ①: 상세 프리뷰 showMore 게이트 잔존 제거 — showMore prop 소비처 0(기본 true)
   const fd = read('src/app/food/[id]/index.tsx');
   expect(fd).not.toContain('showMore={');

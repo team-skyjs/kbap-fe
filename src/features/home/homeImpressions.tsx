@@ -29,10 +29,15 @@ export const VISIBLE_THRESHOLD = 0.5;
 const SETTLE_MS = 350; // 등록·포커스 뒤 첫 측정 지연(레이아웃 정착)
 const DRAG_END_MS = 120; // 손 뗌 뒤 관성 시작 여부를 기다리는 창
 
-type Target = { kind: 'section'; section: HomeSection } | { kind: 'card'; section: HomeSection; position: number; foodId: string };
+/** KB-802: 'review' = 리뷰 탭 카드(review_card_view) — 판정 규칙은 홈과 같다, 키 = 리뷰 id(셀 재사용·순번 변동에도 포커스당 1회) */
+export type Target =
+  | { kind: 'section'; section: HomeSection }
+  | { kind: 'card'; section: HomeSection; position: number; foodId: string }
+  | { kind: 'review'; position: number; reviewId: string; photoCount: number };
 type Measurable = Pick<View, 'measureInWindow'>;
 
-const keyOf = (t: Target) => (t.kind === 'section' ? `s:${t.section}` : `c:${t.section}:${t.position}:${t.foodId}`);
+const keyOf = (t: Target) =>
+  t.kind === 'section' ? `s:${t.section}` : t.kind === 'review' ? `r:${t.reviewId}` : `c:${t.section}:${t.position}:${t.foodId}`;
 
 /** 순수 상태기 — 테스트가 측정·타이머를 직접 몰 수 있게 RN·React 밖에 둔다 */
 export class ImpressionTracker {
@@ -94,6 +99,8 @@ export class ImpressionTracker {
           if (visibleFraction({ x, y, width, height }, v) < VISIBLE_THRESHOLD) return;
           this.seen.add(k);
           if (target.kind === 'section') track(EVENTS.home_section_view, { section: target.section });
+          else if (target.kind === 'review')
+            track(EVENTS.review_card_view, { photo_count: target.photoCount, position: target.position, review_id: target.reviewId });
           else track(EVENTS.home_card_view, { section: target.section, position: target.position, food_id: target.foodId });
         });
       } catch {

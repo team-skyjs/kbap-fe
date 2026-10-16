@@ -369,6 +369,33 @@ const sk = StyleSheet.create({
   gridCard: { width: '48.5%' }, // A-SK-03: 프레임 소멸
 });
 
+/** KB-802 리뷰 상세(02_designer_spec ③ 로딩): 작성자 줄 24 · 칩 48 · 사진 233(+오른쪽 peek) · 평점 3줄 · 본문 4줄. 패딩 20/8, gap 12 = 화면과 같다. */
+export function SkeletonReviewDetail() {
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 12 }} testID="skeleton-review-detail">
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <SkImg w={24} h={24} r={12} />
+        <SkBar w={120} h={14} />
+      </View>
+      <SkImg w="100%" h={48} />
+      <View style={{ flexDirection: 'row', gap: 8, marginRight: -20, overflow: 'hidden' }}>
+        <SkImg w={311} h={233} />
+        <SkImg w={311} h={233} />
+      </View>
+      <View style={{ gap: 10 }}>
+        {[0, 1, 2].map((i) => (
+          <SkBar key={i} w={240} h={14} />
+        ))}
+      </View>
+      <View style={{ gap: 8 }}>
+        {(['100%', '100%', '100%', 200] as const).map((w, i) => (
+          <SkBar key={i} w={w} h={14} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: { padding: 18, gap: 14 },
   block: { backgroundColor: C.surface2, overflow: 'hidden' },

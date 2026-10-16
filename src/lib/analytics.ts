@@ -113,6 +113,9 @@ export const EVENTS = {
   home_section_view: 'home_section_view', // 홈 섹션 노출(50%↑ + 스크롤 정지, 홈 진입당 1회)
   home_card_view: 'home_card_view', // 홈 카드 노출(같은 규칙)
   home_card_click: 'home_card_click', // 홈 카드 클릭(섹션·위치) — 표시 이름 "홈컨텐츠_카드_클릭"
+  // KB-802: 리뷰 탭 카드 → 리뷰 상세 진입 · 리뷰 탭 카드 노출(홈 KB-784 판정 규칙). CSV 등재는 PR 본문으로 커맨드 센터에
+  review_card_open: 'review_card_open',
+  review_card_view: 'review_card_view',
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -166,6 +169,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
   home_card_click: ['section', 'position', 'food_id'],
+  review_card_open: ['target', 'photo_count'], // target: card|photo|read · photo_count 0~3
+  review_card_view: ['photo_count', 'position', 'review_id'], // position = 피드 리뷰 순번(광고 행 제외, 0부터) · review_id = 콘텐츠 id(PII 아님)
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open

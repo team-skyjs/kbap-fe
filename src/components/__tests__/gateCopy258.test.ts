@@ -10,7 +10,10 @@ const { execFileSync } = require('child_process');
 
 it("Helpful = 'helpful' 신카피 · FAB = 'writeReview' — 트리거별 분리 배선", () => {
   const feed = readFileSync('src/features/community/ReviewFeed.tsx', 'utf8') as string;
-  expect(feed).toContain("onGuestHelpful={() => setGateOpen('helpful')}");
+  // KB-802: 리뷰 탭 카드엔 Helpful 버튼이 없다 — 게스트 Helpful 게이트는 리뷰 상세에서
+  const detail = readFileSync('src/app/review/[id].tsx', 'utf8') as string;
+  expect(detail).toContain('onGuest={() => setGateOpen(true)}');
+  expect(detail).toContain('<AuthGateSheet context="helpful"');
   expect(feed).toContain("setGateOpen('writeReview')");
   expect(feed).toContain("context={gateOpen ?? 'helpful'}");
   const sheet = readFileSync('src/components/AuthGateSheet.tsx', 'utf8') as string;

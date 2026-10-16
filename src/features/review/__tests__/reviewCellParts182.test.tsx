@@ -65,8 +65,13 @@ function render(el: React.ReactElement): ReactTestRenderer {
 }
 const flat = (t2: ReactTestRenderer) => JSON.stringify(t2.toJSON());
 
-it('디테일 라우트 소멸 — review/[id] 파일 부재(2depth 전환)', () => {
-  expect(require('fs').existsSync('src/app/review/[id].tsx')).toBe(false);
+// KB-802: 상세 부활 — KB-307 삭제 사유("단건 GET 부재 — 목록 캐시 재렌더")가 재발하지 않게 단건 쿼리 경유를 잠근다
+it('리뷰 상세 = 단건 쿼리(useReview) 정본 — 캐시 전용 상세 재발 금지', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const src = require('fs').readFileSync('src/app/review/[id].tsx', 'utf8') as string;
+  expect(src).toContain('useReview(id)');
+  expect(src).not.toContain('useGlobalReviews(');
+  expect(src).not.toContain('useFoodReviews('); // 목록 캐시 훅 호출 금지(모듈 경로 import 는 무관)
 });
 
 it('ExpandableBody — 3줄 도달 시 See more, 탭 = 전문 펼침(See less), 재탭 = 접기', () => {
@@ -152,11 +157,16 @@ describe('P-196: HelpfulButton — 4표면 유일 경유 + 본인 비활성', ()
     // 표면 직접 배선 금지는 동일하게 잠근다.
     expect(fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8')).toContain('<HelpfulButton');
     const surfaces: [string, 'card' | 'button'][] = [
-      ['src/features/community/ReviewFeed.tsx', 'card'],
+      ['src/app/review/[id].tsx', 'button'], // KB-802: 리뷰 탭 Helpful = 리뷰 상세(리스트 카드는 수 표시만)
       ['src/app/food/[id]/index.tsx', 'card'],
       ['src/app/food/[id]/reviews.tsx', 'button'],
       ['src/app/profile/reviews.tsx', 'card'], // KB-434 D-6: 내 리뷰 = FeedCard 경유
     ];
+    // KB-802: 리뷰 탭 카드는 Helpful 토글이 없다(표시만) — 뮤테이션 경로 0
+    for (const f of ['src/features/community/ReviewFeed.tsx', 'src/features/review/ReviewTabCard.tsx']) {
+      expect(fs.readFileSync(f, 'utf8')).not.toContain('useToggleReviewLike');
+      expect(fs.readFileSync(f, 'utf8')).not.toContain('<HelpfulButton');
+    }
     for (const [f, via] of surfaces) {
       const src = fs.readFileSync(f, 'utf8') as string;
       expect(src).toContain(via === 'card' ? '<FeedCard' : '<HelpfulButton'); // 공용 경유

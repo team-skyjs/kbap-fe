@@ -100,7 +100,8 @@ it('1-B 국기 배지 — 국적 있으면 아바타 우하단 렌더(장식 —
 });
 
 it('1-B 소스 잠금 — FlagEmoji = 국기 한정 이모지 예외 주석 + 흰 링 배지 스타일', () => {
-  const fc = require('fs').readFileSync('src/features/review/FeedCard.tsx', 'utf8') as string;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fc = require('fs').readFileSync('src/features/review/ReviewCellParts.tsx', 'utf8') as string; // KB-802: 작성자 줄 = ReviewAuthorLine
   expect(fc).toContain('국기 한정 헌법 이모지 예외');
   expect(fc).toMatch(/flagBadge: \{ position: 'absolute', right: -2, bottom: -2, width: 14, height: 14/);
 });
