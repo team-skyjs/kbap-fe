@@ -121,7 +121,7 @@ it('①-b foods 커서 에코 가드(#112 P1) — 같은 커서 반복 응답이
 it('③ FoodExplorer 소스 잠금 — 일반 목록 서버 필터·선정 모드 한정 로컬 필터·얇은 페이지 연속 페치·빈 판정 !hasNextPage', () => {
   const fe = require('fs').readFileSync('src/features/food/FoodExplorer.tsx', 'utf8') as string;
   expect(fe).toContain("selectedActive && riskChip !== 'all' ? gridSource.filter((food) => personalRisk(food.risk, hasR) === riskChip) : gridSource");
-  expect(fe).toContain('const browse = useInfiniteFoods(selectedActive ? 'all' : riskChip, { enabled: !savedTabActive && (!selectedActive || (!guest && hasR && riskChip === 'all')) });'); // 2R ②: Saved 활성 = browse 휴면
+  expect(fe).toContain("const browse = useInfiniteFoods(selectedActive ? 'all' : riskChip, { enabled: !savedTabActive && (!selectedActive || (!guest && hasR && riskChip === 'all')) });"); // 2R ②: Saved 활성 = browse 휴면
   expect(fe).toContain("const savedList = useBookmarks(savedTabActive ? riskChip : 'all', { enabled: bookmarksOn });"); // KB-779: 홈은 Saved 탭 활성 시에만
   expect(fe).toContain('const saved = useBookmarks(undefined, { enabled: bookmarksOn });'); // 무필터 유지(저장 0건 판정)
   expect(fe).toContain('if (gridLen < FOODS_PAGE_SIZE && gridQ.hasNextPage && !gridQ.isFetching)');

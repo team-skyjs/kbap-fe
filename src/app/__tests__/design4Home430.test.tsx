@@ -1,4 +1,3 @@
-jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: mockCatalog, unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 /**
  * KB-430(P-275) D-2 — 홈·리뷰 탭·알림 디자인 4차 잠금.
  * ① 홈 섹션 순서(검색→탭→칩→그리드→More→Recent→Reviews→More→면책)
@@ -64,6 +63,7 @@ const mockFood = (id: string, risk: string) => ({
   overall: { average: 4, count: 2 },
   bookmarked: false,
 });
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: mockCatalog, unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({
     isLoading: false,

@@ -1,4 +1,3 @@
-jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 /* eslint-disable @typescript-eslint/no-require-imports, import/first -- jest.mock 팩토리 안 require · 목 등록 뒤 import(homeFeed317 하네스) */
 /**
  * KB-701 · Codex #229 — 홈 불꽃 뱃지 앵커 = **실제 렌더된 검색 줄(스캔 버튼) 바로 아래**.
@@ -63,6 +62,8 @@ jest.mock('@/features/review/FeedCard', () => {
 // KB-712: 홈 쿼리 상태를 테스트별로 바꿀 수 있게(기본 = 로드 완료)
 const HOME_LOADED = { isLoading: false, isPending: false, isError: false, error: null, refetch: jest.fn(), data: { authenticated: true, recent: [] as unknown[], recommended: [] as unknown[] } };
 let mockHome: Record<string, unknown> = HOME_LOADED;
+let mockSelected: {items: unknown[] | undefined; pending: boolean} = {items: [], pending: false};
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: mockSelected.items === undefined ? undefined : { items: mockSelected.items, unavailableFoodIds: [] }, isPending: mockSelected.pending, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '1', restrictions: [] } }) }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
@@ -127,14 +128,16 @@ describe('KB-712 홈 → 인기 레일 prop', () => {
   afterEach(() => { mockHome = HOME_LOADED; });
   const lastProps = () => mockExplorer.mock.calls.at(-1)![0] as { popular?: unknown[]; popularLoading?: boolean };
   it('데이터 없는 pending(요청이 멈춘 상태 — isLoading false라 레일이 마운트됨) = popular undefined + popularLoading true → 레일 스켈레톤', () => {
-    mockHome = { ...HOME_LOADED, isPending: true, data: undefined };
+    mockHome = HOME_LOADED;
+    mockSelected = { items: undefined, pending: true };
     act(() => { renderer.create(<Home />); });
     expect(lastProps().popular).toBeUndefined();
     expect(lastProps().popularLoading).toBe(true);
   });
-  it('로드 완료 = /home recommended 그대로 · 로딩 false', () => {
+  it('로드 완료 = selected items 그대로 · 로딩 false', () => {
     const rec = [{ foodId: '30' }, { foodId: '10' }];
-    mockHome = { ...HOME_LOADED, data: { ...HOME_LOADED.data, recommended: rec } };
+    mockHome = HOME_LOADED;
+    mockSelected = { items: rec, pending: false };
     act(() => { renderer.create(<Home />); });
     expect(lastProps().popular).toBe(rec);
     expect(lastProps().popularLoading).toBe(false);

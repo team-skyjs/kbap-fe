@@ -1,4 +1,3 @@
-jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 /**
  * P-289(KB-436) — prod 채널 표면 감사(빌드 발주 첨부물).
  * expo-updates channel='production' 목 → flags.ts **모듈 실계산**(개별 플래그 목 0) —
@@ -83,6 +82,7 @@ jest.mock('@/lib/data/useDietPresets', () => ({ useDietPresets: () => [] }));
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }),
 }));
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({
     data: { recent: [{ foodId: '7', name: 'Kimbap', nameKo: '김밥', photoUrl: null, risk: 'safe', overall: { average: null, count: 0 } }], recommended: [], authenticated: true, avoided: [] },
