@@ -136,6 +136,64 @@ describe('배너', () => {
   });
 });
 
+describe('KB-798 search inline', () => {
+  const slot = (t: ReactTestRenderer) => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner' && typeof x.type === 'string')[0];
+  const load = (width: number, height: number) => act(() => {
+    (mockAds.banners.at(-1)!.onAdLoaded as (d: { width: number; height: number }) => void)({ width, height });
+  });
+  it('pre-init/off/no-fill = zero; measured inline request remains stable with keyboard and width changes', async () => {
+    const content = { width: 335, viewportHeight: 600, canReveal: () => true };
+    const t = render(<AdBanner placement="search_banner" content={content} />);
+    expect(t.toJSON()).toBeNull();
+    await act(async () => { await initAds(); });
+    expect(slot(t).props.style.height).toBe(0);
+    expect(mockAds.banners.at(-1)).toMatchObject({ size: 'INLINE_ADAPTIVE_BANNER', width: 335, maxHeight: 167 });
+    load(320, 100);
+    expect(slot(t).props.style.height).toBe(132);
+    rerender(t, <AdBanner placement="search_banner" content={{ ...content, viewportHeight: 80 }} />);
+    expect(slot(t).props.style.height).toBe(132); // scrollable: keyboard never hides a loaded ad
+    expect(mockAds.banners.at(-1)).toMatchObject({ width: 335, maxHeight: 167 });
+    act(() => { (mockAds.banners.at(-1)!.onSizeChange as (d: object) => void)({ width: 335, height: 150 }); });
+    expect(slot(t).props.style.height).toBe(132); // container event cannot enlarge/crop creative
+    rerender(t, <AdBanner placement="search_banner" content={{ ...content, width: 280 }} />);
+    expect(slot(t).props.style.height).toBe(0); // never crop a wider creative
+    expect(slot(t).props.pointerEvents).toBe('none');
+    act(() => { (mockAds.banners.at(-1)!.onAdFailedToLoad as () => void)(); });
+    expect(slot(t).props.style.height).toBe(0);
+    adsFlags.banner = false;
+    rerender(t, <AdBanner placement="search_banner" content={content} />);
+    expect(t.toJSON()).toBeNull();
+  });
+  it('late first load after interaction stays zero; same-size refresh stays visible, changed creative collapses', async () => {
+    await act(async () => { await initAds(); });
+    let interacting = true;
+    const content = { width: 335, viewportHeight: 600, canReveal: () => !interacting };
+    const late = render(<AdBanner placement="search_banner" content={content} />);
+    load(320, 50);
+    expect(slot(late).props.style.height).toBe(0);
+    interacting = false;
+    load(320, 50);
+    expect(slot(late).props.style.height).toBe(0); // no delayed pop-in after the gesture
+    const t = render(<AdBanner placement="search_banner" content={content} />);
+    load(320, 50);
+    expect(slot(t).props.style.height).toBe(82);
+    load(320, 100);
+    expect(slot(t).props.style.height).toBe(132);
+    interacting = true;
+    load(320, 100);
+    expect(slot(t).props.style.height).toBe(132);
+    load(320, 50);
+    expect(slot(t).props.style.height).toBe(0);
+    expect(slot(t).props.importantForAccessibility).toBe('no-hide-descendants');
+  });
+  it.each([[0, 50], [320, 0], [336, 50], [320, 168], [NaN, 50]])('unsupported creative %s×%s is suppressed, never stretched', async (width, height) => {
+    await act(async () => { await initAds(); });
+    const t = render(<AdBanner placement="search_banner" content={{ width: 335, viewportHeight: 600, canReveal: () => true }} />);
+    load(width, height);
+    expect(slot(t).props.style.height).toBe(0);
+  });
+});
+
 describe('피드 네이티브', () => {
   const FRAME_KEYS = /^(padding|border|margin)/;
   const flat = (x: { props: { style?: unknown } }) => Object.assign({}, ...[x.props.style].flat(Infinity).filter(Boolean)) as Record<string, unknown>;
