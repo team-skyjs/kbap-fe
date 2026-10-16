@@ -28,10 +28,10 @@
 | U12 | 기존 권한 흐름 코드 보존. 새 권한 호출 없음 | 권한거절 QA 미실행 |
 | U13 | ReduceMotion 켜짐/미확인/실패/늦은조회 역전에도 읽기·닫힘 유지 | OS 실제설정 미실행 |
 | U14 | 모달 blocker/eligible route fixture, navigation interaction 뒤 루트표시 | 실제 모달·background 경합 미실행 |
-| U15 | 10locale 신규키/보간 패리티 확인 예정, 스크롤 가변 레이아웃 | 작은화면·큰글씨·VoiceOver/TalkBack 미실행 |
+| U15 | 10locale 신규키/보간 패리티 10/10 확인, 스크롤 가변 레이아웃 | 작은화면·큰글씨·VoiceOver/TalkBack 미실행 |
 | U16 | true→false 취소 후 새전이, 단순true반복0 | 미실행 |
 
-실행 로그/최종 결과는 PR 본문 및 REPORTS에 갱신한다. 초회 전체검사는 구 뱃지 소유권 기대/소스문자열 기대 및 flaky timeout으로 실패했고 개별 재검증 통과. 최종 전체검사 진행 중. 테스트 단언 삭제·skip 없으며 KB699의 전이 검증을 새 전역 소유자로 옮겼다.
+실행 로그/최종 결과는 PR 본문 및 REPORTS에 갱신한다. 초회 전체검사는 구 뱃지 소유권 기대/소스문자열 기대 및 flaky timeout으로 실패했고 개별 재검증 통과. bb05099f 로컬 tsc·변경줄 lint(20파일 새 문제0)·핵심9suites89tests 통과. 해당 CI는 315/317suites 통과, 기존 mock의 SharedValue.set 누락 및 범위 밖 DishRow 삭제로 2suites6tests 실패. mock API 보완·DishRow 복원 후 해당2suites18tests/1snapshot 통과. 후속 커밋의 전체 CI 결과는 PR 본문·REPORTS에 기록. 테스트 단언 삭제·skip 없으며 KB699의 전이 검증을 새 전역 소유자로 옮겼다.
 
 ## 미승인 카피 / QA
 

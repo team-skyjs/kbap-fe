@@ -36,8 +36,8 @@ import { activePreset, CAM_ZOOM_PRESETS, pinchToZoom, uiRotationDeg, type CamZoo
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
-import { color as C, font, primaryTint, shadow } from '@/lib/theme';
-import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconGallery, IconFlip, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
+import { color as C, font, primaryTint, riskText, riskTone, shadow } from '@/lib/theme';
+import { Btn, RiskMark, QueryErrorBlock, classifyQueryError, IconBulb, IconCheck, IconChevronDown, IconClose, IconScanLines, IconGallery, IconFlip, IconChevron, IconSparkles, IconTabScan, IconArrowLeft } from '@/components';
 import { TopToastHost } from '@/components/TopToast';
 import { ActionSheet } from '@/components/ActionSheet';
 import { useLeaveConfirm } from '@/components/LeaveConfirmModal';
@@ -45,7 +45,7 @@ import { issueScanTicket, scanV2Enabled, useScan } from '@/lib/data/useScan';
 import { useInfiniteFoods } from '@/lib/data/useFoods';
 import type { PhotoOnlyItem, ScanOverlayItem } from '@/lib/api/scanAdapter';
 import { recognizeMenuLines } from '@/lib/scan/ocr';
-import { segmentMenu, orderNameKo, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
+import { segmentMenu, formatKrw, orderNameKo, scanPriceParam, type MenuDish, type ResultDish } from '@/lib/scan/segmentMenu';
 // P-219→P-220: 실패 분류·계측 사유 매핑은 순수 모듈 한 곳(전수 유닛 대상)
 import { ERROR_MSG, failReasonForStage, stageForCode, type ErrorStage } from '@/lib/scan/scanErrors';
 import { sortResultDishes, type ResultSortMode } from '@/lib/scan/resultSort';
@@ -1251,6 +1251,34 @@ function ClosestMatchNotice({
           <Btn testID="closest-details" onPress={() => onSeeDetails(dish)}>{t('scan.closestMatchSeeDetails', vars)}</Btn>
         </View>
       </Pressable>
+    </Pressable>
+  );
+}
+
+function DishRow({ dish, unmatchedNote, riskLabel, onPress, onMarkPress }: { dish: ResultDish; unmatchedNote: string; riskLabel: string; onPress: () => void; onMarkPress?: () => void }) {
+  const tone = riskTone[dish.risk];
+  return (
+    <Pressable testID="dishrow" style={styles.row} onPress={onPress}>
+      {/* P-134: 마크 탭 = 코치마크 재열람 (마크 데모 대체) */}
+      <Pressable onPress={onMarkPress} hitSlop={8} testID="dishrow-mark">
+        <RiskMark state={dish.risk} size={24} />
+      </Pressable>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.rowName} numberOfLines={1}>{dish.displayName}</Text>
+        {/* koreanName 병기 (표시명과 다를 때) · 로마자 라인은 보조 표기 유지 */}
+        {!!dish.koreanName && dish.koreanName !== dish.displayName && (
+          <Text style={styles.rowLatin} numberOfLines={1}>{dish.koreanName}</Text>
+        )}
+        {!dish.koreanName && !!dish.latin && <Text style={styles.rowLatin} numberOfLines={1}>{dish.latin}</Text>}
+        {/* P-031: 안전 행동 지시는 말줄임 금지 — 2줄 허용 */}
+        {!dish.matched && <Text style={styles.rowUnable} numberOfLines={2}>{unmatchedNote}</Text>}
+      </View>
+      {dish.priceKrw != null && <Text style={styles.rowPrice}>{formatKrw(dish.priceKrw)}</Text>}
+      <View style={[styles.rowBadge, { backgroundColor: tone.bg }]}>
+        <Text style={[styles.rowBadgeText, { color: riskText[dish.risk] }]}>{riskLabel}</Text>
+      </View>
+      {/* 조사 대기(matched=false)는 상세가 없어 이동 화살표도 없음 */}
+      {dish.matched && <IconChevron size={16} color={C.ink3} />}
     </Pressable>
   );
 }
