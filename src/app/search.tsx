@@ -48,6 +48,7 @@ export default function Search() {
   const { data: me } = useMe();
   const { recent, add, remove, clear } = useRecentSearches();
 
+  const bodyRef = useRef<FlatList>(null);
   const [query, setQuery] = useState(''); // input text
   const [submitted, setSubmitted] = useState(''); // executed search term (submit-only)
 
@@ -91,6 +92,7 @@ export default function Search() {
     if (!tterm) return; // blank never hits the server (400)
     setQuery(tterm);
     setSubmitted(tterm);
+    bodyRef.current?.scrollToOffset({ offset: 0, animated: false });
     add(tterm);
   };
 
@@ -109,6 +111,7 @@ export default function Search() {
   const reset = () => {
     setQuery('');
     setSubmitted('');
+    bodyRef.current?.scrollToOffset({ offset: 0, animated: false });
   };
 
   const showingSearch = submitted.length > 0;
@@ -152,6 +155,7 @@ export default function Search() {
       </View>
 
       <FlatList
+        ref={bodyRef}
         testID="search-body"
         style={{ flex: 1 }}
         onLayout={(e) => setViewport(e.nativeEvent.layout)}
