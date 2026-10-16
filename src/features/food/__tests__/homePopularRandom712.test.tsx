@@ -147,11 +147,11 @@ it('판정 = /home 응답 위험도 그대로 · 회피 변경으로 /home이 �
 
 describe('소스 잠금', () => {
   const read = (p: string) => (jest.requireActual('fs') as typeof import('fs')).readFileSync(p, 'utf8');
-  it('요청 추가 0 — FoodExplorer는 /home을 직접 조회하지 않고, 홈 화면이 이미 부르는 useHome 값을 내려준다', () => {
+  it('FoodExplorer는 데이터를 직접 조회하지 않고 홈 화면의 선정 query를 받는다', () => {
     expect(read('src/features/food/FoodExplorer.tsx')).not.toMatch(/from '@\/lib\/data\/useHome'/);
     const home = read('src/app/(tabs)/index.tsx');
-    expect(home).toContain('popular={home?.recommended}');
-    expect(home).toContain('popularLoading={isPending}');
+    expect(home).toContain('popular={selected.data?.items}');
+    expect(home).toContain('popularLoading={selected.isPending}');
   });
   it('북마크 토글이 /home을 무효화하지 않는다 — 랜덤 레일이 토글 한 번에 통째로 바뀌지 않게(KB-779: 저장 표시는 카드 bookmarked, 토글은 홈 캐시 낙관 반전만)', () => {
     const bm = read('src/lib/data/bookmarks.ts');

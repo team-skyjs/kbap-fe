@@ -92,3 +92,18 @@ it('저장소 부재(전체 쓰기 실패) = 메모리 온리 현행 유지(true
   expect(await t.loadTokens()).toEqual({ access: 'a', refresh: 'r' });
   (SS as { setItemAsync: typeof realSet }).setItemAsync = realSet;
 });
+
+it('new-session publication notifies selected queries after replacing cached tokens; refresh does not', async () => {
+  const t = tokens();
+  const selected = require('@/features/home/selectedFoods') as typeof import('@/features/home/selectedFoods');
+  const observed: {generation:number;tokens:ReturnType<typeof t.loadTokens>}[] = [];
+  const stop = selected.subscribeSelectedContext(() => observed.push({generation:t.currentGen(),tokens:t.loadTokens()}));
+  await t.saveTokens('account-a','refresh-a',{newSession:true});
+  await t.saveTokens('account-b','refresh-b',{newSession:true});
+  await t.saveTokens('rotated-b','rotated-refresh-b');
+  expect(observed).toHaveLength(2);
+  expect(observed[1].generation).toBe(observed[0].generation+1);
+  await expect(observed[0].tokens).resolves.toEqual({access:'account-a',refresh:'refresh-a'});
+  await expect(observed[1].tokens).resolves.toEqual({access:'account-b',refresh:'refresh-b'});
+  stop();
+});

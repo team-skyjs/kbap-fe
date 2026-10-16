@@ -49,18 +49,32 @@ async function runToggle(qc: QueryClient, add: boolean) {
   const done = new Promise<void>((r) => (settled = r));
   // create와 대기를 같은 act에 두면 effect flush 데드락 — 분리 (useUpdateMe.test 참조)
   await act(async () => {
-    renderer.create(
+    trees.push(renderer.create(
       <QueryClientProvider client={qc}>
         <Harness add={add} onSettled={settled} />
       </QueryClientProvider>,
-    );
+    ));
   });
   await act(async () => {
     await done;
   });
 }
 
-const client = () => new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+const clients: QueryClient[] = [];
+const trees: renderer.ReactTestRenderer[] = [];
+const client = () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  clients.push(qc);
+  return qc;
+};
+afterEach(async () => {
+  await act(async () => { trees.splice(0).forEach((tree) => tree.unmount()); });
+  await Promise.all(clients.map((qc) => qc.cancelQueries()));
+  clients.splice(0).forEach((qc) => {
+    qc.getMutationCache().getAll().forEach((mutation) => mutation.destroy());
+    qc.clear();
+  });
+});
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -168,7 +182,7 @@ describe('KB-779 Codex 리뷰: 카드 캐시 반전 경쟁 조건', () => {
     let settled!: () => void;
     const done = new Promise<void>((r) => (settled = r));
     await act(async () => {
-      renderer.create(<QueryClientProvider client={qc}><Hooks fn={fn} done={settled} /></QueryClientProvider>);
+      trees.push(renderer.create(<QueryClientProvider client={qc}><Hooks fn={fn} done={settled} /></QueryClientProvider>));
     });
     await act(async () => { await done; });
   }
@@ -232,7 +246,7 @@ describe('KB-779 Codex 리뷰: 카드 캐시 반전 경쟁 조건', () => {
     const mount = async (enabled: boolean) => {
       const qc = client();
       qc.setQueryData(['bookmarks', 'en'], partial());
-      await act(async () => { renderer.create(<QueryClientProvider client={qc}><Probe enabled={enabled} /></QueryClientProvider>); });
+      await act(async () => { trees.push(renderer.create(<QueryClientProvider client={qc}><Probe enabled={enabled} /></QueryClientProvider>)); });
       await act(async () => { await new Promise((r) => setTimeout(r, 5)); });
     };
     await mount(true); // 대조군 — 활성이면 드레인이 돈다(테스트 실효 확인)
@@ -241,4 +255,19 @@ describe('KB-779 Codex 리뷰: 카드 캐시 반전 경쟁 조건', () => {
     await mount(false);
     expect(api.get).not.toHaveBeenCalled();
   });
+});
+
+// Selected cache is a summary envelope, not a paginated list or HomeResponse.
+it.each([false, true])('selected cache bookmark success/rollback (reject=%s) preserves order and unavailable IDs', async (reject) => {
+  const qc = client();
+  const key = ['selectedHomeFoods','prod','1.1','manifest','7,8','en',true,0,0];
+  qc.setQueryData(key,{items:[{...SNAP,bookmarked:false},{...SNAP,foodId:'8',bookmarked:false}],unavailableFoodIds:[]});
+  if (reject) api.post.mockRejectedValueOnce(new Error('offline'));
+  else api.post.mockResolvedValueOnce(undefined);
+  await runToggle(qc,true);
+  const data = qc.getQueryData<{items:{foodId:string;bookmarked:boolean}[];unavailableFoodIds:number[]}>(key)!;
+  expect(data.items.map((x) => x.foodId)).toEqual(['7','8']);
+  expect(data.items.map((x) => x.bookmarked)).toEqual([!reject,false]);
+  expect(data.unavailableFoodIds).toEqual([]);
+  expect(qc.getQueryState(key)?.isInvalidated).toBe(true);
 });

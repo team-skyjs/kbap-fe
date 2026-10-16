@@ -90,6 +90,7 @@ jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', 
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false, useSession: () => null })); // KB-499: 배지 훅 — null = 요청 0
 
 const mockUseHome = jest.fn();
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockUseHome() }));
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({

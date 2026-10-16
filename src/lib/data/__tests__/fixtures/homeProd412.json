@@ -1,0 +1,446 @@
+{
+  "home": {
+    "success": true,
+    "payload": {
+      "authenticated": false,
+      "avoidedSubstances": [],
+      "popularFoods": [
+        {
+          "foodId": 753,
+          "name": "Fried Squid",
+          "koreanName": "오징어튀김",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/4614deb2609f_1a31a5f05a9b4981.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:55.346203Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        },
+        {
+          "foodId": 594,
+          "name": "Jeonju Bibimbap",
+          "koreanName": "전주비빔밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/bb8109420d54_0adafec6c35341f8.webp",
+          "spiciness": 3,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:39.710607Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 5.0,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 515,
+          "name": "Seaweed Soup",
+          "koreanName": "미역국",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/3d5ac00a2fcc_53ab5d6e6be3454c.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:28.728061Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 325,
+          "name": "Kimchi Fried Rice",
+          "koreanName": "김치볶음밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/272947e895b3_7b3658b5d9d04ce9.webp",
+          "spiciness": 3,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 324,
+          "name": "Shrimp Fried Rice",
+          "koreanName": "새우볶음밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/9002573761df_64ddeada57e64dd7.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        },
+        {
+          "foodId": 316,
+          "name": "Spicy Pork Rice Bowl",
+          "koreanName": "제육덮밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/bce42c7713b1_8fd53f867f124d8d.webp",
+          "spiciness": 4,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        },
+        {
+          "foodId": 344,
+          "name": "Omurice",
+          "koreanName": "오므라이스",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/a34a126e3fca_a9fbfccd112a449f.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        },
+        {
+          "foodId": 318,
+          "name": "Squid Rice Bowl",
+          "koreanName": "오징어덮밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/1bbb9503fd80_1636dd498a21463e.webp",
+          "spiciness": 5,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        },
+        {
+          "foodId": 291,
+          "name": "Korean Banquet Noodles",
+          "koreanName": "잔치국수",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/ce86307eadcd_9fce3c1ae58b4f86.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        },
+        {
+          "foodId": 250,
+          "name": "Fermented Soybean Paste Stew",
+          "koreanName": "청국장찌개",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/cbbf63e4789c_0aa4e5a08fc8405b.webp",
+          "spiciness": 2,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-07-21T14:17:39.643530Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.2,
+            "count": 5
+          }
+        }
+      ],
+      "mostReviewedFoods": [
+        {
+          "foodId": 251,
+          "name": "Soybean Pulp Stew",
+          "koreanName": "비지찌개",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/09470ce0497f_1c22f774ecbc4f30.webp",
+          "spiciness": 2,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-07-21T14:17:39.643530Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 5
+          }
+        },
+        {
+          "foodId": 250,
+          "name": "Fermented Soybean Paste Stew",
+          "koreanName": "청국장찌개",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/cbbf63e4789c_0aa4e5a08fc8405b.webp",
+          "spiciness": 2,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-07-21T14:17:39.643530Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.2,
+            "count": 5
+          }
+        },
+        {
+          "foodId": 248,
+          "name": "Ginseng Chicken Soup",
+          "koreanName": "삼계탕",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/b7d82f76f0f8_1911beffc37d4638.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-07-21T14:17:39.643530Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.8,
+            "count": 5
+          }
+        },
+        {
+          "foodId": 249,
+          "name": "Loach Soup",
+          "koreanName": "추어탕",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/7c58e9077dcc_5468a90b69b7462e.webp",
+          "spiciness": 3,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-07-21T14:17:39.643530Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 3.8,
+            "count": 4
+          }
+        },
+        {
+          "foodId": 743,
+          "name": "Fried Chicken",
+          "koreanName": "후라이드치킨",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/6a2c1605affd_994b29864d25444e.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:54.557746Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.5,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 630,
+          "name": "Spicy Seafood Noodle Soup",
+          "koreanName": "짬뽕",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/ce5ff89346f9_6d4de25ec4ac4d96.webp",
+          "spiciness": 6,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:43.558059Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.5,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 594,
+          "name": "Jeonju Bibimbap",
+          "koreanName": "전주비빔밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/bb8109420d54_0adafec6c35341f8.webp",
+          "spiciness": 3,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:39.710607Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 5.0,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 433,
+          "name": "Pork Belly",
+          "koreanName": "삼겹살",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/cf1d1af8e04e_d5aa122e8ed64f16.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:16.086722Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.5,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 300,
+          "name": "Spicy Rice Cakes",
+          "koreanName": "떡볶이",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/694b11f55ee8_1d1c440625ba45b5.webp",
+          "spiciness": 5,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 723,
+          "name": "Mini Gimbap",
+          "koreanName": "마약김밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/4287774f5d81_be87cd3241f042bc.webp",
+          "spiciness": 1,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:52.503659Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        }
+      ],
+      "recentScans": []
+    },
+    "message": null,
+    "code": null
+  },
+  "selected": {
+    "success": true,
+    "payload": {
+      "items": [
+        {
+          "foodId": 743,
+          "name": "Fried Chicken",
+          "koreanName": "후라이드치킨",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/6a2c1605affd_994b29864d25444e.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:54.557746Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.5,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 444,
+          "name": "Soy Sauce Marinated Crab",
+          "koreanName": "간장게장",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/aa8720e9f156_fad4d14fdf054ca2.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:17.883862Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 5.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 432,
+          "name": "Bulgogi",
+          "koreanName": "불고기",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/0ac627c8cdea_34a81df2e3a1470e.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:15.961483Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 5.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 325,
+          "name": "Kimchi Fried Rice",
+          "koreanName": "김치볶음밥",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/272947e895b3_7b3658b5d9d04ce9.webp",
+          "spiciness": 3,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 300,
+          "name": "Spicy Rice Cakes",
+          "koreanName": "떡볶이",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/694b11f55ee8_1d1c440625ba45b5.webp",
+          "spiciness": 5,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-04T04:49:12.953346Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 2
+          }
+        },
+        {
+          "foodId": 629,
+          "name": "Jajangmyeon",
+          "koreanName": "짜장면",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/aa14e601c7ed_1b71119f01504913.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:43.466200Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 435,
+          "name": "Japchae",
+          "koreanName": "잡채",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/810e8746e8e9_46ea042b5e984a8f.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:16.362060Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 248,
+          "name": "Ginseng Chicken Soup",
+          "koreanName": "삼계탕",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/b7d82f76f0f8_1911beffc37d4638.webp",
+          "spiciness": 0,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-07-21T14:17:39.643530Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.8,
+            "count": 5
+          }
+        },
+        {
+          "foodId": 414,
+          "name": "Soft Tofu Stew",
+          "koreanName": "순두부찌개",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/b8bc7066bf89_ccf3e45709ea46f2.webp",
+          "spiciness": 5,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-11T02:22:01.607327Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 4.0,
+            "count": 1
+          }
+        },
+        {
+          "foodId": 445,
+          "name": "Spicy Marinated Crab",
+          "koreanName": "양념게장",
+          "imageRef": "https://d29c1cr2ng7w0.cloudfront.net/images/webp/food/35496fceb51f_2e470e4d631d4102.webp",
+          "spiciness": 7,
+          "overallRiskStatus": "SAFE",
+          "publishedAt": "2026-09-20T16:49:18.187849Z",
+          "bookmarked": false,
+          "review": {
+            "averageRating": 0.0,
+            "count": 0
+          }
+        }
+      ],
+      "unavailableFoodIds": []
+    },
+    "message": null,
+    "code": null
+  }
+}

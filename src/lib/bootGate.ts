@@ -1,3 +1,4 @@
+import { selectedHomeOptions } from '@/lib/data/useSelectedHomeFoods';
 /**
  * bootGate.ts — 스플래시 게이팅 (P-018/KB-194, QA Q-07).
  *
@@ -73,7 +74,9 @@ export async function prefetchBootData(): Promise<void> {
         initialPageParam: undefined as number | undefined,
       }),
     ];
-    if (await hasBeSession()) {
+    const authenticated = await hasBeSession();
+    jobs.push(queryClient.prefetchQuery(selectedHomeOptions(lang, authenticated)));
+    if (authenticated) {
       jobs.push(queryClient.prefetchQuery({ queryKey: ['me', lang], queryFn: fetchMe }));
     }
     await Promise.allSettled(jobs);

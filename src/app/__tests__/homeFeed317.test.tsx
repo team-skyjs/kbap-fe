@@ -7,6 +7,8 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: {items: [], unavailableFoodIds: []}, isLoading: false, isError: false, refetch: jest.fn() }) }));
+
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   return {
