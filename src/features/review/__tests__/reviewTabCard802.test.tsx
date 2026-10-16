@@ -45,7 +45,7 @@ jest.mock('@/lib/data/useContentTranslation', () => ({ useContentTranslation: ()
 jest.mock('@/lib/data/useReviewMutations', () => ({ useToggleReviewLike: () => ({ mutate: jest.fn() }) }));
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 
-import { ReviewPhotoCarousel, snapIndex, snapOffset, SNAP, PHOTO_H } from '../ReviewPhotoCarousel';
+import { carouselMetrics, ReviewPhotoCarousel, snapIndex, snapOffset, PHOTO_H } from '../ReviewPhotoCarousel';
 import { ReviewTabCard } from '../ReviewTabCard';
 import type { Review } from '@/lib/api/types';
 
@@ -71,23 +71,34 @@ function render(el: React.ReactElement): ReactTestRenderer {
 const byId = (tree: ReactTestRenderer, id: string) => tree.root.findAll((n) => n.props?.testID === id && typeof n.type !== 'string');
 const texts = (tree: ReactTestRenderer) => tree.root.findAll((n) => typeof n.type === 'string' && typeof n.props?.children === 'string').map((n) => n.props.children as string);
 
-describe('스냅 산식 (화면 375, 사진 311 · 간격 8 · 인셋 20)', () => {
-  it('SNAP = 319, 첫 장 0 · 둘째 319 · 마지막 장은 오른쪽 여백 20 에 붙게 클램프', () => {
-    expect(SNAP).toBe(319);
+describe('스냅 산식 (사진 311 · 간격 8 · 인셋 20 · peek 36)', () => {
+  it('375 이상 = 디자인 수치 311/319, 더 넓어도 311 · 좁은 화면(320) = 가용 폭으로 축소', () => {
+    expect(carouselMetrics(375)).toEqual({ photoW: 311, snap: 319 });
+    expect(carouselMetrics(430)).toEqual({ photoW: 311, snap: 319 });
+    expect(carouselMetrics(320)).toEqual({ photoW: 256, snap: 264 });
+    // 320: 인셋 20 + 사진 256 + 간격 8 + peek 36 = 320 → 잘림 없이 다음 사진 36 노출
+    expect(20 + 256 + 8 + 36).toBe(320);
+  });
+  it('375: 첫 장 0 · 둘째 319 · 마지막 장은 오른쪽 여백 20 에 붙게 클램프', () => {
     // 3장 콘텐츠 = 20+311·3+8·2+20 = 989 → 최대 오프셋 614(< 638) — 이전 사진 36pt peek
-    expect([0, 1, 2].map((i) => snapOffset(i, 3, 375))).toEqual([0, 319, 614]);
+    expect([0, 1, 2].map((i) => snapOffset(i, 3, 375, 311))).toEqual([0, 319, 614]);
     expect(375 - 20 - 311 - 8).toBe(36); // 첫 장의 다음 사진 peek = 마지막 장의 이전 사진 peek
-    expect(989 - 614 - 375).toBe(0);
     // 2장 = 670 → 최대 295
-    expect([0, 1].map((i) => snapOffset(i, 2, 375))).toEqual([0, 295]);
+    expect([0, 1].map((i) => snapOffset(i, 2, 375, 311))).toEqual([0, 295]);
+  });
+  it('320: 오프셋도 축소 폭으로 — 마지막 장 왼쪽 peek 36 · 오른쪽 여백 20', () => {
+    // 3장 콘텐츠 = 40+256·3+16 = 824 → 최대 504
+    expect([0, 1, 2].map((i) => snapOffset(i, 3, 320, 256))).toEqual([0, 264, 504]);
+    expect(824 - 504 - 320).toBe(0);
+    expect(snapIndex(504, 3, 264)).toBe(2);
   });
   it('오프셋 → 현재 장(클램프된 마지막 오프셋도 마지막 장)', () => {
-    expect(snapIndex(0, 3)).toBe(0);
-    expect(snapIndex(319, 3)).toBe(1);
-    expect(snapIndex(614, 3)).toBe(2);
-    expect(snapIndex(295, 2)).toBe(1);
-    expect(snapIndex(-30, 3)).toBe(0); // 바운스
-    expect(snapIndex(9999, 3)).toBe(2);
+    expect(snapIndex(0, 3, 319)).toBe(0);
+    expect(snapIndex(319, 3, 319)).toBe(1);
+    expect(snapIndex(614, 3, 319)).toBe(2);
+    expect(snapIndex(295, 2, 319)).toBe(1);
+    expect(snapIndex(-30, 3, 319)).toBe(0); // 바운스
+    expect(snapIndex(9999, 3, 319)).toBe(2);
   });
 });
 
@@ -137,6 +148,48 @@ describe('ReviewPhotoCarousel', () => {
     const fb = byId(tree, 'review-photo-fallback')[0] ?? tree.root.findAll((n) => n.props?.testID === 'review-photo-fallback')[0];
     expect(StyleSheet.flatten(fb.props.style)).toMatchObject({ height: 233, backgroundColor: '#F7F8FA' });
     expect(tree.root.findAll((n) => n.props?.source != null)).toHaveLength(0);
+  });
+});
+
+describe('ReviewPhotoCarousel — Codex #288 반영', () => {
+  it('1장 실패 뒤 URI 가 바뀌면 새 사진을 다시 로드(실패 상태 리셋)', () => {
+    const tree = render(<ReviewPhotoCarousel photos={['https://cdn/a.jpg']} onPressPhoto={jest.fn()} />);
+    act(() => tree.root.findAll((n) => typeof n.props?.onError === 'function')[0].props.onError());
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-photo-fallback')).not.toHaveLength(0);
+    act(() => tree.update(<ReviewPhotoCarousel photos={['https://cdn/b.jpg']} onPressPhoto={jest.fn()} />));
+    expect(tree.root.findAll((n) => n.props?.testID === 'review-photo-fallback')).toHaveLength(0);
+    expect(tree.root.findAll((n) => n.props?.source?.uri === 'https://cdn/b.jpg')).not.toHaveLength(0);
+  });
+
+  it('사진이 줄면(3→2) 현재 장 클램프 — 배지·접근성 값·activate 가 없는 장을 가리키지 않음', () => {
+    const onPress = jest.fn();
+    const el = (photos: string[]) => <ReviewPhotoCarousel photos={photos} initialIndex={2} onPressPhoto={onPress} a11yLabel="A" testID="c" />;
+    const tree = render(el(P3));
+    act(() => tree.update(el(P3.slice(0, 2))));
+    const adj = tree.root.findAll((n) => n.props?.testID === 'c' && n.props?.accessibilityRole === 'adjustable')[0];
+    expect(adj.props.accessibilityValue).toEqual({ text: '2/2' });
+    expect(byId(tree, 'review-photo-badge')).toHaveLength(1);
+    act(() => adj.props.onAccessibilityAction({ nativeEvent: { actionName: 'activate' } }));
+    expect(onPress).toHaveBeenCalledWith(1);
+  });
+
+  it('initialIndex 가 바뀌면 그 장으로', () => {
+    const el = (i: number) => <ReviewPhotoCarousel photos={P3} initialIndex={i} onPressPhoto={jest.fn()} a11yLabel="A" testID="c" />;
+    const tree = render(el(0));
+    act(() => tree.update(el(1)));
+    const adj = tree.root.findAll((n) => n.props?.testID === 'c' && n.props?.accessibilityRole === 'adjustable')[0];
+    expect(adj.props.accessibilityValue).toEqual({ text: '2/3' });
+  });
+
+  it('접근성 — 1장 = button + activate 만 · 2장 이상 = adjustable + increment/decrement/activate', () => {
+    const one = render(<ReviewPhotoCarousel photos={['https://cdn/a.jpg']} onPressPhoto={jest.fn()} a11yLabel="A" testID="c" />);
+    const btn = one.root.findAll((n) => n.props?.testID === 'c' && n.props?.accessibilityRole != null)[0];
+    expect(btn.props.accessibilityRole).toBe('button');
+    expect(btn.props.accessibilityActions).toEqual([{ name: 'activate' }]);
+    const many = render(<ReviewPhotoCarousel photos={P3} onPressPhoto={jest.fn()} a11yLabel="A" testID="c" />);
+    const adj = many.root.findAll((n) => n.props?.testID === 'c' && n.props?.accessibilityRole != null)[0];
+    expect(adj.props.accessibilityRole).toBe('adjustable');
+    expect(adj.props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual(['increment', 'decrement', 'activate']);
   });
 });
 

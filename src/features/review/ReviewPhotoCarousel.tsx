@@ -18,21 +18,27 @@ import { RemoteImage } from '@/components/RemoteImage';
 import { IconGallery } from '@/components';
 import { color as C, radius, type as type_ } from '@/lib/theme';
 
-export const PHOTO_W = 311;
+export const PHOTO_W = 311; // 375 디자인 캔버스 기준 최대 폭
 export const PHOTO_H = 233;
 export const PHOTO_GAP = 8;
-export const SNAP = PHOTO_W + PHOTO_GAP; // 319
 const INSET = 20; // 카드·상세 좌우 패딩(스크롤 영역 인셋)
+const PEEK = 36; // 다음(이전) 사진이 보이는 폭
 
-/** 장 i 의 스크롤 오프셋 — 마지막 장은 콘텐츠 끝(오른쪽 여백 20)에서 멈추도록 클램프. viewportW = 스크롤 영역 폭(화면 폭). */
-export function snapOffset(i: number, n: number, viewportW: number): number {
-  const contentW = INSET * 2 + PHOTO_W * n + PHOTO_GAP * (n - 1);
-  return Math.min(SNAP * i, Math.max(0, contentW - viewportW));
+/** 화면 폭 → 사진 폭·스냅 간격. 375 이상 = 311/319(디자인 수치), 좁은 화면(320 등) = 인셋 20 + 간격 8 + peek 36 을 남기고 줄인다. */
+export function carouselMetrics(viewportW: number): { photoW: number; snap: number } {
+  const photoW = Math.min(PHOTO_W, viewportW - INSET - PHOTO_GAP - PEEK);
+  return { photoW, snap: photoW + PHOTO_GAP };
 }
 
-/** 오프셋 → 현재 장(끝 클램프 때문에 마지막 장 오프셋이 SNAP·(n−1) 보다 작아도 반올림으로 n−1). */
-export function snapIndex(offsetX: number, n: number): number {
-  return Math.max(0, Math.min(n - 1, Math.round(offsetX / SNAP)));
+/** 장 i 의 스크롤 오프셋 — 마지막 장은 콘텐츠 끝(오른쪽 여백 20)에서 멈추도록 클램프. viewportW = 스크롤 영역 폭(화면 폭). */
+export function snapOffset(i: number, n: number, viewportW: number, photoW: number): number {
+  const contentW = INSET * 2 + photoW * n + PHOTO_GAP * (n - 1);
+  return Math.min((photoW + PHOTO_GAP) * i, Math.max(0, contentW - viewportW));
+}
+
+/** 오프셋 → 현재 장(끝 클램프 때문에 마지막 장 오프셋이 snap·(n−1) 보다 작아도 반올림으로 n−1). */
+export function snapIndex(offsetX: number, n: number, snap: number): number {
+  return Math.max(0, Math.min(n - 1, Math.round(offsetX / snap)));
 }
 
 function Photo({ uri, width }: { uri: string; width: number | '100%' }) {
@@ -76,11 +82,42 @@ export function ReviewPhotoCarousel({
   const { t } = useTranslation();
   const { width: winW } = useWindowDimensions();
   const n = photos.length;
+  const { photoW, snap } = carouselMetrics(winW);
   const start = Math.max(0, Math.min(n - 1, initialIndex));
-  const [index, setIndex] = React.useState(start);
+  const [rawIndex, setIndex] = React.useState(start);
+  // initialIndex 가 바뀌면 그 장으로(렌더 중 전환 비교 — KB-603 패턴)
+  const [prevStart, setPrevStart] = React.useState(start);
+  if (start !== prevStart) {
+    setPrevStart(start);
+    setIndex(start);
+  }
+  // 갱신으로 사진이 줄면(3→2) 배지·접근성 값·activate 가 없는 장을 가리키지 않게 클램프
+  const index = Math.max(0, Math.min(rawIndex, n - 1));
   const listRef = React.useRef<FlatList<string>>(null);
+  const mountedStart = React.useRef(start);
+  React.useEffect(() => {
+    if (start === mountedStart.current) return; // 첫 장은 initialScrollIndex 가 맞춘다
+    mountedStart.current = start;
+    listRef.current?.scrollToOffset({ offset: snapOffset(start, n, winW, photoW), animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialIndex 변경에만 반응(폭·장수 변화는 스냅이 처리)
+  }, [start]);
 
   if (n === 0) return null;
+
+  if (n === 1) {
+    // 1장 = 넘길 장이 없다 — adjustable·increment/decrement 를 내보이지 않고 버튼(activate)만
+    const single = a11yLabel
+      ? { accessible: true, accessibilityRole: 'button' as const, accessibilityLabel: a11yLabel, accessibilityActions: [{ name: 'activate' as const }] }
+      : {};
+    return (
+      <View {...single} onAccessibilityAction={(e) => e.nativeEvent.actionName === 'activate' && onPressPhoto(0)} testID={testID}>
+        <Pressable onPress={() => onPressPhoto(0)} testID={`${testID}-0`}>
+          {/* URI 키 = 사진이 바뀌면 실패 상태도 새로 시작 */}
+          <Photo key={photos[0]} uri={photos[0]} width="100%" />
+        </Pressable>
+      </View>
+    );
+  }
 
   const a11y = a11yLabel
     ? {
@@ -92,27 +129,17 @@ export function ReviewPhotoCarousel({
       }
     : {};
 
-  if (n === 1) {
-    return (
-      <View {...a11y} onAccessibilityAction={(e) => e.nativeEvent.actionName === 'activate' && onPressPhoto(0)} testID={testID}>
-        <Pressable onPress={() => onPressPhoto(0)} testID={`${testID}-0`}>
-          <Photo uri={photos[0]} width="100%" />
-        </Pressable>
-      </View>
-    );
-  }
-
   const go = (i: number) => {
     setIndex(i);
     onIndexChange?.(i);
   };
   const onEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = snapIndex(e.nativeEvent.contentOffset.x, n);
+    const i = snapIndex(e.nativeEvent.contentOffset.x, n, snap);
     if (i !== index) go(i);
   };
   const step = (d: number) => {
     const i = Math.max(0, Math.min(n - 1, index + d));
-    listRef.current?.scrollToOffset({ offset: snapOffset(i, n, winW), animated: true });
+    listRef.current?.scrollToOffset({ offset: snapOffset(i, n, winW, photoW), animated: true });
     go(i);
   };
 
@@ -136,17 +163,17 @@ export function ReviewPhotoCarousel({
         style={styles.list}
         contentContainerStyle={styles.content}
         showsHorizontalScrollIndicator={false}
-        snapToInterval={SNAP}
+        snapToInterval={snap}
         decelerationRate="fast"
         disableIntervalMomentum
-        getItemLayout={(_, i) => ({ length: SNAP, offset: snapOffset(i, n, winW), index: i })}
+        getItemLayout={(_, i) => ({ length: snap, offset: snapOffset(i, n, winW, photoW), index: i })}
         initialScrollIndex={start}
         onMomentumScrollEnd={onEnd}
         onScrollEndDrag={onEnd}
         testID={`${testID}-list`}
         renderItem={({ item, index: i }) => (
           <Pressable onPress={() => onPressPhoto(i)} testID={`${testID}-${i}`}>
-            <Photo uri={item} width={PHOTO_W} />
+            <Photo uri={item} width={photoW} />
             {i === index && <Badge index={i} total={n} />}
           </Pressable>
         )}

@@ -82,7 +82,7 @@ export function ReviewFeed() {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
-  const rows = withFeedAds(reviews, (r) => r.id);
+  const rows = withFeedAds(reviews, (r) => r.id); // KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
   const positions = new Map(reviews.map((r, i) => [r.id, i])); // review_card_view position = 광고 행 제외 리뷰 순번
 
   // KB-802: 카드·사진·"리뷰 읽기" → 리뷰 상세. 이동 전 상세 캐시 시드 = 상세 첫 프레임 완성 렌더(단건 쿼리는 백그라운드 갱신)
@@ -105,7 +105,7 @@ export function ReviewFeed() {
       impressions.focus();
       return () => impressions.blur();
     }, [impressions]),
-  ); // KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
+  );
   const loadMore = () => {
     // Codex #58 P2-2: 에러 푸터가 콘텐츠 높이를 바꿔 onEndReached가 재발화 →
     // 자동 재시도 루프. 실패 상태에선 재시도 = 푸터 버튼만.
