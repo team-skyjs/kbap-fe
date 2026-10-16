@@ -10,6 +10,7 @@
  *   구서버 대비 fallback.
  * - useMyReviews: 리뷰 API 미배포(KB-73) — mock 유지.
  */
+import { observeUnlock } from '@/features/scan/unlockCelebrationStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
@@ -44,6 +45,7 @@ export async function fetchMe(): Promise<User> {
     setSentryUser(user.id); // P-197: 유저 식별 = memberId만(PII 발주 고정)
     setAnalyticsUser(user.id); // KB-732: 로그인 직후·앱 시작 세션 복원 모두 여기(members/me 성공)를 지난다 — 회원 번호 문자열
     setAirbridgeUser(user.id); // KB-783: 같은 지점·같은 값(회원 번호만 — 이메일 등 PII 금지)
+    observeUnlock(user.id, user.scanQuota?.unlocked, gen);
     observeScanQuota(user.id, user.scanQuota?.unlocked); // KB-783 ⑮: 리뷰 해제 = 서버 프로필 전이로만 안다
   }
   return user;

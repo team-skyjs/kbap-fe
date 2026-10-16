@@ -298,6 +298,8 @@
     "quotaTileAdProgress": "已看 {{n}}/{{total}}",
     "quotaBodyUnlock": "撰寫一則評價或觀看幾次廣告，即可解鎖無限掃描。",
     "unlockedTitle": "已解鎖無限掃描！",
+    "unlockedBody": "現在可以不限次數掃描韓語菜單。",
+    "startScanning": "開始掃描",
     "unlockedOpening": "正在重新開啟相機…",
     "unlockedRetry": "無法重新開啟相機，請再試一次。",
     "quotaCta": "寫評價",

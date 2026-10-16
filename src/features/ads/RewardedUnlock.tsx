@@ -1,3 +1,5 @@
+import { blockUnlockPresentation } from '@/features/scan/unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /**
  * RewardedUnlock (KB-739 ④-⑤⑥ · 서버 KB-740) — 스캔 제한 해제 2택의 "광고 보고 풀기(n/3)" 쪽. 제한 도달 시트(HomeQuotaBadge)와
  * 스캔 제한 화면(scan.tsx) 둘 다 `<UnlockActions onWriteReview … />`로 같은 버튼 묶음을 쓴다: [리뷰 쓰기] + [광고 보고 풀기 n/3].
@@ -69,6 +71,9 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
   const ad = sdk.useRewardedAd({ adUnitId: unitId, autoLoad: true });
   const { status, earnedReward, show, load, impression, clicked } = ad;
   const claim = useClaimAdReward();
+  React.useLayoutEffect(() => {
+    if (status === 'showing') return blockUnlockPresentation();
+  }, [status]);
   // 서버 응답만 — 초기값은 프로필(서버), 그 뒤는 claim 응답
   const [remaining, setRemaining] = React.useState(initial.remaining);
   const [failure, setFailure] = React.useState<AdRewardFailure | null>(null);
@@ -85,9 +90,11 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
 
   const { mutateAsync } = claim;
   const submitClaim = React.useCallback((input: { rewardKey: string; adUnitId: string }) => {
+    const generation = currentGen();
     pendingRef.current = input;
     return mutateAsync(input)
       .then((r) => {
+        if (generation !== currentGen()) return;
         pendingRef.current = null;
         setFailure(null);
         setRemaining(r.remainingForUnlock);
@@ -96,6 +103,7 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
         if (r.scanUnlocked) onUnlocked(); // KB-783 ⑮ 'ad' 표식은 useClaimAdReward.onSuccess(재조회 전)에서
       })
       .catch((e: unknown) => {
+        if (generation !== currentGen()) return;
         const kind = classifyAdRewardError(e);
         if (__DEV__) console.log('[ads] reward claim fail', kind, String((e as { code?: string })?.code ?? e));
         setFailure(kind);

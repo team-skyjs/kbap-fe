@@ -298,6 +298,8 @@
     "quotaTileAdProgress": "{{n}}/{{total}} 視聴済み",
     "quotaBodyUnlock": "レビューを1件書くか、広告を数回見るとスキャンが無制限になります。",
     "unlockedTitle": "スキャンが無制限になりました！",
+    "unlockedBody": "韓国語のメニューを何度でもスキャンできます。",
+    "startScanning": "スキャンを始める",
     "unlockedOpening": "カメラを再起動しています…",
     "unlockedRetry": "カメラを再起動できませんでした。もう一度お試しください。",
     "quotaCta": "レビューを書く",
