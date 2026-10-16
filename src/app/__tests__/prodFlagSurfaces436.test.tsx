@@ -82,6 +82,7 @@ jest.mock('@/lib/data/useDietPresets', () => ({ useDietPresets: () => [] }));
 jest.mock('@/lib/data/useIngredientCatalog', () => ({
   useIngredientCatalog: () => ({ name: (c: string) => c, imageUrl: () => null }),
 }));
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({
     data: { recent: [{ foodId: '7', name: 'Kimbap', nameKo: '김밥', photoUrl: null, risk: 'safe', overall: { average: null, count: 0 } }], recommended: [], authenticated: true, avoided: [] },

@@ -1,3 +1,4 @@
+import { advanceSelectedContext } from '@/features/home/selectedFoods';
 /**
  * useMe / useUpdateMe / useMyReviews — profile (KB-68 실연결 2026-07-13).
  *
@@ -145,7 +146,10 @@ export function useUpdateMe() {
       // 언마운트되지 않으므로 홈이 stale 판정을 계속 보여주는 false-safe.
       // invalidateQueries()는 전체를 stale 마킹하고 활성 쿼리를 즉시 재조회.
       // mock 경로(무세션)는 캐시 병합이 진실이라 전면 무효화 시 수정 증발 → 제외.
-      if (patch.restrictions !== undefined && (await hasBeSession())) {
+      if ((patch.restrictions !== undefined || patch.dietCategories !== undefined) && (await hasBeSession())) {
+        await qc.cancelQueries({ queryKey: ['selectedHomeFoods'] });
+        qc.removeQueries({ queryKey: ['selectedHomeFoods'] });
+        advanceSelectedContext();
         void qc.invalidateQueries();
         return;
       }

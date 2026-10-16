@@ -63,6 +63,7 @@ const mockFood = (id: string, risk: string) => ({
   overall: { average: 4, count: 2 },
   bookmarked: false,
 });
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: mockCatalog, unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({
   useHome: () => ({
     isLoading: false,

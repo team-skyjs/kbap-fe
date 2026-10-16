@@ -53,6 +53,7 @@ jest.mock('@/lib/i18n/LocaleProvider', () => ({ useLocale: () => ({ lang: 'en', 
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/features/food/FoodExplorer', () => ({ FoodExplorer: () => null }));
 const mockHome = jest.fn();
+jest.mock('@/lib/data/useSelectedHomeFoods', () => ({ useSelectedHomeFoods: () => ({ data: { items: [], unavailableFoodIds: [] }, isPending: false, isError: false, error: null, refetch: jest.fn() }) }));
 jest.mock('@/lib/data/useHome', () => ({ useHome: () => mockHome() }));
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '1', restrictions: [] } }) }));
 jest.mock('@/lib/data/useNotifications', () => ({ useUnreadCount: () => 0 }));
