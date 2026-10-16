@@ -1,5 +1,4 @@
 import { adaptAdReward, type AdRewardResponse } from '@/lib/api/adRewardAdapter';
-export type { AdRewardResponse } from '@/lib/api/adRewardAdapter';
 /**
  * useAdReward (KB-739 ⑤ · 서버 KB-740) — 보상형 광고 완료 신고 `POST /api/members/me/ad-rewards` {rewardKey, adUnitId}.
  * 카운트는 **서버 응답만**(클라 로컬 카운트·낙관 갱신 금지 — 서버 진실). 멱등(같은 rewardKey 재요청 = 200 현재 상태).
@@ -11,6 +10,8 @@ import { api, ApiError } from '@/lib/api/client';
 import { currentGen } from '@/lib/auth/beTokens';
 import { observeAdUnlock } from '@/features/scan/unlockCelebrationStore';
 import { noteAdUnlock } from '@/lib/airbridge';
+
+export type { AdRewardResponse } from '@/lib/api/adRewardAdapter';
 
 export type AdRewardFailure = 'limit' | 'rejected' | 'network';
 

@@ -17,7 +17,10 @@ export function resetUnlockSession(next: number) {
   scanFocused = false;
   publish({ event: null, presented: false, blocked: blockers.size > 0 });
 }
-export function setUnlockScanFocused(value: boolean) { scanFocused = value; }
+export function setUnlockScanFocused(value: boolean) {
+  scanFocused = value;
+  if (!value && snapshot.event?.context === 'scan') consumeUnlock(snapshot.event.id);
+}
 export function blockUnlockPresentation() {
   const key = Symbol(); blockers.add(key);
   publish({ ...snapshot, blocked: true });

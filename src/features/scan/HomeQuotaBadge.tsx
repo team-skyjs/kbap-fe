@@ -1,3 +1,5 @@
+import { resetUnlockSession } from './unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /**
  * HomeQuotaBadge (KB-680, P-432) — 홈 플로팅(KB-701: 스캔 버튼 바로 아래) "무료 스캔 N회 남음" 불꽃 + 안내 시트.
  * 스펙 = spec specs/001-personalized-menu-mvp/countdown-badge-2026-10-02.md (예진 10/2 결정).
@@ -43,7 +45,7 @@ export const BADGE_GAP = 4;
 export const BADGE_RIGHT = BADGE_EDGE; // 기본 자리 = 오른쪽 가장자리(KB-706 끌어 놓기의 가장자리 여백과 같은 값)
 
 /** Legacy test helper; celebration memory now belongs to the global transition owner. */
-export function _resetQuotaCelebrationMemoryForTest() {}
+export function _resetQuotaCelebrationMemoryForTest() { resetUnlockSession(currentGen()); }
 
 /** top = 홈이 측정한 앵커(null = 아직 측정 전 → 그리지 않는다. 축하 상태는 이 컴포넌트에 남아 측정 뒤 이어진다). */
 export function HomeQuotaBadge({ top }: { top: number | null }) {

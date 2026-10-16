@@ -9,5 +9,6 @@ export function UnlockCelebrationHost() {
     const task = InteractionManager.runAfterInteractions(() => setSettled(path));
     return () => task.cancel();
   }, [path]);
-  return <UnlockCelebration eligible={settled === path && (path === '/' || /^\/food\/[^/]+$/.test(path))} />;
+  const editing = /\/review$/.test(path) || /^\/(?:scan|login|onboarding)(?:[/-]|$)/.test(path);
+  return <UnlockCelebration eligible={settled === path && !editing} />;
 }

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { AccessibilityInfo, AppState, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import Animated, { cancelAnimation, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { Btn } from '@/components/Btn';
 import { Pressable } from '@/components/Pressable';
@@ -25,6 +25,8 @@ export function UnlockCelebration({ eligible, onStartScanning }: { eligible: boo
   const actionTaken = React.useRef<number | null>(null);
   const continued = React.useRef<number | null>(null);
   const burst = useSharedValue(0);
+  const entrance = useSharedValue(1);
+  const sheetMotion = useAnimatedStyle(() => ({ opacity: entrance.value, transform: [{ translateY: (1 - entrance.value) * 40 }] }));
   const event = state.event;
   const visible = eligible && active && !state.blocked && event !== null && closing === null;
   React.useEffect(() => {
@@ -36,11 +38,13 @@ export function UnlockCelebration({ eligible, onStartScanning }: { eligible: boo
     return () => { alive = false; app.remove(); motion.remove(); };
   }, []);
   React.useEffect(() => {
-    if (!visible || reduceMotion) return;
+    if (!visible || reduceMotion) { entrance.value = 1; return; }
+    entrance.value = 0;
+    entrance.value = withTiming(1, { duration: 550 });
     burst.value = 0;
     burst.value = withTiming(1, { duration: 700 });
-    return () => cancelAnimation(burst);
-  }, [visible, reduceMotion, burst]);
+    return () => { cancelAnimation(burst); cancelAnimation(entrance); };
+  }, [visible, reduceMotion, burst, entrance]);
   React.useEffect(() => () => { if (shown.current !== null) consumeUnlock(shown.current); }, []);
   const afterDismiss = React.useCallback(() => {
     if (!closing || continued.current === closing.event.id) return;
@@ -75,13 +79,13 @@ export function UnlockCelebration({ eligible, onStartScanning }: { eligible: boo
             </Animated.View>}
             <Svg width={110} height={42} viewBox="0 0 110 42"><Path d="M55 21C38-4 5 1 5 21S38 46 55 21C72-4 105 1 105 21S72 46 55 21" stroke={C.surface} strokeWidth={8} fill="none" /></Svg>
           </View>
-          <View style={styles.sheet}>
+          <Animated.View style={[styles.sheet, sheetMotion]}>
             <Text style={styles.title} accessibilityRole="header">{t('scan.unlockedTitle')}</Text>
             <Text style={styles.body}>{t('scan.unlockedBody')}</Text>
             <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
               <Btn testID="unlock-celebration-action" onPress={() => dismiss(scanAction)}>{t(scanAction ? 'scan.startScanning' : 'review.done')}</Btn>
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
         <Pressable testID="unlock-celebration-close" accessibilityRole="button" accessibilityLabel={t('common.close')}
           onPress={() => dismiss(false)} style={[styles.close, { top: insets.top + 8 }]}><IconClose size={24} color={C.surface} /></Pressable>
