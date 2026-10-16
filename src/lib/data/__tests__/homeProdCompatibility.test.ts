@@ -1,12 +1,12 @@
-/** Captured public guest responses: server #412, 2026-10-16. Replay is not native QA. */
-process.env.EXPO_PUBLIC_BE_BASE = 'https://prod.kbap.site';
-jest.mock('@/lib/installationId', () => ({ getInstallationId: async () => 'test-install' }));
-jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
-jest.mock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => false }));
 import responses from './fixtures/homeProd412.json';
 import { fetchHome } from '../useHome';
 import { selectedHomeOptions } from '../useSelectedHomeFoods';
 import { HOME_SELECTION } from '@/features/home/selectedFoods';
+/** Captured public guest responses: server #412, 2026-10-16. Replay is not native QA. */
+jest.mock('@/lib/data/config', () => ({ BE_BASE: 'https://prod.kbap.site' }));
+jest.mock('@/lib/installationId', () => ({ getInstallationId: async () => 'test-install' }));
+jest.mock('@/lib/i18n', () => ({ __esModule: true, default: { language: 'en' } }));
+jest.mock('@/lib/flags', () => ({ FLAGS: {}, isProdChannel: () => false }));
 
 it('loads both required home sources through the real client using prod 1.1 DTOs and guest headers', async () => {
   const originalFetch = global.fetch;
