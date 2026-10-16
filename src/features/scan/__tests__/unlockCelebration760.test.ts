@@ -1,4 +1,4 @@
-import { blockUnlockPresentation, consumeUnlock, getUnlockSnapshot, hasUnlockPending, isUnlockEventCurrent, markUnlockPresented, observeAdUnlock, observeUnlock, resetUnlockSession, setUnlockScanFocused } from '../unlockCelebrationStore';
+import { blockUnlockPresentation, consumeUnlock, getUnlockSnapshot, hasUnlockPending, hasObservedUnlockTransition, isUnlockEventCurrent, markUnlockPresented, observeAdUnlock, observeUnlock, resetUnlockSession, setUnlockScanFocused } from '../unlockCelebrationStore';
 import { adaptAdReward } from '@/lib/api/adRewardAdapter';
 beforeEach(() => resetUnlockSession(0));
 it('only a same-member false→true creates one event, with scan context captured at transition', () => {
@@ -8,6 +8,7 @@ it('only a same-member false→true creates one event, with scan context capture
   markUnlockPresented(event.id); observeUnlock('a', true, 0);
   expect(getUnlockSnapshot()).toMatchObject({ event, presented: true });
   expect(consumeUnlock(event.id)).toEqual(event); expect(consumeUnlock(event.id)).toBeNull();
+  expect(hasObservedUnlockTransition()).toBe(true); // late reward callback must still defer to the consumed CTA
   observeUnlock('a', true, 0); expect(hasUnlockPending()).toBe(false);
 });
 it('review context, unknown loading, reward response loss and later server confirmation', () => {

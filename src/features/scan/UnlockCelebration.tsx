@@ -14,7 +14,7 @@ import { color as C, font } from '@/lib/theme';
 import { consumeUnlock, getUnlockSnapshot, isUnlockEventCurrent, markUnlockPresented, subscribeUnlock, type UnlockEvent } from './unlockCelebrationStore';
 
 /** Mounted inside scan's native screen, and at the app host for ordinary routes. */
-export function UnlockCelebration({ eligible, onStartScanning }: { eligible: boolean; onStartScanning?: () => void }) {
+export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eligible: boolean; onStartScanning?: () => void; onClosed?: () => void }) {
   const state = React.useSyncExternalStore(subscribeUnlock, getUnlockSnapshot, getUnlockSnapshot);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -49,10 +49,13 @@ export function UnlockCelebration({ eligible, onStartScanning }: { eligible: boo
   const afterDismiss = React.useCallback(() => {
     if (!closing || continued.current === closing.event.id) return;
     continued.current = closing.event.id;
-    const canStart = closing.start && isUnlockEventCurrent(closing.event) && eligible && AppState.currentState === 'active';
+    const canContinue = isUnlockEventCurrent(closing.event) && eligible && AppState.currentState === 'active';
     setClosing(null);
-    if (canStart) onStartScanning?.();
-  }, [closing, eligible, onStartScanning]);
+    if (canContinue) {
+      if (closing.start) onStartScanning?.();
+      else onClosed?.();
+    }
+  }, [closing, eligible, onStartScanning, onClosed]);
   React.useEffect(() => {
     if (!closing || Platform.OS === 'ios') return;
     // Android has no Modal.onDismiss. No animation means the native window is removed before this task.

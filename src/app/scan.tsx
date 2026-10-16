@@ -1,5 +1,5 @@
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
-import { hasUnlockPending, setUnlockScanFocused } from '@/features/scan/unlockCelebrationStore';
+import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused } from '@/features/scan/unlockCelebrationStore';
 import { currentGen } from '@/lib/auth/beTokens';
 /**
  * Scan screen — camera → on-device OCR → segment (T072, handoff §14) → live BE
@@ -209,8 +209,8 @@ export default function Scan() {
   // KB-759 방어 2: 광고 해제 경로의 티켓 재발급 상태 — 'opening'(요청 중) · 'failed'(실패 → 다시 시도 버튼). 조용히 삼키지 않는다.
   // /review 2: 상태는 **그 상태를 띄운 쿼터 에러 객체**에 묶는다 — 화면이 카메라로 가거나 다른 에러(fail·새 쿼터 잠금)로 바뀌면
   // 객체가 달라져 자동으로 'idle'(리셋 호출을 경로마다 흩뿌리지 않는다). 겹친 preflight의 늦은 실패도 지난 객체에 묶여 안 보인다.
-  const [unlock, setUnlock] = useState<{ kind: 'opening' | 'failed'; forError: object } | null>(null);
-  const unlockState: 'idle' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : me?.scanQuota?.unlocked === true && error?.stage === 'quota' ? 'failed' : 'idle';
+  const [unlock, setUnlock] = useState<{ kind: 'ready' | 'opening' | 'failed'; forError: object } | null>(null);
+  const unlockState: 'idle' | 'ready' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
   const errorRef = useRef(error);
   useLayoutEffect(() => {
     errorRef.current = error;
@@ -963,11 +963,12 @@ export default function Scan() {
       <View style={[styles.root, styles.center]}>
         {Close}
         {GateSheet}
-        <UnlockCelebration eligible={isFocused && !isGuest && !quotaPicker && stage === 'quota'} onStartScanning={() => void runUnlockRetry(() => preflight({ unlocked: true }))} />
+        <UnlockCelebration eligible={isFocused && !isGuest && !quotaPicker && stage === 'quota'} onStartScanning={() => void runUnlockRetry(() => preflight({ unlocked: true }))}
+          onClosed={() => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); }} />
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
         <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
+        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
@@ -982,13 +983,13 @@ export default function Scan() {
             <>
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
-              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t('common.retry')}</Btn>
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
-              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasUnlockPending()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasObservedUnlockTransition()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (

@@ -5,6 +5,7 @@ let generation = 0;
 let previous: { memberId: string; unlocked: boolean } | null = null;
 let serial = 0;
 let scanFocused = false;
+let transitionObserved = false;
 const blockers = new Set<symbol>();
 let snapshot: Snapshot = { event: null, presented: false, blocked: false };
 const listeners = new Set<() => void>();
@@ -14,6 +15,7 @@ export function subscribeUnlock(fn: () => void) { listeners.add(fn); return () =
 export function resetUnlockSession(next: number) {
   generation = next;
   previous = null;
+  transitionObserved = false;
   scanFocused = false;
   publish({ event: null, presented: false, blocked: blockers.size > 0 });
 }
@@ -31,10 +33,12 @@ export function observeUnlock(memberId: string, unlocked: boolean | null | undef
   const prior = previous;
   previous = { memberId, unlocked };
   if (!prior || prior.memberId !== memberId || !unlocked) {
+    transitionObserved = false;
     publish({ ...snapshot, event: null, presented: false });
     return;
   }
   if (!prior.unlocked && unlocked) {
+    transitionObserved = true;
     publish({ ...snapshot, event: { id: ++serial, memberId, generation, context: scanFocused ? 'scan' : 'done' }, presented: false });
   }
 }
@@ -56,3 +60,6 @@ export function hasUnlockPending() { return snapshot.event !== null; }
 export function observeAdUnlock(unlocked: boolean, requestGeneration: number) {
   if (previous) observeUnlock(previous.memberId, unlocked, requestGeneration);
 }
+
+/** Remains true after dismissal so delayed reward callbacks cannot bypass the CTA. */
+export function hasObservedUnlockTransition() { return transitionObserved; }
