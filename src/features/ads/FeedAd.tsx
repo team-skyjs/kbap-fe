@@ -68,29 +68,28 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
               <NativeAsset assetType={NativeAssetType.ICON}>
                 <Image source={{ uri: nativeAd.icon.url }} style={styles.icon} />
               </NativeAsset>
-        )}
-        <View style={styles.who}>
-          <NativeAsset assetType={NativeAssetType.HEADLINE}>
-            <Text style={styles.headline}>{nativeAd.headline}</Text>
-          </NativeAsset>
-          {nativeAd.advertiser ? (
-            <NativeAsset assetType={NativeAssetType.ADVERTISER}>
-              <Text style={styles.advertiser}>{nativeAd.advertiser}</Text>
+            )}
+            <View style={styles.who}>
+              <NativeAsset assetType={NativeAssetType.HEADLINE}>
+                <Text style={styles.headline}>{nativeAd.headline}</Text>
+              </NativeAsset>
+              {nativeAd.advertiser ? (
+                <NativeAsset assetType={NativeAssetType.ADVERTISER}>
+                  <Text style={styles.advertiser}>{nativeAd.advertiser}</Text>
+                </NativeAsset>
+              ) : null}
+            </View>
+          </View>
+          <NativeMediaView style={[styles.media, mediaSize]} resizeMode="contain" />
+          {nativeAd.body ? (
+            <NativeAsset assetType={NativeAssetType.BODY}>
+              <Text style={styles.body}>{nativeAd.body}</Text>
             </NativeAsset>
           ) : null}
-        </View>
-
-      </View>
-      <NativeMediaView style={[styles.media, mediaSize]} resizeMode="contain" />
-      {nativeAd.body ? (
-        <NativeAsset assetType={NativeAssetType.BODY}>
-          <Text style={styles.body}>{nativeAd.body}</Text>
-        </NativeAsset>
-      ) : null}
-      <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
-        <Text style={styles.cta}>{nativeAd.callToAction}</Text>
-      </NativeAsset>
-    </NativeAdView>
+          <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
+            <Text style={styles.cta}>{nativeAd.callToAction}</Text>
+          </NativeAsset>
+        </NativeAdView>
       )}
     </View>
   );
