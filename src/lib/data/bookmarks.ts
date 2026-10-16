@@ -1,3 +1,5 @@
+import { currentGen } from '../auth/beTokens';
+import type { SelectedFoods } from '../api/selectedFoodsAdapter';
 /**
  * bookmarks.ts — 북마크, KB-142 실연결 (2026-07-15, BE Swagger 배포 확인).
  *
@@ -150,10 +152,12 @@ function optimisticWrite(
  *  Codex(#264): 쓰기 전 진행 중 재조회(홈 refetch·/foods fetchNextPage)를 취소 — 늦게 도착한 옛 응답이
  *  낙관 반영을 덮는다. 데이터 있는 쿼리만(초기 로딩 중인 홈을 끊으면 스켈레톤에 멈춘다).
  *  롤백 = 같은 함수로 반대 반전(스냅샷 복원은 그 사이 성공한 다른 카드의 토글까지 지운다). */
-async function flipCardBookmarked(qc: ReturnType<typeof useQueryClient>, foodId: string, add: boolean): Promise<void> {
+async function flipCardBookmarked(qc: ReturnType<typeof useQueryClient>, foodId: string, add: boolean, generation = currentGen()): Promise<void> {
   const hasData = (q: { state: { data: unknown } }) => q.state.data !== undefined;
   await qc.cancelQueries({ queryKey: ['home'], predicate: hasData });
   await qc.cancelQueries({ queryKey: ['foods'], predicate: hasData });
+  if (generation === currentGen()) await qc.cancelQueries({ queryKey: ['selectedHomeFoods'], predicate: hasData });
+  if (generation === currentGen()) qc.setQueriesData<SelectedFoods>({ queryKey: ['selectedHomeFoods'] }, (cur) => cur && ({ ...cur, items: cur.items.map((card) => card.foodId === foodId ? { ...card, bookmarked: add } : card) }));
   const homeKey = ['home', i18n.language] as const;
   const prevHome = qc.getQueryData<HomeResponse>(homeKey);
   if (prevHome) {
@@ -194,14 +198,15 @@ export function useToggleBookmark() {
       }
     },
     onMutate: async ({ snap, add }) => {
+      const generation = currentGen();
       await qc.cancelQueries({ queryKey: QK() });
       const prev = optimisticWrite(qc, snap.foodId, add ? toWire(snap) : null);
       // 상세 캐시의 bookmarked도 즉시 반전 — 상세 화면 saved가 이 필드 기반 (KB-142 후속)
       const detailKey = ['food', snap.foodId, i18n.language] as const;
       const prevDetail = qc.getQueryData<FoodDetail>(detailKey);
       if (prevDetail) qc.setQueryData<FoodDetail>(detailKey, { ...prevDetail, bookmarked: add });
-      await flipCardBookmarked(qc, snap.foodId, add); // KB-779: 홈·목록 카드 별
-      return { prev, prevDetail, detailKey };
+      await flipCardBookmarked(qc, snap.foodId, add, generation); // KB-779: 홈·목록 카드 별
+      return { prev, prevDetail, detailKey, generation };
     },
     // P-339 ⑤(KB-494): 상단 토스트 = 이 뮤테이션 한 곳(전 표면 공용 — 화면별 배선 금지).
     // 저장 화면의 스와이프 해제(useRemoveBookmark)는 Undo 스낵바 현행 유지(중복 방지).
@@ -210,10 +215,10 @@ export function useToggleBookmark() {
       // KB-783 ⑨(#278 Codex P1): 찜 = 서버 저장 **성공**에서만, 이 공용 뮤테이션 한 곳(상세·검색·FoodExplorer 전 표면) — 화면별 배선 금지
       if (add) airbridge.wishlist({ id: snap.foodId, name: snap.nameKo });
     },
-    onError: (e, { snap, add, fromDetail }, ctx) => {
+    onError: async (e, { snap, add, fromDetail }, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
       if (ctx?.prevDetail) qc.setQueryData(ctx.detailKey, ctx.prevDetail);
-      void flipCardBookmarked(qc, snap.foodId, !add);
+      await flipCardBookmarked(qc, snap.foodId, !add, ctx?.generation ?? -1);
       // KB-626(P-405): 음식이 READY가 아니면(FOOD-001 — 숨김·삭제) 서버 `bookmark`가 `getReadyFood`에서
       // 거부한다. 에러가 아니므로 빨간 토스트("다시 시도해 주세요")를 띄우지 않는다 — 다시 해도 같다.
       // ⚠️ 거부를 **삼키지 않고 전파**한다(#185 2R): 숨김 신호를 세우면 상세 화면이 그 즉시 판정·액션 바를
@@ -230,6 +235,7 @@ export function useToggleBookmark() {
     },
     onSettled: (_d, _e, { snap }) => {
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['selectedHomeFoods'] });
       void qc.invalidateQueries({ queryKey: ['food', snap.foodId] });
     },
   });
@@ -243,16 +249,18 @@ export function useRemoveBookmark() {
       await api.patch(`/bookmarks/${foodId}`);
     },
     onMutate: async (foodId) => {
+      const generation = currentGen();
       await qc.cancelQueries({ queryKey: QK() });
-      await flipCardBookmarked(qc, foodId, false); // Codex(#264): 홈·목록 카드 별도 같이 — 안 하면 홈 복귀 시 별 잔존·다음 탭 방향 역전
-      return { prev: optimisticWrite(qc, foodId, null) };
+      await flipCardBookmarked(qc, foodId, false, generation); // Codex(#264): 홈·목록 카드 별도 같이 — 안 하면 홈 복귀 시 별 잔존·다음 탭 방향 역전
+      return { prev: optimisticWrite(qc, foodId, null), generation };
     },
-    onError: (_e, foodId, ctx) => {
+    onError: async (_e, foodId, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
-      void flipCardBookmarked(qc, foodId, true);
+      await flipCardBookmarked(qc, foodId, true, ctx?.generation ?? -1);
     },
     onSettled: (_d, _e, foodId) => {
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['selectedHomeFoods'] });
       void qc.invalidateQueries({ queryKey: ['food', foodId] }); // 상세 bookmarked 동기화
     },
   });
@@ -266,19 +274,21 @@ export function useRestoreBookmark() {
       await postBookmark(snap.foodId); // FOOD-001이면 신호 설정 — 화면은 기존대로 조용한 롤백(토스트 없음)
     },
     onMutate: async (snap) => {
+      const generation = currentGen();
       await qc.cancelQueries({ queryKey: QK() });
-      await flipCardBookmarked(qc, snap.foodId, true); // Codex(#264): 홈·목록 카드 별 동기
-      return { prev: optimisticWrite(qc, snap.foodId, toWire(snap)) };
+      await flipCardBookmarked(qc, snap.foodId, true, generation); // Codex(#264): 홈·목록 카드 별 동기
+      return { prev: optimisticWrite(qc, snap.foodId, toWire(snap)), generation };
     },
     onSuccess: (_d, snap) => {
       airbridge.wishlist({ id: snap.foodId, name: snap.nameKo }); // KB-783 ⑨: 저장 목록 되돌리기 = 재저장(성공만)
     },
-    onError: (_e, snap, ctx) => {
+    onError: async (_e, snap, ctx) => {
       if (ctx?.prev) qc.setQueryData(QK(), ctx.prev);
-      void flipCardBookmarked(qc, snap.foodId, false);
+      await flipCardBookmarked(qc, snap.foodId, false, ctx?.generation ?? -1);
     },
     onSettled: (_d, _e, snap) => {
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['selectedHomeFoods'] });
       void qc.invalidateQueries({ queryKey: ['food', snap.foodId] }); // 상세 bookmarked 동기화
     },
   });

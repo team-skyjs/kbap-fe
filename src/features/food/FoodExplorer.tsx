@@ -108,6 +108,9 @@ export function FoodExplorer({
   mostReviewedLoading = false,
   popular,
   popularLoading = false,
+  selectedPopular = false,
+  popularError,
+  onPopularRetry,
   onScanRowBottom,
 }: {
   variant: 'embedded' | 'screen';
@@ -122,6 +125,9 @@ export function FoodExplorer({
    *  mostReviewed와 같은 이유로 홈 화면이 useHome에서 받아 내린다(요청 추가 0). 미전달(음식 탭)·빈 값(구 서버·MOCK) = 기존 목록 앞부분. */
   popular?: FoodCard[];
   popularLoading?: boolean;
+  selectedPopular?: boolean;
+  popularError?: unknown;
+  onPopularRetry?: () => void;
   /** KB-701: 검색 줄(= 스캔 버튼 — 같은 48 높이, 세로 가운데) 아래 끝의 y — 이 컴포넌트 위쪽 기준. 홈 뱃지 앵커. */
   onScanRowBottom?: (y: number) => void;
   initialTab?: GridTab;
@@ -154,7 +160,8 @@ export function FoodExplorer({
   // saved(무필터) = 북마크 판정 소스(드레인 유지) / savedList(risk) = Saved 목록 소스
   // (riskChip 'all'이면 같은 쿼리키 = 캐시 공유, 추가 요청 없음).
   const savedTabActive = variant === 'screen' ? savedOnly : gridTab === 'saved';
-  const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive }); // #112 2R ②: Saved 활성 = browse 휴면
+  const selectedActive = selectedPopular && variant === 'embedded' && gridTab === 'popular';
+  const browse = useInfiniteFoods(selectedActive ? 'all' : riskChip, { enabled: !savedTabActive && (!selectedActive || (!guest && hasR && riskChip === 'all')) }); // #112 2R ②: Saved 활성 = browse 휴면
   // KB-779: 홈(embedded) 별·토글 방향 = 카드의 bookmarked(/home·/foods·/bookmarks 전부 FoodSummaryResponse 동봉)
   // → 북마크 쿼리(드레인 포함)는 Saved 탭이 활성일 때만(빈 상태 판정·목록). 콜드 스타트 GET /bookmarks 0회.
   // 음식 탭(screen)은 기존 savedIds 판정 경로 그대로(비범위).
@@ -203,7 +210,7 @@ export function FoodExplorer({
     </View>
   );
   React.useEffect(() => {
-    if (riskChip === 'all') return; // 무필터 = 기존 스크롤 페이징만(드레인은 saved 판정 소스 몫)
+    if (selectedActive || riskChip === 'all') return; // 무필터 = 기존 스크롤 페이징만(드레인은 saved 판정 소스 몫)
     if (gridQ.isError) return; // 3R ①: 에러 = 자동 페치 중단(무한 재시도 금지)
     if (
       fillFailedAtRef.current?.key === fillKey &&
@@ -216,7 +223,7 @@ export function FoodExplorer({
         if (r?.isError) fillFailedAtRef.current = { key: fillKey, len: gridLen, at: updatedAt }; // 발화 시점 키 — 옛 실패는 새 쿼리 안 잠금(5R ①)
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fillKey, gridLen, gridQ.isError, gridQ.hasNextPage, gridQ.isFetching, gridQ.dataUpdatedAt, gridQ.fetchNextPage]);
+  }, [selectedActive, fillKey, gridLen, gridQ.isError, gridQ.hasNextPage, gridQ.isFetching, gridQ.dataUpdatedAt, gridQ.fetchNextPage]);
   // Codex #80 2R P1: 탭 네비게이터가 음식 탭을 마운트 유지 — 두 번째 See all(파라미터 변경)이
   // useState 초기값에 막히지 않게 파라미터 변경 시 재동기화(P-318: saved 세그먼트 = Saved 칩).
   // 사용자가 화면에서 바꾼 칩은 다음 파라미터 변경 전까지 유지(마운트 시엔 초기값과 동일해 무동작).
@@ -284,7 +291,7 @@ export function FoodExplorer({
   const isSaved = (f: FoodCard) => (variant === 'embedded' ? f.bookmarked === true : savedIds.has(f.foodId)); // KB-779
   // KB-712: 홈 Popular + All = /home 랜덤(로딩 중이거나 1건 이상일 때) — 비었으면 기존 경로로 폴백.
   // 로딩 중 홈은 popular={undefined}를 넘긴다(빈 배열 아님) — `popular != null`로 걸면 /foods가 먼저 보였다 바뀌는 팝인(#237 공부)
-  const homePopular = variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
+  const homePopular = selectedActive || variant === 'embedded' && gridTab === 'popular' && riskChip === 'all' && (popularLoading || (popular?.length ?? 0) > 0);
   const gridSource: FoodCard[] =
     variant === 'screen'
       ? savedOnly ? savedListFoods : (browse.data ?? []) // P-318: 세그먼트 소멸 — Saved는 토글 칩
@@ -292,7 +299,7 @@ export function FoodExplorer({
         ? homePopular ? (popular ?? []) : popularPhotoFoods(browse.data)
         : gridTab === 'saved' ? savedListFoods : (browse.data ?? []);
   // P-350: 위험 칩 = 서버 필터(&risk=) — 클라 personalRisk 필터 소멸(무한로딩 원인)
-  const filtered = gridSource;
+  const filtered = selectedActive && riskChip !== 'all' ? gridSource.filter((food) => personalRisk(food.risk, hasR) === riskChip) : gridSource;
   // P-318 정렬: 인기 = 목록 응답 순서 그대로(서버 정렬 정본 — P-335로 클라 정렬 소멸).
   const gridFoods = variant === 'embedded' ? filtered.slice(0, HOME_RAIL_N) : filtered;
   // KB-710(6): 레일 구성이 바뀌면(첫 카드 id가 달라짐 — /home 랜덤 재조회·칩·세그먼트 전환) 가로 스크롤을 처음으로.
@@ -594,7 +601,9 @@ export function FoodExplorer({
             <Shimmer key={i} style={{ width: cardW, aspectRatio: 174 / 203, borderRadius: 4 }} />
           ))}
         </View>
-      ) : gridQ.isError && gridFoods.length === 0 ? (
+      ) : selectedActive && popularError && gridFoods.length === 0 ? (
+        <View style={styles.railState} testID="food-grid-error"><QueryErrorBlock error={popularError} onRetry={onPopularRetry ?? (() => {})} /></View>
+      ) : !selectedActive && gridQ.isError && gridFoods.length === 0 ? (
         /* #112 2R ①: 활성 쿼리(gridQ — Saved 탭 = savedList) 에러도 빈 상태보다 먼저.
            캐시 카드가 있으면(백그라운드 refetch 실패) 레일 유지(Codex #85 3R 원칙). */
         gridErrorBlock
