@@ -129,6 +129,7 @@ export function saveTokens(
   const g = sessionGen; // 호출 시점 세대(동기)
   const mine = { access, refresh };
   cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)
+  if (opts?.newSession) advanceSelectedContext();
   readFailed = false; // 쓰기 성공 = 저장소 정상
   return serialized(async () => {
     try {
