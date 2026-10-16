@@ -298,6 +298,8 @@
     "quotaTileAdProgress": "已看 {{n}}/{{total}}",
     "quotaBodyUnlock": "写一条评价或观看几次广告，即可解锁无限扫描。",
     "unlockedTitle": "已解锁无限扫描！",
+    "unlockedBody": "现在可以不限次数扫描韩语菜单。",
+    "startScanning": "开始扫描",
     "unlockedOpening": "正在重新打开相机…",
     "unlockedRetry": "无法重新打开相机，请重试。",
     "quotaCta": "写评价",

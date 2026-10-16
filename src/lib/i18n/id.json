@@ -298,6 +298,8 @@
     "quotaTileAdProgress": "{{n}}/{{total}} ditonton",
     "quotaBodyUnlock": "Tulis ulasan atau tonton beberapa iklan untuk membuka pemindaian tanpa batas.",
     "unlockedTitle": "Pemindaian tanpa batas terbuka!",
+    "unlockedBody": "Kini kamu bisa memindai menu berbahasa Korea tanpa batas.",
+    "startScanning": "Mulai memindai",
     "unlockedOpening": "Membuka kembali kamera…",
     "unlockedRetry": "Kamera tidak dapat dibuka kembali. Coba lagi.",
     "quotaCta": "Tulis ulasan",

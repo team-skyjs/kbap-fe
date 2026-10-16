@@ -7,6 +7,7 @@
  * 웹은 secure store가 없어 메모리만으로 동작(세션 한정).
  */
 import * as SecureStore from 'expo-secure-store';
+import { resetUnlockSession } from '@/features/scan/unlockCelebrationStore';
 import { BE_BASE } from '@/lib/data/config';
 
 /** P-322: 발급 환경 동승 단일 레코드 — dev 토큰이 prod 빌드에 실리는 재사용 차단
@@ -26,6 +27,7 @@ let cached: { access: string; refresh: string } | null | undefined; // undefined
 let sessionGen = 0;
 export function bumpSessionGen(): void {
   sessionGen++;
+  resetUnlockSession(sessionGen);
 }
 export function currentGen(): number {
   return sessionGen;

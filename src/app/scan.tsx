@@ -1,3 +1,6 @@
+import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
+import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused } from '@/features/scan/unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /**
  * Scan screen — camera → on-device OCR → segment (T072, handoff §14) → live BE
  * POST /scans (KB-72 신계약 2026-07-16: imagePath + price) → name-pill markers
@@ -169,13 +172,16 @@ export default function Scan() {
   const [facing, setFacing] = useState<CameraType>('back');
   // P-131: 줌 — 핀치+프리셋 상호 동기 (0~1 상대값, cameraZoom 순수 로직)
   const [zoom, setZoom] = useState(0);
-  const pinchBase = useRef(0);
+  const pinchBase = useSharedValue(0);
+  const onPinchStart = useCallback(() => { pinchBase.set(zoom); }, [pinchBase, zoom]);
+  const onPinchUpdate = useCallback((event: { scale: number }) => { setZoom(pinchToZoom(pinchBase.get(), event.scale)); }, [pinchBase]);
   const [error, setError] = useState<{ stage: ErrorStage; detail: string } | null>(null);
   // P-250: SCAN-004(무료 소진) — "리뷰 작성하기" = 리뷰 픽커(P-245 자격 UX) 직결
   const [quotaPicker, setQuotaPicker] = useState(false);
   // P-255: 진입 시 티켓 선발급 — 소진(SCAN-004)이면 사진 고르기 전에 즉시 잠금
   // (게스트 가드가 상위 — 아래 preflight는 회원·v2만). 티켓은 화면 스코프 1회용.
   const preTicket = useRef<string | null>(null);
+  const ticketEpoch = useRef(0);
   const isGuest = useIsGuest();
   // KB-426(예진 실기 b21): 진입 즉시 OS 권한 팝업 — 안내 화면은 거부 후 폴백으로
   // 강등. 세션당 1회(ref) — OS도 프롬프트를 1회만 주므로(canAskAgain) 중복 무해하나
@@ -205,8 +211,8 @@ export default function Scan() {
   // KB-759 방어 2: 광고 해제 경로의 티켓 재발급 상태 — 'opening'(요청 중) · 'failed'(실패 → 다시 시도 버튼). 조용히 삼키지 않는다.
   // /review 2: 상태는 **그 상태를 띄운 쿼터 에러 객체**에 묶는다 — 화면이 카메라로 가거나 다른 에러(fail·새 쿼터 잠금)로 바뀌면
   // 객체가 달라져 자동으로 'idle'(리셋 호출을 경로마다 흩뿌리지 않는다). 겹친 preflight의 늦은 실패도 지난 객체에 묶여 안 보인다.
-  const [unlock, setUnlock] = useState<{ kind: 'opening' | 'failed'; forError: object } | null>(null);
-  const unlockState: 'idle' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
+  const [unlock, setUnlock] = useState<{ kind: 'ready' | 'opening' | 'failed'; forError: object } | null>(null);
+  const unlockState: 'idle' | 'ready' | 'opening' | 'failed' = unlock && error && unlock.forError === error ? unlock.kind : 'idle';
   const errorRef = useRef(error);
   useLayoutEffect(() => {
     errorRef.current = error;
@@ -237,6 +243,8 @@ export default function Scan() {
   // ① 옛 스냅샷은 반증 처리(재잠금 0) — 서버가 정본 ② 티켓 성공이면 잠금 ref와 무관하게 카메라 ③ 티켓 실패(비-004 포함)는 '다시 시도' 상태로 노출.
   const preflight = useCallback(async (opts?: { unlocked?: boolean }) => {
     if (!scanV2Enabled()) return;
+    const generation = currentGen();
+    const epoch = ticketEpoch.current;
     const quota = quotaRef.current;
     const unlocked = opts?.unlocked === true;
     const forError = errorRef.current; // 해제 경로 = 지금 떠 있는 쿼터 에러에 묶는다
@@ -250,7 +258,9 @@ export default function Scan() {
     // KB-759 진단(개발 번들만): 잠금 상태·티켓 결과를 Metro 로그로
     if (__DEV__) console.log('[scan] preflight', JSON.stringify({ phase: phaseRef.current, lock: quotaLockRef.current, unlocked, quota }));
     try {
-      preTicket.current = await issueScanTicket();
+      const ticket = await issueScanTicket();
+      if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
+      preTicket.current = ticket;
       if (__DEV__) console.log('[scan] preflight ticket ok', JSON.stringify({ lock: quotaLockRef.current, phase: phaseRef.current, unlocked }));
       if (isScanQuotaExhausted(quota)) disprovenQuota.current = quota;
       if (unlocked && errorRef.current !== forError) return; // 그새 화면이 바뀌었다(늦은 응답) — 덮지 않는다
@@ -262,6 +272,7 @@ export default function Scan() {
         setPhase('camera');
       }
     } catch (e) {
+      if (generation !== currentGen() || epoch !== ticketEpoch.current) return;
       const code = (e as { code?: string })?.code;
       if (__DEV__) console.log('[scan] preflight ticket err', String(code ?? e), JSON.stringify({ unlocked }));
       if (unlocked && code !== 'SCAN-004') {
@@ -294,7 +305,9 @@ export default function Scan() {
     useCallback(() => {
       if (isGuest) return; // 게스트 가드 상위(순서 유지) — 티켓 로직 미진입
       // 진입·복귀 시: 카메라 대기 중이거나 쿼터 잠금이면 선발급(잠금은 해금 확인 겸)
-      void preflight();
+      if (!hasUnlockPending()) void preflight();
+      setUnlockScanFocused(true);
+      return () => { ticketEpoch.current++; setUnlockScanFocused(false); };
     }, [isGuest, preflight]),
   );
   const [gateOpen, setGateOpen] = useState(false); // 게스트 스캔 게이트 (KB-77/78, §3-Q1)
@@ -952,10 +965,12 @@ export default function Scan() {
       <View style={[styles.root, styles.center]}>
         {Close}
         {GateSheet}
+        <UnlockCelebration eligible={isFocused && !isGuest && !quotaPicker && stage === 'quota'} onStartScanning={() => void runUnlockRetry(() => preflight({ unlocked: true }))}
+          onClosed={() => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); }} />
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
         <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
-        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
+        <Text style={styles.statusText}>{t(stage === 'quota' ? (unlockState === 'idle' ? (canWatchAd ? 'scan.quotaBodyUnlock' : ERROR_MSG.quota) : unlockState === 'ready' ? 'scan.unlockedBody' : unlockState === 'opening' ? 'scan.unlockedOpening' : 'scan.unlockedRetry') : ERROR_MSG[stage])}</Text>
         {/* P-247 🔴: error.detail(서버 message 원문) 렌더 삭제 — BE message 사용자
             노출 금지(상시 규칙). 진단은 fail()의 콘솔 로그로만. */}
         <View style={styles.errBtns}>
@@ -970,13 +985,13 @@ export default function Scan() {
             <>
               {/* KB-759: 해제됐는데 티켓 재발급 중/실패 — 광고·리뷰 CTA 대신 다시 시도(실패일 때만) + 나중에 */}
               {/* /review 3: 여는 중에도 같은 버튼을 busy로 유지(스피너·비활성) — 실패면 탭 가능 */}
-              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t('common.retry')}</Btn>
+              <Btn busy={unlockState === 'opening' || unlockRetrying} onPress={() => void runUnlockRetry(() => preflight({ unlocked: true }))} testID="scan-unlock-retry">{t(unlockState === 'ready' ? 'scan.startScanning' : 'common.retry')}</Btn>
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'quota' ? (
             <>
               {/* KB-739 ⑤: 2택 — 리뷰 쓰기 / 광고 보고 풀기(n/3). 서버가 scanUnlocked를 돌려주면 preflight({unlocked}) → 새 티켓 → 카메라 복원(KB-759) */}
-              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (__DEV__) console.log('[scan] ad unlock → preflight'); void preflight({ unlocked: true }); }} onClose={() => router.back()} />
+              <UnlockActions reviewTestID="scan-quota-review" onWriteReview={() => setQuotaPicker(true)} onUnlocked={() => { if (!hasObservedUnlockTransition()) void preflight({ unlocked: true }); }} onClose={() => router.back()} />
               <Btn variant="ghost" onPress={() => router.back()} testID="scan-quota-later">{t('scan.later')}</Btn>
             </>
           ) : stage === 'busy' || stage === 'upload' || stage === 'network' || stage === 'outage' ? (
@@ -1054,12 +1069,8 @@ export default function Scan() {
         <GestureDetector
           gesture={Gesture.Pinch()
             .runOnJS(true)
-            .onStart(() => {
-              pinchBase.current = zoom;
-            })
-            .onUpdate((e) => {
-              setZoom(pinchToZoom(pinchBase.current, e.scale));
-            })}
+            .onStart(onPinchStart)
+            .onUpdate(onPinchUpdate)}
         >
           <View style={StyleSheet.absoluteFill}>
             <CameraView

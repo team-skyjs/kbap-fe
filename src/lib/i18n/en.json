@@ -294,6 +294,8 @@
     "quotaTileAdProgress": "{{n}}/{{total}} watched",
     "quotaBodyUnlock": "Write a review or watch a few ads to unlock unlimited scanning.",
     "unlockedTitle": "You're unlocked!",
+    "unlockedBody": "Scan Korean menus as many times as you want.",
+    "startScanning": "Start scanning",
     "unlockedOpening": "Reopening the camera…",
     "unlockedRetry": "Couldn't reopen the camera. Try again.",
     "quotaCta": "Write a review",

@@ -6,7 +6,8 @@
  * 딤·뒤로가기 = "나중에"와 동일. 텍스트는 전부 자동 줄바꿈(독일어 1.8배 = 제목·옵션 제목 2줄), 큰 글씨 최대에선 카드 안 스크롤.
  */
 import * as React from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { blockUnlockPresentation } from './unlockCelebrationStore';
+import { ActivityIndicator, Platform, Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Svg, { Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
@@ -71,11 +72,18 @@ export function QuotaDialog({ visible, value, state, title, onWriteReview, onUnl
 }) {
   const { t } = useTranslation();
   const ad = useAdUnlockSource();
+  const release = React.useRef<(() => void) | null>(null);
+  const dismissed = () => { release.current?.(); release.current = null; onDismiss?.(); };
+  React.useLayoutEffect(() => {
+    if (visible && !release.current) release.current = blockUnlockPresentation();
+    if (!visible && Platform.OS !== 'ios') { release.current?.(); release.current = null; }
+  }, [visible]);
+  React.useEffect(() => () => { release.current?.(); }, []);
   // KB-765 계측: 선택 = review | ad | later(뒤로가기·딤 탭도 later — 같은 닫기)
   const select = (option: 'review' | 'ad' | 'later') => track(EVENTS.scan_quota_dialog_select, { option });
   const later = () => { select('later'); onClose(); };
   return (
-    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={later} onDismiss={onDismiss}>
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={later} onDismiss={dismissed}>
       <View style={styles.backdrop}>
         {/* 딤 탭 = 나중에 */}
         <Pressable style={StyleSheet.absoluteFill} onPress={later} accessible={false} testID="quota-dialog-dim" />

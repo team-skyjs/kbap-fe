@@ -23,6 +23,7 @@ jest.mock('react-native-reanimated', () => {
   };
   return {
     __esModule: true,
+    cancelAnimation: jest.fn(),
     withSpring: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     withDelay: (_d: number, v: unknown) => v,
@@ -36,7 +37,7 @@ jest.mock('react-native-reanimated', () => {
     ZoomIn: chain(),
     ZoomOut: chain(),
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => { const shared = { value: v, set: (next: unknown) => { shared.value = next; } }; return shared; },
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     useReducedMotion: () => false,
@@ -145,6 +146,9 @@ import { _resetAdsSessionForTest, initAds } from '@/lib/ads/adsSession';
 import { _resetAdsSdkForTest } from '@/lib/ads/sdk';
 import { ApiError } from '@/lib/api/client';
 import Scan from '../scan';
+import { AppState, Modal, Platform } from 'react-native';
+import { observeUnlock, resetUnlockSession } from '@/features/scan/unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 const { mockAds } = adsModule as unknown as typeof import('../../../__mocks__/react-native-google-mobile-ads');
 
 const QUOTA = (remaining: number | 'unlimited', unlocked = false) => ({ count: 3, limit: 3, unlocked, remaining });
@@ -156,6 +160,7 @@ beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 let qc: QueryClient;
 beforeEach(async () => {
   jest.clearAllMocks();
+  resetUnlockSession(currentGen());
   mockIsGuest.mockReturnValue(false);
   mockAds.reset(); mockUuid = 0;
   _resetAdsSessionForTest(); _resetAdsSdkForTest();
@@ -164,7 +169,9 @@ beforeEach(async () => {
 });
 
 const me = (remaining: number, unlocked = false) => ({ data: { restrictions: [], scanQuota: unlocked ? QUOTA('unlimited', true) : QUOTA(0), adRewards: { count: 3 - remaining, forUnlock: 3, remaining } } });
-const render = () => { let tree!: ReactTestRenderer; act(() => { tree = renderer.create(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); }); return tree; };
+const mounted: ReactTestRenderer[] = [];
+afterEach(() => { act(() => mounted.splice(0).forEach((tree) => tree.unmount())); qc.clear(); });
+const render = () => { let tree!: ReactTestRenderer; act(() => { tree = renderer.create(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); }); mounted.push(tree); return tree; };
 
 async function watchOnce(tree: ReactTestRenderer, response: { rewardCount: number; remainingForUnlock: number; scanUnlocked: boolean }) {
   mockPost.mockResolvedValueOnce(response);
@@ -296,4 +303,46 @@ it('재현 변형: 스캔 시도 403으로 온 제한 화면(fail 경로, quotaL
   expect(adBtn(tree)).toBeUndefined();
   await act(async () => { d.resolve('t-unlocked'); await flush(); });
   expect(quotaShown(tree)).toBe(false);
+});
+
+// Real Scan + RewardedUnlock + mutation + global owner + Modal: CTA gates the actual ticket issuer.
+it('KB760: server transition waits for celebration CTA and native dismissal before issuing a ticket', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush();
+  mockIssue.mockReset(); mockIssue.mockResolvedValue('celebration-ticket');
+  await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
+  expect(mockIssue).not.toHaveBeenCalled();
+  const action = tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
+  expect(action).toBeDefined();
+  await act(async () => { action.props.onPress(); action.props.onPress(); });
+  if (Platform.OS === 'ios') {
+    expect(mockIssue).not.toHaveBeenCalled();
+    const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+    await act(async () => celebration.props.onDismiss());
+  } else {
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 5)));
+  }
+  await flush(); expect(mockIssue).toHaveBeenCalledTimes(1); expect(quotaShown(tree)).toBe(false);
+  act(() => tree.unmount());
+});
+
+it('KB760: early profile unlock keeps the SDK close listener alive and blocks the modal until CLOSED', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush(); mockIssue.mockClear();
+  mockPost.mockResolvedValueOnce({ rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
+  act(() => mockAds.update('rewarded', { status: 'loaded', earnedReward: false }));
+  await act(async () => adBtn(tree).props.onPress());
+  act(() => mockAds.update('rewarded', { status: 'showing', earnedReward: true })); await flush();
+  mockUseMe.mockReturnValue(me(0, true));
+  act(() => tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>)); await flush();
+  const celebration = () => tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+  expect(celebration().props.visible).toBe(false); expect(mockIssue).not.toHaveBeenCalled();
+  act(() => mockAds.update('rewarded', { status: 'closed', earnedReward: false })); await flush();
+  expect(celebration().props.visible).toBe(true); expect(mockIssue).not.toHaveBeenCalled();
 });

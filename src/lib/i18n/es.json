@@ -298,6 +298,8 @@
     "quotaTileAdProgress": "{{n}}/{{total}} vistos",
     "quotaBodyUnlock": "Escribe una reseña o mira unos anuncios para desbloquear el escaneo ilimitado.",
     "unlockedTitle": "¡Escaneo ilimitado desbloqueado!",
+    "unlockedBody": "Ahora puedes escanear menús en coreano tantas veces como quieras.",
+    "startScanning": "Empezar a escanear",
     "unlockedOpening": "Reabriendo la cámara…",
     "unlockedRetry": "No se pudo reabrir la cámara. Inténtalo de nuevo.",
     "quotaCta": "Escribir reseña",
