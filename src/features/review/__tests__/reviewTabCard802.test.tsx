@@ -47,6 +47,8 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 
 import { carouselMetrics, ReviewPhotoCarousel, snapIndex, snapOffset, PHOTO_H } from '../ReviewPhotoCarousel';
 import { ReviewTabCard } from '../ReviewTabCard';
+import { ReviewAuthorLine } from '../ReviewCellParts';
+import { FeedCard } from '../FeedCard';
 import type { Review } from '@/lib/api/types';
 
 const t = (k: string) => k;
@@ -270,5 +272,17 @@ describe('ReviewTabCard', () => {
     const hidden = tree.root.findAll((n) => n.props?.importantForAccessibility === 'no-hide-descendants' && n.props?.accessibilityElementsHidden === true && typeof n.type === 'string');
     expect(hidden.some((h) => h.findAll((n) => n.props?.testID === 'review-card-photo-r1').length > 0)).toBe(true);
     expect(hidden.some((h) => h.findAll((n) => n.props?.testID === 'review-rating-line').length > 0)).toBe(true);
+  });
+});
+
+describe('Codex #288: 작성자 줄 flex — 세로 컬럼에서 늘거나 접히지 않음', () => {
+  it('ReviewAuthorLine 루트엔 flex 없음 · FeedCard 는 행 래퍼(flex 1)로 가로 몫만 준다', () => {
+    const line = render(<ReviewAuthorLine review={REVIEW} t={t} />);
+    const root = line.root.findAll((n) => typeof n.type === 'string')[0];
+    expect(StyleSheet.flatten(root.props.style).flex).toBeUndefined();
+    const fc = render(<FeedCard review={REVIEW} t={t} mine={false} onOpenFood={() => {}} onGuestHelpful={() => {}} onMore={() => {}} />);
+    const host = fc.root.findAll((n) => typeof n.type === 'string');
+    const wrapper = host.find((n) => n.findAll((c) => c.props?.testID === 'feed-flag-r1').length > 0 && StyleSheet.flatten(n.props.style)?.flex === 1);
+    expect(StyleSheet.flatten(wrapper!.props.style)).toEqual({ flex: 1, minWidth: 0 });
   });
 });

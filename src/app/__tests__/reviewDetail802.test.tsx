@@ -194,6 +194,22 @@ it('사진 = query photo 장부터(이어받기) · 탭 = PhotoViewer 그 장 ·
   expect(tree.root.findAll((n) => n.props?.testID === 'body-toggle')).toHaveLength(0);
 });
 
+it('Codex #288: 뷰어가 열린 채 재조회로 사진이 줄면 뷰어 index 클램프 · 0장이면 닫힘', async () => {
+  mockParams.photo = '2';
+  qc.setQueryData(['reviews', 'detail', '42'], SEED);
+  api.get.mockReturnValueOnce(new Promise(() => {}));
+  const tree = await render();
+  await act(async () => byId(tree, 'review-detail-photo-2')[0].props.onPress());
+  expect(mockViewer).toHaveBeenLastCalledWith(expect.objectContaining({ index: 2 }));
+  await act(async () => { qc.setQueryData(['reviews', 'detail', '42'], { ...SEED, photos: SEED.photos!.slice(0, 2) }); });
+  await flush(); // react-query 알림은 다음 틱
+  expect(mockViewer).toHaveBeenLastCalledWith(expect.objectContaining({ uris: SEED.photos!.slice(0, 2), index: 1 }));
+  const calls = mockViewer.mock.calls.length;
+  await act(async () => { qc.setQueryData(['reviews', 'detail', '42'], { ...SEED, photos: [] }); });
+  await flush();
+  expect(mockViewer.mock.calls.length).toBe(calls); // 0장 = 뷰어 렌더 없음
+});
+
 it('음식 칩 = /food/{id}?src=review_detail', async () => {
   qc.setQueryData(['reviews', 'detail', '42'], SEED);
   api.get.mockReturnValueOnce(new Promise(() => {}));

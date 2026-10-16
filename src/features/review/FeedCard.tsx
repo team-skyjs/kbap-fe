@@ -58,7 +58,9 @@ export function FeedCard({
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
         {/* KB-802: 작성자 블록 = ReviewAuthorLine(리뷰 탭 카드·상세와 공용, 시각 무변) */}
-        <ReviewAuthorLine review={review} t={t} />
+        <View style={styles.who}>
+          <ReviewAuthorLine review={review} t={t} />
+        </View>
         {/* P-196: Helpful = 공용 단일 경유(HelpfulButton) — 표면별 배선 금지 */}
         <HelpfulButton review={review} mine={mine} t={t} onGuest={onGuestHelpful} />
         {/* P-339 ②(KB-494): ⋯ 전 카드 표시(탈퇴 리뷰 포함 — 시트는 신고만) —
@@ -107,6 +109,7 @@ const styles = StyleSheet.create({
   // 카드(4150:13934) — 구분선형(보더·그림자 소멸)
   card: { paddingVertical: 22, paddingHorizontal: 20, gap: 8, borderBottomWidth: 1, borderBottomColor: C.line }, // A-FC-01(KB-486) · gap ↔ 번역 라벨 padTop(TRANSLATE_LABEL_BOX) 묶임 — 줄이면 라벨 상자가 위 사진 터치를 덮는다(유닛)
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 }, // A-FC-01
+  who: { flex: 1, minWidth: 0 }, // 작성자 줄이 행의 남는 가로 폭을 차지(Helpful·⋯ 는 오른쪽) — ReviewAuthorLine 자체는 flex 없음
   // KB-431 후속(9/7 .fig 실측 #2162:11360): 평점 행 = hug 273×20 @x20 — **좌측 정렬**
   // (main=CENTER 속성은 hug 너비라 무효). gap 16(항목 간)·4(라벨-별) 현행 유지.
   axisRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 16 },

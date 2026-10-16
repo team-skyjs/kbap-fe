@@ -222,6 +222,9 @@ export function useToggleReviewLike() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { reviewId: string; foodId: string }) => {
+      // KB-802(Codex #288): 상세 단건(staleTime 0)의 백그라운드 재조회가 진행 중이면 먼저 취소 — 늦은 응답이 낙관 값을 덮고
+      // 롤백이 덮인 값을 다시 뒤집는 경합 차단. 취소된 쿼리는 직전(시드) 값으로 돌아가 아래 next 계산도 그 값 기준
+      await qc.cancelQueries({ queryKey: ['reviews', 'detail', input.reviewId] });
       const next = !currentMyLike(qc, input);
       flipLikeCaches(qc, input); // 낙관 반영 (off 경로는 이게 전부 — P-095 목 시맨틱)
       if (!FLAGS.reviewsLiveEnabled) return;
@@ -231,6 +234,7 @@ export function useToggleReviewLike() {
         flipLikeCaches(qc, input); // 실패 롤백
         throw e;
       }
+      void qc.invalidateQueries({ queryKey: ['reviews', 'detail', input.reviewId] }); // 취소한 재조회 대신 서버값으로 재동기
     },
   });
 }

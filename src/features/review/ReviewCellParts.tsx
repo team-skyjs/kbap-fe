@@ -547,7 +547,8 @@ export function HelpfulButton({
 const styles = StyleSheet.create({
   body: { fontFamily: font.body, fontSize: 13.5, color: C.ink2, lineHeight: 19 },
   // KB-802: ReviewAuthorLine — FeedCard 에서 이관(값 무변)
-  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
+  // Codex #288: flex 1 없음 — 카드·상세(세로 컬럼)에서 세로로 늘거나 접히지 않게. 가로 몫은 FeedCard 가 행 래퍼로 준다
+  who: { minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }, // A-FC-02
   whoName: { flexShrink: 1, fontSize: 15, fontWeight: '500', color: '#2F3137' }, // A-FC-02
   nameGroup: { flex: 1, minWidth: 0, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8, rowGap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, maxWidth: '100%' },

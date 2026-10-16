@@ -215,6 +215,62 @@ describe('Helpful 캐시 동기화 (R-11)', () => {
     expect(feed(qc)).toMatchObject({ likes: 2, myLike: false });
   });
 
+  // 단건 응답도 같은 리뷰(id 'r1')여야 롤백 반전 대상이 된다
+  const R1_ID = 'r1' as unknown as number;
+  // 경합 재현: 상세 마운트 재조회(아직 안 누른 서버 상태)가 POST 진행 중에 도착한다
+  async function raceSetup() {
+    const qc = seed();
+    let resolveStale!: (w: ReviewWire) => void;
+    api.get.mockReturnValueOnce(new Promise((r) => (resolveStale = r)));
+    await act(async () => {
+      trees.push(
+        renderer.create(
+          <QueryClientProvider client={qc}>
+            <Probe id="r1" out={[]} />
+          </QueryClientProvider>,
+        ),
+      );
+    });
+    let settlePost!: { ok: () => void; fail: () => void };
+    api.post.mockReturnValueOnce(new Promise<void>((ok, fail) => (settlePost = { ok: () => ok(), fail: () => fail(new Error('boom')) })));
+    let done!: () => void;
+    const finished = new Promise<void>((r) => (done = r));
+    await act(async () => {
+      trees.push(
+        renderer.create(
+          <QueryClientProvider client={qc}>
+            <LikeOnce done={done} />
+          </QueryClientProvider>,
+        ),
+      );
+    });
+    const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await tick();
+    expect(detail(qc)).toMatchObject({ likes: 3, myLike: true }); // 낙관 반영
+    await act(async () => resolveStale({ ...WIRE, reviewId: R1_ID, likeCount: 2, likedByMe: false })); // POST 진행 중 늦은 응답
+    await tick();
+    return { qc, settlePost, finished, tick };
+  }
+
+  it('Codex #288: 재조회 응답이 POST 진행 중 도착해도 낙관 값 유지 → 성공 뒤 서버값으로 재동기', async () => {
+    const { qc, settlePost, finished, tick } = await raceSetup();
+    expect(detail(qc)).toMatchObject({ likes: 3, myLike: true }); // 덮이지 않음(취소됨)
+    api.get.mockResolvedValueOnce({ ...WIRE, reviewId: R1_ID, likeCount: 3, likedByMe: true });
+    await act(async () => settlePost.ok());
+    await act(async () => { await finished; });
+    await tick();
+    expect(api.get).toHaveBeenCalledTimes(2); // 성공 뒤 상세 무효화 → 재조회 1회
+    expect(detail(qc)).toMatchObject({ likes: 3, myLike: true });
+  });
+
+  it('Codex #288: 같은 경합에서 POST 실패 → 롤백은 시드 값(재조회 값을 뒤집어 거꾸로 켜지 않음)', async () => {
+    const { qc, settlePost, finished } = await raceSetup();
+    await act(async () => settlePost.fail());
+    await act(async () => { await finished; });
+    expect(detail(qc)).toMatchObject({ likes: 2, myLike: false });
+    expect(feed(qc)).toMatchObject({ likes: 2, myLike: false });
+  });
+
   it('findCachedReview — 상세 캐시가 먼저', () => {
     const qc = seed();
     qc.setQueryData(reviewDetailKey('r1'), { ...RV, body: 'fresh' });

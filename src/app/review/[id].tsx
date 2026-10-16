@@ -145,7 +145,10 @@ function ReviewDetail() {
         </View>
       </ScrollView>
 
-      {viewerAt != null && <PhotoViewer uris={photos} index={viewerAt} onClose={() => setViewerAt(null)} />}
+      {/* 재조회로 사진이 줄면(Codex #288) 뷰어 index 도 클램프, 0장이면 닫힘 */}
+      {viewerAt != null && photos.length > 0 && (
+        <PhotoViewer uris={photos} index={Math.min(viewerAt, photos.length - 1)} onClose={() => setViewerAt(null)} />
+      )}
       <ModerationFlow
         target={mod}
         onClose={() => setMod(null)}
