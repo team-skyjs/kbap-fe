@@ -1,4 +1,4 @@
-import { resetUnlockSession } from './unlockCelebrationStore';
+import { resetUnlockSession, isRewardedShowing, subscribeUnlock } from './unlockCelebrationStore';
 import { currentGen } from '@/lib/auth/beTokens';
 /**
  * HomeQuotaBadge (KB-680, P-432) — 홈 플로팅(KB-701: 스캔 버튼 바로 아래) "무료 스캔 N회 남음" 불꽃 + 안내 시트.
@@ -55,11 +55,12 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   const { data: me } = useMe();
   const model = FLAGS.countdownBadge ? quotaBadgeModel(me?.scanQuota, isGuest) : null;
 
+  const rewardedShowing = React.useSyncExternalStore(subscribeUnlock, isRewardedShowing, isRewardedShowing);
   const [sheet, setSheet] = React.useState(false);
   // Codex #221 P2: 시트가 열린 채 노출 자격이 사라지면(세션 만료·게스트·해금·null) 닫는다 — 렌더 중 동기화.
   // 주 경로(시트 → 리뷰 쓰기 → 해금)에선 해금 시점에 시트가 이미 닫혀 있어 축하와 순서가 엮이지 않는다
   // (리뷰 쓰기 탭이 먼저 시트를 닫고, 픽커 예약(pickerAfterDismiss)은 사용자가 고른 것이라 그대로 둔다).
-  if (sheet && !model) setSheet(false);
+  if (sheet && !model && !rewardedShowing) setSheet(false);
   const [picker, setPicker] = React.useState(false);
   const pickerAfterDismiss = React.useRef(false);
   const openPicker = () => {
@@ -206,7 +207,7 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
           state={shown?.state ?? 'empty'}
           title={left}
           onWriteReview={openPicker}
-          onUnlocked={() => setSheet(false)}
+          onUnlocked={() => { if (!isRewardedShowing()) setSheet(false); }}
           onClose={() => setSheet(false)}
           onDismiss={onSheetDismiss}
         />

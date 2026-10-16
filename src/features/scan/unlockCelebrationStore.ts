@@ -63,3 +63,11 @@ export function observeAdUnlock(unlocked: boolean, requestGeneration: number) {
 
 /** Remains true after dismissal so delayed reward callbacks cannot bypass the CTA. */
 export function hasObservedUnlockTransition() { return transitionObserved; }
+
+let showingAds = 0;
+export const isRewardedShowing = () => showingAds > 0;
+export function beginRewardedPresentation() {
+  showingAds++;
+  const release = blockUnlockPresentation();
+  return () => { showingAds--; release(); };
+}

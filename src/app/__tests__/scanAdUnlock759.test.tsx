@@ -169,7 +169,9 @@ beforeEach(async () => {
 });
 
 const me = (remaining: number, unlocked = false) => ({ data: { restrictions: [], scanQuota: unlocked ? QUOTA('unlimited', true) : QUOTA(0), adRewards: { count: 3 - remaining, forUnlock: 3, remaining } } });
-const render = () => { let tree!: ReactTestRenderer; act(() => { tree = renderer.create(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); }); return tree; };
+const mounted: ReactTestRenderer[] = [];
+afterEach(() => { act(() => mounted.splice(0).forEach((tree) => tree.unmount())); qc.clear(); });
+const render = () => { let tree!: ReactTestRenderer; act(() => { tree = renderer.create(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); }); mounted.push(tree); return tree; };
 
 async function watchOnce(tree: ReactTestRenderer, response: { rewardCount: number; remainingForUnlock: number; scanUnlocked: boolean }) {
   mockPost.mockResolvedValueOnce(response);
@@ -325,4 +327,22 @@ it('KB760: server transition waits for celebration CTA and native dismissal befo
   }
   await flush(); expect(mockIssue).toHaveBeenCalledTimes(1); expect(quotaShown(tree)).toBe(false);
   act(() => tree.unmount());
+});
+
+it('KB760: early profile unlock keeps the SDK close listener alive and blocks the modal until CLOSED', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush(); mockIssue.mockClear();
+  mockPost.mockResolvedValueOnce({ rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
+  act(() => mockAds.update('rewarded', { status: 'loaded', earnedReward: false }));
+  await act(async () => adBtn(tree).props.onPress());
+  act(() => mockAds.update('rewarded', { status: 'showing', earnedReward: true })); await flush();
+  mockUseMe.mockReturnValue(me(0, true));
+  act(() => tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>)); await flush();
+  const celebration = () => tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+  expect(celebration().props.visible).toBe(false); expect(mockIssue).not.toHaveBeenCalled();
+  act(() => mockAds.update('rewarded', { status: 'closed', earnedReward: false })); await flush();
+  expect(celebration().props.visible).toBe(true); expect(mockIssue).not.toHaveBeenCalled();
 });
