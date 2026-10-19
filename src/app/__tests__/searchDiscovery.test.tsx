@@ -200,11 +200,17 @@ it('KB-798 single scrolling header keeps one ad/input across initial, loading, e
   const ad = () => tree.root.findAll((n) => n.props.testID === 'search-ad-probe' && typeof n.type === 'string')[0];
   expect(ad().props.content.width).toBe(335);
   expect(ad().props.content.canReveal()).toBe(true);
+  const interacted = jest.fn();
+  const unsubscribe = ad().props.content.onInteract(interacted);
   const initial = renderedContent(tree);
   expect(initial.indexOf('search.recent')).toBeLessThan(initial.indexOf('search-ad-probe'));
   expect(initial.indexOf('search-ad-probe')).toBeLessThan(initial.indexOf('search.popular'));
   act(() => input.props.onChangeText('김치'));
   expect(ad().props.content.canReveal()).toBe(false);
+  expect(interacted).toHaveBeenCalledTimes(1); // first interaction notifies an in-progress ad reveal
+  act(() => input.props.onChangeText('김치찌개'));
+  expect(interacted).toHaveBeenCalledTimes(1);
+  unsubscribe();
   act(() => input.props.onSubmitEditing());
   for (const state of [
     { isLoading: true }, { data: [] }, { isError: true, error: new Error('offline') }, { data: CATALOG },

@@ -17,6 +17,8 @@ import { useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId, type AdPlacement } from '@/lib/ads/units';
 
 const INLINE_MAX_HEIGHT = 250;
+/** onInteract = subscription to the first touch; it collapses a reveal still in progress (Codex P2). */
+type SearchContent = { width: number; viewportHeight: number; canReveal: () => boolean; onInteract?: (listener: () => void) => () => void };
 /** Search inline slot grows instead of popping (QA P-485: Popular jumped ~0.5s after open). Collapse stays instant. */
 export const CONTENT_REVEAL_MS = 200;
 
@@ -29,7 +31,7 @@ export function AdBanner({ placement, inline = false, testID, visible = true, bo
   /** 앵커 배너 아래 안전영역 — 광고가 실제로 떠 있을 때만 더한다(높이 0이면 빈 띠 금지, /review 6) */
   bottomInset?: number;
   /** Measured scrolling body; requests stay stable while the keyboard changes height. */
-  content?: { width: number; viewportHeight: number; canReveal: () => boolean };
+  content?: SearchContent;
 }) {
   const sdk = useAdsSdk(); // ready 전 = null → 자리 0
   if (!FLAGS.ads.banner || !sdk) return null;
@@ -73,7 +75,7 @@ const styles = StyleSheet.create({
 function ContentBannerSlot({ sdk, placement, content, testID }: {
   sdk: AdsSdk;
   placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>;
-  content: { width: number; viewportHeight: number; canReveal: () => boolean };
+  content: SearchContent;
   testID?: string;
 }) {
   // Freeze the request per mount: keyboard animation must not make new ad requests.
@@ -98,9 +100,23 @@ function ContentBannerSlot({ sdk, placement, content, testID }: {
   const target = fits ? size.height + space.lg * 2 : 0;
   const reduced = useReducedMotion();
   const height = useSharedValue(0);
+  const revealing = React.useRef(false);
   React.useEffect(() => {
-    height.set(target > 0 && !reduced ? withTiming(target, { duration: CONTENT_REVEAL_MS }) : target);
+    if (target === 0 || reduced) { height.set(target); return; }
+    height.set(withTiming(target, { duration: CONTENT_REVEAL_MS }));
+    revealing.current = true;
+    const done = setTimeout(() => { revealing.current = false; }, CONTENT_REVEAL_MS);
+    return () => { clearTimeout(done); revealing.current = false; };
   }, [target, reduced, height]);
+  // A touch during the reveal must not keep pushing content: collapse and block, same as a changed creative after touch.
+  const { onInteract } = content;
+  React.useEffect(() => onInteract?.(() => {
+    if (!revealing.current) return;
+    revealing.current = false;
+    blocked.current = true;
+    currentSize.current = null;
+    setSize(null);
+  }), [onInteract]);
   const heightStyle = useAnimatedStyle(() => ({ height: height.value }));
   const { BannerAd, BannerAdSize } = sdk;
   return (

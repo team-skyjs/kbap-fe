@@ -119,7 +119,13 @@ export default function Search() {
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   // Once a person interacts, a late ad must not replace the content they were aiming at.
   const interacted = useRef(false);
-  const markInteraction = () => { interacted.current = true; };
+  const [interactListeners] = useState(() => new Set<() => void>());
+  const [onInteract] = useState(() => (listener: () => void) => { interactListeners.add(listener); return () => { interactListeners.delete(listener); }; });
+  const markInteraction = () => {
+    if (interacted.current) return;
+    interacted.current = true;
+    interactListeners.forEach((listener) => listener());
+  };
   const canReveal = () => !interacted.current;
 
   return (
@@ -206,6 +212,7 @@ export default function Search() {
                   width: viewport.width - 40,
                   viewportHeight: viewport.height,
                   canReveal,
+                  onInteract,
                 }} />
               )}
             </View>

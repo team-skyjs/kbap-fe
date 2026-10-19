@@ -196,6 +196,33 @@ describe('KB-798 search inline', () => {
     load(width, height);
     expect(slot(t).props.style.height).toBe(0);
   });
+  it('Codex P2: a touch during the 200ms reveal collapses and blocks; a touch after it finished keeps the ad', async () => {
+    await act(async () => { await initAds(); });
+    jest.useFakeTimers();
+    try {
+      let interact = () => {};
+      let touched = false;
+      const content = { width: 335, viewportHeight: 600, canReveal: () => !touched, onInteract: (l: () => void) => { interact = l; return () => { interact = () => {}; }; } };
+      const touch = () => act(() => { touched = true; interact(); });
+      const mid = render(<AdBanner placement="search_banner" content={content} />);
+      load(320, 50);
+      expect(slot(mid).props.style.height).toBe(82);
+      act(() => jest.advanceTimersByTime(100));
+      touch();
+      expect(slot(mid).props.style.height).toBe(0);
+      expect(slot(mid).props.pointerEvents).toBe('none');
+      touched = false;
+      load(320, 50);
+      expect(slot(mid).props.style.height).toBe(0); // blocked for this mount, no second pop-in
+      const settled = render(<AdBanner placement="search_banner" content={content} />);
+      load(320, 50);
+      act(() => jest.advanceTimersByTime(200));
+      touch();
+      expect(slot(settled).props.style.height).toBe(82);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
   it('P-485: reveal grows over 200ms to the final height, collapse and Reduce Motion are instant, gesture still blocks', async () => {
     const { withTiming } = jest.requireMock('react-native-reanimated') as { withTiming: jest.Mock };
     await act(async () => { await initAds(); });
