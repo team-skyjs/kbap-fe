@@ -4,15 +4,17 @@
  * 200 remaining 표시·scanUnlocked면 onUnlocked / 429 limit 안내 / 400 닫기 · 게스트·구서버(adRewards null) = 광고 버튼 0(리뷰 경로 무변).
  */
 import * as React from 'react';
+import { StyleSheet } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('react-native-google-mobile-ads'); // 루트 __mocks__ — 명시 선언(SDK 소비자와 같은 인스턴스)
 jest.mock('expo-tracking-transparency');
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
+let mockReduced = false;
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
-  return { __esModule: true, default: { View, createAnimatedComponent: (c: unknown) => c }, useSharedValue: (v: unknown) => ({ value: v }), useAnimatedStyle: () => ({}), withSpring: (v: unknown) => v, withTiming: (v: unknown) => v, withRepeat: (v: unknown) => v, Easing: { linear: 0 } };
+  return { __esModule: true, default: { View, createAnimatedComponent: (c: unknown) => c }, useSharedValue: (v: unknown) => jest.requireActual<typeof import('react')>('react').useState(() => { const s = { value: v, set: (n: unknown) => { s.value = n; } }; return s; })[0], useAnimatedStyle: (fn: () => Record<string, unknown>) => new Proxy({}, { get: (_, k) => fn()[k as string], ownKeys: () => Reflect.ownKeys(fn()), getOwnPropertyDescriptor: (_, k) => ({ enumerable: true, configurable: true, value: fn()[k as string] }) }), useReducedMotion: () => mockReduced, withSpring: (v: unknown) => v, withTiming: jest.fn((v: unknown) => v), withRepeat: (v: unknown) => v, Easing: { linear: 0 } };
 });
 jest.mock('@/lib/flags', () => ({ ...jest.requireActual<typeof import('@/lib/flags')>('@/lib/flags'), isProdChannel: () => false }));
 const mockTrack = jest.fn();
@@ -60,6 +62,7 @@ beforeEach(async () => {
   mockAds.reset();
   Object.assign(adsFlags, { enabled: true, banner: true, interstitial: true, native: true, rewarded: true });
   mockGuest = false;
+  mockReduced = false;
   mockMe = { id: '1', adRewards: { count: 0, forUnlock: 3, remaining: 3 }, scanQuota: { count: 3, limit: 3, unlocked: false, remaining: 0 } };
   mockUuid = 0;
   qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -137,7 +140,8 @@ describe('배너', () => {
 });
 
 describe('KB-798 search inline', () => {
-  const slot = (t: ReactTestRenderer) => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner' && typeof x.type === 'string')[0];
+  const slotNode = (t: ReactTestRenderer) => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner' && typeof x.type === 'string')[0];
+  const slot = (t: ReactTestRenderer) => { const n = slotNode(t); return { props: { ...n.props, style: StyleSheet.flatten(n.props.style) } }; };
   const load = (width: number, height: number) => act(() => {
     (mockAds.banners.at(-1)!.onAdLoaded as (d: { width: number; height: number }) => void)({ width, height });
   });
@@ -191,6 +195,36 @@ describe('KB-798 search inline', () => {
     const t = render(<AdBanner placement="search_banner" content={{ width: 335, viewportHeight: 600, canReveal: () => true }} />);
     load(width, height);
     expect(slot(t).props.style.height).toBe(0);
+  });
+  it('P-485: reveal grows over 200ms to the final height, collapse and Reduce Motion are instant, gesture still blocks', async () => {
+    const { withTiming } = jest.requireMock('react-native-reanimated') as { withTiming: jest.Mock };
+    await act(async () => { await initAds(); });
+    let interacting = false;
+    const content = { width: 335, viewportHeight: 600, canReveal: () => !interacting };
+    const t = render(<AdBanner placement="search_banner" content={content} />);
+    expect(slot(t).props.style.height).toBe(0);
+    withTiming.mockClear();
+    load(320, 50);
+    expect(withTiming).toHaveBeenCalledTimes(1);
+    expect(withTiming).toHaveBeenCalledWith(82, { duration: 200 });
+    expect(slot(t).props.style.height).toBe(82); // final value = creative + 2×16
+    withTiming.mockClear();
+    act(() => { (mockAds.banners.at(-1)!.onAdFailedToLoad as () => void)(); });
+    expect(slot(t).props.style.height).toBe(0);
+    expect(withTiming).not.toHaveBeenCalled(); // collapse never animates over content
+    interacting = true;
+    const late = render(<AdBanner placement="search_banner" content={content} />);
+    withTiming.mockClear();
+    load(320, 50);
+    expect(slot(late).props.style.height).toBe(0);
+    expect(withTiming).not.toHaveBeenCalled(); // after a touch the late ad is not inserted, not even animated
+    interacting = false;
+    mockReduced = true;
+    const still = render(<AdBanner placement="search_banner" content={content} />);
+    withTiming.mockClear();
+    load(320, 100);
+    expect(slot(still).props.style.height).toBe(132);
+    expect(withTiming).not.toHaveBeenCalled();
   });
 });
 

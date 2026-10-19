@@ -7,6 +7,7 @@
  */
 import * as React from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { space } from '@/lib/theme';
 import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
@@ -16,6 +17,8 @@ import { useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId, type AdPlacement } from '@/lib/ads/units';
 
 const INLINE_MAX_HEIGHT = 250;
+/** Search inline slot grows instead of popping (QA P-485: Popular jumped ~0.5s after open). Collapse stays instant. */
+export const CONTENT_REVEAL_MS = 200;
 
 export function AdBanner({ placement, inline = false, testID, visible = true, bottomInset = 0, content }: {
   placement: Extract<AdPlacement, 'search_banner' | 'feed_banner'>;
@@ -63,6 +66,7 @@ function BannerSlot({ sdk, placement, inline, testID, visible, bottomInset }: { 
 const styles = StyleSheet.create({
   slot: { width: '100%', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', boxSizing: 'content-box' },
   clip: { overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, // 로드 전 = 크기 미지정(슬롯 높이 0이 숨김)
+  content: { alignItems: 'center', overflow: 'hidden' },
 });
 
 /** Search-only inline layout. The legacy feed/anchored clipping policy stays separate. */
@@ -91,11 +95,18 @@ function ContentBannerSlot({ sdk, placement, content, testID }: {
     setSize(next);
   };
   const fits = size && size.width <= content.width;
+  const target = fits ? size.height + space.lg * 2 : 0;
+  const reduced = useReducedMotion();
+  const height = useSharedValue(0);
+  React.useEffect(() => {
+    height.set(target > 0 && !reduced ? withTiming(target, { duration: CONTENT_REVEAL_MS }) : target);
+  }, [target, reduced, height]);
+  const heightStyle = useAnimatedStyle(() => ({ height: height.value }));
   const { BannerAd, BannerAdSize } = sdk;
   return (
-    <View
+    <Animated.View
       testID={testID ?? `ad-banner-${placement}`}
-      style={{ alignItems: 'center', height: fits ? size.height + space.lg * 2 : 0, overflow: 'hidden' }}
+      style={[styles.content, heightStyle]}
       pointerEvents={fits ? 'auto' : 'none'}
       accessibilityElementsHidden={!fits}
       importantForAccessibility={fits ? 'auto' : 'no-hide-descendants'}
@@ -114,6 +125,6 @@ function ContentBannerSlot({ sdk, placement, content, testID }: {
           onAdClicked={() => { track(EVENTS.ad_click, { format: 'banner', placement }); airbridge.adClick('banner', placement); }}
         />
       </View>
-    </View>
+    </Animated.View>
   );
 }
