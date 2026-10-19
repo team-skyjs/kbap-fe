@@ -4,15 +4,17 @@
  * 200 remaining 표시·scanUnlocked면 onUnlocked / 429 limit 안내 / 400 닫기 · 게스트·구서버(adRewards null) = 광고 버튼 0(리뷰 경로 무변).
  */
 import * as React from 'react';
+import { StyleSheet } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 jest.mock('react-native-google-mobile-ads'); // 루트 __mocks__ — 명시 선언(SDK 소비자와 같은 인스턴스)
 jest.mock('expo-tracking-transparency');
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
+let mockReduced = false;
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual<typeof import('react-native')>('react-native');
-  return { __esModule: true, default: { View, createAnimatedComponent: (c: unknown) => c }, useSharedValue: (v: unknown) => ({ value: v }), useAnimatedStyle: () => ({}), withSpring: (v: unknown) => v, withTiming: (v: unknown) => v, withRepeat: (v: unknown) => v, Easing: { linear: 0 } };
+  return { __esModule: true, default: { View, createAnimatedComponent: (c: unknown) => c }, useSharedValue: (v: unknown) => jest.requireActual<typeof import('react')>('react').useState(() => { const s = { value: v, set: (n: unknown) => { s.value = n; } }; return s; })[0], useAnimatedStyle: (fn: () => Record<string, unknown>) => new Proxy({}, { get: (_, k) => fn()[k as string], ownKeys: () => Reflect.ownKeys(fn()), getOwnPropertyDescriptor: (_, k) => ({ enumerable: true, configurable: true, value: fn()[k as string] }) }), useReducedMotion: () => mockReduced, withSpring: (v: unknown) => v, withTiming: jest.fn((v: unknown) => v), withRepeat: (v: unknown) => v, Easing: { linear: 0 } };
 });
 jest.mock('@/lib/flags', () => ({ ...jest.requireActual<typeof import('@/lib/flags')>('@/lib/flags'), isProdChannel: () => false }));
 const mockTrack = jest.fn();
@@ -60,6 +62,7 @@ beforeEach(async () => {
   mockAds.reset();
   Object.assign(adsFlags, { enabled: true, banner: true, interstitial: true, native: true, rewarded: true });
   mockGuest = false;
+  mockReduced = false;
   mockMe = { id: '1', adRewards: { count: 0, forUnlock: 3, remaining: 3 }, scanQuota: { count: 3, limit: 3, unlocked: false, remaining: 0 } };
   mockUuid = 0;
   qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -133,6 +136,122 @@ describe('배너', () => {
     const t = render(<AdBanner placement="feed_banner" inline />);
     expect(mockAds.banners).toHaveLength(0);
     expect(t.toJSON()).toBeNull();
+  });
+});
+
+describe('KB-798 search inline', () => {
+  const slotNode = (t: ReactTestRenderer) => t.root.findAll((x) => x.props?.testID === 'ad-banner-search_banner' && typeof x.type === 'string')[0];
+  const slot = (t: ReactTestRenderer) => { const n = slotNode(t); return { props: { ...n.props, style: StyleSheet.flatten(n.props.style) } }; };
+  const load = (width: number, height: number) => act(() => {
+    (mockAds.banners.at(-1)!.onAdLoaded as (d: { width: number; height: number }) => void)({ width, height });
+  });
+  it('pre-init/off/no-fill = zero; measured inline request remains stable with keyboard and width changes', async () => {
+    const content = { width: 335, viewportHeight: 600, canReveal: () => true };
+    const t = render(<AdBanner placement="search_banner" content={content} />);
+    expect(t.toJSON()).toBeNull();
+    await act(async () => { await initAds(); });
+    expect(slot(t).props.style.height).toBe(0);
+    expect(mockAds.banners.at(-1)).toMatchObject({ size: 'INLINE_ADAPTIVE_BANNER', width: 335, maxHeight: 167 });
+    load(320, 100);
+    expect(slot(t).props.style.height).toBe(132);
+    rerender(t, <AdBanner placement="search_banner" content={{ ...content, viewportHeight: 80 }} />);
+    expect(slot(t).props.style.height).toBe(132); // scrollable: keyboard never hides a loaded ad
+    expect(mockAds.banners.at(-1)).toMatchObject({ width: 335, maxHeight: 167 });
+    act(() => { (mockAds.banners.at(-1)!.onSizeChange as (d: object) => void)({ width: 335, height: 150 }); });
+    expect(slot(t).props.style.height).toBe(132); // container event cannot enlarge/crop creative
+    rerender(t, <AdBanner placement="search_banner" content={{ ...content, width: 280 }} />);
+    expect(slot(t).props.style.height).toBe(0); // never crop a wider creative
+    expect(slot(t).props.pointerEvents).toBe('none');
+    act(() => { (mockAds.banners.at(-1)!.onAdFailedToLoad as () => void)(); });
+    expect(slot(t).props.style.height).toBe(0);
+    adsFlags.banner = false;
+    rerender(t, <AdBanner placement="search_banner" content={content} />);
+    expect(t.toJSON()).toBeNull();
+  });
+  it('late first load after interaction stays zero; same-size refresh stays visible, changed creative collapses', async () => {
+    await act(async () => { await initAds(); });
+    let interacting = true;
+    const content = { width: 335, viewportHeight: 600, canReveal: () => !interacting };
+    const late = render(<AdBanner placement="search_banner" content={content} />);
+    load(320, 50);
+    expect(slot(late).props.style.height).toBe(0);
+    interacting = false;
+    load(320, 50);
+    expect(slot(late).props.style.height).toBe(0); // no delayed pop-in after the gesture
+    const t = render(<AdBanner placement="search_banner" content={content} />);
+    load(320, 50);
+    expect(slot(t).props.style.height).toBe(82);
+    load(320, 100);
+    expect(slot(t).props.style.height).toBe(132);
+    interacting = true;
+    load(320, 100);
+    expect(slot(t).props.style.height).toBe(132);
+    load(320, 50);
+    expect(slot(t).props.style.height).toBe(0);
+    expect(slot(t).props.importantForAccessibility).toBe('no-hide-descendants');
+  });
+  it.each([[0, 50], [320, 0], [336, 50], [320, 168], [NaN, 50]])('unsupported creative %s×%s is suppressed, never stretched', async (width, height) => {
+    await act(async () => { await initAds(); });
+    const t = render(<AdBanner placement="search_banner" content={{ width: 335, viewportHeight: 600, canReveal: () => true }} />);
+    load(width, height);
+    expect(slot(t).props.style.height).toBe(0);
+  });
+  it('Codex P2: a touch during the 200ms reveal collapses and blocks; a touch after it finished keeps the ad', async () => {
+    await act(async () => { await initAds(); });
+    jest.useFakeTimers();
+    try {
+      let interact = () => {};
+      let touched = false;
+      const content = { width: 335, viewportHeight: 600, canReveal: () => !touched, onInteract: (l: () => void) => { interact = l; return () => { interact = () => {}; }; } };
+      const touch = () => act(() => { touched = true; interact(); });
+      const mid = render(<AdBanner placement="search_banner" content={content} />);
+      load(320, 50);
+      expect(slot(mid).props.style.height).toBe(82);
+      act(() => jest.advanceTimersByTime(100));
+      touch();
+      expect(slot(mid).props.style.height).toBe(0);
+      expect(slot(mid).props.pointerEvents).toBe('none');
+      touched = false;
+      load(320, 50);
+      expect(slot(mid).props.style.height).toBe(0); // blocked for this mount, no second pop-in
+      const settled = render(<AdBanner placement="search_banner" content={content} />);
+      load(320, 50);
+      act(() => jest.advanceTimersByTime(200));
+      touch();
+      expect(slot(settled).props.style.height).toBe(82);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+  it('P-485: reveal grows over 200ms to the final height, collapse and Reduce Motion are instant, gesture still blocks', async () => {
+    const { withTiming } = jest.requireMock('react-native-reanimated') as { withTiming: jest.Mock };
+    await act(async () => { await initAds(); });
+    let interacting = false;
+    const content = { width: 335, viewportHeight: 600, canReveal: () => !interacting };
+    const t = render(<AdBanner placement="search_banner" content={content} />);
+    expect(slot(t).props.style.height).toBe(0);
+    withTiming.mockClear();
+    load(320, 50);
+    expect(withTiming).toHaveBeenCalledTimes(1);
+    expect(withTiming).toHaveBeenCalledWith(82, { duration: 200 });
+    expect(slot(t).props.style.height).toBe(82); // final value = creative + 2×16
+    withTiming.mockClear();
+    act(() => { (mockAds.banners.at(-1)!.onAdFailedToLoad as () => void)(); });
+    expect(slot(t).props.style.height).toBe(0);
+    expect(withTiming).not.toHaveBeenCalled(); // collapse never animates over content
+    interacting = true;
+    const late = render(<AdBanner placement="search_banner" content={content} />);
+    withTiming.mockClear();
+    load(320, 50);
+    expect(slot(late).props.style.height).toBe(0);
+    expect(withTiming).not.toHaveBeenCalled(); // after a touch the late ad is not inserted, not even animated
+    interacting = false;
+    mockReduced = true;
+    const still = render(<AdBanner placement="search_banner" content={content} />);
+    withTiming.mockClear();
+    load(320, 100);
+    expect(slot(still).props.style.height).toBe(132);
+    expect(withTiming).not.toHaveBeenCalled();
   });
 });
 
