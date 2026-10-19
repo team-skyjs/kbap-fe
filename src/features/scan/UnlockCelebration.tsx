@@ -37,14 +37,18 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
     const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', (value) => { changed = true; setReduceMotion(value); });
     return () => { alive = false; app.remove(); motion.remove(); };
   }, []);
+  // iOS presents the Modal only after the rewarded ad screen finishes dismissing, so the clock starts at onShow, not at visible.
+  const [onScreen, setOnScreen] = React.useState(false);
+  if (!visible && onScreen) setOnScreen(false);
   React.useEffect(() => {
     if (!visible || reduceMotion) { entrance.set(1); return; }
     entrance.set(0);
-    entrance.set(withTiming(1, { duration: 550 }));
     burst.set(0);
+    if (!onScreen) return;
+    entrance.set(withTiming(1, { duration: 550 }));
     burst.set(withTiming(1, { duration: 700 }));
     return () => { cancelAnimation(burst); cancelAnimation(entrance); };
-  }, [visible, reduceMotion, burst, entrance]);
+  }, [visible, onScreen, reduceMotion, burst, entrance]);
   React.useEffect(() => () => { if (shown.current !== null) consumeUnlock(shown.current); }, []);
   const afterDismiss = React.useCallback(() => {
     if (!closing || continued.current === closing.event.id) return;
@@ -71,7 +75,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const scanAction = event?.context === 'scan' && onStartScanning != null;
   return (
     <Modal visible={visible} animationType="none" presentationStyle="fullScreen" onRequestClose={() => dismiss(false)}
-      onShow={() => { if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(t('scan.unlockedTitle')); } }}
+      onShow={() => { setOnScreen(true); if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(t('scan.unlockedTitle')); } }}
       onDismiss={afterDismiss}>
       <View style={styles.root} accessibilityViewIsModal testID="unlock-celebration">
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>

@@ -7,9 +7,10 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) =>
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 44, bottom: 34 }) }));
 jest.mock('@/components/FlameShape', () => ({ FlameShape: () => null }));
 jest.mock('@/components/CountdownBadge', () => ({ QuotaBurstParticle: () => null }));
+const mockShared: { value: number }[] = [];
 jest.mock('react-native-reanimated', () => {
   const { View } = jest.requireActual('react-native');
-  return { __esModule: true, default: { View }, useSharedValue: (value: number) => { const shared = { value, set: (next: number) => { shared.value = next; } }; return shared; }, useAnimatedStyle: () => ({}), cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
+  return { __esModule: true, default: { View }, useSharedValue: (value: number) => jest.requireActual('react').useState(() => { const shared = { value, set: (next: number) => { shared.value = next; } }; mockShared.push(shared); return shared; })[0], useAnimatedStyle: () => ({}), cancelAnimation: jest.fn(), withTiming: jest.fn((v: number) => v) };
 });
 jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
   const { Pressable, Text } = jest.requireActual('react-native');
@@ -17,7 +18,7 @@ jest.mock('@/components/Btn', () => ({ Btn: (p: Record<string, unknown>) => {
 } }));
 const trees: ReactTestRenderer[] = [];
 beforeEach(() => {
-  resetUnlockSession(0); jest.useFakeTimers(); jest.clearAllMocks();
+  resetUnlockSession(0); jest.useFakeTimers(); jest.clearAllMocks(); mockShared.length = 0;
   Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
@@ -85,4 +86,25 @@ it('a newer Reduce Motion change wins over the delayed initial lookup', async ()
   await act(async () => resolve(false));
   expect(modal(tree).props.visible).toBe(true);
   expect(jest.requireMock('react-native-reanimated').withTiming).not.toHaveBeenCalled();
+});
+it('motion clock starts at native onShow, not at visible (iOS presents after the ad dismisses)', async () => {
+  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
+  const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
+  const tree = await mount(); act(() => unlock());
+  expect(modal(tree).props.visible).toBe(true);
+  act(() => jest.advanceTimersByTime(1000));
+  expect(withTiming).not.toHaveBeenCalled();
+  expect(mockShared.length).toBeGreaterThanOrEqual(2);
+  mockShared.forEach((shared) => expect(shared.value).toBe(0));
+  act(() => modal(tree).props.onShow());
+  expect(withTiming).toHaveBeenCalledWith(1, { duration: 550 });
+  expect(withTiming).toHaveBeenCalledWith(1, { duration: 700 });
+  expect(withTiming).toHaveBeenCalledTimes(2);
+  act(() => modal(tree).props.onRequestClose());
+  act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
+  withTiming.mockClear(); act(() => unlock());
+  expect(modal(tree).props.visible).toBe(true);
+  expect(withTiming).not.toHaveBeenCalled();
+  act(() => modal(tree).props.onShow());
+  expect(withTiming).toHaveBeenCalledTimes(2);
 });
