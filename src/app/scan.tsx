@@ -17,7 +17,7 @@ import { currentGen } from '@/lib/auth/beTokens';
  * Fallback "Run sample scan" (no camera/OCR) still verifies the FE↔BE roundtrip.
  */
 import { decideScanNudge, type ScanNudgeMode } from '@/lib/push/scanNudge';
-import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useLayoutEffect, useSyncExternalStore, type ReactElement } from 'react';
 import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
@@ -673,6 +673,20 @@ export default function Scan() {
     </Pressable>
   );
 
+  // Codex #291 R10/R11: ONE celebration presenter for every scan phase (root host excludes /scan). Each phase return goes
+  // through withPresenter, so the presenter keeps its identity across phase changes and no phase can lose an event.
+  // Continuation (reopen camera with a ticket) only in the quota-error context; elsewhere the CTA is Done.
+  // ponytail: mounted while an event is pending, and always in the quota context (its continuation must survive consume).
+  const quotaContext = phase === 'error' && error?.stage === 'quota';
+  const presenter = quotaContext || unlockPending ? (
+    <UnlockCelebration
+      eligible={isFocused && !isGuest && !(quotaContext && quotaPicker)}
+      onStartScanning={quotaContext ? () => void runUnlockRetry(() => preflight({ unlocked: true })) : undefined}
+      onClosed={quotaContext ? () => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); } : undefined}
+    />
+  ) : null;
+  const withPresenter = (node: ReactElement) => <>{node}{presenter}</>;
+
   // 라우트 자체 가드 (실기기 반려분 #2): 진입로별 가드는 누락이 생긴다 —
   // 게스트는 어떤 경로로 오든 카메라 없이 게이트 시트, 닫으면 뒤로.
   if (isGuest) {
@@ -756,7 +770,7 @@ export default function Scan() {
       router.push(`/scan-order?items=${encodeURIComponent(JSON.stringify(items))}${fxParam}${imgParam}` as Href);
     };
 
-    return (
+    return withPresenter(
       <View style={styles.resultRoot}>
         {/* KB-432 §1-1(4150:16420): AppBar 백+제목 중앙 — 다시찍기(P-161 기능 유지)는 우측 */}
         <View style={[styles.quietHeader, { paddingTop: insets.top + 6 }]}>
@@ -939,7 +953,7 @@ export default function Scan() {
 
   // ---- scanning ---- P-062②: D2 오버레이 — 사진 배경 + 코너 브래킷 + 스캔라인 스윕
   if (phase === 'scanning') {
-    return (
+    return withPresenter(
       <View style={styles.root}>
         {/* P-187: cover 크롭 → contain 레터박스(어두운 root 배경) — 가로 사진도 전체 표시,
             "잘려서 분석되나?" 오인 소멸(OCR·업로드는 원래 원본 전체 — 표시 문제였음) */}
@@ -962,12 +976,10 @@ export default function Scan() {
   // ---- error ----
   if (phase === 'error') {
     const stage = error?.stage ?? 'be';
-    return (
+    return withPresenter(
       <View style={[styles.root, styles.center]}>
         {Close}
         {GateSheet}
-        <UnlockCelebration eligible={isFocused && !isGuest && !quotaPicker && stage === 'quota'} onStartScanning={() => void runUnlockRetry(() => preflight({ unlocked: true }))}
-          onClosed={() => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); }} />
         <IconScanLines size={48} color="rgba(255,255,255,0.85)" />
         {/* P-250: quota(SCAN-004) = 전용 제목(가이드 권장 UI — 스테이지 라벨 대체) */}
         <Text style={styles.errStage}>{stage === 'quota' ? t(unlockState === 'idle' ? 'scan.quotaTitle' : 'scan.unlockedTitle') : t(`scan.stage.${stage}`)}</Text>
@@ -1025,25 +1037,20 @@ export default function Scan() {
   }
 
   // ---- camera (default) ----
-  // Codex #291 2R: a late profile refetch can create the scan event after preflight already reopened the camera
-  // (root host excludes /scan). The camera is already open, so the CTA is Done (no onStartScanning).
-  // ponytail: mounted only while an event is pending; the camera path has no continuation that needs onDismiss.
-  const CameraCelebration = unlockPending ? <UnlockCelebration eligible={isFocused && !isGuest} /> : null;
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
   // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일.
   if (offline) {
-    return (
+    return withPresenter(
       <View style={[styles.root, styles.center, { backgroundColor: C.surface }]}>
         {Close}
         <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
-        {CameraCelebration}
       </View>
     );
   }
   // P-137: 시스템 카메라 on = 커스텀 뷰파인더 대신 콰이엇 런처 — 안내 한 줄 +
   // 촬영(주 CTA) + 갤러리(보조). 권한은 launchCameraAsync가 자체 처리.
   if (FLAGS.systemCamera) {
-    return (
+    return withPresenter(
       <View style={styles.launcherRoot}>
         <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
           <IconClose size={22} color={C.ink2} />
@@ -1063,13 +1070,12 @@ export default function Scan() {
         </View>
         {ImportingOverlay}
         {GateSheet}
-        {CameraCelebration}
       </View>
     );
   }
 
   const granted = permission?.granted;
-  return (
+  return withPresenter(
     <View style={styles.root}>
       {granted ? (
         /* P-131: 핀치 줌 — runOnJS(true)로 JS 스레드 콜백(워클릿 0, P-065 교훈 준수) */
@@ -1177,7 +1183,6 @@ export default function Scan() {
           )}
         </View>
       </View>
-      {CameraCelebration}
     </View>
   );
 }

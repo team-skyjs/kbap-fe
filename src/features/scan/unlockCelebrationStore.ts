@@ -6,6 +6,8 @@ let previous: { memberId: string; unlocked: boolean } | null = null;
 let serial = 0;
 let scanFocused = false;
 let transitionObserved = false;
+/** Codex #291 R10: the reward response is server truth; a stale locked profile for the same member/generation must not erase it. */
+let adConfirmed: { memberId: string; generation: number } | null = null;
 const blockers = new Set<symbol>();
 let snapshot: Snapshot = { event: null, presented: false, blocked: false };
 const listeners = new Set<() => void>();
@@ -16,6 +18,7 @@ export function resetUnlockSession(next: number) {
   generation = next;
   previous = null;
   transitionObserved = false;
+  adConfirmed = null;
   scanFocused = false;
   publish({ event: null, presented: false, blocked: blockers.size > 0 });
 }
@@ -30,6 +33,9 @@ export function blockUnlockPresentation() {
 }
 export function observeUnlock(memberId: string, unlocked: boolean | null | undefined, requestGeneration: number) {
   if (requestGeneration !== generation || typeof unlocked !== 'boolean') return;
+  if (adConfirmed && (adConfirmed.memberId !== memberId || adConfirmed.generation !== generation)) adConfirmed = null;
+  if (!unlocked && adConfirmed) return; // profile has not caught up with the reward unlock yet
+  if (unlocked) adConfirmed = null;
   const prior = previous;
   previous = { memberId, unlocked };
   if (!prior || prior.memberId !== memberId || !unlocked) {
@@ -58,7 +64,10 @@ export function hasUnlockPending() { return snapshot.event !== null; }
 
 /** Reward response has the same server entitlement; it may precede a failed profile refetch. */
 export function observeAdUnlock(unlocked: boolean, requestGeneration: number) {
-  if (previous) observeUnlock(previous.memberId, unlocked, requestGeneration);
+  if (!previous) return;
+  const memberId = previous.memberId;
+  observeUnlock(memberId, unlocked, requestGeneration);
+  if (unlocked && requestGeneration === generation) adConfirmed = { memberId, generation };
 }
 
 /** Remains true after dismissal so delayed reward callbacks cannot bypass the CTA. */

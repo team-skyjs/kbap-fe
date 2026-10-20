@@ -78,3 +78,24 @@ it('P-489 R7: celebration copy keys are modal-only, ko/en match the approved cop
   expect(modal).toContain("t('scan.unlockedCelebrationBody')");
   expect(modal).not.toMatch(/'scan\.unlocked(Title|Body)'/); // quota screen keeps the shared keys
 });
+it('Codex #291 R10: a reward-confirmed unlock survives a stale locked profile until the profile catches up', () => {
+  observeUnlock('a', false, 0);
+  observeAdUnlock(true, 0);
+  const event = getUnlockSnapshot().event!;
+  observeUnlock('a', false, 0); // stale ['me'] snapshot after invalidation
+  expect(getUnlockSnapshot().event).toEqual(event);
+  expect(hasObservedUnlockTransition()).toBe(true);
+  observeUnlock('a', true, 0); // profile catches up: no second event
+  expect(getUnlockSnapshot().event).toEqual(event);
+  consumeUnlock(event.id);
+  observeUnlock('a', false, 0); observeUnlock('a', true, 0); // after catching up, real transitions are honoured again
+  expect(hasUnlockPending()).toBe(true);
+});
+it('Codex #291 R10: the reward guard is scoped to the member and generation', () => {
+  observeUnlock('a', false, 0); observeAdUnlock(true, 0);
+  observeUnlock('b', false, 0); // account switch: not ignored
+  expect(hasUnlockPending()).toBe(false);
+  resetUnlockSession(1);
+  observeUnlock('a', false, 1); observeUnlock('a', true, 1);
+  expect(hasUnlockPending()).toBe(true);
+});

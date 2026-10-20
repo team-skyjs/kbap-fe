@@ -80,7 +80,7 @@ jest.mock('expo-image', () => {
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
 jest.mock('expo-router', () => ({
-  useIsFocused: () => true,
+  useIsFocused: () => mockFocused.on,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   // 실제처럼 콜백 정체성 기준 1회(렌더마다 재실행하면 포커스 의미가 사라진다)
   useFocusEffect: (cb: () => void) => jest.requireActual('react').useEffect(cb, [cb]),
@@ -106,6 +106,7 @@ jest.mock('@/lib/scan/ocr', () => ({
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
 const mockProbe: { offline: boolean } = { offline: false };
+const mockFocused = { on: true };
 jest.mock('@/lib/data/useFoods', () => ({
   useInfiniteFoods: () => (mockProbe.offline ? { isError: true, error: new Error('NETWORK: request failed'), refetch: jest.fn() } : { isError: false, error: null, refetch: jest.fn() }),
   // P-136 리치 리스트 행이 상세 프리페치 — 표면 목
@@ -379,4 +380,49 @@ it('Codex #291 R8: offline camera branch also presents a late scan unlock', asyn
   } finally {
     mockProbe.offline = false;
   }
+});
+
+describe('Codex #291 R11: one scan presenter for every phase', () => {
+  const fullScreen = (tree: ReactTestRenderer) => tree.root.findAllByType(Modal).filter((n) => n.props.presentationStyle === 'fullScreen');
+  const gallery = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'scan-gallery' && typeof n.props?.onPress === 'function')[0];
+  beforeEach(() => { Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' }); mockFocused.on = true; });
+
+  it('result phase: a late unlock presents exactly one modal (Done CTA)', async () => {
+    observeUnlock('7', false, currentGen());
+    mockIssue.mockResolvedValue('camera-ticket');
+    mockUseMe.mockReturnValue(me(1));
+    const tree = render(); await flush();
+    await act(async () => { await gallery(tree).props.onPress(); }); await flush();
+    expect(tree.root.findAll((n) => n.props?.testID === 'result-back').length).toBeGreaterThan(0); // result phase
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    expect(fullScreen(tree)).toHaveLength(1);
+    expect(fullScreen(tree)[0].props.visible).toBe(true);
+    expect(JSON.stringify(tree.toJSON())).toContain('review.done');
+  });
+
+  it('guest and unfocused never present', async () => {
+    mockIssue.mockResolvedValue('camera-ticket');
+    mockUseMe.mockReturnValue(me(1));
+    mockFocused.on = false;
+    observeUnlock('7', false, currentGen());
+    const unfocused = render(); await flush();
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    expect(fullScreen(unfocused).every((n) => n.props.visible === false)).toBe(true);
+    act(() => unfocused.unmount()); mounted.splice(mounted.indexOf(unfocused), 1);
+    mockFocused.on = true;
+    resetUnlockSession(currentGen());
+    mockIsGuest.mockReturnValue(true);
+    observeUnlock('7', false, currentGen());
+    const guest = render(); await flush();
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    expect(fullScreen(guest).every((n) => n.props.visible === false)).toBe(true);
+  });
+
+  it('structure: every phase return goes through the single presenter, no per-branch mounts', () => {
+    const fs = jest.requireActual<typeof import('fs')>('fs');
+    const src = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
+    expect(src.match(/<UnlockCelebration\b/g)).toHaveLength(1);
+    const body = src.slice(src.indexOf('// ---- result ----'), src.indexOf('function ScanSweepOverlay'));
+    expect(body.match(/return withPresenter\(/g)).toHaveLength(6); // result · scanning · error · offline · system camera · camera
+  });
 });
