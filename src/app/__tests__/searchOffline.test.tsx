@@ -88,6 +88,11 @@ jest.mock('@/lib/data/useFoods', () => ({
   useSearchFoods: () => mockUseSearchFoods(),
 }));
 const mockRecent = jest.fn();
+// KB-786: 검색 계측 관찰(실 analytics는 키 없음 = no-op이라 호출만 본다)
+const mockTrack = jest.fn();
+jest.mock('@/lib/analytics', () => ({ ...jest.requireActual('@/lib/analytics'), track: (...a: unknown[]) => mockTrack(...a) }));
+const mockSearchResults = jest.fn();
+jest.mock('@/lib/airbridge', () => ({ airbridge: { searchResults: (...a: unknown[]) => mockSearchResults(...a) } }));
 jest.mock('@/lib/data/useRecentSearches', () => ({ useRecentSearches: () => mockRecent() }));
 
 import Search from '../search';
@@ -167,4 +172,33 @@ it('제출 검색 NETWORK 에러 → J4 (StateBlock→QueryErrorBlock 톤 통일
   });
   expect(texts(tree, 'states.offlineTitle')).toBeGreaterThanOrEqual(1);
   expect(texts(tree, 'search.recent')).toBe(0);
+});
+
+
+/* ---- KB-786(#278 Codex P2): 실패한 검색은 "결과 0건"으로 집계하지 않는다 ---- */
+const searchEvents = () => mockTrack.mock.calls.filter((c) => c[0] === 'search_query');
+const submit = (tree: ReactTestRenderer, term: string) => {
+  const input = tree.root.findByType(TextInput);
+  act(() => { input.props.onChangeText(term); });
+  act(() => { input.props.onSubmitEditing(); });
+};
+
+it('KB-786: 검색 요청 실패(500·오프라인) = search_query·Airbridge 결과 0건 발사 없음', () => {
+  mockUseSearchFoods.mockReturnValue({ ...ERR_500, ...PAGED, isSuccess: false, data: undefined });
+  const tree = render(<Search />);
+  submit(tree, 'kimchi');
+  expect(searchEvents()).toEqual([]);
+  expect(mockSearchResults).not.toHaveBeenCalled();
+});
+
+it('KB-786: 같은 검색어 — 실패 뒤 재시도 성공분은 기록된다(실패가 가드를 먼저 차지하지 않음)', () => {
+  mockUseSearchFoods.mockReturnValue({ ...ERR_NET, ...PAGED, isSuccess: false, data: undefined });
+  const tree = render(<Search />);
+  submit(tree, 'kimchi');
+  expect(searchEvents()).toEqual([]);
+  mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, ...PAGED, isSuccess: true, data: POPULAR });
+  act(() => tree.update(<Search />));
+  expect(searchEvents()).toHaveLength(1);
+  expect(searchEvents()[0][1]).toMatchObject({ matched: true, keyword: 'kimchi', result_count: 1 });
+  expect(mockSearchResults).toHaveBeenCalledWith({ keyword: 'kimchi', resultCount: 1 });
 });

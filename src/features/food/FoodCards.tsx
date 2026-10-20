@@ -5,15 +5,16 @@
  * (FeedCard 분리와 같은 계열, P-201).
  */
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, riskTextStrong, shadow, type RiskState } from '@/lib/theme';
-import { Btn, CardPhoto, NewBadge, RiskBadge, IconFood } from '@/components';
+import { Btn, CardPhoto, NewBadge, RiskBadge, IconChevron } from '@/components';
 import { useIsNewFood } from '@/lib/newFood';
-import { BookmarkStar } from '@/components/Stars';
+import { BookmarkStar, Star, Stars } from '@/components/Stars';
 import { FLAGS } from '@/lib/flags';
-import type { FoodCard } from '@/lib/api/types';
+import type { FoodCard, TopRatedFood } from '@/lib/api/types';
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 계열 명시값)
 
@@ -139,6 +140,81 @@ export function RecentRow({
   );
 }
 
+/** KB-800: 홈 "평점 높은 음식" 행 — RecentRow 썸네일·이름 블록 재사용 + 총평점 줄 + 세부 3줄(맛·속도·친절도) + chevron.
+ *  세부 null = 빈 별 5개 + "—"(숫자 칸 폭 24 고정 → 값↔— 전환에 별 위치 불변). 국기 없음(02_designer_spec). */
+export function TopRatedRow({
+  food,
+  risk,
+  onPress,
+  ref,
+}: {
+  food: TopRatedFood;
+  risk: RiskState;
+  onPress: () => void;
+  /** 홈 카드 노출 측정 */
+  ref?: React.Ref<View>;
+}) {
+  const { t } = useTranslation();
+  const details: [string, number | null][] = [
+    [t('review.extrasTaste'), food.taste],
+    [t('review.extrasSpeed'), food.servingSpeed],
+    [t('review.extrasService'), food.staffKindness],
+  ];
+  return (
+    <Pressable
+      ref={ref}
+      style={({ pressed }) => [styles.rrow, pressed && { backgroundColor: C.surface2 } /* 눌림 = 배경색만 */]}
+      onPress={onPress}
+      accessibilityRole="button"
+      testID={`home-top-rated-${food.foodId}`}
+    >
+      <View style={styles.rthumb}>
+        <CardPhoto uri={food.photoUrl} recyclingKey={food.foodId} borderRadius={4} />
+        <View style={styles.rbadge}>
+          <RiskBadge state={risk} />
+        </View>
+      </View>
+      <View style={styles.trBody}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ gap: 3 }}>
+            <Text style={styles.rname} numberOfLines={2}>
+              {food.name}
+            </Text>
+            {food.nameKo !== food.name && (
+              <Text style={styles.gko} numberOfLines={1}>
+                {food.nameKo}
+              </Text>
+            )}
+          </View>
+          <View style={styles.trOverall}>
+            <Star size={14} fillPct={food.overallRating == null ? 0 : 100} />
+            <Text style={food.overallRating == null ? styles.trOverallNone : styles.trOverallNum} testID="top-rated-overall">
+              {food.overallRating == null ? '\u2014' : food.overallRating.toFixed(1)}
+            </Text>
+            <Text style={styles.trCount}>({food.overall.count})</Text>
+          </View>
+          <View style={styles.trDetails}>
+            {details.map(([label, v]) => (
+              <View key={label} style={styles.trLine}>
+                <Text style={styles.trLabel} numberOfLines={2}>
+                  {label}
+                </Text>
+                <Stars value={v ?? 0} size={10} />
+                <Text style={[styles.trNum, v == null && styles.trNumNone]} testID="top-rated-detail">
+                  {v == null ? '\u2014' : v.toFixed(1)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        <View accessible={false}>
+          <IconChevron size={16} color={C.ink3} />
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   gcard: { minWidth: 0 }, // P-333: 구 flexWrap 47%+grow 기본 폐기 — 전 소비처가 폭 명시(레일 cardW·그리드 셀 100%/flex)
   // P-315: 정적 bg(surface2) 제거 — 시안 photo effects 없음(회색 띠 원인). 로딩 = CardPhoto Shimmer
@@ -177,4 +253,16 @@ const styles = StyleSheet.create({
   rname: { fontSize: 15, fontWeight: '700', color: INK_TITLE }, // A-HM-07(recent-row 전용 — 그리드 gname 무변)
   rthumb: { width: 100, height: 100, borderRadius: 4 }, // P-315: 정적 bg 제거(시안 effects 없음) // 폴백만 회색 유지
   rbadge: { position: 'absolute', top: -4, left: 3 }, // P-315 시안 오프셋
+
+  // KB-800 TopRatedRow (02_designer_spec)
+  trBody: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  trOverall: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, height: 18 },
+  trOverallNum: { fontSize: 14, fontWeight: '700', color: C.ink },
+  trOverallNone: { fontSize: 14, fontWeight: '700', color: C.inkMute },
+  trCount: { fontSize: 12, fontWeight: '700', color: C.ink2 },
+  trDetails: { marginTop: 6, gap: 4 },
+  trLine: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 16 },
+  trLabel: { flex: 1, minWidth: 0, fontSize: 12, fontWeight: '500', lineHeight: 16, color: C.ink2 },
+  trNum: { width: 24, textAlign: 'right', fontSize: 12, fontWeight: '700', color: C.ink },
+  trNumNone: { color: C.inkMute },
 });

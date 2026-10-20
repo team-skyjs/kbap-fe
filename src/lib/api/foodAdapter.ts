@@ -17,10 +17,10 @@
  * Risk enums reuse scanAdapter.mapRisk → UNKNOWN/unrecognized ⇒ 'unable',
  * NEVER 'safe' (Constitution III, false-safe = 0).
  */
-import type { FoodCard, FoodDetail, IngredientRisk, RatingAggregate } from './types';
+import type { FoodCard, FoodDetail, IngredientRisk, RatingAggregate, TopRatedFood } from './types';
 import { wireToFoodSpice } from './spiceAdapter';
 import type { FoodDetailWire, ReviewRatingWire } from './foodDetailTypes';
-import type { MenuSummaryWire } from './foodListTypes';
+import type { MenuSummaryWire, TopRatedFoodWire } from './foodListTypes';
 import { mapRisk } from './scanAdapter';
 import { adaptReview } from './reviewAdapter';
 
@@ -207,5 +207,16 @@ export function adaptMenuSummary(wire: MenuSummaryWire): FoodCard {
         ? { average: wire.review.averageRating, count: rvCount }
         : NO_RATING,
     bookmarked: wire.bookmarked === true, // KB-779: 계약 비회원 false·부재 false — 홈 별의 정본
+  };
+}
+
+/** KB-800: 홈 topRatedFoods 항목 — 요약 어댑터 + 세부 평점(null·부재 = null 유지, 0 으로 바꾸지 않는다). */
+export function adaptTopRatedFood(wire: TopRatedFoodWire): TopRatedFood {
+  return {
+    ...adaptMenuSummary(wire),
+    taste: wire.taste ?? null,
+    servingSpeed: wire.servingSpeed ?? null,
+    staffKindness: wire.staffKindness ?? null,
+    overallRating: wire.overallRating ?? null,
   };
 }

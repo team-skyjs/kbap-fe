@@ -235,11 +235,21 @@ export interface AvoidedSubstance {
   name: string; // 회원 언어로 지역화된 성분명 (LIVE /home 제공)
 }
 
+/** KB-800: 홈 "평점 높은 음식" 행 — null = 미입력(화면은 빈 별 + "—"). */
+export type TopRatedFood = FoodCard & {
+  taste: number | null;
+  servingSpeed: number | null;
+  staffKindness: number | null;
+  overallRating: number | null;
+};
+
 export interface HomeResponse {
   recent: FoodCard[];
   recommended: FoodCard[];
   /** P-393(KB-580): 리뷰 많은 음식 — 구 서버·0건 = 빈 배열(섹션 숨김). */
   mostReviewed: FoodCard[];
+  /** KB-800: 평점 높은 음식(서버 순서, 최대 20) — 구 서버·0건 = 빈 배열(섹션 숨김). */
+  topRated: TopRatedFood[];
   /** LIVE(KB-69) 전용 — false면 개인화 섹션은 가입 유도 UI. mock에선 생략. */
   authenticated?: boolean;
   /** LIVE(KB-69) 전용 — 지역화된 기피 성분명. mock에선 생략(restrictionLabel 폴백). */

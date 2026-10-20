@@ -11,9 +11,9 @@ it('① 검색창 = 홈 searchBox 동일(h48 r4 surface2 pad16 보더 0) · 아�
   expect(s).toMatch(/query\.length > 0 \? \([^]*?search-clear[^]*?\) : \(\s*<IconSearch size=\{20\} color=\{C\.ink3\} \/>/);
 });
 
-it('② 결과 0건 = ScreenCenterFill + EmptyBlock(noResultsTitle) · 고아 키 10로케일 제거', () => {
+it('② KB-798 결과 0건 = 스크롤 헤더 안 EmptyBlock(noResultsTitle) · 고아 키 10로케일 제거', () => {
   const s = read('src/app/search.tsx');
-  expect(s).toMatch(/<ScreenCenterFill>\s*<EmptyBlock label=\{t\('search\.noResultsTitle'\)\} testID="search-empty" \/>/);
+  expect(s).toMatch(/ListHeaderComponent=\{[^]*?<View style=\{styles.body\}>\s*<EmptyBlock label=\{t\('search\.noResultsTitle'\)\} testID="search-empty" \/>/);
   expect(s).not.toContain('noResultsBody');
   expect(s).not.toContain('backToPopular');
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
@@ -25,7 +25,7 @@ it('② 결과 0건 = ScreenCenterFill + EmptyBlock(noResultsTitle) · 고아 �
 
 it('③ P-345 → P-353 ⑤: 결과 = 음식 탭 2열 FoodGridCard(dish-item 폐기) · ④ popThumb r4', () => {
   const s = read('src/app/search.tsx');
-  expect(s).toContain('data={padOddGrid(results)}');
+  expect(s).toContain('data={showingSearch && !search.isLoading && !search.isError ? padOddGrid(results) : []}');
   expect(s).toContain('numColumns={2}');
   expect(s).toContain("gridRowWrap: { columnGap: 16, paddingHorizontal: 20 }"); // FoodExplorer 값 그대로
   expect(s).toContain('<FoodGridCard');

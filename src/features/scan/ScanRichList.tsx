@@ -17,11 +17,12 @@
 import * as React from 'react';
 import { RemoteImage } from '@/components/RemoteImage';
 import { CardPhoto } from '@/components/CardPhoto';
+import { IconChevron, IconPlus, IconSparkles, RiskBadge, RiskMark } from '@/components';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { openWebPage } from '@/lib/openExternal';
 import { Txt as Text } from '@/components/Txt';
-import { color as C, font, primaryTint, radius, riskText, riskTone, shadow, type RiskState } from '@/lib/theme';
+import { color as C, font, shadow, type RiskState } from '@/lib/theme';
 
 /** P-171 ① → P-223: 칩 폭 근사 — 통합 칩 메트릭(패딩 8×2·보더·RiskMark 11) 기반.
  *  CJK ≈ 폰트폭, 라틴/숫자 ≈ 절반. ponytail: 문자폭 근사 휴리스틱 — 오차는 이르게
@@ -49,7 +50,6 @@ export function fitAvoidChips<T extends { name: string }>(
   }
   return { shown: warns.slice(0, 1), rest: warns.length - 1 };
 }
-import { IconChevron, IconPlus, RiskBadge, RiskMark } from '@/components';
 import { BrandGoogleMark, D4Minus } from '@/components/design4Assets';
 import { useFoodDetail } from '@/lib/data/useFoods';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
@@ -94,6 +94,7 @@ export function ScanRichList({
   onRemove,
   onOpen,
   onMarkPress,
+  onClosestMatch,
   t,
 }: {
   dishes: ResultDish[];
@@ -105,14 +106,15 @@ export function ScanRichList({
   onOpen: (d: ResultDish) => void;
   /** P-149: 행 RiskMark 탭 = 코치마크 재열람(P-134 표면 — 캡슐 철거 후 리스트가 담당) */
   onMarkPress?: () => void;
-  /** P-153 v2: 미등록 행 유사 제안 탭 → 해당 음식 상세 */
+  /** KB-789: 대체 행(substituted) Closest match 칩 탭 → 설명 카드(행 탭 = 상세 그대로) */
+  onClosestMatch?: (d: ResultDish) => void;
   t: TFn;
 }) {
   return (
     <View style={styles.body}>
       {/* P-138 ④: 카테고리 헤더 없음 — 스캔 API에 카테고리 부재 → 플랫 리스트 */}
       {dishes.map((d) => (
-        <RichRow key={d.itemId} dish={d} currency={currency} fx={fx} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} t={t} />
+        <RichRow key={d.itemId} dish={d} currency={currency} fx={fx} qty={cart.get(d.itemId) ?? 0} onAdd={() => onAdd(d)} onRemove={() => onRemove(d)} onOpen={() => onOpen(d)} onMarkPress={onMarkPress} onClosestMatch={onClosestMatch ? () => onClosestMatch(d) : undefined} t={t} />
       ))}
 
       <Text style={styles.footNote}>{t('scan.listFootNote')}</Text>
@@ -129,6 +131,7 @@ function RichRow({
   onRemove,
   onOpen,
   onMarkPress,
+  onClosestMatch,
   t,
 }: {
   dish: ResultDish;
@@ -139,6 +142,7 @@ function RichRow({
   onRemove: () => void;
   onOpen: () => void;
   onMarkPress?: () => void;
+  onClosestMatch?: () => void;
   t: TFn;
 }) {
   // 매칭 항목만 상세 프리페치 — 설명·사진·기피 재료(개인화 ingredients)
@@ -191,6 +195,30 @@ function RichRow({
             {dish.displayName || (dish.koreanName ?? dish.rawMenuName)}
           </Text>
         </View>
+        {/* KB-789(시안 B 14289:8235): 유사 음식 대체 행 — 이름 줄 아래 Closest match 칩(sparkles 12 +
+            11/600 primary · primary 12% 틴트 · pad 2/8 · pill) + "Menu says {{scanned}}" 1줄(missNote 자리).
+            칩 탭 = 설명 카드(행 탭은 그대로 상세). 긍정 프레임 — "못 찾음" 류 문구 금지(헌법 III). */}
+        {dish.substituted && (
+          <>
+            <Pressable
+              style={styles.closestChip}
+              hitSlop={8}
+              onPress={onClosestMatch}
+              disabled={!onClosestMatch}
+              accessibilityRole="button"
+              accessibilityLabel={t('scan.closestMatchChip')}
+              testID={`closest-${dish.itemId}`}
+            >
+              <IconSparkles size={12} color={C.primary} />
+              <Text style={styles.closestChipText} numberOfLines={1}>{t('scan.closestMatchChip')}</Text>
+            </Pressable>
+            {!!dish.originalScannedName && (
+              <Text style={styles.missText} numberOfLines={1} testID={`closest-line-${dish.itemId}`}>
+                {t('scan.closestMatchLine', { scanned: dish.originalScannedName })}
+              </Text>
+            )}
+          </>
+        )}
         {/* P-285(최종본 2200:21512): 설명 1줄 13/400 #9196A1 — 매칭 = 음식 설명(프리페치) */}
         {dish.matched && !!food?.description && (
           <Text style={styles.desc} numberOfLines={1} testID={`desc-${dish.itemId}`}>{food.description}</Text>
@@ -295,6 +323,9 @@ const styles = StyleSheet.create({
   // P-285: 외부 검색 아이콘 칩 34×30(border #EAEBEE r37 pad 4/6)
   googleChip: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 26, paddingVertical: 4, paddingHorizontal: 8, borderWidth: 1, borderColor: '#EAEBEE', borderRadius: 37, backgroundColor: '#FFFFFF' }, // P-366 ⑦: 회피 칩 프레임 문법
   googleChipText: { fontSize: 12, fontWeight: '700', color: '#2F3137' },
+  // KB-789(14289:8235): Closest match 칩 — primary 12% 틴트 · pad 2/8 · pill · 11/600 primary. 보더 없음(상태 전환 없는 정적 칩).
+  closestChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, borderRadius: 999, backgroundColor: 'rgba(255,113,52,0.12)' },
+  closestChipText: { fontSize: 11, fontWeight: '600', color: C.primary },
   body: { paddingHorizontal: 20, paddingBottom: 120 }, // A-SC-05(KB-486)
   // P-160 B안(.bnrB 전사): surface2 바탕 + 하단 보더 + 대문자 캡션 + 칩 스트립
   bar: { backgroundColor: C.surface2, borderBottomWidth: 1, borderBottomColor: C.line, paddingTop: 10, paddingBottom: 11, paddingHorizontal: 16 },

@@ -24,7 +24,7 @@ beforeEach(() => {
 
 it('해제 응답 → 재조회가 전이를 관측해도 ad 1회만(review 0)', async () => {
   observeScanQuota('7', false); // 잠긴 회원
-  mockPost.mockResolvedValue({ remainingForUnlock: 0, scanUnlocked: true });
+  mockPost.mockResolvedValue({ rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   // 재조회 = 해제된 프로필 관측(fetchMe 성공 경로가 하는 일)
   jest.spyOn(qc, 'invalidateQueries').mockImplementation(async () => {
@@ -46,7 +46,7 @@ it('해제 응답 → 재조회가 전이를 관측해도 ad 1회만(review 0)',
 
 it('해제 아닌 보상(n/3 진행) = 해제 이벤트 0', async () => {
   observeScanQuota('7', false);
-  mockPost.mockResolvedValue({ remainingForUnlock: 2, scanUnlocked: false });
+  mockPost.mockResolvedValue({ rewardCount: 1, remainingForUnlock: 2, scanUnlocked: false });
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
   jest.spyOn(qc, 'invalidateQueries').mockImplementation(async () => {
     observeScanQuota('7', false);

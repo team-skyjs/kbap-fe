@@ -14,7 +14,7 @@ const { api } = require('@/lib/api/client');
 
 import { fetchHome } from '../useHome';
 
-it('fetchHome은 /home?lang= 로 요청한다 (lang 필수 승격 — 400 해소)', async () => {
+it('fetchHome은 /home?lang= 로 요청한다 (lang 필수 승격 — 400 해소) + KB-800 X-API-Version 1.3', async () => {
   await fetchHome();
-  expect(api.get).toHaveBeenCalledWith('/home?lang=ko');
+  expect(api.get).toHaveBeenCalledWith('/home?lang=ko', { headers: { 'X-API-Version': '1.3' } });
 });

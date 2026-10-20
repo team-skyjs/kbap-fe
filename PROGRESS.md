@@ -1499,3 +1499,23 @@
 - [x] 테스트: homeBookmarkedCard779 신설 4(콜드 스타트 /bookmarks 0회·Saved 탭 탭 시 호출 / 별 = 카드값 / 방향 PATCH·POST / Food 탭 /foods 소스) · toggleBookmark +5(홈 3배열 반전·실패 원복·캐시 없음 무크래시·home invalidate 0·/foods 페이지 반전) · foodAdapter +2 · 소스 잠금 갱신(field0910bKb515·homePopularRandom712·riskServerFilter492·design4Home430 ⑤). tsc 0 · jest 296 스위트 2556/2556.
 - [x] Codex 리뷰(#264) 4건 반영(10/14): ① 롤백 = 실패 카드만 반대 반전(스냅샷 복원은 그 사이 성공한 다른 토글까지 지움) ② 쓰기 전 `['home']`·`['foods']` 진행 중 재조회 cancel(데이터 있는 쿼리만 — 초기 로딩 홈을 끊으면 스켈레톤 정지) ③ `useRemoveBookmark`/`useRestoreBookmark`도 카드 캐시 반전(저장 화면 해제 후 홈 복귀 시 별 잔존·방향 역전) ④ `useSavedIds` 드레인 effect `enabled` 가드(수동 fetchNextPage는 enabled가 안 막음). toggleBookmark +4. jest 296 스위트 2560/2560.
 - [ ] 실기(홈 콜드 스타트 네트워크 로그 `GET /bookmarks` 0회 · 레일 별 탭 즉시 반전·롤백 · Saved 탭 전환 시 목록 로드 · 저장 화면 스와이프 해제 후 홈 별). 발행은 예진 승인.
+
+## KB-785 홈 조회만 X-API-Version 1.2 (2026-10-14, 워크트리 feat/kb785-home-api-version)
+
+- [x] dev Swagger 대조: `/home` 1.2 = 인기 음식 소스만 변경(조회 수 상위 → 운영 풀 `food_marketing_popular` 호출마다 무작위 최대 10개). 응답 형태 1.1과 동일 → `HomeWire`·어댑트 무변.
+- [x] `fetchHome` `api.get` 에 `{ headers: { 'X-API-Version': '1.2' } }`(기존 `opts.headers` 병합 패턴, useMe PATCH 1.1과 동일). 훅·부트 프리페치가 같은 함수라 한 곳. 기본 `API_VERSION_HEADER`·타 엔드포인트 무변.
+- [x] 테스트: fetchHome(목 api) 호출 인자 1.2 잠금 · homeApiVersion785 신설(실 client 경유 fetch 헤더 — 홈 1.2 / `/foods`·프로필 PATCH 1.1 유지 / 구 응답 호환). tsc 0 · jest 전체 통과.
+- [ ] dev 실기 홈 렌더 확인(BE 1.2 핸들러 배포 시). 배포는 예진 승인.
+
+## KB-789 스캔 결과 유사 음식 대체 항목 — Closest match 칩 + 설명 카드 (2026-10-15, 워크트리 feat/kb789-scan-closest-match)
+
+- [x] 계약: `SCAN_API_VERSION` 2.0 → **3.0**(티켓 발급·스캔 두 경로 같은 상수). 와이어 `substituted?`·`originalScannedName?`(옵셔널) → 어댑터 `verdict`가 `substituted = === true`·원문 공백/비문자열 = null로 정규화(ScanOverlayItem·PhotoOnlyItem 공통). `ResultDish`는 imageUrl/avoidances 관례대로 옵셔널(픽스처 호환) — scan.tsx 두 매핑(resultDishes·photoDishes)에서 전달.
+- [x] 행(시안 B 14289:8235): `RichRow` 이름 줄 아래 `closest-{itemId}` 칩(공용 Pressable + hitSlop 8 · `IconSparkles` 12 primary · 11/600 primary · primary 12% 틴트 · pad 2/8 · pill · 보더 없음) + `scan.closestMatchLine`(missText 13/ink3 — 시안 수치, 발주 11.5 대신) 1줄(원문 결측 시 줄 생략). 칩 탭 = `onClosestMatch(dish)`(행 탭 = 상세 그대로). 미등록(`matched=false`) 행 무변.
+- [x] 카드(시안 C4 14297:8300): `ClosestMatchNotice` — `UnmatchedNotice` 골격·`notice*` 스타일 공유, sparkles 30 primary, 제목/본문/`closest-details` primary Btn 1개(= `openDish` 재사용 → `/food/[대체 foodId]?…src=scan`), 배경 탭 닫힘, Android back = 카드만 닫힘(KB-769 오버레이 규칙을 unmatched와 한 effect로 통합).
+- [x] 주문 카드: `orderNameKo(d)`(segmentMenu) — 대체 항목 `nameKo = originalScannedName`(직원에게 보여주는 줄), `name`·`foodId`는 대체 음식. 원문 결측은 koreanName 폴백.
+- [x] 계측: `scan_closest_match_open` {food_id} 1건(카드 열림). i18n 5키 × 10로케일(en·ko·ja·zh-Hans·zh-Hant·es·id·ru·th·vi — 발주 본문 JSON 그대로).
+- [x] 테스트: scanClosestMatch789(api) 6 — 3.0 매핑·2.0 폴백·방어·photoOnly·orderNameKo·sanitize / scanClosestMatch789(features) 4 — 칩·줄 렌더·비대체 미렌더·미등록 무변·칩 탭 콜백(onOpen 0)·메트릭·원문 결측 / closestMatchKeys789 3 — 10로케일 키·자리표시자·부정 문구 0 / scanDesign +2 — 카드 열림·이벤트·상세 push·배경/back 닫힘. useScan·scanTicket250 헤더 기대 3.0. tsc 0 · jest 314 스위트 2795/2795.
+- [ ] 실기(종한): 칩 hitSlop·카드 열림·상세 이동 + dev BE 3.0 응답에서 `substituted` 행 실표시. 2.0 응답에서도 칩 미표시로 정상. OTA는 예진 승인.
+
+## KB-820 홈 앱바 로고·벨 위치 4탭 통일 (2026-10-20, 워크트리 fix/kb820-home-appbar-align)
+- [x] KB-777(#262) 홈 전용 오프셋(`alignToHomeGutter` — 마크 +4·벨 −7) 되돌림: 전제였던 "홈 본문 거터 20"이 낡음(10/20 실기 — 4탭 모두 본문 거터 16). 홈을 음식·리뷰·프로필에 맞춤. prop·상수·분기 삭제, 잠금 테스트 homeAppbarGutter777 → appbarFourTabs820(4탭 동일).

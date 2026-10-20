@@ -101,7 +101,7 @@ it('가이드 #1·#2: 티켓 발급 → 업로드 → 스캔(X-Scan-Ticket) 순�
   expect(api.post.mock.invocationCallOrder[0]).toBeLessThan(mockResolvePath.mock.invocationCallOrder[0]);
   const [, , opts] = scanCalls()[0] as [string, unknown, { headers: Record<string, string> }];
   expect(opts.headers['X-Scan-Ticket']).toBe('T-1');
-  expect(opts.headers['X-API-Version']).toBe('2.0');
+  expect(opts.headers['X-API-Version']).toBe('3.0');
 });
 
 it('가이드 #3: 시도마다 신규 발급 — 이전 티켓 재사용 0', async () => {
@@ -195,12 +195,12 @@ it('P-255 배선 소스 잠금 — 진입 선발급(focus)·004 즉시 잠금·�
 
 // KB-418: P-219 채널 게이트 소멸 — prod 채널도 v2 = 티켓 발급 선행(구 "prod=v1
 // 티켓 0" 잠금 반전).
-it('prod 채널 목에서도 v2 — 티켓 발급 선행 + 2.0/티켓 헤더', async () => {
+it('prod 채널 목에서도 v2 — 티켓 발급 선행 + 3.0/티켓 헤더', async () => {
   mockProd = true;
   await runScan({ items: [{ itemId: 0, rawMenuName: '김치찌개', box: { x: 0, y: 0, width: 1, height: 1 } }], photo: PHOTO });
   expect(ticketCalls()).toHaveLength(1);
   const [, , opts] = scanCalls()[0] as [string, unknown, { headers?: Record<string, string> }];
-  expect(opts.headers).toEqual({ 'X-API-Version': '2.0', 'X-Scan-Ticket': 'T-1' }); // 이 스위트의 티켓 목 값
+  expect(opts.headers).toEqual({ 'X-API-Version': '3.0', 'X-Scan-Ticket': 'T-1' }); // 이 스위트의 티켓 목 값
 });
 
 it('소스 잠금 — 잔여 횟수 계산·티켓 영구 저장·만료 클라 판정 잔존 0 + quota UI 배선', () => {
