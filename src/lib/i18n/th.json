@@ -1152,9 +1152,9 @@
     "unavailableTitle": "คอลเลกชันนี้ไม่พร้อมให้บริการแล้ว",
     "unavailableBody": "กลับไปหน้าแรกเพื่อสำรวจต่อ",
     "backHome": "กลับไปหน้าแรก",
-    "viewGuide": "ดูคู่มือ",
+    "guide": "คู่มือ",
     "viewGuideA11y": "ดูคู่มือ {{name}}",
     "viewGuideHint": "เปิดในเบราว์เซอร์",
-    "exploreNearby": "สำรวจรอบๆ"
+    "photoUnavailable": "ไม่มีรูปภาพ"
   }
 }

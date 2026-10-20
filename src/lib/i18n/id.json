@@ -1152,9 +1152,9 @@
     "unavailableTitle": "Koleksi ini sudah tidak tersedia",
     "unavailableBody": "Kembali ke Beranda untuk terus menjelajah.",
     "backHome": "Kembali ke Beranda",
-    "viewGuide": "Lihat panduan",
+    "guide": "Panduan",
     "viewGuideA11y": "Lihat panduan, {{name}}",
     "viewGuideHint": "Dibuka di browser",
-    "exploreNearby": "Jelajahi sekitar"
+    "photoUnavailable": "Foto tidak tersedia"
   }
 }

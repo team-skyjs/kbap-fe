@@ -1152,9 +1152,9 @@
     "unavailableTitle": "此合集已不再提供",
     "unavailableBody": "返回首页继续探索。",
     "backHome": "返回首页",
-    "viewGuide": "查看指南",
+    "guide": "指南",
     "viewGuideA11y": "查看指南，{{name}}",
     "viewGuideHint": "将在浏览器中打开",
-    "exploreNearby": "周边探索"
+    "photoUnavailable": "暂无照片"
   }
 }

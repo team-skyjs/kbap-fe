@@ -1148,9 +1148,9 @@
     "unavailableTitle": "This collection is no longer available",
     "unavailableBody": "Return Home to keep exploring.",
     "backHome": "Back to Home",
-    "viewGuide": "View guide",
+    "guide": "Guide",
     "viewGuideA11y": "View guide, {{name}}",
     "viewGuideHint": "Opens in a browser",
-    "exploreNearby": "Explore nearby"
+    "photoUnavailable": "Photo unavailable"
   }
 }

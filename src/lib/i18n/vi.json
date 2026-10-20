@@ -1152,9 +1152,9 @@
     "unavailableTitle": "Bộ sưu tập này không còn khả dụng",
     "unavailableBody": "Quay về Trang chủ để tiếp tục khám phá.",
     "backHome": "Về Trang chủ",
-    "viewGuide": "Xem hướng dẫn",
+    "guide": "Hướng dẫn",
     "viewGuideA11y": "Xem hướng dẫn, {{name}}",
     "viewGuideHint": "Mở trong trình duyệt",
-    "exploreNearby": "Khám phá xung quanh"
+    "photoUnavailable": "Không có ảnh"
   }
 }
