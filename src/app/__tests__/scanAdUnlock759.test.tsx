@@ -86,6 +86,7 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (cb: () => void) => jest.requireActual('react').useEffect(cb, [cb]),
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
+  useSegments: () => ['scan'],
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
@@ -104,8 +105,9 @@ jest.mock('@/lib/scan/ocr', () => ({
   ]),
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
+const mockProbe: { offline: boolean } = { offline: false };
 jest.mock('@/lib/data/useFoods', () => ({
-  useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }),
+  useInfiniteFoods: () => (mockProbe.offline ? { isError: true, error: new Error('NETWORK: request failed'), refetch: jest.fn() } : { isError: false, error: null, refetch: jest.fn() }),
   // P-136 리치 리스트 행이 상세 프리페치 — 표면 목
   useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
 }));
@@ -359,4 +361,22 @@ it('Codex #291 2R: profile unlock arriving after preflight reopened the camera s
   expect(celebration?.props.visible).toBe(true);
   expect(JSON.stringify(tree.toJSON())).toContain('review.done');
   act(() => tree.unmount());
+});
+
+it('Codex #291 R8: offline camera branch also presents a late scan unlock', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  mockProbe.offline = true;
+  try {
+    observeUnlock('7', false, currentGen());
+    mockIssue.mockResolvedValue('camera-ticket');
+    mockUseMe.mockReturnValue(me(1));
+    const tree = render(); await flush();
+    expect(JSON.stringify(tree.toJSON())).toContain('states.offlineTitle');
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen');
+    expect(celebration?.props.visible).toBe(true);
+    act(() => tree.unmount());
+  } finally {
+    mockProbe.offline = false;
+  }
 });

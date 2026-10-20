@@ -152,3 +152,18 @@ it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden
   act(() => unlock(false));
   expect(modal(tree).props.visible).toBe(true);
 });
+it('QA Android: motion starts at visible without waiting for the late onShow; modal covers status and nav bars', async () => {
+  const os = Platform.OS;
+  Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
+  try {
+    mockReduced = false;
+    const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
+    const tree = await mount(); act(() => unlock(false));
+    expect(withTiming).toHaveBeenCalledTimes(2); // no onShow yet
+    expect(modal(tree).props).toMatchObject({ statusBarTranslucent: true, navigationBarTranslucent: true });
+    act(() => modal(tree).props.onShow());
+    expect(withTiming).toHaveBeenCalledTimes(2); // onShow does not restart it
+  } finally {
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => os });
+  }
+});

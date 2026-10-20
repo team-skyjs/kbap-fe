@@ -1036,6 +1036,7 @@ export default function Scan() {
       <View style={[styles.root, styles.center, { backgroundColor: C.surface }]}>
         {Close}
         <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
+        {CameraCelebration}
       </View>
     );
   }

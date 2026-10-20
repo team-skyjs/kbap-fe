@@ -46,8 +46,11 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   if (!visible && onScreen) setOnScreen(false);
   // QA E2: the Modal's first frame reads whatever the value is at rest, so the hidden value is already the starting pose
   // (0, or 1 under Reduce Motion) — resetting after visible flips is one frame late.
+  // QA Android: onShow arrives ~0.7s after the dialog's first frame there, which reads as a frozen start pose.
+  // Android shows the dialog on mount (no presenter to wait for), so it starts at visible; iOS keeps onShow.
+  const started = visible && (onScreen || Platform.OS === 'android');
   React.useEffect(() => {
-    if (!visible || !onScreen || reduceMotion) {
+    if (!started || reduceMotion) {
       entrance.set(reduceMotion ? 1 : 0);
       burst.set(0);
       return;
@@ -55,7 +58,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
     entrance.set(withTiming(1, { duration: 550 }));
     burst.set(withTiming(1, { duration: 700 }));
     return () => { cancelAnimation(burst); cancelAnimation(entrance); };
-  }, [visible, onScreen, reduceMotion, burst, entrance]);
+  }, [started, reduceMotion, burst, entrance]);
   React.useEffect(() => () => { if (shown.current !== null) consumeUnlock(shown.current); }, []);
   const afterDismiss = React.useCallback(() => {
     if (!closing || continued.current === closing.event.id) return;
@@ -81,7 +84,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   };
   const scanAction = event?.context === 'scan' && onStartScanning != null;
   return (
-    <Modal visible={visible} animationType="none" presentationStyle="fullScreen" onRequestClose={() => dismiss(false)}
+    <Modal visible={visible} animationType="none" presentationStyle="fullScreen" statusBarTranslucent navigationBarTranslucent onRequestClose={() => dismiss(false)}
       onShow={() => { setOnScreen(true); if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(t('scan.unlockedCelebrationTitle')); } }}
       onDismiss={afterDismiss}>
       <View style={styles.root} accessibilityViewIsModal testID="unlock-celebration">
