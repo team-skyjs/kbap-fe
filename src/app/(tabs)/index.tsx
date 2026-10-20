@@ -113,7 +113,7 @@ function HomeBody() {
           {/* P-007 false-empty 금지 유지 — 에러는 에러로 */}
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" alignToHomeGutter bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
       </View>
     );
   }
@@ -228,7 +228,6 @@ function HomeBody() {
         hidden={hidden}
         atTop={atTop}
         mode="brand"
-        alignToHomeGutter /* KB-777: 마크·벨 보이는 끝 = 본문 거터 20 */
         bell={FLAGS.notificationCenter}
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}
