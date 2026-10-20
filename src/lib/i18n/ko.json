@@ -1137,5 +1137,22 @@
     "monLong10": "10월",
     "monLong11": "11월",
     "monLong12": "12월"
+  },
+  "curation": {
+    "sectionTitle": "한국 둘러보기",
+    "loadError": "모음을 불러오지 못했어요.",
+    "refreshFailed": "새로고침하지 못했어요. 마지막 목록을 보여드려요.",
+    "prev": "이전 모음",
+    "next": "다음 모음",
+    "fallbackNotice": "일부 내용은 영어로 보여요.",
+    "errorTitle": "모음을 불러오지 못했어요",
+    "errorBody": "다시 시도하거나 홈으로 돌아가세요.",
+    "unavailableTitle": "더 이상 볼 수 없는 모음이에요",
+    "unavailableBody": "홈으로 돌아가 계속 둘러보세요.",
+    "backHome": "홈으로 돌아가기",
+    "viewGuide": "안내 보기",
+    "viewGuideA11y": "안내 보기, {{name}}",
+    "viewGuideHint": "브라우저에서 열려요",
+    "exploreNearby": "주변 둘러보기"
   }
 }

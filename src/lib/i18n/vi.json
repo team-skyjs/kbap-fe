@@ -1137,5 +1137,22 @@
     "monLong10": "tháng 10",
     "monLong11": "tháng 11",
     "monLong12": "tháng 12"
+  },
+  "curation": {
+    "sectionTitle": "Khám phá Hàn Quốc",
+    "loadError": "Không tải được các bộ sưu tập này.",
+    "refreshFailed": "Không làm mới được. Đang hiển thị danh sách gần nhất.",
+    "prev": "Bộ sưu tập trước",
+    "next": "Bộ sưu tập tiếp theo",
+    "fallbackNotice": "Một số nội dung được hiển thị bằng tiếng Anh.",
+    "errorTitle": "Không tải được bộ sưu tập này",
+    "errorBody": "Hãy thử lại hoặc quay về Trang chủ.",
+    "unavailableTitle": "Bộ sưu tập này không còn khả dụng",
+    "unavailableBody": "Quay về Trang chủ để tiếp tục khám phá.",
+    "backHome": "Về Trang chủ",
+    "viewGuide": "Xem hướng dẫn",
+    "viewGuideA11y": "Xem hướng dẫn, {{name}}",
+    "viewGuideHint": "Mở trong trình duyệt",
+    "exploreNearby": "Khám phá xung quanh"
   }
 }

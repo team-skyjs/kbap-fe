@@ -28,6 +28,7 @@ import {
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
+import { CurationSection } from '@/features/curation/CurationSection';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
@@ -138,6 +139,7 @@ function HomeBody() {
           // (오프라인 등으로 요청이 멈춘 pending: isLoading false)에서 레일이 /foods 폴백을 먼저 그렸다 바꾸지 않게(#237 공부)
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
+          afterRail={<CurationSection />} // KB-796: 음식 레일 뒤·Safe picks 앞
         />
       </View>
 

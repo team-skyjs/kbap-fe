@@ -1137,5 +1137,22 @@
     "monLong10": "10月",
     "monLong11": "11月",
     "monLong12": "12月"
+  },
+  "curation": {
+    "sectionTitle": "探索韓國",
+    "loadError": "無法載入這些合集。",
+    "refreshFailed": "無法重新整理，正在顯示上次的列表。",
+    "prev": "上一個合集",
+    "next": "下一個合集",
+    "fallbackNotice": "部分內容以英文顯示。",
+    "errorTitle": "無法載入此合集",
+    "errorBody": "請重試，或返回首頁。",
+    "unavailableTitle": "此合集已不再提供",
+    "unavailableBody": "返回首頁繼續探索。",
+    "backHome": "返回首頁",
+    "viewGuide": "查看指南",
+    "viewGuideA11y": "查看指南，{{name}}",
+    "viewGuideHint": "將在瀏覽器中開啟",
+    "exploreNearby": "周邊探索"
   }
 }

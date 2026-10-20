@@ -1137,5 +1137,22 @@
     "monLong10": "Oktober",
     "monLong11": "November",
     "monLong12": "Desember"
+  },
+  "curation": {
+    "sectionTitle": "Jelajahi Korea",
+    "loadError": "Gagal memuat koleksi ini.",
+    "refreshFailed": "Gagal memperbarui. Menampilkan daftar terakhir.",
+    "prev": "Koleksi sebelumnya",
+    "next": "Koleksi berikutnya",
+    "fallbackNotice": "Sebagian konten ditampilkan dalam bahasa Inggris.",
+    "errorTitle": "Gagal memuat koleksi ini",
+    "errorBody": "Coba lagi, atau kembali ke Beranda.",
+    "unavailableTitle": "Koleksi ini sudah tidak tersedia",
+    "unavailableBody": "Kembali ke Beranda untuk terus menjelajah.",
+    "backHome": "Kembali ke Beranda",
+    "viewGuide": "Lihat panduan",
+    "viewGuideA11y": "Lihat panduan, {{name}}",
+    "viewGuideHint": "Dibuka di browser",
+    "exploreNearby": "Jelajahi sekitar"
   }
 }

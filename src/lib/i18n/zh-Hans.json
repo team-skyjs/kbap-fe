@@ -1137,5 +1137,22 @@
     "monLong10": "10月",
     "monLong11": "11月",
     "monLong12": "12月"
+  },
+  "curation": {
+    "sectionTitle": "探索韩国",
+    "loadError": "无法加载这些合集。",
+    "refreshFailed": "无法刷新，正在显示上次的列表。",
+    "prev": "上一个合集",
+    "next": "下一个合集",
+    "fallbackNotice": "部分内容以英文显示。",
+    "errorTitle": "无法加载此合集",
+    "errorBody": "请重试，或返回首页。",
+    "unavailableTitle": "此合集已不再提供",
+    "unavailableBody": "返回首页继续探索。",
+    "backHome": "返回首页",
+    "viewGuide": "查看指南",
+    "viewGuideA11y": "查看指南，{{name}}",
+    "viewGuideHint": "将在浏览器中打开",
+    "exploreNearby": "周边探索"
   }
 }

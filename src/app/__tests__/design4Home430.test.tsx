@@ -7,6 +7,7 @@
 import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
+jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('react-native-reanimated', () => {
   const { View, ScrollView, FlatList } = require('react-native');
   return {

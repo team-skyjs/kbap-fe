@@ -113,6 +113,7 @@ export const EVENTS = {
   home_section_view: 'home_section_view', // 홈 섹션 노출(50%↑ + 스크롤 정지, 홈 진입당 1회)
   home_card_view: 'home_card_view', // 홈 카드 노출(같은 규칙)
   home_card_click: 'home_card_click', // 홈 카드 클릭(섹션·위치) — 표시 이름 "홈컨텐츠_카드_클릭"
+  home_curation_link_click: 'home_curation_link_click', // KB-796(홈 큐레이션 도메인 home_) 큐레이션 항목 외부 링크(View guide) — 모음 키·위치만(URL 금지)
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -160,12 +161,13 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ad_reward_earned: ['placement', 'remaining', 'surface'],
   ad_consent_result: ['status', 'can_request_ads', 'gdpr_applies', 'personalized_consent'], // KB-774: boolean만(TC 문자열 원문 금지)
   // KB-784: screen = 라우트 패턴(예 food/[id] — 실제 id 없음) · target = testID 정규화(숫자·대문자 코드·비ASCII 토큰 → :v, lib/uiClick)
-  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta (KB-800: reviews → top_rated) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
+  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta|curation (KB-800: reviews → top_rated · KB-796 curation) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
   screen_view: ['screen'],
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
   home_card_view: ['section', 'position', 'food_id'],
-  home_card_click: ['section', 'position', 'food_id'],
+  home_card_click: ['section', 'position', 'food_id', 'collection_key'], // KB-796: section=curation이면 collection_key(서버 모음 키)
+  home_curation_link_click: ['collection_key', 'position'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open

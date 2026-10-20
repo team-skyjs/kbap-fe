@@ -1137,5 +1137,22 @@
     "monLong10": "octubre",
     "monLong11": "noviembre",
     "monLong12": "diciembre"
+  },
+  "curation": {
+    "sectionTitle": "Explora Corea",
+    "loadError": "No se pudieron cargar estas colecciones.",
+    "refreshFailed": "No se pudo actualizar. Se muestra la última lista.",
+    "prev": "Colección anterior",
+    "next": "Colección siguiente",
+    "fallbackNotice": "Parte del contenido se muestra en inglés.",
+    "errorTitle": "No se pudo cargar esta colección",
+    "errorBody": "Vuelve a intentarlo o regresa al inicio.",
+    "unavailableTitle": "Esta colección ya no está disponible",
+    "unavailableBody": "Vuelve al inicio para seguir explorando.",
+    "backHome": "Volver al inicio",
+    "viewGuide": "Ver guía",
+    "viewGuideA11y": "Ver guía, {{name}}",
+    "viewGuideHint": "Se abre en un navegador",
+    "exploreNearby": "Explora los alrededores"
   }
 }

@@ -9,6 +9,7 @@ import * as React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 // ⚠️ 최상단: flags.ts 로드 전에 채널이 production으로 보여야 한다(모듈 로드 시 계산)
+jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('expo-updates', () => ({ channel: 'production' }));
 
 jest.mock('react-native-reanimated', () => {
