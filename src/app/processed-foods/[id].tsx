@@ -31,7 +31,7 @@ import { FLAGS } from '@/lib/flags';
 import { EVENTS, track } from '@/lib/analytics';
 import { restrictionLabel } from '@/lib/onboarding/data';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
-import type { LabelSource, ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
+import type { LabelSource, ProcessedFoodDetail, ProcessedMayContain } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
 import { FlameShape } from '@/components/FlameShape';
 import { PackagedReviews } from '@/features/processedFood/PackagedReviews';
@@ -63,7 +63,7 @@ function StatusRow({ state, title, body, testID }: { state: Extract<RiskState, '
 }
 
 /** 원재료 원문 — 4줄을 넘을 때만 접기(같은 폭 숨김 측정 Text로 전체 줄 수 — KB-824 정확히 N줄 오판 방지). */
-function RawText({ text }: { text: string }) {
+export function RawText({ text }: { text: string }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = React.useState(false);
   const [lines, setLines] = React.useState<number | null>(null);
@@ -93,7 +93,9 @@ function RawText({ text }: { text: string }) {
   );
 }
 
-function Verdict({ d, onLogin }: { d: ProcessedFoodDetail; onLogin: () => void }) {
+/** 판정 섹션 — 상세와 성분표 분석 결과(P-508 PackagedScanFlow)가 같이 쓴다. mayContain = 성분표 분석만(함유 가능 — 검출 아님, 회색 칩) */
+export type VerdictData = Pick<ProcessedFoodDetail, 'labelSource' | 'detections' | 'unmapped' | 'avoidance'> & { mayContain?: ProcessedMayContain[] };
+export function Verdict({ d, onLogin }: { d: VerdictData; onLogin: () => void }) {
   const { t } = useTranslation();
   const found = (fromLabel: boolean, evidence: string) => t(fromLabel ? 'packaged.foundOnLabel' : 'packaged.foundInIngredients', { evidence });
   return (
@@ -110,6 +112,19 @@ function Verdict({ d, onLogin }: { d: ProcessedFoodDetail; onLogin: () => void }
       {/* 검출 0 = "없음"이 아니라 미확인 — 회색 */}
       {d.detections.length === 0 && (
         <StatusRow state="unable" title={t('packaged.notVerified')} body={t('packaged.notVerifiedBody')} testID="pf-none-detected" />
+      )}
+      {/* P-508: 함유 가능(같은 제조시설·혼입 표기) — 검출로 세지 않는 참고 정보라 판정 색이 아니라 회색 칩 */}
+      {!!d.mayContain?.length && (
+        <View style={s.mayBox} testID="pf-may-contain">
+          <Text style={s.mayTitle}>{t('packaged.mayContainTitle')}</Text>
+          <View style={s.chips}>
+            {d.mayContain.map((m) => (
+              <View key={m.code} style={s.chip} testID={`pf-may-${m.code}`}>
+                <Text style={s.chipText}>{restrictionLabel(m.code)}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
       )}
       {d.avoidance == null ? (
         <Pressable style={s.lock} onPress={onLogin} accessibilityRole="button" testID="pf-login-compare">
@@ -231,8 +246,8 @@ export default function ProcessedFoodDetailScreen() {
         </View>
 
         {FLAGS.packagedLabelScan && (
-          // F2(KB-813)에서 성분표 촬영 진입으로 바꾼다 — 그때까지 플래그 off(숨김)
-          <Btn variant="ghost" onPress={() => router.navigate('/scan' as Href)} style={s.outlineBtn} testID="pf-label-scan">{t('packaged.scanLabel')}</Btn>
+          // P-508: 성분표 직접 확인 = 새 분석(이 상세의 제품과 연결하지 않는다 — 서버 분석에 제품 id가 없다) · 성공 1회
+          <Btn variant="ghost" onPress={() => router.navigate('/scan?mode=packaged&label=1' as Href)} style={s.outlineBtn} testID="pf-label-scan">{t('packaged.scanLabel')}</Btn>
         )}
         {/* 롤백 스위치(reviewsLiveEnabled off) = 가공식품 리뷰는 목 경로가 없어 목록이 비는데 서버 요약은 남는다 — "리뷰 n개" 위 "첫 리뷰" 모순 대신 섹션째 숨김(Codex #314 R2) */}
         {FLAGS.reviewsEnabled && FLAGS.reviewsLiveEnabled && <PackagedReviews productId={d.id} summary={d.reviewSummary} />}
@@ -279,4 +294,9 @@ const s = StyleSheet.create({
   stateBody: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
   skelLine: { height: 14, borderRadius: 4 },
   skelRow: { height: 63, borderRadius: 4 },
+  mayBox: { gap: 8 },
+  mayTitle: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: C.surface2 },
+  chipText: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
 });

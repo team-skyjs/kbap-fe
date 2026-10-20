@@ -1237,7 +1237,8 @@
       "ramen": "라면",
       "bread": "빵",
       "drinks": "음료"
-    }
+    },
+    "mayContainTitle": "함유 가능(같은 제조시설, 혼입)"
   },
   "scanMode": {
     "menu": "메뉴판",
@@ -1285,12 +1286,27 @@
       "goneTitle": "제품을 찾을 수 없어요",
       "goneBody": "다시 찍어 주세요.",
       "discontinuedTitle": "생산이 종료된 제품이에요",
-      "discontinuedBody": "다시 찍어 주세요."
+      "discontinuedBody": "다시 찍어 주세요.",
+      "unreadableTitle": "성분표를 읽지 못했어요",
+      "unreadableBody": "원재료명이 잘 보이게 다시 찍어 주세요.",
+      "newAnalysisTitle": "새로 분석해 주세요",
+      "newAnalysisBody": "이 분석에는 사진을 더 붙일 수 없어요. 새로 분석하면 성공할 때 스캔 1회가 사용돼요."
     },
     "chargeChecking": "스캔 사용 여부를 확인하고 있어요.",
     "chargeSeeHome": "남은 스캔 횟수는 홈 화면에서 확인하세요.",
     "debugLabel": "OCR 텍스트(테스트 전용)",
     "debugPlaceholder": "포장 글자를 한 줄씩 입력",
-    "debugRun": "이 텍스트로 진행"
+    "debugRun": "이 텍스트로 진행",
+    "labelReading": "성분표를 읽고 있어요…",
+    "labelPagesTitle": "성분표 사진",
+    "labelPagesCount": "사진 {{count}}/{{max}}장",
+    "labelAddPage": "한 면 더 찍기",
+    "labelAnalyze": "성분표 분석하기",
+    "labelNoExtra": "이 분석에는 스캔이 더 사용되지 않았어요.",
+    "labelRawTitle": "읽은 성분표 글자",
+    "labelFreeRetry": "30분 안에 3번까지 스캔 추가 사용 없이 다시 분석할 수 있어요.",
+    "newAnalysisCta": "새로 분석하기",
+    "debugLabelPlaceholder": "성분표 한 면의 글자",
+    "debugAddPage": "한 면으로 추가"
   }
 }

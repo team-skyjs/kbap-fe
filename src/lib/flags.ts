@@ -175,10 +175,11 @@ export const FLAGS = {
    */
   contentTranslation: true,
   /**
-   * KB-812: 가공식품 상세 "성분표 직접 확인"(성분표 촬영 진입) — F2(KB-813, 서버 #428) 전까지 숨김.
-   * 켜면 상세에 버튼이 보이지만 촬영 화면이 아직 없으니 F2와 함께 켤 것.
+   * P-508(KB-813 후속): 성분표 촬영·분석(서버 #442 `scan/label`) — 핸드오프 촬영 버튼·상세 "성분표 직접 확인"·결과 화면.
+   * **채널 게이트 의도(AGENTS.md 4항, 발주 P-508)**: development·teamtest(dev 서버 — #442 배포됨)만. teamtest-prod·production·preview는
+   * 운영 서버에 #442가 나간 뒤 이 줄을 true로(그 전엔 버튼이 404를 받는다). 꺼진 채널 = 핸드오프에 "곧 지원" 안내 + 비활성 버튼(기존).
    */
-  packagedLabelScan: false,
+  packagedLabelScan: DEV_SERVER_CHANNEL,
   /**
    * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼. **채널 게이트 의도(AGENTS.md 4항, 커맨드 확인 10/21)**:
    * 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED가 켜진 채널만 — 지금은 dev 서버(#437)뿐이라 development·teamtest만.

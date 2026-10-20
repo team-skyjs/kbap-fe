@@ -26,7 +26,7 @@ import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRep
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Txt as Text } from '@/components/Txt';
-import { useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomInset } from '@/lib/useBottomInset';
 import { EVENTS, track } from '@/lib/analytics';
@@ -133,7 +133,9 @@ export default function Scan() {
 
   const [phase, setPhase] = useState<Phase>('camera');
   // KB-813: 촬영 모드 — 메뉴판(기본·현행 흐름 그대로) / 음식 사진(자리만) / 가공식품(PackagedScanFlow)
-  const [scanMode, setScanModeState] = useState<ScanMode>('menu');
+  // P-508: 가공식품 상세 "성분표 직접 확인" = /scan?mode=packaged&label=1 — 가공식품 모드 + 성분표 안내부터(새 분석)
+  const scanParams = useLocalSearchParams<{ mode?: string; label?: string }>();
+  const [scanMode, setScanModeState] = useState<ScanMode>(() => (scanParams.mode === 'packaged' && FLAGS.packagedLabelScan ? 'packaged' : 'menu'));
   const setScanMode = (m: ScanMode) => {
     if (m === scanMode) return;
     track(EVENTS.scan_mode_select, { mode: m });
@@ -1100,7 +1102,7 @@ export default function Scan() {
 
   // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
   if (scanMode === 'packaged' && !offline) {
-    return withPresenter(<PackagedScanFlow mode={scanMode} onMode={setScanMode} onClose={() => router.back()} />);
+    return withPresenter(<PackagedScanFlow mode={scanMode} onMode={setScanMode} onClose={() => router.back()} startLabel={scanParams.label === '1' && FLAGS.packagedLabelScan} />);
   }
 
   // ---- camera (default) ----

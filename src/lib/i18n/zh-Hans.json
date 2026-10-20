@@ -1237,7 +1237,8 @@
       "ramen": "拉面",
       "bread": "面包",
       "drinks": "饮料"
-    }
+    },
+    "mayContainTitle": "可能含有(同一生产设施、交叉接触)"
   },
   "scanMode": {
     "menu": "菜单",
@@ -1285,12 +1286,27 @@
       "goneTitle": "未找到商品",
       "goneBody": "请重新拍摄。",
       "discontinuedTitle": "该商品已停产",
-      "discontinuedBody": "请重新拍摄。"
+      "discontinuedBody": "请重新拍摄。",
+      "unreadableTitle": "没能读取配料表",
+      "unreadableBody": "请让配料清晰可见后重新拍摄。",
+      "newAnalysisTitle": "请重新分析",
+      "newAnalysisBody": "此分析无法再添加照片。重新分析成功时会使用 1 次扫描。"
     },
     "chargeChecking": "正在确认是否使用了扫描次数。",
     "chargeSeeHome": "请在首页查看剩余扫描次数。",
     "debugLabel": "OCR 文本(仅限测试)",
     "debugPlaceholder": "每行输入一行包装文字",
-    "debugRun": "使用此文本"
+    "debugRun": "使用此文本",
+    "labelReading": "正在读取配料表…",
+    "labelPagesTitle": "配料表照片",
+    "labelPagesCount": "照片 {{count}}/{{max}} 张",
+    "labelAddPage": "再拍一面",
+    "labelAnalyze": "分析配料表",
+    "labelNoExtra": "本次分析没有额外使用扫描次数。",
+    "labelRawTitle": "识别出的文字",
+    "labelFreeRetry": "30 分钟内最多可再分析 3 次，不额外使用扫描次数。",
+    "newAnalysisCta": "重新分析",
+    "debugLabelPlaceholder": "配料表一面的文字",
+    "debugAddPage": "作为一面添加"
   }
 }

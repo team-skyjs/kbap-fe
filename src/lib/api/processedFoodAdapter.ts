@@ -80,6 +80,13 @@ export function adaptProcessedSummary(w: SummaryWire): ProcessedFoodSummary {
   return { id: String(w.id), name: w.productName, maker: blankToNull(w.maker), foodType, type: packagedTypeOf(foodType), imageUrl: toHttps(w.imageUrl) };
 }
 
+// 판정 원소 변환 — 상세(GET /processed-foods/{id})와 성분표 분석(scan/label)이 같은 모양이라 한 벌로
+const adaptDetections = (ds: DetailWire['detections'] | null | undefined): ProcessedDetection[] =>
+  (ds ?? []).map((d) => ({ code: d.code, evidence: d.evidence, fromLabel: d.source === 'ALLERGEN_DECLARATION' }));
+const adaptAvoidance = (as: NonNullable<DetailWire['avoidance']>): ProcessedAvoidance[] =>
+  as.map((a) => ({ code: a.code, detected: a.match === 'DETECTED', evidence: a.evidence ?? [] }));
+const adaptUnmapped = (us: string[] | null | undefined): string[] => (us ?? []).map((u) => u.trim()).filter(Boolean);
+
 export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
   const labelSource = labelSourceOf(w.labelSource);
   return {
@@ -89,9 +96,9 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     rawMaterials: blankToNull(w.rawMaterials),
     allergens: labelSource === 'DECLARED' ? blankToNull(w.allergens) : null,
     labelSource,
-    detections: (w.detections ?? []).map((d) => ({ code: d.code, evidence: d.evidence, fromLabel: d.source === 'ALLERGEN_DECLARATION' })),
-    avoidance: w.avoidance == null ? null : w.avoidance.map((a) => ({ code: a.code, detected: a.match === 'DETECTED', evidence: a.evidence ?? [] })),
-    unmapped: (w.unmapped ?? []).map((u) => u.trim()).filter(Boolean),
+    detections: adaptDetections(w.detections),
+    avoidance: w.avoidance == null ? null : adaptAvoidance(w.avoidance),
+    unmapped: adaptUnmapped(w.unmapped),
     sourceAttributionKey: w.source.attributionKey,
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
     reviewSummary: w.reviewSummary ? { count: w.reviewSummary.count ?? 0, avgRating: w.reviewSummary.avgRating ?? null } : null,
@@ -121,4 +128,43 @@ export function adaptScanName(w: ScanNameWire): ScanNameResult {
 export function adaptScanConfirm(w: ScanConfirmWire): ScanConfirmResult {
   const rejected = w.state === 'REJECTED' || !w.product;
   return { analysisId: w.analysisId, rejected, charged: w.charged === true, product: !rejected && w.product ? adaptProcessedDetail(w.product) : null };
+}
+
+// ── KB-813 후속(P-508): 성분표 분석 S5 — POST /api/processed-foods/scan/label (서버 #442) ──
+/** 함유 가능(같은 제조시설·혼입) — 검출로 세지 않고 회피 대조에도 없는 참고 정보 */
+export type ProcessedMayContain = { code: string; evidence: string };
+/** 성분표 판독 결과. 제품이 정해지지 않았으니 상세 연결 없음. avoidance = 회원 대조(엔드포인트가 회원 전용이라 늘 배열). */
+export type LabelScanResult = {
+  analysisId: string;
+  labelSource: LabelSource;
+  detections: ProcessedDetection[];
+  unmapped: string[];
+  mayContain: ProcessedMayContain[];
+  avoidance: ProcessedAvoidance[];
+  rawText: string;
+  /** 이번 호출에서 서버가 1회 차감했는지 — true일 때만 차감 표시(로컬 추정 0) */
+  charged: boolean;
+};
+export type LabelScanWire = {
+  analysisId: string;
+  state: string;
+  labelSource: string;
+  detections?: DetailWire['detections'] | null;
+  unmapped?: string[] | null;
+  mayContain?: { code: string; source?: string; evidence: string }[] | null;
+  avoidance?: DetailWire['avoidance'];
+  rawText?: string | null;
+  charged?: boolean | null;
+};
+export function adaptLabelScan(w: LabelScanWire): LabelScanResult {
+  return {
+    analysisId: w.analysisId,
+    labelSource: labelSourceOf(w.labelSource),
+    detections: adaptDetections(w.detections),
+    unmapped: adaptUnmapped(w.unmapped),
+    mayContain: (w.mayContain ?? []).map((m) => ({ code: m.code, evidence: m.evidence })),
+    avoidance: adaptAvoidance(w.avoidance ?? []),
+    rawText: blankToNull(w.rawText) ?? '',
+    charged: w.charged === true,
+  };
 }

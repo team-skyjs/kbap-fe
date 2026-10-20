@@ -125,6 +125,7 @@ export const EVENTS = {
   food_packaged_scan_name: 'food_packaged_scan_name', // KB-813 이름 스캔 결과(후보 수 — OCR 원문 금지)
   food_packaged_scan_confirm: 'food_packaged_scan_confirm', // KB-813 확정 — 서버 charged 그대로
   food_packaged_scan_handoff: 'food_packaged_scan_handoff', // KB-813 성분표 안내 진입(from: none|rejected|capture)
+  food_packaged_label_scan: 'food_packaged_label_scan', // P-508 성분표 분석 결과(pages 1~4 · charged = 서버값 · result ok|unreadable|newAnalysis|expired|quota|network… — OCR 원문 금지)
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -189,6 +190,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_packaged_scan_name: ['candidate_count'],
   food_packaged_scan_confirm: ['charged', 'rejected'],
   food_packaged_scan_handoff: ['from'],
+  food_packaged_label_scan: ['pages', 'charged', 'result'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open

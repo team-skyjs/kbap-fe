@@ -1237,7 +1237,8 @@
       "ramen": "Ramen",
       "bread": "Roti",
       "drinks": "Minuman"
-    }
+    },
+    "mayContainTitle": "Mungkin mengandung (fasilitas sama, kontaminasi silang)"
   },
   "scanMode": {
     "menu": "Menu",
@@ -1285,12 +1286,27 @@
       "goneTitle": "Produk tidak ditemukan",
       "goneBody": "Foto ulang.",
       "discontinuedTitle": "Produk ini sudah tidak diproduksi",
-      "discontinuedBody": "Foto ulang."
+      "discontinuedBody": "Foto ulang.",
+      "unreadableTitle": "Label tidak terbaca",
+      "unreadableBody": "Foto ulang dengan daftar bahan terlihat jelas.",
+      "newAnalysisTitle": "Mulai analisis baru",
+      "newAnalysisBody": "Analisis ini tidak bisa ditambah foto. Analisis baru memakai 1 pindaian jika berhasil."
     },
     "chargeChecking": "Kami sedang memeriksa apakah pindaian terpakai.",
     "chargeSeeHome": "Cek sisa pindaian di layar beranda.",
     "debugLabel": "Teks OCR (khusus uji)",
     "debugPlaceholder": "Satu baris teks kemasan per baris",
-    "debugRun": "Pakai teks ini"
+    "debugRun": "Pakai teks ini",
+    "labelReading": "Membaca label komposisi…",
+    "labelPagesTitle": "Foto label komposisi",
+    "labelPagesCount": "Foto: {{count}} dari {{max}}",
+    "labelAddPage": "Foto sisi lain",
+    "labelAnalyze": "Analisis label",
+    "labelNoExtra": "Analisis ini tidak memakai pindaian tambahan.",
+    "labelRawTitle": "Teks yang terbaca",
+    "labelFreeRetry": "Dalam 30 menit, Anda bisa menganalisis ulang hingga 3 kali tanpa pindaian tambahan.",
+    "newAnalysisCta": "Mulai analisis baru",
+    "debugLabelPlaceholder": "Teks satu sisi label",
+    "debugAddPage": "Tambahkan sebagai satu sisi"
   }
 }

@@ -1237,7 +1237,8 @@
       "ramen": "ラーメン",
       "bread": "パン",
       "drinks": "飲料"
-    }
+    },
+    "mayContainTitle": "含む可能性あり(同じ製造施設、混入)"
   },
   "scanMode": {
     "menu": "メニュー",
@@ -1285,12 +1286,27 @@
       "goneTitle": "商品が見つかりません",
       "goneBody": "もう一度撮影してください。",
       "discontinuedTitle": "この商品は生産終了しました",
-      "discontinuedBody": "もう一度撮影してください。"
+      "discontinuedBody": "もう一度撮影してください。",
+      "unreadableTitle": "成分表示を読み取れませんでした",
+      "unreadableBody": "原材料名がはっきり写るように撮り直してください。",
+      "newAnalysisTitle": "新しく分析してください",
+      "newAnalysisBody": "この分析には写真を追加できません。新しく分析すると、成功時にスキャンが1回使われます。"
     },
     "chargeChecking": "スキャンが使われたか確認しています。",
     "chargeSeeHome": "残りのスキャン回数はホーム画面で確認してください。",
     "debugLabel": "OCRテキスト(テスト用)",
     "debugPlaceholder": "パッケージの文字を1行ずつ入力",
-    "debugRun": "このテキストで進む"
+    "debugRun": "このテキストで進む",
+    "labelReading": "成分表示を読み取っています…",
+    "labelPagesTitle": "成分表示の写真",
+    "labelPagesCount": "写真 {{count}}/{{max}}枚",
+    "labelAddPage": "もう一面撮る",
+    "labelAnalyze": "成分表示を分析",
+    "labelNoExtra": "この分析でスキャンは追加で使われていません。",
+    "labelRawTitle": "読み取った文字",
+    "labelFreeRetry": "30分以内なら3回までスキャンを追加で使わずに再分析できます。",
+    "newAnalysisCta": "新しく分析する",
+    "debugLabelPlaceholder": "成分表示1面分の文字",
+    "debugAddPage": "1面として追加"
   }
 }
