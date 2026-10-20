@@ -104,6 +104,7 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: ['home'] }),
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
+      queryClient.invalidateQueries({ queryKey: ['curations'] }), // KB-796(Codex #303 P2): 게시·내림·수정 반영 — 포커스 재조회가 꺼져 있다
     ]).finally(() => setRefreshing(false));
   }, []);
 

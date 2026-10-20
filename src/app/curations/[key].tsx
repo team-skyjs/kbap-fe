@@ -76,7 +76,7 @@ export default function CurationDetailScreen() {
         {detail.items.map((item, i) => (
           <React.Fragment key={item.id}>
             {i > 0 && <View style={styles.divider} />}
-            <ItemCard item={item} collectionKey={detail.key} />
+            <ItemCard item={item} listKey={detail.key} />
           </React.Fragment>
         ))}
       </ScrollView>
@@ -90,10 +90,10 @@ export default function CurationDetailScreen() {
   );
 }
 
-function ItemCard({ item, collectionKey }: { item: CurationItem; collectionKey: string }) {
+function ItemCard({ item, listKey }: { item: CurationItem; listKey: string }) {
   const { t } = useTranslation();
   const open = () => {
-    track(EVENTS.home_curation_link_click, { collection_key: collectionKey, position: item.position });
+    track(EVENTS.home_curation_link_click, { collection_key: listKey, position: item.position });
     void openWebPage(item.externalUrl);
   };
   return (

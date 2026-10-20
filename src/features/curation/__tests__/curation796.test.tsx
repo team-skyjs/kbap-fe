@@ -45,7 +45,8 @@ jest.mock('@/lib/data/useCurations', () => ({
 
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
-import { adaptCurationDetail, adaptCurationIndex, fetchCurationDetail, fetchCurationIndex, type CurationDetail, type CurationIndex } from '@/lib/data/useCurations';
+import { fetchCurationDetail, fetchCurationIndex, type CurationDetail, type CurationIndex } from '@/lib/data/useCurations';
+import { adaptCurationDetail, adaptCurationIndex } from '@/lib/api/curationAdapter';
 import { CurationSection } from '../CurationSection';
 import { HomeImpressionContext, ImpressionTracker } from '@/features/home/homeImpressions';
 import CurationDetailScreen from '@/app/curations/[key]';
@@ -191,12 +192,19 @@ describe('모음 상세', () => {
 
 describe('배치·문구 잠금', () => {
   it('홈: 음식 레일 뒤·Safe picks 앞 슬롯에 큐레이션 · 모음 키 하드코딩 0', () => {
-    expect(fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8')).toContain('afterRail={<CurationSection />}');
+    const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
+    expect(home).toContain('afterRail={<CurationSection />}');
+    expect(home).toContain("queryClient.invalidateQueries({ queryKey: ['curations'] })"); // Codex #303 P2: 당겨서 새로고침에 포함
     const fx = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
     expect(fx.indexOf("{variant === 'embedded' && afterRail}")).toBeGreaterThan(fx.indexOf('testID="home-rail"'));
     expect(fx.indexOf("{variant === 'embedded' && afterRail}")).toBeLessThan(fx.indexOf('testID="home-safe-rail-head"'));
-    for (const f of ['src/features/curation/CurationSection.tsx', 'src/app/curations/[key].tsx', 'src/lib/data/useCurations.ts']) {
+    for (const f of ['src/features/curation/CurationSection.tsx', 'src/app/curations/[key].tsx', 'src/lib/data/useCurations.ts', 'src/lib/api/curationAdapter.ts']) {
       expect(fs.readFileSync(f, 'utf8')).not.toMatch(/['"](sights|stations|restaurants|busan)['"]/);
+    }
+  });
+  it('Codex #303 P1: 와이어 변환은 lib/api/curationAdapter에만 — 훅·화면에 서버 필드명 0', () => {
+    for (const f of ['src/lib/data/useCurations.ts', 'src/features/curation/CurationSection.tsx', 'src/app/curations/[key].tsx']) {
+      expect(fs.readFileSync(f, 'utf8')).not.toMatch(/collectionKey|coverImageAttribution|recommendationReason|entryId/);
     }
   });
   it('10언어 앱 문구 전부 · 가운데점 0 · 이름 자리표시자 유지', () => {
