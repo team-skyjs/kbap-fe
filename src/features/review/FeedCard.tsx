@@ -9,7 +9,7 @@
  * Speed/Service=P-236 2축, 0=미평가 비표시) · 본문 · 사진 104 · 음식/장소 칩.
  */
 import * as React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C, type as type_ } from '@/lib/theme';
@@ -60,6 +60,7 @@ export function FeedCard({
   /** KB-817: 리뷰 탭만 'peek'(사진 가로 스냅 + See more 잉크색). 홈·음식 상세·내 리뷰 = 'tiles' 불변 */
   photoVariant?: 'tiles' | 'peek';
 }) {
+  const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
   const anon = review.anonymized;
   const name = anon ? t('reviews.anonymous') : (review.author?.nickname ?? review.authorNationality ?? t('reviews.anonymous'));
   const when = useReviewTime(review.createdAt, t);
@@ -130,7 +131,8 @@ export function FeedCard({
         ) : (
           <IconFood size={16} color={C.ink2} />
         )}
-        <Text style={styles.foodChipName} numberOfLines={1}>
+        {/* KB-777: 글씨 크기를 바꾸면 한 줄 칩 이름을 새로 마운트해 다시 잰다(옛 폭으로 잘리던 것) */}
+        <Text key={`chip:${fontScale}`} style={styles.foodChipName} numberOfLines={1}>
           {review.foodName ?? t('myReviews.viewDish')}
         </Text>
         <IconChevron size={12} color={C.ink3} />

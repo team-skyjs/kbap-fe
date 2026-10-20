@@ -52,6 +52,14 @@ export function ExpandableBody({ body, t, style, toggleColor }: { body: string; 
     setExpanded(false);
     setFullLines(null);
   }
+  // KB-777(10/20 QA): 앱을 켠 채 글씨 크기를 바꾸면 이미 그려진 카드가 옛 측정으로 남아 See more·칩이 잘렸다 —
+  // 글꼴 배율이 바뀌면(전이) 줄 수를 버리고 측정 Text를 새로 마운트해 다시 잰다. 펼침 상태는 유지.
+  const fontScale = useWindowDimensions().fontScale;
+  const [prevScale, setPrevScale] = React.useState(fontScale);
+  if (fontScale !== prevScale) {
+    setPrevScale(fontScale);
+    setFullLines(null);
+  }
   const clamped = fullLines != null && fullLines > BODY_CLAMP_LINES;
   const toggle = clamped && (
     <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} color={toggleColor} testID="body-toggle" />
@@ -59,12 +67,12 @@ export function ExpandableBody({ body, t, style, toggleColor }: { body: string; 
   return (
     <View style={{ gap: 3 }}>
       {/* Codex #301 P2: 측정 전(null)은 접힌 채 — 긴 본문이 전체로 그려졌다 줄어드는 높이 점프 0(짧은 본문엔 3줄 제한이 보이지 않는다) */}
-      <Text style={[styles.body, style]} numberOfLines={expanded || (fullLines != null && !clamped) ? undefined : BODY_CLAMP_LINES} testID="body-text">
+      <Text key={`v:${fontScale}`} style={[styles.body, style]} numberOfLines={expanded || (fullLines != null && !clamped) ? undefined : BODY_CLAMP_LINES} testID="body-text">
         {body}
       </Text>
       {/* KB-824: 전체 줄 수 측정용 — 보이지 않고 터치·스크린리더 0, 레이아웃에 자리 0(absolute) */}
       <Text
-        key={body}
+        key={`${fontScale}:${body}`}
         style={[styles.body, style, styles.measure]}
         onTextLayout={(e) => setFullLines(e.nativeEvent.lines.length)}
         accessible={false}

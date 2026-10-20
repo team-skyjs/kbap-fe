@@ -479,11 +479,12 @@ function ReviewComposeScreen() {
                   <Image source={{ uri: key }} style={styles.photoThumb} />
                   <Pressable testID="review-photo-remove"
                     accessibilityLabel={t('review.removePhoto')}
-                    style={styles.photoDel}
-                    hitSlop={8}
+                    style={styles.photoDelHit}
                     onPress={() => setPhotos((cur) => removeReviewPhoto(cur, key))}
                   >
-                    <IconClose size={10} color="#fff" />
+                    <View style={styles.photoDel}>
+                      <IconClose size={10} color="#fff" />
+                    </View>
                   </Pressable>
                 </View>
               );
@@ -692,7 +693,9 @@ const styles = StyleSheet.create({
   photoRow: { flexDirection: 'row', gap: 8 },
   photoThumbWrap: { width: 100, height: 100 },
   photoThumb: { width: 100, height: 100, borderRadius: radius.sm, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.inkDisabled },
-  photoDel: { position: 'absolute', top: 6, right: 6, width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
+  // KB-777 A2-9: 터치 = 썸네일 안쪽 모서리 44×44 상자(부모 100 안 — hitSlop은 부모 밖에서 잘린다), 보이는 원은 시안 그대로 16 @ top6·right6
+  photoDelHit: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, padding: 6, alignItems: 'flex-end' },
+  photoDel: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#D9D9D9', alignItems: 'center', justifyContent: 'center' }, // A-RW-06
   photoAdd: { width: 100, height: 100, borderRadius: radius.sm, borderWidth: 1, borderColor: C.line2, backgroundColor: 'rgba(244,246,246,0.5)', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
   metaRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
   tag: { fontSize: 13, fontWeight: '500', color: C.ink3 },

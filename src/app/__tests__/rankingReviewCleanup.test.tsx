@@ -214,3 +214,16 @@ it('KB-710 (7): 한 줄 2장으로 접힌 배치 — 같은 y의 카드끼리 �
   expect(rankRowKey(3, { 3: 150.4 })).toBe('y150');
   expect(rankRowKey(3, {})).toBe('r0'); // 측정 전 폴백
 });
+
+// KB-777 B3-6: "pts to Regular"에 남은 점수가 없던 것 · 바 1%(등급 안 진행) vs "81 / 180 pts"(45%) 불일치
+it('KB-777 B3-6: 남은 점수 = 서버 pointsToNext(없으면 at − score) · 진행 바 = 옆 숫자와 같은 비율(score / 다음 등급 at)', () => {
+  const { barPercent } = jest.requireActual('../profile/ranking') as { barPercent: (s: number, a: number) => number };
+  expect([barPercent(81, 180), barPercent(0, 80), barPercent(200, 180), barPercent(5, 0)]).toEqual([45, 0, 100, 100]);
+  const tree = render(<RankingScreen />); // taster 45 → explorer @80, pointsToNext 35
+  const fill = tree.root.findAll((n) => n.props?.testID === 'ranking-progress-fill' && typeof n.type === 'string')[0];
+  expect((jest.requireActual('react-native').StyleSheet.flatten(fill.props.style) as { width?: string }).width).toBe('56%'); // 45/80 — 종전 (45−30)/50 = 30%
+  const src = jest.requireActual('fs').readFileSync('src/app/profile/ranking.tsx', 'utf8') as string;
+  expect(src).toContain("t('ranking.ptsTo', { count: rk.pointsToNext ?? Math.max(0, next.at - rk.score), tier:");
+  const en = JSON.parse(jest.requireActual('fs').readFileSync('src/lib/i18n/en.json', 'utf8')).ranking;
+  expect([en.ptsTo_one, en.ptsTo_other]).toEqual(['{{count}} pt to {{tier}}', '{{count}} pts to {{tier}}']);
+});

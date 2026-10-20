@@ -29,6 +29,8 @@ const PRIMARY_10 = 'rgba(255,113,52,0.10)';
 /** 별 그리드 규칙(발주): 1별 = 1pt — 다음 등급 간격이 30pt(6×5)를 넘으면 규칙
  *  불일치 → 진행 바 대체. export = 유닛 잠금용. */
 export const STAR_GRID_MAX = 30;
+/** KB-777 B3-6: 진행 바 % = 현재 점수 / 다음 등급 기준(옆 표기 "score / at pts"와 같은 분수). */
+export const barPercent = (score: number, at: number): number => (at > 0 ? Math.max(0, Math.min(100, Math.round((score / at) * 100))) : 100);
 
 /** P-327(KB-486): 진행 배지 = 12각 스타 + 수저 글리프(rankBadge.tsx — .fig 재디코드).
  *  구 5각 별(Stars.tsx STAR_D 스케일) 폐기. 6칸 행 단위로 chunk(space-evenly). */
@@ -126,7 +128,8 @@ function RankingBody({ rk }: { rk: Ranking }) {
       {next && (
         <View style={styles.progCard} testID="ranking-progress-card">
           <View style={styles.progHead}>
-            <Text style={styles.progTo}>{t('ranking.ptsTo', { tier: t(`ranking.tier.${next.key}`) })}</Text>
+            {/* KB-777 B3-6: 남은 점수 = 서버 pointsToNext(없으면 같은 서버값 기준 at − score) */}
+            <Text style={styles.progTo} testID="ranking-pts-to">{t('ranking.ptsTo', { count: rk.pointsToNext ?? Math.max(0, next.at - rk.score), tier: t(`ranking.tier.${next.key}`) })}</Text>
             <Text style={styles.progPts}>
               <Text style={styles.progPtsCur}>{t('ranking.totalChip', { score: rk.score })}</Text>
               <Text style={styles.progPtsGoal}> / {t('ranking.tickPts', { at: next.at })}</Text>
@@ -148,7 +151,8 @@ function RankingBody({ rk }: { rk: Ranking }) {
           ) : (
             /* 간격 30pt 초과 = 1별=1pt 규칙 불일치 — 진행 바 대체(발주 규정) */
             <View style={styles.track} testID="ranking-progress-bar">
-              <View style={[styles.fill, { width: `${span > 0 ? Math.round((gained / span) * 100) : 100}%` }]} />
+              {/* KB-777 B3-6: 바 = 옆 숫자("81 / 180 pts")와 같은 비율 — 등급 안 진행률(1%)이 숫자 45%와 어긋나 보이던 것 */}
+              <View style={[styles.fill, { width: `${barPercent(rk.score, next.at)}%` }]} testID="ranking-progress-fill" />
             </View>
           )}
         </View>
