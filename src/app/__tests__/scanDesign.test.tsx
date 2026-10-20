@@ -447,3 +447,16 @@ it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(�
   expect(src).toContain("const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera);");
   expect(src).toContain('const lightBar = isFocused && darkRoot ?');
 });
+
+it('KB-777 B1-11: 카메라 뷰파인더 위·아래 스크림(제목·안내 대비) — 터치 통과(pointerEvents none) · 결과 화면엔 없음', async () => {
+  const tree = render(<Scan />);
+  for (const id of ['cam-scrim-top', 'cam-scrim-bottom']) {
+    const s = tree.root.findAll((n) => n.props?.testID === id);
+    expect(s.length).toBeGreaterThanOrEqual(1);
+    expect(s[0].props.pointerEvents).toBe('none');
+  }
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  expect(tree.root.findAll((n) => n.props?.testID === 'cam-scrim-top')).toHaveLength(0);
+});

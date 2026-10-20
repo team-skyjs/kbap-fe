@@ -96,6 +96,9 @@ function deletePhotoFile(uri: string | null | undefined): void {
 
 // KB-777 B1-4: 바탕이 어두운(#16110d) 단계 — 상태바 아이콘 light
 const DARK_ROOT_PHASES = new Set<string>(['error', 'scanning']);
+// KB-777 B1-11: 카메라 크롬 스크림 — 위(제목·닫기)·아래(힌트·줌·셔터)
+const CAM_SCRIM_TOP = ['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)'] as const;
+const CAM_SCRIM_BOTTOM = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)'] as const;
 
 export default function Scan() {
   const router = useRouter();
@@ -1144,6 +1147,9 @@ export default function Scan() {
               responsiveOrientationWhenOrientationLocked
               onResponsiveOrientationChanged={(e) => setCamOrientation(e.orientation)}
             />
+            {/* KB-777 B1-11: 밝은 장면에서 흰 제목·안내·버튼이 묻히지 않게 위·아래 스크림(터치 통과 — 핀치·셔터 무영향) */}
+            <LinearGradient pointerEvents="none" colors={CAM_SCRIM_TOP} style={[styles.camScrimTop, { height: insets.top + 96 }]} testID="cam-scrim-top" />
+            <LinearGradient pointerEvents="none" colors={CAM_SCRIM_BOTTOM} style={styles.camScrimBottom} testID="cam-scrim-bottom" />
           </View>
         </GestureDetector>
       ) : (
@@ -1393,6 +1399,8 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
   camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 8 },
+  camScrimTop: { position: 'absolute', top: 0, left: 0, right: 0 },
+  camScrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 300 },
   launcherRoot: { flex: 1, backgroundColor: '#fff' },
   launcherBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34, gap: 12 },
   launcherTitle: { fontFamily: font.bodyBold, fontSize: 21, color: C.ink },
