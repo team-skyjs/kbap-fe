@@ -125,7 +125,7 @@ export const SERVER_FOOD_SORTS: (FoodNameSort | undefined)[] = [undefined, 'name
 
 /**
  * KB-830: 정렬 전환을 즉시로 — 현재 목록의 첫 페이지가 도착한 **뒤**(ready), 같은 필터의 **다른 정렬** 첫 페이지만
- * prefetchInfiniteQuery로 받아 둔다(페이지 1장 · 실패 무시 · 신선한 캐시는 재요청 0 — 기본 staleTime이 목록과 같다).
+ * prefetchInfiniteQuery로 받아 둔다(pages: 1 — 오래된 다페이지 캐시도 1장만 · 실패 무시 · 신선한 캐시는 재요청 0 — 기본 staleTime이 목록과 같다).
  * keepPreviousData는 쓰지 않는다: 필터가 바뀔 때 옛 판정이 보이면 안 되는 판정 표면(정렬만 바뀌어도 같은 쿼리라 일관되게).
  * 다시 거는 계기 = 필터·언어·현재 정렬 변경, 탭 진입(enabled) — 신선하면 네트워크 0.
  */
@@ -138,7 +138,8 @@ export function usePrefetchOtherFoodSorts(risk: RiskFilterChip | undefined, curr
     if (!enabled || !ready) return;
     for (const sort of SERVER_FOOD_SORTS) {
       if (sort === current) continue;
-      void qc.prefetchInfiniteQuery(foodsListOptions(lang, wire, sort)).catch(() => {}); // 선요청 실패 = 무시(전환 시 정상 로딩)
+      // Codex #307 P2: pages 1 명시 — 생략하면 오래된 캐시(깊이 스크롤한 정렬)의 페이지 수만큼 전부 다시 받는다(정렬당 1요청 상한 깨짐)
+      void qc.prefetchInfiniteQuery({ ...foodsListOptions(lang, wire, sort), pages: 1 }).catch(() => {}); // 선요청 실패 = 무시(전환 시 정상 로딩)
     }
   }, [qc, lang, wire, current, enabled, ready]);
 }

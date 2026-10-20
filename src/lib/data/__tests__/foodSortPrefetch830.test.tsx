@@ -28,6 +28,8 @@ jest.mock('react-native-reanimated', () => {
 });
 jest.mock('@/lib/i18n/useAppLanguage', () => ({ useAppLanguage: () => 'en' }));
 const mockFetch = jest.fn();
+const mockApiGet = jest.fn(async () => ({ items: [], hasNext: true, nextCursor: 'n1' }));
+jest.mock('@/lib/api/client', () => ({ ...jest.requireActual('@/lib/api/client'), api: { get: (...a: unknown[]) => mockApiGet(...(a as [])) } }));
 jest.mock('@/lib/data/foodNameSort', () => ({
   ...jest.requireActual('@/lib/data/foodNameSort'),
   useRestartOnStaleCursor: () => {},
@@ -72,14 +74,14 @@ describe('KB-830 다른 정렬 첫 페이지 선요청', () => {
     expect(keys()).toEqual([key('danger', undefined), key('danger', 'name_desc')]);
     m.unmount();
   });
-  it('첫 페이지만(pages 지정 0 — prefetchInfiniteQuery 기본 1장) · 화면 목록과 같은 정의(foodsListOptions) · 비활성(Saved·홈) = 0', () => {
+  it('첫 페이지만(pages: 1 명시 — 생략하면 오래된 캐시의 페이지 수만큼 재요청) · 화면 목록과 같은 정의(foodsListOptions) · 비활성(Saved·홈) = 0', () => {
     const m = mount({ risk: 'all', current: undefined, enabled: false, ready: true });
     expect(spy).not.toHaveBeenCalled();
     m.update({ risk: 'all', current: undefined, enabled: true, ready: true });
     expect(spy).toHaveBeenCalledTimes(2);
     for (const c of spy.mock.calls) {
       const o = c[0] as Record<string, unknown>;
-      expect(o.pages).toBeUndefined();
+      expect(o.pages).toBe(1); // Codex #307: 생략 = 캐시 페이지 수만큼 재요청
       expect(typeof o.getNextPageParam).toBe('function');
       expect(o.placeholderData).toBeUndefined(); // keepPreviousData 금지(판정 표면)
     }
@@ -98,6 +100,24 @@ describe('KB-830 다른 정렬 첫 페이지 선요청', () => {
     expect(fx).toContain('usePrefetchOtherFoodSorts(riskChip, nameSort, { enabled: sortable && !savedTabActive, ready: browse.isSuccess });');
     const uf = fs.readFileSync('src/lib/data/useFoods.ts', 'utf8') as string;
     expect(uf).not.toMatch(/placeholderData\s*:|import[^;]*keepPreviousData/); // 주석의 금지 안내는 허용, 실제 사용 0
+  });
+});
+
+describe('Codex #307: 오래된 다페이지 캐시도 선요청은 1요청', () => {
+  it('실제 QueryClient — 다른 정렬 캐시 3페이지가 stale이어도 선요청 페치 = 1회(첫 페이지)', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 0, retry: false } } });
+    const opts = foods.foodsListOptions('en', undefined, 'name_asc');
+    qc.setQueryData(opts.queryKey, { pages: [1, 2, 3].map((n) => ({ items: [], hasNext: true, nextCursor: `c${n}` })), pageParams: [undefined, 'c1', 'c2'] });
+    mockApiGet.mockClear();
+    function P() { foods.usePrefetchOtherFoodSorts('all', undefined, { enabled: true, ready: true }); return null; }
+    let tr!: renderer.ReactTestRenderer;
+    await act(async () => { tr = renderer.create(<QueryClientProvider client={qc}><P /></QueryClientProvider>); });
+    for (let i = 0; i < 5; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    const urls = mockApiGet.mock.calls.map((c) => String((c as unknown[])[0]));
+    const nameAsc = urls.filter((u) => u.includes('name_asc'));
+    expect(nameAsc).toHaveLength(1); // 3페이지 캐시여도 1요청
+    expect(nameAsc[0]).not.toContain('cursor='); // 첫 페이지
+    act(() => tr.unmount());
   });
 });
 
