@@ -38,7 +38,7 @@ import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
 /** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). 클램프 규칙은 원문·번역문 동일(같은 Text). */
-export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style?: object }) {
+export function ExpandableBody({ body, t, style, toggleColor }: { body: string; t: TFn; style?: object; toggleColor?: string }) {
   const [expanded, setExpanded] = React.useState(false);
   const [clamped, setClamped] = React.useState(false);
   // #220 공부 메모 ①: 본문이 바뀌면(원문↔번역·수정) 접힌 상태로 돌아가 줄 수를 다시 잰다 — 렌더 중 전환 비교(KB-603)
@@ -48,7 +48,7 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
     setExpanded(false);
   }
   const toggle = (clamped || expanded) && (
-    <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} testID="body-toggle" />
+    <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} color={toggleColor} testID="body-toggle" />
   );
   return (
     <View style={{ gap: 3 }}>
@@ -73,7 +73,7 @@ export function ExpandableBody({ body, t, style }: { body: string; t: TFn; style
  *  KB-703(예진 10/2): 누른 뒤 사라지는 경우는 없다 — 같은 언어 응답도 일반 번역 결과처럼 표시.
  *  KB-703 ②: 서버가 판별한 리뷰 언어(`review.language`)가 앱 언어와 같으면 라벨을 **처음부터** 숨긴다(유일한 숨김 조건).
  *  null·필드 없음(판별 불가·구서버) = 지금처럼 표시, 안내 문구 없음. 앱 언어는 구독형(useAppLanguage — 렌더 중 싱글턴 직접 읽기 금지, KB-695). */
-export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style?: object }) {
+export function ReviewBody({ review, t, style, toggleColor }: { review: Review; t: TFn; style?: object; toggleColor?: string }) {
   const original = review.body?.trim() ? review.body : null;
   const tx = useContentTranslation('REVIEW', review.id, original ?? '');
   // 앱 언어 원값과 비교(clampLang 안 거침 — 앱 10개 언어 = 서버 언어 집합. 어긋나면 "다름" = 표시 쪽이라 안전, client 모듈 의존도 안 늘림)
@@ -91,26 +91,54 @@ export function ReviewBody({ review, t, style }: { review: Review; t: TFn; style
           onPress={tx.toggle}
         />
       )}
-      <ExpandableBody body={tx.translatedText ?? original} t={t} style={style} />
+      <ExpandableBody body={tx.translatedText ?? original} t={t} style={style} toggleColor={toggleColor} />
     </View>
   );
 }
 
-/** 사진 가로 스트립 + 탭 = 풀스크린 뷰어(가로 페이징·X 닫기·인덱스). */
-export function ReviewPhotoStrip({ photos, size = 72, radius = 10 }: { photos: string[]; size?: number; radius?: number }) {
+/** KB-817 peek: 다음 장이 이만큼 걸쳐 보인다(타일 폭 = 콘텐츠 폭 − PEEK_REVEAL). */
+export const PEEK_REVEAL = 40;
+export const PEEK_GAP = 8;
+
+/** 사진 가로 스트립 + 탭 = 풀스크린 뷰어(가로 페이징·X 닫기·인덱스).
+ *  variant 'tiles'(기본) = 정사각 최대 3장 · 'peek'(KB-817, 리뷰 탭) = 전체 장수 가로 스냅, 4:3, 다음 장이 걸쳐 보임. */
+export function ReviewPhotoStrip({ photos, size = 72, radius = 10, variant = 'tiles' }: { photos: string[]; size?: number; radius?: number; variant?: 'tiles' | 'peek' }) {
   const [openAt, setOpenAt] = React.useState<number | null>(null);
   const { width } = useWindowDimensions();
   const [page, setPage] = React.useState(0);
+  // 측정 전엔 카드 패딩(20×2)을 뺀 창 폭으로 그려 첫 프레임 높이 점프를 막는다
+  const [measured, setMeasured] = React.useState<number | null>(null);
   if (!photos.length) return null;
+  const open = (i: number) => { setPage(i); setOpenAt(i); };
+  const tileW = Math.max(0, (measured ?? width - 40) - PEEK_REVEAL);
   return (
     <>
+      {variant === 'peek' ? (
+        <View onLayout={(e) => setMeasured(e.nativeEvent.layout.width)} testID="photo-peek">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={tileW + PEEK_GAP}
+            decelerationRate="fast"
+            scrollEnabled={photos.length > 1}
+            contentContainerStyle={{ gap: PEEK_GAP }}
+          >
+            {photos.map((uri, i) => (
+              <Pressable key={uri} onPress={() => open(i)} testID={`photo-${i}`}>
+                <RemoteImage uri={uri} style={{ width: tileW, height: (tileW * 3) / 4, borderRadius: 12, backgroundColor: C.surface2 }} />
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : (
       <View style={styles.strip}>
         {photos.slice(0, 3).map((uri, i) => (
-          <Pressable key={uri} hitSlop={4} onPress={() => { setPage(i); setOpenAt(i); }} testID={`photo-${i}`}>
+          <Pressable key={uri} hitSlop={4} onPress={() => open(i)} testID={`photo-${i}`}>
             <RemoteImage uri={uri} style={{ width: size, height: size, borderRadius: radius, backgroundColor: C.surface2 }} />
           </Pressable>
         ))}
       </View>
+      )}
       {/* P-348 ⑥(KB-511): 공용 PhotoViewer — 세로 스와이프 닫기 포함 */}
       {openAt != null && <PhotoViewer uris={photos} index={openAt} onClose={() => setOpenAt(null)} />}
     </>

@@ -205,3 +205,57 @@ it('P-366 ④(KB-529): 비mine ON 탭 = 체크 토스트 1회(성공 시) · OFF
   tap(tree2, 'r9');
   expect(mockToast).not.toHaveBeenCalled();
 });
+
+describe('KB-817 리뷰 탭 peek', () => {
+  const { ScrollView, StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  const { PhotoViewer } = jest.requireActual<typeof import('@/components/PhotoViewer')>('@/components/PhotoViewer');
+  const photos = ['a', 'b', 'c', 'd', 'e'].map((x) => `https://cdn/${x}.jpg`);
+  const tile = (tree: ReactTestRenderer, i: number) =>
+    StyleSheet.flatten(tree.root.findAll((n) => n.props?.testID === `photo-${i}`)[0].findAll((n) => n.props?.uri)[0].props.style);
+  const measure = (tree: ReactTestRenderer, width: number) =>
+    act(() => tree.root.findAll((n) => n.props?.testID === 'photo-peek' && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { width } } }));
+
+  it('타일 폭 = 콘텐츠 폭 − 40 · 높이 = 폭×3/4 · radius 12 · snap = 폭+8 · 전체 장수 · 탭 index 유지', () => {
+    const tree = render(<ReviewPhotoStrip photos={photos} variant="peek" />);
+    measure(tree, 335);
+    for (let i = 0; i < photos.length; i++) expect(tile(tree, i)).toMatchObject({ width: 295, height: 221.25, borderRadius: 12 });
+    const scroll = tree.root.findByType(ScrollView);
+    expect(scroll.props).toMatchObject({ horizontal: true, showsHorizontalScrollIndicator: false, snapToInterval: 303, decelerationRate: 'fast', scrollEnabled: true });
+    act(() => tree.root.findAll((n) => n.props?.testID === 'photo-3')[0].props.onPress());
+    expect(tree.root.findByType(PhotoViewer).props).toMatchObject({ index: 3, uris: photos });
+  });
+  it('1장 = 스크롤 없이 같은 크기 1장 · 0장 = 미렌더', () => {
+    const one = render(<ReviewPhotoStrip photos={[photos[0]]} variant="peek" />);
+    measure(one, 335);
+    expect(tile(one, 0)).toMatchObject({ width: 295, height: 221.25 });
+    expect(one.root.findByType(ScrollView).props.scrollEnabled).toBe(false);
+    expect(render(<ReviewPhotoStrip photos={[]} variant="peek" />).toJSON()).toBeNull();
+  });
+  it('기본 tiles 불변 — 최대 3장 · 지정 size 정사각 · 가로 스크롤 없음', () => {
+    const tree = render(<ReviewPhotoStrip photos={photos} size={104} radius={4} />);
+    expect(new Set(tree.root.findAll((n) => typeof n.props?.testID === 'string' && /^photo-\d$/.test(n.props.testID)).map((n) => n.props.testID)).size).toBe(3);
+    expect(tile(tree, 0)).toMatchObject({ width: 104, height: 104, borderRadius: 4 });
+    expect(tree.root.findAllByType(ScrollView)).toHaveLength(0);
+  });
+  it('See more 색 — 기본 = 기존 primaryText · toggleColor 지정 시 라벨·아이콘 그 색', () => {
+    const { color: C } = jest.requireActual<typeof import('@/lib/theme')>('@/lib/theme');
+    const labelColor = (tree: ReactTestRenderer) => {
+      const toggle = tree.root.findAll((n) => n.props?.testID === 'body-toggle')[0];
+      return StyleSheet.flatten(toggle.findAll((n) => n.props?.children === 'reviews.seeMore')[0].props.style).color;
+    };
+    const open3 = (tree: ReactTestRenderer) => act(() => tree.root.findAll((n) => typeof n.props?.onTextLayout === 'function')[0].props.onTextLayout({ nativeEvent: { lines: [{}, {}, {}] } }));
+    const base = render(<ExpandableBody body="long" t={t} />); open3(base);
+    expect(labelColor(base)).toBe(C.primaryText);
+    const ink = render(<ExpandableBody body="long" t={t} toggleColor="#2F3137" />); open3(ink);
+    expect(labelColor(ink)).toBe('#2F3137');
+  });
+  it('표면 배선 — 리뷰 탭만 peek, FeedCard 기본 tiles · peek일 때만 See more 잉크색', () => {
+    const fs = jest.requireActual<typeof import('fs')>('fs');
+    const feed = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8');
+    expect(feed).toContain('photoVariant="peek"');
+    const card = fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8');
+    expect(card).toContain("photoVariant = 'tiles'");
+    expect(card).toContain("toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined}");
+    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/profile/reviews.tsx']) expect(fs.readFileSync(f, 'utf8')).not.toContain('photoVariant');
+  });
+});

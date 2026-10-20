@@ -170,6 +170,7 @@ export function ReviewFeed() {
           <FeedCard
             review={row.item}
             t={t}
+            photoVariant="peek" // KB-817: 리뷰 탭만
             mine={row.item.memberId != null && row.item.memberId === myId}
             onOpenFood={() => row.item.foodId && router.push(`/food/${row.item.foodId}?src=feed` as Href)}
             onGuestHelpful={() => setGateOpen('helpful')}
