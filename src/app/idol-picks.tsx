@@ -42,11 +42,21 @@ export default function IdolPicksScreen() {
   const hasR = (me?.restrictions ?? []).length > 0;
   const count = picks?.length;
 
+  // Codex #313 P2: 포커스당 1회 — 캐시 표시 뒤 refetch 로 count 가 바뀌어도 같은 포커스에서 다시 쏘지 않는다. blur 에 리셋
+  const sent = React.useRef(false);
   useFocusEffect(
-    React.useCallback(() => {
-      if (count != null) track(EVENTS.home_idol_pick_list_view, { count });
-    }, [count]),
+    React.useCallback(
+      () => () => {
+        sent.current = false;
+      },
+      [],
+    ),
   );
+  React.useEffect(() => {
+    if (!isFocused || count == null || sent.current) return;
+    sent.current = true;
+    track(EVENTS.home_idol_pick_list_view, { count });
+  }, [isFocused, count]);
 
   const header = (
     <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
@@ -107,12 +117,15 @@ export default function IdolPicksScreen() {
         }
         testID="idol-picks-list"
       />
+      {/* Codex #313 P2: 다크 헤더가 스크롤로 사라져도 light 상태바 아이콘 뒤는 항상 ink — 상태바 영역 고정 면(색만, 레이아웃 무관) */}
+      <View pointerEvents="none" style={[styles.statusScrim, { height: insets.top }]} testID="idol-picks-status-scrim" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.surface },
+  statusScrim: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.ink },
   header: { backgroundColor: C.ink, paddingHorizontal: GUTTER, paddingBottom: 24, gap: 12, marginBottom: 20 },
   back: { width: 36, height: 36, justifyContent: 'center' },
   headRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },

@@ -33,7 +33,7 @@ jest.mock('react-native-reanimated', () => {
   };
 });
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: Record<string, unknown>) => (o ? `${k}:${JSON.stringify(o)}` : k) }), initReactI18next: { type: '3rdParty', init: () => {} } }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 44, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View testID="shimmer" {...p} /> }; });
 jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; onError?: () => void }) => <View testID={`img:${p.uri}`} {...({ onError: p.onError } as object)} /> }; });
 jest.mock('expo-linear-gradient', () => { const { View } = jest.requireActual('react-native'); return { LinearGradient: (p: object) => <View {...p} /> }; });
@@ -70,6 +70,7 @@ import { IdolPickBanner } from '../IdolPickBanner';
 import { trackHomeCardClick } from '../homeImpressions';
 import { IdolVideoCard } from '@/features/food/IdolVideoCard';
 import IdolPicksScreen, { cellWidth } from '@/app/idol-picks';
+import { IdolPhoto } from '../IdolPosterCard';
 /* eslint-enable import/first */
 
 // 계약 C-1 항목 모양(가짜 값 — 법무 잠금: 이름·제목 없음)
@@ -230,6 +231,38 @@ describe('목록 화면 /idol-picks', () => {
     expect(metrics(stylesWhen(t, 'idol-poster-1', true))).toEqual(metrics(stylesWhen(t, 'idol-poster-1', false)));
     expect(cellWidth(375)).toBe(161.5);
     expect(cellWidth(320)).toBe(134);
+  });
+});
+
+describe('Codex #313 P2', () => {
+  it('상태바 뒤 ink 고정 면 — 스크롤과 무관하게 light 아이콘 대비 유지(높이 = insets.top, 터치 통과)', () => {
+    qc.setQueryData(idolPicksKey('en'), [pick(1)]);
+    const t = render(<IdolPicksScreen />);
+    const scrim = t.root.find((n) => n.props.testID === 'idol-picks-status-scrim' && typeof n.type === 'string');
+    expect(StyleSheet.flatten(scrim.props.style)).toMatchObject({ position: 'absolute', top: 0, height: 44, backgroundColor: '#1C1E21' });
+    expect(scrim.props.pointerEvents).toBe('none');
+  });
+
+  it('목록 노출 계측 = 포커스당 1회 — 같은 포커스에서 refetch 로 count 가 바뀌어도 추가 전송 없음, 재진입이면 다시', async () => {
+    qc.setQueryData(idolPicksKey('en'), [pick(1), pick(2)]);
+    const t = render(<IdolPicksScreen />);
+    act(() => { qc.setQueryData(idolPicksKey('en'), [pick(1), pick(2), pick(3)]); });
+    await until(() => hostIds(t).includes('idol-poster-3')); // 새 count 로 리렌더된 뒤 단언
+    const views = () => mockTrack.mock.calls.filter((c) => c[0] === 'home_idol_pick_list_view');
+    expect(views()).toEqual([['home_idol_pick_list_view', { count: 2 }]]);
+    act(() => t.unmount());
+    render(<IdolPicksScreen />);
+    expect(views()).toEqual([['home_idol_pick_list_view', { count: 2 }], ['home_idol_pick_list_view', { count: 3 }]]);
+  });
+
+  it('IdolPhoto: 실패 후 다른 uri 로 바뀌면 다시 시도(실패 상태가 새 사진을 가리지 않는다)', () => {
+    const el = (uri: string) => <IdolPhoto uri={uri} recyclingKey="1" fallbackBg="#000" iconSize={40} style={{}} />;
+    const t = render(el('https://cdn.example/a.webp'));
+    act(() => t.root.find((n) => n.props.testID === 'img:https://cdn.example/a.webp' && typeof n.type === 'string').props.onError());
+    expect(hostIds(t)).toContain('idol-photo-fallback-1');
+    act(() => t.update(<QueryClientProvider client={qc}>{el('https://cdn.example/b.webp')}</QueryClientProvider>));
+    expect(hostIds(t)).toContain('img:https://cdn.example/b.webp');
+    expect(hostIds(t)).not.toContain('idol-photo-fallback-1');
   });
 });
 

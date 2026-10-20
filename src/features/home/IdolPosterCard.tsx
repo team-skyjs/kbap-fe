@@ -23,6 +23,13 @@ const WHITE_50 = 'rgba(255,255,255,0.5)';
 /** 원격 사진 + 실패/없음 폴백(바탕 + 가운데 물음표). 배너 콜라주와 포스터 카드가 공유. */
 export function IdolPhoto({ uri, recyclingKey, fallbackBg, iconSize, style }: { uri: string | null; recyclingKey: string; fallbackBg: string; iconSize: number; style: StyleProp<ViewStyle> }) {
   const [failed, setFailed] = React.useState(false);
+  // Codex #313 P2: 소스 전환마다 실패 리셋 — CardPhoto 와 같은 렌더 중 키 비교(A→B→A 에도 재시도)
+  const key = `${recyclingKey}\u0000${uri ?? ''}`;
+  const [prevKey, setPrevKey] = React.useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
+    setFailed(false);
+  }
   if (!uri || failed) {
     return (
       <View style={[style, { backgroundColor: fallbackBg, alignItems: 'center', justifyContent: 'center' }]} testID={`idol-photo-fallback-${recyclingKey}`}>
