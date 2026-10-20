@@ -42,6 +42,21 @@ function isDiagnosticChannelInner(): boolean {
 }
 const DIAGNOSTIC_CHANNEL = isDiagnosticChannelInner();
 
+/** KB-812 2차(P-507): **dev 서버를 쓰는 채널**만 참 — development·teamtest(eas.json EXPO_PUBLIC_BE_BASE = dev.kbap.site).
+ *  진단 채널과 다르다: teamtest-prod는 진단은 보이지만 백엔드가 prod라 dev 서버에서만 켜진 기능(서버 플래그)은 거기서 막다른 길이다.
+ *  채널 부재는 진단과 같은 규칙(__DEV__일 때만 로컬). */
+function isDevServerChannelInner(): boolean {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ch = (require('expo-updates') as { channel?: string | null }).channel;
+    if (ch == null || ch === '') return __DEV__;
+    return ch === 'teamtest' || ch === 'development';
+  } catch {
+    return __DEV__;
+  }
+}
+const DEV_SERVER_CHANNEL = isDevServerChannelInner();
+
 /** 채널 판별 단일 소스(P-114) — 함수형 export로 jest 목 주입 가능. */
 export function isDiagnosticChannel(): boolean {
   return DIAGNOSTIC_CHANNEL;
@@ -165,11 +180,12 @@ export const FLAGS = {
    */
   packagedLabelScan: false,
   /**
-   * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼 — 서버 쓰기 플래그(PROCESSED_FOOD_REVIEW_WRITE_ENABLED, 기본 OFF → 403 PFOOD-005)가
-   * 켜진 환경에서만 의미가 있다. 진단 채널(dev·teamtest)만 — production·preview(운영 서버, 플래그 OFF)는 서버를 켠 뒤 이 줄을 true로.
-   * 버튼이 보이는데 서버가 아직 꺼져 있으면 작성 화면이 403을 "곧 열려요" 안내로 받는다(차단 아님). 리뷰 **읽기**·기존 리뷰 수정은 이 플래그와 무관.
+   * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼. **채널 게이트 의도(AGENTS.md 4항, 커맨드 확인 10/21)**:
+   * 서버 PROCESSED_FOOD_REVIEW_WRITE_ENABLED가 켜진 채널만 — 지금은 dev 서버(#437)뿐이라 development·teamtest만.
+   * teamtest-prod·production·preview(운영 서버, 플래그 OFF)는 숨김 — 막다른 "곧 열려요" 버튼 방지. prod 서버 ON 뒤 이 줄을 true로 확장.
+   * (그 사이 서버가 꺼져 있으면 작성 화면이 403 PFOOD-005를 "곧 열려요" 안내로 받는다 — 차단 아님.) 리뷰 **읽기**·기존 리뷰 수정은 이 플래그와 무관.
    */
-  packagedReviewWrite: DIAGNOSTIC_CHANNEL,
+  packagedReviewWrite: DEV_SERVER_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).
