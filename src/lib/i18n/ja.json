@@ -1237,5 +1237,54 @@
       "bread": "パン",
       "drinks": "飲料"
     }
+  },
+  "scanMode": {
+    "menu": "メニュー",
+    "food": "料理の写真",
+    "packaged": "加工食品",
+    "soon": "準備中"
+  },
+  "packagedScan": {
+    "title": "スキャン",
+    "chooseTitle": "商品を選択",
+    "reading": "パッケージを読み取っています…",
+    "whichTitle": "どの商品ですか？",
+    "noneTitle": "一致する商品がありません",
+    "usedOnSuccess": "分析に成功するとスキャンを1回使います。",
+    "noScanUsed": "スキャンは使われていません。",
+    "noneBody": "裏面の成分表を撮影して続けてください。",
+    "checkMaker": "メーカーと味を確認してください。",
+    "scanLabel": "成分表を撮影",
+    "noneOfThese": "該当なし",
+    "labelTitle": "成分表",
+    "labelHeadline": "裏面の成分表を撮影してください",
+    "labelBody": "原材料の一覧全体がはっきり写るように撮影してください。必要なら写真を追加できます。",
+    "labelBox": "成分表",
+    "sameAnalysis": "同じ分析で続けます。追加でスキャンは使いません。",
+    "successOnly": "分析に成功したときだけスキャンを1回使います。",
+    "labelSoon": "成分表の分析はまもなく対応します。",
+    "labelCta": "成分表を撮影",
+    "captureHeadline": "パッケージの表面を撮影してください",
+    "captureBody": "商品名と味が見えるように撮影してください。",
+    "captureBox": "パッケージの表面",
+    "labelInstead": "成分表で確認する",
+    "takePhoto": "写真を撮る",
+    "retake": "もう一度撮影",
+    "resultTitle": "スキャン結果",
+    "scanUsed": "スキャンを1回使いました。",
+    "err": {
+      "networkTitle": "接続できませんでした",
+      "networkBody": "接続を確認してもう一度お試しください。",
+      "expiredTitle": "スキャンの有効期限が切れました",
+      "expiredBody": "もう一度撮影して新しくスキャンしてください。",
+      "conflictTitle": "このスキャンはすでに結果が決まっています",
+      "conflictBody": "別の商品はもう一度撮影してください。",
+      "quotaTitle": "無料スキャンを使い切りました",
+      "quotaBody": "スキャン画面でレビューを書くか広告を見ると追加できます。",
+      "goneTitle": "商品が見つかりません",
+      "goneBody": "もう一度撮影してください。",
+      "discontinuedTitle": "この商品は生産終了しました",
+      "discontinuedBody": "もう一度撮影してください。"
+    }
   }
 }

@@ -437,7 +437,7 @@ describe('Codex #291 R11: one scan presenter for every phase', () => {
     const src = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
     expect(src.match(/<UnlockCelebration\b/g)).toHaveLength(1);
     const body = src.slice(src.indexOf('// ---- result ----'), src.indexOf('function ScanSweepOverlay'));
-    expect(body.match(/return withPresenter\(/g)).toHaveLength(6); // result · scanning · error · offline · system camera · camera
+    expect(body.match(/return withPresenter\(/g)).toHaveLength(7); // result · scanning · error · KB-813 packaged · offline · system camera · camera
   });
 });
 

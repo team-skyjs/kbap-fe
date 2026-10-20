@@ -93,3 +93,28 @@ export function adaptProcessedDetail(w: DetailWire): ProcessedFoodDetail {
     image: w.image?.url ? { url: toHttps(w.image.url) as string, attributionKey: w.image.attributionKey } : null,
   };
 }
+
+// ── KB-813 이름 스캔(S4 계약 processed-food-s4-name-scan-contract.md) ──
+export type ScanCandidate = ProcessedFoodSummary & { reportNo: string };
+export type ScanNameResult = { analysisId: string; candidates: ScanCandidate[]; expiresAt: string | null };
+/** 확정 결과 — charged = 이번 호출에서 서버가 1회 차감했는지(표시는 이 값만 — 로컬 추정 금지) */
+export type ScanConfirmResult = { analysisId: string; rejected: boolean; charged: boolean; product: ProcessedFoodDetail | null };
+
+type CandidateWire = SummaryWire & { reportNo: string };
+export type ScanNameWire = { analysisId: string; state: string; candidates?: CandidateWire[] | null; expiresAt?: string | null };
+export type ScanConfirmWire = { analysisId: string; state: string; charged?: boolean | null; product?: DetailWire | null };
+
+/** NO_CANDIDATE면 후보 0 — 서버 state가 정본(후보가 와도 state가 NO_CANDIDATE면 쓰지 않는다). 최대 5. */
+export function adaptScanName(w: ScanNameWire): ScanNameResult {
+  const list = w.state === 'CANDIDATES' ? (w.candidates ?? []) : [];
+  return {
+    analysisId: w.analysisId,
+    candidates: list.slice(0, 5).map((c) => ({ ...adaptProcessedSummary(c), reportNo: String(c.reportNo) })),
+    expiresAt: w.expiresAt ?? null,
+  };
+}
+/** charged는 true일 때만 true(없음·null = 차감 없음으로 보지 않고 "표시 안 함" — 호출측은 true만 차감 표시) */
+export function adaptScanConfirm(w: ScanConfirmWire): ScanConfirmResult {
+  const rejected = w.state === 'REJECTED' || !w.product;
+  return { analysisId: w.analysisId, rejected, charged: w.charged === true, product: !rejected && w.product ? adaptProcessedDetail(w.product) : null };
+}

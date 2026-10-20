@@ -1237,5 +1237,54 @@
       "bread": "麵包",
       "drinks": "飲料"
     }
+  },
+  "scanMode": {
+    "menu": "菜單",
+    "food": "菜色照片",
+    "packaged": "包裝食品",
+    "soon": "即將推出"
+  },
+  "packagedScan": {
+    "title": "掃描",
+    "chooseTitle": "選擇商品",
+    "reading": "正在讀取包裝…",
+    "whichTitle": "你的是哪一款？",
+    "noneTitle": "沒有符合的商品",
+    "usedOnSuccess": "分析成功時會使用 1 次掃描。",
+    "noScanUsed": "未使用掃描次數。",
+    "noneBody": "請拍攝背面的原料表繼續。",
+    "checkMaker": "請確認製造商和口味。",
+    "scanLabel": "拍攝原料表",
+    "noneOfThese": "都不是",
+    "labelTitle": "原料表",
+    "labelHeadline": "請拍攝背面的原料表",
+    "labelBody": "請讓完整的原料表清楚可見。需要時可以新增更多照片。",
+    "labelBox": "原料表",
+    "sameAnalysis": "將延續同一次分析，不會額外扣除掃描次數。",
+    "successOnly": "只有分析成功時才會使用 1 次掃描。",
+    "labelSoon": "原料表分析即將支援。",
+    "labelCta": "拍攝原料表",
+    "captureHeadline": "請拍攝包裝正面",
+    "captureBody": "請讓商品名稱和口味清楚可見。",
+    "captureBox": "包裝正面",
+    "labelInstead": "改用原料表確認",
+    "takePhoto": "拍照",
+    "retake": "重新拍攝",
+    "resultTitle": "掃描結果",
+    "scanUsed": "已使用 1 次掃描。",
+    "err": {
+      "networkTitle": "無法連線",
+      "networkBody": "請檢查網路後再試一次。",
+      "expiredTitle": "這次掃描已過期",
+      "expiredBody": "請重新拍攝開始新的掃描。",
+      "conflictTitle": "這次掃描已有結果",
+      "conflictBody": "如需掃描其他商品，請重新拍攝。",
+      "quotaTitle": "免費掃描次數已用完",
+      "quotaBody": "可在掃描畫面寫評論或觀看廣告取得更多次數。",
+      "goneTitle": "找不到商品",
+      "goneBody": "請重新拍攝。",
+      "discontinuedTitle": "此商品已停產",
+      "discontinuedBody": "請重新拍攝。"
+    }
   }
 }

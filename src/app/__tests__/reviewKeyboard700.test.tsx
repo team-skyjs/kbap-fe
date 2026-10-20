@@ -34,6 +34,7 @@ it('메인 별점 5개 testID = review-star-{1..5} · 세부(Taste/Speed/Service
 // profile/restrictions를 옛 스캔이 못 봤다)를 그리는 것. 예외는 사유와 함께 여기에만.
 const NO_FIXED_BAR_INPUT: Record<string, string> = {
   'src/app/search.tsx': '하단 고정 바 없음(검색 입력이 상단)',
+  'src/app/scan.tsx': 'KB-813 입력은 가공식품 촬영의 OCR 주입 디버그 칸뿐 — 개발·진단 채널 전용(스토어 0), 스크롤 본문 안',
   'src/app/(tabs)/food.tsx': 'KB-812 Packaged 검색 입력이 목록 상단 · 하단 고정 바 없음(탭바는 키보드에 가려져도 됨)',
   'src/app/(tabs)/community.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
   'src/app/food/[id]/index.tsx': '입력은 신고 시트(ModerationFlow — 모달) 안',
@@ -75,7 +76,7 @@ it('입력창이 있는 화면 전수(직접 + 입력 품은 컴포넌트 경유
   expect(inputComponents()).toEqual(expect.arrayContaining(['IngredientFilter', 'PlacePickerSheet', 'ModerationFlow']));
   const screens = screensWithInputs();
   // 고정값 — 화면이 늘거나 줄면 한 번 멈춰 서서 KAV/예외 판단을 하게(스캔이 비어도 실패)
-  expect(screens).toHaveLength(15); // KB-800: 홈 = 신고 시트 소멸로 입력 화면에서 빠짐 · KB-777: 내 리뷰 = 공용 시트(ModerationFlow) 경유로 편입 · KB-812 가공식품 · KB-802: 리뷰 상세(⋯ 신고 시트) 추가
+  expect(screens).toHaveLength(16); // KB-800: 홈 = 신고 시트 소멸로 입력 화면에서 빠짐 · KB-777: 내 리뷰 = 공용 시트(ModerationFlow) 경유로 편입 · KB-812 가공식품 · KB-802: 리뷰 상세(⋯ 신고 시트) 추가 · KB-813: 스캔(OCR 디버그 칸)
   expect(screens).toContain('src/app/profile/restrictions.tsx');
   const missing = screens.filter((f) => !NO_FIXED_BAR_INPUT[f] && !/<KeyboardAvoidingView[^>]*behavior=\{KAV_BEHAVIOR\}/.test(fs.readFileSync(f, 'utf8')));
   expect(missing).toEqual([]);
