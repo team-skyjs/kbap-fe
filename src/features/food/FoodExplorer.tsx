@@ -114,6 +114,7 @@ export function FoodExplorer({
   popular,
   popularLoading = false,
   onScanRowBottom,
+  afterRail,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
@@ -129,6 +130,8 @@ export function FoodExplorer({
   popularLoading?: boolean;
   /** KB-701: 검색 줄(= 스캔 버튼 — 같은 48 높이, 세로 가운데) 아래 끝의 y — 이 컴포넌트 위쪽 기준. 홈 뱃지 앵커. */
   onScanRowBottom?: (y: number) => void;
+  /** KB-796: 홈(embedded) 음식 레일 바로 뒤·Rated safe for you 앞 슬롯(큐레이션 배너) — 홈이 내려준다(이 컴포넌트는 큐레이션을 모른다). */
+  afterRail?: React.ReactNode;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -659,6 +662,7 @@ export function FoodExplorer({
         </ScrollView>
         </View>
       )}
+      {variant === 'embedded' && afterRail}
       {safePicks.length >= 2 && (
         <>
           <SectionHead label={t('home.safeForYou')} title={t('home.safeForYouSub')} testID="home-safe-rail-head" />

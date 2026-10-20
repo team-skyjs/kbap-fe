@@ -1133,5 +1133,22 @@
     "monLong10": "October",
     "monLong11": "November",
     "monLong12": "December"
+  },
+  "curation": {
+    "sectionTitle": "Explore Korea",
+    "loadError": "Couldn't load these collections.",
+    "refreshFailed": "Couldn't refresh. Showing the last list.",
+    "prev": "Previous collection",
+    "next": "Next collection",
+    "fallbackNotice": "Some content is shown in English.",
+    "errorTitle": "Couldn't load this collection",
+    "errorBody": "Try again, or return Home.",
+    "unavailableTitle": "This collection is no longer available",
+    "unavailableBody": "Return Home to keep exploring.",
+    "backHome": "Back to Home",
+    "viewGuide": "View guide",
+    "viewGuideA11y": "View guide, {{name}}",
+    "viewGuideHint": "Opens in a browser",
+    "exploreNearby": "Explore nearby"
   }
 }

@@ -1137,5 +1137,22 @@
     "monLong10": "10月",
     "monLong11": "11月",
     "monLong12": "12月"
+  },
+  "curation": {
+    "sectionTitle": "韓国を巡る",
+    "loadError": "コレクションを読み込めませんでした。",
+    "refreshFailed": "更新できませんでした。前回のリストを表示しています。",
+    "prev": "前のコレクション",
+    "next": "次のコレクション",
+    "fallbackNotice": "一部の内容は英語で表示されます。",
+    "errorTitle": "このコレクションを読み込めませんでした",
+    "errorBody": "もう一度試すか、ホームに戻ってください。",
+    "unavailableTitle": "このコレクションは公開を終了しました",
+    "unavailableBody": "ホームに戻って引き続きお楽しみください。",
+    "backHome": "ホームに戻る",
+    "viewGuide": "ガイドを見る",
+    "viewGuideA11y": "ガイドを見る、{{name}}",
+    "viewGuideHint": "ブラウザで開きます",
+    "exploreNearby": "周辺を巡る"
   }
 }

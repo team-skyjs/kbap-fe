@@ -10,6 +10,7 @@ import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 // guestListBadges.test 프렐류드 재사용 — reanimated/expo 표면 mock
 // P-176: 재료 카탈로그 훅 표면 목 — 폴백 경로 = 종전 렌더와 동일
 // P-227: 프로필 탭 식이 섹션 훅 표면 목(상수 폴백 형태 — P-208 관례)
+jest.mock('@/features/curation/CurationSection', () => ({ CurationSection: () => null })); // KB-796: 홈 큐레이션(자체 쿼리) — 이 스위트 범위 밖
 jest.mock('@/lib/data/useDietPresets', () => ({
   useDietPresets: () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
