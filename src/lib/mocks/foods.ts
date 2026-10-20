@@ -41,11 +41,10 @@ export const MOCK_HOME: HomeResponse = {
     { ...byId['samgyeopsal'], taste: 4.8, servingSpeed: 4.4, staffKindness: 4.6, overallRating: 4.6 },
     { ...byId['japchae'], taste: 4.5, servingSpeed: null, staffKindness: null, overallRating: 4.5 },
   ],
-  idolPicks: [],
 };
 
 /** Empty-state home (new user, 0 scans) — handoff §6 home-empty-rec. */
-export const MOCK_HOME_EMPTY: HomeResponse = { recent: [], recommended: [], mostReviewed: [], topRated: [], idolPicks: [] };
+export const MOCK_HOME_EMPTY: HomeResponse = { recent: [], recommended: [], mostReviewed: [], topRated: [] };
 
 export const MOCK_FOOD_DETAILS: Record<string, FoodDetail> = {
   'kimchi-jjigae': {

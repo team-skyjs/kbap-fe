@@ -694,9 +694,9 @@
     "idolPick": {
       "label": "K-POP & K-FOOD",
       "title": "偶像吃過的那道菜，你也來一口？",
-      "sub": "{{count}}道菜，是誰吃的就到影片裡看看吧。",
-      "seeAll": "瀏覽{{count}}道菜",
-      "bannerA11y": "查看K-POP偶像吃過的{{count}}道菜"
+      "sub": "是誰吃的，就到影片裡看看吧。",
+      "seeAll": "瀏覽這些菜色",
+      "bannerA11y": "查看K-POP偶像吃過的菜色"
     }
   },
   "onboarding": {

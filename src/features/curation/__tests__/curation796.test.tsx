@@ -317,7 +317,7 @@ describe('KB-829 QA S3 지역 행 줄바꿈', () => {
 describe('배치·문구 잠금', () => {
   it('홈: 음식 레일 뒤·Safe picks 앞 슬롯에 큐레이션 · 모음 키 하드코딩 0', () => {
     const home = fs.readFileSync('src/app/(tabs)/index.tsx', 'utf8');
-    expect(home).toContain('afterRail={<><IdolPickBanner foods={home?.idolPicks} loading={isPending} /><CurationSection /></>}'); // KB-836 D1: 배너 → 큐레이션
+    expect(home).toContain('afterRail={<><IdolPickBanner /><CurationSection /></>}'); // KB-836 D1: 배너 → 큐레이션
     expect(home).toContain("queryClient.invalidateQueries({ queryKey: ['curations'] })"); // Codex #303 P2: 당겨서 새로고침에 포함
     const fx = fs.readFileSync('src/features/food/FoodExplorer.tsx', 'utf8');
     expect(fx.indexOf("{variant === 'embedded' && afterRail}")).toBeGreaterThan(fx.indexOf('testID="home-rail"'));

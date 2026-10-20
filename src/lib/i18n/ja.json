@@ -694,9 +694,9 @@
     "idolPick": {
       "label": "K-POP & K-FOOD",
       "title": "アイドルが食べたあの料理、ひと口いかが？",
-      "sub": "{{count}}品の料理。誰が食べたかは動画でチェックしてね。",
-      "seeAll": "{{count}}品の料理を見る",
-      "bannerA11y": "K-POPアイドルが食べた料理{{count}}品の一覧を見る"
+      "sub": "誰が食べたかは動画でチェックしてね。",
+      "seeAll": "料理を見てみる",
+      "bannerA11y": "K-POPアイドルが食べた料理の一覧を見る"
     }
   },
   "onboarding": {

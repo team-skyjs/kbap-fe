@@ -1,9 +1,9 @@
 /**
  * K-POP & K-FOOD 목록 (KB-836, 02_designer_spec 화면 2) — `/idol-picks`.
- * 데이터 = 홈 응답 idolPicks 재사용(D2 — 새 쿼리·엔드포인트 없음, 캐시 없으면 같은 useHome 이 /home 을 부른다).
+ * 데이터 = 전용 쿼리 useIdolPicks(GET /api/foods/idol-picks — 음식 요약 + 대표 영상, D2). 이 캐시를 상세 V1 카드가 읽는다(D3).
  * 다크 헤더(이 화면 전용, StatusBar light) + 2열 3:4 포스터 그리드(BE 순서 그대로, 칩 필터 없음).
  * 상태: 로딩 = Shimmer 6칸 · 오류·캐시 없음 = QueryErrorBlock · 0건 = EmptyBlock · 캐시 있는 백그라운드 실패 = 목록 유지.
- * 위험도 배지 = 회원만(서버 authenticated 정본). 계측: 포커스마다 home_idol_pick_list_view{count} · 카드 → 상세 src=idol_pick.
+ * 위험도 배지 = 회원만(useIsGuest() === false — R-07). 계측: 포커스마다 home_idol_pick_list_view{count} · 카드 → 상세 src=idol_pick.
  */
 import * as React from 'react';
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -18,7 +18,8 @@ import { EmptyBlock, QueryErrorBlock } from '@/components/StateBlock';
 import { IconArrowLeft, IconQuestion } from '@/components/icons';
 import { IdolPosterCard } from '@/features/home/IdolPosterCard';
 import { isGridPad, padOddGrid } from '@/features/food/FoodCards';
-import { useHome } from '@/lib/data/useHome';
+import { useIdolPicks } from '@/lib/data/useIdolPicks';
+import { useIsGuest } from '@/lib/auth/useSession';
 import { useMe } from '@/lib/data/useMe';
 import { personalRisk } from '@/lib/risk';
 import { EVENTS, track } from '@/lib/analytics';
@@ -35,10 +36,9 @@ export default function IdolPicksScreen() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const cellW = cellWidth(useWindowDimensions().width);
-  const { data, isPending, isError, error, refetch } = useHome();
+  const { data: picks, isPending, isError, error, refetch } = useIdolPicks();
   const { data: me } = useMe();
-  const picks = data?.idolPicks;
-  const member = data?.authenticated === true;
+  const member = useIsGuest() === false;
   const hasR = (me?.restrictions ?? []).length > 0;
   const count = picks?.length;
 

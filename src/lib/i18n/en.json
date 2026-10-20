@@ -847,9 +847,9 @@
     "idolPick": {
       "label": "K-POP & K-FOOD",
       "title": "K-pop idols tried these. Want a taste?",
-      "sub": "{{count}} dishes. See who tried them in the videos.",
-      "seeAll": "Explore {{count}} dishes",
-      "bannerA11y": "View all {{count}} dishes tried by K-pop idols"
+      "sub": "See who tried them in the videos.",
+      "seeAll": "Explore the dishes",
+      "bannerA11y": "View the dishes tried by K-pop idols"
     }
   },
   "onboarding": {

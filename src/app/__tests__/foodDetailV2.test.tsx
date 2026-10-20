@@ -84,6 +84,7 @@ jest.mock('@/lib/i18n', () => ({
 const mockIsGuest = jest.fn(() => false);
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => mockIsGuest() }));
 const mockUseFoodDetail = jest.fn();
+jest.mock('@/lib/data/useIdolPicks', () => ({ useIdolPickVideo: () => null })); // KB-836: 목록 캐시 구독(QueryClient 없음)
 jest.mock('@/lib/data/useFoods', () => ({ useFoodDetail: () => mockUseFoodDetail() }));
 const mockUseMe = jest.fn();
 jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockUseMe() }));

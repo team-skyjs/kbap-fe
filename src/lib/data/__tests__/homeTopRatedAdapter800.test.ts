@@ -34,10 +34,10 @@ const japchae = {
   taste: 4.0, servingSpeed: null, staffKindness: null, overallRating: 4.0,
 };
 
-it('X-API-Version 1.4 전송(KB-836 — 1.3 topRatedFoods 포함) + 계약 예시 2건을 순서대로 어댑트(요약 필드 = adaptMenuSummary 와 동일)', async () => {
+it('X-API-Version 1.3 전송 + 계약 예시 2건을 순서대로 어댑트(요약 필드 = adaptMenuSummary 와 동일)', async () => {
   const m = respond({ ...base, topRatedFoods: [stew, japchae] });
   const res = await fetchHome();
-  expect((m.mock.calls[0] as unknown as [string, { headers: Record<string, string> }])[1].headers['X-API-Version']).toBe('1.4');
+  expect((m.mock.calls[0] as unknown as [string, { headers: Record<string, string> }])[1].headers['X-API-Version']).toBe('1.3');
   expect(res.topRated.map((f) => f.foodId)).toEqual(['205', '412']);
   expect(res.topRated[0]).toEqual({
     ...adaptMenuSummary(stew as never),

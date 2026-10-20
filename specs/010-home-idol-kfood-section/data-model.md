@@ -1,20 +1,20 @@
 # Data Model — 010-home-idol-kfood-section
 
-## HomeWire.idolPickFoods (서버 → 어댑터)
+## IdolPicksWire (서버 → 어댑터, C-1)
 
-`MenuSummaryWire[] | null | 부재` — 항목 키 = `foodId, name, koreanName, imageRef, spiciness, overallRiskStatus, publishedAt, bookmarked, review`(popularFoods 와 동일).
+`{ items: IdolPickWire[] }` — `IdolPickWire = MenuSummaryWire & { video: { url, platform: "YOUTUBE" | "TIKTOK" } }`(평탄).
 
-## HomeResponse.idolPicks (화면 모델)
+## IdolPick (화면 모델)
 
-`FoodCard[]` — `adaptMenuSummary`. 부재·null → `[]`. 순서 = 서버(화제성↓ → 게시월↓ → foodId↑).
+`FoodCard & { video: IdolVideo }` — 요약은 `adaptMenuSummary`. 순서 = 서버(화제성↓ → 게시월↓ → foodId↑). items 부재·null → `[]`.
 
-## FoodDetailWire.idolVideo
+## IdolVideo
 
-`{ url: string; platform: string } | null | 부재`.
+`{ url: string; platform: 'youtube' | 'tiktok' }` — 알 수 없는 platform·빈 url 항목은 목록에서 제외.
 
-## IdolVideo / FoodDetail.idolVideo
+## 쿼리
 
-`{ url: string; platform: 'youtube' | 'tiktok' } | null` — 알 수 없는 platform·빈 url → null.
+- `['idolPicks', lang]` — `useIdolPicks()`(목록) · `useIdolPickVideo(foodId)`(상세, enabled:false)
 
 ## 계측
 

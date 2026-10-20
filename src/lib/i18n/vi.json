@@ -694,9 +694,9 @@
     "idolPick": {
       "label": "K-POP & K-FOOD",
       "title": "Món idol K-pop từng ăn, bạn thử một miếng?",
-      "sub": "{{count}} món ăn. Xem ai đã ăn trong video nhé.",
-      "seeAll": "Khám phá {{count}} món",
-      "bannerA11y": "Xem tất cả {{count}} món idol K-pop đã ăn"
+      "sub": "Xem ai đã ăn trong video nhé.",
+      "seeAll": "Khám phá các món",
+      "bannerA11y": "Xem các món idol K-pop đã ăn"
     }
   },
   "onboarding": {

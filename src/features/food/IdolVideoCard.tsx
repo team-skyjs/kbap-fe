@@ -1,6 +1,6 @@
 /**
  * IdolVideoCard (KB-836 V1, 02_designer_spec 화면 3) — 음식 상세의 K-POP & K-FOOD 다크 티저 카드.
- * idolVideo 가 있을 때만 상세가 렌더한다. 카드 전체가 단일 링크 → 대표 영상 1개를 인앱 브라우저로 바로 연다(확인·선택 단계 없음).
+ * 목록 쿼리 캐시(useIdolPickVideo)에 영상이 있을 때만 상세가 렌더한다. 카드 전체가 단일 링크 → 대표 영상 1개를 인앱 브라우저로 바로 연다(확인·선택 단계 없음).
  * 눌림 = CTA primary → primaryPress + 흰 12% 오버레이(색만 — 크기·보더 불변). 진입 모션 없음.
  * 플랫폼명은 화면·접근성 라벨에 쓰지 않는다 — platform 은 계측 속성(food_idol_video_open)으로만. URL 은 계측에 넣지 않는다.
  */
@@ -13,7 +13,7 @@ import { IconPlay, IconQuestion } from '@/components/icons';
 import { color as C, font } from '@/lib/theme';
 import { EVENTS, track } from '@/lib/analytics';
 import { openWebPage } from '@/lib/openExternal';
-import type { IdolVideo } from '@/lib/api/types';
+import type { IdolVideo } from '@/lib/api/idolPickAdapter';
 
 export function IdolVideoCard({ foodId, video }: { foodId: string; video: IdolVideo }) {
   const { t } = useTranslation();
