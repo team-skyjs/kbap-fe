@@ -28,6 +28,7 @@ import {
 import { QueryErrorBlock, ScreenCenterFill } from '@/components/StateBlock';
 import { RecentRow, TopRatedRow } from '@/features/food/FoodCards';
 import { FoodExplorer } from '@/features/food/FoodExplorer';
+import { CurationSection } from '@/features/curation/CurationSection';
 import { queryClient } from '@/lib/queryClient'; // 루트 프로바이더와 동일 인스턴스(_layout)
 import { useHome } from '@/lib/data/useHome';
 import { useMe } from '@/lib/data/useMe';
@@ -103,6 +104,7 @@ function HomeBody() {
       queryClient.invalidateQueries({ queryKey: ['home'] }),
       queryClient.invalidateQueries({ queryKey: ['foods'] }),
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] }),
+      queryClient.invalidateQueries({ queryKey: ['curations'] }), // KB-796(Codex #303 P2): 게시·내림·수정 반영 — 포커스 재조회가 꺼져 있다
     ]).finally(() => setRefreshing(false));
   }, []);
 
@@ -113,7 +115,7 @@ function HomeBody() {
           {/* P-007 false-empty 금지 유지 — 에러는 에러로 */}
           <QueryErrorBlock error={error} onRetry={() => void refetch()} />
         </ScreenCenterFill>
-        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" alignToHomeGutter bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
+        <StickyHeader hidden={hidden} atTop={atTop} mode="brand" bell={FLAGS.notificationCenter} bellCount={unread} onBell={() => router.push('/notifications' as Href)} />
       </View>
     );
   }
@@ -138,6 +140,7 @@ function HomeBody() {
           // (오프라인 등으로 요청이 멈춘 pending: isLoading false)에서 레일이 /foods 폴백을 먼저 그렸다 바꾸지 않게(#237 공부)
           popularLoading={isPending}
           onScanRowBottom={setScanRowBottom}
+          afterRail={<CurationSection />} // KB-796: 음식 레일 뒤·Safe picks 앞
         />
       </View>
 
@@ -228,7 +231,6 @@ function HomeBody() {
         hidden={hidden}
         atTop={atTop}
         mode="brand"
-        alignToHomeGutter /* KB-777: 마크·벨 보이는 끝 = 본문 거터 20 */
         bell={FLAGS.notificationCenter}
         bellCount={unread}
         onBell={() => router.push('/notifications' as Href)}

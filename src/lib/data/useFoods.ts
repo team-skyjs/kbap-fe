@@ -15,7 +15,8 @@
  *       foodId yet (KB-71 blocker, BE 질의 중) → "Unable to assess" screen.
  *   Query keys include the reader language so a live switch refetches.
  */
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import * as React from 'react';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAppLanguage } from '../i18n/useAppLanguage';
 import type { FoodCard, FoodDetail } from '../api/types';
 import type { FoodDetailWire } from '../api/foodDetailTypes';
@@ -25,6 +26,7 @@ import { trackReadyFood, useIsFoodHidden } from './hiddenFoods';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
+import { fetchSortedPage, nameSortOptions, nameSortQuery, useRestartOnStaleCursor, type FoodNameSort, type SortedPage } from './foodNameSort';
 
 /**
  * Foods endpoints connect LIVE regardless of the global MOCK_MODE (like the
@@ -57,7 +59,7 @@ export function useFoods(query?: string) {
  * BE's nextCursor (last item's foodId — treated as opaque).
  */
 /** 목록 페이지 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
-export async function fetchFoodsPage(pageParam: string | number | undefined, riskWire?: string): Promise<PageMenuSummaryWire> {
+export async function fetchFoodsPage(pageParam: string | number | undefined, riskWire?: string, sort?: FoodNameSort): Promise<SortedPage> {
   if (MOCK_MODE_FOODS) {
     return {
       items: MOCK_FOODS.map((f) => ({
@@ -76,7 +78,9 @@ export async function fetchFoodsPage(pageParam: string | number | undefined, ris
   // 전환 완료(무토큰 200, 7/20 실측)로 게스트는 401이 없고, 남는 401 =
   // 죽은 토큰뿐. 빈 목록 위장은 isError를 막아 에러 블록을 무력화한다.
   const riskQ = riskWire ? `&risk=${riskWire}` : '';
-  return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}${riskQ}`);
+  // KB-821: 이름 정렬만 3.1 헤더 + sort(커서는 불투명 문자열 그대로) — 기본 정렬은 위 요청 바이트 그대로
+  return fetchSortedPage(sort, pageParam == null, () =>
+    api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}${riskQ}${nameSortQuery(sort)}`, nameSortOptions(sort)));
 }
 
 /** P-350(KB-492): 위험도 칩 = 서버 필터 — UI 칩→서버 enum 매핑은 foodAdapter
@@ -85,25 +89,59 @@ export async function fetchFoodsPage(pageParam: string | number | undefined, ris
  *  종료 판정은 hasNext/nextCursor로만(빈 페이지 = 종료 아님). */
 export const FOODS_PAGE_SIZE = 20; // 서버 FoodService/BookmarkService PAGE_SIZE 동치
 
-export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boolean }) {
-  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
-  const wire = riskWireOf(risk);
-  return useInfiniteQuery({
-    enabled: opts?.enabled ?? true, // #112 2R ②: Saved 활성 중 비활성 browse risk 쿼리 억제
-    // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지)
-    queryKey: wire ? ['foods', 'list', lang, wire] : ['foods', 'list', lang],
+/** 음식 목록 무한 쿼리 옵션(키·페치·커서) — 화면 목록과 선요청(KB-830)이 **같은 정의**를 쓴다(키·커서 규칙이 갈라지면 선요청 캐시가 안 맞는다). */
+export function foodsListOptions(lang: string, wire: string | undefined, sort: FoodNameSort | undefined) {
+  // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지) · KB-821 이름 정렬도 별도 캐시(커서 종류가 다르다)
+  const baseKey = wire ? ['foods', 'list', lang, wire] : ['foods', 'list', lang];
+  return {
+    queryKey: sort ? [...baseKey, 'sort', sort] : baseKey,
     initialPageParam: undefined as string | number | undefined,
-    queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire),
+    queryFn: ({ pageParam }: { pageParam: string | number | undefined }) => fetchFoodsPage(pageParam, wire, sort),
     // #112 P1 ①(P-332 문법 이식): 커서 에코 가드 — 얇은 페이지 자동 연속 페치가
     // 커서 미전진 경계 응답에서 무한 루프(이 PR이 잡으려던 증상)가 되지 않게,
     // 이미 요청한 커서 재등장 = hasNext 무시·종료.
-    getNextPageParam: (last, _pages, lastParam, allParams) =>
+    getNextPageParam: (last: SortedPage, _pages: SortedPage[], lastParam: string | number | undefined, allParams: (string | number | undefined)[]) =>
       last.hasNext && last.nextCursor != null &&
       last.nextCursor !== lastParam && !allParams.includes(last.nextCursor)
         ? last.nextCursor
         : undefined,
+  };
+}
+
+export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boolean; sort?: FoodNameSort }) {
+  const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
+  const base = foodsListOptions(lang, riskWireOf(risk), opts?.sort);
+  const q = useInfiniteQuery({
+    ...base,
+    enabled: opts?.enabled ?? true, // #112 2R ②: Saved 활성 중 비활성 browse risk 쿼리 억제
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
+  useRestartOnStaleCursor(base.queryKey, q.dataUpdatedAt); // KB-821: 400 FOOD-002·409 FOOD-022 → 첫 페이지부터
+  return q;
+}
+
+/** 서버 정렬 3종(인기 = 정렬 파라미터 없음 · 이름 A–Z · Z–A). NEW는 서버 정렬이 없어 비활성이라 제외. */
+export const SERVER_FOOD_SORTS: (FoodNameSort | undefined)[] = [undefined, 'name_asc', 'name_desc'];
+
+/**
+ * KB-830: 정렬 전환을 즉시로 — 현재 목록의 첫 페이지가 도착한 **뒤**(ready), 같은 필터의 **다른 정렬** 첫 페이지만
+ * prefetchInfiniteQuery로 받아 둔다(pages: 1 — 오래된 다페이지 캐시도 1장만 · 실패 무시 · 신선한 캐시는 재요청 0 — 기본 staleTime이 목록과 같다).
+ * keepPreviousData는 쓰지 않는다: 필터가 바뀔 때 옛 판정이 보이면 안 되는 판정 표면(정렬만 바뀌어도 같은 쿼리라 일관되게).
+ * 다시 거는 계기 = 필터·언어·현재 정렬 변경, 탭 진입(enabled) — 신선하면 네트워크 0.
+ */
+export function usePrefetchOtherFoodSorts(risk: RiskFilterChip | undefined, current: FoodNameSort | undefined, opts: { enabled: boolean; ready: boolean }) {
+  const qc = useQueryClient();
+  const lang = useAppLanguage();
+  const wire = riskWireOf(risk);
+  const { enabled, ready } = opts;
+  React.useEffect(() => {
+    if (!enabled || !ready) return;
+    for (const sort of SERVER_FOOD_SORTS) {
+      if (sort === current) continue;
+      // Codex #307 P2: pages 1 명시 — 생략하면 오래된 캐시(깊이 스크롤한 정렬)의 페이지 수만큼 전부 다시 받는다(정렬당 1요청 상한 깨짐)
+      void qc.prefetchInfiniteQuery({ ...foodsListOptions(lang, wire, sort), pages: 1 }).catch(() => {}); // 선요청 실패 = 무시(전환 시 정상 로딩)
+    }
+  }, [qc, lang, wire, current, enabled, ready]);
 }
 
 /**

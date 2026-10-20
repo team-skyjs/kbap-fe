@@ -1,3 +1,5 @@
+import { resetUnlockSession, isRewardedShowing, subscribeUnlock } from './unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /**
  * HomeQuotaBadge (KB-680, P-432) — 홈 플로팅(KB-701: 스캔 버튼 바로 아래) "무료 스캔 N회 남음" 불꽃 + 안내 시트.
  * 스펙 = spec specs/001-personalized-menu-mvp/countdown-badge-2026-10-02.md (예진 10/2 결정).
@@ -5,8 +7,7 @@
  * - 정본 = `me.scanQuota`(서버) — 클라는 횟수를 세지 않는다. 노출 = 남은 횟수가 숫자인 회원(0 포함 — 꺼진 불꽃).
  *   숨김 = 무제한 · 게스트 · scanQuota null(구서버 — 판별 불가는 막지도 보여주지도 않는다) · 플래그 off.
  * - 탭 = 안내 시트(남은 횟수 · "리뷰를 쓰면 무제한" · 리뷰 쓰기) → 스캔 잠금 화면과 같은 TagPickerSheet(context=review).
- * - 숫자 → 해금(리뷰 작성 후) = 마지막 숫자로 폭죽 1회 후 사라짐 — 시작은 홈이 보일 때(CountdownBadge). 축하 조건은
- *   `unlocked === true` + **같은 회원**(remaining 누락·음수 → 'unlimited' 판별 불가 응답, 계정 전환은 축하 아님).
+ * - KB760: 서버 해제 뒤 뱃지는 조용히 숨김. 전이·폭죽은 전역 UnlockCelebration이 단독 소유한다.
  */
 import * as React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
@@ -43,27 +44,8 @@ export function quotaBadgeModel(quota: ScanQuota | null | undefined, isGuest: bo
 export const BADGE_GAP = 4;
 export const BADGE_RIGHT = BADGE_EDGE; // 기본 자리 = 오른쪽 가장자리(KB-706 끌어 놓기의 가장자리 여백과 같은 값)
 
-/** KB-699: 회원별 마지막 숫자 쿼터 — 세션 메모리(앱 재시작 시 비움). 해금 축하를 재조회 빈 렌더·홈 트리 재마운트 너머로 잇는다. */
-const lastNumericQuota = new Map<string, QuotaBadgeModel>();
-const lastNumericListeners = new Set<() => void>();
-function subscribeLastNumeric(cb: () => void): () => void {
-  lastNumericListeners.add(cb);
-  return () => lastNumericListeners.delete(cb);
-}
-function rememberNumeric(id: string, m: QuotaBadgeModel) {
-  const cur = lastNumericQuota.get(id);
-  if (cur && cur.value === m.value && cur.state === m.state) return;
-  lastNumericQuota.set(id, m);
-  lastNumericListeners.forEach((l) => l());
-}
-function forgetNumeric(id: string) {
-  if (!lastNumericQuota.delete(id)) return;
-  lastNumericListeners.forEach((l) => l());
-}
-/** 유닛용 리셋 */
-export function _resetQuotaCelebrationMemoryForTest() {
-  lastNumericQuota.clear();
-}
+/** Legacy test helper; celebration memory now belongs to the global transition owner. */
+export function _resetQuotaCelebrationMemoryForTest() { resetUnlockSession(currentGen()); }
 
 /** top = 홈이 측정한 앵커(null = 아직 측정 전 → 그리지 않는다. 축하 상태는 이 컴포넌트에 남아 측정 뒤 이어진다). */
 export function HomeQuotaBadge({ top }: { top: number | null }) {
@@ -73,55 +55,14 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   const { data: me } = useMe();
   const model = FLAGS.countdownBadge ? quotaBadgeModel(me?.scanQuota, isGuest) : null;
 
-  // KB-699: 축하 판정을 **회원별 마지막 숫자 쿼터(세션 메모리)**로 잇는다. 옛 렌더 중 전이 비교(prev → 지금)는 전이를 한 컴포넌트
-  // 인스턴스의 연속 렌더에서만 봤다 — ① 재조회 중 me가 잠깐 비면(memberId null) "계정 전환"으로 오인해 기억을 지웠고
-  // ② 홈 트리가 다시 마운트되면(홈 재조회 에러 블록 등) prev가 지금 값(숨김)으로 초기화돼 해금 전이를 영영 못 봤다(QA: 폭죽 0).
-  // 저장소는 표시 상태(서버 사실 아님 — 서버 정본은 me.scanQuota 그대로)이고 useSyncExternalStore로 읽는다(렌더 중 바깥 값 직접 읽기 금지 — KB-694/695).
-  const memberId = me?.id ?? null;
-  const unlockedNow = FLAGS.countdownBadge && !isGuest && me?.scanQuota?.unlocked === true;
-  const getLast = React.useCallback(() => (memberId ? lastNumericQuota.get(memberId) ?? null : null), [memberId]);
-  const last = React.useSyncExternalStore(subscribeLastNumeric, getLast, getLast);
-  // 축하의 **주인 회원**을 함께 든다(Codex #229 · 공부 #229) — 끝·취소 때 지울 기억이 "지금 me"가 아니라 이 회원의 것이어야 한다
-  // (끝나는 순간 me가 비어 있거나 계정이 바뀌었어도).
-  const [celebrating, setCelebrating] = React.useState<{ memberId: string; model: QuotaBadgeModel } | null>(null);
-  // 숫자를 본 순간마다 기억(효과 — 바깥 저장소 쓰기)
-  const modelValue = model?.value;
-  const modelState = model?.state;
-  React.useEffect(() => {
-    if (memberId && modelValue != null && modelState) rememberNumeric(memberId, { value: modelValue, state: modelState });
-  }, [memberId, modelValue, modelState]);
-  // 축하 시작 = 같은 회원이 해금됐고 그 회원의 마지막 숫자를 기억하고 있을 때(중간의 빈 렌더·재마운트와 무관)
-  if (unlockedNow && memberId && last && !celebrating) setCelebrating({ memberId, model: last });
-  // 되돌려진 해금(대기 중 다시 숫자) = 축하 취소(공부 #221 재확인 ①) — 기억은 효과가 새 숫자로 덮는다
-  if (model && celebrating) setCelebrating(null);
-  // 회원이 떠남 = 그 회원의 기억 삭제(축하 중이 아니어도 — Codex #229: A가 숫자인 채 떠났다가 다른 곳에서 해금되고 돌아오면, 이 세션이
-  // 본 적 없는 전이로 낡은 기억이 폭죽을 띄웠다) + 진행·보류 중 축하 취소. 떠남 = 로그아웃(게스트 — 세션 스토어라 재조회 빈 렌더와 구분됨,
-  // 공부 #229 지적 1) · 실제로 다른 회원(계정 전환). 재조회 중 빈 렌더(memberId null)는 떠남이 아니다(KB-699 ①).
-  // 기억 삭제는 바깥 저장소 쓰기라 효과에서 — 렌더는 "누구를 지울지"만 상태로 남긴다(매번 새 객체 = 같은 회원 반복도 다시 실행).
-  const [present, setPresent] = React.useState<string | null>(memberId); // 마지막으로 본 회원(빈 렌더 너머로 유지)
-  const [dropped, setDropped] = React.useState<{ memberId: string } | null>(null);
-  const leaving = present != null && (isGuest || (memberId != null && memberId !== present)) ? present : null;
-  if (leaving) {
-    setDropped({ memberId: leaving });
-    if (celebrating) setCelebrating(null);
-  }
-  const nextPresent = isGuest ? null : memberId ?? present;
-  if (nextPresent !== present) setPresent(nextPresent);
-  React.useEffect(() => {
-    if (dropped) forgetNumeric(dropped.memberId);
-  }, [dropped]);
-  // 끝 = 그 축하 주인의 기억을 지운다(onCelebrateEnd) — 시작 때 지우면 축하 대기 중(홈 가려짐) 트리가 다시 마운트될 때 잃는다.
-  // 진행 중엔 `!celebrating` 가드가 재트리거를 막는다.
-  const endCelebration = () => {
-    if (celebrating) forgetNumeric(celebrating.memberId);
-    setCelebrating(null);
-  };
-
+  const rewardedShowing = React.useSyncExternalStore(subscribeUnlock, isRewardedShowing, isRewardedShowing);
   const [sheet, setSheet] = React.useState(false);
   // Codex #221 P2: 시트가 열린 채 노출 자격이 사라지면(세션 만료·게스트·해금·null) 닫는다 — 렌더 중 동기화.
   // 주 경로(시트 → 리뷰 쓰기 → 해금)에선 해금 시점에 시트가 이미 닫혀 있어 축하와 순서가 엮이지 않는다
   // (리뷰 쓰기 탭이 먼저 시트를 닫고, 픽커 예약(pickerAfterDismiss)은 사용자가 고른 것이라 그대로 둔다).
-  if (sheet && !model) setSheet(false);
+  // Codex #291 R9: a confirmed reward unlock closes the dialog once the ad closes, even if the ['me'] refetch failed or is stale.
+  const [unlockConfirmed, setUnlockConfirmed] = React.useState(false);
+  if (sheet && (!model || unlockConfirmed) && !rewardedShowing) { setSheet(false); setUnlockConfirmed(false); }
   const [picker, setPicker] = React.useState(false);
   const pickerAfterDismiss = React.useRef(false);
   const openPicker = () => {
@@ -231,12 +172,13 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
   // 끌기 직후 손을 뗄 때 들어올 수 있는 탭은 시트를 열지 않는다(끌기 = 시트 안 열림)
   const openSheet = () => {
     if (justDragged.get()) return;
+    setUnlockConfirmed(false);
     setSheet(true);
     // KB-765: 다이얼로그 노출 — 여는 탭에서 1회(이벤트 핸들러 — effect 아님). remaining = 그 순간 남은 무료 횟수
     track(EVENTS.scan_quota_dialog_view, { remaining: model?.value ?? 0 });
   };
 
-  const shown = celebrating?.model ?? model;
+  const shown = model;
   const left = shown && shown.value > 0 ? t('scan.freeLeft', { count: shown.value }) : t('scan.quotaTitle');
   return (
     <>
@@ -252,8 +194,6 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
                 value={shown.value}
                 state={shown.state}
                 onPress={openSheet}
-                celebrate={celebrating != null}
-                onCelebrateEnd={endCelebration}
                 accessibilityLabel={left}
               />
             </Animated.View>
@@ -270,7 +210,7 @@ export function HomeQuotaBadge({ top }: { top: number | null }) {
           state={shown?.state ?? 'empty'}
           title={left}
           onWriteReview={openPicker}
-          onUnlocked={() => setSheet(false)}
+          onUnlocked={() => { if (!isRewardedShowing()) setSheet(false); else setUnlockConfirmed(true); }}
           onClose={() => setSheet(false)}
           onDismiss={onSheetDismiss}
         />

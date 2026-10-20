@@ -26,6 +26,7 @@ import { showTopToast } from '@/components/topToastStore';
 import { airbridge } from '@/lib/airbridge';
 import { adaptMenuSummary, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { useIsGuest } from '../auth/useSession';
+import { fetchSortedPage, nameSortOptions, nameSortQuery, useRestartOnStaleCursor, type FoodNameSort, type SortedPage } from './foodNameSort';
 
 
 const QK = () => ['bookmarks', i18n.language] as const;
@@ -63,19 +64,25 @@ type Pages = InfiniteData<PageMenuSummaryWire, string | number | undefined>;
  *  P-350(KB-492): risk = 서버 필터(&risk=SAFE 등) — 지정 시 쿼리키 분리.
  *  낙관 쓰기(optimisticWrite)는 무필터 캐시(QK)만 — risk 캐시는 onSettled
  *  invalidate(['bookmarks'] 접두)로 동기화. */
-export function useBookmarks(risk?: RiskFilterChip, opts?: { enabled?: boolean }) {
+export function useBookmarks(risk?: RiskFilterChip, opts?: { enabled?: boolean; sort?: FoodNameSort }) {
   const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const isGuest = useIsGuest();
   const wire = riskWireOf(risk);
-  return useInfiniteQuery({
-    queryKey: wire ? (['bookmarks', lang, wire] as const) : (['bookmarks', lang] as const), // = QK() 값(구독 언어)
+  const sort = opts?.sort;
+  // KB-821: 이름 정렬 = 별도 캐시(불투명 커서). 낙관 쓰기는 무필터·기본 정렬 캐시(QK)만 — 정렬 캐시는 onSettled invalidate(['bookmarks'] 접두)로 동기화
+  const baseKey = wire ? ['bookmarks', lang, wire] : ['bookmarks', lang]; // = QK() 값(구독 언어)
+  const queryKey = sort ? [...baseKey, 'sort', sort] : baseKey;
+  const q = useInfiniteQuery({
+    queryKey,
     // 인증 필수 API — 게스트는 게이트로 진입 자체가 차단됨. KB-779: 홈은 Saved 탭 활성 시에만(콜드 스타트 /bookmarks 0회)
     enabled: !isGuest && (opts?.enabled ?? true),
     initialPageParam: undefined as string | number | undefined,
-    queryFn: async ({ pageParam }): Promise<PageMenuSummaryWire> => {
+    queryFn: async ({ pageParam }): Promise<SortedPage> => {
       const cursor = pageParam != null ? `cursor=${encodeURIComponent(String(pageParam))}&` : '';
       const riskQ = wire ? `&risk=${wire}` : '';
-      return api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}${riskQ}`);
+      // KB-821: 이름 정렬만 3.1 헤더 + sort — 기본 정렬은 기존 요청 바이트 그대로
+      return fetchSortedPage(sort, pageParam == null, () =>
+        api.get<PageMenuSummaryWire>(`/bookmarks?${cursor}lang=${apiLang()}${riskQ}${nameSortQuery(sort)}`, nameSortOptions(sort)));
     },
     // P-332(KB-488): 종료 가드 — hasNext만 믿으면 커서가 전진하지 않는 경계 응답
     // (커서 에코)에서 드레인/스크롤이 무한 fetch = 홈 프리징. 이미 요청한 커서
@@ -90,6 +97,8 @@ export function useBookmarks(risk?: RiskFilterChip, opts?: { enabled?: boolean }
         : undefined,
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
+  useRestartOnStaleCursor(queryKey, q.dataUpdatedAt); // KB-821: 400 FOOD-002·409 FOOD-022 → 첫 페이지부터
+  return q;
 }
 
 /** P-353 ⑤/#116 P2 ①: 북마크 판정 소스 공용 훅 — 전 페이지 드레인(P-332 가드

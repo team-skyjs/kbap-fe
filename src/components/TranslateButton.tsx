@@ -1,7 +1,7 @@
 /**
  * TranslateButton (KB-679 → KB-689 2차: X 방식) — 본문 **위 왼쪽** 한 줄 번역 라벨(리뷰 1차 · 게시글·댓글 재사용).
  * 스펙 = spec translate-2026-10-02.md 2차 절 · 레퍼런스 translate-ref-x-before/after.png(X 게시물 화면).
- * - 번역 전 "Show translation" #1B95E0 · 번역 중 "Translating…" #536471 · 번역 후 "Translated from {언어}" #536471(누르면 원문)
+ * - 번역 전 "Show translation" #1B95E0 · 번역 중 "Translating…" #536471 · 번역 후 "Translated from {언어}" #1B95E0(누르면 원문 — KB-777 B2-7, 회색이면 버튼 단서가 없었다)
  * - 글자 12.5(본문 13.5보다 한 단계 작게), 굵기 = 본문과 같음, 1줄 고정(상태가 바뀌어도 높이 불변). 아이콘·번역 평가 없음.
  * - 원문 언어 = 도메인 값 `TranslationSource`(translationAdapter가 와이어를 판정 — 이 컴포넌트는 원시 코드를 모른다):
  *   known → "Translated from {그 언어 이름}", unknown → "Translated".
@@ -47,7 +47,8 @@ export function TranslateButton({ state, source, onPress }: { state: TranslateLa
       accessibilityState={{ busy: state === 'loading' }}
       testID="translate-btn"
     >
-      <Text style={[styles.label, { color: state === 'idle' ? TRANSLATE_LABEL.idleColor : TRANSLATE_LABEL.mutedColor }]} numberOfLines={1}>
+      {/* KB-777 B2-7: 번역 후("Translated from …" — 누르면 원문)도 누를 수 있는 라벨이라 같은 X 블루 — 회색은 진행 중(비활성)만. 색만, 프레임 불변 */}
+      <Text style={[styles.label, { color: state === 'loading' ? TRANSLATE_LABEL.mutedColor : TRANSLATE_LABEL.idleColor }]} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>

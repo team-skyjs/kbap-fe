@@ -186,7 +186,7 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
           </Animated.View>
         </View>
       </Animated.View>
-      {showBurst && Array.from({ length: PARTICLES }, (_, i) => <Particle key={i} index={i} progress={burst} />)}
+      {showBurst && Array.from({ length: PARTICLES }, (_, i) => <QuotaBurstParticle key={i} index={i} progress={burst} />)}
     </>
   );
   if (!onPress) {
@@ -213,7 +213,7 @@ export function CountdownBadge({ value, state, onPress, celebrate = false, onCel
 
 const PARTICLE_COLORS = [C.primary, C.primary2, C.accent];
 
-function Particle({ index, progress }: { index: number; progress: { value: number } }) {
+export function QuotaBurstParticle({ index, progress }: { index: number; progress: { value: number } }) {
   const angle = (index / PARTICLES) * Math.PI * 2;
   const style = useAnimatedStyle(() => {
     const d = 18 + progress.value * 30;

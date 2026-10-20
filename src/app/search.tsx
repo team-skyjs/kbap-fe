@@ -14,7 +14,7 @@
  * the KB-25 RiskPill. Blank keywords never leave the client (server 400s).
  */
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { FlatList, Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { useRouter, type Href } from 'expo-router';
@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { color as C, font, radius, type RiskState } from '@/lib/theme';
 import { Spinner, QueryErrorBlock, classifyQueryError, CardPhoto, PressScale, IconArrowLeft, IconSearch, IconClose, IconChevron, IconFood, Input } from '@/components';
-import { EmptyBlock, ScreenCenterFill } from '@/components/StateBlock';
+import { EmptyBlock } from '@/components/StateBlock';
 import { useInfiniteFoods, useSearchFoods } from '@/lib/data/useFoods';
 import { FoodGridCard, isGridPad, padOddGrid } from '@/features/food/FoodCards';
 import { useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
@@ -48,6 +48,7 @@ export default function Search() {
   const { data: me } = useMe();
   const { recent, add, remove, clear } = useRecentSearches();
 
+  const bodyRef = useRef<FlatList>(null);
   const [query, setQuery] = useState(''); // input text
   const [submitted, setSubmitted] = useState(''); // executed search term (submit-only)
 
@@ -91,6 +92,7 @@ export default function Search() {
     if (!tterm) return; // blank never hits the server (400)
     setQuery(tterm);
     setSubmitted(tterm);
+    bodyRef.current?.scrollToOffset({ offset: 0, animated: false });
     add(tterm);
   };
 
@@ -109,20 +111,25 @@ export default function Search() {
   const reset = () => {
     setQuery('');
     setSubmitted('');
+    bodyRef.current?.scrollToOffset({ offset: 0, animated: false });
   };
 
   const showingSearch = submitted.length > 0;
-  // KB-739: 키보드가 떠 있는 동안 하단 배너 숨김(autoFocus 입력창 — 키보드 뒤에 깔리거나 결과를 더 밀지 않게)
   const bottomInset = useBottomInset();
-  const [keyboardShown, setKeyboardShown] = useState(false);
-  useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardShown(true));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardShown(false));
-    return () => { show.remove(); hide.remove(); };
-  }, []);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  // Once a person interacts, a late ad must not replace the content they were aiming at.
+  const interacted = useRef(false);
+  const [interactListeners] = useState(() => new Set<() => void>());
+  const [onInteract] = useState(() => (listener: () => void) => { interactListeners.add(listener); return () => { interactListeners.delete(listener); }; });
+  const markInteraction = () => {
+    if (interacted.current) return;
+    interacted.current = true;
+    interactListeners.forEach((listener) => listener());
+  };
+  const canReveal = () => !interacted.current;
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onTouchStart={markInteraction}>
       {/* header: back + input + clear */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <PressScale onPress={() => router.back()} hitSlop={8} style={styles.back} testID="search-back">
@@ -135,7 +142,7 @@ export default function Search() {
           <Input
             style={styles.input}
             value={query}
-            onChangeText={setQuery}
+            onChangeText={(text) => { markInteraction(); setQuery(text); }}
             placeholder={seedKeyword ? t('search.placeholderSeed', { name: seedKeyword }) : t('food.searchPlaceholder')} /* KB-722: 홈 검색창과 한 키(중복 키 제거) */
             placeholderTextColor="#D1D3D8"
             selectionColor={C.primary}
@@ -153,86 +160,100 @@ export default function Search() {
         </View>
       </View>
 
-      {!showingSearch && offline ? (
-        /* 1a. offline: 전체화면 J4 — 홈·음식탭과 톤 통일 (P-028) */
-        <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
-      ) : !showingSearch ? (
-        /* 1. empty state: recent (local) + popular (mock) */
-        <ScrollView keyboardDismissMode="on-drag" contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.secHead}>
-            <Text style={styles.secTag}>{t('search.recent')}</Text>
-            {recent.length > 0 && (
-              <Pressable testID="search-recent-clear-all" onPress={clear} hitSlop={6}>
-                <Text style={styles.clearAll}>{t('search.recentClearAll')}</Text>
-              </Pressable>
+      <FlatList
+        ref={bodyRef}
+        testID="search-body"
+        style={{ flex: 1 }}
+        onLayout={(e) => setViewport(e.nativeEvent.layout)}
+        onScrollBeginDrag={markInteraction}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 + bottomInset, flexGrow: 1 }}
+        data={showingSearch && !search.isLoading && !search.isError ? padOddGrid(results) : []}
+        keyExtractor={(f) => f.foodId}
+        numColumns={2}
+        columnWrapperStyle={styles.gridRowWrap}
+        ListHeaderComponent={
+          <View>
+            {!showingSearch && !offline && <View style={{ paddingHorizontal: 18, paddingTop: 18 }}>
+              <View style={styles.secHead}>
+                <Text style={styles.secTag}>{t('search.recent')}</Text>
+                {recent.length > 0 && (
+                  <Pressable testID="search-recent-clear-all" onPress={clear} hitSlop={6}>
+                    <Text style={styles.clearAll}>{t('search.recentClearAll')}</Text>
+                  </Pressable>
+                )}
+              </View>
+              {recent.length === 0 ? (
+                <View style={styles.recentHint}>
+                  <Text style={styles.recentHintText}>{t('search.recentEmptyHint')}</Text>
+                </View>
+              ) : (
+                <View>
+                  {recent.map((rterm) => (
+                    <View key={rterm} style={styles.recentRow}>
+                      <IconSearch size={16} color={C.ink3} />
+                      <Pressable testID="search-recent-term" style={styles.recentTap} onPress={() => doSearch(rterm)}>
+                        <Text style={styles.recentText} numberOfLines={1}>{rterm}</Text>
+                      </Pressable>
+                      <Pressable testID="search-recent-remove" onPress={() => remove(rterm)} hitSlop={8}>
+                        <IconClose size={15} color={C.ink3} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+            </View>}
+            <View style={{ marginHorizontal: showingSearch ? 20 : 18 }}>
+              {viewport.width > 40 && viewport.height > 0 && (
+                <AdBanner placement="search_banner" content={{
+                  width: viewport.width - 40,
+                  viewportHeight: viewport.height,
+                  canReveal,
+                  onInteract,
+                }} />
+              )}
+            </View>
+            {!showingSearch ? offline ? (
+              <QueryErrorBlock error={probe.error} onRetry={() => void probe.refetch()} />
+            ) : <View style={{ paddingHorizontal: 18 }}>
+              {/* P-143: 인기 사진 섹션 — 랭크 큐레이션(discovery), 탭 = 상세 진입. 게스트 노출(열람 영역).
+                  KB-310 Codex P2: 프로브 실패·콜드 캐시(popular 0) = 섹션 통째 미렌더 —
+                  빈 레일 잔존 금지(홈 popularSearch.length>0 게이트와 동일 문법). */}
+              {popular.length > 0 && (
+              <>
+              <Text style={[styles.secTag, { marginTop: 22 }]}>{t('search.popular')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRail}>
+                {popular.map((f) => (
+                  <Pressable key={f.foodId} style={styles.popCard} onPress={() => openFood(f.foodId)} testID={`pop-${f.foodId}`}>
+                    <View style={styles.popThumb}>
+                      {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={4} /> : <IconFood size={22} color={C.ink3} />}
+                    </View>
+                    <Text style={styles.popCardName} numberOfLines={1}>{f.name}</Text>
+                    {f.nameKo !== f.name && <Text style={styles.popCardKo} numberOfLines={1}>{f.nameKo}</Text>}
+                  </Pressable>
+                ))}
+              </ScrollView>
+              </>
+              )}
+              </View> : search.isLoading ? (
+              <View style={styles.body}><Spinner /></View>
+            ) : search.isError ? (
+              <View style={styles.body}><QueryErrorBlock error={search.error} onRetry={() => void search.refetch()} /></View>
+            ) : results.length > 0 ? (
+              <Text style={styles.count}>{t('search.resultCount', { count: results.length })}</Text>
+            ) : (
+              <View style={styles.body}><EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" /></View>
             )}
           </View>
-          {recent.length === 0 ? (
-            <View style={styles.recentHint}>
-              <Text style={styles.recentHintText}>{t('search.recentEmptyHint')}</Text>
-            </View>
-          ) : (
-            <View>
-              {recent.map((rterm) => (
-                <View key={rterm} style={styles.recentRow}>
-                  <IconSearch size={16} color={C.ink3} />
-                  <Pressable testID="search-recent-term" style={styles.recentTap} onPress={() => doSearch(rterm)}>
-                    <Text style={styles.recentText} numberOfLines={1}>{rterm}</Text>
-                  </Pressable>
-                  <Pressable testID="search-recent-remove" onPress={() => remove(rterm)} hitSlop={8}>
-                    <IconClose size={15} color={C.ink3} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* P-143: 인기 사진 섹션 — 랭크 큐레이션(discovery), 탭 = 상세 진입. 게스트 노출(열람 영역).
-              KB-310 Codex P2: 프로브 실패·콜드 캐시(popular 0) = 섹션 통째 미렌더 —
-              빈 레일 잔존 금지(홈 popularSearch.length>0 게이트와 동일 문법). */}
-          {popular.length > 0 && (
-          <>
-          <Text style={[styles.secTag, { marginTop: 22 }]}>{t('search.popular')}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popRail}>
-            {popular.map((f) => (
-              <Pressable key={f.foodId} style={styles.popCard} onPress={() => openFood(f.foodId)} testID={`pop-${f.foodId}`}>
-                <View style={styles.popThumb}>
-                  {f.photoUrl ? <CardPhoto uri={f.photoUrl} recyclingKey={f.foodId} borderRadius={4} /> : <IconFood size={22} color={C.ink3} />}
-                </View>
-                <Text style={styles.popCardName} numberOfLines={1}>{f.name}</Text>
-                {f.nameKo !== f.name && <Text style={styles.popCardKo} numberOfLines={1}>{f.nameKo}</Text>}
-              </Pressable>
-            ))}
-          </ScrollView>
-          </>
-          )}
-        </ScrollView>
-      ) : search.isLoading ? (
-        <View style={styles.fill}>
-          <Spinner />
-        </View>
-      ) : search.isError ? (
-        /* 제출 검색 에러 — 공용 J3/J4 렌더로 톤 통일 (P-028 재량 항목) */
-        <View style={[styles.body, styles.noResults]}>
-          <QueryErrorBlock error={search.error} onRetry={() => void search.refetch()} />
-        </View>
-      ) : results.length > 0 ? (
-        /* 2. results: live pages, cursor infinite scroll */
-        /* P-353 ⑤(KB-515): dish-item 폐기 — 음식 탭과 동일 2열 FoodGridCard(값 그대로) */
-        <FlatList keyboardDismissMode="on-drag"
-          data={padOddGrid(results)}
-          keyExtractor={(f) => f.foodId}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRowWrap}
-          contentContainerStyle={{ paddingBottom: 24 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={<Text style={styles.count}>{t('search.resultCount', { count: results.length })}</Text>}
-          ListFooterComponent={search.isFetchingNextPage ? <Spinner /> : null}
-          onEndReachedThreshold={0.6}
-          onEndReached={() => {
-            if (search.hasNextPage && !search.isFetchingNextPage) void search.fetchNextPage();
-          }}
+        }
+        ListFooterComponent={showingSearch && search.isFetchingNextPage ? <Spinner /> : null}
+        onEndReachedThreshold={0.6}
+        onEndReached={() => {
+          if (showingSearch && search.hasNextPage && !search.isFetchingNextPage) void search.fetchNextPage();
+        }}
           renderItem={({ item }) =>
             isGridPad(item) ? (
               <View style={styles.gridCell} testID="food-grid-pad" />
@@ -251,16 +272,7 @@ export default function Search() {
               </View>
             )
           }
-        />
-      ) : (
-        /* 3. no results(P-345 → P-330 문법) — 성공+0건 = 공용 EmptyBlock 화면 중앙 */
-        <ScreenCenterFill>
-          <EmptyBlock label={t('search.noResultsTitle')} testID="search-empty" />
-        </ScreenCenterFill>
-      )}
-      {/* KB-739 ④-②: 하단 적응형 앵커 배너 — 리스트의 형제(겹침 0, 결과가 배너만큼 짧아진다) · 키보드 떠 있으면 스타일로 숨김(마운트 유지) ·
-          탭바 없는 화면이라 내비 바로 옆 아님. 미수신·초기화 전 = 높이 0(인셋도 0) */}
-      <AdBanner placement="search_banner" visible={!keyboardShown} bottomInset={bottomInset} />
+      />
       {/* #116 P2 ②: 게스트 북마크 = 저장 게이트(홈/음식 탭 동일) */}
       <AuthGateSheet context="save" open={gate} onClose={() => setGate(false)} />
     </View>

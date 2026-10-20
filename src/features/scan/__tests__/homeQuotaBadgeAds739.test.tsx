@@ -82,6 +82,7 @@ jest.mock('@/features/ads/RewardedUnlock', () => ({
 }));
 
 import { HomeQuotaBadge } from '../HomeQuotaBadge';
+import { beginRewardedPresentation } from '../unlockCelebrationStore';
 import { Pressable } from '@/components/Pressable';
 
 const Q = (remaining: number | 'unlimited', unlocked = false) => ({ count: 0, limit: 3, unlocked, remaining });
@@ -266,4 +267,19 @@ it('KB-765 QA 2R: 다이얼로그가 열린 동안 홈 뱃지 숨김 = **애니�
   rerenderNow();
   expect(animatedOpacity()).toBe(1);
   expect(badge().props.pointerEvents).toBe('auto');
+});
+
+it('Codex #291 R9: unlock confirmed while the ad shows closes the dialog when the ad closes, even with a stale/failed profile', () => {
+  mockQuota = Q(0); // profile stays locked (refetch failed or old snapshot)
+  const t = render();
+  open(t);
+  let release!: () => void;
+  act(() => { release = beginRewardedPresentation(); });
+  const p = mockTileProps.mock.calls.at(-1)![0] as { onUnlocked: () => void };
+  act(() => p.onUnlocked());
+  expect(dialogVisible(t)).toBe(true); // ad still on top
+  act(() => release());
+  expect(dialogVisible(t)).toBe(false);
+  open(t); // a fresh open is not auto-closed by the old confirmation
+  expect(dialogVisible(t)).toBe(true);
 });

@@ -2,7 +2,7 @@
  * P-143: 검색 유도 — placeholder 시드 로테이션·빈 상태 인기 사진 섹션·상세 라우팅 잠금.
  */
 import * as React from 'react';
-import { TextInput } from 'react-native';
+import { FlatList, TextInput } from 'react-native';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 
 jest.mock('react-native-reanimated', () => {
@@ -50,6 +50,7 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/',
+  useSegments: () => ['search'],
   useFocusEffect: () => {},
 }));
 jest.mock('react-i18next', () => ({
@@ -83,6 +84,17 @@ jest.mock('@/lib/data/useRecentSearches', () => ({
   useRecentSearches: () => ({ recent: [], add: jest.fn(), remove: jest.fn(), clear: jest.fn() }),
 }));
 
+let mockAdMounts = 0;
+jest.mock('@/features/ads/AdBanner', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
+  return { AdBanner: (props: object) => {
+    React.useEffect(() => { mockAdMounts += 1; }, []);
+    return <View {...props} testID="search-ad-probe" />;
+  } };
+});
+
+// eslint-disable-next-line import/first -- mock factories must precede the screen import
 import Search from '../search';
 
 const OK_QUERY = { isLoading: false, isError: false, error: null, refetch: jest.fn() };
@@ -91,11 +103,16 @@ const CATALOG = [
   { foodId: 'kimchi', name: 'Kimchi Jjigae', nameKo: '김치찌개', photoUrl: 'https://cdn/k.jpg', risk: 'safe', overall: { average: null, count: 0 }, sameNationality: { average: null, count: 0 }, popularityRank: 1 },
 ];
 
+const trees: ReactTestRenderer[] = [];
+afterEach(() => { for (const tree of trees.splice(0)) act(() => tree.unmount()); });
+const renderedContent = (tree: ReactTestRenderer) => tree.root.findAll((n) => typeof n.type === 'string').map((n) => `${n.props.testID ?? ''} ${typeof n.props.children === 'string' ? n.props.children : ''}`).join(' ');
+
 function render(el: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(el);
   });
+  trees.push(tree);
   return tree;
 }
 
@@ -120,7 +137,7 @@ it('placeholder — 카탈로그 시드 로테이션(리더 언어 번역명), �
 
 it('빈 상태 인기 사진 섹션 — 랭크순 카드(사진 우선) + 탭 = 상세 진입(검색 실행 아님)', () => {
   const tree = render(<Search />);
-  const s = JSON.stringify(tree.toJSON());
+  const s = renderedContent(tree);
   expect(s).toContain('search.popular');
   // 사진 보유(kimchi, rank1)가 첫 카드
   const cards = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('pop-') && typeof n.props?.onPress === 'function');
@@ -171,4 +188,44 @@ it('KB-722 검색 결과 = 서버 응답 순서 그대로(popularityRank·이름
     .findAll((n) => typeof n.type === 'string' && typeof n.props?.testID === 'string' && /^home-food-/.test(n.props.testID))
     .map((n) => (n.props.testID as string).replace('home-food-', ''));
   expect(shown).toEqual(['bibim', 'kimchi', 'alpha']);
+});
+
+it('KB-798 single scrolling header keeps one ad/input across initial, loading, empty, error, results and clear', () => {
+  mockAdMounts = 0;
+  const tree = render(<Search />);
+  const list = () => tree.root.findByType(FlatList);
+  act(() => list().props.onLayout({ nativeEvent: { layout: { width: 375, height: 600 } } }));
+  const input = tree.root.findAllByType(TextInput)[0];
+  expect(input.props.autoFocus).toBe(true);
+  const ad = () => tree.root.findAll((n) => n.props.testID === 'search-ad-probe' && typeof n.type === 'string')[0];
+  expect(ad().props.content.width).toBe(335);
+  expect(ad().props.content.canReveal()).toBe(true);
+  const interacted = jest.fn();
+  const unsubscribe = ad().props.content.onInteract(interacted);
+  const initial = renderedContent(tree);
+  expect(initial.indexOf('search.recent')).toBeLessThan(initial.indexOf('search-ad-probe'));
+  expect(initial.indexOf('search-ad-probe')).toBeLessThan(initial.indexOf('search.popular'));
+  act(() => input.props.onChangeText('김치'));
+  expect(ad().props.content.canReveal()).toBe(false);
+  expect(interacted).toHaveBeenCalledTimes(1); // first interaction notifies an in-progress ad reveal
+  act(() => input.props.onChangeText('김치찌개'));
+  expect(interacted).toHaveBeenCalledTimes(1);
+  unsubscribe();
+  act(() => input.props.onSubmitEditing());
+  for (const state of [
+    { isLoading: true }, { data: [] }, { isError: true, error: new Error('offline') }, { data: CATALOG },
+  ]) {
+    mockUseSearchFoods.mockReturnValue({ ...OK_QUERY, data: [], ...state });
+    act(() => tree.update(<Search />));
+    expect(tree.root.findAllByType(TextInput)[0]).toBe(input);
+    expect(mockAdMounts).toBe(1);
+    expect(list().props.ListHeaderComponent).toBeTruthy();
+    expect(renderedContent(tree)).not.toContain('search.recent');
+  }
+  act(() => list().props.onLayout({ nativeEvent: { layout: { width: 375, height: 250 } } }));
+  expect(mockAdMounts).toBe(1);
+  const clear = tree.root.findAll((n) => n.props.testID === 'search-clear' && typeof n.props.onPress === 'function')[0];
+  act(() => clear.props.onPress());
+  expect(renderedContent(tree)).toContain('search.recent');
+  expect(mockAdMounts).toBe(1);
 });

@@ -74,11 +74,11 @@ it('리뷰 상세 = 단건 쿼리(useReview) 정본 — 캐시 전용 상세 재
   expect(src).not.toContain('useFoodReviews('); // 목록 캐시 훅 호출 금지(모듈 경로 import 는 무관)
 });
 
-it('ExpandableBody — 3줄 도달 시 See more, 탭 = 전문 펼침(See less), 재탭 = 접기', () => {
+it('ExpandableBody — 3줄을 넘으면 See more, 탭 = 전문 펼침(See less), 재탭 = 접기', () => {
   const tree = render(<ExpandableBody body="long text" t={t} />);
   expect(flat(tree)).not.toContain('reviews.seeMore'); // 클램프 감지 전 토글 없음
   const text = tree.root.findAll((n) => typeof n.props?.onTextLayout === 'function')[0];
-  act(() => text.props.onTextLayout({ nativeEvent: { lines: [{}, {}, {}] } })); // 3줄
+  act(() => text.props.onTextLayout({ nativeEvent: { lines: [{}, {}, {}, {}] } })); // 전체 4줄(KB-824: 클램프 없는 측정)
   expect(flat(tree)).toContain('reviews.seeMore');
   const toggle = tree.root.findAll((n) => n.props?.testID === 'body-toggle')[0];
   act(() => toggle.props.onPress());
@@ -214,4 +214,148 @@ it('P-366 ④(KB-529): 비mine ON 탭 = 체크 토스트 1회(성공 시) · OFF
   const tree2 = render(<HelpfulButton review={on} mine={false} t={t2} />); // 끄는 방향
   tap(tree2, 'r9');
   expect(mockToast).not.toHaveBeenCalled();
+});
+
+describe('KB-817 리뷰 탭 peek', () => {
+  const { ScrollView, StyleSheet } = jest.requireActual<typeof import('react-native')>('react-native');
+  const { PhotoViewer } = jest.requireActual<typeof import('@/components/PhotoViewer')>('@/components/PhotoViewer');
+  const photos = ['a', 'b', 'c', 'd', 'e'].map((x) => `https://cdn/${x}.jpg`);
+  const tile = (tree: ReactTestRenderer, i: number) =>
+    StyleSheet.flatten(tree.root.findAll((n) => n.props?.testID === `photo-${i}`)[0].findAll((n) => n.props?.uri)[0].props.style);
+  const measure = (tree: ReactTestRenderer, width: number) =>
+    act(() => tree.root.findAll((n) => n.props?.testID === 'photo-peek' && typeof n.props?.onLayout === 'function')[0].props.onLayout({ nativeEvent: { layout: { width } } }));
+
+  it('타일 폭 = 콘텐츠 폭 − 40 · 높이 = 폭×3/4 · radius 12 · snap = 폭+8 · 전체 장수 · 탭 index 유지', () => {
+    const tree = render(<ReviewPhotoStrip photos={photos} variant="peek" />);
+    measure(tree, 335);
+    for (let i = 0; i < photos.length; i++) expect(tile(tree, i)).toMatchObject({ width: 295, height: 221.25, borderRadius: 12 });
+    const scroll = tree.root.findByType(ScrollView);
+    expect(scroll.props).toMatchObject({ horizontal: true, showsHorizontalScrollIndicator: false, snapToInterval: 303, decelerationRate: 'fast', scrollEnabled: true });
+    act(() => tree.root.findAll((n) => n.props?.testID === 'photo-3')[0].props.onPress());
+    expect(tree.root.findByType(PhotoViewer).props).toMatchObject({ index: 3, uris: photos });
+  });
+  it('1장 = 스크롤 없이 같은 크기 1장 · 0장 = 미렌더', () => {
+    const one = render(<ReviewPhotoStrip photos={[photos[0]]} variant="peek" />);
+    measure(one, 335);
+    expect(tile(one, 0)).toMatchObject({ width: 295, height: 221.25 });
+    expect(one.root.findByType(ScrollView).props.scrollEnabled).toBe(false);
+    expect(render(<ReviewPhotoStrip photos={[]} variant="peek" />).toJSON()).toBeNull();
+  });
+  it('기본 tiles 불변 — 최대 3장 · 지정 size 정사각 · 가로 스크롤 없음', () => {
+    const tree = render(<ReviewPhotoStrip photos={photos} size={104} radius={4} />);
+    expect(new Set(tree.root.findAll((n) => typeof n.props?.testID === 'string' && /^photo-\d$/.test(n.props.testID)).map((n) => n.props.testID)).size).toBe(3);
+    expect(tile(tree, 0)).toMatchObject({ width: 104, height: 104, borderRadius: 4 });
+    expect(tree.root.findAllByType(ScrollView)).toHaveLength(0);
+  });
+  it('See more 색 — 기본 = 기존 primaryText · toggleColor 지정 시 라벨·아이콘 그 색', () => {
+    const { color: C } = jest.requireActual<typeof import('@/lib/theme')>('@/lib/theme');
+    const labelColor = (tree: ReactTestRenderer) => {
+      const toggle = tree.root.findAll((n) => n.props?.testID === 'body-toggle')[0];
+      return StyleSheet.flatten(toggle.findAll((n) => n.props?.children === 'reviews.seeMore')[0].props.style).color;
+    };
+    const open3 = (tree: ReactTestRenderer) => act(() => tree.root.findAll((n) => typeof n.props?.onTextLayout === 'function')[0].props.onTextLayout({ nativeEvent: { lines: [{}, {}, {}, {}] } }));
+    const base = render(<ExpandableBody body="long" t={t} />); open3(base);
+    expect(labelColor(base)).toBe(C.primaryText);
+    const ink = render(<ExpandableBody body="long" t={t} toggleColor="#2F3137" />); open3(ink);
+    expect(labelColor(ink)).toBe('#2F3137');
+  });
+  it('표면 배선 — 리뷰 탭 = ReviewTabCard(KB-802 캐러셀, peek 아님), FeedCard 기본 tiles · peek일 때만 See more 잉크색', () => {
+    const fs = jest.requireActual<typeof import('fs')>('fs');
+    // KB-802: 리뷰 탭 카드가 FeedCard → ReviewTabCard(사진 캐러셀)로 교체 — KB-817 peek 배선은 리뷰 탭에서 소멸
+    const feed = fs.readFileSync('src/features/community/ReviewFeed.tsx', 'utf8');
+    expect(feed).toContain('<ReviewTabCard');
+    expect(feed).not.toContain('photoVariant');
+    const card = fs.readFileSync('src/features/review/FeedCard.tsx', 'utf8');
+    expect(card).toContain("photoVariant = 'tiles'");
+    expect(card).toContain("toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined}");
+    for (const f of ['src/app/food/[id]/index.tsx', 'src/app/profile/reviews.tsx']) expect(fs.readFileSync(f, 'utf8')).not.toContain('photoVariant');
+  });
+});
+
+describe('KB-824 See more = 전체 줄 수가 3을 넘을 때만', () => {
+  const measure = (tree: ReactTestRenderer, n: number) =>
+    act(() => tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.props?.onTextLayout === 'function')[0].props.onTextLayout({ nativeEvent: { lines: Array(n).fill({}) } }));
+  const toggle = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'body-toggle' && typeof n.props?.onPress === 'function')[0];
+  const visible = (tree: ReactTestRenderer) => tree.root.findAll((n) => typeof n.type === 'string' && n.props.testID === 'body-text')[0];
+
+  it('정확히 3줄 = 버튼 없음 · 1·2줄도 없음 · 접힘 제한도 걸지 않음', () => {
+    for (const n of [1, 2, 3]) {
+      const tree = render(<ExpandableBody body={`body ${n}`} t={t} />);
+      measure(tree, n);
+      expect(toggle(tree)).toBeUndefined();
+      expect(visible(tree).props.numberOfLines).toBeUndefined();
+    }
+  });
+  it('4줄 = 버튼 + 3줄 접힘 → 펼침·접힘 왕복 5회 내내 버튼 유지 · 측정 Text는 클램프 없음', () => {
+    const tree = render(<ExpandableBody body="four lines" t={t} />);
+    measure(tree, 4);
+    expect(tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0].props.numberOfLines).toBeUndefined();
+    for (let i = 0; i < 5; i++) {
+      expect(visible(tree).props.numberOfLines).toBe(3);
+      act(() => toggle(tree).props.onPress());
+      expect(visible(tree).props.numberOfLines).toBeUndefined();
+      expect(flat(tree)).toContain('reviews.seeLess');
+      act(() => toggle(tree).props.onPress());
+      expect(toggle(tree)).toBeDefined();
+      expect(flat(tree)).toContain('reviews.seeMore');
+    }
+  });
+  it('Codex #301 P2: 측정 전엔 접힌 채(3줄) — 긴 본문이 전체로 그려졌다 줄어드는 점프 0 · 본문 교체 직후도 접힘', () => {
+    const tree = render(<ExpandableBody body="unmeasured" t={t} />);
+    expect(visible(tree).props.numberOfLines).toBe(3);
+    expect(toggle(tree)).toBeUndefined();
+    measure(tree, 2);
+    expect(visible(tree).props.numberOfLines).toBeUndefined();
+    act(() => tree.update(<ExpandableBody body="changed" t={t} />));
+    expect(visible(tree).props.numberOfLines).toBe(3);
+  });
+  it('본문 교체(원문↔번역) = 접힘으로 돌아가 다시 측정 · 짧은 본문엔 잔상 0, 긴 본문엔 다시 버튼', () => {
+    const tree = render(<ExpandableBody body="long one" t={t} />);
+    measure(tree, 6);
+    act(() => toggle(tree).props.onPress()); // 펼친 상태에서
+    act(() => tree.update(<ExpandableBody body="short" t={t} />));
+    expect(toggle(tree)).toBeUndefined(); // 측정 전 버튼 없음
+    measure(tree, 3);
+    expect(toggle(tree)).toBeUndefined();
+    act(() => tree.update(<ExpandableBody body="long again" t={t} />));
+    measure(tree, 5);
+    expect(toggle(tree)).toBeDefined();
+    expect(visible(tree).props.numberOfLines).toBe(3); // 접힘으로 시작
+  });
+  it('폭·글꼴 배율 변화 = 측정 Text가 다시 레이아웃되면 최신 줄 수로 갱신(4 → 3이면 버튼 사라짐)', () => {
+    const tree = render(<ExpandableBody body="resize" t={t} />);
+    measure(tree, 4);
+    expect(toggle(tree)).toBeDefined();
+    measure(tree, 3); // 회전·글꼴 축소로 3줄에 들어감
+    expect(toggle(tree)).toBeUndefined();
+  });
+  it('KB-777: 앱을 켠 채 글씨 크기 변경(fontScale 전이) = 측정 Text 새로 마운트 + 줄 수 다시 잼 → 커진 글씨로 4줄 넘으면 See more · 펼침 상태 유지', () => {
+    const RN = jest.requireActual('react-native');
+    const spy = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
+    const tree = render(<ExpandableBody body="three lines at 1x" t={t} />);
+    measure(tree, 3);
+    expect(toggle(tree)).toBeUndefined();
+    const before = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1.3 });
+    act(() => tree.update(<ExpandableBody body="three lines at 1x" t={t} />));
+    const after = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    expect(after).not.toBe(before); // 새 인스턴스 = 새 onTextLayout
+    expect(visible(tree).props.numberOfLines).toBe(3); // 재측정 전 = 접힌 채(높이 점프 0)
+    measure(tree, 5);
+    expect(toggle(tree)).toBeDefined();
+    act(() => toggle(tree).props.onPress());
+    spy.mockReturnValue({ width: 375, height: 812, scale: 3, fontScale: 1 });
+    act(() => tree.update(<ExpandableBody body="three lines at 1x" t={t} />));
+    measure(tree, 4);
+    expect(visible(tree).props.numberOfLines).toBeUndefined(); // 펼친 채 유지
+    expect(flat(tree)).toContain('reviews.seeLess');
+    spy.mockRestore();
+  });
+  it('측정 Text = 보이지 않고 스크린리더·터치 0', () => {
+    const { StyleSheet } = jest.requireActual('react-native');
+    const tree = render(<ExpandableBody body="x" t={t} />);
+    const m = tree.root.findAll((x) => x.props?.testID === 'body-measure' && typeof x.type === 'string')[0];
+    expect(StyleSheet.flatten(m.props.style)).toMatchObject({ position: 'absolute', opacity: 0 });
+    expect(m.props).toMatchObject({ accessible: false, importantForAccessibility: 'no-hide-descendants', accessibilityElementsHidden: true, pointerEvents: 'none' });
+  });
 });

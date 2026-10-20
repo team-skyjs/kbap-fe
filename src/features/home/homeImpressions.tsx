@@ -13,7 +13,7 @@ import * as React from 'react';
 import type { View } from 'react-native';
 import { EVENTS, track } from '@/lib/analytics';
 
-export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta';
+export type HomeSection = 'popular' | 'saved' | 'food' | 'safe' | 'most_reviewed' | 'recent' | 'top_rated' | 'guest_cta' | 'curation'; // KB-796 curation = 큐레이션 배너
 export type Rect = { x: number; y: number; width: number; height: number };
 export type Viewport = { top: number; bottom: number; left: number; right: number };
 
@@ -121,8 +121,9 @@ export class ImpressionTracker {
   }
 }
 
-export function trackHomeCardClick(section: HomeSection, position: number, foodId: string): void {
-  track(EVENTS.home_card_click, { section, position, food_id: foodId });
+/** id = 음식 카드는 foodId, 큐레이션 배너(KB-796)는 collectionKey(→ collection_key — food_id에 섞지 않는다). */
+export function trackHomeCardClick(section: HomeSection, position: number, id: string): void {
+  track(EVENTS.home_card_click, section === 'curation' ? { section, position, collection_key: id } : { section, position, food_id: id });
 }
 
 /** 홈 밖(음식 탭 등 같은 컴포넌트 재사용)에선 null — 노출 계측 없음 */

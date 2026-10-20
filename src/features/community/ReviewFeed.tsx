@@ -32,7 +32,7 @@ import { ReviewTabCard, type ReviewOpenTarget } from '@/features/review/ReviewTa
 import { ImpressionTracker } from '@/features/home/homeImpressions';
 import { TABBAR_CONTENT_H } from '@/components/TabBar';
 import { FeedAd } from '@/features/ads/FeedAd';
-import { withFeedAds } from '@/lib/ads/feedSlots';
+import { REVIEW_FEED_AD_EVERY, withFeedAds } from '@/lib/ads/feedSlots';
 import { IlloSpeechBubble } from '@/components/design4Assets';
 import { useMe } from '@/lib/data/useMe';
 import { isScanQuotaExhausted } from '@/lib/api/memberAdapter';
@@ -46,6 +46,10 @@ type TFn = ReturnType<typeof useTranslation>['t'];
 
 const INK_TITLE = '#2F3137'; // 시안 gray-900(D-1 Chip과 동일 명시값)
 const SORT_OPTIONS: FeedSort[] = ['latest', 'rating_high', 'rating_low', 'food_review_count', 'helpful'];
+
+/** KB-777 B3-7: 플로팅 "Write a review"를 아이콘만으로 줄이는 작은 화면(폭 < 360 또는 높이 < 700 dp — QA 720×1280@2x = 360×640). */
+export const isCompactFabScreen = (w: number, h: number): boolean => w < 360 || h < 700;
+const FAB_COMPACT_SLOP = 4; // 36 + 4×2 = 44
 
 export function ReviewFeed() {
   const router = useRouter();
@@ -82,7 +86,7 @@ export function ReviewFeed() {
     const author = r.author?.memberId ?? r.memberId;
     return author == null || !blockedIds.has(author);
   });
-  const rows = withFeedAds(reviews, (r) => r.id); // KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
+  const rows = withFeedAds(reviews, (r) => r.id, REVIEW_FEED_AD_EVERY); // KB-816: 5개마다 · KB-739: 광고 행 key 순번 고정(페이지 추가에도 앞 행 identity 유지)
   const positions = new Map(reviews.map((r, i) => [r.id, i])); // review_card_view position = 광고 행 제외 리뷰 순번
 
   // KB-802: 카드·사진·"리뷰 읽기" → 리뷰 상세. 이동 전 상세 캐시 시드 = 상세 첫 프레임 완성 렌더(단건 쿼리는 백그라운드 갱신)
@@ -96,6 +100,7 @@ export function ReviewFeed() {
   // KB-802(R-16): 카드 노출 = 홈 KB-784 판정 그대로(50%↑ · 스크롤 정지 · 리뷰 탭 포커스당 같은 리뷰 1회)
   const { height: winH, width: winW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const fabCompact = isCompactFabScreen(winW, winH); // KB-777 B3-7
   const [impressions] = React.useState(() => new ImpressionTracker({ top: 0, bottom: winH, left: 0, right: winW }));
   React.useEffect(() => {
     impressions.setViewport({ top: headerH, bottom: winH - (TABBAR_CONTENT_H + insets.bottom), left: 0, right: winW });
@@ -192,7 +197,7 @@ export function ReviewFeed() {
         onEndReached={loadMore}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.ink3} progressViewOffset={headerH} />}
         renderItem={({ item: row }) => row.kind === 'ad' ? (
-          <FeedAd testID={`ad-feed-${row.slot}`} /> /* KB-739 ④-④: 글 3개마다 네이티브 광고(③과 같은 컴포넌트) */
+          <FeedAd testID={`ad-feed-${row.slot}`} /> /* KB-739 ④-④ → KB-816: 글 5개마다 네이티브 광고(③과 같은 컴포넌트) */
         ) : (
           <ReviewCardRow
             key={row.item.id /* 셀 재사용 = 캐러셀 첫 장 리셋 */}
@@ -255,13 +260,19 @@ export function ReviewFeed() {
       ) : null}
 
       {/* KB-430 §2-5: 플로팅 "Write a review" 필(4150:17079) — 진입점 = 음식 픽커(현행) */}
+      {/* KB-777 B3-7: 작은 화면(폭 < 360 또는 높이 < 700) = 아이콘만 36 원형 — 필이 본문을 넓게 가렸다. 라벨은 스크린리더 이름으로 유지 */}
       <Pressable
-        style={styles.fab}
+        style={[styles.fab, fabCompact && styles.fabCompact]}
+        // Codex #306 P2: 원형 36 → 터치 44(시각 36 유지). 부모 = 화면 전체이고 right 14·bottom 18 여유라 hitSlop이 부모 안이다
+        hitSlop={fabCompact ? FAB_COMPACT_SLOP : undefined}
         testID="feed-write-fab"
+        accessibilityRole="button"
+        accessibilityLabel={t('reviews.writeReview')}
         onPress={() => (isGuest ? setGateOpen('writeReview') : setPickerOpen(true))}
       >
         <IconEdit size={20} color="#fff" />
-        <Text style={styles.fabLabel}>{t('reviews.writeReview')}</Text>
+        {/* KB-818: 큰 글씨에서 iOS가 라벨을 실제보다 좁게 재서 "Write a revi"로 잘렸다 — 한 줄 + 들어가게 축소(탭 라벨과 같은 규칙) */}
+        {!fabCompact && <Text style={styles.fabLabel} numberOfLines={1} adjustsFontSizeToFit testID="feed-write-fab-label">{t('reviews.writeReview')}</Text>}
       </Pressable>
 
       <TagPickerSheet
@@ -362,6 +373,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   fabLabel: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  fabCompact: { width: 36, height: 36, borderRadius: 18, paddingVertical: 0, paddingHorizontal: 0, justifyContent: 'center' }, // KB-777 B3-7
 });
 
 export default ReviewFeed;

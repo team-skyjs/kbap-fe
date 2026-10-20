@@ -122,9 +122,9 @@ it('P-334 — 하단 바 비율(≥360 = 3:5, <360 = 1:1)·아이콘 없음·fit
   expect(btn).toContain('minimumFontScale={fitLabel ? 0.85 : undefined}');
 });
 
-it('P-335 — A–Z 정렬 소멸: 시트 옵션 2(popular·new)·localeCompare 0·sort_alpha 키 0', () => {
+it('P-335 → KB-821 — 클라 A–Z 정렬 0(서버 정렬만): 시트 옵션 popular·new·name_asc·name_desc · localeCompare 0 · sort_alpha 키 0', () => {
   const fx = read('src/features/food/FoodExplorer.tsx');
-  expect(fx).toContain("FOOD_SORTS: FoodSort[] = ['popular', 'new']");
+  expect(fx).toContain("FOOD_SORTS: FoodSort[] = ['popular', 'new', 'name_asc', 'name_desc']");
   expect(fx).not.toContain('localeCompare');
   for (const loc of ['ko', 'en', 'ja', 'es', 'id', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
     expect(read(`src/lib/i18n/${loc}.json`)).not.toContain('sort_alpha');

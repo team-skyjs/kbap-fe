@@ -21,6 +21,7 @@ import { color as C, font, primaryTint, primaryTintSolid, radius, shadow } from 
 import { Btn, IconCheck, IconClose, IconExpand } from '@/components';
 import { ConfettiBurst, CONFETTI_DURATION_MS } from '@/components/ConfettiBurst';
 import { avoidNoticeKo, orderClosingKo, orderItemLineKo, orderSentenceKo } from '@/lib/order/orderCard';
+import { keepWordsKo } from '@/lib/order/keepWords';
 import { saveOrderHistory } from '@/lib/data/orders';
 import { convertKrw, type ServerFx } from '@/lib/exchange';
 import { formatKrw } from '@/lib/scan/segmentMenu';
@@ -102,24 +103,25 @@ export function FlippedOrderCard({
   const totalKrw = items.reduce((a, i) => a + (i.priceKrw ?? 0) * i.qty, 0);
   const converted = totalKrw > 0 ? convertKrw(totalKrw, currency, fx) : null; // P-242
 
+  // KB-777 B1-10: 한국어 본문은 어절 단위로만 줄바꿈(확대 카드에서 "메뉴가"가 갈라지던 것) — 문구 불변, 표시만
   const koCard = (big = false) => (
     <View style={{ gap: big ? 18 : 10 }}>
       {lines.map((l, i) => (
         <Text key={i} style={[styles.koLine, big && styles.koLineBig]} testID={big ? undefined : `ko-line-${i}`}>
-          {l}
+          {keepWordsKo(l)}
         </Text>
       ))}
       {/* P-265: 맺음 한 줄 — 사장님이 소리내 읽는 본문의 일부라 품목 줄과 같은 타이포 */}
       {!!closing && (
         <Text style={[styles.koLine, big && styles.koLineBig]} testID={big ? undefined : 'ko-closing'}>
-          {closing}
+          {keepWordsKo(closing)}
         </Text>
       )}
       {!!avoid && (
         <>
-          <Text style={[styles.koAvoid, big && styles.koAvoidBig]} testID={big ? undefined : 'ko-avoid'}>{avoid.sentence}</Text>
+          <Text style={[styles.koAvoid, big && styles.koAvoidBig]} testID={big ? undefined : 'ko-avoid'}>{keepWordsKo(avoid.sentence)}</Text>
           {/* P-265: 회피 전체 나열 — 접기 없음(사장님이 전 항목 확인 가능해야 안전) */}
-          <Text style={[styles.koAvoidList, big && styles.koAvoidListBig]} testID={big ? undefined : 'ko-avoid-list'}>{avoid.list}</Text>
+          <Text style={[styles.koAvoidList, big && styles.koAvoidListBig]} testID={big ? undefined : 'ko-avoid-list'}>{keepWordsKo(avoid.list)}</Text>
         </>
       )}
     </View>

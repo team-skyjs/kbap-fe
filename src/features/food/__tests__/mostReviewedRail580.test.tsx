@@ -62,6 +62,7 @@ jest.mock('@/lib/data/useMe', () => ({ useMe: () => ({ data: { id: '1', restrict
 jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 const mockInfinite = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({
+  usePrefetchOtherFoodSorts: () => {}, // KB-830
   useInfiniteFoods: () => mockInfinite(),
   useSearchFoods: () => ({ data: [] }),
   useScannedFoods: () => ({ data: [] }),

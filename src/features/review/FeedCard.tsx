@@ -9,7 +9,7 @@
  * Speed/Service=P-236 2축, 0=미평가 비표시) · 본문 · 사진 104 · 음식/장소 칩.
  */
 import * as React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Pressable } from '@/components/Pressable';
 import { Txt as Text } from '@/components/Txt';
 import { color as C } from '@/lib/theme';
@@ -42,6 +42,7 @@ export function FeedCard({
   onMore,
   showMore = true,
   showFood = true,
+  photoVariant = 'tiles',
 }: {
   review: Review;
   t: TFn;
@@ -53,7 +54,10 @@ export function FeedCard({
   showMore?: boolean;
   /** KB-431: 음식 상세 프리뷰 = 자기 자신 칩 무의미 — 숨김 */
   showFood?: boolean;
+  /** KB-817: 리뷰 탭만 'peek'(사진 가로 스냅 + See more 잉크색). 홈·음식 상세·내 리뷰 = 'tiles' 불변 */
+  photoVariant?: 'tiles' | 'peek';
 }) {
+  const fontScale = useWindowDimensions().fontScale; // KB-777: 글꼴 배율 전이 = 칩 재측정
   return (
     <View style={styles.card} testID={`feed-${review.id}`}>
       <View style={styles.cardTop}>
@@ -80,8 +84,8 @@ export function FeedCard({
       </View>
 
       {/* P-390(KB-578): 사진 위·본문 아래 — 4표면 동일 순서(예진 실기: 반대였다) */}
-      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} />
-      <ReviewBody review={review} t={t} style={styles.body} />
+      <ReviewPhotoStrip photos={review.photos ?? []} size={104} radius={4} variant={photoVariant} />
+      <ReviewBody review={review} t={t} style={styles.body} toggleColor={photoVariant === 'peek' ? INK_TITLE : undefined} />
 
       {/* 음식 칩 행 — 탭 = 음식 상세 (구 미니 카드 대체) */}
       {showFood && (
@@ -93,7 +97,8 @@ export function FeedCard({
         ) : (
           <IconFood size={16} color={C.ink2} />
         )}
-        <Text style={styles.foodChipName} numberOfLines={1}>
+        {/* KB-777: 글씨 크기를 바꾸면 한 줄 칩 이름을 새로 마운트해 다시 잰다(옛 폭으로 잘리던 것) */}
+        <Text key={`chip:${fontScale}`} style={styles.foodChipName} numberOfLines={1}>
           {review.foodName ?? t('myReviews.viewDish')}
         </Text>
         <IconChevron size={12} color={C.ink3} />

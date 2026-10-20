@@ -1516,3 +1516,6 @@
 - [x] 계측: `scan_closest_match_open` {food_id} 1건(카드 열림). i18n 5키 × 10로케일(en·ko·ja·zh-Hans·zh-Hant·es·id·ru·th·vi — 발주 본문 JSON 그대로).
 - [x] 테스트: scanClosestMatch789(api) 6 — 3.0 매핑·2.0 폴백·방어·photoOnly·orderNameKo·sanitize / scanClosestMatch789(features) 4 — 칩·줄 렌더·비대체 미렌더·미등록 무변·칩 탭 콜백(onOpen 0)·메트릭·원문 결측 / closestMatchKeys789 3 — 10로케일 키·자리표시자·부정 문구 0 / scanDesign +2 — 카드 열림·이벤트·상세 push·배경/back 닫힘. useScan·scanTicket250 헤더 기대 3.0. tsc 0 · jest 314 스위트 2795/2795.
 - [ ] 실기(종한): 칩 hitSlop·카드 열림·상세 이동 + dev BE 3.0 응답에서 `substituted` 행 실표시. 2.0 응답에서도 칩 미표시로 정상. OTA는 예진 승인.
+
+## KB-820 홈 앱바 로고·벨 위치 4탭 통일 (2026-10-20, 워크트리 fix/kb820-home-appbar-align)
+- [x] KB-777(#262) 홈 전용 오프셋(`alignToHomeGutter` — 마크 +4·벨 −7) 되돌림: 전제였던 "홈 본문 거터 20"이 낡음(10/20 실기 — 4탭 모두 본문 거터 16). 홈을 음식·리뷰·프로필에 맞춤. prop·상수·분기 삭제, 잠금 테스트 homeAppbarGutter777 → appbarFourTabs820(4탭 동일).

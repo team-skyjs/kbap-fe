@@ -50,8 +50,10 @@ describe('①④⑤⑥⑦ 소스 잠금', () => {
 
   it('④ ko→en 배지 제거 — 카운트만', () => {
     const en = JSON.parse(read('src/lib/i18n/en.json')) as { scan: Record<string, string> };
-    expect(en.scan.resultsSub).toBe('{{count}} dishes');
-    expect(en.scan.resultsSub).not.toContain('KO');
+    // KB-777: 단복수 분리 — 1건 "1 dish" / 그 외 "{{count}} dishes"
+    expect(en.scan.resultsSub_other).toBe('{{count}} dishes');
+    expect(en.scan.resultsSub_one).toBe('{{count}} dish');
+    expect(en.scan.resultsSub_other).not.toContain('KO');
   });
 
   it('⑤ 미등록 행 — 등록 예정 안내 + 구글/네이버 검색 딥링크(한글 키워드)', () => {

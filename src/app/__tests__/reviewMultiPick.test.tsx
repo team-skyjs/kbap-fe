@@ -129,8 +129,11 @@ beforeEach(() => {
 });
 
 /* ---- P-168 헬퍼: 별점 세팅(star pick = hitSlop 4 Pressable) + 하단 Post 버튼 ---- */
-const pickStar = (tree: ReactTestRenderer) =>
+const pickStar = (tree: ReactTestRenderer) => {
   act(() => tree.root.findAll((n) => n.props?.hitSlop === 4 && typeof n.props?.onPress === 'function')[4].props.onPress());
+  // KB-828: 등록 = 본문 10자 이상 필수 — 제출 흐름 테스트는 유효 본문을 함께 채운다
+  act(() => tree.root.findAll((n) => n.props?.multiline === true && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('Tasty and not too spicy'));
+};
 const postBtn = (tree: ReactTestRenderer) =>
   tree.root.findAll((n) => typeof n.props?.onPress === 'function' && n.findAll((c) => c.props?.children === 'review.postReview').length > 0).pop()!;
 
@@ -286,4 +289,25 @@ it('P-191: 리뷰 갤러리 원본 로드 중 = 추가 타일 스피너(프레�
   });
   expect(tree.root.findAllByType(ActivityIndicator).length).toBe(0);
   void add;
+});
+
+// KB-777 A2-9: 사진 × = 44×44 실제 상자(썸네일 100 안 — hitSlop 0), 보이는 원 16·위치(top6·right6)는 시안 그대로
+it('KB-777 A2-9: 사진 삭제 터치 상자 44×44 · 썸네일 안(top0·right0) · hitSlop 없음 · 원 16 시각 위치 불변 · 누르면 그 사진만 삭제', async () => {
+  mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:a.jpg' }, { uri: 'file:b.jpg' }] });
+  const tree = render(<ReviewCompose />);
+  await act(async () => {
+    await addTile(tree).props.onPress();
+  });
+  const flatten = (st: unknown): Record<string, unknown> => Object.assign({}, ...([] as unknown[]).concat(st as never).flat(Infinity).filter(Boolean));
+  const hits = tree.root.findAll((n) => n.props?.testID === 'review-photo-remove' && typeof n.type === 'string');
+  expect(hits).toHaveLength(2);
+  const box = flatten(hits[0].props.style);
+  expect({ w: box.width, h: box.height, top: box.top, right: box.right, pad: box.padding }).toEqual({ w: 44, h: 44, top: 0, right: 0, pad: 6 });
+  expect(hits[0].props.hitSlop).toBeUndefined();
+  const wrap = flatten(hits[0].parent!.props.style);
+  expect((wrap.width as number) >= 44 && (wrap.height as number) >= 44).toBe(true); // 상자가 부모 안
+  const dot = flatten(hits[0].findAll((n) => typeof n.type === 'string')[1].props.style);
+  expect({ w: dot.width, h: dot.height }).toEqual({ w: 16, h: 16 });
+  act(() => tree.root.findAll((n) => n.props?.testID === 'review-photo-remove' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-photo-remove' && typeof n.type === 'string')).toHaveLength(1);
 });
