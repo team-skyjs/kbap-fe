@@ -623,7 +623,14 @@
     "ingGuestBody": "{{ingredient}} se usa en aproximadamente el {{percent}}% de las versiones de este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
     "ingGuestBodyNoPct": "{{ingredient}} se usa comúnmente en este plato. Puede variar según el restaurante; pregunta al dueño para asegurarte.",
     "foodHidden": "Ahora mismo no se puede ver la información de este plato.",
-    "foodUpdating": "La información de este plato se está actualizando. Vuelve a comprobarlo en un momento."
+    "foodUpdating": "La información de este plato se está actualizando. Vuelve a comprobarlo en un momento.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "¿Qué idol del K-pop probó esto?",
+      "sub": "Quizás veas una cara conocida.",
+      "cta": "Míralo en video",
+      "a11y": "Abrir un video de un idol del K-pop probando este plato"
+    }
   },
   "states": {
     "catalogTitle": "Estados",
@@ -683,7 +690,14 @@
     "safeForYouSub": "Según tu lista de evitados — confirma siempre con el restaurante.",
     "railFilterEmpty": "Aún no hay platos \"{{risk}}\" en esta lista. Prueba otro filtro.",
     "mostReviewed": "Más reseñados",
-    "mostReviewedSub": "De lo que todos hablan."
+    "mostReviewedSub": "De lo que todos hablan.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "Los idols del K-pop probaron esto. ¿Te animas?",
+      "sub": "{{count}} platos. Descubre en los videos quién los probó.",
+      "seeAll": "Explorar {{count}} platos",
+      "bannerA11y": "Ver los {{count}} platos que probaron idols del K-pop"
+    }
   },
   "onboarding": {
     "welcomeTag": "Sabe qué es seguro comer, antes de pedir.",
@@ -1291,5 +1305,12 @@
     "debugLabel": "Texto OCR (solo pruebas)",
     "debugPlaceholder": "Una línea del envase por fila",
     "debugRun": "Usar este texto"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "Los idols del K-pop probaron esto. ¿Te animas?",
+    "sub": "Elige un plato para ver los ingredientes y el enlace al video.",
+    "cardA11y": "Ver detalles de {{name}}",
+    "empty": "No hay platos disponibles por ahora."
   }
 }

@@ -17,7 +17,7 @@
  * Risk enums reuse scanAdapter.mapRisk → UNKNOWN/unrecognized ⇒ 'unable',
  * NEVER 'safe' (Constitution III, false-safe = 0).
  */
-import type { FoodCard, FoodDetail, IngredientRisk, RatingAggregate, TopRatedFood } from './types';
+import type { FoodCard, FoodDetail, IdolVideo, IngredientRisk, RatingAggregate, TopRatedFood } from './types';
 import { wireToFoodSpice } from './spiceAdapter';
 import type { FoodDetailWire, ReviewRatingWire } from './foodDetailTypes';
 import type { MenuSummaryWire, TopRatedFoodWire } from './foodListTypes';
@@ -145,7 +145,15 @@ export function adaptFoodDetail(wire: FoodDetailWire, foodId: string): FoodDetai
     // P-251(BE #185): 리뷰 자격 서버 정본 — boolean만 통과(부재 = undefined = 게이트 없음,
     // prod 구응답·강제 미배포 호환). 클라 이력 추정 금지.
     reviewEligible: typeof wire.reviewEligible === 'boolean' ? wire.reviewEligible : undefined,
+    idolVideo: adaptIdolVideo(wire.idolVideo),
   };
+}
+
+/** KB-836: YOUTUBE|TIKTOK → 소문자(계측 값). 알 수 없는 platform·빈 url = null(카드 미렌더). */
+export function adaptIdolVideo(wire: FoodDetailWire['idolVideo']): IdolVideo | null {
+  const platform = wire?.platform?.toLowerCase();
+  if (!wire?.url || (platform !== 'youtube' && platform !== 'tiktok')) return null;
+  return { url: wire.url, platform };
 }
 
 /**

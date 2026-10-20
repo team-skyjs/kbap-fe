@@ -623,7 +623,14 @@
     "ingGuestBody": "{{ingredient}}约在此菜{{percent}}%的版本中使用。各家餐厅可能不同——想确认请询问店主。",
     "ingGuestBodyNoPct": "{{ingredient}}常用于此菜。各家餐厅可能不同——想确认请询问店主。",
     "foodHidden": "目前无法查看这道菜的信息。",
-    "foodUpdating": "这道菜的信息正在更新中，请稍后再来查看。"
+    "foodUpdating": "这道菜的信息正在更新中，请稍后再来查看。",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "这道菜，是哪位爱豆吃过呢？",
+      "sub": "说不定会看到熟悉的面孔。",
+      "cta": "看视频揭晓",
+      "a11y": "打开K-POP爱豆吃这道菜的视频"
+    }
   },
   "states": {
     "catalogTitle": "状态",
@@ -683,7 +690,14 @@
     "safeForYouSub": "基于你的回避清单判定——请务必向店家确认。",
     "railFilterEmpty": "此列表暂无“{{risk}}”菜品，试试其他筛选。",
     "mostReviewed": "评价最多",
-    "mostReviewedSub": "大家都在聊的菜。"
+    "mostReviewedSub": "大家都在聊的菜。",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "爱豆吃过的那道菜，你也来一口？",
+      "sub": "{{count}}道菜，是谁吃的去视频里看看吧。",
+      "seeAll": "浏览{{count}}道菜",
+      "bannerA11y": "查看K-POP爱豆吃过的{{count}}道菜"
+    }
   },
   "onboarding": {
     "welcomeTag": "点单前，先知道什么能安心吃。",
@@ -1291,5 +1305,12 @@
     "debugLabel": "OCR 文本(仅限测试)",
     "debugPlaceholder": "每行输入一行包装文字",
     "debugRun": "使用此文本"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "爱豆吃过的那道菜，你也来一口？",
+    "sub": "选一道想尝的菜，可以查看食材和视频链接。",
+    "cardA11y": "{{name}}，查看菜品详情",
+    "empty": "目前没有可查看的菜品。"
   }
 }

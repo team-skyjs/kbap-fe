@@ -623,7 +623,14 @@
     "ingGuestBody": "{{ingredient}} digunakan di sekitar {{percent}}% versi hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
     "ingGuestBodyNoPct": "{{ingredient}} umum digunakan dalam hidangan ini. Bisa berbeda di tiap restoran — tanyakan kepada pemiliknya untuk memastikan.",
     "foodHidden": "Informasi hidangan ini tidak bisa dilihat saat ini.",
-    "foodUpdating": "Informasi hidangan ini sedang diperbarui. Silakan cek lagi sebentar lagi."
+    "foodUpdating": "Informasi hidangan ini sedang diperbarui. Silakan cek lagi sebentar lagi.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "Idol K-pop mana yang mencoba ini?",
+      "sub": "Mungkin kamu akan melihat wajah yang familier.",
+      "cta": "Tonton untuk tahu",
+      "a11y": "Buka video idol K-pop yang mencicipi hidangan ini"
+    }
   },
   "states": {
     "catalogTitle": "Status",
@@ -683,7 +690,14 @@
     "safeForYouSub": "Berdasarkan daftar hindaranmu — selalu konfirmasi ke pemilik.",
     "railFilterEmpty": "Belum ada hidangan {{risk}} di daftar ini. Coba filter lain.",
     "mostReviewed": "Paling banyak diulas",
-    "mostReviewedSub": "Yang sedang ramai dibicarakan."
+    "mostReviewedSub": "Yang sedang ramai dibicarakan.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "Idol K-pop pernah mencicipi ini. Mau coba?",
+      "sub": "{{count}} hidangan. Lihat siapa yang mencobanya di video.",
+      "seeAll": "Jelajahi {{count}} hidangan",
+      "bannerA11y": "Lihat semua {{count}} hidangan yang dicicipi idol K-pop"
+    }
   },
   "onboarding": {
     "welcomeTag": "Ketahui apa yang aman dimakan — sebelum memesan.",
@@ -1291,5 +1305,12 @@
     "debugLabel": "Teks OCR (khusus uji)",
     "debugPlaceholder": "Satu baris teks kemasan per baris",
     "debugRun": "Pakai teks ini"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "Idol K-pop pernah mencicipi ini. Mau coba?",
+    "sub": "Pilih hidangan untuk melihat bahan dan tautan videonya.",
+    "cardA11y": "Lihat detail {{name}}",
+    "empty": "Belum ada hidangan yang tersedia saat ini."
   }
 }

@@ -1,0 +1,100 @@
+# Feature Specification: 홈 K-POP & K-FOOD 섹션(배너·목록) + 음식 상세 아이돌 영상 티저
+
+**Feature Branch**: `feat/kb836-home-idol-kfood-section`
+
+**Created**: 2026-10-21
+
+**Status**: Draft
+
+**Input**: "아이돌이 먹은 한국 음식을 홈 배너 → 전용 목록 → 음식 상세 대표 영상으로 잇는다 (Jira KB-836)." — 출처 `_workspace/kb836-home-idol-kfood-section/01_cto_plan.md` FE 절(R-01·R-02·R-05~R-13·R-17·R-18·R-21·R-22, 결정 D1~D9)·API 계약 C-1·C-2, 화면 정본 `02_designer_spec.md`(Figma 확정안 node 14359-2309), 문구 정본 `01_copy_list.md`.
+
+> 법무 잠금: 아이돌·그룹 이름, 영상 제목, 썸네일, 인물 사진, 플랫폼명(YouTube/TikTok)은 화면 문구·접근성 라벨·코드·테스트 픽스처에 쓰지 않는다. platform 은 계측 속성으로만 남긴다.
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - 홈에서 K-POP & K-FOOD 배너를 보고 목록으로 간다 (Priority: P1)
+
+광고로 들어온 여행자는 홈 인기 음식 레일 바로 아래에서 "아이돌이 먹던 그 음식, 나도 한 입?" 다크 배너(음식 사진 콜라주 + 물음표)를 보고, 탭해 전용 목록으로 간다.
+
+**Why this priority**: 광고 문구와 같은 헤드라인으로 유입자를 붙잡는 진입점.
+
+**Independent Test**: 홈 응답 `idolPickFoods` 3건으로 배너 렌더 → 사진 3장·헤드라인·"3가지 음식 둘러보기", 탭 → `/idol-picks` + 클릭 계측.
+
+**Acceptance Scenarios**:
+
+1. **Given** 홈 응답에 아이돌 음식 N(≥1)건, **When** 홈(Popular·Saved·Food 어느 탭이든)을 연다, **Then** 인기 레일 아래·큐레이션 위에 배너가 보이고 사진은 앞 min(N,3)장이다.
+2. **Given** 배너가 보인다, **When** 탭한다, **Then** `/idol-picks` 로 이동하고 `home_card_click{section:'idol_pick', position:0}` 이 전송된다(food_id 없음).
+3. **Given** 0건 또는 구 서버(키 부재), **When** 홈을 연다, **Then** 배너와 그 여백이 모두 없다.
+4. **Given** 홈 데이터 미도착(첫 로딩 스켈레톤 아님), **Then** 배너 자리에 Shimmer(화면−40 × 372)가 보인다.
+
+---
+
+### User Story 2 - 목록에서 음식을 골라 상세로 간다 (Priority: P1)
+
+사용자는 `/idol-picks` 다크 헤더 아래 2열 3:4 포스터 그리드(서버 순서)에서 음식을 골라 상세로 간다. 회원은 카드에 개인 위험도 배지가 보인다.
+
+**Independent Test**: 홈 캐시 idolPicks 3건 → 카드 3장 + 빈 셀 1, 게스트 배지 0, 카드 탭 → `/food/{id}?src=idol_pick`.
+
+**Acceptance Scenarios**:
+
+1. **Given** 회원, **When** 목록을 연다, **Then** 각 카드 좌상단에 위험도 배지가 있고 접근성 라벨 끝에 위험도가 붙는다.
+2. **Given** 게스트, **Then** 배지가 없다.
+3. **Given** 카드, **When** 탭, **Then** 상세(`src=idol_pick`)로 가고 상세 진입 계측 source 는 `idol_pick` 이다.
+4. **Given** 로딩/오류(캐시 없음)/0건, **Then** 각각 Shimmer 6칸 / 오류 블록 + 다시 시도 / 빈 안내.
+5. **Given** 화면 포커스, **Then** `home_idol_pick_list_view{count}` 가 매 포커스마다 전송된다.
+
+---
+
+### User Story 3 - 상세에서 "어떤 아이돌이 먹었을까?" 카드로 영상을 연다 (Priority: P1)
+
+영상이 매핑된 음식 상세의 헤더 블록 아래에 다크 티저 카드가 있고, 탭하면 대표 영상 1개가 인앱 브라우저로 바로 열린다.
+
+**Independent Test**: `idolVideo{url, platform:'YOUTUBE'}` 상세 → 카드 렌더, 탭 → 계측 `{food_id, platform:'youtube', video_position:0}` + `openWebPage(url)`. `idolVideo: null` → 카드 없음.
+
+**Acceptance Scenarios**:
+
+1. **Given** idolVideo 있음, **Then** profileHint 다음·디바이더 위에 카드(위험 요약 행보다 아래).
+2. **Given** idolVideo null/부재/알 수 없는 platform, **Then** 카드·래퍼·여백 없음.
+3. **When** 탭, **Then** 확인 모달 없이 계측 후 인앱 브라우저로 연다. 실패 시 기존 링크 실패 토스트.
+4. 화면·접근성 라벨에 플랫폼명이 없다.
+
+### Edge Cases
+
+- 홈 1.3 이하 서버 → 키 부재 = 빈 배열(배너·목록 0건). 1.4 를 모르는 구 서버는 400 → BE 먼저 배포(배포 순서).
+- 사진 URL 없음·로드 실패 → 배너 타일 ink2 + 물음표, 포스터 ink + 물음표(이름·배지 유지).
+- 폭 < 360 → 콜라주 축소 규격(80×100, 높이 120, 물음표 48).
+- 목록 홀수 개수 → 마지막 행 빈 셀(padOddGrid).
+- 캐시 있는 상태에서 백그라운드 실패 → 목록 유지(오류 표시 없음).
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001 (R-17)**: 홈 요청 버전 1.4. 응답 `idolPickFoods` 를 음식 요약 카드 목록으로(인기 음식과 같은 변환), 부재·null = 빈 목록.
+- **FR-002 (R-18)**: 상세 `idolVideo{url, platform}` → `{url, platform: youtube|tiktok}`. 대문자 → 소문자, 알 수 없는 platform·빈 url → null.
+- **FR-003 (R-01·R-05·R-08)**: 홈 배너(디자인 스펙 화면 1) — 위치·콜라주·상태·320pt 규격·단일 버튼·눌림 색만.
+- **FR-004 (R-06·R-07)**: 목록 화면(화면 2) — 데이터 = 홈 응답 재사용(새 요청 경로 없음), 다크 헤더, 2열 포스터, 회원만 위험도 배지, 칩 필터 없음.
+- **FR-005 (R-10·R-11·R-14)**: 상세 V1 카드(화면 3) — idolVideo 있을 때만, 탭 = 계측 → 인앱 브라우저. 확인 단계·진입 모션 없음.
+- **FR-006 (R-09·R-13·R-22)**: 계측 — `home_section_view`/`home_card_click` section=`idol_pick`(클릭 id 없음), `food_detail_view` source=`idol_pick`, `home_idol_pick_list_view{count}`, `food_idol_video_open{food_id, platform, video_position}`(URL 금지).
+- **FR-007 (R-02·R-12)**: 문구 15키 × 10로케일. 플랫폼명·"PICK"·이모지 없음. `opensIn` 키 없음.
+- **FR-008 (R-21)**: 신규 SVG `IconQuestion`·`IconPlay`(텍스트 "?" 금지).
+
+### Key Entities
+
+- **IdolVideo**: `{ url, platform: 'youtube' | 'tiktok' }` — platform 은 계측 전용.
+- **HomeResponse.idolPicks**: `FoodCard[]`(서버 화제성 순서).
+
+## Success Criteria *(mandatory)*
+
+- **SC-001**: 아이돌 음식 0건 응답에서 배너 노드 0.
+- **SC-002**: N건 응답 → 배너 사진 min(N,3)장, 목록 카드 N장(순서 일치).
+- **SC-003**: 배너 클릭 계측에 food_id·collection_key 0.
+- **SC-004**: 영상 열기 계측에 URL 0, 화면·라벨에 플랫폼명 0.
+- **SC-005**: 배너·포스터·V1 카드 눌림 전후 레이아웃 메트릭 동일.
+
+## Assumptions
+
+- 계약 C-1·C-2(01_cto_plan.md) 그대로 — BE 진행 중이라 JSON 예시 기준으로 어댑터 작성.
+- 이벤트 이름은 레포 도메인 접두 잠금(analyticsNaming215)에 따라 `idol_pick_list_view` → `home_idol_pick_list_view`, `idol_video_open` → `food_idol_video_open`(속성·시점은 계획 그대로, cto 통보).
+- 비영어·비한국어 8개 로케일 문구는 en 기준 번역 — 번역 검수 필요.
+- en `idolPicks.sub`("…check the ingredients and find the video link.")는 "재료 검색 약속 금지" 잠금(copy722)에 오탐 — 확정 문구라 허용 목록에 추가.

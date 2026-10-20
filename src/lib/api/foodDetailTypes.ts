@@ -77,4 +77,6 @@ export interface FoodDetailWire {
   recentReviews?: import('./reviewAdapter').ReviewWire[] | null;
   /** P-239 신스키마: 회원 회피 겹침(비회원 null) — 재료 마크 클라 조인용. */
   avoidedIngredients?: AvoidedIngredientWire[] | null;
+  /** KB-836: 대표 아이돌 영상(position 최소 1개) — 매핑 없음·비READY = null, 구 서버 부재. platform = YOUTUBE|TIKTOK */
+  idolVideo?: { url: string; platform: string } | null;
 }

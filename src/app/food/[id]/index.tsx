@@ -29,6 +29,7 @@ import { EmptyBlock,QueryErrorBlock  } from '@/components/StateBlock';
 import { SkeletonFoodDetail } from '@/components/Skeleton';
 import { RemoteImage } from '@/components/RemoteImage';
 import { HeroGallery } from '@/features/food/HeroGallery';
+import { IdolVideoCard } from '@/features/food/IdolVideoCard';
 import { useIsNewFood } from '@/lib/newFood';
 import { useIngredientImageChain } from '@/components/AvoidTile';
 import { ScanCoachMark } from '@/features/scan/ScanCoachMark';
@@ -88,7 +89,7 @@ export default function FoodDetailScreen() {
   const { id, price, src } = useLocalSearchParams<{ id: string; price?: string; src?: string }>();
   // P-083: 상세 진입 계측 — 진입 경로 1회
   useEffect(() => {
-    const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'review_detail'].includes(src) ? src : 'other';
+    const source = src && ['scan', 'list', 'search', 'home', 'saved', 'my_reviews', 'feed', 'tag_sheet', 'review_detail', 'idol_pick'].includes(src) ? src : 'other';
     track(EVENTS.food_detail_view, { source, food_id: id ?? '' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -475,6 +476,9 @@ function Registered({
       </View>
 
       {!guest && !hasRestrictions && <Text style={styles.profileHint}>{t('detail.addProfileHint')}</Text>}
+
+      {/* KB-836 V1: 대표 아이돌 영상 티저 — 있을 때만(없으면 래퍼·여백 0). 위험 요약·헤더 아래(안전 정보 위계 유지) */}
+      {food.idolVideo && <IdolVideoCard foodId={id} video={food.idolVideo} />}
 
       {/* §1-4: 섹션 디바이더 — 8px 회색 띠(4095:1793) */}
       {ingredients.length > 0 && (

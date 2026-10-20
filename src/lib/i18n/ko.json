@@ -780,7 +780,14 @@
     "ingGuestBody": "이 음식의 {{ingredient}} 사용 비율은 약 {{percent}}%예요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
     "ingGuestBodyNoPct": "이 음식은 {{ingredient}} 사용이 흔해요. 식당마다 다를 수 있으니 사장님께 확인해 보세요.",
     "foodHidden": "지금은 이 음식 정보를 볼 수 없어요.",
-    "foodUpdating": "이 음식 정보를 새로 고치는 중이에요. 잠시 후 다시 확인해 주세요."
+    "foodUpdating": "이 음식 정보를 새로 고치는 중이에요. 잠시 후 다시 확인해 주세요.",
+    "idolVideo": {
+      "label": "K-POP & K-FOOD",
+      "title": "이 음식, 어떤 아이돌이 먹었을까?",
+      "sub": "익숙한 얼굴이 나올지도 몰라요.",
+      "cta": "영상으로 확인하기",
+      "a11y": "이 음식을 먹는 K-POP 아이돌 영상 열기"
+    }
   },
   "states": {
     "catalogTitle": "상태",
@@ -840,7 +847,14 @@
     "safeForYouSub": "못 먹는 재료 목록을 기준으로 판정했어요. 사장님께 꼭 확인하세요.",
     "railFilterEmpty": "이 목록에서 '{{risk}}' 판정 메뉴를 찾지 못했어요. 다른 필터를 선택해 보세요.",
     "mostReviewed": "리뷰가 많은 음식",
-    "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요."
+    "mostReviewedSub": "사람들이 많이 이야기한 메뉴예요.",
+    "idolPick": {
+      "label": "K-POP & K-FOOD",
+      "title": "아이돌이 먹던 그 음식, 나도 한 입?",
+      "sub": "{{count}}가지 음식, 누가 먹었는지는 영상에서 확인해요.",
+      "seeAll": "{{count}}가지 음식 둘러보기",
+      "bannerA11y": "K-POP 아이돌이 먹은 음식 {{count}}가지 목록 보기"
+    }
   },
   "onboarding": {
     "welcomeTag": "주문 전에, 먹어도 되는지 먼저.",
@@ -1291,5 +1305,12 @@
     "debugLabel": "OCR 텍스트(테스트 전용)",
     "debugPlaceholder": "포장 글자를 한 줄씩 입력",
     "debugRun": "이 텍스트로 진행"
+  },
+  "idolPicks": {
+    "label": "K-POP & K-FOOD",
+    "title": "아이돌이 먹던 그 음식, 나도 한 입?",
+    "sub": "먹어보고 싶은 음식을 골라봐요. 재료와 영상 링크를 볼 수 있어요.",
+    "cardA11y": "{{name}}, 음식 상세 보기",
+    "empty": "지금은 볼 수 있는 음식이 없어요."
   }
 }

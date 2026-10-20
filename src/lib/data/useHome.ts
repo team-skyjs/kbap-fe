@@ -20,8 +20,9 @@ import { MOCK_HOME } from '../mocks/foods';
 const MOCK_MODE_HOME = false;
 
 /** KB-785: GET /home 전용 X-API-Version — 다른 엔드포인트는 client.ts 기본값.
- *  KB-800: 1.3 = 1.2(마케팅 인기) + topRatedFoods. 1.3 을 모르는 서버는 거절 → BE 배포 후 릴리스. */
-export const HOME_API_VERSION = '1.3';
+ *  KB-800: 1.3 = 1.2(마케팅 인기) + topRatedFoods. KB-836: 1.4 = 1.3 + idolPickFoods.
+ *  새 버전을 모르는 서버는 거절 → BE 배포 후 릴리스. */
+export const HOME_API_VERSION = '1.4';
 
 interface HomeWire {
   authenticated: boolean;
@@ -32,6 +33,8 @@ interface HomeWire {
   recentScans: MenuSummaryWire[];
   /** KB-800: 1.3 이상만 — 활성 리뷰 수↓·총평점↓·foodId↓, 최대 20. 1.2 이하 서버는 키 부재. */
   topRatedFoods?: TopRatedFoodWire[] | null;
+  /** KB-836: 1.4 이상만 — 아이돌 영상 매핑 음식(화제성↓·게시월↓·foodId↑). 항목 = popularFoods 와 같은 요약. */
+  idolPickFoods?: MenuSummaryWire[] | null;
 }
 
 /** 홈 피드 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
@@ -52,6 +55,8 @@ export async function fetchHome(): Promise<HomeResponse> {
     recent: (wire.recentScans ?? []).map(adaptMenuSummary),
     // KB-800: 부재·null = 빈 배열 → 섹션 숨김(CTA 만)
     topRated: (wire.topRatedFoods ?? []).map(adaptTopRatedFood),
+    // KB-836: 부재·null = 빈 배열 → 배너·목록 숨김
+    idolPicks: (wire.idolPickFoods ?? []).map(adaptMenuSummary),
   };
 }
 

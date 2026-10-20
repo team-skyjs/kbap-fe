@@ -165,6 +165,13 @@ export interface FoodDetail {
   isRegistered: boolean; // false ⇒ treat as unable (FR-033)
   /** 조회 회원의 저장(북마크) 여부 (KB-142). 옵셔널 = mock/미등록 경로 — 미설정은 false 취급. */
   bookmarked?: boolean;
+  /** KB-836: 대표 아이돌 영상 — 매핑 없음·구 서버 = null/부재(카드 미렌더). platform 은 계측 전용(화면 비노출). */
+  idolVideo?: IdolVideo | null;
+}
+
+export interface IdolVideo {
+  url: string;
+  platform: 'youtube' | 'tiktok';
 }
 
 export interface ScanResultItem {
@@ -252,6 +259,8 @@ export interface HomeResponse {
   mostReviewed: FoodCard[];
   /** KB-800: 평점 높은 음식(서버 순서, 최대 20) — 구 서버·0건 = 빈 배열(섹션 숨김). */
   topRated: TopRatedFood[];
+  /** KB-836: 아이돌이 먹은 음식(서버 화제성 순서) — 1.3 이하 서버·0건 = 빈 배열(배너·목록 숨김). */
+  idolPicks: FoodCard[];
   /** LIVE(KB-69) 전용 — false면 개인화 섹션은 가입 유도 UI. mock에선 생략. */
   authenticated?: boolean;
   /** LIVE(KB-69) 전용 — 지역화된 기피 성분명. mock에선 생략(restrictionLabel 폴백). */

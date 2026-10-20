@@ -21,7 +21,9 @@
  * | scan_complete            | degraded, item_count, success,              |
  * |                          | fail_reason (P-220 5종: not_menu·ocr·      |
  * |                          | upload·network·server)                     |
- * | food_detail_view         | source (scan|list|search|home|other)       |
+ * | food_detail_view         | source (scan|list|search|home|idol_pick|other) |
+ * | home_idol_pick_list_view      | count (KB-836 K-POP & K-FOOD 목록 포커스)     |
+ * | food_idol_video_open          | food_id, platform (youtube|tiktok), video_position — URL 금지 |
  * | review_submit            | (props 없음)                                |
  * | auth_login_success            | provider (APPLE|GOOGLE), is_new (bool),    |
  * |                              | entry (intro|gate_*|profile|other)         |
@@ -125,6 +127,8 @@ export const EVENTS = {
   food_packaged_scan_name: 'food_packaged_scan_name', // KB-813 이름 스캔 결과(후보 수 — OCR 원문 금지)
   food_packaged_scan_confirm: 'food_packaged_scan_confirm', // KB-813 확정 — 서버 charged 그대로
   food_packaged_scan_handoff: 'food_packaged_scan_handoff', // KB-813 성분표 안내 진입(from: none|rejected|capture)
+  home_idol_pick_list_view: 'home_idol_pick_list_view', // KB-836 K-POP & K-FOOD 목록 화면 포커스(음식 수) — 발주명 idol_pick_list_view → 도메인 규칙상 home_
+  food_idol_video_open: 'food_idol_video_open', // KB-836 발주명 idol_video_open → 도메인 규칙상 food_ · 상세 티저 카드 → 대표 영상 열기(platform 은 계측 전용 — 화면 비노출, URL 금지)
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -172,7 +176,7 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   ad_reward_earned: ['placement', 'remaining', 'surface'],
   ad_consent_result: ['status', 'can_request_ads', 'gdpr_applies', 'personalized_consent'], // KB-774: boolean만(TC 문자열 원문 금지)
   // KB-784: screen = 라우트 패턴(예 food/[id] — 실제 id 없음) · target = testID 정규화(숫자·대문자 코드·비ASCII 토큰 → :v, lib/uiClick)
-  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta|curation (KB-800: reviews → top_rated · KB-796 curation) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
+  // section = popular|saved|food|safe|most_reviewed|recent|top_rated|guest_cta|curation|idol_pick (KB-800: reviews → top_rated · KB-796 curation · KB-836 idol_pick 배너 — 클릭에 id 없음) · position = 섹션 안 0부터 · food_id = 카탈로그 id(PII 아님)
   screen_view: ['screen'],
   ui_click: ['screen', 'target'],
   home_section_view: ['section'],
@@ -189,6 +193,8 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_packaged_scan_name: ['candidate_count'],
   food_packaged_scan_confirm: ['charged', 'rejected'],
   food_packaged_scan_handoff: ['from'],
+  home_idol_pick_list_view: ['count'],
+  food_idol_video_open: ['food_id', 'platform', 'video_position'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
