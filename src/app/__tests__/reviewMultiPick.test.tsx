@@ -290,3 +290,24 @@ it('P-191: 리뷰 갤러리 원본 로드 중 = 추가 타일 스피너(프레�
   expect(tree.root.findAllByType(ActivityIndicator).length).toBe(0);
   void add;
 });
+
+// KB-777 A2-9: 사진 × = 44×44 실제 상자(썸네일 100 안 — hitSlop 0), 보이는 원 16·위치(top6·right6)는 시안 그대로
+it('KB-777 A2-9: 사진 삭제 터치 상자 44×44 · 썸네일 안(top0·right0) · hitSlop 없음 · 원 16 시각 위치 불변 · 누르면 그 사진만 삭제', async () => {
+  mockLaunchLibrary.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:a.jpg' }, { uri: 'file:b.jpg' }] });
+  const tree = render(<ReviewCompose />);
+  await act(async () => {
+    await addTile(tree).props.onPress();
+  });
+  const flatten = (st: unknown): Record<string, unknown> => Object.assign({}, ...([] as unknown[]).concat(st as never).flat(Infinity).filter(Boolean));
+  const hits = tree.root.findAll((n) => n.props?.testID === 'review-photo-remove' && typeof n.type === 'string');
+  expect(hits).toHaveLength(2);
+  const box = flatten(hits[0].props.style);
+  expect({ w: box.width, h: box.height, top: box.top, right: box.right, pad: box.padding }).toEqual({ w: 44, h: 44, top: 0, right: 0, pad: 6 });
+  expect(hits[0].props.hitSlop).toBeUndefined();
+  const wrap = flatten(hits[0].parent!.props.style);
+  expect((wrap.width as number) >= 44 && (wrap.height as number) >= 44).toBe(true); // 상자가 부모 안
+  const dot = flatten(hits[0].findAll((n) => typeof n.type === 'string')[1].props.style);
+  expect({ w: dot.width, h: dot.height }).toEqual({ w: 16, h: 16 });
+  act(() => tree.root.findAll((n) => n.props?.testID === 'review-photo-remove' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  expect(tree.root.findAll((n) => n.props?.testID === 'review-photo-remove' && typeof n.type === 'string')).toHaveLength(1);
+});
