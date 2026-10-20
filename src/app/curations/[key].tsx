@@ -29,6 +29,8 @@ import { isCurationUnavailable, useCurationDetail, type CurationItem } from '@/l
 const GUTTER = 20;
 export const ITEM_PHOTO_RATIO = 208 / 335; // KB-829 v2: 176 → 208(높이만)
 const NO_PHOTO_H = 104; // 사진 없는 항목 = 자리 축소
+/** 지역 행 = 지역·주변 이름을 공백 2칸으로. 이름 안 공백은 U+00A0(줄바꿈 금지)이라 "Hongdae / | streets"처럼 이름 중간에서 꺾이지 않는다. */
+export const areaLine = (area: string, nearby: string[]): string => [area, ...nearby].map((n) => n.trim().replace(/\s+/g, '\u00A0')).join('  ');
 
 export default function CurationDetailScreen() {
   const { t } = useTranslation();
@@ -120,8 +122,8 @@ function ItemCard({ item, listKey }: { item: CurationItem; listKey: string }) {
         >
           <Text style={styles.name}>{item.name}</Text>
           <View style={styles.areaRow}>
-            {/* 역 모음 = 지역 + 주변 이름을 공백 2칸으로(가운데점 금지) */}
-            <Text style={styles.area}>{[item.area, ...item.nearby].join('  ')}</Text>
+            {/* 역 모음 = 지역 + 주변 이름을 공백 2칸으로(가운데점 금지) · 이름 안 공백은 NBSP — 줄바꿈은 이름 사이에서만(QA S3) */}
+            <Text style={styles.area}>{areaLine(item.area, item.nearby)}</Text>
             <IconChevronDown size={24} color="#000" style={expanded ? styles.chevronUp : undefined} />
           </View>
         </Pressable>

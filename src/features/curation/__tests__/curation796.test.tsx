@@ -152,8 +152,8 @@ describe('모음 상세', () => {
     expect(byId(t, 'curation-item-attribution-1')).toHaveLength(1);
     expect(byId(t, 'curation-item-attribution-2')).toHaveLength(0);
     // KB-829: 역 모음 = 지역 행에 area + nearby 공백 2칸(빈 이름 제거) · "Explore nearby" 줄 없음
-    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area 2  Hongdae streets  Forest Park')).toHaveLength(1);
-    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area 1')).toHaveLength(1);
+    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area\u00A02  Hongdae\u00A0streets  Forest\u00A0Park')).toHaveLength(1);
+    expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area\u00A01')).toHaveLength(1);
     expect(text(t)).not.toContain('exploreNearby');
     expect(byId(t, 'curation-cover')).toHaveLength(0); // v2: 상세 표지 없음
     expect(byId(t, 'curation-fallback')).toHaveLength(0);
@@ -271,6 +271,17 @@ describe('KB-829 사진 중심 카드(D-29 v2)', () => {
     mockDetail = { ...q({ data: detail }), dataUpdatedAt: 2 } as Q;
     act(() => t.update(<CurationDetailScreen />));
     expect(byId(t, 'curation-item-about-2')).toHaveLength(0);
+  });
+});
+
+describe('KB-829 QA S3 지역 행 줄바꿈', () => {
+  it('이름 안 공백 = NBSP(이름 중간 줄바꿈 0) · 이름 사이 = 일반 공백 2칸(여기서만 줄바꿈) · 앞뒤 공백 제거', () => {
+    const { areaLine } = jest.requireActual('@/app/curations/[key]') as { areaLine: (a: string, n: string[]) => string };
+    const s = areaLine('Hongdae / Yeonnam-dong', [' Hongdae streets ', 'Gyeongui Line  Forest Park']);
+    expect(s).toBe('Hongdae\u00A0/\u00A0Yeonnam-dong  Hongdae\u00A0streets  Gyeongui\u00A0Line\u00A0Forest\u00A0Park');
+    expect(s.split('  ')).toHaveLength(3); // 줄바꿈 가능한 자리 = 이름 경계뿐
+    expect(s.split('  ').every((name) => !name.includes(' '))).toBe(true);
+    expect(areaLine('Jongno-gu', [])).toBe('Jongno-gu');
   });
 });
 
