@@ -440,3 +440,28 @@ describe('Codex #291 R11: one scan presenter for every phase', () => {
     expect(body.match(/return withPresenter\(/g)).toHaveLength(6); // result · scanning · error · offline · system camera · camera
   });
 });
+
+it('Codex #291 R12 P2: a stale focus preflight returning SCAN-004 after the unlock retry reopened the camera does not relock', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  let rejectFocus!: (e: unknown) => void;
+  mockIssue.mockReset();
+  mockIssue.mockImplementationOnce(() => new Promise((_, reject) => { rejectFocus = reject; })); // focus preflight, still in flight
+  mockUseMe.mockReturnValue(me(1)); // profile exhausted → quota screen without waiting for the ticket
+  const tree = render(); await flush();
+  expect(quotaShown(tree)).toBe(true);
+  mockIssue.mockResolvedValue('unlocked-ticket');
+  act(() => observeUnlock('7', true, currentGen())); await flush(); // late profile transition → celebration (quota context)
+  const action = tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
+  await act(async () => action.props.onPress());
+  if (Platform.OS === 'ios') {
+    const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+    await act(async () => celebration.props.onDismiss());
+  } else {
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 5)));
+  }
+  await flush();
+  expect(quotaShown(tree)).toBe(false); // unlock retry reopened the camera
+  await act(async () => { rejectFocus(new ApiError('quota', 403, 'SCAN-004')); }); await flush();
+  expect(quotaShown(tree)).toBe(false); // the superseded focus result is ignored
+});

@@ -244,7 +244,9 @@ export default function Scan() {
   const preflight = useCallback(async (opts?: { unlocked?: boolean }) => {
     if (!scanV2Enabled()) return;
     const generation = currentGen();
-    const epoch = ticketEpoch.current;
+    // Codex #291 R12 P2: each invocation is its own epoch — a newer preflight (e.g. the unlock retry) supersedes an older
+    // in-flight one, so a late SCAN-004 from the focus preflight cannot relock after the unlock reopened the camera.
+    const epoch = ++ticketEpoch.current;
     const quota = quotaRef.current;
     const unlocked = opts?.unlocked === true;
     const forError = errorRef.current; // 해제 경로 = 지금 떠 있는 쿼터 에러에 묶는다
