@@ -61,3 +61,20 @@ it('Codex #291 3R P1: root layout keeps gesture-handler as its first import', ()
   const first = fs.readFileSync('src/app/_layout.tsx', 'utf8').split('\n').find((line) => line.startsWith('import '));
   expect(first).toBe("import 'react-native-gesture-handler';");
 });
+it('P-489 R7: celebration copy keys are modal-only, ko/en match the approved copy, all 10 locales filled', () => {
+  const fs = jest.requireActual<typeof import('fs')>('fs');
+  const read = (l: string) => JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).scan as Record<string, string>;
+  expect(read('ko')).toMatchObject({ unlockedCelebrationTitle: '스캔이 무제한으로 풀렸어요!', unlockedCelebrationBody: '이제 한국어 메뉴판을 횟수 제한 없이 스캔할 수 있어요.' });
+  expect(read('en')).toMatchObject({ unlockedCelebrationTitle: 'Unlimited scanning unlocked', unlockedCelebrationBody: 'Scan any Korean menu, as many times as you want.' });
+  for (const l of ['ko', 'en', 'es', 'id', 'ja', 'ru', 'th', 'vi', 'zh-Hans', 'zh-Hant']) {
+    const scan = read(l);
+    for (const key of ['unlockedCelebrationTitle', 'unlockedCelebrationBody']) {
+      expect(scan[key]).toBeTruthy();
+      expect(scan[key]).not.toContain('·');
+    }
+  }
+  const modal = fs.readFileSync('src/features/scan/UnlockCelebration.tsx', 'utf8');
+  expect(modal).toContain("t('scan.unlockedCelebrationTitle')");
+  expect(modal).toContain("t('scan.unlockedCelebrationBody')");
+  expect(modal).not.toMatch(/'scan\.unlocked(Title|Body)'/); // quota screen keeps the shared keys
+});

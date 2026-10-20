@@ -82,7 +82,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const scanAction = event?.context === 'scan' && onStartScanning != null;
   return (
     <Modal visible={visible} animationType="none" presentationStyle="fullScreen" onRequestClose={() => dismiss(false)}
-      onShow={() => { setOnScreen(true); if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(t('scan.unlockedTitle')); } }}
+      onShow={() => { setOnScreen(true); if (event) { shown.current = event.id; markUnlockPresented(event.id); AccessibilityInfo.announceForAccessibility(t('scan.unlockedCelebrationTitle')); } }}
       onDismiss={afterDismiss}>
       <View style={styles.root} accessibilityViewIsModal testID="unlock-celebration">
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
@@ -96,8 +96,8 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
             <Svg width={110} height={42} viewBox="0 0 110 42"><Path d="M55 21C38-4 5 1 5 21S38 46 55 21C72-4 105 1 105 21S72 46 55 21" stroke={C.surface} strokeWidth={8} fill="none" /></Svg>
           </View>
           <Animated.View style={[styles.sheet, sheetMotion]}>
-            <Text style={styles.title} accessibilityRole="header">{t('scan.unlockedTitle')}</Text>
-            <Text style={styles.body}>{t('scan.unlockedBody')}</Text>
+            <Text style={styles.title} accessibilityRole="header">{t('scan.unlockedCelebrationTitle')}</Text>
+            <Text style={styles.body}>{t('scan.unlockedCelebrationBody')}</Text>
             <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
               <Btn testID="unlock-celebration-action" onPress={() => dismiss(scanAction)}>{t(scanAction ? 'scan.startScanning' : 'review.done')}</Btn>
             </View>
