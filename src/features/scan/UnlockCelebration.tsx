@@ -100,7 +100,8 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
     particles.set(withDelay(150, withTiming(1, { duration: PARTICLE_MS, easing: Easing.linear })));
     ring1.set(withDelay(150, withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) })));
     ring2.set(withDelay(270, withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) })));
-    infIn.set(withDelay(350, withSpring(1, { damping: 10, stiffness: 200 })));
+    // QA P-493 R5: ∞ 스프링도 ≈1.5×까지 넘쳤다 — 불꽃과 같은 1회 팝 키프레임(stroke 그리기 420ms는 그대로)
+    infIn.set(withDelay(350, withSequence(...FLAME_POP.map(({ to, ms }) => withTiming(to, { duration: ms, easing: Easing.out(Easing.quad) })))));
     infDraw.set(withDelay(350, withTiming(1, { duration: 420 })));
     sheetIn.set(withDelay(500, withSpring(1, { damping: 16, stiffness: 160 }))); // 가벼운 오버슈트
     titleIn.set(withDelay(500, withTiming(1, { duration: titleMs })));
@@ -201,7 +202,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
   );
 }
 export const FLAME_FRAME = { w: 216, h: 252 } as const;
-/** 불꽃 팝 키프레임 — 0 → 1.15(220ms) → 1(230ms). 스프링 없이 한 번만 넘친다(진동 0). */
+/** 불꽃·∞ 팝 키프레임 — 0 → 1.15(220ms) → 1(230ms). 스프링 없이 한 번만 넘친다(진동 0). */
 export const FLAME_POP = [{ to: 1.15, ms: 220 }, { to: 1, ms: 230 }] as const;
 const HERO_PAD_TOP = 24;
 const HERO_PAD_BOTTOM = 32;

@@ -43,7 +43,7 @@ async function mount(start = jest.fn(), eligible = true) {
 }
 function unlock(scan = true) { observeUnlock('a', false, 0); setUnlockScanFocused(scan); observeUnlock('a', true, 0); }
 const springs = () => jest.requireMock('react-native-reanimated').withSpring as jest.Mock;
-const SEQUENCE_SPRINGS = 3; // KB-819: 무한 기호·시트·버튼 — 시퀀스 1회 시작 = 스프링 3회(불꽃은 R4부터 키프레임)
+const SEQUENCE_SPRINGS = 2; // KB-819: 시트·버튼 — 시퀀스 1회 시작 = 스프링 2회(불꽃 R4·∞ R5부터 키프레임)
 const modal = (tree: ReactTestRenderer) => tree.root.findByType(Modal);
 const action = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
 it('scan CTA requests nothing until native dismissal, double tap calls continuation once', async () => {
@@ -274,4 +274,13 @@ it('QA P-493 R4: 불꽃 팝 = 한 번만 넘쳤다 1로 안착(최대 ≤1.2 · 
   const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
   for (const { to, ms } of FLAME_POP) expect(reanimated.withTiming).toHaveBeenCalledWith(to, expect.objectContaining({ duration: ms }));
   expect(reanimated.withSpring).not.toHaveBeenCalledWith(1, expect.objectContaining({ damping: 9 }));
+});
+it('QA P-493 R5: ∞ 기호도 불꽃과 같은 1회 팝 키프레임(스프링 0 — 피크 ≤1.2·단조·450ms는 R4 테스트가 잠금) · stroke 그리기 420ms 유지', async () => {
+  mockReduced = false;
+  const reanimated = jest.requireMock('react-native-reanimated');
+  const { FLAME_POP } = jest.requireActual('../UnlockCelebration');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  for (const { to, ms } of FLAME_POP) expect(reanimated.withTiming.mock.calls.filter((c: unknown[]) => c[0] === to && (c[1] as { duration: number }).duration === ms)).toHaveLength(2); // 불꽃 + ∞
+  expect(reanimated.withTiming).toHaveBeenCalledWith(1, { duration: 420 }); // stroke 그리기
+  expect(reanimated.withSpring).not.toHaveBeenCalledWith(1, expect.objectContaining({ damping: 10, stiffness: 200 }));
 });
