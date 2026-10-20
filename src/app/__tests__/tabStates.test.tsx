@@ -100,6 +100,7 @@ jest.mock('@/lib/data/useMe', () => ({
 }));
 const mockUseInfiniteFoods = jest.fn();
 jest.mock('@/lib/data/useFoods', () => ({
+  usePrefetchOtherFoodSorts: () => {}, // KB-830
   useInfiniteFoods: () => mockUseInfiniteFoods(),
   useFoods: () => ({ data: [] }),
 }));

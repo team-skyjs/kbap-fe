@@ -37,7 +37,7 @@ it('언어 전환 → 같은 컴포넌트의 키가 새 언어로(재마운트 �
 });
 
 it.each([
-  ['src/lib/data/useFoods.ts', 4],
+  ['src/lib/data/useFoods.ts', 5], // KB-830: + usePrefetchOtherFoodSorts(선요청 키도 언어 구독)
   ['src/lib/data/useHome.ts', 1],
   ['src/lib/data/useIngredientCatalog.ts', 1],
   ['src/lib/data/useMe.ts', 1],

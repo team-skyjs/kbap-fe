@@ -29,7 +29,7 @@ import { foodTabHref, type GridSegment, type RiskChipParam } from '@/features/fo
 import { railCardW } from '@/features/food/railLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SectionHead } from '@/components/SectionHead';
-import { useInfiniteFoods, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
+import { useInfiniteFoods, usePrefetchOtherFoodSorts, FOODS_PAGE_SIZE } from '@/lib/data/useFoods';
 import type { FoodNameSort } from '@/lib/data/foodNameSort';
 import { useBookmarks, useSavedIds, useToggleBookmark } from '@/lib/data/bookmarks';
 import { useMe } from '@/lib/data/useMe';
@@ -167,6 +167,8 @@ export function FoodExplorer({
   // (riskChip 'all'이면 같은 쿼리키 = 캐시 공유, 추가 요청 없음).
   const savedTabActive = variant === 'screen' ? savedOnly : gridTab === 'saved';
   const browse = useInfiniteFoods(riskChip, { enabled: !savedTabActive, sort: nameSort }); // #112 2R ②: Saved 활성 = browse 휴면 · KB-821 이름 정렬
+  // KB-830: 정렬 전환 즉시 표시 — 현재 목록 첫 페이지 뒤에 같은 필터의 다른 정렬 첫 페이지만 선요청(정렬 가능한 음식 탭만)
+  usePrefetchOtherFoodSorts(riskChip, nameSort, { enabled: sortable && !savedTabActive, ready: browse.isSuccess });
   // KB-779: 홈(embedded) 별·토글 방향 = 카드의 bookmarked(/home·/foods·/bookmarks 전부 FoodSummaryResponse 동봉)
   // → 북마크 쿼리(드레인 포함)는 Saved 탭이 활성일 때만(빈 상태 판정·목록). 콜드 스타트 GET /bookmarks 0회.
   // 음식 탭(screen)은 기존 savedIds 판정 경로 그대로(비범위).
@@ -527,7 +529,7 @@ export function FoodExplorer({
               gridErrorBlock
             ) : gridQ.isLoading || gridQ.hasNextPage ? (
               /* P-350: 빈 판정은 !hasNextPage && 0건일 때만 — 얇은 페이지 채움 중 = 스켈레톤 */
-              <SkeletonFoodGrid />
+              <SkeletonFoodGrid rowStyle={styles.gridRowWrap} cellStyle={styles.gridCell} />
             ) : savedOnly ? (
               riskChip !== 'all' ? (
                 <View style={styles.railState} testID="food-grid-filter-empty">
