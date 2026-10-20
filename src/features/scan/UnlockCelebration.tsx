@@ -26,7 +26,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const actionTaken = React.useRef<number | null>(null);
   const continued = React.useRef<number | null>(null);
   const burst = useSharedValue(0);
-  const entrance = useSharedValue(1);
+  const entrance = useSharedValue(0);
   const sheetMotion = useAnimatedStyle(() => ({ opacity: entrance.value, transform: [{ translateY: (1 - entrance.value) * 40 }] }));
   const event = state.event;
   // Native Modal sits above the in-tree hard update gate; never cover it (Codex #291 P2). The event stays pending.
@@ -43,11 +43,14 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   // iOS presents the Modal only after the rewarded ad screen finishes dismissing, so the clock starts at onShow, not at visible.
   const [onScreen, setOnScreen] = React.useState(false);
   if (!visible && onScreen) setOnScreen(false);
+  // QA E2: the Modal's first frame reads whatever the value is at rest, so the hidden value is already the starting pose
+  // (0, or 1 under Reduce Motion) — resetting after visible flips is one frame late.
   React.useEffect(() => {
-    if (!visible || reduceMotion) { entrance.set(1); return; }
-    entrance.set(0);
-    burst.set(0);
-    if (!onScreen) return;
+    if (!visible || !onScreen || reduceMotion) {
+      entrance.set(reduceMotion ? 1 : 0);
+      burst.set(0);
+      return;
+    }
     entrance.set(withTiming(1, { duration: 550 }));
     burst.set(withTiming(1, { duration: 700 }));
     return () => { cancelAnimation(burst); cancelAnimation(entrance); };

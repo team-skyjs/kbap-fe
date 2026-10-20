@@ -130,3 +130,23 @@ it('Codex #291 R4: burst wrapper has the badge frame and its center is the flame
   expect(burst.top + burst.height / 2).toBe(FLAME_FRAME.h / 2);
   expect(burst.transform).toEqual([{ scale: 4 }]); // scale pivots on the wrapper center = flame center
 });
+it('QA E2: the hidden resting pose is the start pose, so the first shown frame never has the finished sheet', async () => {
+  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(false);
+  const withTiming = jest.requireMock('react-native-reanimated').withTiming as jest.Mock;
+  const tree = await mount();
+  expect(mockShared.length).toBeGreaterThanOrEqual(2);
+  mockShared.forEach((shared) => expect(shared.value).toBe(0)); // hidden, before any event
+  act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  expect(withTiming).toHaveBeenCalledTimes(2);
+  mockShared.forEach((shared) => expect(shared.value).toBe(1)); // mock withTiming jumps to the end value
+  act(() => modal(tree).props.onRequestClose());
+  act(() => { if (Platform.OS === 'ios') modal(tree).props.onDismiss(); else jest.runOnlyPendingTimers(); });
+  expect(modal(tree).props.visible).toBe(false);
+  mockShared.forEach((shared) => expect(shared.value).toBe(0)); // closing returns to the start pose for the next show
+});
+it('QA E2: under Reduce Motion the resting pose is the finished sheet (no hidden first frame)', async () => {
+  const tree = await mount(); // isReduceMotionEnabled → true (beforeEach)
+  expect(mockShared.map((shared) => shared.value).sort()).toEqual([0, 1]); // burst 0, entrance 1
+  act(() => unlock(false));
+  expect(modal(tree).props.visible).toBe(true);
+});
