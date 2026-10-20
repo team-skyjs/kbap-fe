@@ -9,7 +9,7 @@
  * 외부 링크 = lib/openExternal openWebPage(실패 시 토스트 — `void Linking.*` 직접 호출 금지 규칙).
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -148,9 +148,14 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
 }
 
 const CARD_SHADE = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)'] as const;
-// 시안 v4 하단 블러 — 밴드 = 카드 아래 96(2x PNG 눈금 근사), 흐림 = 윤곽은 지우고 색 덩어리는 남는 정도
+// 시안 v4 하단 블러 — 밴드 = 카드 아래 96(2x PNG 눈금 근사), 흐림 = 윤곽은 지우고 색 덩어리만(시안 02b-mock)
 export const CARD_BLUR_BAND = 96;
-export const CARD_BLUR_RADIUS = 16;
+// expo-image blurRadius는 플랫폼마다 다르다(node_modules/expo-image 실측):
+// - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
+// - Android: Glide BlurTransformation(min(radius, 25), sampling 4) — 1/4로 줄인 뒤 흐리므로 같은 값이 iOS보다 훨씬 세다
+// iOS 72 = QA 비교(kbap-qa 2026-10-21-pr311 03-before-after-mock) 휘도 경사 에너지로 보정: 16 ≈ σ2.1px, 시안 ≈ σ10px(×4.6) → 72.
+// Android 14 = 같은 원본 픽셀 반경(≈36)을 4배 축소 후 반경으로 환산한 추정 — Android 캡처로 확인 대상.
+export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 14 : 72;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.card },

@@ -241,8 +241,9 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(RN.StyleSheet.flatten(band.props.style)).toMatchObject({ position: 'absolute', bottom: 0, height: 96, overflow: 'hidden' });
     expect(band.props.pointerEvents).toBe('none');
     const img = band.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0];
-    expect(img.props.blurRadius).toBe(16);
+    expect(img.props.blurRadius).toBe(72); // iOS(jest 기본) — 시안 수준으로 보정(QA W1: 16은 윤곽이 남음)
     expect(RN.StyleSheet.flatten(img.props.style)).toMatchObject({ position: 'absolute', bottom: 0, height: 330 }); // 원본과 같은 높이 → 같은 자리 겹침
+    expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 14 : 72;");
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.dependencies['expo-blur']).toBeUndefined();
   });
