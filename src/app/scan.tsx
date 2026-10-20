@@ -22,6 +22,7 @@ import { ActivityIndicator, Alert, AppState, BackHandler, Image, Modal, Platform
 import { Pressable } from '@/components/Pressable';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { Txt as Text } from '@/components/Txt';
 import { useFocusEffect, useIsFocused, useRouter, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -92,6 +93,9 @@ function deletePhotoFile(uri: string | null | undefined): void {
     .then(() => console.log('[scan] cleaned photo file:', uri))
     .catch((e) => console.log('[scan] photo cleanup failed:', (e as Error)?.message ?? e));
 }
+
+// KB-777 B1-4: 바탕이 어두운(#16110d) 단계 — 상태바 아이콘 light
+const DARK_ROOT_PHASES = new Set<string>(['error', 'scanning']);
 
 export default function Scan() {
   const router = useRouter();
@@ -725,13 +729,18 @@ export default function Scan() {
       onClosed={quotaContext ? () => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); } : undefined}
     />
   ) : null;
-  const withPresenter = (node: ReactElement) => <>{node}{presenter}</>;
+  // KB-777 B1-4: 어두운 바탕(카메라 뷰파인더·인식 중·오류 — "Not a menu" 등)은 상태바 아이콘을 밝게. 앱 기본(_layout)은 dark —
+  // 포커스를 잃거나 밝은 화면(결과·오프라인·시스템 카메라 런처)으로 가면 이 StatusBar가 빠져 기본으로 돌아간다.
+  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera);
+  const lightBar = isFocused && darkRoot ? <StatusBar style="light" /> : null;
+  const withPresenter = (node: ReactElement) => <>{node}{presenter}{lightBar}</>;
 
   // 라우트 자체 가드 (실기기 반려분 #2): 진입로별 가드는 누락이 생긴다 —
   // 게스트는 어떤 경로로 오든 카메라 없이 게이트 시트, 닫으면 뒤로.
   if (isGuest) {
     return (
       <View style={styles.root}>
+        {lightBar}
         {Close}
         <AuthGateSheet context="scan" open onClose={() => router.back()} />
       </View>

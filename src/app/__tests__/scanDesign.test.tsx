@@ -431,3 +431,19 @@ describe('KB-769 스캔 결과 뒤로가기 가드', () => {
     });
   });
 });
+
+// KB-777 B1-4: 어두운 바탕(카메라·인식 중·오류 "Not a menu" 등) = 상태바 아이콘 밝게 · 밝은 결과 화면 = 앱 기본(dark)으로
+it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(기본 dark 복귀) · 오류·인식 중도 대상(소스 잠금)', async () => {
+  const { StatusBar } = jest.requireActual('expo-status-bar') as typeof import('expo-status-bar');
+  const bars = (tr: ReactTestRenderer) => tr.root.findAll((n) => n.type === StatusBar).map((n) => n.props.style);
+  const tree = render(<Scan />);
+  expect(bars(tree)).toEqual(['light']);
+  await act(async () => {
+    await galleryBtn(tree).props.onPress();
+  });
+  expect(bars(tree)).toEqual([]);
+  const src = jest.requireActual('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
+  expect(src).toContain("const DARK_ROOT_PHASES = new Set<string>(['error', 'scanning']);");
+  expect(src).toContain("const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera);");
+  expect(src).toContain('const lightBar = isFocused && darkRoot ?');
+});
