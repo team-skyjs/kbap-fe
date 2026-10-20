@@ -47,7 +47,8 @@ type Step =
   | { kind: 'candidates'; analysisId: string; candidates: ScanCandidate[] }
   | { kind: 'none'; analysisId: string }
   /** analysisId = 이름 스캔에서 이어 붙일 분석(후보 없음·해당 없음) · null = 새 분석(촬영 화면·상세에서 바로) */
-  | { kind: 'handoff'; analysisId: string | null }
+  /** pages = 면 모으기에서 뒤로 왔을 때 이미 모은 면(QA Z5: 다시 찍으면 덮지 않고 이어 붙인다 — 분석 ID와 면이 어긋나지 않게) */
+  | { kind: 'handoff'; analysisId: string | null; pages?: string[] }
   /** 성분표 면 모으기 — 분석 전(면 1~4) */
   | { kind: 'labelPages'; analysisId: string | null; pages: string[] }
   /** used = 이 분석에서 차감된 적 있음(이번 charged 또는 앞선 성공) — 결과 도착 때 정해 둔다(렌더 중 ref 읽기 금지).
@@ -300,13 +301,23 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
           </View>
           {/* "같은 분석으로 이어가요"는 후보 없음·해당 없음에서 온 경우만(README 진입별 표) */}
           {step.analysisId != null && <ScanCount text={t('packagedScan.sameAnalysis')} testID="pscan-same-analysis" />}
+          {!!step.pages?.length && <Text style={st.body} testID="pscan-label-count">{t('packagedScan.labelPagesCount', { count: step.pages.length, max: LABEL_PAGES_MAX })}</Text>}
           <Text style={st.muted}>{t('packagedScan.successOnly')}</Text>
           {!FLAGS.packagedLabelScan && <Text style={st.muted} testID="pscan-label-soon">{t('packagedScan.labelSoon')}</Text>}
-          {FLAGS.packagedLabelScan && <LabelDebug onAdd={(text) => setStep({ kind: 'labelPages', analysisId: step.analysisId, pages: [text] })} />}
+          {FLAGS.packagedLabelScan && (step.pages?.length ?? 0) < LABEL_PAGES_MAX && (
+            <LabelDebug onAdd={(text) => setStep({ kind: 'labelPages', analysisId: step.analysisId, pages: [...(step.pages ?? []), text] })} />
+          )}
         </ScrollView>
         <View style={[st.bottom, { paddingBottom: insets.bottom + 12 }]}>
           {FLAGS.packagedLabelScan ? (
-            <Btn busy={guard.busy} onPress={() => void shootLabelPage(step.analysisId, [])} testID="pscan-label-capture">{t('packagedScan.labelCta')}</Btn>
+            // 촬영도 같은 이어 붙이기 함수(모은 면 + 새 면) — 4면이 차 있으면 촬영 없이 면 화면으로
+            <Btn
+              busy={guard.busy}
+              onPress={() => ((step.pages?.length ?? 0) >= LABEL_PAGES_MAX ? setStep({ kind: 'labelPages', analysisId: step.analysisId, pages: step.pages ?? [] }) : void shootLabelPage(step.analysisId, step.pages ?? []))}
+              testID="pscan-label-capture"
+            >
+              {t('packagedScan.labelCta')}
+            </Btn>
           ) : (
             <Btn variant="off" testID="pscan-label-capture">{t('packagedScan.labelCta')}</Btn>
           )}
@@ -320,7 +331,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
     const full = pages.length >= LABEL_PAGES_MAX;
     return (
       <View style={st.root} testID="pscan-label-pages">
-        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep({ kind: 'handoff', analysisId })} />
+        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep({ kind: 'handoff', analysisId, pages })} />
         <ScrollView contentContainerStyle={st.page}>
           <Text style={st.h1}>{t('packagedScan.labelPagesTitle')}</Text>
           <Text style={st.body} testID="pscan-label-count">{t('packagedScan.labelPagesCount', { count: pages.length, max: LABEL_PAGES_MAX })}</Text>

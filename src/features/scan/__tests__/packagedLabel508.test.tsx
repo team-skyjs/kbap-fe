@@ -339,6 +339,25 @@ describe('흐름', () => {
     const keys = labelCalls().map((c) => (c[1] as { clientRequestId?: string }).clientRequestId);
     expect(keys).toEqual(['uuid-1', 'uuid-2']);
   });
+  it('QA Z5: 면 모으기 → 뒤로 → 안내에서 다시 찍기·주입 = 이어 붙이기(덮어쓰기 0) · 안내에 n/4 표시 · 분석 ID 유지', async () => {
+    const t = flow();
+    await toHandoffFromNone(t);
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P1 }]);
+    await press(t, 'pscan-label-capture');
+    act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+    expect(ids(t)).toContain('pscan-handoff');
+    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P2 }]);
+    await press(t, 'pscan-label-capture'); // 카메라 경로
+    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":2,"max":4}');
+    act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+    act(() => t.root.findAll((n) => n.props?.testID === 'pscan-label-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('c'));
+    await press(t, 'pscan-label-debug-add'); // 주입 경로
+    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":3,"max":4}');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
+    await press(t, 'pscan-label-analyze');
+    expect(labelCalls()[0][1]).toMatchObject({ analysisId: 'A3', pages: [{ ocrText: LABEL_P1 }, { ocrText: LABEL_P2 }, { ocrText: 'c' }] });
+  });
   it('플래그 off = 성분표 촬영 버튼 비활성 + 곧 지원 안내 · 촬영 호출 0', async () => {
     setFlag(false);
     const t = flow(true);
