@@ -262,25 +262,39 @@ describe('피드 네이티브', () => {
     status: 'loaded',
     nativeAd: { responseId: 'r', headline: 'H', body: 'B', callToAction: 'INSTALL', advertiser: 'Adv', icon: { url: 'https://x/i.png' }, mediaContent: aspectRatio == null ? null : { aspectRatio, hasVideoContent: false, duration: 0 }, addAdEventListener: () => ({ remove: () => {} }) },
   });
-  it('QA 6R: NativeAdView엔 padding·border·margin 0(자식이 GADNativeAdView content frame에 꽂혀 두 번 밀림) — 여백·구분선은 바깥 View · 미디어 aspectRatio = 수신 자산(1.5) · 없으면 16:9 · 세로형(0.5)은 1', async () => {
+  it('QA 6R: NativeAdView엔 padding·border·margin 0(자식이 GADNativeAdView content frame에 꽂혀 두 번 밀림) — 여백·구분선은 바깥 View · KB-799 미디어 원비율 유지 · 미지 이미지 contain', async () => {
     await act(async () => { await initAds(); });
     loaded(1.5);
     const t = render(<FeedAd testID="ad-feed-1" />);
     await flush();
+    act(() => t.root.findAll((x) => x.props?.testID === 'ad-feed-1-frame' && typeof x.type === 'string')[0].props.onLayout({ nativeEvent: { layout: { width: 375 } } }));
     const adView = t.root.findAll((x) => x.props?.testID === 'ad-feed-1' && typeof x.type === 'string')[0];
     expect(Object.keys(flat(adView)).filter((k) => FRAME_KEYS.test(k))).toEqual([]);
     let host = adView.parent; while (host && typeof host.type !== 'string') host = host.parent; // 목 컴포지트 건너뛰고 바깥 host View
     expect(flat(host as typeof adView)).toMatchObject({ paddingVertical: 22, paddingHorizontal: 20, borderBottomWidth: 1 });
-    const media = () => flat(t.root.findAll((x) => x.props?.resizeMode === 'cover' && typeof x.type === 'string')[0]);
-    expect(media().aspectRatio).toBe(1.5);
-    expect(media().width).toBe('100%');
+    const media = () => flat(t.root.findAll((x) => x.props?.resizeMode === 'contain' && typeof x.type === 'string')[0]);
+    expect(media()).toMatchObject({ width: 256, height: 256 / 1.5 });
+    expect(adView.props.onPress).toBeUndefined();
     loaded(null); await flush();
-    expect(media().aspectRatio).toBeCloseTo(16 / 9);
+    expect(media()).toMatchObject({ width: 256, height: 144 });
     loaded(0.5); await flush();
-    expect(media().aspectRatio).toBe(1);
+    expect(media()).toMatchObject({ width: 128, height: 256 });
     // 자산 전부 NativeAdView 안
     const leaves = adView.findAll((x) => typeof x.props?.children === 'string').map((x) => x.props.children as string);
     expect(leaves).toEqual(expect.arrayContaining(['H', 'B', 'INSTALL', 'Adv']));
+    for (const text of ['H', 'B', 'INSTALL', 'Adv']) {
+      const asset = adView.findAll((x) => typeof x.type === 'string' && x.props.children === text)[0];
+      expect(asset.props.numberOfLines).toBeUndefined();
+    }
+    act(() => mockAds.update('native', { nativeAd: { ...(mockAds.native.nativeAd as object), mediaContent: { aspectRatio: 16 / 9, hasVideoContent: true } } }));
+    act(() => t.root.findAll((x) => x.props?.testID === 'ad-feed-1-frame' && typeof x.type === 'string')[0].props.onLayout({ nativeEvent: { layout: { width: 200 } } }));
+    expect(mockAds.banners.at(-1)).toMatchObject({ size: 'INLINE_ADAPTIVE_BANNER', maxHeight: 250 });
+    expect(t.root.findAll((x) => x.props?.resizeMode === 'contain')).toHaveLength(0);
+    const banner = mockAds.banners.at(-1)!;
+    act(() => { (banner.onAdFailedToLoad as () => void)(); });
+    const fallback = t.root.findAll((x) => x.props?.testID === 'ad-feed-1' && typeof x.type === 'string')[0];
+    expect(flat(fallback).height).toBe(0);
+
   });
 });
 

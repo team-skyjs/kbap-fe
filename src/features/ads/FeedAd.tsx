@@ -9,7 +9,7 @@
  * padding만큼 두 번 밀려 마지막 자산(CTA)이 광고 뷰 밖으로 넘친다. 여백·구분선은 바깥 View가, NativeAdView는 레이아웃(gap)만.
  */
 import * as React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, PixelRatio, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Txt as Text } from '@/components/Txt';
 import { FLAGS } from '@/lib/flags';
@@ -19,6 +19,7 @@ import { color as C, font } from '@/lib/theme';
 import type { AdsSdk } from '@/lib/ads/sdk';
 import { useAdsSdk } from '@/lib/ads/adsSession';
 import { adUnitId } from '@/lib/ads/units';
+import { compactMediaSize } from '@/lib/ads/compactMedia';
 import { AdBanner } from './AdBanner';
 
 export function FeedAd({ testID }: { testID?: string }) {
@@ -32,6 +33,7 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
   const { t } = useTranslation();
   const { useNativeAd, NativeAdView, NativeAsset, NativeAssetType, NativeMediaView, NativeAdEventType, NativeAdChoicesPlacement } = sdk;
   const ad = useNativeAd({ adUnitId: adUnitId('feed_native'), autoLoad: true, requestOptions: { adChoicesPlacement: NativeAdChoicesPlacement.TOP_RIGHT } });
+  const [availableWidth, setAvailableWidth] = React.useState<number | null>(null);
   const nativeAd = ad.status === 'loaded' ? ad.nativeAd : null;
   React.useEffect(() => {
     if (!nativeAd) return;
@@ -44,43 +46,51 @@ function NativeSlot({ sdk, testID }: { sdk: AdsSdk; testID?: string }) {
 
   if (ad.status === 'no-fill' || ad.status === 'error') return <AdBanner placement="feed_banner" inline testID={testID} />; // 폴백
   if (!nativeAd) return null; // idle·loading = 0 높이
-  // 미디어 높이 = 수신 자산 비율(라이브러리가 mediaContent.aspectRatio를 주지만 없으면 0 높이) — 없으면 16:9, 세로형은 1:1로 상한(피드 카드 높이 폭주 방지)
-  const mediaRatio = Math.max(nativeAd.mediaContent?.aspectRatio || 16 / 9, 1);
+  const mediaSize = availableWidth === null ? null : compactMediaSize(
+    availableWidth, nativeAd.mediaContent?.aspectRatio, nativeAd.mediaContent?.hasVideoContent === true, PixelRatio.get(),
+  );
+  const unsupported = availableWidth !== null && mediaSize === null;
+  // Keep the measuring host mounted through fallback, so rotation can be evaluated without re-requesting native ads.
   return (
-    <View style={styles.card}>
-    <NativeAdView nativeAd={nativeAd} style={styles.inner} testID={testID ?? 'ad-native-feed_native'}>
-      <View style={styles.top}>
-        {nativeAd.icon && (
-          <NativeAsset assetType={NativeAssetType.ICON}>
-            <Image source={{ uri: nativeAd.icon.url }} style={styles.icon} />
-          </NativeAsset>
-        )}
-        <View style={styles.who}>
-          <NativeAsset assetType={NativeAssetType.HEADLINE}>
-            <Text style={styles.headline} numberOfLines={1}>{nativeAd.headline}</Text>
-          </NativeAsset>
-          {nativeAd.advertiser ? (
-            <NativeAsset assetType={NativeAssetType.ADVERTISER}>
-              <Text style={styles.advertiser} numberOfLines={1}>{nativeAd.advertiser}</Text>
+    <View
+      onLayout={(e) => setAvailableWidth(Math.max(0, e.nativeEvent.layout.width - 40))}
+      style={availableWidth === null || unsupported ? undefined : styles.card}
+      testID={`${testID ?? 'ad-native-feed_native'}-frame`}
+    >
+      {unsupported ? <AdBanner placement="feed_banner" inline testID={testID} /> : mediaSize && (
+        <NativeAdView nativeAd={nativeAd} style={styles.inner} testID={testID ?? 'ad-native-feed_native'}>
+          <View style={styles.badgeWrap}>
+            <Text style={styles.badge} testID="ad-sponsored">{t('ads.sponsored')}</Text>
+            <View style={styles.adChoicesSpace} />
+          </View>
+          <View style={styles.top}>
+            {nativeAd.icon && (
+              <NativeAsset assetType={NativeAssetType.ICON}>
+                <Image source={{ uri: nativeAd.icon.url }} style={styles.icon} />
+              </NativeAsset>
+            )}
+            <View style={styles.who}>
+              <NativeAsset assetType={NativeAssetType.HEADLINE}>
+                <Text style={styles.headline}>{nativeAd.headline}</Text>
+              </NativeAsset>
+              {nativeAd.advertiser ? (
+                <NativeAsset assetType={NativeAssetType.ADVERTISER}>
+                  <Text style={styles.advertiser}>{nativeAd.advertiser}</Text>
+                </NativeAsset>
+              ) : null}
+            </View>
+          </View>
+          <NativeMediaView style={[styles.media, mediaSize]} resizeMode="contain" />
+          {nativeAd.body ? (
+            <NativeAsset assetType={NativeAssetType.BODY}>
+              <Text style={styles.body}>{nativeAd.body}</Text>
             </NativeAsset>
           ) : null}
-        </View>
-        {/* 광고 표시 + AdChoices 자리(우상단 22px) — 콘텐츠로 위장 금지 */}
-        <View style={styles.badgeWrap}>
-          <Text style={styles.badge} testID="ad-sponsored">{t('ads.sponsored')}</Text>
-          <View style={styles.adChoicesSpace} />
-        </View>
-      </View>
-      {nativeAd.body ? (
-        <NativeAsset assetType={NativeAssetType.BODY}>
-          <Text style={styles.body} numberOfLines={3}>{nativeAd.body}</Text>
-        </NativeAsset>
-      ) : null}
-      <NativeMediaView style={[styles.media, { aspectRatio: mediaRatio }]} resizeMode="cover" />
-      <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
-        <Text style={styles.cta} numberOfLines={1}>{nativeAd.callToAction}</Text>
-      </NativeAsset>
-    </NativeAdView>
+          <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
+            <Text style={styles.cta}>{nativeAd.callToAction}</Text>
+          </NativeAsset>
+        </NativeAdView>
+      )}
     </View>
   );
 }
@@ -93,10 +103,10 @@ const styles = StyleSheet.create({
   who: { flex: 1, minWidth: 0, gap: 2 },
   headline: { fontFamily: font.bodyBold, fontSize: 15, color: C.ink, lineHeight: 21 },
   advertiser: { fontFamily: font.body, fontSize: 12, color: C.ink3, lineHeight: 16 },
-  badgeWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  badge: { fontFamily: font.bodyBold, fontSize: 11, color: C.ink2, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: C.line2 },
-  adChoicesSpace: { width: 22, height: 22 },
+  badgeWrap: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 },
+  badge: { flexShrink: 1, fontFamily: font.bodyBold, fontSize: 11, color: C.ink2, lineHeight: 16, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: C.line2 },
+  adChoicesSpace: { width: 22, height: 22, flexShrink: 0 },
   body: { fontFamily: font.body, fontSize: 14, color: C.ink2, lineHeight: 20 },
-  media: { width: '100%', borderRadius: 8, backgroundColor: C.surface2 }, // aspectRatio는 수신 자산별(인라인)
-  cta: { alignSelf: 'flex-start', fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, lineHeight: 20, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: C.primary },
+  media: { alignSelf: 'flex-start', borderRadius: 8, backgroundColor: C.surface2 }, // 원비율·측정 가용폭으로 width/height 지정
+  cta: { alignSelf: 'flex-start', maxWidth: '100%', fontFamily: font.bodyBold, fontSize: 14, color: C.primaryText, lineHeight: 20, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: C.primary },
 });
