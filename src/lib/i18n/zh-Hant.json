@@ -1237,7 +1237,8 @@
       "ramen": "拉麵",
       "bread": "麵包",
       "drinks": "飲料"
-    }
+    },
+    "mayContainTitle": "可能含有(同一生產設施、交叉接觸)"
   },
   "scanMode": {
     "menu": "菜單",
@@ -1285,12 +1286,27 @@
       "goneTitle": "找不到商品",
       "goneBody": "請重新拍攝。",
       "discontinuedTitle": "此商品已停產",
-      "discontinuedBody": "請重新拍攝。"
+      "discontinuedBody": "請重新拍攝。",
+      "unreadableTitle": "沒能讀取成分表",
+      "unreadableBody": "請讓原料清楚可見後重新拍攝。",
+      "newAnalysisTitle": "請重新分析",
+      "newAnalysisBody": "此分析無法再新增照片。重新分析成功時會使用 1 次掃描。"
     },
     "chargeChecking": "正在確認是否使用了掃描次數。",
     "chargeSeeHome": "請在首頁查看剩餘掃描次數。",
     "debugLabel": "OCR 文字(僅限測試)",
     "debugPlaceholder": "每行輸入一行包裝文字",
-    "debugRun": "使用這段文字"
+    "debugRun": "使用這段文字",
+    "labelReading": "正在讀取成分表…",
+    "labelPagesTitle": "成分表照片",
+    "labelPagesCount": "照片 {{count}}/{{max}} 張",
+    "labelAddPage": "再拍一面",
+    "labelAnalyze": "分析成分表",
+    "labelNoExtra": "這次分析沒有額外使用掃描次數。",
+    "labelRawTitle": "辨識出的文字",
+    "labelFreeRetry": "30 分鐘內最多可再分析 3 次，不額外使用掃描次數。",
+    "newAnalysisCta": "重新分析",
+    "debugLabelPlaceholder": "成分表一面的文字",
+    "debugAddPage": "作為一面新增"
   }
 }

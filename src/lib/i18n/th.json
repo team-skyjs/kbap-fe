@@ -1237,7 +1237,8 @@
       "ramen": "ราเมง",
       "bread": "ขนมปัง",
       "drinks": "เครื่องดื่ม"
-    }
+    },
+    "mayContainTitle": "อาจมีส่วนผสมของ (โรงงานเดียวกัน ปนเปื้อนข้าม)"
   },
   "scanMode": {
     "menu": "เมนู",
@@ -1285,12 +1286,27 @@
       "goneTitle": "ไม่พบสินค้า",
       "goneBody": "ถ่ายใหม่",
       "discontinuedTitle": "สินค้านี้เลิกผลิตแล้ว",
-      "discontinuedBody": "ถ่ายใหม่"
+      "discontinuedBody": "ถ่ายใหม่",
+      "unreadableTitle": "อ่านฉลากไม่ได้",
+      "unreadableBody": "ถ่ายใหม่ให้เห็นรายการส่วนประกอบชัดเจน",
+      "newAnalysisTitle": "กรุณาเริ่มวิเคราะห์ใหม่",
+      "newAnalysisBody": "เพิ่มรูปในการวิเคราะห์นี้ไม่ได้แล้ว การวิเคราะห์ใหม่จะใช้สแกน 1 ครั้งเมื่อสำเร็จ"
     },
     "chargeChecking": "กำลังตรวจสอบว่ามีการใช้การสแกนหรือไม่",
     "chargeSeeHome": "ดูจำนวนการสแกนที่เหลือได้ที่หน้าแรก",
     "debugLabel": "ข้อความ OCR (สำหรับทดสอบ)",
     "debugPlaceholder": "ใส่ข้อความบนบรรจุภัณฑ์ทีละบรรทัด",
-    "debugRun": "ใช้ข้อความนี้"
+    "debugRun": "ใช้ข้อความนี้",
+    "labelReading": "กำลังอ่านฉลากส่วนประกอบ…",
+    "labelPagesTitle": "รูปฉลากส่วนประกอบ",
+    "labelPagesCount": "รูป {{count}}/{{max}}",
+    "labelAddPage": "ถ่ายอีกด้าน",
+    "labelAnalyze": "วิเคราะห์ฉลาก",
+    "labelNoExtra": "การวิเคราะห์นี้ไม่ได้ใช้สแกนเพิ่ม",
+    "labelRawTitle": "ข้อความที่อ่านได้",
+    "labelFreeRetry": "ภายใน 30 นาที วิเคราะห์ใหม่ได้สูงสุด 3 ครั้งโดยไม่ใช้สแกนเพิ่ม",
+    "newAnalysisCta": "เริ่มวิเคราะห์ใหม่",
+    "debugLabelPlaceholder": "ข้อความของฉลากหนึ่งด้าน",
+    "debugAddPage": "เพิ่มเป็นหนึ่งด้าน"
   }
 }

@@ -1237,7 +1237,8 @@
       "ramen": "Mì ramen",
       "bread": "Bánh mì",
       "drinks": "Đồ uống"
-    }
+    },
+    "mayContainTitle": "Có thể chứa (cùng cơ sở sản xuất, lẫn chéo)"
   },
   "scanMode": {
     "menu": "Thực đơn",
@@ -1285,12 +1286,27 @@
       "goneTitle": "Không tìm thấy sản phẩm",
       "goneBody": "Hãy chụp lại.",
       "discontinuedTitle": "Sản phẩm này đã ngừng sản xuất",
-      "discontinuedBody": "Hãy chụp lại."
+      "discontinuedBody": "Hãy chụp lại.",
+      "unreadableTitle": "Không đọc được nhãn",
+      "unreadableBody": "Hãy chụp lại sao cho danh sách thành phần rõ nét.",
+      "newAnalysisTitle": "Hãy bắt đầu phân tích mới",
+      "newAnalysisBody": "Không thể thêm ảnh vào phân tích này. Phân tích mới sẽ dùng 1 lượt quét khi thành công."
     },
     "chargeChecking": "Đang kiểm tra xem đã dùng lượt quét chưa.",
     "chargeSeeHome": "Xem số lượt quét còn lại ở màn hình chính.",
     "debugLabel": "Văn bản OCR (chỉ để thử)",
     "debugPlaceholder": "Mỗi dòng một dòng chữ trên bao bì",
-    "debugRun": "Dùng văn bản này"
+    "debugRun": "Dùng văn bản này",
+    "labelReading": "Đang đọc nhãn thành phần…",
+    "labelPagesTitle": "Ảnh nhãn thành phần",
+    "labelPagesCount": "Ảnh: {{count}}/{{max}}",
+    "labelAddPage": "Chụp thêm một mặt",
+    "labelAnalyze": "Phân tích nhãn",
+    "labelNoExtra": "Phân tích này không dùng thêm lượt quét.",
+    "labelRawTitle": "Chữ đọc được trên nhãn",
+    "labelFreeRetry": "Trong 30 phút, bạn có thể phân tích lại tối đa 3 lần mà không dùng thêm lượt quét.",
+    "newAnalysisCta": "Phân tích mới",
+    "debugLabelPlaceholder": "Chữ của một mặt nhãn",
+    "debugAddPage": "Thêm làm một mặt"
   }
 }

@@ -1237,7 +1237,8 @@
       "ramen": "Ramen",
       "bread": "Pan",
       "drinks": "Bebidas"
-    }
+    },
+    "mayContainTitle": "Puede contener (misma planta, contacto cruzado)"
   },
   "scanMode": {
     "menu": "Menú",
@@ -1285,12 +1286,27 @@
       "goneTitle": "Producto no encontrado",
       "goneBody": "Vuelve a tomar la foto.",
       "discontinuedTitle": "Este producto ya no se fabrica",
-      "discontinuedBody": "Vuelve a tomar la foto."
+      "discontinuedBody": "Vuelve a tomar la foto.",
+      "unreadableTitle": "No pudimos leer la etiqueta",
+      "unreadableBody": "Vuelve a tomar la foto con la lista de ingredientes nítida.",
+      "newAnalysisTitle": "Empieza un nuevo análisis",
+      "newAnalysisBody": "No se pueden añadir más fotos a este análisis. Un análisis nuevo usa 1 escaneo si sale bien."
     },
     "chargeChecking": "Estamos comprobando si se usó un escaneo.",
     "chargeSeeHome": "Consulta los escaneos restantes en la pantalla de inicio.",
     "debugLabel": "Texto OCR (solo pruebas)",
     "debugPlaceholder": "Una línea del envase por fila",
-    "debugRun": "Usar este texto"
+    "debugRun": "Usar este texto",
+    "labelReading": "Leyendo la etiqueta de ingredientes…",
+    "labelPagesTitle": "Fotos de la etiqueta",
+    "labelPagesCount": "Fotos: {{count}} de {{max}}",
+    "labelAddPage": "Fotografiar otro lado",
+    "labelAnalyze": "Analizar etiqueta",
+    "labelNoExtra": "Este análisis no usó escaneos adicionales.",
+    "labelRawTitle": "Texto leído",
+    "labelFreeRetry": "Durante 30 minutos puedes volver a analizar hasta 3 veces sin usar escaneos extra.",
+    "newAnalysisCta": "Nuevo análisis",
+    "debugLabelPlaceholder": "Texto de un lado de la etiqueta",
+    "debugAddPage": "Añadir como un lado"
   }
 }

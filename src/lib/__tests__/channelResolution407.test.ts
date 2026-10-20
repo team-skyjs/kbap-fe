@@ -46,7 +46,7 @@ describe('채널 해석표 — 실제 flags.ts', () => {
   });
 });
 
-describe('KB-812 2차 — packagedReviewWrite = dev 서버 채널만(서버 쓰기 플래그가 켜진 곳)', () => {
+describe('KB-812 2차·P-508 — packagedReviewWrite·packagedLabelScan = dev 서버 채널만(서버 기능이 켜진 곳)', () => {
   it.each([
     // channel,        __DEV__, write
     ['development', false, true],
@@ -58,7 +58,9 @@ describe('KB-812 2차 — packagedReviewWrite = dev 서버 채널만(서버 쓰�
     ['', false, false],
     [undefined, false, false],
   ])('%s (__DEV__=%s) → %s', (channel, dev, write) => {
-    expect(flagsFor(channel as string | null | undefined, dev as boolean).FLAGS.packagedReviewWrite).toBe(write);
+    const f = flagsFor(channel as string | null | undefined, dev as boolean);
+    expect(f.FLAGS.packagedReviewWrite).toBe(write);
+    expect(f.FLAGS.packagedLabelScan).toBe(write); // P-508: 성분표 분석(서버 #442)도 dev 서버에만 배포 — 같은 채널 축
   });
   it('eas.json — 쓰기 버튼 채널은 전부 dev 서버, 숨김 채널은 dev 서버가 아니다', () => {
     const build = JSON.parse(fs.readFileSync('eas.json', 'utf8')).build as Record<string, { channel?: string; env?: Record<string, string> }>;
