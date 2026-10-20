@@ -101,6 +101,8 @@
     "searchPlaceholder": "Buscar comida…",
     "sort_popular": "Populares",
     "sort_new": "Nuevos",
+    "sort_name_asc": "Nombre A–Z",
+    "sort_name_desc": "Nombre Z–A",
     "categories": {
       "all": "Todo",
       "stews": "Guisos",
