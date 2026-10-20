@@ -15,7 +15,8 @@ import { useVersionGate } from '@/lib/versionGate';
 import { consumeUnlock, getUnlockSnapshot, isUnlockEventCurrent, markUnlockPresented, subscribeUnlock, type UnlockEvent } from './unlockCelebrationStore';
 
 /** Mounted inside scan's native screen, and at the app host for ordinary routes. */
-export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eligible: boolean; onStartScanning?: () => void; onClosed?: () => void }) {
+/** onDismissed = the native modal is fully gone (iOS onDismiss / Android next task) — for hosts that serialize other modals. */
+export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismissed }: { eligible: boolean; onStartScanning?: () => void; onClosed?: () => void; onDismissed?: () => void }) {
   const state = React.useSyncExternalStore(subscribeUnlock, getUnlockSnapshot, getUnlockSnapshot);
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -70,13 +71,14 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed }: { eli
   const afterDismiss = React.useCallback(() => {
     if (!closing || continued.current === closing.event.id) return;
     continued.current = closing.event.id;
+    onDismissed?.();
     const current = isUnlockEventCurrent(closing.event) && eligible;
     setClosing(null);
     if (!current) return;
     if (AppState.currentState !== 'active') { deferred.current = closing; return; }
     if (closing.start) onStartScanning?.();
     else onClosed?.();
-  }, [closing, eligible, onStartScanning, onClosed]);
+  }, [closing, eligible, onStartScanning, onClosed, onDismissed]);
   React.useEffect(() => {
     const held = deferred.current;
     if (!held || !active) return;

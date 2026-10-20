@@ -673,14 +673,52 @@ export default function Scan() {
     </Pressable>
   );
 
+  const [celebrationTurn, setCelebrationTurn] = useState(false);
+  if (phase !== 'result' && celebrationTurn) setCelebrationTurn(false);
+  const celebrationDone = useRef<(() => void) | null>(null);
+  const celebrationQueued = useRef(false);
+  const celebrationClosed = useCallback(() => {
+    celebrationQueued.current = false;
+    setCelebrationTurn(false);
+    const done = celebrationDone.current;
+    celebrationDone.current = null;
+    done?.();
+  }, []);
+  useEffect(() => {
+    if (phase !== 'result') { celebrationQueued.current = false; celebrationDone.current = null; return; } // modalQueue.clear() drops the step
+    if (!unlockPending || celebrationQueued.current) return;
+    celebrationQueued.current = true;
+    modalQueue.add({
+      key: 'unlock-celebration',
+      present: (done) => {
+        if (!hasUnlockPending()) { celebrationQueued.current = false; return false; }
+        celebrationDone.current = done;
+        setCelebrationTurn(true);
+        return true;
+      },
+    });
+  }, [phase, unlockPending, modalQueue]);
+  // Safety: an event consumed without a native dismissal (screen blur) must not keep the queue waiting forever.
+  useEffect(() => {
+    if (!celebrationTurn || unlockPending) return;
+    const timer = setTimeout(celebrationClosed, 600);
+    return () => clearTimeout(timer);
+  }, [celebrationTurn, unlockPending, celebrationClosed]);
   // Codex #291 R10/R11: ONE celebration presenter for every scan phase (root host excludes /scan). Each phase return goes
   // through withPresenter, so the presenter keeps its identity across phase changes and no phase can lose an event.
   // Continuation (reopen camera with a ticket) only in the quota-error context; elsewhere the CTA is Done.
-  // ponytail: mounted while an event is pending, and always in the quota context (its continuation must survive consume).
+  // ponytail: mounted while an event is pending or holds the result-queue turn, and always in the quota context
+  // (its continuation / the queue's onDismissed must survive consume).
   const quotaContext = phase === 'error' && error?.stage === 'quota';
-  const presenter = quotaContext || unlockPending ? (
+  // Codex #291 R12 P1: the result phase serializes its modals (coach → primer → review prompt) because two native modals
+  // presenting from the scan full-screen modal deadlock UIKit. The celebration takes a turn in that same queue there,
+  // and also waits while a user-opened sheet/dialog is up. The queue advances only after the celebration fully dismissed.
+  const resultSheetOpen = sortSheet || unmatchedOpen || closestMatch != null || retakeConfirm || leave.modal.visible || gateOpen;
+  const presenterEligible = isFocused && !isGuest && !(quotaContext && quotaPicker) && (phase !== 'result' || (celebrationTurn && !resultSheetOpen));
+  const presenter = quotaContext || unlockPending || celebrationTurn ? (
     <UnlockCelebration
-      eligible={isFocused && !isGuest && !(quotaContext && quotaPicker)}
+      eligible={presenterEligible}
+      onDismissed={celebrationClosed}
       onStartScanning={quotaContext ? () => void runUnlockRetry(() => preflight({ unlocked: true })) : undefined}
       onClosed={quotaContext ? () => { if (errorRef.current) setUnlock({ kind: 'ready', forError: errorRef.current }); } : undefined}
     />

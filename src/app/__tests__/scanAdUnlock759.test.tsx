@@ -395,8 +395,22 @@ describe('Codex #291 R11: one scan presenter for every phase', () => {
     await act(async () => { await gallery(tree).props.onPress(); }); await flush();
     expect(tree.root.findAll((n) => n.props?.testID === 'result-back').length).toBeGreaterThan(0); // result phase
     act(() => observeUnlock('7', true, currentGen())); await flush();
+    // Codex #291 R12 P1: the result queue's modals (coach mark → push primer) come first; the celebration waits its turn
+    // and is never visible together with another queue modal (two native modals from the scan modal deadlock UIKit).
+    const queueModal = () => tree.root.findAll((n) => typeof n.type !== 'string' && n.props?.open === true && typeof n.props?.onDismiss === 'function'
+      && (typeof n.props?.onClose === 'function' || typeof n.props?.onDone === 'function'))[0];
+    let closedSteps = 0;
+    while (queueModal()) {
+      expect(fullScreen(tree)[0].props.visible).toBe(false);
+      const m = queueModal();
+      await act(async () => { (m.props.onClose ?? m.props.onDone)(); if (Platform.OS === 'ios') m.props.onDismiss(); });
+      await flush();
+      closedSteps += 1;
+      expect(closedSteps).toBeLessThan(5);
+    }
+    expect(closedSteps).toBeGreaterThan(0);
     expect(fullScreen(tree)).toHaveLength(1);
-    expect(fullScreen(tree)[0].props.visible).toBe(true);
+    expect(fullScreen(tree)[0].props.visible).toBe(true); // its turn, after the earlier steps fully closed
     expect(JSON.stringify(tree.toJSON())).toContain('review.done');
   });
 
