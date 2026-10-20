@@ -41,15 +41,17 @@ import { ScanModeTabs, type ScanMode } from './ScanModeTabs';
 
 type Step =
   | { kind: 'capture' }
-  | { kind: 'reading'; label?: boolean }
+  /** back = 뒤로 갈 단계(Codex #315: 성분표 읽기·분석 중 뒤로 = 모은 면·분석 ID를 지키며 직전 단계로 — 앞면 촬영으로 초기화 금지) */
+  | { kind: 'reading'; label?: boolean; back?: Step }
   | { kind: 'candidates'; analysisId: string; candidates: ScanCandidate[] }
   | { kind: 'none'; analysisId: string }
   /** analysisId = 이름 스캔에서 이어 붙일 분석(후보 없음·해당 없음) · null = 새 분석(촬영 화면·상세에서 바로) */
   | { kind: 'handoff'; analysisId: string | null }
   /** 성분표 면 모으기 — 분석 전(면 1~4) */
   | { kind: 'labelPages'; analysisId: string | null; pages: string[] }
-  /** used = 이 분석에서 차감된 적 있음(이번 charged 또는 앞선 성공) — 결과 도착 때 정해 둔다(렌더 중 ref 읽기 금지) */
-  | { kind: 'labelResult'; result: LabelScanResult; pages: string[]; used: boolean }
+  /** used = 이 분석에서 차감된 적 있음(이번 charged 또는 앞선 성공) — 결과 도착 때 정해 둔다(렌더 중 ref 읽기 금지).
+   *  chargeUnknown = 앞선 전송 실패 뒤 재시도로 받은 결과(첫 요청이 차감했을 수 있음) — "추가 사용 없음"을 단정하지 않는다(Codex #315) */
+  | { kind: 'labelResult'; result: LabelScanResult; pages: string[]; used: boolean; chargeUnknown: boolean }
   | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelPages?: string[] };
 
 /** 디버그 OCR 주입 노출 — 개발 번들·진단 채널(dev·teamtest)만, 스토어 채널 0 */
@@ -111,7 +113,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
 
   /** 촬영 + 온디바이스 OCR 한 장 — 취소·권한 거부·OCR 중 뒤로 감 = null(아무것도 안 함), 글자 없음 = ''.
    *  reading 단계로 넘긴 뒤 OCR을 기다린다(앞면·성분표 공용). */
-  const shootText = async (label: boolean): Promise<string | null> => {
+  const shootText = async (label: boolean, back: Step = { kind: 'capture' }): Promise<string | null> => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
       // Codex #310 R2: 거부 = 메뉴판 흐름과 같은 설정 유도(조용히 무시하면 이 모드를 쓸 길이 없다)
@@ -124,7 +126,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
     const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.8 });
     if (res.canceled || !res.assets?.length) return null;
     const a = res.assets[0];
-    goStep({ kind: 'reading', label });
+    goStep({ kind: 'reading', label, back });
     const my = reqSeq.current;
     let text = '';
     try {
@@ -152,7 +154,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
   /** 한 면 더(분석 전) — 글자를 못 읽은 면은 서버에 보내지 않고 "못 읽음"(차감 0) */
   const shootLabelPage = (analysisId: string | null, pages: string[]) =>
     guard.run(async () => {
-      const text = await shootText(true);
+      const text = await shootText(true, pages.length ? { kind: 'labelPages', analysisId, pages } : { kind: 'handoff', analysisId });
       if (text == null) return; // 취소(단계 그대로 — 모은 면 유지) · OCR 중 뒤로 감(늦은 결과 버림)
       if (!text.trim()) {
         setStep({ kind: 'error', failure: 'unreadable', retry: null, labelPages: pages });
@@ -163,8 +165,8 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
 
   /** analysisId null = 새 분석(성공 1회) · 있음 = 같은 분석(이어 붙이기·재분석 — 서버 규칙 안에서 차감 0).
    *  가드 없는 본체 — 촬영 뒤 이어 부르는 경로(면 추가 재분석)가 같은 가드 안에서 쓴다 */
-  const runLabel = async (analysisId: string | null, pages: string[], chargeUnknown = false): Promise<void> => {
-      goStep({ kind: 'reading', label: true });
+  const runLabel = async (analysisId: string | null, pages: string[], chargeUnknown = false, back: Step = { kind: 'labelPages', analysisId, pages }): Promise<void> => {
+      goStep({ kind: 'reading', label: true, back });
       const my = reqSeq.current;
       try {
         const r = await scanProcessedLabel(analysisId, pages, apiLang());
@@ -172,7 +174,8 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
         track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: r.charged, result: 'ok' });
         if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
         if (r.charged) chargedIds.current.add(r.analysisId);
-        setStep({ kind: 'labelResult', result: r, pages, used: chargedIds.current.has(r.analysisId) });
+        const used = chargedIds.current.has(r.analysisId);
+        setStep({ kind: 'labelResult', result: r, pages, used, chargeUnknown: chargeUnknown && !used });
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
@@ -184,16 +187,18 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
       }
   };
   const analyzeLabel = (analysisId: string | null, pages: string[], chargeUnknown = false) => guard.run(() => runLabel(analysisId, pages, chargeUnknown));
-  /** 결과에서 "한 면 더" = 찍고 같은 분석으로 다시(면은 누적 — 서버는 보낸 면 전체로 결과를 갱신) */
-  const shootMoreAndReanalyze = (analysisId: string, pages: string[]) =>
+  /** 결과에서 "한 면 더" = 찍고 같은 분석으로 다시(면은 누적 — 서버는 보낸 면 전체로 결과를 갱신). 뒤로 = 그 결과 화면 */
+  const shootMoreAndReanalyze = (from: Extract<Step, { kind: 'labelResult' }>) =>
     guard.run(async () => {
-      const text = await shootText(true);
+      const { analysisId } = from.result;
+      const { pages } = from;
+      const text = await shootText(true, from);
       if (text == null) return;
       if (!text.trim()) {
         setStep({ kind: 'error', failure: 'unreadable', retry: null, labelPages: pages });
         return;
       }
-      await runLabel(analysisId, [...pages, text].slice(0, LABEL_PAGES_MAX));
+      await runLabel(analysisId, [...pages, text].slice(0, LABEL_PAGES_MAX), from.chargeUnknown, from);
     });
 
   /** chargeUnknown = 앞선 확정이 전송 실패(서버는 커밋했을 수 있음) — 재확정이 charged false여도 "사용 안 됨"이라 단정하지 않는다 */
@@ -233,7 +238,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
   if (step.kind === 'reading') {
     return (
       <View style={st.root} testID="pscan-reading">
-        <SubHeader title={t(step.label ? 'packagedScan.labelTitle' : 'packagedScan.chooseTitle')} onBack={() => goStep({ kind: 'capture' })} />
+        <SubHeader title={t(step.label ? 'packagedScan.labelTitle' : 'packagedScan.chooseTitle')} onBack={() => goStep(step.back ?? { kind: 'capture' })} />
         <View style={st.darkBand} />
         <View style={[st.sheet, { gap: 20 }]}>
           <Text style={st.h1}>{t(step.label ? 'packagedScan.labelReading' : 'packagedScan.reading')}</Text>
@@ -324,12 +329,12 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
   }
 
   if (step.kind === 'labelResult') {
-    const { result, pages, used } = step;
+    const { result, pages, used, chargeUnknown } = step;
     return (
       <View style={st.root} testID="pscan-label-result">
         <SubHeader title={t('packagedScan.resultTitle')} onBack={onClose} />
         <ScrollView contentContainerStyle={[st.page, { paddingBottom: 24 }]}>
-          <ScanCount text={t(used ? 'packagedScan.scanUsed' : 'packagedScan.labelNoExtra')} testID="pscan-label-charge" />
+          <ScanCount text={t(used ? 'packagedScan.scanUsed' : chargeUnknown ? 'packagedScan.chargeSeeHome' : 'packagedScan.labelNoExtra')} testID="pscan-label-charge" />
           {/* 상세 판정 섹션 그대로(검출 빨강·미매핑 노랑·미확인 회색·labelSource 문구·회피 대조) + 함유 가능 칩. 제품이 정해지지 않아 상세 링크 없음 */}
           <Verdict d={result} onLogin={() => {}} />
           {!!result.rawText && (
@@ -340,9 +345,9 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
           )}
           {pages.length < LABEL_PAGES_MAX && (
             <>
-              <Btn variant="ghost" busy={guard.busy} onPress={() => void shootMoreAndReanalyze(result.analysisId, pages)} style={st.outline} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>
+              <Btn variant="ghost" busy={guard.busy} onPress={() => void shootMoreAndReanalyze(step)} style={st.outline} testID="pscan-label-more">{t('packagedScan.labelAddPage')}</Btn>
               <Text style={st.muted}>{t('packagedScan.labelFreeRetry')}</Text>
-              <LabelDebug onAdd={(text) => void analyzeLabel(result.analysisId, [...pages, text])} />
+              <LabelDebug onAdd={(text) => void guard.run(() => runLabel(result.analysisId, [...pages, text], chargeUnknown, step))} />
             </>
           )}
         </ScrollView>

@@ -227,6 +227,47 @@ describe('흐름', () => {
     expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":4,"max":4}');
     expect(ids(t)).not.toContain('pscan-label-add');
   });
+  it('Codex #315: 전송 실패 뒤 다시 시도가 charged false = "추가 사용 없음" 단정 금지(첫 요청이 차감했을 수 있음 — 홈에서 확인)', async () => {
+    const t = flow();
+    await toHandoffFromNone(t);
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P1 }]);
+    await press(t, 'pscan-label-capture');
+    mockPost.mockRejectedValueOnce(new Error('timeout'));
+    await press(t, 'pscan-label-analyze');
+    expect(texts(t)).toContain('packagedScan.chargeChecking');
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3', charged: false }));
+    await press(t, 'pscan-retry');
+    expect(labelCalls()[1][1]).toMatchObject({ analysisId: 'A3' });
+    expect(texts(t)).toContain('packagedScan.chargeSeeHome');
+    expect(texts(t)).not.toContain('packagedScan.labelNoExtra');
+  });
+  it('Codex #315: 분석 대기 중 뒤로 = 모은 면 화면(면·분석 ID 유지) · 늦은 응답 무시 · 결과에서 면 추가 중 뒤로 = 그 결과', async () => {
+    const t = flow();
+    await toHandoffFromNone(t);
+    mockOcr.mockResolvedValueOnce([{ text: LABEL_P1 }]);
+    await press(t, 'pscan-label-capture');
+    let release!: (v: unknown) => void;
+    mockPost.mockReturnValueOnce(new Promise((r) => (release = r)));
+    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-label-analyze' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    expect(ids(t)).toContain('pscan-reading');
+    act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+    expect(ids(t)).toContain('pscan-label-pages');
+    expect(ids(t)).toContain('pscan-same-analysis'); // 분석 ID 유지
+    expect(texts(t)).toContain('packagedScan.labelPagesCount:{"count":1,"max":4}');
+    await act(async () => { release(RESULT({ analysisId: 'A3' })); await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('pscan-label-pages'); // 늦은 결과로 화면이 바뀌지 않는다
+    mockPost.mockResolvedValueOnce(RESULT({ analysisId: 'A3' }));
+    await press(t, 'pscan-label-analyze');
+    let ocrRelease!: (v: unknown) => void;
+    mockOcr.mockReturnValueOnce(new Promise((r) => (ocrRelease = r)));
+    act(() => { void t.root.findAll((n) => n.props?.testID === 'pscan-label-more' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('pscan-reading');
+    act(() => t.root.findAll((n) => typeof n.props?.onBack === 'function')[0].props.onBack());
+    expect(ids(t)).toContain('pscan-label-result');
+    await act(async () => { ocrRelease([{ text: LABEL_P2 }]); await new Promise((r) => setTimeout(r, 0)); });
+    expect(labelCalls()).toHaveLength(2); // 늦은 OCR로 재분석 0
+  });
   it('플래그 off = 성분표 촬영 버튼 비활성 + 곧 지원 안내 · 촬영 호출 0', async () => {
     setFlag(false);
     const t = flow(true);
