@@ -37,27 +37,40 @@ import { useAppLanguage } from '@/lib/i18n/useAppLanguage';
 
 type TFn = (k: string, o?: Record<string, unknown>) => string;
 
-/** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). 클램프 규칙은 원문·번역문 동일(같은 Text). */
+/** 본문 3줄 클램프 + See more/less — 셀 내 펼침(P-182 ②). 클램프 규칙은 원문·번역문 동일(같은 Text).
+ *  KB-824(운영 실기): 접힌 Text(numberOfLines 3)의 줄 수로 판정하면 **정확히 3줄**인 본문도 3이 나와 See more가 떴고(탭해도 변화 0),
+ *  펼친 뒤 다시 재면 판정이 흔들렸다. → 같은 폭·스타일의 **클램프 없는 숨김 측정 Text**로 전체 줄 수를 재고, 3줄을 **넘을 때만** 토글.
+ *  폭·글꼴 배율·본문(원문↔번역·언어)이 바뀌면 측정 Text가 다시 레이아웃되며 onTextLayout이 다시 온다. */
+export const BODY_CLAMP_LINES = 3;
 export function ExpandableBody({ body, t, style, toggleColor }: { body: string; t: TFn; style?: object; toggleColor?: string }) {
   const [expanded, setExpanded] = React.useState(false);
-  const [clamped, setClamped] = React.useState(false);
+  const [fullLines, setFullLines] = React.useState<number | null>(null);
   // #220 공부 메모 ①: 본문이 바뀌면(원문↔번역·수정) 접힌 상태로 돌아가 줄 수를 다시 잰다 — 렌더 중 전환 비교(KB-603)
   const [prevBody, setPrevBody] = React.useState(body);
   if (body !== prevBody) {
     setPrevBody(body);
     setExpanded(false);
+    setFullLines(null);
   }
-  const toggle = (clamped || expanded) && (
+  const clamped = fullLines != null && fullLines > BODY_CLAMP_LINES;
+  const toggle = clamped && (
     <ExpandToggle expanded={expanded} onPress={() => setExpanded((v) => !v)} color={toggleColor} testID="body-toggle" />
   );
   return (
     <View style={{ gap: 3 }}>
+      <Text style={[styles.body, style]} numberOfLines={expanded || !clamped ? undefined : BODY_CLAMP_LINES} testID="body-text">
+        {body}
+      </Text>
+      {/* KB-824: 전체 줄 수 측정용 — 보이지 않고 터치·스크린리더 0, 레이아웃에 자리 0(absolute) */}
       <Text
-        style={[styles.body, style]}
-        numberOfLines={expanded ? undefined : 3}
-        onTextLayout={(e) => {
-          if (!expanded) setClamped(e.nativeEvent.lines.length >= 3); // 접힌 상태에서 매번 판정(짧은 본문 복귀 시 See more 잔상 0)
-        }}
+        key={body}
+        style={[styles.body, style, styles.measure]}
+        onTextLayout={(e) => setFullLines(e.nativeEvent.lines.length)}
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
+        pointerEvents="none"
+        testID="body-measure"
       >
         {body}
       </Text>
@@ -492,6 +505,8 @@ const styles = StyleSheet.create({
   helpfulOn: { color: C.primaryText },
   helpfulMine: { color: C.ink3 },
   strip: { flexDirection: 'row', gap: 6 },
+  // KB-824: 숨김 측정 Text — 부모 폭 그대로(left·right 0), 보이지 않음
+  measure: { position: 'absolute', left: 0, right: 0, top: 0, opacity: 0 },
   viewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', justifyContent: 'center' },
   viewerClose: { position: 'absolute', top: 54, right: 18 },
   dots: { position: 'absolute', bottom: 42, alignSelf: 'center', flexDirection: 'row', gap: 6 },
