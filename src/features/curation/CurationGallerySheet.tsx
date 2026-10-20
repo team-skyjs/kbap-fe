@@ -7,7 +7,7 @@
  * 접근성: 열리면 닫기 버튼에 포커스, 페이저에 이전/다음 사진 대체 액션(스와이프 못 하는 스크린리더 사용자).
  */
 import * as React from 'react';
-import { AccessibilityInfo, findNodeHandle, FlatList, Modal, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, FlatList, Modal, ScrollView, StyleSheet, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Txt as Text } from '@/components/Txt';
@@ -112,7 +112,8 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
                 <IconClose size={24} color={C.ink} />
               </Pressable>
             </View>
-            <View style={[st.body, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            {/* Codex #309 P2: 짧은 화면(667)·큰 글씨에선 사진 68% 아래 공간이 본문보다 작다 — 본문을 스크롤로(Guide 잘림·도달 불가 0) */}
+            <ScrollView style={st.bodyScroll} contentContainerStyle={[st.body, { paddingBottom: Math.max(insets.bottom, 16) }]} testID="curation-gallery-body">
               <Text style={st.name} accessibilityRole="header">{item.name}</Text>
               <Text style={st.area}>{area}</Text>
               <Text style={st.intro} numberOfLines={2}>{item.introduction}</Text>
@@ -127,7 +128,7 @@ export function CurationGallerySheet({ item, listKey, area, onClose }: { item: C
               >
                 {t('curation.guide')}
               </Btn>
-            </View>
+            </ScrollView>
           </View>
         )}
       </View>
@@ -146,6 +147,7 @@ const st = StyleSheet.create({
   handle: { position: 'absolute', top: 12, alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: C.line2 },
   close: { position: 'absolute', top: 24, left: 16, width: 44, height: 44, borderRadius: 4, borderWidth: 1, borderColor: C.line2, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   counter: { position: 'absolute', bottom: 16, alignSelf: 'center', fontFamily: font.bodySemi, fontSize: 14, lineHeight: 20, color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 4 },
+  bodyScroll: { flex: 1 },
   body: { paddingHorizontal: 20, paddingTop: 16, gap: 8 },
   name: { fontFamily: font.bodyBold, fontSize: 24, lineHeight: 32, color: C.ink },
   area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },

@@ -238,6 +238,10 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_open', { collection_key: 'stations', entry_id: 'e1' });
     expect(ids(t)).not.toContain('curation-gallery-counter');
     expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo: KTO');
+    // Codex #309 P2: 사진 아래 본문 = 스크롤(짧은 화면·큰 글씨에서 Guide 도달)
+    const body = t.root.findAll((n) => n.props?.testID === 'curation-gallery-body')[0];
+    expect(body.type).toBe(jest.requireActual('react-native').ScrollView);
+    expect(body.findAll((n) => n.props?.testID === 'curation-gallery-guide').length).toBeGreaterThan(0);
     press(t, 'curation-gallery-close');
     expect(ids(t)).not.toContain('curation-gallery');
     expect(byId(t, 'curation-item-1')).toHaveLength(1);
