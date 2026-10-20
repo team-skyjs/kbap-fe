@@ -48,7 +48,8 @@ type Step =
   | { kind: 'handoff'; analysisId: string | null }
   /** 성분표 면 모으기 — 분석 전(면 1~4) */
   | { kind: 'labelPages'; analysisId: string | null; pages: string[] }
-  | { kind: 'labelResult'; result: LabelScanResult; pages: string[] }
+  /** used = 이 분석에서 차감된 적 있음(이번 charged 또는 앞선 성공) — 결과 도착 때 정해 둔다(렌더 중 ref 읽기 금지) */
+  | { kind: 'labelResult'; result: LabelScanResult; pages: string[]; used: boolean }
   | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean; labelPages?: string[] };
 
 /** 디버그 OCR 주입 노출 — 개발 번들·진단 채널(dev·teamtest)만, 스토어 채널 0 */
@@ -171,7 +172,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
         track(EVENTS.food_packaged_label_scan, { pages: pages.length, charged: r.charged, result: 'ok' });
         if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 재조회
         if (r.charged) chargedIds.current.add(r.analysisId);
-        setStep({ kind: 'labelResult', result: r, pages });
+        setStep({ kind: 'labelResult', result: r, pages, used: chargedIds.current.has(r.analysisId) });
       } catch (e) {
         if (my !== reqSeq.current) return;
         const failure = scanFailureOf(e);
@@ -323,8 +324,7 @@ export function PackagedScanFlow({ mode, onMode, onClose, startLabel = false }: 
   }
 
   if (step.kind === 'labelResult') {
-    const { result, pages } = step;
-    const used = result.charged || chargedIds.current.has(result.analysisId);
+    const { result, pages, used } = step;
     return (
       <View style={st.root} testID="pscan-label-result">
         <SubHeader title={t('packagedScan.resultTitle')} onBack={onClose} />
