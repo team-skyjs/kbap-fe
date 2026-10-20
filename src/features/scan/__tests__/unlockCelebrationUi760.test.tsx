@@ -233,3 +233,17 @@ it('QA P-493 Android N1: 모달 루트 = 첫 프레임부터 불투명 주황(�
   expect(style.opacity).toBeUndefined();
   expect(tree.root.findAll((n) => n.props.testID === 'unlock-bg')).toHaveLength(0);
 });
+it('QA P-493 iOS L1: 불꽃 묶음 배율 k는 표시 1회당 시트 첫 측정값으로 고정 — 애니 중 시트 레이아웃이 다시 와도 불변', async () => {
+  mockReduced = false;
+  const { StyleSheet } = jest.requireActual('react-native');
+  const tree = await mount(); act(() => unlock(false)); act(() => modal(tree).props.onShow());
+  const sheet = () => tree.root.findAll((n) => n.props.testID === 'unlock-sheet' && typeof n.props.onLayout === 'function')[0];
+  const anchorW = () => StyleSheet.flatten(tree.root.findAll((n) => n.props.testID === 'unlock-flame-anchor' && typeof n.type === 'string')[0].props.style).width;
+  const { height } = jest.requireActual('react-native').Dimensions.get('window');
+  act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: height - 44 - 56 - 310 * 0.8 } } })); // 첫 측정 → k = 0.8 (insets.top 44 · 패딩 24+32)
+  const first = anchorW();
+  expect(first).toBeCloseTo(216 * 0.8, 3);
+  act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: 100 } } })); // 슬라이드·스태거 중 재측정(그대로 쓰면 k = 1)
+  act(() => sheet().props.onLayout({ nativeEvent: { layout: { height: height } } })); // (그대로 쓰면 k = 0.7)
+  expect(anchorW()).toBe(first);
+});

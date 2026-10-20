@@ -111,7 +111,10 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
     return () => { for (const v of all) cancelAnimation(v); };
   }, [started, reduceMotion, titleMs, flameIn, wobble, glowIn, particles, ring1, ring2, infIn, infDraw, sheetIn, titleIn, bodyIn, btnIn, shimmer, flicker, breath]);
   // 작은 화면·큰 글씨에서 Done이 스크롤 없이 보이게 — 히어로가 남는 높이에 맞춰 불꽃 묶음을 줄인다(최소 0.7)
+  // QA P-493 iOS L1: 시트 슬라이드·스태거 중 onLayout이 다시 와 k가 출렁였다(불꽃·∞ 0.6배↔1배) — 표시 1회당 첫 측정값으로 고정.
   const [sheetH, setSheetH] = React.useState(0);
+  if (!visible && sheetH !== 0) setSheetH(0); // 다음 표시에서 다시 1회 측정
+  const measureSheet = (h: number) => { if (sheetH === 0 && h > 0) setSheetH(h); };
   const heroAvail = screenH - sheetH - insets.top - HERO_PAD_TOP - HERO_PAD_BOTTOM;
   const k = sheetH > 0 ? Math.min(1, Math.max(0.7, heroAvail / HERO_CONTENT_H)) : 1;
   React.useEffect(() => () => { if (shown.current !== null) consumeUnlock(shown.current); }, []);
@@ -179,7 +182,7 @@ export function UnlockCelebration({ eligible, onStartScanning, onClosed, onDismi
             </View>
             <InfinityMark draw={infDraw} scaleIn={infIn} breath={breath} scale={k} />
           </View>
-          <Animated.View style={[styles.sheet, sheetMotion]} onLayout={(e) => setSheetH(e.nativeEvent.layout.height)} testID="unlock-sheet">
+          <Animated.View style={[styles.sheet, sheetMotion]} onLayout={(e) => measureSheet(e.nativeEvent.layout.height)} testID="unlock-sheet">
             <StaggerTitle title={title} progress={titleIn} style={styles.title} />
             <Animated.View style={bodyStyle}><Text style={styles.body}>{t('scan.unlockedCelebrationBody')}</Text></Animated.View>
             <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
