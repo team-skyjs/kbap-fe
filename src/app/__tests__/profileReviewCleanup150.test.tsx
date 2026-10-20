@@ -140,10 +140,11 @@ jest.mock('@/lib/data/useFoods', () => ({
 }));
 jest.mock('@/lib/data/bookmarks', () => ({ useSavedIds: () => ({ ids: new Set<string>(), ready: true }), useBookmarks: () => ({ data: [] }) }));
 jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+const mockDeleteReview = jest.fn();
 jest.mock('@/lib/data/useReviewMutations', () => ({ findCachedReview: () => null,
   useCreateReview: () => ({ mutateAsync: jest.fn().mockResolvedValue(undefined) }),
   useUpdateReview: () => ({ mutate: jest.fn(), isPending: false }),
-  useDeleteReview: () => ({ mutate: jest.fn() }),
+  useDeleteReview: () => ({ mutate: (...a: unknown[]) => mockDeleteReview(...a) }),
   useToggleReviewLike: () => ({ mutate: jest.fn() }), // P-196: 공용 HelpfulButton 표면 목
 }));
 jest.mock('@/lib/review/reviewPhotos', () => ({
@@ -566,4 +567,23 @@ it('KB-708 B: 작성 중 세션 만료(게스트 전환) = 막지 않음(게이�
   } finally {
     mockSession.guest = false;
   }
+});
+
+// KB-777 B2-6: 본인 리뷰 ⋯ = 피드와 같은 공용 하단 시트(수정·삭제 — 삭제 위험색), OS Alert 0
+it('KB-777 B2-6: 내 리뷰 ⋯ → 공용 시트(mod-actions: edit·delete, delete destructive) · Alert 0 · 삭제 = 그 리뷰 삭제', () => {
+  const { Alert } = require('react-native');
+  const alertSpy = jest.spyOn(Alert, 'alert');
+  const { QueryClient, QueryClientProvider } = require('@tanstack/react-query');
+  const qc = new QueryClient();
+  const tree = render(<QueryClientProvider client={qc}><MyReviews /></QueryClientProvider>);
+  const more = tree.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('feed-more-') && typeof n.props?.onPress === 'function')[0];
+  const rid = (more.props.testID as string).replace('feed-more-', '');
+  act(() => more.props.onPress());
+  expect(alertSpy).not.toHaveBeenCalled();
+  const rows = ['edit', 'delete'].map((k) => tree.root.findAll((n) => n.props?.testID === `mod-actions-${k}` && typeof n.props?.onPress === 'function'));
+  expect(rows.map((r) => r.length > 0)).toEqual([true, true]);
+  expect(tree.root.findAll((n) => n.props?.testID === 'mod-actions-report')).toHaveLength(0);
+  act(() => rows[1][0].props.onPress());
+  expect(mockDeleteReview).toHaveBeenCalledWith(expect.objectContaining({ reviewId: rid }));
+  alertSpy.mockRestore();
 });
