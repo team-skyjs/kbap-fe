@@ -180,6 +180,13 @@ describe('모음 상세', () => {
     press(down, 'curation-detail-retry');
     expect(mockDetail.refetch).toHaveBeenCalledTimes(1);
   });
+  it('Codex #303 P2: 캐시가 있어도 재조회가 404 CURATION-001이면 "볼 수 없음"(내린 모음의 목록·외부 링크 노출 0)', () => {
+    mockDetail = q({ data: detail, isError: true, error: new ApiError('withdrawn', 404, 'CURATION-001') });
+    const t = render(<CurationDetailScreen />);
+    expect(byId(t, 'curation-unavailable')).toHaveLength(1);
+    expect(byId(t, 'curation-item-1')).toHaveLength(0);
+    expect(t.root.findAll((n) => typeof n.props?.testID === 'string' && n.props.testID.startsWith('curation-item-link-'))).toHaveLength(0);
+  });
   it('로딩 = 스켈레톤 · 갱신 실패(캐시 있음) = 목록 유지 + 한 줄 안내', () => {
     mockDetail = q({ isPending: true });
     expect(byId(render(<CurationDetailScreen />), 'curation-detail-skeleton')).toHaveLength(1);

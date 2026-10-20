@@ -48,7 +48,8 @@ export default function CurationDetailScreen() {
         <Shimmer style={[styles.skelLine, { width: '60%' }]} />
       </View>
     );
-  } else if (!detail) {
+  } else if (!detail || isCurationUnavailable(q.error)) {
+    // Codex #303 P2: 내린 모음(404 CURATION-001)은 캐시가 남아 있어도 "볼 수 없음"이 이긴다 — 캐시 유지는 일시 실패에만
     const unavailable = isCurationUnavailable(q.error);
     body = (
       <View style={[styles.pad, styles.stateBox]} testID={unavailable ? 'curation-unavailable' : 'curation-detail-error'}>
