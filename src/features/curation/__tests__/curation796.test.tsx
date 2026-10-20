@@ -11,7 +11,7 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, o?: 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('react-native-reanimated', () => ({ useReducedMotion: () => false }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
-jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string }) => <View testID={`img:${p.uri}`} /> }; });
+jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string; blurRadius?: number; style?: unknown }) => <View testID={p.blurRadius ? `blur:${p.uri}` : `img:${p.uri}`} style={p.style} {...({ blurRadius: p.blurRadius } as object)} /> }; });
 jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: (p: { color?: string }) => <View testID="chevron-right" style={{ color: p.color }} />, IconArrowLeft: () => null, IconClose: () => null }; });
 jest.mock('expo-linear-gradient', () => { const { View } = jest.requireActual('react-native'); return { LinearGradient: (p: object) => <View {...p} testID="card-shade" /> }; });
 jest.mock('@/components/SubHeader', () => { const { Text } = jest.requireActual('react-native'); return { SubHeader: (p: { title: string }) => <Text testID="subheader">{p.title}</Text> }; });
@@ -230,6 +230,23 @@ describe('KB-832 v5 카드 + 갤러리 시트', () => {
     expect(ids(t)).not.toContain('curation-gallery'); // 처음엔 닫힘
   });
 
+  it('v4 하단 블러 밴드(네이티브 의존 0): 카드 높이 측정 뒤 같은 사진을 blurRadius로 한 장 더 — 원본 높이로 하단 정렬 · 96 밴드만 클립 · 터치 통과 · expo-blur 없음', () => {
+    mockDetail = q({ data: detail });
+    const t = render(<CurationDetailScreen />);
+    expect(ids(t).some((i) => i.startsWith('curation-item-blur-'))).toBe(false); // 높이 모르는 첫 렌더 = 밴드 없음
+    const card = t.root.findAll((n) => n.props?.testID === 'curation-item-1' && typeof n.props?.onLayout === 'function')[0];
+    act(() => card.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 335, height: 330 } } }));
+    const RN = jest.requireActual('react-native');
+    const band = t.root.findAll((n) => n.props?.testID === 'curation-item-blur-1' && typeof n.type === 'string')[0];
+    expect(RN.StyleSheet.flatten(band.props.style)).toMatchObject({ position: 'absolute', bottom: 0, height: 96, overflow: 'hidden' });
+    expect(band.props.pointerEvents).toBe('none');
+    const img = band.findAll((n) => n.props?.testID === 'blur:https://cdn/i1.jpg' && typeof n.type === 'string')[0];
+    expect(img.props.blurRadius).toBe(72); // iOS(jest 기본) — 시안 수준으로 보정(QA W1: 16은 윤곽이 남음)
+    expect(RN.StyleSheet.flatten(img.props.style)).toMatchObject({ position: 'absolute', bottom: 0, height: 330 }); // 원본과 같은 높이 → 같은 자리 겹침
+    expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain("export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 14 : 72;");
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    expect(pkg.dependencies['expo-blur']).toBeUndefined();
+  });
   it('카드 탭 → 시트(1장 = 카운터 숨김 · 출처 = 그 사진 것) + home_curation_gallery_open · 닫기 → 시트 없음(목록 그대로)', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);

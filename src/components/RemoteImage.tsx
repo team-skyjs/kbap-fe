@@ -21,6 +21,7 @@ export function RemoteImage({
   transition = 150,
   onError,
   onLoad,
+  blurRadius,
 }: {
   uri: string;
   /** 크기·라운딩을 가진 컨테이너 스타일(기존 Image 스타일 그대로 이관) */
@@ -33,6 +34,8 @@ export function RemoteImage({
   onError?: () => void;
   /** P-380(KB-518): 실제 렌더 완료 통지 — 캡처 게이트가 프리페치가 아니라 이걸 본다. */
   onLoad?: () => void;
+  /** KB-832: expo-image 흐림(네이티브 의존 추가 없음 — 앱 지문 무변). 큐레이션 카드 하단 블러 밴드 */
+  blurRadius?: number;
 }) {
   const [settled, setSettled] = React.useState(false);
   return (
@@ -43,6 +46,7 @@ export function RemoteImage({
         recyclingKey={recyclingKey}
         contentFit={contentFit}
         transition={transition}
+        blurRadius={blurRadius}
         style={FILL}
         onLoad={() => {
           setSettled(true);

@@ -9,7 +9,7 @@
  * 외부 링크 = lib/openExternal openWebPage(실패 시 토스트 — `void Linking.*` 직접 호출 금지 규칙).
  */
 import * as React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -107,9 +107,11 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
   const { t } = useTranslation();
   const p = item.position;
   const cover = item.images[0]?.url ?? null;
+  const [cardH, setCardH] = React.useState<number | null>(null); // 블러 사본을 원본과 같은 높이로 정렬(큰 글씨면 카드가 자란다)
   return (
     <Pressable
       style={styles.card}
+      onLayout={(e) => setCardH(e.nativeEvent.layout.height)}
       onPress={onOpen}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${item.area}`}
@@ -122,7 +124,13 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.noPhoto]} testID={`curation-item-nophoto-${p}`} />
       )}
-      {/* v4 하단 흐림 — 흰 글자가 밝은 사진에 묻히지 않게(블러 모듈 없이 같은 효과의 어두운 그라데이션) */}
+      {/* v4 하단 블러(예진 "시안 그대로", 네이티브 모듈 없이): 같은 사진을 expo-image blurRadius로 한 장 더 —
+          카드 높이와 같은 크기로 하단 정렬해 원본과 겹치고, 하단 96 밴드만 보이게 클립. 위 경계·글자 대비는 기존 그라데이션 */}
+      {cover && cardH != null && (
+        <View style={styles.blurBand} pointerEvents="none" testID={`curation-item-blur-${p}`}>
+          <RemoteImage uri={cover} style={[styles.blurImg, { height: cardH }]} recyclingKey={`${item.id}-blur`} blurRadius={CARD_BLUR_RADIUS} />
+        </View>
+      )}
       <LinearGradient colors={CARD_SHADE} style={styles.shade} pointerEvents="none" />
       <View style={{ height: CARD_SPACER }} />
       <View style={styles.caption}>
@@ -140,6 +148,14 @@ function ItemCard({ item, onOpen }: { item: CurationItem; onOpen: () => void }) 
 }
 
 const CARD_SHADE = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)'] as const;
+// 시안 v4 하단 블러 — 밴드 = 카드 아래 96(2x PNG 눈금 근사), 흐림 = 윤곽은 지우고 색 덩어리만(시안 02b-mock)
+export const CARD_BLUR_BAND = 96;
+// expo-image blurRadius는 플랫폼마다 다르다(node_modules/expo-image 실측):
+// - iOS: radius/2를 SDImageBlurTransformer에 — **원본 이미지 픽셀** 단위라 고해상도 사진엔 약하다(16 = 원본 8px)
+// - Android: Glide BlurTransformation(min(radius, 25), sampling 4) — 1/4로 줄인 뒤 흐리므로 같은 값이 iOS보다 훨씬 세다
+// iOS 72 = QA 비교(kbap-qa 2026-10-21-pr311 03-before-after-mock) 휘도 경사 에너지로 보정: 16 ≈ σ2.1px, 시안 ≈ σ10px(×4.6) → 72.
+// Android 14 = 같은 원본 픽셀 반경(≈36)을 4배 축소 후 반경으로 환산한 추정 — Android 캡처로 확인 대상.
+export const CARD_BLUR_RADIUS = Platform.OS === 'android' ? 14 : 72;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.card },
@@ -155,6 +171,8 @@ const styles = StyleSheet.create({
   card: { borderRadius: 12, overflow: 'hidden', backgroundColor: C.surface2, justifyContent: 'flex-end' },
   noPhoto: { backgroundColor: C.hair },
   shade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
+  blurBand: { position: 'absolute', left: 0, right: 0, bottom: 0, height: CARD_BLUR_BAND, overflow: 'hidden' },
+  blurImg: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   caption: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 16, paddingRight: 16, paddingBottom: 16, gap: 4 },
   name: { fontFamily: font.bodySemi, fontSize: 18, lineHeight: 26, color: '#FFFFFF' },
   area: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: '#FFFFFF' },
