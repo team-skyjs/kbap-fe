@@ -159,6 +159,8 @@
     "commentBy": "{{name}}님의 댓글",
     "edit": "수정",
     "delete": "삭제",
+    "deleteConfirmTitle": "삭제할까요?",
+    "deleteConfirmBody": "삭제하면 되돌릴 수 없어요.",
     "report": "신고",
     "blockUser": "{{name}}님 차단",
     "reportTitle": "신고 사유를 선택해 주세요",

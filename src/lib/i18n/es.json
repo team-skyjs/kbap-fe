@@ -159,6 +159,8 @@
     "commentBy": "Comentario de {{name}}",
     "edit": "Editar",
     "delete": "Eliminar",
+    "deleteConfirmTitle": "¿Eliminar?",
+    "deleteConfirmBody": "No se puede deshacer.",
     "report": "Denunciar",
     "blockUser": "Bloquear a {{name}}",
     "reportTitle": "¿Por qué denuncias esto?",

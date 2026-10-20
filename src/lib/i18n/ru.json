@@ -163,6 +163,8 @@
     "commentBy": "Комментарий от {{name}}",
     "edit": "Изменить",
     "delete": "Удалить",
+    "deleteConfirmTitle": "Удалить?",
+    "deleteConfirmBody": "Это действие нельзя отменить.",
     "report": "Пожаловаться",
     "blockUser": "Заблокировать {{name}}",
     "reportTitle": "Почему вы жалуетесь?",

@@ -159,6 +159,8 @@
     "commentBy": "Komentar {{name}}",
     "edit": "Edit",
     "delete": "Hapus",
+    "deleteConfirmTitle": "Hapus ini?",
+    "deleteConfirmBody": "Tindakan ini tidak bisa dibatalkan.",
     "report": "Laporkan",
     "blockUser": "Blokir {{name}}",
     "reportTitle": "Mengapa kamu melaporkan ini?",

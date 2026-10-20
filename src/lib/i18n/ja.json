@@ -159,6 +159,8 @@
     "commentBy": "{{name}}さんのコメント",
     "edit": "編集",
     "delete": "削除",
+    "deleteConfirmTitle": "削除しますか？",
+    "deleteConfirmBody": "削除すると元に戻せません。",
     "report": "報告",
     "blockUser": "{{name}}さんをブロック",
     "reportTitle": "報告の理由を選んでください",

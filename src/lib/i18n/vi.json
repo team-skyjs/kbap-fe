@@ -159,6 +159,8 @@
     "commentBy": "Bình luận của {{name}}",
     "edit": "Sửa",
     "delete": "Xóa",
+    "deleteConfirmTitle": "Xóa mục này?",
+    "deleteConfirmBody": "Không thể hoàn tác.",
     "report": "Báo cáo",
     "blockUser": "Chặn {{name}}",
     "reportTitle": "Vì sao bạn báo cáo nội dung này?",

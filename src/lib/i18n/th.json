@@ -159,6 +159,8 @@
     "commentBy": "ความคิดเห็นของ {{name}}",
     "edit": "แก้ไข",
     "delete": "ลบ",
+    "deleteConfirmTitle": "ลบใช่ไหม",
+    "deleteConfirmBody": "ลบแล้วจะกู้คืนไม่ได้",
     "report": "รายงาน",
     "blockUser": "บล็อก {{name}}",
     "reportTitle": "เหตุผลที่รายงาน?",

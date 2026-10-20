@@ -570,7 +570,7 @@ it('KB-708 B: 작성 중 세션 만료(게스트 전환) = 막지 않음(게이�
 });
 
 // KB-777 B2-6: 본인 리뷰 ⋯ = 피드와 같은 공용 하단 시트(수정·삭제 — 삭제 위험색), OS Alert 0
-it('KB-777 B2-6: 내 리뷰 ⋯ → 공용 시트(mod-actions: edit·delete, delete destructive) · Alert 0 · 삭제 = 그 리뷰 삭제', () => {
+it('KB-777 B2-6: 내 리뷰 ⋯ → 공용 시트(edit·delete) → Delete = 시트 안 2차 확인(취소 = 0, 확정 = 1발·연타 무해) · Alert 0', () => {
   const { Alert } = jest.requireActual('react-native');
   const alertSpy = jest.spyOn(Alert, 'alert');
   const { QueryClient, QueryClientProvider } = jest.requireActual('@tanstack/react-query');
@@ -583,7 +583,19 @@ it('KB-777 B2-6: 내 리뷰 ⋯ → 공용 시트(mod-actions: edit·delete, del
   const rows = ['edit', 'delete'].map((k) => tree.root.findAll((n) => n.props?.testID === `mod-actions-${k}` && typeof n.props?.onPress === 'function'));
   expect(rows.map((r) => r.length > 0)).toEqual([true, true]);
   expect(tree.root.findAll((n) => n.props?.testID === 'mod-actions-report')).toHaveLength(0);
+  // 커맨드 지시: 삭제는 되돌릴 수 없다 — 시트의 Delete는 2차 확인 단계만 연다(바로 삭제 0)
   act(() => rows[1][0].props.onPress());
+  expect(mockDeleteReview).not.toHaveBeenCalled();
+  const btn = (id: string) => tree.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0];
+  expect(flatJson(tree)).toContain('editReview.deleteConfirmTitle');
+  act(() => btn('mod-delete-cancel').props.onPress()); // 취소 = 삭제 0
+  expect(mockDeleteReview).not.toHaveBeenCalled();
+  act(() => more.props.onPress());
+  act(() => tree.root.findAll((n) => n.props?.testID === 'mod-actions-delete' && typeof n.props?.onPress === 'function')[0].props.onPress());
+  const confirm = btn('mod-delete-confirm');
+  act(() => { confirm.props.onPress(); confirm.props.onPress(); }); // 같은 틱 연타 = 1발(공용 제출 가드)
+  expect(mockDeleteReview).toHaveBeenCalledTimes(1);
   expect(mockDeleteReview).toHaveBeenCalledWith(expect.objectContaining({ reviewId: rid }));
+  expect(alertSpy).not.toHaveBeenCalled();
   alertSpy.mockRestore();
 });

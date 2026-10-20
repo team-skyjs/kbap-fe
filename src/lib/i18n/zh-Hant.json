@@ -159,6 +159,8 @@
     "commentBy": "{{name}}的留言",
     "edit": "編輯",
     "delete": "刪除",
+    "deleteConfirmTitle": "要刪除嗎？",
+    "deleteConfirmBody": "刪除後無法復原。",
     "report": "檢舉",
     "blockUser": "封鎖{{name}}",
     "reportTitle": "請選擇檢舉原因",

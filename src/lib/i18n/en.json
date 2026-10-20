@@ -155,6 +155,8 @@
     "commentBy": "Comment by {{name}}",
     "edit": "Edit",
     "delete": "Delete",
+    "deleteConfirmTitle": "Delete this?",
+    "deleteConfirmBody": "This can't be undone.",
     "report": "Report",
     "blockUser": "Block {{name}}",
     "reportTitle": "Why are you reporting this?",

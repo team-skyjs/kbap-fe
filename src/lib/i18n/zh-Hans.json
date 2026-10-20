@@ -159,6 +159,8 @@
     "commentBy": "{{name}}的评论",
     "edit": "编辑",
     "delete": "删除",
+    "deleteConfirmTitle": "要删除吗？",
+    "deleteConfirmBody": "删除后无法恢复。",
     "report": "举报",
     "blockUser": "屏蔽{{name}}",
     "reportTitle": "请选择举报原因",
