@@ -1,3 +1,5 @@
+import { getUnlockSnapshot, resetUnlockSession } from '../unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /* eslint-disable import/first, @typescript-eslint/no-require-imports --
    jest 구조상 불가피: 대상의 import는 jest.mock 선언 **뒤**여야 목이 걸린다(팩토리 호이스팅). 레포 관례 동일. */
 /**
@@ -122,19 +124,21 @@ async function mount(): Promise<ReactTestRenderer> {
 
 beforeEach(() => {
   _setBadgePosCacheForTest(null); // KB-706: 뱃지 위치 세션 캐시 — 저장값 없음(기본 자리)으로 즉시
+  resetUnlockSession(currentGen());
   _resetQuotaCelebrationMemoryForTest(); // KB-699
   _resetSessionForTest();
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
 });
 
-it('양성 대조 — 같은 회원 A가 해금되면 폭죽(축하 중 = 뱃지 유지)', async () => {
+it('같은 회원 해제 = 전역 축하가 소유하고 작은 뱃지는 조용히 사라짐', async () => {
   setSessionState(true);
   mockWire = A_ONE_LEFT;
   const t = await mount();
   expect(shown(t)).toBe(true);
   mockWire = A_UNLOCKED;
   await refetchMe();
-  expect(shown(t)).toBe(true); // 축하 중
+  expect(shown(t)).toBe(false);
+  expect(getUnlockSnapshot().event).toMatchObject({ memberId: '1', context: 'done' });
 });
 
 it('A(1회 남음) → 로그아웃 → B(해금) 로그인 = 축하 없음 · 뱃지 없음', async () => {

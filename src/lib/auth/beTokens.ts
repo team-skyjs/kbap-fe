@@ -7,6 +7,7 @@
  * 웹은 secure store가 없어 메모리만으로 동작(세션 한정).
  */
 import * as SecureStore from 'expo-secure-store';
+import { resetUnlockSession } from '@/features/scan/unlockCelebrationStore';
 import { BE_BASE } from '@/lib/data/config';
 
 /** P-322: 발급 환경 동승 단일 레코드 — dev 토큰이 prod 빌드에 실리는 재사용 차단
@@ -26,6 +27,7 @@ let cached: { access: string; refresh: string } | null | undefined; // undefined
 let sessionGen = 0;
 export function bumpSessionGen(): void {
   sessionGen++;
+  resetUnlockSession(sessionGen);
 }
 export function currentGen(): number {
   return sessionGen;
@@ -123,7 +125,7 @@ export function saveTokens(
     newSession?: boolean;
   },
 ): Promise<boolean> {
-  if (opts?.newSession) sessionGen++; // 경계 — 아래 캐시 공개와 동일 동기 틱
+  if (opts?.newSession) bumpSessionGen(); // 경계 — 아래 캐시 공개와 동일 동기 틱(세대 리셋 소비자도 같이 — Codex #291 P1)
   const g = sessionGen; // 호출 시점 세대(동기)
   const mine = { access, refresh };
   cached = mine; // 동기 — 즉시 관찰 가능(기존 시맨틱)

@@ -1,3 +1,4 @@
+import { adaptAdReward, type AdRewardResponse } from '@/lib/api/adRewardAdapter';
 /**
  * useAdReward (KB-739 ⑤ · 서버 KB-740) — 보상형 광고 완료 신고 `POST /api/members/me/ad-rewards` {rewardKey, adUnitId}.
  * 카운트는 **서버 응답만**(클라 로컬 카운트·낙관 갱신 금지 — 서버 진실). 멱등(같은 rewardKey 재요청 = 200 현재 상태).
@@ -6,13 +7,11 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/lib/api/client';
+import { currentGen } from '@/lib/auth/beTokens';
+import { observeAdUnlock } from '@/features/scan/unlockCelebrationStore';
 import { noteAdUnlock } from '@/lib/airbridge';
 
-export interface AdRewardResponse {
-  rewardCount: number;
-  remainingForUnlock: number;
-  scanUnlocked: boolean;
-}
+export type { AdRewardResponse } from '@/lib/api/adRewardAdapter';
 
 export type AdRewardFailure = 'limit' | 'rejected' | 'network';
 
@@ -27,10 +26,15 @@ export function classifyAdRewardError(e: unknown): AdRewardFailure {
 export function useClaimAdReward() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { rewardKey: string; adUnitId: string }) =>
-      api.post<AdRewardResponse>('/api/members/me/ad-rewards', { rewardKey: input.rewardKey, adUnitId: input.adUnitId }),
+    mutationFn: async (input: { rewardKey: string; adUnitId: string }) => {
+      const generation = currentGen();
+      const result = await api.post<AdRewardResponse>('/api/members/me/ad-rewards', { rewardKey: input.rewardKey, adUnitId: input.adUnitId });
+      if (generation !== currentGen()) throw new Error('Stale reward response');
+      return adaptAdReward(result);
+    },
     onSuccess: (r) => {
       // KB-783 ⑮(#278 Codex P1): 해제 표식은 프로필 재조회 **전에** — 재조회가 false→true 전이를 먼저 관측하면 'review'로 잘못 센다
+      observeAdUnlock(r.scanUnlocked, currentGen());
       if (r.scanUnlocked) noteAdUnlock();
       return qc.invalidateQueries({ queryKey: ['me'] }); // 재조회 완료까지 대기(실패해도 resolve — throwOnError 기본 false)
     },

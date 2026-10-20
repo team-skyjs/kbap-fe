@@ -239,42 +239,34 @@ describe('모션 트리거', () => {
     expect(mockSpring).toHaveBeenCalledTimes(1);
   });
 
-  it('숫자 → 해금(리뷰 작성 후) = 마지막 숫자로 폭죽 1회 → JS 타이머 뒤 사라짐', async () => {
+  it('KB760: 서버 해제 뒤 작은 뱃지는 즉시 숨고 재조회에도 폭죽을 재생하지 않는다', async () => {
     jest.useFakeTimers();
     mockQuota = Q(1);
     const t = render();
     await flush();
+    expect(shown(t)).toBe(true);
     mockQuota = Q('unlimited', true);
     rerender(t);
-    expect(shown(t)).toBe(true); // 축하 중
-    expect(valueText(t)).toBe(1);
-    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 1));
-    expect(shown(t)).toBe(true);
-    act(() => jest.advanceTimersByTime(1));
     expect(shown(t)).toBe(false);
+    expect(byId(t, 'countdown-badge')).toHaveLength(0);
+    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 3));
     rerender(t);
-    expect(shown(t)).toBe(false); // 재트리거 0
+    expect(shown(t)).toBe(false);
   });
 
-  it('공부 #221 지적 1: 홈이 가려진 채 해금 → 폭죽 시작 안 함(숫자 든 채 대기) → 홈이 보이면 1회', async () => {
-    jest.useFakeTimers();
+  it('KB760: 홈이 가려진 채 해제되어도 복귀 시 작은 폭죽을 중복 표시하지 않는다', async () => {
     mockQuota = Q(1);
     const t = render();
     await flush();
-    mockFocused = false; // 리뷰 작성 화면으로
+    mockFocused = false;
     rerender(t);
-    mockQuota = Q('unlimited', true); // 제출 성공 → me 재조회(홈은 뒤에서)
+    mockQuota = Q('unlimited', true);
     rerender(t);
-    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS * 3));
-    expect(shown(t)).toBe(true);
-    expect(valueText(t)).toBe(1);
-    expect(byId(t, 'countdown-badge')[0].findAll((n) => n.props?.style && JSON.stringify(n.props.style).includes('"borderRadius":3')).length).toBe(0); // 파티클 미렌더
-    mockFocused = true; // 홈 복귀
-    rerender(t);
-    act(() => jest.advanceTimersByTime(CELEBRATE_END_MS - 1));
-    expect(shown(t)).toBe(true);
-    act(() => jest.advanceTimersByTime(1));
     expect(shown(t)).toBe(false);
+    mockFocused = true;
+    rerender(t);
+    expect(shown(t)).toBe(false);
+    expect(byId(t, 'countdown-badge')).toHaveLength(0);
   });
 
   it('공부 재확인 ①: 가려진 채 해금 대기 중 다시 숫자로 돌아오면 → 축하 취소, 복귀 시 폭죽 없이 숫자 뱃지(눌림 가능)', async () => {

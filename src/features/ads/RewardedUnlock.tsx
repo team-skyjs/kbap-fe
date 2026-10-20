@@ -1,3 +1,5 @@
+import { beginRewardedPresentation, isRewardedShowing, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 /**
  * RewardedUnlock (KB-739 ④-⑤⑥ · 서버 KB-740) — 스캔 제한 해제 2택의 "광고 보고 풀기(n/3)" 쪽. 제한 도달 시트(HomeQuotaBadge)와
  * 스캔 제한 화면(scan.tsx) 둘 다 `<UnlockActions onWriteReview … />`로 같은 버튼 묶음을 쓴다: [리뷰 쓰기] + [광고 보고 풀기 n/3].
@@ -46,15 +48,11 @@ export function UnlockActions({ onWriteReview, onUnlocked, onClose, reviewTestID
   reviewTestID?: string;
 }) {
   const { t } = useTranslation();
-  const isGuest = useIsGuest();
-  const { data: me } = useMe();
-  const sdk = useAdsSdk();
-  const rewards = me?.adRewards ?? null;
-  const canWatch = FLAGS.ads.rewarded && !!sdk && !isGuest && rewards != null && rewards.remaining > 0;
+  const source = useAdUnlockSource();
   return (
     <View style={styles.actions}>
       <Btn onPress={onWriteReview} testID={reviewTestID}>{t('scan.quotaCta')}</Btn>
-      {canWatch && sdk && rewards && <RewardedButton sdk={sdk} initial={rewards} onUnlocked={onUnlocked} onClose={onClose} />}
+      {source && <RewardedButton sdk={source.sdk} initial={source.rewards} onUnlocked={onUnlocked} onClose={onClose} />}
     </View>
   );
 }
@@ -69,6 +67,9 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
   const ad = sdk.useRewardedAd({ adUnitId: unitId, autoLoad: true });
   const { status, earnedReward, show, load, impression, clicked } = ad;
   const claim = useClaimAdReward();
+  React.useLayoutEffect(() => {
+    if (status === 'showing') return beginRewardedPresentation();
+  }, [status]);
   // 서버 응답만 — 초기값은 프로필(서버), 그 뒤는 claim 응답
   const [remaining, setRemaining] = React.useState(initial.remaining);
   const [failure, setFailure] = React.useState<AdRewardFailure | null>(null);
@@ -85,9 +86,11 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
 
   const { mutateAsync } = claim;
   const submitClaim = React.useCallback((input: { rewardKey: string; adUnitId: string }) => {
+    const generation = currentGen();
     pendingRef.current = input;
     return mutateAsync(input)
       .then((r) => {
+        if (generation !== currentGen()) return;
         pendingRef.current = null;
         setFailure(null);
         setRemaining(r.remainingForUnlock);
@@ -96,6 +99,7 @@ function useRewardedUnlock(sdk: AdsSdk, initial: RewardsInit, onUnlocked: () => 
         if (r.scanUnlocked) onUnlocked(); // KB-783 ⑮ 'ad' 표식은 useClaimAdReward.onSuccess(재조회 전)에서
       })
       .catch((e: unknown) => {
+        if (generation !== currentGen()) return;
         const kind = classifyAdRewardError(e);
         if (__DEV__) console.log('[ads] reward claim fail', kind, String((e as { code?: string })?.code ?? e));
         setFailure(kind);
@@ -144,7 +148,16 @@ export function useAdUnlockSource(): { sdk: AdsSdk; rewards: RewardsInit } | nul
   const { data: me } = useMe();
   const sdk = useAdsSdk();
   const rewards = me?.adRewards ?? null;
-  return FLAGS.ads.rewarded && sdk && !isGuest && rewards != null && rewards.remaining > 0 ? { sdk, rewards } : null;
+  const showing = React.useSyncExternalStore(subscribeUnlock, isRewardedShowing, isRewardedShowing);
+  const [retained, setRetained] = React.useState<{ memberId: string | undefined; generation: number; sdk: AdsSdk; rewards: RewardsInit } | null>(null);
+  const eligible = FLAGS.ads.rewarded && sdk && !isGuest && rewards != null && rewards.remaining > 0;
+  if (eligible && (retained?.sdk !== sdk || retained?.rewards.count !== rewards.count || retained?.rewards.forUnlock !== rewards.forUnlock || retained?.rewards.remaining !== rewards.remaining || retained?.memberId !== me?.id || retained?.generation !== currentGen())) {
+    setRetained({ memberId: me?.id, generation: currentGen(), sdk, rewards });
+  }
+  if (eligible) return { sdk, rewards };
+  // Keep the native close listener mounted when the server entitlement arrives before CLOSED.
+  if (showing && !isGuest && retained && retained.generation === currentGen() && (me?.id == null || retained.memberId === me.id) && retained.sdk === sdk) return retained;
+  return null;
 }
 
 /** KB-765 광고 타일 — 상태 기계는 버튼과 같고 그리는 것만 다르다. children = 타일 표면(호출측 스타일), note = 상한·실패 안내 슬롯 */

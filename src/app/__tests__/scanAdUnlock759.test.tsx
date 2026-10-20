@@ -23,6 +23,7 @@ jest.mock('react-native-reanimated', () => {
   };
   return {
     __esModule: true,
+    cancelAnimation: jest.fn(),
     withSpring: (v: unknown) => v,
     withSequence: (...vals: unknown[]) => vals[vals.length - 1],
     withDelay: (_d: number, v: unknown) => v,
@@ -36,7 +37,7 @@ jest.mock('react-native-reanimated', () => {
     ZoomIn: chain(),
     ZoomOut: chain(),
     default: { View, ScrollView, FlatList, createAnimatedComponent: (c: unknown) => c },
-    useSharedValue: (v: unknown) => ({ value: v }),
+    useSharedValue: (v: unknown) => { const shared = { value: v, set: (next: unknown) => { shared.value = next; } }; return shared; },
     useAnimatedStyle: () => ({}),
     useAnimatedScrollHandler: () => () => {},
     useReducedMotion: () => false,
@@ -79,12 +80,13 @@ jest.mock('expo-image', () => {
 // KB-769: 스캔 결과 이탈 가드(useLeaveConfirm) — 포커스·내비 표면 + usePreventRemove 기록(scanDesign이 콜백을 흉내)
 jest.mock('expo-router/build/react-navigation/core', () => ({ usePreventRemove: (on: boolean, cb: unknown) => { (globalThis as { __prevent?: unknown }).__prevent = { on, cb }; } }));
 jest.mock('expo-router', () => ({
-  useIsFocused: () => true,
+  useIsFocused: () => mockFocused.on,
   useNavigation: () => ({ dispatch: (a: unknown) => (globalThis as { __navDispatch?: (a: unknown) => void }).__navDispatch?.(a) }),
   // 실제처럼 콜백 정체성 기준 1회(렌더마다 재실행하면 포커스 의미가 사라진다)
   useFocusEffect: (cb: () => void) => jest.requireActual('react').useEffect(cb, [cb]),
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   usePathname: () => '/scan',
+  useSegments: () => ['scan'],
 }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'en' } }),
@@ -103,8 +105,10 @@ jest.mock('@/lib/scan/ocr', () => ({
   ]),
 }));
 // P-046: 스캔 오프라인 프로브 — 기본 온라인
+const mockProbe: { offline: boolean } = { offline: false };
+const mockFocused = { on: true };
 jest.mock('@/lib/data/useFoods', () => ({
-  useInfiniteFoods: () => ({ isError: false, error: null, refetch: jest.fn() }),
+  useInfiniteFoods: () => (mockProbe.offline ? { isError: true, error: new Error('NETWORK: request failed'), refetch: jest.fn() } : { isError: false, error: null, refetch: jest.fn() }),
   // P-136 리치 리스트 행이 상세 프리페치 — 표면 목
   useFoodDetail: () => ({ data: undefined, isLoading: false, error: null, refetch: jest.fn() }),
 }));
@@ -145,6 +149,9 @@ import { _resetAdsSessionForTest, initAds } from '@/lib/ads/adsSession';
 import { _resetAdsSdkForTest } from '@/lib/ads/sdk';
 import { ApiError } from '@/lib/api/client';
 import Scan from '../scan';
+import { AppState, Modal, Platform } from 'react-native';
+import { observeUnlock, resetUnlockSession } from '@/features/scan/unlockCelebrationStore';
+import { currentGen } from '@/lib/auth/beTokens';
 const { mockAds } = adsModule as unknown as typeof import('../../../__mocks__/react-native-google-mobile-ads');
 
 const QUOTA = (remaining: number | 'unlimited', unlocked = false) => ({ count: 3, limit: 3, unlocked, remaining });
@@ -156,6 +163,7 @@ beforeAll(preloadReactNative, PRELOAD_TIMEOUT_MS);
 let qc: QueryClient;
 beforeEach(async () => {
   jest.clearAllMocks();
+  resetUnlockSession(currentGen());
   mockIsGuest.mockReturnValue(false);
   mockAds.reset(); mockUuid = 0;
   _resetAdsSessionForTest(); _resetAdsSdkForTest();
@@ -164,7 +172,9 @@ beforeEach(async () => {
 });
 
 const me = (remaining: number, unlocked = false) => ({ data: { restrictions: [], scanQuota: unlocked ? QUOTA('unlimited', true) : QUOTA(0), adRewards: { count: 3 - remaining, forUnlock: 3, remaining } } });
-const render = () => { let tree!: ReactTestRenderer; act(() => { tree = renderer.create(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); }); return tree; };
+const mounted: ReactTestRenderer[] = [];
+afterEach(() => { act(() => mounted.splice(0).forEach((tree) => tree.unmount())); qc.clear(); });
+const render = () => { let tree!: ReactTestRenderer; act(() => { tree = renderer.create(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>); }); mounted.push(tree); return tree; };
 
 async function watchOnce(tree: ReactTestRenderer, response: { rewardCount: number; remainingForUnlock: number; scanUnlocked: boolean }) {
   mockPost.mockResolvedValueOnce(response);
@@ -296,4 +306,162 @@ it('재현 변형: 스캔 시도 403으로 온 제한 화면(fail 경로, quotaL
   expect(adBtn(tree)).toBeUndefined();
   await act(async () => { d.resolve('t-unlocked'); await flush(); });
   expect(quotaShown(tree)).toBe(false);
+});
+
+// Real Scan + RewardedUnlock + mutation + global owner + Modal: CTA gates the actual ticket issuer.
+it('KB760: server transition waits for celebration CTA and native dismissal before issuing a ticket', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush();
+  mockIssue.mockReset(); mockIssue.mockResolvedValue('celebration-ticket');
+  await watchOnce(tree, { rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
+  expect(mockIssue).not.toHaveBeenCalled();
+  const action = tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
+  expect(action).toBeDefined();
+  await act(async () => { action.props.onPress(); action.props.onPress(); });
+  if (Platform.OS === 'ios') {
+    expect(mockIssue).not.toHaveBeenCalled();
+    const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+    await act(async () => celebration.props.onDismiss());
+  } else {
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 5)));
+  }
+  await flush(); expect(mockIssue).toHaveBeenCalledTimes(1); expect(quotaShown(tree)).toBe(false);
+  act(() => tree.unmount());
+});
+
+it('KB760: early profile unlock keeps the SDK close listener alive and blocks the modal until CLOSED', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockRejectedValue(new ApiError('quota', 403, 'SCAN-004'));
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush(); mockIssue.mockClear();
+  mockPost.mockResolvedValueOnce({ rewardCount: 3, remainingForUnlock: 0, scanUnlocked: true });
+  act(() => mockAds.update('rewarded', { status: 'loaded', earnedReward: false }));
+  await act(async () => adBtn(tree).props.onPress());
+  act(() => mockAds.update('rewarded', { status: 'showing', earnedReward: true })); await flush();
+  mockUseMe.mockReturnValue(me(0, true));
+  act(() => tree.update(<QueryClientProvider client={qc}><Scan /></QueryClientProvider>)); await flush();
+  const celebration = () => tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+  expect(celebration().props.visible).toBe(false); expect(mockIssue).not.toHaveBeenCalled();
+  act(() => mockAds.update('rewarded', { status: 'closed', earnedReward: false })); await flush();
+  expect(celebration().props.visible).toBe(true); expect(mockIssue).not.toHaveBeenCalled();
+});
+
+it('Codex #291 2R: profile unlock arriving after preflight reopened the camera still celebrates (Done CTA)', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  mockIssue.mockResolvedValue('camera-ticket');
+  mockUseMe.mockReturnValue(me(1));
+  const tree = render(); await flush();
+  expect(quotaShown(tree)).toBe(false); // camera phase
+  act(() => observeUnlock('7', true, currentGen())); await flush();
+  const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen');
+  expect(celebration?.props.visible).toBe(true);
+  expect(JSON.stringify(tree.toJSON())).toContain('review.done');
+  act(() => tree.unmount());
+});
+
+it('Codex #291 R8: offline camera branch also presents a late scan unlock', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  mockProbe.offline = true;
+  try {
+    observeUnlock('7', false, currentGen());
+    mockIssue.mockResolvedValue('camera-ticket');
+    mockUseMe.mockReturnValue(me(1));
+    const tree = render(); await flush();
+    expect(JSON.stringify(tree.toJSON())).toContain('states.offlineTitle');
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen');
+    expect(celebration?.props.visible).toBe(true);
+    act(() => tree.unmount());
+  } finally {
+    mockProbe.offline = false;
+  }
+});
+
+describe('Codex #291 R11: one scan presenter for every phase', () => {
+  const fullScreen = (tree: ReactTestRenderer) => tree.root.findAllByType(Modal).filter((n) => n.props.presentationStyle === 'fullScreen');
+  const gallery = (tree: ReactTestRenderer) => tree.root.findAll((n) => n.props?.testID === 'scan-gallery' && typeof n.props?.onPress === 'function')[0];
+  beforeEach(() => { Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' }); mockFocused.on = true; });
+
+  it('result phase: a late unlock presents exactly one modal (Done CTA)', async () => {
+    observeUnlock('7', false, currentGen());
+    mockIssue.mockResolvedValue('camera-ticket');
+    mockUseMe.mockReturnValue(me(1));
+    const tree = render(); await flush();
+    await act(async () => { await gallery(tree).props.onPress(); }); await flush();
+    expect(tree.root.findAll((n) => n.props?.testID === 'result-back').length).toBeGreaterThan(0); // result phase
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    // Codex #291 R12 P1: the result queue's modals (coach mark → push primer) come first; the celebration waits its turn
+    // and is never visible together with another queue modal (two native modals from the scan modal deadlock UIKit).
+    const queueModal = () => tree.root.findAll((n) => typeof n.type !== 'string' && n.props?.open === true && typeof n.props?.onDismiss === 'function'
+      && (typeof n.props?.onClose === 'function' || typeof n.props?.onDone === 'function'))[0];
+    let closedSteps = 0;
+    while (queueModal()) {
+      expect(fullScreen(tree)[0].props.visible).toBe(false);
+      const m = queueModal();
+      await act(async () => { (m.props.onClose ?? m.props.onDone)(); if (Platform.OS === 'ios') m.props.onDismiss(); });
+      await flush();
+      closedSteps += 1;
+      expect(closedSteps).toBeLessThan(5);
+    }
+    expect(closedSteps).toBeGreaterThan(0);
+    expect(fullScreen(tree)).toHaveLength(1);
+    expect(fullScreen(tree)[0].props.visible).toBe(true); // its turn, after the earlier steps fully closed
+    expect(JSON.stringify(tree.toJSON())).toContain('review.done');
+  });
+
+  it('guest and unfocused never present', async () => {
+    mockIssue.mockResolvedValue('camera-ticket');
+    mockUseMe.mockReturnValue(me(1));
+    mockFocused.on = false;
+    observeUnlock('7', false, currentGen());
+    const unfocused = render(); await flush();
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    expect(fullScreen(unfocused).every((n) => n.props.visible === false)).toBe(true);
+    act(() => unfocused.unmount()); mounted.splice(mounted.indexOf(unfocused), 1);
+    mockFocused.on = true;
+    resetUnlockSession(currentGen());
+    mockIsGuest.mockReturnValue(true);
+    observeUnlock('7', false, currentGen());
+    const guest = render(); await flush();
+    act(() => observeUnlock('7', true, currentGen())); await flush();
+    expect(fullScreen(guest).every((n) => n.props.visible === false)).toBe(true);
+  });
+
+  it('structure: every phase return goes through the single presenter, no per-branch mounts', () => {
+    const fs = jest.requireActual<typeof import('fs')>('fs');
+    const src = fs.readFileSync('src/app/scan.tsx', 'utf8') as string;
+    expect(src.match(/<UnlockCelebration\b/g)).toHaveLength(1);
+    const body = src.slice(src.indexOf('// ---- result ----'), src.indexOf('function ScanSweepOverlay'));
+    expect(body.match(/return withPresenter\(/g)).toHaveLength(6); // result · scanning · error · offline · system camera · camera
+  });
+});
+
+it('Codex #291 R12 P2: a stale focus preflight returning SCAN-004 after the unlock retry reopened the camera does not relock', async () => {
+  Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
+  observeUnlock('7', false, currentGen());
+  let rejectFocus!: (e: unknown) => void;
+  mockIssue.mockReset();
+  mockIssue.mockImplementationOnce(() => new Promise((_, reject) => { rejectFocus = reject; })); // focus preflight, still in flight
+  mockUseMe.mockReturnValue(me(1)); // profile exhausted → quota screen without waiting for the ticket
+  const tree = render(); await flush();
+  expect(quotaShown(tree)).toBe(true);
+  mockIssue.mockResolvedValue('unlocked-ticket');
+  act(() => observeUnlock('7', true, currentGen())); await flush(); // late profile transition → celebration (quota context)
+  const action = tree.root.findAll((n) => n.props.testID === 'unlock-celebration-action' && typeof n.props.onPress === 'function')[0];
+  await act(async () => action.props.onPress());
+  if (Platform.OS === 'ios') {
+    const celebration = tree.root.findAllByType(Modal).find((n) => n.props.presentationStyle === 'fullScreen')!;
+    await act(async () => celebration.props.onDismiss());
+  } else {
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 5)));
+  }
+  await flush();
+  expect(quotaShown(tree)).toBe(false); // unlock retry reopened the camera
+  await act(async () => { rejectFocus(new ApiError('quota', 403, 'SCAN-004')); }); await flush();
+  expect(quotaShown(tree)).toBe(false); // the superseded focus result is ignored
 });
