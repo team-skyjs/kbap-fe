@@ -115,6 +115,7 @@ export function FoodExplorer({
   popularLoading = false,
   onScanRowBottom,
   afterRail,
+  headTop,
 }: {
   variant: 'embedded' | 'screen';
   /** 홈 = useHome().authenticated 판정 승계 / 음식 탭 = useIsGuest() */
@@ -132,6 +133,8 @@ export function FoodExplorer({
   onScanRowBottom?: (y: number) => void;
   /** KB-796: 홈(embedded) 음식 레일 바로 뒤·Rated safe for you 앞 슬롯(큐레이션 배너) — 홈이 내려준다(이 컴포넌트는 큐레이션을 모른다). */
   afterRail?: React.ReactNode;
+  /** KB-812: 목록 머리 맨 위 슬롯(음식 탭 Dishes|Packaged 세그먼트) — 스크롤과 함께 움직인다 */
+  headTop?: React.ReactNode;
   initialTab?: GridTab;
   /** P-318(screen): 홈 See all 파라미터 초기 적용 — 게스트는 개인화 칩 강등(게이트 정합). */
   initialRisk?: RiskChipParam;
@@ -349,6 +352,7 @@ export function FoodExplorer({
 
   const top = (
     <View>
+      {headTop}
       {/* 검색 행 + 스캔 버튼 (4150:16377 @y100) */}
       <View
         style={styles.searchRow}
