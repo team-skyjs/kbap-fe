@@ -25,6 +25,7 @@ import { trackReadyFood, useIsFoodHidden } from './hiddenFoods';
 import { adaptFoodDetail, adaptMenuSummary, unregisteredFoodDetail, riskWireOf, type RiskFilterChip } from '../api/foodAdapter';
 import { MOCK_FOODS, MOCK_FOOD_DETAILS, MOCK_FOOD_UNREGISTERED } from '../mocks/foods';
 import { MOCK_MODE } from './config';
+import { fetchSortedPage, nameSortOptions, nameSortQuery, useRestartOnStaleCursor, type FoodNameSort, type SortedPage } from './foodNameSort';
 
 /**
  * Foods endpoints connect LIVE regardless of the global MOCK_MODE (like the
@@ -57,7 +58,7 @@ export function useFoods(query?: string) {
  * BE's nextCursor (last item's foodId — treated as opaque).
  */
 /** 목록 페이지 fetch — 훅과 부트 프리페치(P-018 bootGate)가 공유. */
-export async function fetchFoodsPage(pageParam: string | number | undefined, riskWire?: string): Promise<PageMenuSummaryWire> {
+export async function fetchFoodsPage(pageParam: string | number | undefined, riskWire?: string, sort?: FoodNameSort): Promise<SortedPage> {
   if (MOCK_MODE_FOODS) {
     return {
       items: MOCK_FOODS.map((f) => ({
@@ -76,7 +77,9 @@ export async function fetchFoodsPage(pageParam: string | number | undefined, ris
   // 전환 완료(무토큰 200, 7/20 실측)로 게스트는 401이 없고, 남는 401 =
   // 죽은 토큰뿐. 빈 목록 위장은 isError를 막아 에러 블록을 무력화한다.
   const riskQ = riskWire ? `&risk=${riskWire}` : '';
-  return api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}${riskQ}`);
+  // KB-821: 이름 정렬만 3.1 헤더 + sort(커서는 불투명 문자열 그대로) — 기본 정렬은 위 요청 바이트 그대로
+  return fetchSortedPage(sort, pageParam == null, () =>
+    api.get<PageMenuSummaryWire>(`/foods?${cursor}lang=${apiLang()}${riskQ}${nameSortQuery(sort)}`, nameSortOptions(sort)));
 }
 
 /** P-350(KB-492): 위험도 칩 = 서버 필터 — UI 칩→서버 enum 매핑은 foodAdapter
@@ -85,15 +88,18 @@ export async function fetchFoodsPage(pageParam: string | number | undefined, ris
  *  종료 판정은 hasNext/nextCursor로만(빈 페이지 = 종료 아님). */
 export const FOODS_PAGE_SIZE = 20; // 서버 FoodService/BookmarkService PAGE_SIZE 동치
 
-export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boolean }) {
+export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boolean; sort?: FoodNameSort }) {
   const lang = useAppLanguage(); // KB-695: 구독 — 렌더 중 i18n.language 직접 읽기는 컴파일러가 키를 굳힌다
   const wire = riskWireOf(risk);
-  return useInfiniteQuery({
+  const sort = opts?.sort;
+  // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지) · KB-821 이름 정렬도 별도 캐시(커서 종류가 다르다)
+  const baseKey = wire ? ['foods', 'list', lang, wire] : ['foods', 'list', lang];
+  const queryKey = sort ? [...baseKey, 'sort', sort] : baseKey;
+  const q = useInfiniteQuery({
     enabled: opts?.enabled ?? true, // #112 2R ②: Saved 활성 중 비활성 browse risk 쿼리 억제
-    // risk 지정 = 별도 캐시(쿼리키 분리 — 'all' 목록과 페이지 혼입 금지)
-    queryKey: wire ? ['foods', 'list', lang, wire] : ['foods', 'list', lang],
+    queryKey,
     initialPageParam: undefined as string | number | undefined,
-    queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire),
+    queryFn: ({ pageParam }) => fetchFoodsPage(pageParam, wire, sort),
     // #112 P1 ①(P-332 문법 이식): 커서 에코 가드 — 얇은 페이지 자동 연속 페치가
     // 커서 미전진 경계 응답에서 무한 루프(이 PR이 잡으려던 증상)가 되지 않게,
     // 이미 요청한 커서 재등장 = hasNext 무시·종료.
@@ -104,6 +110,8 @@ export function useInfiniteFoods(risk?: RiskFilterChip, opts?: { enabled?: boole
         : undefined,
     select: (data) => data.pages.flatMap((p) => p.items.map(adaptMenuSummary)),
   });
+  useRestartOnStaleCursor(queryKey, q.dataUpdatedAt); // KB-821: 400 FOOD-002·409 FOOD-022 → 첫 페이지부터
+  return q;
 }
 
 /**

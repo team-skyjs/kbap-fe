@@ -101,6 +101,8 @@
     "searchPlaceholder": "Tìm món ăn…",
     "sort_popular": "Phổ biến",
     "sort_new": "Mới nhất",
+    "sort_name_asc": "Tên A–Z",
+    "sort_name_desc": "Tên Z–A",
     "categories": {
       "all": "Tất cả",
       "stews": "Món hầm",
