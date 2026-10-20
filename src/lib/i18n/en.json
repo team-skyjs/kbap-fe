@@ -1177,7 +1177,10 @@
     "guide": "Guide",
     "viewGuideA11y": "View guide, {{name}}",
     "viewGuideHint": "Opens in a browser",
-    "photoUnavailable": "Photo unavailable"
+    "photoUnavailable": "Photo unavailable",
+    "openGalleryHint": "Opens photos and details",
+    "nextPhoto": "Next photo",
+    "prevPhoto": "Previous photo"
   },
   "packaged": {
     "segmentDishes": "Dishes",

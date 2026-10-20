@@ -26,9 +26,12 @@ export type CurationItem = {
   reason: string;
   imageUrl: string;
   imageAttribution: string | null;
+  /** KB-832: 갤러리 사진(순서대로) — 서버 images[](KB-833 예정)가 없으면 imageUrl 1장으로 폴백, 사진 없음 = 빈 배열 */
+  images: CurationImage[];
   externalUrl: string;
   nearby: string[];
 };
+export type CurationImage = { url: string; attribution: string | null };
 export type CurationDetail = {
   key: string;
   title: string;
@@ -44,6 +47,8 @@ export type IndexWire = { state: string; fallbackUsed: boolean; collections: Car
 export type ItemWire = {
   entryId: string; position: number; name: string; area: string; introduction: string; recommendationReason: string;
   imageUrl: string; imageAttribution?: string | null; externalUrl: string; nearby?: string[] | null;
+  /** KB-833(서버 예정): 항목별 갤러리 사진 */
+  images?: { url?: string | null; attribution?: string | null }[] | null;
 };
 export type DetailWire = {
   collectionKey: string; title: string; description: string; coverImageUrl: string; coverImageAttribution?: string | null;
@@ -66,6 +71,13 @@ export function adaptCurationIndex(w: IndexWire): CurationIndex {
   return { published: w.state === 'PUBLISHED' && cards.length === CURATION_CARD_COUNT, cards, fallbackUsed: w.fallbackUsed === true };
 }
 
+/** KB-832: 서버 images[]가 있으면 그것(빈 url 제외), 없거나 비면 기존 대표 사진 1장, 그것도 없으면 []. */
+export function galleryOf(it: Pick<ItemWire, 'imageUrl' | 'imageAttribution' | 'images'>): CurationImage[] {
+  const list = (it.images ?? []).filter((x) => x?.url && x.url.trim()).map((x) => ({ url: (x.url as string).trim(), attribution: caption(x.attribution) }));
+  if (list.length) return list;
+  return it.imageUrl && it.imageUrl.trim() ? [{ url: it.imageUrl, attribution: caption(it.imageAttribution) }] : [];
+}
+
 export function adaptCurationDetail(w: DetailWire): CurationDetail {
   return {
     key: w.collectionKey,
@@ -85,6 +97,7 @@ export function adaptCurationDetail(w: DetailWire): CurationDetail {
         reason: it.recommendationReason,
         imageUrl: it.imageUrl,
         imageAttribution: caption(it.imageAttribution),
+        images: galleryOf(it),
         externalUrl: it.externalUrl,
         nearby: (it.nearby ?? []).filter((n) => typeof n === 'string' && n.trim()),
       })),

@@ -1181,7 +1181,10 @@
     "guide": "Hướng dẫn",
     "viewGuideA11y": "Xem hướng dẫn, {{name}}",
     "viewGuideHint": "Mở trong trình duyệt",
-    "photoUnavailable": "Không có ảnh"
+    "photoUnavailable": "Không có ảnh",
+    "openGalleryHint": "Mở ảnh và thông tin",
+    "nextPhoto": "Ảnh tiếp theo",
+    "prevPhoto": "Ảnh trước"
   },
   "packaged": {
     "segmentDishes": "Món ăn",

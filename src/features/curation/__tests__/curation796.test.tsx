@@ -12,7 +12,8 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('react-native-reanimated', () => ({ useReducedMotion: () => false }));
 jest.mock('@/components/Skeleton', () => { const { View } = jest.requireActual('react-native'); return { Shimmer: (p: object) => <View {...p} /> }; });
 jest.mock('@/components/RemoteImage', () => { const { View } = jest.requireActual('react-native'); return { RemoteImage: (p: { uri: string }) => <View testID={`img:${p.uri}`} /> }; });
-jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: () => null, IconArrowLeft: () => null, IconChevronDown: (p: { style?: unknown }) => <View testID="chevron-down" style={p.style} /> }; });
+jest.mock('@/components/icons', () => { const { View } = jest.requireActual('react-native'); return { IconChevron: (p: { color?: string }) => <View testID="chevron-right" style={{ color: p.color }} />, IconArrowLeft: () => null, IconClose: () => null }; });
+jest.mock('expo-linear-gradient', () => { const { View } = jest.requireActual('react-native'); return { LinearGradient: (p: object) => <View {...p} testID="card-shade" /> }; });
 jest.mock('@/components/SubHeader', () => { const { Text } = jest.requireActual('react-native'); return { SubHeader: (p: { title: string }) => <Text testID="subheader">{p.title}</Text> }; });
 jest.mock('@/components/Btn', () => {
   const { Pressable, Text } = jest.requireActual('react-native');
@@ -46,7 +47,7 @@ jest.mock('@/lib/data/useCurations', () => ({
 /* eslint-disable import/first -- jest.mock 뒤 */
 import { ApiError } from '@/lib/api/client';
 import { fetchCurationDetail, fetchCurationIndex, type CurationDetail, type CurationIndex } from '@/lib/data/useCurations';
-import { adaptCurationDetail, adaptCurationIndex } from '@/lib/api/curationAdapter';
+import { adaptCurationDetail, adaptCurationIndex, galleryOf } from '@/lib/api/curationAdapter';
 import { CurationSection } from '../CurationSection';
 import { HomeImpressionContext, ImpressionTracker } from '@/features/home/homeImpressions';
 import CurationDetailScreen from '@/app/curations/[key]';
@@ -67,6 +68,7 @@ const render = (el: React.ReactElement) => { let t!: ReactTestRenderer; act(() =
 const q = (over: Partial<Q>): Q => ({ isPending: false, isError: false, refetch: jest.fn(), ...over });
 const byId = (t: ReactTestRenderer, id: string) => t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string');
 const text = (t: ReactTestRenderer) => JSON.stringify(t.toJSON());
+const ids = (t: ReactTestRenderer) => t.root.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
 const press = (t: ReactTestRenderer, id: string) => act(() => t.root.findAll((n) => n.props?.testID === id && typeof n.props?.onPress === 'function')[0].props.onPress());
 
 describe('응답 어댑트', () => {
@@ -149,8 +151,8 @@ describe('모음 상세', () => {
     const t = render(<CurationDetailScreen />);
     expect(byId(t, 'subheader')[0].props.children).toBe('Explore by subway');
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].every((p) => byId(t, `curation-item-${p}`).length === 1)).toBe(true);
-    expect(byId(t, 'curation-item-attribution-1')).toHaveLength(1);
-    expect(byId(t, 'curation-item-attribution-2')).toHaveLength(0);
+    // KB-832 v5: 사진 출처 캡션은 카드가 아니라 갤러리 시트 안(현재 사진 기준)
+    expect(ids(t).some((i) => i.startsWith('curation-item-attribution-'))).toBe(false);
     // KB-829: 역 모음 = 지역 행에 area + nearby 공백 2칸(빈 이름 제거) · "Explore nearby" 줄 없음
     expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area\u00A02  Hongdae\u00A0streets  Forest\u00A0Park')).toHaveLength(1);
     expect(t.root.findAll((n) => typeof n.type === 'string' && n.props.children === 'Area\u00A01')).toHaveLength(1);
@@ -160,15 +162,17 @@ describe('모음 상세', () => {
     mockDetail = q({ data: { ...detail, fallbackUsed: true } });
     expect(byId(render(<CurationDetailScreen />), 'curation-fallback')).toHaveLength(1);
   });
-  it('View guide = 인앱 브라우저로 외부 URL + home_curation_link_click(키·위치, URL 미전송) · 스크린리더 이름·힌트', () => {
+  it('KB-832: Guide = 시트 안 Outline → 인앱 브라우저 + home_curation_link_click(키·위치, URL 미전송) · 스크린리더 이름·힌트 · 시트 유지(복귀 시 같은 자리)', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
-    const btn = t.root.findAll((n) => n.props?.testID === 'curation-item-link-3' && typeof n.props?.onPress === 'function')[0];
+    press(t, 'curation-item-3');
+    const btn = t.root.findAll((n) => n.props?.testID === 'curation-gallery-guide' && typeof n.props?.onPress === 'function')[0];
     expect(btn.props.accessibilityLabel).toBe('curation.viewGuideA11y:{"name":"Place 3"}');
     expect(btn.props.accessibilityHint).toBe('curation.viewGuideHint');
-    press(t, 'curation-item-link-3');
+    press(t, 'curation-gallery-guide');
     expect(mockOpen).toHaveBeenCalledWith('https://example.com/3');
     expect(mockTrack).toHaveBeenCalledWith('home_curation_link_click', { collection_key: 'stations', position: 3 });
+    expect(ids(t)).toContain('curation-gallery'); // 시트 닫지 않음
   });
   it('404 CURATION-001 = 더 이상 볼 수 없음 + 홈으로(다시 시도 없음) · 503 = 불러오지 못함 + 다시 시도 + 홈으로', () => {
     mockDetail = q({ isError: true, error: new ApiError('gone', 404, 'CURATION-001') });
@@ -200,77 +204,70 @@ describe('모음 상세', () => {
   });
 });
 
-describe('KB-829 사진 중심 카드(D-29 v2)', () => {
+describe('KB-832 v5 카드 + 갤러리 시트', () => {
   const detail = adaptCurationDetail(DETAIL_WIRE) as CurationDetail;
+  const withImages = (n: number) => ({ ...detail, items: detail.items.map((it) => (it.position === 1 ? { ...it, images: Array.from({ length: n }, (_, i) => ({ url: `https://cdn/g${i}.jpg`, attribution: i === 1 ? null : `Photo ${i}` })) } : it)) });
   beforeEach(() => { mockParams = { key: 'stations' }; });
-  const flat = (st: unknown): Record<string, unknown> => Object.assign({}, ...([] as unknown[]).concat(st as never).flat(Infinity).filter(Boolean));
-  const toggle = (t: ReactTestRenderer, p: number) => t.root.findAll((n) => n.props?.testID === `curation-item-toggle-${p}` && typeof n.type === 'string')[0];
-  const chevron = (t: ReactTestRenderer, p: number) => byId(byIdTree(t, `curation-item-${p}`), 'chevron-down')[0];
-  const byIdTree = (t: ReactTestRenderer, id: string) => ({ root: t.root.findAll((n) => n.props?.testID === id && typeof n.type === 'string')[0] }) as unknown as ReactTestRenderer;
 
-  it('사진 335×208 비율 · 소개·선정 이유 기본 접힘 · 펼침 버튼 = 장소명 라벨 + expanded false', () => {
+  it('어댑터: 서버 images[] 우선(빈 url 제외) · 없으면 대표 사진 1장 폴백 · 사진 없음 = []', () => {
+    expect(galleryOf({ imageUrl: 'https://a/1.jpg', imageAttribution: 'P', images: [{ url: 'https://a/x.jpg', attribution: ' ' }, { url: '' }] })).toEqual([{ url: 'https://a/x.jpg', attribution: null }]);
+    expect(galleryOf({ imageUrl: 'https://a/1.jpg', imageAttribution: 'Photo: KTO', images: null })).toEqual([{ url: 'https://a/1.jpg', attribution: 'Photo: KTO' }]);
+    expect(galleryOf({ imageUrl: 'https://a/1.jpg', imageAttribution: null, images: [] })).toEqual([{ url: 'https://a/1.jpg', attribution: null }]);
+    expect(galleryOf({ imageUrl: '', imageAttribution: null })).toEqual([]);
+  });
+
+  it('카드 = 첫 사진 전체 + 하단 흐림 + 흰 이름·지역 + 흰 chevron(박스 없음) · 펼침/Guide 행 0 · 카드 전체가 버튼(이름·지역 라벨 + 힌트)', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
-    expect(t.root.findAll((n) => n.props?.testID === 'img:https://cdn/i1.jpg' && typeof n.type === 'string')).toHaveLength(1); // 표지 없음 = 1번 사진 한 번
-    expect(fs.readFileSync('src/app/curations/[key].tsx', 'utf8')).toContain('export const ITEM_PHOTO_RATIO = 208 / 335;');
-    expect(byId(t, 'curation-item-about-1')).toHaveLength(0);
-    expect(text(t)).not.toContain('Intro 1');
-    const tg = toggle(t, 1);
-    expect(tg.props.accessibilityRole).toBe('button');
-    expect(tg.props.accessibilityLabel).toBe('Place 1');
-    expect(tg.props.accessibilityState).toMatchObject({ expanded: false });
-    expect(flat(chevron(t, 1).props.style).transform).toBeUndefined();
+    const card = t.root.findAll((n) => n.props?.testID === 'curation-item-1' && typeof n.props?.onPress === 'function')[0];
+    expect(card.props.accessibilityRole).toBe('button');
+    expect(card.props.accessibilityLabel).toBe('Place 1, Area 1');
+    expect(card.props.accessibilityHint).toBe('curation.openGalleryHint');
+    expect(ids(t)).toContain('img:https://cdn/i1.jpg');
+    expect(ids(t).filter((i) => i === 'card-shade')).toHaveLength(10);
+    expect(byId(t, 'curation-item-arrow-1')).toHaveLength(1);
+    expect(ids(t).some((i) => /curation-item-(toggle|link|about)-/.test(i))).toBe(false);
+    expect(ids(t)).not.toContain('curation-gallery'); // 처음엔 닫힘
   });
 
-  it('사진 탭 = 펼침(소개·이유, chevron 위로, expanded true) → 이름 행 탭 = 접힘 · 항목별 독립', () => {
+  it('카드 탭 → 시트(1장 = 카운터 숨김 · 출처 = 그 사진 것) + home_curation_gallery_open · 닫기 → 시트 없음(목록 그대로)', () => {
     mockDetail = q({ data: detail });
     const t = render(<CurationDetailScreen />);
-    press(t, 'curation-item-photo-3');
-    expect(byId(t, 'curation-item-about-3')).toHaveLength(1);
-    expect(text(t)).toContain('Intro 3');
-    expect(text(t)).toContain('Why 3');
-    expect(toggle(t, 3).props.accessibilityState).toMatchObject({ expanded: true });
-    expect(flat(chevron(t, 3).props.style).transform).toEqual([{ rotate: '180deg' }]);
-    expect(byId(t, 'curation-item-about-2')).toHaveLength(0); // 다른 항목은 그대로
-    press(t, 'curation-item-toggle-3');
-    expect(byId(t, 'curation-item-about-3')).toHaveLength(0);
+    press(t, 'curation-item-1');
+    expect(ids(t)).toContain('curation-gallery');
+    expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_open', { collection_key: 'stations', entry_id: 'e1' });
+    expect(ids(t)).not.toContain('curation-gallery-counter');
+    expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo: KTO');
+    press(t, 'curation-gallery-close');
+    expect(ids(t)).not.toContain('curation-gallery');
+    expect(byId(t, 'curation-item-1')).toHaveLength(1);
   });
 
-  it('Guide 탭 = 외부 링크만 · 펼침 상태 불변', () => {
-    mockDetail = q({ data: detail });
+  it('여러 장: 카운터 1 / 3 → 스와이프(페이징 끝) 3 / 3 + swipe 계측 · 출처는 현재 사진 것(없으면 숨김) · 스크린리더 다음/이전 사진 동작', () => {
+    mockDetail = q({ data: withImages(3) });
     const t = render(<CurationDetailScreen />);
-    press(t, 'curation-item-link-5');
-    expect(mockOpen).toHaveBeenCalledWith('https://example.com/5');
-    expect(byId(t, 'curation-item-about-5')).toHaveLength(0);
-    press(t, 'curation-item-toggle-5');
-    press(t, 'curation-item-link-5');
-    expect(byId(t, 'curation-item-about-5')).toHaveLength(1);
+    press(t, 'curation-item-1');
+    const counter = () => byId(t, 'curation-gallery-counter')[0]?.props.children;
+    expect(counter()).toBe('1 / 3');
+    expect(byId(t, 'curation-gallery-credit')[0].props.children).toBe('Photo 0');
+    const pager = () => t.root.findAll((n) => n.props?.testID === 'curation-gallery-pager' && typeof n.props?.onMomentumScrollEnd === 'function')[0];
+    const width = jest.requireActual('react-native').Dimensions.get('window').width;
+    act(() => pager().props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: width * 2, y: 0 } } }));
+    expect(counter()).toBe('3 / 3');
+    expect(mockTrack).toHaveBeenCalledWith('home_curation_gallery_swipe', { collection_key: 'stations', entry_id: 'e1', index: 2 });
+    act(() => pager().props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
+    expect(counter()).toBe('2 / 3');
+    expect(byId(t, 'curation-gallery-credit')).toHaveLength(0); // 2번째 사진은 출처 없음
+    expect(pager().props.accessibilityActions.map((a: { name: string }) => a.name)).toEqual(['increment', 'decrement']);
   });
 
-  it('출처 캡션은 지역 행 아래·본문 위 · 사진 없는 항목 = 104 회색 "Photo unavailable"(사진 자리 축소)', () => {
-    mockDetail = q({ data: { ...detail, items: detail.items.map((it) => (it.position === 4 ? { ...it, imageUrl: '' } : it)) } });
+  it('사진 0장 = 카드 회색 자리 · 시트도 플레이스홀더 1장(카운터 0)', () => {
+    mockDetail = q({ data: { ...detail, items: detail.items.map((it) => (it.position === 4 ? { ...it, imageUrl: '', images: [] } : it)) } });
     const t = render(<CurationDetailScreen />);
-    press(t, 'curation-item-toggle-1');
-    const card = t.root.findAll((n) => n.props?.testID === 'curation-item-1' && typeof n.type === 'string')[0];
-    const ids = card.findAll((n) => typeof n.type === 'string' && typeof n.props.testID === 'string').map((n) => n.props.testID as string);
-    const at = (id: string) => ids.indexOf(id);
-    expect(at('curation-item-toggle-1')).toBeGreaterThanOrEqual(0);
-    expect(at('curation-item-attribution-1')).toBeGreaterThan(at('curation-item-toggle-1'));
-    expect(at('curation-item-about-1')).toBeGreaterThan(at('curation-item-attribution-1'));
-    const ph = byId(t, 'curation-item-nophoto-4')[0];
-    expect(flat(ph.props.style).height).toBe(104);
-    expect(text(t)).toContain('curation.photoUnavailable');
-    expect(t.root.findAll((n) => n.props?.testID === 'img:')).toHaveLength(0);
-  });
-
-  it('목록 재조회(새 dataUpdatedAt) = 펼침 초기화', () => {
-    mockDetail = { ...q({ data: detail }), dataUpdatedAt: 1 } as Q;
-    const t = render(<CurationDetailScreen />);
-    press(t, 'curation-item-toggle-2');
-    expect(byId(t, 'curation-item-about-2')).toHaveLength(1);
-    mockDetail = { ...q({ data: detail }), dataUpdatedAt: 2 } as Q;
-    act(() => t.update(<CurationDetailScreen />));
-    expect(byId(t, 'curation-item-about-2')).toHaveLength(0);
+    expect(byId(t, 'curation-item-nophoto-4')).toHaveLength(1);
+    press(t, 'curation-item-4');
+    expect(byId(t, 'curation-gallery-nophoto')).toHaveLength(1);
+    expect(ids(t)).not.toContain('curation-gallery-counter');
   });
 });
 
@@ -303,7 +300,7 @@ describe('배치·문구 잠금', () => {
     }
   });
   it('10언어 앱 문구 전부 · 가운데점 0 · 이름 자리표시자 유지', () => {
-    const keys = ['sectionTitle', 'loadError', 'refreshFailed', 'prev', 'next', 'fallbackNotice', 'errorTitle', 'errorBody', 'unavailableTitle', 'unavailableBody', 'backHome', 'guide', 'photoUnavailable', 'viewGuideA11y', 'viewGuideHint'];
+    const keys = ['sectionTitle', 'loadError', 'refreshFailed', 'prev', 'next', 'fallbackNotice', 'errorTitle', 'errorBody', 'unavailableTitle', 'unavailableBody', 'backHome', 'guide', 'photoUnavailable', 'viewGuideA11y', 'viewGuideHint', 'openGalleryHint', 'nextPhoto', 'prevPhoto'];
     for (const l of ['en', 'ko', 'ja', 'zh-Hans', 'zh-Hant', 'es', 'id', 'ru', 'th', 'vi']) {
       const c = JSON.parse(fs.readFileSync(`src/lib/i18n/${l}.json`, 'utf8')).curation as Record<string, string>;
       for (const k of keys) { expect(c[k]).toBeTruthy(); expect(c[k]).not.toContain('·'); }

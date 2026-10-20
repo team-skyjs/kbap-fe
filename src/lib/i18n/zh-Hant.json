@@ -1181,7 +1181,10 @@
     "guide": "指南",
     "viewGuideA11y": "查看指南，{{name}}",
     "viewGuideHint": "將在瀏覽器中開啟",
-    "photoUnavailable": "暫無照片"
+    "photoUnavailable": "暫無照片",
+    "openGalleryHint": "開啟照片與介紹",
+    "nextPhoto": "下一張照片",
+    "prevPhoto": "上一張照片"
   },
   "packaged": {
     "segmentDishes": "菜色",
