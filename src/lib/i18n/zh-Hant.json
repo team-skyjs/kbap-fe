@@ -1285,6 +1285,11 @@
       "goneBody": "請重新拍攝。",
       "discontinuedTitle": "此商品已停產",
       "discontinuedBody": "請重新拍攝。"
-    }
+    },
+    "chargeChecking": "正在確認是否使用了掃描次數。",
+    "chargeSeeHome": "請在首頁查看剩餘掃描次數。",
+    "debugLabel": "OCR 文字(僅限測試)",
+    "debugPlaceholder": "每行輸入一行包裝文字",
+    "debugRun": "使用這段文字"
   }
 }

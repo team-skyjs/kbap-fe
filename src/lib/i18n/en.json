@@ -1281,6 +1281,11 @@
       "goneBody": "Take the photo again.",
       "discontinuedTitle": "This product is no longer made",
       "discontinuedBody": "Take the photo again."
-    }
+    },
+    "chargeChecking": "We're checking whether a scan was used.",
+    "chargeSeeHome": "Check your remaining scans on the home screen.",
+    "debugLabel": "OCR text (test only)",
+    "debugPlaceholder": "One line per row of the package text",
+    "debugRun": "Use this text"
   }
 }

@@ -1285,6 +1285,11 @@
       "goneBody": "다시 찍어 주세요.",
       "discontinuedTitle": "생산이 종료된 제품이에요",
       "discontinuedBody": "다시 찍어 주세요."
-    }
+    },
+    "chargeChecking": "스캔 사용 여부를 확인하고 있어요.",
+    "chargeSeeHome": "남은 스캔 횟수는 홈 화면에서 확인하세요.",
+    "debugLabel": "OCR 텍스트(테스트 전용)",
+    "debugPlaceholder": "포장 글자를 한 줄씩 입력",
+    "debugRun": "이 텍스트로 진행"
   }
 }

@@ -141,6 +141,7 @@ export default function ProcessedFoodDetailScreen() {
   // KB-813: 스캔 확정에서 온 경우 = "스캔 결과" 띠. 차감 표시는 서버 confirm 응답의 charged(파라미터로 전달)만 — 추정 0
   const fromScan = params.scan === '1';
   const charged = params.charged === '1';
+  const chargeUnknown = params.charged === 'u'; // 앞선 확정 전송 실패 뒤 재확정 — 차감 여부를 단정하지 않는다(남은 횟수는 프로필에서)
   const q = useProcessedDetail(id);
   const [gate, setGate] = React.useState(false);
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/food' as Href));
@@ -187,7 +188,7 @@ export default function ProcessedFoodDetailScreen() {
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={s.scanTitle}>{t('packagedScan.resultTitle')}</Text>
-              <Text style={s.scanSub} testID="pf-scan-charge">{t(charged ? 'packagedScan.scanUsed' : 'packagedScan.noScanUsed')}</Text>
+              <Text style={s.scanSub} testID="pf-scan-charge">{t(charged ? 'packagedScan.scanUsed' : chargeUnknown ? 'packagedScan.chargeSeeHome' : 'packagedScan.noScanUsed')}</Text>
             </View>
           </View>
         )}

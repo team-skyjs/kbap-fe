@@ -743,7 +743,8 @@ export default function Scan() {
   ) : null;
   // KB-777 B1-4: 어두운 바탕(카메라 뷰파인더·인식 중·오류 — "Not a menu" 등)은 상태바 아이콘을 밝게. 앱 기본(_layout)은 dark —
   // 포커스를 잃거나 밝은 화면(결과·오프라인·시스템 카메라 런처)으로 가면 이 StatusBar가 빠져 기본으로 돌아간다.
-  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera);
+  // Codex #310: 가공식품 모드는 밝은 화면(PackagedScanFlow) — 카메라 단계여도 어두운 바탕이 아니다
+  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera && scanMode !== 'packaged');
   const lightBar = isFocused && darkRoot ? <StatusBar style="light" /> : null;
   const withPresenter = (node: ReactElement) => <>{node}{presenter}{lightBar}</>;
 

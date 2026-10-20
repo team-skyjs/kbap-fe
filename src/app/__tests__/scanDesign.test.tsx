@@ -444,7 +444,7 @@ it('KB-777 B1-4: 카메라 = StatusBar light · 결과(밝은 바탕) = 없음(�
   expect(bars(tree)).toEqual([]);
   const src = jest.requireActual('fs').readFileSync('src/app/scan.tsx', 'utf8') as string;
   expect(src).toContain("const DARK_ROOT_PHASES = new Set<string>(['error', 'scanning']);");
-  expect(src).toContain("const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera);");
+  expect(src).toContain("const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera && scanMode !== 'packaged');");
   expect(src).toContain('const lightBar = isFocused && darkRoot ?');
 });
 

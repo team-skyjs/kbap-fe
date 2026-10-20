@@ -1285,6 +1285,11 @@
       "goneBody": "Vuelve a tomar la foto.",
       "discontinuedTitle": "Este producto ya no se fabrica",
       "discontinuedBody": "Vuelve a tomar la foto."
-    }
+    },
+    "chargeChecking": "Estamos comprobando si se usó un escaneo.",
+    "chargeSeeHome": "Consulta los escaneos restantes en la pantalla de inicio.",
+    "debugLabel": "Texto OCR (solo pruebas)",
+    "debugPlaceholder": "Una línea del envase por fila",
+    "debugRun": "Usar este texto"
   }
 }

@@ -41,7 +41,7 @@ type Step =
   | { kind: 'candidates'; analysisId: string; candidates: ScanCandidate[] }
   | { kind: 'none'; analysisId: string }
   | { kind: 'handoff'; sameAnalysis: boolean }
-  | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null };
+  | { kind: 'error'; failure: ScanFailure; retry: (() => void) | null; chargeUnknown?: boolean };
 
 /** 디버그 OCR 주입 노출 — 개발 번들·진단 채널(dev·teamtest)만, 스토어 채널 0 */
 export const showOcrDebug = (): boolean => __DEV__ || isDiagnosticChannel();
@@ -65,14 +65,20 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
   const [step, setStep] = React.useState<Step>({ kind: 'capture' });
   const [debugText, setDebugText] = React.useState('');
   const guard = useSubmitGuard(); // 촬영·확정 연타 1발(P-173)
+  // Codex #310 P2: 뒤로가기 뒤에 도착한 응답은 버린다 — 요청마다 회차, 단계를 사용자가 바꾸면 회차가 올라 늦은 응답이 화면을 되돌리거나 이동시키지 않는다
+  const reqSeq = React.useRef(0);
+  const goStep = (next: Step) => { reqSeq.current += 1; setStep(next); };
 
   const runName = async (ocrText: string) => {
-    setStep({ kind: 'reading' });
+    goStep({ kind: 'reading' });
+    const my = reqSeq.current;
     try {
       const r = await scanProcessedName(ocrText, apiLang());
+      if (my !== reqSeq.current) return; // 그 사이 뒤로 감
       track(EVENTS.food_packaged_scan_name, { candidate_count: r.candidates.length });
       setStep(r.candidates.length ? { kind: 'candidates', analysisId: r.analysisId, candidates: r.candidates } : { kind: 'none', analysisId: r.analysisId });
     } catch (e) {
+      if (my !== reqSeq.current) return;
       setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => void runName(ocrText) });
     }
   };
@@ -99,21 +105,30 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
       await runName(text);
     });
 
-  const confirm = (analysisId: string, reportNo: string | null) =>
+  /** chargeUnknown = 앞선 확정이 전송 실패(서버는 커밋했을 수 있음) — 재확정이 charged false여도 "사용 안 됨"이라 단정하지 않는다 */
+  const confirm = (analysisId: string, reportNo: string | null, chargeUnknown = false) =>
     guard.run(async () => {
+      const my = reqSeq.current;
       try {
         const r = await confirmProcessedScan(analysisId, reportNo);
+        if (my !== reqSeq.current) return; // 그 사이 뒤로 감 — 이동 0
         track(EVENTS.food_packaged_scan_confirm, { charged: r.charged, rejected: r.rejected });
         if (r.rejected || !r.product) {
           track(EVENTS.food_packaged_scan_handoff, { from: 'rejected' });
           setStep({ kind: 'handoff', sameAnalysis: true });
           return;
         }
-        if (r.charged) void qc.invalidateQueries({ queryKey: ['me'] }); // 남은 횟수 = 서버 프로필 재조회(로컬 차감 0)
+        // 남은 횟수 = 서버 프로필 재조회(로컬 차감 0) — 차감됐거나 차감 여부를 모를 때
+        if (r.charged || chargeUnknown) void qc.invalidateQueries({ queryKey: ['me'] });
         qc.setQueryData(['processedFoods', 'detail', r.product.id, 'member'], r.product);
-        router.push(`/processed-foods/${r.product.id}?scan=1&charged=${r.charged ? 1 : 0}` as Href);
+        const charge = r.charged ? '1' : chargeUnknown ? 'u' : '0';
+        router.push(`/processed-foods/${r.product.id}?scan=1&charged=${charge}` as Href);
       } catch (e) {
-        setStep({ kind: 'error', failure: scanFailureOf(e), retry: () => void confirm(analysisId, reportNo) });
+        if (my !== reqSeq.current) return;
+        const failure = scanFailureOf(e);
+        // 전송 실패(응답 없음)는 서버가 확정·차감을 커밋했을 수 있다 → 차감 여부 미상, 같은 analysisId 재확정(멱등)으로 서버 값을 받는다
+        const unknown = chargeUnknown || failure === 'network';
+        setStep({ kind: 'error', failure, chargeUnknown: unknown, retry: () => void confirm(analysisId, reportNo, unknown) });
       }
     });
 
@@ -126,7 +141,7 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
   if (step.kind === 'reading') {
     return (
       <View style={st.root} testID="pscan-reading">
-        <SubHeader title={t('packagedScan.chooseTitle')} onBack={() => setStep({ kind: 'capture' })} />
+        <SubHeader title={t('packagedScan.chooseTitle')} onBack={() => goStep({ kind: 'capture' })} />
         <View style={st.darkBand} />
         <View style={[st.sheet, { gap: 20 }]}>
           <Text style={st.h1}>{t('packagedScan.reading')}</Text>
@@ -140,7 +155,7 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
     const none = step.kind === 'none';
     return (
       <View style={st.root} testID={none ? 'pscan-none' : 'pscan-candidates'}>
-        <SubHeader title={t('packagedScan.chooseTitle')} onBack={() => setStep({ kind: 'capture' })} />
+        <SubHeader title={t('packagedScan.chooseTitle')} onBack={() => goStep({ kind: 'capture' })} />
         <View style={st.darkBand} />
         <View style={[st.sheet, { flex: 1 }]}>
           <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: 24 }}>
@@ -170,7 +185,7 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
   if (step.kind === 'handoff') {
     return (
       <View style={st.root} testID="pscan-handoff">
-        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => setStep({ kind: 'capture' })} />
+        <SubHeader title={t('packagedScan.labelTitle')} onBack={() => goStep({ kind: 'capture' })} />
         <ScrollView contentContainerStyle={st.page}>
           <Text style={st.h1}>{t('packagedScan.labelHeadline')}</Text>
           <Text style={st.body}>{t('packagedScan.labelBody')}</Text>
@@ -197,17 +212,17 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
     const f = step.failure;
     return (
       <View style={st.root} testID={`pscan-error-${f}`}>
-        <SubHeader title={t('packagedScan.title')} onBack={() => setStep({ kind: 'capture' })} />
+        <SubHeader title={t('packagedScan.title')} onBack={() => goStep({ kind: 'capture' })} />
         <View style={[st.page, { gap: 16 }]}>
           <Text style={st.h1}>{t(`packagedScan.err.${f}Title`)}</Text>
-          {/* 차감 표시 금지 원칙의 반대편: 실패는 서버가 차감하지 않는다(계약) — "차감되지 않았어요"만 */}
-          <ScanCount text={t('packagedScan.noScanUsed')} testID="pscan-error-count" />
+          {/* 이름 스캔·서버가 거절한 확정 = 차감 없음(계약). 확정 전송 실패 = 차감 여부 미상 — 단정하지 않고 "확인 중" */}
+          <ScanCount text={t(step.chargeUnknown ? 'packagedScan.chargeChecking' : 'packagedScan.noScanUsed')} testID="pscan-error-count" />
           <Text style={st.body}>{t(`packagedScan.err.${f}Body`)}</Text>
           {f === 'network' && step.retry && <Btn busy={guard.busy} onPress={step.retry} testID="pscan-retry">{t('common.tryAgain')}</Btn>}
           {f === 'quota' ? (
             <Btn variant="ghost" onPress={onClose} testID="pscan-close">{t('common.close')}</Btn>
           ) : (
-            <Btn variant="ghost" onPress={() => setStep({ kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
+            <Btn variant="ghost" onPress={() => goStep({ kind: 'capture' })} testID="pscan-retake">{t('packagedScan.retake')}</Btn>
           )}
         </View>
       </View>
@@ -233,9 +248,9 @@ export function PackagedScanFlow({ mode, onMode, onClose }: { mode: ScanMode; on
           </Btn>
           {showOcrDebug() && (
             <View style={st.debug} testID="pscan-ocr-debug">
-              <Text style={st.muted}>OCR text (dev only)</Text>
-              <Input value={debugText} onChangeText={setDebugText} multiline style={st.debugInput} testID="pscan-ocr-debug-input" placeholder="one OCR line per row" />
-              <Btn variant="ghost" sm onPress={() => debugText.trim() && void runName(debugText)} testID="pscan-ocr-debug-run">Use this text</Btn>
+              <Text style={st.muted}>{t('packagedScan.debugLabel')}</Text>
+              <Input value={debugText} onChangeText={setDebugText} multiline style={st.debugInput} testID="pscan-ocr-debug-input" placeholder={t('packagedScan.debugPlaceholder')} />
+              <Btn variant="ghost" sm onPress={() => debugText.trim() && void runName(debugText)} testID="pscan-ocr-debug-run">{t('packagedScan.debugRun')}</Btn>
             </View>
           )}
         </View>

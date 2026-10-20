@@ -149,7 +149,7 @@ describe('흐름', () => {
     expect(ids(t2)).toContain('pscan-handoff');
     expect(ids(t2)).not.toContain('pscan-same-analysis');
   });
-  it('확정 네트워크 실패 = 오류 화면(차감 0 문구) → 다시 시도 = 같은 analysisId · 만료(PFOOD-003) = 다시 찍기 안내', async () => {
+  it('확정 네트워크 실패 = 오류 화면(차감 여부 확인 중) → 다시 시도 = 같은 analysisId · 만료(PFOOD-003) = 다시 찍기 안내', async () => {
     mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
     mockPost
       .mockResolvedValueOnce({ analysisId: 'A4', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
@@ -159,11 +159,55 @@ describe('흐름', () => {
     await press(t, 'pscan-take-photo');
     await press(t, 'packaged-item-11');
     expect(ids(t)).toContain('pscan-error-network');
-    expect(texts(t)).toContain('packagedScan.noScanUsed');
+    // Codex #310: 확정 전송 실패 = 서버가 커밋했을 수 있음 → "사용 안 됨" 단정 금지, "확인 중"
+    expect(texts(t)).toContain('packagedScan.chargeChecking');
+    expect(texts(t)).not.toContain('packagedScan.noScanUsed');
     await press(t, 'pscan-retry');
     expect(mockPost.mock.calls[2][1]).toEqual({ analysisId: 'A4', reportNo: 'R1' }); // 같은 ID 재시도
     expect(ids(t)).toContain('pscan-error-expired');
     expect(ids(t)).toContain('pscan-retake');
+  });
+  it('Codex #310: 확정 전송 실패 → 같은 ID 재확정 200 charged=true = 1회 사용 표시 · charged=false = 단정 없음(u) + 프로필 재조회', async () => {
+    for (const [charged, expected] of [[true, '1'], [false, 'u']] as const) {
+      mockPush.mockClear();
+      mockOcr.mockResolvedValueOnce([{ text: '새우깡' }]);
+      mockPost
+        .mockResolvedValueOnce({ analysisId: 'A6', state: 'CANDIDATES', candidates: [cand(11, 'R1')] })
+        .mockRejectedValueOnce(new Error('Network request failed'))
+        .mockResolvedValueOnce({ analysisId: 'A6', state: 'CONFIRMED', charged, product: DETAIL });
+      const inv = jest.spyOn(qc, 'invalidateQueries');
+      const t = flow();
+      await press(t, 'pscan-take-photo');
+      await press(t, 'packaged-item-11');
+      await press(t, 'pscan-retry');
+      expect(mockPost.mock.calls.at(-1)![1]).toEqual({ analysisId: 'A6', reportNo: 'R1' });
+      expect(mockPush).toHaveBeenCalledWith(`/processed-foods/11?scan=1&charged=${expected}`);
+      expect(inv).toHaveBeenCalledWith({ queryKey: ['me'] });
+      inv.mockRestore();
+      mockPost.mockReset();
+    }
+  });
+  it('Codex #310: 이름 스캔 대기 중 뒤로 = 늦게 온 응답 무시(후보 화면으로 되돌아가지 않음)', async () => {
+    let release!: (v: unknown) => void;
+    mockPost.mockReturnValueOnce(new Promise((r) => (release = r)));
+    const t = flow();
+    act(() => t.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-input' && typeof n.props?.onChangeText === 'function')[0].props.onChangeText('새우깡'));
+    await act(async () => { t.root.findAll((n) => n.props?.testID === 'pscan-ocr-debug-run' && typeof n.props?.onPress === 'function')[0].props.onPress(); });
+    expect(ids(t)).toContain('pscan-reading');
+    // SubHeader 목은 onBack을 노출하지 않으므로 화면의 onBack을 직접 — reading 헤더의 뒤로
+    const header = t.root.findAll((n) => typeof n.props?.onBack === 'function')[0];
+    act(() => header.props.onBack());
+    expect(ids(t)).toContain('pscan-capture');
+    await act(async () => { release({ analysisId: 'A7', state: 'CANDIDATES', candidates: [cand(11, 'R1')] }); await new Promise((r) => setTimeout(r, 0)); });
+    expect(ids(t)).toContain('pscan-capture');
+    expect(ids(t)).not.toContain('pscan-candidates');
+  });
+  it('상세: charged=u(차감 여부 미상) = 단정 없이 "남은 횟수는 홈에서"', () => {
+    const { adaptProcessedDetail } = jest.requireActual('@/lib/api/processedFoodAdapter');
+    qc.setQueryData(['processedFoods', 'detail', '11', 'member'], adaptProcessedDetail(DETAIL));
+    mockParams = { id: '11', scan: '1', charged: 'u' };
+    const t = render(<Detail />);
+    expect(t.root.findAll((n) => n.props?.testID === 'pf-scan-charge')[0].props.children).toBe('packagedScan.chargeSeeHome');
   });
   it('OCR이 글자를 못 읽음 = 서버 호출 0 · 성분표 안내(새 분석 — 같은 분석 문구 없음)', async () => {
     mockOcr.mockResolvedValueOnce([]);

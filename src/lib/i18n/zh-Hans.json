@@ -1285,6 +1285,11 @@
       "goneBody": "请重新拍摄。",
       "discontinuedTitle": "该商品已停产",
       "discontinuedBody": "请重新拍摄。"
-    }
+    },
+    "chargeChecking": "正在确认是否使用了扫描次数。",
+    "chargeSeeHome": "请在首页查看剩余扫描次数。",
+    "debugLabel": "OCR 文本(仅限测试)",
+    "debugPlaceholder": "每行输入一行包装文字",
+    "debugRun": "使用此文本"
   }
 }

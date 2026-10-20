@@ -1285,6 +1285,11 @@
       "goneBody": "Foto ulang.",
       "discontinuedTitle": "Produk ini sudah tidak diproduksi",
       "discontinuedBody": "Foto ulang."
-    }
+    },
+    "chargeChecking": "Kami sedang memeriksa apakah pindaian terpakai.",
+    "chargeSeeHome": "Cek sisa pindaian di layar beranda.",
+    "debugLabel": "Teks OCR (khusus uji)",
+    "debugPlaceholder": "Satu baris teks kemasan per baris",
+    "debugRun": "Pakai teks ini"
   }
 }

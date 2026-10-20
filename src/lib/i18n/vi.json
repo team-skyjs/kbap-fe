@@ -1285,6 +1285,11 @@
       "goneBody": "Hãy chụp lại.",
       "discontinuedTitle": "Sản phẩm này đã ngừng sản xuất",
       "discontinuedBody": "Hãy chụp lại."
-    }
+    },
+    "chargeChecking": "Đang kiểm tra xem đã dùng lượt quét chưa.",
+    "chargeSeeHome": "Xem số lượt quét còn lại ở màn hình chính.",
+    "debugLabel": "Văn bản OCR (chỉ để thử)",
+    "debugPlaceholder": "Mỗi dòng một dòng chữ trên bao bì",
+    "debugRun": "Dùng văn bản này"
   }
 }
