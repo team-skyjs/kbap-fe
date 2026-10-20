@@ -102,6 +102,7 @@ jest.mock('@/lib/data/useMe', () => ({
   useMyReviews: () => ({ data: [] }),
 }));
 jest.mock('@/lib/data/useFoods', () => ({
+  usePrefetchOtherFoodSorts: () => {}, // KB-830
   useInfiniteFoods: () => ({ data: [{ foodId: '1', name: 'Food 1', nameKo: '음식 1', photoUrl: null, risk: 'safe', overall: { average: 4, count: 2 }, popularityRank: 1 }], isLoading: false, isError: false, error: null, refetch: jest.fn(), hasNextPage: false, isFetchingNextPage: false, fetchNextPage: jest.fn() }),
   useFoods: () => ({ data: [] }),
 }));

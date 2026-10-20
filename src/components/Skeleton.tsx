@@ -3,7 +3,7 @@
  * Shimmer runs on the UI thread via reanimated.
  */
 import * as React from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { color as C, radius } from '@/lib/theme';
 
@@ -323,18 +323,23 @@ const sk287 = StyleSheet.create({
 });
 
 /** 음식 탭: 2열 그리드 카드 ×6 (사진 102 + 이름/뱃지 줄) — FlatList 패딩 안에서 렌더. */
-export function SkeletonFoodGrid() {
+/** KB-830: 실제 카드 그리드와 같은 행·셀 스타일을 받아 그대로 쓴다(여백·열 간격 상수 재사용 — 스켈레톤만 화면 끝까지 붙던 것). */
+export function SkeletonFoodGrid({ rowStyle, cellStyle }: { rowStyle: StyleProp<ViewStyle>; cellStyle: StyleProp<ViewStyle> }) {
   return (
-    <View style={sk.grid}>
+    <View testID="skeleton-food-grid">
       {/* A-SK-03(KB-486): 카드 프레임(흰·보더·r10) 제거 — 이미지 118 r8 + 바 3개 */}
-      {Array.from({ length: 6 }).map((_, i) => (
-        <View key={i} style={[sk.gridCard, { gap: 12 }]}>
-          <SkImg w={'100%' as const} h={118} />
-          <View style={{ gap: 6 }}>
-            <SkBar w={96} h={12} />
-            <SkBar w={72} h={10} />
-            <SkBar w={40} h={10} />
-          </View>
+      {[0, 1, 2].map((r) => (
+        <View key={r} style={[sk.gridRow, rowStyle]} testID="skeleton-food-row">
+          {[0, 1].map((c) => (
+            <View key={c} style={[cellStyle, { gap: 12 }]}>
+              <SkImg w={'100%' as const} h={118} />
+              <View style={{ gap: 6 }}>
+                <SkBar w={96} h={12} />
+                <SkBar w={72} h={10} />
+                <SkBar w={40} h={10} />
+              </View>
+            </View>
+          ))}
         </View>
       ))}
     </View>
@@ -365,8 +370,7 @@ const sk = StyleSheet.create({
   tabWrap: { paddingHorizontal: 18, paddingTop: 4, gap: 20 }, // 홈·프로필 body와 동일
   line: { height: 12, borderRadius: 6 },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: 13 }, // profile id 행
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  gridCard: { width: '48.5%' }, // A-SK-03: 프레임 소멸
+  gridRow: { flexDirection: 'row' }, // KB-830: 열 간격·좌우 여백은 호출측 그리드 행 스타일(FlatList columnWrapperStyle와 같은 값)
 });
 
 const styles = StyleSheet.create({

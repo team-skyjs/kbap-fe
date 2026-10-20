@@ -53,5 +53,7 @@ it('A-SK — 리뷰 블록 pv14·내 리뷰 카드 스트로크·마이푸드 �
   expect(sk).toContain('reviewBlock: { gap: 12, paddingVertical: 14 }');
   expect(sk).toContain("myRevCard: { borderRadius: 8, borderWidth: 1, borderColor: '#EAEBEE', padding: 16, gap: 12 }");
   expect(sk).toMatch(/myFoodsRow: \{[^}]*borderBottomColor: '#EAEBEE'/);
-  expect(sk).toContain("gridCard: { width: '48.5%' }");
+  // KB-830: 스켈레톤 그리드 = 실제 카드 그리드의 행·셀 스타일을 그대로(좌우 20·열 간격 16 — 화면 끝까지 붙던 것)
+  expect(read('src/features/food/FoodExplorer.tsx')).toContain('<SkeletonFoodGrid rowStyle={styles.gridRowWrap} cellStyle={styles.gridCell} />');
+  expect(sk).not.toContain("width: '48.5%'");
 });

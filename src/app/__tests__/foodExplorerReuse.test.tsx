@@ -59,6 +59,7 @@ jest.mock('@/lib/data/useMe', () => ({ useMe: () => mockMe() }));
 const mockBrowse = jest.fn();
 // P-350(KB-492): 칩 = 서버 필터 — 목이 risk 인자로 서버 판정 재현
 jest.mock('@/lib/data/useFoods', () => ({
+  usePrefetchOtherFoodSorts: () => {}, // KB-830
   FOODS_PAGE_SIZE: 20,
   useInfiniteFoods: (risk?: string, opts?: { enabled?: boolean }) => {
     const r = mockBrowse(risk, opts);
