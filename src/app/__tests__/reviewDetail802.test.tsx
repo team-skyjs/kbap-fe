@@ -126,7 +126,7 @@ it('시드 있음 = 첫 렌더 완성(스켈레톤 없음) + 백그라운드 단
   const tree = await render();
   expect(byId(tree, 'skeleton-review-detail')).toHaveLength(0);
   expect(texts(tree)).toContain('Broth was rich.');
-  expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en');
+  expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en', { headers: { 'X-API-Version': '3.2' } });
   await act(async () => resolve(WIRE));
   await flush();
   expect(texts(tree)).toContain('Fresh from server.');

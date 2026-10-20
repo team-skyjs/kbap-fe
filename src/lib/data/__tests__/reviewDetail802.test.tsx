@@ -79,7 +79,7 @@ describe('단건 조회 (C-1)', () => {
   it('GET /api/reviews/{id}?lang= → adaptReview 그대로', async () => {
     api.get.mockResolvedValueOnce(WIRE);
     const r = await fetchReview('42');
-    expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en');
+    expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en', { headers: { 'X-API-Version': '3.2' } });
     expect(r).toMatchObject({ id: '42', foodId: '1', foodName: 'Seolleongtang', foodKoreanName: '설렁탕', likes: 34, myLike: true, staffKindness: 0 });
   });
 
@@ -121,7 +121,7 @@ describe('useReview — 키 [reviews,detail,id] · staleTime 0', () => {
     api.get.mockResolvedValueOnce({ ...WIRE, likeCount: 99 });
     const out = await mount(qc, '42');
     expect(out[0].data).toMatchObject({ id: '42', likes: 1 }); // 첫 프레임 = 시드(스켈레톤 없음)
-    expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en'); // staleTime 0 → 갱신
+    expect(api.get).toHaveBeenCalledWith('/api/reviews/42?lang=en', { headers: { 'X-API-Version': '3.2' } }); // staleTime 0 → 갱신
     expect(out.at(-1)!.data).toMatchObject({ likes: 99 });
   });
 

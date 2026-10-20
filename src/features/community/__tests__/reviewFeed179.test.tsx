@@ -145,7 +145,7 @@ it.each([
   const tree = render();
   act(() => tree.root.findAll((n) => n.props?.testID === testID && typeof n.props?.onPress === 'function')[0].props.onPress());
   expect(mockSetQueryData).toHaveBeenCalledWith(['reviews', 'detail', 'r1'], expect.objectContaining({ id: 'r1', body: 'Great dish' }));
-  expect(mockTrack).toHaveBeenCalledWith('review_card_open', { target, photo_count: 0 });
+  expect(mockTrack).toHaveBeenCalledWith('review_card_open', { target, photo_count: 0, target_type: 'food' }); // KB-812 2차 대상 속성
   expect(mockPush).toHaveBeenCalledWith('/review/r1');
   // 시드가 이동보다 먼저(상세 첫 프레임 완성 렌더)
   expect(mockSetQueryData.mock.invocationCallOrder[0]).toBeLessThan(mockPush.mock.invocationCallOrder[0]);

@@ -31,7 +31,7 @@ it('③ 무효화 — 전역 피드(["reviews","global"]) 포함, 생성/수정/
   const src = read('src/lib/data/useReviewMutations.ts');
   expect(src).toContain("void qc.invalidateQueries({ queryKey: ['reviews', 'global'] });");
   // 세 뮤테이션 전부 공용 invalidate 경유(개별 무효화 재발 방지)
-  expect(src.match(/useInvalidateReviews\(\)/g)?.length).toBe(4); // 선언 1 + 소비 3
+  expect(src.match(/useInvalidateReviews\(\)/g)?.length).toBe(5); // 선언 1 + 소비 4(KB-812 2차 가공식품 작성 추가)
 });
 
 it('④ 커뮤니티 탭 헤더 — 공용 StickyHeader + useStickyScroll, 자체 헤더 스타일 소멸', () => {

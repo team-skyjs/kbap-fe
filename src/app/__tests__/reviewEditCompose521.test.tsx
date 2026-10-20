@@ -81,7 +81,9 @@ jest.mock('@/lib/auth/useSession', () => ({ useIsGuest: () => false }));
 jest.mock('@/lib/data/useFoods', () => ({
   useFoodDetail: () => ({ data: { foodId: '7', name: 'Kimbap', nameKo: '김밥', risk: 'safe' } }),
 }));
-jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+jest.mock('@/lib/data/useFoodReviews', () => ({ useFoodReviews: () => ({ data: undefined, isLoading: false, isFetching: false }), useProcessedReviews: () => ({ data: undefined, isLoading: false, isFetching: false }) }));
+// KB-812 2차: 작성 화면이 가공식품 모드용 상세 훅을 부른다(음식 모드 = id 없음·비활성)
+jest.mock('@/lib/data/useProcessedFoods', () => ({ useProcessedDetail: () => ({ data: undefined }), processedUnavailable: () => null }));
 jest.mock('@/lib/analytics', () => ({ EVENTS: {}, track: jest.fn() }));
 const mockToast = jest.fn();
 jest.mock('@/components/topToastStore', () => ({ showTopToast: (...a: unknown[]) => mockToast(...a), subscribeTopToast: () => () => {} }));
@@ -91,6 +93,8 @@ jest.mock('@/lib/data/useReviewMutations', () => {
   const actual = jest.requireActual('@/lib/data/useReviewMutations') as Record<string, unknown>;
   return {
     findCachedReview: actual.findCachedReview, // 실구현 — 시드 캐시 조회 검증
+    reviewWriteClosed: actual.reviewWriteClosed,
+    useCreateProcessedReview: () => ({ mutateAsync: jest.fn() }),
     useCreateReview: () => ({ mutateAsync: mockCreate }),
     useUpdateReview: () => ({ mutateAsync: mockUpdate, isPending: false }),
     useDeleteReview: () => ({ mutate: jest.fn() }),
@@ -176,7 +180,8 @@ it('⑤ ReviewEditSheet 소멸 — 컴포넌트·4표면 배선·전용 키 잔�
   for (const f of ['src/app/food/[id]/index.tsx', 'src/app/food/[id]/reviews.tsx', 'src/app/profile/reviews.tsx', 'src/app/review/[id].tsx'] /* KB-802: 리뷰 탭 편집 진입 = 리뷰 상세 ⋯ */) {
     const src = read(f);
     expect(src).not.toContain('ReviewEditSheet');
-    expect(src).toContain('reviewId='); // 편집 = 라우트 push
+    expect(src).toMatch(/reviewId=|reviewEditHref\(/); // 편집 = 라우트 push(KB-812 2차: 대상별 경로는 reviewEditHref)
+    if (!src.includes('reviewId=')) expect(read('src/lib/review/reviewTarget.ts')).toContain('/review?reviewId=${r.id}');
   }
   for (const loc of ['ko', 'en']) {
     const j = read(`src/lib/i18n/${loc}.json`);

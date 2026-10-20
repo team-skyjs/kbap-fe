@@ -34,8 +34,9 @@ it('① 리뷰 퍼널 유입 — 홈·피드에서 review_write_tap 발화(sourc
 
 it('② food_detail_view — 유입 4곳 src 부여 + 상세 화이트리스트 수용(other 누수 0)', () => {
   expect(read('src/app/profile/saved.tsx')).toContain('?src=saved');
-  expect(read('src/app/profile/reviews.tsx')).toContain('?src=my_reviews');
-  expect(read('src/features/community/ReviewFeed.tsx')).toContain('?src=feed');
+  expect(read('src/app/profile/reviews.tsx')).toContain("reviewTargetHref(rv, 'my_reviews')"); // KB-812 2차: 대상 링크 = reviewTarget(음식 = ?src=)
+  expect(read('src/lib/review/reviewTarget.ts')).toContain('?src=${src}');
+  expect(read('src/features/community/ReviewFeed.tsx')).toContain("reviewTargetHref(row.item, 'feed')"); // KB-812 2차
   expect(read('src/features/community/tagSheets.tsx')).toContain('?src=tag_sheet');
   const detail = read('src/app/food/[id]/index.tsx');
   for (const v of ['saved', 'my_reviews', 'feed', 'tag_sheet']) {

@@ -164,6 +164,12 @@ export const FLAGS = {
    * 켜면 상세에 버튼이 보이지만 촬영 화면이 아직 없으니 F2와 함께 켤 것.
    */
   packagedLabelScan: false,
+  /**
+   * KB-812 2차(P-507): 가공식품 상세 "리뷰 쓰기" 버튼 — 서버 쓰기 플래그(PROCESSED_FOOD_REVIEW_WRITE_ENABLED, 기본 OFF → 403 PFOOD-005)가
+   * 켜진 환경에서만 의미가 있다. 진단 채널(dev·teamtest)만 — production·preview(운영 서버, 플래그 OFF)는 서버를 켠 뒤 이 줄을 true로.
+   * 버튼이 보이는데 서버가 아직 꺼져 있으면 작성 화면이 403을 "곧 열려요" 안내로 받는다(차단 아님). 리뷰 **읽기**·기존 리뷰 수정은 이 플래그와 무관.
+   */
+  packagedReviewWrite: DIAGNOSTIC_CHANNEL,
 } as const;
 
 /** P-137 변형: systemCamera on일 때 탭 진입 즉시 카메라 자동 실행(취소 시 런처).

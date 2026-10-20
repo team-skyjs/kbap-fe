@@ -11,7 +11,8 @@
  */
 import { useMutation, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import i18n from '../i18n';
-import { api } from '@/lib/api/client';
+import { api, ApiError } from '@/lib/api/client';
+import { REVIEW_READ_HEADERS } from './useFoodReviews';
 import { buildReviewUpdate, type ReviewUpdateWire } from '@/lib/api/reviewAdapter';
 import type { Review, ReviewPage, User } from '@/lib/api/types';
 import { FLAGS } from '@/lib/flags';
@@ -33,6 +34,9 @@ function useInvalidateReviews() {
     // P-393(KB-580): 홈 "리뷰 많은 음식" 랭킹도 리뷰 수 파생 — 빼면 staleTime(60s) 동안
     // 복귀해도 이전 순위가 그대로 보인다(Codex #169). 프리픽스 매칭이라 언어 키 전부 걸린다.
     void qc.invalidateQueries({ queryKey: ['home'] });
+    // KB-812 2차: 가공식품 리뷰 — 제품 리뷰 목록·상세 요약(reviewSummary). 피드·내 리뷰 발 수정·삭제는 제품 id를 모르니 프리픽스 전부(활성 쿼리만 재조회)
+    void qc.invalidateQueries({ queryKey: ['processedFoods', 'reviews'] });
+    void qc.invalidateQueries({ queryKey: ['processedFoods', 'detail'] });
   };
 }
 
@@ -105,6 +109,32 @@ export function useCreateReview() {
   });
 }
 
+/** KB-812 2차(서버 #435): 가공식품 리뷰 작성 — POST /api/processed-foods/{id}/reviews (3.2, 회원). 식당 전용 값(서빙·친절·위치) 없음.
+ *  쓰기 플래그 OFF면 403 PFOOD-005 — 화면이 "곧 열려요" 안내로 받는다(reviewWriteClosed). */
+export function useCreateProcessedReview() {
+  const invalidate = useInvalidateReviews();
+  return useMutation({
+    mutationFn: async (input: { processedFoodId: string; rating: number; content?: string; imagePaths?: string[] }) => {
+      if (!FLAGS.reviewsLiveEnabled) return; // 봉인 경로 = 호출 0(플래그는 리터럴 true 잠금 — reviewsProdEnable403)
+      await api.post(
+        `/api/processed-foods/${encodeURIComponent(input.processedFoodId)}/reviews`,
+        {
+          rating: input.rating,
+          ...(input.content ? { content: input.content } : {}),
+          ...(input.imagePaths?.length ? { imagePaths: input.imagePaths } : {}),
+        },
+        REVIEW_READ_HEADERS, // 엔드포인트가 3.2+ 매핑 — 버전 헤더 없으면 404
+      );
+    },
+    onSuccess: () => {
+      if (FLAGS.reviewsLiveEnabled) invalidate('');
+    },
+  });
+}
+
+/** 403 PFOOD-005 = 서버 쓰기 플래그 OFF(차단이 아니라 아직 안 열림) */
+export const reviewWriteClosed = (e: unknown): boolean => e instanceof ApiError && e.code === 'PFOOD-005';
+
 export function useUpdateReview() {
   const qc = useQueryClient();
   const invalidate = useInvalidateReviews();
@@ -161,6 +191,7 @@ function likeInfiniteQueries(qc: QueryClient, foodId: string) {
   return [
     ...qc.getQueryCache().findAll({ queryKey: ['food', foodId, 'reviews'] }),
     ...qc.getQueryCache().findAll({ queryKey: ['reviews', 'global'] }),
+    ...qc.getQueryCache().findAll({ queryKey: ['processedFoods', 'reviews'] }), // KB-812 2차: 가공식품 상세 리뷰
   ];
 }
 
