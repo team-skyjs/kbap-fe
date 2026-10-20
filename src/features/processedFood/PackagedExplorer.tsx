@@ -60,7 +60,7 @@ export function PackagedPlaceholder({ type, foodType, style }: { type: PackagedT
   );
 }
 
-function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpen: () => void }) {
+export function ProductRow({ item, onOpen }: { item: ProcessedFoodSummary; onOpen: () => void }) {
   const { t } = useTranslation();
   const typeLabel = item.type ? t(`packaged.type.${item.type}`) : item.foodType;
   return (

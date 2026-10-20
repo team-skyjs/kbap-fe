@@ -33,6 +33,7 @@ import { restrictionLabel } from '@/lib/onboarding/data';
 import { processedUnavailable, useProcessedDetail } from '@/lib/data/useProcessedFoods';
 import type { LabelSource, ProcessedFoodDetail } from '@/lib/api/processedFoodAdapter';
 import { PackagedPlaceholder } from '@/features/processedFood/PackagedExplorer';
+import { FlameShape } from '@/components/FlameShape';
 
 const GUTTER = 20;
 export const PHOTO_RATIO = 223 / 335; // 시안 사진 슬롯 335×223(원본 500×333 비율)
@@ -135,8 +136,12 @@ export default function ProcessedFoodDetailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; scan?: string; charged?: string }>();
   const id = typeof params.id === 'string' ? params.id : undefined;
+  // KB-813: 스캔 확정에서 온 경우 = "스캔 결과" 띠. 차감 표시는 서버 confirm 응답의 charged(파라미터로 전달)만 — 추정 0
+  const fromScan = params.scan === '1';
+  const charged = params.charged === '1';
+  const chargeUnknown = params.charged === 'u'; // 앞선 확정 전송 실패 뒤 재확정 — 차감 여부를 단정하지 않는다(남은 횟수는 프로필에서)
   const q = useProcessedDetail(id);
   const [gate, setGate] = React.useState(false);
   const back = () => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/food' as Href));
@@ -176,6 +181,17 @@ export default function ProcessedFoodDetailScreen() {
     const imageCredit = d.image ? IMAGE_CREDIT[d.image.attributionKey] : undefined;
     body = (
       <ScrollView contentContainerStyle={[s.pad, { paddingBottom: insets.bottom + 32 }]} testID="pf-detail">
+        {fromScan && (
+          <View style={s.scanBanner} testID="pf-scan-result">
+            <View style={s.flameBox} pointerEvents="none">
+              <FlameShape scale={0.2} state={charged ? 'active' : 'empty'} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={s.scanTitle}>{t('packagedScan.resultTitle')}</Text>
+              <Text style={s.scanSub} testID="pf-scan-charge">{t(charged ? 'packagedScan.scanUsed' : chargeUnknown ? 'packagedScan.chargeSeeHome' : 'packagedScan.noScanUsed')}</Text>
+            </View>
+          </View>
+        )}
         <View>
           {d.imageUrl ? (
             <RemoteImage uri={d.imageUrl} style={s.photo} recyclingKey={`pf-${d.id}`} />
@@ -253,6 +269,10 @@ const s = StyleSheet.create({
   outlineBtn: { minHeight: 40, paddingVertical: 8 },
   sourceBox: { backgroundColor: C.surface2, padding: 16, gap: 8 },
   source: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
+  scanBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, backgroundColor: C.surface2 },
+  flameBox: { width: 24, height: 30, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  scanTitle: { fontFamily: font.bodySemi, fontSize: 14, lineHeight: 20, color: C.ink },
+  scanSub: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: C.ink2 },
   stateTitle: { fontFamily: font.bodyBold, fontSize: 20, lineHeight: 28, color: C.ink },
   stateBody: { fontFamily: font.body, fontSize: 14, lineHeight: 20, color: C.ink2 },
   skelLine: { height: 14, borderRadius: 4 },

@@ -1,3 +1,5 @@
+import { ScanModeTabs, type ScanMode } from '@/features/scan/ScanModeTabs';
+import { PackagedScanFlow } from '@/features/scan/PackagedScanFlow';
 import { UnlockCelebration } from '@/features/scan/UnlockCelebration';
 import { hasUnlockPending, hasObservedUnlockTransition, setUnlockScanFocused, subscribeUnlock } from '@/features/scan/unlockCelebrationStore';
 import { currentGen } from '@/lib/auth/beTokens';
@@ -130,6 +132,13 @@ export default function Scan() {
   const hasR = (me?.restrictions.length ?? 0) > 0;
 
   const [phase, setPhase] = useState<Phase>('camera');
+  // KB-813: 촬영 모드 — 메뉴판(기본·현행 흐름 그대로) / 음식 사진(자리만) / 가공식품(PackagedScanFlow)
+  const [scanMode, setScanModeState] = useState<ScanMode>('menu');
+  const setScanMode = (m: ScanMode) => {
+    if (m === scanMode) return;
+    track(EVENTS.scan_mode_select, { mode: m });
+    setScanModeState(m);
+  };
   const reviewPrompt = useReviewPrompt(); // KB-730: 스캔 성공 2회 이상 — 결과 화면 일회성 모달 큐의 마지막 스텝
   const modalQueue = useOneShotQueue(); // P-267 직렬화의 일반화: 코치마크 → 알림 넛지 → 리뷰 유도
   const coachDoneRef = useRef<(() => void) | null>(null);
@@ -734,7 +743,8 @@ export default function Scan() {
   ) : null;
   // KB-777 B1-4: 어두운 바탕(카메라 뷰파인더·인식 중·오류 — "Not a menu" 등)은 상태바 아이콘을 밝게. 앱 기본(_layout)은 dark —
   // 포커스를 잃거나 밝은 화면(결과·오프라인·시스템 카메라 런처)으로 가면 이 StatusBar가 빠져 기본으로 돌아간다.
-  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera);
+  // Codex #310: 가공식품 모드는 밝은 화면(PackagedScanFlow) — 카메라 단계여도 어두운 바탕이 아니다
+  const darkRoot = isGuest || DARK_ROOT_PHASES.has(phase) || (phase === 'camera' && !offline && !FLAGS.systemCamera && scanMode !== 'packaged');
   const lightBar = isFocused && darkRoot ? <StatusBar style="light" /> : null;
   const withPresenter = (node: ReactElement) => <>{node}{presenter}{lightBar}</>;
 
@@ -1088,6 +1098,11 @@ export default function Scan() {
     );
   }
 
+  // ---- KB-813 가공식품 모드 — 카메라 단계에서만(결과·오류·쿼터 잠금은 위에서 먼저 처리돼 이 분기에 오지 않는다) ----
+  if (scanMode === 'packaged' && !offline) {
+    return withPresenter(<PackagedScanFlow mode={scanMode} onMode={setScanMode} onClose={() => router.back()} />);
+  }
+
   // ---- camera (default) ----
   // P-046: 오프라인 = 전체 J4 (카메라·갤러리·샘플 진입로 전부 이 화면으로 대체 —
   // 촬영 자체가 불가). 밝은 배경으로 다른 탭 J4와 톤 통일.
@@ -1107,6 +1122,10 @@ export default function Scan() {
         <Pressable style={[styles.close, { top: insets.top + 8, backgroundColor: C.surface2 }]} onPress={() => router.back()} hitSlop={8} testID="scan-close">
           <IconClose size={22} color={C.ink2} />
         </Pressable>
+        {/* KB-813 모드 탭 — 시스템 카메라 런처(밝은 바탕) */}
+        <View style={[styles.camModeTabs, { top: insets.top + 56 }]}>
+          <ScanModeTabs value={scanMode} onChange={setScanMode} />
+        </View>
         <View style={styles.launcherBody}>
           <IconScanLines size={44} color={C.ink3} />
           <Text style={styles.launcherTitle}>{t('scan.cameraTitle')}</Text>
@@ -1187,6 +1206,10 @@ export default function Scan() {
         {GateSheet}
 
       {/* P-136 D: 시안 S3 크롬 — 타이틀 줄 + 가로 배지(기능 무변, P-131 위 미세) */}
+      {/* KB-813 모드 탭(어두운 뷰파인더 위 흰 글자) — 제목 아래, 닫기 버튼 줄 밑 */}
+      <View style={[styles.camModeTabs, { top: insets.top + 56 }]} pointerEvents="box-none">
+        <ScanModeTabs value={scanMode} onChange={setScanMode} tone="dark" />
+      </View>
       <View style={[styles.camTitleWrap, { top: insets.top + 14 }]} pointerEvents="none">
         <Text style={styles.camTitle}>{t('scan.cameraTitle')}</Text>
         {uiDeg !== 0 && (
@@ -1399,6 +1422,7 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, alignItems: 'center', gap: 14 },
   hint: { fontFamily: font.bodyBold, fontSize: 13, color: '#fff', textAlign: 'center' },
   camTitleWrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 8 },
+  camModeTabs: { position: 'absolute', left: 0, right: 0 },
   camScrimTop: { position: 'absolute', top: 0, left: 0, right: 0 },
   camScrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 300 },
   launcherRoot: { flex: 1, backgroundColor: '#fff' },

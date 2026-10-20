@@ -121,6 +121,10 @@ export const EVENTS = {
   food_packaged_detail_view: 'food_packaged_detail_view', // KB-812 가공식품 상세 진입 — id·labelSource
   home_curation_gallery_open: 'home_curation_gallery_open', // KB-832 항목 카드 → 사진 갤러리 시트(발주명 curation_gallery_open → 도메인 규칙상 home_)
   home_curation_gallery_swipe: 'home_curation_gallery_swipe', // KB-832 갤러리 사진 넘김(도착 인덱스)
+  scan_mode_select: 'scan_mode_select', // KB-813 스캔 모드 탭(menu|packaged)
+  food_packaged_scan_name: 'food_packaged_scan_name', // KB-813 이름 스캔 결과(후보 수 — OCR 원문 금지)
+  food_packaged_scan_confirm: 'food_packaged_scan_confirm', // KB-813 확정 — 서버 charged 그대로
+  food_packaged_scan_handoff: 'food_packaged_scan_handoff', // KB-813 성분표 안내 진입(from: none|rejected|capture)
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];
@@ -181,6 +185,10 @@ const ALLOWED: Record<EventName, readonly string[]> = {
   food_packaged_detail_view: ['product_id', 'label_source'],
   home_curation_gallery_open: ['collection_key', 'entry_id'],
   home_curation_gallery_swipe: ['collection_key', 'entry_id', 'index'],
+  scan_mode_select: ['mode'],
+  food_packaged_scan_name: ['candidate_count'],
+  food_packaged_scan_confirm: ['charged', 'rejected'],
+  food_packaged_scan_handoff: ['from'],
   review_prompt_response: ['answer'], // positive|negative|later
   owner_ask_open: ['source', 'food_id'], // cta|ingredient|ingredient_sheet|unregistered
   scan_permission: ['state'], // view|grant|deny|settings_open
